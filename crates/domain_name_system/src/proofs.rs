@@ -91,3 +91,69 @@ fn tcp_reassembly_is_total_and_honest() {
         assert_eq!(message, &stream[2..2 + announced]);
     }
 }
+
+/// How long a dotted text the parse proof takes. Five bytes reach every shape the parse tells
+/// apart: a trailing dot, an empty label at the start, middle or end, two labels, and a byte
+/// outside the alphabet in either. A label too long or a name too long needs 64 or 254 bytes,
+/// past what the proof can carry, and the host tests cover both.
+const DOTTED: usize = 5;
+
+/// **The dotted parse never panics, accepts exactly the texts that are names, and spells them.**
+/// For every byte string of up to [`DOTTED`] bytes (UTF-8 or not), [`Name::from_dotted_bytes`]
+/// returns, and it answers `Ok` exactly when the text, less one trailing dot, is empty or is labels
+/// of letters, digits, `-` and `_` joined by single dots. On `Ok` the wire form is those labels in
+/// order, each after its length byte, then the root's zero. A resolver's grant table runs this
+/// parse on every zone it is given, so a proof of the table may stub it and lean on this one.
+/// Falsification: replayable `crates/domain_name_system/falsifications/proofs.the_dotted_parse_accepts_exactly_names.patch`
+#[kani::proof]
+#[kani::unwind(8)]
+fn the_dotted_parse_accepts_exactly_names() {
+    let bytes: [u8; DOTTED] = kani::any();
+    let length: usize = kani::any();
+    kani::assume(length <= DOTTED);
+    let text = &bytes[..length];
+
+    let body = match text {
+        [rest @ .., b'.'] => rest,
+        _ => text,
+    };
+    // The specification, written apart from the parse: no byte outside the alphabet and the dot, no
+    // dot at either end, and no two dots together.
+    let mut is_name = true;
+    for (i, &b) in body.iter().enumerate() {
+        if b == b'.' {
+            if i == 0 || i + 1 == body.len() || body[i - 1] == b'.' {
+                is_name = false;
+            }
+        } else if !(b.is_ascii_alphanumeric() || b == b'-' || b == b'_') {
+            is_name = false;
+        }
+    }
+
+    match Name::from_dotted_bytes(text) {
+        Ok(name) => {
+            assert!(is_name, "a text that is no name was accepted");
+            // Walk the wire form label by label against the body.
+            let wire = name.as_bytes();
+            let mut at = 0;
+            let mut read = 0;
+            loop {
+                let n = wire[at] as usize;
+                at += 1;
+                if n == 0 {
+                    break;
+                }
+                if read > 0 {
+                    assert_eq!(body[read], b'.', "labels not split at a dot");
+                    read += 1;
+                }
+                assert_eq!(&wire[at..at + n], &body[read..read + n], "a label misspelled");
+                at += n;
+                read += n;
+            }
+            assert_eq!(at, wire.len(), "bytes after the root's zero");
+            assert_eq!(read, body.len(), "text left unspelled");
+        }
+        Err(_) => assert!(!is_name, "a name was refused"),
+    }
+}
