@@ -202,8 +202,8 @@ Each way it can end, by the last lines:
 | 2026-11-17 | `cfe18db337` | `Coherent` | 1000 Mbit/s full duplex, 2851 ms | leased | 104,857,600 in 6.017 s | 139.399 Mbit/s | `LEASED-AND-MEASURED` |
 
 The 2026-11-17 UTC row ran main's control process; the boot of `dd47a83e88` ran #3498's. Its rate
-is one run to a laptop peer over a USB Ethernet adapter, not a link ceiling. The bench session holds its log, and a
-later change adds the committed path. The first three rows predate the control process. The first row is
+is one run to a laptop peer over a USB Ethernet adapter, not a link ceiling. `bench/radon-2026-11-17/network-bench-main-3699.log` is the log, and that
+directory's `README.md` describes the boot. The first three rows predate the control process. The first row is
 `bench/radon-2026-10-20/network-bench-3.log`; that directory's `README.md` says how
 the boots were run, and why the console was not `script/board-console`. Its two earlier boots had
 the cable in `ethernet@16040000`'s jack and ended `FAILED: no link` after 5003 ms, which is the

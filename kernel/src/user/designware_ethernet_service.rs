@@ -368,7 +368,7 @@ pub(crate) struct Wiring {
 
 /// Whether the booted system may bring this port up on its own. `true`: a radon bench boot of this
 /// path (the control process and the clock and reset server, as merged at main `cfe18db337`) ended
-/// `verdict LEASED-AND-MEASURED` with `coherence : Coherent` on 2026-11-17 UTC. An earlier boot
+/// `verdict LEASED-AND-MEASURED` with `coherence : Coherent` on 2026-11-17 UTC (`bench/radon-2026-11-17/network-bench-main-3699.log`). An earlier boot
 /// (`dd47a83e88`) ran the code as it merged at #3498. No emulator has this controller, so only a
 /// radon boot can show this path broken again; set it back to `false` if one does.
 pub(crate) const PROVEN_ON_SILICON: bool = true;
