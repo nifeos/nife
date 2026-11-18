@@ -296,8 +296,8 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 Finished: decisions 1 to 4, items 1 to 11 and the move (#3569, #3634).
 
 - Items 12 to 21: open, two-way. Blocker: other, a lane.
-- The Motorcomm alias sets and the renames the register gate names: no ruling found. Blocker:
-  decision for calef (unverified).
+- The Motorcomm alias sets and the register gate's renames: no ruling found. Blocker: decision
+  for calef (unverified).
 - nife's pin trails the repository's main, whose weekly job fails. Blocker: other, a lane.
 - The `v0.1.0-pre.1` tag. Blocker: release step.
 - Publishing. Blocker: publishing hold.
@@ -313,8 +313,8 @@ Finished: decisions 1 to 4, items 1 to 11 and the move (#3569, #3634).
   crate names the board and its two device trees. The README has its build, proof and falsification
   sections, and `cargo test` compiles its example.
 
-- **Outstanding.** The P2 items stay open. The architect still has to rule the two Motorcomm alias sets and the remaining renames the register
-  gate names. A lane builds each ruling when it arrives.
+- **Outstanding.** The P2 items, and the two Motorcomm alias sets and register-gate renames that
+  wait for a ruling.
 
 ## Index row
 
