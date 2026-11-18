@@ -229,11 +229,30 @@ reservation, and the crate's docs state the rule beside `ABI_VERSION` and in the
 
 The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 
+## Where this stands
+
+Finished: items 1, 3 to 6, 7 (a) and (c), 8 to 11, 14, 18 and 19 (#3565, #3596), and decision B,
+`console::WRITE` kept as reserved (#3596). Decision A is ruled by §323 (the binary interface and
+the names of the layers): the crate is `moho_abi` in code and package.
+
+- The `moho_abi` rename: `crates/abi/Cargo.toml` still names the package `abi`. Blocker: other,
+  a rename lane after its plan.
+- Item 12: `futex::admitted` and `Error::from_ret` keep their names. Blocker: decision for calef.
+- Item 13: no review package exists and the public names are not ratified. Blocker: decision for
+  calef, after a package lane.
+- Items 15 to 17 need names. Blocker: decision for calef.
+- Items 20 and 21 wait for the new repository's first runs. Blocker: other, the move.
+- The move and a tag. Blocker: decision for calef (review clearance), then a release step.
+- Publishing. Blocker: publishing hold.
+
 ## Follow-on
 
-- **Outstanding.** Decisions A and B, the two renames of item 12, the package of item 13 and items 15
-  to 17, which an architect rules. Checked against `crates/abi/src`: `futex::admitted`,
-  `Error::from_ret`, `CapabilitySlot` and `console::WRITE` all still exist.
+- **Done.** Decision B: `console::WRITE` stays as a reserved operation (#3596).
+- **Outstanding.** Decision A's rename to `moho_abi`, ruled by §323 (the binary interface and the
+  names of the layers) and not yet built.
+- **Outstanding.** The two renames of item 12, the package of item 13 and items 15 to 17, which an
+  architect rules. Checked against `crates/abi/src`: `futex::admitted`, `Error::from_ret` and
+  `CapabilitySlot` still exist.
 - **Outstanding.** Items 20 and 21 and the badge row, which need the new repository's first runs.
 
 ## BUGS

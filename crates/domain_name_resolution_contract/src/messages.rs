@@ -7,9 +7,9 @@ use super::*;
 
 /// The [`OPERATION_GRANT`] messages that grant `badge` the zone `zone` (dotted text, a trailing dot
 /// allowed; empty for the root, which is every name). `None` when the badge is 0, which is the
-/// spawner's own, or the text is longer than [`NAME_TEXT_MAXIMUM`] plus a trailing dot.
+/// spawner's own, or the text is longer than [`MAXIMUM_NAME_FIELD_BYTES`].
 pub fn grant_messages(badge: u32, zone: &[u8]) -> Option<impl Iterator<Item = (u64, u64)> + '_> {
-    if badge == 0 || zone.len() > NAME_TEXT_MAXIMUM + 1 {
+    if badge == 0 || zone.len() > MAXIMUM_NAME_FIELD_BYTES {
         return None;
     }
     let total = zone.len() as u8;
@@ -17,7 +17,8 @@ pub fn grant_messages(badge: u32, zone: &[u8]) -> Option<impl Iterator<Item = (u
     let messages = zone.len().div_ceil(8).max(1);
     Some((0..messages).map(move |i| {
         let start = i * 8;
-        let part = zone.get(start..).unwrap_or(&[]);
+        // `start` is below the length, or 0 for the root, so the slice is always in range.
+        let part = &zone[start..];
         let n = part.len().min(8);
         let mut bytes = [0u8; 8];
         bytes[..n].copy_from_slice(&part[..n]);

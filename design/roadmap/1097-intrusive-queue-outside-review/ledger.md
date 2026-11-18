@@ -10,7 +10,7 @@ the test or harness that holds it, or LEFT with the reason.
 | 3 repository skeleton | LEFT | the scaffold belongs to the move |
 | 4 `Queue` is `Send` for every `T` | LEFT | decision 1 |
 | 5 provenance clause, owner-pointer examples, Miri-run test | DONE | the safety list of `Unqueued::new`; `a_token_from_the_owning_pointer_survives_later_borrows` |
-| 5 the kernel's `mint_token` from the stored pointer | LEFT | kernel code; it wants its own lane with the QEMU gates, and the move does not wait on it |
+| 5 the kernel's `mint_token` from the stored pointer | DONE | `mint_token` in `kernel/src/sched/thread_table.rs` mints from `Threads::pointer`, the pointer the table stores |
 | 6 seven public names | LEFT | decision 2 |
 | 7 compile-fail doctest names its error | DONE | the `push_back` doctest is `compile_fail,E0382` |
 | 8 dropping a non-empty queue | DONE | the paragraph on `Queue` |

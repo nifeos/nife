@@ -31,6 +31,10 @@ proofs and one falsification, and meets no sentence in the README or the documen
 code contradicts. `mark_free` rounds in the direction its documentation describes and the safe one.
 The repository's `check` and `proofs` runs are green on the first push for the crate's own reasons.
 
+## Where this stands
+
+[The appendix](1103-page-frames-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1103-page-frames-outside-review/what-was-checked.md).

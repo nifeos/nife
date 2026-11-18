@@ -290,27 +290,34 @@ claims none of the QEMU or hardware steps.
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet.
 
+## Where this stands
+
+Finished: every P0 and P1 item but P1-13's pin, every P2 item but part of P2-4, a stranger run
+and a QEMU run. The Follow-on cites each pull request. Nothing here needs calef.
+
+| item | what remains | blocker |
+|---|---|---|
+| P1-13 | Callers pin `nifeos/crate-workflows` at `d5d7f34`, and no template release carries the mutation stack | release step |
+| Names | The public names minted in #16 to #27 stay provisional for the release review | release step |
+| P2-4 | Identify Controller's queue entry sizes: neither parsed nor in BUGS | other: not yet built |
+| QEMU | A depth-2 run that wraps both rings and records each `SQHD`, and the 16 KiB page repeat | other: not yet run |
+| Hardware | The driver on one real controller with a non-zero `FLBAS` | bench |
+| aarch64 | A long ordering run on a weakly ordered host | bench |
+| Release | `publish = false` goes, and `v0.1.0`, only when the hold lifts | publishing hold |
+
 ## Follow-on
 
-Checked 2026-11-14 (UTC) against `nifeos/non_volatile_memory_express`. Its tag `v0.1.0-pre.1` sits
-on `27aa19c`, the merge of #14; `main` is `5cdfeae`, 60 commits further on. Every item but P1-13
-landed after the tag.
-
-- **Done.** P0-1 landed in `nifeos/non_volatile_memory_express` #15, P1-4 in #17, P1-9 in #20,
-  P1-10 in #22 and P2-7 in #18. P1-1 to P1-3, P1-5 and P1-14 landed in #19. P1-6 to P1-8, P1-11,
-  P1-12 and P2-8 to P2-10 landed in #16, and P1-6's phase helper, `Completion::is_phase_tag_set`,
-  in #23. P0-2's four register names were already on `main`.
-- **Done.** P2-1 landed in `nifeos/non_volatile_memory_express` #26, P2-2 in #23, P2-3 in #21, P2-4
-  in #24 (`MDTS` and `NN` only), P2-5 in #25 and P2-6 in #27. The repository's `falsifications/`
-  holds 18 patches.
-- **Outstanding.** P1-13's pin: the mutation caller landed in #13 and the ruleset requires
-  `check / mutation-diff`, but every caller pins `nifeos/crate-workflows` at `2e651d8`, which is no template
-  release, and no full mutation run covers `5cdfeae`. Read from the workflow files and the run list.
-- **Outstanding.** The names minted after the tag, which #16 to #27 list as provisional for the
-  release review, and the new stranger run: `docs/stranger-test.md` still reads `Last run:
-  2026-11-07`. Read from the pull requests and the file on `main`.
-- **Outstanding.** The QEMU, hardware and aarch64 steps: no run or record of them is in the
-  repository.
+- **Done.** In `nifeos/non_volatile_memory_express`: P0-1 in #15, P1-4 in #17, P1-9 in #20, P1-10
+  in #22 and P2-7 in #18. P1-1 to P1-3, P1-5 and P1-14 in #19. P1-6 to P1-8, P1-11, P1-12 and
+  P2-8 to P2-10 in #16, with #32 anchoring the package include. P0-2's names were already on
+  `main`.
+- **Done.** P1-6's phase helper and P2-2 in #23, P2-1 in #26, P2-3 in #21, P2-4 in part (`MDTS`
+  and `NN`) in #24, P2-5 in #25 and P2-6 in #27. P1-13's mutation caller is #13, now a required
+  check with a green full run on `main`.
+- **Done.** The tags `v0.1.0-pre.1` (`27aa19c`) and `v0.1.0-pre.2` (`73b335c`); the gates pass at
+  `v0.1.0-pre.2`. A new stranger run and a QEMU run of `examples/qemu_driver.rs` are #33.
+- **Outstanding.** Every row of the table above. Read from the workflow files, the
+  README's BUGS and `docs/stranger-test.md`; #33 ran QEMU at depth 64 with a 4 KiB page.
 
 ## Index row
 

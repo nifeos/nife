@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-09
 milestone_dependencies: 818, 1017
 decision_dependencies: 247, 305
@@ -288,11 +288,17 @@ The review claims none of the hardware checks.
 
 ## BUGS
 
-- Item 4's bench sessions ran at crate commit `ee0bde8`. The release commit is a later one, and
-  the README's "Hardware evidence" section names `ee0bde8` only, so a release commit that changes
-  `src/` needs another session before the section can name it.
 - The prior-art rows marked *recalled* were not re-read; a lane that revisits item 17 reads the
   HAL crates it cites first.
+
+## Where this stands
+
+[The status appendix](1049-jh7110-entropy-release-review/where-this-stands.md) holds it.
+
+## Follow-on
+
+- **Done.** Items 4 to 16, 18 and 19; the status appendix cites each.
+- **Outstanding.** Items 1 to 3 and four done-when checks, checked on `main`.
 
 ## Index row
 

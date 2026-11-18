@@ -153,17 +153,17 @@ pub const ZONED_VERSION: u32 = 2;
 pub const SERVICED_VERSION: u32 = 3;
 
 /// The most zones a manifest may ask for: 8, the resolver's
-/// `domain_name_resolution_contract::GRANTS_MAXIMUM`, since each granted zone is its own badge and
+/// `domain_name_resolution_contract::MAXIMUM_GRANTS`, since each granted zone is its own badge and
 /// a program asking for more could never be granted them all at once.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const MAXIMUM_ZONES: usize = domain_name_resolution_contract::GRANTS_MAXIMUM;
+pub const MAXIMUM_ZONES: usize = domain_name_resolution_contract::MAXIMUM_GRANTS;
 
 /// The longest zone, in bytes of dotted text: 253, a host name's limit and the resolver's
-/// `domain_name_resolution_contract::NAME_TEXT_MAXIMUM`.
+/// `domain_name_resolution_contract::MAXIMUM_NAME_TEXT_BYTES`.
 ///
 /// Name: provisional. A length carries its unit (`design/naming.md`, units).
-pub const MAXIMUM_ZONE_BYTES: usize = domain_name_resolution_contract::NAME_TEXT_MAXIMUM;
+pub const MAXIMUM_ZONE_BYTES: usize = domain_name_resolution_contract::MAXIMUM_NAME_TEXT_BYTES;
 
 /// `OWNER` with its NUL, padded to the note's 4-byte alignment.
 const NAME_FIELD_BYTES: usize = 8;

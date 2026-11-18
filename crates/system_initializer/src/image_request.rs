@@ -142,7 +142,7 @@ pub(super) struct SpawnEndpoint {
     /// The label of the job each resolver badge is granted to: badge `i + 1` for entry `i`, so a
     /// badge names its entry and no two live jobs share one. Forgotten at the job's reap, which is
     /// when nothing holds the badge any more.
-    resolving: [Option<u64>; domain_name_resolution_contract::GRANTS_MAXIMUM],
+    resolving: [Option<u64>; domain_name_resolution_contract::MAXIMUM_GRANTS],
 }
 
 /// How many first messages [`SpawnEndpoint`] keeps from senders it is not serving.
@@ -180,7 +180,7 @@ impl SpawnEndpoint {
             replies: [None; INSTALLER_HOLDERS],
             next_label: 1,
             resolver,
-            resolving: [None; domain_name_resolution_contract::GRANTS_MAXIMUM],
+            resolving: [None; domain_name_resolution_contract::MAXIMUM_GRANTS],
         }
     }
 

@@ -40,6 +40,10 @@ bounded, well-formed answer or `None`, never with a size or an offset the caller
 says what it is in words the naming rules accept, and the template's gates are green for the
 crate's own reasons.
 
+## Where this stands
+
+[The appendix](1105-pci-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1105-pci-outside-review/what-was-checked.md).

@@ -2,19 +2,37 @@
 name = "domain_name_resolution_contract"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "The contract between a confined name resolver, the program that grants its clients zones, and those clients: the words, the shared page and the grant table"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "dns", "resolver", "capability"]
+categories = ["no-std", "embedded", "network-programming"]
+publish = false     # `false` until the release that publishes; that release deletes the line
 
-# What a name resolver and the programs around it agree on (milestone 384 (in a capability system
-# the resolver is a grant), §248 (the name resolver is its own confined program)): the words a
-# client resolves a host name with, the page the name and its addresses cross in, the words a
-# spawner grants a client a zone with, and the resolver's endowment. Plus the grant table the
-# resolver keeps, because what a grant means is half of the contract and it is pure logic a host
-# test can reach. Rule 7: the resolver, its spawner and every client link one definition. no_std,
-# and its one dependency is `domain_name_system`, whose `Name` a zone is. Name provisional.
+# What a name resolver and the programs around it agree on: the words a client resolves a host
+# name with, the page the name and its addresses cross in, the words a spawner grants a client a
+# zone with, and the resolver's start words. Plus the grant table the resolver keeps, because what a
+# grant means is half of the contract and it is pure logic a host test can reach. The resolver, its
+# spawner and every client link one definition. no_std, and its one dependency is
+# `domain_name_system`, whose `Name` a zone is.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(loom)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
+# A path until `domain_name_system` has left the tree; then a `git` dependency with `rev` and
+# `version`.
 domain_name_system = { version = "0.1.0", path = "../domain_name_system" }
+

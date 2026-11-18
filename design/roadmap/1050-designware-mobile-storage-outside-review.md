@@ -260,28 +260,32 @@ claims none of the hardware steps.
 - Hardware figures are absent until the bench runs; the deadline recommendation in P1-2 rests on
   the specification, not on this board.
 
+## Where this stands
+
+Finished: every P0, P1 and P2 item, in `nifeos/designware_mobile_storage`. P0-1 is #9, P0-2 #2,
+P0-3 #3, and P0-4 the tag `v0.1.0-pre.1` (#13). P1-1, P1-2, P1-7, P2-3 and P2-5 are #5. P1-3,
+P1-6 and P1-9 are #3 and #15. P1-4 is #16 and #18, P1-5 #14, P1-8 #4. P2-1 is #10 and #19, P2-2
+#12, P2-4 #11, P2-6 #4 and P2-7 #3. `weekly` and the full mutation run are green on `main`. nife
+#3488 and #3695 ran the IDMAC read and write, the `VERID` and `HCON` log and the scratch write on
+the board.
+
+| item | what remains | blocker |
+|---|---|---|
+| P1-1 | The `CMD12` recovery on the board | bench |
+| P1-2 | Busy durations on the board, against the deadline defaults | bench |
+| P2-3 | `CDETECT` polarity and a hot removal | bench |
+| P2-4 | The eMMC socket and its bus modes; slot 0 had no module fitted | bench |
+| Done when | The 50 megahertz clock against a scope | bench |
+| Done when | The semver rule holding a breaking pull request; none has opened | other: no breaking pull request yet |
+| Decisions 2 and 3 | The JH7110 module's home and a shared DMA region trait | decision for calef (at the combine review) |
+| Release | The first crates.io release | publishing hold |
+
 ## Follow-on
 
-Checked 2026-11-14 (UTC) against `nifeos/designware_mobile_storage`. Its tag `v0.1.0-pre.1` sits on
-`473b19c`, the merge of #17; `main` is `63e1328`, seven commits further on.
-
-- **Done.** P0-1 to P0-3, P1-3, P1-5 to P1-9 and P2-6 and P2-7 landed in
-  `nifeos/designware_mobile_storage` #2, #3, #4, #9, #14 and #15, before the tag. P1-9 took a
+- **Done.** Every P0, P1 and P2 item, by the pull requests *Where this stands* cites. P1-9 took a
   different fix: `block_address_argument` returns `Option<u32>` from a checked multiply.
-- **Done.** P0-4 landed as the tag `v0.1.0-pre.1` on `473b19c`, placed by the `release` workflow
-  with the publish input off (`nifeos/designware_mobile_storage` #13); the weekly semver job
-  compares against it.
-- **Done.** P1-1, P1-2, P1-7, P2-3 and P2-5's 32-bit half landed in
-  `nifeos/designware_mobile_storage` #5; P2-2 in #12; P2-4 in #11; P2-1 in #10 and #19; P1-4 in #16
-  and #18; P2-5's 64-bit offset in #19. Issues #6, #7 and #8 closed with them.
-- **Outstanding.** The board run of P1-1, P1-2, P2-3 and P2-4: the README's BUGS says the `CMD12`
-  sequence, the deadlines, hot removal and the eMMC bus modes have run only against the simulator,
-  and it holds no busy measurements. Read from the README on `main`.
-- **Outstanding.** A green `weekly` and a green full mutation run on `main`: the mutation run of
-  2026-11-12 at `63e1328` failed when shard 5 of 8 received a runner shutdown, and the last green
-  one ran at `473b19c`. Read from the repository's run list.
-- **Outstanding.** The semver rule holding a breaking pull request: no such pull request has opened
-  since the tag, so the hold is untested. Read from the pull request list.
+- **Outstanding.** Every row of *Where this stands*, checked against the README's BUGS, the
+  storage bench logs, the pull request list and the tags.
 
 ## Index row
 

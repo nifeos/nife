@@ -8,7 +8,7 @@ the test or harness that holds it, or LEFT with the reason.
 | 1 manifest stands alone | LEFT | the move's manifest rows |
 | 2 README and license files | LEFT | the scaffold belongs to the move |
 | 3 documentation cites this tree | LEFT | the move commit rewrites the citations and strips the provenance blocks |
-| 4 the owner string `nife` | LEFT | decision 1 |
+| 4 the owner string `nife` | LEFT | decision 1 keeps the bytes behind a `// wire literal` marker (#3575); the prose rewording lands with item 3 in the move |
 | 5 passive voice | LEFT | the template's gate runs in the moved repository; the rewrite lands with item 3 |
 | 6 acronyms expanded | DONE | `src/lib.rs` spells out ABI and NUL terminator |
 | 7 a stranger can place the note | DONE | the crate documentation states the link-script requirement, the endianness rule, the registry rule and the absent-entry rule; the README repeats it at the move |

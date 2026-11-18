@@ -28,6 +28,10 @@ what it refuses to be. The same stranger can build, test and prove it from the R
 repository's ten required checks are green on the first day for the crate's own reasons, and red only
 for the crate's own reasons.
 
+## Where this stands
+
+[The appendix](1102-network-time-protocol-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1102-network-time-protocol-outside-review/what-was-checked.md).
@@ -270,8 +274,8 @@ The ledger of each item is in [the appendix](1102-network-time-protocol-outside-
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 2, 3, 6, 8, 10, 11 and the fuzz half of 9 are the new repository's, and wait on Decision 1. Checked against `crates/network_time_protocol` and the ledger above.
-- **Outstanding.** Items 4, 5, 17, 18 and 22 are public names and a public layout, which wait on Decisions 2 and 3.
+- **Outstanding.** Items 1, 2, 8, 10, 11 and the fuzz half of 9 are the new repository's; items 3 and 6 land in nife first. Checked against `crates/network_time_protocol`.
+- **Outstanding.** Items 4, 5, 17, 18 and 22, which Decisions 2 and 3 settle.
 
 ## BUGS
 

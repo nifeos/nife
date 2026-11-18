@@ -77,7 +77,7 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
     slice stays inside the 254-byte buffer. No comment states the invariant and no proof checks it.
     The template runs Kani on every pull request and `falsify.py --check` passes trivially with zero
     harnesses. Change: one bounded Kani harness, with its falsification patch. From `Grants::new()`,
-    up to four arbitrary `(w0, w1)` messages never panic. `check` returns `Ok` only for a badge
+    up to two arbitrary `(w0, w1)` messages never panic. `check` returns `Ok` only for a badge
     whose last control result was `Granted`. A badge's window never changes while it holds one. One
     cargo-fuzz target that feeds arbitrary word pairs to a table and asserts the same, so the weekly
     fuzz job has a target when the repository opts in (the crate has no `unsafe`, so it may). Door:

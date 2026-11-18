@@ -25,6 +25,24 @@ so and adds only what the package did not see.
 Reuse: the template `nifeos/crate-workflows` and its scaffold, Kani, cargo-mutants, cargo-fuzz, the
 crate's own `testing::sample_disk` and its two real fixtures. No new tool and no new dependency.
 
+## Where this stands
+
+Finished: items 2, 6, 7, 8, 13 and 15 to 20 in #3566, with the cheap form of item 5, item 4 but its
+caller notes, item 3 but its proof and item 14's `blocks` harness. The maintainer decided both
+decisions below provisionally in #3589.
+
+- Item 1 (nife vocabulary): ruled procedure, not built; the move, which waits on the package's two
+  decisions and on review clearance.
+- Item 3 (backup round-trip proof): two-way, not built; a lane.
+- Item 4 (notes in the nife callers): two-way, not built; a lane.
+- Item 5 (firm form): two-way, undecided; a lane, before the tag.
+- Item 9 (register names): open; decision for calef, then the rename lane.
+- Items 10, 11 and 12 (acronyms, mutation exemptions, README): not built; the move.
+- Item 14 (four harnesses, fuzz target): not built; a lane, then the move for the target.
+- Decision 1 (`PartitionTable`): decided, not built; a lane.
+- Decision 2 (`uuid`): decided, nothing to build; publishing hold, whose review rechecks it.
+- Package decisions 1 and 2 (nife type GUIDs, `lba` and `mbr`): open; decision for calef.
+
 ## Goal
 
 A stranger who finds the crate on crates.io can tell in one screen what it is for. The stranger can

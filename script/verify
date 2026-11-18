@@ -497,6 +497,7 @@ address_space_layout	3	the user address-space map: every address in exactly one 
 allocation_cache	3	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
 byte_sink_contract	9	the byte-sink framing: any prefix round-trips, the decoder is total, an end of stream decodes from exactly one message, severity reads back clamped, classify tells the three outcomes apart
 environment_contract	0	the inert-configuration page reader: field_bytes never panics for any length byte, and reports a length past its field as absent
+domain_name_resolution_contract	450	the grant table: any short run of control messages never panics, and a badge is in force only once a message said Granted, in a window that never moves
 program_argument_contract	63	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states
 device_tree_blob	186	the device-tree parser's leaf readers
 inter_process_communication	11	the rendezvous state machine
@@ -549,10 +550,15 @@ TABLE
 # `a_negated_class_is_the_exact_complement_of_the_class` reached 7.6 GiB alone, and Kani starts the
 # two first at `-j 2`. Together they reached the memory fence's 14446 MiB cap (run 43782179924).
 # Unfenced, swap carried them on the hosts that have it, and they lost the runner on 4 of the 6
-# logged shard-2 jobs on hosts of image 20261111.82.6. A listed harness the row no longer has fails
-# the run, so this list cannot outlive the harness it names.
+# logged shard-2 jobs on hosts of image 20261111.82.6. domain_name_resolution_contract's
+# `the_one_message_zone_parses_or_is_refused` peaks at 8.4 to 8.6 GiB and its
+# `the_grant_table_grants_only_what_it_said` at 5.2 to 5.7 GiB; together they held 12975 to 13713
+# MiB of a 14447 MiB fence, and on a runner whose fence was 14164 MiB the first was killed (run
+# 44366011720). A listed harness the row no longer has fails the run, so this list cannot outlive
+# the harness it names.
 KANI_APART="$(cat <<'APART'
 byte_glob	verification::a_negated_class_is_the_exact_complement_of_the_class
+domain_name_resolution_contract	verification::the_one_message_zone_parses_or_is_refused
 APART
 )"
 # NIFE_KANI_APART, when set, replaces the table, and set empty it turns the table off. The selftests
@@ -733,6 +739,9 @@ for c in $crates; do
     desc="$(printf '%s\n' "$CRATES" | awk -F'\t' -v c="$c" '$1 == c { print $3 }')"
     case "$c" in
         kernel) extra="-Z unstable-options --ignore-global-asm -Z stubbing" ;;
+        # The bookkeeping harness stubs the zone parse (`#[kani::stub]`), which needs the flag on the
+        # command line; the crate-level Cargo.toml setting did not reach this path in CI.
+        domain_name_resolution_contract) extra="-Z stubbing" ;;
         # `components` is many `[[bin]]` targets and one package, so a bare `cargo kani -p components`
         # compiles all of them. Kani refuses every `#![no_std]` crate root that does not mention it
         # ("Failed to detect Kani functions"), so that run fails on the first binary carrying no
@@ -778,12 +787,20 @@ for c in $crates; do
     apart="$(printf '%s\n' "$KANI_APART" | awk -F'\t' -v c="$c" '$1 == c { print $2 }')"
     case " $* " in *" --harness "*) apart="" ;; esac
     if [ -n "$apart" ]; then
+        # Both passes and the listing keep the row's own flags (`-Z stubbing` for a row whose
+        # harness uses `#[kani::stub]`; without it the crate does not compile under Kani). Flags that
+        # select targets would fight `--exact`, so a row with those cannot be split.
+        case " $extra " in *" --harness "*|*" --bin "*|*" --lib "*)
+            echo "script/verify: KANI_APART cannot split $c, whose flags select targets: $extra" >&2
+            exit 2 ;;
+        esac
         # The row's harnesses, from Kani itself, so a harness added later is in the first pass and
         # never in neither. `cargo kani list` reads the package of the directory it runs in and
         # writes kani-list.json there.
         dir="$(cargo metadata --no-deps --format-version 1 \
             | python3 -c 'import json, os, sys; m = json.load(sys.stdin); print(next(os.path.dirname(p["manifest_path"]) for p in m["packages"] if p["name"] == sys.argv[1]))' "$c")"
-        (cd "$dir" && kani list --format json >/dev/null) || exit 1
+        # shellcheck disable=SC2086
+        (cd "$dir" && kani list $extra --format json >/dev/null) || exit 1
         rest="$(python3 - "$dir/kani-list.json" "$apart" <<'PY'
 import json, sys
 listed = json.load(open(sys.argv[1]))["standard-harnesses"]
@@ -797,10 +814,11 @@ PY
 )" || { rm -f "$dir/kani-list.json"; exit 1; }
         rm -f "$dir/kani-list.json"
         # shellcheck disable=SC2086
-        kani -p "$c" $rest --exact "$@"
+        kani -p "$c" $extra $rest --exact "$@"
         for h in $apart; do
             echo "==> kani: $c, $h apart from the rest"
-            kani -p "$c" --harness "$h" --exact "$@"
+            # shellcheck disable=SC2086
+            kani -p "$c" $extra --harness "$h" --exact "$@"
         done
     else
         # shellcheck disable=SC2086

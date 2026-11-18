@@ -44,3 +44,11 @@ pub fn should_panic(_attr: TokenStream, item: TokenStream) -> TokenStream {
 pub fn solver(_attr: TokenStream, item: TokenStream) -> TokenStream {
     item
 }
+
+/// `#[kani::stub(original, replacement)]`: which function the model checker swaps for another
+/// inside this harness, which only the model checker can do. The replacement is named only here,
+/// so a crate that stubs a function allows `dead_code` on the replacement for this pass.
+#[proc_macro_attribute]
+pub fn stub(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    item
+}

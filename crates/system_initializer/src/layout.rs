@@ -184,7 +184,7 @@ pub(super) const NET_STACK_STACK_PAGES: u64 = 9;
 
 /// **`domain_name_resolver`'s untyped budget** (milestone 892 (a std program at the prompt holds the
 /// network and a resolver)): its socket page and the page tables for up to
-/// `domain_name_resolution_contract::GRANTS_MAXIMUM` client pages. The kernel harness's
+/// `domain_name_resolution_contract::MAXIMUM_GRANTS` client pages. The kernel harness's
 /// `name_resolver_tests::BUDGET_PAGES`, which every resolver test runs under.
 ///
 /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).

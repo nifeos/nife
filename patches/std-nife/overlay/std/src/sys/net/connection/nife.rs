@@ -1116,7 +1116,7 @@ fn ensure_resolver_page(_held: &ResolverGuard, i: usize) -> io::Result<()> {
 }
 
 pub struct LookupHost {
-    addresses: [Ipv4Addr; resolve::MAXIMUM_ADDRESSES],
+    addresses: [Ipv4Addr; resolve::MAXIMUM_IPV4_ADDRESSES],
     count: usize,
     next: usize,
     port: u16,
@@ -1137,7 +1137,7 @@ impl Iterator for LookupHost {
 /// resolver.
 pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
     let name = host.as_bytes();
-    if name.is_empty() || name.len() > resolve::NAME_TEXT_MAXIMUM {
+    if name.is_empty() || name.len() > resolve::MAXIMUM_NAME_FIELD_BYTES {
         return Err(io::const_error!(io::ErrorKind::InvalidInput, "not a host name"));
     }
     let held = resolver_lock();
@@ -1168,10 +1168,10 @@ pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
     };
     let kind = match outcome.status {
         resolve::status::OK => {
-            let count = (outcome.count as usize).min(resolve::MAXIMUM_ADDRESSES);
-            let mut addresses = [Ipv4Addr::UNSPECIFIED; resolve::MAXIMUM_ADDRESSES];
+            let count = (outcome.count as usize).min(resolve::MAXIMUM_IPV4_ADDRESSES);
+            let mut addresses = [Ipv4Addr::UNSPECIFIED; resolve::MAXIMUM_IPV4_ADDRESSES];
             for (k, a) in addresses.iter_mut().take(count).enumerate() {
-                let at = page + (resolve::ADDRESSES_OFFSET_BYTES + 4 * k) as u64;
+                let at = page + (resolve::IPV4_ADDRESSES_OFFSET_BYTES + 4 * k) as u64;
                 *a = Ipv4Addr::new(fr8(at), fr8(at + 1), fr8(at + 2), fr8(at + 3));
             }
             return Ok(LookupHost { addresses, count, next: 0, port });

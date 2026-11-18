@@ -33,6 +33,10 @@ Reuse: `script/crate-move`, the template `nifeos/crate-workflows` at its newest 
 `helpers/falsify.py`, `helpers/standalone.py`, the template's naming helpers, cargo-mutants' recorded
 rows, Kani, and the crate's own harness builder (`any_small_capability_table`). No new tool.
 
+## Where this stands
+
+The appendix lists what remains and what holds each: [where this stands](1081-capability-outside-review/where-this-stands.md).
+
 ## Goal
 
 A stranger who clones the crate's repository can tell in one screen what it is for, and can build, test, prove and falsify it from the README alone. The property the README leads with (a capability passed on never carries more than its source held) holds by proof on the code the kernel runs, not on a neighbor of it. The repository's gates are green for the crate's own reasons on its first

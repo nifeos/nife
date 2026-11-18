@@ -46,6 +46,10 @@ prove and falsify it from the README alone. That stranger can trust that the cra
 a device sends before it reads the byte. A UK, German or Japanese keyboard gives the same key that a
 US one gives. The template's gates are green for the crate's own reasons.
 
+## Where this stands
+
+[The appendix](1111-usb-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1111-usb-outside-review/what-was-checked.md).

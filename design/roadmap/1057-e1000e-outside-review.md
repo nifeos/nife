@@ -233,33 +233,31 @@ hardware steps.
 - Hardware figures stay absent until P1-7 runs; the cost of one tail write per frame (P2-4) and the
   effect of the omitted writes (P1-2) are unmeasured.
 
+## Where this stands
+
+Finished: every P0 and P1 item but P1-7, and every P2 item but P2-9, P2-4's hardware half and
+P2-16's pin. The Follow-on cites each pull request. Nothing here needs calef.
+
+| item | what remains | blocker |
+|---|---|---|
+| P1-7 | The I219 run with a cable (`nifeos/e1000e#10`) | bench |
+| P2-9 | The link-up half, after P1-7 (`nifeos/e1000e#11`) | bench |
+| P2-4 | The tail-write cost on a real controller; only QEMU's is measured | bench |
+| Proofs | The harnesses of #31 verify on `main`, not yet on a tagged commit | release step |
+| P2-16 | Callers pin `nifeos/crate-workflows` at `4d9eea2`, no template release; bump at the next one | release step |
+
 ## Follow-on
 
-Checked 2026-11-14 (UTC) against `nifeos/e1000e`. Its tag `v0.1.0-pre.1` sits on `ef01cef`, the
-merge of #21; `main` is `1df6505`, the merge of #24.
-
-- **Done.** Before the tag, P0-1, P1-1 and P2-15 landed in `nifeos/e1000e` #5, and P0-2 in #3 and
-  #17. P1-2 and P1-5 landed in #9, P1-8 in #18, and P2-3, P2-10, P2-12 and P2-13 in #7. P1-3, P1-4
-  and P2-14 landed in #6, with the description set through the API. P0-3's first run is #4, and
-  #22 records the cold run of 2026-11-11.
-- **Done.** P0-4 landed as the tag `v0.1.0-pre.1` on `ef01cef`. P1-6 landed in `nifeos/e1000e` #8,
-  #14 and #22, the receive-cursor harness of #22 after the tag. P2-1 and P2-2 landed in #23 after
-  the tag, and P2-5 in #9 and #23.
-- **Recorded.** P2-6 and P2-7 are entries in the README's BUGS (`nifeos/e1000e` #9): the ring size
-  stays 16, and the test doubles stay private with the example as their public form.
-- **Outstanding.** P1-7, the I219 run with a cable: issue `nifeos/e1000e#10` is open, and the
-  README's BUGS says no version of the crate has run on an I219. Read from the issue list and the
-  README on `main`.
-- **Outstanding.** P2-4, one tail write per frame: neither fixed nor a BUGS entry or an issue;
-  `nifeos/e1000e` #23 says it was not done. Read from the README and the issue list.
-- **Outstanding.** P2-8 and P2-11 in part: the fuzz targets cover the transmit ring and the flush
-  but not the receive ring, with `public-crash-inputs: false`, and the harnesses of #14 carry no
-  per-assertion falsification lines. Neither gap is in BUGS. Read from `fuzz/` and the fuzz caller.
-- **Outstanding.** P2-9, the link-up half: issue `nifeos/e1000e#11` is open, with a BUGS line.
-- **Outstanding.** Proofs on a tagged commit and P2-16's pin: the seventh harness came after the
-  tag, so it proves on `main` (run 43107117484) and not on `ef01cef`, and every caller pins
-  `nifeos/crate-workflows` at `2e651d8`, which is no template release. Read from the run list and
-  the workflow files.
+- **Done.** In `nifeos/e1000e`: P0-1, P1-1 and P2-15 in #5; P0-2 in #3, #17 and #30; P0-3 in #4
+  and #22, with #24 closing the README gaps; P1-2 and P1-5 in #9; P1-3, P1-4 and P2-14 in #6.
+- **Done.** P1-6 in #8, #14 and #22; P1-8 in #18; P2-1 and P2-2 in #23; P2-3, P2-10, P2-12 and
+  P2-13 in #7; P2-5 in #9 and #23; P2-4 under QEMU, P2-8 and P2-11 in #31.
+- **Done.** P0-4 is the tag `v0.1.0-pre.1` on `ef01cef`; `v0.1.0-pre.2` sits on `68ed520`.
+- **Recorded.** P2-6 and P2-7 are entries in the README's BUGS (#9).
+- **Outstanding.** P1-7, P2-9 and P2-4's hardware half: issues #10 and #11 are open, and #31
+  measured QEMU only. Read from the issue list and the pull request.
+- **Outstanding.** Proofs on a tagged commit and P2-16's pin. Read from the tags, the run list
+  and the workflow files.
 
 ## Index row
 

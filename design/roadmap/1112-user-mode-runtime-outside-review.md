@@ -41,6 +41,10 @@ function is safe to call with any argument. A wrong argument panics or meets a r
 kernel, and it never reads or writes memory the type did not promise. The repository's required checks are green for the
 crate's own reasons.
 
+## Where this stands
+
+[The appendix](1112-user-mode-runtime-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1112-user-mode-runtime-outside-review/what-was-checked.md).

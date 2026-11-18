@@ -37,6 +37,10 @@ falsification, and meets no sentence the code contradicts. No input a caller can
 crate panic. The repository's `check`, `proofs` and interleaving runs are green on the first push
 for the crate's own reasons.
 
+## Where this stands
+
+[The appendix](1101-memory-regions-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1101-memory-regions-outside-review/what-was-checked.md).

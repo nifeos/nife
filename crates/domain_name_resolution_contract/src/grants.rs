@@ -1,7 +1,5 @@
 //! **The grant table**: which badge may resolve which zone, and in which window its page lives.
-//! Moved out of `lib.rs` unchanged by milestone 892 (a std program at the prompt holds the network
-//! and a resolver), whose forget verb grew the crate root, so the root stays an index (§282 (when a
-//! file is split, the parent becomes an index)).
+//! A module of its own so the crate root stays an index.
 //!
 //! Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC), for the module and the file.
 //! The pull request records no other name considered.
@@ -9,8 +7,8 @@
 use domain_name_system::Name;
 
 use crate::{
-    GRANTS_MAXIMUM, NAME_TEXT_MAXIMUM, OPERATION_FORGET, OPERATION_GRANT, Outcome, control_fields,
-    refusal, status,
+    MAXIMUM_GRANTS, MAXIMUM_NAME_FIELD_BYTES, OPERATION_FORGET, OPERATION_GRANT, Outcome,
+    control_fields, refusal, status,
 };
 
 /// Why [`Grants::check`] refused.
@@ -138,9 +136,9 @@ struct Entry {
     zone: Name,
     complete: bool,
     /// The zone's text so far, while the spawner's messages arrive.
-    text: [u8; NAME_TEXT_MAXIMUM + 1],
-    text_len: u8,
-    text_total: u8,
+    text: [u8; MAXIMUM_NAME_FIELD_BYTES],
+    text_bytes_received: u8,
+    text_bytes_total: u8,
 }
 
 impl Entry {
@@ -148,38 +146,55 @@ impl Entry {
         badge: 0,
         zone: Name::root(),
         complete: false,
-        text: [0; NAME_TEXT_MAXIMUM + 1],
-        text_len: 0,
-        text_total: 0,
+        text: [0; MAXIMUM_NAME_FIELD_BYTES],
+        text_bytes_received: 0,
+        text_bytes_total: 0,
     };
+}
+
+/// The badge, the zone as dotted text (as `Name` prints it), whether it is in force, and how much
+/// of a grant in progress has arrived. The text buffer itself is left out: its bytes past the
+/// count are stale.
+impl core::fmt::Debug for Entry {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Entry")
+            .field("badge", &self.badge)
+            .field("zone", &self.zone)
+            .field("complete", &self.complete)
+            .field("text_bytes_received", &self.text_bytes_received)
+            .field("text_bytes_total", &self.text_bytes_total)
+            .finish()
+    }
 }
 
 /// **Which badge may resolve which zone**, and which window its page lives in.
 ///
 /// An entry's index is its client's window, fixed for the resolver's life (see the crate's BUGS),
 /// so the resolver maps a client's page at the same place every time and a re-grant does not move
-/// it.
+/// it. Every `usize` the table hands back ([`Control::Granted`], [`Control::Forgotten`],
+/// [`Grants::check`], [`Grants::granted`]) is that window, below [`MAXIMUM_GRANTS`].
 ///
 /// # Examples
 ///
-/// A spawner grants badge 7 the zone `nife.test`:
+/// A spawner grants badge 7 the zone `example.test`:
 ///
 /// ```
 /// use domain_name_system::Name;
 /// use domain_name_resolution_contract::{Denied, Grants, grant_messages};
 ///
 /// let mut grants = Grants::new();
-/// for (w0, w1) in grant_messages(7, b"nife.test").unwrap() {
-///     grants.control(w0, w1);
+/// for (first_word, second_word) in grant_messages(7, b"example.test").unwrap() {
+///     grants.control(first_word, second_word);
 /// }
-/// let asked = Name::from_dotted("packages.nife.test").unwrap();
+/// let asked = Name::from_dotted("packages.example.test").unwrap();
 /// assert!(grants.check(7, &asked).is_ok());
-/// let elsewhere = Name::from_dotted("evilnife.test").unwrap();
+/// let elsewhere = Name::from_dotted("evilexample.test").unwrap();
 /// assert_eq!(grants.check(7, &elsewhere), Err(Denied::OutsideZone));
 /// assert_eq!(grants.check(8, &asked), Err(Denied::NoGrant));
 /// ```
+#[derive(Debug)]
 pub struct Grants {
-    entries: [Entry; GRANTS_MAXIMUM],
+    entries: [Entry; MAXIMUM_GRANTS],
 }
 
 impl Default for Grants {
@@ -192,24 +207,24 @@ impl Grants {
     /// No grants: every badge is denied.
     pub const fn new() -> Grants {
         Grants {
-            entries: [Entry::FREE; GRANTS_MAXIMUM],
+            entries: [Entry::FREE; MAXIMUM_GRANTS],
         }
     }
 
     /// **Take one control message from the spawner.** The caller has already established that it
     /// arrived with badge 0; this reads only the words.
-    pub fn control(&mut self, w0: u64, w1: u64) -> Control {
-        let (op, offset, total, badge) = control_fields(w0);
-        if op == OPERATION_FORGET {
+    pub fn control(&mut self, first_word: u64, second_word: u64) -> Control {
+        let (operation, offset, total, badge) = control_fields(first_word);
+        if operation == OPERATION_FORGET {
             return self.forget(badge);
         }
-        if op != OPERATION_GRANT {
+        if operation != OPERATION_GRANT {
             return Control::Refused(Refusal::UnknownOperation);
         }
         if badge == 0 {
             return Control::Refused(Refusal::BadgeZero);
         }
-        if total as usize > NAME_TEXT_MAXIMUM + 1 {
+        if total as usize > MAXIMUM_NAME_FIELD_BYTES {
             return self.refuse(badge, Refusal::TooLong);
         }
         let at = match self.position(badge) {
@@ -226,20 +241,30 @@ impl Grants {
             // completes, so there is never a moment where a half-sent zone is in force.
             e.badge = badge;
             e.complete = false;
-            e.text_len = 0;
-            e.text_total = total;
-        } else if e.complete || offset != e.text_len || total != e.text_total {
+            e.text_bytes_received = 0;
+            e.text_bytes_total = total;
+        } else if e.complete || offset != e.text_bytes_received || total != e.text_bytes_total {
             return self.refuse(badge, Refusal::OutOfOrder);
         }
-        let bytes = w1.to_le_bytes();
-        let n = (e.text_total - e.text_len).min(8) as usize;
-        let start = e.text_len as usize;
-        e.text[start..start + n].copy_from_slice(&bytes[..n]);
-        e.text_len += n as u8;
-        if e.text_len < e.text_total {
+        // An entry's bytes received never pass its total: a fresh grant starts at 0, a later piece
+        // is taken only at exactly the count received so far, and a piece adds at most what is
+        // still due. So the subtraction never wraps, and `start + n` is at most the total, which
+        // the length check above holds to the buffer's size. The Kani harness in `verification`
+        // checks it.
+        let bytes = second_word.to_le_bytes();
+        let n = (e.text_bytes_total - e.text_bytes_received).min(8) as usize;
+        let start = e.text_bytes_received as usize;
+        // A byte at a time rather than `copy_from_slice`: Kani models a copy of a length it does
+        // not know as one copy into the whole table, and that ran past the proof's memory fence
+        // even for a single message, where this loop proves in under a minute.
+        for (i, &byte) in bytes[..n].iter().enumerate() {
+            e.text[start + i] = byte;
+        }
+        e.text_bytes_received += n as u8;
+        if e.text_bytes_received < e.text_bytes_total {
             return Control::Partial;
         }
-        let zone = core::str::from_utf8(&e.text[..e.text_len as usize])
+        let zone = core::str::from_utf8(&e.text[..e.text_bytes_received as usize])
             .ok()
             .and_then(|text| Name::from_dotted(text).ok());
         match zone {
@@ -294,8 +319,8 @@ impl Grants {
         if let Some(at) = self.position(badge) {
             let e = &mut self.entries[at];
             e.complete = false;
-            e.text_len = 0;
-            e.text_total = 0;
+            e.text_bytes_received = 0;
+            e.text_bytes_total = 0;
         }
         Control::Refused(why)
     }

@@ -33,6 +33,10 @@ can build, test and prove it from the README alone, call `walk` from a doctest t
 read every refusal as a POSIX errno without a nife glossary. The repository's gates are green for
 the crate's own reasons.
 
+## Where this stands
+
+[The appendix](1110-subtree-scope-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1110-subtree-scope-outside-review/what-was-checked.md).
@@ -279,7 +283,7 @@ The checks are in [the appendix](1110-subtree-scope-outside-review/done-when.md)
 ## Follow-on
 
 - **Milestone 1017.** The crate moves at its step 9; the move lane takes the items marked move work.
-- **Outstanding.** Item 9, which needs a Kani run of about 6 GiB, and the names of item 7.
+- **Outstanding.** Item 9, which needs a Kani run of about 6 GiB, and item 7's renames.
 - **Outstanding.** The maintainer has kept the name `subtree_scope`, provisionally, and ratifying it
   stays the architect's.
 

@@ -122,10 +122,27 @@ license and the crate name. This block does not reopen them.
 - The fuzz runs here took 25 seconds per target on one machine. The weekly job gives five minutes.
   Neither is a long campaign. The repository commits no seed corpus, so each run starts cold.
 
+## Where this stands
+
+Finished: items 2 and 5 to 15 apart from item 13's changelog line, item 3's pre-release half, and
+item 4 apart from its pin (`nifeos/generational_table` #9 to #16 and #18, with
+`nifeos/crate-workflows#50`). The ten harnesses carry ten falsification patches, `check /
+mutation-diff` is a required check on `main`, and full mutation and fuzz runs are green on a `main`
+whose `src/` and manifest match the `v0.1.0-pre.1` tag.
+
+| item | what remains | blocker |
+|---|---|---|
+| 1 (P0) | delete `publish = false` in the release that publishes | publishing hold |
+| 3 (P1) | the `cargo add` line and the crates.io and docs.rs badges | publishing hold |
+| 4 (P1) | the callers pin `nifeos/crate-workflows` at `4d9eea2`, which is no template release; bump to the next one | release step |
+| 13 (P2) | collapse the `0.1.0-pre.1` changelog section to one line at 0.1.0 | release step |
+| done when, last bullet | `cargo test`, `cargo kani`, `cargo mutants` and both fuzz targets green at the commit the 0.1.0 release tags | release step |
+
+No item needs a decision for calef.
+
 ## Follow-on
 
-Checked 2026-11-14 (UTC) against `nifeos/generational_table`, whose tag `v0.1.0-pre.1` sits on the
-head of `main` (`4fb6bb7`, the merge of #16), so every pull request below is in the tagged commit.
+Read against `nifeos/generational_table` `main` at `1a8f8dc`, the merge of #18.
 
 - **Done.** Items 2, 5 to 12, 14 and 15 landed in `nifeos/generational_table` #9 to #16. The slot
   check on narrow targets is #9 and #14, and the five methods and `Ord` are #10. The docs.rs front
@@ -133,20 +150,24 @@ head of `main` (`4fb6bb7`, the merge of #16), so every pull request below is in 
   record are #12. The mutation caller, with the template fix of `nifeos/crate-workflows#50`, is #15
   and #16.
   Ten harnesses carry ten falsification patches, and proofs run 43001273410 passed at `4fb6bb7`.
-- **Done.** Item 3's pre-release part landed in `nifeos/generational_table` #11: the README's
-  build-and-prove section, the one-line Kani install and a stranger run dated 2026-11-09 that found
-  no gap.
+- **Done.** Item 3's pre-release part and item 13's text fixes landed in
+  `nifeos/generational_table` #11: the README's build-and-prove section, the one-line Kani install,
+  a stranger run that found no gap, the `slab` comparison, the CONTRIBUTING line and the CODEOWNERS
+  caveat.
+- **Done.** Item 4 apart from its pin: the `mutation-diff 30` budget line is #18, `check /
+  mutation-diff` is among the `main` ruleset's required checks, and mutation run 43928163330 is
+  green on `main`.
+- **Done.** The fuzz half of the last done-when bullet for the pre-release: fuzz run 44126438080 is
+  green at `551fb87`, whose `src/` and manifest are those of the tagged `4fb6bb7`.
 - **Outstanding.** Item 1's second half and item 3's release half: `publish = false` stays and the
-  README has no `cargo add` line or badges until the release that publishes. Read from `Cargo.toml`
-  and the README at `4fb6bb7`.
-- **Outstanding.** Item 4's pin: every caller pins `nifeos/crate-workflows` at `2e651d8`, which is
-  no template release (the newest is `v7`), and `.github/ci-job-budgets` lacks the scaffold's
-  `mutation-diff 30` line. Read from the workflow files at `4fb6bb7`.
-- **Outstanding.** Item 13's changelog collapse: the `0.1.0-pre.1` section of `CHANGELOG.md` still
-  holds six lines. Read at `4fb6bb7`.
-- **Outstanding.** The last done-when bullet's fuzz half: the newest fuzz run, 42842415159, ran at
-  `c8db9bd`, before #13 and #14 changed `src/lib.rs`, so no fuzz run covers the tagged commit.
-  Read from the repository's run list.
+  README has no `cargo add` line or badges until the release that publishes, which the publishing
+  hold keeps back. Read from `Cargo.toml` and the README at `1a8f8dc`.
+- **Outstanding.** Item 4's pin: every caller pins `nifeos/crate-workflows` at `4d9eea2`, 178
+  commits past `v7`, the newest template release. Read from the workflow files at `1a8f8dc` and
+  the template's tags.
+- **Outstanding.** Item 13's changelog collapse and the last done-when bullet both belong to the
+  0.1.0 release: the `0.1.0-pre.1` section of `CHANGELOG.md` still holds six entries. Read at
+  `1a8f8dc`.
 
 ## Index row
 

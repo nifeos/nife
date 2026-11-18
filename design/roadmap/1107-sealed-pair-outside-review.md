@@ -29,6 +29,10 @@ will each do, in their own words, and nothing it says is true only of one build 
 leaves this tree, it leaves after the two crates it builds on, with a README that a stranger can
 build and test from.
 
+## Where this stands
+
+[The appendix](1107-sealed-pair-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1107-sealed-pair-outside-review/what-was-checked.md).
