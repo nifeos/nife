@@ -291,20 +291,28 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
   earlier spellings (`fifo_bytes`, `mac_conf`, `rx_verdict`); a nife housekeeping item, not the
   crate's.
 
+## Where this stands
+
+Finished: decisions 1 to 4, items 1 to 11 and the move (#3569, #3634).
+
+- Items 12 to 21, two-way. Blocker: other, a lane.
+- The Motorcomm alias sets and the register gate's renames: no ruling found. Blocker: decision
+  for calef (unverified).
+- The pin bump, and the weekly job's failure on main. Blocker: other, a lane.
+- The `v0.1.0-pre.1` tag, then publishing. Blocker: release step, then the publishing hold.
+
 ## Follow-on
 
 - **Done.** The three architect rulings of 2026-11-14 (UTC) are built and recorded above. They are
   the `link` module, the sixteen `pub(crate)` gates and the five renamed constants. The
   `management_data_io` rename ruled the same day is built too.
 
-- **Done.** Items 1, 2, 3, 6, 7, 8, 10 and 11 are built. The crate passes the template's naming and
+- **Done.** The crate has items 1 to 3 and 6 to 11. It passes the template's naming and
   prose gates and bounds `receive` and `reclaim`. Only the constants a caller uses stay `pub`. The
   crate names the board and its two device trees. The README has its build, proof and falsification
   sections, and `cargo test` compiles its example.
 
-- **Outstanding.** Item 9 is the move's own regeneration of the patches. The P2 items stay open. The
-  architect still has to rule the two Motorcomm alias sets and the remaining renames the register
-  gate names. A lane builds each ruling when it arrives.
+- **Outstanding.** The P2 items and the two rulings listed above.
 
 ## Index row
 

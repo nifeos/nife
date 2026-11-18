@@ -175,6 +175,21 @@ change. The name `window` ships provisional. Item 9 is the work.
 
 The checks are in [the appendix](1076-address-space-map-outside-review/done-when.md).
 
+## Where this stands
+
+Finished: the rename to `address_space_layout` (#3593), the provisional rulings (#3589) and items
+1, 3, 4, 6, 8, 9, 10, 12, 14 and 16 with part of 5 (#3659).
+
+- Decision 2, the constants: `PAGE`, `IMAGE_BASE` and `STACK_TOP` are unchanged, and item 7 waits
+  on it. Blocker: decision for calef.
+- Items 15 (`Band::new`) and 17 (`LOW_HALF_SPLIT_SHIFTS`) are new names. Blocker: decision for
+  calef.
+- Items 2, 11 and the rest of 5 belong to the move. Blocker: other, the move.
+- Item 13 is the template's to fix. Blocker: unverified.
+- Item 18 belongs to milestone 1017. Blocker: other, milestone 1017.
+- The move needs a review package and its clearance; no repository exists. Blocker: decision for
+  calef, after a package lane.
+
 ## Follow-on
 
 - **Done.** The crate's own name, `address_space_layout`. Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16,

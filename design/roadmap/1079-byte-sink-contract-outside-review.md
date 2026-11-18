@@ -194,11 +194,26 @@ No old-name alias. Item 9 is the work.
 
 The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-when.md).
 
+## Where this stands
+
+Finished: items 1 (in tree), 2, 4 to 7, 10, 11 and 15 (#3565), and decision C with item 8
+(#3581). Decisions A, B and D are provisional maintainer rulings; A's work is item 2, done.
+
+- Item 3, decision B: `fixture` is still public in `src/lib.rs` and no `byte_sink_fixture` crate
+  exists. Blocker: other, a lane.
+- Item 9, decision D: `INLINE_MAXIMUM`, `req`, `Msg` and `ret` keep their old names. Blocker:
+  other, a rename lane.
+- Items 12 and 13 are open doors with no ruling. Blocker: decision for calef.
+- Item 14 and the rest of item 1 belong to the move; no review package and no repository exist.
+  Blocker: decision for calef (review clearance), after a package lane.
+- Publishing. Blocker: publishing hold.
+
 ## Follow-on
 
-- **Outstanding.** Every item except before-the-tag item 8, and decisions A, B and D. Checked by
-  reading each item and decision in this block against the tree at this branch's head: decision C
-  and item 8 are the only ones built, and the others still describe the tree as it stands.
+- **Done.** Items 1 (in tree), 2, 4 to 8, 10, 11 and 15, decision C, and decision A, whose work is
+  item 2; the ledger has each.
+- **Outstanding.** Items 3 and 9, the work of decisions B and D; items 12 and 13; and item 14 with
+  the rest of item 1, which belong to the move.
 - **Recorded.** The shell does not see `rm`'s exit status, since no exit status reaches a parent;
   `notes/rm.md` keeps it in its BUGS.
 

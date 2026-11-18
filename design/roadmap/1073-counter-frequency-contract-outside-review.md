@@ -265,6 +265,19 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
   carried baseline row reads "missed 0". The review package names the run, for the 08:00 to 13:00
   UTC window.
 
+## Where this stands
+
+Finished: items 1 to 11 (#3513, #3514, #3556, #3571), item 12 recorded as no change, the frozen
+identity (#3516) and a review package brought current and marked ready (#3615, #3626, #3635). No
+repository exists.
+
+- Clearance of the review package. Blocker: decision for calef.
+- The move to its own repository once cleared. Blocker: other, a lane after clearance.
+- The mutation census rerun. Blocker: other, a lane in the heavy-run window.
+- A pre-release tag. Blocker: decision for calef, since the pre-release-tag ruling names other
+  crates.
+- Publishing. Blocker: publishing hold.
+
 ## Follow-on
 
 - **Recorded.** Item 10, the spelling of the page crates' offset constants: ruled, see the decisions above.

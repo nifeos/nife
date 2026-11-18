@@ -114,6 +114,24 @@ names. `Refusal` is the tree's word for a refused call.
 
 The checks are in [the done-when appendix](1071-entropy-contract-outside-review/done-when.md).
 
+## Where this stands
+
+Finished: items 1 to 3, 8, 12 and those that needed no ruling (#3512, #3531, #3558), decision 2's
+wire rules (#3573), the service loops' use of `reply` (#3616) and the move (#3627). In
+nifeos/entropy_contract, #3 fixes the stranger-test findings F1 and G1 to G10 and #5 refuses an
+out-of-range operation or step in release builds.
+
+- The stranger test's record: `docs/stranger-test.md` in the repository still reads `Last run:
+  none`. Blocker: other, a lane.
+- nife's pin of nifeos/entropy_contract is behind that repository's main, which carries #3 and #5.
+  Blocker: other, a pin bump.
+- `jh7110_entropy`'s `Pool::take` still builds its word by hand rather than through the contract.
+  Blocker: other, a pull request in nifeos/jh7110_entropy.
+- The repository's weekly job fails on its main. Blocker: other, a lane.
+- A pre-release tag. The review's clearance named no tag, and the pre-release-tag ruling names
+  other crates. Blocker: decision for calef.
+- Publishing. Blocker: publishing hold.
+
 ## Follow-on
 
 - **Outstanding.** The repository's own stranger test (runbook step 12), from a clone of
