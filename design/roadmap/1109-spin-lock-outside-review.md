@@ -33,6 +33,10 @@ interrupt-safe, poisoning, reentrant). The stranger can build, test and run the 
 README alone. Every gate in that repository is green for the crate's own reasons. In particular, the one
 proof the crate has runs somewhere after the move.
 
+## Where this stands
+
+[The appendix](1109-spin-lock-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1109-spin-lock-outside-review/what-was-checked.md).

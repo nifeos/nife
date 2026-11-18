@@ -35,6 +35,10 @@ this block, every operation's documentation states its argument word, its reply 
 frame carries in each direction. The repository's gates are green for the crate's own reasons. The
 proofs cover the one piece of logic the crate holds beyond the grants.
 
+## Where this stands
+
+[The appendix](1108-socket-contract-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1108-socket-contract-outside-review/what-was-checked.md).

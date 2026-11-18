@@ -35,6 +35,10 @@ prove it from the README alone, on the host and for the three bare-metal targets
 template requires is green for the crate's own reasons, and nothing in the crate names a path, a
 section number, a milestone or a person in another repository.
 
+## Where this stands
+
+[The appendix](1106-program-argument-contract-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1106-program-argument-contract-outside-review/what-was-checked.md).

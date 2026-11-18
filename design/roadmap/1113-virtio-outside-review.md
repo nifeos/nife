@@ -32,6 +32,10 @@ the architect decides about where that code lives, the code that stays is sound 
 device or a client can reach. Its layout constants are the kernel's and not a copy of them. Its pure
 logic is testable on the host, and its names pass `design/naming.md`.
 
+## Where this stands
+
+[The appendix](1113-virtio-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1113-virtio-outside-review/what-was-checked.md).

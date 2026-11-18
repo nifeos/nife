@@ -32,6 +32,10 @@ stranger meets no name that needs a decoder and follows no link into another tre
 claim sits where the `unsafe` lives. The repository's template gates are green for the crate's own
 reasons.
 
+## Where this stands
+
+[The appendix](1104-paging-outside-review/where-this-stands.md).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1104-paging-outside-review/what-was-checked.md).
