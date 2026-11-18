@@ -455,6 +455,15 @@ def drift(table, measured, n):
         if planned[i] and abs(actual - planned[i]) * 100.0 / planned[i] > REFRESH_PCT:
             reasons.append("shard %d/%d is planned at %.1f min and its crates' medians sum to %.1f"
                            % (i + 1, n, planned[i] / 60, actual / 60))
+    # A row that grew fires on its own. A shard total hides one: on 2026-11-17 a narrowing of
+    # `capability_manifest_note`'s proofs took its row from 108 seconds to a median of 304, but it
+    # shares shard 1/5 with `byte_glob`, so that shard's sum stayed inside REFRESH_PCT across the
+    # median of 20 runs that still held the older ones. The refresh at 21:57 UTC opened nothing,
+    # and the shard ran to 21.9 minutes in the merge queue. The line is the one shard-check names
+    # a crate by (ROW_WARN_FACTOR and ROW_WARN_S), so a row a shard's run warns about is a row the
+    # next refresh rewrites.
+    for crate, row, took in rows_off(table, measured):
+        reasons.append("%s is a %d-second row and its median is %d seconds" % (crate, row, took))
     now = max(sum(fresh[c] for c in names) for names in bins)
     _b, better = pack([(s, c) for c, s in fresh.items()], n)
     if now - max(better) >= REPACK_SAVING_S:
@@ -733,6 +742,13 @@ def selftest():
     expect("matching table is quiet", drift(now, now, 2), [])
     expect("unmeasured crate kept", drift(dict(now, new_crate=5), now, 2), [])
     expect("10% everywhere is under the line", drift(now, {c: int(s * 1.1) for c, s in now.items()}, 2), [])
+    # The 2026-11-17 shape: one row nearly tripled beside a large one, and the shard total stayed
+    # inside REFRESH_PCT. The row alone is the reason.
+    grown = {"glob": 1500, "manifest": 108, "a": 800, "b": 800}
+    seen = dict(grown, manifest=250)
+    expect("a grown row drifts when its shard does not",
+           drift(grown, seen, 2), ["manifest is a 108-second row and its median is 250 seconds"])
+    expect("a small row under the seconds floor is quiet", drift(dict(grown, tiny=3), dict(grown, tiny=9), 2), [])
 
     # The replay side: the log reader, the drift rule and the times file.
     rlog = ("2026-10-07T02:28:47.0337237Z shard 2/3: 70 record(s), estimated 1185 s\n"
