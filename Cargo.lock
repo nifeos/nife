@@ -103,7 +103,7 @@ dependencies = [
 [[package]]
 name = "block_roster_contract"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/block_roster_contract?rev=72f531ccf75c873614fb580e07af24d86f313f23#72f531ccf75c873614fb580e07af24d86f313f23"
+source = "git+https://github.com/nifeos/block_roster_contract?rev=2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1#2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1"
 
 [[package]]
 name = "boot_ladder"
@@ -403,7 +403,7 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/designware_ethernet?rev=ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096#ba75ceba7bb7e27799bc28d2e46ad5ea7cb4b096"
+source = "git+https://github.com/nifeos/designware_ethernet?rev=8d9cca0a044487403fd0d37e4fb34442c18b19d2#8d9cca0a044487403fd0d37e4fb34442c18b19d2"
 
 [[package]]
 name = "designware_inter_integrated_circuit"
@@ -412,7 +412,7 @@ version = "0.1.0"
 [[package]]
 name = "designware_mobile_storage"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b#4c8dad498619c2cfbe12a6cb5b7a1715acde4c1b"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=8bb45f85ad1a7b97614a5258a98c481701eda816#8bb45f85ad1a7b97614a5258a98c481701eda816"
 
 [[package]]
 name = "device_tree_blob"
@@ -484,12 +484,12 @@ dependencies = [
 [[package]]
 name = "e1000e"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/e1000e?rev=68ed5202b1df8c5de1ee365c9b9337f731ed7a0c#68ed5202b1df8c5de1ee365c9b9337f731ed7a0c"
+source = "git+https://github.com/nifeos/e1000e?rev=0a21349ffcd95b79ffda04222fc413f7b0e77ed2#0a21349ffcd95b79ffda04222fc413f7b0e77ed2"
 
 [[package]]
 name = "entropy_contract"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/entropy_contract?rev=63aeff35fcd8fabb443433e5e994e8d7f9ef808c#63aeff35fcd8fabb443433e5e994e8d7f9ef808c"
+source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa577421ad1c23b2c08d3754#7e800fdcebe9128eaa577421ad1c23b2c08d3754"
 
 [[package]]
 name = "environment_contract"
@@ -504,7 +504,7 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 [[package]]
 name = "extensible_host_controller_interface"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=a2189a4e8a795d6201cce3075b07216b6b405a7c#a2189a4e8a795d6201cce3075b07216b6b405a7c"
+source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=875a6401be12f311d925580901faf00cbcacbf99#875a6401be12f311d925580901faf00cbcacbf99"
 
 [[package]]
 name = "file_allocation_table"
@@ -600,7 +600,7 @@ dependencies = [
 [[package]]
 name = "generational_table"
 version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/generational_table?rev=4fb6bb7cb0f465e43f90935c611d8c1626d23d67#4fb6bb7cb0f465e43f90935c611d8c1626d23d67"
+source = "git+https://github.com/nifeos/generational_table?rev=1a8f8dc123a1176fcb3a526c8f73912370b3a2c4#1a8f8dc123a1176fcb3a526c8f73912370b3a2c4"
 
 [[package]]
 name = "generator"
@@ -781,7 +781,7 @@ dependencies = [
 [[package]]
 name = "jh7110_entropy"
 version = "0.3.0-pre.1"
-source = "git+https://github.com/nifeos/jh7110_entropy?rev=497d3ec4f0b4d7fc36634dee47d1afd56eb22485#497d3ec4f0b4d7fc36634dee47d1afd56eb22485"
+source = "git+https://github.com/nifeos/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
 
 [[package]]
 name = "jh7110_watchdog"
@@ -1059,7 +1059,7 @@ version = "0.1.0"
 [[package]]
 name = "non_volatile_memory_express"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=73b335cd973cc63f9039fbbc8894af7c72d3a344#73b335cd973cc63f9039fbbc8894af7c72d3a344"
+source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=5b0c24dcd3fe5416bcefeed7bb3936108c44ed45#5b0c24dcd3fe5416bcefeed7bb3936108c44ed45"
 
 [[package]]
 name = "nu-ansi-term"

@@ -18,7 +18,8 @@ fn fill_entropy(request: u64, out: &mut [u8]) -> bool {
         let want = (out.len() - done).min(entropy_contract::MAXIMUM_BYTES as usize);
         let (r0, r1) = call(
             request,
-            entropy_contract::request(entropy_contract::GET, want as u64),
+            entropy_contract::request(entropy_contract::GET, want as u64)
+                .expect("GET is a defined operation"),
             0,
         );
         let Some(n) = entropy_contract::delivered_bytes(r0) else {
