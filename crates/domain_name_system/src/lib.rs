@@ -311,13 +311,17 @@ impl Name {
             _ => text,
         };
         if !body.is_empty() {
-            let mut start = 0;
+            let mut rest = body;
             loop {
-                let mut end = start;
-                while end < body.len() && body[end] != b'.' {
-                    end += 1;
-                }
-                let label = &body[start..end];
+                // The label up to the next dot, and what follows the dot, if there is one. Split
+                // rather than counted, so no edit to the arithmetic can make the walk stand still.
+                let (label, after) = match rest.iter().position(|&b| b == b'.') {
+                    Some(dot) => {
+                        let (label, from_dot) = rest.split_at(dot);
+                        (label, Some(&from_dot[1..]))
+                    }
+                    None => (rest, None),
+                };
                 if label.is_empty() {
                     return Err(Error::BadLabel);
                 }
@@ -334,10 +338,10 @@ impl Name {
                 for &b in label {
                     out.push(b)?;
                 }
-                if end == body.len() {
-                    break;
+                match after {
+                    Some(after) => rest = after,
+                    None => break,
                 }
-                start = end + 1;
             }
         }
         out.push(0)?;
