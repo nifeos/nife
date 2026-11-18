@@ -26,6 +26,25 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold and helpers (`stan
 `spelled_out.py`, `register_names.py`, `british_spelling.py`), cargo-mutants, Kani, and the crate's
 own `test_support::plan_line`. No new tool.
 
+## Where this stands
+
+Finished: the split of item 1 in #3584, item 4 in #3559, and items 2, 8, 10, 12, 15, 17 and 18
+with parts of items 9, 11 and 13 in #3566. The first decision carries its ruling, and the
+maintainer decided the second provisionally in #3589.
+
+- Item 1 (residue): `ISOLATION_WORD` and the tests' catalog dependency, not built; the move lane.
+- Item 3 (manifest and root): not built; the move.
+- Item 5 (proofs): two-way, not built; a lane.
+- Item 6 (units): the standing units rule settles it, not yet recorded in the decision section;
+  decision for calef, who ratifies the new spellings of six ratified limits.
+- Item 7 (eight names): decided, not built; a lane.
+- Item 9 (citations, `Name:` blocks): not built; the move.
+- Items 11, 13, 16 and 19 (references, the `programs!` check, typed operand errors, example):
+  two-way, not built; a lane.
+- Item 14 (mutation run): not built; the move.
+- The move (milestone 1017 step 6): waits on a review package, which nobody has written, and
+  on review clearance (decision for calef).
+
 ## Goal
 
 A stranger who finds `grant_plan` on its own can tell in one screen what it is. It is a `no_std`,

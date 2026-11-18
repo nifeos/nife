@@ -28,6 +28,16 @@ Reuse: the template `nifeos/crate-workflows` and its helpers, `script/crate-move
 `block_roster_contract`'s `verification` module and `falsifications/` directory as the pattern.
 No new tool.
 
+## Where this stands
+
+Finished: Decision 1 froze the identity with the line count as this crate's own (#3582), and items 3, 4, 5, 7, 8, 10, 11, 14 and 15 landed in #3566.
+
+- Item 1 (names): the block records the maintainer's provisional table, and no lane has applied its renames; a lane, then ratification as a decision for calef.
+- Item 9 (header and line namespaces): ruled provisionally in item 1's table, not built; a lane, in item 1's pull request.
+- Items 2 and 13 (manifest, licenses, README): not built; the move, which waits on item 1's ratification and on calef's review clearance for the repository.
+- Item 8 (Miri run): the host tests exist and Miri has not run; the move, in the template's Miri job.
+- Item 12 (dry run against the standalone check): two-way, a finding against `helpers/crate_move.py`; a lane.
+
 ## Goal
 
 A stranger who finds `machine_statistics_contract` in its own repository can tell in one screen what the page is and who writes it. The stranger can build and test it from the README alone. The stranger can read its one `unsafe` reader with a safety contract that matches the signature. The stranger can trust that every accessor is a total function over any page that carries the magic. The repository's gates are green on the day the crate arrives for the crate's own reasons. Nife's own build keeps working the day it leaves.
@@ -109,11 +119,9 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 - **Done.** Decision 1: the identity stays as built (`MACHSTA1`, version 1, interface 4, a 576-byte
   page), and the processor-line count is this crate's own `PROCESSOR_LINES`, held equal to
   `CPU_ID_BOUND` by a compile-time assertion. Pull request #3582.
-- **Outstanding.** Items 1, 2, 6, 9, 12 and 13. They are the ratification table, the move
-  commit's manifest, licenses and README, and the line count (Decision 1). The rest are the header
-  and line namespaces, the dry run against the standalone check and the README's end-to-end note.
-  The ledger names
-  each with its reason. Checked by reading the ledger rows against the crate after the commit that
+- **Outstanding.** Items 1, 2, 9, 12 and 13. They are the ratification table, the move
+  commit's manifest, licenses and README, the header and line namespaces, the dry run against the
+  standalone check and the README's end-to-end note. The ledger names each with its reason. Checked by reading the ledger rows against the crate after the commit that
   built the done items.
 
 ## Decisions for the architect

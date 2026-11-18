@@ -23,6 +23,16 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-sta
 `script/crate-review-packet`, `helpers/name_release.py`, cargo-mutants, Kani, and the policy copies
 in `patches/std-nife` and `redoxfs_server/src/bin/second_mount.rs`. No new tool.
 
+## Where this stands
+
+Finished: decision A's names, the `Result` return, the two accessors and the `va` binding (#3597); the refused second wiring and zero grow (#3559); and the seam, host tests, Kani harnesses, refusals and documentation of items 7 to 14 (#3609).
+
+- Item 1 (names): the seven ruled names read ratified; `Short`, `PageSource` and eleven other later names read provisional; ratification is a decision for calef, and the move strips the blocks.
+- Item 2 (`talc` and path dependencies): ruled as decision B, not built; the move, which waits on the `abi`, `address_space_layout` and `user_mode_runtime` repositories and on calef's review clearance.
+- Items 3, 9 and 12 (manifest, licenses, README): the crate documentation covers its part, and nobody has written the rest; the move.
+- Item 4 (coverage): host tests exist now, and the template's `coverage` job has not measured them; the move.
+- Item 8 (the std and `second_mount` copies): two-way, not built; other, a host-buildable path through `cargo xtask std-src`.
+
 ## Goal
 
 A stranger who meets `memory_region_heap` in its own repository can tell in one screen what pays

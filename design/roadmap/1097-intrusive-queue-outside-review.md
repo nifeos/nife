@@ -20,6 +20,16 @@ so; the template's name checks refuse nothing in it.
 Reuse: the template `nifeos/crate-workflows` and its scaffold, Kani, Miri, cargo-llvm-cov,
 cargo-mutants. No new tool.
 
+## Where this stands
+
+Finished: the crate's provenance clause and owner-pointer minting (#3523), the kernel's `mint_token` from the table's stored pointer (#3523), and items 7, 8, 10, 11 and 12 (#3566).
+
+- Item 4 (`Send` bound): open, decision 1; decision for calef.
+- Item 6 (seven public names): ruled provisionally by the maintainer (#3589), not ratified; decision for calef, then the blocks leave with the move.
+- Items 1 to 3 (manifest, front page, skeleton): not built; the move, which waits on the order of milestone 1017 (the contract crates leave in this order), the crate's listing in `crates/externalization-list.txt` and calef's review clearance for the repository.
+- Item 9 (`remove` and an `extract_if` shape): two-way, undecided; the maintainer decides, then a lane.
+- Item 13 (one shared test node): two-way, not built; the move.
+
 ## Goal
 
 A stranger who finds `intrusive_queue` on crates.io can tell in one screen what it is for. The stranger can build, test, prove and falsify it from the README alone. The stranger can mint a token without stepping on an
@@ -124,7 +134,8 @@ decides it.
    experiment suggests the problem is elsewhere: the provenance of the token is.
    Evidence: `src/lib.rs` lines 7 to 9, 74 to 81, 136, 293 to 298, 369;
    `kernel/src/sched/thread_table.rs` lines 253 to 258 and 100 to 104. The two Miri tests live in
-   the review's scratch copy and appear in the appendix below.
+   the review's scratch copy and appear in
+   [the appendix](1097-intrusive-queue-outside-review/miri-experiments.md).
    Change, in the crate: a fourth clause in `Unqueued::new`'s safety list ("`node` is the owner's
    pointer, or derived from it by raw-pointer operations; a pointer derived from a reference is
    retired by the next reborrow of that reference's parent"). The doctest and the test helper mint
@@ -233,7 +244,7 @@ ratifying them stays the architect's. Item 6 is the work.
 
 - **Outstanding.** Decision 1 (the `Send` bound), which the architect rules, and the ratifying of decision 2. Checked: ledger rows 4 and 6.
 - **Outstanding.** Items 1 to 3, the move's manifest, front page and skeleton, which need the new repository.
-- **Outstanding.** Item 5 (the kernel's `mint_token`), item 9 (new public names) and item 13 (a shared test node, which waits for the move).
+- **Outstanding.** Item 9 (new public names) and item 13 (a shared test node, which waits for the move).
 
 [The ledger](1097-intrusive-queue-outside-review/ledger.md) lists each item.
 
@@ -259,36 +270,7 @@ The checks are in [the appendix](1097-intrusive-queue-outside-review/done-when.m
 
 ## Appendix: the two Miri experiments behind item 5
 
-The review ran both on a copy of the crate outside the tree, under `cargo +nightly miri test`, once with
-the default Stacked Borrows and once with `-Zmiri-tree-borrows`. Both models agree on every case.
-
-Passes under both: a token minted from the owning raw pointer survives a table walk.
-
-```rust
-let a: *mut N = Box::into_raw(Box::new(N { next: None, payload: 0 }));
-let mut q = Queue::new();
-q.push_back(unsafe { Unqueued::new(NonNull::new_unchecked(a)) });
-unsafe { let r: &mut N = &mut *a; r.payload = 7; }   // the walk: a fresh `&mut`, dropped
-let first = q.pop_front().unwrap();                 // fine
-assert_eq!(unsafe { (*first.as_ptr()).payload }, 7);
-```
-
-Undefined behavior under both: the same walk with a token minted from a reborrow, the shape the
-crate's examples and the kernel's `mint_token` use.
-
-```rust
-let a: *mut N = Box::into_raw(Box::new(N { next: None, payload: 0 }));
-let mut q = Queue::new();
-let ta = unsafe { let t: &mut N = &mut *a; Unqueued::new(NonNull::from(&mut *t)) };
-q.push_back(ta);
-unsafe { let r: &mut N = &mut *a; r.payload = 7; }   // retires the reborrow `ta` came from
-let first = q.pop_front().unwrap();                 // UB: the retag through `ta` fails
-```
-
-The second shape with `Box<N>` owners and `NonNull::from(&mut *a)`, which is the crate's own
-doctest and test helper, fails the same way as soon as any later `&mut a` exists. A `&mut` held
-across a queue operation and used after it has undefined behavior in every variant, which is rule 3
-as written.
+The two experiments are in [the appendix](1097-intrusive-queue-outside-review/miri-experiments.md).
 
 ## Index row
 
