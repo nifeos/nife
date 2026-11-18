@@ -134,8 +134,8 @@ const _: () = assert!(E_QUEUE < proto::STEP_NO_FIRST_BYTES);
 /// zeros, or of one value repeated. An empty draw is not condemned, since a source that answered
 /// nothing may start answering.
 fn refuses_service(report: u64) -> bool {
-    report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO)
-        || report == proto::bring_up_failure(proto::STEP_FIRST_ALL_SAME)
+    Ok(report) == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO)
+        || Ok(report) == proto::bring_up_failure(proto::STEP_FIRST_ALL_SAME)
 }
 
 fn r8(off: u64) -> u8 {
@@ -167,7 +167,12 @@ fn mw(off: u64, v: u32) {
 }
 
 fn die(code: u64) -> ! {
-    send(READY, proto::bring_up_failure(code), 0, 0);
+    send(
+        READY,
+        proto::bring_up_failure(code).unwrap_or(proto::BRING_UP_FAILED),
+        0,
+        0,
+    );
     exit();
 }
 

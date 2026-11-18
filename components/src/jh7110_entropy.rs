@@ -259,8 +259,8 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
 /// zeros, or of one value repeated. An empty draw is not condemned, since a source that answered
 /// nothing may start answering.
 fn refuses_service(report: u64) -> bool {
-    report == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO)
-        || report == proto::bring_up_failure(proto::STEP_FIRST_ALL_SAME)
+    Ok(report) == proto::bring_up_failure(proto::STEP_FIRST_ALL_ZERO)
+        || Ok(report) == proto::bring_up_failure(proto::STEP_FIRST_ALL_SAME)
 }
 
 /// The serve loop: one endpoint, one wait point, forever. Identical in shape to `entropy.rs`'s,
