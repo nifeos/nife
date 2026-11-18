@@ -683,7 +683,7 @@ fn stage_words(board: &'static serial_console::board::Profile) -> String {
 /// The device tree's `0x8600_0000` and the archive's `0x9000_0000` are choices; the note has the
 /// arithmetic. No `#` comment lines: U-Boot's parser is a cut-down hush, so the script uses only
 /// verbs the bench transcript shows working.
-fn board_boot_script(words: &str) -> String {
+pub(crate) fn board_boot_script(words: &str) -> String {
     format!(
         "\
 echo nife: boot.scr is driving this boot, milestone 218
@@ -712,7 +712,7 @@ fn board_loader_digests() -> Result<String, String> {
 }
 
 /// The name in the image header. `iminfo` prints it and nothing else reads it.
-const BOARD_BOOT_SCRIPT_NAME: &str = "nife board boot";
+pub(crate) const BOARD_BOOT_SCRIPT_NAME: &str = "nife board boot";
 
 /// The address the archive is loaded to, and the one `booti` is then handed. Written once here
 /// because the two have to agree and there are now four places that name it: two `load` lines and
@@ -798,22 +798,45 @@ fn parse_ip_addr_addresses(text: &str) -> Vec<(String, std::net::Ipv4Addr)> {
     keep_private(found)
 }
 
+/// The name the card's script asks the network for. The served script lives beside the kernel and
+/// the archive in the served directory and is never copied onto a card, so the digests it carries
+/// are always the served archive's. Name: provisional.
+pub(crate) const BOARD_SERVED_SCRIPT: &str = "nife-network-boot.scr.uimg";
+
+/// The served script as text, beside it, for the reason `boot.cmd` sits beside `boot.scr.uimg`.
+const BOARD_SERVED_SCRIPT_TEXT: &str = "nife-network-boot.cmd";
+
+/// The card's script: the file U-Boot's script scan finds and sources.
+pub(crate) const BOARD_CARD_SCRIPT: &str = "boot.scr.uimg";
+
+/// Where the card's script puts the served script before sourcing it. Clear of everything else the
+/// boot touches: the image relocated to `0x8020_0000` ends well below `0x8100_0000`, the device tree is
+/// moved to `0x8600_0000`, `kernel_comp_addr_r` is `0x8800_0000` and the archive starts at `0x9000_0000`.
+/// Not `${scriptaddr}`, because the card's own script lies there, and `source ${scriptaddr}` at the
+/// prompt has to keep meaning "run the card's script again".
+const BOARD_SERVED_SCRIPT_ADDR: &str = "0x84000000";
+
 /// **The network-first script, with the card underneath it** (milestone 257 (boot radon over the
-/// network)). The two `load` lines of [`board_boot_script`] become `dhcp` plus two `tftpboot`
-/// lines, with the card's copy as the fallback; `setenv bootargs`, `fdt addr`, `fdt move` and
-/// `booti` are byte for byte the card script's.
+/// network)). This is the card's script under `--tftp`, and it carries no digest for anything the
+/// network delivers. After `dhcp` it fetches [`BOARD_SERVED_SCRIPT`] and sources it, the shape of
+/// U-Boot's own `bootcmd_dhcp` (fetch `boot.scr.uimg`, then `source` it). That script loads the
+/// kernel and the archive it was written with and hands the kernel their digests, so the digests
+/// travel with the build and a card does not go stale when the archive changes.
 ///
-/// The kernel and archive are one measured pair, so a transfer that loses either takes both from
-/// the card. `autoload no` stops bare `dhcp` from fetching the bootfile DHCP names, and `netretry
-/// no` makes a missing network fail in seconds rather than hang. The shape is deliberately dull
-/// (one state variable, `if cmd; then` and `fi`, nesting at most two, no `else`) because U-Boot's
-/// hush has not been watched running it. See notes/visionfive2/network-boot.md.
-fn board_network_boot_script(server: &str, words: &str) -> String {
+/// If no network script arrives, or it returns because a transfer failed, the card's own kernel
+/// and archive boot, with `words`, the card archive's digests, which `script/board-image --card`
+/// copies in the same set. The kernel and archive are one measured pair, so a transfer that loses
+/// either takes both from the card. `autoload no` stops bare `dhcp` from fetching the bootfile DHCP
+/// names, and `netretry no` makes a missing network fail in seconds rather than hang. The shape is
+/// deliberately dull (one state variable, `if cmd; then` and `fi`, nesting at most two, no `else`)
+/// because U-Boot's hush has not been watched running it. See notes/visionfive2/network-boot.md.
+pub(crate) fn board_network_boot_script(server: &str, words: &str) -> String {
     let archive = BOARD_ARCHIVE_ADDR;
+    let served = BOARD_SERVED_SCRIPT;
+    let served_addr = BOARD_SERVED_SCRIPT_ADDR;
     format!(
         "\
 echo nife: boot.scr is driving this boot, milestones 218 and 257
-setenv nife_source none
 setenv netretry no
 setenv autoload no
 if test x${{nife_boot_server}} = x; then
@@ -823,30 +846,22 @@ echo nife: tftp server is ${{nife_boot_server}}, setenv nife_boot_server to poin
 setenv nife_next none
 if dhcp; then
 setenv serverip ${{nife_boot_server}}
-setenv nife_next kernel
+setenv nife_next script
 fi
-if test x${{nife_next}} = xkernel; then
+if test x${{nife_next}} = xscript; then
 setenv nife_next none
-if tftpboot ${{kernel_addr_r}} nife-vf2.img; then
-setenv nife_next archive
+if tftpboot {served_addr} {served}; then
+setenv nife_next served
 fi
 fi
-if test x${{nife_next}} = xarchive; then
-setenv nife_next none
-if tftpboot {archive} nife-initial-ramdisk.img; then
-setenv nife_archive_size ${{filesize}}
-setenv nife_source net
+if test x${{nife_next}} = xserved; then
+source {served_addr}
 fi
-fi
-if test x${{nife_source}} = xnone; then
+setenv nife_source none
 echo nife: nothing came over the network, falling back to the card
-setenv nife_next kernel
-fi
-if test x${{nife_next}} = xkernel; then
 setenv nife_next none
 if load ${{devtype}} ${{devnum}}:${{distro_bootpart}} ${{kernel_addr_r}} /nife-vf2.img; then
 setenv nife_next archive
-fi
 fi
 if test x${{nife_next}} = xarchive; then
 setenv nife_next none
@@ -865,6 +880,92 @@ fi
 echo nife: still at the prompt, so nothing loaded or booti refused what did
 "
     )
+}
+
+/// **The served script**, [`BOARD_SERVED_SCRIPT`]: two transfers and the boot, with `words`, the
+/// digests of the archive served beside it. It names no server, because the card's script has
+/// already set `serverip`, and it reads nothing from the card, so a pair is never assembled from
+/// two places. When a transfer fails it returns, and the card's script carries on with the card.
+pub(crate) fn board_served_boot_script(words: &str) -> String {
+    let archive = BOARD_ARCHIVE_ADDR;
+    format!(
+        "\
+echo nife: the served boot script is driving this boot, milestone 257
+setenv nife_next none
+if tftpboot ${{kernel_addr_r}} nife-vf2.img; then
+setenv nife_next archive
+fi
+if test x${{nife_next}} = xarchive; then
+setenv nife_next none
+if tftpboot {archive} nife-initial-ramdisk.img; then
+setenv nife_archive_size ${{filesize}}
+setenv nife_next boot
+fi
+fi
+if test x${{nife_next}} = xboot; then
+echo nife: payload came from net
+setenv bootargs {words}
+fdt addr ${{fdtcontroladdr}}
+fdt move ${{fdtcontroladdr}} 0x86000000
+booti ${{kernel_addr_r}} {archive}:${{nife_archive_size}} 0x86000000
+fi
+echo nife: the network did not deliver the kernel and its archive
+"
+    )
+}
+
+/// **The text of a legacy U-Boot script image**, read the way `source` reads it: the magic, the
+/// type `source` checks, then a size table ending in a zero and the script's bytes (u-boot
+/// `cmd/source.c`). The inverse of [`uboot_script_image`], so `card-check` can read what a card's
+/// script will hand the kernel rather than trust a file beside it.
+pub(crate) fn uboot_script_text(image: &[u8]) -> Result<String, String> {
+    let be = |at: usize| -> Result<u32, String> {
+        image
+            .get(at..at + 4)
+            .map(|b| u32::from_be_bytes(b.try_into().expect("four bytes")))
+            .ok_or_else(|| "shorter than a legacy U-Boot header".to_string())
+    };
+    if be(0)? != UIMAGE_MAGIC {
+        return Err("not a legacy U-Boot image (no 0x27051956 magic)".to_string());
+    }
+    if image.get(UIMAGE_HEADER_LEN - UIMAGE_NAME_LEN - 2) != Some(&IH_TYPE_SCRIPT) {
+        return Err("a legacy U-Boot image, but not a script".to_string());
+    }
+    let length = be(UIMAGE_HEADER_LEN)? as usize;
+    if length == 0 {
+        return Err("an empty script, which `source` refuses".to_string());
+    }
+    let mut at = UIMAGE_HEADER_LEN;
+    while be(at)? != 0 {
+        at += 4;
+    }
+    let start = at + 4;
+    let text = image
+        .get(start..start + length)
+        .ok_or_else(|| "the size table names more bytes than the image holds".to_string())?;
+    String::from_utf8(text.to_vec()).map_err(|_| "the script is not UTF-8".to_string())
+}
+
+/// Every `setenv bootargs` value in a script, in order: the words that script hands the kernel.
+pub(crate) fn script_bootargs(text: &str) -> Vec<&str> {
+    text.lines()
+        .filter_map(|line| line.strip_prefix("setenv bootargs "))
+        .collect()
+}
+
+/// **Whether a card's script takes the archive from the network.** A script on the card that does
+/// so carries digests for whatever the network serves, and goes stale on the next build: the shape
+/// this tree wrote before the served script existed.
+pub(crate) fn card_script_fetches_the_archive(text: &str) -> bool {
+    text.lines().any(|line| {
+        let mut words = line.split_whitespace();
+        let verb = match words.next() {
+            Some("if") => words.next(),
+            other => other,
+        };
+        verb == Some("tftpboot")
+            && words.any(|w| w.trim_end_matches(';') == "nife-initial-ramdisk.img")
+    })
 }
 
 /// `0x27051956`, the legacy U-Boot image magic, big-endian at offset 0 (u-boot `include/image.h`).
@@ -888,7 +989,7 @@ const IH_COMP_NONE: u8 = 0;
 /// otherwise need, and the format is 64 bytes and two CRCs. The CRC is
 /// `globally_unique_identifier_partition_table`'s, the tree's one definition of IEEE CRC-32,
 /// Kani-proved equal to its bitwise form: a second copy of a checksum is a second place to be wrong.
-fn uboot_script_image(name: &str, script: &str) -> Vec<u8> {
+pub(crate) fn uboot_script_image(name: &str, script: &str) -> Vec<u8> {
     // A script image's payload is a size table, then the text. `source` reads the first u32 as the
     // script's length and skips two u32s to reach the bytes (u-boot `cmd/source.c`), so one script
     // is `[len, 0]` followed by it.
@@ -943,7 +1044,8 @@ fn uboot_script_image(name: &str, script: &str) -> Vec<u8> {
 }
 
 /// Write `target/board/boot.scr.uimg`, and the script's text beside it as `target/board/boot.cmd`
-/// so that what the board will run can be read without a hex dump.
+/// so that what the board will run can be read without a hex dump. With `--tftp`, also the served
+/// script, `target/board/nife-network-boot.scr.uimg`, and its text as `nife-network-boot.cmd`.
 ///
 ///     cargo xtask board-script                        the card, and only the card (milestone 218)
 ///     cargo xtask board-script --tftp                 the network first, the card underneath (257)
@@ -987,7 +1089,10 @@ pub(crate) fn board_script() -> bool {
             return false;
         }
     };
-    let script = if tftp {
+    // Under `--tftp` there are two scripts. The card's carries the card archive's digests; the
+    // served one carries the served archive's and never leaves this directory. Both are written
+    // from one reading of the words, by one run, beside the archive they name.
+    let (card, served) = if tftp {
         let address = match server {
             Some(given) => {
                 println!("  tftp server: {given} (as given)");
@@ -1011,20 +1116,52 @@ pub(crate) fn board_script() -> bool {
                 first.to_string()
             }
         };
-        board_network_boot_script(&address, &words)
+        (
+            board_network_boot_script(&address, &words),
+            Some(board_served_boot_script(&words)),
+        )
     } else {
-        board_boot_script(&words)
+        (board_boot_script(&words), None)
     };
-    let script = script.as_str();
 
     let out = Path::new("target/board");
     if let Err(e) = std::fs::create_dir_all(out) {
         eprintln!("board-script: cannot create {}: {e}", out.display());
         return false;
     }
+    if !write_script(out, BOARD_CARD_SCRIPT, "boot.cmd", &card, "the card's") {
+        return false;
+    }
+    let served_path = out.join(BOARD_SERVED_SCRIPT);
+    match served {
+        Some(served) => write_script(
+            out,
+            BOARD_SERVED_SCRIPT,
+            BOARD_SERVED_SCRIPT_TEXT,
+            &served,
+            "the served",
+        ),
+        // A card-only build leaves no served script behind: one from an earlier `--tftp` build
+        // would name that build's archive, and the server would hand it to a board.
+        None => {
+            for stale in [served_path, out.join(BOARD_SERVED_SCRIPT_TEXT)] {
+                if stale.exists()
+                    && let Err(e) = std::fs::remove_file(&stale)
+                {
+                    eprintln!("board-script: cannot remove {}: {e}", stale.display());
+                    return false;
+                }
+            }
+            true
+        }
+    }
+}
+
+/// Write one script as a legacy image and as text, and say so.
+fn write_script(out: &Path, image_name: &str, text_name: &str, script: &str, what: &str) -> bool {
     let image = uboot_script_image(BOARD_BOOT_SCRIPT_NAME, script);
-    let image_path = out.join("boot.scr.uimg");
-    let text_path = out.join("boot.cmd");
+    let image_path = out.join(image_name);
+    let text_path = out.join(text_name);
     if let Err(e) = std::fs::write(&image_path, &image) {
         eprintln!("board-script: cannot write {}: {e}", image_path.display());
         return false;
@@ -1034,7 +1171,7 @@ pub(crate) fn board_script() -> bool {
         return false;
     }
     println!(
-        "  {}  ({} bytes, legacy U-Boot script image)",
+        "  {}  ({} bytes, {what} legacy U-Boot script image)",
         image_path.display(),
         image.len()
     );
@@ -1050,13 +1187,14 @@ mod tests {
     const WORDS: &str = "nife.progenitor=sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad \
                          nife.base=sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
-    /// **Both scripts hand the kernel the card's two digests before `booti`**, as one `setenv
-    /// bootargs` whose value the kernel's own parser reads back.
+    /// **Every script hands the kernel two digests before `booti`**, as one `setenv bootargs`
+    /// whose value the kernel's own parser reads back.
     #[test]
     fn both_scripts_set_the_loader_digests_before_booting() {
         for script in [
             board_boot_script(WORDS),
             board_network_boot_script("10.1.2.3", WORDS),
+            board_served_boot_script(WORDS),
         ] {
             let line = script
                 .lines()
@@ -1201,16 +1339,26 @@ utun6: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1280
         );
     }
 
-    /// The network-first script obeys the same vocabulary rule, plus the two it needs of its own.
+    /// The network-first script and the served script obey the same vocabulary rule, plus the two
+    /// they need of their own.
     ///
     /// `;` separates commands in hush, so a stray one in an `echo` would run the rest of the line.
-    /// The card script forbids it outright; this one cannot, because `if cmd; then` is how a branch
+    /// The card script forbids it outright; these cannot, because `if cmd; then` is how a branch
     /// is written, so the only `;` on any line is the one just before `then`. Nesting never goes
     /// deeper than two and there is no `else`: the guard is on the shape, not the outcome, as the
-    /// card script's test is.
+    /// card script's test is. `source` is the one verb added: it is how U-Boot runs the card's own
+    /// script on every boot, and how its `bootcmd_dhcp` runs a fetched one.
     #[test]
-    fn the_network_script_stays_inside_a_deliberately_dull_shape() {
-        let script = board_network_boot_script("10.1.2.3", WORDS);
+    fn the_network_scripts_stay_inside_a_deliberately_dull_shape() {
+        for script in [
+            board_network_boot_script("10.1.2.3", WORDS),
+            board_served_boot_script(WORDS),
+        ] {
+            assert_dull(&script);
+        }
+    }
+
+    fn assert_dull(script: &str) {
         assert!(script.ends_with('\n'), "every line is terminated");
         assert!(!script.contains('#'), "no comments");
         for forbidden in ['(', ')', '`', '\'', '&', '|', '<', '>'] {
@@ -1255,7 +1403,10 @@ utun6: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1280
                 // `else` is deliberately not in this list: a chain of guards costs a few more
                 // lines and needs one fewer parser feature than a branch does.
                 other => assert!(
-                    matches!(other, "echo" | "setenv" | "load" | "fdt" | "booti"),
+                    matches!(
+                        other,
+                        "echo" | "setenv" | "load" | "fdt" | "booti" | "source"
+                    ),
                     "{other} is a verb the bench transcript does not show"
                 ),
             }
@@ -1268,27 +1419,100 @@ utun6: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1280
         assert!(
             script.contains("booti ${kernel_addr_r} 0x90000000:${nife_archive_size} 0x86000000")
         );
-        // The address is baked, and it is also announced before anything depends on it.
-        assert!(script.contains("setenv nife_boot_server 10.1.2.3"));
-        assert!(script.contains("echo nife: tftp server is ${nife_boot_server}"));
-        // And the card script is untouched by any of this: the default is still the default, and
-        // it still has no network verb in it at all.
-        let card = board_boot_script(WORDS);
-        assert!(!card.contains("tftpboot"));
-        assert!(!card.contains("dhcp"));
-        assert!(!card.contains("if "));
     }
 
-    /// **The fallback, actually taken**: the generated script under `/bin/sh`, with the six U-Boot
-    /// verbs stubbed as shell functions whose exit status the test chooses. The constructs it uses
-    /// are common to hush and POSIX `sh`.
+    /// **The digests travel with what they name** (#3690). The card's script fetches neither the
+    /// kernel nor the archive itself, so the words it carries are only ever handed over with the
+    /// card's own pair; the served script reads nothing from the card and names no server, so its
+    /// words are only ever handed over with the pair served beside it.
+    #[test]
+    fn each_script_carries_the_digests_of_the_pair_it_loads() {
+        let card = board_network_boot_script("10.1.2.3", WORDS);
+        assert!(!card_script_fetches_the_archive(&card), "{card}");
+        assert!(!card.contains("tftpboot ${kernel_addr_r}"), "{card}");
+        assert!(card.contains(&format!(
+            "tftpboot {BOARD_SERVED_SCRIPT_ADDR} {BOARD_SERVED_SCRIPT}"
+        )));
+        assert!(card.contains(&format!("source {BOARD_SERVED_SCRIPT_ADDR}")));
+        // The address is baked, and it is also announced before anything depends on it.
+        assert!(card.contains("setenv nife_boot_server 10.1.2.3"));
+        assert!(card.contains("echo nife: tftp server is ${nife_boot_server}"));
+
+        let served = board_served_boot_script(WORDS);
+        assert!(card_script_fetches_the_archive(&served));
+        assert!(
+            !served
+                .lines()
+                .any(|l| l.starts_with("load ") || l.starts_with("if load ")),
+            "the served script reads nothing from the card: {served}"
+        );
+        assert!(!served.contains("10.1.2.3"), "{served}");
+        assert!(!served.contains("nife_boot_server"), "{served}");
+
+        // And the card-only script is untouched by any of this: the default is still the default,
+        // and it still has no network verb in it at all.
+        let card_only = board_boot_script(WORDS);
+        assert!(!card_only.contains("tftpboot"));
+        assert!(!card_only.contains("dhcp"));
+        assert!(!card_only.contains("if "));
+        assert!(!card_script_fetches_the_archive(&card_only));
+    }
+
+    /// The shape this tree wrote onto cards before the served script, a card script that takes
+    /// the archive over the network, is what `card-check` refuses, in either spelling of the line.
+    #[test]
+    fn a_card_script_that_fetches_the_archive_is_recognized() {
+        assert!(card_script_fetches_the_archive(
+            "if tftpboot 0x90000000 nife-initial-ramdisk.img; then\nfi\n"
+        ));
+        assert!(card_script_fetches_the_archive(
+            "tftpboot 0x90000000 nife-initial-ramdisk.img\n"
+        ));
+        assert!(!card_script_fetches_the_archive(
+            "load mmc 1:1 0x90000000 /nife-initial-ramdisk.img\n"
+        ));
+    }
+
+    /// **What `card-check` reads off a card is what `source` would run**: the text comes back out
+    /// of the image byte for byte, the words come back out of the text, and a damaged image says
+    /// why rather than reading as no words at all.
+    #[test]
+    fn a_script_image_reads_back_to_its_text_and_its_words() {
+        let script = board_network_boot_script("10.1.2.3", WORDS);
+        let image = uboot_script_image(BOARD_BOOT_SCRIPT_NAME, &script);
+        let text = uboot_script_text(&image).expect("reads back");
+        assert_eq!(text, script);
+        assert_eq!(script_bootargs(&text), vec![WORDS]);
+
+        assert!(uboot_script_text(&image[..UIMAGE_HEADER_LEN - 1]).is_err());
+        let mut not_a_script = image.clone();
+        not_a_script[UIMAGE_HEADER_LEN - UIMAGE_NAME_LEN - 2] = 2;
+        assert!(uboot_script_text(&not_a_script).is_err());
+        let mut no_magic = image;
+        no_magic[0] = 0;
+        assert!(uboot_script_text(&no_magic).is_err());
+    }
+
+    /// **The fallback, actually taken**: the generated scripts under `/bin/sh`, with the U-Boot
+    /// verbs stubbed as shell functions whose exit status the test chooses. `source` runs the
+    /// served script's text, which is what U-Boot does with the image the card's script fetched.
+    /// The constructs they use are common to hush and POSIX `sh`.
     ///
     /// It proves the control flow (which loads run in which order, that a network failure reaches
     /// the card, that a half-transfer takes both halves from the card, that `booti` gets the length
-    /// of the load that happened) and nothing about whether hush accepts the file; the block's BUGS
-    /// says so. `tftp_fails_at` is a call number because the interesting failure is the second
-    /// transfer.
-    fn run_under_sh(script: &str, dhcp: i32, tftp_fails_at: i32, load: i32) -> String {
+    /// of the load that happened, that the words handed over are the ones beside the pair loaded)
+    /// and nothing about whether hush accepts the file; the note's BUGS says so. `tftp_fails_at` is
+    /// a call number: the served script is the first transfer, the kernel the second and the
+    /// archive the third.
+    fn run_under_sh(dhcp: i32, tftp_fails_at: i32, load: i32) -> String {
+        let dir = std::env::temp_dir().join(format!(
+            "nife-boot-script-{}-{dhcp}{tftp_fails_at}{load}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).expect("temp dir");
+        let served_path = dir.join("served.cmd");
+        std::fs::write(&served_path, board_served_boot_script(SERVED_WORDS))
+            .expect("write the served script");
         let preamble = format!(
             "\
 kernel_addr_r=0x40200000
@@ -1305,17 +1529,15 @@ tftpboot() {{
   filesize=9044480
   [ \"$tftp_calls\" != \"{tftp_fails_at}\" ]
 }}
+source() {{ echo CALL source $1; . {served}; }}
 load() {{ echo CALL load $3 $4; filesize=1234; return {load}; }}
 fdt() {{ echo CALL fdt $*; }}
-booti() {{ echo CALL booti $*; }}
-"
+booti() {{ echo CALL booti $*; echo WITH $bootargs; exit 0; }}
+",
+            served = served_path.display()
         );
-        let dir = std::env::temp_dir().join(format!(
-            "nife-boot-script-{}-{dhcp}{tftp_fails_at}{load}",
-            std::process::id()
-        ));
-        std::fs::create_dir_all(&dir).expect("temp dir");
         let path = dir.join("boot.cmd");
+        let script = board_network_boot_script("10.1.2.3", WORDS);
         std::fs::write(&path, format!("{preamble}{script}")).expect("write the script");
         let out = Command::new("/bin/sh")
             .arg(&path)
@@ -1326,13 +1548,21 @@ booti() {{ echo CALL booti $*; }}
         String::from_utf8(out.stdout).expect("utf-8 output")
     }
 
+    /// Two words of another build, standing for the served archive's, so a run can say whose
+    /// words reached `booti`.
+    const SERVED_WORDS: &str = "nife.progenitor=sha256:0000000000000000000000000000000000000000000000000000000000000001 \
+                                nife.base=sha256:0000000000000000000000000000000000000000000000000000000000000002";
+
     #[test]
     fn the_network_script_falls_back_to_the_card_when_the_network_is_not_there() {
-        let script = board_network_boot_script("10.1.2.3", WORDS);
-
-        // Everything works: two TFTP transfers, no card read at all, and the archive length is the
-        // one TFTP reported.
-        let net = run_under_sh(&script, 0, 0, 0);
+        // Everything works: three TFTP transfers, no card read at all, the archive length is the
+        // one TFTP reported, and the words are the served script's, not the card's.
+        let net = run_under_sh(0, 0, 0);
+        assert!(
+            net.contains(&format!("CALL tftpboot 0x84000000 {BOARD_SERVED_SCRIPT}")),
+            "{net}"
+        );
+        assert!(net.contains("CALL source 0x84000000"), "{net}");
         assert!(
             net.contains("CALL tftpboot 0x40200000 nife-vf2.img"),
             "{net}"
@@ -1347,10 +1577,12 @@ booti() {{ echo CALL booti $*; }}
             net.contains("CALL booti 0x40200000 0x90000000:9044480 0x86000000"),
             "{net}"
         );
+        assert!(net.contains(&format!("WITH {SERVED_WORDS}")), "{net}");
+        assert!(!net.contains(&format!("WITH {WORDS}")), "{net}");
 
         // No lease: the card path runs, and it is the whole card path rather than a kernel from one
-        // place and an archive from another.
-        let card = run_under_sh(&script, 1, 0, 0);
+        // place and an archive from another, with the card's words.
+        let card = run_under_sh(1, 0, 0);
         assert!(
             !card.contains("CALL tftpboot"),
             "no lease, no transfer: {card}"
@@ -1368,14 +1600,24 @@ booti() {{ echo CALL booti $*; }}
             card.contains("CALL booti 0x40200000 0x90000000:1234 0x86000000"),
             "the length is the card load's, not a stale one: {card}"
         );
+        assert!(card.contains(&format!("WITH {WORDS}")), "{card}");
 
-        // A lease and a kernel, and then the archive transfer dies. This is the case worth having:
-        // a kernel over TFTP with an archive off the card is a mismatched pair, which halts at
-        // MEASURED BOOT REFUSED, so the fallback has to take BOTH halves from the card.
-        let half = run_under_sh(&script, 0, 2, 0);
+        // A lease, but no served script (a server that is not this tree's, or an old build): the
+        // card, untouched by anything the network said.
+        let no_script = run_under_sh(0, 1, 0);
+        assert_eq!(no_script.matches("CALL tftpboot").count(), 1, "{no_script}");
+        assert!(!no_script.contains("CALL source"), "{no_script}");
+        assert!(no_script.contains("payload came from card"), "{no_script}");
+        assert!(no_script.contains(&format!("WITH {WORDS}")), "{no_script}");
+
+        // A lease, the served script and a kernel, and then the archive transfer dies. This is the
+        // case worth having: a kernel over TFTP with an archive off the card is a mismatched pair,
+        // which halts at MEASURED BOOT REFUSED, so the fallback has to take BOTH halves from the
+        // card, and hand over the card's words rather than the served script's.
+        let half = run_under_sh(0, 3, 0);
         assert_eq!(
             half.matches("CALL tftpboot").count(),
-            2,
+            3,
             "the kernel arrived and the archive was attempted: {half}"
         );
         assert!(
@@ -1391,19 +1633,22 @@ booti() {{ echo CALL booti $*; }}
             half.contains("CALL booti 0x40200000 0x90000000:1234 0x86000000"),
             "and the length is the card's, not the abandoned transfer's: {half}"
         );
+        assert_eq!(half.matches("CALL booti").count(), 1, "{half}");
+        assert!(half.contains(&format!("WITH {WORDS}")), "{half}");
+        assert!(!half.contains(&format!("WITH {SERVED_WORDS}")), "{half}");
 
         // The kernel transfer itself failing stops there rather than chasing the archive.
-        let first = run_under_sh(&script, 0, 1, 0);
+        let first = run_under_sh(0, 2, 0);
         assert_eq!(
             first.matches("CALL tftpboot").count(),
-            1,
+            2,
             "no archive after a failed kernel: {first}"
         );
         assert!(first.contains("payload came from card"), "{first}");
 
         // Neither: nothing is booted, and the board says so rather than jumping into whatever is
         // at 0x40200000 from a previous boot.
-        let neither = run_under_sh(&script, 1, 0, 1);
+        let neither = run_under_sh(1, 0, 1);
         assert!(!neither.contains("CALL booti"), "{neither}");
         assert!(!neither.contains("CALL fdt"), "{neither}");
         assert!(neither.contains("payload came from none"), "{neither}");

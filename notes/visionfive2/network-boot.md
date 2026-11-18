@@ -30,19 +30,49 @@ The kernel and the archive are one measured pair. So a transfer that gets the ke
 archive falls all the way back, and takes *both* from the card. Half a pair halts at
 `MEASURED BOOT REFUSED`. That is the gate working, and it would be working on a fault we built.
 
+## The digests travel with the archive they name
+
+The kernel holds the progenitor and its measurement table to the loader's two digest words,
+`nife.progenitor` and `nife.base` (milestone 695 (the kernel trusts two digests handed to it by the
+loader)). On this board the loader's words are a `setenv bootargs` line in a boot script. A
+script on the card that named the served archive's digests would name one build and refuse every
+later one. So `script/board-image --tftp` writes two scripts, each carrying the digests of the pair
+it loads:
+
+- `boot.scr.uimg`, on the card. After `dhcp` it fetches `nife-network-boot.scr.uimg` to
+  0x8400_0000 and sources it. If that script does not arrive, or returns, it loads the card's own
+  kernel and archive and hands over the card archive's words, which `--card` copies in the same set.
+- `nife-network-boot.scr.uimg`, served from `target/board` and never copied to a card. It fetches
+  the kernel and the archive and boots them with the words of the archive beside it. It names no
+  server and reads nothing from the card; when a transfer fails it returns to the card's script.
+
+This is U-Boot's own `bootcmd_dhcp` shape, which fetches `boot.scr.uimg` over the network and
+sources it, and iPXE's embedded script, `dhcp` then `chain` to a script the server holds. A card
+written once stays right across rebuilds, because a rebuild rewrites the served script beside the
+archive it names. The FIT on the TH1520 and the UEFI stick reach the same end another way: the words
+or the check ride inside the one file that holds the archive.
+
+0x8400_0000 is clear of everything the boot touches: the relocated image ends below 0x8100_0000, the
+device tree moves to 0x8600_0000, `kernel_comp_addr_r` is 0x8800_0000 and the archive starts at
+0x9000_0000. It is not `${scriptaddr}`, where the card's script lies, so `source ${scriptaddr}` at
+the prompt still reruns the card's script.
+
+`script/card-check` reads the words out of each script image rather than out of the
+`.loader-digests` file `script/board-image` wrote them from, because the script is what the board
+hands the kernel. It refuses a script whose words disagree with the archive beside it, a script that sets no
+`bootargs`, and a card script that fetches the archive itself, the shape that goes stale.
+`script/board-image` runs it on `target/board` and on every card it writes.
+
 ## BUGS
 
-- **The script carries the card's archive's two digests.** Both scripts set `bootargs` to the
-  words `script/board-image` copied beside the archive (milestone 695 (the kernel trusts two
-  digests handed to it by the loader)), and the kernel holds the progenitor and its table to them.
-  The network must therefore serve the archive the card's script names.
-  After a rebuild, rewrite the card with `script/board-image --tftp --card <dir>`, or the boot
-  halts at `MEASURED BOOT REFUSED` naming the progenitor. Fetching the words beside the archive
-  would remove this, and needs a U-Boot verb (`env import`) the bench has not run.
-- **No board has booted a script that sets `bootargs`.** Neither the card script, the network
-  script nor the TH1520 FIT's `usr_bootargs` has reached the progenitor on a board. They add one
-  `setenv`, a verb the bench transcripts show working. A U-Boot that drops or truncates `bootargs`
-  would show up only as `MEASURED BOOT REFUSED` at the board.
+- **No board has run the served script.** The nested `source`, and the fetch to 0x8400_0000, have
+  not run on radon. `source` is the verb U-Boot itself uses to run the card's script, and a host test
+  runs both scripts under `/bin/sh` with the U-Boot verbs stubbed, which proves the control flow and
+  not that hush accepts it. A card written before the served script existed carries the old shape;
+  `script/card-check` refuses it, and `script/board-image --tftp --card <dir>` rewrites it.
+- **The TH1520 FIT's `usr_bootargs` has not reached the progenitor.** It adds one key to the FIT's
+  environment image, and a U-Boot that drops or truncates it would show up only as
+  `MEASURED BOOT REFUSED` at the board.
 
 ## No server address is written down in this tree
 

@@ -80,7 +80,7 @@ the kernel spawns `components/src/power_management_chip_route.rs` once per boot
 (`kernel/src/user/power_management_chip_route_service.rs`). The starter asks the clock and reset
 server to bring I2C5 up, derives the standard-mode timing from the SYS CRG and syscon words, and
 hands the route the controller's first page and one endpoint. The progenitor holds the endpoint at
-slot 35. It endows `WRITE` at `grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT` (23) to the program
+slot 41. It endows `WRITE` at `grant_contract::POWER_MANAGEMENT_CHIP_ROUTE_SLOT` (23) to the program
 that declares reboot, and to nothing else. The route answers one request, `RESET`: it reads register
 `0x32`, writes it back with bit 6 set and every other bit as found, and waits two seconds. A reset
 the PMIC honors never answers. `reboot` prints any answer, then asks the reboot object.
@@ -129,7 +129,7 @@ Its limits, which its `BUGS` lists one line each:
 - The reboot object's caller gets one of four portable reasons, not the firmware's own code. The
   raw PSCI or SBI number is only on the kernel's console line just above.
 - The proof is in no CI gate. Each leg takes over two minutes, because the window is the board's
-  own 120 seconds. A regression is found when somebody runs it.
+  own 120 seconds. Somebody finds a regression only by running it.
 - On `x86_64` only attempt 1 has run. q35 offers the FADT route (`0xCF9 <- 0x0F`), so the `0xCF9`
   and 8042 fallbacks have compiled and never executed. A QEMU proof of either needs a machine whose
   FADT does not offer that route, and no runner here starts one. Whether xenon's `0xCF9` full reset
@@ -137,6 +137,30 @@ Its limits, which its `BUGS` lists one line each:
 - The aarch64 `smc` conduit has never executed. QEMU's PSCI answers on `hvc`. `smc` is argon's.
 - A memory-space FADT reset register is not attempted. No machine here uses one.
 - Nothing has run on any board.
+- **The PMIC route holds the whole I2C controller.** Its page lets it address any chip on the
+  power controller's bus, and any register of the power controller, not only the reset bit. Its
+  code narrows that to the one register and bit the kernel packs in its spawn word, and its wire
+  answers `RESET` alone. Its input is one word from the program that declares `reboot`, which
+  that program could use only to reset the board.
+
+## Bench: reboot with the route withheld
+
+To see `reboot` fall back to the reboot object, build an image whose archive carries no route
+program. Add `[package.metadata.nife] packaged_only = ["power_management_chip_route"]` to
+`components/Cargo.toml`. `declared_programs` in `xtask/src/archive.rs` builds the one list every boot
+archive packs from the `[[bin]]` blocks of `components/Cargo.toml` and `fixtures/Cargo.toml`, less
+each manifest's `packaged_only` names. Dropping the name from `programs` in
+`packages/drivers.package.toml` does nothing, because the archive never reads that list. The builder
+refuses a name that no `[[bin]]` builds, and a name the shell or the boot needs.
+
+The boot then prints `no PMIC route: this archive carries no route program`. `reboot` prints the kernel's
+restart notice and tries SBI SRST.
+
+On radon that attempt hangs. Milestone 249 (the boot lottery is sampled by a person walking to the
+board) and milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write) record it. The console
+shows ten `i2c read` lines and `cannot read pmic power register`, then no firmware banner, and the
+board stays hung until somebody cycles its power. The expected result of this step on radon is that
+hang. The board does not boot back, and the route is the only working `reboot` there.
 
 ## Each board's first bench step
 

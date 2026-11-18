@@ -17,7 +17,7 @@
 # every unrelated merge behind a review nobody can hurry is the wall milestone 92 was written not to
 # build. Same split, same reason, as toolchain-drift.yml.
 #
-# script/lint runs `--check`, which is the structural half and nothing else: the two tables in the
+# script/lint runs `--selftest` (fixture indexes through `--check`) and then `--check`, which is the structural half and nothing else: the two tables in the
 # index describe the same audits, every report link resolves, every kind has a cadence row, the
 # dispositions parse. That one CAN fail a pull request, because a malformed index is a defect in the
 # commit that malformed it.
@@ -33,6 +33,7 @@
 #   script/audits --due       the tripwire: exit 1 if any kind is overdue, and say which trigger
 #   script/audits --check     structural validation of the index; non-zero on a problem (script/lint)
 #   script/audits --baseline  today's counts, to paste into a new baseline row
+#   script/audits --selftest  fixture indexes judged by --check, so a green --check can fail
 #   script/audits --worklist  which documents a documentation sweep should read first (milestone 93)
 #
 # **What the four counted triggers actually count**, because a number nobody can re-derive is a
@@ -132,7 +133,7 @@ set -e
 
 ROOT="$(CDPATH='' cd -- "$(dirname -- "$0")/.." && pwd)"
 
-exec python3 - "$ROOT" "${1:-}" <<'PY'
+exec python3 - "$ROOT" "${1:-}" "$0" <<'PY'
 import datetime
 import glob
 import os
@@ -140,13 +141,70 @@ import re
 import subprocess
 import sys
 
-root, mode = sys.argv[1], sys.argv[2]
-index_path = os.path.join(root, "design", "audit-reports", "README.md")
+root, mode, self_path = sys.argv[1], sys.argv[2], sys.argv[3]
+# NIFE_AUDITS_INDEX points `--check` at another index; `--selftest` is its only caller.
+index_path = (os.environ.get("NIFE_AUDITS_INDEX") if mode == "--check" else None) or \
+    os.path.join(root, "design", "audit-reports", "README.md")
 
-if mode not in ("", "--check", "--due", "--baseline", "--worklist"):
+if mode not in ("", "--check", "--due", "--baseline", "--worklist", "--selftest"):
     print(f"audits: unknown argument {mode!r} "
-          f"(no argument, --check, --due, --baseline, or --worklist)", file=sys.stderr)
+          f"(no argument, --check, --due, --baseline, --worklist, or --selftest)", file=sys.stderr)
     sys.exit(2)
+
+if mode == "--selftest":
+    # Fixture indexes run through `--check`, so a green real `--check` is known to be able to fail.
+    import tempfile
+    cadence_table = ("| Kind | Milestones | Components | ABI constants | External packages | Weeks |\n"
+                     "|---|---|---|---|---|---|\n| security | 1 | 1 | 1 | 1 | 6 |\n")
+
+    def audit_row(date, link, kind="security"):
+        return f"| {date} | {kind} | lens | fixed 0, minted 0, accepted 0 | [r](./{link}) |"
+
+    def base_row(date, counts=(1, 1, 1, 1), kind="security"):
+        return f"| {date} | {kind} | " + " | ".join(str(c) for c in counts) + " |"
+
+    def fixture(audits, bases):
+        return (cadence_table + "\n" + INDEX_HDR_ + "\n|---|---|---|---|---|\n" +
+                "\n".join(audits) + "\n\n" + BASE_HDR_ + "\n|---|---|---|---|---|---|\n" +
+                "\n".join(bases) + "\n")
+
+    INDEX_HDR_ = "| Date | Kind | Lens | Findings | Report |"
+    BASE_HDR_ = "| Date | Kind | Milestones built | Components | ABI constants | External packages |"
+    d = "2026-01-01"
+    cases = [
+        ("one audit each", [audit_row(d, "a.md")], [base_row(d)], 0, ""),
+        ("same key, equal counts",
+         [audit_row(d, "a.md"), audit_row(d, "b.md")], [base_row(d), base_row(d)], 0, ""),
+        ("same key, different counts",
+         [audit_row(d, "a.md"), audit_row(d, "b.md")],
+         [base_row(d), base_row(d, (2, 1, 1, 1))], 1, "different counts"),
+        ("missing baseline row",
+         [audit_row(d, "a.md"), audit_row(d, "b.md")], [base_row(d)], 1, "2 audits"),
+        ("triple",
+         [audit_row(d, f"{n}.md") for n in "abc"], [base_row(d)] * 3, 1, "rows share"),
+        ("duplicate report link",
+         [audit_row(d, "a.md"), audit_row(d, "a.md")], [base_row(d), base_row(d)], 1,
+         "report link"),
+    ]
+    failed = 0
+    for name, audit_rows, base_rows, want, needle in cases:
+        with tempfile.TemporaryDirectory() as tmp:
+            for n in "abc":
+                open(os.path.join(tmp, f"{n}.md"), "w").close()
+            with open(os.path.join(tmp, "README.md"), "w") as f:
+                f.write(fixture(audit_rows, base_rows))
+            got = subprocess.run([self_path, "--check"], capture_output=True, text=True,
+                                 env=dict(os.environ, NIFE_AUDITS_INDEX=os.path.join(tmp, "README.md")))
+        ok = (got.returncode == 0) == (want == 0) and needle in got.stderr
+        if not ok:
+            failed += 1
+            print(f"audits --selftest: {name}: exit {got.returncode}, wanted "
+                  f"{'pass' if want == 0 else 'failure naming ' + repr(needle)}\n{got.stderr}",
+                  file=sys.stderr)
+    if failed:
+        sys.exit(1)
+    print(f"audits --selftest: {len(cases)} fixture indexes judged as expected")
+    sys.exit(0)
 
 # The trigger names, in the order they are printed and in the order the cadence table's columns
 # stand. `weeks` is last because it is the backstop rather than a peer of the other four.
@@ -317,6 +375,7 @@ if not cadence:
                     "report that none is due")
 
 audits = []
+seen_links = {}
 for cells in table(lines, INDEX_HDR, index_path):
     if len(cells) != 5:
         problems.append(f"audit row {cells[0]!r}: {len(cells)} cells, expected 5")
@@ -336,6 +395,12 @@ for cells in table(lines, INDEX_HDR, index_path):
     elif not os.path.exists(os.path.normpath(
             os.path.join(os.path.dirname(index_path), lm.group(2)))):
         problems.append(f"audit {date} ({kind}): report link {lm.group(2)!r} does not resolve")
+    if lm:
+        if lm.group(2) in seen_links:
+            problems.append(f"audit {date} ({kind}) and audit {seen_links[lm.group(2)]} share the "
+                            f"report link {lm.group(2)!r}; one report is one audit, so a pasted "
+                            f"row is not a second audit")
+        seen_links.setdefault(lm.group(2), f"{date} ({kind})")
     if not lens:
         problems.append(f"audit {date} ({kind}): no lens. The value of an audit is the lens the "
                         f"last one lacked, so a row without one cannot be read for what to do next.")
@@ -356,29 +421,40 @@ for cells in table(lines, BASE_HDR, index_path):
     if bad:
         problems.append(f"baseline {date} ({kind}): {bad} are neither integers nor '-'")
         continue
+    counts = {k: (None if n == "-" else int(n)) for k, n in zip(COUNTS, nums)}
+    # Two audits of one kind may run on one day. The tripwire reads only the newest audit of each
+    # kind, so they can share a baseline row's key as long as they record the same tree.
+    if (date, kind) in baselines and baselines[(date, kind)] != counts:
+        problems.append(f"baseline {date} ({kind}): two audits share a date and a kind but record "
+                        f"different counts, so the tripwire cannot tell which tree it measures")
     base_order.append((date, kind))
-    baselines[(date, kind)] = {k: (None if n == "-" else int(n)) for k, n in zip(COUNTS, nums)}
+    baselines[(date, kind)] = counts
 
 # The two tables are one record split for two readers, so the check that keeps them one record is
 # that they list exactly the same audits, in the same order. Without this, a lane can add a row to
 # the table a person reads and leave the tripwire reading a baseline from the audit before it, which
 # is the silent half-update that every two-file record eventually suffers.
 index_order = [(a["date"], a["kind"]) for a in audits]
-if index_order != base_order:
+# Two audits of a kind may share a day (the tripwire reads the newest), but never three.
+for table_name, order in (("index", index_order), ("baseline", base_order)):
+    for key in sorted({k for k in order if order.count(k) > 2}):
+        problems.append(f"{order.count(key)} {table_name} rows share {key[0]} ({key[1]}); at most "
+                        f"two audits of one kind may share a date")
+if len(index_order) != len(base_order):
+    problems.append(f"the index lists {len(index_order)} audits and the baseline table lists "
+                    f"{len(base_order)}; every audit needs exactly one row in each table")
+if sorted(index_order) == sorted(base_order) and index_order != base_order:
+    problems.append("the two tables list the same audits in different orders; keep both "
+                    "oldest-first so the newest row is the last one in each")
+elif index_order != base_order:
     only_index = [x for x in index_order if x not in base_order]
     only_base = [x for x in base_order if x not in index_order]
-    if only_index or only_base:
-        for d, k in only_index:
-            problems.append(f"audit {d} ({k}) has no baseline row: the tripwire would read the "
-                            f"previous audit's counts and under-report every trigger")
-        for d, k in only_base:
-            problems.append(f"baseline {d} ({k}) has no audit row")
-    else:
-        problems.append("the two tables list the same audits in different orders; keep both "
-                        "oldest-first so the newest row is the last one in each")
+    for d, k in only_index:
+        problems.append(f"audit {d} ({k}) has no baseline row: the tripwire would read the "
+                        f"previous audit's counts and under-report every trigger")
+    for d, k in only_base:
+        problems.append(f"baseline {d} ({k}) has no audit row")
 
-if len(set(index_order)) != len(index_order):
-    problems.append("two audits share a date and a kind; one of them cannot be found")
 if index_order != sorted(index_order):
     problems.append("the audits are not in date order, and the newest row is what the tripwire "
                     "reads")
