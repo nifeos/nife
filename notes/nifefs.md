@@ -96,7 +96,7 @@ A format change has to reach all of them, and one of them was the reason this ne
    `progenitor`. Uses `nifefs::Fs`.
 2. **`xtask`** (`has_initial_ramdisk_aarch64`, `has_initial_ramdisk_riscv`, `has_initial_ramdisk_x86`, `mkdisk`), which writes every image and then parses it
    back to hash the boot programs. Uses `nifefs::write_image` and `Fs`.
-3. The EL0 blk driver (`crates/virtio`), which walked the directory out of a 512-byte DMA buffer
+3. The EL0 blk driver (`components/src/block_driver_roles.rs`), which walked the directory out of a 512-byte DMA buffer
    with the offsets **restated by hand**: stride 32, start block at +24, a `count.min(15)` bound with
    the 15 written as a literal. It was the only place in the tree that had to be found rather than
    recompiled, so it now depends on `nifefs` and takes `HEADER_LEN`, `ENTRY_LEN`, `NAME_LEN` and

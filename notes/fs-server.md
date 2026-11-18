@@ -27,7 +27,7 @@ endpoint I read and write blocks on"; the client holds "an endpoint that opens a
 under the one directory this endpoint is bound to." Rewire the endpoints and neither side can tell,
 which is milestone 23's hot-swap claim in component form.
 
-- **The block server** is a role of the virtio driver (`crates/virtio`'s `run_blk_server`, dispatched by `crates/virtio`). It
+- **The block server** is a role of the virtio driver (`run_blk_server` in `components/src/block_driver_roles.rs`, dispatched by `components/src/block_driver.rs`). It
   brings the RedoxFS disk up, then serves read/write/size over blk IPC forever. The device
   confinement is unchanged from any driver (the kernel owns the transport and validates every DMA
   descriptor, notes/dma.md), so a serving block driver is as confined as a reading one.

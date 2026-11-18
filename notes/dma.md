@@ -199,7 +199,7 @@ way. Both now fail closed, and `entropy.rs` had always clamped, so the shape was
 a policy.
 
 What is still missing is the negative control. This tree tests DMA confinement by making the
-*driver* attack (`crates/virtio`'s `run_attack` and the indirect-descriptor variant, both proving
+*driver* attack (`components/src/block_driver_roles.rs`'s `run_attack` and the indirect-descriptor variant, both proving
 the kernel refuses). There is no way to make the *device* attack, so the direction the IOMMU and the
 validator exist for is the one with no test, and the two fixes above are unproven for that reason. A
 harness that can write an arbitrary used ring under a driver is proposed as its own milestone. Under

@@ -5,8 +5,8 @@ An appendix to [the milestone](../1101-memory-regions-outside-review.md).
 Waiting on calef: Decision 1 (whether the crate leaves) and item 9's names.
 
 Finished: item 1 (#3525), item 3's refusals (#3534), item 4 (#3532), items 7, 10, 12, 13, 14 and
-15 and item 6(b) (#3567, with item 14's times in #3647), and item 6(d) (#3521). The maintainer has
-decided Decisions 2, 3 and 4, provisionally.
+15 and item 6(b) (#3567, with item 14's times in #3647), and item 6(d) (#3521). Item 6(c) holds: `src/proofs.rs` and `src/tests.rs` spell out `CBMC` at first use.
+The maintainer has decided Decisions 2, 3 and 4, provisionally.
 
 What remains, and what holds each:
 
@@ -17,7 +17,6 @@ What remains, and what holds each:
   (nifeos/crate-workflows#65) has merged and is in no release yet.
 - Item 6(a), `ObjectKind::AddressSpace` under the template's address rule: ready for a lane, in
   nifeos/crate-workflows.
-- Item 6(c), `CBMC` in `src/proofs.rs`, which the template's acronym gate refuses: ready for a lane.
 - Item 6(e), `orphan_modules` at the pinned `v7`: a release step (a template release after `v7`,
   which carries the fix).
 - Item 8, the dependency on `generational_table` by `git`: the publishing hold.

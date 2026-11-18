@@ -43,7 +43,7 @@ hands a driver either way). It owns the registers and the two DMA-critical power
 a confined `Virtio` capability, a DMA page, and an interrupt. On PCIe the NIC sits behind the IOMMU
 (`iommu_platform=on`), the disk's pattern exactly, so it is confined in hardware too.
 
-The driver is `crates/virtio`'s `run_net`, dispatched by `components/src/block_driver.rs` on every
+The driver is `components/src/block_driver_roles.rs`'s `run_net`, dispatched by `components/src/block_driver.rs` on every
 architecture (the aarch64 tests ran it as a role of `hello` until milestone 291, which found that
 role to be this same binary's code reached through a second dispatch table). It brings up both
 virtqueues (receive = 0, transmit = 1) through the
@@ -129,7 +129,7 @@ stopped being a network card.
 
 The DMA-page layout (`RECEIVE_DESC` to `TRANSMIT_USED`, at a 0x200 stride) restates the validator's
 `DESC_OFF`, `AVAIL_OFF`, `USED_OFF` and `RING_BLOCK` as literals. The kernel aliases those
-constants, while `entropy.rs` and `crates/virtio`'s own net driver spell the same numbers again.
+constants, while `entropy.rs` and `components/src/block_driver_roles.rs`'s own net driver spell the same numbers again.
 Nothing checks the copies against the crate. Consuming the constants takes a `components` to
 `direct_memory_access_validator` dependency edge, which is a §46 (thin primitives or whole
 subsystems) decision. Milestone 410 (six copies of the shared-frame accessors) priced that edge on

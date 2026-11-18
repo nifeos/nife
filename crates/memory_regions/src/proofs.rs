@@ -618,8 +618,8 @@ fn a_release_of_nothing_held_moves_nothing() {
 /// **One assumption, stated.** `Run::any` leaves a parent's retyped pages free to overlap a live
 /// child's run, which no sequence of the table's calls produces (a retype lands above every child
 /// that exists, and a split above every retype before it). The harness assumes the states without
-/// that overlap. Building the start state from real calls instead runs CBMC out of memory, so the
-/// reachability evidence is a host test, `no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages`,
+/// that overlap. Building the start state from real calls instead runs the C Bounded Model Checker
+/// (CBMC) out of memory, so the reachability evidence is a host test, `no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages`,
 /// which replays every call sequence of up to five calls and checks the same rule after each call.
 /// The covers below keep the assumption from emptying the proof: a state with retyped pages below
 /// a live grandchild and one with them above it both reach the claim.

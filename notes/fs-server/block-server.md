@@ -23,7 +23,7 @@ send only single-block requests, so the region's growth leaves them unchanged.
 
 ## It waits on the completion interrupt
 
-This is the milestone-9 discipline (`complete_blk`, `crates/virtio`). The kernel turns the device's
+This is the milestone-9 discipline (`complete_blk`, `components/src/block_driver_roles.rs`). The kernel turns the device's
 completion interrupt into a message on the block server's `Interrupt` endpoint. The server WAITs for
 it, quiets
 the device, ACKs the line, and lets `used.idx` decide when the completion is really its own. A

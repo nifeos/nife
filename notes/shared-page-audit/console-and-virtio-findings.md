@@ -90,7 +90,7 @@ nothing lies; on the VisionFive 2, or behind any device the host does not fully 
 is doing real work and is written down nowhere.
 
 The other two drivers show this is an omission rather than a policy: `entropy.rs` clamps its length
-(`.min(POOL_LEN)`), and `display.rs` and `crates/virtio` read only `used.idx` and never the element,
+(`.min(POOL_LEN)`), and `display.rs` and `components/src/block_driver_roles.rs` read only `used.idx` and never the element,
 because they use one fixed buffer.
 
 Disposition: fixed in this lane, both drivers, failing closed: a completion naming a buffer that
