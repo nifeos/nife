@@ -191,7 +191,7 @@ was the one place that had to be found by hand when the entry layout widened on 
 depends on `nifefs` for them, which is CLAUDE.md's rule 7 (what two binaries must agree on is a
 crate). See [nifefs.md](nifefs.md).
 
-## The block driver roles, `components/src/block_driver_roles.rs`
+## The block driver roles
 
 The driver runs at EL0 and holds three things the kernel handed it. The DMA page is mapped at
 `DMA_VA`, and its physical address arrives as `_start`'s argument, because descriptors speak

@@ -6,8 +6,9 @@ Nothing here waits on calef.
 
 Finished: items 1 and 11 (#3662, the roles live in `components/src/block_driver_roles.rs`), items
 2, 7, 12, 14, 15 and 16 (#3613), items 4, 5 and 8 (#3520), item 6 (#3559, #3574), item 13 (#3520,
-#3613), and item 10 (the kernel comments and notes that named `crates/virtio` now name
-`components/src/block_driver_roles.rs`; the design records keep the name they were written under). Decisions 1, 2 and 3 have rulings, and #3628 built Decision 3.
+#3613). Item 10 is done: the kernel comments and notes that named `crates/virtio` now name
+`components/src/block_driver_roles.rs`, and the design records keep the name they were written
+under. Decisions 1, 2 and 3 have rulings, and #3628 built Decision 3.
 
 What remains, and what holds each:
 
