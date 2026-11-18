@@ -49,7 +49,10 @@ fn output_expansion_puts_each_segment_once_in_order() {
         expand_output(input, &mut out);
         out.0
     };
-    assert_eq!(expand(b"a\nb"), [b"a".to_vec(), b"\r\n".to_vec(), b"b".to_vec()]);
+    assert_eq!(
+        expand(b"a\nb"),
+        [b"a".to_vec(), b"\r\n".to_vec(), b"b".to_vec()]
+    );
     assert_eq!(expand(b"ab"), [b"ab".to_vec()]);
     assert_eq!(expand(b"\nb"), [b"\r\n".to_vec(), b"b".to_vec()]);
     assert_eq!(expand(b"a\n"), [b"a".to_vec(), b"\r\n".to_vec()]);
