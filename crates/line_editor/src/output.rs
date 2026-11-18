@@ -7,7 +7,8 @@
 /// Where echo bytes go. The server implements this over its console channel; the tests
 /// implement it over a terminal model.
 pub trait Sink {
-    /// Write echo bytes out. Called synchronously from the byte-feeding methods below, so a
+    /// Write echo bytes out. Never called with an empty slice, so an implementation may treat a
+    /// call as a message to send. Called synchronously from the byte-feeding methods below, so a
     /// `Sink` that blocks blocks the whole discipline.
     fn put(&mut self, bytes: &[u8]);
 }
@@ -19,12 +20,16 @@ pub fn expand_output(src: &[u8], out: &mut impl Sink) {
     let mut from = 0;
     for (i, &b) in src.iter().enumerate() {
         if b == b'\n' {
-            out.put(&src[from..i]);
+            if from < i {
+                out.put(&src[from..i]);
+            }
             out.put(b"\r\n");
             from = i + 1;
         }
     }
-    out.put(&src[from..]);
+    if from < src.len() {
+        out.put(&src[from..]);
+    }
 }
 
 #[cfg(test)]

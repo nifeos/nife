@@ -237,8 +237,12 @@ impl LineDisc {
     /// Paint the prompt and the line again on a fresh row, cursor where it was. For a caller that
     /// printed something between two keystrokes, as a completion listing does.
     pub fn repaint(&mut self, out: &mut impl Sink) {
-        out.put(&self.prompt[..self.prompt_len]);
-        out.put(&self.buf[..self.len]);
+        if self.prompt_len > 0 {
+            out.put(&self.prompt[..self.prompt_len]);
+        }
+        if self.len > 0 {
+            out.put(&self.buf[..self.len]);
+        }
         csi_left(out, self.len - self.cur);
     }
 
@@ -559,7 +563,9 @@ impl LineDisc {
             old_cur.min(a)
         };
         csi_left(out, old_cur - a);
-        out.put(&self.buf[a..self.len]);
+        if a < self.len {
+            out.put(&self.buf[a..self.len]);
+        }
         out.put(b"\x1b[K");
         csi_left(out, self.len - self.cur);
     }
@@ -658,7 +664,9 @@ impl LineDisc {
         self.buf[..n].copy_from_slice(&text[..n]);
         self.len = n;
         self.cur = n;
-        out.put(&self.buf[..n]);
+        if n > 0 {
+            out.put(&self.buf[..n]);
+        }
         out.put(b"\x1b[K");
     }
 }
