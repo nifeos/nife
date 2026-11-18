@@ -134,6 +134,7 @@ pub mod nameset;
 ///
 /// **BUGS.** The kind is 31 bits, because it rides in the sign-protected half of a reply word
 /// ([`extended_attribute::reply`]); [`fs::SETXATTR`] answers `EINVAL` for a kind with its top bit set.
+#[doc(alias = "xattr")]
 pub mod extended_attribute;
 
 /// The FS server's readiness sentinel: sent once, after it has opened the RedoxFS image over blk
