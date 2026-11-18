@@ -13,9 +13,9 @@ What remains, and what holds each:
 - Item 8, text that speaks to a reader inside nife (the sources still cite sections, milestones
   and `notes/`): ready for a lane.
 - Item 9, acronyms not expanded at first use: ready for a lane.
-- The `xtask` link-script test still reads `link.ld` by path and says the crate has no host test
-  target, and the manifest's `socket_contract` comment says `mapped_window` cannot compile for the
-  host; items 4 and 16 made both stale: ready for a lane.
+- Two texts that items 4 and 16 made stale: ready for a lane. The `xtask` link-script test reads
+  `link.ld` by path and says the crate has no host test target. The manifest's `socket_contract`
+  comment says `mapped_window` cannot compile for the host.
 - Ratifying the names item 13 renamed, and whether `read_u8` to `write_u64` give way to `read::<T>`
   (Decision 1): a decision for calef, at the names review the move requires.
 - The move itself: a release step, the move, which waits on step 3 of milestone 1017 (the contract
