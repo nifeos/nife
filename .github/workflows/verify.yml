@@ -310,7 +310,7 @@ jobs:
         run: python3 helpers/job-budget.py check "${{ github.job }}" "$JOB_STARTED_AT"
 
   prove:
-    name: prove (shard ${{ matrix.shard }}/5)
+    name: prove (shard ${{ matrix.shard }}/6)
     needs: [gate, scope]
     # `!cancelled()` for the same reason `verify` below gives: without it a failed or cancelled
     # dependency skips this job outright, whatever the condition says, and a skipped job still
@@ -335,7 +335,7 @@ jobs:
       # whole suite did is the difference between one investigation and fifteen.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3, 4, 5, 6]
     steps:
       - name: Start the job wall-time clock
         run: echo "JOB_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
@@ -366,13 +366,13 @@ jobs:
       # cost more to miss. Revisit if this step's time grows past a minute.
       - name: Install Kani
         run: script/kani-install
-      # **Five shards, so the slowest stays near 60% of the 20-minute budget.** Measured over the
-      # 29 merge-group runs 43642016303 to 43659021264 (2026-11-14 and 2026-11-15 UTC), the suite
-      # is 50.6 serial minutes of proving and a shard job adds about 0.7 minutes of setup. Packed by
-      # those medians, five shards prove in 10.1 minutes at the median and 11.6 at the 90th
-      # percentile; four prove in 12.7 and 14.3. A sixth buys under a minute, because
-      # `memory_regions` (9.5 minutes) and `byte_glob` (9.1, most of it one harness) each fill a
-      # shard alone. notes/verification/ci-timings.md has the table.
+      # **Six shards, so the slowest stays under the 20-minute budget.** The table in script/verify
+      # plans 79 serial minutes of proving, and a shard job runs 1.07 times its plan at the median
+      # and 1.24 at the 90th percentile, setup included. Five shards plan 15.9 minutes each, and
+      # over the 33 complete five-shard merge-group runs of 2026-11-17 and 2026-11-18 (UTC) the
+      # slowest took 17.0 minutes at the median and 19.7 at the most, on a smaller table. Six plan
+      # 13.2. The floor is `byte_glob` (9.3 minutes, most of it one harness), which fills a shard
+      # alone. notes/verification/ci-timings.md has the table.
       # The balance is by measured seconds from the table in script/verify, which
       # verify-shard-refresh.yml keeps current daily, and each shard warns when it ran more than 30%
       # off its plan or a crate ran far past its own row.
@@ -387,8 +387,8 @@ jobs:
       # annotation, and the shard fails in minutes with its log. The fence also prints the memory
       # in use and each running harness every 15 seconds into this step's live log, which a lost
       # runner keeps. notes/verification/ci-timings.md, "A shard that stalls".
-      - name: script/verify --shard ${{ matrix.shard }}/5
-        run: python3 helpers/memory_fence.py -- script/verify --shard ${{ matrix.shard }}/5
+      - name: script/verify --shard ${{ matrix.shard }}/6
+        run: python3 helpers/memory_fence.py -- script/verify --shard ${{ matrix.shard }}/6
         # VERIFY_JOBS=2, not the script's default 4, and this is a measurement, not caution: the
         # first four runs of the parallel suite on this runner were each killed ~15 minutes in,
         # inside glob's largest harnesses, as a bare "operation was canceled" with orphaned cbmc
