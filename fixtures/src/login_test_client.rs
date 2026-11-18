@@ -76,7 +76,7 @@ const FS_VA: u64 = address_space_layout::pair_page(0x0000_0000_00f0_0000);
 // ..)` having already returned true), the same condition the hand-rolled comment this replaces
 // relied on (milestone 139 round 2; see `user_mode_runtime::mapped_window`).
 const FS_WINDOW: MappedWindow =
-    unsafe { MappedWindow::new(FS_VA, filesystem_contract::PAGE as u64) };
+    unsafe { MappedWindow::new(FS_VA, filesystem_contract::PAGE_BYTES as u64) };
 
 /// **Present the credential and prove what came back.** The whole of what every credential case
 /// needs: two identities' correct credentials, a wrong secret, an identity with no home subtree, and

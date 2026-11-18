@@ -62,7 +62,7 @@ pub use unsupported_fs::rename_noreplace;
 ///
 /// It is written in terms of `read_dir`, `remove_file` and `remove_dir` on paths it composes with
 /// `DirEntry::path`, and [`walk`] resolves those holding one directory capability per level. The
-/// rights it needs at every level are `directory::REMOVE_TREE`'s (`ENUMERATE` to see, `DESCEND` to walk
+/// rights it needs at every level are `dir::REMOVE_TREE`'s (`ENUMERATE` to see, `DESCEND` to walk
 /// in, `REMOVE` to take the name out), asked for one verb at a time by the walk. See
 /// notes/std/fs-descent.md.
 pub use crate::sys::fs::common::remove_dir_all;
@@ -81,7 +81,7 @@ const FS: u64 = rt::FS_DIR_SLOT;
 const PAGE_VA: u64 = rt::FS_PAGE;
 
 /// The contract's transfer unit: one page, so one request never moves more than this.
-const PAGE: usize = fsproto::PAGE;
+const PAGE: usize = fsproto::PAGE_BYTES;
 
 // One child per seam (§282 (when a file is split, the parent becomes an index)). Each takes
 // `use super::*` and is re-exported whole, the shape `kernel/src/sched.rs` uses, because it is part
@@ -99,7 +99,7 @@ mod reachable;
 mod read_dir;
 mod walk;
 
-pub use directory::*;
+pub use dir::*;
 pub use errors::*;
 pub use file::*;
 pub use metadata::*;

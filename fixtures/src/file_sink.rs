@@ -65,7 +65,7 @@ const REPORT: u64 = 2;
 /// The page shared with the FS server. Matches `fs_service`'s `FILE_VA_CLIENT`.
 const PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0060_0000);
 /// Its size, the FS contract's transfer unit.
-const PAGE: usize = filesystem_contract::PAGE;
+const PAGE: usize = filesystem_contract::PAGE_BYTES;
 
 // SAFETY: the wiring maps one page read/write at PAGE_VA before this program runs (milestone 139
 // round 2; see `user_mode_runtime::mapped_window`, which is what collapsed the hand-rolled read_volatile/

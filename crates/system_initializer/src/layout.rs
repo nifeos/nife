@@ -90,7 +90,7 @@ pub(super) const DIR_JOB_REGION_PAGES: u64 = program_table::DIRECTORY_JOB_REGION
 
 /// The stack a `fs_subtree_caretaker` gets, beyond the one page `build_child` maps for it: it has
 /// no allocator, no recursion, and one sizable frame (a sixteen-entry handle table, and in a
-/// `fs_nameset_caretaker` up to two `grant::MAXIMUM_NAME` name buffers for a rename).
+/// `fs_nameset_caretaker` up to two `grant::MAXIMUM_NAME_BYTES` name buffers for a rename).
 pub(super) const CARETAKER_STACK_PAGES: u64 = 4;
 
 /// Where a `fs_subtree_caretaker` and the program it serves both map the FS contract's shared page.
