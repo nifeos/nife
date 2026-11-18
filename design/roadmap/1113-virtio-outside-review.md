@@ -208,6 +208,8 @@ The kernel's scan does not offer the slot, so nothing starts a driver for it.
   check, which waits for the ruling. The kernel's scan refuses a slot whose `Version` is not 2 in every
   build, and the PCI transport answers the real configuration generation (item 6 and
   `notes/virtio.md`).
+- **Done.** Item 10: the kernel comments and notes that named `crates/virtio` name `components/src/block_driver_roles.rs`.
+- **Outstanding.** Items 3 and 9, and the QEMU test of a block request past the disk's capacity.
 
 ## Done when
 
