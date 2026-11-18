@@ -449,7 +449,8 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # each crate prints `==> kani-seconds:` below, each CI shard compares itself against its plan and
 # warns past 30% (`helpers/verify_times.py shard-check`), and
 # `.github/workflows/verify-shard-refresh.yml` rewrites these seconds daily from the last 20 runs
-# when a shard is off its plan by more than 15%. Do not hand-edit a number; run
+# when a shard is off its plan by more than 15% or one row is past the line shard-check warns at.
+# Do not hand-edit a number; run
 # `python3 helpers/verify_times.py refresh`. A new crate's row is the one exception: give it a
 # dev-machine guess, and the first refresh after it lands replaces it.
 #
