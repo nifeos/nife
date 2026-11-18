@@ -266,8 +266,8 @@ the starter's carve-out, 80 for the contract, 200 for the userspace transport an
 2. The existing gates for each device pass on every architecture it runs on, with no test weakened.
    That means the e1000e, NVMe and virtio gates under QEMU, the clock tests on `x86_64` with a wall
    clock, and radon's Ethernet and reboot bench boots.
-3. `reboot` on radon resets the board through the userspace route, and resets it through `REBOOT`
-   when the route is absent.
+3. `reboot` on radon resets the board through the userspace route. Without it, radon's
+   firmware hangs on `REBOOT`'s SBI SRST.
 4. `script/fastpath-footprint` reports no change: none of these paths is hot.
 5. A virtio-pci driver runs on either grant, each starter grants as the default above states, and
    CI runs the direct and the mediated path on all three architectures.

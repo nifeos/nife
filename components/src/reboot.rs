@@ -22,6 +22,8 @@
 //! # BUGS
 //!
 //! - A firmware that accepts the reset and hangs cannot be told from a slow one, from inside.
+//! - On radon (the VisionFive 2) the reboot object's SBI SRST hangs in the firmware's own PMIC
+//!   read, so a boot without the PMIC route cannot restart that board (notes/board-reboot.md).
 //! - The call to the PMIC route has no timeout of its own: the route bounds its wait for the board
 //!   to go, and a route that stops answering leaves this program blocked.
 //! - A refusal does not exit non-zero: no program in this system reports an exit status.
