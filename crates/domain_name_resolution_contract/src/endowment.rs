@@ -27,10 +27,10 @@ pub const fn port_and_transport_fields(word: u64) -> (u16, u64) {
 }
 
 /// **Slot 4: the resolver's own address space, `WRITE`**, so a forget can `UNMAP` the page the
-/// forgotten badge attached (`abi::address_space::UNMAP`), as `net_stack` gives up a closed
-/// socket's page through `socket_contract::stack_slots::OWN_SPACE`. Slots 0 to 3 are the
-/// resolver's own business (`components/src/domain_name_resolver.rs`); this one is here because the
-/// progenitor and the kernel's test harness both place it. Provisional (milestone 892).
+/// forgotten badge attached, as a network stack gives up a closed socket's page through
+/// `socket_contract::stack_slots::OWN_SPACE`. Slots 0 to 3 are the resolver's own business, set by
+/// the resolver program; this one is here because the program that spawns the resolver and the
+/// test harness that spawns it both place it. Provisional.
 ///
 /// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
 /// After `socket_contract::stack_slots::OWN_SPACE`; the pull request records no other name

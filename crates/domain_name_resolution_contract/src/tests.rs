@@ -1,6 +1,4 @@
-//! The crate's host tests, moved out of `lib.rs` on 2026-10-12 (UTC) by lane
-//! maintainer/mutation-triage-2026w42, so the crate root stays an index under §282 (when a file is
-//! split, the parent becomes an index) as its tests grow.
+//! The crate's host tests, in a file of their own so the crate root stays an index.
 
 extern crate std;
 use std::vec::Vec;
@@ -13,8 +11,8 @@ fn grant(g: &mut Grants, badge: u32, zone: &str) -> Control {
     // The first refusal, or the last message's outcome: once a piece is refused, the ones after
     // it are continuations of nothing, and their own refusal would hide the reason.
     let mut last = Control::Partial;
-    for (w0, w1) in grant_messages(badge, zone.as_bytes()).unwrap() {
-        last = g.control(w0, w1);
+    for (first_word, second_word) in grant_messages(badge, zone.as_bytes()).unwrap() {
+        last = g.control(first_word, second_word);
         if matches!(last, Control::Refused(_)) {
             break;
         }
@@ -29,13 +27,16 @@ fn name(text: &str) -> Name {
 #[test]
 fn a_zone_grant_answers_for_the_zone_and_everything_under_it_and_nothing_beside_it() {
     let mut g = Grants::new();
-    assert_eq!(grant(&mut g, 5, "nife.test"), Control::Granted(0));
-    assert_eq!(g.check(5, &name("nife.test")), Ok(0));
-    assert_eq!(g.check(5, &name("packages.nife.test")), Ok(0));
-    assert_eq!(g.check(5, &name("a.b.c.NIFE.Test")), Ok(0));
-    assert_eq!(g.check(5, &name("evilnife.test")), Err(Denied::OutsideZone));
+    assert_eq!(grant(&mut g, 5, "example.test"), Control::Granted(0));
+    assert_eq!(g.check(5, &name("example.test")), Ok(0));
+    assert_eq!(g.check(5, &name("packages.example.test")), Ok(0));
+    assert_eq!(g.check(5, &name("a.b.c.EXAMPLE.Test")), Ok(0));
     assert_eq!(
-        g.check(5, &name("nife.test.evil")),
+        g.check(5, &name("evilexample.test")),
+        Err(Denied::OutsideZone)
+    );
+    assert_eq!(
+        g.check(5, &name("example.test.evil")),
         Err(Denied::OutsideZone)
     );
     assert_eq!(g.check(5, &name("test")), Err(Denied::OutsideZone));
@@ -48,7 +49,7 @@ fn a_badge_with_no_grant_and_the_spawners_own_badge_are_denied() {
     grant(&mut g, 5, "");
     assert_eq!(g.check(6, &name("anything.test")), Err(Denied::NoGrant));
     assert_eq!(g.check(0, &name("anything.test")), Err(Denied::NoGrant));
-    assert!(grant_messages(0, b"nife.test").is_none());
+    assert!(grant_messages(0, b"example.test").is_none());
     assert_eq!(
         g.control(control_word(OPERATION_GRANT, 0, 0, 0), 0),
         Control::Refused(Refusal::BadgeZero)
@@ -58,12 +59,15 @@ fn a_badge_with_no_grant_and_the_spawners_own_badge_are_denied() {
 #[test]
 fn the_root_zone_is_every_name_and_one_host_name_is_exactly_itself() {
     let mut g = Grants::new();
-    assert_eq!(grant(&mut g, 1, ""), Control::Granted(0));
-    assert_eq!(grant(&mut g, 2, "packages.nife.test."), Control::Granted(1));
-    assert_eq!(g.check(1, &name("example.com")), Ok(0));
-    assert_eq!(g.check(2, &name("packages.nife.test")), Ok(1));
+    assert_eq!(grant(&mut g, 1, ROOT_ZONE), Control::Granted(0));
     assert_eq!(
-        g.check(2, &name("mirror.nife.test")),
+        grant(&mut g, 2, "packages.example.test."),
+        Control::Granted(1)
+    );
+    assert_eq!(g.check(1, &name("example.com")), Ok(0));
+    assert_eq!(g.check(2, &name("packages.example.test")), Ok(1));
+    assert_eq!(
+        g.check(2, &name("mirror.example.test")),
         Err(Denied::OutsideZone)
     );
 }
@@ -76,10 +80,10 @@ fn a_longest_zone_crosses_in_thirty_two_messages_and_still_parses() {
     assert!(grant_messages(3, too_long.as_bytes()).is_none());
     // 61 + 63 * 3 + 3 dots = 253, the longest dotted name there is.
     let longest = std::format!("{}.{label}.{label}.{label}", "b".repeat(61));
-    assert_eq!(longest.len(), NAME_TEXT_MAXIMUM);
+    assert_eq!(longest.len(), MAXIMUM_NAME_TEXT_BYTES);
     assert_eq!(
         grant_messages(3, longest.as_bytes()).unwrap().count(),
-        NAME_TEXT_MAXIMUM.div_ceil(8)
+        MAXIMUM_NAME_TEXT_BYTES.div_ceil(8)
     );
     let mut g = Grants::new();
     assert_eq!(grant(&mut g, 3, &longest), Control::Granted(0));
@@ -89,22 +93,24 @@ fn a_longest_zone_crosses_in_thirty_two_messages_and_still_parses() {
 #[test]
 fn a_regrant_replaces_the_zone_in_the_same_window_and_is_not_in_force_until_whole() {
     let mut g = Grants::new();
-    grant(&mut g, 9, "nife.test");
+    grant(&mut g, 9, "example.test");
     let messages: Vec<_> = grant_messages(9, b"example.org").unwrap().collect();
     assert_eq!(messages.len(), 2);
     assert_eq!(g.control(messages[0].0, messages[0].1), Control::Partial);
     // Half way through, neither the old zone nor a prefix of the new one is in force.
-    assert_eq!(g.check(9, &name("nife.test")), Err(Denied::NoGrant));
+    assert_eq!(g.check(9, &name("example.test")), Err(Denied::NoGrant));
     assert_eq!(g.granted(9), None);
     assert_eq!(g.control(messages[1].0, messages[1].1), Control::Granted(0));
     assert_eq!(g.check(9, &name("www.example.org")), Ok(0));
-    assert_eq!(g.check(9, &name("nife.test")), Err(Denied::OutsideZone));
+    assert_eq!(g.check(9, &name("example.test")), Err(Denied::OutsideZone));
 }
 
 #[test]
 fn pieces_out_of_order_or_unstarted_refuse_and_leave_no_grant() {
     let mut g = Grants::new();
-    let messages: Vec<_> = grant_messages(4, b"packages.nife.test").unwrap().collect();
+    let messages: Vec<_> = grant_messages(4, b"packages.example.test")
+        .unwrap()
+        .collect();
     // A continuation for a grant nobody started.
     assert_eq!(
         g.control(messages[1].0, messages[1].1),
@@ -117,7 +123,7 @@ fn pieces_out_of_order_or_unstarted_refuse_and_leave_no_grant() {
         Control::Refused(Refusal::OutOfOrder)
     );
     assert_eq!(
-        g.check(4, &name("packages.nife.test")),
+        g.check(4, &name("packages.example.test")),
         Err(Denied::NoGrant)
     );
 }
@@ -126,11 +132,11 @@ fn pieces_out_of_order_or_unstarted_refuse_and_leave_no_grant() {
 fn a_zone_that_is_not_a_name_is_refused_and_so_is_an_unknown_operation() {
     let mut g = Grants::new();
     assert_eq!(
-        grant(&mut g, 2, "nife..test"),
+        grant(&mut g, 2, "example..test"),
         Control::Refused(Refusal::BadZone)
     );
     assert_eq!(
-        grant(&mut g, 2, "nife test"),
+        grant(&mut g, 2, "example test"),
         Control::Refused(Refusal::BadZone)
     );
     assert_eq!(g.granted(2), None);
@@ -143,17 +149,17 @@ fn a_zone_that_is_not_a_name_is_refused_and_so_is_an_unknown_operation() {
 #[test]
 fn the_ninth_badge_finds_every_window_taken() {
     let mut g = Grants::new();
-    for badge in 1..=GRANTS_MAXIMUM as u32 {
+    for badge in 1..=MAXIMUM_GRANTS as u32 {
         assert_eq!(
-            grant(&mut g, badge, "nife.test"),
+            grant(&mut g, badge, "example.test"),
             Control::Granted(badge as usize - 1)
         );
     }
     assert_eq!(
-        grant(&mut g, 99, "nife.test"),
+        grant(&mut g, 99, "example.test"),
         Control::Refused(Refusal::Full)
     );
-    assert_eq!(g.check(99, &name("nife.test")), Err(Denied::NoGrant));
+    assert_eq!(g.check(99, &name("example.test")), Err(Denied::NoGrant));
 }
 
 /// A continuation from a badge with no grant is out of order even when every window is
@@ -161,14 +167,17 @@ fn the_ninth_badge_finds_every_window_taken() {
 #[test]
 fn a_continuation_into_a_full_table_is_out_of_order_not_full() {
     let mut g = Grants::new();
-    for badge in 1..=GRANTS_MAXIMUM as u32 {
-        grant(&mut g, badge, "nife.test");
+    for badge in 1..=MAXIMUM_GRANTS as u32 {
+        grant(&mut g, badge, "example.test");
     }
-    let (w0, w1) = grant_messages(99, b"packages.nife.test")
+    let (first_word, second_word) = grant_messages(99, b"packages.example.test")
         .unwrap()
         .nth(1)
         .unwrap();
-    assert_eq!(g.control(w0, w1), Control::Refused(Refusal::OutOfOrder));
+    assert_eq!(
+        g.control(first_word, second_word),
+        Control::Refused(Refusal::OutOfOrder)
+    );
 }
 
 /// **The longest name with its trailing dot is 254 bytes, and is granted**; a total past that
@@ -177,10 +186,10 @@ fn a_continuation_into_a_full_table_is_out_of_order_not_full() {
 fn the_longest_zone_with_a_trailing_dot_is_granted_and_one_byte_more_is_not() {
     let label = "a".repeat(63);
     let dotted = std::format!("{}.{label}.{label}.{label}.", "b".repeat(61));
-    assert_eq!(dotted.len(), NAME_TEXT_MAXIMUM + 1);
+    assert_eq!(dotted.len(), MAXIMUM_NAME_FIELD_BYTES);
     let mut g = Grants::new();
     assert_eq!(grant(&mut g, 3, &dotted), Control::Granted(0));
-    let total = (NAME_TEXT_MAXIMUM + 2) as u8;
+    let total = (MAXIMUM_NAME_FIELD_BYTES + 1) as u8;
     assert_eq!(
         g.control(control_word(OPERATION_GRANT, 0, total, 4), 0),
         Control::Refused(Refusal::TooLong)
@@ -193,15 +202,15 @@ fn the_longest_zone_with_a_trailing_dot_is_granted_and_one_byte_more_is_not() {
 #[test]
 fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_grant() {
     let mut g = Grants::new();
-    for badge in 1..=GRANTS_MAXIMUM as u32 {
-        grant(&mut g, badge, "nife.test");
+    for badge in 1..=MAXIMUM_GRANTS as u32 {
+        grant(&mut g, badge, "example.test");
     }
-    let (w0, w1) = forget_message(3).unwrap();
-    assert_eq!(g.control(w0, w1), Control::Forgotten(2));
-    assert_eq!(g.check(3, &name("nife.test")), Err(Denied::NoGrant));
+    let (first_word, second_word) = forget_message(3).unwrap();
+    assert_eq!(g.control(first_word, second_word), Control::Forgotten(2));
+    assert_eq!(g.check(3, &name("example.test")), Err(Denied::NoGrant));
     assert_eq!(g.granted(3), None);
     // The others are untouched.
-    assert_eq!(g.check(4, &name("packages.nife.test")), Ok(3));
+    assert_eq!(g.check(4, &name("packages.example.test")), Ok(3));
     // A fresh badge takes the freed window, not a new one.
     assert_eq!(grant(&mut g, 99, ""), Control::Granted(2));
     assert_eq!(g.check(99, &name("example.com")), Ok(2));
@@ -212,15 +221,18 @@ fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_grant() {
 #[test]
 fn forgetting_a_badge_with_no_window_or_badge_zero_is_refused() {
     let mut g = Grants::new();
-    let (w0, w1) = forget_message(5).unwrap();
-    assert_eq!(g.control(w0, w1), Control::Refused(Refusal::NoSuchGrant));
+    let (first_word, second_word) = forget_message(5).unwrap();
+    assert_eq!(
+        g.control(first_word, second_word),
+        Control::Refused(Refusal::NoSuchGrant)
+    );
     assert!(forget_message(0).is_none());
     assert_eq!(
         g.control(control_word(OPERATION_FORGET, 0, 0, 0), 0),
         Control::Refused(Refusal::BadgeZero)
     );
     // A half-sent grant holds a window, and a forget frees it too.
-    let first = grant_messages(6, b"packages.nife.test")
+    let first = grant_messages(6, b"packages.example.test")
         .unwrap()
         .next()
         .unwrap();
@@ -229,7 +241,7 @@ fn forgetting_a_badge_with_no_window_or_badge_zero_is_refused() {
         g.control(forget_message(6).unwrap().0, 0),
         Control::Forgotten(0)
     );
-    assert_eq!(grant(&mut g, 7, "nife.test"), Control::Granted(0));
+    assert_eq!(grant(&mut g, 7, "example.test"), Control::Granted(0));
 }
 
 #[test]
@@ -282,8 +294,7 @@ fn every_reject_has_its_own_code() {
     assert!(!codes.contains(&0));
 }
 
-/// **A zone has one spelling** (milestone 892 (a std program at the prompt holds the network and a
-/// resolver)): each boundary of `is_canonical_zone` on both sides. The root zone is empty; a label
+/// **A zone has one spelling**: each boundary of `is_canonical_zone` on both sides. The root zone is empty; a label
 /// is 1 to 63 bytes of lowercase letters, digits and hyphens; dots join labels and never end or
 /// double; the whole is at most 253 bytes.
 #[test]
@@ -292,7 +303,7 @@ fn a_zone_is_spelled_one_way() {
     let accepted: Vec<std::string::String> = std::vec![
         std::string::String::new(),
         "a".into(),
-        "nife.test".into(),
+        "example.test".into(),
         "x-1.example-2.net".into(),
         label(63),
         std::format!("{}.{}", label(63), label(63)),
@@ -302,19 +313,19 @@ fn a_zone_is_spelled_one_way() {
     for zone in &accepted {
         assert!(is_canonical_zone(zone.as_bytes()), "{zone:?} is canonical");
     }
-    assert_eq!(accepted[6].len(), NAME_TEXT_MAXIMUM);
+    assert_eq!(accepted[6].len(), MAXIMUM_NAME_TEXT_BYTES);
     let refused: Vec<std::string::String> = std::vec![
         label(64),
         std::format!("{}.a", label(64)),
         std::format!("{}a", accepted[6]),
         ".".into(),
-        ".nife.test".into(),
-        "nife.test.".into(),
-        "nife..test".into(),
-        "Nife.test".into(),
-        "nife_test".into(),
-        "nife test".into(),
-        "nife.tést".into(),
+        ".example.test".into(),
+        "example.test.".into(),
+        "example..test".into(),
+        "Example.test".into(),
+        "example_test".into(),
+        "example test".into(),
+        "example.tést".into(),
     ];
     for zone in &refused {
         assert!(
@@ -402,8 +413,11 @@ fn the_last_piece_of_a_grant_says_whether_it_took() {
     let mut g = Grants::new();
     let messages: Vec<_> = grant_messages(3, b"a.long.example.test").unwrap().collect();
     let (last, pieces) = messages.split_last().unwrap();
-    for &(w0, w1) in pieces {
-        assert_eq!(control_answer(g.control(w0, w1).reply().word()), Ok(()));
+    for &(first_word, second_word) in pieces {
+        assert_eq!(
+            control_answer(g.control(first_word, second_word).reply().word()),
+            Ok(())
+        );
     }
     assert_eq!(
         control_answer(g.control(last.0, last.1).reply().word()),
@@ -422,4 +436,44 @@ fn the_last_piece_of_a_grant_says_whether_it_took() {
         Err(Some(Refusal::BadZone))
     );
     assert_eq!(g.granted(4), None);
+}
+
+/// **The table's size, measured**: 4,160 bytes of a resolver's state. Each of the eight entries is
+/// a 4-byte badge, a 256-byte `Name`, the name field's 254 bytes of text and three one-byte fields,
+/// 517 bytes padded to 520 for the badge's alignment.
+#[test]
+fn the_grant_table_is_the_size_its_entries_add_up_to() {
+    let entry =
+        (4 + core::mem::size_of::<Name>() + MAXIMUM_NAME_FIELD_BYTES + 3).next_multiple_of(4);
+    assert_eq!(entry, 520);
+    assert_eq!(core::mem::size_of::<Grants>(), MAXIMUM_GRANTS * entry);
+    assert_eq!(core::mem::size_of::<Grants>(), 4160);
+}
+
+/// **A table prints its grants**, each zone as dotted text, so a failing test shows the state.
+#[test]
+fn a_grant_table_prints_each_zone_as_dotted_text() {
+    let mut g = Grants::new();
+    assert_eq!(grant(&mut g, 3, "example.test"), Control::Granted(0));
+    let printed = std::format!("{g:?}");
+    assert!(printed.contains("badge: 3"), "{printed}");
+    assert!(printed.contains("example.test"), "{printed}");
+}
+
+/// **The root has one wire spelling**: empty. The dot a configuration may write is not it.
+#[test]
+fn the_root_zone_is_spelled_empty_on_the_wire() {
+    assert!(is_canonical_zone(ROOT_ZONE.as_bytes()));
+    assert!(!is_canonical_zone(b"."));
+}
+
+/// **The grant table is the loose tier** (README, "Zone spelling"): it grants a zone a declaration
+/// may not spell, uppercase, `_` and a trailing dot included, and compares without regard to case.
+#[test]
+fn the_grant_table_takes_spellings_the_canonical_check_refuses() {
+    let zone = "Ex_ample.TEST.";
+    assert!(!is_canonical_zone(zone.as_bytes()));
+    let mut g = Grants::new();
+    assert_eq!(grant(&mut g, 1, zone), Control::Granted(0));
+    assert_eq!(g.check(1, &name("a.ex_ample.test")), Ok(0));
 }

@@ -192,12 +192,11 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
   The template's head carries checks `v7` lacks (passive voice, history phrases, function length,
   spelled-out words, unit symbols), which this block ran by hand. A later template release may add
   more.
-- The size of `Grants` is from reading. A size test (item 14) would make it measured.
 - A spawner whose grant the resolver refuses fails the spawn without saying why, since nothing in the spawner
   writes a line once the shell runs (`crates/system_initializer` BUGS).
-- Decision 1 asks for `first_word` and `second_word` where the tree writes `w0` and `w1` in many
-  contracts. Ruling it for this crate alone leaves the tree inconsistent. Ruling it for the tree is
-  a rename beyond this block, and the recording lane should say which the architect chose.
+- `first_word` and `second_word` (decision 1) are applied in this crate only, so the tree still
+  writes `w0` and `w1` in other contracts. Ruling the spelling for the tree is a rename beyond this
+  block.
 - Item 2 waits on the same question as the `socket_contract` package's decision 2. Whichever gets its ruling first settles the shape for both.
 
 ## Follow-on
@@ -207,9 +206,16 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
   each grant and treats a refusal as no grant. A system test reads `BadZone` and `NoSuchGrant`.
 - **Done.** Item 5, the interface identity (decision 3): the crate's docs state `INTERFACE_ID` 11
   and `VERSION` 1 as frozen.
-- **Outstanding.** Every other item of this review: items 1 to 3 before the move, items 4 and 7 to
-  11 before the tag, and items 12 to 14 for later. The maintainer has decided
-  decision 1, the names, provisionally, and a lane applies them.
+- **Done.** Items 1, 3, 4, 7, 9, 10, 12, 13 and 14, as far as each goes without a ruling or the
+  move; [the ledger](1086-domain-name-resolution-contract-outside-review/ledger.md) says what each
+  left.
+- **Outstanding.** Item 2, the fixture's home, which waits on the `socket_contract` package's
+  decision 2.
+- **Outstanding.** Item 11, the move's mutation exemptions, after a mutation census; and item 3's
+  `git` dependency and license files, which the move lane makes.
+- **Outstanding.** Item 10's fuzz target, in the crate's own repository once it has left.
+- **Outstanding.** `OPERATION_ATTACH_PAGE_FRAME` follows the socket contract's operation-name
+  ruling, and item 14's refusal of an unknown transport needs a ruling on the reply it sends.
 - **Outstanding.** A runtime log channel for the spawner. The spawner reads the reason for a
   refused grant, but nothing lets it write a line once the shell runs, so a lane that gives it one
   also prints that reason.

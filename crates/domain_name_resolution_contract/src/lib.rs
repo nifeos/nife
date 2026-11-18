@@ -1,17 +1,25 @@
-//! **What a name resolver and the programs around it agree on** (§248 (the name resolver is its
-//! own confined program)). The spawner grants each client badge a zone ([`grant_messages`]), and
+//! **What a name resolver and the programs around it agree on**. The resolver is a program of its
+//! own, confined to asking one name server, and a client may resolve only names inside the zone it
+//! was granted. The spawner grants each client badge a zone ([`grant_messages`]), and
 //! only badge 0 is read as a grant; a client attaches a page, writes a host name into it and
 //! `CALL`s [`OPERATION_RESOLVE`]; the resolver judges the name against its [`Grants`] before it
-//! sends anything. See notes/name-resolution/the-contract.md.
+//! sends anything. The README has the sequence and its diagram.
+//!
+//! The acronyms, once: the Domain Name System (DNS) maps names to Internet Protocol version 4
+//! (IPv4) addresses. An RFC (Request for Comments) is one of the standards that define it; RFC 1035
+//! is DNS itself. A name server answers over the User Datagram Protocol (UDP) or the Transmission
+//! Control Protocol (TCP). An answer carries a TTL (time-to-live), and NXDOMAIN (non-existent
+//! domain) is a server's answer that a name does not exist. The Dynamic Host Configuration
+//! Protocol (DHCP) lease is where a spawner learns which name server to use.
 //!
 //! | bytes | field | written by |
 //! |---|---|---|
-//! | [`NAME_OFFSET_BYTES`].. | the host name, dotted ASCII, at most [`NAME_TEXT_MAXIMUM`] bytes | the client |
-//! | [`ADDRESSES_OFFSET_BYTES`].. | up to [`MAXIMUM_ADDRESSES`] IPv4 addresses, four bytes each | the resolver |
+//! | [`NAME_OFFSET_BYTES`].. | the host name, dotted ASCII, at most [`MAXIMUM_NAME_FIELD_BYTES`] bytes, a trailing dot included | the client |
+//! | [`IPV4_ADDRESSES_OFFSET_BYTES`].. | up to [`MAXIMUM_IPV4_ADDRESSES`] IPv4 addresses, four bytes each | the resolver |
 
 //! # BUGS
 //!
-//! - A grant lasts until the spawner sends [`OPERATION_FORGET`]; at most [`GRANTS_MAXIMUM`] at
+//! - A grant lasts until the spawner sends [`OPERATION_FORGET`]; at most [`MAXIMUM_GRANTS`] at
 //!   once.
 //! - One zone per badge: two unrelated domains need two badges, or their common parent.
 //! - Grant messages carry eight bytes each (`RECEIVE_CAPABILITY` returns two words, one the control word),
@@ -22,6 +30,11 @@
 //! (§154 (the acronym test)) and `domain_name_resolution_protocol` (the suffix is `_contract`).
 
 #![no_std]
+
+/// The README's example, compiled and run as a doctest so it cannot rot.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 /// The version of the name resolver protocol and its zone limits: 1. A break bumps it, with the
 /// dated ledger entry the interface-stability discipline owes; an addition an older peer ignores
@@ -45,9 +58,14 @@ mod wire;
 
 pub use wire::*;
 
+mod control;
+
+pub use control::*;
+
 /// The resolver's own copy of the bound, checked against the parser's, because `wire` is copied
-/// into std's PAL where `domain_name_system` cannot be named.
-const _: () = assert!(MAXIMUM_ADDRESSES == domain_name_system::MAXIMUM_IPV4_ADDRESSES);
+/// into a standard library's platform abstraction layer (PAL), where `domain_name_system` cannot
+/// be named.
+const _: () = assert!(MAXIMUM_IPV4_ADDRESSES == domain_name_system::MAXIMUM_IPV4_ADDRESSES);
 
 // =================================================================================================
 // The resolver's endowment.
@@ -70,6 +88,9 @@ pub use grants::*;
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(kani)]
+mod verification;
 
 mod messages;
 

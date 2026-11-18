@@ -1,21 +1,31 @@
-//! **What a client and the name resolver put on the wire**, alone, so it can be copied verbatim
-//! into std's PAL (`cargo xtask std-src` writes it as `sys/pal/nife/resolveproto.rs`), the way every
-//! other contract the PAL speaks is. It names nothing outside itself, which is the condition of that
-//! copy: the grant table and the reject codes need `domain_name_system`, and stay in `lib.rs`.
-//!
-//! Split out 2026-10-09 (UTC) by milestone 801 (packages over the internet)'s lane, whose std
-//! programs resolve names through `std::net` (`ToSocketAddrs`) and so need these numbers in std.
+//! **What a client and the name resolver put on the wire**: the client's page and words, alone, so
+//! the file can be copied verbatim into a standard library that speaks this contract, which cannot
+//! name this crate's dependency. It names
+//! nothing outside itself, which is the condition of that copy. The spawner's control words, which
+//! no client sends, are in `control`; the grant table and the reject codes need
+//! `domain_name_system`, and are in their own modules.
 
 /// The longest host name a client may write, in dotted text without a trailing dot. RFC 1035's
 /// 255-byte wire limit is 253 characters of dotted text.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const NAME_TEXT_MAXIMUM: usize = 253;
+/// Name: provisional, decided by the maintainer on 2026-11-14 (UTC) at the crate's outside review:
+/// a limit opens `MAXIMUM_` and ends with its unit.
+pub const MAXIMUM_NAME_TEXT_BYTES: usize = 253;
 
-/// How many addresses one answer carries back, the same bound `domain_name_system::Answer` keeps.
+/// The most bytes the name field holds: a host name of [`MAXIMUM_NAME_TEXT_BYTES`] and the
+/// trailing dot a fully qualified name may end with. The one bound on a resolve's name length and
+/// on a grant's zone text, so the client, the resolver and the grant table read the same number.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_ADDRESSES: usize = 8;
+/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1086-resolver-contract-outside-review-items.
+pub const MAXIMUM_NAME_FIELD_BYTES: usize = MAXIMUM_NAME_TEXT_BYTES + 1;
+
+/// How many IPv4 addresses one answer carries back, the same bound `domain_name_system::Answer`
+/// keeps.
+///
+/// Name: provisional, decided by the maintainer on 2026-11-14 (UTC) at the crate's outside review:
+/// an address that is not a memory location says which kind it is, as
+/// `domain_name_system::MAXIMUM_IPV4_ADDRESSES` does.
+pub const MAXIMUM_IPV4_ADDRESSES: usize = 8;
 
 /// Where the client writes the host name in its page.
 ///
@@ -24,54 +34,14 @@ pub const NAME_OFFSET_BYTES: usize = 0x000;
 /// Where the resolver writes the addresses in the client's page, four bytes each, in the order the
 /// name server gave them.
 ///
-/// Name: ratified 2026-11-14 (UTC) (#3571).
-pub const ADDRESSES_OFFSET_BYTES: usize = 0x100;
+/// Name: provisional, decided by the maintainer on 2026-11-14 (UTC) at the crate's outside review:
+/// the `<FIELD>_OFFSET_BYTES` shape is the family-wide one ratified 2026-11-14 (UTC) (#3571), and
+/// the field is spelled `IPV4_ADDRESSES` as `MAXIMUM_IPV4_ADDRESSES` is.
+pub const IPV4_ADDRESSES_OFFSET_BYTES: usize = 0x100;
 
-// The name field, with room for the grant's trailing dot, ends before the addresses begin, and the
-// addresses end inside the page.
-const _: () = assert!(NAME_OFFSET_BYTES + NAME_TEXT_MAXIMUM < ADDRESSES_OFFSET_BYTES);
-const _: () = assert!(ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_ADDRESSES <= 4096);
-
-/// How many clients one resolver can hold grants for (see the crate's BUGS).
-///
-/// Name: ratified 2026-10-27 (#2797).
-pub const GRANTS_MAXIMUM: usize = 8;
-
-/// **Whether `zone` is spelled the one way a zone may be asked for or granted** (milestone 892 (a
-/// std program at the prompt holds the network and a resolver)): empty (the root zone, any name),
-/// or labels of one to 63 bytes of `a`-`z`, `0`-`9` and `-`, joined by single dots, with no dot at
-/// either end, at most [`NAME_TEXT_MAXIMUM`] bytes in all. Lowercase only, so `Example.net` and
-/// `example.net` cannot be two spellings of one ask. A manifest note's zones
-/// (`capability_manifest_note::zones`) and the installed-programs table's `grant` lines both hold
-/// to it.
-///
-/// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
-pub const fn is_canonical_zone(zone: &[u8]) -> bool {
-    if zone.len() > NAME_TEXT_MAXIMUM {
-        return false;
-    }
-    let mut label = 0;
-    let mut i = 0;
-    while i < zone.len() {
-        match zone[i] {
-            b'.' => {
-                if label == 0 {
-                    return false;
-                }
-                label = 0;
-            }
-            b'a'..=b'z' | b'0'..=b'9' | b'-' => {
-                label += 1;
-                if label > 63 {
-                    return false;
-                }
-            }
-            _ => return false,
-        }
-        i += 1;
-    }
-    zone.is_empty() || label > 0
-}
+// The name field ends before the addresses begin, and the addresses end inside the page.
+const _: () = assert!(NAME_OFFSET_BYTES + MAXIMUM_NAME_FIELD_BYTES <= IPV4_ADDRESSES_OFFSET_BYTES);
+const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <= 4096);
 
 // =================================================================================================
 // The words.
@@ -84,51 +54,14 @@ pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;
 /// **A client resolves the name in its page.** A `CALL` whose second word is the name's length in
 /// bytes. The reply is an [`Outcome`] word and the answer's TTL in seconds.
 pub const OPERATION_RESOLVE: u64 = 2;
-/// **The spawner grants a badge a zone.** A `SEND` or a `CALL` through the unbadged capability,
-/// whose first word is a [`control_word`] and whose second carries up to eight bytes of the zone's
-/// dotted text, little-endian. Offset 0 starts the zone afresh, so a re-grant replaces rather than
-/// appends. The spawner `CALL`s the last piece of each grant, and the reply's first word says
-/// whether the grant is in force ([`Outcome`], as described at [`refusal`]). Starting at 0x10 so
-/// that no client opcode is ever also a control opcode.
-pub const OPERATION_GRANT: u64 = 0x10;
-/// **The spawner withdraws a badge's grant.** A plain `SEND` or a `CALL` through the unbadged
-/// capability, whose first word is a [`control_word`] naming the badge, with offset and total 0;
-/// the second word is unused. A `CALL` is answered as a grant's last piece is ([`refusal`]). From
-/// then on the badge is denied every name, the resolver gives up the page that badge attached, and
-/// the window is free for the next grant. A spawner that outlives its clients sends one when each
-/// client ends, which is what lets a resolver serve more than [`GRANTS_MAXIMUM`] clients in its
-/// life (milestone 892 (a std program at the prompt holds the
-/// network and a resolver); provisional).
-///
-/// Name: provisional, milestone 892's lane (#2011), 2026-10-12 (UTC).
-/// `system_log_contract` has its own `OPERATION_FORGET`; the pull request records no other name
-/// considered.
-pub const OPERATION_FORGET: u64 = 0x11;
-
 /// A client's request word.
 pub const fn request(operation: u64) -> u64 {
     operation << 56
 }
 
 /// The operation in any first word, client or control.
-pub const fn operation(w0: u64) -> u64 {
-    w0 >> 56
-}
-
-/// A control word: `operation << 56 | offset << 48 | total << 40 | badge`, the badge in the low 32
-/// bits. `offset` and `total` are bytes of the zone's text.
-pub const fn control_word(operation: u64, offset: u8, total: u8, badge: u32) -> u64 {
-    (operation << 56) | ((offset as u64) << 48) | ((total as u64) << 40) | badge as u64
-}
-
-/// A control word's `(operation, offset, total, badge)`.
-pub const fn control_fields(w0: u64) -> (u64, u8, u8, u32) {
-    (
-        w0 >> 56,
-        (w0 >> 48) as u8,
-        (w0 >> 40) as u8,
-        (w0 & 0xffff_ffff) as u32,
-    )
+pub const fn operation(first_word: u64) -> u64 {
+    first_word >> 56
 }
 
 // =================================================================================================
@@ -164,54 +97,15 @@ pub mod status {
     pub const NETWORK: u8 = 9;
     /// **The request was refused as malformed**: an operation this protocol does not have, a
     /// resolve from the spawner's own badge, or a control message the grant table refused. For a
-    /// control message the detail byte is one of [`refusal`](super::refusal), the reason.
+    /// control message the detail byte is the reason, one of the crate's `refusal` numbers.
     pub const BAD_REQUEST: u8 = 10;
 }
 
-/// **Why a control message was refused**: the detail byte of the reply to a control `CALL` whose
-/// status is [`status::BAD_REQUEST`]. The reply to a control `CALL` is an [`Outcome`] word, packed
-/// exactly as a resolve reply's first word, with a count of 0 and a second word of 0. Its status is
-/// [`status::OK`] when the message was accepted (a piece taken, a grant in force, a grant
-/// withdrawn), or [`status::BAD_REQUEST`] with one of these in the detail byte when it was refused.
-/// No other status answers a control message. The numbers are fixed: a new reason takes the next
-/// one, and none is reused.
+/// Which step of the socket contract refused the resolver: [`status::NETWORK`]'s detail byte. In
+/// the client half, so a standard library can say which step failed instead of one error for all
+/// four.
 ///
-/// Name: provisional.
-pub mod refusal {
-    /// The first word names an operation the spawner does not have.
-    ///
-    /// Name: provisional.
-    pub const UNKNOWN_OPERATION: u8 = 1;
-    /// The message names badge 0, the spawner's own, which holds no grant.
-    ///
-    /// Name: provisional.
-    pub const BADGE_ZERO: u8 = 2;
-    /// A piece arrived out of order, or a continuation for a grant nobody started.
-    ///
-    /// Name: provisional.
-    pub const OUT_OF_ORDER: u8 = 3;
-    /// The zone is longer than a name can be.
-    ///
-    /// Name: provisional.
-    pub const TOO_LONG: u8 = 4;
-    /// The zone's text is not a host name.
-    ///
-    /// Name: provisional.
-    pub const BAD_ZONE: u8 = 5;
-    /// Every window already belongs to another badge.
-    ///
-    /// Name: provisional.
-    pub const FULL: u8 = 6;
-    /// A forget for a badge that holds no window.
-    ///
-    /// Name: provisional.
-    pub const NO_SUCH_GRANT: u8 = 7;
-}
-
-/// Which step of the socket contract refused the resolver: [`status::NETWORK`]'s detail byte. Moved
-/// here from `name_resolver` on 2026-10-13 (UTC), values unchanged, so the std PAL can say which
-/// step failed instead of collapsing all four into `NetworkUnreachable` (the riscv-cpu-net-flake
-/// lane: one CI failure named no step). Name: provisional, that lane.
+/// Name: provisional, the riscv-cpu-net-flake lane, 2026-10-13 (UTC).
 pub mod network_step {
     /// The resolver has no socket page to attach.
     pub const NO_SOCKET_PAGE: u8 = 1;
@@ -230,7 +124,7 @@ pub struct Outcome {
     pub status: u8,
     /// What else the status carries: a reject code, a response code, a network step, or 0.
     pub detail: u8,
-    /// How many addresses the resolver wrote at [`ADDRESSES_OFFSET_BYTES`]: 0 unless the status is OK.
+    /// How many addresses the resolver wrote at [`IPV4_ADDRESSES_OFFSET_BYTES`]: 0 unless the status is OK.
     pub count: u8,
 }
 
@@ -253,14 +147,14 @@ impl Outcome {
     /// of them set is not its reply: it is the kernel's error from a `CALL` that failed (a negative
     /// number, read as an enormous one), and decodes to `None`. So does a word the resolver cannot
     /// send: a status the [`status`] module does not define, or a count above
-    /// [`MAXIMUM_ADDRESSES`]. The bound belongs here, where every client gets it.
+    /// [`MAXIMUM_IPV4_ADDRESSES`]. The bound belongs here, where every client gets it.
     pub const fn from_word(word: u64) -> Option<Outcome> {
         if word >> 24 != 0 {
             return None;
         }
         let status = word as u8;
         let count = (word >> 16) as u8;
-        if status > status::BAD_REQUEST || count as usize > MAXIMUM_ADDRESSES {
+        if status > status::BAD_REQUEST || count as usize > MAXIMUM_IPV4_ADDRESSES {
             return None;
         }
         Some(Outcome {
@@ -277,21 +171,9 @@ mod tests {
 
     #[test]
     fn a_request_word_carries_its_operation() {
-        for op in [
-            OPERATION_ATTACH_PAGE_FRAME,
-            OPERATION_RESOLVE,
-            OPERATION_GRANT,
-            OPERATION_FORGET,
-        ] {
-            assert_eq!(operation(request(op)), op);
+        for operation_code in [OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE] {
+            assert_eq!(operation(request(operation_code)), operation_code);
         }
-    }
-
-    #[test]
-    fn a_control_word_comes_back_field_for_field() {
-        let w = control_word(OPERATION_GRANT, 16, 253, 0x8010);
-        assert_eq!(control_fields(w), (OPERATION_GRANT, 16, 253, 0x8010));
-        assert_eq!(operation(w), OPERATION_GRANT);
     }
 
     #[test]
@@ -310,10 +192,10 @@ mod tests {
     /// A word the resolver cannot send is refused by the contract, so no client has to clamp it.
     #[test]
     fn an_outcome_word_the_resolver_cannot_send_is_refused() {
-        let count_too_large = status::OK as u64 | (MAXIMUM_ADDRESSES as u64 + 1) << 16;
+        let count_too_large = status::OK as u64 | (MAXIMUM_IPV4_ADDRESSES as u64 + 1) << 16;
         assert_eq!(Outcome::from_word(count_too_large), None);
         assert_eq!(Outcome::from_word(255 << 16), None);
-        let at_the_limit = status::OK as u64 | (MAXIMUM_ADDRESSES as u64) << 16;
+        let at_the_limit = status::OK as u64 | (MAXIMUM_IPV4_ADDRESSES as u64) << 16;
         assert!(Outcome::from_word(at_the_limit).is_some());
         assert!(Outcome::from_word(status::BAD_REQUEST as u64).is_some());
         assert_eq!(Outcome::from_word(status::BAD_REQUEST as u64 + 1), None);

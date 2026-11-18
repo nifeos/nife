@@ -293,13 +293,31 @@ impl Name {
     /// assert_eq!(Name::from_dotted("example test"), Err(Error::BadCharacter));
     /// ```
     pub fn from_dotted(text: &str) -> Result<Name> {
+        Name::from_dotted_bytes(text.as_bytes())
+    }
+
+    /// [`Name::from_dotted`] over the text's bytes, by index rather than with `str::split`, so
+    /// that the parse a resolver's grants rest on is one Kani can prove (`proofs`): the search
+    /// behind `split` and `strip_suffix` did not finish on two free bytes in five minutes. A dot is
+    /// one byte in UTF-8 and never part of another character, so the bytes split where the text
+    /// does, and any byte outside the label alphabet is refused as the text's was.
+    fn from_dotted_bytes(text: &[u8]) -> Result<Name> {
         let mut out = Name {
             bytes: [0; MAXIMUM_NAME_BYTES],
             length_bytes: 0,
         };
-        let body = text.strip_suffix('.').unwrap_or(text);
+        let body = match text {
+            [rest @ .., b'.'] => rest,
+            _ => text,
+        };
         if !body.is_empty() {
-            for label in body.split('.') {
+            let mut start = 0;
+            loop {
+                let mut end = start;
+                while end < body.len() && body[end] != b'.' {
+                    end += 1;
+                }
+                let label = &body[start..end];
                 if label.is_empty() {
                     return Err(Error::BadLabel);
                 }
@@ -307,15 +325,19 @@ impl Name {
                     return Err(Error::LabelTooLong);
                 }
                 if !label
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+                    .iter()
+                    .all(|&b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
                 {
                     return Err(Error::BadCharacter);
                 }
                 out.push(label.len() as u8)?;
-                for b in label.bytes() {
+                for &b in label {
                     out.push(b)?;
                 }
+                if end == body.len() {
+                    break;
+                }
+                start = end + 1;
             }
         }
         out.push(0)?;
