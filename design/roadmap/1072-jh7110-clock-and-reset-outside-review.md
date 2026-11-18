@@ -189,6 +189,23 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
   review read the diff and did not compile or test it.
 - The review did not replay seven falsification patches and trusts the review package's run.
 
+## Where this stands
+
+Finished: decisions 1 to 5 and the `io` spellings (#3572), and items 1 to 4 and 6 to 14 (#3625).
+The review is cleared and the repository is approved; the crate is still in this tree at
+`crates/jh7110_clock_and_reset`, and nifeos/jh7110_clock_and_reset does not exist.
+
+- Item 5: the mutation census has not been rerun, and
+  `notes/project-metrics/mutation-triage.csv` still lists the stale rows. Blocker: other, a lane
+  in the heavy-run window.
+- The move to nifeos/jh7110_clock_and_reset. Blocker: other, a lane.
+- The server applies the v1.3B transmit parent on every board. Choosing it per board needs the
+  startup page or the server's wire to carry the parent, and no change is written. Blocker:
+  decision for calef.
+- A board run of the power chip's I2C reset after the move. Blocker: bench.
+- The `v0.1.0-pre.1` tag after the move, under the pre-release-tag rule. Blocker: release step.
+- Publishing. Blocker: publishing hold.
+
 ## Follow-on
 
 - **Done.** The five decisions above, built in pull request #3572: the ratified

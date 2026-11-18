@@ -291,6 +291,22 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
   earlier spellings (`fifo_bytes`, `mac_conf`, `rx_verdict`); a nife housekeeping item, not the
   crate's.
 
+## Where this stands
+
+Finished: decisions 1 to 3 (#3569), decision 4 as built, items 1 to 11 and the move: nife pins
+nifeos/designware_ethernet (#3634), whose `proofs.*.patch` files are regenerated for item 9.
+
+- Items 12 to 21, the later items, are open and two-way; item 21's re-exports still exist.
+  Blocker: other, a lane.
+- The two Motorcomm alias sets wait for the architect, and no ruling on them was found. Blocker:
+  decision for calef (unverified).
+- The renames the register gate still names. Blocker: unverified.
+- nife's pin is behind the repository's main, which carries its #1 and #2. Blocker: other, a pin
+  bump.
+- The repository's weekly job fails on its main. Blocker: other, a lane.
+- The `v0.1.0-pre.1` tag, under the pre-release-tag rule. Blocker: release step.
+- Publishing. Blocker: publishing hold.
+
 ## Follow-on
 
 - **Done.** The three architect rulings of 2026-11-14 (UTC) are built and recorded above. They are
@@ -302,8 +318,9 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
   crate names the board and its two device trees. The README has its build, proof and falsification
   sections, and `cargo test` compiles its example.
 
-- **Outstanding.** Item 9 is the move's own regeneration of the patches. The P2 items stay open. The
-  architect still has to rule the two Motorcomm alias sets and the remaining renames the register
+- **Done.** Item 9: the repository carries the regenerated `proofs.*.patch` files.
+
+- **Outstanding.** The P2 items stay open. The architect still has to rule the two Motorcomm alias sets and the remaining renames the register
   gate names. A lane builds each ruling when it arrives.
 
 ## Index row

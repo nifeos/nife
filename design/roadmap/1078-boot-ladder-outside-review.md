@@ -198,6 +198,19 @@ the `Verdict` type and the nife-side gate are the maintainer's.
 
 The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 
+## Where this stands
+
+Finished: the heads that name the system and the two spelled-out check names (#3586), the
+provisional rulings (#3589) and items 1, 3 to 6, 8 to 11 and 13, with parts of 2 and 7 (#3565,
+#3655). The ten public names stand as provisional maintainer rulings.
+
+- Item 7's `script/lint` gate is a new lint section. Blocker: other, a lane.
+- Item 12 waits on milestone 972. Blocker: other, milestone 972.
+- The `self_test_program` names pass is not decided. Blocker: unverified.
+- The move: no review package exists, and nifeos/boot_ladder does not. Blocker: decision for
+  calef (review clearance), after a package lane.
+- Publishing. Blocker: publishing hold.
+
 ## Follow-on
 
 - **Done.** The heads: the crate fixes each head's shape and takes the system's name from its

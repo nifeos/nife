@@ -178,6 +178,17 @@ consumer.
 
 The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.md).
 
+## Where this stands
+
+Finished: the in-tree items (#3565, #3660), with `Class`, `push` and `pop`,
+`MAXIMUM_CLASS_BYTES`, `give_back_all` and five falsifications, and decision 1, that the crate
+moves with the runtime package (#3670). Decisions 2 and 3 are provisional maintainer rulings.
+
+- Items 1 (the repository fields), 3 and 10, and item 11's confirmation, wait for the runtime
+  package's move; nifeos/runtime does not exist. Blocker: other, the runtime package's move.
+
+Nothing here needs calef.
+
 ## Follow-on
 
 - **Outstanding.** The move's items 1 (the repository fields), 3, 10 and 11, which wait for the
