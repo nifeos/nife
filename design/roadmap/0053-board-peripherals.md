@@ -146,8 +146,8 @@ and both trees are GPL and were read for hardware facts only.
 ## Follow-on
 
 - **Done.** The network half's first run on radon, 2026-10-20 (UTC): `LEASED-AND-MEASURED`
-  with `coherence : Coherent`, and `designware_ethernet_service::PROVEN_ON_SILICON` is `true`
-  citing it. notes/designware-ethernet.md's Results row and its proposal to 655 have the detail.
+  with `coherence : Coherent`. The control process's boot of 2026-11-17 UTC (main `cfe18db337`)
+  ended the same way (`bench/radon-2026-11-17/network-bench-main-3699.log`), and `designware_ethernet_service::PROVEN_ON_SILICON` is `true` citing it. notes/designware-ethernet.md's Results row and its proposal to 655 have the detail.
 - **Outstanding.** The network half's rate on radon: 14.3 Mbit/s on a gigabit link, twice on
   2026-10-22, against 2.3 before the `net_stack` fix (notes/designware-ethernet/the-receive-rate.md).
   The limit was radon's debug `net_stack` emptying its buffer one 4,088-byte `RECEIVE` call at a
