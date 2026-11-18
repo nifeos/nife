@@ -32,7 +32,7 @@ The clock page is published to repeatedly by a running service while readers hol
 so a reader can catch a writer mid-publish and must retry rather than blend. The config page has
 exactly one writer, and it finishes before the page has a second reader: it is assembled in a
 buffer nothing else can see, and only *then* mapped read-only into the process that will read it.
-There is nothing to race, so `environment_contract::ConfigPage` is a plain length-prefixed byte layout with no
+There is nothing to race, so `environment_contract::ConfigurationPage` is a plain length-prefixed byte layout with no
 atomics at all.
 
 ## The layout
@@ -44,7 +44,7 @@ host test in the crate pins the widths and the identity.
 ## What's built end to end
 
 - `crates/environment_contract`: the page layout, the three validated domains, `PageBuilder` (assemble,
-  validated) and `ConfigPage` (read). Host-tested: round trips, refusals, an unrecognized magic
+  validated) and `ConfigurationPage` (read). Host-tested: round trips, refusals, an unrecognized magic
   or a zeroed frame reading as "no configuration" (DECISIONS §42's rule, applied here), every
   domain member fitting its field's byte cap.
 - `system_tests/src/user/std_service.rs`: assembles a page (`TZ=UTC`, `LANG=C`, `TERM=dumb`, the

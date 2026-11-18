@@ -45,7 +45,7 @@ pub(super) fn capabilities(nav: &mut Nav, tail: &[u8]) {
     let config = HOLDS_CONFIG
         .load(core::sync::atomic::Ordering::Relaxed)
         .then(|| unsafe {
-            environment_contract::ConfigPage::new(
+            environment_contract::ConfigurationPage::new(
                 grant_contract::SHELL_CONFIGURATION_VIRTUAL_ADDRESS,
             )
         });

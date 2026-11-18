@@ -31,7 +31,7 @@ program_table = { version = "0.1.0", path = "../program_table" }
 # only, no dependencies.
 std_runtime_contract = { version = "0.1.0", path = "../std_runtime_contract" }
 
-# `ConfigPage`, so `caps` prints the inert-configuration values a child would read (milestone 47
+# `ConfigurationPage`, so `caps` prints the inert-configuration values a child would read (milestone 47
 # (navigation and naming), DECISIONS §111 (inert configuration is a validated page)) from the
 # shell's own view of the same page. No dependencies of its own.
 environment_contract = { version = "0.1.0", path = "../environment_contract" }

@@ -260,11 +260,11 @@ fn printenv_says_the_config_page_is_not_on_the_line() {
 
 /// A page assembled with values nobody boots with, so a test that passes cannot be reading the
 /// boot's defaults by coincidence. `LANG` is left out, so the unset spelling is exercised too.
-fn unusual_page() -> [u8; environment_contract::PAGE_BYTES] {
+fn unusual_page() -> [u8; environment_contract::PAGE_CONTENT_BYTES] {
     environment_contract::PageBuilder::new()
-        .tz("America/Los_Angeles")
+        .time_zone("America/Los_Angeles")
         .unwrap()
-        .term("xterm-256color")
+        .terminal_type("xterm-256color")
         .unwrap()
         .build()
 }
@@ -276,8 +276,8 @@ fn unusual_page() -> [u8; environment_contract::PAGE_BYTES] {
 #[test]
 fn capabilities_printenv_prints_the_values_on_the_page_the_child_will_read() {
     let bytes = unusual_page();
-    // SAFETY: `bytes` is a live buffer of exactly `PAGE_BYTES`, alive for this test.
-    let page = unsafe { ConfigPage::new(bytes.as_ptr() as u64) };
+    // SAFETY: `bytes` is a live buffer of exactly `PAGE_CONTENT_BYTES`, alive for this test.
+    let page = unsafe { ConfigurationPage::new(bytes.as_ptr() as u64) };
     let s = shown(|o| {
         write_preview(
             Program::Printenv,
@@ -327,7 +327,7 @@ fn capabilities_printenv_prints_the_values_on_the_page_the_child_will_read() {
 fn capabilities_on_a_pipeline_threads_the_page_to_the_stage_that_declares_it() {
     let bytes = unusual_page();
     // SAFETY: as above.
-    let page = unsafe { ConfigPage::new(bytes.as_ptr() as u64) };
+    let page = unsafe { ConfigurationPage::new(bytes.as_ptr() as u64) };
     let s = shown(|o| {
         write_capabilities(
             b"printenv | wc",
@@ -353,7 +353,7 @@ fn capabilities_on_a_pipeline_threads_the_page_to_the_stage_that_declares_it() {
 fn the_shells_config_view_is_one_row_and_it_cannot_pass_it_on() {
     let bytes = unusual_page();
     // SAFETY: as above.
-    let page = unsafe { ConfigPage::new(bytes.as_ptr() as u64) };
+    let page = unsafe { ConfigurationPage::new(bytes.as_ptr() as u64) };
     let with = shown(|o| write_holdings(128, Holdings::default(), None, Some(page), o));
     assert!(
         with.contains("cap 21 frame     config     READ only, NOT delegable"),

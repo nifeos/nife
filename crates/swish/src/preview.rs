@@ -171,7 +171,7 @@ pub fn write_capabilities(
     budget_pages: u64,
     holdings: Holdings,
     clock: Option<u64>,
-    config: Option<ConfigPage>,
+    config: Option<ConfigurationPage>,
     expand: &mut dyn FnMut(&[u8]) -> Result<NameSet, Say>,
     out: &mut dyn FnMut(&[u8]),
 ) {
@@ -263,7 +263,7 @@ pub fn write_preview(
     program: Program,
     e: &Endowment,
     holdings: &Holdings,
-    config: Option<ConfigPage>,
+    config: Option<ConfigurationPage>,
     out: &mut dyn FnMut(&[u8]),
 ) {
     out(b"  ");
@@ -287,7 +287,7 @@ fn write_preview_rows(
     m: &grant_contract::Manifest,
     zone: Option<&str>,
     holdings: &Holdings,
-    config: Option<ConfigPage>,
+    config: Option<ConfigurationPage>,
     out: &mut dyn FnMut(&[u8]),
 ) {
     // A `std` program's slots are fixed by `crates/std_runtime_contract`, not by listing order.
@@ -427,7 +427,7 @@ fn write_file_and_directory_rows(
 /// asks), and the argv, which is bytes and grants nothing (notes/shell/caps-preview.md).
 fn write_page_rows(
     m: &grant_contract::Manifest,
-    config: Option<ConfigPage>,
+    config: Option<ConfigurationPage>,
     std: bool,
     out: &mut dyn FnMut(&[u8]),
 ) {

@@ -14,8 +14,8 @@ diff --git a/system_tests/src/user/std_service.rs b/system_tests/src/user/std_se
 --- a/system_tests/src/user/std_service.rs
 +++ b/system_tests/src/user/std_service.rs
 @@ -288,8 +288,9 @@
-     // through the reserved tail past `PAGE_BYTES` (`ConfigPage` only ever reads the first
-     // `PAGE_BYTES`, but a frame's contents are otherwise unspecified until written). The retype
+     // through the reserved tail past `PAGE_CONTENT_BYTES` (`ConfigurationPage` only ever reads the first
+     // `PAGE_CONTENT_BYTES`, but a frame's contents are otherwise unspecified until written). The retype
      // zeroes it.
 -    let config_phys = crate::memory_region::retype_page(region)
 -        .expect("no frame for the std program's config page");
@@ -23,5 +23,5 @@ diff --git a/system_tests/src/user/std_service.rs b/system_tests/src/user/std_se
 +        .expect("no frame for the std program's config page")
 +        .addr();
      // SAFETY: `config_phys` is that fresh frame, direct-mapped and owned by nobody else, and
-     // `config_bytes` is `PAGE_BYTES` long, far under `FRAME_SIZE`.
+     // `config_bytes` is `PAGE_CONTENT_BYTES` long, far under `FRAME_SIZE`.
      unsafe {

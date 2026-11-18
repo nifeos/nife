@@ -14,7 +14,7 @@ use super::*;
 #[kani::proof]
 #[kani::unwind(2)]
 fn field_bytes_never_panics_for_any_length_byte() {
-    let mut page = [0u8; PAGE_BYTES];
+    let mut page = [0u8; PAGE_CONTENT_BYTES];
     let length: u8 = kani::any();
     page[TERMINAL_TYPE_LENGTH_OFFSET_BYTES] = length;
     let read = field_bytes(

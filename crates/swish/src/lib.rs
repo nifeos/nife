@@ -46,7 +46,7 @@ pub use apropos::{write_apropos, write_found};
 pub use batching::{Sweep, write_batch, write_sweep};
 use endowment::write_config_values;
 pub use endowment::{write_census, write_holdings};
-use environment_contract::ConfigPage;
+use environment_contract::ConfigurationPage;
 use filesystem_contract::dir;
 use grant_contract::{OutputDeclaration, ProgramArgumentDeclaration};
 use grant_plan::expand::{Expansion, NameSet};

@@ -95,17 +95,17 @@ pub mod domain {
     ];
 
     /// Whether `s` is a member of [`KNOWN_TIME_ZONES`].
-    pub fn is_valid_tz(s: &str) -> bool {
+    pub fn is_known_time_zone(s: &str) -> bool {
         KNOWN_TIME_ZONES.contains(&s)
     }
 
     /// Whether `s` is a member of [`KNOWN_LOCALES`].
-    pub fn is_valid_lang(s: &str) -> bool {
+    pub fn is_known_locale(s: &str) -> bool {
         KNOWN_LOCALES.contains(&s)
     }
 
     /// Whether `s` is a member of [`KNOWN_TERMINAL_TYPES`].
-    pub fn is_valid_term(s: &str) -> bool {
+    pub fn is_known_terminal_type(s: &str) -> bool {
         KNOWN_TERMINAL_TYPES.contains(&s)
     }
 }
@@ -168,7 +168,7 @@ const TERMINAL_TYPE_OFFSET_BYTES: usize = TERMINAL_TYPE_LENGTH_OFFSET_BYTES + 1;
 /// The whole page's size in bytes: magic, then one length-prefixed field per declared key, 8 + 1 +
 /// 40 + 1 + 24 + 1 + 32 = 107 bytes. Well under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
 /// as.
-pub const PAGE_BYTES: usize = TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES;
+pub const PAGE_CONTENT_BYTES: usize = TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES;
 
 /// Why [`PageBuilder`] refused a value: it does not parse as a member of its key's [`domain`].
 ///
@@ -179,16 +179,16 @@ pub const PAGE_BYTES: usize = TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Refused {
     /// The `TZ` value is not in [`domain::KNOWN_TIME_ZONES`].
-    UnknownTz,
+    UnknownTimeZone,
     /// The `LANG` value is not in [`domain::KNOWN_LOCALES`].
-    UnknownLang,
+    UnknownLocale,
     /// The `TERM` value is not in [`domain::KNOWN_TERMINAL_TYPES`].
-    UnknownTerm,
+    UnknownTerminalType,
 }
 
 /// Assemble an inert-configuration page. Each setter validates against its key's [`domain`]
 /// before accepting the value, so a page this type builds can never carry a value outside its
-/// key's closed set. A key never given a value stays absent: [`ConfigPage`] reads it back as
+/// key's closed set. A key never given a value stays absent: [`ConfigurationPage`] reads it back as
 /// `None`, not as an empty string.
 ///
 /// # Examples
@@ -196,25 +196,25 @@ pub enum Refused {
 /// Assembling is validate-then-write; a value outside the domain is refused before it reaches the page:
 ///
 /// ```
-/// use environment_contract::{ConfigPage, PageBuilder, Refused};
+/// use environment_contract::{ConfigurationPage, PageBuilder, Refused};
 ///
 /// let page = PageBuilder::new()
-///     .tz("America/Los_Angeles").unwrap()
-///     .lang("en_US.UTF-8").unwrap()
-///     .term("xterm-256color").unwrap()
+///     .time_zone("America/Los_Angeles").unwrap()
+///     .locale("en_US.UTF-8").unwrap()
+///     .terminal_type("xterm-256color").unwrap()
 ///     .build();
 ///
-/// // SAFETY: `page` is a live, aligned buffer of exactly `PAGE_BYTES`, alive for this block.
-/// let read = unsafe { ConfigPage::new(page.as_ptr() as u64) };
-/// assert_eq!(read.tz(), Some("America/Los_Angeles"));
-/// assert_eq!(read.lang(), Some("en_US.UTF-8"));
-/// assert_eq!(read.term(), Some("xterm-256color"));
+/// // SAFETY: `page` is a live, aligned buffer of exactly `PAGE_CONTENT_BYTES`, alive for this block.
+/// let read = unsafe { ConfigurationPage::new(page.as_ptr() as u64) };
+/// assert_eq!(read.time_zone(), Some("America/Los_Angeles"));
+/// assert_eq!(read.locale(), Some("en_US.UTF-8"));
+/// assert_eq!(read.terminal_type(), Some("xterm-256color"));
 ///
 /// // A value outside the domain is refused when the page is built, not carried through
 /// // disguised as configuration.
 /// assert_eq!(
-///     PageBuilder::new().tz("definitely-not-a-timezone"),
-///     Err(Refused::UnknownTz),
+///     PageBuilder::new().time_zone("definitely-not-a-timezone"),
+///     Err(Refused::UnknownTimeZone),
 /// );
 /// ```
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
@@ -235,39 +235,42 @@ impl<'a> PageBuilder<'a> {
     }
 
     /// Declare `TZ`. Refused if `value` is not a member of [`domain::KNOWN_TIME_ZONES`].
-    pub fn tz(mut self, value: &'a str) -> Result<Self, Refused> {
-        if domain::is_valid_tz(value) {
+    #[doc(alias = "TZ")]
+    pub fn time_zone(mut self, value: &'a str) -> Result<Self, Refused> {
+        if domain::is_known_time_zone(value) {
             self.tz = Some(value);
             Ok(self)
         } else {
-            Err(Refused::UnknownTz)
+            Err(Refused::UnknownTimeZone)
         }
     }
 
     /// Declare `LANG`. Refused if `value` is not a member of [`domain::KNOWN_LOCALES`].
-    pub fn lang(mut self, value: &'a str) -> Result<Self, Refused> {
-        if domain::is_valid_lang(value) {
+    #[doc(alias = "LANG")]
+    pub fn locale(mut self, value: &'a str) -> Result<Self, Refused> {
+        if domain::is_known_locale(value) {
             self.lang = Some(value);
             Ok(self)
         } else {
-            Err(Refused::UnknownLang)
+            Err(Refused::UnknownLocale)
         }
     }
 
     /// Declare `TERM`. Refused if `value` is not a member of [`domain::KNOWN_TERMINAL_TYPES`].
-    pub fn term(mut self, value: &'a str) -> Result<Self, Refused> {
-        if domain::is_valid_term(value) {
+    #[doc(alias = "TERM")]
+    pub fn terminal_type(mut self, value: &'a str) -> Result<Self, Refused> {
+        if domain::is_known_terminal_type(value) {
             self.term = Some(value);
             Ok(self)
         } else {
-            Err(Refused::UnknownTerm)
+            Err(Refused::UnknownTerminalType)
         }
     }
 
     /// Write the declared keys into a fresh page buffer. Bytes for a key never declared stay
-    /// zero, which is what [`ConfigPage`] reads as absent.
-    pub fn build(&self) -> [u8; PAGE_BYTES] {
-        let mut page = [0u8; PAGE_BYTES];
+    /// zero, which is what [`ConfigurationPage`] reads as absent.
+    pub fn build(&self) -> [u8; PAGE_CONTENT_BYTES] {
+        let mut page = [0u8; PAGE_CONTENT_BYTES];
         page[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8].copy_from_slice(&MAGIC);
         write_field(
             &mut page,
@@ -380,58 +383,58 @@ fn read_field(
 /// An undeclared key reads as absent, and an unassembled frame as no configuration at all:
 ///
 /// ```
-/// use environment_contract::{ConfigPage, PageBuilder};
+/// use environment_contract::{ConfigurationPage, PageBuilder};
 ///
-/// let page = PageBuilder::new().tz("UTC").unwrap().build(); // LANG and TERM left undeclared
-/// // SAFETY: `page` is a live, aligned buffer of exactly `PAGE_BYTES`, alive for this block.
-/// let read = unsafe { ConfigPage::new(page.as_ptr() as u64) };
-/// assert_eq!(read.tz(), Some("UTC"));
-/// assert_eq!(read.lang(), None);
-/// assert_eq!(read.term(), None);
+/// let page = PageBuilder::new().time_zone("UTC").unwrap().build(); // LANG and TERM left undeclared
+/// // SAFETY: `page` is a live, aligned buffer of exactly `PAGE_CONTENT_BYTES`, alive for this block.
+/// let read = unsafe { ConfigurationPage::new(page.as_ptr() as u64) };
+/// assert_eq!(read.time_zone(), Some("UTC"));
+/// assert_eq!(read.locale(), None);
+/// assert_eq!(read.terminal_type(), None);
 ///
-/// let zeroed = [0u8; environment_contract::PAGE_BYTES];
+/// let zeroed = [0u8; environment_contract::PAGE_CONTENT_BYTES];
 /// // SAFETY: as above.
-/// let nothing = unsafe { ConfigPage::new(zeroed.as_ptr() as u64) };
-/// assert_eq!(nothing.tz(), None);
-/// assert_eq!(nothing.lang(), None);
-/// assert_eq!(nothing.term(), None);
+/// let nothing = unsafe { ConfigurationPage::new(zeroed.as_ptr() as u64) };
+/// assert_eq!(nothing.time_zone(), None);
+/// assert_eq!(nothing.locale(), None);
+/// assert_eq!(nothing.terminal_type(), None);
 /// ```
 #[derive(Debug, Clone, Copy)]
-pub struct ConfigPage {
+pub struct ConfigurationPage {
     base: *const u8,
 }
 
 // SAFETY: the whole point of the page is that the process that assembled it and the process
 // that reads it are different address spaces; every access is a plain read of immutable bytes
 // (see the crate docs), so there is no mutable aliasing to protect against.
-unsafe impl Send for ConfigPage {}
+unsafe impl Send for ConfigurationPage {}
 // SAFETY: as `Send` above.
-unsafe impl Sync for ConfigPage {}
+unsafe impl Sync for ConfigurationPage {}
 
-impl ConfigPage {
-    /// Name the config page mapped at `va`.
+impl ConfigurationPage {
+    /// Name the config page mapped at `virtual_address`.
     ///
     /// # Safety
     ///
-    /// `va` must be a mapped, byte-aligned buffer of at least [`PAGE_BYTES`] bytes (either an
+    /// `virtual_address` must be a mapped, byte-aligned buffer of at least [`PAGE_CONTENT_BYTES`] bytes (either an
     /// assembled page, or a zeroed frame, which reads as "no configuration"), and it must stay
     /// mapped and unwritten by this process for as long as this value is used. The page is
     /// read-only by construction on the kernel side (the same `PageFrame` `READ`-only shape the
     /// clock page uses), so a caller with a correctly typed capability cannot violate this by
     /// accident.
-    pub const unsafe fn new(va: u64) -> Self {
-        ConfigPage {
-            base: va as *const u8,
+    pub const unsafe fn new(virtual_address: u64) -> Self {
+        ConfigurationPage {
+            base: virtual_address as *const u8,
         }
     }
 
     /// # Safety
     ///
-    /// Upheld by [`new`](Self::new)'s contract: `base` names at least `PAGE_BYTES` mapped,
+    /// Upheld by [`new`](Self::new)'s contract: `base` names at least `PAGE_CONTENT_BYTES` mapped,
     /// stable bytes.
     fn bytes(&self) -> &[u8] {
         // SAFETY: `new`'s contract.
-        unsafe { core::slice::from_raw_parts(self.base, PAGE_BYTES) }
+        unsafe { core::slice::from_raw_parts(self.base, PAGE_CONTENT_BYTES) }
     }
 
     fn is_recognized(&self) -> bool {
@@ -441,7 +444,8 @@ impl ConfigPage {
     /// `TZ`, or `None` if this process holds no config page, the page is unrecognized, `TZ` was
     /// never declared onto it, or the bytes are not a member of [`domain::KNOWN_TIME_ZONES`]. A
     /// reader never sees a value outside that set, whoever wrote the page.
-    pub fn tz(&self) -> Option<&str> {
+    #[doc(alias = "TZ")]
+    pub fn time_zone(&self) -> Option<&str> {
         self.is_recognized()
             .then(|| {
                 read_field(
@@ -452,12 +456,13 @@ impl ConfigPage {
                 )
             })
             .flatten()
-            .filter(|value| domain::is_valid_tz(value))
+            .filter(|value| domain::is_known_time_zone(value))
     }
 
-    /// `LANG`, or `None` for the same reasons [`tz`](Self::tz) can be `None`, with
+    /// `LANG`, or `None` for the same reasons [`time_zone`](Self::time_zone) can be `None`, with
     /// [`domain::KNOWN_LOCALES`] as the set.
-    pub fn lang(&self) -> Option<&str> {
+    #[doc(alias = "LANG")]
+    pub fn locale(&self) -> Option<&str> {
         self.is_recognized()
             .then(|| {
                 read_field(
@@ -468,12 +473,13 @@ impl ConfigPage {
                 )
             })
             .flatten()
-            .filter(|value| domain::is_valid_lang(value))
+            .filter(|value| domain::is_known_locale(value))
     }
 
-    /// `TERM`, or `None` for the same reasons [`tz`](Self::tz) can be `None`, with
+    /// `TERM`, or `None` for the same reasons [`time_zone`](Self::time_zone) can be `None`, with
     /// [`domain::KNOWN_TERMINAL_TYPES`] as the set.
-    pub fn term(&self) -> Option<&str> {
+    #[doc(alias = "TERM")]
+    pub fn terminal_type(&self) -> Option<&str> {
         self.is_recognized()
             .then(|| {
                 read_field(
@@ -484,16 +490,16 @@ impl ConfigPage {
                 )
             })
             .flatten()
-            .filter(|value| domain::is_valid_term(value))
+            .filter(|value| domain::is_known_terminal_type(value))
     }
 }
 
 impl core::fmt::Display for Refused {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         formatter.write_str(match self {
-            Refused::UnknownTz => "TZ is not a member of KNOWN_TIME_ZONES",
-            Refused::UnknownLang => "LANG is not a member of KNOWN_LOCALES",
-            Refused::UnknownTerm => "TERM is not a member of KNOWN_TERMINAL_TYPES",
+            Refused::UnknownTimeZone => "TZ is not a member of KNOWN_TIME_ZONES",
+            Refused::UnknownLocale => "LANG is not a member of KNOWN_LOCALES",
+            Refused::UnknownTerminalType => "TERM is not a member of KNOWN_TERMINAL_TYPES",
         })
     }
 }
@@ -507,13 +513,16 @@ mod verification;
 mod tests {
     use super::*;
 
-    /// `buffer` read as a mapped [`ConfigPage`] for the length of `f`, and the one place these tests
-    /// argue `ConfigPage::new`'s contract. The page is lent to `f` by reference; a test that copied it
+    /// `buffer` read as a mapped [`ConfigurationPage`] for the length of `f`, and the one place these tests
+    /// argue `ConfigurationPage::new`'s contract. The page is lent to `f` by reference; a test that copied it
     /// out would break the argument, and none does.
-    fn with_page<R>(buffer: &[u8; PAGE_BYTES], f: impl FnOnce(&ConfigPage) -> R) -> R {
+    fn with_page<R>(
+        buffer: &[u8; PAGE_CONTENT_BYTES],
+        f: impl FnOnce(&ConfigurationPage) -> R,
+    ) -> R {
         // SAFETY: `buffer` is live, sized and aligned for the page by its type, and borrowed for
         // the whole call, so it outlives every use of the page inside `f`.
-        f(&unsafe { ConfigPage::new(buffer.as_ptr() as u64) })
+        f(&unsafe { ConfigurationPage::new(buffer.as_ptr() as u64) })
     }
 
     /// Every curated domain member fits under its field's maximum. The `const` assertion above
@@ -548,16 +557,16 @@ mod tests {
     /// looks plausible but is not (a made-up city, a common typo) is refused.
     #[test]
     fn domain_checks_accept_real_values_and_refuse_invented_ones() {
-        assert!(domain::is_valid_tz("UTC"));
-        assert!(domain::is_valid_tz("America/Los_Angeles"));
-        assert!(!domain::is_valid_tz("Mars/Olympus_Mons"));
-        assert!(!domain::is_valid_tz("america/los_angeles")); // case matters, like the real db
+        assert!(domain::is_known_time_zone("UTC"));
+        assert!(domain::is_known_time_zone("America/Los_Angeles"));
+        assert!(!domain::is_known_time_zone("Mars/Olympus_Mons"));
+        assert!(!domain::is_known_time_zone("america/los_angeles")); // case matters, like the real db
 
-        assert!(domain::is_valid_lang("en_US.UTF-8"));
-        assert!(!domain::is_valid_lang("klingon"));
+        assert!(domain::is_known_locale("en_US.UTF-8"));
+        assert!(!domain::is_known_locale("klingon"));
 
-        assert!(domain::is_valid_term("xterm-256color"));
-        assert!(!domain::is_valid_term("my-cool-terminal"));
+        assert!(domain::is_known_terminal_type("xterm-256color"));
+        assert!(!domain::is_known_terminal_type("my-cool-terminal"));
     }
 
     /// [`PageBuilder`]'s setters refuse before they ever touch a page, and the refusal names
@@ -565,16 +574,16 @@ mod tests {
     #[test]
     fn the_builder_refuses_a_value_outside_its_domain() {
         assert_eq!(
-            PageBuilder::new().tz("not-a-real-zone"),
-            Err(Refused::UnknownTz)
+            PageBuilder::new().time_zone("not-a-real-zone"),
+            Err(Refused::UnknownTimeZone)
         );
         assert_eq!(
-            PageBuilder::new().lang("not-a-real-locale"),
-            Err(Refused::UnknownLang)
+            PageBuilder::new().locale("not-a-real-locale"),
+            Err(Refused::UnknownLocale)
         );
         assert_eq!(
-            PageBuilder::new().term("not-a-real-terminal"),
-            Err(Refused::UnknownTerm)
+            PageBuilder::new().terminal_type("not-a-real-terminal"),
+            Err(Refused::UnknownTerminalType)
         );
     }
 
@@ -583,17 +592,17 @@ mod tests {
     #[test]
     fn a_fully_declared_page_round_trips() {
         let bytes = PageBuilder::new()
-            .tz("Europe/Berlin")
+            .time_zone("Europe/Berlin")
             .unwrap()
-            .lang("de_DE.UTF-8")
+            .locale("de_DE.UTF-8")
             .unwrap()
-            .term("screen-256color")
+            .terminal_type("screen-256color")
             .unwrap()
             .build();
         with_page(&bytes, |page| {
-            assert_eq!(page.tz(), Some("Europe/Berlin"));
-            assert_eq!(page.lang(), Some("de_DE.UTF-8"));
-            assert_eq!(page.term(), Some("screen-256color"));
+            assert_eq!(page.time_zone(), Some("Europe/Berlin"));
+            assert_eq!(page.locale(), Some("de_DE.UTF-8"));
+            assert_eq!(page.terminal_type(), Some("screen-256color"));
         });
     }
 
@@ -602,11 +611,11 @@ mod tests {
     /// than "LANG was granted the empty string".
     #[test]
     fn an_undeclared_key_reads_as_absent_not_empty() {
-        let bytes = PageBuilder::new().tz("UTC").unwrap().build();
+        let bytes = PageBuilder::new().time_zone("UTC").unwrap().build();
         with_page(&bytes, |page| {
-            assert_eq!(page.tz(), Some("UTC"));
-            assert_eq!(page.lang(), None);
-            assert_eq!(page.term(), None);
+            assert_eq!(page.time_zone(), Some("UTC"));
+            assert_eq!(page.locale(), None);
+            assert_eq!(page.terminal_type(), None);
         });
     }
 
@@ -616,11 +625,11 @@ mod tests {
     /// to the clock.
     #[test]
     fn a_zeroed_frame_carries_no_configuration() {
-        let zeroed = [0u8; PAGE_BYTES];
+        let zeroed = [0u8; PAGE_CONTENT_BYTES];
         with_page(&zeroed, |page| {
-            assert_eq!(page.tz(), None);
-            assert_eq!(page.lang(), None);
-            assert_eq!(page.term(), None);
+            assert_eq!(page.time_zone(), None);
+            assert_eq!(page.locale(), None);
+            assert_eq!(page.terminal_type(), None);
         });
     }
 
@@ -641,16 +650,16 @@ mod tests {
         for (corrupted, (length_offset, maximum_bytes)) in fields.into_iter().enumerate() {
             for length in (maximum_bytes + 1)..=usize::from(u8::MAX) {
                 let mut bytes = PageBuilder::new()
-                    .tz("UTC")
+                    .time_zone("UTC")
                     .unwrap()
-                    .lang("C")
+                    .locale("C")
                     .unwrap()
-                    .term("xterm")
+                    .terminal_type("xterm")
                     .unwrap()
                     .build();
                 bytes[length_offset] = length as u8;
                 with_page(&bytes, |page| {
-                    let read = [page.tz(), page.lang(), page.term()];
+                    let read = [page.time_zone(), page.locale(), page.terminal_type()];
                     for (i, value) in read.iter().enumerate() {
                         assert_eq!(
                             value.is_none(),
@@ -682,36 +691,36 @@ mod tests {
     #[test]
     fn a_recognized_page_carrying_a_non_member_reads_that_key_as_absent() {
         let mut bytes = PageBuilder::new()
-            .tz("UTC")
+            .time_zone("UTC")
             .unwrap()
-            .lang("C")
+            .locale("C")
             .unwrap()
-            .term("xterm")
+            .terminal_type("xterm")
             .unwrap()
             .build();
         // `UTC` followed by a NUL, one byte longer than the member.
         bytes[TIME_ZONE_LENGTH_OFFSET_BYTES] = 4;
         with_page(&bytes, |page| {
-            assert_eq!(page.tz(), None);
-            assert_eq!(page.lang(), Some("C"));
-            assert_eq!(page.term(), Some("xterm"));
+            assert_eq!(page.time_zone(), None);
+            assert_eq!(page.locale(), Some("C"));
+            assert_eq!(page.terminal_type(), Some("xterm"));
         });
         // A well-formed UTF-8 value the lists do not hold.
-        let mut bytes = PageBuilder::new().lang("C").unwrap().build();
+        let mut bytes = PageBuilder::new().locale("C").unwrap().build();
         bytes[LOCALE_OFFSET_BYTES] = b'X';
-        with_page(&bytes, |page| assert_eq!(page.lang(), None));
-        let mut bytes = PageBuilder::new().term("xterm").unwrap().build();
+        with_page(&bytes, |page| assert_eq!(page.locale(), None));
+        let mut bytes = PageBuilder::new().terminal_type("xterm").unwrap().build();
         bytes[TERMINAL_TYPE_OFFSET_BYTES] = b'X';
-        with_page(&bytes, |page| assert_eq!(page.term(), None));
+        with_page(&bytes, |page| assert_eq!(page.terminal_type(), None));
     }
 
     /// A refusal prints and converts into a boxed error, naming the domain constant.
     #[test]
     fn a_refusal_displays_and_is_an_error() {
         let all = [
-            Refused::UnknownTz,
-            Refused::UnknownLang,
-            Refused::UnknownTerm,
+            Refused::UnknownTimeZone,
+            Refused::UnknownLocale,
+            Refused::UnknownTerminalType,
         ];
         let names = ["KNOWN_TIME_ZONES", "KNOWN_LOCALES", "KNOWN_TERMINAL_TYPES"];
         for (refused, name) in all.into_iter().zip(names) {
@@ -768,7 +777,7 @@ mod tests {
     /// domain, which would hide a wrong answer here.
     #[test]
     fn field_bytes_refuses_a_zero_length_and_a_length_past_its_maximum_each_alone() {
-        let mut page = [b'a'; PAGE_BYTES];
+        let mut page = [b'a'; PAGE_CONTENT_BYTES];
         let (length_offset, value_offset, maximum_bytes) = (
             TIME_ZONE_LENGTH_OFFSET_BYTES,
             TIME_ZONE_OFFSET_BYTES,
@@ -795,12 +804,12 @@ mod tests {
     /// never declared the time zone.
     #[test]
     fn a_page_with_a_zero_length_after_the_magic_reads_that_field_as_absent() {
-        let mut bytes = PageBuilder::new().tz("UTC").unwrap().build();
+        let mut bytes = PageBuilder::new().time_zone("UTC").unwrap().build();
         // Corrupt the length byte to zero after building, simulating an assembler that wrote
         // the magic but never declared the time zone.
         bytes[TIME_ZONE_LENGTH_OFFSET_BYTES] = 0;
         with_page(&bytes, |page| {
-            assert_eq!(page.tz(), None);
+            assert_eq!(page.time_zone(), None);
         });
     }
 
@@ -810,18 +819,18 @@ mod tests {
     #[test]
     fn an_unrecognized_magic_refuses_every_field() {
         let mut bytes = PageBuilder::new()
-            .tz("UTC")
+            .time_zone("UTC")
             .unwrap()
-            .lang("C")
+            .locale("C")
             .unwrap()
-            .term("dumb")
+            .terminal_type("dumb")
             .unwrap()
             .build();
         bytes[MAGIC_OFFSET_BYTES] ^= 0xff; // flip one byte of the magic
         with_page(&bytes, |page| {
-            assert_eq!(page.tz(), None);
-            assert_eq!(page.lang(), None);
-            assert_eq!(page.term(), None);
+            assert_eq!(page.time_zone(), None);
+            assert_eq!(page.locale(), None);
+            assert_eq!(page.terminal_type(), None);
         });
     }
 
@@ -847,10 +856,10 @@ mod tests {
             TERMINAL_TYPE_LENGTH_OFFSET_BYTES + 1
         );
         assert_eq!(
-            PAGE_BYTES,
+            PAGE_CONTENT_BYTES,
             TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES
         );
-        assert!(PAGE_BYTES < 4096, "the page must fit in one frame");
+        assert!(PAGE_CONTENT_BYTES < 4096, "the page must fit in one frame");
     }
 
     /// The frozen identity and widths, as literals: a change to any of them is a new version of
@@ -863,7 +872,7 @@ mod tests {
         assert_eq!(MAXIMUM_TIME_ZONE_BYTES, 40);
         assert_eq!(MAXIMUM_LOCALE_BYTES, 24);
         assert_eq!(MAXIMUM_TERMINAL_TYPE_BYTES, 32);
-        assert_eq!(PAGE_BYTES, 107);
+        assert_eq!(PAGE_CONTENT_BYTES, 107);
         assert_eq!(MAGIC[7], b'0' + VERSION as u8);
     }
 }

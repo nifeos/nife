@@ -297,21 +297,21 @@ fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioB
 /// (`system_tests/src/user/std_service.rs`). See notes/progenitor-boot.md.
 pub(super) fn boot_config_page() -> u64 {
     let bytes = environment_contract::PageBuilder::new()
-        .tz("UTC")
+        .time_zone("UTC")
         .expect("UTC is not a recognized environment_contract::domain::KNOWN_TIME_ZONES member")
-        .lang("C")
+        .locale("C")
         .expect("C is not a recognized environment_contract::domain::KNOWN_LOCALES member")
-        .term("dumb")
+        .terminal_type("dumb")
         .expect(
             "dumb is not a recognized environment_contract::domain::KNOWN_TERMINAL_TYPES member",
         )
         .build();
-    // Zeroed, so a previous occupant's bytes are not visible through the tail past `PAGE_BYTES`.
+    // Zeroed, so a previous occupant's bytes are not visible through the tail past `PAGE_CONTENT_BYTES`.
     let phys = crate::memory::alloc_zeroed()
         .expect("no frame for the config page")
         .addr();
     // SAFETY: `phys` names that frame, direct-mapped and owned by nobody else yet, and `bytes` is
-    // `PAGE_BYTES` long, far under `FRAME_SIZE`, so the copy does not run past the frame.
+    // `PAGE_CONTENT_BYTES` long, far under `FRAME_SIZE`, so the copy does not run past the frame.
     unsafe {
         core::ptr::copy_nonoverlapping(
             bytes.as_ptr(),

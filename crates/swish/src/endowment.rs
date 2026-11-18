@@ -18,7 +18,7 @@ pub fn write_holdings(
     budget_pages: u64,
     holdings: Holdings,
     clock: Option<u64>,
-    config: Option<ConfigPage>,
+    config: Option<ConfigurationPage>,
     out: &mut dyn FnMut(&[u8]),
 ) {
     out(b"  this shell holds, and nothing else:\n");
@@ -120,12 +120,12 @@ fn write_bind_row(entry: &nav::BindEntry, out: &mut dyn FnMut(&[u8])) {
 
 /// **The three inert-configuration keys, one per line**, in `printenv`'s spelling (`KEY=value`,
 /// or `KEY (unset)` for a key the page does not carry). A page nobody assembled reads as three
-/// unset keys, which is what [`ConfigPage`] answers for it and what the child would see.
-pub(super) fn write_config_values(page: &ConfigPage, indent: &[u8], out: &mut dyn FnMut(&[u8])) {
+/// unset keys, which is what [`ConfigurationPage`] answers for it and what the child would see.
+pub(super) fn write_config_values(page: &ConfigurationPage, indent: &[u8], out: &mut dyn FnMut(&[u8])) {
     for (key, value) in [
-        (b"TZ".as_slice(), page.tz()),
-        (b"LANG".as_slice(), page.lang()),
-        (b"TERM".as_slice(), page.term()),
+        (b"TZ".as_slice(), page.time_zone()),
+        (b"LANG".as_slice(), page.locale()),
+        (b"TERM".as_slice(), page.terminal_type()),
     ] {
         out(indent);
         out(key);

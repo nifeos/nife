@@ -105,7 +105,7 @@ The boundary decisions behind each bucket are in `helpers/rust_source.py`'s own 
   header, every one of them runs on nife at EL0 and never as kernel code.
 - shared (19 blocks, in 5 of 36 crates reachable from both sides). This code genuinely executes with
   kernel privilege in the kernel binary and, separately, under confinement in a userspace program.
-  `environment_contract`'s `ConfigPage` and `clock_contract`'s `ClockPage` are built by the kernel's
+  `environment_contract`'s `ConfigurationPage` and `clock_contract`'s `ClockPage` are built by the kernel's
   `unsafe fn new`/`from_raw_parts`. A userspace `std` program reads them back through the identical
   accessor. So the same unsafe source is real in both roles, and folding it into either side would
   overcount one and undercount the other.
