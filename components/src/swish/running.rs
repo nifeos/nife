@@ -549,7 +549,8 @@ fn carve_image_grants(
 /// Statics rather than locals for [`GENERATION_TABLE`]'s reason: two pages on the stack would take
 /// the frame past the guard page `script/stack-frame-check` holds every frame to.
 static mut NOTE_HEAD: [u8; filesystem_contract::PAGE_BYTES] = [0; filesystem_contract::PAGE_BYTES];
-static mut NOTE_SEGMENT: [u8; filesystem_contract::PAGE_BYTES] = [0; filesystem_contract::PAGE_BYTES];
+static mut NOTE_SEGMENT: [u8; filesystem_contract::PAGE_BYTES] =
+    [0; filesystem_contract::PAGE_BYTES];
 
 /// **The manifest the open file `handle` carries in its own bytes** (milestone 597 (a program
 /// carries its manifest in an ELF note)), read the way the progenitor reads its copy: `PT_NOTE`

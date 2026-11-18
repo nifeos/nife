@@ -59,7 +59,10 @@ impl<D: Disk> Server<D> {
             fs,
             // Handle 0 carries every right; narrowing happens at the endpoint above, never here.
             // This is `Rights::root`'s only caller.
-            handles: alloc::vec![Some(Entry::Dir(TreePtr::root(), Rights::root(directory::ALL)))],
+            handles: alloc::vec![Some(Entry::Dir(
+                TreePtr::root(),
+                Rights::root(directory::ALL)
+            ))],
             clock: 1,
             memo: Memo::default(),
             owners: alloc::vec![0],
@@ -107,7 +110,10 @@ impl<D: Disk> Server<D> {
         // transaction clones the allocator; see notes/fs-server/the-core.md.
         let uses = self.fs.node_usages.entry(ptr.id()).or_insert(0);
         *uses = uses.checked_add(1).ok_or(Error::new(EINVAL))?;
-        Ok(self.install(Entry::File(ptr, rights.attenuate(directory::READ | directory::WRITE))))
+        Ok(self.install(Entry::File(
+            ptr,
+            rights.attenuate(directory::READ | directory::WRITE),
+        )))
     }
 
     /// Descend: resolve `name` under the directory `handle` names and hand back a handle to the
@@ -302,7 +308,10 @@ impl<D: Disk> Server<D> {
             transaction.on_open_node(node.ptr())?;
             Ok(node.ptr())
         })?;
-        Ok(self.install(Entry::File(ptr, rights.attenuate(directory::READ | directory::WRITE))))
+        Ok(self.install(Entry::File(
+            ptr,
+            rights.attenuate(directory::READ | directory::WRITE),
+        )))
     }
 
     /// Set the size of the file a handle names to exactly `size` bytes (milestone 31 phase 2).
@@ -523,7 +532,8 @@ impl<D: Disk> Server<D> {
         let ptr = self.node_at(handle, directory::READ, EBADF)?;
         self.look(|transaction| {
             let blob = read_attrs(transaction, ptr.id())?;
-            let (kind, value) = extended_attribute::store::get(&blob, name).ok_or(Error::new(extended_attribute::ENODATA))?;
+            let (kind, value) = extended_attribute::store::get(&blob, name)
+                .ok_or(Error::new(extended_attribute::ENODATA))?;
             if out.len() < value.len() {
                 return Err(Error::new(extended_attribute::ERANGE));
             }
@@ -571,8 +581,12 @@ impl<D: Disk> Server<D> {
     /// directory walk can.
     pub fn list_xattr(&mut self, handle: u32, out: &mut [u8]) -> Result<usize> {
         let ptr = self.node_at(handle, directory::READ, EBADF)?;
-        self.fs
-            .tx(|transaction| Ok(extended_attribute::store::list(&read_attrs(transaction, ptr.id())?, out)))
+        self.fs.tx(|transaction| {
+            Ok(extended_attribute::store::list(
+                &read_attrs(transaction, ptr.id())?,
+                out,
+            ))
+        })
     }
 
     /// **Remove one extended attribute from the node `handle` names.** Needs [`directory::WRITE`],

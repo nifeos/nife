@@ -81,7 +81,10 @@ fn start(_: u64, _: u64, _: u64) -> ! {
                     // SAFETY: the NVMe window is `block::MAXIMUM_TRANSFER_BYTES` bytes at BLK_PAGE and
                     // `skip + len` never passes `read.blocks` blocks (`crates/disk_tree`'s tests).
                     let staged = unsafe {
-                        core::slice::from_raw_parts(BLK_PAGE as *const u8, block::MAXIMUM_TRANSFER_BYTES)
+                        core::slice::from_raw_parts(
+                            BLK_PAGE as *const u8,
+                            block::MAXIMUM_TRANSFER_BYTES,
+                        )
                     };
                     page[..read.len].copy_from_slice(&staged[read.skip..read.skip + read.len]);
                     (read.len as i64, 0)

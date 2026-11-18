@@ -190,7 +190,8 @@ pub(super) static mut GENERATION_TABLE: [u8; filesystem_contract::PAGE_BYTES] =
 
 /// One page for the nearest version set, a static for [`GENERATION_TABLE`]'s reason. Provisional;
 /// the file it holds (`.jig-versions`) was ratified 2026-10-07, and this static's name was not.
-static mut VERSION_SET: [u8; filesystem_contract::PAGE_BYTES] = [0; filesystem_contract::PAGE_BYTES];
+static mut VERSION_SET: [u8; filesystem_contract::PAGE_BYTES] =
+    [0; filesystem_contract::PAGE_BYTES];
 
 /// **The nearest version set at or above where this shell stands** (milestone 614 (two installed
 /// versions of one program, each runnable, and a caller granted the one it needs), ruling 4):

@@ -131,7 +131,13 @@ fn nothing_writes() {
     for code in [fs::WRITE, fs::TRUNCATE] {
         assert_eq!(call(&mut t, code, f, b"", 0), err(directory::EROFS));
     }
-    for code in [fs::CREATE, fs::MKDIR, fs::UNLINK, fs::RMDIR, fs::SET_MODIFICATION_TIME] {
+    for code in [
+        fs::CREATE,
+        fs::MKDIR,
+        fs::UNLINK,
+        fs::RMDIR,
+        fs::SET_MODIFICATION_TIME,
+    ] {
         assert_eq!(call(&mut t, code, fs::ROOT, b"x", 0), err(directory::EROFS));
     }
     // A descent cannot ask for a right the root never had.
@@ -178,7 +184,10 @@ fn the_reachability_probe_is_refused_as_a_bad_handle() {
         call(&mut t, fs::FSTAT, fs::MAXIMUM_HANDLE, b"", 0),
         err(EBADF)
     );
-    assert_eq!(call(&mut t, fs::CLOSE, fs::ROOT, b"", 0), err(directory::EINVAL));
+    assert_eq!(
+        call(&mut t, fs::CLOSE, fs::ROOT, b"", 0),
+        err(directory::EINVAL)
+    );
 }
 
 /// Names that are not in the tree are not there, at either level, and the two levels are not
@@ -194,14 +203,23 @@ fn only_the_two_names_resolve() {
         call(&mut t, fs::OPEN, fs::ROOT, b"n1", directory::READ),
         err(ENOENT)
     );
-    let d = handle_of(call(&mut t, fs::OPENDIR, fs::ROOT, DIRECTORY, directory::READ));
+    let d = handle_of(call(
+        &mut t,
+        fs::OPENDIR,
+        fs::ROOT,
+        DIRECTORY,
+        directory::READ,
+    ));
     assert_eq!(call(&mut t, fs::OPEN, d, b"nope", 0), err(ENOENT));
     assert_eq!(
         call(&mut t, fs::OPEN, fs::ROOT, DIRECTORY, directory::READ),
         err(directory::EISDIR)
     );
     // A descent from `nvme0` needs `DESCEND` on it: without, `n1` is not there; with, it is a file.
-    assert_eq!(call(&mut t, fs::OPENDIR, d, FILE, directory::READ), err(ENOENT));
+    assert_eq!(
+        call(&mut t, fs::OPENDIR, d, FILE, directory::READ),
+        err(ENOENT)
+    );
     let walkable = directory::READ | directory::DESCEND;
     let d = handle_of(call(&mut t, fs::OPENDIR, fs::ROOT, DIRECTORY, walkable));
     assert_eq!(
@@ -249,7 +267,10 @@ fn a_name_longer_than_the_buffer_or_the_page_is_refused() {
     let w0 = fs::req(fs::OPENDIR, fs::ROOT, 5);
     assert!(matches!(t.handle(w0, directory::READ, &mut page), Answer::Reply(h, _) if h > 0));
     let w0 = fs::req(fs::OPENDIR, fs::ROOT, 6);
-    assert_eq!(t.handle(w0, directory::READ, &mut page), err(directory::EINVAL));
+    assert_eq!(
+        t.handle(w0, directory::READ, &mut page),
+        err(directory::EINVAL)
+    );
 }
 
 /// What the verbs that are neither a read nor a write answer.
@@ -285,7 +306,13 @@ fn the_other_verbs_answer_what_a_read_only_disk_can_say() {
 #[test]
 fn a_listing_without_enumerate_is_refused() {
     let mut t = Tree::new(SIZE);
-    let d = handle_of(call(&mut t, fs::OPENDIR, fs::ROOT, DIRECTORY, directory::READ));
+    let d = handle_of(call(
+        &mut t,
+        fs::OPENDIR,
+        fs::ROOT,
+        DIRECTORY,
+        directory::READ,
+    ));
     let mut page = [0u8; 64];
     assert_eq!(
         t.handle(fs::req(fs::READDIR, d, 0), 0, &mut page),
@@ -301,7 +328,13 @@ fn handles_close_and_run_out() {
     let f = opened(&mut t);
     assert_eq!(call(&mut t, fs::CLOSE, f, b"", 0), Answer::Reply(0, 0));
     assert_eq!(call(&mut t, fs::FSTAT, f, b"", 0), err(EBADF));
-    let d = handle_of(call(&mut t, fs::OPENDIR, fs::ROOT, DIRECTORY, directory::READ));
+    let d = handle_of(call(
+        &mut t,
+        fs::OPENDIR,
+        fs::ROOT,
+        DIRECTORY,
+        directory::READ,
+    ));
     while matches!(call(&mut t, fs::OPEN, d, FILE, 0), Answer::Reply(h, _) if h >= 0) {}
     assert_eq!(call(&mut t, fs::OPEN, d, FILE, 0), err(EMFILE));
 }

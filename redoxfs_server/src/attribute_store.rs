@@ -132,7 +132,11 @@ pub(crate) fn purge_attrs<D: Disk>(transaction: &mut Transaction<D>, node_id: u3
 /// propagated, because a store that failed to be removed is not a store known to be gone. See
 /// notes/fs-server/the-core.md.
 pub(crate) fn drop_store_if_empty<D: Disk>(transaction: &mut Transaction<D>) -> Result<()> {
-    match transaction.remove_node(TreePtr::root(), extended_attribute::STORE_DIRECTORY, Node::MODE_DIR) {
+    match transaction.remove_node(
+        TreePtr::root(),
+        extended_attribute::STORE_DIRECTORY,
+        Node::MODE_DIR,
+    ) {
         Ok(_) => Ok(()),
         Err(e) if e.errno == ENOTEMPTY || e.errno == ENOENT => Ok(()),
         Err(e) => Err(e),

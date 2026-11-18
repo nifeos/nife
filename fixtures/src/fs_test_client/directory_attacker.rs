@@ -7,7 +7,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{directory, fs, extended_attribute};
+use filesystem_contract::{directory, extended_attribute, fs};
 use filesystem_fixture as fixture;
 use fixture::{dirscape as esc, tree};
 use user_mode_runtime::{call, exit, send};
@@ -36,7 +36,9 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
         v |= esc::REACHED_PARENT;
     }
     // 2. The sibling, by both routes: descending into it and naming the file inside it.
-    if dir_descend(fs::ROOT, tree::OTHER, directory::ALL) >= 0 || dir_open(fs::ROOT, tree::SECRET) >= 0 {
+    if dir_descend(fs::ROOT, tree::OTHER, directory::ALL) >= 0
+        || dir_open(fs::ROOT, tree::SECRET) >= 0
+    {
         v |= esc::REACHED_SIBLING;
     }
     // 3. `..`, which is not a component this contract accepts, at any rights.

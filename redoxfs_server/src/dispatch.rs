@@ -26,7 +26,7 @@
 //!   between `extended_attribute::is_valid_name` and the store's use of it, or the value as it is stored. Only
 //!   `GETXATTR` copies first.
 
-use filesystem_contract::{block, fs, operation, reply_err, extended_attribute};
+use filesystem_contract::{block, extended_attribute, fs, operation, reply_err};
 use redoxfs::Disk;
 use syscall::error::{EINVAL, EPERM, Error, Result};
 
@@ -326,8 +326,13 @@ impl<D: Disk> Server<D> {
             Err(Error::new(EINVAL))
         } else {
             let (name, value) = window[..len + value_len].split_at(len);
-            self.set_xattr(handle, name, extended_attribute::specification_kind(offset), value)
-                .map(|()| 0)
+            self.set_xattr(
+                handle,
+                name,
+                extended_attribute::specification_kind(offset),
+                value,
+            )
+            .map(|()| 0)
         }
     }
 }

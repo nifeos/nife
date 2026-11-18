@@ -68,7 +68,12 @@ pub const fn pack_name(name: &[u8]) -> Option<(u64, u64)> {
 
 /// Unpack a name from two argument words into `buf` and return its length, at most
 /// [`MAXIMUM_WORDS_NAME_BYTES`]: a length word claiming more is clamped to what two words can hold.
-pub fn unpack_name(lo: u64, hi: u64, len: usize, buf: &mut [u8; MAXIMUM_WORDS_NAME_BYTES]) -> usize {
+pub fn unpack_name(
+    lo: u64,
+    hi: u64,
+    len: usize,
+    buf: &mut [u8; MAXIMUM_WORDS_NAME_BYTES],
+) -> usize {
     buf[..8].copy_from_slice(&lo.to_le_bytes());
     buf[8..].copy_from_slice(&hi.to_le_bytes());
     len.min(MAXIMUM_WORDS_NAME_BYTES)

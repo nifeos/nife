@@ -585,7 +585,10 @@ mod tests {
         let (n, r, last) = down(0, all, b"a/b/x", directory::READ).unwrap();
         assert_eq!((n, last), (2, &b"x"[..]));
         assert_eq!(r.bits(), directory::DESCEND | directory::READ);
-        assert_eq!(down(0, all, b"x", directory::READ).unwrap(), (0, all, &b"x"[..]));
+        assert_eq!(
+            down(0, all, b"x", directory::READ).unwrap(),
+            (0, all, &b"x"[..])
+        );
     }
 
     #[test]

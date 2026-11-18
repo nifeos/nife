@@ -18,7 +18,9 @@
 
 #![no_std]
 
-use filesystem_contract::{block, directory, directory_entry, fs, operation, reply_err, verb, extended_attribute};
+use filesystem_contract::{
+    block, directory, directory_entry, extended_attribute, fs, operation, reply_err, verb,
+};
 
 /// The one directory under the root: the controller, as Linux's `nvme0`.
 ///
@@ -220,7 +222,13 @@ impl Tree {
         }
     }
 
-    fn open_file(&mut self, node: Node, rights: directory::Rights, name: &[u8], step: u64) -> Answer {
+    fn open_file(
+        &mut self,
+        node: Node,
+        rights: directory::Rights,
+        name: &[u8],
+        step: u64,
+    ) -> Answer {
         let (parent, rights, last) = match Self::walk(node, rights, name, step) {
             Ok(found) => found,
             Err(errno) => return err(errno),

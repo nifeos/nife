@@ -66,7 +66,10 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
         [(b"a", false); nameset::MAXIMUM_NAMES + 1];
     assert_eq!(nameset::encode(&over, &mut buf), None, "one name too many");
     assert_eq!(
-        nameset::encode(&[(&[b'n'; grant::MAXIMUM_NAME_BYTES + 1][..], false)], &mut buf),
+        nameset::encode(
+            &[(&[b'n'; grant::MAXIMUM_NAME_BYTES + 1][..], false)],
+            &mut buf
+        ),
         None,
         "a name that cannot travel in a grant cannot travel in a set either",
     );
@@ -108,7 +111,18 @@ fn a_nameset_lays_out_byte_for_byte() {
     assert_eq!(nameset::encode(&names, &mut out), Some(10));
     assert_eq!(
         out,
-        [2, 0, b'a', b'b', 3, nameset::IS_DIRECTORY, b'c', b'd', b'e', 0]
+        [
+            2,
+            0,
+            b'a',
+            b'b',
+            3,
+            nameset::IS_DIRECTORY,
+            b'c',
+            b'd',
+            b'e',
+            0
+        ]
     );
     let mut short = [0u8; 9];
     assert_eq!(nameset::encode(&names, &mut short), None);
@@ -118,7 +132,18 @@ fn a_nameset_lays_out_byte_for_byte() {
 /// names before it, and a length byte with no flags byte behind it reads as nothing.
 #[test]
 fn a_truncated_set_stops_at_the_last_whole_record() {
-    let full = [2, 0, b'a', b'b', 3, nameset::IS_DIRECTORY, b'c', b'd', b'e', 0];
+    let full = [
+        2,
+        0,
+        b'a',
+        b'b',
+        3,
+        nameset::IS_DIRECTORY,
+        b'c',
+        b'd',
+        b'e',
+        0,
+    ];
     assert_eq!(nameset::count(&full[..7]), 1);
     assert_eq!(nameset::count(&full[..5]), 1);
     assert_eq!(nameset::count(&full[..1]), 0);

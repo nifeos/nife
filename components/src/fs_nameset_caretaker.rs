@@ -24,7 +24,9 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use filesystem_contract::{directory_entry, fs, grant, nameset, operation, reply_err, reply_errno, verb};
+use filesystem_contract::{
+    directory_entry, fs, grant, nameset, operation, reply_err, reply_errno, verb,
+};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{Reply, call, receive_request, send};
 
@@ -52,7 +54,8 @@ const PAGE: usize = filesystem_contract::PAGE_BYTES;
 // write_volatile loops below).
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
 // SAFETY: the wiring maps SET_VA read-only, at least nameset::MAXIMUM_BYTES bytes, before this program runs.
-const SET_WINDOW: MappedWindow = unsafe { MappedWindow::new(SET_VA, nameset::MAXIMUM_BYTES as u64) };
+const SET_WINDOW: MappedWindow =
+    unsafe { MappedWindow::new(SET_VA, nameset::MAXIMUM_BYTES as u64) };
 
 /// How many handles a confined program may hold open at once, including the granted directory at
 /// index 0. `fs_subtree_caretaker`'s number, for `fs_subtree_caretaker`'s reason: no heap, one

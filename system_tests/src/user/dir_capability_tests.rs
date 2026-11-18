@@ -126,7 +126,10 @@ fn a_read_only_directory_capability_reaches_its_subtree_and_nothing_above_it() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(v) = attack_a_subtree(directory::DESCEND | directory::READ | directory::ENUMERATE, 1) else {
+    let Some(v) = attack_a_subtree(
+        directory::DESCEND | directory::READ | directory::ENUMERATE,
+        1,
+    ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_verdict(
@@ -181,7 +184,8 @@ fn an_append_only_directory_capability_adds_and_cannot_walk_or_list() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(v) = attack_a_subtree(directory::READ | directory::WRITE | directory::CREATE, 3) else {
+    let Some(v) = attack_a_subtree(directory::READ | directory::WRITE | directory::CREATE, 3)
+    else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_verdict(

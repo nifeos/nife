@@ -1310,7 +1310,10 @@ fn mint(own_ut: u64, care: Option<&static_elf::Elf>, identity: &[u8]) -> Option<
         return None;
     };
 
-    let spec = filesystem_contract::grant::specification(identity.len(), filesystem_contract::directory::ALL);
+    let spec = filesystem_contract::grant::specification(
+        identity.len(),
+        filesystem_contract::directory::ALL,
+    );
 
     // Its whole authority: the file service to attenuate, the endpoint it will serve, one place to
     // say it is ready, and the frame it shares with the file service. No untyped of its own, no

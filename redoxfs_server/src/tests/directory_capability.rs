@@ -87,7 +87,11 @@ fn a_path_opens_what_the_walk_opens() {
         assert_eq!(srv.write(h, 0, b"x").err().map(|e| e.errno), Some(EROFS));
     }
     let rw = srv
-        .open_file_path(0, &named("sub/deeper/leaf"), directory::READ | directory::WRITE)
+        .open_file_path(
+            0,
+            &named("sub/deeper/leaf"),
+            directory::READ | directory::WRITE,
+        )
         .unwrap();
     assert_eq!(
         srv.write(rw, 0, b"T").unwrap(),
@@ -107,7 +111,11 @@ fn a_path_reaches_nothing_the_walk_could_not() {
         .unwrap();
     let errno = |r: Result<u32>| r.err().map(|e| e.errno);
     assert_eq!(
-        errno(srv.open_file_path(read_only, &named("deeper/leaf"), directory::READ | directory::WRITE)),
+        errno(srv.open_file_path(
+            read_only,
+            &named("deeper/leaf"),
+            directory::READ | directory::WRITE
+        )),
         Some(EPERM),
         "a step asking for more than its parent holds is refused, not narrowed"
     );
@@ -206,11 +214,18 @@ fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
     let all = srv
         .open_dir(root, &named("sub"), directory::PARENT_RIGHTS)
         .unwrap();
-    assert_eq!(held(&mut srv, all), directory::ENUMERATE | directory::DESCEND);
+    assert_eq!(
+        held(&mut srv, all),
+        directory::ENUMERATE | directory::DESCEND
+    );
 
     // Under a narrowed grant, `ALL` is refused and the sentinel is not.
     let narrow = srv
-        .open_dir(root, &named("sub"), directory::ENUMERATE | directory::DESCEND)
+        .open_dir(
+            root,
+            &named("sub"),
+            directory::ENUMERATE | directory::DESCEND,
+        )
         .unwrap();
     assert_eq!(
         errno(srv.open_dir(narrow, &named("deeper"), directory::ALL)),
@@ -259,7 +274,11 @@ fn the_parent_rights_sentinel_asks_for_whatever_the_parent_holds() {
 
     // A word that only has bit 63 among others is not the sentinel and widens nothing.
     assert_eq!(
-        errno(srv.open_dir(narrow, &named("deeper"), directory::PARENT_RIGHTS | directory::ALL)),
+        errno(srv.open_dir(
+            narrow,
+            &named("deeper"),
+            directory::PARENT_RIGHTS | directory::ALL
+        )),
         Some(EPERM)
     );
 }
@@ -409,7 +428,11 @@ fn a_sync_only_badge_answers_sync_and_refuses_everything_else() {
 fn a_bound_badge_reaches_its_grant_and_what_it_minted() {
     let mut srv = server_with_tree();
     let grant = srv
-        .open_dir(0, &named("sub"), directory::ENUMERATE | directory::READ | directory::DESCEND)
+        .open_dir(
+            0,
+            &named("sub"),
+            directory::ENUMERATE | directory::READ | directory::DESCEND,
+        )
         .unwrap();
     let outside = srv.open_file(&named("motd")).unwrap();
     srv.bind(0, grant, 3).unwrap();
@@ -554,7 +577,11 @@ fn a_file_never_reaches_past_the_tree() {
 fn a_grant_root_cannot_be_closed_while_bound() {
     let mut srv = server_with_tree();
     let grant = srv
-        .open_dir(0, &named("sub"), directory::ENUMERATE | directory::READ | directory::DESCEND)
+        .open_dir(
+            0,
+            &named("sub"),
+            directory::ENUMERATE | directory::READ | directory::DESCEND,
+        )
         .unwrap();
     srv.bind(0, grant, 3).unwrap();
     assert_eq!(
@@ -803,7 +830,12 @@ fn each_rung_of_the_ladder_gates_exactly_its_own_verb() {
     // They differ for `open`, which takes READ **or** WRITE, so withholding only READ would
     // leave it reachable and the sweep would be asserting the wrong thing (it did, first time).
     for &(withheld, needed, ok, refusal) in &[
-        (directory::ENUMERATE, directory::ENUMERATE, "enumerate", EPERM),
+        (
+            directory::ENUMERATE,
+            directory::ENUMERATE,
+            "enumerate",
+            EPERM,
+        ),
         (
             directory::READ | directory::WRITE,
             directory::READ,
@@ -823,7 +855,12 @@ fn each_rung_of_the_ladder_gates_exactly_its_own_verb() {
         // `touch`'s three rungs (milestone 47, DECISIONS §112). `mtime` is a naming right like
         // `open`'s, so its refusal is `ENOENT` rather than `EROFS`: a holder that may not read
         // a name's time must not learn whether the name is there.
-        (directory::READ, directory::READ, "mtime", syscall::error::ENOENT),
+        (
+            directory::READ,
+            directory::READ,
+            "mtime",
+            syscall::error::ENOENT,
+        ),
         // Bare `touch`: WRITE alone, and nothing more, is what DECISIONS §112 says it should
         // take. `settime_at` below reuses this same "without" (WRITE present, SETTIME absent)
         // to prove the reverse: WRITE does not smuggle in the arbitrary-time authority.
@@ -833,7 +870,12 @@ fn each_rung_of_the_ladder_gates_exactly_its_own_verb() {
         // side already rules out for `settime_now`. Isolating SETTIME here (withheld is just
         // SETTIME, so `without` still carries WRITE) proves the arbitrary half needs the extra
         // grant even when the plain half is satisfied.
-        (directory::SETTIME, directory::WRITE | directory::SETTIME, "settime_at", EROFS),
+        (
+            directory::SETTIME,
+            directory::WRITE | directory::SETTIME,
+            "settime_at",
+            EROFS,
+        ),
     ] {
         let mut srv = server_with_tree();
         // Everything except the rung under test, so a verb that consults the wrong bit passes
@@ -1263,7 +1305,11 @@ fn a_listing_larger_than_the_buffer_is_paged_without_tearing_a_name() {
 fn mkdir_returns_a_capability_no_wider_than_the_one_that_made_it() {
     let mut srv = server_with_tree();
     // No REMOVE, so nothing made below may remove either.
-    let held = directory::DESCEND | directory::CREATE | directory::READ | directory::WRITE | directory::ENUMERATE;
+    let held = directory::DESCEND
+        | directory::CREATE
+        | directory::READ
+        | directory::WRITE
+        | directory::ENUMERATE;
     let sub = srv
         .open_dir(filesystem_contract::fs::ROOT as u32, &named("sub"), held)
         .unwrap();

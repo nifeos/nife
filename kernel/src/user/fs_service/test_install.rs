@@ -47,7 +47,10 @@ pub fn install_for_test(program: &str, name: &str, version: &str, bytes: &[u8]) 
         );
         for (k, chunk) in contents.chunks(PAGE_BYTES).enumerate() {
             page[..chunk.len()].copy_from_slice(chunk);
-            let wrote = call([fs::req(fs::WRITE, h, chunk.len() as u64), (k * PAGE_BYTES) as u64]);
+            let wrote = call([
+                fs::req(fs::WRITE, h, chunk.len() as u64),
+                (k * PAGE_BYTES) as u64,
+            ]);
             assert_eq!(wrote, chunk.len() as i64, "short write of {file}");
         }
         call([fs::req(fs::CLOSE, h, 0), 0]);

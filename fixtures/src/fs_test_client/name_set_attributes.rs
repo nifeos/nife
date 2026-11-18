@@ -8,7 +8,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{directory, fs, extended_attribute};
+use filesystem_contract::{directory, extended_attribute, fs};
 use filesystem_fixture as fixture;
 use user_mode_runtime::{call, exit, send};
 
@@ -52,7 +52,10 @@ pub(crate) fn set_attrs() -> ! {
         let (s, _) = call(
             FILE,
             fs::req(fs::SETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
-            extended_attribute::specification(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
+            extended_attribute::specification(
+                fixture::attrs::KIND,
+                fixture::attrs::VALUE.len() as u64,
+            ),
         );
         if (s as i64) >= 0 {
             put_page(fixture::attrs::NAME);
@@ -92,7 +95,8 @@ pub(crate) fn set_attrs() -> ! {
     // The naming question, by both routes: a file the set does not carry, and a directory it does
     // not carry. Both are really in the granted directory and the caretaker one hop up could open
     // either on any request it liked, so each refusal is a fact about the set.
-    if dir_open(fs::ROOT, tree::DEEPER) >= 0 || dir_descend(fs::ROOT, tree::DEEPER, directory::READ) >= 0
+    if dir_open(fs::ROOT, tree::DEEPER) >= 0
+        || dir_descend(fs::ROOT, tree::DEEPER, directory::READ) >= 0
     {
         v |= esc::REACHED_AN_UNMATCHED_NAME;
     }

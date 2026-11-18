@@ -500,7 +500,9 @@ impl Nav {
 
             let r = match at_seconds {
                 None => nav.name_call_in(t, fs::SET_MODIFICATION_TIME, handle, name, 0),
-                Some(seconds) => nav.name_call_in(t, fs::SET_MODIFICATION_TIME_AT, handle, name, seconds),
+                Some(seconds) => {
+                    nav.name_call_in(t, fs::SET_MODIFICATION_TIME_AT, handle, name, seconds)
+                }
             };
             if r < 0 {
                 return Say::Failed(-r as i32);

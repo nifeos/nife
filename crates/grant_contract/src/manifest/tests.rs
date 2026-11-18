@@ -10,7 +10,10 @@ fn word_rights_are_the_filesystem_contracts() {
     let read = directory::ENUMERATE | directory::READ | directory::DESCEND;
     assert_eq!(WordGrant::ReadOnly.rights(), read);
     assert_eq!(WordGrant::ReadWrite.rights(), read | directory::WRITE);
-    assert_eq!(WordGrant::Create.rights(), read | directory::WRITE | directory::CREATE);
+    assert_eq!(
+        WordGrant::Create.rights(),
+        read | directory::WRITE | directory::CREATE
+    );
 }
 
 /// **The index store opens its directory with exactly a word grant's rights**: none when

@@ -168,7 +168,9 @@ fn a_rename_replaces_a_file_and_refuses_to_cross_kinds() {
         Some(ENOTDIR),
     );
     // And a non-empty destination directory survives, which is the engine's ENOTEMPTY.
-    let d = srv.make_dir(sub, &named("empty-dir"), directory::ALL).unwrap();
+    let d = srv
+        .make_dir(sub, &named("empty-dir"), directory::ALL)
+        .unwrap();
     let _ = d;
     assert_eq!(
         srv.rename(sub, &named("empty-dir"), sub, &named("deeper"))
@@ -394,7 +396,9 @@ fn statfs_answers_through_a_capability_that_carries_nothing() {
     let mut srv = server_with_tree();
     let root = filesystem_contract::fs::ROOT as u32;
     // A child directory holding one right, and not one of the ones a read would need.
-    let narrow = srv.open_dir(root, &named("sub"), directory::DESCEND).unwrap();
+    let narrow = srv
+        .open_dir(root, &named("sub"), directory::DESCEND)
+        .unwrap();
     assert!(
         srv.read_dir(narrow, 0, &mut [0u8; 64]).is_err(),
         "the fixture is only meaningful if this capability cannot enumerate",

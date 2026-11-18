@@ -158,7 +158,8 @@ pub mod list {
     /// [`super::super::fs::LISTXATTR`] answer without a cursor.
     ///
     /// Name: ratified 2026-10-27 (#2797).
-    pub const MAXIMUM_BYTES: usize = super::MAXIMUM_ATTRIBUTES * record_len(super::MAXIMUM_NAME_BYTES);
+    pub const MAXIMUM_BYTES: usize =
+        super::MAXIMUM_ATTRIBUTES * record_len(super::MAXIMUM_NAME_BYTES);
 
     /// Write one record at the start of `out`, returning its length, or `None` if it does not
     /// fit or the name is not one this store holds.
@@ -209,7 +210,8 @@ pub mod list {
 /// format is public so its rules are host-tested and a recovery tool can read it.
 pub mod store {
     use super::{
-        E2BIG, ENODATA, ENOSPC, ERANGE, MAXIMUM_ATTRIBUTES, MAXIMUM_KIND, MAXIMUM_VALUE_BYTES, is_valid_name,
+        E2BIG, ENODATA, ENOSPC, ERANGE, MAXIMUM_ATTRIBUTES, MAXIMUM_KIND, MAXIMUM_VALUE_BYTES,
+        is_valid_name,
     };
 
     /// A record's fixed header: one byte of name length, four of kind, two of value length.
@@ -227,7 +229,8 @@ pub mod store {
     /// all rather than being left to the disk.
     ///
     /// Name: ratified 2026-10-27 (#2797).
-    pub const MAXIMUM_BYTES: usize = MAXIMUM_ATTRIBUTES * record_len(super::MAXIMUM_NAME_BYTES, MAXIMUM_VALUE_BYTES);
+    pub const MAXIMUM_BYTES: usize =
+        MAXIMUM_ATTRIBUTES * record_len(super::MAXIMUM_NAME_BYTES, MAXIMUM_VALUE_BYTES);
 
     /// The name of the file that holds a node's blob: its `TreePtr` id in lowercase hex, always
     /// eight characters, so the store directory's entries sort and read predictably in a
@@ -354,7 +357,10 @@ pub mod store {
     /// Lay one record at the start of `out`; `None` if it does not fit.
     fn write_record(out: &mut [u8], name: &[u8], kind: u32, value: &[u8]) -> Option<usize> {
         let n = record_len(name.len(), value.len());
-        if out.len() < n || name.len() > super::MAXIMUM_NAME_BYTES || value.len() > MAXIMUM_VALUE_BYTES {
+        if out.len() < n
+            || name.len() > super::MAXIMUM_NAME_BYTES
+            || value.len() > MAXIMUM_VALUE_BYTES
+        {
             return None;
         }
         out[0] = name.len() as u8;

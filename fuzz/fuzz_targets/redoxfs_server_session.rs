@@ -26,7 +26,7 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use filesystem_contract::{directory, fs, extended_attribute};
+use filesystem_contract::{directory, extended_attribute, fs};
 use libfuzzer_sys::arbitrary::{Result as ArbResult, Unstructured};
 use libfuzzer_sys::fuzz_target;
 use redoxfs::{BLOCK_SIZE, Disk, FileSystem, Node, TreePtr};
@@ -276,9 +276,11 @@ impl Session {
         let small = u.int_in_range(0u64..=9000)?;
         let (len, w1) = match code {
             fs::OPEN | fs::OPENDIR | fs::MKDIR => (self.name(u, 0)?, Self::rights(u)?),
-            fs::CREATE | fs::UNLINK | fs::RMDIR | fs::GET_MODIFICATION_TIME | fs::SET_MODIFICATION_TIME => {
-                (self.name(u, 0)?, 0)
-            }
+            fs::CREATE
+            | fs::UNLINK
+            | fs::RMDIR
+            | fs::GET_MODIFICATION_TIME
+            | fs::SET_MODIFICATION_TIME => (self.name(u, 0)?, 0),
             fs::SET_MODIFICATION_TIME_AT => (self.name(u, 0)?, small),
             fs::NARROW => (0, Self::rights(u)?),
             fs::READ => (small as usize, u.int_in_range(0..=600)?),

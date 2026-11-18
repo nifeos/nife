@@ -81,7 +81,8 @@ const LISTING: usize = 128;
 /// the widest set a grant carries, a directory entry's header per name and every byte of name the
 /// set may hold. It is one frame at the top of the stack and is never held across the recursion,
 /// which is why it can be larger than [`LISTING`] on a program with four stack pages.
-const SET_LISTING: usize = directory_entry::record_len(0) * filesystem_contract::nameset::MAXIMUM_NAMES
+const SET_LISTING: usize = directory_entry::record_len(0)
+    * filesystem_contract::nameset::MAXIMUM_NAMES
     + filesystem_contract::nameset::NAME_BYTES;
 
 /// The most rounds one directory takes before the walk gives up on it. A ceiling rather than a limit
@@ -93,7 +94,11 @@ const MAXIMUM_ROUNDS: usize = 64;
 
 /// Copy `bytes` into the shared page.
 fn put_page(bytes: &[u8]) {
-    for (i, &b) in bytes.iter().take(filesystem_contract::PAGE_BYTES).enumerate() {
+    for (i, &b) in bytes
+        .iter()
+        .take(filesystem_contract::PAGE_BYTES)
+        .enumerate()
+    {
         WINDOW.write_u8(i as u64, b);
     }
 }

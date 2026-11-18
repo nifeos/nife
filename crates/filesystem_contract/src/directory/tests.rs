@@ -40,7 +40,10 @@ fn every_refusal_explains_itself_without_implying_a_policy() {
     }
     // The two rungs whose whole design is that they answer different words must not collapse
     // into one sentence, or the distinction is invisible where a human meets it.
-    assert_ne!(directory::explain(directory::EROFS), directory::explain(directory::EPERM));
+    assert_ne!(
+        directory::explain(directory::EROFS),
+        directory::explain(directory::EPERM)
+    );
     assert_ne!(directory::explain(2), directory::explain(directory::EPERM));
 }
 
@@ -193,7 +196,8 @@ fn the_parent_rights_sentinel_is_not_a_mask_and_resolves_to_the_parents_own() {
     // Only the exact word is the sentinel: a mask that merely has bit 63 set among others keeps
     // the meaning it always had.
     assert_eq!(
-        directory::Rights::root(directory::READ).resolve(directory::PARENT_RIGHTS | directory::READ),
+        directory::Rights::root(directory::READ)
+            .resolve(directory::PARENT_RIGHTS | directory::READ),
         directory::PARENT_RIGHTS | directory::READ
     );
 }

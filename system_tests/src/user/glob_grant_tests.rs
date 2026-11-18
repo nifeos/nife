@@ -59,7 +59,10 @@ fn shell_expanded() -> Option<u64> {
             role: ROLE_GLOB,
             // The shell is told what its capability carries, for notes/shell-navigation.md's
             // reason: nothing on this wire reports what a handle holds.
-            arg: filesystem_contract::grant::specification(0, directory::ENUMERATE | directory::DESCEND | directory::READ),
+            arg: filesystem_contract::grant::specification(
+                0,
+                directory::ENUMERATE | directory::DESCEND | directory::READ,
+            ),
             arg2: 0,
             // A measurement: six pages ran within a few dozen bytes of the guard once `Holdings`
             // learned a second tree's mount point. See notes/two-trees.md, "The globbing

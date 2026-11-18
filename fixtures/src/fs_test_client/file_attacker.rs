@@ -8,7 +8,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{fs, grant, extended_attribute};
+use filesystem_contract::{extended_attribute, fs, grant};
 use filesystem_fixture as fixture;
 use fixture::escape;
 use user_mode_runtime::{call, exit, send};

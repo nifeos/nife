@@ -60,7 +60,12 @@ pub(crate) fn attr_blob<D: Disk>(
     let node = match transaction.find_node(dir_ptr, name) {
         Ok(node) => node,
         Err(e) if e.errno == syscall::error::ENOENT => return Ok(Vec::new()),
-        Err(e) => return Err(format!("{}/{name}: {e}", extended_attribute::STORE_DIRECTORY)),
+        Err(e) => {
+            return Err(format!(
+                "{}/{name}: {e}",
+                extended_attribute::STORE_DIRECTORY
+            ));
+        }
     };
     let size = node.data().size() as usize;
     if size > extended_attribute::store::MAXIMUM_BYTES {

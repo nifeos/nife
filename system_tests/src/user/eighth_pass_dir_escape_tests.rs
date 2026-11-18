@@ -29,7 +29,10 @@ fn a_grant_that_drops_one_right_loses_exactly_that_right() {
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }
-    let Some(read_only) = attack_a_subtree(directory::DESCEND | directory::READ | directory::ENUMERATE, 1) else {
+    let Some(read_only) = attack_a_subtree(
+        directory::DESCEND | directory::READ | directory::ENUMERATE,
+        1,
+    ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_verdict(

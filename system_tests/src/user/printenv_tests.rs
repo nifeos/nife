@@ -157,7 +157,10 @@ fn printenv_prints_the_page_it_was_granted() {
 /// different claim `environment_contract`'s `Option<&str>` never makes).
 #[test_case]
 fn a_key_never_declared_reads_as_unset_not_empty() {
-    let phys = assembled_page(|b| b.time_zone("UTC").expect("UTC is a real KNOWN_TIME_ZONES member"));
+    let phys = assembled_page(|b| {
+        b.time_zone("UTC")
+            .expect("UTC is a real KNOWN_TIME_ZONES member")
+    });
     let endpoints = crate::memory_region::create(1).expect("no endpoint region");
     let out = spawn_printenv(endpoints, Some(phys));
     let mut buf = [0u8; 128];

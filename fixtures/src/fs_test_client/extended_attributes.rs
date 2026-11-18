@@ -8,7 +8,7 @@
 //! Name: provisional (lane maintainer/files-over-1500, 2026-10-12 UTC), for the module and the
 //! file.
 
-use filesystem_contract::{directory, fs, extended_attribute};
+use filesystem_contract::{directory, extended_attribute, fs};
 use filesystem_fixture as fixture;
 use fixture::attrs;
 use user_mode_runtime::call;
@@ -112,7 +112,10 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     let r = call(
         FILE,
         fs::req(fs::SETXATTR, scratch, big.len() as u64),
-        extended_attribute::specification(extended_attribute::RAW, (extended_attribute::MAXIMUM_VALUE_BYTES + 1) as u64),
+        extended_attribute::specification(
+            extended_attribute::RAW,
+            (extended_attribute::MAXIMUM_VALUE_BYTES + 1) as u64,
+        ),
     )
     .0 as i64;
     if filesystem_contract::reply_errno(r) == Some(extended_attribute::E2BIG) {
@@ -122,7 +125,8 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     // 4. Removing it takes it away, and reading it afterwards is ENODATA. Without this the round
     //    trip above is equally true of a store that never forgets anything.
     if xattr_remove(scratch, attrs::NAME) >= 0
-        && filesystem_contract::reply_errno(xattr_get(scratch, attrs::NAME)) == Some(extended_attribute::ENODATA)
+        && filesystem_contract::reply_errno(xattr_get(scratch, attrs::NAME))
+            == Some(extended_attribute::ENODATA)
     {
         v |= attrs::GONE_AFTER_REMOVE;
     }
@@ -143,7 +147,11 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     // 7. The store is not in the namespace: it cannot be opened, created, or descended into.
     if dir_open(fs::ROOT, extended_attribute::STORE_DIRECTORY) < 0
         && dir_create(fs::ROOT, extended_attribute::STORE_DIRECTORY) < 0
-        && dir_descend(fs::ROOT, extended_attribute::STORE_DIRECTORY, directory::ALL) < 0
+        && dir_descend(
+            fs::ROOT,
+            extended_attribute::STORE_DIRECTORY,
+            directory::ALL,
+        ) < 0
     {
         v |= attrs::STORE_UNNAMEABLE;
     }
@@ -202,7 +210,9 @@ fn a_full_enumeration_does_not_name_the_store() -> u64 {
         }
         get_page(n as usize, &mut buf);
         let mut seen = 0u64;
-        for (name, _) in filesystem_contract::directory_entry::iter(&buf[..(n as usize).min(buf.len())]) {
+        for (name, _) in
+            filesystem_contract::directory_entry::iter(&buf[..(n as usize).min(buf.len())])
+        {
             if name == extended_attribute::STORE_DIRECTORY.as_bytes() {
                 clean = false;
             }

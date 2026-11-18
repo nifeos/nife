@@ -12,7 +12,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use filesystem_contract::{directory, fs, extended_attribute};
+use filesystem_contract::{directory, extended_attribute, fs};
 use redoxfs::DiskFile;
 use redoxfs_server::NameCopy;
 
@@ -161,8 +161,13 @@ fn write_attributes_as_the_server_does(img: &Path) -> Vec<u8> {
             redoxfs_server::Server::open(disk).expect("mount the image as the FS server does");
 
         let top = srv.open_file(&named("top.txt")).unwrap();
-        srv.set_xattr(top, b"user.com.apple.FinderInfo", extended_attribute::RAW, &finder)
-            .unwrap();
+        srv.set_xattr(
+            top,
+            b"user.com.apple.FinderInfo",
+            extended_attribute::RAW,
+            &finder,
+        )
+        .unwrap();
         srv.set_xattr(
             top,
             b"user.com.apple.metadata:tags",
@@ -174,8 +179,13 @@ fn write_attributes_as_the_server_does(img: &Path) -> Vec<u8> {
         let nested = srv
             .open_dir(fs::ROOT as u32, &named("nested"), directory::ALL)
             .expect("descend into nested");
-        srv.set_xattr(nested, b"user.nife.kind", extended_attribute::RAW, b"directory")
-            .unwrap();
+        srv.set_xattr(
+            nested,
+            b"user.nife.kind",
+            extended_attribute::RAW,
+            b"directory",
+        )
+        .unwrap();
 
         let note = srv.open_file_at(nested, &named("note.txt")).unwrap();
         srv.set_xattr(note, b"user.nife.note", extended_attribute::RAW, b"deep")

@@ -134,7 +134,14 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
     },
     // The second word is an offset for both, which is why they carry it and TRUNCATE's size
     // rides there too: an offset-shaped quantity is not a payload length.
-    row(fs::READ, "READ", Operand::Payload, true, false, directory::READ),
+    row(
+        fs::READ,
+        "READ",
+        Operand::Payload,
+        true,
+        false,
+        directory::READ,
+    ),
     row(
         fs::WRITE,
         "WRITE",
@@ -205,7 +212,14 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
         false,
         directory::REMOVE,
     ),
-    row(fs::RMDIR, "RMDIR", Operand::Name, false, false, directory::REMOVE),
+    row(
+        fs::RMDIR,
+        "RMDIR",
+        Operand::Name,
+        false,
+        false,
+        directory::REMOVE,
+    ),
     // The extended-attribute verbs. Their operand is a **payload**, not a name:
     // an attribute name is not a name in the directory, so a name-set capability must not filter
     // it and a per-file capability must not compare it against the granted name. Getting that
@@ -249,7 +263,14 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
     // parties already share (see `fs_subtree_caretaker`'s `PAGE_VA`).
     row(fs::STATFS, "STATFS", Operand::None, false, false, 0),
     // SYNC: any handle qualifies, and it needs `directory::WRITE`, for the reason `fs::SYNC` gives.
-    row(fs::SYNC, "SYNC", Operand::None, false, false, directory::WRITE),
+    row(
+        fs::SYNC,
+        "SYNC",
+        Operand::None,
+        false,
+        false,
+        directory::WRITE,
+    ),
     // **The mtime verbs**. All three are name-taking,
     // resolved directly under a directory handle rather than against an open file handle,
     // because `touch` never opens what it acts on: `fs::CREATE` and `fs::UNLINK` already take

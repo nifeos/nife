@@ -169,8 +169,8 @@ fn rm_f_ignores_a_name_that_is_not_there_and_success_says_nothing() {
     assert_eq!(quiet.printed, 0, "`-f` suppresses the diagnostic too");
     assert_eq!(quiet.removed, 0, "there was nothing to remove");
 
-    let did =
-        run_rm(directory::REMOVE_TREE, tree::RM_SOLO, 0).expect("the service was wired by the first run");
+    let did = run_rm(directory::REMOVE_TREE, tree::RM_SOLO, 0)
+        .expect("the service was wired by the first run");
     assert_eq!(did.status, rr::OK);
     assert_eq!(did.removed, 1);
     assert_eq!(

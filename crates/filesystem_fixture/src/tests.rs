@@ -548,7 +548,7 @@ fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
 /// something the bits no longer spell.
 #[test]
 fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
-    use filesystem_contract::{grant, extended_attribute};
+    use filesystem_contract::{extended_attribute, grant};
 
     use crate::attrs::*;
     let bits = [

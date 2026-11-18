@@ -48,14 +48,23 @@ fn an_attribute_round_trips_at_the_edges_of_both_limits() {
 fn a_type_code_survives_the_store_and_the_reply_word() {
     use extended_attribute::store;
     // 'CSTR' and 'LONG', BFS's own spellings, plus the largest code the reply word can carry.
-    for kind in [extended_attribute::RAW, 0x4353_5452, 0x4C4F_4E47, extended_attribute::MAXIMUM_KIND] {
+    for kind in [
+        extended_attribute::RAW,
+        0x4353_5452,
+        0x4C4F_4E47,
+        extended_attribute::MAXIMUM_KIND,
+    ] {
         let mut out = scratch();
         let n = store::set(&[], b"typed", kind, b"body", &mut out).expect("set");
         assert_eq!(store::get(&out[..n], b"typed").unwrap().0, kind);
 
         let r = extended_attribute::reply(kind, 4);
         assert!(r >= 0, "a reply word must never read as an error");
-        assert_eq!(extended_attribute::reply_kind(r), kind, "kind through the reply word");
+        assert_eq!(
+            extended_attribute::reply_kind(r),
+            kind,
+            "kind through the reply word"
+        );
         assert_eq!(
             extended_attribute::reply_value_len(r),
             4,
@@ -65,7 +74,13 @@ fn a_type_code_survives_the_store_and_the_reply_word() {
     // Bit 31 is not the store's to give away: refuse it where it is written.
     let mut out = scratch();
     assert_eq!(
-        store::set(&[], b"toobig", extended_attribute::MAXIMUM_KIND + 1, b"x", &mut out),
+        store::set(
+            &[],
+            b"toobig",
+            extended_attribute::MAXIMUM_KIND + 1,
+            b"x",
+            &mut out
+        ),
         Err(22),
         "a kind that cannot ride home must be refused, not truncated",
     );
@@ -124,13 +139,23 @@ fn each_limit_answers_with_its_own_word_and_nothing_is_clipped() {
     }
     assert_eq!(store::count(&blob), extended_attribute::MAXIMUM_ATTRIBUTES);
     assert_eq!(
-        store::set(&blob, b"one-too-many", extended_attribute::RAW, b"v", &mut out),
+        store::set(
+            &blob,
+            b"one-too-many",
+            extended_attribute::RAW,
+            b"v",
+            &mut out
+        ),
         Err(extended_attribute::ENOSPC),
     );
     // And the ceiling is on NEW names only: replacing one of the sixteen still works, which is
     // what keeps a full file usable rather than frozen.
-    let n = store::set(&blob, b"a0", extended_attribute::RAW, b"replaced", &mut out).expect("replace at cap");
-    assert_eq!(store::count(&out[..n]), extended_attribute::MAXIMUM_ATTRIBUTES);
+    let n = store::set(&blob, b"a0", extended_attribute::RAW, b"replaced", &mut out)
+        .expect("replace at cap");
+    assert_eq!(
+        store::count(&out[..n]),
+        extended_attribute::MAXIMUM_ATTRIBUTES
+    );
     assert_eq!(store::get(&out[..n], b"a0").unwrap().1, b"replaced");
 }
 
@@ -264,7 +289,10 @@ fn the_widest_listing_fits_one_page_and_round_trips() {
     }
     let mut page = [0u8; PAGE_BYTES];
     let used = store::list(&blob, &mut page);
-    assert_eq!(used, PAGE_BYTES, "sixteen widest names fill the page and no more");
+    assert_eq!(
+        used, PAGE_BYTES,
+        "sixteen widest names fill the page and no more"
+    );
     let back: Vec<Vec<u8>> = extended_attribute::list::iter(&page[..used])
         .map(|n| n.to_vec())
         .collect();
@@ -284,11 +312,18 @@ fn the_attribute_words_carry_a_kind_and_a_length_without_bleeding() {
     for &(kind, len) in &[
         (extended_attribute::RAW, 0usize),
         (1, extended_attribute::MAXIMUM_VALUE_BYTES),
-        (extended_attribute::MAXIMUM_KIND, extended_attribute::MAXIMUM_VALUE_BYTES),
+        (
+            extended_attribute::MAXIMUM_KIND,
+            extended_attribute::MAXIMUM_VALUE_BYTES,
+        ),
         (0xFFFF_FFFF, 1), // a caller that ignores MAXIMUM_KIND: the reply masks rather than lies
     ] {
         let w1 = extended_attribute::specification(kind, len as u64);
-        assert_eq!(extended_attribute::specification_kind(w1), kind, "kind through the request word");
+        assert_eq!(
+            extended_attribute::specification_kind(w1),
+            kind,
+            "kind through the request word"
+        );
         assert_eq!(
             extended_attribute::specification_value_len(w1),
             len,
@@ -296,7 +331,10 @@ fn the_attribute_words_carry_a_kind_and_a_length_without_bleeding() {
         );
         let r = extended_attribute::reply(kind, len);
         assert!(r >= 0);
-        assert_eq!(extended_attribute::reply_kind(r), kind & extended_attribute::MAXIMUM_KIND);
+        assert_eq!(
+            extended_attribute::reply_kind(r),
+            kind & extended_attribute::MAXIMUM_KIND
+        );
         assert_eq!(extended_attribute::reply_value_len(r), len);
     }
 }
@@ -349,7 +387,10 @@ fn a_record_that_exactly_fits_is_written_and_a_short_buffer_refuses() {
     use extended_attribute::store;
     let n = store::record_len(1, 1);
     let mut exact = vec![0u8; n];
-    assert_eq!(store::set(&[], b"n", extended_attribute::RAW, b"v", &mut exact), Ok(n));
+    assert_eq!(
+        store::set(&[], b"n", extended_attribute::RAW, b"v", &mut exact),
+        Ok(n)
+    );
     let mut short = vec![0u8; n - 1];
     assert_eq!(
         store::set(&[], b"n", extended_attribute::RAW, b"v", &mut short),
@@ -384,5 +425,8 @@ fn a_record_wider_than_the_contract_is_refused_when_a_blob_is_rewritten() {
         store::set(&blob, b"b", extended_attribute::RAW, b"v", &mut out),
         Err(extended_attribute::ENOSPC),
     );
-    assert_eq!(store::remove(&blob, b"b", &mut out), Err(extended_attribute::ENOSPC));
+    assert_eq!(
+        store::remove(&blob, b"b", &mut out),
+        Err(extended_attribute::ENOSPC)
+    );
 }

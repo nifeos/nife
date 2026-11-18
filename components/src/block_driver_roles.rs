@@ -1232,23 +1232,25 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
         let count = block::req_blocks(w0).min(block::TRANSFER_BLOCKS) as u64;
         let operation = filesystem_contract::operation(w0);
         let r0: i64 = match operation {
-            block::READ | block::WRITE => match transfer_first_sector(block, count, capacity_sectors) {
-                // EINVAL: some block of the request lies past the end of the disk.
-                None => filesystem_contract::reply_err(22),
-                Some(sector) => {
-                    let done = if operation == block::READ {
-                        blk_read(direct_memory_access_phys, sector, count)
-                    } else {
-                        blk_write(direct_memory_access_phys, sector, count)
-                    };
-                    // EIO: the device took the request and completed it with a non-OK status.
-                    if done {
-                        0
-                    } else {
-                        filesystem_contract::reply_err(5)
+            block::READ | block::WRITE => {
+                match transfer_first_sector(block, count, capacity_sectors) {
+                    // EINVAL: some block of the request lies past the end of the disk.
+                    None => filesystem_contract::reply_err(22),
+                    Some(sector) => {
+                        let done = if operation == block::READ {
+                            blk_read(direct_memory_access_phys, sector, count)
+                        } else {
+                            blk_write(direct_memory_access_phys, sector, count)
+                        };
+                        // EIO: the device took the request and completed it with a non-OK status.
+                        if done {
+                            0
+                        } else {
+                            filesystem_contract::reply_err(5)
+                        }
                     }
                 }
-            },
+            }
             block::SIZE => disk_size_bytes(capacity_sectors),
             // The one verb that can refuse for a reason outside this program. A device that never
             // offered the feature gets EOPNOTSUPP rather than a zero, because a zero here is a lie

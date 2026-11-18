@@ -237,7 +237,10 @@ fn a_walk_through_a_confined_grant_is_priced() {
     use filesystem_fixture::walk as tree;
     skip_without_the_walk!();
     let mut got = [0u8; 2048];
-    let Some(len) = walk_with(directory::ENUMERATE | directory::READ | directory::DESCEND, &mut got) else {
+    let Some(len) = walk_with(
+        directory::ENUMERATE | directory::READ | directory::DESCEND,
+        &mut got,
+    ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     let text = core::str::from_utf8(&got[..len]).unwrap_or("<not utf-8>");
@@ -541,7 +544,11 @@ fn ripgrep_without_enumerate_is_refused_rather_than_empty() {
     use filesystem_fixture::walk as tree;
     skip_without_rg!();
     let mut got = [0u8; 8192];
-    let Some(len) = rg_with(directory::READ | directory::DESCEND, tree::RG_SEARCH, &mut got) else {
+    let Some(len) = rg_with(
+        directory::READ | directory::DESCEND,
+        tree::RG_SEARCH,
+        &mut got,
+    ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     let text = core::str::from_utf8(&got[..len]).unwrap_or("<not utf-8>");
@@ -573,7 +580,11 @@ fn ripgrep_reaches_a_named_file_without_enumerate() {
     use filesystem_fixture::walk as tree;
     skip_without_rg!();
     let mut got = [0u8; 1024];
-    let Some(len) = rg_with(directory::READ | directory::DESCEND, tree::RG_NAMED, &mut got) else {
+    let Some(len) = rg_with(
+        directory::READ | directory::DESCEND,
+        tree::RG_NAMED,
+        &mut got,
+    ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_eq!(

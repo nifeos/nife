@@ -79,7 +79,11 @@ pub(super) fn mounted_grant((lo, hi, spec): (u64, u64, u64)) -> Option<(u64, u64
     let n = grant::unpack_name(lo, hi, grant::specification_len(spec), &mut buf);
     let rest = spawnproto::in_mounted_tree(&buf[..n])?;
     let (lo, hi) = grant::pack_name(rest)?;
-    Some((lo, hi, grant::specification(rest.len(), grant::specification_rights(spec))))
+    Some((
+        lo,
+        hi,
+        grant::specification(rest.len(), grant::specification_rights(spec)),
+    ))
 }
 
 /// **A channel of its own for one job behind a grant in the second mounted tree**: [`job_channel`]
@@ -164,7 +168,11 @@ pub(super) fn bound_channel(
 /// Name: provisional (milestone 946).
 pub(super) fn at_bound_root((_, _, spec): (u64, u64, u64)) -> (u64, u64, u64) {
     use filesystem_contract::grant;
-    (0, 0, grant::specification(0, grant::specification_rights(spec)))
+    (
+        0,
+        0,
+        grant::specification(0, grant::specification_rights(spec)),
+    )
 }
 
 /// **Bind window `w`'s badge to the directory `handle` names, and hand back the window's page and

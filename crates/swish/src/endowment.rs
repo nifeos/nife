@@ -121,7 +121,11 @@ fn write_bind_row(entry: &nav::BindEntry, out: &mut dyn FnMut(&[u8])) {
 /// **The three inert-configuration keys, one per line**, in `printenv`'s spelling (`KEY=value`,
 /// or `KEY (unset)` for a key the page does not carry). A page nobody assembled reads as three
 /// unset keys, which is what [`ConfigurationPage`] answers for it and what the child would see.
-pub(super) fn write_config_values(page: &ConfigurationPage, indent: &[u8], out: &mut dyn FnMut(&[u8])) {
+pub(super) fn write_config_values(
+    page: &ConfigurationPage,
+    indent: &[u8],
+    out: &mut dyn FnMut(&[u8]),
+) {
     for (key, value) in [
         (b"TZ".as_slice(), page.time_zone()),
         (b"LANG".as_slice(), page.locale()),

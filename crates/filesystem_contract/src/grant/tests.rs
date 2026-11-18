@@ -102,6 +102,12 @@ fn a_root_grant_is_an_empty_name_carrying_its_rights() {
     assert!(grant::pack_name(b"").is_none());
     let specification = grant::specification(0, crate::directory::REMOVE);
     let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
-    assert_eq!(grant::unpack_name(0, 0, grant::specification_len(specification), &mut buf), 0);
-    assert_eq!(grant::specification_rights(specification), crate::directory::REMOVE);
+    assert_eq!(
+        grant::unpack_name(0, 0, grant::specification_len(specification), &mut buf),
+        0
+    );
+    assert_eq!(
+        grant::specification_rights(specification),
+        crate::directory::REMOVE
+    );
 }

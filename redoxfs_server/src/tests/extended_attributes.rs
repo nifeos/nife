@@ -275,8 +275,10 @@ fn the_last_attribute_takes_the_store_with_it() {
 
     let motd = srv.open_file(&named("motd")).unwrap();
     let second = srv.create_file(&named("second")).unwrap();
-    srv.set_xattr(motd, b"user.a", extended_attribute::RAW, b"1").unwrap();
-    srv.set_xattr(second, b"user.b", extended_attribute::RAW, b"2").unwrap();
+    srv.set_xattr(motd, b"user.a", extended_attribute::RAW, b"1")
+        .unwrap();
+    srv.set_xattr(second, b"user.b", extended_attribute::RAW, b"2")
+        .unwrap();
     assert!(store_exists(&mut srv), "setting one must create the store");
 
     srv.remove_xattr(motd, b"user.a").unwrap();
@@ -293,7 +295,8 @@ fn the_last_attribute_takes_the_store_with_it() {
 
     // And again by the other route: `unlink` purges a blob without going through `write_attrs`,
     // so the two paths need separate evidence.
-    srv.set_xattr(motd, b"user.c", extended_attribute::RAW, b"3").unwrap();
+    srv.set_xattr(motd, b"user.c", extended_attribute::RAW, b"3")
+        .unwrap();
     assert!(store_exists(&mut srv));
     srv.unlink(filesystem_contract::fs::ROOT as u32, &named("motd"))
         .unwrap();
@@ -311,7 +314,8 @@ fn the_last_attribute_takes_the_store_with_it() {
 fn the_attribute_store_is_not_in_the_namespace() {
     let mut srv = server_with_tree();
     let h = srv.open_file(&named("motd")).unwrap();
-    srv.set_xattr(h, b"user.x", extended_attribute::RAW, b"1").unwrap();
+    srv.set_xattr(h, b"user.x", extended_attribute::RAW, b"1")
+        .unwrap();
 
     // It is really there: this test would be vacuous against a filesystem with no store at all.
     assert!(
@@ -324,7 +328,9 @@ fn the_attribute_store_is_not_in_the_namespace() {
     let root = filesystem_contract::fs::ROOT as u32;
     let listed = list(&mut srv, root, 4096).unwrap();
     assert!(
-        !listed.iter().any(|(n, _)| n == extended_attribute::STORE_DIRECTORY),
+        !listed
+            .iter()
+            .any(|(n, _)| n == extended_attribute::STORE_DIRECTORY),
         "a listing named the attribute store: {listed:?}",
     );
     // Every name-taking verb, at every rights this contract can carry, and the answer is always
@@ -336,9 +342,13 @@ fn the_attribute_store_is_not_in_the_namespace() {
         EINVAL
     );
     assert_eq!(
-        srv.open_dir(root, &named(extended_attribute::STORE_DIRECTORY), directory::ALL)
-            .unwrap_err()
-            .errno,
+        srv.open_dir(
+            root,
+            &named(extended_attribute::STORE_DIRECTORY),
+            directory::ALL
+        )
+        .unwrap_err()
+        .errno,
         EINVAL,
     );
     assert_eq!(
@@ -348,9 +358,13 @@ fn the_attribute_store_is_not_in_the_namespace() {
         EINVAL
     );
     assert_eq!(
-        srv.make_dir(root, &named(extended_attribute::STORE_DIRECTORY), directory::ALL)
-            .unwrap_err()
-            .errno,
+        srv.make_dir(
+            root,
+            &named(extended_attribute::STORE_DIRECTORY),
+            directory::ALL
+        )
+        .unwrap_err()
+        .errno,
         EINVAL,
     );
     assert_eq!(
@@ -360,13 +374,20 @@ fn the_attribute_store_is_not_in_the_namespace() {
         EINVAL
     );
     assert_eq!(
-        srv.rmdir(root, &named(extended_attribute::STORE_DIRECTORY)).unwrap_err().errno,
+        srv.rmdir(root, &named(extended_attribute::STORE_DIRECTORY))
+            .unwrap_err()
+            .errno,
         EINVAL
     );
     assert_eq!(
-        srv.rename(root, &named("motd"), root, &named(extended_attribute::STORE_DIRECTORY))
-            .unwrap_err()
-            .errno,
+        srv.rename(
+            root,
+            &named("motd"),
+            root,
+            &named(extended_attribute::STORE_DIRECTORY)
+        )
+        .unwrap_err()
+        .errno,
         EINVAL,
     );
     // And it is reserved in a *subdirectory* too, so the rule is one sentence rather than a
@@ -442,13 +463,20 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
     let mut page = [0u8; 4096];
 
     assert_eq!(
-        srv.set_xattr(h, b"", extended_attribute::RAW, b"v").unwrap_err().errno,
+        srv.set_xattr(h, b"", extended_attribute::RAW, b"v")
+            .unwrap_err()
+            .errno,
         extended_attribute::ERANGE,
     );
     assert_eq!(
-        srv.set_xattr(h, &vec![b'n'; extended_attribute::MAXIMUM_NAME_BYTES + 1], extended_attribute::RAW, b"v")
-            .unwrap_err()
-            .errno,
+        srv.set_xattr(
+            h,
+            &vec![b'n'; extended_attribute::MAXIMUM_NAME_BYTES + 1],
+            extended_attribute::RAW,
+            b"v"
+        )
+        .unwrap_err()
+        .errno,
         extended_attribute::ERANGE,
     );
     assert_eq!(
@@ -478,8 +506,13 @@ fn every_ceiling_refuses_loudly_and_with_its_own_word() {
 
     // Fill the node and ask for one more.
     for i in 1..extended_attribute::MAXIMUM_ATTRIBUTES {
-        srv.set_xattr(h, format!("user.a{i}").as_bytes(), extended_attribute::RAW, b"v")
-            .unwrap();
+        srv.set_xattr(
+            h,
+            format!("user.a{i}").as_bytes(),
+            extended_attribute::RAW,
+            b"v",
+        )
+        .unwrap();
     }
     assert_eq!(
         srv.set_xattr(h, b"user.overflow", extended_attribute::RAW, b"v")

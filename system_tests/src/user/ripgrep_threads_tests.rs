@@ -145,9 +145,11 @@ impl Line {
 fn threaded_run(line: &str, workers: usize, before_counting: impl FnOnce()) {
     use filesystem_contract::directory;
     let mut got = [0u8; 8192];
-    let Some((len, started, spent)) =
-        run_rg_as_process(directory::ENUMERATE | directory::READ | directory::DESCEND, line, &mut got)
-    else {
+    let Some((len, started, spent)) = run_rg_as_process(
+        directory::ENUMERATE | directory::READ | directory::DESCEND,
+        line,
+        &mut got,
+    ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     let text = core::str::from_utf8(&got[..len]).unwrap_or("<not utf-8>");

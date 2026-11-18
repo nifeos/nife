@@ -212,7 +212,11 @@ fn unlink_and_rmdir_refuse_every_refused_name_and_remove_nothing() {
 fn the_mtime_verbs_refuse_every_refused_name() {
     let mut srv = server_with_tree();
     let mut window = vec![0u8; fs::MAXIMUM_TRANSFER_BYTES];
-    for &code in &[fs::GET_MODIFICATION_TIME, fs::SET_MODIFICATION_TIME, fs::SET_MODIFICATION_TIME_AT] {
+    for &code in &[
+        fs::GET_MODIFICATION_TIME,
+        fs::SET_MODIFICATION_TIME,
+        fs::SET_MODIFICATION_TIME_AT,
+    ] {
         for &name in REFUSED {
             let len = stage(&mut window, name);
             let (r0, _) = srv.handle(
@@ -374,7 +378,12 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
         "RENAME took the store name as a destination from a subdirectory",
     );
     assert_eq!(
-        sub_rename(&mut srv, &mut window, STORE_DIRECTORY.as_bytes(), b"anywhere"),
+        sub_rename(
+            &mut srv,
+            &mut window,
+            STORE_DIRECTORY.as_bytes(),
+            b"anywhere"
+        ),
         -(EINVAL as i64),
         "RENAME took the store name as a source from a subdirectory",
     );
@@ -383,7 +392,13 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
     srv.fs
         .tx(|transaction| {
             let (ptr, _) = srv_lookup_sub(transaction)?;
-            transaction.create_node(ptr, STORE_DIRECTORY, redoxfs::Node::MODE_FILE | 0o600, 0, 0)?;
+            transaction.create_node(
+                ptr,
+                STORE_DIRECTORY,
+                redoxfs::Node::MODE_FILE | 0o600,
+                0,
+                0,
+            )?;
             Ok(())
         })
         .unwrap();
