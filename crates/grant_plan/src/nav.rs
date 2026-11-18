@@ -33,6 +33,10 @@ pub const MAXIMUM_NAME: usize = crate::MAXIMUM_FILE_NAME;
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
 pub const MAXIMUM_DIRECTORY_NAME: usize = crate::WORDS_NAME;
 
+// A bound directory entry holds its name length as a `u8`.
+const _: () = assert!(MAXIMUM_NAME <= u8::MAX as usize);
+const _: () = assert!(MAXIMUM_DIRECTORY_NAME <= u8::MAX as usize);
+
 /// The bytes [`Cwd::render`] can need: a slash per level, plus each name, plus the leading slash a
 /// root renders as on its own.
 ///
@@ -136,7 +140,7 @@ impl<'a> Path<'a> {
 /// Parse a token into a [`Path`], with no IO and no capability consulted.
 ///
 /// Empty components are skipped, so `a//b` and `deeper/` mean what they do everywhere else; that is
-/// Unix's behaviour and there is no divergence to earn. A leading `/` sets [`Path::is_from_root`],
+/// Unix's behavior and there is no divergence to earn. A leading `/` sets [`Path::is_from_root`],
 /// which is the biggest fact about the token and the only one the steps themselves cannot carry:
 /// `/a` and `a` parse to the same single step and mean different places.
 pub fn path(token: &[u8]) -> Result<Path<'_>, Refused> {

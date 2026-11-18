@@ -5,6 +5,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	code	the heavy-job slots (a full machine holds a job back; a killed holder frees its slot)
 -	1	-	-	0	-	code	the CI fuzz job keeps a finding private
 -	1	-	-	0	-	code	script/verify --parallel forks the shards, joins their verdicts, and keeps to one slot
+-	1	-	-	0	-	code	script/idle-pull-requests classifies open pull requests (the queue sweep's idle check)
 -	1	-	-	0	-	code	script/crate-move stages a move as the runbook says
 -	1	-	-	0	-	code	script/push believes origin's ref, not git's exit status
 -	1	-	-	0	-	code	script/push --requeue re-arms, and arming refuses a held pull request
@@ -85,6 +86,7 @@ section-list	1	-	-	1	-	code	the section list (script/lint's sections are a revie
 -	1	-	-	0	-	code	the empty-diff check
 -	1	-	-	0	-	code	workflow steps that swallow a failure
 -	1	-	-	0	-	code	every workflow file parses
+-	1	-	-	0	-	code	no workflow step uses a bare actions/checkout
 -	1	-	-	0	-	code	the fuzz heartbeat (selftest, and the workflow keeps to its limits)
 -	1	-	-	0	-	code	every issue form renders
 -	0	main	-	0	-	code	the kernel's dependencies: nothing only its tests use

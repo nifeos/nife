@@ -98,17 +98,26 @@ impl Windows {
 
     /// Whether window `w`'s badge is bound to a grant.
     #[must_use]
+    ///
+    /// A window outside the pool is never bound: a shift by 64 or more would wrap to a low bit and
+    /// answer for another window.
     pub const fn is_bound(&self, w: u64) -> bool {
-        self.bound & (1 << w) != 0
+        w < MAXIMUM_WINDOWS as u64 && self.bound & (1 << w) != 0
     }
 
-    /// Record whether window `w`'s badge is bound.
-    pub fn set_bound(&mut self, w: u64, bound: bool) {
+    /// Record whether window `w`'s badge is bound. Returns `false`, and records nothing, for a
+    /// window outside the pool, which is a wiring mistake in the caller and would otherwise set
+    /// another window's bit.
+    pub fn set_bound(&mut self, w: u64, bound: bool) -> bool {
+        if w >= MAXIMUM_WINDOWS as u64 {
+            return false;
+        }
         if bound {
             self.bound |= 1 << w;
         } else {
             self.bound &= !(1 << w);
         }
+        true
     }
 }
 
@@ -259,6 +268,19 @@ mod tests {
         let w = p.take(1).unwrap();
         p.release(w);
         assert_eq!(p.take(2), Some(w + 1));
+    }
+
+    /// **A window past the pool is never bound and cannot be bound**, so a shift that would wrap
+    /// onto another window's bit is refused instead.
+    #[test]
+    fn a_window_outside_the_pool_cannot_set_another_windows_bit() {
+        let mut p = Windows::new(0, MAXIMUM_WINDOWS as u64);
+        for w in [MAXIMUM_WINDOWS as u64, 64, 65, u64::MAX] {
+            assert!(!p.set_bound(w, true), "window {w}");
+            assert!(!p.is_bound(w), "window {w}");
+        }
+        assert!((0..MAXIMUM_WINDOWS as u64).all(|w| !p.is_bound(w)));
+        assert!(p.set_bound(15, true) && p.is_bound(15));
     }
 
     /// **A window's bound bit is its own**: setting one leaves the others, and clearing it clears

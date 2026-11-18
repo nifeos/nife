@@ -264,6 +264,22 @@ fn pending_signals_do_not_make_an_rendezvous_busy() {
     assert!(e.is_idle());
 }
 
+/// **The pending count saturates and never wraps**: a signal arriving at the largest count leaves
+/// it there (wrapping to zero would lose every counted signal), and a receive still drains one.
+#[test]
+fn the_pending_count_saturates_and_a_receive_still_drains_one() {
+    let mut e: Rendezvous<N> = Rendezvous::new();
+    e.pending = u32::MAX;
+    assert!(e.signal().is_none());
+    assert_eq!(e.debug_counts(), (0, 0, u32::MAX));
+    let mut driver = node();
+    let Receive::Signal(back) = e.receive(token(&mut driver)) else {
+        panic!("a pending signal was not drained");
+    };
+    assert_eq!(e.debug_counts(), (0, 0, u32::MAX - 1));
+    drop(back);
+}
+
 /// **A queued sender can be taken back out of the middle**, which is what reaping a corpse
 /// needs (DECISIONS §32, and §16's `DESTROY` before it): a supervised thread that died with
 /// nobody receiving is parked here with its death message, and freeing it while it is still

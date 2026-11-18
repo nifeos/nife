@@ -82,7 +82,7 @@ pub const fn req_blocks(w0: u64) -> usize {
 }
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, for
-/// `fs::TRANSFER_MAXIMUM`'s reason: this contract has no test harness at EL0, and a build is the
+/// `fs::TRANSFER_MAXIMUM`'s reason: this contract has no test harness at EL0 (the unprivileged exception level), and a build is the
 /// only artifact that can be wrong about it there.
 const _: () = {
     assert!(TRANSFER_BLOCKS >= 1);

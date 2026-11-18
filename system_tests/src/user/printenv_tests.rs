@@ -86,7 +86,7 @@ fn finish(out: RendezvousId, endpoints: u64) {
 }
 
 /// A page nobody assembled: allocated and left zeroed, exactly `date_tests`'s unpublished-clock
-/// shape and `environment_contract`'s own `a_zeroed_page_reads_as_no_configuration`.
+/// shape and `environment_contract`'s own `a_zeroed_frame_carries_no_configuration`.
 fn blank_page() -> u64 {
     crate::memory::alloc_zeroed()
         .expect("no frame for a blank config page")

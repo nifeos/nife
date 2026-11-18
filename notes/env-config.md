@@ -1,7 +1,6 @@
 # The inert-configuration page: `TZ`, `LANG`, `TERM`, and what still waits
 
-Milestone 47's environment-variable fork. Built 2026-08-23. The contract is `environment_contract` (a
-provisional name; naming crates is an architect's call, per AGENTS.md); the decision is DECISIONS
+Milestone 47's environment-variable fork. Built 2026-08-23. The contract is `environment_contract`; the decision is DECISIONS
 §111 (inert configuration is a read-only page).
 
 ## What this is
@@ -98,10 +97,12 @@ host test in the crate pins the widths and the identity.
 
 ## Tests
 
-`crates/environment_contract` host suite: 9 unit tests plus 2 doctests. They cover the round trip,
+`crates/environment_contract` host suite: 13 unit tests plus 2 doctests. They cover the round trip,
 every domain check, and an undeclared key reading as absent rather than empty. Then a zeroed frame
 and an unrecognized
-magic both reading as "no configuration," and the layout offsets not overlapping.
+magic both reading as "no configuration," and the layout offsets not overlapping. A length byte past its field, and a recognized page whose
+field holds a non-member, read as absent; the Kani harnesses in the crate prove the bound and the
+round trip.
 `kernel::user::std_tests::a_whole_std_program_runs_on_the_native_abi`, both ISAs: the real
 `std_exerciser` binary, granted a real config page assembled by the real kernel wiring, reads
 `TZ`/`LANG`/`TERM` back through the real std PAL and the real `std::env` API.

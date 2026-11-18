@@ -30,7 +30,7 @@ for the heap, where it lives, how it grows and when it refuses. The same strange
 the growth policy on a host without a kernel, can read every `unsafe` block against a stated
 invariant that holds, and sees the template's gates green for the crate's own reasons.
 
-## What was checked, and how
+## How the review checked
 
 The tools run, the sources read and what was not run are in [the appendix](1100-memory-region-heap-outside-review/what-was-checked.md).
 
@@ -116,7 +116,7 @@ The P1 items are in [the appendix](1100-memory-region-heap-outside-review/before
 
 ## Decisions for the architect
 
-Two one-way doors. Everything else above is the maintainer's. Decisions A and B are ruled and in force.
+Two one-way doors. Everything else above is the maintainer's. The architect ruled Decisions A and B, and both hold.
 
 ### A. The seven public names, and the shape of `commit_all` (ruled 2026-11-14 UTC)
 
@@ -151,7 +151,7 @@ The rule in force, option A (block 1100 decision B):
 - If upstream stays silent past the next monthly `script/vendor-watch` report, the question
   returns as a request to fork. A fork under `nifeos` needs its own approval.
 
-Evidence the architect saw: `talc` 5.1.1 was released 2026-09-09 and has 2.6 million downloads. One
+Evidence the architect saw: `talc` 5.1.1 came out on 2026-09-09 and has 2.6 million downloads. One
 maintainer wrote most of its commits. Pull request 57 has been open since 2026-09-24 with no
 comments.
 
@@ -216,7 +216,7 @@ not merged). A fork under `nifeos` (refused in the step 9 appendix as needing it
 
 ## Done when
 
-The checks are in [the appendix](1100-memory-region-heap-outside-review/done-when.md).
+The checks are in [the appendix](1100-memory-region-heap-outside-review/done-when.md). What is done and what is left, item by item, is in [the ledger](1100-memory-region-heap-outside-review/ledger.md).
 
 ## BUGS
 

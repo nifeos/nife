@@ -41,7 +41,7 @@ fn an_attribute_round_trips_at_the_edges_of_both_limits() {
 }
 
 /// **The kind is carried and never interpreted**, which is the whole of "do not foreclose
-/// indexing". A BFS-style four-character code has to survive
+/// indexing". A `BeOS` filesystem style four-character code has to survive
 /// the store and the reply word, and a code with bit 31 set has to be refused rather than
 /// truncated into a type nobody wrote.
 #[test]

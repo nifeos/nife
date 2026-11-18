@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: none
 decision_dependencies: none
@@ -229,6 +229,14 @@ revisit. The seven keep their spelling as they stand. The crate stays with the k
 released, so nothing outside acts on the names. The review package lists them as provisional;
 ratifying them stays the architect's. Item 6 is the work.
 
+## Follow-on
+
+- **Outstanding.** Decision 1 (the `Send` bound), which the architect rules, and the ratifying of decision 2. Checked: ledger rows 4 and 6.
+- **Outstanding.** Items 1 to 3, the move's manifest, front page and skeleton, which need the new repository.
+- **Outstanding.** Item 5 (the kernel's `mint_token`), item 9 (new public names) and item 13 (a shared test node, which waits for the move).
+
+[The ledger](1097-intrusive-queue-outside-review/ledger.md) lists each item.
+
 ## Done when
 
 The checks are in [the appendix](1097-intrusive-queue-outside-review/done-when.md).
@@ -284,8 +292,4 @@ as written.
 
 ## Index row
 
-An outside review of `intrusive_queue` before its first release. Three P0 items are the
-move's own skeleton (manifest, front page, scaffold). Five P1 items follow (a `Send` bound the move makes
-necessary, a provenance clause the aliasing models demand and the kernel's mint violates, seven
-names to ratify, a doctest that names its error, a drop rule). Five P2 items close it (a proved `remove`
-behind five consumer loops, link hygiene in the harness, std traits, prose, test support).
+An outside review of `intrusive_queue` before its first release. Three P0 items are the move's skeleton. Five P1 items follow (a `Send` bound, a provenance clause, seven names to ratify, a doctest, a drop rule). Five P2 items close it.

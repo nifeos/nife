@@ -28,9 +28,12 @@ length a client sends travels in a register, which the caller chooses. The name 
 shared page, which any holder of the frame can rewrite. The victim sends its own name's length,
 so the attacker's name must fill exactly that many bytes for the server to resolve it.
 
+`SHARED_ISOLATED` is the expected verdict on separate windows, `SHARED_SUBSTITUTED` is the negative
+control's verdict on one shared window, and `SHARED_UNEXPECTED` is a wiring fault in the witness.
+
 ## The durability witness
 
-The witness asks `filesystem_contract::fs::SYNC` twice and reads the count each answer carries.
+A witness would ask `filesystem_contract::fs::SYNC` twice and read the count each answer carries.
 Two independent things are checked, which is why one verdict is not enough:
 
 1. The count was already non-zero when the witness first asked. Nothing in this process had
@@ -46,9 +49,10 @@ somebody chasing the wrong half of the stack.
 Nothing produces these verdicts. The only role that ran the witness was `fs_test_client`'s SMB
 verify role, which went with the SMB implementation (notes/smb.md). Its end-to-end leg needed a
 network client to cause the first flush. `SYNC` and the block server's `VIRTIO_BLK_T_FLUSH` are
-still wired and still correct, and nothing gates them. The vocabulary is kept because the
-classification is the useful half. Re-homing the witness onto a role that needs no network is a
-small piece of work with no design question in it.
+still wired and still correct, and nothing gates them. The fixture crate carries no verdict words
+for it, since a public item nothing produces is a promise the crate cannot keep. The
+classification above is the useful half and stays here: a witness rebuilt on a role that needs no
+network adds the verdict words to the fixture with it.
 
 ## The throughput shape
 

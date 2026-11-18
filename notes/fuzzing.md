@@ -52,7 +52,7 @@ The rule that picked them: does this code read bytes from outside the trust boun
 whose input this system produced is a correctness question. A parser whose input somebody else
 produced is a security question, and it is the one where a panic has a consequence a user notices.
 
-Thirteen parser targets, deliberately fewer than one per crate; the FAT crate fuzzes its own in its
+Fifteen parser targets, fewer than one per crate; the FAT crate fuzzes its own in its
 repository, `nifeos/file_allocation_table`. A fuzz target that finds nothing
 because it fuzzes a total function is worse than no target: it costs CI time on every commit and it
 implies coverage the project does not have.
@@ -72,6 +72,8 @@ implies coverage the project does not have.
 | `acpi_firmware_tables` | firmware (ACPI) | IOMMU identity mappings stay whole pages |
 | `machine_description_from_device_tree` | firmware (device tree) | readers no proof reaches |
 | `video_terminal_feed` | any program that prints | cursor and damage stay inside; cutting input changes nothing |
+| `line_editor_feed` | serial console | cursor stays inside |
+| `line_editor_handoff` | handoff frame | restores whole or refuses |
 
 ### And the ones deliberately not fuzzed
 

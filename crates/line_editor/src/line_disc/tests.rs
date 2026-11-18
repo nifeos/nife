@@ -606,3 +606,143 @@ fn a_long_control_sequence_parameter_saturates() {
     assert_eq!(feed_all(&mut d, &mut s, b"\r"), [Event::Line]);
     assert_eq!(d.line(), b"abXc");
 }
+
+/// A second Escape is the same introducer, not a dropped one: a Meta-prefixed arrow (`ESC ESC [ A`)
+/// recalls history, where it used to leave `[A` in the line.
+#[test]
+fn a_doubled_escape_is_one_prefix() {
+    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    feed_all(&mut d, &mut s, b"first\r");
+    feed_all(&mut d, &mut s, b"\x1b\x1b[A");
+    assert_eq!(d.pending().0, b"first");
+}
+
+/// An X10 mouse report (`ESC [ M` and three payload bytes) is dropped whole: its payload is not
+/// typed into the line, whatever the three bytes are, and a key after it is an ordinary key.
+#[test]
+fn a_mouse_report_is_dropped_with_its_payload() {
+    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    feed_all(&mut d, &mut s, b"ab");
+    feed_all(&mut d, &mut s, b"\x1b[M #!");
+    assert_eq!(d.pending().0, b"ab");
+    // The payload may itself hold an escape or a final-looking byte.
+    feed_all(&mut d, &mut s, b"\x1b[M\x1b[M");
+    assert_eq!(d.pending().0, b"ab");
+    feed_all(&mut d, &mut s, b"c");
+    assert_eq!(d.pending().0, b"abc");
+    // `CSI 1 M` carries a parameter and is not a mouse report: dropped as an unknown final.
+    feed_all(&mut d, &mut s, b"\x1b[1Md");
+    assert_eq!(d.pending().0, b"abcd");
+}
+
+/// A byte at or above 0x80 is dropped without echo: input is ASCII only (the crate `BUGS` says so).
+#[test]
+fn a_byte_above_ascii_is_dropped_without_echo() {
+    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    feed_all(&mut d, &mut s, b"a\xc3\xa9b");
+    assert_eq!(d.pending().0, b"ab");
+    assert_eq!(s.text(), "ab");
+}
+
+/// Yanking more than fits fills the line to its limit and keeps the cursor and length consistent,
+/// with the kill buffer read in place.
+#[test]
+fn a_yank_into_a_nearly_full_line_inserts_what_fits() {
+    let (mut d, mut s) = (LineDisc::new(), Screen::new());
+    feed_all(&mut d, &mut s, &[b'x'; 10]);
+    feed_all(&mut d, &mut s, b"\x15"); // ^U: the ten bytes are the kill buffer
+    feed_all(&mut d, &mut s, &[b'y'; LINE_MAXIMUM - 4]);
+    feed_all(&mut d, &mut s, b"\x19"); // ^Y: four fit
+    let (line, cursor) = d.pending();
+    assert_eq!(line.len(), LINE_MAXIMUM);
+    assert_eq!(cursor, LINE_MAXIMUM);
+    assert_eq!(&line[LINE_MAXIMUM - 4..], b"xxxx");
+}
+
+/// Every cursor move the engine can echo, at the largest distance, is one contiguous sequence of
+/// the right digits: the buffer in `csi_move` holds a line-length distance.
+#[test]
+fn the_largest_cursor_move_is_a_whole_sequence() {
+    struct Whole(Vec<Vec<u8>>);
+    impl Sink for Whole {
+        fn put(&mut self, bytes: &[u8]) {
+            self.0.push(bytes.to_vec());
+        }
+    }
+    let mut out = Whole(Vec::new());
+    csi_left(&mut out, LINE_MAXIMUM);
+    csi_right(&mut out, 1);
+    assert_eq!(out.0, [b"\x1b[256D".to_vec(), b"\x1b[C".to_vec()]);
+}
+
+/// A sink is never handed an empty write. Clearing the screen on a fresh editor with no prompt and
+/// no line (the one byte 0x0c) repaints nothing after the clear, and the repaint of an empty
+/// prompt or an empty line puts nothing at all. The line editor fuzz target found this.
+#[test]
+fn a_repaint_with_nothing_to_paint_puts_nothing() {
+    struct Puts(Vec<Vec<u8>>);
+    impl Sink for Puts {
+        fn put(&mut self, b: &[u8]) {
+            self.0.push(b.to_vec());
+        }
+    }
+    let mut editor = LineDisc::new();
+    let mut out = Puts(Vec::new());
+    editor.feed(0x0c, &mut out);
+    assert_eq!(out.0, [b"\x1b[2J\x1b[H".to_vec()]);
+    let mut out = Puts(Vec::new());
+    editor.repaint(&mut out);
+    assert!(out.0.is_empty());
+}
+
+/// Every sequence of up to three bytes, from the whole byte range, leaves no empty put: a kill
+/// that removes the tail of the line and a history recall of an empty entry are the two other
+/// places that once handed the sink an empty slice.
+#[test]
+fn no_short_keystroke_sequence_puts_an_empty_slice() {
+    struct Puts(bool);
+    impl Sink for Puts {
+        fn put(&mut self, b: &[u8]) {
+            self.0 |= b.is_empty();
+        }
+    }
+    for a in 0..=255u8 {
+        for b in 0..=255u8 {
+            for c in [0u8, 8, 11, 21, 23, 25, b'a', b'\r', 0x10, 0x0e] {
+                let mut editor = LineDisc::new();
+                let mut out = Puts(false);
+                for k in [b'x', b'y', a, b, c] {
+                    let _ = editor.feed(k, &mut out);
+                }
+                assert!(!out.0, "{a} {b} {c}");
+            }
+        }
+    }
+}
+
+/// Walking down from a recalled entry back to an empty line in progress erases the row and puts
+/// nothing else: no empty write for the empty text, and the recalled text is a single put.
+#[test]
+fn recalling_the_empty_line_in_progress_puts_only_the_erase() {
+    struct Puts(Vec<Vec<u8>>);
+    impl Sink for Puts {
+        fn put(&mut self, b: &[u8]) {
+            self.0.push(b.to_vec());
+        }
+    }
+    let mut editor = LineDisc::new();
+    let mut out = Puts(Vec::new());
+    for key in *b"ab\r" {
+        let _ = editor.feed(key, &mut out);
+    }
+    out.0.clear();
+    for key in *b"\x1b[A" {
+        let _ = editor.feed(key, &mut out);
+    }
+    assert_eq!(out.0, [b"ab".to_vec(), b"\x1b[K".to_vec()]);
+    out.0.clear();
+    for key in *b"\x1b[B" {
+        let _ = editor.feed(key, &mut out);
+    }
+    assert_eq!(out.0, [b"\x1b[2D".to_vec(), b"\x1b[K".to_vec()]);
+}

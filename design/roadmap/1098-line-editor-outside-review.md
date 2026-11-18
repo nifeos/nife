@@ -19,7 +19,7 @@ module links nife's `capability_plan`, and the cut leaves that module here first
 crate name (ratified), `Event::Suspend`, `Event::Tab` and the badge and opcode values of `proto` as
 settled, together with §232 (the `line_editor` swap contract) and §295 (the line editor's crate
 root splits into module files). No review package exists for this crate under
-`notes/crate-reviews/`, so the baseline is thinner than the other crates' and this block says so.
+`notes/crate-reviews/`, so the baseline is thinner than other crates'.
 Three names #2797 ratified, `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM`, are reopened here. The later unit rule (design/naming.md, "Units": a limit opens `MAXIMUM_` and ends with its unit) contradicts them. The rule in force is that a release review rechecks a name ratified before a later rule.
 
 Reuse: the template `nifeos/crate-workflows` and its helpers (`spelled_out.py`,
@@ -160,6 +160,17 @@ or identity, a dependency); everything else is two-way and the maintainer decide
 
 The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.md).
 
+## Follow-on
+
+- **Outstanding.** Items 1, 3 and 4: the move commit's manifest and license work, the public names
+  (Decisions 2 and 3) and the gate spellings that follow the cut. The ledger names each with its
+  reason.
+- **Done.** Item 2, as decision 1 rules: `terminal_contract` and `line_editor_component` carry
+  the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
+  program holds the two `QUIESCED` values equal.
+- **Outstanding.** Whether `terminal_contract` takes an interface identity; decision 1 records it
+  as open.
+
 ## Decisions for the architect
 
 Each gives the background first, then the recommendation.
@@ -241,7 +252,7 @@ sees it is bytes, not columns, which the one-row `BUGS` entry makes a live disti
 
 ## Done when
 
-The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
+The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). [The ledger](1098-line-editor-outside-review/ledger.md) says, item by item, what this block finished and what waits.
 
 ## BUGS
 
@@ -254,18 +265,8 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 - Whether `abbreviations.py` is a gate or a report in the template's `check` job stays
   unverified; item 4 lists its 40 findings either way.
 
-## Follow-on
-
-- **Done.** Item 2, as decision 1 rules: `terminal_contract` and `line_editor_component` carry
-  the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
-  program holds the two `QUIESCED` values equal.
-- **Outstanding.** Items 1, 3 to 7 and 9 to 14, and decision 3; a read of the items against the
-  crate shows none started.
-- **Outstanding.** Whether `terminal_contract` takes an interface identity; decision 1 records it
-  as open.
-
 ## Index row
 
-An outside review of `line_editor` before it leaves. Two items block the move (the crate does not stand alone, and the contract modules are not yet cut out of it). Six land before the first tag (names the rules refuse, a stranger's documentation, a fuzz target and two proofs, the handoff layout pinned, one duplicated constant). Six wait for later. Three one-way doors go to the
+An outside review of `line_editor` before it leaves. Two items block the move (the crate does not stand alone, and the contract modules are not yet cut out of it). Six land before the first tag. Six wait for later. Three one-way doors go to the
 architect: where the cut falls, the engine's type and history names, and the three limits reopened
 under the unit rule.

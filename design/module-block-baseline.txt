@@ -2574,7 +2574,6 @@ crates/filesystem_fixture/src/lib.rs::DISK_BLOCKS
 
 crates/filesystem_fixture/src/lib.rs::DOT_DOT_CROSSED_MOUNTS
 
-crates/filesystem_fixture/src/lib.rs::DURABLE
 
 crates/filesystem_fixture/src/lib.rs::ENUMERATED
 
@@ -2738,11 +2737,8 @@ crates/filesystem_fixture/src/lib.rs::NAV_TOUCH_BODY
 
 crates/filesystem_fixture/src/lib.rs::NAV_TOUCH_NO_SETTIME
 
-crates/filesystem_fixture/src/lib.rs::NEVER_FLUSHED
 
-crates/filesystem_fixture/src/lib.rs::NOT_ADVANCING
 
-crates/filesystem_fixture/src/lib.rs::NO_DEVICE_FLUSH
 
 crates/filesystem_fixture/src/lib.rs::NO_MATCH_REFUSED
 
@@ -2812,7 +2808,6 @@ crates/filesystem_fixture/src/lib.rs::REDIR_ONE
 
 crates/filesystem_fixture/src/lib.rs::REDIR_TWO
 
-crates/filesystem_fixture/src/lib.rs::REFUSED
 
 crates/filesystem_fixture/src/lib.rs::RENAMED
 
@@ -4897,7 +4892,6 @@ crates/machine_statistics_contract/src/lib.rs::ONLINE
 
 crates/machine_statistics_contract/src/lib.rs::PAGE_BYTES
 
-crates/machine_statistics_contract/src/lib.rs::PAGE_VA
 
 crates/machine_statistics_contract/src/lib.rs::RUNNABLE
 

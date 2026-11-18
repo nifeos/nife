@@ -46,6 +46,13 @@ jobs:
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
 
       # RUSTUP_TOOLCHAIN overrides rust-toolchain.toml for every cargo/rustc invocation in this job,
       # which is the whole mechanism: the repo stays pinned, this one job does not.

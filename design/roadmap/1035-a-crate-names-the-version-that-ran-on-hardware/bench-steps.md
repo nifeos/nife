@@ -50,7 +50,7 @@ before touching anything.
 4. First boot. Power the board on from off. The log shows `nife: payload came from net`, then
    the boot tour. `board-console` stops once the self-test verdict prints. If the log shows
    `payload came from card` instead, the board booted an older kernel from the card; the judge
-   refuses that boot because its `trng` line names another crate commit or none. Fix the network
+   refuses that boot because its `true_random_number_generator` line names another crate commit or none. Fix the network
    and boot again.
 
 5. Second boot. Power the board off, wait ten seconds, start `board-console` again with
@@ -68,10 +68,10 @@ before touching anything.
    `FAIL, N problem(s)`. Each boot's line reads like this, and its last clause names the crate:
 
    ```
-   self-test       : trng       ok      JH7110 TRNG at 0x1600c000 (tree says disabled): report 0x524e475550,
-       STAT 0x00040308 (256-bit: all eight RAND words are the answer), draws 32/32 bytes, first 93a34471..,
-       differ true; bring-up 551 us, 64 bytes in 68 us (937728 bytes/s);
-       crate jh7110_entropy 0.2.0 at cfdbeb78e4f63eb251cd11b5dcf1521d4ed0ca06
+   self-test       : true_random_number_generator ok      JH7110 TRNG at 0x1600c000 (tree says disabled): report 0x524e475550,
+       STAT 0x00040308 (256-bit: all eight RAND words are the answer), draws 32/32 bytes, first 625b4bc8..,
+       differ true; bring-up 1637 us, 64 bytes in 102 us (627450 bytes/s);
+       crate jh7110_entropy 0.3.0-pre.1 at 497d3ec4f0b4d7fc36634dee47d1afd56eb22485
    ```
 
    A `FAILED` line, or one the judge refuses, goes to milestone 159's [table of what each line
@@ -79,7 +79,7 @@ before touching anything.
 
 7. Record. Commit the two logs under `bench/<board>-<date>/` with a `README-1035.md` that names
    the nife commit, the crate version and commit, the two image hashes and the judge's output. Put
-   each boot's `trng` line, the nife commit and the crate version in the main page's block. Only then
+   each boot's `true_random_number_generator` line, the nife commit and the crate version in the main page's block. Only then
    does the crate's README name the version.
 
 ## What the log holds
@@ -87,4 +87,4 @@ before touching anything.
 A board log carries the board's serial number, its MAC addresses and private local addresses. The
 runs of milestone 1049 (`jh7110_entropy` is ready to publish: the release review's findings)
 committed theirs as the board printed them. The person may instead trim those lines first, and the
-bench README then says so. The judge reads only the banner and the `trng` lines.
+bench README then says so. The judge reads only the banner and the `true_random_number_generator` lines.

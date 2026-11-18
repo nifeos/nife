@@ -1,7 +1,7 @@
 //! The staged glob fixtures against the matcher: the sets the filesystem tests state literally are
 //! only trustworthy if they are the expansion of the pattern they are staged for, so this checks
-//! them with the matcher itself. It lives here, with the matcher, because the fixture and the
-//! filesystem contract it rides on are crates that do not depend on the matcher.
+//! them with the matcher itself. It lives here, in a crate that already depends on the matcher, because
+//! the fixture and the filesystem contract it rides on do not, and the matcher links neither.
 
 /// **The set the globbing lane grants is exactly what the pattern matches**, checked against the
 /// matcher rather than asserted twice.

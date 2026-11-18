@@ -153,6 +153,15 @@ jobs:
       # The checkout is the dispatched ref's own commit for both events, never the diff tip: the
       # steps invoke this tree's helper, and the run above is what checking the tip out costs.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           fetch-depth: 0
 
@@ -272,7 +281,16 @@ jobs:
       # helper that reads its table live in this tree, and the patches were generated against a
       # tree this commit holds.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
         if: ${{ !matrix.noop }}
+        with:
+          fetch-depth: 0
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: ${{ steps.checkout_first_1.outcome != 'success' && (!matrix.noop) }}
         with:
           fetch-depth: 0
 

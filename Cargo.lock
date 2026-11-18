@@ -119,10 +119,6 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
-dependencies = [
- "filesystem_contract",
- "filesystem_fixture",
-]
 
 [[package]]
 name = "byte_sink_contract"
@@ -646,6 +642,7 @@ version = "0.1.0"
 dependencies = [
  "byte_glob",
  "filesystem_contract",
+ "filesystem_fixture",
  "grant_contract",
  "program_argument_contract",
  "program_table",

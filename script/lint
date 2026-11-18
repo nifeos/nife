@@ -272,6 +272,11 @@ echo "==> script/verify --parallel forks the shards, joins their verdicts, and k
 # waiting for the slot its parent holds) is proved against a one-slot fixture under a deadline,
 # because a deadlock never returns on its own.
 python3 helpers/verify_parallel.py --selftest >/dev/null
+echo "==> script/idle-pull-requests classifies open pull requests (the queue sweep's idle check)"
+# lint-scope: code
+# notes/idle-pull-requests.md: the classifier (queued, armed, held, running, idle) and its four flags run on
+# fixture pull requests with a stub for the blocker lookup, no `gh` and no network.
+python3 helpers/idle_pull_requests.py --selftest >/dev/null
 echo "==> script/crate-move stages a move as the runbook says"
 # lint-scope: code
 # notes/crate-move.md: the dry run deletes Name: blocks, regenerates falsification patches over the stripped source and
@@ -3405,6 +3410,17 @@ echo "==> every workflow file parses"
 # lint-scope: code
 python3 "$(dirname "$0")/../helpers/workflow_parses.py" --selftest
 python3 "$(dirname "$0")/../helpers/workflow_parses.py"
+
+# 12c1. **No workflow step uses a bare `actions/checkout`** (helpers/workflow_checkout_retry.py, name
+#     provisional). The `git fetch` inside the action sometimes stalls for about 13 minutes on a
+#     hosted runner and then completes, which spent a merge-group job's 20-minute budget and
+#     ejected pull requests. Every checkout is a 2-minute first attempt that may fail plus a
+#     3-minute retry that may not, or says on the line above why it is exempt. Fixtures first,
+#     because a green run looks the same as a check that cannot fire. See notes/ci.md.
+echo "==> no workflow step uses a bare actions/checkout"
+# lint-scope: code
+python3 "$(dirname "$0")/../helpers/workflow_checkout_retry.py" --selftest
+python3 "$(dirname "$0")/../helpers/workflow_checkout_retry.py"
 
 # 12c2. **The fuzz heartbeat** (helpers/fuzz-heartbeat.py, name provisional). Its selftest runs the
 #     checks over fixture reports with no network: missing release, no ok window, infrastructure

@@ -1,0 +1,25 @@
+Falsifies `globally_unique_identifier_partition_table::verification::an_entries_block_count_never_panics_and_is_exact`.
+
+The defect: `blocks` subtracts and adds with the plain operators once the range is not reversed,
+so the range `0 ..= u64::MAX` overflows: a panic with overflow checks on, a count of zero with
+them off.
+
+Expected to fail: the arithmetic overflow check in `blocks`, reached through the harness's `blocks` call.
+
+diff --git a/crates/globally_unique_identifier_partition_table/src/entry.rs b/crates/globally_unique_identifier_partition_table/src/entry.rs
+--- a/crates/globally_unique_identifier_partition_table/src/entry.rs
++++ b/crates/globally_unique_identifier_partition_table/src/entry.rs
+@@ -119,9 +119,10 @@ impl Entry {
+     /// [`crate::GloballyUniqueIdentifierPartitionTable`] rejects both, so a partition obtained
+     /// from a parsed table always has a size.
+     pub const fn blocks(&self) -> Option<u64> {
+-        match self.last_lba.checked_sub(self.first_lba) {
+-            Some(span) => span.checked_add(1),
+-            None => None,
++        if self.last_lba < self.first_lba {
++            None
++        } else {
++            Some(self.last_lba - self.first_lba + 1)
+         }
+     }
+ 
