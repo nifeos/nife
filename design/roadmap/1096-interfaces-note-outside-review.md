@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 956, 1017
 decision_dependencies: none
@@ -207,6 +207,13 @@ a program was built against, and a decoder that refuses every other spelling of 
 ## Prior art
 
 The comparison with nearby work is in [the appendix](1096-interfaces-note-outside-review/prior-art.md).
+
+## Follow-on
+
+- **Outstanding.** The three decisions above (the owner string, the public names, the crate name), which the architect rules. Checked: ledger rows 4, 9 (public lengths) and 10.
+- **Outstanding.** The move's own work: manifest rows, README and license files, the citation rewrite with the passive-voice pass, the fuzz opt-in and the carried mutation exemptions (items 1, 2, 3, 5, 11, 15). Checked: each needs the moved repository or the template's gates.
+
+[The ledger](1096-interfaces-note-outside-review/ledger.md) lists each item with its state.
 
 ## Done when
 

@@ -9,7 +9,7 @@ use super::*;
 ///
 /// Borrows the entry array rather than copying it: 16 KiB is too much to move around a kernel, and
 /// the caller already has the bytes.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy)]
 pub struct GloballyUniqueIdentifierPartitionTable<'a> {
     header: Header,
     /// Exactly `entry_count * entry_size` bytes, the span the array CRC covers. Trimmed on the way
@@ -18,11 +18,33 @@ pub struct GloballyUniqueIdentifierPartitionTable<'a> {
     block_size: usize,
 }
 
+/// The header, the block size and how many entries are in use: the 16 KiB array stays out of a
+/// `{:?}`, which would otherwise fill a console or a kernel log.
+impl core::fmt::Debug for GloballyUniqueIdentifierPartitionTable<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("GloballyUniqueIdentifierPartitionTable")
+            .field("header", &self.header)
+            .field("block_size", &self.block_size)
+            .field("used_entries", &self.partitions().count())
+            .finish_non_exhaustive()
+    }
+}
+
 impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
     /// Parse a primary GPT.
     ///
     /// `header_block` is the block read from LBA 1, and its length is the logical block size.
-    /// `entry_array` is read from the header's `PartitionEntryLBA` and may run past the array.
+    /// `entry_array` is read from the header's `PartitionEntryLBA` and may run past the array. That
+    /// field is not always block 2: [`Header::decode`] the block from LBA 1 first, read
+    /// [`Header::entry_array_lba`] and as many blocks as the array needs, then call `parse`.
+    /// Bytes read from the wrong block fail as [`Error::EntryArrayCrc`] or
+    /// [`Error::TableOverlapsUsable`].
+    ///
+    /// `parse` takes the disk's size from the header (`alternate_lba + 1`) and never sees the
+    /// device. After it succeeds a caller runs three more checks: [`Self::check_disk_size`]
+    /// against the device, [`Self::check_backup`] against the last block, and
+    /// [`Self::check_protective_mbr`] against LBA 0.
+    ///
     /// Refuses a bad header ([`Header::decode`]), a bad array CRC, a table that intrudes on the
     /// usable range, a used partition outside it, and two partitions that overlap. The backup is
     /// a second read, left to [`GloballyUniqueIdentifierPartitionTable::check_backup`].
@@ -61,6 +83,65 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
             });
         }
 
+        Self::checked(header, entry_array, block_size)
+    }
+
+    /// Parse the backup GPT of a disk whose primary is damaged, as UEFI 2.10 section 5.3.2
+    /// requires a reader to be able to.
+    ///
+    /// `backup_block` is the last block of the disk, `backup_entries` is read from the backup
+    /// header's `PartitionEntryLBA`, and `block_count` is the device's size. The header must say
+    /// it lives at the last block and points back at LBA 1, and its array must lie after the last
+    /// usable block and end before it. The table returned is normalized to the primary's
+    /// orientation (`MyLBA` 1, `AlternateLBA` the last block, the array at block 2), so
+    /// [`Self::write_primary_header`] and [`Self::entry_array`] restore the primary, and
+    /// [`Self::check_backup`] against the real primary says whether a restore is needed. The
+    /// normalization assumes the primary array sits at block 2, which every tool writes and the
+    /// specification does not require.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane lane/outside-review-1089-1100.
+    pub fn parse_backup(
+        backup_block: &[u8],
+        backup_entries: &'a [u8],
+        block_count: u64,
+    ) -> Result<GloballyUniqueIdentifierPartitionTable<'a>, Error> {
+        let block_size = backup_block.len();
+        let backup = Header::decode(backup_block)?;
+        let last = block_count
+            .checked_sub(1)
+            .ok_or(Error::TableOverlapsUsable)?;
+        if backup.my_lba != last {
+            return Err(Error::NotBackup {
+                claimed_block: backup.my_lba,
+            });
+        }
+        if backup.alternate_lba != PRIMARY_HEADER_LBA {
+            return Err(Error::Backup(BackupMismatch::AlternateLba));
+        }
+        check_entry_array(&backup, backup_entries)?;
+        let array_blocks = array_blocks(&backup, block_size)?;
+        let array_end = backup
+            .entry_array_lba
+            .checked_add(array_blocks)
+            .ok_or(Error::TableOverlapsUsable)?;
+        if backup.entry_array_lba <= backup.last_usable_lba || array_end > backup.my_lba {
+            return Err(Error::TableOverlapsUsable);
+        }
+        let header = Header {
+            my_lba: PRIMARY_HEADER_LBA,
+            alternate_lba: last,
+            entry_array_lba: PRIMARY_HEADER_LBA + 1,
+            ..backup
+        };
+        Self::checked(header, backup_entries, block_size)
+    }
+
+    /// The geometry and partition rules every table meets, whichever copy it was read from.
+    fn checked(
+        header: Header,
+        entry_array: &'a [u8],
+        block_size: usize,
+    ) -> Result<GloballyUniqueIdentifierPartitionTable<'a>, Error> {
         let entries = check_entry_array(&header, entry_array)?;
         let array_blocks = array_blocks(&header, block_size)?;
 
@@ -155,7 +236,10 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
                 have: entry_array.len(),
             });
         }
-        let entry_count = (entry_array.len() / entry::SIZE) as u32;
+        let entry_count =
+            u32::try_from(entry_array.len() / entry::SIZE).map_err(|_| Error::EntryArrayShape {
+                have: entry_array.len(),
+            })?;
         if partitions.len() > entry_count as usize {
             return Err(Error::TooManyPartitions {
                 given: partitions.len(),
@@ -211,6 +295,10 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
     /// [`GloballyUniqueIdentifierPartitionTable::backup_entry_lba`]. Every field the two headers
     /// must share is compared, and the two arrays are compared by CRC.
     ///
+    /// This is stricter than UEFI 2.10 section 5.3.1, which lets the backup array sit anywhere after
+    /// the last usable block and before the backup header: here it must end exactly at the backup
+    /// header, which is where every tool this crate was tested against writes it.
+    ///
     /// The CRC is what the format itself binds a header to its array with, so arrays that CRC
     /// alike and differ would be a CRC-32 collision; and the caller need not hold both 16 KiB
     /// arrays at once.
@@ -250,6 +338,25 @@ impl<'a> GloballyUniqueIdentifierPartitionTable<'a> {
         // above only proves the two headers agree, not that the backup array on the disk is intact.
         check_entry_array(&backup, backup_entries)?;
         Ok(())
+    }
+
+    /// Check the device is the size the header says it is.
+    ///
+    /// `device_blocks` is the device's own block count. Equality is required: a table cloned onto
+    /// a smaller or larger disk, or a disk grown under its table, is a resize for a tool to
+    /// perform, and not a table to accept. [`GloballyUniqueIdentifierPartitionTable::parse`] cannot
+    /// make this check because it never sees the device.
+    ///
+    /// Name: provisional, minted 2026-11-14 (UTC) by lane lane/outside-review-1089-1100.
+    pub fn check_disk_size(&self, device_blocks: u64) -> Result<(), Error> {
+        if self.block_count() == device_blocks {
+            Ok(())
+        } else {
+            Err(Error::DiskSize {
+                header: self.block_count(),
+                device: device_blocks,
+            })
+        }
     }
 
     /// The decoded primary header.

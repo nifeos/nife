@@ -5,6 +5,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
 ## P2: later
 
 13. `check_backup` demands a layout the specification does not.
+   DONE for the documentation alternative (`check_backup` says it is stricter than the specification and why). The strictness stays.
     Finding: the backup's `entry_array_lba` must equal `alternate_lba - entry_array_blocks()`
     exactly. UEFI 2.10 section 5.3.1 says "The backup GPT Partition Entry Array must be located
     after the Last Usable LBA and end before the backup GPT Header", which allows slack. Linux reads
@@ -18,6 +19,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: S.
 
 14. The proofs stop short of the hostile-input surface.
+   LEFT. Four harnesses and a fuzz target move are a lane of their own.
     Finding: eight harnesses prove the codecs, the CRC's structure at eight bytes, the overlap rule
     and the writer against the reader's rules. Five properties are not proved. First, that
     `Header::decode` is total on any block (the package's open question 1; the CRC chain is what
@@ -36,6 +38,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: M.
 
 15. `Debug` on a table prints the entry array.
+   DONE (`a_table_debug_prints_a_summary_and_every_refusal_is_an_error`).
     Finding: the derived `Debug` prints the 16 KiB `entries` slice: 49,513 characters for the
     sample disk (measured). A stranger's first `{:?}` floods a console or a kernel log.
     Evidence: `src/table.rs` line 12 to `src/table.rs` line 19.
@@ -43,6 +46,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: XS.
 
 16. Two casts narrow on a 32-bit host without saying so.
+   DONE (`Span::covering` refuses an offset a `usize` cannot hold and `create` refuses an array whose count does not fit a `u32`). No host test reaches either on a 64-bit host.
     Finding: `Span::covering` returns `offset as usize` (`src/span.rs` line 61), which truncates when
     `transfer` exceeds `usize::MAX` on a 32-bit host, while `buffer_bytes` three lines down guards
     the same case; `create` computes `(entry_array.len() / entry::SIZE) as u32` (`src/table.rs` line 158),
@@ -53,6 +57,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: XS.
 
 17. The crate checks the header's reserved tail but not the entry's, and not the attribute bits.
+   DONE (the crate root states which "must be zero" rules the reader enforces).
     Finding: `Header::decode` refuses a non-zero byte after the header (UEFI: "The rest of the
     block is reserved by UEFI and must be zero"), the strictest check in the crate. `Entry::decode`
     reads the first 128 bytes of a larger entry and ignores the rest, which the specification also
@@ -66,6 +71,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: XS.
 
 18. A header that declares more than 92 bytes re-emits as 92.
+   DONE (`Header::encode_into` says a rewrite normalizes to 92 bytes).
     Finding: `Header` drops `header_size`; `encode_into` always writes 92. A parsed table from a
     disk with a 96-byte header passes `parse`, and `write_primary_header` then writes a header the
     other tool would read as changed. The specification permits the larger size, and no tool
@@ -76,6 +82,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: XS.
 
 19. A caller must add `uuid` itself to name the type the crate returns.
+   DONE (`pub use uuid`).
     Finding: `guid::Uuid` is re-exported, so a caller can write `guid::Uuid`, but
     `Uuid::from_fields`, `Builder` and the parsers need the caller's own `uuid`
     dependency at a matching major; nife's `uefi_loader/Cargo.toml` carries that second line.
@@ -85,6 +92,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
     Door: two-way. Effort: XS.
 
 20. The MBR validator calls a dead record a hybrid.
+   DONE (`a_typed_record_of_zero_blocks_is_not_a_hybrid`).
     Finding: `validate` refuses any record beside the protective one whose `OSType` is non-zero.
     UEFI 2.10 section 5.2.1: "A Partition Record that contains an OSType value of zero or a
     SizeInLBA value of zero may be ignored." A record with a type and a zero size is noise the

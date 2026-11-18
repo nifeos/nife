@@ -33,6 +33,7 @@ program_argument_contract = { version = "0.1.0", path = "../program_argument_con
 # safe rather than a drift waiting to happen.
 [dev-dependencies]
 filesystem_contract = { version = "0.1.0", path = "../filesystem_contract" }
+filesystem_fixture = { version = "0.1.0", path = "../filesystem_fixture" }
 # A dev dependency only, and the one edge that points back: the planner's tests plan the lines a
 # person types against the manifests nife's programs ship with. The library links no program table;
 # its tests pass a row's manifest in, the way a caller does. Nothing here may hand a type of this

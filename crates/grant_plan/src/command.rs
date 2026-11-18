@@ -252,6 +252,7 @@ pub struct FileGrant {
     /// Owned rather than borrowed from the line, because a pattern that matched exactly one file is
     /// a legitimate way to designate one and that name came from a directory listing.
     pub name: Name,
+    /// Whether the grant includes the right to write.
     pub writable: bool,
 }
 

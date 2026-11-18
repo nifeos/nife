@@ -122,7 +122,6 @@ crates/machine_discovery/src/riscv64.rs::EID_IPI spelled-out
 
 crates/machine_discovery/src/riscv64.rs::SBI_IPI spelled-out
 
-crates/machine_statistics_contract/src/lib.rs::PAGE_VA spelled-out
 
 
 crates/nifefs/src/lib.rs::DIR_BLOCKS spelled-out

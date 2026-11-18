@@ -115,13 +115,13 @@ impl Entry {
     /// How many blocks the partition covers. `last_lba` is inclusive, hence the `+ 1`.
     ///
     /// `None` when `last_lba < first_lba`, which is a malformed entry rather than an empty
-    /// partition. [`crate::GloballyUniqueIdentifierPartitionTable`] rejects those, so a partition
-    /// obtained from a parsed table always has a size.
+    /// partition, and also when the count does not fit in a `u64` (the range `0 ..= u64::MAX`).
+    /// [`crate::GloballyUniqueIdentifierPartitionTable`] rejects both, so a partition obtained
+    /// from a parsed table always has a size.
     pub const fn blocks(&self) -> Option<u64> {
-        if self.last_lba < self.first_lba {
-            None
-        } else {
-            Some(self.last_lba - self.first_lba + 1)
+        match self.last_lba.checked_sub(self.first_lba) {
+            Some(span) => span.checked_add(1),
+            None => None,
         }
     }
 

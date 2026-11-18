@@ -44,6 +44,7 @@ pub struct Escalation {
 }
 
 impl Escalation {
+    /// A fresh escalation, with no interrupt seen yet.
     pub fn new() -> Self {
         Escalation {
             interrupts: 0,

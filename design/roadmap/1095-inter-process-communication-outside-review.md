@@ -1,5 +1,5 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: 101, 154
@@ -273,6 +273,14 @@ left and the kernel pins its revision. The same step, one level down.
 Concrete example: after the move, the manifest line reads
 `intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "<full sha>" }`,
 the form the kernel already uses for the two crates that left.
+
+## Follow-on
+
+- **Outstanding.** The three decisions above (the verdict names, the scope of the crate, the order of leaving), which the architect rules. Checked: the ledger's LEFT rows for items 2, 4, 10, 5, 12, 13 and 16 are these.
+- **Outstanding.** The move's own work: the review package, the stand-alone text, the manifest rows, `docs/design.md` with a README, and one full mutation run (items 1, 3, 6, 7, 9). Checked: each needs the new repository.
+- **Outstanding.** Options for the maintainer after the move: the one-queue layout, one shared test node and an iterator on `intrusive_queue` (items 11, 12, 15). Checked: each changes proofs or another crate.
+
+[The ledger](1095-inter-process-communication-outside-review/ledger.md) lists each item.
 
 ## Done when
 

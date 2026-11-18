@@ -215,7 +215,7 @@ Example. A test holds `Refusal::FileNotNameable`'s sentence against `MAXIMUM_FIL
 
 ## Done when
 
-The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
+The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md). The state of each item is in [the ledger](1094-grant-plan-outside-review/ledger.md).
 
 ## BUGS
 
@@ -244,11 +244,10 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 
 - **Done.** P0 item 1, the split, carried by lane milestone/1094-grant-plan-split: `grant_plan`,
   `crates/grant_contract` and `crates/program_table` build and test on their own.
-- **Outstanding.** P0 items 2 and 3, the P1 items, the P2 items and the two remaining decisions
-  (the eight names and the units). None of them has a lane; read against the code on 2026-11-14.
+- **Outstanding.** P0 item 3, the P1 items and the P2 items the ledger marks LEFT, and the two
+  remaining decisions (the eight names and the units). The ledger says why each waits.
 - **Recorded.** `grant_plan`'s tests still plan against the catalog, and `ISOLATION_WORD` still
-  names the shell; both are in this block's BUGS, beside
-  `design/roadmap/1094-grant-plan-outside-review.md`.
+  names the shell; both are in this block's BUGS.
 
 ## Index row
 

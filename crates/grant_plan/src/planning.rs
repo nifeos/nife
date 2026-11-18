@@ -23,7 +23,9 @@ use crate::{
 /// and because a stage in the middle of a pipeline has both.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Streams {
+    /// Where the program's standard output goes.
     pub sink: Sink,
+    /// Where the program's standard input comes from.
     pub source: Source,
     /// **The file a `2>` named, and what it does to what is in it**, or `None` for a line with no
     /// `2>` on it. It is the *question* the line asked; [`Endowment::diagnostics`] is the answer,

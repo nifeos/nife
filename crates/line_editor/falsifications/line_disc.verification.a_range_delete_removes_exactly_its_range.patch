@@ -1,0 +1,17 @@
+Falsifies `line_editor::line_disc::verification::a_range_delete_removes_exactly_its_range`.
+
+The defect: a cursor inside the deleted range keeps its old column instead of moving to the start
+of the range, so after the delete it points into bytes that now belong to the tail, or past the
+end of the shortened line. Backspace and forward delete never leave the cursor inside the range
+(it is at one end), so only a range that spans the cursor shows the defect.
+
+Expected to fail: the harness's check that the cursor lands on `a` when it was inside the range.
+
+diff --git a/crates/line_editor/src/line_disc.rs b/crates/line_editor/src/line_disc.rs
+--- a/crates/line_editor/src/line_disc.rs
++++ b/crates/line_editor/src/line_disc.rs
+@@ -557,3 +557,3 @@
+         } else {
+-            old_cur.min(a)
++            old_cur
+         };

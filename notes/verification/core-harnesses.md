@@ -211,15 +211,17 @@ notes/generational-names.md); the table names the three this appendix adjudicate
 
 ## `crates/intrusive_queue`
 
-One in `crates/intrusive_queue/src/lib.rs` <!--count:intrusive-fifo-harnesses-->, the scheduler's
+Two in `crates/intrusive_queue/src/lib.rs` <!--count:intrusive-fifo-harnesses-->, the scheduler's
 queue structure (milestone 14 phase A.2; see notes/intrusive-queues.md):
 
 | Harness | Property |
 |---|---|
 | `any_push_pop_interleaving_is_first_in_first_out_and_lossless` | the real `Queue`, driven by a six-step *symbolic* operation sequence over three nodes, agrees with a trivially-correct model at every step: FIFO order, no node lost or invented, lengths agree, and no stale link is dereferenced |
+| `a_popped_node_leaves_with_a_clear_link` | whichever node is popped, and however many were queued behind it, the popped node's link reads as clear, which the FIFO order alone cannot show |
 
-One harness rather than several, because the operation-sequence shape subsumes the single-step
-properties: a push-preserves-X proof is the sequence of length one.
+The operation-sequence harness subsumes the single-step properties: a push-preserves-X proof is
+the sequence of length one. The second harness covers what that sequence cannot see, the link a
+popped node leaves behind.
 
 ## `crates/address_space_identifier`
 

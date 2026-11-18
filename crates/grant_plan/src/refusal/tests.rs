@@ -163,3 +163,66 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         );
     }
 }
+
+/// **A sentence that names a number names the constant's current value.** The sentences are fixed
+/// text because this crate cannot format at run time without `alloc`, and the other tests pin the
+/// text exactly, which catches a drift of the sentence and not a drift of the constant. This
+/// catches the constant: raise one and the prompt would otherwise keep telling the old number.
+#[test]
+fn every_number_a_refusal_names_is_its_constants_value() {
+    extern crate std;
+    use std::string::ToString;
+
+    let says = |sentence: &str, number: usize| {
+        let text = number.to_string();
+        let grouped = if number >= 1000 {
+            std::format!("{},{:03}", number / 1000, number % 1000)
+        } else {
+            text.clone()
+        };
+        assert!(
+            sentence.contains(&text) || sentence.contains(&grouped),
+            "`{sentence}` does not say {number}"
+        );
+    };
+
+    let refused_file_name = Refusal::FileNotNameable.message();
+    says(refused_file_name, crate::MAXIMUM_FILE_NAME);
+    says(refused_file_name, crate::nav::MAXIMUM_DIRECTORY_NAME);
+    says(refused_file_name, crate::nav::MAXIMUM_DEPTH);
+    let too_many = Refusal::TooManyNames.message();
+    says(too_many, crate::expand::MAXIMUM_NAMES);
+    says(too_many, crate::expand::NAME_BYTES);
+    says(
+        Refusal::MatchNotNameable.message(),
+        crate::MAXIMUM_FILE_NAME,
+    );
+    says(
+        Refusal::TooManyStages.message(),
+        crate::line::MAXIMUM_STAGES,
+    );
+    says(
+        Refusal::ArgumentsTooLong.message(),
+        program_argument_contract::CAPACITY,
+    );
+    says(
+        crate::nav::Refused::NotAName.message(),
+        crate::MAXIMUM_FILE_NAME,
+    );
+    says(
+        crate::nav::Refused::TooDeep.message(),
+        crate::nav::MAXIMUM_DEPTH,
+    );
+    says(
+        crate::nav::Refused::DirectoryNameTooLong.message(),
+        crate::nav::MAXIMUM_DIRECTORY_NAME,
+    );
+    says(
+        crate::nav::BindRefused::NotAName.message(),
+        crate::nav::MAXIMUM_DIRECTORY_NAME,
+    );
+    says(
+        crate::nav::BindRefused::TooMany.message(),
+        crate::nav::MAXIMUM_BINDS,
+    );
+}

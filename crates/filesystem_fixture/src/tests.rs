@@ -203,20 +203,22 @@ fn the_navigation_bits_are_distinct() {
 // equivalences (every `|` over disjoint masked fields, where `^` cannot differ) are recorded as
 // such rather than tested.
 
+/// Assert that each value is a single bit and that no two values share one.
+fn all_distinct_bits(bits: &[u64]) {
+    for (i, &a) in bits.iter().enumerate() {
+        assert!(a.is_power_of_two(), "bit {i} is {a:#x}, not a single bit");
+        for &b in &bits[i + 1..] {
+            assert_ne!(a, b, "two claims share bit {a:#x}");
+        }
+    }
+}
+
 /// Every witness verdict module is distinct single bits. Both ends of each QEMU test build
 /// their words from these same constants, so a shifted-to-zero bit is invisible at runtime:
 /// the claim it carried silently stops being checked. Distinct powers of two here is the
-/// whole defence.
+/// whole defense.
 #[test]
 fn the_witness_bits_are_distinct_single_bits() {
-    fn all_distinct_bits(bits: &[u64]) {
-        for (i, &a) in bits.iter().enumerate() {
-            assert!(a.is_power_of_two(), "bit {i} is {a:#x}, not a single bit");
-            for &b in &bits[i + 1..] {
-                assert_ne!(a, b, "two claims share bit {a:#x}");
-            }
-        }
-    }
     all_distinct_bits(&[
         crate::escape::SECOND_FILE,
         crate::escape::WROTE,
@@ -286,6 +288,11 @@ fn the_witness_bits_are_distinct_single_bits() {
         crate::globscape::TEXT_UNTOUCHED,
         crate::globscape::GLOB_FAILED,
     ]);
+}
+
+/// The attribute claims are distinct single bits, and the eight required ones are bits 0 through 7.
+#[test]
+fn the_attribute_claim_bits_are_distinct_and_cover_the_required_eight() {
     all_distinct_bits(&[
         crate::attrs::SET_AND_READ_BACK,
         crate::attrs::LISTED,
@@ -299,9 +306,17 @@ fn the_witness_bits_are_distinct_single_bits() {
     ]);
     assert_eq!(
         crate::attrs::EXPECTED,
-        255,
+        crate::attrs::SET_AND_READ_BACK
+            | crate::attrs::LISTED
+            | crate::attrs::SURVIVED_RENAME
+            | crate::attrs::GONE_AFTER_REMOVE
+            | crate::attrs::GONE_AFTER_UNLINK
+            | crate::attrs::OVERSIZE_REFUSED
+            | crate::attrs::STORE_UNNAMEABLE
+            | crate::attrs::STORE_UNLISTED,
         "the eight required claims, bits 0 through 7"
     );
+    assert_eq!(crate::attrs::EXPECTED, 255);
 }
 
 // ---- survivor triage of the 2026-10-03 census: the shared fixture's arithmetic ---------------
@@ -330,7 +345,23 @@ fn the_wide_directory_names_are_n_and_three_digits() {
     assert_eq!(&wide_name(7), b"n007");
     assert_eq!(&wide_name(45), b"n045");
     assert_eq!(&wide_name(123), b"n123");
-    assert_eq!(&wide_name(987), b"n987");
+    assert_eq!(&wide_name(127), b"n127");
+}
+
+/// A name past the wide directory would wrap onto one already used, so it is refused rather than
+/// returned.
+#[test]
+#[should_panic]
+fn a_wide_name_past_the_last_file_is_refused() {
+    let _ = crate::walk::wide_name(crate::walk::WIDE_COUNT);
+}
+
+/// The match list ends at `RG_MATCHES`; one past it would repeat the narrow file.
+#[test]
+#[should_panic]
+fn a_match_path_past_the_last_match_is_refused() {
+    let mut buffer = [0u8; crate::walk::MATCH_PATH_BYTES];
+    let _ = crate::walk::rg_match_path(crate::walk::RG_MATCHES, &mut buffer);
 }
 
 /// **The match list's three regions meet where the shape says**, spelled out by hand: the chain's
@@ -341,9 +372,9 @@ fn the_wide_directory_names_are_n_and_three_digits() {
 fn the_rg_match_paths_meet_at_the_region_boundaries() {
     use crate::walk::*;
     let path = |i| {
-        let mut buf = [0u8; 32];
-        let len = rg_match_path(i, &mut buf);
-        std::string::String::from_utf8(buf[..len].to_vec()).unwrap()
+        let mut buffer = [0u8; 32];
+        let len = rg_match_path(i, &mut buffer);
+        std::string::String::from_utf8(buffer[..len].to_vec()).unwrap()
     };
     assert_eq!(path(0), "chain/f");
     assert_eq!(path(1), "chain/c/f");
@@ -513,7 +544,7 @@ fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
 
 /// The attribute witness's bits must not overlap, for the reason every other witness's must not:
 /// the kernel test asserts an exact set, so two outcomes on one bit make a wrong verdict read as
-/// a right one. `EXPECTED` is pinned against them here so the two ISA legs cannot assert
+/// a right one. `EXPECTED` is pinned against them here so the two instruction-set legs cannot assert
 /// something the bits no longer spell.
 #[test]
 fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {

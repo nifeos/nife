@@ -1,0 +1,16 @@
+Falsifies `machine_statistics_contract::verification::a_built_header_reads_back_as_an_empty_page`.
+
+The defect: `build_header` writes the frame size into the tick-rate word, so a reader prints
+times at the wrong rate. A host test that builds a header with the frame size equal to the tick
+rate would not see it; the harness takes both as arbitrary values.
+
+Expected to fail: the harness's `assert_eq!(s.tick_hertz, tick_hertz)`.
+
+diff --git a/crates/machine_statistics_contract/src/lib.rs b/crates/machine_statistics_contract/src/lib.rs
+--- a/crates/machine_statistics_contract/src/lib.rs
++++ b/crates/machine_statistics_contract/src/lib.rs
+@@ -142,3 +142,3 @@
+     line[word::FRAME_BYTES] = frame_bytes;
+-    line[word::TICK_HERTZ] = tick_hertz;
++    line[word::TICK_HERTZ] = frame_bytes;
+     line

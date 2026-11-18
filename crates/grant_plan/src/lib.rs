@@ -16,9 +16,6 @@
 //! `supervision_contract::ChildEndowment`). Not named for `swish`: seven things use it.
 
 #![no_std]
-// milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 22-item
-// worklist (notes/doc-coverage.md) is burned down.
-#![allow(missing_docs)]
 
 pub mod expand;
 pub mod line;

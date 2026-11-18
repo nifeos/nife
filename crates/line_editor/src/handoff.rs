@@ -1,6 +1,6 @@
 // This module's docs are on its `pub mod` line in `lib.rs`.
 
-use super::{HIST, LINE_MAXIMUM, LineDisc, PROMPT_MAXIMUM, RAW_QUEUE_MAXIMUM, RawQueue};
+use super::{HIST, LineDisc, PROMPT_MAXIMUM, RAW_QUEUE_MAXIMUM, RawQueue};
 
 /// "LEDT", then the layout, in the blob's first eight bytes.
 pub const MAGIC: u32 = 0x5444_454c;
@@ -42,8 +42,14 @@ impl<'a> Writer<'a> {
     }
     /// Append a length, then that many bytes.
     pub fn field(&mut self, b: &[u8]) {
-        self.u32(b.len() as u32);
-        self.bytes(b);
+        match u32::try_from(b.len()) {
+            Ok(length) => {
+                self.u32(length);
+                self.bytes(b);
+            }
+            // A field this long is not one any caller writes; refuse the blob rather than wrap.
+            Err(_) => self.full = true,
+        }
     }
     /// How many bytes were written, or `None` if the blob did not fit.
     pub fn finish(self) -> Option<usize> {
@@ -132,9 +138,7 @@ impl LineDisc {
         self.hist_count = (r.u32()? as usize).min(HIST);
         self.hist_next = (r.u32()? as usize) % HIST;
         for entry in &mut self.hist {
-            let mut line = [0u8; LINE_MAXIMUM];
-            let n = r.field(&mut line)?;
-            *entry = (line, n);
+            entry.1 = r.field(&mut entry.0)?;
         }
         self.browse = None;
         Some(())
@@ -144,11 +148,12 @@ impl LineDisc {
 impl RawQueue {
     /// Write the unread raw bytes into `w`, oldest first.
     pub fn save(&self, w: &mut Writer<'_>) {
-        let mut out = [0u8; RAW_QUEUE_MAXIMUM];
-        for (i, b) in out.iter_mut().take(self.len).enumerate() {
-            *b = self.buf[(self.head + i) % RAW_QUEUE_MAXIMUM];
-        }
-        w.field(&out[..self.len]);
+        // A length word, then the ring read out in order: the run up to the end of the buffer,
+        // then the wrapped run from its start.
+        w.u32(self.len as u32);
+        let first = self.len.min(RAW_QUEUE_MAXIMUM - self.head);
+        w.bytes(&self.buf[self.head..self.head + first]);
+        w.bytes(&self.buf[..self.len - first]);
     }
 
     /// Replace the queue with what `r` holds.

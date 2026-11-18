@@ -34,3 +34,16 @@ pub const OK: u64 = 0;
 pub const fn status(errno: i32) -> u64 {
     errno as u64
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The exit status of a failed run is the errno of the first failure, and a clean run is 0.
+    #[test]
+    fn a_status_is_the_errno_and_success_is_zero() {
+        assert_eq!(OK, 0);
+        assert_eq!(status(2), 2);
+        assert_eq!(status(30), 30);
+    }
+}

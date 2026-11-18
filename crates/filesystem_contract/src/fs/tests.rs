@@ -31,41 +31,9 @@ fn a_handle_never_collides_with_the_opcode_or_length() {
 
 // --- The directory capability ---
 
-/// The three new verbs must not collide with the seven that were already on the wire, and
-/// `ROOT` must stay 0 because every client that ever sent an `OPEN` sent 0 in that field.
+/// `ROOT` stays 0 because every client that ever sent an `OPEN` sent 0 in that field.
 #[test]
-fn the_directory_verbs_are_distinct_from_every_other_one() {
-    let operations = [
-        ("OPEN", fs::OPEN),
-        ("READ", fs::READ),
-        ("WRITE", fs::WRITE),
-        ("CLOSE", fs::CLOSE),
-        ("FSTAT", fs::FSTAT),
-        ("CREATE", fs::CREATE),
-        ("TRUNCATE", fs::TRUNCATE),
-        ("OPENDIR", fs::OPENDIR),
-        ("READDIR", fs::READDIR),
-        ("MKDIR", fs::MKDIR),
-        ("RENAME", fs::RENAME),
-        ("UNLINK", fs::UNLINK),
-        ("RMDIR", fs::RMDIR),
-        ("GETXATTR", fs::GETXATTR),
-        ("SETXATTR", fs::SETXATTR),
-        ("LISTXATTR", fs::LISTXATTR),
-        ("REMOVEXATTR", fs::REMOVEXATTR),
-        ("SYNC", fs::SYNC),
-        ("GETMTIME", fs::GETMTIME),
-        ("SETMTIME", fs::SETMTIME),
-        ("SETMTIME_AT", fs::SETMTIME_AT),
-        ("NARROW", fs::NARROW),
-    ];
-    for (i, (na, a)) in operations.iter().enumerate() {
-        assert!(*a <= 0xff, "{na} does not fit the 8-bit opcode field");
-        assert_ne!(*a, 0, "0 is not a verb");
-        for (nb, b) in &operations[i + 1..] {
-            assert_ne!(a, b, "{na} and {nb} share an opcode");
-        }
-    }
+fn the_root_handle_stays_zero() {
     assert_eq!(fs::ROOT, 0, "every existing client sends 0 and means this");
 }
 

@@ -5,6 +5,7 @@
 //!
 //! Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1094-grant-plan-split.
 
+use grant_contract::{Manifest, ShortOptions};
 use grant_plan::{argv, verb_of};
 
 use crate::*;
@@ -275,4 +276,32 @@ fn a_typed_name_is_planned_against_its_row() {
         ),
         Err(Refusal::NoSuchProgram)
     );
+}
+
+/// **Every shipped manifest agrees with itself**: a widening option a directory grant names is one
+/// the manifest declares, so the planner's narrow reading of an undeclared one never happens to a
+/// program of ours.
+#[test]
+fn every_shipped_manifest_is_well_formed() {
+    for &p in Program::ALL {
+        assert!(p.manifest().is_well_formed(), "{p:?}");
+    }
+}
+
+/// **A manifest naming a widening option it does not declare is not well formed**, and declaring
+/// the option makes it so.
+#[test]
+fn a_widening_option_must_be_declared() {
+    let remove_manifest = Program::Rm.manifest();
+    assert!(remove_manifest.is_well_formed());
+    let undeclared = Manifest {
+        short_options: ShortOptions::new(b"f"),
+        ..remove_manifest
+    };
+    assert!(!undeclared.is_well_formed());
+    let declared = Manifest {
+        short_options: ShortOptions::new(b"fr"),
+        ..remove_manifest
+    };
+    assert!(declared.is_well_formed());
 }
