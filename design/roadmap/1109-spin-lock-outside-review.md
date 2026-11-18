@@ -35,18 +35,7 @@ proof the crate has runs somewhere after the move.
 
 ## Where this stands
 
-Finished: item 1 (nifeos/crate-workflows#65), items 5, 9, 10, 11 and 13 (#3580), items 3, 8, 12, 14
-and 15 (#3636). Item 16 is refused.
-
-What remains, and what holds each:
-
-- Item 2, the `Name:` blocks and the citations of paths in this tree: a release step (the move).
-  The README, license files and manifest literals are done (#3636).
-- Item 4, the name under which the crate leaves: a decision for calef (the repository and
-  publication name). The recommendation is recorded as provisional in the `Name:` block (#3636).
-- Item 6, the `pause` exemption line: a release step (the move).
-- Item 7, a gate that replays a loom falsification: ready for a lane (the patch here and a loom
-  form of the template's falsify gate in nifeos/crate-workflows).
+[The appendix](1109-spin-lock-outside-review/where-this-stands.md).
 
 ## What was checked, and how
 

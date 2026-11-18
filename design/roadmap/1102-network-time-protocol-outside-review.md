@@ -30,23 +30,7 @@ for the crate's own reasons.
 
 ## Where this stands
 
-Finished: items 13, 15, 16, 19, 20 and 21, item 12's saturating accessors, item 9's
-`#![forbid(unsafe_code)]` and item 14's paragraph on `Query::accept` (#3567). Decisions 1, 2 and 3
-are decided, provisionally, by the maintainer.
-
-What remains, and what holds each:
-
-- Item 7, a private `NANOSECONDS_PER_SECOND` in place of `clock_contract` (Decision 1): ready for a
-  lane.
-- Items 4, 5, 18 and 22, the names Decision 2 settles: ready for a lane.
-- Item 17, `Query::new` and the low-bit randomizer leave (Decision 3): ready for a lane.
-- Item 3, the contract-crate opening form: ready for a lane.
-- Item 6, acronyms (`IPv4`, `DOWN` and `MAXSTRAT` still fail the template's gate): ready for a lane.
-- Item 12, a Kani harness over the accessors: ready for a lane.
-- Items 1, 2, 8, 10 and 11, item 9's fuzz opt-in and target, and item 14's README line: a release
-  step (the move).
-- Item 2's stranger record: another person (a stranger run before the first tag).
-- The move: a decision for calef, taken by clearing a review package, which does not exist yet.
+[The appendix](1102-network-time-protocol-outside-review/where-this-stands.md).
 
 ## What was checked, and how
 
@@ -290,8 +274,8 @@ The ledger of each item is in [the appendix](1102-network-time-protocol-outside-
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 2, 3, 6, 8, 10, 11 and the fuzz half of 9 are the new repository's, and wait on Decision 1. Checked against `crates/network_time_protocol` and the ledger above.
-- **Outstanding.** Items 4, 5, 17, 18 and 22 are public names and a public layout, which wait on Decisions 2 and 3.
+- **Outstanding.** Items 1, 2, 8, 10, 11 and the fuzz half of 9 are the new repository's; items 3 and 6 land in nife first. Checked against `crates/network_time_protocol`.
+- **Outstanding.** Items 4, 5, 17, 18 and 22, which Decisions 2 and 3 settle.
 
 ## BUGS
 
