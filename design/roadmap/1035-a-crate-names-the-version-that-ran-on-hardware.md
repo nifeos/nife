@@ -1,5 +1,6 @@
 ---
 status: BUILT
+built: 2026-11-18
 promoted_from: a-crate-names-the-version-that-ran-on-hardware
 raised: 2026-11-05
 milestone_dependencies: 159, 818, 857
