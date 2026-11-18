@@ -6,8 +6,9 @@ Names minted by this work: none (the two harnesses are
 `parse_never_panics_and_iterates_len_items` and `a_parsed_page_holds_exactly_what_its_header_states`).
 
 - 1, 2, 3 LEFT: the move's preparation (manifest, repository files, citations).
-- 4 LEFT: renames, for the architect.
-- 5 LEFT: `PAGE_CONTENT_BYTES` is a public rename, ratified in the decision below.
+- 4 LEFT: renames, decided provisionally by the maintainer.
+- 5 LEFT: `MAXIMUM_RECORDS_BYTES` for `CAPACITY` is a public rename, decided provisionally by the
+  maintainer.
 - 6 PARTIAL: two of the three harnesses, each with a falsification patch. The round trip needs
   item 12's builder shape and is LEFT. The README's "What is proven" belongs to item 2.
 - 7 DONE: `a_page_read_through_its_virtual_address_matches_the_slice_reader`.

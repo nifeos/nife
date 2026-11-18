@@ -16,7 +16,7 @@ the code.
 | 7 acronyms | DONE | DMA, MMU and MMIO expand at first use |
 | 8 names | LEFT | Decisions 1 and 2 are the architect's, and the rename lane follows them |
 | 9 `page_frames_in` truncates | DONE | `a_span_that_ends_mid_frame_is_covered_but_not_whole`; `page_frames_covering` (provisional) is what `kernel/src/memory.rs` calls |
-| 10 patches drift | PARTIAL | every patch in the crate applies with `patch -p1 -F0` at no offset. LEFT: the blank-context-line fault in the move's regeneration, which belongs to the move tooling |
+| 10 patches drift | DONE | every patch in the crate applies with `patch -p1 -F0` at no offset; the move's regeneration keeps a trailing blank context line (#3521), and a dry run's nine regenerated patches pass `falsify.py --check` |
 | 11 `#[must_use]` | DONE | the eleven items, with a reason on `alloc` and `alloc_contiguous` |
 | 12 `free` for a run | LEFT | no caller uses it yet; the two kernel loops stay until a lane takes the symmetric API |
 | 13 alignment | DONE | a `# BUGS` entry on `alloc_contiguous` |

@@ -40,6 +40,26 @@ bounded, well-formed answer or `None`, never with a size or an offset the caller
 says what it is in words the naming rules accept, and the template's gates are green for the
 crate's own reasons.
 
+## Where this stands
+
+Finished: items 3 and 4 (#3519); the P2 `cap_len`, `Bdf` masking and `forbid(unsafe_code)` items
+(#3567); the package name (#3588). Both decisions are decided.
+
+What remains, and what holds each:
+
+- Item 1, the fixture tests that reach into nife: ready for a lane.
+- Item 2, the staged tree's manifest, README, citations and the corrupt regenerated patch: a
+  release step, the move (`script/crate-move` and its staged tree).
+- Items 5 and 6, the renames: ready for a lane (two-way before the first tag, so the maintainer
+  rules the spellings provisionally).
+- Item 7, documentation for a stranger: ready for a lane.
+- Item 8, one shared capability walk and the ceiling proof: ready for a lane.
+- P2 `intx_interrupt_number`, the precondition and `intx_pin_through_bridge`: ready for a lane.
+- P2 fuzz targets and their opt-in: a release step, the move (the opt-in needs the repository).
+- P2 stale patch headers: ready for a lane.
+- P2 proof table rows and the mutation survivors: a release step, the move.
+- Creating `nifeos/pci_configuration_space`: a decision for calef (clearing this review).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1105-pci-outside-review/what-was-checked.md).

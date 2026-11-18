@@ -46,6 +46,25 @@ prove and falsify it from the README alone. That stranger can trust that the cra
 a device sends before it reads the byte. A UK, German or Japanese keyboard gives the same key that a
 US one gives. The template's gates are green for the crate's own reasons.
 
+## Where this stands
+
+Finished: items 3, 5, 6, 7, 11, 13 (in the crate) and 14 (#3614), items 8, 9 and 12 (#3580).
+Decisions 1, 2 and 3 are decided, provisionally; Decision 1 and the `Speed` half of Decision 3 are
+built.
+
+What remains, and what holds each:
+
+- Items 1, 2, 4 and 10, the manifest, the name `universal_serial_bus` with its alias, the scaffold
+  files with the README and the stranger test, and the two fuzz targets: a release step, the move,
+  which milestone 820 (`extensible_host_controller_interface`: proven xHCI logic, released on its
+  own) owns. The 13 prose acronym findings of the review package go with it.
+- Decision 2's work, `changes` emitting HID usages and `MODIFIER_CODES` leaving the public surface:
+  ready for a lane.
+- Decision 3's other half, `DeviceDescriptor::parse` answering `Result`: ready for a lane.
+- The move itself: a decision for calef (clearing the review package
+  `notes/crate-reviews/universal-serial-bus.md`, whose recommendation asks for a review of the
+  names).
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1111-usb-outside-review/what-was-checked.md).

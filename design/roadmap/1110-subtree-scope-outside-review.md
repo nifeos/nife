@@ -33,6 +33,26 @@ can build, test and prove it from the README alone, call `walk` from a doctest t
 read every refusal as a POSIX errno without a nife glossary. The repository's gates are green for
 the crate's own reasons.
 
+## Where this stands
+
+Finished: items 4, 5, 6, 8 (the two doctests), 13 and 14 (#3580), items 11 and 12 (#3610), and
+the template half of item 3 (`nifeos/crate-workflows#66`: `deny.toml` admits git sources on the
+organization). The name decision is decided, provisionally.
+
+What remains, and what holds each:
+
+- Items 1, 2 and 10, the manifest and files with the README (and item 8's README example), the
+  module doc in the crate's own words, and the passive voice (26 in 4,081 words against an
+  allowance of 8): a release step, the move.
+- Item 15, the README's section on `openat2` and `cap-std`: a release step, the move, with item 1.
+- Item 3, the `git` and `rev` pin on `filesystem_contract`: another milestone, step 2 of
+  milestone 1017 (the contract crates leave in this order), which gives `filesystem_contract` its
+  repository and tag.
+- Item 7, the eight renames: ready for a lane (two-way before the first release, so the maintainer
+  rules the names provisionally).
+- Item 9, the walk-completeness harness and the measured peak: ready for a lane, at about 6 GiB.
+- The move: a decision for calef, taken by clearing a review package, which does not exist yet.
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1110-subtree-scope-outside-review/what-was-checked.md).

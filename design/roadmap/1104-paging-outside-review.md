@@ -32,6 +32,25 @@ stranger meets no name that needs a decoder and follows no link into another tre
 claim sits where the `unsafe` lives. The repository's template gates are green for the crate's own
 reasons.
 
+## Where this stands
+
+Finished: items 7, 8, 10, 13, 16 and 18 (#3567), item 2 (#3594). Decision 1 is decided.
+
+What remains, and what holds each:
+
+- Items 1, 3, 4, 9 and 11, the manifest, the falsification paths, the documentation for a stranger,
+  the mutation exemptions and the README: a release step, the move to its own repository.
+- Item 5, the spelled-out renames: ready for a lane (two-way before the first release, so the
+  maintainer rules the names provisionally).
+- Item 6, the aliases on kept specification names: ready for a lane.
+- Item 12, moving `WritableAndExecutable` out of `MapError`: ready for a lane.
+- Item 14, the leaf-size spelling: a decision for calef (Decision 2).
+- Item 15, the README's list of missing operations: a release step, the move, with item 11.
+- Items 17 and 19, the test pool shape and the Miri casts: ready for a lane.
+- Decision 2, the spelling of `PageSize`'s variants: a decision for calef.
+- Creating the repository: a decision for calef, taken by clearing a review package, which does not
+  exist yet.
+
 ## What was checked, and how
 
 The tools run, the sources read and what was not run are in [the appendix](1104-paging-outside-review/what-was-checked.md).
