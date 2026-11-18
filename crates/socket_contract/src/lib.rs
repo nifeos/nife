@@ -515,8 +515,14 @@ pub mod ephemeral {
         /// its open at `last` the stack has used no position past `clock(last)`, and a stack whose
         /// first open comes at `last + gap` starts at `clock(last + gap)`, which is past it.
         ///
+        ///
+        /// The formula is small and its hard part is three 64-bit divisions by 1000. kissat proves
+        /// it in a little over half the time CaDiCaL, Kani's default, takes; minisat takes longer
+        /// than either. The solver changes how long the proof takes and not what it proves.
+        ///
         /// Falsification: replayable `crates/socket_contract/falsifications/ephemeral.verification.a_stack_started_four_milliseconds_later_starts_past_every_port_used.patch`
         #[kani::proof]
+        #[kani::solver(kissat)]
         fn a_stack_started_four_milliseconds_later_starts_past_every_port_used() {
             let last: u64 = kani::any();
             let gap: u64 = kani::any();

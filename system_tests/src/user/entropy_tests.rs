@@ -202,7 +202,13 @@ fn a_reply_never_delivers_more_bytes_than_it_says() {
         "an oversized request should be clamped and answered, not refused",
     );
 
-    let r = crate::sched::ipc_call(w.request, [entropy_contract::request(0xff, 8), 0]);
+    let r = crate::sched::ipc_call(
+        w.request,
+        [
+            entropy_contract::request(0xff, 8).expect("0xff fits the operation byte"),
+            0,
+        ],
+    );
     assert_eq!(
         r[0],
         entropy_contract::NO_ENTROPY,
@@ -213,7 +219,9 @@ fn a_reply_never_delivers_more_bytes_than_it_says() {
         let r = crate::sched::ipc_call(
             w.request,
             [
-                entropy_contract::request(entropy_contract::GET, 8) | (1 << bit),
+                entropy_contract::request(entropy_contract::GET, 8)
+                    .expect("GET is a defined operation")
+                    | (1 << bit),
                 0,
             ],
         );

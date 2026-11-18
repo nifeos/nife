@@ -215,7 +215,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
 fn nonce_bits() -> Result<u64, u64> {
     let (r0, r1) = call(
         ENTROPY,
-        entropy_contract::request(entropy_contract::GET, 8),
+        entropy_contract::request(entropy_contract::GET, 8).expect("GET is a defined operation"),
         0,
     );
     let Some(n) = entropy_contract::delivered_bytes(r0) else {

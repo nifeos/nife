@@ -698,4 +698,4 @@ clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
 # `unreachable_network_witness`'s entropy probe (milestone 202's unvouched-child claim, DECISIONS
 # §219 (how the shell names an installed program to the spawner) gate D2): a real `GET`, so a child wrongly handed the service gets an answer rather than a
 # request the service would not recognise. Already in the shipping graph through `components`.
-entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "63aeff35fcd8fabb443433e5e994e8d7f9ef808c" }
+entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }

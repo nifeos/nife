@@ -45,7 +45,8 @@ fn ask(n: usize) -> Option<(usize, u64)> {
     if GRANTED.load(Ordering::Relaxed) == 2 {
         return None;
     }
-    let (r0, r1) = rt::call(ENTROPY, proto::request(proto::GET, n as u64), 0);
+    let request = proto::request(proto::GET, n as u64).expect("GET is a defined operation");
+    let (r0, r1) = rt::call(ENTROPY, request, 0);
     match proto::delivered_bytes(r0) {
         Some(count) => {
             GRANTED.store(1, Ordering::Relaxed);
