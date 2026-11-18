@@ -96,6 +96,13 @@ jobs:
       verdict: ${{ steps.measure.outputs.verdict }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
 
       - name: Work out the two nightlies
         id: plan
@@ -323,6 +330,15 @@ jobs:
           exit 0
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           token: ${{ steps.app-token.outputs.token || github.token }}
 
@@ -645,6 +661,15 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        id: checkout_first_1
+        timeout-minutes: 2
+        continue-on-error: true  # outcome: re-raised
+        with:
+          token: ${{ steps.app-token.outputs.token || github.token }}
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        timeout-minutes: 3
+        if: steps.checkout_first_1.outcome != 'success'
         with:
           token: ${{ steps.app-token.outputs.token || github.token }}
       - name: Raise .kani-version and open or update the pull request

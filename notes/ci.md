@@ -68,6 +68,28 @@ And the sweep the BUGS entry already owns: the per-item allowances for x86_64's 
 mirroring the aarch64 twins. This note's table is that sweep's worklist, with each item's caller
 already read.
 
+## Checkout is bounded
+
+The `git fetch` inside `actions/checkout` sometimes goes silent for about 13 minutes on a
+GitHub-hosted runner and then completes. A checkout step normally takes a median of 8 seconds and
+at most 17, so one stall spends most of a job's 20-minute budget (`.github/ci-job-budgets`) and can
+eject a pull request from the merge queue.
+
+Every `actions/checkout` step in `.github/workflows/` is therefore a pair. The first attempt has
+`timeout-minutes: 2` and `continue-on-error: true`. The second runs only when the first did not
+succeed, has `timeout-minutes: 3`, takes the same `with:` inputs, and does not swallow its failure,
+so a job whose two attempts both fail goes red. The first attempt's workspace is usable for the
+second, because the action's `clean` input defaults to true and the action cleans an existing
+directory before it fetches. The worst case is 5 minutes in place of 13 or more. The job's
+`timeout-minutes` and its budget are unchanged.
+
+The pair is spelled out at each site because a composite action cannot carry the bound: a step
+inside one has no `timeout-minutes`. `helpers/workflow_checkout_retry.py`, a section of
+`script/lint`, refuses a bare checkout, a wrong timeout, a retry that differs from its first
+attempt, and a retry that swallows its failure. A job that must keep the bare action says why on a
+`# checkout-retry: exempt, <reason>` comment line above the step. Today that is the two jobs of
+`owned-runner-canary.yml`, which measure the owned runner's own checkout.
+
 ## BUGS
 
 - The reading is one job on one day. The classes here are structural, but a second job's log could

@@ -3406,6 +3406,17 @@ echo "==> every workflow file parses"
 python3 "$(dirname "$0")/../helpers/workflow_parses.py" --selftest
 python3 "$(dirname "$0")/../helpers/workflow_parses.py"
 
+# 12c1. **No workflow step uses a bare `actions/checkout`** (helpers/workflow_checkout_retry.py, name
+#     provisional). The `git fetch` inside the action sometimes stalls for about 13 minutes on a
+#     hosted runner and then completes, which spent a merge-group job's 20-minute budget and
+#     ejected pull requests. Every checkout is a 2-minute first attempt that may fail plus a
+#     3-minute retry that may not, or says on the line above why it is exempt. Fixtures first,
+#     because a green run looks the same as a check that cannot fire. See notes/ci.md.
+echo "==> no workflow step uses a bare actions/checkout"
+# lint-scope: code
+python3 "$(dirname "$0")/../helpers/workflow_checkout_retry.py" --selftest
+python3 "$(dirname "$0")/../helpers/workflow_checkout_retry.py"
+
 # 12c2. **The fuzz heartbeat** (helpers/fuzz-heartbeat.py, name provisional). Its selftest runs the
 #     checks over fixture reports with no network: missing release, no ok window, infrastructure
 #     share above the bound, a late release tolerated, an open issue not duplicated, the quiet
