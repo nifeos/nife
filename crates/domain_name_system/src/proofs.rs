@@ -147,7 +147,11 @@ fn the_dotted_parse_accepts_exactly_names() {
                     assert_eq!(body[read], b'.', "labels not split at a dot");
                     read += 1;
                 }
-                assert_eq!(&wire[at..at + n], &body[read..read + n], "a label misspelled");
+                assert_eq!(
+                    &wire[at..at + n],
+                    &body[read..read + n],
+                    "a label misspelled"
+                );
                 at += n;
                 read += n;
             }
