@@ -4,7 +4,7 @@ The defect: a zone that parses is answered `Granted` but never marked complete, 
 grant after the table said it did.
 
 Expected to fail: `assert_eq!(after, Some(at))` on `Control::Granted`, in a run of one message that
-carries a zone of up to eight bytes the parse accepts.
+carries a whole zone the stubbed parse accepts.
 
 diff --git a/crates/domain_name_resolution_contract/src/grants.rs b/crates/domain_name_resolution_contract/src/grants.rs
 index e64e5b7c4..be1d95168 100644

@@ -13,7 +13,7 @@ use super::*;
 /// it, a piece out of order after a first piece, and a forget after a grant. A third message, and
 /// the parse of a zone inside the run, each made the proof outrun its twenty-minute shard (the
 /// parse of up to 32 free bytes, over a table of 256-byte names, passed the memory fence), so the
-/// run stays at two and the parse is stubbed here and proved in its own harness below. Two
+/// run stays at two and the parse is stubbed here and proved in the name crate. Two
 /// messages prove in about eleven minutes and 7.4 GB.
 const STEPS: usize = 2;
 
@@ -27,7 +27,7 @@ fn text_without_validation(_bytes: &[u8]) -> Result<&str, core::str::Utf8Error> 
 }
 
 /// The stand-in for `Name::from_dotted` in the bookkeeping proof: either a zone or a refusal, free.
-/// The real parse is `the_one_message_zone_parses_or_is_refused` (and the name crate's own tests).
+/// The real parse is proved in the name crate (`the_dotted_parse_accepts_exactly_names`).
 #[allow(dead_code)] // as above
 fn zone_without_parsing(_text: &str) -> Result<Name, domain_name_system::Error> {
     if kani::any() {
@@ -96,9 +96,11 @@ fn the_grant_table_grants_only_what_it_said() {
 }
 
 /// **One control message, whose zone text is free, is a grant or a refusal, and `check` answers `Ok`
-/// only for a badge that was granted.** This is the real parse (`core::str::from_utf8` and
-/// `Name::from_dotted`, not stubbed) of up to eight free bytes, the most one message carries; the
-/// bookkeeping proof above covers runs of messages with the parse left free. After the message:
+/// only for a badge that was granted.** The zone fits the one message (up to eight bytes), and its
+/// parse is stubbed as in the proof above, free to accept or refuse: the real parse of free text did
+/// not fit the memory fence inside the table, so `domain_name_system` proves it on its own
+/// (`the_dotted_parse_accepts_exactly_names`, any text of up to five bytes, accepted exactly when it
+/// is a name and spelled as written). After the message:
 ///
 /// - `Granted(at)` leaves the badge in force in window `at`, and `check` against the root answers
 ///   `Ok(at)` or `OutsideZone`, never `NoGrant`.
@@ -106,6 +108,8 @@ fn the_grant_table_grants_only_what_it_said() {
 /// Falsification: replayable `crates/domain_name_resolution_contract/falsifications/verification.the_one_message_zone_parses_or_is_refused.patch`
 #[kani::proof]
 #[kani::unwind(10)]
+#[kani::stub(core::str::from_utf8, text_without_validation)]
+#[kani::stub(domain_name_system::Name::from_dotted, zone_without_parsing)]
 fn the_one_message_zone_parses_or_is_refused() {
     let first_word: u64 = kani::any();
     let second_word: u64 = kani::any();
