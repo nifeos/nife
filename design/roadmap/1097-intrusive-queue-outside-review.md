@@ -26,7 +26,7 @@ Finished: the crate's provenance clause and owner-pointer minting (#3523), the k
 
 - Item 4 (`Send` bound): open, decision 1; decision for calef.
 - Item 6 (seven public names): ruled provisionally by the maintainer (#3589), not ratified; decision for calef, then the blocks leave with the move.
-- Items 1 to 3 (manifest, front page, skeleton): not built; the move, which waits on milestone 1017's order, the crate's listing in `crates/externalization-list.txt` and calef's review clearance for the repository.
+- Items 1 to 3 (manifest, front page, skeleton): not built; the move, which waits on the order of milestone 1017 (the contract crates leave in this order), the crate's listing in `crates/externalization-list.txt` and calef's review clearance for the repository.
 - Item 9 (`remove` and an `extract_if` shape): two-way, undecided; the maintainer decides, then a lane.
 - Item 13 (one shared test node): two-way, not built; the move.
 
