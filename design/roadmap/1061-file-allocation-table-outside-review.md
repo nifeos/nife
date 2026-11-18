@@ -253,23 +253,44 @@ The checks are in [the done-when appendix](1061-file-allocation-table-outside-re
 - The P2 order is the reviewer's judgment of what a user asks for first. Nobody outside has asked
   for anything yet.
 
+## Where this stands
+
+Finished, in `nifeos/file_allocation_table` unless named otherwise:
+
+- P0-1: #21, #22 and #53, with a full mutation run green at `6f8aa1d`, the `v0.1.0-pre.2` commit.
+- P0-2: #17, #21 and #23. P1-1 and P1-2: #24. P1-4: #25. P1-5: #19.
+- P1-3: the `main` ruleset requires `check / mutation-diff`, and the weekly `settings drift` job is
+  green.
+- P1-6 to P1-9: #18, with the names ratified as built.
+- Every P2 item: #20, #26 to #32, #46 and `nifeos/crate-workflows#58`, each closing its issue among
+  #33 to #45.
+- The second stranger run: #50, with its gaps closed in #51.
+- nife's callers build against `v0.1.0-pre.2` through `nifeos/nife#3568`.
+
+| item | what remains | blocker |
+|---|---|---|
+| The tag `v0.1.0` and the first publish | each a separate go, after the assessment of completeness and unique value that this block is the worklist for | decision for calef |
+| P0-3 | the first-publish token in the `crates-io` environment, which holds no secret | release step |
+| Done when: nife's callers | move nife's pins from `v0.1.0-pre.2` to the release | release step |
+| Done when: checks at the release commit | `cargo test`, clippy, docs, the bare-metal builds, `cargo package`, `proofs` and `mutation` rerun at the commit the release tags; all are green at `6f8aa1d` | release step |
+
 ## Follow-on
 
-Checked 2026-11-14 (UTC) against `nifeos/file_allocation_table`. Its tag `v0.1.0-pre.1` sits on
-`9b3eac1`, the merge of #23; `main` is `2215cbc`, 42 commits further on.
-
-- **Done.** P0-1 landed in `nifeos/file_allocation_table` #21 and #22, with mutation run 43006997718
-  green at `9b3eac1`; P0-2 in #17, #21 and #23; P1-5 in #19; P1-6 to P1-9 in #18; all before the
-  tag. P1-3 is a repository setting: the `main` ruleset requires `check / mutation-diff`.
-- **Done.** P1-1 and P1-2 landed in `nifeos/file_allocation_table` #24 and P1-4 in #25, after the
-  tag. P2-1 to P2-3 and P2-5 to P2-13 landed in #26 to #32 and #46, each closing its issue among #33
-  to #45.
-- **Outstanding.** P0-3, the first-publish token: the repository lists no secret, and the secrets of
-  the `crates-io` environment are unreadable from outside. Read through the GitHub API.
-- **Outstanding.** P2-4: the seeds sit in `fuzz/seeds/`, which the weekly fuzz job does not read;
-  issue `nifeos/file_allocation_table#36` is open.
-- **Outstanding.** The second stranger run: `docs/stranger-test.md` still reads `Last run:
-  2026-11-06`.
+- **Done.** P0-1 landed in `nifeos/file_allocation_table` #21, #22 and #53, with mutation run
+  44049789540 green at `6f8aa1d`, the commit tagged `v0.1.0-pre.2`. P0-2 landed in #17, #21 and
+  #23. P1-5 is #19, and P1-6 to P1-9 are #18. P1-3 is a repository setting: the `main` ruleset
+  requires `check / mutation-diff`, and weekly run 43906126610 has `settings drift` green.
+- **Done.** P1-1 and P1-2 landed in `nifeos/file_allocation_table` #24 and P1-4 in #25. P2-1 to
+  P2-3 and P2-5 to P2-13 landed in #26 to #32 and #46, each closing its issue among #33 to #45.
+- **Done.** P2-4: the weekly fuzz run reads `fuzz/seeds/<target>/` since the template's
+  `nifeos/crate-workflows#58`, and issue `nifeos/file_allocation_table#36` is closed.
+- **Done.** The second stranger run is recorded in `nifeos/file_allocation_table` #50 and found no
+  false claim; the gaps it and the next run found (#49, #52) closed in #51. nife pins
+  `v0.1.0-pre.2` through `nifeos/nife#3568`, and its callers build against the changed items.
+- **Outstanding.** P0-3, the first-publish token: the `crates-io` environment lists no secret. Read
+  through the GitHub API.
+- **Outstanding.** The tag `v0.1.0`, the first publish, and the done-when checks and nife pin at the
+  release commit. Nothing is tagged `v0.1.0`; read from the repository's tags.
 
 ## Index row
 
