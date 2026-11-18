@@ -485,6 +485,8 @@ pub mod propose {
 
     /// Build a request's first word. The opcode is one byte: a larger `operation` loses its high
     /// bits, which a debug build refuses.
+    ///
+    /// Name: provisional, minted 2026-11-18 (UTC) by milestone/1082-1083-ruled-follow-ons.
     pub const fn request(operation: u64) -> u64 {
         debug_assert!(operation < 256);
         operation << OPERATION_SHIFT

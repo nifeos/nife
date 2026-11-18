@@ -1126,7 +1126,6 @@ crates/clock_contract/src/lib.rs::publish
 
 crates/clock_contract/src/lib.rs::read
 
-crates/clock_contract/src/lib.rs::req
 
 crates/compositor/src/lib.rs::ACKED
 
