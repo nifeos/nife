@@ -35,63 +35,27 @@ The tools run, the sources read and what was not run are in [the appendix](1078-
 
 ## The crate in one paragraph
 
-`src/lib.rs` is 142 lines: eight `&str` constants (`BANNER`, `MACHINE`, `SELF_TEST`,
-`SELF_TEST_FAILED`, `SELF_TEST_ABSENT`, `TOUR`, `PROMPT`, `SCREEN_HELD`), one `&[&str]`
-(`SELF_TEST_CHECKS`, 15 names) and one `&[usize]` (`SELF_TEST_CHECKS_EARLIER`, the two older list
-lengths). It is `no_std`, has no dependencies, no `unsafe`, no functions, no tests. The kernel
-prints the heads; `swish` prints `PROMPT`; `serial_console` and `xtask` match them and parse the
-verdict's tail. Soundness has nothing to review. Correctness lives in the agreement between the
-printer and the readers, and that is where the items below sit.
+`src/heads.rs` holds `Heads`, built from a system's name, whose seven accessors (`banner`,
+`machine`, `self_test`, `self_test_subject`, `core_runs`, `shell_banner`, `screen_held`) each give
+a `Head` that prints through `Display` and matches a line in place. `src/rungs.rs` holds the
+verdict's two inner heads (`SELF_TEST_FAILED`, `SELF_TEST_ABSENT`), the fifteen check names
+(`SELF_TEST_CHECKS`) and the two older list lengths (`EARLIER_SELF_TEST_CHECK_COUNTS`).
+`src/verdict.rs` holds the verdict's grammar: `Verdict` prints it and `ParsedVerdict` reads it.
+`kernel_half` and `self_test_program` hold the pages and slots the kernel, the progenitor and the
+self-test program agree on. The crate is `no_std`, with no dependencies and no `unsafe`. The kernel
+prints its heads, the self-test program prints the verdict, the shell prints its banner, and
+`serial_console` and `xtask` read them through the same code. Soundness has nothing to review.
+Correctness lives in the agreement between the printer and the readers, and that is where the items
+below sit.
 
 ## The items
 
 Effort: S is half a day for a lane, M a day or two, L more. A door is one-way when somebody
 outside the repository acts on it after a release (a public name, a printed wording that logs and profiles already hold, a layout, a license). Everything else is two-way, and the maintainer decides it.
 
-The ledger of what landed and what is left is in [the appendix](1078-boot-ladder-outside-review/ledger.md).
-
 ### P0: blocks the move
 
-1. The manifest is not standalone.
-   Finding: `crates/boot_ladder/Cargo.toml` inherits `license` (line 9) and `lints` (lines 20
-   to 21) from the nife workspace, carries no `rust-version`, no `description`, no `repository`,
-   no `readme`, no `keywords` and no `categories`. The `publish = false` line (line 8) points the
-   reader at `crates/publish-allowlist.txt`, a file that will not be in the repository. The header
-   comment (lines 1 to 3) describes a `Name:` block the template strips. The body comment (lines 11 to 18) says the crate is "six `&'static str`s" when it holds eight and two slices. It also cites a milestone and a rule of `AGENTS.md`.
-   Why it matters: `check / standalone` fails on each of the first three. `cargo publish --dry-run` refuses a manifest without `description` and `license`. A stale count is the first thing a
-   stranger reads and the first thing they stop trusting.
-   Change: write `license = "MIT OR Apache-2.0"`, `rust-version = "1.88"` (the value every other
-   package in `notes/crate-reviews.md` states), a one-sentence `description`, `repository`,
-   `readme = "README.md"`, and the template's required `[lints]` table (`unsafe_op_in_unsafe_fn`,
-   `missing_docs`, `unexpected_cfgs` naming `cfg(kani)`) as literals. Replace every comment with
-   one sentence a stranger can act on. The `publish` line stays until the release that publishes,
-   with the comment "set to `true` only in the release that publishes".
-   Door: two-way, except the license, which is already ruled for every crate. Effort: S.
-
-2. The files a stranger needs do not exist.
-   Finding: the crate has no `README.md`, no `LICENSE-MIT`, no `LICENSE-APACHE`, no
-   `CHANGELOG.md`, no `_typos.toml`, no `docs/stranger-test.md`.
-   Why it matters: `check / standalone` requires the README with `EXAMPLES` and `BUGS` headings,
-   the two license files and the typos configuration; `release / gate` refuses while
-   `docs/stranger-test.md` reads `Last run: none`.
-   Change: the scaffold's files, filled in. The README's one screen says what the crate is for in the words of item 3. It shows the verdict line and how a matcher keys on `SELF_TEST` and `SELF_TEST_FAILED`. It carries `EXAMPLES` (a reader that finds the verdict in a transcript) and `BUGS` (the crate's current `BUGS` list, reworded for a stranger).
-   Door: two-way. Effort: S.
-
-3. Shipped text points into this tree.
-   Finding: `script/crate-standalone` counts 10 milestone citation lines (first `Cargo.toml` line 11). It counts 3 lines naming a path in nife (first `src/lib.rs` line 8, "See notes/boot-ladder.md"; also lines 79 and 141). It counts one line naming the architect outside a `Name:` block (`src/lib.rs` line 62 to 63, a ruling cited by a pull request number). Beyond what
-   the script counts, the doc comments name `kernel_main`, `kernel/src/machine_description.rs`, `kernel/src/self_test.rs`, `components/src/swish.rs`, `kernel::console::yield_screen`,
-   `machine_discovery::framebuffer::SCREEN_HOLD`, `cargo xtask swish-check` and `cargo xtask
-   uefi-boot`, and `AGENTS.md` rule 7 (lines 5, 31, 42, 50, 109 to 111, 119, 127, 139 to 140).
-   Lines 82 to 83 and 108 to 111 carry a dated history of the check list, which the documentation
-   standard sends to git.
-   Why it matters: the move cannot strip these as it strips `Name:` blocks; each is a link a
-   stranger cannot follow, and the ruling citation names a person in text that leaves the tree.
-   Change: rewrite each doc comment to say who prints the line and who reads it in role words ("the
-   kernel", "the shell", "a console reader"), with no path. State the ruling behind `absent`
-   without the name or the pull request number. Keep the table of earlier list lengths, keyed by
-   which names each list held rather than by date. Move the design narrative (why the banner is
-   generic, why the machine line comes last) to the README.
-   Door: two-way. Effort: S.
+The P0 items are in [the appendix](1078-boot-ladder-outside-review/blocks-the-move.md).
 
 ### P2: later
 
@@ -104,9 +68,9 @@ The P1 items are in [the appendix](1078-boot-ladder-outside-review/before-the-ta
 ## Decisions for the architect
 
 Each states the background first, then the recommendation, prior art and a concrete example.
-The ten public names are Rust identifiers, a two-way door before the first tag, and the maintainer
-has decided them, provisionally; the wordings and the printed check names wait for the architect. The repository itself follows the standing rule that clearing this review is the
-go for creating it; that is not a new decision.
+The architect ruled the heads and the printed check names, below. The ten public names wait for
+the architect's ratification, and the review clearance that is the go for the repository waits
+too; both are under [Open decisions](#open-decisions).
 
 ### The heads are fixed shapes after the caller's system name
 
@@ -118,12 +82,12 @@ allocates and the kernel can use it. nife passes `nife`, so every byte printed a
 logs, board profiles and gates already hold, and a test in `serial_console` pins the nife heads to
 those bytes.
 
-The ruling ratifies the nine shapes as printed: `<system> on `, `<system> machine: `,
+The ruling ratifies the nine shapes as printed. They are `<system> on `, `<system> machine: `,
 `<system> self-test: `, `<system> self-test subject: thread `,
 `<system>: the capability core runs on `, `<system> capability shell`,
 `<system> screen: held for the host; `, and inside the verdict `FAILED: ` and `absent: `. The shell
 banner keeps its text and takes no period. The names of the accessors and types are
-provisional, under the decision below.
+provisional, under [Open decisions](#open-decisions).
 
 Prior art (recalled, not read in this review, unless stated): seL4's `sel4test` ends a green run with one fixed sentence that its CI harness matches. Zephyr's `twister` console harness matches `PROJECT EXECUTION SUCCESSFUL` or `FAILED`. Linux's KTAP (`Documentation/dev-tools/ktap.rst`)
 freezes `KTAP version 1` as the head of every report. In each, the first release of the reader freezes the sentence. Where nife differs: the heads live in a crate both sides link rather than
@@ -134,39 +98,6 @@ Example: a transcript holding
 green under the released crate and under every later one, because the verdict's shape and the
 grammar behind it never change. Only the list length and the names may change, and the
 earlier-lengths list says which totals an older kernel printed.
-
-### The ten public names
-
-Background. Ten items are public and unratified. Seven say what they hold. `PROMPT` holds the
-shell's banner, which the crate's `BUGS` concedes. `SELF_TEST_CHECKS_EARLIER` holds counts.
-`TOUR` holds the line that says the kernel's middle stages finished, named for a concept
-(`Stage::Tour`) a stranger never meets. The name of `TOUR` and `PROMPT` is also the name of a
-`serial_console` stage, which follows whatever ruling comes. The seven heads are now accessors on
-`Heads` (decision above), so each recommendation below applies to the accessor's lower-case
-spelling (`prompt` to `shell_banner`, `tour` to `core_runs`).
-
-Recommendation: ratify `BANNER`, `MACHINE`, `SELF_TEST`, `SELF_TEST_FAILED`, `SELF_TEST_ABSENT`,
-`SELF_TEST_CHECKS` and `SCREEN_HELD`. Rename `PROMPT` to `SHELL_BANNER` (it is the shell's first
-line, and the real prompt is `$ `), `SELF_TEST_CHECKS_EARLIER` to `EARLIER_SELF_TEST_CHECK_COUNTS` (a count names the things counted), and `TOUR` to `CORE_RUNS` (the line's own words: the
-capability core runs). Refused for `TOUR`: `HANDOVER`, since milestone 972 (the boot stick's shared names are code) spends that meaning on
-the progenitor line; `KERNEL_UP`, since the banner already says the kernel is up.
-
-Prior art: systemd's readiness protocol names its message for what it says (`READY=1`, `STATUS=`), and its reader and writer share `sd_notify`'s definition. U-Boot's `bootstage` names
-each stage for the event (`BOOTSTAGE_ID_START_UBOOT_F`, `..._BOOTM_START`) in one header its tools
-include. Where nife differs: a name here is a Rust item a third-party reader imports, so a
-misnomer is in their code too.
-
-Example: a third-party console reader written against the released crate reads
-`boot_ladder::SHELL_BANNER` and knows without the `BUGS` entry that it is not waiting for a `$ `.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `PROMPT` becomes `SHELL_BANNER`, `SELF_TEST_CHECKS_EARLIER` becomes
-`EARLIER_SELF_TEST_CHECK_COUNTS` and `TOUR` becomes `CORE_RUNS`. `BANNER`, `MACHINE`, `SELF_TEST`,
-`SELF_TEST_SUBJECT`, `SELF_TEST_FAILED`, `SELF_TEST_ABSENT`, `SELF_TEST_CHECKS` and `SCREEN_HELD`
-keep their names. `SELF_TEST_SUBJECT` (`src/rungs.rs` line 44) is the head added after the review
-and is kept with the rest. The bytes each constant holds are the wordings decision above, not this
-one. The `self_test_program` module (`src/self_test_program.rs`), added after the review, holds
-about twenty more provisional names this decision does not cover; item 8 carries their pass as
-work.
 
 ### The printed check names spell out their words
 
@@ -190,42 +121,139 @@ The comparison with nearby work is in [the appendix](1078-boot-ladder-outside-re
 
 ## What needs the architect
 
-The ten public names, above, which the maintainer has decided, provisionally; the architect has ruled
-on the heads and the check names. Nothing else here is one-way: the manifest, the README, the tests,
-the `Verdict` type and the nife-side gate are the maintainer's.
+The ratification of the public names and the review clearance, under
+[Open decisions](#open-decisions). The architect has ruled on the heads and the check names.
+Nothing else here is one-way: the manifest, the README, the tests, the `Verdict` type and the
+nife-side gate are the maintainer's.
 
 ## Done when
 
 The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 
-## Where this stands
+## Finding status
 
-Finished: the heads that name the system and the two spelled-out check names (#3586), the
-provisional rulings (#3589) and items 1, 3 to 6, 8 to 11 and 13, with parts of 2 and 7 (#3565,
-#3655). The ten public names stand as provisional maintainer rulings.
+- P0-1, manifest stands alone: Open. The license, `rust-version`, description, readme, keywords,
+  categories and lints are literal ([#3655](https://github.com/nifeos/nife/pull/3655)); the
+  `repository` line is missing, and the move tool's `add_repository` writes it.
+- P0-2, the files a stranger needs: Open. The README and both licenses exist
+  ([#3655](https://github.com/nifeos/nife/pull/3655)); `CHANGELOG.md`, `_typos.toml` and
+  `docs/stranger-test.md` with a stranger run come with the move's scaffold.
+- P0-3, shipped text points into the tree: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3655](https://github.com/nifeos/nife/pull/3655). Tree references remain only in `Name:` blocks,
+  which the move strips.
+- P1-4, one verdict code for the writer and the readers: Done,
+  [#3655](https://github.com/nifeos/nife/pull/3655). The kernel prints through `Verdict`, and
+  `serial_console` and `xtask` read through `ParsedVerdict`.
+- P1-5, check list invariants: Done, [#3565](https://github.com/nifeos/nife/pull/3565). A test
+  (`the_check_names_are_plain_and_distinct`), not a `const` block, because a `const` block drew five
+  mutation survivors no test can kill.
+- P1-6, tests and proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3655](https://github.com/nifeos/nife/pull/3655). Two Kani harnesses in `src/verdict.rs`, each
+  with a falsification patch.
+- P1-7, head literals in `xtask`: Open. The literals are gone
+  ([#3655](https://github.com/nifeos/nife/pull/3655)); the `script/lint` section that refuses a head
+  literal outside `crates/boot_ladder`, tests and fixtures is not written, and as a new lint section
+  it is a reviewed interface.
+- P1-8, the ten public names: Done as provisional renames,
+  [#3589](https://github.com/nifeos/nife/pull/3589),
+  [#3655](https://github.com/nifeos/nife/pull/3655). Their ratification is under Open decisions.
+- P1-8b, the `self_test_program` names: Open. About twenty provisional names, with one change
+  proposed (`DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS` to
+  `DIRECT_MEMORY_ACCESS_OBSERVER_VIRTUAL_ADDRESS`) and not applied; a two-way door the maintainer
+  rules provisionally. Which of the module's items stay public is a question for the self-test
+  program's own move.
+- P1-9, the boundary claim and the matching rule: Done,
+  [#3586](https://github.com/nifeos/nife/pull/3586),
+  [#3655](https://github.com/nifeos/nife/pull/3655).
+- P2-10, abbreviated check names: Done, [#3586](https://github.com/nifeos/nife/pull/3586). The
+  kernel's name column is still ten wide, which the README's `BUGS` records.
+- P2-11, a version policy: Done, [#3655](https://github.com/nifeos/nife/pull/3655). The README
+  states it; no identity constant exists.
+- P2-12, growth already proposed: Open. Milestone 972 (the boot stick's shared names are code) and
+  the two hoists of soak markers and job-mix fields land before the move, or this block records that
+  they wait.
+- P2-13, the banner's tail: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3586](https://github.com/nifeos/nife/pull/3586). The crate states that the tail is free text and
+  a reader takes the architecture from the machine line.
+- Decision, heads after the caller's system name: Done (ruled 2026-11-14 UTC, option A),
+  [#3586](https://github.com/nifeos/nife/pull/3586).
+- Decision, the ten public names: Open. Built as the maintainer's provisional ruling of 2026-11-14
+  (UTC), [#3589](https://github.com/nifeos/nife/pull/3589); the ratification is under Open
+  decisions.
+- Decision, printed check names spelled out: Done (ruled 2026-11-14 UTC),
+  [#3586](https://github.com/nifeos/nife/pull/3586).
+- The move: Open. No review package exists under `notes/crate-reviews/`, and nifeos/boot_ladder does
+  not exist; a package lane comes first, then the clearance under Open decisions.
 
-- Item 7's `script/lint` gate is a new lint section. Blocker: other, a lane.
-- Item 12 waits on milestone 972. Blocker: other, milestone 972.
-- The `self_test_program` names pass is not decided. Blocker: unverified.
-- The move: no review package exists, and nifeos/boot_ladder does not. Blocker: decision for
-  calef (review clearance), after a package lane.
-- Publishing. Blocker: publishing hold.
+## Open decisions
+
+### Ratify the public names of the heads and the check lists
+
+Background: `boot_ladder` holds the fixed beginnings ("heads") of the lines a kernel, its
+self-test and its shell print while booting, such as `nife self-test: ` and
+`nife capability shell`. It also holds the list of self-test check names. The program that prints a line
+and every program that reads one (a console reader on a bench, a CI transcript check) use the same
+crate, so they cannot disagree. A third-party console reader would import these names.
+
+The names in question are the accessors on `Heads` (`banner`, `machine`, `self_test`,
+`self_test_subject`, `core_runs`, `shell_banner`, `screen_held`) and the constants
+`SELF_TEST_FAILED`, `SELF_TEST_ABSENT`, `SELF_TEST_CHECKS` and `EARLIER_SELF_TEST_CHECK_COUNTS`.
+The maintainer decided them on 2026-11-14 (UTC), provisionally, and the tree builds them. Three are
+renames. The shell's banner line was `PROMPT`, though the real prompt is `$ `. The line that says
+the capability core runs was `TOUR`, after an internal stage a stranger never meets. The list of
+older check counts was `SELF_TEST_CHECKS_EARLIER`, though it holds counts. The printed bytes
+are not part of this decision; the architect ruled them on 2026-11-14 (UTC).
+
+Recommendation: A.
+
+- A. Ratify every name as built.
+- B. Ratify the rest and give the core line another name. Refused so far: `handover`, since
+  milestone 972 spends that meaning on the progenitor's line, and `kernel_up`, since the banner
+  already says the kernel is up.
+- C. Move the shell banner's period into the head so every head ends on a boundary, and ratify the
+  names. This changes printed bytes that stored logs hold, so it is the heads ruling reopened.
+
+Door: two-way today, one-way at the first publish, when a third-party reader writes the names.
+
+Prior art: systemd's readiness protocol names its messages for what they say (`READY=1`,
+`STATUS=`), and its reader and writer share `sd_notify`'s definition. U-Boot's `bootstage` names
+each stage for its event (`BOOTSTAGE_ID_START_UBOOT_F`) in one header its tools include. Both are
+recalled, not read in this review. Where nife differs: a name here is a Rust item a reader
+imports, so a misnomer is in their code too. Example: a reader written against the released crate
+calls `Heads::new("nife").shell_banner()` and knows without the `BUGS` entry that it is not waiting
+for a `$ `.
+
+What it blocks: the first publish. The names in `verdict`, `kernel_half` and `self_test_program`
+are outside this decision and go to the crate's release name review.
+
+### Clear the review, which creates nifeos/boot_ladder
+
+Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
+architect reads; clearing it is the go to create the crate's repository and move the crate. No
+package exists for `boot_ladder` yet, so a package lane writes one first. The crate's in-tree work
+lacks only P1-7's lint section and P2-12's growth; P0-1 and P0-2 come with the move itself.
+
+Recommendation: A.
+
+- A. A package lane writes the review package now, and the architect clears it when it arrives.
+- B. Hold the package until milestone 972's names land, so the move carries them and the new
+  repository does not take a release for each.
+
+Door: one-way. The template's workflows and nife's pin act on a repository and a moved
+crate from the first day; moving back is a second move.
+
+Prior art (recalled, not read): the Rust project moved `libc` and `compiler_builtins` out of the
+compiler's tree into repositories of their own, and the compiler consumes them back by version.
+Where nife differs: a review package checks that the crate stands alone before it leaves, not
+after. Example: `jh7110_entropy`, whose review the architect cleared on 2026-11-01 (UTC), lives in
+nifeos/jh7110_entropy, and nife depends on it at a pinned revision.
+
+What it blocks: the move, and so the first tag and the first publish.
 
 ## Follow-on
 
-- **Done.** The heads: the crate fixes each head's shape and takes the system's name from its
-  caller, and nife passes `nife`, so every byte stays the same.
-- **Done.** The two check names: `block_device` and `true_random_number_generator`, with the slot
-  and flag that name the generator, and the other thirteen marked ratified.
-- **Done.** Items 1, 3, 4, 6, 8 (the three renames, provisionally), 9, 10, 11 and 13, and the rest
-  of item 2 except the move's scaffold; the ledger has each.
-- **Done.** The constants in `boot_ladder::kernel_half` that named the generator begin
-  `TRUE_RANDOM_NUMBER_GENERATOR_`, so the check-names ruling holds across the crate.
-- **Outstanding.** Item 7's `script/lint` gate for head literals. It is a new lint section, so a
-  reviewed interface.
-- **Outstanding.** Item 12, which waits on milestone 972 (the boot stick's shared names are code).
-- **Outstanding.** The pass over the `self_test_program` names, listed in the ledger.
-- **Outstanding.** The move's own files: `CHANGELOG.md`, `_typos.toml` and `docs/stranger-test.md`.
+- **Outstanding.** The Open lines under [Finding status](#finding-status) and the items under
+  [Open decisions](#open-decisions).
 
 ## BUGS
 
