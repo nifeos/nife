@@ -118,7 +118,7 @@ pub fn structures(
                 multiplier = c.notify_offset_multiplier;
             }
             VIRTIO_CAPABILITY_INTERRUPT_STATUS if interrupt_status.is_none() => {
-                interrupt_status = Some(s)
+                interrupt_status = Some(s);
             }
             VIRTIO_CAPABILITY_DEVICE if device.is_none() => device = Some(s),
             _ => {}

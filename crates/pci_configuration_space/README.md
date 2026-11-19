@@ -17,24 +17,6 @@ arbitrary bytes leaves the caller with a bounded, well-formed answer or `None`. 
 is a linked list the device supplies, so each walk stops after 64 entries; the bus walk visits
 each bus at most once, so a bridge that names its own bus or a loop terminates.
 
-## What it decodes
-
-- `Bdf`: bus, device and function, with `ecam_offset` (4 KiB per function, `bus:8 | device:5 |
-  function:3 | offset:12`) and `requester_id` (the 16-bit identifier a function stamps on its
-  memory transactions, which an input and output memory management unit keys a device by). A
-  device or function number wider than its field is masked, so it never names another page.
-- `walk` and `enumerate`: every function reachable from bus 0, with its ids, class code, header
-  type, and for a bridge the bus numbers behind it. A caller states the bus number it can read, and
-  a bridge naming a bus at or above it is reported but not entered.
-- `read_bars`: the memory base address registers of a header, sized by the write-all-ones probe and
-  restored afterwards. A register whose writable bits are not contiguous, whose base plus size
-  overflows, or whose 64-bit upper half would fall outside the header is refused with a
-  `BarRefusal` rather than sized.
-- `virtio_capabilities`, `msi_capability`, `msix_capability`: the capability list, decoded.
-- `intx_interrupt_number`: the legacy interrupt swizzle of QEMU's `virt` boards.
-- `memory_window_32_bit`: the 32-bit non-prefetchable window from a PCI host bridge's `ranges`
-  property.
-
 ## EXAMPLES
 
 ```rust
@@ -69,6 +51,24 @@ queue never runs past its array on any sequence of bridges; the ranges parse is 
 patch under `falsifications/` that makes it fail. The scan loops of `walk` over 256 buses are
 bounded by literals and not proved; a harness of `walk` on a two-bus machine ran over twelve
 CPU-minutes without finishing and was not kept.
+
+## What it decodes
+
+- `Bdf`: bus, device and function, with `ecam_offset` (4 KiB per function, `bus:8 | device:5 |
+  function:3 | offset:12`) and `requester_id` (the 16-bit identifier a function stamps on its
+  memory transactions, which an input and output memory management unit keys a device by). A
+  device or function number wider than its field is masked, so it never names another page.
+- `walk` and `enumerate`: every function reachable from bus 0, with its ids, class code, header
+  type, and for a bridge the bus numbers behind it. A caller states the bus number it can read, and
+  a bridge naming a bus at or above it is reported but not entered.
+- `read_bars`: the memory base address registers of a header, sized by the write-all-ones probe and
+  restored afterwards. A register whose writable bits are not contiguous, whose base plus size
+  overflows, or whose 64-bit upper half would fall outside the header is refused with a
+  `BarRefusal` rather than sized.
+- `virtio_capabilities`, `msi_capability`, `msix_capability`: the capability list, decoded.
+- `intx_interrupt_number`: the legacy interrupt swizzle of QEMU's `virt` boards.
+- `memory_window_32_bit`: the 32-bit non-prefetchable window from a PCI host bridge's `ranges`
+  property.
 
 ## Building and testing
 

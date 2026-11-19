@@ -13,7 +13,7 @@ index b2a5d41fc..ff8e60d1b 100644
 --- a/kernel/src/arch/x86_64/iommu.rs
 +++ b/kernel/src/arch/x86_64/iommu.rs
 @@ -467,8 +467,7 @@ const fn remappable_message(handle: u16) -> MsiTarget {
-         address: MESSAGE_ADDRESS_BASE
+         message_address: MESSAGE_ADDRESS_BASE
              | (handle & 0x7fff) << 5
              | MESSAGE_REMAPPABLE_FORMAT
 -            | MESSAGE_SUBHANDLE_VALID
