@@ -381,7 +381,7 @@ fn each_port_has_its_own_glue_block_and_physical_layer() {
 }
 
 #[test]
-fn window_encoder_takes_the_smallest_window_and_drops_the_low_address_bits() {
+fn window_encoder_takes_the_smallest_window_and_keeps_only_whole_pages_of_the_source() {
     let entry = bridge::outbound_window(2, 0x9_8000_0abc, 0x9_8000_0000, 0x1000).unwrap();
     assert_eq!(
         entry,
