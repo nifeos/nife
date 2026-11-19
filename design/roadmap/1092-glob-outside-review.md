@@ -72,7 +72,7 @@ release steps.
 - Decision 1, the registry name: Done, [#3578](https://github.com/nifeos/nife/pull/3578).
 - Decision 2, the seven names: Ruled (maintainer, provisional, 2026-11-14 UTC) and built by P0-2.
 - Decision 3, ratify the seven names and create `nifeos/byte_glob`: Ruled (maintainer,
-  provisional, 2026-11-19 UTC). The architect's two steps are asked from the package.
+  provisional, 2026-11-19 UTC). The package asks the architect for the two steps.
 - R1, the review package: Done, [#3790](https://github.com/nifeos/nife/pull/3790), at
   [notes/crate-reviews/byte-glob.md](../../notes/crate-reviews/byte-glob.md).
 - R2, ratify the seven names and clear `nifeos/byte_glob`: Open. The architect's step, asked from
@@ -80,8 +80,8 @@ release steps.
 
 ## Open decisions
 
-None. The architect's two steps, ratifying the seven names and clearing the review, are asked from
-[the review package](../../notes/crate-reviews/byte-glob.md).
+None. [The review package](../../notes/crate-reviews/byte-glob.md) carries the architect's two
+steps: ratifying the seven names and clearing the review.
 
 ## Goal
 
@@ -187,7 +187,7 @@ its variants unchanged and no alias. The rename is built (P0-2). Ratifying the n
 Ruled 2026-11-19 (UTC), provisional (the maintainer; a two-way door): a lane writes the review
 package now, so the work is not held. The package is
 [notes/crate-reviews/byte-glob.md](../../notes/crate-reviews/byte-glob.md). Two steps stay the
-architect's and are asked from it: ratifying the seven names (`matches`, `matches_with`,
+architect's, and the package asks for them: ratifying the seven names (`matches`, `matches_with`,
 `has_magic`, `literal`, `match_steps`, `cost_bound` and `LeadingDot`), and clearing the review,
 which is the go to create `nifeos/byte_glob`. No tag and no publish follow from it, and the move
 (milestone 1017, step 5) waits for both.
@@ -230,8 +230,8 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 An outside reading of `byte_glob` before it leaves. The crate name is `byte_glob` (Decision 1), the
 README, the manifest fields and the split proof module are in, and the test that linked two staying
-crates lives in `grant_plan`. `Dot` is `LeadingDot` (Decision 2) and the review package is written.
+crates lives in `grant_plan`. `Dot` is `LeadingDot` (Decision 2) and the review package exists.
 Before the move: the shipped text loses its citations of this tree, the manifest names its
-repository, and the architect ratifies the seven names and clears `nifeos/byte_glob` (Decision 3). The falsification
-paths are rewritten at the move; four P2 items follow. The matcher itself checks out. Publishing
+repository, and the architect ratifies the seven names and clears `nifeos/byte_glob` (Decision 3). The move rewrites the falsification
+paths; four P2 items follow. The matcher itself checks out. Publishing
 stays held.

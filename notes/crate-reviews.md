@@ -82,3 +82,4 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |
+| [`byte_glob`](crate-reviews/byte-glob.md) | contract | names and clearance for the architect |
