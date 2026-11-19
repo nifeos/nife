@@ -22,28 +22,28 @@ pub enum Next {
     Look,
     /// Sleep this many microseconds (the stack's own next timer or the poll interval, whichever
     /// is sooner), then look. Zero means look now.
-    Sleep(u64),
+    SleepMicroseconds(u64),
 }
 
-/// The wait at counter time `now`, when the last frame was taken at `last_frame` and a
-/// scheduler tick is `tick` counter ticks. `stack_due_microseconds` is when the stack next needs
+/// The wait at counter time `now_ticks`, when the last frame was taken at `last_frame_ticks` and a
+/// scheduler tick is `ticks_per_scheduler_tick` counter ticks. `stack_due_microseconds` is when the stack next needs
 /// polling for its own timers, if ever; `poll_microseconds` is the longest a polled NIC goes
 /// unlooked-at.
 ///
 /// Name: provisional, minted 2026-10-21 (UTC) by milestone 53's receive-rate lane.
 pub const fn next(
-    now: u64,
-    last_frame: u64,
-    tick: u64,
+    now_ticks: u64,
+    last_frame_ticks: u64,
+    ticks_per_scheduler_tick: u64,
     stack_due_microseconds: Option<u64>,
     poll_microseconds: u64,
 ) -> Next {
-    if now.wrapping_sub(last_frame) < tick {
+    if now_ticks.wrapping_sub(last_frame_ticks) < ticks_per_scheduler_tick {
         return Next::Look;
     }
     match stack_due_microseconds {
-        Some(due) if due < poll_microseconds => Next::Sleep(due),
-        _ => Next::Sleep(poll_microseconds),
+        Some(due) if due < poll_microseconds => Next::SleepMicroseconds(due),
+        _ => Next::SleepMicroseconds(poll_microseconds),
     }
 }
 
@@ -67,13 +67,22 @@ mod tests {
     #[test]
     fn a_tick_after_the_last_frame_the_stack_sleeps_no_longer_than_its_timers_allow() {
         let last = 1_000_000;
-        assert_eq!(next(last + TICK, last, TICK, None, 1000), Next::Sleep(1000));
+        assert_eq!(
+            next(last + TICK, last, TICK, None, 1000),
+            Next::SleepMicroseconds(1000)
+        );
         assert_eq!(
             next(last + TICK, last, TICK, Some(300), 1000),
-            Next::Sleep(300)
+            Next::SleepMicroseconds(300)
         );
-        assert_eq!(next(last + TICK, last, TICK, Some(0), 1000), Next::Sleep(0));
+        assert_eq!(
+            next(last + TICK, last, TICK, Some(0), 1000),
+            Next::SleepMicroseconds(0)
+        );
         // Before any frame at all, a stack that has been up a tick sleeps too.
-        assert_eq!(next(5 * TICK, 0, TICK, Some(5000), 1000), Next::Sleep(1000));
+        assert_eq!(
+            next(5 * TICK, 0, TICK, Some(5000), 1000),
+            Next::SleepMicroseconds(1000)
+        );
     }
 }

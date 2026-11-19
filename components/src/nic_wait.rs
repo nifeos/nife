@@ -112,8 +112,8 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
             user_mode_runtime::yield_now();
             return;
         }
-        polled_wait::Next::Sleep(0) => return,
-        polled_wait::Next::Sleep(microseconds) => microseconds,
+        polled_wait::Next::SleepMicroseconds(0) => return,
+        polled_wait::Next::SleepMicroseconds(microseconds) => microseconds,
     };
     let ticks = abi::timer::counter_ticks_for(0, (microseconds * 1000) as u32, counter_hertz());
     if sleep_until(RETRANSMIT, WAKE, now().saturating_add(ticks)) < 0 {

@@ -55,11 +55,13 @@ package, `notes/crate-reviews/socket-contract.md`.
 - P2-7, the ephemeral cursor unproven: Done, [#3580](https://github.com/nifeos/nife/pull/3580) and
   [#3610](https://github.com/nifeos/nife/pull/3610).
 - P2-8, offsets and lengths of mixed types: Open. `FRAME_BYTES` and the byte order are in place;
-  the offsets stay `u64` while `DATA_MAXIMUM` is `usize`, and one type waits on a change to
+  the offsets stay `u64` while `MAXIMUM_PAYLOAD_BYTES` (was `DATA_MAXIMUM`) is `usize`, and one type waits on a change to
   `user_mode_runtime`'s window API that no milestone holds.
-- P2-9, names: Open. `Ports::next`, `polled_wait::next` and, if `fixture` stays, `IN_MSG` and
-  `OUT_MSG` keep their spellings; two-way before the first tag, so the maintainer rules them
-  provisionally. `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC).
+- P2-9, names: Partly done, [#3811](https://github.com/nifeos/nife/pull/3811). The package's names
+  table is built as provisional names, ruled by the maintainer on 2026-11-19 UTC, two-way before the
+  first tag; nothing is ratified. `Cursor::next` and `polled_wait::next` keep their spelling (the
+  table keeps them). `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC); adding `tcp`
+  and `udp` to the template's accepted words is in another repository and not done.
 - P2-10, inline "provisional" prose: Open. Seven doc comments in `src/lib.rs` still say it; the
   move removes them with the `Name:` blocks.
 - P2-11, vocabulary undefined: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
@@ -68,13 +70,16 @@ package, `notes/crate-reviews/socket-contract.md`.
 - D2, the `ACCEPT` peer in the second reply word: Done,
   [#3526](https://github.com/nifeos/nife/pull/3526) (ruled 2026-11-11 UTC).
 - PKG-1, `INTERFACE_ID` 19 and `VERSION` 1: Open, and an open decision below.
-- PKG-2, `fixture` moves to a crate that stays in nife: Open. `pub mod fixture` is still in the
-  crate; a two-way door the maintainer rules provisionally, then a lane moves it.
-- PKG-3, `ephemeral` and `polled_wait` move to the stack's own crate: Open. Both modules are still
-  in the crate; the same two-way ruling and move as PKG-2.
-- PKG-4, the package's names table: Open. Two-way before the first tag, ruled by the maintainer
-  with P2-9. The table's four `_OFFSET` rows give way to the family's `<FIELD>_OFFSET_BYTES`
-  (ruled 2026-11-14 UTC), which the crate already carries.
+- PKG-2, `fixture` moves to a crate that stays in nife: Done as provisional,
+  [#3811](https://github.com/nifeos/nife/pull/3811). The crate is `socket_fixture`, not published;
+  its name is provisional. Four constants took spelled-out stems because the new crate's report
+  gates refuse `msg` and `ip`.
+- PKG-3, `ephemeral` and `polled_wait` move to the stack's own crate: Done as provisional,
+  [#3811](https://github.com/nifeos/nife/pull/3811), into `network_stack`, with the module renamed
+  `ephemeral_port`.
+- PKG-4, the package's names table: Done as provisional, [#3811](https://github.com/nifeos/nife/pull/3811),
+  with one difference: the four offset rows keep `_BYTES`, because the family's
+  `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) governs, and only their stems changed.
 - PKG-5, clearing the move with no tag and no publish: Open, and an open decision below.
 
 ## Open decisions
@@ -115,15 +120,15 @@ Blocks: the move, and with it any tag and the first publish.
 
 Clearing a crate's review package is what approves its repository, here
 `nifeos/socket_contract`. The package says the crate builds, proves and stands alone, and it
-recommends against clearing yet. It waits on the identity above, on where `fixture`, `ephemeral`
-and `polled_wait` live (PKG-2 and PKG-3), and on its names (P2-9 and PKG-4). The package also lists
+recommends against clearing yet. It waits on the identity above and on the ratification of its names (P2-9 and PKG-4); where `fixture`, `ephemeral_port`
+and `polled_wait` live (PKG-2 and PKG-3) is settled provisionally. The package also lists
 a maintainer step: the `std` farm must read the pinned checkout's source, or the move breaks the
 platform layer's build.
 
 Recommendation: A.
 
 - A. Clear once the architect freezes the identity and PKG-2, PKG-3, P2-9 and PKG-4 have
-  provisional rulings and have landed, with no tag and no publish.
+  landed (they are built in #3811, provisionally), with no tag and no publish.
 - B. Clear on the identity alone, and let the scope moves and renames land in the new repository.
 - C. Hold the clearance until the first publish is near, and move nothing before then.
 

@@ -67,6 +67,7 @@ pub const OPERATION_OPEN_TCP: u64 = 3;
 /// in bytes, at most [`MAXIMUM_PAYLOAD_BYTES`]; a larger one is answered [`REPLY_ERROR`]. The destination is in
 /// the frame header and the payload at [`PAYLOAD_OFFSET_BYTES`]. The frame's [`PAYLOAD_LENGTH_OFFSET_BYTES`] is not read. Replies
 /// [`REPLY_OK`], or [`REPLY_ERROR`].
+#[doc(alias = "sendto")]
 pub const OPERATION_SEND_TO: u64 = 4;
 /// `CALL(socket, OPERATION_RECEIVE, 0)`: block until a datagram or segment arrives, and write it to
 /// the frame. The argument word is ignored: pass 0. Replies the payload length in bytes, which is

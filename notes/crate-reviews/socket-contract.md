@@ -41,15 +41,15 @@ file by path to build the standard library's platform layer.
 | path dependency | `components`, `kernel`, `fixtures`, `crates/system_initializer`, `crates/user_mode_runtime`, `jig`, `std_exerciser`; `system_tests` as a development dependency. `jig` and `std_exerciser` carry no `version` key |
 | source copied into `std` | `cargo xtask std-src` writes `src/lib.rs` verbatim into the patched `std` as `netproto.rs` and stamps it, from the directory `cargo metadata` gives for the package (`xtask/src/farm/copied.rs`), so the move changes nothing there |
 | prose and tables | `helpers/trust_boundary_crates.tsv`, `helpers/interface_stability.py`, `helpers/lint_externalized_crates.py`, `helpers/template_report_baseline.txt`, `packages/contracts.package.toml`, `crates/externalization-list.txt`, the doc comments of `domain_name_resolution_contract` |
-| users of `fixture` | `components/src/socket_test_client.rs`, `fixtures`, `jig`, `std_exerciser`, `system_tests` (network and riscv virtio tests); `xtask/src/inbound.rs` spells the same values for the host side |
-| users of `ephemeral` and `polled_wait` | the network stack alone: `components/src/socket_server.rs`, `components/src/socket_table.rs`, `components/src/nic_wait.rs`. No crate in nife holds the stack's host-testable logic, so these two modules live here for their host tests |
+| users of the moved `fixture` | now `socket_fixture` (see below): `components/src/socket_test_client.rs`, `fixtures`, `jig`, `std_exerciser`, `system_tests` (network and riscv virtio tests); `xtask/src/inbound.rs` spells the same values for the host side |
+| users of the moved `ephemeral_port` and `polled_wait` | the network stack alone, which now reads them from `network_stack`: `components/src/socket_server.rs`, `components/src/socket_table.rs`, `components/src/nic_wait.rs` |
 
 No test reads a `../../` file, no `include_str!` leaves the crate (the one there reads its own
 README), and nife's fuzz workspace has no target for it.
 
 ## What was run
 
-This lane ran each check in its own worktree, on this branch.
+The first table is what the review lane ran before the scope moves and renames; it counts the crate as it was then. The second table is what the lane `1108-renames-scope` ran on the crate as it is now.
 
 | check | result |
 |---|---|
@@ -63,6 +63,17 @@ This lane ran each check in its own worktree, on this branch.
 
 Not run, and so not claimed: the stranger test, `cargo-semver-checks` (a first release has no
 baseline) and the template's workflows, which run in the repository.
+
+The lane `1108-renames-scope` moved three modules out and applied the names table below. Draft
+pull request [#3811](https://github.com/nifeos/nife/pull/3811) carries it. The maintainer ruled the
+moves and the renames provisionally and as two-way doors on 2026-11-19 UTC; nothing is ratified.
+
+| check | result |
+|---|---|
+| `cargo test`, `cargo clippy --all-targets -- -D warnings`, `cargo doc` with warnings denied | `socket_contract`, `network_stack`, `socket_fixture`, `xtask` and the other dependents on the host: no failure, no warning |
+| `cargo check` for the bare-metal programs | `components`, `fixtures`, `system_tests` and `kernel` on `aarch64-unknown-none-softfloat`: pass. The RISC-V target is not installed on this machine, so the lane checked only what its own jobs run |
+| `script/falsifications --check` | every patch applies, after the moved and renamed ones were re-cut |
+| Kani, Miri, `script/crate-standalone`, `script/crate-move --dry-run`, the QEMU gates, `script/lint` | see the pull request's checks; this table is updated when each result is in |
 
 ### What this lane changed in the crate
 
@@ -81,32 +92,42 @@ baseline) and the template's workflows, which run in the repository.
 | kind | items |
 |---|---|
 | identity | `VERSION`, `INTERFACE_ID` |
-| operations | `OPERATION_ATTACH_SHARED_PAGE`, `OPERATION_OPEN_UDP`, `OPERATION_OPEN_TCP`, `OPERATION_SENDTO`, `OPERATION_RECEIVE`, `OPERATION_CONNECT`, `OPERATION_SEND`, `OPERATION_CLOSE`, `OPERATION_LISTEN`, `OPERATION_ACCEPT`, `OPERATION_BIND_UDP` (1 to 11) |
-| badges | `SOCKET_BADGE` (bit 63), `names_a_socket(badge)` |
-| replies | `REP_OK`, `REP_ERR` (bit 32), `CONNECT_ESTABLISHED`, `CONNECT_REFUSED`, `LISTEN_GRANTED`, `LISTEN_DENIED`, `LISTEN_IN_USE` |
-| port grants | `NO_LISTEN_GRANT`, `listen_grant(lo, hi)`, `grant_allows(grant, port)`, `udp_bind_grant(lo, hi)`, `udp_grant_allows(grant, port)` |
-| shared page | `DESTINATION_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES`, `DATA_MAXIMUM` |
-| `stack_slots` | `MINT` (7), `OWN_SPACE` (8) |
-| `lease` | `NO_NAMESERVER`, `ipv4_word(octets)`, `word_ipv4(word)` |
-| `ephemeral` | `LO`, `HI`, `SPAN`, `PER_SECOND`, `Ports`, `Ports::new`, `Ports::next(milliseconds, held)` |
-| `polled_wait` | `Next::{Look, Sleep(u64)}`, `next(now, last_frame, tick, stack_due_microseconds, poll_microseconds)` |
-| `fixture` | `LISTEN_PORT`, `DENIED_PORT`, `IN_MSG`, `OUT_MSG`, `ROUNDS`, `ECHO_PEER_IP`, `ECHO_PEER_PORT`, `PACKAGE_PEER_IP`, `PACKAGE_PEER_PORT`, `PACKAGE_PEER_HOST` |
+| operations | `OPERATION_ATTACH_SHARED_PAGE`, `OPERATION_OPEN_UDP`, `OPERATION_OPEN_TCP`, `OPERATION_SEND_TO` (alias `sendto`), `OPERATION_RECEIVE`, `OPERATION_CONNECT`, `OPERATION_SEND`, `OPERATION_CLOSE`, `OPERATION_LISTEN`, `OPERATION_ACCEPT`, `OPERATION_BIND_UDP` (1 to 11) |
+| badges | `SOCKET_BADGE_BIT` (bit 63), `names_a_socket(badge)` |
+| replies | `REPLY_OK`, `REPLY_ERROR` (bit 32), `CONNECT_ESTABLISHED`, `CONNECT_REFUSED`, `PORT_CLAIM_GRANTED`, `PORT_CLAIM_DENIED`, `PORT_CLAIM_IN_USE` |
+| port grants | `NO_PORT_GRANT`, `listen_grant(start, end)`, `listen_grant_allows(grant, port)`, `udp_bind_grant(start, end)`, `udp_bind_grant_allows(grant, port)` |
+| shared page | `DESTINATION_IP_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `PAYLOAD_LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES`, `MAXIMUM_PAYLOAD_BYTES` |
+| `stack_slots` | `MINTING_ENDPOINT_SLOT` (7), `OWN_ADDRESS_SPACE_SLOT` (8) |
+| `lease` | `NO_NAME_SERVER`, `ipv4_to_word(octets)`, `word_to_ipv4(word)` |
+
+Three modules left the crate. `ephemeral_port` and `polled_wait` are in `network_stack`
+(`crates/network_stack`, the stack's own host-testable crate, `publish = false`):
+
+| module | items |
+|---|---|
+| `ephemeral_port` | `LOWEST_PORT`, `HIGHEST_PORT`, `PORT_COUNT`, `PORTS_PER_SECOND`, `Cursor`, `Cursor::new`, `Cursor::next(milliseconds, held)` |
+| `polled_wait` | `Next::{Look, SleepMicroseconds(u64)}`, `next(now_ticks, last_frame_ticks, ticks_per_scheduler_tick, stack_due_microseconds, poll_microseconds)` |
+
+`fixture` is now the crate `socket_fixture` (`crates/socket_fixture`, `publish = false`, a
+development dependency on `socket_contract`): `LISTEN_PORT`, `DENIED_PORT`, `INBOUND_MESSAGE`,
+`OUTBOUND_MESSAGE`, `ROUNDS`, `ECHO_PEER_ADDRESS`, `ECHO_PEER_PORT`, `PACKAGE_PEER_ADDRESS`,
+`PACKAGE_PEER_PORT`, `PACKAGE_PEER_HOST`. All three crate names and their items are provisional.
 
 No nife type appears in a signature. What a stranger may find surprising:
 
-- `CONNECT_ESTABLISHED` and `REP_OK` share the value 0, and so do `LISTEN_GRANTED` and
-  `NO_LISTEN_GRANT`: a client reads each vocabulary only in reply to its own operation.
-- The `LISTEN_` replies also answer `OPERATION_BIND_UDP`, and `NO_LISTEN_GRANT` is the empty word
+- `CONNECT_ESTABLISHED` and `REPLY_OK` share the value 0, and so do `PORT_CLAIM_GRANTED` and
+  `NO_PORT_GRANT`: a client reads each vocabulary only in reply to its own operation.
+- The `PORT_CLAIM_` replies answer `OPERATION_BIND_UDP` as well as `OPERATION_LISTEN`, and `NO_PORT_GRANT` is the empty word
   for both halves of the grant.
 - The documentation refers to a `PageFrame` that the crate does not define; it means the shared
   page.
-- Under `cargo kani`, the compile-time `assert!` in `ephemeral` draws a future-incompatibility
+- Under `cargo kani`, the compile-time `assert!` in `ephemeral_port` draws a future-incompatibility
   warning from Kani's own `assert` macro. Plain `cargo` builds do not warn.
 
 ## Rulings
 
-- A send's length travels in the `CALL` argument word, checked against `DATA_MAXIMUM`, and
-  `LENGTH_OFFSET_BYTES` is an output of `RECEIVE` only (the architect, 2026-11-11 UTC). The crate's layout
+- A send's length travels in the `CALL` argument word, checked against `MAXIMUM_PAYLOAD_BYTES`, and
+  `PAYLOAD_LENGTH_OFFSET_BYTES` is an output of `RECEIVE` only (the architect, 2026-11-11 UTC). The crate's layout
   note, every `OPERATION_` constant's documentation, the README and the client runtime's frame
   accessor state it, and a documentation test on `OPERATION_SEND` sends with the length in the
   argument. 
@@ -117,19 +138,21 @@ No nife type appears in a signature. What a stranger may find surprising:
 
 ## Names
 
-The architect ratified the crate name, and `DATA_MAXIMUM` before the rule that a limit opens
+The architect ratified the crate name, and `DATA_MAXIMUM` (now `MAXIMUM_PAYLOAD_BYTES`, provisional) before the rule that a limit opens
 `MAXIMUM_` and ends with its unit; a release review reopens that one. `VERSION`, `INTERFACE_ID` and
 `polled_wait::Next` are provisional, and the 52 other items, the five modules and both `Next`
 variants have no block. A doc comment saying "name provisional" is not a block, and the move does
 not strip it.
 
-This lane renames nothing. Every proposal below is provisional, for the architect to rule on. The
-crate has not left, so each is a two-way door.
+The lane `1108-renames-scope` built the table below on the maintainer's provisional ruling of
+2026-11-19 UTC. Every name in the "built" column is provisional and nothing here is ratified; the
+crate has not left, so each is a two-way door. Where the build differs from the proposal, the row
+says so.
 
-| item now | proposed | rule |
+| item before | built | rule |
 |---|---|---|
 | `VERSION`, `INTERFACE_ID` | keep | the names `block_roster_contract` ratified |
-| `OPERATION_SENDTO` | `OPERATION_SEND_TO`, alias `sendto` | two words; POSIX's `sendto` kept as the alias |
+| `OPERATION_SENDTO` | `OPERATION_SEND_TO`, with `#[doc(alias = "sendto")]` | two words; POSIX's `sendto` kept as the alias |
 | `OPERATION_ATTACH_SHARED_PAGE` | keep (ruled 2026-11-19 UTC) | both contracts spell the one act the same way, and here `frame` also means a network frame (`polled_wait`) |
 | the other ten `OPERATION_` constants | keep | `udp` and `tcp` pass the acronym test, as `pci` does; add both to the template's accepted words |
 | `SOCKET_BADGE` | `SOCKET_BADGE_BIT` | it is the bit; a socket's badge is that bit with others set |
@@ -140,43 +163,44 @@ crate has not left, so each is a two-way door.
 | `NO_LISTEN_GRANT` | `NO_PORT_GRANT` | the empty word for both halves |
 | `listen_grant`, `udp_bind_grant` | keep; parameters `lo`, `hi` become `start`, `end` | the standard library's words for an inclusive range |
 | `grant_allows`, `udp_grant_allows` | `listen_grant_allows`, `udp_bind_grant_allows` | each names the grant its packer makes |
-| `DESTINATION_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES` | `DESTINATION_IP_ADDRESS_OFFSET`, `DESTINATION_PORT_OFFSET`, `PAYLOAD_LENGTH_OFFSET`, `PAYLOAD_OFFSET` | `off`, `dst` and `len` abbreviate; `_OFFSET` as in `CPU_WORD_OFFSET`; an IP address takes `ip` before `_ADDRESS` |
+| `DESTINATION_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES` | `DESTINATION_IP_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `PAYLOAD_LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES` | **Differs from the proposal.** The proposal dropped `_BYTES`; the family-wide `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) governs, so the lane kept it and renamed only the stems. `ip` before `_ADDRESS` as proposed |
 | `DATA_MAXIMUM` | `MAXIMUM_PAYLOAD_BYTES` | a limit opens `MAXIMUM_` and ends with its unit |
 | `stack_slots::MINT`, `OWN_SPACE` | `MINTING_ENDPOINT_SLOT`, `OWN_ADDRESS_SPACE_SLOT` | `mint` is a verb and `space` half a term; `_SLOT` as in `ACTIVATION_SLOT` |
 | `lease::NO_NAMESERVER` | `NO_NAME_SERVER` | two words |
 | `lease::ipv4_word`, `word_ipv4` | `ipv4_to_word`, `word_to_ipv4` | the pair reads as each other's inverse |
-| `ephemeral` | `ephemeral_port` | a module takes a noun |
+| `ephemeral` | `ephemeral_port`, in `network_stack` | a module takes a noun |
 | `LO`, `HI`, `SPAN`, `PER_SECOND` | `LOWEST_PORT`, `HIGHEST_PORT`, `PORT_COUNT`, `PORTS_PER_SECOND` | abbreviations, and a rate names what it counts |
-| `Ports`, `Ports::new`, `Ports::next` | `Cursor`; keep `new` and `next` | the documentation calls it the cursor; `next` advances it and returns the next value, as an iterator's does |
+| `Ports`, `Ports::new`, `Ports::next` | `Cursor`; `new` and `next` kept | the documentation calls it the cursor; `next` advances it and returns the next value, as an iterator's does |
 | `polled_wait`, `Next::Look` | keep | |
 | `Next::Sleep(u64)` | `Next::SleepMicroseconds(u64)` | a quantity carries its unit |
 | `polled_wait::next`'s `now`, `last_frame`, `tick` | `now_ticks`, `last_frame_ticks`, `ticks_per_scheduler_tick` | each is in counter ticks; the unit is spelled nowhere in the signature |
-| `fixture`'s items | not proposed | decision 2 below would take them out of the crate |
+| `fixture`'s items | moved to `socket_fixture`; `IN_MSG`, `OUT_MSG`, `ECHO_PEER_IP`, `PACKAGE_PEER_IP` became `INBOUND_MESSAGE`, `OUTBOUND_MESSAGE`, `ECHO_PEER_ADDRESS`, `PACKAGE_PEER_ADDRESS` | **Not in the table.** The new crate's report gates refuse `msg` and `ip` as abbreviations and a new crate starts at zero findings, so the four stems were spelled out; the rest keep their names |
 
 Names that would follow a rename elsewhere: `domain_name_resolution_contract` carries `NAME_OFFSET_BYTES`
-and `ADDRESSES_OFFSET_BYTES` in the same style, and several contracts use `REP_OK` and `REP_ERR`.
+and `ADDRESSES_OFFSET_BYTES` in the same style, and several contracts use `REP_OK` and `REP_ERR`, which this lane did not touch: it renamed them in this crate only.
 
 ## What still blocks the move
 
 | item | owner |
 |---|---|
 | Ratify `INTERFACE_ID` 19 and `VERSION` 1, which milestone 1017 asks for before a contract leaves. | architect |
-| Rule where `fixture`, `ephemeral` and `polled_wait` live. | architect |
-| Ratify every remaining name, with the renames ruled. | architect |
+| Ratify every name, built provisionally above. | architect |
+| Add `tcp` and `udp` to the template's accepted words (another repository; not done here). | maintainer |
 | The `std` farm must read the pinned checkout's source; until then the move breaks the platform layer's build. | maintainer |
 | Convert the eight path dependencies to `git` and `rev` with `version = "0.1.0"`, and read every file the dry run lists. | move lane |
 | Run the stranger test and the template's workflows in the new repository. | move lane |
 
 ## Recommendation
 
-Not ready to clear. The crate builds, proves and stands alone. It waits on the identity values, on
-the scope of the crate, and on names for 55 items.
+Not ready to clear. The crate builds, proves and stands alone, and its scope is now settled
+provisionally: `fixture`, `ephemeral_port` and `polled_wait` live in crates that stay in nife. It
+still waits on the identity values and on the ratification of its names.
 
 ## Decisions for the architect
 
 1. Ratify `INTERFACE_ID` 19 and `VERSION` 1 unchanged.
-2. Move `fixture` into a crate that stays in nife before this crate leaves.
-3. Move `ephemeral` and `polled_wait` into a host-testable crate of the network stack's that stays
-   in nife.
-4. Ratify the names above, with the proposed renames.
-5. Clear the move, with no tag and no publication.
+2. Ratify the names above, built provisionally.
+3. Clear the move, with no tag and no publication.
+
+The scope decisions (where `fixture`, `ephemeral_port` and `polled_wait` live) are built on the
+maintainer's provisional ruling of 2026-11-19 UTC, so they no longer wait for the architect.
