@@ -59,7 +59,7 @@ package, `notes/crate-reviews/socket-contract.md`.
   `user_mode_runtime`'s window API that no milestone holds.
 - P2-9, names: Partly done, [#3811](https://github.com/nifeos/nife/pull/3811). The package's names
   table is built as provisional names, ruled by the maintainer on 2026-11-19 UTC, two-way before the
-  first tag; nothing is ratified. `Cursor::next` and `polled_wait::next` keep their spelling (the
+  first tag; the architect ratifies nothing here. `Cursor::next` and `polled_wait::next` keep their spelling (the
   table keeps them). `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC); adding `tcp`
   and `udp` to the template's accepted words is in another repository and not done.
 - P2-10, inline "provisional" prose: Open. Seven doc comments in `src/lib.rs` still say it; the
@@ -79,13 +79,13 @@ package, `notes/crate-reviews/socket-contract.md`.
   `ephemeral_port`.
 - PKG-4, the package's names table: Done as provisional, [#3811](https://github.com/nifeos/nife/pull/3811),
   with one difference: the four offset rows keep `_BYTES`, because the family's
-  `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) governs, and only their stems changed.
+  `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) wins, and only their stems changed.
 - PKG-5, clearing the move with no tag and no publish: Open, and an open decision below.
 
 ## Rules in force
 
 - The socket contract's identity is `INTERFACE_ID` 19 and `VERSION` 1, with no magic word at the
-  head of a frame (ruled 2026-11-19 UTC). Both numbers are frozen: a second network stack or a
+  head of a frame (ruled 2026-11-19 UTC). Both numbers stay fixed: a second network stack or a
   client built against the crate in its own repository bakes them in, so neither changes without a
   new ruling. No operation sends `VERSION` on the wire; the bind-time check that reads it belongs
   to milestone 1000 (message contracts carry bind-time version checks).
@@ -97,7 +97,7 @@ package, `notes/crate-reviews/socket-contract.md`.
 Clearing a crate's review package is what approves its repository, here
 `nifeos/socket_contract`. The package says the crate builds, proves and stands alone, and it
 recommends against clearing yet. It waits on the ratification of its names (P2-9 and PKG-4); where `fixture`, `ephemeral_port`
-and `polled_wait` live (PKG-2 and PKG-3) is settled provisionally. The package also lists
+and `polled_wait` live (PKG-2 and PKG-3) has a provisional answer. The package also lists
 a maintainer step: the `std` farm must read the pinned checkout's source, or the move breaks the
 platform layer's build.
 
@@ -105,7 +105,7 @@ Recommendation: A.
 
 - A. Clear once PKG-2, PKG-3, P2-9 and PKG-4 have
   landed (they are built in #3811, provisionally), with no tag and no publish.
-- B. Clear now, before the names are ratified, and let the scope moves and renames land in the new repository.
+- B. Clear now, before the architect ratifies the names, and let the scope moves and renames land in the new repository.
 - C. Hold the clearance until the first publish is near, and move nothing before then.
 
 Door: one-way. A public repository is visible and forkable the moment it exists, and the eight
