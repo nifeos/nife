@@ -29,3 +29,4 @@ interfaces_note
 subtree_scope
 memory_region_heap
 line_editor
+intrusive_queue
