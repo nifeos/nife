@@ -20,15 +20,107 @@ so; the template's name checks refuse nothing in it.
 Reuse: the template `nifeos/crate-workflows` and its scaffold, Kani, Miri, cargo-llvm-cov,
 cargo-mutants. No new tool.
 
-## Where this stands
+## Finding status
 
-Finished: the crate's provenance clause and owner-pointer minting (#3523), the kernel's `mint_token` from the table's stored pointer (#3523), and items 7, 8, 10, 11 and 12 (#3566).
+Every item not Done blocks the first crates.io publish, which waits until every outside-review
+milestone reaches delivery.
 
-- Item 4 (`Send` bound): open, decision 1; decision for calef.
-- Item 6 (seven public names): ruled provisionally by the maintainer (#3589), not ratified; decision for calef, then the blocks leave with the move.
-- Items 1 to 3 (manifest, front page, skeleton): not built; the move, which waits on the order of milestone 1017 (the contract crates leave in this order), the crate's listing in `crates/externalization-list.txt` and calef's review clearance for the repository.
-- Item 9 (`remove` and an `extract_if` shape): two-way, undecided; the maintainer decides, then a lane.
-- Item 13 (one shared test node): two-way, not built; the move.
+- Item 1, the manifest is a workspace member's: Open. The move writes the crate's own rows.
+- Item 2, the front page points into nife: Open. The notes pointers (`src/lib.rs` lines 3, 64 and
+  243), the DECISIONS citation (line 287) and the `Name:` blocks leave with the move.
+- Item 3, no repository skeleton: Open. The move stages the README and the two license files.
+- Item 4, `Queue<T>` is `Send` for every `T`: Open. Calef's (see "The `Send` bound on `Queue`"
+  below); `src/lib.rs` line 187 has no bound.
+- Item 5, the documentation teaches an aliasing minting shape: Done,
+  [#3523](https://github.com/nifeos/nife/pull/3523).
+- Item 6, seven public names lack ratification: Open. The maintainer ruled them provisionally
+  ([#3589](https://github.com/nifeos/nife/pull/3589)); ratifying is calef's (see "Ratify the seven
+  public names" below).
+- Item 7, the compile-fail doctest accepts any error: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 8, no rule for dropping a non-empty `Queue`: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 9, `remove` and an `extract_if`-shaped method: Open. Two-way and additive, so the maintainer
+  rules whether the surface grows; a lane then builds it with its harnesses.
+- Item 10, link hygiene after a pop: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 11, the standard traits: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 12, acronyms: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 13, one shared test node: Open. It waits for the move.
+- Follow-on, the externalization list: Open. `crates/externalization-list.txt` does not name this
+  crate.
+- Follow-on, review clearance and the repository: Open. Calef's (see "Review clearance and the
+  repository" below).
+
+## Open decisions
+
+### The `Send` bound on `Queue`
+
+Background. A `Queue<T>` is two pointers and a count. Raw pointers never cross a thread boundary
+by themselves, so the crate states by hand that every queue may. A published crate cannot see its
+callers: a node holding an `Rc` is `!Send`, and a queue of those crossing threads is what `!Send`
+exists to stop. Nothing in the kernel needs the looser form; `Thread` is `Send`.
+
+Recommendation: A, `unsafe impl<T: Node + Send> Send for Queue<T> {}`.
+
+- A. Bound it on `T: Send`, which every current caller meets.
+- B. Keep the unbounded form and document the caller's duty.
+- C. Drop `Send` and let each consumer wrap the queue.
+
+Door: one-way at the first release. A later release can loosen A without breaking anyone, and
+tightening B needs a major version.
+
+Prior art. `std::collections::LinkedList<T>`, `Vec<T>` and `Box<T>` are `Send` only when
+`T: Send`, and `intrusive-collections` bounds `SinglyLinkedList<A>` the same way. Where nife
+differs: nothing; A follows them. Example: under A, a queue of nodes that hold an `Rc<Log>` no
+longer compiles when handed to a worker thread.
+
+Blocks: the tag.
+
+### Ratify the seven public names
+
+Background. Calef ratified the crate name and `Queue`. The release also publishes `Node` (`next`,
+`set_next`), `push_back`, `pop_front`, `is_empty`, `len` and the token `Unqueued` (`new`, `as_ptr`,
+`as_non_null`). `Unqueued` reads provisional (`src/lib.rs` line 66), and the rest carry no status.
+The maintainer ruled them provisionally as they stand (decision 2 below). Only calef ratifies.
+
+Recommendation: A, ratify the seven as they stand.
+
+- A. Ratify all seven.
+- B. Ratify the six that match std and send `Unqueued` back for another name.
+- C. Send `as_non_null` back, since it mirrors `Box::as_non_null`, which is unstable.
+
+Door: one-way at the first release.
+
+Prior art. `push_back`, `pop_front`, `is_empty` and `len` are `VecDeque`'s spellings, and `as_ptr`
+is `NonNull`'s. `intrusive-collections` names the glue trait `Adapter`, where `Node` names the
+thing. `heapless::spsc::Queue` spells `enqueue` and `dequeue`. Where nife differs: the token type
+carries the proof that a node is on no queue. Example: `let first = ready.pop_front()?;
+inbox.push_back(first);`.
+
+Blocks: the tag.
+
+### Review clearance and the repository
+
+Background. Clearing a crate review is the go to create its repository under nifeos. This crate
+has no review package in `notes/crate-reviews/`, and no extraction list names it.
+`inter_process_communication` cannot leave before it (milestone 1095 (`inter_process_communication`:
+what an outside maintainer would fix before it leaves)).
+
+Recommendation: A, a lane writes the package and adds the crate to the externalization list, and
+calef clears once the two decisions above have their rulings, with no tag and no publication.
+
+- A. Clear after the package and the two rulings.
+- B. Clear together with `inter_process_communication`, so both repositories open in one lane.
+- C. Hold until the maintainer also rules item 9's surface question.
+
+Door: one-way: a repository that exists has a name others link to.
+
+Prior art. In this tree `generational_table`, `block_roster` and `file_allocation_table` each moved
+on a cleared review with no tag. Where nife differs: nothing outside nife links the crate. Example:
+under A, the kernel and `inter_process_communication` both pin `nifeos/intrusive_queue` by
+revision.
+
+Blocks: the move.
 
 ## Goal
 
@@ -114,7 +206,7 @@ decides it.
    Change: `unsafe impl<T: Node + Send> Send for Queue<T> {}`, and a doc sentence on `Queue` saying
    why. `Unqueued<T>` stays `!Send` by construction (`NonNull` is), which the doc can also say.
    Door: one-way. A bound added after release is a breaking change; one removed later is not.
-   Effort: XS. Needs the architect: see decision 1.
+   Effort: XS. Calef's: see "The `Send` bound on `Queue`" under "Open decisions".
 
 5. The documentation teaches a minting shape that both aliasing models retire.
    Finding: `Unqueued::new`'s safety list and rule 3 ask only that no reference to the node be
@@ -187,66 +279,18 @@ The P2 items are in [the appendix](1097-intrusive-queue-outside-review/later-ite
 
 ## Decisions for the architect
 
-Two doors, each independent of the other. Decision 2 is decided, provisionally.
+The rule in force, with its background and prior art, is in
+[the appendix](1097-intrusive-queue-outside-review/ruled-decisions.md):
 
-### Decision 1. Does `Queue<T>` stay `Send` for every `T`, or only for `T: Send`?
+- Decision 2, the seven public names: the maintainer's provisional ruling of 2026-11-14 (UTC). The
+  seven keep their spelling as they stand, until calef ratifies them.
 
-Background. A `Queue<T>` is two pointers and a count; it owns no node. Rust decides whether a type
-may cross a thread boundary from its fields, and raw pointers never cross by themselves. So the
-crate writes the answer by hand. Today it says every queue crosses, whatever its node type. The
-tree's audit accepted that for an internal crate whose one consumer keeps every access behind a
-lock. A published crate cannot see its callers. Suppose a caller's node type is `!Send` because it holds
-something that must stay on one thread. A queue of those nodes crossing threads is exactly what
-`!Send` exists to stop, and the crate today lets it through in safe code. Nothing in the kernel
-depends on the looser form: `Thread` is `Send`, and both consumers type-check with the bound.
-
-Recommendation: bound it, `T: Node + Send`. The stricter form is compatible with every current
-caller and a later release can loosen it without breaking anyone; the looser form, once published,
-needs a major version to tighten.
-
-Prior art: `std::collections::LinkedList<T>` is `Send` only when `T: Send`;
-`intrusive-collections` bounds `SinglyLinkedList<A>` on `A: Send` (read from its source);
-`Vec<T>`, `Box<T>` and every std container do the same.
-
-Concrete example: a node type holding an `Rc<Log>` beside its link, queued on one thread and the
-queue handed to a worker thread, which pops and reads the log. Today it compiles. With the bound it
-does not, which is the right answer.
-
-### Decision 2. The seven public names the release publishes
-
-Background. The ratified block covers the crate name and `Queue`. `Unqueued` is provisional, its
-three methods are the lane's, and `Node`, `next`, `set_next`, `push_back`, `pop_front`, `is_empty`
-and `len` carry no status. After the first release every one is a name other code spells, and a
-rename is a major version.
-
-Recommendation: ratify them as they stand. `push_back`, `pop_front`, `is_empty` and `len` are
-`VecDeque`'s spellings, which the standard-library rule asks for. `as_ptr` is `NonNull`'s. `Node`
-says what the implementing type is; the alternatives in the field name the glue rather than the
-thing (`Adapter` in `intrusive-collections`, `Linked` in `cordyceps`). `Unqueued` says what the
-token proves, and it reads correctly at every call site that passes or receives one. `as_non_null`
-mirrors `Box::as_non_null`, which is still unstable in the pinned nightly (feature
-`box_as_non_null`, issue 157345), so the name matches an unstable std name. `NonNull`'s own
-`as_ptr` is stable.
-
-Prior art: the rows of the prior-art table above; `heapless::spsc::Queue` spells `enqueue` and
-`dequeue`, a spelling the standard-library rule weighs against.
-
-Concrete example: `let first = ready.pop_front()?; inbox.push_back(first);` reads as the thread
-leaving one queue for another, with the token named nowhere because the types carry it. A name
-that said `dequeue` or `take_front` would read as well but would stop matching `VecDeque`.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
-revisit. The seven keep their spelling as they stand. The crate stays with the kernel and is not
-released, so nothing outside acts on the names. The review package lists them as provisional;
-ratifying them stays the architect's. Item 6 is the work.
+Decision 1, the `Send` bound, is calef's and is under "Open decisions" above.
 
 ## Follow-on
 
-- **Outstanding.** Decision 1 (the `Send` bound), which the architect rules, and the ratifying of decision 2. Checked: ledger rows 4 and 6.
-- **Outstanding.** Items 1 to 3, the move's manifest, front page and skeleton, which need the new repository.
-- **Outstanding.** Item 9 (new public names) and item 13 (a shared test node, which waits for the move).
-
-[The ledger](1097-intrusive-queue-outside-review/ledger.md) lists each item.
+- **Outstanding.** Every finding marked Open under "Finding status", each checked against the
+  crate's sources on main.
 
 ## Done when
 
@@ -274,4 +318,6 @@ The two experiments are in [the appendix](1097-intrusive-queue-outside-review/mi
 
 ## Index row
 
-An outside review of `intrusive_queue` before its first release. Three P0 items are the move's skeleton. Five P1 items follow (a `Send` bound, a provenance clause, seven names to ratify, a doctest, a drop rule). Five P2 items close it.
+An outside review of `intrusive_queue` before its first release. Six findings have landed. The
+move's skeleton, a shared test node and item 9 remain; the `Send` bound, the names and clearance are
+calef's.
