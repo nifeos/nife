@@ -635,6 +635,78 @@ pub const SD_IO_BRING_UP: [&[Step]; 2] = [
     ],
 ];
 
+/// **The STG bus clock** (`JH7110_SYSCLK_NOC_BUS_STG_AXI` in \[mainline-clock-ids\]), **96**: the
+/// network-on-chip port into the STG domain, the first clock mainline's `pcie0` and `pcie1` nodes
+/// name. Word `0x180`.
+#[doc(alias = "JH7110_SYSCLK_NOC_BUS_STG_AXI")]
+pub(crate) const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_BUS: u32 = 96;
+/// **The STG bus reset** (`JH7110_SYSRST_NOC_BUS_STG_AXI` in \[mainline-ids\]), **30**: the reset
+/// mainline's `stgcrg` node takes, bit 30 of the word at `0x2f8`. Releasing it is idempotent.
+#[doc(alias = "JH7110_SYSRST_NOC_BUS_STG_AXI")]
+pub(crate) const SYSTEM_RESET_SYSTEM_TOP_GROUP_BUS: u32 = 30;
+
+/// **The PCI Express ports' STG clocks** (\[mainline-clock-ids\]), indexed by port: the
+/// transaction layer clock (`JH7110_STGCLK_PCIE0_TL` 10, `PCIE1_TL` 13), the bus master clock
+/// (`JH7110_STGCLK_PCIE0_AXI_MST0` 8, `PCIE1_AXI_MST0` 11) and the register bus clock
+/// (`JH7110_STGCLK_PCIE0_APB` 9, `PCIE1_APB` 12), in the order mainline's nodes name them.
+#[doc(alias = "JH7110_STGCLK_PCIE0_TL")]
+#[doc(alias = "JH7110_STGCLK_PCIE1_TL")]
+#[doc(alias = "JH7110_STGCLK_PCIE0_AXI_MST0")]
+#[doc(alias = "JH7110_STGCLK_PCIE1_AXI_MST0")]
+#[doc(alias = "JH7110_STGCLK_PCIE0_APB")]
+#[doc(alias = "JH7110_STGCLK_PCIE1_APB")]
+pub(crate) const SYSTEM_TOP_GROUP_CLOCKS_PCI_EXPRESS: [[u32; 3]; 2] = [[10, 8, 9], [13, 11, 12]];
+
+/// **The PCI Express ports' STG resets** (\[mainline-ids\]), indexed by port, in the order
+/// mainline's nodes name them: `AXI_MST0`, `AXI_SLV0`, `AXI_SLV`, `BRG`, `CORE`, `APB`, which are
+/// 11 to 16 for port 0 (`JH7110_STGRST_PCIE0_*`) and 17 to 22 for port 1.
+#[doc(alias = "JH7110_STGRST_PCIE0_AXI_MST0")]
+#[doc(alias = "JH7110_STGRST_PCIE1_AXI_MST0")]
+#[doc(alias = "JH7110_STGRST_PCIE0_CORE")]
+#[doc(alias = "JH7110_STGRST_PCIE1_CORE")]
+pub(crate) const SYSTEM_TOP_GROUP_RESETS_PCI_EXPRESS: [[u32; 6]; 2] =
+    [[11, 12, 13, 14, 15, 16], [17, 18, 19, 20, 21, 22]];
+
+/// **What either PCI Express port needs from the SYS domain**: the STG bus clock, then the STG bus
+/// reset. Walk it before [`PCI_EXPRESS_SYSTEM_TOP_GROUP_BRING_UP`], whose words sit behind that
+/// bus. Firmware that has already used the STG domain (for the TRNG, say) has left both on, and
+/// both steps are idempotent.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane lane/163-jh7110-pcie-kernel-wiring, in
+/// [`GMAC0_SYSTEM_BRING_UP`]'s shape. calef has not named it.
+#[doc(alias = "pcie")]
+pub const PCI_EXPRESS_SYSTEM_BRING_UP: &[Step] = &[
+    Step::EnableClock(SYSTEM_CLOCK_SYSTEM_TOP_GROUP_BUS),
+    Step::DeassertReset(SYSTEM_RESET_SYSTEM_TOP_GROUP_BUS),
+];
+
+/// **What each PCI Express port needs from the STG domain**, port 0 then port 1: the three clocks
+/// its mainline node names, then its six resets, in Linux's order (`starfive_pcie_clk_rst_init`
+/// enables the bulk clocks, then deasserts the bulk resets). The port's PHY and glue words answer
+/// only after this.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane lane/163-jh7110-pcie-kernel-wiring, in
+/// [`SD_IO_BRING_UP`]'s shape. calef has not named it.
+#[doc(alias = "pcie")]
+pub const PCI_EXPRESS_SYSTEM_TOP_GROUP_BRING_UP: [&[Step]; 2] = [&port_steps(0), &port_steps(1)];
+
+/// Port `port`'s STG steps, built from the two tables so a plan cannot name the other port's ids.
+const fn port_steps(port: usize) -> [Step; 9] {
+    let clocks = SYSTEM_TOP_GROUP_CLOCKS_PCI_EXPRESS[port];
+    let resets = SYSTEM_TOP_GROUP_RESETS_PCI_EXPRESS[port];
+    [
+        Step::EnableClock(clocks[0]),
+        Step::EnableClock(clocks[1]),
+        Step::EnableClock(clocks[2]),
+        Step::DeassertReset(resets[0]),
+        Step::DeassertReset(resets[1]),
+        Step::DeassertReset(resets[2]),
+        Step::DeassertReset(resets[3]),
+        Step::DeassertReset(resets[4]),
+        Step::DeassertReset(resets[5]),
+    ]
+}
+
 /// The divider field of a JH7110 clock word, bits 23:0 (\[mainline-clk-header\]'s
 /// `JH71X0_CLK_DIV_MASK`).
 /// A caller can print it beside the enable bit, so the card clock's source rate is read off the
