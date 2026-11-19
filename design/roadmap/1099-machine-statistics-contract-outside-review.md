@@ -17,15 +17,11 @@ rules, the crate template and the sibling contract crates, and ran the standalon
 dry run of the move. It changes nothing; it lists what the next lanes change.
 
 The review package is [`notes/crate-reviews/machine-statistics-contract.md`](../../notes/crate-reviews/machine-statistics-contract.md),
-with its row in `notes/crate-reviews.md`. The review found a baseline thinner than the sibling
-reviews had: the crate name, ratified on pull request 1360's table, the identity constants
-`VERSION` and `INTERFACE_ID` that milestone 956 (the linked interfaces carry checkable versions)
-minted, the fixed address, and the two renames `helpers/name_release.py` carried as pre-ruled,
-`PAGE_BYTES` to `PAGE_CONTENT_BYTES` and `PAGE_VA` to `PAGE_VIRTUAL_ADDRESS`. The review
-reopened none of these. The fixed address predates the rule that an address is `_VIRTUAL_ADDRESS`
-in every location, and the pre-ruled rename already resolves that contradiction; the review flags
-nothing else in the baseline against a later rule. Every other public name has no `Name:` block
-at all, so the ratification pass this crate still owes is where the architect meets them.
+with its row in `notes/crate-reviews.md`. The review reopened no earlier ruling. The crate name,
+the identity constants `VERSION` and `INTERFACE_ID` (milestone 956, the linked interfaces carry
+checkable versions) and the fixed address stand. The fixed address follows the rule that an address
+is `_VIRTUAL_ADDRESS` in every location. Every public name now carries a `Name:` block that reads
+ratified.
 
 Reuse: the template `nifeos/crate-workflows` and its helpers, `script/crate-move --dry-run`,
 `script/crate-standalone`, `helpers/name_release.py`, Kani, Miri, cargo-llvm-cov, and
@@ -34,8 +30,8 @@ No new tool.
 
 ## Finding status
 
-- P0-1, names and the ratification table: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The table is ratified
-  (2026-11-19 UTC) and built, and every public name carries a ratified block.
+- P0-1, names and the ratification table: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The 2026-11-19 (UTC) ruling
+  ratified the table. The names ship, and every public name carries a ratified block.
 - P0-2, manifest, license files and README: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The move changes the two path
   dependencies to pinned git dependencies and adds `repository`.
 - P0-3, citations of this tree: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -78,7 +74,7 @@ built, and each public name's `Name:` block reads ratified 2026-11-19 (UTC).
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package; that clearance is the approval to create the repository. A package
 lists every public item with its signature for the architect's reading.
-[The package](../../notes/crate-reviews/machine-statistics-contract.md) is written, and it shows the
+[The package](../../notes/crate-reviews/machine-statistics-contract.md) shows the
 names as they ship. The kernel, the spawn service and three programs share
 the contract, so it meets the bar for leaving.
 
@@ -104,7 +100,7 @@ Blocks: the move.
 
 A stranger who finds `machine_statistics_contract` in its own repository can tell in one screen what the page is and who writes it. The stranger can build and test it from the README alone. The stranger can read its one `unsafe` reader with a safety contract that matches the signature. The stranger can trust that every accessor is a total function over any page that carries the magic. The repository's gates are green on the day the crate arrives for the crate's own reasons. Nife's own build keeps working the day it leaves.
 
-## What was checked, and how
+## How the review checked
 
 The tools run, the sources read and what was not run are in [the appendix](1099-machine-statistics-contract-outside-review/what-was-checked.md).
 
@@ -153,7 +149,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    Door: two-way. Effort: S.
 
 3. The source cites this tree in places a stranger cannot follow.
-   Finding: the module documentation and the doc comments name milestone 126 (the `procps` package, now `process-tools`: who else is running, and who is allowed to ask) and milestone 956. They also name milestone 326 (nobody has been assigned to turn a mutation score upward), decision 225, "AGENTS.md rule 7", `notes/machine-statistics.md`, pull requests 1360 and 2852, two lane names and the architect. Also `src/lib.rs` line 16 says "nife does not page out". The manifest comment does the same. `script/crate-standalone` counts two section
+   Finding: the module documentation and the doc comments name milestone 126 (the `procps` package, now `process-tools`: who else is running, and who may ask) and milestone 956. They also name milestone 326 (nobody owns turning a mutation score upward), decision 225, "AGENTS.md rule 7", `notes/machine-statistics.md`, pull requests 1360 and 2852, two lane names and the architect. Also `src/lib.rs` line 16 says "nife does not page out". The manifest comment does the same. `script/crate-standalone` counts two section
    citation lines, six milestone citation lines, three architect's-name lines and three path lines;
    the externalization lint counts one `nife` hit. The `Name:` block on the module is the only one
    the move strips; the `Ratified` sentence on `PAGE_VA` (line 76) and the ruling sentence on
@@ -232,7 +228,7 @@ old spellings.
 
 ## Done when
 
-The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). The finding status above says, item by item, what is done and what each open item still needs.
+The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). The finding status above says, item by item, what has landed and what each open item still needs.
 
 ## BUGS
 
@@ -254,5 +250,5 @@ The checks are in [the appendix](1099-machine-statistics-contract-outside-review
 
 ## Index row
 
-An outside review of `machine_statistics_contract` before it leaves this tree. Three items block the move: thirty-four names without a `Name:` block, a manifest and file set the standalone check refuses, and citations of this tree throughout the source. Eight land before the first tag. Three concern the code: totals that overflow on a page the reader accepted, a `'static` reference under a weaker contract, and a layout whose line count another crate owns. Three concern the proofs and tests: no Kani harness, two `unsafe` functions no host test reaches, and one namespace for indices and offsets. The last two are a type-width inconsistency and six documentation defects. Four follow later. The one one-way door, freezing the identity set with the line count inside it,
-has its ruling of 2026-11-14 (UTC); the names are ratified (2026-11-19 UTC), and clearing the review package stays open.
+An outside review of `machine_statistics_contract` before it leaves this tree. Three items block the move: thirty-four names without a `Name:` block, a manifest and file set the standalone check refuses, and citations of this tree throughout the source. Eight land before the first tag. Three concern the code: totals that overflow on a page the reader accepted, a `'static` reference under a weaker contract, and a layout whose line count another crate owns. Three concern the proofs and tests: no Kani harness, two `unsafe` functions no host test reaches, and one namespace for indices and offsets. The last two are a type-width inconsistency and six documentation defects. Four follow later. The one one-way door, freezing the identity set with the line count inside it, has its ruling of 2026-11-14 (UTC).
+The 2026-11-19 (UTC) ruling ratified the names, and clearing the review package stays open.
