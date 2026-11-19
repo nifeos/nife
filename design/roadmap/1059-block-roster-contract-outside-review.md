@@ -245,38 +245,58 @@ None needs hardware or QEMU.
 
 ## Where this stands
 
-Finished: P0-1 (`nifeos/block_roster_contract` #3, #5), P0-2 (#6), the mutation caller of P1-1 (#4,
-#7), P1-2 to P1-6 and P1-8 (#9), P1-7 (#5, #8, #9, #10), P2-1, P2-3, P2-6 and P2-8 (#10), P2-5
-(#11) and P2-4 (#12). P2-2 is a README BUGS entry (#18). The two call sites in this organization
-use the new `Roster::read` (nife #3568). The weekly jobs pass on `main`, and `v0.1.0-pre.2` is
-tagged.
+Every finding has one current status. The repository is `nifeos/block_roster_contract`; `v0.1.0-pre.2`
+is tagged, and the weekly jobs pass on `main`.
 
-| item | what remains | blocker |
-|---|---|---|
-| P1-1 | every caller pins `nifeos/crate-workflows` at `4d9eea2`, which is no template release; the newest release, `v7`, predates the mutation stack | release step |
-| P2-7 | the repository description now names block devices, but its topics lack `virtio` and `nvme` | other: one settings run, not yet done |
+| finding | status |
+|---|---|
+| P0-1 stranger test | DONE: #3, #5; `docs/stranger-test.md` carries a run date |
+| P0-2 mutation survivors | DONE: #6; `.cargo/mutants.toml` and one exemption |
+| P1-1 CI pin and mutation caller | DONE: #4, #7, #19; every caller pins release `v8`, which carries `mutation.yml`, and the ruleset requires `check / mutation-diff` |
+| P1-2 `ReadError` | DONE: #9; nife #3568 moved the two call sites |
+| P1-3 capacity word checked | DONE: #9; the variants `CapacityBeyondPage` and `CountBeyondCapacity` are the maintainers' provisional names, open to the naming review before any tag |
+| P1-4 `Display` and `Error` on `TooManyDevices` | DONE: #9 |
+| P1-5 `forbid(unsafe_code)` | DONE: #9 |
+| P1-6 `index` and the transport aliases | DONE: #9 |
+| P1-7 shipped text | DONE: #5, #8, #9, #10 |
+| P1-8 `Hash`, `Ord`, exact-size `devices()` | DONE: #9 |
+| P2-1 publishing metadata | DONE: #10 |
+| P2-2 `rust-version` | Declined: stays 1.88 because the reader uses `slice::as_chunks`; README BUGS, #18 |
+| P2-3 package contents | DONE: #10 |
+| P2-4 fuzz targets | DONE: #12 |
+| P2-5 proofs on longer pages | DONE: #11 |
+| P2-6 what a reader may trust | DONE: #10 |
+| P2-7 repository topics | Open: the topics lack `virtio` and `nvme`; one `script/apply-settings` run in the template with `--topic virtio --topic nvme`, which a maintainer runs |
+| P2-8 single-letter locals | DONE: #10 |
+| `capacity_of(len)` becomes `entry_capacity(page_bytes)` | Ruled; #20 builds it, awaiting merge |
+| any further tag | Open: see Open decisions |
 
-Nothing in this block waits on a decision for calef. Any further tag is a separate ask, and the
-publishing hold keeps `publish = false`.
+The publishing hold keeps `publish = false`. The milestone closes when #20 merges, the topics run
+happens, and the tag question below has an answer.
 
-## Follow-on
+## Open decisions
 
-- **Done.** P0-1 landed in `nifeos/block_roster_contract` #3 and #5, P0-2 in #6, and P1-1's mutation
-  caller in #4 and #7; the `main` ruleset requires `check / mutation-diff`, which reports.
-- **Done.** P1-2 to P1-6 and P1-8 landed in `nifeos/block_roster_contract` #9, with `Roster::read`
-  returning `Result<Roster, ReadError>`; P1-7 in #5, #8, #9 and #10; P2-1, P2-3, P2-6 and P2-8 in
-  #10; P2-5 in #11; P2-4 in #12.
-- **Done.** nife's two call sites build against the new API: nife #3568 moved the pin to `72f531c`
-  (`v0.1.0-pre.2` and later), and `components/src/disk_surveyor.rs` and
-  `system_tests/src/user/disk_tests.rs` match on the `Result`.
-- **Done.** P2-2 became a README BUGS entry in `nifeos/block_roster_contract` #18: `rust-version`
-  stays 1.88 because the reader uses `slice::as_chunks`.
-- **Outstanding.** P1-1's pin: every caller pins `nifeos/crate-workflows` at `4d9eea2`, which is no
-  template release, and no release of the template carries the mutation stack. Read from the
-  workflow files on `main` and the template's tags.
-- **Outstanding.** P2-7's topics: the description is the manifest's, and the topics are
-  `block-device`, `storage`, `no-std`, `kani`, `formal-verification` and `rust`, without `virtio`
-  and `nvme`. Read from the repository through the GitHub API.
+### Whether to tag a third pre-release for the rename
+
+**Background.** A tag is a number others compare against, so placing one is the architect's call.
+`v0.1.0-pre.2` is the last tag. The only change on `main` since then that touches the public
+signature is the rename of `capacity_of` to `entry_capacity`. Nothing in this organization calls
+`capacity_of`: nife pins the crate by commit, not by tag. The weekly gates pass, so the condition
+this block set for asking is met. One-way once placed (the tag is a published number); no crates.io
+publish follows either way, since the hold stands.
+
+**Recommendation: A.**
+
+- A. Place no tag now. The next tag waits for the next batch of changes or for the lifting of the
+  publishing hold. Nothing consumes a tag today, and a tag costs a number that cannot be taken back.
+- B. Tag `v0.1.0-pre.3` after the dry run is green on `main`, so the renamed function has a tagged
+  release.
+
+**Prior art.** This crate took `v0.1.0-pre.1` and `v0.1.0-pre.2` each after a batch of public
+changes (the second after the `Result` from `Roster::read`). A one-function rename is the smallest
+change it has had to tag.
+
+**Blocks.** Nothing else waits on it. #20 merges either way.
 
 ## Index row
 
