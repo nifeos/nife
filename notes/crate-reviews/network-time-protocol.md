@@ -76,9 +76,9 @@ All on the branch tip, on the lane's Linux host.
 | `script/crate-standalone --no-kani network_time_protocol` | ten failures, each an item below: 54 names not yet ratified (the first is `PACKET_BYTES`), the manifest's inherited `license` and `lints` and its missing `rust-version`, no README and no license texts, and nife citations in the manifest and `src/lib.rs`. The build passes on stable for the host and the three bare-metal targets |
 | `script/falsifications` patch replay of `verification.accepting_is_total_and_a_sample_is_coherent.patch` | applies with `patch -p3 --dry-run -F0` from the crate directory; the harness-and-patch pairing section of `script/lint` passes |
 
-Not run, and so not claimed: the Kani proofs and the falsification replays as a local run, because the
-host's heavy-job slots held `script/crate-standalone` in the queue for over an hour; the verify workflow runs
-them on this pull request, which changes harnesses. Also the stranger test, the template's workflows, the first weekly mutation
+Not run, and so not claimed: the Kani proofs and the falsification replays as a local run. The
+host's heavy-job slots held `script/crate-standalone` in the queue for over an hour. The verify
+workflow runs them on this pull request, which changes harnesses. Also not run: the stranger test, the template's workflows, the first weekly mutation
 run, coverage (the template floor is 85 per cent per file) and `cargo-semver-checks` (a first
 release has no baseline). Mutation last ran in the 2026-10 census; the baseline row records 5 missed of 166 caught,
 and the renames change no behavior.
