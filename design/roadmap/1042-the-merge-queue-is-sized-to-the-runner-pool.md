@@ -1,12 +1,13 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-19
 promoted_from: the-merge-queue-is-sized-to-the-runner-pool
 raised: 2026-11-04
 milestone_dependencies: 965
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1042. The merge queue is sized to the runner pool
 
@@ -17,7 +18,7 @@ Pacific day of 2026-11-03 (`notes/coes/2026-11-03-merge-queue-backlog.md`). This
 are the architect's.
 
 Reuse: the ruleset's merge queue parameters, the `NIFE_RUNNER_OWNED` switch of `notes/owned-runners.md`,
-and milestone 965 (gating CI rents more concurrency before it owns a runner). No new tool.
+and milestone 965 (gating CI rents more concurrency before it owns a runner). No new tool: the wait measure extends `helpers/ci_job_times.py` and `script/metrics`.
 
 ## Background
 
@@ -30,12 +31,24 @@ heavy gates left the pull request (#3176). A group spends about 200 job minutes,
 once, so 5 groups need about 55 of the 60 hosted slots. The build window and the pool are one
 budget: a wider window with the same pool makes every group slower.
 
-## The ruling (2026-11-11, UTC)
+## The ruling (2026-11-19, UTC)
 
-The queue stays at 5 builds with `ALLGREEN` grouping, and `NIFE_RUNNER_OWNED` stays `false` until
-the owned-runner canary is green. Raising the build window, larger groups and milestone 965's plan
-upgrade wait for a measurement taken after the lint failures inside merge groups and the canary are
-fixed.
+The queue builds up to 5 entries at once and groups with `ALLGREEN`, one entry to a group. Each
+trigger below moves one setting, and nothing else moves it:
+
+- `NIFE_RUNNER_OWNED` becomes `true` once the owned-runner canary evidence is in. It moves the stage
+  1 x86_64 jobs, about a fifth of a group's job minutes, to the 5 owned slots. The architect sets the
+  variable.
+- `max_entries_to_build` rises to 8 only after a measured day shows the median hosted job waiting
+  under one minute with 5 groups building. `ci-job-waits.svg` in `notes/project-metrics.md` is that
+  measure.
+- The group size stays one entry until `fuzz-guests` stops failing inside merge groups. Then a larger
+  group (`HEADGREEN`, or a larger `min_entries_to_merge` with a longer wait) is measured again.
+- Milestone 965 (gating CI rents more concurrency before it owns a runner) decides the plan upgrade
+  on its own.
+
+The settings, their triggers and the measurement of 2026-11-19 are in `notes/merge-queue.md`'s "The
+queue's own settings".
 
 ## The week the ruling rests on
 
@@ -49,42 +62,37 @@ The 7 days before 2026-11-11 (UTC):
   [lint fails in the queue after passing on the pull request](proposals/lint-fails-in-the-queue-after-passing-on-the-pull-request.md)
   has the causes and the fixes.
 
-## The question
+On 2026-11-19 the queue took 28 entries: 1 was removed and 27 merged, a median of 1.1 hours from
+entry to merge. Recent merge-group runs took 10 to 15 minutes, and the weekly CI build had a median
+of 19.0 minutes and a p90 of 34.0 in 2026W47.
 
-Which settings, in which order? The ruling above took the first two steps of (a).
+## Refused
 
-- (a) Recommended. Leave `max_entries_to_build` at 5 and the grouping at `ALLGREEN`. Set
-  `NIFE_RUNNER_OWNED` to `true` once the canary has passed its acceptance items, which moves the
-  stage 1 x86_64 jobs (about a fifth of a group's job minutes) to the 5 owned slots. Then decide
-  milestone 965 (gating CI rents more concurrency before it owns a runner). Raise the build window to
-  8 only after a measured day shows hosted jobs waiting under a minute at the median with 5 groups
-  building.
-- (b) Raise `max_entries_to_build` to 10 now. Refused for now: the pool cannot run 10 groups, so each
-  would take longer and the ceiling would not move.
-- (c) Group several entries into one build (`HEADGREEN`, or a larger `min_entries_to_merge` with a
-  longer wait). A green group of 5 then costs one build, not 5. Refused for now: one red entry
-  fails the group and every entry in it rebuilds, and the day had 7 red group runs in 39. Worth
-  measuring again once `fuzz-guests` stops failing in groups.
-- (d) Move more of the heavy set off the group (run some gates on `push` to `main` only). Refused:
-  it lets a regression reach `main`, which is the queue's whole purpose.
+- Raising `max_entries_to_build` to 10: the pool cannot run 10 groups, so each would take longer and
+  the ceiling would not move.
+- Grouping several entries into one build now: one red entry fails the group and every entry in it
+  rebuilds, and the week measured had 7 red group runs in 39.
+- Moving more of the heavy set off the group, to run on `push` to `main` only: it lets a regression
+  reach `main`, which is the queue's whole purpose.
 
 ## Done when
 
-- The settings chosen are in `notes/merge-queue.md`'s "The queue's own settings", with the day's
+- The settings chosen are in `notes/merge-queue.md`'s "The queue's own settings", with the
   measurement that justified them.
-- A week of queue data shows the median group wall time and the share of hosted jobs that waited
-  over 5 minutes, before and after.
+- The median hosted job wait and the share of hosted jobs that waited over 5 minutes are recorded
+  per week (`notes/project-metrics/ci-job-wait-days.csv`, written daily by `helpers/ci_job_times.py`)
+  and the median is charted as `ci-job-waits.svg`.
 
 ## Follow-on
 
-- **Done.** The ruling of 2026-11-11 (UTC): the queue stays at 5 builds with `ALLGREEN` grouping, and
-  `NIFE_RUNNER_OWNED` stays `false`.
-- **Outstanding.** The fixes the ruling waits for: the lint failures inside merge groups
-  ([lint fails in the queue after passing on the pull request](proposals/lint-fails-in-the-queue-after-passing-on-the-pull-request.md))
-  and a green owned-runner canary, which then sets `NIFE_RUNNER_OWNED` to `true`.
-- **Outstanding.** A second week of queue data after those fixes: the median group wall time and the
-  share of hosted jobs that waited over 5 minutes, and from it the settings in `notes/merge-queue.md`'s
-  "The queue's own settings".
+- **Done.** The settings and their triggers are written into `notes/merge-queue.md`'s "The queue's
+  own settings", with the measurement of 2026-11-19 (UTC).
+- **Done.** `helpers/ci_job_times.py` records the hosted jobs' wait for a runner each day, and
+  `script/metrics` charts the weekly median against the one-minute line as `ci-job-waits.svg`, with
+  the share over 5 minutes in the `ci-job-waits` measure file.
+- **Recorded.** The lint failures inside merge groups, the canary, and the two settings they gate
+  (`NIFE_RUNNER_OWNED`, then the window of 8) are triggers of the rule above, not work of this
+  milestone: the proposal about lint in the queue and `notes/owned-runners.md` own them.
 
 ## Index row
 

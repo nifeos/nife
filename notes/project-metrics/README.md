@@ -9,7 +9,9 @@ undrawn since 2026-10-11. So is
 `merged-pull-requests.csv`: one row per pull request merged into `main`, with whether it carries the
 `debt-paydown` label, written by `helpers/debt_paydown_share.py update` (name provisional,
 2026-10-11). So is `ci-builds.csv`: one row per green merge-group build and one per job in it,
-written by `helpers/ci_job_times.py update` (name provisional, 2026-10-11).
+written by `helpers/ci_job_times.py update` (name provisional, 2026-10-11). So is
+`ci-job-wait-days.csv`: one row per day with the hosted merge-group jobs that ran, their median wait for
+a runner and how many waited over five minutes, written by the same command (name provisional).
 
 *Name: provisional, minted 2026-09-02 with `script/metrics` (`175a2409b`), for the directory and
 `ledger.md`; `notes/project-metrics.md` records the same. Naming is an architect's.*
