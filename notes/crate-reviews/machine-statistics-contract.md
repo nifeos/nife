@@ -73,13 +73,13 @@ dependency. `grant_contract` names the crate in documentation only and has no de
 
 The `unsafe` surface is two raw-address entry points, `atomic_word` and `Snapshot::read`, behind
 their safety contracts. No proof covers a caller's promise that the address names a mapped page,
-since Kani cannot see a mapping, and the README says so. Miri runs the host tests, including one
-that reads an unmapped frame through `Snapshot::read`.
+since Kani cannot see a mapping, and the README says so. Miri runs the host tests, including
+the ones that read a frame through `Snapshot::read`.
 
-Ten host tests cover the reader: the round trip through `atomic_word`, an unprepared frame, a
-wrong magic and a wrong version, an offline line that counts for nothing, the totals over online
-lines only, a page of maximal counters that saturates every reading, the units the header carries,
-one cache line per processor line and the line count. One doctest runs the README's example. The kernel-side test
+Ten host tests cover the reader. They check the round trip through `atomic_word`, an unprepared
+frame, a wrong magic and a wrong version. They check that an offline line counts for nothing and
+that totals cover online lines only. A page of maximal counters saturates every reading. The last
+tests pin the units the header carries, one cache line per processor line and the line count. One doctest runs the README's example. The kernel-side test
 that reads the page from a running process belongs to `system_tests` and stays in nife.
 
 ## What was run
