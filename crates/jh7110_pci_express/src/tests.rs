@@ -370,8 +370,14 @@ fn register_fields_hold_the_values_linux_names() {
 fn each_port_has_its_own_glue_block_and_physical_layer() {
     assert_eq!(PortNumber::Zero.system_top_group_controller_base(), 0x48);
     assert_eq!(PortNumber::One.system_top_group_controller_base(), 0x1f8);
-    assert_eq!(PortNumber::Zero.physical_layer_physical_address(), 0x1021_0000);
-    assert_eq!(PortNumber::One.physical_layer_physical_address(), 0x1022_0000);
+    assert_eq!(
+        PortNumber::Zero.physical_layer_physical_address(),
+        0x1021_0000
+    );
+    assert_eq!(
+        PortNumber::One.physical_layer_physical_address(),
+        0x1022_0000
+    );
 }
 
 #[test]
@@ -428,7 +434,10 @@ fn configure_keeps_the_command_bits_and_writes_no_status_bit() {
             size_bytes: 0x800_0000,
         },
     );
-    assert!(matches!(configured, root_port::Configured::Forwarding { .. }));
+    assert!(matches!(
+        configured,
+        root_port::Configured::Forwarding { .. }
+    ));
     assert_eq!(writes.last(), Some(&(COMMAND, 0x0000_0006)));
 }
 
