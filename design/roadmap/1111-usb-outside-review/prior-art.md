@@ -19,7 +19,7 @@ Where this crate differs: it parses only what a boot keyboard needs, in 1,100 li
 allocation and no `unsafe`. It proves with Kani that the walk over device-chosen lengths is total
 and accepts only an interrupt IN endpoint of at least eight bytes. No implementation above
 carries a machine-checked proof of its descriptor walk. What it costs: boot protocol only, one
-keyboard per configuration, a usage table that stops at 0x63 (item 6), and a key vocabulary that is
+keyboard per configuration, a usage table that stops at 0x8b, and a key vocabulary that is
 Linux's (Decision 2).
 
 Concrete example. OpenBSD's `hidkbd_decode` ignores a phantom report only when slot 0 holds 0x01;
