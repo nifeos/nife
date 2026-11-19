@@ -270,7 +270,7 @@ with a builder for Event Data TRBs. Two-way (documentation). XS.
 Ruled, and in force:
 
 1. The shapes of P1-3, P1-5, P1-8, P1-11, P1-12, P1-13 and P1-14 (ruled 2026-11-09 and
-   2026-11-10). Each finding states its ruling.
+   2026-11-10), each stated in its finding.
 2. The names of P1-3, P1-5 to P1-9, P1-12 and P1-13 stand as built (ruled 2026-11-16; recorded by
    nife #3664). They are `EndpointType` and its variants, the two segment bounds, `ProducerRing::capacity`,
    `fits_one_transfer_request_block`, the public type codes, speed ids, change bits and completion
@@ -301,8 +301,7 @@ and `port::RESET_TIMEOUT_MILLISECONDS`.
 They matter now because the first publish freezes every public name. Decision 2 ratified the P1 names; these arrived after it. The
 constraint is nife's naming rules: words spelled out, a limit carries its unit, std spellings win,
 spec mnemonics only as `doc(alias)`. Each name follows them. The three controller waits sit at the
-crate root because the register naming gate refuses a timeout inside `registers`, which is a
-placement choice rather than a rule.
+crate root because the register naming gate refuses a timeout inside `registers`, which is a placement choice.
 
 Ratifying costs nothing. A rename costs one crate pull request; no caller in nife uses any of
 these names.
