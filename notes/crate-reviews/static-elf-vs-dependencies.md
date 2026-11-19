@@ -41,10 +41,10 @@ Any of these is a ruling under rule 6 (taking a third-party dependency is an arc
 
 ## 1. What each reader checks by itself
 
-Our crate refuses a file unless it is a little-endian ELF64 `ET_EXEC` for the build's machine, with
-at most 64 program headers, no writable-and-executable segment, no two segments on one page, an
-entry inside an executable segment's file bytes, every segment inside the file, and no address
-overflow. It reads notes with a bounded walk that refuses padding past the segment and a duplicate.
+Our crate refuses a file unless it is a little-endian ELF64 `ET_EXEC` for the build's machine.
+It also refuses more than 64 program headers, a writable-and-executable segment, two segments on
+one page, an entry outside an executable segment's file bytes, a segment outside the file, and
+address overflow. It reads notes with a bounded walk that refuses padding past the segment and a duplicate.
 
 The corpus below has 60 malformed images. They cover truncated headers, huge `e_phoff`, odd
 `e_phentsize` and `e_phnum`, offset and size overflow, address wrap, overlapping and
@@ -129,9 +129,9 @@ ran one and found no panic in either.
 
 ## 3. Kani
 
-Our nine harnesses cover four claims: a note walk never panics and stays inside its segment, a
-program header names a whole header inside the table, the address check never overflows and yields
-an in-bounds range, and the page range is ordered and panic free. They pass, and each of the nine
+Our nine harnesses cover four claims. A note walk never panics and stays inside its segment. A
+program header names a whole header inside the table. The address check never overflows and yields
+an in-bounds range. The page range is ordered and panic free. They pass, and each of the nine
 fails under its falsification patch (`script/crate-standalone static_elf`, 2026-11-19, nine of
 nine).
 
@@ -209,18 +209,18 @@ architect would first need a question put to each maintainer.
 
 Lines. The crate holds 525 lines of shipping code (blank lines and comments excluded, tests and
 harnesses excluded): `parse.rs` 187, `note.rs` 220, `segment.rs` 56, `error.rs` 46, `machine.rs` 13,
-`lib.rs` 3. A switch retires the field readers and the note walk. The 784 probe wrapper, which holds
-the loader policy plus glue to one candidate, comes to 165 lines for `elf` and 150 for `object`,
-but it leaves out the 17-variant error type, `Segment`, `PageBytes`, the machine constants and the
+`lib.rs` 3. A switch retires the field readers and the note walk. The 784 probe wrapper holds
+the loader policy plus glue to one candidate. It comes to 165 lines for `elf` and 150 for `object`,
+and it leaves out the 17-variant error type, `Segment`, `PageBytes`, the machine constants and the
 note search, about 115 lines in the crate today. A wrapper would run to about 270 lines. A switch
 removes about 250 of 525, a little under half, which agrees with the 280 of 490 that milestone 784
 measured. The loader policy stays ours either way.
 
 Dependents. Eleven crates depend on `static_elf` by `Cargo.toml`: `jig`, `uefi_loader`,
 `components`, `fuzz`, `system_tests`, `measured_boot`, `system_initializer`, `program_asks`,
-`process_builder`, `fixtures` and `kernel`. A grep of the other crates finds the names `Elf` on 255
-lines in 56 files, `Elf::parse` on 110 lines in 42 files, `NATIVE_MACHINE` on 36 lines in 21 files,
-`Segment` on 29 lines in 8, `PageBytes` on 34 lines in 10, and the note types on about 90 lines in
+`process_builder`, `fixtures` and `kernel`. A grep of the other crates finds these counts. The name `Elf` appears on 255
+lines in 56 files, and `Elf::parse` on 110 lines in 42 files. `NATIVE_MACHINE` appears on 36 lines
+in 21 files, `Segment` on 29 lines in 8, `PageBytes` on 34 lines in 10, and the note types on about 90 lines in
 8. These counts are upper bounds, because shared words such as `Elf` and `READABLE` match other
 code. If a crate named `static_elf` stays as the wrapper with today's public names, the dependents
 change nothing and their lines do not move. If they take `elf` or `object` directly, each repeats
