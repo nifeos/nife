@@ -18,10 +18,10 @@ encoder against each other.
 
 | item | value |
 |---|---|
-| crate | `interfaces_note`, ratified as the crate and repository name |
+| crate | `interfaces_note`, the ratified crate and repository name |
 | note type | `INTERFACES` = 4 |
 | interface id | 21, with `INTERFACES_VERSION` 1 |
-| owner string and section | kept as wire literals, each line marked `// wire literal` |
+| owner string and section | wire literals; each line carries the `// wire literal` marker |
 | size | one `src/lib.rs` of about 630 lines: library, Kani harnesses and tests |
 | consumers in nife | the programs of `components` (through `carry_interfaces!`), `system_initializer` and `capability_manifest_note` (its tests) |
 
@@ -47,8 +47,8 @@ Twenty public names. The architect ratified all twenty with four renames (milest
 | `interfaces_note_len` | `note_bytes` |
 | `Declared` | `DeclaredInterface` |
 
-Every changed name carries a provisional `Name:` block, and the `Name:` blocks of the sixteen names
-that keep their spelling are unchanged; ratifying them is the architect's step. The static that
+Every changed name carries a provisional `Name:` block, and the sixteen names that keep their
+spelling keep their blocks. Ratifying them stays the architect's step. The static that
 `carry_interfaces!` emits is now `CARRIED_INTERFACES_NOTE`, provisional (milestone 1096, BUGS), so
 that the identifier no longer spells the system's name.
 
@@ -61,7 +61,7 @@ and `decode_interfaces_never_panics`. The patches follow the renames.
 ## What the move still carries
 
 Items 1 to 5, 11 and 15 of the milestone are the move's own work: the manifest, the README and
-license files, the citations and passive voice, the fuzz opt-in and the mutation exemptions.
+license files, the citations and prose, the fuzz opt-in and the mutation exemptions.
 
 ## Proposed items
 

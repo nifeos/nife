@@ -220,6 +220,6 @@ The checks are in [the appendix](1096-interfaces-note-outside-review/done-when.m
 
 An outside review of `interfaces_note` before its move. Ten findings are done. The owner string
 keeps its bytes behind a marker, and calef ratified the crate name. The architect ratified the twenty public
-names with four renames, and the renames are built. The move's own work remains:
+names with four renames, and this lane built the renames. The move's own work remains:
 the manifest, README, citations, prose, fuzz opt-in and mutation exemptions. The review package
-is written, and the maintainer asks for the go to create the repository once the architect has read it.
+exists, and the maintainer asks for the go to create the repository once the architect reads it.
