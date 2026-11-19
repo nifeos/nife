@@ -69,9 +69,9 @@ for the crate's own reasons.
 - P2-20, drifted notes: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-21, the `Reject` order claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-22, `abs_ticks`: Done (Decision 2). `abs_ticks` no longer exists.
-- Decision 1, `clock_contract`: Done (maintainer, provisional, 2026-11-14 UTC). Item 7 is built.
+- Decision 1, `clock_contract`: Done (maintainer, provisional, 2026-11-14 UTC). Item 7 has landed.
 - Decision 2, the public names: Done (maintainer, provisional, 2026-11-14 UTC). Items 4, 5, 18 and
-  22 are built, with the `UNIX_*` constants, `DEFAULT_POLL_EXPONENT` and `ShortFormat` renamed.
+  22 landed, with the `UNIX_*` constants, `DEFAULT_POLL_EXPONENT` and `ShortFormat` renamed.
 - Decision 3, the low-entropy items: Done (maintainer, provisional, 2026-11-14 UTC). Item 17 is
   built.
 - Ratifying the renamed names: Open. It is an open decision below.
@@ -269,7 +269,7 @@ Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door befor
 publish, which the architect may revisit. Removing a dependency on an own crate needs no
 dependency ruling. The crate drops `clock_contract`, its only `[dependencies]` entry, and defines a
 private `NANOSECONDS_PER_SECOND` in `src/lib.rs`, as `core::time` defines its own privately.
-Item 7 is built.
+Item 7 has landed.
 
 ### Decision 2. The public names the template's gates refuse, and the ones a later rule reopens
 
@@ -279,14 +279,14 @@ publish, which the architect may revisit. The table in
 settled elsewhere. `MAXIMUM_UNIX_SECONDS` is inclusive. `abs_ticks` goes, since no caller outside the
 crate uses it. The low-bit randomizer leaves under Decision 3, so its row renames nothing; its
 test still takes the American spelling. No old spelling stays as an alias. Items 4, 5, 18 and 22
-are built.
+landed.
 
 ### Decision 3. Do `Query::new` and the low-bit randomizer leave before the first publish?
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
 publish, which the architect may revisit. Both leave: the stricter surface, since adding a
 constructor later is compatible and removing one is not. `Query::new` (`src/lib.rs` line 616) and
-the low-bit randomizer (line 226) have no caller outside the crate. Item 17 is built.
+the low-bit randomizer (line 226) have no caller outside the crate. Item 17 has landed.
 
 ## Follow-on
 
