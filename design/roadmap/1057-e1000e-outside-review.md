@@ -240,14 +240,13 @@ Ruled, with where each landed:
 4. The three harness names `nifeos/e1000e#31` minted for P2-11 are provisional, ruled by the maintainers in
    that pull request. Harness names are not public API.
 
-One question is open, under Open decisions. The publishing hold stands.
+5. Whether the first release of `e1000e` waits for a cabled I219 run (P1-7). Ruled 2026-11-19: it
+   waits. This milestone does not count as delivered until the run happens, and the first publish
+   of every reviewed crate waits with it.
 
 ## Open decisions
 
-The briefs are in [the open decisions appendix](1057-e1000e-outside-review/open-decisions.md).
-
-- D1. Does the first release of `e1000e` wait for a cabled I219 run (P1-7)? Recommended: no;
-  the bench rows follow the release, as in 1050 and 1058.
+None. The publishing hold stands.
 
 ## Prior art
 
@@ -280,7 +279,8 @@ carries its own status line, which is the one record of it. This list names only
   will carry `nifeos/e1000e#31`. Read from the tags and the proofs runs.
 - **Outstanding.** P2-14's last wording fix is `nifeos/e1000e#34`, a draft until `v0.1.0-pre.3` exists.
   Read from the pull request list.
-- **Outstanding.** D1, under Open decisions, needs the architect.
+- **Outstanding.** P1-7 blocks delivery. This milestone is not delivered until the cabled I219 run
+  happens, and the first publish of every reviewed crate waits for it (decision 5).
 
 ## Index row
 
