@@ -120,7 +120,7 @@ The ruling renames the crate and nothing inside it. This package ratifies none o
 | item | kind | status | proposal |
 |---|---|---|---|
 | `test_and_set_lock` | crate, package, repository | ratified by the architect's ruling on 2026-11-19 (UTC), recorded in the crate's `Name:` block and in milestone 1109 | none |
-| `SpinLock`, `SpinLockGuard` | types | ratified 2026-10-26 (UTC), on #2760 (milestone 953) | none; the type keeps its spelling, so the crate name and the type name differ on purpose |
+| `SpinLock`, `SpinLockGuard` | types | ratified 2026-10-26 (UTC), on #2760 (milestone 953, what the kernel lock proves that it takes from the spin crate) | none; the type keeps its spelling, so the crate name and the type name differ on purpose |
 | `SpinLock::new`, `lock`, `try_lock`, `force_unlock` | functions | ratified 2026-10-26 (UTC), on #2760 | none |
 | `get_mut`, `into_inner` | functions | provisional, minted 2026-11-14 (UTC), in the standard library's spelling and meaning | keep; no rename is proposed |
 

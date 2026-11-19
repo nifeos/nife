@@ -86,7 +86,7 @@ keeps every row within the 10% tripwire, and the LOCK test in
   `notes/kernel-dependency-unsafe.md`.
 - **Done.** Ruled 2026-10-26 (UTC): the type's name, `SpinLock`, `SpinLockGuard`, both `new`,
   `lock`, `try_lock` and `force_unlock` stand as ratified; the `Name:` block in
-  `crates/test_and_set_lock/src/lib.rs` records it. The crate's own name is milestone 1109's (what an outside maintainer would fix before it leaves).
+  `crates/test_and_set_lock/src/lib.rs` records it. The crate's own name is set by milestone 1109 (what an outside maintainer would fix before it leaves).
 
 ## Index row
 
