@@ -373,7 +373,7 @@ mod tests {
     /// **`changes` speaks usages**: a modifier is 0xe0 to 0xe7 in bit order, and a usage with no
     /// evdev code is still delivered, so the caller sees it and skips it.
     #[test]
-    fn changes_emits_hid_usages_and_modifiers_as_0xe0_to_0xe7() {
+    fn changes_emits_hid_usages_and_modifiers_as_their_own_usages() {
         assert_eq!(
             usages(&BootReport::RELEASED, &report(0x82, &[0x0b])),
             [(0xe1, true), (0xe7, true), (0x0b, true)]
@@ -386,7 +386,7 @@ mod tests {
 
     /// The eight modifier rows of [`evdev_code`], and the usages around them that have none.
     #[test]
-    fn evdev_code_answers_for_the_eight_modifiers_only_in_their_range() {
+    fn the_code_lookup_answers_for_the_eight_modifiers_by_their_usage() {
         for (bit, code) in [29, 42, 56, 125, 97, 54, 100, 126].into_iter().enumerate() {
             assert_eq!(evdev_code(0xe0 + bit as u8), Some(code));
         }

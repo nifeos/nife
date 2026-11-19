@@ -138,8 +138,8 @@ reopens it.
 Background. The template's `check / standalone` job refuses, at a ceiling of zero, any name that
 holds a word from `naming_words.toml`'s spelled-out list or a length without its unit. Nine public
 names of this crate fail, and the new repository is red until they change. The caller changes with
-them. The rule and the helper are settled. Only the replacement spellings need a ruling, because a
-public name is one-way once the crate is published.
+them. The rule and the helper stand. Only the replacement spellings need a ruling, because a
+public name is one-way once a release carries the crate.
 
 Recommendation first, one row per name:
 
