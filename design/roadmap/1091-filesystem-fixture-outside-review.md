@@ -48,10 +48,10 @@ then the decisions and the release step.
   a repository of several crates.
 - Item 2 (P0), the order and pairing are stale: Ruled (Decision 1, 2026-11-14 UTC). Not built: the
   crate's README (line 58) and root `BUGS` (`src/lib.rs` line 12) still say the contract leaves
-  first and this crate then pins it by revision; under the ruling both say the crate depends on
+  first and this crate then pins it by revision. Under the ruling both say the crate depends on
   `filesystem_contract` by path inside one workspace. Milestone 1017's step 2 row still gives the
   removed dev-dependency as the reason for the pairing, and its owner corrects it.
-- Item 3 (P0), acronyms and British spelling: Open. The doc comments are fixed
+- Item 3 (P0), acronyms and British spelling: Open. The doc comments read in full
   ([#3566](https://github.com/nifeos/nife/pull/3566)); `EL0` remains in the `MOTD` literal
   (`src/lib.rs` line 44), which the system tests compare, and changes with item 6.
 - Item 4 (P0), names the gates refuse: Ruled (Decision 2, maintainer, provisional, 2026-11-14 UTC).
@@ -65,19 +65,20 @@ then the decisions and the release step.
   the image builder and `xtask/src/disk_check.rs`.
 - Item 7 (P1), history residue: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 8 (P1), the `durability` module is unused: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566). The module is deleted.
+  [#3566](https://github.com/nifeos/nife/pull/3566) deleted the module.
 - Item 9 (P1), the shared-frame witness doc states the refuted outcome: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 10 (P1), 14 equivalent mutants: Done, [#3566](https://github.com/nifeos/nife/pull/3566). The
-  sites are written as `1` and `0xFF`.
+  sites now read `1` and `0xFF`.
 - Item 11 (P1), caller workflows, manifest and stranger run: Open. The manifest has no
   `repository` field and its `publish` comment cites this tree's allowlist; the caller workflows
   (three targets, `allow-unpublished`), accepted words and the stranger run come with the move.
-- Item 12 (P1), the README's claims mislead: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 12 (P1), the README's claims mislead: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 13 (P2), `rg_match_path` unbounded: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `wide_name` wraps: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 15 (P2), the throughput widths are mixed: Open. `throughput::UNIT` is still a `usize`; one
-  width changes the casts in the kernel bench and the client with it.
+- Item 15 (P2), the throughput widths mix `usize` and `u64`: Open. `throughput::UNIT` is still a
+  `usize`; one width changes the casts in the kernel bench and the client with it.
 - Item 16 (P2), hand-copied distinct-bits lists: Open. Public `ALL` arrays per witness module, new
   provisional names, with one test over them.
 - Item 17 (P2), the doc comments are a note: Open. A rewrite of about 11,000 words, the reasons
@@ -151,13 +152,14 @@ landed. Before the move a lane checks that the template handles a two-crate work
 
 Why. The test of whether a crate leaves is that it is publishable or used by more than one
 repository. This crate never publishes (it is test data, and the template's `allow-unpublished`
-input exists for the case), so the test is sharing: eleven manifests in this tree link it, and after
-1017's step 9 the `redoxfs` repository links it too (the server's compile-time assertion on
-`throughput::RECORD`, the crash injector's `crash::CUT`, `mkfs`'s `blank` layout and the walk
-model). Copying those four constants into `redoxfs` instead is refused, because they are agreements
-between a server in one repository and a test in another, and a copied constant is how two sides
-drift. The fixture depends on the contract, seven of its nine consumers link the contract as well,
-and one repository keeps the contract and its test data agreeing in one pull request.
+input exists for the case), so the test is sharing. Eleven manifests in this tree link it. After
+1017's step 9 the `redoxfs` repository links it too, for four constants: the server's compile-time
+assertion on `throughput::RECORD`, the crash injector's `crash::CUT`, `mkfs`'s `blank` layout and
+the walk model. The ruling refuses copying those four constants into `redoxfs` instead, because they
+are agreements between a server in one repository and a test in another, and a copied constant is
+how two sides drift. The fixture depends on the contract, seven of its nine consumers link the
+contract as well, and one repository keeps the contract and its test data agreeing in one pull
+request.
 
 Prior art: xfstests and pjdfstest are repositories of filesystem test data shared by several
 implementations. `futures-test` and `tokio-test` are test-support crates kept in the workspace of
@@ -246,13 +248,19 @@ The checks are in [the appendix](1091-filesystem-fixture-outside-review/done-whe
 - The census figures are the tree's weekly runs, not a run for this review; the window for a
   census is 08:00 to 13:00 UTC and this review ran outside it.
 
+## Follow-on
+
+- **Outstanding.** Every finding marked Open or Ruled under Finding status above, each with what
+  is left, and each open decision under Open decisions. Checked by reading each finding line
+  against the crate and its pull requests on main.
+
 ## Index row
 
 `filesystem_fixture` is 1,178 lines of test vocabulary with no `unsafe`, no proof and sixteen
 passing tests, green on stable 1.88 and the pinned nightly. It leaves with `filesystem_contract`, as
 the second crate of one workspace repository (ruled 2026-11-14 UTC), and never publishes. The
-template now allows git sources from the organization and several crates per repository. Before the
-move the crate's text must state the shared workspace, the names the gates refuse must be renamed as
-Decision 2 rules, the `EL0` literal and the mentions of this tree must go, and the architect must
-ratify the crate's names from a review package that does not yet exist and clear the shared
+template now allows git sources from the organization and several crates per repository. Four things
+come before the move. The crate's text states the shared workspace. A lane renames the names the
+gates refuse, as Decision 2 rules. The `EL0` literal and the mentions of this tree go. The architect
+ratifies the crate's names from a review package that does not yet exist and clears the shared
 repository.

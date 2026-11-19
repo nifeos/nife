@@ -16,12 +16,12 @@ covers, and give the two scanners their own one-line bound in the doc. Two-way. 
 
 `matches(b".*", b"..")` is `true` and the test at `src/lib.rs` line 506 pins it. That is historical shell
 behavior, and bash 5.2 changed its default (`globskipdots`) so that `.*` no longer yields the two
-entries. No listing in this tree offers them: `redoxfs_server/src/listing.rs` lists the stored
+entries. No listing in this tree offers them. `redoxfs_server/src/listing.rs` lists the stored
 children, and RedoxFS stores no `.` or `..` entry, while `disk_tree` refuses both names. Under this
 crate's own rule (the default grants less), the matcher is not the place to decide it: the layer that
 enumerates is. Change: the README states that `.` and `..` are ordinary names here and the caller's
-enumeration decides whether to offer them; a note in `grant_plan` that its listings never carry
-them, so a server that does is a change it must see. Two-way. S.
+enumeration decides whether to offer them. A note in `grant_plan` says that its listings never
+carry them, so that a server which does is a change it sees. Two-way. S.
 
 #### P2-3. `match_steps` returns a tuple and calls its own value unstable
 

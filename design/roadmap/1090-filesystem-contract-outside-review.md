@@ -37,11 +37,12 @@ classification of equivalent mutants already in `notes/mutation-testing/`. No ne
 
 ## Finding status
 
-One line per finding, in the review's order: items 1 to 5 below, items 6 to 13 in
-[the before-the-tag appendix](1090-filesystem-contract-outside-review/before-the-tag.md), items 14
-to 22 in [the later-items appendix](1090-filesystem-contract-outside-review/later-items.md), then
-the decisions and the release steps. The item texts use the names the review read; Decision B's
-renames are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `block`).
+One line per finding, in the review's order: items 1 to 5 in [the blocks-the-move
+appendix](1090-filesystem-contract-outside-review/blocks-the-move.md), items 6 to 13 in [the
+before-the-tag appendix](1090-filesystem-contract-outside-review/before-the-tag.md), items 14 to 22
+in [the later-items appendix](1090-filesystem-contract-outside-review/later-items.md), then the
+decisions and the release steps. The item texts use the names the review read; Decision B's renames
+are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `block`).
 
 - Item 1 (P0), the crate does not stand alone: Open. `nife` still appears in `README.md` lines 5
   and 87, `src/lib.rs` line 33, `src/grant.rs` lines 11 and 13 and `src/extended_attribute.rs` line
@@ -78,7 +79,8 @@ renames are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `bl
   `CLIENT_WINDOWS` is still documented as provisional with a citation of `abi::rendezvous::BADGE`;
   where `rm` lands (the program or `byte_sink_contract`) and whether the window count is a contract
   fact are placement calls the maintainer makes.
-- Item 13 (P1), dates and British spellings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 13 (P1), dates and British spellings: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 14 (P2), `req_blocks` decodes 256: Open. `block.rs` still returns `(w0 & 0xff) + 1`; clamp
   or `Option` is a two-way door the maintainer rules provisionally.
 - Item 15 (P2), `directory_entry::encode` accepts an empty name: Open. Unchanged; refusing in the
@@ -123,8 +125,9 @@ Recommendation: A.
 
 - A. Approve the edit: §99's two mentions become `.extended-attributes`, stated as the rule in
   force, with no other change to the section.
-- B. Leave §99 as written and add a line in Decision A that it supersedes §99's name.
-- C. Supersede §99 with a new section that carries the renamed store.
+- B. Leave §99 as written and add a line in Decision A that its name replaces §99's.
+- C. Replace §99 with a new section that carries the renamed store, its frontmatter naming the
+  successor.
 
 Door: two-way. It is a record's wording, and no image outside the maintainers' own ever carried
 the old name. It comes to the architect only because §88 reserves a changed word in a decision to
@@ -141,7 +144,7 @@ Blocks: nothing in the move or the tag; it is the record's accuracy.
 ### Clear the review of `filesystem_contract` and `filesystem_fixture`, and create their repository
 
 Background. `filesystem_contract` defines the two message protocols a filesystem server and a
-block server speak, and `filesystem_fixture` is the test image those servers are checked against.
+block server speak, and `filesystem_fixture` is the test image those servers run against.
 They leave together for one workspace repository, ruled 2026-11-14 UTC; the fixture never
 publishes. A crate leaves once its review package lists every public name and decision and the
 architect clears that review, and the clearance is also the go to create the repository. Most of
@@ -150,7 +153,7 @@ the contract's public names are provisional, Decision B's renames included, and 
 
 Recommendation: A, once the review package exists.
 
-- A. Clear one review covering both crates when its package is written: ratify the names as the
+- A. Clear one review covering both crates once a lane writes its package: ratify the names as the
   package lists them, and create the repository as `publish = false`. The move follows, with items
   1 to 3 and 10 here and items 6 and 11 of milestone 1091.
 - B. Create the repository and leave the names provisional until the release review.
@@ -160,11 +163,11 @@ Recommendation: A, once the review package exists.
 Door: one-way. The repository is an outward step, and a ratified protocol name binds every server
 and client once anything outside this tree speaks it.
 
-Prior art: `jh7110_clock_and_reset` and `designware_ethernet` were cleared from review packages
-before their repositories were made. Outside, `rust-lang/futures-rs` and `tokio` keep a test
-utility crate (`futures-test`, `tokio-test`) in the same workspace as the library it tests, which is
-the shape ruled here. Concrete example: ratifying `nameset::IS_DIRECTORY` fixes the spelling
-in the filesystem servers and in the fixture's witness documentation at once.
+Prior art: `jh7110_clock_and_reset` and `designware_ethernet` each had a review package cleared
+before the organization made their repositories. Outside, `rust-lang/futures-rs` and `tokio` keep a
+test utility crate (`futures-test`, `tokio-test`) in the same workspace as the library it tests,
+which is the shape ruled here. Concrete example: ratifying `nameset::IS_DIRECTORY` fixes the
+spelling in the filesystem servers and in the fixture's witness documentation at once.
 
 Blocks: the move.
 
@@ -193,81 +196,7 @@ two-way and the maintainer decides it.
 
 ### P0: red at the moving commit, or refused by the move rule
 
-1. The crate does not stand alone.
-   Finding: 21 externalization-lint hits, every one in prose. `nife` appears in `README.md` line 5 and `:84`,
-   `src/lib.rs` line 29, `src/grant.rs` line 11 and `:13`, and `src/xattr.rs` line 76 and `:77`.
-   Programs appear by name too. They are `disk_surveyor`, `disk_partitioner` and `mkfs`
-   (`src/blk.rs` line 47, `:61`). They are `fs_nameset_caretaker`, `fs_subtree_caretaker`,
-   `fs_file_caretaker` and `redoxfs_server` (`src/verb.rs` line 14, `:64`, `:119`, `:249`, `:333`;
-   `src/xattr.rs` line 61, `:62`; `src/verb/tests.rs` line 133, `:174`). The last is
-   `least_authority_demo` (`src/grant/tests.rs` line 40, `:44`, `:51`). Beyond the lint: `rm.rs`
-   describes the `rm` program and cites `byte_sink_contract::eof()`; `fs.rs` line 298 cites
-   `abi::rendezvous::BADGE`; `fs.rs` line 274 cites `bench/transfer-size-sweep.sh`; `fs.rs` line 232 cites
-   `subtree_scope::Bindings::bind`; `nameset.rs` line 7 cites `grant_plan::Refusal::TooManyNames`;
-   `xattr.rs` line 73 cites `redoxfs_host extract`. `standalone.py` adds: `publish = false`
-   (`Cargo.toml` line 11, with a comment pointing at a nife file), 31 provenance blocks, 7 milestone
-   citations, 4 lines naming the architect, 1 section citation. Of the provenance blocks,
-   `src/fs.rs` line 255 quotes a ruling verbatim, against the standing rule that a record states the
-   decision and never quotes the decider. The manifest has no `repository`, `documentation` or
-   `homepage` field.
-   Why it matters: the move rule is that nothing that leaves references back into nife; the
-   template's `check / standalone` is a required check and reads every one of these.
-   Change: reword each hit for any reader (a caretaker becomes "a proxy that narrows a directory
-   capability", a program name becomes its role). The move commit strips the `Name:` blocks, as
-   ruled, and the quotation goes with them. Replace the `publish` comment with one sentence a
-   stranger can act on. Add the three URL fields. Delete the `rm` module (item 5) or reword it.
-   Door: two-way, except `STORE_DIR` (Decision A). Effort: M.
-
-2. `check / clippy` is red on the template's toolchain.
-   Finding: stable clippy with `-D warnings` fails on `doc_markdown` for `RedoxFS` at
-   `src/lib.rs` line 21, `:73`, `:108`, `src/blk.rs` line 41, `:57`, `src/grant.rs` line 11 and two more sites
-   (8 in the library, 9 with the test build). nife's workspace `clippy.toml` carries
-   `doc-valid-idents` with `RedoxFS`; the scaffold has no `clippy.toml`.
-   Why it matters: the new repository's first pull request is red before anything else is judged.
-   Change: a `clippy.toml` at the crate root with `doc-valid-idents = ["RedoxFS", ..]`, carrying
-   nife's reason (backticks would render a proper noun as code). Backticking is the alternative
-   and the worse one.
-   Door: two-way. Effort: XS.
-
-3. The falsification patches carry nife's path, and the README's command with them.
-   Finding: all three patches diff `a/crates/filesystem_contract/src/dir.rs`
-   (`falsifications/*.patch`, the `diff --git` lines). The template's `proofs / falsify` applies
-   each patch crate-relative with `git apply -p1`, so after the move none applies and the job is
-   red. The doc comments at `src/dir.rs` line 227, `:248` and `:266` name the same path, and
-   `README.md` line 74 says `patch -p3`.
-   Change: rewrite the three headers to `a/src/dir.rs`, the three doc comments to
-   `falsifications/<name>.patch`, and the README to the scaffold's `git apply -p1` form with one
-   real example and what the failing run prints. The move commit is the right place, since the
-   paths change with it.
-   Door: two-way. Effort: XS.
-
-4. `check / coverage` is red on `src/rm.rs`.
-   Finding: `rm::status` is never called inside the crate; the standalone lcov reports 0 of 3
-   lines, under the per-file floor of 85 that `coverage-floor.sh` applies to every file with an
-   executable line. The function's callers are the `rm` program and `filesystem_fixture`'s tests.
-   Change: resolved by item 5 if the module leaves; otherwise one test that `status(errno)` is the
-   errno and `OK` is 0.
-   Door: two-way. Effort: XS.
-
-5. The name gates refuse 22 names, and renames are the architect's.
-   Finding: `spelled_out` (ceiling 0) refuses module `dir` (`src/dir.rs`). It refuses `IS_DIR` twice
-   (`src/dirent.rs` line 4, `src/nameset.rs` line 33) and `STORE_DIR` (`src/xattr.rs` line 77). It
-   refuses `grant::spec`, `spec_len` and `spec_rights` (`src/grant.rs` line 116, `:121`, `:126`). It
-   refuses `xattr::spec`, `spec_kind` and `spec_value_len` (`src/xattr.rs` line 82, `:86`, `:90`).
-   It also refuses seven `is_dir` and `spec` bindings in tests. `register_names` (ceiling 0): `blk::SIZE` (`src/blk.rs` line 27, an opcode, so a false
-   positive), `BLOCK_SIZE` (`src/blk.rs` line 43), `MAXIMUM_LENGTH_OR_OFFSET` (`src/fs.rs` line 309,
-   ratified), `statfs::LEN` (`src/statfs.rs` line 3). `question_shape`: `in_opcode_order`
-   (`src/verb.rs` line 319). The naming worklist inside nife lists the same ten wire-or-format names.
-   `GETMTIME`, `SETMTIME` and `SETMTIME_AT` (`src/fs.rs` line 193, `:204`, `:214`) contain `mtime`,
-   which the spelled-out list expands, and the gate does not split `GETMTIME` into components, so
-   it misses them; the rule still applies. No item in the crate carries a `#[doc(alias)]`, which
-   the rule asks of every kept foreign spelling (the POSIX verb and errno names) and every
-   spelled-out name a reader searches for by its abbreviation.
-   Why it matters: `check / standalone` runs these at a ceiling of 0; a ratified name failing a
-   check needs an exemption outside the `Name:` block, and an unratified one needs a ruling.
-   Change: the names Decision B decides, provisionally; one rename lane applies them at the end,
-   then adds the exemption for `blk::SIZE` with its reason and the aliases.
-   Door: two-way before the first tag. Effort: S for the lane, after the ruling.
+The P0 items are in [the appendix](1090-filesystem-contract-outside-review/blocks-the-move.md).
 
 ### P2: later
 
@@ -279,7 +208,8 @@ The P1 items are in [the appendix](1090-filesystem-contract-outside-review/befor
 
 ## Decisions for the architect
 
-Only one-way doors. Each with the background first, then the recommendation.
+A and C are ruled; B is the maintainer's provisional ruling on a two-way door. Each states the rule
+in force.
 
 ### A. The reserved on-disk name: ruled 2026-11-14 (UTC)
 
@@ -304,57 +234,8 @@ store does not list it.
 
 ### B. The names the gates refuse, and the units on the ratified limits
 
-Background. The template runs `spelled_out`, `register_names` and `question_shape` at a ceiling
-of 0 on every pull request. Seventeen names fail the first (the module `dir`, `IS_DIR`,
-`STORE_DIR`, six `spec` functions, bindings), four the second, one the third. Separately, the
-rule that a length or a limit carries its unit postdates the ratification of `MAXIMUM_NAME`
-(twice), `MAXIMUM_VALUE`, `TRANSFER_MAXIMUM` and `MAXIMUM_LENGTH_OR_OFFSET`, and the rule that a
-count names the things reaches `MAXIMUM_COUNT`. A release review rechecks such names. The verb
-names (`OPENDIR`, `READDIR`, `MKDIR`, `RMDIR`, `FSTAT`, `GETXATTR` and the rest) and the errno
-names are POSIX terms of art, which the rules keep with an alias and an opening line naming the
-source. The module names `blk`, `fs`, `dirent`, `xattr`, `statfs` are abbreviations whose
-expansions are spoken, except `fs`, which mirrors `std::fs`, and `statfs`, which is the call's
-name.
-
-Recommendation, one table, to rule as a set and apply in one lane after the move:
-
-| today | proposed | rule |
-|---|---|---|
-| module `dir` | `directory` | spelled out (ruled word) |
-| `dirent::IS_DIR`, `nameset::IS_DIR` | `IS_DIRECTORY` | spelled out |
-| `xattr::STORE_DIR` | `STORE_DIRECTORY` | spelled out (Decision A rules the value) |
-| `grant::spec`, `spec_len`, `spec_rights` | `specification`, `specification_len`, `specification_rights` | spelled out (ruled word) |
-| `xattr::spec`, `spec_kind`, `spec_value_len` | `specification`, `specification_kind`, `specification_value_len` | spelled out |
-| module `blk` | `block` | an expansion everyone says |
-| module `dirent` | `directory_entry` | the same |
-| module `xattr` | `extended_attribute` | the same; `#[doc(alias = "xattr")]` |
-| module `fs` | keep, `#[doc(alias = "filesystem")]` | mirrors `std::fs` |
-| module `statfs` | keep, alias `volume_statistics` | a POSIX call name |
-| `GETMTIME`, `SETMTIME`, `SETMTIME_AT` | `GET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME`, `SET_MODIFICATION_TIME_AT` | `mtime` is a ruled word; provisional today |
-| `blk::BLOCK_SIZE` | `BLOCK_BYTES` | a size carries its unit |
-| `statfs::LEN` | `RECORD_BYTES` | the same |
-| `store::RECORD_HEADER` | `RECORD_HEADER_BYTES` | the same |
-| `nameset::BYTES` | `MAXIMUM_BYTES` | a limit opens `MAXIMUM_` |
-| `grant::WORDS_NAME` | `MAXIMUM_WORDS_NAME_BYTES` | a limit with its unit |
-| `PAGE` | `PAGE_BYTES` | the page-contract spelling in `design/naming.md` |
-| `xattr::MAXIMUM_NAME`, `grant::MAXIMUM_NAME` | `MAXIMUM_NAME_BYTES` | ratified before the units rule; reopened at release |
-| `xattr::MAXIMUM_VALUE` | `MAXIMUM_VALUE_BYTES` | the same |
-| `fs::TRANSFER_MAXIMUM`, `blk::TRANSFER_MAXIMUM` | `MAXIMUM_TRANSFER_BYTES` | the same |
-| `fs::MAXIMUM_LENGTH_OR_OFFSET` | `MAXIMUM_LENGTH_BYTES` | the same, and the field carries no offset (item 17) |
-| `xattr::MAXIMUM_COUNT` | `MAXIMUM_ATTRIBUTES` | a count names the things |
-| `blk::SIZE` | keep, exempt from `register_names` | an opcode, not a size |
-| `verb::in_opcode_order` | `is_in_opcode_order` | question shape |
-| the POSIX verb and errno names | keep, each with `#[doc(alias)]` and a source line | a specification's term of art |
-
-Prior art. Fuchsia spells `GetAttributes`, `UpdateAttributes` and `rights` in full in FIDL and
-keeps POSIX names only at its POSIX compatibility layer. Capsicum keeps the Unix spellings
-(`CAP_FUTIMES`) because they name Unix calls, which is the case the verb names are in. The `libc`
-crate keeps every errno as the platform spells it, which is the case the errno names are in.
-
-Concrete example. A caretaker that reads `verb::of(operation).takes_name()` today would read
-`verb::of(operation).takes_name()` still; one that compares `grant::spec_rights(w)` reads
-`grant::specification_rights(w)`; a client that sends `fs::req(fs::GETMTIME, ..)` sends
-`fs::req(fs::GET_MODIFICATION_TIME, ..)`, and the number 20 does not change.
+The background, the table, the prior art and an example are in
+[the appendix](1090-filesystem-contract-outside-review/decision-b-names.md).
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
 which the architect may revisit. The table holds as written, applied by one lane, and
@@ -393,6 +274,12 @@ The checks are in [the appendix](1090-filesystem-contract-outside-review/done-wh
   template's helpers, which the reviewer ran by hand on a standalone copy with the same arguments
   the workflows pass. The exception is `coverage`, where the reviewer applied the floor to a locally
   produced lcov.
+
+## Follow-on
+
+- **Outstanding.** Every finding marked Open or Ruled under Finding status above, each with what
+  is left, and each open decision under Open decisions. Checked by reading each finding line
+  against the crate and its pull requests on main.
 
 ## Index row
 
