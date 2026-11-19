@@ -150,6 +150,7 @@ intrusive_queue register_names 1
 jh7110_clock_and_reset abbreviations 56
 jh7110_clock_and_reset_contract abbreviations 1
 jh7110_clock_and_reset_devices abbreviations 1
+jh7110_pci_express abbreviations 1
 jh7110_watchdog abbreviations 15
 jh7110_watchdog inflated_wording 1
 jh7110_watchdog prose_acronyms 5

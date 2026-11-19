@@ -1,87 +1,144 @@
 ---
-status: NOT-STARTED
+status: PARTIAL
 raised: 2026-08-25
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: JH7110 silicon
-specific_machine: none
+specific_machine: radon (the first run, with a drive in the M.2 slot)
 needs_person: yes
 ---
 # 163. The JH7110's PCIe root complex: a real driver for the PLDA XpressRICH controller
 
-Three places name this as needing "its own milestone": `design/roadmap/0053-board-peripherals.md`
-("driving it is its own milestone, not a bench fix"), `notes/visionfive2.md`'s own "PCIe" section
-(identical words), and `design/decisions/0086-el0-nvme-driver.md`, which holds itself `PROPOSED`
-pending exactly this work. This block gives that debt a home.
-
-In milestone 159's sense: the board is on the desk and this needs hands on it.
-Bringing up a real PCIe root complex means flashing, a serial console, and power-cycling a board
-that will wedge. A background lane can do none of it (milestone 53 (board peripherals)'s own words,
-said generally about the NVMe/network work this is one piece of).
+Milestone 53 (board peripherals), `notes/visionfive2.md`'s "PCIe" row and §86 (the NVMe driver
+leaves the kernel) each name this as needing its own milestone. This block is that milestone.
 
 ## What it needs
 
-Drive the JH7110's PCIe root complex, a PLDA XpressRICH controller
-(`starfive,jh7110-pcie` in mainline device trees). This is not the same device as QEMU's
-`pci-host-ecam-generic`, which is explicitly a QEMU-only fake exposed by the `virt` boards.
-(`design/roadmap/0016-real-hardware-iommu.md`'s own framing of the two IOMMUs as "structural
-siblings" only holds for the emulated case; the PLDA controller has no such sibling in this tree
-today.) `notes/visionfive2.md` records the honest current state: the kernel already reads PCIe
-windows from a generic-ECAM device-tree node when one exists (`memory::initialize`,
-`mmu::map_everything`, every probe in `kernel/src/pci.rs`). But on this board there is no such node,
-so nothing PCIe is mapped or touched. A real driver for the PLDA controller is what would give that
-existing, already-portable `kernel/src/pci.rs` probe path something real to find.
+Drive the JH7110's PCIe root complex, a PLDA XpressRICH controller wrapped in StarFive glue
+(`starfive,jh7110-pcie` in mainline device trees), so that the kernel's existing PCI path
+(`memory::pci_regions`, `mmu::map_everything` step 9, `kernel/src/pci.rs`) finds the devices behind
+it. QEMU's `pci-host-ecam-generic` is a different device: firmware there leaves a working
+Enhanced Configuration Access Mechanism (ECAM) window, and nothing on the JH7110 does until the
+bridge is brought up and its address translation is programmed.
 
-Getting this working is what would let §18 (the PCIe transport)'s already-built transport layer
-reach real devices behind it on this board. Concretely: the real M.2 NVMe slot
-(milestone 53's storage half) and any real PCIe-attached NIC, replacing the QEMU-only fake device
-with a real one.
+The JH7110 has two ports. On a VisionFive 2, port 1 (`pcie@9c0000000`) is the M.2 M-key slot and
+port 0 (`pcie@940000000`) carries the VL805 USB 3 controller. The first target is port 1, because
+the NVMe path behind it is already built (§86, option 2a) and polls, so it needs no interrupt to
+give a first data point. Port 0 is what §260 (radon's block server serves a USB drive) waits for.
 
 ## Why it matters, and what it unblocks
 
-**DECISIONS §86** (whether an NVMe driver can leave the kernel, and what capability would let it)
-holds itself `PROPOSED` specifically pending this: its own recommendation is "Option 2, but not
-yet... hold this PROPOSED until the board-side work (the JH7110's PLDA XpressRICH root complex)
-exists, for the same reason §23 built multi-queue confinement only after single-queue worked: the
-second data point tells you which parts of the contract are QEMU artifacts." This milestone is
-that board-side work.
+- §86 asks for a second data point beyond QEMU, to tell which parts of the NVMe capability contract
+  are QEMU artifacts. A real NVMe drive behind a real root complex is that data point.
+- Milestone 53's storage half on the VisionFive 2 is NVMe over PCIe.
+- §260's storage path runs through port 0 and the VL805.
 
-Milestone 53 also names why NVMe-over-PCIe was chosen over SD/eMMC as the storage path in the
-first place. Partly on this driver's account: "a real PCIe root-complex driver compounds into
-milestone 87's x86 machine where an MSHC driver serves one slot on one board."
+## Sources
 
-**A second path to §86's specific question may exist, and it is not this one.** Milestone 87's
-x86_64 machine (a Dell OptiPlex 7050 Micro, already on calef's desk) also has real NVMe hardware,
-and milestone 161's work already landed real ACPI/MCFG table parsing against it. A separate
-scoping lane, launched the same day this milestone was minted, is investigating whether x86 can
-reach a "real hardware NVMe behind a real IOMMU" data point for §86 faster and cheaper than this
-milestone will. x86's PCIe discovery mechanism is ACPI-described and architecturally identical
-between QEMU's `q35` machine and real x86 hardware, unlike RISC-V's QEMU-only fake ECAM device.
-Proving PCI enumeration correct under QEMU there is much stronger evidence than the equivalent
-would be here. That does **not** make this milestone unnecessary: milestone 53's actual
-storage-and-network completion on the VisionFive 2 still needs a real PLDA driver regardless of
-what x86 provides for §86 specifically. But the two paths' relative priority should be read against
-that scoping lane's finding, whichever way it goes, before this milestone is sequenced against
-other hardware-gated work.
+Every register and every step is transcribed from mainline Linux at `torvalds/linux`
+`cbbddb6b08cc`, the revision the JH7110 crates already pin:
 
-## What is needed
+- `drivers/pci/controller/plda/pcie-plda.h` and `pcie-plda-host.c`: the XpressRICH bridge
+  registers, the address translation (ATR) table, the interrupt bits.
+- `drivers/pci/controller/plda/pcie-starfive.c`: the StarFive glue and the bring-up order.
+- `drivers/phy/starfive/phy-jh7110-pcie.c`: the PHY's mode and tuning writes.
+- `arch/riscv/boot/dts/starfive/jh7110.dtsi` and `jh7110-common.dtsi`: windows, clocks, resets,
+  the PERST# GPIO.
+- `include/dt-bindings/clock/starfive,jh7110-crg.h` and `.../reset/starfive,jh7110-crg.h`: the STG
+  clock and reset numbers.
 
-Hands-on work with the physical board: flashing, a serial console, and iterative bring-up against
-real silicon, the same shape as milestone 159's "Gate: HARDWARE" framing. Not a background-lane
-task. The driver's own logic (register layout, initialization sequence) can likely be transcribed
-from a mainline Linux driver for the same controller the way `crates/jh7110_entropy` transcribed the
-JH7110 TRNG's from `drivers/char/hw_random/jh7110-trng.c`, and host-tested before any hardware is
-involved. Whether it actually enumerates real devices can only be verified on the board.
+No BSD has a driver for this controller, so the spelled-out register names carry the Linux
+spelling as their `doc(alias)`.
 
-## Radon's storage depends on this, 2026-10-07
+## The bring-up, in order
 
-§260 (radon's block server serves a USB drive) puts this milestone on radon's storage path. The USB 3
-ports sit behind a VL805 on PCIe. Until this root complex enumerates it, the booted system cannot
-read a disk.
+As `starfive_pcie_host_init` and `plda_pcie_host_init` do it:
+
+1. PHY into PCIe mode: tuning words at PHY `0x28` and `0x80`. Port 0 also clears the STG syscon's
+   mode, bus-width and USB 3 PHY bits and the SYS syscon's split-reset bit. Port 1's PHY has no
+   syscon arguments in the tree, so only the tuning writes apply.
+2. STG syscon: set `K_RP_NEP`, select the reference clock source (2), set `CLKREQ`.
+3. Clocks on and resets released: `NOC_BUS_STG_AXI` in SYS, and the port's `TL`, `AXI_MST0` and
+   `APB` clocks and six resets in STG.
+4. Assert PERST# (the port's `perst-gpios`, active low).
+5. Disable PHY functions 1 to 3 through the STG syscon's `AR` and `AW` selects and the bridge's
+   `PCI_MISC`, then clear both selects.
+6. Bridge: enable the root port (`GEN_SETTINGS`), zero the root port's BAR0 and BAR1, set the class
+   to PCI-to-PCI bridge, disable LTR messages, advertise 64-bit prefetchable windows.
+7. Wait 100 ms, release PERST#, wait 100 ms, then poll the STG syscon's `DATA_LINK_ACTIVE`.
+8. ATR window 0 maps the `cfg` window as the configuration interface, which makes it ECAM-shaped.
+   Window 1 maps the 32-bit memory range one to one; window 2 the 64-bit prefetchable range.
+9. Root port at `00:00.0`: primary bus 0, secondary 1, subordinate 1; memory base and limit
+   covering the 32-bit window; memory decoding and bus mastering on. Nothing in the kernel assigns
+   bridge buses today (`pci.rs` reads them), and the NVMe controller sits at bus 1.
+10. Record `(cfg, mem32)` with `memory::record_pci_regions`, so step 9 of `map_everything` maps them
+    and `pci::find_non_volatile_memory_express_device` finds the controller.
+
+## Steps that need no hardware
+
+- [x] The register layout and the bring-up as a pure crate, `crates/jh7110_pci_express`
+      (name provisional). It holds the offsets and bits, the ATR window encoder, the ordered
+      sequence over an injected register bus, the link-up check, and root-port bus and window
+      assignment.
+- [x] A simulated root complex in that crate's tests. Its link comes up only after a correct
+      sequence, and its `cfg` window decodes as ECAM only once ATR window 0 maps it. Its NVMe
+      endpoint at `01:00.0` answers only once the root port forwards bus 1, and the tests run
+      `pci_configuration_space::walk` over it.
+- [x] Kani harnesses for the ATR window encoder (size field, alignment, enable bit) and the bridge
+      bus-number word.
+- [ ] `machine_discovery::jh7110::pci_express`: each enabled `starfive,jh7110-pcie` node's `cfg` and
+      `apb` windows by `reg-names`, its 32-bit and prefetchable ranges, its PERST# GPIO, and which
+      port it is.
+- [ ] `jh7110_clock_and_reset`: the PCIe clocks and resets of each port as constants and plans.
+- [ ] Kernel wiring: `memory` records the port, `mmu::map_everything` maps its bridge, syscon, PHY
+      and GPIO pages, a kernel driver walks the plan before the PCI survey, and records the regions.
+      QEMU's `virt` names no such node, so every CI boot is unchanged.
+- [ ] `notes/jh7110-pci-express-bench.md`: the bench steps for a person.
+
+## Steps that need the board
+
+- [ ] The vendor U-Boot's tree: whether it carries a `starfive,jh7110-pcie` node in mainline's shape
+      (`reg-names`, `ranges`, `perst-gpios`). If not, the kernel needs a fallback to the constants,
+      as the clock and reset discovery has.
+- [ ] Link up on port 1 with a drive fitted: the `DATA_LINK_ACTIVE` poll succeeds.
+- [ ] Enumeration: `00:00.0` reads as a bridge and `01:00.0` as class `0x010802`.
+- [ ] The NVMe path's identify and a read, through `pci::find_non_volatile_memory_express_device`.
+- [ ] Port 0 and the VL805, for §260.
+
+## Open decisions
+
+These are the lane's provisional choices. Each is a two-way door: nothing outside the tree depends
+on it yet.
+
+1. **Where the bring-up runs.** Recommended: in the kernel, beside `pci.rs`, on the boot thread
+   before the PCI survey. Enumeration, BAR placement and the ECAM mapping are already kernel work,
+   and the bring-up is one pass at boot. The alternative is a root-complex server under milestone
+   1062's device control planes, which would also move enumeration out; that is a larger change
+   than this milestone and can follow it.
+2. **One port or two.** Recommended: port 1 only for now. `memory::pci_regions` holds one host, so
+   two ports need `pci.rs` to carry two ECAM windows and two segment numbers. Port 0 follows with
+   that change.
+3. **Clocks and resets through the kernel's own walk.** Recommended: the kernel's
+   `drivers::jh7110_clock_and_reset::bring_up`, as the watchdog uses it, rather than the clock and
+   reset server, because the bring-up runs before any server is spawned. The single-writer argument
+   that walk documents still holds: both run on the boot thread.
+4. **PERST# through the GPIO controller's output registers directly.** The tree has no JH7110 GPIO
+   driver. Recommended: the crate writes the one pin's output and output-enable fields, as
+   `pinctrl-starfive-jh7110.c` does, rather than adding a GPIO driver for one pin.
+
+## Follow-on
+
+- **Outstanding.** The device-tree reader, the clock and reset plans and the kernel wiring, the
+  four unticked items under "Steps that need no hardware". Checked against this block's checklist:
+  nothing in `machine_discovery`, `jh7110_clock_and_reset` or `kernel/` names the PCI Express
+  controller yet.
+- **Outstanding.** The bench runbook, `notes/jh7110-pci-express-bench.md`, which needs the kernel
+  wiring's log lines. Checked: no such file exists.
+- **Outstanding.** Every item under "Steps that need the board", which needs a person at the board
+  with a drive fitted.
 
 ## Index row
 
-Named as needing "its own milestone" in three places (milestone 53, notes/visionfive2.md,
-DECISIONS §86) without ever getting one until now. Gate: HARDWARE. What DECISIONS §86 holds itself
-PROPOSED pending: a real second data point beyond QEMU's fake ECAM device, so it can tell which
-parts of the NVMe capability contract are QEMU artifacts.
+The JH7110's PLDA XpressRICH root complex, brought up from the kernel so that the existing PCI path
+finds the devices behind it: the M.2 NVMe slot first, then the VL805 USB 3 controller. It gives
+§86 its real-hardware data point and milestone 53 and §260 their storage path on the VisionFive 2.
