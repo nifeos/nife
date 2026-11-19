@@ -40,9 +40,85 @@ bounded, well-formed answer or `None`, never with a size or an offset the caller
 says what it is in words the naming rules accept, and the template's gates are green for the
 crate's own reasons.
 
-## Where this stands
+## Finding status
 
-[The appendix](1105-pci-outside-review/where-this-stands.md).
+- P0-1, fixture tests that reach into nife: Open. The five witness tests still `include_bytes!`
+  two other crates' fixtures and link `device_tree_blob` by path; they move into nife beside the
+  constants they pin, the crate inlines the swizzle cells, and the dev-dependency goes.
+- P0-2, the staged tree's red gates: Open. [#3521](https://github.com/nifeos/nife/pull/3521) fixed
+  the patch regeneration. The manifest literals (license, lints, `rust-version`), the README, the
+  license files and specification citations in place of tree paths remain. A fresh dry run
+  confirms the regenerated patches apply.
+- P1-3, BAR size trusts the mask: Done, [#3519](https://github.com/nifeos/nife/pull/3519).
+- P1-4, BAR probing on any header and past slot 5: Done,
+  [#3519](https://github.com/nifeos/nife/pull/3519).
+- P1-5, names the template's gates refuse: Open. `mem32_window`, `CLASS_NVME`, `size`, `length`,
+  `table_size`, `address_low` and `address` keep their old spellings; two-way before the first tag, so the
+  maintainer rules the spellings provisionally and one rename lane covers the crate, the kernel
+  and `driver_process_contract`.
+- P1-6, names the naming rules refuse: Open. The `VIRTIO_BLK_*`, `VIRTIO_RNG_*`, `VIRTIO_NET_*`
+  and `CMD_*` constants, `dev` and `func`, `cfg_type`, `CLASS_XHCI`, `pba_*`, `ISR`, `is_64` and
+  the `_REGISTER` suffixes keep their old spellings; the same provisional ruling and rename lane as P1-5.
+- P1-7, documentation that assumes the tree: Open. `#![allow(missing_docs)]` stands and doc
+  comments still cite nife paths and milestones; every public item needs a doc comment that cites
+  a specification.
+- P1-8, the MSI walk and the ceiling: Open. The MSI termination harness and its patch are in
+  place; the three capability walks are not yet one shared walk and no ceiling proof has been
+  attempted.
+- P2, `virtio_capabilities` ignores `cap_len`: Done,
+  [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2, `intx_interrupt_number` precondition: Open. The doc comment states no bus-0 precondition,
+  `intx_pin_through_bridge` does not exist, and `kernel/src/pci.rs` has no BUGS entry for it.
+- P2, `Bdf` fields unmasked: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2, `#![forbid(unsafe_code)]`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2, fuzz targets: Open. No target covers `mem32_window` or the walks; the opt-in waits for the
+  repository.
+- P2, stale patch headers: Open. Two patches still name `virtio_caps` and `msix_cap`, and their
+  headers name the old module path; regenerate them in nife.
+- P2, the proof table: Open. `notes/verification.md` and `parser-harnesses.md` still count four
+  harnesses against the crate's ten; the rows land in the move pull request.
+- P2, mutation survivors: Open. The baseline row carries counts only; the first run in the
+  repository exempts the 11 equivalent survivors.
+- Decision, the package name: Done, [#3588](https://github.com/nifeos/nife/pull/3588) (ruled
+  2026-11-14 UTC).
+- Decision, the crate moves before the bus server: Done,
+  [#3589](https://github.com/nifeos/nife/pull/3589) (maintainer, provisional, 2026-11-14 UTC;
+  nothing to build).
+- Follow-on, creating `nifeos/pci_configuration_space`: Open, and an open decision below.
+
+## Open decisions
+
+### Clearing the review, which approves the repository
+
+The crate decodes a PCI function's configuration space: its header, its base address registers,
+its capability list and the host bridge window from the device tree. The kernel and
+`driver_process_contract` link it today, and a bus server outside the kernel will link it later.
+Moving it into its own repository, `nifeos/pci_configuration_space`, is what lets those three
+consumers pin one released copy. Creating a public repository is an outward step, and the
+standing rule is that clearing a crate's review is what approves it.
+
+Every other crate that has moved or passed clearance had a review package under
+`notes/crate-reviews/`: a short record of the names, the identity and the gates, written for the
+clearance. This crate has none, so there is nothing yet to clear. The move itself also waits on
+P0-1, P0-2, P1-5 to P1-8 and the P2 move steps above.
+
+Recommendation: A.
+
+- A. A lane writes the review package once P0-1, P0-2 and P1-5 to P1-8 land; clearing that
+  package approves the repository.
+- B. Clear on this milestone alone, without a package, once the same items land.
+- C. Keep the crate in nife until the bus server of milestone 1064 exists, and clear both
+  together.
+
+Door: one-way. Others can see, fork, pin or cite a public repository the moment it exists.
+Renaming or deleting it later breaks whoever acted on it.
+
+Prior art: the rust-osdev `pci_types` crate lives in its own repository apart from any kernel,
+which is the shape A gives. Redox keeps PCI decoding inside its `pcid` daemon, which is the shape C
+keeps. nife differs from both by keeping every volatile access in the kernel and only pure decoding
+in the crate. In this tree, `designware_ethernet` and `e1000e` each moved after a cleared package.
+
+Blocks: the move, and with it any tag and the first publish.
 
 ## What was checked, and how
 
@@ -87,8 +163,7 @@ Why: `check / standalone` fails on no README, no license files, `license.workspa
 14 milestone citations in doc comments. `proofs / falsify` fails because the regenerated patch for
 `a_fresh_bus_queue_holds_the_root_and_nothing_else` is one context line short: its hunk header
 says seven old lines and the body holds six, so `git apply --check` reports a corrupt patch while
-`patch -p1 -F0` accepts it. The other seven regenerate cleanly, so the cause is in the
-regeneration for a hunk that ends on a blank line (unverified). The `Name:` blocks, patch paths
+`patch -p1 -F0` accepts it. The other seven regenerate cleanly. The `Name:` blocks, patch paths
 and record positions belong to the move script and are not items here.
 Fix: a manifest with `license = "MIT OR Apache-2.0"`, `rust-version = "1.88"` (the crate uses
 `as_chunks`, stable since 1.88, and edition 2024), `repository`, the two license files, and no
@@ -97,8 +172,9 @@ Building and testing, BUGS, Minimum Rust version, License) from the two existing
 tests. Replace every tree reference in a doc comment with the specification it stands for. Cite the
 PCI Local Bus Specification 3.0 for the header, capability list, MSI and MSI-X; PCI Express Base for ECAM;
 virtio 1.2 section 4.1.4 for the vendor capabilities; the device tree specification for `ranges`.
-Remove the four lines that name the architect. Before the repository's first CI run, fix
-`script/crate-move`'s patch regeneration, or hand-write a patch for that one harness.
+Remove the four lines that name the architect. `script/crate-move` keeps a hunk's trailing blank
+context line and checks each regenerated patch with `git apply --check`, so a fresh dry run shows
+whether every patch applies.
 Effort: M. Door: two-way.
 
 ### P1
@@ -111,7 +187,8 @@ The P2 items are in [the appendix](1105-pci-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-No one-way door is open. Everything else above the maintainer rules as provisional.
+Both decisions here have rulings, and each states the rule in force. Clearing the review is under
+"Open decisions" above; everything else the maintainer rules as provisional.
 
 ### The package name, because another author holds `pci` on crates.io
 
@@ -140,33 +217,22 @@ the bus server links it from its repository when it comes. The crate's manifest 
 `[dependencies]` table, only a test dependency on `device_tree_blob`, so it waits on none of
 milestones 317, 1062 and 1068. The move still waits on the package name above.
 
-## Ledger
-
-The ledger is in [the appendix](1105-pci-outside-review/ledger.md).
-
 ## Done when
 
 The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Done.** The package name and the import rule: the package is `pci_configuration_space`, in
-  `crates/pci_configuration_space`, and every consumer imports it under that name.
-- **Outstanding.** The other review items, which the maintainer rules as provisional and later
-  lanes build: the renames (items 5 and 6) and the move preparation (items 1, 2, 7 and the P2
-  patch, table and exemption items). Item 8 still lacks the one-walk factoring and the ceiling
-  proof, and `intx_pin_through_bridge` and the fuzz targets have not started. The ledger lists the
-  finished items.
-- **Outstanding.** Creating the repository under the new name, after the architect clears the
-  review.
+- **Outstanding.** Every finding marked Open under "Finding status" above, each with what
+  remains, checked against the crate's manifest, `src/lib.rs`, `tests/` and `falsifications/`.
+- **Outstanding.** Clearing the review, which approves the repository: the decision under "Open
+  decisions" above.
 
 ## BUGS
 
 - Item 3's size claim comes from reading the arithmetic, not from a device that answers a
   non-contiguous mask; the fix is cheap enough to land with its proof rather than after a
   reproduction.
-- The cause of the one corrupt regenerated patch (item 2) is in `script/crate-move` or in the
-  patch's shape, and this review did not find which. Seven of eight regenerate cleanly.
 - The review ran the template's name gates from the template's head; the release the move pins
   (`v7` today) runs fewer of them, so some of item 5 becomes red only at a later template bump.
 - No review package exists for this crate. This block reads as if one did; a package lane
@@ -178,4 +244,5 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 An outside review of `pci` before it leaves. It finds two blockers (the fixture tests that reach
 into nife, and the staged tree's red gates). It finds six items to land before the tag (BAR sizing
 that trusts the mask, BAR probing on any header, two name lists, documentation for a stranger, a
-missing MSI proof), and seven for later. It asks one decision: the package name, because another author holds `pci` on crates.io.
+missing MSI proof), and seven for later. The package name, because another author holds `pci` on
+crates.io, has a ruling; clearing the review, which approves the repository, stays open.

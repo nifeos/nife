@@ -28,9 +28,183 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, its naming and st
 cargo-mutants, Kani, cargo-fuzz and the crate's own `Blob` builder in `tests/hostile.rs`. No new
 tool.
 
-## Where this stands
+## Finding status
 
-The appendix lists what remains and what holds each: [where this stands](1085-device-tree-blob-outside-review/where-this-stands.md).
+The ids are the review's own; P0 and P1 are in [the
+appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
+items](1085-device-tree-blob-outside-review/later-items.md), and D1 to D6 under [Open
+decisions](#open-decisions).
+
+- P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
+  license and lints and reads `publish = false`; the README and both license files are missing. The
+  move writes them, and the item lapses if nife takes `dtoolkit` first.
+- P0-2, the documentation cites nife: Done, [#3612](https://github.com/nifeos/nife/pull/3612). Only
+  `Name:` blocks cite it, and the move strips them.
+- P0-3, 29 refused names: Done, [#3612](https://github.com/nifeos/nife/pull/3612). The spelled-out
+  and British-spelling checks refuse none over `src/` and `tests/`.
+- P1-1, `node_reg` does not stop at the first match: Done,
+  [#3559](https://github.com/nifeos/nife/pull/3559).
+- P1-2, reserved memory matched at any depth: Done,
+  [#3559](https://github.com/nifeos/nife/pull/3559).
+- P1-3, unchecked cursor arithmetic on 32-bit targets: Done,
+  [#3559](https://github.com/nifeos/nife/pull/3559).
+- P1-4, the walk is not confined to the structure block: Done,
+  [#3559](https://github.com/nifeos/nife/pull/3559).
+- P1-5, the fuzz target does not move with the crate: Open. The target is still in nife's `fuzz/`;
+  the move stages it in the new repository with `public-crash-inputs: false`.
+- P2-1 to P2-8, the error's shape, cells above two, `memory_regions` and a disabled node, the token
+  loop, the proofs, the reservation overflow, `from_ptr`'s read and `from_bytes`'s trim: Done,
+  [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-9, one example, and it does not run: Open. [#3612](https://github.com/nifeos/nife/pull/3612)
+  added the running doctests; the README's `## EXAMPLES` waits for P0-1.
+- P2-10 to P2-13, the depth counters, `MAXIMUM_DEPTH`, a trailing partial `reg` pair and private
+  names: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
+- P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
+- D1 to D6: Open. Built as recommended, awaiting ratification; each is a subsection under [Open
+  decisions](#open-decisions).
+- F-size, `Region::size` is a length with no unit: Open. `register_names` refuses it at `src/lib.rs`
+  line 26. It is two-way while unreleased, and the maintainer rules the rename provisionally; the
+  new name joins the set for ratification. The same check refuses four test names in
+  `tests/hostile.rs`, among them `SIZE_DT_STRUCT_AT` and `address_cells`, and `prose_acronyms` flags
+  UEFI, NUL, GIC, PL031, PLIC, PMIC and PMP. The move's gate pass clears these.
+- F-dtoolkit, the switch to `dtoolkit`: Open, under [Open
+  decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
+- F-package, the review package: Open. None exists under `notes/crate-reviews/`; it waits on the
+  decision to clear the move.
+- F-clearance, review clearance: Open, under [Open
+  decisions](#clear-the-move-or-hold-it-for-dtoolkit).
+- BUGS-239: Open. Milestone 239 (radon's device tree does not describe the TRNG) gives the depth
+  bound as a `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64. A lane corrects that milestone.
+
+## Open decisions
+
+Code carries the six name and surface decisions as recommended, each under a `Name: provisional`
+block. Each is two-way while the crate has no release and one-way at its first publish. The
+`dtoolkit` path makes it likely the crate never publishes, so every one of them waits on the last
+two decisions here.
+
+### Spell `prop` out as `property` (D1)
+
+Six public lookups abbreviated "property": `node_prop`, `node_props`, `node_prop_compatible`,
+`parent_prop_compatible`, `node_prop_inherited` and `phandle_prop`. The naming rules spell out a
+word that needs a decoder, and the Devicetree Specification says "property". `prop` is libfdt's C
+spelling (`fdt_getprop`).
+
+Recommendation: A.
+
+- A. Ratify as built: `node_property`, `node_properties`, `node_property_compatible`,
+  `parent_property_compatible`, `node_property_inherited` and `phandle_property`, with no alias.
+- B. Restore `prop`, the libfdt spelling.
+
+Door: one-way at publish. Prior art: the `fdt` crate and `dtoolkit` spell `property()` and
+`properties()`; libfdt abbreviates. nife differs from libfdt only where C's short names were a
+constraint. Example: `tree.node_property(b"chosen", b"stdout-path")`. Blocks: the tag.
+
+### Name the needle parameter `compatible` (D2)
+
+Three lookups took `compat: &[u8]`, and rustdoc shows parameters. Recommendation: A.
+
+- A. Ratify `compatible`, the property's own name, as built.
+- B. Restore `compat`.
+
+Door: two-way, since a parameter name is not part of the call. Prior art:
+`fdt::Fdt::find_compatible(with: ...)` and `dtoolkit`'s `is_compatible(&self, compatible: &str)`.
+Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`. Blocks: the tag.
+
+### Keep `reg` and `phandle` as the specification's terms (D3)
+
+`node_reg`, `node_reg_compatible` and `phandle_property` carry the specification's property names,
+which a reader searches for by that spelling. The rule for a term of art keeps it, opens the doc
+comment with the expansion and the source, and carries `#[doc(alias)]`. Recommendation: A.
+
+- A. Ratify as built: keep `reg` and `phandle`, with `#[doc(alias = "register regions")]` on the two
+  `reg` lookups.
+- B. Spell out, as `node_register_regions`.
+
+Door: one-way at publish. Prior art: the `fdt` crate's `NodeProperty::reg()` keeps the spelling.
+Example: a search for "register" or "reg" lands on `node_reg`. Blocks: the tag.
+
+### Add the unit to `MAXIMUM_TOTALSIZE` (D4)
+
+The name's ratification predates the rule that a limit ends with its unit, and the release review
+rechecks a ratified name. `totalsize` names the header field, so it keeps its spelling.
+Recommendation: A.
+
+- A. Ratify `MAXIMUM_TOTALSIZE_BYTES`, with `#[doc(alias = "MAX_FDT_SIZE")]`, as built.
+- B. Restore `MAXIMUM_TOTALSIZE`.
+
+Door: one-way at publish. Prior art: Linux's `MAX_FDT_SIZE`, which lends its value; `dtoolkit` has
+no ceiling. Example: `if total > MAXIMUM_TOTALSIZE_BYTES { return Err(Error::TooLarge(total)) }`.
+Blocks: the tag.
+
+### Name the reservation block `memory_reservations` (D5)
+
+Two lookups read two sources: the memory reservation block before the structure block, and the
+`/reserved-memory` node's children. `reserved_regions` beside `reserved_memory_regions` did not say
+which is which, and the kernel calls both. Recommendation: A.
+
+- A. Ratify `memory_reservations` for the block, the specification's term, as built;
+  `reserved_memory_regions` keeps its name.
+- B. Restore `reserved_regions`.
+
+Door: one-way at publish. Prior art: the `fdt` crate's `memory_reservations()`, libfdt's
+`fdt_get_mem_rsv`, and `dtoolkit`'s `reserved_memory()` for the node. Example:
+`tree.memory_reservations(&mut out)` beside `tree.reserved_memory_regions(&mut out)`. Blocks: the
+tag.
+
+### Keep `from_ptr` as the crate's one `unsafe` function (D6)
+
+`from_ptr` reads the header through a raw pointer, checks the magic, caps the size at 2 MiB and
+builds the slice. Sixteen call sites outside the crate use it: nine in `kernel/`, four in
+`uefi_loader/`, two in `machine_discovery` and one in a board-check tool. Because of it, the
+template refuses the public fuzz opt-in (P1-5). Recommendation: A, because the one place that knows
+how to trust a firmware pointer should be the parser.
+
+- A. Ratify as built: `from_ptr` stays, and the weekly public fuzz opt-in stays off. The tree's own
+  fuzz host keeps the target.
+- B. Add a safe `declared_size(header: &[u8; 8])`, leave the slice to each caller, forbid `unsafe`
+  in the crate and turn the public fuzz job on.
+
+Door: one-way at publish, since an `unsafe` constructor is a published contract. Prior art:
+`fdt::Fdt::from_ptr` and `dtoolkit::Fdt::from_raw` are `unsafe` constructors in the parser crate.
+nife differs in nothing here. Example: `unsafe { DeviceTreeBlob::from_ptr(pointer) }?` stays one
+line in the kernel. Blocks: the tag.
+
+### Take `dtoolkit` once a release carries the fixes
+
+Ruled 2026-11-11 (UTC): nife contributes five gaps to Google's `dtoolkit` and switches once a
+release ships them; the switch is its own ruling. Upstream merged [google/dtoolkit
+#108](https://github.com/google/dtoolkit/pull/108).
+[#111](https://github.com/google/dtoolkit/pull/111) and
+[#112](https://github.com/google/dtoolkit/pull/112) have changes requested; the answers went up on
+2026-11-16 and 2026-11-17, and both wait on the upstream maintainer. Release 0.5.0 (2026-11-03)
+carries neither. Until the switch, `device_tree_blob` boots every nife machine.
+
+Recommendation: A, the restrictive option, which keeps the kernel on the parser it proves today.
+
+- A. Wait for a release that carries #111 and #112, then rule the switch against the dependency bar.
+- B. Switch to 0.5.0 now with the two fixes vendored as patches.
+- C. Keep `device_tree_blob` and move it as its own crate.
+
+Door: one-way, a third-party dependency on the boot path. Prior art: Linux, U-Boot and FreeBSD each
+vendor libfdt (`scripts/dtc/libfdt`, `sys/contrib/libfdt`; recalled, unverified) rather than keep
+their own parser. nife differs by holding the dependency to its bar of proofs and three
+architectures. Example: under A, the kernel's `DeviceTreeBlob::from_ptr` becomes
+`dtoolkit::Fdt::from_raw`, and P0-1, P1-5 and the P2-9 README lapse. Blocks: whether the move
+happens at all.
+
+### Clear the move, or hold it for `dtoolkit`
+
+No review package exists, and clearance follows one. Recommendation: B, because every move item
+lapses if the switch comes first, and a package written first would go to waste.
+
+- A. Write the package now and clear the move after the ratification of D1 to D6.
+- B. Hold the package and the move until the `dtoolkit` decision; write the package only if C wins
+  there.
+
+Door: two-way until the repository exists. Prior art: `file_allocation_table` and `e1000e` cleared
+from a written package. Example: under B, F-package and P0-1 stay open with no lane. Blocks: the
+move, F-package, P0-1, P1-5 and P2-9.
 
 ## Goal
 
@@ -49,191 +223,10 @@ The comparison with nearby work is in [the appendix](1085-device-tree-blob-outsi
 
 ## The items
 
-Each item: what is wrong, where, why it matters, the fix, effort (S/M/L), and the door. A name,
-layout or dependency that the move publishes is a one-way door; everything else is two-way.
-
-### P0: the new repository's required checks are red on day one
-
-**P0-1. The manifest and the files do not stand alone.** `crates/device_tree_blob/Cargo.toml` lines 1 to 9.
-`standalone.py` reports: no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, `license.workspace =
-true` where the field must read `MIT OR Apache-2.0`, no `rust-version`, `publish = false`, and
-`lints.workspace = true`, which inherits a workspace that is not there. The template's `check /
-standalone` fails on each. The fix is the scaffold's: inline the license field and the lints
-(`unsafe_op_in_unsafe_fn`, `missing_docs`). Add `rust-version` (the crate uses `let` chains and
-`is_multiple_of`, so 1.88 is the floor; verify with `cargo +1.88 test`). Add `description`,
-`repository`, `keywords`, `categories` and `readme`, and copy both license files. Drop the allowlist
-comment and `publish = false` in the release that publishes. The template's README order (`#
-device_tree_blob`, `## EXAMPLES`, `## What is proven`, `## BUGS`, `## Minimum Rust version`, `##
-License`) is the README's shape. Effort S. Two-way.
-
-**P0-2. The documentation cites nife, and once quotes the architect.** DONE, except the `Name:` blocks, which the move commit strips. `src/lib.rs` lines 1 to 32 (the
-crate's opening paragraph points at `notes/boot-protocol.md`, `notes/device-tree.md` and a decision
-section, then carries a 22-line name-provenance block naming the architect three times).
-`src/lib.rs` lines 1020 to 1022 (a quotation of the architect's ruling, which no record may carry).
-`src/lib.rs` line 105, `:542`, `:1093-1095` (three more `Name:` blocks). `src/lib.rs` line 50, `:81`, `:1017`,
-`:1234` and `tests/hostile.rs` line 6, `:184`, `:874`, `:912`, `:1057`, `:1099`, `:1128` (milestone
-numbers, `kernel/src/memory.rs`, `notes/fuzzing.md`). All four files under `falsifications/` (each
-cites a milestone). `standalone.py` counts 19 milestone citations, 13 paths into the tree, six
-section citations, five provenance blocks and four lines naming the architect, and fails on each
-class. A stranger cannot follow any of them, and the externalized-crate rule is that a crate
-repository does not mention nife. The fix: say in the crate's own words what each citation was
-standing for. The 2 MiB ceiling is Linux's `MAX_FDT_SIZE`. The saturating `end` exists because a
-`pub` type with `pub` fields lets anyone build it. The one-cell rule follows Linux's
-`of_n_addr_cells`. Then move the provenance to the move commit's message, and delete the quotation.
-Effort M. Two-way.
-
-**P0-3. The naming gates refuse 29 names.** DONE (the binding is `tree`, and "honor" is spelled the American way). `spelled_out.py` refuses the binding `dtb` 28 times:
-`src/lib.rs` line 181 and 27 bindings across the three test files (the table replaces `dtb` with
-`device_tree_blob`; `tree` or `blob` reads better at a binding). `british_spelling.py` refuses
-`tests/hostile.rs` line 825 (the British form of "honors"). Both gates run at a ceiling of zero in the template. Effort S.
-Two-way.
-
-### P1: land before the tag
-
-**P1-1. `node_reg` does not stop at the first match; its documentation and its siblings say it
-does.** DONE (`node_reg_stops_at_the_first_matching_node_even_without_a_reg`). `src/lib.rs` lines 320 to 327 says "the `reg` regions of the first node whose name starts with
-`prefix`", and the comment at `:369-376` says "either way, stop looking", but the code clears
-`target_at` and keeps matching. Probe: a root with `uart@1` (no `reg`) then `uart@2` (`reg`) gives
-`node_reg(b"uart@")` one region, `uart@2`'s, while `node_prop(b"uart@", b"reg")` on the same blob
-gives `Ok(None)`, and `node_reg_compatible` documents "zero regions for a match with no `reg`"
-(`:430`). Two lookups with the same contract answer differently for the same tree, which is the kind
-of difference that hides until a board writes a disabled first instance. The callers in the tree
-pass `plic@`, `serial@10000000` and `smmuv3@`. On every fixture the first match carries `reg`, so this review found no caller that leans on the fall-through (unverified beyond the fixtures). The fix is to return
-`Ok(0)` at the matched node's `END_NODE`, as `node_prop` returns `Ok(None)`, and a hostile test of
-the shape above. Effort S. Two-way.
-
-**P1-2. `reserved_memory_regions` matches a `reserved-memory` node at any depth and decodes its
-children with the root's widths.** DONE (`a_reserved_memory_node_below_the_root_is_not_the_reservation_list`). `src/lib.rs` line 952 matches the name wherever it first appears;
-`:973-982` reads cell counts at depth 1 only, and `:932` documents "each depth-3 child's `reg`".
-Probe: a root declaring 1/1 with `/soc` declaring 2/2 and `/soc/reserved-memory/fw@80000000`
-carrying a 2/2 `reg` yields two regions, `{0, 2 GiB}` and `{0, 256 KiB}`, neither of which the tree
-names. The kernel reserves what this returns before it has a frame allocator; a wrong answer here is
-RAM the machine never gets. Linux resolves the path `/reserved-memory` and reads its children only
-(the memory scan it shares the file with reads root children only, which this review verified; the reserved-memory scan stays unverified). The fix: match at depth 2 only, as `memory_regions` and
-`initial_ramdisk` do, and a hostile test of the nested shape. Effort S. Two-way.
-
-**P1-3. Offset arithmetic has no check on a target whose `usize` is 32 bits.** DONE (the first of the two fixes: every cursor step is checked; `a_property_length_past_the_blob_is_truncated_in_every_lookup`, the helper tests in `src/lib.rs`, and the `skip_padded_never_wraps` harness with its falsification patch). The wrap itself needs a 32-bit `usize`, so no blob test on a 64-bit host fails before the fix. Every walker adds a
-blob-supplied `u32` to a cursor without a check. The sums are `at + align4(len)` (`src/lib.rs` line 285,
-`:382`, `:481`, `:604`, `:670`, `:756`, `:820`, `:906`, `:969`, `:1056`, `:1127`). Next come
-`self.off_strings + name_off` (`:287`, `:384`, `:483`, `:606`, `:672`, `:758`, `:823`, `:909`,
-`:971`, `:1059`, `:1131`) and `value_at + len` (`:500`, `:591`, `:615`, `:675`, `:742`, `:808`,
-`:914`, `:1135`). Last come `at + i * 4` (`:1212`) and `align4` itself (`:1227`, which overflows
-above `usize::MAX - 3`). With 64-bit `usize` none can overflow, because `len` and `name_off` are
-`u32` and `at` is below `isize::MAX`, so the kernel is sound on its three targets. On a 32-bit
-target a `len` of `0xffff_fffd` is an arithmetic overflow: a panic under overflow checks, a wrapped
-cursor without them (the wrapped `get` still fails as `Truncated`, so no out-of-bounds read follows
-either way). A published `no_std` parser that nothing stops a 32-bit kernel from taking should not
-panic on a hostile byte. `be32` and `be64` gained `checked_add` for this reason and proved total, and the walkers above them did not. Inferred from reading; the review host has no 32-bit target.
-The fix is one of two: route every cursor step through a
-`checked_add(...).ok_or(Error::Truncated)?`, or state `#[cfg(not(target_pointer_width = "64"))]
-compile_error!(...)` and say so in the README. The first is the honest one for a crate that claims
-`no_std`. The second is cheaper and closes the door on 32-bit users. Effort M for the first, S for
-the second. Two-way.
-
-**P1-4. The walk is never confined to the structure block.** DONE (`a_structure_block_without_its_end_token_is_truncated_not_read_into_the_strings`, `the_declared_structure_size_bounds_the_walk`, `a_blob_older_than_version_17_ends_its_structure_at_the_strings`). `from_bytes` (`src/lib.rs` lines 162 to 193)
-reads the magic, `totalsize`, `last_comp_version` and three offsets, and never reads `version`
-(offset 20), `size_dt_strings` (32) or `size_dt_struct` (36). A walker runs from `off_struct` until
-`FDT_END`, an unknown token or the end of the blob. A structure block that lacks `FDT_END` is
-therefore walked into the strings block. The probe replaced `FDT_END` with `FDT_NOP` and
-`memory_regions` answered `Err(BadToken(0x2361_6464))`, which is the ASCII of `#add` read as a
-token. The answer is an error, so nothing is unsound, but it is the wrong error, and a blob whose
-strings block happens to spell a valid token sequence reads as structure. libfdt's
-`fdt_check_full` and Linux refuse this; notes/device-tree.md records that this tree filed the same
-missing check against `dtoolkit`. The fix: read `size_dt_struct`, refuse `off_struct +
-size_dt_struct > totalsize` at `from_bytes`, and stop every walker at that end with `Truncated`. For
-a `version` below 17 fall back to `off_strings` as the end, as libfdt does. Effort S. Two-way.
-
-**P1-5. The fuzz target does not move with the crate, and the template will not run one.**
-`fuzz/fuzz_targets/device_tree_blob_walk.rs` lives in nife's fuzz workspace and exercises every
-public lookup; it is the target that found the out-of-bounds index `tests/hostile.rs` lines 141 to 179
-closes. The template's weekly fuzz job refuses the crash-input opt-in for a crate whose shipped
-source holds `unsafe` (`unsafe_scan.py` reports `src/lib.rs` line 139, `:142`, `:155`), so after the move
-the crate gets fuzzed only where someone runs it by hand. The fix: carry a `fuzz/` directory with the
-target and its dictionary into the new repository so the README's one command runs it. Keep the
-crate's weekly caller at `public-crash-inputs: false`, and let the tree's own fuzz host keep the
-target in its rotation. D6 decides whether the `unsafe` stays. Effort S. Two-way.
-
-### P2: later
-
-The P2 items are in [the appendix](1085-device-tree-blob-outside-review/later-items.md).
-
-## Decisions for the architect
-
-Names and a surface the move publishes. Each states the background first, then a recommendation,
-prior art, and an example. All six are two-way doors while the crate is unreleased, and the
-maintainer has decided them, provisionally; the decision follows the six.
-
-D1. `prop` in six public names. Background: `node_prop`, `node_props`, `node_prop_compatible`,
-`parent_prop_compatible`, `node_prop_inherited` and `phandle_prop` abbreviate "property", which is a
-word people say. design/naming.md refuses an abbreviation that needs a decoder and spells out every
-word in a name this tree authors. The Devicetree Specification's own word is "property"; `prop` is
-libfdt's C spelling (`fdt_getprop`). Recommendation: `node_property`, `node_properties`,
-`node_property_compatible`, `parent_property_compatible`, `node_property_inherited`,
-`phandle_property`, with no alias for the old spelling (the crate has no release). Prior art: the
-`fdt` crate and `dtoolkit` both spell `property()` and `properties()`; libfdt abbreviates. Example:
-`tree.node_property(b"chosen", b"stdout-path")`. Effort S; the eight packages in the tree that
-depend on the crate change with it.
-
-D2. `compat` as a public parameter. Background: `node_reg_compatible`, `node_prop_compatible`
-and `parent_prop_compatible` take `compat: &[u8]` (`src/lib.rs` line 432, `:527`, `:545`). The naming
-rules cover a function's parameters, and rustdoc shows them. Recommendation: `compatible`, the
-property's own name. Prior art: `fdt::Fdt::find_compatible(with: &[&str])`; `dtoolkit`'s
-`is_compatible(&self, compatible: &str)`. Example: `tree.node_reg_compatible(b"arm,pl031", &mut
-regions)` reads the same, and its signature now says what the needle is. Effort S.
-
-D3. `reg` stays, with its alias. Background: `node_reg`, `node_reg_compatible` and the private
-`decode_reg` carry `reg`, the property's name in the specification, which a reader searches for by
-that spelling. The rule for a specification's term of art is to keep it, open the doc comment
-with the expansion and the source, and carry `#[doc(alias)]`. Recommendation: keep `reg`, open each
-doc comment with "the `reg` property (Devicetree Specification)" and add
-`#[doc(alias = "register regions")]`; the same treatment for `phandle_prop`'s `phandle`. Prior art:
-the `fdt` crate's `NodeProperty::reg()` keeps the spelling; libfdt has no `reg` helper. Example: a
-search for "register" or "reg" lands on `node_reg`. Effort S.
-
-D4. `MAXIMUM_TOTALSIZE` against the units rule. Background: the name has a ratification. The later rule
-says a limit ends with its unit (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`), and a ratified name gets a recheck at its release review. `totalsize` names the header field in the
-specification, so it keeps its spelling inside the name. Recommendation: `MAXIMUM_TOTALSIZE_BYTES`,
-with `#[doc(alias = "MAX_FDT_SIZE")]` for the Linux constant it borrows its value from. Prior art:
-Linux `MAX_FDT_SIZE`; `dtoolkit` has no ceiling in the released version. Example: `if total >
-MAXIMUM_TOTALSIZE_BYTES { return Err(Error::TooLarge(total)) }`. Effort S.
-
-D5. Two names for two sources of reservations. Background: `reserved_regions` reads the memory
-reservation block (the fixed-layout list before the structure block) and `reserved_memory_regions`
-reads the `/reserved-memory` node's children. A stranger meeting the two names side by side cannot
-tell which is which, and the kernel calls both. Recommendation: `memory_reservations` for the block,
-the specification's own term ("memory reservation block"), and `reserved_memory_regions` unchanged
-for the node. Prior art: the `fdt` crate's `memory_reservations()`; libfdt's `fdt_get_mem_rsv`;
-`dtoolkit`'s `reserved_memory()` names the node. Example: `tree.memory_reservations(&mut out)`
-beside `tree.reserved_memory_regions(&mut out)`. Effort S.
-
-D6. Whether `from_ptr` stays in the crate. Background: `from_ptr` (`src/lib.rs` lines 139 to 157) is the
-crate's only `unsafe`: it reads the header through a raw pointer, checks the magic, caps the size at
-2 MiB and builds the slice. Ten call sites in the kernel and the loader use it. Because of it the
-template refuses the public fuzz opt-in (P1-5), and the crate cannot carry
-`#![forbid(unsafe_code)]`. Moving it out would spread the header-read-and-cap logic to two or more
-copies outside the crate, or add a safe `declared_size(header: &[u8; 8])` helper and leave the
-`unsafe` slice construction to each caller. Recommendation: keep `from_ptr`, keep the `unsafe` count
-at one function, and accept that the weekly public fuzz job does not run. The tree's own fuzz host
-keeps the target. The alternative is cleaner for the crate and worse for the system, since the one
-place that knows how to trust a firmware pointer should be the parser. Prior art:
-`fdt::Fdt::from_ptr` and `dtoolkit::Fdt::from_raw` are both `unsafe` constructors in the parser
-crate. Example: `unsafe { DeviceTreeBlob::from_ptr(pointer) }?` stays the kernel's one line. Effort
-none if kept.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: two-way doors while the crate is
-unreleased, which the architect may revisit. The path ruled for `dtoolkit` makes it likely that
-this crate is replaced after an upstream release and never published. D1: `node_property`,
-`node_properties`, `node_property_compatible`, `parent_property_compatible`,
-`node_property_inherited` and `phandle_property`, with no alias for the old spelling. D2: the
-parameter `compat` becomes `compatible`. D3: `reg` and `phandle` keep their spelling as the
-specification's terms; each doc comment opens with the expansion, and `node_reg` and
-`node_reg_compatible` carry `#[doc(alias = "register regions")]`. D4: `MAXIMUM_TOTALSIZE` becomes
-`MAXIMUM_TOTALSIZE_BYTES`, with `#[doc(alias = "MAX_FDT_SIZE")]`. D5: `reserved_regions` becomes
-`memory_reservations`; `reserved_memory_regions` keeps its name. D6: `from_ptr` stays as the crate's
-one `unsafe` function, and the public weekly fuzz opt-in stays off. The count in D6 is low: at
-HEAD, 16 call sites outside the crate name `DeviceTreeBlob::from_ptr`, 9 in `kernel/`, 4 in
-`uefi_loader/`, 2 in `machine_discovery` and 1 in a board-check tool. The renames are one lane, with
-the eight packages that depend on the crate; done-when's last line is the check.
+Each item states what is wrong, where, why it matters, the fix, effort (S/M/L), and the door. A
+name, layout or dependency that the move publishes is a one-way door; everything else is two-way.
+P0 and P1 are in [the appendix](1085-device-tree-blob-outside-review/before-the-tag.md), and P2 is
+in [the later items](1085-device-tree-blob-outside-review/later-items.md).
 
 ## Done when
 
@@ -241,13 +234,8 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 
 ## Follow-on
 
-- **Done.** P0-2, P0-3, P1-1 to P1-4 and P2-1 to P2-14 (P2-9's documentation half), carried by
-  pull request #3612 and the lanes before it, with the tests and harnesses each item names.
-- **Outstanding.** P0-1, P1-5 and the README half of P2-9, which wait for the move. Checked by
-  reading `crates/device_tree_blob`: its manifest still inherits the workspace's license and lints
-  and reads `publish = false`, and it holds no README, no license files and no `fuzz/` directory.
-- **Recorded.** Three findings with no other home, in this file's BUGS
-  (`design/roadmap/1085-device-tree-blob-outside-review.md`).
+- **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
+  half of P2-9, F-size, F-package and BUGS-239, and the eight open decisions.
 
 ## BUGS
 
@@ -261,10 +249,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
   zero, which is what the counts above assume.
 - If the ruling to take `dtoolkit` lands before this crate moves, P0-1, P1-5 and the README half
   of P2-9 lapse.
-- `register_names.py` still reports the public field `Region::size` (a length with no unit), a
-  rename for the move's naming review; `abbreviations.py` reports `formatter`, `core::fmt`'s word.
-- Milestone 239 (radon's device tree does not describe the TRNG) still gives the depth bound as a
-  `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64.
+- `abbreviations.py` reports `formatter`, `core::fmt`'s word.
 
 ## Index row
 
@@ -272,4 +257,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and six names go to the architect.
+that does not move. Fourteen smaller items follow, and eight decisions go to the architect.

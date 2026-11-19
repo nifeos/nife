@@ -35,9 +35,108 @@ this block, every operation's documentation states its argument word, its reply 
 frame carries in each direction. The repository's gates are green for the crate's own reasons. The
 proofs cover the one piece of logic the crate holds beyond the grants.
 
-## Where this stands
+## Finding status
 
-[The appendix](1108-socket-contract-outside-review/where-this-stands.md).
+The ids P0-1 to P2-11 are this review's items; PKG-1 to PKG-5 are the decisions of the review
+package, `notes/crate-reviews/socket-contract.md`.
+
+- P0-1, text and wire disagree on where a send's length travels: Done,
+  [#3517](https://github.com/nifeos/nife/pull/3517) (D1).
+- P0-2, the `publish` comment points outside: Open. The comment and `repository` are in place; the
+  new repository's caller passes `allow-unpublished` at the move.
+- P1-3, `ACCEPT` carries no peer: Done, [#3526](https://github.com/nifeos/nife/pull/3526), its
+  proof in [#3580](https://github.com/nifeos/nife/pull/3580) (D2).
+- P1-4, the reply vocabulary: Done, [#3517](https://github.com/nifeos/nife/pull/3517).
+- P1-5, the README against the scaffold: Open. The badges, the `rustup target add` line, the Kani
+  time and peak, the one-harness command, a falsify example and the undo remain, then a stranger
+  run; a move step.
+- P1-6, three equivalent mutants: Open. `.github/mutants-exempts` exists only in the new
+  repository; the move exempts them with the triage's reasons.
+- P2-7, the ephemeral cursor unproven: Done, [#3580](https://github.com/nifeos/nife/pull/3580) and
+  [#3610](https://github.com/nifeos/nife/pull/3610).
+- P2-8, offsets and lengths of mixed types: Open. `FRAME_BYTES` and the byte order are in place;
+  the offsets stay `u64` while `DATA_MAXIMUM` is `usize`, and one type waits on a change to
+  `user_mode_runtime`'s window API that no milestone holds.
+- P2-9, names: Open. `Ports::next`, `polled_wait::next` and, if `fixture` stays, `IN_MSG` and
+  `OUT_MSG` keep their spellings; two-way before the first tag, so the maintainer rules them
+  provisionally. `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC).
+- P2-10, inline "provisional" prose: Open. Seven doc comments in `src/lib.rs` still say it; the
+  move removes them with the `Name:` blocks.
+- P2-11, vocabulary undefined: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- D1, a send's length in the argument word: Done,
+  [#3517](https://github.com/nifeos/nife/pull/3517) (ruled 2026-11-11 UTC).
+- D2, the `ACCEPT` peer in the second reply word: Done,
+  [#3526](https://github.com/nifeos/nife/pull/3526) (ruled 2026-11-11 UTC).
+- PKG-1, `INTERFACE_ID` 19 and `VERSION` 1: Open, and an open decision below.
+- PKG-2, `fixture` moves to a crate that stays in nife: Open. `pub mod fixture` is still in the
+  crate; a two-way door the maintainer rules provisionally, then a lane moves it.
+- PKG-3, `ephemeral` and `polled_wait` move to the stack's own crate: Open. Both modules are still
+  in the crate; the same two-way ruling and move as PKG-2.
+- PKG-4, the package's names table: Open. Two-way before the first tag, ruled by the maintainer
+  with P2-9. The table's four `_OFFSET` rows give way to the family's `<FIELD>_OFFSET_BYTES`
+  (ruled 2026-11-14 UTC), which the crate already carries.
+- PKG-5, clearing the move with no tag and no publish: Open, and an open decision below.
+
+## Open decisions
+
+### The socket contract's identity: interface 19, version 1
+
+Every contract crate in this tree carries two numbers that a program checks when it links to the
+other side: an interface number that says which contract this is, and a version that says which
+revision of it. The socket contract is the agreement between the network stack and every program
+that opens a socket, including the standard library's platform layer, which copies this crate's
+source verbatim. Its numbers today are `INTERFACE_ID` 19, the row milestone 956 (the linked
+interfaces carry checkable versions) gives it, and `VERSION` 1. Both are provisional. No operation
+sends `VERSION` on the wire; the bind-time check that will read it belongs to milestone 1000
+(message contracts carry bind-time version checks).
+
+The package records no magic for the socket frame, as `entropy_contract` has none. Milestone 1017
+asks for a frozen identity before a contract leaves.
+
+Recommendation: A.
+
+- A. Freeze `INTERFACE_ID` 19 and `VERSION` 1, with no magic.
+- B. Freeze the same two numbers and add a magic word at the head of each frame.
+- C. Leave them provisional until milestone 1000 builds the bind-time check.
+
+Door: one-way. A second network stack, or a client built against the crate in its own repository,
+bakes both numbers in; changing either after that breaks every program built before.
+
+Prior art: Fuchsia gives each FIDL protocol a fixed name and each method an ordinal, and a peer
+that disagrees fails the call; Android's Binder sends an interface descriptor string with each
+transaction. nife differs by checking the pair once at bind time instead of on each message. In
+this tree, `entropy_contract` froze 12 and 1 with no magic, and `clock_contract` 8 and 1 with one.
+Example: a client linked against version 1 that meets a stack reporting version 2 refuses at bind
+time instead of misreading a reply word.
+
+Blocks: the move, and with it any tag and the first publish.
+
+### Clearing the move of `socket_contract`
+
+Clearing a crate's review package is what approves its repository, here
+`nifeos/socket_contract`. The package says the crate builds, proves and stands alone, and it
+recommends against clearing yet. It waits on the identity above, on where `fixture`, `ephemeral`
+and `polled_wait` live (PKG-2 and PKG-3), and on its names (P2-9 and PKG-4). The package also lists
+a maintainer step: the `std` farm must read the pinned checkout's source, or the move breaks the
+platform layer's build.
+
+Recommendation: A.
+
+- A. Clear once the architect freezes the identity and PKG-2, PKG-3, P2-9 and PKG-4 have
+  provisional rulings and have landed, with no tag and no publish.
+- B. Clear on the identity alone, and let the scope moves and renames land in the new repository.
+- C. Hold the clearance until the first publish is near, and move nothing before then.
+
+Door: one-way. A public repository is visible and forkable the moment it exists, and the eight
+path dependencies in nife switch to it.
+
+Prior art: smoltcp keeps its socket types and the stack in one crate, which is the shape C keeps;
+`embedded-nal` publishes the client-side traits alone, apart from any stack, which is closer to
+A. nife differs by keeping one contract crate that both sides link, with the stack's private logic
+outside it. In this tree, `block_roster_contract` and `entropy_contract` each moved after a cleared
+package.
+
+Blocks: the move, and with it any tag and the first publish.
 
 ## What was checked, and how
 
@@ -82,7 +181,7 @@ released, so its names are two-way today and the package's naming table stands.
    the implementation.
    Door: the text is two-way; the wire choice it records is one-way. Effort: S.
 
-2. The manifest's `publish` comment points outside the repository. LEFT: a move step; the manifest line is rewritten at the move.
+2. The manifest's `publish` comment points outside the repository. PARTIAL: the comment and `repository` are in place. LEFT: the caller's `allow-unpublished`, at the move.
    Finding: `Cargo.toml` line 11 reads `publish = false     # the default; the allowlist lint holds
    the exception (crates/publish-allowlist.txt)`. That file is nife's and will not be in the new
    repository; the crate is not on the allowlist today. The template's `check / standalone`
@@ -97,64 +196,7 @@ released, so its names are two-way today and the package's naming table stands.
 
 ### P1: before the first release
 
-3. `ACCEPT` carries no peer address, and the tree already lists it as a contract change. DONE (`a_peer_word_round_trips_and_refuses_what_no_stack_writes`, Kani `a_peer_word_round_trips_for_every_host_and_port`; the stack and std read the word; D2 ruled 2026-11-11).
-   Finding: `OPERATION_ACCEPT` answers `REP_OK` and the connection's capability. The stack's
-   second reply word is always 0 (`socket_server.rs`, every `reply(to, word, 0)`), and the new
-   connection has no frame yet to carry an address in. `notes/net.md` line 173 records that an
-   accepted stream reports its peer as `0.0.0.0:0`, and
-   `notes/bugs-without-milestones/network-stack.md` line 16 holds it as a contract change for the
-   architect. Every system in the prior-art table returns the peer with the accepted socket.
-   Evidence: `lib.rs` lines 67 to 70; `socket_server.rs` lines 188 to 196;
-   `components/src/socket_table.rs` line 125 (`hand_over`).
-   Change: item D2 below. If ruled, the crate gains `peer_word(ip, port)` and `word_peer(word)`
-   (names provisional) in the `lease` style, documented on `OPERATION_ACCEPT`, with a round-trip
-   test and a Kani harness over every address and port. The stack fills the second reply word in
-   `hand_over` for an accepted connection, and the std layer reads it for `peer_addr`.
-   Door: one-way (a wire format). Effort: M across crate, stack and std; S in the crate.
-
-4. The reply vocabulary leaves two outcomes a client must handle unstated. DONE (the operation, `REP_OK` and `CONNECT_*` docs state the replies; `RECEIVE` 0 is the end of the stream and a short `SEND` count means send the rest).
-   Finding: `REP_OK`'s documentation (`lib.rs` line 104) says "Non-negative is success, and
-   `RECEIVE` replies its length here instead". `SEND` also replies a length, and a short one when
-   smoltcp's buffer is full (`socket_operations.rs` lines 338 to 343: `sent as u64`). `RECEIVE`
-   replies 0 when the stream has closed or `recv_slice` fails (`socket_operations.rs` lines 94 to
-   97, `unwrap_or(0)`). Every in-tree client treats 0 as end of stream (`socket_test_client.rs` line
-   414, `components/src/domain_name_resolver.rs` line 400), yet the contract never says so. `OPERATION_ATTACH_PAGE_FRAME` sent as a `CALL` answers `REP_ERR`
-   (`socket_server.rs` line 197), which its documentation does not state.
-   Evidence: the lines above.
-   Change: one "Replies" section in the crate documentation and the README, listing per operation
-   the reply word's meaning, with 0 from `RECEIVE` as end of stream and a short count from `SEND`
-   as "send the rest". Lands with item 1.
-   Door: two-way (it documents the wire as spoken). Effort: S.
-
-5. The README does not yet meet the template's scaffold. LEFT: README scaffold sections belong to the move lane's staged tree.
-   Finding: against `scaffold/README-crate.md` the README lacks several things. It has no badge row
-   and no `rustup target add` line before the bare-metal build. It does not say how long `cargo
-   kani` takes or its peak memory. It does not say how to run one harness (`cargo kani --harness
-   verification::<name> --exact`). It has no worked falsification example with what the failing run
-   prints. It does not say what a passing run prints that looks alarming (the future-incompatibility
-   warning this review saw). It does not say how to check the minimum Rust version.
-   The "Each patch under `falsifications/` ... applying it with `patch -p1` from the repository
-   root" sentence is true for nife's paths; `script/crate-move` rewrites the paths, and the
-   sentence should name the command and the undo (`git checkout -- src`).
-   Evidence: `README.md` lines 55 to 72; the scaffold.
-   Change: the scaffold's sections, filled with this crate's figures. The stranger test then has
-   a README to fail against.
-   Door: two-way. Effort: S.
-
-6. The three surviving mutants need exemptions, or the release gate reads a red verdict. LEFT: `.github/mutants-exempts` exists only in the new repository.
-   Finding: the census records 93 mutants, 87 caught, 3 missed, 0 timeouts, 3 unviable, in three
-   consecutive weekly runs. The triage classifies all three as equivalent. Two are `|` to `^` in
-   `listen_grant` (line 147) and `udp_bind_grant` (line 195), where the operands have no bit in
-   common. One is `<` to `<=` in `polled_wait::next` (line 250), where both arms return
-   `Sleep(poll_microseconds)` at equality. The review package quotes an older row (84 tested, 80
-   caught, 2 missed). The template's `mutation` verdict judges survivors against
-   `.github/mutants-exempts`, and the release gate requires that verdict green.
-   Evidence: `notes/project-metrics/mutation-census.csv` rows for `socket_contract`;
-   `notes/project-metrics/mutation-triage.csv`; the template README's release path.
-   Change: at the move, write the three into `.github/mutants-exempts` with the triage's reasons.
-   For the two `|` sites, `+` would be a wrong fix (it reads as arithmetic where the word is a
-   bit field); the exemption is right. Update the package's figure to the census.
-   Door: two-way. Effort: S.
+The P1 items are in [the appendix](1108-socket-contract-outside-review/before-the-release.md).
 
 ### P2: for later
 
@@ -162,8 +204,9 @@ The P2 items are in [the appendix](1108-socket-contract-outside-review/later-ite
 
 ## Decisions for the architect
 
-Only one-way doors. The package's five decisions stand and are not repeated; these two are
-additions it did not raise.
+Only one-way doors, both ruled. The package's decisions 1 and 5 are under "Open decisions" above;
+its decisions 2, 3 and 4 are two-way doors the maintainer rules provisionally. These two are
+additions the package did not raise.
 
 ### D1. Where a send's length travels (ruled 2026-11-11 UTC as recommended)
 
@@ -229,13 +272,14 @@ The checks are in [the appendix](1108-socket-contract-outside-review/done-when.m
 
 ## Follow-on
 
-What is left: the move steps (items 2, 5, 6), the names (item 9), the inline provisional prose
-(item 10), and the part of item 8 marked LEFT in the appendix.
+What is left is under "Finding status" above.
 
 - **Milestone 1017.** The crate moves in its order, and the move lane takes items 2, 5, 6 and 10.
 - **Outstanding.** Item 8's single offset type, which waits on the window API's offset type.
   Item 7's loop proof is bounded at four candidates, as the appendix says.
-- **Refused.** Nothing here renames; item 9 waits for the naming pass.
+- **Outstanding.** Item 9's names and the package's decisions 2 to 4, which the maintainer rules
+  provisionally, checked against `crates/socket_contract/src/lib.rs`.
+- **Outstanding.** The identity values and the clearance, under "Open decisions" above.
 
 ## Index row
 

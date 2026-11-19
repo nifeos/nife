@@ -29,17 +29,151 @@ one-way when somebody outside this repository acts on it after the move or the r
 every public name is two-way in fact and one-way in intent, because the first publish freezes it;
 the items say which.
 
-## Where this stands
+## Finding status
 
-Finished: the review fixes that need no ruling (item 5's private parts and most prose, items 8, 12's assertion, 14, 16's wording and 17) landed in #3566, and #3589 records the maintainer's provisional rulings on D1 and D2.
+Every item not Done blocks the first crates.io publish, which waits until every outside-review
+milestone reaches delivery.
 
-- Item 4 (verdict names): ruled as D1, not built; a lane.
-- Item 5 (prose spellings): partly done; five British spellings and a doc-example `pa` remain; a lane.
-- Items 1, 5, 12, 13 (review package, public names): not built; a lane writes the package, then decision for calef on each name.
-- Item 2 (order of leaving, D3): open; decision for calef.
-- Item 10 (scope): ruled as D2; the README sentence waits on the move.
-- Items 3, 6, 7, 9 (stand-alone text, design record, manifest, mutation run): the move, which waits on D3, on `intrusive_queue` leaving, and on review clearance from calef.
-- Items 11, 12 iterator, 15, 16 diagnostic structs (maintainer options): two-way; a lane, mostly after the move.
+- P0-1, no review package: Open. `notes/crate-reviews/` has none for this crate; a lane writes it
+  once the order of leaving has its ruling.
+- P0-2, the one dependency has not left and appears in no plan: Open. Calef's (see "`intrusive_queue`
+  leaves first" below).
+- P0-3, the crate does not stand alone: Open. The move strips the ten `Name:` lines and the
+  citations, and gives the manifest its own `license`, `lints` and `rust-version` in place of
+  `license.workspace` and the allowlist comment.
+- P1-4, a public type named `Send`: Ruled (maintainer, provisional, 2026-11-14 UTC,
+  [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `src/lib.rs` line 37 exports
+  `Send` and `Receive`, and `Signal`, `Wait` and `Arm` keep their names.
+- P1-5a, gate names in the private parts: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-5b, prose spellings: Open. The British forms of signaling (`src/timer.rs` line 13), signaled
+  (`src/notification.rs` lines 58 and 328) and modeled (line 246), `queueing` (`src/futex.rs`
+  line 5, `src/rendezvous.rs` line 38), two patch headers and the doc example's `pa`
+  (`src/futex.rs` lines 27 and 33) remain. A lane fixes them.
+- P1-5c, gate names in the public parts: Open. Calef's (see "Two public names the gates refuse"
+  below).
+- P1-6, the design record does not travel: Open. The move writes `docs/design.md` and the README
+  in place of the links to `notes/inter-process-communication.md`.
+- P1-7, manifest metadata: Open. The move writes the description, repository, keywords and
+  categories rows.
+- P1-8, a harness recorded as unfalsifiable: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-9, the mutation record is stale: Open. A full run in the new repository, with the three
+  survivors triaged.
+- P2-10, a timer and a futex table in a crate named for inter-process communication: Ruled
+  (maintainer, provisional, 2026-11-14 UTC, [#3589](https://github.com/nifeos/nife/pull/3589)).
+  Not built: the README's first line, which states the shared reason, comes with the move.
+- P2-11, the one-queue invariant could hold by construction: Open. Two-way, and the maintainer
+  rules it after the move; it changes the proofs.
+- P2-12a, `Futexes<T, 0>` panics: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-12b, `Futexes` as a stranger reads it: Open. The names are calef's (see "The futex table's
+  names" below); the iterator lands in `intrusive_queue` and is the maintainer's.
+- P2-13, `Timer::deadline` answers with a sentinel: Open. `deadline()` returns `u64`
+  (`src/timer.rs` line 112); `Option<u64>` is two-way until the publish, and the maintainer rules
+  it.
+- P2-14, the pending count's saturation has no host test: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-15, five copies of the test node: Open. One shared node, after the move.
+- P2-16a, documentation details: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-16b, tuples from `debug_counts`: Open. `src/rendezvous.rs` line 202 and
+  `src/notification.rs` line 163 return tuples; a lane names them as structs.
+- P2-17, two Kani toolchain warnings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Follow-on, the externalization list: Open. `crates/externalization-list.txt` does not name this
+  crate.
+- Follow-on, review clearance and the repository: Open. Calef's (see "Review clearance and the
+  repository" below).
+
+## Open decisions
+
+### `intrusive_queue` leaves first
+
+Background. Every public signature here exposes `Unqueued<T>` and `Node` from `intrusive_queue`, a
+small crate in nife that no extraction plan names. Milestone 1097 (`intrusive_queue`: what an
+outside maintainer would fix before its first release) reviews it. A crate that has left may not
+depend back into nife, and a published crate cannot depend on an unpublished one, so this crate
+cannot leave before `intrusive_queue` does, or with it.
+
+Recommendation: A. `intrusive_queue` gets its own package and repository first; this crate then
+pins it by git revision on that repository's `main`, and milestone 1017's list records the pair in
+that order.
+
+- A. `intrusive_queue` first, then this crate.
+- B. Both in one lane as two repositories: one round trip fewer, two packages to rule at once.
+- C. Fold the queue into this crate: the kernel's run queue would carry a second copy of the type.
+
+Door: one-way: the order sets which repository pins which.
+
+Prior art. In this tree `generational_table` left before the kernel pinned it, and the kernel pins
+`extensible_host_controller_interface` by revision. Where nife differs: nothing; this is the same
+step one level down. Example: after the move the manifest line reads
+`intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "<full sha>" }`.
+
+Blocks: the move.
+
+### Two public names the gates refuse
+
+Background. The template's name gates run at zero tolerance in a crate's own repository. Two
+public names fail them. `Rendezvous::one_queue_invariant` returns `bool` and does not read as a
+question, where its twin `Notification::invariant_holds` does. `futex::Key::address` is a virtual
+address, and the naming rule says which kind of address a name holds. Both are provisional, and the
+first publish fixes them.
+
+Recommendation: A, `one_queue_invariant_holds` and `Key::virtual_address`.
+
+- A. `one_queue_invariant_holds` and `Key::virtual_address`.
+- B. As A, with `Key::address` kept and a gate exemption: the field is the only address in the
+  type.
+- C. `is_one_queue` for the method, shorter and still a question.
+
+Door: one-way at the first publish; two-way until then.
+
+Prior art. The standard library writes its predicates as questions (`is_empty`, `contains`);
+Linux's `futex_key` names the field `address` inside a union keyed by `private` or `shared`. Where
+nife differs: the address kind is in the name. Example: `Key { space: 7, virtual_address: 0x1000 }`
+in the crate's doc example.
+
+Blocks: the tag.
+
+### The futex table's names
+
+Background. `Futexes<T, const B: usize>` is a table of futex wait queues hashed by a `Key`. Four
+of its names are provisional, and a stranger meets each in the first screen: the plural type name,
+the const parameter `B`, the count method `queued()` and the field `Key::space`, which names an
+address space by a generic word.
+
+Recommendation: A, `FutexTable<T, const BUCKETS: usize>`, `len()` and `Key::address_space`.
+
+- A. `FutexTable`, `BUCKETS`, `len` and `address_space`.
+- B. Keep `Futexes` and rename only `B`, `queued` and `space`.
+- C. Keep all four; the documentation explains them.
+
+Door: one-way at the first publish; two-way until then.
+
+Prior art. Linux names the structure `futex_hash_bucket` and its table `futex_queues`;
+`parking_lot_core` keeps a `HashTable` of buckets. The standard library's count is `len`. Where
+nife differs: nothing; A follows them. Example: `let table: FutexTable<Thread, 64> =
+FutexTable::new();` and `table.len()`.
+
+Blocks: the first publish.
+
+### Review clearance and the repository
+
+Background. Clearing a crate review is the go to create its repository under nifeos. This crate
+has no review package yet (P0-1), and it waits on `intrusive_queue` leaving first.
+
+Recommendation: A, clear once the package exists, `intrusive_queue` has left and the names above
+have their rulings, with no tag and no publication.
+
+- A. Clear after those three.
+- B. Clear together with `intrusive_queue`, so both repositories open in one lane.
+- C. Hold until the P1 items land as well.
+
+Door: one-way: a repository that exists has a name others link to.
+
+Prior art. In this tree `generational_table`, `block_roster` and `file_allocation_table` each moved
+on a cleared review with no tag. Where nife differs: nothing outside nife links the crate. Example:
+under A, the kernel's manifest switches from a path to a pinned revision of
+`nifeos/inter_process_communication` in the move's pin pull request.
+
+Blocks: the move.
 
 ## Goal
 
@@ -118,99 +252,20 @@ The P2 items are in [the appendix](1095-inter-process-communication-outside-revi
 
 ## Decisions for the architect
 
-Each is one decision, with the background first and the recommendation before the alternatives.
-D1 and D2 are decided, provisionally.
+The rules in force, with their background and prior art, are in
+[the appendix](1095-inter-process-communication-outside-review/ruled-decisions.md):
 
-### D1. The names of the verdict enums
+- D1, the verdict enums: the maintainer's provisional ruling of 2026-11-14 (UTC). `SendVerdict`,
+  `ReceiveVerdict`, `SignalVerdict`, `WaitVerdict` and `ArmVerdict`, with no alias.
+- D2, the timer and the futex table: the maintainer's provisional ruling of 2026-11-14 (UTC). The
+  four modules stay together, and a publish review settles the scope if the crate goes to one.
 
-Background: the crate hands back what an operation decided as an enum per operation: `Send`,
-`Receive`, `Signal`, `Wait`, `Arm`. The prose in the same files calls these "verdicts". `Send` at
-the crate root is also the name of the standard library's marker trait, in the same namespace, so
-a user who imports it loses the trait in that module (item 4). Once published, a rename is a
-breaking change for every user; before, it costs one commit in the kernel.
-
-Recommendation: `SendVerdict`, `ReceiveVerdict`, `SignalVerdict`, `WaitVerdict`, `ArmVerdict`.
-One suffix across the four modules, the word the documentation already uses, and no collision
-with anything in `core`.
-
-Alternatives: `Sent`/`Received` (shorter, but a past participle reads as a fact, and `Blocked` names
-nothing that anyone sent). Keep `Send` and tell users to import by path (the footgun stays for a
-glob import). `SendOutcome` (fine, but the tree says "verdict" everywhere it explains these).
-
-Prior art: Rust's `std::cmp::Ordering`, `std::ops::ControlFlow` and `std::task::Poll` are the
-standard library's verdict enums, each a noun that names the kind of answer; none shares a name
-with a trait. seL4's equivalents are not types at all (a C function's side effects).
-
-Concrete example: today, `use inter_process_communication::{Rendezvous, Send}; fn park<T: Send>()`
-fails to compile with "expected trait, found enum `Send`". With the recommendation it compiles,
-and `match ep.send(me) { SendVerdict::Blocked => ..., }` reads as the documentation already does.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The five take the `Verdict` suffix: `SendVerdict`,
-`ReceiveVerdict`, `SignalVerdict`, `WaitVerdict` and `ArmVerdict`, with no alias. Item 4 is the
-work.
-
-### D2. Whether the timer and the futex table stay in this crate
-
-Background: the crate has its ratified name. Its contents grew: the rendezvous and the notification
-are inter-process communication; the timer and the futex wait queues are not, and arrived later
-because they share the token discipline and the proof shape. While nife is the only user, moving
-a module out is a two-way door. The first publish makes the crate's contents a claim the name
-makes to strangers (item 10).
-
-Recommendation: keep the four together through the move, publish nothing (publishing stays on hold in
-any case), and settle the scope at the publish review with the measured demand in hand. State the
-shared reason in the README's first line so a stranger is not surprised. If the scope is then
-split, `timer` and `futex` leave as their own crates before the first tag, which nobody outside
-nife will have pinned.
-
-Alternatives: split now (two more repositories to review and move before this one can; the
-timer is 150 lines); rename the crate to say what it holds (reopens a ratified name for a
-question the publish review can answer later).
-
-Prior art: seL4 keeps endpoints and notifications in one kernel module family and timers in
-another; Linux keeps `futex` and `hrtimer` apart; Zircon keeps channels, futexes and timers as
-separate dispatcher types. No kernel bundles the four under a communication name; all four bundle
-them under one lock, which is what this crate mirrors.
-
-Concrete example: a crates.io search for "futex wait queue" finds `parking_lot_core` and
-`futex`, never a crate named for inter-process communication. A search for "rendezvous endpoint
-seL4" would find this one, and `timer::NEVER` in the sidebar would surprise the reader.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
-revisit. The four modules stay together, and the scope is settled at the publish review if this
-crate ever goes to one. Nothing is published and nothing outside nife links the crate.
-
-### D3. The order of leaving: `intrusive_queue` first
-
-Background: every public signature here exposes `Unqueued<T>` and `Node` from `intrusive_queue`,
-which has not left and appears in no plan (item 2). A crate that has left may not reference back
-into nife. Pinning a path dependency is not an option, and a published crate cannot depend on
-an unpublished one.
-
-Recommendation: `intrusive_queue` gets its own package and repository first, this crate pins it
-by git revision on `main`, and milestone 1017's list (or a sibling) records the pair in that order.
-`intrusive_queue` is small, its names stand ratified, it has one harness with a falsification, and
-no dependency, so its review is the shorter one.
-
-Alternatives: move both in one lane as two repositories (saves a round trip; two packages to
-rule on at once, which the one-decision-at-a-time rule discourages). Inline the queue into this
-crate (duplicates the kernel's run-queue type, which is the thing the crate exists not to do).
-
-Prior art: `generational_table` left before the kernel pinned it; `extensible_host_controller_interface`
-left and the kernel pins its revision. The same step, one level down.
-
-Concrete example: after the move, the manifest line reads
-`intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "<full sha>" }`,
-the form the kernel already uses for the two crates that left.
+The order of leaving is calef's and is under "Open decisions" above.
 
 ## Follow-on
 
-- **Outstanding.** The order of leaving (D3), which the architect rules, and the verdict names and scope (D1, D2), ruled provisionally and not yet built. Checked: the ledger's LEFT rows for items 2, 4, 10, 5, 12, 13 and 16 are these.
-- **Outstanding.** The move's own work: the review package, the stand-alone text, the manifest rows, `docs/design.md` with a README, and one full mutation run (items 1, 3, 6, 7, 9). Checked: each needs the new repository.
-- **Outstanding.** Options for the maintainer after the move: the one-queue layout, one shared test node and an iterator on `intrusive_queue` (items 11, 12, 15). Checked: each changes proofs or another crate.
-
-[The ledger](1095-inter-process-communication-outside-review/ledger.md) lists each item.
+- **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
+  the crate's sources on main.
 
 ## Done when
 
@@ -237,5 +292,5 @@ An outside review of `inter_process_communication` before it leaves. Three items
 move (no review package, a dependency that has not left, text that does not stand alone). Six
 land before the first tag (a type named `Send`, five gate findings, the design record, manifest
 metadata, a harness whose unfalsifiable claim is false, a stale mutation record). Eight wait for
-later. Three decisions go to the architect, on the verdict names, the crate's scope and the order
-in which it and `intrusive_queue` leave.
+later. The verdict names and the crate's scope are ruled provisionally; the order in which it and
+`intrusive_queue` leave, three public names and review clearance are calef's.

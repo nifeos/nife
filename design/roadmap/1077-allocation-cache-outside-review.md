@@ -46,8 +46,6 @@ outside the repository acts on it after the first tag (a public name, a publishe
 release, so a public rename is one-way only from the tag on; the items say "one-way at the tag"
 for those.
 
-The ledger of what landed and what is left is in [the appendix](1077-allocation-cache-outside-review/ledger.md).
-
 ### P0: blocks the move
 
 1. The manifest and the files do not stand alone.
@@ -94,8 +92,9 @@ The P1 items are in [the appendix](1077-allocation-cache-outside-review/before-t
 ## Decisions for the architect
 
 Each is plain background first, the recommendation, then prior art and one example. The architect
-ruled decision 1. Decisions 2 and 3 are two-way before the first tag, and the maintainer has decided them,
-provisionally.
+ruled decision 1. Decision 3 is two-way before the first tag, and the maintainer has decided it,
+provisionally. Decision 2, the names, waits for the architect's ratification under
+[Open decisions](#open-decisions).
 
 ### Decision 1: Whether the crate gets a repository of its own
 
@@ -114,36 +113,6 @@ shared applies.
 Example: `nifeos/runtime` holds `allocation_cache/` beside `user_mode_runtime/` in one workspace;
 nife's `xtask` depends on it by `git` and `rev` on that repository, and `cargo xtask std-src` reads
 the copied file from Cargo's checkout.
-
-### Decision 2: The crate name and the five constant names
-
-Background: the crate name is provisional and unruled. It names what the thing holds (cached
-allocations) rather than its owner, so it does not say "thread", which is right for an algorithm
-that never reads an owner id. The word `cache` is a generic one in an operating system (a page
-cache, a CPU cache, a disk block cache), which the naming rules warn against; here `allocation_`
-qualifies it. The constants are in item 7.
-
-Recommendation: keep `allocation_cache`. The nearest alternatives are worse: `free_block_cache`
-reads as a disk block cache, `thread_cache` names the owner, `allocation_stash` trades a word
-every allocator paper uses for one none does. For the constants: `GRID_BYTES`,
-`MAXIMUM_CLASS_BYTES` (for `LARGEST`), `BLOCKS_PER_CLASS` (for `DEPTH`), `BATCH_BLOCKS`,
-`MAXIMUM_CACHED_BYTES`; `CLASSES` stays. For the methods: `push` and `pop` in place of `put` and `take`. Std and `heapless` spell a bounded stack that way, and `put`'s `Result<(), T>` on a full class is `heapless::Vec::push`'s shape. `drain` either returns an iterator of `(Class,
-NonNull<u8>)` or takes the name `give_back_all` so it does not claim std's meaning. The glibc
-spellings `tcache_put` and `tcache_get` go in the documentation as the terms a reader searches for.
-
-Prior art: glibc's `tcache_count` and `tcache_max_bytes`, jemalloc's `ncached_max` and
-`tcache_max`, TCMalloc's `max_length` and `num_objects_to_move`: each names the thing counted or
-the unit. None of the three names its grid, because none has a fixed one.
-
-Example: `let class = class(48, 8).unwrap(); cache.push(class, block)?; let again =
-cache.pop(class);` and `const _: () = assert!(size_of::<Block>() > MAXIMUM_CLASS_BYTES);` in the
-consumer's thread block.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. The crate keeps the name `allocation_cache`. `GRID` becomes `GRID_BYTES`, `LARGEST`
-`MAXIMUM_CLASS_BYTES`, `DEPTH` `BLOCKS_PER_CLASS`, `BATCH` `BATCH_BLOCKS` and `MOST_CACHED_BYTES`
-`MAXIMUM_CACHED_BYTES`; `CLASSES` stays. `put` becomes `push` and `take` becomes `pop`. `drain`
-takes a closure today, so it becomes `give_back_all`, unless the rename lane makes it return an
-iterator, in which case it keeps `drain` with std's meaning. Item 7 is the work.
 
 ### Decision 3: A `Class` newtype in the public signatures
 
@@ -178,23 +147,94 @@ consumer.
 
 The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.md).
 
-## Where this stands
+## Finding status
 
-Finished: the in-tree items (#3565, #3660), with `Class`, `push` and `pop`,
-`MAXIMUM_CLASS_BYTES`, `give_back_all` and five falsifications, and decision 1, that the crate
-moves with the runtime package (#3670). Decisions 2 and 3 are provisional maintainer rulings.
+- P0-1, manifest and files stand alone: Open. The README, both licenses, a literal license, lints
+  and `rust-version` are in the tree; the `repository` and `documentation` fields and the strip of
+  the `Name:` blocks come with the `runtime` package's move.
+- P0-2, documentation names no consumer: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3660](https://github.com/nifeos/nife/pull/3660).
+- P0-3, a workspace member depends on the crate: Open. When the `runtime` package moves, `xtask`
+  takes a `git` dependency on the crate at that repository's tag so `cargo xtask std-src` still
+  finds it; today only the workspace member list names the crate.
+- P1-4, arithmetic edges on bare `usize`: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3660](https://github.com/nifeos/nife/pull/3660). `class` compares before it rounds, and the
+  `Class` newtype of decision 3 replaces the bare index.
+- P1-5, zeroed is empty: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P1-6, the owner's rule beyond `push`: Done, [#3660](https://github.com/nifeos/nife/pull/3660).
+- P1-7, constant and method names: Done, [#3660](https://github.com/nifeos/nife/pull/3660). The
+  names are provisional; their ratification is the open decision below.
+- P1-8, proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3660](https://github.com/nifeos/nife/pull/3660). Five harnesses, each with a falsification
+  patch.
+- P1-9, `Free` alignment asserted: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P2-10, the `talc` patch left behind: Open. The new repository's weekly Miri run confirms the
+  unpatched `talc` 5.1.1; if it turns red, the host test pins a fixed `talc` or swaps in an arena of
+  its own.
+- P2-11, `proofs` on an empty harness set: Open. Item 8 gives the crate five harnesses; the move
+  lane still sees the `proofs` workflow green on its first pull request.
+- P2-12, `Debug` and a leak-noticing `Drop`: Done,
+  [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3660](https://github.com/nifeos/nife/pull/3660).
+- P2-13, constants not tunable: Done, [#3565](https://github.com/nifeos/nife/pull/3565). A `BUGS`
+  line says the constants do not move.
+- P2-14, cross-owner free in the crate's `BUGS`: Done,
+  [#3565](https://github.com/nifeos/nife/pull/3565).
+- P2-15, the `uncached` test name: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Decision 1, own repository: Done (ruled 2026-11-16 UTC: the crate moves with the `runtime`
+  package), [#3670](https://github.com/nifeos/nife/pull/3670). No milestone schedules the `runtime`
+  package's move, which needs its own review clearance; nifeos/runtime does not exist.
+- Decision 2, crate, constant and method names: Open. Built as the maintainer's provisional ruling
+  of 2026-11-14 (UTC); the ratification is under Open decisions.
+- Decision 3, a `Class` newtype: Done, [#3660](https://github.com/nifeos/nife/pull/3660). The name
+  `Class` goes with decision 2.
 
-- Items 1 (the repository fields), 3 and 10, and item 11's confirmation, wait for the runtime
-  package's move; nifeos/runtime does not exist. Blocker: other, the runtime package's move.
+## Open decisions
 
-Nothing here needs calef.
+### Ratify the crate name, the constant and method names, and `Class`
+
+Background: `allocation_cache` is a small `no_std` crate. Each owner (a thread, in nife's `std`
+port) keeps one in front of a locked heap: a bounded stash of freed small blocks, sorted by size
+class, so most allocations and frees never take the heap's lock. Its public names are the crate
+name; the constants `GRID_BYTES`, `MAXIMUM_CLASS_BYTES`, `BLOCKS_PER_CLASS`, `BATCH_BLOCKS` and
+`MAXIMUM_CACHED_BYTES` (and `CLASSES`, unchanged); the methods `push`, `pop` and `give_back_all`;
+and the type `Class`, the size class that `class` mints.
+
+The maintainer chose these on 2026-11-14 (UTC), provisionally, and the tree builds them. No
+architect has ruled on any of them. While the crate is unpublished, a rename is one pass over the
+crate and its one consumer, the `std` overlay. After the first publish it breaks every user.
+
+The reasons: the crate names what it holds rather than its owner, so it does not say "thread". A
+constant names its unit or the thing it counts. `push` and `pop` are std's and `heapless`'s
+spellings for a bounded stack, with the same `Result<(), T>` on a full class. `give_back_all`
+avoids `drain`, because std's `drain` returns an iterator and this one takes a closure.
+
+Recommendation: A.
+
+- A. Ratify every name as built.
+- B. Ratify the constants, the methods and `Class`, and rename the crate. The nearest alternatives
+  are worse: `free_block_cache` reads as a disk block cache, `thread_cache` names the owner, and
+  `allocation_stash` trades a word every allocator paper uses for one none does.
+- C. Make `give_back_all` return an iterator and call it `drain`, with std's meaning, and ratify
+  the rest as built.
+
+Door: two-way today, one-way at the first publish, when users start to write the names.
+
+Prior art: glibc's `tcache_count` and `tcache_max_bytes`, jemalloc's `ncached_max` and
+`tcache_max`, TCMalloc's `max_length` and `num_objects_to_move` each name the thing counted or the
+unit. None names a grid, because none has a fixed one; this crate does, so `GRID_BYTES` names it.
+`slotmap` and `thunderdome` mint their keys as types, as `class` mints `Class`. The glibc spellings
+`tcache_put` and `tcache_get` are `doc(alias)` search terms on `push` and `pop`. Example:
+`let class = class(48, 8).unwrap(); unsafe { cache.push(class, block) }?; let again =
+cache.pop(class);`.
+
+What it blocks: the first publish. This milestone's done-when also asks for the names to be
+ratified before the move.
 
 ## Follow-on
 
-- **Outstanding.** The move's items 1 (the repository fields), 3, 10 and 11, which wait for the
-  `runtime` package's move, since the architect ruled decision 1. Decisions 2 and 3 are built provisionally in the tree: `Class`, `MAXIMUM_CLASS_BYTES` and
-  `push` exist, and the crate has five harnesses, the three models of `push` and `pop` among them.
-  If decision 2 or 3 is ruled otherwise, items 7 and 4 are redone in one pass.
+- **Outstanding.** The Open lines under [Finding status](#finding-status) and the items under
+  [Open decisions](#open-decisions).
 
 ## BUGS
 

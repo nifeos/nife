@@ -23,15 +23,99 @@ puts this crate last in its step and says it leaves like any leaf.
 Reuse: `script/crate-move`, the template `nifeos/crate-workflows` and its scaffold, Kani,
 cargo-mutants, cargo-fuzz. No new tool.
 
-## Where this stands
+## Finding status
 
-Finished: decision 1 (the owner string and section keep their bytes behind a `// wire literal` marker) and decision 3 (the crate name) are ruled and built in #3575. Items 6, 7, 8, 9's private part, 12, 13 and 14 landed in #3566.
+Every item not Done blocks the first crates.io publish, which waits until every outside-review
+milestone reaches delivery.
 
-- Items 9 public part and 10 (four renames): ruled provisionally as decision 2, not built; a lane.
-- Ratifying the twenty public names: open; decision for calef, which `script/crate-standalone` step 0 needs.
-- Item 4 (prose naming nife): ruled; the rewording lands with item 3 in the move.
-- Items 1, 2, 3, 5, 11, 15 (manifest, README and licenses, citations and passives, fuzz opt-in, mutation exemptions): the move. It waits on the renames, the ratification, review clearance from calef, and the three crates ahead of it in step 3 of milestone 1017.
-- The `NIFE_INTERFACES_NOTE` static (BUGS): two-way; a lane, nobody has built it.
+- Item 1, the manifest does not stand alone: Open. `Cargo.toml` still inherits `license` and
+  `[lints]` and names a milestone; the move writes the crate's own rows.
+- Item 2, no README and no license files: Open. The move stages the scaffold's README and the two
+  license files.
+- Item 3, the documentation cites this tree: Open. The module doc still speaks of the progenitor, a
+  package and nife (`src/lib.rs` lines 3, 4, 15, 16, 41, 47 and 364); the move rewrites it.
+- Item 4, the owner string `nife` is the wire format: Open. The bytes keep their spelling behind the
+  `// wire literal` marker (decision 1, [#3575](https://github.com/nifeos/nife/pull/3575)); the
+  prose lines that name nife reword with item 3.
+- Item 5, passive voice over the template's ceiling: Open. The template's gate runs in the moved
+  repository, and the rewrite lands with item 3.
+- Item 6, two acronyms unexpanded: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 7, a stranger cannot place the note: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 8, the only example does not compile: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 9, private lengths carry a unit: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 9, public lengths carry a unit: Ruled (decision 2, maintainer, provisional, 2026-11-14 UTC,
+  [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `INTERFACE_RECORD` (`src/lib.rs`
+  line 111), `interfaces_len` (line 127) and `interfaces_note_len` (line 323) keep their names.
+- Item 10, `Declared` names a state: Ruled (decision 2, maintainer, provisional, 2026-11-14 UTC,
+  [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `struct Declared` (`src/lib.rs`
+  line 117) is not yet `DeclaredInterface`.
+- Item 11, no fuzz target: Open. The opt-in is a per-repository choice, off by default, made at the
+  move.
+- Item 12, the proof runs one direction: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 13, a test name the abbreviation report flags: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 14, `iter` yields by value: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 15, the triaged timeouts travel nowhere: Open. The move carries the three rows into
+  `.github/mutants-exempts`.
+- Decision 1, the owner string: Done, [#3575](https://github.com/nifeos/nife/pull/3575).
+- Decision 2, ratifying the twenty public names: Open. Calef's (see "Ratify the twenty public
+  names" below).
+- Decision 3, the crate name: Done, ruled 2026-11-14 UTC with nothing to build; the crate's `Name:`
+  block records it ([#3589](https://github.com/nifeos/nife/pull/3589)).
+- BUGS, the `NIFE_INTERFACES_NOTE` static: Open. `src/lib.rs` line 381; two-way, so the maintainer
+  rules its new name provisionally and a lane renames it before the move.
+- Follow-on, review clearance and the repository: Open. Calef's (see "Review clearance and the
+  repository" below).
+
+## Open decisions
+
+### Ratify the twenty public names
+
+Background. Every `Name:` block in the crate reads `provisional`, and `script/crate-standalone`
+step 0 refuses to move a crate whose names are not ratified. The names become one-way at the first
+tag that nife pins, because every program built against the crate spells them. The maintainer
+ruled four renames provisionally (decision 2 in
+[the appendix](1096-interfaces-note-outside-review/ruled-decisions.md)): `INTERFACE_RECORD_BYTES`,
+`descriptor_bytes`, `note_bytes` and `DeclaredInterface`. Sixteen names keep their spelling. Only
+calef ratifies.
+
+Recommendation: A, ratify the twenty as decision 2 leaves them, once the four renames land.
+
+- A. Ratify the twenty with the four renames, no alias of the old spellings.
+- B. Ratify the sixteen now and the four once they land.
+- C. Send one or more back, named, for a new provisional spelling.
+
+Door: one-way at the tag; ratifying is what lets the move begin.
+
+Prior art. `goblin::elf::note::Note` and `object::read::elf::Note` name the record for what it is,
+and std names an element count `len` and a byte count `size_of`. Where nife differs: the unit is in
+the name and not only in a doc comment. Example: under A,
+`let bytes: [u8; descriptor_bytes(3)] = encode_interfaces(&list);` reads as 44 bytes for three
+records.
+
+Blocks: the move.
+
+### Review clearance and the repository
+
+Background. Clearing a crate review is the go to create its repository under nifeos. This crate
+has no review package in `notes/crate-reviews/`; this milestone is its review. It leaves last in
+step 3 of milestone 1017 (the contract crates leave in this order), after the three crates ahead of
+it.
+
+Recommendation: A, clear once the four renames land and calef ratifies the names, with no tag and
+no publication.
+
+- A. Clear after the renames and the ratification.
+- B. Clear now, and let the move wait for them.
+- C. Hold until a dry run also stages the move's own items (1 to 5, 11, 15).
+
+Door: one-way: a repository that exists has a name others link to.
+
+Prior art. In this tree `generational_table`, `block_roster` and `file_allocation_table` each moved
+on a cleared review with no tag. Where nife differs: nothing outside nife links the crate. Example:
+under A, `nifeos/interfaces_note` opens with the README of item 2, and nife pins it by revision.
+
+Blocks: the move.
 
 ## Goal
 
@@ -69,8 +153,9 @@ Each item: what, where, why, the fix, effort (S/M/L), door.
    `:326` and `:492` say `nife`. Two of them (`:15`, `:32`) are prose and reword. The other five are
    the owner string `b"nife"`, the section `.note.nife.manifest` and the test that asserts those
    bytes; they are the format itself. The move check and `lint_externalized_crates.py` both fail
-   them, and no rewording removes them. Fix: decision 1 below, then one pull request that applies
-   the ruled form. S once ruled. One-way, because the owner string is in every built program.
+   them, and no rewording removes them. Fix: decision 1 keeps the bytes behind a `// wire literal`
+   marker, which #3575 applied; the two prose lines reword with item 3. S. One-way, because the
+   owner string is in every built program.
 
 ### P1: before the tag
 
@@ -134,85 +219,16 @@ Each item: what, where, why, the fix, effort (S/M/L), door.
 
 ## Decisions for the architect
 
-Each: background, the recommendation first, prior art, an example. The public names are decided,
-provisionally; the other two are one-way doors.
+The rules in force, with their background and prior art, are in
+[the appendix](1096-interfaces-note-outside-review/ruled-decisions.md):
 
-### The owner string `nife` in a crate that may not say `nife`
-
-Background. Every nife manifest note has the owner `nife`, and the macro places the note in
-`.note.nife.manifest`. The standing rule says a crate on the externalization list names neither nife
-nor its programs, and `lint_externalized_crates.py` and `script/crate-move` both fail on the word.
-Five of this crate's nine hits are the owner constant, the section name and a test asserting the
-bytes. `capability_manifest_note`, on the same list with 37 hits, has the same constant. Changing
-the owner changes the bytes of every built program and every reader; it is the one-way side.
-
-Ruled 2026-11-14 UTC (decision D1): the owner and the section name keep their bytes, for both note
-crates. Bytes that already sit on a wire or in built programs may spell the word after the crate
-leaves; the exception covers wire literals only (owner strings, section names, magic values and the
-tests that assert those bytes). The lint and the move check accept a line that ends with the
-comment `// wire literal` (provisional spelling), refuse an unmarked mention, and the lint prints
-every marked line. Prose around them says "the owner string" and does not repeat it. Reversing the
-exemption costs one pull request; reversing a renamed owner costs a format version.
-
-Prior art. The owner of an ELF note is the vendor's name and nothing else: `GNU` for
-`.note.gnu.build-id` and `.note.ABI-tag`, `FreeBSD` for `.note.tag`, `NetBSD` for
-`.note.netbsd.ident`, `Android` for `.note.android.ident`. Every third-party parser (readelf,
-`object`, `goblin`) carries those strings as literals. Where nife differs: no other project forbids
-its own name in its own format's crate; the rule exists so the crate stands alone, and a wire
-constant does not stop it standing alone.
-
-Example. After the ruling, `src/lib.rs` keeps `const OWNER: &[u8] = b"nife"; // wire literal` and the module doc reads "the owner string names the operating system that reads
-the note".
-
-### The public names, ratified before the move
-
-Background. Every `Name:` block in the crate reads `provisional`, and `script/crate-standalone`
-step 0 refuses a crate whose names are not ratified. The names are one-way at the tag that nife
-pins. Twenty public names: `Error` (`NoVersion`, `UnknownVersion`, `WrongLength`, `BadField`),
-`INTERFACES`, `INTERFACE_ID`, `INTERFACES_VERSION`, `MAXIMUM_INTERFACES`, `INTERFACE_RECORD`,
-`Declared` (`id`, `version`), `interfaces_len`, `encode_interfaces`, `Interfaces` (`len`,
-`is_empty`, `iter`, `version_of`, `check_served`), `decode_interfaces`, `Refusal` (`interface`,
-`declared`, `served`), `interfaces_note_len`, `InterfacesNote` (`of`), `carry_interfaces!`.
-
-Recommendation. Ratify them as they stand except four: `INTERFACE_RECORD` becomes
-`INTERFACE_RECORD_BYTES`, `interfaces_len` becomes `descriptor_bytes`, `interfaces_note_len`
-becomes `note_bytes`, and `Declared` becomes `DeclaredInterface`. The first three follow the unit
-rule; the fourth gives a noun. `len`, `is_empty` and `iter` keep std's spelling. `version_of`
-stays, since std's `get` would promise the record and this returns one field of it.
-
-Prior art. std names a byte count `size_of` and an element count `len`; the unit rule's own example
-is `MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`. `goblin::elf::note::Note` and
-`object::read::elf::Note` name the record for what it is. Where nife differs: the unit is in the
-name, not in a doc comment.
-
-Example. `let bytes: [u8; descriptor_bytes(3)] = encode_interfaces(&list);` reads as 44 bytes for
-three records; `interfaces_len(3)` reads as a count of three.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The recommendation holds: sixteen keep their spelling, and
-`INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface` replace the
-four, with no alias of the old spellings. The review package lists the twenty as provisional;
-ratifying them stays the architect's. Items 9 and 10 are the work.
-
-### The crate name
-
-Ruled 2026-11-14 UTC (decision 3, option A): the crate and repository name `interfaces_note` is
-ratified, and the crate's `Name:` block says so. The crates.io name is asked again with the
-naming-layers decision.
-
-Background. The repository `nifeos/interfaces_note` takes the name at creation, which is the
-one-way step; the crates.io name waits on the publishing hold.
-
-Recommendation. Keep `interfaces_note`. It follows the sibling `capability_manifest_note` (what the
-note holds, then `_note`) and the ruled type name `INTERFACES`. The alternative, if the name should
-say what the records are, is `interface_versions_note`.
-
-Prior art. Note crates and types take their names from the note's type: `abi-tag`, `build-id`,
-`gnu-property`. Linux names the module table that is this crate's closest relative `__versions`.
-Where nife differs: the `_note` suffix says the carrier, which the alternatives above do not.
-
-Example. The README's first line under either name: "An ELF note that lists the interface versions
-a program was built against, and a decoder that refuses every other spelling of that list."
+- Decision 1, the owner string: ruled 2026-11-14 (UTC). The owner and the section name keep their
+  bytes, each line marked `// wire literal`, and prose says "the owner string".
+- Decision 2, the public names: the maintainer's provisional ruling of 2026-11-14 (UTC).
+  `INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface`, with no
+  alias; sixteen names keep their spelling.
+- Decision 3, the crate name: ruled 2026-11-14 (UTC). The crate and repository take
+  `interfaces_note`.
 
 ## Prior art
 
@@ -220,10 +236,8 @@ The comparison with nearby work is in [the appendix](1096-interfaces-note-outsid
 
 ## Follow-on
 
-- **Outstanding.** The public names: decision 2's renames, not yet built, and the ratification of the twenty public names, which the architect rules. Checked: ledger rows 9 (public lengths) and 10.
-- **Outstanding.** The move's own work: manifest rows, README and license files, the citation rewrite with the passive-voice pass, the fuzz opt-in and the carried mutation exemptions (items 1, 2, 3, 5, 11, 15). Checked: each needs the moved repository or the template's gates.
-
-[The ledger](1096-interfaces-note-outside-review/ledger.md) lists each item with its state.
+- **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
+  the crate's sources on main.
 
 ## Done when
 
@@ -246,4 +260,7 @@ The checks are in [the appendix](1096-interfaces-note-outside-review/done-when.m
 
 ## Index row
 
-An outside review of `interfaces_note` before its move. Four manifest and text findings fail the move's own dry run, and one of them (the owner string `nife`) needs a ruling. Six items come before the tag (prose ceilings, a usable README, runnable examples, unit-bearing names). Five wait for later (a fuzz target, a second proof direction, a test name, an iterator note and the triaged timeouts).
+An outside review of `interfaces_note` before its move. Eight findings are done. The owner string
+keeps its bytes behind a marker, and calef ratified the crate name. The maintainer ruled four
+renames provisionally, and no lane has built them. The move's own work remains: the manifest, README, citations, prose,
+fuzz opt-in and mutation exemptions. Ratifying the public names and review clearance are calef's.

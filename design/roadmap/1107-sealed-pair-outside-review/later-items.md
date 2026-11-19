@@ -4,7 +4,7 @@ An appendix to [the milestone](../1107-sealed-pair-outside-review.md).
 
 ## P2: later
 
-11. The table check hashes an entry the kernel and the progenitor never see, and skips one they LEFT: needs an `nifefs` change; the three facts are in the crate's `BUGS`.
+11. The table check hashes an entry the kernel and the progenitor never see, and skips one they DONE by the item's own alternative: the three facts are in the crate's `BUGS`.
     never read.
     Finding: `inspect_table` walks `fs.entries()` and reads each by name with `fs.read(name)`,
     which returns the first entry of that name. `nifefs::write_image` does not refuse duplicate

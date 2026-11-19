@@ -41,8 +41,6 @@ outside the repository acts on it after the first tag (a public name, a publishe
 Line numbers are from `crates/address_space_layout/src/lib.rs` at `137639a3` unless a path says
 otherwise.
 
-The ledger of what landed and what is left is in [the appendix](1076-address-space-map-outside-review/ledger.md).
-
 ### P0: blocks the move
 
 1. The host test reads a file outside the crate.
@@ -110,9 +108,10 @@ The comparison with nearby work is in [the appendix](1076-address-space-map-outs
 
 ## Decisions for the architect
 
-The crate's name and the address and length constants are public names that become the
-repository's, crates.io's or every caller's at the first tag. The whole-window check is a two-way
-door before the first tag, and the maintainer has decided it, provisionally.
+The architect ruled the crate's name. The whole-window check is the maintainer's provisional
+ruling, a two-way door before the first tag. The constants of item 7 are a two-way door the
+maintainer rules provisionally, and the finding status says so. The decision still open is under
+"Open decisions" below.
 
 ### The crate's name
 
@@ -121,28 +120,6 @@ package name, with no `package =` rename and no `doc(alias)` of the earlier spel
 force: nife's vocabulary rule sets `map` aside where the kernel uses it as a verb, and "layout" is
 the word the crate already uses for itself. This tree carries the rename, and the crate's `Name:`
 block says ratified.
-
-### The address and length constants
-
-Background. `PAGE` holds a length in bytes; six constants and three enum fields hold virtual
-addresses (item 7). nife's naming rules say a length carries its unit and an address says `virtual`
-or `physical`, and the page-contract crates already spell `PAGE_BYTES` and `PAGE_VIRTUAL_ADDRESS`.
-The template's gate does not catch these, so nothing mechanical forces the change; the rule does.
-Ninety call sites in nife; after the first tag, every one is a semver break for an outside caller.
-
-Recommendation: rename in the move pull request: `PAGE` to `PAGE_BYTES`; `IMAGE_BASE`,
-`STACK_TOP`, `STACK_TOP_PAGE`, `CURRENT_CPU_PAGE` and `CODE_MODEL_CEILING` to the same stem plus
-`_VIRTUAL_ADDRESS`; `ImagePlacement`'s `image_start`, `image_end`, `stack_base` to
-`image_start_virtual_address`, `image_end_virtual_address`, `stack_base_virtual_address`. The
-alternative, ratifying the short forms as they stand, is cheaper now and reopens at the release
-review by nife's own rule, so it saves nothing. A middle course, renaming the constants and leaving
-the fields, splits one rule across one enum and is not recommended.
-
-Prior art: FreeBSD's `USRSTACK` and `SHAREDPAGE` carry no unit or kind, and a reader needs the header's comments. `vm-memory` types the kind instead (`GuestAddress`). This crate's bare `u64` constants cannot do that without a wrapper type, a larger change than a name.
-
-Concrete example: `kernel/src/user.rs` line 21, `pub const USER_STACK_TOP: u64 =
-address_space_layout::STACK_TOP;`, becomes `... = address_space_layout::STACK_TOP_VIRTUAL_ADDRESS;`,
-and a reader of the kernel knows it is an address without opening the crate.
 
 ### A whole-window check, and its name
 
@@ -175,33 +152,95 @@ change. The name `window` ships provisional. Item 9 is the work.
 
 The checks are in [the appendix](1076-address-space-map-outside-review/done-when.md).
 
-## Where this stands
+## Finding status
 
-Finished: the rename to `address_space_layout` (#3593), the provisional rulings (#3589) and items
-1, 3, 4, 6, 8, 9, 10, 12, 14 and 16 with part of 5 (#3659).
+- Item 1, the host test reads a file outside the crate: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 2, falsification records carry nife's tree paths: Open. `helpers/crate_move.py` rewrites
+  the nine records and regenerates every patch in crate-relative form at the move.
+- Item 3, the manifest does not stand alone: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 4, documentation addressed to a reader inside nife: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 5, no README, licenses, changelog or scaffold: Open.
+  [#3659](https://github.com/nifeos/nife/pull/3659) added the README; the license files,
+  `CHANGELOG.md`, `_typos.toml`, caller workflows, `.github` files and the recorded stranger run
+  come with the move.
+- Item 6, parameter and helper names the template refuses: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 7 and decision 2, the address and length constants: Open. Two-way until the first tag, so
+  the maintainer rules it provisionally. The recommendation is `PAGE_BYTES` and the
+  `_VIRTUAL_ADDRESS` stem on the five address constants and the three `ImagePlacement` fields,
+  renamed in the move pull request. calef ratifies the names in the crate's review package.
+- Item 8 and decision N1, the crate's name: Done, [#3593](https://github.com/nifeos/nife/pull/3593).
+- Item 9 and decision 3, a whole-window check: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
+  The name `window` stays the maintainer's provisional ruling until the review package.
+- Item 10, `const` assertions under Kani's toolchain: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 11, the surviving mutant's exemption: Open. One `.github/mutants-exempts` line with the
+  equivalence reason, at the move.
+- Item 12, the layout is the same in every process: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 13, the template's `register_names.py` misreads harness names: Open. The template still
+  reads `address` in a function name as an address, so the crate's `check / standalone` is red on
+  its first run until nifeos/crate-workflows fixes it.
+- Item 14, `BANDS` fixes the band count in its type: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 15, a caller can build `Band` inverted: Open. Two-way, so the maintainer rules the
+  constructor's name provisionally (`Band::new`, asserting `start < end` and page alignment), and
+  the review package carries it.
+- Item 16, `#![forbid(unsafe_code)]`: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 17, nife's checks that walk `crates/` lose this crate: Open. Two-way, so the maintainer rules
+  provisionally on making `LOW_HALF_SPLIT_SHIFTS` public for the `page_tables` test; the
+  declarations check also has to read the pinned checkout.
+- Item 18, milestone 1017's stale blocker row: Open. The row that says the `link.ld` test must move
+  is stale, and the lane that owns milestone 1017 drops it.
+- nife's pins: Open. All twenty-eight manifests move to one `rev` in one pull request after the
+  move, with a dry run of `cargo xtask std-src` first.
+- The move: Open. It waits for the review package and its clearance.
+- Publishing: Open. No first publish happens until the last outside-review milestone closes
+  (ruled 2026-11-18 UTC).
 
-- Decision 2, the constants: `PAGE`, `IMAGE_BASE` and `STACK_TOP` are unchanged, and item 7 waits
-  on it. Blocker: decision for calef.
-- Items 15 (`Band::new`) and 17 (`LOW_HALF_SPLIT_SHIFTS`) are new names. Blocker: decision for
-  calef.
-- Items 2, 11 and the rest of 5 belong to the move. Blocker: other, the move.
-- Item 13 is the template's to fix. Blocker: unverified.
-- Item 18 belongs to milestone 1017. Blocker: other, milestone 1017.
-- The move needs a review package and its clearance; no repository exists. Blocker: decision for
-  calef, after a package lane.
+## Open decisions
+
+### Clearing the review package
+
+Background. Before a crate leaves this tree, calef reads its code and its review package and
+clears it; the clearing is also the approval to create its repository. This crate fixes where every
+program's image, stack, heap and service windows sit in its address space, and the kernel, the
+program builder and the runtime all read it. It has no review package yet. A lane writes one that
+lists every public name with its state, including the provisional names of items 7, 9, 15 and 17.
+This decision is the clearing of that package once it exists.
+
+Recommendation: A.
+
+- A. Clear the review once the package lands, which approves creating the repository and moving
+  the crate.
+- B. Clear it with named changes to the provisional names, which land in the move pull request.
+- C. Send the package back, naming what to change first.
+
+Door: one-way. A public repository is an outward step, and after the first tag every band and name
+in the crate is what an outside caller builds against.
+
+Prior art. FreeBSD fixes its user address space in machine headers (`USRSTACK`, `SHAREDPAGE`),
+kept in the kernel's own tree. nife differs in that the layout leaves
+the kernel's tree as a crate of its own, pinned by commit, with the compiler checking each window
+against its band. Example: `block_roster_contract` had its clearance on 2026-11-09 (UTC) and now
+lives in a repository of its own, which nife pins at the commit of a pre-release tag.
+
+Blocks: the move, and through it the tag and the first publish.
 
 ## Follow-on
 
 - **Done.** The crate's own name, `address_space_layout`. Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16,
   and the README of item 5, are done in this tree: the crate has `window` (provisional) and a
   manifest that stands alone.
-- **Outstanding.** Decision 2 and with it item 7; items 15 and 17, each a new public name; and the
-  move's items 2, 5 (the rest of the scaffold), 11 and 13, with item 18 left to block 1017.
+- **Outstanding.** Item 7 and items 15 and 17, each a provisional public name for the review
+  package; the move's items 2, 5 (the rest of the scaffold), 11 and 13, with item 18 left to 1017.
 
 ## BUGS
 
-- `Band::new` (item 15) and a public `LOW_HALF_SPLIT_SHIFTS` (item 17) wait for an architect to name
-  them; nothing here builds either.
+- Nothing here builds `Band::new` (item 15) or a public `LOW_HALF_SPLIT_SHIFTS` (item 17); the
+  maintainer names them provisionally and the review package carries them.
 - Item 13 is the template's to fix, and until it lands the crate's `check / standalone` is red on
   the first run for a reason no change here removes.
 - The 1.88 floor is the lowest installed toolchain that builds the crate (1.85 fails on
@@ -213,4 +252,4 @@ Finished: the rename to `address_space_layout` (#3593), the provisional rulings 
 
 ## Index row
 
-An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. It leaves two names for the architect: the address and length constants, and a whole-window check. The crate's own name has its ruling and its rename.
+An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. The crate's own name has its ruling and its rename. The constants and the whole-window check carry provisional names, and the review package waits for its clearance.

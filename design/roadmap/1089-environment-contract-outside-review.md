@@ -24,18 +24,96 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-sta
 `script/crate-move`, Kani with the falsification-patch shape `block_roster_contract` carries,
 cargo-mutants. No new tool.
 
-## Where this stands
+## Finding status
 
-The appendix lists what remains and what holds each: [where this stands](1089-environment-contract-outside-review/where-this-stands.md).
+One line per finding, in the review's order: items 1 to 8 in [the before-the-move
+appendix](1089-environment-contract-outside-review/before-the-move.md), items 9 to 12 in [the
+later-items appendix](1089-environment-contract-outside-review/later-items.md), then the decisions
+and the release steps.
+
+- Item 1 (P0), the reader panics on an oversized length byte: Done,
+  [#3529](https://github.com/nifeos/nife/pull/3529).
+  `a_length_past_its_field_reads_that_field_as_absent` holds it.
+- Item 2 (P1), the closed domain holds on the writer only: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566). Each accessor answers only a member of its
+  key's domain.
+- Item 3 (P1), the family and rule names: Done, [#3726](https://github.com/nifeos/nife/pull/3726).
+  `PAGE_CONTENT_BYTES`, `ConfigurationPage` and `virtual_address`, provisional until the review.
+- Item 4 (P1), the abbreviated accessors: Done, [#3726](https://github.com/nifeos/nife/pull/3726).
+  `time_zone`, `locale`, `terminal_type`, `is_known_*` and `Unknown*`, each accessor with its POSIX
+  alias, provisional until the review.
+- Item 5 (P1), no Kani proof: Open. Kani proves `field_bytes_never_panics_for_any_length_byte`, with
+  a falsification patch; the round-trip and domain-member harnesses each ran past 25 minutes under
+  Kani and return only with the text scan bounded or the shape split, each with its patch.
+- Item 6 (P1), the crate does not stand alone: Open. The manifest still inherits `license` and
+  `lints` and has no `rust-version`, there is no README or license file, and `src/lib.rs` cites
+  §111, §46 (thin primitives, whole subsystems) and `notes/env-config.md`. All of it is the move's
+  work, with a README that says fuzzing stays off because the crate has `unsafe`.
+- Item 7 (P1), the identity is provisional and unpinned: Done,
+  [#3585](https://github.com/nifeos/nife/pull/3585). `the_frozen_identity_and_widths_are_pinned`
+  asserts the literals and that `MAGIC[7]` is `b'0' + VERSION`, as a test assertion rather than the
+  `const` assertion the item asked for.
+- Item 8 (P1), truncation writes a plausible wrong value: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566). `const` assertions hold every domain member to
+  its field, `write_field` asserts, and the private names spell their words out.
+- Item 9 (P2), `Refused` lacks `Display` and `Error`: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 10 (P2), five documentation sentences: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 11 (P2), a safe reader over borrowed bytes: Open. Only `pub const unsafe fn new` exists; the
+  safe reader is a new public name and an additive two-way door, which the maintainer rules
+  provisionally.
+- Item 12 (P2), the curated lists have no growth path: Open. The crate's `BUGS` states the policy
+  ([#3566](https://github.com/nifeos/nife/pull/3566)); the README's row comes with item 6.
+- Decision, the identity: Done, [#3585](https://github.com/nifeos/nife/pull/3585). Ruled
+  2026-11-14 UTC.
+- Decision, the accessor names: Done, [#3726](https://github.com/nifeos/nife/pull/3726). Maintainer
+  ruling, provisional, 2026-11-14 UTC.
+- Review package: Open. `notes/crate-reviews/` has no `environment-contract.md`; it comes before
+  the move and carries the name draft.
+- Review clearance and name ratification: Open. Under Open decisions.
+
+## Open decisions
+
+### Clear the review of `environment_contract` and create its repository
+
+Background. `environment_contract` is the agreement between the program that writes a process's
+inert configuration page (time zone, locale, terminal type) and every reader of that page, the
+standard library's start-up code first among them. It leaves for a repository of its own at step 8
+of milestone 1017. A crate leaves once its review package lists every public name and decision and
+the architect clears that review; the clearance is also the go to create the repository. The
+identity (13, 1, `ENVCONF1`, 107 bytes) has its ruling. The eleven public names the lanes minted
+(`PAGE_CONTENT_BYTES`, `ConfigurationPage`, `virtual_address`, `time_zone`, `locale`,
+`terminal_type`, the three `is_known_*` functions and the `Unknown*` variants) are provisional.
+They are free to change while only this tree spells them and bind every reader once a release
+does.
+
+Recommendation: A, once the review package exists.
+
+- A. Clear the review once a lane writes its package: ratify the eleven names as built, and create
+  the repository as `publish = false`. The move follows, with item 6's files.
+- B. Create the repository and leave the names provisional until the release review, which reopens
+  older names anyway.
+- C. Hold the crate in this repository until a program outside it reads the page.
+
+Door: one-way. The repository is an outward step, and a ratified name binds the standard library
+overlay and every program that reads the page.
+
+Prior art: `block_roster_contract` and `entropy_contract` each froze an identity and had a review
+package cleared before the organization made its repository, with no publish. POSIX fixed `TZ`,
+`LANG` and `TERM` once and has never renamed them, which is why the aliases carry those spellings.
+Concrete example: ratifying `ConfigurationPage::time_zone` fixes the call in the overlay's
+`sys/env/nife.rs`, and a later rename is a coordinated change across two repositories.
+
+Blocks: the move.
 
 ## Goal
 
 A stranger who finds `environment_contract` in its own repository can tell in one screen what the
 page is, and can build and test it from the README. The same stranger can trust two claims the crate
 makes today. One is that a page the builder did not write reads as absence rather than a panic. The
-other is that a value outside a key's closed domain cannot reach a reader. The first claim is false
-today and the second holds only on the writer's side. The repository's gates are green for the
-crate's own reasons.
+other is that a value outside a key's closed domain cannot reach a reader. The repository's gates
+are green for the crate's own reasons.
 
 ## What was checked, and how
 
@@ -52,143 +130,19 @@ somebody outside the repository acts on it after a release (a public name, a wir
 identity value, a license). Everything else is two-way and the maintainer decides it. The crate has no release and nothing outside nife links it, so every public name is two-way until the move and
 one-way after. The items say which.
 
-### P0: a claim the crate makes is false
+### P0 and P1: before the move
 
-1. The reader panics on a length byte past its field, and the documentation says it cannot.
-   Finding: `read_field` (`src/lib.rs` line 304 to `:310`) slices `page[data_off..data_off + n]` with `n`
-   read from the page. `bytes()` is exactly `PAGE_BYTES` (107) long, so a `TERM` length above 32, a
-   `LANG` length above 57 or a `TZ` length above 98 indexes past the slice and panics. The doc
-   comment at `:300` to `:303` says a foreign or corrupt page answers "absence rather than a panic".
-   The test comment at `:523` to `:529` says the page "must not read out of bounds or panic" and
-   then tests only a length of zero. The crate docs of `program_argument_contract` cite this reader
-   as the "default-honest shape" that checks "every length against what is left". Reached from
-   `sys/env/nife.rs`'s `seed()` before `main`, from `printenv` and from the shell's `caps` preview.
-   Only the progenitor writes the page today, so no untrusted writer reaches it. The defect is a
-   false claim and a startup abort on a corrupt frame, not a memory-safety hole, since the code checks the index. Change: give `read_field` the field's cap and answer `None` when `n` is zero or above
-   the cap. Add one test per field with a length one past the cap and one with 255. Reword the two
-   comments to state the bound. Then `program_argument_contract`'s citation becomes true. Door:
-   two-way; no page `PageBuilder` writes has such a byte. Effort: S.
-
-### P1: before the move
-
-2. The closed domain is a writer-side guarantee only. Finding: `tz()`, `lang()` and `term()`
-   (`src/lib.rs` line 380 to `:398`) return whatever UTF-8 the length byte covers. With item 1 fixed a
-   length under the cap still returns a value with trailing NUL bytes, or any string a writer other
-   than `PageBuilder` put there. §111's reason for the domains is that no shape tells bytes on a page apart. The domains live in this crate and cost 20, 12 and 11 string compares,
-   once, at process start. Change: an accessor answers `Some` only for a member of its key's domain
-   (`domain::is_valid_tz(value).then_some(value)`), and the doc comments say a reader never sees a
-   value outside the set. Add a test that a recognized page carrying a non-member reads as absent.
-   The alternative, leaving the reader raw and documenting that callers check the domain, is the
-   shape `counter_frequency_contract` kept for `hertz()`. Here the domain is the whole point of the
-   contract, and a later release can loosen the stricter reader, but once a program depends on the looser one, no release can tighten it. Door: two-way until the move, since only pages a conforming writer
-   never produces change behavior. The maintainer can decide it. Effort: S.
-
-3. The pre-ruled family and rule names. Finding: `PAGE_BYTES` (`src/lib.rs` line 162) is 107 bytes of
-   content, and the page contract family rule in `design/naming/crates.md` names that
-   `PAGE_CONTENT_BYTES`, reserving `PAGE_BYTES` for a real page size. `helpers/name_release.py
-   --draft` prints the rename as pre-ruled. `ConfigPage` (`:337`) breaks the spelled-out rule
-   (`config`) and sits in `design/naming-rule-baseline.txt`. `ConfigPage::new`'s parameter `va`
-   (`:359`) is on the spelled-out list, and the family rule names the parameter `virtual_address`.
-   The template's `spelled_out` gate would refuse the last two on the repository's first pull
-   request. Change: `PAGE_CONTENT_BYTES`, `ConfigurationPage`, `virtual_address`, each `provisional`
-   until the name review, with `crates/swish/src/preview/tests.rs`, `components/src/printenv.rs`,
-   `crates/swish/src/endowment.rs`, `crates/swish/src/preview.rs`,
-   `components/src/swish/capabilities.rs`, the overlay's `sys/env/nife.rs` and
-   `sys/pal/nife/mod.rs`, and the two baselines moving in the same change.
-   `grant_plan::Manifest::configuration` and `SHELL_CONFIGURATION_SLOT` already use the spelled-out
-   word. Door: public names, one-way after the move and two-way now. The rules that decide them are
-   already ruled, so nothing new needs deciding. Effort: S.
-
-4. The abbreviated accessor family: `tz`, `lang`, `term`. Finding: the public functions `tz`,
-   `lang`, `term` (on both `PageBuilder` and `ConfigPage`), `is_valid_tz`, `is_valid_lang`,
-   `is_valid_term`, the variants `UnknownTz`, `UnknownLang`, `UnknownTerm`, and the private
-   `OFF_TZ*` and `OFF_LANG*` constants carry none of the words the ratified constants spell out
-   (`TIME_ZONE`, `LOCALE`, `TERMINAL_TYPE`). `TZ`, `LANG` and `TERM` are POSIX's own variable names,
-   which the naming rules let a name keep only with the expansion in the doc comment and a
-   `#[doc(alias)]`. The accessors carry neither (the aliases sit on the constants). `abbreviations`
-   reports all 19 components. No `Name:` block covers any of them. Change: the names the decision
-   below decides, provisionally. Each accessor gains `#[doc(alias = "TZ")]`, `"LANG"` or `"TERM"`, and the
-   overlay's `seed()` moves in the same change. Door: two-way before the first tag; the
-   architect may revisit the names. Effort: S after the ruling.
-
-5. No proof, and the one that matters would have caught item 1. Finding: the crate has no
-   `#[cfg(kani)]` module and no `falsifications/`; `crate-standalone` fails `proofs`, and the
-   template's `proofs.yml` would run nothing. `block_roster_contract`'s
-   `read_is_total_and_every_counted_entry_is_gettable` is the shape this crate lacks: for any bytes,
-   `read` neither panics nor indexes out of bounds. The review's trial of that harness over a fully
-   symbolic page did not finish in seven minutes ("What was checked"). The expensive part is
-   `from_utf8` over a symbolic slice of up to 255 bytes, and it is also the part that does not
-   matter: the bound to prove is on the slice, not on its decoding. Change: a `verification` module
-   with three harnesses, each with a falsification patch the template's `falsify` job replays red.
-   One: for any three length bytes and a correct magic, the slice `read_field` takes lies inside the
-   page (prove the bound on the index arithmetic with the bytes of the fields concrete, so the UTF-8
-   loop is not symbolic). Two: for any choice of one member per domain, build then read returns the
-   same three members. Three: after item 2, any value an accessor returns is a member of its domain.
-   Measure the run with `/usr/bin/time -v` for the README, as the scaffold asks. Door: two-way.
-   Effort: M.
-
-6. The crate does not stand alone. Finding: `crate-standalone` lists the rows. The manifest
-   inherits `license` and `lints`, has no `rust-version`, `description`, `repository`, `readme`,
-   `keywords` or `categories`, and its `publish = false` comment points at
-   `crates/publish-allowlist.txt`. There is no README, `LICENSE-MIT` or `LICENSE-APACHE`.
-   `src/lib.rs` cites `notes/env-config.md` (`:7`), three decision sections, two milestones,
-   `script/lint`, `clock_contract::MAGIC`, `clock_contract::status`, `filesystem_contract`,
-   `PageFrame`, `init` and "the `std` PAL", and its `Name:` blocks name the architect, which the
-   template's `standalone` check refuses as a finding of its own. The template refuses a fuzz opt-in
-   for a crate with `unsafe`, and this crate has three sites (`new`, `bytes`, the `Send`/`Sync`
-   impls), so the README must say fuzzing stays off and why. Change: the manifest rows as
-   `clock_contract` writes them (`rust-version = "1.88"`, literal `license`, the `[lints]` tables
-   inlined, `description`, `readme`, `keywords`, `categories`). A README in the scaffold's shape
-   (one line, the contract as a bullet list with the layout table, `## EXAMPLES`, `## What is
-   proven`, `## Building and testing`, `## BUGS` with the curated-list policy and how to add a zone, `## Minimum Rust version`, `## License`). Both license texts. Every citation rewritten in
-   the crate's own terms ("the assembler", "the reader", "a frame mapped read-only"), and the
-   `Name:` blocks stripped by `script/crate-move` as the runbook already does. Door: two-way.
-   Effort: M.
-
-7. The identity is provisional and unpinned.
-   Finding: `INTERFACE_ID` (13) and `VERSION` (1) carry provisional `Name:` blocks, and
-   `script/names --unratified` lists both crossing into `components`. Milestone 1017 asks for
-   ratified identity values before a contract crate leaves. No test pins `MAGIC`, `VERSION` and
-   `INTERFACE_ID` as literals (`clock_contract` has one), and nothing ties the digit `MAGIC`
-   carries to `VERSION` although the doc comment on `VERSION` says they move together.
-   Change: the decision below; then a host test that asserts the three literals, and a
-   `const` assertion that `MAGIC[7] == b'0' + VERSION as u8`.
-   Door: one-way; the identity is what a release binary compares. Effort: S after the ruling.
-
-8. The truncation path writes a plausible wrong value. Finding: `write_field` (`src/lib.rs` line 292
-   to `:298`) truncates a value to the field's cap and writes the cap as its length. A domain member
-   longer than its cap would reach the page cut short, which, after item 2, a reader refuses. Before
-   it, a reader returns the cut string as configuration. The crate's `BUGS` says a host test catches
-   this first, which is a gate (rung 2) where a compile-time check (rung 1) costs the same. Change:
-   a `const` block that walks each domain and asserts every member's length against its cap, so a
-   list grown past its cap fails to compile. Then `write_field` asserts instead of truncating, and
-   the `BUGS` entry and the `vendored_name_gates.py` exemption for `cap` go. Rename the parameters
-   while there: `cap` reads as capability in this tree and the template's `spelled_out` refuses it.
-   `val`, `len_off` and `data_off` spell out to `value`, `length_offset` and `value_offset`.
-   `OFF_TZ_LEN` and its siblings to `TIME_ZONE_LENGTH_OFFSET` and `TIME_ZONE_OFFSET`, which also
-   clears the three `register_names` refusals. Door: two-way; private names. Effort: S.
+The P0 and P1 items are in [the
+appendix](1089-environment-contract-outside-review/before-the-move.md).
 
 ### P2: after the move, before a release
 
 The P2 items are in [the appendix](1089-environment-contract-outside-review/later-items.md).
 
-## Ledger
-
-The [ledger](1089-environment-contract-outside-review/ledger.md) lists each item as done or left, with the test and the reason.
-
-## Follow-on
-
-- **Done.** The identity freeze: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, with the
-  terminal type field widened from 24 to 32 bytes, so the page is 107 bytes. Pull request #3585.
-- **Outstanding.** Item 5's two wider harnesses and items 3, 4, 6, 7 and 11: public names, the identity freeze, the move commit's
-  standalone files and a safe reader constructor. Each waits on a ruling or on the move, as the
-  ledger above says. Checked by reading the ledger rows against the crate after the commit that
-  built the done items.
-
 ## Decisions for the architect
 
 Each states the background, the recommendation first, the prior art and one concrete example. The
-accessor names are decided, provisionally.
+maintainer rules the accessor names, provisionally.
 
 ### Freeze the identity: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, and the 107-byte layout
 
@@ -261,21 +215,26 @@ The checks are in [the appendix](1089-environment-contract-outside-review/done-w
 
 ## BUGS
 
-- A test the review wrote and deleted showed item 1. The lane that fixes it writes the test
-  into the crate. The review did not test a `std` program against a corrupt page under QEMU, so the
+- The review did not test a `std` program against a corrupt page under QEMU, so the
   claim that `seed()` aborts before `main` on such a page comes from reading `sys/env/nife.rs`, not from a run.
 - The review has no Kani verdict: its one trial harness was too wide to finish inside a
-  seven-minute cap on one machine. Item 5's harness shapes are a proposal, not a measured run; the
-  lane that lands them measures with `/usr/bin/time -v` for the README.
+  seven-minute cap on one machine. Item 5's two wider harness shapes are a proposal, not a measured
+  run; the lane that lands them measures with `/usr/bin/time -v` for the README.
 - The glibc and terminfo lengths in decision 1 come from recall, not from the databases, and carry a mark saying so. The review read the IANA lengths from this host's tzdata.
 - The review did not run `script/crate-move --dry-run`. The template scaffold's findings (the pull
   request template, `CONTRIBUTING.md`, the commit hook) are the runbook's and are not repeated here.
 - The mutation figures are the saved baseline's; the review did not rerun the census.
 
+## Follow-on
+
+- **Outstanding.** Every finding that Finding status above marks Open or Ruled, each with what
+  remains, and each open decision under Open decisions. A lane checked each finding line against
+  the crate and its pull requests on main.
+
 ## Index row
 
-An outside review of `environment_contract` before it leaves. One false claim comes first (a corrupt
-length byte panics the reader that every `std` program runs before `main`). Seven items come before
-the move (reader-side validation, the pre-ruled family names, the abbreviated accessors, three Kani
-harnesses, the standalone files and manifest rows, the identity freeze, a compile-time check in
-place of a truncation). Four more follow for the first release.
+An outside review of `environment_contract` before it leaves. Of 16 findings and steps, ten are
+done: the reader panic, reader-side validation, the family and accessor names, the identity freeze
+and the compile-time cap check among them. Five are open: two wider Kani harnesses, the standalone
+files, a safe reader, the README's growth-path row and the review package. One decision is open:
+the review's clearance, which creates the repository and ratifies eleven provisional names.

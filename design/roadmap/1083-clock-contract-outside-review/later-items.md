@@ -21,7 +21,7 @@ An appendix to [the milestone](../1083-clock-contract-outside-review.md).
     Change: with the rename to `virtual_address` (the package's proposal), decide the type too: keep
     `u64`, whose name then says what it is, or take `*const u8` and let the caller own the cast.
     Keeping `u64` is defensible for a value that arrives in a register; the doc should then say the name means an address, not a pointer.
-    Door: two-way before the first release; the name is Decision 3's. Effort: S.
+    Door: two-way before the first release; the name is Decision 3's, which waits on ratification. Effort: S.
 
 12. A test whose name claims more than it checks.
     Done, with Decision 1: the reader has no spin path, and the host test

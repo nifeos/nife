@@ -93,7 +93,7 @@ license and the crate name. This block does not reopen them.
 
 - `Cargo.toml` carries no comment that points outside the repository, and the release that
   publishes carries no `publish = false`.
-- `slot_of` resolves nothing for a slot the target cannot index, with a test that spells such a
+- `slot_index` resolves nothing for a slot the target cannot index, with a test that spells such a
   name, and the documentation says so.
 - The README has a section a stranger can follow to build, test, prove and falsify, the Kani install
   line copies as one line, and a new stranger run is on record with no open finding against the
@@ -103,7 +103,7 @@ license and the crate name. This block does not reopen them.
   mutation` has one green full run on `main`.
 - Six harnesses become seven, each new one arriving with a falsification patch that `proofs /
   falsify` replays red, and the walk harness counts `values_mut`.
-- `insert`, `contains_key`, `iter_mut`, `capacity` and `clear` exist with tests, and the README's
+- `insert`, `contains_key`, `iter_mut`, `slot_count` and `clear` exist with tests, and the README's
   method list names them.
 - A benchmark in the repository reproduces every performance figure the README states, or the
   README states none.
@@ -124,50 +124,59 @@ license and the crate name. This block does not reopen them.
 
 ## Where this stands
 
-Finished: items 2 and 5 to 15 apart from item 13's changelog line, item 3's pre-release half, and
-item 4 apart from its pin (`nifeos/generational_table` #9 to #16 and #18, with
-`nifeos/crate-workflows#50`). The ten harnesses carry ten falsification patches, `check /
-mutation-diff` is a required check on `main`, and full mutation and fuzz runs are green on a `main`
-whose `src/` and manifest match the `v0.1.0-pre.1` tag.
-
-| item | what remains | blocker |
-|---|---|---|
-| 1 (P0) | delete `publish = false` in the release that publishes | publishing hold |
-| 3 (P1) | the `cargo add` line and the crates.io and docs.rs badges | publishing hold |
-| 4 (P1) | the callers pin `nifeos/crate-workflows` at `4d9eea2`, which is no template release; bump to the next one | release step |
-| 13 (P2) | collapse the `0.1.0-pre.1` changelog section to one line at 0.1.0 | release step |
-| done when, last bullet | `cargo test`, `cargo kani`, `cargo mutants` and both fuzz targets green at the commit the 0.1.0 release tags | release step |
-
-No item needs a decision for calef.
+Every item is done or waits on the release that publishes, which the publishing hold keeps back
+until every outside review is delivered. Milestone 1033 owns that release, its tags and the pin
+bumps in this tree. The Follow-on list gives each item's status.
 
 ## Follow-on
 
-Read against `nifeos/generational_table` `main` at `1a8f8dc`, the merge of #18.
+Read against `nifeos/generational_table` `main` at `8328360`, the merge of #22.
 
-- **Done.** Items 2, 5 to 12, 14 and 15 landed in `nifeos/generational_table` #9 to #16. The slot
-  check on narrow targets is #9 and #14, and the five methods and `Ord` are #10. The docs.rs front
-  page, `deny.toml` and `rust-version` 1.85 are #11. The benchmark, the cursor scan and the layout
-  record are #12. The mutation caller, with the template fix of `nifeos/crate-workflows#50`, is #15
-  and #16.
-  Ten harnesses carry ten falsification patches, and proofs run 43001273410 passed at `4fb6bb7`.
-- **Done.** Item 3's pre-release part and item 13's text fixes landed in
-  `nifeos/generational_table` #11: the README's build-and-prove section, the one-line Kani install,
-  a stranger run that found no gap, the `slab` comparison, the CONTRIBUTING line and the CODEOWNERS
-  caveat.
-- **Done.** Item 4 apart from its pin: the `mutation-diff 30` budget line is #18, `check /
-  mutation-diff` is among the `main` ruleset's required checks, and mutation run 43928163330 is
-  green on `main`.
-- **Done.** The fuzz half of the last done-when bullet for the pre-release: fuzz run 44126438080 is
-  green at `551fb87`, whose `src/` and manifest are those of the tagged `4fb6bb7`.
-- **Outstanding.** Item 1's second half and item 3's release half: `publish = false` stays and the
-  README has no `cargo add` line or badges until the release that publishes, which the publishing
-  hold keeps back. Read from `Cargo.toml` and the README at `1a8f8dc`.
-- **Outstanding.** Item 4's pin: every caller pins `nifeos/crate-workflows` at `4d9eea2`, 178
-  commits past `v7`, the newest template release. Read from the workflow files at `1a8f8dc` and
-  the template's tags.
-- **Outstanding.** Item 13's changelog collapse and the last done-when bullet both belong to the
-  0.1.0 release: the `0.1.0-pre.1` section of `CHANGELOG.md` still holds six entries. Read at
-  `1a8f8dc`.
+- **Outstanding.** Item 1 (P0): the release that publishes deletes `publish = false`, as ruled.
+  The comment beside it is already one sentence a stranger can act on. Read from `Cargo.toml`.
+- **Done.** Item 2 (P1), in #9 and #14: `slot_index` widens a slot without a check where `usize`
+  holds 32 bits or more and resolves nothing elsewhere. The narrow-target test waits on a
+  toolchain (BUGS).
+- **Outstanding.** Item 3 (P1): the `cargo add` line and the crates.io and docs.rs badges wait on
+  the release that publishes. #11 landed the rest: the "Building and proving" section, the
+  one-line Kani install and a stranger run that found no gap (`docs/stranger-test.md`). Read from
+  the README.
+- **Done.** Item 4 (P1): the callers pin template release `v8` (#20), `mutation.yml` is a caller
+  with the repository's cron (#15), the `mutation-diff 30` budget is #18, `check / mutation-diff`
+  is a required check on `main`, and mutation run 44468076120 is green at `8328360`.
+- **Done.** Item 5 (P1), in `nifeos/crate-workflows#50`.
+- **Done.** Item 6 (P1), in #10, with the spellings this crate's rulings chose in #21: `insert`,
+  `contains_key`, `iter_mut`, `slot_count` and `clear`, each in the README's method list.
+- **Done.** Item 7 (P1), in #9: ten harnesses carry ten falsification patches, among them
+  `the_walk_bound_and_the_live_count_survive_any_operation`, and the walk harness counts
+  `values_mut`.
+- **Done.** Item 8 (P1), in #12: `cargo bench` reproduces every figure the README states.
+- **Done.** Item 9 (P2), in #12: insert scans from a cursor below which no slot is free, and
+  `the_scan_cursor_keeps_first_fit_order` proves the order unchanged.
+- **Done.** Item 10 (P2), in #12: the README states the layout, a `size_of` test pins it, and the
+  one-array layout measured no faster, so the two arrays stay.
+- **Done.** Item 11 (P2), in #10: `PartialOrd` and `Ord` by the packed bits, as ratified, and
+  `Debug` through `debug_struct`.
+- **Done.** Item 12 (P2), in #11: the crate documentation opens with an example and states the
+  range of `N` and the stack cost.
+- **Outstanding.** Item 13 (P2): the changelog's three pre-release sections collapse to one line
+  at 0.1.0. #11 landed the other three fixes (`slab` in the comparison, the CONTRIBUTING line, the
+  CODEOWNERS caveat). Read from `CHANGELOG.md`.
+- **Refused.** Item 14 (P2): `deny.toml` keeps the template's list and says why the `Zlib` warning
+  is expected, since the crate has no dependency for any allowance to match.
+- **Done.** Item 15 (P2), in #11: `rust-version` is 1.85, and the weekly `msrv` job holds it.
+- **Outstanding.** Done when, last bullet: tests, proofs, mutation and both fuzz targets green at
+  the commit 0.1.0 tags. Fuzz last ran green at `551fb87`, before the renames of #21. Read from the
+  repository's fuzz runs.
+- **Done.** The release review's names, in #21: `slot_of` is `slot_index`, `live_slots` is
+  `live_slot_indices`, `iter_from` is `iter_from_slot_index` (parameter `first_slot_index`),
+  `insert_with` is `insert_with_name`, `capacity` is `slot_count`, and `NEVER_MINTED` stays. #22
+  renames the `Debug` field to match.
+
+## Open decisions
+
+None. Every remaining step is the release that publishes, which the standing publishing hold
+already governs; no item here needs a ruling of its own.
 
 ## Index row
 

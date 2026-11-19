@@ -13,9 +13,10 @@ Raised by a read-only outside review of `crates/line_editor`, read the way a mai
 for the first time would. It changes nothing; it lists what the next lanes change, and it puts the
 one-way doors to the architect.
 
-The review's accepted baseline is the disposition in force for this crate in the releasable-crates
-note (`notes/releasable-crates-*.md`): `line_editor` moves after a cut, because its `component`
-module links nife's `capability_plan`, and the cut leaves that module here first. It takes the
+The review's accepted baseline is the disposition in the releasable-crates note
+(`notes/releasable-crates-*.md`) when the review ran: `line_editor` moved after a cut, because its
+`component` module linked nife's `capability_plan`. The note now gives the cut: `line_editor`
+moves, `terminal_contract` joins the contract crates and `line_editor_component` stays. It takes the
 crate name (ratified), `Event::Suspend`, `Event::Tab` and the badge and opcode values of `proto` as
 settled, together with §232 (the `line_editor` swap contract) and §295 (the line editor's crate
 root splits into module files). No review package exists for this crate under
@@ -25,14 +26,142 @@ Three names #2797 ratified, `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXI
 Reuse: the template `nifeos/crate-workflows` and its helpers (`spelled_out.py`,
 `abbreviations.py`, `standalone.py`), cargo-fuzz, Kani, cargo-mutants. No new tool.
 
-## Where this stands
+## Finding status
 
-Finished: the cut of decision 1 and the one `QUIESCED` (items 2 and 8, #3587). Items 5 to 7 and 9 to 14 (README, bindings, fuzz targets, Kani harnesses, handoff layout, P2 fixes) landed in #3566.
+Every item not Done blocks the first crates.io publish, which waits until every outside-review
+milestone reaches delivery.
 
-- Item 3 (public names): `LineEditor` and `HISTORY_LINES` ruled provisionally by the maintainer (#3589), not built, a lane; the three limits, decision 3, a decision for calef.
-- Item 4 (gate spellings): two-way, not built; a lane for the engine's fields with item 3, and the contract crates' own worklists for `terminal_contract` and `line_editor_component`.
-- Item 1 (manifest, licenses, citations): not built; the move, which waits on milestone 1017's order, the names of item 3 and calef's review clearance for the repository.
-- `terminal_contract` interface identity: open; decision for calef.
+- Item 1, the crate does not stand alone: Open. `Cargo.toml` still inherits `license` and carries
+  the allowlist comment; the move commit writes the manifest rows and the license files and rewrites
+  the citations.
+- Item 2, the cut: Done, [#3587](https://github.com/nifeos/nife/pull/3587).
+- Item 3, `LineEditor` and `HISTORY_LINES`: Ruled (decision 2, maintainer, provisional,
+  2026-11-14 UTC, [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `struct LineDisc`
+  (`src/line_disc.rs` line 142) and `HIST` (line 23) keep their names.
+- Item 3, the three limits: Open. Calef's (see "The three limits take their unit" below).
+- Item 3, `pop8`: Open. `src/raw_queue.rs` line 65; two-way before the tag, so the maintainer rules
+  its new name provisionally and a lane renames it with decision 2.
+- Item 4, names the template's gates refuse: Open. The engine's fields (`buf`, `cur`, `hist`, `esc`,
+  `params`, `src/line_disc.rs` lines 143 to 159) rename with item 3; `terminal_contract` and
+  `line_editor_component` keep their own worklists, and `proto` joins the template's word list.
+- Item 5, bindings and limits a stranger can read: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 6, `forbid(unsafe_code)`, fuzz targets and Kani harnesses: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 7, the handoff layout's version policy: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 8, one `QUIESCED`: Done, [#3587](https://github.com/nifeos/nife/pull/3587).
+- Item 9, stack copies: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 10, the `csi_move` bound: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 11, three repaints with one body: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 12, the history depth: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 13, the test terminal's row: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 14, `Writer::field` width: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Decision 1, where the cut falls: Done, ruled 2026-11-14 UTC,
+  [#3587](https://github.com/nifeos/nife/pull/3587).
+- Follow-on, `terminal_contract`'s interface identity: Open. Calef's (see "An interface identity
+  for `terminal_contract`" below).
+- Follow-on, `terminal_contract`'s published name: Open. Calef's (see "The name
+  `terminal_contract`" below).
+- Follow-on, the review package: Open. `notes/crate-reviews/` has none for these crates; a lane
+  writes it, or records that this block is it.
+- Follow-on, the externalization list: Open. `crates/externalization-list.txt` names `line_editor`
+  and not `terminal_contract`.
+- Follow-on, the releasable-crates disposition: Done,
+  [#3587](https://github.com/nifeos/nife/pull/3587).
+- Follow-on, review clearance and the repositories: Open. Calef's (see "Review clearance and the
+  repositories" below).
+
+## Open decisions
+
+### The three limits take their unit
+
+Background. `LINE_MAXIMUM` (256), `PROMPT_MAXIMUM` (64) and `RAW_QUEUE_MAXIMUM` (64) are byte
+lengths, and #2797 ratified them. The units rule came later: a limit opens `MAXIMUM_` and ends with
+its unit, and a release review rechecks a name ratified before a later rule. A completion buffer in
+the shell declares `[0u8; line_editor::LINE_MAXIMUM]`, and a reader cannot tell bytes from columns.
+
+Recommendation: A, `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and `MAXIMUM_RAW_QUEUE_BYTES`, with
+no alias.
+
+- A. Rename the three as the units rule spells them.
+- B. Keep the ratified names and state the unit in each doc comment.
+
+Door: one-way at the first tag, and a rename of a ratified name is calef's.
+
+Prior art. POSIX's `MAX_CANON` and `MAX_INPUT` are the same two limits with the unit implied, and
+linenoise has `LINENOISE_MAX_LINE`. The tree's own `MAXIMUM_SURFACE_BYTES` and
+`MAXIMUM_UDP_MESSAGE_BYTES` carry it. Where nife differs: the unit is always in the name. Example:
+`[0u8; line_editor::MAXIMUM_LINE_BYTES]`.
+
+Blocks: the tag.
+
+### An interface identity for `terminal_contract`
+
+Background. `terminal_contract` holds the terminal protocol's opcodes, badges and quiesce value,
+which the kernel and every program that speaks the protocol share. Other contract crates in
+milestone 1017's family (the contract crates leave in this order) carry an interface number and a
+version, which a program declares in its interfaces note and a server checks at spawn.
+`terminal_contract` carries neither, so a program built against an older table passes unchecked.
+
+Recommendation: A, give it an interface number and version 1, minted when calef freezes the crate's
+identity, as the other contract crates did.
+
+- A. An interface number and a version, with no magic.
+- B. No identity: the protocol is register-only, and the badges already gate the operations.
+- C. An identity and a magic word, as the page contracts carry.
+
+Door: one-way: the number lands in every built program's interfaces note.
+
+Prior art. In this tree `entropy_contract` (12, version 1) and `resolver_contract` (11, version 1)
+took their identities before they moved. Linux, which has no such check, added `termios2` and
+`TCGETS2` beside the old layout rather than change it. Where nife differs: the check runs at spawn, not at the first call. Example: under A,
+the shell's note carries `(terminal_contract::INTERFACE_ID, 1)`.
+
+Blocks: the move.
+
+### The name `terminal_contract`
+
+Background. The crate's name is provisional. §323 (the binary interface, and the names of the
+project's layers) keeps crate names descriptive and gives the page-contract crates no common prefix,
+so nothing else decides this one. The repository takes the name at creation.
+
+Recommendation: A, ratify `terminal_contract`, which says what it holds and follows the
+`_contract` siblings.
+
+- A. `terminal_contract`.
+- B. `terminal_protocol`, since it holds opcodes and no page layout.
+
+Door: one-way at repository creation.
+
+Prior art. The tree's `supervision_contract` and `hot_swap_contract` name a protocol the same
+way, and Linux's `uapi` headers name the interface by subsystem (`termios.h`). Where nife differs:
+the suffix says the crate is the agreement both sides compile against. Example:
+`use terminal_contract::OPERATION_READLINE;`.
+
+Blocks: the move.
+
+### Review clearance and the repositories
+
+Background. Clearing a crate review is the go to create its repository under nifeos. `line_editor`
+and `terminal_contract` leave; `line_editor_component` stays in nife. Neither leaving crate has a
+review package in `notes/crate-reviews/`.
+
+Recommendation: A, clear both once the review package exists and the decisions above have their
+rulings, with no tag and no publication.
+
+- A. Clear both after the package and the rulings.
+- B. Clear `line_editor` alone first, since it depends on nothing and nothing above blocks it but
+  the limits.
+- C. Hold until a dry run also stages the move's own work (item 1).
+
+Door: one-way: a repository that exists has a name others link to.
+
+Prior art. In this tree `generational_table`, `block_roster` and `file_allocation_table` each moved
+on a cleared review with no tag. Where nife differs: nothing outside nife links either crate.
+Example: under A, the shell pins `nifeos/line_editor` by revision.
+
+Blocks: the move.
 
 ## Goal
 
@@ -82,8 +211,8 @@ or identity, a dependency); everything else is two-way and the maintainer decide
    Evidence: `Cargo.toml` line 14; `src/lib.rs` lines 38 to 68; `src/component.rs` whole;
    `src/proto.rs` lines 63 to 215; `crates/hot_swap_contract/src/lib.rs` line 49 (the duplicate
    `QUIESCED`).
-   Change: as decision 1 below rules. `handoff` stays: `save` and `restore` read the engine's
-   private fields, and the crate documents the layout as its own.
+   Change: as decision 1 below rules, built in #3587. `handoff` stays: `save` and `restore` read
+   the engine's private fields, and the crate documents the layout as its own.
    Door: one-way for the new crate's name and for the shape of the published `line_editor` (no
    `proto` module); decision 1 below. Effort: M.
 
@@ -97,18 +226,16 @@ The P2 items are in [the appendix](1098-line-editor-outside-review/later-items.m
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 3 and 4: the move commit's manifest and license work, the public names
-  (Decisions 2 and 3) and the gate spellings that follow the cut. The ledger names each with its
-  reason.
 - **Done.** Item 2, as decision 1 rules: `terminal_contract` and `line_editor_component` carry
   the cut, and `line_editor` depends on nothing. Item 8: a `const` assertion in the `line_editor`
   program holds the two `QUIESCED` values equal.
-- **Outstanding.** Whether `terminal_contract` takes an interface identity; decision 1 records it
-  as open.
+- **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
+  the crates' sources on main.
 
 ## Decisions for the architect
 
-Each gives the background first, then the recommendation.
+Decisions 1 and 2 are the rules in force. Decision 3, the three limits, is calef's and is under
+"Open decisions" above.
 
 ### Where the cut falls: `proto` and `component` leave the crate, `handoff` stays
 
@@ -138,15 +265,15 @@ Concrete example. `kernel/Cargo.toml` links `line_editor` to read `proto::req` a
 
 Ruled 2026-11-14 (UTC): the cut falls in three places. `proto`, the terminal protocol's opcodes and
 badges, is the wire-only leaf crate `terminal_contract`, with no dependencies; its name is
-provisional, and its published name waits on the naming-layers decision. The kernel,
+provisional, and calef rules its published name (see "Open decisions"). The kernel,
 `std_runtime_contract`, `fixtures`, `system_initializer`, `system_tests` and every program that
 speaks the protocol depend on it, not on `line_editor`. `component` stays beside the terminal
 programs as the nife-only crate `line_editor_component` (name provisional), and `capability_plan`
 does not leave. `handoff` stays in the engine. `line_editor` depends on nothing
 and is listed in `crates/externalization-list.txt`. The leaf states `QUIESCED`, and the
 `line_editor` program holds it equal to `hot_swap_contract::QUIESCED` at compile time (item 8).
-Open: `terminal_contract` carries no interface identity (an interface number, a version), and
-whether it takes one under milestone 1017's family rule is not decided; none is minted.
+`terminal_contract` carries no interface identity; whether it takes one is under "Open
+decisions".
 
 ### The engine's public type and constant names at release: `LineEditor` and `HISTORY_LINES`
 
@@ -167,32 +294,15 @@ after the rename the declaration reads `line_editor::LineEditor`.
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
 which the architect may revisit. The recommendation is the rule. Item 3 is the work.
 
-### The three ratified limits, reopened under the unit rule
-
-Background. #2797 ratified `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM` in the same
-sweep that renamed `MAXIMUM_NAME_BYTES` and `MAXIMUM_TERM_BYTES` elsewhere, before anyone wrote the units rule
-down as a rule. The rule in force now reads: a limit opens `MAXIMUM_` and ends with its
-unit, and the release review rechecks a ratified name. These three are byte lengths.
-
-Recommendation. Rename before the tag to `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and
-`MAXIMUM_RAW_QUEUE_BYTES`, with no alias.
-
-Prior art. POSIX `MAX_CANON` and `MAX_INPUT` are the same two limits with the unit implied;
-linenoise's `LINENOISE_MAX_LINE`; the tree's own `MAXIMUM_SURFACE_BYTES` and
-`MAXIMUM_UDP_MESSAGE_BYTES`, ratified in the same pull request.
-
-Concrete example. `components/src/swish/prompt.rs` line 321 declares
-`[0u8; line_editor::LINE_MAXIMUM]` for a completion buffer; with the unit in the name the reader
-sees it is bytes, not columns, which the one-row `BUGS` entry makes a live distinction.
-
 ## Done when
 
-The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). [The ledger](1098-line-editor-outside-review/ledger.md) says, item by item, what this block finished and what waits.
+The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 
 ## BUGS
 
 - No review package exists for this crate under `notes/crate-reviews/`, so this block had no list
-  of accepted names and proposed items to measure itself against; it took the releasable-crates disposition, the two notes and #2797 as the baseline. A recording lane should write the package or say that this block is it.
+  of accepted names and proposed items to measure itself against; it took the releasable-crates
+  disposition, the two notes and #2797 as the baseline.
 - The mutation figures come from records, not a re-run, and predate the module split and the unit
   renames; the census that confirms them belongs in the template's window.
 - The behavior of `noline`'s initialization comes from `notes/line-discipline.md`, and the review did not
@@ -202,6 +312,7 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md). 
 
 ## Index row
 
-An outside review of `line_editor` before it leaves. Two items block the move (the crate does not stand alone, and the contract modules are not yet cut out of it). Six land before the first tag. Six wait for later. Three one-way doors go to the
-architect: where the cut falls, the engine's type and history names, and the three limits reopened
-under the unit rule.
+An outside review of `line_editor` before it leaves. The cut has landed: `terminal_contract` and
+`line_editor_component` hold the contract, and the engine depends on nothing. Twelve findings have
+landed. The engine's renames and the move's own work remain. The three limits, an interface
+identity and a name for `terminal_contract`, and review clearance are calef's.

@@ -35,9 +35,48 @@ prove it from the README alone, on the host and for the three bare-metal targets
 template requires is green for the crate's own reasons, and nothing in the crate names a path, a
 section number, a milestone or a person in another repository.
 
-## Where this stands
+## Finding status
 
-[The appendix](1106-program-argument-contract-outside-review/where-this-stands.md).
+- P0-1, the manifest does not stand alone: Open. `Cargo.toml` still inherits `license` and
+  `lints`, lacks `rust-version`, `description`, `repository` and `readme`, and keeps its comments.
+- P0-2, the repository files: Open. The scaffold's files, the README and a stranger
+  run remain.
+- P0-3, text that reaches into nife: Open. The crate root still cites sections, milestones and
+  paths and names the architect; the move strips the `Name:` blocks.
+- P0-4, seven names the spelled-out gate refuses: Ruled (maintainer, provisional, 2026-11-14 UTC;
+  see "Three public names" below). Not built: `ArgPage`, `from_va(va)` and the `arg` and `args`
+  bindings keep their old spellings in the crate, the `std` overlay and its generator.
+- P1-5, `CAPACITY` carries no unit: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built:
+  `CAPACITY` still stands in the crate and in `grant_plan`'s parsing and refusal code.
+- P1-6, no proof: Open. Two of the three harnesses and their patches landed in
+  [#3567](https://github.com/nifeos/nife/pull/3567); the round-trip harness waits on P2-12's
+  builder shape and a memory measurement.
+- P1-7, the `unsafe` reader has no test: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P1-8, the mutation exemption and the coverage figure: Open. Both belong to the move.
+- P1-9, the all-or-nothing claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-10, the address truncates on narrow targets: Open. The crate's BUGS states the limit, an
+  alternative the review allowed; the maintainer rules provisionally whether that closes it.
+- P2-11, `EMPTY` unused and its literal duplicated: Done,
+  [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-12, the builder takes a fixed array: Open. `PageBuilder::new` still takes
+  `&mut [u8; PAGE_BYTES]`; a builder over any slice remains.
+- P2-13, the layout arithmetic copied in `grant_plan`: Open. `record_bytes`,
+  `remaining_bytes` and the pedantic API items remain; `grant_plan` still sums by hand.
+- P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- Ruling, the layout leaves as built with `VERSION` 1 and `INTERFACE_ID` 18: Done,
+  [#3579](https://github.com/nifeos/nife/pull/3579) (ruled 2026-11-14 UTC; nothing to build).
+- Ruling, a numbered magic replaces `nifeargv` at milestone 994: Ruled (2026-11-14 UTC). Not built:
+  `MAGIC` still reads `b"nifeargv"`, and milestone 994 has not started.
+- Ruling, three public names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: the same
+  renames as P0-4 and P1-5.
+- Ruling, the repository: Ruled (2026-11-14 UTC). Not built: a lane creates
+  `nifeos/program_argument_contract`, runs the move check and a dry run, and tags
+  `v0.1.0-pre.1` with no publish, after the renames and milestone 994.
+
+## Open decisions
+
+None.
 
 ## What was checked, and how
 
@@ -236,17 +275,10 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 
 - **Done.** The three rulings above, recorded in this block, and the matching step in milestone
   994's block.
-- **Outstanding.** Items 1 to 15 above. Each lane checks its item against
-  `crates/program_argument_contract` when it starts.
+- **Outstanding.** Every finding marked Open or Ruled under "Finding status" above, each with what
+  remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
 - **Outstanding.** The three renames of the rulings, then milestone 994, then the repository and
   its `v0.1.0-pre.1` tag.
-- **Outstanding.** Items 6 and 12 (the round-trip harness and the builder shape), item 13
-  (`record_bytes`) and item 10 (the checked address conversion) have not started; the ledger names
-  the finished items.
-
-## Ledger
-
-The ledger is in [the appendix](1106-program-argument-contract-outside-review/ledger.md).
 
 ## Done when
 

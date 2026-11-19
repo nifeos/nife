@@ -33,9 +33,113 @@ Reuse: `script/crate-move`, the template `nifeos/crate-workflows` at its newest 
 `helpers/falsify.py`, `helpers/standalone.py`, the template's naming helpers, cargo-mutants' recorded
 rows, Kani, and the crate's own harness builder (`any_small_capability_table`). No new tool.
 
-## Where this stands
+## Finding status
 
-The appendix lists what remains and what holds each: [where this stands](1081-capability-outside-review/where-this-stands.md).
+- P0-1, the manifest stands alone: Open. `Cargo.toml` still inherits the workspace's license and
+  lints and has no `rust-version`, `description` or `repository`, and the crate has no README and no
+  license files; the move pull request writes them, or a lane does it in the tree first.
+- P0-2, the crate's text refers back into nife: Done,
+  [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3656](https://github.com/nifeos/nife/pull/3656). Only the `Name:` blocks remain, and the move
+  strips them.
+- P1-3, the proved `derive` is not the delegation the kernel runs: Open. `Capability::delegate`
+  holds the rule once, the kernel's `Delegation::derive` calls it, and a harness proves it
+  ([#3656](https://github.com/nifeos/nife/pull/3656)). Left: the two `REVOKE` arms in
+  `kernel/src/syscall.rs` still test `GRANT` inline under no harness; the shape of a syscall-layer
+  harness is two-way, and the maintainer rules it provisionally.
+- P1-4, a slot truncates on a 32-bit target: Done,
+  [#3565](https://github.com/nifeos/nife/pull/3565).
+- P1-5, `len` means capacity: Done, [#3656](https://github.com/nifeos/nife/pull/3656). The name
+  `capacity` is provisional.
+- P1-6, the move tool corrupts patches and skips `repository`: Done,
+  [#3521](https://github.com/nifeos/nife/pull/3521).
+- P1-7, two mutators outside every harness: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P2-8, `Rights::ALL` is a literal: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P2-9, abbreviated parameter names: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P2-10, `Error` is thin for a stranger: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3656](https://github.com/nifeos/nife/pull/3656). `GrantRequired` and `SlotOccupied` are
+  provisional.
+- P2-11, the process-wide peak is unconditional: Open. The static and its readers sit behind
+  `target_has_atomic = "32"` ([#3565](https://github.com/nifeos/nife/pull/3565)); a `peak` cargo
+  feature remains. It is two-way until the release, and the maintainer rules it provisionally; the
+  feature's name then joins the release name review.
+- P2-12, no read-only walk, and `delete_matching` takes `Fn`: Done,
+  [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3656](https://github.com/nifeos/nife/pull/3656).
+- P2-13, the mutation record travels as unknown: Open. The move pull request writes the three
+  survivors and their reasons into `.github/mutants-exempts`.
+- P2-14, one test pins the global exactly: Declined. No table has more than 64 slots, so no test can
+  exceed the pinned `(64, 64)`, and a wider table cannot break the exact assertion.
+- P2-15, notes beside the crate have drifted: Done,
+  [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3656](https://github.com/nifeos/nife/pull/3656).
+- P2-16, `Option<Capability<O>>` has no niche: Open. Optional; it changes the input domain of every
+  rights harness, so a lane measures it before taking it.
+- D1, the crate's name: Done (ruled 2026-11-16 UTC, option A),
+  [#3674](https://github.com/nifeos/nife/pull/3674).
+- The provisional names: Open. `delegate`, `GrantRequired`, `SlotOccupied`, `capacity` and `iter`
+  wait for the architect's ratification under Open decisions.
+- The move: Open. No review package exists under `notes/crate-reviews/`, and nifeos/capability_table
+  does not exist; a package lane comes first, then the clearance under Open decisions.
+
+## Open decisions
+
+### Ratify the five provisional names
+
+Background: `capability_table` is the kernel's per-thread table of capabilities and their rights.
+Five of its public names come from the review's fixes, each provisional. `Capability::delegate`
+makes a copy of a capability with fewer rights, and refuses without the `GRANT` right
+(`Error::GrantRequired`) or when the copy would hold a right the source lacks. `capacity` is the
+number of slots, not `len`, which in std counts the elements held. `iter` walks the
+occupied slots. `Error::SlotOccupied` answers an insert at a slot already in use, apart from a full
+table. A provisional name can change freely inside nife; once the crate publishes, every user's code
+spells it, so the first publish turns each into a promise.
+
+Recommendation: A.
+
+- A. Ratify all five as built.
+- B. Rename `delegate` to `derive`, so the capability's method and the table's
+  `CapabilityTable::derive`, which calls it, spell the one act alike (seL4's derivation tree uses
+  the same word); keep the other four.
+- C. Ratify the five, and also add `len` returning the occupied count, beside `used`.
+
+Door: two-way inside nife; one-way at the first publish, when a published name becomes a breaking
+change.
+
+Prior art: std's `Vec::capacity` and `HashMap::capacity` mean exactly the slot count, and
+`Vec::len` the elements held, which is why `len` moved. seL4's `CNode_Mint` narrows rights on a
+copy; Zircon's `zx_handle_duplicate` does the same and requires the `DUPLICATE` right, as `delegate`
+requires `GRANT` (recalled, not read). Where nife differs: one method holds both refusals, and the
+kernel calls that method, so the proof covers the code the kernel runs. Example:
+`source.delegate(Rights::READ)` on a capability holding `READ | GRANT` is `Ok` with `READ` alone;
+on one holding `READ | WRITE` it is `Err(Error::GrantRequired)`.
+
+What it blocks: the first publish.
+
+### Clear the review, which creates nifeos/capability_table
+
+Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
+architect reads; clearing it is the go to create the crate's repository and move the crate there.
+No package exists for this crate yet, so a package lane writes one first. The crate's only consumer
+is the kernel, which then depends on it at a pinned revision.
+
+Recommendation: A.
+
+- A. A package lane writes the review package now, and the architect clears it when it arrives; the
+  manifest, README, licenses and exemptions (P0-1, P2-13) come with the move.
+- B. Land P0-1 and the `peak` feature (P2-11) in the tree first, so the package shows the crate as
+  it will publish.
+
+Door: one-way. The template's workflows and nife's pin act on a repository and a moved
+crate from the first day; moving back is a second move.
+
+Prior art (recalled, not read): the Rust project moved `libc` out of the compiler's tree into a
+repository of its own, and the compiler consumes it back by version. Where nife differs: a review
+package checks that the crate stands alone before it leaves, not after. Example:
+`jh7110_entropy`, whose review the architect cleared on 2026-11-01 (UTC), lives in nifeos/jh7110_entropy,
+and nife depends on it at a pinned revision.
+
+What it blocks: the move, and so the first tag and the first publish.
 
 ## Goal
 
@@ -57,129 +161,13 @@ somebody outside the repository acts on it after the move or the release (a repo
 published name, a published behavior, a layout, a license); everything else is two-way and the
 maintainer decides it. Every name proposed below is provisional.
 
-The ledger of what landed and what is left is in [the appendix](1081-capability-outside-review/ledger.md).
-
 ### P0: blocks the move
 
-1. The manifest does not stand alone, and the files the template wants are absent.
-   Finding: `Cargo.toml` inherits `license.workspace = true` and `[lints] workspace = true`, which
-   name a workspace the new repository does not have; it carries no `rust-version`, `description`
-   or `repository`; its `publish = false` comment points at `crates/publish-allowlist.txt`, a file
-   that will not be there. There is no README, no `LICENSE-MIT`, no `LICENSE-APACHE`. The template's
-   `check / standalone` reports all of this and fails. Outside the workspace the `#[cfg(kani)]`
-   module warns under `unexpected_cfgs`, which `-D warnings` turns into an error, because the
-   `check-cfg = ['cfg(kani)']` line lives in the workspace's lints. The move tool's `add_repository`
-   inserts `repository` after a `license =` line and finds none in this manifest, so the staged
-   manifest has no `repository` while the tool reports the step as done (see item 6).
-   Evidence: `crates/capability_table/Cargo.toml` lines 5 to 9; `helpers/standalone.py` on the staged
-   tree: 10 lines; `crate-workflows/sample/Cargo.toml` for the shape.
-   Change: `license = "MIT OR Apache-2.0"`, `rust-version = "1.85"` (edition 2024 needs it; the
-   tests pass there), `description`, `repository`, an own `[lints.rust]` block with `missing_docs`,
-   `unsafe_op_in_unsafe_fn` and the `unexpected_cfgs` line, and a comment on `publish = false` a
-   stranger can act on. Add both license files. Write the README in the template's section order
-   (`readme_sections.py`): summary, EXAMPLES, "What is proven", Building and testing with the Kani
-   install line on one line, one real falsification example, BUGS, Minimum Rust version, License.
-   The two crate-level doctests are the EXAMPLES.
-   Door: two-way. Effort: S.
-
-2. The crate's text refers back into nife.
-   Finding: `src/lib.rs` and the fourteen patch headers cite section numbers (15 lines) and milestones (29 lines). They also cite paths into the tree (20 lines: `notes/capabilities/table.md`, `kernel/src/...`,
-   `design/roadmap/0778-...`, `script/verify`) and name the architect with dates (5 lines after
-   the `Name:` blocks go; 7 before). The rule for a crate that leaves is that it never mentions
-   nife, and a document states the present rule without its history. Two of the citations are
-   already wrong inside the tree. `kernel/src/capability.rs` (line 213) does not exist; the file is `kernel/src/capability_object.rs`. ``split_never_widens_rights`` (line 138) renders as a link to a file that rustdoc does not serve. `cargo doc -D warnings` does not catch it because it is a URL and not an intra-doc path. The crate documentation also carries kernel
-   facts a generic reader cannot use ("Only `Rendezvous` consults it", "Only `Process` consults
-   it", lines 70 and 79) and the phrase "A thread's capability table," above (line 43) points at
-   text that now sits below it.
-   Evidence: `helpers/standalone.py` citation counts on the staged tree. `src/lib.rs` lines 38 to 43, 66 to 79, 123 to 124, 136 to 141, 150 to 155, 173, 186 to 192, 209 to 217, 237 to 241, 496 to 506, 529 to 534 and every harness comment. Also the patch headers.
-   Change: rewrite each doc comment to state what the item does and why, in the crate's own words. Move the reasons that need the kernel to `notes/capabilities/table.md`, which stays in nife. Turn the harness links into intra-doc links (`[`verification::split_never_widens_rights`]`
-   under `#[cfg(kani)]` needs a plain code span instead). Rewrite the patch preambles to name the
-   defect and the assertion only. Keep the dates out: git is the history. Do this in nife before
-   the move, so the dry run reads zero citation lines.
-   Door: two-way. Effort: M.
+The P0 items are in [the appendix](1081-capability-outside-review/blocks-the-move.md).
 
 ### P1: before the first green pull request in the new repository
 
-3. The proved `derive` is not the delegation the kernel runs.
-   Finding: `CapabilityTable::derive`, the subject of `derive_never_widens_rights` (which the
-   crate, `notes/verification/core-harnesses.md` and the lifecycle note all call the central
-   theorem), has no caller in the kernel. Neither do `put` and `get_with`. Delegation runs in
-   `kernel/src/sched/capabilities.rs` (`Delegation::derive`, lines 366 to 383), which rereads the
-   source, requires `GRANT`, requires the subset, and builds the copy by hand; the two `REVOKE`
-   arms in `kernel/src/syscall.rs` (lines 198 and 212) check `GRANT` the same way. None of those
-   three sites is under a Kani harness (`kernel/src/syscall/proofs.rs` has none for them). Inside the crate, the docs describe `Rights::GRANT` as the right to pass a capability on, and nothing in
-   the crate consults it: an outside user who calls `derive` gets a copy of a `GRANT`-less
-   capability. Within nife this widens nothing, because the kernel never calls `derive`; it means
-   the proof and the code it describes have drifted apart, and the crate's own API contradicts its
-   own documentation of `GRANT`.
-   Evidence: `src/lib.rs` lines 62 to 64, 453 to 472, 717 to 758; `kernel/src/sched/capabilities.rs`
-   lines 340 to 400; `kernel/src/syscall.rs` lines 196 to 214; `grep -rn '\.derive(' kernel/src`.
-   Change: put the rule in the crate once, as a method on `Capability<O>`: `delegate(&self,
-   rights: Rights) -> Result<Capability<O>, Error>` (name provisional), refusing without `GRANT`
-   and refusing a widening, with a new error variant for the first refusal (`GrantRequired`,
-   provisional). Have `Delegation::derive` and `CapabilityTable::derive` call it, so the kernel's
-   lock discipline stays where it is and the rule has one body. Prove it: a harness over all 2^32
-   source and requested rights that `Ok` implies `GRANT` held and the result's bits are within the
-   source's, stated in raw bits as `derive_never_widens_rights` is, with a falsification patch that
-   drops the `GRANT` check. Then either give `get_with` a caller or delete it; `put` stays as the
-   proof builder's door and says so.
-   Door: two-way (no behavior changes on the kernel's path when the rule is the same). Effort: M.
-
-4. A slot number truncates on a 32-bit target.
-   Finding: `get`, `put`, `delete` and (through them) `derive` cast `slot as usize`
-   (`src/lib.rs` lines 389, 439, 448, 476; its range check guards `insert_at` first and `insert_at_or_above` uses `try_from`). On a target with 32-bit `usize`, slot `2^32 + k` names
-   slot `k`. The caller only reaches its own table, so the caller gains no authority. The claim that "the
-   entire security mechanism is a bounds check" stops being true as stated, and `get(u64::MAX)`
-   passing the test (`usize::MAX` is out of range) hides it. No target nife builds is 32-bit, so
-   this is a hole in the claim, not a defect a current user can reach.
-   Evidence: the four lines above; `cargo clippy -W clippy::pedantic` names five
-   `cast_possible_truncation` sites; `tests.rs` line 103.
-   Change: make `storage::slot`, `fill` and `empty` take `u64` and convert with
-   `usize::try_from(slot).ok()?`, so an unrepresentable slot is `NoSuchSlot` everywhere; one test
-   with `1 << 32` beside `u64::MAX`; one sentence on `get`.
-   Door: two-way. Effort: S.
-
-5. `len` means capacity.
-   Finding: `CapabilityTable::len` returns `N`, the capacity, while `is_empty` and `used` speak of
-   occupancy, so a table with `len() == 64` is `is_empty()`. The naming rule says a method takes
-   std's spelling and meaning where std has one, and `len` in std is the number of elements held.
-   The ruling that standard-library names win came after this name, so this review rechecks it as the release-review rule allows. The kernel reads it as capacity at `kernel/src/sched/
-   capabilities.rs` lines 88, 149, 303 and 328.
-   Evidence: `src/lib.rs` lines 377 to 385; `design/naming.md`, "Shapes".
-   Change: rename to `capacity` (std's word for exactly this on `Vec` and `HashMap`), keep
-   `is_empty` and `used`, add `len` only if it returns `used`. Four kernel call sites move with it.
-   Door: two-way before the release; a published name after it. Effort: S. Name provisional.
-
-6. The move tool breaks every regenerated patch and skips the manifest step while reporting both
-   as done.
-   Finding: in the staged tree all 14 regenerated patches fail `git apply --check` with "corrupt
-   patch" (the template's `proofs / falsify` uses `git apply`), while the tool's own `patch -p1
-   --dry-run -F0` passes them. The regenerated hunk header for `subset_is_reflexive` says 7 old
-   lines and the body carries 6: the trailing blank context line is gone. `regenerate_patch` calls
-   `run`, which returns `(stdout + stderr).strip()`, and `strip()` removes a final line that is a
-   single space, which is how `diff -u` writes a blank context line. Separately, `add_repository`
-   matches only `^license\s*=` and this manifest has `license.workspace = true`, so the tool writes no `repository` line while the "rewrite" step reports it set.
-   Evidence: `helpers/crate_move.py` lines 72 to 118 (`regenerate_patch`), 156 to 163
-   (`add_repository`), 574 to 576 (`run`); the staged tree's `falsifications/
-   verification.subset_is_reflexive.patch` lines 26 to 32; `crate-move-static.log` of the dry run.
-   Change: have `regenerate_patch` take `diff`'s output without stripping (or strip newlines
-   only), add a selftest patch whose hunk ends in a blank line, and make `add_repository` insert
-   after `license.workspace` too, or fail loudly when it inserted nothing. Any crate whose hunk
-   ends at a blank line hits the first; any crate that inherits its license hits the second, so
-   both belong in the tool, not in this crate. The template's `standalone` job would have caught
-   both on the first pull request; the point of the dry run is to catch them before it.
-   Door: two-way. Effort: S. This item is against nife's tooling, not the crate.
-
-7. Two mutators are outside every harness.
-   Finding: `insert_at_or_above` (the floor insert the `std` runtime relies on) appears in no
-   harness, so no proof covers the free word or the count after it. Only the builder's first fill exercises `put` over an occupied slot. One assertion covers the mark's monotonicity, as `peak() >= used()` after a delete, not as "never falls across any operation". A test, not a proof, reaches the `floor >= 64` arm of `first_free_from`.
-   Evidence: `src/lib.rs` lines 294 to 302, 414 to 427, 601 to 677.
-   Change: add `insert_at_or_above(kani::any(), ...)` and a second `put` to
-   `the_free_mask_is_the_empty_slots` and `the_count_is_the_slots`. Add a harness that applies one
-   symbolic operation of any kind to a symbolic table and asserts `peak` did not fall and
-   `insert_at_or_above` never landed below its floor. Each new harness arrives with its
-   falsification patch. The unwind bound stays N + 1 by the existing argument.
-   Door: two-way. Effort: S.
+The P1 items are in [the appendix](1081-capability-outside-review/before-the-first-green-pull-request.md).
 
 ### P2: later
 
@@ -187,7 +175,9 @@ The P2 items are in [the appendix](1081-capability-outside-review/later-items.md
 
 ## Decisions for the architect
 
-No decision is open. Everything else above is two-way until the first release, and the review records it as provisional.
+D1 has its ruling. Everything else above is two-way until the first release, and the maintainer
+decides it, provisionally. The provisional names and the review clearance that creates the
+repository are under [Open decisions](#open-decisions).
 
 ### D1. The crate's name is `capability_table`
 
@@ -226,17 +216,15 @@ The checks are in [the appendix](1081-capability-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** The move's items 1 and 13, the `peak` cargo feature of item 11 (a
-  published name; the `target_has_atomic` gate is in), item 16 and the syscall layer's two inline
-  `GRANT` tests of item 3. The names `delegate`, `GrantRequired`, `SlotOccupied`, `capacity` and `iter`
-  are provisional, and each becomes a published name when the crate releases.
+- **Outstanding.** The Open lines under [Finding status](#finding-status) and the items under
+  [Open decisions](#open-decisions).
 
 ## BUGS
 
 - Item 4 came from reading and from clippy; the review ran no 32-bit build, because the host has no 32-bit target and the review adds nothing to a machine.
-- Ten of the fourteen falsification patches were not replayed; the four that were each failed
-  exactly their harness. The tree's own `script/verify` replays all fourteen on its cadence
-  (unverified for this head).
+- Ten of the fourteen falsification patches the review found were not replayed; the four that were
+  each failed exactly their harness. The tree's own `script/verify` replays every patch on its
+  cadence.
 - The dry run ran with `--no-build` and with the template at its newest release. The template's
   head carries checks the release lacks (spelled-out words, unit symbols, passive voice, function
   length); the review ran the two naming ones by hand and they pass, and it did not run the other two.

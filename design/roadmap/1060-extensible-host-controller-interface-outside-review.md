@@ -12,9 +12,9 @@ needs_person: yes
 Raised by the lane `milestone/1060-extensible-host-controller-interface-outside-review`. A reviewer
 with no prior exposure to this project read `nifeos/extensible_host_controller_interface` at commit
 `bea0257` (`main`, after its pull request #1), against
-[the review package](../../notes/crate-reviews/extensible-host-controller-interface.md). This block
-cites files and symbols at that commit, which is still `main`. It proposes work and changes nothing
-in that repository. Every item below is work for a lane there.
+[the review package](../../notes/crate-reviews/extensible-host-controller-interface.md). The findings
+cite files and symbols at that commit. Each finding's status line reads the repository's current
+`main`, and this block is the one record of where each finding and decision stands.
 
 The review package and milestone 820 (`extensible_host_controller_interface`: proven xHCI logic,
 released on its own) settle the crate name, its 146 ratified names, the license and the version.
@@ -31,10 +31,7 @@ driver. The same stranger can build, test, prove and falsify it from the README 
 name every code the crate hands back, and write a driver on a weakly ordered machine without
 guessing the order the ring discipline needs. The weekly gates are green.
 
-Publishing stays held. No crate from this organization publishes to crates.io until the
-maintainers have extracted several crates and a review has decided whether any of them combine.
-Nothing in this block lifts that hold, and no ruling covers a tag: a tag is a number others compare
-against, so placing one is a separate question for the architect.
+Publishing stays held, and a tag needs its own ruling; both are under the decisions below.
 
 ## What the review covered
 
@@ -53,6 +50,8 @@ provisionally.
 
 #### P0-1. The manifest's publish-facing fields are wrong or point outside the repository
 
+Status: Done: nifeos/extensible_host_controller_interface#7 and #8.
+
 In `Cargo.toml`, `description` says the crate covers "HID boot reports", and no report code exists
 in `src/`: the only report names are layout constants in `src/direct_memory_access.rs`.
 `keywords` holds `no-std`, `kani` and `driver`, and not `xhci` or `usb`, the two words a user
@@ -69,6 +68,8 @@ holds. Two-way. XS.
 ### P1: before the first release
 
 #### P1-1. The weekly mutation verdict is red, and the exemption file holds a census
+
+Status: Done: nifeos/extensible_host_controller_interface#5.
 
 The weekly run's `mutation` job fails with 99 survivors. Fifty sit in `src/verification.rs`, which
 compiles only under `cfg(kani)`, so no host test can kill them. The other 49 are the ones a local
@@ -87,6 +88,8 @@ for the template, through its own queue. Two-way. S.
 
 #### P1-2. The stranger run has never been recorded, and the README does not carry what a stranger needs
 
+Status: Done: nifeos/extensible_host_controller_interface#2 recorded the first stranger run, #4 added the section, #20 put the install line on one line. nifeos/extensible_host_controller_interface#23 (draft) records the newer run of issue #18.
+
 `docs/stranger-test.md` reads `Last run: none`, and the weekly `stranger cadence` job fails closed
 on it. The README gives no build or test command. Its Kani install command breaks across two lines
 inside one code span. It describes the falsification patches but gives no command to apply one,
@@ -98,6 +101,8 @@ line, `cargo kani`, the three commands around a patch (`patch -p1 < falsificatio
 with no project context records a stranger run. Two-way. S.
 
 #### P1-3. `context::endpoint` does not keep the endpoint type to its field
+
+Status: Done: nifeos/extensible_host_controller_interface#11 (the enum), #20 (the mask and the patch that drops it). Ruled; names ratified.
 
 Dword 1 of the context that `context::endpoint` builds takes `(kind as u32) << 3` with no mask. The
 Endpoint Type field is bits 5:3, so a `kind` above 7 spills into bit 6 (reserved), bit 7 (Host
@@ -114,6 +119,8 @@ mask. One-way (public signature). XS.
 
 #### P1-4. The read order a consumer needs on a weakly ordered machine is stated nowhere
 
+Status: Done: nifeos/extensible_host_controller_interface#9.
+
 The doc of `TransferRequestBlockPlacement` in `src/ring.rs` says the driver writes the cycle dword
 last, which is the producer's half. Nothing states the consumer's half. The controller writes an
 event's cycle dword last, so a driver that reads all four dwords and then calls
@@ -126,6 +133,8 @@ and the barrier, and a "What the caller does" section in the README listing the 
 and fences in sequence. Two-way. XS.
 
 #### P1-5. The rings accept sizes a controller refuses
+
+Status: Done: nifeos/extensible_host_controller_interface#11, with the harness bounds in #20. Ruled; names ratified.
 
 `EventRing::new` accepts any `entries > 0` and `ProducerRing::new` any `entries >= 2`. The reviewer
 recalls the specification's Event Ring Segment Table entry as valid for 16 to 4,096 TRBs per
@@ -140,6 +149,8 @@ them. The harness assumptions and the fuzz range narrow to match. One-way (publi
 
 #### P1-6. A producer ring has no notion of being full
 
+Status: Done: nifeos/extensible_host_controller_interface#9.
+
 `ProducerRing::enqueue` always places the next TRB and wraps, so a caller who enqueues more than
 `entries - 1` TRBs between two consumptions overwrites TRBs the controller has not reached. The crate's
 own driver never does; a stranger's may. The only statement of the rule is a
@@ -151,6 +162,8 @@ Two-way. XS.
 
 #### P1-7. The 64 kibibyte buffer rule is not stated on the data builders
 
+Status: Done: nifeos/extensible_host_controller_interface#9.
+
 `TransferRequestBlock::data` and `TransferRequestBlock::normal` take any buffer and length. A `u16`
 length keeps a TRB under 64 kibibytes, but a buffer that is not aligned can still cross a 64
 kibibyte boundary, which Linux splits a TD at and the reviewer recalls as a specification rule.
@@ -160,6 +173,8 @@ Change: read the rule, state it on both builders and in the README `BUGS`, and a
 `fits_one_transfer_request_block(buffer, len) -> bool`. Two-way. XS.
 
 #### P1-8. The codes the crate hands back have no public names
+
+Status: Done: nifeos/extensible_host_controller_interface#12. Ruled; names ratified.
 
 `TransferRequestBlock::kind` and `Event::Other` return a type code, and
 `src/transfer_request_block_type.rs` keeps `SETUP`, `LINK`, every command and every event code
@@ -177,6 +192,8 @@ specification's name as `doc(alias)`. `completion::name(code) -> &'static str` s
 
 #### P1-9. The crate holds no `unsafe` and does not say so
 
+Status: Done: nifeos/extensible_host_controller_interface#8.
+
 No `unsafe` block exists, yet the manifest enables `unsafe_op_in_unsafe_fn` and
 `undocumented_unsafe_blocks`, `SECURITY.md` speaks of the crate corrupting "memory it confines",
 and `.github/workflows/fuzz.yml` keeps crash inputs private. Change: `#![forbid(unsafe_code)]` in
@@ -185,6 +202,8 @@ wrong field position, a wrong ring step, a proof that does not hold. Set `public
 true`, which the standing rule allows for a crate with no `unsafe`. Two-way. XS.
 
 #### P1-10. The next template release brings the mutation stack
+
+Status: Done: nifeos/extensible_host_controller_interface#3 added the mutation caller, and #21 pins release `v8`, which carries the mutation stack. The `main` ruleset requires `check / mutation-diff`.
 
 Every caller pins `nifeos/crate-workflows` at `cd1b484`, at or past release `v7`, so the `lag` job
 passes. The template's unreleased `main` adds a `mutation.yml` caller, `check / mutation-diff` as a
@@ -197,6 +216,8 @@ lands first, or that run is red. Two-way. S.
 
 #### P1-11. Port 0 aliases port 1, and no port offset is bounded
 
+Status: Done: nifeos/extensible_host_controller_interface#13. Ruled.
+
 `Capabilities::port_status_and_control` in `src/registers.rs` saturates `port_number - 1`, so port
 0 returns port 1's offset, and nothing checks the port against `maximum_ports`.
 `fuzz/fuzz_targets/capability_registers.rs` asserts the alias. An offset for a port that does not
@@ -208,6 +229,8 @@ One-way (public signature). XS.
 
 #### P1-12. Two tri-states are spelled as `Option<bool>`
 
+Status: Done: nifeos/extensible_host_controller_interface#13. Ruled; names ratified.
+
 `PortDebounce::sample` returns `Option<bool>` for pending, settled and timed out, and
 `TransferRequestBlock::setup` takes `Option<bool>` for no data stage, host to device and device to
 host. A reader needs the doc comment to decode each.
@@ -217,6 +240,8 @@ Ruled 2026-11-09. Two enums replace them before any tag: a debounce verdict with
 `DeviceToHost`. The enum and variant names stand as built (2026-11-16 UTC). One-way (names and shapes). XS.
 
 #### P1-13. A fake controller a stranger can run, and a ring that refuses when full
+
+Status: Done: nifeos/extensible_host_controller_interface#14. Ruled; names ratified.
 
 The host test `a_simulated_controller_runs_exactly_what_was_produced_across_laps` holds a consumer
 that follows links and toggles its cycle, which is the test double a driver author wants, and it
@@ -230,6 +255,8 @@ consumes it as the controller would and decodes the events it writes. The names 
 
 #### P1-14. The Event Data bit is ignored
 
+Status: Done: nifeos/extensible_host_controller_interface#13. Ruled.
+
 When a transfer event has its Event Data bit (bit 2 of its last dword) on, its pointer field holds
 the event data value, not a TRB address. For a driver that issues Event Data TRBs, `Event::decode` in
 `src/event.rs` reports that value as an address.
@@ -240,34 +267,60 @@ with a builder for Event Data TRBs. Two-way (documentation). XS.
 
 ## Decisions this block needs
 
-Ruled, and closed here (decisions 1 to 4 on 2026-11-09, decision 5 on 2026-11-10):
+Ruled, and in force:
 
-1. `context::endpoint` takes an `EndpointType` enum and keeps the mask; a lane mints the variant
-   names come from the specification's spellings and stand as built (2026-11-16 UTC).
-2. `EventRing::new` and `ProducerRing::new` refuse sizes outside the specification's bounds, read
-   from its text first, with `MINIMUM_SEGMENT_ENTRIES` and `MAXIMUM_SEGMENT_ENTRIES`; the harness
-   assumptions and the fuzz range narrow to match (P1-5).
-3. New public names land before any tag (P1-8, P1-12, P1-13). They are the type codes, speed ids
-   and change bits made public, the missing completion codes with aliases, `completion::name`, the
-   two enums, `try_enqueue` and `complete`, with the fake controller example. Every name stands
-   as built (2026-11-16 UTC).
-4. `Capabilities::port_status_and_control` returns `Option<u64>`, `None` for port 0 or past
-   `maximum_ports`, and the fuzz target asserts `None` (P1-11).
-5. `Event::Transfer` grows no `event_data` field until a builder for Event Data TRBs arrives; its
-   documentation says when the pointer is a TRB address (P1-14).
+1. The shapes of P1-3, P1-5, P1-8, P1-11, P1-12, P1-13 and P1-14 (ruled 2026-11-09 and
+   2026-11-10), each stated in its finding.
+2. The names of P1-3, P1-5 to P1-9, P1-12 and P1-13 stand as built (ruled 2026-11-16; recorded by
+   nife #3664). They are `EndpointType` and its variants, the two segment bounds, `ProducerRing::capacity`,
+   `fits_one_transfer_request_block`, the public type codes, speed ids, change bits and completion
+   codes with `completion::name`, `DebounceVerdict`, `TransferType`, `try_enqueue`, `complete` and
+   `examples/fake_controller.rs`.
+3. The crate takes the pre-release tag `v0.1.0-pre.3` after a green dry run on `main`, with nothing
+   published (ruled 2026-11-19). Open: in flight in
+   `nifeos/extensible_host_controller_interface` #22.
+4. No crate publishes until every outside review milestone is delivered (ruled 2026-11-18).
+   `publish = false` stays.
 
-For the architect, one-way, not yet ruled: any tag, asked separately when the weekly gates pass.
+The maintainers' provisional calls: every two-way item above and in the appendix. One question is
+open, below.
 
-Ruled 2026-11-16 (UTC): the names of P1-3, P1-5 to P1-9, P1-12 and P1-13 stand as built. They
-are `EndpointType` and its variants; `MINIMUM_SEGMENT_ENTRIES` and `MAXIMUM_SEGMENT_ENTRIES`;
-`ProducerRing::capacity`; `fits_one_transfer_request_block`; the public type codes, speed ids,
-change bits and completion codes with `completion::name`; `DebounceVerdict` (`Pending`, `Settled`,
-`TimedOut`); `TransferType` (`NoDataStage`, `HostToDevice`, `DeviceToHost`); `try_enqueue`;
-`complete`; and `examples/fake_controller.rs`. Tag and publish stay separate asks.
+## Open decisions
 
-The maintainers' provisional calls: every other two-way item above and in the appendix.
+### Do the names the P2 batch added stand as built?
 
-The publishing hold stands.
+`nifeos/extensible_host_controller_interface` #15 closed the P2 items, and in doing so added public
+names nobody has ratified. P2-5 added `Capabilities::interrupter_register(interrupter,
+register_offset) -> Option<u64>`. P2-6 added `SUPPORTED_PROTOCOL_EXTENDED_CAPABILITY_ID` and the
+struct `SupportedProtocol`, with fields `major_revision`, `minor_revision`, `name`,
+`first_port_number`, `port_count` and `speed_id_count` and methods `decode` and `contains_port`.
+P2-7 added five waits: `HALT_TIMEOUT_MILLISECONDS`, `CONTROLLER_RESET_TIMEOUT_MILLISECONDS` and
+`COMMAND_COMPLETION_TIMEOUT_MILLISECONDS` at the crate root, and `port::POWER_ON_WAIT_MILLISECONDS`
+and `port::RESET_TIMEOUT_MILLISECONDS`.
+
+They matter now because the first publish freezes every public name. Decision 2 ratified the P1 names; these arrived after it. The
+constraint is nife's naming rules: words spelled out, a limit carries its unit, std spellings win,
+spec mnemonics only as `doc(alias)`. Each name follows them. The three controller waits sit at the
+crate root because the register naming gate refuses a timeout inside `registers`, which is a placement choice.
+
+Ratifying costs nothing. A rename costs one crate pull request; no caller in nife uses any of
+these names.
+
+Recommendation: A.
+
+- A. They stand as built, placement included.
+- B. They stand, but the three controller waits move into a `timing` module beside the port waits'
+  module, so every wait reads from one place.
+- C. Named changes, given name by name.
+
+Door: two-way until the first publish, one-way after it. Prior art, read in Linux's
+`drivers/usb/host/xhci-caps.h`, `xhci.h` and `xhci-ext-caps.h`. Linux names the same waits
+`XHCI_MAX_HALT_USEC` (32 ms), `XHCI_RESET_LONG_USEC` (10 s) and `XHCI_CMD_DEFAULT_TIMEOUT` (5 s).
+It reads the capability through `XHCI_EXT_CAPS_PROTOCOL`, `XHCI_EXT_PORT_MAJOR`,
+`XHCI_EXT_PORT_OFF`, `XHCI_EXT_PORT_COUNT` and `XHCI_EXT_PORT_PSIC`. Linux abbreviates and puts the
+unit in a suffix; this crate spells the same split out. The tree's analogue is decision 2, ruled as built.
+Blocked until answered: the release review's name list for this crate, and so its first publish;
+no tag waits on it.
 
 ## Prior art
 
@@ -281,48 +334,28 @@ The checks, and the hardware steps the review claims none of, are in
 
 ## BUGS
 
-- P1-5 and P1-7 rest on the reviewer's memory of the specification and of Linux's ring code,
-  not on its text, which nobody has read for this block. The recalled bound of P1-5 is the Event
-  Ring Segment Table entry's; the lane reads which bound, if any, applies to a producer ring.
 - The fuzz runs took 30 seconds per target, and the repository commits no seed corpus.
 - The crate decodes only what the controller writes. The hostile input a USB device presents
   (descriptors, report lengths) belongs to the review of the crate that parses descriptors.
-- P1-10 waits on a template release.
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet.
 
-## Where this stands
-
-Finished: every P0, P1 and P2 item except P1-10, in `nifeos/extensible_host_controller_interface`
-#2 to #15 and #20. The names of P1-3, P1-5 to P1-9, P1-12 and P1-13 are ratified as built (nife
-#3664). The `main` ruleset requires `check / mutation-diff`. Kani, fuzz and mutation pass at
-`a2189a4`, the commit `v0.1.0-pre.2` tags.
-
-| item | what remains | blocker |
-|---|---|---|
-| P1-10 | every caller pins `nifeos/crate-workflows` at `4d9eea2`, which is no template release; the newest release, `v7`, predates the mutation stack | release step |
-| P1-2, P1-3, P1-5, P2-3 | #20 landed after `v0.1.0-pre.2`, so no tag carries them yet; milestone 820 owns the next tag, and any tag is a separate ask | decision for calef |
-| the hardware checks of the done-when appendix | none has a bench record after the review or a README BUGS line naming it unrun | bench |
-
-The publishing hold keeps `publish = false`.
-
 ## Follow-on
 
-- **Done.** P0-1 landed in `nifeos/extensible_host_controller_interface` #7 and #8, and P1-1 in #5.
-  P1-4, P1-6 and P1-7 landed in #9, P1-8 in #12, P1-9 in #8, P1-11, P1-12 and P1-14 in #13, P1-13 in #14, P2-2 in
-  #10, and the rest of P2 in #15.
-- **Done.** #20 landed P1-2's one-line Kani install, P1-3's mask with a patch that drops it, P1-5's
-  harness bounds, P2-3's module sentences and P2-10's description and topics.
-- **Outstanding.** P1-10's pin: every caller pins `nifeos/crate-workflows` at `4d9eea2`, which is no
-  template release, and none carries the mutation stack. Read from the workflow files and the tags.
+- **Done.** Every P0, P1 and P2 item, in `nifeos/extensible_host_controller_interface` #2 to #15,
+  #20 and #21; each finding's status line names its pull request. The bounds of P1-5 and the rule
+  of P1-7 come from the specification text (xHCI 1.2 section 4.9.2.2, Table 6-1, section 6.4.1),
+  not from the reviewer's memory.
+- **Done.** `nifeos/extensible_host_controller_interface` #23 (draft until the tag exists) names
+  every hardware check of the done-when appendix in the README's BUGS as unrun on silicon.
+- **Outstanding.** The names the P2 batch added wait on the ruling under Open decisions.
+- **Outstanding.** The `v0.1.0-pre.3` tag, in flight in #22.
 - **Outstanding.** The hardware checks of
   [the done-when appendix](1060-extensible-host-controller-interface-outside-review/done-when.md):
-  none has a bench record made after the review. Read from the README's BUGS and nife's `bench/`.
+  none has a bench record. Read from the README's BUGS and nife's `bench/`.
 
 ## Index row
 
-An outside reading of `extensible_host_controller_interface`: one manifest fix blocks the first
-release, and fourteen items go before it. Seven carry rulings: an `EndpointType` enum, refused
-ring sizes, public names for every returned code, two enums for `Option<bool>`, `try_enqueue` with
-a fake controller, an `Option` port offset, and no Event Data field yet. Eleven follow it. Any tag
-is open, and publishing stays held.
+An outside reading of `extensible_host_controller_interface`: one manifest fix, fourteen items
+before the first release and eleven after it, all landed. Every P1 name is ratified; the names the
+P2 batch added wait on one ruling. The hardware checks are unrun, and publishing stays held.

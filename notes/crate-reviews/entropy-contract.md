@@ -28,7 +28,7 @@ change.
 |---|---|
 | crate | `entropy_contract`, ratified ("the service's own word, `entropy`, with the contract suffix") |
 | identity values | `INTERFACE_ID` 12, `VERSION` 1, no magic (a message contract, not a page). Both match row 12 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table and its "version 1 when assigned". The two names are ratified for every contract crate (#3059). Frozen 2026-11-11 (UTC) on #3480 |
-| version | `0.1.0`; no tag |
+| version | the version, the tag and the pin are tracked in [milestone 1071 (`entropy_contract`: what an outside maintainer would fix before 0.1.0)](../../design/roadmap/1071-entropy-contract-outside-review.md) |
 | edition, `rust-version` | 2024, 1.88 |
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest (no workspace inheritance) |
 | `publish` | `false`; milestone 1017 keeps the moved contract crates unpublished until their own release milestone |
@@ -189,15 +189,9 @@ The callers in `components`, the kernel, `system_initializer`, `fixtures`, `syst
 
 ## What still blocks the move
 
-The crate itself does not. What blocks the move is in nife, and in the decisions below.
-
-| item | owner |
-|---|---|
-| Convert the six path dependencies to `git` and `rev` with `version = "0.1.0"`. | move lane |
-| Repoint `helpers/interface_declarations_check.py`, `helpers/interface_stability.py`, `helpers/trust_boundary_crates.tsv`, `packages/contracts.package.toml`, the `script/verify` row, the mutation baseline row and `helpers/template_report_baseline.txt`. | move lane |
-| The manifest's `publish = false` comment names this tree's allowlist path; the reason in the new repository is the publishing hold. | move lane |
-| Run the template's workflows in the new repository, with the patches rewritten to its paths. | move lane |
-| Run the stranger test from a clone of the repository and record it in `docs/stranger-test.md`. | maintainer, runbook step 12 |
+Nothing: the move landed in #3627. What remains for the repository, and the state of every
+finding, is in [milestone 1071 (`entropy_contract`: what an outside maintainer would fix before
+0.1.0)](../../design/roadmap/1071-entropy-contract-outside-review.md).
 
 ## Decided by the maintainer, provisional
 

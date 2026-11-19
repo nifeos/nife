@@ -11,7 +11,7 @@ An appendix to [the milestone](../1095-inter-process-communication-outside-revie
    there; `T: Send` then fails to parse as a bound. The kernel never imports it, which is why
    nothing has noticed. A stranger's first `use` will.
    Evidence: `src/lib.rs` line 37; `src/rendezvous.rs` line 66.
-   Change: the names D1 below decides, provisionally. The crate's own vocabulary is "verdict"
+   Change: the names the milestone's D1 decides, provisionally. The crate's own vocabulary is "verdict"
    (`src/rendezvous.rs` lines 64, 81; `src/notification.rs` line 79), so `SendVerdict` and
    `ReceiveVerdict` are the names the documentation already uses in prose; `Signal`, `Wait` and
    `Arm` would follow for one shape across the four modules.

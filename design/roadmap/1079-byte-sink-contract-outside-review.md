@@ -44,36 +44,9 @@ The comparison with nearby work is in [the appendix](1079-byte-sink-contract-out
 Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A door is one-way when
 somebody outside the repository acts on it after the release (a published name, a published wire behavior, a layout, a dependency, a license). Everything else is two-way, and the maintainer decides it.
 
-The ledger of what landed and what is left is in [the appendix](1079-byte-sink-contract-outside-review/ledger.md).
-
 ### P0: blocks the move or any publish
 
-1. The crate does not stand alone, and the documentation that explains it does not travel.
-   Finding: there is no README, no `LICENSE-MIT` or `LICENSE-APACHE`, no `rust-version`. The manifest inherits `license` and `lints` from the workspace, and its `publish = false` comment points at `crates/publish-allowlist.txt`, a file that will not exist in the new repository. The
-   crate root documentation sends the reader to notes/abi.md, notes/sink-protocol.md ("the module
-   note", twice), §16 (object revocation: reclaim the objects a process built), §242, milestones 613 and 956, `filesystem_contract`, `line_editor::proto`, `filesystem_fixture`, `cargo xtask std-src` and two files under `fixtures/src/`. It also names the architect in four `Name:` blocks. The reasons for the shape (register-only rather than a
-   shared page; `SEND` rather than `CALL`; no per-write error; what the protocol deliberately does
-   not carry) live only in the note. A stranger holding the published crate cannot learn why the contract has its shape, and the template's `standalone` gate refuses every one of those
-   references.
-   Evidence: `crates/byte_sink_contract/Cargo.toml` lines 5 to 6, 8 to 13, 16 to 17, 20 to 26. `src/lib.rs` lines 4, 8, 10 to 11, 15 to 16, 22, 26, 32, 35, 58, 61, 66, 153 to 158, 162, 248, 278 to 281, 285, 291, 297. Also the `standalone` findings above, and the two `lint_externalized_crates` hits (`line_editor` at line 16, `b"nife"` at line 360).
-   Change: copy the scaffold (README with the template's section order, both license files, `CHANGELOG.md`, `_typos.toml`, `deny.toml`, `.github/`). Write `license`, `rust-version` and the three lints as literals. Delete the `publish` line in the release that publishes, and until then give it a comment a stranger can act on. Strip the `Name:` blocks (ruled for every moved crate). Rewrite the crate root documentation as the specification. It carries the wire table and the two shape decisions with their reasons. It carries the `Gone` versus `NoSink` split with std's mapping (`BrokenPipe` versus `Unsupported`) as the worked example. It also lists what the contract does not carry, in the crate's own words with no path into this tree. Rename the test string at line
-   360.
-   Door: two-way (the license is already ruled). Effort: M.
-
-2. The `VERSION` documentation specifies a bind-time wire check that does not exist and cannot
-   exist in this shape.
-   Finding: the comment says a writer `CALL`s `OPERATION_VERSION` and binds only when its own
-   version is in the served set. No such opcode exists in this crate or anywhere in the tree. Proposal 1000 (message contracts carry bind-time version checks), not started, reserves opcode 0 for it "where the protocol leaves it free", and this contract gives opcode 0 to `OPERATION_BYTES`. A sink is `SEND`-only by the contract's own first paragraph, so there is
-   nothing a writer could `CALL`, and the one receiver that would answer is a pipe's ordinary
-   reader. The check that does exist today is static: the program's `INTERFACES` note carries
-   (6, 1), and `interfaces_note` says the progenitor compares only the syscall ABI's entry at spawn
-   and carries the others. An outside implementer who trusts the comment reserves opcode 0 for a
-   version reply and collides with every bytes message.
-   Evidence: `src/lib.rs` lines 19 to 27 (the comment) and 46 (opcode 0 taken);
-   `crates/interfaces_note/src/lib.rs` lines 4 to 7; `design/roadmap/1000-*.md` line 23.
-   Change: the comment states what is true: a program's note declares the pair (`INTERFACE_ID`, `VERSION`). The contract has no wire operation for versions and, being one-way, cannot have one without a reply. A framing change bumps `VERSION`, and a sink that serves two versions does so by accepting both framings, which is what "serves N and N-1" means for a stream. Whether a
-   wire version operation is ever added is decision A, decided provisionally: none.
-   Door: two-way, decision A. Effort: S.
+The P0 items are in [the appendix](1079-byte-sink-contract-outside-review/blocks-the-move.md).
 
 ### P2: later
 
@@ -87,7 +60,8 @@ The P1 items are in [the appendix](1079-byte-sink-contract-outside-review/before
 
 Each gives the background, then the recommendation, then prior art and one concrete example.
 A, B and D are two-way before the first tag, and the maintainer has decided them, provisionally.
-C has its ruling.
+C has its ruling. The review clearance that creates the repository is under
+[Open decisions](#open-decisions).
 
 ### A. Does the byte-sink contract ever get a wire version operation?
 
@@ -114,8 +88,7 @@ treat each line as a version query.
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may revisit. No such operation exists and nobody has built against one, and a later `VERSION`
 can add one. The contract has no wire version operation. The pair (`INTERFACE_ID`, `VERSION`)
 declared in the program's `INTERFACES` note is the check, made by the spawner, and the `VERSION`
-documentation says so. Item 2 is the work: the comment at `src/lib.rs` lines 19 to 27 still
-promises a `CALL` of `OPERATION_VERSION`, where opcode 0 is `OPERATION_BYTES` (line 46).
+documentation says so. Item 2 is the work, and the `VERSION` documentation states it.
 
 ### B. Does `fixture` ship in the published crate?
 
@@ -194,28 +167,89 @@ No old-name alias. Item 9 is the work.
 
 The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-when.md).
 
-## Where this stands
+## Finding status
 
-Finished: items 1 (in tree), 2, 4 to 7, 10, 11 and 15 (#3565), and decision C with item 8
-(#3581). Decisions A, B and D are provisional maintainer rulings; A's work is item 2, done.
+- P0-1, the crate stands alone: Open. The crate-root documentation is rewritten as the specification
+  ([#3565](https://github.com/nifeos/nife/pull/3565)). Left: a README, both licenses, a literal
+  license and lints, `rust-version` and a `publish` comment a stranger can act on. That comment
+  points at `crates/publish-allowlist.txt`. Also left: the scaffold and the `Name:` strip, and a
+  test payload other than `b"nife"` (`src/lib.rs` line 394, not a wire literal).
+- P0-2, the `VERSION` text: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P1-3, `fixture` in the public API: Ruled (maintainer provisional, decision B, 2026-11-14 UTC). Not
+  built: `pub mod fixture` is still in `src/lib.rs`; it moves to an in-tree `byte_sink_fixture`
+  (name provisional), and four consumers change one `use`.
+- P1-4, the `abi` dev-dependency: Done, [#3565](https://github.com/nifeos/nife/pull/3565). The pin
+  of `GONE` to `abi::Error::Gone` is a `const` assertion in `system_tests/src/user/sink_tests.rs`.
+- P1-5, proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565). Five harnesses, each with a
+  falsification patch.
+- P1-6, the decoder ignores `kind`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P1-7, British spellings: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P1-8, end-of-stream words reserved: Open. `unpack` refuses either word non-zero and `rm`'s verdict
+  has its own endpoint ([#3581](https://github.com/nifeos/nife/pull/3581)); one sentence remains,
+  since the crate root's "What it does not carry" still says a sink ignores the two words.
+- P1-9, names a later rule reopens: Ruled (maintainer provisional, decision D, 2026-11-14 UTC). Not
+  built: `INLINE_MAXIMUM`, `req`, `Msg` and `ret` keep their old names; one rename lane applies
+  `MAXIMUM_INLINE_BYTES`, `first_word`, `Message` and `returned`, with no alias and the std PAL
+  regenerated, and the names then go to the crate's release name review.
+- P1-10, the zero-count contradiction: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P2-11, `len` on a narrow `usize`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+  `unpack` compares the count as `u64`.
+- P2-12, `req` drops high bits: Open. Typed `operation: u8` and `len: u32` parameters retype the
+  public opcode constants; a two-way door before the release, which the maintainer rules
+  provisionally.
+- P2-13, `pack` returns a bare four-tuple: Open. Whether `pack` and `unpack` take a words struct is
+  two-way until the release, and the maintainer rules it provisionally; if taken, the struct's name
+  joins the release name review.
+- P2-14, equivalent mutants: Open. Four exemptions with their reasons go into the new repository's
+  `.github/mutants-exempts`.
+- P2-15, severity bits on any first word: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Decision A, no wire version operation: Done (maintainer provisional, 2026-11-14 UTC), built as
+  P0-2, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Decision B, `fixture` out of the published crate: Ruled (maintainer provisional, 2026-11-14 UTC).
+  Not built: P1-3.
+- Decision C, end-of-stream words reserved: Done (ruled 2026-11-14 UTC, option A),
+  [#3581](https://github.com/nifeos/nife/pull/3581).
+- Decision D, the names: Ruled (maintainer provisional, 2026-11-14 UTC). Not built: P1-9.
+- The move: Open. No review package exists under `notes/crate-reviews/`, and
+  nifeos/byte_sink_contract does not exist; a package lane comes first, then the clearance under
+  Open decisions.
 
-- Item 3, decision B: `fixture` is still public in `src/lib.rs` and no `byte_sink_fixture` crate
-  exists. Blocker: other, a lane.
-- Item 9, decision D: `INLINE_MAXIMUM`, `req`, `Msg` and `ret` keep their old names. Blocker:
-  other, a rename lane.
-- Items 12 and 13 are open doors with no ruling. Blocker: decision for calef.
-- Item 14 and the rest of item 1 belong to the move; no review package and no repository exist.
-  Blocker: decision for calef (review clearance), after a package lane.
-- Publishing. Blocker: publishing hold.
+## Open decisions
+
+### Clear the review, which creates nifeos/byte_sink_contract
+
+Background: `byte_sink_contract` is the one framing every "write these bytes there" destination
+speaks (a terminal, a file, a pipe), so a writer holds any of them in one capability slot. A crate
+that leaves nife gets a review package under `notes/crate-reviews/`, which an architect reads;
+clearing it is the go to create the crate's repository and move the crate. No package exists for
+this crate yet, so a package lane writes one first.
+
+Before the package is worth reading, the in-tree work lands: `fixture` moves out (P1-3), the
+renames apply (P1-9), and a lane corrects the crate-root sentence on end-of-stream words (P1-8). The
+manifest, README, licenses and exemptions (P0-1, P2-14) come with the move itself.
+
+Recommendation: A.
+
+- A. Land P1-3, P1-8 and P1-9, then a package lane writes the review package, and the architect
+  clears it when it arrives.
+- B. Write the package now, with P1-3 and P1-9 listed as conditions of the clearance.
+
+Door: one-way. The template's workflows and nife's pin act on a repository and a moved
+crate from the first day; moving back is a second move.
+
+Prior art (recalled, not read): the Rust project moved `libc` out of the compiler's tree into a
+repository of its own, and the compiler consumes it back by version. Where nife differs: a review
+package checks that the crate stands alone before it leaves, not after. Example:
+`jh7110_entropy`, whose review the architect cleared on 2026-11-01 (UTC), lives in nifeos/jh7110_entropy,
+and nife depends on it at a pinned revision.
+
+What it blocks: the move, which is milestone 1017's step 5, and so the first tag and the first
+publish.
 
 ## Follow-on
 
-- **Done.** Items 1 (in tree), 2, 4 to 8, 10, 11 and 15, decision C, and decision A, whose work is
-  item 2; the ledger has each.
-- **Outstanding.** Items 3 and 9, the work of decisions B and D; items 12 and 13; and item 14 with
-  the rest of item 1, which belong to the move.
-- **Recorded.** The shell does not see `rm`'s exit status, since no exit status reaches a parent;
-  `notes/rm.md` keeps it in its BUGS.
+- **Outstanding.** The Open lines under [Finding status](#finding-status) and the items under
+  [Open decisions](#open-decisions).
 
 ## BUGS
 
@@ -230,5 +264,5 @@ Finished: items 1 (in tree), 2, 4 to 7, 10, 11 and 15 (#3565), and decision C wi
 ## Index row
 
 An outside review of `byte_sink_contract` before it leaves found two findings that block the move. The crate does not stand alone, and its `VERSION` text specifies a wire operation that does not and cannot exist. It found eight to land before the first release. They are the fixture module in the public API, the `abi` dev-dependency, no proofs, a kind byte the decoder ignores, a British spelling, undefined end-of-stream words, names a later rule reopens, and a zero-count contradiction. It found five for later.
-Four one-way doors for the architect: no wire version operation, `fixture` out of the published
-crate, end-of-stream words reserved, and the renames.
+Four decisions: the architect ruled the end-of-stream words reserved, and the maintainer decided,
+provisionally, no wire version operation, `fixture` out of the published crate, and the renames.

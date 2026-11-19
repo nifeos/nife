@@ -10,11 +10,11 @@ An appendix to [the milestone](../1098-line-editor-outside-review.md).
    public constant with no `Name:` block, so the worklist cannot see it. `pop8` carries a digit
    where the sibling `OPERATION_READRAW` carries its eight in prose. `Event::Eof` keeps the
    standard library's spelling (`UnexpectedEof`) and stays here on that ground. The unit rule (above) reopens the three limits.
-   Evidence: `src/line_disc.rs` lines 15, 17, 21 and 128; `src/raw_queue.rs` lines 16 and 60.
+   Evidence: `src/line_disc.rs` lines 16, 21, 23, 27 and 142; `src/raw_queue.rs` lines 15 and 65.
    Change: `LineDisc` becomes `LineEditor` (a crate that holds a component's logic takes the component's name; `rustyline` and `noline` both call theirs `Editor`). `HIST` becomes `HISTORY_LINES` (a count of things names the things). `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM` become `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and `MAXIMUM_RAW_QUEUE_BYTES`. `pop8` becomes `pop_up_to_eight` or takes a `[u8; 8]` return that
    says it. No `doc(alias)` for the old spellings before the first release, per the rule in force.
-   Door: two-way before the first tag; decision 2 below decides `LineEditor` and `HISTORY_LINES`,
-   provisionally, and decision 3 the limits. Effort: S.
+   Door: two-way before the first tag; the milestone's decision 2 decides `LineEditor` and
+   `HISTORY_LINES`, provisionally, and the limits are calef's. Effort: S.
 
 4. Names the template's day-one gates refuse, in `proto` and `component`, and in parameters.
    Finding: `spelled_out.py` fails at a ceiling of 0 on `HANDOFF_VA`, `ELF_VA` (`va` abbreviates
