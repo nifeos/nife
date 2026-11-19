@@ -85,7 +85,7 @@ needs nothing more, and only the board can show that.
   says.
 - The walk has no only-one-child rule. If this bridge answers every device number on bus 1, the
   drive appears 32 times.
-- Whether an unsupported request reads as all ones or raises a bus error is unmeasured; the walk
-  reads every device number on bus 1.
-- The PCI Express master's DMA coherence is unmeasured. The Ethernet controller's is measured
-  coherent on the same board.
+- Nobody has measured whether an unsupported request reads as all ones or raises a bus error, and
+  the walk reads every device number on bus 1.
+- Nobody has measured the PCI Express master's DMA coherence. A measurement on the same board
+  found the Ethernet controller's coherent.

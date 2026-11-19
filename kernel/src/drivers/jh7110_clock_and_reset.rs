@@ -6,9 +6,9 @@
 //! and reports what the hardware said. It reaches into no kernel global (§4 (kernel shape)). Every
 //! device a userspace driver serves asks the clock and reset server instead
 //! (`user::jh7110_clock_and_reset_service`); the kernel keeps this walk for what it brings up
-//! before that server exists: the PCI Express root port (milestone 163), and its own watchdog
-//! (milestone 593 (a wedged kernel resets itself)), which the soak's supervisor pets from the
-//! kernel. See notes/jh7110-clock-and-reset.md.
+//! before that server exists: the PCI Express root port (milestone 163 (the JH7110's PCIe root
+//! complex)), and its own watchdog (milestone 593 (a wedged kernel resets itself)), which the
+//! soak's supervisor pets from the kernel. See notes/jh7110-clock-and-reset.md.
 //!
 //! # SAFETY
 //!
