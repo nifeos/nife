@@ -67,6 +67,8 @@ pub const OPERATION_OPEN_TCP: u64 = 3;
 /// in bytes, at most [`MAXIMUM_PAYLOAD_BYTES`]; a larger one is answered [`REPLY_ERROR`]. The destination is in
 /// the frame header and the payload at [`PAYLOAD_OFFSET_BYTES`]. The frame's [`PAYLOAD_LENGTH_OFFSET_BYTES`] is not read. Replies
 /// [`REPLY_OK`], or [`REPLY_ERROR`].
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 #[doc(alias = "sendto")]
 pub const OPERATION_SEND_TO: u64 = 4;
 /// `CALL(socket, OPERATION_RECEIVE, 0)`: block until a datagram or segment arrives, and write it to
@@ -155,6 +157,8 @@ pub const fn word_peer(word: u64) -> Option<([u8; 4], u16)> {
 /// socket's badge with this bit set, so a request whose badge has it names a socket and any other
 /// badge is a front door. A closed socket's badge stays
 /// in the socket range and leaves the stack's table, so it reaches nothing at all.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 pub const SOCKET_BADGE_BIT: u64 = 1 << 63;
 
 /// Does a request that arrived with `badge` name a socket? `false` means it came through a front
@@ -181,6 +185,8 @@ pub const fn names_a_socket(badge: u64) -> bool {
 /// Success. Non-negative is success, and `RECEIVE` and `SEND` reply a byte count here instead: from
 /// `RECEIVE`, 0 is the end of the stream, and from `SEND`, a count below the length sent means send
 /// the rest.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 pub const REPLY_OK: u64 = 0;
 /// `OPERATION_CONNECT` succeeded.
 pub const CONNECT_ESTABLISHED: u64 = 0;
@@ -188,21 +194,31 @@ pub const CONNECT_ESTABLISHED: u64 = 0;
 pub const CONNECT_REFUSED: u64 = 1;
 /// A failure sentinel (a capability that names no live socket, a bad operation, or a server-side
 /// timeout). Bit 32 set, so it is never mistaken for a length or a connect outcome.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 pub const REPLY_ERROR: u64 = 1 << 32;
 
 // `LISTEN`'s outcomes, its own small vocabulary because "never granted this port" and "somebody
 // else holds it" call for opposite responses: ask for authority, or pick another port.
 
 /// The port claim was granted; the reply carries the new capability.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 pub const PORT_CLAIM_GRANTED: u64 = 0;
 /// The port is outside this stack's [`listen_grant`]. The capability refusal: no retry, no
 /// other port in range will help unless the caller was granted it.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 pub const PORT_CLAIM_DENIED: u64 = 1;
 /// The port is inside the grant but another socket already listens there. Exclusivity is the whole
 /// reason a port is a grantable thing; this is what enforcing it looks like from the client side.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 pub const PORT_CLAIM_IN_USE: u64 = 2;
 
 /// No inbound authority at all, and the default a net server is spawned with.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 pub const NO_PORT_GRANT: u64 = 0;
 
 /// Pack an inclusive listen-port range into the one word a net server is spawned with. `start == 0` is
@@ -229,6 +245,8 @@ pub const fn listen_grant(start: u16, end: u16) -> u64 {
 /// May a holder of a stack carrying `grant` listen on `port`? The whole authority check, in one
 /// place both the server and its tests read, so a server-side widening cannot pass a test that
 /// keeps its own copy of the range.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 pub const fn listen_grant_allows(grant: u64, port: u16) -> bool {
     let lo = (grant & 0xffff) as u16;
     let hi = ((grant >> 16) & 0xffff) as u16;
@@ -277,6 +295,8 @@ pub const fn udp_bind_grant(start: u16, end: u16) -> u64 {
 /// May a holder of a stack carrying `grant` bind a UDP socket to the fixed `port`? [`listen_grant_allows`]
 /// for the word's UDP half; the two halves are independent authorities, so granting a TCP listen
 /// range grants no UDP port and the reverse.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
 pub const fn udp_bind_grant_allows(grant: u64, port: u16) -> bool {
     let lo = ((grant >> 32) & 0xffff) as u16;
     let hi = ((grant >> 48) & 0xffff) as u16;
@@ -290,9 +310,13 @@ pub mod stack_slots {
     /// The stack's own endpoint again, `WRITE | GRANT`: what each socket's capability is minted
     /// from with `BADGE`, which keeps the source's rights. Not the `READ` copy the stack serves on,
     /// because a socket minted from that could take other clients' requests.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
     pub const MINTING_ENDPOINT_SLOT: u64 = 7;
     /// The stack's own address space, `WRITE`: so `CLOSE` can `UNMAP` a socket's page before its
     /// table entry takes another client's.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
     pub const OWN_ADDRESS_SPACE_SLOT: u64 = 8;
 }
 
@@ -353,15 +377,21 @@ pub const MAXIMUM_PAYLOAD_BYTES: usize = FRAME_BYTES - PAYLOAD_OFFSET_BYTES as u
 pub mod lease {
     /// Word 1 when the lease named no DNS server. 0.0.0.0 is never a nameserver, so it cannot
     /// collide with one.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
     pub const NO_NAME_SERVER: u64 = 0;
 
     /// An IPv4 address as a report word: big-endian in the low 32 bits.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
     pub const fn ipv4_to_word(octets: [u8; 4]) -> u64 {
         u32::from_be_bytes(octets) as u64
     }
 
     /// A report word back to an address, or `None` for [`NO_NAME_SERVER`] or a word with any of the
     /// high 32 bits set, which no encoder here produces.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
     pub const fn word_to_ipv4(word: u64) -> Option<[u8; 4]> {
         if word == NO_NAME_SERVER || word > u32::MAX as u64 {
             return None;
