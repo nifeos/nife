@@ -14,6 +14,8 @@ second list page. A harness shows that every entry is page-aligned, that the ent
 the transfer, and that the count fits the page, with its patch. A new public name; the behavior of
 the pair stays. M.
 
+Status: Landed in nifeos/non_volatile_memory_express#26 as `physical_region_page_list`.
+
 ## P2-2. The completion status is a raw field
 
 `Completion::status` (`src/completion.rs`) is the 15-bit field, and its doc comment gives the bit
@@ -24,6 +26,8 @@ specification open. Change: `is_success`, `status_code_type`, `status_code`, `do
 type and the two codes the example of the README meets become constants, and a harness shows that
 the methods rebuild the field. New public names. S.
 
+Status: Landed in nifeos/non_volatile_memory_express#23. Two of its names became `has_more_status_information` and `is_retry_refused` in nifeos/non_volatile_memory_express#36.
+
 ## P2-3. No value for a clean shutdown, and no status bits for it
 
 The crate gives the enable value of `CC` and the `RDY` and `CFS` bits of `CSTS`. It has no `SHN`
@@ -33,6 +37,8 @@ to flush and stop, and a real drive loses its volatile cache at power off. Evide
 `shutdown_controller_configuration` (normal shutdown notification) and the two
 `CONTROLLER_STATUS_SHUTDOWN_*` bits, each written as a shift, with the mnemonics of the
 specification as aliases. New public names. XS.
+
+Status: Landed in nifeos/non_volatile_memory_express#21. Its builder became `controller_configuration_with_shutdown_notification` in nifeos/non_volatile_memory_express#36.
 
 ## P2-4. Identify stops at two facts of one namespace
 
@@ -45,6 +51,8 @@ transfers below two pages, parses the structures by hand. Change:
 `parse_identify_controller` that reads `MDTS` and `NN`, total for any 4096 bytes, with a harness
 and patch in the shape of the namespace parse. New public names. S.
 
+Status: Landed in nifeos/non_volatile_memory_express#24 for the namespace list, `MDTS` and `NN`. Open: the queue entry sizes become a BUGS entry in nifeos/non_volatile_memory_express#38, a draft until `v0.1.0-pre.3` is tagged.
+
 ## P2-5. Nothing tracks which command identifiers are in flight
 
 The caller mints `command_id`, and the crate never sees it again; `src/queues.rs` holds no
@@ -52,6 +60,8 @@ identifier state. Every driver in the prior art owns a tag set, and the hostile 
 needs one. Change, after P1-1 and P1-7: a fixed-capacity `InFlight<N>` bitmap (name provisional)
 that mints an identifier on push and releases it on an owned completion, and refuses an identifier
 it did not mint. A harness shows that no identifier releases twice. A new public name. S.
+
+Status: Landed in nifeos/non_volatile_memory_express#25. The type became `CommandIdentifierSet`, with `acquire`, in nifeos/non_volatile_memory_express#36.
 
 ## P2-6. No test double shows the whole loop
 
@@ -63,6 +73,8 @@ hundred lines that model a controller over two `Vec`s of entries. It drives both
 several laps, reports `SQHD`, and once reports an impossible head, under `cargo test --examples`.
 It doubles as the test double a consumer copies. Two-way. M.
 
+Status: Landed in nifeos/non_volatile_memory_express#27.
+
 ## P2-7. The mutation ledger carries 22 lines that one setting would retire
 
 Of the 28 lines `.github/mutants-exempts` lists, 22 sit in `#[cfg(kani)]` harness bodies.
@@ -73,6 +85,8 @@ Change: `.cargo/mutants.toml` with `exclude_globs = ["src/verification.rs"]`, th
 and the census line refreshed or dropped. Check first that the mutation gate of the template reads
 the configuration. Two-way. XS.
 
+Status: Landed in nifeos/non_volatile_memory_express#18.
+
 ## P2-8. The package ships its CI
 
 `cargo package --list` shows 55 files. The workflows, hooks, Dependabot and issue templates,
@@ -82,6 +96,8 @@ and `Cargo.toml` has no `include`. Change: `include = ["src/**", "falsifications
 "CHANGELOG.md", "LICENSE-*", "Cargo.toml"]`, which keeps the patches, since shipping them is the
 point. Two-way. XS.
 
+Status: Landed in nifeos/non_volatile_memory_express#16, with nifeos/non_volatile_memory_express#32 anchoring the patterns.
+
 ## P2-9. `rust-version` may sit higher than the code needs
 
 The manifest states 1.88. The tests pass on 1.85 with the version check bypassed, and the one
@@ -89,6 +105,8 @@ method stable after 1.85 (`is_multiple_of`) sits in `#[cfg(kani)]` code, which b
 toolchain. A lower minimum widens who can take the crate, and lowering later is compatible while
 raising is a change users feel. Change: state 1.85, confirm it with the weekly `msrv` job, and
 update the badge and the section of P1-11 together. Two-way. XS.
+
+Status: Landed in nifeos/non_volatile_memory_express#16; the weekly `msrv` job is green at 1.85.
 
 ## P2-10. Small text fixes for a stranger
 
@@ -104,3 +122,5 @@ update the badge and the section of P1-11 together. Two-way. XS.
   entries, and the struct docs do not state it. Change: one sentence there.
 
 Two-way. XS.
+
+Status: Landed in nifeos/non_volatile_memory_express#16.
