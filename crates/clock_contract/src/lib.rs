@@ -68,9 +68,8 @@ pub const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
 /// Saturating rather than wrapping: an implausible offset should read as an implausible time, not
 /// as a plausible one on the other side of the wrap.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane/unit-symbols-sweep-1: `wall_nanoseconds` spells
-/// out the unit that `wall_nanos` abbreviated. 1083 Decision 3 (provisional) deleted the `wall_nanos`
-/// spelling the overlay read.
+/// Name: ratified 2026-11-19 (UTC), 1083 Decision 3: `wall_nanoseconds` spells out the unit that
+/// `wall_nanos` abbreviated, and no alias keeps the old spelling.
 ///
 /// # Examples
 ///
@@ -128,8 +127,8 @@ pub mod state {
     /// Set once at startup from the hardware real-time clock (RTC). As good as the battery-backed clock on the board,
     /// which on QEMU is the host's clock and on a real board is whatever the coin cell managed.
     ///
-    /// Name: provisional. Spelled out under 1083 Decision 3, which replaced `RTC` and keeps it as a
-    /// doc alias.
+    /// Name: ratified 2026-11-19 (UTC), 1083 Decision 3: spelled out from `RTC`, which stays a doc
+    /// alias.
     #[doc(alias = "RTC")]
     pub const REAL_TIME_CLOCK: u64 = 1;
     /// Set outright by an authority holding the page read/write: an operator, or the service's own
@@ -140,7 +139,7 @@ pub mod state {
     /// me" are different provenance, and the difference is exactly what a caller deciding whether
     /// to trust a certificate expiry wants.
     ///
-    /// Name: provisional. Spelled out under 1083 Decision 3, which replaced `SYNCED`.
+    /// Name: ratified 2026-11-19 (UTC), 1083 Decision 3: spelled out from `SYNCED`.
     pub const SYNCHRONIZED: u64 = 3;
 
     /// Whether a state means the machine actually knows the time.
@@ -305,8 +304,8 @@ impl ClockPage {
     /// either a page it does not recognize (and reports unknown) or a fully initialized one. Never
     /// a recognized page with garbage in it.
     ///
-    /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
-    /// design/naming/acronyms-and-abbreviations.md.
+    /// Name: ratified 2026-11-19 (UTC), 1083 Decision 3: spelled out under the `init` ruling of
+    /// 2026-10-26 (UTC), in design/naming/acronyms-and-abbreviations.md.
     pub fn initialize(&self) {
         // A compare-exchange of the magic for itself rather than a load: it answers the same
         // question (is the magic already there?) and writes nothing new. A lone load here left the
@@ -486,7 +485,7 @@ pub mod propose {
     /// Build a request's first word. The opcode is one byte: a larger `operation` loses its high
     /// bits, which a debug build refuses.
     ///
-    /// Name: provisional, minted 2026-11-18 (UTC) by milestone/1082-1083-ruled-follow-ons.
+    /// Name: ratified 2026-11-19 (UTC), 1083 Decision 3: spelled out from `req`.
     pub const fn request(operation: u64) -> u64 {
         debug_assert!(operation < 256);
         operation << OPERATION_SHIFT
@@ -699,14 +698,12 @@ pub mod real_time_clock {
     /// The CMOS index port: write a register number here before reaching it at [`DATA_PORT`].
     /// The lower of the two ports a [`CMOS`] binding's grant covers.
     ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/cmos-read-in-the-clock-service for
-    /// milestone 1062 (the device control planes leave the kernel), step 6.
+    /// Name: ratified 2026-11-19 (UTC), 1083 Decision 3: the public names stand as built.
     pub const INDEX_PORT: u16 = 0x70;
 
     /// The CMOS data port: reads and writes the register [`INDEX_PORT`] last named.
     ///
-    /// Name: provisional, minted 2026-11-10 (UTC) by lane/cmos-read-in-the-clock-service for
-    /// milestone 1062 (the device control planes leave the kernel), step 6.
+    /// Name: ratified 2026-11-19 (UTC), 1083 Decision 3: the public names stand as built.
     pub const DATA_PORT: u16 = 0x71;
 }
 
