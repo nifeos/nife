@@ -68,7 +68,7 @@ items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Rul
   under [Ruled decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
 - F-package, the review package: Open. None exists under `notes/crate-reviews/`; a lane writes it
   now, as ruled under [Ruled decisions](#write-the-review-package-now-the-move-is-not-held-for-dtoolkit).
-- F-clearance, review clearance: Open. It follows the package and is asked of the architect.
+- F-clearance, review clearance: Open. The architect decides it once the package exists.
 - BUGS-239: Open. Milestone 239 (radon's device tree does not describe the TRNG) gives the depth
   bound as a `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64. A lane corrects that milestone.
 
@@ -79,7 +79,7 @@ items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Rul
 Ruled 2026-11-19 (UTC): option A. The lookups spell `property` out, with no alias for the old
 `prop` spelling: `node_property`, `node_properties`, `node_property_compatible`,
 `parent_property_compatible`, `node_property_inherited` and `pointer_handle_property` (below). The
-six names are ratified as built. The naming rules spell out a word that needs a decoder, and the
+six names stand as built. The naming rules spell out a word that needs a decoder, and the
 Devicetree Specification says "property"; `prop` is libfdt's C spelling (`fdt_getprop`).
 
 Door: one-way at publish. Prior art: the `fdt` crate and `dtoolkit` spell `property()` and
@@ -120,7 +120,7 @@ no ceiling. Example: `if total > MAXIMUM_TOTAL_SIZE_BYTES { return Err(Error::To
 ### Name the reservation block `memory_reservations` (D5)
 
 Ruled 2026-11-19 (UTC): option A. `memory_reservations`, the specification's term for the memory
-reservation block, is ratified as built. `reserved_memory_regions` keeps its name for the
+reservation block, stands as built. `reserved_memory_regions` keeps its name for the
 `/reserved-memory` node's children, and the old `reserved_regions` has no alias. Two lookups read
 two sources, and the kernel calls both, so the names say which is which.
 
@@ -132,7 +132,7 @@ Door: one-way at publish. Prior art: the `fdt` crate's `memory_reservations()`, 
 
 Ruled 2026-11-19 (UTC): option A. `DeviceTreeBlob::from_pointer` stays the crate's one `unsafe`
 function, and the weekly public fuzz opt-in stays off. The tree's own fuzz host keeps the target.
-The constructor is spelled out from `ptr` and carries `#[doc(alias = "from_ptr")]`, a search aid
+The constructor spells `ptr` out and carries `#[doc(alias = "from_ptr")]`, a search aid
 for the standard library's spelling and not an old nife spelling. It reads the header through a raw
 pointer, checks the magic, caps the size at 2 MiB and builds the slice. Sixteen call sites outside
 the crate use it: nine in `kernel/`, four in `uefi_loader/`, two in `machine_discovery` and one in
@@ -166,8 +166,8 @@ architectures. Example: after the switch, the kernel's `DeviceTreeBlob::from_poi
 
 Ruled 2026-11-19 (UTC): option A. A lane writes the `device_tree_blob` review package under
 `notes/crate-reviews/` now. The move does not wait for the `dtoolkit` switch, which may take a long
-time or never come. Clearance, the go to create the repository, follows the package and is asked
-of the architect when the package exists.
+time or never come. The architect gives the clearance, the go to create the repository, once the package
+exists.
 
 Door: two-way until the repository exists. Prior art: `file_allocation_table` and `e1000e` cleared
 from a written package. Example: F-package and P0-1 each get a lane, and if the switch later comes
@@ -248,4 +248,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and eight decisions went to the architect; all are ruled.
+that does not move. Fourteen smaller items follow, and the architect ruled all eight decisions.
