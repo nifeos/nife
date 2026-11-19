@@ -9,9 +9,9 @@ first.*
 ## In one paragraph
 
 `grant_contract` is what a program links to say what it may ask for, and what the planner reads
-to decide. It holds the manifest types (`Manifest`, the file and directory declarations, the rights
-bits and the authorities a program asks for), the slot constants a program finds its holdings in,
-and the verb narrowing that turns a manifest into the subset a verb needs. It is `no_std` with no
+to decide. It holds the manifest types: `Manifest`, the file and directory declarations, the rights
+bits and the authorities a program asks for. It also holds the slot constants a program finds its
+holdings in, and the verb narrowing that turns a manifest into the subset a verb needs. It is `no_std` with no
 allocator and no `unsafe`, and depends on `program_argument_contract`. `grant_plan` and nine other
 packages in nife link it.
 
