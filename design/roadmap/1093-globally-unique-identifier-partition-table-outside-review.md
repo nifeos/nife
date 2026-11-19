@@ -17,8 +17,8 @@ what the next lanes change.
 The review took its accepted baseline from
 [the review package](../../notes/crate-reviews/globally-unique-identifier-partition-table.md) and
 reopens none of the decisions it settles or holds. Those are the crate name and the six ratified
-names, and the sixteen rows of its name table. They include its two decisions for the architect:
-where the two nife type GUIDs live, and whether `lba` and `mbr` spell out. They also include its two
+names, and the sixteen rows of its name table. They include its two decisions for the architect,
+now ruled below: where the two nife type GUIDs live, and whether `lba` and `mbr` spell out. They also include its two
 open questions: a totality harness for `parse`, and whether `VERSION` stays. Where this block touches a name the package lists, it says
 so and adds only what the package did not see.
 
@@ -49,7 +49,7 @@ milestone reaches delivery.
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-8, the error type is not an `Error`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-9, the name gates refuse ten register names and one test name: Open. The replacement names
-  are calef's to ratify (see "The size constants take their unit" below); a rename lane follows.
+  Decision 2 below rules them; the rename lane builds them.
 - P1-10, the prose gate refuses nineteen acronyms: Open. The move lane runs the template's
   `prose_acronyms` gate and expands each at first use.
 - P1-11, the mutation verdict needs the recorded equivalents: Open. The move lane carries the six
@@ -74,16 +74,16 @@ milestone reaches delivery.
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - Decision 1, the type name `PartitionTable`: Ruled (maintainer, provisional, 2026-11-14 UTC,
   [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `src/table.rs` line 13 still
-  declares `GloballyUniqueIdentifierPartitionTable`; calef ratifies with the name table.
-- Decision 2, `uuid` in the public API: Open. The maintainer's provisional ruling keeps it; the
-  door turns one-way at the first publish, so it is calef's (see "`uuid` stays in the public API"
-  below).
-- Package decision 1, where the two nife type GUIDs live: Open. Calef's (see "Where the nife
-  partition type GUIDs live" below); `NIFE_DATA` is at `src/guid.rs` line 146.
-- Package decision 2, spelling out `lba` and `mbr`: Open. Calef's (see "Spelling out `lba` and
-  `mbr`" below).
-- Package decision 3, review clearance and repository go: Open. Calef's (see "Review clearance and
-  the repository" below).
+  declares `GloballyUniqueIdentifierPartitionTable`; the architect ratifies it with the name table.
+- Decision 2, the size constants take their unit: Ruled (maintainer, provisional, 2026-11-19 UTC).
+  Not built: the rename lane carries it.
+- Decision 3, `uuid` stays in the public API: Ruled (architect, 2026-11-19 UTC). The rename lane adds
+  the documentation item.
+- Decision 4, where the nife type GUIDs live: Ruled (architect, 2026-11-19 UTC). Not built;
+  `NIFE_DATA` is at `src/guid.rs` line 146.
+- Decision 5, spelling out `lba` and `mbr`: Ruled (architect, 2026-11-19 UTC). Not built.
+- Decision 6, review clearance and repository go: Ruled (maintainer, provisional, 2026-11-19 UTC).
+  Clearance follows decisions 4 and 5 and the name ratification.
 - Package questions, a totality harness for `parse` and whether `VERSION` stays: Open. Both are
   two-way and the maintainer rules them provisionally; `VERSION` is at `src/lib.rs` line 54.
 - Follow-on, the protective-MBR code moves to `master_boot_record`: Ruled (maintainer, provisional,
@@ -93,139 +93,7 @@ milestone reaches delivery.
 
 ## Open decisions
 
-### The size constants take their unit
-
-Background. The crate names its sizes `entry::SIZE`, `header::HEADER_SIZE`,
-`header::at::HEADER_SIZE`, `header::at::ENTRY_SIZE`, `Header::entry_size`, `MINIMUM_BLOCK_SIZE`,
-`MAXIMUM_BLOCK_SIZE`, `mbr::SIZE_LBA`, the field `block_size` and the private `entry::SIZE_U32`;
-one test is `the_three_reads_a_gpt_reader_makes`. The naming rules say a size or a limit ends with
-its unit, and the tree spells out `gpt`. The template's name gates refuse all eleven, so the new
-repository's checks are red until they change. Two of them (`MINIMUM_BLOCK_SIZE`,
-`MAXIMUM_BLOCK_SIZE`) took their ratification in #2797, before the units rule; a release review rechecks a
-name ratified before a later rule. After the tag each public one is a breaking rename.
-
-Recommendation: A. Rename them to the review package's spellings plus item 9's four:
-`ENTRY_BYTES` and `ENTRY_BYTES_U32`, `HEADER_BYTES`, `at::HEADER_BYTES` and `at::ENTRY_BYTES`,
-`entry_bytes` (alias `SizeOfPartitionEntry`), `MINIMUM_BLOCK_BYTES`, `MAXIMUM_BLOCK_BYTES`,
-`block_bytes`, `mbr::SIZE_BLOCKS` (alias `SizeInLBA`) and
-`the_three_reads_a_partition_table_reader_makes`.
-
-- A. The spellings above, in one rename lane with the rest of the package's name table.
-- B. Ratify the public names as they stand and rename only the private ones the gate refuses; the
-  gate then needs an exemption for each public one.
-- C. Choose other unit words (for example `_LENGTH`), which the units rule does not use.
-
-Door: one-way at the first tag that a nifeos repository pins and at publish; two-way until then.
-
-Prior art. `gpt_disk_types` spells `BlockSize` as a type and leaves the unit to it; Linux's
-`efi.c` writes `sizeof_partition_entry`; this tree's page contracts spell `PAGE_BYTES`, and the
-units rule's own example is `MAXIMUM_NAME_BYTES`. Where nife differs: the unit is in the
-name, not in a type or a comment. Example: `[0u8; entry::ENTRY_BYTES]` reads as 128 bytes, where
-`[0u8; entry::SIZE]` leaves the reader to look it up.
-
-Blocks: the tag.
-
-### `uuid` stays in the public API
-
-Background. The one type from outside in a public signature is `uuid::Uuid`, with default features
-off. The GPT ecosystem's alternative is `uguid::Guid`, which stores a GUID in the on-disk
-mixed-endian order so that reading sixteen bytes is a copy, and which the `uefi` crate and
-`gpt_disk_types` share. The first publish fixes the choice: a published signature's type
-cannot change without a major version. The maintainer ruled provisionally on 2026-11-14 (UTC) to
-keep `uuid`; `uuid` is already a dependency (1.28.0, default features off).
-
-Recommendation: A, keep `uuid`. It is the type a user prints, parses and compares everywhere else
-(253 million recent downloads against 705 thousand), and the crate's RFC 9562 order is what every
-printed GUID shows. The two byte swaps this crate adds hold over all 2^128 values (proved), and
-`pub use uuid` saves a caller the second manifest line.
-
-- A. Keep `uuid::Uuid`.
-- B. Switch to `uguid::Guid`, matching `gpt_disk_types` and `uefi`.
-- C. A sixteen-byte newtype of the crate's own: a third GUID type with no parser or printer.
-
-Door: one-way at the first crates.io publish; two-way until then.
-
-Prior art. `gpt` 4.1 uses `uuid`; `gpt_disk_types` and `uefi` use `uguid`. Where nife differs: it
-keeps the order every tool prints and pays sixteen byte moves per GUID read. Example:
-`uefi_loader/Cargo.toml` depends on this crate and `uuid` and converts nothing; a downstream that
-uses `uefi`'s `Guid` converts through `Uuid::from_bytes(guid.to_bytes())` plus `guid::from_disk`,
-two lines.
-
-Blocks: the first publish.
-
-### Where the nife partition type GUIDs live
-
-Background. `types::NIFE_DATA` and `types::NIFE_BOOT` are the partition type GUIDs of nife's data
-partition and boot slot. Every installed disk carries them, and the loader, the installer and the
-surveyor match on them, so their values never change. A crate that leaves for its own repository
-may not mention nife, and these two name it in both identifier and purpose. The move cannot finish
-while they are here.
-
-Recommendation: A. Move them, values unchanged, to a crate that stays in nife, and drop them from
-`types::name`.
-
-- A. A crate that stays in nife holds them.
-- B. Keep them in this crate under neutral names: the crate still carries one system's identity.
-- C. Keep them and exempt them from the standalone rule, as wire literals are exempt.
-
-Door: one-way for where a published crate's constants are; the values themselves never change.
-
-Prior art. `gpt_disk_types` and `gpt` carry the well-known types (EFI system, Linux filesystem,
-Microsoft basic data) and leave a system's private types to that system; systemd's Discoverable
-Partitions Specification keeps its GUIDs in systemd. Where nife differs: nothing; this follows
-them. Example: after A, `uefi_loader` reads `nife_partition_types::DATA` (name to choose) and this
-crate's `types::name` lists only public types.
-
-Blocks: the move.
-
-### Spelling out `lba` and `mbr`
-
-Background. The crate uses `lba` (logical block address) in the five `Header` address fields,
-`Entry::first_lba` and `last_lba`, `PRIMARY_HEADER_LBA`, the table readers and two error variants.
-It uses `mbr` (master boot record) in a module, an error enum, an `Error` variant and two
-functions. The tree's acronym test asks whether people say the phrase as a word. Under it, §154
-(the acronym test is whether the phrase is spoken) spelled out `gpt`, an acronym from the same
-specification. The answer settles most of the package's name table.
-
-Recommendation: A, spell both out, as §154 spelled out `gpt`.
-
-- A. Spell out both (`logical_block_address`, `master_boot_record`).
-- B. Keep both whole, as spoken acronyms, with each expanded at first use in the documentation.
-- C. Spell out `mbr` only; `lba` is the specification's field suffix in every header name.
-
-Door: one-way at the first tag that a nifeos repository pins and at publish.
-
-Prior art. `gpt_disk_types` writes `Lba`, `LbaLe` and `MasterBootRecord`; Linux writes `lba` in
-`efi.c`; FreeBSD writes `hdr_lba_alt`. The protective-MBR follow-on names its target crate
-`master_boot_record`. Where nife differs: the acronym test, which most systems do not apply.
-Example: under A, `table.backup_header_lba()` becomes `table.backup_header_logical_block_address()`;
-under B it stays.
-
-Blocks: the move.
-
-### Review clearance and the repository
-
-Background. The crate's review package is
-[`notes/crate-reviews/globally-unique-identifier-partition-table.md`](../../notes/crate-reviews/globally-unique-identifier-partition-table.md).
-Clearing a crate review is the go to create its repository under nifeos. The package recommends
-clearing once the two decisions above and the name ratification land, with no tag and no
-publication.
-
-Recommendation: A, clear once "Where the nife partition type GUIDs live", "Spelling out `lba` and
-`mbr`" and the name ratification have their rulings and their lanes.
-
-- A. Clear after those rulings land.
-- B. Clear now, and let the move lane carry the rulings into the new repository.
-- C. Hold the move until the P1 items land as well.
-
-Door: one-way: a repository that exists has a name others link to.
-
-Prior art. In this tree, `generational_table`, `block_roster` and `file_allocation_table` each
-moved on a cleared review with no tag. Where nife differs: nothing outside nife pins the crate yet.
-Example: after A, `script/crate-move globally_unique_identifier_partition_table` runs with the
-renamed constants and no nife GUID.
-
-Blocks: the move.
+None. The rename lane carries items 1 to 4 of "Decisions for the architect" below (the size constants, the `uuid` documentation, the nife type GUIDs, `logical_block_address` and `master_boot_record`), and the review clearance follows it.
 
 ## Goal
 
@@ -277,8 +145,7 @@ The P1 items are in [the appendix](1093-globally-unique-identifier-partition-tab
 
 ## Decisions for the architect
 
-The maintainer ruled the decision below provisionally. The `uuid` dependency, the package's
-two decisions and the size-constant names are calef's and are under "Open decisions" above.
+Each decision below is the rule in force from 2026-11-19 UTC. The maintainer's rulings are provisional.
 
 ### Decision 1: the name of the one type a user holds
 
@@ -308,6 +175,74 @@ already import it `as Table` (`xtask/src/confirm.rs` line 41, `xtask/src/rollbac
 `uefi_loader/src/chooser.rs` line 38). A tag is a pre-release that only nifeos repositories pin.
 Effort: XS.
 
+### Decision 2: the size constants take their unit
+
+Rule (maintainer, provisional, 2026-11-19 UTC; two-way until the first tag). The crate renames
+`entry::SIZE` to `ENTRY_BYTES`, the private `SIZE_U32` to `ENTRY_BYTES_U32`, `HEADER_SIZE` to
+`HEADER_BYTES`. `at::HEADER_SIZE` and `at::ENTRY_SIZE` become `at::HEADER_BYTES` and `at::ENTRY_BYTES`.
+`Header::entry_size` becomes `entry_bytes` (alias `SizeOfPartitionEntry`), `MINIMUM_BLOCK_SIZE` and
+`MAXIMUM_BLOCK_SIZE` become `MINIMUM_BLOCK_BYTES` and `MAXIMUM_BLOCK_BYTES`. The field `block_size` becomes
+`block_bytes`. `mbr::SIZE_LBA` becomes `mbr::SIZE_BLOCKS` (alias `SizeInLBA`). The test becomes
+`the_three_reads_a_partition_table_reader_makes`. One rename lane does this with the package's
+name table. This pull request changes no crate code.
+
+Why. The naming rules end a size with its unit, and the template's name gates refuse all eleven
+names. The units rule came after #2797 ratified the two block limits.
+
+Prior art. `gpt_disk_types` leaves the unit to a `BlockSize` type; Linux writes
+`sizeof_partition_entry`; this tree's page contracts spell `PAGE_BYTES`. Nife puts the unit in the
+name. Example: `[0u8; entry::ENTRY_BYTES]` reads as 128 bytes.
+
+### Decision 3: `uuid` stays in the public API
+
+Rule (architect, 2026-11-19 UTC). The crate keeps `uuid::Uuid` in its public signatures, with a
+caret floor of 1.28.0 and default features off. A GUID is an opaque sixteen-byte identifier: the
+crate checks and generates no version or variant. The rename lane adds a documentation item to
+the crate docs that says so (the maintainer's two-way call).
+
+Why. `Uuid` is what users print, parse and compare (253 million recent downloads against 705
+thousand for `uguid`), and a proof covers the two byte swaps this crate adds over all 2^128 values.
+
+Prior art. `gpt` uses `uuid`; `gpt_disk_types` and `uefi` use `uguid`. Nife keeps the order every
+tool prints and pays sixteen byte moves per read. Example: a downstream holding a `uefi` `Guid`
+converts with `Uuid::from_bytes(guid.to_bytes())`.
+
+### Decision 4: where the nife partition type GUIDs live
+
+Rule (architect, 2026-11-19 UTC). `NIFE_DATA` and `NIFE_BOOT` move, values unchanged, to a crate
+that stays in nife, provisionally `nife_partition_types`, and leave `types::name`. Whether the
+identifiers say nife or Moho stays open and two-way while the crate is unpublished.
+
+Why. Every installed disk carries these values, so they never change, and a standalone crate may
+not name one system.
+
+Prior art. `gpt_disk_types` and `gpt` carry the well-known types and leave a system's private
+types to that system; systemd keeps its Discoverable Partitions GUIDs in systemd. Example:
+`uefi_loader` reads the data type from the new crate, and `types::name` lists only public types.
+
+### Decision 5: spelling out `lba` and `mbr`
+
+Rule (architect, 2026-11-19 UTC). The crate spells out `logical_block_address` and
+`master_boot_record`, as §154 (the acronym test is whether the phrase is spoken) spelled out `gpt`.
+The rename lane applies it to the header fields, `Entry::first_lba` and `last_lba`,
+`PRIMARY_HEADER_LBA`, the table readers, two error variants and the `mbr` module, enum, variant and
+functions.
+
+Prior art. `gpt_disk_types` writes `Lba` and `MasterBootRecord`; Linux and FreeBSD write `lba`.
+Nife applies the acronym test, which most systems do not. Example: `backup_header_lba()` becomes
+`backup_header_logical_block_address()`.
+
+### Decision 6: review clearance and the repository
+
+Rule (maintainer, provisional, 2026-11-19 UTC). The review clears once decisions 4 and 5 and the
+name ratification have landed in their lanes. The architect ratifies the names and gives the go
+from [the review package](../../notes/crate-reviews/globally-unique-identifier-partition-table.md)
+then. No tag and no publication.
+
+Prior art. `generational_table`, `block_roster` and `file_allocation_table` each moved on a cleared
+review with no tag. Example: `script/crate-move globally_unique_identifier_partition_table` then
+runs with the renamed constants and no nife GUID.
+
 ## Done when
 
 The checks are in [the appendix](1093-globally-unique-identifier-partition-table-outside-review/done-when.md).
@@ -327,7 +262,7 @@ The checks are in [the appendix](1093-globally-unique-identifier-partition-table
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
+- **Outstanding.** The rename lane carries decisions 2 to 5, and the review clearance follows it. Every finding marked Open or Ruled under "Finding status", each checked against
   the crate's sources on main.
 
 ## Index row
@@ -338,5 +273,5 @@ tag, and eight for later. The eleven cover these. A panic in `Entry::blocks` on 
 The missing path through the backup table that the specification requires. A disk-size check no
 caller performs. The array-location guess every caller makes. The `forbid(unsafe_code)` line. The
 twenty-three undocumented items. The error type's traits. The template's name, prose and mutation
-gates. The README's proof sections. The central type becomes `PartitionTable`; the `uuid`
-dependency, the size-constant names, the nife type GUIDs and `lba` and `mbr` are calef's.
+gates. The README's proof sections. The central type becomes `PartitionTable`; the size
+constants take their unit, `uuid` stays, the nife type GUIDs leave, and `lba` and `mbr` spell out.

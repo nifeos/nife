@@ -3972,23 +3972,14 @@ crates/inter_process_communication/src/timer.rs::next_due
 
 crates/inter_process_communication/src/verification.rs
 
-crates/intrusive_queue/src/lib.rs::Node
 
-crates/intrusive_queue/src/lib.rs::as_non_null
 
-crates/intrusive_queue/src/lib.rs::as_ptr
 
-crates/intrusive_queue/src/lib.rs::is_empty
 
-crates/intrusive_queue/src/lib.rs::len
 
-crates/intrusive_queue/src/lib.rs::new
 
-crates/intrusive_queue/src/lib.rs::new
 
-crates/intrusive_queue/src/lib.rs::pop_front
 
-crates/intrusive_queue/src/lib.rs::push_back
 
 crates/job_mix/src/lib.rs::CENSUS
 
