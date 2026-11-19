@@ -1,12 +1,11 @@
 //! Fuzz the ELF loader's front half with arbitrary bytes.
 //!
-//! `crates/static_elf` is the only parser that loads what it parses: its (vaddr, memsz, flags, data) tuples
-//! become page-table entries. Kani proves the leaf, `check_segment_bounds`, and the whole-parse
-//! totality proof did not return (notes/verification.md). This reaches the unproved shell: the
-//! header-count and table-size arithmetic, the entry-point check, the overlap loop, and the
-//! `segments()` iterator. `EXPECTED_MACHINE` is a compile-time constant, so a host build accepts
-//! the host's machine only; `crates/static_elf/tests/fixtures/` holds one seed per machine, and
-//! `crates/static_elf/tests/fuzz_seed.rs` fails if none matches (notes/fuzzing/elf-seeds.md).
+//! The parser is the one a loader trusts to turn a file into (virtual address, size, flags, data)
+//! tuples that become page-table entries. Kani proves the per-segment bounds check, and the
+//! whole-parse totality proof did not return. This reaches the unproved shell: the header-count and
+//! table-size arithmetic, the entry-point check, the overlap loop and the `segments()` iterator.
+//! `Elf::parse` accepts the build's own machine only, so a host build accepts the host's machine;
+//! `tests/fixtures/` holds one seed per machine, and `tests/fuzz_seed.rs` fails if none matches.
 
 #![no_main]
 
@@ -23,8 +22,7 @@ const SIXTEEN_KIBIBYTES: PageBytes = PageBytes::new(16384).unwrap();
 
 fuzz_target!(|data: &[u8]| {
     // The shell's streaming note reader runs on bytes nobody has parsed as a program yet, so it is
-    // fuzzed before `parse` gets a chance to refuse them (milestone 597 (a program carries its
-    // manifest in an ELF note), provisional).
+    // fuzzed before `parse` gets a chance to refuse them.
     if let Ok(segs) = static_elf::NoteSegments::from_head(data) {
         let mut search = static_elf::NoteSearch::new(NOTE_OWNER, NOTE_TYPE);
         for seg in segs {
@@ -38,19 +36,19 @@ fuzz_target!(|data: &[u8]| {
         return;
     };
 
-    // Everything the kernel's loader does with a parsed ELF, in the order it does it. Validation
+    // Everything a loader does with a parsed ELF, in the order it does it. Validation
     // already ran inside `parse`; this is the walk that happens afterwards, when the loader is
     // mapping and is past the point where refusing is easy.
     let _ = elf.entry();
 
-    // The note lookup the progenitor makes for a program's manifest (milestone 597, provisional):
-    // every `PT_NOTE` walked in full, on the same hostile bytes the loader accepted.
+    // The note lookup a loader makes for a program's manifest: every `PT_NOTE` walked in full, on
+    // the same hostile bytes the loader accepted.
     let _ = elf.note(NOTE_OWNER, NOTE_TYPE);
     for seg in elf.segments() {
         let _ = seg.is_readable();
         let _ = seg.is_writable();
         let _ = seg.is_executable();
-        // Both page sizes the tree can boot with. 4 KiB is what both ISAs use today; 16 KiB is on
+        // Two common page sizes. 4 KiB is the usual one; 16 KiB is used on some
         // the aarch64 roadmap and the arithmetic differs (`div_ceil` then `saturating_mul`), so
         // fuzzing only the one we ship would prove the less interesting half.
         let _ = seg.page_range(PageBytes::FOUR_KIBIBYTES);
