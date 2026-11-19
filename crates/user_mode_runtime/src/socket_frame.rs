@@ -68,7 +68,7 @@ impl Frame {
     }
 
     /// Write the destination header: the address and port the next `SENDTO` or `CONNECT` uses,
-    /// and the fields a UDP `RECEIVE` reply carries the sender's endpoint back in.
+    /// and the fields a User Datagram Protocol (UDP) `RECEIVE` reply carries the sender's endpoint back in.
     ///
     /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn set_destination(&self, ip: [u8; 4], port: u16) {

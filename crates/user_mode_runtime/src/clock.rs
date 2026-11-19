@@ -22,7 +22,7 @@ pub fn now() -> u64 {
     t
 }
 
-/// The monotonic tick count (RISC-V): `rdtime`, which reads the `time` CSR. Readable from U-mode
+/// The monotonic tick count (RISC-V): `rdtime`, which reads the `time` control and status register (CSR). Readable from U-mode
 /// only because the kernel sets `scounteren.TM` in its per-hart timer init. Pair with [`counter_hertz`]
 /// to get seconds.
 #[cfg(target_arch = "riscv64")]
@@ -36,7 +36,7 @@ pub fn now() -> u64 {
 }
 
 /// The counter frequency in Hz, `CNTFRQ_EL0`: how many [`now`] ticks make a second. Constant for the
-/// life of the machine (QEMU reports 62.5 MHz under TCG, the host's counter frequency under HVF).
+/// life of the machine (QEMU reports 62.5 megahertz under its Tiny Code Generator (TCG), and the host's counter frequency under hardware virtualization).
 ///
 /// # Panics
 /// If the register reads zero, as it does on firmware that never programmed it: see
@@ -71,7 +71,7 @@ pub fn counter_hertz_checked() -> Option<u64> {
 ///
 /// RISC-V has no register that reports the timebase, so the kernel reads the device tree's
 /// `/cpus/timebase-frequency` (`kernel::arch::riscv64::timer::initialize_frequency`) and publishes it
-/// (`kernel::user::timebase_page_phys`). No constant stands in: radon runs at 4 MHz. See
+/// (`kernel::user::timebase_page_phys`). No constant stands in: radon runs at 4 megahertz. See
 /// notes/user-mode-runtime/time.md.
 ///
 /// # Panics
@@ -113,7 +113,7 @@ pub fn counter_hertz_checked() -> Option<u64> {
 /// cycles. See notes/user-mode-runtime/time.md.
 ///
 /// # BUGS
-/// - The TSC is ambient, so every ring-3 program holds a fine timing instrument it was never
+/// - The time stamp counter (TSC) is ambient, so every ring-3 program holds a fine timing instrument it was never
 ///   granted (milestone 228 (the cycle counters are closed by assumption, and on two architectures
 ///   the assumption is a comment)); closing it needs a coarse monotonic page first (§43 (reading
 ///   the clock is a page)).
@@ -192,7 +192,7 @@ pub struct CycleReading {
 ///
 /// | architecture | instruction | [`CycleMeaning`] |
 /// |---|---|---|
-/// | aarch64 | `mrs PMCCNTR_EL0` | [`CycleMeaning::CoreCyclesUserAndKernel`]: EL0 and EL1, not EL2 |
+/// | aarch64 | `mrs PMCCNTR_EL0` | [`CycleMeaning::CoreCyclesUserAndKernel`]: `EL0` and `EL1`, not `EL2` |
 /// | riscv64 | `csrr cycle` | [`CycleMeaning::CoreCyclesEveryMode`]: every privilege mode |
 /// | `x86_64` | `rdtsc` | [`CycleMeaning::ConstantRateReferenceCycles`]: not core cycles |
 ///
@@ -226,7 +226,7 @@ pub fn cycle_reading() -> CycleReading {
     }
 }
 
-/// What [`cycle_reading`] counts here: core cycles at EL0 and EL1, under the `PMCCFILTR_EL0` of
+/// What [`cycle_reading`] counts here: core cycles at `EL0` and `EL1`, under the `PMCCFILTR_EL0` of
 /// zero the kernel writes on every core.
 #[cfg(target_arch = "aarch64")]
 const CYCLE_MEANING: CycleMeaning = CycleMeaning::CoreCyclesUserAndKernel;
@@ -288,7 +288,7 @@ fn read_cycle_counter() -> u64 {
 /// ```
 ///
 /// # BUGS
-/// - A process whose address space was never bound to a TCB has no page here, and this faults on
+/// - A process whose address space was never bound to a thread control block (TCB) has no page here, and this faults on
 ///   an unmapped read rather than answering `None`. Only a space with no thread in it lacks the
 ///   page, and a fault is the one failure a caller cannot handle.
 pub fn current_cpu() -> Option<usize> {
@@ -318,7 +318,7 @@ pub fn tick_hertz() -> Option<core::num::NonZeroU64> {
 /// **Monotonic nanoseconds since boot**, from [`now`] and [`counter_hertz`].
 ///
 /// The conversion splits into whole seconds and a remainder, because `ticks * 1_000_000_000`
-/// overflows a `u64` about five minutes into a boot at 62.5 MHz. No capability is needed: the
+/// overflows a `u64` about five minutes into a boot at 62.5 megahertz. No capability is needed: the
 /// counter is ambient, so any process can measure a duration. The wall clock is what needs one
 /// (notes/clock.md).
 pub fn monotonic_nanoseconds() -> u64 {

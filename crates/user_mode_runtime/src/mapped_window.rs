@@ -33,7 +33,7 @@
 //! ```
 
 /// The page size every migrated caller was already assuming (each one's own comment said "one
-/// page" or "single-page DMA region"; none of them checked it).
+/// page" or "single-page direct memory access (DMA) region"; none of them checked it).
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub const PAGE_BYTES: u64 = 4096;
@@ -65,7 +65,7 @@ impl WindowInteger for u64 {}
 impl<T: WindowInteger, const N: usize> WindowInteger for [T; N] {}
 
 /// A caller-owned window onto one page this process was handed at a fixed virtual address: a DMA
-/// page a driver's wiring mapped before `_start` ran, or a shared IPC frame the program mapped
+/// page a driver's wiring mapped before `_start` ran, or a shared inter-process communication (IPC) frame the program mapped
 /// itself with `PageFrame::MAP`. Every read and write is bounds-checked against `len`, so the only
 /// trust this type asks for is the one made at construction. Accesses are native-endian, which is
 /// little-endian on every architecture this tree targets.
