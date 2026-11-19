@@ -104,74 +104,17 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
   Maintainer ruling, provisional, 2026-11-14 UTC; the aliases are item 5.
 - Decision C, the reply error range: Done, [#3577](https://github.com/nifeos/nife/pull/3577). Ruled
   2026-11-14 UTC.
-- §99 (where Apple's metadata lands: stream or sidecar) still names the store `.nife-attrs`: Open.
-  Under Open decisions.
+- Decision D, §99's store name: Done. Ruled 2026-11-19 UTC; §99 names `.extended-attributes`.
 - Review package: Open. `notes/crate-reviews/` has no package for this crate; one package may cover
   both crates of the shared repository.
-- Review clearance of the shared repository: Open. Under Open decisions.
+- Decision E, the review package and clearance of the shared repository: Ruled (maintainer,
+  provisional for the package step, 2026-11-19 UTC). A lane writes one package once the other items
+  land; the clearance stays open until the architect gives it.
 
 ## Open decisions
 
-### Correct the store directory's name in §99
-
-Background. §99 decides where macOS metadata (resource forks, Finder information) lands on a nife
-filesystem: in a sidecar store directory beside the files. Decision A above renamed that directory
-`.extended-attributes` (2026-11-14 UTC), and the crate, the server, the host tool and the notes
-carry the new name. §99's own text still says `.nife-attrs`, in its bytes-at-rest row (line 160)
-and its closing paragraph (line 202). A reader of the decision record now meets a name that no
-code uses. A decision's words change only with the architect's approval, so no lane may make the
-edit on its own.
-
-Recommendation: A.
-
-- A. Approve the edit: §99's two mentions become `.extended-attributes`, stated as the rule in
-  force, with no other change to the section.
-- B. Leave §99 as written and add a line in Decision A that its name replaces §99's.
-- C. Replace §99 with a new section that carries the renamed store, its frontmatter naming the
-  successor.
-
-Door: two-way. It is a record's wording, and no image outside the maintainers' own ever carried the
-old name. It comes to the architect only because §88 (`needs-architect` as a required check)
-reserves a changed word in a decision to him.
-
-Prior art: §298 (a document states what is in force now) states that a document says what is in
-force now, with git as the history, which is option A. Python's PEPs and Rust's RFCs keep their
-original text and point to the successor, which is option B; this tree chose the other way. Concrete
-example: a reader of §99's cost table counts "one 4096-byte block for the node's blob under
-`.nife-attrs`" and then finds `STORE_DIRECTORY` holding `.extended-attributes`.
-
-Blocks: nothing in the move or the tag; it is the record's accuracy.
-
-### Clear the review of `filesystem_contract` and `filesystem_fixture`, and create their repository
-
-Background. `filesystem_contract` defines the two message protocols a filesystem server and a block
-server speak, and `filesystem_fixture` is the test image those servers run against. They leave
-together for one workspace repository, ruled 2026-11-14 UTC; the fixture never publishes. A crate
-leaves once its review package lists every public name and decision and the architect clears that
-review, and the clearance is also the go to create the repository. Most of the contract's public
-names are provisional, Decision B's renames included, and the fixture has 244 unratified names, which
-milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves)
-counts. The decision is one clearance for both crates.
-
-Recommendation: A, once the review package exists.
-
-- A. Clear one review covering both crates once a lane writes its package: ratify the names as the
-  package lists them, and create the repository as `publish = false`. The move follows, with items
-  1 to 3 and 10 here and items 6 and 11 of milestone 1091.
-- B. Create the repository and leave the names provisional until the release review.
-- C. Clear the contract alone and keep the fixture in this repository, against the 2026-11-14 ruling
-  that they share one.
-
-Door: one-way. The repository is an outward step, and a ratified protocol name binds every server
-and client once anything outside this tree speaks it.
-
-Prior art: `jh7110_clock_and_reset` and `designware_ethernet` each had a review package cleared
-before the organization made their repositories. Outside, `rust-lang/futures-rs` and `tokio` keep a
-test utility crate (`futures-test`, `tokio-test`) in the same workspace as the library it tests,
-which is the shape ruled here. Concrete example: ratifying `nameset::IS_DIRECTORY` fixes the
-spelling in the filesystem servers and in the fixture's witness documentation at once.
-
-Blocks: the move.
+None. The review package carries the name ratification and the clearance of the review, which stay
+the architect's once the package exists.
 
 ## Goal
 
@@ -210,7 +153,7 @@ The P1 items are in [the appendix](1090-filesystem-contract-outside-review/befor
 
 ## Decisions for the architect
 
-A and C are ruled; B is the maintainer's provisional ruling on a two-way door. Each states the rule
+The architect ruled A, C and D; B and E are the maintainer's provisional rulings on two-way doors. Each states the rule
 in force.
 
 ### A. The reserved on-disk name: ruled 2026-11-14 (UTC)
@@ -262,6 +205,36 @@ carries the errno as its own field.
 Concrete example. `reply_errno(-5_000_000_000)` is `Some(71)`, where a truncating cast gave
 `Some(705_032_704)`, and `reply_errno(-2)` is `Some(2)`.
 
+### D. The store directory's name in §99: ruled 2026-11-19 (UTC)
+
+In force: §99 (where Apple's metadata lands: stream or sidecar) names the sidecar store
+`.extended-attributes`, in its bytes-at-rest row and its closing paragraph, the name Decision A
+rules. The section says what is in force now and changes nothing else.
+
+Prior art: §298 (a document states what is in force now) keeps git as the history. Python's PEPs and
+Rust's RFCs keep their original text and point to a successor; this tree chose the other way.
+
+Concrete example: a reader of §99's cost table counts "one 4096-byte block for the node's blob under
+`.extended-attributes`" and then finds `STORE_DIRECTORY` holding the same name.
+
+### E. The review package and clearance of `filesystem_contract` and `filesystem_fixture`: maintainer ruling, provisional, 2026-11-19 (UTC)
+
+In force: a lane writes one review package that covers both crates, which share one workspace
+repository (ruled 2026-11-14 UTC; the fixture never publishes), once the other items here land. The
+move is not held for it. The package step is the maintainer's provisional ruling on a two-way door.
+Ratifying the names and clearing the review, which is also the go to create the repository as
+`publish = false`, stay the architect's, and the package asks for them. The move follows, with
+items 1 to 3 and 10 here and items 6 and 11 of milestone 1091 (`filesystem_fixture`: what an outside
+maintainer would fix before it leaves).
+
+Prior art: `jh7110_clock_and_reset` and `designware_ethernet` each had a review package cleared
+before the organization made their repositories. Outside, `rust-lang/futures-rs` and `tokio` keep a
+test utility crate (`futures-test`, `tokio-test`) in the same workspace as the library it tests,
+which is the shape ruled here.
+
+Concrete example: ratifying `nameset::IS_DIRECTORY` fixes the spelling in the filesystem servers and
+in the fixture's witness documentation at once, which is why the package lists both crates.
+
 ## Done when
 
 The checks are in [the appendix](1090-filesystem-contract-outside-review/done-when.md).
@@ -289,7 +262,6 @@ An outside review of `filesystem_contract` before it leaves nife. Five items are
 commit (the stand-alone text, clippy's proper-noun list, the falsification patch paths, one
 uncovered file, 22 names the gates refuse). Eight come before the first tag (a non-total errno
 decoder, packers that mask, seven unproven properties, the equivalent-mutant list, the README and
-prose gates, the `rm` module). Nine are for later. Three decisions: the on-disk name (A, ruled),
-the naming pass with units (B, the maintainer's provisional ruling, built), and a bound on the
-error range of a reply word (C, ruled). Two are open: §99's stale store name, and the clearance of
-the repository this crate shares with `filesystem_fixture`.
+prose gates, the `rm` module). Nine are for later. Five decisions, none open. The architect ruled the on-disk name (A), the bound on the error range of
+a reply word (C) and §99's store name (D). The maintainer rules provisionally on the naming pass with
+units (B, built) and on the review package for the shared repository (E).
