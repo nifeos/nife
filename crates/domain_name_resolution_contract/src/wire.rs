@@ -50,6 +50,10 @@ const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <
 /// **A client delegates its page.** A `SEND_CAPABILITY` of a writable page frame with this request word.
 /// The resolver maps it in the window its badge's grant names; a page from a badge with no grant
 /// is deleted unmapped.
+///
+/// Name: ratified 2026-11-19 (UTC), the same spelling as the socket contract's operation for the
+/// same act; the earlier page-frame spelling is refused, since `frame` also means a network frame
+/// in the socket contract.
 pub const OPERATION_ATTACH_SHARED_PAGE: u64 = 1;
 /// **A client resolves the name in its page.** A `CALL` whose second word is the name's length in
 /// bytes. The reply is an [`Outcome`] word and the answer's TTL in seconds.
@@ -105,8 +109,7 @@ pub mod status {
 /// the client half, so a standard library can say which step failed instead of one error for all
 /// four.
 ///
-/// Name: provisional, the riscv-cpu-net-flake lane, 2026-10-13 (UTC). `UNKNOWN_TRANSPORT` is
-/// provisional too, ruled in the milestone 1086 rulings lane, 2026-11-19 (UTC).
+/// Name: provisional, the riscv-cpu-net-flake lane, 2026-10-13 (UTC).
 pub mod network_step {
     /// The resolver has no socket page to attach.
     pub const NO_SOCKET_PAGE: u8 = 1;
@@ -118,6 +121,8 @@ pub mod network_step {
     pub const CONNECT: u8 = 4;
     /// The spawner started the resolver with a transport word that is neither `TRANSPORT_UDP` nor
     /// `TRANSPORT_TCP`. The resolver refuses it at start and answers every resolve with this step.
+    ///
+    /// Name: ratified 2026-11-19 (UTC), the step number 5 with it.
     pub const UNKNOWN_TRANSPORT: u8 = 5;
 }
 

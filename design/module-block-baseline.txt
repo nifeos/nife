@@ -1868,7 +1868,6 @@ crates/domain_name_resolution_contract/src/wire.rs::OK
 
 crates/domain_name_resolution_contract/src/wire.rs::OPEN
 
-crates/domain_name_resolution_contract/src/wire.rs::OPERATION_ATTACH_SHARED_PAGE
 
 
 crates/domain_name_resolution_contract/src/wire.rs::OPERATION_RESOLVE
@@ -6113,7 +6112,6 @@ crates/socket_contract/src/lib.rs::NO_NAMESERVER
 
 crates/socket_contract/src/lib.rs::OPERATION_ACCEPT
 
-crates/socket_contract/src/lib.rs::OPERATION_ATTACH_SHARED_PAGE
 
 crates/socket_contract/src/lib.rs::OPERATION_BIND_UDP
 

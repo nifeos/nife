@@ -23,6 +23,8 @@ pub const fn port_and_transport(port: u16, transport: u64) -> u64 {
 
 /// Whether a transport word is one this contract defines, `TRANSPORT_UDP` or `TRANSPORT_TCP`. The
 /// resolver refuses any other word at start.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1086-rulings.
 pub const fn is_known_transport(transport: u64) -> bool {
     transport == TRANSPORT_UDP || transport == TRANSPORT_TCP
 }
