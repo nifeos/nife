@@ -72,8 +72,7 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
   [#3542](https://github.com/nifeos/nife/pull/3542).
 - Decision B, the names: Open. Built ([#3657](https://github.com/nifeos/nife/pull/3657)); ratifying
   them is [an open decision](#ratify-the-provisional-names).
-- Review package: Open. No package for this crate exists under `notes/crate-reviews/`; a lane writes
-  one.
+- Review package: Done. [The package](../../notes/crate-reviews/current-cpu-contract.md).
 - Review clearance: Open. It is [an open decision](#clear-the-review-for-the-move).
 
 ## Open decisions
