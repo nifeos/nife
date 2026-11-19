@@ -102,9 +102,10 @@ pub const fn wall_nanoseconds(offset_nanoseconds: u64, monotonic_nanoseconds: u6
 ///
 /// A `monotonic_nanoseconds` past `wall_nanoseconds` saturates to an offset of zero, and
 /// [`wall_nanoseconds`] then reads as uptime since the epoch, which is the reading this crate
-/// exists to prevent. [`policy::is_plausible`] makes that unreachable for a proposal or an RTC
-/// reading, since a plausible wall time exceeds any uptime a machine has, but [`ClockPage::publish`]
-/// accepts any offset from a holder of the set authority, so such a caller owns the check.
+/// exists to prevent. [`policy::is_plausible`] makes that unreachable for a proposal or a real-time
+/// clock (RTC) reading, since a plausible wall time exceeds any uptime a machine has, but
+/// [`ClockPage::publish`] accepts any offset from a holder of the set authority, so such a caller
+/// owns the check.
 pub const fn offset_for(wall_nanoseconds: u64, monotonic_nanoseconds: u64) -> u64 {
     wall_nanoseconds.saturating_sub(monotonic_nanoseconds)
 }
@@ -232,8 +233,8 @@ pub struct Reading {
 /// This is Linux's seqcount latch (`raw_write_seqcount_latch` in `include/linux/seqlock.h`)
 /// with one copy written per publish instead of both, and FreeBSD's `timehands` ring
 /// (`sys/kern/kern_tc.c`) at its default of two records, with the generation kept in one word
-/// rather than in each record. The orderings, and what each pairs with, are at the stores and loads below and in
-/// notes/clock.md.
+/// rather than in each record. The orderings, and what each pairs with, are at the stores and
+/// loads below.
 ///
 /// # BUGS
 ///
@@ -316,7 +317,7 @@ impl ClockPage {
             .is_ok()
         {
             if self.word(CLAIM_WORD_INDEX).load(Ordering::Relaxed) == CLAIM_HELD {
-                // Release, as in `release`: the next writer's acquire in `try_claim` must see the
+                // Release, as in `release`: the next writer's acquire in `take_claim` must see the
                 // publish count as this writer sees it, or it may fill the copy readers are using.
                 // That this writer sees the stopped one's last stores at all rests on the stop
                 // itself, which the restart is ordered after (BUGS).
@@ -406,13 +407,17 @@ impl ClockPage {
 
     /// Take the writers' claim, waiting while another writer holds it.
     fn claim(&self) {
-        while !self.try_claim() {
+        while !self.take_claim() {
             spin_hint();
         }
     }
 
-    /// Take the writers' claim if it is free.
-    fn try_claim(&self) -> bool {
+    /// Take the writers' claim if it is free, and say whether this writer now holds it.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/clock-contract-move-findings, renamed from
+    /// `try_claim`, which the template's question-shape check refuses; `take_` reports whether the
+    /// take worked.
+    fn take_claim(&self) -> bool {
         // Acquire on success: pairs with the release store in `release`, so this writer sees the
         // last writer's publish count and its copy's stores, and its own stores to that copy two
         // publishes later are ordered after them.
@@ -457,7 +462,7 @@ impl ClockPage {
 
     /// Give the claim back.
     fn release(&self) {
-        // Release: pairs with the next writer's acquire in `try_claim`, carrying this publish's
+        // Release: pairs with the next writer's acquire in `take_claim`, carrying this publish's
         // count and copy to it. Without it the next writer may read a count older than this
         // publish's and fill the copy readers are using. Made relaxed, it fails the loom model of
         // two writers: the second reads the count as it was before the first publish, and both
@@ -513,7 +518,8 @@ pub mod propose {
 }
 
 /// The reply's first word for a [`propose::PROPOSE`]. Not an errno space: this contract has no
-/// POSIX behind it, and every refusal here is a policy answer rather than a failure.
+/// Portable Operating System Interface (POSIX) behind it, and every refusal here is a policy answer
+/// rather than a failure.
 pub mod status {
     /// The proposal was applied. The clock is now [`super::state::SYNCHRONIZED`].
     pub const ACCEPTED: u64 = 0;
@@ -549,9 +555,10 @@ pub mod policy {
     /// **The build-era floor: 2026-01-01T00:00:00Z.** No machine running this code existed before
     /// it, so any claimed time below this is wrong no matter who said it.
     ///
-    /// It is the escape from the network-time chicken-and-egg (TLS needs a roughly correct clock,
-    /// and a correct clock needs TLS), chosen here on purpose. It is a **floor on plausibility, not a
-    /// claim of accuracy**: passing it means "not obviously a lie", never "trustworthy".
+    /// It is the escape from the network-time chicken-and-egg (Transport Layer Security (TLS) needs
+    /// a roughly correct clock, and a correct clock needs TLS), chosen here on purpose. It is a
+    /// **floor on plausibility, not a claim of accuracy**: passing it means "not obviously a lie",
+    /// never "trustworthy".
     pub const NOT_BEFORE_NANOSECONDS: u64 = 1_767_225_600 * super::NANOSECONDS_PER_SECOND;
 
     /// The ceiling: 2100-01-01T00:00:00Z. Far enough out to be uncontroversial and near enough to
@@ -664,14 +671,16 @@ pub mod policy {
 // ================================================================================================
 
 /// **Which RTC the machine has**, discovered from the device tree's `compatible` (or, on `x86_64`,
-/// the CMOS clock behind two fixed I/O ports) and passed to the clock service at spawn.
+/// the complementary metal-oxide-semiconductor (CMOS) clock behind two fixed I/O ports) and passed
+/// to the clock service at spawn.
 ///
 /// The service could have keyed the register layout off `target_arch`, which is what the console
-/// driver does for its UART. It does not, because the RTC is where that shortcut runs out: the
-/// VisionFive 2 is riscv64 and has neither of these devices, so an ISA-keyed driver would compile
-/// clean and read garbage on the first real board. The binding is what the driver actually knows
-/// how to drive, so the binding is what it is told. `CMOS` names a register map behind two I/O
-/// ports rather than behind a page, and the service reads it the same way it reads the other two.
+/// driver does for its universal asynchronous receiver-transmitter (UART). It does not, because the
+/// RTC is where that shortcut runs out: the VisionFive 2 is riscv64 and has neither of these
+/// devices, so a driver keyed on the instruction set would compile clean and read garbage on the
+/// first real board. The binding is what the driver actually knows how to drive, so the binding is
+/// what it is told. `CMOS` names a register map behind two I/O ports rather than behind a page, and
+/// the service reads it the same way it reads the other two.
 #[doc(alias = "RTC")]
 pub mod real_time_clock {
     /// No RTC in the device tree. The clock service still runs and still serves proposals; it just
@@ -682,9 +691,9 @@ pub mod real_time_clock {
     pub const PL031: u64 = 1;
     /// `google,goldfish-rtc`, QEMU `virt` on riscv64 at `0x101000`. Two 32-bit registers,
     /// `TIME_LOW` at 0 and `TIME_HIGH` at 4, together **nanoseconds** since the Unix epoch. Read
-    /// LOW first: it latches HIGH, and reading them the other way round gives a value that is
-    /// correct except across the low word's wrap, which is a bug that shows up once every four
-    /// seconds and looks like a 4-second jump.
+    /// `TIME_LOW` first: it latches `TIME_HIGH`, and reading them the other way round gives a value
+    /// that is correct except across the low word's wrap, which is a bug that shows up once every
+    /// four seconds and looks like a 4-second jump.
     pub const GOLDFISH: u64 = 2;
     /// **The `x86_64` CMOS RTC**, a clock behind two fixed I/O ports, [`INDEX_PORT`] and
     /// [`DATA_PORT`], with no page. `PL031` and `GOLDFISH` name a register layout the clock
@@ -878,7 +887,7 @@ mod tests {
             let first = page.publish(state::REAL_TIME_CLOCK, 7);
             let before = page.read();
             // The stopped writer: it took the claim and filled the spare copy, and never flipped.
-            assert!(page.try_claim());
+            assert!(page.take_claim());
             page.fill(state::SYNCHRONIZED, 9);
 
             page.initialize();
@@ -951,7 +960,7 @@ mod tests {
                 "a stopped writer must not make a reader retry, let alone wait"
             );
             assert!(
-                !page.try_claim(),
+                !page.take_claim(),
                 "and it still holds the claim against writers"
             );
 
@@ -1032,7 +1041,7 @@ mod tests {
             page.initialize();
             page.publish(state::REAL_TIME_CLOCK, 7);
         });
-        assert!(page.try_claim(), "the first publish gave the claim back");
+        assert!(page.take_claim(), "the first publish gave the claim back");
         let waiting = std::thread::spawn(move || page.publish(state::SYNCHRONIZED, 11));
         std::thread::sleep(std::time::Duration::from_millis(100));
         assert_eq!(
@@ -1429,7 +1438,7 @@ mod interleavings {
                 "the page does not hold the pair of the writer that published last: {r:?}"
             );
             assert!(
-                page.try_claim(),
+                page.take_claim(),
                 "the claim was left held after both writers finished"
             );
             BOTH_LANDED.mark();
@@ -1500,7 +1509,7 @@ mod interleavings {
 
                 writer.join().unwrap();
                 assert!(
-                    !page.try_claim(),
+                    !page.take_claim(),
                     "a later writer took the claim a stopped writer still holds"
                 );
             });
