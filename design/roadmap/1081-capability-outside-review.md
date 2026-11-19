@@ -87,10 +87,10 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 ### Ratify the five provisional names
 
 Background: `capability_table` is the kernel's per-thread table of capabilities and their rights.
-The review's fixes added or renamed five public names, each provisional. `Capability::delegate`
+Five of its public names come from the review's fixes, each provisional. `Capability::delegate`
 makes a copy of a capability with fewer rights, and refuses without the `GRANT` right
 (`Error::GrantRequired`) or when the copy would hold a right the source lacks. `capacity` is the
-number of slots, renamed from `len`, which in std counts the elements held. `iter` walks the
+number of slots, not `len`, which in std counts the elements held. `iter` walks the
 occupied slots. `Error::SlotOccupied` answers an insert at a slot already in use, apart from a full
 table. A provisional name can change freely inside nife; once the crate publishes, every user's code
 spells it, so the first publish turns each into a promise.
