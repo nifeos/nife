@@ -69,7 +69,8 @@ pub(crate) fn parse_table<'a>(
                 continue;
             }
         };
-        let array_at = (header.entry_array_logical_block_address as usize).saturating_mul(block_size);
+        let array_at =
+            (header.entry_array_logical_block_address as usize).saturating_mul(block_size);
         let array = head.get(array_at..).unwrap_or(&[]);
         match PartitionTable::parse(header_block, array) {
             Ok(table) => return Ok((table, block_size)),
@@ -156,9 +157,7 @@ pub fn partitions(device: &Path) -> Result<TableInfo, String> {
         out.push(PartitionInfo {
             number: index + 1,
             type_guid: entry.type_guid,
-            type_name: nife_partition_types::name(
-                entry.type_guid,
-            ),
+            type_name: nife_partition_types::name(entry.type_guid),
             first_lba: entry.first_logical_block_address,
             last_lba: entry.last_logical_block_address,
             bytes: entry.blocks().unwrap_or(0) * block_size as u64,

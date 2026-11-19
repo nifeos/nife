@@ -270,7 +270,12 @@ fn verify() -> ! {
     }
     let head: &[u8] = head;
 
-    if globally_unique_identifier_partition_table::master_boot_record::validate(&head[..LBA as usize], block_count).is_ok() {
+    if globally_unique_identifier_partition_table::master_boot_record::validate(
+        &head[..LBA as usize],
+        block_count,
+    )
+    .is_ok()
+    {
         flags |= F_MBR;
     }
     let Ok(table) = PartitionTable::parse(
