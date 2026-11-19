@@ -175,7 +175,7 @@ designware_inter_integrated_circuit = { version = "0.1.0", path = "../crates/des
 # The JH7110's SD/MMC controller (milestone 53 (the board's own peripherals: network and storage on
 # real silicon)): the whole driver as pure logic behind one `Registers` trait, which
 # `kernel/src/designware_mobile_storage.rs` implements over a mapped device window.
-designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "ce50796532385586a46620bc9545b25b22593fae" }
+designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "85c4e1b58bb5d76efbc0b48d3ff51024d3904b12" }
 # Sector 0 of a card: the MBR's partition entries and the scratch range before the first partition
 # (`kernel/src/storage_bench_steps.rs`). It left `designware_mobile_storage` for a crate of its own.
 master_boot_record = { version = "0.1.0", path = "../crates/master_boot_record" }
