@@ -648,7 +648,7 @@ pub(crate) fn register(
     let mut devs = DEVICES.lock();
     let id = devs
         .table
-        .insert_with(|name| Device {
+        .insert_with_name(|name| Device {
             name: name.to_bits(),
             owner: None,
             transport,

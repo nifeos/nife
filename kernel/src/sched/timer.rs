@@ -59,7 +59,7 @@ pub fn create_timer_from(region: u64) -> Option<TimerId> {
     // insert. Then the count the retype took goes back; the page stays spent.
     let name = sched
         .timer_table
-        .insert_with(|_| TimerPageAddress::new(phys))
+        .insert_with_name(|_| TimerPageAddress::new(phys))
         .map(EntryName::to_bits);
     if name.is_none() {
         crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Timer);

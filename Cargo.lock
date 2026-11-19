@@ -484,8 +484,8 @@ dependencies = [
 
 [[package]]
 name = "e1000e"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/e1000e?rev=0a21349ffcd95b79ffda04222fc413f7b0e77ed2#0a21349ffcd95b79ffda04222fc413f7b0e77ed2"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/nifeos/e1000e?rev=571d33f2e5fc9b287c7b9c8733bcdd0a17c18357#571d33f2e5fc9b287c7b9c8733bcdd0a17c18357"
 
 [[package]]
 name = "entropy_contract"
@@ -600,8 +600,8 @@ dependencies = [
 
 [[package]]
 name = "generational_table"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/generational_table?rev=6873e778d775d955387c1bd931abf3838215fc29#6873e778d775d955387c1bd931abf3838215fc29"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/nifeos/generational_table?rev=832836094b1170f0f07275bb2adbb889d949ccc5#832836094b1170f0f07275bb2adbb889d949ccc5"
 
 [[package]]
 name = "generator"
@@ -1063,8 +1063,8 @@ version = "0.1.0"
 
 [[package]]
 name = "non_volatile_memory_express"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=5b0c24dcd3fe5416bcefeed7bb3936108c44ed45#5b0c24dcd3fe5416bcefeed7bb3936108c44ed45"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee#1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee"
 
 [[package]]
 name = "nu-ansi-term"

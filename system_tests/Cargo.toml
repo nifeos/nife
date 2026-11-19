@@ -54,7 +54,7 @@ package_archive = { version = "0.1.0", path = "../crates/package_archive" }
 # The e1000e family (milestone 494 (a driver for the network card a PC actually has)).
 # `wired_or_skip!` asks `e1000e::platform_controller_hub::is_platform_controller_hub_device` whether a NIC with no link is silicon or the
 # runner's, by the same predicate the boot uses to tell them apart.
-e1000e = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/e1000e", rev = "0a21349ffcd95b79ffda04222fc413f7b0e77ed2" }
+e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
 coremark = { version = "0.1.0", path = "../crates/coremark" }
 abi = { version = "0.1.0", path = "../crates/abi" }
 block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
