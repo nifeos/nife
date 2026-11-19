@@ -481,7 +481,7 @@ fn through_el0(slot: &Slot, r: &ReadOnlyProbeReport, write: bool) -> El0 {
 /// The window the EL0 server serves: the scratch range in a write build, else the first used
 /// partition, rounded down to whole blocks. `None` when the card has neither.
 fn el0_window(
-    mbr: &designware_mobile_storage::partition::MasterBootRecord,
+    mbr: &master_boot_record::MasterBootRecord,
     write: bool,
 ) -> Option<driver_process_contract::designware_mobile_storage::Window> {
     use driver_process_contract::designware_mobile_storage::Window;
