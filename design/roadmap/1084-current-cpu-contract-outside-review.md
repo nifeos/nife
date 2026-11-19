@@ -5,7 +5,7 @@ milestone_dependencies: 1017, 956
 decision_dependencies: 204
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1084. `current_cpu_contract`: what an outside maintainer would fix before it leaves
 
@@ -73,32 +73,7 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
   ([#3657](https://github.com/nifeos/nife/pull/3657)) and ratified as built.
 - Review package: Open. No package for this crate exists under `notes/crate-reviews/`; a lane writes
   one.
-- Review clearance: Open. It is [an open decision](#clear-the-review-for-the-move).
-
-## Open decisions
-
-### Clear the review for the move
-
-Background. A crate leaves nife for its own repository in the `nifeos` organization only after calef
-clears its review package. That clearance is also the go to create the repository. This crate has no
-package yet, so the clearance comes after a lane writes one. Every other finding has landed or is
-work the move itself does (items 1 and 4).
-
-Recommendation: A, once the package exists.
-
-- A. Clear the package and approve the repository once a lane writes it.
-- B. Clear it only together with the names, in one review.
-- C. Keep the crate in nife until a program outside nife reads the page.
-
-Door: one-way. Others see and clone a public repository once it exists, and nobody can withdraw its
-history.
-
-Prior art. Servo moved crates it shared with others, such as `url`, into repositories of their own
-(from memory, not re-read). nife differs by having one person clear a written review package before
-the repository exists. Concrete example: `counter_frequency_contract`, this crate's sibling, follows
-the same order of milestone 1017.
-
-Blocks: the move, and with it the tag and the first publish.
+- Review clearance: Done (ruled 2026-11-19 UTC, option A), once the package exists; the package is still to be written.
 
 ## Goal
 
@@ -183,8 +158,8 @@ The P1 items are in [the appendix](1084-current-cpu-contract-outside-review/befo
 
 ## Decisions for the architect
 
-Decision A, the type of `CPU_OFFSET_BYTES` and the public names have rulings, which are the rules in
-force.
+Decision A, the type of `CPU_OFFSET_BYTES`, the public names and the review clearance have rulings,
+which are the rules in force.
 
 ### Decision A. The bound on CPU ids is part of this page's identity
 
@@ -243,6 +218,19 @@ Prior art. Linux's `rseq` calls the unscheduled state `RSEQ_CPU_ID_UNINITIALIZED
 differs by spelling every abbreviation out. Concrete example: a runtime's one line reads
 `CurrentCpuPage::new(PAGE_VIRTUAL_ADDRESS)`, the sibling's shape to the word.
 
+### The review clearance and the move
+
+Ruled 2026-11-19 (UTC), option A. The review of this crate is cleared once a lane writes the review
+package, and that clearance is the go to create `nifeos/current_cpu_contract` and move the crate
+there. The package is still to be written by a lane, and the move starts after the package lands.
+No tag is part of this ruling, and nothing is published. A public repository is one-way: others see
+and clone it once it exists, and nobody can withdraw its history.
+
+Prior art. Servo moved crates it shared with others, such as `url`, into repositories of their own
+(from memory, not re-read). nife differs by having one person clear a written review package before
+the repository exists. Concrete example: `counter_frequency_contract`, this crate's sibling, follows
+the same order of milestone 1017.
+
 ## Done when
 
 The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-when.md).
@@ -266,8 +254,7 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 4 and 12, the review package and the
-  review clearance, each as [Finding status](#finding-status) gives it. Checked against the crate's
+- **Outstanding.** Items 1, 4 and 12 and the review package, each as [Finding status](#finding-status) gives it. Checked against the crate's
   code and the template's naming helpers.
 - **Milestone 1017.** The contract crates leave in its order. This crate moves once the `Name:` blocks
   read ratified, so the standalone gate's `names` check can pass.
