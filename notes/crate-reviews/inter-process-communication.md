@@ -12,7 +12,8 @@ helpers that keep a cached earliest deadline. `FutexTable` holds futex wait queu
 prove the one-queue invariant, the token discipline and the delivery rules. The timer and the futex
 table stay in this crate (maintainer, provisional, 2026-11-14 UTC, D2); the README the move writes
 states the shared reason (the same token discipline and proof shape) in its first line. The
-record is [milestone 1095](../../design/roadmap/1095-inter-process-communication-outside-review.md) (`inter_process_communication`: what an outside maintainer would fix before it leaves).
+record is milestone 1095 (`inter_process_communication`: what an outside maintainer would fix before it leaves), at
+[its roadmap file](../../design/roadmap/1095-inter-process-communication-outside-review.md).
 
 ## Identity
 
@@ -24,7 +25,7 @@ record is [milestone 1095](../../design/roadmap/1095-inter-process-communication
 | license | the nife workspace supplies it today; the move writes `MIT OR Apache-2.0` and both license files |
 | `publish` | `false`; nothing publishes until every outside-review milestone is delivered |
 | size | 2447 lines in seven files under `src/` (library, `tests.rs`, and `verification.rs` under `cfg(kani)`) |
-| dependency | `intrusive_queue`, by `path` in nife. It leaves first (milestone 1097, D3); this crate then pins it by a full revision |
+| dependency | `intrusive_queue`, by `path` in nife. It leaves first (milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release), D3); this crate then pins it by a full revision |
 | consumers in nife | `kernel` only |
 
 ## Public API
@@ -41,7 +42,7 @@ What a stranger may find surprising:
 - Every operation answers with a verdict enum and hands back the caller's `Unqueued<T>` token when
   its node did not queue. The kernel owns the nodes; this crate only links and unlinks them.
 - `Rendezvous` holds two queues and a pending count, and the proofs say at most one queue is
-  non-empty. A single queue with a tag would hold that by construction (milestone 1095, P2-11,
+  non-empty. A single queue with a tag would hold that by construction (milestone 1095 (`inter_process_communication`: what an outside maintainer would fix before it leaves), P2-11,
   open after the move).
 - `Timer::deadline` answers `NEVER` (`u64::MAX`) for no deadline (P2-13, open).
 - `debug_counts` on `Rendezvous` and `Notification` answers a struct with field names.
