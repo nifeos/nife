@@ -81,25 +81,37 @@ impl Bdf {
 /// Byte offset of the Vendor ID and Device ID dword in the standard header (PCI Local Bus
 /// Specification 3.0, section 6.2.1): the vendor in the low half, the device in the high half. A
 /// vendor of `0xffff` means no function answers.
+///
+/// Name: provisional. Was `VENDOR_ID`; a register offset ends in `_REGISTER`.
 pub const VENDOR_ID_REGISTER: u64 = 0x00;
 /// Byte offset of the Command and Status dword (section 6.2.2 and 6.2.3): the command register in
 /// the low half and the status register in the high half. The capability walks read the status
 /// half from this dword.
+///
+/// Name: provisional. Was `COMMAND`; a register offset ends in `_REGISTER`.
 pub const COMMAND_REGISTER: u64 = 0x04;
 /// Byte offset of the Class Code and Revision ID dword (section 6.2.4): the 24-bit class code over
 /// the 8-bit revision id. `read32(bdf, CLASS_REVISION_REGISTER) >> 8` is the class code.
+///
+/// Name: provisional. Was `CLASS_REVISION`; a register offset ends in `_REGISTER`.
 pub const CLASS_REVISION_REGISTER: u64 = 0x08;
 /// Byte offset of the Header Type byte (section 6.2.5): bits 6:0 give the layout, bit 7 says the
 /// device is multifunction. The byte sits in the dword at `HEADER_TYPE_REGISTER & !3`.
+///
+/// Name: provisional. Was `HEADER_TYPE`; a register offset ends in `_REGISTER`.
 pub const HEADER_TYPE_REGISTER: u64 = 0x0e;
 /// Byte offset of Base Address Register 0 (section 6.2.5.1); the six BARs of a type-0 header follow
 /// at four-byte steps.
+///
+/// Name: provisional. Was `BAR0`; a register offset ends in `_REGISTER`.
 pub const BAR0_REGISTER: u64 = 0x10;
 /// Byte offset of the Capabilities Pointer byte (section 6.7): where the capability list starts.
 ///
 /// Name: provisional. Spelled out from `CAP_PTR`; the register offsets end in `_REGISTER`.
 pub const CAPABILITIES_POINTER_REGISTER: u64 = 0x34;
 /// Byte offset of the Interrupt Pin byte (section 6.2.4): 0 for none, then 1 to 4 for INTA to INTD.
+///
+/// Name: provisional. Was `INTERRUPT_PIN`; a register offset ends in `_REGISTER`.
 pub const INTERRUPT_PIN_REGISTER: u64 = 0x3d;
 
 /// **Header type 1: a PCI-to-PCI bridge**, which is what a PCI Express root port and every switch
@@ -116,6 +128,8 @@ pub const HEADER_TYPE_BRIDGE: u8 = 1;
 /// its own enumeration and they are the only record of the topology that exists; nothing derives
 /// them, and software that does not read them cannot find a device behind a root port. See
 /// [`bridge_buses`].
+///
+/// Name: provisional. Was `BUS_NUMBERS`; a register offset ends in `_REGISTER`.
 pub const BUS_NUMBERS_REGISTER: u64 = 0x18;
 
 /// The non-volatile memory express (NVMe) class code: mass storage (0x01), non-volatile memory
@@ -864,6 +878,8 @@ pub fn msi_capability(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Opti
 /// Specification 3.0, section 6.8.2.3). It is the upper half of the capability's first dword, so
 /// a driver writes it with a 32-bit config write that also rewrites the (read-only) id and
 /// next-pointer bytes, which is what the hardware expects.
+///
+/// Name: provisional. Was `MESSAGE_CONTROL`; a register offset ends in `_REGISTER`.
 pub const MESSAGE_CONTROL_REGISTER: u64 = 0x02;
 
 /// Message Control bit 15: **MSI-X Enable** (PCI Local Bus Specification 3.0, section 6.8.2.3).
