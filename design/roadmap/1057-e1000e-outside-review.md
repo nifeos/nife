@@ -48,7 +48,7 @@ in a way others would act on.
 
 #### P0-1. One method of the `Hardware` trait carries its width in an abbreviated name
 
-**Status:** Done. Landed in `nifeos/e1000e#5`; `read16` appears nowhere on `main`.
+Status: Done. Landed in `nifeos/e1000e#5`; `read16` appears nowhere on `main`.
 
 `Hardware` (`src/platform_controller_hub/hardware_access.rs`) is the whole surface a kernel
 implements for the I219 sequences and for the PHY identifier read of the 82574L. It has `read`,
@@ -68,7 +68,7 @@ earlier spelling of this tree before a first release. One-way (public API). S.
 
 #### P0-2. The weekly mutation gate fails on survivors nobody has triaged
 
-**Status:** Done. Landed in `nifeos/e1000e#3`, `#17` and `#30`; the weekly mutation run on `main` passes.
+Status: Done. Landed in `nifeos/e1000e#3`, `#17` and `#30`; the weekly mutation run on `main` passes.
 
 The exemption file `.github/mutants-exempts` carries a census row as a comment and no entry, and
 says the first weekly run would name each survivor. That run named 82, and the gate fails on them.
@@ -91,7 +91,7 @@ comment with the counts of the run. Two-way. M.
 
 #### P0-3. The stranger test has never run, and its weekly job fails for that
 
-**Status:** Done. Landed in `nifeos/e1000e#4`, `#22` and `#24`. The `stranger cadence` job asks for a fresh run 28 days after the one `docs/stranger-test.md` records.
+Status: Done. Landed in `nifeos/e1000e#4`, `#22` and `#24`. The `stranger cadence` job asks for a fresh run 28 days after the one `docs/stranger-test.md` records.
 
 `docs/stranger-test.md` ends `Last run: none`, and the `stranger cadence` job fails when the last
 run is older than 28 days. The repository's own text calls this the whole claim of the release.
@@ -101,7 +101,7 @@ writes the date on that line. Two-way. S, plus the hour of the reader.
 
 #### P0-4. No tag, so the semver gate has no baseline
 
-**Status:** Done. `v0.1.0-pre.1` sits on `ef01cef` and `v0.1.0-pre.2` on `68ed520`.
+Status: Done. `v0.1.0-pre.1` sits on `ef01cef` and `v0.1.0-pre.2` on `68ed520`.
 
 `git tag` is empty, so the `semver` job of the template compares against nothing. The review
 package placed the tag on the move commit. Since then pull request #2 of the repository renamed
@@ -117,7 +117,7 @@ compare against). S.
 
 #### P1-1. The public traits do not state the volatile and ordering contract
 
-**Status:** Done. Landed in `nifeos/e1000e#5`.
+Status: Done. Landed in `nifeos/e1000e#5`.
 
 `DirectMemoryAccessRegion` takes `&self` for reads of memory the device writes, and its doc says
 only "Read the little-endian `u64` at `offset`". `Tails::barrier` says what it orders, but nothing
@@ -131,7 +131,7 @@ Two-way. S.
 
 #### P1-2. The I219 port omits three steps of its source without saying so
 
-**Status:** Done by documenting. Landed in `nifeos/e1000e#9`: the doc of `sequence` and the module BUGS list the `GCR`, `WUFC`, `VET` and `PBA` departures; none is ported, and their effect on silicon waits on P1-7.
+Status: Done by documenting. Landed in `nifeos/e1000e#9`: the doc of `sequence` and the module BUGS list the `GCR`, `WUFC`, `VET` and `PBA` departures. The crate ports none of them, and their effect on silicon waits on P1-7.
 
 FreeBSD's `e1000_init_hw_ich8lan` ends with `e1000_set_pcie_no_snoop_generic(hw, ~PCIE_NO_SNOOP_ALL)`,
 a read-modify-write of `GCR` (offset `0x5B00`) that `initialize_hardware` does not perform.
@@ -148,7 +148,7 @@ Two-way. S to document, M to port with a bench check.
 
 #### P1-3. The BSD notices live only in doc comments
 
-**Status:** Done. Landed in `nifeos/e1000e#6`.
+Status: Done. Landed in `nifeos/e1000e#6`.
 
 The `license` field of `Cargo.toml` names `BSD-3-Clause` and `BSD-2-Clause`, and the root carries
 `LICENSE-APACHE` and `LICENSE-MIT` only. The Intel and FreeBSD notices sit in
@@ -161,7 +161,7 @@ stays as it is. Two-way (additive). S.
 
 #### P1-4. The manifest cites a file from another repository
 
-**Status:** Done. Landed in `nifeos/e1000e#6`.
+Status: Done. Landed in `nifeos/e1000e#6`.
 
 The comment on the `publish = false` line of `Cargo.toml` says the exception lives in
 `crates/publish-allowlist.txt`, a path that does not exist in this repository and that a stranger
@@ -170,7 +170,7 @@ above. Two-way. S.
 
 #### P1-5. No example drives the ring, and no document gives the register order the crate assumes
 
-**Status:** Done. Landed in `nifeos/e1000e#9`.
+Status: Done. Landed in `nifeos/e1000e#9`.
 
 The README's one example judges a status word. The sentence after it tells the reader to implement
 two traits and "drive a `DataPlane`" with no code. The doc of `DataPlane::start` assumes the kernel
@@ -185,7 +185,7 @@ Two-way. M.
 
 #### P1-6. The proofs cover three pure functions and not the cursors of the ring
 
-**Status:** Done. Landed in `nifeos/e1000e#8`, `#14` and `#22`.
+Status: Done. Landed in `nifeos/e1000e#8`, `#14` and `#22`.
 
 The harnesses prove `receive_verdict`, the layout offsets and `plan_paged_access`. Host tests
 against a cooperative simulator are all that check the invariants a driver author most wants:
@@ -203,7 +203,7 @@ harness covers the range checks of `Geometry::from_strap` and `read_word`. Two-w
 
 #### P1-7. The I219 bring-up has run once on silicon, with no cable
 
-**Status:** Open, bench: `nifeos/e1000e#10`. Whether the first release waits for it is the first open decision below.
+Status: Open, bench: `nifeos/e1000e#10`. Whether the first release waits for it is the first open decision below.
 
 The README and the module BUGS say so. The link-up half (`e1000_check_for_copper_link_ich8lan`,
 with the latency tolerance reporting of `e1000_platform_pm_pch_lpt` and the K1 configuration) is
@@ -215,7 +215,7 @@ The port of the link-up half is P2-9 and waits on that result. Two-way. L, and i
 
 #### P1-8. The repository cannot show its own data plane working under QEMU
 
-**Status:** Done. Landed in `nifeos/e1000e#18`; `docs/qemu.md` says what a pass prints.
+Status: Done. Landed in `nifeos/e1000e#18`; `docs/qemu.md` says what a pass prints.
 
 The only end-to-end evidence for the 82574L path lives in a consumer. This repository has host
 tests and nothing that touches `-device e1000e`; the tree holds no QEMU reference. Change: at least
@@ -244,68 +244,10 @@ One question is open, under Open decisions. The publishing hold stands.
 
 ## Open decisions
 
-### D1. Does the first release of `e1000e` wait for a cabled I219 run?
+The briefs are in [the open decisions appendix](1057-e1000e-outside-review/open-decisions.md).
 
-The crate carries two device paths. The 82574L data plane is checked by host tests, the Kani
-harnesses, three fuzz targets and a QEMU run of `-device e1000e`. The I219 bring-up is a port of
-FreeBSD's Intel shared code that only the crate's simulator checks: it has run once on silicon,
-with no cable, so nobody knows whether it brings a link up and passes frames. P1-7 is that run.
-It needs a Sunrise Point I219 cabled to a switch and a person at the bench, and no date is set
-for it (`nifeos/e1000e#10`).
-
-This matters now because the first publish of every crate under outside review waits until all
-of that review feedback is delivered. As this milestone is written, P1-7 sits in the P1 list and
-in the done-when appendix, so 1057 cannot read as delivered until a person runs it, and the
-first publish of the organization waits with it. Everything else in this block is done or
-waits on the same run: P2-4's hardware half and P2-9 (the link-up port) follow P1-7 and are P2,
-after the first release, already.
-
-What constrains it: a crates.io version is permanent, and what it claims is read by everyone who
-depends on it. Today the README's BUGS says that no version of the crate has run on an I219 and
-that the link-up half is not ported, and `is_supported_device` answers yes for the Sunrise Point
-rows. A release with P1-7 open publishes that honest limit; it claims nothing false, but it
-offers a device path nobody has seen pass a frame. Waiting costs time with no bound, since the
-run needs hardware and a person, and it holds the other crates' first publish too.
-
-The same shape sits in 1050 (two board steps) and 1058 (a run on one real controller and an
-ordering run on a weakly ordered host), whose status tables mark them bench. One answer here
-settles those as well.
-
-**Question.** Does 1057 count as delivered for the publishing hold while P1-7 is open as a bench
-step?
-
-- **A (recommended).** Yes. P1-7 moves to the bench list with P2-4's hardware half and P2-9;
-  the first release ships the I219 port with the README's BUGS saying it has not run on silicon,
-  and the run's result lands in a later version whichever way it goes. The same rule covers the
-  bench rows of 1050 and 1058.
-- **B.** No. The first release waits for the cabled run, as the done-when appendix now reads,
-  and with it the first publish of every reviewed crate.
-- **C.** Yes, but the first release stops claiming the I219: `is_supported_device` answers no
-  for the Sunrise Point rows until the run passes, and a later version turns them on. This is
-  the restrictive option on the API, and turning a device on later is compatible where turning
-  one off is not. It costs a code change to a function a consumer already calls, and it hides
-  a port that the README already describes honestly.
-
-The recommendation is not about effort: B and C each cost a person or a change, and A costs
-neither, but A is chosen because the README already states the limit and the run adds a fact,
-not a correction to a claim. If the run fails, the fix is a patch release to code the BUGS
-section already warned about.
-
-Door: two-way for the delivery rule itself; the publish it permits is one-way.
-
-Prior art, read for this brief: Linux puts drivers that "may or may not work" under
-`drivers/staging/`, which is off by default and taints the kernel when used
-(`drivers/staging/Kconfig`), so an unproven path ships but is marked at the point of use. The
-`ixy.rs` user-space driver names one controller family it supports and does not separate tested
-models from untested ones in its README. Not read for this brief, from memory: FreeBSD's `em(4)`
-HARDWARE section lists supported controllers without saying which were run.
-
-What the tree already does: 1050 and 1058 list bench runs as what remains and say nothing there
-needs the architect, and a pull request whose only open ask is a bench boot merges without it,
-the bench step confirming afterwards. A follows those.
-
-Blocked until answered: the reading of 1057 as delivered, and so the first publish of the
-organization, as far as this crate holds it.
+- D1. Does the first release of `e1000e` wait for a cabled I219 run (P1-7)? Recommended: no;
+  the bench rows follow the release, as in 1050 and 1058.
 
 ## Prior art
 
@@ -322,20 +264,23 @@ hardware steps.
 
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet, so the order may change once anyone does.
-- Hardware figures stay absent until P1-7 runs. The cost of one tail write per frame (P2-4) is
-  measured under QEMU only, and the effect of the omitted writes (P1-2) is unmeasured.
+- Hardware figures stay absent until P1-7 runs. Only QEMU has measured the cost of one tail write
+  per frame (P2-4), and nobody has measured the effect of the omitted writes (P1-2).
 
-## Where this stands
+## Follow-on
 
 Each finding above and in [the P2 appendix](1057-e1000e-outside-review/after-the-first-release.md)
-carries its status line, the one record of it. What is not done:
+carries its own status line, which is the one record of it. This list names only what is left.
 
-- Bench: P1-7 (`nifeos/e1000e#10`), and the two items that follow it, P2-4's hardware half and P2-9
-  (`nifeos/e1000e#11`).
-- Release step: the harnesses verify on `main`; they verify on a tagged commit once
-  `v0.1.0-pre.3`, which carries `nifeos/e1000e#31`, is placed.
-- Lane: P2-14's last wording fix, `nifeos/e1000e#34`, a draft until `v0.1.0-pre.3` exists.
-- Architect: D1, under Open decisions.
+- **Done.** Every P0 item, every P1 item but P1-7, and every P2 item but P2-4's hardware half,
+  P2-9 and the rest of P2-14, each with its pull request on its status line.
+- **Outstanding.** P1-7, P2-4's hardware half and P2-9 need a bench: `nifeos/e1000e#10` and `#11` are
+  open, and `nifeos/e1000e#31` measured QEMU only. Read from the issue list and that pull request.
+- **Outstanding.** The harnesses verify on `main` but not yet on a tagged commit; `v0.1.0-pre.3`
+  will carry `nifeos/e1000e#31`. Read from the tags and the proofs runs.
+- **Outstanding.** P2-14's last wording fix is `nifeos/e1000e#34`, a draft until `v0.1.0-pre.3` exists.
+  Read from the pull request list.
+- **Outstanding.** D1, under Open decisions, needs the architect.
 
 ## Index row
 
