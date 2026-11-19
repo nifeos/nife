@@ -10,7 +10,7 @@ cpu the ticks spent busy and idle, the context switches, the interrupts taken an
 `no_std`. The kernel is the one writer. It and every reader link this crate, so they agree on where
 each word lives and cannot drift on the layout or the page's fixed virtual address.
 
-The page is granted to a program, never ambient. A parent maps it read-only at
+The page is never ambient: a program holds it only by grant. A parent maps it read-only at
 `PAGE_VIRTUAL_ADDRESS` in the one child that declares it.
 
 ## The contract
@@ -85,9 +85,9 @@ drives a kernel's writer and this crate's reader together, lives with the kernel
 - The words are not consistent with each other, and no sequence counter lets a reader detect a torn
   read.
 - Busy time is not split into user and system time.
-- A sample's age is bounded by the writer's tick and not by the page: a counter the writer
+- The writer's tick bounds a sample's age, not the page: a counter the writer
   publishes once per tick is up to one tick old, and a parked cpu keeps its last sample.
-- The line count is fixed at `PROCESSOR_LINES`; a machine with more cpus does not fit.
+- `PROCESSOR_LINES` fixes the line count; a machine with more cpus does not fit.
 - There is no swap, page-cache or block I/O counter.
 
 ## Minimum Rust version
