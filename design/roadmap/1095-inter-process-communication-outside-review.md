@@ -45,9 +45,9 @@ milestone reaches delivery.
   [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `src/lib.rs` line 37 exports
   `Send` and `Receive`, and `Signal`, `Wait` and `Arm` keep their names.
 - P1-5a, gate names in the private parts: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-5b, prose spellings: Open. "signalling" (`src/timer.rs` line 13), "queueing"
-  (`src/futex.rs` line 5, `src/rendezvous.rs` line 38), "signalled" (`src/notification.rs` lines
-  58 and 328), "modelled" (line 246), two patch headers and the doc example's `pa`
+- P1-5b, prose spellings: Open. The British forms of signaling (`src/timer.rs` line 13), signaled
+  (`src/notification.rs` lines 58 and 328) and modeled (line 246), `queueing` (`src/futex.rs`
+  line 5, `src/rendezvous.rs` line 38), two patch headers and the doc example's `pa`
   (`src/futex.rs` lines 27 and 33) remain for a lane.
 - P1-5c, gate names in the public parts: Open. Calef's (see "Two public names the gates refuse"
   below).
