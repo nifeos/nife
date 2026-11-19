@@ -1,7 +1,7 @@
 # Ruled decisions
 
-An appendix to [the milestone](../1094-grant-plan-outside-review.md). The two decisions below are
-the rules in force; the milestone's "Open decisions" holds the ones still calef's.
+An appendix to [the milestone](../1094-grant-plan-outside-review.md). The decisions below are
+the rules in force; none is open.
 
 ## Where the crate boundary falls
 
@@ -68,3 +68,58 @@ back without opening the module.
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
 which the architect may revisit. The eight renames hold, with `job_page_frame` becoming
 `job_channel_page`, and no alias of the old spellings. `Cwd` and `argv` stay. Item 7 is the work.
+
+## Limits carry their unit
+
+Background. A limit is the largest size a value may take, and the naming rule says it ends with
+its unit (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`). Most of this crate's limits were
+ratified before that rule, and a release review rechecks such a name. Seven public limits count
+bytes with no unit, and four private fields named `len` or `name_len` fail the template's name
+gate. After the first publish every public rename breaks a caller.
+
+Rule, ruled 2026-11-19 (UTC) by the maintainer, provisional: a two-way door until the first publish.
+`MAXIMUM_FILE_NAME_BYTES`; `MAXIMUM_NAME_BYTES` in `expand` and in `nav`;
+`MAXIMUM_DIRECTORY_NAME_BYTES`; `MAXIMUM_RENDERED_PATH_BYTES`; `MAXIMUM_HOLDER_NAME_BYTES`;
+`MAXIMUM_VERB_BYTES`; `MAXIMUM_WORDS_NAME_BYTES` kept as built; the four fields become
+`length_bytes`. `filesystem_contract::grant::MAXIMUM_NAME`, which two of these mirror, moves in the
+same lane. A rename lane does the work, not the pull request that records the rule.
+
+Prior art. This tree's `program_argument_contract::PAGE_BYTES` and `expand::NAME_BYTES` carry their
+unit; POSIX's `PATH_MAX` and `NAME_MAX` are the case the rule avoids, since neither says whether the
+terminator counts. Where nife differs: the unit is in the name, not in a manual page.
+
+Example. A test holds `Refusal::FileNotNameable`'s sentence against `MAXIMUM_FILE_NAME_BYTES`, and a
+reader knows what 252 counts.
+
+## The names `grant_contract` and `program_table`
+
+Background. The split made two crates out of `grant_plan`. `grant_contract` holds what a program and
+its spawner share: the manifest types, the capability slot numbers, `INTERFACE_ID` 17 and the verb
+narrowing. It leaves for a repository of its own. `program_table` holds nife's table of 28
+programs, the spawn protocol and the region budgets, and stays in nife. §323 (the binary interface,
+and the names of the project's layers) settled that crate names stay descriptive and that the
+page-contract crates take no common prefix.
+
+Rule, ruled 2026-11-19 (UTC) by the architect: both names stand as built. `grant_contract` follows
+the tree's `_contract` pattern for what two programs agree on, and `program_table` says what the
+crate holds.
+
+Prior art. `clap` ships its lexer as `clap_lex` and its derive as `clap_derive`, named for the part.
+Where nife differs: the leaf carries no family prefix, per §323.
+
+Example. A `std` program writes `grant_contract::DOMAIN_SLOT` and links no parser.
+
+## Review clearance and the repositories
+
+Background. Clearing a crate review is the go to create its repository under nifeos. The planner and
+the leaf each leave at step 6 of milestone 1017 (the contract crates leave in this order).
+
+Rule, ruled 2026-11-19 (UTC) by the maintainer, provisional: write both review packages now. The
+architect then ratifies any provisional names from the packages and clears `grant_plan` and
+`grant_contract` together, with no tag and no publication.
+
+Prior art. In this tree `generational_table`, `block_roster` and `file_allocation_table` each moved
+on a cleared review with no tag. Where nife differs: nothing outside nife pins either crate.
+
+Example. Both packages exist, the architect clears them in one step, and `grant_contract` and
+`grant_plan` get their repositories together, the planner depending on the leaf by version.
