@@ -5,11 +5,10 @@ package of [crate-reviews.md](../crate-reviews.md), in its own file as every pac
 
 ## In one paragraph
 
-The kernel's blocking primitives, as plain state machines over intrusive queues: a synchronous
-rendezvous endpoint (`Rendezvous`: send and receive meet, or one waits, with a pending-signal count
-for a bound interrupt), a notification word with waiters (`Notification`), a one-shot `Timer` with
-the helpers that keep a cached earliest deadline, and a table of futex wait queues (`FutexTable`).
-It is `no_std` with no allocator and one dependency, `intrusive_queue`, and sixteen Kani harnesses
+The kernel's blocking primitives, as plain state machines over intrusive queues. `Rendezvous` is a
+synchronous endpoint where a send and a receive meet or one waits, with a pending-signal count for
+a bound interrupt. `Notification` is a word with waiters. `Timer` is a one-shot timer with the
+helpers that keep a cached earliest deadline. `FutexTable` holds futex wait queues. It is `no_std` with no allocator and one dependency, `intrusive_queue`, and sixteen Kani harnesses
 prove the one-queue invariant, the token discipline and the delivery rules. The timer and the futex
 table stay in this crate (maintainer, provisional, 2026-11-14 UTC, D2); the README the move writes
 states the shared reason (the same token discipline and proof shape) in its first line. The
@@ -60,7 +59,7 @@ Sixteen harnesses in `notification.rs`, `timer.rs` and `verification.rs`, each w
 - A bound endpoint never yields a sender.
 - A send rendezvouses exactly when a receiver waited.
 - A token comes back exactly when its node did not queue.
-- Removing a waiter keeps the invariant, a pending signal drains first, and a collected sender is forgotten.
+- Removing a waiter keeps the invariant, a pending signal drains first, and the endpoint forgets a collected sender.
 
 The futex table has host tests and no
 harness. The proofs are inductive steps over one waiter per queue.
@@ -121,7 +120,7 @@ None beyond the milestone's open items (P0-3, P1-6, P1-7, P1-9, P2-11, P2-13, P2
 1. How does the template's `register_names` gate treat `address_space`? Two options: add
    `space` handling to the template's address rule (a change to `crate-workflows`, not to this
    crate), or rename the field. The ruling of D5 names it `address_space` and the gate runs only
-   in the new repository, so the question is raised here and nothing is renamed.
+   in the new repository, so this package raises the question and renames nothing.
 
 ## Result of `script/crate-standalone`
 
