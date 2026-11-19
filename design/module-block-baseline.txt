@@ -1067,64 +1067,37 @@ crates/capability_witness_contract/src/lib.rs::USED_WORD
 
 crates/capability_witness_contract/src/lib.rs::WHOLE
 
-crates/clock_contract/src/lib.rs::ACCEPTED
-
-crates/clock_contract/src/lib.rs::BAD_REQUEST
-
-crates/clock_contract/src/lib.rs::CMOS
-
-crates/clock_contract/src/lib.rs::ClockPage
-
-crates/clock_contract/src/lib.rs::GOLDFISH
-
-
-crates/clock_contract/src/lib.rs::NONE
 
 
 
-crates/clock_contract/src/lib.rs::NOT_AFTER_NANOSECONDS
-
-crates/clock_contract/src/lib.rs::NOT_BEFORE_NANOSECONDS
-
-crates/clock_contract/src/lib.rs::OPERATION_SHIFT
-
-crates/clock_contract/src/lib.rs::PL031
-
-crates/clock_contract/src/lib.rs::PROPOSE
-
-crates/clock_contract/src/lib.rs::REFUSED_IMPLAUSIBLE
-
-crates/clock_contract/src/lib.rs::REFUSED_TOO_FAR_BACKWARD
-
-crates/clock_contract/src/lib.rs::REFUSED_TOO_FAR_FORWARD
 
 
-crates/clock_contract/src/lib.rs::Reading
-
-crates/clock_contract/src/lib.rs::SET
-
-crates/clock_contract/src/lib.rs::STATE
 
 
-crates/clock_contract/src/lib.rs::UNKNOWN
 
-crates/clock_contract/src/lib.rs::WORDS
 
-crates/clock_contract/src/lib.rs::decide
 
-crates/clock_contract/src/lib.rs::is_known
 
-crates/clock_contract/src/lib.rs::is_plausible
 
-crates/clock_contract/src/lib.rs::new
 
-crates/clock_contract/src/lib.rs::offset_for
 
-crates/clock_contract/src/lib.rs::operation
 
-crates/clock_contract/src/lib.rs::publish
 
-crates/clock_contract/src/lib.rs::read
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 crates/compositor/src/lib.rs::ACKED

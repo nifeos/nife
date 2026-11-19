@@ -239,9 +239,6 @@ UNIT_KEPT = {
     'system_tests/src/user/clock_tests.rs': ({'offset_nanos'}, _OVERLAY),
     # The std overlay under patches/std-nife reads a generated copy of this file by these names, and
     # no sweep rewrites patches/. `offset_nanos` is the field of `Reading` it reads.
-    'crates/clock_contract/src/lib.rs':
-        ({'NANOS_PER_SEC', 'wall_nanos', 'offset_nanos', 'monotonic_nanos'},
-         'the names the std overlay reads'),
     'cryptography_provider/src/lib.rs': ({'Sec1Point', 'ToSec1Point', 'from_sec1_bytes', 'to_sec1_point', 'sec1'}, _SEC1),
     'cryptography_exerciser/src/main.rs': ({'Sec1Point', 'ToSec1Point', 'from_sec1_bytes', 'to_sec1_point', 'sec1'}, _SEC1),
 }
