@@ -14,8 +14,6 @@
 //! - `nifefs::write_image` does not refuse duplicate names, and an entry whose name is not UTF-8 is
 //!   skipped: the first duplicate is hashed twice and the second never, and neither can be read by
 //!   the kernel, so the verdict is right and the dead bytes go unreported.
-//! - In the stick path the haystack contains the archive, so an archive entry that embedded another
-//!   entry's raw digest would make a pair read as vouched with no digest in the kernel. No entry does.
 //! - It asks whether a digest is present, not whether the kernel checks it; notes/sealed-pair.md.
 //!
 //! Name: provisional: the thing (a sealed pair), not the act. Refused `card_check` (three of the
@@ -520,20 +518,30 @@ fn entry_disagreement(
 }
 
 /// **Find the archive inside a single boot file** (the UEFI stick's one file per
-/// architecture, milestone 441 (the program that makes the stick)).
+/// architecture, milestone 441 (the program that makes the stick)), and return where it lies.
 ///
 /// The stick carries no separate archive: `uefi_loader` embeds both halves, so a reader that wants
 /// to judge the pair has to find the archive by its magic. Every occurrence is tried, because the
 /// kernel is embedded in the same file and carries `nifefs::MAGIC` as a constant of its own; the
 /// first one that parses and holds a `progenitor` is the archive.
-pub fn embedded_archive(blob: &[u8]) -> Option<&[u8]> {
+///
+/// The result is the archive's span in `blob`: from its magic to the end of its last entry. A
+/// reader that searches the rest of the file for the trust root's digests must search only the
+/// bytes outside the span, since an archive entry that embedded another entry's raw digest would
+/// otherwise vouch for it.
+pub fn embedded_archive(blob: &[u8]) -> Option<std::ops::Range<usize>> {
     blob.windows(nifefs::MAGIC.len())
         .enumerate()
         .filter(|(_, w)| *w == nifefs::MAGIC)
-        .map(|(at, _)| &blob[at..])
-        .find(|candidate| {
-            nifefs::Fs::parse(candidate)
-                .is_ok_and(|fs| fs.read(measured_boot::PROGENITOR).is_some())
+        .find_map(|(at, _)| {
+            let candidate = &blob[at..];
+            let fs = nifefs::Fs::parse(candidate).ok()?;
+            fs.read(measured_boot::PROGENITOR)?;
+            let end = fs
+                .entries()
+                .map(|e| e.start_block as usize * nifefs::BLOCK + e.len as usize)
+                .fold(nifefs::DIR_BLOCKS * nifefs::BLOCK, usize::max);
+            Some(at..at + end)
         })
 }
 
@@ -994,8 +1002,11 @@ mod tests {
         blob.extend_from_slice(&kernel);
         blob.extend_from_slice(&archive);
 
-        let found = embedded_archive(&blob).expect("the archive is in there");
-        let seal = inspect(&blob, found).expect("readable");
+        let span = embedded_archive(&blob).expect("the archive is in there");
+        // The span ends at the last entry's last byte; the packed image may pad past it.
+        assert!(archive.starts_with(&blob[span.clone()]));
+        assert!(span.len() > nifefs::DIR_BLOCKS * nifefs::BLOCK);
+        let seal = inspect(&blob, &blob[span]).expect("readable");
         assert!(seal.is_sealed(), "{seal:?}");
     }
 }
