@@ -23,6 +23,7 @@ crates = [
     "direct_memory_access_validator",
     "firmware_configuration",
     "jh7110_watchdog",
+    "jh7110_pci_express",
 ]
 # `jh7110_clock_and_reset` names the JH7110 clock controllers' spellings and decodes their
 # properties; the device-tree walk in `machine_discovery` (contracts) reads the tree with them and

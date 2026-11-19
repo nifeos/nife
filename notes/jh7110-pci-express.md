@@ -5,7 +5,7 @@
 The JH7110 has two PCI Express root ports, each a PLDA XpressRICH controller inside StarFive glue.
 On a VisionFive 2, port 1 is the M.2 M-key slot and port 0 carries the VL805 USB 3 controller.
 `crates/jh7110_pci_express` holds what it takes to bring one up, as logic over an injected register
-bus. Milestone 163 holds the plan and what still needs the board.
+bus. Milestone 163 (the JH7110's PCIe root complex) holds the plan and what still needs the board.
 
 ## Why the kernel's PCI path needs a bring-up first
 
@@ -16,11 +16,11 @@ and its address translation programmed, a read of the `cfg` window decodes as no
 
 Three things have to happen, in this order:
 
-1. **The bring-up** (`bring_up`): the PHY into PCI Express mode, the glue told it is a root port,
+1. The bring-up (`bring_up`): the PHY into PCI Express mode, the glue told it is a root port,
    clocks on, PERST# held and released, the link polled.
-2. **The translation table**: entry 0 maps the `cfg` window as the configuration interface, which
+2. The translation table: entry 0 maps the `cfg` window as the configuration interface, which
    makes it ECAM-shaped. Entries 1 and 2 map the 32-bit and prefetchable memory ranges one to one.
-3. **The root port** (`root_port::configure`): bus numbers 0, 1, 1 and a memory window over the
+3. The root port (`root_port::configure`): bus numbers 0, 1, 1 and a memory window over the
    32-bit range. Firmware does this on a PC. Here the root port reads zero bus numbers and forwards
    nothing, so the walk in `pci_configuration_space` sees only `00:00.0` until this runs.
 
