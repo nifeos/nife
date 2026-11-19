@@ -22,7 +22,7 @@ address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 # read from the fixed page `kernel::user::load` maps read-only into every x86_64 process. Only
 # `counter_hertz`'s x86_64 arm reads it, but the dependency is unconditional the way clock_contract's and
 # environment_contract's kernel-side deps are, since it is tiny, no_std, and dependency-free.
-clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "26605ae02e06e972f38521ab74fddc21b6f18dea" }
+clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 current_cpu_contract = { version = "0.1.0", path = "../current_cpu_contract" }
 # The entropy contract, for `entropy::fill` (lane/uuid-crate, 2026-10-06): the client loop four
 # programs had copied. Dependency-free and no_std, like the other two protocol crates above.
