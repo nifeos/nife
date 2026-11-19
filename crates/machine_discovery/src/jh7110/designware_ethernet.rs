@@ -17,9 +17,7 @@
 //! documentation and in a `#[doc(alias)]`.
 //!
 //! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, after the crate it
-//! serves. calef has not named it. The items from [`COMPATIBLE_MAINLINE`] to
-//! [`SystemController`] keep the names they had in the driver crate's `jh7110` module, which they
-//! left; those are provisional too.
+//! serves. calef has not named it.
 
 use designware_ethernet::motorcomm_physical_layer_device::{
     PadDriveStrength, Settings, SettingsSource,
@@ -28,16 +26,31 @@ use designware_ethernet::network_interface_controller::BusConfiguration;
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
 /// Mainline's compatible for both ports.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-dwmac";
 /// The vendor U-Boot's compatible for both ports, the one the board's firmware serves.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,jh7110-eqos-5.20";
 /// Both spellings, in the order to try them: mainline's first.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR];
 
 /// The physical address of the registers of the Gigabit media access control (Gigabit MAC, GMAC)
 /// `gmac0`, in both trees and in OpenBSD's port table.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const GMAC0_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1603_0000;
 /// The physical address of the registers of the Gigabit MAC `gmac1`.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const GMAC1_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1604_0000;
 
 /// The DMA system bus mode's burst-length bits for 256, 128, 64 and 32 beats, bits 7 to 4
@@ -54,6 +67,9 @@ pub const BUS_BURST_BEATS_256_128_64_32_PERMITTED: u32 = 0xf0;
 /// limits `0xf`. Carried as a constant rather than read, because the tree's spelling of it is the
 /// one thing both trees share verbatim and parsing it would add a failure path for no new fact.
 /// The kernel's bring-up and the control process both pass it in `bring_up::Inputs`.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
     fixed_burst: true,
     channel_burst_beats_times_8: false,
@@ -88,14 +104,23 @@ pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_BASE_PHYSICAL_ADDRESS: u64 = 0x1701
 /// Its size.
 pub(crate) const ALWAYS_ON_SYSTEM_CONTROLLER_SIZE_BYTES: u64 = 0x1000;
 /// Mainline's compatible for it. The vendor's node says only `syscon`, which names nothing.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "aon")]
 pub const COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER: &[u8] = b"starfive,jh7110-aon-syscon";
 /// The vendor's node name for it, a prefix that matches `aon_syscon@17010000`.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "aon")]
 pub const ALWAYS_ON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
 /// The always-on system controller register holding `gmac0`'s interface select, at byte
 /// offset `0xc` of the controller: mainline's `<&aon_syscon 0xc 0x12>` second cell, the vendor's
 /// `AON_SYSCFG_12`.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "AON_SYSCFG_12")]
 pub const GMAC0_INTERFACE_SELECT_REGISTER: u64 = 0xc;
 /// The field's shift: mainline's third cell `0x12`, the vendor's `GMAC5_0_SEL_I_SHIFT`.
@@ -112,6 +137,9 @@ pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT: u32 = 1;
 /// **The syscon word with `gmac0`'s interface select set to RGMII**, the reduced gigabit
 /// media-independent interface (the MAC-to-physical layer device wiring both JH7110 boards use), every other field
 /// kept.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "rgmii")]
 pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u32 {
     (word & !(SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT))
@@ -127,11 +155,17 @@ const _: () = assert!(
 );
 
 /// The interface select a syscon word holds for `gmac0`.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const fn gmac0_interface_select(word: u32) -> u32 {
     (word >> GMAC0_SYSTEM_CONTROLLER_SHIFT) & SYSTEM_CONTROLLER_FIELD
 }
 
 /// What the tree says about the first port.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Discovered {
     /// The physical address of the window holding the controller's registers.
@@ -170,11 +204,17 @@ const DEFAULT_DELAY_PICOSECONDS: u32 = 1950;
 /// `gmac0`'s physical layer device in the vendor tree: `gmac0`'s child, found by node name because the vendor tree
 /// gives it no `phy-handle`. `gmac0` precedes `gmac1` in that tree, and `gmac1`'s physical layer device is
 /// `ethernet-phy@1`, so the first `ethernet-phy@0` is `gmac0`'s.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "phy")]
 pub const VENDOR_PHYSICAL_LAYER_DEVICE_NODE: &[u8] = b"ethernet-phy@0";
 
 /// The first cell of a property, big-endian, as every device-tree cell is: `interrupts`'s first
 /// interrupt, `phy-handle`'s phandle, a `reg`'s first word.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[must_use]
 pub fn first_cell(value: &[u8]) -> Option<u32> {
     Some(u32::from_be_bytes(value.get(..4)?.try_into().ok()?))
@@ -190,6 +230,9 @@ impl Discovered {
     /// # Errors
     ///
     /// Propagates the first error `property` returns.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+    /// as the driver crate spelled it. calef has not named it.
     pub fn from_node<'t, E>(
         registers_physical_address: u64,
         registers_size_bytes: u64,
@@ -226,6 +269,9 @@ impl Discovered {
 /// # Errors
 ///
 /// Propagates the first error `property` returns.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "phy")]
 pub fn mainline_physical_layer_device<'t, E>(
     mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
@@ -270,6 +316,9 @@ pub fn mainline_physical_layer_device<'t, E>(
 /// # Errors
 ///
 /// Propagates the first error `property` returns.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "phy")]
 pub fn vendor_physical_layer_device<'t, E>(
     mut property: impl FnMut(&[u8]) -> Result<Option<&'t [u8]>, E>,
@@ -304,6 +353,9 @@ pub fn vendor_physical_layer_device<'t, E>(
 
 /// **Where the always-on system controller is** (the device tree's `syscon` node), and whether the tree
 /// said so.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[doc(alias = "syscon")]
 pub struct SystemController {
@@ -318,6 +370,9 @@ pub struct SystemController {
 impl SystemController {
     /// **The constant both trees agree on**, `0x1701_0000`, `0x1000` long, with `from_tree`
     /// false. An answer here is not evidence the machine is a JH7110.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+    /// as the driver crate spelled it. calef has not named it.
     #[must_use]
     pub const fn fallback() -> Self {
         SystemController {

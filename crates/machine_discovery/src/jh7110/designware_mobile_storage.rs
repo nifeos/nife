@@ -22,48 +22,76 @@
 //! `reg` and its properties.
 //!
 //! Name: provisional, minted 2026-10-25 (UTC) by lane crates-stand-alone-cuts, after the crate it
-//! serves. calef has not named it. The items from [`COMPATIBLE_MAINLINE`] to [`Slot`] keep the
-//! names they had in the driver crate's `jh7110` module, which they left; those are provisional
-//! too.
+//! serves. calef has not named it.
 
 use device_tree_blob::{DeviceTreeBlob, Error, Region};
 
 /// Mainline's `compatible`.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const COMPATIBLE_MAINLINE: &[u8] = b"starfive,jh7110-mmc";
 /// The vendor tree's `compatible`, the generic binding.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const COMPATIBLE_VENDOR: &[u8] = b"snps,dw-mshc";
 
 /// Slot 0's controller registers: the eMMC socket on a `VisionFive` 2. The vendor tree labels the
 /// instance `sdio0`.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "sdio0")]
 pub const SLOT_0_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1601_0000;
 /// Slot 1's controller registers: the microSD slot on a `VisionFive` 2, the card the `VisionFive` 2 boots from.
 /// The vendor tree labels the instance `sdio1`.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "sdio1")]
 pub const SLOT_1_REGISTERS_PHYSICAL_ADDRESS: u64 = 0x1602_0000;
 /// Each controller's register window, `0x10000` bytes in both trees.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const REGISTERS_SIZE_BYTES: u64 = 0x1_0000;
 /// The rate mainline and the vendor branch head assign the `ciu` clock (the module documentation
 /// gives the revisions; the vendor tag `VF2_v2.10.4` assigns none), which the controller divides
 /// for the card.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const CARD_INTERFACE_UNIT_HERTZ: u32 = 50_000_000;
 /// Both trees' `fifo-depth`: the FIFO's depth in entries of its width, which on the JH7110 (and in
 /// every controller `designware_mobile_storage`'s `HostController::new` accepts)
 /// is 32 bits, so a count of 32-bit words.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "fifo")]
 #[doc(alias = "fifo-depth")]
 pub const QUEUE_DEPTH_WORDS: u32 = 32;
 /// Mainline's interrupt numbers at the platform-level interrupt controller (PLIC), indexed by slot:
 /// slot 0 is 74 and slot 1 is 75.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const SLOT_INTERRUPT_NUMBERS: [u32; 2] = [74, 75];
 
 /// The node names each slot goes by: mainline's first, then the vendor's.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 pub const NODE_NAMES: [[&[u8]; 2]; 2] = [
     [b"mmc@16010000", b"sdio0@16010000"],
     [b"mmc@16020000", b"sdio1@16020000"],
 ];
 
 /// One controller, as the tree describes it.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+/// as the driver crate spelled it. calef has not named it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Slot {
     /// 0 or 1.
@@ -92,6 +120,9 @@ pub struct Slot {
 
 impl Slot {
     /// What the slot is for on a `VisionFive` 2, for a transcript.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+    /// as the driver crate spelled it. calef has not named it.
     #[must_use]
     pub const fn board_role(&self) -> &'static str {
         match self.index {
@@ -116,6 +147,9 @@ impl Slot {
     /// # Errors
     ///
     /// Propagates the first error `property` returns.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
+    /// as the driver crate spelled it. calef has not named it.
     pub fn from_node<'t, E>(
         index: u8,
         registers_physical_address: u64,
