@@ -40,8 +40,8 @@
 /// are exactly two answers and the compiler should be able to say which one a call site chose.
 ///
 /// Name: provisional, ruled provisionally by the maintainer on 2026-11-14 (UTC) (block 1092
-/// decision 2); the architect may revisit it before the first tag. It was `Dot`; the new spelling
-/// says which dot the policy is about, as `FNM_PERIOD` and `require_literal_leading_dot` do.
+/// decision 2); the architect may revisit it before the first tag. The spelling says which dot the
+/// policy is about, as `FNM_PERIOD` and `require_literal_leading_dot` do.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum LeadingDot {
     /// A name starting with `.` matches only a pattern starting with a **literal** `.` (which `\.`
