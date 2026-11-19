@@ -49,7 +49,7 @@ milestone reaches delivery.
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-8, the error type is not an `Error`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-9, the name gates refuse ten register names and one test name: Open. The replacement names
-  are ruled (Decision 2 below); the rename lane builds them.
+  Decision 2 below rules them; the rename lane builds them.
 - P1-10, the prose gate refuses nineteen acronyms: Open. The move lane runs the template's
   `prose_acronyms` gate and expands each at first use.
 - P1-11, the mutation verdict needs the recorded equivalents: Open. The move lane carries the six
@@ -145,8 +145,7 @@ The P1 items are in [the appendix](1093-globally-unique-identifier-partition-tab
 
 ## Decisions for the architect
 
-All six decisions are ruled, each as the rule in force from 2026-11-19 UTC unless it says otherwise.
-The maintainer's rulings are provisional.
+Each decision below is the rule in force from 2026-11-19 UTC. The maintainer's rulings are provisional.
 
 ### Decision 1: the name of the one type a user holds
 
@@ -183,12 +182,12 @@ Rule (maintainer, provisional, 2026-11-19 UTC; two-way until the first tag). The
 `HEADER_BYTES`, `at::HEADER_SIZE` and `at::ENTRY_SIZE` to `at::HEADER_BYTES` and `at::ENTRY_BYTES`,
 `Header::entry_size` to `entry_bytes` (alias `SizeOfPartitionEntry`), `MINIMUM_BLOCK_SIZE` and
 `MAXIMUM_BLOCK_SIZE` to `MINIMUM_BLOCK_BYTES` and `MAXIMUM_BLOCK_BYTES`, the field `block_size` to
-`block_bytes`, `mbr::SIZE_LBA` to `mbr::SIZE_BLOCKS` (alias `SizeInLBA`), and the test to
+`block_bytes`, `mbr::SIZE_LBA` to `mbr::SIZE_BLOCKS` (alias `SizeInLBA`). The test becomes
 `the_three_reads_a_partition_table_reader_makes`. One rename lane does this with the package's
 name table. This pull request changes no crate code.
 
 Why. The naming rules end a size with its unit, and the template's name gates refuse all eleven
-names. The two block limits were ratified in #2797, before the units rule.
+names. The units rule came after #2797 ratified the two block limits.
 
 Prior art. `gpt_disk_types` leaves the unit to a `BlockSize` type; Linux writes
 `sizeof_partition_entry`; this tree's page contracts spell `PAGE_BYTES`. Nife puts the unit in the
@@ -202,7 +201,7 @@ crate checks and generates no version or variant. The rename lane adds a documen
 the crate docs that says so (the maintainer's two-way call).
 
 Why. `Uuid` is what users print, parse and compare (253 million recent downloads against 705
-thousand for `uguid`), and the two byte swaps this crate adds are proved over all 2^128 values.
+thousand for `uguid`), and a proof covers the two byte swaps this crate adds over all 2^128 values.
 
 Prior art. `gpt` uses `uuid`; `gpt_disk_types` and `uefi` use `uguid`. Nife keeps the order every
 tool prints and pays sixteen byte moves per read. Example: a downstream holding a `uefi` `Guid`
