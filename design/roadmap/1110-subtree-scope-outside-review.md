@@ -101,12 +101,12 @@ Recommendation: A.
 Door: one-way. The repository is public the moment it exists, and `redoxfs_server`'s manifest
 switches to it; a rename or a split after that breaks every pin.
 
-Prior art: `cap-std` makes its beneath-the-directory check in `cap-primitives`, a crate of its
-own beneath the `Dir` type (from memory, unverified), the shape A keeps. Linux keeps it in the kernel, as `RESOLVE_BENEATH` in
-`openat2`. nife differs by putting the decision in a crate a server links and a prover checks.
-In this tree, `generational_table` and `e1000e` each moved after a cleared package of their
-own. Example: under A, the server's manifest reads `subtree_scope = { version = "0.1.0", git =
-"https://github.com/nifeos/<step-9 repository>", rev = "<sha>" }`.
+Prior art: `cap-std` makes its beneath-the-directory check in `cap-primitives`, a crate of its own
+beneath the `Dir` type (from memory, unverified), the shape A keeps. Linux keeps it in the kernel,
+as `RESOLVE_BENEATH` in `openat2`. nife differs by putting the decision in a crate a server links
+and a prover checks. In this tree, `generational_table` and `e1000e` each moved after a cleared
+package of their own. Example: under A, the server's manifest reads `subtree_scope = { version =
+"0.1.0", git = "https://github.com/nifeos/<step-9 repository>", rev = "<sha>" }`.
 
 Blocks: the move, and with it any tag and the first publish.
 
