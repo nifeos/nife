@@ -110,7 +110,7 @@ dependency); everything else is two-way and the maintainer decides it.
    scaffold's badge row. The `abbreviations` step is report only but lists 16 components
    (`cmos`, `pl`, `unix`, `rtc`, `seq`, `st`, `req` among them); `cmos`, `pl031` and `unix` belong
    in `.github/accepted-words` with their reasons, and the rest go with the renames.
-   Door: two-way before the first tag; the renames are ratified (Decision 3). Effort: S.
+   Door: two-way before the first tag; Decision 3 ratifies the renames. Effort: S.
 
 2. `check / clippy` refuses the crate outside nife.
    Finding: `cargo clippy --all-targets -- -D warnings` fails on `doc_markdown` at `src/lib.rs` line 537
@@ -135,7 +135,7 @@ The P1 items are in [the appendix](1083-clock-contract-outside-review/before-the
 
 ## Decisions
 
-Decisions 1 to 4 are ruled, and their rulings are the rules in force.
+Decisions 1 to 4 have rulings, and those rulings are the rules in force.
 
 ### Decision 1. A reader of the page never waits on a writer
 
@@ -201,15 +201,15 @@ spelling.
 
 ### Decision 4. The review is cleared and the crate moves
 
-Ruled 2026-11-19 (UTC), option A: the review of `clock_contract` is cleared, on the condition that
+Ruled 2026-11-19 (UTC), option A: the review of `clock_contract` clears on the condition that
 [the review package](../../notes/crate-reviews/clock-contract.md) names the landed renames and no
 longer says it waits on the names. The package does. The clearance approves creating
 `nifeos/clock_contract` and moving the crate there. It approves no tag and no publish; each is a
 separate question.
 
-A crate leaves nife for its own repository in the `nifeos` organization only after its review
-package is cleared, and the clearance is the go to create the repository. The page layout and
-identity are frozen (Decisions 1 and 2), the names are ratified (Decision 3), and the hostile-input
+A crate leaves nife for its own repository in the `nifeos` organization only once its review
+package clears, and the clearance is the go to create the repository. Decisions 1 and 2 froze the
+page layout and identity, Decision 3 ratified the names, and the hostile-input
 and documentation fixes have landed. Items 1, 3 and 4 and the stranger test are work the move
 itself does.
 
@@ -247,4 +247,4 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
 
 ## Index row
 
-An outside review of `clock_contract` before it leaves. Two required checks are red on the first commit (the template's naming and prose gates, and clippy without nife's `clippy.toml`). Seven items land before the move finishes, and six wait for later. The page's layout and identity are settled: two copies so a reader never waits on a writer, frozen as interface 8, version 1, magic `CLOCKv01`. The public names are ratified as built, and the review is cleared for the move to `nifeos/clock_contract`, with no tag and no publish.
+An outside review of `clock_contract` before it leaves. Two required checks are red on the first commit (the template's naming and prose gates, and clippy without nife's `clippy.toml`). Seven items land before the move finishes, and six wait for later. The page's layout and identity are fixed: two copies so a reader never waits on a writer, frozen as interface 8, version 1, magic `CLOCKv01`. The public names stand as built, and the review clears the crate for the move to `nifeos/clock_contract`, with no tag and no publish.

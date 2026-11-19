@@ -19,7 +19,7 @@ on a writer, and its reader and writers sit in different address spaces. Six loo
 orderings against the C11 memory model. The crate is `no_std`, has
 no run-time dependency, and has `unsafe` in one place: `ClockPage::new` takes a raw address. Two
 Kani harnesses prove the policy and the request encoding. Nothing in it points back into nife. Every
-public name is ratified as built (2026-11-19 UTC).
+public name stands as built (ruled 2026-11-19 UTC).
 
 ## Identity
 
@@ -47,13 +47,13 @@ Two more readers reach the crate outside its dependency lines:
 
 - The standard library. `cargo xtask std-src` copies the crate's `src/lib.rs` verbatim to
   `sys/pal/nife/clockproto.rs` in the generated `std` source. It finds the file in the directory
-  `cargo metadata` gives for the package (`xtask/src/farm/copied.rs`), so a pinned crate is read
+  `cargo metadata` gives for the package (`xtask/src/farm/copied.rs`), so the std source reads a pinned crate
   from Cargo's checkout. The time support in
   `patches/std-nife/overlay/std/src/sys/time/nife.rs` reads `NANOSECONDS_PER_SECOND`, `wall_nanoseconds`,
   `Reading::offset_nanoseconds` and `state::is_known` from that copy.
 - The tooling. `script/interleaving-check` and `.github/workflows/ci.yml` run the loom models.
   `helpers/interface_stability.py` reads the source for the series of milestone 610 (the
-  interface's stability is measured weekly). `helpers/vendored_name_gates.py` exempts the overlay
+  weekly series measures the interface's stability). `helpers/vendored_name_gates.py` exempts the overlay
   names, and `helpers/template_report_baseline.txt` holds three rows.
   `.cargo/mutants-baseline.txt` holds the census row (caught 54, missed 3, timeout 7, unviable 5).
   `packages/contracts.package.toml` and `crates/externalization-list.txt` list the crate.
@@ -64,9 +64,8 @@ nife's `fuzz/` workspace. The manifest writes `license` and `lints` as literals.
 
 ## What was run
 
-The runs below were made before the renames landed. They name the old spellings where those were
-the finding. The move lane runs each check again on the crate as it now stands, and the renames
-were checked against the template's naming helpers when they landed.
+The runs below predate the renames. They name the old spellings where those were
+the finding. The move lane runs each check again on the crate as it now stands, and the template's naming helpers checked the renames when they landed.
 
 | check | result |
 |---|---|
@@ -173,5 +172,5 @@ Linux text.
 
 ## Recommendation
 
-Ready for review. The names are ratified, and the crate is a leaf with nothing pointing back into
+Ready for review. The ruling ratifies the names, and the crate is a leaf with nothing pointing back into
 nife.
