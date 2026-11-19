@@ -50,7 +50,7 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 - P1-4, a slot truncates on a 32-bit target: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565).
 - P1-5, `len` means capacity: Done, [#3656](https://github.com/nifeos/nife/pull/3656). The name
-  `capacity` is provisional.
+  The name `capacity` is ratified (2026-11-19 UTC).
 - P1-6, the move tool corrupts patches and skips `repository`: Done,
   [#3521](https://github.com/nifeos/nife/pull/3521).
 - P1-7, two mutators outside every harness: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
@@ -58,7 +58,7 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 - P2-9, abbreviated parameter names: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - P2-10, `Error` is thin for a stranger: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3656](https://github.com/nifeos/nife/pull/3656). `GrantRequired` and `SlotOccupied` are
-  provisional.
+  ratified (2026-11-19 UTC).
 - P2-11, the process-wide peak is unconditional: Open. The static and its readers sit behind
   `target_has_atomic = "32"` ([#3565](https://github.com/nifeos/nife/pull/3565)); a `peak` cargo
   feature remains. It is two-way until the release, and the maintainer rules it provisionally; the
@@ -77,44 +77,14 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
   rights harness, so a lane measures it before taking it.
 - D1, the crate's name: Done (ruled 2026-11-16 UTC, option A),
   [#3674](https://github.com/nifeos/nife/pull/3674).
-- The provisional names: Open. `delegate`, `GrantRequired`, `SlotOccupied`, `capacity` and `iter`
-  wait for the architect's ratification under Open decisions.
+- The five names: Done (ruled 2026-11-19 UTC, option A). `delegate`, `GrantRequired`, `SlotOccupied`,
+  `capacity` and `iter` stand as built.
 - The move: Open. No review package exists under `notes/crate-reviews/`, and nifeos/capability_table
   does not exist; a package lane comes first, then the clearance under Open decisions.
 
 ## Open decisions
 
-### Ratify the five provisional names
-
-Background: `capability_table` is the kernel's per-thread table of capabilities and their rights.
-Five of its public names come from the review's fixes, each provisional. `Capability::delegate`
-makes a copy of a capability with fewer rights, and refuses without the `GRANT` right
-(`Error::GrantRequired`) or when the copy would hold a right the source lacks. `capacity` is the
-number of slots, not `len`, which in std counts the elements held. `iter` walks the
-occupied slots. `Error::SlotOccupied` answers an insert at a slot already in use, apart from a full
-table. A provisional name can change freely inside nife; once the crate publishes, every user's code
-spells it, so the first publish turns each into a promise.
-
-Recommendation: A.
-
-- A. Ratify all five as built.
-- B. Rename `delegate` to `derive`, so the capability's method and the table's
-  `CapabilityTable::derive`, which calls it, spell the one act alike (seL4's derivation tree uses
-  the same word); keep the other four.
-- C. Ratify the five, and also add `len` returning the occupied count, beside `used`.
-
-Door: two-way inside nife; one-way at the first publish, when a published name becomes a breaking
-change.
-
-Prior art: std's `Vec::capacity` and `HashMap::capacity` mean exactly the slot count, and
-`Vec::len` the elements held, which is why `len` moved. seL4's `CNode_Mint` narrows rights on a
-copy; Zircon's `zx_handle_duplicate` does the same and requires the `DUPLICATE` right, as `delegate`
-requires `GRANT` (recalled, not read). Where nife differs: one method holds both refusals, and the
-kernel calls that method, so the proof covers the code the kernel runs. Example:
-`source.delegate(Rights::READ)` on a capability holding `READ | GRANT` is `Ok` with `READ` alone;
-on one holding `READ | WRITE` it is `Err(Error::GrantRequired)`.
-
-What it blocks: the first publish.
+One decision is open. The five names are ruled, under D2 below.
 
 ### Clear the review, which creates nifeos/capability_table
 
@@ -159,7 +129,7 @@ The comparison with nearby work is in [the appendix](1081-capability-outside-rev
 Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A door is one-way when
 somebody outside the repository acts on it after the move or the release (a repository name, a
 published name, a published behavior, a layout, a license); everything else is two-way and the
-maintainer decides it. Every name proposed below is provisional.
+maintainer decides it. A name proposed below is provisional unless a ruling under Decisions for the architect ratifies it.
 
 ### P0: blocks the move
 
@@ -175,9 +145,9 @@ The P2 items are in [the appendix](1081-capability-outside-review/later-items.md
 
 ## Decisions for the architect
 
-D1 has its ruling. Everything else above is two-way until the first release, and the maintainer
-decides it, provisionally. The provisional names and the review clearance that creates the
-repository are under [Open decisions](#open-decisions).
+D1 and D2 have their rulings. Everything else above is two-way until the first release, and the
+maintainer decides it, provisionally. The review clearance that creates the repository is under
+[Open decisions](#open-decisions).
 
 ### D1. The crate's name is `capability_table`
 
@@ -210,13 +180,28 @@ CAPABILITY_TABLE_SLOTS>`.
 
 Door: one-way (a repository name and a published crate name), and the ruling closes it.
 
+### D2. The five names stand as built
+
+Ruled 2026-11-19 (UTC), option A. `Capability::delegate`, `Error::GrantRequired`,
+`Error::SlotOccupied`, `CapabilityTable::capacity` and `CapabilityTable::iter` are ratified as built.
+`Capability::delegate` makes a copy of a capability with fewer rights and refuses without the
+`GRANT` right (`Error::GrantRequired`) or when the copy would hold a right the source lacks. The
+kernel calls that one method, so the proof covers the code the kernel runs. `capacity` is the number
+of slots, as in std's `Vec::capacity`, and `len` stays out because in std it counts the elements
+held. `iter` walks the occupied slots. `Error::SlotOccupied` answers an insert at a slot already in
+use, apart from a full table. `derive` as a rename of `delegate` is refused, and no `len` is added.
+The first publish turns each name into a promise, and this ruling is the clearance for that
+promise.
+
+Door: one-way at the first publish.
+
 ## Done when
 
 The checks are in [the appendix](1081-capability-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** The Open lines under [Finding status](#finding-status) and the items under
+- **Outstanding.** The Open lines under [Finding status](#finding-status) and the clearance under
   [Open decisions](#open-decisions).
 
 ## BUGS
@@ -229,7 +214,7 @@ The checks are in [the appendix](1081-capability-outside-review/done-when.md).
   head carries checks the release lacks (spelled-out words, unit symbols, passive voice, function
   length); the review ran the two naming ones by hand and they pass, and it did not run the other two.
 - The review did not look for a review package on any branch; if one exists, its rulings win over
-  the provisional names here.
+  the names here.
 - Item 16 is optional, and the review measured it only on a 64-bit host.
 - Item 3's kernel half and item 12's three kernel walks were checked with `cargo check` for the three
   kernel targets and `--features system_tests`, and the crate's tests and Kani harnesses ran; the
