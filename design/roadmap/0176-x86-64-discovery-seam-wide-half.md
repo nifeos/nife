@@ -86,9 +86,9 @@ Piece 1 is complete and independent of this.
   `PortRange` capability, and `design/decisions/0130-cmos-rtc-delegation.md` uses it for the RTC:
   the userspace clock service reads the CMOS through it. `rtc_region()` stays `None` on x86_64
   because the CMOS has no page.
-- **Recorded.** `clock_contract` (spelled clock_proto when this was written; milestone 265
-  renamed it, and it now lives at `nifeos/clock_contract`) carries the new `rtc` kind, shipped as
-  a provisional name like every name a lane mints. `CMOS` is unlike its siblings in kind. `PL031` and `GOLDFISH`
+- **Recorded.** `clock_contract` (spelled clock_proto when this was written, and now at
+  `nifeos/clock_contract`) carries the new `rtc` kind, shipped as a provisional name like every
+  name a lane mints. `CMOS` is unlike its siblings in kind. `PL031` and `GOLDFISH`
   name a register layout the clock service reads through a mapping, while `CMOS` names two I/O ports
   it reads through a `PortRange`.
 - **Recorded.** `kernel/src/arch/x86_64/machine.rs`'s BUGS section had claimed for two milestones
