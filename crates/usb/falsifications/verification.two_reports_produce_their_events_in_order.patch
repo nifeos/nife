@@ -7,10 +7,15 @@ present, still says the right thing, and the count is unchanged, so the bound ha
 Expected to fail: the harness's "modifiers first" assertion.
 
 diff --git a/crates/usb/src/boot_keyboard.rs b/crates/usb/src/boot_keyboard.rs
+index 49c427569..846ef704c 100644
 --- a/crates/usb/src/boot_keyboard.rs
 +++ b/crates/usb/src/boot_keyboard.rs
-@@ -310,3 +310,3 @@
+@@ -316,7 +316,7 @@ const CODE_BY_USAGE: [Option<u16>; 0x88] = [
+ /// ```
+ pub fn changes(before: &BootReport, after: &BootReport, event: &mut dyn FnMut(u8, bool)) {
      let flipped = before.modifiers ^ after.modifiers;
--    for (bit, &code) in MODIFIER_CODES.iter().enumerate() {
-+    for (bit, &code) in MODIFIER_CODES.iter().enumerate().rev() {
+-    for bit in 0..8u8 {
++    for bit in (0..8u8).rev() {
          if flipped & (1 << bit) != 0 {
+             event(
+                 FIRST_MODIFIER_USAGE + bit,
