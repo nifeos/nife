@@ -28,7 +28,7 @@ crate's own `testing::sample_disk` and its two real fixtures. No new tool and no
 ## Finding status
 
 Every item not Done blocks the first crates.io publish, which waits until every outside-review
-milestone is delivered.
+milestone reaches delivery.
 
 - P0-1, nife vocabulary in the sources: Open. The move commit strips the twelve `Name:` blocks and
   rewrites the comment on `Cargo.toml` line 11.
@@ -65,7 +65,7 @@ milestone is delivered.
 - P2-15, `Debug` prints the entry array: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-16, two casts narrow on a 32-bit host: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-17, the entry's reserved tail is unchecked: Done (the crate root states which rules it
+- P2-17, nothing checks the entry's reserved tail: Done (the crate root states which rules it
   enforces), [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-18, a longer header re-emits as 92 bytes: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -80,8 +80,8 @@ milestone is delivered.
   below).
 - Package decision 1, where the two nife type GUIDs live: Open. Calef's (see "Where the nife
   partition type GUIDs live" below); `NIFE_DATA` is at `src/guid.rs` line 146.
-- Package decision 2, whether `lba` and `mbr` are spelled out: Open. Calef's (see "Whether `lba`
-  and `mbr` are spelled out" below).
+- Package decision 2, spelling out `lba` and `mbr`: Open. Calef's (see "Spelling out `lba` and
+  `mbr`" below).
 - Package decision 3, review clearance and repository go: Open. Calef's (see "Review clearance and
   the repository" below).
 - Package questions, a totality harness for `parse` and whether `VERSION` stays: Open. Both are
@@ -95,13 +95,13 @@ milestone is delivered.
 
 ### The size constants take their unit
 
-Background. The crate's sizes are named `entry::SIZE`, `header::HEADER_SIZE`,
+Background. The crate names its sizes `entry::SIZE`, `header::HEADER_SIZE`,
 `header::at::HEADER_SIZE`, `header::at::ENTRY_SIZE`, `Header::entry_size`, `MINIMUM_BLOCK_SIZE`,
 `MAXIMUM_BLOCK_SIZE`, `mbr::SIZE_LBA`, the field `block_size` and the private `entry::SIZE_U32`;
 one test is `the_three_reads_a_gpt_reader_makes`. The naming rules say a size or a limit ends with
-its unit, and `gpt` is spelled out. The template's name gates refuse all eleven, so the new
+its unit, and the tree spells out `gpt`. The template's name gates refuse all eleven, so the new
 repository's checks are red until they change. Two of them (`MINIMUM_BLOCK_SIZE`,
-`MAXIMUM_BLOCK_SIZE`) were ratified in #2797 before the units rule; a release review rechecks a
+`MAXIMUM_BLOCK_SIZE`) took their ratification in #2797, before the units rule; a release review rechecks a
 name ratified before a later rule. After the tag each public one is a breaking rename.
 
 Recommendation: A. Rename them to the review package's spellings plus item 9's four:
@@ -130,7 +130,7 @@ Blocks: the tag.
 Background. The one type from outside in a public signature is `uuid::Uuid`, with default features
 off. The GPT ecosystem's alternative is `uguid::Guid`, which stores a GUID in the on-disk
 mixed-endian order so that reading sixteen bytes is a copy, and which the `uefi` crate and
-`gpt_disk_types` share. After the first publish the choice is fixed: a published signature's type
+`gpt_disk_types` share. The first publish fixes the choice: a published signature's type
 cannot change without a major version. The maintainer ruled provisionally on 2026-11-14 (UTC) to
 keep `uuid`; `uuid` is already a dependency (1.28.0, default features off).
 
@@ -178,14 +178,14 @@ crate's `types::name` lists only public types.
 
 Blocks: the move.
 
-### Whether `lba` and `mbr` are spelled out
+### Spelling out `lba` and `mbr`
 
 Background. The crate uses `lba` (logical block address) in the five `Header` address fields,
-`Entry::first_lba` and `last_lba`, `PRIMARY_HEADER_LBA`, six table readers and the
-`BackupMismatch` and `MbrProblem` variants, and `mbr` (master boot record) in a module, an error
-enum, an `Error` variant and two functions. The tree's acronym test asks whether the phrase is
-spoken; §154 (the acronym test is whether the phrase is spoken) spelled out `gpt`, an acronym from
-the same specification. The answer settles most of the package's name table.
+`Entry::first_lba` and `last_lba`, `PRIMARY_HEADER_LBA`, the table readers and two error variants.
+It uses `mbr` (master boot record) in a module, an error enum, an `Error` variant and two
+functions. The tree's acronym test asks whether people say the phrase as a word. Under it, §154
+(the acronym test is whether the phrase is spoken) spelled out `gpt`, an acronym from the same
+specification. The answer settles most of the package's name table.
 
 Recommendation: A, spell both out, as §154 spelled out `gpt`.
 
@@ -211,12 +211,12 @@ Clearing a crate review is the go to create its repository under nifeos. The pac
 clearing once the two decisions above and the name ratification land, with no tag and no
 publication.
 
-Recommendation: A, clear once "Where the nife partition type GUIDs live", "Whether `lba` and `mbr`
-are spelled out" and the name ratification are ruled and built.
+Recommendation: A, clear once "Where the nife partition type GUIDs live", "Spelling out `lba` and
+`mbr`" and the name ratification have their rulings and their lanes.
 
 - A. Clear after those rulings land.
 - B. Clear now, and let the move lane carry the rulings into the new repository.
-- C. Hold the move until the P1 items are done as well.
+- C. Hold the move until the P1 items land as well.
 
 Door: one-way: a repository that exists has a name others link to.
 
@@ -277,7 +277,7 @@ The P1 items are in [the appendix](1093-globally-unique-identifier-partition-tab
 
 ## Decisions for the architect
 
-The decision below is ruled provisionally by the maintainer. The `uuid` dependency, the package's
+The maintainer ruled the decision below provisionally. The `uuid` dependency, the package's
 two decisions and the size-constant names are calef's and are under "Open decisions" above.
 
 ### Decision 1: the name of the one type a user holds
@@ -324,6 +324,11 @@ The checks are in [the appendix](1093-globally-unique-identifier-partition-table
   says so, and a caller that knows better can edit the `Header` before writing.
 - The template's `prose_acronyms` false positive on `U+FFFD` is the template's to fix; until it
   lands, the crate rewords the one comment.
+
+## Follow-on
+
+- **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
+  the crate's sources on main.
 
 ## Index row
 
