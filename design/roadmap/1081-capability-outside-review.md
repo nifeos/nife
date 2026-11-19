@@ -50,15 +50,15 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 - P1-4, a slot truncates on a 32-bit target: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565).
 - P1-5, `len` means capacity: Done, [#3656](https://github.com/nifeos/nife/pull/3656). The name
-  The name `capacity` is ratified (2026-11-19 UTC).
+  The ruling of 2026-11-19 (UTC) keeps the name `capacity`.
 - P1-6, the move tool corrupts patches and skips `repository`: Done,
   [#3521](https://github.com/nifeos/nife/pull/3521).
 - P1-7, two mutators outside every harness: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - P2-8, `Rights::ALL` is a literal: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - P2-9, abbreviated parameter names: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - P2-10, `Error` is thin for a stranger: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
-  [#3656](https://github.com/nifeos/nife/pull/3656). `GrantRequired` and `SlotOccupied` are
-  ratified (2026-11-19 UTC).
+  [#3656](https://github.com/nifeos/nife/pull/3656). The ruling of 2026-11-19 (UTC) keeps `GrantRequired` and
+  `SlotOccupied`.
 - P2-11, the process-wide peak is unconditional: Open. The static and its readers sit behind
   `target_has_atomic = "32"` ([#3565](https://github.com/nifeos/nife/pull/3565)); a `peak` cargo
   feature remains. It is two-way until the release, and the maintainer rules it provisionally; the
@@ -183,13 +183,13 @@ Door: one-way (a repository name and a published crate name), and the ruling clo
 ### D2. The five names stand as built
 
 Ruled 2026-11-19 (UTC), option A. `Capability::delegate`, `Error::GrantRequired`,
-`Error::SlotOccupied`, `CapabilityTable::capacity` and `CapabilityTable::iter` are ratified as built.
+`Error::SlotOccupied`, `CapabilityTable::capacity` and `CapabilityTable::iter` stand as built.
 `Capability::delegate` makes a copy of a capability with fewer rights and refuses without the
 `GRANT` right (`Error::GrantRequired`) or when the copy would hold a right the source lacks. The
 kernel calls that one method, so the proof covers the code the kernel runs. `capacity` is the number
 of slots, as in std's `Vec::capacity`, and `len` stays out because in std it counts the elements
 held. `iter` walks the occupied slots. `Error::SlotOccupied` answers an insert at a slot already in
-use, apart from a full table. `derive` as a rename of `delegate` is refused, and no `len` is added.
+use, apart from a full table. The ruling refuses `derive` as a rename of `delegate` and adds no `len`.
 The first publish turns each name into a promise, and this ruling is the clearance for that
 promise.
 
