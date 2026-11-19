@@ -13,13 +13,13 @@ An appendix to [the milestone](../1088-elf-outside-review.md).
 - No `as usize` narrows a file field. `usize::try_from` does, and the four sites are tests of
   `SegmentOutOfBounds` or `BadProgramHeaders` on a forged header with a bit above 32 set (item 7).
 - `Error` and `NoteError` implement `Display` and `core::error::Error`. `Elf` is `Debug`, `Clone`
-  and `Copy`. The UEFI loader's wording table and the kernel's `LoadError` display use them (item
-  8).
+  and `Copy`. The UEFI loader keeps its own wording table and the kernel its own `LoadError`
+  display, worded for their readers (item 8).
 - The names D3 ruled are in place across the crate and its dependents with no alias for the old
   spelling, and `script/names` passes (item 9).
 - The README has the three sections named in item 10. An `examples/` program runs under CI.
   `docs/stranger-test.md` records one run with no open finding (item 10).
-- Eight harnesses become nine with the program-header index proved. Each new one with a
+- Nine harnesses, with the program-header index proved. Each new one has a
   falsification patch that `proofs / falsify` replays red (item 11).
 - `cargo test`, `cargo kani`, `cargo clippy --all-targets` and `cargo doc` with warnings denied are
   green at the commit the baseline tag names. So is the weekly `mutation` verdict, with the four

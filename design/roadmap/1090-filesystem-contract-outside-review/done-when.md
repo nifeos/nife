@@ -6,7 +6,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
   `standalone.py --manifest-dir .` passes in the new repository with no `publish = false`, no
   provenance block, no milestone or section citation and no architect's name.
 - `check / clippy`, `check / coverage` and `check / standalone` are green on the moving commit.
-  `proofs / falsify` replays all three patches red through `git apply -p1`.
+  `proofs / falsify` replays every patch red through `git apply -p1`.
 - Decisions A, B and C have rulings; the rename lane has landed with `#[doc(alias)]` on every
   kept foreign spelling and one `register_names` exemption with its reason.
 - `reply_err` and every packer assert their field's range, each with a `#[should_panic]` test.

@@ -6,15 +6,11 @@ An appendix to [the milestone](../1092-glob-outside-review.md).
 
 #### P1-1. One test function fails the template's question gate
 
-DONE (`naive` is `naive_matches`).
-
 `fn naive(pattern, name, j, i) -> bool` (`src/lib.rs` line 580) returns a `bool` and is not named like a
 question. `check.yml` runs `question_shape` at a ceiling of 0, so the first pull request in the new
 repository is red. Change: `naive_matches` or `exhaustive_matches`. Two-way. S.
 
 #### P1-2. The falsification patches and their records are written for the tree's paths
-
-LEFT. The in-tree sweep needs the tree paths; the move lane rewrites them.
 
 All six patches diff `a/crates/byte_glob/src/lib.rs`, and the six `Falsification: replayable` records
 name `crates/byte_glob/falsifications/<name>.patch`. The template's `falsify.py` accepts only
@@ -27,8 +23,6 @@ hunks, and replay each once. Two-way. S.
 
 #### P1-3. The inline proof module will be mutated in the new repository
 
-DONE (`src/tests.rs`, `src/verification.rs`).
-
 `#[cfg(kani)] mod verification` is inline in `src/lib.rs` (line 881). In nife, `.cargo/mutants.toml`
 excludes `verification::` by regex; that file does not travel. cargo-mutants in the repository will
 mutate harness bodies that no host test can reach, and the weekly mutation gate will fail on them, as
@@ -40,15 +34,11 @@ code. Two-way. S.
 
 #### P1-4. The crate does not forbid `unsafe`
 
-DONE (`#![forbid(unsafe_code)]`).
-
 `src/lib.rs` has no `unsafe` and does not say so. `#![forbid(unsafe_code)]` makes the claim one the
 compiler keeps, and it is the shortcut the template's fuzz opt-in scan accepts. Change: add it under
 `#![no_std]` (line 26). Two-way. S.
 
 #### P1-5. The one caveat the record says is in the crate docs is not there
-
-DONE (the module doc, `matches` and its doctest).
 
 `notes/glob.md` and `notes/glob-scope.md` both say that the matcher's blindness to `/` is "written
 down instead, in the crate docs where a reader meets the function". `src/lib.rs` never mentions a
@@ -58,8 +48,6 @@ line in P0-6. Two-way. S.
 
 #### P1-6. The module doc opens for nife's reader, not the crate's
 
-DONE (the module doc).
-
 The first paragraph of `src/lib.rs` explains that one matcher "serves both the shell's expansion and
 its grant" and that the authors wrote it "because it is on the verification path (§46 (thin primitives or whole subsystems; we write everything in between) ...)". A stranger
 needs the first paragraph to say what the crate is: an `fnmatch(3)`-style matcher over bytes for one
@@ -68,8 +56,6 @@ The grant argument belongs in the README's "How it differs" section, in the crat
 Change: rewrite the two opening paragraphs; keep the syntax table. Two-way, with P0-4. S.
 
 #### P1-7. The names of the two length parameters do not carry their unit
-
-DONE (`pattern_bytes` and `name_bytes`).
 
 `cost_bound(pattern_len: usize, name_len: usize)` (`src/lib.rs` line 236). The naming page says a length
 carries its unit (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`) and that the rules apply to
