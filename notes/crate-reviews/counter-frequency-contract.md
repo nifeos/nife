@@ -4,7 +4,7 @@
 package of [crate-reviews.md](../crate-reviews.md), in its own file because the five packages
 together outgrow the page.*
 
-The architect reads this to clear the crate for its move to its own repository, in step 2 of
+The architect read this to clear the crate for its move to its own repository, in step 2 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 It describes the crate as `main` leaves it. The outside review behind it is
 [milestone 1073 (`counter_frequency_contract`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1073-counter-frequency-contract-outside-review.md),
@@ -27,7 +27,7 @@ private machine.
 | item | value |
 |---|---|
 | crate | `counter_frequency_contract`, ratified on #3059 |
-| version | `0.1.0`; no tag and no repository |
+| version | `0.1.0`; no tag and no repository yet |
 | edition, `rust-version` | 2024, 1.88 |
 | license | `MIT OR Apache-2.0`, both texts at the crate root |
 | `publish` | `false`; milestone 1017 keeps moved contract crates unpublished until their own release milestone, and the manifest comment says the line stays until the release that publishes |
@@ -150,5 +150,8 @@ manifests switch to the tagged commit, and the mutation baseline row leaves.
 
 ## Recommendation
 
-Ready for the architect's review. The identity does not change. The crate stays in this tree, and
-no repository appears, until the architect clears this review.
+Cleared to move. The architect cleared the review on 2026-11-19 (UTC), which approves creating
+`nifeos/counter_frequency_contract` and moving the crate there. The identity does not change. The
+clearance does not approve a publication. The architect also approved the tag `v0.1.0-pre.1` on
+the same date, once the move lane finds the new repository matches this copy and the release dry
+run is green. Nothing publishes.

@@ -96,7 +96,21 @@ The P2 items are in [the appendix](1073-counter-frequency-contract-outside-revie
 
 The architect froze the identity: magic `TIMEBAS1`, version 1, interface 9 (ruled 2026-11-11 UTC,
 #3516).
-The decisions still open are under "Open decisions" below.
+### Clearing the review package
+
+Ruled 2026-11-19 (UTC): the review of `counter_frequency_contract` is cleared. Clearing the review
+approves creating `nifeos/counter_frequency_contract` and moving the crate there. The review
+package is [the review package](../../notes/crate-reviews/counter-frequency-contract.md). It
+states the crate, its thirteen ratified names, its frozen identity (`TIMEBAS1`, version 1,
+interface 9) and what the move changes.
+
+### The pre-release tag
+
+Ruled 2026-11-19 (UTC): the tag `v0.1.0-pre.1` is approved, once the move lane finds that the new
+repository matches this tree's copy and the release dry run is green. These are the two conditions
+of the approval of 2026-11-11 (UTC) for seven cleared crates. After the move, nife pins the crate
+by `rev` at the commit of the tag, with `Cargo.toml` carrying the same version. Nothing publishes:
+a contract crate never publishes to crates.io, and the tag is its release.
 
 ### How the page crates spell their offset constants (item 10)
 
@@ -160,74 +174,26 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
 - The review package: Done, [#3615](https://github.com/nifeos/nife/pull/3615),
   [#3626](https://github.com/nifeos/nife/pull/3626) and
   [#3635](https://github.com/nifeos/nife/pull/3635); it states that it is ready.
-- Clearance of the review package: Open. calef's, under "Open decisions" below.
-- The move to its own repository: Open. A lane moves the crate once the review has its clearance.
-- A pre-release tag: Open. calef's, under "Open decisions" below.
+- Clearance of the review package: Done. Ruled 2026-11-19 (UTC), under "Clearing the review
+  package" above.
+- The move to its own repository: Open. A lane creates `nifeos/counter_frequency_contract` and
+  moves the crate there.
+- A pre-release tag: Open until the move. Ruled 2026-11-19 (UTC): `v0.1.0-pre.1` once the move
+  check and the release dry run pass, under "The pre-release tag" above.
 - Publishing: Open. A contract crate never publishes to crates.io; the tag is its release.
 
 ## Open decisions
 
-### Clearing the review package
-
-Background. Before a crate leaves this tree, calef reads its code and its review package and
-clears it; the clearing is also the approval to create its repository. The package for this crate
-is [the review package](../../notes/crate-reviews/counter-frequency-contract.md). It states the
-crate, its thirteen ratified names, its frozen identity (`TIMEBAS1`, version 1, interface 9) and
-what the move changes, and it states that it is ready. Lanes have built every finding above that
-the crate itself can fix. The crate is a contract: the kernel writes a 16-byte page and every
-process reads it, so what leaves is an agreement between two programs.
-
-Recommendation: A.
-
-- A. Clear the review, which approves creating nifeos/counter_frequency_contract and moving the
-  crate there.
-- B. Send it back, naming what to change first.
-- C. Hold it until milestone 1017's order reaches the crate.
-
-Door: one-way. A public repository is an outward step: once it exists, strangers fetch and pin it,
-and the crate's name and page layout become what they rely on.
-
-Prior art. Debian's archive takes no new source package until a person in the `ftpmaster` team
-reviews it by hand in the NEW queue (recalled, not read here). nife differs in that the person who clears the
-crate is the architect who ratified its names, and a contract crate leaves with its wire identity
-already frozen. Example: `block_roster_contract` had its clearance on 2026-11-09 (UTC) and now
-lives at nifeos/block_roster_contract, which nife pins at the commit of a pre-release tag.
-
-Blocks: the move, and through it the tag.
-
-### The pre-release tag
-
-Background. After the move, nife depends on the crate by a git commit. A tag such as
-`v0.1.0-pre.1` names that commit as a release candidate, with `Cargo.toml` carrying the same
-version, so nife pins a tag and not an arbitrary commit. An approval of 2026-11-11 (UTC) gave seven
-cleared crates this tag, each after its move check passed and its release dry run was green. That
-approval named those crates, and this crate is not among them. A contract crate never publishes,
-so for it the tag is the release.
-
-Recommendation: A.
-
-- A. Approve now: the tag `v0.1.0-pre.1` once the move lane finds the repository matches nife's
-  copy and the release dry run is green, under the same two conditions as the seven.
-- B. Rule it when the move lands, as its own question then.
-- C. No tag: nife pins a commit of the repository's `main`.
-
-Door: one-way. Others fetch and pin a pushed tag at once, and a tag that moves breaks every pin
-that named it; nobody can reuse the version it burns for another commit.
-
-Prior art. Semantic Versioning 2.0.0 marks a candidate with a pre-release identifier
-(`0.1.0-pre.1`), and Cargo never selects a pre-release for a requirement that does not name one.
-nife differs in that the tag is never published: it exists only so nife and basalt pin a named
-commit. Example: nife pins `block_roster_contract` by `rev` at the commit of its `v0.1.0-pre.2`
-tag, with `version = "0.1.0-pre.2"`.
-
-Blocks: the tag, and with it nife's pin by tag; not the move.
+None. The publishing hold stands.
 
 ## Follow-on
 
 - **Recorded.** Item 10, the spelling of the page crates' offset constants: ruled, see the decisions above.
-- **Outstanding.** The move itself, which waits on the architect's clearing of the review, and
-  the move dry run's two gaps in `helpers/crate_move.py`. The finding status above says what each
-  needs.
+- **Recorded.** The review is cleared (ruled 2026-11-19 UTC), which approves creating the
+  repository and moving the crate. The tag `v0.1.0-pre.1` is approved on the same date, after the
+  move check and the release dry run pass.
+- **Outstanding.** The move itself, which a lane carries out, and the move dry run's two gaps in
+  `helpers/crate_move.py`. The finding status above says what each needs.
 - **Recorded.** Item 12 (`Debug` prints the address) is `design/roadmap/1073-counter-frequency-contract-outside-review/later-items.md`
   item 12: no change until the next API change.
 
@@ -238,4 +204,4 @@ have landed. They cover the `std` farm's source lookup, the stable clippy failur
 entries in the contract's own terms. They also cover the band the reader applies, the pointer-width
 assertion, the manifest comment and the documentation fixes. The rest are the template's prose
 gates, two Kani harnesses, and a README sentence on where the end-to-end test lives. Item 10, the private offset constants, follows the family rule. The identity does not change, and
-the crate waits for the architect to clear its review.
+the review is cleared and the tag `v0.1.0-pre.1` is approved (ruled 2026-11-19 UTC), and the crate moves to its own repository next.
