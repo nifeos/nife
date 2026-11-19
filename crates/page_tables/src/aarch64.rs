@@ -483,8 +483,8 @@ mod verification {
 
         let leaf = Aarch64::leaf_entry(physical_address, flags);
         // **The address field read out of the word, not through `entry_physical_address`**
-        // (milestone 211: a harness that states its property through the function under test cannot
-        // see that function break).
+        // (milestone 211 (a harness that states its property through the function under test
+        // cannot see that function break)).
         // `leaf_entry` and `entry_physical_address` are an encoder and its own decoder, so a round trip
         // between them is satisfied by any pair that agree: a shift wrong in both would leave
         // this green while the hardware read the wrong page. The line below states where the
