@@ -46,7 +46,7 @@ use block_roster_contract::{
 use filesystem_contract::{block, req};
 use globally_unique_identifier_partition_table::entry::NAME_UNITS;
 use globally_unique_identifier_partition_table::span::Span;
-use globally_unique_identifier_partition_table::{PartitionTable, master_boot_record};
+use globally_unique_identifier_partition_table::{PartitionTable};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, send};
 
@@ -285,7 +285,7 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
     // Reborrowed immutably from here on, so this and the backup buffer can be live at once.
     let primary: &[u8] = head_buf;
 
-    if master_boot_record::validate(&primary[..LBA as usize], block_count).is_ok() {
+    if globally_unique_identifier_partition_table::master_boot_record::validate(&primary[..LBA as usize], block_count).is_ok() {
         flags |= F_MBR;
     }
     let Ok(table) = PartitionTable::parse(

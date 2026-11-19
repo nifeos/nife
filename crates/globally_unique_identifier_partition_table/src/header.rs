@@ -36,8 +36,11 @@ mod at {
     pub(crate) const HEADER_CRC: usize = 16;
     pub const RESERVED: usize = 20;
     pub(crate) const MY_LOGICAL_BLOCK_ADDRESS: usize = 24;
+    /// Name: provisional.
     pub const ALTERNATE_LOGICAL_BLOCK_ADDRESS: usize = 32;
+    /// Name: provisional.
     pub const FIRST_USABLE_LOGICAL_BLOCK_ADDRESS: usize = 40;
+    /// Name: provisional.
     pub const LAST_USABLE_LOGICAL_BLOCK_ADDRESS: usize = 48;
     pub(crate) const DISK_GUID: usize = 56;
     pub(crate) const ENTRY_ARRAY_LOGICAL_BLOCK_ADDRESS: usize = 72;

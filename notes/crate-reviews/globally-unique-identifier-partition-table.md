@@ -111,10 +111,10 @@ Ratified before the rename: `from_disk` and `to_disk` (#1795), `PROTECTIVE_OPERA
 ratified, so the release review reopens them. `REVISION` is recorded, the specification's field.
 The ratification is one pull request with the table `name_release.py --draft` prints.
 
-Decisions 1, 2 and 5 of
-[milestone 1093](../../design/roadmap/1093-globally-unique-identifier-partition-table-outside-review.md)
-are built as provisional names, each with a `Name:` block. Nothing is ratified; ratification is the
-architect's, one name at a time. The rows below say what stands, and what is still only proposed.
+The crate carries decisions 1, 2 and 5 of
+[milestone 1093 (what an outside maintainer would fix before 0.1.0)](../../design/roadmap/1093-globally-unique-identifier-partition-table-outside-review.md)
+as provisional names, each with a `Name:` block. The architect ratifies nothing here, and does it
+later, one name at a time. The rows below say what stands, and what is still only proposed.
 
 | # | items | state |
 |---|---|---|
@@ -130,7 +130,7 @@ architect's, one name at a time. The rows below say what stands, and what is sti
 | 10 | `PartitionTable::entry(index)` | not ruled; proposed `get` |
 | 11 | `Span::covering`'s and `buffer_bytes`'s parameter `transfer` | not ruled; proposed `transfer_bytes` |
 | 12 | `Error::PartitionsOverlap { a, b }` | not ruled; proposed `first`, `second` |
-| 13 | `Header` and `Entry` fields that mirror UEFI's | the `LBA` aliases are built; `DiskGUID`, `NumberOfPartitionEntries`, `PartitionEntryArrayCRC32`, `PartitionTypeGUID`, `UniquePartitionGUID` stay proposed |
+| 13 | `Header` and `Entry` fields that mirror UEFI's | the `LBA` aliases exist; `DiskGUID`, `NumberOfPartitionEntries`, `PartitionEntryArrayCRC32`, `PartitionTypeGUID`, `UniquePartitionGUID` stay proposed |
 | 14 | `APPLE_HFS_PLUS`, `APPLE_APFS` | no rename; aliases `Mac OS Extended` and `Apple File System` stay proposed |
 | 15 | the private test | built as `the_three_reads_a_partition_table_reader_makes` |
 | 16 | `VERSION` | provisional; see [Identity values](#identity-values) |
@@ -213,7 +213,7 @@ For the move lane:
 
 ## Decisions for the architect
 
-Decisions 1 to 5 of the milestone are ruled and built as provisional names. What remains is the
+The milestone's decisions 1 to 5 are ruled, and the crate carries them as provisional names. What remains is the
 architect's:
 
 1. Ratify the provisional names, one at a time, and rule the names no decision reaches (rows 6, 8

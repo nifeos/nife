@@ -32,7 +32,7 @@ use globally_unique_identifier_partition_table::entry::{Entry, NAME_UNITS};
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::span::Span;
 use globally_unique_identifier_partition_table::{
-    ENTRY_ARRAY_BYTES, PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, PartitionTable, master_boot_record,
+    ENTRY_ARRAY_BYTES, PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, PartitionTable,
 };
 use user_mode_runtime::{call, send};
 use uuid::Uuid;
@@ -270,7 +270,7 @@ fn verify() -> ! {
     }
     let head: &[u8] = head;
 
-    if master_boot_record::validate(&head[..LBA as usize], block_count).is_ok() {
+    if globally_unique_identifier_partition_table::master_boot_record::validate(&head[..LBA as usize], block_count).is_ok() {
         flags |= F_MBR;
     }
     let Ok(table) = PartitionTable::parse(

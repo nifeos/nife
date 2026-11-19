@@ -1,3 +1,7 @@
+//! The protective master boot record (MBR) that a GUID partition table disk carries at block 0.
+//!
+//! Name: provisional. Spelled out, with the alias `MBR` for the specification's spelling.
+
 use crate::{Error, MasterBootRecordProblem, is_block_size_ok};
 
 /// The operating system type byte that makes a record protective. Not a filesystem, a keep-out
@@ -29,6 +33,8 @@ const SIZE_BLOCKS: usize = 12;
 /// The size field is 32 bits, so on a disk larger than 2 TiB (at 512-byte blocks) it cannot
 /// hold the truth and the convention is `0xFFFFFFFF`. That is the one place this format admits
 /// it is a fiction.
+///
+/// Name: provisional.
 pub fn write(block: &mut [u8], block_count: u64) -> Result<(), Error> {
     if !is_block_size_ok(block.len()) {
         return Err(Error::BlockSize(block.len()));
@@ -56,6 +62,8 @@ pub fn write(block: &mut [u8], block_count: u64) -> Result<(), Error> {
 /// do (Boot Camp made a generation of them) and it is also the format's worst failure mode: two
 /// descriptions of one disk, maintained by two different tools, silently diverging. Refusing it
 /// is a decision rather than an omission, and the error names it so the message can say so.
+///
+/// Name: provisional.
 pub fn validate(block: &[u8], block_count: u64) -> Result<(), Error> {
     if !is_block_size_ok(block.len()) {
         return Err(Error::BlockSize(block.len()));

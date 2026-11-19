@@ -467,7 +467,7 @@ impl<'a> PartitionTable<'a> {
     /// Separate from [`PartitionTable::parse`] for the same reason
     /// [`PartitionTable::check_backup`] is: it is a different block, and a
     /// caller that has only read LBA 1 and the array should not be forced to read another. See
-    /// [`mbr`] for what "protective" means and why a hybrid MBR is refused.
+    /// [`crate::master_boot_record`] for what "protective" means and why a hybrid MBR is refused.
     ///
     /// Name: provisional.
     #[doc(alias = "MBR")]

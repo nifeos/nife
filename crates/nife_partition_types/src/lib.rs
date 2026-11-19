@@ -1,8 +1,9 @@
-//! **The partition type GUIDs nife writes to a disk**, and a name for each.
+//! **The partition types nife writes to a disk**, and a name for each.
 //!
-//! A GPT entry's type GUID says what the partition holds. These two are nife's own: the data
-//! volume and the boot slot. Every installed disk carries them, so their values never change. The
-//! well-known types (EFI system, Linux filesystem and the rest) are in
+//! An entry in a disk's partition table names the kind of partition with a type Globally Unique
+//! Identifier (GUID). These two are nife's own: the data volume and the boot slot. Every
+//! installed disk carries them, so their values never change. The well-known types (the
+//! Extensible Firmware Interface (EFI) system partition, Linux filesystem and the rest) are in
 //! [`globally_unique_identifier_partition_table::guid::types`], and [`name`] answers for both
 //! sets.
 //!
@@ -34,7 +35,7 @@ pub const NIFE_DATA: Uuid = Uuid::from_fields(
 /// **A nife boot slot**, holding one copy of the image the firmware's chooser starts
 /// (one slot of an A/B install).
 ///
-/// A random version-4 GUID generated on 2026-09-21 and fixed. **Never change this value**, for [`NIFE_DATA`]'s reason. UEFI 2.11
+/// A random version-4 GUID generated on 2026-09-21 and fixed. **Never change this value**, for [`NIFE_DATA`]'s reason. Unified Extensible Firmware Interface (UEFI) 2.11
 /// 5.3.3 reserves attribute bits 48 to 63 for "GUID specific use": *"Only the owner of the
 /// `PartitionTypeGUID` is allowed to modify these bits"*. They carry a boot slot's
 /// priority, tries and confirmed flag, and are ours because this GUID is, which is why a boot
@@ -48,7 +49,7 @@ pub const NIFE_BOOT: Uuid = Uuid::from_fields(
     &[0x9D, 0x7F, 0x17, 0x15, 0x72, 0x63, 0x56, 0x29],
 );
 
-/// A short name for a type GUID, or `None` for one neither this crate nor
+/// A short name for a partition type, or `None` for one neither this crate nor
 /// [`types::name`] recognizes.
 ///
 /// Answers for the two nife types, and for every other GUID asks [`types::name`]. It returns
@@ -56,8 +57,8 @@ pub const NIFE_BOOT: Uuid = Uuid::from_fields(
 /// type, because that is the string a person can look up.
 ///
 /// Name: provisional.
-pub fn name(guid: Uuid) -> Option<&'static str> {
-    match guid {
+pub fn name(type_identifier: Uuid) -> Option<&'static str> {
+    match type_identifier {
         NIFE_DATA => Some("nife data"),
         NIFE_BOOT => Some("nife boot slot"),
         other => types::name(other),
