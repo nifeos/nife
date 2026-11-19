@@ -118,6 +118,9 @@ CONFIGURATIONS = {
     'crates/memory_region_heap/fuzz/clippy': ('--manifest-path',
                                               'crates/memory_region_heap/fuzz/Cargo.toml',
                                               '--all-targets'),
+    'crates/master_boot_record/fuzz/clippy': ('--manifest-path',
+                                              'crates/master_boot_record/fuzz/Cargo.toml',
+                                              '--all-targets'),
 }
 # Files whose change cannot alter what clippy reports (the freshness rule's exception): prose,
 # records, workflows, and the scripts and Python helpers that never reach rustc. A `.rs` file under

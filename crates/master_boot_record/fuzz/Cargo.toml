@@ -1,0 +1,35 @@
+# The fuzz workspace for `master_boot_record`: the parser over arbitrary sector bytes.
+#
+# Its own workspace, the shape of the top-level `fuzz/` (see its Cargo.toml for why cargo-fuzz). It
+# lives in the crate's directory so it leaves with the crate, and the root Cargo.toml excludes it.
+#
+# Name: provisional, 2026-11-19. `fuzz`, matching the directory cargo-fuzz finds by convention, as
+# the top-level `fuzz` package and `crates/memory_region_heap/fuzz` do.
+
+[package]
+name = "fuzz"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT OR Apache-2.0"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+master_boot_record = { path = ".." }
+
+[profile.release]
+debug = 1
+debug-assertions = true
+overflow-checks = true
+
+[[bin]]
+name = "master_boot_record_parse"
+path = "fuzz_targets/master_boot_record_parse.rs"
+test = false
+doc = false
+bench = false
+
+[workspace]
