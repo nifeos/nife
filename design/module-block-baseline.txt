@@ -1632,7 +1632,6 @@ crates/device_tree_blob/src/lib.rs::end
 
 crates/device_tree_blob/src/lib.rs::from_bytes
 
-crates/device_tree_blob/src/lib.rs::from_pointer
 
 crates/device_tree_blob/src/lib.rs::memory_regions
 
@@ -1640,9 +1639,7 @@ crates/device_tree_blob/src/lib.rs::memory_regions
 
 
 
-crates/device_tree_blob/src/lib.rs::node_register_regions
 
-crates/device_tree_blob/src/lib.rs::node_register_regions_compatible
 
 
 crates/device_tree_blob/src/lib.rs::reserved_memory_regions

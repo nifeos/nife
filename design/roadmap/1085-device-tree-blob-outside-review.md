@@ -31,7 +31,8 @@ tool.
 
 The ids are the review's own; P0 and P1 are in [the
 appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
-items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Ruled decisions](#ruled-decisions).
+items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Ruled decisions](#ruled-decisions), and the
+move under [Open decisions](#open-decisions).
 
 - P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
   license and lints and reads `publish = false`; the README and both license files are missing. The
@@ -64,8 +65,8 @@ items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Rul
   new name joins the set for ratification. The same check refuses four test names in
   `tests/hostile.rs`, among them `SIZE_DT_STRUCT_AT` and `address_cells`, and `prose_acronyms` flags
   UEFI, NUL, GIC, PL031, PLIC, PMIC and PMP. The move's gate pass clears these.
-- F-dtoolkit, the switch to `dtoolkit`: Open, under [Open
-  decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
+- F-dtoolkit, the switch to `dtoolkit`: Open, waiting for an upstream release; the wait is ruled,
+  under [Ruled decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
 - F-package, the review package: Open. None exists under `notes/crate-reviews/`; it waits on the
   decision to clear the move.
 - F-clearance, review clearance: Open, under [Open
@@ -145,6 +146,24 @@ Door: one-way at publish, since an `unsafe` constructor is a published contract.
 nife differs in nothing here. Example: `unsafe { DeviceTreeBlob::from_pointer(pointer) }?` stays
 one line in the kernel.
 
+### Take `dtoolkit` once a release carries the fixes
+
+Ruled 2026-11-19 (UTC): option A. nife waits for a `dtoolkit` release that carries
+[google/dtoolkit #111](https://github.com/google/dtoolkit/pull/111) and
+[#112](https://github.com/google/dtoolkit/pull/112), then rules the switch against the dependency
+bar. Until then `device_tree_blob` boots every nife machine. An earlier ruling of 2026-11-11 (UTC)
+has nife contribute five gaps to Google's `dtoolkit` and switch once a release ships them; the
+switch is its own ruling. Upstream merged [#108](https://github.com/google/dtoolkit/pull/108). As
+of 2026-11-19, #111 and #112 are open with changes requested; the answers went up on 2026-11-16
+and 2026-11-17, and both wait on the upstream maintainer. Release 0.5.0 (2026-11-03), the latest,
+carries neither.
+
+Door: one-way, a third-party dependency on the boot path. Prior art: Linux, U-Boot and FreeBSD each
+vendor libfdt (`scripts/dtc/libfdt`, `sys/contrib/libfdt`; recalled, unverified) rather than keep
+their own parser. nife differs by holding the dependency to its bar of proofs and three
+architectures. Example: after the switch, the kernel's `DeviceTreeBlob::from_pointer` becomes
+`dtoolkit::Fdt::from_raw`, and P0-1, P1-5 and the P2-9 README lapse.
+
 ### Property is spelled out across the crate
 
 The crate spells `property` out in every public item, parameter and doc comment. The one `prop`
@@ -167,30 +186,7 @@ Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`.
 
 ## Open decisions
 
-The two decisions here decide whether the crate leaves at all. The six name and surface decisions above are two-way until the crate has a release and one-way at its first publish.
-
-### Take `dtoolkit` once a release carries the fixes
-
-Ruled 2026-11-11 (UTC): nife contributes five gaps to Google's `dtoolkit` and switches once a
-release ships them; the switch is its own ruling. Upstream merged [google/dtoolkit
-#108](https://github.com/google/dtoolkit/pull/108).
-[#111](https://github.com/google/dtoolkit/pull/111) and
-[#112](https://github.com/google/dtoolkit/pull/112) have changes requested; the answers went up on
-2026-11-16 and 2026-11-17, and both wait on the upstream maintainer. Release 0.5.0 (2026-11-03)
-carries neither. Until the switch, `device_tree_blob` boots every nife machine.
-
-Recommendation: A, the restrictive option, which keeps the kernel on the parser it proves today.
-
-- A. Wait for a release that carries #111 and #112, then rule the switch against the dependency bar.
-- B. Switch to 0.5.0 now with the two fixes vendored as patches.
-- C. Keep `device_tree_blob` and move it as its own crate.
-
-Door: one-way, a third-party dependency on the boot path. Prior art: Linux, U-Boot and FreeBSD each
-vendor libfdt (`scripts/dtc/libfdt`, `sys/contrib/libfdt`; recalled, unverified) rather than keep
-their own parser. nife differs by holding the dependency to its bar of proofs and three
-architectures. Example: under A, the kernel's `DeviceTreeBlob::from_ptr` becomes
-`dtoolkit::Fdt::from_raw`, and P0-1, P1-5 and the P2-9 README lapse. Blocks: whether the move
-happens at all.
+One decision is open. It decides whether the crate leaves at all.
 
 ### Clear the move, or hold it for `dtoolkit`
 
@@ -234,7 +230,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
-  half of P2-9, F-size, F-package and BUGS-239, and the two open decisions.
+  half of P2-9, F-size, F-package and BUGS-239, and the one open decision.
 
 ## BUGS
 
@@ -256,4 +252,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 to D6 are ruled and two remain open.
+that does not move. Fourteen smaller items follow, and eight decisions went to the architect; seven are ruled and one remains open.
