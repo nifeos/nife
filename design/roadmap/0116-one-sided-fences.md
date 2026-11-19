@@ -63,7 +63,7 @@ right.
   would be this milestone's own bug and is outside the inventory.
 - **Milestone 953.** Roughly half the soundness arguments rest on the kernel lock's orderings.
   Milestone 953 (the kernel's lock proves what it takes from spin) made it the in-tree
-  `crates/spin_lock`, whose loom models fail when its release store or its acquire weakens.
+  `crates/test_and_set_lock`, whose loom models fail when its release store or its acquire weakens.
 - **Recorded.** `notes/memory-ordering.md`: nothing in the inventory is a proof about aarch64 or
   riscv64. Every soundness argument in it is a C11-model argument about happens-before.
 

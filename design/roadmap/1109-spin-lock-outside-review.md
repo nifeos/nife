@@ -7,14 +7,14 @@ machine_requirements: none
 specific_machine: none
 needs_person: yes
 ---
-# 1109. `spin_lock`: what an outside maintainer would fix before it leaves
+# 1109. `test_and_set_lock`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only outside review of `crates/spin_lock` as a stranger to this tree would meet
+Raised by a read-only outside review of the crate, then named `spin_lock` and now `crates/test_and_set_lock`, as a stranger to this tree would meet
 it. It changes nothing; it lists what the lanes that move the crate change, and the one question
 only an architect can answer.
 
 The settled baseline this review does not reopen is the rulings recorded in milestone 953 (the
-kernel's lock proves what it takes from `spin`). They ratified the crate name, `SpinLock`,
+kernel's lock proves what it takes from `spin`). They ratified `SpinLock`,
 `SpinLockGuard`, both `new`, `lock`, `try_lock` and `force_unlock`. They chose a test-and-set lock with
 loom-ready atomics over `spin`. They placed `force_unlock` outside the models by construction. The baseline also holds
 the mutation triage that classes the `pause` survivor as equivalent. No review package exists for
@@ -41,8 +41,8 @@ proof the crate has runs somewhere after the move.
   added the README, the license files and the manifest literals; the `Name:` blocks, the citations
   of paths in this tree and the manifest's `repository` remain, all move work.
 - P0-3, the scaffold's lint table: Done, [#3636](https://github.com/nifeos/nife/pull/3636).
-- P1-4, another crate holds the name on crates.io: Open, and an open decision below. The `Name:`
-  block records the recommendation as provisional and the README states the clash.
+- P1-4, another crate holds the name on crates.io: Done, the crate is `test_and_set_lock` (see
+  "Open decisions"), which crates.io does not hold.
 - P1-5, test modules hidden from cargo-mutants' skip: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-6, the `pause` survivor's exemption line: Open. One `.github/mutants-exempts` line with the
@@ -67,47 +67,18 @@ proof the crate has runs somewhere after the move.
 
 ## Open decisions
 
-### The name the crate leaves under
+None.
 
-The crate is a small lock for the kernel and its tests: one flag that a taker sets and spins on,
-with five machine-checked models of its ordering. Its name in nife is `spin_lock`, ratified with its
-six public names in milestone 953 (the kernel's lock proves what it takes from spin). crates.io
-reads `_` and `-` as one character, and `spin-lock` 0.2.1 already exists there: a small crate with
-15 downloads in the last 90 days, last published about two years before this review. So `spin_lock`
-can never reach crates.io under its own name.
-
-Today that costs nothing. Every consumer pins by git `rev`, and a standing ruling holds publishing
-for every crate until the last outside review lands. A crate leaves for its own repository only if
-it is publishable or used by more than one repository. The three callers all live in nife. The
-crate's unique value is its loom-ready source and models, which `spin` (192 million recent
-downloads) does not offer; no one outside has asked for it.
-
-Recommendation: A.
-
-- A. Keep `spin_lock` as the package and repository name, publish nothing, and choose a
-  publication name only if a publication is ever wanted, before the first tag. Renaming a crate
-  nobody outside consumes, to free a registry name nobody has asked for, is work with no reader.
-- B. Rename to `test_and_set_lock` before the move, so the repository, the package and the
-  registry agree from the first commit. Milestone 953's ruling weighed it and set it aside only
-  for length; it says exactly what the thing is, and it was free on crates.io when this review
-  looked.
-- C. Rename to `checked_spin_lock` or `model_checked_spin_lock`. Both name the verification rather
-  than the lock, the shape the tree refused for `script/interleaving-check`'s predecessor.
-
-Door: one-way. The repository name is public from the day it exists, and the first tag fixes the
-name the registry would see; a rename after that breaks every pin.
-
-Prior art: `spin` took the family's short name on crates.io, and the flag-lock crates that followed
-(`spinning_top`, `spin-lock`, `spinlock`) each took a qualified or compound spelling. Linux calls
-the thing `spinlock_t` and the queued variant `qspinlock`; FreeBSD calls the type `mtx` and the
-variant `MTX_SPIN`, naming the discipline rather than the mechanism. nife differs by naming the
-mechanism and keeping the models beside it. Example: with A, nife's manifests keep
-`spin_lock = { git = "https://github.com/nifeos/spin_lock", rev = "<sha>", version = "0.1.0" }` and
-the kernel keeps `use spin_lock::SpinLock`. With B, the move commit writes `test_and_set_lock` in
-three manifests, in `kernel/src/sync.rs`, in one kernel static, in six `system_tests` statics and in
-`tools/host_reordering_litmus`.
-
-Blocks: the move and the tag under B or C; under A, only a first publish.
+The crate is `test_and_set_lock`, as the package, the library and the repository it moves to. The
+architect ruled on 2026-11-19 (UTC) to rename it from `spin_lock` before the move, so that the
+repository, the package and the registry agree from the first commit: crates.io reads `_` and `-` as
+one character, and `spin-lock` is already taken there, while `test_and_set_lock` says exactly what
+the thing is. The type `SpinLock`, `SpinLockGuard`, both `new`, `lock`, `try_lock` and `force_unlock`
+keep the spellings milestone 953 (the kernel's lock proves what it takes from spin) ratified; the
+ruling renames the crate and nothing inside it. The `Name:` block in `crates/test_and_set_lock/src/lib.rs`
+records it. The manifests that depend on it, `kernel/src/sync.rs`, the kernel and `system_tests`
+statics and `tools/host_reordering_litmus` carry the new name. The move itself and the first publish
+remain.
 
 ## What was checked, and how
 
@@ -155,7 +126,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
 
 ### P0
 
-1. The crate's only proof runs nowhere after the move. `crates/spin_lock/src/lib.rs` line 307 DONE (the template's `proofs / loom`, nifeos/crate-workflows#65).
+1. The crate's only proof runs nowhere after the move. `crates/test_and_set_lock/src/lib.rs` line 307 DONE (the template's `proofs / loom`, nifeos/crate-workflows#65).
    holds the five loom models, and `script/interleaving-check` runs them as nife's required
    `interleavings` job. The template has no loom job: `check.yml` runs `cargo test` without
    `--cfg loom`, so the models are not compiled, and `proofs.yml`'s `falsify.py` reports
@@ -165,7 +136,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    once in the template, per the standing ruling), `RUSTFLAGS="--cfg loom -D warnings" cargo test
    --release --lib`. Give it a step that fails when a crate declares `cfg(loom)` in `check-cfg` and
    no model ran. The caller's `proofs.yml` then enables it. Six nife crates carry `cfg(loom)`
-   today (`clock_contract`, `memory_corruption_canary_gate`, `memory_regions`, `spin_lock`,
+   today (`clock_contract`, `memory_corruption_canary_gate`, `memory_regions`, `test_and_set_lock`,
    `thread_wake_handshake`, `work_steal_slot`), and `clock_contract` is in step 2 of milestone
    1017's order, so the job serves more than this crate. Effort M. Two-way.
 
@@ -190,14 +161,10 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
 
 ### P1
 
-4. Another crate already holds the name on crates.io. crates.io treats `_` and `-` as the same character OPEN: under "Open decisions" above; provisional in the `Name:` block.
-   in a crate name, and `spin-lock` 0.2.1 exists (verified by the API: `spin_lock` resolves to it).
-   The ratified name cannot go to the registry, ever, under the registry's rules. Nothing breaks today:
-   nife and basalt pin by git `rev`, and a standing ruling holds publishing for every crate.
-   But the move sets the repository name and the package name, and every later rename costs
-   every pin and every `use spin_lock::` path in three manifests. This is the one one-way door the
-   review found; see "Decisions for the architect". Effort S if ruled before the move, L after.
-   One-way.
+4. Another crate already held the ratified name on crates.io. DONE: the crate is `test_and_set_lock`, ruled 2026-11-19 (UTC); see "Open decisions" above.
+   crates.io treats `_` and `-` as the same character, and `spin-lock` 0.2.1 exists, so the old
+   name could never reach the registry. The repository name and the package name are set at the
+   move, and a later rename costs every pin, so the rename came first. One-way.
 
 5. The test modules are invisible to cargo-mutants' test-module skip. `src/lib.rs` line 227 is DONE (both modules behind `#[cfg(test)]`).
    `#[cfg(all(test, not(loom)))]` and `src/lib.rs` line 307 is `#[cfg(all(test, loom))]`. cargo-mutants
@@ -263,7 +230,7 @@ The P2 items are in [the appendix](1109-spin-lock-outside-review/later-items.md)
 
 ## Decisions for the architect
 
-None ruled. The one decision this review raised, the name, is under "Open decisions" above.
+None open. The one decision this review raised, the name, is ruled under "Open decisions" above.
 
 ## Done when
 
@@ -282,14 +249,12 @@ The checks are in [the appendix](1109-spin-lock-outside-review/done-when.md).
 - **Milestone 1017.** The crate moves in its order; the move lane takes the items marked move work.
 - **Outstanding.** Item 7: the template's falsify gate cannot replay a loom patch, checked
   against nifeos/crate-workflows' `falsify.py`.
-- **Outstanding.** Item 4, the name, an open decision above; checked against crates.io's
-  `spin-lock` 0.2.1.
 - **Refused.** Item 16: `try_lock` already answers `is_locked`, and a `lock_api` impl is a new
   dependency.
 
 ## Index row
 
-An outside review of `spin_lock` before it leaves. The template's falsify gate cannot replay the
+An outside review of `test_and_set_lock` before it leaves. The template's falsify gate cannot replay the
 crate's loom falsification, and the move commit still owes the `Name:` blocks, the citations and the
-`pause` exemption. The ratified name is already taken on crates.io. Three P0, seven P1 and six P2
-items; one one-way door, the publication name.
+`pause` exemption. The crate left the name `spin_lock`, which crates.io already holds, for `test_and_set_lock`. Three P0,
+seven P1 and six P2 items; the one one-way door, the name, is ruled.

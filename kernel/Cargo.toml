@@ -232,7 +232,7 @@ generational_table = { version = "0.1.0-pre.3", git = "https://github.com/nifeos
 # the
 # tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what
 # checks it: notes/kernel-dependency-unsafe.md. See notes/interleaving.md.
-spin_lock = { version = "0.1.0", path = "../crates/spin_lock" }
+test_and_set_lock = { version = "0.1.0", path = "../crates/test_and_set_lock" }
 # The work-steal handshake (milestone 80): the one lock-free cross-core protocol in the scheduler,
 # lifted out of `cpu.rs` so a model checker can reach it. The kernel calls the checked type rather
 # than keeping a second copy of the compare-exchange, the same move `memory_regions`,

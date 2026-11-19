@@ -12,7 +12,7 @@ sources and were not re-read for this review; treat them as unverified.
 | `lock_api` 0.5.0 (275 M / 1.18 G) | the `RawMutex` trait and a generic `Mutex<R, T>` | by the raw lock | a guard with `map`, `MappedMutexGuard`, `ArcMutexGuard`; one guard type shared by every lock | no trait, no dependency |
 | `spinning_top` 0.4.0 (20 M / 64 M) | `lock_api` over a test-and-set flag, with `Backoff` | none | everything `lock_api` gives | the same as against `spin` |
 | `std::sync::Mutex` | OS futex or pthread | by the OS | poisoning, `get_mut`, `into_inner`, `Default`, `From<T>`, `Debug`, `T: ?Sized`, a `!Send` guard | spins; `const fn new` on bare metal; no allocation; model-checked |
-| `spin-lock` 0.2.1 (15 / 5.8 k, last published two years before this review) | a spinlock crate | unverified | nothing this crate wants | the crates.io name that `spin_lock` resolves to (item 4) |
+| `spin-lock` 0.2.1 (15 / 5.8 k, last published two years before this review) | a spinlock crate | unverified | nothing this crate wants | the crates.io name the crate's earlier name `spin_lock` resolved to (item 4) |
 | Linux `qspinlock` (unverified) | MCS queue, 4 bytes | fair | fairness, `spin_lock_irqsave` and the lockdep ranks (which the kernel's `InterruptSafeMutex` supplies above this crate), lock statistics | model-checked happens-before edge at the crate boundary |
 | FreeBSD `mtx_lock_spin`, OpenBSD `mtx_enter` (unverified) | owner word, interrupts masked or IPL raised by the lock itself | none | owner recording for `MTX_RECURSE` and witness | the split between the flag and the interrupt discipline, which is what lets loom check the flag alone |
 

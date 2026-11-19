@@ -203,7 +203,7 @@ socket_contract,listen_grant,replace | with ^,1,or_xor,equivalent,unclassified,n
 socket_contract,peer_word,replace | with ^,1,or_xor,equivalent,unclassified,noise,
 socket_contract,polled_wait::next,replace < with <=,1,comparison,equivalent,unclassified,algebraic,
 socket_contract,udp_bind_grant,replace | with ^,1,or_xor,equivalent,unclassified,noise,
-spin_lock,pause,replace pause with (),1,other,equivalent,unclassified,algebraic,
+test_and_set_lock,pause,replace pause with (),1,other,equivalent,unclassified,algebraic,
 startup_page_contract,StartupWindow::virtual_address,replace StartupWindow::virtual_address -> u64 with 0,1,other,gap,,gap,
 startup_page_contract,StartupWindow::virtual_address,replace StartupWindow::virtual_address -> u64 with 1,1,other,gap,,gap,
 stick_maker,Reader<'a>::close_tag,replace - with +,1,arithmetic,equivalent,unclassified,algebraic,

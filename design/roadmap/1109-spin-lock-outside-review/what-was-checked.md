@@ -5,10 +5,10 @@ An appendix to [the milestone](../1109-spin-lock-outside-review.md).
 Verified firsthand on a fresh shallow clone of `nifeos/nife` at the head of `main`. The checks ran
 inside the workspace and in a standalone copy of the crate with a template-shaped manifest:
 
-- Inside nife: `cargo test -p spin_lock` (4 host tests, 0 doc-tests). `cargo clippy --all-targets`
+- Inside nife: `cargo test -p test_and_set_lock` (4 host tests, 0 doc-tests). `cargo clippy --all-targets`
   and `cargo doc` with warnings denied. Builds for `aarch64-unknown-none-softfloat`,
   `riscv64imac-unknown-none-elf` and `x86_64-unknown-none`. The loom run (`RUSTFLAGS="--cfg loom -D
-  warnings" cargo test --release -p spin_lock --lib`: 5 models, 0.02 s after the build). All clean
+  warnings" cargo test --release -p test_and_set_lock --lib`: 5 models, 0.02 s after the build). All clean
   on the pinned nightly.
 - Standalone: `cargo test`, `cargo clippy --all-targets`, `cargo doc` and the loom run on stable.
   `cargo build` and `cargo test` on Rust 1.85, the edition's floor. Miri over the host tests. `cargo

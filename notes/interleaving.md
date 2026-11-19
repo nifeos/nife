@@ -84,12 +84,12 @@ timing table already said "all four crates".
 | `crates/thread_wake_handshake` | block/wake, in the gaps between `SCHED` critical sections (2026-08-14) | a wake racing a switch-out resumes on a saved context; three historical races rebuilt as `#[should_panic]` reconstructions |
 | `crates/memory_corruption_canary_gate` | the corruption canary's arm/check/disarm (2026-08-15) | armer and checker exclusion, disarm's quiescence, single-flight checking; the old two-flag protocol failed on the first run |
 | `crates/memory_regions` | the untyped region claim (2026-08-18) | exactly one destroyer reclaims; a witness harness asserts the pre-#316 protocol double-frees |
-| `crates/spin_lock` | the lock under `InterruptSafeMutex` (2026-10-25) | exclusion and the happens-before edge for two and three takers, and a Relaxed release that must fail |
+| `crates/test_and_set_lock` | the lock under `InterruptSafeMutex` (2026-10-25) | exclusion and the happens-before edge for two and three takers, and a Relaxed release that must fail |
 
 Two of the six are lock-based, so what loom searches there is the interleaving of critical
 sections, not memory orderings. That is the standing correction to the survey: a protocol is a
 candidate when its steps span more than one critical section, whatever its fields are. Every
-harness runs to exhaustion, with no preemption or branch bound, except `spin_lock`'s three-taker
+harness runs to exhaustion, with no preemption or branch bound, except `test_and_set_lock`'s three-taker
 model, which loom cannot finish past one preemption. Each crate's harness table, how
 each was falsified, and its bounds are in
 [interleaving/what-was-modeled.md](interleaving/what-was-modeled.md).
@@ -255,7 +255,7 @@ from the public API alone. `script/lint`'s "the region claim protocol has one de
 pins the crate's public surface and requires each free loop to make its entitling call first. The
 other loom crates have the same exposure and are not gated, except that `InterruptSafeMutex`'s field
 type
-is `spin_lock::SpinLock`, so the compiler holds that caller. The rebuilt gap, the two halves of
+is `test_and_set_lock::SpinLock`, so the compiler holds that caller. The rebuilt gap, the two halves of
 the check and the `compile_fail` doctests are in
 [interleaving/lift-is-only-worth-what-its-caller-does.md](interleaving/lift-is-only-worth-what-its-caller-does.md).
 

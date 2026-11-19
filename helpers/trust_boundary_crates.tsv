@@ -173,7 +173,7 @@ soak_page	shared	fixtures,kernel
 socket_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 socket_proto	shared	retired
 socket_protocol	shared	retired
-spin_lock	kernel	kernel
+test_and_set_lock	kernel	kernel
 startup_page_contract	shared	components,fixtures,kernel
 static_elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
 std_runtime_contract	shared	components,fixtures,jig,kernel,std

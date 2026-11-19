@@ -43,7 +43,8 @@ pub struct Wiring {
 /// Eight kilobytes because scripts share shells rather than wire more: every scripted shell is a
 /// live process whose frames are never reclaimed, and one more put `time_tests` over the frame
 /// pool intermittently. Kernel `.bss` costs no frames.
-static TRANSCRIPT: spin_lock::SpinLock<[u8; 8192]> = spin_lock::SpinLock::new([0; 8192]);
+static TRANSCRIPT: test_and_set_lock::SpinLock<[u8; 8192]> =
+    test_and_set_lock::SpinLock::new([0; 8192]);
 static WRITTEN: AtomicUsize = AtomicUsize::new(0);
 
 /// Set while a scripted shell's [`transcript`] is being collected; [`watch_for_a_killed_stage`]

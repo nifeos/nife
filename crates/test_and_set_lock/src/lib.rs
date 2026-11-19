@@ -9,7 +9,7 @@
 //! explore two and three contending threads, and one of them runs this crate's own lock with the
 //! release store turned Relaxed and passes only when loom reports the race. No fairness: a waiter
 //! can lose every round, as with any test-and-set lock. See notes/interleaving/what-was-modeled.md,
-//! "`crates/spin_lock`, the kernel's lock".
+//! "`crates/test_and_set_lock`, the kernel's lock".
 //!
 //! # What it is, and what it is not
 //!
@@ -35,12 +35,11 @@
 //! - [`SpinLock::force_unlock`] is outside the models: it exists to break a lock whose holder will
 //!   never release it, which is a broken invariant by construction.
 //!
-//! Name: ratified 2026-10-26 (UTC), on #2760, as it stood. Considered: `kernel_lock` (names the
-//! user, not the thing) and `test_and_set_lock` (exact, longer than the field's word). The
-//! repository name `spin_lock` is provisional, as milestone 1109 (what an outside maintainer would
-//! fix before it leaves) recommends: crates.io reads `spin_lock` as the `spin-lock` another crate
-//! holds, so no publication name is chosen while the publication hold stands. Considered for a publication: `test_and_set_lock`, `checked_spin_lock`
-//! and `model_checked_spin_lock` (name the verification, not the lock).
+//! Name: `test_and_set_lock` ratified 2026-11-19 (UTC), on milestone 1109 (what an outside maintainer
+//! would fix before it leaves), as the crate, package and repository name; it says what the thing
+//! is, and crates.io holds no crate of that name. `SpinLock`, `SpinLockGuard`, both `new`, `lock`,
+//! `try_lock` and `force_unlock` keep the spellings milestone 953 (the kernel's lock proves what it
+//! takes from spin) ratified on 2026-10-26 (UTC), on #2760.
 
 #![cfg_attr(not(test), no_std)]
 
@@ -76,7 +75,7 @@ use loom::sync::atomic::{AtomicBool, Ordering};
 /// A counter in a static, taken by two threads. `new` is `const`, so the lock needs no lazy setup:
 ///
 /// ```
-/// use spin_lock::SpinLock;
+/// use test_and_set_lock::SpinLock;
 ///
 /// static HITS: SpinLock<u32> = SpinLock::new(0);
 ///
