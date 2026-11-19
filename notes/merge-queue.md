@@ -183,26 +183,9 @@ logs the run it cites; otherwise it runs everything. The queue's check timeout i
 [`merge-queue/main-push-and-check-timeout.md`](merge-queue/main-push-and-check-timeout.md) has the
 premise checked against history and the eviction timeline.
 
-The queue's build window and grouping are set together with the hosted runner pool and the owned
-runners, since a group runs about 11 jobs at once and the pool holds 60 hosted slots
-(milestone 1042 (the merge queue is sized to the runner pool), COE action item:
-notes/coes/2026-11-03-merge-queue-backlog.md, action 5). The rule in force, 2026-11-19 (UTC):
-
-| setting | value | what moves it |
-|---|---|---|
-| `max_entries_to_build` | 5 | rises to 8 only after a measured day shows the median hosted job waiting under one minute with 5 groups building |
-| grouping | `ALLGREEN`, a group of one entry | a larger group waits until `fuzz-guests` stops failing inside merge groups, since one red entry fails the whole group |
-| `NIFE_RUNNER_OWNED` | `true` once the owned-runner canary evidence is in | the architect sets the variable; see [owned-runners.md](owned-runners.md) |
-
-Milestone 965 (gating CI rents more concurrency before it owns a runner) decides the plan upgrade
-separately. The measure the first trigger reads is `ci-job-waits.svg` in
-[project-metrics.md](project-metrics.md): the weekly median wait of a hosted merge-group job, from
-the Actions API's creation and start times, and the share that waited over five minutes.
-
-The measurement of 2026-11-19 (UTC) that the settings rest on: 28 entries entered the queue, 1 was
-removed and 27 merged, with a median of 1.1 hours from entry to merge. The recent merge-group runs
-took 10 to 15 minutes. The weekly CI build, first job start to last job end, had a median of 19.0
-minutes and a p90 of 34.0 in 2026W47.
+Settings in force: 5 builds at once, `ALLGREEN`, one entry per group, and `NIFE_RUNNER_OWNED` set
+after the owned-runner canary. [`merge-queue/queue-sizing.md`](merge-queue/queue-sizing.md) has each
+trigger and the measurement.
 
 ## The heavy gates run only in the queue, and the proofs also on a harness change
 
@@ -242,9 +225,8 @@ The queue's prevention has a price, and a red member is where it is paid. A grou
 is built as one, and a member that is red on top of the entries ahead of it fails the whole group,
 which is then rebuilt without it. Every other member's build is thrown away. Per-pull-request CI
 cannot see this case at all, because the failing input is the stack, not the branch. On 2026-09-24 a
-lane replayed the queue by hand (23 entries, about 40 minutes) and found three pull requests, #1194,
-#1222 and #1182, green alone and red on top of what was ahead of them. Each would have cost a group
-roughly an hour of runner time per member.
+hand replay of 23 entries found three pull requests (#1194, #1222, #1182) green alone and red on
+top of what was ahead of them.
 
 `script/preflight-queue` makes that replay a command. It walks the queue in order, then the pull
 requests armed but not yet queued. It merges each onto the green ones ahead in a scratch worktree, and

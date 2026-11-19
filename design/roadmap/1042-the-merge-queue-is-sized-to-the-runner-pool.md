@@ -43,12 +43,12 @@ trigger below moves one setting, and nothing else moves it:
   under one minute with 5 groups building. `ci-job-waits.svg` in `notes/project-metrics.md` is that
   measure.
 - The group size stays one entry until `fuzz-guests` stops failing inside merge groups. Then a larger
-  group (`HEADGREEN`, or a larger `min_entries_to_merge` with a longer wait) is measured again.
+  group (`HEADGREEN`, or a larger `min_entries_to_merge` with a longer wait) gets a new measurement.
 - Milestone 965 (gating CI rents more concurrency before it owns a runner) decides the plan upgrade
   on its own.
 
-The settings, their triggers and the measurement of 2026-11-19 are in `notes/merge-queue.md`'s "The
-queue's own settings".
+`notes/merge-queue.md`'s "The queue's own settings" and `notes/merge-queue/queue-sizing.md` hold the
+settings, their triggers and the measurement of 2026-11-19.
 
 ## The week the ruling rests on
 
@@ -62,7 +62,7 @@ The 7 days before 2026-11-11 (UTC):
   [lint fails in the queue after passing on the pull request](proposals/lint-fails-in-the-queue-after-passing-on-the-pull-request.md)
   has the causes and the fixes.
 
-On 2026-11-19 the queue took 28 entries: 1 was removed and 27 merged, a median of 1.1 hours from
+On 2026-11-19 the queue took 28 entries, removed 1 and merged 27, with a median of 1.1 hours from
 entry to merge. Recent merge-group runs took 10 to 15 minutes, and the weekly CI build had a median
 of 19.0 minutes and a p90 of 34.0 in 2026W47.
 
@@ -79,20 +79,21 @@ of 19.0 minutes and a p90 of 34.0 in 2026W47.
 
 - The settings chosen are in `notes/merge-queue.md`'s "The queue's own settings", with the
   measurement that justified them.
-- The median hosted job wait and the share of hosted jobs that waited over 5 minutes are recorded
-  per week (`notes/project-metrics/ci-job-wait-days.csv`, written daily by `helpers/ci_job_times.py`)
-  and the median is charted as `ci-job-waits.svg`.
+- The record keeps the median hosted job wait and the share of hosted jobs that waited over 5
+  minutes, per week (`notes/project-metrics/ci-job-wait-days.csv`, which `helpers/ci_job_times.py`
+  writes daily), and `ci-job-waits.svg` charts the median.
 
 ## Follow-on
 
-- **Done.** The settings and their triggers are written into `notes/merge-queue.md`'s "The queue's
-  own settings", with the measurement of 2026-11-19 (UTC).
+- **Done.** `notes/merge-queue.md`'s "The queue's own settings" and `notes/merge-queue/queue-sizing.md`
+  hold the settings and their triggers, with the measurement of 2026-11-19 (UTC).
 - **Done.** `helpers/ci_job_times.py` records the hosted jobs' wait for a runner each day, and
   `script/metrics` charts the weekly median against the one-minute line as `ci-job-waits.svg`, with
   the share over 5 minutes in the `ci-job-waits` measure file.
-- **Recorded.** The lint failures inside merge groups, the canary, and the two settings they gate
-  (`NIFE_RUNNER_OWNED`, then the window of 8) are triggers of the rule above, not work of this
-  milestone: the proposal about lint in the queue and `notes/owned-runners.md` own them.
+- **Recorded.** The lint failures inside merge groups and the canary trigger the rule above. They
+  are not work of this milestone, because the proposal about lint in the queue and
+  `notes/owned-runners.md` own them. The two settings they gate are `NIFE_RUNNER_OWNED` and then the
+  window of 8.
 
 ## Index row
 
