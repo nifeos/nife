@@ -2,7 +2,9 @@
 //! by a cursor that never falls behind the boot clock. An allocation takes the later of the
 //! cursor and a clock advancing [`PER_SECOND`] ports a second, so a fresh stack starts past the
 //! ports an earlier one used, which a peer may still hold in `TIME_WAIT`. Here so its claim is
-//! a host test; only the network stack uses it. The module's name is provisional.
+//! a host test; only the network stack uses it.
+//!
+//! Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 
 //! # BUGS
 //!
@@ -12,14 +14,22 @@
 //! - The sequence-number half stays smoltcp's: a reused 4-tuple still fails half the time.
 
 /// The lowest port of the private ephemeral range (Request for Comments (RFC) 6335).
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub const LO: u16 = 49152;
 /// The highest.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub const HI: u16 = 65535;
 /// How many ports the range holds.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub const SPAN: u64 = (HI - LO) as u64 + 1;
 /// How far the clock moves the cursor each second. 256 makes one tick about 4 ms, so a stack
 /// started a few milliseconds after another's last open already starts past it, and keeps the
 /// wrap at 64 s, above the 60 s `TIME_WAIT` of Linux and the BSDs.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub const PER_SECOND: u64 = 256;
 
 // The wrap stays at or above the 60 s `TIME_WAIT` the BUGS section names, checked at compile
@@ -28,12 +38,16 @@ const _: () = assert!(SPAN * 1000 / PER_SECOND >= 60_000);
 
 /// The cursor. It counts positions without wrapping; a position's port is its remainder in the
 /// range. A new one has handed out nothing, so its first allocation starts at the clock.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub struct Ports {
     next: u64,
 }
 
 impl Ports {
     /// A cursor that has handed out nothing.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
     pub const fn new() -> Self {
         Self { next: 0 }
     }
@@ -43,6 +57,8 @@ impl Ports {
     /// the range, so it always returns; a stack holds far fewer sockets than the range has
     /// ports, so in practice the first or second candidate is free. The cursor moves past
     /// every port it tried, so a caller that gets `None` has used the whole range.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
     pub fn next(&mut self, milliseconds: u64, held: impl Fn(u16) -> bool) -> Option<u16> {
         self.next_within(milliseconds, held, SPAN)
     }
@@ -185,11 +201,7 @@ mod tests {
 
     /// Hand out `n` ports from a fresh cursor, `gap_milliseconds` apart, starting at `start_milliseconds`. Returns
     /// the ports and the time of the last open.
-    fn run(
-        start_milliseconds: u64,
-        n: u64,
-        gap_milliseconds: u64,
-    ) -> (std::vec::Vec<u16>, u64) {
+    fn run(start_milliseconds: u64, n: u64, gap_milliseconds: u64) -> (std::vec::Vec<u16>, u64) {
         let mut ports = Ports::new();
         let mut at = start_milliseconds;
         let mut got = std::vec::Vec::new();

@@ -6081,15 +6081,10 @@ crates/socket_contract/src/lib.rs::CONNECT_ESTABLISHED
 
 crates/socket_contract/src/lib.rs::CONNECT_REFUSED
 
-crates/socket_contract/src/lib.rs::DENIED_PORT
 
-crates/socket_contract/src/lib.rs::ECHO_PEER_IP
 
-crates/socket_contract/src/lib.rs::ECHO_PEER_PORT
 
-crates/socket_contract/src/lib.rs::HI
 
-crates/socket_contract/src/lib.rs::IN_MSG
 
 crates/socket_contract/src/lib.rs::LISTEN_DENIED
 
@@ -6097,9 +6092,7 @@ crates/socket_contract/src/lib.rs::LISTEN_GRANTED
 
 crates/socket_contract/src/lib.rs::LISTEN_IN_USE
 
-crates/socket_contract/src/lib.rs::LISTEN_PORT
 
-crates/socket_contract/src/lib.rs::LO
 
 crates/socket_contract/src/lib.rs::MINT
 
@@ -6128,29 +6121,21 @@ crates/socket_contract/src/lib.rs::OPERATION_SEND
 
 crates/socket_contract/src/lib.rs::OPERATION_SENDTO
 
-crates/socket_contract/src/lib.rs::OUT_MSG
 
 crates/socket_contract/src/lib.rs::OWN_SPACE
 
-crates/socket_contract/src/lib.rs::PACKAGE_PEER_HOST
 
-crates/socket_contract/src/lib.rs::PACKAGE_PEER_IP
 
-crates/socket_contract/src/lib.rs::PACKAGE_PEER_PORT
 
-crates/socket_contract/src/lib.rs::PER_SECOND
 
-crates/socket_contract/src/lib.rs::Ports
 
 crates/socket_contract/src/lib.rs::REP_ERR
 
 crates/socket_contract/src/lib.rs::REP_OK
 
-crates/socket_contract/src/lib.rs::ROUNDS
 
 crates/socket_contract/src/lib.rs::SOCKET_BADGE
 
-crates/socket_contract/src/lib.rs::SPAN
 
 crates/socket_contract/src/lib.rs::grant_allows
 
@@ -6160,9 +6145,7 @@ crates/socket_contract/src/lib.rs::listen_grant
 
 crates/socket_contract/src/lib.rs::names_a_socket
 
-crates/socket_contract/src/lib.rs::new
 
-crates/socket_contract/src/lib.rs::next
 
 crates/socket_contract/src/lib.rs::udp_bind_grant
 

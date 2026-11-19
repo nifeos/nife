@@ -3,7 +3,9 @@
 //! tick after the last frame the stack yields and looks at the ring again, and it sleeps only
 //! once a whole tick has passed with nothing, because a timed wait ends at a tick and a sleep
 //! would add up to a tick to every round trip. Here so its claim is a host test; only
-//! the network stack uses it. The module's name is provisional.
+//! the network stack uses it.
+//!
+//! Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 
 //! # BUGS
 //!
