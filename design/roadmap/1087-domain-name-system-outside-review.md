@@ -13,8 +13,8 @@ Raised by a read-only outside review of `crates/domain_name_system`, read the wa
 meeting it on crates.io would read it. The review changed nothing; this block lists what the next
 lanes change, in the order the move needs them.
 
-The accepted baseline is thinner than for the other crates on journey 5: `notes/crate-reviews.md`
-lists no package for this crate, and `notes/crate-reviews/` holds none. Four things are settled.
+The accepted baseline is the review package, [domain-name-system.md](../../notes/crate-reviews/domain-name-system.md)
+in `notes/crate-reviews/`. Four things are settled.
 The crate name is ratified, with `dns` and `name_resolver` refused. Pull request #2797 ratified
 five constants (`MAXIMUM_UDP_MESSAGE_BYTES`, `MAXIMUM_NAME_BYTES`, `MAXIMUM_LABEL_LEN`,
 `MAXIMUM_CHAIN`, `MAXIMUM_ADDRESSES`). Section 248 (the resolver is its own confined program) and
@@ -65,32 +65,13 @@ items](1087-domain-name-system-outside-review/later-items.md).
   [#3728](https://github.com/nifeos/nife/pull/3728).
 - Decision 3, the IPv4 address names: Done, [#3608](https://github.com/nifeos/nife/pull/3608),
   ratified by [#3728](https://github.com/nifeos/nife/pull/3728).
-- F-package, the review package: Open. None exists under `notes/crate-reviews/`.
-- F-clearance, review clearance: Open, under [Open
-  decisions](#clear-the-review-and-create-the-repository).
+- F-package, the review package: Done, [the package](../../notes/crate-reviews/domain-name-system.md).
+- F-clearance, review clearance: Open. [Decision 4](#decision-4-write-the-package-now-and-clear-the-move-from-it)
+  says the architect clears it from the package.
 
 ## Open decisions
 
-### Clear the review and create the repository
-
-The architect has ratified every public name, and the crate's manifest, README and licenses stand
-alone. The move follows `notes/crate-move.md`: a review package, the architect's review clearance
-(step 4), then the repository (step 5). Milestone 1017 (the contract crates leave in this order)
-places this crate in step 5, before `domain_name_resolution_contract`, which pins it as a `git`
-dependency.
-
-Recommendation: A, since this crate is the closest of its journey to ready, and the resolver
-contract's move waits on it.
-
-- A. Write the package now and clear the move from it, as the earlier crates did.
-- B. Hold the move until the architect ratifies the contract crate's names as well, and move the two
-  together.
-
-Door: one-way, since creating a public repository is an outward step. Prior art:
-`file_allocation_table` and `e1000e` each cleared from a written package before their repository
-existed. Example: under A, a lane writes the package, the architect clears it, and
-`script/crate-move domain_name_system` creates `nifeos/domain_name_system` with the three mutant
-exemptions and the fuzz target staged. Blocks: the move, and the resolver contract's move after it.
+None.
 
 ## Goal
 
@@ -180,8 +161,8 @@ The P1 items are in [the appendix](1087-domain-name-system-outside-review/before
 
 ## Decisions for the architect
 
-Each is a rule in force; the ratification of every public name as built, 2026-11-16 (UTC), covers
-all three.
+Each is a rule in force. The ratification of every public name as built, 2026-11-16 (UTC), covers
+the first three. Decision 4 dates from 2026-11-19 (UTC).
 
 ### Decision 1. `MAXIMUM_LABEL_BYTES` and `HEADER_BYTES`
 
@@ -223,6 +204,18 @@ keeps code 9. Prior art: `std::net::Ipv4Addr` and smoltcp's `IpAddress` name the
 looks first. Example: `answer.ipv4_addresses()` says what `&[[u8; 4]]` holds, and an
 `ipv6_addresses()` later needs no rename.
 
+### Decision 4. Write the package now and clear the move from it
+
+The move follows `notes/crate-move.md`: a review package, the architect's review clearance, then
+the repository. Milestone 1017 (the contract crates leave in this order) places this crate in step
+5, before `domain_name_resolution_contract`, which pins it as a `git` dependency. A lane writes the
+package now, from the crate as it stands, and the architect clears the move from it. The
+move does not wait for the resolver contract, whose names have settled. Creating a public repository
+is an outward step, so the clearance itself stays the architect's. Prior art:
+`file_allocation_table` and `e1000e` each cleared from a written package before their repository
+existed. Example: the architect clears the package, and `script/crate-move domain_name_system`
+creates `nifeos/domain_name_system` with the three mutant exemptions and the fuzz target staged.
+
 ## Done when
 
 The checks are in [the appendix](1087-domain-name-system-outside-review/done-when.md).
@@ -230,12 +223,10 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): items 3, 5, 7 and 9,
-  F-package, and the review clearance.
+  and the review clearance.
 
 ## BUGS
 
-- No review package exists for this crate in `notes/crate-reviews/`, so this block had to assemble
-  its own baseline from the ratification record, the roadmap and the resolver notes. The crate still needs a package before the architect's reading; this block is not one.
 - The template's `abbreviations` helper judged one name when run here. That is almost certainly a
   harness problem on the reviewing side, so the abbreviations report (`tcp`, `udp`
   and any other) stays unverified until the crate runs the template's `check` workflow.
