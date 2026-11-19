@@ -67,16 +67,20 @@ citation, and the `Name:` blocks (see What the move lane does).
 | `cargo test -p intrusive_queue` | 7 host tests and 2 doctests pass; 2 compile-fail doctests fail to compile as they should (the double push and the `Rc` node on a thread, `E0277`) |
 | `cargo clippy -p intrusive_queue -p inter_process_communication --all-targets -D warnings` | no warning |
 | `cargo kani -p intrusive_queue` | 2 of 2 harnesses verified, 0 failures, 27 seconds |
-| `script/crate-standalone intrusive_queue` | `names`, `build`, `proofs` and both `falsification` rows ok. Eight failures, all the move lane's: the manifest inherits `license` and `lints`, no `rust-version`, no README, no license files, three notes path lines and one section citation line |
+| `script/crate-standalone intrusive_queue` | `names`, `build`, `proofs` and both `falsification` rows ok. Eight failures, all the move lane's. The manifest inherits `license` and `lints`. There is no `rust-version`, README or license file. Three lines cite notes paths and one cites a section |
 | `script/crate-move --dry-run` | stages at template `v8` (a69ab4829b02) with 27 scaffold files. The build fails until the manifest is its own. Further failures: no README, the same standalone and citation lines, a comment block over the 40-line cap, and the scaffold README's prose caps |
 | `python3 helpers/name_release.py --draft intrusive_queue` | all 11 names carry a ratified block, none missing |
 | `cargo build -p kernel -p components --target` for aarch64, riscv64 and x86_64 | each builds with the bound |
 | `cargo test -p inter_process_communication` | passes |
 
-Not run, and so not claimed: Miri (the pinned nightly has no `miri` component installed on this
-host, so the crate's tests were not run under it; the template's weekly job runs it), mutation (the
-list is 26 mutants; the template gives the first figures after the move), the stranger test (no
-README yet), `cargo-semver-checks` (a first release has no baseline), and the template's workflows.
+Not run, and so not claimed:
+
+- Miri. The pinned nightly has no `miri` component on this host, so the tests did not run under it.
+  The template's weekly job runs it.
+- Mutation. The list is 26 mutants; the template gives the first figures after the move.
+- The stranger test, because there is no README yet.
+- `cargo-semver-checks`, because a first release has no baseline.
+- The template's workflows.
 
 ## Public API
 
@@ -90,9 +94,9 @@ No nife type appears in a public signature.
 
 ## Proofs
 
-Two Kani harnesses, each with a falsification patch under `falsifications/` that `script/crate-standalone`
-applied and saw its harness fail: any push and pop interleaving is first in, first out and lossless,
-and a popped node leaves with a clear link. The harnesses cover the queue's list logic. They do not
+Two Kani harnesses prove that any push and pop interleaving is first in, first out and lossless,
+and that a popped node leaves with a clear link. Each has a falsification patch under
+`falsifications/`. `script/crate-standalone` applied each patch and saw its harness fail. The harnesses cover the queue's list logic. They do not
 cover the aliasing rules of the caller's contract, which Miri covers (item 5 of the milestone,
 Done in #3523).
 
