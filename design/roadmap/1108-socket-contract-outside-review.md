@@ -16,7 +16,7 @@ It changes nothing; it lists what the next lanes change.
 
 The review took its accepted baseline from
 [the review package](../../notes/crate-reviews/socket-contract.md). It raises none of the
-decisions it puts to the architect. They are the identity values (`INTERFACE_ID` 19, `VERSION` 1), where
+decisions it puts to the architect. They are the identity values (`INTERFACE_ID` 19, `VERSION` 1, since ruled), where
 `fixture`, `ephemeral` and `polled_wait` live, the table of 55 proposed names, and the clearance
 itself. Nothing here reopens them. Where this review reads a later rule differently from the
 package, it says so at the item. The bind-time version check belongs to
@@ -69,7 +69,7 @@ package, `notes/crate-reviews/socket-contract.md`.
   [#3517](https://github.com/nifeos/nife/pull/3517) (ruled 2026-11-11 UTC).
 - D2, the `ACCEPT` peer in the second reply word: Done,
   [#3526](https://github.com/nifeos/nife/pull/3526) (ruled 2026-11-11 UTC).
-- PKG-1, `INTERFACE_ID` 19 and `VERSION` 1: Open, and an open decision below.
+- PKG-1, `INTERFACE_ID` 19 and `VERSION` 1: Done as a ruling (2026-11-19 UTC): frozen with no magic word; see "Rules in force".
 - PKG-2, `fixture` moves to a crate that stays in nife: Done as provisional,
   [#3811](https://github.com/nifeos/nife/pull/3811). The crate is `socket_fixture`, not published;
   its name is provisional. Four constants took spelled-out stems because the new crate's report
@@ -82,54 +82,30 @@ package, `notes/crate-reviews/socket-contract.md`.
   `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) governs, and only their stems changed.
 - PKG-5, clearing the move with no tag and no publish: Open, and an open decision below.
 
+## Rules in force
+
+- The socket contract's identity is `INTERFACE_ID` 19 and `VERSION` 1, with no magic word at the
+  head of a frame (ruled 2026-11-19 UTC). Both numbers are frozen: a second network stack or a
+  client built against the crate in its own repository bakes them in, so neither changes without a
+  new ruling. No operation sends `VERSION` on the wire; the bind-time check that reads it belongs
+  to milestone 1000 (message contracts carry bind-time version checks).
+
 ## Open decisions
-
-### The socket contract's identity: interface 19, version 1
-
-Every contract crate in this tree carries two numbers that a program checks when it links to the
-other side: an interface number that says which contract this is, and a version that says which
-revision of it. The socket contract is the agreement between the network stack and every program
-that opens a socket, including the standard library's platform layer, which copies this crate's
-source verbatim. Its numbers today are `INTERFACE_ID` 19, the row milestone 956 (the linked
-interfaces carry checkable versions) gives it, and `VERSION` 1. Both are provisional. No operation
-sends `VERSION` on the wire; the bind-time check that will read it belongs to milestone 1000
-(message contracts carry bind-time version checks).
-
-The package records no magic for the socket frame, as `entropy_contract` has none. Milestone 1017
-asks for a frozen identity before a contract leaves.
-
-Recommendation: A.
-
-- A. Freeze `INTERFACE_ID` 19 and `VERSION` 1, with no magic.
-- B. Freeze the same two numbers and add a magic word at the head of each frame.
-- C. Leave them provisional until milestone 1000 builds the bind-time check.
-
-Door: one-way. A second network stack, or a client built against the crate in its own repository,
-bakes both numbers in; changing either after that breaks every program built before.
-
-Prior art: Fuchsia gives each FIDL protocol a fixed name and each method an ordinal, and a peer
-that disagrees fails the call; Android's Binder sends an interface descriptor string with each
-transaction. nife differs by checking the pair once at bind time instead of on each message. In
-this tree, `entropy_contract` froze 12 and 1 with no magic, and `clock_contract` 8 and 1 with one.
-Example: a client linked against version 1 that meets a stack reporting version 2 refuses at bind
-time instead of misreading a reply word.
-
-Blocks: the move, and with it any tag and the first publish.
 
 ### Clearing the move of `socket_contract`
 
 Clearing a crate's review package is what approves its repository, here
 `nifeos/socket_contract`. The package says the crate builds, proves and stands alone, and it
-recommends against clearing yet. It waits on the identity above and on the ratification of its names (P2-9 and PKG-4); where `fixture`, `ephemeral_port`
+recommends against clearing yet. It waits on the ratification of its names (P2-9 and PKG-4); where `fixture`, `ephemeral_port`
 and `polled_wait` live (PKG-2 and PKG-3) is settled provisionally. The package also lists
 a maintainer step: the `std` farm must read the pinned checkout's source, or the move breaks the
 platform layer's build.
 
 Recommendation: A.
 
-- A. Clear once the architect freezes the identity and PKG-2, PKG-3, P2-9 and PKG-4 have
+- A. Clear once PKG-2, PKG-3, P2-9 and PKG-4 have
   landed (they are built in #3811, provisionally), with no tag and no publish.
-- B. Clear on the identity alone, and let the scope moves and renames land in the new repository.
+- B. Clear now, before the names are ratified, and let the scope moves and renames land in the new repository.
 - C. Hold the clearance until the first publish is near, and move nothing before then.
 
 Door: one-way. A public repository is visible and forkable the moment it exists, and the eight
@@ -284,7 +260,7 @@ What is left is under "Finding status" above.
   Item 7's loop proof is bounded at four candidates, as the appendix says.
 - **Outstanding.** Item 9's names and the package's decisions 2 to 4, which the maintainer rules
   provisionally, checked against `crates/socket_contract/src/lib.rs`.
-- **Outstanding.** The identity values and the clearance, under "Open decisions" above.
+- **Outstanding.** The names (P2-9 and PKG-4) and the clearance, under "Open decisions" above.
 
 ## Index row
 

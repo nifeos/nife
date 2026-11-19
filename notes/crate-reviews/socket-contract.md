@@ -25,7 +25,7 @@ file by path to build the standard library's platform layer.
 | item | value |
 |---|---|
 | crate | `socket_contract`, ratified |
-| identity values | `INTERFACE_ID` 19 and `VERSION` 1, both provisional; no magic. Row 19 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table names this crate, so the value agrees. No operation carries `VERSION` on the wire: the bind-time check belongs to [the message contracts carry bind-time version checks](../../design/roadmap/1000-message-contracts-carry-bind-time-version-checks.md) |
+| identity values | `INTERFACE_ID` 19 and `VERSION` 1, frozen with no magic word (ruled 2026-11-19 UTC). Row 19 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table names this crate, so the value agrees. No operation carries `VERSION` on the wire: the bind-time check belongs to [the message contracts carry bind-time version checks](../../design/roadmap/1000-message-contracts-carry-bind-time-version-checks.md) |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88 |
 | license | `MIT OR Apache-2.0`, both texts at the crate root; nothing adapted |
@@ -183,7 +183,6 @@ and `ADDRESSES_OFFSET_BYTES` in the same style, and several contracts use `REP_O
 
 | item | owner |
 |---|---|
-| Ratify `INTERFACE_ID` 19 and `VERSION` 1, which milestone 1017 asks for before a contract leaves. | architect |
 | Ratify every name, built provisionally above. | architect |
 | Add `tcp` and `udp` to the template's accepted words (another repository; not done here). | maintainer |
 | The `std` farm must read the pinned checkout's source; until then the move breaks the platform layer's build. | maintainer |
@@ -194,13 +193,12 @@ and `ADDRESSES_OFFSET_BYTES` in the same style, and several contracts use `REP_O
 
 Not ready to clear. The crate builds, proves and stands alone, and its scope is now settled
 provisionally: `fixture`, `ephemeral_port` and `polled_wait` live in crates that stay in nife. It
-still waits on the identity values and on the ratification of its names.
+still waits on the ratification of its names and on the clearance itself.
 
 ## Decisions for the architect
 
-1. Ratify `INTERFACE_ID` 19 and `VERSION` 1 unchanged.
-2. Ratify the names above, built provisionally.
-3. Clear the move, with no tag and no publication.
+1. Ratify the names above, built provisionally.
+2. Clear the move, with no tag and no publication.
 
 The scope decisions (where `fixture`, `ephemeral_port` and `polled_wait` live) are built on the
 maintainer's provisional ruling of 2026-11-19 UTC, so they no longer wait for the architect.
