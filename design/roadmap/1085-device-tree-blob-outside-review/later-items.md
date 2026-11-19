@@ -54,7 +54,7 @@ proves `be32` and `be64` total, `be32` big-endian when in bounds, and `align4` c
 any cell counts. `cells` is total. `from_bytes` is total over an arbitrary 48-byte buffer. And,
 after P2-4, the token iterator is total. Each is a bounded harness of the same size as the four that
 exist, and each needs its falsification patch. The `align4` bound needs a statement against the real
-ceiling (`MAXIMUM_TOTALSIZE` plus the header), not `1 << 60`. Effort M. Two-way.
+ceiling (`MAXIMUM_TOTAL_SIZE_BYTES` plus the header), not `1 << 60`. Effort M. Two-way.
 
 P2-6. The reservation block gets fewer checks than `reg`. DONE (`reservations_are_read_entry_by_entry` refuses a wrapping entry; the documentation says the alignment is not checked and why). `reserved_regions`
 (`src/lib.rs` lines 208 to 225) passes `start` and `size` out without the `RegionOverflow` check `decode_reg`
@@ -72,7 +72,7 @@ states and a stranger will ask. Effort S. Two-way.
 
 P2-8. `from_bytes` does not say what it trims or ignores. DONE (one paragraph at `from_bytes`). `src/lib.rs` lines 159 to 162. A buffer longer
 than `totalsize` gets accepted and trimmed (`tests/hostile.rs` lines 283 to 290 proves it, the documentation
-does not say it). `MAXIMUM_TOTALSIZE` applies to `from_ptr` only (right, and unstated). `version`,
+does not say it). `MAXIMUM_TOTAL_SIZE_BYTES` applies to `from_ptr` only (right, and unstated). `version`,
 `size_dt_strings`, `size_dt_struct` and `boot_cpuid_phys` are not read (P1-4 reads one). One
 paragraph closes it. Effort S. Two-way.
 

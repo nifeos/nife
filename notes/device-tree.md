@@ -134,7 +134,7 @@ The blob comes from firmware, and firmware is the trust boundary here, so these 
 robustness rather than confinement. Each one costs a comparison and turns a crash on the boot path
 into an `Error`.
 
-- `MAXIMUM_TOTALSIZE_BYTES` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize`
+- `MAXIMUM_TOTAL_SIZE_BYTES` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize`
   before anything else is checked, and the magic says only that the pointer is at a blob. A
   `totalsize` of `0xffff_ffff` would otherwise become a 4 GiB slice that the walkers read past the
   end of RAM. The figure is Linux's `MAX_FDT_SIZE` for the same slot. The largest blob this tree has

@@ -1201,8 +1201,8 @@ fn an_inherited_property_comes_from_the_named_node_not_the_first_one() {
 /// and the cap is what decides it.
 #[test]
 fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
-    use device_tree_blob::MAXIMUM_TOTALSIZE_BYTES;
-    let claimed = MAXIMUM_TOTALSIZE_BYTES + 1;
+    use device_tree_blob::MAXIMUM_TOTAL_SIZE_BYTES;
+    let claimed = MAXIMUM_TOTAL_SIZE_BYTES + 1;
     let mut buffer = minimal_tree();
     buffer[4..8].copy_from_slice(&(claimed as u32).to_be_bytes());
     buffer.resize(claimed + 64, 0);
@@ -1214,10 +1214,13 @@ fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
 
     // Exactly the ceiling is still believed: the header lies about the length, so the parse fails
     // on its offsets, but it fails as a parse and not as a refusal to look.
-    buffer[4..8].copy_from_slice(&(MAXIMUM_TOTALSIZE_BYTES as u32).to_be_bytes());
-    // SAFETY: as above; `buffer` is longer than `MAXIMUM_TOTALSIZE_BYTES`.
+    buffer[4..8].copy_from_slice(&(MAXIMUM_TOTAL_SIZE_BYTES as u32).to_be_bytes());
+    // SAFETY: as above; `buffer` is longer than `MAXIMUM_TOTAL_SIZE_BYTES`.
     let looked = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
-    assert_ne!(looked.err(), Some(Error::TooLarge(MAXIMUM_TOTALSIZE_BYTES)));
+    assert_ne!(
+        looked.err(),
+        Some(Error::TooLarge(MAXIMUM_TOTAL_SIZE_BYTES))
+    );
 }
 
 /// `from_ptr` reads the magic and `totalsize`, 8 bytes, before it trusts anything, and no more:

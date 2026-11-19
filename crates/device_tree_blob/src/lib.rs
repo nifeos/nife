@@ -71,7 +71,7 @@ pub enum Error {
     BadStructure,
     /// The structure block nests deeper than [`MAXIMUM_DEPTH`].
     TooDeep,
-    /// The header's `totalsize` is larger than [`MAXIMUM_TOTALSIZE_BYTES`], so
+    /// The header's `totalsize` is larger than [`MAXIMUM_TOTAL_SIZE_BYTES`], so
     /// [`from_ptr`](DeviceTreeBlob::from_ptr) refused to build a slice of that length over
     /// memory nobody has checked. Carries the size claimed.
     TooLarge(usize),
@@ -128,10 +128,13 @@ const HEADER_BYTES: usize = 40;
 /// 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in `arch/arm64/include/asm/boot.h`); QEMU's `virt`
 /// blobs are under 64 KiB.
 ///
-/// Name: provisional. Ratified as `MAXIMUM_TOTALSIZE` on 2026-10-27 (#2797); `_BYTES` added at the
-/// crate's own name review, since a size carries its unit.
+/// Name: ratified 2026-11-19. Refused `MAXIMUM_TOTALSIZE`, which ran the words together and had no
+/// unit; `totalsize` stays the header field's spelling in backticks, and the `total_size()` method
+/// shares the word split (milestone 1085 (what an outside maintainer would fix before it leaves)
+/// D4).
 #[doc(alias = "MAX_FDT_SIZE")]
-pub const MAXIMUM_TOTALSIZE_BYTES: usize = 2 * 1024 * 1024;
+#[doc(alias = "totalsize")]
+pub const MAXIMUM_TOTAL_SIZE_BYTES: usize = 2 * 1024 * 1024;
 
 /// The most cells a `#address-cells` or `#size-cells` declaration may give a `reg` value, as
 /// libfdt's `FDT_MAX_NCELLS`. A `reg` read under a larger count is [`Error::BadValue`].
@@ -189,7 +192,7 @@ impl<'a> DeviceTreeBlob<'a> {
     ///
     /// Reads the first 8 bytes alone, the magic and `totalsize`, and builds a slice over the
     /// whole blob only once the magic matches and the size is at most
-    /// [`MAXIMUM_TOTALSIZE_BYTES`]. Every read is byte-wise, so `pointer` needs no alignment.
+    /// [`MAXIMUM_TOTAL_SIZE_BYTES`]. Every read is byte-wise, so `pointer` needs no alignment.
     ///
     /// # Safety
     ///
@@ -205,12 +208,12 @@ impl<'a> DeviceTreeBlob<'a> {
             return Err(Error::BadMagic(magic));
         }
         let total = be32(header, 4)? as usize;
-        if total > MAXIMUM_TOTALSIZE_BYTES {
+        if total > MAXIMUM_TOTAL_SIZE_BYTES {
             return Err(Error::TooLarge(total));
         }
 
         // SAFETY: the magic checked out, so `pointer` really is a blob, and `total` is the length it
-        // declares for itself, now bounded by `MAXIMUM_TOTALSIZE_BYTES`; the caller's contract covers the
+        // declares for itself, now bounded by `MAXIMUM_TOTAL_SIZE_BYTES`; the caller's contract covers the
         // whole of it for `'a`.
         let bytes = unsafe { core::slice::from_raw_parts(pointer, total) };
         Self::from_bytes(bytes)
@@ -221,7 +224,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// enough to build one, and it is the entry point every host test uses directly.
     ///
     /// A `bytes` longer than the header's `totalsize` is accepted and trimmed to it, so a blob
-    /// read into a larger buffer parses as itself. [`MAXIMUM_TOTALSIZE_BYTES`] bounds
+    /// read into a larger buffer parses as itself. [`MAXIMUM_TOTAL_SIZE_BYTES`] bounds
     /// [`from_ptr`](Self::from_ptr) only: a slice in hand is already as long as it is. The header's
     /// `version` decides where the structure block ends (`size_dt_struct` from version 17, the
     /// strings block before it), and a `last_compatible_version` above 17 is refused. `size_dt_strings`
@@ -1300,7 +1303,7 @@ mod tests {
 /// The device tree is untrusted boot input. The leaves are proved for every input: the big-endian
 /// readers every field goes through, the padding helper, `cells` and `decode_regions`. `align4` is
 /// proved for every `usize`, and overflows only within 3 of `usize::MAX`, where no caller reaches:
-/// every length it is given comes from a blob, which is at most `MAXIMUM_TOTALSIZE_BYTES` through
+/// every length it is given comes from a blob, which is at most `MAXIMUM_TOTAL_SIZE_BYTES` through
 /// `from_ptr` and at most `u32::MAX` bytes of header-declared length otherwise. Above the leaves,
 /// `from_bytes` and one step of the token walk are proved total over blobs of a bounded size,
 /// which is as far as bounded model checking reaches over a structure of real size; the fuzz target
