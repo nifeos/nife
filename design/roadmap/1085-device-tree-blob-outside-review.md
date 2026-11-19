@@ -16,9 +16,9 @@ lanes that move the crate change, and what the kernel should take from the list 
 crate moves.
 
 The crate has no review package under `notes/crate-reviews/`, so the baseline this review takes is
-the names already ratified at the item (`device_tree_blob`, `DeviceTreeBlob`, `MAXIMUM_TOTALSIZE`,
-`initial_ramdisk`), the provisional names recorded there (`boot_arguments`), and the bounds notes/device-tree.md records. One ratified name meets a later
-rule (item D4). A ruling on record has nife working toward Google's `dtoolkit` as its device-tree
+the names already ratified at the item (`device_tree_blob`, `DeviceTreeBlob`, `initial_ramdisk`),
+the provisional name recorded there (`boot_arguments`), and the bounds notes/device-tree.md
+records. A ruling on record has nife working toward Google's `dtoolkit` as its device-tree
 dependency. The switch itself is a separate decision. Until that switch, this crate is what boots
 every nife machine. So the correctness items below (P1-1 to P1-4) are worth landing in the kernel's
 path whether or not the crate ever publishes.
@@ -31,7 +31,7 @@ tool.
 
 The ids are the review's own; P0 and P1 are in [the
 appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
-items](1085-device-tree-blob-outside-review/later-items.md), D1 to D3 under [Ruled decisions](#ruled-decisions), and D4 to D6 under [Open
+items](1085-device-tree-blob-outside-review/later-items.md), D1 to D4 under [Ruled decisions](#ruled-decisions), and D5 and D6 under [Open
 decisions](#open-decisions).
 
 - P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
@@ -59,8 +59,8 @@ decisions](#open-decisions).
 - P2-10 to P2-13, the depth counters, `MAXIMUM_DEPTH`, a trailing partial `reg` pair and private
   names: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
-- D1 to D3 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
-- D4 to D6: Open. Built as recommended, awaiting ratification; each is a subsection under [Open
+- D1 to D4 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
+- D5 and D6: Open. Built as recommended, awaiting ratification; each is a subsection under [Open
   decisions](#open-decisions).
 - F-size, `Region::size` is a length with no unit: Open. `register_names` refuses it at `src/lib.rs`
   line 26. It is two-way while unreleased, and the maintainer rules the rename provisionally; the
@@ -111,6 +111,16 @@ alias. Example: a search for "reg" lands on `node_register_regions`, and
 `tree.node_register_regions_compatible(b"arm,pl031", &mut regions)` reads the register regions of
 a PL031.
 
+### Add the unit to the total size limit (D4)
+
+Ruled 2026-11-19 (UTC): option A as amended. The limit is `MAXIMUM_TOTAL_SIZE_BYTES`, with the words
+separated and the unit last, which matches the existing `total_size()` method. It carries
+`#[doc(alias = "MAX_FDT_SIZE")]` and `#[doc(alias = "totalsize")]`. The header field's own spelling,
+`totalsize`, stays in doc comments, in backticks. A limit ends with its unit.
+
+Door: one-way at publish. Prior art: Linux's `MAX_FDT_SIZE`, which lends its value; `dtoolkit` has
+no ceiling. Example: `if total > MAXIMUM_TOTAL_SIZE_BYTES { return Err(Error::TooLarge(total)) }`.
+
 ### Property is spelled out across the crate
 
 The crate spells `property` out in every public item, parameter and doc comment. The one `prop`
@@ -137,19 +147,6 @@ Code carries the remaining name and surface decisions as recommended, each under
 provisional` block. Each is two-way while the crate has no release and one-way at its first publish. The
 `dtoolkit` path makes it likely the crate never publishes, so every one of them waits on the last
 two decisions here.
-
-### Add the unit to `MAXIMUM_TOTALSIZE` (D4)
-
-The name's ratification predates the rule that a limit ends with its unit, and the release review
-rechecks a ratified name. `totalsize` names the header field, so it keeps its spelling.
-Recommendation: A.
-
-- A. Ratify `MAXIMUM_TOTALSIZE_BYTES`, with `#[doc(alias = "MAX_FDT_SIZE")]`, as built.
-- B. Restore `MAXIMUM_TOTALSIZE`.
-
-Door: one-way at publish. Prior art: Linux's `MAX_FDT_SIZE`, which lends its value; `dtoolkit` has
-no ceiling. Example: `if total > MAXIMUM_TOTALSIZE_BYTES { return Err(Error::TooLarge(total)) }`.
-Blocks: the tag.
 
 ### Name the reservation block `memory_reservations` (D5)
 
@@ -212,7 +209,7 @@ happens at all.
 No review package exists, and clearance follows one. Recommendation: B, because every move item
 lapses if the switch comes first, and a package written first would go to waste.
 
-- A. Write the package now and clear the move after the ratification of D4 to D6.
+- A. Write the package now and clear the move after the ratification of D5 and D6.
 - B. Hold the package and the move until the `dtoolkit` decision; write the package only if C wins
   there.
 
@@ -249,7 +246,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
-  half of P2-9, F-size, F-package and BUGS-239, and the five open decisions.
+  half of P2-9, F-size, F-package and BUGS-239, and the four open decisions.
 
 ## BUGS
 
@@ -271,4 +268,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 to D3 are ruled and five remain open.
+that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 to D4 are ruled and four remain open.
