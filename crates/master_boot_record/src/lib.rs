@@ -25,6 +25,9 @@ pub(crate) const MASTER_BOOT_RECORD_SIGNATURE: [u8; 2] = [0x55, 0xaa];
 pub(crate) const TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE: u8 = 0xee;
 
 /// One of the four primary partition entries.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane/master-boot-record-crate; as built in
+/// `designware_mobile_storage`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct PartitionEntry {
     /// The type byte; 0 is an unused entry.
@@ -37,6 +40,9 @@ pub struct PartitionEntry {
 
 impl PartitionEntry {
     /// Is this entry a partition at all? Unused entries are type 0 or zero length.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/master-boot-record-crate; as built in
+    /// `designware_mobile_storage`.
     #[must_use]
     pub const fn is_used(&self) -> bool {
         self.kind != 0 && self.sectors != 0
@@ -44,6 +50,9 @@ impl PartitionEntry {
 
     /// Does this partition contain `sector`? Computed in 64 bits, so an entry whose end passes
     /// 2^32 still contains what it claims to.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/master-boot-record-crate; as built in
+    /// `designware_mobile_storage`.
     #[must_use]
     pub const fn contains(&self, sector: u64) -> bool {
         self.is_used()
@@ -53,6 +62,9 @@ impl PartitionEntry {
 }
 
 /// **A parsed master boot record (MBR)**: the four primary entries.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane/master-boot-record-crate; as built in
+/// `designware_mobile_storage`.
 #[doc(alias = "mbr")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MasterBootRecord {
@@ -77,6 +89,9 @@ impl MasterBootRecord {
     /// // Eight sectors ending just before the partition.
     /// assert_eq!(mbr.scratch_sector_range(8), Some((2040, 8)));
     /// ```
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/master-boot-record-crate; as built in
+    /// `designware_mobile_storage`.
     #[must_use]
     pub fn parse(sector: &[u8; 512]) -> Option<MasterBootRecord> {
         if sector[510..512] != MASTER_BOOT_RECORD_SIGNATURE {
@@ -130,6 +145,9 @@ impl MasterBootRecord {
     /// };
     /// assert_eq!(mbr.scratch_sector_range(8), Some((2040, 8)));
     /// ```
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/master-boot-record-crate; as built in
+    /// `designware_mobile_storage`.
     #[must_use]
     pub fn scratch_sector_range(&self, want: u32) -> Option<(u32, u32)> {
         if want == 0
