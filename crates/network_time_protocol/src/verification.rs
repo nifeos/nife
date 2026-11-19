@@ -24,7 +24,7 @@ fn nanoseconds_survive_the_fixed_point() {
 }
 
 /// **The era pivot is exact over the whole representable window**: for every Unix second in
-/// [`UNIX_MINIMUM`]`..`[`UNIX_LIMIT`], 1970 to 2104, encoding and decoding returns the second it
+/// [`MINIMUM_UNIX_SECONDS`]`..=`[`MAXIMUM_UNIX_SECONDS`], 1970 to 2104, encoding and decoding returns the second it
 /// started with. Quantified rather than sampled, and the window spans the 2036 rollover, so this
 /// covers the era-0 branch, the era-1 branch, and the boundary between them in one proof. All
 /// 4.2 billion of them, in a third of a second, because this half is addition.
@@ -36,7 +36,7 @@ fn nanoseconds_survive_the_fixed_point() {
 #[kani::proof]
 fn the_era_pivot_is_exact_over_the_window() {
     let seconds: u64 = kani::any();
-    kani::assume(seconds < UNIX_LIMIT);
+    kani::assume(seconds <= MAXIMUM_UNIX_SECONDS);
 
     let t = Timestamp::from_unix(seconds, 0).expect("in range must encode");
     assert_eq!(t.to_unix().0, seconds);
@@ -67,18 +67,18 @@ fn out_of_range_is_refused() {
     let encoded = Timestamp::from_unix(seconds, nanoseconds);
     assert_eq!(
         encoded.is_some(),
-        seconds < UNIX_LIMIT && (nanoseconds as u64) < NANOSECONDS_PER_SECOND
+        seconds <= MAXIMUM_UNIX_SECONDS && (nanoseconds as u64) < NANOSECONDS_PER_SECOND
     );
 }
 
-/// **Parse then serialise is the identity, on every 48-byte input there is.** Not "on a
+/// **Parse then serialize is the identity, on every 48-byte input there is.** Not "on a
 /// well-formed packet": there is no such qualifier, because parse judges nothing. That is what
 /// makes this provable over 2^384 inputs and what keeps every rejection in one function.
-/// Falsification: replayable `crates/network_time_protocol/falsifications/verification.parse_then_serialise_is_the_identity.patch`
+/// Falsification: replayable `crates/network_time_protocol/falsifications/verification.parse_then_serialize_is_the_identity.patch`
 #[kani::proof]
 #[kani::unwind(49)]
-fn parse_then_serialise_is_the_identity() {
-    let wire: [u8; PACKET_LEN] = kani::any();
+fn parse_then_serialize_is_the_identity() {
+    let wire: [u8; PACKET_BYTES] = kani::any();
     let p = Packet::parse(&wire).expect("48 bytes always parse");
     assert_eq!(p.to_bytes(), wire);
 }
@@ -90,7 +90,7 @@ fn parse_then_serialise_is_the_identity() {
 #[kani::proof]
 #[kani::unwind(49)]
 fn an_unmatched_origin_is_always_rejected() {
-    let wire: [u8; PACKET_LEN] = kani::any();
+    let wire: [u8; PACKET_BYTES] = kani::any();
     let nonce: u64 = kani::any();
     let sent: u64 = kani::any();
     let dest: u64 = kani::any();
@@ -112,7 +112,7 @@ fn an_unmatched_origin_is_always_rejected() {
 #[kani::proof]
 #[kani::unwind(49)]
 fn accepting_is_total_and_a_sample_is_coherent() {
-    let wire: [u8; PACKET_LEN] = kani::any();
+    let wire: [u8; PACKET_BYTES] = kani::any();
     let nonce: u64 = kani::any();
     let sent: u64 = kani::any();
     let dest: u64 = kani::any();
@@ -168,8 +168,8 @@ fn a_consistent_exchange_is_accepted() {
         stratum,
         poll: 6,
         precision: 0,
-        root_delay: Short(root_delay),
-        root_dispersion: Short(root_dispersion),
+        root_delay: ShortFormat::from_bits(root_delay),
+        root_dispersion: ShortFormat::from_bits(root_dispersion),
         reference_id: [0; 4],
         reference: Timestamp::ZERO,
         origin: Timestamp::from_bits(nonce),

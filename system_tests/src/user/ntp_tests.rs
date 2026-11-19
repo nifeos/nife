@@ -425,7 +425,7 @@ fn an_ntp_client_holds_no_writable_clock_page() {
 /// **The nonce is unpredictable, because it comes from the entropy service.**
 ///
 /// Two exchanges, the server reporting what was on the wire each time: the nonces differ, and
-/// neither is a time. `Query::new` would put the client's clock in the transmit field, within a
+/// neither is a time. A nonce taken from the clock would put the client's time in the transmit field, within a
 /// moment of now; a 64-bit draw lands in a random one of 2^32 seconds, so a false failure is a
 /// 7201-in-2^32 event (about one boot in 600,000). `Query::with_nonce` is worth nothing if the bits
 /// are guessable, as splitmix64 seeded off the virtual counter would be (notes/entropy.md).
@@ -441,8 +441,8 @@ fn the_nonce_on_the_wire_is_random_and_is_not_the_clock() {
     let claimed = clock.wall_nanoseconds() + NANOSECONDS_PER_SECOND / 2;
 
     // A time in the NTP era the transmit field would carry if it were a clock reading.
-    let now_ntp_seconds =
-        clock.wall_nanoseconds() / NANOSECONDS_PER_SECOND + network_time_protocol::UNIX_DELTA;
+    let now_ntp_seconds = clock.wall_nanoseconds() / NANOSECONDS_PER_SECOND
+        + network_time_protocol::UNIX_EPOCH_DELTA_SECONDS;
 
     let mut nonces = [0u64; 2];
     for slot in nonces.iter_mut() {

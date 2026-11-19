@@ -1,12 +1,14 @@
-//! **The NTPv4 wire format** (RFC 5905), as pure computation: no socket, clock, service or policy.
+//! **The Network Time Protocol (NTP) version 4 (NTPv4) wire format** (RFC 5905), as
+//! pure computation: no socket, clock, service or policy.
 //!
 //! The clock service owns the offset and the authority to set it; these 48 bytes and the arithmetic
-//! over them are here. Unauthenticated NTPv4 only, with no NTS (RFC 8915) and no RFC 5905
-//! symmetric-key MAC: an off-path attacker must guess the 64-bit nonce [`Query::accept`] checks and
-//! an on-path one reads it, so a time from here is untrusted input the client may propose and never
-//! set. [`Packet::parse`] is total on 48 bytes; [`Query::accept`] alone rejects. A timestamp counts
-//! from 1900 in binary fractions ([`Timestamp`]), its seconds wrap on 7 February 2036 at 06:28:16
-//! UTC ([`Timestamp::to_unix`]), and offsets are modular ([`Interval`]). See notes/ntp.md.
+//! over them are here. Unauthenticated NTPv4 only, with no Network Time Security (NTS, RFC 8915)
+//! and no RFC 5905 symmetric-key message authentication code (MAC): an off-path attacker must guess
+//! the 64-bit nonce [`Query::accept`] checks and an on-path one reads it, so a time from here is
+//! untrusted input the client may propose and never set. [`Packet::parse`] is total on 48 bytes;
+//! [`Query::accept`] alone rejects. A timestamp counts from 1900 in binary fractions
+//! ([`Timestamp`]), its seconds wrap on 7 February 2036 at 06:28:16 UTC ([`Timestamp::to_unix`]),
+//! and offsets are modular ([`Interval`]). See notes/ntp.md.
 
 //! Name: ratified 2026-10-18 (calef, a crate-naming session). Kept: the NTPv4 standard's own full
 //! name, so its `_protocol` is the standard's word and not nife's contract suffix. His answer was
@@ -17,7 +19,7 @@
 #![no_std]
 #![forbid(unsafe_code)]
 
-/// The UDP port NTP runs on. Here for the client that will eventually open the socket; this crate
+/// The User Datagram Protocol (UDP) port NTP runs on. Here for the client that will eventually open the socket; this crate
 /// never opens one.
 pub const PORT: u16 = 123;
 
@@ -28,7 +30,7 @@ pub const PORT: u16 = 123;
 /// silently ignoring authentication data a server went to the trouble of computing. Fail closed:
 /// we send 48 bytes, a compliant server answers with 48 bytes, and anything else is not a reply to
 /// the question we asked.
-pub const PACKET_LEN: usize = 48;
+pub const PACKET_BYTES: usize = 48;
 
 /// The version this crate speaks and requires in a reply. NTPv4 (RFC 5905). A server echoes the
 /// version it was asked in, so a reply that is not 4 did not come from a server we spoke to.
@@ -39,14 +41,18 @@ pub const VERSION: u8 = 4;
 /// 70 years of 365 days plus the 17 leap days from 1904 to 1968 inclusive: 25567 days, 2208988800
 /// seconds. 1900 itself is not a leap year (divisible by 100, not by 400), which is the arithmetic
 /// this constant is most often got wrong by one day over.
-pub const UNIX_DELTA: u64 = 2_208_988_800;
+///
+/// Name: provisional.
+pub const UNIX_EPOCH_DELTA_SECONDS: u64 = 2_208_988_800;
 
 /// The number of NTP fraction ticks in one second: 2<sup>32</sup>. One tick is about 233 ps, which
 /// is finer than a nanosecond, which is why nanoseconds survive a round trip through a
 /// [`Timestamp`] and arbitrary tick values do not.
 pub(crate) const TICKS_PER_SECOND: u64 = 1 << 32;
 
-use clock_contract::NANOSECONDS_PER_SECOND;
+/// Nanoseconds in one second. Private: the crate needs the number and defines it, as `core::time`
+/// does, so it depends on nothing.
+const NANOSECONDS_PER_SECOND: u64 = 1_000_000_000;
 
 /// **The oldest Unix second [`Timestamp`] can represent**, under the era pivot: 0, the Unix epoch.
 ///
@@ -54,28 +60,28 @@ use clock_contract::NANOSECONDS_PER_SECOND;
 /// clock service has no use for a pre-1970 wall clock and a signed second only invites a sign bug),
 /// so the reachable floor is the Unix epoch itself.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const UNIX_MINIMUM: u64 = 0;
+/// Name: provisional.
+pub const MINIMUM_UNIX_SECONDS: u64 = 0;
 
-/// **The first Unix second [`Timestamp`] cannot represent**: 4233462144, which is 26 February 2104
-/// at 09:42:24 UTC.
+/// **The last Unix second [`Timestamp`] can represent**, inclusive: 4233462143, which is 26 February
+/// 2104 at 09:42:23 UTC.
 ///
-/// Past this the era pivot on [`Timestamp::to_unix`] would alias the value onto a date 136 years
-/// earlier, so [`Timestamp::from_unix`] refuses it rather than returning a wrong answer.
-/// `UNIX_MINIMUM..UNIX_LIMIT` is exactly the range over which Unix → NTP → Unix is the identity,
-/// and that is the property Kani proves.
+/// One second past this the era pivot on [`Timestamp::to_unix`] would alias the value onto a date
+/// 136 years earlier, so [`Timestamp::from_unix`] refuses it rather than returning a wrong answer.
+/// `MINIMUM_UNIX_SECONDS..=MAXIMUM_UNIX_SECONDS` is exactly the range over which Unix → NTP → Unix
+/// is the identity, and that is the property Kani proves.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
-pub const UNIX_LIMIT: u64 = (TICKS_PER_SECOND - UNIX_DELTA) + (1 << 31);
+/// Name: provisional.
+pub const MAXIMUM_UNIX_SECONDS: u64 = (TICKS_PER_SECOND - UNIX_EPOCH_DELTA_SECONDS) + (1 << 31) - 1;
 
-/// The highest stratum a synchronised server may claim (RFC 5905 `MAXSTRAT`). 1 is a reference
-/// clock, 15 is fifteen hops from one, 16 means "unsynchronised" and anything above is reserved.
+/// The highest stratum a synchronized server may claim (RFC 5905 `MAXSTRAT`). 1 is a reference
+/// clock, 15 is fifteen hops from one, 16 means "unsynchronized" and anything above is reserved.
 /// A reply outside `1..=15` is not a time source ([`Reject::Stratum`]).
 ///
 /// Name: recorded (RFC 5905's `MAXSTRAT`).
 pub const MAXIMUM_STRATUM: u8 = 15;
 
-/// The root distance we refuse outright, in [`Short`] units: 16 seconds, RFC 5905's `MAXDISP`.
+/// The root distance we refuse outright, in [`ShortFormat`] units: 16 seconds, RFC 5905's `MAXDISP`.
 /// A reply whose root distance is this or more is refused, as the RFC's reference `packet()`
 /// routine refuses `rootdelay / 2 + rootdisp >= MAXDISP`.
 ///
@@ -87,14 +93,14 @@ pub const MAXIMUM_STRATUM: u8 = 15;
 /// other samples in front of it.
 ///
 /// Name: recorded (RFC 5905's `MAXDISP`).
-pub const MAXIMUM_ROOT_DISTANCE: Short = Short(16 << 16);
+pub const MAXIMUM_ROOT_DISTANCE: ShortFormat = ShortFormat::from_bits(16 << 16);
 
 /// The poll interval a request advertises, as log2 seconds: 6, which is 64 seconds. The server does
 /// not act on it for a unicast client; it exists so the packet is well-formed and so a server that
 /// rate-limits can see we are not asking often.
 ///
-/// Name: provisional. The name came from an earlier lane; this lane restored its `pub` visibility on 2026-10-28 and chose nothing.
-pub const DEFAULT_POLL: i8 = 6;
+/// Name: provisional.
+pub const DEFAULT_POLL_EXPONENT: i8 = 6;
 
 /// The NTP mode field (RFC 5905 §7.3). Three bits, in the low bits of the first octet.
 pub mod mode {
@@ -114,17 +120,17 @@ pub mod mode {
 
 /// The leap indicator (RFC 5905 §7.3). Two bits, the top of the first octet.
 pub mod leap {
-    /// No warning: the server is synchronised and the day is 86400 seconds long.
+    /// No warning: the server is synchronized and the day is 86400 seconds long.
     pub const NONE: u8 = 0;
     /// The last minute of the day has 61 seconds (a leap second is being inserted).
     pub const INSERT: u8 = 1;
     /// The last minute of the day has 59 seconds (a leap second is being deleted).
     pub const DELETE: u8 = 2;
-    /// **The clock is not synchronised.** The server is telling us its own time is not to be
+    /// **The clock is not synchronized.** The server is telling us its own time is not to be
     /// trusted, and [`super::Query::accept`] believes it.
     ///
     /// Name: recorded (RFC 5905's leap indicator 3).
-    pub const UNSYNCHRONISED: u8 = 3;
+    pub const UNSYNCHRONIZED: u8 = 3;
 }
 
 // =================================================================================================
@@ -133,7 +139,7 @@ pub mod leap {
 
 /// **An NTP 64-bit timestamp**: 32 bits of seconds since 1 January 1900, 32 bits of binary fraction.
 ///
-/// Held as the raw 64-bit wire value, so a parse-serialise round trip is the identity by
+/// Held as the raw 64-bit wire value, so a parse-serialize round trip is the identity by
 /// construction and there is no "which representation is canonical" question to get wrong.
 ///
 /// The two conversions that matter are [`Timestamp::from_unix`] and [`Timestamp::to_unix`], and the
@@ -143,7 +149,7 @@ pub struct Timestamp(u64);
 
 impl Timestamp {
     /// The all-zero timestamp. On the wire this means "unknown" rather than "1900": a server that
-    /// has never synchronised sends zero, and a client's first request carries zero in the fields
+    /// has never synchronized sends zero, and a client's first request carries zero in the fields
     /// it cannot yet fill. [`Query::accept`] refuses a reply whose transmit timestamp is zero.
     pub const ZERO: Timestamp = Timestamp(0);
 
@@ -177,20 +183,20 @@ impl Timestamp {
     }
 
     /// **Unix seconds and nanoseconds to an NTP timestamp.** `None` if `nanoseconds` is not a valid
-    /// sub-second (`>= 1_000_000_000`) or if `seconds` is outside `UNIX_MINIMUM..`[`UNIX_LIMIT`],
+    /// sub-second (`>= 1_000_000_000`) or if `seconds` is outside `MINIMUM_UNIX_SECONDS..=`[`MAXIMUM_UNIX_SECONDS`],
     /// where the era pivot could not read the result back.
     ///
     /// Refusing out of range rather than wrapping is the deliberate half of the 2036 handling: the
     /// conversion is only ever the identity's inverse inside the window, so outside it we return
     /// nothing instead of a value that would decode to a date 136 years off.
     pub const fn from_unix(seconds: u64, nanoseconds: u32) -> Option<Timestamp> {
-        if nanoseconds as u64 >= NANOSECONDS_PER_SECOND || seconds >= UNIX_LIMIT {
+        if nanoseconds as u64 >= NANOSECONDS_PER_SECOND || seconds > MAXIMUM_UNIX_SECONDS {
             return None;
         }
         // Wrapping is correct and intended here: for secs in range, the sum exceeds 2^32 exactly
         // when the instant is in era 0 (before 2036), and truncating to 32 bits is what the wire
         // format is. The era is recovered by the pivot on the way back.
-        let ntp_seconds = ((seconds + UNIX_DELTA) % TICKS_PER_SECOND) as u32;
+        let ntp_seconds = ((seconds + UNIX_EPOCH_DELTA_SECONDS) % TICKS_PER_SECOND) as u32;
         Some(Timestamp(
             ((ntp_seconds as u64) << 32) | nanoseconds_to_ticks(nanoseconds) as u64,
         ))
@@ -203,42 +209,22 @@ impl Timestamp {
     /// fixed pivot, not a guess against the current time: high bit set (seconds ≥ 2<sup>31</sup>)
     /// is era 0, counted from 1900 (20 January 1968 to 7 February 2036 at 06:28:16 UTC); clear is
     /// era 1, counted from the rollover (to 26 February 2104). The window is
-    /// [`UNIX_MINIMUM`]`..`[`UNIX_LIMIT`], clipped at the Unix epoch because the seconds returned
+    /// [`MINIMUM_UNIX_SECONDS`]`..=`[`MAXIMUM_UNIX_SECONDS`], clipped at the Unix epoch because the seconds returned
     /// are unsigned, and the crate expires in 2104. See notes/ntp/the-era-pivot.md for why a
     /// nearest-era rule is worse.
     pub const fn to_unix(self) -> (u64, u32) {
         let s = self.seconds() as u64;
         let seconds = if s >= (1 << 31) {
-            // Era 0. UNIX_DELTA > 2^31, so this subtraction stays non-negative only for s at or
+            // Era 0. UNIX_EPOCH_DELTA_SECONDS > 2^31, so this subtraction stays non-negative only for s at or
             // above the delta; below it (1968 to 1970) the instant predates the Unix epoch and we
             // saturate at 0 rather than return a negative second. That range is unreachable from
             // from_unix, so it costs the round trip nothing.
-            s.saturating_sub(UNIX_DELTA)
+            s.saturating_sub(UNIX_EPOCH_DELTA_SECONDS)
         } else {
             // Era 1: add a full rollover before subtracting the epoch delta.
-            s + TICKS_PER_SECOND - UNIX_DELTA
+            s + TICKS_PER_SECOND - UNIX_EPOCH_DELTA_SECONDS
         };
         (seconds, ticks_to_nanoseconds(self.fraction()))
-    }
-
-    /// **Replace the low `bits` of the fraction with random bits**, for use as the transmit
-    /// timestamp of a request.
-    ///
-    /// [`Query::accept`] requires the reply's origin to match it exactly, so it is all an off-path
-    /// attacker has to guess, and RFC 5905 section 3 says to randomise its low-order bits. How many
-    /// are random is the clock's precision, which the caller knows and this crate does not: a
-    /// microsecond clock leaves about 12, which is 4096 guesses. `bits >= 32` randomises the whole
-    /// fraction. With a real random source, prefer [`Query::with_nonce`] and its 64 random bits.
-    pub const fn randomise_low(self, bits: u32, random: u32) -> Timestamp {
-        if bits == 0 {
-            return self;
-        }
-        let mask: u32 = if bits >= 32 {
-            u32::MAX
-        } else {
-            (1 << bits) - 1
-        };
-        Timestamp((self.0 & !(mask as u64)) | (random & mask) as u64)
     }
 
     /// The signed difference `self - other`, in fraction ticks, taken **modulo 2<sup>64</sup>** and
@@ -285,10 +271,22 @@ const fn ticks_to_nanoseconds(ticks: u32) -> u32 {
 
 /// **The NTP short format**: 16 bits of seconds, 16 of fraction. Used for root delay and root
 /// dispersion, which are durations rather than instants and never need 136 years of range.
+///
+/// Name: provisional.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Hash)]
-pub struct Short(pub u32);
+pub struct ShortFormat(u32);
 
-impl Short {
+impl ShortFormat {
+    /// Wrap a raw wire value (the 32 bits as they appear in the packet, host-order).
+    pub const fn from_bits(bits: u32) -> ShortFormat {
+        ShortFormat(bits)
+    }
+
+    /// The raw wire value.
+    pub const fn bits(self) -> u32 {
+        self.0
+    }
+
     /// The value in nanoseconds. Exact enough: a 16.16 tick is about 15.3 µs, so nothing is lost
     /// that was ever there.
     pub const fn nanoseconds(self) -> u64 {
@@ -347,11 +345,6 @@ impl Interval {
     pub const fn is_negative(self) -> bool {
         self.0 < 0
     }
-
-    /// The magnitude, in ticks.
-    pub const fn abs_ticks(self) -> u128 {
-        self.0.unsigned_abs()
-    }
 }
 
 // =================================================================================================
@@ -360,7 +353,7 @@ impl Interval {
 
 /// **A parsed NTP packet.** The 48 bytes of RFC 5905 §7.3, decoded field by field and judged not at
 /// all: [`Packet::parse`] cannot reject a 48-byte input, so every judgement is in one place
-/// ([`Query::accept`]) and parse-then-serialise is the identity on every packet that exists.
+/// ([`Query::accept`]) and parse-then-serialize is the identity on every packet that exists.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Packet {
     /// Leap indicator, 2 bits. See [`leap`].
@@ -370,18 +363,18 @@ pub struct Packet {
     /// Association mode, 3 bits. See [`mode`].
     pub mode: u8,
     /// Distance from a reference clock in hops. 1 is a reference clock itself, 0 is either
-    /// "unspecified" or a kiss-o'-death, 16 is unsynchronised. See [`MAXIMUM_STRATUM`].
+    /// "unspecified" or a kiss-o'-death, 16 is unsynchronized. See [`MAXIMUM_STRATUM`].
     pub stratum: u8,
     /// Log2 of the maximum interval between messages, in seconds.
     pub poll: i8,
     /// Log2 of the sender's clock precision, in seconds. Negative in practice: -23 is about 119 ns.
     pub precision: i8,
     /// Round-trip delay to the reference clock.
-    pub root_delay: Short,
+    pub root_delay: ShortFormat,
     /// Maximum error relative to the reference clock.
-    pub root_dispersion: Short,
+    pub root_dispersion: ShortFormat,
     /// Four bytes identifying the reference source. For stratum 1 it is ASCII naming the clock
-    /// (`GPS`, `PPS`, `DCF`); for stratum 2 and up it is (in IPv4) the upstream server's address;
+    /// (`GPS`, `PPS`, `DCF`); for stratum 2 and up it is (in Internet Protocol version 4, IPv4) the upstream server's address;
     /// for stratum 0 it is the **kiss code**, which is why it is bytes here and not a `u32`.
     pub reference_id: [u8; 4],
     /// When the server last set or corrected its own clock.
@@ -400,7 +393,7 @@ impl Packet {
     /// packet, because on the wire every 48-byte input is one. Semantic checks live in
     /// [`Query::accept`].
     pub fn parse(wire: &[u8]) -> Result<Packet, Reject> {
-        if wire.len() != PACKET_LEN {
+        if wire.len() != PACKET_BYTES {
             return Err(Reject::Length(wire.len()));
         }
         Ok(Packet {
@@ -410,8 +403,8 @@ impl Packet {
             stratum: wire[1],
             poll: wire[2] as i8,
             precision: wire[3] as i8,
-            root_delay: Short(be32(wire, 4)),
-            root_dispersion: Short(be32(wire, 8)),
+            root_delay: ShortFormat(be32(wire, 4)),
+            root_dispersion: ShortFormat(be32(wire, 8)),
             reference_id: [wire[12], wire[13], wire[14], wire[15]],
             reference: Timestamp(be64(wire, 16)),
             origin: Timestamp(be64(wire, 24)),
@@ -425,8 +418,8 @@ impl Packet {
     /// masked to their field width rather than rejected, because a `Packet` you built by hand with
     /// a nonsense field is a programming error, not a wire event, and the wire has no room to
     /// express it.
-    pub fn to_bytes(&self) -> [u8; PACKET_LEN] {
-        let mut w = [0u8; PACKET_LEN];
+    pub fn to_bytes(&self) -> [u8; PACKET_BYTES] {
+        let mut w = [0u8; PACKET_BYTES];
         w[0] = ((self.leap & 0b11) << 6) | ((self.version & 0b111) << 3) | (self.mode & 0b111);
         w[1] = self.stratum;
         w[2] = self.poll as u8;
@@ -441,12 +434,12 @@ impl Packet {
         w
     }
 
-    /// **The synchronisation distance to the root**, RFC 5905's λ: half the root delay plus the root
+    /// **The synchronization distance to the root**, RFC 5905's λ: half the root delay plus the root
     /// dispersion. The server's own claim about how far from a real clock it is. Compared against
     /// [`MAXIMUM_ROOT_DISTANCE`] by [`Query::accept`]; saturating, so a server claiming the maximum
     /// of both fields gets a large answer rather than a wrapped small one.
-    pub(crate) const fn root_distance(&self) -> Short {
-        Short((self.root_delay.0 / 2).saturating_add(self.root_dispersion.0))
+    pub(crate) const fn root_distance(&self) -> ShortFormat {
+        ShortFormat((self.root_delay.0 / 2).saturating_add(self.root_dispersion.0))
     }
 
     /// Is the reference id a kiss code? True exactly when the stratum is 0, which is what makes the
@@ -514,7 +507,7 @@ const fn be64(w: &[u8], at: usize) -> u64 {
 /// ```
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Reject {
-    /// Not 48 bytes. See [`PACKET_LEN`] for why nothing else is accepted.
+    /// Not 48 bytes. See [`PACKET_BYTES`] for why nothing else is accepted.
     Length(usize),
     /// The version is not [`VERSION`]. A server echoes the version it was asked, so this reply is
     /// not to our request.
@@ -527,11 +520,11 @@ pub enum Reject {
     /// back). A client that treats this as a mere failure and retries is the abusive client the
     /// packet exists to stop, so it is its own variant.
     KissOfDeath([u8; 4]),
-    /// The stratum is above [`MAXIMUM_STRATUM`]: 16 is the server saying it is unsynchronised,
+    /// The stratum is above [`MAXIMUM_STRATUM`]: 16 is the server saying it is unsynchronized,
     /// above that is reserved. Either way it is not a time source.
     Stratum(u8),
-    /// The leap indicator is [`leap::UNSYNCHRONISED`]. The server is telling us not to trust it.
-    Unsynchronised,
+    /// The leap indicator is [`leap::UNSYNCHRONIZED`]. The server is telling us not to trust it.
+    Unsynchronized,
     /// **The origin timestamp is not the nonce we sent.** The load-bearing check: this is what an
     /// off-path attacker, who cannot see our request, has to guess. Also what stops a stale reply to
     /// an earlier request being read as an answer to this one.
@@ -627,18 +620,7 @@ pub struct Query {
 }
 
 impl Query {
-    /// **The plain form.** The transmit timestamp on the wire is the local send time, and the only
-    /// unpredictability an attacker faces is whatever the clock's low fraction bits give (see
-    /// [`Timestamp::randomise_low`], which the caller should apply first).
-    pub const fn new(sent: Timestamp) -> Query {
-        Query {
-            nonce: sent,
-            sent,
-            poll: DEFAULT_POLL,
-        }
-    }
-
-    /// **The hardened form, and it is worth understanding why it is free.**
+    /// **The constructor, and it is worth understanding why the nonce is free.**
     ///
     /// A server never interprets the client's transmit timestamp. It copies it into the origin field
     /// and does nothing else with it. So the value on the wire does not have to be a time at all: it
@@ -652,11 +634,11 @@ impl Query {
         Query {
             nonce,
             sent,
-            poll: DEFAULT_POLL,
+            poll: DEFAULT_POLL_EXPONENT,
         }
     }
 
-    /// Advertise a different poll interval (log2 seconds). See [`DEFAULT_POLL`].
+    /// Advertise a different poll interval (log2 seconds). See [`DEFAULT_POLL_EXPONENT`].
     pub const fn with_poll(mut self, poll: i8) -> Query {
         self.poll = poll;
         self
@@ -676,7 +658,7 @@ impl Query {
     /// timestamp zero. Zero is the honest value for the rest: we are a client, we have no stratum,
     /// no reference and no idea what time it is, and saying so is both correct and the smallest
     /// fingerprint.
-    pub fn request(&self) -> [u8; PACKET_LEN] {
+    pub fn request(&self) -> [u8; PACKET_BYTES] {
         Packet {
             leap: leap::NONE,
             version: VERSION,
@@ -684,8 +666,8 @@ impl Query {
             stratum: 0,
             poll: self.poll,
             precision: 0,
-            root_delay: Short(0),
-            root_dispersion: Short(0),
+            root_delay: ShortFormat(0),
+            root_dispersion: ShortFormat(0),
             reference_id: [0; 4],
             reference: Timestamp::ZERO,
             origin: Timestamp::ZERO,
@@ -700,7 +682,7 @@ impl Query {
     ///
     /// Refuses, in this order: a length other than 48; a version other than 4 or a mode other than
     /// server; an origin that is not our nonce, checked before anything else is believed; a
-    /// kiss-o'-death, a stratum above [`MAXIMUM_STRATUM`] or an unsynchronised leap indicator; a
+    /// kiss-o'-death, a stratum above [`MAXIMUM_STRATUM`] or an unsynchronized leap indicator; a
     /// zero transmit timestamp; timestamps against causality (T2 ≤ T3, T1 ≤ T4, a round trip no
     /// shorter than the turnaround); a root distance of [`MAXIMUM_ROOT_DISTANCE`] or more; a
     /// non-zero reference timestamp later than the transmit timestamp. Each is its [`Reject`]
@@ -730,8 +712,8 @@ impl Query {
         if p.stratum > MAXIMUM_STRATUM {
             return Err(Reject::Stratum(p.stratum));
         }
-        if p.leap == leap::UNSYNCHRONISED {
-            return Err(Reject::Unsynchronised);
+        if p.leap == leap::UNSYNCHRONIZED {
+            return Err(Reject::Unsynchronized);
         }
         if p.transmit.is_zero() {
             return Err(Reject::TransmitZero);
@@ -782,10 +764,10 @@ mod tests {
     /// agrees with the *specification*, which is the thing a capture could not tell us (a capture
     /// only proves we agree with whatever produced it).
     ///
-    /// It describes a stratum 2 server synchronised to 17.253.14.251, with a 50.8 ms root delay and
+    /// It describes a stratum 2 server synchronized to 17.253.14.251, with a 50.8 ms root delay and
     /// 23.4 ms root dispersion, replying to a request sent at 2026-07-30 12:00:00 UTC (plus a random
     /// nonce fraction) with a server clock 0.5 s ahead of ours.
-    const REPLY: [u8; PACKET_LEN] = [
+    const REPLY: [u8; PACKET_BYTES] = [
         0x24, 0x02, 0x06, 0xe9, 0x00, 0x00, 0x0d, 0x01, // LI/VN/mode, stratum, poll, prec
         0x00, 0x00, 0x05, 0xfe, 0x11, 0xfd, 0x0e, 0xfb, // root delay, root dispersion, refid
         0xee, 0x15, 0xba, 0xb7, 0x1c, 0x8a, 0x3d, 0x00, // reference
@@ -800,12 +782,12 @@ mod tests {
     const T4: Timestamp = Timestamp::from_bits(0xee15_bb40_6129_5c42);
 
     fn query() -> Query {
-        Query::new(T1)
+        Query::with_nonce(T1, T1)
     }
 
     /// Mutate a copy of the good reply, so every rejection test differs from an acceptance by
     /// exactly the bytes under test.
-    fn tweak(f: impl FnOnce(&mut [u8; PACKET_LEN])) -> [u8; PACKET_LEN] {
+    fn tweak(f: impl FnOnce(&mut [u8; PACKET_BYTES])) -> [u8; PACKET_BYTES] {
         let mut w = REPLY;
         f(&mut w);
         w
@@ -815,7 +797,7 @@ mod tests {
     /// The usual error, treating 1900 as a leap year, is exactly one day.
     #[test]
     fn the_epoch_delta_is_the_number_everyone_gets_wrong() {
-        assert_eq!(UNIX_DELTA, 0x83AA_7E80);
+        assert_eq!(UNIX_EPOCH_DELTA_SECONDS, 0x83AA_7E80);
         let epoch = Timestamp::from_unix(0, 0).unwrap();
         assert_eq!(epoch.seconds(), 0x83AA_7E80);
         assert_eq!(epoch.fraction(), 0);
@@ -840,11 +822,11 @@ mod tests {
     #[test]
     fn the_pivot_has_edges_and_they_are_where_the_docs_say() {
         // Just inside the window round trips.
-        let last = Timestamp::from_unix(UNIX_LIMIT - 1, 999_999_999).unwrap();
-        assert_eq!(last.to_unix(), (UNIX_LIMIT - 1, 999_999_999));
-        // Just outside is refused rather than aliased: UNIX_LIMIT would encode to the same seconds
+        let last = Timestamp::from_unix(MAXIMUM_UNIX_SECONDS, 999_999_999).unwrap();
+        assert_eq!(last.to_unix(), (MAXIMUM_UNIX_SECONDS, 999_999_999));
+        // Just outside is refused rather than aliased: one second past it would encode to the same seconds
         // field as 1968-01-20.
-        assert!(Timestamp::from_unix(UNIX_LIMIT, 0).is_none());
+        assert!(Timestamp::from_unix(MAXIMUM_UNIX_SECONDS + 1, 0).is_none());
         assert!(Timestamp::from_unix(u64::MAX, 0).is_none());
         // A nanosecond field that is not a sub-second is a caller bug, not a rounding opportunity.
         assert!(Timestamp::from_unix(0, 1_000_000_000).is_none());
@@ -852,7 +834,7 @@ mod tests {
 
     /// **Every nanosecond there is, checked by running the code on all 10^9 of them**: 0.6 s, so
     /// exhaustive, where Kani cannot finish (notes/ntp/what-is-proved.md has the measurements).
-    /// It needs the optimised build `[profile.dev.package.network_time_protocol]` in the workspace
+    /// It needs the optimized build `[profile.dev.package.network_time_protocol]` in the workspace
     /// manifest supplies, as `measured_boot` has for SHA-256. Under Miri, about a thousand times
     /// slower, it walks every 999,983rd value (a prime, so the samples miss any power-of-two
     /// structure) plus the edges, and "Miri-clean" means those values
@@ -898,8 +880,8 @@ mod tests {
         assert_eq!(p.stratum, 2);
         assert_eq!(p.poll, 6);
         assert_eq!(p.precision, -23);
-        assert_eq!(p.root_delay, Short(0x0D01));
-        assert_eq!(p.root_dispersion, Short(0x05FE));
+        assert_eq!(p.root_delay, ShortFormat::from_bits(0x0D01));
+        assert_eq!(p.root_dispersion, ShortFormat::from_bits(0x05FE));
         assert_eq!(p.reference_id, [17, 253, 14, 251]);
         assert_eq!(p.origin, T1);
         // 0x0D01 in 16.16 is 3329/65536 s = 50.796 ms.
@@ -910,12 +892,12 @@ mod tests {
     }
 
     #[test]
-    fn parse_then_serialise_is_the_identity() {
+    fn parse_then_serialize_is_the_identity() {
         assert_eq!(Packet::parse(&REPLY).unwrap().to_bytes(), REPLY);
         // Including on bytes that are not a sensible packet at all: parse judges nothing.
-        let junk = [0xFFu8; PACKET_LEN];
+        let junk = [0xFFu8; PACKET_BYTES];
         assert_eq!(Packet::parse(&junk).unwrap().to_bytes(), junk);
-        let zeros = [0u8; PACKET_LEN];
+        let zeros = [0u8; PACKET_BYTES];
         assert_eq!(Packet::parse(&zeros).unwrap().to_bytes(), zeros);
     }
 
@@ -925,7 +907,7 @@ mod tests {
         let w = Query::with_nonce(T1, nonce).request();
         assert_eq!(w[0], 0b00_100_011, "LI 0, VN 4, mode 3");
         assert_eq!(w[1], 0, "no stratum: we are a client, not a source");
-        assert_eq!(w[2] as i8, DEFAULT_POLL);
+        assert_eq!(w[2] as i8, DEFAULT_POLL_EXPONENT);
         assert_eq!(
             &w[3..24],
             &[0u8; 21],
@@ -939,7 +921,7 @@ mod tests {
         assert_eq!(&w[40..48], &nonce.bits().to_be_bytes());
         // And it is exactly one datagram's worth, which is what makes the strict length check on
         // the reply symmetric rather than arbitrary.
-        assert_eq!(w.len(), PACKET_LEN);
+        assert_eq!(w.len(), PACKET_BYTES);
     }
 
     /// Checkable by hand: the server clock is 0.5 s ahead, the request took 11.5 ms to arrive, the
@@ -971,7 +953,7 @@ mod tests {
     }
 
     /// The reason the arithmetic is modular. T1 is two seconds before the rollover (seconds field
-    /// 0xFFFFFFFE) and T4 one second after (0x00000001), so the raw seconds go DOWN across the
+    /// 0xFFFFFFFE) and T4 one second after (0x00000001), so the raw seconds go down across the
     /// exchange: decoding then subtracting gives a delay of minus 136 years, wrapping gives three
     /// seconds. Round trip 3 s and turnaround 1.5 s make the delay 1.5 s, and the offset
     /// ((T2-T1) + (T3-T4))/2 = (1 + -0.5)/2 = 0.25 s. T2 and T3 straddle the era boundary.
@@ -986,7 +968,7 @@ mod tests {
         p.origin = t1;
         p.receive = t2;
         p.transmit = t3;
-        let s = Query::new(t1).accept(&p.to_bytes(), t4).unwrap();
+        let s = Query::with_nonce(t1, t1).accept(&p.to_bytes(), t4).unwrap();
         assert_eq!(s.delay.nanoseconds(), 1_500_000_000);
         assert_eq!(s.offset.nanoseconds(), 250_000_000);
         assert_eq!(t2.to_unix().0 + 1, t3.to_unix().0);
@@ -1046,14 +1028,14 @@ mod tests {
 
     #[test]
     fn a_server_that_says_it_is_lost_is_believed() {
-        // Stratum 16 is "unsynchronised", above it is reserved.
+        // Stratum 16 is "unsynchronized", above it is reserved.
         let w = tweak(|w| w[1] = 16);
         assert_eq!(query().accept(&w, T4), Err(Reject::Stratum(16)));
         let w = tweak(|w| w[1] = 255);
         assert_eq!(query().accept(&w, T4), Err(Reject::Stratum(255)));
         // The leap indicator says the same thing in two bits.
-        let w = tweak(|w| w[0] |= leap::UNSYNCHRONISED << 6);
-        assert_eq!(query().accept(&w, T4), Err(Reject::Unsynchronised));
+        let w = tweak(|w| w[0] |= leap::UNSYNCHRONIZED << 6);
+        assert_eq!(query().accept(&w, T4), Err(Reject::Unsynchronized));
         // A leap second pending is NOT a rejection: the clock is fine, the day is not 86400 s long,
         // and interpreting that is the calendar's problem.
         let w = tweak(|w| w[0] = (w[0] & 0b0011_1111) | (leap::INSERT << 6));
@@ -1103,15 +1085,18 @@ mod tests {
             w[8..12].copy_from_slice(&u32::MAX.to_be_bytes());
         });
         assert_eq!(query().accept(&w, T4), Err(Reject::RootDistance));
-        assert_eq!(Packet::parse(&w).unwrap().root_distance(), Short(u32::MAX));
+        assert_eq!(
+            Packet::parse(&w).unwrap().root_distance(),
+            ShortFormat::from_bits(u32::MAX)
+        );
         // RFC 5905 refuses `>= MAXDISP`: a tick under 16 seconds is inside, 16 exactly is not.
         let mut p = Packet::parse(&REPLY).unwrap();
-        p.root_delay = Short(0);
-        p.root_dispersion = Short(MAXIMUM_ROOT_DISTANCE.0 - 1);
+        p.root_delay = ShortFormat::from_bits(0);
+        p.root_dispersion = ShortFormat::from_bits(MAXIMUM_ROOT_DISTANCE.bits() - 1);
         assert!(query().accept(&p.to_bytes(), T4).is_ok());
         p.root_dispersion = MAXIMUM_ROOT_DISTANCE;
         assert_eq!(query().accept(&p.to_bytes(), T4), Err(Reject::RootDistance));
-        p.root_dispersion = Short(MAXIMUM_ROOT_DISTANCE.0 + 1);
+        p.root_dispersion = ShortFormat::from_bits(MAXIMUM_ROOT_DISTANCE.bits() + 1);
         assert_eq!(query().accept(&p.to_bytes(), T4), Err(Reject::RootDistance));
     }
 
@@ -1161,48 +1146,33 @@ mod tests {
     /// ignoring authentication data a server computed is the failure this refuses to have.
     #[test]
     fn a_reply_of_the_wrong_size_is_refused_rather_than_truncated() {
-        let mut long = [0u8; PACKET_LEN + 20];
-        long[..PACKET_LEN].copy_from_slice(&REPLY);
+        let mut long = [0u8; PACKET_BYTES + 20];
+        long[..PACKET_BYTES].copy_from_slice(&REPLY);
         assert_eq!(query().accept(&long, T4), Err(Reject::Length(68)));
         assert_eq!(query().accept(&REPLY[..47], T4), Err(Reject::Length(47)));
         assert_eq!(query().accept(&[], T4), Err(Reject::Length(0)));
     }
 
     #[test]
-    fn randomising_the_low_bits_touches_only_the_low_bits() {
-        let t = Timestamp::from_unix(1_785_412_800, 500_000_000).unwrap();
-        let r = t.randomise_low(12, 0xFFFF_FFFF);
-        assert_eq!(r.seconds(), t.seconds(), "the second must not move");
-        assert_eq!(r.fraction() >> 12, t.fraction() >> 12);
-        assert_eq!(r.fraction() & 0xFFF, 0xFFF);
-        // Zero bits is a no-op rather than a mask of width zero minus one.
-        assert_eq!(t.randomise_low(0, 0xFFFF_FFFF), t);
-        // And 32 or more takes the whole fraction, which is the most this can do; a full 64 bits of
-        // nonce needs Query::with_nonce.
-        assert_eq!(t.randomise_low(32, 0x1234_5678).fraction(), 0x1234_5678);
-        assert_eq!(t.randomise_low(99, 0x1234_5678).fraction(), 0x1234_5678);
-    }
-
-    #[test]
     fn the_short_format_reads_as_16_dot_16() {
-        assert_eq!(Short(1 << 16).seconds(), 1);
-        assert_eq!(Short(1 << 16).nanoseconds(), 1_000_000_000);
-        assert_eq!(Short(1 << 15).nanoseconds(), 500_000_000);
+        assert_eq!(ShortFormat::from_bits(1 << 16).seconds(), 1);
+        assert_eq!(ShortFormat::from_bits(1 << 16).nanoseconds(), 1_000_000_000);
+        assert_eq!(ShortFormat::from_bits(1 << 15).nanoseconds(), 500_000_000);
         assert_eq!(MAXIMUM_ROOT_DISTANCE.seconds(), 16);
     }
 
     // Milestone 85 survivors. The exhaustive sweeps quantify over the CONVERSIONS; these are the
     // edges and accessors the sweeps never touch. See notes/mutation-testing.md.
 
-    /// `UNIX_LIMIT` is a wall with two sides. Checks read off the constant move with it, so the
+    /// `MAXIMUM_UNIX_SECONDS` is a wall with two sides. Checks read off the constant move with it, so the
     /// wall is also pinned as a date worked by hand: era 0's 2^32 seconds less the 1900-to-1970
     /// offset, plus the half-era the pivot grants, is 2104-02-26T09:42:24Z. A date well inside it
     /// survives the round trip.
     #[test]
     fn the_range_limit_is_exactly_where_the_docs_say() {
-        assert!(Timestamp::from_unix(UNIX_LIMIT - 1, 0).is_some());
-        assert!(Timestamp::from_unix(UNIX_LIMIT, 0).is_none());
-        assert_eq!(UNIX_LIMIT, 4_233_462_144);
+        assert!(Timestamp::from_unix(MAXIMUM_UNIX_SECONDS, 0).is_some());
+        assert!(Timestamp::from_unix(MAXIMUM_UNIX_SECONDS + 1, 0).is_none());
+        assert_eq!(MAXIMUM_UNIX_SECONDS, 4_233_462_143);
         const Y2100: u64 = 4_102_444_800; // 2100-01-01T00:00:00Z
         assert_eq!(
             Timestamp::from_unix(Y2100, 0).map(|t| t.to_unix()),
@@ -1211,18 +1181,18 @@ mod tests {
     }
 
     /// An interval answers for its own sign and magnitude. `nanos()` was the only accessor any
-    /// test read, so `ticks`, `abs_ticks` and `is_negative` could return constants.
+    /// test read, so `ticks` and `is_negative` could return constants.
     #[test]
     fn an_interval_knows_its_sign_and_magnitude() {
         let earlier = Timestamp::from_unix(1_785_412_800, 0).unwrap();
         let later = Timestamp::from_unix(1_785_412_801, 0).unwrap();
         let forward = later.since(earlier);
         assert_eq!(forward.ticks(), 1i128 << 32);
-        assert_eq!(forward.abs_ticks(), 1u128 << 32);
+        assert_eq!(forward.ticks().unsigned_abs(), 1u128 << 32);
         assert!(!forward.is_negative());
         let backward = earlier.since(later);
         assert_eq!(backward.ticks(), -(1i128 << 32));
-        assert_eq!(backward.abs_ticks(), 1u128 << 32);
+        assert_eq!(backward.ticks().unsigned_abs(), 1u128 << 32);
         assert!(backward.is_negative());
         // Zero is not negative: the boundary the < sits on.
         assert!(!earlier.since(earlier).is_negative());
@@ -1233,12 +1203,12 @@ mod tests {
     #[test]
     fn root_distance_halves_the_delay_it_is_given() {
         let mut p = Packet::parse(&REPLY).unwrap();
-        p.root_delay = Short(6 << 16);
-        p.root_dispersion = Short(1 << 16);
+        p.root_delay = ShortFormat::from_bits(6 << 16);
+        p.root_dispersion = ShortFormat::from_bits(1 << 16);
         assert_eq!(p.root_distance().seconds(), 4);
     }
 
-    /// Stratum 15 is the last hop that still counts as synchronised (RFC 5905 MAXSTRAT); the
+    /// Stratum 15 is the last hop that still counts as synchronized (RFC 5905 `MAXSTRAT`); the
     /// rejection tests only ever probed 16, so > could rot to >= and refuse a legal server.
     #[test]
     fn the_fifteenth_stratum_is_still_a_time_source() {
