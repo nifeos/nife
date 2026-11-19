@@ -92,9 +92,7 @@ The P1 items are in [the appendix](1077-allocation-cache-outside-review/before-t
 ## Decisions for the architect
 
 Each is plain background first, the recommendation, then prior art and one example. The architect
-ruled decision 1. Decision 3 is two-way before the first tag, and the maintainer has decided it,
-provisionally. Decision 2, the names, waits for the architect's ratification under
-[Open decisions](#open-decisions).
+ruled decisions 1 and 2. Decision 3 is two-way before the first tag, and the maintainer decided it.
 
 ### Decision 1: Whether the crate gets a repository of its own
 
@@ -133,9 +131,19 @@ Example: `pub struct Class(u8); pub const fn class(size: usize, align: usize) ->
 pub fn pop(&mut self, class: Class) -> Option<NonNull<u8>>; pub const fn class_bytes(class: Class)
 -> usize;`
 
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `class` returns `Option<Class>`, where `Class` is a `#[repr(transparent)]` newtype over
+Decided by the maintainer on 2026-11-14 (UTC), and ratified with decision 2: `class` returns `Option<Class>`, where `Class` is a `#[repr(transparent)]` newtype over
 `u8` with a private field, and `class_bytes`, `class_layout`, `count`, `pop`, `push`, `spill` and
-`refill` take it. The name `Class` ships provisional. Item 4 is the work.
+`refill` take it. Item 4 is the work.
+
+### Decision 2: The crate name, the constant and method names, and `Class`
+
+Ruled 2026-11-19 (UTC), option A: every name stands as built. The crate is `allocation_cache`. The
+constants are `GRID_BYTES`, `MAXIMUM_CLASS_BYTES`, `CLASSES`, `BLOCKS_PER_CLASS`, `BATCH_BLOCKS` and
+`MAXIMUM_CACHED_BYTES`. The methods are `push`, `pop` and `give_back_all`, and the type is `Class`.
+The crate names what it holds and not its owner, each constant names its unit or the thing it
+counts, and `push` and `pop` take std's spelling. `give_back_all` stays because std's `drain` returns
+an iterator and this one takes a closure. The glibc spellings `tcache_put` and `tcache_get` are
+`doc(alias)` search terms on `push` and `pop`.
 
 ### Not brought
 
@@ -163,7 +171,7 @@ The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.
 - P1-5, zeroed is empty: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - P1-6, the owner's rule beyond `push`: Done, [#3660](https://github.com/nifeos/nife/pull/3660).
 - P1-7, constant and method names: Done, [#3660](https://github.com/nifeos/nife/pull/3660). The
-  names are provisional; their ratification is the open decision below.
+  names are ratified (decision 2).
 - P1-8, proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3660](https://github.com/nifeos/nife/pull/3660). Five harnesses, each with a falsification
   patch.
@@ -184,57 +192,19 @@ The checks are in [the appendix](1077-allocation-cache-outside-review/done-when.
 - Decision 1, own repository: Done (ruled 2026-11-16 UTC: the crate moves with the `runtime`
   package), [#3670](https://github.com/nifeos/nife/pull/3670). No milestone schedules the `runtime`
   package's move, which needs its own review clearance; nifeos/runtime does not exist.
-- Decision 2, crate, constant and method names: Open. Built as the maintainer's provisional ruling
-  of 2026-11-14 (UTC); the ratification is under Open decisions.
+- Decision 2, crate, constant and method names: Done (ruled 2026-11-19 UTC, option A), built in
+  [#3660](https://github.com/nifeos/nife/pull/3660).
 - Decision 3, a `Class` newtype: Done, [#3660](https://github.com/nifeos/nife/pull/3660). The name
-  `Class` goes with decision 2.
+  `Class` is ratified with decision 2.
 
 ## Open decisions
 
-### Ratify the crate name, the constant and method names, and `Class`
-
-Background: `allocation_cache` is a small `no_std` crate. Each owner (a thread, in nife's `std`
-port) keeps one in front of a locked heap: a bounded stash of freed small blocks, sorted by size
-class, so most allocations and frees never take the heap's lock. Its public names are the crate
-name; the constants `GRID_BYTES`, `MAXIMUM_CLASS_BYTES`, `BLOCKS_PER_CLASS`, `BATCH_BLOCKS` and
-`MAXIMUM_CACHED_BYTES` (and `CLASSES`, unchanged); the methods `push`, `pop` and `give_back_all`;
-and the type `Class`, the size class that `class` mints.
-
-The maintainer chose these on 2026-11-14 (UTC), provisionally, and the tree builds them. No
-architect has ruled on any of them. While the crate is unpublished, a rename is one pass over the
-crate and its one consumer, the `std` overlay. After the first publish it breaks every user.
-
-The reasons: the crate names what it holds rather than its owner, so it does not say "thread". A
-constant names its unit or the thing it counts. `push` and `pop` are std's and `heapless`'s
-spellings for a bounded stack, with the same `Result<(), T>` on a full class. `give_back_all`
-avoids `drain`, because std's `drain` returns an iterator and this one takes a closure.
-
-Recommendation: A.
-
-- A. Ratify every name as built.
-- B. Ratify the constants, the methods and `Class`, and rename the crate. The nearest alternatives
-  are worse: `free_block_cache` reads as a disk block cache, `thread_cache` names the owner, and
-  `allocation_stash` trades a word every allocator paper uses for one none does.
-- C. Make `give_back_all` return an iterator and call it `drain`, with std's meaning, and ratify
-  the rest as built.
-
-Door: two-way today, one-way at the first publish, when users start to write the names.
-
-Prior art: glibc's `tcache_count` and `tcache_max_bytes`, jemalloc's `ncached_max` and
-`tcache_max`, TCMalloc's `max_length` and `num_objects_to_move` each name the thing counted or the
-unit. None names a grid, because none has a fixed one; this crate does, so `GRID_BYTES` names it.
-`slotmap` and `thunderdome` mint their keys as types, as `class` mints `Class`. The glibc spellings
-`tcache_put` and `tcache_get` are `doc(alias)` search terms on `push` and `pop`. Example:
-`let class = class(48, 8).unwrap(); unsafe { cache.push(class, block) }?; let again =
-cache.pop(class);`.
-
-What it blocks: the first publish. This milestone's done-when also asks for the names to be
-ratified before the move.
+None. The publishing hold stands.
 
 ## Follow-on
 
-- **Outstanding.** The Open lines under [Finding status](#finding-status) and the items under
-  [Open decisions](#open-decisions).
+- **Outstanding.** The Open lines under [Finding status](#finding-status). Nothing waits on a
+  ruling, and the publishing hold stands.
 
 ## BUGS
 
@@ -257,5 +227,4 @@ ratified before the move.
 
 An outside review of `allocation_cache` before any move. Three items would turn the new
 repository's first pull request red or stop the `std` farm, six land before the first tag, and six
-follow later. The six cover three arithmetic edges on bare `usize` indices and a zeroed-is-empty contract the consumer relies on. They also cover the owner's obligations `put` leaves unstated, five constant names without units or things, the absence of any proof, and an alignment the code relies on without asserting. The architect ruled decision 1 (the crate moves with the `runtime` package, not on its own). Decisions 2 and 3, the
-crate and constant names and a `Class` newtype in the public signatures, are provisional maintainer calls.
+follow later. The six cover three arithmetic edges on bare `usize` indices and a zeroed-is-empty contract the consumer relies on. They also cover the owner's obligations `put` leaves unstated, five constant names without units or things, the absence of any proof, and an alignment the code relies on without asserting. The architect ruled decision 1 (the crate moves with the `runtime` package, not on its own) and decision 2 (every crate, constant and method name stands, `Class` included). Decision 3, a `Class` newtype in the public signatures, is built.
