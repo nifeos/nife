@@ -31,8 +31,7 @@ tool.
 
 The ids are the review's own; P0 and P1 are in [the
 appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
-items](1085-device-tree-blob-outside-review/later-items.md), D1 to D5 under [Ruled decisions](#ruled-decisions), and D6 under [Open
-decisions](#open-decisions).
+items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Ruled decisions](#ruled-decisions).
 
 - P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
   license and lints and reads `publish = false`; the README and both license files are missing. The
@@ -52,16 +51,14 @@ decisions](#open-decisions).
 - P1-5, the fuzz target does not move with the crate: Open. The target is still in nife's `fuzz/`;
   the move stages it in the new repository with `public-crash-inputs: false`.
 - P2-1 to P2-8, the error's shape, cells above two, `memory_regions` and a disabled node, the token
-  loop, the proofs, the reservation overflow, `from_ptr`'s read and `from_bytes`'s trim: Done,
+  loop, the proofs, the reservation overflow, `from_pointer`'s read and `from_bytes`'s trim: Done,
   [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-9, one example, and it does not run: Open. [#3612](https://github.com/nifeos/nife/pull/3612)
   added the running doctests; the README's `## EXAMPLES` waits for P0-1.
 - P2-10 to P2-13, the depth counters, `MAXIMUM_DEPTH`, a trailing partial `reg` pair and private
   names: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
-- D1 to D5 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
-- D6: Open. Built as recommended, awaiting ratification; it is a subsection under [Open
-  decisions](#open-decisions).
+- D1 to D6 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
 - F-size, `Region::size` is a length with no unit: Open. `register_names` refuses it at `src/lib.rs`
   line 26. It is two-way while unreleased, and the maintainer rules the rename provisionally; the
   new name joins the set for ratification. The same check refuses four test names in
@@ -132,6 +129,22 @@ Door: one-way at publish. Prior art: the `fdt` crate's `memory_reservations()`, 
 `fdt_get_mem_rsv`, and `dtoolkit`'s `reserved_memory()` for the node. Example:
 `tree.memory_reservations(&mut out)` beside `tree.reserved_memory_regions(&mut out)`.
 
+### Keep `from_pointer` as the crate's one `unsafe` function (D6)
+
+Ruled 2026-11-19 (UTC): option A. `DeviceTreeBlob::from_pointer` stays the crate's one `unsafe`
+function, and the weekly public fuzz opt-in stays off. The tree's own fuzz host keeps the target.
+The constructor is spelled out from `ptr` and carries `#[doc(alias = "from_ptr")]`, a search aid
+for the standard library's spelling and not an old nife spelling. It reads the header through a raw
+pointer, checks the magic, caps the size at 2 MiB and builds the slice. Sixteen call sites outside
+the crate use it: nine in `kernel/`, four in `uefi_loader/`, two in `machine_discovery` and one in
+a board-check tool. Because of it, the template refuses the public fuzz opt-in (P1-5). The one
+place that knows how to trust a firmware pointer is the parser.
+
+Door: one-way at publish, since an `unsafe` constructor is a published contract. Prior art:
+`fdt::Fdt::from_ptr` and `dtoolkit::Fdt::from_raw` are `unsafe` constructors in the parser crate.
+nife differs in nothing here. Example: `unsafe { DeviceTreeBlob::from_pointer(pointer) }?` stays
+one line in the kernel.
+
 ### Property is spelled out across the crate
 
 The crate spells `property` out in every public item, parameter and doc comment. The one `prop`
@@ -154,27 +167,7 @@ Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`.
 
 ## Open decisions
 
-Code carries the remaining surface decision (D6) as recommended. It is two-way while the crate has
-no release and one-way at its first publish. The `dtoolkit` path makes it likely the crate never
-publishes, so D6 waits on the last two decisions here.
-
-### Keep `from_ptr` as the crate's one `unsafe` function (D6)
-
-`from_ptr` reads the header through a raw pointer, checks the magic, caps the size at 2 MiB and
-builds the slice. Sixteen call sites outside the crate use it: nine in `kernel/`, four in
-`uefi_loader/`, two in `machine_discovery` and one in a board-check tool. Because of it, the
-template refuses the public fuzz opt-in (P1-5). Recommendation: A, because the one place that knows
-how to trust a firmware pointer should be the parser.
-
-- A. Ratify as built: `from_ptr` stays, and the weekly public fuzz opt-in stays off. The tree's own
-  fuzz host keeps the target.
-- B. Add a safe `declared_size(header: &[u8; 8])`, leave the slice to each caller, forbid `unsafe`
-  in the crate and turn the public fuzz job on.
-
-Door: one-way at publish, since an `unsafe` constructor is a published contract. Prior art:
-`fdt::Fdt::from_ptr` and `dtoolkit::Fdt::from_raw` are `unsafe` constructors in the parser crate.
-nife differs in nothing here. Example: `unsafe { DeviceTreeBlob::from_ptr(pointer) }?` stays one
-line in the kernel. Blocks: the tag.
+The two decisions here decide whether the crate leaves at all. The six name and surface decisions above are two-way until the crate has a release and one-way at its first publish.
 
 ### Take `dtoolkit` once a release carries the fixes
 
@@ -204,7 +197,7 @@ happens at all.
 No review package exists, and clearance follows one. Recommendation: B, because every move item
 lapses if the switch comes first, and a package written first would go to waste.
 
-- A. Write the package now and clear the move after the ratification of D6.
+- A. Write the package now and clear the move.
 - B. Hold the package and the move until the `dtoolkit` decision; write the package only if C wins
   there.
 
@@ -241,7 +234,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
-  half of P2-9, F-size, F-package and BUGS-239, and the three open decisions.
+  half of P2-9, F-size, F-package and BUGS-239, and the two open decisions.
 
 ## BUGS
 
@@ -263,4 +256,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 to D5 are ruled and three remain open.
+that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 to D6 are ruled and two remain open.
