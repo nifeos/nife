@@ -404,4 +404,41 @@ mod tests {
         );
         assert_eq!(named(&[b"jig", b"install", b"greeting"], &mut out), None);
     }
+
+    #[test]
+    fn verb_key_joins_verb_and_option_with_one_space() {
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(b"list", None, &mut out), Some(&b"list"[..]));
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(
+            verb_key(b"list", Some(b"-u"), &mut out),
+            Some(&b"list -u"[..])
+        );
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(b"list", Some(b""), &mut out), Some(&b"list"[..]));
+    }
+
+    #[test]
+    fn verb_key_refuses_an_empty_long_or_spaced_verb() {
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(b"", None, &mut out), None);
+        assert_eq!(verb_key(b"a b", None, &mut out), None);
+        let long = [b'x'; MAXIMUM_VERB_BYTES + 1];
+        assert_eq!(verb_key(&long, None, &mut out), None);
+        let exact = [b'x'; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(&exact, None, &mut out), Some(&exact[..]));
+    }
+
+    #[test]
+    fn verb_key_drops_an_option_that_does_not_fit() {
+        // 10 + 1 + 5 = 16 fits exactly; one more byte does not.
+        let verb = [b'v'; 10];
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        let key = verb_key(&verb, Some(b"-aaaa"), &mut out).unwrap();
+        assert_eq!(key.len(), 16);
+        assert_eq!(key[10], b' ');
+        assert_eq!(&key[11..], b"-aaaa");
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(&verb, Some(b"-aaaaa"), &mut out), Some(&verb[..]));
+    }
 }
