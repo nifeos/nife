@@ -78,8 +78,8 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
    `arg`, `mem_pages` and `args` bindings are the maintainer's to sweep.
    Evidence: `spelled_out.py` output; `design/naming.md`, "Acronyms and abbreviations" and
    "Vocabulary".
-   Change: the names the second decision decides, provisionally, for the public ones. A sweep lane
-   takes the private ones. Door: two-way before the first tag. Effort: S.
+   Change: the names the ruled decision on public names settles, provisionally, for the public
+   ones. A sweep lane takes the private ones. Door: two-way before the first tag. Effort: S.
 
 8. British spellings in doc comments.
    Finding: the British form of "recognize" (`src/line.rs` line 224), the British form of "behavior" (`src/nav.rs` line 139), the British form of "honors"
