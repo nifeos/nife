@@ -63,8 +63,7 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
   x;` or an `include!` in a copied single-file crate, and tells `cfg(test)` and `cfg(kani)` modules
   from real ones, is not built and has no other home than this line.
 - 13, `cfg_attr(not(test), no_std)`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- 14, the type of `CPU_OFFSET_BYTES`: Open. It is [an open
-  decision](#the-published-type-of-cpu_offset_bytes).
+- 14, the type of `CPU_OFFSET_BYTES`: Done (ruled 2026-11-19 UTC, option A). It stays `u64`.
 - 15, the kernel's safety comment says 16 bytes: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565).
 - 16, two notes that do not link: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
@@ -77,35 +76,6 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
 - Review clearance: Open. It is [an open decision](#clear-the-review-for-the-move).
 
 ## Open decisions
-
-### The published type of `CPU_OFFSET_BYTES`
-
-Background. The current-CPU page is one read-only page the kernel maps into every process, and it
-tells the running thread which CPU it is on. `CPU_OFFSET_BYTES` is the one public offset into it:
-where the CPU word sits, for machine code that loads the word by absolute address instead of calling
-the reader. It is a `u64`, so that caller adds it to `PAGE_VIRTUAL_ADDRESS` (also a `u64`) with no
-cast; the crate's private offsets are `usize`, so a Rust reader slicing the page writes `as usize`.
-Once published, changing the type breaks every caller that does arithmetic with it.
-
-Recommendation: A. The constant exists for address arithmetic, its one caller in the tree (the x86
-test program in the kernel) adds it to the page address, and `socket_contract` publishes its page
-offsets as `u64` too.
-
-- A. Keep `u64`.
-- B. Change it to `usize`, which indexes a slice without a cast and matches
-  `domain_name_resolution_contract`'s public `NAME_OFFSET_BYTES`.
-- C. Publish both, a `u64` for addresses and a `usize` for slices, under two names.
-
-Door: one-way. A published constant's type is part of the API every caller compiles against.
-
-Prior art. Linux's `rseq` user ABI describes the area as a C struct with fixed-width fields and
-leaves offsets to `offsetof`, which yields a `size_t`, the C analogue of `usize` (from memory, not
-re-read). The tree has both: `socket_contract` publishes `u64` offsets and
-`domain_name_resolution_contract` a `usize` one. Concrete example: the x86 program computes
-`(PAGE_VIRTUAL_ADDRESS + CPU_OFFSET_BYTES) as u32` for a 32-bit absolute load; under B that line
-becomes `(PAGE_VIRTUAL_ADDRESS + CPU_OFFSET_BYTES as u64) as u32`.
-
-Blocks: the first publish.
 
 ### Ratify the provisional names
 
@@ -147,7 +117,7 @@ work the move itself does (items 1 and 4).
 Recommendation: A, once the package exists.
 
 - A. Clear the package and approve the repository once a lane writes it.
-- B. Clear it only together with the names and item 14, in one review.
+- B. Clear it only together with the names, in one review.
 - C. Keep the crate in nife until a program outside nife reads the page.
 
 Door: one-way. Others see and clone a public repository once it exists, and nobody can withdraw its
@@ -243,8 +213,9 @@ The P1 items are in [the appendix](1084-current-cpu-contract-outside-review/befo
 
 ## Decisions for the architect
 
-Decision A has its ruling, which is the rule in force. Decision B, the names, has landed in code
-and waits on ratification under [Open decisions](#ratify-the-provisional-names).
+Decision A and the type of `CPU_OFFSET_BYTES` have rulings, which are the rules in force. Decision B,
+the names, has landed in code and waits on ratification under [Open
+decisions](#ratify-the-provisional-names).
 
 ### Decision A. The bound on CPU ids is part of this page's identity
 
@@ -269,6 +240,22 @@ Concrete example. A kernel with a bound of 16 publishes CPU 9 to a program built
 kernel's crate carries a new magic, the program reads `None` for every word, and its standard
 library walks on one thread, which is the degradation the crate documents for a magic mismatch.
 
+### The published type of `CPU_OFFSET_BYTES`
+
+Ruled 2026-11-19 (UTC), option A. `CPU_OFFSET_BYTES` is published as `u64` and stays `u64`. The
+constant exists for address arithmetic: its one caller in the tree, the x86 test program in the
+kernel, adds it to `PAGE_VIRTUAL_ADDRESS`, also a `u64`, and `socket_contract` publishes its page
+offsets as `u64` too. The crate's private offsets stay `usize`, so a Rust reader slicing the page
+writes `as usize`. A published constant's type is part of the API every caller compiles against,
+so this is a one-way door.
+
+Prior art. Linux's `rseq` user ABI describes the area as a C struct with fixed-width fields and
+leaves offsets to `offsetof`, which yields a `size_t`, the C analogue of `usize` (from memory, not
+re-read). The tree has both: `socket_contract` publishes `u64` offsets and
+`domain_name_resolution_contract` a `usize` one. Concrete example: the x86 program computes
+`(PAGE_VIRTUAL_ADDRESS + CPU_OFFSET_BYTES) as u32` for a 32-bit absolute load; a `usize` constant
+would make that line `(PAGE_VIRTUAL_ADDRESS + CPU_OFFSET_BYTES as u64) as u32`.
+
 ## Done when
 
 The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-when.md).
@@ -292,7 +279,7 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 4, 12 and 14, Decision B's ratification, the review package and the
+- **Outstanding.** Items 1, 4 and 12, Decision B's ratification, the review package and the
   review clearance, each as [Finding status](#finding-status) gives it. Checked against the crate's
   code and the template's naming helpers.
 - **Milestone 1017.** The contract crates leave in its order. This crate moves once the architect
@@ -301,5 +288,5 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 ## Index row
 
 An outside review of `current_cpu_contract` before it leaves. Four P0 items are the standalone gate's thirteen failures (manifest, files, citations, names). Eight P1 items come before the first tag, and one of them is a reader that hands back an id the consumer cannot index. Four P2 items remain. The CPU id
-bound is part of the page's identity (ruled); the eighteen names and the published type of
-`CPU_OFFSET_BYTES` wait on rulings.
+bound is part of the page's identity (ruled); the published type of `CPU_OFFSET_BYTES` stays `u64` (ruled); the eighteen
+names wait on a ruling.
