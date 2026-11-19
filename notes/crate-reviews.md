@@ -80,6 +80,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | ready for the architect's review |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
+| [`subtree_scope`](crate-reviews/subtree-scope.md) | step 9 | eight provisional names for the architect; the move waits on P0-3's pin |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | names for the architect, then clearance |

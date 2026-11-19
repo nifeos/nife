@@ -52,14 +52,19 @@ the crate's own reasons.
   [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-6, the badge-to-slot cast truncates on 32 bits: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
-- P1-7, names the rules refuse: Open. The eight renames (`PROOF_PATH_BYTES`, `directories`,
-  `want_directory`, `component`, `NodeKind`, `Binding::Unbound`, `check_landing`,
-  `Bindings::binding`) are two-way before the first tag, so the maintainer rules them
-  provisionally and one lane renames.
+- P1-7, names the rules refuse: Done, [#3813](https://github.com/nifeos/nife/pull/3813). The eight
+  renames (`PROOF_PATH_BYTES`, `directories`, `want_directory`, `component`, `NodeKind`,
+  `Binding::Unbound`, `check_landing`, `Bindings::binding`) are in the tree and in
+  `redoxfs_server`, provisional (maintainer, 2026-11-19 UTC); the architect ratifies them from the
+  review package.
 - P1-8, no example anywhere: Open. The doctests on `walk` and `Bindings` landed in
   [#3580](https://github.com/nifeos/nife/pull/3580); the README's `## EXAMPLES` is move work.
-- P1-9, what the walk proofs leave out and cost: Open. The walk-completeness harness and its
-  measured peak, at about 6 GiB, need a lane of their own.
+- P1-9, what the walk proofs leave out and cost: Measured, not added. The completeness harness
+  `a_walk_asks_for_every_component_in_order` verifies at unwind 7, but costs 11 minutes of wall
+  time on a loaded host (658 s of CPU) at a peak of 4.6 GiB, against the crate's whole row of 234
+  seconds. That overruns a prove shard's room, so it is not in the tree; the package records the
+  measurement and the harness's shape. A lane that makes room in the shards, or shrinks the
+  harness, adds it.
 - P1-10, passive voice over the template's ceiling: Open. The template counts 26 passives in 4,081
   words against an allowance of 8; the rewrite is move work, with P0-2.
 - P2-11, `Refusal::errno` restates the contract's numbers: Done,
@@ -85,8 +90,12 @@ moves it with `memory_region_heap` and `redoxfs` into one new public repository,
 and the standing rule is that clearing a crate's review package approves it. This crate has no
 package under `notes/crate-reviews/` yet, so there is nothing to clear.
 
-The move also waits on P0-3's pin, which needs `filesystem_contract`'s repository first, and on
-P1-7's renames.
+The move also waits on P0-3's pin, which needs `filesystem_contract`'s repository first. The
+renames of P1-7 are done, and the review package is
+[written](../../notes/crate-reviews/subtree-scope.md) (maintainer ruling, provisional, 2026-11-19
+UTC: option A for writing it). Clearing it, the go to create the step-9 repository with
+`memory_region_heap` and `redoxfs`, with no tag and no publish, stays open and is asked of the
+architect from the package.
 
 Recommendation: A.
 
