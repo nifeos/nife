@@ -24,18 +24,89 @@ Reuse: the crate's own tests, harnesses and falsification patches, the shared cr
 their helpers, `script/crate-review-packet`, `helpers/name_release.py`, cargo-mutants and cargo-fuzz.
 No new tool.
 
-## Where this stands
+## Finding status
 
-Finished: Decision 1, the `byte_glob` rename (#3578); Decision 2, ruled provisionally (#3589); P0-3, P0-5, P0-6, P1-1, P1-3 to P1-7, P2-1, P2-5, P2-6 and P2-7 (#3566). The falsification patches already carry the template's file names.
+One line per finding, in the review's order: P0 below, P1 in
+[the before-the-tag appendix](1092-glob-outside-review/before-the-tag.md), P2 in
+[the later-items appendix](1092-glob-outside-review/later-items.md), then the decisions and the
+release steps.
 
-- P0-2 (seven public names): `Dot` to `LeadingDot` ruled provisionally, not built; a lane. Ratification needs a review package nobody has written, then a decision for calef.
-- P0-4 (tree citations): the move; `script/crate-move` strips them. The move waits on 1017 step 5 and review clearance.
-- P0-5 (the rest): the publish comment still cites `crates/publish-allowlist.txt` and no `repository` field exists; the move.
-- P1-2 (falsification paths): the diffs and the six records still name tree paths; the move.
-- P2-2 (`.` and `..` in `grant_plan`): unverified whether its enumeration yields them; a lane.
-- P2-3 (a named return for `match_steps`): a new public name, two-way; a lane.
-- P2-4 (fuzz target): two-way, not built; a lane.
-- P2-8 (benchmark): two-way, not built; a lane.
+- P0-1, the crate name is taken on crates.io: Done, [#3578](https://github.com/nifeos/nife/pull/3578).
+- P0-2, seven public names unratified: Ruled (Decision 2, maintainer, provisional, 2026-11-14 UTC).
+  Not built: `pub enum Dot` (`src/lib.rs` line 42) is not yet `LeadingDot`, in the crate, `pgrep`,
+  `grant_plan` and the doctests; ratification is under Open decisions.
+- P0-3, the integration test links staying crates: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566). The test is in `crates/grant_plan/tests/`, and
+  the manifest has no dev-dependency.
+- P0-4, the shipped text cites the tree: Open. Eighteen citation lines remain in `src/`; the README
+  takes on `notes/glob.md`, `docs/proofs.md` takes on the proofs note, and the move strips the rest.
+- P0-5, the manifest is not standalone: Open. Every field is present, but the `publish = false`
+  comment cites this tree's allowlist and there is no `repository` field.
+- P0-6, no README: Done, [#3566](https://github.com/nifeos/nife/pull/3566), with both license texts.
+- P1-1, `naive` fails the question gate: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-2, falsification patch paths: Open. The six patches diff `a/crates/byte_glob/src/lib.rs` and
+  the six records name tree paths; the move rewrites them, regenerates the hunks and replays each.
+- P1-3, the inline proof module would be mutated: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566). The repository's `.cargo/mutants.toml` comes
+  with the move.
+- P1-4, no `forbid(unsafe_code)`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-5, the `/` caveat is missing: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-6, the module doc opens for this tree's reader: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-7, the length parameters lack a unit: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-1, the doc overstates the cost bound: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-2, `.*` matches `.` and `..`: Open. The matcher's doc and README state it; no listing in this
+  tree offers either name (RedoxFS stores neither, `disk_tree` refuses both), and the note saying
+  so in `grant_plan` is not written.
+- P2-3, `match_steps` returns a tuple: Open. The promise is documented; a named return
+  (`Outcome`) or a recorded keep is two-way before release, so the maintainer rules provisionally.
+- P2-4, no fuzz target: Open. A target with the naive matcher as oracle, under the opt-in rule for
+  crates with no `unsafe`.
+- P2-5, harnesses fix one dot rule: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-6, stale solver times: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-7, `Elem` is an abbreviation: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-8, no benchmark: Open. A `benches/` with the three adversarial shapes and one ordinary
+  pattern.
+- Decision 1, the registry name: Done, [#3578](https://github.com/nifeos/nife/pull/3578).
+- Decision 2, the seven names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: P0-2's
+  rename.
+- R1, the review package: Open. `notes/crate-reviews/` has no package for this crate; it follows
+  P0-2's rename.
+- R2, ratify the seven names and clear `nifeos/byte_glob`: Open. Under Open decisions.
+
+## Open decisions
+
+### Ratify `byte_glob`'s seven names and create `nifeos/byte_glob`
+
+Background. `byte_glob` is the tree's glob matcher: it answers whether a pattern such as `*.txt`
+matches one file name, over bytes, with a proved cost bound. The shell's expansion and `pgrep` call
+it, and milestone 1017 moves it to its own repository at step 5. The move strips every `Name:`
+block, so its seven public names (`matches`, `matches_with`, `has_magic`, `literal`,
+`match_steps`, `cost_bound` and the dot-rule enum) leave the tree as whatever they are on that day,
+ratified or not. A repository in the organization exists only once its review is cleared, and the
+clearance is the go to create it. The maintainer ruled the names provisionally on 2026-11-14 UTC:
+six as they are, and `Dot` becomes `LeadingDot` with no alias.
+
+Recommendation: A.
+
+- A. Clear the review once P0-2's rename and R1's package have landed: ratify the seven names with
+  `LeadingDot`, and create `nifeos/byte_glob`. No tag and no publish follow from it.
+- B. Clear now on the names as built, `Dot` included, and drop the rename. The enum's name then
+  does not say which dot the policy is about.
+- C. Hold the clearance until 1017 reaches step 5, and ratify then. Nothing is lost by waiting
+  except that the package goes stale against the code.
+
+Door: one-way. Once the repository exists and a consumer pins it, a name change is a breaking
+change across repositories, and the repository's name is a public fact.
+
+Prior art: fnmatch spells the policy `FNM_PERIOD`, rust-lang/glob `require_literal_leading_dot`,
+bash `dotglob` and glibc's `glob(3)` `GLOB_PERIOD`; each names the position, as `LeadingDot` does.
+This tree cleared `generational_table` and `block_roster_contract` the same way, a review package first and
+the repository after, with no tag and no publish. A concrete example: with A,
+`byte_glob::matches_with(b"*", b".config", LeadingDot::Ordinary)` is `true` and reads without the
+doc, where `Dot::Ordinary` leaves the reader asking which dot.
+
+Blocks: the move.
 
 ## Goal
 
@@ -61,8 +132,6 @@ the public API, a layout, a dependency); the maintainer decides the rest.
 
 #### P0-1. The crate name was taken on crates.io
 
-LEFT. Decision 1.
-
 `glob` is rust-lang/glob, version 0.3.4, over 700 million downloads, the most widely used glob
 crate in the ecosystem. The ratification of the crate name as a standard term, which it is, did not weigh the registry. The tree already knows the other crate: the survey behind
 milestone 784 (reuse what the tree wrote) lists `glob` 0.3.4 as prior art for this very crate.
@@ -82,19 +151,15 @@ S for the rename, since the crate is small and has three dependents.
 
 #### P0-2. Seven public names carry no provenance and are not ratified
 
-LEFT. Decision 2.
-
 `Dot` (and its variants `Special` and `Ordinary`), `matches`, `matches_with`, `has_magic`,
 `literal`, `match_steps` and `cost_bound` have no `Name:` block; `helpers/name_release.py --draft
-glob` reports "no block" for each, and `design/module-block-baseline.txt` lines 3146 to 3158 hold
+byte_glob` reports "no block" for each, and `design/module-block-baseline.txt` lines 3146 to 3158 hold
 them as baseline violators. The move strips `Name:` blocks, so whatever is not ratified in a review
 package before the move leaves the tree as an unratified public API. The names themselves are mostly
 right; Decision 2 below decides them, provisionally, with one change. Evidence:
 `crates/byte_glob/src/lib.rs` lines 33, 76, 91, 102, 118, 140 and 236. Two-way before the first tag. S.
 
 #### P0-3. The integration test links two crates that do not leave with it
-
-DONE (`the_glob_fixture_is_matched_by_the_pattern_it_is_staged_for`, now in `crates/grant_plan/tests/`).
 
 `tests/fixture_agreement.rs` dev-depends on `filesystem_contract` and `filesystem_fixture`
 (`Cargo.toml` lines 22 to 24), both sibling crates by path. The rule in milestone 1017 is that a crate leaves
@@ -103,13 +168,12 @@ and the review packet both flag the two paths. The test checks that nife's stage
 matcher. Its own header says it lives here only because the fixture crate does not depend on the
 matcher; a dev-dependency the other way creates no cycle and is the ordinary shape.
 
-Change: move the file to `crates/filesystem_fixture/tests/` (or `crates/grant_plan/tests/`, which
-already depends on `byte_glob`) with `byte_glob` as a dev-dependency, and delete the two dev-dependencies here.
+Change: move the file to `crates/grant_plan/tests/`, which already depends on `byte_glob` and leaves
+after it, and delete the two dev-dependencies here. `filesystem_fixture` must not take it, since that
+crate leaves first (milestone 1091, item 2).
 Two-way. S.
 
 #### P0-4. The shipped text cites the tree it is leaving
-
-LEFT. The README carries the content; `script/crate-move` strips the citations at the move.
 
 `standalone.py` counts 18 lines with a path into the nife tree, 3 section citations, 2 milestone
 citations, 1 provenance block and 1 architect's name. They sit in `Cargo.toml` (lines 7 to 13) and
@@ -126,8 +190,6 @@ is about the layer above. Two-way. M.
 
 #### P0-5. The manifest is not a standalone manifest
 
-DONE (every manifest row).
-
 `Cargo.toml` inherits `license` and `lints` from the workspace, has no `rust-version`, no
 `description`, `repository`, `readme`, `keywords`, `categories` or `include`, and the comment on
 `publish = false` sends the reader to `crates/publish-allowlist.txt`, a file the repository will not
@@ -143,10 +205,8 @@ hold). Two-way; a ruling covers the publish flag itself and it stays. S.
 
 #### P0-6. There is no README
 
-DONE (`README.md` and both license texts).
-
 The crate has no README, no `LICENSE-*` files and no changelog. The scaffold supplies the license
-files and the changelog; the README is the review's concern. `readme_sections.py` requires `# glob`,
+files and the changelog; the README is the review's concern. `readme_sections.py` requires `# byte_glob`,
 a summary paragraph, `## EXAMPLES`, `## What is proven`, `## BUGS`, `## Minimum Rust version` and
 `## License`, in that order. `standalone.py` fails without `## EXAMPLES` and `## BUGS`. The summary
 must say in its first lines the three things a stranger will not guess. The first is bytes rather
@@ -164,8 +224,9 @@ The P2 items are in [the appendix](1092-glob-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-Decision 1 is a one-way door; Decision 2 is decided, provisionally. The baseline (scope, the
-default dot rule, the algorithm) stays closed.
+Both are ruled: Decision 1 by the architect, Decision 2 provisionally by the maintainer. Ratifying
+the names and clearing the repository are under Open decisions. The baseline (scope, the default dot
+rule, the algorithm) stays closed.
 
 ### Decision 1. The registry name of the crate (P0-1)
 
@@ -226,7 +287,8 @@ the two answers. The three call sites in the tree change with it
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
 which the architect may revisit. The six keep their spelling, and `Dot` becomes `LeadingDot` with
-its variants unchanged and no alias. Ratifying them stays the architect's. P0-2 is the work.
+its variants unchanged and no alias. Ratifying them is the architect's, under Open decisions. P0-2
+is the work.
 
 ## Prior art
 
@@ -240,22 +302,15 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 - The review ran two of the six harnesses and replayed one of the six patches. The rest rests on
   the crate's record and the tree's own gates.
-- Whether any enumeration in nife yields `.` or `..` stays unverified (P2-2).
 - The P2 order is the reviewer's judgment of what a first user asks about; nobody outside has asked
   yet.
 
-## Follow-on
-
-Decision 1 is built; the rest is open.
-
-- **Outstanding.** The one rename of Decision 2, which the maintainer decided provisionally, the integration
-  test and the falsification patches are unbuilt. Milestone 1017 moves the crate at step 5, after they land.
-- **Outstanding.** P0-4 and P1-2 belong to the move; `crates/byte_glob/falsifications/` still names tree paths.
-- **Outstanding.** P2-2's `grant_plan` note, P2-3's named return, P2-4's fuzz target and P2-8's benchmark.
-
 ## Index row
 
-An outside reading of `byte_glob` before it leaves. Six items block the move. Another crate holds the crate name on crates.io (Decision 1 rules it). Seven public names lack ratification (Decision 2). A test links two
-staying crates. Shipped text carries nife citations. The manifest inherits from the workspace. There
-is no README. Seven go before the first tag. Eight follow. The matcher itself checks out.
-Publishing stays held.
+An outside reading of `byte_glob` before it leaves. The crate name is `byte_glob` (Decision 1), the
+README, the manifest fields and the split proof module are in, and the test that linked two staying
+crates lives in `grant_plan`. Before the move: `Dot` becomes `LeadingDot` (Decision 2), the shipped
+text loses its citations of this tree, the manifest names its repository, the review package is
+written, and the architect ratifies the seven names and clears `nifeos/byte_glob`. The falsification
+paths are rewritten at the move; four P2 items follow. The matcher itself checks out. Publishing
+stays held.

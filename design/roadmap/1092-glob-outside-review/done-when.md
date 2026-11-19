@@ -6,7 +6,7 @@ An appendix to [the milestone](../1092-glob-outside-review.md).
   and the docs, with no alias for the old spelling.
 - The seven public names have ratification in a review package `notes/crate-reviews/<name>.md` with a row
   in `notes/crate-reviews.md`, under Decision 2. `name_release.py --draft` reports no "no block".
-- `tests/fixture_agreement.rs` lives in a crate that stays. `glob` is a dev-dependency there. The
+- `tests/fixture_agreement.rs` lives in a crate that stays. `byte_glob` is a dev-dependency there. The
   matcher's manifest has no dev-dependency.
 - `python3 helpers/standalone.py --manifest-dir crates/<name>` from the template exits 0 with no
   `--allow-unpublished`, except for the `publish = false` line. The move's caller covers that line
