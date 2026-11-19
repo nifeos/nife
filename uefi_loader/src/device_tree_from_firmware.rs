@@ -4,7 +4,7 @@
 //!
 //! The firmware hands aarch64 and riscv64 a bare pointer in its configuration table, and the only
 //! length is the one the tree states for itself. This is the one place the loader turns that
-//! pointer into bytes, and it does it with the kernel's own reader, `DeviceTreeBlob::from_ptr`, so
+//! pointer into bytes, and it does it with the kernel's own reader, `DeviceTreeBlob::from_pointer`, so
 //! the loader believes no tree the kernel would refuse. See notes/device-tree.md ("The parser's
 //! bounds").
 //!
@@ -13,7 +13,7 @@
 
 use device_tree_blob::{DeviceTreeBlob, Error};
 
-/// **The bytes of the device tree at `source`**, after `DeviceTreeBlob::from_ptr` has checked its
+/// **The bytes of the device tree at `source`**, after `DeviceTreeBlob::from_pointer` has checked its
 /// magic, bounded its `totalsize` by `device_tree_blob::MAXIMUM_TOTAL_SIZE_BYTES` and parsed its header.
 /// Refuses with the sentence for the firmware console.
 ///
@@ -25,14 +25,14 @@ use device_tree_blob::{DeviceTreeBlob, Error};
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane maintainer/device-tree-copy-checks.
 pub unsafe fn bytes<'a>(source: *const u8) -> Result<&'a [u8], &'static str> {
-    // SAFETY: the caller's contract, which is `from_ptr`'s own.
-    let tree = unsafe { DeviceTreeBlob::from_ptr(source) }.map_err(reason)?;
-    // SAFETY: `from_ptr` accepted the tree, so `total_size` is its bounded `totalsize`, which the
+    // SAFETY: the caller's contract, which is `from_pointer`'s own.
+    let tree = unsafe { DeviceTreeBlob::from_pointer(source) }.map_err(reason)?;
+    // SAFETY: `from_pointer` accepted the tree, so `total_size` is its bounded `totalsize`, which the
     // caller's contract covers for `'a`.
     Ok(unsafe { core::slice::from_raw_parts(source, tree.total_size()) })
 }
 
-/// The firmware-console sentence for a tree `from_ptr` refused.
+/// The firmware-console sentence for a tree `from_pointer` refused.
 fn reason(error: Error) -> &'static str {
     match error {
         Error::BadMagic(_) => "the firmware's device tree has the wrong magic",

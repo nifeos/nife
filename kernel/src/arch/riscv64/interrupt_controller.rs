@@ -28,7 +28,7 @@ pub(crate) fn initialize_contexts(dtb_ptr: usize) {
     // SAFETY: the pointer firmware handed us, already parsed by memory::initialize on this boot,
     // named through the direct map.
     let Ok(dt) = (unsafe {
-        device_tree_blob::DeviceTreeBlob::from_ptr(
+        device_tree_blob::DeviceTreeBlob::from_pointer(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8
         )
     }) else {
@@ -224,9 +224,9 @@ mod tests {
         let ptr = crate::DTB.load(core::sync::atomic::Ordering::Relaxed);
         // SAFETY: the pointer firmware handed us, already parsed several times on this boot.
         let dt = unsafe {
-            device_tree_blob::DeviceTreeBlob::from_ptr(
-                crate::arch::mmu::phys_to_virt(ptr as u64) as *const u8
-            )
+            device_tree_blob::DeviceTreeBlob::from_pointer(crate::arch::mmu::phys_to_virt(
+                ptr as u64,
+            ) as *const u8)
         }
         .expect("device tree is unreadable");
         let ctx = machine_discovery::plic::PlicContexts::from_device_tree(&dt)

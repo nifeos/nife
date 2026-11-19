@@ -67,7 +67,7 @@ impl BootInfo {
     /// Decode `bytes`, which must begin at the structure.
     ///
     /// The magic is checked first and everything else is refused until it passes, which is the same
-    /// discipline `device_tree_blob::DeviceTreeBlob::from_ptr` follows and for the same reason:
+    /// discipline `device_tree_blob::DeviceTreeBlob::from_pointer` follows and for the same reason:
     /// this is the first thing the kernel does with a pointer somebody else chose, so a wrong
     /// pointer must produce an error rather than a plausible-looking memory map.
     pub fn parse(bytes: &[u8]) -> Result<Self, BootInfoError> {

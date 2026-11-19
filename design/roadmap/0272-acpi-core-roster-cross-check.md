@@ -23,7 +23,7 @@ device tree.
 > it against yet)
 
 On aarch64 and riscv64, the roster the scheduler built at boot is checked against a second, later
-parse of the device tree (`device_tree_blob::DeviceTreeBlob::from_ptr` on `crate::DTB`), so a bug in the first parse has
+parse of the device tree (`device_tree_blob::DeviceTreeBlob::from_pointer` on `crate::DTB`), so a bug in the first parse has
 something independent to disagree with. `crate::DTB` on x86 holds PVH's `hvm_start_info` pointer,
 not an FDT blob, so parsing it as a device tree would not skip, it would panic; the test correctly
 avoids that rather than avoiding the check's purpose.

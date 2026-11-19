@@ -63,7 +63,7 @@ while a `reg` pair of the same shape draws a refusal. And nothing checks `off_rs
 alignment the specification requires. Apply the same overflow refusal; document that alignment is
 not checked because the reader is byte-wise and needs none. Effort S. Two-way.
 
-P2-7. `from_ptr` reads 40 bytes while its contract speaks of 8. DONE (`from_ptr_reads_eight_bytes_before_it_trusts_the_size`, clean under Miri). `src/lib.rs` lines 133 to 142 says "we trust
+P2-7. `from_pointer` reads 40 bytes while its contract speaks of 8. DONE (`from_ptr_reads_eight_bytes_before_it_trusts_the_size`, clean under Miri). `src/lib.rs` lines 133 to 142 says "we trust
 the first 8 bytes before we have validated anything" and then builds a 40-byte slice. The caller's
 contract (a blob valid for `'a`) covers both, since a blob is at least 40 bytes. The comment and the
 code should still say the same number: read 8, check the magic and the size, then build the rest.
@@ -72,7 +72,7 @@ states and a stranger will ask. Effort S. Two-way.
 
 P2-8. `from_bytes` does not say what it trims or ignores. DONE (one paragraph at `from_bytes`). `src/lib.rs` lines 159 to 162. A buffer longer
 than `totalsize` gets accepted and trimmed (`tests/hostile.rs` lines 283 to 290 proves it, the documentation
-does not say it). `MAXIMUM_TOTAL_SIZE_BYTES` applies to `from_ptr` only (right, and unstated). `version`,
+does not say it). `MAXIMUM_TOTAL_SIZE_BYTES` applies to `from_pointer` only (right, and unstated). `version`,
 `size_dt_strings`, `size_dt_struct` and `boot_cpuid_phys` are not read (P1-4 reads one). One
 paragraph closes it. Effort S. Two-way.
 

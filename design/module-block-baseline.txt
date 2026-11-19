@@ -1632,7 +1632,7 @@ crates/device_tree_blob/src/lib.rs::end
 
 crates/device_tree_blob/src/lib.rs::from_bytes
 
-crates/device_tree_blob/src/lib.rs::from_ptr
+crates/device_tree_blob/src/lib.rs::from_pointer
 
 crates/device_tree_blob/src/lib.rs::memory_regions
 

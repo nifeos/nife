@@ -1194,10 +1194,10 @@ fn an_inherited_property_comes_from_the_named_node_not_the_first_one() {
     );
 }
 
-/// `from_ptr` has to believe the header's `totalsize` before it can check anything, and until the
+/// `from_pointer` has to believe the header's `totalsize` before it can check anything, and until the
 /// 2026-09-24 security audit it believed any value: a firmware blob claiming 4 GiB became a 4 GiB
 /// slice and a data abort in `memory::initialize`. The blob here sits inside a buffer large enough that
-/// the slice `from_ptr` would build is real memory, so the test is sound whichever way it goes,
+/// the slice `from_pointer` would build is real memory, so the test is sound whichever way it goes,
 /// and the cap is what decides it.
 #[test]
 fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
@@ -1209,38 +1209,38 @@ fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
 
     // SAFETY: `buffer` is longer than `claimed`, so every byte a slice of that length could
     // cover is owned, initialized memory that outlives the call.
-    let refused = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
+    let refused = unsafe { DeviceTreeBlob::from_pointer(buffer.as_ptr()) };
     assert_eq!(refused.err(), Some(Error::TooLarge(claimed)));
 
     // Exactly the ceiling is still believed: the header lies about the length, so the parse fails
     // on its offsets, but it fails as a parse and not as a refusal to look.
     buffer[4..8].copy_from_slice(&(MAXIMUM_TOTAL_SIZE_BYTES as u32).to_be_bytes());
     // SAFETY: as above; `buffer` is longer than `MAXIMUM_TOTAL_SIZE_BYTES`.
-    let looked = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
+    let looked = unsafe { DeviceTreeBlob::from_pointer(buffer.as_ptr()) };
     assert_ne!(
         looked.err(),
         Some(Error::TooLarge(MAXIMUM_TOTAL_SIZE_BYTES))
     );
 }
 
-/// `from_ptr` reads the magic and `totalsize`, 8 bytes, before it trusts anything, and no more:
+/// `from_pointer` reads the magic and `totalsize`, 8 bytes, before it trusts anything, and no more:
 /// a pointer to 8 bytes that fail the magic, or that pass it and claim a size of 8, is refused
 /// without a read past them. Miri (`script/undefined-behavior-check`) is what sees a read past the
 /// allocation; natively the test pins the answers.
 #[test]
 fn from_ptr_reads_eight_bytes_before_it_trusts_the_size() {
     let wrong: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 8];
-    // SAFETY: the 8 bytes are a live local array, all `from_ptr` may read before the magic
+    // SAFETY: the 8 bytes are a live local array, all `from_pointer` may read before the magic
     // check, which fails.
-    let refused = unsafe { DeviceTreeBlob::from_ptr(wrong.as_ptr()) };
+    let refused = unsafe { DeviceTreeBlob::from_pointer(wrong.as_ptr()) };
     assert_eq!(refused.err(), Some(Error::BadMagic(0)));
 
     let mut short = [0u8; 8];
     short[..4].copy_from_slice(&0xd00d_feed_u32.to_be_bytes());
     short[4..].copy_from_slice(&8u32.to_be_bytes());
     // SAFETY: as above; the size the bytes claim, 8, is the array's length, so the slice
-    // `from_ptr` builds is the array.
-    let refused = unsafe { DeviceTreeBlob::from_ptr(short.as_ptr()) };
+    // `from_pointer` builds is the array.
+    let refused = unsafe { DeviceTreeBlob::from_pointer(short.as_ptr()) };
     assert_eq!(refused.err(), Some(Error::Truncated));
 }
 
@@ -1254,7 +1254,7 @@ fn a_tree_of_one_and_a_half_mebibytes_is_not_too_large() {
     buffer.resize(claimed + 64, 0);
     // SAFETY: `buffer` is longer than `claimed`, so every byte a slice of that length could
     // cover is owned, initialized memory that outlives the call.
-    let looked = unsafe { DeviceTreeBlob::from_ptr(buffer.as_ptr()) };
+    let looked = unsafe { DeviceTreeBlob::from_pointer(buffer.as_ptr()) };
     assert_ne!(looked.err(), Some(Error::TooLarge(claimed)));
 }
 
