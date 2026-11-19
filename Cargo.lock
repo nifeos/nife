@@ -600,8 +600,8 @@ dependencies = [
 
 [[package]]
 name = "generational_table"
-version = "0.1.0-pre.1"
-source = "git+https://github.com/nifeos/generational_table?rev=1a8f8dc123a1176fcb3a526c8f73912370b3a2c4#1a8f8dc123a1176fcb3a526c8f73912370b3a2c4"
+version = "0.1.0-pre.2"
+source = "git+https://github.com/nifeos/generational_table?rev=6873e778d775d955387c1bd931abf3838215fc29#6873e778d775d955387c1bd931abf3838215fc29"
 
 [[package]]
 name = "generator"
