@@ -94,7 +94,7 @@ timetable_store = { version = "0.1.0", path = "../crates/timetable_store" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The `date` tests parse what `date` printed back with the crate that printed it (ruled
 # 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems)).
-jiff = { version = "0.2.43", default-features = false }
+jiff = { version = "1.0.0", default-features = false }
 line_editor_component = { version = "0.1.0", path = "../crates/line_editor_component" }
 terminal_contract = { version = "0.1.0", path = "../crates/terminal_contract" }
 login_contract = { version = "0.1.0", path = "../crates/login_contract" }
