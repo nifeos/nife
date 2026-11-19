@@ -38,7 +38,7 @@ diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
          };
 @@ -128,9 +128,10 @@
          }
-         let base = phys + first * page_frames::FRAME_SIZE;
+         let base = phys + first * page_frames::FRAME_BYTES;
          Ok(crate::capability_object::page_frame_run_capability(
              base, len, src.rights,
          ))

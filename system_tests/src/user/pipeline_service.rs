@@ -164,7 +164,7 @@ fn start_with(
             return None;
         }
     }
-    .addr();
+    .physical_address();
     let line_phys = match crate::memory::alloc_zeroed() {
         Some(f) => f,
         None => {
@@ -172,7 +172,7 @@ fn start_with(
             return None;
         }
     }
-    .addr();
+    .physical_address();
     WRITTEN.store(0, Ordering::SeqCst);
     SCRIPT_RUNNING.store(true, Ordering::Release);
     if crate::sched::spawn(watch_for_a_killed_stage).is_none() {
@@ -244,10 +244,10 @@ fn shell_mappings(
         flags: Flags::user_rodata(),
     };
     for (k, m) in maps[2..2 + SHELL_EXTRA_STACK].iter_mut().enumerate() {
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = crate::memory::alloc()
             .expect("no frame for the shell's stack")
-            .addr();
+            .physical_address();
         m.flags = Flags::user_data();
     }
     // The optional pages last, so a shell wired without either maps exactly what it did before

@@ -169,7 +169,7 @@ fn each_thread_reads_through_its_own_thread_pointer() {
             call6(
                 tcb,
                 abi::thread_control_block::CONFIGURE,
-                [CODE_VA, STACK_VA + page_frames::FRAME_SIZE, given],
+                [CODE_VA, STACK_VA + page_frames::FRAME_BYTES, given],
                 first,
             ),
             Ok(current_cpu_contract::PAGE_VIRTUAL_ADDRESS as i64),
@@ -273,7 +273,7 @@ fn a_thread_pointer_outside_the_user_half_is_refused_and_changes_nothing() {
         call6(
             tcb,
             abi::thread_control_block::CONFIGURE,
-            [CODE_VA, STACK_VA + page_frames::FRAME_SIZE, given],
+            [CODE_VA, STACK_VA + page_frames::FRAME_BYTES, given],
             tp,
         )
     };

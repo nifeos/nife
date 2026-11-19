@@ -47,7 +47,7 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
     // Zeroed so no stale descriptor and no stale event is ever visible to the device or to us.
     let dma = crate::memory::alloc_contiguous_zeroed(DMA_PAGE_FRAMES as usize)
         .expect("no DMA region for the keyboard driver")
-        .addr();
+        .physical_address();
     // Where the page is, in the page
     // (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`): the driver
     // reads it there rather than from `arg1`, so a supervisor that holds only the frame capability
@@ -61,7 +61,7 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
     let vid = crate::virtio::register(
         crate::virtio::Transport::pci(&d),
         dma,
-        DMA_PAGE_FRAMES * FRAME_SIZE,
+        DMA_PAGE_FRAMES * FRAME_BYTES,
         Some(d.rid),
     )?;
     Some(KeyboardDevice {
@@ -85,7 +85,7 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
     } = wire_device()?;
     let ring = crate::memory::alloc_zeroed()
         .expect("no frame for the input ring")
-        .addr();
+        .physical_address();
 
     let report = crate::sched::create_rendezvous();
     let doorbell = crate::sched::create_rendezvous();

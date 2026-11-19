@@ -5289,7 +5289,7 @@ crates/package_index/src/lib.rs::sources
 
 crates/package_index/src/lib.rs::target_path
 
-crates/page_frames/src/lib.rs::FRAME_SIZE
+crates/page_frames/src/lib.rs::FRAME_BYTES
 
 crates/page_frames/src/lib.rs::PageFrame
 
@@ -5311,7 +5311,7 @@ crates/page_frames/src/lib.rs::free
 
 crates/page_frames/src/lib.rs::free
 
-crates/page_frames/src/lib.rs::from_addr
+crates/page_frames/src/lib.rs::from_physical_address
 
 crates/page_frames/src/lib.rs::is_used
 

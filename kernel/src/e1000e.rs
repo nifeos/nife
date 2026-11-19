@@ -325,20 +325,20 @@ fn region_for(rid: u32) -> Result<u64, crate::iommu::AttachError> {
     let base =
         crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
             .expect("no DMA region for the e1000e NIC")
-            .addr();
+            .physical_address();
     if crate::iommu::is_active() {
         let confined = crate::iommu::confine(
             rid,
             &[page_tables::domain::DmaRegion {
                 base,
-                size: layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * page_frames::FRAME_SIZE,
+                size: layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * page_frames::FRAME_BYTES,
                 writable: true,
             }],
         );
         if let Err(e) = confined {
             for page in 0..layout::DIRECT_MEMORY_ACCESS_REGION_PAGES {
-                crate::memory::free(page_frames::PageFrame::from_addr(
-                    base + page * page_frames::FRAME_SIZE,
+                crate::memory::free(page_frames::PageFrame::from_physical_address(
+                    base + page * page_frames::FRAME_BYTES,
                 ));
             }
             return Err(e);

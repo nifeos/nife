@@ -39,7 +39,7 @@ fn run_hackbench(line: &str, out: &mut [u8]) -> usize {
         // SAFETY: a frame just retyped for this page alone, direct-mapped, which nothing else
         // holds until the program is given it read-only.
         let page = unsafe {
-            &mut *(crate::arch::mmu::phys_to_virt(args) as *mut [u8; FRAME_SIZE as usize])
+            &mut *(crate::arch::mmu::phys_to_virt(args) as *mut [u8; FRAME_BYTES as usize])
         };
         page.fill(0);
         grant_plan::argv(line.as_bytes(), page).expect("the test's line is not an argv");
@@ -112,7 +112,7 @@ pub(super) fn run_in_grant(
         // SAFETY: a frame just retyped for this page alone, direct-mapped, which nothing else
         // holds until the program is given it read-only.
         let page = unsafe {
-            &mut *(crate::arch::mmu::phys_to_virt(args) as *mut [u8; FRAME_SIZE as usize])
+            &mut *(crate::arch::mmu::phys_to_virt(args) as *mut [u8; FRAME_BYTES as usize])
         };
         page.fill(0);
         grant_plan::argv(line.as_bytes(), page).expect("the test's line is not an argv");

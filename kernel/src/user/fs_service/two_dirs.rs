@@ -88,7 +88,7 @@ pub fn start_granted_two_dirs(
         }; FILE_PAGES + CLIENT_EXTRA_STACK];
         let n = map_channel(&mut maps, FILE_VA_CLIENT, file_shared, FILE_PAGES);
         for (k, m) in maps[n..n + stack_pages].iter_mut().enumerate() {
-            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
             m.phys = page_frame();
         }
         run(

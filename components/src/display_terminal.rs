@@ -121,7 +121,7 @@ fn wr32(va: u64, v: u32) {
 }
 
 fn out_byte(i: usize) -> u8 {
-    // SAFETY: `i` is below FRAME_SIZE, inside the application's output page.
+    // SAFETY: `i` is below FRAME_BYTES, inside the application's output page.
     unsafe { core::ptr::read_volatile((OUT_VA + i as u64) as *const u8) }
 }
 

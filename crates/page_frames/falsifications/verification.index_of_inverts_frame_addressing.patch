@@ -5,15 +5,15 @@ region this allocator owns, dropping the `- self.base`. Absolute frame number an
 are the same thing exactly when the region starts at zero, which is what every host test and the
 harness above this one use, so the confusion survives ordinary testing.
 
-Expected to fail: the harness's `assert_eq!(fa.index_of(frame), Some(i))`, at any non-zero base,
+Expected to fail: the harness's `assert_eq!(allocator.index_of(frame), Some(i))`, at any non-zero base,
 where the answer is either `None` (the inflated index is past `total`) or a different index, and
 a frame is filed under somebody else's bit.
 
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -357,3 +357,3 @@
+@@ -361,3 +361,3 @@
          }
--        let i = ((addr - self.base) / FRAME_SIZE) as usize;
-+        let i = (addr / FRAME_SIZE) as usize;
+-        let i = ((physical_address - self.base) / FRAME_BYTES) as usize;
++        let i = (physical_address / FRAME_BYTES) as usize;
          (i < self.total).then_some(i)

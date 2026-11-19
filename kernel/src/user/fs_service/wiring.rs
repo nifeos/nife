@@ -91,7 +91,7 @@ fn wire_servers(
     let file_shared = file_pool();
     for (w, window) in WINDOWS.iter().enumerate() {
         window.store(
-            file_shared + (w * FILE_PAGES) as u64 * FRAME_SIZE,
+            file_shared + (w * FILE_PAGES) as u64 * FRAME_BYTES,
             core::sync::atomic::Ordering::Relaxed,
         );
     }
@@ -145,20 +145,22 @@ pub(in crate::user) fn spawn_block_server(
     // or the FS server.
     let dma = crate::memory::alloc_contiguous_zeroed(1 + BLK_PAGES)
         .expect("no DMA region for the block server")
-        .addr();
+        .physical_address();
     // First, so a refused device leaves nothing else behind.
     let Some(vid) = crate::virtio::register(
         dev.transport,
         dma,
-        (1 + BLK_PAGES) as u64 * FRAME_SIZE, // every page: the device may touch the rings AND the data buffer
+        (1 + BLK_PAGES) as u64 * FRAME_BYTES, // every page: the device may touch the rings AND the data buffer
         dev.rid, // `Some` behind an IOMMU (every PCI function), `None` on virtio-mmio
     ) else {
         for page in 0..(1 + BLK_PAGES) as u64 {
-            crate::memory::free(page_frames::PageFrame::from_addr(dma + page * FRAME_SIZE));
+            crate::memory::free(page_frames::PageFrame::from_physical_address(
+                dma + page * FRAME_BYTES,
+            ));
         }
         return None;
     };
-    let blk_shared = dma + FRAME_SIZE; // the data pages start right after the rings page
+    let blk_shared = dma + FRAME_BYTES; // the data pages start right after the rings page
 
     let blk_ep = crate::sched::create_rendezvous(); // FS server WRITE (CALL) -> block server READ
     let blk_ready = crate::sched::create_rendezvous(); // block server WRITE -> the kernel test receives
@@ -180,7 +182,7 @@ pub(in crate::user) fn spawn_block_server(
             phys: dma,
             flags: Flags::user_data(),
         };
-        map_channel(&mut maps[1..], DMA_VA + FRAME_SIZE, blk_shared, BLK_PAGES);
+        map_channel(&mut maps[1..], DMA_VA + FRAME_BYTES, blk_shared, BLK_PAGES);
         run(
             blk_image,
             Spawn {
@@ -293,12 +295,12 @@ pub(super) fn spawn_fs_server(fs_server_image: &'static [u8], cfg: FsServer) {
         let mut n = n0 + map_channel(&mut maps[n0..], FILE_PAGE_FS, cfg.file_shared, FILE_PAGES);
         for (w, window) in WINDOWS.iter().enumerate().skip(1).take(cfg.extra_windows) {
             let phys = window.load(core::sync::atomic::Ordering::Relaxed);
-            let va = FILE_PAGE_FS + w as u64 * FILE_PAGES as u64 * FRAME_SIZE;
+            let va = FILE_PAGE_FS + w as u64 * FILE_PAGES as u64 * FRAME_BYTES;
             n += map_channel(&mut maps[n..], va, phys, FILE_PAGES);
         }
         for (i, &phys) in stack.iter().enumerate() {
             maps[n + i] = Mapping {
-                va: super::USER_STACK_VA - (i as u64 + 1) * FRAME_SIZE,
+                va: super::USER_STACK_VA - (i as u64 + 1) * FRAME_BYTES,
                 phys,
                 flags: Flags::user_data(),
             };

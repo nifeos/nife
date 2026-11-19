@@ -294,7 +294,7 @@ fn a_c_underrun_below_the_grant_faults_and_changes_nothing_outside_it() {
     // The site: exactly one page below the grant, the address the C computed and nothing else.
     let underrun_site = of_kind(&msgs, RPT_SITE)
         .find(|s| {
-            s[2] == address_space_layout::service_window(0x5000_0000) - page_frames::FRAME_SIZE
+            s[2] == address_space_layout::service_window(0x5000_0000) - page_frames::FRAME_BYTES
         })
         .expect("no fault site one page below the grant: the underrun faulted elsewhere");
     assert_ne!(underrun_site[1], 0, "no faulting pc for the underrun");

@@ -126,7 +126,9 @@ fn an_asid_flush_reaches_the_other_cpus() {
     // space never owns it and its teardown cannot free it out from under us.
     let fresh = crate::memory::alloc().expect("out of memory");
     // SAFETY: the allocator just handed us this frame exclusively; the direct map reaches it.
-    unsafe { core::ptr::write_volatile(mmu::phys_to_virt(fresh.addr()) as *mut u8, NEW) };
+    unsafe {
+        core::ptr::write_volatile(mmu::phys_to_virt(fresh.physical_address()) as *mut u8, NEW)
+    };
 
     let probe = sched::spawn_on(target, move || {
         probe_across_the_flush(handshake, installed, VA);
@@ -138,7 +140,7 @@ fn an_asid_flush_reaches_the_other_cpus() {
         "the probe never cached the translation on core {target}",
     );
 
-    remap_with_no_invalidation(&space, VA, fresh.addr());
+    remap_with_no_invalidation(&space, VA, fresh.physical_address());
 
     mmu::flush_asid(asid);
     handshake.stage.store(2, Ordering::SeqCst);
@@ -367,7 +369,7 @@ fn an_installed_space_stays_installed_across_a_timer_tick() {
     }
 
     let mut space = AddressSpace::new(2).expect("no address space");
-    let frame = crate::memory::alloc().expect("no frame").addr();
+    let frame = crate::memory::alloc().expect("no frame").physical_address();
     space
         .map_physical(
             VA,
@@ -420,7 +422,7 @@ fn an_installed_space_stays_installed_across_a_timer_tick() {
         "the competitors never stopped",
     );
     drop(space);
-    crate::memory::free(PageFrame::from_addr(frame));
+    crate::memory::free(PageFrame::from_physical_address(frame));
 
     let Some(seen) = seen else {
         panic!(
@@ -448,7 +450,7 @@ fn an_installed_space_stays_installed_across_a_timer_tick() {
 /// the baseline forever and fails. Approximate there would have hidden the milestone 6 bug.
 #[test_case]
 fn a_dead_user_thread_frees_its_whole_address_space() {
-    let used = || crate::memory::stats().expect("no allocator").used;
+    let used = || crate::memory::stats().expect("no allocator").used_frames;
 
     // Warm up first: the first user thread pays for page tables in untouched kernel VA, and the
     // steady state is what must hold. Snapshot the fault count BEFORE each spawn, or a fast fault
@@ -584,10 +586,10 @@ fn a_user_built_aspace_maps_translates_and_revokes() {
     );
 
     // The pin: the backing region hosts a live root, so destroy must free nothing.
-    let free_before = crate::memory::stats().unwrap().free();
+    let free_before = crate::memory::stats().unwrap().free_frames();
     crate::memory_region::destroy(region);
     assert_eq!(
-        crate::memory::stats().unwrap().free(),
+        crate::memory::stats().unwrap().free_frames(),
         free_before,
         "destroy reclaimed the region under a live user-built space",
     );

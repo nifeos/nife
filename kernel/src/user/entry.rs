@@ -99,7 +99,7 @@ pub fn spawn_elf_child_builder(
 ) -> holding::Holding {
     let (initial_ramdisk_start, initial_ramdisk_len) =
         memory::initial_ramdisk_region().expect("no initial ramdisk to hand the builder");
-    let initial_ramdisk_pages = initial_ramdisk_len.div_ceil(FRAME_SIZE);
+    let initial_ramdisk_pages = initial_ramdisk_len.div_ceil(FRAME_BYTES);
 
     // Routed before the builder exists: the test raises it as soon as this returns, and an
     // interrupt that fires unrouted is dropped, not queued. The child's WAIT drains the count.
@@ -154,7 +154,7 @@ pub fn spawn_elf_child_builder(
             .segments()
             .map(|seg| {
                 let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
-                (end - start) / FRAME_SIZE
+                (end - start) / FRAME_BYTES
             })
             .sum::<u64>()
             + 1
@@ -169,7 +169,7 @@ pub fn spawn_elf_child_builder(
         // stays USER_STACK_TOP.
         for k in 0..PROGENITOR_STACK_PAGES {
             space
-                .map_new(USER_STACK_VA - k * FRAME_SIZE, Flags::user_data())
+                .map_new(USER_STACK_VA - k * FRAME_BYTES, Flags::user_data())
                 .expect("could not map the builder's stack");
         }
         #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
@@ -179,8 +179,8 @@ pub fn spawn_elf_child_builder(
         for i in 0..initial_ramdisk_pages {
             space
                 .map_physical(
-                    INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
-                    initial_ramdisk_start + i * FRAME_SIZE,
+                    INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_BYTES,
+                    initial_ramdisk_start + i * FRAME_BYTES,
                     Flags::user_rodata(),
                     crate::revoke::PageMapSource::NoCapability,
                 )
@@ -335,8 +335,8 @@ fn run_with(
         for k in 0..d.pages {
             space
                 .map_physical(
-                    d.va + k * FRAME_SIZE,
-                    d.phys + k * FRAME_SIZE,
+                    d.va + k * FRAME_BYTES,
+                    d.phys + k * FRAME_BYTES,
                     if d.write_combining {
                         Flags::user_write_combining()
                     } else {
@@ -380,7 +380,7 @@ fn window_is_mapped(
 ) -> bool {
     let first = w.virtual_address;
     maps.iter().any(|m| m.va == first)
-        || device.is_some_and(|d| first >= d.va && first < d.va + d.pages * FRAME_SIZE)
+        || device.is_some_and(|d| first >= d.va && first < d.va + d.pages * FRAME_BYTES)
 }
 
 /// Drop the **current** thread to user mode at `entry` on `user_sp`, with `arg0` to `arg2` in the

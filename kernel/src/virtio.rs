@@ -504,7 +504,7 @@ const RING_END: u64 = direct_memory_access_validator::RING_END;
 /// The most virtqueues the confinement drives per device. A virtio-net device needs two (receive =
 /// queue 0, transmit = queue 1); the disk uses only queue 0. Fixed and small on purpose: one
 /// kernel-private shadow frame per device holds every queue's shadow rings, so the ceiling is what
-/// fits there (`MAXIMUM_QUEUES * RING_BLOCK <= FRAME_SIZE`), asserted below, not a policy dial.
+/// fits there (`MAXIMUM_QUEUES * RING_BLOCK <= FRAME_BYTES`), asserted below, not a policy dial.
 pub(crate) const MAXIMUM_QUEUES: usize = direct_memory_access_validator::MAXIMUM_QUEUES as usize;
 
 /// The stride between successive queues' ring areas, in both the driver's DMA region and the
@@ -519,7 +519,7 @@ const _: () = assert!(
     "a queue's rings overflow its ring block"
 );
 const _: () = assert!(
-    MAXIMUM_QUEUES as u64 * RING_BLOCK <= page_frames::FRAME_SIZE,
+    MAXIMUM_QUEUES as u64 * RING_BLOCK <= page_frames::FRAME_BYTES,
     "the shadow frame cannot hold every queue's ring block",
 );
 
@@ -626,7 +626,7 @@ pub(crate) fn register(
     // Zeroed so a stale word can never look like a valid descriptor before the first copy.
     let shadow_base = crate::memory::alloc_zeroed()
         .expect("no frame for the virtio shadow ring")
-        .addr();
+        .physical_address();
 
     // Confine the device in hardware before it is entered in the table. Done outside the DEVICES
     // lock: building the domain allocates page-table frames, and the IOMMU attach takes its own
@@ -640,7 +640,7 @@ pub(crate) fn register(
             shadow_base,
         );
         if crate::iommu::confine(rid, &regions).is_err() {
-            crate::memory::free(page_frames::PageFrame::from_addr(shadow_base));
+            crate::memory::free(page_frames::PageFrame::from_physical_address(shadow_base));
             return None;
         }
     }
@@ -732,7 +732,9 @@ pub(crate) fn unregister(id: u64) -> bool {
     if removed.owner.is_some() {
         OWNED.fetch_sub(1, core::sync::atomic::Ordering::Release);
     }
-    crate::memory::free(page_frames::PageFrame::from_addr(removed.shadow_base));
+    crate::memory::free(page_frames::PageFrame::from_physical_address(
+        removed.shadow_base,
+    ));
     true
 }
 

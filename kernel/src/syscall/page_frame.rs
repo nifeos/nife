@@ -128,7 +128,7 @@ pub(super) fn page_frame_slice(slot: u64, first: u64, len: u64) -> Result<i64, E
         if end > count.get() {
             return Err(Error::BadPointer);
         }
-        let base = phys + first * page_frames::FRAME_SIZE;
+        let base = phys + first * page_frames::FRAME_BYTES;
         Ok(crate::capability_object::page_frame_run_capability(
             base, len, src.rights,
         ))

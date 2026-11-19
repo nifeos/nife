@@ -110,7 +110,7 @@ pub(super) fn segment_pages(elf: &Elf) -> u64 {
     elf.segments()
         .map(|seg| {
             let (s, e) = seg.page_range(FRAME_PAGE_BYTES);
-            (e - s) / FRAME_SIZE
+            (e - s) / FRAME_BYTES
         })
         .sum()
 }
@@ -123,7 +123,7 @@ pub(super) fn lay_out_program(space: &mut AddressSpace, elf: &Elf, stack_pages: 
     map_segments(space, elf).unwrap_or_else(|e| panic!("could not lay out {name}: {e}"));
     for k in 0..stack_pages {
         space
-            .map_new(USER_STACK_VA - k * FRAME_SIZE, Flags::user_data())
+            .map_new(USER_STACK_VA - k * FRAME_BYTES, Flags::user_data())
             .unwrap_or_else(|e| panic!("could not map {name}'s stack: {e:?}"));
     }
     #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
@@ -155,7 +155,7 @@ pub(super) fn spawn_progenitor_shaped(
 ) -> Started {
     let (initial_ramdisk_start, initial_ramdisk_len) =
         memory::initial_ramdisk_region().expect("no initial ramdisk region");
-    let initial_ramdisk_pages = initial_ramdisk_len.div_ceil(FRAME_SIZE);
+    let initial_ramdisk_pages = initial_ramdisk_len.div_ceil(FRAME_BYTES);
     let Some(bytes) = program(name) else {
         panic!("no {name} program in the initial ramdisk");
     };
@@ -178,8 +178,8 @@ pub(super) fn spawn_progenitor_shaped(
     for i in 0..initial_ramdisk_pages {
         space
             .map_physical(
-                INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
-                initial_ramdisk_start + i * FRAME_SIZE,
+                INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_BYTES,
+                initial_ramdisk_start + i * FRAME_BYTES,
                 Flags::user_rodata(),
                 crate::revoke::PageMapSource::NoCapability,
             )

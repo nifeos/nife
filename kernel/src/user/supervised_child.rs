@@ -129,7 +129,7 @@ pub const REPORT_STUB: &[u32] = &x86_programs::report(REPORT_WORD as u32);
 ///
 /// Name: provisional, minted 2026-10-24 (UTC) by milestone/944-self-test-supervision-and-teardown.
 pub fn code_page(region: u64, code: &[u32]) -> Option<u64> {
-    if size_of_val(code) > FRAME_SIZE as usize {
+    if size_of_val(code) > FRAME_BYTES as usize {
         return None;
     }
     let phys = crate::memory_region::retype_page(region)?;
@@ -137,7 +137,7 @@ pub fn code_page(region: u64, code: &[u32]) -> Option<u64> {
     // SAFETY: `retype_page` hands back a whole frame carved from `region` for this caller alone,
     // and the direct map names every RAM page, so the slice is the frame and nothing aliases it.
     let page = unsafe {
-        core::slice::from_raw_parts_mut(va as *mut u32, FRAME_SIZE as usize / size_of::<u32>())
+        core::slice::from_raw_parts_mut(va as *mut u32, FRAME_BYTES as usize / size_of::<u32>())
     };
     page[..code.len()].copy_from_slice(code);
     sync_icache(va, size_of_val(code));
@@ -199,7 +199,7 @@ pub fn spawn(
     crate::sched::configure_thread_control_block(
         tid,
         CODE_ADDRESS,
-        STACK_ADDRESS + FRAME_SIZE,
+        STACK_ADDRESS + FRAME_BYTES,
         aspace,
     )
     .map_err(|_| "could not configure the child")?;

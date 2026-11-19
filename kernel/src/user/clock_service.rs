@@ -55,7 +55,7 @@ pub fn start(image: &'static [u8]) -> Wiring {
     // Zeroed: a page nobody has published to reads as `state::UNKNOWN`, not as 1970.
     let page_phys = crate::memory::alloc_zeroed()
         .expect("no frame for the clock page")
-        .addr();
+        .physical_address();
 
     let report = crate::sched::create_rendezvous();
     let propose = crate::sched::create_rendezvous();

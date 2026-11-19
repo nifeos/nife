@@ -4,7 +4,7 @@
 //! a forged [`TrapFrame`] falls into `exception_restore`. See notes/userspace.md, and
 //! notes/kernel-wired-services.md for the services.
 
-use page_frames::{FRAME_SIZE, PageFrame};
+use page_frames::{FRAME_BYTES, PageFrame};
 use page_tables::{Flags, Half, MapError, Mapper};
 use static_elf::Elf;
 
@@ -19,13 +19,13 @@ use crate::memory;
 /// map's image band.
 pub const USER_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 pub const USER_STACK_TOP: u64 = address_space_layout::STACK_TOP;
-const _: () = assert!(USER_STACK_TOP == USER_STACK_VA + FRAME_SIZE);
+const _: () = assert!(USER_STACK_TOP == USER_STACK_VA + FRAME_BYTES);
 
 /// The frame size as the page size `static_elf` rounds segments to, so the loader's page ranges are
 /// the frames it maps.
 ///
 /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
-const FRAME_PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(FRAME_SIZE).unwrap();
+const FRAME_PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(FRAME_BYTES).unwrap();
 
 // Every type and function of `user` lives in a child named for it, and this file is the index (§281
 // (the kernel's user-mode file splits into child modules of `user`)). Each child takes `use

@@ -325,13 +325,13 @@ fn spawn_system_installer(
 /// in frames allocated here and never freed: about sixty kilobytes for the rest of the boot.
 fn system_installer_maps(boot_file_len: u64) -> &'static [Mapping] {
     let boot_file_phys = crate::memory::boot_file_region().map_or(0, |(at, _)| at);
-    let pages = boot_file_len.div_ceil(FRAME_SIZE) as usize;
+    let pages = boot_file_len.div_ceil(FRAME_BYTES) as usize;
     let total = SYSTEM_INSTALLER_STACK_PAGES + pages;
 
     let bytes = total * core::mem::size_of::<Mapping>();
-    let scratch = crate::memory::alloc_contiguous_zeroed(bytes.div_ceil(FRAME_SIZE as usize))
+    let scratch = crate::memory::alloc_contiguous_zeroed(bytes.div_ceil(FRAME_BYTES as usize))
         .expect("no scratch for the installer's mappings")
-        .addr();
+        .physical_address();
     // SAFETY: `total` `Mapping`s fit in the run of frames just allocated, which nothing else holds;
     // the direct map reaches them, and `Mapping` is a plain `Copy` struct of integers, so the
     // zeroed frames are already a valid initialised slice of them.
@@ -340,15 +340,15 @@ fn system_installer_maps(boot_file_len: u64) -> &'static [Mapping] {
     };
 
     for (k, m) in maps[..SYSTEM_INSTALLER_STACK_PAGES].iter_mut().enumerate() {
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = crate::memory::alloc()
             .expect("no frame for the installer's stack")
-            .addr();
+            .physical_address();
         m.flags = Flags::user_data();
     }
     for (i, m) in maps[SYSTEM_INSTALLER_STACK_PAGES..].iter_mut().enumerate() {
-        m.va = BOOT_FILE_VA + i as u64 * FRAME_SIZE;
-        m.phys = boot_file_phys + i as u64 * FRAME_SIZE;
+        m.va = BOOT_FILE_VA + i as u64 * FRAME_BYTES;
+        m.phys = boot_file_phys + i as u64 * FRAME_BYTES;
         // Read-only: the whole of what keeps a program holding a disk from rewriting the image.
         m.flags = Flags::user_rodata();
     }
