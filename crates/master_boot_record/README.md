@@ -38,6 +38,16 @@ Two Kani harnesses (`src/verification.rs`), each with a falsification patch that
 partition table makes the scratch range touch a used partition or sector 0, and the parse accepts
 exactly the sectors that end in the signature and reads each entry from its own bytes.
 
+## BUGS
+
+- Only the four primary entries are read: an extended partition's chain of logical partitions is
+  not followed, and the cylinder-head-sector fields are ignored.
+- The API may still change before the first release; the names are provisional.
+
+## Minimum Rust version
+
+Rust 1.88.
+
 ## License
 
-MIT OR Apache-2.0, at your option.
+Licensed under either of MIT (LICENSE-MIT) or Apache-2.0 (LICENSE-APACHE), at your option.
