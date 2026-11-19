@@ -413,7 +413,7 @@ version = "0.1.0"
 [[package]]
 name = "designware_mobile_storage"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=ce50796532385586a46620bc9545b25b22593fae#ce50796532385586a46620bc9545b25b22593fae"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=85c4e1b58bb5d76efbc0b48d3ff51024d3904b12#85c4e1b58bb5d76efbc0b48d3ff51024d3904b12"
 
 [[package]]
 name = "device_tree_blob"
@@ -484,8 +484,8 @@ dependencies = [
 
 [[package]]
 name = "e1000e"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/e1000e?rev=0a21349ffcd95b79ffda04222fc413f7b0e77ed2#0a21349ffcd95b79ffda04222fc413f7b0e77ed2"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/nifeos/e1000e?rev=571d33f2e5fc9b287c7b9c8733bcdd0a17c18357#571d33f2e5fc9b287c7b9c8733bcdd0a17c18357"
 
 [[package]]
 name = "entropy_contract"
@@ -504,8 +504,8 @@ checksum = "877a4ace8713b0bcf2a4e7eec82529c029f1d0619886d18145fea96c3ffe5c0f"
 
 [[package]]
 name = "extensible_host_controller_interface"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=875a6401be12f311d925580901faf00cbcacbf99#875a6401be12f311d925580901faf00cbcacbf99"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/nifeos/extensible_host_controller_interface?rev=99daca365beb53961c3d64b01751f8de85a281ac#99daca365beb53961c3d64b01751f8de85a281ac"
 
 [[package]]
 name = "file_allocation_table"
@@ -600,8 +600,8 @@ dependencies = [
 
 [[package]]
 name = "generational_table"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/generational_table?rev=6873e778d775d955387c1bd931abf3838215fc29#6873e778d775d955387c1bd931abf3838215fc29"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/nifeos/generational_table?rev=832836094b1170f0f07275bb2adbb889d949ccc5#832836094b1170f0f07275bb2adbb889d949ccc5"
 
 [[package]]
 name = "generator"
@@ -1063,8 +1063,8 @@ version = "0.1.0"
 
 [[package]]
 name = "non_volatile_memory_express"
-version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=5b0c24dcd3fe5416bcefeed7bb3936108c44ed45#5b0c24dcd3fe5416bcefeed7bb3936108c44ed45"
+version = "0.1.0-pre.3"
+source = "git+https://github.com/nifeos/non_volatile_memory_express?rev=1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee#1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee"
 
 [[package]]
 name = "nu-ansi-term"

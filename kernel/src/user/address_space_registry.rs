@@ -182,7 +182,7 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
     // maps one from its parent's rate, and most callers build nothing like an ELF process.
     let name = USER_SPACES
         .lock()
-        .insert_with(|_| Registered { space, bound: None })
+        .insert_with_name(|_| Registered { space, bound: None })
         .map(generational_table::EntryName::to_bits);
     // On a refusal the closure is dropped uncalled, and `space`'s `Drop` forgets the root, frees
     // the ASID and gives the count back; the page stays spent on the caller's budget. Nothing is
@@ -357,7 +357,7 @@ pub(crate) fn register_bound_address_space(
     let mut spaces = USER_SPACES.lock();
     let mut copy = None;
     spaces
-        .insert_with(|name| {
+        .insert_with_name(|name| {
             copy = Some(BoundSpace::of(name.to_bits(), &space));
             Registered {
                 space: {
@@ -427,7 +427,7 @@ pub(crate) fn reap_address_spaces_in_region(base: u64, end: u64) {
 pub fn readopt_user_address_space(space: AddressSpace) -> Option<u64> {
     USER_SPACES
         .lock()
-        .insert_with(|_| Registered { space, bound: None })
+        .insert_with_name(|_| Registered { space, bound: None })
         .map(generational_table::EntryName::to_bits)
 }
 
@@ -473,7 +473,7 @@ mod tests {
 
         {
             let mut spaces = USER_SPACES.lock();
-            while spaces.insert_with(|_| placeholder()).is_some() {}
+            while spaces.insert_with_name(|_| placeholder()).is_some() {}
         }
         let refused = user_address_space_create(region);
         loop {

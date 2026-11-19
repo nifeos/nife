@@ -422,7 +422,7 @@ impl<const N: usize> RegionTable<N> {
             return None;
         }
         self.table
-            .insert_with(|_| Region {
+            .insert_with_name(|_| Region {
                 base_page,
                 pages,
                 watermark: 0,
@@ -457,7 +457,7 @@ impl<const N: usize> RegionTable<N> {
         if !self.can_charge(parent, Counted::Region) {
             return None;
         }
-        let child = self.table.insert_with(|_| Region {
+        let child = self.table.insert_with_name(|_| Region {
             base_page,
             pages,
             watermark: 0,

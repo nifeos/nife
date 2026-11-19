@@ -53,7 +53,7 @@ impl<const N: usize> RegionTable<N> {
         (ceilings, live, held): (Ceilings, Ceilings, [u32; ObjectKind::COUNT]),
     ) -> Option<u64> {
         self.table
-            .insert_with(|_| Region {
+            .insert_with_name(|_| Region {
                 base_page,
                 pages,
                 watermark,

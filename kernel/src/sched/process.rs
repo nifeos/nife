@@ -102,7 +102,7 @@ pub fn create_process_from(region: u64, space: u64) -> Result<ProcessId, abi::Er
         // insert. Then the count the retype took goes back; the page stays spent.
         let Some(pid) = sched
             .processes
-            .insert_with(|_| ProcessPageAddress::new(phys))
+            .insert_with_name(|_| ProcessPageAddress::new(phys))
             .map(generational_table::EntryName::to_bits)
         else {
             crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Process);

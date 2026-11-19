@@ -485,7 +485,7 @@ fn a_corpse_still_leaving_its_core_is_reaped_once_it_has_left() {
 /// **The cursor resumes, and it never repeats or skips a member.**
 ///
 /// The walk gives `IPC_TABLES` back between entries, so the cursor is the only thing carrying the
-/// position across calls (`generational_table::Table::iter_from`). A cursor that resolved to a *position* rather
+/// position across calls (`generational_table::Table::iter_from_slot_index`). A cursor that resolved to a *position* rather
 /// than a slot would double-report or drop a member the moment anything changed, so what is checked
 /// is the invariant that makes the shape safe: distinct tids, every one of them a real member.
 ///
@@ -552,7 +552,7 @@ fn the_survey_cursor_counts_threads_the_viewer_cannot_name() {
     let parking = rendezvous(rendezvous_region);
 
     // Creation order is the whole experiment: one of mine, then a stranger the viewer will never be
-    // shown, then a second of mine. `generational_table::Table::insert_with` takes the lowest free slot, so the
+    // shown, then a second of mine. `generational_table::Table::insert_with_name` takes the lowest free slot, so the
     // three land in strictly increasing slots in this order and the stranger's is between the two
     // the viewer can see.
     let a = child_in(budget, REPORT_STUB, Some(parking), mine);

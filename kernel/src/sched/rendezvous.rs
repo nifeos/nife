@@ -48,7 +48,7 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
     // insert. Then the count the retype took goes back; the page stays spent.
     let Some(name) = sched
         .rendezvous_table
-        .insert_with(|_| RendezvousPageAddress::new(phys))
+        .insert_with_name(|_| RendezvousPageAddress::new(phys))
         .map(EntryName::to_bits)
     else {
         crate::memory_region::release_object(region, crate::memory_region::ObjectKind::Rendezvous);
