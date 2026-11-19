@@ -117,7 +117,7 @@ a contract crate never publishes to crates.io, and the tag is its release.
 Ruled 2026-11-14 (UTC) for the whole family: the byte position of a page field or region-layout
 field is named `<FIELD>_OFFSET_BYTES`, with the field name spelled out under `design/naming.md`.
 This crate's constants are `MAGIC_OFFSET_BYTES` and `HERTZ_OFFSET_BYTES`. A constant that counts
-words says `_OFFSET_WORDS`. No old spelling is kept as an alias.
+words says `_OFFSET_WORDS`. The family keeps no alias for an old spelling.
 
 ## Done when
 
