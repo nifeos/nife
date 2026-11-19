@@ -1,4 +1,4 @@
-//! **The PLDA `XpressRICH` bridge**: the registers in the controller's `apb` window, and the address
+//! **The `PLDA` `XpressRICH` bridge**: the registers in the controller's `apb` window, and the address
 //! translation (ATR) table that maps the processor's windows onto PCI Express addresses.
 //!
 //! Transcribed from Linux's `drivers/pci/controller/plda/pcie-plda.h` and `pcie-plda-host.c`
@@ -56,7 +56,7 @@ pub const WINDOW_CAPABILITIES: u32 = 0xfc;
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PREF_MEM_WIN_64_SUPPORT")]
-pub const PREFETCHABLE_WINDOW_64_BIT: u32 = 1 << 3;
+pub const PREFETCH_WINDOW_64_BIT: u32 = 1 << 3;
 
 /// The message reception word.
 ///
@@ -80,33 +80,33 @@ pub const LOCAL_INTERRUPT_MASK: u32 = 0x180;
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "ISTATUS_LOCAL")]
 pub const LOCAL_INTERRUPT_STATUS: u32 = 0x184;
-/// The address a device writes a message-signalled interrupt to, inside this window.
+/// The address a device writes a message-signaled interrupt to, inside this window.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "IMSI_ADDR")]
-pub const MESSAGE_SIGNALLED_INTERRUPT_ADDRESS: u32 = 0x190;
-/// The message-signalled interrupt status: one bit per vector, 32 vectors.
+pub const MESSAGE_SIGNALED_INTERRUPT_BUS_ADDRESS: u32 = 0x190;
+/// The message-signaled interrupt status: one bit per vector, 32 vectors.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "ISTATUS_MSI")]
-pub const MESSAGE_SIGNALLED_INTERRUPT_STATUS: u32 = 0x194;
-/// [`LOCAL_INTERRUPT_STATUS`]: the four legacy interrupt lines, INTA to INTD, bits 24 to 27.
+pub const MESSAGE_SIGNALED_INTERRUPT_STATUS: u32 = 0x194;
+/// [`LOCAL_INTERRUPT_STATUS`]: the four legacy interrupt lines, A to D, bits 24 to 27.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PM_MSI_INT_INTX_MASK")]
 pub const LEGACY_INTERRUPTS: u32 = 0xf << 24;
-/// [`LOCAL_INTERRUPT_STATUS`]: a message-signalled interrupt arrived.
+/// [`LOCAL_INTERRUPT_STATUS`]: a message-signaled interrupt arrived.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PM_MSI_INT_MSI")]
-pub const MESSAGE_SIGNALLED_INTERRUPT: u32 = 1 << 28;
+pub const MESSAGE_SIGNALED_INTERRUPT: u32 = 1 << 28;
 
 /// The root port's own type 1 configuration header, at this offset inside the bridge window.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "CONFIG_SPACE_ADDR_OFFSET")]
 pub const ROOT_PORT_CONFIGURATION: u32 = 0x1000;
-/// The root port's BAR0, inside the bridge window. The bring-up writes zero to it and to the word
+/// The root port's first base address register (BAR), BAR0, inside the bridge window. The bring-up writes zero to it and to the word
 /// after it.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
@@ -116,26 +116,26 @@ pub const ROOT_PORT_BAR0: u32 = ROOT_PORT_CONFIGURATION + 0x10;
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 pub const ROOT_PORT_BAR1: u32 = ROOT_PORT_CONFIGURATION + 0x14;
 
-/// The first outbound translation entry: the processor's AXI slave 0 window 0.
+/// The first outbound translation entry: the processor's `AXI` slave 0 window 0.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "ATR0_AXI4_SLV0_SRCADDR_PARAM")]
-pub const OUTBOUND_SOURCE_ADDRESS_AND_SIZE: u32 = 0x800;
+pub const OUTBOUND_SOURCE_LOW: u32 = 0x800;
 /// The entry's source address, bits 63:32.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "ATR0_AXI4_SLV0_SRC_ADDR")]
-pub const OUTBOUND_SOURCE_ADDRESS_HIGH: u32 = 0x804;
+pub const OUTBOUND_SOURCE_HIGH: u32 = 0x804;
 /// The entry's translated (PCI Express) address, bits 31:0.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "ATR0_AXI4_SLV0_TRSL_ADDR_LSB")]
-pub const OUTBOUND_TRANSLATED_ADDRESS_LOW: u32 = 0x808;
+pub const OUTBOUND_TRANSLATION_LOW: u32 = 0x808;
 /// The entry's translated address, bits 63:32.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "ATR0_AXI4_SLV0_TRSL_ADDR_UDW")]
-pub const OUTBOUND_TRANSLATED_ADDRESS_HIGH: u32 = 0x80c;
+pub const OUTBOUND_TRANSLATION_HIGH: u32 = 0x80c;
 /// The entry's interface: [`INTERFACE_TRANSMIT_RECEIVE`] or [`INTERFACE_CONFIGURATION`].
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
@@ -146,21 +146,21 @@ pub const OUTBOUND_INTERFACE: u32 = 0x810;
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "ATR_ENTRY_SIZE")]
 pub const TRANSLATION_ENTRY_BYTES: u32 = 32;
-/// How many outbound entries the AXI slave 0 table holds.
+/// How many outbound entries the `AXI` slave 0 table holds.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 pub const OUTBOUND_ENTRIES: u32 = 8;
 
-/// [`OUTBOUND_SOURCE_ADDRESS_AND_SIZE`]: the entry is in use.
+/// [`OUTBOUND_SOURCE_LOW`]: the entry is in use.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "ATR_IMPL_ENABLE")]
 pub const TRANSLATION_ENABLE: u32 = 1 << 0;
-/// [`OUTBOUND_SOURCE_ADDRESS_AND_SIZE`]: the size field, bits 6:1, holding `log2(size) - 1`.
+/// [`OUTBOUND_SOURCE_LOW`]: the size field, bits 6:1, holding `log2(size) - 1`.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "ATR_SIZE_MASK")]
-pub const TRANSLATION_SIZE_MASK: u32 = 0x3f << 1;
+pub const TRANSLATION_SIZE_ORDER_MASK: u32 = 0x3f << 1;
 /// [`OUTBOUND_INTERFACE`]: memory reads and writes.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
@@ -179,7 +179,7 @@ pub const MINIMUM_TRANSLATION_BYTES: u64 = 0x1000;
 
 /// **One outbound translation entry's five words**, as `(offset, value)` pairs in the order Linux's
 /// `plda_pcie_setup_window` writes them, for entry `index` mapping `size_bytes` of the processor's
-/// address space at `processor_address` onto `pci_address`.
+/// address space at `processor_physical_address` onto `pci_bus_address`.
 ///
 /// Entry 0 carries configuration requests and every other entry memory requests, as Linux assigns
 /// them. Refuses (`None`) an index past the table, a size that is not a power of two of at least
@@ -191,8 +191,8 @@ pub const MINIMUM_TRANSLATION_BYTES: u64 = 0x1000;
 #[must_use]
 pub const fn outbound_window(
     index: u32,
-    processor_address: u64,
-    pci_address: u64,
+    processor_physical_address: u64,
+    pci_bus_address: u64,
     size_bytes: u64,
 ) -> Option<[(u32, u32); 5]> {
     if index >= OUTBOUND_ENTRIES
@@ -210,21 +210,21 @@ pub const fn outbound_window(
     } else {
         INTERFACE_TRANSMIT_RECEIVE
     };
-    let source_low = (processor_address as u32) & !(MINIMUM_TRANSLATION_BYTES as u32 - 1);
+    let source_low = (processor_physical_address as u32) & !(MINIMUM_TRANSLATION_BYTES as u32 - 1);
     Some([
         (base + OUTBOUND_INTERFACE, interface),
         (
-            base + OUTBOUND_SOURCE_ADDRESS_AND_SIZE,
-            source_low | ((size_field << 1) & TRANSLATION_SIZE_MASK) | TRANSLATION_ENABLE,
+            base + OUTBOUND_SOURCE_LOW,
+            source_low | ((size_field << 1) & TRANSLATION_SIZE_ORDER_MASK) | TRANSLATION_ENABLE,
         ),
         (
-            base + OUTBOUND_SOURCE_ADDRESS_HIGH,
-            (processor_address >> 32) as u32,
+            base + OUTBOUND_SOURCE_HIGH,
+            (processor_physical_address >> 32) as u32,
         ),
-        (base + OUTBOUND_TRANSLATED_ADDRESS_LOW, pci_address as u32),
+        (base + OUTBOUND_TRANSLATION_LOW, pci_bus_address as u32),
         (
-            base + OUTBOUND_TRANSLATED_ADDRESS_HIGH,
-            (pci_address >> 32) as u32,
+            base + OUTBOUND_TRANSLATION_HIGH,
+            (pci_bus_address >> 32) as u32,
         ),
     ])
 }
@@ -236,10 +236,10 @@ pub const fn outbound_window(
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[must_use]
-pub const fn translated_size_bytes(source_address_and_size: u32) -> Option<u64> {
-    if source_address_and_size & TRANSLATION_ENABLE == 0 {
+pub const fn translated_size_bytes(source_low: u32) -> Option<u64> {
+    if source_low & TRANSLATION_ENABLE == 0 {
         return None;
     }
-    let field = (source_address_and_size & TRANSLATION_SIZE_MASK) >> 1;
+    let field = (source_low & TRANSLATION_SIZE_ORDER_MASK) >> 1;
     1u64.checked_shl(field + 1)
 }

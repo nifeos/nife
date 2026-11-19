@@ -19,7 +19,7 @@ pub struct Window {
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PortNumber {
-    /// `pcie@940000000`: the VL805 USB 3 controller on a `VisionFive` 2.
+    /// `pcie@940000000`: the board's USB 3 controller on a `VisionFive` 2.
     Zero,
     /// `pcie@9c0000000`: the M.2 M-key slot on a `VisionFive` 2.
     One,
@@ -55,7 +55,7 @@ impl PortNumber {
     ///
     /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
     #[must_use]
-    pub const fn phy_physical_address(self) -> u64 {
+    pub const fn physical_layer_physical_address(self) -> u64 {
         match self {
             Self::Zero => 0x1021_0000,
             Self::One => 0x1022_0000,
@@ -82,7 +82,7 @@ impl PortNumber {
                     physical_address: 0x3000_0000,
                     size_bytes: 0x800_0000,
                 },
-                prefetchable_memory: Some(Window {
+                prefetch_memory: Some(Window {
                     physical_address: 0x9_0000_0000,
                     size_bytes: 0x4000_0000,
                 }),
@@ -102,7 +102,7 @@ impl PortNumber {
                     physical_address: 0x3800_0000,
                     size_bytes: 0x800_0000,
                 },
-                prefetchable_memory: Some(Window {
+                prefetch_memory: Some(Window {
                     physical_address: 0x9_8000_0000,
                     size_bytes: 0x4000_0000,
                 }),
@@ -127,8 +127,8 @@ pub struct Port {
     /// The 32-bit non-prefetchable memory range the kernel places BARs in.
     pub memory_32_bit: Window,
     /// The 64-bit prefetchable memory range, if the tree names one.
-    pub prefetchable_memory: Option<Window>,
-    /// The PERST# pin in the SYS GPIO controller, active low, if the tree names one.
+    pub prefetch_memory: Option<Window>,
+    /// The `PERST#` pin in the SYS GPIO controller, active low, if the tree names one.
     pub reset_pin: Option<u32>,
 }
 
@@ -147,7 +147,7 @@ pub const SYSTEM_CONTROLLER: Window = Window {
     physical_address: 0x1303_0000,
     size_bytes: 0x1000,
 };
-/// **The SYS GPIO controller's window**, `sysgpio`, which drives each port's PERST#.
+/// **The SYS GPIO controller's window**, `sysgpio`, which drives each port's `PERST#`.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 pub const SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT: Window = Window {
@@ -157,4 +157,4 @@ pub const SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT: Window = Window {
 /// Each PHY's window size. Only the first page is written.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
-pub const PHY_SIZE_BYTES: u64 = 0x1_0000;
+pub const PHYSICAL_LAYER_SIZE_BYTES: u64 = 0x1_0000;

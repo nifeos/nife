@@ -18,7 +18,7 @@ use crate::Window;
 /// The root port's address: bus 0, device 0, function 0.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
-pub const ADDRESS: Bdf = Bdf {
+pub const LOCATION: Bdf = Bdf {
     bus: 0,
     dev: 0,
     func: 0,
@@ -43,7 +43,7 @@ pub const MEMORY_BASE_AND_LIMIT: u64 = 0x20;
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PCI_PREF_MEMORY_BASE")]
-pub const PREFETCHABLE_BASE_AND_LIMIT: u64 = 0x24;
+pub const PREFETCH_BASE_AND_LIMIT: u64 = 0x24;
 
 /// A base above its limit, which forwards nothing: base `0xf0`, limit `0x00` in the I/O word.
 /// The secondary status half is written zero, which clears nothing, as its bits clear on a one.
@@ -53,7 +53,7 @@ pub const INPUT_OUTPUT_CLOSED: u32 = 0x0000_00f0;
 /// A base above its limit for the prefetchable word: base `0xfff0_0000`, limit below it.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
-pub const PREFETCHABLE_CLOSED: u32 = 0x0000_fff0;
+pub const PREFETCH_CLOSED: u32 = 0x0000_fff0;
 
 /// **The memory base and limit word that forwards exactly `window`**, or `None` when the window
 /// is empty, crosses 4 GiB, or is not aligned to the 1 MiB granule the word counts in.
@@ -122,29 +122,29 @@ pub fn configure(
     write32: &mut dyn FnMut(Bdf, u64, u32),
     memory: Window,
 ) -> Configured {
-    if read32(ADDRESS, 0) & 0xffff == 0xffff {
+    if read32(LOCATION, 0) & 0xffff == 0xffff {
         return Configured::Absent;
     }
-    let header_type = ((read32(ADDRESS, HEADER_TYPE & !3) >> 16) & 0x7f) as u8;
+    let header_type = ((read32(LOCATION, HEADER_TYPE & !3) >> 16) & 0x7f) as u8;
     if header_type != HEADER_TYPE_BRIDGE {
         return Configured::NotABridge { header_type };
     }
     let Some(memory_word) = memory_base_and_limit(memory) else {
         return Configured::WindowUnusable;
     };
-    let before = read32(ADDRESS, BUS_NUMBERS);
-    write32(ADDRESS, BUS_NUMBERS, bus_numbers(before));
-    write32(ADDRESS, MEMORY_BASE_AND_LIMIT, memory_word);
-    write32(ADDRESS, INPUT_OUTPUT_BASE_AND_LIMIT, INPUT_OUTPUT_CLOSED);
-    write32(ADDRESS, PREFETCHABLE_BASE_AND_LIMIT, PREFETCHABLE_CLOSED);
-    let command = read32(ADDRESS, COMMAND) & 0xffff;
+    let before = read32(LOCATION, BUS_NUMBERS);
+    write32(LOCATION, BUS_NUMBERS, bus_numbers(before));
+    write32(LOCATION, MEMORY_BASE_AND_LIMIT, memory_word);
+    write32(LOCATION, INPUT_OUTPUT_BASE_AND_LIMIT, INPUT_OUTPUT_CLOSED);
+    write32(LOCATION, PREFETCH_BASE_AND_LIMIT, PREFETCH_CLOSED);
+    let command = read32(LOCATION, COMMAND) & 0xffff;
     write32(
-        ADDRESS,
+        LOCATION,
         COMMAND,
         command | u32::from(CMD_MEMORY_SPACE | CMD_BUS_MASTER),
     );
     Configured::Forwarding {
-        bus_numbers: read32(ADDRESS, BUS_NUMBERS),
-        memory_base_and_limit: read32(ADDRESS, MEMORY_BASE_AND_LIMIT),
+        bus_numbers: read32(LOCATION, BUS_NUMBERS),
+        memory_base_and_limit: read32(LOCATION, MEMORY_BASE_AND_LIMIT),
     }
 }

@@ -1,4 +1,4 @@
-//! The SYS GPIO controller's output words, four pins to a word, one byte each.
+//! The system (SYS) general-purpose input and output (GPIO) controller's output words, four pins to a word, one byte each.
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 

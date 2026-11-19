@@ -1,7 +1,7 @@
 //! **A simulated JH7110 root complex**, for the host tests: the five register windows a bring-up
 //! writes, a link that trains only after a correct sequence, and an ECAM view of the `cfg` window
-//! that decodes only once translation entry 0 maps it as configuration space, with an NVMe
-//! controller at `01:00.0` that answers only once the root port forwards bus 1.
+//! that decodes only once translation entry 0 maps it as configuration space, with a Non-Volatile
+//! Memory Express (NVMe) controller at `01:00.0` that answers only once the root port forwards bus 1.
 //!
 //! What it models is what Linux's sequence implies the hardware needs. It cannot say the silicon
 //! needs nothing more; the board does that.
@@ -11,7 +11,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    Block, PortNumber, Registers, general_purpose_input_output as gpio, glue, phy, xpressrich,
+    Block, PortNumber, Registers, general_purpose_input_output as gpio, glue, physical_layer, bridge,
 };
 
 /// One thing the bring-up did, in order, for the ordering tests.
@@ -33,7 +33,7 @@ pub struct Simulated {
     pub resets_stick: bool,
     /// Whether a device is fitted behind the port at all.
     pub device_fitted: bool,
-    /// Milliseconds since PERST# was last driven low, while it is low; `None` while it is high.
+    /// Milliseconds since `PERST#` was last driven low, while it is low; `None` while it is high.
     reset_held: Option<u32>,
     reset_was_held_long_enough: bool,
     clocks_on: bool,
@@ -57,18 +57,18 @@ impl Simulated {
         // Reset values that matter: LTR forwarding on, as the comment in Linux says, and the
         // controller's revision in the identification word.
         words.insert(
-            (Block::Bridge, xpressrich::MESSAGE_RECEPTION),
-            xpressrich::LATENCY_TOLERANCE_REPORTING_RECEPTION,
+            (Block::Bridge, bridge::MESSAGE_RECEPTION),
+            bridge::LATENCY_TOLERANCE_REPORTING_RECEPTION,
         );
         words.insert(
-            (Block::Bridge, xpressrich::IDENTIFICATION_CLASS_AND_REVISION),
+            (Block::Bridge, bridge::IDENTIFICATION_CLASS_AND_REVISION),
             0x0000_0002,
         );
         // Port 0's PHY wakes in USB 3 mode, which is what the mode writes undo.
-        words.insert((Block::SystemTopGroupController, phy::MODE), 1 << 20);
+        words.insert((Block::SystemTopGroupController, physical_layer::MODE), 1 << 20);
         words.insert(
-            (Block::SystemTopGroupController, phy::USB_SELECT),
-            phy::USB3_PHY_ENABLE,
+            (Block::SystemTopGroupController, physical_layer::USB_SELECT),
+            physical_layer::USB3_PHYSICAL_LAYER_ENABLE,
         );
         let reset_pin = port.mainline().reset_pin.unwrap_or(0);
         Self {
@@ -108,47 +108,47 @@ impl Simulated {
         enable == gpio::DRIVE && level == gpio::LOW
     }
 
-    fn phy_in_pci_express_mode(&self) -> bool {
-        let tuned = self.word(Block::Phy, phy::KVCO_LEVEL) == phy::KVCO_FINE_TUNE_LEVEL
-            && self.word(Block::Phy, phy::KVCO_TUNE_SIGNAL) == phy::KVCO_FINE_TUNE_SIGNALS;
+    fn physical_layer_in_pci_express_mode(&self) -> bool {
+        let tuned = self.word(Block::PhysicalLayer, physical_layer::OSCILLATOR_GAIN_LEVEL) == physical_layer::OSCILLATOR_GAIN_FINE_TUNE_LEVEL
+            && self.word(Block::PhysicalLayer, physical_layer::OSCILLATOR_GAIN_TUNE_SIGNAL) == physical_layer::OSCILLATOR_GAIN_FINE_TUNE_SIGNALS;
         let mode = match self.port {
             PortNumber::One => true,
             PortNumber::Zero => {
-                self.word(Block::SystemTopGroupController, phy::MODE) & phy::MODE_MASK == 0
-                    && self.word(Block::SystemTopGroupController, phy::USB_SELECT)
-                        & (phy::USB3_BUS_WIDTH_MASK | phy::USB3_PHY_ENABLE)
-                        == phy::USB3_BUS_WIDTH
+                self.word(Block::SystemTopGroupController, physical_layer::MODE) & physical_layer::MODE_MASK == 0
+                    && self.word(Block::SystemTopGroupController, physical_layer::USB_SELECT)
+                        & (physical_layer::USB3_BUS_WIDTH_MASK | physical_layer::USB3_PHYSICAL_LAYER_ENABLE)
+                        == physical_layer::USB3_BUS_WIDTH
             }
         };
         tuned && mode
     }
 
     /// What the hardware would need before training: the PHY in PCI Express mode, the glue saying
-    /// root port with a reference clock, clocks on, the bridge a root port, PERST# held for
+    /// root port with a reference clock, clocks on, the bridge a root port, `PERST#` held for
     /// [`crate::RESET_HOLD_MILLISECONDS`] and then released.
     fn may_train(&self) -> bool {
         self.device_fitted
-            && self.phy_in_pci_express_mode()
+            && self.physical_layer_in_pci_express_mode()
             && self.clocks_on
             && self.glue_word(glue::ROOT_PORT) & glue::ROOT_PORT_NOT_ENDPOINT != 0
             && self.glue_word(glue::WRITE_CHANNEL) & glue::REFERENCE_CLOCK_SOURCE_MASK
                 == glue::REFERENCE_CLOCK_SOURCE
-            && self.word(Block::Bridge, xpressrich::GENERAL_SETTINGS) & xpressrich::ROOT_PORT_ENABLE
+            && self.word(Block::Bridge, bridge::GENERAL_SETTINGS) & bridge::ROOT_PORT_ENABLE
                 != 0
             && self.reset_was_held_long_enough
             && !self.reset_pin_driven_low()
     }
 
     fn configuration_decodes(&self) -> bool {
-        let source = self.word(Block::Bridge, xpressrich::OUTBOUND_SOURCE_ADDRESS_AND_SIZE);
+        let source = self.word(Block::Bridge, bridge::OUTBOUND_SOURCE_LOW);
         let configuration = self.port.mainline().configuration;
-        source & xpressrich::TRANSLATION_ENABLE != 0
-            && self.word(Block::Bridge, xpressrich::OUTBOUND_INTERFACE)
-                == xpressrich::INTERFACE_CONFIGURATION
+        source & bridge::TRANSLATION_ENABLE != 0
+            && self.word(Block::Bridge, bridge::OUTBOUND_INTERFACE)
+                == bridge::INTERFACE_CONFIGURATION
             && u64::from(source & !0xfff) == configuration.physical_address & 0xffff_f000
-            && u64::from(self.word(Block::Bridge, xpressrich::OUTBOUND_SOURCE_ADDRESS_HIGH))
+            && u64::from(self.word(Block::Bridge, bridge::OUTBOUND_SOURCE_HIGH))
                 == configuration.physical_address >> 32
-            && xpressrich::translated_size_bytes(source) == Some(configuration.size_bytes)
+            && bridge::translated_size_bytes(source) == Some(configuration.size_bytes)
     }
 
     fn forwards_bus_one(&self) -> bool {
@@ -218,7 +218,7 @@ impl Simulated {
         match register {
             // PLDA's vendor identifier and the JH7110's device identifier.
             0x00 => 0x0100_1556,
-            0x08 => self.word(Block::Bridge, xpressrich::IDENTIFICATION_CLASS_AND_REVISION),
+            0x08 => self.word(Block::Bridge, bridge::IDENTIFICATION_CLASS_AND_REVISION),
             0x0c => u32::from(pci_configuration_space::HEADER_TYPE_BRIDGE) << 16,
             // Hidden: the `StarFive` glue reads zero here, as Linux's config accessor makes it.
             0x10 | 0x14 => 0,

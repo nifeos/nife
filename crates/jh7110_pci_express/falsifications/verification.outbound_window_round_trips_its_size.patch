@@ -1,0 +1,20 @@
+Falsifies `jh7110_pci_express::verification::outbound_window_round_trips_its_size`.
+
+The defect: the size field holds `log2(size)` rather than `log2(size) - 1`, so every window the
+bridge decodes is twice the size the caller asked for and overlaps whatever lies above it.
+
+Expected to fail: the harness's assertion that `translated_size_bytes` decodes the size back.
+
+diff --git a/crates/jh7110_pci_express/src/bridge.rs b/crates/jh7110_pci_express/src/bridge.rs
+index 1723209a6..41cb6cccc 100644
+--- a/crates/jh7110_pci_express/src/bridge.rs
++++ b/crates/jh7110_pci_express/src/bridge.rs
+@@ -203,7 +203,7 @@ pub const fn outbound_window(
+     }
+     // At most 62, since `size_bytes` is a power of two of at least 4 KiB in a u64: always inside
+     // the 6-bit field.
+-    let size_field = size_bytes.trailing_zeros() - 1;
++    let size_field = size_bytes.trailing_zeros();
+     let base = index * TRANSLATION_ENTRY_BYTES;
+     let interface = if index == 0 {
+         INTERFACE_CONFIGURATION

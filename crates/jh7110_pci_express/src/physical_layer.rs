@@ -2,36 +2,36 @@
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 
-/// The PHY's PLL KVCO level word.
+/// The PHY's phase-locked loop (PLL) `KVCO` level word.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PCIE_KVCO_LEVEL_OFF")]
-pub const KVCO_LEVEL: u32 = 0x28;
-/// The value Linux writes to [`KVCO_LEVEL`].
+pub const OSCILLATOR_GAIN_LEVEL: u32 = 0x28;
+/// The value Linux writes to [`OSCILLATOR_GAIN_LEVEL`].
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PHY_KVCO_FINE_TUNE_LEVEL")]
-pub const KVCO_FINE_TUNE_LEVEL: u32 = 0x91;
-/// The PHY's PLL KVCO tuning signal word.
+pub const OSCILLATOR_GAIN_FINE_TUNE_LEVEL: u32 = 0x91;
+/// The PHY's PLL `KVCO` tuning signal word.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PCIE_KVCO_TUNE_SIGNAL_OFF")]
-pub const KVCO_TUNE_SIGNAL: u32 = 0x80;
-/// The value Linux writes to [`KVCO_TUNE_SIGNAL`].
+pub const OSCILLATOR_GAIN_TUNE_SIGNAL: u32 = 0x80;
+/// The value Linux writes to [`OSCILLATOR_GAIN_TUNE_SIGNAL`].
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PHY_KVCO_FINE_TUNE_SIGNALS")]
-pub const KVCO_FINE_TUNE_SIGNALS: u32 = 0xc;
+pub const OSCILLATOR_GAIN_FINE_TUNE_SIGNALS: u32 = 0xc;
 /// The PHY's PLL control word.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PCIE_USB3_PHY_PLL_CTL_OFF")]
-pub const PLL_CONTROL: u32 = 0x7c;
-/// [`PLL_CONTROL`] and [`super::phy::USB_SELECT`]: the USB 3 PHY is on. Cleared for PCI Express.
+pub const PHASE_LOCKED_LOOP_CONTROL: u32 = 0x7c;
+/// [`PHASE_LOCKED_LOOP_CONTROL`] and [`super::physical_layer::USB_SELECT`]: the USB 3 PHY is on. Cleared for PCI Express.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "PCIE_USB3_PHY_ENABLE")]
-pub const USB3_PHY_ENABLE: u32 = 1 << 4;
+pub const USB3_PHYSICAL_LAYER_ENABLE: u32 = 1 << 4;
 /// Port 0's PHY mode word in the STG system controller (the tree's first `stg-syscon` cell).
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.

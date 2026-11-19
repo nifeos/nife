@@ -1,14 +1,15 @@
 #![cfg_attr(not(test), no_std)]
-//! The `StarFive` JH7110's PCI Express root complex, as pure logic: the PLDA `XpressRICH` bridge's
-//! registers ([`xpressrich`]), the `StarFive` glue in the STG system controller and the PHY, the
-//! bring-up sequence ([`bring_up`]) and the root port's bus and window assignment
-//! ([`root_port`]).
+//! The `StarFive` JH7110's Peripheral Component Interconnect (PCI) Express root complex, as pure
+//! logic: the `PLDA` `XpressRICH` bridge's registers ([`bridge`]), the `StarFive` glue in the
+//! system top group (STG) controller and the physical (PHY) layer, the bring-up sequence
+//! ([`bring_up`]) and the root port's bus and window assignment ([`root_port`]).
 //!
 //! The JH7110 has two ports. On a `VisionFive` 2, port 1 is the M.2 M-key slot and port 0 carries
-//! the VL805 USB 3 controller. Once [`bring_up`] has run, a port's `cfg` window answers
-//! configuration requests in the ECAM layout, so `pci_configuration_space` walks it as it walks
-//! QEMU's generic host. Nothing here reads a device tree or touches memory: the caller supplies a
-//! [`Registers`] implementation over the five windows a bring-up writes.
+//! the board's Universal Serial Bus (USB) 3 controller. Once [`bring_up`] has run, a port's `cfg`
+//! window answers configuration requests in the Enhanced Configuration Access Mechanism (ECAM)
+//! layout, so `pci_configuration_space` walks it as it walks QEMU's generic host. Nothing here
+//! reads a device tree or touches memory: the caller supplies a [`Registers`] implementation over
+//! the five windows a bring-up writes.
 //!
 //! Every offset, bit and step is transcribed from mainline Linux, `torvalds/linux` at
 //! `cbbddb6b08cc`: `drivers/pci/controller/plda/pcie-starfive.c`, `pcie-plda.h`,
@@ -20,8 +21,8 @@
 //!
 //! # BUGS
 //!
-//! - The PERST# pin's pad configuration (input enable, Schmitt trigger, bias) is left as reset
-//!   leaves it. Linux clears those three when it turns the pin into an output; the output itself
+//! - The fundamental reset pin's (`PERST#`) pad configuration (input enable, Schmitt trigger,
+//!   bias) is left as reset leaves it. Linux clears those three when it turns the pin into an output; the output itself
 //!   does not depend on them.
 //! - The root port forwards one bus. A PCI Express switch behind it would need a subordinate bus
 //!   number above 1.
@@ -33,17 +34,17 @@
 mod bring_up;
 pub mod general_purpose_input_output;
 pub mod glue;
-pub mod phy;
+pub mod physical_layer;
 mod port;
 pub mod root_port;
-pub mod xpressrich;
+pub mod bridge;
 
 pub use bring_up::{
     Block, BroughtUp, Failure, LINK_POLL_INTERVAL_MILLISECONDS, LINK_POLLS,
     RESET_HOLD_MILLISECONDS, Registers, bring_up,
 };
 pub use port::{
-    PHY_SIZE_BYTES, Port, PortNumber, SYSTEM_CONTROLLER, SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT,
+    PHYSICAL_LAYER_SIZE_BYTES, Port, PortNumber, SYSTEM_CONTROLLER, SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT,
     SYSTEM_TOP_GROUP_CONTROLLER, Window,
 };
 

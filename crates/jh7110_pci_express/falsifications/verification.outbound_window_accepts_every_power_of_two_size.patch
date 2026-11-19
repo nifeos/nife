@@ -1,0 +1,20 @@
+Falsifies `jh7110_pci_express::verification::outbound_window_accepts_every_power_of_two_size`.
+
+The defect: the smallest window, one 4 KiB granule, is refused, so a tree that names a 4 KiB
+range gets no translation entry at all.
+
+Expected to fail: the harness's assertion that every power of two from 4 KiB up is accepted.
+
+diff --git a/crates/jh7110_pci_express/src/bridge.rs b/crates/jh7110_pci_express/src/bridge.rs
+index 1723209a6..923be3403 100644
+--- a/crates/jh7110_pci_express/src/bridge.rs
++++ b/crates/jh7110_pci_express/src/bridge.rs
+@@ -196,7 +196,7 @@ pub const fn outbound_window(
+     size_bytes: u64,
+ ) -> Option<[(u32, u32); 5]> {
+     if index >= OUTBOUND_ENTRIES
+-        || size_bytes < MINIMUM_TRANSLATION_BYTES
++        || size_bytes <= MINIMUM_TRANSLATION_BYTES
+         || !size_bytes.is_power_of_two()
+     {
+         return None;

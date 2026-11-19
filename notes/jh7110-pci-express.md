@@ -64,6 +64,6 @@ needs nothing more, and only the board can show that.
 - The PERST# pad's input enable, Schmitt trigger and bias stay as reset leaves them. Linux clears
   them when it makes the pin an output.
 - The root port forwards one bus, so a switch behind it would need more bus numbers.
-- No interrupts: the NVMe path polls. The bridge's interrupt registers are in `xpressrich` for the
+- No interrupts: the NVMe path polls. The bridge's interrupt registers are in `bridge` for the
   work that adds them.
 - One port at a time: `memory::pci_regions` holds one host.

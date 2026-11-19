@@ -1,0 +1,19 @@
+Falsifies `jh7110_pci_express::verification::memory_base_and_limit_forwards_exactly_the_window`.
+
+The defect: a window whose size is not a whole number of 1 MiB granules is accepted, and the
+limit word rounds it, so the root port forwards memory past the end of the range.
+
+Expected to fail: the harness's assertion that the decoded limit ends exactly at the window's end.
+
+diff --git a/crates/jh7110_pci_express/src/root_port.rs b/crates/jh7110_pci_express/src/root_port.rs
+index fc0948551..7eee2dae6 100644
+--- a/crates/jh7110_pci_express/src/root_port.rs
++++ b/crates/jh7110_pci_express/src/root_port.rs
+@@ -69,7 +69,6 @@ pub const fn memory_base_and_limit(window: Window) -> Option<u32> {
+     if window.size_bytes == 0
+         || end > 0x1_0000_0000
+         || !base.is_multiple_of(GRANULE)
+-        || !window.size_bytes.is_multiple_of(GRANULE)
+     {
+         return None;
+     }

@@ -3,7 +3,7 @@
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 
-use crate::{Port, PortNumber, Window, general_purpose_input_output, glue, phy, xpressrich};
+use crate::{Port, PortNumber, Window, general_purpose_input_output, glue, physical_layer, bridge};
 
 /// **The five windows a bring-up writes.**
 ///
@@ -14,8 +14,8 @@ pub enum Block {
     Bridge,
     /// [`SYSTEM_TOP_GROUP_CONTROLLER`].
     SystemTopGroupController,
-    /// The port's PHY window, [`PortNumber::phy_physical_address`].
-    Phy,
+    /// The port's PHY window, [`PortNumber::physical_layer_physical_address`].
+    PhysicalLayer,
     /// [`SYSTEM_CONTROLLER`].
     SystemController,
     /// [`SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT`].
@@ -38,11 +38,12 @@ pub trait Registers {
     fn enable_clocks_and_resets(&mut self, port: PortNumber) -> bool;
 }
 
-/// How long PERST# is held after power and clocks are stable (`T_PVPERL`, PCI Express card
+/// How long `PERST#` is held after power and clocks are stable (`T_PVPERL`, PCI Express card
 /// electromechanical specification 2.0, table 2-4), and how long software waits after releasing
 /// it before the first configuration request (`PCIE_RESET_CONFIG_WAIT_MS`).
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
+#[doc(alias = "T_PVPERL", alias = "PCIE_RESET_CONFIG_WAIT_MS")]
 pub const RESET_HOLD_MILLISECONDS: u32 = 100;
 /// How many times the bring-up reads the link status (`PCIE_LINK_WAIT_MAX_RETRIES`).
 ///
@@ -106,8 +107,8 @@ fn drive_reset_pin(registers: &mut dyn Registers, pin: u32, asserted: bool) {
 }
 
 /// **Bring `port` up**, in the order Linux's `starfive_pcie_host_init` and `plda_pcie_host_init`
-/// use: PHY mode, glue, clocks and resets, PERST# asserted, functions 1 to 3 disabled, the
-/// bridge made a root port, PERST# released, the link polled, then the outbound windows.
+/// use: PHY mode, glue, clocks and resets, `PERST#` asserted, functions 1 to 3 disabled, the
+/// bridge made a root port, `PERST#` released, the link polled, then the outbound windows.
 ///
 /// A link that never comes up is reported in [`BroughtUp::link_up`] rather than as a failure, as
 /// Linux does: the root port itself still answers at `00:00.0`. Refuses only when a reset does not
@@ -122,57 +123,57 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
     let glue_base = port.number.system_top_group_controller_base();
 
     // The PHY. Port 1's tree node names no system controller words, so only the tuning applies.
-    registers.write(Block::Phy, phy::KVCO_LEVEL, phy::KVCO_FINE_TUNE_LEVEL);
+    registers.write(Block::PhysicalLayer, physical_layer::OSCILLATOR_GAIN_LEVEL, physical_layer::OSCILLATOR_GAIN_FINE_TUNE_LEVEL);
     registers.write(
-        Block::Phy,
-        phy::KVCO_TUNE_SIGNAL,
-        phy::KVCO_FINE_TUNE_SIGNALS,
+        Block::PhysicalLayer,
+        physical_layer::OSCILLATOR_GAIN_TUNE_SIGNAL,
+        physical_layer::OSCILLATOR_GAIN_FINE_TUNE_SIGNALS,
     );
     if port.number == PortNumber::Zero {
-        let stg = Block::SystemTopGroupController;
-        update(registers, stg, phy::MODE, phy::MODE_MASK, 0);
+        let top_group = Block::SystemTopGroupController;
+        update(registers, top_group, physical_layer::MODE, physical_layer::MODE_MASK, 0);
         update(
             registers,
-            stg,
-            phy::USB_SELECT,
-            phy::USB3_BUS_WIDTH_MASK,
-            phy::USB3_BUS_WIDTH,
+            top_group,
+            physical_layer::USB_SELECT,
+            physical_layer::USB3_BUS_WIDTH_MASK,
+            physical_layer::USB3_BUS_WIDTH,
         );
-        update(registers, stg, phy::USB_SELECT, phy::USB3_PHY_ENABLE, 0);
+        update(registers, top_group, physical_layer::USB_SELECT, physical_layer::USB3_PHYSICAL_LAYER_ENABLE, 0);
         update(
             registers,
             Block::SystemController,
-            phy::CONNECT,
-            phy::USB_POWER_DOWN_RESET_SPLIT,
+            physical_layer::CONNECT,
+            physical_layer::USB_POWER_DOWN_RESET_SPLIT,
             0,
         );
         update(
             registers,
-            Block::Phy,
-            phy::PLL_CONTROL,
-            phy::USB3_PHY_ENABLE,
+            Block::PhysicalLayer,
+            physical_layer::PHASE_LOCKED_LOOP_CONTROL,
+            physical_layer::USB3_PHYSICAL_LAYER_ENABLE,
             0,
         );
     }
 
-    let stg = Block::SystemTopGroupController;
+    let top_group = Block::SystemTopGroupController;
     update(
         registers,
-        stg,
+        top_group,
         glue_base + glue::ROOT_PORT,
         glue::ROOT_PORT_NOT_ENDPOINT,
         glue::ROOT_PORT_NOT_ENDPOINT,
     );
     update(
         registers,
-        stg,
+        top_group,
         glue_base + glue::WRITE_CHANNEL,
         glue::REFERENCE_CLOCK_SOURCE_MASK,
         glue::REFERENCE_CLOCK_SOURCE,
     );
     update(
         registers,
-        stg,
+        top_group,
         glue_base + glue::WRITE_CHANNEL,
         glue::CLOCK_REQUEST,
         glue::CLOCK_REQUEST,
@@ -189,14 +190,14 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
     for function in 1..glue::FUNCTIONS {
         update(
             registers,
-            stg,
+            top_group,
             glue_base + glue::READ_CHANNEL,
             glue::READ_CHANNEL_MASK,
             function << glue::READ_CHANNEL_FUNCTION_SHIFT,
         );
         update(
             registers,
-            stg,
+            top_group,
             glue_base + glue::WRITE_CHANNEL,
             glue::WRITE_CHANNEL_MASK,
             function << glue::WRITE_CHANNEL_FUNCTION_SHIFT,
@@ -204,21 +205,21 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
         update(
             registers,
             Block::Bridge,
-            xpressrich::MISCELLANEOUS,
-            xpressrich::PHYSICAL_FUNCTION_DISABLE,
-            xpressrich::PHYSICAL_FUNCTION_DISABLE,
+            bridge::MISCELLANEOUS,
+            bridge::PHYSICAL_FUNCTION_DISABLE,
+            bridge::PHYSICAL_FUNCTION_DISABLE,
         );
     }
     update(
         registers,
-        stg,
+        top_group,
         glue_base + glue::READ_CHANNEL,
         glue::READ_CHANNEL_MASK,
         0,
     );
     update(
         registers,
-        stg,
+        top_group,
         glue_base + glue::WRITE_CHANNEL,
         glue::WRITE_CHANNEL_MASK,
         0,
@@ -228,32 +229,32 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
     update(
         registers,
         bridge,
-        xpressrich::GENERAL_SETTINGS,
-        xpressrich::ROOT_PORT_ENABLE,
-        xpressrich::ROOT_PORT_ENABLE,
+        bridge::GENERAL_SETTINGS,
+        bridge::ROOT_PORT_ENABLE,
+        bridge::ROOT_PORT_ENABLE,
     );
-    registers.write(bridge, xpressrich::ROOT_PORT_BAR0, 0);
-    registers.write(bridge, xpressrich::ROOT_PORT_BAR1, 0);
+    registers.write(bridge, bridge::ROOT_PORT_BAR0, 0);
+    registers.write(bridge, bridge::ROOT_PORT_BAR1, 0);
     update(
         registers,
         bridge,
-        xpressrich::IDENTIFICATION_CLASS_AND_REVISION,
-        !xpressrich::REVISION_MASK,
-        xpressrich::CLASS_PCI_TO_PCI_BRIDGE,
+        bridge::IDENTIFICATION_CLASS_AND_REVISION,
+        !bridge::REVISION_MASK,
+        bridge::CLASS_PCI_TO_PCI_BRIDGE,
     );
     update(
         registers,
         bridge,
-        xpressrich::MESSAGE_RECEPTION,
-        xpressrich::LATENCY_TOLERANCE_REPORTING_RECEPTION,
+        bridge::MESSAGE_RECEPTION,
+        bridge::LATENCY_TOLERANCE_REPORTING_RECEPTION,
         0,
     );
     update(
         registers,
         bridge,
-        xpressrich::WINDOW_CAPABILITIES,
-        xpressrich::PREFETCHABLE_WINDOW_64_BIT,
-        xpressrich::PREFETCHABLE_WINDOW_64_BIT,
+        bridge::WINDOW_CAPABILITIES,
+        bridge::PREFETCH_WINDOW_64_BIT,
+        bridge::PREFETCH_WINDOW_64_BIT,
     );
 
     registers.wait_milliseconds(RESET_HOLD_MILLISECONDS);
@@ -266,7 +267,7 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
     let mut link_status = 0;
     let mut link_up = false;
     while link_polls < LINK_POLLS {
-        link_status = registers.read(stg, glue_base + glue::LINK_STATUS);
+        link_status = registers.read(top_group, glue_base + glue::LINK_STATUS);
         link_polls += 1;
         if link_status & glue::DATA_LINK_ACTIVE != 0 {
             link_up = true;
@@ -278,7 +279,7 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
     let mut windows = 0;
     let mut program = |registers: &mut dyn Registers, index: u32, window: Window, pci: u64| {
         let entry =
-            xpressrich::outbound_window(index, window.physical_address, pci, window.size_bytes)
+            bridge::outbound_window(index, window.physical_address, pci, window.size_bytes)
                 .ok_or(Failure::Window(index))?;
         for (offset, value) in entry {
             registers.write(bridge, offset, value);
@@ -293,8 +294,8 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
         port.memory_32_bit,
         port.memory_32_bit.physical_address,
     )?;
-    if let Some(prefetchable) = port.prefetchable_memory {
-        program(registers, 2, prefetchable, prefetchable.physical_address)?;
+    if let Some(window) = port.prefetch_memory {
+        program(registers, 2, window, window.physical_address)?;
     }
 
     Ok(BroughtUp {

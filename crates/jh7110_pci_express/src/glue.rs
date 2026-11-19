@@ -3,7 +3,7 @@
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 
-/// The AXI slave read-channel word; bits 20:17 select a physical function.
+/// The `AXI` slave read-channel word; bits 20:17 select a physical function.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "STG_SYSCON_AR_OFFSET")]
@@ -17,7 +17,7 @@ pub const READ_CHANNEL_MASK: u32 = 0x7fff << 8;
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 pub const READ_CHANNEL_FUNCTION_SHIFT: u32 = 17;
-/// The AXI slave write-channel word; bits 12:9 select a physical function.
+/// The `AXI` slave write-channel word; bits 12:9 select a physical function.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "STG_SYSCON_AW_OFFSET")]
@@ -31,7 +31,7 @@ pub const WRITE_CHANNEL_MASK: u32 = 0x7fff;
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 pub const WRITE_CHANNEL_FUNCTION_SHIFT: u32 = 9;
-/// [`WRITE_CHANNEL`]: the controller asserts CLKREQ#.
+/// [`WRITE_CHANNEL`]: the controller asserts `CLKREQ#`.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 #[doc(alias = "STG_SYSCON_CLKREQ")]

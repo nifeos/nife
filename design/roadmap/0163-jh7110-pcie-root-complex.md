@@ -73,7 +73,7 @@ As `starfive_pcie_host_init` and `plda_pcie_host_init` do it:
    covering the 32-bit window; memory decoding and bus mastering on. Nothing in the kernel assigns
    bridge buses today (`pci.rs` reads them), and the NVMe controller sits at bus 1.
 10. Record `(cfg, mem32)` with `memory::record_pci_regions`, so step 9 of `map_everything` maps them
-    and `pci::find_nvme_device` finds the controller.
+    and `pci::find_non_volatile_memory_express_device` finds the controller.
 
 ## Steps that need no hardware
 
@@ -103,7 +103,7 @@ As `starfive_pcie_host_init` and `plda_pcie_host_init` do it:
       as the clock and reset discovery has.
 - [ ] Link up on port 1 with a drive fitted: the `DATA_LINK_ACTIVE` poll succeeds.
 - [ ] Enumeration: `00:00.0` reads as a bridge and `01:00.0` as class `0x010802`.
-- [ ] The NVMe path's identify and a read, through `pci::find_nvme_device`.
+- [ ] The NVMe path's identify and a read, through `pci::find_non_volatile_memory_express_device`.
 - [ ] Port 0 and the VL805, for §260.
 
 ## Open decisions
