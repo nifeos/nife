@@ -13,7 +13,7 @@ It is `no_std` with no allocator and one dependency, `intrusive_queue`, and sixt
 prove the one-queue invariant, the token discipline and the delivery rules. The timer and the futex
 table stay in this crate (maintainer, provisional, 2026-11-14 UTC, D2); the README the move writes
 states the shared reason (the same token discipline and proof shape) in its first line. The
-milestone is [1095](../../design/roadmap/1095-inter-process-communication-outside-review.md).
+milestone is [1095](../../design/roadmap/1095-inter-process-communication-outside-review.md), milestone 1095 (`inter_process_communication`: what an outside maintainer would fix before its first release).
 
 ## Identity
 
@@ -104,7 +104,7 @@ The manifest inherits `license` from the workspace. The crate adapts no source, 
 | The move: own manifest (`license`, `lints`, `rust-version`, description, repository), both license files, README and `docs/design.md` in place of the links to `notes/inter-process-communication.md`, citations and `Name:` lines stripped | the move lane |
 | A full mutation run in the new repository, with the three survivors triaged (P1-9) | the move lane |
 | Ratify the provisional names above, then the go to create the repository | calef |
-| The externalization list names the pair, `intrusive_queue` first | milestone 1017 |
+| The externalization list names the pair, `intrusive_queue` first | milestone 1017 (the contract crates leave in this order) |
 
 ## Proposed items
 
