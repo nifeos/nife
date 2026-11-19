@@ -13,7 +13,7 @@
 //! - The clock is boot-relative, so a rebooted machine's first ports repeat the last boot's.
 //! - The sequence-number half stays smoltcp's: a reused 4-tuple still fails half the time.
 
-/// The lowest port of the private ephemeral range (Request for Comments (RFC) 6335).
+/// The lowest port of the private ephemeral range.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub const LO: u16 = 49152;
@@ -246,8 +246,8 @@ mod tests {
         }
     }
 
-    /// The cursor walks the whole private range and nothing outside it (RFC 6335's
-    /// 49152 to 65535), in order, and wraps to its bottom. Spelled as numbers, because the
+    /// The cursor walks the whole private range and nothing outside it (the
+    /// range 49152 to 65535), in order, and wraps to its bottom. Spelled as numbers, because the
     /// other tests compare ports only with each other and would pass on any range.
     #[test]
     fn the_cursor_walks_49152_to_65535_and_wraps() {

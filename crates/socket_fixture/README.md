@@ -7,3 +7,28 @@ addresses of the QEMU runners' echo peer and package source. `no_std`. Its one d
 
 It is not a wire contract. The host's copy of the inbound gate's facts is spelled again on the host
 side on purpose, so the gate proves two independently written sides agree.
+
+## EXAMPLES
+
+```rust
+use socket_fixture::{INBOUND_MESSAGE, LISTEN_PORT};
+
+assert_eq!(LISTEN_PORT, 7778);
+assert_eq!(INBOUND_MESSAGE, b"nife-in!");
+```
+
+## What is proven
+
+Nothing is proven. A test checks that the port the gate probes is one no grant admits.
+
+## BUGS
+
+- None known.
+
+## Minimum Rust version
+
+Rust 1.88.
+
+## License
+
+Licensed under either of MIT (LICENSE-MIT) or Apache-2.0 (LICENSE-APACHE), at your option.

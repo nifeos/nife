@@ -1095,16 +1095,16 @@ fn serve_one_inbound(listener: &TcpListener, round: usize) {
         "round {round}: peer_addr disagrees with accept"
     );
 
-    let mut got = vec![0u8; fixture::IN_MSG.len()];
+    let mut got = vec![0u8; fixture::INBOUND_MESSAGE.len()];
     conn.read_exact(&mut got)
         .unwrap_or_else(|e| panic!("round {round}: reading the request failed: {e:?}"));
     assert_eq!(
         got,
-        fixture::IN_MSG,
+        fixture::INBOUND_MESSAGE,
         "round {round}: something connected and said something else",
     );
 
-    conn.write_all(fixture::OUT_MSG)
+    conn.write_all(fixture::OUTBOUND_MESSAGE)
         .unwrap_or_else(|e| panic!("round {round}: answering failed: {e:?}"));
 }
 

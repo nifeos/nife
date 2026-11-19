@@ -19,7 +19,7 @@
 use std::io::{Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpStream, ToSocketAddrs};
 
-use socket_fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
+use socket_fixture::{ECHO_PEER_ADDRESS, ECHO_PEER_PORT};
 
 // What it asks the owner for: its words (every `std` image hears them), its output, the network,
 // and names in `nife.test`.
@@ -37,7 +37,7 @@ capability_manifest_note::carry!(
 
 fn main() {
     const MSG: &[u8] = b"nife-reach";
-    let peer = SocketAddr::from((Ipv4Addr::from(ECHO_PEER_IP), ECHO_PEER_PORT));
+    let peer = SocketAddr::from((Ipv4Addr::from(ECHO_PEER_ADDRESS), ECHO_PEER_PORT));
     let echoed = TcpStream::connect(peer).and_then(|mut s| {
         s.write_all(MSG)?;
         let mut back = [0u8; MSG.len()];

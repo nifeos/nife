@@ -98,7 +98,7 @@ const DNS_IP: [u8; 4] = [10, 0, 2, 3];
 const DNS_PORT: u16 = 53;
 const GW_IP: [u8; 4] = [10, 0, 2, 2];
 const TFTP_PORT: u16 = 69;
-const ECHO_IP: [u8; 4] = socket_fixture::ECHO_PEER_IP;
+const ECHO_IP: [u8; 4] = socket_fixture::ECHO_PEER_ADDRESS;
 const ECHO_PORT: u16 = socket_fixture::ECHO_PEER_PORT;
 
 const DNS_TXID: u16 = 0x1234;
@@ -156,8 +156,8 @@ const CONNECTION: usize = 1;
 /// gate is that the guest *composed* an answer to a connection it did not make. Shared with
 /// `std_exerciser`'s inbound half through `socket_fixture`; `xtask`'s prober deliberately
 /// keeps its own literals, so the two sides of the exchange are written independently.
-const IN_MSG: &[u8] = socket_fixture::IN_MSG;
-const OUT_MSG: &[u8] = socket_fixture::OUT_MSG;
+const INBOUND_MESSAGE: &[u8] = socket_fixture::INBOUND_MESSAGE;
+const OUTBOUND_MESSAGE: &[u8] = socket_fixture::OUTBOUND_MESSAGE;
 
 /// The fixture the runners put in slirp's TFTP directory, and its exact contents. Both sides are
 /// fixed so the round trip is asserted byte for byte (see helpers/qemu-runner-*.sh).
@@ -752,18 +752,18 @@ fn serve_one_inbound(base: u64) {
     }
 
     let (rlen, _) = on(CONNECTION, OPERATION_RECEIVE, 0);
-    if rlen != IN_MSG.len() as u64 {
+    if rlen != INBOUND_MESSAGE.len() as u64 {
         done(base + 1);
     }
-    let mut got = [0u8; IN_MSG.len()];
-    SHARED_FRAME.payload_read(IN_MSG.len(), &mut got);
-    if &got[..] != IN_MSG {
+    let mut got = [0u8; INBOUND_MESSAGE.len()];
+    SHARED_FRAME.payload_read(INBOUND_MESSAGE.len(), &mut got);
+    if &got[..] != INBOUND_MESSAGE {
         done(base + 2); // something connected and said something else
     }
 
-    SHARED_FRAME.payload_write(OUT_MSG);
-    let (sent, _) = on(CONNECTION, OPERATION_SEND, OUT_MSG.len() as u64);
-    if sent != OUT_MSG.len() as u64 {
+    SHARED_FRAME.payload_write(OUTBOUND_MESSAGE);
+    let (sent, _) = on(CONNECTION, OPERATION_SEND, OUTBOUND_MESSAGE.len() as u64);
+    if sent != OUTBOUND_MESSAGE.len() as u64 {
         done(base + 3);
     }
 
@@ -810,7 +810,7 @@ const CATALOGUE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00C0_0000)
 pub(crate) const DIGEST_REFUSED: u64 = 3;
 // The package source the runners put at 10.0.2.9:8080 (`helpers/package-http-peer`).
 use socket_fixture::{
-    PACKAGE_PEER_HOST, PACKAGE_PEER_IP as PACKAGE_IP, PACKAGE_PEER_PORT as PACKAGE_PORT,
+    PACKAGE_PEER_HOST, PACKAGE_PEER_ADDRESS as PACKAGE_IP, PACKAGE_PEER_PORT as PACKAGE_PORT,
 };
 
 /// **Rung 3a's fetch and verify** (milestone 198 (a package manager)): `GET` a package over plain

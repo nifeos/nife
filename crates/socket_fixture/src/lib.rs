@@ -29,11 +29,11 @@ pub const DENIED_PORT: u16 = 8080;
 /// of the gate is that the guest *composed* an answer to a connection it did not make.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
-pub const IN_MSG: &[u8] = b"nife-in!";
+pub const INBOUND_MESSAGE: &[u8] = b"nife-in!";
 /// What the guest answers with, composed rather than echoed (see the field-group docs).
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
-pub const OUT_MSG: &[u8] = b"nife-out!";
+pub const OUTBOUND_MESSAGE: &[u8] = b"nife-out!";
 
 /// How many connections one listener serves before the client stops. Two, and the second is
 /// the load-bearing one: a listener that accepts exactly one connection would pass a
@@ -42,13 +42,13 @@ pub const OUT_MSG: &[u8] = b"nife-out!";
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub const ROUNDS: usize = 2;
 
-/// The runners' TCP echo peer: a `guestfwd` inside QEMU's user-mode network that pipes every
+/// The runners' Transmission Control Protocol (TCP) echo peer: a `guestfwd` inside QEMU's user-mode network that pipes every
 /// connection to `10.0.2.9:7777` into a fresh `/bin/cat`. Two binaries dial it, so it is here; the runners spell it a third
 /// time for [`LISTEN_PORT`]'s reason.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
-pub const ECHO_PEER_IP: [u8; 4] = [10, 0, 2, 9];
-/// The echo peer's port; see [`ECHO_PEER_IP`].
+pub const ECHO_PEER_ADDRESS: [u8; 4] = [10, 0, 2, 9];
+/// The echo peer's port; see [`ECHO_PEER_ADDRESS`].
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub const ECHO_PEER_PORT: u16 = 7777;
@@ -58,14 +58,14 @@ pub const ECHO_PEER_PORT: u16 = 7777;
 /// reachable inside a QEMU runner.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
-pub const PACKAGE_PEER_IP: [u8; 4] = [10, 0, 2, 9];
-/// The package source's port; see [`PACKAGE_PEER_IP`]. The same number as [`DENIED_PORT`], and
+pub const PACKAGE_PEER_ADDRESS: [u8; 4] = [10, 0, 2, 9];
+/// The package source's port; see [`PACKAGE_PEER_ADDRESS`]. The same number as [`DENIED_PORT`], and
 /// unrelated to it: that is a port a *guest* may not listen on, this is one on a *host* the
 /// guest dials.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub const PACKAGE_PEER_PORT: u16 = 8080;
-/// The `Host` header a request to the package source carries: [`PACKAGE_PEER_IP`], spelled.
+/// The `Host` header a request to the package source carries: [`PACKAGE_PEER_ADDRESS`], spelled.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
 pub const PACKAGE_PEER_HOST: &str = "10.0.2.9";
