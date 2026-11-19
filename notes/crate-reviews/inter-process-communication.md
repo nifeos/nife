@@ -13,16 +13,16 @@ It is `no_std` with no allocator and one dependency, `intrusive_queue`, and sixt
 prove the one-queue invariant, the token discipline and the delivery rules. The timer and the futex
 table stay in this crate (maintainer, provisional, 2026-11-14 UTC, D2); the README the move writes
 states the shared reason (the same token discipline and proof shape) in its first line. The
-milestone is [1095](../../design/roadmap/1095-inter-process-communication-outside-review.md), milestone 1095 (`inter_process_communication`: what an outside maintainer would fix before its first release).
+milestone is [1095](../../design/roadmap/1095-inter-process-communication-outside-review.md), milestone 1095 (`inter_process_communication`: what an outside maintainer would fix before it leaves).
 
 ## Identity
 
 | item | value |
 |---|---|
-| crate | `inter_process_communication`, ratified 2026-09-18 (the crate name only) |
+| crate | `inter_process_communication`, ratified 2026-09-18, the crate name only |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024; none in the manifest, the move writes it |
-| license | inherited from the nife workspace today; the move writes `MIT OR Apache-2.0` and both license files |
+| license | the nife workspace supplies it today; the move writes `MIT OR Apache-2.0` and both license files |
 | `publish` | `false`; nothing publishes until every outside-review milestone is delivered |
 | size | 2447 lines in seven files under `src/` (library, `tests.rs`, and `verification.rs` under `cfg(kani)`) |
 | dependency | `intrusive_queue`, by `path` in nife. It leaves first (milestone 1097, D3); this crate then pins it by a full revision |
@@ -45,22 +45,29 @@ What a stranger may find surprising:
   non-empty. A single queue with a tag would hold that by construction (milestone 1095, P2-11,
   open after the move).
 - `Timer::deadline` answers `NEVER` (`u64::MAX`) for no deadline (P2-13, open).
-- `debug_counts` on `Rendezvous` and `Notification` answers a struct with named fields.
+- `debug_counts` on `Rendezvous` and `Notification` answers a struct with field names.
 
 ## Proofs and falsification patches
 
 Sixteen harnesses in `notification.rs`, `timer.rs` and `verification.rs`, each with one patch under
-`falsifications/`. They cover the invariant after every operation, a signal losing no bit, a waiter
-woken before the bound receiver, a wait answering a non-zero word or blocking, the timer cache never
-later than an armed deadline, a walk firing exactly the due timers, no stale fire after a cancel or
-a re-arm, a bound endpoint never yielding a sender, rendezvous exactly when a receiver waited, a
-token coming back exactly when its node did not queue, removal preserving the invariant, a pending
-signal drained first, and a collected sender forgotten. The futex table has host tests and no
+`falsifications/`. Each harness covers one claim:
+
+- The invariant holds after every operation.
+- A signal loses no bit, and a waiter wakes before the bound receiver.
+- A wait answers a non-zero word or blocks.
+- The timer cache is never later than an armed deadline, and a walk fires exactly the due timers.
+- A cancelled or re-armed timer never fires stale.
+- A bound endpoint never yields a sender.
+- A send rendezvouses exactly when a receiver waited.
+- A token comes back exactly when its node did not queue.
+- Removing a waiter keeps the invariant, a pending signal drains first, and a collected sender is forgotten.
+
+The futex table has host tests and no
 harness. The proofs are inductive steps over one waiter per queue.
 
 ## Names
 
-One crate name is ratified. Every other name is unratified, 60 in all by `script/crate-standalone`.
+The crate name is the one ratified name. `script/crate-standalone` counts 60 unratified names.
 The ones this package asks the architect to ratify, all provisional with a `Name:` block:
 
 | name | ruling | what was considered |
@@ -74,8 +81,7 @@ The ones this package asks the architect to ratify, all provisional with a `Name
 | `RendezvousCounts`, `NotificationCounts` | P2-16b | keeping the tuples |
 
 The remaining names (the crate's modules, `Rendezvous`, `Notification`, `Timer`, `Key`, every method
-and `NEVER`) are unratified in their older blocks or have none, and the move writes none. A release
-review reopens names ratified before a later rule; only the crate name is ratified here.
+and `NEVER`) carry an older provisional block or none, and the move writes none.
 
 ## Naming rules
 
@@ -100,7 +106,7 @@ The manifest inherits `license` from the workspace. The crate adapts no source, 
 
 | item | owner |
 |---|---|
-| `intrusive_queue` leaves first (milestone 1097), then this crate pins its revision | milestone 1097 |
+| `intrusive_queue` leaves first, then this crate pins its revision | milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release) |
 | The move: own manifest (`license`, `lints`, `rust-version`, description, repository), both license files, README and `docs/design.md` in place of the links to `notes/inter-process-communication.md`, citations and `Name:` lines stripped | the move lane |
 | A full mutation run in the new repository, with the three survivors triaged (P1-9) | the move lane |
 | Ratify the provisional names above, then the go to create the repository | calef |
@@ -120,7 +126,7 @@ None beyond the milestone's open items (P0-3, P1-6, P1-7, P1-9, P2-11, P2-13, P2
 ## Result of `script/crate-standalone`
 
 A run with `--no-kani` fails exactly the checks the move resolves: 60 unratified names, the path
-dependency, the inherited `license` and `lints`, no `rust-version`, no README, no license files, and
+dependency, the workspace `license` and `lints`, no `rust-version`, no README, no license files, and
 the citations (12 section, 12 path and 9 milestone lines, in patch headers and rustdoc). The build is
 skipped because the dependency is outside the copy. Host tests, clippy with warnings denied, the
 bare-metal builds and Kani run green in nife.
