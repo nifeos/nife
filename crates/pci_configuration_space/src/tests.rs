@@ -136,7 +136,8 @@ fn ecam_offsets_have_the_specified_strides() {
 }
 
 /// The requester id is `bus:8 | device:5 | fn:3`, the id the IOMMU keys per-device tables on
-/// (milestone 16b). A different packing than `ecam_offset`, so it gets its own witness.
+/// (PCI Express Base Specification, "Requester ID"). A different packing than `ecam_offset`, so it
+/// gets its own witness.
 #[test]
 fn requester_id_packs_bus_dev_fn() {
     assert_eq!(
@@ -243,7 +244,7 @@ fn enumeration_follows_the_multifunction_bit_and_skips_what_does_not_answer() {
 }
 
 /// **A machine shaped like xenon**: a host bridge and a PCIe root port on bus 0, and the NVMe
-/// controller behind the root port on bus 1. This is the topology milestone 320 exists for, and
+/// controller behind the root port on bus 1. This is the topology a bridge walk exists for, and
 /// it is the one QEMU's `q35` does not have by default, so it is built here.
 ///
 /// The ids are the real ones off `bench/xenon-2026-09-17/`: an Intel Kaby Lake host bridge, an
@@ -295,8 +296,8 @@ impl BridgedCfg {
 }
 
 /// **The walk follows a root port onto the bus behind it and finds the controller there.**
-/// This is milestone 320's whole claim in one test: before it, enumeration scanned bus 0 and
-/// reported the machine as having no NVMe at all.
+/// This is the bridge walk's whole claim in one test: without it, enumeration scans bus 0 and
+/// reports the machine as having no NVMe at all.
 #[test]
 fn the_walk_follows_a_root_port_onto_the_bus_behind_it() {
     let cfg = BridgedCfg::new();
@@ -932,8 +933,8 @@ fn the_msix_capability_decodes_with_its_table_size_off_by_one_corrected() {
     );
 }
 
-/// **An MSI-only function, the shape of an Intel PCH's xHCI** (milestone 242 (USB host and
-/// HID)): a power-management capability, then MSI with a 64-bit address, and no MSI-X. The
+/// **An MSI-only function, the shape of an Intel PCH's xHCI** (a function with
+/// MSI and no MSI-X): a power-management capability, then MSI with a 64-bit address, and no MSI-X. The
 /// data register moves with the address width, and writing the address's high half into the
 /// data register is the bug a 32-bit assumption would make.
 #[test]

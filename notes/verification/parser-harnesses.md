@@ -36,7 +36,7 @@ deliberately unproved, and why it is sound anyway.
 
 ## `crates/pci_configuration_space`
 
-Four in `crates/pci_configuration_space/src/lib.rs`, the config-space decode the kernel runs on device input. A hostile
+Ten in `crates/pci_configuration_space/src/lib.rs`, the config-space decode the kernel runs on device input. A hostile
 or broken PCI function can answer the closures with anything.
 
 | Harness | Property |
@@ -45,3 +45,9 @@ or broken PCI function can answer the closures with anything.
 | `intx_interrupt_number_is_total_and_bounded` | the swizzle is total (the pin-0 underflow that panicked debug builds is gone, hardened with saturating arithmetic) and lands within `base..=base+3` |
 | `read_bars_is_total_for_any_device` | the BAR size probe never panics on garbage device answers (`!mask + 1` cannot overflow: the type bits are masked first) |
 | `the_capability_walk_terminates_on_any_device` | a capability list forming ANY graph, cycles included, is walked at most 64 hops; the bounded-walk discipline proved rather than argued |
+| `a_bar_size_is_where_the_writable_bits_begin` | a decoded BAR size is exactly the boundary between the bits a device ignores and the bits it decodes |
+| `the_msix_walk_terminates_and_bounds_its_table_size` | the MSI-X walk terminates on any device and the table size it reports is in `1..=2048` |
+| `the_message_signaled_interrupt_walk_terminates_on_any_device` | the MSI walk terminates on any device within the shared bound |
+| `the_bus_queue_stays_inside_its_array_on_any_firmware` | the bus queue's tail never passes 256, whatever the bridges said |
+| `a_fresh_bus_queue_holds_the_root_and_nothing_else` | the queue a walk starts from holds only the root bus |
+| `the_ranges_parse_is_total` | the bridge window parse is total on any bytes |

@@ -67,8 +67,8 @@ bits a device ignores and the bits it decodes; the three capability walks termin
 (the shared walk visits at most 64 entries) and an MSI-X table size is in `1..=2048`; the bus
 queue never runs past its array on any sequence of bridges; the ranges parse is total. Each has a
 patch under `falsifications/` that makes it fail. The scan loops of `walk` over 256 buses are
-bounded by literals and not proved; the module documentation records how far the proof of `walk`
-itself reaches.
+bounded by literals and not proved; a harness of `walk` on a two-bus machine ran over twelve
+CPU-minutes without finishing and was not kept.
 
 ## Building and testing
 

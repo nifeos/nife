@@ -1052,7 +1052,9 @@ pub fn memory_window_32_bit(ranges: &[u8]) -> Option<(u64, u64)> {
 /// what a device said, is proved for every sequence firmware could write, which no fixture can
 /// show. The scan loops are bounded by literals and not proved: a bounded model checker does not
 /// finish unrolling 256 buses of 32 devices, and the queue's bound settles the only part a device
-/// controls. `enumerate` is [`walk`] with a field dropped, so it has no proof of its own.
+/// controls. A harness of [`walk`] itself on a two-bus machine was tried and stopped after more
+/// than twelve CPU-minutes without a result, so it is not kept. `enumerate` is [`walk`] with a
+/// field dropped, so it has no proof of its own.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -1210,17 +1212,6 @@ mod verification {
         if let Some(capability) = found {
             assert!(capability.capability_offset != 0 && capability.capability_offset % 4 == 0);
         }
-    }
-
-    /// **[`walk`] is total on a machine of at most two buses**, whatever its devices answer: it
-    /// never panics and reports at most 512 functions (two buses of 32 devices of 8 functions).
-    /// Two is the ceiling the proof reaches; see the module's record of the larger attempts.
-    #[kani::proof]
-    #[kani::unwind(34)]
-    fn the_walk_is_total_on_two_buses() {
-        let mut found = 0u32;
-        walk(2, &mut |_, _| kani::any(), &mut |_| found += 1);
-        assert!(found <= 512);
     }
 
     /// **The bus queue never runs off the end of its array, whatever firmware wrote in the
