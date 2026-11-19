@@ -8,7 +8,7 @@
 The Domain Name System (DNS) wire format a stub resolver needs, as pure computation. Request for Comments (RFC)
 1035 defines it, and RFC 7766 defines its use over the Transmission Control Protocol (TCP).
 It writes the bytes of a query for one name's Internet Protocol version 4 (IPv4) addresses. It also runs the checks a reply must
-pass before any address in it is believed. `no_std`, no dependencies, no `unsafe`. There is no socket, no timer and no
+pass before the caller believes any address in it. `no_std`, no dependencies, no `unsafe`. There is no socket, no timer and no
 policy. Which program sends these bytes, and which names a client may ask about, are the caller's
 business.
 
@@ -101,7 +101,7 @@ bytes and `Result<Answer, Reject>` is 300. A caller on a small stack should coun
   retry.
 - No DNS Security Extensions (DNSSEC): an on-path attacker can forge the reply, transaction id and all. No "0x20" case
   randomization.
-- At most `MAXIMUM_IPV4_ADDRESSES` addresses are kept from one answer; the rest are dropped.
+- `Query::accept` keeps at most `MAXIMUM_IPV4_ADDRESSES` addresses from one answer and drops the rest.
 - Labels hold only letters, digits, `-` and `_` (`Name::from_dotted`): no escape syntax.
 
 ## Minimum Rust version
