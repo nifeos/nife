@@ -202,7 +202,7 @@ fn parse_peer(s: &str) -> Option<u64> {
 #[cfg(target_arch = "riscv64")]
 mod radon {
     use driver_process_contract::designware_ethernet::device::cache_coherence::Verdict;
-    use driver_process_contract::designware_ethernet::device::jh7110;
+    use machine_discovery::jh7110::designware_ethernet as jh7110;
 
     use crate::println;
     use crate::user::designware_ethernet_service::{

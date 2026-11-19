@@ -18,10 +18,10 @@ use designware_mobile_storage::host_controller::{
 use designware_mobile_storage::internal_direct_memory_access::{
     DirectMemoryAccessRegion, InternalDirectMemoryAccess, Refusal,
 };
-use designware_mobile_storage::jh7110::Slot;
 use designware_mobile_storage::sd::{
     self, BLOCK_BYTES, BlockTransferError, CardKind, InitializationError,
 };
+use machine_discovery::jh7110::designware_mobile_storage::Slot;
 
 use crate::designware_mobile_storage::{Region, Window};
 use crate::storage_bench_steps::{

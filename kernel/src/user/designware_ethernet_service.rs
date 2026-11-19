@@ -11,7 +11,7 @@
 //! network stack above it is shared, through a `Handoff` of the same shape as `e1000e`'s (both in
 //! `driver_process_contract`). A second board with Synopsys's Ethernet `QoS` controller (the RK3568
 //! and RK3588 are aarch64) would reuse the control process and the crate, and add its own glue
-//! beside `designware_ethernet::jh7110`.
+//! beside `machine_discovery::jh7110::designware_ethernet`.
 
 //! # BUGS
 //!
@@ -179,6 +179,7 @@ fn bring_up_port(
     let region = region()?;
     let inputs = Inputs {
         region_physical_address: region,
+        bus_configuration: machine_discovery::jh7110::designware_ethernet::BUS_CONFIGURATION,
         station_mac_address: e.port.station_mac_address,
         physical_layer_device_bus_address: e.port.physical_layer_device_bus_address,
         physical_layer_device: e.port.physical_layer_device,

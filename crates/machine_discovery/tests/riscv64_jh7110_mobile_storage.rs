@@ -1,16 +1,16 @@
 //! The JH7110's two SD/MMC controllers, found in both of the chip's device trees and absent from
 //! QEMU's.
 //!
-//! `designware_mobile_storage::jh7110` names both bindings and decodes the properties;
-//! `machine_discovery::jh7110::designware_mobile_storage` walks the tree. These pin the walk
-//! against the board-shaped fixtures and the tree every CI boot uses.
+//! `machine_discovery::jh7110::designware_mobile_storage` names both bindings, decodes the
+//! properties and walks the tree. These pin the walk against the board-shaped fixtures and the
+//! tree every CI boot uses.
 
-use designware_mobile_storage::jh7110::{
+use device_tree_blob::DeviceTreeBlob;
+use machine_discovery::jh7110::designware_mobile_storage::{
     COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, QUEUE_DEPTH_WORDS, REGISTERS_SIZE_BYTES,
     SLOT_0_REGISTERS_PHYSICAL_ADDRESS, SLOT_1_REGISTERS_PHYSICAL_ADDRESS, SLOT_INTERRUPT_NUMBERS,
+    discover,
 };
-use device_tree_blob::DeviceTreeBlob;
-use machine_discovery::jh7110::designware_mobile_storage::discover;
 
 const VENDOR: &[u8] = include_bytes!("fixtures/jh7110-mmc-vendor.dtb");
 const MAINLINE: &[u8] = include_bytes!("fixtures/jh7110-mmc-mainline.dtb");

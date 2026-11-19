@@ -22,7 +22,7 @@ confinement_attackers = []
 # Each window is a pair page, checked at compile time against the address-space map.
 address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 # The JH7110 Ethernet control process's handoff and report carry the driver crate's types.
-designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "8d9cca0a044487403fd0d37e4fb34442c18b19d2" }
+designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "f7312439c23dbc7db303212164b7f48f473131c2" }
 # The xHCI register window is drawn from the controller's decoded capability registers.
 extensible_host_controller_interface = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "875a6401be12f311d925580901faf00cbcacbf99" }
 # The PMIC route's spawn words carry the I2C master's standard-mode timing.

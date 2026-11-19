@@ -633,7 +633,8 @@ pub(crate) fn plic_region() -> Option<(u64, u64)> {
 /// when the tree does not describe it, and the whole answer `None` on every machine that is not a
 /// JH7110, which is every machine CI boots. RISC-V's `mmu::initialize` maps the first page of each.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
-pub(crate) fn jh7110_storage() -> Option<[Option<designware_mobile_storage::jh7110::Slot>; 2]> {
+pub(crate) fn jh7110_storage()
+-> Option<[Option<machine_discovery::jh7110::designware_mobile_storage::Slot>; 2]> {
     *JH7110_STORAGE.lock()
 }
 
@@ -705,13 +706,13 @@ pub(crate) fn jh7110_watchdog() -> Option<(
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Jh7110Ethernet {
     /// The controller, its PHY's settings, its station address if the tree has one.
-    pub port: driver_process_contract::designware_ethernet::device::jh7110::Discovered,
+    pub port: machine_discovery::jh7110::designware_ethernet::Discovered,
     /// The AON clock-and-reset window: `gmac0`'s bus clocks, transmit clock and resets.
     pub aon: jh7110_clock_and_reset::WindowLocation,
     /// The SYS clock-and-reset window: `gmac0`'s transmit and PTP clocks.
     pub sys: jh7110_clock_and_reset::WindowLocation,
     /// The AON syscon: `gmac0`'s interface select.
-    pub syscon: driver_process_contract::designware_ethernet::device::jh7110::SystemController,
+    pub syscon: machine_discovery::jh7110::designware_ethernet::SystemController,
 }
 
 /// The PCIe host bridge's windows, from the device tree: `(ecam, mem32)`, each `(start, size)`,
@@ -1039,7 +1040,7 @@ static PLIC_REGION: InterruptSafeMutex<Option<(u64, u64)>> =
 /// The JH7110's SD/MMC controllers (milestone 53). `None` until `initialize`, and on every machine
 /// that is not a JH7110.
 static JH7110_STORAGE: InterruptSafeMutex<
-    Option<[Option<designware_mobile_storage::jh7110::Slot>; 2]>,
+    Option<[Option<machine_discovery::jh7110::designware_mobile_storage::Slot>; 2]>,
 > = InterruptSafeMutex::new(rank::RAM, None);
 
 /// The JH7110's STG clock-and-reset window, from the device tree or from the constant both
