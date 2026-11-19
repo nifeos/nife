@@ -107,6 +107,12 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 | 8 | `calendar`, `environment_contract`, then `core-tools` | the last two crates `core-tools` reaches; the kernel links both; the third package leaves as soon as they have |
 | 9, `redoxfs` | `subtree_scope`, `memory_region_heap`, then `redoxfs` as one repository | after the 10 contract crates it links; ruled 2026-11-01 (UTC) in the questions appendix; `talc` becomes a pinned upstream dependency (below) |
 
+`sealed_pair` is not one of the 22. It links `nifefs` and `measured_boot`, so it leaves only after
+both have repositories, with or after `uefi_loader`, and it gets no repository now (milestone 1107
+(`sealed_pair`: what an outside maintainer would fix before it leaves)). With more than one kernel
+it becomes a crate of its own, used by several repositories. With one user it moves into that
+repository as a module and never publishes.
+
 `jh7110_entropy` stays the leaf pilot (milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic,
 released on its own)). It proves that a leaf crate builds from its own repository and nife pins it by `rev`. It does not prove the contract case: no
 consumer outside nife, so no two pins must agree, and no version check has refused a real mismatch
