@@ -515,6 +515,9 @@ fn mkfs_phase(
 /// its size and for block 0, because an error that left the server dead or wedged would answer
 /// neither. A host test covers the arithmetic (`transfer_first_sector`); this one covers the whole
 /// server, over the device, in the guest.
+///
+/// Falsification: unfalsified. No replay patch exists yet. Removing the capacity check in
+/// `transfer_first_sector` would turn this test red, but that run has not been made.
 #[test_case]
 fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serving() {
     use filesystem_contract::{block, reply_err};
