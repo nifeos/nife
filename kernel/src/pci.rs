@@ -1124,9 +1124,7 @@ const JH7110_MARKER: &str = "  jh7110 pcie:";
 /// tree names no such port, which is every machine CI boots.
 #[cfg(target_arch = "riscv64")]
 pub(crate) fn bring_up_jh7110_root_port() {
-    use crate::drivers::jh7110_pci_express::{
-        CONFIGURATION_BUSES, Controller, Page, Windows, regions,
-    };
+    use crate::drivers::jh7110_pci_express::{CONFIGURATION_BUSES, Controller};
     if let Some(why) = crate::memory::jh7110_pci_express_absent() {
         crate::println!("{JH7110_MARKER} port One stays off: {why}");
         return;
@@ -1138,30 +1136,7 @@ pub(crate) fn bring_up_jh7110_root_port() {
         return;
     };
     let port = found.port;
-    let page = |(physical_address, bytes): (u64, u64)| Page {
-        virtual_address: mmu::phys_to_virt(physical_address) as usize,
-        bytes,
-    };
-    let [
-        bridge,
-        top_group_controller,
-        physical_layer,
-        gpio,
-        configuration,
-    ] = regions(&port);
-    let windows = Windows {
-        bridge: page(bridge),
-        system_top_group_controller: page(top_group_controller),
-        physical_layer: page(physical_layer),
-        system_controller: Page::UNMAPPED,
-        general_purpose_input_output: page(gpio),
-        system_clock_and_reset_virtual_address: mmu::phys_to_virt(found.sys.base_physical_address)
-            as usize,
-        system_top_group_clock_and_reset_virtual_address: mmu::phys_to_virt(
-            top_group.base_physical_address,
-        ) as usize,
-        configuration: page(configuration),
-    };
+    let windows = jh7110_windows(&found, top_group.base_physical_address);
     crate::println!(
         "{JH7110_MARKER} port {:?}: bridge {:#x}, cfg {:#x}, 32-bit memory {:#x}+{:#x}, PERST# pin \
          {:?}",
@@ -1180,30 +1155,7 @@ pub(crate) fn bring_up_jh7110_root_port() {
     // `regions(&port)` device-typed, and both clock-and-reset windows for their whole domain.
     let mut controller = unsafe { Controller::new(windows, &mut wait) };
     let brought_up = jh7110_pci_express::bring_up(&mut controller, &port);
-    for (name, report) in [
-        ("SYS", &controller.system),
-        ("STG", &controller.system_top_group),
-    ] {
-        crate::println!(
-            "{JH7110_MARKER} {name} clocks: {} turned on, {} of {} reset(s) released, {} step(s) \
-             rejected{}",
-            report.clocks,
-            report.resets_released,
-            report.resets,
-            report.rejected,
-            if report.was_already_up() {
-                " (already up)"
-            } else {
-                ""
-            },
-        );
-    }
-    if controller.refused != 0 {
-        crate::println!(
-            "{JH7110_MARKER} {} register access(es) fell outside the mapped pages and were not made",
-            controller.refused,
-        );
-    }
+    print_jh7110_clocks_and_refusals(&controller);
     let brought_up = match brought_up {
         Ok(b) => b,
         Err(failure) => {
@@ -1211,21 +1163,7 @@ pub(crate) fn bring_up_jh7110_root_port() {
             return;
         }
     };
-    if brought_up.link_up {
-        crate::println!(
-            "{JH7110_MARKER} link up after {} read(s), status {:#010x}, {} window(s) translated",
-            brought_up.link_polls,
-            brought_up.link_status,
-            brought_up.windows,
-        );
-    } else {
-        crate::println!(
-            "{JH7110_MARKER} link down after {} reads, status {:#010x}: an empty slot or a drive \
-             that did not train",
-            brought_up.link_polls,
-            brought_up.link_status,
-        );
-    }
+    print_jh7110_link(&brought_up);
     let configured = jh7110_pci_express::root_port::configure(
         &mut |b, o| controller.configuration_read(b, o),
         &mut |b, o, v| controller.configuration_write(b, o, v),
@@ -1251,7 +1189,7 @@ pub(crate) fn bring_up_jh7110_root_port() {
     crate::memory::record_pci_regions(
         (
             port.configuration.physical_address,
-            (u64::from(buses) * BUS_BYTES).min(configuration.1),
+            (u64::from(buses) * BUS_BYTES).min(windows.configuration.bytes),
         ),
         (
             port.memory_32_bit.physical_address,
@@ -1260,6 +1198,89 @@ pub(crate) fn bring_up_jh7110_root_port() {
     );
     crate::println!("{JH7110_MARKER} the walk over {buses} bus(es):");
     survey();
+}
+
+/// The pages `bring_up_jh7110_root_port` hands its driver: each of `regions`' windows in the direct
+/// map, and the two clock-and-reset windows.
+#[cfg(target_arch = "riscv64")]
+fn jh7110_windows(
+    found: &crate::memory::Jh7110PciExpress,
+    system_top_group_clock_and_reset_physical_address: u64,
+) -> crate::drivers::jh7110_pci_express::Windows {
+    use crate::drivers::jh7110_pci_express::{Page, Windows, regions};
+    let page = |(physical_address, bytes): (u64, u64)| Page {
+        virtual_address: mmu::phys_to_virt(physical_address) as usize,
+        bytes,
+    };
+    let [
+        bridge,
+        top_group_controller,
+        physical_layer,
+        gpio,
+        configuration,
+    ] = regions(&found.port);
+    Windows {
+        bridge: page(bridge),
+        system_top_group_controller: page(top_group_controller),
+        physical_layer: page(physical_layer),
+        system_controller: Page::UNMAPPED,
+        general_purpose_input_output: page(gpio),
+        system_clock_and_reset_virtual_address: mmu::phys_to_virt(found.sys.base_physical_address)
+            as usize,
+        system_top_group_clock_and_reset_virtual_address: mmu::phys_to_virt(
+            system_top_group_clock_and_reset_physical_address,
+        ) as usize,
+        configuration: page(configuration),
+    }
+}
+
+/// The bring-up's two clock and reset reports, and any access its driver refused.
+#[cfg(target_arch = "riscv64")]
+fn print_jh7110_clocks_and_refusals(controller: &crate::drivers::jh7110_pci_express::Controller) {
+    for (name, report) in [
+        ("SYS", &controller.system),
+        ("STG", &controller.system_top_group),
+    ] {
+        crate::println!(
+            "{JH7110_MARKER} {name} clocks: {} turned on, {} of {} reset(s) released, {} step(s) \
+             rejected{}",
+            report.clocks,
+            report.resets_released,
+            report.resets,
+            report.rejected,
+            if report.was_already_up() {
+                " (already up)"
+            } else {
+                ""
+            },
+        );
+    }
+    if controller.refused != 0 {
+        crate::println!(
+            "{JH7110_MARKER} {} register access(es) fell outside the mapped pages and were not made",
+            controller.refused,
+        );
+    }
+}
+
+/// Whether the link trained, with the reads it took and the status word.
+#[cfg(target_arch = "riscv64")]
+fn print_jh7110_link(brought_up: &jh7110_pci_express::BroughtUp) {
+    if brought_up.link_up {
+        crate::println!(
+            "{JH7110_MARKER} link up after {} read(s), status {:#010x}, {} window(s) translated",
+            brought_up.link_polls,
+            brought_up.link_status,
+            brought_up.windows,
+        );
+    } else {
+        crate::println!(
+            "{JH7110_MARKER} link down after {} reads, status {:#010x}: an empty slot or a drive \
+             that did not train",
+            brought_up.link_polls,
+            brought_up.link_status,
+        );
+    }
 }
 
 /// Busy-wait `milliseconds` on the free-running counter, for the JH7110 bring-up's delays: it runs

@@ -502,13 +502,7 @@ where
     //     two buses of its `cfg` window, and the slice of its 32-bit memory range BARs go in. Its
     //     clocks live in the STG and SYS windows 6b and 6c already map. `pci_regions` stays `None`
     //     until the port forwards, so step 9 maps nothing for it.
-    if let Some(p) = memory::jh7110_pci_express() {
-        for (start, size) in crate::drivers::jh7110_pci_express::regions(&p.port) {
-            direct_map_device_window(m, start, size)?;
-        }
-        let bar = p.port.memory_32_bit;
-        direct_map_device_window(m, bar.physical_address, PCI_BAR_MAPPED.min(bar.size_bytes))?;
-    }
+    map_jh7110_pci_express(m)?;
 
     // 7. QEMU's `sifive_test` finisher, which `arch::semihosting::exit` writes. Boards have none.
     #[cfg(not(feature = "board"))]
@@ -574,6 +568,22 @@ where
     }
     let pages = (va_end - va_start).div_ceil(PAGE_SIZE);
     m.map_range(va_start, virt_to_phys(va_start), pages, flags)
+}
+
+/// `map_everything`'s step 6f: the JH7110 M.2 root port's windows, when the tree names the port.
+fn map_jh7110_pci_express<A, P>(m: &mut Mapper<A, P, Format>) -> Result<(), MapError>
+where
+    A: FnMut() -> Option<u64>,
+    P: Fn(u64) -> *mut PageTable,
+{
+    let Some(p) = memory::jh7110_pci_express() else {
+        return Ok(());
+    };
+    for (start, size) in crate::drivers::jh7110_pci_express::regions(&p.port) {
+        direct_map_device_window(m, start, size)?;
+    }
+    let bar = p.port.memory_32_bit;
+    direct_map_device_window(m, bar.physical_address, PCI_BAR_MAPPED.min(bar.size_bytes))
 }
 
 /// A device window given as its physical base and size, mapped as [`direct_map`] maps a device.
