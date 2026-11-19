@@ -44,21 +44,21 @@ crate's own reasons.
 
 - P0-1, fixture tests that reach into nife: Open. The five witness tests still `include_bytes!`
   two other crates' fixtures and link `device_tree_blob` by path; they move into nife beside the
-  constants they pin, the swizzle cells are inlined, and the dev-dependency goes.
-- P0-2, the staged tree's red gates: Open. The patch regeneration is fixed
-  ([#3521](https://github.com/nifeos/nife/pull/3521)); the manifest literals (license, lints,
-  `rust-version`), the README, the license files and specification citations in place of tree
-  paths remain, and a fresh dry run confirms the regenerated patches apply.
+  constants they pin, the crate inlines the swizzle cells, and the dev-dependency goes.
+- P0-2, the staged tree's red gates: Open. [#3521](https://github.com/nifeos/nife/pull/3521) fixed
+  the patch regeneration. The manifest literals (license, lints, `rust-version`), the README, the
+  license files and specification citations in place of tree paths remain. A fresh dry run
+  confirms the regenerated patches apply.
 - P1-3, BAR size trusts the mask: Done, [#3519](https://github.com/nifeos/nife/pull/3519).
 - P1-4, BAR probing on any header and past slot 5: Done,
   [#3519](https://github.com/nifeos/nife/pull/3519).
 - P1-5, names the template's gates refuse: Open. `mem32_window`, `CLASS_NVME`, `size`, `length`,
-  `table_size`, `address_low` and `address` are unrenamed; two-way before the first tag, so the
+  `table_size`, `address_low` and `address` keep their old spellings; two-way before the first tag, so the
   maintainer rules the spellings provisionally and one rename lane covers the crate, the kernel
   and `driver_process_contract`.
 - P1-6, names the naming rules refuse: Open. The `VIRTIO_BLK_*`, `VIRTIO_RNG_*`, `VIRTIO_NET_*`
   and `CMD_*` constants, `dev` and `func`, `cfg_type`, `CLASS_XHCI`, `pba_*`, `ISR`, `is_64` and
-  the `_REGISTER` suffixes are unrenamed; the same provisional ruling and rename lane as P1-5.
+  the `_REGISTER` suffixes keep their old spellings; the same provisional ruling and rename lane as P1-5.
 - P1-7, documentation that assumes the tree: Open. `#![allow(missing_docs)]` stands and doc
   comments still cite nife paths and milestones; every public item needs a doc comment that cites
   a specification.
@@ -77,8 +77,8 @@ crate's own reasons.
   headers name the old module path; regenerate them in nife.
 - P2, the proof table: Open. `notes/verification.md` and `parser-harnesses.md` still count four
   harnesses against the crate's ten; the rows land in the move pull request.
-- P2, mutation survivors: Open. The baseline row carries counts only; the 11 equivalent survivors
-  are exempted after the first run in the repository.
+- P2, mutation survivors: Open. The baseline row carries counts only; the first run in the
+  repository exempts the 11 equivalent survivors.
 - Decision, the package name: Done, [#3588](https://github.com/nifeos/nife/pull/3588) (ruled
   2026-11-14 UTC).
 - Decision, the crate moves before the bus server: Done,
@@ -97,7 +97,7 @@ Moving it into its own repository, `nifeos/pci_configuration_space`, is what let
 consumers pin one released copy. Creating a public repository is an outward step, and the
 standing rule is that clearing a crate's review is what approves it.
 
-Every other crate that has moved or been cleared had a review package under
+Every other crate that has moved or passed clearance had a review package under
 `notes/crate-reviews/`: a short record of the names, the identity and the gates, written for the
 clearance. This crate has none, so there is nothing yet to clear. The move itself also waits on
 P0-1, P0-2, P1-5 to P1-8 and the P2 move steps above.
@@ -110,8 +110,8 @@ Recommendation: A.
 - C. Keep the crate in nife until the bus server of milestone 1064 exists, and clear both
   together.
 
-Door: one-way. A public repository is seen and can be forked, pinned or cited by others the moment
-it exists; renaming or deleting it later breaks whoever acted on it.
+Door: one-way. Others can see, fork, pin or cite a public repository the moment it exists.
+Renaming or deleting it later breaks whoever acted on it.
 
 Prior art: the rust-osdev `pci_types` crate lives in its own repository apart from any kernel,
 which is the shape A gives. Redox keeps PCI decoding inside its `pcid` daemon, which is the shape C
@@ -187,7 +187,7 @@ The P2 items are in [the appendix](1105-pci-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-Both decisions here are ruled, and each states the rule in force. Clearing the review is under
+Both decisions here have rulings, and each states the rule in force. Clearing the review is under
 "Open decisions" above; everything else the maintainer rules as provisional.
 
 ### The package name, because another author holds `pci` on crates.io
@@ -221,6 +221,13 @@ milestones 317, 1062 and 1068. The move still waits on the package name above.
 
 The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 
+## Follow-on
+
+- **Outstanding.** Every finding marked Open under "Finding status" above, each with what
+  remains, checked against the crate's manifest, `src/lib.rs`, `tests/` and `falsifications/`.
+- **Outstanding.** Clearing the review, which approves the repository: the decision under "Open
+  decisions" above.
+
 ## BUGS
 
 - Item 3's size claim comes from reading the arithmetic, not from a device that answers a
@@ -238,4 +245,4 @@ An outside review of `pci` before it leaves. It finds two blockers (the fixture 
 into nife, and the staged tree's red gates). It finds six items to land before the tag (BAR sizing
 that trusts the mask, BAR probing on any header, two name lists, documentation for a stranger, a
 missing MSI proof), and seven for later. The package name, because another author holds `pci` on
-crates.io, is ruled; clearing the review, which approves the repository, is open.
+crates.io, has a ruling; clearing the review, which approves the repository, stays open.
