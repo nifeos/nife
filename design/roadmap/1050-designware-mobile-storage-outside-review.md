@@ -85,7 +85,7 @@ it there. Verified in the source. One-way door (removing `pub` after a publish i
 
 #### P0-3. The ISC notice travels only inside a doc comment
 
-Status: Done: [nifeos/designware_mobile_storage#3](https://github.com/nifeos/designware_mobile_storage/pull/3) (`LICENSE-ISC`, the README and `CONTRIBUTING.md`). The license detection of GitHub still names Apache-2.0 alone, since it reports one license per repository.
+Status: Done: [nifeos/designware_mobile_storage#3](https://github.com/nifeos/designware_mobile_storage/pull/3) (`LICENSE-ISC`, the README and `CONTRIBUTING.md`). 
 
 The crate root `src/lib.rs` carries the notice of OpenBSD for the adapted `dwmmc.c` as rustdoc
 text. The root of the repository has `LICENSE-MIT` and `LICENSE-APACHE` and no `LICENSE-ISC` or
@@ -221,16 +221,13 @@ source. Two-way. S.
 ## Decisions this block needs
 
 1. The baseline tag (P0-4). Ruled and placed: `v0.1.0-pre.1` on `473b19c`.
-2. Where the JH7110 facts live. Ruled: the crate knows no chip. The addresses, interrupts and
-   device-tree spellings of the JH7110 live in nife's
+2. Where the JH7110 facts live. Ruled: the crate knows no chip. The JH7110 facts live in nife's
    `crates/machine_discovery/src/jh7110/designware_mobile_storage.rs`, and the crate has no
-   `jh7110` module. Landed in [nifeos/designware_mobile_storage#31](https://github.com/nifeos/designware_mobile_storage/pull/31) and nifeos/nife#3729; the same ruling moved
-   `designware_ethernet`'s JH7110 facts beside them.
+   `jh7110` module. Landed in [nifeos/designware_mobile_storage#31](https://github.com/nifeos/designware_mobile_storage/pull/31) and nifeos/nife#3729.
 3. Where the master boot record parser lives. Ruled: the `partition` module (`MasterBootRecord`,
    `PartitionEntry`, `scratch_sector_range`) leaves for a new crate `master_boot_record`, staged in
    nife first. Open: the staged crate is nifeos/nife#3731; the removal here is [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33), held on
-   #3731; the pin bump in nife follows both. A repository for the new crate needs its own review
-   clearance.
+   #3731; the pin bump in nife follows both. 
 4. A shared DMA region trait across the organization's drivers. Open: needs a ruling, below.
 
 ## Open decisions
@@ -292,9 +289,9 @@ claims none of the hardware steps.
 
 Every P0, P1 and P2 item is done in code on `main` of `nifeos/designware_mobile_storage`; each finding above and in
 [the appendix](1050-designware-mobile-storage-outside-review/after-the-first-release.md) carries its
-status. The board has run the polled and IDMAC read and write, the `VERID` and `HCON` log and the
-scratch write (nifeos/nife#3488 and #3695, logged in `bench/radon-2026-11-17/`); the README's BUGS
-says so after [nifeos/designware_mobile_storage#32](https://github.com/nifeos/designware_mobile_storage/pull/32).
+status. The board steps that have run are marked in
+[the done-when appendix](1050-designware-mobile-storage-outside-review/done-when.md); the README
+reports them after [nifeos/designware_mobile_storage#32](https://github.com/nifeos/designware_mobile_storage/pull/32).
 
 | item | what remains | blocker |
 |---|---|---|

@@ -21,7 +21,7 @@ methods with `u64` offsets and 64-bit words, no bus address or length, and put `
 separate `Tails` trait beside the two tail-pointer writes. They also refuse a device whose DMA is
 not coherent, where this crate allows it. Once published, a shared trait is a public contract that
 every driver and every outside implementation depends on. So the shape has to settle before the
-first publish of any of the three. Nothing here is published, so today the change is a rename and a
+first publish of any of the three. No crate here has published, so today the change is a rename and a
 dependency.
 
 The constraint. The two shapes differ for reasons, not by accident. The driver's own register
@@ -43,19 +43,16 @@ ordinary breaking release.
 
 The question: does `designware_mobile_storage` keep its own DMA region trait for its first release?
 
-- **A (recommended).** Yes. Each driver keeps its own trait for its first release. Whether the two
-  network crates share one trait is decided in their own milestones (1074 and e1000e's), not here.
-  A shared crate is reconsidered once a second storage driver needs one, and arrives, if at all,
-  as a 0.2 of each driver. This is the stricter choice: no new public crate, and a shared trait can
-  still be added later.
+- **A (recommended).** Yes. Each driver keeps its own trait for its first release. The milestones of the two network crates decide whether they share one trait, not this one.
+  A second storage driver that needs one reopens the question, and a shared crate arrives, if at all,
+  as a 0.2 of each driver. This is the stricter choice: no new public crate, and a later release can still add a shared trait.
 - **B.** A shared crate now (provisional name `direct_memory_access_region`) holding the union
   shape, adopted by all three drivers before any publishes. Costs the repository and review above
   and holds all three first publishes behind it.
 - **C.** A shared crate for the two network drivers only, whose shapes already match, with this
   crate keeping its own. Decided in 1074 rather than here; listed so the constraint is visible.
 
-One-way or two-way: two-way until the first publish of any of the three; one-way after it (a
-published trait, or a published crate name, cannot be taken back).
+One-way or two-way: two-way until the first publish of any of the three; one-way after it (no one takes back a published trait or crate name).
 
 Prior art, read for this decision: Linux has one DMA API for every subsystem
 (`<linux/dma-mapping.h>`, docs.kernel.org/core-api/dma-api.html): coherent memory from
@@ -70,5 +67,5 @@ own DMA channel API on it. From memory, not re-read: U-Boot's `dw_mmc` and Linux
 What the tree already does: each driver crate defines the trait it needs, and the kernel adapts its
 own mapping to each, in the three files named above. No shared DMA trait exists in nife.
 
-What is blocked until it is answered: the first publish of this crate (with every other review
+What waits on the answer: the first publish of this crate (with every other review
 milestone), and the closing of this block. Nothing else in the crate waits on it.
