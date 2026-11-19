@@ -5,7 +5,7 @@
 page.*
 
 The architect reads this to ratify the crate's names and to clear it for its move to its own
-repository, as part of [milestone 1102 (the outside review of `network_time_protocol`)](../../design/roadmap/1102-network-time-protocol-outside-review.md).
+repository, as part of [milestone 1102 (`network_time_protocol`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1102-network-time-protocol-outside-review.md).
 It describes the crate as `main` plus this branch leaves it. It ratifies nothing and clears nothing.
 
 ## In one paragraph
@@ -50,7 +50,7 @@ Each by a path dependency with `version = "0.1.0"`:
 need. Four rows of `helpers/template_report_baseline.txt`, one row of `.cargo/mutants-baseline.txt`
 and the lists in `helpers/` that name crates (the move lane's list from `script/crate-move`) refer to it.
 
-What the crate references back into nife: its manifest header comment (milestone 51 and
+What the crate references back into nife: its manifest header comment (milestone 51 (Wall-clock time, the `date` command, and an NTP service) and
 `notes/ntp.md`), the milestone and section citations in `src/lib.rs` and `src/verification.rs`
 (`script/crate-move --dry-run` counts four milestone citations, nine nife paths and four section
 citations), and one workspace-inherited `license` and `[lints]`.
@@ -92,8 +92,8 @@ and the renames change no behavior.
 | `Sample` | `offset`, `delay`, `response` |
 | `Query` | `with_nonce`, `with_poll`, `nonce`, `sent`, `request`, `accept` |
 
-No nife type, capability or handoff appears in a public signature. `Query::new` and the low-bit
-randomizer are gone (Decision 3); `Interval::abs_ticks` is gone (Decision 2).
+No nife type, capability or handoff appears in a public signature. `Query::new`, the low-bit
+randomizer (Decision 3) and `Interval::abs_ticks` (Decision 2) no longer exist.
 
 What a stranger may find surprising:
 
@@ -109,14 +109,14 @@ Eight Kani harnesses, each with a falsification patch under `falsifications/`: t
 exact over every Unix second in the window; nanoseconds survive the fixed point; decoding any wire
 value is total; `from_unix` refuses exactly the out-of-range inputs; `parse` then `to_bytes` is the
 identity over all 2^384 packets; an unmatched origin is always rejected; `accept` is total and a
-sample is coherent; and a consistent exchange is accepted. The standalone run's result is in the
+sample is coherent; and `accept` takes a consistent exchange. The standalone run's result is in the
 checks table. `notes/ntp/what-is-proved.md` states each claim and the one place the solver was the
 wrong tool.
 
 ## Names
 
 Every public name with its status and a proposal. "Provisional" means the source carries a
-`Name: provisional.` block. None is marked ratified; the renamed ones stay provisional until the
+`Name: provisional.` block. No name reads ratified; the renamed ones stay provisional until the
 architect ratifies them in one pass. The move strips every `Name:` block, so each name must read
 ratified first.
 
@@ -124,26 +124,26 @@ ratified first.
 |---|---|---|---|
 | `network_time_protocol` | crate | ratified 2026-10-18 | keep |
 | `PORT` | constant | no block | ratify: the registered port; a spelled-out `UDP_PORT` is a possible alternative |
-| `PACKET_BYTES` | constant | provisional, renamed from `PACKET_LEN` (Decision 2) | ratify: the unit is in the name |
+| `PACKET_BYTES` | constant | provisional, replaces `PACKET_LEN` (Decision 2) | ratify: the unit is in the name |
 | `VERSION` | constant | no block | ratify |
-| `UNIX_EPOCH_DELTA_SECONDS` | constant | provisional, renamed from `UNIX_DELTA` | ratify |
-| `MINIMUM_UNIX_SECONDS` | constant | provisional, renamed from `UNIX_MINIMUM`; the ratified name carried no unit | ratify |
-| `MAXIMUM_UNIX_SECONDS` | constant | provisional, renamed from `UNIX_LIMIT`; now inclusive | ratify |
+| `UNIX_EPOCH_DELTA_SECONDS` | constant | provisional, replaces `UNIX_DELTA` | ratify |
+| `MINIMUM_UNIX_SECONDS` | constant | provisional, replaces `UNIX_MINIMUM`; the ratified name carried no unit | ratify |
+| `MAXIMUM_UNIX_SECONDS` | constant | provisional, replaces `UNIX_LIMIT`; inclusive | ratify |
 | `MAXIMUM_STRATUM` | constant | recorded (RFC 5905 `MAXSTRAT`) | ratify |
 | `MAXIMUM_ROOT_DISTANCE` | constant | recorded (RFC 5905 `MAXDISP`); now a `ShortFormat` built with `from_bits` | ratify |
-| `DEFAULT_POLL_EXPONENT` | constant | provisional, renamed from `DEFAULT_POLL`; the poll is a base-2 exponent | ratify |
+| `DEFAULT_POLL_EXPONENT` | constant | provisional, replaces `DEFAULT_POLL`; the poll is a base-2 exponent | ratify |
 | `mode`, `mode::*` | module, constants | no block | ratify: the RFC's mode names |
 | `leap`, `leap::NONE`, `INSERT`, `DELETE` | module, constants | no block | ratify |
-| `leap::UNSYNCHRONIZED` | constant | recorded (RFC 5905 leap indicator 3), American spelling, renamed from `UNSYNCHRONISED` | ratify |
-| `Reject::Unsynchronized` | variant | renamed from `Unsynchronised` | ratify |
+| `leap::UNSYNCHRONIZED` | constant | recorded (RFC 5905 leap indicator 3), American spelling, replaces `UNSYNCHRONISED` | ratify |
+| `Reject::Unsynchronized` | variant | replaces `Unsynchronised` | ratify |
 | `Reject` (other variants) | enum | no block | ratify as built |
 | `Timestamp` and its methods | type | no block, except `fraction` (provisional) | ratify; `fraction` as built |
-| `ShortFormat` | type | provisional, renamed from `Short`; field now private (Decision 2) | ratify: the RFC's term is "NTP short format" |
+| `ShortFormat` | type | provisional, replaces `Short`; private field (Decision 2) | ratify: the RFC's term is "NTP short format" |
 | `ShortFormat::from_bits`, `bits` | methods | provisional, new; they match `Timestamp` and `Interval` | ratify |
-| `Interval` and its methods | type | no block | ratify; `abs_ticks` is removed |
+| `Interval` and its methods | type | no block | ratify; `abs_ticks` leaves |
 | `Packet` and its fields | type | no block | ratify |
 | `Sample` | type | no block | ratify |
-| `Query`, `Query::with_nonce`, `with_poll`, `nonce`, `sent`, `request`, `accept` | type, methods | no block | ratify; `Query::new` is removed |
+| `Query`, `Query::with_nonce`, `with_poll`, `nonce`, `sent`, `request`, `accept` | type, methods | no block | ratify; `Query::new` leaves |
 
 No alias carries an old spelling (the tree's rule before a first release). The `Packet` field
 `leap`, `version`, `mode`, `stratum`, `poll`, `precision`, `reference_id` and the `Timestamp`
@@ -153,8 +153,7 @@ exponents rather than seconds; the documentation says so and the unit is not par
 ## License
 
 `MIT OR Apache-2.0`, the workspace's. The crate adapts no source. It follows RFC 5905 as a
-specification; the RFC's reference implementation is cited for two checks (the reference-time
-ordering and the unsynchronized leap refusal) and no text is copied.
+specification; the RFC's reference implementation supplies two checks, and the crate copies no text.
 
 ## What still blocks the move
 

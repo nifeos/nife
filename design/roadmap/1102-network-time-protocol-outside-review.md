@@ -62,13 +62,13 @@ for the crate's own reasons.
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-16, `Timestamp::fraction`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-17, the low-entropy items: Done (Decision 3, maintainer, provisional, 2026-11-14 UTC).
-  `Query::new` and the low-bit randomizer are removed; `Query::with_nonce` is the only constructor.
+  `Query::new` and the low-bit randomizer no longer exist; `Query::with_nonce` is the only constructor.
 - P2-18, `Short`'s public field: Done (Decision 2). `ShortFormat` keeps its field private, with
   `from_bits` and `bits`.
 - P2-19, the `dest` parameter: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-20, drifted notes: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-21, the `Reject` order claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-22, `abs_ticks`: Done (Decision 2). `abs_ticks` is removed.
+- P2-22, `abs_ticks`: Done (Decision 2). `abs_ticks` no longer exists.
 - Decision 1, `clock_contract`: Done (maintainer, provisional, 2026-11-14 UTC). Item 7 is built.
 - Decision 2, the public names: Done (maintainer, provisional, 2026-11-14 UTC). Items 4, 5, 18 and
   22 are built, with the `UNIX_*` constants, `DEFAULT_POLL_EXPONENT` and `ShortFormat` renamed.
