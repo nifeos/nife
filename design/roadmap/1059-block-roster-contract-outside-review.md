@@ -266,13 +266,12 @@ is tagged, and the weekly jobs pass on `main`.
 | P2-4 fuzz targets | DONE: #12 |
 | P2-5 proofs on longer pages | DONE: #11 |
 | P2-6 what a reader may trust | DONE: #10 |
-| P2-7 repository topics | Open: the topics lack `virtio` and `nvme`; one `script/apply-settings` run in the template with `--topic virtio --topic nvme`, which a maintainer runs |
+| P2-7 repository topics | DONE: the topics are `rust`, `no-std`, `formal-verification`, `kani`, `block-device`, `storage`, `virtio` and `nvme` |
 | P2-8 single-letter locals | DONE: #10 |
 | `capacity_of(len)` becomes `entry_capacity(page_bytes)` | Ruled; #20 builds it, awaiting merge |
 | any further tag | Open: see Open decisions |
 
-The publishing hold keeps `publish = false`. The milestone closes when #20 merges, the topics run
-happens, and the tag question below has an answer.
+The publishing hold keeps `publish = false`. The milestone closes when #20 merges, the tag question below has an answer.
 
 ## Open decisions
 
@@ -300,13 +299,11 @@ change it has had to tag.
 
 ## Follow-on
 
-- **Done.** P0-1 to P0-2, P1-1 to P1-8 and every P2 item except P2-7 landed in
+- **Done.** P0-1 to P0-2, P1-1 to P1-8 and every P2 item landed in
   `nifeos/block_roster_contract`; the table above names the pull request of each. nife #3568 moved
   the two call sites.
 - **Outstanding.** The rename of `capacity_of` to `entry_capacity` is `nifeos/block_roster_contract`
   #20, open. Read from the repository through the GitHub API.
-- **Outstanding.** P2-7's topics: the repository carries `block-device`, `storage`, `no-std`,
-  `kani`, `formal-verification` and `rust`, without `virtio` and `nvme`. Read through the GitHub API.
 - **Outstanding.** The tag question in Open decisions: `v0.1.0-pre.2` is the last tag, and the
   repository's tags list confirms it.
 
