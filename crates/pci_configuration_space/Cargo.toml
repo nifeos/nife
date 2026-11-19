@@ -2,13 +2,31 @@
 name = "pci_configuration_space"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "PCI configuration-space decoding over closures: ECAM addressing, bus walks, BAR sizing, capability lists, and the virtio PCI capabilities"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "pci", "pcie", "virtio"]
+categories = ["no-std", "embedded", "hardware-support"]
+publish = false     # `false` until the release that publishes; that release deletes the line
 
-# no_std for the kernel, std for host tests, like every §7 pure-logic crate. The crate owns the
-# decode logic only (ECAM addressing, config-space walks, BAR sizing, virtio capability parsing);
-# the kernel supplies the volatile MMIO accessors, so all of this tests on the host against a fake
-# config space in milliseconds.
+# The decode logic only: ECAM addressing, bus walks, BAR sizing, capability lists and the virtio
+# PCI capabilities. The caller supplies the volatile configuration-space accessors as closures, so
+# all of this tests on a host against a fake configuration space in milliseconds. Pure logic,
+# `no_std`, dependency-free.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
+
+[dependencies]

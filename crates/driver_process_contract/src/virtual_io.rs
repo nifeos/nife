@@ -15,7 +15,7 @@
 //! whole as every name does.
 
 use pci_configuration_space::{
-    Bdf, VIRTIO_CAPABILITY_COMMON, VIRTIO_CAPABILITY_DEVICE, VIRTIO_CAPABILITY_ISR,
+    Bdf, VIRTIO_CAPABILITY_COMMON, VIRTIO_CAPABILITY_DEVICE, VIRTIO_CAPABILITY_INTERRUPT_STATUS,
     VIRTIO_CAPABILITY_NOTIFY,
 };
 use startup_page_contract::WindowKind;
@@ -109,15 +109,17 @@ pub fn structures(
         let s = Structure {
             bar: c.bar,
             offset: u64::from(c.offset),
-            length: u64::from(c.length),
+            length: u64::from(c.length_bytes),
         };
-        match c.cfg_type {
+        match c.configuration_type {
             VIRTIO_CAPABILITY_COMMON if common.is_none() => common = Some(s),
             VIRTIO_CAPABILITY_NOTIFY if notify.is_none() => {
                 notify = Some(s);
-                multiplier = c.notify_off_multiplier;
+                multiplier = c.notify_offset_multiplier;
             }
-            VIRTIO_CAPABILITY_ISR if interrupt_status.is_none() => interrupt_status = Some(s),
+            VIRTIO_CAPABILITY_INTERRUPT_STATUS if interrupt_status.is_none() => {
+                interrupt_status = Some(s)
+            }
             VIRTIO_CAPABILITY_DEVICE if device.is_none() => device = Some(s),
             _ => {}
         }
@@ -147,18 +149,21 @@ pub fn withheld(function: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> [With
     let Some(c) = pci_configuration_space::msix_capability(function, read32) else {
         return [none; 2];
     };
-    let (table, pending) = (u64::from(c.table_offset), u64::from(c.pba_offset));
+    let (table, pending) = (
+        u64::from(c.table_offset),
+        u64::from(c.pending_bit_array_offset),
+    );
     [
         Withheld {
             bar: c.table_bar,
             start: table,
-            end: table + u64::from(c.table_size) * pci_configuration_space::MSIX_ENTRY_BYTES,
+            end: table + u64::from(c.table_entries) * pci_configuration_space::MSIX_ENTRY_BYTES,
         },
         // One bit per entry, in whole quadwords.
         Withheld {
-            bar: c.pba_bar,
+            bar: c.pending_bit_array_bar,
             start: pending,
-            end: pending + u64::from(c.table_size).div_ceil(64) * 8,
+            end: pending + u64::from(c.table_entries).div_ceil(64) * 8,
         },
     ]
 }
@@ -833,8 +838,8 @@ mod tests {
 
     const FUNCTION: Bdf = Bdf {
         bus: 0,
-        dev: 3,
-        func: 0,
+        device: 3,
+        function: 0,
     };
 
     /// A modern function's capability list reads as QEMU's layout, and its window maps the four

@@ -464,7 +464,7 @@ const fn remapped_entry(vector: u8, destination: u8, source_id: u16, level: bool
 const fn remappable_message(handle: u16) -> MsiTarget {
     let handle = handle as u64;
     MsiTarget {
-        address: MESSAGE_ADDRESS_BASE
+        message_address: MESSAGE_ADDRESS_BASE
             | (handle & 0x7fff) << 5
             | MESSAGE_REMAPPABLE_FORMAT
             | MESSAGE_SUBHANDLE_VALID

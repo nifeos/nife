@@ -17,7 +17,7 @@ impl FakeCfg {
         s.insert((f.0, f.1, f.2, 0x04), (0x0010u32) << 16);
         // header type 0, single-function
         s.insert((f.0, f.1, f.2, 0x0c), 0);
-        // BAR0: 32-bit memory at 0x4000_0000 (assigned), size 0x1000
+        // BAR0_REGISTER: 32-bit memory at 0x4000_0000 (assigned), size 0x1000
         s.insert((f.0, f.1, f.2, 0x10), 0x4000_0000);
         // BAR4: 64-bit memory, unassigned (base 0), size 0x4000
         s.insert((f.0, f.1, f.2, 0x20), 0b100);
@@ -41,7 +41,7 @@ impl FakeCfg {
         s.insert((f.0, f.1, f.2, 0x54), 4);
         s.insert((f.0, f.1, f.2, 0x58), 0x3000);
         s.insert((f.0, f.1, f.2, 0x5c), 0x1000);
-        s.insert((f.0, f.1, f.2, 0x60), 4); // notify_off_multiplier
+        s.insert((f.0, f.1, f.2, 0x60), 4); // notify_offset_multiplier
         // 0x70 -> MSI-X (id 0x11), end of list. Message Control 0x0002, which is a table of
         // THREE entries: the field holds the count minus one. Table BIR 1, offset 0x2000.
         s.insert(
@@ -78,24 +78,24 @@ impl FakeCfg {
         // Empty slots float high: all-ones, the hardware's "nobody home".
         *self
             .space
-            .get(&(bdf.bus, bdf.dev, bdf.func, off & !3))
+            .get(&(bdf.bus, bdf.device, bdf.function, off & !3))
             .unwrap_or(&u32::MAX)
     }
 
     /// BAR writes emulate the size probe: all-ones writes read back as the size mask.
     fn write32(&mut self, bdf: Bdf, off: u64, v: u32) {
-        let key = (bdf.bus, bdf.dev, bdf.func, off & !3);
+        let key = (bdf.bus, bdf.device, bdf.function, off & !3);
         if !self.space.contains_key(&key) {
             return;
         }
         // Keyed on the device too: 00:01 and 00:03 both have a BAR at 0x10 and they are
         // different sizes.
-        let v = match (bdf.dev, off & !3) {
-            (1, 0x10) if v == u32::MAX => !(0x1000u32 - 1), // BAR0: size 0x1000
+        let v = match (bdf.device, off & !3) {
+            (1, 0x10) if v == u32::MAX => !(0x1000u32 - 1), // BAR0_REGISTER: size 0x1000
             (1, 0x20) if v == u32::MAX => (!(0x4000u32 - 1)) | 0b100, // BAR4 low: size 0x4000, keep type bits
             (1, 0x24) if v == u32::MAX => u32::MAX, // BAR4 high: all bits writable
-            (3, 0x10) if v == u32::MAX => (!(0x2000u32 - 1)) | 0b100, // BAR0 low: size 0x2000
-            (3, 0x14) if v == u32::MAX => u32::MAX, // BAR0 high
+            (3, 0x10) if v == u32::MAX => (!(0x2000u32 - 1)) | 0b100, // BAR0_REGISTER low: size 0x2000
+            (3, 0x14) if v == u32::MAX => u32::MAX,                   // BAR0_REGISTER high
             _ => v,
         };
         self.space.insert(key, v);
@@ -109,8 +109,8 @@ fn ecam_offsets_have_the_specified_strides() {
     assert_eq!(
         Bdf {
             bus: 0,
-            dev: 0,
-            func: 1
+            device: 0,
+            function: 1
         }
         .ecam_offset(),
         0x1000
@@ -118,8 +118,8 @@ fn ecam_offsets_have_the_specified_strides() {
     assert_eq!(
         Bdf {
             bus: 0,
-            dev: 1,
-            func: 0
+            device: 1,
+            function: 0
         }
         .ecam_offset(),
         0x8000
@@ -127,23 +127,23 @@ fn ecam_offsets_have_the_specified_strides() {
     assert_eq!(
         Bdf {
             bus: 1,
-            dev: 0,
-            func: 0
+            device: 0,
+            function: 0
         }
         .ecam_offset(),
         0x10_0000
     );
 }
 
-/// The requester id is `bus:8 | dev:5 | fn:3`, the id the IOMMU keys per-device tables on
+/// The requester id is `bus:8 | device:5 | fn:3`, the id the IOMMU keys per-device tables on
 /// (milestone 16b). A different packing than `ecam_offset`, so it gets its own witness.
 #[test]
 fn requester_id_packs_bus_dev_fn() {
     assert_eq!(
         Bdf {
             bus: 0,
-            dev: 0,
-            func: 0
+            device: 0,
+            function: 0
         }
         .requester_id(),
         0
@@ -151,8 +151,8 @@ fn requester_id_packs_bus_dev_fn() {
     assert_eq!(
         Bdf {
             bus: 0,
-            dev: 1,
-            func: 0
+            device: 1,
+            function: 0
         }
         .requester_id(),
         0x08
@@ -160,8 +160,8 @@ fn requester_id_packs_bus_dev_fn() {
     assert_eq!(
         Bdf {
             bus: 0,
-            dev: 0,
-            func: 1
+            device: 0,
+            function: 1
         }
         .requester_id(),
         0x01
@@ -169,8 +169,8 @@ fn requester_id_packs_bus_dev_fn() {
     assert_eq!(
         Bdf {
             bus: 0,
-            dev: 2,
-            func: 3
+            device: 2,
+            function: 3
         }
         .requester_id(),
         0x13
@@ -178,8 +178,8 @@ fn requester_id_packs_bus_dev_fn() {
     assert_eq!(
         Bdf {
             bus: 1,
-            dev: 0,
-            func: 0
+            device: 0,
+            function: 0
         }
         .requester_id(),
         0x100
@@ -205,35 +205,35 @@ fn enumeration_follows_the_multifunction_bit_and_skips_what_does_not_answer() {
             (
                 Bdf {
                     bus: 0,
-                    dev: 1,
-                    func: 0
+                    device: 1,
+                    function: 0
                 },
                 VIRTIO_VENDOR,
-                VIRTIO_BLK_MODERN
+                VIRTIO_BLOCK_MODERN
             ),
             (
                 Bdf {
                     bus: 0,
-                    dev: 2,
-                    func: 0
+                    device: 2,
+                    function: 0
                 },
                 VIRTIO_VENDOR,
-                VIRTIO_NET_MODERN
+                VIRTIO_NETWORK_MODERN
             ),
             (
                 Bdf {
                     bus: 0,
-                    dev: 2,
-                    func: 1
+                    device: 2,
+                    function: 1
                 },
                 VIRTIO_VENDOR,
-                VIRTIO_RNG_MODERN
+                VIRTIO_ENTROPY_MODERN
             ),
             (
                 Bdf {
                     bus: 0,
-                    dev: 3,
-                    func: 0
+                    device: 3,
+                    function: 0
                 },
                 VIRTIO_VENDOR,
                 VIRTIO_GPU_MODERN
@@ -257,11 +257,14 @@ impl BridgedCfg {
     /// `class` is the 24-bit class triple; `header` the raw header-type byte (bit 7 sets
     /// multifunction).
     fn function(&mut self, bdf: (u8, u8, u8), ids: u32, class: u32, header: u32) {
-        self.space.insert((bdf.0, bdf.1, bdf.2, VENDOR_ID), ids);
         self.space
-            .insert((bdf.0, bdf.1, bdf.2, CLASS_REVISION), class << 8);
+            .insert((bdf.0, bdf.1, bdf.2, VENDOR_ID_REGISTER), ids);
         self.space
-            .insert((bdf.0, bdf.1, bdf.2, HEADER_TYPE & !3), header << 16);
+            .insert((bdf.0, bdf.1, bdf.2, CLASS_REVISION_REGISTER), class << 8);
+        self.space.insert(
+            (bdf.0, bdf.1, bdf.2, HEADER_TYPE_REGISTER & !3),
+            header << 16,
+        );
     }
 
     fn new() -> Self {
@@ -272,15 +275,21 @@ impl BridgedCfg {
         cfg.function((0, 0x1d, 0), 0xa334_8086, 0x06_04_00, 0x01);
         // primary 0, secondary 1, subordinate 2: the subtree is buses 1 and 2, and only bus 1
         // has anything on it, which is the ordinary shape (firmware leaves headroom).
-        cfg.space.insert((0, 0x1d, 0, BUS_NUMBERS), 0x00_02_01_00);
-        cfg.function((1, 0, 0), 0x51b2_1344, CLASS_NVME, 0x00);
+        cfg.space
+            .insert((0, 0x1d, 0, BUS_NUMBERS_REGISTER), 0x00_02_01_00);
+        cfg.function(
+            (1, 0, 0),
+            0x51b2_1344,
+            CLASS_NON_VOLATILE_MEMORY_EXPRESS,
+            0x00,
+        );
         cfg
     }
 
     fn read32(&self, bdf: Bdf, off: u64) -> u32 {
         *self
             .space
-            .get(&(bdf.bus, bdf.dev, bdf.func, off & !3))
+            .get(&(bdf.bus, bdf.device, bdf.function, off & !3))
             .unwrap_or(&u32::MAX)
     }
 }
@@ -309,13 +318,16 @@ fn the_walk_follows_a_root_port_onto_the_bus_behind_it() {
     );
 
     let nvme = found[2];
-    assert_eq!(nvme.class, CLASS_NVME, "the controller is on bus 1");
+    assert_eq!(
+        nvme.class, CLASS_NON_VOLATILE_MEMORY_EXPRESS,
+        "the controller is on bus 1"
+    );
     assert_eq!(
         nvme.bdf,
         Bdf {
             bus: 1,
-            dev: 0,
-            func: 0
+            device: 0,
+            function: 0
         }
     );
     assert_eq!(nvme.bridge, None, "an endpoint states no buses behind it");
@@ -357,10 +369,12 @@ fn a_cycle_in_the_bus_numbering_terminates() {
     let mut cfg = BridgedCfg::new();
     // 01:01.0: a bridge whose secondary bus is 1, the bus it is itself on.
     cfg.function((1, 1, 0), 0xdead_beef, 0x06_04_00, 0x01);
-    cfg.space.insert((1, 1, 0, BUS_NUMBERS), 0x00_01_01_00);
+    cfg.space
+        .insert((1, 1, 0, BUS_NUMBERS_REGISTER), 0x00_01_01_00);
     // 01:02.0: a bridge pointing back at bus 0, the root.
     cfg.function((1, 2, 0), 0xdead_beee, 0x06_04_00, 0x01);
-    cfg.space.insert((1, 2, 0, BUS_NUMBERS), 0x00_02_00_01);
+    cfg.space
+        .insert((1, 2, 0, BUS_NUMBERS_REGISTER), 0x00_02_00_01);
 
     let mut n = 0usize;
     walk(256, &mut |b, o| cfg.read32(b, o), &mut |_| n += 1);
@@ -375,7 +389,7 @@ fn a_cycle_in_the_bus_numbering_terminates() {
 #[test]
 fn an_unconfigured_bridge_states_no_subtree() {
     let mut cfg = BridgedCfg::new();
-    cfg.space.insert((0, 0x1d, 0, BUS_NUMBERS), 0);
+    cfg.space.insert((0, 0x1d, 0, BUS_NUMBERS_REGISTER), 0);
     let mut found = Vec::new();
     walk(256, &mut |b, o| cfg.read32(b, o), &mut |f| found.push(f));
     assert_eq!(found.len(), 2, "nothing behind an unconfigured bridge");
@@ -387,7 +401,7 @@ fn an_unconfigured_bridge_states_no_subtree() {
 /// and eight per-function reads, and the walk still returns the right answer, so read count
 /// is the only thing that can see the guard.
 #[test]
-fn an_empty_slot_costs_one_config_read() {
+fn an_empty_slot_costs_one_configuration_read() {
     let mut cfg = FakeCfg::new();
     let mut reads = 0usize;
     enumerate(
@@ -408,7 +422,7 @@ fn an_empty_slot_costs_one_config_read() {
     assert_eq!(reads, 29 + (2 + 3) + (2 + 3 + 3 + 6) + (2 + 3));
 }
 
-/// The BAR probe decodes an assigned 32-bit BAR and an UNassigned 64-bit BAR (base 0), sizes
+/// The BAR probe decodes an assigned 32-bit BAR and an unassigned 64-bit BAR (base 0), sizes
 /// both by the write-ones dance, marks widths, and restores the original values (the probe
 /// must not leave the device reprogrammed).
 #[test]
@@ -416,8 +430,8 @@ fn bars_are_sized_and_restored() {
     let cfg = std::cell::RefCell::new(FakeCfg::new());
     let bdf = Bdf {
         bus: 0,
-        dev: 1,
-        func: 0,
+        device: 1,
+        function: 0,
     };
     let bars = read_bars(
         bdf,
@@ -430,17 +444,17 @@ fn bars_are_sized_and_restored() {
     assert_eq!(
         bars[0],
         Some(Bar {
-            base: 0x4000_0000,
-            size: 0x1000,
-            is_64: false
+            base_physical_address: 0x4000_0000,
+            size_bytes: 0x1000,
+            is_64_bit: false
         })
     );
     assert_eq!(
         bars[4],
         Some(Bar {
-            base: 0,
-            size: 0x4000,
-            is_64: true
+            base_physical_address: 0,
+            size_bytes: 0x4000,
+            is_64_bit: true
         })
     );
     assert_eq!(bars[1], None);
@@ -463,8 +477,8 @@ fn a_64_bit_bar_in_the_first_slot_keeps_its_high_half() {
     let cfg = std::cell::RefCell::new(FakeCfg::new());
     let bdf = Bdf {
         bus: 0,
-        dev: 3,
-        func: 0,
+        device: 3,
+        function: 0,
     };
     // A high-water mark rather than a log of every access: the mutants that make this walk
     // run forever are caught by a timeout, and a growing Vec would turn that into an OOM.
@@ -485,9 +499,9 @@ fn a_64_bit_bar_in_the_first_slot_keeps_its_high_half() {
     assert_eq!(
         bars[0],
         Some(Bar {
-            base: 0x1_c000_0000,
-            size: 0x2000,
-            is_64: true
+            base_physical_address: 0x1_c000_0000,
+            size_bytes: 0x2000,
+            is_64_bit: true
         })
     );
     assert_eq!(
@@ -499,12 +513,12 @@ fn a_64_bit_bar_in_the_first_slot_keeps_its_high_half() {
     // and a walk that ran one slot long would size that pointer as if it were a BAR.
     assert_eq!(
         highest.get(),
-        BAR0 + 20,
+        BAR0_REGISTER + 20,
         "the probe touched a register outside the six BAR slots"
     );
 }
 
-/// A device answering the BAR probe from a table: `BAR0 + 4 * slot` holds `(value, mask)`, and an
+/// A device answering the BAR probe from a table: `BAR0_REGISTER + 4 * slot` holds `(value, mask)`, and an
 /// all-ones write to a slot reads back its mask until the next write restores a value. The header
 /// type dword reads `header_type << 16`, and any other register reads zero.
 struct ProbeTable {
@@ -525,14 +539,14 @@ impl ProbeTable {
     }
 
     fn slot(off: u64) -> Option<usize> {
-        (BAR0..BAR0 + 24)
+        (BAR0_REGISTER..BAR0_REGISTER + 24)
             .contains(&off)
-            .then(|| ((off - BAR0) / 4) as usize)
+            .then(|| ((off - BAR0_REGISTER) / 4) as usize)
     }
 
     fn read32(&mut self, off: u64) -> u32 {
         self.highest = self.highest.max(off);
-        if off == HEADER_TYPE & !3 {
+        if off == HEADER_TYPE_REGISTER & !3 {
             return u32::from(self.header_type) << 16;
         }
         match Self::slot(off) {
@@ -556,8 +570,8 @@ impl ProbeTable {
         let bars = read_bars(
             Bdf {
                 bus: 0,
-                dev: 0,
-                func: 0,
+                device: 0,
+                function: 0,
             },
             &mut |_, o| device.borrow_mut().read32(o),
             &mut |_, o, v| device.borrow_mut().write32(o, v),
@@ -635,7 +649,7 @@ fn a_64_bit_bar_in_the_last_slot_is_refused_without_probing_past_it() {
     assert_eq!(refusals, vec![(5, BarRefusal::SixtyFourBitInLastSlot)]);
     assert_eq!(
         device.highest,
-        BAR0 + 20,
+        BAR0_REGISTER + 20,
         "the probe touched a register past the BARs"
     );
 }
@@ -655,16 +669,16 @@ fn a_bridge_has_two_bar_slots() {
     assert_eq!(
         bars[0],
         Some(Bar {
-            base: 0x4000_0000,
-            size: 0x1000,
-            is_64: false
+            base_physical_address: 0x4000_0000,
+            size_bytes: 0x1000,
+            is_64_bit: false
         })
     );
     assert_eq!(&bars[1..], &[None; 5]);
     assert_eq!(refusals, vec![(1, BarRefusal::SixtyFourBitInLastSlot)]);
     assert_eq!(
         device.highest,
-        BAR0 + 4,
+        BAR0_REGISTER + 4,
         "the probe touched the bus numbers"
     );
 }
@@ -679,7 +693,7 @@ fn an_unknown_header_layout_has_no_bars() {
     let (bars, refusals) = device.read();
     assert_eq!(bars, [None; 6]);
     assert!(refusals.is_empty());
-    assert_eq!(device.highest, HEADER_TYPE & !3);
+    assert_eq!(device.highest, HEADER_TYPE_REGISTER & !3);
 }
 
 /// The largest regions both widths can describe are sized, not refused: a 32-bit BAR of 2 GiB and
@@ -693,8 +707,8 @@ fn the_largest_regions_are_sized() {
     slots[2] = (0, 0x8000_0000);
     let (bars, refusals) = ProbeTable::new(slots).read();
     assert!(refusals.is_empty(), "{refusals:?}");
-    assert_eq!(bars[0].map(|b| b.size), Some(0x8000_0000));
-    assert_eq!(bars[1].map(|b| b.size), Some(1 << 63));
+    assert_eq!(bars[0].map(|b| b.size_bytes), Some(0x8000_0000));
+    assert_eq!(bars[1].map(|b| b.size_bytes), Some(1 << 63));
 }
 
 /// The capability walk yields the two virtio vendor capabilities with their (bar, offset,
@@ -704,8 +718,8 @@ fn the_capability_walk_finds_virtio_vendor_capabilities_only() {
     let mut cfg = FakeCfg::new();
     let bdf = Bdf {
         bus: 0,
-        dev: 1,
-        func: 0,
+        device: 1,
+        function: 0,
     };
     let mut capabilities = Vec::new();
     virtio_capabilities(bdf, &mut |b, o| cfg.read32(b, o), &mut |c| {
@@ -717,18 +731,18 @@ fn the_capability_walk_finds_virtio_vendor_capabilities_only() {
         2,
         "exactly the two vendor caps, MSI-X skipped"
     );
-    assert_eq!(capabilities[0].cfg_type, VIRTIO_CAPABILITY_COMMON);
+    assert_eq!(capabilities[0].configuration_type, VIRTIO_CAPABILITY_COMMON);
     assert_eq!(
         (
             capabilities[0].bar,
             capabilities[0].offset,
-            capabilities[0].length
+            capabilities[0].length_bytes
         ),
         (4, 0, 0x1000)
     );
-    assert_eq!(capabilities[1].cfg_type, VIRTIO_CAPABILITY_NOTIFY);
+    assert_eq!(capabilities[1].configuration_type, VIRTIO_CAPABILITY_NOTIFY);
     assert_eq!((capabilities[1].bar, capabilities[1].offset), (4, 0x3000));
-    assert_eq!(capabilities[1].notify_off_multiplier, 4);
+    assert_eq!(capabilities[1].notify_offset_multiplier, 4);
 }
 
 /// A function whose status register does not advertise a capability list is not walked. The
@@ -741,10 +755,10 @@ fn a_function_without_a_capability_list_is_not_walked() {
     let mut cfg = FakeCfg::new();
     let bdf = Bdf {
         bus: 0,
-        dev: 1,
-        func: 0,
+        device: 1,
+        function: 0,
     };
-    cfg.space.insert((0, 1, 0, COMMAND), 0);
+    cfg.space.insert((0, 1, 0, COMMAND_REGISTER), 0);
     let mut capabilities = Vec::new();
     virtio_capabilities(bdf, &mut |b, o| cfg.read32(b, o), &mut |c| {
         capabilities.push(c);
@@ -762,8 +776,8 @@ fn a_cyclic_capability_list_terminates() {
     let mut cfg = FakeCfg::new();
     let bdf = Bdf {
         bus: 0,
-        dev: 1,
-        func: 0,
+        device: 1,
+        function: 0,
     };
     // Point the second cap's `next` back at the first.
     cfg.space.insert(
@@ -828,8 +842,8 @@ fn the_intx_swizzle_matches_the_routing_tables_of_the_virt_machines() {
 /// path to catch it.
 #[test]
 fn the_command_bits_are_the_specified_positions() {
-    assert_eq!(CMD_MEMORY_SPACE, 0x0002);
-    assert_eq!(CMD_BUS_MASTER, 0x0004);
+    assert_eq!(COMMAND_MEMORY_SPACE_ENABLE, 0x0002);
+    assert_eq!(COMMAND_BUS_MASTER_ENABLE, 0x0004);
 }
 
 /// **A modern virtio PCI device id is `0x1040 + the virtio device type`**, which is what lets
@@ -848,13 +862,13 @@ fn ranges(entries: &[[u32; 7]]) -> Vec<u8> {
 /// The QEMU riscv `virt` ranges verbatim (IO, 32-bit memory, 64-bit memory): the parser must
 /// step past the IO entry, take the mem32 one, and never reach the mem64 one.
 #[test]
-fn the_mem32_entry_is_found_among_its_neighbours() {
+fn the_mem32_entry_is_found_among_its_neighbors() {
     let r = ranges(&[
         [0x0100_0000, 0, 0, 0, 0x0300_0000, 0, 0x1_0000],
         [0x0200_0000, 0, 0x4000_0000, 0, 0x4000_0000, 0, 0x4000_0000],
         [0x0300_0000, 4, 0, 4, 0, 4, 0],
     ]);
-    assert_eq!(mem32_window(&r), Some((0x4000_0000, 0x4000_0000)));
+    assert_eq!(memory_window_32_bit(&r), Some((0x4000_0000, 0x4000_0000)));
 }
 
 /// A prefetchable 32-bit entry is not the window BARs are placed in; a tree that states only
@@ -862,7 +876,7 @@ fn the_mem32_entry_is_found_among_its_neighbours() {
 #[test]
 fn a_prefetchable_window_is_not_taken() {
     let r = ranges(&[[0x4200_0000, 0, 0x4000_0000, 0, 0x4000_0000, 0, 0x4000_0000]]);
-    assert_eq!(mem32_window(&r), None);
+    assert_eq!(memory_window_32_bit(&r), None);
 }
 
 /// A translated window (PCI address != CPU address) is refused, per the doc: the kernel
@@ -870,7 +884,7 @@ fn a_prefetchable_window_is_not_taken() {
 #[test]
 fn a_translated_window_is_refused() {
     let r = ranges(&[[0x0200_0000, 0, 0x0000_0000, 0, 0x4000_0000, 0, 0x4000_0000]]);
-    assert_eq!(mem32_window(&r), None);
+    assert_eq!(memory_window_32_bit(&r), None);
 }
 
 /// A ragged length is not the shape this parser knows; `None`, not a partial read. Empty is
@@ -878,15 +892,15 @@ fn a_translated_window_is_refused() {
 #[test]
 fn a_ragged_or_empty_ranges_is_refused() {
     let r = ranges(&[[0x0200_0000, 0, 0x4000_0000, 0, 0x4000_0000, 0, 0x4000_0000]]);
-    assert_eq!(mem32_window(&r[..r.len() - 4]), None);
-    assert_eq!(mem32_window(&[]), None);
+    assert_eq!(memory_window_32_bit(&r[..r.len() - 4]), None);
+    assert_eq!(memory_window_32_bit(&[]), None);
 }
 
 #[test]
 fn a_modern_virtio_pci_id_is_0x1040_plus_the_device_type() {
-    assert_eq!(VIRTIO_NET_MODERN as u32, 0x1040 + VIRTIO_TYPE_NET);
-    assert_eq!(VIRTIO_BLK_MODERN as u32, 0x1040 + VIRTIO_TYPE_BLOCK);
-    assert_eq!(VIRTIO_RNG_MODERN as u32, 0x1040 + VIRTIO_TYPE_ENTROPY);
+    assert_eq!(VIRTIO_NETWORK_MODERN as u32, 0x1040 + VIRTIO_TYPE_NETWORK);
+    assert_eq!(VIRTIO_BLOCK_MODERN as u32, 0x1040 + VIRTIO_TYPE_BLOCK);
+    assert_eq!(VIRTIO_ENTROPY_MODERN as u32, 0x1040 + VIRTIO_TYPE_ENTROPY);
     assert_eq!(VIRTIO_GPU_MODERN as u32, 0x1040 + VIRTIO_TYPE_GPU);
     assert_eq!(VIRTIO_INPUT_MODERN as u32, 0x1040 + VIRTIO_TYPE_INPUT);
 }
@@ -900,8 +914,8 @@ fn the_msix_capability_decodes_with_its_table_size_off_by_one_corrected() {
     let mut cfg = FakeCfg::new();
     let bdf = Bdf {
         bus: 0,
-        dev: 1,
-        func: 0,
+        device: 1,
+        function: 0,
     };
     let capability =
         msix_capability(bdf, &mut |b, o| cfg.read32(b, o)).expect("the fake declares MSI-X");
@@ -909,11 +923,11 @@ fn the_msix_capability_decodes_with_its_table_size_off_by_one_corrected() {
         capability,
         MsixCapability {
             capability_offset: 0x70,
-            table_size: 3,
+            table_entries: 3,
             table_bar: 1,
             table_offset: 0x2000,
-            pba_bar: 1,
-            pba_offset: 0x2800,
+            pending_bit_array_bar: 1,
+            pending_bit_array_offset: 0x2800,
         }
     );
 }
@@ -926,12 +940,12 @@ fn the_msix_capability_decodes_with_its_table_size_off_by_one_corrected() {
 fn an_msi_only_function_decodes_and_places_its_data_by_address_width() {
     let bdf = Bdf {
         bus: 0,
-        dev: 20,
-        func: 0,
+        device: 20,
+        function: 0,
     };
     let mut read = |_: Bdf, o: u64| match o {
-        COMMAND => u32::from(STATUS_CAPABILITIES_LIST) << 16,
-        CAPABILITIES_POINTER => 0x70,
+        COMMAND_REGISTER => u32::from(STATUS_CAPABILITIES_LIST) << 16,
+        CAPABILITIES_POINTER_REGISTER => 0x70,
         0x70 => 0x01 | 0x80 << 8, // power management, next 0x80
         0x80 => u32::from(CAPABILITY_ID_MSI) | u32::from(MSI_64_BIT | 0x6) << 16, // 64-bit, eight vectors
         _ => 0,
@@ -941,27 +955,27 @@ fn an_msi_only_function_decodes_and_places_its_data_by_address_width() {
         msi,
         MsiCapability {
             capability_offset: 0x80,
-            is_64: true
+            is_64_bit: true
         }
     );
-    assert_eq!((msi.address_low(), msi.data()), (0x84, 0x8c));
+    assert_eq!((msi.message_address_low(), msi.data()), (0x84, 0x8c));
     assert_eq!(msix_capability(bdf, &mut read), None);
     let narrow = MsiCapability {
         capability_offset: 0x50,
-        is_64: false,
+        is_64_bit: false,
     };
     assert_eq!(narrow.data(), 0x58);
     // A 32-bit MSI capability says so, and a function whose status has no capability list
     // is not walked even when its pointer byte happens to lead to one.
     let mut read32 = |_: Bdf, o: u64| match o {
-        COMMAND => u32::from(STATUS_CAPABILITIES_LIST) << 16,
-        CAPABILITIES_POINTER => 0x50,
+        COMMAND_REGISTER => u32::from(STATUS_CAPABILITIES_LIST) << 16,
+        CAPABILITIES_POINTER_REGISTER => 0x50,
         0x50 => u32::from(CAPABILITY_ID_MSI),
         _ => 0,
     };
     assert_eq!(msi_capability(bdf, &mut read32), Some(narrow));
     let mut unlisted = |_: Bdf, o: u64| match o {
-        CAPABILITIES_POINTER => 0x50,
+        CAPABILITIES_POINTER_REGISTER => 0x50,
         0x50 => u32::from(CAPABILITY_ID_MSI),
         _ => 0,
     };
@@ -975,8 +989,8 @@ fn a_function_without_a_capability_list_declares_no_msix() {
     let mut cfg = FakeCfg::new();
     let bdf = Bdf {
         bus: 0,
-        dev: 2,
-        func: 1,
+        device: 2,
+        function: 1,
     };
     assert_eq!(msix_capability(bdf, &mut |b, o| cfg.read32(b, o)), None);
 }
@@ -988,16 +1002,16 @@ fn a_function_without_a_capability_list_declares_no_msix() {
 fn a_cyclic_capability_list_terminates_instead_of_hanging() {
     let bdf = Bdf {
         bus: 0,
-        dev: 4,
-        func: 0,
+        device: 4,
+        function: 0,
     };
     let mut reads = 0usize;
     let answer = msix_capability(bdf, &mut |_, off| {
         reads += 1;
         match off {
-            COMMAND => 0x0010 << 16,      // capability list present
-            CAPABILITIES_POINTER => 0x40, // first entry at 0x40
-            0x40 => 0x0000_4009,          // a vendor cap whose `next` points back at 0x40
+            COMMAND_REGISTER => 0x0010 << 16,      // capability list present
+            CAPABILITIES_POINTER_REGISTER => 0x40, // first entry at 0x40
+            0x40 => 0x0000_4009,                   // a vendor cap whose `next` points back at 0x40
             _ => 0,
         }
     });
@@ -1011,15 +1025,15 @@ fn a_cyclic_capability_list_terminates_instead_of_hanging() {
 fn a_status_without_the_list_bit_hides_a_capability_that_is_there() {
     let bdf = Bdf {
         bus: 0,
-        dev: 5,
-        func: 0,
+        device: 5,
+        function: 0,
     };
     let read = |present: bool| {
         move |_: Bdf, off: u64| -> u32 {
             match off {
                 // Status bit 3 (an interrupt is pending) is set; bit 4 is the list.
-                COMMAND => (if present { 0x0018u32 } else { 0x0008 }) << 16,
-                CAPABILITIES_POINTER => 0x40,
+                COMMAND_REGISTER => (if present { 0x0018u32 } else { 0x0008 }) << 16,
+                CAPABILITIES_POINTER_REGISTER => 0x40,
                 0x40 => 0x0001_0011, // MSI-X, control 1, no next
                 _ => 0,
             }
@@ -1052,7 +1066,7 @@ fn a_window_reads_its_addresses_and_size_as_high_then_low_cells() {
         0x1000_0000,
     ]]);
     assert_eq!(
-        mem32_window(&r),
+        memory_window_32_bit(&r),
         Some((0x1_8000_0000, 0x2_1000_0000)),
         "{r:?}"
     );
@@ -1066,16 +1080,16 @@ fn a_window_reads_its_addresses_and_size_as_high_then_low_cells() {
         0,
         0x1000_0000,
     ]]);
-    assert_eq!(mem32_window(&translated), None);
+    assert_eq!(memory_window_32_bit(&translated), None);
 }
 
 /// A whole entry followed by four stray bytes is ragged, not "the first entry and some noise".
 #[test]
 fn a_whole_entry_plus_a_stray_cell_is_ragged() {
     let mut r = ranges(&[[0x0200_0000, 0, 0x4000_0000, 0, 0x4000_0000, 0, 0x4000_0000]]);
-    assert!(mem32_window(&r).is_some());
+    assert!(memory_window_32_bit(&r).is_some());
     r.extend_from_slice(&[0; 4]);
-    assert_eq!(mem32_window(&r), None);
+    assert_eq!(memory_window_32_bit(&r), None);
 }
 
 /// Every bus number is queued once and handed out once, in order of arrival, whatever the
@@ -1107,8 +1121,8 @@ fn a_vendor_capability_shorter_than_its_type_needs_is_skipped() {
     let mut configuration = FakeCfg::new();
     let location = Bdf {
         bus: 0,
-        dev: 1,
-        func: 0,
+        device: 1,
+        function: 0,
     };
     configuration.space.insert(
         (0, 1, 0, 0x40),
@@ -1127,20 +1141,20 @@ fn a_vendor_capability_shorter_than_its_type_needs_is_skipped() {
     assert_eq!(seen, 0);
 }
 
-/// **A device or function number past its field cannot reach another function's page.** `dev`
-/// holds five bits and `func` three, so a 32 or an 8 wraps inside its field rather than landing
+/// **A device or function number past its field cannot reach another function's page.** `device`
+/// holds five bits and `function` three, so a 32 or an 8 wraps inside its field rather than landing
 /// on the next bus's or the next device's configuration space, in both packings.
 #[test]
 fn a_device_or_function_past_its_field_is_masked_to_it() {
     let wide = Bdf {
         bus: 3,
-        dev: 32 + 5,
-        func: 8 + 2,
+        device: 32 + 5,
+        function: 8 + 2,
     };
     let narrow = Bdf {
         bus: 3,
-        dev: 5,
-        func: 2,
+        device: 5,
+        function: 2,
     };
     assert_eq!(wide.ecam_offset(), narrow.ecam_offset());
     assert_eq!(wide.requester_id(), narrow.requester_id());
@@ -1152,15 +1166,15 @@ fn a_device_or_function_past_its_field_is_masked_to_it() {
 fn the_message_signaled_interrupt_walk_ends_on_a_cyclic_list() {
     let location = Bdf {
         bus: 0,
-        dev: 1,
-        func: 0,
+        device: 1,
+        function: 0,
     };
     let mut reads = 0;
     let mut cyclic = |_: Bdf, o: u64| {
         reads += 1;
         match o {
-            COMMAND => u32::from(STATUS_CAPABILITIES_LIST) << 16,
-            CAPABILITIES_POINTER => 0x50,
+            COMMAND_REGISTER => u32::from(STATUS_CAPABILITIES_LIST) << 16,
+            CAPABILITIES_POINTER_REGISTER => 0x50,
             0x50 => 0x01 | 0x50 << 8, // power management whose next is itself
             _ => 0,
         }
