@@ -14,7 +14,7 @@
 //! - A badge is a window and a grant at once (§230 (badged endpoint capabilities)): a revoked badge
 //!   handed to a new client while its old holder lives reaches the new grant. The progenitor frees
 //!   a window only at reap, after the holder is dead; nothing here can check that.
-//! - The proof is bounded ([`PROOF_PATH`], [`PROOF_BADGES`], [`PROOF_OPERATIONS`]); that no loop
+//! - The proof is bounded ([`PROOF_PATH_BYTES`], [`PROOF_BADGES`], [`PROOF_OPERATIONS`]); that no loop
 //!   behaves differently past the bounds is an argument, not a proof.
 //!
 //! Name: provisional 2026-09-27 (milestone 606's lane, ruling D). calef names crates.
@@ -78,7 +78,7 @@ impl Refusal {
 
 /// What a server found under a name. The only facts about a node this crate needs.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Kind {
+pub enum NodeKind {
     /// A directory: the only thing a walk steps through.
     Directory,
     /// A regular file, hard-linked or not.
@@ -89,10 +89,14 @@ pub enum Kind {
     MountPoint,
 }
 
-/// **Whether `c` is one name**: non-empty, not `.` or `..`, and free of `/` and NUL. The only
+/// **Whether `component` is one name**: non-empty, not `.` or `..`, and free of `/` and NUL. The only
 /// way down a tree is a name, so this is what keeps a path from going up or sideways.
-pub fn is_name(c: &[u8]) -> bool {
-    !c.is_empty() && c != b"." && c != b".." && !c.contains(&b'/') && !c.contains(&0)
+pub fn is_name(component: &[u8]) -> bool {
+    !component.is_empty()
+        && component != b"."
+        && component != b".."
+        && !component.contains(&b'/')
+        && !component.contains(&0)
 }
 
 /// **Every component of `path` is a name**, checked before any is resolved, so a malformed path is
@@ -126,12 +130,12 @@ pub fn check_path(path: &[u8]) -> Result<(), Refusal> {
 ///
 /// ```
 /// use filesystem_contract::directory::{self, Rights};
-/// use subtree_scope::{walk, Kind, Refusal};
+/// use subtree_scope::{walk, NodeKind, Refusal};
 ///
 /// let lookup = |node: u32, name: &[u8]| match (node, name) {
-///     (0, b"a") => Ok((1, Kind::Directory)),
-///     (0, b"s") => Ok((3, Kind::Symlink)),
-///     (1, b"b") => Ok((2, Kind::Directory)),
+///     (0, b"a") => Ok((1, NodeKind::Directory)),
+///     (0, b"s") => Ok((3, NodeKind::Symlink)),
+///     (1, b"b") => Ok((2, NodeKind::Directory)),
 ///     _ => Err(Refusal::NotFound),
 /// };
 /// let all = Rights::root(directory::ALL);
@@ -149,20 +153,20 @@ pub fn walk<N: Copy, E: From<Refusal>>(
     rights: Rights,
     path: &[u8],
     hop: u64,
-    mut lookup: impl FnMut(N, &[u8]) -> Result<(N, Kind), E>,
+    mut lookup: impl FnMut(N, &[u8]) -> Result<(N, NodeKind), E>,
 ) -> Result<(N, Rights, &[u8]), E> {
     check_path(path).map_err(E::from)?;
-    let (dirs, last) = match path.iter().rposition(|&b| b == b'/') {
+    let (directories, last) = match path.iter().rposition(|&b| b == b'/') {
         Some(i) => (&path[..i], &path[i + 1..]),
         None => return Ok((start, rights, path)),
     };
     let (mut node, mut rights) = (start, rights);
-    for step in dirs.split(|&b| b == b'/') {
+    for step in directories.split(|&b| b == b'/') {
         if !rights.allows(directory::DESCEND) {
             return Err(Refusal::NotFound.into());
         }
         let (child, kind) = lookup(node, step)?;
-        landing(kind, true).map_err(E::from)?;
+        check_landing(kind, true).map_err(E::from)?;
         let asked = directory::DESCEND | hop;
         let granted = rights.attenuate(asked);
         if granted != Rights::root(asked) {
@@ -174,15 +178,15 @@ pub fn walk<N: Copy, E: From<Refusal>>(
 }
 
 /// **Whether a verb may land on a node of `kind`**: a directory when the verb wants one
-/// (`want_dir`), a file when it does not, and never a symbolic link or a mount point. The last
+/// (`want_directory`), a file when it does not, and never a symbolic link or a mount point. The last
 /// step of every verb goes through here, as every step of [`walk`] does.
-pub fn landing(kind: Kind, want_dir: bool) -> Result<(), Refusal> {
-    match (kind, want_dir) {
-        (Kind::Symlink, _) => Err(Refusal::Symlink),
-        (Kind::MountPoint, _) => Err(Refusal::MountCrossing),
-        (Kind::Directory, true) | (Kind::File, false) => Ok(()),
-        (Kind::File, true) => Err(Refusal::NotADirectory),
-        (Kind::Directory, false) => Err(Refusal::IsADirectory),
+pub fn check_landing(kind: NodeKind, want_directory: bool) -> Result<(), Refusal> {
+    match (kind, want_directory) {
+        (NodeKind::Symlink, _) => Err(Refusal::Symlink),
+        (NodeKind::MountPoint, _) => Err(Refusal::MountCrossing),
+        (NodeKind::Directory, true) | (NodeKind::File, false) => Ok(()),
+        (NodeKind::File, true) => Err(Refusal::NotADirectory),
+        (NodeKind::Directory, false) => Err(Refusal::IsADirectory),
     }
 }
 
@@ -191,7 +195,7 @@ pub fn landing(kind: Kind, want_dir: bool) -> Result<(), Refusal> {
 pub enum Binding {
     /// Never bound. The badge carries the endpoint's whole authority, as every badge did before
     /// ruling D; caretakers hold such badges, and the unbadged value 0 is always this.
-    Open,
+    Unbound,
     /// Scoped to the directory handle `root`: its `ROOT` means that directory, and it reaches the
     /// handles it minted and nothing else.
     Bound {
@@ -207,7 +211,7 @@ pub enum Binding {
     /// request and its capability, and flush for the device cache only.").
     SyncOnly,
     /// Was bound, and the grant was taken back. It reaches nothing. It never becomes
-    /// [`Binding::Open`] again, which is the property that makes revocation mean anything: a badge
+    /// [`Binding::Unbound`] again, which is the property that makes revocation mean anything: a badge
     /// that fell back to the whole endpoint's authority on revocation would be a widening.
     Revoked,
 }
@@ -235,7 +239,7 @@ pub fn admit(
     let Handle(requested) = requested;
     match binding {
         Binding::SyncOnly => Err(Refusal::NotYours),
-        Binding::Open => Ok(requested),
+        Binding::Unbound => Ok(requested),
         Binding::Revoked => Err(Refusal::NotYours),
         Binding::Bound { root } if requested == ROOT => Ok(root),
         Binding::Bound { .. } if owner == Some(badge) => Ok(requested),
@@ -259,12 +263,12 @@ pub fn admit(
 /// // The open caller (badge 0) binds badge 2 to the server's handle 40.
 /// table.bind(0, 2, 40).unwrap();
 /// // The bound badge's `ROOT` is that directory, and a handle it did not mint is refused.
-/// assert_eq!(admit(table.of(2), 2, Handle(ROOT), None), Ok(40));
-/// assert_eq!(admit(table.of(2), 2, Handle(7), Some(1)), Err(Refusal::NotYours));
+/// assert_eq!(admit(table.binding(2), 2, Handle(ROOT), None), Ok(40));
+/// assert_eq!(admit(table.binding(2), 2, Handle(7), Some(1)), Err(Refusal::NotYours));
 /// // Taking the grant back hands the root to close, and the badge reaches nothing after.
 /// assert_eq!(table.unbind(0, 2), Ok(Some(40)));
-/// assert_eq!(table.of(2), Binding::Revoked);
-/// assert_eq!(admit(table.of(2), 2, Handle(ROOT), None), Err(Refusal::NotYours));
+/// assert_eq!(table.binding(2), Binding::Revoked);
+/// assert_eq!(admit(table.binding(2), 2, Handle(ROOT), None), Err(Refusal::NotYours));
 /// ```
 ///
 /// A badge's slot is the badge itself, compared as a `u64`, so a badge past a machine word is never
@@ -284,14 +288,14 @@ impl<const B: usize> Bindings<B> {
     /// Every badge open.
     pub const fn new() -> Self {
         Self {
-            state: [Binding::Open; B],
+            state: [Binding::Unbound; B],
         }
     }
 
     /// The table slot for `badge`, or `None` for a badge with no slot. The comparison is made in
     /// `u64` space, so a badge past `usize`'s range on a 32-bit target is `None` rather than folded
     /// onto a low slot. [`Bindings::bind`] and [`Bindings::unbind`] refuse `None` as they refuse
-    /// slot 0, so it can change nothing; [`Bindings::of`] answers for it.
+    /// slot 0, so it can change nothing; [`Bindings::binding`] answers for it.
     fn index(badge: u64) -> Option<usize> {
         usize::try_from(badge).ok().filter(|&i| i < B)
     }
@@ -306,11 +310,11 @@ impl<const B: usize> Bindings<B> {
         }
     }
 
-    /// What `badge` is. Badge 0 is always [`Binding::Open`]; a nonzero badge at or past `B` is
+    /// What `badge` is. Badge 0 is always [`Binding::Unbound`]; a nonzero badge at or past `B` is
     /// always [`Binding::Revoked`].
-    pub fn of(&self, badge: u64) -> Binding {
+    pub fn binding(&self, badge: u64) -> Binding {
         match Self::index(badge) {
-            Some(0) => Binding::Open,
+            Some(0) => Binding::Unbound,
             Some(i) => self.state[i],
             None => Binding::Revoked,
         }
@@ -322,7 +326,7 @@ impl<const B: usize> Bindings<B> {
     /// be a way out of it. Badge 0 cannot be bound (it is the unbadged value), and a badge already
     /// bound cannot be bound again without being revoked first.
     pub fn bind(&mut self, caller: u64, badge: u64, root: u64) -> Result<(), Refusal> {
-        if self.of(caller) != Binding::Open {
+        if self.binding(caller) != Binding::Unbound {
             return Err(Refusal::Refused);
         }
         let i = Self::slot_to_bind(badge, &self.state)?;
@@ -337,7 +341,7 @@ impl<const B: usize> Bindings<B> {
     /// Name: ratified 2026-10-06 (calef, #1783: "Approve sync for the file-server
     /// request and its capability, and flush for the device cache only.").
     pub fn bind_sync_only(&mut self, caller: u64, badge: u64) -> Result<(), Refusal> {
-        if self.of(caller) != Binding::Open {
+        if self.binding(caller) != Binding::Unbound {
             return Err(Refusal::Refused);
         }
         let i = Self::slot_to_bind(badge, &self.state)?;
@@ -350,7 +354,7 @@ impl<const B: usize> Bindings<B> {
     /// which the server closes along with every handle the badge minted, or `None` for a sync-only
     /// badge, which held no directory.
     pub fn unbind(&mut self, caller: u64, badge: u64) -> Result<Option<u64>, Refusal> {
-        if self.of(caller) != Binding::Open {
+        if self.binding(caller) != Binding::Unbound {
             return Err(Refusal::Refused);
         }
         let i = match Self::index(badge) {
@@ -368,7 +372,7 @@ impl<const B: usize> Bindings<B> {
 }
 
 /// Path length, in bytes, the harnesses prove over.
-pub const PROOF_PATH: usize = 5;
+pub const PROOF_PATH_BYTES: usize = 5;
 /// Badges in the binding table the harnesses prove over.
 pub const PROOF_BADGES: usize = 3;
 /// Operations in the binding sequence the harnesses prove over.
@@ -378,11 +382,11 @@ pub const PROOF_OPERATIONS: usize = 4;
 mod proofs {
     use super::*;
 
-    /// A symbolic path of up to [`PROOF_PATH`] bytes over the alphabet that matters: `/`, `.`, a
+    /// A symbolic path of up to [`PROOF_PATH_BYTES`] bytes over the alphabet that matters: `/`, `.`, a
     /// letter and NUL.
-    fn any_path(buf: &mut [u8; PROOF_PATH]) -> &[u8] {
+    fn any_path(buf: &mut [u8; PROOF_PATH_BYTES]) -> &[u8] {
         let len: usize = kani::any();
-        kani::assume(len <= PROOF_PATH);
+        kani::assume(len <= PROOF_PATH_BYTES);
         for b in buf.iter_mut() {
             let c: u8 = kani::any();
             kani::assume(c == b'/' || c == b'.' || c == b'a' || c == 0);
@@ -398,14 +402,14 @@ mod proofs {
     #[kani::proof]
     #[kani::unwind(7)]
     fn a_step_is_one_name() {
-        let mut buf = [0u8; PROOF_PATH];
+        let mut buf = [0u8; PROOF_PATH_BYTES];
         let path = any_path(&mut buf);
         let rights = Rights::root(kani::any());
         let _ = walk::<u8, Refusal>(0u8, rights, path, kani::any(), |n, step| {
             // Stated here from scratch, not through `is_name`, so a defect there cannot hide.
             assert!(!step.is_empty() && step != b"." && step != b"..");
             assert!(!step.contains(&b'/') && !step.contains(&0));
-            Ok((n, Kind::Directory))
+            Ok((n, NodeKind::Directory))
         });
     }
 
@@ -416,7 +420,7 @@ mod proofs {
     #[kani::proof]
     #[kani::unwind(7)]
     fn a_walk_never_widens_follows_or_crosses() {
-        let mut buf = [0u8; PROOF_PATH];
+        let mut buf = [0u8; PROOF_PATH_BYTES];
         let path = any_path(&mut buf);
         let start = Rights::root(kani::any());
         let hop: u64 = kani::any();
@@ -424,9 +428,13 @@ mod proofs {
         let result = walk::<u8, Refusal>(0u8, start, path, hop, |n, _| {
             let kind: u8 = kani::any();
             kani::assume(kind < 4);
-            let kind =
-                [Kind::Directory, Kind::File, Kind::Symlink, Kind::MountPoint][kind as usize];
-            if kind != Kind::Directory {
+            let kind = [
+                NodeKind::Directory,
+                NodeKind::File,
+                NodeKind::Symlink,
+                NodeKind::MountPoint,
+            ][kind as usize];
+            if kind != NodeKind::Directory {
                 saw_other = true;
             }
             Ok((n, kind))
@@ -471,7 +479,7 @@ mod proofs {
             let badge: u64 = kani::any();
             kani::assume(caller < PROOF_BADGES as u64 + 1 && badge < PROOF_BADGES as u64 + 1);
             let before = t;
-            let caller_open = t.of(caller) == Binding::Open;
+            let caller_open = t.binding(caller) == Binding::Unbound;
             let which: u8 = kani::any();
             let changed = match which % 3 {
                 0 => t.bind(caller, badge, kani::any()).is_ok(),
@@ -482,19 +490,29 @@ mod proofs {
                 assert!(caller_open, "a bound or revoked caller changed a binding");
             } else {
                 for b in 0..PROOF_BADGES as u64 {
-                    assert_eq!(t.of(b), before.of(b));
+                    assert_eq!(t.binding(b), before.binding(b));
                 }
             }
             for (b, ever) in ever_bound.iter_mut().enumerate() {
-                if matches!(t.of(b as u64), Binding::Bound { .. } | Binding::SyncOnly) {
+                if matches!(
+                    t.binding(b as u64),
+                    Binding::Bound { .. } | Binding::SyncOnly
+                ) {
                     *ever = true;
                 }
                 if *ever {
-                    assert!(t.of(b as u64) != Binding::Open, "a bound badge became open");
+                    assert!(
+                        t.binding(b as u64) != Binding::Unbound,
+                        "a bound badge became open"
+                    );
                 }
             }
         }
-        assert_eq!(t.of(0), Binding::Open, "the unbadged value was bound");
+        assert_eq!(
+            t.binding(0),
+            Binding::Unbound,
+            "the unbadged value was bound"
+        );
     }
 
     /// **A badge the table has no slot for is never open, whatever has been bound** (calef's
@@ -514,10 +532,10 @@ mod proofs {
         let past: u64 = kani::any();
         kani::assume(past >= PROOF_BADGES as u64);
         assert!(
-            t.of(past) != Binding::Open,
+            t.binding(past) != Binding::Unbound,
             "a badge past the table was open"
         );
-        assert_eq!(t.of(0), Binding::Open, "the unbadged value changed");
+        assert_eq!(t.binding(0), Binding::Unbound, "the unbadged value changed");
     }
 }
 
@@ -525,13 +543,13 @@ mod proofs {
 mod tests {
     use super::*;
 
-    fn tree(n: u8, step: &[u8]) -> Result<(u8, Kind), Refusal> {
+    fn tree(n: u8, step: &[u8]) -> Result<(u8, NodeKind), Refusal> {
         match (n, step) {
-            (0, b"a") => Ok((1, Kind::Directory)),
-            (1, b"b") => Ok((2, Kind::Directory)),
-            (0, b"f") => Ok((3, Kind::File)),
-            (0, b"l") => Ok((4, Kind::Symlink)),
-            (0, b"m") => Ok((5, Kind::MountPoint)),
+            (0, b"a") => Ok((1, NodeKind::Directory)),
+            (1, b"b") => Ok((2, NodeKind::Directory)),
+            (0, b"f") => Ok((3, NodeKind::File)),
+            (0, b"l") => Ok((4, NodeKind::Symlink)),
+            (0, b"m") => Ok((5, NodeKind::MountPoint)),
             _ => Err(Refusal::NotFound),
         }
     }
@@ -549,9 +567,12 @@ mod tests {
 
     #[test]
     fn a_file_verb_on_a_directory_is_is_a_directory() {
-        assert_eq!(landing(Kind::Directory, false), Err(Refusal::IsADirectory));
-        assert_eq!(landing(Kind::Directory, true), Ok(()));
-        assert_eq!(landing(Kind::File, false), Ok(()));
+        assert_eq!(
+            check_landing(NodeKind::Directory, false),
+            Err(Refusal::IsADirectory)
+        );
+        assert_eq!(check_landing(NodeKind::Directory, true), Ok(()));
+        assert_eq!(check_landing(NodeKind::File, false), Ok(()));
     }
 
     /// Handle 0 is a handle a binder may bind a badge to, so `unbind` must tell it from a badge
@@ -572,11 +593,11 @@ mod tests {
     fn a_badge_past_a_machine_word_binds_nothing_and_is_revoked() {
         let mut t = Bindings::<4>::new();
         let far = (1u64 << 32) + 2;
-        assert_eq!(t.of(far), Binding::Revoked);
+        assert_eq!(t.binding(far), Binding::Revoked);
         assert_eq!(t.bind(0, far, 40), Err(Refusal::Refused));
         assert_eq!(t.bind_sync_only(0, far), Err(Refusal::Refused));
         assert_eq!(t.unbind(0, far), Err(Refusal::Refused));
-        assert_eq!(t.of(2), Binding::Open, "slot 2 is untouched");
+        assert_eq!(t.binding(2), Binding::Unbound, "slot 2 is untouched");
     }
 
     #[test]
@@ -618,15 +639,15 @@ mod tests {
     fn a_bound_badge_is_scoped_and_a_revoked_one_reaches_nothing() {
         let mut t = Bindings::<4>::new();
         assert_eq!(
-            admit(t.of(2), 2, Handle(7), None),
+            admit(t.binding(2), 2, Handle(7), None),
             Ok(7),
             "an open badge passes through"
         );
         t.bind(0, 2, 40).unwrap();
-        assert_eq!(admit(t.of(2), 2, Handle(ROOT), None), Ok(40));
-        assert_eq!(admit(t.of(2), 2, Handle(7), Some(2)), Ok(7));
+        assert_eq!(admit(t.binding(2), 2, Handle(ROOT), None), Ok(40));
+        assert_eq!(admit(t.binding(2), 2, Handle(7), Some(2)), Ok(7));
         assert_eq!(
-            admit(t.of(2), 2, Handle(7), Some(1)),
+            admit(t.binding(2), 2, Handle(7), Some(1)),
             Err(Refusal::NotYours)
         );
         assert_eq!(
@@ -641,14 +662,14 @@ mod tests {
             "the unbadged value"
         );
         assert_eq!(t.unbind(0, 2), Ok(Some(40)));
-        assert_eq!(t.of(2), Binding::Revoked);
+        assert_eq!(t.binding(2), Binding::Revoked);
         assert_eq!(
-            admit(t.of(2), 2, Handle(ROOT), None),
+            admit(t.binding(2), 2, Handle(ROOT), None),
             Err(Refusal::NotYours)
         );
         t.bind(0, 2, 42).unwrap();
         assert_eq!(
-            t.of(2),
+            t.binding(2),
             Binding::Bound { root: 42 },
             "a revoked badge may be bound anew"
         );
@@ -658,13 +679,13 @@ mod tests {
     fn a_sync_only_badge_reaches_no_handle_and_is_revoked_like_a_grant() {
         let mut t = Bindings::<4>::new();
         t.bind_sync_only(0, 3).unwrap();
-        assert_eq!(t.of(3), Binding::SyncOnly);
+        assert_eq!(t.binding(3), Binding::SyncOnly);
         assert_eq!(
-            admit(t.of(3), 3, Handle(ROOT), None),
+            admit(t.binding(3), 3, Handle(ROOT), None),
             Err(Refusal::NotYours)
         );
         assert_eq!(
-            admit(t.of(3), 3, Handle(7), Some(3)),
+            admit(t.binding(3), 3, Handle(7), Some(3)),
             Err(Refusal::NotYours)
         );
         assert_eq!(
@@ -681,7 +702,7 @@ mod tests {
             "the unbadged value"
         );
         assert_eq!(t.unbind(0, 3), Ok(None), "no directory to close");
-        assert_eq!(t.of(3), Binding::Revoked);
+        assert_eq!(t.binding(3), Binding::Revoked);
         t.bind_sync_only(0, 3).unwrap();
     }
 
@@ -689,9 +710,9 @@ mod tests {
     fn a_nonzero_badge_past_the_table_reaches_nothing() {
         let mut t = Bindings::<4>::new();
         for badge in [4u64, 5, 1 << 40, u64::MAX] {
-            assert_eq!(t.of(badge), Binding::Revoked, "{badge}");
+            assert_eq!(t.binding(badge), Binding::Revoked, "{badge}");
             assert_eq!(
-                admit(t.of(badge), badge, Handle(7), None),
+                admit(t.binding(badge), badge, Handle(7), None),
                 Err(Refusal::NotYours)
             );
             assert_eq!(Refusal::NotYours.errno(), 9, "EBADF");
@@ -699,11 +720,15 @@ mod tests {
             assert_eq!(t.bind(0, badge, 40), Err(Refusal::Refused), "as a target");
             assert_eq!(t.unbind(0, badge), Err(Refusal::Refused));
         }
-        assert_eq!(t.of(0), Binding::Open, "badge 0 stays the caretaker's");
-        assert_eq!(admit(t.of(0), 0, Handle(7), None), Ok(7));
+        assert_eq!(
+            t.binding(0),
+            Binding::Unbound,
+            "badge 0 stays the caretaker's"
+        );
+        assert_eq!(admit(t.binding(0), 0, Handle(7), None), Ok(7));
         t.bind(0, 3, 40).unwrap();
         assert_eq!(
-            t.of(3),
+            t.binding(3),
             Binding::Bound { root: 40 },
             "the last in-table badge"
         );
@@ -758,7 +783,7 @@ mod tests {
         let mut t = Bindings::<4>::new();
         assert_eq!(t.bind(0, 4, 40), Err(Refusal::Refused));
         assert_eq!(t.unbind(0, 4), Err(Refusal::Refused));
-        assert_eq!(t.of(4), Binding::Revoked);
+        assert_eq!(t.binding(4), Binding::Revoked);
         t.bind(0, 3, 40).unwrap();
         assert_eq!(
             t.unbind(0, 3),
