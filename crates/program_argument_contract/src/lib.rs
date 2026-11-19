@@ -108,6 +108,14 @@ pub enum Refused {
     TooLong,
 }
 
+/// Why [`PageBuilder::new`] refused a buffer: its length is not exactly [`PAGE_BYTES`]. A shorter
+/// buffer cannot hold a page, and a longer one is refused too, so a caller that hands over the
+/// wrong region learns of it at once.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1106-renames-fixes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WrongPageLength;
+
 /// Assembles one argument page, in place.
 ///
 /// It writes into a page the caller owns rather than returning one, because the one real caller
@@ -121,7 +129,7 @@ pub enum Refused {
 /// use program_argument_contract::{ArgumentPage, PAGE_BYTES, PageBuilder};
 ///
 /// let mut page = [0u8; PAGE_BYTES];
-/// let mut b = PageBuilder::new(&mut page);
+/// let mut b = PageBuilder::new(&mut page).unwrap();
 /// for argument in [&b"rg"[..], b"ab\xffcd", b"src"] {
 ///     b.push(argument).unwrap();
 /// }
@@ -130,7 +138,7 @@ pub enum Refused {
 /// assert_eq!(arguments, [&b"rg"[..], b"ab\xffcd", b"src"]);
 /// ```
 pub struct PageBuilder<'p> {
-    page: &'p mut [u8; PAGE_BYTES],
+    page: &'p mut [u8],
     count: u32,
     used: usize,
 }
@@ -149,13 +157,21 @@ impl core::fmt::Debug for PageBuilder<'_> {
 impl<'p> PageBuilder<'p> {
     /// An empty argv, written over `page`. The magic is cleared first, so the page is not a valid
     /// argv again until [`Self::finish`].
-    pub fn new(page: &'p mut [u8; PAGE_BYTES]) -> Self {
+    ///
+    /// # Errors
+    ///
+    /// [`WrongPageLength`] when `page` is not exactly [`PAGE_BYTES`] long. The buffer is left
+    /// untouched.
+    pub fn new(page: &'p mut [u8]) -> Result<Self, WrongPageLength> {
+        if page.len() != PAGE_BYTES {
+            return Err(WrongPageLength);
+        }
         page[..HEADER_BYTES].fill(0);
-        PageBuilder {
+        Ok(PageBuilder {
             page,
             count: 0,
             used: 0,
-        }
+        })
     }
 
     /// Append one argument, or refuse it if the page cannot hold it.
@@ -395,7 +411,7 @@ mod tests {
 
     fn build(arguments: &[&[u8]]) -> [u8; PAGE_BYTES] {
         let mut page = [0xa5; PAGE_BYTES];
-        let mut b = PageBuilder::new(&mut page);
+        let mut b = PageBuilder::new(&mut page).unwrap();
         for argument in arguments {
             b.push(argument).unwrap();
         }
@@ -468,7 +484,7 @@ mod tests {
         assert_eq!(record_bytes(0), 4);
         assert_eq!(record_bytes(10), 14);
         let mut page = [0; PAGE_BYTES];
-        let mut b = PageBuilder::new(&mut page);
+        let mut b = PageBuilder::new(&mut page).unwrap();
         assert_eq!(b.remaining_bytes(), MAXIMUM_RECORDS_BYTES);
         b.push(b"abc").unwrap();
         assert_eq!(b.remaining_bytes(), MAXIMUM_RECORDS_BYTES - 7);
@@ -508,7 +524,7 @@ mod tests {
     #[test]
     fn the_page_fills_to_capacity_and_refuses_one_byte_more() {
         let mut page = [0; PAGE_BYTES];
-        let mut b = PageBuilder::new(&mut page);
+        let mut b = PageBuilder::new(&mut page).unwrap();
         let big = vec![b'x'; MAXIMUM_RECORDS_BYTES - 4];
         b.push(&big).unwrap();
         assert_eq!(b.push(b""), Err(Refused::TooLong));
@@ -516,13 +532,26 @@ mod tests {
         b.finish();
         assert_eq!(read(&page), [big]);
 
-        let mut b = PageBuilder::new(&mut page);
+        let mut b = PageBuilder::new(&mut page).unwrap();
         assert_eq!(
             b.push(&[b'x'; MAXIMUM_RECORDS_BYTES - 3]),
             Err(Refused::TooLong)
         );
         b.finish();
         assert!(ArgumentPage::parse(&page).is_empty());
+    }
+
+    /// **Only a buffer of exactly one page is taken.** A shorter or longer one is refused, and the
+    /// refused buffer is not written.
+    #[test]
+    fn a_buffer_that_is_not_one_page_is_refused_untouched() {
+        for length in [0, 1, HEADER_BYTES, PAGE_BYTES - 1, PAGE_BYTES + 1] {
+            let mut buffer = vec![0xa5; length];
+            assert_eq!(PageBuilder::new(&mut buffer).unwrap_err(), WrongPageLength);
+            assert!(buffer.iter().all(|&byte| byte == 0xa5), "length {length}");
+        }
+        let mut buffer = vec![0xa5; PAGE_BYTES];
+        assert!(PageBuilder::new(&mut buffer).is_ok());
     }
 
     /// **A page reused for a second line is not the first line's argv until it is finished.** The
@@ -532,7 +561,7 @@ mod tests {
     fn an_unfinished_page_is_no_arguments() {
         let mut page = build(&[b"rg", b"old"]);
         {
-            let mut b = PageBuilder::new(&mut page);
+            let mut b = PageBuilder::new(&mut page).unwrap();
             b.push(b"new").unwrap();
         }
         assert!(ArgumentPage::parse(&page).is_empty());
@@ -580,7 +609,7 @@ mod tests {
     #[test]
     fn counts_track_three_arguments_and_the_hint_shrinks() {
         let mut page = [0; PAGE_BYTES];
-        let mut b = PageBuilder::new(&mut page);
+        let mut b = PageBuilder::new(&mut page).unwrap();
         assert_eq!(b.count(), 0);
         for (i, argument) in [&b"a"[..], b"bb", b"ccc"].into_iter().enumerate() {
             b.push(argument).unwrap();

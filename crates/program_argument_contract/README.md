@@ -26,6 +26,7 @@ granted, never by what its arguments say, so nothing on the page is validated fo
 - A page that does not parse reads as no arguments: a wrong magic, a zeroed frame, a count that
   disagrees with the records, or a length that overruns the page. The reader never returns a partial
   argv, because a program that sees half its arguments would act on a line nobody typed.
+- `PageBuilder::new` takes a slice and refuses, with `WrongPageLength`, any whose length is not `PAGE_BYTES`.
 - `ArgumentPage::from_virtual_address` is `unsafe` and names a mapped page; `ArgumentPage::parse`
   takes any slice, and is the safe reader.
 - The identity is `VERSION` 1 and `INTERFACE_ID` 18, with the layout above.
@@ -36,7 +37,7 @@ granted, never by what its arguments say, so nothing on the page is validated fo
 use program_argument_contract::{ArgumentPage, PAGE_BYTES, PageBuilder};
 
 let mut page = [0u8; PAGE_BYTES];
-let mut builder = PageBuilder::new(&mut page);
+let mut builder = PageBuilder::new(&mut page).unwrap();
 for argument in [&b"rg"[..], b"ab\xffcd", b"src"] {
     builder.push(argument).unwrap();
 }
@@ -53,8 +54,8 @@ Two Kani harnesses cover the parser, over a symbolic 48-byte page that carries t
 yields exactly `len()` arguments, with `is_empty` agreeing.
 `a_parsed_page_holds_exactly_what_its_header_states` proves that a page which parses holds exactly
 `count` arguments whose four-byte prefixes and bytes add up to `total`. Each has a falsification
-patch in `falsifications/` that turns it red. No harness covers the builder's round trip: the
-fixed 4,096-byte buffer exhausted the checker's memory, so the tests cover it. No proof covers the
+patch in `falsifications/` that turns it red. No harness covers the builder's round trip: a
+proof over its 4,096-byte buffer exhausted the checker's memory, so the tests cover it. No proof covers the
 caller's promise that the address names a mapped page, because Kani cannot see a mapping.
 
 ## Building and testing
@@ -76,7 +77,9 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 - A secret on a command line is plain bytes on this page.
 - This crate is one file, `src/lib.rs`, because the nife repository's `std` port copies it by
   name. A test checks that `src/` holds no other file.
-- The builder takes a fixed 4,096-byte buffer, so a proof or a test over it needs the whole page.
+- `PageBuilder::new` takes a slice of exactly 4,096 bytes, so a proof over the builder needs the
+  whole page. A round-trip harness over one built page ran Kani's solver past 11 GiB and failed,
+  so no proof covers the builder.
 
 ## Minimum Rust version
 

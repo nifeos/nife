@@ -48,9 +48,9 @@ section number, a milestone or a person in another repository.
   and stays.
 - P1-5, `CAPACITY` carries no unit: Done (maintainer, provisional, 2026-11-14 UTC). `grant_plan`
   uses `MAXIMUM_RECORDS_BYTES`.
-- P1-6, no proof: Open. Two of the three harnesses and their patches landed in
-  [#3567](https://github.com/nifeos/nife/pull/3567); the round-trip harness waits on P2-12's
-  builder shape and a memory measurement.
+- P1-6, no proof: Partly done. Two of the three harnesses and their patches landed in
+  [#3567](https://github.com/nifeos/nife/pull/3567). The round-trip harness over the exact-page
+  builder ran Kani's solver past 11 GiB and failed, so it did not land; the tests cover the round trip.
 - P1-7, the `unsafe` reader has no test: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-8, the mutation exemption and the coverage figure: Open. Both belong to the move.
 - P1-9, the all-or-nothing claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
@@ -58,8 +58,9 @@ section number, a milestone or a person in another repository.
   alternative the review allowed; the maintainer rules provisionally whether that closes it.
 - P2-11, `EMPTY` unused and its literal duplicated: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-12, the builder takes a fixed array: Open. The item offers two shapes and the block picks
-  neither, so the maintainer picks one before a lane builds it. P1-6's round-trip harness waits on it.
+- P2-12, the builder takes a fixed array: Done (maintainer, provisional, 2026-11-19 UTC).
+  `PageBuilder::new` takes `&mut [u8]` and refuses any length but `PAGE_BYTES` with `WrongPageLength`
+  (a provisional name).
 - P2-13, the layout arithmetic copied in `grant_plan`: Done. `record_bytes` and
   `PageBuilder::remaining_bytes` are provisional names, and `grant_plan` sums with `record_bytes`.
 - P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
@@ -284,9 +285,8 @@ The checks are in [the appendix](1106-program-argument-contract-outside-review/d
 
 ## BUGS
 
-- The round-trip harness here failed for memory, not for a property. Whether item 12's builder
-  shape makes it fit is a guess, not a measurement; a lane measures it before promising the third
-  harness in the README.
+- The round-trip harness fails for memory, not for a property: with item 12's exact-page builder
+  it ran past 11 GiB.
 - Nobody measured the coverage floor. The two unreached public lines have names; the percentage
   does not.
 - The mutation figures are the weekly census's, read from the metrics files. This review ran no

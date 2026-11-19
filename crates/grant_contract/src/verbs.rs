@@ -188,7 +188,7 @@ pub fn verb_key<'o>(
 /// ```
 /// use grant_contract::delegated_within;
 /// let mut page = [0u8; program_argument_contract::PAGE_BYTES];
-/// let mut builder = program_argument_contract::PageBuilder::new(&mut page);
+/// let mut builder = program_argument_contract::PageBuilder::new(&mut page).unwrap();
 /// for word in ["jig", "install", "--within", "lab-runner", "greeting"] {
 ///     builder.push(word.as_bytes()).unwrap();
 /// }
@@ -265,7 +265,7 @@ mod tests {
     /// An argument page carrying `words`, as a spawner receives one.
     fn page(words: &[&[u8]]) -> [u8; program_argument_contract::PAGE_BYTES] {
         let mut page = [0u8; program_argument_contract::PAGE_BYTES];
-        let mut builder = program_argument_contract::PageBuilder::new(&mut page);
+        let mut builder = program_argument_contract::PageBuilder::new(&mut page).unwrap();
         for word in words {
             builder.push(word).unwrap();
         }
