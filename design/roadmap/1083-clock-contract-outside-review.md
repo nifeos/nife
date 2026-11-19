@@ -24,9 +24,107 @@ in this order) owns the move; this block owns the findings that should land insi
 
 Reuse: the template and its scaffold, loom, Kani, cargo-mutants, cargo-llvm-cov. No new tool.
 
-## Where this stands
+## Finding status
 
-The appendix lists what remains and what holds each: [where this stands](1083-clock-contract-outside-review/where-this-stands.md).
+- 1, template naming and prose gates: Open. The renames landed in
+  [#3640](https://github.com/nifeos/nife/pull/3640) and
+  [#3727](https://github.com/nifeos/nife/pull/3727). Now `spelled_out`, `unit_symbols`,
+  `register_names` and `british_spelling` refuse nothing. Four things remain for the move.
+  `prose_acronyms` still flags RTC, POSIX, TLS, UART, ISA and LOW; the README has no badge row;
+  `cmos`, `pl031` and `unix` are not in `.github/accepted-words`; and `question_shape` refuses the
+  private `try_claim`, which the review did not see. The maintainer rules a new private name for
+  `try_claim` provisionally.
+- 2, clippy `doc_markdown` outside nife: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
+- 3, mutation exemptions and loom in the tests job: Open. The move's first `mutation` run writes
+  `.github/mutants-exempts`, and the tests job runs loom under `--cfg loom`.
+- 4, the manifest outside nife: Open. The `publish` comment names no nife file
+  ([#3640](https://github.com/nifeos/nife/pull/3640)); `Cargo.toml` gains `repository` at the move.
+- 5, a reader never waits on a writer: Done, [#3576](https://github.com/nifeos/nife/pull/3576).
+- 6, `initialize` on every start: Done, [#3559](https://github.com/nifeos/nife/pull/3559), carried
+  onto the two-copy layout by [#3576](https://github.com/nifeos/nife/pull/3576).
+- 7, doc comments that assume nife: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
+- 8, 64-bit atomics: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
+- 9, two Kani harnesses with falsifications: Done,
+  [#3640](https://github.com/nifeos/nife/pull/3640).
+- 10, `propose::request` truncates silently: Done,
+  [#3640](https://github.com/nifeos/nife/pull/3640).
+- 11, `ClockPage::new` takes an integer: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
+- 12, a test name that claims more than it checks: Done,
+  [#3576](https://github.com/nifeos/nife/pull/3576).
+- 13, `initialize` relies on a zeroed frame: Done,
+  [#3640](https://github.com/nifeos/nife/pull/3640).
+- 14, `offset_for` saturates to zero: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
+- 15, who can use the crate: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
+- Decision 1, two copies and a publish count: Done,
+  [#3576](https://github.com/nifeos/nife/pull/3576).
+- Decision 2, identity 8, 1, `CLOCKv01`: Done, [#3576](https://github.com/nifeos/nife/pull/3576).
+- Decision 3, the public names: Open. Built ([#3640](https://github.com/nifeos/nife/pull/3640),
+  [#3727](https://github.com/nifeos/nife/pull/3727)); ratifying them is [an open
+  decision](#ratify-the-public-names).
+- Review package: Open. [The package](../../notes/crate-reviews/clock-contract.md) still names the
+  old spellings and closes by saying it is not ready for review; a lane brings it up to the landed
+  renames.
+- Review clearance: Open. It is [an open decision](#clear-the-review-for-the-move).
+- Stranger test: Open. The move lane runs it and records it in the new repository.
+
+## Open decisions
+
+### Ratify the public names
+
+Background. A public name is what every program that links `clock_contract` writes in its source, so
+once the crate ships on crates.io a rename breaks each of them. The review found names that the
+rules now in force refuse, such as `NS_PER_SECOND` (the rules spell units out) and `va` (the rules
+allow no abbreviation outside the stay list). The tree now carries the renames:
+`NANOSECONDS_PER_SECOND`, `virtual_address`, `propose::request`, `word`, `state::SYNCHRONIZED`,
+`REAL_TIME_CLOCK` and `real_time_clock` with `#[doc(alias = "RTC")]`, `Reading::offset_nanoseconds`;
+`NANOS_PER_SEC` and `wall_nanos` are gone and the std overlay reads the crate's names. `CMOS`,
+`PL031`, `GOLDFISH` and `WORDS` keep their spellings. No alias carries an old spelling. Eight `Name:
+provisional` blocks remain, and a provisional name cannot ship in the first publish.
+
+Recommendation: A. Every name passes the template's naming helpers, and each rename follows a rule
+already ruled (units spelled out, no alias for an old nife spelling, spec terms kept as aliases).
+
+- A. Ratify every public name as built.
+- B. Ratify as built except the names calef lists, which return to a rename lane.
+- C. Hold ratification until the crate's release review, after the move.
+
+Door: one-way. A name becomes permanent at the first publish, and every caller outside the tree
+writes it.
+
+Prior art. Linux names the same constant `NSEC_PER_SEC` (`include/vdso/time64.h`), and Rust's
+standard library spells the unit out in method names (`Duration::as_nanos`,
+`Duration::subsec_nanos`) while keeping the short form. nife differs by spelling the unit in full in
+every constant. Concrete example: the overlay's `monotonic_nanos` computes `d.as_secs() *
+clockproto::NANOSECONDS_PER_SECOND + d.subsec_nanos() as u64`, and the std method keeps its own
+spelling.
+
+Blocks: the first publish, and the review package's readiness.
+
+### Clear the review for the move
+
+Background. A crate leaves nife for its own repository in the `nifeos` organization only after calef
+clears its review package. That clearance is also the go to create the repository. The package for
+`clock_contract` exists but still says it is not ready, because it waits on the names. Once a lane
+brings it up to the landed renames, a stranger can read the crate whole. The page layout and
+identity have frozen (Decisions 1 and 2), and the hostile-input and documentation fixes have landed.
+What remains (items 1, 3 and 4, the stranger test) is work done during the move itself.
+
+Recommendation: A, once the package is up to date.
+
+- A. Clear the package and approve the repository once the package names the landed renames.
+- B. Clear it only after calef ratifies the names, so one review covers the package and the names.
+- C. Keep the crate in nife until its consumers outside nife exist.
+
+Door: one-way. Others see and clone a public repository once it exists, and nobody can withdraw its
+history.
+
+Prior art. Servo moved crates it shared with others, such as `url` and `html5ever`, into
+repositories of their own, each with its own CI and owners (from memory, not re-read). nife differs
+by writing a review package that a stranger can read and having one person clear it before the
+repository exists. Concrete example: `file_allocation_table` and `e1000e` moved under the same
+sequence after their clearances.
+
+Blocks: the move, and with it the tag and the first publish.
 
 ## Goal
 
@@ -47,8 +145,6 @@ Effort: S is half a day for a lane, M a day or two, L more. A door is one-way wh
 the repository acts on it after the move (a public name, a page layout, an identity value, a
 dependency); everything else is two-way and the maintainer decides it.
 
-The ledger of what landed and what is left is in [the appendix](1083-clock-contract-outside-review/ledger.md).
-
 ### P0: the template's required checks are red on the first commit
 
 1. The `check / standalone` job refuses this source as it stands.
@@ -64,7 +160,7 @@ The ledger of what landed and what is left is in [the appendix](1083-clock-contr
    does not move with the crate.
    Why it matters: `standalone` is a required check, so the repository's first pull request is red
    for reasons that have nothing to do with the change it carries.
-   Change: the renames are Decision 3 and land first, under the package's table. The table covers `virtual_address`,
+   Change: the renames land first, under the package's table (Decision 3). The table covers `virtual_address`,
    `NANOSECONDS_PER_SECOND`, the two overlay spellings deleted with the overlay moved to the crate's
    names, `WORD_OFFSET` with its three siblings, the four American spellings, and the loom notes
    that cite the test names moved with them. Then, in the move lane, expand each acronym at its
@@ -73,7 +169,7 @@ The ledger of what landed and what is left is in [the appendix](1083-clock-contr
    scaffold's badge row. The `abbreviations` step is report only but lists 16 components
    (`cmos`, `pl`, `unix`, `rtc`, `seq`, `st`, `req` among them); `cmos`, `pl031` and `unix` belong
    in `.github/accepted-words` with their reasons, and the rest go with the renames.
-   Door: two-way before the first tag; Decision 3 decides the renames, provisionally. Effort: S.
+   Door: two-way before the first tag; ratifying the renames is an open decision. Effort: S.
 
 2. `check / clippy` refuses the crate outside nife.
    Finding: `cargo clippy --all-targets -- -D warnings` fails on `doc_markdown` at `src/lib.rs` line 537
@@ -98,8 +194,9 @@ The P1 items are in [the appendix](1083-clock-contract-outside-review/before-the
 
 ## Decisions
 
-Decisions 1 and 2 are one-way doors and have their rulings; Decision 3 is two-way before the first
-tag, and the maintainer has decided it, provisionally.
+Decisions 1 and 2 are one-way doors and have their rulings, which are the rules in force. Decision
+3, the public names, has landed in code and waits on ratification under
+[Open decisions](#ratify-the-public-names).
 
 ### Decision 1. A reader of the page never waits on a writer
 
@@ -143,51 +240,15 @@ pin the values and the words as literals.
 Concrete example. A program built against `CLOCKv01` meets a page stamped `CLOCKv02`: `read` returns
 `UNKNOWN`, the program says it does not know the time, and the program does not claim it is 1970.
 
-### Decision 3. The public names, under the rules now in force
-
-Background. The review package proposes a name per item and ratifies the rest as written. Two of its
-findings rest on rules that postdate names the package records as ratified. An earlier unit ruling ratified `NS_PER_SECOND`, and the rule now in force spells every unit out and accepts no symbol. The release review reopens such a name. The template's `unit_symbols` and
-`register_names` steps refuse it and `NANOS_PER_SEC` at ceiling 0 (item 1), so the move cannot be
-green without the ruling.
-
-Recommendation: ratify the package's table as it stands. `NANOSECONDS_PER_SECOND` for
-`NS_PER_SECOND`, with no alias for the old spelling. Delete `NANOS_PER_SEC` and `wall_nanos` and move the overlay to the crate's names in the same change. `offset_nanoseconds` for `Reading::offset_nanos`; `virtual_address` for `va` (and item 11's type question with it); `request` for `propose::req`; `word` for `w0`; `SYNCHRONIZED` for `SYNCED`. `REAL_TIME_CLOCK` and `real_time_clock` for `RTC` and `rtc`, each carrying `#[doc(alias = "RTC")]`. Keep `CMOS`, `PL031`, `GOLDFISH` and `WORDS`. This review adds no name to the table and dissents from none. The one
-addition is a check, not a name: the four `MAXIMUM_STEP_*` and `NOT_*_NANOSECONDS` constants pass
-every rule now in force and need no reopening.
-
-Prior art: the rule itself (a quantity's name ends with its unit spelled out), and the two
-contract-crate name tables ratified before this one, which took the same spelled-out forms.
-
-Concrete example. After the rename, the overlay's `monotonic_nanos` reads
-`d.as_secs() * clockproto::NANOSECONDS_PER_SECOND + d.subsec_nanos() as u64`, and the std method
-keeps its own spelling as the rule says.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. The package's table holds as written: `NS_PER_SECOND` becomes
-`NANOSECONDS_PER_SECOND`, and `NANOS_PER_SEC` and `wall_nanos` go. `Reading::offset_nanos`
-becomes `offset_nanoseconds`; `va` becomes `virtual_address`; `propose::req` becomes `request`. `w0`
-becomes `word`; `state::SYNCED` becomes `SYNCHRONIZED`; `RTC` and `rtc` become `REAL_TIME_CLOCK` and
-`real_time_clock`, each with `#[doc(alias = "RTC")]`; `CMOS`, `PL031`, `GOLDFISH` and `WORDS` keep
-their names. No alias carries an old spelling. The std overlay reads the old names on more than one
-line: `NANOS_PER_SEC` three times, `wall_nanos` once and `offset_nanos` once
-(`patches/std-nife/overlay/std/src/sys/time/nife.rs` lines 48, 138, 140 and 141), and all of them
-move in the same change. Item 1 is the work.
-
 ## Done when
 
 The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Done.** Item 5 of [before the tag](1083-clock-contract-outside-review/before-the-tag.md),
-  item 12 of [later items](1083-clock-contract-outside-review/later-items.md), and Decisions 1 and
-  2: pull request #3576, on branch `milestone/1083-clock-page-two-copies`.
-- **Done.** Item 6 before the tag: pull request #3559, carried onto the two-copy layout by #3576.
-- **Done.** Items 2 and 4 to 15 except item 3, and every Decision 3 name except the two named
-  next: pull request #3640, on branch `milestone/1083-clock-contract-names-and-docs`.
-- **Done.** Item 1's two renames, `NANOSECONDS_PER_SECOND` and `propose::request`, in every
-  crate, component, test and the std overlay that reads them: branch
-  `milestone/1082-1083-ruled-follow-ons`.
-- **Outstanding.** Item 3 is the move's first mutation run.
+- **Outstanding.** Items 1, 3 and 4, Decision 3's ratification, the review package, the review
+  clearance and the stranger test, each as [Finding status](#finding-status) gives it. Checked
+  against the crate's code and the template's naming helpers.
 
 ## BUGS
 
@@ -201,7 +262,7 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
 - Item 6 assumes a restart of the `clock` program on the same frame is possible or will be; the review found no supervisor entry and looked for none beyond `crates/system_initializer`.
 - The review did not reproduce item 8 on a 32-bit target; the review machine has none installed.
 - The review did not run nife's `script/crate-standalone`, `script/crate-move --dry-run` or
-  `script/names`; the review package's runs cover them and no name has changed since.
+  `script/names`; the review package's runs predate the renames, and the move runs them again.
 - Clippy at 1.99.1 and 1.88 agree on item 2; a later stable may add `doc_markdown` findings this
   review cannot see.
 
