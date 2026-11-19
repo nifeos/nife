@@ -22,8 +22,8 @@ pub(crate) mod netproto;
 #[allow(dead_code)]
 pub(crate) mod fsproto;
 // The wall-clock contract (DECISIONS §43): the clock page's layout and its seqlock, the propose
-// protocol, and the policy, generated verbatim from `crates/clock_contract/src/lib.rs` by the same
-// xtask step. The time PAL (`sys/time`) is a *reader* of the page and never a writer, so the
+// protocol, and the policy, generated verbatim from `src/lib.rs` of the `clock_contract` package by
+// the same xtask step. The time PAL (`sys/time`) is a *reader* of the page and never a writer, so the
 // publish half and the propose half belong to the other parties; hence the allow.
 #[allow(dead_code)]
 pub(crate) mod clockproto;

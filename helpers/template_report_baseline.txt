@@ -38,7 +38,6 @@ capability_plan register_names 1
 capability_table abbreviations 3
 capability_table prose_acronyms 2
 capability_witness_contract prose_acronyms 2
-clock_contract abbreviations 4
 compositor abbreviations 25
 compositor prose_acronyms 5
 compositor readme_acronyms 1
