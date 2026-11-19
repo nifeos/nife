@@ -74,9 +74,10 @@ impl Frame {
     pub fn set_destination(&self, ip: [u8; 4], port: u16) {
         for (i, &b) in ip.iter().enumerate() {
             self.window
-                .write_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+                .write::<u8>(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
         }
-        self.window.write_u16(DESTINATION_PORT_OFFSET_BYTES, port);
+        self.window
+            .write::<u16>(DESTINATION_PORT_OFFSET_BYTES, port);
     }
 
     /// The destination address, or the sender's after a UDP `RECEIVE` (the layout note on
@@ -88,7 +89,7 @@ impl Frame {
         for (i, b) in ip.iter_mut().enumerate() {
             *b = self
                 .window
-                .read_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
+                .read::<u8>(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
         }
         ip
     }
@@ -98,7 +99,7 @@ impl Frame {
     ///
     /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn destination_port(&self) -> u16 {
-        self.window.read_u16(DESTINATION_PORT_OFFSET_BYTES)
+        self.window.read::<u16>(DESTINATION_PORT_OFFSET_BYTES)
     }
 
     /// Read the length field at `LENGTH_OFFSET_BYTES`: what the last `RECEIVE` wrote, or what [`set_len`](Self::set_len)
@@ -111,14 +112,14 @@ impl Frame {
         reason = "a header field, not a collection"
     )]
     pub fn len(&self) -> u16 {
-        self.window.read_u16(LENGTH_OFFSET_BYTES)
+        self.window.read::<u16>(LENGTH_OFFSET_BYTES)
     }
 
     /// Write the length field at `LENGTH_OFFSET_BYTES`. The stack never reads it: a `SEND*` takes its length
     /// from the `CALL` argument word, and only `RECEIVE` writes the field, so this is for a client
     /// that clears it before a `RECEIVE` to watch for the reply.
     pub fn set_len(&self, len: u16) {
-        self.window.write_u16(LENGTH_OFFSET_BYTES, len);
+        self.window.write::<u16>(LENGTH_OFFSET_BYTES, len);
     }
 
     /// Write `bytes` at the start of the payload. An overlong slice panics at the window's

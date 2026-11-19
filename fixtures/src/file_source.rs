@@ -67,13 +67,13 @@ const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
 /// Copy `bytes` into the shared page.
 fn put(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(PAGE).enumerate() {
-        WINDOW.write_u8(i as u64, b);
+        WINDOW.write::<u8>(i as u64, b);
     }
 }
 
 /// Read one byte out of the shared page.
 fn get(i: usize) -> u8 {
-    WINDOW.read_u8(i as u64)
+    WINDOW.read::<u8>(i as u64)
 }
 
 /// One request to the FS server. Negative replies are the caller's to interpret.
