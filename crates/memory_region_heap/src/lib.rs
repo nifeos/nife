@@ -69,7 +69,7 @@ const MINIMUM_GROW_PAGES: u64 = 8;
 /// Why a page source did not map a page: the raw nonzero answer of the call that maps one. For
 /// [`MemoryRegionPages`] it is the kernel's return, one of [`abi::Error`]'s codes.
 ///
-/// Name: provisional (block 1100 item 7, 2026-11-15 UTC).
+/// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Refusal {
     /// The nonzero value the page source answered with.
@@ -80,7 +80,7 @@ impl Refusal {
     /// Whether the region has no page left to pay with, the one refusal that only means the budget
     /// is spent. Any other refusal stops the heap from growing again.
     ///
-    /// Name: provisional (block 1100 item 7, 2026-11-15 UTC).
+    /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     pub fn is_budget_spent(self) -> bool {
         abi::Error::from_ret(self.code) == Some(abi::Error::OutOfMemory)
     }
@@ -92,18 +92,18 @@ impl Refusal {
 /// An implementation maps exactly the page at `virtual_address` and nothing else, and answers
 /// `Ok(())` only when that page is mapped and writable for the caller.
 ///
-/// Name: provisional (block 1100 item 8, 2026-11-15 UTC), after `dlmalloc`'s `Allocator` and
+/// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling), after `dlmalloc`'s `Allocator` and
 /// `rlsf`'s `FlexSource`.
 pub trait PageSource {
     /// Map the page at `virtual_address`, or say why not.
     ///
-    /// Name: provisional (block 1100 item 8, 2026-11-15 UTC).
+    /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     fn map_page(&mut self, virtual_address: u64) -> Result<(), Refusal>;
 }
 
 /// The default [`PageSource`]: `MAP` on the memory region in one capability table slot.
 ///
-/// Name: provisional (block 1100 item 8, 2026-11-15 UTC).
+/// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
 pub struct MemoryRegionPages {
     /// Which capability table slot holds the memory region that pays for pages.
     slot: u64,
@@ -153,7 +153,7 @@ struct Inner<S> {
 /// What [`MemoryRegionHeap::commit_all`] could not do: the bytes of the capped range that stayed
 /// unmapped because the budget ran out.
 ///
-/// Name: provisional (block 1100 decision A, 2026-11-14 UTC).
+/// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Short {
     /// Bytes of the cap, a whole number of pages, that the heap could not commit.
@@ -162,7 +162,7 @@ pub struct Short {
 
 /// Why [`MemoryRegionHeap::initialize`] left the heap as it was.
 ///
-/// Name: provisional (block 1100 items 5 and 7, 2026-11-15 UTC).
+/// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum WiringRefusal {
     /// An earlier call already wired the heap; this one changed nothing.
@@ -190,7 +190,7 @@ pub enum WiringRefusal {
 /// program that installs a handler that allocates should not do so while the heap can be locked.
 ///
 /// Name: ratified 2026-11-14 (UTC) (block 1100 decision A). The page-source parameter is
-/// provisional (block 1100 item 8, 2026-11-15 UTC).
+/// ratified 2026-11-19 (UTC) (block 1100 names ruling).
 pub struct MemoryRegionHeap<S: PageSource = MemoryRegionPages> {
     locked: AtomicBool,
     inner: core::cell::UnsafeCell<Inner<S>>,
@@ -242,7 +242,7 @@ impl MemoryRegionHeap<MemoryRegionPages> {
     ///
     /// Name: ratified 2026-11-14 (UTC) (block 1100 decision A). Spelled out under the `init` ruling
     /// of 2026-10-26 (UTC), in design/naming/acronyms-and-abbreviations.md. The `Result` return is
-    /// provisional (block 1100 items 5 and 7, 2026-11-15 UTC).
+    /// ratified 2026-11-19 (UTC) (block 1100 names ruling).
     #[must_use = "a refused wiring leaves the heap unable to allocate"]
     pub fn initialize(
         &self,
@@ -263,7 +263,7 @@ impl<S: PageSource> MemoryRegionHeap<S> {
     /// An empty, un-wired heap over `source`, `const` so it can be a static. Wire it with
     /// [`initialize_source`](Self::initialize_source).
     ///
-    /// Name: provisional (block 1100 item 8, 2026-11-15 UTC).
+    /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     pub const fn with_source(source: S) -> Self {
         MemoryRegionHeap {
             locked: AtomicBool::new(false),
@@ -284,7 +284,7 @@ impl<S: PageSource> MemoryRegionHeap<S> {
     /// [`initialize`](MemoryRegionHeap::initialize) for a heap over a custom [`PageSource`]: the
     /// source already knows what pays, so only the range is given. The same refusals apply.
     ///
-    /// Name: provisional (block 1100 item 8, 2026-11-15 UTC).
+    /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     #[must_use = "a refused wiring leaves the heap unable to allocate"]
     pub fn initialize_source(&self, base: u64, maximum_bytes: u64) -> Result<(), WiringRefusal> {
         let mut g = self.lock();
@@ -322,7 +322,7 @@ impl<S: PageSource> MemoryRegionHeap<S> {
     /// Whether [`initialize`](MemoryRegionHeap::initialize) has succeeded, so that a further call
     /// would change nothing.
     ///
-    /// Name: provisional, minted 2026-11-14 (UTC) by maintainer/review-hostile-input-fixes.
+    /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     pub fn is_initialized(&self) -> bool {
         let mut g = self.lock();
         g.inner().wired
@@ -367,7 +367,7 @@ impl<S: PageSource> MemoryRegionHeap<S> {
     /// [`initialize`](MemoryRegionHeap::initialize), rounded down to a whole page. Zero until the
     /// heap is wired. A later `initialize` does not change it.
     ///
-    /// Name: provisional (block 1100 item 13, decision A, 2026-11-14 UTC).
+    /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     pub fn maximum_bytes(&self) -> u64 {
         let mut g = self.lock();
         g.inner().maximum
@@ -377,7 +377,7 @@ impl<S: PageSource> MemoryRegionHeap<S> {
     /// [`initialize`](MemoryRegionHeap::initialize). Zero until the heap is wired. A later
     /// `initialize` does not change it.
     ///
-    /// Name: provisional (block 1100 item 13, decision A, 2026-11-14 UTC).
+    /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     pub fn base_virtual_address(&self) -> u64 {
         let mut g = self.lock();
         g.inner().base
@@ -388,7 +388,7 @@ impl<S: PageSource> MemoryRegionHeap<S> {
     /// (a misaligned or already-mapped address, a slot without the right to write) means the heap
     /// stopped growing the first time it happened.
     ///
-    /// Name: provisional (block 1100 item 7, 2026-11-15 UTC).
+    /// Name: ratified 2026-11-19 (UTC) (block 1100 names ruling).
     pub fn last_refusal(&self) -> Option<Refusal> {
         let mut g = self.lock();
         g.inner().last_refusal

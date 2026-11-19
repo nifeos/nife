@@ -57,7 +57,7 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
    `MAXIMUM_STAGES`, `MAXIMUM_POSITIONALS`, `MAXIMUM_WINDOWS`, `MAXIMUM_DUE` and
    `MAXIMUM_SHORT_OPTIONS` count things and are right as they are.
    Evidence: the lines above; `design/naming.md`, "Units"; `register_names.py` output.
-   Change: the milestone's open decision "Limits carry their unit". The fields take
+   Change: the ruled decision "Limits carry their unit" (ruled-decisions appendix). The fields take
    `length_bytes` (`len` is the standard library's spelling for a method, and these are fields of a
    packed value, not methods).
    Door: one-way at the release (public names). Effort: S once ruled.
