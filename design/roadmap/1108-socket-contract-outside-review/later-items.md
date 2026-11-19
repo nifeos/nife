@@ -37,7 +37,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    is the way an address reads.
    Door: two-way before the release; the types become one-way after. Effort: S.
 
-9. Names where this review reads a later rule differently from the package. LEFT: names, the architect's pass.
+9. Names where this review reads a later rule differently from the package. LEFT: names, two-way before the first tag, so the maintainer rules them provisionally; `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC).
    Finding: the package proposes keeping `Ports::next` and `polled_wait::next`. The rule that a
    method takes std's spelling asks for std's meaning too; `Iterator::next` takes no argument and
    returns `Option`, while `Ports::next(milliseconds, held)` takes two and returns a `u16`, and

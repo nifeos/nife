@@ -16,6 +16,6 @@ How the crate sits against what a reader already knows. Recent downloads are the
 Where this crate differs, and what a user coming from `pci_types` will miss: no header types (one
 `read_bars` for every function), abbreviated field names (`dev`, `func`, `cfg_type`), and device
 identities (`VIRTIO_*`, `CLASS_NVME`, `CLASS_XHCI`) in the PCI layer. What it has that none of them
-has: eight machine-checked proofs, each with the patch that makes it fail. It has a breadth-first
+has: ten machine-checked proofs, each with the patch that makes it fail. It has a breadth-first
 bridge walk over a 256-bit visited set that any firmware bus numbering terminates. It has a
 device-tree `ranges` parser the two `virt` boards hold against their own trees.

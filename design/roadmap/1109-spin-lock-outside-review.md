@@ -33,9 +33,81 @@ interrupt-safe, poisoning, reentrant). The stranger can build, test and run the 
 README alone. Every gate in that repository is green for the crate's own reasons. In particular, the one
 proof the crate has runs somewhere after the move.
 
-## Where this stands
+## Finding status
 
-[The appendix](1109-spin-lock-outside-review/where-this-stands.md).
+- P0-1, the only proof runs nowhere after the move: Done, the template's `proofs / loom`
+  ([nifeos/crate-workflows#65](https://github.com/nifeos/crate-workflows/pull/65)).
+- P0-2, the crate does not stand alone: Open. [#3636](https://github.com/nifeos/nife/pull/3636)
+  added the README, the license files and the manifest literals; the `Name:` blocks, the citations
+  of paths in this tree and the manifest's `repository` remain, all move work.
+- P0-3, the scaffold's lint table: Done, [#3636](https://github.com/nifeos/nife/pull/3636).
+- P1-4, another crate holds the name on crates.io: Open, and an open decision below. The `Name:`
+  block records the recommendation as provisional and the README states the clash.
+- P1-5, test modules hidden from cargo-mutants' skip: Done,
+  [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-6, the `pause` survivor's exemption line: Open. One `.github/mutants-exempts` line with the
+  triage's reason, at the move.
+- P1-7, the second falsification is a hand step: Open. The loom falsification patch here and a
+  loom form of the template's falsify gate in nifeos/crate-workflows remain; the README calls the
+  step manual.
+- P1-8, no README, example or doc-test: Done, [#3636](https://github.com/nifeos/nife/pull/3636).
+- P1-9, the standard library's accessors: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-10, documentation for the kernel's reader: Done,
+  [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-11, what the models do not check: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-12, `T: ?Sized`: Done, [#3636](https://github.com/nifeos/nife/pull/3636).
+- P2-13, `repr(C)` reads as a promise: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-14, the `rust-version`: Done, [#3636](https://github.com/nifeos/nife/pull/3636) (1.88,
+  tested on it).
+- P2-15, loom's lockfile footprint: Done, [#3636](https://github.com/nifeos/nife/pull/3636) (the
+  README says why).
+- P2-16, `is_locked`, `try_lock_weak`, `lock_api` and a fair variant: Declined. `try_lock` answers
+  `is_locked`, nothing calls `try_lock_weak`, and a `lock_api` impl is a third-party dependency
+  that gives loom nothing.
+
+## Open decisions
+
+### The name the crate leaves under
+
+The crate is a small lock for the kernel and its tests: one flag that a taker sets and spins on,
+with five machine-checked models of its ordering. Its name in nife is `spin_lock`, ratified with its
+six public names in milestone 953 (the kernel's lock proves what it takes from spin). crates.io
+reads `_` and `-` as one character, and `spin-lock` 0.2.1 already exists there: a small crate with
+15 downloads in the last 90 days, last published about two years before this review. So `spin_lock`
+can never reach crates.io under its own name.
+
+Today that costs nothing. Every consumer pins by git `rev`, and a standing ruling holds publishing
+for every crate until the last outside review lands. A crate leaves for its own repository only if
+it is publishable or used by more than one repository. The three callers all live in nife. The
+crate's unique value is its loom-ready source and models, which `spin` (192 million recent
+downloads) does not offer; no one outside has asked for it.
+
+Recommendation: A.
+
+- A. Keep `spin_lock` as the package and repository name, publish nothing, and choose a
+  publication name only if a publication is ever wanted, before the first tag. Renaming a crate
+  nobody outside consumes, to free a registry name nobody has asked for, is work with no reader.
+- B. Rename to `test_and_set_lock` before the move, so the repository, the package and the
+  registry agree from the first commit. Milestone 953's ruling weighed it and set it aside only
+  for length; it says exactly what the thing is, and it was free on crates.io when this review
+  looked.
+- C. Rename to `checked_spin_lock` or `model_checked_spin_lock`. Both name the verification rather
+  than the lock, the shape the tree refused for `script/interleaving-check`'s predecessor.
+
+Door: one-way. The repository name is public from the day it exists, and the first tag fixes the
+name the registry would see; a rename after that breaks every pin.
+
+Prior art: `spin` took the family's short name on crates.io, and the flag-lock crates that followed
+(`spinning_top`, `spin-lock`, `spinlock`) each took a qualified or compound spelling. Linux calls
+the thing `spinlock_t` and the queued variant `qspinlock`; FreeBSD calls the type `mtx` and the
+variant `MTX_SPIN`, naming the discipline rather than the mechanism. nife differs by naming the
+mechanism and keeping the models beside it. Example: with A, nife's manifests keep
+`spin_lock = { git = "https://github.com/nifeos/spin_lock", rev = "<sha>", version = "0.1.0" }` and
+the kernel keeps `use spin_lock::SpinLock`. With B, the move commit writes `test_and_set_lock` in
+three manifests, in `kernel/src/sync.rs`, in one kernel static, in six `system_tests` statics and in
+`tools/host_reordering_litmus`.
+
+Blocks: the move and the tag under B or C; under A, only a first publish.
 
 ## What was checked, and how
 
@@ -97,7 +169,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
    `thread_wake_handshake`, `work_steal_slot`), and `clock_contract` is in step 2 of milestone
    1017's order, so the job serves more than this crate. Effort M. Two-way.
 
-2. The crate does not stand alone. `standalone.py` on the source as it is reports: no README, DONE except the `Name:` blocks and citations, which are LEFT: move work.
+2. The crate does not stand alone. `standalone.py` on the source as it is reports: no README, PARTIAL: the `Name:` blocks, the citations and `repository` stay LEFT: move work.
    no `LICENSE-MIT`, no `LICENSE-APACHE`, 6 lines that cite paths into nife (first
    `src/lib.rs` line 8; `notes/memory-ordering.md`, `notes/interleaving.md`,
    `notes/interleaving/what-was-modeled.md`, `script/interleaving-check`, `kernel/src/sync.rs`),
@@ -118,7 +190,7 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
 
 ### P1
 
-4. Another crate already holds the name on crates.io. crates.io treats `_` and `-` as the same character LEFT: the architect's (decision below); provisional in the `Name:` block.
+4. Another crate already holds the name on crates.io. crates.io treats `_` and `-` as the same character OPEN: under "Open decisions" above; provisional in the `Name:` block.
    in a crate name, and `spin-lock` 0.2.1 exists (verified by the API: `spin_lock` resolves to it).
    The ratified name cannot go to the registry, ever, under the registry's rules. Nothing breaks today:
    nife and basalt pin by git `rev`, and a standing ruling holds publishing for every crate.
@@ -187,82 +259,11 @@ one-way door (a published name, wire format, identity, layout or dependency) or 
 
 ### P2
 
-11. Say what the models do not check. `read` and `write` (`src/lib.rs` line 77, `src/lib.rs` line 87) DONE (crate documentation).
-    return loom's pointer out of `with` and `with_mut`, which loom's documentation names as the
-    pattern it does not track for duration. The causality check still fires on every access, which
-    is the property the crate claims, and the review confirmed it. Fix: say so in the comment at
-    `src/lib.rs` line 73 and in the README's "What is proven"; or hold loom's `ConstPtr` and `MutPtr`
-    in the guard under `cfg(loom)` so the guard tracks the duration too. Effort S for the words, M for
-    the pointers. Two-way.
-
-12. `T: ?Sized`. std and `spin` both allow it; nothing here needs `Sized` except `new`. DONE (loom's cell is `?Sized` too).
-    Relaxing the bound on the type and the guard is compatible. Effort S. Two-way.
-
-13. `repr(C)` reads as a promise. `src/lib.rs` lines 46 to 50 says the flag sits at offset 0 so an DONE (the comment).
-    inlined `lock` needs no offset arithmetic. The fields are private, so no caller can rely on the
-    layout soundly, and the codegen claim is on nobody's record this review found (unverified).
-    Fix: either cite a measurement in the comment or say the layout is an implementation choice
-    and not part of the API. Effort S. Two-way.
-
-14. Pick the `rust-version`. The crate builds and tests on 1.85, the edition's floor DONE (1.88, tested on it).
-    (verified); every review package so far writes 1.88. Either is defensible; the number is the
-    maintainer's. Effort S. Two-way.
-
-15. Loom's lockfile footprint. In a repository of its own the crate's `Cargo.lock` holds 31 DONE (the README says why).
-    packages, 30 of them loom's tree (`tracing-subscriber`, `regex-automata`, `generator`,
-    `windows-sys` among them). `cargo deny` passes them (verified), and Dependabot will open bumps
-    for a tree only the model run links. No action beyond awareness; the README says why the
-    lockfile is large. Effort S. Two-way.
-
-16. Considered and not recommended. `is_locked` (not std; `try_lock` answers it) and `try_lock_weak` LEFT: not recommended.
-  (no caller). Also not recommended: a `lock_api::RawMutex` impl (a third-party dependency, which
-  needs its own ruling and would give loom nothing), and a fair or ticket variant (the kernel's
-  sections are short and the layer above this crate masks interrupts).
+The P2 items are in [the appendix](1109-spin-lock-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-One one-way door.
-
-### Under what name does the crate leave
-
-Background. The crate is `spin_lock` in nife, ratified with its six public names in milestone 953.
-crates.io reads `_` and `-` as one character, and `spin-lock` 0.2.1 already exists there: a small
-crate with 15 downloads in the last 90 days, last published about two years before this review.
-So `spin_lock` can never reach crates.io under its ratified name. Today that costs
-nothing: every consumer pins by git `rev`, and a standing ruling holds publishing for every crate
-until several crates have left and a combine review finishes. Another standing ruling says a crate
-leaves for its own repository only if it is publishable or used by more than one repository. The
-three callers all live in nife today. Whether they still share one repository after the kernel
-leaves is not yet settled. The names below were free on crates.io when this review looked: `test_and_set_lock`, `checked_spin_lock`, `model_checked_spin_lock`, `ttas_lock`,
-`flag_lock`.
-
-Recommendation first: keep `spin_lock` as the package and repository name, publish nothing, and
-record in the crate's README and in the review record that another crate holds the crates.io name. Decide a
-publication name only if a publication is ever wanted, and then before the first tag. The reason is
-the standing publication hold and the "useful or shared" rule. The crate's unique value is the
-loom-ready source and its models, which `spin` (192 million recent downloads) does not offer. That
-value is a property of how nife verifies, not a demand anyone outside has shown. Renaming a
-crate nobody outside consumes, to free a registry name nobody has asked for, is work with no
-reader.
-
-If you want a publication, the alternative is to rename before the move, so the repository, the
-package and the registry agree from the first commit. `test_and_set_lock` is the name milestone
-953's ruling already weighed and set aside only for length; it says exactly what the thing is,
-which is the headline naming rule, and it is free. `checked_spin_lock` and
-`model_checked_spin_lock` name the verification rather than the lock, the shape the tree refused
-for `script/interleaving-check`'s predecessor.
-
-Prior art: `spin` took the family's short name on crates.io and the flag-lock crates that followed
-(`spinning_top`, `spin-lock`, `spinlock`) each took a qualified or compound spelling. Linux calls
-the thing `spinlock_t` and the queued variant `qspinlock`; FreeBSD calls the type `mtx` and the
-variant `MTX_SPIN`, naming the discipline rather than the mechanism.
-
-Concrete example: with the recommendation, nife's manifests keep
-`spin_lock = { git = "https://github.com/nifeos/spin_lock", rev = "<sha>", version = "0.1.0" }` and
-the kernel keeps `use spin_lock::SpinLock`. With the alternative, the move commit writes
-`test_and_set_lock` in three manifests, in `kernel/src/sync.rs`, in one kernel static, in six
-`system_tests` statics and in `tools/host_reordering_litmus`, and the tag `v0.1.0` is the first
-name the registry would ever see.
+None ruled. The one decision this review raised, the name, is under "Open decisions" above.
 
 ## Done when
 
@@ -279,8 +280,12 @@ The checks are in [the appendix](1109-spin-lock-outside-review/done-when.md).
 ## Follow-on
 
 - **Milestone 1017.** The crate moves in its order; the move lane takes the items marked move work.
-- **Outstanding.** Item 7: the template's falsify gate cannot replay a loom patch.
-- **Refused.** Item 16: `try_lock` already answers `is_locked`, and a `lock_api` impl is a new dependency.
+- **Outstanding.** Item 7: the template's falsify gate cannot replay a loom patch, checked
+  against nifeos/crate-workflows' `falsify.py`.
+- **Outstanding.** Item 4, the name, an open decision above; checked against crates.io's
+  `spin-lock` 0.2.1.
+- **Refused.** Item 16: `try_lock` already answers `is_locked`, and a `lock_api` impl is a new
+  dependency.
 
 ## Index row
 
