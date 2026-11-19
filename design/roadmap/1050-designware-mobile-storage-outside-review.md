@@ -9,46 +9,42 @@ needs_person: yes
 ---
 # 1050. `designware_mobile_storage`: the outside review's findings land before its first release
 
-Raised by the lane `lane/designware-mobile-storage-outside-review`. The lane read
+Raised by the lane `lane/designware-mobile-storage-outside-review`, which read
 `nifeos/designware_mobile_storage` at its first merge (`a800e4b`) as an outside maintainer would,
 against [the review package](../../notes/crate-reviews/designware-mobile-storage.md) and the name
 rulings it records. This block proposes work and changes nothing. Every item names what the
-reviewer verified and what the reviewer inferred, and the last section says what the reviewer did
-not run. Milestone 817 (`designware_mobile_storage`: a proven DesignWare SD and eMMC host, released
+reviewer verified and inferred, and the last section says what was not run. Milestone 817 (`designware_mobile_storage`: a proven DesignWare SD and eMMC host, released
 on its own) owns the extraction and the release path; this block owns the findings that land inside
 that path.
 
-Reuse: the crate's own simulator, Kani harnesses and falsification patches; the shared
-crate-workflows template at the pinned revision; cargo-mutants and the template's mutation gate;
-the kernel's storage bench on the board. No new tool.
+Reuse: the crate's simulator, Kani harnesses and falsification patches; the shared
+crate-workflows template; cargo-mutants; the kernel's storage bench. No new tool.
 
 ## Goal
 
-A stranger who finds the repository can build the crate and read one page that says what the
-driver does and what the two traits ask of them. The maintainers tag nothing, and later publish
+A stranger can build the crate and read one page that says what the driver does and what the
+two traits ask of them. The maintainers tag nothing, and later publish
 nothing, that a later release must take back. The crate today is sound, tested and proven where it
 claims to be. Between it and a first release stand a handful of one-way API shapes, the packaging
 of the license notice, a tag, and three robustness gaps a card on a real bus will find.
 
 Publishing stays held. No crate from this organization publishes to crates.io until every outside
-review milestone is delivered, for every crate under review, and the combine review has decided
-what the crates share. Nothing in this block lifts that hold, and a green gate here is not
-permission to publish.
+review milestone is delivered and the combine review has decided what the crates share. Nothing
+in this block lifts that hold, and a green gate here is not permission to publish.
 
 ## What the review covered
 
 The review read the whole repository. That is the eight public modules (about 100 public items),
 the 92 host tests and five doctests, the simulator, and the 23 Kani harnesses with their 23
 falsification patches. It also read the README, CHANGELOG, SECURITY, CONTRIBUTING and the manifest,
-the eight workflow callers against the template at `cd1b484`, and the first weekly run. It read the
-settings of the repository through the GitHub API. The accepted baseline is the review package: all
+the eight workflow callers against the template at `cd1b484`, and the first weekly run. The accepted baseline is the review package: all
 111 public names read ratified there, and this block re-raises none of them.
 
-Effort sizes: S is under a day of one lane, M a few days, L a week or more.
+Effort: S is under a day of one lane, M a few days, L a week or more.
 
 ## Findings, prioritized
 
-P0 blocks the baseline tag and any publish. P1 lands before the first release. P2 follows it, in
+P0 blocks the baseline tag and any publish. P1 lands before the first release. P2 follows, in
 [the appendix](1050-designware-mobile-storage-outside-review/after-the-first-release.md).
 
 ### P0: one-way shapes and packaging that a tag or a publish would freeze
@@ -81,7 +77,7 @@ else is crate-private, and every doctest uses the public API alone. The lane tha
 rewrites the doctest on `Command` in `src/command.rs` to match, so no register bit stays public for
 a doctest's sake. A later release can relax the rule without a break; tightening it after a tag is
 one. That lane lists, in its pull request, each item it keeps public and the caller need that keeps
-it there. Verified in the source. One-way door (removing `pub` after a publish is a break). S.
+it there. Verified. One-way door (removing `pub` after a publish is a break). S.
 
 #### P0-3. The ISC notice travels only inside a doc comment
 
@@ -94,7 +90,7 @@ text. The root of the repository has `LICENSE-MIT` and `LICENSE-APACHE` and no `
 manifest carries in its `license` field. The License section of the README is the one place that
 states it whole. Recommended: add `LICENSE-ISC` with the copyright line and notice, point
 `src/lib.rs` and the README at it, and correct `CONTRIBUTING.md`. The SPDX expression stays as
-ruled. Verified in the files. Two-way change to a one-way license statement. S.
+ruled. Verified. Two-way change to a one-way license statement. S.
 
 #### P0-4. No tag, so the semver gate has no baseline
 
@@ -105,7 +101,7 @@ template and the per-pull-request semver rule of the labeler compare against the
 With none, they judge nothing (the template README, the note on `semver_baseline.py`), so a
 breaking change merges without a hold. Ruled: a baseline git tag `v0.1.0-pre.1`, placed on the
 first commit on `main` whose gates pass after the P0 items of this block merge. It is a git tag
-only, with no publish; plain `v0.1.0` waits for the crates.io release. The tag sits on `473b19c`.
+only; plain `v0.1.0` waits for the crates.io release. The tag sits on `473b19c`.
 One-way door (a tag is permanent). S.
 
 ### P1: before the first release
@@ -124,8 +120,7 @@ data-phase error of a multi-block command, send `CMD12` as R1b, wait for `DAT0`,
 and return the original error. Add a simulator knob for a card that keeps streaming after an error,
 a host test, and a harness on the modeled card that every failed transfer leaves the card in the
 transfer state. Verified in the source; the behavior of Linux and U-Boot is from the reviewer's
-reading of those drivers, not re-read for this review. Two-way. M. The recovery sequence needs the
-board to confirm.
+reading, not re-read. Two-way. M.
 
 #### P1-2. The deadlines are constants, and the busy deadline sits at the ceiling of the specification
 
@@ -136,9 +131,7 @@ Status: Done in code: [nifeos/designware_mobile_storage#5](https://github.com/ni
 deadline. The SD specification gives an SDHC write 250 ms and an SDXC write 500 ms, and eMMC
 devices may hold busy longer; the block layer of Linux allows ten seconds. A caller cannot change
 either value. Recommended: a `Deadlines` value held by `HostController` with these defaults and a
-setter, and a busy default of at least one second. Verified in the source; the figures of the
-specification come from memory, not a re-reading. Two-way (additive). S. The board measures the
-real busy durations.
+setter, and a busy default of at least one second. Verified in the source; the specification figures come from memory. Two-way (additive). S.
 
 #### P1-3. The two traits state no contract
 
@@ -166,8 +159,8 @@ has `fail-fast: false` and its concurrency group does not cancel, so the cause i
 compile-time assertions in `src/registers.rs` and `src/command.rs` exist for. Others are the
 uninhabited `NoDirectMemoryAccess` methods. A few are real: `extract_bits` `>` to `>=` in
 `src/card.rs`, twice, and `is_condition_met_within` `>` to `>=` in `src/host_controller.rs`.
-Recommended: dispatch `weekly` again, exempt each equivalent mutant with its reason, and add a test
-for each real one. Verified from the run logs and the file. Two-way. M.
+Recommended: dispatch `weekly` again, exempt each equivalent mutant with its reason, and test
+each real one. Verified from the run logs and the file. Two-way. M.
 
 #### P1-5. The stranger test has never run
 
@@ -229,6 +222,10 @@ source. Two-way. S.
    nife first. Open: the staged crate is nifeos/nife#3731; the removal here is [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33), held on
    #3731; the pin bump in nife follows both. 
 4. A shared DMA region trait across the organization's drivers. Open: needs a ruling, below.
+5. When the first release goes. Ruled 2026-11-19 (UTC): the first release of
+   `designware_mobile_storage` waits for the board confirmation of P1-1 (the `CMD12` recovery) and
+   P1-2 (busy durations against the deadline defaults). P2-3, P2-4 and the 50 megahertz scope check
+   follow the release as known limits stated in the README's BUGS.
 
 ## Open decisions
 
@@ -295,11 +292,11 @@ reports them after [nifeos/designware_mobile_storage#32](https://github.com/nife
 
 | item | what remains | blocker |
 |---|---|---|
-| P1-1 | The `CMD12` recovery on the board | bench |
-| P1-2 | Busy durations on the board, against the deadline defaults | bench |
-| P2-3 | `CDETECT` polarity and a hot removal | bench |
-| P2-4 | The eMMC socket and its bus modes; slot 0 has no module fitted | bench |
-| Done when | The 50 megahertz clock against a scope | bench |
+| P1-1 | The `CMD12` recovery on the board | bench; blocks the first release |
+| P1-2 | Busy durations on the board, against the deadline defaults | bench; blocks the first release |
+| P2-3 | `CDETECT` polarity and a hot removal | bench; follows the first release |
+| P2-4 | The eMMC socket and its bus modes; slot 0 has no module fitted | bench; follows the first release |
+| Done when | The 50 megahertz clock against a scope | bench; follows the first release |
 | Done when | The semver rule holding a breaking pull request | [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33) is the first; open, held on nifeos/nife#3731 |
 | Decision 3 | The `partition` module leaves | [nifeos/designware_mobile_storage#33](https://github.com/nifeos/designware_mobile_storage/pull/33), held on nifeos/nife#3731, then the nife pin bump |
 | Decision 4 | A shared DMA region trait | needs a ruling (Open decisions) |
@@ -308,6 +305,7 @@ reports them after [nifeos/designware_mobile_storage#32](https://github.com/nife
 ## Follow-on
 
 - **Done.** Every P0, P1 and P2 item in code, by the pull requests each finding's status names.
+- **Outstanding.** P1-1 and P1-2 are the blockers for delivery.
 - **Outstanding.** The bench rows and the two open pull request rows of *Where this stands*,
   checked against the pull request list of the crate, its tags and `bench/radon-2026-11-17/`.
 - **Outstanding.** The shared DMA region trait, in *Open decisions*: it needs a ruling.
