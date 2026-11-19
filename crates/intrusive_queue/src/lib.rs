@@ -147,8 +147,6 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 /// no token for them exists, and queueing one again needs a fresh [`Unqueued::new`]. `Queue` has no
 /// `Drop`, so pop every node before the queue goes.
 ///
-/// A `Queue<T>` is [`Send`] only when `T` is, as `LinkedList<T>` is.
-///
 /// Name: ratified 2026-10-27 (#2797).
 ///
 /// # Examples
@@ -191,7 +189,8 @@ pub struct Queue<T: Node> {
     len: usize,
 }
 
-/// An `Rc` in a node keeps the queue on its own thread:
+/// A `Queue<T>` is [`Send`] only when `T` is, as `LinkedList<T>` is. An `Rc` in a node keeps the
+/// queue on its own thread:
 ///
 /// ```compile_fail,E0277
 /// # use core::ptr::NonNull;
