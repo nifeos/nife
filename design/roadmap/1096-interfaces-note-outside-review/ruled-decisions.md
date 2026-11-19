@@ -54,7 +54,7 @@ name, not in a doc comment.
 Example. `let bytes: [u8; descriptor_bytes(3)] = encode_interfaces(&list);` reads as 44 bytes for
 three records; `interfaces_len(3)` reads as a count of three.
 
-Ruled 2026-11-19 UTC (option A): the twenty names are ratified with the four renames,
+Ruled 2026-11-19 UTC (option A): the architect ratified the twenty names with the four renames,
 `INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface`, and no alias of
 the old spellings. Sixteen names keep their spelling. Ratification takes effect for the `Name:`
 blocks when the renames land; items 9 and 10 are that work, done by a rename lane. The names are
@@ -88,7 +88,7 @@ it. The repository name is one-way: a repository that exists has a name others l
 
 Ruled 2026-11-19 UTC (option A, the maintainer's provisional ruling): clear the review once the
 four renames land. The architect then gives the go to create `nifeos/interfaces_note`, with no tag
-and no publication, and that go is asked from milestone 1096. Clearing now with the move waiting
+and no publication, and the maintainer asks for that go from milestone 1096. Clearing now with the move waiting
 (B), and holding until a dry run also stages the move's own items 1 to 5, 11 and 15 (C), were the
 alternatives.
 

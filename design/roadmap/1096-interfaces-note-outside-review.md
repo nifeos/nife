@@ -180,7 +180,7 @@ The rules in force, with their background and prior art, are in
 
 - Decision 1, the owner string: ruled 2026-11-14 (UTC). The owner and the section name keep their
   bytes, each line marked `// wire literal`, and prose says "the owner string".
-- Decision 2, the public names: ruled 2026-11-19 (UTC). The twenty names are ratified with four
+- Decision 2, the public names: ruled 2026-11-19 (UTC). The architect ratified the twenty names with four
   renames, `INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface`, and
   no alias; sixteen names keep their spelling. Ratification takes effect for the `Name:` blocks
   when the renames land.
@@ -222,7 +222,7 @@ The checks are in [the appendix](1096-interfaces-note-outside-review/done-when.m
 ## Index row
 
 An outside review of `interfaces_note` before its move. Eight findings are done. The owner string
-keeps its bytes behind a marker, and calef ratified the crate name. The twenty public
-names are ratified with four renames, and no lane has built them yet. The move's own work remains:
+keeps its bytes behind a marker, and calef ratified the crate name. The architect ratified the twenty public
+names with four renames, and no lane has built them yet. The move's own work remains:
 the manifest, README, citations, prose, fuzz opt-in and mutation exemptions. Review clearance
-follows the renames, and the go to create the repository is asked then.
+follows the renames, and the maintainer asks for the go to create the repository then.
