@@ -10,7 +10,7 @@ An appendix to [the milestone](../1082-capability-manifest-note-outside-review.m
   the lint exempts them and the ceiling entry is gone.
 - `spelled_out.py` reports 0 for the crate at the template's head, and no private name says `FLAG`
   for an option letter.
-- The `_BYTES` names, `asks_service` and `BARE_VERSION` are applied with nife's callers, and the
+- The `_BYTES` names, `asks_service` and `BARE_VERSION` apply with nife's callers, and the
   record shows them ratified under their current spelling.
 - `Error` implements `Display` and `core::error::Error`. `Zones` has `len`. `cargo doc` with
   warnings denied, `cargo clippy --all-targets`, `cargo test` and `cargo kani` are green at the

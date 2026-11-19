@@ -55,46 +55,7 @@ outside the repository acts on it after a release (a public name, a printed word
 
 ### P0: blocks the move
 
-1. The manifest is not standalone.
-   Finding: `crates/boot_ladder/Cargo.toml` inherits `license` (line 9) and `lints` (lines 20
-   to 21) from the nife workspace, carries no `rust-version`, no `description`, no `repository`,
-   no `readme`, no `keywords` and no `categories`. The `publish = false` line (line 8) points the
-   reader at `crates/publish-allowlist.txt`, a file that will not be in the repository. The header
-   comment (lines 1 to 3) describes a `Name:` block the template strips. The body comment (lines 11 to 18) says the crate is "six `&'static str`s" when it holds eight and two slices. It also cites a milestone and a rule of `AGENTS.md`.
-   Why it matters: `check / standalone` fails on each of the first three. `cargo publish --dry-run` refuses a manifest without `description` and `license`. A stale count is the first thing a
-   stranger reads and the first thing they stop trusting.
-   Change: write `license = "MIT OR Apache-2.0"`, `rust-version = "1.88"` (the value every other
-   package in `notes/crate-reviews.md` states), a one-sentence `description`, `repository`,
-   `readme = "README.md"`, and the template's required `[lints]` table (`unsafe_op_in_unsafe_fn`,
-   `missing_docs`, `unexpected_cfgs` naming `cfg(kani)`) as literals. Replace every comment with
-   one sentence a stranger can act on. The `publish` line stays until the release that publishes,
-   with the comment "set to `true` only in the release that publishes".
-   Door: two-way, except the license, which is already ruled for every crate. Effort: S.
-
-2. The files a stranger needs do not exist.
-   Finding: the crate has no `README.md`, no `LICENSE-MIT`, no `LICENSE-APACHE`, no
-   `CHANGELOG.md`, no `_typos.toml`, no `docs/stranger-test.md`.
-   Why it matters: `check / standalone` requires the README with `EXAMPLES` and `BUGS` headings,
-   the two license files and the typos configuration; `release / gate` refuses while
-   `docs/stranger-test.md` reads `Last run: none`.
-   Change: the scaffold's files, filled in. The README's one screen says what the crate is for in the words of item 3. It shows the verdict line and how a matcher keys on `SELF_TEST` and `SELF_TEST_FAILED`. It carries `EXAMPLES` (a reader that finds the verdict in a transcript) and `BUGS` (the crate's current `BUGS` list, reworded for a stranger).
-   Door: two-way. Effort: S.
-
-3. Shipped text points into this tree.
-   Finding: `script/crate-standalone` counts 10 milestone citation lines (first `Cargo.toml` line 11). It counts 3 lines naming a path in nife (first `src/lib.rs` line 8, "See notes/boot-ladder.md"; also lines 79 and 141). It counts one line naming the architect outside a `Name:` block (`src/lib.rs` line 62 to 63, a ruling cited by a pull request number). Beyond what
-   the script counts, the doc comments name `kernel_main`, `kernel/src/machine_description.rs`, `kernel/src/self_test.rs`, `components/src/swish.rs`, `kernel::console::yield_screen`,
-   `machine_discovery::framebuffer::SCREEN_HOLD`, `cargo xtask swish-check` and `cargo xtask
-   uefi-boot`, and `AGENTS.md` rule 7 (lines 5, 31, 42, 50, 109 to 111, 119, 127, 139 to 140).
-   Lines 82 to 83 and 108 to 111 carry a dated history of the check list, which the documentation
-   standard sends to git.
-   Why it matters: the move cannot strip these as it strips `Name:` blocks; each is a link a
-   stranger cannot follow, and the ruling citation names a person in text that leaves the tree.
-   Change: rewrite each doc comment to say who prints the line and who reads it in role words ("the
-   kernel", "the shell", "a console reader"), with no path. State the ruling behind `absent`
-   without the name or the pull request number. Keep the table of earlier list lengths, keyed by
-   which names each list held rather than by date. Move the design narrative (why the banner is
-   generic, why the machine line comes last) to the README.
-   Door: two-way. Effort: S.
+The P0 items are in [the appendix](1078-boot-ladder-outside-review/blocks-the-move.md).
 
 ### P2: later
 
@@ -121,7 +82,7 @@ allocates and the kernel can use it. nife passes `nife`, so every byte printed a
 logs, board profiles and gates already hold, and a test in `serial_console` pins the nife heads to
 those bytes.
 
-The ruling ratifies the nine shapes as printed: `<system> on `, `<system> machine: `,
+The ruling ratifies the nine shapes as printed. They are `<system> on `, `<system> machine: `,
 `<system> self-test: `, `<system> self-test subject: thread `,
 `<system>: the capability core runs on `, `<system> capability shell`,
 `<system> screen: held for the host; `, and inside the verdict `FAILED: ` and `absent: `. The shell
@@ -172,45 +133,57 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 ## Finding status
 
 - P0-1, manifest stands alone: Open. The license, `rust-version`, description, readme, keywords,
-  categories and lints are literal ([#3655](https://github.com/nifeos/nife/pull/3655)); the `repository` line is missing, and the move
-  tool's `add_repository` writes it.
-- P0-2, the files a stranger needs: Open. The README and both licenses exist ([#3655](https://github.com/nifeos/nife/pull/3655));
-  `CHANGELOG.md`, `_typos.toml` and `docs/stranger-test.md` with a stranger run come with the
-  move's scaffold.
-- P0-3, shipped text points into the tree: Done, [#3565](https://github.com/nifeos/nife/pull/3565), [#3655](https://github.com/nifeos/nife/pull/3655). Tree references remain only in
-  `Name:` blocks, which the move strips.
-- P1-4, one verdict code for the writer and the readers: Done, [#3655](https://github.com/nifeos/nife/pull/3655). The kernel prints
-  through `Verdict`, and `serial_console` and `xtask` read through `ParsedVerdict`.
-- P1-5, check list invariants: Done, [#3565](https://github.com/nifeos/nife/pull/3565). A test (`the_check_names_are_plain_and_distinct`),
-  not a `const` block, because a `const` block drew five mutation survivors no test can kill.
-- P1-6, tests and proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565), [#3655](https://github.com/nifeos/nife/pull/3655). Two Kani harnesses in `src/verdict.rs`, each with
-  a falsification patch.
-- P1-7, head literals in `xtask`: Open. The literals are gone ([#3655](https://github.com/nifeos/nife/pull/3655)); the `script/lint`
-  section that refuses a head literal outside `crates/boot_ladder`, tests and fixtures is not
-  written, and as a new lint section it is a reviewed interface.
-- P1-8, the ten public names: Done as provisional renames, [#3589](https://github.com/nifeos/nife/pull/3589), [#3655](https://github.com/nifeos/nife/pull/3655). Their ratification is
-  under Open decisions.
+  categories and lints are literal ([#3655](https://github.com/nifeos/nife/pull/3655)); the
+  `repository` line is missing, and the move tool's `add_repository` writes it.
+- P0-2, the files a stranger needs: Open. The README and both licenses exist
+  ([#3655](https://github.com/nifeos/nife/pull/3655)); `CHANGELOG.md`, `_typos.toml` and
+  `docs/stranger-test.md` with a stranger run come with the move's scaffold.
+- P0-3, shipped text points into the tree: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3655](https://github.com/nifeos/nife/pull/3655). Tree references remain only in `Name:` blocks,
+  which the move strips.
+- P1-4, one verdict code for the writer and the readers: Done,
+  [#3655](https://github.com/nifeos/nife/pull/3655). The kernel prints through `Verdict`, and
+  `serial_console` and `xtask` read through `ParsedVerdict`.
+- P1-5, check list invariants: Done, [#3565](https://github.com/nifeos/nife/pull/3565). A test
+  (`the_check_names_are_plain_and_distinct`), not a `const` block, because a `const` block drew five
+  mutation survivors no test can kill.
+- P1-6, tests and proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3655](https://github.com/nifeos/nife/pull/3655). Two Kani harnesses in `src/verdict.rs`, each
+  with a falsification patch.
+- P1-7, head literals in `xtask`: Open. The literals are gone
+  ([#3655](https://github.com/nifeos/nife/pull/3655)); the `script/lint` section that refuses a head
+  literal outside `crates/boot_ladder`, tests and fixtures is not written, and as a new lint section
+  it is a reviewed interface.
+- P1-8, the ten public names: Done as provisional renames,
+  [#3589](https://github.com/nifeos/nife/pull/3589),
+  [#3655](https://github.com/nifeos/nife/pull/3655). Their ratification is under Open decisions.
 - P1-8b, the `self_test_program` names: Open. About twenty provisional names, with one change
   proposed (`DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS` to
   `DIRECT_MEMORY_ACCESS_OBSERVER_VIRTUAL_ADDRESS`) and not applied; a two-way door the maintainer
   rules provisionally. Which of the module's items stay public is a question for the self-test
   program's own move.
-- P1-9, the boundary claim and the matching rule: Done, [#3586](https://github.com/nifeos/nife/pull/3586), [#3655](https://github.com/nifeos/nife/pull/3655).
-- P2-10, abbreviated check names: Done, [#3586](https://github.com/nifeos/nife/pull/3586). The kernel's name column is still ten wide,
-  which the README's `BUGS` records.
-- P2-11, a version policy: Done, [#3655](https://github.com/nifeos/nife/pull/3655). The README states it; no identity constant exists.
+- P1-9, the boundary claim and the matching rule: Done,
+  [#3586](https://github.com/nifeos/nife/pull/3586),
+  [#3655](https://github.com/nifeos/nife/pull/3655).
+- P2-10, abbreviated check names: Done, [#3586](https://github.com/nifeos/nife/pull/3586). The
+  kernel's name column is still ten wide, which the README's `BUGS` records.
+- P2-11, a version policy: Done, [#3655](https://github.com/nifeos/nife/pull/3655). The README
+  states it; no identity constant exists.
 - P2-12, growth already proposed: Open. Milestone 972 (the boot stick's shared names are code) and
-  the two hoists of soak markers and job-mix fields land before the move, or this block records
-  that they wait.
-- P2-13, the banner's tail: Done, [#3565](https://github.com/nifeos/nife/pull/3565), [#3586](https://github.com/nifeos/nife/pull/3586). The crate states that the tail is free text and
-  the architecture is read from the machine line.
+  the two hoists of soak markers and job-mix fields land before the move, or this block records that
+  they wait.
+- P2-13, the banner's tail: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3586](https://github.com/nifeos/nife/pull/3586). The crate states that the tail is free text and
+  a reader takes the architecture from the machine line.
 - Decision, heads after the caller's system name: Done (ruled 2026-11-14 UTC, option A),
   [#3586](https://github.com/nifeos/nife/pull/3586).
 - Decision, the ten public names: Open. Built as the maintainer's provisional ruling of 2026-11-14
-  (UTC), [#3589](https://github.com/nifeos/nife/pull/3589); the ratification is under Open decisions.
-- Decision, printed check names spelled out: Done (ruled 2026-11-14 UTC), [#3586](https://github.com/nifeos/nife/pull/3586).
-- The move: Open. No review package exists under `notes/crate-reviews/`, and nifeos/boot_ladder
-  does not exist; a package lane comes first, then the clearance under Open decisions.
+  (UTC), [#3589](https://github.com/nifeos/nife/pull/3589); the ratification is under Open
+  decisions.
+- Decision, printed check names spelled out: Done (ruled 2026-11-14 UTC),
+  [#3586](https://github.com/nifeos/nife/pull/3586).
+- The move: Open. No review package exists under `notes/crate-reviews/`, and nifeos/boot_ladder does
+  not exist; a package lane comes first, then the clearance under Open decisions.
 
 ## Open decisions
 
@@ -218,7 +191,7 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 
 Background: `boot_ladder` holds the fixed beginnings ("heads") of the lines a kernel, its
 self-test and its shell print while booting, such as `nife self-test: ` and
-`nife capability shell`, and the list of self-test check names. The program that prints a line
+`nife capability shell`. It also holds the list of self-test check names. The program that prints a line
 and every program that reads one (a console reader on a bench, a CI transcript check) use the same
 crate, so they cannot disagree. A third-party console reader would import these names.
 
@@ -226,9 +199,9 @@ The names in question are the accessors on `Heads` (`banner`, `machine`, `self_t
 `self_test_subject`, `core_runs`, `shell_banner`, `screen_held`) and the constants
 `SELF_TEST_FAILED`, `SELF_TEST_ABSENT`, `SELF_TEST_CHECKS` and `EARLIER_SELF_TEST_CHECK_COUNTS`.
 The maintainer decided them on 2026-11-14 (UTC), provisionally, and the tree builds them. Three are
-renames: the shell's banner line was `PROMPT`, though the real prompt is `$ `; the line that says
-the capability core runs was `TOUR`, after an internal stage a stranger never meets; and the list
-of older check counts was `SELF_TEST_CHECKS_EARLIER`, though it holds counts. The printed bytes
+renames. The shell's banner line was `PROMPT`, though the real prompt is `$ `. The line that says
+the capability core runs was `TOUR`, after an internal stage a stranger never meets. The list of
+older check counts was `SELF_TEST_CHECKS_EARLIER`, though it holds counts. The printed bytes
 are not part of this decision; the architect ruled them on 2026-11-14 (UTC).
 
 Recommendation: A.
@@ -258,7 +231,7 @@ are outside this decision and go to the crate's release name review.
 Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
 architect reads; clearing it is the go to create the crate's repository and move the crate. No
 package exists for `boot_ladder` yet, so a package lane writes one first. The crate's in-tree work
-is done except P1-7's lint section and P2-12's growth; P0-1 and P0-2 come with the move itself.
+lacks only P1-7's lint section and P2-12's growth; P0-1 and P0-2 come with the move itself.
 
 Recommendation: A.
 
@@ -266,16 +239,21 @@ Recommendation: A.
 - B. Hold the package until milestone 972's names land, so the move carries them and the new
   repository does not take a release for each.
 
-Door: one-way. A repository and a moved crate are acted on by the template's workflows and by
-nife's pin from the first day; moving back is a second move.
+Door: one-way. The template's workflows and nife's pin act on a repository and a moved
+crate from the first day; moving back is a second move.
 
 Prior art (recalled, not read): the Rust project moved `libc` and `compiler_builtins` out of the
 compiler's tree into repositories of their own, and the compiler consumes them back by version.
 Where nife differs: a review package checks that the crate stands alone before it leaves, not
-after. Example: `jh7110_entropy`, whose review was cleared on 2026-11-01 (UTC), lives in
+after. Example: `jh7110_entropy`, whose review the architect cleared on 2026-11-01 (UTC), lives in
 nifeos/jh7110_entropy, and nife depends on it at a pinned revision.
 
 What it blocks: the move, and so the first tag and the first publish.
+
+## Follow-on
+
+- **Outstanding.** The Open lines under [Finding status](#finding-status) and the items under
+  [Open decisions](#open-decisions).
 
 ## BUGS
 
