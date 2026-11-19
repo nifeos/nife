@@ -27,9 +27,70 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-sta
 `script/crate-review-packet`, `helpers/name_release.py`, Kani, cargo-mutants, cargo-fuzz. No new
 tool.
 
-## Where this stands
+## Finding status
 
-The appendix lists what remains and what holds each: [where this stands](1087-domain-name-system-outside-review/where-this-stands.md).
+Items 1 to 4 are under [P0](#p0-blocks-the-move), 5 to 9 in [the before-the-tag
+appendix](1087-domain-name-system-outside-review/before-the-tag.md), and 10 to 16 in [the later
+items](1087-domain-name-system-outside-review/later-items.md).
+
+- 1, unratified public names: Done, [#3728](https://github.com/nifeos/nife/pull/3728), which
+  ratified every public name as built.
+- 2, the manifest does not stand alone: Done, [#3658](https://github.com/nifeos/nife/pull/3658).
+- 3, the files a stranger needs are absent: Open. [#3658](https://github.com/nifeos/nife/pull/3658)
+  added the README and both license files. The scaffold files, the caller workflows,
+  `docs/stranger-test.md` and the stranger run come from `script/crate-move` at the move.
+- 4, shipped text points into nife: Done, [#3608](https://github.com/nifeos/nife/pull/3608).
+- 5, the fuzz target lives in nife: Open. [#3658](https://github.com/nifeos/nife/pull/3658) added
+  `#![forbid(unsafe_code)]`. The move stages the target in the crate's own `fuzz/`, and the weekly
+  caller passes `fuzz: true`.
+- 6, two length names break the units rule: Done, [#3608](https://github.com/nifeos/nife/pull/3608).
+- 7, names that need the specification, and the `address` gate: Open. Parts a, c and d landed in
+  [#3608](https://github.com/nifeos/nife/pull/3608) and
+  [#3668](https://github.com/nifeos/nife/pull/3668). Part b leaves a private binding `address`
+  (`src/lib.rs` line 977) and eight test names in `tests/replies.rs` that `register_names` refuses;
+  Decision 3 qualifies them as IPv4. The crate's `.github/accepted-words` adds `tcp` and `udp` at
+  the move, and `prose_acronyms` flags 13 acronyms in the README and `src/` for expansion or that
+  list.
+- 8, a TTL with its high bit set: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
+- 9, the three equivalent mutants: Open. The move commit writes their `.github/mutants-exempts`
+  lines, and `mutation / mutation` has no green full run on `main` yet.
+- 10 to 16, `Display` and `FromStr`, type sizes, an exhaustive `Error`, documentation drift,
+  host-name syntax, re-capturable fixtures and the TCP buffer: Done,
+  [#3608](https://github.com/nifeos/nife/pull/3608).
+- Decision 1, `MAXIMUM_LABEL_BYTES` and `HEADER_BYTES`: Done,
+  [#3608](https://github.com/nifeos/nife/pull/3608), ratified by
+  [#3728](https://github.com/nifeos/nife/pull/3728).
+- Decision 2, the specification's abbreviations: Done,
+  [#3668](https://github.com/nifeos/nife/pull/3668), ratified by
+  [#3728](https://github.com/nifeos/nife/pull/3728).
+- Decision 3, the IPv4 address names: Done, [#3608](https://github.com/nifeos/nife/pull/3608),
+  ratified by [#3728](https://github.com/nifeos/nife/pull/3728).
+- F-package, the review package: Open. None exists under `notes/crate-reviews/`.
+- F-clearance, review clearance: Open, under [Open
+  decisions](#clear-the-review-and-create-the-repository).
+
+## Open decisions
+
+### Clear the review and create the repository
+
+The architect has ratified every public name, and the crate's manifest, README and licenses stand
+alone. The move follows `notes/crate-move.md`: a review package, the architect's review clearance
+(step 4), then the repository (step 5). Milestone 1017 (the contract crates leave in this order)
+places this crate in step 5, before `domain_name_resolution_contract`, which pins it as a `git`
+dependency.
+
+Recommendation: A, since this crate is the closest of its journey to ready, and the resolver
+contract's move waits on it.
+
+- A. Write the package now and clear the move from it, as the earlier crates did.
+- B. Hold the move until the architect ratifies the contract crate's names as well, and move the two
+  together.
+
+Door: one-way, since creating a public repository is an outward step. Prior art:
+`file_allocation_table` and `e1000e` each cleared from a written package before their repository
+existed. Example: under A, a lane writes the package, the architect clears it, and
+`script/crate-move domain_name_system` creates `nifeos/domain_name_system` with the three mutant
+exemptions and the fuzz target staged. Blocks: the move, and the resolver contract's move after it.
 
 ## Goal
 
@@ -53,8 +114,6 @@ Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A do
 somebody outside the repository acts on it after the release (a public name, a published behavior, a
 wire layout, a dependency). Everything else is two-way and the maintainer decides it. Line numbers
 are `crates/domain_name_system/src/lib.rs` unless a path says otherwise.
-
-The ledger of what landed and what is left is in [the appendix](1087-domain-name-system-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -121,138 +180,48 @@ The P1 items are in [the appendix](1087-domain-name-system-outside-review/before
 
 ## Decisions for the architect
 
-Each is one decision, with the background first and the recommendation before the alternatives.
-All three are decided, provisionally. The review recommends ratifying the remaining 40-odd names as they stand, and they need only the pull request of item 1.
+Each is a rule in force; the ratification of every public name as built, 2026-11-16 (UTC), covers
+all three.
 
-### Decision 1. `MAXIMUM_LABEL_LEN` and `HEADER_LEN`
+### Decision 1. `MAXIMUM_LABEL_BYTES` and `HEADER_BYTES`
 
-Background. A DNS label is at most 63 bytes, and a message header is 12 bytes. The crate names these
-`MAXIMUM_LABEL_LEN` and `HEADER_LEN`. The units rule says a length or a limit carries its unit, with
-`MAXIMUM_NAME_BYTES` as the right form and `MAXIMUM_NAME_LEN` as the wrong one. The crate already
-follows it for `MAXIMUM_NAME_BYTES` and `MAXIMUM_UDP_MESSAGE_BYTES`. `MAXIMUM_LABEL_LEN` got its ratification before the rule, and the review index says a later rule reopens such a name at release
-review. Four nife manifests depend on the crate; the names appear inside the crate and in
-`components/`.
+A DNS label is at most 63 bytes and a message header 12. A length or a limit carries its unit, as
+`MAXIMUM_NAME_BYTES` and `MAXIMUM_UDP_MESSAGE_BYTES` already did, so the names are
+`MAXIMUM_LABEL_BYTES` and `HEADER_BYTES`, with no alias of the old spellings. A caller writes `[0u8;
+MAXIMUM_LABEL_BYTES]` and knows the unit from the name. Prior art: `hickory-proto` names its limit
+`MAX_LABEL_LENGTH` (unverified); nife's rule is stricter.
 
-Recommendation: `MAXIMUM_LABEL_BYTES` and `HEADER_BYTES`. It matches the two sibling constants, the
-rule's own example, and what the template's gate would ask of a new name.
+### Decision 2. The specification's abbreviations in public names
 
-Alternative: keep both as ratified, on the ground that a label length in DNS is a count of bytes by
-definition. The rule's example rejects exactly this argument for `MAXIMUM_NAME_LEN`.
+A term a reader searches for keeps its spelling, with the expansion in its doc and a
+`#[doc(alias)]`; any other term expands. People say "question count", not "qdcount", and they do say
+"TTL" and "class IN". The names in force:
 
-Prior art: `hickory-proto` names its limit `MAX_LABEL_LENGTH` (unverified); `smoltcp` has no
-constant for it. The nife rule is stricter than both, deliberately.
-
-Concrete example: a caller sizing a label buffer writes `[0u8; MAXIMUM_LABEL_BYTES]` and knows the
-unit from the name, as it already does with `[0u8; MAXIMUM_UDP_MESSAGE_BYTES]`.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The recommendation holds: `MAXIMUM_LABEL_BYTES` and
-`HEADER_BYTES`, with no alias of the old spellings. Item 6 is the work.
-
-### Decision 2. The specification's abbreviations in public field and constant names
-
-Background. RFC 1035 names the header counts `QDCOUNT`, `ANCOUNT`, `NSCOUNT`, `ARCOUNT`, the flag
-bits `QR`, `TC`, `RD`, the response code `RCODE`, the class `IN`, the record fields `TYPE`, `CLASS`,
-`TTL`, `RDLENGTH`, `RDATA`, and the record types `A` and `CNAME`. The crate carries most of these as
-lower-case field names (`qdcount`, `rcode`, `qtype`, `qclass`, `rtype`, `rdata`, `rdata_off`, `ttl`)
-and as constants (`FLAG_QR`, `FLAG_TC`, `FLAG_RD`, `RCODE_MASK`, `RCODE_NAME_ERROR`, `CLASS_IN`,
-`record_type::A`, `record_type::CNAME`), plus `cname_target`. The naming page's rule: a
-specification's term a reader searches for keeps its spelling, with the expansion in the doc and a
-`#[doc(alias)]`. Any other term expands. The acronym test asks whether people speak the expansion. Nobody
-says "qdcount" or "ancount" aloud; people say "question count" and "answer count". People do say
-"TTL", "CNAME", "an A record" and "class IN". `rdata_off` holds `off`, which no rule keeps.
-
-Recommendation, one list, ruled as one decision:
-
-- `Header::{question_count, answer_count, authority_count, additional_count}`, each with
-  `#[doc(alias = "QDCOUNT")]` and so on; `Header::response_code()` with alias `RCODE`.
-- `FLAG_RESPONSE` (alias `QR`), `FLAG_TRUNCATED` (alias `TC`), `FLAG_RECURSION_DESIRED` (alias
-  `RD`). `RESPONSE_CODE_MASK` and `RESPONSE_CODE_NAME_ERROR` (alias `RCODE`, and `NXDOMAIN` on the
-  second). `OPERATION_CODE_MASK` (alias `OPCODE`), matching `RESPONSE_CODE_MASK`.
+- `Header::{question_count, answer_count, authority_count, additional_count}` (aliases `QDCOUNT` and
+  so on) and `Header::response_code()` (alias `RCODE`).
+- `FLAG_RESPONSE`, `FLAG_TRUNCATED` and `FLAG_RECURSION_DESIRED` (aliases `QR`, `TC`, `RD`);
+  `RESPONSE_CODE_MASK`, `RESPONSE_CODE_NAME_ERROR` (alias `NXDOMAIN` too) and `OPERATION_CODE_MASK`
+  (alias `OPCODE`).
 - `Question::{record_type, class}` and `Record::{record_type, class, ttl_seconds, data,
-  data_offset}`, with the `Question` fields losing their `q` and `data_offset` spelled out.
-  `ttl` stays an abbreviation, and the fields and methods that hold it carry the unit:
-  `Record::ttl_seconds` and `Answer::ttl_seconds()`, each with `#[doc(alias = "TTL")]` and
-  `#[doc(alias = "time to live")]`.
-- Spell `CNAME` out: `record_type::CANONICAL_NAME` (aliases `CNAME` and `canonical name record`)
-  and `canonical_name_target` (aliases `CNAME` and `canonical name`).
-- Spell `A` out: `record_type::IPV4_ADDRESS` (aliases `A` and `address record`).
-- Keep `CLASS_IN`: it is the term a reader searches for, and it gets the
-  expansion in its doc opening and an alias (`Internet class`).
+  data_offset}`. `ttl` stays an abbreviation and carries the unit: `Record::ttl_seconds` and
+  `Answer::ttl_seconds()`, with aliases `TTL` and `time to live`.
+- `record_type::CANONICAL_NAME` and `canonical_name_target` (aliases `CNAME` and `canonical name`),
+  and `record_type::IPV4_ADDRESS` (aliases `A` and `address record`).
+- `CLASS_IN` keeps its spelling as a term of art, with alias `Internet class`.
 
-Alternative A: keep every specification spelling and add the aliases. This is what the `domain`
-crate does (`qdcount()`, `rcode()`, `tc()`; unverified) and what a reader with the RFC open expects.
-It is also what the acronym test refuses for the counts.
+Prior art: `hickory-proto` spells the counts out and keeps `ttl` (unverified); the `domain` crate
+keeps `qdcount()` (unverified). Example: the resolver's check reads `header.question_count != 1`,
+and a reader who has never opened RFC 1035 knows what refused the reply.
 
-Alternative B: spell out everything, `ttl` and `cname` included (`time_to_live`,
-`canonical_name_target`, `CLASS_INTERNET`, `record_type::ADDRESS`). Consistent, and it costs the
-reader the four terms every DNS text uses on its first page.
+### Decision 3. `MAXIMUM_IPV4_ADDRESSES`, `Answer::ipv4_addresses` and `Reject::NoIpv4Address`
 
-Prior art: `hickory-proto`'s `Header` spells the counts out (`query_count`, `answer_count`,
-`name_server_count`, `additional_count`) and keeps `ttl` on records (unverified, from memory of its
-API). `smoltcp`'s `dns.rs` keeps the RFC field names in its internal `field` module and exposes none
-of them. Both sides exist in the ecosystem; the recommendation takes the one the nife rule already
-picked for `network_time_protocol` and `non_volatile_memory_express`.
-
-Concrete example: a log line in the resolver today reads `h.qdcount != 1`. After the ruling it reads
-`header.question_count != 1`, and a reader who has never opened RFC 1035 knows what refused the
-reply. This decision leaves `domain_name_resolution_contract::reject_code` alone; Decision 3
-touches it.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The recommendation's list holds as written, with the
-specification's spelling as `#[doc(alias)]` on each expanded name. `CLASS_IN`
-keeps its spelling as a term of art, with its expansion in the doc opening and an alias.
-
-Ruled 2026-11-16 (UTC) for the names below. `ttl` stays an abbreviation, but the fields and methods that
-hold it carry the unit: `Record::ttl_seconds` and `Answer::ttl_seconds()`, each with
-`#[doc(alias = "TTL")]` and `#[doc(alias = "time to live")]`. The crate spells `CNAME` out:
-`record_type::CANONICAL_NAME` with aliases `CNAME` and `canonical name record`, and
-`canonical_name_target` (the maintainer's provisional spelling) with aliases `CNAME` and
-`canonical name`. `OPCODE_MASK` becomes `OPERATION_CODE_MASK` with alias `OPCODE`, matching
-`RESPONSE_CODE_MASK`. `record_type::A` becomes `record_type::IPV4_ADDRESS` with aliases `A` and `address record`. No
-alias of the old nife spelling. Item 7 part a is the work.
-
-### Decision 3. `MAXIMUM_ADDRESSES`, `Answer::addresses` and `Reject::NoAddress`
-
-Background. The crate returns IPv4 addresses as `[[u8; 4]]`, caps them at `MAXIMUM_ADDRESSES`
-(ratified), and refuses a reply with none as `Reject::NoAddress`. The template's `register_names`
-gate runs in every crate repository at a ceiling of zero. It reads a bare `address` as a memory
-address and demands `_VIRTUAL_ADDRESS` or `_PHYSICAL_ADDRESS` unless a qualifier from its list
-(`ip`, `ipv4`, `ipv6`, `mac`, `network`, `socket` and others) stands before it. It flags 15 names
-here, ratified and unratified alike, and the crate would arrive red. The crate is IPv4-only by its
-own BUGS list, and when AAAA arrives `addresses()` returning `[u8; 4]` will need a sibling anyway.
-`domain_name_resolution_contract` asserts its own `MAXIMUM_ADDRESSES` equals this one (its `lib.rs`
-line 50) and numbers `Reject::NoAddress` as code 9 (`messages.rs` line 57).
-
-Recommendation: `MAXIMUM_IPV4_ADDRESSES`, `Answer::ipv4_addresses()`, the field to match,
-`Reject::NoIpv4Address`, and the seven test names qualified the same way. The names say what the
-bytes are, the gate passes without an exemption, and an `ipv6_addresses()` later needs no rename of
-this one. The contract crate's assertion and `reject_code` arm follow in the same pull request; the
-code number 9 does not change.
-
-Alternative A: widen the gate in `crate-workflows` so `address` passes in a crate that declares a
-network vocabulary. That is a template change for one crate's convenience, and the first future
-`e1000e` or `designware_ethernet` reader would then meet a bare `address` and wonder which kind.
-
-Alternative B: keep the names and list the 15 in a baseline the gate tolerates. The template has
-no such baseline for `register_names` by design.
-
-Prior art: `std::net::Ipv4Addr` and `SocketAddr` qualify in the type, not the field.
-`hickory-proto`'s `A` record type is the IPv4 record and its `lookup_ip` returns `IpAddr`
-(unverified). `smoltcp`'s DNS socket returns `IpAddress`. All three say which kind of address in the
-name a reader sees first.
-
-Concrete example: today `answer.addresses()` returns `&[[u8; 4]]`, and the type is the only place
-the reader learns these are IPv4. After the ruling `answer.ipv4_addresses()` says it, and the
-template's gate reports zero findings on the crate.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The recommendation holds: `MAXIMUM_IPV4_ADDRESSES`,
-`Answer::ipv4_addresses()` and its field, `Reject::NoIpv4Address` and the test names to match,
-with no template exemption. The contract crate's assertion and `reject_code` arm follow, and the
-code number 9 does not change. Item 7 part b is the work, and milestone 1086 (`domain_name_resolution_contract`) decision 1 takes
-`MAXIMUM_IPV4_ADDRESSES` to match.
+The crate returns IPv4 addresses only, and the template's `register_names` gate reads a bare
+`address` as a memory address. So the names say which kind: `MAXIMUM_IPV4_ADDRESSES`,
+`Answer::ipv4_addresses()` and its field, `Reject::NoIpv4Address`, and the test names to match, with
+no template exemption. `domain_name_resolution_contract` asserts the same limit, and `reject_code`
+keeps code 9. Prior art: `std::net::Ipv4Addr` and smoltcp's `IpAddress` name the kind where a reader
+looks first. Example: `answer.ipv4_addresses()` says what `&[[u8; 4]]` holds, and an
+`ipv6_addresses()` later needs no rename.
 
 ## Done when
 
@@ -260,19 +229,8 @@ The checks are in [the appendix](1087-domain-name-system-outside-review/done-whe
 
 ## Follow-on
 
-- **Outstanding.** Item 1 waits for the architect. The ratification pull request covers the 51 public
-  names that no ratification covers yet. `python3 helpers/name_release.py --draft domain_name_system`
-  prints its table. Decisions 1 to 3 stand provisionally and the code uses their spellings. The move
-  waits for the architect to read the table.
-- **Outstanding.** Four things wait for the move. `script/crate-move` stages item 5's `fuzz/`
-  directory, with the three fixtures as seeds. It passes `fuzz: true` to the weekly caller because the
-  crate forbids `unsafe`. Item 9's `.github/mutants-exempts` lines name the stripped source's line
-  numbers, so only the move commit can write them. Item 7's `.github/accepted-words` entries and the
-  stranger run come after. The architect clears the review package and the repository exists first
-  (`notes/crate-move.md`, steps 4 and 5).
-- **Outstanding.** `mutation / mutation` has no green full run on `main` yet. It first runs in the new
-  repository.
-- **Outstanding.** Nothing else here has a ruling to build.
+- **Outstanding.** The open lines under [Finding status](#finding-status): items 3, 5, 7 and 9,
+  F-package, and the review clearance.
 
 ## BUGS
 
@@ -295,4 +253,5 @@ An outside review of `domain_name_system` before it leaves. Four items block the
 names, a manifest and files that do not stand alone, text pointing into nife). Five land before the
 first tag (the fuzz target moving with the crate, two length names under the units rule, the
 specification's abbreviations and the `address` gate, a TTL the RFC says to zero, the three
-equivalent mutants). Seven more are for later. Three decisions for the architect, all names.
+equivalent mutants). Seven more are for later. The architect has ratified the three name decisions,
+and the review clearance goes to the architect.
