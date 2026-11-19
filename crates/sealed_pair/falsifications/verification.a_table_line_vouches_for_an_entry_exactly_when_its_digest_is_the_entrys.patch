@@ -1,0 +1,21 @@
+Falsifies `sealed_pair::verification::a_table_line_vouches_for_an_entry_exactly_when_its_digest_is_the_entrys`.
+
+The defect: the comparison looks only at the first byte of the two digests. An entry whose bytes
+changed but whose hash still starts with the table's first byte reads as described by the table, and
+the check calls a tampered archive consistent. Every test that changes an entry changes a hash whose
+first byte differs too, so they still pass.
+
+Expected to fail: the harness's `assert_eq!` on `Changed`, with two digests that share a first byte.
+
+diff --git a/crates/sealed_pair/src/lib.rs b/crates/sealed_pair/src/lib.rs
+--- a/crates/sealed_pair/src/lib.rs
++++ b/crates/sealed_pair/src/lib.rs
+@@ -514,7 +514,7 @@
+ ) -> Option<TableDisagreement> {
+     match listed.iter().find(|(n, _)| *n == name) {
+         None => Some(TableDisagreement::Unlisted(name.to_string())),
+-        Some((_, want)) if *want != have => Some(TableDisagreement::Changed(name.to_string())),
++        Some((_, want)) if want[0] != have[0] => Some(TableDisagreement::Changed(name.to_string())),
+         Some(_) => None,
+     }
+ }

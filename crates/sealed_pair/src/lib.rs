@@ -484,14 +484,11 @@ fn inspect_table(fs: &nifefs::Fs<'_>) -> TableSeal {
             continue;
         }
         let bytes = fs.read(name).unwrap_or_default();
-        let have = measured_boot::sha256(bytes);
-        match listed.iter().find(|(n, _)| *n == name) {
-            None => disagreements.push(TableDisagreement::Unlisted(name.to_string())),
-            Some((_, want)) if *want != have => {
-                disagreements.push(TableDisagreement::Changed(name.to_string()));
-            }
-            Some(_) => {}
-        }
+        disagreements.extend(entry_disagreement(
+            &listed,
+            name,
+            measured_boot::sha256(bytes),
+        ));
     }
     for (name, _) in &listed {
         if fs.read(name).is_none() {
@@ -505,6 +502,21 @@ fn inspect_table(fs: &nifefs::Fs<'_>) -> TableSeal {
         TableDisagreement::BadLine { line, .. } => line.clone(),
     });
     TableSeal::Checked { disagreements }
+}
+
+/// Does the table describe this archive entry? `have` is the digest of the entry's bytes. `None`
+/// when the table lists the entry with `have`; `Unlisted` when it does not list the entry;
+/// `Changed` when it lists a different digest.
+fn entry_disagreement(
+    listed: &[(&str, Digest)],
+    name: &str,
+    have: Digest,
+) -> Option<TableDisagreement> {
+    match listed.iter().find(|(n, _)| *n == name) {
+        None => Some(TableDisagreement::Unlisted(name.to_string())),
+        Some((_, want)) if *want != have => Some(TableDisagreement::Changed(name.to_string())),
+        Some(_) => None,
+    }
 }
 
 /// **Find the archive inside a single boot file** (the UEFI stick's one file per
@@ -650,6 +662,37 @@ mod verification {
             at += 1;
         }
         assert_eq!(contains(&haystack, &needle), there);
+    }
+
+    /// **A table line vouches for an entry exactly when its digest is the entry's own.** The table
+    /// comparison reports `Changed` for an entry the table lists with a digest that is not the
+    /// entry's digest, and nothing for one it lists with that digest. The reference answer compares
+    /// the two digests one byte at a time, so the proof does not restate the array comparison
+    /// under proof. The entry's digest is an input here (hashing is `measured_boot`'s, proved
+    /// there); both digests are any 32 bytes.
+    ///
+    /// Falsification: replayable `crates/sealed_pair/falsifications/verification.a_table_line_vouches_for_an_entry_exactly_when_its_digest_is_the_entrys.patch`
+    #[kani::proof]
+    #[kani::unwind(35)]
+    fn a_table_line_vouches_for_an_entry_exactly_when_its_digest_is_the_entrys() {
+        let want: Digest = kani::any();
+        let have: Digest = kani::any();
+        let listed = [("progenitor", want)];
+        let mut same = true;
+        let mut i = 0;
+        while i < 32 {
+            same &= want[i] == have[i];
+            i += 1;
+        }
+        let found = entry_disagreement(&listed, "progenitor", have);
+        if same {
+            assert_eq!(found, None);
+        } else {
+            assert_eq!(
+                found,
+                Some(TableDisagreement::Changed("progenitor".to_string()))
+            );
+        }
     }
 }
 
