@@ -318,8 +318,8 @@ impl<'a> DeviceTreeBlob<'a> {
     /// `reg` pair of the same shape is. The specification places the block on an 8-byte boundary,
     /// and that is not checked: every read here is byte-wise, so a misplaced block reads the same.
     ///
-    /// Name: provisional. Refused `reserved_regions`, with no alias for it (milestone 1085 (what an
-    /// outside maintainer would fix before it leaves) D5).
+    /// Name: ratified 2026-11-19. Refused `reserved_regions`, with no alias for it (milestone 1085
+    /// (what an outside maintainer would fix before it leaves) D5).
     pub fn memory_reservations(&self, out: &mut [Region]) -> Result<usize, Error> {
         let mut at = self.reservations_offset;
         let mut n = 0;
