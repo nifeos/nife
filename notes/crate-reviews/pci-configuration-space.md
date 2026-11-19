@@ -5,17 +5,17 @@ in its own file because the packages together outgrow the page.*
 
 The architect reads this to clear the crate for its move to its own repository,
 `nifeos/pci_configuration_space`. Clearing it is what approves creating that repository
-([milestone 1105 (what an outside maintainer would fix before the crate leaves)](../../design/roadmap/1105-pci-outside-review.md),
+([milestone 1105 (`pci`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1105-pci-outside-review.md),
 option A of its open decision, taken provisionally by the maintainer). It describes the crate as `main`
 plus this branch leaves it.
 
 ## In one paragraph
 
 A PCI function's configuration space decoded over closures. The caller supplies `read32(Bdf, offset)`
-and the crate does the rest: ECAM addressing and the requester identifier, a breadth-first walk of the
-buses behind every bridge, base address register sizing, the capability list, the virtio vendor
-capabilities, MSI and MSI-X, the legacy interrupt swizzle, and the first 32-bit window of a host
-bridge's `ranges`. Every volatile access stays in the kernel. A function that answers every read with
+and the crate does the rest. It does ECAM addressing and the requester identifier, a breadth-first
+walk of the buses behind every bridge, base address register sizing and the capability list. It also
+decodes the virtio vendor capabilities, MSI and MSI-X, the legacy interrupt swizzle, and the first
+32-bit window of a host bridge's `ranges`. Every volatile access stays in the kernel. A function that answers every read with
 garbage leaves the caller with a bounded, well-formed answer or `None`. The crate is `no_std`, has no
 dependency of any kind and forbids `unsafe`. Ten Kani harnesses prove the hostile-input properties and
 each has a falsification patch. Nothing in it points back into nife. Every renamed public name is
@@ -25,7 +25,7 @@ provisional, so the move waits on the architect's ratification of the table unde
 
 | item | value |
 |---|---|
-| crate | `pci_configuration_space`, ratified: the short name `pci` stays ratified, and the package name was ruled 2026-11-14 (UTC) because another author holds `pci` on crates.io |
+| crate | `pci_configuration_space`, ratified: the short name `pci` stays ratified, and the architect ruled the package name because another author holds `pci` on crates.io |
 | identity values | none: the crate is not a wire contract. No magic, no interface number, no layout a peer reads |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88 (`as_chunks` is stable since 1.88) |
@@ -44,7 +44,7 @@ provisional, so the move waits on the architect's ratification of the table unde
 - `crates/jh7110_pci_express`: the root port and its simulation decode through `Bdf` and the register
   offsets.
 - `crates/machine_discovery`: `src/jh7110/pci_express.rs`, and `tests/pci_host_bridge_windows.rs`, which
-  now holds the five device-tree witness tests that used to live in this crate.
+  now holds the five device-tree witness tests that this crate no longer carries.
 - Later, the bus server of
   [milestone 1064 (PCI enumeration leaves the kernel)](../../design/roadmap/1064-pci-enumeration-leaves-the-kernel.md)
   will link it from its own repository, the same way. The crate has no dependency on that milestone or
@@ -55,7 +55,7 @@ provisional, so the move waits on the architect's ratification of the table unde
 What references back into nife from the crate: nothing. No path dependency, no `include_bytes!`, no
 milestone number in a doc comment, no tree path.
 
-## What was run
+## What ran
 
 All on this branch, on the committed tip, with the toolchain pinned in the tree unless the row says
 otherwise.
@@ -64,23 +64,23 @@ otherwise.
 |---|---|
 | `cargo test -p pci_configuration_space` | 41 unit tests and 2 doctests pass |
 | `cargo clippy -p pci_configuration_space --all-targets -- -D warnings` | no warning |
-| `cargo doc` with warnings denied | no warning; every public item is documented and `allow(missing_docs)` is gone |
+| `cargo doc` with warnings denied | no warning; every public item has a doc comment and `allow(missing_docs)` is gone |
 | bare-metal builds | `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf` and `x86_64-unknown-none` build |
 | MSRV 1.88, on a copy outside the tree | builds and tests pass |
 | Miri | the test suite passes |
 | `cargo kani`, each of the ten harnesses | all ten `VERIFICATION:- SUCCESSFUL`; the slowest are `read_bars_is_total_for_any_device` (211 s), `the_bus_queue_stays_inside_its_array_on_any_firmware` (57 s) and the two walk harnesses (26 s and 28 s) |
 | the ten falsification patches | each applies with `patch -p3`; whether each turns its harness red is the template's `falsify` job, see below |
-| `script/crate-standalone pci_configuration_space` | see "What still blocks the move"; the run is recorded there |
+| `script/crate-standalone pci_configuration_space` | see "What still blocks the move" |
 | `script/crate-move --dry-run` | see "What still blocks the move" |
 | `script/lint` | run before the push; the pull request's checks are the record |
 
 Not run, and so not claimed:
 
-- A Kani harness of `walk` on a two-bus machine. It ran over twelve CPU-minutes without a result and
-  was stopped, so no harness of the bus scan itself is kept. The scan loops are bounded by literals,
-  and the bus queue, the only part a device controls, is proved. The module documentation and the
-  README say so. This is the "ceiling" attempt of milestone 1105's item P1-8; its outcome is that the
-  walk proof stays at its decomposed form.
+- A Kani harness of `walk` on a two-bus machine. It ran over twelve CPU-minutes without a result, so
+  this branch stopped it and keeps no harness of the bus scan itself. Literals bound the scan loops,
+  and the bus queue, the only part a device controls, has its proof. The module documentation and
+  the README say so. This was the ceiling attempt of milestone 1105's item P1-8; the walk proof stays
+  in its decomposed form.
 - Mutation. The first run happens in the new repository, which exempts the 11 equivalent survivors the
   baseline row already counts.
 - The stranger test, the fuzz targets (an opt-in that waits for the repository) and
@@ -116,21 +116,27 @@ What a stranger may find surprising:
 
 ## Proofs
 
-Ten Kani harnesses, each with a falsification patch under `falsifications/`: the ECAM offset stays
-inside the 256-bus window; `intx_interrupt_number` is total and bounded; `read_bars` is total and
-every `Bar` it returns has a power-of-two size of at least 16 and an end that does not overflow; a BAR
-size is exactly the boundary between the bits a device ignores and the bits it decodes; the capability
-walk, the MSI walk and the MSI-X walk terminate on any device, and an MSI-X table size is in
-`1..=2048`; the bus queue stays inside its array for every sequence of bridges firmware could write; a
-fresh queue holds only the root; the ranges parse is total. The proofs and their timings are under
-"What was run".
+Ten Kani harnesses, each with a falsification patch under `falsifications/`.
+
+- The ECAM offset stays inside the 256-bus window.
+- `intx_interrupt_number` is total and bounded.
+- `read_bars` is total, and every `Bar` it returns has a power-of-two size of at least 16 and an end
+  that does not overflow.
+- A BAR size is exactly the boundary between the bits a device ignores and the bits it decodes.
+- The capability walk, the MSI walk and the MSI-X walk terminate on any device, and an MSI-X table
+  size is in `1..=2048`.
+- The bus queue stays inside its array for every sequence of bridges firmware could write, and a
+  fresh queue holds only the root.
+- The ranges parse is total.
+
+The proofs and their timings are under "What ran".
 
 ## Names
 
-Every name below is provisional and none is ratified by this package. The architect rules the table
-as one decision. "Was" is the spelling before this branch. The specification's own spelling is a
-`#[doc(alias)]` where it differs, and no alias carries a nife spelling. The two names already
-ratified, the crate and `intx_interrupt_number`, are untouched.
+Every name below is provisional and this package ratifies none. The architect rules the table as
+one decision. "Was" is the spelling before this branch. Where the specification spells a name
+differently, a `#[doc(alias)]` carries its spelling, and no alias carries a nife spelling. This
+package leaves the two ratified names, the crate and `intx_interrupt_number`, as they are.
 
 | item | kind | was | status | proposal |
 |---|---|---|---|---|
@@ -164,7 +170,7 @@ driver say; the proposal is the long form with `ISR` as the alias.
 ## License
 
 `license = "MIT OR Apache-2.0"`. The crate adapts no source, so no `AND` term follows the pair. The
-register layouts, capability formats and identifiers are specification facts: the PCI Local Bus
+register layouts, capability formats and identifiers are specification facts. They come from the PCI Local Bus
 Specification 3.0, PCI Express Base for ECAM and the requester identifier, the virtio 1.2
 specification section 4.1.4 for the vendor capabilities, and the device tree specification for
 `ranges`. The crate copies no driver text.

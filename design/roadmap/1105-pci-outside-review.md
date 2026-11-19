@@ -48,14 +48,14 @@ crate's own reasons.
 - P0-2, the staged tree's red gates: Done, [#3807](https://github.com/nifeos/nife/pull/3807)
   ([#3521](https://github.com/nifeos/nife/pull/3521) fixed the patch regeneration earlier). The
   manifest states its license, lints and `rust-version` as literals, the README and both license
-  files exist, doc comments cite specifications, and all ten patches are regenerated and apply.
+  files exist, doc comments cite specifications, and all ten patches regenerate against the new source and apply.
 - P1-3, BAR size trusts the mask: Done, [#3519](https://github.com/nifeos/nife/pull/3519).
 - P1-4, BAR probing on any header and past slot 5: Done,
   [#3519](https://github.com/nifeos/nife/pull/3519).
 - P1-5, names the template's gates refuse: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
-  The spellings are renamed in the crate, the kernel, `driver_process_contract`, `jh7110_pci_express`
-  and `machine_discovery`. Every one is provisional, and the architect ratifies them in the review
-  package.
+  The crate, the kernel, `driver_process_contract`, `jh7110_pci_express`
+  and `machine_discovery` carry the new spellings. Every one is provisional, and the review
+  package asks the architect to ratify them.
 - P1-6, names the naming rules refuse: Done, [#3807](https://github.com/nifeos/nife/pull/3807). The
   same renames and the same provisional status as P1-5.
 - P1-7, documentation that assumes the tree: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
@@ -73,7 +73,7 @@ crate's own reasons.
 - P2, fuzz targets: Open. No target covers `mem32_window` or the walks; the opt-in waits for the
   repository.
 - P2, stale patch headers: Done, [#3807](https://github.com/nifeos/nife/pull/3807). All ten patches
-  are regenerated against the renamed source.
+  regenerate against the renamed source.
 - P2, the proof table: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
   `notes/verification/parser-harnesses.md` lists all ten harnesses.
 - P2, mutation survivors: Open. The baseline row carries counts only; the first run in the
@@ -103,7 +103,7 @@ Every other crate that has moved or passed clearance had a review package under
 clearance. This crate's package is
 [`pci-configuration-space.md`](../../notes/crate-reviews/pci-configuration-space.md). The maintainer
 took option A provisionally on 2026-11-19 (UTC), a two-way door the architect may revisit. Clearing
-the package approves the repository; it has not been cleared. The move also waits on the architect
+the package approves the repository; nobody has cleared it yet. The move also waits on the architect
 ratifying the package's table of names and on the P2 move steps above.
 
 Recommendation: A, taken provisionally.
