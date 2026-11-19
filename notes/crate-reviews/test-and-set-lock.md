@@ -77,7 +77,8 @@ Results come from this branch, on a Linux host.
 | `script/crate-review-packet test_and_set_lock` | the packet this package follows. It lists 17 public items, no type from another crate in a public signature, and 7 `unsafe` sites of which 4 are library code and 3 are in tests or one test helper |
 | `script/names test_and_set_lock` | the tree's name index has no row for the new crate name. The `Name:` block records the ruling |
 
-MOVE_RESULT
+| `script/crate-move test_and_set_lock --dry-run --into <scratch>` | exits 1 with three findings for the move lane: the standalone check and the citations check each report the 6 lines that cite paths in this tree, and the passive-voice check reports 6 passives in the README. It stages the repository in the scratch directory, creates and pushes nothing, and prints the three dependent manifests' `git` and `rev` lines |
+
 
 Not run, and so not claimed: the stranger test, mutation, `cargo-semver-checks` (a first release has
 no baseline), Kani (the crate has no harness), the QEMU gates (`script/test`, `script/boot-check`
@@ -130,7 +131,7 @@ spellings, and no name carries a unit or an abbreviation.
 
 | item | owner |
 |---|---|
-| Strip the `Name:` blocks, rewrite the 6 citations of paths in this tree as plain prose, and drop `notes/...` and `script/...` mentions from the manifest comments. | move lane |
+| Rewrite the README's 6 passives in the active voice, strip the `Name:` blocks, rewrite the 6 citations of paths in this tree as plain prose, and drop `notes/...` and `script/...` mentions from the manifest comments. | move lane |
 | Write `repository`, `description` and the manifest literals; the moved `[lints.rust]` keeps `cfg(loom)` in `check-cfg`. | move lane |
 | Add one `.github/mutants-exempts` line for the `pause` survivor, with the triage's reason. | move lane |
 | Ship `falsifications/interleavings.two_takers_are_exclusive_and_ordered.patch` and a loom form of the template's falsify gate (item 7 of the milestone). | move lane, with `nifeos/crate-workflows` |
