@@ -3876,7 +3876,6 @@ crates/http_response/src/lib.rs::status
 
 crates/http_response/src/lib.rs::with_room
 
-crates/inter_process_communication/src/futex.rs::FutexTable
 
 crates/inter_process_communication/src/futex.rs::Key
 
@@ -3884,7 +3883,6 @@ crates/inter_process_communication/src/futex.rs::new
 
 crates/inter_process_communication/src/futex.rs::park
 
-crates/inter_process_communication/src/futex.rs::queued
 
 crates/inter_process_communication/src/futex.rs::remove
 
@@ -3894,11 +3892,8 @@ crates/inter_process_communication/src/futex.rs::waiters
 
 crates/inter_process_communication/src/notification.rs::Notification
 
-crates/inter_process_communication/src/notification.rs::Signal
 
-crates/inter_process_communication/src/notification.rs::Wait
 
-crates/inter_process_communication/src/notification.rs::debug_counts
 
 crates/inter_process_communication/src/notification.rs::drain_waiters
 
@@ -3916,13 +3911,10 @@ crates/inter_process_communication/src/notification.rs::wait
 
 crates/inter_process_communication/src/notification.rs::word
 
-crates/inter_process_communication/src/rendezvous.rs::Receive
 
 crates/inter_process_communication/src/rendezvous.rs::Rendezvous
 
-crates/inter_process_communication/src/rendezvous.rs::Send
 
-crates/inter_process_communication/src/rendezvous.rs::debug_counts
 
 crates/inter_process_communication/src/rendezvous.rs::drain_waiters
 
@@ -3944,7 +3936,6 @@ crates/inter_process_communication/src/tests.rs
 
 crates/inter_process_communication/src/timer.rs
 
-crates/inter_process_communication/src/timer.rs::Arm
 
 crates/inter_process_communication/src/timer.rs::NEVER
 
