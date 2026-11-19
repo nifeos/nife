@@ -33,9 +33,82 @@ can build, test and prove it from the README alone, call `walk` from a doctest t
 read every refusal as a POSIX errno without a nife glossary. The repository's gates are green for
 the crate's own reasons.
 
-## Where this stands
+## Finding status
 
-[The appendix](1110-subtree-scope-outside-review/where-this-stands.md).
+- P0-1, the crate does not stand alone: Open. The README, both license files, the inlined
+  `license`, lints and `rust-version`, and a `publish` comment a stranger can act on remain, all
+  move work.
+- P0-2, the shipped text speaks to this tree: Open. The module doc still opens with a milestone, a
+  dated ruling and `fs_subtree_caretaker`; the rewrite in the crate's own words, with the
+  hard-cases prose of `notes/walk-cost.md`, is move work.
+- P0-3, the dependency on `filesystem_contract` has nowhere to point: Open. The template half
+  landed in [nifeos/crate-workflows#66](https://github.com/nifeos/crate-workflows/pull/66), so
+  `deny.toml` admits git sources on the organization; the `git` and `rev` pin waits on
+  `filesystem_contract`'s repository at step 2 of milestone 1017 (the contract crates leave in this
+  order).
+- P1-4, `landing` answers `EINVAL` for `EISDIR`: Done,
+  [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-5, `unbind` uses handle 0 for nothing to close: Done,
+  [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-6, the badge-to-slot cast truncates on 32 bits: Done,
+  [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-7, names the rules refuse: Open. The eight renames (`PROOF_PATH_BYTES`, `directories`,
+  `want_directory`, `component`, `NodeKind`, `Binding::Unbound`, `check_landing`,
+  `Bindings::binding`) are two-way before the first tag, so the maintainer rules them
+  provisionally and one lane renames.
+- P1-8, no example anywhere: Open. The doctests on `walk` and `Bindings` landed in
+  [#3580](https://github.com/nifeos/nife/pull/3580); the README's `## EXAMPLES` is move work.
+- P1-9, what the walk proofs leave out and cost: Open. The walk-completeness harness and its
+  measured peak, at about 6 GiB, need a lane of their own.
+- P1-10, passive voice over the template's ceiling: Open. The template counts 26 passives in 4,081
+  words against an allowance of 8; the rewrite is move work, with P0-2.
+- P2-11, `Refusal::errno` restates the contract's numbers: Done,
+  [#3610](https://github.com/nifeos/nife/pull/3610).
+- P2-12, `admit` takes three `u64` words in a row: Done,
+  [#3610](https://github.com/nifeos/nife/pull/3610).
+- P2-13, `cfg_attr(not(test), no_std)`: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-14, how the hop word masks: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-15, where the crate is stricter than Linux: Open. The README's section on `openat2` and
+  `cap-std` is move work, with P0-1.
+- Decision, the crate's name: Done, [#3589](https://github.com/nifeos/nife/pull/3589) (maintainer,
+  provisional, 2026-11-14 UTC; nothing to build).
+- Follow-on, the move into the step-9 repository: Open, and an open decision below.
+
+## Open decisions
+
+### Clearing the move of `subtree_scope`
+
+The crate decides two things for a file server: whether a path stays beneath one directory, and
+which handles one client may use. Its one consumer is `redoxfs_server`. Milestone 1017's step 9
+moves it with `memory_region_heap` and `redoxfs` into one new public repository, ruled 2026-11-01
+(UTC), after the ten contract crates those link. Creating a public repository is an outward step,
+and the standing rule is that clearing a crate's review package approves it. This crate has no
+package under `notes/crate-reviews/` yet, so there is nothing to clear.
+
+The move also waits on P0-3's pin, which needs `filesystem_contract`'s repository first, and on
+P1-7's renames.
+
+Recommendation: A.
+
+- A. A lane writes the review package once P1-7's renames land and `filesystem_contract` has its
+  tag; clearing it approves the move, together with the step-9 packages of `memory_region_heap`
+  and `redoxfs`, with no tag and no publish.
+- B. Clear this crate's package on its own, ahead of the other two, so its renames and pin land in
+  the new repository.
+- C. Keep the crate inside `redoxfs`'s package and clear the repository once, with no package of
+  its own.
+
+Door: one-way. The repository is public the moment it exists, and `redoxfs_server`'s manifest
+switches to it; a rename or a split after that breaks every pin.
+
+Prior art: `cap-std` makes its beneath-the-directory check in `cap-primitives`, a crate of its
+own beneath the `Dir` type (from memory, unverified), the shape A keeps. Linux keeps it in the kernel, as `RESOLVE_BENEATH` in
+`openat2`. nife differs by putting the decision in a crate a server links and a prover checks.
+In this tree, `generational_table` and `e1000e` each moved after a cleared package of their
+own. Example: under A, the server's manifest reads `subtree_scope = { version = "0.1.0", git =
+"https://github.com/nifeos/<step-9 repository>", rev = "<sha>" }`.
+
+Blocks: the move, and with it any tag and the first publish.
 
 ## What was checked, and how
 
@@ -88,16 +161,14 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
    bounds". `fs_subtree_caretaker` goes.
    Door: two-way. Effort: M.
 
-3. The dependency on `filesystem_contract` has nowhere to point yet. LEFT: the template's rule and `filesystem_contract`'s repository.
+3. The dependency on `filesystem_contract` has nowhere to point yet. PARTIAL: the template's rule landed (nifeos/crate-workflows#66). LEFT: `filesystem_contract`'s repository, then the pin.
    Finding: the only dependency is `filesystem_contract` by path. The runbook's bottom-up rule
    (`notes/crate-move.md`, "A crate leaves only when nothing it depends on is still in this
    tree") holds the move until `filesystem_contract` has its own repository, which step 2 of
-   milestone 1017 schedules and which has not happened. When it has, the scaffold's `deny.toml`
-   denies every git source (`unknown-git = "deny"`, no `allow-git`), and the maintainers hold
-   publishing to crates.io, so neither way of writing the dependency passes `check / supply-chain` today. No moved
-   repository depends on another nifeos crate yet: `block_roster_contract`'s dependency table is
-   empty (verified through the GitHub API); the others showed no dependency table (unverified
-   beyond that).
+   milestone 1017 schedules. The scaffold's `deny.toml` admits git sources on the organization
+   (nifeos/crate-workflows#66), and the maintainers hold publishing to crates.io, so the
+   dependency takes a `git` and `rev` pin. This is the first moved crate to depend on another
+   nifeos crate.
    Evidence: `crates/subtree_scope/Cargo.toml` line 13; `crate-workflows/scaffold/deny.toml`
    lines 30 to 33; `design/roadmap/1017-the-contract-crates-leave-in-this-order.md`, the step
    table.
@@ -113,106 +184,7 @@ name or behavior, a dependency); everything else is two-way and the maintainer d
 
 ### P1: before the first release
 
-4. `landing` answers `EINVAL` where the contract says `EISDIR`, and leaves the arm to the caller. DONE (`a_file_verb_on_a_directory_is_is_a_directory`; `Refusal::IsADirectory` is provisional; the server's special case is gone).
-   Finding: `landing(Kind::Directory, false)` returns `Refusal::Malformed` (errno 22), with a
-   comment that the server maps this one arm itself. The one caller does: `open_file_path` tests
-   `kind == Kind::Directory` and answers `EISDIR` before it calls `landing`, so the arm is dead in
-   this tree and a wrong answer for any other caller. A refusal enum with a hole in it is a trap a
-   stranger falls into on the first file server that is not this one.
-   Evidence: `crates/subtree_scope/src/lib.rs` lines 145 to 147; `redoxfs_server/src/server.rs`
-   lines 102 to 106; `filesystem_contract/src/dir.rs` line 88 (`EISDIR` is 21).
-   Change: add `Refusal::IsADirectory` with errno 21, return it from that arm, delete the comment
-   and the server's special case (the server's own copy of the rule goes, the behavior stays).
-   Adding a variant to a public enum is one-way after the first release, so it lands before the
-   tag.
-   Door: two-way now, one-way after the tag. Effort: XS.
-
-5. `unbind` uses handle 0 to mean "nothing to close". DONE (`unbinding_a_badge_bound_to_handle_zero_is_not_unbinding_a_sync_only_one`; `unbind` returns `Option`).
-   Finding: for a sync-only badge, `unbind` returns `Ok(ROOT)` as "no directory to hand back".
-   `ROOT` is 0, and 0 is also a handle a binder may bind a badge to: `bind(caller, badge, 0)` succeeds, and in the server that is the image root with every right. The server tells the two
-   apart with `root != ROOT`, which happens to be right for both (handle 0 is never closed), but
-   the API says one value for two facts. The same function computes `Self::index(badge)` twice
-   under two names (`f`, then `i`), and the equivalent-mutant survivor of the census is the
-   `i != 0` guard this shape needs.
-   Evidence: `crates/subtree_scope/src/lib.rs` lines 283 to 302; `redoxfs_server/src/server.rs`
-   lines 760 to 774; `notes/project-metrics/mutation-triage.csv` row 305.
-   Change: `unbind` returns `Result<Option<u64>, Refusal>`: `Some(root)` for a bound badge,
-   `None` for a sync-only one. One `index` call, one `match` over the slot. The server closes on
-   `Some`. The census then has no survivor to explain.
-   Door: two-way (one-way after the tag, as a public signature). Effort: XS.
-
-6. The badge-to-slot cast truncates on a 32-bit target. DONE (`a_badge_past_a_machine_word_binds_nothing_and_is_revoked`; `index` returns `Option`).
-   Finding: `index` compares `(badge as usize) < B`. On a target whose `usize` is 32 bits, badge
-   2^32 + 2 casts to 2 and folds onto slot 2, so `bind(caller, 2^32 + 2, root)` binds badge 2
-   while `of(2^32 + 2)` answers `Revoked`. The `u64` compare on line 236 guards `of`;
-   `bind`, `bind_sync_only` and `unbind` have no such guard. Only an open caller can bind, and the three
-   bare-metal targets the move stages are 64-bit, so this is a hole in the claim, not a defect a
-   current user can reach. The harness `a_badge_with_no_window_is_never_open` runs on a 64-bit
-   host and cannot see it.
-   Evidence: `crates/subtree_scope/src/lib.rs` lines 225 to 231 (`index`), 254, 272, 289, 294.
-   Change: make `index` return `Option<usize>` through `usize::try_from(badge).ok().filter(|&i|
-   i < B)`, have `of` use it, and have the three mutators refuse `None` as they refuse slot 0. One
-   sentence in `Bindings`' doc. No behavior changes on any 64-bit target.
-   Door: two-way. Effort: XS.
-
-7. Names the naming rules refuse, or that read wrong to a stranger. LEFT: names, the architect's pass.
-   Finding, each with the rule: `PROOF_PATH` is a length in bytes and carries no unit
-   (`design/naming.md`, Units: a length carries its unit; `PROOF_BADGES` and `PROOF_OPERATIONS`
-   are counts of things and stand). The binding `dirs` (line 115) and the parameter `want_dir`
-   (line 139) abbreviate `directory`, which the template's `spelled_out.py` refuses at a ceiling
-   of 0. `is_name(c: &[u8])` has a one-letter parameter (the rules apply to parameters). `Kind`
-   is a generic word the rules name as a failure mode. `Binding::Open` collides with the file verb
-   in a filesystem crate. `landing` is a noun on a function that judges, beside `check_path`.
-   `Bindings::of` has no standard-library precedent (`get` would promise an `Option`).
-   Evidence: `crates/subtree_scope/src/lib.rs` lines 83, 115, 139, 70, 156, 139, 235, 306.
-   Change, recommended spellings: `PROOF_PATH_BYTES`; `directories`; `want_directory`;
-   `component`; `NodeKind`; `Binding::Unbound`; `check_landing`; `Bindings::binding`. The `hop`
-   parameter of `walk` could take the server's word, `requested`, since the doc already explains
-   it as the rights each step asks for. One pull request, after the maintainer rules the two-way
-   names provisional.
-   Door: two-way before the tag; every public one is one-way after it. Effort: S.
-
-8. There is no example anywhere. DONE (doctests on `walk` and `Bindings`; the README example is move work).
-   Finding: 0 doctests, no `examples/`, no README. A stranger has the test module's `tree`
-   function as the only picture of how to write `lookup`.
-   Evidence: `cargo test` output ("Doc-tests subtree_scope: running 0 tests");
-   `crates/subtree_scope/src/lib.rs` lines 463 to 472.
-   Change: a doctest on `walk` over a four-node toy tree (the test's `tree`, lifted into the doc).
-   It shows a success, a `Symlink` refusal and a `Narrowed` refusal. A second doctest on
-   `Bindings` shows bind, admit through `ROOT`, unbind, and the `NotYours` after. The README's `## EXAMPLES`
-   carries the first.
-   Door: two-way. Effort: S.
-
-9. What the walk proofs leave out, and what they cost. LEFT: needs a Kani run at about 6 GiB; a lane of its own.
-   Finding: the two walk harnesses state that every step is a name and that a successful walk went
-   through directories only and never widened. Neither states that `walk` asks `lookup` for every
-   component but the last, in order; a `walk` that skipped a component, or stopped early and
-   returned the start, passes both (the unit tests catch it, the proofs do not). Neither says
-   when `walk` answers `NotFound` and `Narrowed`. The reach record agrees: the walk harness killed 3
-   of the 19 mutants in its direct reach and the one-name harness 2 of 8 (the record predates
-   `SyncOnly`; the proportions are what is on file). The two harnesses also cost the most:
-   falsification replays of 242 s and 104 s, and the crate's 5.9 GiB peak, for a 5-byte path at
-   unwind 7. The template's `proofs` job runs under a 20-minute default budget and `falsify` under
-   30. Nobody has verified whether a hosted runner holds the peak.
-   Evidence: `crates/subtree_scope/src/lib.rs` lines 329 to 379;
-   `notes/kani-reach-2026-10-04.csv` rows 179 to 180;
-   `notes/project-metrics/falsification-times.tsv` rows 342 to 343; `helpers/kani-peaks.tsv`.
-   Change: one harness, `a_walk_asks_for_every_component_in_order`, whose `lookup` records the
-   steps it saw and asserts afterwards that they equal the components before the last `/`, in
-   order. Its falsification patch makes `walk` skip the first component. Extend
-   `a_walk_never_widens_follows_or_crosses` with the two refusal conditions, or state in the README
-   that tests cover them and proofs do not. Measure the peak after; if it stays near 6 GiB, state the
-   figure in the README beside the install line.
-   Door: two-way. Effort: S.
-
-10. Passive voice over the template's ceiling. LEFT: move work.
-    Finding: `passive_voice.py` at the template's head counts 20 passive constructions in 3,366
-    words against a ceiling of 6. The pinned release (v7) does not run it; the first pin bump past
-    v7 will make `check` red for this reason alone.
-    Evidence: `passive_voice.py` over the staged `src/lib.rs`, five of the lines: 257, 321, 339,
-    427, 587 (staged numbering).
-    Change: put 14 sentences into the active voice while item 2 rewrites the doc; one pass.
-    Door: two-way. Effort: S.
+The P1 items are in [the appendix](1110-subtree-scope-outside-review/before-the-release.md).
 
 ### P2: later
 
@@ -220,46 +192,24 @@ The P2 items are in [the appendix](1110-subtree-scope-outside-review/later-items
 
 ## Decisions for the architect
 
-One decision, the crate's name, decided provisionally below. Everything else above is the
-maintainer's.
+One decision, ruled; the move is under "Open decisions" above.
 
-### The crate's name becomes a repository name at the move
+### The crate's name
 
-Background. The crate decides two things for a file server. The first is whether a path stays
-beneath one directory (every component is a name, no symbolic link, no mount point, rights only
-narrow). The second is which handles one client may use (its grant's root, and the handles it
-minted). Its name has been
-provisional since its minting. The move makes it the repository's name and, if the crate is
-ever published, the crates.io name. Both are one-way.
+The crate keeps `subtree_scope` (maintainer, provisional, 2026-11-14 UTC). It is a noun phrase,
+spelled out, and it says what the crate is: the scope of a subtree grant. `use
+subtree_scope::{walk, admit}` reads as what the two calls do. The door is two-way. The crate's one
+consumer is `redoxfs_server`, and step 9 of milestone 1017 places it in one repository with
+`memory_region_heap` and `redoxfs`, so its name is a workspace crate's name and not a repository's.
+The publishing hold keeps it off crates.io. If the crate is ever published on
+its merits, its crates.io name comes to the architect then, and ratifying it stays the architect's.
 
-Recommendation: keep `subtree_scope`. It is a noun phrase, spelled out, with no abbreviation, and
-it says what the crate is: the scope of a subtree grant. `use subtree_scope::{walk, admit}` reads as
-what the two calls do.
-
-Alternatives considered. `beneath` is the field's term (`RESOLVE_BENEATH`, `O_RESOLVE_BENEATH`),
-one word, and a reader from Linux or FreeBSD knows it; but it is a preposition, and the rules say a
-crate takes a noun. `subtree_grant` names the thing a program gets, where the crate decides what a
-grant reaches and never makes one. `directory_scope` loses the word that says the whole tree beneath
-counts.
-
-Prior art: Linux names the behavior by the preposition (`RESOLVE_BENEATH`); FreeBSD the same
-(`O_RESOLVE_BENEATH`); `cap-std` names the type (`Dir`) and leaves the property to prose; Fuchsia
-speaks of rights, not scope. None of them has a crate or a module whose only job is this decision,
-so none offers a name to copy.
-
-Concrete example: a server's manifest line `subtree_scope = { version = "0.1.0", git = ..., rev =
-... }` beside `filesystem_contract`, and the README's first sentence, "What a grant rooted at one
-directory can reach, decided in one place a server links."
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
-revisit. The door is not one-way, as the background above reads it. A crate leaves into its own
-repository only when it is publishable or used by more than one repository. This one has one
-consumer, `redoxfs_server`, and milestone 1017 step 9 places it with `memory_region_heap` and
-`redoxfs` in one repository. There its name is a workspace crate's name, not a repository's, and no
-crates.io name is taken while the publishing hold stands. The crate keeps `subtree_scope`, the
-spelled-out noun phrase; `beneath` is a preposition. If the crate is ever published on its merits,
-its crates.io name comes to the architect then. The crate's `Name:` block (`src/lib.rs` line 20)
-stays provisional, and ratifying the name stays the architect's.
+The alternatives lost. `beneath` is the field's term (`RESOLVE_BENEATH`, `O_RESOLVE_BENEATH`), but
+it is a preposition, and a crate takes a noun. `subtree_grant` names the thing a program gets,
+where the crate decides what a grant reaches and never makes one. `directory_scope` loses the word
+that says the whole tree beneath counts. Linux and FreeBSD name the behavior by the preposition;
+`cap-std` names the type (`Dir`) and leaves the property to prose; none has a crate whose only job
+is this decision, so none offers a name to copy.
 
 ## Done when
 
@@ -267,9 +217,6 @@ The checks are in [the appendix](1110-subtree-scope-outside-review/done-when.md)
 
 ## BUGS
 
-- Item 3 is the template's to decide. Until `deny.toml` admits a sibling git source, or a sibling is
-  on crates.io, no crate that depends on another nifeos crate can pass `check / supply-chain`, and
-  this is the first such crate in the order.
 - Item 6 came from reading, not from a build for a 32-bit target. The fix is cheap enough to land
   without one.
 - Item 9's cost figures are this tree's recorded medians on its own runners. Nobody has verified
@@ -283,9 +230,10 @@ The checks are in [the appendix](1110-subtree-scope-outside-review/done-when.md)
 ## Follow-on
 
 - **Milestone 1017.** The crate moves at its step 9; the move lane takes the items marked move work.
-- **Outstanding.** Item 9, which needs a Kani run of about 6 GiB, and item 7's renames.
-- **Outstanding.** The maintainer has kept the name `subtree_scope`, provisionally, and ratifying it
-  stays the architect's.
+- **Outstanding.** Item 9, which needs a Kani run of about 6 GiB, and item 7's renames, checked
+  against `crates/subtree_scope/src/lib.rs`.
+- **Outstanding.** The move's clearance, an open decision above; no package exists under
+  `notes/crate-reviews/`.
 
 ## Index row
 
