@@ -627,7 +627,6 @@ crates/boot_slot/src/lib.rs::select_excluding
 
 crates/boot_slot/src/lib.rs::unreadable
 
-crates/byte_glob/src/lib.rs::Dot
 
 crates/byte_glob/src/lib.rs::cost_bound
 

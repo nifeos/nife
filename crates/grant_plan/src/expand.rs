@@ -360,7 +360,7 @@ impl<'a> Expander<'a> {
 
     /// Offer one directory entry.
     ///
-    /// The dot rule is `byte_glob`'s default (`Dot::Special`), so `*` does not match `.config`, and that
+    /// The dot rule is `byte_glob`'s default (`LeadingDot::Special`), so `*` does not match `.config`, and that
     /// default is not a compatibility habit here: `rm *` hands a child authority over everything it
     /// matched, so the default reading is the one that **grants less**. A user who wants the
     /// dotfiles asks for them and takes the larger grant deliberately.

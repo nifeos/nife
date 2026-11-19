@@ -25,7 +25,7 @@ S for the rename, since the crate is small and has three dependents.
 
 #### P0-2. Seven public names carry no provenance and are not ratified
 
-`Dot` (and its variants `Special` and `Ordinary`), `matches`, `matches_with`, `has_magic`,
+`LeadingDot` (and its variants `Special` and `Ordinary`), `matches`, `matches_with`, `has_magic`,
 `literal`, `match_steps` and `cost_bound` have no `Name:` block; `helpers/name_release.py --draft
 byte_glob` reports "no block" for each, and `design/module-block-baseline.txt` lines 3146 to 3158 hold
 them as baseline violators. The move strips `Name:` blocks, so whatever is not ratified in a review

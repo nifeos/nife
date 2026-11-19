@@ -41,13 +41,13 @@ and you cannot restructure someone else's crate to make a model checker tractabl
 ## The surface
 
 ```rust
-pub enum Dot { Special, Ordinary }
+pub enum LeadingDot { Special, Ordinary }
 
 pub fn matches(pattern: &[u8], name: &[u8]) -> bool;
-pub fn matches_with(pattern: &[u8], name: &[u8], dot: Dot) -> bool;
+pub fn matches_with(pattern: &[u8], name: &[u8], dot: LeadingDot) -> bool;
 pub fn has_magic(pattern: &[u8]) -> bool;
 pub fn literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]>;
-pub fn match_steps(pattern: &[u8], name: &[u8], dot: Dot) -> (bool, usize);
+pub fn match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> (bool, usize);
 pub const fn cost_bound(pattern_bytes: usize, name_bytes: usize) -> usize;
 ```
 
@@ -122,14 +122,14 @@ strings.
 
 ### A leading dot is special by default, because the default should grant less
 
-`Dot::Special`, what `matches` uses: a name beginning with `.` is matched only by a pattern beginning
+`LeadingDot::Special`, what `matches` uses: a name beginning with `.` is matched only by a pattern beginning
 with a literal `.`. So `*` does not match `.config`, `?` does not match `.`, and `[.]config` does
 not match `.config` either. That last one is glibc's `FNM_PERIOD` rule exactly, and the reason a
 bracket expression does not count is that the rule exists to stop a *wildcard* reaching a dotfile,
 and a class is a wildcard however few members it has.
 
 This is a policy rather than a matching fact, which is why fnmatch makes it a flag and why
-`Dot::Ordinary` exists. It is the *default* here because of what a match means in this system: `rm *`
+`LeadingDot::Ordinary` exists. It is the *default* here because of what a match means in this system: `rm *`
 hands a child authority over everything it matched, so the default is the reading that grants less.
 A user who wants the dotfiles asks for them, and gets the larger grant deliberately.
 
@@ -182,7 +182,7 @@ Six Kani harnesses, run by `script/verify`, and the split with the host tests is
 
 | harness | what it quantifies over |
 |---|---|
-| `matching_is_total` | every pattern of 0..=3 arbitrary bytes against every name of 0..=3 arbitrary bytes, both `Dot` settings: no panic, no overflow, no out-of-bounds index, and the loop terminates |
+| `matching_is_total` | every pattern of 0..=3 arbitrary bytes against every name of 0..=3 arbitrary bytes, both `LeadingDot` settings: no panic, no overflow, no out-of-bounds index, and the loop terminates |
 | `the_cost_never_exceeds_the_bound` | the same domain: `steps <= cost_bound(pattern_bytes, name_bytes)`, which is the *accounting* rather than the blowup (see below) |
 | `no_magic_means_the_pattern_is_its_own_only_match` | the same domain: if `has_magic` is false, the pattern matches a name **iff** that name is `literal(pattern)` |
 | `star_matches_anything_and_question_matches_one_byte` | every name of 0..=3 arbitrary bytes: `*` and `**` always match, `?` matches iff the name is one byte, `??` iff two, `*?*` iff non-empty |
