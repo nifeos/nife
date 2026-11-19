@@ -1,6 +1,6 @@
 # The queue's build window, grouping and runner switch
 
-[Milestone 1042](../../design/roadmap/1042-the-merge-queue-is-sized-to-the-runner-pool.md) answers COE action item 5 of
+[Milestone 1042 (a queue sized to the runner pool)](../../design/roadmap/1042-the-merge-queue-is-sized-to-the-runner-pool.md) answers COE action item 5 of
 [the merge queue backlog](../coes/2026-11-03-merge-queue-backlog.md). The rule in force is below.
 [`notes/merge-queue.md`](../merge-queue.md) holds the summary under "The queue's own settings".
 
