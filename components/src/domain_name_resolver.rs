@@ -167,7 +167,7 @@ fn serve(state: &mut State, server: &Server, refusal: Option<u8>) {
     // aliasing it onto one that does.
     let badge = u32::try_from(r.badge).unwrap_or(0);
     match protocol::operation(r.w0) {
-        protocol::OPERATION_ATTACH_PAGE_FRAME => match r.delivered {
+        protocol::OPERATION_ATTACH_SHARED_PAGE => match r.delivered {
             Delivered::Delegation(frame) => attach_client(state, badge, frame),
             other => {
                 if let Some(to) = other.into_reply() {
@@ -369,7 +369,7 @@ fn open(server: &Server, operation: u64) -> Result<u64, Fail> {
         socket,
         frame,
         rights::READ | rights::WRITE,
-        socket::OPERATION_ATTACH_PAGE_FRAME,
+        socket::OPERATION_ATTACH_SHARED_PAGE,
     ) < 0
     {
         close(socket);

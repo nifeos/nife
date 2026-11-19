@@ -308,7 +308,7 @@ fn keep(which: usize, socket: u64, carries_bytes: bool) {
             socket,
             frame,
             rights::READ | rights::WRITE,
-            OPERATION_ATTACH_PAGE_FRAME,
+            OPERATION_ATTACH_SHARED_PAGE,
         ) < 0
     {
         done(0xE003);

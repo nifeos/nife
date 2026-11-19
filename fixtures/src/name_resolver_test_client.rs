@@ -35,8 +35,8 @@ use domain_name_resolution_contract::fixture::{
     CASES, ECHO_FAILED, ECHO_NO_ADDRESS, ECHO_OK, ECHO_SKIPPED, WITH_NETWORK,
 };
 use domain_name_resolution_contract::{
-    IPV4_ADDRESSES_OFFSET_BYTES, NAME_OFFSET_BYTES, OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE,
-    Outcome, endowment, request, status,
+    IPV4_ADDRESSES_OFFSET_BYTES, NAME_OFFSET_BYTES, OPERATION_ATTACH_SHARED_PAGE,
+    OPERATION_RESOLVE, Outcome, endowment, request, status,
 };
 use socket_contract as socket;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
@@ -64,7 +64,7 @@ user_mode_runtime::program_entry!(start);
 fn start(mode: u64, _a1: u64, _a2: u64) -> ! {
     // A page the resolver refuses (no grant for this badge) is deleted on its side; this client
     // cannot tell, and does not need to: every resolve then answers DENIED, which is the claim.
-    if !attach(RESOLVER, RESOLVER_VA, request(OPERATION_ATTACH_PAGE_FRAME)) {
+    if !attach(RESOLVER, RESOLVER_VA, request(OPERATION_ATTACH_SHARED_PAGE)) {
         send(REPORT, u64::MAX, 0, 0);
         exit();
     }
@@ -124,7 +124,7 @@ fn echo_at(address: [u8; 4]) -> u64 {
 
 fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
     const MSG: &[u8] = b"nife-by-name";
-    if !attach(socket, SOCKET_VA, socket::OPERATION_ATTACH_PAGE_FRAME) {
+    if !attach(socket, SOCKET_VA, socket::OPERATION_ATTACH_SHARED_PAGE) {
         return ECHO_FAILED;
     }
     for (i, &b) in address.iter().enumerate() {

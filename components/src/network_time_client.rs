@@ -347,7 +347,7 @@ fn attach_page_frame(socket: u64) {
         socket,
         frame,
         rights::READ | rights::WRITE,
-        OPERATION_ATTACH_PAGE_FRAME,
+        OPERATION_ATTACH_SHARED_PAGE,
     ) < 0
     {
         done(RPT_NET_ERROR, 1, 0);

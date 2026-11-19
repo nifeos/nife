@@ -79,7 +79,7 @@ pub fn run() -> ! {
         STACK,
         frame,
         rights::READ | rights::WRITE,
-        OPERATION_ATTACH_PAGE_FRAME,
+        OPERATION_ATTACH_SHARED_PAGE,
     );
 
     // 2. Every operation that names a socket, on the front door. `RECEIVE` after `CLOSE`: on an

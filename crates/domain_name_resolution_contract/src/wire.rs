@@ -50,7 +50,7 @@ const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <
 /// **A client delegates its page.** A `SEND_CAPABILITY` of a writable page frame with this request word.
 /// The resolver maps it in the window its badge's grant names; a page from a badge with no grant
 /// is deleted unmapped.
-pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;
+pub const OPERATION_ATTACH_SHARED_PAGE: u64 = 1;
 /// **A client resolves the name in its page.** A `CALL` whose second word is the name's length in
 /// bytes. The reply is an [`Outcome`] word and the answer's TTL in seconds.
 pub const OPERATION_RESOLVE: u64 = 2;
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn a_request_word_carries_its_operation() {
-        for operation_code in [OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE] {
+        for operation_code in [OPERATION_ATTACH_SHARED_PAGE, OPERATION_RESOLVE] {
             assert_eq!(operation(request(operation_code)), operation_code);
         }
     }

@@ -101,7 +101,7 @@ const SERVER_TURNAROUND_NANOSECONDS: u64 = 1_000;
 /// `socket_contract`'s.
 const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
-// SAFETY: the `OPERATION_ATTACH_PAGE_FRAME` arm below maps one page read/write at PAGE_FRAME_VA, and it is
+// SAFETY: the `OPERATION_ATTACH_SHARED_PAGE` arm below maps one page read/write at PAGE_FRAME_VA, and it is
 // the first request the client makes, before any access through `SHARED_FRAME` (milestone 139 (drive the unsafe count down)).
 static SHARED_FRAME: Frame = unsafe { Frame::new(PAGE_FRAME_VA) };
 
@@ -127,7 +127,7 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
         let to = match req.delivered {
             // A SEND_CAPABILITY: the client's shared frame, which we map for ourselves and then drop the
             // capability for, because the mapping outlives it. No reply; nobody is waiting.
-            Delivered::Delegation(frame) if w0 == OPERATION_ATTACH_PAGE_FRAME => {
+            Delivered::Delegation(frame) if w0 == OPERATION_ATTACH_SHARED_PAGE => {
                 map_page_frame(frame, PAGE_FRAME_VA, true, MEMORY_REGION);
                 capability_delete(frame);
                 continue;

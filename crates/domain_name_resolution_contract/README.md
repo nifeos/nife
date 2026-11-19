@@ -33,7 +33,7 @@ cannot widen its own grant.
    bytes per message, after a `control_word` that names the operation, the offset, the total length
    and the badge. The spawner `CALL`s the last piece, and the reply says whether the grant is in
    force (below).
-2. The client delegates one writable page with `OPERATION_ATTACH_PAGE_FRAME`. The resolver maps it
+2. The client delegates one writable page with `OPERATION_ATTACH_SHARED_PAGE`. The resolver maps it
    in the window its badge's grant names, or deletes it if the badge holds no grant.
 3. The client writes a host name at `NAME_OFFSET_BYTES` and `CALL`s `request(OPERATION_RESOLVE)`
    with the name's length as the second word.
