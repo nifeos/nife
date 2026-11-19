@@ -1,0 +1,32 @@
+[package]
+name = "master_boot_record"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "The master boot record (MBR) as pure computation: parse sector 0 and name the scratch sectors before the first partition, with Kani-proven bounds"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "mbr", "partition-table", "kani"]
+categories = ["no-std", "embedded", "filesystem", "parser-implementations"]
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+include = ["src/**", "falsifications/**", "README.md", "LICENSE-*"]
+
+# The master boot record, as pure computation: sector 0 in, four partition entries out, and from
+# them the sectors that belong to no partition. No I/O, no allocation and no dependency. Name:
+# provisional (a name review follows the move out of `designware_mobile_storage`).
+
+[dependencies]
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
