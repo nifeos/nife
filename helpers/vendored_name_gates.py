@@ -831,6 +831,8 @@ def words_main(argv):
 PROGRAM_KEPT = {
     "uuid": "RFC 9562's own term for the object; the d is the last letter of identifier, and the "
             "program draws sixteen bytes, prints one line and exits (milestone 111 (a shell that can endow a child with entropy))",
+    "master_boot_record": "the standard term for sector 0 of a disk, ruled for this crate on 2026-11-19 (UTC); the "
+                          "crate is a pure parser and starts nothing",
     "report_child": "ends in the word child, which calef ruled for it on 2026-10-18 (UTC); built "
                     "by its builder, reports once and exits",
     "device_child": "as report_child",

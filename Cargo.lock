@@ -875,6 +875,7 @@ dependencies = [
  "login_contract",
  "machine_discovery",
  "machine_statistics_contract",
+ "master_boot_record",
  "measured_boot",
  "memory_corruption_canary_gate",
  "memory_regions",
@@ -987,6 +988,10 @@ name = "managed"
 version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ca88d725a0a943b096803bd34e73a4437208b6077654cc4ecb2947a5f91618d"
+
+[[package]]
+name = "master_boot_record"
+version = "0.1.0"
 
 [[package]]
 name = "matchers"
