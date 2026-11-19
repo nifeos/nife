@@ -42,7 +42,7 @@ for the crate's own reasons.
 - P0-1, a split refused for a full table: Done, [#3525](https://github.com/nifeos/nife/pull/3525).
 - P0-2, the crate cannot stand alone: Held with the move. The README, both license files, an explicit license
   line, `rust-version`, inline lints and self-contained doc comments are the move's work. Decision
-  1 holds the move until its trigger fires, so this item is held.
+  1 holds the move until its trigger fires, so this item waits.
 - P1-3, a root at the top of the page-number space: Open. The refusal landed in
   [#3534](https://github.com/nifeos/nife/pull/3534); no Kani harness yet drives any one operation
   from any accepted root.
@@ -54,7 +54,7 @@ for the crate's own reasons.
 - P1-6, gates of the template: Open. (b) and (c) landed in
   [#3567](https://github.com/nifeos/nife/pull/3567), and (d) in
   [#3521](https://github.com/nifeos/nife/pull/3521). (a) is open: the template's address rule still
-  refuses `ObjectKind::AddressSpace`. (e) is held with the move: the move pins the template at `v8`.
+  refuses `ObjectKind::AddressSpace`. (e) waits for the move, which pins the template at `v8`.
 - P1-7, documentation the code contradicts: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-8, manifest metadata and the dependency line: Held with the move. The manifest has `description`,
@@ -75,9 +75,9 @@ for the crate's own reasons.
 - P2-16, a dropped claim: Open. The type's documentation says a dropped claim leaks;
   `return_to_parent` still takes `&DestroyClaim`, and `DestroyClaim` has no `Drop`. The signature
   is a two-way door until the first publish, and the maintainer rules it.
-- Decision 1, whether the crate leaves nife: Ruled (2026-11-19 UTC), option A: the move is held
+- Decision 1, whether the crate leaves nife: Ruled (2026-11-19 UTC), option A: the move waits
   until the crate has a second consumer or its object kinds are the caller's to define, whichever
-  comes first. The crate stays in the kernel base package. Items 2, 5, 6(e) and 8 are held with
+  comes first. The crate stays in the kernel base package. Items 2, 5, 6(e) and 8 wait for
   the move; the in-nife items stay actionable.
 - Decision 2, typed region names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: every
   public method still takes and returns `u64`, and `entry()` remains.
@@ -90,7 +90,7 @@ for the crate's own reasons.
 ## Held decision
 
 The crate stays in the kernel base package (`notes/package-boundaries.md`). The move to a
-repository of its own is held until the crate has a second consumer, or until its object kinds are
+repository of its own waits until the crate has a second consumer, or until its object kinds are
 the caller's to define, whichever comes first. The kernel is the one consumer today, and
 `ObjectKind` lists seven nife kernel object kinds, so publishing now would put
 `ObjectKind::Rendezvous` in an interface nobody else can use as it stands. Ruled 2026-11-19 (UTC),
@@ -256,4 +256,4 @@ a first release. Among them are a panic on a root at the top of the page-number 
 release that loosens a ceiling for good, six loom harnesses with no runner after the move, and gates
 the template refuses. Seven follow later. Of four decisions, the maintainer ruled three provisionally, and whether the
 crate leaves is ruled: it stays with the kernel until a second consumer or caller-defined kinds
-exist. The move, and with it the ratification of the interface's names, is held.
+exist. The move waits, and the ratification of the interface's names waits with it.
