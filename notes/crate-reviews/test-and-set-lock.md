@@ -24,7 +24,7 @@ five loom models. Nothing in its manifest points back into nife.
 
 | item | value |
 |---|---|
-| crate | `test_and_set_lock`, named by the architect's ruling on milestone 1109's "The name the crate leaves under" (option B, 2026-11-19 UTC), renamed from `spin_lock` before the move so the repository, the package and the registry agree. crates.io holds `spin-lock`, which it reads as the same name as `spin_lock`, and holds nothing under the new name |
+| crate | `test_and_set_lock`, named by the architect's ruling on milestone 1109's "The name the crate leaves under" (option B, 2026-11-19 UTC), so the repository, the package and the registry agree. crates.io holds `spin-lock`, which it reads as the same name as `spin_lock`, and holds nothing under the new name |
 | directory | `crates/test_and_set_lock` |
 | identity values | none: no `INTERFACE_ID`, `VERSION` or `MAGIC`; the lock is an in-process type, not a wire layout |
 | version | `0.1.0`; no tag |
@@ -80,12 +80,12 @@ Results come from this branch, on a Linux host.
 | `script/crate-move test_and_set_lock --dry-run --into <scratch>` | exits 1 with three findings for the move lane: the standalone check and the citations check each report the 6 lines that cite paths in this tree, and the passive-voice check reports 6 passives in the README. It stages the repository in the scratch directory, creates and pushes nothing, and prints the three dependent manifests' `git` and `rev` lines |
 
 
-Not run, and so not claimed: the stranger test, mutation, `cargo-semver-checks` (a first release has
-no baseline), Kani (the crate has no harness), the QEMU gates (`script/test`, `script/boot-check`
-and the like: the change is a package rename, the kernel and `system_tests` build for all three
-targets, and the heavy-job slots on this host were held for most of the session), and the
-template's workflows, which run in the repository. The queue runs the QEMU gates on this pull
-request.
+Not run, and so not claimed: the stranger test, mutation, `cargo-semver-checks` (a first release
+has no baseline), Kani (the crate has no harness) and the template's workflows, which run in the
+repository. The QEMU gates (`script/test`, `script/boot-check` and the like) were not run either.
+The change is a package rename, the kernel and `system_tests` build for all three targets, and the
+heavy-job slots on this host were held for most of the session. The queue runs the QEMU gates on
+this pull request.
 
 ## Public API
 
@@ -107,7 +107,7 @@ What a stranger may find surprising:
 
 ## Proofs
 
-Five loom models and no Kani harness. Two takers and three takers are exclusive and ordered, a
+Five loom models and no Kani harness. Two takers and three takers are exclusive and ordered. A
 refused `try_lock` does not release the holder, a Release unlock publishes what the holder wrote,
 and a Relaxed unlock publishes nothing, a model that passes only when loom reports the race. The
 three-taker model runs at a preemption bound of one, which is loom's limit on spin-wait loops.
