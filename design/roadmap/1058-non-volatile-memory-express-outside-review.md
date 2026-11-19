@@ -305,7 +305,7 @@ Status: Landed in nifeos/non_volatile_memory_express#19.
    One is the driver on one real controller with a non-zero `FLBAS`, a drive with a 4096-byte
    logical block format. The other is the long ordering run on a weakly ordered host. Both must
    run on real hardware. The planned host is radon (VisionFive 2, JH7110, RVWMO) with an M.2 NVMe
-   drive, once milestone 163 lands. An emulated NVMe device under QEMU may serve as interim
+   drive, once milestone 163 (the JH7110 PCIe root complex driver) lands. An emulated NVMe device under QEMU may serve as interim
    evidence and satisfies neither row.
 
 The publishing hold stands.
