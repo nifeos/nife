@@ -253,11 +253,11 @@ at the head this review read.
 
 1. The sources carry nife's vocabulary, which the template's `check / standalone` refuses.
    LEFT. The move commit strips the `Name:` blocks and the manifest comment.
-   Finding: `Name:` provenance blocks at `src/lib.rs` line 13, `src/lib.rs` line 39, `src/lib.rs` line 47,
-   `src/lib.rs` line 55, `src/header.rs` line 19, `src/guid.rs` line 19, `src/guid.rs` line 33, `src/mbr.rs` line 7,
-   `src/table.rs` line 4 and `src/error.rs` line 3. The `publish = false` line at `Cargo.toml` line 11 carries a
+   Finding: `Name:` provenance blocks at `src/lib.rs` line 17, `src/lib.rs` line 44, `src/lib.rs` line 53,
+   `src/lib.rs` line 59, `src/header.rs` line 19, `src/guid.rs` line 19, `src/guid.rs` line 33, `src/mbr.rs` line 7,
+   `src/table.rs` lines 4, 102 and 350 and `src/error.rs` line 3. The `publish = false` line at `Cargo.toml` line 11 carries a
    comment naming `crates/publish-allowlist.txt`, a file the new repository will not have. The
-   `lib.rs` line 13 block cites a `design/decisions/` section. The template's `standalone.py` refuses a
+   `lib.rs` line 17 block cites a `design/decisions/` section. The template's `standalone.py` refuses a
    `Name:` block and the template's `AGENTS.md` refuses `design/` paths. Two of the blocks quote a
    person, which the tree's own rule for records forbids; stripping them resolves that too.
    Evidence: the lines above; `crate-workflows/AGENTS.md`, "Comments and names".
