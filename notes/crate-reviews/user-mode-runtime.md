@@ -34,7 +34,7 @@ no block.
 | edition, `rust-version` | 2024, 1.88, both literals |
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest. The crate adapts no source |
 | `publish` | `false`, with the one-sentence reason in the manifest: milestone 1017 keeps moved crates unpublished under §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit) until their release milestone |
-| dependencies | `abi`, `address_space_layout`, `clock_contract`, `current_cpu_contract` and `socket_contract` by path, `counter_frequency_contract` by path outside `aarch64`, and `entropy_contract` already by git `rev` |
+| dependencies | `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` by path, `counter_frequency_contract` by path outside `aarch64`, and `clock_contract` and `entropy_contract` already by git `rev` |
 | manifest metadata | description, keywords (`no-std`, `runtime`, `syscall`), categories (`no-std`, `embedded`, `os`), `readme`, and `[package.metadata.docs.rs]` for the three targets. The `repository` key waits for the move |
 | size | 14 files under `src`, 2,689 lines |
 | lints | literal `[lints.rust]` and `[lints.clippy]` tables, the same set `current_cpu_contract` carries |
@@ -75,13 +75,13 @@ version rows.
 | `cargo build -p components -p fixtures --target <each of the three>` | pass on all three |
 | `redoxfs_server`: `cargo test` and `cargo clippy --all-targets -- -D warnings` | pass (86, 5, 2, 1 and 1 tests across its targets) |
 | the call sites of the removed accessors | none remain: `grep` finds no `read_u8` through `write_u64` call on a window anywhere in `components`, `fixtures`, `crates`, `patches` or the notes. The three `DirectMemoryAccessRegion` impls in the `designware_ethernet` and `e1000e` transports keep their trait methods `read_u64` and `write_u64`, and call `read::<u64>` inside |
-| MSRV: a copy of the crate and its five path dependencies outside the tree, `cargo +1.88 build` | passes for the host; `--lib` passes for the three bare-metal targets |
+| MSRV: a copy of the crate and its path dependencies (five before `clock_contract` left) outside the tree, `cargo +1.88 build` | passes for the host; `--lib` passes for the three bare-metal targets |
 | `python3 helpers/template_report_gates.py --check` | clean. The rows for `prose_acronyms` (23) and `readme_acronyms` (1) left `helpers/template_report_baseline.txt`; `abbreviations` (19) and `register_names` (2) stay |
 | `python3 helpers/name_release.py --draft user_mode_runtime` | 122 rows: 24 ratified, 48 provisional, 49 with no block, 1 recorded (`_start`) |
 | `script/crate-review-packet user_mode_runtime` | facts match this note: the public API, the 100 `unsafe` sites and the dependents above |
 | `script/lint --quick` | passes all sections |
 | `script/test` (host tests, the patched std build, kernel and system tests under QEMU 11.1.2 on `aarch64`, `riscv64` and `x86_64` including OVMF and AMD-Vi, the screen boot tours, the redoxfs image check) | passes, exit 0 |
-| `script/crate-standalone user_mode_runtime` | 12 failures, all for the move lane (P1-8): five path dependencies (`abi`, `address_space_layout`, `clock_contract`, `current_cpu_contract`, `socket_contract`), the 108 names not yet ratified, 97 citations of the nife tree, milestones and sections, one architect's name, and the build and proofs that follow from the path dependencies |
+| `script/crate-standalone user_mode_runtime` | 12 failures, all for the move lane (P1-8): five path dependencies (`abi`, `address_space_layout`, `clock_contract`, `current_cpu_contract`, `socket_contract`; `clock_contract` has since left for git), the 108 names not yet ratified, 97 citations of the nife tree, milestones and sections, one architect's name, and the build and proofs that follow from the path dependencies |
 | `script/crate-move --dry-run --into <scratch> user_mode_runtime` | the copy, mutation cron, scaffold, name-block removal and patch checks pass, and the README prose caps and passive-voice checks pass after this pull request's README edit. It fails the build (the path dependencies), standalone, the citations and five mentions of nife, the same list as above, and prints the nife-side pull request: thirteen dependents repoint to the repository at the tag |
 
 Not run, and so not claimed:
@@ -182,7 +182,7 @@ each block with a ratified one, and that is the move lane's step once the archit
 |---|---|
 | Ratify the names above and replace the provisional `Name:` blocks with ratified ones. | architect, then the move lane |
 | Move `notes/user-mode-runtime.md` and `notes/user-mode-runtime/` into the crate's `docs/`, and drop the externalized-crates ceiling to zero (milestone 1112 P1-8). The text cites 34 nife paths, 31 milestones, 31 sections and the architect's name in the sources and the manifest, which the standalone `citations` check lists. | move lane |
-| Convert the five path dependencies (`abi`, `address_space_layout`, `clock_contract`, `current_cpu_contract`, `socket_contract`) and `counter_frequency_contract` to `git` and `rev` with `version = "0.1.0"`, once each has left. | move lane, after the contract crates |
+| Convert the four path dependencies (`abi`, `address_space_layout`, `current_cpu_contract`, `socket_contract`) and `counter_frequency_contract` to `git` and `rev` with `version = "0.1.0"`, once each has left. | move lane, after the contract crates |
 | `helpers/template_report_baseline.txt` holds two rows (`abbreviations` 19, `register_names` 2) and `packages/runtime.package.toml` and `crates/externalization-list.txt` list the crate. | move lane |
 | The template's scaffold findings (the pull request template names the architect, `CONTRIBUTING.md` cites a nife path, the commit hook and `deny.toml` mention nife) are listed in the runbook's `BUGS`. | move lane |
 | Every dependent's manifest (the ones listed above) repoints to the new repository by a full commit. | move lane, step 3 of milestone 1017 |
