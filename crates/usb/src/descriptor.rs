@@ -95,16 +95,17 @@ pub struct DeviceDescriptor {
 }
 
 impl DeviceDescriptor {
-    /// Parse a device descriptor. `None` for fewer than [`DEVICE_DESCRIPTOR_BYTES`] bytes, the
-    /// wrong type, or a `bLength` shorter than the layout.
-    pub fn parse(bytes: &[u8]) -> Option<DeviceDescriptor> {
-        if bytes.len() < DEVICE_DESCRIPTOR_BYTES
-            || (bytes[0] as usize) < DEVICE_DESCRIPTOR_BYTES
-            || bytes[1] != DEVICE
-        {
-            return None;
+    /// Parse a device descriptor. [`Refusal::Truncated`] for fewer than [`DEVICE_DESCRIPTOR_BYTES`]
+    /// bytes, and [`Refusal::NotThatDescriptor`] for the wrong type or a `bLength` shorter than
+    /// the layout.
+    pub fn parse(bytes: &[u8]) -> Result<DeviceDescriptor, Refusal> {
+        if bytes.len() < DEVICE_DESCRIPTOR_BYTES {
+            return Err(Refusal::Truncated);
         }
-        Some(DeviceDescriptor {
+        if (bytes[0] as usize) < DEVICE_DESCRIPTOR_BYTES || bytes[1] != DEVICE {
+            return Err(Refusal::NotThatDescriptor);
+        }
+        Ok(DeviceDescriptor {
             usb_release_binary_coded_decimal: u16::from_le_bytes([bytes[2], bytes[3]]),
             class: bytes[4],
             control_packet_size_code: bytes[7],
@@ -484,10 +485,13 @@ mod tests {
         assert_eq!(device.control_packet_size_code, 8);
         assert_eq!((device.vendor, device.product), (0x0627, 0x0001));
         assert_eq!(device.configurations, 1);
-        assert_eq!(DeviceDescriptor::parse(&d[..8]), None);
+        assert_eq!(DeviceDescriptor::parse(&d[..8]), Err(Refusal::Truncated));
         let mut wrong = d;
         wrong[1] = CONFIGURATION;
-        assert_eq!(DeviceDescriptor::parse(&wrong), None);
+        assert_eq!(
+            DeviceDescriptor::parse(&wrong),
+            Err(Refusal::NotThatDescriptor)
+        );
     }
 
     /// A device descriptor whose `bLength` is shorter than the layout is refused, however many
@@ -498,9 +502,12 @@ mod tests {
             18, 1, 0x00, 0x02, 0, 0, 0, 8, 0x27, 0x06, 0x01, 0x00, 0, 0, 1, 4, 11, 1,
         ];
         d[0] = 17;
-        assert_eq!(DeviceDescriptor::parse(&d), None);
+        assert_eq!(
+            DeviceDescriptor::parse(&d),
+            Err(Refusal::NotThatDescriptor)
+        );
         d[0] = 20;
-        assert!(DeviceDescriptor::parse(&d).is_some());
+        assert!(DeviceDescriptor::parse(&d).is_ok());
     }
 
     /// Exactly the nine header bytes parse; a short `bLength` or a different type is not this

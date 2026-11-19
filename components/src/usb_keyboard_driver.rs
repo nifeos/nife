@@ -53,7 +53,7 @@ use extensible_host_controller_interface::{
 };
 use startup_page_contract::StartupWindow;
 use terminal_contract as proto;
-use usb::boot_keyboard::{BootReport, REPORT_BYTES, changes};
+use usb::boot_keyboard::{BootReport, REPORT_BYTES, changes, evdev_code};
 use usb::descriptor::{self, ConfigurationHeader, DeviceDescriptor};
 use usb::request::SetupPacket;
 use user_mode_runtime::mapped_window::MappedWindow;
@@ -494,7 +494,7 @@ impl Host {
         // SAFETY: the controller finished writing the buffer before the status stage's completion,
         // which `transfer` waited for and fenced; nothing writes it until the next transfer.
         let device = DeviceDescriptor::parse(&unsafe { control_buffer().as_slice() }[..n])
-            .ok_or((BringUpStep::BadDeviceDescriptor, n as u32))?;
+            .map_err(|_| (BringUpStep::BadDeviceDescriptor, n as u32))?;
 
         let n = self.transfer(
             slot,
@@ -943,7 +943,11 @@ impl Host {
         if let Some(now) = BootReport::parse(&bytes[..got]) {
             let mut typed = Typed::new(out);
             let keys = &mut self.keys;
-            changes(&self.last, &now, &mut |code, pressed| {
+            changes(&self.last, &now, &mut |usage, pressed| {
+                // A usage with no evdev code has no key to press, so it is skipped here.
+                let Some(code) = evdev_code(usage) else {
+                    return;
+                };
                 if let Some(b) = keys.event(EV_KEY, code, u32::from(pressed)) {
                     for &c in b.as_slice() {
                         typed.push(c);

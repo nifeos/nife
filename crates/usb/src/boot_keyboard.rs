@@ -4,12 +4,13 @@
 //! A boot keyboard does not send key events. It sends its **state**: eight bytes, the modifier
 //! keys as a bitmap in byte 0, a reserved byte, then up to six usage ids for the other keys held
 //! down, in no promised order. So a keystroke is a *difference* between two reports, and
-//! [`changes`] computes it, in the evdev numbering so that a keymap which already turns evdev
-//! codes (a virtio keyboard's, say) into terminal bytes does the rest.
+//! [`changes`] computes it, as HID usages (the modifiers as 0xe0 to 0xe7). A caller that wants the
+//! evdev numbering, so that a keymap which already turns evdev codes (a virtio keyboard's, say)
+//! into terminal bytes does the rest, maps each usage through [`evdev_code`].
 //!
 //! # Where the table comes from
 //!
-//! [`evdev_code`]'s table and [`MODIFIER_CODES`] come from two public documents, and every row
+//! [`evdev_code`]'s table, modifier rows included, comes from two public documents, and every row
 //! carries both in its comment:
 //!
 //! - The usage id and its name come from the USB-IF *HID Usage Tables for USB*, version 1.5
@@ -40,10 +41,14 @@ pub const REPORT_BYTES: usize = 8;
 #[doc(alias = "ErrorRollOver")]
 pub const ERROR_ROLL_OVER: u8 = 0x01;
 
+/// The usage id of the first modifier key, left control; the eight modifiers are usages 0xe0 to
+/// 0xe7, in the bit order of byte 0 of a report.
+const FIRST_MODIFIER_USAGE: u8 = 0xe0;
+
 /// The evdev codes of the eight modifier keys, usages 0xe0 to 0xe7, in the bit order of byte 0:
 /// left control, shift, alt, GUI, then the right-hand four. The module documentation says where
 /// the numbers come from, and [`evdev_code`] why the GUI keys are Meta.
-pub const MODIFIER_CODES: [u16; 8] = [
+const MODIFIER_CODES: [u16; 8] = [
     29,  // 0xe0 LeftControl: KEY_LEFTCTRL
     42,  // 0xe1 LeftShift: KEY_LEFTSHIFT
     56,  // 0xe2 LeftAlt: KEY_LEFTALT
@@ -57,7 +62,7 @@ pub const MODIFIER_CODES: [u16; 8] = [
 /// **One boot report**: the modifier bitmap and the six key slots.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct BootReport {
-    /// Byte 0: one bit per modifier key, in [`MODIFIER_CODES`]' order.
+    /// Byte 0: one bit per modifier key, in the order of usages 0xe0 to 0xe7.
     pub modifiers: u8,
     /// Bytes 2..8: usage ids of the keys held, zero for an empty slot.
     pub keys: [u8; 6],
@@ -96,8 +101,8 @@ impl BootReport {
 
 /// **Usage id to evdev code**, for the keyboard page's usages 0x04 through 0x8b: the main block,
 /// the function keys to F24, the navigation cluster, the keypad, the European and Japanese keys,
-/// and the editing and volume keys. `None` for anything else, including 0 (no key), and for the
-/// four usages in that range with no key (below). The module documentation names the sources.
+/// and the editing and volume keys; and for the eight modifiers, 0xe0 to 0xe7. `None` for anything
+/// else, including 0 (no key), and for the four usages in the first range with no key (below). The module documentation names the sources.
 ///
 /// Most names match on their face (`F1` is `KEY_F1`); where they do not, the Usage Tables decide:
 ///
@@ -135,6 +140,9 @@ impl BootReport {
 ///   is held in the report while the lock is on, so a press and a release would toggle a keymap
 ///   twice for one change. Keyboards are expected to send the non-locking keys (0x39, 0x53, 0x47).
 pub fn evdev_code(usage: u8) -> Option<u16> {
+    if let Some(bit) = usage.checked_sub(FIRST_MODIFIER_USAGE) {
+        return MODIFIER_CODES.get(usize::from(bit)).copied();
+    }
     CODE_BY_USAGE
         .get(usize::from(usage).checked_sub(4)?)
         .copied()
@@ -281,11 +289,14 @@ const CODE_BY_USAGE: [Option<u16>; 0x88] = [
     Some(94),  // 0x8b International5: KEY_MUHENKAN
 ];
 
-/// **What changed from `before` to `after`**, as `(evdev code, pressed)` calls to `event`, in the
+/// **What changed from `before` to `after`**, as `(usage, pressed)` calls to `event`, in the
 /// order that types correctly: every modifier change first, then the keys released, then the keys
-/// pressed. Shift and a letter arriving in one report must reach the keymap shift first, which is
-/// why modifiers lead; a key released and another pressed in one report is a roll, and the release
-/// first is what a person did. A usage with no evdev code is skipped.
+/// pressed. A modifier is its usage, 0xe0 for left control through 0xe7 for right GUI, so every
+/// event names a usage of the Keyboard/Keypad page, and [`evdev_code`] maps it to an evdev code.
+/// Shift and a letter arriving in one report must reach the keymap shift first, which is why
+/// modifiers lead; a key released and another pressed in one report is a roll, and the release
+/// first is what a person did. Every usage the device reports is delivered, whether or not
+/// [`evdev_code`] knows it; the caller skips what it cannot map.
 ///
 /// At most twenty calls: eight modifiers, six releases, six presses.
 ///
@@ -294,39 +305,32 @@ const CODE_BY_USAGE: [Option<u16>; 0x88] = [
 /// Shift and `h` arrive together in one report, so the shift press is delivered first:
 ///
 /// ```
-/// use usb::boot_keyboard::{BootReport, changes};
+/// use usb::boot_keyboard::{BootReport, changes, evdev_code};
 ///
 /// let before = BootReport::parse(&[0, 0, 0, 0, 0, 0, 0, 0]).unwrap();
 /// let after = BootReport::parse(&[0x02, 0, 0x0b, 0, 0, 0, 0, 0]).unwrap(); // left shift, usage 0x0b (h)
 /// let mut seen = Vec::new();
-/// changes(&before, &after, &mut |code, pressed| seen.push((code, pressed)));
-/// assert_eq!(seen, [(42, true), (35, true)]); // KEY_LEFTSHIFT, then KEY_H
+/// changes(&before, &after, &mut |usage, pressed| seen.push((usage, pressed)));
+/// assert_eq!(seen, [(0xe1, true), (0x0b, true)]); // LeftShift, then h
+/// assert_eq!(evdev_code(0xe1), Some(42)); // KEY_LEFTSHIFT
 /// ```
-pub fn changes(before: &BootReport, after: &BootReport, event: &mut dyn FnMut(u16, bool)) {
+pub fn changes(before: &BootReport, after: &BootReport, event: &mut dyn FnMut(u8, bool)) {
     let flipped = before.modifiers ^ after.modifiers;
-    for (bit, &code) in MODIFIER_CODES.iter().enumerate() {
+    for bit in 0..8u8 {
         if flipped & (1 << bit) != 0 {
-            event(code, after.modifiers & (1 << bit) != 0);
+            event(FIRST_MODIFIER_USAGE + bit, after.modifiers & (1 << bit) != 0);
         }
     }
     for (i, &usage) in before.keys.iter().enumerate() {
         // `before.keys[..i]` so a usage a confused device reports twice is released once.
-        if usage != 0
-            && !after.holds(usage)
-            && !before.keys[..i].contains(&usage)
-            && let Some(code) = evdev_code(usage)
-        {
-            event(code, false);
+        if usage != 0 && !after.holds(usage) && !before.keys[..i].contains(&usage) {
+            event(usage, false);
         }
     }
     for (i, &usage) in after.keys.iter().enumerate() {
         // `after.keys[..i]` so a usage a confused device reports twice is pressed once.
-        if usage != 0
-            && !before.holds(usage)
-            && !after.keys[..i].contains(&usage)
-            && let Some(code) = evdev_code(usage)
-        {
-            event(code, true);
+        if usage != 0 && !before.holds(usage) && !after.keys[..i].contains(&usage) {
+            event(usage, true);
         }
     }
 }
@@ -345,10 +349,47 @@ mod tests {
         BootReport::parse(&b).unwrap()
     }
 
+    /// The events as evdev codes, the way a caller with an evdev keymap reads them.
     fn difference(a: &BootReport, b: &BootReport) -> Vec<(u16, bool)> {
         let mut v = Vec::new();
-        changes(a, b, &mut |c, p| v.push((c, p)));
+        changes(a, b, &mut |usage, p| {
+            if let Some(code) = evdev_code(usage) {
+                v.push((code, p));
+            }
+        });
         v
+    }
+
+    /// The events as the usages the device sent.
+    fn usages(a: &BootReport, b: &BootReport) -> Vec<(u8, bool)> {
+        let mut v = Vec::new();
+        changes(a, b, &mut |usage, p| v.push((usage, p)));
+        v
+    }
+
+    /// **`changes` speaks usages**: a modifier is 0xe0 to 0xe7 in bit order, and a usage with no
+    /// evdev code is still delivered, so the caller sees it and skips it.
+    #[test]
+    fn changes_emits_hid_usages_and_modifiers_as_0xe0_to_0xe7() {
+        assert_eq!(
+            usages(&BootReport::RELEASED, &report(0x82, &[0x0b])),
+            [(0xe1, true), (0xe7, true), (0x0b, true)]
+        );
+        assert_eq!(
+            usages(&report(0x01, &[0x74]), &BootReport::RELEASED),
+            [(0xe0, false), (0x74, false)] // 0x74 Execute has no evdev code
+        );
+    }
+
+    /// The eight modifier rows of [`evdev_code`], and the usages around them that have none.
+    #[test]
+    fn evdev_code_answers_for_the_eight_modifiers_only_in_their_range() {
+        for (bit, code) in [29, 42, 56, 125, 97, 54, 100, 126].into_iter().enumerate() {
+            assert_eq!(evdev_code(0xe0 + bit as u8), Some(code));
+        }
+        assert_eq!(evdev_code(0xdf), None);
+        assert_eq!(evdev_code(0xe8), None);
+        assert_eq!(evdev_code(0xff), None);
     }
 
     /// The table's rows land where the keycaps say: an off-by-one row puts `s` on the `a` key.
@@ -385,7 +426,7 @@ mod tests {
     /// Usage Tables and the header, then compared with `hid_keyboard[]` in
     /// `drivers/hid/hid-input.c` at `torvalds/linux@cbbddb6b08cc9900a87cccaa9b22bbe06aa4f50a`
     /// (GPL-2.0-or-later). The comparison read that array's entries for usages 0x04 to 0x8b and
-    /// 0xe0 to 0xe7 as numbers and compared them with [`evdev_code`] and [`MODIFIER_CODES`], a
+    /// 0xe0 to 0xe7 as numbers and compared them with [`evdev_code`], a
     /// hole counting as 0, as an unmapped entry does there. Four of the 144 differ, and the Usage
     /// Tables decide each: 0x74 `Execute` is a hole here and `KEY_OPEN` there; 0x76 `Menu` is
     /// `KEY_MENU` here and `KEY_PROPS` there; 0x77 `Select` is `KEY_SELECT` here and `KEY_FRONT`
@@ -403,7 +444,7 @@ mod tests {
         let mut hash: u32 = 0x811c_9dc5;
         let codes = (0x04..=0x8b)
             .map(|usage| evdev_code(usage).unwrap_or(0))
-            .chain(MODIFIER_CODES);
+            .chain((0xe0..=0xe7).map(|usage| evdev_code(usage).unwrap_or(0)));
         for code in codes {
             for byte in code.to_le_bytes() {
                 hash = (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193);
@@ -425,8 +466,8 @@ mod tests {
             0x08u8, 0x06, 0x0b, 0x12, 0x2c, 0x0b, 0x08, 0x0f, 0x0f, 0x12, 0x28,
         ] {
             for next in [report(0, &[usage]), BootReport::RELEASED] {
-                changes(&state, &next, &mut |code, pressed| {
-                    if pressed {
+                changes(&state, &next, &mut |usage, pressed| {
+                    if pressed && let Some(code) = evdev_code(usage) {
                         presses.push(code);
                     }
                 });
