@@ -14,7 +14,7 @@
 
 use designware_mobile_storage::host_controller::{HostController, RegisterWindowAndClock};
 use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
-use designware_mobile_storage::partition::MasterBootRecord;
+use master_boot_record::MasterBootRecord;
 use designware_mobile_storage::sd::{
     self, BLOCK_BYTES, BlockTransferError, Card, InitializationError,
 };
