@@ -117,7 +117,7 @@ None for this package. The names above are the architect's to ratify, and the cl
 The run fails with 20 findings. The first is the 188 unratified names, which the architect clears by
 ratifying them (`python3 helpers/name_release.py --draft grant_plan` prints the table). The rest are
 the manifest, the missing README and license files and the citations listed above, which are the
-move's work and not defects of the source. The build and proofs are skipped because the copy
+move's work and not defects of the source. The run skips the build and proofs because the copy
 needs the sibling crates. The six path dependencies resolve to sibling crates in
 nife, three of them dev-dependencies that the move rewrites.
 

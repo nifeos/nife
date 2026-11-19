@@ -97,7 +97,7 @@ None for this package. The clearance covers this crate with `grant_plan`.
 The run fails with 17 findings. They are the crate name and 55 item names not yet ratified
 (`python3 helpers/name_release.py --draft grant_contract` prints the table), the missing README,
 license files and `rust-version`, and the citations listed above. The two path dependencies are
-sibling crates in nife. The build and proofs are skipped because the copy needs them.
+sibling crates in nife. The run skips the build and proofs because the copy needs them.
 
 ## Recommendation
 
