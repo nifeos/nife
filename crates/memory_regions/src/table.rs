@@ -1,14 +1,12 @@
 //! The region table, and the claim that makes reclamation single-winner. The crate root's
 //! arithmetic is what one caller decides; this module is what happens when two callers hold a name
-//! for one region, which the loom harnesses (milestone 135) model and Kani does not.
+//! for one region, which the loom harnesses model and Kani does not.
 //! [`RegionTable::claim_for_destroy`] decides and removes in one `&mut self` call, so two callers
 //! cannot both pass the check, and the [`DestroyClaim`] it mints is the only right to reclaim the
-//! run. Everything is in page units, `base_page` included; the kernel multiplies. See
-//! notes/memory-regions.md, "The `memory_regions` crate".
+//! run. Everything is in page units, `base_page` included; the kernel multiplies.
 //!
 //! Name: provisional, for `RegionTable`, `DestroyClaim`, `insert_root`, `claim_for_destroy` and
-//! `return_to_parent`, minted 2026-08-18 by milestone 135 (the region claim, under loom)'s lane.
-//! Nouns per the naming tenet; `RegionTable` takes its shape from the crate's name, `memory_regions`.
+//! `return_to_parent`. Nouns, as the tree's naming rule asks; `RegionTable` takes its shape from the crate's name, `memory_regions`.
 
 use generational_table::EntryName;
 
@@ -56,7 +54,7 @@ pub struct Region {
     /// provisional.
     retyped_to: u64,
     /// **A kernel object lives in this region**: a page here was retyped into an endpoint, an
-    /// address space or a thread control block, so a claim is refused until `sched::reclaim_region` has torn the
+    /// address space or a thread control block, so a claim is refused until the caller has torn the
     /// objects down and called [`unpin`](RegionTable::unpin).
     pinned: bool,
     /// The region this one was split out of, or [`NO_PARENT`].
@@ -66,8 +64,7 @@ pub struct Region {
     /// parent being committed for its whole lifetime.
     children: u32,
     /// **What the watermark was spent on**, one count per [`ObjectKind`] plus plain frames, and
-    /// the pages currently carved into live children (milestone 126 (the `procps` package), §225 (`free` sees the machine and your share) part 1: `free`'s "yours"
-    /// line and `slabtop` per object type). Pure bookkeeping beside the watermark: no decision in
+    /// the pages currently carved into live children (`free`'s "yours" line and `slabtop` per object type). Pure bookkeeping beside the watermark: no decision in
     /// this module reads it, so it cannot become the read half of a claim.
     spent: Spent,
     /// **The most live objects of each [`Counted`] kind this region's subtree may hold at once.**
@@ -96,9 +93,9 @@ struct Spent {
 }
 
 /// **Which kind of kernel object a page was retyped into**, so the region can say afterwards what
-/// its pages were spent on (milestone 126, DECISIONS §225).
+/// its pages were spent on.
 ///
-/// Name: provisional, minted 2026-09-26 by milestone 126's `free` lane.
+/// Name: provisional.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ObjectKind {
     /// An inter-process communication rendezvous (`abi::object_type::RENDEZVOUS`).
@@ -107,7 +104,7 @@ pub enum ObjectKind {
     AddressSpace,
     /// A thread control block (`abi::object_type::THREAD_CONTROL_BLOCK`).
     Thread,
-    /// A page of the kernel's own object pool (`kernel/src/kmem.rs`), whose contents change kind as
+    /// A page of the kernel's own object pool (the kernel's pool), whose contents change kind as
     /// pages are recycled, so no finer count would stay true.
     KernelPool,
     /// A notification object (`abi::object_type::NOTIFICATION`). Counted, and not yet reported by any
@@ -115,8 +112,7 @@ pub enum ObjectKind {
     Notification,
     /// A timer object (`abi::object_type::TIMER`), counted and unreported for the same reason.
     Timer,
-    /// A process (`abi::object_type::PROCESS`, milestone 812 (`std::thread::spawn` runs real threads
-    /// in one address space)), counted and unreported for the same reason.
+    /// A process (`abi::object_type::PROCESS`), counted and unreported for the same reason.
     Process,
 }
 
@@ -124,7 +120,7 @@ impl ObjectKind {
     /// Every kind, in [`Ceilings`] order. A new kind is one more entry here and its variant; the
     /// counts and the proofs follow this list.
     ///
-    /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane.
+    /// Name: provisional.
     pub const ALL: [ObjectKind; 7] = [
         ObjectKind::Rendezvous,
         ObjectKind::AddressSpace,
@@ -138,7 +134,7 @@ impl ObjectKind {
 }
 
 /// **What a subtree ceiling counts**: the live kernel objects of one kind, or the live regions
-/// split below a region. See notes/memory-regions.md, "Subtree ceilings".
+/// split below a region.
 ///
 /// Name: provisional.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -186,14 +182,14 @@ pub struct Ceilings([u32; COUNTED_KINDS]);
 impl Ceilings {
     /// No ceiling on any kind: what [`RegionTable::insert_root`] gives a root.
     ///
-    /// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
+    /// Name: provisional.
     pub const UNLIMITED: Ceilings = Ceilings([u32::MAX; COUNTED_KINDS]);
 
     const ZERO: Ceilings = Ceilings([0; COUNTED_KINDS]);
 
     /// These ceilings with `counted`'s set to `most`.
     ///
-    /// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
+    /// Name: provisional.
     #[must_use]
     pub const fn with(self, counted: Counted, most: u32) -> Ceilings {
         let mut counts = self.0;
@@ -203,7 +199,7 @@ impl Ceilings {
 
     /// The count for `counted`.
     ///
-    /// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
+    /// Name: provisional.
     #[must_use]
     pub const fn get(self, counted: Counted) -> u32 {
         self.0[counted.index()]
@@ -243,7 +239,7 @@ pub struct CeilingReached {
 
 /// **One line of a region's spending, as [`RegionTable::spent`] reports it.**
 ///
-/// Name: provisional, minted 2026-09-26 by milestone 126's `free` lane.
+/// Name: provisional.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PageUse {
     /// Plain pages: mapped memory, page tables, image pages and revocation records.
@@ -267,7 +263,7 @@ pub enum PageUse {
 /// # The two doctests below are a gate
 ///
 /// `#[derive(Clone)]` or a `pub` field would hand the kernel back a right to free pages the table
-/// no longer knows it gave out. `script/lint` pins this module's public items; these pin field
+/// no longer knows it gave out. The repository's lint pins this module's public items; these pin field
 /// visibility and the missing traits, each by its error code, since a bare `compile_fail` passes
 /// on any failure, a typo included. Private fields: a caller cannot build its own claim.
 ///
@@ -325,7 +321,7 @@ impl DestroyClaim {
     }
 }
 
-/// **The untyped regions**, a generational table (`nifeos/generational_table`) plus every decision
+/// **The untyped regions**, a generational table (`generational_table`) plus every decision
 /// taken over it. Removing a region bumps its slot's generation, so every capability minted for it
 /// stops resolving: that is what makes [`claim_for_destroy`](Self::claim_for_destroy) single-winner.
 /// `N` bounds the regions live at once (the kernel picks 1,024, the loom harnesses 2 or 4).
@@ -379,9 +375,9 @@ impl<const N: usize> RegionTable<N> {
     /// test suite's closing `regions:` line prints (`memory_region::MAXIMUM_REGIONS` has the
     /// ledger). An observer about the table rather than about any region, so it names nothing a
     /// caller could act on after the answer stopped being true, which is the argument
-    /// `script/lint`'s surface pin asks of a new `&self` method.
+    /// a new `&self` method on this table owes.
     ///
-    /// Name: provisional, from milestone 601 (the region table prints its peak). It is
+    /// Name: provisional. It is
     /// `generational_table`'s own spelling of the same question.
     #[must_use]
     pub fn len(&self) -> usize {
@@ -424,21 +420,19 @@ impl<const N: usize> RegionTable<N> {
         if pages == 0 || base_page.checked_add(pages).is_none() {
             return None;
         }
-        self.table
-            .insert_with_name(|_| Region {
-                base_page,
-                pages,
-                watermark: 0,
-                retyped_to: 0,
-                pinned: false,
-                parent: NO_PARENT,
-                children: 0,
-                spent: Spent::default(),
-                held: [0; ObjectKind::COUNT],
-                ceilings,
-                live: Ceilings::ZERO,
-            })
-            
+        self.table.insert_with_name(|_| Region {
+            base_page,
+            pages,
+            watermark: 0,
+            retyped_to: 0,
+            pinned: false,
+            parent: NO_PARENT,
+            children: 0,
+            spent: Spent::default(),
+            held: [0; ObjectKind::COUNT],
+            ceilings,
+            live: Ceilings::ZERO,
+        })
     }
 
     /// Carve `pages` off `parent`'s unspent budget into a new child region and return the child's
@@ -450,8 +444,7 @@ impl<const N: usize> RegionTable<N> {
     /// ceiling, or the table is full, and **a refusal moves nothing**: every check runs before
     /// the parent changes, and the child's slot is taken before the parent's watermark and child
     /// count move, so a split refused for a full table leaves the parent as it found it. The
-    /// child's ceilings are fixed here, from its parent's. See
-    /// notes/region-split-on-a-full-table.md.
+    /// child's ceilings are fixed here, from its parent's.
     pub fn split(&mut self, parent: RegionName, pages: u64) -> Option<RegionName> {
         let r = self.table.get(parent)?;
         let new_watermark = split_new_watermark(r.pages, r.watermark, pages)?;
@@ -614,9 +607,7 @@ impl<const N: usize> RegionTable<N> {
     #[must_use]
     pub fn live_and_ceiling(&self, name: RegionName, counted: Counted) -> Option<(u32, u32)> {
         let k = counted.index();
-        self.table
-            .get(name)
-            .map(|r| (r.live.0[k], r.ceilings.0[k]))
+        self.table.get(name).map(|r| (r.live.0[k], r.ceilings.0[k]))
     }
 
     /// Whether this region has live children, so a claim on it will be refused. `false` for a dead
@@ -699,7 +690,7 @@ impl<const N: usize> RegionTable<N> {
         self.table.get(name).map(|r| (r.watermark, r.pages))
     }
 
-    /// How many of the region's pages went to `on` (milestone 126, DECISIONS §225 part 1), or
+    /// How many of the region's pages went to `on` or
     /// `None` for a dead name. An observer: no decision reads these counts, so a stale answer can
     /// print a wrong number and free nothing. `Frames` and each `Object` kind count the whole
     /// subtree (this region and every live region split from it, however deep); `Children` is this
@@ -759,7 +750,7 @@ impl<const N: usize> RegionTable<N> {
     /// instant this returns, so a second caller gets `None` whatever the interleaving. `None` means
     /// the name was already dead or the region refuses: a live object pins it, or a child still owns
     /// part of its run. Removing the slot before the caller's I/O also makes a retype on a region on
-    /// its way back to the allocator fail. See notes/memory-regions.md.
+    /// its way back to the allocator fail.
     ///
     /// # Examples
     ///
@@ -812,7 +803,7 @@ impl<const N: usize> RegionTable<N> {
     /// and the un-bump share one borrow. The watermark then falls to the highest page still held
     /// ([`crate::coalesced_watermark`]) unless a claimed sibling is in flight, and the child count
     /// drops here rather than at the claim, so the parent cannot be reclaimed under this child's
-    /// pages. See notes/memory-regions.md, "The `memory_regions` crate".
+    /// pages.
     ///
     /// Cost: one scan of the table per return.
     ///
@@ -868,7 +859,7 @@ mod tests {
         assert_eq!(t.bounds(r), None, "the name is dead, not merely claimed");
     }
 
-    /// `len` and `is_empty` are what the region table prints as its peak (milestone 601): they must
+    /// `len` and `is_empty` are what the region table prints as its peak: they must
     /// follow the live count up through inserts and splits and back down through claims.
     #[test]
     fn len_and_is_empty_follow_the_live_regions() {
@@ -1185,7 +1176,7 @@ mod tests {
     /// count through `destroy_outcome` rather than through this accessor, so every test above
     /// exercises the *refusal* without ever calling `has_children`; the only call one made was on a
     /// dead name, where `get` returns `None` and the predicate inside is never evaluated. A mutation
-    /// run of 2026-09-19 (milestone 326) found all four of its mutants alive on that, including the
+    /// run found all four of its mutants alive on that, including the
     /// whole function replaced by `false`. The kernel asks this before it offers to destroy, so a
     /// constant answer is a region reported childless while a child still holds pages inside it.
     #[test]
@@ -1557,8 +1548,7 @@ mod tests {
 #[cfg(all(test, loom))]
 mod interleavings {
     //! Every interleaving of the region claim, and every reordering C11 permits within it. Run with
-    //! `script/interleaving-check`; notes/interleaving.md has the method and
-    //! notes/object-revocation.md the bug behind it.
+    //! `--cfg loom`.
     //!
     //! The protocol is lock-based, so loom searches the interleaving of critical sections, not
     //! memory orderings: the model assumes mutual exclusion and says nothing about whether
@@ -1579,8 +1569,8 @@ mod interleavings {
     /// afterwards. The flag is a *real* atomic, deliberately: it lives outside the model and
     /// accumulates across every execution loom runs, where a loom atomic would be reset by each.
     ///
-    /// Copied from `crates/memory_corruption_canary_gate`, which is where this shape was first written. See
-    /// notes/verification.md's non-vacuity section for why it is not optional.
+    /// A harness that cannot reach a state it claims to cover proves nothing, so each
+    /// harness marks the states it must see and fails if one was never reached.
     struct Reached(core::sync::atomic::AtomicBool);
 
     impl Reached {
@@ -1598,8 +1588,7 @@ mod interleavings {
         }
     }
 
-    /// **The spending observer never sees a child's pages half returned** (milestone 126 (the
-    /// `procps` package), `MemoryRegion::USAGE`). One thread reclaims a child and returns its pages;
+    /// **The spending observer never sees a child's pages half returned** (`MemoryRegion::USAGE`). One thread reclaims a child and returns its pages;
     /// the other asks the parent what is carved into children. Every execution must read the whole
     /// child or none of it, and loom must be seen reaching both answers.
     #[test]
@@ -1665,7 +1654,7 @@ mod interleavings {
                             assert!(claim.is_root(), "a created region frees to the allocator");
                             assert_eq!((claim.base_page(), claim.pages()), (0x1000, 4));
                             // The kernel revokes and frees HERE, with the lock released. That
-                            // release is what the pre-#316 protocol could not survive.
+                            // release is what the pre-claim protocol could not survive.
                             freed.lock().unwrap().push(who);
                         }
                     })
@@ -1692,11 +1681,11 @@ mod interleavings {
         SECOND_WON.assert("an execution in which the second destroyer won");
     }
 
-    /// The falsification witness: the pre-#316 protocol, and loom finding its double free.
+    /// The falsification witness: the pre-claim protocol, and loom finding its double free.
     ///
-    /// A model that cannot fail proves nothing (milestone 62 (make a red run mean something)), so
+    /// A model that cannot fail proves nothing so
     /// the broken protocol lives here permanently, written against this module's private internals
-    /// in the shape `memory_region::destroy` had before the fix: check under the lock, release it,
+    /// in the shape the kernel's destroy had before the claim: check under the lock, release it,
     /// revoke, free every page, and remove the slot last. The assertion is inverted on purpose:
     /// this harness passes only when loom finds an execution in which both callers free the same
     /// run.
@@ -1704,9 +1693,13 @@ mod interleavings {
     fn the_pre_fix_protocol_double_frees_and_this_model_finds_it() {
         static DOUBLE_FREE: Reached = Reached::new();
 
-        /// `memory_region::destroy` as it stood before pull request #316. Kept in the test module rather
+        /// The kernel's destroy as it stood before the claim. Kept in the test module rather
         /// than in the crate's API so that nothing outside a loom run can call it.
-        fn destroy_with_the_gap(table: &Mutex<RegionTable<2>>, name: RegionName, freed: &Mutex<usize>) {
+        fn destroy_with_the_gap(
+            table: &Mutex<RegionTable<2>>,
+            name: RegionName,
+            freed: &Mutex<usize>,
+        ) {
             // 1. Decide under the lock.
             let captured = {
                 let guard = table.lock().unwrap();
@@ -1755,7 +1748,7 @@ mod interleavings {
 
         DOUBLE_FREE.assert(
             "an execution in which both callers freed the same run, \
-             which is the bug pull request #316 fixed and this model must be able to see",
+             which is the bug the claim fixed and this model must be able to see",
         );
     }
 

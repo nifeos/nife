@@ -34,11 +34,10 @@ the crate; under B it calls `retype_object_page(name, MyKind::Vcpu)`.
 ## Decision 2: Whether region names cross the crate's boundary as `u64` or as a typed name
 
 Background. The dependency's whole point, in its own words, is that a name carries its table's entry
-type so no caller can hand a name from one table to another. This crate undoes that at its own
-boundary: every public method takes and returns `u64`, and `entry()` at `src/table.rs` lines 331 to 337 calls
-itself "a temporary adapter" that "goes when those methods take `EntryName<Region>` themselves".
-`Region` is private, so that cannot happen as written. The crate needs a public opaque marker. A
-method signature is one-way once published.
+type so no caller can hand a name from one table to another. A crate whose public methods take and
+return a bare `u64` undoes that at its own boundary. `Region` was private, so the typed name could
+not appear in a signature, and the crate needed a public opaque marker. A method signature is
+one-way once published.
 
 Recommendation: typed names before the first release. `pub struct RegionName(EntryName<Region>)`
 with `to_bits` and `from_bits` for the syscall register, or a public zero-sized `RegionTag` and
@@ -57,13 +56,13 @@ sits. With a typed name it does not.
 
 Background. The kernel's `RETYPE` count rule says a word of zero asks for one page, because the
 syscall ignored the argument before the count existed. That ruling stands and this decision does not
-reopen it. The crate carries it as `retype_pages` and `retype_new_watermark`, so `retype_run(name,
-0)` hands out a page while `split(parent, 0)` refuses. A stranger reading `retype_run(name, 0)`
+reopen it. A crate that carries it makes `retype_run(name, 0)` hand out a page while `split(parent, 0)`
+refuses. A stranger reading `retype_run(name, 0)`
 expects nothing to happen, and a published function's behavior on zero is one-way.
 
 Recommendation: the crate refuses zero everywhere, as `split` does, and the kernel maps the syscall
-word's zero to one before it calls (`kernel/src/memory_region.rs` line 255 already computes the count;
-it moves one line earlier). `retype_pages` leaves the crate. The kernel's syscall behaves as ruled.
+word's zero to one before it calls, in the kernel's own `retype_run`. The kernel's syscall behaves as
+ruled.
 
 Prior art. seL4's `seL4_Untyped_Retype` refuses a zero object count with an invalid-argument error.
 POSIX `read` with a zero count returns zero and moves nothing (both unverified in wording).

@@ -66,9 +66,7 @@ fn a_retyped_run_is_the_pages_asked_for_and_zero_is_refused() {
         }
         None => {
             assert!(
-                count == 0
-                    || watermark.checked_add(count).is_none()
-                    || watermark + count > pages,
+                count == 0 || watermark.checked_add(count).is_none() || watermark + count > pages,
                 "a run that fits must not be refused"
             );
         }
@@ -631,7 +629,10 @@ fn a_root_the_table_accepts_never_overflows() {
         );
         return;
     };
-    kani::cover!(base_page > u64::MAX - 4, "a root at the top of the page numbers");
+    kani::cover!(
+        base_page > u64::MAX - 4,
+        "a root at the top of the page numbers"
+    );
     match kani::any::<u8>() % 4 {
         0 => {
             let _ = table.retype_run(root, kani::any());

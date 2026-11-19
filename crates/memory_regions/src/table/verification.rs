@@ -1,10 +1,9 @@
 //! The table's Kani-only constructors and observers, for the subtree-ceiling harnesses in
 //! `proofs.rs`. A child of `table` so they reach its private fields, and a file of its own so
 //! the host mutation census leaves them out: no build but Kani's compiles them, and their checker
-//! is `script/verify`. See `.cargo/mutants.toml`.
+//! is the Kani run.
 //!
-//! Name: provisional, minted 2026-11-11 (UTC) by lane/region-subtree-ceilings; `verification` is
-//! the tree's name for a Kani module.
+//! Name: provisional; `verification` is the name for a Kani-only module.
 
 use super::{COUNTED_KINDS, Ceilings, ObjectKind, Region, RegionName, RegionTable, Spent};
 
@@ -50,20 +49,19 @@ impl<const N: usize> RegionTable<N> {
         children: u32,
         (ceilings, live, held): (Ceilings, Ceilings, [u32; ObjectKind::COUNT]),
     ) -> Option<RegionName> {
-        self.table
-            .insert_with_name(|_| Region {
-                base_page,
-                pages,
-                watermark,
-                retyped_to,
-                pinned,
-                parent,
-                children,
-                spent: Spent::default(),
-                ceilings,
-                live,
-                held,
-            })
+        self.table.insert_with_name(|_| Region {
+            base_page,
+            pages,
+            watermark,
+            retyped_to,
+            pinned,
+            parent,
+            children,
+            spent: Spent::default(),
+            ceilings,
+            live,
+            held,
+        })
     }
 }
 

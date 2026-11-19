@@ -40,12 +40,14 @@ for the crate's own reasons.
 ## Finding status
 
 - P0-1, a split refused for a full table: Done, [#3525](https://github.com/nifeos/nife/pull/3525).
-- P0-2, the crate cannot stand alone: Held with the move. The README, both license files, an explicit license
-  line, `rust-version`, inline lints and self-contained doc comments are the move's work. Decision
-  1 holds the move until its trigger fires, so this item waits.
-- P1-3, a root at the top of the page-number space: Open. The refusal landed in
-  [#3534](https://github.com/nifeos/nife/pull/3534); no Kani harness yet drives any one operation
-  from any accepted root.
+- P0-2, the crate cannot stand alone: Held with the move. The doc comments and the manifest
+  comments name no nife path, pull request or section. The README, both license files, an explicit
+  license line, `rust-version` and inline lints are the move's work. Decision 1 holds the move
+  until its trigger fires, so those wait.
+- P1-3, a root at the top of the page-number space: Done. The refusal landed in
+  [#3534](https://github.com/nifeos/nife/pull/3534), and the Kani harness
+  `a_root_the_table_accepts_never_overflows` drives one operation from any accepted root, with its
+  falsification patch, in [#3825](https://github.com/nifeos/nife/pull/3825).
 - P1-4, a second release of one object: Done, [#3532](https://github.com/nifeos/nife/pull/3532).
 - P1-5, the loom harnesses at the move: Held with the move. The template's `proofs` workflow runs a crate's loom
   models when its manifest depends on loom, from
@@ -79,10 +81,13 @@ for the crate's own reasons.
   until the crate has a second consumer or its object kinds are the caller's to define, whichever
   comes first. The crate stays in the kernel base package. Items 2, 5, 6(e) and 8 wait for
   the move; the in-nife items stay actionable.
-- Decision 2, typed region names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: every
-  public method still takes and returns `u64`, and `entry()` remains.
-- Decision 3, zero pages: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built:
-  `retype_pages` is still in `src/watermark.rs`, and `retype_run(name, 0)` still retypes a page.
+- Decision 2, typed region names: Done (maintainer, provisional, 2026-11-14 UTC),
+  [#3825](https://github.com/nifeos/nife/pull/3825). `RegionName` is `EntryName<Region>`, `Region`
+  is the public opaque marker, and `entry()` is gone. The kernel converts with `to_bits` and
+  `from_bits` in `kernel/src/memory_region.rs`.
+- Decision 3, zero pages: Done (maintainer, provisional, 2026-11-14 UTC),
+  [#3825](https://github.com/nifeos/nife/pull/3825). `retype_pages` is gone, `retype_run(name, 0)`
+  is refused, and the kernel maps the syscall word's zero to one.
 - Decision 4, the child's share: Done (maintainer, provisional, 2026-11-14 UTC),
   [#3567](https://github.com/nifeos/nife/pull/3567). `CHILD_SHARE_OF_ROOT` stays private and its
   documentation states the limit.
@@ -195,19 +200,18 @@ The case behind each ruling (background, recommendation, prior art and an exampl
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door while the crate stays
 with the kernel, which the architect may revisit. Region names cross the crate's boundary as a typed
-name. A public marker type lets `EntryName<...>` appear in the signatures, as the generational
-table's entry names are a type and not a bare `u64`. The kernel converts once at its syscall
-boundary, and `entry()` goes. The names of the marker and the alias are provisional and go through
+name. A public marker type, `Region`, lets `EntryName<Region>` appear in the signatures as
+`RegionName`, as the generational table's entry names are a type and not a bare `u64`. The kernel
+converts once at its boundary. The names of the marker and the alias are provisional and go through
 item 9's naming pass.
 
 ### Decision 3: Whether "zero pages means one" is the crate's contract or the kernel's
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door while the crate stays
 with the kernel, which the architect may revisit. The syscall behaves as ruled; only the place of the
-rule moves. The crate refuses zero everywhere, as `split` does (`src/table.rs` line 433).
-`retype_pages` (`src/watermark.rs` line 40) leaves the crate, and the kernel maps the syscall
-word's zero to one before it calls (`kernel/src/memory_region.rs` line 262). Under a stricter rule
-first, a crate that later accepts zero stays compatible.
+rule moves. The crate refuses zero everywhere, as `split` does, and the kernel maps the syscall word's zero to
+one before it calls (`retype_run` in `kernel/src/memory_region.rs`). Under a stricter rule first, a
+crate that later accepts zero stays compatible.
 
 ### Decision 4: Whether a child's share of its root's ceilings is the crate's constant
 
