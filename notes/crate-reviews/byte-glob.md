@@ -99,7 +99,7 @@ Every result below comes from this branch.
 | `cargo build --lib` for `x86_64-unknown-none`, `aarch64-unknown-none-softfloat` and `riscv64imac-unknown-none-elf` | all three build |
 | MSRV: a copy of the crate outside the tree, `cargo +1.88 test` and the bare-metal build | 18 tests and 2 doctests pass; builds |
 | Miri, `cargo +nightly miri test --lib` | 17 pass, 1 ignored (the exhaustive worst-case scan is too slow under Miri); the crate has no `unsafe`, so this is a cross-check |
-| `cargo kani` in `crates/byte_glob` | not finished locally: the run shared a loaded host with other lanes' Kani runs and had not returned when this package was pushed. The queue's prove shard runs the six harnesses on `merge_group`, and a PR that changes a harness runs it on the PR. Treat the proofs as unchecked on this branch until that shard is green. The rename touches the harnesses by spelling only |
+| `cargo kani` in `crates/byte_glob` | 6 of 6 harnesses verified, 0 failures (638 s of verification time, on a loaded host). The queue's prove shard runs them again on `merge_group` |
 | falsification sweep, `script/falsifications --sweep byte_glob` | not run here: it needs a clean tree and a Kani run per patch, and the host was loaded. All six patches apply (checked with `git apply --check`); the `Dot` rule patch was rewrapped after rustfmt changed its line |
 | `script/crate-standalone byte_glob` | not finished locally, for the host load named above. The dry run of `script/crate-move` covers the same staging and passes the host tests and bare-metal builds |
 | `script/crate-move --dry-run --into <scratch> byte_glob` | stages at template `v8`; the host tests and the three bare-metal builds pass on 1.88; 5 of 6 patches regenerate for the move. Nine findings for the move lane, listed below. The sixth patch failed to apply after the rename and was fixed on this branch; its own commit says why |
@@ -114,8 +114,8 @@ Not run, and so not claimed:
   ran here, since heavy runs belong in the 08:00 to 13:00 UTC window. The template's weekly job
   runs it in the new repository.
 - The stranger test, which belongs to the new repository (`docs/stranger-test.md`).
-- Fuzzing. No target exists (milestone 1092 P2-4) and the crate has no `unsafe`, so the opt-in rule
-  allows one later.
+- Fuzzing. No target exists (item P2-4 of milestone 1092, what an outside maintainer would fix before
+  the crate leaves). The crate has no `unsafe`, so the opt-in rule allows one later.
 - `cargo-semver-checks` (a first release has no baseline), the template's workflows and the
   publish rehearsal. No repository exists yet.
 
@@ -123,8 +123,8 @@ Not run, and so not claimed:
 
 Six Kani harnesses in `src/verification.rs`, each with a falsification patch that turns it red.
 They quantify over every byte value of patterns and names up to three bytes, not over length.
-Matching is total under both dot rules, the step count never exceeds `cost_bound`, a pattern with
-no magic matches exactly itself, `*` and `?` keep their base meanings, the dot rule touches only
+Matching is total under both dot rules. The step count never exceeds `cost_bound`. A pattern with
+no magic matches exactly itself, and `*` and `?` keep their base meanings. The dot rule touches only
 names that start with a dot, and a negated class is the exact complement of its class. The
 length-independent claims are host tests: an exhaustive cross-check against a naive matcher, and a
 100,000-byte adversarial run held under the bound. The proof domain and its reasons are in
@@ -136,8 +136,8 @@ Three crates, each by a path dependency with `version = "0.1.0"`:
 
 - `crates/swish`, whose word expansion asks `has_magic` before anything else.
 - `crates/grant_plan`, whose directory offers match with the default dot rule, so `*` does not
-  grant a dotfile. Its integration test `tests/fixture_agreement.rs` holds the fixture check that
-  used to live in the matcher.
+  grant a dotfile. Its integration test `tests/fixture_agreement.rs` holds the fixture check of
+  the matcher's cases.
 - `crates/pgrep`, which matches state names with `LeadingDot::Ordinary` and records why at the
   call site.
 
