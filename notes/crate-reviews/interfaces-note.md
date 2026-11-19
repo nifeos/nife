@@ -18,7 +18,7 @@ encoder against each other.
 
 | item | value |
 |---|---|
-| crate | `interfaces_note`, the ratified crate and repository name |
+| crate | `interfaces_note`, which names the crate and the repository |
 | note type | `INTERFACES` = 4 |
 | interface id | 21, with `INTERFACES_VERSION` 1 |
 | owner string and section | wire literals; each line carries the `// wire literal` marker |
