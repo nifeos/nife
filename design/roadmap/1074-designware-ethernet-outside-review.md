@@ -15,7 +15,7 @@ the first time would. It changes nothing; it lists what the next lanes change.
 The review took its baseline from [the review package](../../notes/crate-reviews/designware-ethernet.md)
 and reopens none of the decisions it settles. Those are the crate name, the 173 ratified names, the
 license expression, the provenance notices, the six harnesses and their patches, and the two
-Motorcomm alias sets that already wait for the architect. Where a later rule or a later template gate contradicts a
+Motorcomm alias sets (built in #3319). Where a later rule or a later template gate contradicts a
 ratified name, the item says so and leaves the rename to the release review that the rules provide
 for.
 
@@ -268,9 +268,15 @@ Example: `let address = discovered.station_mac_address.unwrap_or(from_registers)
 
 ### Not brought
 
-The two Motorcomm alias sets wait for the architect already and are not restated here. Items 6 and
-21 are two-way until the tag and carry a recommendation; they come to the architect only if the
-maintainer wants the wider option. Item 11 is a template rule, not a name.
+The two Motorcomm alias sets carry OpenBSD's and FreeBSD's spellings and no Linux one (#3319), as
+`design/naming.md` requires; they need no ruling. Items 6 and 21 stay two-way until the tag, and the
+crate takes the narrow option as the maintainer's provisional call. Item 11 is a template rule.
+
+## Open decisions
+
+None for calef from this block. calef ruled the `v0.1.0-pre.1` tag on 2026-11-19 (UTC): tag after a
+green release dry run, and publish nothing. calef already holds the crate's release name review,
+which covers the provisional names of items 12, 15 and 18.
 
 ## Done when
 
@@ -280,8 +286,8 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
 
 - Items 1 and 11 are built in the crate and not in the template, which has no allowance for
   either shape; Decision 4 ratifies the crate's names instead.
-- The review did not verify item 16's question, which tree inverts the 10 Mbit/s transmit clock,
-  against either device tree.
+- Item 16: mainline's tree does not invert the 10 Mbit/s transmit clock and the vendor tree does.
+  Which is right for the board is not measured; it is a bench step.
 - Items 15 and 17 cite Linux's `motorcomm.c` and the controller databook from memory, marked so in
   the text. The review took the crate's own account of OpenBSD as given.
 - The review did not run Kani, cargo-mutants or Miri, and did not build at `rust-version` 1.88.
@@ -289,30 +295,24 @@ The checks are in [the done-when appendix](1074-designware-ethernet-outside-revi
   it pushes.
 - `notes/project-metrics/mutation-rowless-survivors.csv` still names the crate's functions by their
   earlier spellings (`fifo_bytes`, `mac_conf`, `rx_verdict`); a nife housekeeping item, not the
-  crate's.
+  crate's. Open: a lane.
 
 ## Where this stands
 
-Finished: decisions 1 to 4, items 1 to 11 and the move (#3569, #3634).
+Finished: decisions 1 to 4, items 1 to 11 and the move (#3569, #3634); the Motorcomm alias sets
+(#3319); the weekly job's failure on main (nifeos/designware_ethernet#7).
 
-- Items 12 to 21, two-way. Blocker: other, a lane.
-- The Motorcomm alias sets and the register gate's renames: no ruling found. Blocker: decision
-  for calef (unverified).
-- The pin bump, and the weekly job's failure on main. Blocker: other, a lane.
-- The `v0.1.0-pre.1` tag, then publishing. Blocker: release step, then the publishing hold.
+- Items 12 to 15 and 17 to 21: built in nifeos/designware_ethernet#9, open. Blocker: review and
+  merge.
+- Item 16's 10 Mbit/s inversion. Blocker: bench.
+- The pin bump to #9's commit, moving the transport to `is_frame_waiting`. Blocker: #9.
+- A green full mutation run on the crate's main, for the dry run. Blocker: the schedule.
+- The `v0.1.0-pre.1` tag, ruled; then publishing. Blocker: the dry run, then the publishing hold.
+- The rowless-survivor names. Blocker: other, a lane.
 
 ## Follow-on
 
-- **Done.** The three architect rulings of 2026-11-14 (UTC) are built and recorded above. They are
-  the `link` module, the sixteen `pub(crate)` gates and the five renamed constants. The
-  `management_data_io` rename ruled the same day is built too.
-
-- **Done.** The crate has items 1 to 3 and 6 to 11. It passes the template's naming and
-  prose gates and bounds `receive` and `reclaim`. Only the constants a caller uses stay `pub`. The
-  crate names the board and its two device trees. The README has its build, proof and falsification
-  sections, and `cargo test` compiles its example.
-
-- **Outstanding.** The P2 items and the two rulings listed above.
+- **Outstanding.** Each item under Where this stands, checked against both repositories' main.
 
 ## Index row
 
