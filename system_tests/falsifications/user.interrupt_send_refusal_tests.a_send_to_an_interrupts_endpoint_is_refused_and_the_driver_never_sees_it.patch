@@ -2,7 +2,7 @@ Falsifies `system_tests::user::interrupt_send_refusal_tests::a_send_to_an_interr
 
 The defect: `Rendezvous::send` forgets DECISIONS §101 (notification objects)'s ruling B and decides as it did before it.
 `bind_interrupt` still marks the endpoint and nothing reads the mark, so the kernel compiles, every
-`Send::Refused` arm is simply never reached, and every other test stays green.
+`SendVerdict::Refused` arm is simply never reached, and every other test stays green.
 
 Expected to fail: the `SEND` assertion, which gets `Ok(0)` where it wants `NotPermitted`,
 because the send rendezvouses with the driver parked in `Interrupt::WAIT`. That driver wakes holding
@@ -12,13 +12,13 @@ diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter
 --- a/crates/inter_process_communication/src/rendezvous.rs
 +++ b/crates/inter_process_communication/src/rendezvous.rs
 @@ -249,9 +249,7 @@ impl<T: Node> Rendezvous<T> {
-     pub fn send(&mut self, me: Unqueued<T>) -> Send<T> {
+     pub fn send(&mut self, me: Unqueued<T>) -> SendVerdict<T> {
          // Before a receiver is popped: the receiver here is the driver, and handing it a sender's
          // words is the forgery the refusal exists to stop.
 -        if self.bound_to_interrupt {
--            Send::Refused(me)
+-            SendVerdict::Refused(me)
 -        } else if let Some(receiver) = self.receivers.pop_front() {
 +        if let Some(receiver) = self.receivers.pop_front() {
-             Send::Rendezvous(receiver, me)
+             SendVerdict::Rendezvous(receiver, me)
          } else {
              self.senders.push_back(me);
