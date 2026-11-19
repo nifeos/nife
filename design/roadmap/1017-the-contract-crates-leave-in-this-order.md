@@ -11,9 +11,9 @@ needs_person: yes
 # 1017. The contract crates leave in this order
 
 Raised 2026-11-01 (UTC) by the lane `lane/contract-crates-move-order`. It answers in what order the
-22 crates that the first cut's programs link could leave this repository, and what policy makes
-frequent breaking change safe across repositories. It moves no crate and changes no code. Every new
-name below is provisional. The text states each ruling (2026-11-01 UTC).
+22 crates the first cut's programs link could leave this repository, and what policy makes
+breaking change safe across repositories. It moves no crate and changes no code. Every new
+name below is provisional.
 
 Reuse: `cargo metadata`, git's rename detection, milestone 610's series, milestone 956's constants,
 the crate template and basalt's gate.
@@ -26,7 +26,7 @@ Two directions from the architect, both dated 2026-11-01 (UTC), frame it:
   can write alternative implementations. Waiting for a crate to settle is not a criterion.
 - Anything that leaves must not reference back into nife. So a crate leaves bottom-up in the
   dependency graph, before or with every program that links it, and nothing that has left depends
-  on a path or a pin into nife. nife may depend on what left.
+  on a path or a pin into nife.
 
 The second direction inverts the order of 2026-10-04 in milestone 756 (`process-tools`,
 `core-tools` and `disk-tools` are the first code to leave this repository). Programs first and
@@ -73,7 +73,7 @@ points from nife to the crate, which the direction permits. Beyond those, five r
 | `capability_manifest_note` | a test reads `../../fuzz/seeds/`, and nife's fuzz workspace builds it | its seeds and fuzz target leave with it |
 
 Six more of the 22 have fuzz targets in nife's `fuzz/` workspace. Those point from nife to the
-crate, so they do not block, but a crate's fuzzing belongs with it. Between 5 and 36 files in nife name each crate's path.
+crate and do not block. Between 5 and 36 files in nife name each crate's path.
 
 ## The recommended order
 
@@ -107,11 +107,9 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 | 8 | `calendar`, `environment_contract`, then `core-tools` | the last two crates `core-tools` reaches; the kernel links both; the third package leaves as soon as they have |
 | 9, `redoxfs` | `subtree_scope`, `memory_region_heap`, then `redoxfs` as one repository | after the 10 contract crates it links; ruled 2026-11-01 (UTC) in the questions appendix; `talc` becomes a pinned upstream dependency (below) |
 
-`sealed_pair` is not one of the 22. It links `nifefs` and `measured_boot`, so it leaves only after
-both have repositories, with or after `uefi_loader`, and it gets no repository now (milestone 1107
-(`sealed_pair`: what an outside maintainer would fix before it leaves)). With more than one kernel
-it becomes a crate of its own, used by several repositories. With one user it moves into that
-repository as a module and never publishes.
+`sealed_pair` is not one of the 22. It leaves after `nifefs` and `measured_boot` have repositories
+and gets none now (milestone 1107 (`sealed_pair`: what an outside
+maintainer would fix before it leaves)).
 
 `jh7110_entropy` stays the leaf pilot (milestone 818 (`jh7110_entropy`: proven JH7110 TRNG logic,
 released on its own)). It proves that a leaf crate builds from its own repository and nife pins it by `rev`. It does not prove the contract case: no
