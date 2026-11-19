@@ -72,7 +72,7 @@ and the release steps.
 - Review package: Done, [the package](../../notes/crate-reviews/environment-contract.md). It lists
   every public name with a proposal, the checks run, the move's work, the dependents and what a
   rename would sweep.
-- Review clearance and name ratification: Open. The decision is ruled (below); the architect
+- Review clearance and name ratification: Open. The decision has its ruling (below); the architect
   ratifies the names from the package and clears the review, which is the go to create the
   repository.
 
@@ -242,4 +242,4 @@ done: the reader panic, reader-side validation, the family and accessor names, t
 and the compile-time cap check among them. Five are open: two wider Kani harnesses, the standalone
 files, a safe reader, the README's growth-path row and the architect's reading of the review
 package, which ratifies the names and clears the review, which creates the repository. The
-review package is written, and no decision is open.
+review package exists, and no decision is open.

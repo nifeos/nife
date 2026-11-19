@@ -143,19 +143,22 @@ ratification can name them all.
 | the module `verification` | module | provisional | Ratify. It is the name every crate's harnesses use |
 
 The private names (`tz`, `lang` and `term` as the builder's fields, and the offset constants) pass
-the template's checks and are the move lane's to touch. The `Name:` blocks of the ratified rows are
-ratified, so they need no edit. The provisional blocks (ten distinct names, six accessor blocks and
-three function blocks among them) and the four items with no block are the ones this ratification
-settles. The move strips the `Name:` blocks (`crate-move` reports them removed from 2 files), so a
+the template's checks and are the move lane's to touch. The `Name:` blocks of the ratified rows need
+no edit. The ten provisional names (six accessor blocks and three function blocks among them) and
+the four items with no block are the ones this ratification settles. The move strips the `Name:` blocks (`crate-move` reports them removed from 2 files), so a
 lane need not rewrite them first; if the architect wants them rewritten in nife before the move, that
 is a short lane.
 
-A rename would sweep: the overlay (`sys/env/nife.rs` lines 144 to 146, three accessor calls and
-one `new`), `components/src/printenv.rs` (lines 115 to 117), `system_tests/src/user/std_service.rs`
-(lines 324 to 328), `system_tests/src/user/printenv_tests.rs`, `crates/swish/src/preview/tests.rs`,
-`kernel/src/user/device_starters.rs` (lines 299 to 306, with their `expect` messages), the crate's
-tests and doctests, and `notes/env-config.md`. After the move it also costs a coordinated change
-across two repositories.
+A rename would sweep these files:
+
+- the overlay, `sys/env/nife.rs` lines 144 to 146 (one `new` and three accessor calls);
+- `components/src/printenv.rs`, lines 115 to 117;
+- `system_tests/src/user/std_service.rs`, lines 324 to 328, and `system_tests/src/user/printenv_tests.rs`;
+- `crates/swish/src/preview/tests.rs`;
+- `kernel/src/user/device_starters.rs`, lines 299 to 306, with their `expect` messages;
+- the crate's tests and doctests, and `notes/env-config.md`.
+
+After the move it also costs a coordinated change across two repositories.
 
 ## What still blocks the move
 
@@ -166,11 +169,11 @@ are the move lane's work.
 |---|---|
 | Write a README (the scaffold is staged; the prose cap refuses a 423-word draft), say there that fuzzing stays off because the crate has `unsafe`, and add item 12's growth-path row | move lane |
 | Write `license`, `lints` and `rust-version = "1.88"` into the manifest, and add `LICENSE-MIT` and `LICENSE-APACHE` | move lane |
-| Rewrite 5 section citations, 2 milestone citations and 3 paths into the nife tree (the manifest's comment and the crate header's cites of §111, §46 and `notes/env-config.md`) | move lane |
+| Rewrite 5 section citations, 2 milestone citations and 3 paths into the nife tree (the manifest's comment and the crate header's cites of §111 (inert configuration is a read-only page), §46 (thin primitives, whole subsystems) and `notes/env-config.md`) | move lane |
 | `cargo generate-lockfile` fails in the staged copy only until the manifest stops inheriting from the workspace | move lane |
 | Convert four manifests (`kernel`, `components`, `crates/swish`, `system_tests`) to `git` and `rev` with `version = "0.1.0"` | move lane |
 | `xtask/src/farm/copied.rs` copies `src/lib.rs` by path; it must read the pinned checkout. The move also reads `helpers/interface_stability.py`, `helpers/template_report_baseline.txt`, `helpers/trust_boundary_crates.tsv`, `script/verify`, `script/metrics`, `crates/externalization-list.txt`, `packages/contracts.package.toml` and the mutants baseline | move lane |
-| Items 5, 11 and 12 of milestone 1089 (wider Kani harnesses, a safe reader, the growth path) stay open; none blocks the repository, and the two-way ones are the maintainer's | later lanes |
+| Items 5, 11 and 12 of the outside review stay open: wider Kani harnesses, a safe reader and the growth path. None blocks the repository, and the two-way ones are the maintainer's | later lanes |
 | Run the stranger test, the template's workflows and the first weekly mutation run in the new repository | move lane |
 
 ## Open questions
