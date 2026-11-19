@@ -6,8 +6,8 @@ An appendix to [the milestone](../1098-line-editor-outside-review.md).
   names a nife path, a milestone, a decision section or a person.
 - `proto` and `component` live in the contract crate the architect names. Every caller points at
   it. `capability_plan` is gone from the manifest. `QUIESCED` has one definition.
-- The engine's public names are the ones ruled in decisions 2 and 3. `spelled_out.py` and the
-  template's `check` job are green at a ceiling of 0. `HIST`'s successor carries a `Name:` block.
+- The engine's public names are the ones ruled in decision 2 and in the limits' decision.
+  `spelled_out.py` and the template's `check` job are green at a ceiling of 0. `HIST`'s successor carries a `Name:` block.
 - The README and the crate documentation carry the bindings table and every limit with its number.
   They also carry a `BUGS` list that states ASCII-only input, the one-row redraw, the history depth, the
   Meta prefix and the mouse-report payload (or the two get a fix and a test).
