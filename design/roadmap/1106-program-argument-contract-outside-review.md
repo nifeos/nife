@@ -65,8 +65,8 @@ section number, a milestone or a person in another repository.
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - Ruling, the layout leaves as built with `VERSION` 1 and `INTERFACE_ID` 18: Done,
   [#3579](https://github.com/nifeos/nife/pull/3579) (ruled 2026-11-14 UTC; nothing to build).
-- Ruling, a numbered magic replaces `nifeargv`: Ruled (2026-11-14 UTC), and its condition is met
-  (below). Not built: `MAGIC` still reads `b"nifeargv"`.
+- Ruling, a numbered magic replaces `nifeargv`: Ruled (2026-11-14 UTC), condition met (below).
+  Not built: `MAGIC` still reads `b"nifeargv"`.
 - Ruling, three public names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: the same
   renames as P0-4 and P1-5.
 - Ruling, the repository: Ruled (2026-11-14 UTC). Not built: a lane creates
@@ -273,11 +273,10 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 ## Follow-on
 
 - **Done.** The three rulings above, recorded in this block.
-- **Done.** The layout ruling's condition is met (maintainer's reading, provisional, 2026-11-19
-  UTC). Milestone 1115 (the gate builds basalt's delivered programs from the candidate tree)
-  rebuilds them in every merge group, and milestone 994 (the cross-repository pair is tested where
-  the pin is) tests the published bytes in basalt. So the numbered magic lands in one nife pull
-  request, a lane of its own.
+- **Done.** Two milestones meet the layout ruling's condition (maintainer's reading, provisional,
+  2026-11-19 UTC): 1115 (the gate builds basalt's delivered programs from the candidate tree) in
+  every merge group, and 994 (the cross-repository pair is tested where the pin is) in basalt. The
+  numbered magic lands in one nife pull request, a lane of its own.
 - **Outstanding.** Every finding marked Open or Ruled under "Finding status" above, each with what
   remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
 - **Outstanding.** The three renames of the rulings and the numbered magic, then the repository
