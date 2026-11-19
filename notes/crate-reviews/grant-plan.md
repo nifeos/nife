@@ -20,7 +20,7 @@ on `byte_glob` and on `program_argument_contract`. The catalog of nife's program
 
 | item | value |
 |---|---|
-| crate | `grant_plan`, ratified |
+| crate | `grant_plan`; `script/names` and `script/crate-standalone` report 188 names in it not ratified, the crate name among them |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024; none |
 | license | inherited from the nife workspace; no `LICENSE-MIT` or `LICENSE-APACHE` in the crate |
@@ -114,9 +114,11 @@ None for this package. The names above are the architect's to ratify, and the cl
 
 ## Result of `script/crate-standalone`
 
-Run with `--no-kani` for the crate in this tree: see the pull request body for the exit. It reports
-the manifest, the missing README and license files and the citations listed above; those are the
-move's work and not defects of the source. The six path dependencies resolve to sibling crates in
+The run fails with 20 findings. The first is the 188 unratified names, which the architect clears by
+ratifying them (`python3 helpers/name_release.py --draft grant_plan` prints the table). The rest are
+the manifest, the missing README and license files and the citations listed above, which are the
+move's work and not defects of the source. The build and proofs are skipped because the copy
+needs the sibling crates. The six path dependencies resolve to sibling crates in
 nife, three of them dev-dependencies that the move rewrites.
 
 ## Recommendation

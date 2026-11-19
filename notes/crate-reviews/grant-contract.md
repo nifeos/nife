@@ -19,7 +19,7 @@ packages in nife link it.
 
 | item | value |
 |---|---|
-| crate | `grant_contract`, ratified (2026-11-19 UTC) |
+| crate | `grant_contract`; the maintainer ruled the name as built on 2026-11-19 UTC, and `script/names` still reports it provisional until the architect ratifies it |
 | interface | `INTERFACE_ID` 17, `VERSION` 1 |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024; none |
@@ -94,8 +94,10 @@ None for this package. The clearance covers this crate with `grant_plan`.
 
 ## Result of `script/crate-standalone`
 
-Reports the missing README, license files and `rust-version`, and the citations listed above.
-The dev-dependency on `filesystem_contract` is a sibling crate in nife.
+The run fails with 17 findings. They are the crate name and 55 item names not yet ratified
+(`python3 helpers/name_release.py --draft grant_contract` prints the table), the missing README,
+license files and `rust-version`, and the citations listed above. The two path dependencies are
+sibling crates in nife. The build and proofs are skipped because the copy needs them.
 
 ## Recommendation
 
