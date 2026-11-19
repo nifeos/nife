@@ -33,9 +33,102 @@ Reuse: `script/crate-move`, the template `nifeos/crate-workflows` at its newest 
 `helpers/falsify.py`, `helpers/standalone.py`, the template's naming helpers, cargo-mutants' recorded
 rows, Kani, and the crate's own harness builder (`any_small_capability_table`). No new tool.
 
-## Where this stands
+## Finding status
 
-The appendix lists what remains and what holds each: [where this stands](1081-capability-outside-review/where-this-stands.md).
+- P0-1, the manifest stands alone: Open. `Cargo.toml` still inherits the workspace's license and
+  lints and has no `rust-version`, `description` or `repository`, and the crate has no README and no
+  license files; the move pull request writes them, or a lane does it in the tree first.
+- P0-2, the crate's text refers back into nife: Done, [#3565](https://github.com/nifeos/nife/pull/3565), [#3656](https://github.com/nifeos/nife/pull/3656). Only the `Name:` blocks
+  remain, and the move strips them.
+- P1-3, the proved `derive` is not the delegation the kernel runs: Open. `Capability::delegate` holds
+  the rule once, the kernel's `Delegation::derive` calls it, and a harness proves it ([#3656](https://github.com/nifeos/nife/pull/3656)).
+  Left: the two `REVOKE` arms in `kernel/src/syscall.rs` still test `GRANT` inline under no harness;
+  the shape of a syscall-layer harness is two-way, and the maintainer rules it provisionally.
+- P1-4, a slot truncates on a 32-bit target: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P1-5, `len` means capacity: Done, [#3656](https://github.com/nifeos/nife/pull/3656). The name `capacity` is provisional.
+- P1-6, the move tool corrupts patches and skips `repository`: Done, [#3521](https://github.com/nifeos/nife/pull/3521).
+- P1-7, two mutators outside every harness: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P2-8, `Rights::ALL` is a literal: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P2-9, abbreviated parameter names: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- P2-10, `Error` is thin for a stranger: Done, [#3565](https://github.com/nifeos/nife/pull/3565), [#3656](https://github.com/nifeos/nife/pull/3656). `GrantRequired` and `SlotOccupied`
+  are provisional.
+- P2-11, the process-wide peak is unconditional: Open. The static and its readers sit behind
+  `target_has_atomic = "32"` ([#3565](https://github.com/nifeos/nife/pull/3565)); a `peak` cargo feature is left. It is two-way until the
+  release, and the maintainer rules it provisionally; the feature's name then joins the release
+  name review.
+- P2-12, no read-only walk, and `delete_matching` takes `Fn`: Done, [#3565](https://github.com/nifeos/nife/pull/3565), [#3656](https://github.com/nifeos/nife/pull/3656).
+- P2-13, the mutation record travels as unknown: Open. The move pull request writes the three
+  survivors and their reasons into `.github/mutants-exempts`.
+- P2-14, one test pins the global exactly: Declined. No table has more than 64 slots, so no test can
+  exceed the pinned `(64, 64)`, and a wider table cannot break the exact assertion.
+- P2-15, notes beside the crate have drifted: Done, [#3565](https://github.com/nifeos/nife/pull/3565), [#3656](https://github.com/nifeos/nife/pull/3656).
+- P2-16, `Option<Capability<O>>` has no niche: Open. Optional; it changes the input domain of every
+  rights harness, so it is measured before a lane takes it.
+- D1, the crate's name: Done (ruled 2026-11-16 UTC, option A), [#3674](https://github.com/nifeos/nife/pull/3674).
+- The provisional names: Open. `delegate`, `GrantRequired`, `SlotOccupied`, `capacity` and `iter`
+  wait for the architect's ratification under Open decisions.
+- The move: Open. No review package exists under `notes/crate-reviews/`, and
+  nifeos/capability_table does not exist; a package lane comes first, then the clearance under Open
+  decisions.
+
+## Open decisions
+
+### Ratify the five provisional names
+
+Background: `capability_table` is the kernel's per-thread table of capabilities and their rights.
+The review's fixes added or renamed five public names, each provisional. `Capability::delegate`
+makes a copy of a capability with fewer rights, and refuses without the `GRANT` right
+(`Error::GrantRequired`) or when the copy would hold a right the source lacks. `capacity` is the
+number of slots, renamed from `len`, which in std counts the elements held. `iter` walks the
+occupied slots. `Error::SlotOccupied` answers an insert at a slot already in use, apart from a full
+table. A provisional name can change freely inside nife; once the crate publishes, every user's code
+spells it, so the first publish turns each into a promise.
+
+Recommendation: A.
+
+- A. Ratify all five as built.
+- B. Rename `delegate` to `derive`, so the capability's method and the table's
+  `CapabilityTable::derive`, which calls it, spell the one act alike (seL4's derivation tree uses
+  the same word); keep the other four.
+- C. Ratify the five, and also add `len` returning the occupied count, beside `used`.
+
+Door: two-way inside nife; one-way at the first publish, when a published name becomes a breaking
+change.
+
+Prior art: std's `Vec::capacity` and `HashMap::capacity` mean exactly the slot count, and
+`Vec::len` the elements held, which is why `len` moved. seL4's `CNode_Mint` narrows rights on a
+copy; Zircon's `zx_handle_duplicate` does the same and requires the `DUPLICATE` right, as `delegate`
+requires `GRANT` (recalled, not read). Where nife differs: one method holds both refusals, and the
+kernel calls that method, so the proof covers the code the kernel runs. Example:
+`source.delegate(Rights::READ)` on a capability holding `READ | GRANT` is `Ok` with `READ` alone;
+on one holding `READ | WRITE` it is `Err(Error::GrantRequired)`.
+
+What it blocks: the first publish.
+
+### Clear the review, which creates nifeos/capability_table
+
+Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
+architect reads; clearing it is the go to create the crate's repository and move the crate there.
+No package exists for this crate yet, so a package lane writes one first. The crate's only consumer
+is the kernel, which then depends on it at a pinned revision.
+
+Recommendation: A.
+
+- A. A package lane writes the review package now, and the architect clears it when it arrives; the
+  manifest, README, licenses and exemptions (P0-1, P2-13) come with the move.
+- B. Land P0-1 and the `peak` feature (P2-11) in the tree first, so the package shows the crate as
+  it will publish.
+
+Door: one-way. A repository and a moved crate are acted on by the template's workflows and by
+nife's pin from the first day; moving back is a second move.
+
+Prior art (recalled, not read): the Rust project moved `libc` out of the compiler's tree into a
+repository of its own, and the compiler consumes it back by version. Where nife differs: a review
+package checks that the crate stands alone before it leaves, not after. Example:
+`jh7110_entropy`, whose review was cleared on 2026-11-01 (UTC), lives in nifeos/jh7110_entropy,
+and nife depends on it at a pinned revision.
+
+What it blocks: the move, and so the first tag and the first publish.
 
 ## Goal
 
@@ -56,8 +149,6 @@ Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A do
 somebody outside the repository acts on it after the move or the release (a repository name, a
 published name, a published behavior, a layout, a license); everything else is two-way and the
 maintainer decides it. Every name proposed below is provisional.
-
-The ledger of what landed and what is left is in [the appendix](1081-capability-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -187,7 +278,9 @@ The P2 items are in [the appendix](1081-capability-outside-review/later-items.md
 
 ## Decisions for the architect
 
-No decision is open. Everything else above is two-way until the first release, and the review records it as provisional.
+D1 has its ruling. Everything else above is two-way until the first release, and the maintainer
+decides it, provisionally. The provisional names and the review clearance that creates the
+repository are under [Open decisions](#open-decisions).
 
 ### D1. The crate's name is `capability_table`
 
@@ -224,19 +317,12 @@ Door: one-way (a repository name and a published crate name), and the ruling clo
 
 The checks are in [the appendix](1081-capability-outside-review/done-when.md).
 
-## Follow-on
-
-- **Outstanding.** The move's items 1 and 13, the `peak` cargo feature of item 11 (a
-  published name; the `target_has_atomic` gate is in), item 16 and the syscall layer's two inline
-  `GRANT` tests of item 3. The names `delegate`, `GrantRequired`, `SlotOccupied`, `capacity` and `iter`
-  are provisional, and each becomes a published name when the crate releases.
-
 ## BUGS
 
 - Item 4 came from reading and from clippy; the review ran no 32-bit build, because the host has no 32-bit target and the review adds nothing to a machine.
-- Ten of the fourteen falsification patches were not replayed; the four that were each failed
-  exactly their harness. The tree's own `script/verify` replays all fourteen on its cadence
-  (unverified for this head).
+- Ten of the fourteen falsification patches the review found were not replayed; the four that were
+  each failed exactly their harness. The tree's own `script/verify` replays every patch on its
+  cadence.
 - The dry run ran with `--no-build` and with the template at its newest release. The template's
   head carries checks the release lacks (spelled-out words, unit symbols, passive voice, function
   length); the review ran the two naming ones by hand and they pass, and it did not run the other two.
