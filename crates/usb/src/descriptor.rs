@@ -18,21 +18,22 @@ pub const ENDPOINT: u8 = 5;
 
 /// How many bytes a device descriptor holds (USB 2.0 Table 9-8).
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC), on #3814. Refused `DEVICE_LEN` (a length carries its unit).
 pub const DEVICE_DESCRIPTOR_BYTES: usize = 18;
 /// How many bytes a configuration descriptor's own header holds, before its interfaces (Table
 /// 9-10). Not the configuration's whole length, which is its `wTotalLength`.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC), on #3814. Refused `CONFIGURATION_LEN` (a length carries its
+/// unit, and the configuration's own length is `wTotalLength`, which this is not).
 pub const CONFIGURATION_HEADER_BYTES: usize = 9;
 /// How many bytes an interface descriptor holds (Table 9-12).
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC), on #3814. Refused `INTERFACE_LEN` (a length carries its unit).
 pub const INTERFACE_DESCRIPTOR_BYTES: usize = 9;
 /// How many bytes an endpoint descriptor holds (Table 9-13). USB 3 appends a companion descriptor rather
 /// than lengthening this one, so 7 holds at every speed.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC), on #3814. Refused `ENDPOINT_LEN` (a length carries its unit).
 pub const ENDPOINT_DESCRIPTOR_BYTES: usize = 7;
 
 /// The HID interface class (HID 1.11 section 4.1).
@@ -119,7 +120,9 @@ impl DeviceDescriptor {
 /// **The speed a device runs at**, in the USB specification's terms. It is USB vocabulary and not
 /// a host controller's numbering: a host controller driver maps its own port speed onto it.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC), on #3814. Refused `superspeed: bool` and a `u8` speed id (a
+/// flag cannot say low, full and high speed, and a port speed id ties a USB crate to one host
+/// controller's numbering).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Speed {
     /// Low speed, 1.5 Mb/s (USB 2.0).
@@ -145,7 +148,8 @@ pub enum Speed {
 /// `torvalds/linux@23c62304dde29abe92013d85910d03a77dada35d`); this function refuses that, as the
 /// specification does.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC), on #3814. Refused `control_max_packet` (`max` is spelled out,
+/// and the name states the unit of its answer).
 pub fn control_maximum_packet_bytes(control_packet_size_code: u8, speed: Speed) -> Option<u16> {
     match (speed, control_packet_size_code) {
         (Speed::Low, 8) | (Speed::Full, 8 | 16 | 32 | 64) | (Speed::High, 64) => {
@@ -502,10 +506,7 @@ mod tests {
             18, 1, 0x00, 0x02, 0, 0, 0, 8, 0x27, 0x06, 0x01, 0x00, 0, 0, 1, 4, 11, 1,
         ];
         d[0] = 17;
-        assert_eq!(
-            DeviceDescriptor::parse(&d),
-            Err(Refusal::NotThatDescriptor)
-        );
+        assert_eq!(DeviceDescriptor::parse(&d), Err(Refusal::NotThatDescriptor));
         d[0] = 20;
         assert!(DeviceDescriptor::parse(&d).is_ok());
     }

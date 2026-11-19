@@ -33,7 +33,7 @@
 
 /// How many bytes a boot report holds.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC), on #3814. Refused `REPORT_LEN` (a length carries its unit).
 pub const REPORT_BYTES: usize = 8;
 
 /// The usage id a keyboard puts in every key slot when more keys are held than it can report
@@ -318,7 +318,10 @@ pub fn changes(before: &BootReport, after: &BootReport, event: &mut dyn FnMut(u8
     let flipped = before.modifiers ^ after.modifiers;
     for bit in 0..8u8 {
         if flipped & (1 << bit) != 0 {
-            event(FIRST_MODIFIER_USAGE + bit, after.modifiers & (1 << bit) != 0);
+            event(
+                FIRST_MODIFIER_USAGE + bit,
+                after.modifiers & (1 << bit) != 0,
+            );
         }
     }
     for (i, &usage) in before.keys.iter().enumerate() {

@@ -69,7 +69,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 |---|---|---|
 | [`file_allocation_table`](crate-reviews/file-allocation-table.md) | 2 | cleared to move; repository exists |
 | [`extensible_host_controller_interface`](crate-reviews/extensible-host-controller-interface.md) | 3 | cleared to move; repository exists |
-| [`universal_serial_bus`](crate-reviews/universal-serial-bus.md) (`usb` in this tree) | 3 | names for the architect; the move waits for items 1, 2, 4 and 10 of milestone 1111 (what an outside maintainer would fix before its first release) and the work of its Decisions 2 and 3 |
+| [`universal_serial_bus`](crate-reviews/universal-serial-bus.md) (`usb` in this tree) | 3 | cleared to move (2026-11-19 UTC, no tag, no publish); the move waits for items 1, 2, 4 and 10 of milestone 1111 (what an outside maintainer would fix before its first release) |
 | [`generational_table`](crate-reviews/generational-table.md) | 4 | cleared to move; repository exists |
 | [`non_volatile_memory_express`](crate-reviews/non-volatile-memory-express.md) | 5 | cleared to move; repository exists |
 | [`e1000e`](crate-reviews/e1000e.md) | 6 | cleared to move; repository exists |
