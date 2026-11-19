@@ -134,7 +134,7 @@ The P2 items are in [the appendix](1072-jh7110-clock-and-reset-outside-review/la
 
 ## Decisions
 
-Ruled 2026-11-14 (UTC). Each is a public name or the meaning of a public constant, permanent at the
+Decisions 1 to 5 ruled 2026-11-14 (UTC). Each is a public name or the meaning of a public constant, permanent at the
 crate's first publication.
 
 1. `POWER_MANAGEMENT_CHIP_BUS_BRING_UP` is ratified as spelled: the plan for the device at
@@ -170,6 +170,15 @@ crate's first publication.
    JH7110_AONCLK_GMAC0_TX>; assigned-clock-parents = <&aoncrg JH7110_AONCLK_GMAC0_RMII_RTX>;`);
    the v1.2A board file has no `&gmac0`. Example: a v1.2A tree gives no parent step, so its mux
    stays where reset put it.
+
+6. The pre-release tag. Ruled 2026-11-19 (UTC): the tag `v0.1.0-pre.1` is approved for
+   `jh7110_clock_and_reset`. The move lane places it once it finds the new repository matches this
+   tree's copy and the release dry run is green, the same two conditions as the seven crates
+   approved 2026-11-11. The tag names a commit for nife and basalt to pin and nothing publishes.
+   Creating the repository was approved with the review's clearance (2026-11-11 UTC), and no
+   repository exists yet. Prior art: Semantic Versioning 2.0.0 marks a candidate with a pre-release
+   identifier, and Cargo never selects one for a requirement that does not name it. Example:
+   `generational_table` carries `v0.1.0-pre.2`, and nife pins that tag's commit by `rev`.
 
 ## Done when
 
@@ -234,46 +243,21 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
   (`pmic-route-step1-3499.log`) resets the board through the route. It runs this crate's timing:
   198 high counts and 297 low counts at 49.5 MHz. Left: the crate README's BUGS still says no board has
   run that timing, and a lane corrects it, citing the log.
-- The `v0.1.0-pre.1` tag: Open. calef's, under "Open decisions" below.
+- The `v0.1.0-pre.1` tag: Ruled (decision 6). Left: the move lane places it after the move check
+  and a green release dry run. The tag is not placed.
 - Publishing: Open. No first publish happens until the last outside-review milestone closes
   (ruled 2026-11-18 UTC).
 
 ## Open decisions
 
-### The pre-release tag
-
-Background. A crate that leaves this tree gets its own repository, and nife then depends on it by
-a git commit. A tag such as `v0.1.0-pre.1` names that commit as a release candidate, with
-`Cargo.toml` carrying the same version, so nife pins a tag and not an arbitrary commit, and the
-plain `v0.1.0` stays free for the crates.io release. An approval of 2026-11-11 (UTC) gave seven
-cleared crates this tag, each after its move check passed and its release dry run was green. That
-approval named those crates. This crate had its clearance the same day but is not among them, and
-it has no repository yet.
-
-Recommendation: A.
-
-- A. Approve now: the tag `v0.1.0-pre.1` once the move lane finds the repository matches nife's
-  copy and the release dry run is green, under the same two conditions as the seven.
-- B. Rule it when the move lands, as its own question then.
-- C. No pre-release tag: nife pins a commit of the repository's `main` until the crates.io release.
-
-Door: one-way. Others fetch and pin a pushed tag at once, and a tag that moves breaks every pin
-that named it; nobody can reuse the version it burns for another commit.
-
-Prior art. Semantic Versioning 2.0.0 marks a candidate with a pre-release identifier
-(`0.1.0-pre.1`), and Cargo never selects a pre-release for a requirement that does not name one,
-so a pre-release cannot reach a user by accident. nife differs in that the tag is never
-published: it exists only so nife and basalt pin a named commit. Example: `generational_table`
-carries `v0.1.0-pre.2`, and nife pins that tag's commit by `rev` with `version = "0.1.0-pre.2"`.
-
-Blocks: the tag, and with it nife's pin by tag; not the move.
+None. The publishing hold stands.
 
 ## Follow-on
 
 - **Outstanding.** Item 5's exempts file and triage-ledger cleanup, the move with its repository
-  files (item 13), the server's per-board transmit parent and the README's board sentence. The
+  files (item 13), the `v0.1.0-pre.1` tag once the move check and the dry run pass (decision 6), the server's per-board transmit parent and the README's board sentence. The
   finding status above says what each needs.
-- **Done.** The five decisions and items 1 to 4, 6, 7 and 9 to 14, built in
+- **Done.** Decisions 1 to 5 and items 1 to 4, 6, 7 and 9 to 14, built in
   [#3572](https://github.com/nifeos/nife/pull/3572) and
   [#3625](https://github.com/nifeos/nife/pull/3625).
 
@@ -282,5 +266,5 @@ Blocks: the tag, and with it nife's pin by tag; not the move.
 An outside review of `jh7110_clock_and_reset` before its move. Two P0 items keep the template's
 checks red: 17 `doc_markdown` errors and 43 ceiling-0 name and acronym refusals. Three P1 items
 follow: a `reg` decoder that misreads a 12-byte property, a chip plan carrying one board's transmit
-parent, and a mutation record that describes code that no longer exists. Nine P2 items and five
-ruled decisions on public names and the plan's meaning complete it.
+parent, and a mutation record that describes code that no longer exists. Nine P2 items and six
+ruled decisions on public names, the plan's meaning and the pre-release tag complete it.
