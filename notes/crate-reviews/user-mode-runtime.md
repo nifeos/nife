@@ -80,6 +80,7 @@ version rows.
 | `python3 helpers/name_release.py --draft user_mode_runtime` | 122 rows: 24 ratified, 48 provisional, 49 with no block, 1 recorded (`_start`) |
 | `script/crate-review-packet user_mode_runtime` | facts match this note: the public API, the 100 `unsafe` sites and the dependents above |
 | `script/lint --quick` | passes all sections |
+| `script/test` (host tests, the patched std build, kernel and system tests under QEMU 11.1.2 on `aarch64`, `riscv64` and `x86_64` including OVMF and AMD-Vi, the screen boot tours, the redoxfs image check) | passes, exit 0 |
 | `script/crate-standalone user_mode_runtime` | 12 failures, all for the move lane (P1-8): five path dependencies (`abi`, `address_space_layout`, `clock_contract`, `current_cpu_contract`, `socket_contract`), the 108 names not yet ratified, 97 citations of the nife tree, milestones and sections, one architect's name, and the build and proofs that follow from the path dependencies |
 | `script/crate-move --dry-run --into <scratch> user_mode_runtime` | the copy, mutation cron, scaffold, name-block removal and patch checks pass, and the README prose caps and passive-voice checks pass after this pull request's README edit. It fails the build (the path dependencies), standalone, the citations and five mentions of nife, the same list as above, and prints the nife-side pull request: thirteen dependents repoint to the repository at the tag |
 
@@ -93,7 +94,6 @@ Not run, and so not claimed:
   `c_library` for the `*-unknown-nife` targets. They need `-Zbuild-std` against the patched
   standard library source, which `cargo xtask std-src` builds, and no call into the crate changed
   there: none of them called a sized accessor.
-- QEMU on `riscv64`: `qemu-system-riscv64` is not installed on the machine that ran this branch.
 
 ## Public API
 
