@@ -1,7 +1,8 @@
-# toolchain: nightly-2026-11-18
+# toolchain: nightly-2026-11-19
 # qemu: 11.1.2
 # date: 2026-11-18
 # why: nightly-2026-11-18: every row fell, none rose. Measured on one machine by running the same tree at both pins: the compiler alone moved yield_switch -18.28%, ipc_rtt -18.58%, relay_rtt -18.58%, call_reply -18.10%, broker_rtt -18.10%, spawn_reap -14.81%, map_new -10.54%, coremark -15.14%, null_syscall -11.27%, ctx_switch -17.81%, ipc_rtt_el0 -18.15%, sink_throughput -18.06%, map_el0 -19.62%, spawn_el0 -15.15%. Both nightlies carry LLVM 23.1.5 and the bench kernel builds at -O0; coremark touches no OS primitive and moved with the rest, so this is code generation, not a kernel path. Which rustc change did it is not identified. This save also absorbs drift already on main at the old pin, up to -6.98% (yield_switch) and +1.81% (map_el0) against the 2026-10-22 floor.
+# why: 2026-11-19: restamped from nightly-2026-11-18 to nightly-2026-11-19 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
 # bench/baseline-aarch64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
