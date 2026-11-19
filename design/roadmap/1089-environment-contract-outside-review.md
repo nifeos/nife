@@ -72,8 +72,8 @@ and the release steps.
 - Review package: Done, [the package](../../notes/crate-reviews/environment-contract.md). It lists
   every public name with a proposal, the checks run, the move's work, the dependents and what a
   rename would sweep.
-- Name ratification: Done. Every public name in the review package's Names table is ratified as
-  built, ruled 2026-11-19 UTC.
+- Name ratification: Done. The architect ratified every public name in the review package's Names
+  table as built on 2026-11-19 UTC.
 - Review clearance: Open. The architect clears the review from the package, which is the go to
   create the repository.
 
@@ -161,7 +161,7 @@ Ruled 2026-11-19 (UTC), option A on the names: the architect ratified every publ
 package's Names table as built.
 
 In force. The review package is `notes/crate-reviews/environment-contract.md`. It lists every
-public name with its ruling. These names are ratified:
+public name with its ruling. The architect ratified these names:
 
 - `PAGE_CONTENT_BYTES`, `ConfigurationPage` and `virtual_address`.
 - `time_zone`, `locale` and `terminal_type` on `PageBuilder` and `ConfigurationPage`, with the
@@ -180,8 +180,8 @@ of milestone 1017. A crate leaves once its review package lists every public nam
 the architect clears that review. The identity (13, 1, `ENVCONF1`, 107 bytes) has its ruling. The
 public names the lanes minted (`PAGE_CONTENT_BYTES`, `ConfigurationPage`, `virtual_address`,
 `time_zone`, `locale`, `terminal_type`, the three `is_known_*` functions and the `Unknown*`
-variants) are ratified. They bind the standard library overlay and every reader of the page once a
-release exists.
+variants) now bind the standard library overlay and, once a release exists, every reader of the
+page.
 
 Door: one-way. The repository is an outward step, and a ratified name binds the standard library
 overlay and every program that reads the page.
@@ -254,5 +254,5 @@ An outside review of `environment_contract` before it leaves. Of 16 findings and
 done: the reader panic, reader-side validation, the family and accessor names, the identity freeze
 and the compile-time cap check among them. Five are open: two wider Kani harnesses, the standalone
 files, a safe reader, the README's growth-path row and the architect's clearance of the review,
-which creates the repository. The names are ratified, the review package exists, and no decision
-is open.
+which creates the repository. The architect ratified the names, the review package exists, and no
+decision is open.
