@@ -79,8 +79,10 @@ one level down. Example: after the move the manifest line reads
 `intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "<full sha>" }`.
 
 Decided by the maintainer on 2026-11-19 (UTC), provisional: a two-way door, which the architect may
-revisit. `intrusive_queue` leaves first (milestone 1097 holds its package), then this crate pins it
-by git revision on that repository's `main`. Milestone 1017's list records the pair in that order.
+revisit. `intrusive_queue` leaves first (milestone 1097 (`intrusive_queue`: what an outside
+maintainer would fix before its first release) holds its package), then this crate pins it by git
+revision on that repository's `main`. The list of milestone 1017 (the contract crates leave in this
+order) records the pair in that order.
 
 ## D4. Two public names the gates refuse
 
