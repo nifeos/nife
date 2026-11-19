@@ -98,15 +98,15 @@ The architect froze the identity: magic `TIMEBAS1`, version 1, interface 9 (rule
 #3516).
 ### Clearing the review package
 
-Ruled 2026-11-19 (UTC): the review of `counter_frequency_contract` is cleared. Clearing the review
-approves creating `nifeos/counter_frequency_contract` and moving the crate there. The review
+Ruled 2026-11-19 (UTC): the architect clears the review of `counter_frequency_contract`. The
+clearance approves creating `nifeos/counter_frequency_contract` and moving the crate there. The review
 package is [the review package](../../notes/crate-reviews/counter-frequency-contract.md). It
 states the crate, its thirteen ratified names, its frozen identity (`TIMEBAS1`, version 1,
 interface 9) and what the move changes.
 
 ### The pre-release tag
 
-Ruled 2026-11-19 (UTC): the tag `v0.1.0-pre.1` is approved, once the move lane finds that the new
+Ruled 2026-11-19 (UTC): the architect approves the tag `v0.1.0-pre.1`, once the move lane finds that the new
 repository matches this tree's copy and the release dry run is green. These are the two conditions
 of the approval of 2026-11-11 (UTC) for seven cleared crates. After the move, nife pins the crate
 by `rev` at the commit of the tag, with `Cargo.toml` carrying the same version. Nothing publishes:
@@ -189,8 +189,8 @@ None. The publishing hold stands.
 ## Follow-on
 
 - **Recorded.** Item 10, the spelling of the page crates' offset constants: ruled, see the decisions above.
-- **Recorded.** The review is cleared (ruled 2026-11-19 UTC), which approves creating the
-  repository and moving the crate. The tag `v0.1.0-pre.1` is approved on the same date, after the
+- **Recorded.** The architect cleared the review (ruled 2026-11-19 UTC), which approves creating
+  the repository and moving the crate. The same ruling approves the tag `v0.1.0-pre.1`, after the
   move check and the release dry run pass.
 - **Outstanding.** The move itself, which a lane carries out, and the move dry run's two gaps in
   `helpers/crate_move.py`. The finding status above says what each needs.
@@ -204,4 +204,4 @@ have landed. They cover the `std` farm's source lookup, the stable clippy failur
 entries in the contract's own terms. They also cover the band the reader applies, the pointer-width
 assertion, the manifest comment and the documentation fixes. The rest are the template's prose
 gates, two Kani harnesses, and a README sentence on where the end-to-end test lives. Item 10, the private offset constants, follows the family rule. The identity does not change, and
-the review is cleared and the tag `v0.1.0-pre.1` is approved (ruled 2026-11-19 UTC), and the crate moves to its own repository next.
+the architect cleared the review and approved the tag `v0.1.0-pre.1` (ruled 2026-11-19 UTC), so the crate moves to its own repository next.
