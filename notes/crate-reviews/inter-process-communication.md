@@ -8,11 +8,11 @@ package of [crate-reviews.md](../crate-reviews.md), in its own file as every pac
 The kernel's blocking primitives, as plain state machines over intrusive queues. `Rendezvous` is a
 synchronous endpoint where a send and a receive meet or one waits, with a pending-signal count for
 a bound interrupt. `Notification` is a word with waiters. `Timer` is a one-shot timer with the
-helpers that keep a cached earliest deadline. `FutexTable` holds futex wait queues. It is `no_std` with no allocator and one dependency, `intrusive_queue`, and sixteen Kani harnesses
+helpers that keep a cached earliest deadline. `FutexTable` holds futex wait queues. It is `no_std` with no allocator and one dependency, `intrusive_queue`. Sixteen Kani harnesses
 prove the one-queue invariant, the token discipline and the delivery rules. The timer and the futex
 table stay in this crate (maintainer, provisional, 2026-11-14 UTC, D2); the README the move writes
 states the shared reason (the same token discipline and proof shape) in its first line. The
-milestone is [1095](../../design/roadmap/1095-inter-process-communication-outside-review.md), milestone 1095 (`inter_process_communication`: what an outside maintainer would fix before it leaves).
+record is [milestone 1095](../../design/roadmap/1095-inter-process-communication-outside-review.md) (`inter_process_communication`: what an outside maintainer would fix before it leaves).
 
 ## Identity
 
@@ -125,8 +125,8 @@ None beyond the milestone's open items (P0-3, P1-6, P1-7, P1-9, P2-11, P2-13, P2
 ## Result of `script/crate-standalone`
 
 A run with `--no-kani` fails exactly the checks the move resolves: 60 unratified names, the path
-dependency, the workspace `license` and `lints`, no `rust-version`, no README, no license files, and
-the citations (12 section, 12 path and 9 milestone lines, in patch headers and rustdoc). The build is
+dependency, the workspace `license` and `lints`, no `rust-version`, no README, no license files.
+The citations fail too (12 section, 12 path and 9 milestone lines, in patch headers and rustdoc). The build is
 skipped because the dependency is outside the copy. Host tests, clippy with warnings denied, the
 bare-metal builds and Kani run green in nife.
 
