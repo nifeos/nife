@@ -55,7 +55,7 @@ No new tool.
 - P2-15, `Snapshot` size: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Decision 1, identity with the line count inside it: Done (option A, 2026-11-14 UTC),
   [#3582](https://github.com/nifeos/nife/pull/3582).
-- Review package: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The repository stays Open: the clearance is an open
+- Review package: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The repository stays Open: the clearance remains an open
   decision below, and the move waits for `address_space_layout` and `current_cpu_contract` to leave
   first (milestone 1017 step 6).
 
@@ -65,9 +65,7 @@ No new tool.
 
 Ruled 2026-11-19 (UTC), option A. The table stands as the maintainer set it: `PAGE_CONTENT_BYTES`,
 `PAGE_VIRTUAL_ADDRESS`, the parameters `page_va` and `va` as `virtual_address`, `PAGE_WORDS`,
-`word::LINE_WORDS` and `atomic_word` for `counter`. `Snapshot` stays and the module sentence is
-reworded. Every other name stays as written, and no alias carries an old spelling. The names are
-built, and each public name's `Name:` block reads ratified 2026-11-19 (UTC).
+`word::LINE_WORDS` and `atomic_word` for `counter`. `Snapshot` stays, and the lane rewords the module sentence. Every other name stays as written, and no alias carries an old spelling. The names ship, and each public name's `Name:` block reads ratified 2026-11-19 (UTC).
 
 ### Clear the review package and approve the repository
 

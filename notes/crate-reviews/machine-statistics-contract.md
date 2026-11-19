@@ -125,7 +125,7 @@ date set the renames: `PAGE_BYTES` to `PAGE_CONTENT_BYTES`, `PAGE_VA` to `PAGE_V
 parameters `page_va` and `va` to `virtual_address`, `WORDS` to `PAGE_WORDS`, `word::LINE` to
 `word::LINE_WORDS` and `counter` to `atomic_word`. `Snapshot` stays. No alias carries an old
 spelling. The two submodule names `word::header` and `word::line` come from item 9 of the milestone,
-which the maintainer set provisionally: they keep the header indices and the per-line offsets in
+which the maintainer set provisionally. They keep the header indices and the per-line offsets in
 separate namespaces, and they keep `word::LINE_WORDS` and `word::cpu` where the ruled table puts
 them. The architect clears the package, and that clearance covers these two module names too.
 
