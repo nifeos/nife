@@ -328,7 +328,7 @@ fn receive_within(ep: u64, seconds: u64, d: Option<&Deadline>) -> Option<(u64, u
 
 /// The machine's free-frame count, from the statistics page the progenitor mapped.
 fn free_frames() -> u64 {
-    use machine_statistics_contract::word::FREE_FRAMES;
+    use machine_statistics_contract::word::header::FREE_FRAMES;
     use machine_statistics_contract::{PAGE_VA, counter};
     // SAFETY: the progenitor mapped the machine statistics page read-only at `PAGE_VA`.
     unsafe { counter(PAGE_VA, FREE_FRAMES) }.load(Ordering::Relaxed)

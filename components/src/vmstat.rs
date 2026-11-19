@@ -37,7 +37,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use machine_statistics_contract::{PAGE_VA, Snapshot};
+use machine_statistics_contract::{PAGE_VIRTUAL_ADDRESS, Snapshot};
 use user_mode_runtime::{exit, is_granted, monotonic_nanoseconds, send};
 
 const REPORT: u64 = 0;
@@ -108,9 +108,9 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let has_diag = is_granted(DIAG_SLOT);
     let granted = is_granted(MACHINE_SLOT);
     let machine = if granted {
-        // SAFETY: granted only alongside a read-only mapping of the same frame at `PAGE_VA`, which
+        // SAFETY: granted only alongside a read-only mapping of the same frame at `PAGE_VIRTUAL_ADDRESS`, which
         // lives as long as this process (`system_initializer`'s spawn service).
-        unsafe { Snapshot::read(PAGE_VA) }
+        unsafe { Snapshot::read(PAGE_VIRTUAL_ADDRESS) }
     } else {
         None
     };

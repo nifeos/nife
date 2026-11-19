@@ -1538,7 +1538,7 @@ impl Service<'_> {
         }
         if let (true, Some(page)) = (wants.machine, req.delegated.machine_page) {
             map_buf[map_n] = (
-                machine_statistics_contract::PAGE_VA,
+                machine_statistics_contract::PAGE_VIRTUAL_ADDRESS,
                 page,
                 abi::address_space::MAP_READ_ONLY,
             );

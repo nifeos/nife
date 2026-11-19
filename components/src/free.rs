@@ -3,7 +3,7 @@
 //!
 //! Two reads and two sinks; what to print, with examples, is `crates/free`. Slot 0 is the output
 //! sink and slot 8 the diagnostics sink (both `WRITE`). Slot 11 is the machine statistics page
-//! (`READ`, also mapped read-only at `machine_statistics_contract::PAGE_VA`, written by the kernel
+//! (`READ`, also mapped read-only at `machine_statistics_contract::PAGE_VIRTUAL_ADDRESS`, written by the kernel
 //! alone) for the `Mem:` line. Slot 12 is the job pool behind `Yours:`, asked `MemoryRegion::USAGE`
 //! twice through a view narrowed to `ENUMERATE`, which answers what was spent and cannot spend,
 //! split or destroy. Neither view can change anything.
@@ -26,7 +26,7 @@
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use free::{MachineRefusal, Share, ShareRefusal};
-use machine_statistics_contract::{PAGE_VA, Snapshot};
+use machine_statistics_contract::{PAGE_VIRTUAL_ADDRESS, Snapshot};
 use user_mode_runtime::{exit, is_granted, memory_region_usage, send};
 
 const REPORT: u64 = 0;
@@ -101,9 +101,9 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 
     let page = if is_granted(MACHINE_SLOT) {
         // SAFETY: the capability at `MACHINE_SLOT` is granted only alongside a read-only mapping of
-        // the same frame at `PAGE_VA` (`system_initializer`'s spawn service does both from one
+        // the same frame at `PAGE_VIRTUAL_ADDRESS` (`system_initializer`'s spawn service does both from one
         // declaration), and that mapping lives as long as this process.
-        unsafe { Snapshot::read(PAGE_VA) }.ok_or(MachineRefusal::Unrecognized)
+        unsafe { Snapshot::read(PAGE_VIRTUAL_ADDRESS) }.ok_or(MachineRefusal::Unrecognized)
     } else {
         Err(MachineRefusal::Withheld)
     };
