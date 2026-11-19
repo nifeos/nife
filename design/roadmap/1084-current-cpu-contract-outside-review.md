@@ -24,7 +24,7 @@ and `design/naming.md`. Nothing below reopens:
 - the mechanism (a per-thread read-only page, §204), the `Relaxed` store and load with the
   scheduler's handoff as the ordering argument, or the fixed address beside the stack;
 - the identity values a published program already compares: `MAGIC` `CURRCPU1`, `VERSION` 1, and
-  `INTERFACE_ID` 10 in milestone 956 (the linked interfaces carry checkable versions)'s table (ratification is asked below, the values are not);
+  `INTERFACE_ID` 10 in milestone 956 (the linked interfaces carry checkable versions)'s table (the values are not reopened);
 - the deliberate `!Send` and `!Sync` of `CurrentCpuPage`, which the sibling package records as a
   difference from `CounterFrequencyPage`;
 - the two renames the page-contract family rule already settles (`design/naming/crates.md`), which
@@ -44,8 +44,8 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
 - 2, README and license files: Done, [#3657](https://github.com/nifeos/nife/pull/3657).
 - 3, docs cite nife and quote the decider: Done, [#3657](https://github.com/nifeos/nife/pull/3657).
 - 4, names that lack ratification: Open. The public renames are in
-  ([#3657](https://github.com/nifeos/nife/pull/3657)), and their ratification is [an open
-  decision](#ratify-the-provisional-names). `spelled_out` still refuses the test helper
+  ([#3657](https://github.com/nifeos/nife/pull/3657)) and ratified (ruled 2026-11-19 UTC, option A);
+  the `Name:` blocks follow. `spelled_out` still refuses the test helper
   `Aligned::va` and a test binding `va`; the maintainer rules their spelled-out names provisionally.
 - 5, `cpu()` returns an id past the bound: Done, [#3542](https://github.com/nifeos/nife/pull/3542).
 - 6, `allowance()` truncates on narrow targets: Done,
@@ -69,43 +69,13 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
 - 16, two notes that do not link: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Decision A, the CPU id bound is part of the identity: Done,
   [#3542](https://github.com/nifeos/nife/pull/3542).
-- Decision B, the names: Open. Built ([#3657](https://github.com/nifeos/nife/pull/3657)); ratifying
-  them is [an open decision](#ratify-the-provisional-names).
+- Decision B, the names: Done (ruled 2026-11-19 UTC, option A). Built
+  ([#3657](https://github.com/nifeos/nife/pull/3657)) and ratified as built.
 - Review package: Open. No package for this crate exists under `notes/crate-reviews/`; a lane writes
   one.
 - Review clearance: Open. It is [an open decision](#clear-the-review-for-the-move).
 
 ## Open decisions
-
-### Ratify the provisional names
-
-Background. A public name is what every program that links the crate writes, so a rename after the
-first publish breaks each of them, and the standalone gate's `names` check refuses the move while
-any block reads provisional. The tree carries these names: `PAGE_CONTENT_BYTES`,
-`PAGE_VIRTUAL_ADDRESS`, `thread_page_virtual_address`, `build_page_with`, `CPU_OFFSET_BYTES` (the
-family-wide `<FIELD>_OFFSET_BYTES` form), and the parameters `page_virtual_address` and
-`virtual_address`. `MAGIC`, `VERSION`, `INTERFACE_ID`, `UNSCHEDULED`, `CPU_ID_BOUND` (kept over
-`MAXIMUM_CPUS`, since it bounds ids and is not a count), `THREAD_PAGE_SLOTS`, `build_page`,
-`publish`, `CurrentCpuPage`, `new`, `cpu`, `allowance` and `tick_hertz` keep their spellings. No
-alias carries an old name. Ten `Name: provisional` blocks remain, `VERSION` and `INTERFACE_ID` among
-them.
-
-Recommendation: A. Each name follows a ruled rule: the page-contract family pattern, units and
-`virtual_address` spelled out, and no alias for an old nife spelling.
-
-- A. Ratify every name as built.
-- B. Ratify as built except `CPU_ID_BOUND`, which becomes `MAXIMUM_CPUS`, the kernel's ratified name
-  for the same value.
-- C. Ratify as built except the names calef lists, which return to a rename lane.
-
-Door: one-way. The names become permanent at the first publish.
-
-Prior art. Linux's `rseq` calls the unscheduled state `RSEQ_CPU_ID_UNINITIALIZED`, and the sibling
-`counter_frequency_contract` ratified its 13 names in one pull request with the same table. nife
-differs by spelling every abbreviation out. Concrete example: a runtime's one line reads
-`CurrentCpuPage::new(PAGE_VIRTUAL_ADDRESS)`, the sibling's shape to the word.
-
-Blocks: the move.
 
 ### Clear the review for the move
 
@@ -198,7 +168,7 @@ layout, an identity, a dependency); everything else is two-way and the maintaine
    page-contract family rule.
    Evidence: `src/lib.rs` lines 35, 42, 51, 73, 98, 108, 115, 121, 127, 141, 149, 159, 179, 211,
    228, 255, 269, 277; the gate's output.
-   Change: the `--draft` table, built provisionally and waiting on ratification. One rename lane applies those spellings in the crate, the kernel (six sites), the
+   Change: the `--draft` table, built and ratified. One rename lane applies those spellings in the crate, the kernel (six sites), the
    runtime, the fixtures, the system tests and `xtask/src/farm`. Ratified names get their blocks in
    the commit that applies them; the move commit strips them.
    Door: two-way before the first tag (Decision B). Effort: S for the rename lane.
@@ -213,9 +183,8 @@ The P1 items are in [the appendix](1084-current-cpu-contract-outside-review/befo
 
 ## Decisions for the architect
 
-Decision A and the type of `CPU_OFFSET_BYTES` have rulings, which are the rules in force. Decision B,
-the names, has landed in code and waits on ratification under [Open
-decisions](#ratify-the-provisional-names).
+Decision A, the type of `CPU_OFFSET_BYTES` and the public names have rulings, which are the rules in
+force.
 
 ### Decision A. The bound on CPU ids is part of this page's identity
 
@@ -256,6 +225,24 @@ re-read). The tree has both: `socket_contract` publishes `u64` offsets and
 `(PAGE_VIRTUAL_ADDRESS + CPU_OFFSET_BYTES) as u32` for a 32-bit absolute load; a `usize` constant
 would make that line `(PAGE_VIRTUAL_ADDRESS + CPU_OFFSET_BYTES as u64) as u32`.
 
+### The public names
+
+Ruled 2026-11-19 (UTC), option A. Every public name stands as built. These are `PAGE_CONTENT_BYTES`,
+`PAGE_VIRTUAL_ADDRESS`, `thread_page_virtual_address`, `build_page_with`, `CPU_OFFSET_BYTES` (the
+family-wide `<FIELD>_OFFSET_BYTES` form), and the parameters `page_virtual_address` and
+`virtual_address`. `MAGIC`, `VERSION`, `INTERFACE_ID`, `UNSCHEDULED`, `CPU_ID_BOUND` (kept over
+`MAXIMUM_CPUS`, since it bounds ids and is not a count), `THREAD_PAGE_SLOTS`, `build_page`,
+`publish`, `CurrentCpuPage`, `new`, `cpu`, `allowance` and `tick_hertz` keep their spellings. No
+alias carries an old name. Each name follows a ruled rule: the page-contract family pattern, units
+and `virtual_address` spelled out, and no alias for an old nife spelling. The names become permanent
+at the first publish, so this is a one-way door. The `Name:` blocks in the crate source follow in a
+later change.
+
+Prior art. Linux's `rseq` calls the unscheduled state `RSEQ_CPU_ID_UNINITIALIZED`, and the sibling
+`counter_frequency_contract` ratified its 13 names in one pull request with the same table. nife
+differs by spelling every abbreviation out. Concrete example: a runtime's one line reads
+`CurrentCpuPage::new(PAGE_VIRTUAL_ADDRESS)`, the sibling's shape to the word.
+
 ## Done when
 
 The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-when.md).
@@ -279,14 +266,13 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 4 and 12, Decision B's ratification, the review package and the
+- **Outstanding.** Items 1, 4 and 12, the review package and the
   review clearance, each as [Finding status](#finding-status) gives it. Checked against the crate's
   code and the template's naming helpers.
-- **Milestone 1017.** The contract crates leave in its order. This crate moves once the architect
-  has ratified the names, so the standalone gate's `names` check can pass.
+- **Milestone 1017.** The contract crates leave in its order. This crate moves once the `Name:` blocks
+  read ratified, so the standalone gate's `names` check can pass.
 
 ## Index row
 
 An outside review of `current_cpu_contract` before it leaves. Four P0 items are the standalone gate's thirteen failures (manifest, files, citations, names). Eight P1 items come before the first tag, and one of them is a reader that hands back an id the consumer cannot index. Four P2 items remain. The CPU id
-bound is part of the page's identity (ruled); the published type of `CPU_OFFSET_BYTES` stays `u64` (ruled); the eighteen
-names wait on a ruling.
+bound is part of the page's identity (ruled); the published type of `CPU_OFFSET_BYTES` stays `u64` (ruled); the public names stand as built (ruled).
