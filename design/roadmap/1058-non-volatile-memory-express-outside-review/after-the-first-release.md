@@ -26,7 +26,8 @@ specification open. Change: `is_success`, `status_code_type`, `status_code`, `do
 type and the two codes the example of the README meets become constants, and a harness shows that
 the methods rebuild the field. New public names. S.
 
-Status: Landed in nifeos/non_volatile_memory_express#23. Two of its names became `has_more_status_information` and `is_retry_refused` in nifeos/non_volatile_memory_express#36.
+Status: Landed in nifeos/non_volatile_memory_express#23. Two of its names became
+`has_more_status_information` and `is_retry_refused` in nifeos/non_volatile_memory_express#36.
 
 ## P2-3. No value for a clean shutdown, and no status bits for it
 
@@ -38,7 +39,8 @@ to flush and stop, and a real drive loses its volatile cache at power off. Evide
 `CONTROLLER_STATUS_SHUTDOWN_*` bits, each written as a shift, with the mnemonics of the
 specification as aliases. New public names. XS.
 
-Status: Landed in nifeos/non_volatile_memory_express#21. Its builder became `controller_configuration_with_shutdown_notification` in nifeos/non_volatile_memory_express#36.
+Status: Landed in nifeos/non_volatile_memory_express#21. Its builder became
+`controller_configuration_with_shutdown_notification` in nifeos/non_volatile_memory_express#36.
 
 ## P2-4. Identify stops at two facts of one namespace
 
@@ -51,7 +53,9 @@ transfers below two pages, parses the structures by hand. Change:
 `parse_identify_controller` that reads `MDTS` and `NN`, total for any 4096 bytes, with a harness
 and patch in the shape of the namespace parse. New public names. S.
 
-Status: Landed in nifeos/non_volatile_memory_express#24 for the namespace list, `MDTS` and `NN`. Open: the queue entry sizes become a BUGS entry in nifeos/non_volatile_memory_express#38, a draft until `v0.1.0-pre.3` is tagged.
+Status: Landed in nifeos/non_volatile_memory_express#24 for the namespace list, `MDTS` and `NN`.
+Open: the queue entry sizes become a BUGS entry in nifeos/non_volatile_memory_express#38, a draft
+until `v0.1.0-pre.3` is tagged.
 
 ## P2-5. Nothing tracks which command identifiers are in flight
 
@@ -61,7 +65,8 @@ needs one. Change, after P1-1 and P1-7: a fixed-capacity `InFlight<N>` bitmap (n
 that mints an identifier on push and releases it on an owned completion, and refuses an identifier
 it did not mint. A harness shows that no identifier releases twice. A new public name. S.
 
-Status: Landed in nifeos/non_volatile_memory_express#25. The type became `CommandIdentifierSet`, with `acquire`, in nifeos/non_volatile_memory_express#36.
+Status: Landed in nifeos/non_volatile_memory_express#25. The type became `CommandIdentifierSet`,
+with `acquire`, in nifeos/non_volatile_memory_express#36.
 
 ## P2-6. No test double shows the whole loop
 
@@ -96,7 +101,8 @@ and `Cargo.toml` has no `include`. Change: `include = ["src/**", "falsifications
 "CHANGELOG.md", "LICENSE-*", "Cargo.toml"]`, which keeps the patches, since shipping them is the
 point. Two-way. XS.
 
-Status: Landed in nifeos/non_volatile_memory_express#16, with nifeos/non_volatile_memory_express#32 anchoring the patterns.
+Status: Landed in nifeos/non_volatile_memory_express#16, with nifeos/non_volatile_memory_express#32
+anchoring the patterns.
 
 ## P2-9. `rust-version` may sit higher than the code needs
 

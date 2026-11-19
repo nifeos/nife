@@ -120,7 +120,8 @@ Every address parameter takes a `_physical_address` suffix: `data_physical_addre
 shift takes the one spelling `logical_block_size_shift`, for the free function and the field alike. One-way at the tag.
 S.
 
-Status: Landed in nifeos/non_volatile_memory_express#19; `doorbell_stride` later became `doorbell_stride_exponent` in nifeos/non_volatile_memory_express#35.
+Status: Landed in nifeos/non_volatile_memory_express#19; `doorbell_stride` later became
+`doorbell_stride_exponent` in nifeos/non_volatile_memory_express#35.
 
 #### P1-3. Two harness names and their patch files carry `sq` and `cq`
 
@@ -181,7 +182,8 @@ three dwords. A helper, `Completion::phase_of(dword_three: u32) -> bool` (name p
 caller test ownership before it has the whole entry. The text is two-way; the helper is a new
 public name. XS.
 
-Status: Landed in nifeos/non_volatile_memory_express#16 (the text) and nifeos/non_volatile_memory_express#23 (the helper, `Completion::is_phase_tag_set`).
+Status: Landed in nifeos/non_volatile_memory_express#16 (the text) and
+nifeos/non_volatile_memory_express#23 (the helper, `Completion::is_phase_tag_set`).
 
 #### P1-7. The example of the README teaches a completion that frees nothing
 
@@ -266,8 +268,9 @@ Change: when the template releases, take the pin bump from Dependabot, and in th
 add the scaffold's `mutation.yml` caller and budgets file. The settings script then makes the tenth
 check required, and one dispatch on `main` gives the release gate a green run. Two-way. S.
 
-Status: Landed: nifeos/non_volatile_memory_express#13 added the mutation caller, and nifeos/non_volatile_memory_express#34 pins template release `v8`. The ruleset requires `check / mutation-diff`, and `mutation / mutation` has a green full run on
-`main`.
+Status: Landed: nifeos/non_volatile_memory_express#13 added the mutation caller, and
+nifeos/non_volatile_memory_express#34 pins template release `v8`. The ruleset requires `check /
+mutation-diff`, and `mutation / mutation` has a green full run on `main`.
 
 #### P1-14. `IdentifyNamespace::default()` reads as a namespace
 
