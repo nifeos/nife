@@ -90,3 +90,4 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | ready for review |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |
+| [`byte_glob`](crate-reviews/byte-glob.md) | contract | names and clearance for the architect |
