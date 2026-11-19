@@ -7,6 +7,8 @@
 //! renders relative to it ([`Cwd::render`]), so every shell has its own root. [`TwoRoots`] and
 //! [`Bindings`] compose a second root and named positions. See notes/shell-navigation.md and
 //! notes/grant-expression/grant-plan-crate.md ("Navigation").
+//!
+//! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, spelled out.
 
 /// The deepest a shell tracks below its own root.
 ///
@@ -21,7 +23,7 @@ pub const MAXIMUM_DEPTH: usize = 8;
 /// component of a path can be a file, and a file may be named that long. A component the shell
 /// descends through or stands in is held to [`MAXIMUM_DIRECTORY_NAME_BYTES`] as well ([`Cwd::descend`]).
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
 pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 
 /// **The longest directory name a [`Cwd`] or a bound name holds**, which is [`crate::MAXIMUM_WORDS_NAME_BYTES`]:
@@ -30,7 +32,7 @@ pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 /// It is also what keeps a [`Cwd`] small, and the shell carries one by value in every
 /// [`crate::Holdings`] and several in an [`crate::Endowment`].
 ///
-/// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
 pub const MAXIMUM_DIRECTORY_NAME_BYTES: usize = crate::MAXIMUM_WORDS_NAME_BYTES;
 
 // A bound directory entry holds its name length as a `u8`.
@@ -40,7 +42,7 @@ const _: () = assert!(MAXIMUM_DIRECTORY_NAME_BYTES <= u8::MAX as usize);
 /// The bytes [`Cwd::render`] can need: a slash per level, plus each name, plus the leading slash a
 /// root renders as on its own.
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
 pub const MAXIMUM_RENDERED_PATH_BYTES: usize =
     1 + MAXIMUM_DEPTH * (1 + MAXIMUM_DIRECTORY_NAME_BYTES);
 
@@ -509,6 +511,8 @@ impl BindEntry {
     }
 
     /// Where this entry points, **before** anything after the bound name in a token is applied.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built.
     pub fn position(&self) -> Cwd {
         self.position
     }

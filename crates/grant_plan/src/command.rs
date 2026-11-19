@@ -290,6 +290,8 @@ pub struct DirectoryGrant {
 /// **`rm`'s options**, by the bit they occupy in [`Endowment::short_options`], which is their position in
 /// `rm`'s manifest. Named here so the shell, the program and the tests share one definition
 /// rather than three copies of an ordering; `rm_options_are_numbered_by_their_position` pins them.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, spelled out.
 pub mod rm_options {
     /// `-r`: recurse. It is also `rm`'s `subtree_option`, so typing it visibly widens the grant.
     pub const RECURSIVE: u64 = 1 << 0;

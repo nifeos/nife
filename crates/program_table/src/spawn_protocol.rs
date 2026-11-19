@@ -7,6 +7,8 @@
 //! on the result endpoint. A userspace protocol, not kernel ABI: the kernel routes these words as
 //! any IPC and never reads them (§10 (process model: capability-based)).
 //! notes/grant-expression/spawn-protocol.md has the exchange.
+//!
+//! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, spelled out.
 
 //! # BUGS
 //!
@@ -489,7 +491,7 @@ pub fn activation_reply(status: ActivationStatus, live: u32, member: u64) -> (u6
 /// width of a package header's name field (`package_archive::NAME_LEN`). A longer name, which only
 /// a hand-written table holds, arrives cut at this width. Name: provisional, milestone 919's lane.
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
 pub const MAXIMUM_HOLDER_NAME_BYTES: usize = 32;
 
 /// **The two messages that follow a [`ActivationStatus::NameTaken`] reply on an installer
@@ -979,6 +981,8 @@ pub fn image_pages(len: u64) -> u64 {
 }
 
 /// The program id from a received request (word 0).
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built.
 pub fn program_id(w0: u64) -> u64 {
     w0
 }

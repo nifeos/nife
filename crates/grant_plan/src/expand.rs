@@ -12,7 +12,7 @@ use crate::navigation::{self, Step};
 
 /// The longest name a grant can carry, which is [`crate::MAXIMUM_FILE_NAME_BYTES`].
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
 pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 
 /// **The most names one expansion may grant**: Unix's `ARG_MAX` as a capability limit. The set

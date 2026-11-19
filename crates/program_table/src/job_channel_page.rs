@@ -8,6 +8,8 @@
 //! The layout is four `u64` words at the byte offsets below. The shell writes [`INTERRUPT`]; the
 //! child writes [`DONE`], [`STATUS`] and [`HEARTBEAT`]. One writer per word, so no locking is
 //! needed: each side reads the other's words and writes only its own.
+//!
+//! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, spelled out.
 
 /// Byte offset of the interrupt flag (shell writes 1, child polls).
 pub const INTERRUPT: usize = 0;

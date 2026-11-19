@@ -359,6 +359,7 @@ pub enum WordGrant {
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 // This module is private, so nothing outside can reach the constant; the mutation exclusion in
 // .cargo/mutants.toml is its reader, and helpers/mutation_exclusion_check.py fails if it is gone.
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built.
 #[allow(dead_code)]
 pub const RIGHTS_BITS_DO_NOT_OVERLAP: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
 

@@ -96,7 +96,7 @@ pub struct VerbGrant {
 
 /// The longest verb a verb table may hold, in bytes: `capability_manifest_note`'s record gives each sixteen.
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
 pub const MAXIMUM_VERB_BYTES: usize = 16;
 
 /// **A manifest narrowed by the verb a line used** (milestone 809 (the package client becomes a

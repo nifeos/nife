@@ -12,7 +12,7 @@ use super::*;
 /// milliseconds. 252, calef's ruling of 2026-10-24 (UTC) on milestone 946 (a granted file name can
 /// be longer than sixteen bytes)).
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
 pub const MAXIMUM_FILE_NAME_BYTES: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, duplicated from
