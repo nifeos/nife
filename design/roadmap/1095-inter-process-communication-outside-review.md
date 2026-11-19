@@ -37,7 +37,7 @@ milestone reaches delivery.
 - P0-1, no review package: Open. `notes/crate-reviews/` has none for this crate; a lane writes it
   now (ruled, maintainer, provisional, 2026-11-19 UTC, D6).
 - P0-2, the one dependency has not left and appears in no plan: Ruled (maintainer, provisional,
-  2026-11-19 UTC, D3). Not built: `intrusive_queue` leaves first, under milestone 1097.
+  2026-11-19 UTC, D3). Not built: `intrusive_queue` leaves first, under milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release).
 - P0-3, the crate does not stand alone: Open. The move strips the ten `Name:` lines and the
   citations, and gives the manifest its own `license`, `lints` and `rust-version` in place of
   `license.workspace` and the allowlist comment.
