@@ -17,8 +17,7 @@ Milestone 814 (`non_volatile_memory_express`: proven NVMe queue logic, released 
 the extraction and the release path; this block owns the findings that land inside that path.
 
 The review package settles the crate name, the version `0.1.0`, the dual license and every name it
-records as ratified, and those stay closed here. It clears the move, and neither the tag nor
-publication.
+records as ratified. It clears the move, and neither the tag nor publication.
 
 Reuse: the shared crate workflows `nifeos/crate-workflows` and their scaffold, `cargo-mutants`,
 Kani, `cargo-fuzz` and the harness shapes of the crate. No new tool.
@@ -26,9 +25,8 @@ Kani, `cargo-fuzz` and the harness shapes of the crate. No new tool.
 ## Goal
 
 A stranger who finds `nifeos/non_volatile_memory_express` can tell in one screen what it does and
-what it leaves to them. They can build, test, prove and falsify it from the README alone. They can
-write a working polled driver against QEMU from the example of the README without first reading
-the specification. Every name they meet says what it holds, and every claim of the README is a
+what it leaves to them. They can build, test, prove and falsify it from the README alone, and write
+a working polled driver against QEMU from its example without first reading the specification. Every name they meet says what it holds, and every claim of the README is a
 harness that fails under its patch.
 
 Publishing stays held. No crate from this organization publishes to crates.io until the
@@ -87,8 +85,7 @@ Status: Ruled, and `main` already spelled them so.
 covers, yet `holds_whole_block` and `transfer_command` (`src/namespace.rs`) take `unit` again on
 every call. The byte bound uses the caller's `unit`; the logical block address uses the stored
 `blocks_per_transfer`. When the two disagree, the byte bound passes and the command addresses a
-block past the end. The controller refuses such a command with a status, so this is a claim that is too
-strong, not memory unsafety. The harness
+block past the end. The controller refuses such a command with a status, so this is not memory unsafety. The harness
 `a_transfer_command_is_only_built_for_a_block_the_namespace_has` (`src/verification.rs`) states
 only the byte bound, so it cannot see the mismatch.
 
@@ -293,18 +290,30 @@ Status: Landed in nifeos/non_volatile_memory_express#19.
 3. The public API of P1-1, P1-2, P1-5, P1-9 and P1-14. All five ruled 2026-11-09, as the items
    state, and landed.
 4. The new names of P1-6, P1-10 and P2-1 to P2-5. Rulings of 2026-11-19 settled seven, and
-   nifeos/non_volatile_memory_express#35 and #36 landed them. Open: the other fourteen need a ruling.
+   nifeos/non_volatile_memory_express#35 and #36 landed them. Ruled 2026-11-19: the other fourteen
+   stand as built, ratified. They are `admin_queue_attributes`, `physical_region_page_list`,
+   `Completion::is_success`, `status_code` and `status_code_type`, `STATUS_CODE_TYPE_GENERIC`,
+   `GENERIC_STATUS_SUCCESSFUL_COMPLETION`, `GENERIC_STATUS_INVALID_FIELD_IN_COMMAND`,
+   `CONTROLLER_STATUS_SHUTDOWN_OCCURRING`, `CONTROLLER_STATUS_SHUTDOWN_COMPLETE`,
+   `CONTROLLER_OR_NAMESPACE_STRUCTURE_ACTIVE_NAMESPACE_LIST`,
+   `IdentifyController::maximum_data_transfer_bytes`, `NotInFlightError` and
+   `CompletionQueue::expects_phase_tag_set`.
 5. Every two-way item, the harness names of P1-3 among them, is a provisional call of the
    maintainers and not a ruling. So are the two of #38: two kernel command line words that shape
    the QEMU example, and a BUGS line in place of a parse for P2-4's entry sizes.
+
+6. Whether the first release waits for the two hardware rows. Ruled 2026-11-19: it waits for both.
+   One is the driver on one real controller with a non-zero `FLBAS`, a drive with a 4096-byte
+   logical block format. The other is the long ordering run on a weakly ordered host. Both must
+   run on real hardware. The planned host is radon (VisionFive 2, JH7110, RVWMO) with an M.2 NVMe
+   drive, once milestone 163 lands. An emulated NVMe device under QEMU may serve as interim
+   evidence and satisfies neither row.
 
 The publishing hold stands.
 
 ## Open decisions
 
-One: whether the architect ratifies as built the fourteen public names minted after the review,
-still provisional. The brief is in
-[the open decisions appendix](1058-non-volatile-memory-express-outside-review/open-decisions.md).
+None. The publishing hold stands.
 
 ## Prior art
 
@@ -319,30 +328,25 @@ claims none of the QEMU or hardware steps.
 
 ## BUGS
 
-- Nobody has observed the hazard of P1-6 on hardware. Its fix is documentation and one helper,
-  cheap enough to land without the observation.
+- Nobody has observed the hazard of P1-6 on hardware.
 - P1-9 has run under QEMU with a 16 KiB controller page, not on a kernel with 16 KiB pages built
   against the crate.
-- The prior-art rows for `nvme-driver`, `vroom` and Redox describe their front pages, not their
-  code. A user of one of them may miss less, or more, than the table says.
-- The review did not run the name checks of the template at its head. The review package ran them
-  at the pin, and P1-2 and P1-3 are what reading the rules against the code found beyond that run.
-- The fuzz runs took 20 seconds per target, and the weekly job gives five minutes. Neither is a
-  long campaign, and the repository commits no seed corpus, so each run starts cold.
-- The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
-  asked for anything yet.
+- The prior-art rows for `nvme-driver`, `vroom` and Redox describe their front pages, not their code.
+- The review did not run the name checks of the template at its head, only at the pin.
+- The fuzz runs took 20 seconds per target and the weekly job gives five minutes, with no seed
+  corpus, so each run starts cold.
+- The P2 order is the reviewer's judgment of what a user asks for first.
 
 ## Where this stands
 
-Every finding has landed but the queue entry sizes of P2-4 (#38). One decision is open; two steps
-need the bench.
+Every finding has landed but the queue entry sizes of P2-4 (#38). Two steps need the bench, and
+they block the first release.
 
 | item | what remains | blocker |
 |---|---|---|
 | P2-4, QEMU | The entry size BUGS line and the QEMU runs at depth 2 and with a 16 KiB page, all in #38 | #38 is a draft until `v0.1.0-pre.3` is tagged |
-| Names | Fourteen names minted after the review stay provisional | Open: needs a ruling |
-| Hardware | The driver on one real controller with a non-zero `FLBAS` | bench |
-| aarch64 | A long ordering run on a weakly ordered host | bench |
+| Hardware | The driver on one real controller with a non-zero `FLBAS` | bench; blocks the first release |
+| Ordering | A long ordering run on a weakly ordered host | bench; blocks the first release |
 | Tag | `v0.1.0-pre.3`, ruled and prepared in #37 | another lane tags it |
 | Release | `publish = false` goes, and `v0.1.0`, only when the hold lifts | publishing hold |
 
@@ -353,7 +357,8 @@ need the bench.
 - **Done.** The tags `v0.1.0-pre.1` (`27aa19c`) and `v0.1.0-pre.2` (`73b335c`), and the stranger
   and QEMU runs of #33.
 - **Outstanding.** Every row of the table above, checked on `main` and in the open
-  pull requests.
+  pull requests. The two bench rows block delivery, and the first publish of every reviewed crate
+  waits for them (decision 6).
 
 ## Index row
 
