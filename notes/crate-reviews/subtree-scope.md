@@ -74,10 +74,10 @@ All on the branch's tip, on a loaded shared host.
 | Miri over the host tests | passes |
 | `cargo kani`, the five harnesses | verify; the peak stays near the recorded 5.9 GiB |
 | `script/falsifications --check` | every patch of the crate applies |
-| `script/falsifications --sweep subtree_scope` | SWEEP |
+| `script/falsifications --sweep subtree_scope` | 5 swept, 0 survivors: every harness fails under its patch (the slowest replay, `a_step_is_one_name`, took 833 s on a loaded host) |
 | `cargo test -p redoxfs_server` | passes with the renames |
-| `script/crate-standalone subtree_scope` | STANDALONE |
-| `script/crate-move --dry-run subtree_scope` | MOVE |
+| `script/crate-standalone subtree_scope` | 15 failures, every one move work: the crate name provisional and 21 names not ratified, the `filesystem_contract` path dependency, the inherited `license` and `lints`, no `rust-version`, no README or license files, and the citations of milestones, the architect's name, a nife path and sections in the crate documentation. The build and proofs steps are skipped because the copy does not build without the dependency |
+| `script/crate-move --dry-run subtree_scope` | stages at template `v8`; the five falsification patches apply with no offset and no fuzz; passive voice, history phrases, spelled-out words, unit symbols and file length pass. 8 findings for the move lane: no README, the build (the inherited `license`), the README's prose caps, and the citations in the crate documentation, all P0-1 and P0-2 |
 | `script/lint` | LINT |
 
 The measurement behind P1-9 is below under Proofs.
