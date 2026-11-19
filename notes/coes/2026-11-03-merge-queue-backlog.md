@@ -198,7 +198,7 @@ Each proposal and milestone below names this file and its row, under its title.
 | 1 | The heavy gates run only in the merge queue, and the `full-ci` label runs them on demand. Priority 1. | delivered | **Done.** #3176, merged 2026-11-03 23:56 UTC |
 | 2 | The names note carries no totals, and each baseline row stands alone between blank lines. Priority 1. | delivered | **Done.** #3181, merged 2026-11-04 01:34 UTC |
 | 3 | Stage 1 of the owned runners, behind `NIFE_RUNNER_OWNED`; setting the variable is the architect's. Priority 1. | delivered | **Done.** #3180, merged 2026-11-04 04:54 UTC |
-| 4 | Rent more hosted concurrency, or not: the same cap bound again. Priority 1, owner the architect. | proposed | **Milestone 965.** Milestone 965 (gating CI rents more concurrency before it owns a runner) |
+| 4 | Rent more hosted concurrency, or not: the same cap bound again. Priority 1, owner the architect. | delivered | **Milestone 965.** Milestone 965 (gating CI rents more concurrency before it owns a runner) |
 | 5 | Choose the build window, the group size and stage 1's switch together, against measured capacity. Priority 1, owner the architect and a lane. | proposed | **Milestone 1042.** Milestone 1042 (the merge queue is sized to the runner pool) |
 | 6 | Merge a pull request against the queue's tip before arming it, and name lanes that share a file before a wide run launches. Priority 2, owner the maintainer role and a lane. | delivered | **Milestone 1054.** Milestone 1054 (conflicts) |
 | 7 | `script/push` dequeues, pushes and re-arms in one step, and arming refuses a held pull request. Priority 2, owner a lane. | delivered | **Milestone 1052.** Milestone 1052 (re-arms) |

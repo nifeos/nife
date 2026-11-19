@@ -63,11 +63,12 @@ and fetch-op outside test code:
 
 ## What was modeled
 
-34 harnesses <!--count:loom-harnesses--> across six crates <!--count:loom-crates-->, run by
-`script/interleaving-check`.
+26 harnesses <!--count:loom-harnesses--> across five crates <!--count:loom-crates-->, run by
+`script/interleaving-check`. The clock page's eight models left with `clock_contract`, which runs
+them in its own repository, `nifeos/clock_contract`.
 
 The harness number is written in digits because `script/lint`'s marker reads small cardinals and no
-compositions, so "twenty-four" would be read as four; the crate number stays a word because six is
+compositions, so "twenty-four" would be read as four; the crate number stays a word because five is
 in range. That asymmetry is the gate's, not the prose's.
 
 Both numbers said sixteen and three until the 2026-08-17 documentation sweep. This line is the
@@ -80,13 +81,12 @@ timing table already said "all four crates".
 | Crate | Protocol | What the model holds |
 |---|---|---|
 | `crates/work_steal_slot` | the work-steal request slot, a compare-exchange mailbox; the pilot | one steal per victim per round, each request served exactly once, release/acquire publication, and a relaxed pairing that must fail |
-| `crates/clock_contract` | the clock page's two copies and publish count, across address spaces | no torn reading, including across two publishes; a generation that matches its pair; a stopped writer never makes a reader wait; serialized writers; a restarted `initialize` invisible to a reader, and the claim it gives back carrying the last publish; this is where the bug was |
 | `crates/thread_wake_handshake` | block/wake, in the gaps between `SCHED` critical sections (2026-08-14) | a wake racing a switch-out resumes on a saved context; three historical races rebuilt as `#[should_panic]` reconstructions |
 | `crates/memory_corruption_canary_gate` | the corruption canary's arm/check/disarm (2026-08-15) | armer and checker exclusion, disarm's quiescence, single-flight checking; the old two-flag protocol failed on the first run |
 | `crates/memory_regions` | the untyped region claim (2026-08-18) | exactly one destroyer reclaims; a witness harness asserts the pre-#316 protocol double-frees |
 | `crates/test_and_set_lock` | the lock under `InterruptSafeMutex` (2026-10-25) | exclusion and the happens-before edge for two and three takers, and a Relaxed release that must fail |
 
-Two of the six are lock-based, so what loom searches there is the interleaving of critical
+Two of the five are lock-based, so what loom searches there is the interleaving of critical
 sections, not memory orderings. That is the standing correction to the survey: a protocol is a
 candidate when its steps span more than one critical section, whatever its fields are. Every
 harness runs to exhaustion, with no preemption or branch bound, except `test_and_set_lock`'s three-taker

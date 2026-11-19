@@ -29,7 +29,6 @@ members = [
     "crates/program_table",
     "crates/credentialer",
     "crates/credential_contract",
-    "crates/clock_contract",
     "crates/program_argument_contract",
     "crates/environment_contract",
     "crates/std_runtime_contract",

@@ -7,6 +7,8 @@ would otherwise add to the same page.
 
 - [`file-allocation-table-public-api.md`](file-allocation-table-public-api.md): every public item
   of `file_allocation_table` and its signature, beside its package.
+- [`static-elf-vs-dependencies.md`](static-elf-vs-dependencies.md): `static_elf` measured against the
+  `elf` and `object` crates, beside the package for `static_elf`.
 - Every other file: one crate's package, with its names, proposed items and open questions.
 
 *Name: provisional, minted by lane milestone/813-review-package. The directory follows §212 (a

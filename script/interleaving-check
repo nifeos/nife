@@ -20,7 +20,6 @@
 #
 # **What it covers**: `crates/work_steal_slot` (renamed from `steal_request` 2026-08-23; the
 # work-steal handshake, the pilot and the kernel's one lock-free cross-core protocol),
-# `crates/clock_contract` (the cross-address-space seqlock, where the survey's real bug was),
 # `crates/thread_wake_handshake` (renamed from `wake_handshake` 2026-08-23; the scheduler's
 # block/wake protocol, extracted after the VisionFive 2's fourth bench stop; lock-based, so what
 # loom searches there is the interleaving of critical sections rather than memory orderings), and
@@ -73,5 +72,5 @@ cd "$(dirname "$0")/.."
 # optimised one is seconds. Nothing here depends on debug assertions.
 echo "==> loom: the hand-rolled atomic protocols, every interleaving"
 RUSTFLAGS="--cfg loom -D warnings" cargo test --release \
-    -p work_steal_slot -p clock_contract -p thread_wake_handshake -p memory_corruption_canary_gate \
+    -p work_steal_slot -p thread_wake_handshake -p memory_corruption_canary_gate \
     -p memory_regions -p test_and_set_lock --lib "$@"

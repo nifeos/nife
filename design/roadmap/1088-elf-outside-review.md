@@ -212,6 +212,9 @@ Each decision's background, options and prior art are in
   package name, with no `package =` rename and no `doc(alias)` of the old spelling. The repository,
   when the crate leaves, is `nifeos/static_elf`. The type `Elf` and every other public name keep
   their spelling, and the notes about the file format keep theirs.
+- The crate keeps `static_elf`, not `static_elf64`. Ruled 2026-11-19 (UTC): no 32-bit target exists,
+  and the crate refuses ELFCLASS32 the way it refuses any other unsupported file. A future 32-bit
+  crate would take the name `static_elf32`.
 
 ## Done when
 

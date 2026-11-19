@@ -63,7 +63,7 @@ byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" 
 # suite plays the spawner and a reader, so it links the words they agree on rather than copies.
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }
 capability_witness_contract = { version = "0.1.0", path = "../crates/capability_witness_contract" }
-clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
+clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 compositor = { version = "0.1.0", path = "../crates/compositor" }
 counter_frequency_contract = { version = "0.1.0", path = "../crates/counter_frequency_contract" }
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
