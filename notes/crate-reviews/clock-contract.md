@@ -53,7 +53,7 @@ Two more readers reach the crate outside its dependency lines:
   `Reading::offset_nanoseconds` and `state::is_known` from that copy.
 - The tooling. `script/interleaving-check` and `.github/workflows/ci.yml` run the loom models.
   `helpers/interface_stability.py` reads the source for the series of milestone 610 (the
-  weekly series measures the interface's stability). `helpers/vendored_name_gates.py` exempts the overlay
+  interface's stability is measured weekly). `helpers/vendored_name_gates.py` exempts the overlay
   names, and `helpers/template_report_baseline.txt` holds three rows.
   `.cargo/mutants-baseline.txt` holds the census row (caught 54, missed 3, timeout 7, unviable 5).
   `packages/contracts.package.toml` and `crates/externalization-list.txt` list the crate.
