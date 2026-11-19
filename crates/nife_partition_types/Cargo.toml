@@ -1,0 +1,19 @@
+[package]
+name = "nife_partition_types"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+license.workspace = true
+
+# The two GPT partition type GUIDs that belong to this system, and a name for each. They stay here
+# and not in `globally_unique_identifier_partition_table`, whose types are the well-known ones.
+# Name: provisional (whether the identifiers say nife or Moho stays open while the crate is
+# unpublished).
+
+[lints]
+workspace = true
+
+[dependencies]
+globally_unique_identifier_partition_table = { version = "0.1.0", path = "../globally_unique_identifier_partition_table" }
+uuid = { version = "1.28.0", default-features = false }

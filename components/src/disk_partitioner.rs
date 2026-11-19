@@ -32,7 +32,7 @@ use globally_unique_identifier_partition_table::entry::{Entry, NAME_UNITS};
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::span::Span;
 use globally_unique_identifier_partition_table::{
-    ENTRY_ARRAY_BYTES, GloballyUniqueIdentifierPartitionTable, PRIMARY_HEADER_LBA, mbr,
+    ENTRY_ARRAY_BYTES, PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, PartitionTable, master_boot_record,
 };
 use user_mode_runtime::{call, send};
 use uuid::Uuid;
@@ -87,7 +87,7 @@ pub const F_NAMES: u64 = 1 << 4;
 pub(crate) const F_UNIQUE: u64 = 1 << 5;
 
 /// The entry array under construction, and the buffer
-/// `GloballyUniqueIdentifierPartitionTable::create` writes into. 16 KiB, so it goes in `.bss`
+/// `PartitionTable::create` writes into. 16 KiB, so it goes in `.bss`
 /// rather than on the one-page stack.
 static mut ARRAY: [u8; ENTRY_ARRAY_BYTES] = [0; ENTRY_ARRAY_BYTES];
 /// The primary table as read back: LBA 0..33 is 34 logical blocks, which is five transfer blocks.
@@ -179,7 +179,11 @@ fn partition() -> ! {
     let layout = [
         (types::EFI_SYSTEM, blank::ESP, blank::NAMES[0]),
         (types::LINUX_FILESYSTEM, blank::LINUX, blank::NAMES[1]),
-        (types::NIFE_DATA, blank::DATA, blank::NAMES[2]),
+        (
+            nife_partition_types::NIFE_DATA,
+            blank::DATA,
+            blank::NAMES[2],
+        ),
     ];
     let mut parts = [Entry::UNUSED; blank::PARTITIONS];
     for (i, (type_guid, (first, last), name)) in layout.iter().enumerate() {
@@ -191,7 +195,7 @@ fn partition() -> ! {
     }
 
     // The disk's own size, asked of the disk rather than assumed. A layout that does not fit is a
-    // refusal from `GloballyUniqueIdentifierPartitionTable::create`, not a truncated table.
+    // refusal from `PartitionTable::create`, not a truncated table.
     let size = call(BLK, req(block::SIZE), 0).0 as i64;
     if size <= 0 || !(size as u64).is_multiple_of(LBA) {
         send(REPORT, R_DISK_FAILED, 2, size as u64);
@@ -200,29 +204,24 @@ fn partition() -> ! {
     let block_count = size as u64 / LBA;
 
     let array = array();
-    let Ok(table) = GloballyUniqueIdentifierPartitionTable::create(
-        guids[0],
-        LBA as usize,
-        block_count,
-        &parts,
-        array,
-    ) else {
+    let Ok(table) = PartitionTable::create(guids[0], LBA as usize, block_count, &parts, array)
+    else {
         send(REPORT, R_DISK_FAILED, 3, block_count);
         user_mode_runtime::exit()
     };
 
     // One logical block of scratch, built and written one at a time: the MBR, the primary header,
     // and the backup header are each 512 bytes at a known LBA, and the entry array is written
-    // straight out of the buffer `GloballyUniqueIdentifierPartitionTable::create` filled.
+    // straight out of the buffer `PartitionTable::create` filled.
     let mut block = [0u8; LBA as usize];
     let entries: &[u8] = table.entry_array();
 
     let steps: [(u64, Option<&[u8]>); 5] = [
-        (0, None),                  // the protective MBR
-        (PRIMARY_HEADER_LBA, None), // the primary header
-        (table.primary_entry_lba(), Some(entries)),
-        (table.backup_entry_lba(), Some(entries)),
-        (table.backup_header_lba(), None), // the backup header, on the last block
+        (0, None),                                    // the protective MBR
+        (PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, None), // the primary header
+        (table.primary_entry_logical_block_address(), Some(entries)),
+        (table.backup_entry_logical_block_address(), Some(entries)),
+        (table.backup_header_logical_block_address(), None), // the backup header, on the last block
     ];
     for (n, (lba, bytes)) in steps.iter().enumerate() {
         let data: &[u8] = match bytes {
@@ -230,7 +229,7 @@ fn partition() -> ! {
             None => {
                 block.fill(0);
                 let built = match n {
-                    0 => table.write_protective_mbr(&mut block),
+                    0 => table.write_protective_master_boot_record(&mut block),
                     1 => table.write_primary_header(&mut block),
                     _ => table.write_backup_header(&mut block),
                 };
@@ -271,10 +270,10 @@ fn verify() -> ! {
     }
     let head: &[u8] = head;
 
-    if mbr::validate(&head[..LBA as usize], block_count).is_ok() {
+    if master_boot_record::validate(&head[..LBA as usize], block_count).is_ok() {
         flags |= F_MBR;
     }
-    let Ok(table) = GloballyUniqueIdentifierPartitionTable::parse(
+    let Ok(table) = PartitionTable::parse(
         &head[LBA as usize..2 * LBA as usize],
         &head[2 * LBA as usize..],
     ) else {
@@ -285,7 +284,7 @@ fn verify() -> ! {
 
     // The backup, read as its own I/O at the far end of the disk, which is what says whether the
     // two copies this program wrote actually agree on the platter.
-    let backup_lba = table.backup_entry_lba();
+    let backup_lba = table.backup_entry_logical_block_address();
     let backup_blocks = block_count.saturating_sub(backup_lba);
     let tail = backup();
     if backup_blocks > 1
@@ -312,9 +311,9 @@ fn verify() -> ! {
             partitions += 1; // more entries than the layout has: the count below will say so
             continue;
         }
-        if part.type_guid == types::NIFE_DATA {
+        if part.type_guid == nife_partition_types::NIFE_DATA {
             flags |= F_NIFE;
-            data_first_lba = part.first_lba;
+            data_first_lba = part.first_logical_block_address;
         }
         let mut label = [0u8; 4 * NAME_UNITS];
         if let Ok(n) = part.name_utf8(&mut label)
@@ -348,12 +347,12 @@ fn verify() -> ! {
     user_mode_runtime::exit()
 }
 
-/// Lay `data` over the disk starting at logical block `first_lba`, **preserving everything else in
+/// Lay `data` over the disk starting at logical block `first_logical_block_address`, **preserving everything else in
 /// the transfer blocks it touches**: each is read, patched in the shared page, and written back.
-fn write_at(first_lba: u64, data: &[u8]) -> bool {
+fn write_at(first_logical_block_address: u64, data: &[u8]) -> bool {
     let mut done = 0usize;
     while done < data.len() {
-        let byte_at = first_lba * LBA + done as u64;
+        let byte_at = first_logical_block_address * LBA + done as u64;
         let block = byte_at / TRANSFER;
         let offset = (byte_at % TRANSFER) as usize;
         let n = core::cmp::min(block::BLOCK_BYTES - offset, data.len() - done);
@@ -377,10 +376,14 @@ fn write_at(first_lba: u64, data: &[u8]) -> bool {
     true
 }
 
-/// Read `into.len()` bytes starting at logical block `first_lba`. `into` must be a whole number of
-/// transfer blocks and `first_lba` must land on one.
-fn read_at(first_lba: u64, into: &mut [u8]) -> bool {
-    match Span::covering(first_lba * LBA, into.len() as u64, TRANSFER) {
+/// Read `into.len()` bytes starting at logical block `first_logical_block_address`. `into` must be a whole number of
+/// transfer blocks and `first_logical_block_address` must land on one.
+fn read_at(first_logical_block_address: u64, into: &mut [u8]) -> bool {
+    match Span::covering(
+        first_logical_block_address * LBA,
+        into.len() as u64,
+        TRANSFER,
+    ) {
         Some(span) if span.offset == 0 => read_span(span, into),
         _ => false,
     }

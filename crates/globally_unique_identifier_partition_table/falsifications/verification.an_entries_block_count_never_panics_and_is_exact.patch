@@ -10,16 +10,16 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/entry.rs b/cr
 --- a/crates/globally_unique_identifier_partition_table/src/entry.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/entry.rs
 @@ -119,9 +119,10 @@ impl Entry {
-     /// [`crate::GloballyUniqueIdentifierPartitionTable`] rejects both, so a partition obtained
+     /// [`crate::PartitionTable`] rejects both, so a partition obtained
      /// from a parsed table always has a size.
      pub const fn blocks(&self) -> Option<u64> {
--        match self.last_lba.checked_sub(self.first_lba) {
+-        match self.last_logical_block_address.checked_sub(self.first_logical_block_address) {
 -            Some(span) => span.checked_add(1),
 -            None => None,
-+        if self.last_lba < self.first_lba {
++        if self.last_logical_block_address < self.first_logical_block_address {
 +            None
 +        } else {
-+            Some(self.last_lba - self.first_lba + 1)
++            Some(self.last_logical_block_address - self.first_logical_block_address + 1)
          }
      }
  

@@ -1,6 +1,6 @@
 Falsifies `globally_unique_identifier_partition_table::verification::a_headers_fields_survive_the_round_trip`.
 
-The defect: `encode_fields` writes `last_usable_lba` through a 32-bit truncation. Any disk past 2 TiB at 512-byte
+The defect: `encode_fields` writes `last_usable_logical_block_address` through a 32-bit truncation. Any disk past 2 TiB at 512-byte
 blocks gets a header that decodes with a smaller usable range than it was built with.
 
 Expected to fail: the harness's `assert_eq!(Header::decode_fields(&block), header)`.
@@ -10,7 +10,7 @@ index 2495db796..ccb10a1c9 100644
 --- a/crates/globally_unique_identifier_partition_table/src/header.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/header.rs
 @@ -177,3 +177,3 @@ impl Header {
-         put64(block, at::FIRST_USABLE_LBA, self.first_usable_lba);
--        put64(block, at::LAST_USABLE_LBA, self.last_usable_lba);
-+        put64(block, at::LAST_USABLE_LBA, self.last_usable_lba as u32 as u64);
+         put64(block, at::FIRST_USABLE_LOGICAL_BLOCK_ADDRESS, self.first_usable_logical_block_address);
+-        put64(block, at::LAST_USABLE_LOGICAL_BLOCK_ADDRESS, self.last_usable_logical_block_address);
++        put64(block, at::LAST_USABLE_LOGICAL_BLOCK_ADDRESS, self.last_usable_logical_block_address as u32 as u64);
          block[at::DISK_GUID..at::DISK_GUID + 16].copy_from_slice(&guid::to_disk(self.disk_guid));

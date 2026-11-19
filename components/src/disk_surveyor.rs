@@ -45,9 +45,8 @@ use block_roster_contract::{
 };
 use filesystem_contract::{block, req};
 use globally_unique_identifier_partition_table::entry::NAME_UNITS;
-use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::span::Span;
-use globally_unique_identifier_partition_table::{GloballyUniqueIdentifierPartitionTable, mbr};
+use globally_unique_identifier_partition_table::{PartitionTable, master_boot_record};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, send};
 
@@ -286,10 +285,10 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
     // Reborrowed immutably from here on, so this and the backup buffer can be live at once.
     let primary: &[u8] = head_buf;
 
-    if mbr::validate(&primary[..LBA as usize], block_count).is_ok() {
+    if master_boot_record::validate(&primary[..LBA as usize], block_count).is_ok() {
         flags |= F_MBR;
     }
-    let Ok(table) = GloballyUniqueIdentifierPartitionTable::parse(
+    let Ok(table) = PartitionTable::parse(
         &primary[LBA as usize..2 * LBA as usize],
         &primary[2 * LBA as usize..],
     ) else {
@@ -298,10 +297,10 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
     flags |= F_PRIMARY;
 
     // The backup: the entry array plus the header, ending on the last block of the disk. Reading it
-    // is a second I/O on purpose (`GloballyUniqueIdentifierPartitionTable::check_backup` is
+    // is a second I/O on purpose (`PartitionTable::check_backup` is
     // separate for exactly this reason), and it is the check that says whether anything has
     // happened to this disk since it was written.
-    let backup_lba = table.backup_entry_lba();
+    let backup_lba = table.backup_entry_logical_block_address();
     let backup_blocks = block_count.saturating_sub(backup_lba);
     let tail_buf = backup();
     if backup_blocks > 1
@@ -328,9 +327,9 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
     let mut named = 0;
     for (_, part) in table.partitions() {
         *partitions += 1;
-        if part.type_guid == types::NIFE_DATA {
+        if part.type_guid == nife_partition_types::NIFE_DATA {
             flags |= F_NIFE;
-            *nife_first_lba = part.first_lba;
+            *nife_first_lba = part.first_logical_block_address;
         }
         let mut label = [0u8; 4 * NAME_UNITS];
         if part.name_utf8(&mut label).is_ok() {
