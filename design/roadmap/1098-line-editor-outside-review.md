@@ -60,7 +60,7 @@ milestone reaches delivery.
 - Decision 1, where the cut falls: Done, ruled 2026-11-14 UTC,
   [#3587](https://github.com/nifeos/nife/pull/3587).
 - Follow-on, `terminal_contract`'s interface identity: Ruled (decision 4, 2026-11-19 UTC). The
-  number is minted when the crate's identity is frozen.
+  architect mints the number when freezing the crate's identity.
 - Follow-on, `terminal_contract`'s published name: Ruled (decision 5, 2026-11-19 UTC).
 - Follow-on, the review package: Open. `notes/crate-reviews/` has none for these crates; one
   package covering `line_editor` and `terminal_contract` is the next lane.
@@ -242,8 +242,8 @@ not at the first call. Example: under A, the shell's note carries
 `(terminal_contract::INTERFACE_ID, 1)`.
 
 Ruled 2026-11-19 (UTC): A. The crate takes an interface number and version 1, with no magic. The
-number is minted when the architect freezes the crate's identity, as the other contract crates
-did, and is not chosen yet.
+architect mints the number when freezing the crate's identity, as for the other contract crates;
+it is not chosen yet.
 
 ### The name `terminal_contract`
 
@@ -259,7 +259,7 @@ way, and Linux's `uapi` headers name the interface by subsystem (`termios.h`). W
 the suffix says the crate is the agreement both sides compile against. Example:
 `use terminal_contract::OPERATION_READLINE;`.
 
-Ruled 2026-11-19 (UTC): A. The name `terminal_contract` is ratified, and the repository takes it at
+Ruled 2026-11-19 (UTC): A. The architect ratifies the name `terminal_contract`, and the repository takes it at
 creation.
 
 ### Review clearance and the repositories
@@ -302,5 +302,5 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 An outside review of `line_editor` before it leaves. The cut has landed: `terminal_contract` and
 `line_editor_component` hold the contract, and the engine depends on nothing. Twelve findings have
 landed. The engine's renames and the move's own work remain. The limits' rename, the interface
-number for `terminal_contract` and one review package for both crates remain; the names and the
-clearance route are ruled.
+number for `terminal_contract` and one review package for both crates remain; the rulings cover the
+names and the clearance route.
