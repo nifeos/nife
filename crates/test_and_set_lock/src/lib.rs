@@ -35,8 +35,8 @@
 //! - [`SpinLock::force_unlock`] is outside the models: it exists to break a lock whose holder will
 //!   never release it, which is a broken invariant by construction.
 //!
-//! Name: `test_and_set_lock` ratified 2026-11-19 (UTC), on milestone 1109 (what an outside maintainer
-//! would fix before it leaves), as the crate, package and repository name; it says what the thing
+//! Name: ratified 2026-11-19 (UTC), on milestone 1109 (what an outside maintainer would fix before
+//! it leaves): `test_and_set_lock` is the crate, package and repository name; it says what the thing
 //! is, and crates.io holds no crate of that name. `SpinLock`, `SpinLockGuard`, both `new`, `lock`,
 //! `try_lock` and `force_unlock` keep the spellings milestone 953 (the kernel's lock proves what it
 //! takes from spin) ratified on 2026-10-26 (UTC), on #2760.

@@ -9,8 +9,8 @@ needs_person: yes
 ---
 # 1109. `test_and_set_lock`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only outside review of the crate, then named `spin_lock` and now `crates/test_and_set_lock`, as a stranger to this tree would meet
-it. It changes nothing; it lists what the lanes that move the crate change, and the one question
+A read-only outside review raised this milestone. It read the crate as a stranger to this tree would
+meet it, when it was still named `spin_lock`; it is now `crates/test_and_set_lock`. It changes nothing; it lists what the lanes that move the crate change, and the one question
 only an architect can answer.
 
 The settled baseline this review does not reopen is the rulings recorded in milestone 953 (the
@@ -69,16 +69,17 @@ proof the crate has runs somewhere after the move.
 
 None.
 
-The crate is `test_and_set_lock`, as the package, the library and the repository it moves to. The
-architect ruled on 2026-11-19 (UTC) to rename it from `spin_lock` before the move, so that the
-repository, the package and the registry agree from the first commit: crates.io reads `_` and `-` as
-one character, and `spin-lock` is already taken there, while `test_and_set_lock` says exactly what
-the thing is. The type `SpinLock`, `SpinLockGuard`, both `new`, `lock`, `try_lock` and `force_unlock`
-keep the spellings milestone 953 (the kernel's lock proves what it takes from spin) ratified; the
-ruling renames the crate and nothing inside it. The `Name:` block in `crates/test_and_set_lock/src/lib.rs`
-records it. The manifests that depend on it, `kernel/src/sync.rs`, the kernel and `system_tests`
-statics and `tools/host_reordering_litmus` carry the new name. The move itself and the first publish
-remain.
+The crate is `test_and_set_lock`: the package, the library and the repository it moves to. The
+architect ruled on 2026-11-19 (UTC) to rename it from `spin_lock` before the move, so the
+repository, the package and the registry agree from the first commit. crates.io reads `_` and `-`
+as one character, and `spin-lock` is already taken there. The new name says exactly what the thing
+is.
+
+The ruling renames the crate and nothing inside it. `SpinLock`, `SpinLockGuard`, both `new`, `lock`,
+`try_lock` and `force_unlock` keep the spellings milestone 953 (the kernel's lock proves what it
+takes from spin) ratified. The `Name:` block in `crates/test_and_set_lock/src/lib.rs` records the
+ruling. The three manifests, `kernel/src/sync.rs`, the kernel static, the `system_tests` statics and
+`tools/host_reordering_litmus` carry the new name. The move itself and the first publish remain.
 
 ## What was checked, and how
 
