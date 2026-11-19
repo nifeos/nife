@@ -18,7 +18,7 @@ the crate reads it as untrusted input. It checks every offset, bounds every walk
 malformed blob with an `Error`, never a panic. It reads the memory banks, the memory reservation
 block, the `/reserved-memory` children, the register regions of a node found by name prefix or by
 `compatible` string, any property of a node, the parent's `compatible`, the initial ramdisk and the
-command line. The crate is `no_std`, has no run-time dependency, and has `unsafe` in one function:
+command line. The crate is `no_std` and has no run-time dependency. It has `unsafe` in one function:
 `DeviceTreeBlob::from_pointer`, which reads eight bytes through a raw pointer before it validates
 anything. Nine Kani harnesses prove the leaf readers and the token step, each with a falsification
 patch. This crate boots every nife machine today. Nothing in its code points back into nife.
