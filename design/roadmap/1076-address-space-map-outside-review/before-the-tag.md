@@ -58,9 +58,9 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
    sites in nife (`IMAGE_BASE` 42, `PAGE` 23, `STACK_TOP_PAGE` 20, `CURRENT_CPU_PAGE` 2,
    `CODE_MODEL_CEILING` 2, `STACK_TOP` 1). `MAXIMUM_STACK_PAGES` has a ratified name and is a count, so it passes. The eight `Band` constants name bands, not addresses, and pass.
    Evidence: `src/lib.rs` lines 39, 70, 144, 149, 154, 165 and 216 to 226.
-   Change: see decision 2 below. If ruled, the rename lands in the move pull request, where every
+   Change: the maintainer's provisional ruling on these names; the rename lands in the move pull request, where every
    caller's manifest changes anyway, with `script/names` enumerating the sites first.
-   Door: one-way (public names). Effort: M across nife, S in the crate.
+   Door: two-way before the first tag (public names). Effort: M across nife, S in the crate.
 
 8. The crate's name uses a word the vocabulary rule sets aside.
    Finding: `address_space_layout` carries `map`, which `design/naming/vocabulary.md` lists among the
@@ -80,7 +80,7 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
    already the whole-range check, and `std_runtime_contract` calls it directly for that reason.
    Evidence: `src/lib.rs` lines 11 to 14 and 171 to 206; `crates/std_runtime_contract/src/lib.rs` line 272;
    `notes/address-space-map.md`, BUGS, first entry.
-   Change: as decision 3 below decides, provisionally: add `window(band, start_virtual_address,
+   Change: as decision 3 of the milestone decides, provisionally: add `window(band, start_virtual_address,
    bytes)`, asserting alignment and `band.holds`, and make the three one-page functions wrappers
    over it, so their 222 call sites stay. `process_builder`'s `SCRATCH_WINDOW` checks its whole
    64 MiB with one `window` call.
