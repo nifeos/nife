@@ -17,5 +17,5 @@ An appendix to [the milestone](../1078-boot-ladder-outside-review.md).
   runs green and its falsification patch turns it red.
 - `git grep -n "nife capability shell" -- ':!crates/boot_ladder' ':!*tests.rs' ':!*.md'` in nife
   finds nothing, and `script/lint` fails if it ever does.
-- The three provisional renames stand as built, `Stage::Prompt` and `Stage::Tour` included, until
-  the architect revisits them.
+- The three renames stand as built, `Stage::Prompt` and `Stage::Tour` included, ratified 2026-11-19
+  (UTC).
