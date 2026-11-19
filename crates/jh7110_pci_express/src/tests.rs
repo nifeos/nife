@@ -341,3 +341,164 @@ fn ports_map_from_their_domain() {
     assert_eq!(PortNumber::from_domain(1), Some(PortNumber::One));
     assert_eq!(PortNumber::from_domain(2), None);
 }
+
+#[test]
+fn register_fields_hold_the_values_linux_names() {
+    // Linux's spellings, from `pcie-plda.h` and `pcie-starfive.c` at the cited commit, as numbers.
+    // The simulation reads these same constants, so only a literal here pins them.
+    use crate::physical_layer;
+    assert_eq!(bridge::ROOT_PORT_ENABLE, 0x1);
+    assert_eq!(bridge::CLASS_PCI_TO_PCI_BRIDGE, 0x0604_0000);
+    assert_eq!(bridge::PHYSICAL_FUNCTION_DISABLE, 0x8000);
+    assert_eq!(bridge::PREFETCH_WINDOW_64_BIT, 0x8);
+    assert_eq!(bridge::LATENCY_TOLERANCE_REPORTING_RECEPTION, 0x4);
+    assert_eq!(bridge::LEGACY_INTERRUPTS, 0x0f00_0000);
+    assert_eq!(bridge::MESSAGE_SIGNALED_INTERRUPT, 0x1000_0000);
+    assert_eq!(bridge::ROOT_PORT_BAR0, 0x1010);
+    assert_eq!(bridge::ROOT_PORT_BAR1, 0x1014);
+    assert_eq!(bridge::TRANSLATION_ENABLE, 0x1);
+    assert_eq!(glue::READ_CHANNEL_MASK, 0x007f_ff00);
+    assert_eq!(glue::CLOCK_REQUEST, 0x0040_0000);
+    assert_eq!(glue::REFERENCE_CLOCK_SOURCE, 0x0008_0000);
+    assert_eq!(physical_layer::USB3_PHYSICAL_LAYER_ENABLE, 0x10);
+    assert_eq!(physical_layer::MODE_MASK, 0x0030_0000);
+    assert_eq!(physical_layer::USB3_BUS_WIDTH, 0x8);
+    assert_eq!(physical_layer::USB_POWER_DOWN_RESET_SPLIT, 0x0002_0000);
+}
+
+#[test]
+fn each_port_has_its_own_glue_block_and_physical_layer() {
+    assert_eq!(PortNumber::Zero.system_top_group_controller_base(), 0x48);
+    assert_eq!(PortNumber::One.system_top_group_controller_base(), 0x1f8);
+    assert_eq!(
+        PortNumber::Zero.physical_layer_physical_address(),
+        0x1021_0000
+    );
+    assert_eq!(
+        PortNumber::One.physical_layer_physical_address(),
+        0x1022_0000
+    );
+}
+
+#[test]
+fn window_encoder_takes_the_smallest_window_and_keeps_only_whole_pages_of_the_source() {
+    let entry = bridge::outbound_window(2, 0x9_8000_0abc, 0x9_8000_0000, 0x1000).unwrap();
+    assert_eq!(
+        entry,
+        [
+            (0x850, bridge::INTERFACE_TRANSMIT_RECEIVE),
+            (0x840, 0x8000_0000 | (11 << 1) | 1),
+            (0x844, 0x9),
+            (0x848, 0x8000_0000),
+            (0x84c, 0x9),
+        ]
+    );
+}
+
+#[test]
+fn a_disabled_entry_translates_nothing() {
+    assert_eq!(bridge::translated_size_bytes(0), None);
+    assert_eq!(bridge::translated_size_bytes(0x4000_002e), None);
+    assert_eq!(bridge::translated_size_bytes(0x1), Some(0x2));
+}
+
+#[test]
+fn a_window_may_end_exactly_at_four_gibibytes() {
+    assert_eq!(
+        root_port::memory_base_and_limit(Window {
+            physical_address: 0xfff0_0000,
+            size_bytes: 0x10_0000,
+        }),
+        Some(0xfff0_fff0)
+    );
+}
+
+#[test]
+fn configure_keeps_the_command_bits_and_writes_no_status_bit() {
+    use pci_configuration_space::{BUS_NUMBERS, COMMAND};
+    let mut writes = Vec::new();
+    let mut read = |_: Bdf, offset: u64| match offset {
+        0 => 0x0000_1556,
+        // Header type 1 in bits 23:16 of the word at 0x0c.
+        0x0c => 0x0001_0000,
+        // A status bit set in the high half, which a write of one would clear.
+        o if o == COMMAND => 0x0010_0004,
+        o if o == BUS_NUMBERS => 0,
+        _ => 0,
+    };
+    let configured = root_port::configure(
+        &mut read,
+        &mut |_, offset, value| writes.push((offset, value)),
+        Window {
+            physical_address: 0x3800_0000,
+            size_bytes: 0x800_0000,
+        },
+    );
+    assert!(matches!(
+        configured,
+        root_port::Configured::Forwarding { .. }
+    ));
+    assert_eq!(writes.last(), Some(&(COMMAND, 0x0000_0006)));
+}
+
+#[test]
+fn port_one_selects_each_function_in_its_own_glue_block() {
+    let mut simulated = Simulated::new(PortNumber::One);
+    bring_up(&mut simulated, &PortNumber::One.mainline()).unwrap();
+    // 0x1f8 + 0x78 and 0x1f8 + 0x7c: the read and write channel words of port 1's glue.
+    let channel_writes: Vec<(u32, u32)> = simulated
+        .events
+        .iter()
+        .filter_map(|event| match *event {
+            Event::Write(Block::SystemTopGroupController, offset @ (0x270 | 0x274), value) => {
+                Some((offset, value))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        channel_writes,
+        [
+            (0x274, 0x0008_0000),
+            (0x274, 0x0048_0000),
+            (0x270, 0x0002_0000),
+            (0x274, 0x0048_0200),
+            (0x270, 0x0004_0000),
+            (0x274, 0x0048_0400),
+            (0x270, 0x0006_0000),
+            (0x274, 0x0048_0600),
+            (0x270, 0),
+            (0x274, 0x0048_0000),
+        ]
+    );
+}
+
+#[test]
+fn port_zero_drives_its_reset_pin_in_the_third_byte() {
+    // Port 0's PERST# is pin 26: the word at 24, bits 23:16. Every other bit starts set, and the
+    // bring-up must leave each one as it found it.
+    let mut simulated = Simulated::new(PortNumber::Zero);
+    for word in [0x18, 0x58] {
+        simulated
+            .words
+            .insert((Block::GeneralPurposeInputOutput, word), 0xffff_ffff);
+    }
+    let _ = bring_up(&mut simulated, &PortNumber::Zero.mainline());
+    let pin_writes: Vec<(u32, u32)> = simulated
+        .events
+        .iter()
+        .filter_map(|event| match *event {
+            Event::Write(Block::GeneralPurposeInputOutput, offset, value) => Some((offset, value)),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(
+        pin_writes,
+        [
+            (0x58, 0xff80_ffff),
+            (0x18, 0xffc0_ffff),
+            (0x58, 0xff81_ffff),
+            (0x18, 0xffc0_ffff),
+        ]
+    );
+}
