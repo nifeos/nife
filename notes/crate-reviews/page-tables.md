@@ -59,7 +59,11 @@ Run on this branch, after the renames and after the falsification patches were c
 | `cargo miri test -p page_tables` | pass; the integer-to-pointer warnings remain (item 19 below) |
 | `script/falsifications --check` | all patches apply; twelve were cut again because the longer names moved rustfmt's line breaks under them |
 | `script/names page_tables` | the crate name ratified; the other public names provisional, which this package asks to ratify |
-@@STANDALONE@@
+| `cargo xtask test --arch aarch64,riscv64,x86_64 --no-host --image kernel` | the x86_64 OVMF legs pass (kernel suite 164 passed, 14 skipped; system_tests 318 passed, 85 skipped); the screen checks pass. The aarch64 and riscv64 legs ran in the same invocation and the command exited 0 |
+| `script/falsifications --check` over the whole tree | no patch fails to apply |
+| the four `nth_allocation.*` patches applied by hand, each test run | each test goes red with the defect applied |
+| `script/crate-standalone page_tables` | 15 failures, none new: no README, no license files, the manifest inherits `license` and `lints`, 3 prose-cap lines, 9 spelled-out-word lines, and the 80 citation lines of the milestone's items 1, 3, 4 and 11. The build passes on the host and the three bare-metal targets. `proofs`: 38 harnesses verified, 0 failures. Every Kani falsification patch fails its harness as recorded. The four `nth_allocation` patches are reported "still passes" because the replay does not run the integration test, the gap in the milestone's BUGS |
+| `script/crate-move --dry-run --into <dir> page_tables` | stages at template `v8`; 42 patches regenerate and apply with no offset and no fuzz; `Name:` blocks removed from 11 files. 9 findings for the move lane: the missing README, the manifest's inherited keys (so `cargo generate-lockfile` fails), the prose caps, the citations and nine private test or harness names that still contain `va` (`the_user_va_gate_...`), which the spelled-out check refuses; renaming them moves with the harness registries and the three patch file names, so the move lane takes them |
 
 Not run, and so not claimed:
 
