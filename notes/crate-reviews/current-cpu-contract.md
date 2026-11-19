@@ -39,10 +39,11 @@ the readers and the builder, each with a falsification patch. Every public name 
 
 ## Who in nife depends on it
 
-Each by a path dependency with `version = "0.1.0"`: `kernel` (the one writer, which calls `publish`
-from the context switch and `build_page_with` when it builds a thread's page), `user_mode_runtime`
-(the reader), `machine_statistics_contract` (a compile-time assertion that its processor line count
-equals `CPU_ID_BOUND`), `components`, `fixtures`, and `system_tests` (development only). Fifteen
+Six crates depend on it by a path dependency with `version = "0.1.0"`. `kernel` is the one writer:
+it calls `publish` from the context switch and `build_page_with` when it builds a thread's page.
+`user_mode_runtime` is the reader. `machine_statistics_contract` asserts at compile time that its
+processor line count equals `CPU_ID_BOUND`. `components`, `fixtures` and `system_tests` (development
+only) complete the six. Fifteen
 programs in `components` declare the pair of `INTERFACE_ID` and `VERSION` in their interface note.
 The x86 test program in `kernel/src/user/x86_programs.rs` adds `CPU_OFFSET_BYTES` to
 `PAGE_VIRTUAL_ADDRESS` for a 32-bit absolute load.
@@ -92,7 +93,7 @@ What a stranger may find surprising:
 
 | harness | what it proves | falsification patch | verifies in |
 |---|---|---|---|
-| `the_readers_answer_only_what_the_page_holds` | over every 32-byte frame, each reader answers `Some` exactly when the magic matches and its word is a real answer: the CPU when it is neither `UNSCHEDULED` nor at or past the bound, the allowance and the tick when nonzero | an off-by-one bound check; its harness turns red | 1.38 seconds |
+| `the_readers_answer_only_what_the_page_holds` | over every 32-byte frame, a reader answers `Some` only for a matching magic and a real answer: the CPU when it is neither `UNSCHEDULED` nor at or past the bound, the allowance and the tick when nonzero | an off-by-one bound check; its harness turns red | 1.38 seconds |
 | `a_built_page_reads_back_its_words` | for every pair of optional allowance and tick, the page `build_page_with` makes reads them back and reads the CPU as `None` | the writer stores the tick big-endian; its harness turns red | 0.98 seconds |
 
 The `unsafe` surface is two raw-address entry points, `publish` and `new`, behind their safety
