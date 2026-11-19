@@ -534,7 +534,11 @@ fn dump_thread_wait(t: &Thread) {
         Some(Wait::Rendezvous(ep, role)) => crate::println!(" wait={ep:#x}/{role:?}"),
         Some(Wait::Notification(n)) => crate::println!(" wait={n:#x}/Notification"),
         Some(Wait::Futex(k)) => {
-            crate::println!(" wait={:#x}@{:#x}/Futex", k.virtual_address, k.address_space);
+            crate::println!(
+                " wait={:#x}@{:#x}/Futex",
+                k.virtual_address,
+                k.address_space
+            );
         }
         Some(Wait::Resume) => crate::println!(" wait=Resume"),
         None => crate::println!(" wait=-"),

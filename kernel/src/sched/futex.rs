@@ -50,7 +50,10 @@ pub fn is_current_space(space: u64) -> bool {
 /// waker's store is either seen here or finds this thread parked (notes/futex.md). The load is
 /// `Acquire`, pairing with the waker's store.
 pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error> {
-    let key = inter_process_communication::futex::Key { address_space: space, virtual_address: va };
+    let key = inter_process_communication::futex::Key {
+        address_space: space,
+        virtual_address: va,
+    };
     {
         let mut guard = IPC_TABLES.lock();
         let sched = guard.as_mut().expect("no scheduler");
@@ -98,7 +101,10 @@ pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error>
 /// word at `va` in `space`, oldest first, and return how many. Reads no memory, so an unmapped `va`
 /// has no waiters. The woken are placed on this core: the waker is usually about to block or yield.
 pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
-    let key = inter_process_communication::futex::Key { address_space: space, virtual_address: va };
+    let key = inter_process_communication::futex::Key {
+        address_space: space,
+        virtual_address: va,
+    };
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
     let maximum = usize::try_from(count).unwrap_or(usize::MAX);
@@ -173,7 +179,10 @@ pub fn futex_queued() -> usize {
 /// a thread is asleep on exactly this word before they wake it.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn futex_waiters(space: u64, va: u64) -> usize {
-    let key = inter_process_communication::futex::Key { address_space: space, virtual_address: va };
+    let key = inter_process_communication::futex::Key {
+        address_space: space,
+        virtual_address: va,
+    };
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
     // SAFETY: as `futex_wake`'s.
