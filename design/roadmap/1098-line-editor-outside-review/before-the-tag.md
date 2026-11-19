@@ -14,7 +14,7 @@ An appendix to [the milestone](../1098-line-editor-outside-review.md).
    Change: `LineDisc` becomes `LineEditor` (a crate that holds a component's logic takes the component's name; `rustyline` and `noline` both call theirs `Editor`). `HIST` becomes `HISTORY_LINES` (a count of things names the things). `LINE_MAXIMUM`, `PROMPT_MAXIMUM` and `RAW_QUEUE_MAXIMUM` become `MAXIMUM_LINE_BYTES`, `MAXIMUM_PROMPT_BYTES` and `MAXIMUM_RAW_QUEUE_BYTES`. `pop8` becomes `pop_up_to_eight` or takes a `[u8; 8]` return that
    says it. No `doc(alias)` for the old spellings before the first release, per the rule in force.
    Door: two-way before the first tag; the milestone's decision 2 decides `LineEditor` and
-   `HISTORY_LINES`, provisionally, and the limits are calef's. Effort: S.
+   `HISTORY_LINES`, provisionally, and decision 3 decides the limits, provisionally. Effort: S.
 
 4. Names the template's day-one gates refuse, in `proto` and `component`, and in parameters.
    Finding: `spelled_out.py` fails at a ceiling of 0 on `HANDOFF_VA`, `ELF_VA` (`va` abbreviates

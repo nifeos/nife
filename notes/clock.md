@@ -2,7 +2,7 @@
 
 What the machine knows about the time, who is allowed to change it, and why the three answers are
 three different capabilities. Milestone 51 (wall-clock time) lane A. The decision and its argument are [DECISIONS
-§43 (reading the clock is a page)](../design/decisions/0043-clock-authority.md), the contract is `crates/clock_contract`.
+§43 (reading the clock is a page)](../design/decisions/0043-clock-authority.md), the contract is `clock_contract` (the repository `nifeos/clock_contract`).
 
 ## Why not the counter alone
 

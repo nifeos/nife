@@ -134,6 +134,7 @@ dependencies = [
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
 dependencies = [
  "loom",
 ]
