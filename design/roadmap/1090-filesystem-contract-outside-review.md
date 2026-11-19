@@ -153,7 +153,7 @@ The P1 items are in [the appendix](1090-filesystem-contract-outside-review/befor
 
 ## Decisions for the architect
 
-A, C and D are ruled; B and E are the maintainer's provisional rulings on two-way doors. Each states the rule
+The architect ruled A, C and D; B and E are the maintainer's provisional rulings on two-way doors. Each states the rule
 in force.
 
 ### A. The reserved on-disk name: ruled 2026-11-14 (UTC)
@@ -223,7 +223,7 @@ In force: a lane writes one review package that covers both crates, which share 
 repository (ruled 2026-11-14 UTC; the fixture never publishes), once the other items here land. The
 move is not held for it. The package step is the maintainer's provisional ruling on a two-way door.
 Ratifying the names and clearing the review, which is also the go to create the repository as
-`publish = false`, stay the architect's and are asked from the package. The move follows, with
+`publish = false`, stay the architect's, and the package asks for them. The move follows, with
 items 1 to 3 and 10 here and items 6 and 11 of milestone 1091 (`filesystem_fixture`: what an outside
 maintainer would fix before it leaves).
 
@@ -262,7 +262,6 @@ An outside review of `filesystem_contract` before it leaves nife. Five items are
 commit (the stand-alone text, clippy's proper-noun list, the falsification patch paths, one
 uncovered file, 22 names the gates refuse). Eight come before the first tag (a non-total errno
 decoder, packers that mask, seven unproven properties, the equivalent-mutant list, the README and
-prose gates, the `rm` module). Nine are for later. Five decisions, none open. The on-disk name (A) is ruled. The naming pass with units (B) is the
-maintainer's provisional ruling, built. A bound on the error range of a reply word (C) is ruled, and
-so is §99's store name (D). The review package for the shared repository (E) is the maintainer's
-provisional ruling.
+prose gates, the `rm` module). Nine are for later. Five decisions, none open. The architect ruled the on-disk name (A), the bound on the error range of
+a reply word (C) and §99's store name (D). The maintainer rules provisionally on the naming pass with
+units (B, built) and on the review package for the shared repository (E).
