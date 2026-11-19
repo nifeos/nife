@@ -143,6 +143,13 @@ impl<T: Node, const BUCKETS: usize> FutexTable<T, BUCKETS> {
         self.buckets.iter().map(Queue::len).sum()
     }
 
+    /// **Whether no waiter is linked anywhere in the table**, the pair of [`len`](Self::len).
+    ///
+    /// Name: provisional. The standard library's spelling, which a public `len` brings with it.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// How many waiters are parked under `key`. For tests and diagnostics; a wake does not need it.
     /// `&mut` because the queue is intrusive and walked by popping, in order, then put back as it was.
     pub fn waiters(&mut self, key: Key, key_of: impl Fn(NonNull<T>) -> Key) -> usize {
@@ -246,6 +253,7 @@ mod tests {
         assert_eq!(drain(f.take(b, 1, key_of)), 1);
         assert_eq!(drain(f.take(a, usize::MAX, key_of)), 0);
         assert_eq!(f.len(), 0);
+        assert!(f.is_empty());
     }
 
     #[test]
