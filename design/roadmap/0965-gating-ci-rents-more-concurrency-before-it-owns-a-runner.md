@@ -48,7 +48,7 @@ exactly this open: "Whether anything that gates a merge runs on" the build machi
   others.
 
 Ruled 2026-11-19 (UTC): the project does not rent more hosted concurrency now, so (a) waits for its
-trigger, which is under Rulings. (e) and (b) stand as ruled there. (c) is refused. (d) is a variant
+trigger, which is under Rulings. (e) and (b) stand as ruled there. The project refuses (c) and treats (d) as a variant
 of (b), because the QEMU-heavy shards are the jobs an owned x86_64 host cannot take.
 
 Why: the hosted tier is the far larger lever and adds no failure mode. (b) is cheap to make safe
