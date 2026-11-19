@@ -83,6 +83,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | ready for the architect's review |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
+| [`network_time_protocol`](crate-reviews/network-time-protocol.md) | 1102 | names and clearance for the architect |
 | [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | ready for review |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |
