@@ -673,7 +673,7 @@ driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # radon's SD/MMC driver (milestone 53): designware_mobile_storage.rs is its register window and
 # serve loop over it.
-designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "ce50796532385586a46620bc9545b25b22593fae" }
+designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "85c4e1b58bb5d76efbc0b48d3ff51024d3904b12" }
 # The JH7110 facts `designware_ethernet_control` needs and the driver crate does not hold: the
 # board's bus configuration and the always-on syscon's interface-select field.
 machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
@@ -773,10 +773,10 @@ filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" 
 # The NVMe queue arithmetic (milestone 53's crate, milestone 261's consumer):
 # non_volatile_memory_express.rs is the volatile shell of ring copies and doorbell writes over it,
 # the crate/program pair this tree already uses for `jh7110_entropy` and `line_editor`.
-non_volatile_memory_express = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "5b0c24dcd3fe5416bcefeed7bb3936108c44ed45" }
+non_volatile_memory_express = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/non_volatile_memory_express", rev = "1e6416528e8239f1cbf0ab8266fd17ce74e9d4ee" }
 # The `e1000e` NIC's ring logic (milestone 494 (a driver for the network card a PC actually has)):
 # `net_stack`'s e1000e_transport.rs is the volatile shell of tail writes and window copies over it.
-e1000e = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/e1000e", rev = "0a21349ffcd95b79ffda04222fc413f7b0e77ed2" }
+e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", rev = "571d33f2e5fc9b287c7b9c8733bcdd0a17c18357" }
 # radon's Ethernet port's ring logic (milestone 53 (the board's own peripherals: network and storage
 # on real silicon)): `net_stack`'s designware_ethernet_transport.rs is the volatile shell over it.
 designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "0e8f92bf67e58016983164cb52bf274e08e1d7ef" }
@@ -784,7 +784,7 @@ designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/desi
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
 usb = { version = "0.1.0", path = "../crates/usb" }
-extensible_host_controller_interface = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "875a6401be12f311d925580901faf00cbcacbf99" }
+extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and
 # the byte order, host-tested there because this program has no harness of its own.

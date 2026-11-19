@@ -184,7 +184,7 @@ impl Threads {
     ) -> Option<ThreadId> {
         let ptr = crate::arch::mmu::phys_to_virt(page) as *mut Thread;
         let mut built = false;
-        let name = self.table.insert_with(|tid| {
+        let name = self.table.insert_with_name(|tid| {
             built = build(tid.to_bits(), ptr);
             if built {
                 // In place, not in a constructor: this is a fact about the page, and the register
@@ -219,7 +219,7 @@ impl Threads {
     /// own `thread_control_block_kmem`, which `remove` reads to decide whether the page returns to `kmem`.
     fn insert_at(&mut self, page: u64, f: impl FnOnce(ThreadId) -> Thread) -> Option<ThreadId> {
         let ptr = crate::arch::mmu::phys_to_virt(page) as *mut Thread;
-        let name = self.table.insert_with(|tid| {
+        let name = self.table.insert_with_name(|tid| {
             // SAFETY: a fresh, exclusively-ours page; `write` moves the Thread in, no drop of
             // uninitialized bytes.
             unsafe { ptr.write(f(tid.to_bits())) };
@@ -326,12 +326,12 @@ impl Threads {
 
     /// Every live TCB from slot `from` onward, with its slot index, for a resumable sweep
     /// (`rendezvous::SURVEY`). The slot is the caller's cursor; see
-    /// `generational_table::Table::iter_from` for why a position would not do.
+    /// `generational_table::Table::iter_from_slot_index` for why a position would not do.
     pub(super) fn iter_from(&self, from: usize) -> impl Iterator<Item = (usize, &Thread)> + '_ {
         // SAFETY: as `iter_mut`, and shared rather than exclusive: each stored pointer is a
         // distinct live page, and `&self` carries IPC_TABLES for the walk.
         self.table
-            .iter_from(from)
+            .iter_from_slot_index(from)
             .map(|(slot, _, &ThreadControlBlockPointer(p))| (slot, unsafe { &*p }))
     }
 }

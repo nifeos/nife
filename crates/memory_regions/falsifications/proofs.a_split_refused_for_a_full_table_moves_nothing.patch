@@ -21,7 +21,7 @@ index 9d726ec87..3c7f64966 100644
 +            r.children += 1;
 +            r.spent.children += pages;
 +        }
-         let child = self.table.insert_with(|_| Region {
+         let child = self.table.insert_with_name(|_| Region {
              base_page,
              pages,
 @@ -436,14 +442,6 @@ impl<const N: usize> RegionTable<N> {

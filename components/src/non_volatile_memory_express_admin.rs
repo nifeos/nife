@@ -200,11 +200,11 @@ impl Controller {
         // naming the controller, not in a process that cannot reach its doorbells.
         if capabilities.maximum_queue_entries() < ENTRIES as u32
             || capabilities.minimum_page_size_bytes() > PAGE_BYTES
-            || capabilities.doorbell_stride() > MAXIMUM_DOORBELL_STRIDE
+            || capabilities.doorbell_stride_exponent() > MAXIMUM_DOORBELL_STRIDE
         {
             return Err(BringUpError::UnsupportedController);
         }
-        self.dstrd = capabilities.doorbell_stride();
+        self.dstrd = capabilities.doorbell_stride_exponent();
 
         // A controller that was already enabled (a warm reboot, or a previous test) must be taken
         // down before the admin queue registers may change; RDY follows EN in both directions.
@@ -257,7 +257,9 @@ impl Controller {
         };
         let namespace =
             non_volatile_memory_express::parse_identify_namespace(&data).ok_or(refused)?;
-        if namespace.blocks == 0 || namespace.blocks_per_transfer(BLOCK_SIZE).is_none() {
+        if namespace.size_in_logical_blocks == 0
+            || namespace.blocks_per_transfer(BLOCK_SIZE).is_none()
+        {
             return Err(refused);
         }
 
