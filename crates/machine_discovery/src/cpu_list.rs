@@ -156,20 +156,20 @@ impl CpuList {
     /// cores, and the answer is an empty list ([`len`](CpuList::len) of zero) rather than a failure,
     /// because the kernel asking the question is demonstrably running on one of them. An `Err` here
     /// means the blob itself is malformed, which is a different thing entirely.
-    pub fn from_device_tree(dt: &DeviceTreeBlob<'_>) -> Result<CpuList, Error> {
+    pub fn from_device_tree(tree: &DeviceTreeBlob<'_>) -> Result<CpuList, Error> {
         let mut list = CpuList {
-            address_cells: cpus_address_cells(dt)?,
+            address_cells: cpus_address_cells(tree)?,
             ..CpuList::default()
         };
 
-        let mut regs = [None; MAXIMUM_CPU_NODES];
+        let mut registers = [None; MAXIMUM_CPU_NODES];
         let mut status = [None; MAXIMUM_CPU_NODES];
         let mut methods = [None; MAXIMUM_CPU_NODES];
         let mut isa_strings = [None; MAXIMUM_CPU_NODES];
-        list.described = dt.node_properties(b"cpu@", b"reg", &mut regs)?;
-        dt.node_properties(b"cpu@", b"status", &mut status)?;
-        dt.node_properties(b"cpu@", b"enable-method", &mut methods)?;
-        dt.node_properties(b"cpu@", b"riscv,isa", &mut isa_strings)?;
+        list.described = tree.node_properties(b"cpu@", b"reg", &mut registers)?;
+        tree.node_properties(b"cpu@", b"status", &mut status)?;
+        tree.node_properties(b"cpu@", b"enable-method", &mut methods)?;
+        tree.node_properties(b"cpu@", b"riscv,isa", &mut isa_strings)?;
 
         list.len = list.described.min(MAXIMUM_CPU_NODES);
         for i in 0..list.len {
@@ -177,7 +177,7 @@ impl CpuList {
                 // A `cpu@` node with no `reg` is malformed, and there is no id to invent. Zero is
                 // wrong in the least dangerous direction: it collides with the boot core, which
                 // every caller skips, rather than naming some other core to start.
-                hwid: regs[i]
+                hwid: registers[i]
                     .and_then(|bytes| hwid_from_reg(bytes, list.address_cells))
                     .unwrap_or(0),
                 usable: status[i].is_none_or(is_okay),
@@ -188,7 +188,7 @@ impl CpuList {
             };
         }
 
-        list.timebase_hertz = timebase_hertz(dt)?;
+        list.timebase_hertz = timebase_hertz(tree)?;
         Ok(list)
     }
 }
@@ -199,8 +199,8 @@ impl CpuList {
 /// nothing is 2, and using it here would be following the letter into the wrong answer: the CPU
 /// bindings *require* `/cpus` to declare this, so an absent property is a malformed tree, and the
 /// overwhelmingly common shape (every tree QEMU emits, on both architectures) is one cell.
-fn cpus_address_cells(dt: &DeviceTreeBlob<'_>) -> Result<u32, Error> {
-    match dt.node_property(b"cpus", b"#address-cells")? {
+fn cpus_address_cells(tree: &DeviceTreeBlob<'_>) -> Result<u32, Error> {
+    match tree.node_property(b"cpus", b"#address-cells")? {
         Some(bytes) if bytes.len() >= 4 => {
             Ok(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
         }
@@ -243,12 +243,12 @@ pub(crate) fn is_okay(value: &[u8]) -> bool {
 /// machine whose harts genuinely differ, so reading only the first is a simplification and not a
 /// correct general answer. The kernel treats the counter as machine-wide either way, so the honest
 /// place to record that limitation is here rather than at the call site.
-fn timebase_hertz(dt: &DeviceTreeBlob<'_>) -> Result<Option<u64>, Error> {
-    if let Some(bytes) = dt.node_property(b"cpus", b"timebase-frequency")? {
+fn timebase_hertz(tree: &DeviceTreeBlob<'_>) -> Result<Option<u64>, Error> {
+    if let Some(bytes) = tree.node_property(b"cpus", b"timebase-frequency")? {
         return Ok(cells_to_u64(bytes));
     }
     let mut per_hart = [None; 1];
-    dt.node_properties(b"cpu@", b"timebase-frequency", &mut per_hart)?;
+    tree.node_properties(b"cpu@", b"timebase-frequency", &mut per_hart)?;
     Ok(per_hart[0].and_then(cells_to_u64))
 }
 

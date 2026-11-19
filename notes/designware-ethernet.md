@@ -214,7 +214,7 @@ cabling, not the driver. What the run settled that nothing read had predicted:
 - `phy : id 0x4f51e91b, 1800 mV I/O, settings from Fallback`. The identifier is the YT8531's.
   The tree radon hands nife carries neither the vendor nor the mainline PHY delay properties, so
   the driver used the fallback settings,
-  `machine_discovery::jh7110::designware_ethernet::GMAC0_FALLBACK_SETTINGS`, which leased. The
+  `machine_discovery::jh7110::designware_ethernet::PORT_0_FALLBACK_SETTINGS`, which leased. The
   runbook expected `VendorTree`.
 - `address : 6c:cf:39:00:47:2c from Tree`: the tree U-Boot hands over carries
   `local-mac-address`.
@@ -239,7 +239,7 @@ Mbit/s, how QEMU reproduces it, the fix, and what the later rows measured of it.
   the link wait.
 - **`gmac0` only.** `gmac1`'s clocks all live in the SYS domain and no plan for them exists; the
   milestone proposed in pull request #2470 is that work.
-- The PHY's delays and drive strengths come from `GMAC0_FALLBACK_SETTINGS` on radon, because
+- The PHY's delays and drive strengths come from `PORT_0_FALLBACK_SETTINGS` on radon, because
   the tree it hands over names neither spelling of them. They leased at 1000 Mbit/s; whether they
   are also behind the slow rate is not excluded.
 - **The MAC loopback is the probe's one method.** It ran on radon, so `Inconclusive` has not been

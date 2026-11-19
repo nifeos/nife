@@ -1,4 +1,4 @@
-//! Where the JH7110's two SD/MMC controllers are, and how each slot is wired, for
+//! Where the JH7110's two Secure Digital (SD) and MultiMediaCard (MMC) controllers are, and how each slot is wired, for
 //! `designware_mobile_storage`.
 //!
 //! The controllers came with milestone 53 (the board's own peripherals: network and storage on
@@ -63,7 +63,7 @@ pub const REGISTERS_SIZE_BYTES: u64 = 0x1_0000;
 /// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
 /// as the driver crate spelled it. calef has not named it.
 pub const CARD_INTERFACE_UNIT_HERTZ: u32 = 50_000_000;
-/// Both trees' `fifo-depth`: the FIFO's depth in entries of its width, which on the JH7110 (and in
+/// Both trees' `fifo-depth`: the first-in, first-out (FIFO) queue's depth in entries of its width, which on the JH7110 (and in
 /// every controller `designware_mobile_storage`'s `HostController::new` accepts)
 /// is 32 bits, so a count of 32-bit words.
 ///
@@ -213,12 +213,12 @@ pub fn discover(tree: &DeviceTreeBlob<'_>, index: u8) -> Result<Option<Slot>, Er
         return Ok(None);
     };
     for name in names {
-        let mut reg = [Region { start: 0, size: 0 }; 1];
-        if tree.node_reg(name, &mut reg)? == 0 {
+        let mut regions = [Region { start: 0, size: 0 }; 1];
+        if tree.node_reg(name, &mut regions)? == 0 {
             continue;
         }
         let prop = |p: &[u8]| tree.node_property(name, p);
-        if let Some(slot) = Slot::from_node(index, reg[0].start, reg[0].size, prop)? {
+        if let Some(slot) = Slot::from_node(index, regions[0].start, regions[0].size, prop)? {
             return Ok(Some(slot));
         }
     }

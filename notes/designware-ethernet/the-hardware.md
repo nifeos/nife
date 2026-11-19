@@ -59,7 +59,7 @@ quantities they encode. For radon's `gmac0` (VisionFive 2 v1.3B) they agree:
 | receive data drive | `rgmii_sw_dr = <0x3>` | `motorcomm,rx-data-drv-microamp = <2910>` | `3` at 1.8 V |
 | transmit clock inverted at 1000 | `tx_inverted_1000 = <0x1>` | `motorcomm,tx-clk-1000-inverted` | set |
 
-`GMAC0_FALLBACK_SETTINGS`, in the same file, is the last column. It is used only when a tree
+`PORT_0_FALLBACK_SETTINGS`, in the same file, is the last column. It is used only when a tree
 states neither spelling, and `Settings::source` says which happened.
 
 The sequence in `motorcomm_physical_layer_device.rs` is OpenBSD's `ytphy_yt8521_init`, `ytphy_yt8531_init` and

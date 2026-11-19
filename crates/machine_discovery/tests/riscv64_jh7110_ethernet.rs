@@ -7,8 +7,8 @@
 
 use designware_ethernet::motorcomm_physical_layer_device::{Settings, SettingsSource};
 use machine_discovery::jh7110::designware_ethernet::{
-    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, GMAC0_FALLBACK_SETTINGS,
-    GMAC0_REGISTERS_PHYSICAL_ADDRESS, discover, discover_aon_syscon,
+    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, GMAC0_REGISTERS_PHYSICAL_ADDRESS,
+    PORT_0_FALLBACK_SETTINGS, discover, discover_aon_syscon,
 };
 
 const VENDOR: &[u8] = include_bytes!("fixtures/jh7110-gmac-vendor.dtb");
@@ -44,7 +44,7 @@ fn radons_vendor_tree_gives_gmac0_its_physical_layer_device_settings_and_its_add
             source: SettingsSource::Fallback,
             ..d.physical_layer_device
         },
-        GMAC0_FALLBACK_SETTINGS,
+        PORT_0_FALLBACK_SETTINGS,
         "the vendor's gmac0 values are the fallback's, field for field"
     );
 }

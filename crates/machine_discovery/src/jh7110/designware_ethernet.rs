@@ -1,11 +1,12 @@
-//! Where the JH7110's first Ethernet port and its AON syscon are, what the board wired to the
-//! port, and the one syscon field that tells the MAC it is talking the reduced gigabit
-//! media-independent interface (RGMII), for `designware_ethernet`.
+//! Where the JH7110's first Ethernet port and its AON syscon are, what the board wired to the port,
+//! and the one syscon field that tells the media access controller (MAC) it is talking the reduced
+//! gigabit media-independent interface (RGMII), for `designware_ethernet`.
 //!
-//! The port and its PHY came with milestone 53 (the board's own peripherals: network and storage
-//! on real silicon). The driver crate knows no system-on-chip, so every JH7110 fact it needs is
-//! here: the compatible strings and node names, both port addresses, the bus configuration, the
-//! PHY's fallback settings, and the always-on syscon's window and interface-select field.
+//! The port and its physical (PHY) layer device came with milestone 53 (the board's own
+//! peripherals: network and storage on real silicon). The driver crate knows no system-on-chip, so
+//! every JH7110 fact it needs is here: the compatible strings and node names, both port addresses,
+//! the bus configuration, the PHY's fallback settings, and the always-on syscon's window and
+//! interface-select field.
 //!
 //! The shape follows OpenBSD's `if_dwqe_fdt.c` (`dwqe_fdt_attach`, `dwqe_setup_jh7110`), read for
 //! facts: the controller's address picks the port, the `phy-mode` picks the interface select, the
@@ -41,7 +42,7 @@ pub const COMPATIBLE_VENDOR: &[u8] = b"starfive,jh7110-eqos-5.20";
 /// as the driver crate spelled it. calef has not named it.
 pub const COMPATIBLES: [&[u8]; 2] = [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR];
 
-/// The physical address of the registers of the Gigabit media access control (Gigabit MAC, GMAC)
+/// The physical address of the registers of the first gigabit media access controller (GMAC),
 /// `gmac0`, in both trees and in OpenBSD's port table.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
@@ -88,7 +89,7 @@ pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates. calef
 /// has not named it.
-pub const GMAC0_FALLBACK_SETTINGS: Settings = Settings {
+pub const PORT_0_FALLBACK_SETTINGS: Settings = Settings {
     receive_delay: 0xa,
     receive_fixed_delay: false,
     transmit_delay: 0xa,
@@ -124,7 +125,7 @@ pub const ALWAYS_ON_SYSTEM_CONTROLLER_NODE: &[u8] = b"aon_syscon@";
 #[doc(alias = "AON_SYSCFG_12")]
 pub const GMAC0_INTERFACE_SELECT_REGISTER: u64 = 0xc;
 /// The field's shift: mainline's third cell `0x12`, the vendor's `GMAC5_0_SEL_I_SHIFT`.
-pub(crate) const GMAC0_SYSTEM_CONTROLLER_SHIFT: u32 = 18;
+pub(crate) const PORT_0_SYSTEM_CONTROLLER_SHIFT: u32 = 18;
 /// The field is three bits wide (OpenBSD's `((1U << 3) - 1) << shift`; the vendor's mask
 /// `0x1c0000`).
 pub(crate) const SYSTEM_CONTROLLER_FIELD: u32 = 0x7;
@@ -142,8 +143,8 @@ pub(crate) const REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT: u32 = 1;
 /// as the driver crate spelled it. calef has not named it.
 #[doc(alias = "rgmii")]
 pub const fn select_reduced_gigabit_media_independent_interface(word: u32) -> u32 {
-    (word & !(SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT))
-        | REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT << GMAC0_SYSTEM_CONTROLLER_SHIFT
+    (word & !(SYSTEM_CONTROLLER_FIELD << PORT_0_SYSTEM_CONTROLLER_SHIFT))
+        | REDUCED_GIGABIT_MEDIA_INDEPENDENT_INTERFACE_SELECT << PORT_0_SYSTEM_CONTROLLER_SHIFT
 }
 
 /// The interface value fits the field the function clears, which the compiler checks here: a
@@ -159,7 +160,7 @@ const _: () = assert!(
 /// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates,
 /// as the driver crate spelled it. calef has not named it.
 pub const fn gmac0_interface_select(word: u32) -> u32 {
-    (word >> GMAC0_SYSTEM_CONTROLLER_SHIFT) & SYSTEM_CONTROLLER_FIELD
+    (word >> PORT_0_SYSTEM_CONTROLLER_SHIFT) & SYSTEM_CONTROLLER_FIELD
 }
 
 /// What the tree says about the first port.
@@ -179,7 +180,7 @@ pub struct Discovered {
     /// Whether `status` is absent, `"okay"` or `"ok"`.
     pub status_okay: bool,
     /// The station's media access control (MAC) address, from `local-mac-address`, which the
-    /// board's U-Boot writes into the tree it hands over from the EEPROM's address (its
+    /// board's U-Boot writes into the tree it hands over from the electrically erasable programmable read-only memory (EEPROM)'s address (its
     /// `fdt_fixup_ethernet`, through the `ethernet0` alias). `None` when the tree has none, and
     /// then the driver falls back to what the address registers hold.
     #[doc(alias = "mac_address")]
@@ -189,7 +190,7 @@ pub struct Discovered {
     /// for.
     #[doc(alias = "rgmii")]
     pub reduced_gigabit_media_independent_interface: bool,
-    /// The physical layer device's MDIO address: its node's `reg`, else its unit address, else 0.
+    /// The physical layer device's management data input/output (MDIO) address: its node's `reg`, else its unit address, else 0.
     #[doc(alias = "phy")]
     pub physical_layer_device_bus_address: u8,
     /// The physical layer device's board settings, and which spelling they were read from.
@@ -264,7 +265,7 @@ impl Discovered {
 
 /// **The physical layer device as mainline describes it**, in physical units: `property(name)` is the property `name`
 /// of the node the port's `phy-handle` names. Gives the MDIO address (its `reg`, else 0) and the
-/// settings; a node with neither internal delay keeps [`GMAC0_FALLBACK_SETTINGS`].
+/// settings; a node with neither internal delay keeps [`PORT_0_FALLBACK_SETTINGS`].
 ///
 /// # Errors
 ///
@@ -283,7 +284,7 @@ pub fn mainline_physical_layer_device<'t, E>(
         number(b"tx-internal-delay-ps")?,
     );
     if receive.is_none() && transmit.is_none() {
-        return Ok((bus_address, GMAC0_FALLBACK_SETTINGS));
+        return Ok((bus_address, PORT_0_FALLBACK_SETTINGS));
     }
     let receive_clock = number(b"motorcomm,rx-clk-drv-microamp")?.unwrap_or(0);
     let receive_data = number(b"motorcomm,rx-data-drv-microamp")?.unwrap_or(0);
@@ -311,7 +312,7 @@ pub fn mainline_physical_layer_device<'t, E>(
 
 /// **The physical layer device as the vendor tree describes it**, in register values: `property(name)` is the
 /// property `name` of the node [`VENDOR_PHYSICAL_LAYER_DEVICE_NODE`]. Any property it lacks keeps
-/// [`GMAC0_FALLBACK_SETTINGS`]'s value, and a node without `rx_delay_sel` is the fallback whole.
+/// [`PORT_0_FALLBACK_SETTINGS`]'s value, and a node without `rx_delay_sel` is the fallback whole.
 ///
 /// # Errors
 ///
@@ -325,9 +326,9 @@ pub fn vendor_physical_layer_device<'t, E>(
 ) -> Result<(u8, Settings), E> {
     let mut number = |name: &[u8]| property(name).map(|v| v.and_then(first_cell));
     let Some(receive) = number(b"rx_delay_sel")? else {
-        return Ok((0, GMAC0_FALLBACK_SETTINGS));
+        return Ok((0, PORT_0_FALLBACK_SETTINGS));
     };
-    let f = GMAC0_FALLBACK_SETTINGS;
+    let f = PORT_0_FALLBACK_SETTINGS;
     let flag = |v: Option<u32>, d: bool| v.map_or(d, |x| x != 0);
     Ok((
         number(b"reg")?.map_or(0, |r| (r & 0x1f) as u8),
@@ -400,7 +401,7 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
             continue;
         }
         let prop = |name: &[u8]| tree.node_property_compatible(compatible, name);
-        let phy = match prop(b"phy-handle")?.and_then(first_cell) {
+        let physical_layer_device = match prop(b"phy-handle")?.and_then(first_cell) {
             Some(handle) => {
                 mainline_physical_layer_device(|name| tree.phandle_property(handle, name))?
             }
@@ -408,8 +409,14 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
                 tree.node_property(VENDOR_PHYSICAL_LAYER_DEVICE_NODE, name)
             })?,
         };
-        return Discovered::from_node(regions[0].start, regions[0].size, compatible, prop, phy)
-            .map(Some);
+        return Discovered::from_node(
+            regions[0].start,
+            regions[0].size,
+            compatible,
+            prop,
+            physical_layer_device,
+        )
+        .map(Some);
     }
     Ok(None)
 }
@@ -460,7 +467,7 @@ mod tests {
             (b"phy-mode", b"rgmii-id\0"),
             (b"interrupts", &[0, 0, 0, 7, 0, 0, 0, 6]),
         ];
-        let physical_layer_device = (0, GMAC0_FALLBACK_SETTINGS);
+        let physical_layer_device = (0, PORT_0_FALLBACK_SETTINGS);
         let d = Discovered::from_node(
             GMAC0_REGISTERS_PHYSICAL_ADDRESS,
             0x1_0000,
@@ -501,7 +508,7 @@ mod tests {
             2,
             COMPATIBLE_MAINLINE,
             node(&[]),
-            (3, GMAC0_FALLBACK_SETTINGS),
+            (3, PORT_0_FALLBACK_SETTINGS),
         )
         .unwrap();
         assert!(d.status_okay);
@@ -524,7 +531,7 @@ mod tests {
             2,
             COMPATIBLE_MAINLINE,
             node(table),
-            (0, GMAC0_FALLBACK_SETTINGS),
+            (0, PORT_0_FALLBACK_SETTINGS),
         )
         .unwrap();
         assert!(!d.status_okay && !d.reduced_gigabit_media_independent_interface);
@@ -536,7 +543,7 @@ mod tests {
                 2,
                 COMPATIBLE_MAINLINE,
                 node(table),
-                (0, GMAC0_FALLBACK_SETTINGS),
+                (0, PORT_0_FALLBACK_SETTINGS),
             )
             .unwrap();
             assert!(d.status_okay);
@@ -581,7 +588,7 @@ mod tests {
         let table: &[(&[u8], &[u8])] = &[(b"reg", ONE)];
         assert_eq!(
             mainline_physical_layer_device(node(table)).unwrap(),
-            (1, GMAC0_FALLBACK_SETTINGS)
+            (1, PORT_0_FALLBACK_SETTINGS)
         );
     }
 
@@ -597,7 +604,7 @@ mod tests {
             (b"tx_inverted_10", ONE),
             (b"tx_inverted_100", ZERO),
         ];
-        let f = GMAC0_FALLBACK_SETTINGS;
+        let f = PORT_0_FALLBACK_SETTINGS;
         let (bus_address, s) = vendor_physical_layer_device(node(table)).unwrap();
         assert_eq!(bus_address, 3);
         assert_eq!(
@@ -632,7 +639,7 @@ mod tests {
         let failing = |_: &[u8]| -> Result<Option<&'static [u8]>, u8> { Err(9) };
         assert_eq!(mainline_physical_layer_device(failing), Err(9));
         assert_eq!(vendor_physical_layer_device(failing), Err(9));
-        let physical_layer_device = (0, GMAC0_FALLBACK_SETTINGS);
+        let physical_layer_device = (0, PORT_0_FALLBACK_SETTINGS);
         assert_eq!(
             Discovered::from_node(0, 0, COMPATIBLE_MAINLINE, failing, physical_layer_device),
             Err(9)
@@ -659,7 +666,7 @@ mod tests {
     }
 
     #[test]
-    fn the_interface_select_touches_only_gmac0s_three_bits() {
+    fn the_interface_select_touches_only_port_0s_three_bits() {
         assert_eq!(
             select_reduced_gigabit_media_independent_interface(0),
             0x0004_0000
@@ -676,7 +683,7 @@ mod tests {
         );
         // The vendor U-Boot's mask, 0x1c0000, is exactly this field.
         assert_eq!(
-            SYSTEM_CONTROLLER_FIELD << GMAC0_SYSTEM_CONTROLLER_SHIFT,
+            SYSTEM_CONTROLLER_FIELD << PORT_0_SYSTEM_CONTROLLER_SHIFT,
             0x1c_0000
         );
         assert_eq!(gmac0_interface_select(0), 0);
@@ -686,9 +693,9 @@ mod tests {
     /// The two trees' spellings of `gmac0`'s physical layer device come to the same registers,
     /// which are the fallback's.
     #[test]
-    fn the_two_trees_spell_the_same_registers_for_the_boards_gmac0() {
+    fn the_two_trees_spell_the_same_registers_for_the_boards_port_0() {
         let mainline = Settings::from_mainline(1500, 1500, 3970, 2910, Some([false, true, true]));
-        let fallback = GMAC0_FALLBACK_SETTINGS;
+        let fallback = PORT_0_FALLBACK_SETTINGS;
         assert_eq!(mainline.receive_delay, fallback.receive_delay);
         assert_eq!(mainline.transmit_delay, fallback.transmit_delay);
         assert_eq!(mainline.receive_fixed_delay, fallback.receive_fixed_delay);
