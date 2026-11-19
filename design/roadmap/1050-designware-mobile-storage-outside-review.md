@@ -44,7 +44,7 @@ Effort: S is under a day of one lane, M a few days, L a week or more.
 
 ## Findings, prioritized
 
-P0 blocks the baseline tag and any publish. P1 lands before the first release. P2 follows it, in
+P0 blocks the baseline tag and any publish. P1 lands before the first release. P2 follows, in
 [the appendix](1050-designware-mobile-storage-outside-review/after-the-first-release.md).
 
 ### P0: one-way shapes and packaging that a tag or a publish would freeze
@@ -77,7 +77,7 @@ else is crate-private, and every doctest uses the public API alone. The lane tha
 rewrites the doctest on `Command` in `src/command.rs` to match, so no register bit stays public for
 a doctest's sake. A later release can relax the rule without a break; tightening it after a tag is
 one. That lane lists, in its pull request, each item it keeps public and the caller need that keeps
-it there. Verified in the source. One-way door (removing `pub` after a publish is a break). S.
+it there. Verified. One-way door (removing `pub` after a publish is a break). S.
 
 #### P0-3. The ISC notice travels only inside a doc comment
 
@@ -90,7 +90,7 @@ text. The root of the repository has `LICENSE-MIT` and `LICENSE-APACHE` and no `
 manifest carries in its `license` field. The License section of the README is the one place that
 states it whole. Recommended: add `LICENSE-ISC` with the copyright line and notice, point
 `src/lib.rs` and the README at it, and correct `CONTRIBUTING.md`. The SPDX expression stays as
-ruled. Verified in the files. Two-way change to a one-way license statement. S.
+ruled. Verified. Two-way change to a one-way license statement. S.
 
 #### P0-4. No tag, so the semver gate has no baseline
 
