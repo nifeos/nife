@@ -44,8 +44,8 @@ matcher; a dev-dependency the other way creates no cycle and is the ordinary sha
 
 Change: move the file to `crates/grant_plan/tests/`, which already depends on `byte_glob` and leaves
 after it, and delete the two dev-dependencies here. `filesystem_fixture` must not take it, since
-that crate leaves first (milestone 1091, `filesystem_fixture`: what an outside maintainer would fix
-before it leaves, item 2). Two-way. S.
+that crate leaves first, as item 2 of milestone 1091 (`filesystem_fixture`: what an outside
+maintainer would fix before it leaves) states. Two-way. S.
 
 #### P0-4. The shipped text cites the tree it is leaving
 

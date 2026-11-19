@@ -96,8 +96,8 @@ then the decisions and the release step.
 
 ### Clear the review of the shared `filesystem_contract` and `filesystem_fixture` repository
 
-This is one decision with milestone 1090's (`filesystem_contract`: what an outside maintainer would
-fix before it leaves), and its brief is there: [clear the review of `filesystem_contract` and
+This is one decision with the one in milestone 1090 (`filesystem_contract`: what an outside
+maintainer would fix before it leaves), and its brief is there: [clear the review of `filesystem_contract` and
 `filesystem_fixture`, and create their
 repository](1090-filesystem-contract-outside-review.md#clear-the-review-of-filesystem_contract-and-filesystem_fixture-and-create-their-repository).
 For this crate, the clearance ratifies the 244 names of item 5's package, after Decision 2's renames

@@ -149,9 +149,9 @@ server speak, and `filesystem_fixture` is the test image those servers run again
 together for one workspace repository, ruled 2026-11-14 UTC; the fixture never publishes. A crate
 leaves once its review package lists every public name and decision and the architect clears that
 review, and the clearance is also the go to create the repository. Most of the contract's public
-names are provisional, Decision B's renames included, and the fixture has 244 unratified names
-(milestone 1091, `filesystem_fixture`: what an outside maintainer would fix before it leaves). The
-decision is one clearance for both crates.
+names are provisional, Decision B's renames included, and the fixture has 244 unratified names, which
+milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves)
+counts. The decision is one clearance for both crates.
 
 Recommendation: A, once the review package exists.
 
