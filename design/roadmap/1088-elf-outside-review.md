@@ -22,7 +22,7 @@ That comparison measured fit, hostile input, proofs, cost and upkeep. It ended i
 stays ours. The baseline also takes the order in which milestone 857 (crates released on their own) moves it.
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-review-packet`,
-`script/crate-standalone`, Kani, cargo-mutants, cargo-fuzz, the crate's eight falsification patches,
+`script/crate-standalone`, Kani, cargo-mutants, cargo-fuzz, the crate's falsification patches,
 and milestone 784's probe script. No new tool.
 
 ## Does it leave?
@@ -38,29 +38,130 @@ repository. Judged against both halves:
   user. The progenitor, the shell, `jig` and the UEFI loader are not kernel code and link it too. So
   once the kernel moves, at least two repositories link `static_elf`, and the kernel cannot move until `static_elf`
   has. The order the split already ruled meets the shared test.
-- **Publishable: not as it stands.** The crates.io name `elf` belongs to a different crate (0.8.0, 14.1
+- **Publishable: not yet.** The crates.io name `elf` belongs to a different crate (0.8.0, 14.1
   million downloads, 3.98 million in the last 90 days, measured from the crates.io API during this
-  review), which is why the crate is named `static_elf`. The machine the parser accepts is a compile-time constant of the host. The refusals that
-  are this loader's policy (W^X, one segment per page at 4 KiB, 64 headers, `ET_EXEC` only) are
-  hard-wired with no way to state another page size. Shipped doc comments cite this tree's paths,
-  milestones, sections and the architect by name twenty-nine times. There is no README, no license
-  file and no manifest metadata. Every one of these is fixable; the first is a one-way door.
+  review), which is why the crate is named `static_elf`. The review found the machine fixed to the
+  build, the page size of the overlap check fixed at 4 KiB, 29 citations of this tree in shipped
+  text, and no README, license file or manifest metadata. All of those are now fixed (Finding
+  status); what remains for a release is the move's own items and the ratified names.
 
 Verdict: a candidate to leave, on the shared ground, as a `publish = false` repository first, the
 way the other extracted crates left. Publication is a separate later question, and the publishing
 hold stands; nothing here lifts it. The P0 items are what the move needs. The P1 items are what a
 first tag needs. The decisions section holds the three one-way doors a release would close.
 
-## Where this stands
+## Finding status
 
-The appendix lists what remains and what holds each: [where this stands](1088-elf-outside-review/where-this-stands.md).
+One line per finding, in the review's order: the P0 items in
+[the before-the-move appendix](1088-elf-outside-review/before-the-move.md) (items 1 to 4), the P1
+items in [the before-the-tag appendix](1088-elf-outside-review/before-the-tag.md) (items 5 to 11),
+the P2 items in [the later-items appendix](1088-elf-outside-review/later-items.md) (items 12 to 16),
+then the decisions below and the release steps.
+
+- Item 1 (P0), shipped text cites this tree: Done,
+  [#3642](https://github.com/nifeos/nife/pull/3642). The provisional `Name:` blocks that remain go
+  in the move commit.
+- Item 2 (P0), fuzz seeds and target: Open. The seeds live in `tests/fixtures/`; the `elf_parse`
+  target and its `fuzz/Cargo.toml` entry are still in this repository's fuzz workspace and move to
+  the new repository's `fuzz/`, opted in since the crate has no `unsafe`.
+- Item 3 (P0), manifest and repository files: Open. The manifest states every key as a literal with
+  `rust-version` 1.88, and the license files are in the crate
+  ([#3642](https://github.com/nifeos/nife/pull/3642)); the scaffold's `CHANGELOG.md`,
+  `SECURITY.md`, `CONTRIBUTING.md`, `deny.toml`, `_typos.toml` and caller workflows come at the
+  move.
+- Item 4 (P0), a public name says nife and the machine list is public: Done,
+  [#3642](https://github.com/nifeos/nife/pull/3642). The guard is the test-only `unknown_machine`;
+  `NATIVE_MACHINE` is under D1.
+- Item 5 (P1), `page_range` panics on a bad page size: Done,
+  [#3642](https://github.com/nifeos/nife/pull/3642). `PageBytes` holds only a power of two, and a
+  harness quantifies over every one.
+- Item 6 (P1), the overlap check hard-codes 4 KiB: Done,
+  [#3642](https://github.com/nifeos/nife/pull/3642). `Elf::parse_with` takes the loader's page
+  size, and the kernel passes its frame size.
+- Item 7 (P1), four truncating casts: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
+- Item 8 (P1), `Display`, `core::error::Error` and derives: Done,
+  [#3565](https://github.com/nifeos/nife/pull/3565). The consumers keep their own wording by
+  design: the UEFI loader's `refusal` table words each refusal for a machine that will not boot,
+  and the kernel's `LoadError` display prints a parser refusal by its `Debug` form.
+- Item 9 (P1), the public vocabulary: Done, [#3642](https://github.com/nifeos/nife/pull/3642). The
+  names D3 ruled, across the crate and its dependents, each with the specification's alias.
+- Item 10 (P1), README, example, shared forge and stranger run: Open. The README and
+  `examples/parse_static_executable.rs` are in
+  [#3642](https://github.com/nifeos/nife/pull/3642); the stranger run in `docs/stranger-test.md`
+  comes at the move, and the shared test forge is not built because no finding stands behind it
+  (the unit tests, doc examples and dependents each forge differently). The maintainer rules
+  whether the forge is dropped.
+- Item 11 (P1), the program-header index has no proof: Done,
+  [#3642](https://github.com/nifeos/nife/pull/3642). Nine harnesses, each with a falsification
+  patch.
+- Item 12 (P2), an entry in the zero-filled tail: Done,
+  [#3642](https://github.com/nifeos/nife/pull/3642). Refused as `EntryNotExecutable`, a maintainer
+  ruling, provisional (2026-11-16 UTC).
+- Item 13 (P2), what the parser ignores is unwritten: Done,
+  [#3642](https://github.com/nifeos/nife/pull/3642). The README's "What it does not check",
+  congruence included.
+- Item 14 (P2), `segments()` discards an unreachable error: Done,
+  [#3565](https://github.com/nifeos/nife/pull/3565). A comment states the invariant, and
+  `exactly_the_maximum_header_count_is_accepted` counts.
+- Item 15 (P2), four mutation timeouts: Open. They are triaged from the first weekly mutation run
+  in the new repository.
+- Item 16 (P2), the note padding rule differs from LLVM: Open. The `padding` doc and the README's
+  `BUGS` state the difference from the review's recollection; LLVM's note iterator source is still
+  to be read and the rule stated from it.
+- D1, the machine as an input: Ruled (option A, maintainer, provisional, 2026-11-14 UTC). Not
+  built: `NATIVE_MACHINE` stays public against the ruling's list, for the reason the decision
+  records; the maintainer either removes it before the tag or records the deviation as the rule.
+- D2, the policy stays inside the parser: Done, [#3642](https://github.com/nifeos/nife/pull/3642).
+  All five refusals stay, the README lists them as policy, and the page size is an input.
+- D3, the public names: Done, [#3642](https://github.com/nifeos/nife/pull/3642).
+- The crate name: Done, [#3595](https://github.com/nifeos/nife/pull/3595). Ruled 2026-11-14 UTC.
+- Review package: Open. `notes/crate-reviews/` has no `static-elf.md`; it is the first step before
+  the move, and it carries the name draft.
+- Review clearance and name ratification: Open. Under Open decisions.
+
+## Open decisions
+
+### Clear the review of `static_elf` and create its repository
+
+Background. `static_elf` is the front half of this tree's ELF loader: it validates a static ELF64
+executable and finds a note in it. The kernel, the UEFI loader and nine other packages link it, and
+the kernel cannot leave this repository until every crate it links has left, so `static_elf` must
+move to a repository of its own, `nifeos/static_elf`. A crate leaves after its review package
+(`notes/crate-reviews/static-elf.md`) lists every public name and decision, and the architect
+clears that review. Clearing it is also the go to create the repository. Today every public name but
+the crate's own is provisional: `Elf`, `Segment::virtual_address`, `PageBytes`,
+`Elf::parse_for_machine`, the three machine constants, `NATIVE_MACHINE` and the rest. A name is
+cheap to change while only this tree spells it, and a one-way door once a release does.
+
+Recommendation: A, once the review package exists.
+
+- A. Clear the review when its package is written: ratify the names as the package lists them, and
+  create `nifeos/static_elf` as a `publish = false` repository. The move, the stranger run and the
+  first weekly mutation run follow.
+- B. Create the repository but leave the names provisional until the release review. The move
+  happens sooner; every name is decided once, at the tag, with the release review that reopens
+  older names anyway.
+- C. Hold the crate in this repository. The kernel's move (milestone 1039) waits with it.
+
+Door: one-way. A repository is an outward step other people can see and link, and a ratified name
+binds every dependent once anything outside reads it.
+
+Prior art: the Rust project's libs-team API review clears a public surface before it stabilizes, and
+renames freely before that. The crates already cleared here (`e1000e`, `extensible_host_controller_interface`,
+`generational_table`) took the same path: package, clearance, repository, then tags with no publish.
+`static_elf` differs in sitting on the kernel's critical path, so its clearance gates milestone
+1039. Concrete example: ratifying `Segment::virtual_address` fixes the spelling the kernel's loader
+uses at `kernel/src/user/loader.rs`, and a later rename would sweep eleven packages in two
+repositories.
+
+Blocks: the move.
 
 ## Goal
 
 A stranger who finds the repository can tell in one screen that this is a validating front half of a
 loader for static ELF64 executables, not a general ELF reader. The same stranger can see which
 refusals are the ELF format's and which are this loader's policy. They can build it, run its tests,
-verify its eight proofs and replay one falsification from the README alone. The crate reads nothing
+verify its proofs and replay one falsification from the README alone. The crate reads nothing
 outside its own repository, names no project but itself, and compiles for every target it claims
 without a width assumption it does not state. The public vocabulary follows the organization's
 naming rules before anyone outside depends on it.
@@ -75,7 +176,7 @@ The comparison with nearby work is in [the appendix](1088-elf-outside-review/pri
 
 ## Findings
 
-The ledger of what landed and what is left is in [the appendix](1088-elf-outside-review/ledger.md).
+What each finding became is under Finding status above.
 
 ### P0: before the move
 
@@ -244,20 +345,6 @@ leaves, is `nifeos/static_elf`. The notes about the file format keep their names
 
 The checks are in [the appendix](1088-elf-outside-review/done-when.md).
 
-## Follow-on
-
-- **Done.** The rename to `static_elf`: the directory, the package, every dependent, the lock
-  files, the tables and baselines, and the notes that name the crate. It changes no behavior and no
-  public item.
-- **Done.** Every item that needs no move: the citations, the seeds, the manifest, the page-size
-  type, the program-header proof, the casts, `Display`, the D3 names, the README and its example,
-  and the entry-point refusal. The parse refuses an entry in the zero-filled tail as
-  `EntryNotExecutable`, a maintainer ruling, provisional (2026-11-16 UTC). The crate has no
-  release, so a later ruling can still drop the refusal without breaking a file that passed.
-- **Outstanding.** The move's own items (the scaffold's files, the fuzz target), the four mutation
-  timeouts (the first weekly run in the new repository), the stranger test, and the shared test
-  forge.
-
 ## BUGS
 
 - Items 5 and 7 come from reading. The review installed no 32-bit target and wrote no failing
@@ -273,14 +360,9 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
 
 ## Index row
 
-An outside reading of `static_elf` (then named `elf`) before it leaves. No review package exists.
-The crate leaves on the shared ground: the kernel links it and must follow it out. It does not
-leave on publishability. Three things rule that out as it stands: the crates.io name `elf` taken by
-another crate (the reason for the rename), a build-time machine constant and 29 citations of this
-tree.
-Four items block the move (citations, the fuzz seeds and target, the manifest and files, a public
-name that says nife). Seven go before the first tag (a page-size hole in a public helper and in the
-overlap check, four truncating casts, `Display`, the naming sweep, a README with an example, one
-harness). Five follow it. Three decisions for the architect, one at a time: the machine as an input,
-the policy staying inside, and the public names. Tests, clippy, docs, three targets, eight proofs
-and eight falsifications all ran clean; the census records no survivor.
+An outside reading of `static_elf` (then named `elf`) before it leaves. The crate leaves on the
+shared ground: the kernel links it and must follow it out. Of 22 findings and steps, 14 are done,
+one is ruled and not built (`NATIVE_MACHINE` still public against D1), and six are open: the
+move's fuzz target and scaffold, the stranger run, the four mutation timeouts, the LLVM padding
+check and the review package. One decision is open: the review's clearance, which creates
+`nifeos/static_elf` and ratifies its names.
