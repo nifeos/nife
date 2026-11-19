@@ -17,12 +17,12 @@
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_DEPTH: usize = 8;
 
-/// The longest single component a path may have, which is [`crate::MAXIMUM_FILE_NAME`]: the last
+/// The longest single component a path may have, which is [`crate::MAXIMUM_FILE_NAME_BYTES`]: the last
 /// component of a path can be a file, and a file may be named that long. A component the shell
-/// descends through or stands in is held to [`MAXIMUM_DIRECTORY_NAME`] as well ([`Cwd::descend`]).
+/// descends through or stands in is held to [`MAXIMUM_DIRECTORY_NAME_BYTES`] as well ([`Cwd::descend`]).
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_NAME: usize = crate::MAXIMUM_FILE_NAME;
+pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 
 /// **The longest directory name a [`Cwd`] or a bound name holds**, which is [`crate::MAXIMUM_WORDS_NAME_BYTES`]:
 /// a directory grant names its directory in the caretaker's two `START` words, and a shell that
@@ -31,29 +31,30 @@ pub const MAXIMUM_NAME: usize = crate::MAXIMUM_FILE_NAME;
 /// [`crate::Holdings`] and several in an [`crate::Endowment`].
 ///
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
-pub const MAXIMUM_DIRECTORY_NAME: usize = crate::MAXIMUM_WORDS_NAME_BYTES;
+pub const MAXIMUM_DIRECTORY_NAME_BYTES: usize = crate::MAXIMUM_WORDS_NAME_BYTES;
 
 // A bound directory entry holds its name length as a `u8`.
-const _: () = assert!(MAXIMUM_NAME <= u8::MAX as usize);
-const _: () = assert!(MAXIMUM_DIRECTORY_NAME <= u8::MAX as usize);
+const _: () = assert!(MAXIMUM_NAME_BYTES <= u8::MAX as usize);
+const _: () = assert!(MAXIMUM_DIRECTORY_NAME_BYTES <= u8::MAX as usize);
 
 /// The bytes [`Cwd::render`] can need: a slash per level, plus each name, plus the leading slash a
 /// root renders as on its own.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const RENDER_MAXIMUM: usize = 1 + MAXIMUM_DEPTH * (1 + MAXIMUM_DIRECTORY_NAME);
+pub const MAXIMUM_RENDERED_PATH_BYTES: usize =
+    1 + MAXIMUM_DEPTH * (1 + MAXIMUM_DIRECTORY_NAME_BYTES);
 
 /// Why a token cannot be navigated. Each is a fact about the *name*, never about a permission,
 /// which is the distinction the whole model rests on.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Refused {
-    /// A component that is not a name: empty, longer than [`MAXIMUM_NAME`], or carrying a byte a
+    /// A component that is not a name: empty, longer than [`MAXIMUM_NAME_BYTES`], or carrying a byte a
     /// name cannot carry.
     NotAName,
     /// More components than [`MAXIMUM_DEPTH`], or a descent that would take the shell past it.
     TooDeep,
     /// A directory to stand in, descend through or bind whose name is over
-    /// [`MAXIMUM_DIRECTORY_NAME`]. A name that long is a file's, not a place this shell can be.
+    /// [`MAXIMUM_DIRECTORY_NAME_BYTES`]. A name that long is a file's, not a place this shell can be.
     ///
     /// Name: provisional (milestone 946).
     DirectoryNameTooLong,
@@ -188,7 +189,7 @@ pub fn path(token: &[u8]) -> Result<Path<'_>, Refused> {
 /// a request it knows will be `EINVAL`.
 pub fn component_fits(part: &[u8]) -> bool {
     !part.is_empty()
-        && part.len() <= MAXIMUM_NAME
+        && part.len() <= MAXIMUM_NAME_BYTES
         && part != b"."
         && part != b".."
         && !part.contains(&b'/')
@@ -198,11 +199,11 @@ pub fn component_fits(part: &[u8]) -> bool {
 }
 
 /// Whether one component can be a directory this shell stands in: [`component_fits`], and at most
-/// [`MAXIMUM_DIRECTORY_NAME`] bytes.
+/// [`MAXIMUM_DIRECTORY_NAME_BYTES`] bytes.
 ///
 /// Name: provisional (milestone 946).
 pub fn directory_fits(part: &[u8]) -> bool {
-    component_fits(part) && part.len() <= MAXIMUM_DIRECTORY_NAME
+    component_fits(part) && part.len() <= MAXIMUM_DIRECTORY_NAME_BYTES
 }
 
 /// **Where a shell is, relative to its own root**: the components it descended through, and nothing
@@ -213,7 +214,7 @@ pub fn directory_fits(part: &[u8]) -> bool {
 /// change what that grant means.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct Cwd {
-    names: [[u8; MAXIMUM_DIRECTORY_NAME]; MAXIMUM_DEPTH],
+    names: [[u8; MAXIMUM_DIRECTORY_NAME_BYTES]; MAXIMUM_DEPTH],
     lens: [u8; MAXIMUM_DEPTH],
     depth: usize,
 }
@@ -248,7 +249,7 @@ impl Cwd {
     /// with no directory capability can be.
     pub const fn root() -> Self {
         Cwd {
-            names: [[0; MAXIMUM_DIRECTORY_NAME]; MAXIMUM_DEPTH],
+            names: [[0; MAXIMUM_DIRECTORY_NAME_BYTES]; MAXIMUM_DEPTH],
             lens: [0; MAXIMUM_DEPTH],
             depth: 0,
         }
@@ -265,7 +266,7 @@ impl Cwd {
     }
 
     /// Record a descent. `false` if the name does not fit, is longer than a directory's may be
-    /// ([`MAXIMUM_DIRECTORY_NAME`]), or the shell is already as deep as it tracks; the caller must
+    /// ([`MAXIMUM_DIRECTORY_NAME_BYTES`]), or the shell is already as deep as it tracks; the caller must
     /// not have sent the request in that case.
     pub fn descend(&mut self, name: &[u8]) -> bool {
         if self.depth == MAXIMUM_DEPTH || !directory_fits(name) {
@@ -290,7 +291,7 @@ impl Cwd {
             return false;
         }
         self.depth -= 1;
-        self.names[self.depth] = [0; MAXIMUM_DIRECTORY_NAME];
+        self.names[self.depth] = [0; MAXIMUM_DIRECTORY_NAME_BYTES];
         self.lens[self.depth] = 0;
         true
     }
@@ -310,7 +311,7 @@ impl Cwd {
     /// leading slash is honest rather than borrowed: `/` is the root of *your* namespace, which is
     /// Plan 9's answer and the only one that does not imply a namespace above you.
     ///
-    /// Returns the number of bytes written. `out` should be [`RENDER_MAXIMUM`] bytes; a shorter
+    /// Returns the number of bytes written. `out` should be [`MAXIMUM_RENDERED_PATH_BYTES`] bytes; a shorter
     /// buffer truncates rather than panicking, because a shell rendering a prompt must not fault.
     pub fn render(&self, out: &mut [u8]) -> usize {
         let mut n = 0;
@@ -496,20 +497,20 @@ pub const MAXIMUM_BINDS: usize = 4;
 /// One name a shell has bound to a position it already reached some other way.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct BindEntry {
-    name: [u8; MAXIMUM_DIRECTORY_NAME],
-    name_len: u8,
-    pos: Cwd,
+    name: [u8; MAXIMUM_DIRECTORY_NAME_BYTES],
+    name_length_bytes: u8,
+    position: Cwd,
 }
 
 impl BindEntry {
     /// The name an absolute path's first component must match to reach this entry.
     pub fn name(&self) -> &[u8] {
-        &self.name[..self.name_len as usize]
+        &self.name[..self.name_length_bytes as usize]
     }
 
     /// Where this entry points, **before** anything after the bound name in a token is applied.
-    pub fn pos(&self) -> Cwd {
-        self.pos
+    pub fn position(&self) -> Cwd {
+        self.position
     }
 }
 
@@ -583,12 +584,12 @@ impl Bindings {
             .iter_mut()
             .find(|e| e.is_none())
             .ok_or(BindRefused::TooMany)?;
-        let mut packed = [0u8; MAXIMUM_DIRECTORY_NAME];
+        let mut packed = [0u8; MAXIMUM_DIRECTORY_NAME_BYTES];
         packed[..name.len()].copy_from_slice(name);
         *slot = Some(BindEntry {
             name: packed,
-            name_len: name.len() as u8,
-            pos,
+            name_length_bytes: name.len() as u8,
+            position: pos,
         });
         Ok(())
     }
@@ -616,7 +617,7 @@ impl Bindings {
             _ => return None,
         };
         let entry = self.lookup(label)?;
-        Some((entry.pos(), rest))
+        Some((entry.position(), rest))
     }
 
     /// [`Bindings::split_absolute`], fully resolved: the bound position with the rest of the token
@@ -655,7 +656,7 @@ mod tests {
     /// Assert what `pwd` would print. A helper rather than a returned `String` because this crate is
     /// `no_std` and has no allocator, in tests or out.
     fn assert_pwd(cwd: &Cwd, want: &[u8]) {
-        let mut buf = [0u8; RENDER_MAXIMUM];
+        let mut buf = [0u8; MAXIMUM_RENDERED_PATH_BYTES];
         let n = cwd.render(&mut buf);
         assert_eq!(
             core::str::from_utf8(&buf[..n]),
@@ -732,7 +733,7 @@ mod tests {
         assert_eq!(cwd.last(), Some(&b"b"[..]));
     }
 
-    /// `RENDER_MAXIMUM` is the worst case exactly: the deepest position with the widest names fills
+    /// `MAXIMUM_RENDERED_PATH_BYTES` is the worst case exactly: the deepest position with the widest names fills
     /// all but one of its bytes, and the spare byte is the lone slash a root renders as, which
     /// never coexists with a level. Slack would hide a truncation bug behind a buffer that always
     /// happened to fit; a byte short would truncate a real prompt.
@@ -742,11 +743,11 @@ mod tests {
         for _ in 0..MAXIMUM_DEPTH {
             assert!(cwd.descend(b"sixteen-bytes!!!"));
         }
-        let mut buf = [0u8; RENDER_MAXIMUM];
+        let mut buf = [0u8; MAXIMUM_RENDERED_PATH_BYTES];
         let n = cwd.render(&mut buf);
-        assert_eq!(n, RENDER_MAXIMUM - 1);
+        assert_eq!(n, MAXIMUM_RENDERED_PATH_BYTES - 1);
         // And nothing was truncated to make that true: a wider buffer renders the same count.
-        let mut wide = [0u8; 2 * RENDER_MAXIMUM];
+        let mut wide = [0u8; 2 * MAXIMUM_RENDERED_PATH_BYTES];
         assert_eq!(cwd.render(&mut wide), n);
     }
 
@@ -830,7 +831,7 @@ mod tests {
         assert_pwd(&shallow, b"/logs/2026");
 
         // `pwd`'s output is a token you can type back: the round trip.
-        let mut buf = [0u8; RENDER_MAXIMUM];
+        let mut buf = [0u8; MAXIMUM_RENDERED_PATH_BYTES];
         let n = deep.render(&mut buf);
         let mut elsewhere = Cwd::root();
         cd(&mut elsewhere, "somewhere/else").unwrap();
@@ -880,14 +881,14 @@ mod tests {
     fn a_component_that_cannot_be_a_name_is_refused_before_anything_is_sent() {
         assert_eq!(path(b""), Err(Refused::NotAName));
         assert_eq!(path(b"."), Err(Refused::NotAName));
-        let mut long = [b'/'; MAXIMUM_NAME + 3];
-        long[1..MAXIMUM_NAME + 2].fill(b'n');
+        let mut long = [b'/'; MAXIMUM_NAME_BYTES + 3];
+        long[1..MAXIMUM_NAME_BYTES + 2].fill(b'n');
         assert_eq!(
-            path(&long[..MAXIMUM_NAME + 2]),
+            path(&long[..MAXIMUM_NAME_BYTES + 2]),
             Err(Refused::NotAName),
             "/ and one byte too many"
         );
-        let mut under = [b'n'; MAXIMUM_NAME + 3];
+        let mut under = [b'n'; MAXIMUM_NAME_BYTES + 3];
         under[..2].copy_from_slice(b"a/");
         assert_eq!(
             path(&under),

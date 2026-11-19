@@ -13,12 +13,12 @@ use super::*;
 /// be longer than sixteen bytes)).
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_FILE_NAME: usize = 252;
+pub const MAXIMUM_FILE_NAME_BYTES: usize = 252;
 
 /// **The longest name two `START` argument words carry**: sixteen bytes, duplicated from
-/// `filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES` for [`MAXIMUM_FILE_NAME`]'s reason and pinned the same
+/// `filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES` for [`MAXIMUM_FILE_NAME_BYTES`]'s reason and pinned the same
 /// way. A name the shell sends that way is held to it at the prompt: the directory a grant descends
-/// into ([`crate::nav::MAXIMUM_DIRECTORY_NAME`]), an identity `user` names, and the name `vouch`
+/// into ([`crate::navigation::MAXIMUM_DIRECTORY_NAME_BYTES`]), an identity `user` names, and the name `vouch`
 /// records.
 ///
 /// Name: provisional (milestone 946), after the constant it mirrors.
@@ -29,7 +29,7 @@ pub const MAXIMUM_WORDS_NAME_BYTES: usize = 16;
 /// because there is no namespace here to walk.
 pub fn file_name_fits(name: &[u8]) -> bool {
     !name.is_empty()
-        && name.len() <= MAXIMUM_FILE_NAME
+        && name.len() <= MAXIMUM_FILE_NAME_BYTES
         && name != b"."
         && name != b".."
         && !name.contains(&b'/')

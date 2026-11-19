@@ -16,12 +16,12 @@ use super::*;
 /// do.
 const ARGV_VA: u64 = IMAGE_WINDOW;
 /// **And the window a stage's name set is written through** (milestone 205's designation half,
-/// `spawnproto::NAMESET_BIT`): one page per stage, above the argv pages and below [`IMAGE_VA`], so
+/// `spawn_protocol::NAMESET_BIT`): one page per stage, above the argv pages and below [`IMAGE_VA`], so
 /// [`IMAGE_TABLE_PAGES`] pays for these tables too.
-const SET_VA: u64 = ARGV_VA + line::MAXIMUM_STAGES as u64 * spawnproto::IMAGE_PAGE;
+const SET_VA: u64 = ARGV_VA + line::MAXIMUM_STAGES as u64 * spawn_protocol::IMAGE_PAGE;
 
 /// **One line's argv, written and waiting to be sent**: the one-page region it was carved from and
-/// the frame in it. The frame travels to the progenitor narrowed to `READ` (`spawnproto::PROGRAM_ARGUMENTS_BIT`)
+/// the frame in it. The frame travels to the progenitor narrowed to `READ` (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`)
 /// and the progenitor copies it before the child runs, so the region goes back as soon as the
 /// child has answered.
 #[derive(Clone, Copy)]
@@ -36,11 +36,11 @@ pub(super) struct Argv {
 /// refusal here is not expected; it is handled rather than unwrapped because a shell that panics
 /// takes the prompt with it.
 pub(super) fn assemble_argv(cmd: &[u8], stage: usize) -> Result<Argv, Option<Refusal>> {
-    let va = ARGV_VA + stage as u64 * spawnproto::IMAGE_PAGE;
+    let va = ARGV_VA + stage as u64 * spawn_protocol::IMAGE_PAGE;
     let a = fresh_page(va).ok_or(None)?;
     // SAFETY: `va` is one page this shell just mapped read/write, fresh, and nothing else reaches
     // it until the frame is sent; the borrow ends before this function returns.
-    let page = unsafe { &mut *(va as *mut [u8; spawnproto::IMAGE_PAGE as usize]) };
+    let page = unsafe { &mut *(va as *mut [u8; spawn_protocol::IMAGE_PAGE as usize]) };
     match grant_plan::argv(cmd, page) {
         Ok(_) => Ok(a),
         Err(r) => {
@@ -109,12 +109,12 @@ pub(super) fn words_grant(
         }
     };
     // **A directory in the mounted tree is named through the mount** (milestone 834 (ioping on nife and Linux)): the
-    // progenitor builds the caretaker against the tree `spawnproto::in_mounted_tree` says.
+    // progenitor builds the caretaker against the tree `spawn_protocol::in_mounted_tree` says.
     let mut routed = [0u8; filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES + 1];
     let dir = match g.which {
-        nav::Which::A => dir,
-        nav::Which::B => {
-            let mount = spawnproto::MOUNTED_TREE_NAME;
+        grant_navigation::Which::A => dir,
+        grant_navigation::Which::B => {
+            let mount = spawn_protocol::MOUNTED_TREE_NAME;
             let n = mount.len() + 1 + dir.len();
             if n > routed.len() {
                 return Err(Some(
@@ -154,7 +154,7 @@ pub(super) fn words_grant(
 /// `Err(Some(sentence))` is a set the encoding refuses, which the planner's own bounds make
 /// unexpected, and `Err(None)` the budget.
 fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
-    let va = SET_VA + stage as u64 * spawnproto::IMAGE_PAGE;
+    let va = SET_VA + stage as u64 * spawn_protocol::IMAGE_PAGE;
     let page = fresh_page(va).ok_or(None)?;
     let mut list = [(&b""[..], false); filesystem_contract::nameset::MAXIMUM_NAMES];
     let mut n = 0;
@@ -164,7 +164,7 @@ fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
     }
     // SAFETY: `va` is one page this shell just mapped read/write, fresh, and nothing else reaches
     // it until the frame is sent; the borrow ends before this function returns.
-    let out = unsafe { &mut *(va as *mut [u8; spawnproto::IMAGE_PAGE as usize]) };
+    let out = unsafe { &mut *(va as *mut [u8; spawn_protocol::IMAGE_PAGE as usize]) };
     match filesystem_contract::nameset::encode(&list[..n], out) {
         Some(_) => Ok(page),
         None => {
@@ -176,7 +176,7 @@ fn set_page(g: &GrantDir, stage: usize) -> Result<Argv, Option<&'static [u8]>> {
     }
 }
 
-/// Send a words grant's set page, `READ` only (`spawnproto::NAMESET_BIT`), after the argv's.
+/// Send a words grant's set page, `READ` only (`spawn_protocol::NAMESET_BIT`), after the argv's.
 pub(super) fn send_set(w: &WordsGrant) {
     if let Some(p) = w.set {
         user_mode_runtime::send_capability(SPAWN, p.frame, abi::rights::READ, 0);
@@ -216,12 +216,12 @@ fn release_region(region: u64) {
 pub(super) const IMAGE_WINDOW: u64 = address_space_layout::pair_page(0x0000_0000_0400_0000);
 
 /// **The window this shell writes an image's frames through**, above the name-set pages. At most
-/// [`spawnproto::IMAGE_MAXIMUM_PAGES`] pages, which is 4 MiB and so crosses 2 MiB page-table spans.
-const IMAGE_VA: u64 = SET_VA + line::MAXIMUM_STAGES as u64 * spawnproto::IMAGE_PAGE;
+/// [`spawn_protocol::IMAGE_MAXIMUM_PAGES`] pages, which is 4 MiB and so crosses 2 MiB page-table spans.
+const IMAGE_VA: u64 = SET_VA + line::MAXIMUM_STAGES as u64 * spawn_protocol::IMAGE_PAGE;
 
 /// The first address past [`IMAGE_WINDOW`].
 pub(super) const IMAGE_WINDOW_END: u64 =
-    IMAGE_VA + spawnproto::IMAGE_MAXIMUM_PAGES * spawnproto::IMAGE_PAGE;
+    IMAGE_VA + spawn_protocol::IMAGE_MAXIMUM_PAGES * spawn_protocol::IMAGE_PAGE;
 
 /// **The pages that pay for [`IMAGE_WINDOW`]'s page tables**, split off [`BUDGET`] once per shell
 /// and never given back. A staging region's pages go back to [`BUDGET`] on `DESTROY` only if it is
@@ -244,7 +244,7 @@ static IMAGE_TABLES: core::sync::atomic::AtomicU64 = core::sync::atomic::AtomicU
 /// manifest note [`read_manifest_note`] finds (milestone 597 (a program carries its manifest in an
 /// ELF note)), or `program_table::NO_NOTE_MANIFEST`, and every refusal sends nothing. The staging
 /// region is destroyed once the answer is in, revoking the frames from both address spaces. See
-/// `notes/swish-language/running.md` and `spawnproto`'s BUGS.
+/// `notes/swish-language/running.md` and `spawn_protocol`'s BUGS.
 pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     let Some(PlannedImage {
         t,
@@ -256,7 +256,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     else {
         return;
     };
-    let pages = spawnproto::image_pages(size);
+    let pages = spawn_protocol::image_pages(size);
     let holds_run_unvouched = HOLDS_RUN_UNVOUCHED.load(core::sync::atomic::Ordering::Relaxed);
 
     let Some(ImageGrants {
@@ -269,7 +269,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
         return;
     };
 
-    let (w0, w1, w2) = spawnproto::request(
+    let (w0, w1, w2) = spawn_protocol::request(
         size,
         e.program_argument,
         if mem_slot.is_some() {
@@ -277,13 +277,13 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
         } else {
             0
         },
-        spawnproto::Wiring {
+        spawn_protocol::Wiring {
             image: true,
             run_unvouched: holds_run_unvouched,
             program_arguments: argv.is_some(),
             directory_grant: set_grant.is_some(),
             nameset: set_grant.is_some_and(|w| w.set.is_some()),
-            ..spawnproto::Wiring::default()
+            ..spawn_protocol::Wiring::default()
         },
     );
     send(SPAWN, w0, w1, w2);
@@ -294,7 +294,7 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
     }
     let read_ok = send_frames(t.slot, handle, pages, staging);
     nav.close_in(t, handle);
-    // The argv's frame follows the image's, before every other capability (`spawnproto::PROGRAM_ARGUMENTS_BIT`).
+    // The argv's frame follows the image's, before every other capability (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`).
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
         capability_delete(a.frame);
@@ -308,11 +308,11 @@ pub(super) fn run_image(nav: &mut Nav, spec: ParsedInvocation) {
         delegate(slot, abi::rights::ALL);
         capability_delete(slot);
     }
-    // **The presentation, last** (`spawnproto::RUN_UNVOUCHED_BIT`): one word on the endpoint only a
+    // **The presentation, last** (`spawn_protocol::RUN_UNVOUCHED_BIT`): one word on the endpoint only a
     // holder can reach. Sent on every image request this session makes, vouched or not, because
     // the shell cannot know the verdict and the progenitor is waiting for it either way.
     if holds_run_unvouched {
-        send(spawnproto::RUN_UNVOUCHED_SLOT, 0, 0, 0);
+        send(spawn_protocol::RUN_UNVOUCHED_SLOT, 0, 0, 0);
     }
 
     report_image_answer(e, &m, read_ok);
@@ -340,7 +340,7 @@ fn report_image_answer(e: Endowment, m: &grant_contract::Manifest, read_ok: bool
         // (`SPAWN_REFUSED_BY_MANIFEST` is the lowest; `SPAWN_NO_DISPLAY`, below it, answers only a
         // `graphical_terminal` launch); anything below is the program's own answer, which no row
         // renders for an image.
-        if answer >= spawnproto::SPAWN_REFUSED_BY_MANIFEST {
+        if answer >= spawn_protocol::SPAWN_REFUSED_BY_MANIFEST {
             // Every such word is answered before any row's own sentence, so the stand-in row
             // (`program_table::IMAGE_ROW`) is never read.
             outcome(program_table::IMAGE_ROW, e, answer);
@@ -624,7 +624,7 @@ pub(super) fn out_of_budget() {
 /// **Open the file `path` names, for its bytes**, the way `<` would: walk the lead, open the last
 /// component. Returns the tree it is in (either, in a two-grant shell), the handle and the size, or
 /// prints why not and returns `None`. A file that
-/// is empty or larger than [`spawnproto::IMAGE_MAXIMUM_PAGES`] is refused here, before anything is
+/// is empty or larger than [`spawn_protocol::IMAGE_MAXIMUM_PAGES`] is refused here, before anything is
 /// sent, because both a §219 image and a package travel as that many frames at most.
 pub(super) fn open_for_bytes(nav: &mut Nav, path: &[u8]) -> Option<(Tree, u64, u64)> {
     let p = match nav.plan_name_path(path) {
@@ -655,7 +655,7 @@ pub(super) fn open_for_bytes(nav: &mut Nav, path: &[u8]) -> Option<(Tree, u64, u
     }
     let handle = opened as u64;
     let size = call(t.slot, fs::req(fs::FSTAT, handle, 0), 0).0 as i64;
-    if size <= 0 || spawnproto::image_pages(size as u64) > spawnproto::IMAGE_MAXIMUM_PAGES {
+    if size <= 0 || spawn_protocol::image_pages(size as u64) > spawn_protocol::IMAGE_MAXIMUM_PAGES {
         nav.close_in(t, handle);
         refused();
         print(b"  that file is empty, or larger than an image may be (4 MiB)\n");
@@ -697,7 +697,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
         let Ok(frame) = u64::try_from(user_mode_runtime::retype_into_page_frame(staging)) else {
             // Only a full capability table or a kernel contradicting the budget lands here. The
             // progenitor then waits for a frame that never comes, and the prompt hangs; see
-            // `spawnproto`'s BUGS.
+            // `spawn_protocol`'s BUGS.
             return false;
         };
         if map_window_frame(frame, va) {
@@ -729,7 +729,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
 /// endpoint refuses a vouch (milestone 809 (the package client becomes a program)). The shell never
 /// reads or writes `activation/` itself here; §221 ruled that this prompt, the owner's console, may.
 pub(super) fn vouch(nav: &mut Nav, path: Option<&[u8]>) {
-    use spawnproto::{Activation, ActivationStatus as S};
+    use spawn_protocol::{Activation, ActivationStatus as S};
     let Some(path) = path else {
         refused();
         print(swish::VOUCH_USAGE);
@@ -746,7 +746,7 @@ pub(super) fn vouch(nav: &mut Nav, path: Option<&[u8]>) {
     let Some((t, handle, size)) = open_for_bytes(nav, path) else {
         return;
     };
-    let pages = spawnproto::image_pages(size);
+    let pages = spawn_protocol::image_pages(size);
     let staging = if prime_image_window() {
         memory_region_split(pages)
     } else {
@@ -756,7 +756,7 @@ pub(super) fn vouch(nav: &mut Nav, path: Option<&[u8]>) {
         nav.close_in(t, handle);
         return out_of_budget();
     };
-    let (w0, w1, w2) = spawnproto::activation_request(Activation::Vouch, size);
+    let (w0, w1, w2) = spawn_protocol::activation_request(Activation::Vouch, size);
     send(SPAWN, w0, w1, w2);
     let read_ok = send_frames(t.slot, handle, pages, staging);
     nav.close_in(t, handle);
@@ -796,7 +796,7 @@ type StartWords = (u64, u64, u64);
 ///
 /// Named rather than a bare pair of tuples because the order is the wire's, and getting it backwards
 /// would start `rm` with a directory's name and a caretaker with a file's, which comes up serving a
-/// namespace nobody meant. `spawnproto::GRANT_WORDS` is the count on the other side.
+/// namespace nobody meant. `spawn_protocol::GRANT_WORDS` is the count on the other side.
 #[derive(Clone, Copy)]
 pub(super) struct DirWords {
     /// The `fs_subtree_caretaker`'s: the granted directory, and the rights to ask for.
@@ -825,7 +825,7 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
     // tree's; the words below say nothing about which tree, so sending them for the second would
     // hand the program a directory of the same name in the *first*. Refused here, with nothing
     // spawned, until the spawn protocol carries the tree (the roadmap block's BUGS entry).
-    if g.which != nav::Which::A {
+    if g.which != grant_navigation::Which::A {
         return Err(
             b"  that directory is in a mounted tree, and the progenitor builds a caretaker\n  from the root tree; a grant there is not built\n",
         );
@@ -925,7 +925,7 @@ pub(super) fn hold_pages(program: Program, e: &Endowment, line: &[u8]) -> Option
     if e.interruptible || e.file.is_some() || program == Program::GraphicalTerminal {
         return None;
     }
-    let mut verb = [0u8; grant_contract::MAXIMUM_VERB];
+    let mut verb = [0u8; grant_contract::MAXIMUM_VERB_BYTES];
     let verb = grant_plan::verb_of(line, &mut verb);
     let manifest = grant_contract::narrow_by_verb(&e.manifest, program.verbs(), verb);
     if manifest.installer {
@@ -1015,7 +1015,7 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
     );
     send(SPAWN, w0, w1, w2);
 
-    // **The grant's two data messages, before any delegation** (`spawnproto::GRANT_WORDS`): the
+    // **The grant's two data messages, before any delegation** (`spawn_protocol::GRANT_WORDS`): the
     // caretaker's three `START` words, then the confined program's. They go first because they are
     // data and the delegation is capabilities, and both sides read the order off the one wiring word.
     if let Some(DirWords { caretaker, child }) = dir_words {
@@ -1024,19 +1024,19 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
     }
 
     // **The argv's one frame, after the data and before every other capability**
-    // (`spawnproto::PROGRAM_ARGUMENTS_BIT`), `READ` only: the progenitor copies it and can neither write it nor
+    // (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`), `READ` only: the progenitor copies it and can neither write it nor
     // pass it on. The slot goes now; the region waits for the child's answer.
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
         capability_delete(a.frame);
     }
-    // The name set's frame follows the argv's (`spawnproto::NAMESET_BIT`).
+    // The name set's frame follows the argv's (`spawn_protocol::NAMESET_BIT`).
     if let Some(w) = &set_grant {
         send_set(w);
     }
 
     // A held job's region and exit lead the delegation, after the interrupt pair a supervised job
-    // sends and before the sink (`spawnproto::HELD_BIT`). The region goes with every right, as a
+    // sends and before the sink (`spawn_protocol::HELD_BIT`). The region goes with every right, as a
     // supervised job's does: the progenitor builds from it, and what it builds carries the budget's
     // rights. The exit goes `READ` for the supervision slot, `WRITE` for an answer, and `GRANT` so
     // the progenitor can badge a copy with the job's label.
@@ -1050,7 +1050,7 @@ pub(super) fn spawn(program: Program, e: Endowment, argv: Option<Argv>, hold: Op
         );
         // And, for a program that declares a share view, this shell's budget narrowed to the right
         // to enumerate it: `free` and `slabtop` then describe where the job's memory is.
-        if spawnproto::held_shares(program) {
+        if spawn_protocol::held_shares(program) {
             delegate(BUDGET, abi::rights::ENUMERATE | abi::rights::GRANT);
         }
     }
@@ -1173,11 +1173,11 @@ fn plain_request(
     // `diagnostics` is false (DECISIONS §67 (a program's second stream is a declaration)): a plain
     // line has no `2>`, and a declared second stream gets the terminal's own sink. `2>` goes down
     // [`pipeline`].
-    spawnproto::request(
+    spawn_protocol::request(
         program.id(),
         e.program_argument,
         e.memory_grant_pages,
-        spawnproto::Wiring {
+        spawn_protocol::Wiring {
             interruptible: false,
             sink: false,
             source: false,
@@ -1185,13 +1185,13 @@ fn plain_request(
             directory_grant: dir,
             // **Always false from this shell**: no manifest declares two directory operands, so
             // nothing here constructs a two-directory grant for a spawned program; see
-            // `spawnproto::SECOND_DIRECTORY_GRANT_BIT`'s own doc and notes/two-trees.md's BUGS.
+            // `spawn_protocol::SECOND_DIRECTORY_GRANT_BIT`'s own doc and notes/two-trees.md's BUGS.
             second_directory_grant: false,
             // Always false (DECISIONS §106 (an unredirected tail stage's output goes to the
             // screen)): every `writes_while_reading` program also declares
             // `InputDeclaration::Required`, which takes [`run`]'s `Source::File` arm instead.
             // A held job's `screen` is "quiet": its output defaults to the terminal's sink, which
-            // is a background job's, and no endpoint follows (`spawnproto::HELD_BIT`).
+            // is a background job's, and no endpoint follows (`spawn_protocol::HELD_BIT`).
             screen: held == Some(true),
             image: false,
             run_unvouched: false,
@@ -1230,21 +1230,21 @@ pub(super) fn drain_text_with(read: &mut dyn FnMut() -> Option<(u64, u64, u64)>)
         // Checked before decoding: the progenitor's sentinel is `u64::MAX`, whose top byte is an opcode this
         // contract does not define, so it would otherwise read as a malformed message rather than as
         // the one thing it is.
-        if w0 == spawnproto::SPAWN_FAILED || w0 == spawnproto::SPAWN_NOT_IN_IMAGE {
+        if w0 == spawn_protocol::SPAWN_FAILED || w0 == spawn_protocol::SPAWN_NOT_IN_IMAGE {
             // Past the sentence's own indent: this function printed one before the first read.
             print(&swish::spawn_failure_sentence(w0)[2..]);
             return;
         }
         // **Refused as unvouched** (DECISIONS §219), which nothing but an image request earns.
         // Printed the way the faulted sentence below is, indent and all.
-        if w0 == spawnproto::SPAWN_UNVOUCHED {
+        if w0 == spawn_protocol::SPAWN_UNVOUCHED {
             refused();
             print(swish::UNVOUCHED_SENTENCE);
             return;
         }
         // **Refused by the bytes' own manifest** (milestone 597, provisional), which nothing but an
         // image request earns either.
-        if w0 == spawnproto::SPAWN_REFUSED_BY_MANIFEST {
+        if w0 == spawn_protocol::SPAWN_REFUSED_BY_MANIFEST {
             refused();
             print(swish::REFUSED_BY_MANIFEST_SENTENCE);
             return;
@@ -1252,7 +1252,7 @@ pub(super) fn drain_text_with(read: &mut dyn FnMut() -> Option<(u64, u64, u64)>)
         // **The stream stops here because its writer is dead** (milestone 235), and this is the
         // one place that difference is visible: without the word, this loop would run to
         // `MAXIMUM_OUTPUT_CHUNKS` on a rendezvous nobody will ever send on again.
-        if w0 == spawnproto::JOB_FAULTED {
+        if w0 == spawn_protocol::JOB_FAULTED {
             failed();
             print(swish::FAULTED_SENTENCE);
             return;
@@ -1395,7 +1395,7 @@ fn finish_held(
     background: Option<&mut Jobs>,
 ) {
     let (answer, label, _) = receive(RESULT);
-    if answer != spawnproto::SPAWN_OK {
+    if answer != spawn_protocol::SPAWN_OK {
         // The progenitor has reclaimed the region; this shell's slot for it is stale. The budget
         // it was to spend is still this shell's, and goes back above the region's pages.
         capability_delete(held.region);
@@ -1433,7 +1433,7 @@ fn foreground_held(program: Program, e: &Endowment, label: u64) {
             Ok(message) => Some(message),
             Err(fault) => {
                 fate = Some(fault);
-                fault.then_some((spawnproto::JOB_FAULTED, 0, 0))
+                fault.then_some((spawn_protocol::JOB_FAULTED, 0, 0))
             }
         });
     } else {
@@ -1442,7 +1442,7 @@ fn foreground_held(program: Program, e: &Endowment, label: u64) {
             Err(fault) => {
                 fate = Some(fault);
                 if fault {
-                    outcome(program, *e, spawnproto::JOB_FAULTED);
+                    outcome(program, *e, spawn_protocol::JOB_FAULTED);
                 } else {
                     failed();
                     print(b"  that command exited without answering\n");
@@ -1463,17 +1463,19 @@ fn outcome(program: Program, e: Endowment, answer: u64) {
     // **The only failure a spawned child reports back today**, which is why the sweep's stop rule
     // is honest about its reach: there is no exit status on this path, so a child that ran and did
     // the wrong thing looks to a sweep exactly like one that succeeded. See notes/glob-grant.md.
-    if answer == spawnproto::SPAWN_FAILED {
+    if answer == spawn_protocol::SPAWN_FAILED {
         failed();
     }
     // **A job the kernel killed** (milestone 235). `Failed` rather than `Refused`: this shell was
     // willing and something did run, which is exactly the line [`failed`] draws.
-    if answer == spawnproto::JOB_FAULTED {
+    if answer == spawn_protocol::JOB_FAULTED {
         failed();
     }
     // **Bytes nobody vouched for** (DECISIONS §219). `Refused`, not `Failed`: nothing was
     // attempted and nothing broke; the progenitor declined, the way this shell declines a grant.
-    if answer == spawnproto::SPAWN_UNVOUCHED || answer == spawnproto::SPAWN_REFUSED_BY_MANIFEST {
+    if answer == spawn_protocol::SPAWN_UNVOUCHED
+        || answer == spawn_protocol::SPAWN_REFUSED_BY_MANIFEST
+    {
         refused();
     }
     swish::write_outcome(program, &e, answer, &mut print);
@@ -1555,7 +1557,7 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
                 // program at the prompt holds the network and a resolver)): the terminal answers its
                 // stdin read only in cooked mode, so the shell leaves raw mode first, as it does for a
                 // supervised job, and the next prompt's editor takes it back.
-                let mut verb = [0u8; grant_contract::MAXIMUM_VERB];
+                let mut verb = [0u8; grant_contract::MAXIMUM_VERB_BYTES];
                 let verb = grant_plan::verb_of(spec.line(), &mut verb);
                 if grant_contract::narrow_by_verb(&endow.manifest, program.verbs(), verb)
                     .console_input

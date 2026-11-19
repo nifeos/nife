@@ -1,8 +1,8 @@
 # The spawn protocol: the exchange, and the reasons behind its words
 
-*Name: provisional, after `program_table::spawnproto`'s own heading.*
+*Name: provisional, after `program_table::spawn_protocol`'s own heading.*
 
-An appendix to [notes/grant-expression.md](../grant-expression.md). `program_table::spawnproto` is
+An appendix to [notes/grant-expression.md](../grant-expression.md). `program_table::spawn_protocol` is
 the wire between the shell and the progenitor. Its doc comments say what each word and bit holds.
 This page holds the order of the whole exchange and the reasons behind the choices that are not
 visible in the code.
@@ -10,7 +10,7 @@ visible in the code.
 ## The exchange, in order
 
 1. Request. Three words on the spawn endpoint: the program id, the integer argument, and the
-   memory-grant page count (`request`, `prog_id`, `program_argument`, `memory_grant_pages`).
+   memory-grant page count (`request`, `program_id`, `program_argument`, `memory_grant_pages`).
 2. The directory grant, if announced (`Wiring::directory_grant`): `GRANT_WORDS` plain `SEND`s.
    They come before the capabilities because they are data, and mixing the orders would put a
    `RECEIVE` where a `RECEIVE_CAPABILITY` belongs.

@@ -18,7 +18,7 @@ need one, the option says so and stops.
 ## 1. `pwdx`: the premise the block carried was wrong
 
 Decided 2026-09-26: option A. calef: *"Yes, decline pwdx."* The ruling is §224 (no `pwdx`), and
-the reason is the one below: only the shell has a working directory (`grant_plan::nav::Cwd`), so
+the reason is the one below: only the shell has a working directory (`grant_plan::navigation::Cwd`), so
 `pwdx` has nothing to report. The fork is kept as it was written, since it is the reasoning.
 
 The block filed `pwdx` beside `w` as "print a name for a tid", blocked on a display name. That is
@@ -27,7 +27,7 @@ not what `pwdx` does. Upstream `pwdx PID` prints the process's current working d
 display name, and it was waiting on the wrong fork for a month.
 
 The real question is sharper. A working directory here is not a kernel fact. It is a value,
-`grant_plan::nav::Cwd`, inside the shell's own `Holdings` (`crates/grant_plan/src/command.rs`). A grep
+`grant_plan::navigation::Cwd`, inside the shell's own `Holdings` (`crates/grant_plan/src/command.rs`). A grep
 for `Cwd` across `components/` and `crates/` finds it in `grant_plan` and the shell (`swish`) and
 nowhere else. Other programs receive grants, not a position to resolve against. So on this system
 exactly one kind of process has a working directory, and it can already print it with `pwd`.

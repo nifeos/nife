@@ -120,7 +120,7 @@ pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShortOptions {
     letters: [u8; MAXIMUM_DECLARED_SHORT_OPTIONS],
-    len: u8,
+    length_bytes: u8,
 }
 
 impl ShortOptions {
@@ -148,7 +148,7 @@ impl ShortOptions {
         }
         Some(Self {
             letters: out,
-            len: letters.len() as u8,
+            length_bytes: letters.len() as u8,
         })
     }
 
@@ -163,7 +163,7 @@ impl ShortOptions {
 
     /// The letters, in bit order.
     pub const fn letters(&self) -> &[u8] {
-        self.letters.split_at(self.len as usize).0
+        self.letters.split_at(self.length_bytes as usize).0
     }
 }
 
@@ -360,7 +360,7 @@ pub enum WordGrant {
 // This module is private, so nothing outside can reach the constant; the mutation exclusion in
 // .cargo/mutants.toml is its reader, and helpers/mutation_exclusion_check.py fails if it is gone.
 #[allow(dead_code)]
-pub const THE_RIGHTS_BITS_SHARE_NO_BIT: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
+pub const RIGHTS_BITS_DO_NOT_OVERLAP: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
 
 impl WordGrant {
     /// The rights a caretaker asks the file service for, as `filesystem_contract::directory`'s bits. Spelled
@@ -570,7 +570,7 @@ pub struct Manifest {
     ///
     /// [`clock`](Manifest::clock)'s family. §225 grants it to every login by default, withholdable
     /// by the owner (`system_initializer::GRANT_MACHINE_PAGE`): the shell holds it at
-    /// `spawnproto::MACHINE_PAGE_SLOT` and sends it with the request, so a withheld session's
+    /// `spawn_protocol::MACHINE_PAGE_SLOT` and sends it with the request, so a withheld session's
     /// programs say they cannot see the machine.
     ///
     /// **Provisional field name.**

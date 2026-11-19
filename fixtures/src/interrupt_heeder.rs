@@ -5,12 +5,12 @@
 //! up, records that it stopped gracefully, and exits: the cooperative tier of §24 (interrupting the
 //! foreground process) made visible. The flag is shared memory and not an endpoint because a
 //! running computation can neither poll an endpoint (there is no non-blocking receive) nor block on
-//! one without stalling its work. See `program_table::job_page_frame` and notes/grant-expression.md.
+//! one without stalling its work. See `program_table::job_channel_page` and notes/grant-expression.md.
 
 //! # What it holds
 //!
 //! - the shared job frame, mapped read/write at [`JOB_PAGE_FRAME_VA`] (init maps it; the shell
-//!   holds the other view). It reads [`job_page_frame::INTERRUPT`] and writes the rest. No
+//!   holds the other view). It reads [`job_channel_page::INTERRUPT`] and writes the rest. No
 //!   capabilities: its whole authority is one shared page.
 //!
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist). Refused `heeder` (it never
@@ -26,7 +26,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use program_table::job_page_frame;
+use program_table::job_channel_page;
 use user_mode_runtime::exit;
 use user_mode_runtime::mapped_window::{self, MappedWindow};
 
@@ -56,14 +56,17 @@ fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
         // One unit of work. The heartbeat is liveness the shell can show; the spin makes a unit
         // take long enough that the interrupt is noticed promptly, not after a million iterations.
         beats = beats.wrapping_add(1);
-        store(job_page_frame::HEARTBEAT, beats);
+        store(job_channel_page::HEARTBEAT, beats);
         for _ in 0..4096 {
             core::hint::spin_loop();
         }
         // Notice the cooperative interrupt between units.
-        if load(job_page_frame::INTERRUPT) != 0 {
-            store(job_page_frame::STATUS, job_page_frame::STATUS_INTERRUPTED);
-            store(job_page_frame::DONE, 1); // tell the shell we are stopping cleanly, then leave
+        if load(job_channel_page::INTERRUPT) != 0 {
+            store(
+                job_channel_page::STATUS,
+                job_channel_page::STATUS_INTERRUPTED,
+            );
+            store(job_channel_page::DONE, 1); // tell the shell we are stopping cleanly, then leave
             exit();
         }
     }

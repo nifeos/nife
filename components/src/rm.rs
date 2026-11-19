@@ -67,7 +67,7 @@ const ENOENT: i32 = 2;
 const ELOOP: i32 = 40;
 
 /// How deep the walk goes. This program has no allocator, so the recursion is real stack, and each
-/// level holds a listing buffer by value. Eight matches the shell's path stack (`grant_plan::nav`) and
+/// level holds a listing buffer by value. Eight matches the shell's path stack (`grant_plan::navigation`) and
 /// is well inside the sixteen handles a `fs_subtree_caretaker` will mint. Deeper is refused rather
 /// than silently leaving a tree half-removed with a zero exit status.
 const MAXIMUM_DEPTH: usize = 8;
@@ -134,7 +134,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     let r = name_call(fs::UNLINK, parent, name, 0);
     if r == 0 {
         *count += 1;
-        if flags & grant_plan::rmopt::VERBOSE != 0 {
+        if flags & grant_plan::rm_options::VERBOSE != 0 {
             say(name, b"");
         }
         return Ok(());
@@ -146,7 +146,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     // still reports, and so does an `ENOENT` from elsewhere in the walk: the `OPENDIR` below
     // answers `ENOENT` when the capability may not descend, and swallowing that would turn a walk
     // that could not start into a silent success.
-    if errno == ENOENT && flags & grant_plan::rmopt::FORCE != 0 {
+    if errno == ENOENT && flags & grant_plan::rm_options::FORCE != 0 {
         return Ok(());
     }
     if errno != directory::EISDIR {
@@ -155,7 +155,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     }
 
     // It is a directory. Without `-r` that is the answer, and it is `rm`'s answer.
-    if flags & grant_plan::rmopt::RECURSIVE == 0 {
+    if flags & grant_plan::rm_options::RECURSIVE == 0 {
         diagnose(name, directory::EISDIR);
         return Err(directory::EISDIR);
     }
@@ -185,7 +185,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
         return Err((-r) as i32);
     }
     *count += 1;
-    if flags & grant_plan::rmopt::VERBOSE != 0 {
+    if flags & grant_plan::rm_options::VERBOSE != 0 {
         say(name, b"/");
     }
     Ok(())
@@ -413,7 +413,7 @@ fn start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
     let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
     // The options ride in the spec word's mask field, the same field a caretaker's rights ride in:
     // both are "what this process was started with", and neither needs a frame. The bit order is
-    // `grant_plan::rmopt`, which is the shell's own numbering, so the program and the prompt cannot
+    // `grant_plan::rm_options`, which is the shell's own numbering, so the program and the prompt cannot
     // disagree about what `-r` means.
     let flags = grant::specification_rights(spec);
 

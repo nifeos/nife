@@ -21,7 +21,7 @@ publish = false
 
 # **Only the public contracts** (milestone 809's "other package managers can emerge": a second
 # manager on these crates can do what `jig` can). The request wire and the manifest
-# (`grant_plan`'s `spawnproto`), the package format and the catalog's lookup rule
+# (`grant_plan`'s `spawn_protocol`), the package format and the catalog's lookup rule
 # (`package_archive`), how a name travels on that wire (`filesystem_contract::grant`), the plain
 # HTTP reader the progenitor used to run (`http_response`, which left the progenitor's graph in the
 # same change), where the package source answers (`socket_contract::fixture`), the `std` layout's

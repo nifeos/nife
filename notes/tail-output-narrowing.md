@@ -142,10 +142,10 @@ spawn time and `RECEIVE` on it instead of on the child's output), not a new kern
 
 | Option | Kernel change | Wire/protocol change | What it costs | What it's already proven to cost (measured) |
 |---|---|---|---|---|
-| (a) Pull-based source | None | Collapses input+output onto one endpoint; touches `spawnproto`, every sink-contract reader/writer in the tree | Destroys the separate-rights property (§51's indifference, the pipe's read/write asymmetry) | Not benchmarked; rejected on the property loss before it reached measurement, twice |
+| (a) Pull-based source | None | Collapses input+output onto one endpoint; touches `spawn_protocol`, every sink-contract reader/writer in the tree | Destroys the separate-rights property (§51's indifference, the pipe's read/write asymmetry) | Not benchmarked; rejected on the property loss before it reached measurement, twice |
 | (b) Buffering stage | None | New program, `Program` id, the progenitor entry | A second rendezvous per message | Measured: ~2x per-message latency (`relay_rtt` 1187ns vs `ipc_rtt` 2313ns is the userspace-hop cost this pays); does not raise the 16-byte-per-message ceiling that is the actual bottleneck (13.3 MiB/s vs Unix's 44 MiB/s at the same granularity) |
 | (c) Do nothing | None | None | Milestone 40 stays PARTIAL; no line renders a page at a prompt, ever, on this branch of the design | N/A |
-| (d) `terminal_sink_caretaker` takes primary output | None | One `spawnproto` bit (or a repurposed `DIAG_BIT`-shaped convention) for "this stage's output goes to the terminal by default"; the shell must additionally wire §26's fault endpoint for the spawn, where today it wires none | Narrows what the shell can observe about that child (it no longer reads its bytes); a completion-race caveat, below | §26's fault delivery is already built and proved (milestone 22); the incremental piece is shell wiring, comparable in size to `spawn_interruptible`'s existing job-watching path, not a new kernel primitive |
+| (d) `terminal_sink_caretaker` takes primary output | None | One `spawn_protocol` bit (or a repurposed `DIAG_BIT`-shaped convention) for "this stage's output goes to the terminal by default"; the shell must additionally wire §26's fault endpoint for the spawn, where today it wires none | Narrows what the shell can observe about that child (it no longer reads its bytes); a completion-race caveat, below | §26's fault delivery is already built and proved (milestone 22); the incremental piece is shell wiring, comparable in size to `spawn_interruptible`'s existing job-watching path, not a new kernel primitive |
 
 Here is the caveat option (d) owes, named exactly where notes/documentation.md already named it and
 not resolved there. Using kernel exit-delivery (§26) as the shell's "child is done, print the next
@@ -174,7 +174,7 @@ about *which* pending message the terminal shows first when more than one is in 
 **Not cheap, and not because the wiring is large.** Per the *move fast on what can be undone* tenet,
 this falls on the expensive side for two independent reasons:
 
-- **It is a spawn-protocol decision**, which `crates/program_table/src/spawnproto.rs` calls out as
+- **It is a spawn-protocol decision**, which `crates/program_table/src/spawn_protocol.rs` calls out as
   "anything two binaries must agree on". Both inits (`fixtures/src/hello.rs` for aarch64,
   `crates/system_initializer` for riscv64, unified since milestone 96 (one init: the spawn service written twice)) would carry the new
   convention, and so would every program's manifest. §67 set the precedent for how cheaply this
@@ -215,7 +215,7 @@ milestone 33's compositor) regardless of how this fork resolves.
 
 Take it. The fork looks like a syscall-adjacent, two-programs-must-agree wire decision on the
 expensive side of *move fast on what can be undone*, and the code says it is not. `SINK_BIT`'s own
-contract (`crates/program_table/src/spawnproto.rs`) already makes the child's output
+contract (`crates/program_table/src/spawn_protocol.rs`) already makes the child's output
 slot opaque to the program: "the shell delegates an endpoint and the progenitor puts it where the result
 endpoint would have gone, so the child writes to a pipe or a file sink without knowing which."
 Nothing about what a program declares changes; no manifest is touched, because the primary output

@@ -248,7 +248,7 @@ pub const MOUNTED_TREE_RIGHTS: u64 = 0b10_0011;
 /// tree, as `rest`, for `disk/<rest>`; the first, unchanged, for anything else.
 ///
 /// ```
-/// use program_table::spawnproto::{in_mounted_tree, MOUNTED_TREE_NAME};
+/// use program_table::spawn_protocol::{in_mounted_tree, MOUNTED_TREE_NAME};
 /// assert_eq!(in_mounted_tree(b"disk/nvme0"), Some(&b"nvme0"[..]));
 /// assert_eq!(in_mounted_tree(b"diskette"), None);
 /// assert_eq!(in_mounted_tree(MOUNTED_TREE_NAME), None);
@@ -490,15 +490,15 @@ pub fn activation_reply(status: ActivationStatus, live: u32, member: u64) -> (u6
 /// a hand-written table holds, arrives cut at this width. Name: provisional, milestone 919's lane.
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const HOLDER_MAXIMUM: usize = 32;
+pub const MAXIMUM_HOLDER_NAME_BYTES: usize = 32;
 
 /// **The two messages that follow a [`ActivationStatus::NameTaken`] reply on an installer
 /// endpoint** (milestone 919): the name of the package that already holds the program, so the
 /// owner is told what to remove first. Four little-endian words of name and its length. The spawn
 /// endpoint sends no install, so only a package manager reads these. Name: provisional.
 pub fn holder_words(holder: &str) -> [(u64, u64, u64); 2] {
-    let mut bytes = [0u8; HOLDER_MAXIMUM];
-    let len = holder.len().min(HOLDER_MAXIMUM);
+    let mut bytes = [0u8; MAXIMUM_HOLDER_NAME_BYTES];
+    let len = holder.len().min(MAXIMUM_HOLDER_NAME_BYTES);
     bytes[..len].copy_from_slice(&holder.as_bytes()[..len]);
     let word = |i: usize| {
         let mut w = [0u8; 8];
@@ -607,7 +607,7 @@ pub fn answered_from_trailer(
             }
             Some(Answered::Approval {
                 name: *out,
-                len,
+                length_bytes: len,
                 digest,
             })
         }
@@ -628,7 +628,7 @@ pub enum Answered {
         /// The name, as `out` was given room for it.
         name: [u8; 16],
         /// The name's length, at most sixteen bytes.
-        len: usize,
+        length_bytes: usize,
         /// The file's digest the records bind to.
         digest: [u8; 32],
     },
@@ -636,12 +636,17 @@ pub enum Answered {
 
 /// [`holder_words`] read back into `out`: the holder's name, or `""` for words that do not spell
 /// one.
-pub fn holder_from_words(words: [(u64, u64, u64); 2], out: &mut [u8; HOLDER_MAXIMUM]) -> &str {
+pub fn holder_from_words(
+    words: [(u64, u64, u64); 2],
+    out: &mut [u8; MAXIMUM_HOLDER_NAME_BYTES],
+) -> &str {
     let [(a, b, len), (c, d, _)] = words;
     for (i, w) in [a, b, c, d].into_iter().enumerate() {
         out[i * 8..i * 8 + 8].copy_from_slice(&w.to_le_bytes());
     }
-    let len = usize::try_from(len).map_or(HOLDER_MAXIMUM, |l| l.min(HOLDER_MAXIMUM));
+    let len = usize::try_from(len).map_or(MAXIMUM_HOLDER_NAME_BYTES, |l| {
+        l.min(MAXIMUM_HOLDER_NAME_BYTES)
+    });
     core::str::from_utf8(&out[..len]).unwrap_or("")
 }
 
@@ -843,7 +848,7 @@ pub struct Wiring {
 }
 
 /// Build the three request words from a resolved endowment's parts.
-pub fn request(prog_id: u64, arg: u64, mem_pages: u64, w: Wiring) -> (u64, u64, u64) {
+pub fn request(program_id: u64, arg: u64, mem_pages: u64, w: Wiring) -> (u64, u64, u64) {
     let mut w2 = mem_pages & 0xffff_ffff;
     if w.interruptible {
         w2 |= INTERRUPTIBLE_BIT;
@@ -890,7 +895,7 @@ pub fn request(prog_id: u64, arg: u64, mem_pages: u64, w: Wiring) -> (u64, u64, 
     if w.held {
         w2 |= HELD_BIT;
     }
-    (prog_id, arg, w2)
+    (program_id, arg, w2)
 }
 
 /// The whole wiring of a received request (word 2), so the progenitor reads it once rather than
@@ -962,7 +967,7 @@ pub const fn held_answer(label: u64) -> (u64, u64, u64) {
 }
 
 /// The image's length in bytes from a received request (word 0), when [`Wiring::image`] is set.
-/// The same word [`prog_id`] reads otherwise; which one it is depends on word 2 alone.
+/// The same word [`program_id`] reads otherwise; which one it is depends on word 2 alone.
 pub fn image_len(w0: u64) -> u64 {
     w0
 }
@@ -974,7 +979,7 @@ pub fn image_pages(len: u64) -> u64 {
 }
 
 /// The program id from a received request (word 0).
-pub fn prog_id(w0: u64) -> u64 {
+pub fn program_id(w0: u64) -> u64 {
     w0
 }
 
@@ -1294,10 +1299,10 @@ mod tests {
         match answered_from_trailer(trailer[0], &trailer[1..], &mut out) {
             Some(Answered::Approval {
                 name,
-                len,
+                length_bytes,
                 digest: got,
             }) => {
-                assert_eq!(&name[..len], b"lab-runner");
+                assert_eq!(&name[..length_bytes], b"lab-runner");
                 assert_eq!(got, digest);
             }
             other => panic!("{other:?}"),
@@ -1322,11 +1327,11 @@ mod tests {
     /// A holder's name survives the two messages whole, at the full width and empty.
     #[test]
     fn a_holder_name_round_trips() {
-        let mut out = [0u8; HOLDER_MAXIMUM];
+        let mut out = [0u8; MAXIMUM_HOLDER_NAME_BYTES];
         for name in ["duet", "", "a-package-name-that-fills-it-all"] {
             assert_eq!(holder_from_words(holder_words(name), &mut out), name);
         }
-        let mut out = [0u8; HOLDER_MAXIMUM];
+        let mut out = [0u8; MAXIMUM_HOLDER_NAME_BYTES];
         let words = [(u64::MAX, 0, 99), (0, 0, 0)];
         assert_eq!(
             holder_from_words(words, &mut out),
@@ -1409,7 +1414,7 @@ mod tests {
         // 6, not 1: word zero must come back verbatim, and an id of 1 cannot tell verbatim from a
         // hardcoded answer.
         let (w0, w1, w2) = request(6, 9, 16, Wiring::default());
-        assert_eq!(prog_id(w0), 6);
+        assert_eq!(program_id(w0), 6);
         assert_eq!(program_argument(w1), 9);
         assert_eq!(memory_grant_pages(w2), 16);
         assert_eq!(wiring(w2), Wiring::default());

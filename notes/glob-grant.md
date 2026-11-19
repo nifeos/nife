@@ -250,7 +250,7 @@ Known limitations, next to the feature rather than only in a tracker.
   entries here said the prompt holds no directory and `spawn` refuses every directory grant. Since
   milestone 31 (a capability shell) phase 3 (2026-08-17) the boot shell holds the file service and
   the progenitor builds a `fs_subtree_caretaker` for one name one level down. Two or more names are
-  refused in `dir_grant` (`components/src/swish/running.rs`), because `spawnproto` cannot carry a
+  refused in `dir_grant` (`components/src/swish/running.rs`), because `spawn_protocol` cannot carry a
   set. Only the kernel test wires a set caretaker. How a set should travel is PROPOSED in
   [a-set-grant-at-the-prompt.md](a-set-grant-at-the-prompt.md).
 - The set is not consulted below the granted directory, including for attributes. A handle minted by
