@@ -44,5 +44,4 @@ breaking version. Every harness and falsification patch passes in `proofs`, and 
 run at `v0.3.0-pre.1` is green. `cargo package --list` shows only what item 11 names. The naming
 checks and `standalone` pass at the current template, and the report-only README checks list
 nothing. Every hardware check above has a pass or a recorded answer from the board, except the two
-bench rows of the
-milestone's follow-on.
+bench rows of the milestone's follow-on.
