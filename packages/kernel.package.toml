@@ -23,7 +23,6 @@ crates = [
     "direct_memory_access_validator",
     "firmware_configuration",
     "jh7110_watchdog",
-    "jh7110_pci_express",
 ]
 # `jh7110_clock_and_reset` names the JH7110 clock controllers' spellings and decodes their
 # properties; the device-tree walk in `machine_discovery` (contracts) reads the tree with them and
@@ -34,7 +33,10 @@ crates = [
 # (contracts) reads a virtio function's structures and MSI-X ranges with it, so a direct grant's
 # window and the kernel's mediated transport read the list one way. Two packages link it, so it is
 # an interface.
-interfaces = ["jh7110_clock_and_reset", "pci_configuration_space", "spin_lock"]
+# `jh7110_pci_express` holds the JH7110 root complex's bring-up; `machine_discovery::jh7110`
+# (contracts) fills its `Port` from the tree, as it fills the clock and reset types. Two packages
+# link it, so it is an interface.
+interfaces = ["jh7110_clock_and_reset", "jh7110_pci_express", "pci_configuration_space", "spin_lock"]
 
 [[exception]]
 date = 2026-09-27
