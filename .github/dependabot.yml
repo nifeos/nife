@@ -85,6 +85,7 @@ updates:
   - package-ecosystem: cargo
     directories:
       - "/c_library"
+      - "/crates/master_boot_record/fuzz"
       - "/crates/memory_region_heap/fuzz"
       - "/cryptography_exerciser"
       - "/cryptography_provider"

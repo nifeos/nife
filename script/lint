@@ -400,6 +400,12 @@ echo "==> clippy: memory_region_heap fuzz target (its own workspace)"
 python3 helpers/clippy_record.py crates/memory_region_heap/fuzz/clippy cargo clippy \
     --manifest-path crates/memory_region_heap/fuzz/Cargo.toml --all-targets -- -D warnings
 
+echo "==> clippy: master_boot_record fuzz target (its own workspace)"
+# lint-scope: code
+# lint-lane: fuzz
+python3 helpers/clippy_record.py crates/master_boot_record/fuzz/clippy cargo clippy \
+    --manifest-path crates/master_boot_record/fuzz/Cargo.toml --all-targets -- -D warnings
+
 # The proofs' own code, which nothing else in this file compiles (milestone 113).
 #
 # `cfg(kani)` is set by the model checker and by nothing else. So every `#[cfg(kani)] mod

@@ -150,6 +150,7 @@ exclude = [
     "tools/redoxfs_host",
     "fuzz",
     "crates/memory_region_heap/fuzz",
+    "crates/master_boot_record/fuzz",
 ]
 
 # Shared package metadata. Each member opts in with `license.workspace = true`, so the
