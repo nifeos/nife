@@ -8,7 +8,7 @@ The architect reads this to clear the crate for its move to its own repository, 
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 It describes the crate as `main` leaves it. The outside review behind it is
 [milestone 1100 (`memory_region_heap`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1100-memory-region-heap-outside-review.md).
-The names were ratified on 2026-11-19 (UTC). This package ratifies and clears nothing.
+The ruling of 2026-11-19 (UTC) ratified the names. This package ratifies and clears nothing.
 
 ## In one paragraph
 
@@ -45,16 +45,16 @@ policy is still to come. `packages/runtime.package.toml` lists the crate, and
 `crates/externalization-list.txt` names it for step 9. The crate leaves with `subtree_scope` and
 before `redoxfs`, which shares its `talc`.
 
-What points back into nife from the crate: the three path dependencies (they become `git` and
-`rev` pins when `abi`, `address_space_layout` and `user_mode_runtime` have repositories, which
-steps 2 and 3 of milestone 1017 produce first), citations of nife milestones and paths in the
+Four things point back into nife from the crate. The three path dependencies become `git` and
+`rev` pins once `abi`, `address_space_layout` and `user_mode_runtime` have repositories, which
+steps 2 and 3 of milestone 1017 produce first. The rest are citations of nife milestones and paths in the
 crate's text and fuzz crate, and the `Cargo.toml` inheritance. `script/crate-standalone` and
 `script/crate-move --dry-run` list each (below).
 
 ## Public API
 
-Every public name is ratified. The names of items 5 to 13 were ratified 2026-11-19 (UTC); the seven
-of decision A on 2026-11-14 (UTC).
+Every public name reads ratified: decision A ratified seven on 2026-11-14 (UTC), and the ruling of
+2026-11-19 (UTC) ratified the thirteen that items 5 to 13 added.
 
 | item | kind | signature or value | status |
 |---|---|---|---|
@@ -80,19 +80,19 @@ of decision A on 2026-11-14 (UTC).
 | `WiringRefusal` | enum | `AlreadyWired` and the other refusals of a wiring call | ratified 2026-11-19 |
 
 The fuzz crate's names (the modules `src`, `policy` and `sequence`, and the function `run`) stay
-provisional. The crate never publishes, and the move strips it of nife citations.
+provisional. The crate never publishes.
 
 What a stranger may find surprising:
 
 - `MemoryRegionHeap::new` is a `const fn` for a `static`; the heap does nothing until `initialize`.
-- The program picks the base and the cap. A cap under one page is refused. The smallest useful cap
+- The program picks the base and the cap. `initialize` refuses a cap under one page. The smallest useful cap
   is one page, which serves about 2,500 bytes of allocations after `talc`'s 1,575 bytes of
   bookkeeping.
 - A second `initialize` changes nothing and says so with `WiringRefusal::AlreadyWired`.
 - Null from `alloc` means one of three refusals; `last_refusal` tells a person which.
-- Growth is monotonic. `talc`'s `truncate` is never called, and the memory-region interface has no
+- Growth is monotonic. The heap never calls `talc`'s `truncate`, and the memory-region interface has no
   call that returns one page.
-- A panic inside the allocator is not caught: `GlobalAlloc` has no way to report one.
+- The allocator does not catch a panic, since `GlobalAlloc` has no way to report one.
 
 ## Proofs and tests
 
@@ -104,10 +104,12 @@ Three Kani harnesses, each with a falsification patch under `falsifications/`.
 | `verification::a_grow_never_commits_past_the_maximum` | committed bytes stay at or under the maximum | its harness fails with the patch |
 | `verification::a_grow_at_the_maximum_is_a_refusal` | a grow at the maximum is a refusal and commits nothing | its harness fails with the patch |
 
-Sixteen host tests drive the policy through a fake `PageSource`: the doubling from eight pages, the
+Sixteen host tests drive the policy through a fake `PageSource`. They cover the doubling from eight pages, the
 first heap fitting in one page, a second `initialize`, a grow of zero bytes, the refusals, zero-size
 and over-aligned layouts, and the accessors. The crate disables doctests, because every
-bare-metal path ends in a syscall. The fuzz crate holds a libFuzzer target, committed seeds and a
+bare-metal path ends in a syscall.
+
+The fuzz crate holds a libFuzzer target, committed seeds and a
 test that replays the seeds, which is the check that would catch the `talc` defect of upstream pull
 request 57 coming back. No proof covers the `unsafe impl GlobalAlloc` or a caller's promise that
 the slot holds a memory region.
@@ -145,8 +147,8 @@ Not run, and so not claimed:
 
 Ruled 2026-11-14 (UTC), option A: outside nife the crate depends on crates.io `talc = "5.1.1"`
 unpatched. nife's root `[patch.crates-io]` keeps building the vendored copy with upstream pull
-request 57 for every nife image. The move lane writes this README sentence: the unpatched package
-lacks two fit-check fixes, which matter only for a free gap within one chunk of the top of the
+request 57 for every nife image. The move lane writes this README sentence. The unpatched package
+lacks two fit-check fixes. They matter only for a free gap within one chunk of the top of the
 address space, and a 64-bit user process never maps one. When a `talc` release carries the fix, the
 crate bumps and the sentence goes. The fork question exists only once the monthly
 `script/vendor-watch` report passes in silence; it is not live and this package does not raise it.
