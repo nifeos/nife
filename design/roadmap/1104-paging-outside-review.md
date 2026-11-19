@@ -32,9 +32,134 @@ stranger meets no name that needs a decoder and follows no link into another tre
 claim sits where the `unsafe` lives. The repository's template gates are green for the crate's own
 reasons.
 
-## Where this stands
+## Finding status
 
-[The appendix](1104-paging-outside-review/where-this-stands.md).
+- P0-1, the manifest stands alone: Open. `Cargo.toml` still inherits `license` and the lints,
+  carries `publish = false` and has no `rust-version`, metadata or license files.
+- P0-2, another crate holds the name on crates.io: Done,
+  [#3594](https://github.com/nifeos/nife/pull/3594), the rename to `page_tables`.
+- P0-3, falsification records point into nife: Open. The 38 record lines and 42 patch paths still
+  name `crates/page_tables/`, and the four host-test patches have no replay.
+- P1-4, documentation for a stranger: Open. The comments still cite sections, milestones and nife
+  paths.
+- P1-5, the spelled-out renames: Open. `is_user_page_va`, `entry_pa`, `DmaRegion` and the `va` and
+  `pa` parameters remain; a two-way door before the first release, so the maintainer rules the names
+  provisionally and the ratification below takes the result.
+- P1-6, `doc(alias)` on kept specification names: Open. The crate has none.
+- P1-7, `Mapper::new`'s safety contract and `Misaligned`: Done,
+  [#3567](https://github.com/nifeos/nife/pull/3567).
+- P1-8, `Flags::ALL` over every constructor: Done,
+  [#3567](https://github.com/nifeos/nife/pull/3567), eleven constructors, with `Flags::ALL`
+  provisional.
+- P1-9, the mutation exemptions: Open. The 33 exemptions stay in nife's `.cargo/mutants.toml` until
+  the new repository's `.github/mutants-exempts` takes them.
+- P1-10, overflowing range arithmetic: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P1-11, a README: Open. None exists.
+- P2-12a, `SPLIT_SHIFT` and `BadRegion` documented: Done,
+  [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-12b, `WritableAndExecutable` out of `MapError`: Open. A change to a public enum, two-way before
+  the first publish and the maintainer's.
+- P2-13, the `walk` assertion: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-14, the leaf-size spelling: Open, below.
+- P2-15a, `Display` and `core::error::Error` for `MapError`: Done,
+  [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-15b, the README's list of missing operations: Open, with item 11.
+- P2-16, documentation drift: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-17, the test pool shape: Open. `tests/mapping.rs` still frees its tables by `TableGuard`.
+- P2-18, the Sv39 device bit and the T-Head source: Done,
+  [#3567](https://github.com/nifeos/nife/pull/3567).
+- P2-19, Miri's pointer casts: Open. No `expose_provenance` in the crate and no README note.
+- Decision 1, the published name: Done, ruled 2026-11-14 (UTC) and built in
+  [#3594](https://github.com/nifeos/nife/pull/3594).
+- Decision 2, the spelling of the leaf sizes: Open, below, one decision with item 14.
+- Ratifying the public names: Open, below.
+- Clearing a review package: Open, below. No package exists yet.
+
+## Open decisions
+
+### The spelling of the leaf sizes
+
+Background. `PageSize` names the three sizes a single page table entry can map: 4 KiB, 2 MiB and
+1 GiB. Its variants are `Size4KiB`, `Size2MiB` and `Size1GiB`, copied from the `x86_64` crate,
+the spelling a Rust kernel author has already seen. The units rule says a name spells its unit out
+and treats the binary prefixes as symbols, so a name says `kibibytes`, `mebibytes` or
+`gibibytes`. The template's unit check does not catch the variants, because it splits a name at
+digits and never sees `kib` whole. Keeping the `x86_64` spelling is an exception to the rule,
+which is why this is the architect's call.
+
+Recommendation: A. The tree has one spelling for units, and an exception for one enum is a second
+rule to remember. The rule's case argument (uppercase erases `K` against `k`) is weaker for a
+camel-case variant, which keeps the letters. The stricter choice also allows loosening later: an
+alias added later is compatible, a rename is not.
+
+- A. Follow the rule: `PageSize::FourKibibytes`, `PageSize::TwoMebibytes` and
+  `PageSize::OneGibibyte`, with `#[doc(alias = "Size4KiB")]` and its siblings for the reader who
+  searches for the `x86_64` spelling.
+- B. Keep `Size4KiB`, `Size2MiB` and `Size1GiB` as a kept foreign name, a term of art a reader
+  searches for, and record the exception in [design/naming.md](../naming.md).
+- C. Name the level and not the size, as Linux does, for example `PageSize::Page`,
+  `PageSize::Block` and `PageSize::LargeBlock`.
+
+Door: one-way at the first publish. Renaming an enum variant breaks every user.
+
+Prior art. `x86_64` 0.15.5 spells `Size4KiB`, `Size2MiB` and `Size1GiB`. `page_table_multiarch`
+0.6.2 spells `PageSize::Size4K` (from its landing page; the larger sizes unverified). Linux names
+the level and not the size: `PAGE_SIZE`, `PMD_SIZE`, `PUD_SIZE`. Arm's documentation says
+"page", "block" and the granule. nife differs in spelling the unit into every name that holds a
+quantity. Concrete example: `m.map_span(va, pa, len, flags, PageSize::Size1GiB)` becomes
+`m.map_span(virtual_address, physical_address, len, flags, PageSize::OneGibibyte)`.
+
+Blocks: the first publish. The rename lane of item 5 can take it.
+
+### Ratify the public names once the rename lane lands
+
+Background. `page_tables` builds and walks page tables for six formats: aarch64, Sv39, the T-Head
+Sv39 variant, x86-64, Intel VT-d and AMD-Vi. Its public names are what every user compiles against,
+and the move strips the `Name:` blocks that mark a name provisional, so each must read ratified
+first. Item 5 renames `va` and `pa` to `virtual_address` and `physical_address`, and spells
+out `is_user_page_virtual_address`, `entry_physical_address`, `DirectMemoryAccessRegion` and
+others; the maintainer rules those provisionally. The fixes added `Flags::ALL`. Ratification is
+the architect's by the naming rule.
+
+Recommendation: A. One lane performs item 5, item 6's aliases and the leaf-size ruling, then the
+architect ratifies the result in one pass, so the names read are the names that ship.
+
+- A. Ratify after the rename lane lands, against the renamed source.
+- B. Ratify item 5's proposed names now, before the renames.
+- C. Ratify with changes the architect names; the rename lane applies them.
+
+Door: one-way at the first publish. A published public name is a breaking change to rename.
+
+Prior art. `x86_64` spells its addresses `VirtAddr` and `PhysAddr`, and `aarch64-paging` spells
+`VirtualAddress` and `PhysicalAddress` (both recalled). nife takes the spelled-out form
+for every parameter as well as every type. Concrete example: `PageFormat::entry_pa(entry)` reads
+`PageFormat::entry_physical_address(entry)`.
+
+Blocks: the first publish.
+
+### Clear the review package and approve the repository
+
+Background. A crate leaves this tree for its own `nifeos` repository only when the architect
+clears its review package, and that clearance approves the repository. `page_tables` serves
+every kernel that maps memory on these six formats, so it meets the bar for leaving. The
+architect ruled its published name on 2026-11-14 (UTC). No package exists in
+`notes/crate-reviews/` yet, and items 1, 3, 4, 9 and 11 are the move's work.
+
+Recommendation: A. A package written after the rename lane shows the crate as it will ship.
+
+- A. A lane writes the package after the rename lane; the architect's clearance creates the
+  repository.
+- B. Clear on this outside review alone.
+- C. Keep the crate in nife.
+
+Door: one-way. Creating a public repository and moving the crate are outward steps.
+
+Prior art. `aarch64-paging` and `page_table_multiarch` each live in their own repository and
+publish on their own cadence. nife differs in reviewing a whole crate once, before its first
+publish. Concrete example: the architect cleared `generational_table` on 2026-11-08 (UTC), and its
+repository, `nifeos/generational_table`, dates from that day.
+
+Blocks: the move.
 
 ## What was checked, and how
 
@@ -84,98 +209,7 @@ from this reading.
 
 ### P1
 
-4. The documentation assumes a reader inside nife. 52 lines in `src/` and `tests/` cite `§N`,
-   `milestone N`, `notes/...` or `design/...`. 30 lines are `Name:` provenance blocks.
-   `src/lib.rs` line 11 names the architect. `standalone.py` refuses all of them. A stranger cannot
-   follow `notes/page-tables.md`, `MappingHold::record_mapping`, `revoke::revoke_region`,
-   `framebuffer_driver`, `board_th1520`, `arch::x86_64::initialize`, `mmu::initialize` or
-   `kernel/src/arch/x86_64/iommu.rs`. A doc comment points at each of them as if the reader had it
-   (`src/mapper.rs` lines 35 to 43, `src/mapper.rs` line 372, `src/flags.rs` line 46, `src/flags.rs` line 146,
-   `src/sv39.rs` line 147, `src/x86_64.rs` line 17, `src/x86_64.rs` line 235, `src/aarch64.rs` line 92). The hardware
-   citations (Arm DDI 0487, the Intel SDM, AMD 48882 revision 2.62, QEMU's `intel_iommu_internal.h`,
-   Linux's `pgtable-64.h`) are the ones to keep. Fix: rewrite each comment to say what the kernel
-   does with the item in words, keep the hardware sources, move the history to git, and run
-   `standalone.py` to zero. Effort M. Two-way.
-
-5. Public names the spelled-out rule refuses. The template's `spelled_out.py`, at a ceiling of
-0, refuses 84 definitions. Public among them: `is_user_page_va` (`src/page_format.rs` line 43) and `PageFormat::entry_pa` (`src/page_format.rs` line 66). The `va` and `pa` parameters of every `PageFormat` method and every `Mapper` method (`src/mapper.rs` lines 138 to 451). `PageSize::largest_fitting` (`src/page_size.rs` line 53), `DmaRegion` (`src/domain.rs` line 12) and `pat::MSR` (`src/x86_64.rs` line 23). `AMD_VI_PR` (`src/x86_64.rs` line 331, refused as `pr`; it is "present"). The rule (`design/naming.md`,
-"Acronyms and abbreviations") lists `va`, `pa`, `dma` and `msr` by name, and says an integer
-constant is never kept. The helper does not catch these, but the same rule applies by judgment. `phys_to_ptr` and `alloc_page_frame` as parameters (`src/mapper.rs` lines 66 to 67, `src/domain.rs` lines 81 to 82). `attrs` (`src/aarch64.rs` line 111, `src/sv39.rs` line 55, `src/x86_64.rs` line 107). `kernel_rodata` and `user_rodata` (`src/flags.rs` line 84, `src/flags.rs` line 125), where "read-only data" is the spoken phrase. Fix: one
-rename lane: `virtual_address` and `physical_address` throughout, `is_user_page_virtual_address`,
-`entry_physical_address`, `DirectMemoryAccessRegion`, `pat::MODEL_SPECIFIC_REGISTER` with
-`#[doc(alias = "IA32_PAT")]`, `AMD_VI_PRESENT`, `physical_to_pointer`, `allocate_page_frame`,
-`attributes`, `kernel_read_only_data` and `user_read_only_data`. Every new name provisional. The
-kernel's call sites move with them. Effort M. Two-way before the first release. The maintainer rules
-them provisionally, and the release review rechecks them.
-
-6. Kept specification names carry no alias. `Aarch64`, `Sv39`, `Sv39Mae`, `Ia32e`, `Vtd`, `AmdVi`,
-   `TlbFlush`, the modules `mair` and `pat`, and the register-bit constants (`AF`, `SH_INNER`,
-   `PXN`, `UXN`, `NG`, `PPN_SHIFT`, `PWT`, `PCD`, `XD`, `DTE_TV`) keep their source's spelling. The
-   rule allows this for a term a reader searches for. The condition is that the doc comment opens
-   with the full name and source and the item carries `#[doc(alias = "<plain-English name>")]`. The
-   crate has zero `doc(alias)` attributes. `Ia32e` (`src/x86_64.rs` line 99) and `Sv39Mae`
-   (`src/sv39.rs` line 150) state their source. The rest do not. `TlbFlush` is the one judgment call: the
-   rule keeps an acronym only where nobody says the expansion as a phrase, and "translation
-   lookaside buffer" is rarely spoken, so the recommendation is to keep it with an alias. Fix: one
-   pass adding the opening line and the alias to each kept name. Effort S. Two-way.
-
-7. `Mapper::new`'s safety contract omits the allocator. `src/mapper.rs` lines 77 to 88 requires a zeroed,
-   page-aligned `root` and a `phys_to_ptr` that satisfies the type's contract, and says nothing
-   about `alloc_page_frame`. The safe methods `map` and `map_block` then write
-   `(*(self.phys_to_ptr)(new)).entries = [0; ENTRIES]` through a `*mut PageTable` built from
-   whatever the allocator returned (`src/mapper.rs` lines 159 to 167, `src/mapper.rs` lines 226 to 231). A frame that
-   lacks 4 KiB alignment, lacks exclusive ownership, or lacks a route through `phys_to_ptr` makes
-   safe code reach undefined behavior. `build_identity_domain` (`src/domain.rs` lines 75 to 78) states
-   exactly this condition. `Mapper::new` does not, and every kernel call site argues only the root.
-   Fix: state in `Mapper::new`'s `# Safety` that every frame the allocator returns is page-aligned,
-   exclusively owned by the mapper from that moment, reachable through `phys_to_ptr`, and not a
-   frame any live leaf maps. Add `debug_assert!(new.is_multiple_of(PAGE_SIZE))` at both sites or
-   return `MapError::Misaligned` for a misaligned frame. Effort S. Two-way.
-
-8. The proofs say "over every constructor" and cover eight of ten. Every `all` array in the format harnesses omits `Flags::write_combining` and `Flags::user_write_combining`. The arrays are at `src/aarch64.rs` lines 402 to 411, 433 to 442 and 481 to 490. More are at `src/sv39.rs` lines 468 to 477, 500 to 509 and 544 to 553. The rest are at `src/x86_64.rs` lines 1000 to 1009, 1037 to 1046, 1072 to 1081 and 1133 to 1142. `flag_tests::ALL` (`src/flag_tests.rs` lines 3 to 12) omits them too. On `Ia32e` those two are the only flags that take the PWT-alone path
-(`src/x86_64.rs` lines 118 to 123), so the W^X, round-trip and address-field proofs never see that branch.
-The host tests do (`src/eighth_pass_attacks.rs` lines 56 to 67, `src/x86_64.rs` lines 614 to 635), and
-`src/flags.rs` lines 41 to 47 already records half of this gap in its BUGS. Fix: a `Flags::ALL` constant of
-ten, with one test that its length equals the number of public constructors, used by every harness
-and test. The harness docs then say "every constructor" truthfully. Effort S. Two-way.
-
-9. The mutation exemptions and their reasons live in nife's `.cargo/mutants.toml`. Lines 328-388
-   there hold 33 regexes of the form `^crates/page_tables/src/<file>\.rs:...`, each justified by a
-   `THE_*_SHARE_NO_BIT` compile-time assertion (`src/share_no_bit.rs`). In the new repository the
-   paths become `src/...`, and the template reads `.github/mutants-exempts`, not `mutants.toml`.
-   Without the port, the first full run reports those 33 as survivors. The ledgers record this
-   crate's history: 39 survivors in the first baseline, 17 killed and 22 equivalent, and a later
-   inflow of 18, 8 killed and 10 equivalent (`notes/mutation-testing/baseline-ledger.md` line 22,
-   `notes/mutation-testing/inflow-2026-10-12-triage.md` line 31; the inflow columns were not re-derived).
-   The file lists 644 mutants today. Fix: port each exemption with its reason into the template's
-   format and run one full `mutation.yml` inside the window. Expect the `pat::VALUE` constant-level
-   `|` (`src/x86_64.rs` line 34) to survive, as nife's note at `mutants.toml` lines 385 to 387 says it does, and
-   exempt it with that reason. Effort S to M. Two-way.
-
-10. Address arithmetic that can overflow. `map_range` computes `va + i * PAGE_SIZE` and `pa + i
-* PAGE_SIZE` (`src/mapper.rs` line 285), and `map_span` computes `va + done` and `pa + done`
-(`src/mapper.rs` lines 269 to 270). `PageFormat::index` computes `9 * (Self::LEVELS - 1 - level)`
-(`src/page_format.rs` line 104). With overflow checks on, which the workspace's release profile sets, a
-`count` or `len` that runs past `u64::MAX` panics instead of returning a `MapError`. Without them it
-wraps into the low half and maps a page nobody asked for. The kernel's callers derive counts from
-link-time symbols and page-aligned user requests, so this is inferred to be unreachable today (not
-proven). `domain.rs` already refuses the same shape with `MapError::BadRegion`
-(`src/domain.rs` lines 50 to 52) and says in its comment that it avoids `map_range`'s unchecked arithmetic.
-Fix: `checked_add` and `checked_mul`, returning `MapError::BadRegion`, in both functions, with a
-test at `u64::MAX - PAGE_SIZE`. A `const` assertion or a doc line that `index` is defined for `level
-< LEVELS`. Effort S. Two-way.
-
-11. There is no README, and the examples need twenty hidden lines. The crate root's docs
-    (`src/lib.rs` lines 1 to 11) are four sentences and a pointer into nife. The two `Mapper` doctests
-    (`src/mapper.rs` lines 107 to 137, `src/mapper.rs` lines 298 to 325) hide the table allocation behind `# ` lines,
-    so the rendered example omits the one thing a user has to supply. The scaffold's
-    `README-crate.md` requires `## EXAMPLES` and `## BUGS`, the build and prove commands, the Kani
-    install line at the template's version, measured run time and memory, and one real falsification
-    example. Fix: write it. Include a visible `Mapper` example over a `Vec<Box<PageTable>>` and a
-    table of the six formats (levels, split bit, block sizes, what `leaf_flags` can report). Add the
-    "what is proven" list in a user's words. State the limits: no permission change, no block split,
-    no table reclamation, the 4 KiB granule, and the `SPLIT_SHIFT` fiction on the IOMMU formats.
-    Effort M. Two-way.
+The P1 items are in [the appendix](1104-paging-outside-review/before-the-tag.md).
 
 ### P2: later
 
@@ -183,7 +217,7 @@ The P2 items are in [the appendix](1104-paging-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-Only one-way doors. Each is one decision, with the background first and a recommendation.
+Only one-way doors. Decision 1 has its ruling; the leaf-size spelling is under "Open decisions".
 
 ### Decision 1. The crate's published name
 
@@ -218,37 +252,6 @@ Concrete example. The kernel's `use paging::{Flags, Half, MapError, Mapper};`
 (`kernel/src/user.rs`) became `use page_tables::{Flags, Half, MapError, Mapper};`, and the
 repository is `nifeos/page_tables`.
 
-### Decision 2. The spelling of the leaf sizes
-
-Background. `PageSize` has three variants, `Size4KiB`, `Size2MiB` and `Size1GiB`. The units rule
-says a name holding a quantity spells its unit out and that the binary prefixes are symbols, so a
-name says `kibibytes`, `mebibytes` or `gibibytes`. The variants' own doc says the `x86_64` crate
-spells the same three sizes this way, which is true and is the one million downloads a month a
-Rust kernel author has already seen. The template's unit check does not catch the variants,
-because it splits a name at digits and never sees `kib` whole. Once published, the variant names
-are a one-way door: renaming them is a breaking change for every user.
-
-Recommendation. Follow the rule: `PageSize::FourKibibytes`, `PageSize::TwoMebibytes`,
-`PageSize::OneGibibyte`. The rule exists because uppercase erases the case a symbol depends on, and
-a variant is camel case, so the `K`, `M` and `G` survive here and the argument is weaker than for a
-constant. The recommendation still follows the rule because the tree has one spelling for units and
-an exception for one enum is a second rule to remember. The restrictive choice is also the one that
-allows loosening later (an alias is compatible; a rename is not). The alternative, keeping the
-`x86_64` crate's spelling as a kept foreign name with an alias, is defensible under "a
-specification's term of art that a reader searches for", and `Size2MiB` is what that reader types.
-
-Prior art. `x86_64` 0.15.5: `Size4KiB`, `Size2MiB`, `Size1GiB`. `page_table_multiarch` 0.6.2:
-`PageSize::Size4K` and larger (the landing page shows `Size4K`; the rest unverified). Linux:
-`PAGE_SIZE`, `PMD_SIZE`, `PUD_SIZE`, named for the level and not the size. aarch64 documentation:
-"page", "block" and the granule.
-
-Concrete example. `m.map_span(va, pa, len, flags, PageSize::Size1GiB)` becomes
-`m.map_span(virtual_address, physical_address, len, flags, PageSize::OneGibibyte)`.
-
-## Ledger
-
-The ledger is in [the appendix](1104-paging-outside-review/ledger.md).
-
 ## Done when
 
 The checks are in [the appendix](1104-paging-outside-review/done-when.md).
@@ -256,7 +259,7 @@ The checks are in [the appendix](1104-paging-outside-review/done-when.md).
 ## BUGS
 
 - The template's `unit_symbols.py` does not see a binary prefix inside a camel-case variant
-  (`Size4KiB` judged clean). Whatever Decision 2 rules, the check and the rule disagree today, and
+  (`Size4KiB` judged clean). Whatever the leaf-size decision rules, the check and the rule disagree today, and
   the fix is the template's, not this crate's.
 - The template replays Kani falsifications only. The four host-test patches under
   `falsifications/nth_allocation.*` would have no gate in the new repository unless someone adds
@@ -270,9 +273,8 @@ The checks are in [the appendix](1104-paging-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Done.** Decision 1, the crate name, is carried by the rename in `crates/page_tables`.
-- **Outstanding.** Decision 2, the leaf-size spelling, waits for the architect; the enum still holds
-  `Size4KiB`. The ledger lists the other items left, each waiting on it or on the move.
+- **Outstanding.** Each finding that "Finding status" marks Open, checked against
+  `crates/page_tables` and its manifest.
 
 ## Index row
 
@@ -280,7 +282,7 @@ An outside review of `page_tables` before it leaves for its own repository. It f
 manifest that cannot stand alone, a crate name that another crate already holds on crates.io, and
 falsification records that point into nife. It finds eight P1 items: documentation written for an
 insider, 84 spelled-out-rule findings, kept names with no alias, and an incomplete `unsafe` contract
-on `Mapper::new`. The rest are proofs that cover eight of ten constructors, mutation exemptions in
+on `Mapper::new`. The rest are proofs that miss constructors, mutation exemptions in
 the wrong file, overflowing range arithmetic, and no README. It finds eight P2 items. The architect
 ruled the crate's published name on 2026-11-14 (`page_tables`); the spelling of the leaf sizes stays
 open.

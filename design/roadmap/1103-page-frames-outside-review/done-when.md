@@ -16,7 +16,7 @@ An appendix to [the milestone](../1103-page-frames-outside-review.md).
 - `cargo kani` verifies eight harnesses, each with a falsification patch that applies with
   `patch -p1 --dry-run -F0` at no offset, and `falsify.py` passes on the staged tree.
 - `prose_acronyms.py` over `src/` and `tests/` reports nothing.
-- The architect has ruled Decisions 1 and 2, one rename lane has performed them and the two-way
+- Decisions 1 and 2 have rulings, one rename lane has performed them and the two-way
   renames of item 8, and `cargo build` of the kernel for all three architectures is green.
 - `page_frames_covering` (or the ratified name) exists and `kernel/src/memory.rs` calls it.
 - Every pure function and both allocation functions carry `#[must_use]`.

@@ -1,0 +1,63 @@
+# Decisions 2 to 4: the case behind each ruling
+
+An appendix to [the milestone](../1101-memory-regions-outside-review.md). The rulings themselves are
+in the milestone's "Decisions for the architect".
+
+## Decision 2: Whether region names cross the crate's boundary as `u64` or as a typed name
+
+Background. The dependency's whole point, in its own words, is that a name carries its table's entry
+type so no caller can hand a name from one table to another. This crate undoes that at its own
+boundary: every public method takes and returns `u64`, and `entry()` at `src/table.rs` lines 331 to 337 calls
+itself "a temporary adapter" that "goes when those methods take `EntryName<Region>` themselves".
+`Region` is private, so that cannot happen as written. The crate needs a public opaque marker. A
+method signature is one-way once published.
+
+Recommendation: typed names before the first release. `pub struct RegionName(EntryName<Region>)`
+with `to_bits` and `from_bits` for the syscall register, or a public zero-sized `RegionTag` and
+`pub type RegionName = EntryName<RegionTag>`. The kernel converts once at its syscall boundary, as
+it already converts bytes to pages there. The `u64` form is the convenient one for the kernel's
+current code and nothing else.
+
+Prior art. `slotmap` keys are a type per map (`new_key_type!`), `thunderdome::Index` and
+`generational_table::EntryName<T>` carry `to_bits` and `from_bits` for exactly this boundary
+(unverified detail).
+
+Example. `table.unpin(claim.pages())` compiles today, though a name belongs where the page count
+sits. With a typed name it does not.
+
+## Decision 3: Whether "zero pages means one" is the crate's contract or the kernel's
+
+Background. The kernel's `RETYPE` count rule says a word of zero asks for one page, because the
+syscall ignored the argument before the count existed. That ruling stands and this decision does not
+reopen it. The crate carries it as `retype_pages` and `retype_new_watermark`, so `retype_run(name,
+0)` hands out a page while `split(parent, 0)` refuses. A stranger reading `retype_run(name, 0)`
+expects nothing to happen, and a published function's behavior on zero is one-way.
+
+Recommendation: the crate refuses zero everywhere, as `split` does, and the kernel maps the syscall
+word's zero to one before it calls (`kernel/src/memory_region.rs` line 255 already computes the count;
+it moves one line earlier). `retype_pages` leaves the crate. The kernel's syscall behaves as ruled.
+
+Prior art. seL4's `seL4_Untyped_Retype` refuses a zero object count with an invalid-argument error.
+POSIX `read` with a zero count returns zero and moves nothing (both unverified in wording).
+
+Example. `for n in 0..3 { table.retype_run(name, n); }` retypes four pages today (one for the zero)
+and three under the recommendation.
+
+## Decision 4: Whether a child's share of its root's ceilings is the crate's constant
+
+Background. `CHILD_SHARE_OF_ROOT` is 16, private, and every split region of every tree gets one
+sixteenth of its root's ceilings, with integer division. A root ceiling under sixteen gives every
+child zero (item 10). The kernel chose sixteen for the progenitor's tree. A published crate makes
+that every user's policy, and a published policy number is one-way.
+
+Recommendation: the share becomes a field of the root's `Ceilings` (or a parameter of
+`insert_root_with_ceilings`), with the kernel passing 16. Zero stays zero (the stricter answer;
+relaxing later is compatible). The crate keeps the invariant that no child's ceiling exceeds its
+parent's.
+
+Prior art. Linux's `pids.max` and `memory.max` belong to each group, and whoever holds the parent
+sets them, not by a fixed fraction. Zircon job policies belong to each job (the wording of neither
+description has a check).
+
+Example. A root with a thread ceiling of 15 can give one child 8 and another 7 under the
+recommendation; today both children get 0.

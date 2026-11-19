@@ -28,15 +28,99 @@ Reuse: the template `nifeos/crate-workflows` and its helpers, `script/crate-move
 `block_roster_contract`'s `verification` module and `falsifications/` directory as the pattern.
 No new tool.
 
-## Where this stands
+## Finding status
 
-Finished: Decision 1 froze the identity with the line count as this crate's own (#3582), and items 3, 4, 5, 7, 8, 10, 11, 14 and 15 landed in #3566.
+- P0-1, names and the ratification table: Ruled (maintainer provisional, 2026-11-14 UTC). Not
+  built: the code still says `PAGE_BYTES`, `PAGE_VA`, `page_va`, `va`, `word::LINE` and
+  `counter`. Ratifying the table is an open decision below.
+- P0-2, manifest, license files and README: Open. The manifest still inherits `license` and
+  `[lints]` from the workspace, keeps path dependencies and the allowlist comment, and no README or
+  license file exists.
+- P0-3, citations of this tree: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-4, saturating totals: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-5, `counter` lifetime and read-only contract: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-6, line count owned by this crate: Done, [#3582](https://github.com/nifeos/nife/pull/3582).
+- P1-7, three Kani harnesses: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-8, host tests over an aligned frame: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+  Miri over the same tests is Open: it runs in the template's Miri job after the move.
+- P1-9, header and line namespaces: Ruled (maintainer provisional, 2026-11-14 UTC, in item 1's
+  table). Not built: `word::ONLINE` still sits beside `word::MAGIC` in one namespace.
+- P1-10, `online_cpus` type and the word core: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-11, documentation defects: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-12, dry run against the standalone check: Open. `helpers/crate_move.py` runs
+  `cargo generate-lockfile` before it inlines the inherited manifest keys, so the dry run stops
+  before it can report the path dependencies.
+- P2-13, end-to-end test note: Open. The sentence belongs in the README that item 2 writes.
+- P2-14, unconditional `no_std`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-15, `Snapshot` size: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Decision 1, identity with the line count inside it: Done (option A, 2026-11-14 UTC),
+  [#3582](https://github.com/nifeos/nife/pull/3582).
+- Review package and repository: Open. No package exists in `notes/crate-reviews/`; the go is an
+  open decision below.
 
-- Item 1 (names): the block records the maintainer's provisional table, and no lane has applied its renames; a lane, then ratification as a decision for calef.
-- Item 9 (header and line namespaces): ruled provisionally in item 1's table, not built; a lane, in item 1's pull request.
-- Items 2 and 13 (manifest, licenses, README): not built; the move, which waits on item 1's ratification and on calef's review clearance for the repository.
-- Item 8 (Miri run): the host tests exist and Miri has not run; the move, in the template's Miri job.
-- Item 12 (dry run against the standalone check): two-way, a finding against `helpers/crate_move.py`; a lane.
+## Open decisions
+
+### Ratify the names of item 1's table
+
+Background. Every public name in this crate carries a `Name:` provenance block. The move to the
+crate's own repository strips those blocks, so each name must read `ratified` before the move.
+Only the architect's ratification settles a name. The maintainer set the table on 2026-11-14
+(UTC), provisionally: `PAGE_CONTENT_BYTES`, `PAGE_VIRTUAL_ADDRESS`, `virtual_address` for the
+parameters, `PAGE_WORDS`, `word::LINE_WORDS` and `atomic_word` for `counter`. `Snapshot` stays,
+the header and line offsets take separate namespaces (item 9), and the remaining names stay as
+written, with no alias of the old spellings. After the first publish, every user compiles against these names.
+
+Recommendation: A. The table follows the rules in force (spelled-out words, units on constants,
+std spellings), and ratifying it before the rename lane runs means the lane lands ratified names in
+one pass, with no second ratification round.
+
+- A. Ratify the maintainer's table as it stands; one rename lane applies it.
+- B. Ratify it with named changes (for example a different name for `counter` than
+  `atomic_word`); the lane applies the changed table.
+- C. Hold ratification until the rename lane has landed, and ratify against the built code.
+
+Door: one-way at the first publish, because a published name is a breaking change to rename.
+Before then it is two-way, but ratification is the architect's by the naming rule.
+
+Prior art. Linux fixes the names of a published interface in `Documentation/ABI/stable/` and
+never renames them afterwards; FreeBSD's `sysctl` names behave the same way. Rust's API
+guidelines (C-CASE, C-CONV) settle spelling before 1.0 for the same reason. nife differs in
+ratifying every public item of a small crate, not only the interface surface. Concrete example:
+`machine_statistics_contract::counter(page_va, ...)` becomes
+`machine_statistics_contract::atomic_word(virtual_address, ...)`.
+
+Blocks: the move.
+
+### Clear the review package and approve the repository
+
+Background. A crate leaves this tree for its own `nifeos` repository only when the architect
+clears its review package; that clearance is the approval to create the repository. A package
+lists every public item with its signature for the architect's reading, and
+`script/crate-review-packet` writes it. This crate has none: this outside review stands in for one
+on its own items only (BUGS, first entry). The kernel, the spawn service and three programs share
+the contract, so it meets the bar for leaving.
+
+Recommendation: A. A package written after the rename lane shows the architect the names as they
+will ship, so one reading covers both the ratified table and the clearance.
+
+- A. A lane writes the package after the rename lane lands; the architect's clearance creates the
+  repository.
+- B. Clear on this outside review alone, without a package.
+- C. Keep the crate in nife for now and revisit when a second repository needs it.
+
+Door: one-way. Creating a public repository and moving the crate there are outward steps that
+other pins then follow.
+
+Prior art. Rust moved `libc` and `compiler-builtins` out of `rust-lang/rust` into their own
+repositories once their interfaces had settled, each with its own review. Fuchsia's SDK moves a
+library into the published SDK only after an API review. nife differs in asking for the review
+before the first publish rather than before an SDK release. Concrete example:
+the architect cleared `block_roster_contract` on 2026-11-09 (UTC), and it moved to its own
+repository.
+
+Blocks: the move.
 
 ## Goal
 
@@ -64,7 +148,7 @@ layout, a fixed address, a dependency); everything else is two-way and the maint
    ratified row (the crate), two provisional rows (`VERSION`, `INTERFACE_ID`) and thirty-one rows
    reading "no block". `script/crate-standalone` fails first on this. The move commit strips every
    block, so each name must read `ratified` before it. The review's flags for that table are in
-   "What needs the architect".
+   "Decisions for the architect".
    Evidence: `script/crate-standalone` output, "34 name(s) in the crate not ratified";
    `crates/machine_statistics_contract/src/lib.rs` throughout.
    Change: one pull request whose body carries the draft table, with the pre-ruled renames applied
@@ -116,19 +200,15 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Follow-on
 
-- **Done.** Decision 1: the identity stays as built (`MACHSTA1`, version 1, interface 4, a 576-byte
-  page), and the processor-line count is this crate's own `PROCESSOR_LINES`, held equal to
-  `CPU_ID_BOUND` by a compile-time assertion. Pull request #3582.
-- **Outstanding.** Items 1, 2, 9, 12 and 13. They are the ratification table, the move
-  commit's manifest, licenses and README, the header and line namespaces, the dry run against the
-  standalone check and the README's end-to-end note. The ledger names each with its reason. Checked by reading the ledger rows against the crate after the commit that
-  built the done items.
+- **Outstanding.** Each finding that "Finding status" marks Open or Ruled, checked against the
+  crate's source and manifest.
 
 ## Decisions for the architect
 
-One one-way door was open, and Decision 1 below carries its ruling. The ratification table of item 1 is the architect's by the naming rule
-and sits after it with the review's flags; it is not a decision in the sense of this section.
-Everything else above is two-way and the maintainer decides it.
+Decision 1 below is the one one-way door, and it carries its ruling. The table of item 1 follows it with
+the review's flags and the maintainer's provisional names; ratifying it is the architect's by the
+naming rule and is under "Open decisions". Everything else above is two-way and the maintainer
+decides it.
 
 ### Decision 1: Freeze the contract's identity before it leaves, with the line count inside it
 
@@ -140,28 +220,8 @@ own constant, `PROCESSOR_LINES` (name provisional), and replaces the re-export o
 `current_cpu_contract::CPU_ID_BOUND`. A compile-time assertion keeps it equal to that bound, so a
 change to the bound fails this crate's build until this page's magic and version move too.
 
-Background. Three programs under `components/src/` declare this interface by the pair (`INTERFACE_ID`, `VERSION`) in their `INTERFACES` note. The kernel and the spawn service compile in the fixed address. Every reader compares `MAGIC` and the version word. The kernel and every reader compute the layout from `word::LINE` and `CPU_ID_BOUND`. Once a pin outside nife builds one of those programs, a change to any of these values has to move every pin in one image. Milestone 1017 (the contract crates leave in this order) measured that cost from two reverts. The identity
-set here has one member the sibling page crates do not have: the number of cpu lines, which today
-is another crate's constant (item 6). A kernel and a reader that agree on every identity value can
-still disagree on the layout if that constant moves between their pins.
-
-Recommendation first: freeze the identity as it stands, and make the line count this crate's own.
-`MAGIC` is `MACHSTA1`, `VERSION` is 1, `INTERFACE_ID` is 4, and `PAGE_VIRTUAL_ADDRESS` is `0x005F_F000` (a pair page on the address-space map). A line is eight words. There are eight cpu lines after the header line, and the content is 576 bytes. The header holds the magic at word 0, the frame size at 1, the tick rate at 2, the total and free frame counts at 3 and 4 and the version at 5. Words 6 and 7 of every line stay reserved and read zero. A later writer may assign one under the same version only if a reader that does not know it is still right to read zero there. Any other change bumps `VERSION` and re-mints the magic's digit in one change. Every value is already compiled into the kernel, the spawn service and three programs, and no item above needs any of them to change. The line count becomes a constant of this crate with a compile-time check against `current_cpu_contract::CPU_ID_BOUND`. The two cannot drift inside one image, and a change to the bound is a deliberate version decision here.
-
-Prior art. Linux's vDSO data page always matches the kernel that ships it, so its layout never has to be versioned across a boundary. FreeBSD's `vdso_timekeep` carries `tk_ver` and OpenBSD's `timekeep` page a version constant that libc compares. A mismatch means no page rather than a misread one (both unverified in detail). Linux `/proc/stat` grows by appending columns and readers ignore columns they do not know, which is the growth rule recommended for the reserved words. Fuchsia's `zx_info_cpu_stats_t` is a struct per topic whose size the call checks (unverified in
-detail). `block_roster_contract`, the contract pilot, froze its identity as a set before it left.
-
-Concrete example. `components/src/free.rs` declares
-`(machine_statistics_contract::INTERFACE_ID, machine_statistics_contract::VERSION)`. Suppose a
-release of `current_cpu_contract` raised `CPU_ID_BOUND` to 16 and the kernel took it while `free`'s
-pin did not. Both still declare `(4, 1)`, the magic and version match, and `free` reads eight of
-sixteen lines: its `Mem:` line is right and its cpu totals are silently half. With the line count
-frozen here, the kernel's build of this crate fails at the assertion instead, and the change
-arrives as `VERSION` 2 with `MACHSTA2`, which `free` refuses until its pin moves.
-
-The alternative, left open, is to carry the line count in a header word (word 6) so a reader
-learns it at run time. It costs a layout change now, with the version bump that implies, for a
-flexibility no reader in the tree needs; the review does not recommend it.
+The background, the recommendation as reviewed, prior art, a concrete example and the alternative
+are in [the appendix](1099-machine-statistics-contract-outside-review/identity-decision.md).
 
 ### The ratification table of item 1, with the review's flags
 
@@ -192,11 +252,11 @@ which the architect may revisit. The names the table carries into item 1's pull 
 `PAGE_CONTENT_BYTES` and `PAGE_VIRTUAL_ADDRESS`, with the parameters `page_va` and `va` as
 `virtual_address`. `PAGE_WORDS` and `word::LINE_WORDS`. `Snapshot` stays, and a lane rewords the module
 sentence. `counter` becomes `atomic_word`. The rest stay as written. There is no alias of the
-old spellings. Ratifying the table stays the architect's.
+old spellings. Ratifying the table is an open decision.
 
 ## Done when
 
-The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). [The ledger](1099-machine-statistics-contract-outside-review/ledger.md) says, item by item, what this block finished and what waits.
+The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). The finding status above says, item by item, what is done and what each open item still needs.
 
 ## BUGS
 
@@ -222,5 +282,5 @@ The checks are in [the appendix](1099-machine-statistics-contract-outside-review
 
 ## Index row
 
-An outside review of `machine_statistics_contract` before it leaves this tree. Three items block the move: thirty-four names without a `Name:` block, a manifest and file set the standalone check refuses, and citations of this tree throughout the source. Eight land before the first tag. Three concern the code: totals that overflow on a page the reader accepted, a `'static` reference under a weaker contract, and a layout whose line count another crate owns. Three concern the proofs and tests: no Kani harness, two `unsafe` functions no host test reaches, and one namespace for indices and offsets. The last two are a type-width inconsistency and six documentation defects. Four follow later. One one-way door waits for the architect: freezing the identity set
-with the line count inside it.
+An outside review of `machine_statistics_contract` before it leaves this tree. Three items block the move: thirty-four names without a `Name:` block, a manifest and file set the standalone check refuses, and citations of this tree throughout the source. Eight land before the first tag. Three concern the code: totals that overflow on a page the reader accepted, a `'static` reference under a weaker contract, and a layout whose line count another crate owns. Three concern the proofs and tests: no Kani harness, two `unsafe` functions no host test reaches, and one namespace for indices and offsets. The last two are a type-width inconsistency and six documentation defects. Four follow later. The one one-way door, freezing the identity set with the line count inside it,
+has its ruling of 2026-11-14 (UTC); ratifying the names and clearing a review package stay open.

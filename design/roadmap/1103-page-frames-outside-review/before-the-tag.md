@@ -89,7 +89,7 @@ An appendix to [the milestone](../1103-page-frames-outside-review.md).
    `bitmap_bytes` and `mark_free` / `mark_used` pass every rule this review can apply.
    Evidence: `src/lib.rs` line 17, 48, 62, `69-74`, `78`, `135`, `185`, `201`, `390`, `409-419`.
    `crates/page_tables/src/tlb_flush.rs` line 41. `design/naming/crates.md` line 65.
-   Change: one rename lane after the architect rules Decisions 1 and 2. The lane performs the two
+   Change: one rename lane once Decision 1 is ruled. The lane performs the two
    public renames across the tree (about 60 `FRAME_SIZE` sites in `kernel/` and `system_tests/`) and
    the two-way ones in the crate, all shipped provisional. The rule that a crate carries no alias
    for this tree's own earlier spelling before its first release refuses `#[doc(alias =

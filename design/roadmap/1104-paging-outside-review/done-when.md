@@ -10,12 +10,12 @@ An appendix to [the milestone](../1104-paging-outside-review.md).
 - `falsify.py --check` passes for all 38 records, and one replay run shows every patch failing
   exactly its own harness.
 - `spelled_out.py` reports zero findings. Every kept specification name opens its doc with the full
-  name and source and carries `#[doc(alias)]`. `PageSize`'s variants carry the spelling Decision 2
-  rules.
+  name and source and carries `#[doc(alias)]`. `PageSize`'s variants carry the spelling the leaf-size
+  decision rules.
 - `Mapper::new`'s `# Safety` states the allocator's obligations, and both allocation sites check
   alignment.
-- One `Flags::ALL` of ten feeds every harness and host test, with a test on its length; Kani
-  verifies 38 harnesses still, each over ten constructors.
+- One `Flags::ALL` of eleven feeds every harness and host test, with a test on its length; Kani
+  verifies 38 harnesses still, each over eleven constructors.
 - `.github/mutants-exempts` carries the ported exemptions with reasons, and one full
   `mutation.yml` run on `main` is green inside the window.
 - `map_range` and `map_span` return `MapError::BadRegion` instead of overflowing, with a test.
