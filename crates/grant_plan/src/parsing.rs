@@ -64,8 +64,8 @@ pub fn argv(
     line: &[u8],
     page: &mut [u8; program_argument_contract::PAGE_BYTES],
 ) -> Result<u32, Refusal> {
-    let mut b = program_argument_contract::PageBuilder::new(page)
-        .map_err(|_| Refusal::ArgumentsTooLong)?;
+    let mut b =
+        program_argument_contract::PageBuilder::new(page).map_err(|_| Refusal::ArgumentsTooLong)?;
     each_word(line, &mut |w| {
         b.push(w).map_err(|_| Refusal::ArgumentsTooLong)
     })?;
