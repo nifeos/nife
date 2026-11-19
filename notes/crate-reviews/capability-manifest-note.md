@@ -87,7 +87,13 @@ References to nife in shipped text. `python3 helpers/lint_externalized_crates.py
 the crate, below its ceiling, which this pull request lowers from 5 to 2, and lists 5 marked wire
 literals in `src/lib.rs`, 3 in `src/tests.rs` and none elsewhere.
 
-Result of `script/crate-standalone`. RESULT_STANDALONE
+Result of `script/crate-standalone`. Seven failures, all expected before the move. The check copies the
+crate alone, and its four path dependencies (`grant_contract`, `domain_name_resolution_contract`,
+`interfaces_note`, `program_table`) have not left the tree yet, so the manifest check fails once per
+dependency, the build is skipped and the proofs are skipped because the copy does not build. The seventh
+failure is the names check: 56 names are not yet ratified, which is the list in the table above for this
+review. The harness and falsification steps could not run. The move lane reruns the check once the sibling
+crates are available.
 
 Result of `script/crate-move --dry-run`. Three findings, each for the move lane; template `v8`, the 15 tracked files copied, the `Name:` blocks
 removed from 3 files and the 7 falsification patches regenerated for `-p1` and applying with no offset. The
