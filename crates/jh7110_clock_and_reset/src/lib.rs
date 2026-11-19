@@ -645,7 +645,8 @@ pub(crate) const SYSTEM_CLOCK_SYSTEM_TOP_GROUP_BUS: u32 = 96;
 #[doc(alias = "JH7110_SYSRST_NOC_BUS_STG_AXI")]
 pub(crate) const SYSTEM_RESET_SYSTEM_TOP_GROUP_BUS: u32 = 30;
 
-/// **The PCI Express ports' STG clocks** (\[mainline-clock-ids\]), indexed by port: the
+/// **The Peripheral Component Interconnect (PCI) Express ports' STG clocks**
+/// (\[mainline-clock-ids\]), indexed by port: the
 /// transaction layer clock (`JH7110_STGCLK_PCIE0_TL` 10, `PCIE1_TL` 13), the bus master clock
 /// (`JH7110_STGCLK_PCIE0_AXI_MST0` 8, `PCIE1_AXI_MST0` 11) and the register bus clock
 /// (`JH7110_STGCLK_PCIE0_APB` 9, `PCIE1_APB` 12), in the order mainline's nodes name them.
@@ -682,8 +683,8 @@ pub const PCI_EXPRESS_SYSTEM_BRING_UP: &[Step] = &[
 
 /// **What each PCI Express port needs from the STG domain**, port 0 then port 1: the three clocks
 /// its mainline node names, then its six resets, in Linux's order (`starfive_pcie_clk_rst_init`
-/// enables the bulk clocks, then deasserts the bulk resets). The port's PHY and glue words answer
-/// only after this.
+/// enables the bulk clocks, then deasserts the bulk resets). The port's physical (PHY) layer and
+/// glue words answer only after this.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane lane/163-jh7110-pcie-kernel-wiring, in
 /// [`SD_IO_BRING_UP`]'s shape. calef has not named it.

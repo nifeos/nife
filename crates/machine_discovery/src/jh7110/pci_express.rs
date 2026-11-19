@@ -6,7 +6,7 @@
 //! `compatible = "starfive,jh7110-pcie"`, with two `reg` entries named by `reg-names = "cfg", "apb"`
 //! (the configuration window and the bridge's registers, in that order), `ranges` holding a 32-bit and a 64-bit
 //! prefetchable memory range, `linux,pci-domain` 0 or 1, and `perst-gpios` naming the fundamental
-//! reset pin in the SYS GPIO controller (`jh7110-common.dtsi`). The chip's tree leaves both `disabled`,
+//! reset pin in the SYS general-purpose input/output (GPIO) controller (`jh7110-common.dtsi`). The chip's tree leaves both `disabled`,
 //! and `jh7110-starfive-visionfive-2.dtsi` marks both `okay`.
 //!
 //! [`discover`] finds the node named for a port in [`NODE_NAMES`] and hands [`RootPort::from_node`]
@@ -125,7 +125,8 @@ impl RootPort {
             return Ok(None);
         };
         let ranges = property(b"ranges")?.unwrap_or_default();
-        let Some((memory_address, memory_size)) = pci_configuration_space::mem32_window(ranges)
+        let Some((memory_physical_address, memory_size)) =
+            pci_configuration_space::mem32_window(ranges)
         else {
             return Ok(None);
         };
@@ -138,7 +139,7 @@ impl RootPort {
                 bridge,
                 configuration,
                 memory_32_bit: Window {
-                    physical_address: memory_address,
+                    physical_address: memory_physical_address,
                     size_bytes: memory_size,
                 },
                 prefetch_memory: prefetch_window(ranges),
@@ -232,13 +233,13 @@ mod tests {
 
     #[test]
     fn mainline_port_one_reads_as_the_crate_s_own_description_of_it() {
-        let (regions, ranges, domain, perst, names) = mainline_port_1();
+        let (regions, ranges, domain, reset_specifier, names) = mainline_port_1();
         let table: &[(&[u8], &[u8])] = &[
             (b"compatible", b"starfive,jh7110-pcie\0"),
             (b"reg-names", &names),
             (b"ranges", &ranges),
             (b"linux,pci-domain", &domain),
-            (b"perst-gpios", &perst),
+            (b"perst-gpios", &reset_specifier),
             (b"status", b"okay\0"),
         ];
         let found = RootPort::from_node(PortNumber::One, &regions, node(table))
@@ -249,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn reg_names_order_the_windows() {
+    fn register_names_order_the_windows() {
         let (mut regions, ranges, _, _, _) = mainline_port_1();
         regions.reverse();
         let table: &[(&[u8], &[u8])] = &[
@@ -317,17 +318,17 @@ mod tests {
     }
 
     #[test]
-    fn prefetch_window_skips_ranges_that_are_not_64_bit_prefetchable() {
+    fn prefetch_window_skips_ranges_that_are_not_64_bit_prefetch_memory() {
         assert_eq!(prefetch_window(&[]), None);
         assert_eq!(prefetch_window(&[0; 27]), None);
-        let not_prefetchable = cells(&[0x8300_0000, 9, 0, 9, 0, 0, 0x1000]);
-        assert_eq!(prefetch_window(&not_prefetchable), None);
+        let not_prefetch = cells(&[0x8300_0000, 9, 0, 9, 0, 0, 0x1000]);
+        assert_eq!(prefetch_window(&not_prefetch), None);
         let translated = cells(&[0xc300_0000, 0, 0, 9, 0, 0, 0x1000]);
         assert_eq!(prefetch_window(&translated), None);
     }
 
     #[test]
-    fn qemu_s_tree_has_no_jh7110_port() {
+    fn qemu_s_tree_has_no_port() {
         let blob = include_bytes!("../../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
         let tree = DeviceTreeBlob::from_bytes(blob).unwrap();
         for number in [PortNumber::Zero, PortNumber::One] {
