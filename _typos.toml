@@ -78,6 +78,10 @@ THRE = "THRE"
 # which `xtask/src/portable_executable.rs` reads to convert the riscv64 loader to PE/COFF.
 rela = "rela"
 Rela = "Rela"
+# The JH7110 pin controller's output-enable and output words, `JH7110_SYS_DOEN` and `JH7110_SYS_DOUT`
+# in Linux's `pinctrl-starfive-jh7110-sys.c`, which crates/jh7110_pci_express carries as aliases.
+DOEN = "DOEN"
+DOUT = "DOUT"
 RELA = "RELA"
 # The aarch64 Scalable Matrix Extension, named beside SVE in `CPACR_EL1`'s `SMEN` field, which
 # the FP module of milestone 447 (a thread's vector registers are its own) records as vector
