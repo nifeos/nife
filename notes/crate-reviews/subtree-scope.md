@@ -8,7 +8,7 @@ The architect reads this to clear the crate for its move to its own repository, 
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
 where it leaves with `memory_region_heap` and `redoxfs` as one repository. It describes the crate as
 `main` plus this branch leaves it. The outside review behind it is
-[milestone 1110](../../design/roadmap/1110-subtree-scope-outside-review.md).
+[milestone 1110 (`subtree_scope`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1110-subtree-scope-outside-review.md).
 
 ## In one paragraph
 
@@ -51,7 +51,7 @@ Beyond that, the tooling and the lists:
   `helpers/kani-peaks.tsv` holds its peak, and `notes/project-metrics/falsification-times.tsv` its
   five falsification times.
 - `script/verify` carries its per-crate cost row, which balances the Kani shards.
-- Documents cite it: `notes/walk-cost.md` and milestones 633, 634, 726 and 1110.
+- Documents cite it: `notes/walk-cost.md` and milestones 633, 634, 726 and 1110 by number.
 - `crates/capability_manifest_note` and `crates/filesystem_contract` mention the crate in text only.
 - The fuzz workspace's falsification patch
   `fuzz/falsifications/redoxfs_server_session.unknown_badge_fails_open.patch` edits the crate's
@@ -105,12 +105,12 @@ No nife type, capability or handoff appears in a public signature; `walk` takes 
 
 What a stranger may find surprising:
 
-- A badge is both a window and a grant (§230), so `Revoked` is a fact about a badge and not about
+- A badge is both a window and a grant (§230 (badged endpoint capabilities)), so `Revoked` is a fact about a badge and not about
   a handle. Badge 0 is the unbadged value and cannot be bound.
 - `Binding::SyncOnly` holds a badge that may only flush, with no directory to hand back, so
   `unbind` answers `None` for it. `Some(0)` means a badge bound to the root handle, which is a
   directory to close.
-- An unknown badge fails closed (milestone 726): `binding` answers `Revoked` for one past the table
+- An unknown badge fails closed (milestone 726 (an unknown badge fails closed in subtree_scope)): `binding` answers `Revoked` for one past the table
   and for one that does not fit a machine word.
 - `walk` asks `lookup` for every component but the last and returns the last unresolved, so the
   verb decides what to do with it. A file verb on a directory lands on `IsADirectory`.
@@ -123,8 +123,8 @@ Five Kani harnesses, each with a falsification patch under
 `a_badge_once_bound_is_never_open_again` and `a_bound_badge_reaches_only_its_own`. The
 falsification times on file are 212.2 s and 110.9 s for the first two and under 8 s for the rest.
 The proof is bounded: a path of `PROOF_PATH_BYTES` bytes at unwind 7, three badges and four
-operations. That no loop behaves differently past the bounds is an argument, not a proof, and the
-crate documentation says so.
+operations. The crate documentation says that no loop behaves differently past the bounds is an
+argument, not a proof.
 
 ### What the walk proofs leave out (P1-9)
 
@@ -141,14 +141,13 @@ The lane wrote it twice and measured both. It is not in the tree.
 | 2 | recorded each step's offset and length against the path's own start, with the same bounds | verified in 11 minutes 10 seconds of wall time (546 s user, 112 s system) at a peak of 4.6 GiB |
 
 The second verifies, and its shape is the one to keep: a `walk::<u8, Refusal>` over a path of
-`PROOF_PATH_BYTES` arbitrary bytes, a record of `(offset, length)` pairs bounded by the path
-length, and an assertion after the walk that the pairs equal the components that end at or before
-the last slash, in order, whenever every component is a name; and that `lookup` was never asked
-when one is not. Its falsification makes `walk` skip the first component.
+`PROOF_PATH_BYTES` arbitrary bytes and a record of `(offset, length)` pairs bounded by the path
+length. After the walk, the pairs equal the components that end at or before the last slash, in
+order, whenever every component is a name. When one is not, `lookup` was never asked. Its falsification makes `walk` skip the first component.
 
-It stays out for cost. The crate's whole row in `script/verify` is 234 seconds, and a prove job
-has a 20-minute budget shared by every crate in its shard; 658 seconds of CPU for one harness
-would more than triple the row and move the shard balance. The host was loaded, so the wall figure
+It stays out for cost. The crate's whole row in `script/verify` is 234 seconds. A prove job has a
+20-minute budget that every crate in its shard shares. 658 seconds of CPU for one harness would
+more than triple the row and move the shard balance. The host was loaded, so the wall figure
 is high, but the CPU figure is not a load artifact. The limit is the walk's path-length bound: the
 cost grows with the product of the bound and the loop's unwind. A lane that adds it either makes
 room in the shards (a row of about 900 and a rebalance), shortens the path bound for this harness
@@ -159,7 +158,7 @@ The README the move lane writes says the unit tests cover those two refusals and
 
 ## Names
 
-Nothing here is ratified by this package; the architect ratifies from it. The maintainer ruled the
+This package ratifies nothing. The architect ratifies from it. The maintainer ruled the
 eight spellings below provisional on 2026-11-19 (UTC), two-way before the first tag. Each public
 one is one-way after it. Where milestone 1110 had no proposal, the lane chose by
 `design/naming.md`; there was no such case, all eight came from the milestone.
@@ -208,8 +207,8 @@ and it copies no Linux or `cap-std` text.
 ## Open questions
 
 1. Clearing the move: the go to create the step-9 repository with this crate, `memory_region_heap`
-   and `redoxfs`, with no tag and no publish. It is asked of the architect from this package, and
-   the package ratifies and clears nothing.
+   and `redoxfs`, with no tag and no publish. The architect decides it from this package, which
+   ratifies and clears nothing.
 2. Whether to spend a prove shard's room on the completeness harness of P1-9. Recommendation: not
    before the move; add it in the new repository, where the crate's own proofs job has the
    budget to itself, and the measurement above sets its cost.

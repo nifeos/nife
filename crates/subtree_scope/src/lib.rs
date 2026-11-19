@@ -96,7 +96,6 @@ pub enum NodeKind {
 pub fn is_name(component: &[u8]) -> bool {
     !component.is_empty()
         && component != b"."
-        && component != b".."
         && !component.contains(&b'/')
         && !component.contains(&0)
 }
