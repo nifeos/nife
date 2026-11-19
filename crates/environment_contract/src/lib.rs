@@ -96,21 +96,21 @@ pub mod domain {
 
     /// Whether `s` is a member of [`KNOWN_TIME_ZONES`].
     ///
-    /// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+    /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
     pub fn is_known_time_zone(s: &str) -> bool {
         KNOWN_TIME_ZONES.contains(&s)
     }
 
     /// Whether `s` is a member of [`KNOWN_LOCALES`].
     ///
-    /// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+    /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
     pub fn is_known_locale(s: &str) -> bool {
         KNOWN_LOCALES.contains(&s)
     }
 
     /// Whether `s` is a member of [`KNOWN_TERMINAL_TYPES`].
     ///
-    /// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+    /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
     pub fn is_known_terminal_type(s: &str) -> bool {
         KNOWN_TERMINAL_TYPES.contains(&s)
     }
@@ -175,7 +175,7 @@ const TERMINAL_TYPE_OFFSET_BYTES: usize = TERMINAL_TYPE_LENGTH_OFFSET_BYTES + 1;
 /// 40 + 1 + 24 + 1 + 32 = 107 bytes. Well under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
 /// as.
 ///
-/// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+/// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
 pub const PAGE_CONTENT_BYTES: usize = TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES;
 
 /// Why [`PageBuilder`] refused a value: it does not parse as a member of its key's [`domain`].
@@ -244,7 +244,7 @@ impl<'a> PageBuilder<'a> {
 
     /// Declare `TZ`. Refused if `value` is not a member of [`domain::KNOWN_TIME_ZONES`].
     ///
-    /// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+    /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
     #[doc(alias = "TZ")]
     pub fn time_zone(mut self, value: &'a str) -> Result<Self, Refused> {
         if domain::is_known_time_zone(value) {
@@ -257,7 +257,7 @@ impl<'a> PageBuilder<'a> {
 
     /// Declare `LANG`. Refused if `value` is not a member of [`domain::KNOWN_LOCALES`].
     ///
-    /// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+    /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
     #[doc(alias = "LANG")]
     pub fn locale(mut self, value: &'a str) -> Result<Self, Refused> {
         if domain::is_known_locale(value) {
@@ -270,7 +270,7 @@ impl<'a> PageBuilder<'a> {
 
     /// Declare `TERM`. Refused if `value` is not a member of [`domain::KNOWN_TERMINAL_TYPES`].
     ///
-    /// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+    /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
     #[doc(alias = "TERM")]
     pub fn terminal_type(mut self, value: &'a str) -> Result<Self, Refused> {
         if domain::is_known_terminal_type(value) {
@@ -414,7 +414,7 @@ fn read_field(
 /// assert_eq!(nothing.terminal_type(), None);
 /// ```
 ///
-/// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+/// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
 #[derive(Debug, Clone, Copy)]
 pub struct ConfigurationPage {
     base: *const u8,
@@ -461,7 +461,7 @@ impl ConfigurationPage {
     /// never declared onto it, or the bytes are not a member of [`domain::KNOWN_TIME_ZONES`]. A
     /// reader never sees a value outside that set, whoever wrote the page.
     ///
-    /// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+    /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
     #[doc(alias = "TZ")]
     pub fn time_zone(&self) -> Option<&str> {
         self.is_recognized()
@@ -480,7 +480,7 @@ impl ConfigurationPage {
     /// `LANG`, or `None` for the same reasons [`time_zone`](Self::time_zone) can be `None`, with
     /// [`domain::KNOWN_LOCALES`] as the set.
     ///
-    /// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+    /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
     #[doc(alias = "LANG")]
     pub fn locale(&self) -> Option<&str> {
         self.is_recognized()
@@ -499,7 +499,7 @@ impl ConfigurationPage {
     /// `TERM`, or `None` for the same reasons [`time_zone`](Self::time_zone) can be `None`, with
     /// [`domain::KNOWN_TERMINAL_TYPES`] as the set.
     ///
-    /// Name: ratified 2026-11-19 (calef, milestone 1089). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
+    /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
     #[doc(alias = "TERM")]
     pub fn terminal_type(&self) -> Option<&str> {
         self.is_recognized()

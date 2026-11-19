@@ -157,17 +157,21 @@ of the provisional names. The architect ratifies the eleven names from it and cl
 asked once the package exists; that clearance is the go to create `nifeos/environment_contract` as
 a `publish = false` repository.
 
-Ruled 2026-11-19 (UTC), option A on the names: every public name in the package's Names table is
-ratified as built.
+Ruled 2026-11-19 (UTC), option A on the names: the architect ratified every public name in the
+package's Names table as built.
 
 In force. The review package is `notes/crate-reviews/environment-contract.md`. It lists every
-public name with its ruling. The names are ratified: `PAGE_CONTENT_BYTES`, `ConfigurationPage`,
-`virtual_address`, `time_zone`, `locale` and `terminal_type` on `PageBuilder` and
-`ConfigurationPage` with the aliases `TZ`, `LANG` and `TERM` and no alias of the old spellings,
-`domain::is_known_time_zone`, `is_known_locale` and `is_known_terminal_type`,
-`Refused::UnknownTimeZone`, `UnknownLocale` and `UnknownTerminalType`, `PageBuilder`, `new`,
-`build`, `Refused`, the module `domain` and the module `verification`. The repository waits on the
-architect's clearance of the review. The move follows, with item 6's files.
+public name with its ruling. These names are ratified:
+
+- `PAGE_CONTENT_BYTES`, `ConfigurationPage` and `virtual_address`.
+- `time_zone`, `locale` and `terminal_type` on `PageBuilder` and `ConfigurationPage`, with the
+  aliases `TZ`, `LANG` and `TERM` and no alias of the old spellings.
+- `domain::is_known_time_zone`, `is_known_locale` and `is_known_terminal_type`.
+- `Refused::UnknownTimeZone`, `UnknownLocale` and `UnknownTerminalType`.
+- `PageBuilder`, `new`, `build`, `Refused`, the module `domain` and the module `verification`.
+
+The repository waits on the architect's clearance of the review. The move follows, with item 6's
+files.
 
 Background. `environment_contract` is the agreement between the program that writes a process's
 inert configuration page (time zone, locale, terminal type) and every reader of that page, the
@@ -176,8 +180,8 @@ of milestone 1017. A crate leaves once its review package lists every public nam
 the architect clears that review. The identity (13, 1, `ENVCONF1`, 107 bytes) has its ruling. The
 public names the lanes minted (`PAGE_CONTENT_BYTES`, `ConfigurationPage`, `virtual_address`,
 `time_zone`, `locale`, `terminal_type`, the three `is_known_*` functions and the `Unknown*`
-variants) were provisional until 2026-11-19 UTC. They were free to change while only this tree spelled them
-and bind every reader once a release does.
+variants) are ratified. They bind the standard library overlay and every reader of the page once a
+release exists.
 
 Door: one-way. The repository is an outward step, and a ratified name binds the standard library
 overlay and every program that reads the page.
@@ -214,8 +218,8 @@ Example. `PageBuilder::new().time_zone("UTC")?.locale("C")?.terminal_type("dumb"
 today's `.tz("UTC")?.lang("C")?.term("dumb")?`; a refusal reads `Refused::UnknownTimeZone` in a
 log a stranger has to understand.
 
-Decided by the maintainer on 2026-11-14 (UTC) and ratified by the architect on 2026-11-19 (UTC).
-The recommendation holds: `time_zone`, `locale` and
+The maintainer decided on 2026-11-14 (UTC) and the architect ratified on 2026-11-19 (UTC). The
+recommendation holds: `time_zone`, `locale` and
 `terminal_type` on both types, `is_known_time_zone` and its siblings, and
 `Refused::UnknownTimeZone` and its siblings. Each accessor carries `#[doc(alias = "TZ")]`, `"LANG"`
 or `"TERM"`, since POSIX's variable names are the source's terms, and no alias of the old
