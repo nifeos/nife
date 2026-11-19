@@ -11,12 +11,12 @@ macro, the panic handler macro and typed windows over memory the kernel handed t
 
 ## What it does
 
-- `invoke` is the one system call wrapper. `send`, `receive`, `call`, `exit` and `require` are
-  built on it, and each discharges `invoke`'s safety obligation once so a call site does not.
+- `invoke` is the one system call wrapper. `send`, `receive`, `call`, `exit` and `require`
+  build on it, and each discharges `invoke`'s safety obligation once so a call site does not.
 - `program_entry!` writes the process entry point, `_start`, with the stack alignment each
   architecture expects. `panic_handler!` writes a panic handler that traps.
-- `mapped_window::MappedWindow` is one page the process was handed at a fixed virtual address. Every
-  access is volatile and bounds-checked, `read::<T>` and `write::<T>` take the sealed
+- `mapped_window::MappedWindow` is one page the kernel handed the process at a fixed virtual address.
+  Every access is volatile and checks its bounds. `read::<T>` and `write::<T>` take the sealed
   `WindowInteger` types, and a misaligned address panics instead of causing undefined behavior.
 - The opt-in modules `initial_ramdisk`, `virtio`, `entropy`, `socket_frame` and `child_stub` each
   hold one invariant several programs had copied.
@@ -39,7 +39,7 @@ WINDOW.write::<u16>(0x080, 7);
 assert_eq!(WINDOW.read::<u16>(0x080), 7);
 ```
 
-A program is built for one of the three targets and takes `link.ld` from this crate:
+Build a program for one of the three targets, and it takes `link.ld` from this crate:
 
 ```rust,ignore
 // build.rs
@@ -62,11 +62,11 @@ fn start(_argument0: u64, _argument1: u64, _argument2: u64) -> ! {
 
 ## What is proven
 
-No model checker covers this crate, and none is claimed. Host tests cover the logic that runs
-anywhere: the window's bounds and alignment checks and its copies, the frame accessors over a heap
-page, the reply decoder, the three hand-assembled child stubs (each instruction decoded back to the
-constant it carries) and the link script's base address. The system call arms run only in a
-user-mode process under a kernel, so they are checked by building them for all three targets.
+No model checker covers this crate, and this README claims none. Host tests cover the logic that runs
+anywhere. They check the window's bounds, alignment and copies, the frame accessors over a heap
+page, the reply decoder and the link script's base address. They also decode each instruction of
+the three hand-assembled child stubs back to the constant it carries. The system call arms run only in a
+user-mode process under a kernel, so building them for all three targets checks them.
 
 ## Building and testing
 
@@ -80,8 +80,8 @@ cargo build --lib --target riscv64imac-unknown-none-elf
 
 ## BUGS
 
-- Nothing here runs a system call on the host; the arms are checked by building them for all three
-  targets and by the kernel's own boot tests.
+- Nothing here runs a system call on the host; building the arms for all three targets and the
+  kernel's own boot tests check them.
 - A program with its own panic handler does not invoke `panic_handler!`; the macro ignores the panic
   information because a program without a console cannot print it.
 
