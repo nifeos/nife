@@ -2,9 +2,7 @@
 use pci_configuration_space::{Bdf, CLASS_NVME, Function, HEADER_TYPE_BRIDGE, walk};
 
 use crate::simulation::{Event, Simulated};
-use crate::{
-    Block, Failure, LINK_POLLS, PortNumber, Window, bring_up, glue, root_port, bridge,
-};
+use crate::{Block, Failure, LINK_POLLS, PortNumber, Window, bridge, bring_up, glue, root_port};
 
 fn walk_all(simulated: &Simulated) -> Vec<Function> {
     let mut found = Vec::new();
@@ -48,10 +46,7 @@ fn configuration_window_encodes_as_linux_programs_it() {
             (0x80c, 0),
         ]
     );
-    assert_eq!(
-        bridge::translated_size_bytes(0x4000_002f),
-        Some(0x100_0000)
-    );
+    assert_eq!(bridge::translated_size_bytes(0x4000_002f), Some(0x100_0000));
 }
 
 #[test]
@@ -112,11 +107,7 @@ fn bring_up_follows_linux_order() {
     let configuration_entry = position(&|event| {
         matches!(
             event,
-            Event::Write(
-                Block::Bridge,
-                bridge::OUTBOUND_SOURCE_LOW,
-                _
-            )
+            Event::Write(Block::Bridge, bridge::OUTBOUND_SOURCE_LOW, _)
         )
     });
     assert!(root_port_glue < clocks);
@@ -127,12 +118,7 @@ fn bring_up_follows_linux_order() {
     let disables = simulated
         .events
         .iter()
-        .filter(|event| {
-            matches!(
-                event,
-                Event::Write(Block::Bridge, bridge::MISCELLANEOUS, _)
-            )
-        })
+        .filter(|event| matches!(event, Event::Write(Block::Bridge, bridge::MISCELLANEOUS, _)))
         .count();
     assert_eq!(disables, 3);
     // The function selects end cleared.
@@ -180,7 +166,11 @@ fn port_one_writes_no_physical_layer_mode_bits() {
     assert!(!simulated.events.iter().any(|event| matches!(
         event,
         Event::Write(Block::SystemController, _, _)
-            | Event::Write(Block::SystemTopGroupController, crate::physical_layer::MODE, _)
+            | Event::Write(
+                Block::SystemTopGroupController,
+                crate::physical_layer::MODE,
+                _
+            )
     )));
 }
 

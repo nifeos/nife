@@ -3,7 +3,7 @@
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 
-use crate::{Port, PortNumber, Window, general_purpose_input_output, glue, physical_layer, bridge};
+use crate::{Port, PortNumber, Window, bridge, general_purpose_input_output, glue, physical_layer};
 
 /// **The five windows a bring-up writes.**
 ///
@@ -123,7 +123,11 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
     let glue_base = port.number.system_top_group_controller_base();
 
     // The PHY. Port 1's tree node names no system controller words, so only the tuning applies.
-    registers.write(Block::PhysicalLayer, physical_layer::OSCILLATOR_GAIN_LEVEL, physical_layer::OSCILLATOR_GAIN_FINE_TUNE_LEVEL);
+    registers.write(
+        Block::PhysicalLayer,
+        physical_layer::OSCILLATOR_GAIN_LEVEL,
+        physical_layer::OSCILLATOR_GAIN_FINE_TUNE_LEVEL,
+    );
     registers.write(
         Block::PhysicalLayer,
         physical_layer::OSCILLATOR_GAIN_TUNE_SIGNAL,
@@ -131,7 +135,13 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
     );
     if port.number == PortNumber::Zero {
         let top_group = Block::SystemTopGroupController;
-        update(registers, top_group, physical_layer::MODE, physical_layer::MODE_MASK, 0);
+        update(
+            registers,
+            top_group,
+            physical_layer::MODE,
+            physical_layer::MODE_MASK,
+            0,
+        );
         update(
             registers,
             top_group,
@@ -139,7 +149,13 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
             physical_layer::USB3_BUS_WIDTH_MASK,
             physical_layer::USB3_BUS_WIDTH,
         );
-        update(registers, top_group, physical_layer::USB_SELECT, physical_layer::USB3_PHYSICAL_LAYER_ENABLE, 0);
+        update(
+            registers,
+            top_group,
+            physical_layer::USB_SELECT,
+            physical_layer::USB3_PHYSICAL_LAYER_ENABLE,
+            0,
+        );
         update(
             registers,
             Block::SystemController,
@@ -278,9 +294,8 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
 
     let mut windows = 0;
     let mut program = |registers: &mut dyn Registers, index: u32, window: Window, pci: u64| {
-        let entry =
-            bridge::outbound_window(index, window.physical_address, pci, window.size_bytes)
-                .ok_or(Failure::Window(index))?;
+        let entry = bridge::outbound_window(index, window.physical_address, pci, window.size_bytes)
+            .ok_or(Failure::Window(index))?;
         for (offset, value) in entry {
             registers.write(bridge, offset, value);
         }

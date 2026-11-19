@@ -3,7 +3,7 @@
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 
-use crate::{Window, root_port, bridge};
+use crate::{Window, bridge, root_port};
 
 /// Any accepted window encodes an enabled entry whose size field decodes back to the size, whose
 /// source address keeps its 4 KiB granule, and whose words stay inside the entry's 32 bytes.
@@ -14,29 +14,30 @@ fn outbound_window_round_trips_its_size() {
     let processor_physical_address: u64 = kani::any();
     let pci_bus_address: u64 = kani::any();
     let size_bytes: u64 = kani::any();
-    if let Some(entry) =
-        bridge::outbound_window(index, processor_physical_address, pci_bus_address, size_bytes)
-    {
+    if let Some(entry) = bridge::outbound_window(
+        index,
+        processor_physical_address,
+        pci_bus_address,
+        size_bytes,
+    ) {
         assert!(index < bridge::OUTBOUND_ENTRIES);
         let base = index * bridge::TRANSLATION_ENTRY_BYTES;
         for (offset, _) in entry {
             assert!(offset >= base + bridge::OUTBOUND_SOURCE_LOW);
-            assert!(
-                offset
-                    < base
-                        + bridge::OUTBOUND_SOURCE_LOW
-                        + bridge::TRANSLATION_ENTRY_BYTES
-            );
+            assert!(offset < base + bridge::OUTBOUND_SOURCE_LOW + bridge::TRANSLATION_ENTRY_BYTES);
         }
         let source = entry[1].1;
         assert_eq!(bridge::translated_size_bytes(source), Some(size_bytes));
-        assert_eq!(source & 0xfff & !(bridge::TRANSLATION_SIZE_ORDER_MASK | 1), 0);
-        assert_eq!(source & !0xfff, (processor_physical_address as u32) & !0xfff);
-        assert_eq!(entry[2].1, (processor_physical_address >> 32) as u32);
         assert_eq!(
-            entry[0].1 == bridge::INTERFACE_CONFIGURATION,
-            index == 0
+            source & 0xfff & !(bridge::TRANSLATION_SIZE_ORDER_MASK | 1),
+            0
         );
+        assert_eq!(
+            source & !0xfff,
+            (processor_physical_address as u32) & !0xfff
+        );
+        assert_eq!(entry[2].1, (processor_physical_address >> 32) as u32);
+        assert_eq!(entry[0].1 == bridge::INTERFACE_CONFIGURATION, index == 0);
     }
 }
 

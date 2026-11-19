@@ -31,21 +31,21 @@
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex,
 //! after the chip and the bus as `pci_configuration_space` spells it. calef has not named it.
 
+pub mod bridge;
 mod bring_up;
 pub mod general_purpose_input_output;
 pub mod glue;
 pub mod physical_layer;
 mod port;
 pub mod root_port;
-pub mod bridge;
 
 pub use bring_up::{
     Block, BroughtUp, Failure, LINK_POLL_INTERVAL_MILLISECONDS, LINK_POLLS,
     RESET_HOLD_MILLISECONDS, Registers, bring_up,
 };
 pub use port::{
-    PHYSICAL_LAYER_SIZE_BYTES, Port, PortNumber, SYSTEM_CONTROLLER, SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT,
-    SYSTEM_TOP_GROUP_CONTROLLER, Window,
+    PHYSICAL_LAYER_SIZE_BYTES, Port, PortNumber, SYSTEM_CONTROLLER,
+    SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT, SYSTEM_TOP_GROUP_CONTROLLER, Window,
 };
 
 #[cfg(kani)]

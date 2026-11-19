@@ -11,7 +11,8 @@
 use std::collections::HashMap;
 
 use crate::{
-    Block, PortNumber, Registers, general_purpose_input_output as gpio, glue, physical_layer, bridge,
+    Block, PortNumber, Registers, bridge, general_purpose_input_output as gpio, glue,
+    physical_layer,
 };
 
 /// One thing the bring-up did, in order, for the ordering tests.
@@ -65,7 +66,10 @@ impl Simulated {
             0x0000_0002,
         );
         // Port 0's PHY wakes in USB 3 mode, which is what the mode writes undo.
-        words.insert((Block::SystemTopGroupController, physical_layer::MODE), 1 << 20);
+        words.insert(
+            (Block::SystemTopGroupController, physical_layer::MODE),
+            1 << 20,
+        );
         words.insert(
             (Block::SystemTopGroupController, physical_layer::USB_SELECT),
             physical_layer::USB3_PHYSICAL_LAYER_ENABLE,
@@ -109,14 +113,21 @@ impl Simulated {
     }
 
     fn physical_layer_in_pci_express_mode(&self) -> bool {
-        let tuned = self.word(Block::PhysicalLayer, physical_layer::OSCILLATOR_GAIN_LEVEL) == physical_layer::OSCILLATOR_GAIN_FINE_TUNE_LEVEL
-            && self.word(Block::PhysicalLayer, physical_layer::OSCILLATOR_GAIN_TUNE_SIGNAL) == physical_layer::OSCILLATOR_GAIN_FINE_TUNE_SIGNALS;
+        let tuned = self.word(Block::PhysicalLayer, physical_layer::OSCILLATOR_GAIN_LEVEL)
+            == physical_layer::OSCILLATOR_GAIN_FINE_TUNE_LEVEL
+            && self.word(
+                Block::PhysicalLayer,
+                physical_layer::OSCILLATOR_GAIN_TUNE_SIGNAL,
+            ) == physical_layer::OSCILLATOR_GAIN_FINE_TUNE_SIGNALS;
         let mode = match self.port {
             PortNumber::One => true,
             PortNumber::Zero => {
-                self.word(Block::SystemTopGroupController, physical_layer::MODE) & physical_layer::MODE_MASK == 0
+                self.word(Block::SystemTopGroupController, physical_layer::MODE)
+                    & physical_layer::MODE_MASK
+                    == 0
                     && self.word(Block::SystemTopGroupController, physical_layer::USB_SELECT)
-                        & (physical_layer::USB3_BUS_WIDTH_MASK | physical_layer::USB3_PHYSICAL_LAYER_ENABLE)
+                        & (physical_layer::USB3_BUS_WIDTH_MASK
+                            | physical_layer::USB3_PHYSICAL_LAYER_ENABLE)
                         == physical_layer::USB3_BUS_WIDTH
             }
         };
@@ -133,8 +144,7 @@ impl Simulated {
             && self.glue_word(glue::ROOT_PORT) & glue::ROOT_PORT_NOT_ENDPOINT != 0
             && self.glue_word(glue::WRITE_CHANNEL) & glue::REFERENCE_CLOCK_SOURCE_MASK
                 == glue::REFERENCE_CLOCK_SOURCE
-            && self.word(Block::Bridge, bridge::GENERAL_SETTINGS) & bridge::ROOT_PORT_ENABLE
-                != 0
+            && self.word(Block::Bridge, bridge::GENERAL_SETTINGS) & bridge::ROOT_PORT_ENABLE != 0
             && self.reset_was_held_long_enough
             && !self.reset_pin_driven_low()
     }
