@@ -1,6 +1,6 @@
 Falsifies `subtree_scope::proofs::a_walk_never_widens_follows_or_crosses`.
 
-The defect: `landing` lets a walk step through a symbolic link.
+The defect: `check_landing` lets a walk step through a symbolic link.
 
 Expected to fail: the assertion that a successful walk went through nothing but directories.
 
