@@ -71,13 +71,13 @@ appendix](1086-domain-name-resolution-contract-outside-review/before-the-tag.md)
   [#3641](https://github.com/nifeos/nife/pull/3641).
 - 13, the root zone has three spellings: Done, [#3641](https://github.com/nifeos/nife/pull/3641).
 - 14, small shapes: Open. [#3641](https://github.com/nifeos/nife/pull/3641) added `Debug`, the size
-  test and the dead branch's removal. Decision 4 ruled the reply to an unknown transport, built in
-  the rulings pull request.
+  test and the dead branch's removal. Decision 4 ruled the reply to an unknown transport, and the
+  rulings pull request builds it.
 - Decision 1, the reopened names: Done, ratified as built. The `Name:` blocks in the crate source
   still say provisional, and a later lane or the move rewrites them.
 - Decision 2, the control reply: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
 - Decision 3, the identity: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
-- Decision 4, the reply to an unknown transport: Done, built in the rulings pull request.
+- Decision 4, the reply to an unknown transport: Done; the rulings pull request builds it.
 - Decision 5, the attach operation's name: Done, renamed in both contracts and every user.
 - F-attach, the attach operation's name: Done, decision 5.
 - F-log, a runtime log channel for the spawner: Open. The spawner reads why the resolver refused a
@@ -181,9 +181,8 @@ The P1 items are in [the appendix](1086-domain-name-resolution-contract-outside-
 
 ## Decisions for the architect
 
-The doors that someone outside this repository acts on after the first tag. Every decision here is
-ruled and in force. Decisions 2 and 3 were ruled 2026-11-14 (UTC), and 1 and 4 to 6 on 2026-11-19
-(UTC).
+The doors that someone outside this repository acts on after the first tag. Every decision here is a rule
+in force. The architect ruled 2 and 3 on 2026-11-14 (UTC), and 1 and 4 to 6 on 2026-11-19 (UTC).
 
 1. The names (item 4). Ruled 2026-11-19 (UTC), option A. The 30 provisional names stand as built. A
    limit opens `MAXIMUM_` and ends with its unit, an address that is not a memory location says
