@@ -327,6 +327,110 @@ mod tests {
         assert_eq!(prefetch_window(&translated), None);
     }
 
+    /// A flattened device tree with one node under the root, for the tests that need a tree QEMU
+    /// will not emit: the root declares two address and two size cells, as `jh7110.dtsi` does.
+    /// Written out by hand because the crate has no tree writer.
+    fn tree_with_node(name: &[u8], properties: &[(&[u8], &[u8])]) -> Vec<u8> {
+        let mut strings = Vec::new();
+        let mut structure = Vec::new();
+        let push = |v: &mut Vec<u8>, w: u32| v.extend_from_slice(&w.to_be_bytes());
+        let pad = |v: &mut Vec<u8>| v.resize(v.len().next_multiple_of(4), 0);
+        let mut property = |st: &mut Vec<u8>, key: &[u8], value: &[u8]| {
+            let offset = u32::try_from(strings.len()).unwrap();
+            strings.extend_from_slice(key);
+            strings.push(0);
+            push(st, 3);
+            push(st, u32::try_from(value.len()).unwrap());
+            push(st, offset);
+            st.extend_from_slice(value);
+            pad(st);
+        };
+        push(&mut structure, 1);
+        push(&mut structure, 0);
+        property(&mut structure, b"#address-cells", &cells(&[2]));
+        property(&mut structure, b"#size-cells", &cells(&[2]));
+        push(&mut structure, 1);
+        structure.extend_from_slice(name);
+        structure.push(0);
+        pad(&mut structure);
+        for (key, value) in properties {
+            property(&mut structure, key, value);
+        }
+        for token in [2, 2, 9] {
+            push(&mut structure, token);
+        }
+        let structure_offset = 40 + 16;
+        let strings_offset = structure_offset + structure.len();
+        let total = strings_offset + strings.len();
+        let mut out = Vec::new();
+        for word in [
+            0xd00d_feed,
+            total,
+            structure_offset,
+            strings_offset,
+            40,
+            17,
+            16,
+            0,
+            strings.len(),
+            structure.len(),
+        ] {
+            push(&mut out, u32::try_from(word).unwrap());
+        }
+        out.extend_from_slice(&[0; 16]);
+        out.extend_from_slice(&structure);
+        out.extend_from_slice(&strings);
+        out
+    }
+
+    #[test]
+    fn discover_finds_mainline_port_one_under_its_own_name_and_not_port_zero() {
+        let (_, ranges, domain, reset_specifier, names) = mainline_port_1();
+        let reg = cells(&[9, 0xc000_0000, 0, 0x100_0000, 0, 0x2c00_0000, 0, 0x10_0000]);
+        let blob = tree_with_node(
+            NODE_NAMES[1],
+            &[
+                (b"compatible", b"starfive,jh7110-pcie\0"),
+                (b"reg", &reg),
+                (b"reg-names", &names),
+                (b"ranges", &ranges),
+                (b"linux,pci-domain", &domain),
+                (b"perst-gpios", &reset_specifier),
+            ],
+        );
+        let tree = DeviceTreeBlob::from_bytes(&blob).unwrap();
+        let found = discover(&tree, PortNumber::One).unwrap().unwrap();
+        assert_eq!(found.port, PortNumber::One.mainline());
+        assert!(found.status_okay);
+        assert_eq!(discover(&tree, PortNumber::Zero).unwrap(), None);
+    }
+
+    #[test]
+    fn a_node_complete_but_for_its_compatible_reads_as_none() {
+        let (regions, ranges, _, _, names) = mainline_port_1();
+        let table: &[(&[u8], &[u8])] = &[
+            (b"compatible", b"vendor,other\0"),
+            (b"reg-names", &names),
+            (b"ranges", &ranges),
+        ];
+        assert_eq!(
+            RootPort::from_node(PortNumber::One, &regions, node(table)).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn a_prefetch_window_of_four_gibibytes_or_more_keeps_its_size_s_high_word() {
+        let large = cells(&[0xc300_0000, 9, 0, 9, 0, 1, 0]);
+        assert_eq!(
+            prefetch_window(&large),
+            Some(Window {
+                physical_address: 0x9_0000_0000,
+                size_bytes: 0x1_0000_0000,
+            })
+        );
+    }
+
     #[test]
     fn qemu_s_tree_has_no_port() {
         let blob = include_bytes!("../../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
