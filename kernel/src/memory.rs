@@ -752,7 +752,7 @@ pub(crate) struct Jh7110Ethernet {
     pub syscon: machine_discovery::jh7110::designware_ethernet::SystemController,
 }
 
-/// What [`jh7110_pci_express`] answers: the root port as the tree describes it, and the SYS
+/// What [`jh7110_pci_express()`] answers: the root port as the tree describes it, and the SYS
 /// clock-and-reset window that holds the bus clock its bring-up ungates first.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Jh7110PciExpress {

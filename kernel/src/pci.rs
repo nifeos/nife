@@ -71,7 +71,7 @@ pub fn ecam_bytes() -> u64 {
 ///
 /// On `x86_64` it runs before the fine map replaces the boot map, while every bus the MCFG
 /// describes is readable; called later it would read off the end of the mapped window. On riscv64
-/// [`bring_up_jh7110_root_port`] calls it once the port forwards, over exactly the buses mapped. It
+/// `bring_up_jh7110_root_port` calls it once the port forwards, over exactly the buses mapped. It
 /// prints the list rather than a count, because a missing disk hides in an ordinary count. The bus
 /// range it records is contiguous from 0, not the set found (notes/pcie.md, "More than one bus",
 /// and its `BUGS`).

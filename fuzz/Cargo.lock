@@ -358,6 +358,13 @@ version = "0.3.0-pre.1"
 source = "git+https://github.com/nifeos/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
 
 [[package]]
+name = "jh7110_pci_express"
+version = "0.1.0"
+dependencies = [
+ "pci_configuration_space",
+]
+
+[[package]]
 name = "jobserver"
 version = "0.1.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -434,6 +441,8 @@ dependencies = [
  "device_tree_blob",
  "jh7110_clock_and_reset",
  "jh7110_entropy",
+ "jh7110_pci_express",
+ "pci_configuration_space",
 ]
 
 [[package]]
@@ -479,6 +488,10 @@ name = "parse-size"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "487f2ccd1e17ce8c1bfab3a65c89525af41cfad4c8659021a1e9a2aacd73b89b"
+
+[[package]]
+name = "pci_configuration_space"
+version = "0.1.0"
 
 [[package]]
 name = "plain"
