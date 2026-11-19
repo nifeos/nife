@@ -60,6 +60,9 @@ interfaces = [
     "capability_manifest_note",
     "interfaces_note",
     "byte_glob",
+    # Sector 0 of a disk: the MBR entries and the scratch range before the first partition (the
+    # storage bench links it; it left `designware_mobile_storage`).
+    "master_boot_record",
     "documentation",
     "device_tree_blob",
     "machine_discovery",
