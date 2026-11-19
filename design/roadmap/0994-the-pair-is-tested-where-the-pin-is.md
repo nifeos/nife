@@ -64,13 +64,17 @@ basalt commit instead.
 
 - basalt's `install` job lists the two `rg-threads` legs, and they pass on the pull request that
   adds them: nifeos/basalt#83.
-- This block, milestone 1106 and milestone 1017 state the rule above.
+- This block, milestone 1106 and milestone 1017 (the contract crates leave in this order) state
+  the rule above.
 
-## BUGS
+## Follow-on
 
-- **The two basalt legs are not required checks.** A pull request in basalt can merge with them
-  red; only `publish` then stops. Adding them to basalt's ruleset is a settings change for a
-  person.
+- **Done.** nifeos/basalt#83 adds the two `rg-threads` legs to basalt's `install` job.
+- **Recorded.** The two legs are not required checks, so a basalt pull request can merge with them
+  red and only `publish` stops; basalt's `CONTRIBUTING.md` says so. Adding them to basalt's ruleset
+  is a settings change for a person.
+- **Milestone 1106.** The numbered magic for `program_argument_contract` is a lane of its own, under
+  that block's Follow-on.
 
 ## Index row
 

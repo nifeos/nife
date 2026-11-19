@@ -273,12 +273,11 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 ## Follow-on
 
 - **Done.** The three rulings above, recorded in this block.
-- **In force (maintainer's reading, provisional, 2026-11-19 UTC).** Milestone 1115 (the gate builds
-  basalt's delivered programs from the candidate tree) meets the layout ruling's condition: a
-  merge group rebuilds every delivered program from the candidate tree, and milestone 994 (the
-  cross-repository pair is tested where the pin is) has basalt test the published bytes at its pin.
-  The numbered magic replaces `nifeargv` in one nife pull request, with no reader-first rollout,
-  and basalt rebuilds its programs at its next pin bump. It is a lane of its own.
+- **Done.** The layout ruling's condition is met (maintainer's reading, provisional, 2026-11-19
+  UTC). Milestone 1115 (the gate builds basalt's delivered programs from the candidate tree)
+  rebuilds them in every merge group, and milestone 994 (the cross-repository pair is tested where
+  the pin is) tests the published bytes in basalt. So the numbered magic lands in one nife pull
+  request, a lane of its own.
 - **Outstanding.** Every finding marked Open or Ruled under "Finding status" above, each with what
   remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
 - **Outstanding.** The three renames of the rulings and the numbered magic, then the repository
