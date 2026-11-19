@@ -1,11 +1,12 @@
-//! The JH7110's clock and reset generator, the kernel's own volatile half: what the kernel's
-//! watchdog needs to turn its clock on.
+//! The JH7110's clock and reset generator, the kernel's own volatile half: what the kernel's PCI
+//! Express root port and its watchdog need to turn their clocks on.
 //!
 //! `crates/jh7110_clock_and_reset` owns the offsets, bit positions, bring-up plan and device-tree
 //! query, host-tested and pointer-free. This walks a plan it is handed against a base it is handed
 //! and reports what the hardware said. It reaches into no kernel global (§4 (kernel shape)). Every
 //! device a userspace driver serves asks the clock and reset server instead
-//! (`user::jh7110_clock_and_reset_service`); the kernel keeps this walk for its own watchdog
+//! (`user::jh7110_clock_and_reset_service`); the kernel keeps this walk for what it brings up
+//! before that server exists: the PCI Express root port (milestone 163), and its own watchdog
 //! (milestone 593 (a wedged kernel resets itself)), which the soak's supervisor pets from the
 //! kernel. See notes/jh7110-clock-and-reset.md.
 //!
@@ -14,7 +15,8 @@
 //! [`bring_up`] stores to whatever address it is given, and the pure crate's fallback can name
 //! `0x1023_0000` on a machine with nothing there. The caller must establish that the machine is a
 //! JH7110 first; `memory::jh7110_clock_and_reset` records a region only when the tree names a CRG
-//! or a JH7110 TRNG, so QEMU's `virt` never reaches this driver.
+//! or a JH7110 TRNG, and `memory::jh7110_pci_express` and `memory::jh7110_watchdog` only when the
+//! tree names their own nodes, so QEMU's `virt` never reaches this driver.
 
 use jh7110_clock_and_reset::{
     BringUpReport, CLOCK_ENABLE, Domain, MAXIMUM_RECORDED_CLOCKS, Step, is_deasserted, with_parent,
@@ -93,10 +95,10 @@ pub unsafe fn bring_up(base: usize, domain: &Domain, plan: &[Step]) -> BringUpRe
                 let before = unsafe { core::ptr::read_volatile(assert) };
                 // SAFETY: as above. A read-modify-write, and it must be one: this word holds up
                 // to 32 resets and clobbering it would release or hold every other line in the
-                // domain. Two programs write it: this walk, whose only caller is the soak's
-                // watchdog on the boot thread, and the clock and reset server, which stores only
-                // while it answers a call and whose every caller is a starter on that same boot
-                // thread (`user::jh7110_clock_and_reset_service`). The boot thread is in one of
+                // domain. Two programs write it: this walk, whose callers (the PCI Express
+                // root port's bring-up and the soak's watchdog) both run on the boot thread, and
+                // the clock and reset server, which stores only while it answers a call and whose
+                // every caller is a starter on that same boot thread (`user::jh7110_clock_and_reset_service`). The boot thread is in one of
                 // the two at a time, so the read and the write cannot be separated by another
                 // writer.
                 unsafe { core::ptr::write_volatile(assert, before & !bit.mask) };

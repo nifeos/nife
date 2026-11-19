@@ -455,7 +455,8 @@ where
         direct_map_device_window(m, crg.base_physical_address, crg.size_bytes)?;
     }
 
-    // 6c. The JH7110's SYS clock and reset generator: I2C5 for the PMIC reset, and gmac0's clocks.
+    // 6c. The JH7110's SYS clock and reset generator: I2C5 for the PMIC reset, gmac0's clocks, and
+    //     the PCI Express port's bus clock.
     if let Some(sys) = memory::jh7110_sys_window() {
         direct_map_device_window(m, sys.base_physical_address, sys.size_bytes)?;
     }
@@ -495,6 +496,18 @@ where
     if let Some((w, _sys)) = memory::jh7110_watchdog() {
         let used = jh7110_watchdog::WINDOW_USED.min(w.size);
         direct_map(m, w.base, w.base + used, Flags::device())?;
+    }
+
+    // 6f. The JH7110's M.2 root port: the page of each register window its bring-up touches, the
+    //     two buses of its `cfg` window, and the slice of its 32-bit memory range BARs go in. Its
+    //     clocks live in the STG and SYS windows 6b and 6c already map. `pci_regions` stays `None`
+    //     until the port forwards, so step 9 maps nothing for it.
+    if let Some(p) = memory::jh7110_pci_express() {
+        for (start, size) in crate::drivers::jh7110_pci_express::regions(&p.port) {
+            direct_map_device_window(m, start, size)?;
+        }
+        let bar = p.port.memory_32_bit;
+        direct_map_device_window(m, bar.physical_address, PCI_BAR_MAPPED.min(bar.size_bytes))?;
     }
 
     // 7. QEMU's `sifive_test` finisher, which `arch::semihosting::exit` writes. Boards have none.

@@ -37,11 +37,17 @@ pub mod plic;
 // The JH7110's clock and reset generator (milestone 220). Gated to riscv64: the JH7110 is a
 // RISC-V SoC, so on the other two architectures the module would be dead code naming a device
 // that cannot be present. Pure MMIO Rust over `crates/jh7110_clock_and_reset`'s offsets; takes its base and
-// its plan from the caller and holds no state of its own. It serves the kernel's own watchdog alone,
-// so it is built only where a soak arms it; every other device, the PMIC bus among them, goes
-// through the clock and reset server.
-#[cfg(all(target_arch = "riscv64", soak_watchdog))]
+// its plan from the caller and holds no state of its own. It serves the two things the kernel
+// brings up itself before any server is spawned: the PCI Express root port (milestone 163) and, in
+// a soak that arms it, the watchdog. Every other device, the PMIC bus among them, goes through the
+// clock and reset server.
+#[cfg(target_arch = "riscv64")]
 pub mod jh7110_clock_and_reset;
+
+// The JH7110's PCI Express root complex (milestone 163 (the JH7110's PCIe root complex)): the
+// volatile half of `crates/jh7110_pci_express`, one register page per window, each base passed in.
+#[cfg(target_arch = "riscv64")]
+pub mod jh7110_pci_express;
 
 // The JH7110's watchdog (milestone 593 (a wedged kernel resets itself), provisional), only in a
 // build whose soak arms it: the soak's supervisor is its one caller. Pure MMIO over
