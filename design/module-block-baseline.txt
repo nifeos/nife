@@ -4999,7 +4999,6 @@ crates/network_time_protocol/src/lib.rs::Interval
 
 crates/network_time_protocol/src/lib.rs::NONE
 
-crates/network_time_protocol/src/lib.rs::PACKET_LEN
 
 crates/network_time_protocol/src/lib.rs::PORT
 
@@ -5017,11 +5016,9 @@ crates/network_time_protocol/src/lib.rs::SYMMETRIC_PASSIVE
 
 crates/network_time_protocol/src/lib.rs::Sample
 
-crates/network_time_protocol/src/lib.rs::Short
 
 crates/network_time_protocol/src/lib.rs::Timestamp
 
-crates/network_time_protocol/src/lib.rs::UNIX_DELTA
 
 crates/network_time_protocol/src/lib.rs::VERSION
 
@@ -5029,7 +5026,6 @@ crates/network_time_protocol/src/lib.rs::ZERO
 
 crates/network_time_protocol/src/lib.rs::ZERO
 
-crates/network_time_protocol/src/lib.rs::abs_ticks
 
 crates/network_time_protocol/src/lib.rs::accept
 
@@ -5051,7 +5047,6 @@ crates/network_time_protocol/src/lib.rs::nanoseconds
 
 crates/network_time_protocol/src/lib.rs::nanoseconds
 
-crates/network_time_protocol/src/lib.rs::new
 
 crates/network_time_protocol/src/lib.rs::nonce
 
@@ -5059,7 +5054,6 @@ crates/network_time_protocol/src/lib.rs::nonce
 
 crates/network_time_protocol/src/lib.rs::parse
 
-crates/network_time_protocol/src/lib.rs::randomise_low
 
 crates/network_time_protocol/src/lib.rs::request
 

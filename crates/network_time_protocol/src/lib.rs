@@ -30,6 +30,8 @@ pub const PORT: u16 = 123;
 /// silently ignoring authentication data a server went to the trouble of computing. Fail closed:
 /// we send 48 bytes, a compliant server answers with 48 bytes, and anything else is not a reply to
 /// the question we asked.
+///
+/// Name: provisional.
 pub const PACKET_BYTES: usize = 48;
 
 /// The version this crate speaks and requires in a reply. NTPv4 (RFC 5905). A server echoes the
@@ -278,11 +280,15 @@ pub struct ShortFormat(u32);
 
 impl ShortFormat {
     /// Wrap a raw wire value (the 32 bits as they appear in the packet, host-order).
+    ///
+    /// Name: provisional.
     pub const fn from_bits(bits: u32) -> ShortFormat {
         ShortFormat(bits)
     }
 
     /// The raw wire value.
+    ///
+    /// Name: provisional.
     pub const fn bits(self) -> u32 {
         self.0
     }
