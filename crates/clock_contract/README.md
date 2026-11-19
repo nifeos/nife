@@ -5,9 +5,9 @@
 [![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/clock_contract#license)
 [![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/clock_contract/blob/main/Cargo.toml)
 
-The wall clock as a contract between a clock service and everything that reads or sets the time:
-the layout of a shared clock page, the small protocol for proposing a new time, and the policy a
-proposal must meet. `no_std`, no dependencies outside an optional model-checking build. A clock
+The wall clock as a contract between a clock service and everything that reads or sets the time.
+It holds the layout of a shared clock page, the small protocol for proposing a new time, and the
+policy a proposal must meet. `no_std`, no dependencies outside an optional model-checking build. A clock
 service, its readers and a standard library's time support share this one definition, so they
 cannot drift. On its own the crate maps nothing and sets nothing; it is useful with a clock service
 that maps the page and a loader that grants it.
