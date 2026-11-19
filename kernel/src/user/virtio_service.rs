@@ -6,7 +6,7 @@ use crate::capability_object::{
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
-/// Where the driver expects its DMA page. Must match `DMA_VA` in `components/src/block_driver_roles.rs`. The
+/// Where the driver expects its DMA page. Must match `DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS` in `components/src/block_driver_roles.rs`. The
 /// driver holds no device registers: it drives the device through a `Virtio` capability, so it
 /// cannot point the device outside this DMA region.
 const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);

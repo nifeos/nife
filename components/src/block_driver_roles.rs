@@ -9,7 +9,7 @@
 //!   memory and reports whether the kernel refused it.
 //! - [`run_net`] is a one-shot virtio-net role: a DHCP (Dynamic Host Configuration Protocol)
 //!   DISCOVER out and an OFFER back.
-//! - [`run_blk_server`] is the long-lived block server that the filesystem server reads and writes
+//! - [`run_block_server`] is the long-lived block server that the filesystem server reads and writes
 //!   disk blocks through.
 //!
 //! The one-shot roles report to the kernel's test on slot 0; the table beside `report_code` lists
@@ -47,7 +47,8 @@ use user_mode_runtime::{
 // The kernel maps the DMA page at this fixed VA (must match kernel/src/user/virtio_service.rs).
 // The device REGISTERS are NOT mapped: we drive the device through a `Virtio` capability (slot 2),
 // so we cannot point it outside this DMA region. See kernel/src/virtio.rs.
-const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
+const DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS: u64 =
+    address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// Capability slots the kernel handed us, by convention.
 const REPORT: u64 = 0; // SEND: report the result back to the kernel
@@ -75,11 +76,15 @@ const STATUS: u64 = 0x070;
 #[doc(alias = "ConfigGeneration")]
 const CONFIGURATION_GENERATION: u64 = 0x0fc;
 
-// Status bits.
-const S_ACKNOWLEDGE: u32 = 1;
-const S_DRIVER: u32 = 2;
-const S_DRIVER_OK: u32 = 4;
-const S_FEATURES_OK: u32 = 8;
+// Device status bits (virtio 1.2 section 2.1: ACKNOWLEDGE, DRIVER, DRIVER_OK, FEATURES_OK).
+#[doc(alias = "ACKNOWLEDGE")]
+const DEVICE_STATUS_ACKNOWLEDGE: u32 = 1;
+#[doc(alias = "DRIVER")]
+const DEVICE_STATUS_DRIVER: u32 = 2;
+#[doc(alias = "DRIVER_OK")]
+const DEVICE_STATUS_DRIVER_OK: u32 = 4;
+#[doc(alias = "FEATURES_OK")]
+const DEVICE_STATUS_FEATURES_OK: u32 = 8;
 
 // Feature bit 32: VIRTIO_F_VERSION_1. Mandatory for a modern device.
 const F_VERSION_1_HI: u32 = 1; // bit 32 lives in the high 32-bit word
@@ -90,7 +95,8 @@ const F_VERSION_1_HI: u32 = 1; // bit 32 lives in the high 32-bit word
 const F_ACCESS_PLATFORM_HI: u32 = 1 << 1; // bit 33 lives in the high 32-bit word
 
 // The virtqueue we build. Small: one request in flight is all a demo needs.
-const QSIZE: usize = 8;
+#[doc(alias = "Queue Size")]
+const QUEUE_ENTRIES: usize = 8;
 
 // Descriptor flags.
 const VIRTQ_DESC_F_NEXT: u16 = 1;
@@ -106,7 +112,7 @@ const VIRTIO_BLK_T_IN: u32 = 0; // read: the device WRITES the data buffer
 const VIRTIO_BLK_T_OUT: u32 = 1; // write: the device READS the data buffer
 // Flush: no data buffer at all, just the header and the status byte. Legal only once
 // `VIRTIO_BLK_F_FLUSH` is negotiated, which is why the block server probes for it rather than
-// assuming it (virtio 1.2 section 5.2.6; see `initialize_with_features` and `blk_flush`).
+// assuming it (virtio 1.2 section 5.2.6; see `initialize_with_features` and `block_flush`).
 const VIRTIO_BLK_T_FLUSH: u32 = 4;
 
 // Feature bit 9 (low word): VIRTIO_BLK_F_FLUSH, "the device supports a cache flush command". The
@@ -117,16 +123,16 @@ const VIRTIO_BLK_T_FLUSH: u32 = 4;
 const F_FLUSH_LO: u32 = 1 << 9;
 
 // --- our DMA layout, offsets within the one DMA page ---
-// BUGS: `QSIZE` and the three ring offsets below, and the net queues' 0x200 stride, restate the
+// BUGS: `QUEUE_ENTRIES` and the three ring offsets below, and the net queues' 0x200 stride, restate the
 // layout the kernel builds and `direct_memory_access_validator` proves (`LAYOUT_QSIZE`,
 // `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`) as literals, and nothing checks the copy: a
 // change to the proved layout would leave this driver on the wrong offsets until a QEMU test
 // failed. The fix is to move the constants to `abi::virtio`, where this crate, the kernel and the
 // validator all name them, as Decision 2 of milestone 1113 (what an outside maintainer would fix
 // before it leaves this tree) decides.
-const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QSIZE = 128 bytes
-const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080; // 6 + 2*QSIZE
-const USED_RING_OFFSET_BYTES: u64 = 0x100; // 6 + 8*QSIZE
+const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QUEUE_ENTRIES = 128 bytes
+const AVAILABLE_RING_OFFSET_BYTES: u64 = 0x080; // 6 + 2*QUEUE_ENTRIES
+const USED_RING_OFFSET_BYTES: u64 = 0x100; // 6 + 8*QUEUE_ENTRIES
 const REQUEST_HEADER_OFFSET_BYTES: u64 = 0x200; // 16-byte blk request header
 const DATA_OFFSET_BYTES: u64 = 0x400; // 512-byte block buffer
 const STATUS_OFFSET_BYTES: u64 = 0x600; // 1-byte status
@@ -135,7 +141,7 @@ const BLOCK: usize = 512;
 
 /// Read a device register: through the kernel on a mediated grant, where reads are DMA-safe so
 /// any register is allowed, or from the mapped structures on a direct one ([`direct::read`]).
-fn mr(off: u64) -> u32 {
+fn read_device_register(off: u64) -> u32 {
     if direct::is_direct() {
         return direct::read(off);
     }
@@ -143,7 +149,7 @@ fn mr(off: u64) -> u32 {
 }
 /// Write a DMA-*safe* device register (status, features, interrupt-ack): through the kernel on a
 /// mediated grant, which owns the queue-address and notify registers, or directly on a direct one.
-fn mw(off: u64, v: u32) {
+fn write_device_register(off: u64, v: u32) {
     if direct::is_direct() {
         return direct::write(off, v);
     }
@@ -174,7 +180,7 @@ fn notify(slot: u64, queue: u64) -> i64 {
 /// The DMA region's virtual base: the fixed page a mediated grant maps, or the window a direct
 /// grant's startup page lists.
 fn region() -> u64 {
-    direct::region().unwrap_or(DMA_VA)
+    direct::region().unwrap_or(DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS)
 }
 
 /// How many bytes from [`region()`] the two accessors below may reach: the first page of the DMA
@@ -185,7 +191,9 @@ const DIRECT_MEMORY_ACCESS_WINDOW_BYTES: u64 = 0x1000;
 
 // The window starts on a page boundary, so an offset aligned for `T` is an address aligned for `T`:
 // the mediated base by this assertion, the direct one by the check in [`direct::take`].
-const _: () = assert!(DMA_VA.is_multiple_of(DIRECT_MEMORY_ACCESS_WINDOW_BYTES));
+const _: () = assert!(
+    DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS.is_multiple_of(DIRECT_MEMORY_ACCESS_WINDOW_BYTES)
+);
 
 /// Whether an access of `size` bytes at `off`, for a type aligned to `align`, lies wholly inside a
 /// window of `window` bytes and is aligned. The check the two accessors below make before every
@@ -210,7 +218,7 @@ fn direct_memory_access_write<T: Copy>(off: u64, val: T) {
         "a DMA page write outside the page or misaligned"
     );
     // SAFETY: the assertion above holds the access inside the first page of the DMA region, which
-    // is mapped read/write at region() for every role (at DMA_VA on a mediated grant, at the
+    // is mapped read/write at region() for every role (at DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS on a mediated grant, at the
     // startup page's window on a direct one), and aligned for T, since region() is page aligned.
     unsafe { core::ptr::write_volatile((region() + off) as *mut T, val) };
 }
@@ -252,7 +260,10 @@ fn reset_until_zero(mut write: impl FnMut(u32), mut read: impl FnMut() -> u32) -
 /// handshake checks do.
 fn reset_device() {
     assert!(
-        reset_until_zero(|value| mw(STATUS, value), || mr(STATUS)),
+        reset_until_zero(
+            |value| write_device_register(STATUS, value),
+            || read_device_register(STATUS)
+        ),
         "the device never read back Status 0 after a reset"
     );
 }
@@ -284,41 +295,47 @@ fn initialize() {
 fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     // The driver checks the magic and not `Version`: the kernel offers only modern (version 2)
     // devices on either bus, so a `Version` check here would test what the kernel already tested.
-    assert!(mr(MAGIC) == 0x7472_6976); // "virt": we really are talking to a virtio device
+    assert!(read_device_register(MAGIC) == 0x7472_6976); // "virt": we really are talking to a virtio device
 
     reset_device();
-    mw(STATUS, S_ACKNOWLEDGE);
-    mw(STATUS, S_ACKNOWLEDGE | S_DRIVER);
+    write_device_register(STATUS, DEVICE_STATUS_ACKNOWLEDGE);
+    write_device_register(STATUS, DEVICE_STATUS_ACKNOWLEDGE | DEVICE_STATUS_DRIVER);
 
     // The kernel filters the low word, so a ring-layout feature it cannot validate does not
     // survive.
-    mw(DEVICE_FEATURES_SEL, 0);
-    let dev_lo = mr(DEVICE_FEATURES);
+    write_device_register(DEVICE_FEATURES_SEL, 0);
+    let dev_lo = read_device_register(DEVICE_FEATURES);
     let flush = want_flush && (dev_lo & F_FLUSH_LO) != 0;
-    mw(DRIVER_FEATURES_SEL, 0);
-    mw(
+    write_device_register(DRIVER_FEATURES_SEL, 0);
+    write_device_register(
         DRIVER_FEATURES,
         driver_features_lo | if flush { F_FLUSH_LO } else { 0 },
     );
 
     // The high word: VERSION_1 (refused when not offered), ACCESS_PLATFORM only if offered, so
     // the ack stays a subset of the offer.
-    mw(DEVICE_FEATURES_SEL, 1);
-    let dev_hi = mr(DEVICE_FEATURES);
+    write_device_register(DEVICE_FEATURES_SEL, 1);
+    let dev_hi = read_device_register(DEVICE_FEATURES);
     let ack_hi = acknowledged_high_features(dev_hi)
         .expect("the device does not offer VIRTIO_F_VERSION_1, so it is not a modern device");
-    mw(DRIVER_FEATURES_SEL, 1);
-    mw(DRIVER_FEATURES, ack_hi);
+    write_device_register(DRIVER_FEATURES_SEL, 1);
+    write_device_register(DRIVER_FEATURES, ack_hi);
 
-    mw(STATUS, S_ACKNOWLEDGE | S_DRIVER | S_FEATURES_OK);
-    assert!(mr(STATUS) & S_FEATURES_OK != 0);
+    write_device_register(
+        STATUS,
+        DEVICE_STATUS_ACKNOWLEDGE | DEVICE_STATUS_DRIVER | DEVICE_STATUS_FEATURES_OK,
+    );
+    assert!(read_device_register(STATUS) & DEVICE_STATUS_FEATURES_OK != 0);
 
     // The layout constants (DESCRIPTOR_TABLE_OFFSET_BYTES/AVAIL/USED) are the contract the kernel uses.
-    assert!(setup_queue(VIRTIO, QSIZE as u64, 0) == 0);
+    assert!(setup_queue(VIRTIO, QUEUE_ENTRIES as u64, 0) == 0);
 
-    mw(
+    write_device_register(
         STATUS,
-        S_ACKNOWLEDGE | S_DRIVER | S_FEATURES_OK | S_DRIVER_OK,
+        DEVICE_STATUS_ACKNOWLEDGE
+            | DEVICE_STATUS_DRIVER
+            | DEVICE_STATUS_FEATURES_OK
+            | DEVICE_STATUS_DRIVER_OK,
     );
     // `DriverFeatures` is write-only; FEATURES_OK sticking is what says the device accepted this
     // set.
@@ -629,11 +646,11 @@ fn submit(queue: &Queue, chain: &[Descriptor]) -> Option<u16> {
             next,
         );
     }
-    // avail: { u16 flags; u16 idx; u16 ring[QSIZE]; }, and used: { u16 flags; u16 idx; ... }.
+    // avail: { u16 flags; u16 idx; u16 ring[QUEUE_ENTRIES]; }, and used: { u16 flags; u16 idx; ... }.
     let used_before: u16 = direct_memory_access_read::<u16>(queue.used_ring + 2);
     let idx: u16 = direct_memory_access_read::<u16>(queue.available_ring + 2);
     direct_memory_access_write::<u16>(
-        queue.available_ring + 4 + (idx as u64 % QSIZE as u64) * 2,
+        queue.available_ring + 4 + (idx as u64 % QUEUE_ENTRIES as u64) * 2,
         0,
     ); // ring[idx] = head 0
     virtio_ring_barrier(); // the descriptors and ring entry must be visible before we bump idx
@@ -741,8 +758,8 @@ fn complete(queue: &Queue, used_before: u16, bound: Option<u32>) -> bool {
         interrupt_wait(INTERRUPT);
         // Quiet the device (read its interrupt-status, acknowledge it), then re-enable the line at
         // the controller, which the kernel masked when it fired.
-        let istatus = mr(INTERRUPT_STATUS);
-        mw(INTERRUPT_ACK, istatus);
+        let istatus = read_device_register(INTERRUPT_STATUS);
+        write_device_register(INTERRUPT_ACK, istatus);
         interrupt_acknowledge(INTERRUPT);
         virtio_ring_barrier();
         direct_memory_access_read::<u16>(queue.used_ring + 2)
@@ -864,37 +881,43 @@ fn ip_checksum(header: &[u8]) -> u16 {
 /// The virtio-net handshake and both-queue setup. Unlike the disk's `initialize`, this sets up
 /// receive AND transmit, through the kernel, which places each queue's rings at its own block.
 fn initialize_net() {
-    assert!(mr(MAGIC) == 0x7472_6976); // "virt"
+    assert!(read_device_register(MAGIC) == 0x7472_6976); // "virt"
 
     reset_device();
-    mw(STATUS, S_ACKNOWLEDGE);
-    mw(STATUS, S_ACKNOWLEDGE | S_DRIVER);
+    write_device_register(STATUS, DEVICE_STATUS_ACKNOWLEDGE);
+    write_device_register(STATUS, DEVICE_STATUS_ACKNOWLEDGE | DEVICE_STATUS_DRIVER);
 
     // Negotiate no low-word net features: no checksum offload, no MRG_RXBUF, so one frame lands in
     // one buffer behind one 12-byte header, which is the simplest correct thing.
-    mw(DRIVER_FEATURES_SEL, 0);
-    mw(DRIVER_FEATURES, 0);
+    write_device_register(DRIVER_FEATURES_SEL, 0);
+    write_device_register(DRIVER_FEATURES, 0);
 
     // The high word: VERSION_1 always, ACCESS_PLATFORM only if offered (behind an IOMMU), the same
     // conditional ack the disk driver makes so one binary works on the bare NIC and the confined one.
-    mw(DEVICE_FEATURES_SEL, 1);
-    let dev_hi = mr(DEVICE_FEATURES);
+    write_device_register(DEVICE_FEATURES_SEL, 1);
+    let dev_hi = read_device_register(DEVICE_FEATURES);
     let ack_hi = acknowledged_high_features(dev_hi)
         .expect("the device does not offer VIRTIO_F_VERSION_1, so it is not a modern device");
-    mw(DRIVER_FEATURES_SEL, 1);
-    mw(DRIVER_FEATURES, ack_hi);
+    write_device_register(DRIVER_FEATURES_SEL, 1);
+    write_device_register(DRIVER_FEATURES, ack_hi);
 
-    mw(STATUS, S_ACKNOWLEDGE | S_DRIVER | S_FEATURES_OK);
-    assert!(mr(STATUS) & S_FEATURES_OK != 0);
+    write_device_register(
+        STATUS,
+        DEVICE_STATUS_ACKNOWLEDGE | DEVICE_STATUS_DRIVER | DEVICE_STATUS_FEATURES_OK,
+    );
+    assert!(read_device_register(STATUS) & DEVICE_STATUS_FEATURES_OK != 0);
 
     // Both queues, through the kernel: it programs each queue's ring addresses to that queue's block
     // in our DMA region, so we never choose them.
-    assert!(setup_queue(VIRTIO, QSIZE as u64, NET_RECEIVE_Q) == 0);
-    assert!(setup_queue(VIRTIO, QSIZE as u64, NET_TRANSMIT_Q) == 0);
+    assert!(setup_queue(VIRTIO, QUEUE_ENTRIES as u64, NET_RECEIVE_Q) == 0);
+    assert!(setup_queue(VIRTIO, QUEUE_ENTRIES as u64, NET_TRANSMIT_Q) == 0);
 
-    mw(
+    write_device_register(
         STATUS,
-        S_ACKNOWLEDGE | S_DRIVER | S_FEATURES_OK | S_DRIVER_OK,
+        DEVICE_STATUS_ACKNOWLEDGE
+            | DEVICE_STATUS_DRIVER
+            | DEVICE_STATUS_FEATURES_OK
+            | DEVICE_STATUS_DRIVER_OK,
     );
 }
 
@@ -1045,7 +1068,7 @@ fn wait_receive(receive_used_before: u16) -> bool {
 /// (`yiaddr`) on a match, `None` otherwise, so an unrelated broadcast is skipped rather than
 /// mistaken for the reply.
 fn parse_dhcp_offer(used_slot: u16) -> Option<u32> {
-    let element = NET_RECEIVE_USED + 4 + (used_slot as u64 % QSIZE as u64) * 8;
+    let element = NET_RECEIVE_USED + 4 + (used_slot as u64 % QUEUE_ENTRIES as u64) * 8;
     let written = direct_memory_access_read::<u32>(element + 4) as u64;
     let frame_len = written.min(NET_RECEIVE_BUF_LEN).saturating_sub(NET_HDR_LEN);
     let frame = NET_RECEIVE_BUF + NET_HDR_LEN;
@@ -1186,7 +1209,7 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
 const BLK_REQ: u64 = 0;
 
 /// Where the kernel maps the data region shared with the FS server (the block buffer). Distinct
-/// from the DMA region, which the FS server must never see, and from [`DMA_VA`].
+/// from the DMA region, which the FS server must never see, and from [`DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS`].
 ///
 /// The block server's DMA region is `1 + block::TRANSFER_BLOCKS` contiguous pages
 /// (`kernel/src/user/fs_service.rs`): page 0 holds the rings, request header and status, and pages
@@ -1206,7 +1229,7 @@ const CONFIG: u64 = 0x100;
 /// answered through the kernel-minted Reply, so this server can answer a client it was never wired
 /// to, exactly once each. The transfer unit is one filesystem block; the bulk rides in the shared
 /// page, the control (opcode, block index, result) rides in the message, the §10 split.
-pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
+pub fn run_block_server(direct_memory_access_phys: u64) -> ! {
     // Whether VIRTIO_BLK_F_FLUSH was negotiated decides `block::FLUSH`: a device round trip, or a
     // loud refusal, never a yes that does nothing.
     let can_flush = initialize_with_features(0, true);
@@ -1238,9 +1261,9 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
                     None => filesystem_contract::reply_err(22),
                     Some(sector) => {
                         let done = if operation == block::READ {
-                            blk_read(direct_memory_access_phys, sector, count)
+                            block_read(direct_memory_access_phys, sector, count)
                         } else {
-                            blk_write(direct_memory_access_phys, sector, count)
+                            block_write(direct_memory_access_phys, sector, count)
                         };
                         // EIO: the device took the request and completed it with a non-OK status.
                         if done {
@@ -1258,7 +1281,7 @@ pub fn run_blk_server(direct_memory_access_phys: u64) -> ! {
             block::FLUSH => {
                 if !can_flush {
                     -95 // EOPNOTSUPP: this device has no flush, and pretending otherwise is the bug
-                } else if blk_flush(direct_memory_access_phys) {
+                } else if block_flush(direct_memory_access_phys) {
                     flushes += 1;
                     flushes
                 } else {
@@ -1293,7 +1316,7 @@ fn transfer_first_sector(block: u64, count: u64, capacity_sectors: u64) -> Optio
 /// The wait has no bound, unlike a test role's. Giving up would leave the request on the ring with
 /// its descriptors at head 0, and the next request would rewrite them while the device may still
 /// read them; a server that stops answering is the safer failure.
-fn complete_blk(used_before: u16) -> bool {
+fn complete_block_server_request(used_before: u16) -> bool {
     // QEMU completes inside `NOTIFY`, so the interrupt is usually already pending and the kernel's
     // pending-signal count (milestone 9 (a virtio-blk driver at EL0, and an interrupt becomes a
     // message)) returns this WAIT at once.
@@ -1306,17 +1329,19 @@ fn complete_blk(used_before: u16) -> bool {
 /// copy (milestone 138 (close the read gap: a 4 KiB request must stop moving 128 KiB) step 4),
 /// since a device round trip costs far more than the transfer. The caller has checked the range
 /// with [`transfer_first_sector`]. `true` if the device reported success.
-fn blk_read(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
-    let used_before = submit_blk(direct_memory_access_phys, sector, VIRTIO_BLK_T_IN, count);
-    complete_blk(used_before)
+fn block_read(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
+    let used_before =
+        submit_block_server_transfer(direct_memory_access_phys, sector, VIRTIO_BLK_T_IN, count);
+    complete_block_server_request(used_before)
 }
 
 /// Write `count` contiguous filesystem blocks from the data pages (the FS server filled them before
 /// this request) in a single virtio request. The one direction flag differs from the read; the
 /// addresses are identical. `true` if the device reported success.
-fn blk_write(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
-    let used_before = submit_blk(direct_memory_access_phys, sector, VIRTIO_BLK_T_OUT, count);
-    complete_blk(used_before)
+fn block_write(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
+    let used_before =
+        submit_block_server_transfer(direct_memory_access_phys, sector, VIRTIO_BLK_T_OUT, count);
+    complete_block_server_request(used_before)
 }
 
 /// **Ask the device to make everything it has acknowledged durable**, and wait for it to say it
@@ -1325,9 +1350,9 @@ fn blk_write(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
 /// A status of 0 says the device finished its flush; it cannot prove the hardware beneath is
 /// honest. A bad status such as `VIRTIO_BLK_S_UNSUPP` (2) is `false`, as for a transfer. See
 /// notes/virtio.md ("The block server").
-fn blk_flush(direct_memory_access_phys: u64) -> bool {
+fn block_flush(direct_memory_access_phys: u64) -> bool {
     let used_before = submit_flush(direct_memory_access_phys);
-    complete_blk(used_before)
+    complete_block_server_request(used_before)
 }
 
 /// A flush's **two**-descriptor chain: the 16-byte request header the device reads, and the status
@@ -1336,7 +1361,7 @@ fn blk_flush(direct_memory_access_phys: u64) -> bool {
 /// unused for a flush and the specification says to set it to 0, so no stale sector from the
 /// previous request is left in the header.
 fn submit_flush(direct_memory_access_phys: u64) -> u16 {
-    // As `submit_blk`: the kernel validates every descriptor against the region.
+    // As `submit_block_request`: the kernel validates every descriptor against the region.
     submit_block_request(direct_memory_access_phys, VIRTIO_BLK_T_FLUSH, 0, None)
         .expect("the kernel refused the block server's flush, a server bug")
 }
@@ -1344,8 +1369,13 @@ fn submit_flush(direct_memory_access_phys: u64) -> u16 {
 /// Submit a `count`-block transfer: as [`submit_block`], but with one data descriptor spanning
 /// `count` contiguous blocks at [`BLOCK_SERVER_DATA_OFFSET_BYTES`] (milestone 138 step 4):
 /// virtio-blk asks only that its length be whole sectors. Returns the used-ring index from before
-/// the submit, which [`complete_blk`] compares against.
-fn submit_blk(direct_memory_access_phys: u64, sector: u64, req_type: u32, count: u64) -> u16 {
+/// the submit, which [`complete_block_server_request`] compares against.
+fn submit_block_server_transfer(
+    direct_memory_access_phys: u64,
+    sector: u64,
+    req_type: u32,
+    count: u64,
+) -> u16 {
     let data_len = count * block::BLOCK_BYTES as u64;
     submit_block_request(
         direct_memory_access_phys,
@@ -1383,8 +1413,8 @@ fn consistent_read(
 /// capacity's low half with another's high half.
 fn capacity_sectors() -> u64 {
     consistent_read(
-        || mr(CONFIGURATION_GENERATION),
-        || mr(CONFIG) as u64 | ((mr(CONFIG + 4) as u64) << 32),
+        || read_device_register(CONFIGURATION_GENERATION),
+        || read_device_register(CONFIG) as u64 | ((read_device_register(CONFIG + 4) as u64) << 32),
     )
     .expect("the disk's configuration generation never held still across a capacity read")
 }
