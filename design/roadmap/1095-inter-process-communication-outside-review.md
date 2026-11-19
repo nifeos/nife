@@ -48,7 +48,7 @@ milestone reaches delivery.
 - P1-5b, prose spellings: Open. The British forms of signaling (`src/timer.rs` line 13), signaled
   (`src/notification.rs` lines 58 and 328) and modeled (line 246), `queueing` (`src/futex.rs`
   line 5, `src/rendezvous.rs` line 38), two patch headers and the doc example's `pa`
-  (`src/futex.rs` lines 27 and 33) remain for a lane.
+  (`src/futex.rs` lines 27 and 33) remain. A lane fixes them.
 - P1-5c, gate names in the public parts: Open. Calef's (see "Two public names the gates refuse"
   below).
 - P1-6, the design record does not travel: Open. The move writes `docs/design.md` and the README
