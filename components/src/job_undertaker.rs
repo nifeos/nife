@@ -43,7 +43,7 @@ const DEATHS: u64 = 0;
 const REPORT: u64 = 1;
 
 /// **The progenitor's spawn endpoint, held `WRITE` through a copy badged
-/// [`spawn_protocol::UNDERTAKER_BADGE`]** (milestone 685): where [`announce`] says a job is reaped. No
+/// [`spawn_protocol::UNDERTAKER_BADGE`]** (milestone 685 (a job is finished when its memory is back)): where [`announce`] says a job is reaped. No
 /// `GRANT`, so the badge cannot be passed on, and the progenitor is the only receiver.
 const SPAWN: u64 = 2;
 

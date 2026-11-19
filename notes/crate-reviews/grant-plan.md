@@ -2,13 +2,13 @@
 
 *Name: provisional, minted by lane milestone/1094-grant-plan-rulings-built. The `grant_plan` package
 of [crate-reviews.md](../crate-reviews.md), written with `script/crate-review-packet grant_plan`.
-It is the first of two for the split in milestone 1094 (an outside review of `grant_plan` before it
-leaves); [grant-contract.md](grant-contract.md) is the second.*
+It is the first of two for the split in milestone 1094 (`grant_plan`: what an outside maintainer would fix before it leaves);
+[grant-contract.md](grant-contract.md) is the second.*
 
 ## In one paragraph
 
 `grant_plan` turns one line a person typed at a shell into a plan: which program runs, which
-holdings each stream is wired to, and which of the person's authorities the program is granted. It
+holdings each stream reaches, and which of the person's authorities the program receives. It
 tokenizes the line, parses pipelines and redirections, expands wildcards a directory listing at a
 time, resolves paths against the person's current directory and bindings, and refuses with a typed
 `Refusal` that carries its own sentence. It is `no_std` with no allocator and no `unsafe`. It
@@ -45,7 +45,7 @@ Eleven modules, all `pub`: `word`, `lexing`, `parsing`, `line`, `expand`, `navig
 | escalation | `Escalation` and `COOPERATIVE_GRACE_POLLS` |
 
 The full list, with signatures, is in the packet (`script/crate-review-packet grant_plan`, kept
-under `target/`). A bare item of an `impl` is not repeated here.
+under `target/`). The list leaves out the items of an `impl`.
 
 ## Proofs and falsification patches
 
@@ -57,8 +57,7 @@ cover: no input indexes past a line, and no path walk leaves the person's root.
 ## Names
 
 The crate has 64 names with a block: 19 ratified and 45 provisional. The provisional ones were
-minted by this lane under the two rulings of milestone 1094 (limits carry their unit; public names
-that need a decoder), and each carries a `Name:` block stating that. They are for the architect to
+minted by this lane under the two rulings of milestone 1094 (`grant_plan`: what an outside maintainer would fix before it leaves), and each carries a `Name:` block stating that. They are for the architect to
 ratify.
 
 | name | before | reason |
@@ -73,7 +72,7 @@ ratify.
 | `navigation::MAXIMUM_RENDERED_PATH_BYTES` | `RENDER_MAXIMUM` | unit, and the noun first |
 | private fields `length_bytes` and `name_length_bytes` | `len`, `name_len` | unit; the standard library's `len` method stays |
 
-No alias of an old nife spelling was added.
+The lane added no alias of an old nife spelling.
 
 ## Naming rules
 
@@ -96,7 +95,7 @@ the crate's own manifest and adds both license files. The crate adapts no source
 
 ## Proposed items
 
-These are the findings of the outside review that are not built. Each is Open in milestone 1094.
+These findings of the outside review remain unbuilt. Each is Open in milestone 1094.
 
 1. P1-5: a Kani harness per claim, with a falsification patch for each.
 2. P0-3: the manifest and the repository root belong to the workspace; the move writes them.

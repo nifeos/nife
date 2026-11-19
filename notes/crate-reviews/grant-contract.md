@@ -3,12 +3,12 @@
 *Name: provisional, minted by lane milestone/1094-grant-plan-rulings-built. The `grant_contract`
 package of [crate-reviews.md](../crate-reviews.md), written with
 `script/crate-review-packet grant_contract`. It is the second of two for the split in milestone 1094
-(an outside review of `grant_plan` before it leaves); [grant-plan.md](grant-plan.md) is the
+(`grant_plan`: what an outside maintainer would fix before it leaves); [grant-plan.md](grant-plan.md) is the
 first.*
 
 ## In one paragraph
 
-`grant_contract` is what a program links to say what it may be granted, and what the planner reads
+`grant_contract` is what a program links to say what it may ask for, and what the planner reads
 to decide. It holds the manifest types (`Manifest`, the file and directory declarations, the rights
 bits and the authorities a program asks for), the slot constants a program finds its holdings in,
 and the verb narrowing that turns a manifest into the subset a verb needs. It is `no_std` with no
@@ -59,7 +59,7 @@ minted by this lane under the two rulings of milestone 1094.
 | private field `length_bytes` | `len` | unit |
 | the block of each item in `manifest.rs` and `verbs.rs` that cites the new spellings | | provisional until the architect ratifies |
 
-No alias of an old nife spelling was added.
+The lane added no alias of an old nife spelling.
 
 ## Naming rules
 
