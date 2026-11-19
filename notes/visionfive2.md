@@ -63,7 +63,7 @@ the code each row names.
 | PLIC S context of hart h | `2h + 1` | `2h` | decoded from `interrupts-extended` |
 | Hart 0 | a normal hart | the S7: no MMU, no S-mode | refused by `status` and by its `riscv,isa` |
 | Timebase | 10 MHz | 4 MHz [dtsi] | read from the DTB |
-| PCIe | generic ECAM | PLDA XpressRICH, no driver | windows mapped only when the DTB has an ECAM node |
+| PCIe | generic ECAM | PLDA XpressRICH behind StarFive glue | the M.2 port brought up from its `starfive,jh7110-pcie` node before the walk ([jh7110-pci-express.md](jh7110-pci-express.md)) |
 
 The `text_offset` is an exception and a foot gun, on the record. Linux means "2 MiB into RAM,
 wherever RAM is"; ours means "0x8020_0000 absolute, on any board whose RAM starts at 0x4000_0000".

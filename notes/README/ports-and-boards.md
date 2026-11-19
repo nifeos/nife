@@ -20,6 +20,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Programming a clock and a reset line, for the first time](../jh7110-clock-and-reset.md).
 - [The JH7110 watchdog](../jh7110-watchdog.md): how the block counts twice before it resets, and the sources read. Name provisional.
 - [The JH7110 PCI Express root complex](../jh7110-pci-express.md): why the bridge needs a bring-up before the PCI walk, the sequence and its sources, and the simulation. Name provisional.
+- [The JH7110's M.2 root port at the bench](../jh7110-pci-express-bench.md): a person's runbook from the tree check to a read off the drive, with the log lines and what each failure means. Name provisional.
 - [Reading a board, without a person watching it](../board-console.md): how `script/board-console` reads a board's serial boot unattended.
 - [Pricing milestone 342 (the kernel and the console server drive one UART from two address spaces)](../kernel-console-arbitration-pricing.md): whether argon, radon and xenon have a second usable UART, and what a kernel/console-server arbitration option costs in a panic.
 - [The boot ladder](../boot-ladder.md): the boot markers every architecture prints, in order.
