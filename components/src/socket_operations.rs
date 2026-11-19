@@ -40,13 +40,13 @@ pub(crate) fn udp_sendto(
     len: usize,
 ) -> u64 {
     let Some(sk) = table.socks[entry] else {
-        return REP_ERR;
+        return REPLY_ERROR;
     };
-    if sk.kind != Kind::Udp || len > DATA_MAXIMUM {
-        return REP_ERR;
+    if sk.kind != Kind::Udp || len > MAXIMUM_PAYLOAD_BYTES {
+        return REPLY_ERROR;
     }
     let Some(window) = sk.window else {
-        return REP_ERR;
+        return REPLY_ERROR;
     };
     let dst = read_dst(window);
     let mut buf = vec![0u8; len];
@@ -56,10 +56,10 @@ pub(crate) fn udp_sendto(
         .send_slice(&buf, dst)
         .is_err()
     {
-        return REP_ERR;
+        return REPLY_ERROR;
     }
     iface.poll(instant(), dev, sockets); // push the datagram out
-    REP_OK
+    REPLY_OK
 }
 
 pub(crate) fn sock_receive(
@@ -70,10 +70,10 @@ pub(crate) fn sock_receive(
     entry: usize,
 ) -> u64 {
     let Some(sk) = table.socks[entry] else {
-        return REP_ERR;
+        return REPLY_ERROR;
     };
     let Some(window) = sk.window else {
-        return REP_ERR;
+        return REPLY_ERROR;
     };
     let handle = sk.handle;
     let is_tcp = sk.kind == Kind::Tcp;
@@ -87,10 +87,10 @@ pub(crate) fn sock_receive(
         })
     };
     if !ready {
-        return REP_ERR;
+        return REPLY_ERROR;
     }
 
-    let mut buf = [0u8; DATA_MAXIMUM];
+    let mut buf = [0u8; MAXIMUM_PAYLOAD_BYTES];
     let n = if is_tcp {
         sockets
             .get_mut::<tcp::Socket>(handle)
@@ -104,7 +104,7 @@ pub(crate) fn sock_receive(
                 // answer whoever asked, as TFTP's transfer ids do.
                 let IpAddress::Ipv4(src) = meta.endpoint.addr;
                 for (i, &b) in src.octets().iter().enumerate() {
-                    window.write_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+                    window.write_u8(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
                 }
                 window.write_u16(DESTINATION_PORT_OFFSET_BYTES, meta.endpoint.port);
                 n
@@ -113,7 +113,7 @@ pub(crate) fn sock_receive(
         }
     };
     window.copy_from_slice(PAYLOAD_OFFSET_BYTES, &buf[..n]);
-    window.write_u16(LENGTH_OFFSET_BYTES, n as u16);
+    window.write_u16(PAYLOAD_LENGTH_OFFSET_BYTES, n as u16);
     n as u64
 }
 
@@ -125,13 +125,13 @@ pub(crate) fn tcp_connect(
     entry: usize,
 ) -> u64 {
     let Some(sk) = table.socks[entry] else {
-        return REP_ERR;
+        return REPLY_ERROR;
     };
     if sk.kind != Kind::Tcp {
-        return REP_ERR;
+        return REPLY_ERROR;
     }
     let Some(window) = sk.window else {
-        return REP_ERR;
+        return REPLY_ERROR;
     };
     let dst = read_dst(window);
     let handle = sk.handle;
@@ -143,7 +143,7 @@ pub(crate) fn tcp_connect(
             .connect(cx, dst, local)
             .is_err()
         {
-            return REP_ERR;
+            return REPLY_ERROR;
         }
     }
     // Drive until the connection settles: established, or back to a closed state (a RST from an
@@ -178,7 +178,7 @@ pub(crate) fn arm_listener(sockets: &mut SocketSet, port: u16) -> Option<SocketH
 ///
 /// Three refusals, and they are deliberately distinguishable (`socket_contract`): outside the grant is
 /// a refusal of *authority* and no retry will fix it; already-listening is a collision on an
-/// exclusive name and another port would work; `REP_ERR` is a full table. A granted listen is
+/// exclusive name and another port would work; `REPLY_ERROR` is a full table. A granted listen is
 /// answered with the listener's own capability (§255 (each socket is its own capability)).
 ///
 /// A listener gets no shared frame. That is the contract's claim that a listener and a connection
@@ -192,11 +192,11 @@ pub(crate) fn tcp_listen(
     // Not truncated to 16 bits: a request for 65536 is a request for a port no grant can name, and
     // silently turning it into port 0 would answer a question nobody asked.
     if port_word > u16::MAX as u64 {
-        return Err(LISTEN_DENIED);
+        return Err(PORT_CLAIM_DENIED);
     }
     let port = port_word as u16;
-    if !grant_allows(grant, port) {
-        return Err(LISTEN_DENIED);
+    if !listen_grant_allows(grant, port) {
+        return Err(PORT_CLAIM_DENIED);
     }
     if table
         .socks
@@ -204,19 +204,19 @@ pub(crate) fn tcp_listen(
         .flatten()
         .any(|s| s.kind == Kind::Listener && s.local_port == port)
     {
-        return Err(LISTEN_IN_USE);
+        return Err(PORT_CLAIM_IN_USE);
     }
-    let entry = table.free().ok_or(REP_ERR)?;
-    let handle = arm_listener(sockets, port).ok_or(REP_ERR)?;
+    let entry = table.free().ok_or(REPLY_ERROR)?;
+    let handle = arm_listener(sockets, port).ok_or(REPLY_ERROR)?;
     table.install(entry, handle, Kind::Listener, port);
-    Ok((entry, LISTEN_GRANTED))
+    Ok((entry, PORT_CLAIM_GRANTED))
 }
 
 /// **`ACCEPT`: block until a peer connects, then hand the connection over as its own socket.**
 ///
 /// The handshaken smoltcp socket becomes a connection in a free entry with a new badge, never the
 /// listener in place; the listener keeps its badge and port and is re-armed on a fresh socket
-/// before this returns. Returns the connection's entry, or `REP_ERR` for a full table, a socket
+/// before this returns. Returns the connection's entry, or `REPLY_ERROR` for a full table, a socket
 /// that is not a listener, or no peer within `service_until`'s 15 s. See
 /// notes/net/the-inbound-half.md.
 ///
@@ -230,14 +230,14 @@ pub(crate) fn tcp_accept(
     listening: usize,
 ) -> Result<(usize, u64), u64> {
     let Some(listener) = table.socks[listening] else {
-        return Err(REP_ERR);
+        return Err(REPLY_ERROR);
     };
     if listener.kind != Kind::Listener {
-        return Err(REP_ERR);
+        return Err(REPLY_ERROR);
     }
     // Room for the connection first: a handshake taken off the listener with nowhere to put it
     // would be a peer accepted and then dropped.
-    let target = table.free().ok_or(REP_ERR)?;
+    let target = table.free().ok_or(REPLY_ERROR)?;
     let handle = listener.handle;
     let port = listener.local_port;
 
@@ -264,7 +264,7 @@ pub(crate) fn tcp_accept(
         });
 
     // Re-arm whatever happened, including the aborted case: the listener's authority did not expire
-    // because one peer sent a RST, and a client that gets `REP_ERR` should be able to accept again.
+    // because one peer sent a RST, and a client that gets `REPLY_ERROR` should be able to accept again.
     match arm_listener(sockets, port) {
         Some(fresh) => {
             table.socks[listening] = Some(Sock {
@@ -276,12 +276,12 @@ pub(crate) fn tcp_accept(
             // The listener is gone; its badge goes with it, so its capability reaches nothing.
             table.socks[listening] = None;
             sockets.remove(handle);
-            return Err(REP_ERR);
+            return Err(REPLY_ERROR);
         }
     }
     if !landed {
         sockets.remove(handle);
-        return Err(REP_ERR);
+        return Err(REPLY_ERROR);
     }
     table.install(target, handle, Kind::Tcp, port);
     Ok((target, peer))
@@ -289,8 +289,8 @@ pub(crate) fn tcp_accept(
 
 /// **`BIND_UDP`: claim a fixed UDP port, if this stack was granted it** (milestone 55's mDNS stack
 /// half). `tcp_listen`'s refusals, verbatim, because they are properties of claiming an exclusive
-/// port and not of TCP: outside the grant is a refusal of *authority* (`LISTEN_DENIED`), and a port
-/// some live socket already holds is a collision (`LISTEN_IN_USE`, and the check spans *all*
+/// port and not of TCP: outside the grant is a refusal of *authority* (`PORT_CLAIM_DENIED`), and a port
+/// some live socket already holds is a collision (`PORT_CLAIM_IN_USE`, and the check spans *all*
 /// sockets, so a fixed bind cannot silently shadow an ephemeral port a live socket was allocated).
 /// Unlike a listener the socket carries bytes, so its holder attaches a frame to it exactly as to
 /// one `OPERATION_OPEN_UDP` made.
@@ -302,25 +302,25 @@ pub(crate) fn udp_bind(
 ) -> Result<(usize, u64), u64> {
     // Not truncated to 16 bits, for tcp_listen's reason.
     if port_word > u16::MAX as u64 {
-        return Err(LISTEN_DENIED);
+        return Err(PORT_CLAIM_DENIED);
     }
     let port = port_word as u16;
-    if !udp_grant_allows(grant, port) {
-        return Err(LISTEN_DENIED);
+    if !udp_bind_grant_allows(grant, port) {
+        return Err(PORT_CLAIM_DENIED);
     }
     if table.port_held(port) {
-        return Err(LISTEN_IN_USE);
+        return Err(PORT_CLAIM_IN_USE);
     }
-    let entry = table.free().ok_or(REP_ERR)?;
+    let entry = table.free().ok_or(REPLY_ERROR)?;
     let handle = sockets.add(udp_socket());
     if sockets.get_mut::<udp::Socket>(handle).bind(port).is_err() {
         // Only port 0 is refused, and the grant already excludes it; kept so a surprise is a
         // clean error rather than a socket nothing owns parked in the set.
         sockets.remove(handle);
-        return Err(REP_ERR);
+        return Err(REPLY_ERROR);
     }
     table.install(entry, handle, Kind::Udp, port);
-    Ok((entry, LISTEN_GRANTED))
+    Ok((entry, PORT_CLAIM_GRANTED))
 }
 
 pub(crate) fn tcp_send(
@@ -332,13 +332,13 @@ pub(crate) fn tcp_send(
     len: usize,
 ) -> u64 {
     let Some(sk) = table.socks[entry] else {
-        return REP_ERR;
+        return REPLY_ERROR;
     };
-    if sk.kind != Kind::Tcp || len > DATA_MAXIMUM {
-        return REP_ERR;
+    if sk.kind != Kind::Tcp || len > MAXIMUM_PAYLOAD_BYTES {
+        return REPLY_ERROR;
     }
     let Some(window) = sk.window else {
-        return REP_ERR;
+        return REPLY_ERROR;
     };
     let mut buf = vec![0u8; len];
     window.copy_to_slice(PAYLOAD_OFFSET_BYTES, &mut buf);

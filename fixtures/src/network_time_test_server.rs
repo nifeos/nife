@@ -140,17 +140,17 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
         match w0 {
             OPERATION_OPEN_UDP | OPERATION_OPEN_TCP => {
                 // The opened socket's capability, as `net_stack` hands one over.
-                let socket = badge(MINT, SOCKET_BADGE | 1);
+                let socket = badge(MINT, SOCKET_BADGE_BIT | 1);
                 if socket < 0 {
-                    reply(to, REP_ERR, 0);
+                    reply(to, REPLY_ERROR, 0);
                     continue;
                 }
-                if let Err((to, _)) = reply_capability(to, REP_OK, 0, socket as u64) {
-                    reply(to, REP_ERR, 0);
+                if let Err((to, _)) = reply_capability(to, REPLY_OK, 0, socket as u64) {
+                    reply(to, REPLY_ERROR, 0);
                 }
                 capability_delete(socket as u64);
             }
-            OPERATION_SENDTO => {
+            OPERATION_SEND_TO => {
                 // The length the client declared, which is how the real server learns it too.
                 let mut wire = [0u8; network_time_protocol::PACKET_LEN];
                 let n = SHARED_FRAME.payload_read(
@@ -159,7 +159,7 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
                 );
                 let request = Packet::parse(&wire[..n]).unwrap_or_default();
                 pending_len = build_reply(&request, variant, claimed_nanoseconds, &mut pending);
-                reply(to, REP_OK, 0);
+                reply(to, REPLY_OK, 0);
                 if !reported {
                     reported = true;
                     let destination_port = SHARED_FRAME.destination_port() as u64;
@@ -179,10 +179,10 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
                 reply(to, pending_len as u64, 0);
             }
             OPERATION_CLOSE => {
-                reply(to, REP_OK, 0);
+                reply(to, REPLY_OK, 0);
             }
             _ => {
-                reply(to, REP_ERR, 0);
+                reply(to, REPLY_ERROR, 0);
             }
         }
     }

@@ -392,7 +392,7 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp() {
     // word (`socket_contract::lease`, provisional) for a resolver's spawner (§248 (the name
     // resolver is its own confined program)).
     assert_eq!(
-        socket_contract::lease::word_ipv4(nameserver),
+        socket_contract::lease::word_to_ipv4(nameserver),
         Some([10, 0, 2, 3]),
         "the lease report did not carry slirp's DNS server (word {nameserver:#x})",
     );
@@ -424,7 +424,7 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract() {
         net_stack_image(),
         NET_TEST_UDP_TFTP,
         false,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ) else {
         crate::testing::skip!("no virtio-net device attached");
     };
@@ -443,7 +443,7 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract_pci() {
         net_stack_image(),
         NET_TEST_UDP_TFTP,
         true,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ) else {
         crate::testing::skip!("no virtio-net-pci device attached");
     };
@@ -465,7 +465,7 @@ fn a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers() {
         net_stack_image(),
         NET_TEST_NAME_RESOLUTION,
         false,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ) else {
         crate::testing::skip!("no virtio-net device attached");
     };
@@ -499,7 +499,7 @@ fn a_client_echoes_over_tcp_through_the_socket_contract() {
         net_stack_image(),
         NET_TEST_TCP_ECHO,
         false,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ) else {
         crate::testing::skip!("no virtio-net device attached");
     };
@@ -546,7 +546,7 @@ fn a_client_echoes_over_tcp_through_the_socket_contract_pci() {
         net_stack_image(),
         NET_TEST_TCP_ECHO,
         true,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ) else {
         crate::testing::skip!("no virtio-net-pci device attached");
     };
@@ -595,7 +595,7 @@ fn a_reopened_socket_id_connects_again_over_tcp() {
         net_stack_image(),
         NET_TEST_TCP_REOPEN,
         false,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ) else {
         crate::testing::skip!("no virtio-net device attached");
     };
@@ -683,7 +683,7 @@ fn std_net_runs_over_the_socket_contract() {
     let Some((report, writer, net)) = virtio_service::start_net_std(
         net_stack_image(),
         std_exerciser_image(),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ) else {
         crate::testing::skip!("no virtio-net device attached");
     };

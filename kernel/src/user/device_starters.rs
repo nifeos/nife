@@ -234,7 +234,7 @@ pub(super) fn boot_designware_network()
         return None;
     }
     let image = program("net_stack")?;
-    match designware_ethernet_service::start_net_server(image, socket_contract::NO_LISTEN_GRANT) {
+    match designware_ethernet_service::start_net_server(image, socket_contract::NO_PORT_GRANT) {
         Ok(w) => {
             crate::println!(
                 "  network     : the JH7110's Ethernet port, link up; its control process brought it \

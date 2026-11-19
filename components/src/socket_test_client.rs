@@ -182,7 +182,7 @@ const DNS_ATTEMPTS: u32 = 3;
 /// is the window in which `socket_squatter` tries every way it has to reach this socket.
 fn udp_tftp_held() -> ! {
     attach_page_frame();
-    if open(OPERATION_OPEN_UDP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_UDP, SOCKET, 0) != REPLY_OK {
         done(0xE040);
     }
     send(REPORT, READY, 0, 0);
@@ -192,7 +192,7 @@ fn udp_tftp_held() -> ! {
 
 /// [`TEST_SOCKET_GIVE`]: open a UDP socket and send it to the taker, keeping our own copy. After the
 /// go on slot 4, sent once the taker has used and closed it, report `OK` if our copy reaches
-/// nothing. The probe is a zero-length `SENDTO`, which a closed socket answers `REP_ERR` at once.
+/// nothing. The probe is a zero-length `SENDTO`, which a closed socket answers `REPLY_ERROR` at once.
 ///
 /// # BUGS
 ///
@@ -201,7 +201,7 @@ fn udp_tftp_held() -> ! {
 /// and the hand-off test's "reaches nothing" rests on the probe alone. Not yet checked by a lane.
 fn socket_give() -> ! {
     let (word, _, socket) = call_receiving(STACK, OPERATION_OPEN_UDP, 0);
-    let Some(socket) = socket.filter(|_| word == REP_OK) else {
+    let Some(socket) = socket.filter(|_| word == REPLY_OK) else {
         done(0xE0B0);
     };
     // `WRITE` alone: what the taker needs to use it. Our copy keeps `GRANT`; the taker's does not.
@@ -210,17 +210,17 @@ fn socket_give() -> ! {
     }
     send(REPORT, READY, 0, 0);
     let _ = receive(GO);
-    let (stale, _) = call(socket, OPERATION_SENDTO, 0);
-    done(if stale == REP_ERR { OK } else { 0xE0B2 });
+    let (stale, _) = call(socket, OPERATION_SEND_TO, 0);
+    done(if stale == REPLY_ERROR { OK } else { 0xE0B2 });
 }
 
 /// [`TEST_SOCKET_BADGE_FORGE`]: open one UDP socket, attempt to re-badge its capability, and
 /// report. The refusal must be `NotPermitted` (the capability is already badged, and a badge is set
 /// once), and the socket must be undisturbed by the refused attempt: a `CLOSE` of it must still
-/// answer `REP_OK`. Reports `OK`, or a stage code.
+/// answer `REPLY_OK`. Reports `OK`, or a stage code.
 fn socket_badge_forge() -> ! {
     let (word, _, socket) = call_receiving(STACK, OPERATION_OPEN_UDP, 0);
-    let Some(socket) = socket.filter(|_| word == REP_OK) else {
+    let Some(socket) = socket.filter(|_| word == REPLY_OK) else {
         done(0xE0D0);
     };
     // A second badge for a capability the stack minted badged. The badge value is arbitrary; the
@@ -229,12 +229,12 @@ fn socket_badge_forge() -> ! {
     if re_badge != abi::Error::NotPermitted as i64 {
         done(0xE0D1);
     }
-    // The survival probe is a clean `CLOSE`: the stack answering `REP_OK` to a close of this
+    // The survival probe is a clean `CLOSE`: the stack answering `REPLY_OK` to a close of this
     // socket is the stack still serving the capability the refused forgery named, with its entry
     // free to hand back. (A zero-length `SENDTO` is refused on an open socket too, so it cannot
-    // probe liveness; the hand-off test only ever read its `REP_ERR` half.)
+    // probe liveness; the hand-off test only ever read its `REPLY_ERROR` half.)
     let (closed, _) = call(socket, OPERATION_CLOSE, 0);
-    done(if closed == REP_OK { OK } else { 0xE0D2 });
+    done(if closed == REPLY_OK { OK } else { 0xE0D2 });
 }
 
 /// [`TEST_SOCKET_TAKE`]: take a socket from slot 3, attach our own page to it, and run the TFTP round
@@ -271,12 +271,12 @@ static FRAME: AtomicU64 = AtomicU64::new(NO_SOCKET);
 /// **Make a socket through the front door** and keep its capability in `which`: `OPEN_TCP`,
 /// `OPEN_UDP`, `LISTEN` or `BIND_UDP`, with `arg` the port for the last two. Returns the reply word.
 /// A socket that carries bytes is handed a copy of our frame straight away. A success that arrived
-/// without its capability reads as `REP_ERR`, because a socket this client cannot name is no use.
+/// without its capability reads as `REPLY_ERROR`, because a socket this client cannot name is no use.
 fn open(operation: u64, which: usize, arg: u64) -> u64 {
     let (word, _, socket) = call_receiving(STACK, operation, arg);
-    // `REP_OK` and `LISTEN_GRANTED` are both 0: every success here carries a capability.
+    // `REPLY_OK` and `PORT_CLAIM_GRANTED` are both 0: every success here carries a capability.
     let Some(socket) = socket else {
-        return if word == REP_OK { REP_ERR } else { word };
+        return if word == REPLY_OK { REPLY_ERROR } else { word };
     };
     keep(which, socket, operation != OPERATION_LISTEN);
     word
@@ -291,7 +291,7 @@ fn accept(listener: usize, connection: usize) -> u64 {
     let (word, peer, socket) = call_receiving(held(listener), OPERATION_ACCEPT, 0);
     ACCEPTED_PEER.store(peer, Ordering::Relaxed);
     let Some(socket) = socket else {
-        return REP_ERR;
+        return REPLY_ERROR;
     };
     keep(connection, socket, true);
     word
@@ -392,7 +392,7 @@ fn against_the_name_server() -> u64 {
 
 /// One query on socket 0 over TCP: the reply's verdict, or the stage that stopped the exchange.
 fn ask_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer, Reject>, u64> {
-    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REPLY_OK {
         return Err(0x1);
     }
     let verdict = exchange_over_tcp(query);
@@ -420,10 +420,10 @@ fn exchange_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer,
     // takes the reference once per call and drops it before returning.
     let buf = unsafe { &mut *core::ptr::addr_of_mut!(TCP_REPLY_BUFFER) };
     let mut reply = TcpReply::new(buf);
-    let mut chunk = [0u8; DATA_MAXIMUM];
+    let mut chunk = [0u8; MAXIMUM_PAYLOAD_BYTES];
     loop {
         let (got, _) = on(SOCKET, OPERATION_RECEIVE, 0);
-        if got == 0 || got > DATA_MAXIMUM as u64 {
+        if got == 0 || got > MAXIMUM_PAYLOAD_BYTES as u64 {
             return Err(0x5); // the peer went away (or the stack failed) before the reply was whole
         }
         let got = got as usize;
@@ -442,7 +442,7 @@ fn exchange_over_tcp(query: &Query) -> Result<Result<domain_name_system::Answer,
 /// is one a connection can be made to, which is what resolving it was for.
 fn echo_at(address: [u8; 4]) -> u64 {
     const MSG: &[u8] = b"nife-by-name";
-    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REPLY_OK {
         return 0xE1F1;
     }
     SHARED_FRAME.set_destination(address, ECHO_PORT);
@@ -475,7 +475,7 @@ fn echo_at(address: [u8; 4]) -> u64 {
 /// or that `Query::accept` finds malformed, or one for `example.com` with no address in it, still
 /// fails: that would be a defect here, not in the network.
 fn against_the_host_resolver() -> u64 {
-    if open(OPERATION_OPEN_UDP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_UDP, SOCKET, 0) != REPLY_OK {
         return 0xE010;
     }
     let code = ask_the_host_resolver();
@@ -491,15 +491,15 @@ fn ask_the_host_resolver() -> u64 {
     let Ok(n) = query.request(&mut request) else {
         return 0xE012;
     };
-    let mut reply = [0u8; DATA_MAXIMUM];
+    let mut reply = [0u8; MAXIMUM_PAYLOAD_BYTES];
     for _ in 0..DNS_ATTEMPTS {
         SHARED_FRAME.payload_write(&request[..n]);
         SHARED_FRAME.set_destination(DNS_IP, DNS_PORT);
-        if on(SOCKET, OPERATION_SENDTO, n as u64).0 != REP_OK {
+        if on(SOCKET, OPERATION_SEND_TO, n as u64).0 != REPLY_OK {
             return 0xE011;
         }
         let (rlen, _) = on(SOCKET, OPERATION_RECEIVE, 0);
-        if rlen == REP_ERR || rlen == 0 || rlen > DATA_MAXIMUM as u64 {
+        if rlen == REPLY_ERROR || rlen == 0 || rlen > MAXIMUM_PAYLOAD_BYTES as u64 {
             continue;
         }
         let rlen = rlen as usize;
@@ -522,7 +522,7 @@ fn ask_the_host_resolver() -> u64 {
 /// the fixture's bytes exactly. See notes/net/the-test-clients.md.
 fn udp_tftp() -> ! {
     attach_page_frame();
-    if open(OPERATION_OPEN_UDP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_UDP, SOCKET, 0) != REPLY_OK {
         done(0xE040);
     }
     tftp_on_socket()
@@ -547,14 +547,14 @@ fn tftp_on_socket() -> ! {
     SHARED_FRAME.payload_write(&rrq[..at]);
 
     SHARED_FRAME.set_destination(GW_IP, TFTP_PORT);
-    if on(SOCKET, OPERATION_SENDTO, at as u64).0 != REP_OK {
+    if on(SOCKET, OPERATION_SEND_TO, at as u64).0 != REPLY_OK {
         done(0xE041);
     }
 
     // DATA: { u16 opcode = 3 }{ u16 block = 1 } body. The fixture is one short block, so the whole
     // file arrives in this first packet and no ACK/continuation is needed.
     let (rlen, _) = on(SOCKET, OPERATION_RECEIVE, 0);
-    if rlen == REP_ERR || rlen < 4 + TFTP_BODY.len() as u64 {
+    if rlen == REPLY_ERROR || rlen < 4 + TFTP_BODY.len() as u64 {
         done(0xE042);
     }
     let mut data = [0u8; 4 + TFTP_BODY.len()];
@@ -592,7 +592,7 @@ fn tftp_on_socket() -> ! {
     let ack = [0x00u8, 0x04, 0x00, 0x01];
     SHARED_FRAME.payload_write(&ack);
     SHARED_FRAME.set_destination(src_ip, src_port);
-    let _ = on(SOCKET, OPERATION_SENDTO, ack.len() as u64);
+    let _ = on(SOCKET, OPERATION_SEND_TO, ack.len() as u64);
 
     let _ = close(SOCKET);
     done(OK);
@@ -602,7 +602,7 @@ fn tcp_echo() -> ! {
     const MSG: &[u8] = b"nife-net!";
 
     attach_page_frame();
-    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REPLY_OK {
         done(0xE020);
     }
 
@@ -641,7 +641,7 @@ fn tcp_reopen() -> ! {
     SHARED_FRAME.set_destination(ECHO_IP, ECHO_PORT);
 
     // The first connection.
-    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REPLY_OK {
         done(0xE030);
     }
     if on(SOCKET, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
@@ -650,7 +650,7 @@ fn tcp_reopen() -> ! {
     let _ = close(SOCKET);
 
     // A second socket, in the entry the first left, and connect again.
-    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REPLY_OK {
         done(0xE032);
     }
     if on(SOCKET, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
@@ -673,25 +673,25 @@ fn tcp_accept_inbound() -> ! {
     // A port outside the grant is refused as a matter of AUTHORITY, which is a different answer from
     // "somebody has it" and calls for a different response from a client.
     match open(OPERATION_LISTEN, LISTENER, DENIED_PORT) {
-        LISTEN_DENIED => {}
-        LISTEN_GRANTED => done(0xE050), // bound a port nothing granted: the whole point, lost
-        LISTEN_IN_USE => done(0xE051),
+        PORT_CLAIM_DENIED => {}
+        PORT_CLAIM_GRANTED => done(0xE050), // bound a port nothing granted: the whole point, lost
+        PORT_CLAIM_IN_USE => done(0xE051),
         _ => done(0xE052),
     }
 
     // The granted one binds, and this listener is the one the rest of the exchange accepts on.
     match open(OPERATION_LISTEN, LISTENER, LISTEN_PORT) {
-        LISTEN_GRANTED => {}
-        LISTEN_DENIED => done(0xE053), // the spawn service granted the wrong range
-        LISTEN_IN_USE => done(0xE054),
+        PORT_CLAIM_GRANTED => {}
+        PORT_CLAIM_DENIED => done(0xE053), // the spawn service granted the wrong range
+        PORT_CLAIM_IN_USE => done(0xE054),
         _ => done(0xE055),
     }
 
     // And it is exclusive, which is the property that makes a port grantable rather than merely a
     // number. Asking again must collide.
     match open(OPERATION_LISTEN, CONNECTION, LISTEN_PORT) {
-        LISTEN_IN_USE => {}
-        LISTEN_GRANTED => done(0xE056), // two listeners on one port
+        PORT_CLAIM_IN_USE => {}
+        PORT_CLAIM_GRANTED => done(0xE056), // two listeners on one port
         _ => done(0xE057),
     }
 
@@ -711,16 +711,16 @@ fn tcp_accept_inbound() -> ! {
 
 /// **An accept nobody connects to ends at `net_stack`'s bound.** Listen on the granted port and
 /// accept once on a NIC no host process can reach: the stack's wait must end by its own 15 s bound
-/// with `REP_ERR`, or every retry built on that bound ([`ACCEPT_TRIES`], `std_exerciser`'s) retries
+/// with `REPLY_ERROR`, or every retry built on that bound ([`ACCEPT_TRIES`], `std_exerciser`'s) retries
 /// nothing. `OK` when refused, `0xE0C0`/`0xE0C1` if the listen or the refusal went wrong; how long
 /// it took is the kernel test's to judge. See notes/net/the-test-clients.md.
 ///
 /// Name: provisional, the riscv-cpu-net-flake lane, 2026-10-13 (UTC).
 fn tcp_accept_unheard() -> ! {
-    if open(OPERATION_LISTEN, LISTENER, LISTEN_PORT) != LISTEN_GRANTED {
+    if open(OPERATION_LISTEN, LISTENER, LISTEN_PORT) != PORT_CLAIM_GRANTED {
         done(0xE0C0);
     }
-    if accept(LISTENER, CONNECTION) == REP_OK {
+    if accept(LISTENER, CONNECTION) == REPLY_OK {
         done(0xE0C1); // somebody connected to a port nothing forwards to
     }
     let _ = close(LISTENER);
@@ -738,9 +738,9 @@ const ACCEPT_TRIES: usize = 5;
 /// Accept one inbound connection, check what the host sent, answer it, and close. Reports through
 /// `done` on any failure, so `base` distinguishes the first connection from the second.
 fn serve_one_inbound(base: u64) {
-    // `REP_ERR` is the bounded wait expiring with the listener still armed (`net_stack`'s
+    // `REPLY_ERROR` is the bounded wait expiring with the listener still armed (`net_stack`'s
     // `tcp_accept` re-arms on every exit), so a server that means to serve asks again.
-    if !(0..ACCEPT_TRIES).any(|_| accept(LISTENER, CONNECTION) == REP_OK) {
+    if !(0..ACCEPT_TRIES).any(|_| accept(LISTENER, CONNECTION) == REPLY_OK) {
         done(base); // nobody connected within ACCEPT_TRIES of the server's bounded waits
     }
 
@@ -767,33 +767,33 @@ fn serve_one_inbound(base: u64) {
         done(base + 3);
     }
 
-    if close(CONNECTION).0 != REP_OK {
+    if close(CONNECTION).0 != REPLY_OK {
         done(base + 4);
     }
 }
 
 /// **The UDP bind grant's refusals** (milestone 55 (Time Machine: SMB3 with Apple's extensions, and
 /// mDNS)), inside the accept test's spawn (see [`tcp_accept_inbound`]). A port outside the grant is
-/// `LISTEN_DENIED`, the capability answer that no retry helps; a granted port binds, and asking for
+/// `PORT_CLAIM_DENIED`, the capability answer that no retry helps; a granted port binds, and asking for
 /// it again collides. The spawn word also carries the TCP listen grant, so this exercises the
 /// composed word. Nothing proves multicast (notes/net/the-test-clients.md).
 fn udp_bind_half() {
     match open(OPERATION_BIND_UDP, LISTENER, UDP_DENIED_PORT) {
-        LISTEN_DENIED => {}
-        LISTEN_GRANTED => done(0xE080), // bound a port nothing granted: the whole point, lost
+        PORT_CLAIM_DENIED => {}
+        PORT_CLAIM_GRANTED => done(0xE080), // bound a port nothing granted: the whole point, lost
         _ => done(0xE081),
     }
 
     match open(OPERATION_BIND_UDP, CONNECTION, UDP_GRANTED_PORT) {
-        LISTEN_GRANTED => {}
-        LISTEN_DENIED => done(0xE082), // the spawn granted the wrong range
+        PORT_CLAIM_GRANTED => {}
+        PORT_CLAIM_DENIED => done(0xE082), // the spawn granted the wrong range
         _ => done(0xE083),
     }
 
     // Exclusive, the property that makes a fixed port grantable rather than merely a number.
     match open(OPERATION_BIND_UDP, LISTENER, UDP_GRANTED_PORT) {
-        LISTEN_IN_USE => {}
-        LISTEN_GRANTED => done(0xE084), // two sockets on one fixed port
+        PORT_CLAIM_IN_USE => {}
+        PORT_CLAIM_GRANTED => done(0xE084), // two sockets on one fixed port
         _ => done(0xE085),
     }
 
@@ -849,7 +849,7 @@ fn http_package(len: u64) -> ! {
 
 /// One fetch on socket 0: `OK`, [`DIGEST_REFUSED`], or the stage code that stopped it.
 fn fetch_and_verify(stem: &str, tampered: bool, expected: &measured_boot::Digest) -> u64 {
-    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REPLY_OK {
         return 0xE092;
     }
     let code = exchange(stem, tampered, expected);
@@ -882,10 +882,10 @@ fn exchange(stem: &str, tampered: bool, expected: &measured_boot::Digest) -> u64
 
     let mut response = http_response::Response::new();
     let mut hash = measured_boot::Sha256::new();
-    let mut chunk = [0u8; DATA_MAXIMUM];
+    let mut chunk = [0u8; MAXIMUM_PAYLOAD_BYTES];
     while !response.is_complete() {
         let (got, _) = on(SOCKET, OPERATION_RECEIVE, 0);
-        if got == 0 || got > DATA_MAXIMUM as u64 {
+        if got == 0 || got > MAXIMUM_PAYLOAD_BYTES as u64 {
             return 0xE096; // the peer went away (or the stack failed) before the body was whole
         }
         let got = got as usize;
@@ -928,7 +928,7 @@ fn tcp_drain(peer: u64) -> ! {
     let ip = ((peer >> 16) as u32).to_be_bytes();
     let port = peer as u16;
     attach_page_frame();
-    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REP_OK {
+    if open(OPERATION_OPEN_TCP, SOCKET, 0) != REPLY_OK {
         done(0xE0A0);
     }
     SHARED_FRAME.set_destination(ip, port);
@@ -942,14 +942,14 @@ fn tcp_drain(peer: u64) -> ! {
     loop {
         let asked = now();
         let (got, _) = on(SOCKET, OPERATION_RECEIVE, 0);
-        if got == 0 || got > DATA_MAXIMUM as u64 {
+        if got == 0 || got > MAXIMUM_PAYLOAD_BYTES as u64 {
             break;
         }
         last = now();
         bytes += got;
         calls += 1;
         inside += last.saturating_sub(asked);
-        full += u64::from(got == DATA_MAXIMUM as u64);
+        full += u64::from(got == MAXIMUM_PAYLOAD_BYTES as u64);
     }
     let _ = close(SOCKET);
     send(REPORT, OK, bytes, last.saturating_sub(first));

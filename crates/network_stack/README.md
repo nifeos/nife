@@ -4,7 +4,7 @@ The network stack's host-testable logic, kept out of the programs that use it so
 host test and a machine-checked proof. `no_std`, no dependency, no `unsafe`. It stays in nife and
 is not published.
 
-- `ephemeral::Ports` allocates outbound local ports from the private range 49152 to 65535 with a
+- `ephemeral_port::Cursor` allocates outbound local ports from the private range 49152 to 65535 with a
   cursor that never falls behind the boot clock, so a stack started a moment after another hands
   out none of the ports an earlier one used.
 - `polled_wait::next` decides whether a stack may sleep while it waits on a network card that
@@ -13,9 +13,9 @@ is not published.
 ## EXAMPLES
 
 ```rust
-use network_stack::ephemeral::Ports;
+use network_stack::ephemeral_port::Cursor;
 
-let mut ports = Ports::new();
+let mut ports = Cursor::new();
 let port = ports.next(0, |_| false).unwrap();
 assert!((49152..=65535).contains(&port));
 ```

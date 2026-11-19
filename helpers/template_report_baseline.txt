@@ -236,7 +236,7 @@ slabtop abbreviations 1
 slabtop register_names 1
 soak_page abbreviations 4
 soak_page prose_acronyms 1
-socket_contract abbreviations 13
+socket_contract abbreviations 11
 socket_contract register_names 1
 spin_lock abbreviations 1
 spin_lock prose_acronyms 1

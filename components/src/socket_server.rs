@@ -28,9 +28,9 @@ pub(crate) const RETRANSMIT: u64 = 6;
 
 /// Our own endpoint again, `WRITE | GRANT`, and our own address space (§255 (each socket is its own
 /// capability)); `socket_contract::stack_slots` says what each is for.
-pub(crate) const MINT: u64 = socket_contract::stack_slots::MINT;
+pub(crate) const MINT: u64 = socket_contract::stack_slots::MINTING_ENDPOINT_SLOT;
 
-pub(crate) const OWN_SPACE: u64 = socket_contract::stack_slots::OWN_SPACE;
+pub(crate) const OWN_SPACE: u64 = socket_contract::stack_slots::OWN_ADDRESS_SPACE_SLOT;
 
 /// The heap smoltcp allocates against, capped under the granted budget.
 ///
@@ -53,7 +53,7 @@ user_mode_runtime::program_entry!(start);
 /// `a2` is the server's **grant word**, both port authorities in one spawn argument: the TCP
 /// listen range in the low half (milestone 107 (the socket contract learns to accept), `socket_contract::listen_grant`) and the fixed-UDP
 /// bind range in the high half (milestone 55 (time Machine: SMB3 with Apple's extensions, and mDNS)'s stack half, `socket_contract::udp_bind_grant`).
-/// Whoever spawns the server decides both; a server spawned with zero (`NO_LISTEN_GRANT`, which
+/// Whoever spawns the server decides both; a server spawned with zero (`NO_PORT_GRANT`, which
 /// every outbound-only test uses) refuses every `LISTEN` and every `BIND_UDP`. The client half
 /// ignores it.
 fn start(role: u64, direct_memory_access_phys: u64, a2: u64) -> ! {
@@ -115,8 +115,8 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
     // --- Serve the socket contract. One synchronous exchange per request. ---
     let mut table = Table::new();
     // Local ports follow the boot clock, so a stack started after another starts past its ports
-    // (network_stack::ephemeral says why that matters to a peer in TIME_WAIT).
-    let mut ports = ephemeral::Ports::new();
+    // (network_stack::ephemeral_port says why that matters to a peer in TIME_WAIT).
+    let mut ports = ephemeral_port::Cursor::new();
     loop {
         let req = receive_request(STACK);
         let (operation, arg, badge) = (req.w0, req.w1, req.badge);
@@ -145,7 +145,7 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
                 OPERATION_OPEN_TCP => open_tcp(&mut sockets, &mut table, &mut ports),
                 OPERATION_LISTEN => tcp_listen(&mut sockets, &mut table, arg, grant_word),
                 OPERATION_BIND_UDP => udp_bind(&mut sockets, &mut table, arg, grant_word),
-                _ => Err(REP_ERR),
+                _ => Err(REPLY_ERROR),
             };
             match opened {
                 Ok((entry, word)) => table.hand_over(&mut sockets, to, entry, word, 0),
@@ -159,11 +159,11 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
         // A socket's capability. A badge the table does not hold is a closed socket's, or one
         // nobody minted: it reaches nothing.
         let Some(entry) = table.find(badge) else {
-            reply(to, REP_ERR, 0);
+            reply(to, REPLY_ERROR, 0);
             continue;
         };
         let rep = match operation {
-            OPERATION_SENDTO => udp_sendto(
+            OPERATION_SEND_TO => udp_sendto(
                 &mut iface,
                 &mut dev,
                 &mut sockets,
@@ -183,19 +183,19 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
             ),
             OPERATION_CLOSE => {
                 table.close(&mut iface, &mut dev, &mut sockets, entry);
-                REP_OK
+                REPLY_OK
             }
             OPERATION_ACCEPT => {
                 match tcp_accept(&mut iface, &mut dev, &mut sockets, &mut table, entry) {
                     Ok((connection, peer)) => {
-                        table.hand_over(&mut sockets, to, connection, REP_OK, peer);
+                        table.hand_over(&mut sockets, to, connection, REPLY_OK, peer);
                         continue;
                     }
                     Err(word) => word,
                 }
             }
             // A CALL naming ATTACH carries no frame; anything else is not an operation.
-            _ => REP_ERR,
+            _ => REPLY_ERROR,
         };
         reply(to, rep, 0);
     }

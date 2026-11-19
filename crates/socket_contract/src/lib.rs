@@ -4,7 +4,7 @@
 //! only make sockets, and one capability per open socket. Opening and `LISTEN` are `CALL`s on the
 //! front door answered with the socket's capability; every other operation is a `CALL` on the
 //! socket, with an opcode, one argument and one reply word. The stack names a socket only by its
-//! kernel-stamped [`SOCKET_BADGE`], so a closed socket's copies reach nothing. A port claim is
+//! kernel-stamped [`SOCKET_BADGE_BIT`], so a closed socket's copies reach nothing. A port claim is
 //! granted at spawn ([`listen_grant`], [`udp_bind_grant`]), never assumed.
 //!
 //! # Vocabulary
@@ -52,65 +52,65 @@ pub const VERSION: u32 = 1;
 pub const INTERFACE_ID: u64 = 19;
 
 /// `SEND_CAPABILITY` on a socket's capability: delegate that socket's shared frame. Not a `CALL`:
-/// it has no argument word, and a `CALL` with this opcode is answered [`REP_ERR`].
+/// it has no argument word, and a `CALL` with this opcode is answered [`REPLY_ERROR`].
 ///
 /// Name: ratified 2026-11-19 (UTC), the same spelling as the resolver contract's operation for the
 /// same act; the earlier page-frame spelling is refused, since `frame` also means a network frame
 /// that a stack takes off a network card.
 pub const OPERATION_ATTACH_SHARED_PAGE: u64 = 1;
 /// `CALL` on the front door: create a User Datagram Protocol (UDP) socket and bind an ephemeral local port. Answered
-/// [`REP_OK`] with the socket's capability.
+/// [`REPLY_OK`] with the socket's capability.
 pub const OPERATION_OPEN_UDP: u64 = 2;
-/// `CALL` on the front door: create a TCP socket. Answered [`REP_OK`] with the socket's capability.
+/// `CALL` on the front door: create a TCP socket. Answered [`REPLY_OK`] with the socket's capability.
 pub const OPERATION_OPEN_TCP: u64 = 3;
-/// `CALL(udp socket, OPERATION_SENDTO, length)`: UDP send. The argument word is the payload length
-/// in bytes, at most [`DATA_MAXIMUM`]; a larger one is answered [`REP_ERR`]. The destination is in
-/// the frame header and the payload at [`PAYLOAD_OFFSET_BYTES`]. The frame's [`LENGTH_OFFSET_BYTES`] is not read. Replies
-/// [`REP_OK`], or [`REP_ERR`].
-pub const OPERATION_SENDTO: u64 = 4;
+/// `CALL(udp socket, OPERATION_SEND_TO, length)`: UDP send. The argument word is the payload length
+/// in bytes, at most [`MAXIMUM_PAYLOAD_BYTES`]; a larger one is answered [`REPLY_ERROR`]. The destination is in
+/// the frame header and the payload at [`PAYLOAD_OFFSET_BYTES`]. The frame's [`PAYLOAD_LENGTH_OFFSET_BYTES`] is not read. Replies
+/// [`REPLY_OK`], or [`REPLY_ERROR`].
+pub const OPERATION_SEND_TO: u64 = 4;
 /// `CALL(socket, OPERATION_RECEIVE, 0)`: block until a datagram or segment arrives, and write it to
 /// the frame. The argument word is ignored: pass 0. Replies the payload length in bytes, which is
-/// also written at [`LENGTH_OFFSET_BYTES`]; 0 means the stream has closed, and [`REP_ERR`] a failure. A UDP
-/// reply also writes the sender's address and port at [`DESTINATION_ADDRESS_OFFSET_BYTES`] and [`DESTINATION_PORT_OFFSET_BYTES`].
+/// also written at [`PAYLOAD_LENGTH_OFFSET_BYTES`]; 0 means the stream has closed, and [`REPLY_ERROR`] a failure. A UDP
+/// reply also writes the sender's address and port at [`DESTINATION_IP_ADDRESS_OFFSET_BYTES`] and [`DESTINATION_PORT_OFFSET_BYTES`].
 pub const OPERATION_RECEIVE: u64 = 5;
 /// `CALL(tcp socket, OPERATION_CONNECT, 0)`: connect to the destination in the frame header. The
 /// argument word is ignored: pass 0. Replies [`CONNECT_ESTABLISHED`] or [`CONNECT_REFUSED`], or
-/// [`REP_ERR`].
+/// [`REPLY_ERROR`].
 pub const OPERATION_CONNECT: u64 = 6;
 /// `CALL(tcp socket, OPERATION_SEND, length)`: TCP send. The argument word is the payload length in
-/// bytes, at most [`DATA_MAXIMUM`]; a larger one is answered [`REP_ERR`]. The payload is at
-/// [`PAYLOAD_OFFSET_BYTES`]. The frame's [`LENGTH_OFFSET_BYTES`] is not read. Replies the count of bytes the stack
+/// bytes, at most [`MAXIMUM_PAYLOAD_BYTES`]; a larger one is answered [`REPLY_ERROR`]. The payload is at
+/// [`PAYLOAD_OFFSET_BYTES`]. The frame's [`PAYLOAD_LENGTH_OFFSET_BYTES`] is not read. Replies the count of bytes the stack
 /// accepted, which may be fewer than `length` when its buffer is short: send the rest.
 ///
 /// ```
-/// use socket_contract::{DATA_MAXIMUM, LENGTH_OFFSET_BYTES, PAYLOAD_OFFSET_BYTES, OPERATION_SEND};
+/// use socket_contract::{MAXIMUM_PAYLOAD_BYTES, PAYLOAD_LENGTH_OFFSET_BYTES, PAYLOAD_OFFSET_BYTES, OPERATION_SEND};
 ///
 /// // A client's side of a send: the payload goes in the frame, and the length goes in the
-/// // argument word of the `CALL`. It never writes `LENGTH_OFFSET_BYTES`.
+/// // argument word of the `CALL`. It never writes `PAYLOAD_LENGTH_OFFSET_BYTES`.
 /// let mut frame = [0u8; 4096];
 /// let payload = b"hello out!";
 /// let at = PAYLOAD_OFFSET_BYTES as usize;
 /// frame[at..at + payload.len()].copy_from_slice(payload);
 /// let (operation, argument) = (OPERATION_SEND, payload.len() as u64);
 ///
-/// // The stack's side: the argument is the whole length, checked against `DATA_MAXIMUM`.
+/// // The stack's side: the argument is the whole length, checked against `MAXIMUM_PAYLOAD_BYTES`.
 /// assert_eq!(operation, 7);
-/// assert!(argument <= DATA_MAXIMUM as u64);
+/// assert!(argument <= MAXIMUM_PAYLOAD_BYTES as u64);
 /// let sent = &frame[at..at + argument as usize];
 /// assert_eq!(sent, payload);
-/// // Nothing was written at `LENGTH_OFFSET_BYTES`.
-/// assert_eq!(frame[LENGTH_OFFSET_BYTES as usize..LENGTH_OFFSET_BYTES as usize + 2], [0, 0]);
+/// // Nothing was written at `PAYLOAD_LENGTH_OFFSET_BYTES`.
+/// assert_eq!(frame[PAYLOAD_LENGTH_OFFSET_BYTES as usize..PAYLOAD_LENGTH_OFFSET_BYTES as usize + 2], [0, 0]);
 /// ```
 pub const OPERATION_SEND: u64 = 7;
 /// `CALL(socket, OPERATION_CLOSE, 0)`: close the socket and drop its frame mapping. The argument
-/// word is ignored: pass 0. Replies [`REP_OK`].
+/// word is ignored: pass 0. Replies [`REPLY_OK`].
 pub const OPERATION_CLOSE: u64 = 8;
 /// `CALL(front door, OPERATION_LISTEN, port)`: start listening on `port`. Replies one of the
-/// [`LISTEN_GRANTED`] outcomes, and a granted one carries the listener's capability. Names
+/// [`PORT_CLAIM_GRANTED`] outcomes, and a granted one carries the listener's capability. Names
 /// provisional.
 pub const OPERATION_LISTEN: u64 = 9;
 /// `CALL(listener, OPERATION_ACCEPT, 0)`: block until a connection arrives on this listener, then
-/// answer [`REP_OK`] carrying the connection's capability, or [`REP_ERR`]. The listener keeps
+/// answer [`REPLY_OK`] carrying the connection's capability, or [`REPLY_ERROR`]. The listener keeps
 /// listening, and the connection wants a frame attached before it carries bytes. The argument word
 /// is ignored: pass 0. The reply's second word is the peer that connected, packed by [`peer_word`]
 /// and read back by [`word_peer`]: the Internet Protocol version 4 (IPv4) address in bits 47 to 16
@@ -126,7 +126,7 @@ pub const OPERATION_LISTEN: u64 = 9;
 /// ```
 pub const OPERATION_ACCEPT: u64 = 10;
 /// `CALL(front door, OPERATION_BIND_UDP, port)`: create a UDP socket bound to the fixed
-/// `port`, subject to the stack's [`udp_bind_grant`]. Replies the [`LISTEN_GRANTED`] vocabulary,
+/// `port`, subject to the stack's [`udp_bind_grant`]. Replies the [`PORT_CLAIM_GRANTED`] vocabulary,
 /// which is the port-claim vocabulary rather than a TCP one, and a granted one carries the socket's
 /// capability. Name provisional.
 pub const OPERATION_BIND_UDP: u64 = 11;
@@ -154,7 +154,7 @@ pub const fn word_peer(word: u64) -> Option<([u8; 4], u16)> {
 /// socket's badge with this bit set, so a request whose badge has it names a socket and any other
 /// badge is a front door. A closed socket's badge stays
 /// in the socket range and leaves the stack's table, so it reaches nothing at all.
-pub const SOCKET_BADGE: u64 = 1 << 63;
+pub const SOCKET_BADGE_BIT: u64 = 1 << 63;
 
 /// Does a request that arrived with `badge` name a socket? `false` means it came through a front
 /// door. Name provisional.
@@ -164,14 +164,14 @@ pub const SOCKET_BADGE: u64 = 1 << 63;
 /// A badge in the socket range names a socket; any other badge is a front door:
 ///
 /// ```
-/// use socket_contract::{SOCKET_BADGE, names_a_socket};
+/// use socket_contract::{SOCKET_BADGE_BIT, names_a_socket};
 ///
-/// assert!(names_a_socket(SOCKET_BADGE | 1));
+/// assert!(names_a_socket(SOCKET_BADGE_BIT | 1));
 /// assert!(!names_a_socket(0)); // the unbadged front door a spawner hands out
 /// assert!(!names_a_socket(7)); // a front door a spawner badged for its own reasons
 /// ```
 pub const fn names_a_socket(badge: u64) -> bool {
-    badge & SOCKET_BADGE != 0
+    badge & SOCKET_BADGE_BIT != 0
 }
 
 // Reply words. The connect outcomes are their own small vocabulary, so a client can tell
@@ -180,32 +180,32 @@ pub const fn names_a_socket(badge: u64) -> bool {
 /// Success. Non-negative is success, and `RECEIVE` and `SEND` reply a byte count here instead: from
 /// `RECEIVE`, 0 is the end of the stream, and from `SEND`, a count below the length sent means send
 /// the rest.
-pub const REP_OK: u64 = 0;
+pub const REPLY_OK: u64 = 0;
 /// `OPERATION_CONNECT` succeeded.
 pub const CONNECT_ESTABLISHED: u64 = 0;
 /// The peer sent a reset (RST), or the connect otherwise failed or closed.
 pub const CONNECT_REFUSED: u64 = 1;
 /// A failure sentinel (a capability that names no live socket, a bad operation, or a server-side
 /// timeout). Bit 32 set, so it is never mistaken for a length or a connect outcome.
-pub const REP_ERR: u64 = 1 << 32;
+pub const REPLY_ERROR: u64 = 1 << 32;
 
 // `LISTEN`'s outcomes, its own small vocabulary because "never granted this port" and "somebody
 // else holds it" call for opposite responses: ask for authority, or pick another port.
 
 /// The port claim was granted; the reply carries the new capability.
-pub const LISTEN_GRANTED: u64 = 0;
+pub const PORT_CLAIM_GRANTED: u64 = 0;
 /// The port is outside this stack's [`listen_grant`]. The capability refusal: no retry, no
 /// other port in range will help unless the caller was granted it.
-pub const LISTEN_DENIED: u64 = 1;
+pub const PORT_CLAIM_DENIED: u64 = 1;
 /// The port is inside the grant but another socket already listens there. Exclusivity is the whole
 /// reason a port is a grantable thing; this is what enforcing it looks like from the client side.
-pub const LISTEN_IN_USE: u64 = 2;
+pub const PORT_CLAIM_IN_USE: u64 = 2;
 
 /// No inbound authority at all, and the default a net server is spawned with.
-pub const NO_LISTEN_GRANT: u64 = 0;
+pub const NO_PORT_GRANT: u64 = 0;
 
-/// Pack an inclusive listen-port range into the one word a net server is spawned with. `lo == 0` is
-/// [`NO_LISTEN_GRANT`] whatever `hi` says, because port 0 is not a port and a grant that starts at
+/// Pack an inclusive listen-port range into the one word a net server is spawned with. `start == 0` is
+/// [`NO_PORT_GRANT`] whatever `end` says, because port 0 is not a port and a grant that starts at
 /// "no port" grants nothing; that keeps the "no grant" case a single value a reader can recognize.
 ///
 /// # Examples
@@ -213,29 +213,29 @@ pub const NO_LISTEN_GRANT: u64 = 0;
 /// The degenerate cases collapse to one value a reader can recognize:
 ///
 /// ```
-/// use socket_contract::{NO_LISTEN_GRANT, listen_grant};
+/// use socket_contract::{NO_PORT_GRANT, listen_grant};
 ///
-/// assert_eq!(listen_grant(0, 65535), NO_LISTEN_GRANT); // port 0 is not a port
-/// assert_eq!(listen_grant(8080, 80), NO_LISTEN_GRANT); // an inverted range grants nothing
+/// assert_eq!(listen_grant(0, 65535), NO_PORT_GRANT); // port 0 is not a port
+/// assert_eq!(listen_grant(8080, 80), NO_PORT_GRANT); // an inverted range grants nothing
 /// ```
-pub const fn listen_grant(lo: u16, hi: u16) -> u64 {
-    if lo == 0 || hi < lo {
-        return NO_LISTEN_GRANT;
+pub const fn listen_grant(start: u16, end: u16) -> u64 {
+    if start == 0 || end < start {
+        return NO_PORT_GRANT;
     }
-    (lo as u64) | ((hi as u64) << 16)
+    (start as u64) | ((end as u64) << 16)
 }
 
 /// May a holder of a stack carrying `grant` listen on `port`? The whole authority check, in one
 /// place both the server and its tests read, so a server-side widening cannot pass a test that
 /// keeps its own copy of the range.
-pub const fn grant_allows(grant: u64, port: u16) -> bool {
+pub const fn listen_grant_allows(grant: u64, port: u16) -> bool {
     let lo = (grant & 0xffff) as u16;
     let hi = ((grant >> 16) & 0xffff) as u16;
     lo != 0 && port >= lo && port <= hi
 }
 
 /// Pack an inclusive UDP bind port range into the high half of the spawn word (the
-/// [`listen_grant`] holds the low half, and the two compose with `|`). The same degenerate cases as the listen grant, for the same reasons: `lo == 0` grants nothing, and
+/// [`listen_grant`] holds the low half, and the two compose with `|`). The same degenerate cases as the listen grant, for the same reasons: `start == 0` grants nothing, and
 /// an inverted range is a spawn-site mistake whose safe reading is "grants nothing".
 ///
 /// # Examples
@@ -244,39 +244,39 @@ pub const fn grant_allows(grant: u64, port: u16) -> bool {
 ///
 /// ```
 /// use socket_contract::{
-///     NO_LISTEN_GRANT, grant_allows, listen_grant, udp_bind_grant, udp_grant_allows,
+///     NO_PORT_GRANT, listen_grant_allows, listen_grant, udp_bind_grant, udp_bind_grant_allows,
 /// };
 ///
 /// // What an mDNS responder is spawned with: one UDP port, no TCP listen authority at all.
 /// let responder = udp_bind_grant(5353, 5353);
-/// assert!(udp_grant_allows(responder, 5353));
-/// assert!(!grant_allows(responder, 5353)); // the same number, and not the same authority
+/// assert!(udp_bind_grant_allows(responder, 5353));
+/// assert!(!listen_grant_allows(responder, 5353)); // the same number, and not the same authority
 ///
 /// // What a file server is spawned with: SMB's port, and nothing on the UDP side.
 /// let smb = listen_grant(445, 445);
-/// assert!(grant_allows(smb, 445));
-/// assert!(!udp_grant_allows(smb, 445));
+/// assert!(listen_grant_allows(smb, 445));
+/// assert!(!udp_bind_grant_allows(smb, 445));
 ///
 /// // Both at once is one word, and neither half leaks into the other.
 /// let both = smb | responder;
-/// assert!(grant_allows(both, 445) && udp_grant_allows(both, 5353));
-/// assert!(!grant_allows(both, 5353) && !udp_grant_allows(both, 445));
+/// assert!(listen_grant_allows(both, 445) && udp_bind_grant_allows(both, 5353));
+/// assert!(!listen_grant_allows(both, 5353) && !udp_bind_grant_allows(both, 445));
 ///
 /// // The default, and what every outbound-only client is spawned with: nothing inbound.
-/// assert!(!grant_allows(NO_LISTEN_GRANT, 445));
-/// assert!(!udp_grant_allows(NO_LISTEN_GRANT, 5353));
+/// assert!(!listen_grant_allows(NO_PORT_GRANT, 445));
+/// assert!(!udp_bind_grant_allows(NO_PORT_GRANT, 5353));
 /// ```
-pub const fn udp_bind_grant(lo: u16, hi: u16) -> u64 {
-    if lo == 0 || hi < lo {
-        return NO_LISTEN_GRANT;
+pub const fn udp_bind_grant(start: u16, end: u16) -> u64 {
+    if start == 0 || end < start {
+        return NO_PORT_GRANT;
     }
-    ((lo as u64) << 32) | ((hi as u64) << 48)
+    ((start as u64) << 32) | ((end as u64) << 48)
 }
 
-/// May a holder of a stack carrying `grant` bind a UDP socket to the fixed `port`? [`grant_allows`]
+/// May a holder of a stack carrying `grant` bind a UDP socket to the fixed `port`? [`listen_grant_allows`]
 /// for the word's UDP half; the two halves are independent authorities, so granting a TCP listen
 /// range grants no UDP port and the reverse.
-pub const fn udp_grant_allows(grant: u64, port: u16) -> bool {
+pub const fn udp_bind_grant_allows(grant: u64, port: u16) -> bool {
     let lo = ((grant >> 32) & 0xffff) as u16;
     let hi = ((grant >> 48) & 0xffff) as u16;
     lo != 0 && port >= lo && port <= hi
@@ -289,10 +289,10 @@ pub mod stack_slots {
     /// The stack's own endpoint again, `WRITE | GRANT`: what each socket's capability is minted
     /// from with `BADGE`, which keeps the source's rights. Not the `READ` copy the stack serves on,
     /// because a socket minted from that could take other clients' requests.
-    pub const MINT: u64 = 7;
+    pub const MINTING_ENDPOINT_SLOT: u64 = 7;
     /// The stack's own address space, `WRITE`: so `CLOSE` can `UNMAP` a socket's page before its
     /// table entry takes another client's.
-    pub const OWN_SPACE: u64 = 8;
+    pub const OWN_ADDRESS_SPACE_SLOT: u64 = 8;
 }
 
 /// The destination address's offset in the `PageFrame`: the first header field. The frame is
@@ -302,11 +302,11 @@ pub mod stack_slots {
 ///   +0x000  u8[4]  destination_address    destination (SENDTO / CONNECT); source on a UDP RECEIVE reply
 ///   +0x004  u16    destination_port  little-endian, the same two roles
 ///   +0x006  u16    len       payload length, written by RECEIVE only
-///   +0x008  ...    payload   up to DATA_MAXIMUM bytes
+///   +0x008  ...    payload   up to MAXIMUM_PAYLOAD_BYTES bytes
 /// ```
 ///
 /// Name: ratified 2026-11-14 (UTC) (#3571).
-pub const DESTINATION_ADDRESS_OFFSET_BYTES: u64 = 0x000;
+pub const DESTINATION_IP_ADDRESS_OFFSET_BYTES: u64 = 0x000;
 /// The destination port, right after the destination Internet Protocol (IP) address.
 ///
 /// Name: ratified 2026-11-14 (UTC) (#3571).
@@ -315,17 +315,17 @@ pub const DESTINATION_PORT_OFFSET_BYTES: u64 = 0x004;
 /// little-endian; the lease word, by contrast, carries its address big-endian in its low 32 bits,
 /// because that is the order an address is read in. Only `RECEIVE` writes it,
 /// and nothing in this contract reads it: a send carries its length in the argument word of its
-/// `CALL`, checked against [`DATA_MAXIMUM`], and ignores this field. A client may clear it before
+/// `CALL`, checked against [`MAXIMUM_PAYLOAD_BYTES`], and ignores this field. A client may clear it before
 /// a `RECEIVE` to watch for the reply.
 ///
 /// Name: ratified 2026-11-14 (UTC) (#3571).
-pub const LENGTH_OFFSET_BYTES: u64 = 0x006;
+pub const PAYLOAD_LENGTH_OFFSET_BYTES: u64 = 0x006;
 /// Where the payload bytes start.
 ///
 /// Name: ratified 2026-11-14 (UTC) (#3571).
 pub const PAYLOAD_OFFSET_BYTES: u64 = 0x008;
 
-/// The shared frame's size in bytes: one 4 KiB page. [`DATA_MAXIMUM`] derives from it, and a client
+/// The shared frame's size in bytes: one 4 KiB page. [`MAXIMUM_PAYLOAD_BYTES`] derives from it, and a client
 /// runtime that maps the frame can import it.
 ///
 /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
@@ -334,35 +334,35 @@ pub const FRAME_BYTES: usize = 4096;
 /// The largest payload the frame carries (a 4 KiB frame minus the header).
 ///
 /// Name: ratified 2026-10-27 (#2797).
-pub const DATA_MAXIMUM: usize = FRAME_BYTES - PAYLOAD_OFFSET_BYTES as usize;
+pub const MAXIMUM_PAYLOAD_BYTES: usize = FRAME_BYTES - PAYLOAD_OFFSET_BYTES as usize;
 
 /// The lease report the network stack sends its spawner once the Dynamic Host Configuration Protocol (DHCP) completes, provisional, as is the
 /// name. Word 0 is the leased Internet Protocol version 4
 /// (IPv4) address, big-endian in the low 32 bits; word 1 the first Domain Name System (DNS) server the lease named, for the
 /// resolver's spawner (the name resolver is its own confined program), the same encoding or
-/// [`lease::NO_NAMESERVER`]; word 2 is zero and reserved.
+/// [`lease::NO_NAME_SERVER`]; word 2 is zero and reserved.
 ///
 /// ```
 /// use socket_contract::lease;
 ///
-/// let word = lease::ipv4_word([10, 0, 2, 3]);
-/// assert_eq!(lease::word_ipv4(word), Some([10, 0, 2, 3]));
-/// assert_eq!(lease::word_ipv4(lease::NO_NAMESERVER), None);
+/// let word = lease::ipv4_to_word([10, 0, 2, 3]);
+/// assert_eq!(lease::word_to_ipv4(word), Some([10, 0, 2, 3]));
+/// assert_eq!(lease::word_to_ipv4(lease::NO_NAME_SERVER), None);
 /// ```
 pub mod lease {
     /// Word 1 when the lease named no DNS server. 0.0.0.0 is never a nameserver, so it cannot
     /// collide with one.
-    pub const NO_NAMESERVER: u64 = 0;
+    pub const NO_NAME_SERVER: u64 = 0;
 
     /// An IPv4 address as a report word: big-endian in the low 32 bits.
-    pub const fn ipv4_word(octets: [u8; 4]) -> u64 {
+    pub const fn ipv4_to_word(octets: [u8; 4]) -> u64 {
         u32::from_be_bytes(octets) as u64
     }
 
-    /// A report word back to an address, or `None` for [`NO_NAMESERVER`] or a word with any of the
+    /// A report word back to an address, or `None` for [`NO_NAME_SERVER`] or a word with any of the
     /// high 32 bits set, which no encoder here produces.
-    pub const fn word_ipv4(word: u64) -> Option<[u8; 4]> {
-        if word == NO_NAMESERVER || word > u32::MAX as u64 {
+    pub const fn word_to_ipv4(word: u64) -> Option<[u8; 4]> {
+        if word == NO_NAME_SERVER || word > u32::MAX as u64 {
             return None;
         }
         Some((word as u32).to_be_bytes())
@@ -391,11 +391,11 @@ mod tests {
 
     #[test]
     fn a_lease_word_round_trips_and_refuses_what_no_encoder_writes() {
-        assert_eq!(lease::ipv4_word([10, 0, 2, 3]), 0x0a00_0203);
-        assert_eq!(lease::word_ipv4(0x0a00_0203), Some([10, 0, 2, 3]));
-        assert_eq!(lease::word_ipv4(lease::NO_NAMESERVER), None);
-        assert_eq!(lease::word_ipv4(1 << 32), None);
-        assert_eq!(lease::word_ipv4(u32::MAX as u64), Some([255; 4]));
+        assert_eq!(lease::ipv4_to_word([10, 0, 2, 3]), 0x0a00_0203);
+        assert_eq!(lease::word_to_ipv4(0x0a00_0203), Some([10, 0, 2, 3]));
+        assert_eq!(lease::word_to_ipv4(lease::NO_NAME_SERVER), None);
+        assert_eq!(lease::word_to_ipv4(1 << 32), None);
+        assert_eq!(lease::word_to_ipv4(u32::MAX as u64), Some([255; 4]));
     }
 
     /// Every opcode the contract defines, in one place: a list repeated per property will one day
@@ -404,7 +404,7 @@ mod tests {
         OPERATION_ATTACH_SHARED_PAGE,
         OPERATION_OPEN_UDP,
         OPERATION_OPEN_TCP,
-        OPERATION_SENDTO,
+        OPERATION_SEND_TO,
         OPERATION_RECEIVE,
         OPERATION_CONNECT,
         OPERATION_SEND,
@@ -443,7 +443,7 @@ mod tests {
         for b in [1u64, 7, 1 << 62, (1 << 63) - 1] {
             assert!(!names_a_socket(b), "front door badge {b:#x} names a socket");
         }
-        for b in [SOCKET_BADGE, SOCKET_BADGE | 1, u64::MAX] {
+        for b in [SOCKET_BADGE_BIT, SOCKET_BADGE_BIT | 1, u64::MAX] {
             assert!(
                 names_a_socket(b),
                 "socket badge {b:#x} reads as a front door"
@@ -457,9 +457,9 @@ mod tests {
     #[test]
     fn the_frame_header_fields_do_not_overlap() {
         let mut offs: [u64; 3] = [
-            DESTINATION_ADDRESS_OFFSET_BYTES,
+            DESTINATION_IP_ADDRESS_OFFSET_BYTES,
             DESTINATION_PORT_OFFSET_BYTES,
-            LENGTH_OFFSET_BYTES,
+            PAYLOAD_LENGTH_OFFSET_BYTES,
         ];
         offs.sort_unstable();
         for w in offs.windows(2) {
@@ -479,7 +479,7 @@ mod tests {
     #[test]
     fn a_full_payload_fills_the_shared_frame_exactly() {
         assert_eq!(
-            PAYLOAD_OFFSET_BYTES as usize + DATA_MAXIMUM,
+            PAYLOAD_OFFSET_BYTES as usize + MAXIMUM_PAYLOAD_BYTES,
             4096,
             "the payload is not the whole frame minus its header"
         );
@@ -490,15 +490,20 @@ mod tests {
     #[test]
     fn connect_outcomes_are_their_own_vocabulary() {
         assert_ne!(CONNECT_ESTABLISHED, CONNECT_REFUSED);
-        assert_ne!(CONNECT_ESTABLISHED, REP_ERR);
-        assert_ne!(CONNECT_REFUSED, REP_ERR);
+        assert_ne!(CONNECT_ESTABLISHED, REPLY_ERROR);
+        assert_ne!(CONNECT_REFUSED, REPLY_ERROR);
     }
 
     /// The same for `LISTEN`'s three outcomes, and for the same reason: a client that cannot tell
     /// a refusal of *authority* from a collision on a port cannot do the right thing about either.
     #[test]
     fn listen_outcomes_are_their_own_vocabulary() {
-        let outcomes = [LISTEN_GRANTED, LISTEN_DENIED, LISTEN_IN_USE, REP_ERR];
+        let outcomes = [
+            PORT_CLAIM_GRANTED,
+            PORT_CLAIM_DENIED,
+            PORT_CLAIM_IN_USE,
+            REPLY_ERROR,
+        ];
         for (i, a) in outcomes.iter().enumerate() {
             for b in &outcomes[i + 1..] {
                 assert_ne!(a, b, "two listen outcomes share a value");
@@ -512,20 +517,29 @@ mod tests {
     #[test]
     fn a_listen_grant_admits_its_range_and_refuses_everything_outside_it() {
         let g = listen_grant(7778, 7780);
-        assert!(!grant_allows(g, 7777), "one below the range was allowed");
-        for p in 7778..=7780 {
-            assert!(grant_allows(g, p), "port {p} inside the range was refused");
-        }
-        assert!(!grant_allows(g, 7781), "one above the range was allowed");
         assert!(
-            !grant_allows(g, 80),
+            !listen_grant_allows(g, 7777),
+            "one below the range was allowed"
+        );
+        for p in 7778..=7780 {
+            assert!(
+                listen_grant_allows(g, p),
+                "port {p} inside the range was refused"
+            );
+        }
+        assert!(
+            !listen_grant_allows(g, 7781),
+            "one above the range was allowed"
+        );
+        assert!(
+            !listen_grant_allows(g, 80),
             "a well-known port outside was allowed"
         );
 
         // A single-port grant is the common case (one server, one port) and the tightest one.
         let one = listen_grant(80, 80);
-        assert!(grant_allows(one, 80));
-        assert!(!grant_allows(one, 81));
+        assert!(listen_grant_allows(one, 80));
+        assert!(!listen_grant_allows(one, 81));
     }
 
     /// No grant means no port. The default a server is spawned with must admit nothing, or
@@ -536,16 +550,16 @@ mod tests {
     fn the_default_grant_admits_no_port_at_all() {
         for p in [0u16, 1, 80, 7778, 65535] {
             assert!(
-                !grant_allows(NO_LISTEN_GRANT, p),
+                !listen_grant_allows(NO_PORT_GRANT, p),
                 "port {p} was allowed with no grant"
             );
         }
-        assert_eq!(listen_grant(0, 65535), NO_LISTEN_GRANT);
-        assert!(!grant_allows(listen_grant(0, 65535), 7778));
-        assert!(!grant_allows(listen_grant(1, 65535), 0));
+        assert_eq!(listen_grant(0, 65535), NO_PORT_GRANT);
+        assert!(!listen_grant_allows(listen_grant(0, 65535), 7778));
+        assert!(!listen_grant_allows(listen_grant(1, 65535), 0));
         // An inverted range is a mistake at the spawn site, and the safe reading of a mistake in a
         // grant is "grants nothing", never "grants the ports between them in the other order".
-        assert_eq!(listen_grant(7780, 7778), NO_LISTEN_GRANT);
+        assert_eq!(listen_grant(7780, 7778), NO_PORT_GRANT);
     }
 
     /// The UDP bind grant admits exactly its range, the twin of the listen-grant test above
@@ -556,31 +570,31 @@ mod tests {
     fn a_udp_bind_grant_admits_its_range_and_refuses_everything_outside_it() {
         let g = udp_bind_grant(5353, 5355);
         assert!(
-            !udp_grant_allows(g, 5352),
+            !udp_bind_grant_allows(g, 5352),
             "one below the range was allowed"
         );
         for p in 5353..=5355 {
             assert!(
-                udp_grant_allows(g, p),
+                udp_bind_grant_allows(g, p),
                 "port {p} inside the range was refused"
             );
         }
         assert!(
-            !udp_grant_allows(g, 5356),
+            !udp_bind_grant_allows(g, 5356),
             "one above the range was allowed"
         );
 
         // The single-port grant is the one the multicast name service actually spawns with (5353).
         let one = udp_bind_grant(5353, 5353);
-        assert!(udp_grant_allows(one, 5353));
-        assert!(!udp_grant_allows(one, 5354));
+        assert!(udp_bind_grant_allows(one, 5353));
+        assert!(!udp_bind_grant_allows(one, 5354));
 
         // The degenerate cases read as "grants nothing", exactly as the listen grant's do.
-        assert_eq!(udp_bind_grant(0, 65535), NO_LISTEN_GRANT);
-        assert_eq!(udp_bind_grant(5355, 5353), NO_LISTEN_GRANT);
+        assert_eq!(udp_bind_grant(0, 65535), NO_PORT_GRANT);
+        assert_eq!(udp_bind_grant(5355, 5353), NO_PORT_GRANT);
         for p in [0u16, 1, 5353, 65535] {
             assert!(
-                !udp_grant_allows(NO_LISTEN_GRANT, p),
+                !udp_bind_grant_allows(NO_PORT_GRANT, p),
                 "port {p} allowed with no grant"
             );
         }
@@ -594,35 +608,35 @@ mod tests {
     #[test]
     fn the_listen_and_udp_bind_grants_compose_without_leaking() {
         let listen_only = listen_grant(7778, 7778);
-        assert!(grant_allows(listen_only, 7778));
+        assert!(listen_grant_allows(listen_only, 7778));
         assert!(
-            !udp_grant_allows(listen_only, 7778),
+            !udp_bind_grant_allows(listen_only, 7778),
             "a listen grant granted a UDP bind"
         );
 
         let udp_only = udp_bind_grant(5353, 5353);
-        assert!(udp_grant_allows(udp_only, 5353));
+        assert!(udp_bind_grant_allows(udp_only, 5353));
         assert!(
-            !grant_allows(udp_only, 5353),
+            !listen_grant_allows(udp_only, 5353),
             "a UDP bind grant granted a TCP listen"
         );
 
         let both = listen_grant(7778, 7778) | udp_bind_grant(5353, 5353);
-        assert!(grant_allows(both, 7778));
-        assert!(udp_grant_allows(both, 5353));
+        assert!(listen_grant_allows(both, 7778));
+        assert!(udp_bind_grant_allows(both, 5353));
         assert!(
-            !grant_allows(both, 5353),
+            !listen_grant_allows(both, 5353),
             "the UDP half answered a listen question"
         );
         assert!(
-            !udp_grant_allows(both, 7778),
+            !udp_bind_grant_allows(both, 7778),
             "the listen half answered a UDP question"
         );
 
         // The top of the port space survives the high half's packing.
         let top = udp_bind_grant(65535, 65535);
-        assert!(udp_grant_allows(top, 65535));
-        assert!(!udp_grant_allows(top, 65534));
+        assert!(udp_bind_grant_allows(top, 65535));
+        assert!(!udp_bind_grant_allows(top, 65534));
     }
 
     /// A grant round-trips through the one word a spawn argument carries, up to the top of the
@@ -637,8 +651,14 @@ mod tests {
             (7778, 7778),
         ] {
             let g = listen_grant(lo, hi);
-            assert!(grant_allows(g, lo), "the low end was lost for {lo}..={hi}");
-            assert!(grant_allows(g, hi), "the high end was lost for {lo}..={hi}");
+            assert!(
+                listen_grant_allows(g, lo),
+                "the low end was lost for {lo}..={hi}"
+            );
+            assert!(
+                listen_grant_allows(g, hi),
+                "the high end was lost for {lo}..={hi}"
+            );
         }
     }
 }
@@ -650,7 +670,7 @@ mod verification {
     use super::*;
 
     /// **A listen grant admits exactly its range**: for any bounds and any port, a word packed by
-    /// [`listen_grant`] lets [`grant_allows`] admit the port exactly when the low bound is a port and
+    /// [`listen_grant`] lets [`listen_grant_allows`] admit the port exactly when the low bound is a port and
     /// the port lies between the bounds, and it grants no UDP port at all.
     /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_listen_grant_admits_exactly_its_range.patch`
     #[kani::proof]
@@ -660,14 +680,14 @@ mod verification {
         let port: u16 = kani::any();
         let grant = listen_grant(lowest, highest);
         assert_eq!(
-            grant_allows(grant, port),
+            listen_grant_allows(grant, port),
             lowest != 0 && lowest <= port && port <= highest
         );
-        assert!(!udp_grant_allows(grant, port));
+        assert!(!udp_bind_grant_allows(grant, port));
     }
 
     /// **A UDP bind grant admits exactly its range**: the same property for [`udp_bind_grant`] and
-    /// [`udp_grant_allows`], and such a word grants no listen port at all.
+    /// [`udp_bind_grant_allows`], and such a word grants no listen port at all.
     /// Falsification: replayable `crates/socket_contract/falsifications/verification.a_bind_grant_admits_exactly_its_range.patch`
     #[kani::proof]
     fn a_bind_grant_admits_exactly_its_range() {
@@ -676,10 +696,10 @@ mod verification {
         let port: u16 = kani::any();
         let grant = udp_bind_grant(lowest, highest);
         assert_eq!(
-            udp_grant_allows(grant, port),
+            udp_bind_grant_allows(grant, port),
             lowest != 0 && lowest <= port && port <= highest
         );
-        assert!(!grant_allows(grant, port));
+        assert!(!listen_grant_allows(grant, port));
     }
 
     /// **The two halves of a composed grant are independent**: for any listen range, any UDP range
@@ -692,8 +712,14 @@ mod verification {
         let bind = udp_bind_grant(kani::any(), kani::any());
         let port: u16 = kani::any();
         let both = listen | bind;
-        assert_eq!(grant_allows(both, port), grant_allows(listen, port));
-        assert_eq!(udp_grant_allows(both, port), udp_grant_allows(bind, port));
+        assert_eq!(
+            listen_grant_allows(both, port),
+            listen_grant_allows(listen, port)
+        );
+        assert_eq!(
+            udp_bind_grant_allows(both, port),
+            udp_bind_grant_allows(bind, port)
+        );
     }
 
     /// **A peer word round-trips for every address and port**: for any four octets and any port,

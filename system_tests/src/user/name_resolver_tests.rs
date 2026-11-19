@@ -251,7 +251,7 @@ fn a_granted_client_resolves_inside_its_zone_and_nothing_outside_it() {
     };
     let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ));
     // The lease, drained so `net_stack` enters its serve loop. Its second word is the name server
     // DHCP named (slirp's 10.0.2.3, which forwards to the host's resolver); the resolver here is
@@ -259,7 +259,7 @@ fn a_granted_client_resolves_inside_its_zone_and_nothing_outside_it() {
     // against. Which server to ask is the spawner's decision either way.
     let [_lease, nameserver, ..] = crate::sched::ipc_receive(w.report);
     assert_eq!(
-        socket_contract::lease::word_ipv4(nameserver),
+        socket_contract::lease::word_to_ipv4(nameserver),
         Some([10, 0, 2, 3]),
         "the lease did not name slirp's name server, so a spawner would have nothing to hand on",
     );
@@ -336,7 +336,7 @@ fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_client() {
     };
     let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ));
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);
@@ -539,7 +539,7 @@ fn a_std_program_resolves_its_granted_zone_and_nothing_without_a_grant() {
     };
     let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ));
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);
@@ -580,7 +580,7 @@ fn a_std_program_asks_each_badge_in_order_until_one_holds_the_name() {
     };
     let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ));
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);

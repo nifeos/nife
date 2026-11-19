@@ -84,7 +84,7 @@ mod socket_test_client;
 // reason; its header records why that is an exception.
 #[path = "socket_squatter.rs"]
 mod socket_squatter;
-use network_stack::ephemeral;
+use network_stack::ephemeral_port;
 use socket_contract::*;
 
 #[path = "nic_device.rs"]

@@ -403,7 +403,7 @@ pub(crate) fn start_drain(
     peer: u64,
 ) -> Result<(RendezvousId, Wiring), NotStarted> {
     const TEST_TCP_DRAIN: u64 = 7;
-    let mut w = start_net_server(image, socket_contract::NO_LISTEN_GRANT)?;
+    let mut w = start_net_server(image, socket_contract::NO_PORT_GRANT)?;
     let cli = super::virtio_service::spawn_stack_client(
         image,
         TEST_TCP_DRAIN,
@@ -473,7 +473,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
         // What each socket is minted from (§255 (each socket is its own capability)); slot 8, the
         // server's own address space, `run_with_own_space` adds once the space exists.
         at(
-            socket_contract::stack_slots::MINT,
+            socket_contract::stack_slots::MINTING_ENDPOINT_SLOT,
             rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
         );
         run_with_own_space(
@@ -497,7 +497,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
                     },
                 ],
             },
-            socket_contract::stack_slots::OWN_SPACE,
+            socket_contract::stack_slots::OWN_ADDRESS_SPACE_SLOT,
         )
     })
     .expect("could not spawn net_stack over the JH7110 Ethernet port");
@@ -529,7 +529,7 @@ mod tests {
     fn with_no_port_the_starter_refuses_before_spawning_anything() {
         assert!(crate::memory::jh7110_ethernet().is_none());
         assert!(matches!(
-            start_net_server(&[], socket_contract::NO_LISTEN_GRANT),
+            start_net_server(&[], socket_contract::NO_PORT_GRANT),
             Err(NotStarted::Absent(Absent::NoController))
         ));
         assert!(last_report().is_none());

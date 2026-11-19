@@ -72,7 +72,7 @@ fn net_stack_image() -> &'static [u8] {
 fn start_stack() -> Result<(Holding, RendezvousId), crate::user::e1000e_service::Absent> {
     let w = crate::user::e1000e_service::start_net_server(
         net_stack_image(),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     )?;
     // Drain the lease so the server reaches its serve loop before any client asks.
     let [_lease, ..] = crate::sched::ipc_receive(w.report);
@@ -227,7 +227,7 @@ fn a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic() {
 /// ground on the §255 (each socket is its own capability) surface).
 ///
 /// The stack mints each socket's capability from a `WRITE | GRANT` copy of its serve endpoint
-/// (`socket_contract::stack_slots::MINT`), badged and without `READ`, and the kernel refuses a
+/// (`socket_contract::stack_slots::MINTING_ENDPOINT_SLOT`), badged and without `READ`, and the kernel refuses a
 /// receive on a `READ`-less endpoint (`kernel/src/syscall.rs`). With `READ`, a plain `RECEIVE` or
 /// `RECEIVE_CAPABILITY` would dequeue other clients' requests, milestone 649's capture class by IPC. The
 /// squatter (role 8) runs both probes on its own socket, so no victim is needed.
@@ -314,7 +314,7 @@ fn a_socket_moves_by_its_capability_and_a_closed_one_reaches_nothing() {
 ///
 /// The squatter's ten attempts count a re-badge of its own socket among the refused; this probe has
 /// the answer's shape. The refusal must be `NotPermitted` (a badge is set once, at the mint), and a
-/// `CLOSE` answering `REP_OK` afterwards proves the socket undisturbed. A second badge for one
+/// `CLOSE` answering `REPLY_OK` afterwards proves the socket undisturbed. A second badge for one
 /// socket would be a second name for it, and names are how a stack tells its clients apart.
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it

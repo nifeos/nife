@@ -31,8 +31,8 @@
 //! `socket_frame`, so `socket_contract::` stays the one place a reader looks for the wire.
 
 use socket_contract::{
-    DATA_MAXIMUM, DESTINATION_ADDRESS_OFFSET_BYTES, DESTINATION_PORT_OFFSET_BYTES,
-    LENGTH_OFFSET_BYTES, PAYLOAD_OFFSET_BYTES,
+    DESTINATION_IP_ADDRESS_OFFSET_BYTES, DESTINATION_PORT_OFFSET_BYTES, MAXIMUM_PAYLOAD_BYTES,
+    PAYLOAD_LENGTH_OFFSET_BYTES, PAYLOAD_OFFSET_BYTES,
 };
 
 use crate::mapped_window::{MappedWindow, PAGE_BYTES};
@@ -43,7 +43,7 @@ use crate::mapped_window::{MappedWindow, PAGE_BYTES};
 ///
 /// `MappedWindow::new`'s contract, forwarded once: `base .. base + PAGE_BYTES` must be a range the
 /// kernel has mapped read/write-accessible into this process for as long as the `Frame` is used.
-/// One page, which is what [`socket_contract::DATA_MAXIMUM`] already assumes.
+/// One page, which is what [`socket_contract::MAXIMUM_PAYLOAD_BYTES`] already assumes.
 #[derive(Clone, Copy)]
 pub struct Frame {
     window: MappedWindow,
@@ -62,7 +62,7 @@ impl Frame {
         Self {
             // SAFETY: forwarded from this function's own contract, verbatim: `base .. base +
             // PAGE_BYTES` is mapped for as long as the `Frame` is used, and one page is what
-            // `socket_contract::DATA_MAXIMUM` assumes.
+            // `socket_contract::MAXIMUM_PAYLOAD_BYTES` assumes.
             window: unsafe { MappedWindow::new(base, PAGE_BYTES) },
         }
     }
@@ -74,13 +74,13 @@ impl Frame {
     pub fn set_destination(&self, ip: [u8; 4], port: u16) {
         for (i, &b) in ip.iter().enumerate() {
             self.window
-                .write_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+                .write_u8(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
         }
         self.window.write_u16(DESTINATION_PORT_OFFSET_BYTES, port);
     }
 
     /// The destination address, or the sender's after a UDP `RECEIVE` (the layout note on
-    /// `DESTINATION_ADDRESS_OFFSET_BYTES` in `socket_contract`).
+    /// `DESTINATION_IP_ADDRESS_OFFSET_BYTES` in `socket_contract`).
     ///
     /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn destination_network_address(&self) -> [u8; 4] {
@@ -88,7 +88,7 @@ impl Frame {
         for (i, b) in ip.iter_mut().enumerate() {
             *b = self
                 .window
-                .read_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
+                .read_u8(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64);
         }
         ip
     }
@@ -101,7 +101,7 @@ impl Frame {
         self.window.read_u16(DESTINATION_PORT_OFFSET_BYTES)
     }
 
-    /// Read the length field at `LENGTH_OFFSET_BYTES`: what the last `RECEIVE` wrote, or what [`set_len`](Self::set_len)
+    /// Read the length field at `PAYLOAD_LENGTH_OFFSET_BYTES`: what the last `RECEIVE` wrote, or what [`set_len`](Self::set_len)
     /// cleared it to, so a client can watch for the reply.
     ///
     /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes, for
@@ -111,14 +111,14 @@ impl Frame {
         reason = "a header field, not a collection"
     )]
     pub fn len(&self) -> u16 {
-        self.window.read_u16(LENGTH_OFFSET_BYTES)
+        self.window.read_u16(PAYLOAD_LENGTH_OFFSET_BYTES)
     }
 
-    /// Write the length field at `LENGTH_OFFSET_BYTES`. The stack never reads it: a `SEND*` takes its length
+    /// Write the length field at `PAYLOAD_LENGTH_OFFSET_BYTES`. The stack never reads it: a `SEND*` takes its length
     /// from the `CALL` argument word, and only `RECEIVE` writes the field, so this is for a client
     /// that clears it before a `RECEIVE` to watch for the reply.
     pub fn set_len(&self, len: u16) {
-        self.window.write_u16(LENGTH_OFFSET_BYTES, len);
+        self.window.write_u16(PAYLOAD_LENGTH_OFFSET_BYTES, len);
     }
 
     /// Write `bytes` at the start of the payload. An overlong slice panics at the window's
@@ -131,7 +131,7 @@ impl Frame {
     /// a reply word's length, and a peer's idea of a length is data, so the clamp against
     /// `out.len()` is the bounds check's first line rather than the caller's job.
     pub fn payload_read(&self, n: usize, out: &mut [u8]) -> usize {
-        let n = n.min(out.len()).min(DATA_MAXIMUM);
+        let n = n.min(out.len()).min(MAXIMUM_PAYLOAD_BYTES);
         self.window
             .copy_to_slice(PAYLOAD_OFFSET_BYTES, &mut out[..n]);
         n
@@ -140,7 +140,7 @@ impl Frame {
 
 #[cfg(test)]
 mod tests {
-    use socket_contract::DATA_MAXIMUM;
+    use socket_contract::MAXIMUM_PAYLOAD_BYTES;
 
     use super::Frame;
 
@@ -172,6 +172,6 @@ mod tests {
         assert_eq!(f.payload_read(100, &mut small), 2);
         assert_eq!(small, [9, 8]);
         let mut big = [0u8; 8192];
-        assert_eq!(f.payload_read(usize::MAX, &mut big), DATA_MAXIMUM);
+        assert_eq!(f.payload_read(usize::MAX, &mut big), MAXIMUM_PAYLOAD_BYTES);
     }
 }

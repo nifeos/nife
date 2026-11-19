@@ -88,7 +88,7 @@ pub fn run() -> ! {
     //    into a report that never came.
     let mut refused = 0u64;
     let operations = [
-        OPERATION_SENDTO,
+        OPERATION_SEND_TO,
         OPERATION_SEND,
         OPERATION_CONNECT,
         OPERATION_ACCEPT,
@@ -96,13 +96,13 @@ pub fn run() -> ! {
         OPERATION_RECEIVE,
     ];
     for (bit, &operation) in operations.iter().enumerate() {
-        if call(STACK, operation, 0).0 == REP_ERR {
+        if call(STACK, operation, 0).0 == REPLY_ERROR {
             refused |= 1 << bit;
         }
     }
 
     // 3. Mint a socket's capability: the front door has no `GRANT`.
-    if badge(STACK, SOCKET_BADGE | 1) < 0 {
+    if badge(STACK, SOCKET_BADGE_BIT | 1) < 0 {
         refused |= 1 << 6;
     }
 
@@ -111,22 +111,22 @@ pub fn run() -> ! {
     //    both kernel receives must fail at once; a permissive kernel blocks here instead, which
     //    the test reads as the squatter never arming.
     let mut recv_refused = 0u64;
-    if let (REP_OK, _, Some(own)) = call_receiving(STACK, OPERATION_OPEN_UDP, 0) {
+    if let (REPLY_OK, _, Some(own)) = call_receiving(STACK, OPERATION_OPEN_UDP, 0) {
         if (receive(own).0 as i64) < 0 {
             recv_refused |= 1 << 0;
         }
         if (receive_capability(own).0 as i64) < 0 {
             recv_refused |= 1 << 1;
         }
-        if badge(own, SOCKET_BADGE | 2) < 0 {
+        if badge(own, SOCKET_BADGE_BIT | 2) < 0 {
             refused |= 1 << 7;
         }
         let _ = call(own, OPERATION_CLOSE, 0);
-        if call(own, OPERATION_RECEIVE, 0).0 == REP_ERR {
+        if call(own, OPERATION_RECEIVE, 0).0 == REPLY_ERROR {
             refused |= 1 << 8;
         }
         match call_receiving(own, OPERATION_OPEN_UDP, 0) {
-            (REP_ERR, _, None) => refused |= 1 << 9,
+            (REPLY_ERROR, _, None) => refused |= 1 << 9,
             (_, _, Some(opened)) => capability_delete(opened),
             _ => {}
         }
@@ -150,20 +150,20 @@ pub fn run() -> ! {
     }
     put(0x00);
     for (i, &b) in GW_IP.iter().enumerate() {
-        WINDOW.write_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        WINDOW.write_u8(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
     WINDOW.write_u16(DESTINATION_PORT_OFFSET_BYTES, TFTP_PORT);
     // Clear the length field: only a RECEIVE writes it (a send carries its length in the CALL
     // argument), so a nonzero value below means the stack delivered something into this frame.
-    WINDOW.write_u16(LENGTH_OFFSET_BYTES, 0);
+    WINDOW.write_u16(PAYLOAD_LENGTH_OFFSET_BYTES, 0);
 
     send(REPORT, RPT_ARMED, refused, recv_refused);
 
     let deadline = now() + WATCH_SECONDS * user_mode_runtime::counter_hertz();
-    while now() < deadline && WINDOW.read_u16(LENGTH_OFFSET_BYTES) == 0 {
+    while now() < deadline && WINDOW.read_u16(PAYLOAD_LENGTH_OFFSET_BYTES) == 0 {
         yield_now();
     }
-    let len = WINDOW.read_u16(LENGTH_OFFSET_BYTES);
+    let len = WINDOW.read_u16(PAYLOAD_LENGTH_OFFSET_BYTES);
     let opcode = ((WINDOW.read_u8(PAYLOAD_OFFSET_BYTES) as u16) << 8)
         | WINDOW.read_u8(PAYLOAD_OFFSET_BYTES + 1) as u16;
     send(

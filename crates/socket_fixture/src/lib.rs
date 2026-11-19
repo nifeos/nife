@@ -4,7 +4,7 @@
 //! standard library exerciser, the package-source client and the kernel tests. They are a test
 //! harness's facts, not part of the socket contract. The host's copy of the inbound gate's facts is
 //! deliberately not here: the host side spells them again, so the gate proves two independently
-//! written sides agree. Its one dependency is `socket_contract`, whose grants it is checked against.
+//! written sides agree. Its one development dependency is `socket_contract`, whose grants it is checked against.
 //!
 //! Not published: nothing outside this tree has a reason to read it.
 //!
@@ -72,7 +72,7 @@ pub const PACKAGE_PEER_HOST: &str = "10.0.2.9";
 
 #[cfg(test)]
 mod tests {
-    use socket_contract::{NO_LISTEN_GRANT, grant_allows, listen_grant};
+    use socket_contract::{NO_PORT_GRANT, listen_grant, listen_grant_allows};
 
     use super::*;
 
@@ -85,16 +85,16 @@ mod tests {
     #[test]
     fn the_inbound_fixture_probes_a_port_no_test_grants() {
         let g = listen_grant(LISTEN_PORT, LISTEN_PORT);
-        assert!(grant_allows(g, LISTEN_PORT));
+        assert!(listen_grant_allows(g, LISTEN_PORT));
         assert!(
-            !grant_allows(g, DENIED_PORT),
+            !listen_grant_allows(g, DENIED_PORT),
             "the port the gate calls denied is inside the grant it is handed",
         );
         // And the wider range the combined inbound boot hands out (the SMB port rides beside the
         // listen port) must not reach it either.
         let wide = listen_grant(LISTEN_PORT, LISTEN_PORT + 1);
-        assert!(!grant_allows(wide, DENIED_PORT));
+        assert!(!listen_grant_allows(wide, DENIED_PORT));
         // The default admits neither, which is what "granted, never assumed" means for the fixture.
-        assert!(!grant_allows(NO_LISTEN_GRANT, LISTEN_PORT));
+        assert!(!listen_grant_allows(NO_PORT_GRANT, LISTEN_PORT));
     }
 }

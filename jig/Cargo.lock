@@ -1056,9 +1056,6 @@ version = "0.1.0"
 [[package]]
 name = "socket_fixture"
 version = "0.1.0"
-dependencies = [
- "socket_contract",
-]
 
 [[package]]
 name = "spki"
