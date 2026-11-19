@@ -179,8 +179,8 @@ names until the ratification pass, so this section keeps the links it carried.
 - `src/lib.rs`, the crate root: the design lives in `notes/designware-ethernet.md`.
 - `src/data_plane.rs`, `DataPlane`: `notes/designware-ethernet/the-hardware.md` explains the
   held-back receive slot.
-- `src/regs.rs`, `src/jh7110.rs` and `src/motorcomm_physical_layer_device.rs`, each module's doc: the register pages,
-  the two device trees and the PHY settings are in `notes/designware-ethernet/the-hardware.md`.
+- `src/regs.rs` and `src/motorcomm_physical_layer_device.rs`, each module's doc: the register pages
+  and the PHY settings are in `notes/designware-ethernet/the-hardware.md`.
 - `src/cache_coherence.rs`, the module's doc: `notes/designware-ethernet.md`, "Is radon's DMA coherent?
   Yes, by measurement", records the probe reporting `Coherent` on radon over three boots on
   2026-10-20 (UTC).

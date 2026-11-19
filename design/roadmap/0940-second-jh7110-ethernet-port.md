@@ -36,9 +36,9 @@ and nothing on the console says to try the other one. The firmware has no such l
 Everything port-specific is written for `gmac0`, and the shape of a second port is already in the
 sources this tree read.
 
-- The port. `designware_ethernet::jh7110::discover` returns the first node matching either
-  compatible, which is `gmac0` in both trees. `GMAC1_REGISTERS_PHYSICAL_ADDRESS` exists in
-  `crates/designware_ethernet/src/jh7110.rs` and nothing reads it. `DeviceTreeBlob`'s lookups
+- The port. `machine_discovery::jh7110::designware_ethernet::discover` returns the first node
+  matching either compatible, which is `gmac0` in both trees. `GMAC1_REGISTERS_PHYSICAL_ADDRESS`
+  exists in `crates/machine_discovery/src/jh7110/designware_ethernet.rs` and nothing reads it. `DeviceTreeBlob`'s lookups
   answer the first match; the node name, `ethernet@16040000`, is the same in both trees, so
   `node_reg` and `node_prop` by name reach the second.
 - The clocks and resets. `crates/jh7110_clock_and_reset` has `GMAC0_SYSTEM_BRING_UP` and
