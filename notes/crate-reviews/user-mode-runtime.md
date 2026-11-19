@@ -5,11 +5,11 @@
 page.*
 
 The architect reads this to ratify the crate's names and to clear it for its move to its own
-repository, as part of step 3 of
+repository. That move is step 3 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
-after the contract crates it links. It describes the crate as `main` plus this branch leaves it. The
+after the contract crates the crate links. It describes the crate as `main` plus this branch leaves it. The
 outside review that produced the work is
-[milestone 1112](../../design/roadmap/1112-user-mode-runtime-outside-review.md).
+[milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1112-user-mode-runtime-outside-review.md).
 
 ## In one paragraph
 
@@ -33,7 +33,7 @@ no block.
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88, both literals |
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest. The crate adapts no source |
-| `publish` | `false`, with the one-sentence reason in the manifest: milestone 1017 keeps moved crates unpublished under §305 until their release milestone |
+| `publish` | `false`, with the one-sentence reason in the manifest: milestone 1017 keeps moved crates unpublished under §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit) until their release milestone |
 | dependencies | `abi`, `address_space_layout`, `clock_contract`, `current_cpu_contract` and `socket_contract` by path, `counter_frequency_contract` by path outside `aarch64`, and `entropy_contract` already by git `rev` |
 | manifest metadata | description, keywords (`no-std`, `runtime`, `syscall`), categories (`no-std`, `embedded`, `os`), `readme`, and `[package.metadata.docs.rs]` for the three targets. The `repository` key waits for the move |
 | size | 14 files under `src`, 2,689 lines |
@@ -143,7 +143,7 @@ natural first one, and the move lane or a later lane can add it with a falsifica
 
 ## Names
 
-None of the names is ratified by this package, and none was renamed in this branch. The table gives
+None of the names is ratified by this package, and this branch renamed none. The table gives
 each public name's status as `script/names` reads it, and a proposal. Proposal "stands" means the
 spelling meets `design/naming.md` as written and the block only needs the ratified status.
 

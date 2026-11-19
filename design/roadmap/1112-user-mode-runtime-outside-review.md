@@ -72,7 +72,7 @@ crate's own reasons.
   2026-11-15 UTC); the docs of `exit` say why none is needed.
 - Decision 1, the rename table: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional, 2026-11-14 UTC).
 - Decision 1, the sized accessors: Done, [#3815](https://github.com/nifeos/nife/pull/3815)
-  (maintainer, recommendation B, provisional, 2026-11-19 UTC). `read_u8` to `write_u64` are removed
+  (maintainer, recommendation B, provisional, 2026-11-19 UTC). the maintainer removed `read_u8` to `write_u64`
   and every call site uses `read::<T>` and `write::<T>`; a two-way door until the first tag.
 - Decision 1, ratifying the names: Open. calef's, under "Open decisions", asked from the review
   package.
@@ -94,8 +94,8 @@ Background. This crate is what every nife program links: the syscall wrapper, th
 panic handler and typed windows over memory the kernel hands a process. It leaves nife for its own
 repository, and a crate leaves with ratified names. The maintainer ruled the renames on 2026-11-14
 (UTC), provisionally, and #3611 built them; each renamed name carries a provisional `Name:` block.
-The sized window accessors `read_u8` to `write_u64` are removed (the maintainer ruled it on
-2026-11-19 UTC, provisionally, and #3815 built it), so a window has one spelling, `read::<T>` and
+The maintainer ruled on 2026-11-19 UTC, provisionally, to remove the sized window accessors
+`read_u8` to `write_u64`, and #3815 built it, so a window has one spelling, `read::<T>` and
 `write::<T>`. After the first tag a name is a published surface. The package
 (`notes/crate-reviews/user-mode-runtime.md`) lists every public name with its status and a
 proposal.
@@ -121,7 +121,7 @@ What it blocks: the move, and with it the tag.
 ### Clear the review package
 
 Background. A crate leaves nife only after calef clears its review package, and clearing approves
-its repository (the rule of 2026-11-01 UTC). The package is written
+its repository (the rule of 2026-11-01 UTC). The package exists
 (`notes/crate-reviews/user-mode-runtime.md`). Every nife program and `disk-tools` depend on this crate, so it leaves at step 3 of milestone
 1017, after the contract crates it links.
 
