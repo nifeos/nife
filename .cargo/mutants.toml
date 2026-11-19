@@ -253,7 +253,7 @@ exclude_re = [
     # excluded function generates no mutant for it, which the assertion narrows and does not close.
     #
     # aarch64: the descriptor's address field, the valid and table-or-page bits, and every field
-    # `attrs` writes, per THE_DESCRIPTOR_FIELDS_SHARE_NO_BIT.
+    # `attributes` writes, per THE_DESCRIPTOR_FIELDS_SHARE_NO_BIT.
     "^crates/page_tables/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::table_entry$",
     "^crates/page_tables/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::leaf_entry$",
     "^crates/page_tables/src/aarch64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Aarch64>::block_entry$",
@@ -274,7 +274,7 @@ exclude_re = [
     # sv39: the PTE's PPN field, V, R, W, X, U, G, A, D and the software device bit, per
     # THE_PAGE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT; and the memory-type bits against each other and
     # against everything below bit 54, per THE_MEMORY_TYPE_BITS_SHARE_NO_BIT.
-    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in Sv39::attrs$",
+    "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in Sv39::attributes$",
     "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::table_entry$",
     "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::leaf_entry$",
     "^crates/page_tables/src/sv39\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Sv39>::is_block$",
@@ -289,7 +289,7 @@ exclude_re = [
     # THE_AMD_VI_ENTRY_FIELDS_SHARE_NO_BIT; and the device table entry's first qword, per
     # THE_DEVICE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT (the root is held inside the address mask by the
     # `None` guard above the `|`).
-    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in Ia32e::attrs$",
+    "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in Ia32e::attributes$",
     "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::table_entry$",
     "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::leaf_entry$",
     "^crates/page_tables/src/x86_64\\.rs:\\d+:\\d+: replace \\| with \\^ in <impl PageFormat for Ia32e>::block_entry$",

@@ -8,6 +8,8 @@
 use crate::{Flags, Half, MapError, Mapper, PAGE_SIZE, PageFormat, PageTable};
 
 /// A physical region a device is allowed to touch: `[base, base + size)`, 4 KiB aligned.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane/1104-renames-package.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct DirectMemoryAccessRegion {
     /// Physical address of the first byte.

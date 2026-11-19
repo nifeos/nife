@@ -6,7 +6,7 @@ page.*
 
 The architect reads this to ratify the crate's public names in one pass and to clear the crate for its
 move to its own repository, the outcome of
-[milestone 1104 (paging outside review)](../../design/roadmap/1104-paging-outside-review.md). It
+[milestone 1104 (`paging`: what an outside maintainer would fix before the move)](../../design/roadmap/1104-paging-outside-review.md). It
 describes the crate as `main` plus this branch leaves it.
 
 ## In one paragraph
@@ -63,7 +63,7 @@ Run on this branch, after the renames and after the falsification patches were c
 | `script/falsifications --check` over the whole tree | no patch fails to apply |
 | the four `nth_allocation.*` patches applied by hand, each test run | each test goes red with the defect applied |
 | `script/crate-standalone page_tables` | 15 failures, none new: no README, no license files, the manifest inherits `license` and `lints`, 3 prose-cap lines, 9 spelled-out-word lines, and the 80 citation lines of the milestone's items 1, 3, 4 and 11. The build passes on the host and the three bare-metal targets. `proofs`: 38 harnesses verified, 0 failures. Every Kani falsification patch fails its harness as recorded. The four `nth_allocation` patches are reported "still passes" because the replay does not run the integration test, the gap in the milestone's BUGS |
-| `script/crate-move --dry-run --into <dir> page_tables` | stages at template `v8`; 42 patches regenerate and apply with no offset and no fuzz; `Name:` blocks removed from 11 files. 9 findings for the move lane: the missing README, the manifest's inherited keys (so `cargo generate-lockfile` fails), the prose caps, the citations and nine private test or harness names that still contain `va` (`the_user_va_gate_...`), which the spelled-out check refuses; renaming them moves with the harness registries and the three patch file names, so the move lane takes them |
+| `script/crate-move --dry-run --into <dir> page_tables` | stages at template `v8`; 42 patches regenerate and apply with no offset and no fuzz; `Name:` blocks removed from 11 files. 9 findings for the move lane. They are the missing README, the manifest's inherited keys (so `cargo generate-lockfile` fails), the prose caps and the citations. The ninth finding is nine private test or harness names that still contain `va` (`the_user_va_gate_...`), which the spelled-out check refuses. Renaming them moves with the harness registries and the three patch file names, so the move lane takes them |
 
 Not run, and so not claimed:
 
@@ -95,9 +95,9 @@ is empty. The packet is `script/crate-review-packet page_tables`.
 ## Proofs
 
 Thirty-eight Kani harnesses, each with a falsification patch under `falsifications/`, cover the
-indices and offsets of each format, the two halves, the user gate, the writable-and-executable
-refusal, block and leaf encodings, the grant enumeration of the domain builder and the reserved bits
-of the VT-d and AMD-Vi entries. Four host tests carry falsification patches
+indices and offsets of each format, the two halves and the user gate. They also cover the
+writable-and-executable refusal, block and leaf encodings, the grant enumeration of the domain
+builder and the reserved bits of the VT-d and AMD-Vi entries. Four host tests carry falsification patches
 (`nth_allocation.*`): a failed map leaks no table and a failed span or domain build maps a prefix.
 The template replays Kani falsifications only, so the four host-test patches have no gate in the new
 repository until someone adds one.

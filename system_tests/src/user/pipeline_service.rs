@@ -262,7 +262,7 @@ fn shell_mappings(
         n += 1;
     }
     if let Some(phys) = clock {
-        // **`user_read_only_data`, and that is the read rung of DECISIONS §43 rather than tidiness**: a
+        // **`user_read_only_data`, and that is the read rung of DECISIONS §43 (reading the clock is a page) rather than tidiness**: a
         // shell that could write this page could set the wall clock, and the whole argument for
         // it holding one at all is that reading is not that.
         maps[n] = Mapping {

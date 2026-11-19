@@ -15,7 +15,7 @@ virtual_address))`, still holds under this defect, because the half test is exac
 kept.
 
 **The gate is shared and the proof is not**, which is the point of recording this
-three times. `is_user_page_virtual_address` is one generic function in `lib.rs`; DECISIONS §19
+three times. `is_user_page_virtual_address` is one generic function in `lib.rs`; DECISIONS §19 (architectural parity)
 makes each ISA state the property itself, so this one defect is caught three
 times over. The `sv39` and `x86_64` records break the same function in two other
 ways, so the three patches are not copies of each other.

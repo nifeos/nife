@@ -29,6 +29,8 @@ pub enum Half {
 /// request walks only the process's own tables (the halves are proved disjoint per format). The
 /// syscall layer runs it before a page is retyped for a user `MAP` request.
 ///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane/1104-renames-package.
+///
 /// # Examples
 ///
 /// A conjunction: the aligned high-half address is what tells `&&` from `||`.

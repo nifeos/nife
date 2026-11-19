@@ -99,6 +99,8 @@ impl Flags {
     }
 
     /// Kernel constants: readable by the kernel, never writable, never executable by anyone.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/1104-renames-package.
     pub const fn kernel_read_only_data() -> Self {
         Flags(ACCESS_GLOBAL)
     }
@@ -140,6 +142,8 @@ impl Flags {
     /// An ELF's `.rodata` segment is `PF_R` alone. Without this, the loader's only non-executable
     /// choice is [`user_data`](Self::user_data), which is **writable**, so we would silently grant
     /// the program more authority than its own file asked for.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/1104-renames-package.
     pub const fn user_read_only_data() -> Self {
         Flags(ACCESS_USER)
     }

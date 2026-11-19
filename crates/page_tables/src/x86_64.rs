@@ -21,6 +21,8 @@ use crate::{
 #[doc(alias = "page attribute table")]
 pub mod pat {
     /// The model-specific register `IA32_PAT`, number 0x277.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/1104-renames-package.
     #[doc(alias = "IA32_PAT")]
     #[doc(alias = "MSR")]
     pub const MODEL_SPECIFIC_REGISTER: u32 = 0x277;

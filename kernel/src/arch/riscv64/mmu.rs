@@ -405,6 +405,22 @@ pub(crate) fn initialize_secondary() {
     unsafe { install(root) };
 }
 
+/// Step 2 of [`map_everything`]: the kernel image, section by section, at its linked VAs. W^X.
+fn map_kernel_image<A, P>(m: &mut Mapper<A, P, Format>) -> Result<(), MapError>
+where
+    A: FnMut() -> Option<u64>,
+    P: Fn(u64) -> *mut PageTable,
+{
+    map_range(m, text_start(), text_end(), Flags::kernel_code())?;
+    map_range(
+        m,
+        rodata_start(),
+        rodata_end(),
+        Flags::kernel_read_only_data(),
+    )?;
+    map_range(m, data_start(), bss_end(), Flags::kernel_data())
+}
+
 /// Build every mapping the kernel needs in `m`: the direct map of RAM, the W^X kernel sections, the
 /// stacks, and the devices the device tree names. See notes/riscv-port/memory.md.
 fn map_everything<A, P>(m: &mut Mapper<A, P, Format>) -> Result<(), MapError>
@@ -422,15 +438,7 @@ where
         direct_map(m, image_hi.max(start), end, Flags::kernel_data())?;
     }
 
-    // 2. The kernel image, section by section, at its linked VAs. W^X.
-    map_range(m, text_start(), text_end(), Flags::kernel_code())?;
-    map_range(
-        m,
-        rodata_start(),
-        rodata_end(),
-        Flags::kernel_read_only_data(),
-    )?;
-    map_range(m, data_start(), bss_end(), Flags::kernel_data())?;
+    map_kernel_image(m)?;
 
     // 3. The guard page stays unmapped. 4. The stack.
     map_range(m, stack_bottom(), stack_top(), Flags::kernel_data())?;
