@@ -115,7 +115,7 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
     // --- Serve the socket contract. One synchronous exchange per request. ---
     let mut table = Table::new();
     // Local ports follow the boot clock, so a stack started after another starts past its ports
-    // (socket_contract::ephemeral says why that matters to a peer in TIME_WAIT).
+    // (network_stack::ephemeral says why that matters to a peer in TIME_WAIT).
     let mut ports = ephemeral::Ports::new();
     loop {
         let req = receive_request(STACK);

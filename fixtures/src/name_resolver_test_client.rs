@@ -132,7 +132,7 @@ fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
     }
     SOCKET_PAGE.write_u16(
         socket::DESTINATION_PORT_OFFSET_BYTES,
-        socket::fixture::ECHO_PEER_PORT,
+        socket_fixture::ECHO_PEER_PORT,
     );
     if call(socket, socket::OPERATION_CONNECT, 0).0 != socket::CONNECT_ESTABLISHED {
         return ECHO_FAILED;

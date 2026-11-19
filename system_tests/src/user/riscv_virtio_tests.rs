@@ -33,9 +33,9 @@ const NET_TEST_TCP_ACCEPT_UNHEARD: u64 = 12;
 const NET_CLIENT_DIGEST_REFUSED: u64 = 3;
 /// The one port the inbound gate is granted (milestone 107); the runners forward a host port to
 /// it. Both ISA legs use the same number and the same host port, because they run one after the
-/// other and never hold it at once. From `socket_contract::fixture` since milestone 64 (enough `std` to run somebody else's crate): see the
+/// other and never hold it at once. From `socket_fixture` since milestone 64 (enough `std` to run somebody else's crate): see the
 /// aarch64 twin for why the number has one definition.
-const NET_LISTEN_PORT: u16 = socket_contract::fixture::LISTEN_PORT;
+const NET_LISTEN_PORT: u16 = socket_fixture::LISTEN_PORT;
 /// The fixed UDP port range the accept test's stack is granted (milestone 55's UDP bind grant).
 /// `socket_test_client` binds 5354 inside it and is refused 4444 outside it. See the aarch64 twin
 /// for why the range still starts at 5353.

@@ -19,7 +19,7 @@
 use std::io::{Read, Write};
 use std::net::{Ipv4Addr, SocketAddr, TcpStream, ToSocketAddrs};
 
-use socket_contract::fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
+use socket_fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
 
 // What it asks the owner for: its words (every `std` image hears them), its output, the network,
 // and names in `nife.test`.

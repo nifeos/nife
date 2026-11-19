@@ -5,7 +5,7 @@
 //! nothing inside the guest can make on its own.
 
 /// The bytes the inbound prober sends into the guest and the answer it requires back. They must
-/// match `socket_contract::fixture` (`IN_MSG`/`OUT_MSG`), which is what the two guest programs read
+/// match `socket_fixture` (`IN_MSG`/`OUT_MSG`), which is what the two guest programs read
 /// them from, and they are deliberately different strings: an echo would pass even if the guest
 /// were only reflecting our own bytes, and the point of this gate is that the guest **composed** an
 /// answer to a connection it did not make.

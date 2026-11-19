@@ -1,7 +1,7 @@
 //! **Reach the network from a booted system's prompt** (milestone 590 (the booted system starts its
 //! network stack)).
 //!
-//! Opens a TCP connection to the QEMU runners' echo peer (`socket_contract::fixture::ECHO_PEER_IP`,
+//! Opens a TCP connection to the QEMU runners' echo peer (`socket_fixture::ECHO_PEER_IP`,
 //! port `ECHO_PEER_PORT`), sends [`MSG`], and prints what comes back. The real progenitor spawns it
 //! through the real spawn service, holding exactly what its manifest
 //! (`program_table::Program::NetworkEchoClient`) declares, against the `net_stack` built at boot, so a
@@ -33,7 +33,7 @@
 #![no_main]
 
 use abi::rights;
-use socket_contract::fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
+use socket_fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
 use socket_contract::*;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{

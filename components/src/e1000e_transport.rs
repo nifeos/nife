@@ -15,7 +15,7 @@
 //!   stack looks at the ring continuously, yielding between looks, which keeps a core busy; once a
 //!   scheduler tick passes with none it sleeps between looks, and a sleep lasts until the next tick
 //!   (up to 10 ms), so the first frame after an idle spell waits that long. Nothing polls while no
-//!   request is being served. `socket_contract::polled_wait` has the argument.
+//!   request is being served. `network_stack::polled_wait` has the argument.
 //! - **A full transmit ring drops the frame** after a bounded wait, and the stack above retransmits.
 //!   The virtio transport makes the same trade.
 //!

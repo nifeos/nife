@@ -45,13 +45,13 @@ const NET_CLIENT_DIGEST_REFUSED: u64 = 3;
 /// exactly this one, and the client asks for `fixture::DENIED_PORT` as well to prove the grant
 /// refuses. Named here because the *spawn service* is what grants it, which is the point.
 ///
-/// Taken from `socket_contract::fixture` rather than spelled again (milestone 64 (enough `std` to
+/// Taken from `socket_fixture` rather than spelled again (milestone 64 (enough `std` to
 /// run somebody else's crate)): three binaries and this test have to agree on the number, and a
 /// literal repeated per call site is the shape rule 7 exists to retire. The runners' `hostfwd`
 /// spells it a second time because a shell script cannot read a Rust crate, and that drift is loud
 /// (the prober reports the guest served none).
 #[cfg(target_arch = "aarch64")]
-const NET_LISTEN_PORT: u16 = socket_contract::fixture::LISTEN_PORT;
+const NET_LISTEN_PORT: u16 = socket_fixture::LISTEN_PORT;
 /// The fixed UDP port range the accept test's stack is granted (milestone 55's UDP bind grant).
 /// Named here for the same reason as the listen port: the spawn service grants it, and a program
 /// cannot ask for what it was not given. `socket_test_client` binds 5354 inside it to prove a
@@ -517,7 +517,7 @@ const STD_NET_EXPECTED: &[u8] = b"std net on nife\nlisten refused\nudp ok\ntcp e
 /// The exact transcript the same binary prints when its stack **is** granted the listening port
 /// (milestone 64's inbound half). Four lines, and each is a separate claim: the granted port binds,
 /// a port outside the grant is refused as a matter of authority, the granted port is exclusive, and
-/// the listener served `socket_contract::fixture::ROUNDS` connections one after another.
+/// the listener served `socket_fixture::ROUNDS` connections one after another.
 #[cfg(target_arch = "aarch64")]
 const STD_LISTEN_EXPECTED: &[u8] =
     b"std net on nife\nlisten ok\ndenied refused\nin use refused\nserved 2\n";

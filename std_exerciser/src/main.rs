@@ -26,7 +26,7 @@ use std::path::PathBuf;
 use std::random::{Rng, SystemRng};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
-use socket_contract::fixture;
+use socket_fixture as fixture;
 
 fn main() {
     // `thread::sleep` blocks on a kernel timer (milestone 106 (a wait that ends on either the

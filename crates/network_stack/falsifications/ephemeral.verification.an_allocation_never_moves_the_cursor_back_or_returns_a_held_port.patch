@@ -1,0 +1,20 @@
+Falsifies `network_stack::ephemeral::verification::an_allocation_never_moves_the_cursor_back_or_returns_a_held_port`.
+
+The defect: the cursor takes the clock's position outright instead of the larger of the two,
+so a clock behind the cursor moves it backwards and a port handed out before can come again.
+
+Expected to fail: `assert!(ports.next >= start)`.
+
+diff --git a/crates/network_stack/src/ephemeral.rs b/crates/network_stack/src/ephemeral.rs
+index 4ff507d82..3d6253c2d 100644
+--- a/crates/network_stack/src/ephemeral.rs
++++ b/crates/network_stack/src/ephemeral.rs
+@@ -55,7 +55,7 @@ impl Ports {
+         held: impl Fn(u16) -> bool,
+         tries: u64,
+     ) -> Option<u16> {
+-        self.next = self.next.max(clock(milliseconds));
++        self.next = clock(milliseconds);
+         for _ in 0..tries {
+             let port = port_at(self.next);
+             self.next += 1;

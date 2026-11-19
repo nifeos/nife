@@ -39,12 +39,6 @@ never assumed.
 - `stack_slots` names where a network stack finds the two capabilities it is spawned with.
 - `lease` encodes the report a stack sends its spawner when it has an address: the Internet Protocol version 4
   (IPv4) address (`ipv4_word`, `word_ipv4`) and the first nameserver or `NO_NAMESERVER`.
-- `ephemeral::Ports` allocates outbound local ports from the private range 49152 to 65535 with a
-  cursor that never falls behind a clock advancing 256 ports a second, so a new stack starts past
-  ports an earlier one used. `polled_wait::next` decides whether a stack may sleep on a network card
-  that raises no interrupt.
-- `fixture` holds the fixed addresses and messages of one network stack's test runners. It is not
-  part of the contract and a consumer can ignore it.
 
 ## EXAMPLES
 
@@ -62,12 +56,11 @@ assert!(!names_a_socket(0)); // an unbadged front door
 
 ## What is proven
 
-Five Kani harnesses in `src/lib.rs` prove the port grants for every pair of bounds and every port.
+Four Kani harnesses in `src/lib.rs` prove the port grants for every pair of bounds and every port.
 A listen grant admits exactly its range and no UDP port, a UDP bind grant admits exactly its range
-and no listen port, and each half of a composed grant answers exactly as it does alone. Two more
-prove that a peer word reads back as the address and port it was made from, for every address and
-port, and that the ephemeral clock never runs backwards and every position maps to a port in the
-range. Run them with `cargo kani`. Tests check the rest of the contract: the opcodes, the reply words and the
+and no listen port, and each half of a composed grant answers exactly as it does alone. The fourth
+proves that a peer word reads back as the address and port it was made from, for every address and
+port. Run them with `cargo kani`. Tests check the rest of the contract: the opcodes, the reply words and the
 frame layout.
 
 Each patch under `falsifications/` names the harness or test it breaks, and applying it with
@@ -90,7 +83,6 @@ differently.
 - A grant is the stack's, shared by every holder of its front door; a per-client grant would ride on
   a badged front door, which nothing builds yet.
 - A listener's backlog is one connection: a second arriving before `ACCEPT` is refused by TCP.
-- `polled_wait` keeps a core busy while a stream flows, and for a tick after it ends.
 - No operation carries `VERSION`, so a client and a stack built from different versions are not
   told apart when the client binds.
 

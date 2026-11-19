@@ -85,6 +85,7 @@ mod socket_test_client;
 #[path = "socket_squatter.rs"]
 mod socket_squatter;
 use socket_contract::*;
+use network_stack::ephemeral;
 
 #[path = "nic_device.rs"]
 mod nic_device;
