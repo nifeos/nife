@@ -333,9 +333,8 @@ Each item above carries its status. What is still open:
   `src/lib.rs` on `main`.
 - **Outstanding.** The README's bring-up paragraph gives the measured poll times, a done-when check
   the README contradicted; carried by `nifeos/jh7110_entropy#34`.
-- **Outstanding.** `weekly` green. Its last scheduled run failed only `settings drift`, which asked
-  for the `proofs / loom` check that the ruleset on `main` now requires; a dispatched run on `main`
-  checks it.
+- **Done.** `weekly` is green on `main` (run `44470342339`), with the `proofs / loom` check its
+  `settings drift` job asked for now required by the ruleset.
 - **Outstanding.** Bench: whether a reseed clears `LFSR_LOCKUP`, since no lockup appeared in either
   board run.
 - **Outstanding.** Bench: `STATUS_SEEDED`, `LAST_RESEED` and `BCONF` bit 3 at the silicon's reset
