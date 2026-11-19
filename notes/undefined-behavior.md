@@ -90,8 +90,8 @@ recorded `greedy_agrees_with_exhaustive_search_over_every_short_pattern` failing
 `checked = 43,720`; that run caught the file mid-edit, with the Miri stride applied but the
 completeness pin not yet updated. The finished edit passes under Miri and natively.
 
-**Also seen, deliberately left:** integer-to-pointer cast *warnings* in `paging`'s tests, where
-`phys_to_ptr` is an identity cast by design (the tests' documented trick is that host addresses
+**Also seen, deliberately left:** integer-to-pointer cast *warnings* in `page_tables`' tests, where
+`physical_to_pointer` is an identity cast by design (the tests' documented trick is that host addresses
 stand in for physical ones). They are warnings about a pattern the harness is honest about, not
 errors.
 
