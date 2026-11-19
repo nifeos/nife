@@ -26,24 +26,153 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold and helpers (`stan
 `spelled_out.py`, `register_names.py`, `british_spelling.py`), cargo-mutants, Kani, and the crate's
 own `test_support::plan_line`. No new tool.
 
-## Where this stands
+## Finding status
 
-Finished: the split of item 1 in #3584, item 4 in #3559, and items 2, 8, 10, 12, 15, 17 and 18
-with parts of items 9, 11 and 13 in #3566. The first decision carries its ruling, and the
-maintainer decided the second provisionally in #3589.
+Every item not Done blocks the first crates.io publish, which waits until every outside-review
+milestone reaches delivery.
 
-- Item 1 (residue): `ISOLATION_WORD` and the tests' catalog dependency, not built; the move lane.
-- Item 3 (manifest and root): not built; the move.
-- Item 5 (proofs): two-way, not built; a lane.
-- Item 6 (units): the standing units rule settles it, not yet recorded in the decision section;
-  decision for calef, who ratifies the new spellings of six ratified limits.
-- Item 7 (eight names): decided, not built; a lane.
-- Item 9 (citations, `Name:` blocks): not built; the move.
-- Items 11, 13, 16 and 19 (references, the `programs!` check, typed operand errors, example):
-  two-way, not built; a lane.
-- Item 14 (mutation run): not built; the move.
-- The move (milestone 1017 step 6): waits on a review package, which nobody has written, and
-  on review clearance (decision for calef).
+- P0-1, split the catalog from the planner: Done,
+  [#3584](https://github.com/nifeos/nife/pull/3584).
+- P0-2, the documentation does not build with warnings denied: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- P0-3, the manifest and the repository root are the workspace's: Open. The move writes a
+  manifest of the crate's own (no `license.workspace`, no allowlist comment), a README and a
+  LICENSE. It also moves the tests off the `program_table` dev-dependency and makes
+  `ISOLATION_WORD` (`src/planning.rs` line 42) a value the caller passes, as BUGS records.
+- P1-4, the tokenizer drops a seventeenth token: Done,
+  [#3559](https://github.com/nifeos/nife/pull/3559).
+- P1-5, no proof: Open. Neither `grant_plan` nor `grant_contract` has a Kani harness; a lane writes
+  one per claim, and the two `job_windows` patches in `program_table` replay host tests.
+- P1-6, limits carry their unit, and four fields named `len`: Open. The new spellings are calef's
+  (see "Limits carry their unit" below); `MAXIMUM_WORDS_NAME_BYTES` already carries its unit.
+- P1-7, public names that need a decoder: Ruled (maintainer, provisional, 2026-11-14 UTC,
+  [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `nav`, `rmopt`, `BindEntry::pos`,
+  `COOP_GRACE_TICKS`, `THE_RIGHTS_BITS_SHARE_NO_BIT`, `spawnproto`, `prog_id` and
+  `job_page_frame` keep their spellings; calef ratifies once the rename lane lands.
+- P1-8, British spellings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-9, documentation for a stranger: Open.
+  [#3566](https://github.com/nifeos/nife/pull/3566) closes `grant_plan`'s `missing_docs` worklist;
+  the move strips the citations, the quotations
+  and the 74 `Name:` lines.
+- P1-9b, `missing_docs` in the split crates: Open. `grant_contract/src/lib.rs` line 21 and
+  `program_table/src/lib.rs` line 16 carry `#![allow(missing_docs)]`; a lane documents the items
+  and removes both.
+- P1-10, numbers in refusal sentences: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-11, two-kilobyte values by value: Open. The size test is in
+  [#3566](https://github.com/nifeos/nife/pull/3566); taking `&Holdings`, `&Expansion` and
+  `&Streams` (`src/planning.rs` lines 60 to 73, `program_table/src/planning.rs` lines 14 to 31) is
+  two-way, and the maintainer rules it provisionally.
+- P1-12, narrow length fields: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P1-13, an undeclared widening option: Open. `Manifest::is_well_formed` is in
+  [#3566](https://github.com/nifeos/nife/pull/3566); the `programs!` assertion and the note
+  decoder's call are not written.
+- P1-14, the mutation record predates the split: Open. A full run on the three crates gives the
+  figure the release gate asks for.
+- P2-15, `NameSet`'s `Debug`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-16, `Result<_, ()>` operands: Open. `src/parsing.rs` lines 212 and 242 allow
+  `clippy::result_unit_err`; a lane names the errors.
+- P2-17, an unchecked window shift: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-18, tests pin thirteen of twenty-eight wire ids: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- P2-19, no runnable example: Open. The crate has no `examples/` directory; one shows a manifest
+  and a planned line.
+- Decision, where the crate boundary falls: Done (ruled 2026-11-14 UTC),
+  [#3584](https://github.com/nifeos/nife/pull/3584).
+- Decision, the names of the split crates: Open. Calef's (see "The names `grant_contract` and
+  `program_table`" below).
+- Follow-on, a review package: Open. `notes/crate-reviews/` has none for `grant_plan` or
+  `grant_contract`; a lane runs `script/crate-review-packet` and writes one before the move.
+- Follow-on, the externalization list: Open. `crates/externalization-list.txt` names `grant_plan`
+  and not `grant_contract`, which leaves too; `program_table` stays in nife and needs no row.
+- Follow-on, review clearance and the repositories: Open. Calef's (see "Review clearance and the
+  repositories" below).
+
+## Open decisions
+
+### Limits carry their unit
+
+Background. A limit is the largest size a value may take, and the naming rule says it ends with
+its unit (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`). Most of this crate's limits had their
+ratification before that rule, and a release review rechecks such a name. Seven public limits
+count bytes with no unit: `MAXIMUM_FILE_NAME` (252), `expand::MAXIMUM_NAME`, `nav::MAXIMUM_NAME`,
+`nav::MAXIMUM_DIRECTORY_NAME`, `nav::RENDER_MAXIMUM`, `program_table::spawnproto::HOLDER_MAXIMUM`
+and `grant_contract::verbs::MAXIMUM_VERB`. A lane already renamed `WORDS_NAME` to
+`MAXIMUM_WORDS_NAME_BYTES`, matching `filesystem_contract::grant`, where the review had proposed
+`MAXIMUM_PACKED_NAME_BYTES`. Four private fields named `len` or `name_len` fail the template's name
+gate. After the first publish every public rename breaks a caller.
+
+Recommendation: A.
+
+- A. `MAXIMUM_FILE_NAME_BYTES`; `MAXIMUM_NAME_BYTES` in `expand` and in `nav`;
+  `MAXIMUM_DIRECTORY_NAME_BYTES`; `MAXIMUM_RENDERED_PATH_BYTES`; `MAXIMUM_HOLDER_NAME_BYTES`;
+  `MAXIMUM_VERB_BYTES`; `MAXIMUM_WORDS_NAME_BYTES` kept as built; the four fields become
+  `length_bytes`. `filesystem_contract::grant::MAXIMUM_NAME`, which two of these mirror, moves in
+  the same lane.
+- B. As A, but `MAXIMUM_WORDS_NAME_BYTES` becomes `MAXIMUM_PACKED_NAME_BYTES` in both crates, the
+  review's spelling: it says the name is the one two argument words pack, where "words" reads as
+  "words of the line".
+- C. Ratify the ratified limits as they are and rename only the fields; the units rule then
+  carries a list of exemptions.
+
+Door: one-way at the first publish, because each is a public path; two-way until then.
+
+Prior art. This tree's `program_argument_contract::PAGE_BYTES` and `expand::NAME_BYTES` carry
+their unit; POSIX's `PATH_MAX` and `NAME_MAX` are the case the rule avoids, since neither says
+whether the terminator counts. Where nife differs: the unit is in the name, not in a manual page.
+Example: a test holds `Refusal::FileNotNameable`'s sentence against `MAXIMUM_FILE_NAME_BYTES`, and a
+reader knows what 252 counts.
+
+Blocks: the tag.
+
+### The names `grant_contract` and `program_table`
+
+Background. The split ruled on 2026-11-14 (UTC) made two crates out of `grant_plan`.
+`grant_contract` holds what a program and its spawner share: the manifest types, the capability
+slot numbers, `INTERFACE_ID` 17 and the verb narrowing. It leaves for a repository of its own, and
+a program links it without the planner. `program_table` holds nife's own table of 28 programs, the
+spawn protocol and the region budgets, and stays in nife. Both names are provisional. §323 (the
+binary interface, and the names of the project's layers) settled that crate names stay descriptive
+and that the page-contract crates take no common prefix, so nothing waits before these names.
+
+Recommendation: A.
+
+- A. Ratify both as built: `grant_contract` follows the tree's `_contract` pattern for what two
+  programs agree on, and `program_table` says what the crate holds.
+- B. `grant_contract` and `program_catalog`, the word the review and the code comments use.
+- C. `capability_manifest` for the leaf, naming its central type instead of its role.
+
+Door: one-way for `grant_contract`, whose name becomes a repository and a crates.io name; two-way
+for `program_table`, which stays in nife.
+
+Prior art. `clap` ships its lexer as `clap_lex` and its derive as `clap_derive`, named for the
+part. Where nife
+differs: the leaf carries no family prefix, per §323 (the binary interface, and the names of the
+project's layers). Example: a `std` program writes `grant_contract::DOMAIN_SLOT` and links no
+parser.
+
+Blocks: the move.
+
+### Review clearance and the repositories
+
+Background. Clearing a crate review is the go to create its repository under nifeos. The planner
+and the leaf each leave at step 6 of milestone 1017 (the contract crates leave in this order). No
+review package exists yet for either, so clearance follows the package and the two decisions above.
+
+Recommendation: A, clear both once their review packages exist and the names above have their
+rulings, with no tag and no publication.
+
+- A. Clear `grant_plan` and `grant_contract` together after the packages and the names.
+- B. Clear `grant_contract` first, since programs link it and it has no dependency on the planner.
+- C. Hold both until the P1 items land.
+
+Door: one-way: a repository that exists has a name others link to.
+
+Prior art. In this tree `generational_table`, `block_roster` and `file_allocation_table` each moved
+on a cleared review with no tag. Where nife differs: nothing outside nife pins either crate.
+Example: under B, `grant_contract` leaves first and `grant_plan` depends on it by version from its
+own repository.
+
+Blocks: the move.
 
 ## Goal
 
@@ -139,8 +268,8 @@ The P1 items are in [the appendix](1094-grant-plan-outside-review/before-the-tag
 
 ## Decisions for the architect
 
-Only the one-way doors. Each gives the background first, the recommendation second, the prior art
-and one concrete example after.
+The rules in force. The units and the names of the split crates are under "Open decisions"
+above.
 
 ### Where the crate boundary falls
 
@@ -177,8 +306,7 @@ Example. After the split, `swish` plans a line with
 
 Ruled 2026-11-14 (UTC): the three parts, as recommended, and the split is built.
 `grant_plan` is the planner, and `Endowment::manifest` is the manifest its plan used. The leaf
-crate is `crates/grant_contract`; its name is provisional, and its published name waits on the
-naming-layers decision. The catalog, `spawnproto`, `job_windows`, `job_page_frame`, `image` and
+crate is `crates/grant_contract`; its name is provisional, for calef to ratify. The catalog, `spawnproto`, `job_windows`, `job_page_frame`, `image` and
 the region budgets are in `crates/program_table`, a provisional name, whose `plan` and
 `plan_stage` return the row beside the endowment. No slot number, `INTERFACE_ID`, `VERSION` or word
 layout changed.
@@ -209,32 +337,9 @@ Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door befor
 which the architect may revisit. The eight renames hold, with `job_page_frame` becoming
 `job_channel_page`, and no alias of the old spellings. `Cwd` and `argv` stay. Item 7 is the work.
 
-### Limits carry their unit, and four fields named `len`
-
-Background. The units rule post-dates most of this crate's ratified limits, and the release review
-reopens a name ratified before a later rule. Eight public limits are byte counts with no unit; the
-template's gate refuses four private `len` fields.
-
-Recommendation. `MAXIMUM_FILE_NAME` becomes `MAXIMUM_FILE_NAME_BYTES`; `WORDS_NAME` becomes
-`MAXIMUM_PACKED_NAME_BYTES` (it is the longest name two argument words carry, and `WORDS_NAME`
-says neither); `expand::MAXIMUM_NAME` and `nav::MAXIMUM_NAME` become `MAXIMUM_NAME_BYTES` in each
-module; `nav::MAXIMUM_DIRECTORY_NAME` becomes `MAXIMUM_DIRECTORY_NAME_BYTES`; `nav::RENDER_MAXIMUM`
-becomes `MAXIMUM_RENDERED_PATH_BYTES`; `spawnproto::HOLDER_MAXIMUM` becomes
-`MAXIMUM_HOLDER_NAME_BYTES`; `MAXIMUM_VERB` becomes `MAXIMUM_VERB_BYTES`. The four fields become
-`length_bytes`. `filesystem_contract::grant::MAXIMUM_NAME` and `WORDS_NAME`, which two of these
-mirror and a test pins, take the same spelling in the same lane, since names that follow a renamed
-thing move with it. The counts (`MAXIMUM_NAMES`, `MAXIMUM_DEPTH`, `MAXIMUM_STAGES` and the rest)
-are counts of things and stay.
-
-Prior art. `program_argument_contract::PAGE_BYTES` and `expand::NAME_BYTES` in this tree; `libc`'s
-`PATH_MAX` and `NAME_MAX` are the counterexample the rule exists to avoid.
-
-Example. A test holds `Refusal::FileNotNameable`'s sentence against `MAXIMUM_FILE_NAME_BYTES`
-(item 10), and a reader of the constant knows what 252 counts.
-
 ## Done when
 
-The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md). The state of each item is in [the ledger](1094-grant-plan-outside-review/ledger.md).
+The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 
 ## BUGS
 
@@ -253,7 +358,7 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md). T
 - `grant_plan`'s tests plan against `program_table`'s catalog through a dev-dependency, so the
   crate cannot run its tests outside this tree until they plan against manifests of their own. The
   move lane writes those before 1017 step 6.
-- `ISOLATION_WORD` (`b"swish"`) is still in `grant_plan`, and is now public so the catalog can
+- `ISOLATION_WORD` (`b"swish"`) is in `grant_plan`, and is public so the catalog can
   refuse the word before resolving it. It names nife's shell, so the crate cannot leave with it;
   the move lane makes it a value the caller passes.
 - The review measured the sizes with the tree's nightly on one 64-bit host. They match on every
@@ -261,12 +366,12 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md). T
 
 ## Follow-on
 
-- **Done.** P0 item 1, the split, carried by lane milestone/1094-grant-plan-split: `grant_plan`,
-  `crates/grant_contract` and `crates/program_table` build and test on their own.
-- **Outstanding.** P0 item 3, the P1 items and the P2 items the ledger marks LEFT, and the two
-  remaining decisions (the eight names and the units). The ledger says why each waits.
-- **Recorded.** `grant_plan`'s tests still plan against the catalog, and `ISOLATION_WORD` still
-  names the shell; both are in this block's BUGS.
+- **Done.** P0 item 1, the split, in #3584: `grant_plan`, `crates/grant_contract` and
+  `crates/program_table` build and test on their own.
+- **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
+  the three crates' sources on main.
+- **Recorded.** `grant_plan`'s tests plan against the catalog, and `ISOLATION_WORD` names the
+  shell; both are in this block's BUGS.
 
 ## Index row
 
@@ -277,5 +382,5 @@ later. The eleven cover these. A tokenizer that drops a seventeenth token. The a
 Eight limits without units and eight public names that need a decoder. Five British spellings.
 Documentation written for a reader inside this tree. Refusal sentences that spell constants by hand.
 Two-kilobyte values passed by value. Three unasserted narrow casts. A silently narrowed manifest. A
-mutation run the release gate will ask for. Three decisions go to the architect: where the crate boundary
-falls, the eight names, and the units.
+mutation run the release gate will ask for. The split along the ruled boundary has landed; the units, the
+names of the split crates and review clearance are calef's.

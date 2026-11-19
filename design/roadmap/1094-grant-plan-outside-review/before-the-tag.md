@@ -42,21 +42,24 @@ An appendix to [the milestone](../1094-grant-plan-outside-review.md).
 
 6. Limits that do not carry their unit, and four `len` fields.
    Finding: the units rule says a length or a limit ends with its unit (`MAXIMUM_NAME_BYTES`, never
-   `MAXIMUM_NAME_LEN`). The release review reopens a name ratified before that rule. Eight public
+   `MAXIMUM_NAME_LEN`). The release review reopens a name ratified before that rule. Seven public
    limits are in bytes with no unit: `MAXIMUM_FILE_NAME` (ratified; `src/lexing.rs` line 16),
-   `WORDS_NAME` (line 25), `expand::MAXIMUM_NAME` (ratified; `src/expand.rs` line 16),
-   `nav::MAXIMUM_NAME` (ratified; `src/nav.rs` line 25), `nav::MAXIMUM_DIRECTORY_NAME` (line 34).
-   The list goes on with `nav::RENDER_MAXIMUM` (ratified; line 40), `spawnproto::HOLDER_MAXIMUM` (ratified;
-   `src/spawnproto.rs` line 492) and `MAXIMUM_VERB` (ratified; `src/verbs.rs` line 100).
-   `expand::NAME_BYTES` already carries its unit. The template's `register_names.py` refuses the
-   four private fields `len` (`src/expand.rs` line 42, `src/manifest.rs` line 125,
-   `src/spawnproto.rs` line 630) and `name_len` (`src/nav.rs` line 496) at a ceiling of 0. The
+   `expand::MAXIMUM_NAME` (ratified; `src/expand.rs` line 16), `nav::MAXIMUM_NAME` (ratified;
+   `src/nav.rs` line 25) and `nav::MAXIMUM_DIRECTORY_NAME` (line 34). The list goes on with
+   `nav::RENDER_MAXIMUM` (ratified; line 44), `program_table::spawnproto::HOLDER_MAXIMUM` (ratified;
+   line 493) and `grant_contract::verbs::MAXIMUM_VERB` (ratified; line 100).
+   `expand::NAME_BYTES` and `MAXIMUM_WORDS_NAME_BYTES` (`src/lexing.rs` line 25) carry their
+   unit. The template's `register_names.py` refuses the four private fields `len`
+   (`src/expand.rs` line 46, `grant_contract/src/manifest.rs` line 123,
+   `program_table/src/spawnproto.rs` line 631) and `name_len` (`src/nav.rs` line 500) at a
+   ceiling of 0. The
    `standalone` job is red on them. `MAXIMUM_NAMES`, `MAXIMUM_DEPTH`, `MAXIMUM_BINDS`,
    `MAXIMUM_STAGES`, `MAXIMUM_POSITIONALS`, `MAXIMUM_WINDOWS`, `MAXIMUM_DUE` and
    `MAXIMUM_SHORT_OPTIONS` count things and are right as they are.
    Evidence: the lines above; `design/naming.md`, "Units"; `register_names.py` output.
-   Change: the third decision below. The fields take `length_bytes` (`len` is the standard
-   library's spelling for a method, and these are fields of a packed value, not methods).
+   Change: the milestone's open decision "Limits carry their unit". The fields take
+   `length_bytes` (`len` is the standard library's spelling for a method, and these are fields of a
+   packed value, not methods).
    Door: one-way at the release (public names). Effort: S once ruled.
 
 7. Public names that need a decoder.
