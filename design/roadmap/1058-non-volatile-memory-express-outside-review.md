@@ -305,7 +305,7 @@ Status: Landed in nifeos/non_volatile_memory_express#19.
    One is the driver on one real controller with a non-zero `FLBAS`, a drive with a 4096-byte
    logical block format. The other is the long ordering run on a weakly ordered host. Both must
    run on real hardware. The planned host is radon (VisionFive 2, JH7110, RVWMO) with an M.2 NVMe
-   drive, once milestone 163 (the JH7110 PCIe root complex driver) lands. An emulated NVMe device under QEMU may serve as interim
+   drive, once milestone 163 (the JH7110 PCIe driver) lands. An emulated NVMe device under QEMU may serve as interim
    evidence and satisfies neither row.
 
 The publishing hold stands.
@@ -331,7 +331,7 @@ claims none of the QEMU or hardware steps.
 - P1-9 has run under QEMU with a 16 KiB controller page, not on a kernel with 16 KiB pages built
   against the crate.
 - The prior-art rows for `nvme-driver`, `vroom` and Redox describe their front pages, not their code.
-- The review did not run the name checks of the template at its head, only at the pin.
+- The review ran the template's name checks at the pin only.
 - The fuzz runs took 20 seconds per target and the weekly job gives five minutes, with no seed
   corpus, so each run starts cold.
 - The P2 order is the reviewer's judgment of what a user asks for first.
