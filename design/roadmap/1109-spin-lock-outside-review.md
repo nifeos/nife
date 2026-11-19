@@ -10,8 +10,8 @@ needs_person: yes
 # 1109. `test_and_set_lock`: what an outside maintainer would fix before it leaves
 
 A read-only outside review raised this milestone. It read the crate as a stranger to this tree would
-meet it, when it was still named `spin_lock`; it is now `crates/test_and_set_lock`. It changes nothing; it lists what the lanes that move the crate change, and the one question
-only an architect can answer.
+meet it, when it was still named `spin_lock`; it is now `crates/test_and_set_lock`. It lists what the lanes that move the crate change, and it records the one question only an
+architect could answer.
 
 The settled baseline this review does not reopen is the rulings recorded in milestone 953 (the
 kernel's lock proves what it takes from `spin`). They ratified `SpinLock`,
