@@ -96,12 +96,12 @@ then the decisions and the release step.
 
 ### Clear the review of the shared `filesystem_contract` and `filesystem_fixture` repository
 
-This is one decision with milestone 1090's, and its brief is there:
-[clear the review of `filesystem_contract` and `filesystem_fixture`, and create their
+This is one decision with milestone 1090's (`filesystem_contract`: what an outside maintainer would
+fix before it leaves), and its brief is there: [clear the review of `filesystem_contract` and
+`filesystem_fixture`, and create their
 repository](1090-filesystem-contract-outside-review.md#clear-the-review-of-filesystem_contract-and-filesystem_fixture-and-create-their-repository).
-For this crate, the clearance ratifies the 244 names of item 5's package, after Decision 2's
-renames have landed. Door: one-way, a repository and names that other repositories pin. Blocks: the
-move.
+For this crate, the clearance ratifies the 244 names of item 5's package, after Decision 2's renames
+have landed. Door: one-way, a repository and names that other repositories pin. Blocks: the move.
 
 ## Goal
 
@@ -250,9 +250,9 @@ The checks are in [the appendix](1091-filesystem-fixture-outside-review/done-whe
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open or Ruled under Finding status above, each with what
-  is left, and each open decision under Open decisions. Checked by reading each finding line
-  against the crate and its pull requests on main.
+- **Outstanding.** Every finding that Finding status above marks Open or Ruled, each with what
+  remains, and each open decision under Open decisions. A lane checked each finding line against
+  the crate and its pull requests on main.
 
 ## Index row
 

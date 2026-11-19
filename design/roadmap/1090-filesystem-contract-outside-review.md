@@ -104,7 +104,8 @@ are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `b
   Maintainer ruling, provisional, 2026-11-14 UTC; the aliases are item 5.
 - Decision C, the reply error range: Done, [#3577](https://github.com/nifeos/nife/pull/3577). Ruled
   2026-11-14 UTC.
-- §99 still names the store `.nife-attrs`: Open. Under Open decisions.
+- §99 (where Apple's metadata lands: stream or sidecar) still names the store `.nife-attrs`: Open.
+  Under Open decisions.
 - Review package: Open. `notes/crate-reviews/` has no package for this crate; one package may cover
   both crates of the shared repository.
 - Review clearance of the shared repository: Open. Under Open decisions.
@@ -129,27 +130,28 @@ Recommendation: A.
 - C. Replace §99 with a new section that carries the renamed store, its frontmatter naming the
   successor.
 
-Door: two-way. It is a record's wording, and no image outside the maintainers' own ever carried
-the old name. It comes to the architect only because §88 reserves a changed word in a decision to
-him.
+Door: two-way. It is a record's wording, and no image outside the maintainers' own ever carried the
+old name. It comes to the architect only because §88 (`needs-architect` as a required check)
+reserves a changed word in a decision to him.
 
-Prior art: §298 states that a document says what is in force now, with git as the history, which
-is option A. Python's PEPs and Rust's RFCs keep their original text and point to the successor,
-which is option B; this tree chose the other way. Concrete example: a reader of §99's cost table
-counts "one 4096-byte block for the node's blob under `.nife-attrs`" and then finds
-`STORE_DIRECTORY` holding `.extended-attributes`.
+Prior art: §298 (a document states what is in force now) states that a document says what is in
+force now, with git as the history, which is option A. Python's PEPs and Rust's RFCs keep their
+original text and point to the successor, which is option B; this tree chose the other way. Concrete
+example: a reader of §99's cost table counts "one 4096-byte block for the node's blob under
+`.nife-attrs`" and then finds `STORE_DIRECTORY` holding `.extended-attributes`.
 
 Blocks: nothing in the move or the tag; it is the record's accuracy.
 
 ### Clear the review of `filesystem_contract` and `filesystem_fixture`, and create their repository
 
-Background. `filesystem_contract` defines the two message protocols a filesystem server and a
-block server speak, and `filesystem_fixture` is the test image those servers run against.
-They leave together for one workspace repository, ruled 2026-11-14 UTC; the fixture never
-publishes. A crate leaves once its review package lists every public name and decision and the
-architect clears that review, and the clearance is also the go to create the repository. Most of
-the contract's public names are provisional, Decision B's renames included, and the fixture has
-244 unratified names (milestone 1091). The decision is one clearance for both crates.
+Background. `filesystem_contract` defines the two message protocols a filesystem server and a block
+server speak, and `filesystem_fixture` is the test image those servers run against. They leave
+together for one workspace repository, ruled 2026-11-14 UTC; the fixture never publishes. A crate
+leaves once its review package lists every public name and decision and the architect clears that
+review, and the clearance is also the go to create the repository. Most of the contract's public
+names are provisional, Decision B's renames included, and the fixture has 244 unratified names
+(milestone 1091, `filesystem_fixture`: what an outside maintainer would fix before it leaves). The
+decision is one clearance for both crates.
 
 Recommendation: A, once the review package exists.
 
@@ -277,9 +279,9 @@ The checks are in [the appendix](1090-filesystem-contract-outside-review/done-wh
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open or Ruled under Finding status above, each with what
-  is left, and each open decision under Open decisions. Checked by reading each finding line
-  against the crate and its pull requests on main.
+- **Outstanding.** Every finding that Finding status above marks Open or Ruled, each with what
+  remains, and each open decision under Open decisions. A lane checked each finding line against
+  the crate and its pull requests on main.
 
 ## Index row
 

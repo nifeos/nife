@@ -232,9 +232,9 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open or Ruled under Finding status above, each with what
-  is left, and each open decision under Open decisions. Checked by reading each finding line
-  against the crate and its pull requests on main.
+- **Outstanding.** Every finding that Finding status above marks Open or Ruled, each with what
+  remains, and each open decision under Open decisions. A lane checked each finding line against
+  the crate and its pull requests on main.
 
 ## Index row
 

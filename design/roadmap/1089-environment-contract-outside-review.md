@@ -47,8 +47,8 @@ and the release steps.
   Kani and return only with the text scan bounded or the shape split, each with its patch.
 - Item 6 (P1), the crate does not stand alone: Open. The manifest still inherits `license` and
   `lints` and has no `rust-version`, there is no README or license file, and `src/lib.rs` cites
-  §111, §46 and `notes/env-config.md`. All of it is the move's work, with a README that says
-  fuzzing stays off because the crate has `unsafe`.
+  §111, §46 (thin primitives, whole subsystems) and `notes/env-config.md`. All of it is the move's
+  work, with a README that says fuzzing stays off because the crate has `unsafe`.
 - Item 7 (P1), the identity is provisional and unpinned: Done,
   [#3585](https://github.com/nifeos/nife/pull/3585). `the_frozen_identity_and_widths_are_pinned`
   asserts the literals and that `MAGIC[7]` is `b'0' + VERSION`, as a test assertion rather than the
@@ -142,7 +142,7 @@ The P2 items are in [the appendix](1089-environment-contract-outside-review/late
 ## Decisions for the architect
 
 Each states the background, the recommendation first, the prior art and one concrete example. The
-accessor names are decided, provisionally.
+maintainer rules the accessor names, provisionally.
 
 ### Freeze the identity: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, and the 107-byte layout
 
@@ -227,9 +227,9 @@ The checks are in [the appendix](1089-environment-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open or Ruled under Finding status above, each with what
-  is left, and each open decision under Open decisions. Checked by reading each finding line
-  against the crate and its pull requests on main.
+- **Outstanding.** Every finding that Finding status above marks Open or Ruled, each with what
+  remains, and each open decision under Open decisions. A lane checked each finding line against
+  the crate and its pull requests on main.
 
 ## Index row
 
