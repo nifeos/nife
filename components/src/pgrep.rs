@@ -58,51 +58,51 @@ static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: abi::INTERFACE_ID,
         version: abi::ABI_VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,
         version: address_space_layout::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: byte_sink_contract::INTERFACE_ID,
         version: byte_sink_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: clock_contract::INTERFACE_ID,
         version: clock_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: counter_frequency_contract::INTERFACE_ID,
         version: counter_frequency_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: current_cpu_contract::INTERFACE_ID,
         version: current_cpu_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: entropy_contract::INTERFACE_ID,
         version: entropy_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: grant_contract::INTERFACE_ID,
         version: grant_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: program_argument_contract::INTERFACE_ID,
         version: program_argument_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: socket_contract::INTERFACE_ID,
         version: socket_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: user_mode_runtime::INTERFACE_ID,
         version: user_mode_runtime::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: interfaces_note::INTERFACE_ID,
         version: interfaces_note::INTERFACES_VERSION
     },

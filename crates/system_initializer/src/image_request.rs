@@ -793,7 +793,7 @@ pub(super) fn endowed_image(
 
 #[cfg(test)]
 mod tests {
-    use interfaces_note::{Declared, InterfacesNote, interfaces_len, interfaces_note_len};
+    use interfaces_note::{DeclaredInterface, InterfacesNote, descriptor_bytes, note_bytes};
 
     use super::serves_declared_abi;
     extern crate std;
@@ -838,11 +838,11 @@ mod tests {
 
     /// The note a program built against `version` of the ABI carries.
     fn declaring(version: u32) -> Vec<u8> {
-        let list = [Declared {
+        let list = [DeclaredInterface {
             id: abi::INTERFACE_ID,
             version,
         }];
-        InterfacesNote::<{ interfaces_note_len(1) }>::of::<{ interfaces_len(1) }>(&list)
+        InterfacesNote::<{ note_bytes(1) }>::of::<{ descriptor_bytes(1) }>(&list)
             .0
             .to_vec()
     }
