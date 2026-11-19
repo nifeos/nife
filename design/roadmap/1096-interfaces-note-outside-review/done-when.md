@@ -11,7 +11,7 @@ An appendix to [the milestone](../1096-interfaces-note-outside-review.md).
   lives and that an absent entry passes.
 - The lint and the move check accept decision 1's marked lines; `lint_externalized_crates.py`
   drops this crate's waiver.
-- Decision 2's renames have landed, calef has ratified the twenty public names, and
+- Decision 2's renames have landed, the twenty public names stand ratified, and
   `script/names interfaces_note` reads `ratified` for every name.
 - Four doctests run under `cargo test`, none `ignore`.
 - `cargo kani` verifies three harnesses, each with a replayable falsification patch that
