@@ -189,7 +189,7 @@ e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", re
 # driver is mapped and the handoff it is spawned with. The kernel's extensible_host_controller_interface
 # module is its volatile half, the same split as `pci` above. The window, the
 # handoff and the driver's bring-up report are `driver_process_contract`'s.
-extensible_host_controller_interface = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "875a6401be12f311d925580901faf00cbcacbf99" }
+extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }
