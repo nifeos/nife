@@ -1632,7 +1632,6 @@ crates/device_tree_blob/src/lib.rs::end
 
 crates/device_tree_blob/src/lib.rs::from_bytes
 
-crates/device_tree_blob/src/lib.rs::from_ptr
 
 crates/device_tree_blob/src/lib.rs::memory_regions
 
@@ -1640,9 +1639,7 @@ crates/device_tree_blob/src/lib.rs::memory_regions
 
 
 
-crates/device_tree_blob/src/lib.rs::node_reg
 
-crates/device_tree_blob/src/lib.rs::node_reg_compatible
 
 
 crates/device_tree_blob/src/lib.rs::reserved_memory_regions
@@ -1868,7 +1865,6 @@ crates/domain_name_resolution_contract/src/wire.rs::OK
 
 crates/domain_name_resolution_contract/src/wire.rs::OPEN
 
-crates/domain_name_resolution_contract/src/wire.rs::OPERATION_ATTACH_PAGE_FRAME
 
 
 crates/domain_name_resolution_contract/src/wire.rs::OPERATION_RESOLVE
@@ -6113,7 +6109,6 @@ crates/socket_contract/src/lib.rs::NO_NAMESERVER
 
 crates/socket_contract/src/lib.rs::OPERATION_ACCEPT
 
-crates/socket_contract/src/lib.rs::OPERATION_ATTACH_PAGE_FRAME
 
 crates/socket_contract/src/lib.rs::OPERATION_BIND_UDP
 

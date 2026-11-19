@@ -46,13 +46,13 @@ Two-way.
 
 ## P1: land before the tag
 
-### P1-1. `node_reg` does not stop at the first match; its documentation and its siblings say it does
+### P1-1. `node_register_regions` does not stop at the first match; its documentation and its siblings say it does
 
 DONE (`node_reg_stops_at_the_first_matching_node_even_without_a_reg`). `src/lib.rs` lines 320 to 327 says "the `reg` regions of the first node whose name starts with
 `prefix`", and the comment at `:369-376` says "either way, stop looking", but the code clears
 `target_at` and keeps matching. Probe: a root with `uart@1` (no `reg`) then `uart@2` (`reg`) gives
-`node_reg(b"uart@")` one region, `uart@2`'s, while `node_prop(b"uart@", b"reg")` on the same blob
-gives `Ok(None)`, and `node_reg_compatible` documents "zero regions for a match with no `reg`"
+`node_register_regions(b"uart@")` one region, `uart@2`'s, while `node_prop(b"uart@", b"reg")` on the same blob
+gives `Ok(None)`, and `node_register_regions_compatible` documents "zero regions for a match with no `reg`"
 (`:430`). Two lookups with the same contract answer differently for the same tree, which is the kind
 of difference that hides until a board writes a disabled first instance. The callers in the tree
 pass `plic@`, `serial@10000000` and `smmuv3@`. On every fixture the first match carries `reg`, so this review found no caller that leans on the fall-through (unverified beyond the fixtures). The fix is to return

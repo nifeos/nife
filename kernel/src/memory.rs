@@ -153,8 +153,8 @@ fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         // about what a PLIC is (`machine_discovery::plic::COMPATIBLES` names each string's machine).
         let found = machine_discovery::plic::COMPATIBLES
             .iter()
-            .any(|compat| matches!(dtb.node_reg_compatible(compat, &mut plic), Ok(n) if n >= 1))
-            || matches!(dtb.node_reg(b"plic@", &mut plic), Ok(n) if n >= 1);
+            .any(|compat| matches!(dtb.node_register_regions_compatible(compat, &mut plic), Ok(n) if n >= 1))
+            || matches!(dtb.node_register_regions(b"plic@", &mut plic), Ok(n) if n >= 1);
         if found {
             *PLIC_REGION.lock() = Some((plic[0].start, plic[0].size));
         }
@@ -182,7 +182,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // it.
     {
         let mut smmu = [Region { start: 0, size: 0 }; 1];
-        if let Ok(n) = dtb.node_reg(b"smmuv3@", &mut smmu)
+        if let Ok(n) = dtb.node_register_regions(b"smmuv3@", &mut smmu)
             && n >= 1
         {
             *SMMU_REGION.lock() = Some((smmu[0].start, smmu[0].size));
@@ -200,7 +200,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
                 clock_contract::real_time_clock::GOLDFISH,
             ),
         ] {
-            if let Ok(n) = dtb.node_reg_compatible(compat, &mut rtc)
+            if let Ok(n) = dtb.node_register_regions_compatible(compat, &mut rtc)
                 && n >= 1
             {
                 *RTC_REGION.lock() = Some((rtc[0].start, rtc[0].size, kind));
@@ -223,7 +223,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // tree: QEMU's BAR window is DRAM on the JH7110, which has no such node.
     {
         let mut ecam = [Region { start: 0, size: 0 }; 1];
-        if let Ok(n) = dtb.node_reg_compatible(b"pci-host-ecam-generic", &mut ecam)
+        if let Ok(n) = dtb.node_register_regions_compatible(b"pci-host-ecam-generic", &mut ecam)
             && n >= 1
             && let Ok(Some(ranges)) =
                 dtb.node_property_compatible(b"pci-host-ecam-generic", b"ranges")

@@ -35,7 +35,7 @@ as a known limit. Honor `status` (a disabled bank is RAM the firmware says not t
 is not read. Effort S. Two-way; a change on the boot path, so run the fixture suites and a QEMU
 boot after it.
 
-P2-4. The source writes one token loop nine times. DONE: a private `Tokens` walk carries every walker, with the advance guard, the structure-block bound, the depth bound and the balance check in one place. `memory_regions`, `node_reg`, `node_reg_compatible`,
+P2-4. The source writes one token loop nine times. DONE: a private `Tokens` walk carries every walker, with the advance guard, the structure-block bound, the depth bound and the balance check in one place. `memory_regions`, `node_register_regions`, `node_register_regions_compatible`,
 `prop_compatible_up`, `node_prop`, `node_prop_inherited`, `phandle_prop`, `node_props`,
 `reserved_memory_regions`, `initial_ramdisk` and `boot_arguments` each open the same `loop { be32;
 match token { BEGIN_NODE => cstr, align4, depth += 1 ... } }` (`src/lib.rs` line 255, `:339`, `:444`,
@@ -54,7 +54,7 @@ proves `be32` and `be64` total, `be32` big-endian when in bounds, and `align4` c
 any cell counts. `cells` is total. `from_bytes` is total over an arbitrary 48-byte buffer. And,
 after P2-4, the token iterator is total. Each is a bounded harness of the same size as the four that
 exist, and each needs its falsification patch. The `align4` bound needs a statement against the real
-ceiling (`MAXIMUM_TOTALSIZE` plus the header), not `1 << 60`. Effort M. Two-way.
+ceiling (`MAXIMUM_TOTAL_SIZE_BYTES` plus the header), not `1 << 60`. Effort M. Two-way.
 
 P2-6. The reservation block gets fewer checks than `reg`. DONE (`reservations_are_read_entry_by_entry` refuses a wrapping entry; the documentation says the alignment is not checked and why). `reserved_regions`
 (`src/lib.rs` lines 208 to 225) passes `start` and `size` out without the `RegionOverflow` check `decode_reg`
@@ -63,7 +63,7 @@ while a `reg` pair of the same shape draws a refusal. And nothing checks `off_rs
 alignment the specification requires. Apply the same overflow refusal; document that alignment is
 not checked because the reader is byte-wise and needs none. Effort S. Two-way.
 
-P2-7. `from_ptr` reads 40 bytes while its contract speaks of 8. DONE (`from_ptr_reads_eight_bytes_before_it_trusts_the_size`, clean under Miri). `src/lib.rs` lines 133 to 142 says "we trust
+P2-7. `from_pointer` reads 40 bytes while its contract speaks of 8. DONE (`from_ptr_reads_eight_bytes_before_it_trusts_the_size`, clean under Miri). `src/lib.rs` lines 133 to 142 says "we trust
 the first 8 bytes before we have validated anything" and then builds a 40-byte slice. The caller's
 contract (a blob valid for `'a`) covers both, since a blob is at least 40 bytes. The comment and the
 code should still say the same number: read 8, check the magic and the size, then build the rest.
@@ -72,14 +72,14 @@ states and a stranger will ask. Effort S. Two-way.
 
 P2-8. `from_bytes` does not say what it trims or ignores. DONE (one paragraph at `from_bytes`). `src/lib.rs` lines 159 to 162. A buffer longer
 than `totalsize` gets accepted and trimmed (`tests/hostile.rs` lines 283 to 290 proves it, the documentation
-does not say it). `MAXIMUM_TOTALSIZE` applies to `from_ptr` only (right, and unstated). `version`,
+does not say it). `MAXIMUM_TOTAL_SIZE_BYTES` applies to `from_pointer` only (right, and unstated). `version`,
 `size_dt_strings`, `size_dt_struct` and `boot_cpuid_phys` are not read (P1-4 reads one). One
 paragraph closes it. Effort S. Two-way.
 
-P2-9. One example, and it does not run. DONE for the documentation: `from_bytes`, `memory_regions`, `node_reg_compatible` and `node_properties` carry running examples over the QEMU fixture. The README half waits for the move (P0-1). The only `# Examples` block is on `node_props`
+P2-9. One example, and it does not run. DONE for the documentation: `from_bytes`, `memory_regions`, `node_register_regions_compatible` and `node_properties` carry running examples over the QEMU fixture. The README half waits for the move (P0-1). The only `# Examples` block is on `node_props`
 (`src/lib.rs` lines 852 to 861), marked `no_run`. The two QEMU fixtures under `tests/fixtures/` are real
 trees the documentation could `include_bytes!` into a running doctest on `from_bytes`,
-`memory_regions` and `node_reg_compatible`, and the README's `## EXAMPLES` needs the same code.
+`memory_regions` and `node_register_regions_compatible`, and the README's `## EXAMPLES` needs the same code.
 Effort S. Two-way.
 
 P2-10. Two depth counters. DONE (`a_tree_whose_nesting_does_not_balance_is_refused`; one `usize` depth in the token walk). Four walkers count depth in `i32` and subtract bare (`src/lib.rs:
@@ -99,7 +99,7 @@ Two-way.
 P2-12. A trailing partial `reg` pair drops silently. DONE (`a_reg_that_does_not_fit_a_region_is_a_bad_value`: a length that is not a multiple of the pair is `BadValue`). `decode_reg` (`src/lib.rs` line 1183)
 stops when fewer than `pair_bytes` remain. Linux refuses a `reg` whose length is not a multiple
 of the pair (`of_flat_dt_get_addr_size_prop`); `dtoolkit` refuses too; this crate's documentation
-says nothing. State it at `memory_regions`, `node_reg` and `node_reg_compatible`, or refuse with
+says nothing. State it at `memory_regions`, `node_register_regions` and `node_register_regions_compatible`, or refuse with
 the P2-1 error. Effort S. Two-way.
 
 P2-13. Private names that need a decoder. DONE (the private names are spelled out). `acells`, `scells` (`src/lib.rs` lines 332 to 333 and

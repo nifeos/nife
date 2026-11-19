@@ -44,7 +44,7 @@ fn the_th1520_plic_register_block_is_found_40_bits_up() {
     let mut plic = [Region { start: 0, size: 0 }; 1];
     let found = COMPATIBLES
         .iter()
-        .any(|c| matches!(dt.node_reg_compatible(c, &mut plic), Ok(n) if n >= 1));
+        .any(|c| matches!(dt.node_register_regions_compatible(c, &mut plic), Ok(n) if n >= 1));
     assert!(
         found,
         "no compatible in the shared list names the TH1520's PLIC"

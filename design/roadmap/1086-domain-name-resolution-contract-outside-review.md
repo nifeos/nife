@@ -48,8 +48,8 @@ appendix](1086-domain-name-resolution-contract-outside-review/before-the-tag.md)
   wrote the manifest. The pinned `git` dependency on `domain_name_system` and the two license files
   wait for the move.
 - 4, the limits and offsets break the current rules: Open.
-  [#3641](https://github.com/nifeos/nife/pull/3641) built the renames, which wait on
-  [ratification](#ratify-the-provisional-names). `udp` and `tcp` still need adding to the template's
+  [#3641](https://github.com/nifeos/nife/pull/3641) built the renames, and decision 1 ratified
+  them. `udp` and `tcp` still need adding to the template's
   accepted words; they stay abbreviated, as ruled 2026-11-16 (UTC).
 - 5, the interface identity: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
 - 6, the reply word to a control `CALL`: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
@@ -71,95 +71,24 @@ appendix](1086-domain-name-resolution-contract-outside-review/before-the-tag.md)
   [#3641](https://github.com/nifeos/nife/pull/3641).
 - 13, the root zone has three spellings: Done, [#3641](https://github.com/nifeos/nife/pull/3641).
 - 14, small shapes: Open. [#3641](https://github.com/nifeos/nife/pull/3641) added `Debug`, the size
-  test and the dead branch's removal. [The reply to an unknown
-  transport](#the-reply-to-an-unknown-transport) waits for a ruling.
-- Decision 1, the reopened names: Open, under [ratification](#ratify-the-provisional-names).
+  test and the dead branch's removal. Decision 4 ruled the reply to an unknown transport, and the
+  rulings pull request builds it.
+- Decision 1, the reopened names: Done, ratified as built. The `Name:` blocks in the crate source
+  still say provisional, and a later lane or the move rewrites them.
 - Decision 2, the control reply: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
 - Decision 3, the identity: Done, [#3583](https://github.com/nifeos/nife/pull/3583).
-- F-attach, `OPERATION_ATTACH_PAGE_FRAME`: Open, under [Open
-  decisions](#name-the-attach-operation-with-the-socket-contract).
+- Decision 4, the reply to an unknown transport: Done; the rulings pull request builds it.
+- Decision 5, the attach operation's name: Done, renamed in both contracts and every user.
+- F-attach, the attach operation's name: Done, decision 5.
 - F-log, a runtime log channel for the spawner: Open. The spawner reads why the resolver refused a
   grant, but cannot write a line once the shell runs. No lane holds it.
-- F-package, the review package: Open. None exists under `notes/crate-reviews/`.
-- F-clearance, review clearance: Open, under [Open decisions](#clear-the-review-for-the-move).
+- F-package, the review package: Open. None exists under `notes/crate-reviews/`; a lane writes it
+  once the rulings pull request merges (decision 6).
+- F-clearance, review clearance: Open. The repository go is asked when the package exists.
 
 ## Open decisions
 
-### The reply to an unknown transport
-
-The spawner hands the resolver a transport word, `TRANSPORT_UDP` (0) or `TRANSPORT_TCP` (1). The
-resolver tests only for TCP (`components/src/domain_name_resolver.rs` line 133), so any other value
-reads as UDP. The contract defines no reply for a word it does not know, and a stranger's spawner
-that writes 2 for a transport of its own gets UDP without a word.
-
-Recommendation: A. It is the restrictive option, and it follows the precedent the resolver set for
-a missing socket page: refuse at start, then answer each resolve with `status::NETWORK` and a step
-that names why.
-
-- A. Refuse the transport at start; answer every resolve with `status::NETWORK` and a new
-  `network_step::UNKNOWN_TRANSPORT` (5).
-- B. Keep reading every value but 1 as UDP, and document it.
-- C. Have the spawner refuse the value before it spawns, with no word on the wire.
-
-Door: one-way at the tag, since the step number is a wire word. Prior art: glibc's resolver reads
-`options use-vc` as a flag, so no third value can exist (recalled, unverified); systemd-resolved
-refuses an unknown D-Bus enum value with an error. nife differs by carrying the transport as a
-number a spawner writes. Example: under A, a resolve against a resolver started with transport 2
-returns `Outcome { status: NETWORK, detail: UNKNOWN_TRANSPORT }`, and the standard library reports
-which step failed. Blocks: the tag.
-
-### Ratify the provisional names
-
-[#3641](https://github.com/nifeos/nife/pull/3641) built decision 1, which the maintainer decided
-provisionally on 2026-11-14 (UTC), and the crate holds 30 `Name: provisional` blocks. A limit opens `MAXIMUM_` and ends with its unit, an
-address that is not a memory location says which kind, and an offset follows the family-wide
-`<FIELD>_OFFSET_BYTES`.
-
-| was | built |
-|---|---|
-| `NAME_TEXT_MAXIMUM`, `GRANTS_MAXIMUM` | `MAXIMUM_NAME_TEXT_BYTES`, `MAXIMUM_GRANTS` |
-| `MAXIMUM_ADDRESSES` | `MAXIMUM_IPV4_ADDRESSES`, as in `domain_name_system` |
-| `OFF_NAME`, `OFF_ADDRESSES` | `NAME_OFFSET_BYTES`, `IPV4_ADDRESSES_OFFSET_BYTES` |
-| `w0`, `w1`; `text_len`, `text_total`; `op` | `first_word`, `second_word`; `text_bytes_received`, `text_bytes_total`; `operation` |
-
-`TRANSPORT_UDP` and `TRANSPORT_TCP` keep their spelling, and the rest of the public names keep
-theirs. Recommendation: A.
-
-- A. Ratify the names as built.
-- B. Ratify all but `first_word` and `second_word`, and rule the message-word spelling for the
-  whole tree first, since other contracts still write `w0` and `w1`.
-
-Door: one-way at the tag. Prior art: smoltcp spells its limits `MAX_NAME_SIZE` (recalled,
-unverified); POSIX spells `NI_MAXHOST`. nife spells the word and the unit out. Example:
-`MAXIMUM_NAME_TEXT_BYTES = 253` beside `domain_name_system::MAXIMUM_NAME_BYTES = 255` shows that one
-holds dotted text and the other wire bytes. Blocks: the tag.
-
-### Name the attach operation with the socket contract
-
-`OPERATION_ATTACH_PAGE_FRAME` (`src/wire.rs` line 53) is the operation that hands the resolver its
-page. It names the same act as the socket contract's attach, whose package proposes
-`OPERATION_ATTACH_SHARED_PAGE`. Recommendation: A, because two contracts that spell one act two ways
-teach a reader two acts.
-
-- A. Rename it to whatever the socket contract's operation-name ruling settles, in the same lane.
-- B. Ratify `OPERATION_ATTACH_PAGE_FRAME` here on its own.
-
-Door: one-way at the tag. Prior art: Linux names `mmap` once for every file type. Example: under A,
-both crates read `OPERATION_ATTACH_SHARED_PAGE`. Blocks: the tag, after the socket contract's
-ruling.
-
-### Clear the review for the move
-
-No review package exists, and clearance follows one. Recommendation: A, write the package once
-items 1 to 3 close and ratification settles the names, then clear the move at step 6 of milestone 1017
-(the contract crates leave in this order), after `domain_name_system` leaves in step 5.
-
-- A. Clear from a written package, as other crates did.
-- B. Hold the move until the socket contract leaves, since the two share the fixture question.
-
-Door: two-way until the repository exists. Prior art: `file_allocation_table` and `e1000e` cleared
-from a written package. Example: under A, the move runs `script/crate-move` on a tree whose
-`standalone` check reports nothing. Blocks: the move.
+None.
 
 ## Goal
 
@@ -252,8 +181,27 @@ The P1 items are in [the appendix](1086-domain-name-resolution-contract-outside-
 
 ## Decisions for the architect
 
-The doors that someone outside this repository acts on after the first tag. Decision 1, the names,
-waits on [ratification](#ratify-the-provisional-names). Decisions 2 and 3 are the rules in force.
+The doors that someone outside this repository acts on after the first tag. Every decision here is a rule
+in force. The architect ruled 2 and 3 on 2026-11-14 (UTC), and 1 and 4 to 6 on 2026-11-19 (UTC).
+
+1. The names (item 4). Ruled 2026-11-19 (UTC), option A. The 30 provisional names stand as built. A
+   limit opens `MAXIMUM_` and ends with its unit, an address that is not a memory location says
+   which kind, and an offset follows the family-wide `<FIELD>_OFFSET_BYTES`.
+
+   | was | built |
+   |---|---|
+   | `NAME_TEXT_MAXIMUM`, `GRANTS_MAXIMUM` | `MAXIMUM_NAME_TEXT_BYTES`, `MAXIMUM_GRANTS` |
+   | `MAXIMUM_ADDRESSES` | `MAXIMUM_IPV4_ADDRESSES`, as in `domain_name_system` |
+   | `OFF_NAME`, `OFF_ADDRESSES` | `NAME_OFFSET_BYTES`, `IPV4_ADDRESSES_OFFSET_BYTES` |
+   | `w0`, `w1`; `text_len`, `text_total`; `op` | `first_word`, `second_word`; `text_bytes_received`, `text_bytes_total`; `operation` |
+
+   `TRANSPORT_UDP`, `TRANSPORT_TCP` and the rest of the public names keep their spelling.
+   `first_word` and `second_word` are ratified for this crate only. Other contracts that still
+   write `w0` and `w1` follow when their own names come up. Prior art: smoltcp spells its limits
+   `MAX_NAME_SIZE` (recalled, unverified); POSIX spells `NI_MAXHOST`. nife spells the word and the
+   unit out. Example: `MAXIMUM_NAME_TEXT_BYTES = 253` beside
+   `domain_name_system::MAXIMUM_NAME_BYTES = 255` shows that one holds dotted text and the other
+   wire bytes.
 
 2. The reply word to a control `CALL` (item 6). Ruled 2026-11-14 (UTC), option A. The reply uses
    `Outcome`'s packing, a status byte and a detail byte, exactly as a resolve reply does.
@@ -269,6 +217,34 @@ waits on [ratification](#ratify-the-provisional-names). Decisions 2 and 3 are th
    `INTERFACE_ID` 11 and `VERSION` 1. Version 1 includes the control reply of decision 2, with no
    bump, because the earlier bare reply was never part of the contract.
 
+4. The reply to an unknown transport (item 14). Ruled 2026-11-19 (UTC), option A. The spawner
+   hands the resolver `TRANSPORT_UDP` (0) or `TRANSPORT_TCP` (1). The resolver refuses any other
+   word at start and answers every resolve with `status::NETWORK` and
+   `network_step::UNKNOWN_TRANSPORT` (5), as it does for a missing socket page. The step number is
+   an addition inside interface version 1, which stays. The restrictive option follows the
+   precedent a missing socket page set. Door: one-way at the tag, since the step number is a wire
+   word. Prior art: glibc's resolver reads `options use-vc` as a flag, so no third value can exist
+   (recalled, unverified); systemd-resolved refuses an unknown D-Bus enum value with an error. nife
+   differs by carrying the transport as a number a spawner writes. Example: a resolve against a
+   resolver started with transport 2 returns `Outcome { status: NETWORK, detail:
+   UNKNOWN_TRANSPORT }`, and the standard library reports which step failed.
+
+5. The attach operation's name. Ruled 2026-11-19 (UTC), option A. The operation that hands the
+   resolver its page is `OPERATION_ATTACH_SHARED_PAGE` here and in the socket contract, with its
+   number unchanged. The two contracts must agree on one act's name, and in the socket contract
+   `frame` also means a network frame (`polled_wait`), though `page frame` stays the kernel's own
+   term. Door: one-way at the tag. Prior art: Linux names `mmap` once for every file type.
+   Example: both crates read `OPERATION_ATTACH_SHARED_PAGE`.
+
+6. The review and the move. Ruled 2026-11-19 (UTC), option A. A lane writes the review package
+   once the rulings pull request merges, with the names as ruled, `UNKNOWN_TRANSPORT` and
+   `OPERATION_ATTACH_SHARED_PAGE` included. The move does not wait for the socket contract. The
+   repository go is asked when the package exists, and the move runs at step 6 of milestone 1017
+   (the contract crates leave in this order), after `domain_name_system` leaves in step 5. Door:
+   two-way until the repository exists. Prior art: `file_allocation_table` and `e1000e` cleared
+   from a written package. Example: the move runs `script/crate-move` on a tree whose `standalone`
+   check reports nothing.
+
 ## Done when
 
 The checks are in [the appendix](1086-domain-name-resolution-contract-outside-review/done-when.md).
@@ -282,15 +258,14 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
   more.
 - A spawner whose grant the resolver refuses fails the spawn without saying why, since nothing in the spawner
   writes a line once the shell runs (`crates/system_initializer` BUGS).
-- `first_word` and `second_word` (decision 1) apply in this crate only, so the tree still
-  writes `w0` and `w1` in other contracts. Ruling the spelling for the tree is a rename beyond this
-  block.
+- `first_word` and `second_word` (decision 1) are ratified for this crate only, so the tree still
+  writes `w0` and `w1` in other contracts, which follow when their own names come up.
 - Item 2 waits on the same question as the `socket_contract` package's decision 2. Whichever gets its ruling first settles the shape for both.
 
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): items 1 to 4, 9 to 11
-  and 14, F-log and F-package, and the four open decisions.
+  and 14, F-log, F-package and F-clearance. The review package follows this pull request.
 
 ## Index row
 
@@ -299,6 +274,5 @@ An outside review of `domain_name_resolution_contract` before it leaves. Three i
 Eight land before the first tag. They are the reopened names, the interface identity, an undefined
 control reply word, three bounds for one field, an unchecked reply count, the README and a broken
 doc table, a proof over the grant table, and the six equivalent mutants. Three more are for later.
-The architect has ruled the control reply word and the identity. Four decisions go to the
-architect: the names, the reply to an unknown transport, the attach operation's name and the review
-clearance.
+The architect has ruled all six decisions: the control reply word, the identity, the names, the
+reply to an unknown transport, the attach operation's name and the review package and move.

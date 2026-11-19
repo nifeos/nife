@@ -125,7 +125,7 @@ pub(crate) fn server(mut dev: Nic, grant_word: u64) -> ! {
         // socket's own capability; every other is a CALL, and a delegation sent with one is deleted
         // here rather than answered into (§245 (a `CALL` server tells a Reply from a delegation)).
         let to = match req.delivered {
-            Delivered::Delegation(frame) if operation == OPERATION_ATTACH_PAGE_FRAME => {
+            Delivered::Delegation(frame) if operation == OPERATION_ATTACH_SHARED_PAGE => {
                 table.attach(badge, frame);
                 continue;
             }

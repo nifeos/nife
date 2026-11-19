@@ -191,7 +191,7 @@ missed (99.7%), the baseline's own number.
 Thirteen of the fourteen are one omission repeated across four walkers. `Dtb` has five walks over
 the structure block, each keeping its own 16-entry per-depth array.
 `a_declaration_at_the_stacks_edge_is_ignored_not_indexed`, from milestone 42 (supply chain and
-fuzzing in CI)'s fuzzing leg, tests exactly one of them: `node_reg`'s. `node_prop_compatible`,
+fuzzing in CI)'s fuzzing leg, tests exactly one of them: `node_register_regions`'s. `node_prop_compatible`,
 `node_prop_inherited`, `phandle_prop` and `node_prop` carry the same `depth < MAX_DEPTH` guard, and
 `<=` survived in every one. At depth exactly 16 that is an out-of-bounds index. It sits in a parser
 the kernel runs on firmware bytes, before there is any way to report a failure. Three of them also

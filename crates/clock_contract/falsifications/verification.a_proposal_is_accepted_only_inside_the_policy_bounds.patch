@@ -9,7 +9,7 @@ diff --git a/crates/clock_contract/src/lib.rs b/crates/clock_contract/src/lib.rs
 index fd158fdfd..5cf7b3254 100644
 --- a/crates/clock_contract/src/lib.rs
 +++ b/crates/clock_contract/src/lib.rs
-@@ -647,7 +647,7 @@ pub mod policy {
+@@ -655,7 +655,7 @@ pub mod policy {
              return status::ACCEPTED;
          }
          if proposed_nanoseconds > current_nanoseconds {

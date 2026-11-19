@@ -343,7 +343,7 @@ pub(crate) fn check_frequency_against_device_tree(dtb_ptr: usize) {
     // named through the boot map's direct region. Same read `isa::initialize` makes of the same
     // pointer.
     let dt = unsafe {
-        device_tree_blob::DeviceTreeBlob::from_ptr(
+        device_tree_blob::DeviceTreeBlob::from_pointer(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8
         )
     }

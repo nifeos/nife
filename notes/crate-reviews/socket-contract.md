@@ -81,7 +81,7 @@ baseline) and the template's workflows, which run in the repository.
 | kind | items |
 |---|---|
 | identity | `VERSION`, `INTERFACE_ID` |
-| operations | `OPERATION_ATTACH_PAGE_FRAME`, `OPERATION_OPEN_UDP`, `OPERATION_OPEN_TCP`, `OPERATION_SENDTO`, `OPERATION_RECEIVE`, `OPERATION_CONNECT`, `OPERATION_SEND`, `OPERATION_CLOSE`, `OPERATION_LISTEN`, `OPERATION_ACCEPT`, `OPERATION_BIND_UDP` (1 to 11) |
+| operations | `OPERATION_ATTACH_SHARED_PAGE`, `OPERATION_OPEN_UDP`, `OPERATION_OPEN_TCP`, `OPERATION_SENDTO`, `OPERATION_RECEIVE`, `OPERATION_CONNECT`, `OPERATION_SEND`, `OPERATION_CLOSE`, `OPERATION_LISTEN`, `OPERATION_ACCEPT`, `OPERATION_BIND_UDP` (1 to 11) |
 | badges | `SOCKET_BADGE` (bit 63), `names_a_socket(badge)` |
 | replies | `REP_OK`, `REP_ERR` (bit 32), `CONNECT_ESTABLISHED`, `CONNECT_REFUSED`, `LISTEN_GRANTED`, `LISTEN_DENIED`, `LISTEN_IN_USE` |
 | port grants | `NO_LISTEN_GRANT`, `listen_grant(lo, hi)`, `grant_allows(grant, port)`, `udp_bind_grant(lo, hi)`, `udp_grant_allows(grant, port)` |
@@ -130,7 +130,7 @@ crate has not left, so each is a two-way door.
 |---|---|---|
 | `VERSION`, `INTERFACE_ID` | keep | the names `block_roster_contract` ratified |
 | `OPERATION_SENDTO` | `OPERATION_SEND_TO`, alias `sendto` | two words; POSIX's `sendto` kept as the alias |
-| `OPERATION_ATTACH_PAGE_FRAME` | `OPERATION_ATTACH_SHARED_PAGE` | `frame` is a word to avoid, and here it also means a network frame (`polled_wait`) |
+| `OPERATION_ATTACH_SHARED_PAGE` | keep (ruled 2026-11-19 UTC) | both contracts spell the one act the same way, and here `frame` also means a network frame (`polled_wait`) |
 | the other ten `OPERATION_` constants | keep | `udp` and `tcp` pass the acronym test, as `pci` does; add both to the template's accepted words |
 | `SOCKET_BADGE` | `SOCKET_BADGE_BIT` | it is the bit; a socket's badge is that bit with others set |
 | `names_a_socket` | keep | a third-person verb phrase |

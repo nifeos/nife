@@ -23,7 +23,7 @@ Everywhere else the machine describes itself. `crates/device_tree_blob` already 
 milestone 60 (ISA discovery) reads the ISA out of it on both architectures. `crates/pci_configuration_space` holds its
 own hardcodes against the tree in a host test, and the console's hardcoded UART base is checked against
 `dtb`'s answer in `crates/device_tree_blob/tests/qemu_aarch64_virt.rs`. **The parser is not what is missing.**
-`Fdt::node_prop` and `Fdt::node_reg` already answer both questions; what is missing is the call.
+`Fdt::node_prop` and `Fdt::node_register_regions` already answer both questions; what is missing is the call.
 
 Two failure shapes, and only one of them is certain. The core-list half is a guaranteed silent
 no-op: a board with more than four cores has cores 4 and up never started, with no error to return

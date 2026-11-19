@@ -51,7 +51,7 @@ pub fn initialize(dtb_ptr: usize) {
     // SAFETY: the pointer firmware handed us, whose magic `memory::initialize` has already checked
     // (it runs first and panics otherwise), named through the boot map's direct region.
     let dt = unsafe {
-        device_tree_blob::DeviceTreeBlob::from_ptr(
+        device_tree_blob::DeviceTreeBlob::from_pointer(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8
         )
     }

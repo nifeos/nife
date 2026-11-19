@@ -97,7 +97,7 @@ scoped to that one crate. The comparison and the license reasoning are in
 Each is fixed and pinned by a host test, and each is told in full in
 [fuzzing/three-bugs.md](fuzzing/three-bugs.md).
 
-1. `dtb::Dtb::node_reg` indexed past its 16-entry cell stack on a tree nested 17 deep. Fixed by
+1. `dtb::Dtb::node_register_regions` indexed past its 16-entry cell stack on a tree nested 17 deep. Fixed by
 refusing to match past the stack, as its sibling already did. It was found by reading the code while
 writing the target; ten minutes of fuzzing did not find it. 2. `dtb::Region::end` overflowed on a
 hostile memory map, a panic on the boot path. Fixed at the source (`Error::RegionOverflow`) and at
@@ -252,7 +252,7 @@ Add a target. Four steps, and the first decides whether the other three are wort
 
 ## BUGS
 
-**Ten minutes of fuzzing did not find the `node_reg` bug, and a reader did.** This is the most
+**Ten minutes of fuzzing did not find the `node_register_regions` bug, and a reader did.** This is the most
 important limitation on this page, because it is the one that contradicts what a fuzzer is assumed
 to do. Reaching that panic needs a device tree seventeen levels deep whose *only* prefix match is at
 the bottom, and the seed corpus is real device trees, which are three deep. A mutational fuzzer
@@ -280,7 +280,7 @@ prefix would not be found. Letting the fuzzer choose the needle would mean struc
 which would stop the committed `.dtb` fixtures from working as seeds; that trade is worth revisiting
 with a grammar.
 
-`node_property` matches at any depth and `node_reg` now stops at 16. The two lookups disagree about
+`node_property` matches at any depth and `node_register_regions` now stops at 16. The two lookups disagree about
 how deep a device tree can be, which is a behavioral wart rather than a bug: `node_property` keeps no
 per-depth state, so it has nothing to overflow. Nothing in the tree nests past 4.
 

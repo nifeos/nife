@@ -40,7 +40,7 @@ pub fn of_node(dt: &DeviceTreeBlob<'_>, node: &[u8]) -> Result<Option<u32>, Erro
     let Some(phandle) = be32_word(parent, 0) else {
         return Ok(None);
     };
-    let Some(cells_prop) = dt.phandle_property(phandle, b"#interrupt-cells")? else {
+    let Some(cells_prop) = dt.pointer_handle_property(phandle, b"#interrupt-cells")? else {
         return Ok(None);
     };
     let Some(cells) = be32_word(cells_prop, 0) else {
@@ -66,7 +66,7 @@ pub fn of_node(dt: &DeviceTreeBlob<'_>, node: &[u8]) -> Result<Option<u32>, Erro
 
 /// Is the controller `phandle` names a PLIC: does it state one of [`crate::plic::COMPATIBLES`]?
 fn is_a_plic(dt: &DeviceTreeBlob<'_>, phandle: u32) -> Result<bool, Error> {
-    let Some(compatible) = dt.phandle_property(phandle, b"compatible")? else {
+    let Some(compatible) = dt.pointer_handle_property(phandle, b"compatible")? else {
         return Ok(false);
     };
     Ok(compatible

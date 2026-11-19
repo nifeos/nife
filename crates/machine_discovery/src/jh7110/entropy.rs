@@ -25,7 +25,7 @@ use jh7110_entropy::{COMPATIBLES, Discovered};
 pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> {
     for compatible in COMPATIBLES {
         let mut regions = [Region { start: 0, size: 0 }; 1];
-        if tree.node_reg_compatible(compatible, &mut regions)? == 0 {
+        if tree.node_register_regions_compatible(compatible, &mut regions)? == 0 {
             continue;
         }
         let interrupt = tree

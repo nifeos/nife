@@ -20,7 +20,7 @@ capability to it:
   reads only badge 0's messages as grants, so a client cannot widen its own. The spawner `CALL`s each grant's last piece,
   and the reply (`control_answer`) is `status::OK`, or `status::BAD_REQUEST` with the `Refusal`'s
   number (`refusal`) in the detail byte. The spawner treats a refusal as no grant.
-- A client delegates one page (`OPERATION_ATTACH_PAGE_FRAME`), writes a host name into it, and
+- A client delegates one page (`OPERATION_ATTACH_SHARED_PAGE`), writes a host name into it, and
   `CALL`s `OPERATION_RESOLVE`. The reply is a `status` (`Outcome`) and the TTL, and the addresses
   are in the page.
 - The resolver keeps a `Grants` table and judges each name against its caller's zone before it

@@ -126,7 +126,7 @@ fn finds_the_interrupt_controller() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 4];
 
-    let n = tree.node_reg(b"intc@", &mut regs).unwrap();
+    let n = tree.node_register_regions(b"intc@", &mut regs).unwrap();
 
     // The GIC has TWO register blocks, and the order is part of the binding.
     assert_eq!(
@@ -158,7 +158,7 @@ fn finds_the_uart_the_console_hardcodes() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
 
-    assert_eq!(tree.node_reg(b"pl011@", &mut regs).unwrap(), 1);
+    assert_eq!(tree.node_register_regions(b"pl011@", &mut regs).unwrap(), 1);
     assert_eq!(regs[0].start, 0x0900_0000);
 }
 
@@ -166,16 +166,20 @@ fn finds_the_uart_the_console_hardcodes() {
 fn a_missing_node_is_zero_regions_not_an_error() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(tree.node_reg(b"nonesuch@", &mut regs).unwrap(), 0);
+    assert_eq!(
+        tree.node_register_regions(b"nonesuch@", &mut regs).unwrap(),
+        0
+    );
 }
 
 #[test]
 fn from_ptr_agrees_with_from_bytes() {
-    // The boot path's actual entry: the machine hands the kernel a bare pointer, and from_ptr
+    // The boot path's actual entry: the machine hands the kernel a bare pointer, and from_pointer
     // must learn the blob's length from the blob itself before it can build the checked slice
     // that everything else parses. Prove the pointer path lands on the same tree.
-    // SAFETY: `QEMU_VIRT` is a `'static` blob compiled into the test binary, so the pointer is valid for any `'a`, which is exactly what `from_ptr` asks for.
-    let via_ptr = unsafe { DeviceTreeBlob::from_ptr(QEMU_VIRT.as_ptr()) }.expect("should parse");
+    // SAFETY: `QEMU_VIRT` is a `'static` blob compiled into the test binary, so the pointer is valid for any `'a`, which is exactly what `from_pointer` asks for.
+    let via_ptr =
+        unsafe { DeviceTreeBlob::from_pointer(QEMU_VIRT.as_ptr()) }.expect("should parse");
     assert_eq!(via_ptr.total_size(), QEMU_VIRT.len());
 
     let mut a = [Region { start: 0, size: 0 }; 4];
@@ -213,7 +217,8 @@ fn finds_the_rtc_by_compatible() {
     let mut regs = [Region { start: 0, size: 0 }; 2];
 
     assert_eq!(
-        tree.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(),
+        tree.node_register_regions_compatible(b"arm,pl031", &mut regs)
+            .unwrap(),
         1
     );
     assert_eq!(
@@ -232,7 +237,7 @@ fn the_goldfish_rtc_is_absent_on_aarch64() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
     assert_eq!(
-        tree.node_reg_compatible(b"google,goldfish-rtc", &mut regs)
+        tree.node_register_regions_compatible(b"google,goldfish-rtc", &mut regs)
             .unwrap(),
         0
     );
@@ -259,7 +264,7 @@ fn inherits_the_interrupt_parent_from_the_root() {
     let phandle = u32::from_be_bytes(parent[..4].try_into().unwrap());
 
     let cells = tree
-        .phandle_property(phandle, b"#interrupt-cells")
+        .pointer_handle_property(phandle, b"#interrupt-cells")
         .unwrap()
         .expect("the GIC declares its interrupt cells");
     assert_eq!(

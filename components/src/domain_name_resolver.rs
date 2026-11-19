@@ -66,7 +66,7 @@ const _: u64 =
     address_space_layout::pair_page(CLIENT_VA + (protocol::MAXIMUM_GRANTS as u64 - 1) * PAGE_BYTES);
 
 // SAFETY: `socket_page` maps one page read/write at SOCKET_VA before any accessor runs, and every
-// accessor is reached only after it succeeded (`socket_ready`).
+// accessor is reached only after it succeeded (`refusal` is `None`).
 const SOCKET: MappedWindow = unsafe { MappedWindow::new(SOCKET_VA, PAGE_BYTES) };
 
 /// How many UDP queries one resolve sends before it gives up, a fresh id each. Three, the number
@@ -134,14 +134,21 @@ fn start(server: u64, port_and_transport: u64, _unused: u64) -> ! {
         frame: socket_page(),
     };
     // A failure here is answered on every request rather than by exiting: a resolver that vanished
-    // would leave its clients blocked in `CALL` with nothing to say why.
-    let socket_ready = server.frame.is_some();
+    // would leave its clients blocked in `CALL` with nothing to say why. A transport word the
+    // contract does not define is refused the same way, and takes precedence over a missing page.
+    let refusal = if !endowment::is_known_transport(transport) {
+        Some(network_step::UNKNOWN_TRANSPORT)
+    } else if server.frame.is_none() {
+        Some(network_step::NO_SOCKET_PAGE)
+    } else {
+        None
+    };
     loop {
-        serve(state, &server, socket_ready);
+        serve(state, &server, refusal);
     }
 }
 
-fn serve(state: &mut State, server: &Server, socket_ready: bool) {
+fn serve(state: &mut State, server: &Server, refusal: Option<u8>) {
     let r = receive_request(SERVICE);
     if r.badge == 0 {
         // The spawner's unbadged capability, and nothing else, can say this. A control `CALL` is
@@ -160,7 +167,7 @@ fn serve(state: &mut State, server: &Server, socket_ready: bool) {
     // aliasing it onto one that does.
     let badge = u32::try_from(r.badge).unwrap_or(0);
     match protocol::operation(r.w0) {
-        protocol::OPERATION_ATTACH_PAGE_FRAME => match r.delivered {
+        protocol::OPERATION_ATTACH_SHARED_PAGE => match r.delivered {
             Delivered::Delegation(frame) => attach_client(state, badge, frame),
             other => {
                 if let Some(to) = other.into_reply() {
@@ -172,10 +179,9 @@ fn serve(state: &mut State, server: &Server, socket_ready: bool) {
             let Some(to) = r.delivered.into_reply() else {
                 return;
             };
-            let (outcome, ttl) = if socket_ready {
-                resolve(state, server, badge, r.w1)
-            } else {
-                (network(network_step::NO_SOCKET_PAGE), 0)
+            let (outcome, ttl) = match refusal {
+                None => resolve(state, server, badge, r.w1),
+                Some(step) => (network(step), 0),
             };
             let _ = reply(to, outcome.word(), ttl);
         }
@@ -363,7 +369,7 @@ fn open(server: &Server, operation: u64) -> Result<u64, Fail> {
         socket,
         frame,
         rights::READ | rights::WRITE,
-        socket::OPERATION_ATTACH_PAGE_FRAME,
+        socket::OPERATION_ATTACH_SHARED_PAGE,
     ) < 0
     {
         close(socket);
