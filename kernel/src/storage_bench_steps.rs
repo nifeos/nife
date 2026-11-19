@@ -14,10 +14,10 @@
 
 use designware_mobile_storage::host_controller::{HostController, RegisterWindowAndClock};
 use designware_mobile_storage::internal_direct_memory_access::DirectMemoryAccessRegion;
-use master_boot_record::MasterBootRecord;
 use designware_mobile_storage::sd::{
     self, BLOCK_BYTES, BlockTransferError, Card, InitializationError,
 };
+use master_boot_record::MasterBootRecord;
 
 // The registers and fields below are the ones the bench reads for its transcript and the driver
 // does not export, because a caller of the driver never needs them. Each is from the register map
