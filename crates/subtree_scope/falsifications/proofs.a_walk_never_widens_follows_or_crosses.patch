@@ -7,8 +7,8 @@ Expected to fail: the assertion that a successful walk went through nothing but 
 diff --git a/crates/subtree_scope/src/lib.rs b/crates/subtree_scope/src/lib.rs
 --- a/crates/subtree_scope/src/lib.rs
 +++ b/crates/subtree_scope/src/lib.rs
-@@ -178,7 +178,7 @@
- /// step of every verb goes through here, as every step of [`walk`] does.
+@@ -186,7 +186,7 @@
+ /// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
  pub fn check_landing(kind: NodeKind, want_directory: bool) -> Result<(), Refusal> {
      match (kind, want_directory) {
 -        (NodeKind::Symlink, _) => Err(Refusal::Symlink),

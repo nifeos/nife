@@ -77,6 +77,8 @@ impl Refusal {
 }
 
 /// What a server found under a name. The only facts about a node this crate needs.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum NodeKind {
     /// A directory: the only thing a walk steps through.
@@ -180,6 +182,8 @@ pub fn walk<N: Copy, E: From<Refusal>>(
 /// **Whether a verb may land on a node of `kind`**: a directory when the verb wants one
 /// (`want_directory`), a file when it does not, and never a symbolic link or a mount point. The last
 /// step of every verb goes through here, as every step of [`walk`] does.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
 pub fn check_landing(kind: NodeKind, want_directory: bool) -> Result<(), Refusal> {
     match (kind, want_directory) {
         (NodeKind::Symlink, _) => Err(Refusal::Symlink),
@@ -195,6 +199,8 @@ pub fn check_landing(kind: NodeKind, want_directory: bool) -> Result<(), Refusal
 pub enum Binding {
     /// Never bound. The badge carries the endpoint's whole authority, as every badge did before
     /// ruling D; caretakers hold such badges, and the unbadged value 0 is always this.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
     Unbound,
     /// Scoped to the directory handle `root`: its `ROOT` means that directory, and it reaches the
     /// handles it minted and nothing else.
@@ -312,6 +318,8 @@ impl<const B: usize> Bindings<B> {
 
     /// What `badge` is. Badge 0 is always [`Binding::Unbound`]; a nonzero badge at or past `B` is
     /// always [`Binding::Revoked`].
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
     pub fn binding(&self, badge: u64) -> Binding {
         match Self::index(badge) {
             Some(0) => Binding::Unbound,
@@ -372,6 +380,8 @@ impl<const B: usize> Bindings<B> {
 }
 
 /// Path length, in bytes, the harnesses prove over.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
 pub const PROOF_PATH_BYTES: usize = 5;
 /// Badges in the binding table the harnesses prove over.
 pub const PROOF_BADGES: usize = 3;
