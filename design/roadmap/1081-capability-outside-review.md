@@ -84,7 +84,7 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 
 ## Open decisions
 
-One decision is open. The five names are ruled, under D2 below.
+One decision is open. D2 below rules the five names.
 
 ### Clear the review, which creates nifeos/capability_table
 
