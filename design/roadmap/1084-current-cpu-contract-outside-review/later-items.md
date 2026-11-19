@@ -14,7 +14,7 @@ An appendix to [the milestone](../1084-current-cpu-contract-outside-review.md).
     Finding: the one public offset has the type its one caller wants (an x86 test program that adds it to
     the address); `OFF_CPU` is a `usize`. A stranger reaching for `page[CPU_WORD_OFFSET..]` casts.
     Evidence: `src/lib.rs` lines 100 to 115.
-    Change: none recommended before the name review; recorded so the review sees it.
+    Change: none; ruled 2026-11-19 UTC that the constant stays `u64`.
     Door: one-way (a published type). Effort: XS.
 
 15. The kernel's safety comment at the write site says the frame view is "16 bytes wide".

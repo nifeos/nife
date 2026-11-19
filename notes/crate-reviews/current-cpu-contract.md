@@ -213,7 +213,8 @@ Linux's `rseq` appears only in the review's prior-art box, and the crate copies 
 
 ## Recommendation
 
-Ready for review. The names and the type of `CPU_OFFSET_BYTES` are ruled, every finding of the
+Ready for the move. The names and the type of `CPU_OFFSET_BYTES` are ruled, every finding of the
 outside review has landed or is work the move does, and the crate's own tests, clippy, docs, Kani
-harnesses and falsification patches pass. Clearing the review, which is also the go to create
-`nifeos/current_cpu_contract`, is the architect's open decision in milestone 1084.
+harnesses and falsification patches pass. Milestone 1084 rules the review clear once this
+package exists (2026-11-19 UTC), and that clearance is the go to create
+`nifeos/current_cpu_contract`.
