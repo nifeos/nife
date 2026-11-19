@@ -47673,22 +47673,22 @@ date,workflow,job,variant,kind,name,runs,median_seconds,max_seconds
 2026-11-17,ci.yml,fuzz-shard,fuzz-2,step,Set up job,54,1,3
 2026-11-17,ci.yml,fuzz-shard,fuzz-2,step,Start the job wall-time clock,54,0,1
 2026-11-17,ci.yml,fuzz-shard,fuzz-2,step,Upload the time record,52,1,2
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,acpi_firmware_tables,38,61.5,61.7
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,capability_manifest_note_decode,38,62.0,62.3
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,compositor_session,38,61.7,61.9
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,device_tree_blob_walk,38,92.4,108.2
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,device_tree_patch_initial_ramdisk,38,93.6,104.6
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,domain_name_system_reply,38,61.7,61.8
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,elf_parse,38,61.5,61.7
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,globally_unique_identifier_partition_table,38,61.4,61.5
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,http_response_feed,38,61.5,61.6
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,machine_description_from_device_tree,38,61.4,61.5
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,nifefs_roundtrip,38,61.6,61.8
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,package_archive_roundtrip,38,61.8,61.9
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,package_index_text,38,62.1,62.3
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,redoxfs_server_session,38,67.3,68.6
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,system_log_session,38,62.3,62.6
-2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,video_terminal_feed,38,61.7,61.8
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,acpi_firmware_tables,39,61.5,61.7
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,capability_manifest_note_decode,39,62.0,62.3
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,compositor_session,39,61.7,61.9
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,device_tree_blob_walk,39,92.5,108.2
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,device_tree_patch_initial_ramdisk,39,93.4,104.6
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,domain_name_system_reply,39,61.7,61.8
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,elf_parse,39,61.5,61.7
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,globally_unique_identifier_partition_table,39,61.4,61.5
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,http_response_feed,39,61.5,61.7
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,machine_description_from_device_tree,39,61.4,61.5
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,nifefs_roundtrip,39,61.6,61.8
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,package_archive_roundtrip,39,61.8,61.9
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,package_index_text,39,62.1,62.3
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,redoxfs_server_session,39,67.3,68.8
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,system_log_session,39,62.3,62.6
+2026-11-17,ci.yml,fuzz-shard,host / fuzz,target,video_terminal_feed,39,61.7,61.8
 2026-11-17,ci.yml,image-permissions,,job,,54,49,64
 2026-11-17,ci.yml,image-permissions,,step,Check the job's wall time against its budget,54,0,1
 2026-11-17,ci.yml,image-permissions,,step,Complete job,54,0,1
@@ -48370,7 +48370,7 @@ date,workflow,job,variant,kind,name,runs,median_seconds,max_seconds
 2026-11-17,verify.yml,falsify-shard,7 7,step,script/falsifications --affected-since --shard,8,487,507
 2026-11-17,verify.yml,falsify-shard,host / host test,falsification,program_table::take_never_hands_out_a_bound_window,15,1.6,2.3
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,address_space_identifier::free_releases_exactly_its_own_asid,14,1.1,1.2
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,address_space_layout::every_address_below_the_ceiling_lies_in_exactly_one_band,14,1.8,1.9
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,address_space_layout::every_address_below_the_ceiling_lies_in_exactly_one_band,15,1.8,1.9
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,allocation_cache::a_class_never_holds_more_than_its_bound,14,1.1,1.3
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,allocation_cache::a_pop_returns_the_block_last_pushed,14,2.1,2.4
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,allocation_cache::a_push_to_one_class_leaves_the_others_alone,14,1.2,1.5
@@ -48383,12 +48383,12 @@ date,workflow,job,variant,kind,name,runs,median_seconds,max_seconds
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_glob::star_matches_anything_and_question_matches_one_byte,14,3.2,3.6
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_glob::the_cost_never_exceeds_the_bound,14,118.8,129.6
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_glob::the_dot_rule_only_touches_names_that_start_with_a_dot,14,195.6,245.1
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::an_end_of_stream_decodes_exactly_from_its_one_message,13,1.7,1.9
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::any_prefix_survives_pack_then_unpack,13,8.1,8.6
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::classify_separates_the_three_outcomes,13,1.0,1.1
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::end_of_stream_is_no_bytes_message,13,1.6,1.6
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::severity_reads_back_clamped_and_leaves_the_rest,13,1.8,2.0
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::unpack_never_answers_more_than_a_message_holds,13,1.6,1.7
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::an_end_of_stream_decodes_exactly_from_its_one_message,14,1.7,1.9
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::any_prefix_survives_pack_then_unpack,14,8.1,8.6
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::classify_separates_the_three_outcomes,14,1.0,1.1
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::end_of_stream_is_no_bytes_message,14,1.6,1.6
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::severity_reads_back_clamped_and_leaves_the_rest,14,1.8,2.0
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::unpack_never_answers_more_than_a_message_holds,14,1.6,1.7
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability::a_deleted_capability_stays_deleted,4,2.2,2.3
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability::a_stranger_reveals_nothing_about_its_liveness,4,1.1,1.1
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability::a_survey_shows_exactly_the_endpoints_own_children,4,1.1,1.1
@@ -48402,37 +48402,37 @@ date,workflow,job,variant,kind,name,runs,median_seconds,max_seconds
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability::the_free_mask_is_the_empty_slots,4,5.3,5.5
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability::the_peak_never_falls_and_a_floor_insert_stays_above_its_floor,4,2.3,2.5
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability::the_view_and_the_reap_have_the_same_scope,4,1.0,1.1
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::a_decoded_manifest_encodes_back_to_its_bytes,14,98.4,114.2
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::a_decoded_verb_table_finds_each_verb,7,56.8,59.6
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::an_encoded_manifest_decodes_to_itself,7,46.4,48.7
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::decode_never_panics,14,34.0,36.2
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::decode_never_panics_through_a_serviced_descriptor,7,401.8,452.6
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::decode_subtree_grants_never_panics,7,1.7,1.8
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::a_decoded_manifest_encodes_back_to_its_bytes,15,94.3,114.2
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::a_decoded_verb_table_finds_each_verb,8,56.7,59.6
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::an_encoded_manifest_decodes_to_itself,8,47.2,48.7
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::decode_never_panics,15,33.9,36.2
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::decode_never_panics_through_a_serviced_descriptor,8,395.9,452.6
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::decode_subtree_grants_never_panics,8,1.7,1.8
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_plan::a_missing_route_refuses_rather_than_falling_through_to_a_slot,14,5.6,6.3
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_plan::a_plan_never_grants_a_right_the_declaration_did_not_ask_for,14,4.3,4.9
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_plan::dependents_finds_exactly_the_non_target_instances_that_declared_it,14,2.4,2.8
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_plan::the_device_split_partitions_the_mappings,14,5.0,5.7
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_plan::too_many_live_instances_never_silently_truncates,14,1.9,2.3
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::a_deleted_capability_stays_deleted,9,2.1,2.4
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::a_stranger_reveals_nothing_about_its_liveness,9,1.1,1.1
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::a_survey_shows_exactly_the_endpoints_own_children,9,1.1,1.1
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::delegation_needs_grant_and_never_widens,9,1.9,2.1
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::delete_touches_only_its_slot,9,2.6,3.0
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::derive_never_widens_rights,9,2.1,2.3
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::reap_is_permitted_only_to_the_supervising_rendezvous,9,1.7,1.9
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::split_never_widens_rights,9,1.7,1.9
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::subset_matches_allows,9,1.0,1.1
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_count_is_the_slots,9,3.6,3.8
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_free_mask_is_the_empty_slots,9,5.1,5.4
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_peak_never_falls_and_a_floor_insert_stays_above_its_floor,9,2.4,2.6
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_view_and_the_reap_have_the_same_scope,9,1.0,1.1
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::a_bounded_wait_stops_at_its_bound,18,2.2,16.7
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::a_configuration_read_holds_inside_one_generation,18,1.9,2.4
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::a_header_carrying_its_checksum_sums_to_zero,18,3.1,10.2
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::push_never_writes_past_the_buffer_it_was_given,19,10.9,20.8
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::the_buffer_can_be_filled_exactly,19,2.0,8.6
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::the_directory_lookup_is_total,18,169.4,174.8
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::the_lookup_matches_a_whole_name_only,18,3.6,11.3
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::a_deleted_capability_stays_deleted,10,2.1,2.4
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::a_stranger_reveals_nothing_about_its_liveness,10,1.1,1.1
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::a_survey_shows_exactly_the_endpoints_own_children,10,1.0,1.1
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::delegation_needs_grant_and_never_widens,10,1.9,2.1
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::delete_touches_only_its_slot,10,2.6,3.0
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::derive_never_widens_rights,10,2.1,2.5
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::reap_is_permitted_only_to_the_supervising_rendezvous,10,1.7,1.9
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::split_never_widens_rights,10,1.7,1.9
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::subset_matches_allows,10,1.0,1.1
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_count_is_the_slots,10,3.6,3.8
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_free_mask_is_the_empty_slots,10,5.1,5.4
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_peak_never_falls_and_a_floor_insert_stays_above_its_floor,10,2.3,2.6
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_view_and_the_reap_have_the_same_scope,10,1.0,1.1
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::a_bounded_wait_stops_at_its_bound,19,2.2,16.7
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::a_configuration_read_holds_inside_one_generation,19,1.9,2.4
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::a_header_carrying_its_checksum_sums_to_zero,19,3.0,10.2
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::push_never_writes_past_the_buffer_it_was_given,20,10.9,20.8
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::the_buffer_can_be_filled_exactly,20,2.0,8.6
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::the_directory_lookup_is_total,19,169.5,174.8
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,components::the_lookup_matches_a_whole_name_only,19,3.5,11.3
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,counter_frequency_contract::a_built_page_reads_back_its_rate,14,1.7,1.8
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,counter_frequency_contract::hertz_answers_none_exactly_when_the_magic_differs,14,1.8,1.9
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,credential_contract::no_request_word_makes_the_parse_read_outside_the_page,14,1.6,1.8
@@ -48449,9 +48449,9 @@ date,workflow,job,variant,kind,name,runs,median_seconds,max_seconds
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,direct_memory_access_validator::an_accepted_descriptor_is_confined,14,1.7,1.9
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,direct_memory_access_validator::the_outer_walk_stays_inside_the_rings_and_terminates,14,14.6,15.4
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,direct_memory_access_validator::validate_and_shadow_confines_every_chain,14,6.8,7.1
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::tcp_reassembly_is_total_and_honest,13,23.9,25.6
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::the_header_round_trips_on_every_value,13,2.9,3.3
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::the_name_decoder_is_total_and_in_bounds,13,40.5,43.6
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::tcp_reassembly_is_total_and_honest,14,23.9,25.6
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::the_header_round_trips_on_every_value,14,2.9,3.3
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::the_name_decoder_is_total_and_in_bounds,14,40.5,43.6
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,driver_process_contract::an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page,16,1.1,1.2
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,driver_process_contract::the_handoff_round_trips_and_accepts_only_what_pack_can_make,16,1.9,2.2
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,driver_process_contract::the_window_never_maps_a_withheld_page,32,162.8,352.3
@@ -48466,15 +48466,15 @@ date,workflow,job,variant,kind,name,runs,median_seconds,max_seconds
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,filesystem_contract::a_sent_code_round_trips,14,1.7,1.8
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,filesystem_contract::attenuate_never_widens,14,1.6,1.8
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,filesystem_contract::every_word_decodes_within_the_bound,14,1.7,1.9
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::a_guid_survives_the_on_disk_layout,13,1.9,2.2
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::a_headers_fields_survive_the_round_trip,13,3.6,4.2
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::a_single_byte_change_always_changes_the_crc,13,2.3,2.7
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::an_entries_block_count_never_panics_and_is_exact,3,1.8,1.9
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::an_entry_survives_the_round_trip,13,10.2,11.5
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::crc32_matches_its_bitwise_definition,13,2.4,2.7
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::create_never_lays_out_a_table_parse_would_reject,13,37.3,41.8
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::overlap_is_exactly_sharing_a_block,13,1.3,1.5
-2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::the_header_fields_partition_the_block,13,3.4,4.0
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::a_guid_survives_the_on_disk_layout,14,1.8,2.2
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::a_headers_fields_survive_the_round_trip,14,3.6,4.2
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::a_single_byte_change_always_changes_the_crc,14,2.3,2.7
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::an_entries_block_count_never_panics_and_is_exact,4,1.8,1.9
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::an_entry_survives_the_round_trip,14,10.3,11.5
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::crc32_matches_its_bitwise_definition,14,2.4,2.8
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::create_never_lays_out_a_table_parse_would_reject,14,37.8,41.8
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::overlap_is_exactly_sharing_a_block,14,1.3,1.5
+2026-11-17,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::the_header_fields_partition_the_block,14,3.3,4.0
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,inter_process_communication::a_walk_fires_exactly_the_due_timers,14,5.6,6.6
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,inter_process_communication::the_cache_is_never_later_than_an_armed_deadline,14,2.9,3.2
 2026-11-17,verify.yml,falsify-shard,host / kani,falsification,interfaces_note::a_decoded_interface_list_encodes_back_to_its_bytes,14,22.8,25.0
@@ -48666,3 +48666,1386 @@ date,workflow,job,variant,kind,name,runs,median_seconds,max_seconds
 2026-11-17,verify.yml,verify,,step,Complete job,53,0,1
 2026-11-17,verify.yml,verify,,step,Report the shards' combined result,53,0,2
 2026-11-17,verify.yml,verify,,step,Set up job,53,0,1
+2026-11-18,ci.yml,base-image,,job,,39,122,153
+2026-11-18,ci.yml,base-image,,step,Build QEMU if the cache missed,32,0,3
+2026-11-18,ci.yml,base-image,,step,Cache QEMU,32,2,9
+2026-11-18,ci.yml,base-image,,step,Check the job's wall time against its budget,39,0,0
+2026-11-18,ci.yml,base-image,,step,Complete job,39,0,1
+2026-11-18,ci.yml,base-image,,step,"In a merge group, is this change prose that no build or test reads?",39,2,10
+2026-11-18,ci.yml,base-image,,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,base-image,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,base-image,,step,Put it on PATH,32,0,1
+2026-11-18,ci.yml,base-image,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,8,20
+2026-11-18,ci.yml,base-image,,step,Run helpers/hang_evidence.py run -- script/ci-build base-image,32,87,94
+2026-11-18,ci.yml,base-image,,step,Run script/bootstrap,32,17,31
+2026-11-18,ci.yml,base-image,,step,Set up job,39,1,3
+2026-11-18,ci.yml,base-image,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,bench,,job,,39,537,768
+2026-11-18,ci.yml,bench,,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,bench,,step,Cache QEMU,32,2,5
+2026-11-18,ci.yml,bench,,step,Check the job's wall time against its budget,39,0,0
+2026-11-18,ci.yml,bench,,step,Complete job,39,0,1
+2026-11-18,ci.yml,bench,,step,"In a merge group, is this change prose that no build or test reads?",39,2,10
+2026-11-18,ci.yml,bench,,step,Keep the readings,32,1,2
+2026-11-18,ci.yml,bench,,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,bench,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,bench,,step,Put it on PATH,32,0,1
+2026-11-18,ci.yml,bench,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,9,18
+2026-11-18,ci.yml,bench,,step,Run helpers/hang_evidence.py run -- script/ci-build bench,32,132,173
+2026-11-18,ci.yml,bench,,step,Run helpers/hang_evidence.py run -- script/ci-build icount,32,364,549
+2026-11-18,ci.yml,bench,,step,Run script/bootstrap,32,23,30
+2026-11-18,ci.yml,bench,,step,Set up job,39,1,3
+2026-11-18,ci.yml,bench,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,boot-check,,job,,39,634,663
+2026-11-18,ci.yml,boot-check,,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,boot-check,,step,Cache QEMU,32,2,18
+2026-11-18,ci.yml,boot-check,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,boot-check,,step,Complete job,39,0,1
+2026-11-18,ci.yml,boot-check,,step,"In a merge group, is this change prose that no build or test reads?",39,2,11
+2026-11-18,ci.yml,boot-check,,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,boot-check,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,boot-check,,step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,boot-check,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,8,12
+2026-11-18,ci.yml,boot-check,,step,Run helpers/hang_evidence.py run -- script/ci-build acpi-boot,32,268,271
+2026-11-18,ci.yml,boot-check,,step,Run helpers/hang_evidence.py run -- script/ci-build boot-check,32,182,199
+2026-11-18,ci.yml,boot-check,,step,Run helpers/hang_evidence.py run -- script/ci-build netboot-rehearsal,32,95,97
+2026-11-18,ci.yml,boot-check,,step,Run helpers/hang_evidence.py run -- script/ci-build release-uefi-boot,32,56,59
+2026-11-18,ci.yml,boot-check,,step,Run script/bootstrap,32,18,28
+2026-11-18,ci.yml,boot-check,,step,Set up job,39,1,2
+2026-11-18,ci.yml,boot-check,,step,Start the job wall-time clock,39,0,0
+2026-11-18,ci.yml,boot-check,,step,Upload the cloud boot disk,32,3,8
+2026-11-18,ci.yml,boot-file-size-check,,job,,39,114,150
+2026-11-18,ci.yml,boot-file-size-check,,step,Check the job's wall time against its budget,39,0,0
+2026-11-18,ci.yml,boot-file-size-check,,step,Complete job,39,0,1
+2026-11-18,ci.yml,boot-file-size-check,,step,"In a merge group, is this change prose that no build or test reads?",39,3,12
+2026-11-18,ci.yml,boot-file-size-check,,step,Install the pinned toolchain,32,18,22
+2026-11-18,ci.yml,boot-file-size-check,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,boot-file-size-check,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,5,8
+2026-11-18,ci.yml,boot-file-size-check,,step,Run helpers/hang_evidence.py run -- script/ci-build boot-file-size-check,32,91,119
+2026-11-18,ci.yml,boot-file-size-check,,step,Set up job,39,1,3
+2026-11-18,ci.yml,boot-file-size-check,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,build-is-reproducible,,job,,39,47,63
+2026-11-18,ci.yml,build-is-reproducible,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,build-is-reproducible,,step,Complete job,39,0,1
+2026-11-18,ci.yml,build-is-reproducible,,step,"In a merge group, is this change prose that no build or test reads?",39,3,9
+2026-11-18,ci.yml,build-is-reproducible,,step,Install the pinned toolchain,32,17,23
+2026-11-18,ci.yml,build-is-reproducible,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,build-is-reproducible,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,5,11
+2026-11-18,ci.yml,build-is-reproducible,,step,Run helpers/hang_evidence.py run -- script/ci-build build-is-reproducible,32,18,23
+2026-11-18,ci.yml,build-is-reproducible,,step,Set up job,39,1,4
+2026-11-18,ci.yml,build-is-reproducible,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,coverage,,job,,39,119,158
+2026-11-18,ci.yml,coverage,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,coverage,,step,Complete job,39,0,1
+2026-11-18,ci.yml,coverage,,step,"In a merge group, is this change prose that no build or test reads?",39,3,12
+2026-11-18,ci.yml,coverage,,step,Install the pinned toolchain,32,18,22
+2026-11-18,ci.yml,coverage,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,coverage,,step,Publish the summary to the run,32,0,1
+2026-11-18,ci.yml,coverage,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,15
+2026-11-18,ci.yml,coverage,,step,Run helpers/hang_evidence.py run -- script/ci-build coverage,32,84,119
+2026-11-18,ci.yml,coverage,,step,Run taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39,32,0,1
+2026-11-18,ci.yml,coverage,,step,Set up job,39,1,4
+2026-11-18,ci.yml,coverage,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,coverage,,step,Upload the lcov + HTML report,32,2,4
+2026-11-18,ci.yml,cpu-matrix,,job,,39,3,5
+2026-11-18,ci.yml,cpu-matrix,,step,Complete job,39,0,1
+2026-11-18,ci.yml,cpu-matrix,,step,Report the shards' combined result,39,0,2
+2026-11-18,ci.yml,cpu-matrix,,step,Set up job,39,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / kernel,phase,boot,30,0.2,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / kernel,phase,build,30,3.3,3.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / kernel,phase,exit,30,0.0,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / kernel,phase,suite,30,9.4,10.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,30,3.7,3.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,30,2.4,3.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,phase,boot,30,0.2,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,phase,build,30,6.7,7.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,phase,suite,30,190.4,204.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen,30,1.6,1.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,30,6.5,6.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,30,5.6,5.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::dir_capability_tests::a_full_directory_capability_does_everything_inside_and_nothing_outside,30,1.4,1.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else,30,2.8,3.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,30,10.1,10.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,30,5.4,5.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,30,2.8,2.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::eighth_pass_dir_escape_tests::each_shell_running_the_others_script_names_nothing_of_it,30,1.6,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,30,2.1,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks,30,3.0,3.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::identity_provisioning_tests::a_duplicate_identity_is_refused_without_disturbing_the_original,30,1.2,1.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::language_tests::a_connector_runs_the_second_command_only_when_it_should,30,1.3,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::login_tests::caretaker_teardown_reclaims_a_full_session_worth_of_memory,30,1.9,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::login_user_schedule_tests::suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed,30,1.5,1.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,30,5.2,5.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,30,5.3,5.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::nth_retype_tests::login_gives_back_everything_when_any_retype_of_a_login_fails,30,3.6,3.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,30,18.1,21.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::pinned_tls_tests::a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other,30,1.3,1.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_bound_grant_is_priced,30,2.3,2.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_confined_grant_is_priced,30,2.5,2.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_host_process_connects_to_the_guest_and_is_answered,30,4.8,8.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent,30,1.9,3.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers,30,1.4,2.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_std_program_serves_a_granted_listening_port,30,1.9,11.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::riscv_virtio_tests::an_accept_nobody_answers_ends_at_the_stacks_bound,30,15.2,15.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability,30,1.1,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::riscv_virtio_tests::std_net_runs_over_the_socket_contract,30,1.3,1.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,30,2.2,2.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::shell_navigation_tests::two_shells_with_different_roots_cannot_name_each_others_files,30,1.7,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,30,2.5,2.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,30,2.0,2.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,30,11.6,12.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rv64 / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,30,2.4,2.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / kernel,phase,boot,30,0.2,0.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / kernel,phase,build,30,0.1,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / kernel,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / kernel,phase,suite,30,9.2,9.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,30,3.7,3.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,30,2.4,2.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,phase,boot,30,0.2,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,phase,build,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,phase,suite,30,190.8,193.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen,30,1.6,1.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,30,6.5,6.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,30,5.5,5.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::dir_capability_tests::a_full_directory_capability_does_everything_inside_and_nothing_outside,30,1.4,1.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else,30,2.8,3.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,30,10.2,10.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,30,5.4,5.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,30,2.8,2.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::eighth_pass_dir_escape_tests::each_shell_running_the_others_script_names_nothing_of_it,30,1.6,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,30,2.1,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks,30,3.0,3.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::identity_provisioning_tests::a_duplicate_identity_is_refused_without_disturbing_the_original,30,1.1,1.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::language_tests::a_connector_runs_the_second_command_only_when_it_should,30,1.2,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::login_tests::caretaker_teardown_reclaims_a_full_session_worth_of_memory,30,1.9,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::login_user_schedule_tests::suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed,30,1.5,1.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,30,5.2,5.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,30,5.3,5.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::nth_retype_tests::login_gives_back_everything_when_any_retype_of_a_login_fails,30,3.6,3.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,30,18.1,20.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::pinned_tls_tests::a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other,30,1.3,1.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_bound_grant_is_priced,30,2.3,2.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_confined_grant_is_priced,30,2.4,2.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_host_process_connects_to_the_guest_and_is_answered,30,4.6,9.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent,30,2.2,3.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers,30,1.4,2.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_std_program_serves_a_granted_listening_port,30,1.5,2.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::riscv_virtio_tests::an_accept_nobody_answers_ends_at_the_stacks_bound,30,15.2,15.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability,30,1.1,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::riscv_virtio_tests::std_net_runs_over_the_socket_contract,30,1.3,1.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,30,2.2,2.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::shell_navigation_tests::two_shells_with_different_roots_cannot_name_each_others_files,30,1.6,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,30,2.5,2.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,30,2.0,2.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,30,11.6,12.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva22s64 / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,30,2.4,2.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / kernel,phase,boot,30,0.2,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / kernel,phase,build,30,3.4,3.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / kernel,phase,exit,30,0.0,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / kernel,phase,suite,30,9.7,10.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,30,3.9,4.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,30,2.4,3.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,phase,boot,30,0.2,0.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,phase,build,30,6.8,7.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,phase,suite,30,192.5,207.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen,30,1.7,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,30,6.8,6.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,30,5.8,6.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::credential_tests::a_client_gets_a_correct_yes_or_no_and_nothing_else,30,1.0,1.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::dir_capability_tests::a_full_directory_capability_does_everything_inside_and_nothing_outside,30,1.3,1.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else,30,2.8,3.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,30,10.7,11.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,30,5.8,5.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,30,3.0,3.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::eighth_pass_dir_escape_tests::each_shell_running_the_others_script_names_nothing_of_it,30,1.6,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,30,2.1,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks,30,3.0,3.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::identity_provisioning_tests::a_duplicate_identity_is_refused_without_disturbing_the_original,30,1.2,1.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::language_tests::a_connector_runs_the_second_command_only_when_it_should,30,1.3,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::login_tests::caretaker_teardown_reclaims_a_full_session_worth_of_memory,30,2.0,2.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::login_user_schedule_tests::suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed,30,1.6,1.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,30,5.2,5.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,30,5.3,5.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::nth_retype_tests::login_gives_back_everything_when_any_retype_of_a_login_fails,30,3.7,3.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,30,18.2,21.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::pinned_tls_tests::a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other,30,1.3,1.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_bound_grant_is_priced,30,2.2,2.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_confined_grant_is_priced,30,2.5,2.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_host_process_connects_to_the_guest_and_is_answered,30,3.0,12.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent,30,2.1,3.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers,30,1.4,1.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_std_program_serves_a_granted_listening_port,30,1.7,2.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::riscv_virtio_tests::an_accept_nobody_answers_ends_at_the_stacks_bound,30,15.2,15.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability,30,1.1,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::riscv_virtio_tests::std_net_runs_over_the_socket_contract,30,1.3,1.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,30,2.2,2.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::shell_navigation_tests::two_shells_with_different_roots_cannot_name_each_others_files,30,1.6,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,30,2.7,2.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,30,2.2,2.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,30,12.5,13.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=rva23s64 / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,30,2.4,2.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / kernel,phase,boot,30,0.2,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / kernel,phase,build,30,0.1,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / kernel,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / kernel,phase,suite,30,9.2,9.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,30,3.7,3.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,30,2.4,2.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,phase,boot,30,0.2,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,phase,build,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,phase,suite,30,191.4,193.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen,30,1.6,1.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,30,6.5,6.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,30,5.7,5.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::dir_capability_tests::a_full_directory_capability_does_everything_inside_and_nothing_outside,30,1.4,1.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else,30,2.8,3.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,30,10.1,10.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,30,5.4,5.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,30,2.8,2.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::eighth_pass_dir_escape_tests::each_shell_running_the_others_script_names_nothing_of_it,30,1.7,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,30,2.1,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks,30,3.0,3.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::identity_provisioning_tests::a_duplicate_identity_is_refused_without_disturbing_the_original,30,1.2,1.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::language_tests::a_connector_runs_the_second_command_only_when_it_should,30,1.3,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::login_tests::caretaker_teardown_reclaims_a_full_session_worth_of_memory,30,1.9,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::login_user_schedule_tests::suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed,30,1.6,1.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,30,5.2,5.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,30,5.3,5.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::nth_retype_tests::login_gives_back_everything_when_any_retype_of_a_login_fails,30,3.6,3.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,30,18.2,19.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::pinned_tls_tests::a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other,30,1.3,1.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_bound_grant_is_priced,30,2.3,2.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_confined_grant_is_priced,30,2.6,2.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::riscv_virtio_tests::a_host_process_connects_to_the_guest_and_is_answered,30,3.7,9.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::riscv_virtio_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent,30,2.1,3.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers,30,1.4,2.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::riscv_virtio_tests::a_std_program_serves_a_granted_listening_port,30,1.6,2.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::riscv_virtio_tests::an_accept_nobody_answers_ends_at_the_stacks_bound,30,15.2,15.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability,30,1.2,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::riscv_virtio_tests::std_net_runs_over_the_socket_contract,30,1.3,1.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,30,2.2,2.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::shell_navigation_tests::two_shells_with_different_roots_cannot_name_each_others_files,30,1.7,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,30,2.6,2.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::system_log_tests::a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it,30,1.2,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,30,2.0,2.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,30,11.7,12.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=sifive-u54 / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,30,2.4,2.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / kernel,phase,boot,30,0.2,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / kernel,phase,build,30,0.1,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / kernel,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / kernel,phase,suite,30,9.3,9.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,30,3.7,3.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,30,2.4,2.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,phase,boot,30,0.2,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,phase,build,30,0.1,0.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,phase,suite,30,190.7,203.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen,30,1.6,1.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,30,6.5,6.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,30,5.6,6.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::dir_capability_tests::a_full_directory_capability_does_everything_inside_and_nothing_outside,30,1.4,1.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else,30,2.8,3.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,30,10.2,10.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,30,5.4,5.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,30,2.8,2.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::eighth_pass_dir_escape_tests::each_shell_running_the_others_script_names_nothing_of_it,30,1.6,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,30,2.1,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks,30,3.0,3.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks,30,2.0,2.0
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::identity_provisioning_tests::a_duplicate_identity_is_refused_without_disturbing_the_original,30,1.1,1.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::language_tests::a_connector_runs_the_second_command_only_when_it_should,30,1.2,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::login_tests::caretaker_teardown_reclaims_a_full_session_worth_of_memory,30,1.9,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::login_user_schedule_tests::suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed,30,1.5,1.6
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,30,5.2,5.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,30,5.3,5.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::nth_retype_tests::login_gives_back_everything_when_any_retype_of_a_login_fails,30,3.6,3.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,30,18.1,19.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::pinned_tls_tests::a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other,30,1.3,1.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_bound_grant_is_priced,30,2.3,2.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_confined_grant_is_priced,30,2.5,2.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::riscv_virtio_tests::a_host_process_connects_to_the_guest_and_is_answered,30,4.4,8.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::riscv_virtio_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent,30,1.9,2.9
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers,30,1.4,2.4
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::riscv_virtio_tests::a_std_program_serves_a_granted_listening_port,30,1.9,11.8
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::riscv_virtio_tests::an_accept_nobody_answers_ends_at_the_stacks_bound,30,15.2,15.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability,30,1.1,1.5
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::riscv_virtio_tests::std_net_runs_over_the_socket_contract,30,1.3,1.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,30,2.2,2.3
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::shell_navigation_tests::two_shells_with_different_roots_cannot_name_each_others_files,30,1.6,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,30,2.6,2.7
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,30,2.0,2.1
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,30,11.7,12.2
+2026-11-18,ci.yml,cpu-matrix-shard,riscv64 cpu=thead-c906 / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,30,2.4,2.6
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,job,,39,896,919
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Cache QEMU,32,2,18
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Complete job,39,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,"In a merge group, is this change prose that no build or test reads?",39,2,10
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,8,9
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Run helpers/hang_evidence.py run -- script/ci-build cpu-matrix,32,859,878
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Run script/bootstrap,32,16,22
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Set up job,39,1,1
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Summarize where the time went,32,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rv64 sifive-u54 rva22s64,step,Upload the time record,32,1,3
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,job,,39,690,727
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Cache QEMU,32,2,20
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Complete job,39,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,"In a merge group, is this change prose that no build or test reads?",39,2,11
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Put it on PATH,32,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,8,17
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Run helpers/hang_evidence.py run -- script/ci-build cpu-matrix,32,656,677
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Run script/bootstrap,32,18,33
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Set up job,39,1,2
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Summarize where the time went,32,0,1
+2026-11-18,ci.yml,cpu-matrix-shard,rva23s64 thead-c906,step,Upload the time record,32,1,2
+2026-11-18,ci.yml,crate-probes,,job,,39,211,281
+2026-11-18,ci.yml,crate-probes,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,crate-probes,,step,Complete job,39,0,1
+2026-11-18,ci.yml,crate-probes,,step,"In a merge group, is this change prose that no build or test reads?",39,3,9
+2026-11-18,ci.yml,crate-probes,,step,Install the pinned toolchain,32,18,23
+2026-11-18,ci.yml,crate-probes,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,crate-probes,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,5,8
+2026-11-18,ci.yml,crate-probes,,step,Run helpers/hang_evidence.py run -- script/ci-build crate-probes,32,186,247
+2026-11-18,ci.yml,crate-probes,,step,Set up job,39,1,3
+2026-11-18,ci.yml,crate-probes,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,ext4-read-oracle,,job,,39,61,77
+2026-11-18,ci.yml,ext4-read-oracle,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,ext4-read-oracle,,step,Compare the reader with debugfs over the corpus,32,16,19
+2026-11-18,ci.yml,ext4-read-oracle,,step,Complete job,39,0,0
+2026-11-18,ci.yml,ext4-read-oracle,,step,"In a merge group, is this change prose that no build or test reads?",39,2,7
+2026-11-18,ci.yml,ext4-read-oracle,,step,Install the pinned toolchain,32,18,30
+2026-11-18,ci.yml,ext4-read-oracle,,step,Lint and test the reader,32,13,18
+2026-11-18,ci.yml,ext4-read-oracle,,step,"On a pull request, does it touch the oracle?",39,0,1
+2026-11-18,ci.yml,ext4-read-oracle,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,ext4-read-oracle,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,16
+2026-11-18,ci.yml,ext4-read-oracle,,step,Set up job,39,1,3
+2026-11-18,ci.yml,ext4-read-oracle,,step,Show the e2fsprogs the corpus is built with,32,0,0
+2026-11-18,ci.yml,ext4-read-oracle,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,fastpath-footprint,,job,,39,71,82
+2026-11-18,ci.yml,fastpath-footprint,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,fastpath-footprint,,step,Complete job,39,0,1
+2026-11-18,ci.yml,fastpath-footprint,,step,"In a merge group, is this change prose that no build or test reads?",39,3,10
+2026-11-18,ci.yml,fastpath-footprint,,step,Install the pinned toolchain,32,18,22
+2026-11-18,ci.yml,fastpath-footprint,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,fastpath-footprint,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,5,8
+2026-11-18,ci.yml,fastpath-footprint,,step,Run helpers/hang_evidence.py run -- script/ci-build fastpath-footprint,32,40,50
+2026-11-18,ci.yml,fastpath-footprint,,step,Set up job,39,1,3
+2026-11-18,ci.yml,fastpath-footprint,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,fmt,,job,,39,33,45
+2026-11-18,ci.yml,fmt,,step,Check the job's wall time against its budget,39,0,0
+2026-11-18,ci.yml,fmt,,step,Complete job,39,0,1
+2026-11-18,ci.yml,fmt,,step,"In a merge group, is this change prose that no build or test reads?",39,3,12
+2026-11-18,ci.yml,fmt,,step,Install the pinned toolchain,33,17,22
+2026-11-18,ci.yml,fmt,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,fmt,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,5,10
+2026-11-18,ci.yml,fmt,,step,Run helpers/hang_evidence.py run -- script/ci-build fmt,33,3,4
+2026-11-18,ci.yml,fmt,,step,Set up job,39,1,3
+2026-11-18,ci.yml,fmt,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,fuzz,,job,,39,3,5
+2026-11-18,ci.yml,fuzz,,step,Complete job,39,0,1
+2026-11-18,ci.yml,fuzz,,step,Report the shards' combined result,39,0,2
+2026-11-18,ci.yml,fuzz,,step,Set up job,39,0,1
+2026-11-18,ci.yml,fuzz-guests,0,job,,39,182,216
+2026-11-18,ci.yml,fuzz-guests,0,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,fuzz-guests,0,step,Cache QEMU,32,3,6
+2026-11-18,ci.yml,fuzz-guests,0,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,fuzz-guests,0,step,Complete job,39,0,0
+2026-11-18,ci.yml,fuzz-guests,0,step,"In a merge group, is this change prose that no build or test reads?",39,3,12
+2026-11-18,ci.yml,fuzz-guests,0,step,Open /dev/kvm to the runner user,32,0,1
+2026-11-18,ci.yml,fuzz-guests,0,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,fuzz-guests,0,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,fuzz-guests,0,step,Put it on PATH,32,0,1
+2026-11-18,ci.yml,fuzz-guests,0,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,16
+2026-11-18,ci.yml,fuzz-guests,0,step,Run script/bootstrap,32,24,43
+2026-11-18,ci.yml,fuzz-guests,0,step,Set up job,39,1,4
+2026-11-18,ci.yml,fuzz-guests,0,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,fuzz-guests,0,step,Sweep the shard,32,144,156
+2026-11-18,ci.yml,fuzz-guests,1,job,,39,177,208
+2026-11-18,ci.yml,fuzz-guests,1,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,fuzz-guests,1,step,Cache QEMU,32,2,4
+2026-11-18,ci.yml,fuzz-guests,1,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,fuzz-guests,1,step,Complete job,39,0,1
+2026-11-18,ci.yml,fuzz-guests,1,step,"In a merge group, is this change prose that no build or test reads?",39,3,12
+2026-11-18,ci.yml,fuzz-guests,1,step,Open /dev/kvm to the runner user,32,0,1
+2026-11-18,ci.yml,fuzz-guests,1,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,fuzz-guests,1,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,fuzz-guests,1,step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,fuzz-guests,1,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,13
+2026-11-18,ci.yml,fuzz-guests,1,step,Run script/bootstrap,32,24,31
+2026-11-18,ci.yml,fuzz-guests,1,step,Set up job,39,1,3
+2026-11-18,ci.yml,fuzz-guests,1,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,fuzz-guests,1,step,Sweep the shard,32,136,157
+2026-11-18,ci.yml,fuzz-guests,2,job,,39,175,203
+2026-11-18,ci.yml,fuzz-guests,2,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,fuzz-guests,2,step,Cache QEMU,32,3,5
+2026-11-18,ci.yml,fuzz-guests,2,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,fuzz-guests,2,step,Complete job,39,0,1
+2026-11-18,ci.yml,fuzz-guests,2,step,"In a merge group, is this change prose that no build or test reads?",39,3,9
+2026-11-18,ci.yml,fuzz-guests,2,step,Open /dev/kvm to the runner user,32,0,1
+2026-11-18,ci.yml,fuzz-guests,2,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,fuzz-guests,2,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,fuzz-guests,2,step,Put it on PATH,32,0,1
+2026-11-18,ci.yml,fuzz-guests,2,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,15
+2026-11-18,ci.yml,fuzz-guests,2,step,Run script/bootstrap,32,23,30
+2026-11-18,ci.yml,fuzz-guests,2,step,Set up job,39,1,3
+2026-11-18,ci.yml,fuzz-guests,2,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,fuzz-guests,2,step,Sweep the shard,32,131,153
+2026-11-18,ci.yml,fuzz-guests,3,job,,39,186,206
+2026-11-18,ci.yml,fuzz-guests,3,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,fuzz-guests,3,step,Cache QEMU,32,2,5
+2026-11-18,ci.yml,fuzz-guests,3,step,Check the job's wall time against its budget,39,0,0
+2026-11-18,ci.yml,fuzz-guests,3,step,Complete job,39,0,1
+2026-11-18,ci.yml,fuzz-guests,3,step,"In a merge group, is this change prose that no build or test reads?",39,2,9
+2026-11-18,ci.yml,fuzz-guests,3,step,Open /dev/kvm to the runner user,32,0,1
+2026-11-18,ci.yml,fuzz-guests,3,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,fuzz-guests,3,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,fuzz-guests,3,step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,fuzz-guests,3,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,15
+2026-11-18,ci.yml,fuzz-guests,3,step,Run script/bootstrap,32,24,41
+2026-11-18,ci.yml,fuzz-guests,3,step,Set up job,39,1,3
+2026-11-18,ci.yml,fuzz-guests,3,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,fuzz-guests,3,step,Sweep the shard,32,141,155
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,job,,39,625,665
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,step,Check the job's wall time against its budget,39,0,0
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,step,Complete job,39,0,1
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,step,"In a merge group, is this change prose that no build or test reads?",39,3,10
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,16
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,step,Run helpers/hang_evidence.py run -- script/ci-build fuzz-1,32,614,643
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,step,Set up job,39,1,3
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,fuzz-shard,fuzz-1,step,Upload the time record,32,1,2
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,job,,39,629,712
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,step,Complete job,39,0,1
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,step,"In a merge group, is this change prose that no build or test reads?",39,2,9
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,69
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,step,Run helpers/hang_evidence.py run -- script/ci-build fuzz-2,32,619,685
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,step,Set up job,39,1,4
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,fuzz-shard,fuzz-2,step,Upload the time record,32,1,3
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,acpi_firmware_tables,30,61.5,61.7
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,capability_manifest_note_decode,30,62.0,62.2
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,compositor_session,30,61.7,61.9
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,device_tree_blob_walk,30,92.3,106.2
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,device_tree_patch_initial_ramdisk,30,93.1,147.1
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,domain_name_system_reply,30,61.7,61.8
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,elf_parse,30,61.5,61.6
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,globally_unique_identifier_partition_table,30,61.4,61.5
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,http_response_feed,30,61.5,61.6
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,line_editor_feed,20,61.6,61.7
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,line_editor_handoff,20,61.5,61.7
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,machine_description_from_device_tree,30,61.4,61.5
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,nifefs_roundtrip,30,61.6,61.8
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,package_archive_roundtrip,30,61.8,61.9
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,package_index_text,30,62.1,62.3
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,redoxfs_server_session,30,67.0,68.9
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,system_log_session,30,62.4,62.6
+2026-11-18,ci.yml,fuzz-shard,host / fuzz,target,video_terminal_feed,30,61.7,61.9
+2026-11-18,ci.yml,image-permissions,,job,,39,48,59
+2026-11-18,ci.yml,image-permissions,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,image-permissions,,step,Complete job,39,0,1
+2026-11-18,ci.yml,image-permissions,,step,"In a merge group, is this change prose that no build or test reads?",39,3,9
+2026-11-18,ci.yml,image-permissions,,step,Install the pinned toolchain,32,18,27
+2026-11-18,ci.yml,image-permissions,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,image-permissions,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,5,8
+2026-11-18,ci.yml,image-permissions,,step,Run helpers/hang_evidence.py run -- script/ci-build image-permissions,32,17,21
+2026-11-18,ci.yml,image-permissions,,step,Set up job,39,1,3
+2026-11-18,ci.yml,image-permissions,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,interleavings,,job,,39,55,72
+2026-11-18,ci.yml,interleavings,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,interleavings,,step,Complete job,39,0,1
+2026-11-18,ci.yml,interleavings,,step,"In a merge group, is this change prose that no build or test reads?",39,2,11
+2026-11-18,ci.yml,interleavings,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,interleavings,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,14
+2026-11-18,ci.yml,interleavings,,step,Run script/interleaving-check,32,38,47
+2026-11-18,ci.yml,interleavings,,step,Set up job,39,1,3
+2026-11-18,ci.yml,interleavings,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,lint,,job,,39,563,745
+2026-11-18,ci.yml,lint,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,lint,,step,Complete job,39,0,0
+2026-11-18,ci.yml,lint,,step,"In a merge group, is this change prose that no build or test reads?",39,3,12
+2026-11-18,ci.yml,lint,,step,"Install clang (the C component's compiler), shellcheck, dtc and ruby",39,9,58
+2026-11-18,ci.yml,lint,,step,"Install the lint tools (cargo-machete, typos)",39,93,121
+2026-11-18,ci.yml,lint,,step,Install the pinned toolchain,39,19,21
+2026-11-18,ci.yml,lint,,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,39,0,1
+2026-11-18,ci.yml,lint,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,lint,,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,39,2,5
+2026-11-18,ci.yml,lint,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,16
+2026-11-18,ci.yml,lint,,step,Run helpers/hang_evidence.py run -- script/ci-build lint,39,451,519
+2026-11-18,ci.yml,lint,,step,Run helpers/hang_evidence.py run -- script/ci-build rule-violations,39,0,2
+2026-11-18,ci.yml,lint,,step,Run helpers/hang_evidence.py run -- script/ci-build vt-replay,39,9,13
+2026-11-18,ci.yml,lint,,step,Selftest of script/metrics,39,0,1
+2026-11-18,ci.yml,lint,,step,Set up job,39,1,3
+2026-11-18,ci.yml,lint,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,lint,,step,The fleet tooling's checks,39,11,13
+2026-11-18,ci.yml,lint,,step,The host tests of the packages whose comments this change touched,1,5,5
+2026-11-18,ci.yml,lint,,step,The tests of the code that reads the prose this change touched,7,12,13
+2026-11-18,ci.yml,rg-threads,,job,,39,644,712
+2026-11-18,ci.yml,rg-threads,,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,rg-threads,,step,Build basalt's delivered programs from this tree,32,207,228
+2026-11-18,ci.yml,rg-threads,,step,Cache QEMU,32,2,5
+2026-11-18,ci.yml,rg-threads,,step,Check the job's wall time against its budget,39,0,0
+2026-11-18,ci.yml,rg-threads,,step,Complete job,39,0,1
+2026-11-18,ci.yml,rg-threads,,step,"In a merge group, is this change prose that no build or test reads?",39,3,11
+2026-11-18,ci.yml,rg-threads,,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,rg-threads,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,rg-threads,,step,Put it on PATH,32,0,1
+2026-11-18,ci.yml,rg-threads,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,3,6
+2026-11-18,ci.yml,rg-threads,,step,Run helpers/hang_evidence.py run -- script/ci-build rg-threads-aarch64-riscv64,32,411,444
+2026-11-18,ci.yml,rg-threads,,step,Run script/bootstrap,32,16,25
+2026-11-18,ci.yml,rg-threads,,step,Set up job,39,1,2
+2026-11-18,ci.yml,rg-threads,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,rg-threads-x86_64,,job,,39,619,683
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Build basalt's delivered programs from this tree,32,123,139
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Cache QEMU,32,2,17
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Complete job,39,0,1
+2026-11-18,ci.yml,rg-threads-x86_64,,step,"In a merge group, is this change prose that no build or test reads?",39,3,11
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,4,7
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Run helpers/hang_evidence.py run -- script/ci-build rg-threads-x86_64,32,466,509
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Run script/bootstrap,32,18,29
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Set up job,39,1,1
+2026-11-18,ci.yml,rg-threads-x86_64,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,stack-frame-check,,job,,39,109,165
+2026-11-18,ci.yml,stack-frame-check,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,stack-frame-check,,step,Complete job,39,0,1
+2026-11-18,ci.yml,stack-frame-check,,step,"In a merge group, is this change prose that no build or test reads?",39,3,32
+2026-11-18,ci.yml,stack-frame-check,,step,Install the pinned toolchain,32,18,23
+2026-11-18,ci.yml,stack-frame-check,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,stack-frame-check,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,5,11
+2026-11-18,ci.yml,stack-frame-check,,step,Run helpers/hang_evidence.py run -- script/ci-build stack-depth-check,32,46,61
+2026-11-18,ci.yml,stack-frame-check,,step,Run helpers/hang_evidence.py run -- script/ci-build stack-frame-check,32,42,57
+2026-11-18,ci.yml,stack-frame-check,,step,Set up job,39,1,4
+2026-11-18,ci.yml,stack-frame-check,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,supply-chain,,job,,39,45,65
+2026-11-18,ci.yml,supply-chain,,step,Cache the vendored tarballs,32,0,3
+2026-11-18,ci.yml,supply-chain,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,supply-chain,,step,Complete job,39,0,1
+2026-11-18,ci.yml,supply-chain,,step,"In a merge group, is this change prose that no build or test reads?",39,3,8
+2026-11-18,ci.yml,supply-chain,,step,Post Cache the vendored tarballs,32,0,2
+2026-11-18,ci.yml,supply-chain,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,supply-chain,,step,Read the pinned cargo-deny version,32,0,0
+2026-11-18,ci.yml,supply-chain,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,5,16
+2026-11-18,ci.yml,supply-chain,,step,Run helpers/hang_evidence.py run -- script/ci-build supply-chain,32,32,46
+2026-11-18,ci.yml,supply-chain,,step,Run taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39,32,0,1
+2026-11-18,ci.yml,supply-chain,,step,Set up job,39,1,4
+2026-11-18,ci.yml,supply-chain,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,swish-check,,job,,39,3,5
+2026-11-18,ci.yml,swish-check,,step,Complete job,39,0,1
+2026-11-18,ci.yml,swish-check,,step,Report the shards' combined result,39,0,2
+2026-11-18,ci.yml,swish-check,,step,Set up job,39,0,1
+2026-11-18,ci.yml,swish-check-shard,aarch64,job,,39,661,709
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Build basalt's delivered programs from this tree,32,124,135
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Cache QEMU,32,2,5
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Complete job,39,0,1
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,"In a merge group, is this change prose that no build or test reads?",39,2,11
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,8,17
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Run helpers/hang_evidence.py run -- script/ci-build swish-check-aarch64,32,506,540
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Run script/bootstrap,32,18,24
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Set up job,39,1,2
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Summarize where the time went,32,0,1
+2026-11-18,ci.yml,swish-check-shard,aarch64,step,Upload the time record,32,1,2
+2026-11-18,ci.yml,swish-check-shard,aarch64 / first boot,line,/installed/rg needle,60,5.3,5.7
+2026-11-18,ci.yml,swish-check-shard,aarch64 / first boot,line,/installed/rg needle docs ../hay/secret.txt,60,5.4,5.7
+2026-11-18,ci.yml,swish-check-shard,aarch64 / first boot,line,caps /installed/rg needle docs,60,2.5,3.0
+2026-11-18,ci.yml,swish-check-shard,aarch64 / first boot,line,installed/jig rollback,60,2.9,4.0
+2026-11-18,ci.yml,swish-check-shard,aarch64 / first boot,line,installed/std-echo-large big,60,4.1,6.4
+2026-11-18,ci.yml,swish-check-shard,aarch64 / first boot,line,interrupt_ignorer,60,3.3,4.5
+2026-11-18,ci.yml,swish-check-shard,aarch64 / first boot,line,wait %2,60,2.1,2.2
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,caps rg BUGS crates,30,2.3,2.7
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,jig install ./duet.nifepkg,30,1.1,1.2
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,jig install ./reach.nifepkg,30,1.5,1.6
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,jig install demos,30,1.2,1.4
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,jig install greeting@0.3.0,30,1.2,1.3
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,jig install hackbench,30,2.1,3.3
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,jig install ioping,30,3.0,3.2
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,jig install ripgrep,30,15.7,17.5
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,jig install sqlite,30,7.9,8.5
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,rg --version,30,5.4,5.5
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,rg BUGS crates,30,21.9,25.2
+2026-11-18,ci.yml,swish-check-shard,aarch64 / second boot,line,speedtest1 --memdb --testset main --size 1 --verify,30,3.3,3.4
+2026-11-18,ci.yml,swish-check-shard,riscv64,job,,39,596,647
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Build basalt's delivered programs from this tree,32,117,133
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Cache QEMU,32,2,17
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Check the job's wall time against its budget,39,0,0
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Complete job,39,0,1
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,"In a merge group, is this change prose that no build or test reads?",39,2,10
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,8,9
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Run helpers/hang_evidence.py run -- script/ci-build swish-check-riscv64,32,445,474
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Run script/bootstrap,32,17,25
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Set up job,39,1,2
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Start the job wall-time clock,39,0,0
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Summarize where the time went,32,0,1
+2026-11-18,ci.yml,swish-check-shard,riscv64,step,Upload the time record,32,1,2
+2026-11-18,ci.yml,swish-check-shard,riscv64 / first boot,line,/installed/rg needle,30,9.1,9.5
+2026-11-18,ci.yml,swish-check-shard,riscv64 / first boot,line,/installed/rg needle docs ../hay/secret.txt,30,9.2,9.8
+2026-11-18,ci.yml,swish-check-shard,riscv64 / first boot,line,caps /installed/rg needle docs,30,3.9,4.8
+2026-11-18,ci.yml,swish-check-shard,riscv64 / first boot,line,installed/jig rollback,30,5.9,6.1
+2026-11-18,ci.yml,swish-check-shard,riscv64 / first boot,line,installed/std-echo-large big,30,8.1,8.5
+2026-11-18,ci.yml,swish-check-shard,riscv64 / first boot,line,interrupt_ignorer,30,3.2,4.2
+2026-11-18,ci.yml,swish-check-shard,riscv64 / first boot,line,wait %2,30,2.2,2.2
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,caps rg BUGS crates,30,3.8,4.8
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,ioping -c 5 -i 0 -s 4k -S 4m -o 1m n1,30,1.4,1.5
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,ioping -c 5 -i 0 -s 4k ioping/1.3/ioping,30,1.3,1.4
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,ioping -v,30,1.2,1.3
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,jig install ./duet.nifepkg,30,1.1,1.2
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,jig install ./reach.nifepkg,30,1.7,1.9
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,jig install demos,30,1.2,1.3
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,jig install greeting@0.3.0,30,1.4,1.5
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,jig install hackbench,30,2.4,2.7
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,jig install ioping,30,4.4,4.8
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,jig install ripgrep,30,19.5,21.5
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,jig install sqlite,30,8.4,9.3
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,jig install uptime,30,1.0,1.1
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,rg --version,30,9.1,9.6
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,rg BUGS crates,30,29.5,35.0
+2026-11-18,ci.yml,swish-check-shard,riscv64 / second boot,line,speedtest1 --memdb --testset main --size 1 --verify,30,4.6,4.9
+2026-11-18,ci.yml,swish-check-x86_64,,job,,39,491,631
+2026-11-18,ci.yml,swish-check-x86_64,,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,swish-check-x86_64,,step,Build basalt's delivered programs from this tree,32,120,156
+2026-11-18,ci.yml,swish-check-x86_64,,step,Cache QEMU,32,2,4
+2026-11-18,ci.yml,swish-check-x86_64,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,swish-check-x86_64,,step,Complete job,39,0,1
+2026-11-18,ci.yml,swish-check-x86_64,,step,"In a merge group, is this change prose that no build or test reads?",39,3,12
+2026-11-18,ci.yml,swish-check-x86_64,,step,Open /dev/kvm to the runner user,32,0,1
+2026-11-18,ci.yml,swish-check-x86_64,,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,swish-check-x86_64,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,swish-check-x86_64,,step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,swish-check-x86_64,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,10,20
+2026-11-18,ci.yml,swish-check-x86_64,,step,Run helpers/hang_evidence.py run -- script/ci-build swish-check-x86_64,32,340,424
+2026-11-18,ci.yml,swish-check-x86_64,,step,Run script/bootstrap,32,25,32
+2026-11-18,ci.yml,swish-check-x86_64,,step,Set up job,39,1,4
+2026-11-18,ci.yml,swish-check-x86_64,,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,swish-check-x86_64,,step,Summarize where the time went,32,0,1
+2026-11-18,ci.yml,swish-check-x86_64,,step,Upload the time record,32,1,2
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / first boot,line,caps /installed/rg needle docs,30,1.0,1.4
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / first boot,line,caps jig install greeting@0.1.0,30,1.4,1.8
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / first boot,line,interrupt_ignorer,30,10.9,10.9
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / first boot,line,interrupt_ignorer &,30,2.2,2.2
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / first boot,line,ls,150,1.0,1.4
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / first boot,line,wait %2,30,2.3,2.3
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / second boot,line,jig install demos,30,1.3,1.4
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / second boot,line,jig install greeting@0.3.0,30,1.3,1.4
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / second boot,line,jig install hackbench,30,1.4,1.4
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / second boot,line,jig install ioping,30,1.9,2.0
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / second boot,line,jig install ripgrep,30,2.4,3.2
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / second boot,line,jig install sqlite,30,1.8,2.3
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / second boot,line,jig install uptime,30,1.8,1.9
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / second boot,line,rg BUGS crates,30,14.9,19.8
+2026-11-18,ci.yml,swish-check-x86_64,x86_64 kvm / second boot,line,speedtest1 --memdb --testset main --size 1 --verify,30,1.5,1.9
+2026-11-18,ci.yml,test,,job,,39,3,5
+2026-11-18,ci.yml,test,,step,Complete job,39,0,1
+2026-11-18,ci.yml,test,,step,Report the shards' combined result,39,0,2
+2026-11-18,ci.yml,test,,step,Set up job,39,0,1
+2026-11-18,ci.yml,test-shard,aarch64 / kernel,phase,boot,29,0.1,0.1
+2026-11-18,ci.yml,test-shard,aarch64 / kernel,phase,build,29,2.7,3.1
+2026-11-18,ci.yml,test-shard,aarch64 / kernel,phase,exit,29,0.1,0.1
+2026-11-18,ci.yml,test-shard,aarch64 / kernel,phase,suite,29,8.1,8.5
+2026-11-18,ci.yml,test-shard,aarch64 / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,29,2.9,3.0
+2026-11-18,ci.yml,test-shard,aarch64 / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,29,2.4,2.7
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,phase,boot,29,0.1,0.1
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,phase,build,29,6.7,7.6
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,phase,exit,29,0.1,0.1
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,phase,suite,29,153.3,156.7
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,29,4.9,4.9
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,29,4.2,4.5
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else,29,1.0,1.8
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,29,7.3,7.5
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,29,2.5,2.6
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,29,1.4,1.5
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,29,2.0,2.1
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,29,2.0,2.0
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks,29,3.0,3.0
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks,29,2.0,2.0
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::login_tests::caretaker_teardown_reclaims_a_full_session_worth_of_memory,29,1.5,1.7
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::login_user_schedule_tests::suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed,29,1.1,1.2
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::name_resolver_tests::a_forgotten_badge_is_denied_and_its_window_serves_the_next_client,29,1.7,3.7
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,29,5.2,5.2
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,29,5.2,5.3
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::network_tests::a_host_process_connects_to_the_guest_and_is_answered,29,4.3,9.0
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::network_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers,29,1.3,1.4
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::network_tests::a_std_program_serves_a_granted_listening_port,29,3.9,4.0
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::network_tests::an_accept_nobody_answers_ends_at_the_stacks_bound,29,15.1,15.2
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::network_tests::std_net_runs_over_the_socket_contract,29,1.2,1.2
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::nth_retype_tests::login_gives_back_everything_when_any_retype_of_a_login_fails,29,2.7,2.8
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,29,18.4,20.6
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_bound_grant_is_priced,29,1.8,1.9
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_confined_grant_is_priced,29,2.3,2.5
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,29,2.1,2.2
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,29,1.6,1.7
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,29,1.3,1.4
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,29,7.2,7.4
+2026-11-18,ci.yml,test-shard,aarch64 / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,29,2.3,2.3
+2026-11-18,ci.yml,test-shard,host / host crates,phase,suite,29,150.8,162.6
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",job,,39,835,883
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Cache QEMU,32,2,7
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Complete job,39,0,1
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,"In a merge group, is this change prose that no build or test reads?",39,2,10
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,8,11
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Run helpers/hang_evidence.py run -- script/ci-build test-aarch64-riscv64,32,803,851
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Run script/bootstrap,32,18,23
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Set up job,39,1,1
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Summarize where the time went,32,0,1
+2026-11-18,ci.yml,test-shard,"host crates, aarch64 and riscv64",step,Upload the time record,32,1,2
+2026-11-18,ci.yml,test-shard,riscv64 / kernel,phase,boot,29,0.2,0.2
+2026-11-18,ci.yml,test-shard,riscv64 / kernel,phase,build,29,3.3,4.0
+2026-11-18,ci.yml,test-shard,riscv64 / kernel,phase,exit,29,0.1,0.1
+2026-11-18,ci.yml,test-shard,riscv64 / kernel,phase,suite,29,9.4,10.2
+2026-11-18,ci.yml,test-shard,riscv64 / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,29,3.8,3.9
+2026-11-18,ci.yml,test-shard,riscv64 / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,29,2.4,3.4
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,phase,boot,29,0.2,0.2
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,phase,build,29,6.6,7.6
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,phase,exit,29,0.1,0.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,phase,suite,29,190.9,193.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen,29,1.6,1.8
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,29,6.5,6.6
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,29,5.6,5.8
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::credential_tests::a_client_gets_a_correct_yes_or_no_and_nothing_else,29,1.0,1.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::dir_capability_tests::a_full_directory_capability_does_everything_inside_and_nothing_outside,29,1.4,1.8
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else,29,2.9,3.8
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,29,10.2,10.6
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,29,5.4,5.5
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,29,2.8,2.8
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::eighth_pass_dir_escape_tests::each_shell_running_the_others_script_names_nothing_of_it,29,1.7,2.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,29,2.1,2.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,29,2.0,2.0
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks,29,3.0,3.0
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks,29,2.0,2.0
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::identity_provisioning_tests::a_duplicate_identity_is_refused_without_disturbing_the_original,29,1.2,1.2
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::language_tests::a_connector_runs_the_second_command_only_when_it_should,29,1.2,1.5
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::login_tests::caretaker_teardown_reclaims_a_full_session_worth_of_memory,29,1.9,2.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::login_user_schedule_tests::suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed,29,1.6,1.6
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,29,5.2,5.2
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,29,5.3,5.4
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::nth_retype_tests::login_gives_back_everything_when_any_retype_of_a_login_fails,29,3.6,3.8
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,29,18.1,21.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::pinned_tls_tests::a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other,29,1.3,1.3
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_bound_grant_is_priced,29,2.3,2.6
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_confined_grant_is_priced,29,2.5,2.7
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_host_process_connects_to_the_guest_and_is_answered,29,3.9,9.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent,29,2.0,3.0
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers,29,1.4,2.4
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::riscv_virtio_tests::a_std_program_serves_a_granted_listening_port,29,1.7,2.8
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::riscv_virtio_tests::an_accept_nobody_answers_ends_at_the_stacks_bound,29,15.2,15.2
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability,29,1.2,1.5
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::riscv_virtio_tests::std_net_runs_over_the_socket_contract,29,1.3,1.3
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,29,2.2,2.3
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::shell_navigation_tests::two_shells_with_different_roots_cannot_name_each_others_files,29,1.6,2.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,29,2.6,2.7
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::system_log_tests::a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it,29,1.1,1.5
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,29,2.0,2.2
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,29,11.6,12.1
+2026-11-18,ci.yml,test-shard,riscv64 / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,29,2.4,2.6
+2026-11-18,ci.yml,test-shard,x86_64,job,,39,830,862
+2026-11-18,ci.yml,test-shard,x86_64,step,Build QEMU if the cache missed,32,0,1
+2026-11-18,ci.yml,test-shard,x86_64,step,Cache QEMU,32,2,18
+2026-11-18,ci.yml,test-shard,x86_64,step,Check the job's wall time against its budget,39,0,0
+2026-11-18,ci.yml,test-shard,x86_64,step,Complete job,39,0,1
+2026-11-18,ci.yml,test-shard,x86_64,step,"In a merge group, is this change prose that no build or test reads?",39,2,11
+2026-11-18,ci.yml,test-shard,x86_64,step,Post Cache QEMU,32,0,1
+2026-11-18,ci.yml,test-shard,x86_64,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,test-shard,x86_64,step,Put it on PATH,32,0,0
+2026-11-18,ci.yml,test-shard,x86_64,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,8,9
+2026-11-18,ci.yml,test-shard,x86_64,step,Run helpers/hang_evidence.py run -- script/ci-build test-x86_64,32,795,823
+2026-11-18,ci.yml,test-shard,x86_64,step,Run script/bootstrap,32,17,27
+2026-11-18,ci.yml,test-shard,x86_64,step,Set up job,39,1,1
+2026-11-18,ci.yml,test-shard,x86_64,step,Start the job wall-time clock,39,0,1
+2026-11-18,ci.yml,test-shard,x86_64,step,Summarize where the time went,32,0,1
+2026-11-18,ci.yml,test-shard,x86_64,step,Upload the time record,32,1,2
+2026-11-18,ci.yml,test-shard,x86_64 / kernel,phase,boot,30,0.4,0.5
+2026-11-18,ci.yml,test-shard,x86_64 / kernel,phase,build,30,3.6,3.9
+2026-11-18,ci.yml,test-shard,x86_64 / kernel,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,test-shard,x86_64 / kernel,phase,suite,30,10.9,11.1
+2026-11-18,ci.yml,test-shard,x86_64 / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,30,4.7,4.9
+2026-11-18,ci.yml,test-shard,x86_64 / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,30,2.3,2.5
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,phase,boot,30,0.5,0.5
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,phase,build,30,6.9,7.2
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,phase,suite,30,147.6,152.0
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen,30,2.2,2.4
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours,30,1.3,1.3
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,30,7.6,7.8
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,30,5.3,5.4
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::dir_capability_tests::a_full_directory_capability_does_everything_inside_and_nothing_outside,30,1.1,1.8
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else,30,2.2,3.7
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,30,11.5,11.8
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,30,5.7,5.8
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,30,2.4,2.5
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::eighth_pass_dir_escape_tests::each_shell_running_the_others_script_names_nothing_of_it,30,1.2,2.0
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,30,2.1,2.1
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,30,2.0,2.0
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks,30,3.0,3.0
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks,30,2.0,2.0
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::language_tests::a_connector_runs_the_second_command_only_when_it_should,30,1.3,1.4
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,30,5.2,5.2
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,30,5.3,5.3
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,30,18.9,20.0
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::pinned_tls_tests::a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other,30,1.3,1.3
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_bound_grant_is_priced,30,2.1,2.5
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_confined_grant_is_priced,30,2.4,2.5
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,30,2.2,2.2
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::shell_navigation_tests::two_shells_with_different_roots_cannot_name_each_others_files,30,1.2,2.0
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,30,2.6,2.7
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::system_log_tests::a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it,30,1.0,1.5
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,30,2.2,2.3
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,30,12.5,13.1
+2026-11-18,ci.yml,test-shard,x86_64 / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,30,2.7,2.7
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / kernel,phase,boot,30,0.5,0.5
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / kernel,phase,build,30,3.1,3.5
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / kernel,phase,exit,30,0.0,0.1
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / kernel,phase,suite,30,10.4,10.6
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,30,4.8,4.9
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,30,2.3,2.4
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,phase,boot,30,0.5,0.5
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,phase,build,30,0.3,0.3
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,phase,suite,30,147.9,152.3
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen,30,2.2,2.3
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours,30,1.3,1.3
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,30,7.6,7.7
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,30,5.3,5.5
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::dir_capability_tests::a_full_directory_capability_does_everything_inside_and_nothing_outside,30,1.1,1.8
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::disk_tests::the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else,30,2.1,3.7
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,30,11.5,11.6
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,30,5.7,5.7
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,30,2.4,2.5
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::eighth_pass_dir_escape_tests::each_shell_running_the_others_script_names_nothing_of_it,30,1.2,2.0
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,30,2.1,2.1
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,30,2.0,2.0
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_outlasts_a_core_that_takes_no_ticks,30,3.0,3.0
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::every_core_tick_budget_tests::the_backstop_bounds_a_wait_on_a_core_that_never_ticks,30,2.0,2.0
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::language_tests::a_connector_runs_the_second_command_only_when_it_should,30,1.3,1.4
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,30,5.2,5.2
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,30,5.3,5.3
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,30,18.0,21.0
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::pinned_tls_tests::a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other,30,1.2,1.3
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_bound_grant_is_priced,30,2.2,2.6
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::ripgrep_tests::a_walk_through_a_confined_grant_is_priced,30,2.4,2.5
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,30,2.2,2.2
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::shell_navigation_tests::two_shells_with_different_roots_cannot_name_each_others_files,30,1.2,2.0
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,30,2.6,2.8
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::system_log_tests::a_stalled_drainers_last_line_reaches_the_wire_with_no_line_after_it,30,1.1,1.5
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,30,2.2,2.2
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,30,12.5,12.8
+2026-11-18,ci.yml,test-shard,x86_64 iommu=amd / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,30,2.7,2.7
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / kernel,phase,boot,30,1.5,1.6
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / kernel,phase,build,30,3.4,3.5
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / kernel,phase,exit,30,0.2,0.3
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / kernel,phase,suite,30,19.2,19.9
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / kernel,test,kernel::ipc_stack_depth::tests::one_ipc_reaches_a_measured_depth_into_its_kernel_stack,30,5.2,5.4
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / kernel,test,kernel::smp::tests::a_migrated_kernel_thread_reads_its_own_name,30,1.9,1.9
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,phase,boot,30,1.6,2.1
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,phase,build,30,4.0,4.2
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,phase,exit,30,0.2,0.2
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,phase,suite,30,125.7,128.1
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::compositor_tests::a_one_window_redraw_costs_one_rectangle_and_not_the_screen,30,2.0,2.2
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours,30,1.2,1.2
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it,30,7.5,7.6
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted,30,5.3,5.4
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout,30,11.4,11.8
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::display_tests::a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer,30,5.6,5.7
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::display_tests::a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver,30,2.3,2.4
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_budget_expiry_message_is_followed_by_a_thread_dump,30,2.0,2.1
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::every_core_tick_budget_tests::a_wait_on_every_core_gives_up_on_work_that_never_finishes,30,2.0,2.0
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability,30,5.2,5.2
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic,30,5.3,5.3
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest,30,18.0,20.0
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::pinned_tls_tests::a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other,30,1.2,1.3
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::running_space_tests::a_builder_that_gave_its_scratch_up_faults_writing_to_a_childs_page,30,2.2,2.2
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model,30,2.4,2.5
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::terminal_display_swap_tests::a_supervised_display_terminal_refuses_a_quiesce_from_anyone_but_its_supervisor,30,2.1,2.2
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::terminal_display_swap_tests::the_display_terminal_is_replaced_live_and_its_screen_and_history_survive,30,12.1,12.7
+2026-11-18,ci.yml,test-shard,x86_64 ovmf / system_tests,test,system_tests::user::timetable_tests::a_calendar_entry_keeps_time_by_its_granted_clock_and_a_step_moves_it_by_s3,30,2.7,2.7
+2026-11-18,ci.yml,test-shard,x86_64 root-port / kernel,phase,boot,30,0.5,0.5
+2026-11-18,ci.yml,test-shard,x86_64 root-port / kernel,phase,build,30,3.1,3.4
+2026-11-18,ci.yml,test-shard,x86_64 root-port / kernel,phase,exit,30,0.1,0.1
+2026-11-18,ci.yml,test-shard,x86_64 root-port / kernel,phase,suite,30,0.0,0.0
+2026-11-18,ci.yml,watchdog,,job,,39,16,489
+2026-11-18,ci.yml,watchdog,,step,Build QEMU if the cache missed,4,0,0
+2026-11-18,ci.yml,watchdog,,step,Cache QEMU,4,2,3
+2026-11-18,ci.yml,watchdog,,step,Check the job's wall time against its budget,39,0,1
+2026-11-18,ci.yml,watchdog,,step,Complete job,39,0,1
+2026-11-18,ci.yml,watchdog,,step,Does this change touch the watchdog?,32,0,0
+2026-11-18,ci.yml,watchdog,,step,"In a merge group, is this change prose that no build or test reads?",39,2,10
+2026-11-18,ci.yml,watchdog,,step,Post Cache QEMU,4,0,0
+2026-11-18,ci.yml,watchdog,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,0,1
+2026-11-18,ci.yml,watchdog,,step,Put it on PATH,4,0,0
+2026-11-18,ci.yml,watchdog,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,39,8,10
+2026-11-18,ci.yml,watchdog,,step,Run helpers/hang_evidence.py run -- script/ci-build watchdog-check,4,351,353
+2026-11-18,ci.yml,watchdog,,step,Run script/bootstrap,4,110,118
+2026-11-18,ci.yml,watchdog,,step,Set up job,39,1,2
+2026-11-18,ci.yml,watchdog,,step,Start the job wall-time clock,39,0,1
+2026-11-18,verify.yml,falsify,,job,,40,3,5
+2026-11-18,verify.yml,falsify,,step,Complete job,40,0,1
+2026-11-18,verify.yml,falsify,,step,Report the shards' combined result,40,0,1
+2026-11-18,verify.yml,falsify,,step,Set up job,40,0,1
+2026-11-18,verify.yml,falsify-shard,1 1,job,,5,74,792
+2026-11-18,verify.yml,falsify-shard,1 1,step,Check the job's wall time against its budget,5,0,0
+2026-11-18,verify.yml,falsify-shard,1 1,step,Complete job,5,0,0
+2026-11-18,verify.yml,falsify-shard,1 1,step,Install Kani,5,11,15
+2026-11-18,verify.yml,falsify-shard,1 1,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,5,0,1
+2026-11-18,verify.yml,falsify-shard,1 1,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,5,0,0
+2026-11-18,verify.yml,falsify-shard,1 1,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,5,13,15
+2026-11-18,verify.yml,falsify-shard,1 1,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,5,8,8
+2026-11-18,verify.yml,falsify-shard,1 1,step,Set up job,5,1,2
+2026-11-18,verify.yml,falsify-shard,1 1,step,Start the job wall-time clock,5,0,0
+2026-11-18,verify.yml,falsify-shard,1 1,step,Summarize where the time went,5,10,11
+2026-11-18,verify.yml,falsify-shard,1 1,step,Upload the time record,5,2,2
+2026-11-18,verify.yml,falsify-shard,1 1,step,script/falsifications --affected-since --shard,5,20,745
+2026-11-18,verify.yml,falsify-shard,1 2,job,,1,439,439
+2026-11-18,verify.yml,falsify-shard,1 2,step,Check the job's wall time against its budget,1,0,0
+2026-11-18,verify.yml,falsify-shard,1 2,step,Complete job,1,0,0
+2026-11-18,verify.yml,falsify-shard,1 2,step,Install Kani,1,9,9
+2026-11-18,verify.yml,falsify-shard,1 2,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,1,0,0
+2026-11-18,verify.yml,falsify-shard,1 2,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,1,1,1
+2026-11-18,verify.yml,falsify-shard,1 2,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,1,17,17
+2026-11-18,verify.yml,falsify-shard,1 2,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,1,8,8
+2026-11-18,verify.yml,falsify-shard,1 2,step,Set up job,1,2,2
+2026-11-18,verify.yml,falsify-shard,1 2,step,Start the job wall-time clock,1,0,0
+2026-11-18,verify.yml,falsify-shard,1 2,step,Summarize where the time went,1,9,9
+2026-11-18,verify.yml,falsify-shard,1 2,step,Upload the time record,1,1,1
+2026-11-18,verify.yml,falsify-shard,1 2,step,script/falsifications --affected-since --shard,1,390,390
+2026-11-18,verify.yml,falsify-shard,1 7,job,,12,586,620
+2026-11-18,verify.yml,falsify-shard,1 7,step,Check the job's wall time against its budget,12,0,1
+2026-11-18,verify.yml,falsify-shard,1 7,step,Complete job,12,0,0
+2026-11-18,verify.yml,falsify-shard,1 7,step,Install Kani,12,10,17
+2026-11-18,verify.yml,falsify-shard,1 7,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,0,1
+2026-11-18,verify.yml,falsify-shard,1 7,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,0,1
+2026-11-18,verify.yml,falsify-shard,1 7,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,14,23
+2026-11-18,verify.yml,falsify-shard,1 7,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,8,9
+2026-11-18,verify.yml,falsify-shard,1 7,step,Set up job,12,1,1
+2026-11-18,verify.yml,falsify-shard,1 7,step,Start the job wall-time clock,12,0,0
+2026-11-18,verify.yml,falsify-shard,1 7,step,Summarize where the time went,12,11,13
+2026-11-18,verify.yml,falsify-shard,1 7,step,Upload the time record,12,1,2
+2026-11-18,verify.yml,falsify-shard,1 7,step,script/falsifications --affected-since --shard,12,532,568
+2026-11-18,verify.yml,falsify-shard,2 2,job,,1,210,210
+2026-11-18,verify.yml,falsify-shard,2 2,step,Check the job's wall time against its budget,1,0,0
+2026-11-18,verify.yml,falsify-shard,2 2,step,Complete job,1,0,0
+2026-11-18,verify.yml,falsify-shard,2 2,step,Install Kani,1,12,12
+2026-11-18,verify.yml,falsify-shard,2 2,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,1,0,0
+2026-11-18,verify.yml,falsify-shard,2 2,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,1,0,0
+2026-11-18,verify.yml,falsify-shard,2 2,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,1,13,13
+2026-11-18,verify.yml,falsify-shard,2 2,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,1,8,8
+2026-11-18,verify.yml,falsify-shard,2 2,step,Set up job,1,1,1
+2026-11-18,verify.yml,falsify-shard,2 2,step,Start the job wall-time clock,1,0,0
+2026-11-18,verify.yml,falsify-shard,2 2,step,Summarize where the time went,1,9,9
+2026-11-18,verify.yml,falsify-shard,2 2,step,Upload the time record,1,1,1
+2026-11-18,verify.yml,falsify-shard,2 2,step,script/falsifications --affected-since --shard,1,164,164
+2026-11-18,verify.yml,falsify-shard,2 7,job,,12,600,685
+2026-11-18,verify.yml,falsify-shard,2 7,step,Check the job's wall time against its budget,12,0,0
+2026-11-18,verify.yml,falsify-shard,2 7,step,Complete job,12,0,1
+2026-11-18,verify.yml,falsify-shard,2 7,step,Install Kani,12,11,12
+2026-11-18,verify.yml,falsify-shard,2 7,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,0,1
+2026-11-18,verify.yml,falsify-shard,2 7,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,0,1
+2026-11-18,verify.yml,falsify-shard,2 7,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,14,17
+2026-11-18,verify.yml,falsify-shard,2 7,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,8,17
+2026-11-18,verify.yml,falsify-shard,2 7,step,Set up job,12,2,2
+2026-11-18,verify.yml,falsify-shard,2 7,step,Start the job wall-time clock,12,0,1
+2026-11-18,verify.yml,falsify-shard,2 7,step,Summarize where the time went,12,11,11
+2026-11-18,verify.yml,falsify-shard,2 7,step,Upload the time record,12,1,2
+2026-11-18,verify.yml,falsify-shard,2 7,step,script/falsifications --affected-since --shard,12,549,633
+2026-11-18,verify.yml,falsify-shard,3 7,job,,12,575,631
+2026-11-18,verify.yml,falsify-shard,3 7,step,Check the job's wall time against its budget,12,0,1
+2026-11-18,verify.yml,falsify-shard,3 7,step,Complete job,12,0,1
+2026-11-18,verify.yml,falsify-shard,3 7,step,Install Kani,12,11,26
+2026-11-18,verify.yml,falsify-shard,3 7,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,0,1
+2026-11-18,verify.yml,falsify-shard,3 7,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,0,1
+2026-11-18,verify.yml,falsify-shard,3 7,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,14,18
+2026-11-18,verify.yml,falsify-shard,3 7,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,8,9
+2026-11-18,verify.yml,falsify-shard,3 7,step,Set up job,12,1,2
+2026-11-18,verify.yml,falsify-shard,3 7,step,Start the job wall-time clock,12,0,1
+2026-11-18,verify.yml,falsify-shard,3 7,step,Summarize where the time went,12,10,11
+2026-11-18,verify.yml,falsify-shard,3 7,step,Upload the time record,12,1,2
+2026-11-18,verify.yml,falsify-shard,3 7,step,script/falsifications --affected-since --shard,12,524,583
+2026-11-18,verify.yml,falsify-shard,4 7,job,,12,387,410
+2026-11-18,verify.yml,falsify-shard,4 7,step,Check the job's wall time against its budget,12,0,1
+2026-11-18,verify.yml,falsify-shard,4 7,step,Complete job,12,0,0
+2026-11-18,verify.yml,falsify-shard,4 7,step,Install Kani,12,10,13
+2026-11-18,verify.yml,falsify-shard,4 7,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,0,1
+2026-11-18,verify.yml,falsify-shard,4 7,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,0,1
+2026-11-18,verify.yml,falsify-shard,4 7,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,16,19
+2026-11-18,verify.yml,falsify-shard,4 7,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,8,9
+2026-11-18,verify.yml,falsify-shard,4 7,step,Set up job,12,1,2
+2026-11-18,verify.yml,falsify-shard,4 7,step,Start the job wall-time clock,12,0,0
+2026-11-18,verify.yml,falsify-shard,4 7,step,Summarize where the time went,12,11,12
+2026-11-18,verify.yml,falsify-shard,4 7,step,Upload the time record,12,1,3
+2026-11-18,verify.yml,falsify-shard,4 7,step,script/falsifications --affected-since --shard,12,336,357
+2026-11-18,verify.yml,falsify-shard,5 7,job,,12,588,624
+2026-11-18,verify.yml,falsify-shard,5 7,step,Check the job's wall time against its budget,12,0,0
+2026-11-18,verify.yml,falsify-shard,5 7,step,Complete job,12,0,0
+2026-11-18,verify.yml,falsify-shard,5 7,step,Install Kani,12,11,13
+2026-11-18,verify.yml,falsify-shard,5 7,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,0,0
+2026-11-18,verify.yml,falsify-shard,5 7,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,0,1
+2026-11-18,verify.yml,falsify-shard,5 7,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,14,17
+2026-11-18,verify.yml,falsify-shard,5 7,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,8,9
+2026-11-18,verify.yml,falsify-shard,5 7,step,Set up job,12,1,1
+2026-11-18,verify.yml,falsify-shard,5 7,step,Start the job wall-time clock,12,0,1
+2026-11-18,verify.yml,falsify-shard,5 7,step,Summarize where the time went,12,10,11
+2026-11-18,verify.yml,falsify-shard,5 7,step,Upload the time record,12,1,2
+2026-11-18,verify.yml,falsify-shard,5 7,step,script/falsifications --affected-since --shard,12,540,573
+2026-11-18,verify.yml,falsify-shard,6 7,job,,12,552,612
+2026-11-18,verify.yml,falsify-shard,6 7,step,Check the job's wall time against its budget,12,0,0
+2026-11-18,verify.yml,falsify-shard,6 7,step,Complete job,12,0,1
+2026-11-18,verify.yml,falsify-shard,6 7,step,Install Kani,12,11,16
+2026-11-18,verify.yml,falsify-shard,6 7,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,0,0
+2026-11-18,verify.yml,falsify-shard,6 7,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,0,1
+2026-11-18,verify.yml,falsify-shard,6 7,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,14,18
+2026-11-18,verify.yml,falsify-shard,6 7,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,8,9
+2026-11-18,verify.yml,falsify-shard,6 7,step,Set up job,12,1,2
+2026-11-18,verify.yml,falsify-shard,6 7,step,Start the job wall-time clock,12,0,1
+2026-11-18,verify.yml,falsify-shard,6 7,step,Summarize where the time went,12,10,12
+2026-11-18,verify.yml,falsify-shard,6 7,step,Upload the time record,12,1,2
+2026-11-18,verify.yml,falsify-shard,6 7,step,script/falsifications --affected-since --shard,12,502,558
+2026-11-18,verify.yml,falsify-shard,7 7,job,,12,716,911
+2026-11-18,verify.yml,falsify-shard,7 7,step,Check the job's wall time against its budget,12,0,0
+2026-11-18,verify.yml,falsify-shard,7 7,step,Complete job,12,0,1
+2026-11-18,verify.yml,falsify-shard,7 7,step,Install Kani,12,12,16
+2026-11-18,verify.yml,falsify-shard,7 7,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,0,0
+2026-11-18,verify.yml,falsify-shard,7 7,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,0,1
+2026-11-18,verify.yml,falsify-shard,7 7,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,12,14,19
+2026-11-18,verify.yml,falsify-shard,7 7,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,12,8,9
+2026-11-18,verify.yml,falsify-shard,7 7,step,Set up job,12,1,2
+2026-11-18,verify.yml,falsify-shard,7 7,step,Start the job wall-time clock,12,0,1
+2026-11-18,verify.yml,falsify-shard,7 7,step,Summarize where the time went,12,10,12
+2026-11-18,verify.yml,falsify-shard,7 7,step,Upload the time record,12,1,2
+2026-11-18,verify.yml,falsify-shard,7 7,step,script/falsifications --affected-since --shard,12,662,856
+2026-11-18,verify.yml,falsify-shard,host / host test,falsification,program_table::take_never_hands_out_a_bound_window,6,1.5,1.7
+2026-11-18,verify.yml,falsify-shard,host / host test,falsification,program_table::take_never_hands_out_a_window_whose_last_holder_is_unreaped,6,1.1,1.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,address_space_identifier::free_releases_exactly_its_own_asid,6,1.1,1.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,address_space_layout::every_address_below_the_ceiling_lies_in_exactly_one_band,6,1.8,1.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,allocation_cache::a_class_never_holds_more_than_its_bound,6,1.1,1.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,allocation_cache::a_pop_returns_the_block_last_pushed,6,2.0,2.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,allocation_cache::a_push_to_one_class_leaves_the_others_alone,6,1.2,1.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,allocation_cache::the_heap_layout_is_never_empty_or_smaller,6,1.1,1.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,boot_ladder::a_count_is_read_without_overflow,6,1.9,2.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,boot_ladder::a_segment_is_read_without_panicking,6,207.5,227.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_glob::a_negated_class_is_the_exact_complement_of_the_class,6,146.1,172.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_glob::matching_is_total,6,146.3,155.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_glob::no_magic_means_the_pattern_is_its_own_only_match,6,530.0,561.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_glob::star_matches_anything_and_question_matches_one_byte,6,3.1,3.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_glob::the_cost_never_exceeds_the_bound,6,119.4,121.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_glob::the_dot_rule_only_touches_names_that_start_with_a_dot,6,200.1,202.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::an_end_of_stream_decodes_exactly_from_its_one_message,6,1.7,1.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::any_prefix_survives_pack_then_unpack,6,8.0,8.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::classify_separates_the_three_outcomes,6,1.0,1.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::end_of_stream_is_no_bytes_message,6,1.5,1.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::severity_reads_back_clamped_and_leaves_the_rest,6,1.8,2.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,byte_sink_contract::unpack_never_answers_more_than_a_message_holds,6,1.6,1.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::a_decoded_manifest_encodes_back_to_its_bytes,7,91.3,93.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::a_decoded_verb_table_finds_each_verb,7,57.5,58.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::an_encoded_manifest_decodes_to_itself,7,48.4,49.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::decode_never_panics,7,34.4,35.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::decode_never_panics_through_a_serviced_descriptor,7,412.3,462.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_manifest_note::decode_subtree_grants_never_panics,7,1.7,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_plan::a_missing_route_refuses_rather_than_falling_through_to_a_slot,6,5.6,6.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_plan::a_plan_never_grants_a_right_the_declaration_did_not_ask_for,6,4.4,4.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_plan::dependents_finds_exactly_the_non_target_instances_that_declared_it,6,2.4,2.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_plan::the_device_split_partitions_the_mappings,6,5.1,5.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_plan::too_many_live_instances_never_silently_truncates,6,1.9,2.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::a_deleted_capability_stays_deleted,6,2.1,2.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::a_stranger_reveals_nothing_about_its_liveness,6,1.1,1.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::a_survey_shows_exactly_the_endpoints_own_children,6,1.0,1.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::delegation_needs_grant_and_never_widens,6,1.9,2.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::delete_touches_only_its_slot,6,2.6,2.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::derive_never_widens_rights,6,2.1,2.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::reap_is_permitted_only_to_the_supervising_rendezvous,6,1.7,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::split_never_widens_rights,6,1.7,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::subset_matches_allows,6,1.0,1.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_count_is_the_slots,6,3.5,3.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_free_mask_is_the_empty_slots,6,5.0,5.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_peak_never_falls_and_a_floor_insert_stays_above_its_floor,6,2.3,2.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,capability_table::the_view_and_the_reap_have_the_same_scope,6,1.0,1.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,components::a_bounded_wait_stops_at_its_bound,9,2.0,3.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,components::a_configuration_read_holds_inside_one_generation,9,2.2,10.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,components::a_header_carrying_its_checksum_sums_to_zero,9,3.0,4.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,components::push_never_writes_past_the_buffer_it_was_given,9,3.8,11.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,components::the_buffer_can_be_filled_exactly,9,2.2,2.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,components::the_directory_lookup_is_total,9,172.7,178.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,components::the_lookup_matches_a_whole_name_only,9,9.8,10.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,counter_frequency_contract::a_built_page_reads_back_its_rate,6,1.7,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,counter_frequency_contract::hertz_answers_none_exactly_when_the_magic_differs,6,1.8,1.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,credential_contract::no_request_word_makes_the_parse_read_outside_the_page,6,1.5,1.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,current_cpu_contract::a_built_page_reads_back_its_words,6,2.3,2.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,current_cpu_contract::the_readers_answer_only_what_the_page_holds,6,2.8,3.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,device_tree_blob::a_token_step_is_total_and_moves_forward,6,232.2,242.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,device_tree_blob::be32_is_total,6,1.7,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,device_tree_blob::be32_reads_big_endian_when_in_bounds,6,2.0,2.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,device_tree_blob::be64_is_total,6,1.6,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,device_tree_blob::cells_refuses_a_value_wider_than_64_bits,6,5.3,5.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,device_tree_blob::decode_regions_stays_inside_its_output,6,48.1,50.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,device_tree_blob::from_bytes_is_total,6,4.4,4.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,direct_memory_access_validator::a_descriptor_mutated_after_validation_cannot_reach_the_device,6,129.6,136.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,direct_memory_access_validator::an_accepted_descriptor_is_confined,6,1.8,1.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,direct_memory_access_validator::the_outer_walk_stays_inside_the_rings_and_terminates,6,15.0,15.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,direct_memory_access_validator::validate_and_shadow_confines_every_chain,6,7.0,7.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,domain_name_resolution_contract::the_grant_table_grants_only_what_it_said,5,344.4,357.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,domain_name_resolution_contract::the_one_message_zone_parses_or_is_refused,5,89.9,97.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::tcp_reassembly_is_total_and_honest,7,22.2,24.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::the_dotted_parse_accepts_exactly_names,5,162.1,169.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::the_header_round_trips_on_every_value,7,2.7,3.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,domain_name_system::the_name_decoder_is_total_and_in_bounds,7,38.4,41.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,driver_process_contract::an_accepted_handoff_keeps_its_doorbells_inside_the_mapped_page,6,1.1,1.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,driver_process_contract::the_handoff_round_trips_and_accepts_only_what_pack_can_make,6,1.9,1.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,driver_process_contract::the_window_never_maps_a_withheld_page,12,167.4,345.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,environment_contract::field_bytes_never_panics_for_any_length_byte,6,1.4,1.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,filesystem_contract::a_grandchild_is_bounded_by_the_root,6,1.6,1.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,filesystem_contract::a_packed_name_comes_back_whole,6,2.2,2.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,filesystem_contract::a_sent_code_round_trips,6,1.7,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,filesystem_contract::attenuate_never_widens,6,1.6,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,filesystem_contract::every_word_decodes_within_the_bound,6,1.8,1.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::a_guid_survives_the_on_disk_layout,6,1.9,2.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::a_headers_fields_survive_the_round_trip,6,3.7,3.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::a_single_byte_change_always_changes_the_crc,6,2.3,3.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::an_entries_block_count_never_panics_and_is_exact,6,1.9,2.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::an_entry_survives_the_round_trip,6,10.4,10.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::crc32_matches_its_bitwise_definition,6,2.3,2.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::create_never_lays_out_a_table_parse_would_reject,6,39.1,41.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::overlap_is_exactly_sharing_a_block,6,1.3,1.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,globally_unique_identifier_partition_table::the_header_fields_partition_the_block,6,3.4,3.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,inter_process_communication::a_walk_fires_exactly_the_due_timers,6,5.7,6.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,inter_process_communication::the_cache_is_never_later_than_an_armed_deadline,6,2.7,2.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,interfaces_note::a_decoded_interface_list_encodes_back_to_its_bytes,6,21.9,22.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,interfaces_note::an_encoded_interface_list_decodes_back_to_itself,6,4.1,4.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,interfaces_note::decode_interfaces_never_panics,6,18.6,19.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,intrusive_queue::any_push_pop_interleaving_is_first_in_first_out_and_lossless,6,8.7,10.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,jh7110_clock_and_reset::a_device_plan_from_specifiers_ungates_before_it_releases,6,79.7,86.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,jh7110_clock_and_reset::a_transmit_parent_from_the_tree_is_one_of_the_clocks_two_inputs,6,18.9,19.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,jh7110_clock_and_reset::the_power_management_chip_bus_plan_is_never_empty_and_ungates_before_it_releases,6,87.2,90.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,kernel::every_page_between_the_checked_ends_is_itself_a_user_page,11,2.6,2.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,kernel::no_device_can_reach_another_devices_context,11,4.8,6.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,kernel::no_stream_can_reach_another_streams_tables,11,2.6,5.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,kernel::the_iommu_is_handed_exactly_the_domain_the_kernel_built,11,3.5,3.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,kernel::the_level_one_table_names_exactly_the_leaf,11,2.4,6.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,kernel::the_root_entry_names_exactly_the_leaf,11,2.3,4.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,kernel::the_run_end_is_exact_and_refuses_exactly_what_does_not_fit,11,2.3,2.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,kernel::the_smmu_is_handed_exactly_the_tables_the_kernel_built,11,2.4,3.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,line_editor::a_control_sequence_leaves_the_cursor_inside_the_line,6,51.8,53.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,line_editor::a_range_delete_removes_exactly_its_range,6,72.3,77.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::a_counter_width_is_widened_before_the_specifications_off_by_one_is_undone,6,2.1,2.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer,6,4.8,5.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::a_multi_letter_extension_is_never_read_as_a_privilege_letter,6,12.6,13.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::a_range_read_out_of_the_memory_map_never_wraps_to_look_empty,6,3.9,4.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::a_table_header_this_parser_accepts_always_has_a_body_length,6,2.1,2.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::an_ecam_windows_size_is_total_and_counts_one_mebibyte_per_bus,6,2.0,2.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::an_encoded_token_never_exceeds_the_maximum_it_advertises,6,10.0,10.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::an_rsdp_is_accepted_only_when_its_bytes_sum_to_zero,6,6.7,7.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::every_hex_field_the_loader_writes_is_one_the_kernel_reads_back,6,480.5,530.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::no_length_of_handoff_bytes_makes_the_decode_read_past_its_end,6,2.7,3.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::no_override_writes_outside_the_sixteen_legacy_interrupts,6,70.8,78.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::no_read_leaves_the_region,6,2.8,3.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::no_table_length_reaches_past_the_region,6,11.6,12.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::the_dmar_fixed_part_decodes_without_arithmetic_overflow,6,2.0,2.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::the_dmar_walk_terminates_and_stays_inside_the_body,6,8.7,9.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::the_madt_walk_terminates_and_stays_inside_the_body,6,180.3,190.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_discovery::the_root_tables_entry_count_and_its_entry_reader_agree,6,2.5,2.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_statistics_contract::a_built_header_reads_back_as_an_empty_page,6,4.0,4.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_statistics_contract::every_reading_is_total_over_an_admitted_page,6,47.7,49.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,machine_statistics_contract::the_reader_admits_exactly_the_pages_it_names,6,6.6,7.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,measured_boot::every_digest_reads_back_as_itself,6,22.7,23.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,measured_boot::only_a_labeled_sha256_parses,6,58.5,60.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_region_heap::a_grow_at_the_maximum_is_a_refusal,8,2.1,2.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_regions::a_carve_keeps_every_count_exact_and_under_its_ceiling,7,129.7,143.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_regions::a_reclaimed_region_tree_leaves_no_count_behind,7,50.6,51.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_regions::a_refused_carve_moves_nothing,7,140.9,149.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_regions::a_refused_split_moves_nothing,7,103.9,109.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_regions::a_release_keeps_every_count_exact,7,62.2,63.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_regions::a_release_of_nothing_held_moves_nothing,7,16.5,17.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_regions::a_return_keeps_every_run_inside_its_parents_spent_part,7,22.4,23.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_regions::a_split_keeps_every_count_exact_and_under_its_ceiling,7,175.1,185.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,memory_regions::a_split_refused_for_a_full_table_moves_nothing,7,90.4,92.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,network_time_protocol::a_consistent_exchange_is_accepted,6,4.6,5.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,network_time_protocol::accepting_is_total_and_a_sample_is_coherent,6,1.1,1.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,network_time_protocol::an_unmatched_origin_is_always_rejected,6,1.0,1.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,network_time_protocol::nanoseconds_survive_the_fixed_point,6,1.6,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,network_time_protocol::out_of_range_is_refused,6,1.0,1.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,network_time_protocol::parse_then_serialise_is_the_identity,6,2.5,3.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,network_time_protocol::the_era_pivot_is_exact_over_the_window,6,1.7,1.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,nifefs::a_short_image_is_refused_not_indexed,7,33.2,34.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,nifefs::the_validation_implies_reads_slice_is_in_bounds,7,1.6,1.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,package_archive::a_parsed_package_reads_only_inside_itself,6,4.7,4.9
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,package_archive::a_short_file_is_refused,6,4.1,4.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,page_frames::a_contiguous_run_was_free_and_is_now_used,6,2.4,2.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,page_frames::index_of_inverts_frame_addressing,6,1.6,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,page_frames::mark_free_frees_only_whole_frames_inside_the_range,6,1.2,1.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,page_frames::mark_used_claims_exactly_the_frames_the_range_touches,6,1.9,2.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,page_frames::the_used_count_is_the_number_of_set_bits,6,10.6,11.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,page_frames::two_allocations_are_distinct,6,3.2,3.3
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,pci_configuration_space::read_bars_is_total_for_any_device,6,40.4,45.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,pci_configuration_space::the_bus_queue_stays_inside_its_array_on_any_firmware,6,1.1,1.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,pci_configuration_space::the_capability_walk_terminates_on_any_device,6,6.1,6.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,pci_configuration_space::the_message_signaled_interrupt_walk_terminates_on_any_device,6,2.7,3.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,pci_configuration_space::the_msix_walk_terminates_and_bounds_its_table_size,6,4.4,4.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,pci_configuration_space::the_ranges_parse_is_total,6,4.4,5.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,periodic_deadline::a_zero_period_is_never_due,6,1.6,1.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,program_argument_contract::a_parsed_page_holds_exactly_what_its_header_states,6,47.5,49.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,program_argument_contract::parse_never_panics_and_iterates_len_items,6,59.2,63.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,sealed_pair::contains_finds_a_digest_exactly_when_it_is_there,7,14.7,15.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,socket_contract::a_position_is_a_port_in_range_and_the_clock_never_runs_backwards,7,99.7,105.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,socket_contract::a_stack_started_four_milliseconds_later_starts_past_every_port_used,7,32.2,37.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,static_elf::a_note_segment_is_read_inside_itself,6,10.1,11.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,static_elf::note_segments_from_a_head_never_panic,6,103.0,107.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,static_elf::page_range_is_panic_free_and_ordered,6,10.9,11.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,subtree_scope::a_badge_once_bound_is_never_open_again,6,9.0,9.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,subtree_scope::a_badge_with_no_window_is_never_open,6,2.0,2.2
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,subtree_scope::a_step_is_one_name,6,223.4,231.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,subtree_scope::a_walk_never_widens_follows_or_crosses,6,119.3,124.1
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,timetable::a_range_is_exactly_its_steps,6,6.0,8.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,timetable::a_time_of_day_is_strictly_later_and_listed,6,15.4,16.5
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,timetable::a_time_of_day_skips_nothing,6,27.1,28.6
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,timetable::an_nth_weekday_is_counted_from_its_month,6,2.0,4.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,timetable::the_first_and_last_weekdays_are_what_they_say,6,1.7,2.0
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,usb::the_configuration_walk_is_total_and_accepts_only_an_interrupt_in,6,167.4,180.7
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,usb::the_header_parsers_are_total,6,1.7,1.8
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,usb::two_interfaces_are_walked_as_two,6,9.9,10.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,usb::two_reports_produce_a_bounded_number_of_events,6,7.8,8.4
+2026-11-18,verify.yml,falsify-shard,host / kani,falsification,usb::two_reports_produce_their_events_in_order,6,161.6,176.5
+2026-11-18,verify.yml,prove,1,job,,24,1044,1317
+2026-11-18,verify.yml,prove,1,step,Check the job's wall time against its budget,24,0,0
+2026-11-18,verify.yml,prove,1,step,Complete job,24,0,0
+2026-11-18,verify.yml,prove,1,step,Install Kani,24,14,16
+2026-11-18,verify.yml,prove,1,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,19,0,1
+2026-11-18,verify.yml,prove,1,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,0,1
+2026-11-18,verify.yml,prove,1,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,24,20,23
+2026-11-18,verify.yml,prove,1,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,4,8
+2026-11-18,verify.yml,prove,1,step,Set up job,24,1,2
+2026-11-18,verify.yml,prove,1,step,Start the job wall-time clock,24,0,0
+2026-11-18,verify.yml,prove,1,step,script/verify --shard 1/5,19,1012,1273
+2026-11-18,verify.yml,prove,1,step,script/verify --shard 1/6,5,1001,1002
+2026-11-18,verify.yml,prove,2,job,,24,937,1119
+2026-11-18,verify.yml,prove,2,step,Check the job's wall time against its budget,24,0,0
+2026-11-18,verify.yml,prove,2,step,Complete job,24,0,0
+2026-11-18,verify.yml,prove,2,step,Install Kani,24,13,19
+2026-11-18,verify.yml,prove,2,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,24,0,1
+2026-11-18,verify.yml,prove,2,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,0,1
+2026-11-18,verify.yml,prove,2,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,24,20,23
+2026-11-18,verify.yml,prove,2,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,5,9
+2026-11-18,verify.yml,prove,2,step,Set up job,24,1,3
+2026-11-18,verify.yml,prove,2,step,Start the job wall-time clock,24,0,0
+2026-11-18,verify.yml,prove,2,step,script/verify --shard 2/5,19,898,1073
+2026-11-18,verify.yml,prove,2,step,script/verify --shard 2/6,5,696,924
+2026-11-18,verify.yml,prove,3,job,,24,876,1157
+2026-11-18,verify.yml,prove,3,step,Check the job's wall time against its budget,24,0,1
+2026-11-18,verify.yml,prove,3,step,Complete job,24,0,0
+2026-11-18,verify.yml,prove,3,step,Install Kani,24,14,15
+2026-11-18,verify.yml,prove,3,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,24,0,1
+2026-11-18,verify.yml,prove,3,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,0,1
+2026-11-18,verify.yml,prove,3,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,24,20,23
+2026-11-18,verify.yml,prove,3,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,5,9
+2026-11-18,verify.yml,prove,3,step,Set up job,24,1,4
+2026-11-18,verify.yml,prove,3,step,Start the job wall-time clock,24,0,0
+2026-11-18,verify.yml,prove,3,step,script/verify --shard 3/5,19,874,1115
+2026-11-18,verify.yml,prove,3,step,script/verify --shard 3/6,5,719,898
+2026-11-18,verify.yml,prove,4,job,,24,890,1312
+2026-11-18,verify.yml,prove,4,step,Check the job's wall time against its budget,24,0,0
+2026-11-18,verify.yml,prove,4,step,Complete job,24,0,1
+2026-11-18,verify.yml,prove,4,step,Install Kani,24,14,18
+2026-11-18,verify.yml,prove,4,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,23,0,1
+2026-11-18,verify.yml,prove,4,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,0,1
+2026-11-18,verify.yml,prove,4,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,24,20,25
+2026-11-18,verify.yml,prove,4,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,4,12
+2026-11-18,verify.yml,prove,4,step,Set up job,24,1,4
+2026-11-18,verify.yml,prove,4,step,Start the job wall-time clock,24,0,1
+2026-11-18,verify.yml,prove,4,step,script/verify --shard 4/5,19,864,1273
+2026-11-18,verify.yml,prove,4,step,script/verify --shard 4/6,5,622,728
+2026-11-18,verify.yml,prove,5,job,,24,931,1219
+2026-11-18,verify.yml,prove,5,step,Check the job's wall time against its budget,24,0,1
+2026-11-18,verify.yml,prove,5,step,Complete job,24,0,0
+2026-11-18,verify.yml,prove,5,step,Install Kani,24,14,15
+2026-11-18,verify.yml,prove,5,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,23,0,1
+2026-11-18,verify.yml,prove,5,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,0,1
+2026-11-18,verify.yml,prove,5,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,24,20,22
+2026-11-18,verify.yml,prove,5,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,3,8
+2026-11-18,verify.yml,prove,5,step,Set up job,24,1,3
+2026-11-18,verify.yml,prove,5,step,Start the job wall-time clock,24,0,0
+2026-11-18,verify.yml,prove,5,step,script/verify --shard 5/5,19,911,1177
+2026-11-18,verify.yml,prove,5,step,script/verify --shard 5/6,5,878,934
+2026-11-18,verify.yml,prove,6,job,,5,987,1063
+2026-11-18,verify.yml,prove,6,step,Check the job's wall time against its budget,5,0,0
+2026-11-18,verify.yml,prove,6,step,Complete job,5,0,0
+2026-11-18,verify.yml,prove,6,step,Install Kani,5,14,15
+2026-11-18,verify.yml,prove,6,step,Post Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,5,0,1
+2026-11-18,verify.yml,prove,6,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,5,0,1
+2026-11-18,verify.yml,prove,6,step,Run Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0,5,20,25
+2026-11-18,verify.yml,prove,6,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,5,5,5
+2026-11-18,verify.yml,prove,6,step,Set up job,5,1,1
+2026-11-18,verify.yml,prove,6,step,Start the job wall-time clock,5,0,1
+2026-11-18,verify.yml,prove,6,step,script/verify --shard 6/6,5,944,1015
+2026-11-18,verify.yml,prove-kernel-aarch64,,job,,24,44,51
+2026-11-18,verify.yml,prove-kernel-aarch64,,step,Check the job's wall time against its budget,24,0,1
+2026-11-18,verify.yml,prove-kernel-aarch64,,step,Complete job,24,0,0
+2026-11-18,verify.yml,prove-kernel-aarch64,,step,Install Kani,24,24,28
+2026-11-18,verify.yml,prove-kernel-aarch64,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,0,1
+2026-11-18,verify.yml,prove-kernel-aarch64,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,4,6
+2026-11-18,verify.yml,prove-kernel-aarch64,,step,Set up job,24,1,1
+2026-11-18,verify.yml,prove-kernel-aarch64,,step,Start the job wall-time clock,24,0,1
+2026-11-18,verify.yml,prove-kernel-aarch64,,step,script/verify --only kernel,24,11,17
+2026-11-18,verify.yml,prove-kernel-riscv64,,job,,24,52,61
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Build the patched Kani if the cache missed,24,13,19
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Cache the patched Kani,24,2,3
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Check the job's wall time against its budget,24,0,0
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Complete job,24,0,1
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Name the carried Kani patch,24,0,1
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Post Cache the patched Kani,24,0,1
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,0,1
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,24,3,7
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Set up job,24,1,1
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,Start the job wall-time clock,24,0,1
+2026-11-18,verify.yml,prove-kernel-riscv64,,step,script/verify-riscv64,24,28,31
+2026-11-18,verify.yml,scope,,job,,40,36,49
+2026-11-18,verify.yml,scope,,step,Check the job's wall time against its budget,40,0,1
+2026-11-18,verify.yml,scope,,step,Complete job,40,0,1
+2026-11-18,verify.yml,scope,,step,Does this change need the proofs?,40,1,27
+2026-11-18,verify.yml,scope,,step,"In a merge group, is this change prose that no build or test reads?",40,2,8
+2026-11-18,verify.yml,scope,,step,Plan the re-falsify shards,24,1,25
+2026-11-18,verify.yml,scope,,step,Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,40,0,1
+2026-11-18,verify.yml,scope,,step,Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1,40,10,17
+2026-11-18,verify.yml,scope,,step,Set up job,40,1,3
+2026-11-18,verify.yml,scope,,step,Start the job wall-time clock,40,0,1
+2026-11-18,verify.yml,verify,,job,,40,3,5
+2026-11-18,verify.yml,verify,,step,Complete job,40,0,1
+2026-11-18,verify.yml,verify,,step,Report the shards' combined result,40,0,2
+2026-11-18,verify.yml,verify,,step,Set up job,40,0,1
