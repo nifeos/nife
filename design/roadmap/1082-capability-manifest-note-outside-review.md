@@ -66,9 +66,8 @@ helpers, Kani, cargo-fuzz, the crate's own encoders as seed writers. No new tool
 - P2-15, `std` inside a `no_std` crate: Done, [#3643](https://github.com/nifeos/nife/pull/3643).
 - The wire literal `nife`: Done (ruled 2026-11-14 UTC, option A),
   [#3575](https://github.com/nifeos/nife/pull/3575).
-- The `_LEN` family: Open. Built as the `_BYTES` names
-  ([#3643](https://github.com/nifeos/nife/pull/3643)), provisional; ratification is under Open
-  decisions.
+- The `_LEN` family: Done (ruled 2026-11-19 UTC, option A). The `_BYTES` names stand as built
+  ([#3643](https://github.com/nifeos/nife/pull/3643)).
 - `service` as a yes-or-no function: Open. Built as `asks_service`
   ([#3643](https://github.com/nifeos/nife/pull/3643)), provisional; ratification is under Open
   decisions.
@@ -84,36 +83,6 @@ helpers, Kani, cargo-fuzz, the crate's own encoders as seed writers. No new tool
   under Open decisions.
 
 ## Open decisions
-
-### Ratify the eleven `_BYTES` names
-
-Background: `capability_manifest_note` writes and reads the ELF note a program carries to ask for
-authority. Its public byte lengths and the functions that compute them had the suffix `_LEN`. The units
-rule says a length carries its unit, and gives `MAXIMUM_NAME_BYTES, never MAXIMUM_NAME_LEN` as its
-own example, so the crate's names now end in `_BYTES`: `DESCRIPTOR_BYTES`, `NOTE_BYTES`,
-`SUBTREE_GRANTS_BYTES`, `SUBTREE_GRANTS_NOTE_BYTES`, `VERB_RECORD_BYTES`, `MAXIMUM_ZONE_BYTES`,
-`zoned_descriptor_bytes`, `serviced_descriptor_bytes`, `zoned_note_bytes`, `serviced_note_bytes`
-and `verbs_descriptor_bytes`. The rule decided the suffix. The choice the rule did not make is the
-word `descriptor` in the middle of the functions: `zoned_len` did not say what it measured, and
-`zoned_note_len` beside it measured something else. Callers in nife (`program_asks`,
-`system_initializer`, `jig`, `xtask`) use the new names; each `Name:` block is provisional.
-
-Recommendation: A.
-
-- A. Ratify the eleven as built.
-- B. Ratify the suffix and drop `descriptor` from the functions (`zoned_bytes`, `serviced_bytes`,
-  `verbs_bytes`), keeping `_note_` where the function measures the whole note.
-
-Door: two-way inside nife; one-way at the first publish, when each name is in users' code.
-
-Prior art: std names a constant by what it counts (`u32::BITS`). POSIX names limits by thing and
-unit (`NAME_MAX`, `PATH_MAX`, bytes by convention). The Linux kernel's ELF code says `n_namesz` and
-`n_descsz` after the specification, keeping "desc" to tell the descriptor from the note. Where nife
-differs: the name spells the unit out, not convention. Example: a reader of
-`const D: [u8; capability_manifest_note::zoned_descriptor_bytes(ZONES)]` learns at the call that the
-number is bytes of descriptor, not a count of zones.
-
-What it blocks: the first publish.
 
 ### Ratify `asks_service`
 
@@ -222,10 +191,27 @@ The P1 items are in [the appendix](1082-capability-manifest-note-outside-review/
 
 ## Decisions for the architect
 
-The architect ruled the wire literal, below. The three decisions on public names (the `_BYTES`
-family, `asks_service` and `BARE_VERSION`) stand under provisional names and wait for the
+The architect ruled the `_BYTES` names and the wire literal, below. The two decisions on public
+names (`asks_service` and `BARE_VERSION`) stand under provisional names and wait for the
 architect's ratification under [Open decisions](#open-decisions), with the review clearance that
 creates the repository.
+
+### The `_BYTES` names
+
+Ruled 2026-11-19 UTC (option A): the eleven names stand as built. A public length carries its unit
+in the suffix `_BYTES`, as the units rule says, and a function that measures a descriptor says
+`descriptor` and one that measures the whole note says `note`. The constants are `DESCRIPTOR_BYTES`,
+`NOTE_BYTES`, `SUBTREE_GRANTS_BYTES`, `SUBTREE_GRANTS_NOTE_BYTES`, `VERB_RECORD_BYTES` and
+`MAXIMUM_ZONE_BYTES`. The functions are `zoned_descriptor_bytes`, `serviced_descriptor_bytes`,
+`zoned_note_bytes`, `serviced_note_bytes` and `verbs_descriptor_bytes`. The callers in nife
+(`program_asks`, `system_initializer`, `jig`, `xtask`) use them.
+
+Prior art: std names a constant by what it counts (`u32::BITS`), and POSIX names a limit by thing
+and unit (`NAME_MAX`, `PATH_MAX`). The Linux kernel's ELF code says `n_namesz` and `n_descsz` after
+the specification, keeping "desc" to tell the descriptor from the note. Where nife differs: the name
+spells the unit out. Example: a reader of
+`const D: [u8; capability_manifest_note::zoned_descriptor_bytes(ZONES)]` learns at the call that the
+number is bytes of descriptor, not a count of zones.
 
 ### The wire literal `nife` in a crate that may not mention nife
 
@@ -286,5 +272,5 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 
 ## Index row
 
-An outside review of `capability_manifest_note` before it leaves. Three items block the move (a manifest that cannot stand alone, no README, and two encoders that build notes their own decoder refuses). Six land before the first tag. They are project-internal citations in shipped text, stale documentation, private names against the spelled-out rule, tests bound to nife's program catalog, the fuzz target and seeds left behind, and the template's `unsafe` scan refusing the opt-in. Six more come after. Four decisions on names: the architect ruled that the wire literal `nife` keeps its bytes, and three
-public names wait for ratification.
+An outside review of `capability_manifest_note` before it leaves. Three items block the move (a manifest that cannot stand alone, no README, and two encoders that build notes their own decoder refuses). Six land before the first tag. They are project-internal citations in shipped text, stale documentation, private names against the spelled-out rule, tests bound to nife's program catalog, the fuzz target and seeds left behind, and the template's `unsafe` scan refusing the opt-in. Six more come after. Four decisions on names: the architect ruled that the wire literal `nife` keeps its bytes and that
+the eleven `_BYTES` names stand, and two public names wait for ratification.
