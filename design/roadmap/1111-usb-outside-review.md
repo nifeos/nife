@@ -79,10 +79,9 @@ US one gives. The template's gates are green for the crate's own reasons.
   [#3614](https://github.com/nifeos/nife/pull/3614).
 - Decision 1, public rename table: Done, [#3614](https://github.com/nifeos/nife/pull/3614)
   (maintainer, provisional, 2026-11-14 UTC).
-- Decision 1, ratifying the public names: Done (2026-11-19 UTC, option A). Every public name of
-  [the package](../../notes/crate-reviews/universal-serial-bus.md) is ratified as built, with the
-  aliases `bMaxPacketSize0`, `wTotalLength`, `wLength`, `ErrorRollOver` and `bcdUSB`.
-  `MODIFIER_CODES` is not public. The crate's own name `universal_serial_bus` stays the move's.
+- Decision 1, ratifying the public names: Done (2026-11-19 UTC, option A). The architect ratified every public name
+  of [the package](../../notes/crate-reviews/universal-serial-bus.md) as built, with the aliases
+  `bMaxPacketSize0`, `wTotalLength`, `wLength`, `ErrorRollOver` and `bcdUSB`. `MODIFIER_CODES` stays private. The crate's own name `universal_serial_bus` stays the move's.
 - Decision 2, `changes` emits HID usages: Done, [#3814](https://github.com/nifeos/nife/pull/3814)
   (maintainer, provisional, 2026-11-14 UTC). `changes` emits usages, modifiers as 0xe0 to 0xe7;
   `evdev_code` answers for the eight modifiers; `MODIFIER_CODES` is private; the xHCI keyboard
@@ -93,9 +92,9 @@ US one gives. The template's gates are green for the crate's own reasons.
   `Result<DeviceDescriptor, Refusal>`.
 - Prose acronyms, the 13 findings the review package lists: Open. The move lane expands each at
   first use.
-- Clearing the review package: Done (2026-11-19 UTC, option A). The review is cleared and approves
-  the public repository `nifeos/universal_serial_bus`, with `publish = false`, no tag and no
-  publish. The move waits until Decisions 2 and 3 are merged in nife.
+- Clearing the review package: Done (2026-11-19 UTC, option A). The architect cleared the review,
+  which approves the public repository `nifeos/universal_serial_bus` with `publish = false`, no tag
+  and no publish. The move waits for nife to merge Decisions 2 and 3.
 
 ## Open decisions
 
@@ -242,7 +241,7 @@ returns `Result<DeviceDescriptor, Refusal>`, and `BootReport::parse` keeps `Opti
 ## Follow-on
 
 - **Outstanding.** The findings "Finding status" marks Open, each line read against `crates/usb`.
-- **The move.** A move lane creates `nifeos/universal_serial_bus` after #3814 merges, runs the move
+- **Milestone 820.** A move lane creates `nifeos/universal_serial_bus` after #3814 merges, runs the move
   check and a dry run, and tags `v0.1.0-pre.1` only after separate approval. No publish.
 
 ## Done when
