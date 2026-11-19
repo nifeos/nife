@@ -357,7 +357,7 @@ fn split_record(rest: &[u8]) -> Option<(&[u8], &[u8])> {
     (len <= body.len()).then(|| body.split_at(len))
 }
 
-/// Proofs, run by `script/verify` (the file stays one file, so they sit here).
+/// Proofs, run by Kani (the file stays one file, so they sit here).
 #[cfg(kani)]
 mod verification {
     use super::*;
