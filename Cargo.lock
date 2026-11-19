@@ -785,6 +785,13 @@ version = "0.3.0-pre.1"
 source = "git+https://github.com/nifeos/jh7110_entropy?rev=df37dc91383c4226b0266499c48de7e5e92ecb99#df37dc91383c4226b0266499c48de7e5e92ecb99"
 
 [[package]]
+name = "jh7110_pci_express"
+version = "0.1.0"
+dependencies = [
+ "pci_configuration_space",
+]
+
+[[package]]
 name = "jh7110_watchdog"
 version = "0.1.0"
 dependencies = [

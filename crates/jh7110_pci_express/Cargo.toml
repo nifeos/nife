@@ -1,0 +1,26 @@
+[package]
+name = "jh7110_pci_express"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "StarFive JH7110 PCI Express root complex logic: the PLDA XpressRICH bridge, the StarFive glue and the bring-up sequence"
+license = "MIT OR Apache-2.0"
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+
+# no_std for a kernel, std for host tests. This crate owns register offsets, bit positions, the
+# bring-up sequence and the root port's bus and window assignment, over a register bus the caller
+# supplies. No unsafe code and no raw pointer in here; the volatile MMIO is the caller's.
+
+[dependencies]
+pci_configuration_space = { version = "0.1.0", path = "../pci_configuration_space" }
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[lints.clippy]
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
