@@ -31,7 +31,7 @@ tool.
 
 The ids are the review's own; P0 and P1 are in [the
 appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
-items](1085-device-tree-blob-outside-review/later-items.md), D1 under [Ruled decisions](#ruled-decisions), and D2 to D6 under [Open
+items](1085-device-tree-blob-outside-review/later-items.md), D1 and D2 under [Ruled decisions](#ruled-decisions), and D3 to D6 under [Open
 decisions](#open-decisions).
 
 - P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
@@ -59,8 +59,8 @@ decisions](#open-decisions).
 - P2-10 to P2-13, the depth counters, `MAXIMUM_DEPTH`, a trailing partial `reg` pair and private
   names: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
-- D1 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
-- D2 to D6: Open. Built as recommended, awaiting ratification; each is a subsection under [Open
+- D1, D2 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
+- D3 to D6: Open. Built as recommended, awaiting ratification; each is a subsection under [Open
   decisions](#open-decisions).
 - F-size, `Region::size` is a length with no unit: Open. `register_names` refuses it at `src/lib.rs`
   line 26. It is two-way while unreleased, and the maintainer rules the rename provisionally; the
@@ -99,10 +99,25 @@ spelling. Its doc comment opens with the expansion and cites the Devicetree Spec
 replaces the part of D3 that kept `phandle`; D3 now covers `reg` alone. The ratification is the
 same as D1's, as built.
 
+### Property is spelled out across the crate
+
+The crate spells `property` out in every public item, parameter and doc comment. The one `prop`
+left is the private `Blob::prop` test builder in `tests/hostile.rs`, which is not public.
+
 Door: one-way at publish. Prior art: libfdt's `fdt_node_offset_by_phandle` and the `fdt` crate's
 `find_phandle` keep the abbreviation; neither spells the specification's expansion. nife differs
 because its naming rules spell out a word that needs a decoder, and the alias keeps the term
 searchable. Example: `tree.pointer_handle_property(pointer_handle, b"#interrupt-cells")`.
+
+### Name the needle parameter `compatible` (D2)
+
+Ruled 2026-11-19 (UTC): option A. The three lookups that take a needle name the parameter
+`compatible: &[u8]`, the property's own name in the Devicetree Specification, ratified as built.
+Rustdoc shows parameters, and `compat` needs a decoder.
+
+Door: two-way, since a parameter name is not part of the call. Prior art:
+`fdt::Fdt::find_compatible(with: ...)` and `dtoolkit`'s `is_compatible(&self, compatible: &str)`.
+Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`.
 
 ## Open decisions
 
@@ -110,17 +125,6 @@ Code carries the remaining name and surface decisions as recommended, each under
 provisional` block. Each is two-way while the crate has no release and one-way at its first publish. The
 `dtoolkit` path makes it likely the crate never publishes, so every one of them waits on the last
 two decisions here.
-
-### Name the needle parameter `compatible` (D2)
-
-Three lookups took `compat: &[u8]`, and rustdoc shows parameters. Recommendation: A.
-
-- A. Ratify `compatible`, the property's own name, as built.
-- B. Restore `compat`.
-
-Door: two-way, since a parameter name is not part of the call. Prior art:
-`fdt::Fdt::find_compatible(with: ...)` and `dtoolkit`'s `is_compatible(&self, compatible: &str)`.
-Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`. Blocks: the tag.
 
 ### Keep `reg` as the specification's term (D3)
 
@@ -208,7 +212,7 @@ happens at all.
 No review package exists, and clearance follows one. Recommendation: B, because every move item
 lapses if the switch comes first, and a package written first would go to waste.
 
-- A. Write the package now and clear the move after the ratification of D2 to D6.
+- A. Write the package now and clear the move after the ratification of D3 to D6.
 - B. Hold the package and the move until the `dtoolkit` decision; write the package only if C wins
   there.
 
@@ -245,7 +249,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
-  half of P2-9, F-size, F-package and BUGS-239, and the seven open decisions.
+  half of P2-9, F-size, F-package and BUGS-239, and the six open decisions.
 
 ## BUGS
 
@@ -267,4 +271,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 is ruled and seven remain open.
+that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 and D2 are ruled and six remain open.
