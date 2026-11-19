@@ -5,7 +5,7 @@
 //! Name: provisional, minted 2026-11-16 (UTC) by milestone/1086-resolver-contract-outside-review-items.
 //! Private: the items are re-exported at the crate root, so the module's name is not public.
 
-use super::wire::{MAXIMUM_NAME_TEXT_BYTES, OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE};
+use super::wire::{MAXIMUM_NAME_TEXT_BYTES, OPERATION_ATTACH_SHARED_PAGE, OPERATION_RESOLVE};
 #[cfg(doc)]
 use super::wire::{Outcome, status};
 
@@ -81,7 +81,7 @@ pub const OPERATION_FORGET: u64 = 0x11;
 
 // A control opcode is never also a client's, so the resolver cannot read one as the other.
 const _: () =
-    assert!(OPERATION_ATTACH_PAGE_FRAME < OPERATION_GRANT && OPERATION_RESOLVE < OPERATION_GRANT);
+    assert!(OPERATION_ATTACH_SHARED_PAGE < OPERATION_GRANT && OPERATION_RESOLVE < OPERATION_GRANT);
 
 /// A control word: `operation << 56 | offset << 48 | total << 40 | badge`, the badge in the low 32
 /// bits. `offset` and `total` are bytes of the zone's text.

@@ -23,7 +23,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    smoltcp's buffer is full (`socket_operations.rs` lines 338 to 343: `sent as u64`). `RECEIVE`
    replies 0 when the stream has closed or `recv_slice` fails (`socket_operations.rs` lines 94 to
    97, `unwrap_or(0)`). Every in-tree client treats 0 as end of stream (`socket_test_client.rs` line
-   414, `components/src/domain_name_resolver.rs` line 400), yet the contract never says so. `OPERATION_ATTACH_PAGE_FRAME` sent as a `CALL` answers `REP_ERR`
+   414, `components/src/domain_name_resolver.rs` line 400), yet the contract never says so. `OPERATION_ATTACH_SHARED_PAGE` sent as a `CALL` answers `REP_ERR`
    (`socket_server.rs` line 197), which its documentation does not state.
    Evidence: the lines above.
    Change: one "Replies" section in the crate documentation and the README, listing per operation

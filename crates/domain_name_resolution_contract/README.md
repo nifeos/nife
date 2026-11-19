@@ -33,7 +33,7 @@ cannot widen its own grant.
    bytes per message, after a `control_word` that names the operation, the offset, the total length
    and the badge. The spawner `CALL`s the last piece, and the reply says whether the grant is in
    force (below).
-2. The client delegates one writable page with `OPERATION_ATTACH_PAGE_FRAME`. The resolver maps it
+2. The client delegates one writable page with `OPERATION_ATTACH_SHARED_PAGE`. The resolver maps it
    in the window its badge's grant names, or deletes it if the badge holds no grant.
 3. The client writes a host name at `NAME_OFFSET_BYTES` and `CALL`s `request(OPERATION_RESOLVE)`
    with the name's length as the second word.
@@ -59,7 +59,7 @@ because "no such name" is a different fact from "you may not ask":
 - `DENIED`: the badge holds no grant, or the name is outside its zone. Nothing was sent.
 - `NO_SUCH_NAME`, `REFUSED`, `NO_ANSWER`, `SERVER_ERROR`: what the name server said, or did not.
 - `BAD_NAME`, `NOT_ATTACHED`, `NO_ENTROPY`, `NETWORK`, `BAD_REQUEST`: what stopped the resolver
-  before it could ask. `NETWORK`'s detail byte is a `network_step`.
+  before it could ask. `NETWORK`'s detail byte is a `network_step`, among them `UNKNOWN_TRANSPORT`, which answers every resolve when the spawner started the resolver with a transport other than `TRANSPORT_UDP` or `TRANSPORT_TCP`.
 
 `Outcome::from_word` refuses a word the resolver never sends, such as a failed `CALL`'s negative
 error. A control `CALL` is answered with an `Outcome` too: `OK` when the message was accepted, or

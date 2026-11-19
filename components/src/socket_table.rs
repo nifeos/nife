@@ -152,7 +152,7 @@ impl Table {
         capability_delete(minted);
     }
 
-    /// `OPERATION_ATTACH_PAGE_FRAME`: map `frame` writable at the window of the socket `badge`
+    /// `OPERATION_ATTACH_SHARED_PAGE`: map `frame` writable at the window of the socket `badge`
     /// names, paid for from `net_stack`'s untyped, and drop the capability (the mapping outlives
     /// it). A badge that names no open socket, or names a listener, which carries no bytes, gets
     /// nothing, and the frame is dropped. A second attach replaces the first page.

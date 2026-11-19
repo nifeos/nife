@@ -56,7 +56,7 @@ impl Frame {
     /// `base .. base + PAGE_BYTES` must be a range the kernel has mapped read/write-accessible into
     /// this process for as long as the returned `Frame` is used: the program's own
     /// `PageFrame::MAP` succeeded first (the mint-and-map behind
-    /// `socket_contract::OPERATION_ATTACH_PAGE_FRAME`), or the wiring mapped it before `_start`
+    /// `socket_contract::OPERATION_ATTACH_SHARED_PAGE`), or the wiring mapped it before `_start`
     /// ran. `MappedWindow::new`'s contract, forwarded.
     pub const unsafe fn new(base: u64) -> Self {
         Self {

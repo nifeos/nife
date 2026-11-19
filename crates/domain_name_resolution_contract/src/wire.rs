@@ -50,7 +50,11 @@ const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <
 /// **A client delegates its page.** A `SEND_CAPABILITY` of a writable page frame with this request word.
 /// The resolver maps it in the window its badge's grant names; a page from a badge with no grant
 /// is deleted unmapped.
-pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;
+///
+/// Name: ratified 2026-11-19 (UTC), the same spelling as the socket contract's operation for the
+/// same act; the earlier page-frame spelling is refused, since `frame` also means a network frame
+/// in the socket contract.
+pub const OPERATION_ATTACH_SHARED_PAGE: u64 = 1;
 /// **A client resolves the name in its page.** A `CALL` whose second word is the name's length in
 /// bytes. The reply is an [`Outcome`] word and the answer's TTL in seconds.
 pub const OPERATION_RESOLVE: u64 = 2;
@@ -115,6 +119,11 @@ pub mod network_step {
     pub const SEND: u8 = 3;
     /// The TCP connection to the name server was not established.
     pub const CONNECT: u8 = 4;
+    /// The spawner started the resolver with a transport word that is neither `TRANSPORT_UDP` nor
+    /// `TRANSPORT_TCP`. The resolver refuses it at start and answers every resolve with this step.
+    ///
+    /// Name: ratified 2026-11-19 (UTC), the step number 5 with it.
+    pub const UNKNOWN_TRANSPORT: u8 = 5;
 }
 
 /// A resolve reply's first word, decoded: `status | detail << 8 | count << 16`.
@@ -171,7 +180,7 @@ mod tests {
 
     #[test]
     fn a_request_word_carries_its_operation() {
-        for operation_code in [OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE] {
+        for operation_code in [OPERATION_ATTACH_SHARED_PAGE, OPERATION_RESOLVE] {
             assert_eq!(operation(request(operation_code)), operation_code);
         }
     }

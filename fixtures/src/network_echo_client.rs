@@ -112,7 +112,7 @@ fn converse(socket: u64, frame: u64) -> Result<usize, &'static [u8]> {
         socket,
         frame,
         rights::READ | rights::WRITE,
-        OPERATION_ATTACH_PAGE_FRAME,
+        OPERATION_ATTACH_SHARED_PAGE,
     ) < 0
     {
         return Err(b"handing the stack the shared page");

@@ -56,7 +56,11 @@ pub const INTERFACE_ID: u64 = 19;
 
 /// `SEND_CAPABILITY` on a socket's capability: delegate that socket's shared frame. Not a `CALL`:
 /// it has no argument word, and a `CALL` with this opcode is answered [`REP_ERR`].
-pub const OPERATION_ATTACH_PAGE_FRAME: u64 = 1;
+///
+/// Name: ratified 2026-11-19 (UTC), the same spelling as the resolver contract's operation for the
+/// same act; the earlier page-frame spelling is refused, since `frame` also means a network frame
+/// (`polled_wait`).
+pub const OPERATION_ATTACH_SHARED_PAGE: u64 = 1;
 /// `CALL` on the front door: create a User Datagram Protocol (UDP) socket and bind an ephemeral local port. Answered
 /// [`REP_OK`] with the socket's capability.
 pub const OPERATION_OPEN_UDP: u64 = 2;
@@ -794,7 +798,7 @@ mod tests {
     /// Every opcode the contract defines, in one place: a list repeated per property will one day
     /// be missing an entry in exactly the property that would have caught it.
     const OPERATIONS: &[u64] = &[
-        OPERATION_ATTACH_PAGE_FRAME,
+        OPERATION_ATTACH_SHARED_PAGE,
         OPERATION_OPEN_UDP,
         OPERATION_OPEN_TCP,
         OPERATION_SENDTO,

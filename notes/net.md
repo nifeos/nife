@@ -116,7 +116,7 @@ let listener = match call_receiving(STACK, OPERATION_LISTEN, 7778) {
 // 2. Accept, use, close, repeat. The listener re-arms inside ACCEPT, so this loop keeps working.
 loop {
     let (REP_OK, _, Some(conn)) = call_receiving(listener, OPERATION_ACCEPT, 0) else { break };
-    send_capability(conn, frame, rights::READ | rights::WRITE, OPERATION_ATTACH_PAGE_FRAME);
+    send_capability(conn, frame, rights::READ | rights::WRITE, OPERATION_ATTACH_SHARED_PAGE);
     let (len, _) = call(conn, OPERATION_RECEIVE, 0);
     // ... read the request out of the frame at FRAME_VA + PAYLOAD_OFFSET_BYTES, write the answer back ...
     let _ = call(conn, OPERATION_SEND, reply_len);

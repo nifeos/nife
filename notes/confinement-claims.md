@@ -137,7 +137,7 @@ carried none. A `CALL` server reads it as the slot of its one-shot `Reply`. No c
 checks the kind of object in that slot, and no ABI call would let one, as the audit by milestone 613
 (a system log service: the in-memory half) on PR #1494 found. So a word in `x1` that names a real
 slot without a delivery is authority. The worst case is `net_stack`, which
-any program that declares network reaches: its `OPERATION_ATTACH_PAGE_FRAME` does `capability_delete(x1)`
+any program that declares network reaches: its `OPERATION_ATTACH_SHARED_PAGE` does `capability_delete(x1)`
 with no guard, so a chosen slot deletes one of the server's own capabilities.
 
 `system_tests/src/user/receive_capability_attack_tests.rs` holds the property on every arrival order.
