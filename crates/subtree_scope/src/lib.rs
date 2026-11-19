@@ -186,7 +186,7 @@ pub fn walk<N: Copy, E: From<Refusal>>(
 /// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
 pub fn check_landing(kind: NodeKind, want_directory: bool) -> Result<(), Refusal> {
     match (kind, want_directory) {
-        (NodeKind::Symlink, _) => Ok(()),
+        (NodeKind::Symlink, _) => Err(Refusal::Symlink),
         (NodeKind::MountPoint, _) => Err(Refusal::MountCrossing),
         (NodeKind::Directory, true) | (NodeKind::File, false) => Ok(()),
         (NodeKind::File, true) => Err(Refusal::NotADirectory),
