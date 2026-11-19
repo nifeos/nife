@@ -1,12 +1,13 @@
 ---
-status: NOT-STARTED
+status: BUILT
 promoted_from: gating-ci-rents-more-concurrency-before-it-owns-a-runner
 raised: 2026-10-24
+built: 2026-11-19
 milestone_dependencies: none
-decision_dependencies: unwritten
+decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 965. Gating CI rents more concurrency before it owns a runner
 
@@ -46,9 +47,9 @@ exactly this open: "Whether anything that gates a merge runs on" the build machi
 - (e) Limit who may open a pull request on nife to collaborators, which pairs with any of the
   others.
 
-Recommendation: (a) now, with (e), and (b) as the staged next step under the preconditions below.
-Refuse (c). Treat (d) as a variant of (b), because the QEMU-heavy shards are the jobs an owned
-x86_64 host cannot take.
+Ruled 2026-11-19 (UTC): the project does not rent more hosted concurrency now, so (a) waits for its
+trigger, which is under Rulings. (e) and (b) stand as ruled there. (c) is refused. (d) is a variant
+of (b), because the QEMU-heavy shards are the jobs an owned x86_64 host cannot take.
 
 Why: the hosted tier is the far larger lever and adds no failure mode. (b) is cheap to make safe
 under calef's fork ruling, but it buys little until the arm64 question below is answered. At equal
@@ -256,9 +257,9 @@ Each job on an owned runner writes its runner kind and image digest into its sum
 
 ## Rollout and rollback
 
-1. Move the organization to Enterprise, through a trial if GitHub offers one (recalled). Measure
-   for a week: wait by label in busy hours, peak concurrency, merges per hour, full-run wall clock.
-   Done when a busy hour's median job wait is under a minute. Rollback is a plan downgrade.
+1. Measure a day when the trigger under Rulings may have fired: wait by label in busy hours, peak
+   concurrency, merges per hour, full-run wall clock. If it fired, move the organization to
+   Enterprise, through a trial if GitHub offers one (recalled). Rollback is a plan downgrade.
 2. If calef rules for (e), flip the policy, then open one App pull request to prove the bots still
    can. Rollback is one setting.
 3. If the cap still binds, or after #2668 reports: land the lint and the first-step guard, then
@@ -274,16 +275,14 @@ credentials are spent, and it is reinstalled, not cleaned.
 
 ## Rulings
 
-The architect ruled item 1 on 2026-11-11 (UTC), and items 2 to 5 on 2026-10-24 (UTC).
+The architect ruled item 1 on 2026-11-19 (UTC), and items 2 to 5 on 2026-10-24 (UTC).
 
-1. The organization keeps its plan for now. The hosted pool is 60 concurrent jobs, and
-   in the 7 days before 2026-11-11 merge groups filled it at peak on six of the seven days.
-   Enterprise raises the limit to 500 for 17 US dollars a month more. The fixes for the lint failures inside
-   merge groups and for the owned-runner canary come first; then a new measurement of the queue. If
-   hosted capacity still binds, the first step is a request to GitHub Support for a higher
-   concurrent-job limit, and the architect reads any ticket text before anyone files it. Binding means
-   jobs at the cap with runners waiting, and merge-group runs well over their uncontended 14
-   minutes.
+1. The project does not rent more hosted concurrency now. The organization keeps its plan, with
+   a hosted pool of 60 concurrent jobs. Enterprise raises the limit to 500 for 17 US dollars a
+   month more. The trigger to rent the Enterprise tier is a measured day on which the median
+   hosted job waits over five minutes for a runner while five queue groups build. Until a
+   measured day meets it, the plan stays. A request to GitHub Support for a higher limit is not
+   part of this rule.
 2. The pull-request creation policy is `collaborators_only`, set the day of the ruling.
 3. (b) proceeds under the five preconditions, with the VM shape held for the day an outside
    contributor appears.
@@ -294,9 +293,20 @@ The architect ruled item 1 on 2026-11-11 (UTC), and items 2 to 5 on 2026-10-24 (
 
 Not decided here: cutting demand, such as runs a later push cancels and the label bots' slots.
 
+## Done when
+
+- The architect rules on renting more hosted concurrency. Met: item 1 under Rulings, 2026-11-19
+  (UTC), with its trigger.
+
+## Follow-on
+
+- **None.** The trigger is a standing rule that a maintainer reads against a measured day. It
+  builds nothing, and no workflow or setting changes.
+
 ## Index row
 
 On 2026-10-24 the merge queue waited on GitHub's 60-job Team cap, with 430 jobs waiting. Enterprise
-raises it to 500 for $17 a month. An owned runner takes merge-group and `main` jobs only, under
+raises it to 500 for $17 a month, and the project rents it only when a measured day shows the median
+hosted job waiting over five minutes while five queue groups build. An owned runner takes merge-group and `main` jobs only, under
 calef's ruling that unreviewed fork code never runs on owned infrastructure, enforced by a lint.
 It adds x86_64 capacity unless #2668 frees the arm64 jobs.
