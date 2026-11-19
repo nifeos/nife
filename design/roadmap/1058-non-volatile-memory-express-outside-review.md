@@ -19,8 +19,8 @@ the extraction and the release path; this block owns the findings that land insi
 The review package settles the crate name, the version `0.1.0`, the dual license and every name it
 records as ratified. It clears the move, and neither the tag nor publication.
 
-Reuse: the shared crate workflows `nifeos/crate-workflows` and their scaffold, `cargo-mutants`,
-Kani, `cargo-fuzz` and the harness shapes of the crate. No new tool.
+Reuse: the shared crate workflows `nifeos/crate-workflows`, `cargo-mutants`, Kani, `cargo-fuzz`
+and the crate's harness shapes. No new tool.
 
 ## Goal
 
@@ -114,8 +114,7 @@ Status: Landed in nifeos/non_volatile_memory_express#19.
 Ruled 2026-11-09: `minimum_page_size_bytes`, and `unit_bytes` and `page_size_bytes` everywhere.
 Every address parameter takes a `_physical_address` suffix: `data_physical_address` for Identify,
 `queue_physical_address` for the two queue builders. The doorbell parameter becomes `role`, and the
-shift takes the one spelling `logical_block_size_shift`, for the free function and the field alike. One-way at the tag.
-S.
+shift takes the one spelling `logical_block_size_shift`. One-way at the tag. S.
 
 Status: Landed in nifeos/non_volatile_memory_express#19; `doorbell_stride` later became
 `doorbell_stride_exponent` in nifeos/non_volatile_memory_express#35.
@@ -213,7 +212,7 @@ Status: Landed in nifeos/non_volatile_memory_express#16.
 
 `enabled_controller_configuration()` (`src/configuration.rs`) returns `CC` with `MPS` 0, so a
 kernel whose frames are 16 KiB or 64 KiB cannot use it. Nothing ties that `MPS` to the
-`page_size_bytes` the page-pair builder takes, so the two can disagree without a warning.
+`page_size_bytes` the page-pair builder takes.
 `Capabilities` decodes `MPSMIN` and not `MPSMAX`, so a caller cannot check the upper bound. Ruled
 2026-11-09: `enabled_controller_configuration(page_size_bytes) -> Option<u32>`. It encodes
 `MPS = log2(page_size_bytes) - 12` and returns `None` for a size that is not a power of two or lies
