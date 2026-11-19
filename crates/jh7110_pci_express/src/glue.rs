@@ -1,5 +1,5 @@
 //! The words of one port's glue, relative to
-//! [`PortNumber::system_top_group_controller_base`].
+//! [`crate::PortNumber::system_top_group_controller_base`].
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 

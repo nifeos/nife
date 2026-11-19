@@ -12,13 +12,13 @@ use crate::{Port, PortNumber, Window, bridge, general_purpose_input_output, glue
 pub enum Block {
     /// The port's bridge window, [`Port::bridge`].
     Bridge,
-    /// [`SYSTEM_TOP_GROUP_CONTROLLER`].
+    /// [`crate::SYSTEM_TOP_GROUP_CONTROLLER`].
     SystemTopGroupController,
     /// The port's PHY window, [`PortNumber::physical_layer_physical_address`].
     PhysicalLayer,
-    /// [`SYSTEM_CONTROLLER`].
+    /// [`crate::SYSTEM_CONTROLLER`].
     SystemController,
-    /// [`SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT`].
+    /// [`crate::SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT`].
     GeneralPurposeInputOutput,
 }
 
@@ -121,8 +121,34 @@ fn drive_reset_pin(registers: &mut dyn Registers, pin: u32, asserted: bool) {
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp, Failure> {
     let glue_base = port.number.system_top_group_controller_base();
+    physical_layer_into_pci_express_mode(registers, port.number);
+    glue_as_root_port(registers, glue_base);
+    if !registers.enable_clocks_and_resets(port.number) {
+        return Err(Failure::ClocksAndResets);
+    }
+    if let Some(pin) = port.reset_pin {
+        drive_reset_pin(registers, pin, true);
+    }
+    disable_functions_one_to_three(registers, glue_base);
+    bridge_as_root_port(registers);
+    registers.wait_milliseconds(RESET_HOLD_MILLISECONDS);
+    if let Some(pin) = port.reset_pin {
+        drive_reset_pin(registers, pin, false);
+    }
+    registers.wait_milliseconds(RESET_HOLD_MILLISECONDS);
+    let (link_up, link_polls, link_status) = poll_link(registers, glue_base);
+    let windows = program_windows(registers, port)?;
+    Ok(BroughtUp {
+        link_up,
+        link_polls,
+        link_status,
+        windows,
+    })
+}
 
-    // The PHY. Port 1's tree node names no system controller words, so only the tuning applies.
+/// The PHY's tuning on both ports; port 0 also leaves USB 3 mode. Port 1's tree node names no
+/// system controller words, so only the tuning applies to it.
+fn physical_layer_into_pci_express_mode(registers: &mut dyn Registers, number: PortNumber) {
     registers.write(
         Block::PhysicalLayer,
         physical_layer::OSCILLATOR_GAIN_LEVEL,
@@ -133,7 +159,7 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
         physical_layer::OSCILLATOR_GAIN_TUNE_SIGNAL,
         physical_layer::OSCILLATOR_GAIN_FINE_TUNE_SIGNALS,
     );
-    if port.number == PortNumber::Zero {
+    if number == PortNumber::Zero {
         let top_group = Block::SystemTopGroupController;
         update(
             registers,
@@ -171,7 +197,10 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
             0,
         );
     }
+}
 
+/// The glue: root port rather than endpoint, reference clock source 2, `CLKREQ#` asserted.
+fn glue_as_root_port(registers: &mut dyn Registers, glue_base: u32) {
     let top_group = Block::SystemTopGroupController;
     update(
         registers,
@@ -194,15 +223,11 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
         glue::CLOCK_REQUEST,
         glue::CLOCK_REQUEST,
     );
+}
 
-    if !registers.enable_clocks_and_resets(port.number) {
-        return Err(Failure::ClocksAndResets);
-    }
-
-    if let Some(pin) = port.reset_pin {
-        drive_reset_pin(registers, pin, true);
-    }
-
+/// Functions 1 to 3 disabled through each one's select, then both selects back to function 0.
+fn disable_functions_one_to_three(registers: &mut dyn Registers, glue_base: u32) {
+    let top_group = Block::SystemTopGroupController;
     for function in 1..glue::FUNCTIONS {
         update(
             registers,
@@ -240,45 +265,47 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
         glue::WRITE_CHANNEL_MASK,
         0,
     );
+}
 
-    let bridge = Block::Bridge;
+/// The bridge made a root port: enabled, BARs zero, the bridge class, LTR reception off, 64-bit
+/// prefetchable windows.
+fn bridge_as_root_port(registers: &mut dyn Registers) {
     update(
         registers,
-        bridge,
+        Block::Bridge,
         bridge::GENERAL_SETTINGS,
         bridge::ROOT_PORT_ENABLE,
         bridge::ROOT_PORT_ENABLE,
     );
-    registers.write(bridge, bridge::ROOT_PORT_BAR0, 0);
-    registers.write(bridge, bridge::ROOT_PORT_BAR1, 0);
+    registers.write(Block::Bridge, bridge::ROOT_PORT_BAR0, 0);
+    registers.write(Block::Bridge, bridge::ROOT_PORT_BAR1, 0);
     update(
         registers,
-        bridge,
+        Block::Bridge,
         bridge::IDENTIFICATION_CLASS_AND_REVISION,
         !bridge::REVISION_MASK,
         bridge::CLASS_PCI_TO_PCI_BRIDGE,
     );
     update(
         registers,
-        bridge,
+        Block::Bridge,
         bridge::MESSAGE_RECEPTION,
         bridge::LATENCY_TOLERANCE_REPORTING_RECEPTION,
         0,
     );
     update(
         registers,
-        bridge,
+        Block::Bridge,
         bridge::WINDOW_CAPABILITIES,
         bridge::PREFETCH_WINDOW_64_BIT,
         bridge::PREFETCH_WINDOW_64_BIT,
     );
+}
 
-    registers.wait_milliseconds(RESET_HOLD_MILLISECONDS);
-    if let Some(pin) = port.reset_pin {
-        drive_reset_pin(registers, pin, false);
-    }
-    registers.wait_milliseconds(RESET_HOLD_MILLISECONDS);
-
+/// Up to [`LINK_POLLS`] reads of the link status, [`LINK_POLL_INTERVAL_MILLISECONDS`] apart:
+/// whether it came up, how many reads, and the last word.
+fn poll_link(registers: &mut dyn Registers, glue_base: u32) -> (bool, u32, u32) {
+    let top_group = Block::SystemTopGroupController;
     let mut link_polls = 0;
     let mut link_status = 0;
     let mut link_up = false;
@@ -291,13 +318,18 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
         }
         registers.wait_milliseconds(LINK_POLL_INTERVAL_MILLISECONDS);
     }
+    (link_up, link_polls, link_status)
+}
 
+/// Translation entries 0 (configuration), 1 (32-bit memory) and 2 (prefetchable memory, when the
+/// port has it); how many were programmed.
+fn program_windows(registers: &mut dyn Registers, port: &Port) -> Result<u32, Failure> {
     let mut windows = 0;
     let mut program = |registers: &mut dyn Registers, index: u32, window: Window, pci: u64| {
         let entry = bridge::outbound_window(index, window.physical_address, pci, window.size_bytes)
             .ok_or(Failure::Window(index))?;
         for (offset, value) in entry {
-            registers.write(bridge, offset, value);
+            registers.write(Block::Bridge, offset, value);
         }
         windows += 1;
         Ok(())
@@ -312,11 +344,5 @@ pub fn bring_up(registers: &mut dyn Registers, port: &Port) -> Result<BroughtUp,
     if let Some(window) = port.prefetch_memory {
         program(registers, 2, window, window.physical_address)?;
     }
-
-    Ok(BroughtUp {
-        link_up,
-        link_polls,
-        link_status,
-        windows,
-    })
+    Ok(windows)
 }

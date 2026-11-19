@@ -122,7 +122,7 @@ pub struct Port {
     pub number: PortNumber,
     /// The bridge's register window, `reg-names = "apb"`.
     pub bridge: Window,
-    /// The configuration window, `reg-names = "cfg"`, ECAM-shaped once [`bring_up`] has run.
+    /// The configuration window, `reg-names = "cfg"`, ECAM-shaped once [`bring_up`](crate::bring_up()) has run.
     pub configuration: Window,
     /// The 32-bit non-prefetchable memory range the kernel places BARs in.
     pub memory_32_bit: Window,
