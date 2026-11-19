@@ -27,9 +27,151 @@ crates leave in this order): after `machine_statistics_contract`,
 Reuse: `script/crate-move --dry-run`, the template `nifeos/crate-workflows` and its scaffold and
 helpers, Kani, cargo-fuzz, the crate's own encoders as seed writers. No new tool.
 
-## Where this stands
+## Finding status
 
-The appendix lists what remains and what holds each: [where this stands](1082-capability-manifest-note-outside-review/where-this-stands.md).
+- P0-1, the manifest cannot stand alone: Done, [#3643](https://github.com/nifeos/nife/pull/3643).
+- P0-2, there is no README: Open. The README is in the scaffold's sections ([#3643](https://github.com/nifeos/nife/pull/3643)); the
+  stranger run is recorded in `docs/stranger-test.md`, which the template's scaffold supplies, in
+  the move pull request.
+- P0-3, the encoders accept manifests the decoder refuses: Done, [#3565](https://github.com/nifeos/nife/pull/3565), [#3643](https://github.com/nifeos/nife/pull/3643).
+- P1-4, the shipped text names a person and cites the tree: Done, [#3643](https://github.com/nifeos/nife/pull/3643). Only the `Name:`
+  blocks remain, and the move strips them.
+- P1-5, stale documentation: Done, [#3643](https://github.com/nifeos/nife/pull/3643).
+- P1-6, private names break the spelled-out rule: Done, [#3643](https://github.com/nifeos/nife/pull/3643).
+- P1-7, the tests and examples depend on nife's catalog: Done, [#3643](https://github.com/nifeos/nife/pull/3643), [#3727](https://github.com/nifeos/nife/pull/3727).
+  `every_compiled_in_manifest_round_trips` runs in `crates/program_table`, which holds the catalog.
+- P1-8, the fuzz target and seeds stay behind: Open. `tests/fuzz_seed.rs` still reads
+  `../../fuzz/seeds/` and the target is in nife's fuzz workspace; the move pull request gives the
+  crate a `fuzz/` workspace with the target and its 14 seeds, reads the seeds from
+  `CARGO_MANIFEST_DIR`, and drops the target from nife's.
+- P1-9, the template refuses the fuzz opt-in over `carry!`: Done (maintainer, two-way), [#3643](https://github.com/nifeos/nife/pull/3643).
+  The weekly opt-in stays off, the crate is fuzzed on the project's own host, and the template's
+  scan does not change.
+- P2-10, `Error` is not `Display` or `Error`: Done, [#3565](https://github.com/nifeos/nife/pull/3565), [#3643](https://github.com/nifeos/nife/pull/3643).
+- P2-11, `Zones` lacks `len`, and the views differ on lifetimes: Done, [#3643](https://github.com/nifeos/nife/pull/3643).
+- P2-12, the proofs cover version 1 only: Done, [#3643](https://github.com/nifeos/nife/pull/3643).
+- P2-13, the note header is written four times: Done, [#3643](https://github.com/nifeos/nife/pull/3643).
+- P2-14, the `interfaces_note` dev-dependency: Done, [#3643](https://github.com/nifeos/nife/pull/3643).
+- P2-15, `std` inside a `no_std` crate: Done, [#3643](https://github.com/nifeos/nife/pull/3643).
+- The wire literal `nife`: Done (ruled 2026-11-14 UTC, option A), [#3575](https://github.com/nifeos/nife/pull/3575).
+- The `_LEN` family: Open. Built as the `_BYTES` names ([#3643](https://github.com/nifeos/nife/pull/3643)), provisional; ratification is
+  under Open decisions.
+- `service` as a yes-or-no function: Open. Built as `asks_service` ([#3643](https://github.com/nifeos/nife/pull/3643)), provisional;
+  ratification is under Open decisions.
+- `VERSION` as the name of version 1: Open. Built as `BARE_VERSION` ([#3643](https://github.com/nifeos/nife/pull/3643)), provisional;
+  ratification is under Open decisions.
+- BUGS, the two statics `carry!` emits: Open. `NIFE_MANIFEST_NOTE` and `NIFE_SUBTREE_GRANTS_NOTE`
+  are identifiers, not wire literals, so a rename lane gives them names that do not spell nife
+  before the move; the names are two-way, and the maintainer rules them provisionally.
+  `globally_unique_identifier_partition_table`'s `NIFE_DATA` and `NIFE_BOOT` are that crate's own.
+- The move: Open. No review package exists under `notes/crate-reviews/`, and
+  nifeos/capability_manifest_note does not exist; a package lane comes first, then the clearance
+  under Open decisions.
+
+## Open decisions
+
+### Ratify the eleven `_BYTES` names
+
+Background: `capability_manifest_note` writes and reads the ELF note a program carries to ask for
+authority. Its public byte lengths and the functions that compute them were named `_LEN`. The units
+rule says a length carries its unit, and gives `MAXIMUM_NAME_BYTES, never MAXIMUM_NAME_LEN` as its
+own example, so the crate's names now end in `_BYTES`: `DESCRIPTOR_BYTES`, `NOTE_BYTES`,
+`SUBTREE_GRANTS_BYTES`, `SUBTREE_GRANTS_NOTE_BYTES`, `VERB_RECORD_BYTES`, `MAXIMUM_ZONE_BYTES`,
+`zoned_descriptor_bytes`, `serviced_descriptor_bytes`, `zoned_note_bytes`, `serviced_note_bytes`
+and `verbs_descriptor_bytes`. The rule decided the suffix. The choice the rule did not make is the
+word `descriptor` in the middle of the functions: `zoned_len` did not say what it measured, and
+`zoned_note_len` beside it measured something else. Callers in nife (`program_asks`,
+`system_initializer`, `jig`, `xtask`) use the new names; each `Name:` block is provisional.
+
+Recommendation: A.
+
+- A. Ratify the eleven as built.
+- B. Ratify the suffix and drop `descriptor` from the functions (`zoned_bytes`, `serviced_bytes`,
+  `verbs_bytes`), keeping `_note_` where the function measures the whole note.
+
+Door: two-way inside nife; one-way at the first publish, when each name is in users' code.
+
+Prior art: std names a constant by what it counts (`u32::BITS`). POSIX names limits by thing and
+unit (`NAME_MAX`, `PATH_MAX`, bytes by convention). The Linux kernel's ELF code says `n_namesz` and
+`n_descsz` after the specification, keeping "desc" to tell the descriptor from the note. Where nife
+differs: the unit is spelled out, not left to convention. Example: a reader of
+`const D: [u8; capability_manifest_note::zoned_descriptor_bytes(ZONES)]` learns at the call that the
+number is bytes of descriptor, not a count of zones.
+
+What it blocks: the first publish.
+
+### Ratify `asks_service`
+
+Background: `pub fn asks_service(d: &[u8]) -> Result<bool, Error>` answers whether a program's
+manifest asks to run as a service. It was `service`. The rule for a function that answers yes or no
+asks for `is_`, `has_`, `can_` or a third-person verb phrase, because a bare noun reads as a getter.
+The maintainer decided `asks_service` on 2026-11-14 (UTC), provisionally, using the crate's own
+word for the request; `zones` keeps its name, since it returns a view. Its callers are
+`program_asks` and `jig`.
+
+Recommendation: A.
+
+- A. Ratify `asks_service` as built.
+- B. `is_service`, the plain predicate.
+
+Door: two-way inside nife; one-way at the first publish.
+
+Prior art: std's `Path::is_absolute` and `Metadata::is_dir`; the crate's own `Zones::has_root` and
+`Verbs::is_empty` follow the same rule. `is_service` reads as a property of the program, while the
+manifest only asks and the reader may refuse. Example:
+`if capability_manifest_note::asks_service(d)? { ... }` reads as the condition it is, where
+`service(d)?` read as a getter.
+
+What it blocks: the first publish.
+
+### Ratify `BARE_VERSION`
+
+Background: the note's descriptor has three layouts. Version 1 has no zones and no service byte,
+version 2 (`ZONED_VERSION`) adds zones, and version 3 (`SERVICED_VERSION`) adds the service byte;
+`decode` reads all three. Version 1's constant was `VERSION`, which a stranger reads as the crate's
+or the format's current version. The maintainer decided `BARE_VERSION` on 2026-11-14 (UTC),
+provisionally. The value is a wire byte, 1, and does not change; only the identifier did.
+
+Recommendation: A.
+
+- A. Ratify `BARE_VERSION` as built.
+- B. `PLAIN_VERSION`, or another word for the layout with nothing added.
+
+Door: two-way inside nife; one-way at the first publish.
+
+Prior art: FreeBSD's `NT_FREEBSD_ABI_TAG` names what the version is of, and GNU's
+`GNU_PROPERTY_*` constants name the property, never a bare `VERSION`. Where nife differs: the three
+layouts are named for what each adds. Example:
+`match version { BARE_VERSION => ..., ZONED_VERSION => ..., SERVICED_VERSION => ... }` reads as
+three layouts, where `VERSION` in that list read as a mistake.
+
+What it blocks: the first publish.
+
+### Clear the review, which creates nifeos/capability_manifest_note
+
+Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
+architect reads; clearing it is the go to create the crate's repository and move the crate there.
+No package exists for this crate yet, so a package lane writes one first. The crate leaves in step
+6 of milestone 1017, after `machine_statistics_contract`, `domain_name_resolution_contract` and
+`grant_plan`, and the move pull request carries the stranger run (P0-2) and the fuzz workspace
+(P1-8).
+
+Recommendation: A.
+
+- A. A package lane writes the review package once the two statics are renamed (BUGS), and the
+  architect clears it when it arrives; the move waits for its place in step 6.
+- B. Write the package now, with the statics as a condition of the clearance.
+
+Door: one-way. A repository and a moved crate are acted on by the template's workflows and by
+nife's pins from the first day; moving back is a second move.
+
+Prior art (recalled, not read): the Rust project moved `libc` out of the compiler's tree into a
+repository of its own, and the compiler consumes it back by version. Where nife differs: a review
+package checks that the crate stands alone before it leaves, not after. Example:
+`jh7110_entropy`, whose review was cleared on 2026-11-01 (UTC), lives in nifeos/jh7110_entropy,
+and nife depends on it at a pinned revision.
+
+What it blocks: the move, and so the first tag and the first publish.
 
 ## Goal
 
@@ -50,8 +192,6 @@ The comparison with nearby work is in [the appendix](1082-capability-manifest-no
 Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A door is one-way when
 somebody outside the repository acts on it after the release (a public name, a wire byte, a
 dependency, a license); everything else is two-way and the maintainer decides it.
-
-The ledger of what landed and what is left is in [the appendix](1082-capability-manifest-note-outside-review/ledger.md).
 
 ### P0: blocks the move
 
@@ -118,9 +258,10 @@ The P1 items are in [the appendix](1082-capability-manifest-note-outside-review/
 
 ## Decisions for the architect
 
-Each has the plain background first, then the recommendation, prior art and a concrete example.
-The names of decisions 3 and 4 are two-way before the first tag, and the maintainer has decided
-them, provisionally.
+The architect ruled the wire literal, below. The three decisions on public names (the `_BYTES`
+family, `asks_service` and `BARE_VERSION`) are built under provisional names and wait for the
+architect's ratification under [Open decisions](#open-decisions), with the review clearance that
+creates the repository.
 
 ### The wire literal `nife` in a crate that may not mention nife
 
@@ -154,86 +295,9 @@ Example: a program built today carries `05 00 00 00 | 38 00 00 00 | 01 00 00 00 
 00 | <56 bytes>`. If `OWNER` became anything else, `elf.note(OWNER, MANIFEST)` on that program
 returns no note, and the shell runs it as a native program that hears no words.
 
-### The `_LEN` family of public names
-
-Background: the units rule says a length or a limit carries its unit, and gives `MAXIMUM_NAME_BYTES,
-never MAXIMUM_NAME_LEN` as its own example. The crate's public byte lengths are `DESCRIPTOR_LEN`,
-`NOTE_LEN`, `SUBTREE_GRANTS_LEN`, `SUBTREE_GRANTS_NOTE_LEN`, `VERB_RECORD`, `ZONE_MAXIMUM`,
-`zoned_len`, `serviced_len`, `zoned_note_len`, `serviced_note_len` and `verbs_len`. `ZONE_MAXIMUM`
-mirrors the resolver's `NAME_TEXT_MAXIMUM`, which has the same gap. Every one is a public item of a crate nearly ready for its first tag, and callers in nife (`program_asks`, `system_initializer`, `jig`,
-`xtask`) spell several of them. Their `Name:` blocks are provisional.
-
-Recommendation: rename before the first tag, in one lane, with nife's callers in the same pull
-request: `DESCRIPTOR_BYTES`, `NOTE_BYTES`, `SUBTREE_GRANTS_BYTES`, `SUBTREE_GRANTS_NOTE_BYTES`,
-`VERB_RECORD_BYTES`, `MAXIMUM_ZONE_BYTES`, `zoned_descriptor_bytes`, `serviced_descriptor_bytes`,
-`zoned_note_bytes`, `serviced_note_bytes`, `verbs_descriptor_bytes`. The rule already decides the suffix. The open choice is whether the functions say `descriptor` in the middle, and the recommendation is yes, because `zoned_len` does not say what it measures and `zoned_note_len`
-sits beside it measuring something else.
-
-Prior art: std names a method `len` and a constant by what it counts (`u32::BITS`, `size_of::<T>()`). POSIX names limits by thing and unit (`NAME_MAX`, `PATH_MAX`, in bytes by convention and documented as such). The Linux kernel's ELF code names note sizes `n_namesz` and
-`n_descsz` after the specification. The template's `unit_symbols.py` does not catch `_LEN`
-because it is a word, not a symbol; the rule does.
-
-Example: a stranger reading `const D: [u8; capability_manifest_note::zoned_len(ZONES)]` has to
-open the function to learn that the number is bytes of descriptor, not zones; `zoned_descriptor_bytes(ZONES)`
-says it at the call.
-
-Applied, provisional: the units rule decides the `_BYTES` suffix, and the eleven names above,
-`descriptor` in the middle included, are the crate's names. Their `Name:` blocks stay provisional
-until the crate's name review.
-
-### `service` as the name of a yes-or-no function
-
-Background: `pub fn service(d: &[u8]) -> Result<bool, Error>` answers whether the manifest asks to
-run as a service. The rule for functions that answer yes or no asks for `is_`, `has_`, `can_` or a
-third-person verb phrase, because a bare noun reads as a getter. The name is provisional and has
-three callers in nife (`program_asks`, `jig`).
-
-Recommendation: `asks_service(d)`, the crate's own word for the request ("the service ask"), with
-`is_service` as the alternative if the architect prefers the plain predicate. `zones(d)` stays: it
-returns a view, not a yes or no.
-
-Prior art: std's `Path::is_absolute`, `Metadata::is_dir`; the crate's own `Zones::has_root` and
-`Verbs::is_empty` already follow the rule.
-
-Example: `if capability_manifest_note::service(d)? { ... }` reads as "if the service", and
-`if capability_manifest_note::asks_service(d)? { ... }` reads as the condition it is.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `service` (`src/lib.rs` line 737) becomes `asks_service`, the crate's own word for
-the request, and its callers in `program_asks` and `jig` follow. `zones` keeps its name.
-
-### `VERSION` as the name of version 1
-
-Background: `pub const VERSION: u32 = 1` is the descriptor version with no zones and no service
-byte; `ZONED_VERSION` is 2 and `SERVICED_VERSION` is 3, and `decode` reads all three. A stranger
-reads `capability_manifest_note::VERSION` as the crate's or the format's current version, and the
-constant's own comment still says it is the only version read (item 5). The name is the lane's own design, and no architect has ratified it.
-
-Recommendation: `BARE_VERSION`, beside `ZONED_VERSION` and `SERVICED_VERSION`, so the three names
-say what each layout adds. The value is a wire byte and does not change; only the identifier does,
-with the same callers as decision 2.
-
-Prior art: `NT_FREEBSD_ABI_TAG` names what the version is of; GNU's `GNU_PROPERTY_*` constants
-name the property, never a bare `VERSION`.
-
-Example: `match version { BARE_VERSION => ..., ZONED_VERSION => ..., SERVICED_VERSION => ... }`
-reads as three layouts; `VERSION => ...` in that list reads as a mistake.
-
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag, which the architect may revisit. `VERSION` (`src/lib.rs` line 117) becomes `BARE_VERSION`, beside `ZONED_VERSION`
-and `SERVICED_VERSION`. The wire byte 1 does not change.
-
 ## Done when
 
 The checks are in [the appendix](1082-capability-manifest-note-outside-review/done-when.md).
-
-## Follow-on
-
-- **Done.** Items 1 to 6 and 10 to 15, the wire literal marker, and the three names the
-  maintainer or the units rule decides; [the ledger](1082-capability-manifest-note-outside-review/ledger.md)
-  says what each became.
-- **Done.** The catalog round trip of item 7, `every_compiled_in_manifest_round_trips`, runs in
-  `crates/program_table`, which holds the catalog.
-- **Outstanding.** The stranger run of item 2 and the fuzz workspace of item 8 belong to the move
-  pull request. The two statics in BUGS want a rename lane.
 
 ## BUGS
 
@@ -253,4 +317,5 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 
 ## Index row
 
-An outside review of `capability_manifest_note` before it leaves. Three items block the move (a manifest that cannot stand alone, no README, and two encoders that build notes their own decoder refuses). Six land before the first tag. They are project-internal citations in shipped text, stale documentation, private names against the spelled-out rule, tests bound to nife's program catalog, the fuzz target and seeds left behind, and the template's `unsafe` scan refusing the opt-in. Six more come after. Four one-way names go to the architect, the wire literal `nife` first.
+An outside review of `capability_manifest_note` before it leaves. Three items block the move (a manifest that cannot stand alone, no README, and two encoders that build notes their own decoder refuses). Six land before the first tag. They are project-internal citations in shipped text, stale documentation, private names against the spelled-out rule, tests bound to nife's program catalog, the fuzz target and seeds left behind, and the template's `unsafe` scan refusing the opt-in. Six more come after. Four decisions on names: the architect ruled that the wire literal `nife` keeps its bytes, and three
+public names wait for ratification.
