@@ -196,19 +196,19 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
 - Item 4, one board's transmit parent: Done, [#3572](https://github.com/nifeos/nife/pull/3572) and
   [#3625](https://github.com/nifeos/nife/pull/3625).
 - Item 5, stale mutation record: Open. The census of run 43876176886 tested 254 mutants and missed
-  6; left are a `.github/mutants-exempts` written from it with one reason per survivor, and the
-  retirement of the crate's rows in `notes/project-metrics/mutation-triage.csv`, which still name
-  `every_reset_released`, `i2c5_ic_clk` and `PmicBus::from_nodes`.
+  6. Left: a `.github/mutants-exempts` written from it with one reason per survivor, and the
+  retirement of the crate's rows in `notes/project-metrics/mutation-triage.csv`. Those rows still
+  name `every_reset_released`, `i2c5_ic_clk` and `PmicBus::from_nodes`.
 - Item 6, fractional PLL2: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
 - Item 7, `was_already_up`: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
-- Item 8, I2C count margin and floor: Open. The margin is documented; the floor stays 1 and the
+- Item 8, I2C count margin and floor: Open. The doc states the margin; the floor stays 1 and the
   test keeps its name until a source confirms the databook minimums (BUGS below).
 - Item 9, `name_index`: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
 - Item 10, fallback addresses: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
 - Item 11, fetch dates: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
 - Item 12, README sections: Done, [#3625](https://github.com/nifeos/nife/pull/3625); the badge row
   arrives with the move.
-- Item 13, manifest and repository plumbing: Open. The manifest is done
+- Item 13, manifest and repository plumbing: Open. The manifest carries its fields
   ([#3625](https://github.com/nifeos/nife/pull/3625)); the repository files (`.github/accepted-words`
   with `jh`, the caller workflows, the `-p1` patches) arrive with the move.
 - Item 14, README prose: Done, [#3625](https://github.com/nifeos/nife/pull/3625).
@@ -220,8 +220,8 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
 - Decision 4, `SD_IO` and the always-on constants: Done,
   [#3572](https://github.com/nifeos/nife/pull/3572).
 - Decision 5, transmit parent from the tree: Done, [#3572](https://github.com/nifeos/nife/pull/3572).
-- The move to nifeos/jh7110_clock_and_reset: Open. The review is cleared and the repository
-  approved (2026-11-11 UTC); no lane has created the repository or moved the crate.
+- The move to nifeos/jh7110_clock_and_reset: Open. The review has its clearance and the
+  repository its approval (2026-11-11 UTC); no lane has created the repository or moved the crate.
 - The server's transmit parent: Open. `jh7110_clock_and_reset_devices` applies the v1.3B parent to
   the device at `0x1603_0000` on every board, and nothing in the kernel calls
   `machine_discovery::jh7110::clock_and_reset::first_ethernet_port_transmit_parent`. Both ends are
@@ -231,11 +231,12 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
   timing (`driver_process_contract::power_management_chip_route`).
 - The board run of the power chip's I2C reset: Open. A board has run it: the bench of
   [#3499](https://github.com/nifeos/nife/pull/3499) in `bench/radon-2026-11-17/`
-  (`pmic-route-step1-3499.log`) resets the board through the route with this crate's timing, 198
-  high counts and 297 low counts at 49.5 MHz. Left: the crate README's BUGS still says no board has
+  (`pmic-route-step1-3499.log`) resets the board through the route. It runs this crate's timing:
+  198 high counts and 297 low counts at 49.5 MHz. Left: the crate README's BUGS still says no board has
   run that timing, and a lane corrects it, citing the log.
 - The `v0.1.0-pre.1` tag: Open. calef's, under "Open decisions" below.
-- Publishing: Open. Held until every outside-review milestone is delivered (2026-11-18 UTC).
+- Publishing: Open. No first publish happens until the last outside-review milestone closes
+  (ruled 2026-11-18 UTC).
 
 ## Open decisions
 
@@ -244,10 +245,10 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
 Background. A crate that leaves this tree gets its own repository, and nife then depends on it by
 a git commit. A tag such as `v0.1.0-pre.1` names that commit as a release candidate, with
 `Cargo.toml` carrying the same version, so nife pins a tag and not an arbitrary commit, and the
-plain `v0.1.0` stays free for the crates.io release. Seven cleared crates were approved for this
-tag on 2026-11-11 (UTC), each after its move check passed and its release dry run was green. That
-approval named those crates; this one was cleared the same day but is not among them, and it has
-no repository yet.
+plain `v0.1.0` stays free for the crates.io release. An approval of 2026-11-11 (UTC) gave seven
+cleared crates this tag, each after its move check passed and its release dry run was green. That
+approval named those crates. This crate had its clearance the same day but is not among them, and
+it has no repository yet.
 
 Recommendation: A.
 
@@ -256,8 +257,8 @@ Recommendation: A.
 - B. Rule it when the move lands, as its own question then.
 - C. No pre-release tag: nife pins a commit of the repository's `main` until the crates.io release.
 
-Door: one-way. A pushed tag is fetched and pinned by others at once, and a tag that moves breaks
-every pin that named it; the version it burns cannot be reused for another commit.
+Door: one-way. Others fetch and pin a pushed tag at once, and a tag that moves breaks every pin
+that named it; nobody can reuse the version it burns for another commit.
 
 Prior art. Semantic Versioning 2.0.0 marks a candidate with a pre-release identifier
 (`0.1.0-pre.1`), and Cargo never selects a pre-release for a requirement that does not name one,
@@ -269,9 +270,9 @@ Blocks: the tag, and with it nife's pin by tag; not the move.
 
 ## Follow-on
 
-- **Outstanding.** Item 5's exempts file and the retirement of the crate's rows in nife's triage
-  ledger, the move with its repository files (item 13), the server's per-board transmit parent and
-  the README's board sentence; the finding status above says what each needs.
+- **Outstanding.** Item 5's exempts file and triage-ledger cleanup, the move with its repository
+  files (item 13), the server's per-board transmit parent and the README's board sentence. The
+  finding status above says what each needs.
 - **Done.** The five decisions and items 1 to 4, 6, 7 and 9 to 14, built in
   [#3572](https://github.com/nifeos/nife/pull/3572) and
   [#3625](https://github.com/nifeos/nife/pull/3625).
