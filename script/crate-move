@@ -45,7 +45,7 @@
 #    on the crate by `path = ".."`, each target that links this crate and no other crate of the tree,
 #    its seeds and the crate's fixture directories that `script/fuzz` adds, in `fuzz/corpus/<target>`,
 #    the seed scripts, and a `fuzz/README.md` made of the targets' sections of the notes. The weekly
-#    caller passes `fuzz: true` only when the crate has no `unsafe` code (weekly fuzz is opt-in,
+#    caller passes `public-crash-inputs: true` only when the crate has no `unsafe` code (weekly fuzz is opt-in,
 #    ruled for crates without it); otherwise it stays `false` and the run says why. Unless
 #    `--no-build`, it then builds the targets with `cargo +nightly fuzz build` and runs each once
 #    over its corpus (`-runs=0`). The output of a run is withheld on failure, since it holds the
