@@ -6,7 +6,7 @@ records item by item.*
 
 ## In one paragraph
 
-An ELF note, type `INTERFACES` (4), that lists the interface versions a program was built against:
+An ELF note, type `INTERFACES` (4), that lists the interface versions a program targets:
 a version word, a count, then records of a `u64` interface id and a `u32` version in strictly
 ascending id order. The crate writes the note at compile time (`carry_interfaces!`), decodes it from
 untrusted bytes without a panic (`decode_interfaces`) and checks a declared version against the
