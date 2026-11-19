@@ -11,7 +11,7 @@ than the frame it reserved the bit for.
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -260,3 +260,3 @@
+@@ -268,3 +268,3 @@
          self.hint = i + 1;
 -        Some(PageFrame(self.base + i as u64 * FRAME_BYTES))
 +        Some(PageFrame(self.base + i as u64))

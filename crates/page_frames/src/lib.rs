@@ -19,6 +19,8 @@ const _: () = assert!(usize::BITS >= 64, "page_frames needs a 64-bit usize");
 
 /// 4 KiB. The unit the memory management unit (MMU) translates in, so it is the unit we
 /// allocate in.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1103-renames-package.
 pub const FRAME_BYTES: u64 = 4096;
 
 /// A physical address, guaranteed frame-aligned.
@@ -50,6 +52,8 @@ impl PageFrame {
     ///
     /// # Panics
     /// If `physical_address` is not frame-aligned.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1103-renames-package.
     #[must_use]
     pub const fn from_physical_address(physical_address: u64) -> Self {
         assert!(
@@ -79,6 +83,8 @@ impl PageFrame {
     }
 
     /// The physical address of this frame's first byte.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1103-renames-package.
     #[must_use]
     pub const fn physical_address(self) -> u64 {
         self.0
@@ -96,6 +102,8 @@ pub struct Stats {
 
 impl Stats {
     /// Frames currently available: `frames - used_frames`.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1103-renames-package.
     #[must_use]
     pub fn free_frames(&self) -> usize {
         self.frames - self.used_frames

@@ -9,7 +9,7 @@ kernel the last frame of a DMA ring would be handed to the next caller while the
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -295,3 +295,3 @@
+@@ -303,3 +303,3 @@
              if run == count {
 -                for j in run_start..run_start + count {
 +                for j in run_start..run_start + count - 1 {

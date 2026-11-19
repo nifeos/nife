@@ -12,7 +12,7 @@ the end of the bitmap.
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -154,3 +154,3 @@
+@@ -162,3 +162,3 @@
      pub const fn bitmap_bytes(frames: usize) -> usize {
 -        frames.div_ceil(8)
 +        frames / 8

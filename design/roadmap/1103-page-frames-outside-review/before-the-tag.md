@@ -90,9 +90,10 @@ An appendix to [the milestone](../1103-page-frames-outside-review.md).
    Evidence: `src/lib.rs` line 17, 48, 62, `69-74`, `78`, `135`, `185`, `201`, `390`, `409-419`.
    `crates/page_tables/src/tlb_flush.rs` line 41. `design/naming/crates.md` line 65.
    Change: done by one rename lane across the tree (about 60 `FRAME_SIZE` sites in `kernel/` and
-   `system_tests/`): `FRAME_BYTES`, `physical_address`, `from_physical_address`, the parameters
-   `bytes` and `span_bytes`, the `Stats` fields `frames` and `used_frames`, `Stats::free_frames`,
-   the private `is_index_used`, and the harness locals `bitmap`, `allocator`, `first` and `second`.
+   `system_tests/`). The names are `FRAME_BYTES`, `physical_address`, `from_physical_address`, the
+   parameters `bytes` and `span_bytes`, the `Stats` fields `frames` and `used_frames`, and
+   `Stats::free_frames`. The private `is_index_used` and the harness locals `bitmap`,
+   `allocator`, `first` and `second` follow.
    All ship provisional. The rule that a crate carries no alias for this tree's own earlier
    spelling before its first release refuses `#[doc(alias = "FRAME_SIZE")]`.
    Door: one-way after a release for the public names. Two-way for the rest. Effort: S after the

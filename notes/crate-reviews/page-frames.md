@@ -6,7 +6,7 @@ page.*
 
 The architect reads this to ratify the crate's public names in one pass and to clear the crate for
 its move to its own repository. It follows
-[milestone 1103 (page_frames outside review)](../../design/roadmap/1103-page-frames-outside-review.md)
+[milestone 1103 (what an outside maintainer would fix before 0.1.0)](../../design/roadmap/1103-page-frames-outside-review.md)
 and describes the crate as `main` plus this branch leaves it.
 
 ## In one paragraph
@@ -69,7 +69,7 @@ write. The architect weighs these; this package does not.
 | `cargo kani -p page_frames` | 9 harnesses verified, 0 failures, 1 min 51 s, 476 MB peak; the slowest is `the_used_count_is_the_number_of_set_bits` at 50 s |
 | the falsification patches (`patch -p1 --dry-run -F0`) | each of the nine applies at no offset |
 | `script/crate-standalone --no-kani page_frames` | seven failures, all the move lane's (see below); the build passes on the host and three targets |
-| `script/crate-move --dry-run` | stages; four findings, all for the move lane: no README, the manifest inherits from the workspace so `cargo generate-lockfile` fails in the copy, the licenses are absent, and the README the move scaffolds exceeds the prose caps until it is written |
+| `script/crate-move --dry-run` | stages; four findings, all for the move lane. There is no README. The manifest inherits from the workspace, so `cargo generate-lockfile` fails in the copy. The licenses are absent. The scaffolded README exceeds the prose caps until it is written |
 | `script/names page_frames` and `python3 helpers/name_release.py --draft page_frames` | the crate name ratified; 21 names: 1 ratified, 2 provisional with a block, 18 with no block |
 | the template's naming checks (`question_shape`, `contract_names`, `spelled_out`, `unit_symbols`, `register_names`, `british_spelling`) | each judges 120 names and refuses none |
 | `abbreviations` (report only) | finds one component, `allocator`, eight times, which its word list does not hold; a question for the architect |
@@ -92,8 +92,8 @@ No nife type, capability or handoff appears in a public signature.
 
 What a stranger may find surprising:
 
-- The allocator starts with every frame used, and `mark_free` frees only whole frames inside the
-  range while `mark_used` claims every frame the range touches, so an edge mistake wastes a frame
+- The allocator starts with every frame used. `mark_free` frees only whole frames inside the
+  range, and `mark_used` claims every frame the range touches. An edge mistake wastes a frame
   and never hands out a held one.
 - `from_physical_address` panics on an unaligned address; `try_aligned` returns `None` and
   `containing` rounds down.
@@ -103,11 +103,7 @@ What a stranger may find surprising:
 
 ## Proofs
 
-Nine Kani harnesses, each with a falsification patch. They prove that an allocated frame is aligned and in range, that two
-allocations differ, that a contiguous run was free and is now used, that `mark_free` frees only
-whole frames inside its range, that `mark_used` claims exactly the frames it touches, that the used
-count is the number of set bits, that `index_of` inverts frame addressing, that `bitmap_bytes`
-covers every frame and that `containing` rounds down within a frame. Each patch breaks the property
+Nine Kani harnesses, each with a falsification patch. They prove that an allocated frame is aligned and in range. Two allocations differ. A contiguous run was free and is now used. `mark_free` frees only whole frames inside its range, and `mark_used` claims exactly the frames it touches. The used count is the number of set bits. `index_of` inverts frame addressing, `bitmap_bytes` covers every frame and `containing` rounds down within a frame. Each patch breaks the property
 it names and fails its harness.
 
 ## Names

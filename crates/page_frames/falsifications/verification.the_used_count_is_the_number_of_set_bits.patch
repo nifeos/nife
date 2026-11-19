@@ -10,7 +10,7 @@ Expected to fail: the harness's `assert_eq!(allocator.used, set_bits)`, on a run
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -298,3 +298,3 @@
+@@ -306,3 +306,3 @@
                  }
 -                self.used += count;
 +                self.used += 1;
