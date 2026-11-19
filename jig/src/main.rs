@@ -48,7 +48,7 @@ use package_index::{
 use pinned_tls_client::listed::{self, root_der};
 use pinned_tls_client::{PinnedPeer, Session};
 use program_table::spawnproto::{self, Activation, ActivationStatus as S};
-use socket_fixture::{PACKAGE_PEER_HOST, PACKAGE_PEER_ADDRESS, PACKAGE_PEER_PORT};
+use socket_fixture::{PACKAGE_PEER_ADDRESS, PACKAGE_PEER_HOST, PACKAGE_PEER_PORT};
 use user_mode_runtime as rt;
 
 // **What these bytes ask for when they are run by path, as installed bytes** (milestone 597 (a

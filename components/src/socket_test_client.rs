@@ -810,7 +810,7 @@ const CATALOGUE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00C0_0000)
 pub(crate) const DIGEST_REFUSED: u64 = 3;
 // The package source the runners put at 10.0.2.9:8080 (`helpers/package-http-peer`).
 use socket_fixture::{
-    PACKAGE_PEER_HOST, PACKAGE_PEER_ADDRESS as PACKAGE_IP, PACKAGE_PEER_PORT as PACKAGE_PORT,
+    PACKAGE_PEER_ADDRESS as PACKAGE_IP, PACKAGE_PEER_HOST, PACKAGE_PEER_PORT as PACKAGE_PORT,
 };
 
 /// **Rung 3a's fetch and verify** (milestone 198 (a package manager)): `GET` a package over plain
