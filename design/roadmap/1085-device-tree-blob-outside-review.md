@@ -31,7 +31,7 @@ tool.
 
 The ids are the review's own; P0 and P1 are in [the
 appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
-items](1085-device-tree-blob-outside-review/later-items.md), D1 to D4 under [Ruled decisions](#ruled-decisions), and D5 and D6 under [Open
+items](1085-device-tree-blob-outside-review/later-items.md), D1 to D5 under [Ruled decisions](#ruled-decisions), and D6 under [Open
 decisions](#open-decisions).
 
 - P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
@@ -59,8 +59,8 @@ decisions](#open-decisions).
 - P2-10 to P2-13, the depth counters, `MAXIMUM_DEPTH`, a trailing partial `reg` pair and private
   names: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
-- D1 to D4 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
-- D5 and D6: Open. Built as recommended, awaiting ratification; each is a subsection under [Open
+- D1 to D5 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
+- D6: Open. Built as recommended, awaiting ratification; it is a subsection under [Open
   decisions](#open-decisions).
 - F-size, `Region::size` is a length with no unit: Open. `register_names` refuses it at `src/lib.rs`
   line 26. It is two-way while unreleased, and the maintainer rules the rename provisionally; the
@@ -121,6 +121,17 @@ separated and the unit last, which matches the existing `total_size()` method. I
 Door: one-way at publish. Prior art: Linux's `MAX_FDT_SIZE`, which lends its value; `dtoolkit` has
 no ceiling. Example: `if total > MAXIMUM_TOTAL_SIZE_BYTES { return Err(Error::TooLarge(total)) }`.
 
+### Name the reservation block `memory_reservations` (D5)
+
+Ruled 2026-11-19 (UTC): option A. `memory_reservations`, the specification's term for the memory
+reservation block, is ratified as built. `reserved_memory_regions` keeps its name for the
+`/reserved-memory` node's children, and the old `reserved_regions` has no alias. Two lookups read
+two sources, and the kernel calls both, so the names say which is which.
+
+Door: one-way at publish. Prior art: the `fdt` crate's `memory_reservations()`, libfdt's
+`fdt_get_mem_rsv`, and `dtoolkit`'s `reserved_memory()` for the node. Example:
+`tree.memory_reservations(&mut out)` beside `tree.reserved_memory_regions(&mut out)`.
+
 ### Property is spelled out across the crate
 
 The crate spells `property` out in every public item, parameter and doc comment. The one `prop`
@@ -143,25 +154,9 @@ Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`.
 
 ## Open decisions
 
-Code carries the remaining name and surface decisions as recommended, each under a `Name:
-provisional` block. Each is two-way while the crate has no release and one-way at its first publish. The
-`dtoolkit` path makes it likely the crate never publishes, so every one of them waits on the last
-two decisions here.
-
-### Name the reservation block `memory_reservations` (D5)
-
-Two lookups read two sources: the memory reservation block before the structure block, and the
-`/reserved-memory` node's children. `reserved_regions` beside `reserved_memory_regions` did not say
-which is which, and the kernel calls both. Recommendation: A.
-
-- A. Ratify `memory_reservations` for the block, the specification's term, as built;
-  `reserved_memory_regions` keeps its name.
-- B. Restore `reserved_regions`.
-
-Door: one-way at publish. Prior art: the `fdt` crate's `memory_reservations()`, libfdt's
-`fdt_get_mem_rsv`, and `dtoolkit`'s `reserved_memory()` for the node. Example:
-`tree.memory_reservations(&mut out)` beside `tree.reserved_memory_regions(&mut out)`. Blocks: the
-tag.
+Code carries the remaining surface decision (D6) as recommended. It is two-way while the crate has
+no release and one-way at its first publish. The `dtoolkit` path makes it likely the crate never
+publishes, so D6 waits on the last two decisions here.
 
 ### Keep `from_ptr` as the crate's one `unsafe` function (D6)
 
@@ -209,7 +204,7 @@ happens at all.
 No review package exists, and clearance follows one. Recommendation: B, because every move item
 lapses if the switch comes first, and a package written first would go to waste.
 
-- A. Write the package now and clear the move after the ratification of D5 and D6.
+- A. Write the package now and clear the move after the ratification of D6.
 - B. Hold the package and the move until the `dtoolkit` decision; write the package only if C wins
   there.
 
@@ -246,7 +241,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
-  half of P2-9, F-size, F-package and BUGS-239, and the four open decisions.
+  half of P2-9, F-size, F-package and BUGS-239, and the three open decisions.
 
 ## BUGS
 
@@ -268,4 +263,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 to D4 are ruled and four remain open.
+that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 to D5 are ruled and three remain open.
