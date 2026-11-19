@@ -259,7 +259,7 @@ fn inherits_the_interrupt_parent_from_the_root() {
     let phandle = u32::from_be_bytes(parent[..4].try_into().unwrap());
 
     let cells = tree
-        .phandle_property(phandle, b"#interrupt-cells")
+        .pointer_handle_property(phandle, b"#interrupt-cells")
         .unwrap()
         .expect("the GIC declares its interrupt cells");
     assert_eq!(

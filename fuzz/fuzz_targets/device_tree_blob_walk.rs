@@ -50,9 +50,9 @@ fuzz_target!(|data: &[u8]| {
         && parent.len() >= 4
     {
         let ph = u32::from_be_bytes([parent[0], parent[1], parent[2], parent[3]]);
-        let _ = dtb.phandle_property(ph, b"#interrupt-cells");
+        let _ = dtb.pointer_handle_property(ph, b"#interrupt-cells");
     }
-    let _ = dtb.phandle_property(1, b"#interrupt-cells");
+    let _ = dtb.pointer_handle_property(1, b"#interrupt-cells");
     for compat in [
         &b""[..],
         b"arm,pl031",

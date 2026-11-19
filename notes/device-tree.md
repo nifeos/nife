@@ -174,7 +174,7 @@ a convention; a real driver matches `compatible`, such as `"arm,cortex-a15-gic"`
 The RTC is `pl031@9010000` on aarch64 `virt` and `rtc@101000` on riscv64, so a prefix that finds one
 finds nothing on the other, while `arm,pl031` and `google,goldfish-rtc` name what a driver can
 drive. `compatible` lists the most specific entry first, and a match on any entry counts.
-`node_property_compatible`, `parent_property_compatible` and `phandle_property` follow the same pattern: the
+`node_property_compatible`, `parent_property_compatible` and `pointer_handle_property` follow the same pattern: the
 deciding property may come after the wanted one in a node, so each open node's candidate is
 remembered and the answer is taken when a matching node closes.
 

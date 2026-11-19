@@ -298,7 +298,7 @@ pub fn discover(
             clocks_and_resets: DevicePlan::from_specifiers(
                 tree.node_property_compatible(compatible, b"clocks")?,
                 tree.node_property_compatible(compatible, b"resets")?,
-                |phandle, name| tree.phandle_property(phandle, name),
+                |phandle, name| tree.pointer_handle_property(phandle, name),
             )?,
         }));
     }

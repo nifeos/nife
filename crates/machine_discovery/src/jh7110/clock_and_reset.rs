@@ -117,7 +117,7 @@ pub fn pmic_bus(tree: &DeviceTreeBlob<'_>) -> Result<PowerManagementChipBus, Err
             bus_reg,
             clocks,
             resets,
-            |phandle, name| tree.phandle_property(phandle, name),
+            |phandle, name| tree.pointer_handle_property(phandle, name),
         );
     }
     Ok(PowerManagementChipBus::without_power_management_chip())
@@ -147,7 +147,7 @@ pub fn first_ethernet_port_transmit_parent(
         return jh7110_clock_and_reset::gmac0_transmit_parent(
             tree.node_property_compatible(compatible, b"assigned-clocks")?,
             tree.node_property_compatible(compatible, b"assigned-clock-parents")?,
-            |phandle, name| tree.phandle_property(phandle, name),
+            |phandle, name| tree.pointer_handle_property(phandle, name),
         );
     }
     Ok(TransmitParent::Unassigned)

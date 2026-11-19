@@ -246,7 +246,7 @@ fn follows_the_serial_interrupt_parent_to_the_plic() {
     let phandle = u32::from_be_bytes(parent[..4].try_into().unwrap());
 
     let cells = tree
-        .phandle_property(phandle, b"#interrupt-cells")
+        .pointer_handle_property(phandle, b"#interrupt-cells")
         .unwrap()
         .expect("the PLIC declares its interrupt cells");
     assert_eq!(
@@ -258,12 +258,12 @@ fn follows_the_serial_interrupt_parent_to_the_plic() {
     // A phandle no node carries, and a property the matched node does not have: both are `None`,
     // not errors, same posture as node_property_compatible.
     assert_eq!(
-        tree.phandle_property(0xdead_beef, b"#interrupt-cells")
+        tree.pointer_handle_property(0xdead_beef, b"#interrupt-cells")
             .unwrap(),
         None
     );
     assert_eq!(
-        tree.phandle_property(phandle, b"no-such-prop").unwrap(),
+        tree.pointer_handle_property(phandle, b"no-such-prop").unwrap(),
         None
     );
 }

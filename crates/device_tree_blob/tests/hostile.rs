@@ -191,7 +191,7 @@ fn a_node_at_the_deepest_depth_is_found_and_one_deeper_is_refused() {
         tree.node_property_compatible(b"arm,pl031", b"reg"),
         Err(Error::TooDeep)
     );
-    assert_eq!(tree.phandle_property(1, b"reg"), Err(Error::TooDeep));
+    assert_eq!(tree.pointer_handle_property(1, b"reg"), Err(Error::TooDeep));
     assert_eq!(tree.memory_regions(&mut out), Err(Error::TooDeep));
     assert_eq!(tree.reserved_memory_regions(&mut out), Err(Error::TooDeep));
     assert_eq!(tree.initial_ramdisk(), Err(Error::TooDeep));
@@ -997,7 +997,7 @@ fn every_walker_answers_at_the_deepest_depth_and_refuses_one_deeper() {
         "the first bus is the target, and neither it nor the root has the property"
     );
     assert_eq!(
-        dt.phandle_property(7, b"clock-frequency"),
+        dt.pointer_handle_property(7, b"clock-frequency"),
         Ok(Some(frequency))
     );
 
@@ -1012,7 +1012,7 @@ fn every_walker_answers_at_the_deepest_depth_and_refuses_one_deeper() {
         Err(Error::TooDeep)
     );
     assert_eq!(
-        dt.phandle_property(7, b"clock-frequency"),
+        dt.pointer_handle_property(7, b"clock-frequency"),
         Err(Error::TooDeep)
     );
 }
@@ -1065,7 +1065,7 @@ fn a_tree_whose_nesting_does_not_balance_is_refused() {
             dt.node_property_compatible(b"absent", b"reg"),
             Err(Error::BadStructure)
         );
-        assert_eq!(dt.phandle_property(1, b"reg"), Err(Error::BadStructure));
+        assert_eq!(dt.pointer_handle_property(1, b"reg"), Err(Error::BadStructure));
         assert_eq!(
             dt.reserved_memory_regions(&mut out),
             Err(Error::BadStructure)
@@ -1106,7 +1106,7 @@ fn a_sibling_does_not_answer_with_its_predecessors_property() {
         "`second` has no clock-frequency; `first`'s is not an answer for it"
     );
 
-    // `phandle_property`: matched by `phandle`.
+    // `pointer_handle_property`: matched by `phandle`.
     let mut b = Blob::new();
     b.begin_node(b"");
     b.begin_node(b"first");
@@ -1120,7 +1120,7 @@ fn a_sibling_does_not_answer_with_its_predecessors_property() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
     assert_eq!(
-        dt.phandle_property(2, b"clock-frequency"),
+        dt.pointer_handle_property(2, b"clock-frequency"),
         Ok(None),
         "phandle 2 has no clock-frequency; phandle 1's is not an answer for it"
     );

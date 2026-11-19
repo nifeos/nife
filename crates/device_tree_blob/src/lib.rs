@@ -581,7 +581,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// matched node closes for the same reason. It exists because labels differ between machines:
     /// the PLIC is `plic@c000000` on QEMU `virt` and `interrupt-controller@c000000` on the JH7110.
     ///
-    /// Name: provisional. Refused `node_prop_compatible`, with no alias for it (milestone 1085
+    /// Name: ratified 2026-11-19. Refused `node_prop_compatible`, with no alias for it (milestone 1085
     /// (what an outside maintainer would fix before it leaves) D1).
     pub fn node_property_compatible(
         &self,
@@ -600,7 +600,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// the bus. The parent's slot is filled when the child closes, because a node's properties
     /// precede its first subnode.
     ///
-    /// Name: provisional, 2026-09-25. Refused `parent_prop_compatible`, the abbreviation, with no
+    /// Name: ratified 2026-11-19. Refused `parent_prop_compatible`, the abbreviation, with no
     /// alias for it; `property` is spelled out across the crate's lookups.
     pub fn parent_property_compatible(
         &self,
@@ -661,7 +661,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// its entry width depends on three different nodes' cell counts). The caller gets the bytes
     /// (big-endian cells, as the specification lays them out) and owns the interpretation.
     ///
-    /// Name: provisional. Refused `node_prop`, with no alias for it (milestone 1085 (what an
+    /// Name: ratified 2026-11-19. Refused `node_prop`, with no alias for it (milestone 1085 (what an
     /// outside maintainer would fix before it leaves) D1).
     pub fn node_property(&self, prefix: &[u8], name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
         let mut target_at: Option<usize> = None;
@@ -702,7 +702,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// value wins, per the spec. A node's properties precede its children, so one walk suffices:
     /// the answer is taken at the target's `END_NODE`.
     ///
-    /// Name: provisional. Refused `node_prop_inherited`, with no alias for it (milestone 1085 (what
+    /// Name: ratified 2026-11-19. Refused `node_prop_inherited`, with no alias for it (milestone 1085 (what
     /// an outside maintainer would fix before it leaves) D1).
     pub fn node_property_inherited(
         &self,
@@ -744,19 +744,27 @@ impl<'a> DeviceTreeBlob<'a> {
         Ok(None)
     }
 
-    /// The raw bytes of property `name` on the node whose phandle (`phandle`, the specification's
-    /// name for a node's numeric handle, which other nodes use to refer to it) is `phandle`.
-    /// `Ok(None)` when no node carries that phandle, or the node has no such property.
+    /// The raw bytes of property `name` on the node whose pointer handle (`phandle`, the
+    /// Devicetree Specification's name for a node's numeric handle, which other nodes use to refer
+    /// to it) is `pointer_handle`. `Ok(None)` when no node carries that pointer handle, or the node
+    /// has no such property.
     ///
     /// How a property that refers to another node is followed, such as `interrupt-parent` to the
     /// controller's `#interrupt-cells`. Both `phandle` and the legacy `linux,phandle` are honored,
     /// because old dtc wrote the latter. As in [`node_property_compatible`](Self::node_property_compatible),
     /// the answer is taken when the matching node closes.
     ///
-    /// Name: provisional. Refused `phandle_prop`, with no alias for it (milestone 1085 (what an
-    /// outside maintainer would fix before it leaves) D1).
-    pub fn phandle_property(&self, phandle: u32, name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
-        // Per open node: `name`'s value, and whether its phandle matched.
+    /// Name: ratified 2026-11-19. Spelled out from the specification's `phandle` ("pointer
+    /// handle"), with `#[doc(alias = "phandle")]` as a search aid for the specification's term;
+    /// refused `phandle_prop`, with no alias for it (milestone 1085 (what an outside maintainer
+    /// would fix before it leaves) D1).
+    #[doc(alias = "phandle")]
+    pub fn pointer_handle_property(
+        &self,
+        pointer_handle: u32,
+        name: &[u8],
+    ) -> Result<Option<&'a [u8]>, Error> {
+        // Per open node: `name`'s value, and whether its pointer handle matched.
         let mut found = [None::<&'a [u8]>; DEPTH_SLOTS];
         let mut matched = [false; DEPTH_SLOTS];
         let mut tokens = self.tokens();
@@ -768,7 +776,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     matched[depth] = false;
                 }
                 Token::EndNode => {
-                    // Depth 1 is the root, which no phandle names in practice.
+                    // Depth 1 is the root, which no pointer handle names in practice.
                     if depth >= 2 && matched[depth] {
                         return Ok(found[depth]);
                     }
@@ -782,7 +790,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     }
                     if (property_name == b"phandle" || property_name == b"linux,phandle")
                         && value.len() == 4
-                        && be32(value, 0)? == phandle
+                        && be32(value, 0)? == pointer_handle
                     {
                         matched[depth] = true;
                     }
@@ -800,7 +808,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// **nodes**, which may exceed `out.len()`; the excess is counted and not written, so a caller
     /// can tell it under-provisioned.
     ///
-    /// Name: provisional. Refused `node_props`, with no alias for it (milestone 1085 (what an
+    /// Name: ratified 2026-11-19. Refused `node_props`, with no alias for it (milestone 1085 (what an
     /// outside maintainer would fix before it leaves) D1).
     ///
     /// # Examples

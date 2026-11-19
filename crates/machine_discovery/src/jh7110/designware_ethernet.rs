@@ -406,7 +406,7 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
         let prop = |name: &[u8]| tree.node_property_compatible(compatible, name);
         let physical_layer_device = match prop(b"phy-handle")?.and_then(first_cell) {
             Some(handle) => {
-                mainline_physical_layer_device(|name| tree.phandle_property(handle, name))?
+                mainline_physical_layer_device(|name| tree.pointer_handle_property(handle, name))?
             }
             None => vendor_physical_layer_device(|name| {
                 tree.node_property(VENDOR_PHYSICAL_LAYER_DEVICE_NODE, name)
