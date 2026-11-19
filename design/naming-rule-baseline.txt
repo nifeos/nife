@@ -129,9 +129,7 @@ crates/pci_configuration_space/src/lib.rs::CLASS_NVME spelled-out
 
 crates/pci_configuration_space/src/lib.rs::mem32_window spelled-out
 
-crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
 
-crates/program_argument_contract/src/lib.rs::from_va spelled-out
 
 crates/program_table/src/spawnproto.rs::prog_id spelled-out
 

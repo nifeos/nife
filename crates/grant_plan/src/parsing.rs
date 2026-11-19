@@ -80,8 +80,8 @@ pub fn argv(
 pub fn check_words(line: &[u8]) -> Result<(), Refusal> {
     let mut used = 0usize;
     each_word(line, &mut |w| {
-        used += 4 + w.len();
-        if used > program_argument_contract::CAPACITY {
+        used += program_argument_contract::record_bytes(w.len());
+        if used > program_argument_contract::MAXIMUM_RECORDS_BYTES {
             Err(Refusal::ArgumentsTooLong)
         } else {
             Ok(())

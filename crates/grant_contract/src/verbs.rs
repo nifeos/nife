@@ -200,7 +200,7 @@ pub fn verb_key<'o>(
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub fn delegated_within(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
-    let args = program_argument_contract::ArgPage::parse(page);
+    let args = program_argument_contract::ArgumentPage::parse(page);
     let mut words = args.iter().skip(1);
     while let Some(word) = words.next() {
         if word == b"--within" {
@@ -220,7 +220,7 @@ pub fn delegated_within(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
 /// assembled from the line, which is what the progenitor holds; `None` for a page that does not
 /// parse, has one word, or whose second is longer than [`MAXIMUM_VERB`] or holds a space.
 pub fn verb_of_page<'o>(page: &[u8], out: &'o mut [u8; MAXIMUM_VERB]) -> Option<&'o [u8]> {
-    let args = program_argument_contract::ArgPage::parse(page);
+    let args = program_argument_contract::ArgumentPage::parse(page);
     let mut words = args.iter().skip(1);
     let verb = words.next()?;
     verb_key(verb, words.next(), out)

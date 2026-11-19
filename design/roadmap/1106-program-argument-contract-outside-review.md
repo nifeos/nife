@@ -37,17 +37,23 @@ section number, a milestone or a person in another repository.
 
 ## Finding status
 
-- P0-1, the manifest does not stand alone: Open. `Cargo.toml` still inherits `license` and
-  `lints`, lacks `rust-version`, `description`, `repository` and `readme`, and keeps its comments.
-- P0-2, the repository files: Open. The scaffold's files, the README and a stranger
-  run remain.
-- P0-3, text that reaches into nife: Open. The crate root still cites sections, milestones and
-  paths and names the architect; the move strips the `Name:` blocks.
-- P0-4, seven names the spelled-out gate refuses: Ruled (maintainer, provisional, 2026-11-14 UTC;
-  see "Three public names" below). Not built: `ArgPage`, `from_va(va)` and the `arg` and `args`
-  bindings keep their old spellings in the crate, the `std` overlay and its generator.
-- P1-5, `CAPACITY` carries no unit: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built:
-  `CAPACITY` still stands in the crate and in `grant_plan`'s parsing and refusal code.
+- P0-1, the manifest does not stand alone: Done in nife. The manifest carries its own license,
+  lints, `rust-version`, `description` and `readme`, and no citation comment. `repository` is set by
+  the move, which stages it after `license`.
+- P0-2, the repository files: Partly done. The README (to the scaffold's section order) and both
+  license texts are in the crate. The scaffold's other files, the stranger run and the stranger
+  record belong to the move lane.
+- P0-3, text that reaches into nife: Done in nife. The crate's text states the layout, the
+  all-or-nothing rule and the reason the bytes carry no authority in the crate's own terms, with no
+  section or milestone number, no path and no architect's name or quotation. The `Name:` blocks
+  stay for the move to strip.
+- P0-4, seven names the spelled-out gate refuses: Done (maintainer, provisional, 2026-11-14 UTC;
+  see "Three public names" below). `ArgumentPage`, `from_virtual_address(virtual_address)`, and
+  `argument` and `arguments` for the bindings stand in the crate and the `std` overlay. The
+  generator copies the crate verbatim, so it carries the names with no change of its own. The
+  overlay's `args()` is the standard library's own function name and stays.
+- P1-5, `CAPACITY` carries no unit: Done (maintainer, provisional, 2026-11-14 UTC).
+  `MAXIMUM_RECORDS_BYTES` stands in the crate and in `grant_plan`'s parsing and refusal code.
 - P1-6, no proof: Open. Two of the three harnesses and their patches landed in
   [#3567](https://github.com/nifeos/nife/pull/3567); the round-trip harness waits on P2-12's
   builder shape and a memory measurement.
@@ -59,20 +65,24 @@ section number, a milestone or a person in another repository.
 - P2-11, `EMPTY` unused and its literal duplicated: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-12, the builder takes a fixed array: Open. `PageBuilder::new` still takes
-  `&mut [u8; PAGE_BYTES]`; a builder over any slice remains.
-- P2-13, the layout arithmetic copied in `grant_plan`: Open. `record_bytes`,
-  `remaining_bytes` and the pedantic API items remain; `grant_plan` still sums by hand.
+  `&mut [u8; PAGE_BYTES]`. The item offers two shapes (a slice that refuses a short buffer, or a
+  const-generic length) and the block does not pick one, so the maintainer picks before a lane
+  builds it; the round-trip harness of P1-6 waits on it.
+- P2-13, the layout arithmetic copied in `grant_plan`: Done. `record_bytes` and
+  `PageBuilder::remaining_bytes` (both provisional names) stand in the crate, `grant_plan` sums
+  with `record_bytes`, and the pedantic API items are in: `#[must_use]`, `IntoIterator` for
+  `&ArgumentPage`, `Debug` on the three public types, `FusedIterator`, the `# Errors` section and the
+  checked conversions behind the `u32` casts.
 - P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - Ruling, the layout leaves as built with `VERSION` 1 and `INTERFACE_ID` 18: Done,
   [#3579](https://github.com/nifeos/nife/pull/3579) (ruled 2026-11-14 UTC; nothing to build).
 - Ruling, a numbered magic replaces `nifeargv` at milestone 994: Ruled (2026-11-14 UTC). Not built:
   `MAGIC` still reads `b"nifeargv"`, and milestone 994 has not started.
-- Ruling, three public names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: the same
-  renames as P0-4 and P1-5.
+- Ruling, three public names: Done (maintainer, provisional, 2026-11-14 UTC), with P0-4 and P1-5.
 - Ruling, the repository: Ruled (2026-11-14 UTC). Not built: a lane creates
   `nifeos/program_argument_contract`, runs the move check and a dry run, and tags
-  `v0.1.0-pre.1` with no publish, after the renames and milestone 994.
+  `v0.1.0-pre.1` with no publish, after the renames and milestone 994. The renames are built, so milestone 994 is what remains.
 
 ## Open decisions
 
@@ -263,7 +273,7 @@ provisional until an architect ratifies them.
   contract family it is the number of bytes the page content occupies, header included (see
   `crates/base_digest_contract/src/lib.rs`), and the capacity here is the space for records alone.
 
-The code keeps the old names until a lane renames them.
+The crate, the `std` overlay and `grant_plan` use the new names.
 
 ### The repository
 
@@ -275,10 +285,12 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 
 - **Done.** The three rulings above, recorded in this block, and the matching step in milestone
   994's block.
-- **Outstanding.** Every finding marked Open or Ruled under "Finding status" above, each with what
-  remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
-- **Outstanding.** The three renames of the rulings, then milestone 994, then the repository and
-  its `v0.1.0-pre.1` tag.
+- **Done.** The three renames of the rulings, the manifest, the README and license texts, the
+  crate's text in its own terms, and P2-13.
+- **Outstanding.** Every finding marked Open under "Finding status" above, each with what remains,
+  checked against `crates/program_argument_contract` and `crates/grant_plan`: P1-6's round-trip
+  harness and P2-12 (the maintainer picks the builder's shape), P2-10, and P1-8 at the move.
+- **Outstanding.** Milestone 994, then the repository and its `v0.1.0-pre.1` tag.
 
 ## Done when
 

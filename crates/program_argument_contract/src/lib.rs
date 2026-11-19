@@ -1,13 +1,15 @@
-//! **The argument page** (milestone 205 (how a foreign program is told what to do), DECISIONS
-//! §170 (how a foreign program is told what to do)). One definition of the read-only page that
-//! carries a `std` program's argv, shared by whoever assembles it (the shell, the kernel test
-//! harness) and the `std` PAL's `sys/args`, as `environment_contract` is for the configuration page.
+//! **The argument page.** One definition of the read-only page that carries a program's argv as
+//! plain bytes, shared by whoever assembles it (a shell, a test harness) and the runtime that reads
+//! it, so the writer and the reader cannot drift on the layout.
 //!
 //! **A program written by somebody else hears its arguments as bytes, and the bytes carry no
-//! authority** (§170). Whether `rg foo src` may read `src` is decided by the directory the line
-//! granted and the program's manifest, so nothing on this page is validated for meaning.
+//! authority.** Whether `rg foo src` may read `src` is decided by the access the line granted and
+//! the program's own manifest, so nothing on this page is validated for meaning. The page is
+//! length-prefixed, not delimited, so any byte (a NUL, a newline, `0xff`) may appear in an argument.
+//! It holds `argv[0]` too, since programs such as `ripgrep` skip the first element and `clap` treats
+//! it as the program's name. It is one page because an argument line that does not fit one frame is
+//! refused whole rather than truncated.
 //!
-
 //! # The layout
 //! ```text
 //!   offset  size  field
@@ -17,38 +19,37 @@
 //!   16      ...   count records, each a little-endian u32 length and then that many bytes
 //! ```
 //! Any byte may appear in a record, nothing past the records is read, and a line longer than
-//! [`CAPACITY`] is refused ([`Refused::TooLong`]). See notes/foreign-program-arguments.md.
+//! [`MAXIMUM_RECORDS_BYTES`] is refused ([`Refused::TooLong`]).
 
 //! # A page that does not parse reads as no arguments
 //!
-//! [`MAGIC`] is checked first, and then every length against what is left, the same
-//! default-honest shape `environment_contract::ConfigurationPage` uses. A zeroed frame, a page belonging
-//! to something else, or a count that disagrees with the records all answer an empty argv rather
-//! than a partial one: a program that sees half its arguments would act on a line nobody typed.
-//! That holds for damage to any one field. The layout has no checksum, so a header whose `count`
-//! and `total` both describe a prefix of the records is a shorter, consistent argv and reads as one
-//! (see BUGS below).
+//! [`MAGIC`] is checked first, and then every length against what is left. A zeroed frame, a page
+//! belonging to something else, or a count that disagrees with the records all answer an empty argv
+//! rather than a partial one: a program that sees half its arguments would act on a line nobody
+//! typed. That holds for damage to any one field. The layout has no checksum, so a header whose
+//! `count` and `total` both describe a prefix of the records is a shorter, consistent argv and reads
+//! as one (see BUGS below).
 
 //! # BUGS
 //!
-//! - A secret on a command line is plain bytes on this page, the ruling's known cost; §111 (inert
-//!   configuration is a read-only page) refused free-form strings on its page for this reason.
+//! - A secret on a command line is plain bytes on this page. The layout accepts that cost, because
+//!   the argument line is what the program was asked to run.
 //! - Damage to two header fields at once can read as a shorter argv. A `count` and a `total` that
 //!   both describe a prefix of the records parse as exactly that prefix, since nothing in the
 //!   layout can tell a consistently shortened line from a typed one. The page has one writer and
 //!   maps read-only, so this is a property of the format under corruption and not an attack
 //!   surface; a checksum would be a wire-format change.
-//! - [`ArgPage::from_va`] reads through a `usize` pointer, so on a target narrower than 64 bits an
-//!   address above 4 GiB would read a different page. No target built here is that narrow.
-//! - This crate is one file, `src/lib.rs`: the `std` port copies it by name, so a module split, or
-//!   an inner attribute the port cannot carry, breaks that build and not this one. A test checks
-//!   that `src/` holds no other file.
-//! - The environment does not ride here: §170 is silent on it, so it stays on §111's page.
+//! - [`ArgumentPage::from_virtual_address`] reads through a `usize` pointer, so on a target
+//!   narrower than 64 bits an address above 4 GiB would read a different page. No target built here
+//!   is that narrow.
+//! - This crate is one file, `src/lib.rs`: the nife repository's `std` port copies it by name, so a
+//!   module split, or an inner attribute the port cannot carry, breaks that build and not this one.
+//!   A test checks that `src/` holds no other file.
+//! - The environment does not ride on this page.
 //!
-//! Name: ratified 2026-10-18 (calef), asked "Or should it be `program_argument_contract`?" and
-//! answering yes: `argument` alone collides with the argument register and the argument word.
-//! Refused `argument_contract` (that collision). The layout is a separate wire format two programs
-//! agree on; `design/roadmap/0672-the-argument-page-layout.md` is its proposal.
+//! Name: ratified 2026-10-18 (UTC). `argument` alone collides with the argument register and the
+//! argument word, and `argument_contract` collides the same way, so the crate names the program's
+//! arguments in full. The layout is a separate wire format two programs agree on.
 
 #![cfg_attr(not(test), no_std)]
 
@@ -59,24 +60,42 @@ pub const PAGE_BYTES: usize = 4096;
 pub const HEADER_BYTES: usize = 16;
 
 /// The bytes of records one page holds, each argument's four-byte length prefix included.
-pub const CAPACITY: usize = PAGE_BYTES - HEADER_BYTES;
+///
+/// Name: provisional, renamed from `CAPACITY` so the name carries its unit. `PAGE_CONTENT_BYTES`
+/// is not used: elsewhere in the contract family it counts the header too.
+pub const MAXIMUM_RECORDS_BYTES: usize = PAGE_BYTES - HEADER_BYTES;
+
+/// The bytes one argument of `argument_bytes` bytes takes in the records: its four-byte length
+/// prefix and then the bytes. A line fits the page when the sum of these over its arguments is at
+/// most [`MAXIMUM_RECORDS_BYTES`], so a caller that checks a line before it has a page counts with
+/// this function and not with a copy of the prefix width.
+///
+/// Name: provisional.
+#[must_use]
+pub const fn record_bytes(argument_bytes: usize) -> usize {
+    LENGTH_PREFIX_BYTES + argument_bytes
+}
+
+/// The width of the length that starts each record.
+const LENGTH_PREFIX_BYTES: usize = 4;
+
+// The header stores the record total in a `u32`, and every length in one, so the page must be small
+// enough that no stored number truncates.
+const _: () = assert!(MAXIMUM_RECORDS_BYTES <= u32::MAX as usize);
 
 /// The first eight bytes of an assembled page. Provisional, with the rest of the layout.
 pub const MAGIC: [u8; 8] = *b"nifeargv";
 
-/// The page layout's version. The magic stays unnumbered because basalt's published programs read
-/// an argv page before this tree builds them: a break mints the digits into [`MAGIC`] only when
-/// basalt's archive rebuilds, in the same coordinated change, so this constant records the version
-/// the layout now carries rather than a digit string a reader can see.
+/// The page layout's version. The magic carries no digits, so this constant records the version
+/// the layout now carries: a break to the layout is a new version, and the magic changes in the
+/// same coordinated change.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 18, naming the argument page. The
 /// number is this interface's for good: no other interface takes it, and a format change is a new
-/// version, never a new number. Milestone 956 (the linked interfaces carry checkable versions)
-/// holds the table of numbers, and `script/lint` holds the tree to it. A program declares the pair
-/// of this id and [`VERSION`].
+/// version, never a new number. A program declares the pair of this id and [`VERSION`].
 ///
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
 pub const INTERFACE_ID: u64 = 18;
@@ -99,21 +118,32 @@ pub enum Refused {
 /// # Examples
 ///
 /// ```
-/// use program_argument_contract::{ArgPage, PAGE_BYTES, PageBuilder};
+/// use program_argument_contract::{ArgumentPage, PAGE_BYTES, PageBuilder};
 ///
 /// let mut page = [0u8; PAGE_BYTES];
 /// let mut b = PageBuilder::new(&mut page);
-/// for a in [&b"rg"[..], b"ab\xffcd", b"src"] {
-///     b.push(a).unwrap();
+/// for argument in [&b"rg"[..], b"ab\xffcd", b"src"] {
+///     b.push(argument).unwrap();
 /// }
 /// b.finish();
-/// let args: Vec<&[u8]> = ArgPage::parse(&page).iter().collect();
-/// assert_eq!(args, [&b"rg"[..], b"ab\xffcd", b"src"]);
+/// let arguments: Vec<&[u8]> = ArgumentPage::parse(&page).iter().collect();
+/// assert_eq!(arguments, [&b"rg"[..], b"ab\xffcd", b"src"]);
 /// ```
 pub struct PageBuilder<'p> {
     page: &'p mut [u8; PAGE_BYTES],
     count: u32,
     used: usize,
+}
+
+impl core::fmt::Debug for PageBuilder<'_> {
+    /// The counts only, since the page itself is 4 KiB of bytes.
+    fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        formatter
+            .debug_struct("PageBuilder")
+            .field("count", &self.count)
+            .field("used", &self.used)
+            .finish_non_exhaustive()
+    }
 }
 
 impl<'p> PageBuilder<'p> {
@@ -129,51 +159,76 @@ impl<'p> PageBuilder<'p> {
     }
 
     /// Append one argument, or refuse it if the page cannot hold it.
-    pub fn push(&mut self, arg: &[u8]) -> Result<(), Refused> {
-        let need = 4 + arg.len();
-        if need > CAPACITY - self.used {
+    ///
+    /// # Errors
+    ///
+    /// [`Refused::TooLong`] when the argument's record is longer than [`Self::remaining_bytes`].
+    /// The page and the count are left as they were.
+    pub fn push(&mut self, argument: &[u8]) -> Result<(), Refused> {
+        let need = record_bytes(argument.len());
+        if need > self.remaining_bytes() {
             return Err(Refused::TooLong);
         }
+        // `need` fits the page, so the length fits a `u32`; a failure here is the same refusal.
+        let length = u32::try_from(argument.len()).map_err(|_| Refused::TooLong)?;
         let at = HEADER_BYTES + self.used;
-        self.page[at..at + 4].copy_from_slice(&(arg.len() as u32).to_le_bytes());
-        self.page[at + 4..at + need].copy_from_slice(arg);
+        self.page[at..at + LENGTH_PREFIX_BYTES].copy_from_slice(&length.to_le_bytes());
+        self.page[at + LENGTH_PREFIX_BYTES..at + need].copy_from_slice(argument);
         self.used += need;
         self.count += 1;
         Ok(())
     }
 
+    /// How many bytes of records the page still has room for, so an argument fits when its
+    /// [`record_bytes`] are no more than this.
+    ///
+    /// Name: provisional.
+    #[must_use]
+    pub const fn remaining_bytes(&self) -> usize {
+        MAXIMUM_RECORDS_BYTES - self.used
+    }
+
     /// How many arguments have been pushed.
+    #[must_use]
     pub const fn count(&self) -> u32 {
         self.count
     }
 
     /// Write the header, which is what makes the page an argv. Returns the count.
+    // The count is a convenience: a caller that has been counting its own pushes ignores it.
+    #[allow(clippy::must_use_candidate)]
     pub fn finish(self) -> u32 {
+        // `used` never passes `MAXIMUM_RECORDS_BYTES`, which the assertion above keeps inside a `u32`.
+        #[allow(clippy::cast_possible_truncation)]
+        let total = self.used as u32;
         self.page[8..12].copy_from_slice(&self.count.to_le_bytes());
-        self.page[12..16].copy_from_slice(&(self.used as u32).to_le_bytes());
+        self.page[12..16].copy_from_slice(&total.to_le_bytes());
         self.page[..8].copy_from_slice(&MAGIC);
         self.count
     }
 }
 
 /// A parsed argument page: an argv that has already been checked whole.
-#[derive(Clone, Copy)]
-pub struct ArgPage<'a> {
+///
+/// Name: provisional, renamed from `ArgPage` so the name is spelled out.
+#[derive(Clone, Copy, Debug)]
+pub struct ArgumentPage<'a> {
     records: &'a [u8],
     count: u32,
 }
 
-impl<'a> ArgPage<'a> {
+impl<'a> ArgumentPage<'a> {
     /// No arguments.
-    pub const EMPTY: ArgPage<'static> = ArgPage {
+    pub const EMPTY: ArgumentPage<'static> = ArgumentPage {
         records: &[],
         count: 0,
     };
 
     /// Read `page`. Anything that is not a whole, consistent page is [`Self::EMPTY`]: see the
     /// crate's documentation for why a partial argv is never returned.
+    #[must_use]
     pub fn parse(page: &'a [u8]) -> Self {
-        Self::check(page).unwrap_or(ArgPage::EMPTY)
+        Self::check(page).unwrap_or(ArgumentPage::EMPTY)
     }
 
     fn check(page: &'a [u8]) -> Option<Self> {
@@ -182,7 +237,7 @@ impl<'a> ArgPage<'a> {
         }
         let count = u32::from_le_bytes(page[8..12].try_into().ok()?);
         let total = u32::from_le_bytes(page[12..16].try_into().ok()?) as usize;
-        let room = (page.len() - HEADER_BYTES).min(CAPACITY);
+        let room = (page.len() - HEADER_BYTES).min(MAXIMUM_RECORDS_BYTES);
         if total > room {
             return None;
         }
@@ -198,31 +253,39 @@ impl<'a> ArgPage<'a> {
             rest = tail;
             walked = walked.checked_add(1)?;
         }
-        (walked == count).then_some(ArgPage { records, count })
+        (walked == count).then_some(ArgumentPage { records, count })
     }
 
-    /// Read the page mapped at `va`.
+    /// Read the page mapped at `virtual_address`.
+    ///
+    /// Name: provisional, renamed from `from_va` so the address is spelled out.
     ///
     /// # Safety
     ///
-    /// `va` must be the start of [`PAGE_BYTES`] of readable memory that stays mapped and unwritten
+    /// `virtual_address` must be the start of [`PAGE_BYTES`] of readable memory that stays mapped and unwritten
     /// for `'a`. The loader maps this page read-only and nothing writes it after assembly.
-    pub unsafe fn from_va(va: u64) -> Self {
+    #[must_use]
+    pub unsafe fn from_virtual_address(virtual_address: u64) -> Self {
         // SAFETY: the caller's contract, exactly.
-        Self::parse(unsafe { core::slice::from_raw_parts(va as *const u8, PAGE_BYTES) })
+        Self::parse(unsafe {
+            core::slice::from_raw_parts(virtual_address as *const u8, PAGE_BYTES)
+        })
     }
 
     /// How many arguments.
+    #[must_use]
     pub const fn len(&self) -> usize {
         self.count as usize
     }
 
     /// Whether there are none.
+    #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.count == 0
     }
 
     /// The arguments, in order.
+    #[must_use]
     pub fn iter(&self) -> Iter<'a> {
         Iter {
             rest: self.records,
@@ -231,7 +294,17 @@ impl<'a> ArgPage<'a> {
     }
 }
 
-/// The arguments of an [`ArgPage`], in order.
+impl<'a> IntoIterator for &ArgumentPage<'a> {
+    type Item = &'a [u8];
+    type IntoIter = Iter<'a>;
+
+    fn into_iter(self) -> Iter<'a> {
+        self.iter()
+    }
+}
+
+/// The arguments of an [`ArgumentPage`], in order.
+#[derive(Clone, Debug)]
 pub struct Iter<'a> {
     rest: &'a [u8],
     left: u32,
@@ -244,12 +317,12 @@ impl<'a> Iterator for Iter<'a> {
         if self.left == 0 {
             return None;
         }
-        // `ArgPage::check` walked these records already, so this cannot fail; answering `None`
+        // `ArgumentPage::check` walked these records already, so this cannot fail; answering `None`
         // rather than panicking keeps that a property of the parser and not of this line.
-        let (arg, tail) = split_record(self.rest)?;
+        let (argument, tail) = split_record(self.rest)?;
         self.rest = tail;
         self.left -= 1;
-        Some(arg)
+        Some(argument)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -258,6 +331,8 @@ impl<'a> Iterator for Iter<'a> {
 }
 
 impl ExactSizeIterator for Iter<'_> {}
+
+impl core::iter::FusedIterator for Iter<'_> {}
 
 /// One record off the front of `rest`: its bytes and what follows it.
 fn split_record(rest: &[u8]) -> Option<(&[u8], &[u8])> {
@@ -286,7 +361,7 @@ mod verification {
     #[kani::unwind(14)]
     fn parse_never_panics_and_iterates_len_items() {
         let page = any_page();
-        let parsed = ArgPage::parse(&page);
+        let parsed = ArgumentPage::parse(&page);
         assert_eq!(parsed.iter().count(), parsed.len());
         assert_eq!(parsed.is_empty(), parsed.iter().next().is_none());
     }
@@ -301,7 +376,7 @@ mod verification {
         let page = any_page();
         let count = u32::from_le_bytes([page[8], page[9], page[10], page[11]]);
         let total = u32::from_le_bytes([page[12], page[13], page[14], page[15]]) as usize;
-        let parsed = ArgPage::parse(&page);
+        let parsed = ArgumentPage::parse(&page);
         if parsed.is_empty() {
             return;
         }
@@ -318,18 +393,21 @@ mod verification {
 mod tests {
     use super::*;
 
-    fn build(args: &[&[u8]]) -> [u8; PAGE_BYTES] {
+    fn build(arguments: &[&[u8]]) -> [u8; PAGE_BYTES] {
         let mut page = [0xa5; PAGE_BYTES];
         let mut b = PageBuilder::new(&mut page);
-        for a in args {
-            b.push(a).unwrap();
+        for argument in arguments {
+            b.push(argument).unwrap();
         }
         b.finish();
         page
     }
 
     fn read(page: &[u8]) -> Vec<Vec<u8>> {
-        ArgPage::parse(page).iter().map(<[u8]>::to_vec).collect()
+        ArgumentPage::parse(page)
+            .iter()
+            .map(<[u8]>::to_vec)
+            .collect()
     }
 
     /// Any byte survives, which is the reason the layout is length-prefixed: a NUL and a `0xff`
@@ -342,13 +420,13 @@ mod tests {
     }
 
     /// **The raw-pointer reader gives what the slice parser gives**, and a zeroed frame through it
-    /// is no arguments. This is the one path through [`ArgPage::from_va`], so the test argues its
+    /// is no arguments. This is the one path through [`ArgumentPage::from_virtual_address`], so the test argues its
     /// contract: the page is a live, 4 KiB array, borrowed for the whole of the reads.
     #[test]
     fn a_page_read_through_its_virtual_address_matches_the_slice_reader() {
         let page = build(&[b"rg", b"a\0b", b""]);
         // SAFETY: `page` is a live array of `PAGE_BYTES`, readable and unwritten while `parsed` is used.
-        let parsed = unsafe { ArgPage::from_va(page.as_ptr() as u64) };
+        let parsed = unsafe { ArgumentPage::from_virtual_address(page.as_ptr() as u64) };
         assert_eq!(
             parsed.iter().map(<[u8]>::to_vec).collect::<Vec<_>>(),
             read(&page)
@@ -357,7 +435,7 @@ mod tests {
 
         let zeroed = [0u8; PAGE_BYTES];
         // SAFETY: as above, for `zeroed`.
-        let none = unsafe { ArgPage::from_va(zeroed.as_ptr() as u64) };
+        let none = unsafe { ArgumentPage::from_virtual_address(zeroed.as_ptr() as u64) };
         assert!(none.is_empty() && none.iter().next().is_none());
     }
 
@@ -382,20 +460,56 @@ mod tests {
         assert_eq!(names, ["lib.rs"]);
     }
 
+    /// **The cost of a record and the room left agree with what the page holds.** An argument
+    /// costs its bytes and a four-byte prefix, `remaining_bytes` falls by that cost per push, and an
+    /// argument whose cost equals what is left fits.
+    #[test]
+    fn record_cost_and_remaining_room_track_the_pushes() {
+        assert_eq!(record_bytes(0), 4);
+        assert_eq!(record_bytes(10), 14);
+        let mut page = [0; PAGE_BYTES];
+        let mut b = PageBuilder::new(&mut page);
+        assert_eq!(b.remaining_bytes(), MAXIMUM_RECORDS_BYTES);
+        b.push(b"abc").unwrap();
+        assert_eq!(b.remaining_bytes(), MAXIMUM_RECORDS_BYTES - 7);
+        let rest = b.remaining_bytes();
+        b.push(&vec![b'x'; rest - 4]).unwrap();
+        assert_eq!(b.remaining_bytes(), 0);
+        assert_eq!(b.push(b""), Err(Refused::TooLong));
+    }
+
+    /// Iterating a borrowed page with `for` gives the same arguments as `iter`, and an iterator that
+    /// has ended stays ended.
+    #[test]
+    fn a_borrowed_page_iterates_and_a_finished_iterator_stays_finished() {
+        let page = build(&[b"a", b"bb"]);
+        let parsed = ArgumentPage::parse(&page);
+        let mut seen = Vec::new();
+        for argument in &parsed {
+            seen.push(argument.to_vec());
+        }
+        assert_eq!(seen, [b"a".to_vec(), b"bb".to_vec()]);
+        let mut it = parsed.iter();
+        it.next();
+        it.next();
+        assert_eq!(it.next(), None);
+        assert_eq!(it.next(), None);
+    }
+
     /// A frame nobody assembled a page into is no arguments, not a garbage argv.
     #[test]
     fn a_zeroed_page_is_no_arguments() {
-        assert!(ArgPage::parse(&[0; PAGE_BYTES]).is_empty());
-        assert!(ArgPage::parse(&[]).is_empty());
+        assert!(ArgumentPage::parse(&[0; PAGE_BYTES]).is_empty());
+        assert!(ArgumentPage::parse(&[]).is_empty());
     }
 
-    /// The page holds exactly `CAPACITY` bytes of records, and one more is refused whole rather
+    /// The page holds exactly `MAXIMUM_RECORDS_BYTES` bytes of records, and one more is refused whole rather
     /// than truncated. The builder is unchanged by the refusal.
     #[test]
     fn the_page_fills_to_capacity_and_refuses_one_byte_more() {
         let mut page = [0; PAGE_BYTES];
         let mut b = PageBuilder::new(&mut page);
-        let big = vec![b'x'; CAPACITY - 4];
+        let big = vec![b'x'; MAXIMUM_RECORDS_BYTES - 4];
         b.push(&big).unwrap();
         assert_eq!(b.push(b""), Err(Refused::TooLong));
         assert_eq!(b.count(), 1);
@@ -403,9 +517,12 @@ mod tests {
         assert_eq!(read(&page), [big]);
 
         let mut b = PageBuilder::new(&mut page);
-        assert_eq!(b.push(&[b'x'; CAPACITY - 3]), Err(Refused::TooLong));
+        assert_eq!(
+            b.push(&[b'x'; MAXIMUM_RECORDS_BYTES - 3]),
+            Err(Refused::TooLong)
+        );
         b.finish();
-        assert!(ArgPage::parse(&page).is_empty());
+        assert!(ArgumentPage::parse(&page).is_empty());
     }
 
     /// **A page reused for a second line is not the first line's argv until it is finished.** The
@@ -418,7 +535,7 @@ mod tests {
             let mut b = PageBuilder::new(&mut page);
             b.push(b"new").unwrap();
         }
-        assert!(ArgPage::parse(&page).is_empty());
+        assert!(ArgumentPage::parse(&page).is_empty());
     }
 
     /// **No corruption yields a partial argv.** Every single-byte change to the header or to a
@@ -452,29 +569,29 @@ mod tests {
     #[test]
     fn a_total_past_the_page_is_refused() {
         let mut p = build(&[b"rg"]);
-        p[12..16].copy_from_slice(&(CAPACITY as u32 + 1).to_le_bytes());
-        assert!(ArgPage::parse(&p).is_empty());
+        p[12..16]
+            .copy_from_slice(&(u32::try_from(MAXIMUM_RECORDS_BYTES).unwrap() + 1).to_le_bytes());
+        assert!(ArgumentPage::parse(&p).is_empty());
     }
 
     /// **The counts are numbers, not flags.** `count`, `len`, `is_empty` and `size_hint` each have a
     /// two-value wrong answer (0 or 1) that a one-argument fixture cannot tell from the right one,
     /// so this uses three arguments and checks the hint shrinks as the iterator is drained.
-    /// Mutation survivor triage, milestone 326 (turn a mutation score upward), batch 3.
     #[test]
     fn counts_track_three_arguments_and_the_hint_shrinks() {
         let mut page = [0; PAGE_BYTES];
         let mut b = PageBuilder::new(&mut page);
         assert_eq!(b.count(), 0);
-        for (i, a) in [&b"a"[..], b"bb", b"ccc"].into_iter().enumerate() {
-            b.push(a).unwrap();
-            assert_eq!(b.count(), i as u32 + 1);
+        for (i, argument) in [&b"a"[..], b"bb", b"ccc"].into_iter().enumerate() {
+            b.push(argument).unwrap();
+            assert_eq!(b.count(), u32::try_from(i).unwrap() + 1);
         }
         assert_eq!(b.finish(), 3);
 
-        let args = ArgPage::parse(&page);
-        assert_eq!(args.len(), 3);
-        assert!(!args.is_empty());
-        let mut it = args.iter();
+        let arguments = ArgumentPage::parse(&page);
+        assert_eq!(arguments.len(), 3);
+        assert!(!arguments.is_empty());
+        let mut it = arguments.iter();
         assert_eq!(it.size_hint(), (3, Some(3)));
         it.next();
         assert_eq!(it.size_hint(), (2, Some(2)));
