@@ -267,8 +267,8 @@ fn disable_functions_one_to_three(registers: &mut dyn Registers, glue_base: u32)
     );
 }
 
-/// The bridge made a root port: enabled, BARs zero, the bridge class, LTR reception off, 64-bit
-/// prefetchable windows.
+/// The bridge made a root port: enabled, BARs zero, the bridge class, latency tolerance reporting
+/// (LTR) reception off, 64-bit prefetchable windows.
 fn bridge_as_root_port(registers: &mut dyn Registers) {
     update(
         registers,
