@@ -39,8 +39,8 @@ section number, a milestone or a person in another repository.
 
 - P0-1, the manifest does not stand alone: Open. `Cargo.toml` still inherits `license` and
   `lints`, lacks `rust-version`, `description`, `repository` and `readme`, and keeps its comments.
-- P0-2, the repository files: Open. The scaffold's files, the README and a stranger run
-  remain.
+- P0-2, the repository files: Open. The scaffold's files, the README and a stranger
+  run remain.
 - P0-3, text that reaches into nife: Open. The crate root still cites sections, milestones and
   paths and names the architect; the move strips the `Name:` blocks.
 - P0-4, seven names the spelled-out gate refuses: Ruled (maintainer, provisional, 2026-11-14 UTC;
@@ -60,8 +60,8 @@ section number, a milestone or a person in another repository.
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-12, the builder takes a fixed array: Open. `PageBuilder::new` still takes
   `&mut [u8; PAGE_BYTES]`; a builder over any slice remains.
-- P2-13, the layout arithmetic copied in `grant_plan`: Open. `record_bytes`, `remaining_bytes` and the
-  pedantic API items remain; `grant_plan` still sums by hand.
+- P2-13, the layout arithmetic copied in `grant_plan`: Open. `record_bytes`,
+  `remaining_bytes` and the pedantic API items remain; `grant_plan` still sums by hand.
 - P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - Ruling, the layout leaves as built with `VERSION` 1 and `INTERFACE_ID` 18: Done,
