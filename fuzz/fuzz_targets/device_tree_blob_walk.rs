@@ -5,7 +5,7 @@
 //! a board's firmware wrote; a panic here is a kernel that cannot boot and cannot say why.
 //! `crates/device_tree_blob`'s Kani harnesses prove the leaf readers (`be32`, `be64`) total but not
 //! the walkers, whose depth counter, per-depth stacks and current-node slot are indexed by numbers
-//! the blob controls. This target found an out-of-bounds index in `node_reg` within seconds of its
+//! the blob controls. This target found an out-of-bounds index in `node_register_regions` within seconds of its
 //! first run (`crates/device_tree_blob/tests/hostile.rs`). notes/fuzzing/targets.md has the rest.
 
 #![no_main]
@@ -34,11 +34,11 @@ fuzz_target!(|data: &[u8]| {
     // path cheapest, since it matches the first node at depth >= 2, and for that reason it cannot
     // reach the deep-nesting bug: matching stops at the first candidate (notes/fuzzing.md's BUGS).
     for prefix in [&b""[..], b"intc", b"plic", b"memory", b"virtio_mmio"] {
-        let _ = dtb.node_reg(prefix, &mut out);
+        let _ = dtb.node_register_regions(prefix, &mut out);
         let _ = dtb.node_property(prefix, b"reg");
         let _ = dtb.node_property(prefix, b"compatible");
         // The inherited variant keeps a per-depth value stack the blob's nesting indexes, which is
-        // the same shape as the `node_reg` cell stacks this target already caught a real
+        // the same shape as the `node_register_regions` cell stacks this target already caught a real
         // out-of-bounds in. `interrupts` beside `interrupt-parent` because that pair is the
         // kernel's real read (the console UART's line).
         let _ = dtb.node_property_inherited(prefix, b"interrupt-parent");
@@ -59,7 +59,7 @@ fuzz_target!(|data: &[u8]| {
         b"google,goldfish-rtc",
         b"riscv,plic0",
     ] {
-        let _ = dtb.node_reg_compatible(compat, &mut out);
+        let _ = dtb.node_register_regions_compatible(compat, &mut out);
     }
 
     // `Region::end()` is a `pub fn` on a `pub struct` whose fields came out of the blob, so it has

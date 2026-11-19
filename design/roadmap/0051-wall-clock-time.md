@@ -15,7 +15,7 @@ build settled that this block left open, and one place it went somewhere the blo
   The block imagined all three as capabilities without saying what kind; a process has one blocking
   wait point, so two message-borne authorities would have needed two servers.
 - **Discovery is by `compatible`, not by node name**, because the aarch64 board calls the node
-  `pl031@9010000` and the RISC-V one calls its RTC `rtc@101000`. `dtb::node_reg_compatible` is new
+  `pl031@9010000` and the RISC-V one calls its RTC `rtc@101000`. `dtb::node_register_regions_compatible` is new
   for it, and the kernel passes the *binding* to the driver so the register layout comes from the
   machine rather than from `target_arch` (the VisionFive 2 is riscv64 with neither device).
 - The unknown state is the default, since a zeroed page reads as `UNKNOWN`. Its one uncomfortable

@@ -214,7 +214,7 @@ pub fn discover(tree: &DeviceTreeBlob<'_>, index: u8) -> Result<Option<Slot>, Er
     };
     for name in names {
         let mut regions = [Region { start: 0, size: 0 }; 1];
-        if tree.node_reg(name, &mut regions)? == 0 {
+        if tree.node_register_regions(name, &mut regions)? == 0 {
             continue;
         }
         let prop = |p: &[u8]| tree.node_property(name, p);

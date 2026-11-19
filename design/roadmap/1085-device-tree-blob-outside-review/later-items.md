@@ -35,7 +35,7 @@ as a known limit. Honor `status` (a disabled bank is RAM the firmware says not t
 is not read. Effort S. Two-way; a change on the boot path, so run the fixture suites and a QEMU
 boot after it.
 
-P2-4. The source writes one token loop nine times. DONE: a private `Tokens` walk carries every walker, with the advance guard, the structure-block bound, the depth bound and the balance check in one place. `memory_regions`, `node_reg`, `node_reg_compatible`,
+P2-4. The source writes one token loop nine times. DONE: a private `Tokens` walk carries every walker, with the advance guard, the structure-block bound, the depth bound and the balance check in one place. `memory_regions`, `node_register_regions`, `node_register_regions_compatible`,
 `prop_compatible_up`, `node_prop`, `node_prop_inherited`, `phandle_prop`, `node_props`,
 `reserved_memory_regions`, `initial_ramdisk` and `boot_arguments` each open the same `loop { be32;
 match token { BEGIN_NODE => cstr, align4, depth += 1 ... } }` (`src/lib.rs` line 255, `:339`, `:444`,
@@ -76,10 +76,10 @@ does not say it). `MAXIMUM_TOTALSIZE` applies to `from_ptr` only (right, and uns
 `size_dt_strings`, `size_dt_struct` and `boot_cpuid_phys` are not read (P1-4 reads one). One
 paragraph closes it. Effort S. Two-way.
 
-P2-9. One example, and it does not run. DONE for the documentation: `from_bytes`, `memory_regions`, `node_reg_compatible` and `node_properties` carry running examples over the QEMU fixture. The README half waits for the move (P0-1). The only `# Examples` block is on `node_props`
+P2-9. One example, and it does not run. DONE for the documentation: `from_bytes`, `memory_regions`, `node_register_regions_compatible` and `node_properties` carry running examples over the QEMU fixture. The README half waits for the move (P0-1). The only `# Examples` block is on `node_props`
 (`src/lib.rs` lines 852 to 861), marked `no_run`. The two QEMU fixtures under `tests/fixtures/` are real
 trees the documentation could `include_bytes!` into a running doctest on `from_bytes`,
-`memory_regions` and `node_reg_compatible`, and the README's `## EXAMPLES` needs the same code.
+`memory_regions` and `node_register_regions_compatible`, and the README's `## EXAMPLES` needs the same code.
 Effort S. Two-way.
 
 P2-10. Two depth counters. DONE (`a_tree_whose_nesting_does_not_balance_is_refused`; one `usize` depth in the token walk). Four walkers count depth in `i32` and subtract bare (`src/lib.rs:
@@ -99,7 +99,7 @@ Two-way.
 P2-12. A trailing partial `reg` pair drops silently. DONE (`a_reg_that_does_not_fit_a_region_is_a_bad_value`: a length that is not a multiple of the pair is `BadValue`). `decode_reg` (`src/lib.rs` line 1183)
 stops when fewer than `pair_bytes` remain. Linux refuses a `reg` whose length is not a multiple
 of the pair (`of_flat_dt_get_addr_size_prop`); `dtoolkit` refuses too; this crate's documentation
-says nothing. State it at `memory_regions`, `node_reg` and `node_reg_compatible`, or refuse with
+says nothing. State it at `memory_regions`, `node_register_regions` and `node_register_regions_compatible`, or refuse with
 the P2-1 error. Effort S. Two-way.
 
 P2-13. Private names that need a decoder. DONE (the private names are spelled out). `acells`, `scells` (`src/lib.rs` lines 332 to 333 and

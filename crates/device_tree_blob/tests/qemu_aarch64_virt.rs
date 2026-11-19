@@ -126,7 +126,7 @@ fn finds_the_interrupt_controller() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 4];
 
-    let n = tree.node_reg(b"intc@", &mut regs).unwrap();
+    let n = tree.node_register_regions(b"intc@", &mut regs).unwrap();
 
     // The GIC has TWO register blocks, and the order is part of the binding.
     assert_eq!(
@@ -158,7 +158,7 @@ fn finds_the_uart_the_console_hardcodes() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
 
-    assert_eq!(tree.node_reg(b"pl011@", &mut regs).unwrap(), 1);
+    assert_eq!(tree.node_register_regions(b"pl011@", &mut regs).unwrap(), 1);
     assert_eq!(regs[0].start, 0x0900_0000);
 }
 
@@ -166,7 +166,10 @@ fn finds_the_uart_the_console_hardcodes() {
 fn a_missing_node_is_zero_regions_not_an_error() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(tree.node_reg(b"nonesuch@", &mut regs).unwrap(), 0);
+    assert_eq!(
+        tree.node_register_regions(b"nonesuch@", &mut regs).unwrap(),
+        0
+    );
 }
 
 #[test]
@@ -213,7 +216,8 @@ fn finds_the_rtc_by_compatible() {
     let mut regs = [Region { start: 0, size: 0 }; 2];
 
     assert_eq!(
-        tree.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(),
+        tree.node_register_regions_compatible(b"arm,pl031", &mut regs)
+            .unwrap(),
         1
     );
     assert_eq!(
@@ -232,7 +236,7 @@ fn the_goldfish_rtc_is_absent_on_aarch64() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
     assert_eq!(
-        tree.node_reg_compatible(b"google,goldfish-rtc", &mut regs)
+        tree.node_register_regions_compatible(b"google,goldfish-rtc", &mut regs)
             .unwrap(),
         0
     );

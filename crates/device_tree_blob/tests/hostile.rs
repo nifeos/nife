@@ -140,7 +140,7 @@ fn nested(depth: usize) -> Vec<u8> {
 
 /// **A node at the deepest depth is found, and a tree one deeper is refused by every lookup.**
 ///
-/// `node_reg` once carried `#address-cells`/`#size-cells` down a 16-entry per-depth array and
+/// `node_register_regions` once carried `#address-cells`/`#size-cells` down a 16-entry per-depth array and
 /// matched a node at *any* depth >= 2. At depth 17 the `reg` arm read one past the array: an
 /// out-of-bounds index, a panic in the parser the kernel runs against a blob it did not write.
 /// The guard that fixed it left a node at depth 17 present for two lookups and absent for five.
@@ -159,7 +159,7 @@ fn a_node_at_the_deepest_depth_is_found_and_one_deeper_is_refused() {
         let blob = nested(depth);
         let tree = DeviceTreeBlob::from_bytes(&blob).unwrap();
         assert_eq!(
-            tree.node_reg(b"intc", &mut out),
+            tree.node_register_regions(b"intc", &mut out),
             Ok(1),
             "a node at depth {depth} is found"
         );
@@ -173,9 +173,12 @@ fn a_node_at_the_deepest_depth_is_found_and_one_deeper_is_refused() {
     let blob = nested(MAXIMUM_DEPTH + 1);
     let tree = DeviceTreeBlob::from_bytes(&blob).unwrap();
     let mut values = [None; 1];
-    assert_eq!(tree.node_reg(b"intc", &mut out), Err(Error::TooDeep));
     assert_eq!(
-        tree.node_reg_compatible(b"arm,pl031", &mut out),
+        tree.node_register_regions(b"intc", &mut out),
+        Err(Error::TooDeep)
+    );
+    assert_eq!(
+        tree.node_register_regions_compatible(b"arm,pl031", &mut out),
         Err(Error::TooDeep)
     );
     assert_eq!(tree.node_property(b"intc", b"reg"), Err(Error::TooDeep));
@@ -429,7 +432,7 @@ fn cell_widths_are_inherited_and_a_reg_uses_its_parents() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 4];
-    assert_eq!(dt.node_reg(b"dev@", &mut out), Ok(2));
+    assert_eq!(dt.node_register_regions(b"dev@", &mut out), Ok(2));
     assert_eq!((out[0].start, out[0].size), (0x1000_0000, 0x100));
     assert_eq!((out[1].start, out[1].size), (0x2000_0000, 0x200));
 }
@@ -453,7 +456,7 @@ fn a_prefix_finds_its_node_not_the_first_node() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dt.node_reg(b"uart@", &mut out), Ok(1));
+    assert_eq!(dt.node_register_regions(b"uart@", &mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0x900_0000, 0x1000));
 }
 
@@ -477,7 +480,7 @@ fn a_matched_node_survives_its_children_closing() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dt.node_reg(b"m@", &mut out), Ok(1));
+    assert_eq!(dt.node_register_regions(b"m@", &mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0xAB00, 0x40));
 }
 
@@ -506,7 +509,7 @@ fn a_declaration_at_the_deepest_depth_has_its_own_slot() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 1];
-    assert_eq!(dt.node_reg(b"m@", &mut out), Ok(1));
+    assert_eq!(dt.node_register_regions(b"m@", &mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0xAB00, 0x40));
 }
 
@@ -536,12 +539,12 @@ fn compatible_respects_the_root_and_the_cell_widths() {
 
     let mut out = [Region { start: 0, size: 0 }; 2];
     assert_eq!(
-        dt.node_reg_compatible(b"root,thing", &mut out),
+        dt.node_register_regions_compatible(b"root,thing", &mut out),
         Ok(0),
         "the root is not a device"
     );
     assert_eq!(
-        dt.node_reg_compatible(b"google,goldfish-rtc", &mut out),
+        dt.node_register_regions_compatible(b"google,goldfish-rtc", &mut out),
         Ok(1)
     );
     assert_eq!((out[0].start, out[0].size), (0x0010_1000, 0x1000));
@@ -764,7 +767,7 @@ fn a_roots_reg_is_never_a_named_devices() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dt.node_reg(b"absent@", &mut out), Ok(0));
+    assert_eq!(dt.node_register_regions(b"absent@", &mut out), Ok(0));
 }
 
 /// The compatible walker inherits cell widths through a silent intermediary, the same
@@ -793,7 +796,10 @@ fn compatible_inherits_cell_widths_through_a_silent_bus() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dt.node_reg_compatible(b"example,testdev", &mut out), Ok(1));
+    assert_eq!(
+        dt.node_register_regions_compatible(b"example,testdev", &mut out),
+        Ok(1)
+    );
     assert_eq!((out[0].start, out[0].size), (0x2000, 0x1_0000_2000));
 }
 
@@ -811,7 +817,10 @@ fn a_reg_before_the_root_is_walked_past() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dt.node_reg_compatible(b"absent", &mut out), Ok(0));
+    assert_eq!(
+        dt.node_register_regions_compatible(b"absent", &mut out),
+        Ok(0)
+    );
 }
 
 /// The prop walker's target may only be a matched node: not the root, which is what `||` in the
@@ -958,7 +967,7 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
     assert_eq!((r.start, r.size), (0x4800_0000, 0x2_0000));
 }
 
-/// **Each walker's per-depth stack reaches the deepest depth.** The walkers beside `node_reg`
+/// **Each walker's per-depth stack reaches the deepest depth.** The walkers beside `node_register_regions`
 /// keep a slot per depth, and a mutation run once found the edge guard of each alive under `<=`:
 /// an out-of-bounds index on firmware bytes. The guard is now the walk's own refusal past
 /// [`MAXIMUM_DEPTH`], so a tree nested to exactly that depth answers from its deepest node in every
@@ -1044,9 +1053,12 @@ fn a_tree_whose_nesting_does_not_balance_is_refused() {
         let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
         let mut values = [None; 1];
         assert_eq!(dt.memory_regions(&mut out), Err(Error::BadStructure));
-        assert_eq!(dt.node_reg(b"absent", &mut out), Err(Error::BadStructure));
         assert_eq!(
-            dt.node_reg_compatible(b"absent", &mut out),
+            dt.node_register_regions(b"absent", &mut out),
+            Err(Error::BadStructure)
+        );
+        assert_eq!(
+            dt.node_register_regions_compatible(b"absent", &mut out),
             Err(Error::BadStructure)
         );
         assert_eq!(
@@ -1065,7 +1077,10 @@ fn a_tree_whose_nesting_does_not_balance_is_refused() {
             dt.node_property_compatible(b"absent", b"reg"),
             Err(Error::BadStructure)
         );
-        assert_eq!(dt.pointer_handle_property(1, b"reg"), Err(Error::BadStructure));
+        assert_eq!(
+            dt.pointer_handle_property(1, b"reg"),
+            Err(Error::BadStructure)
+        );
         assert_eq!(
             dt.reserved_memory_regions(&mut out),
             Err(Error::BadStructure)
@@ -1275,9 +1290,12 @@ fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
 
     let mut out = [Region { start: 0, size: 0 }; 2];
     let dev = (0x1000, 0x10);
-    assert_eq!(dt.node_reg(b"dev", &mut out), Ok(1));
+    assert_eq!(dt.node_register_regions(b"dev", &mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), dev);
-    assert_eq!(dt.node_reg_compatible(b"example,dev", &mut out), Ok(1));
+    assert_eq!(
+        dt.node_register_regions_compatible(b"example,dev", &mut out),
+        Ok(1)
+    );
     assert_eq!((out[0].start, out[0].size), dev);
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0x2000, 0x20));
@@ -1285,7 +1303,7 @@ fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
 
 /// An empty needle names no device. A `compatible` value ends in a NUL, so splitting it on NUL
 /// leaves an empty last piece, and that piece is not an entry: counting it would answer
-/// `node_reg_compatible(b"")` with the first node that has any `compatible` at all. No caller
+/// `node_register_regions_compatible(b"")` with the first node that has any `compatible` at all. No caller
 /// passes an empty needle; the fuzz target does, and dtoolkit's `is_compatible("")` matches
 /// nothing, which is how measuring the two crates against each other found the difference.
 #[test]
@@ -1305,10 +1323,13 @@ fn an_empty_compatible_needle_matches_nothing() {
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
     let mut out = [Region { start: 0, size: 0 }; 2];
-    assert_eq!(dt.node_reg_compatible(b"", &mut out), Ok(0));
+    assert_eq!(dt.node_register_regions_compatible(b"", &mut out), Ok(0));
     assert_eq!(dt.node_property_compatible(b"", b"reg"), Ok(None));
     assert_eq!(dt.parent_property_compatible(b"", b"#size-cells"), Ok(None));
-    assert_eq!(dt.node_reg_compatible(b"example,dev", &mut out), Ok(1));
+    assert_eq!(
+        dt.node_register_regions_compatible(b"example,dev", &mut out),
+        Ok(1)
+    );
 }
 
 /// Every walker that reads cell widths ignores a malformed declaration of either kind, at the root
@@ -1372,10 +1393,14 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
                 (0x4000_0000, 0x1000),
                 "{case:?}"
             );
-            assert_eq!(dt.node_reg(b"dev", &mut out), Ok(1), "{case:?}");
+            assert_eq!(
+                dt.node_register_regions(b"dev", &mut out),
+                Ok(1),
+                "{case:?}"
+            );
             assert_eq!((out[0].start, out[0].size), (0x1000, 0x10), "{case:?}");
             assert_eq!(
-                dt.node_reg_compatible(b"example,dev", &mut out),
+                dt.node_register_regions_compatible(b"example,dev", &mut out),
                 Ok(1),
                 "{case:?}"
             );
@@ -1386,7 +1411,7 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
     }
 }
 
-/// `node_reg` answers for the first node whose name matches, and stops there, as `node_property` does.
+/// `node_register_regions` answers for the first node whose name matches, and stops there, as `node_property` does.
 /// A first match with no `reg` is zero regions; a later match's `reg` is never used in its place.
 #[test]
 fn node_reg_stops_at_the_first_matching_node_even_without_a_reg() {
@@ -1405,10 +1430,10 @@ fn node_reg_stops_at_the_first_matching_node_even_without_a_reg() {
 
     let mut out = [Region { start: 0, size: 0 }; 2];
     assert_eq!(dt.node_property(b"uart@", b"reg"), Ok(None));
-    assert_eq!(dt.node_reg(b"uart@", &mut out), Ok(0));
+    assert_eq!(dt.node_register_regions(b"uart@", &mut out), Ok(0));
 
     // The control: asked for the second node by its own name, it answers.
-    assert_eq!(dt.node_reg(b"uart@2", &mut out), Ok(1));
+    assert_eq!(dt.node_register_regions(b"uart@2", &mut out), Ok(1));
     assert_eq!((out[0].start, out[0].size), (0x2000, 0x100));
 }
 
@@ -1479,7 +1504,10 @@ fn a_property_length_past_the_blob_is_truncated_in_every_lookup() {
             Err(Error::Truncated),
             "{len:#x}"
         );
-        assert_eq!(dt.node_reg(b"memory", &mut out), Err(Error::Truncated));
+        assert_eq!(
+            dt.node_register_regions(b"memory", &mut out),
+            Err(Error::Truncated)
+        );
         assert_eq!(dt.node_property(b"memory", b"reg"), Err(Error::Truncated));
         assert_eq!(dt.boot_arguments(), Err(Error::Truncated));
         assert_eq!(dt.initial_ramdisk(), Err(Error::Truncated));
@@ -1514,7 +1542,10 @@ fn a_structure_block_without_its_end_token_is_truncated_not_read_into_the_string
     let no_end = patched(&blob, off_strings - 4, 4); // FDT_NOP in place of FDT_END
     let dt = DeviceTreeBlob::from_bytes(&no_end).unwrap();
     assert_eq!(dt.memory_regions(&mut out), Err(Error::Truncated));
-    assert_eq!(dt.node_reg(b"nothing", &mut out), Err(Error::Truncated));
+    assert_eq!(
+        dt.node_register_regions(b"nothing", &mut out),
+        Err(Error::Truncated)
+    );
     assert_eq!(dt.node_property(b"nothing", b"reg"), Err(Error::Truncated));
     assert_eq!(dt.boot_arguments(), Err(Error::Truncated));
     assert_eq!(dt.initial_ramdisk(), Err(Error::Truncated));
@@ -1758,8 +1789,8 @@ fn a_reg_that_does_not_fit_a_region_is_a_bad_value() {
         type Lookup<'t> = &'t dyn Fn(&mut [Region]) -> Result<usize, Error>;
         let lookups: [Lookup<'_>; 4] = [
             &|out| dt.memory_regions(out),
-            &|out| dt.node_reg(b"rtc@", out),
-            &|out| dt.node_reg_compatible(b"vendor,rtc", out),
+            &|out| dt.node_register_regions(b"rtc@", out),
+            &|out| dt.node_register_regions_compatible(b"vendor,rtc", out),
             &|out| dt.reserved_memory_regions(out),
         ];
         lookups

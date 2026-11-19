@@ -512,7 +512,7 @@ where
     //    may be RAM already mapped in step 1 (notes/visionfive2.md).
     let named = crate::device_tree().is_ok_and(|dt| {
         let mut slot = [device_tree_blob::Region { start: 0, size: 0 }; 1];
-        matches!(dt.node_reg_compatible(b"virtio,mmio", &mut slot), Ok(n) if n >= 1)
+        matches!(dt.node_register_regions_compatible(b"virtio,mmio", &mut slot), Ok(n) if n >= 1)
     });
     if named {
         direct_map(

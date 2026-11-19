@@ -167,7 +167,7 @@ pub fn discover(tree: &DeviceTreeBlob<'_>, number: PortNumber) -> Result<Option<
         PortNumber::One => 1,
     }];
     let mut regions = [Region { start: 0, size: 0 }; 2];
-    let found = tree.node_reg(name, &mut regions)?;
+    let found = tree.node_register_regions(name, &mut regions)?;
     if found == 0 {
         return Ok(None);
     }

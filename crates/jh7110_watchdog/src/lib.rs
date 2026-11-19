@@ -288,7 +288,7 @@ pub fn discover(
 ) -> Result<Option<Discovered>, device_tree_blob::Error> {
     for compatible in [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR] {
         let mut reg = [device_tree_blob::Region { start: 0, size: 0 }; 1];
-        if tree.node_reg_compatible(compatible, &mut reg)? == 0 {
+        if tree.node_register_regions_compatible(compatible, &mut reg)? == 0 {
             continue;
         }
         return Ok(Some(Discovered {

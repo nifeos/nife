@@ -426,17 +426,22 @@ impl<'a> DeviceTreeBlob<'a> {
         Ok(found)
     }
 
-    /// The register regions (`reg`, the specification's name for the property) of the first node
-    /// whose name starts with `prefix`, searched at any depth.
+    /// The register regions (`reg`, the Devicetree Specification's abbreviation for the
+    /// property) of the first node whose name starts with `prefix`, searched at any depth.
     ///
     /// Decodes with the `#address-cells`/`#size-cells` of the node's **parent**, carried down a
     /// per-depth stack, so a device nested under `/soc` reads as well as one under the root. A GIC
     /// decodes to two regions, distributor first, as its binding orders them. Matching a name prefix
-    /// rather than `compatible` is a simplification; [`node_reg_compatible`](Self::node_reg_compatible)
+    /// rather than `compatible` is a simplification; [`node_register_regions_compatible`](Self::node_register_regions_compatible)
     /// is the correct lookup. The first match is the answer: one with no `reg` yields zero regions, and
     /// a later match's `reg` is never read in its place.
-    #[doc(alias = "register regions")]
-    pub fn node_reg(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
+    ///
+    /// Name: ratified 2026-11-19. Spelled out from the specification's `reg` ("register regions"),
+    /// with `#[doc(alias = "reg")]` as a search aid for the specification's term; refused
+    /// `node_reg`, with no alias for it (milestone 1085 (what an outside maintainer would fix before it
+    /// leaves) D3).
+    #[doc(alias = "reg")]
+    pub fn node_register_regions(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         // The cell counts declared by the node open at each depth, applying to its children. Depth
         // 0 is the slot above the root; the root is depth 1. The specification's defaults are 2
         // and 1.
@@ -460,7 +465,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     if target_at == Some(depth) {
                         // The whole node has been walked. Had it a `reg`, the property arm would
                         // have answered, so it has none. The first match is the answer, as for
-                        // `node_property` and `node_reg_compatible`: zero regions, and a later
+                        // `node_property` and `node_register_regions_compatible`: zero regions, and a later
                         // node's `reg` is not a substitute.
                         return Ok(0);
                     }
@@ -487,8 +492,8 @@ impl<'a> DeviceTreeBlob<'a> {
         Ok(0)
     }
 
-    /// The register regions (`reg`, the specification's name for the property) of the first node
-    /// whose `compatible` property lists the entry `compatible`, searched at any depth.
+    /// The register regions (`reg`, the Devicetree Specification's abbreviation for the
+    /// property) of the first node whose `compatible` property lists the entry `compatible`, searched at any depth.
     ///
     /// A match on **any** NUL-separated entry counts, as the binding intends: a node that says
     /// `"starfive,jh7110-rtc\0arm,pl031"` claims the PL031 register layout. The empty piece after the
@@ -510,12 +515,17 @@ impl<'a> DeviceTreeBlob<'a> {
     /// ));
     /// let tree = DeviceTreeBlob::from_bytes(blob)?;
     /// let mut rtc = [Region { start: 0, size: 0 }; 1];
-    /// let found = tree.node_reg_compatible(b"google,goldfish-rtc", &mut rtc)?;
+    /// let found = tree.node_register_regions_compatible(b"google,goldfish-rtc", &mut rtc)?;
     /// assert_eq!(&rtc[..found], [Region { start: 0x10_1000, size: 0x1000 }]);
     /// # Ok::<(), device_tree_blob::Error>(())
     /// ```
-    #[doc(alias = "register regions")]
-    pub fn node_reg_compatible(
+    ///
+    /// Name: ratified 2026-11-19. Spelled out from the specification's `reg` ("register regions"),
+    /// with `#[doc(alias = "reg")]` as a search aid for the specification's term; refused
+    /// `node_reg_compatible`, with no alias for it (milestone 1085 (what an outside maintainer would fix before it
+    /// leaves) D3).
+    #[doc(alias = "reg")]
+    pub fn node_register_regions_compatible(
         &self,
         compatible: &[u8],
         out: &mut [Region],
@@ -577,7 +587,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// entry `compatible`, searched at any depth. `Ok(None)` when no such node exists, or the node has no
     /// such property.
     ///
-    /// The property twin of [`node_reg_compatible`](Self::node_reg_compatible), deciding when the
+    /// The property twin of [`node_register_regions_compatible`](Self::node_register_regions_compatible), deciding when the
     /// matched node closes for the same reason. It exists because labels differ between machines:
     /// the PLIC is `plic@c000000` on QEMU `virt` and `interrupt-controller@c000000` on the JH7110.
     ///

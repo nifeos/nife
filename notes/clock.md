@@ -167,7 +167,7 @@ address and knowing nothing else (rule 2).
 
 Discovery is by `compatible`, not by node name. The aarch64 board calls the node
 `pl031@9010000`; the RISC-V board calls its RTC `rtc@101000`. No name prefix finds both, so this
-uses `dtb::node_reg_compatible`. Two wrinkles the fixture tests pin. `compatible` is a NUL-separated
+uses `dtb::node_register_regions_compatible`. Two wrinkles the fixture tests pin. `compatible` is a NUL-separated
 list and a match on any entry counts (the PL031 declares `"arm,pl031", "arm,primecell"`). The node
 writes `reg` before `compatible`, so the decode has to wait for the node to close rather than decide
 at the `reg` property.

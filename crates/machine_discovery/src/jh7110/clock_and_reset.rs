@@ -66,7 +66,7 @@ fn discover_window(
 ) -> Result<WindowLocation, Error> {
     for spelling in &window.spellings {
         let mut regions = [Region { start: 0, size: 0 }; MAXIMUM_REGISTER_ENTRIES];
-        let n = tree.node_reg_compatible(spelling.compatible, &mut regions)?;
+        let n = tree.node_register_regions_compatible(spelling.compatible, &mut regions)?;
         if n == 0 {
             continue;
         }
