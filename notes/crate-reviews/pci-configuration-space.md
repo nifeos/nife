@@ -69,9 +69,8 @@ otherwise.
 | MSRV 1.88, on a copy outside the tree | builds and tests pass |
 | Miri | the test suite passes |
 | `cargo kani`, each of the ten harnesses | all ten `VERIFICATION:- SUCCESSFUL`; the slowest are `read_bars_is_total_for_any_device` (211 s), `the_bus_queue_stays_inside_its_array_on_any_firmware` (57 s) and the two walk harnesses (26 s and 28 s) |
-| the ten falsification patches | each applies with `patch -p3`; whether each turns its harness red is the template's `falsify` job, see below |
-| `script/crate-standalone pci_configuration_space` | see "What still blocks the move" |
-| `script/crate-move --dry-run` | see "What still blocks the move" |
+| `script/crate-standalone pci_configuration_space` | one failure. `names`: 66 names are not ratified, which is the architect's table below. The build passes on 1.88 for the host and the three bare-metal targets, the proofs report 10 verified harnesses and 0 failures, and each of the ten falsification patches turns its harness red |
+| `script/crate-move --dry-run` | stages the tree and builds it; three findings for the move lane, which the move lane lists again when it runs the move for real, and the list of files in nife that name the crate, which is the path-dependency conversion below |
 | `script/lint` | run before the push; the pull request's checks are the record |
 
 Not run, and so not claimed:
