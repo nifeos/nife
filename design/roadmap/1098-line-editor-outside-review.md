@@ -114,8 +114,8 @@ identity, as the other contract crates did.
 Door: one-way: the number lands in every built program's interfaces note.
 
 Prior art. In this tree `entropy_contract` (12, version 1) and `resolver_contract` (11, version 1)
-took their identities before they moved, and Linux versions its `termios` ABI through
-`TCGETS2`. Where nife differs: the check runs at spawn, not at the first call. Example: under A,
+took their identities before they moved. Linux, which has no such check, added `termios2` and
+`TCGETS2` beside the old layout rather than change it. Where nife differs: the check runs at spawn, not at the first call. Example: under A,
 the shell's note carries `(terminal_contract::INTERFACE_ID, 1)`.
 
 Blocks: the move.
