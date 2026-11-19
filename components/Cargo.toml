@@ -673,7 +673,7 @@ driver_process_contract = { version = "0.1.0", path = "../crates/driver_process_
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # radon's SD/MMC driver (milestone 53): designware_mobile_storage.rs is its register window and
 # serve loop over it.
-designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "ce50796532385586a46620bc9545b25b22593fae" }
+designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/designware_mobile_storage", rev = "85c4e1b58bb5d76efbc0b48d3ff51024d3904b12" }
 # The JH7110 facts `designware_ethernet_control` needs and the driver crate does not hold: the
 # board's bus configuration and the always-on syscon's interface-select field.
 machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
