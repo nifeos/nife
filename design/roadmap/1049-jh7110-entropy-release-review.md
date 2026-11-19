@@ -190,15 +190,15 @@ Recommended: make both `pub`. Additive, two-way. Effort XS.
 
 #### Item 16: Decode the read-only build registers and the reseed-state field
 
-Status: Done, names open. Landed in `nifeos/jh7110_entropy#21`; the new names wait on *Open decisions*.
+Status: Done. Landed in `nifeos/jh7110_entropy#21`; the new names stand as ruled, under *Open decisions*.
 
 NetBSD names
 `FEATURES` bits (`MM_RESET_STATE` 3, `RAND_SEED_AVAIL` 2, `MAX_RAND_LENGTH` 1:0) and `BCONF`
 bits (`AUTO_RESEED_LOOPBACK` 5, `MODE_AFTER_RST` 4, `PRNG_LEN_AFTER_RST` 3, `MAX_PRNG_LEN` 2);
 Linux names the `STAT.LAST_RESEED` field at bit 16, whose value 7 the crate cites in prose. The crate names the two register offsets and
 no field, so a bench dump of them is undecodable with this crate alone, and exactly these fields answer item 4's width question. `SEED_1..6_REGISTER` are also absent while
-`RANDOM_NUMBER_0..7` are all present. Additive; the new names are provisional and go to the
-name review. Two-way. Effort S.
+`RANDOM_NUMBER_0..7` are all present. Additive; the new names stand, under *Open decisions*.
+Two-way. Effort S.
 
 #### Item 17: A rand_core adapter behind a feature. Declined
 
@@ -231,68 +231,17 @@ toolchain. Two-way. Effort XS.
 
 ## Open decisions
 
-The rulings this block records stand: the first published version (item 1), the width outcome
-`WrongOutputWidth` (item 6), the `Pool` changes (item 8), the names of item 9 and the declined
-`rand_core` feature (item 17). The publication steps (items 1 to 3) wait on the publishing hold and
-ask nothing until it lifts. The maintainers rule the parameter name `out` of `Pool::take_into`
-provisionally: a parameter name is not part of a Rust API, so changing it later breaks no caller.
-One decision is open.
+None. The publication steps (items 1 to 3) wait on the publishing hold and ask nothing until it
+lifts.
 
-### Ratify the public names added since the last ratification
-
-The crate gained twelve public names after the four ratified groups. Item 16 added eleven constants
-that decode the read-only build registers and the reseed-state field of the status register, and
-the `take_into` method arrived with a caller's request to fill a byte slice. Each shipped as
-provisional, in the pre-release `v0.3.0-pre.1` that the kernel pins by commit. `SEED_1_REGISTER` to
-`SEED_6_REGISTER` follow the ratified `SEED_n_REGISTER` pattern and are not asked again.
-
-It matters now because a crates.io version is permanent. Once 0.3.0 publishes, a rename costs a
-0.4.0 and every user's edit; before it, a rename costs a new pre-release and one pin bump in the
-kernel. The publishing hold means nothing publishes soon, so the answer is not urgent, but it is the
-last thing between this repository and a release pull request.
-
-The constraint is the naming rules: names are spelled out, a length or limit carries its unit, and
-the specification's mnemonics stay as `#[doc(alias)]`. The specification's `MAX_RAND_LENGTH`,
-`PRNG_LEN_AFTER_RST` and `MAX_PRNG_LEN` are widths with no unit, and the units check refuses
-`LENGTH` without one, so the crate spells them `WIDEST_OUTPUT` and `OUTPUT_WIDTH`, which matches the
-ratified `MODE_256_BIT_OUTPUT` and `STATUS_256_BIT_OUTPUT`. The seven naming checks of the template
-refuse none of the twelve.
-
-The names, with the source mnemonic each decodes; the crate carries the mnemonic as an alias on the
-first constant of each field:
-
-| name | source mnemonic |
-|---|---|
-| `STATUS_LAST_RESEED_MASK`, `STATUS_LAST_RESEED_SHIFT` | Linux `STARFIVE_STAT_LAST_RESEED(x)` (bit 16) |
-| `STATUS_LAST_RESEED_UNSEEDED` (the value 7) | none; the crate's prose cited it |
-| `FEATURES_MISSION_MODE_RESET_STATE` | NetBSD `FEATURES_MM_RESET_STATE` |
-| `FEATURES_RANDOM_SEED_AVAILABLE` | NetBSD `FEATURES_RAND_SEED_AVAIL` |
-| `FEATURES_WIDEST_OUTPUT_MASK`, `FEATURES_WIDEST_OUTPUT_256_BIT` | NetBSD `FEATURES_MAX_RAND_LENGTH` |
-| `BUILD_CONFIGURATION_AUTOMATIC_RESEED_LOOPBACK` | NetBSD `BCONF_AUTO_RESEED_LOOPBACK` |
-| `BUILD_CONFIGURATION_MISSION_MODE_AFTER_RESET` | NetBSD `BCONF_MODE_AFTER_RST` |
-| `BUILD_CONFIGURATION_OUTPUT_WIDTH_AFTER_RESET` | NetBSD `BCONF_PRNG_LEN_AFTER_RST` |
-| `BUILD_CONFIGURATION_WIDEST_OUTPUT_256_BIT` | NetBSD `BCONF_MAX_PRNG_LEN` |
-| `Pool::take_into` | none |
-
-Prior art, read for this brief: NetBSD's `sys/arch/riscv/starfive/jh7110_trng.c` (trunk) names the
-`FEATURES` and `BCONF` bits above and describes bit 2 of `FEATURES` as "ring oscillator" present or
-not; Linux's `drivers/char/hw_random/jh7110-trng.c` (mainline) names only the `LAST_RESEED` field.
-For a method that fills a caller's slice and may stop short, the standard library's `Read::read`
-answers the count it wrote, as `take_into` does. rand_core 0.10's `fill_bytes(dst)` and getrandom
-0.4's `fill(dest)` fill the whole slice or fail, so a `fill` name would promise more than
-`take_into` gives. In the tree, `components/src/timetable.rs` has a private `read_into(..., out)`
-of the same shape, and the `_MASK` and `_SHIFT` suffixes appear in `boot_slot`,
-`byte_sink_contract`, `clock_contract` and `credential_contract`.
-
-Recommended: A.
-
-- A. Ratify all twelve names as built.
-- B. Ratify them except `take_into`, which takes a name you give; this
-  costs one rename, a `v0.3.0-pre.2` tag and a kernel pin bump.
-- C. Rename any of the eleven constants you name; the same cost as B.
-
-The door is one-way at the first publish and two-way until then. Blocked until it is answered: the
-release pull request for 0.3.0, which also waits on the publishing hold.
+Ruled 2026-11-19: the twelve public names added since the last ratification stand as built, ratifying each:
+`STATUS_LAST_RESEED_MASK`, `STATUS_LAST_RESEED_SHIFT`, `STATUS_LAST_RESEED_UNSEEDED`,
+`FEATURES_MISSION_MODE_RESET_STATE`, `FEATURES_RANDOM_SEED_AVAILABLE`, `FEATURES_WIDEST_OUTPUT_MASK`,
+`FEATURES_WIDEST_OUTPUT_256_BIT`, `BUILD_CONFIGURATION_AUTOMATIC_RESEED_LOOPBACK`,
+`BUILD_CONFIGURATION_MISSION_MODE_AFTER_RESET`, `BUILD_CONFIGURATION_OUTPUT_WIDTH_AFTER_RESET`,
+`BUILD_CONFIGURATION_WIDEST_OUTPUT_256_BIT` and `Pool::take_into`. The parameter name `out` of
+`Pool::take_into` is a provisional call of the maintainers: a parameter name is not part of a Rust
+API, so changing it later breaks no caller.
 
 ## The first published version
 
@@ -329,8 +278,6 @@ Each item above carries its status. What is still open:
   `allow-unpublished: true` in the release pull request, then pass `cargo publish --dry-run`, and
   create the first-publish token. All wait on the publishing hold; checked on `main`, where the
   manifest still refuses to publish.
-- **Outstanding.** The twelve provisional public names, under *Open decisions*; checked against
-  `src/lib.rs` on `main`.
 - **Outstanding.** The README's bring-up paragraph gives the measured poll times, a done-when check
   the README contradicted; carried by `nifeos/jh7110_entropy#34`.
 - **Done.** `weekly` is green on `main` (run `44470342339`), with the `proofs / loom` check its
