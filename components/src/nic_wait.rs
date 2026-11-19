@@ -6,8 +6,8 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use smoltcp::time::Duration;
 use network_stack::polled_wait;
+use smoltcp::time::Duration;
 
 use super::*;
 

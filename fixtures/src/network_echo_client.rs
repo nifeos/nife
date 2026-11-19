@@ -33,8 +33,8 @@
 #![no_main]
 
 use abi::rights;
-use socket_fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
 use socket_contract::*;
+use socket_fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
     call, call_receiving, capability_delete, exit, is_granted, map_page_frame,
