@@ -83,4 +83,5 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | names for the architect, then clearance |
+| [`page_frames`](crate-reviews/page-frames.md) | kernel | ready for review |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |
