@@ -7,7 +7,7 @@ page.*
 The architect reads this to clear the crate for its move to its own repository, as part of step 5 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
 the `process-tools` leaves. It describes the crate as `main` plus this branch leaves it. The review
-that raised the work is [milestone 1087 (what an outside maintainer would fix before the crate
+that raised the work is [milestone 1087 (what an outside maintainer would fix before it
 leaves)](../../design/roadmap/1087-domain-name-system-outside-review.md); its Decision 4 rules that
 this package comes first and that the move does not wait for the resolver contract.
 
@@ -34,7 +34,7 @@ back into nife except text this package lists. Every public name stands as built
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88 (the floor that `as_chunks_mut` sets) |
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest with `description`, `readme`, `keywords` and `categories` |
-| `publish` | `false`; milestone 1017 keeps the moved contract crates unpublished under §305 until their own release milestone, and the publish hold stands |
+| `publish` | `false`; milestone 1017 keeps the moved contract crates unpublished under §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit) until their own release milestone, and the publish hold stands |
 | dependencies | none |
 | size | `src/lib.rs` 1,086 lines, `src/proofs.rs` 165 lines (the Kani harnesses, compiled only under `cfg(kani)`), `tests/replies.rs` 781 lines, three captured replies under `tests/fixtures/` |
 
@@ -77,7 +77,7 @@ check names.
 | the MSRV copy: the crate copied outside the tree, `cargo +1.88 test` and the three target builds | 43 tests and 4 doctests pass, and all three targets build. `cargo +1.85 build` refuses the crate for its `rust-version` of 1.88, as it should |
 | `cargo kani` on that copy (Kani 0.68.0) | 4 harnesses verified, 0 failures. Times while other gates ran beside it: the dotted parse 389 seconds, the name decoder 97, the TCP reassembly 48, the header 2 |
 | `script/crate-standalone domain_name_system` | clean: the build on 1.88 for the host and three targets, the four harnesses, and each of the four falsification patches fails its own harness |
-| `script/crate-move domain_name_system --dry-run --into <scratch>` | stages at template `v8` (`a69ab4829b02`); 15 files copied, 27 scaffold files, the `Name:` blocks stripped from 2 files, 4 patches regenerated and applied with no offset, the fuzz target staged with its 3 corpus inputs, host tests and three targets build on 1.88, the fuzz target builds and runs once over its corpus. The template's cheap checks pass except two findings, listed under "What the move needs" |
+| `script/crate-move domain_name_system --dry-run --into <scratch>` | stages at template `v8` (`a69ab4829b02`). It copies 15 files, adds 27 scaffold files and strips the `Name:` blocks from 2 files. It regenerates 4 patches, and they apply with no offset. It stages the fuzz target with its 3 corpus inputs. Host tests and the three targets build on 1.88, and the fuzz target builds and runs once over its corpus. The template's cheap checks pass except two findings, listed under "What the move needs" |
 | `script/names domain_name_system` and `python3 helpers/name_release.py --draft domain_name_system` | the crate name and every public name ratified; none provisional and none without a block |
 | the template's naming helpers over `src/` and `tests/` | `spelled_out`, `unit_symbols`, `british_spelling`, `question_shape` and `contract_names` refuse none of 427 names. `register_names` refuses 9 (see below). `abbreviations` (report only) finds 54 components in three files |
 | `python3 helpers/lint_externalized_crates.py` | the crate has 0 hits, below its waiver ceiling of 12 |
@@ -122,13 +122,19 @@ What a stranger may find surprising:
 
 ## Proofs
 
-Four Kani harnesses in `src/proofs.rs`, each with a falsification patch in `falsifications/` that
-`script/crate-standalone` applied and saw fail: the name decoder is total and stays in bounds, a
-header round-trips on every value, `TcpReply` is total on any split of its input and refuses a reply
-longer than it announced, and the dotted parse accepts exactly the valid names. `Query::accept` is
-too large for the solver, so a fuzz target asserts that an accepted address is really in the answer
-section under the reported name, that TCP framing does not change the bytes, and that the decoder is
-total at every offset. No Miri and no mutation run backs these claims today (see above).
+Four Kani harnesses in `src/proofs.rs` each carry a falsification patch in `falsifications/`.
+`script/crate-standalone` applied each patch and saw its harness fail. The harnesses prove four
+things:
+
+- The name decoder is total and stays in bounds.
+- A header round-trips on every value.
+- `TcpReply` is total on any split of its input and refuses a reply longer than it announced.
+- The dotted parse accepts exactly the valid names.
+
+`Query::accept` is too large for the solver, so a fuzz target covers it. The target asserts three
+properties. An accepted address is really in the answer section under the reported name. TCP framing
+does not change the bytes. The decoder is total at every offset. No Miri run and no mutation run
+backs these claims today (see above).
 
 ## Names
 
@@ -169,7 +175,7 @@ for it, or for one lane before it:
 | `register_names` refuses 9 names, all on the word `address`: the binding `address` in `src/lib.rs` (line 977) and eight names in `tests/replies.rs` (lines 24, 135, 245, 257, 279, 342, 361 and 414). Milestone 1087 item 7 part b leaves them. Qualify each as IPv4, as Decision 3 did for the public names, or write `.github/accepted-words` entries. | a lane before the move |
 | Carry the three equivalent mutants (`Name::is_within` `<` to `<=` and two `|` to `^` on disjoint bit ranges) into `.github/mutants-exempts` with their reasons, then dispatch `mutation.yml` once on `main` before the tag. | move lane |
 | The `.github/accepted-words` file lists `tcp`, `udp` and `ipv4`; the template's `prose_acronyms` flags 13 acronyms in the README and `src/` for expansion or that list. | move lane |
-| Nife side: drop the workspace member, convert the three path dependencies (`components`, `domain_name_resolution_contract`, `system_tests`) to `git` with `rev` and `version = "0.1.0"`, delete the fuzz dependency and the target `domain_name_system_reply` with its `script/fuzz` and `notes/fuzzing/targets.md` rows, refresh `fuzz/Cargo.lock`, and delete the mutation baseline row. The dry run lists the other files that name the crate. | move lane, in a nife pull request |
+| Nife side: drop the workspace member. Convert the three path dependencies (`components`, `domain_name_resolution_contract`, `system_tests`) to `git` with `rev` and `version = "0.1.0"`. Delete the fuzz dependency, the target `domain_name_system_reply` and its `script/fuzz` and `notes/fuzzing/targets.md` rows. Refresh `fuzz/Cargo.lock` and delete the mutation baseline row. The dry run lists the other files that name the crate. | move lane, in a nife pull request |
 | Remove the crate's `lint_externalized_crates.py` waiver (0 hits against a ceiling of 12) and update its rows in `helpers/template_report_baseline.txt` and `helpers/vendored_name_gates.py`. | move lane |
 | Run the stranger test, the template's workflows and the first weekly mutation run in the new repository. | move lane |
 

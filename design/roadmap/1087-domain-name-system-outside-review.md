@@ -162,7 +162,7 @@ The P1 items are in [the appendix](1087-domain-name-system-outside-review/before
 ## Decisions for the architect
 
 Each is a rule in force. The ratification of every public name as built, 2026-11-16 (UTC), covers
-the first three. Decision 4 is ruled 2026-11-19 (UTC).
+the first three. Decision 4 dates from 2026-11-19 (UTC).
 
 ### Decision 1. `MAXIMUM_LABEL_BYTES` and `HEADER_BYTES`
 
@@ -208,9 +208,9 @@ looks first. Example: `answer.ipv4_addresses()` says what `&[[u8; 4]]` holds, an
 
 The move follows `notes/crate-move.md`: a review package, the architect's review clearance, then
 the repository. Milestone 1017 (the contract crates leave in this order) places this crate in step
-5, before `domain_name_resolution_contract`, which pins it as a `git` dependency. The package is
-written now, from the crate as it stands, and the architect's clearance is brought from it. The
-move does not wait for the resolver contract, whose names are ruled. Creating a public repository
+5, before `domain_name_resolution_contract`, which pins it as a `git` dependency. A lane writes the
+package now, from the crate as it stands, and the architect clears the move from it. The
+move does not wait for the resolver contract, whose names have settled. Creating a public repository
 is an outward step, so the clearance itself stays the architect's. Prior art:
 `file_allocation_table` and `e1000e` each cleared from a written package before their repository
 existed. Example: the architect clears the package, and `script/crate-move domain_name_system`
