@@ -1,10 +1,12 @@
 # P2: after the first release
 
 An appendix to [the milestone](../1060-extensible-host-controller-interface-outside-review.md).
-Every item here is two-way and the maintainers' provisional call. A name an item mints is
-provisional.
+Every item here is two-way and the maintainers' provisional call, and every one landed before the
+first release. A name an item mints is provisional until the milestone's open decision rules on it.
 
 ## P2-1. Two clamps that cannot fire, and a doc comment that claims them
+
+Status: Done: nifeos/extensible_host_controller_interface#15.
 
 For full and low speed, `interrupt_interval` in `src/context.rs` computes the period in
 microframes as `descriptor_interval * 8`, between 8 and 2,040, so the exponent always lies between
@@ -16,6 +18,8 @@ and say in the doc comment that 3 to 10 is the range the arithmetic produces. Th
 as equivalent, since both give 16. XS.
 
 ## P2-2. Five proofs are cheap and missing
+
+Status: Done: nifeos/extensible_host_controller_interface#10.
 
 The README says "Not yet proven: event decoding". Four more properties lack a proof:
 
@@ -32,11 +36,15 @@ red, and the README's "Not yet proven" line goes. S.
 
 ## P2-3. The crate's front page on docs.rs shows no code
 
+Status: Done: nifeos/extensible_host_controller_interface#15 (the example), #20 (one sentence per module).
+
 The crate documentation in `src/lib.rs` is prose and limits; the example lives in the README, which
 the crate compiles as a doctest and docs.rs does not render. Change: the README example in the
 crate documentation, and one sentence per module on when a driver reaches for it. XS.
 
 ## P2-4. The event ring dequeue pointer comes back without the busy bit a write needs
+
+Status: Done: nifeos/extensible_host_controller_interface#15, as the sentence on `dequeue_pointer`.
 
 `EventRing::dequeue_pointer` says it is the physical address to write to `ERDP`, and a write that
 does not also set the Event Handler Busy bit leaves the interrupter's busy state pending. The
@@ -46,12 +54,16 @@ on `dequeue_pointer` saying to set it. XS.
 
 ## P2-5. One interrupter
 
+Status: Done: nifeos/extensible_host_controller_interface#15. Its name waits on the open decision in the milestone.
+
 `Capabilities::interrupter` reaches interrupter 0 only, through `INTERRUPTER_0_REGISTER`; the
 stride between interrupter register sets is 32 bytes, and nothing reads the decoded
 `maximum_interrupters`. Change: `interrupter_register(interrupter: u16, register_offset: u64)` beside the
 existing method. Additive. XS.
 
 ## P2-6. The Supported Protocol capability is absent
+
+Status: Done: nifeos/extensible_host_controller_interface#15. Its names wait on the open decision in the milestone.
 
 `src/extended_capabilities.rs` names one id, `LEGACY_SUPPORT_EXTENDED_CAPABILITY_ID`. The Supported
 Protocol capability (id 2) says which port numbers belong to USB 2 and which to USB 3, and carries
@@ -62,6 +74,8 @@ Additive. S.
 
 ## P2-7. The driver's other waits have no named constants
 
+Status: Done: nifeos/extensible_host_controller_interface#15. Its names wait on the open decision in the milestone.
+
 `src/port.rs` carries the debounce figures (`DEBOUNCE_STABLE_MILLISECONDS` and its two siblings)
 with their source, and nothing else a driver waits on: the command completion bound, the port reset
 bound, the controller-not-ready wait after reset, the halt wait. Change: named constants in
@@ -69,6 +83,8 @@ milliseconds beside them, each with its source (the specification's timing table
 defaults). Additive. XS.
 
 ## P2-8. The direct memory access layout is one driver's, and the module does not say so
+
+Status: Done: nifeos/extensible_host_controller_interface#15.
 
 `src/direct_memory_access.rs` fixes eleven pages for one slot, one keyboard, four report slots and
 one scratchpad page, and says both ends read these constants. Nothing else in the crate reads them,
@@ -78,6 +94,8 @@ in the crate depends on it, and that a different driver lays out its own. XS.
 
 ## P2-9. The bit constants carry no `doc(alias)` for their mnemonics
 
+Status: Done: nifeos/extensible_host_controller_interface#15.
+
 The register offsets carry the specification's mnemonic as an alias (`USBCMD`, `IMAN`), and so do
 the interrupter bits. The command, status, port and legacy bits do not: `COMMAND_RUN` (`RS`),
 `COMMAND_RESET` (`HCRST`), `STATUS_HALTED` (`HCH`), `CONNECTED` (`CCS`), `ENABLED` (`PED`) and the
@@ -85,6 +103,8 @@ rest in `src/registers.rs` and `src/port.rs`. Change: `#[doc(alias = "PORTSC.CCS
 in the form the interrupter bits use. Additive. XS.
 
 ## P2-10. Small text fixes for a stranger
+
+Status: Done: nifeos/extensible_host_controller_interface#15 for the texts and the test name; the repository description and topics name xHCI and USB. `deny.toml` keeps the scaffold's list.
 
 - `CODEOWNERS` says the maintainers' team may not exist; it does. Drop the caveat.
 - `CONTRIBUTING.md` says the crate stays "free of vocabulary from any other tree", which means
@@ -100,6 +120,8 @@ in the form the interrupter bits use. Additive. XS.
 XS.
 
 ## P2-11. `rust-version` is higher than the code needs
+
+Status: Done: nifeos/extensible_host_controller_interface#15.
 
 The library and its tests build and pass at 1.85 except for one call to `is_multiple_of` in the
 host test `a_port_that_never_holds_still_ends_at_the_timeout`, stabilized in 1.87. Edition 2024
