@@ -88,7 +88,7 @@ for the template, through its own queue. Two-way. S.
 
 #### P1-2. The stranger run has never been recorded, and the README does not carry what a stranger needs
 
-Status: Done: nifeos/extensible_host_controller_interface#2 recorded the first stranger run, #4 added the section, #20 put the install line on one line. nifeos/extensible_host_controller_interface#23 (draft) records the newer run of issue #18.
+Status: Done: nifeos/extensible_host_controller_interface#2 recorded the first stranger run, #4 added the section, #20 put the install line on one line. nifeos/extensible_host_controller_interface#23 records the newer run of issue #18.
 
 `docs/stranger-test.md` reads `Last run: none`, and the weekly `stranger cadence` job fails closed
 on it. The README gives no build or test command. Its Kani install command breaks across two lines
@@ -277,50 +277,24 @@ Ruled, and in force:
    codes with `completion::name`, `DebounceVerdict`, `TransferType`, `try_enqueue`, `complete` and
    `examples/fake_controller.rs`.
 3. The crate takes the pre-release tag `v0.1.0-pre.3` after a green dry run on `main`, with nothing
-   published (ruled 2026-11-19). Open: in flight in
-   `nifeos/extensible_host_controller_interface` #22.
+   published (ruled 2026-11-19). Done: `nifeos/extensible_host_controller_interface` #22 merged and
+   the tag exists.
 4. No crate publishes until every outside review milestone is delivered (ruled 2026-11-18).
    `publish = false` stays.
+5. The names the P2 batch added stand as built, placement included (ruled 2026-11-19), listed under
+   Open decisions.
 
-The maintainers' provisional calls: every two-way item above and in the appendix. One question is
-open, below.
+The maintainers' provisional calls: every two-way item above and in the appendix. Nothing is open.
 
 ## Open decisions
 
-### Do the names the P2 batch added stand as built?
-
-`nifeos/extensible_host_controller_interface` #15 closed the P2 items, and in doing so added public
-names nobody has ratified. P2-5 added `Capabilities::interrupter_register(interrupter,
-register_offset) -> Option<u64>`. P2-6 added `SUPPORTED_PROTOCOL_EXTENDED_CAPABILITY_ID` and the
-struct `SupportedProtocol`, with fields `major_revision`, `minor_revision`, `name`,
-`first_port_number`, `port_count` and `speed_id_count` and methods `decode` and `contains_port`.
-P2-7 added five waits: `HALT_TIMEOUT_MILLISECONDS`, `CONTROLLER_RESET_TIMEOUT_MILLISECONDS` and
-`COMMAND_COMPLETION_TIMEOUT_MILLISECONDS` at the crate root, and `port::POWER_ON_WAIT_MILLISECONDS`
-and `port::RESET_TIMEOUT_MILLISECONDS`.
-
-They matter now because the first publish freezes every public name. Decision 2 ratified the P1 names; these arrived after it. The
-constraint is nife's naming rules: words spelled out, a limit carries its unit, std spellings win,
-spec mnemonics only as `doc(alias)`. Each name follows them. The three controller waits sit at the
-crate root because the register naming gate refuses a timeout inside `registers`, which is a placement choice.
-
-Ratifying costs nothing. A rename costs one crate pull request; no caller in nife uses any of
-these names.
-
-Recommendation: A.
-
-- A. They stand as built, placement included.
-- B. They stand, but the three controller waits move into a `timing` module beside the port waits'
-  module, so every wait reads from one place.
-- C. Named changes, given name by name.
-
-Door: two-way until the first publish, one-way after it. Prior art, read in Linux's
-`drivers/usb/host/xhci-caps.h`, `xhci.h` and `xhci-ext-caps.h`. Linux names the same waits
-`XHCI_MAX_HALT_USEC` (32 ms), `XHCI_RESET_LONG_USEC` (10 s) and `XHCI_CMD_DEFAULT_TIMEOUT` (5 s).
-It reads the capability through `XHCI_EXT_CAPS_PROTOCOL`, `XHCI_EXT_PORT_MAJOR`,
-`XHCI_EXT_PORT_OFF`, `XHCI_EXT_PORT_COUNT` and `XHCI_EXT_PORT_PSIC`. Linux abbreviates and puts the
-unit in a suffix; this crate spells the same split out. The tree's analogue is decision 2, ruled as built.
-Blocked until answered: the release review's name list for this crate, and so its first publish;
-no tag waits on it.
+None. The names the P2 batch added stand as built, placement included (ruled 2026-11-19 UTC):
+`Capabilities::interrupter_register`, `SUPPORTED_PROTOCOL_EXTENDED_CAPABILITY_ID`,
+`SupportedProtocol` (fields `major_revision`, `minor_revision`, `name`, `first_port_number`,
+`port_count` and `speed_id_count`; methods `decode` and `contains_port`), the crate-root
+`HALT_TIMEOUT_MILLISECONDS`, `CONTROLLER_RESET_TIMEOUT_MILLISECONDS` and
+`COMMAND_COMPLETION_TIMEOUT_MILLISECONDS`, and `port::POWER_ON_WAIT_MILLISECONDS` and
+`port::RESET_TIMEOUT_MILLISECONDS`. The publishing hold stands.
 
 ## Prior art
 
@@ -346,10 +320,9 @@ The checks, and the hardware steps the review claims none of, are in
   #20 and #21; each finding's status line names its pull request. The bounds of P1-5 and the rule
   of P1-7 come from the specification text (xHCI 1.2 section 4.9.2.2, Table 6-1, section 6.4.1),
   not from the reviewer's memory.
-- **Done.** `nifeos/extensible_host_controller_interface` #23 (draft until the tag exists) names
+- **Done.** `nifeos/extensible_host_controller_interface` #23 names
   every hardware check of the done-when appendix in the README's BUGS as unrun on silicon.
-- **Outstanding.** The names the P2 batch added wait on the ruling under Open decisions.
-- **Outstanding.** The `v0.1.0-pre.3` tag, in flight in #22.
+- **Done.** The `v0.1.0-pre.3` tag, by #22. Read from the tags.
 - **Outstanding.** The hardware checks of
   [the done-when appendix](1060-extensible-host-controller-interface-outside-review/done-when.md):
   none has a bench record. Read from the README's BUGS and nife's `bench/`.
@@ -357,5 +330,4 @@ The checks, and the hardware steps the review claims none of, are in
 ## Index row
 
 An outside reading of `extensible_host_controller_interface`: one manifest fix, fourteen items
-before the first release and eleven after it, all landed. Every P1 name is ratified; the names the
-P2 batch added wait on one ruling. The hardware checks are unrun, and publishing stays held.
+before the first release and eleven after it, all landed. Every name, the P1 and the P2 batch, is ratified. The hardware checks are unrun, and publishing stays held.
