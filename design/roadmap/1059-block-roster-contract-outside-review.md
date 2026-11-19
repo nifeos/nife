@@ -38,8 +38,7 @@ two call sites and no version bump.
 
 Publishing stays held. No crate from this organization publishes to crates.io until the
 maintainers have extracted several crates and a review has decided whether any of them combine.
-Nothing in this block lifts that hold, and no ruling covers a tag: a tag is a number others
-compare against, so placing one is a separate question for the architect.
+Nothing in this block lifts that hold, and no tag follows the rename (decision 6).
 
 ## What the review covered
 
@@ -215,7 +214,9 @@ Ruled 2026-11-09, and closed here:
 5. The crate is `block_roster_contract`, since [design/naming.md](../naming.md) ends a wire-contract
    crate in `_contract`.
 
-For the architect, one-way, not yet ruled: any tag, asked separately when the weekly gates pass.
+6. Whether to tag a third pre-release for the rename of `capacity_of` to `entry_capacity`. Ruled
+   2026-11-19: no `v0.1.0-pre.3` tag now. `v0.1.0-pre.2` stays the last tag. The question returns
+   when nife needs a newer pin or a release is near. Nothing publishes.
 
 The maintainers' provisional calls: every two-way item above and in the appendix, and the names of
 the capacity-word refusals in P1-3, which go through the naming review before any tag.
@@ -267,44 +268,24 @@ is tagged, and the weekly jobs pass on `main`.
 | P2-6 what a reader may trust | DONE: #10 |
 | P2-7 repository topics | DONE: the topics are `rust`, `no-std`, `formal-verification`, `kani`, `block-device`, `storage`, `virtio` and `nvme` |
 | P2-8 single-letter locals | DONE: #10 |
-| `capacity_of(len)` becomes `entry_capacity(page_bytes)` | Ruled; #20 builds it, awaiting merge |
-| any further tag | Open: see Open decisions |
+| `capacity_of(len)` becomes `entry_capacity(page_bytes)` | DONE: #20 |
+| any further tag | None now: decision 6 |
 
-The publishing hold keeps `publish = false`. The milestone closes when #20 merges, the tag question below has an answer.
+The publishing hold keeps `publish = false`.
 
 ## Open decisions
 
-### Whether to tag a third pre-release for the rename
-
-**Background.** A tag is a number others compare against, so placing one is the architect's call.
-`v0.1.0-pre.2` is the last tag. The only change on `main` since then that touches the public
-signature is the rename of `capacity_of` to `entry_capacity`. Nothing in this organization calls
-`capacity_of`: nife pins the crate by commit, not by tag. The weekly gates pass, so the condition
-this block set for asking is met. One-way once placed (the tag is a published number); no crates.io
-publish follows either way, since the hold stands.
-
-**Recommendation: A.**
-
-- A. Place no tag now. The next tag waits for the next batch of changes or for the lifting of the
-  publishing hold. Nothing consumes a tag today, and a tag costs a number that cannot be taken back.
-- B. Tag `v0.1.0-pre.3` after the dry run is green on `main`, so the renamed function has a tagged
-  release.
-
-**Prior art.** This crate took `v0.1.0-pre.1` and `v0.1.0-pre.2` each after a batch of public
-changes (the second after the `Result` from `Roster::read`). A one-function rename is the smallest
-change it has had to tag.
-
-**Blocks.** Nothing else waits on it. #20 merges either way.
+None. The publishing hold stands.
 
 ## Follow-on
 
 - **Done.** P0-1 to P0-2, P1-1 to P1-8 and every P2 item landed in
   `nifeos/block_roster_contract`; the table above names the pull request of each. nife #3568 moved
   the two call sites.
-- **Outstanding.** The rename of `capacity_of` to `entry_capacity` is `nifeos/block_roster_contract`
-  #20, open. Read from the repository through the GitHub API.
-- **Outstanding.** The tag question in Open decisions: `v0.1.0-pre.2` is the last tag, and the
-  repository's tags list confirms it.
+- **Done.** The rename of `capacity_of` to `entry_capacity` is `nifeos/block_roster_contract` #20,
+  merged. Read from the repository through the GitHub API.
+- **Outstanding.** A tag for the rename waits until nife needs a newer pin or a release is near
+  (decision 6). `v0.1.0-pre.2` is the last tag, and the repository's tags list confirms it.
 
 ## Index row
 
@@ -313,4 +294,4 @@ stranger run; mutation survivors inside the Kani module). Eight items go before 
 the mutation caller, a checked capacity word, `Display` on `TooManyDevices`, `forbid(unsafe_code)`
 and the shipped text are the maintainers' calls. A `Result` from `Roster::read`, `index` and three
 aliases, and `Hash` and `Ord` on `Device` sorted by transport then ordinal, with an exact-size
-`devices()`, are ruled. Eight follow it. Any tag is open; publishing stays held.
+`devices()`, are ruled. Eight follow it. No tag follows the rename; publishing stays held.
