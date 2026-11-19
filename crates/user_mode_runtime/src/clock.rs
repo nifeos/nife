@@ -135,7 +135,7 @@ pub fn now() -> u64 {
 ///
 /// # Panics
 /// If the rate is unknown (a zeroed or unrecognized page), rather than guessing one: the panic
-/// traps (see [`trap`]) and the kernel kills the process. [`counter_hertz_checked`] does not panic.
+/// traps (see [`trap`](crate::trap)) and the kernel kills the process. [`counter_hertz_checked`] does not panic.
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "x86_64")]
