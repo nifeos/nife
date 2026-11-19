@@ -65,8 +65,8 @@ An appendix to [the milestone](../1084-current-cpu-contract-outside-review.md).
    Evidence: `src/lib.rs` lines 143 to 166; `kernel/src/user/address_space.rs` line 159;
    `kernel/src/user/address_space_registry.rs` line 300.
    Change: `build_page_with(allowance: Option<NonZeroU64>, tick_hertz:
-   Option<NonZeroU64>)`, with `build_page()` kept as the all-unknown page. Decision B decides the
-   name, provisionally; the parameter types are the maintainer's.
+   Option<NonZeroU64>)`, with `build_page()` kept as the all-unknown page. Decision B ratified the
+   name (2026-11-19 UTC); the parameter types are the maintainer's.
    Door: two-way before the first tag. Effort: S, including the two kernel call sites.
 
 10. Nothing is machine-checked, and the template expects a proof or a stated reason.
