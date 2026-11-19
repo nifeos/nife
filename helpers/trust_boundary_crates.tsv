@@ -34,7 +34,7 @@ capability_table	kernel	kernel
 capability_witness_contract	userspace	fixtures
 capability_witness_protocol	userspace	retired
 caps	kernel	retired
-clock_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
+clock_contract	shared	retired
 clock_proto	shared	retired
 clock_protocol	shared	retired
 component_plan	shared	retired

@@ -193,6 +193,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/clock_contract?rev=26605ae02e06e972f38521ab74fddc21b6f18dea#26605ae02e06e972f38521ab74fddc21b6f18dea"
 dependencies = [
  "loom",
 ]

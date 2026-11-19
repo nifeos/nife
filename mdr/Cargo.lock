@@ -44,6 +44,7 @@ checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/clock_contract?rev=26605ae02e06e972f38521ab74fddc21b6f18dea#26605ae02e06e972f38521ab74fddc21b6f18dea"
 dependencies = [
  "loom",
 ]

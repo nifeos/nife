@@ -733,7 +733,7 @@ interfaces_note = { version = "0.1.0", path = "../crates/interfaces_note" }
 # The system log service's logic and its wire contracts (milestone 613, provisional names).
 system_log = { version = "0.1.0", path = "../crates/system_log" }
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }
-clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
+clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "26605ae02e06e972f38521ab74fddc21b6f18dea" }
 environment_contract = { version = "0.1.0", path = "../crates/environment_contract" }
 credentialer = { version = "0.1.0", path = "../crates/credentialer" }
 credential_contract = { version = "0.1.0", path = "../crates/credential_contract" }
