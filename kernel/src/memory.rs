@@ -280,8 +280,44 @@ fn record_jh7110(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         ) {
             *JH7110_PMIC_BUS.lock() = Some((sys, bus));
         }
+        record_jh7110_pci_express(dtb);
     }
     record_jh7110_ethernet(dtb);
+}
+
+/// **Record the JH7110's M.2 root port and the SYS clock-and-reset window its clocks live in**
+/// (milestone 163 (the JH7110's PCIe root complex)). Port 1 only: on a VisionFive 2 it is the M.2
+/// slot, and [`pci_regions`] holds one host.
+///
+/// Two guards. The caller has already established a JH7110 (the STG window is recorded), and the
+/// port's own node must name it with `status = "okay"`: its discovery has no constant fallback, so
+/// QEMU's `virt` and a tree without the node record nothing. Its own frame for
+/// [`record_jh7110`]'s reason.
+#[inline(never)]
+#[cfg(not(target_arch = "x86_64"))] // the device-tree front end
+fn record_jh7110_pci_express(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
+    let why = match machine_discovery::jh7110::pci_express::discover(
+        dtb,
+        jh7110_pci_express::PortNumber::One,
+    ) {
+        Err(_) => "the tree could not be read for it",
+        Ok(None) => {
+            "the tree names no port-1 `starfive,jh7110-pcie` node with `reg-names` `apb` and \
+             `cfg` and a 32-bit memory range"
+        }
+        Ok(Some(found)) if !found.status_okay => "its node's `status` is not `okay`",
+        Ok(Some(found)) => match machine_discovery::jh7110::clock_and_reset::discover_sys(dtb) {
+            Ok(sys) => {
+                *JH7110_PCI_EXPRESS.lock() = Ok(Jh7110PciExpress {
+                    port: found.port,
+                    sys,
+                });
+                return;
+            }
+            Err(_) => "the SYS clock and reset window was not found",
+        },
+    };
+    *JH7110_PCI_EXPRESS.lock() = Err(why);
 }
 
 /// **Record the JH7110's first Ethernet port and the three windows its bring-up writes**
@@ -677,14 +713,15 @@ pub(crate) fn jh7110_ethernet() -> Option<Jh7110Ethernet> {
 
 /// **The SYS clock-and-reset window, if anything on this machine needs it**: the PMIC bus's
 /// (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write)), the Ethernet port's
-/// (milestone 53) or the watchdog's (milestone 593). All come from the same `discover_sys`, so
+/// (milestone 53), the PCI Express port's (milestone 163) or the watchdog's (milestone 593). All come from the same `discover_sys`, so
 /// they are the same window, and `mmu::initialize` maps it once through this rather than once per
 /// user.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_sys_window() -> Option<jh7110_clock_and_reset::WindowLocation> {
     let sys = jh7110_pmic_bus()
         .map(|(sys, _)| sys)
-        .or_else(|| jh7110_ethernet().map(|e| e.sys));
+        .or_else(|| jh7110_ethernet().map(|e| e.sys))
+        .or_else(|| jh7110_pci_express().map(|p| p.sys));
     #[cfg(all(target_arch = "riscv64", soak_watchdog))]
     let sys = sys.or_else(|| jh7110_watchdog().map(|(_, sys)| sys));
     sys
@@ -715,11 +752,41 @@ pub(crate) struct Jh7110Ethernet {
     pub syscon: machine_discovery::jh7110::designware_ethernet::SystemController,
 }
 
+/// What [`jh7110_pci_express()`] answers: the root port as the tree describes it, and the SYS
+/// clock-and-reset window that holds the bus clock its bring-up ungates first.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Jh7110PciExpress {
+    /// The port's windows and its `PERST#` pin.
+    pub port: jh7110_pci_express::Port,
+    /// The SYS clock-and-reset window: `NOC_BUS_STG_AXI` and its reset.
+    pub sys: jh7110_clock_and_reset::WindowLocation,
+}
+
+/// **The JH7110's M.2 root port and the windows its bring-up writes** (milestone 163), or `None`
+/// on every machine whose tree names no such port with `status = "okay"`, which is every machine
+/// CI boots. RISC-V's `mmu::initialize` maps the page of each window the bring-up touches, and
+/// `drivers::jh7110_pci_express` brings the port up; only then does [`pci_regions`] name it.
+#[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
+pub(crate) fn jh7110_pci_express() -> Option<Jh7110PciExpress> {
+    JH7110_PCI_EXPRESS.lock().ok()
+}
+
+/// **Why a JH7110's tree gave no root port to bring up**, for the boot log; `None` when it gave
+/// one, or when the machine is not a JH7110 (the clock and reset generator was not found).
+#[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))]
+pub(crate) fn jh7110_pci_express_absent() -> Option<&'static str> {
+    match *JH7110_PCI_EXPRESS.lock() {
+        Err(why) if !why.is_empty() => Some(why),
+        _ => None,
+    }
+}
+
 /// The PCIe host bridge's windows, from the device tree: `(ecam, mem32)`, each `(start, size)`,
 /// all **physical**. ECAM is the config window the bridge's `reg` names; `mem32` is the 32-bit
 /// non-prefetchable memory window BARs are placed in. `None` before `initialize`, and on a machine
-/// whose tree describes no `pci-host-ecam-generic` bridge, which is the JH7110's honest state:
-/// its own PCIe controller is a different device, undriven until its own milestone. Absence
+/// whose tree describes no `pci-host-ecam-generic` bridge. The JH7110 describes none: its
+/// controller answers configuration reads only after a bring-up, so `drivers::jh7110_pci_express`
+/// records its windows through [`record_pci_regions`] once the root port forwards. Absence
 /// degrades the way an absent virtio device does: `mmu::map_everything` maps no window and every
 /// probe in kernel/src/pci.rs reports nobody home without touching MMIO.
 pub(crate) fn pci_regions() -> Option<((u64, u64), (u64, u64))> {
@@ -732,9 +799,10 @@ pub(crate) fn pci_regions() -> Option<((u64, u64), (u64, u64))> {
 /// interpreter, which this kernel does not have), so `main.rs` supplies both from what it already
 /// knows and fills the same static every consumer already reads. See notes/x86-port/acpi-and-pci.md.
 ///
-/// Its only caller is `x86_64`'s boot tour; the other two architectures fill the same static from
-/// their device tree inside `initialize` instead.
-#[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
+/// Two callers: `x86_64`'s boot tour, and on riscv64 the JH7110 root port's bring-up once the port
+/// forwards, since that controller's windows decode nothing before it. aarch64 fills the same
+/// static from its device tree inside `initialize` instead.
+#[cfg_attr(target_arch = "aarch64", allow(dead_code))]
 pub(crate) fn record_pci_regions(ecam: (u64, u64), mem32: (u64, u64)) {
     *PCI_REGIONS.lock() = Some((ecam, mem32));
 }
@@ -1073,10 +1141,16 @@ static JH7110_WATCHDOG: InterruptSafeMutex<
 static JH7110_ETHERNET: InterruptSafeMutex<Option<Jh7110Ethernet>> =
     InterruptSafeMutex::new(rank::RAM, None);
 
+/// The JH7110's M.2 root port and its SYS window (milestone 163), or why a JH7110's tree gave none.
+/// The empty reason until `initialize`, and on every machine that is not a JH7110.
+static JH7110_PCI_EXPRESS: InterruptSafeMutex<Result<Jh7110PciExpress, &'static str>> =
+    InterruptSafeMutex::new(rank::RAM, Err(""));
+
 /// The generic-ECAM PCIe host bridge's windows: (ecam, mem32), each (base, size). Physical.
 type PciWindows = ((u64, u64), (u64, u64));
 
-/// `None` until `initialize`, and on a machine whose device tree has no such node (the JH7110).
+/// `None` until `initialize`, and on a machine whose device tree has no such node (the JH7110,
+/// until its root port is brought up).
 static PCI_REGIONS: InterruptSafeMutex<Option<PciWindows>> =
     InterruptSafeMutex::new(rank::RAM, None);
 

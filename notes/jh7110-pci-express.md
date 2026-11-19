@@ -27,6 +27,18 @@ Three things have to happen, in this order:
 After the third step, `pci_configuration_space::walk` finds the drive at `01:00.0` exactly as it
 finds QEMU's devices, and `kernel/src/pci.rs` places its BAR in the 32-bit range.
 
+## Where the kernel does it
+
+`memory` records port 1 from its tree node, or the reason it took none. `mmu::map_everything` step
+6f maps the pages `drivers::jh7110_pci_express::regions` names: two pages of the bridge, one each of
+the STG system controller, the PHY and the SYS GPIO controller, two buses of `cfg`, and the BAR
+slice of the 32-bit range. `pci::bring_up_jh7110_root_port` runs on the boot thread before the
+IOMMU starts. It walks the bring-up through `drivers::jh7110_pci_express::Controller`, configures
+the root port, and only then calls `memory::record_pci_regions`, so no PCI walk ever reads a host
+that does not answer. Every line it prints starts with `jh7110 pcie:`, and
+[jh7110-pci-express-bench.md](jh7110-pci-express-bench.md) reads them. QEMU's `virt` names no such
+node, so the function returns at once there.
+
 ## The sequence, and where each step comes from
 
 The order is Linux's `starfive_pcie_host_init` followed by `plda_pcie_host_init`, at mainline
@@ -66,4 +78,14 @@ needs nothing more, and only the board can show that.
 - The root port forwards one bus, so a switch behind it would need more bus numbers.
 - No interrupts: the NVMe path polls. The bridge's interrupt registers are in `bridge` for the
   work that adds them.
-- One port at a time: `memory::pci_regions` holds one host.
+- One port at a time: `memory::pci_regions` holds one host, so port 0 and the VL805 wait for
+  `pci.rs` to carry two ECAM windows.
+- No fallback to constants: a tree that names the port under other `reg-names`, as StarFive's own
+  kernel tree has, leaves the port off. The bench runbook's step 1 records what the board's tree
+  says.
+- The walk has no only-one-child rule. If this bridge answers every device number on bus 1, the
+  drive appears 32 times.
+- Nobody has measured whether an unsupported request reads as all ones or raises a bus error, and
+  the walk reads every device number on bus 1.
+- Nobody has measured the PCI Express master's DMA coherence. A measurement on the same board
+  found the Ethernet controller's coherent.

@@ -335,6 +335,11 @@ fn bring_up_machine(boot_info_pointer: usize) {
     // with neither DMAR nor IVRS says so loudly.
     #[cfg(target_arch = "x86_64")]
     arch::discovery::bring_up_iommus();
+    // The JH7110's M.2 root port, which answers no configuration read until it is brought up,
+    // here because every PCI walk from the IOMMU's on must see it. A no-op where the tree names no
+    // such port. See notes/jh7110-pci-express.md.
+    #[cfg(target_arch = "riscv64")]
+    pci::bring_up_jh7110_root_port();
     // The RISC-V IOMMU, a PCI function, here for the SMMUv3's reason: before any path confines a
     // virtio-pci device.
     #[cfg(target_arch = "riscv64")]

@@ -69,11 +69,13 @@ pub fn ecam_bytes() -> u64 {
 /// Print every function on every bus the machine has, and record how many buses that is.
 /// Returns the number of functions found.
 ///
-/// Runs before the fine map replaces the boot map, while every bus the MCFG describes is readable;
-/// called later it would read off the end of the mapped window. It prints the list rather than a
-/// count, because a missing disk hides in an ordinary count. The bus range it records is
-/// contiguous from 0, not the set found (notes/pcie.md, "More than one bus", and its `BUGS`).
-#[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
+/// On `x86_64` it runs before the fine map replaces the boot map, while every bus the MCFG
+/// describes is readable; called later it would read off the end of the mapped window. On riscv64
+/// `bring_up_jh7110_root_port` calls it once the port forwards, over exactly the buses mapped. It
+/// prints the list rather than a count, because a missing disk hides in an ordinary count. The bus
+/// range it records is contiguous from 0, not the set found (notes/pcie.md, "More than one bus",
+/// and its `BUGS`).
+#[cfg_attr(target_arch = "aarch64", allow(dead_code))]
 pub(crate) fn survey() -> usize {
     if !is_host_bridge_present() {
         return 0;
@@ -1106,6 +1108,188 @@ pub(crate) fn find_e1000e_device() -> Option<PciE1000eDevice> {
 const IOMMU_VENDOR: u16 = 0x1b36;
 #[cfg(target_arch = "riscv64")]
 const IOMMU_DEVICE: u16 = 0x0014;
+
+/// How the JH7110 bring-up's lines start, so a bench log can be searched for them.
+#[cfg(target_arch = "riscv64")]
+const JH7110_MARKER: &str = "  jh7110 pcie:";
+
+/// **Bring up the JH7110's M.2 root port, if the tree names one, and hand it to this module**
+/// (milestone 163 (the JH7110's PCIe root complex)).
+///
+/// Runs `jh7110_pci_express::bring_up` through `drivers::jh7110_pci_express`, configures the root
+/// port to forward bus 1, and only then records the port's windows in `memory::pci_regions`, so
+/// every walk here sees a host that answers. A link that never trained still records the root port,
+/// with one bus, so no walk reads bus 1. Prints each step, the clock and reset reports and the
+/// [`survey`] list; notes/jh7110-pci-express-bench.md reads them. A no-op on every machine whose
+/// tree names no such port, which is every machine CI boots.
+#[cfg(target_arch = "riscv64")]
+pub(crate) fn bring_up_jh7110_root_port() {
+    use crate::drivers::jh7110_pci_express::{CONFIGURATION_BUSES, Controller};
+    if let Some(why) = crate::memory::jh7110_pci_express_absent() {
+        crate::println!("{JH7110_MARKER} port One stays off: {why}");
+        return;
+    }
+    let (Some(found), Some(top_group)) = (
+        crate::memory::jh7110_pci_express(),
+        crate::memory::jh7110_clock_and_reset(),
+    ) else {
+        return;
+    };
+    let port = found.port;
+    let windows = jh7110_windows(&found, top_group.base_physical_address);
+    crate::println!(
+        "{JH7110_MARKER} port {:?}: bridge {:#x}, cfg {:#x}, 32-bit memory {:#x}+{:#x}, PERST# pin \
+         {:?}",
+        port.number,
+        port.bridge.physical_address,
+        port.configuration.physical_address,
+        port.memory_32_bit.physical_address,
+        port.memory_32_bit.size_bytes,
+        port.reset_pin,
+    );
+    let mut wait = |milliseconds: u32| {
+        spin_milliseconds(milliseconds);
+    };
+    // SAFETY: `memory::jh7110_pci_express` recorded this port only from its own tree node on a
+    // JH7110 (the STG window is recorded too), and `mmu::map_everything` mapped every page of
+    // `regions(&port)` device-typed, and both clock-and-reset windows for their whole domain.
+    let mut controller = unsafe { Controller::new(windows, &mut wait) };
+    let brought_up = jh7110_pci_express::bring_up(&mut controller, &port);
+    print_jh7110_clocks_and_refusals(&controller);
+    let brought_up = match brought_up {
+        Ok(b) => b,
+        Err(failure) => {
+            crate::println!("{JH7110_MARKER} bring-up stopped: {failure:?}; the port stays off");
+            return;
+        }
+    };
+    print_jh7110_link(&brought_up);
+    let configured = jh7110_pci_express::root_port::configure(
+        &mut |b, o| controller.configuration_read(b, o),
+        &mut |b, o, v| controller.configuration_write(b, o, v),
+        port.memory_32_bit,
+    );
+    let jh7110_pci_express::root_port::Configured::Forwarding {
+        bus_numbers,
+        memory_base_and_limit,
+    } = configured
+    else {
+        crate::println!("{JH7110_MARKER} root port does not forward: {configured:?}");
+        return;
+    };
+    crate::println!(
+        "{JH7110_MARKER} root port forwards: bus numbers {bus_numbers:#010x}, memory base and \
+         limit {memory_base_and_limit:#010x}"
+    );
+    let buses = if brought_up.link_up {
+        CONFIGURATION_BUSES
+    } else {
+        1
+    };
+    crate::memory::record_pci_regions(
+        (
+            port.configuration.physical_address,
+            (u64::from(buses) * BUS_BYTES).min(windows.configuration.bytes),
+        ),
+        (
+            port.memory_32_bit.physical_address,
+            port.memory_32_bit.size_bytes,
+        ),
+    );
+    crate::println!("{JH7110_MARKER} the walk over {buses} bus(es):");
+    survey();
+}
+
+/// The pages `bring_up_jh7110_root_port` hands its driver: each of `regions`' windows in the direct
+/// map, and the two clock-and-reset windows.
+#[cfg(target_arch = "riscv64")]
+fn jh7110_windows(
+    found: &crate::memory::Jh7110PciExpress,
+    system_top_group_clock_and_reset_physical_address: u64,
+) -> crate::drivers::jh7110_pci_express::Windows {
+    use crate::drivers::jh7110_pci_express::{Page, Windows, regions};
+    let page = |(physical_address, bytes): (u64, u64)| Page {
+        virtual_address: mmu::phys_to_virt(physical_address) as usize,
+        bytes,
+    };
+    let [
+        bridge,
+        top_group_controller,
+        physical_layer,
+        gpio,
+        configuration,
+    ] = regions(&found.port);
+    Windows {
+        bridge: page(bridge),
+        system_top_group_controller: page(top_group_controller),
+        physical_layer: page(physical_layer),
+        system_controller: Page::UNMAPPED,
+        general_purpose_input_output: page(gpio),
+        system_clock_and_reset_virtual_address: mmu::phys_to_virt(found.sys.base_physical_address)
+            as usize,
+        system_top_group_clock_and_reset_virtual_address: mmu::phys_to_virt(
+            system_top_group_clock_and_reset_physical_address,
+        ) as usize,
+        configuration: page(configuration),
+    }
+}
+
+/// The bring-up's two clock and reset reports, and any access its driver refused.
+#[cfg(target_arch = "riscv64")]
+fn print_jh7110_clocks_and_refusals(controller: &crate::drivers::jh7110_pci_express::Controller) {
+    for (name, report) in [
+        ("SYS", &controller.system),
+        ("STG", &controller.system_top_group),
+    ] {
+        crate::println!(
+            "{JH7110_MARKER} {name} clocks: {} turned on, {} of {} reset(s) released, {} step(s) \
+             rejected{}",
+            report.clocks,
+            report.resets_released,
+            report.resets,
+            report.rejected,
+            if report.was_already_up() {
+                " (already up)"
+            } else {
+                ""
+            },
+        );
+    }
+    if controller.refused != 0 {
+        crate::println!(
+            "{JH7110_MARKER} {} register access(es) fell outside the mapped pages and were not made",
+            controller.refused,
+        );
+    }
+}
+
+/// Whether the link trained, with the reads it took and the status word.
+#[cfg(target_arch = "riscv64")]
+fn print_jh7110_link(brought_up: &jh7110_pci_express::BroughtUp) {
+    if brought_up.link_up {
+        crate::println!(
+            "{JH7110_MARKER} link up after {} read(s), status {:#010x}, {} window(s) translated",
+            brought_up.link_polls,
+            brought_up.link_status,
+            brought_up.windows,
+        );
+    } else {
+        crate::println!(
+            "{JH7110_MARKER} link down after {} reads, status {:#010x}: an empty slot or a drive \
+             that did not train",
+            brought_up.link_polls,
+            brought_up.link_status,
+        );
+    }
+}
+
+/// Busy-wait `milliseconds` on the free-running counter, for the JH7110 bring-up's delays: it runs
+/// before interrupts are on, so nothing can sleep.
+#[cfg(target_arch = "riscv64")]
+fn spin_milliseconds(milliseconds: u32) {
+    let timer = crate::arch::timer::frequency();
+    crate::arch::timer::spin_for(timer * u64::from(milliseconds) / 1000);
+}
 
 /// Bring up the RISC-V IOMMU, if the machine has one. The ratified RISC-V IOMMU is a PCI function:
 /// the kernel places its BAR0 (the register file) from the shared cursor, enables memory-space

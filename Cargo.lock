@@ -877,6 +877,7 @@ dependencies = [
  "jh7110_clock_and_reset",
  "jh7110_clock_and_reset_contract",
  "jh7110_entropy",
+ "jh7110_pci_express",
  "jh7110_watchdog",
  "job_mix",
  "login_contract",
@@ -980,6 +981,8 @@ dependencies = [
  "device_tree_blob",
  "jh7110_clock_and_reset",
  "jh7110_entropy",
+ "jh7110_pci_express",
+ "pci_configuration_space",
 ]
 
 [[package]]

@@ -18,3 +18,4 @@ pub mod clock_and_reset;
 pub mod designware_ethernet;
 pub mod designware_mobile_storage;
 pub mod entropy;
+pub mod pci_express;

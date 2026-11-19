@@ -71,8 +71,9 @@ As `starfive_pcie_host_init` and `plda_pcie_host_init` do it:
 9. Root port at `00:00.0`: primary bus 0, secondary 1, subordinate 1; memory base and limit
    covering the 32-bit window; memory decoding and bus mastering on. Nothing in the kernel assigns
    bridge buses today (`pci.rs` reads them), and the NVMe controller sits at bus 1.
-10. Record `(cfg, mem32)` with `memory::record_pci_regions`, so step 9 of `map_everything` maps them
-    and `pci::find_non_volatile_memory_express_device` finds the controller.
+10. Record `(cfg, mem32)` with `memory::record_pci_regions`, so `pci::survey` lists the drive and
+    `pci::find_nvme_device` finds the controller. Step 6f of `map_everything` has already mapped
+    both, because the record comes after the fine map.
 
 ## Steps that need no hardware
 
@@ -86,14 +87,14 @@ As `starfive_pcie_host_init` and `plda_pcie_host_init` do it:
       `pci_configuration_space::walk` over it.
 - [x] Kani harnesses for the ATR window encoder (size field, alignment, enable bit) and the bridge
       bus-number word.
-- [ ] `machine_discovery::jh7110::pci_express`: each enabled `starfive,jh7110-pcie` node's `cfg` and
+- [x] `machine_discovery::jh7110::pci_express`: each enabled `starfive,jh7110-pcie` node's `cfg` and
       `apb` windows by `reg-names`, its 32-bit and prefetchable ranges, its PERST# GPIO, and which
       port it is.
-- [ ] `jh7110_clock_and_reset`: the PCIe clocks and resets of each port as constants and plans.
-- [ ] Kernel wiring: `memory` records the port, `mmu::map_everything` maps its bridge, syscon, PHY
+- [x] `jh7110_clock_and_reset`: the PCIe clocks and resets of each port as constants and plans.
+- [x] Kernel wiring: `memory` records the port, `mmu::map_everything` maps its bridge, syscon, PHY
       and GPIO pages, a kernel driver walks the plan before the PCI survey, and records the regions.
       QEMU's `virt` names no such node, so every CI boot is unchanged.
-- [ ] `notes/jh7110-pci-express-bench.md`: the bench steps for a person.
+- [x] `notes/jh7110-pci-express-bench.md`: the bench steps for a person.
 
 ## Steps that need the board
 
@@ -102,7 +103,7 @@ As `starfive_pcie_host_init` and `plda_pcie_host_init` do it:
       as the clock and reset discovery has.
 - [ ] Link up on port 1 with a drive fitted: the `DATA_LINK_ACTIVE` poll succeeds.
 - [ ] Enumeration: `00:00.0` reads as a bridge and `01:00.0` as class `0x010802`.
-- [ ] The NVMe path's identify and a read, through `pci::find_non_volatile_memory_express_device`.
+- [ ] The NVMe path's identify and a read, through `pci::find_nvme_device`.
 - [ ] Port 0 and the VL805, for §260.
 
 ## Open decisions
@@ -128,14 +129,9 @@ on it yet.
 
 ## Follow-on
 
-- **Outstanding.** The device-tree reader, the clock and reset plans and the kernel wiring, the
-  four unticked items under "Steps that need no hardware". Checked against this block's checklist:
-  nothing in `machine_discovery`, `jh7110_clock_and_reset` or `kernel/` names the PCI Express
-  controller yet.
-- **Outstanding.** The bench runbook, `notes/jh7110-pci-express-bench.md`, which needs the kernel
-  wiring's log lines. Checked: no such file exists.
 - **Outstanding.** Every item under "Steps that need the board", which needs a person at the board
-  with a drive fitted.
+  with a drive fitted. `notes/jh7110-pci-express-bench.md` is the runbook.
+- **Outstanding.** Port 0 and the VL805, which need `pci.rs` to carry two hosts.
 
 ## Index row
 

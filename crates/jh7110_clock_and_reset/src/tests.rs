@@ -1249,3 +1249,50 @@ fn a_provider_error_reaches_the_caller() {
         Err(7)
     );
 }
+
+// The PCI Express bring-up plans.
+
+#[test]
+fn each_pci_express_plan_stays_in_its_domain_and_names_only_its_own_ports_ids() {
+    for s in PCI_EXPRESS_SYSTEM_BRING_UP {
+        match *s {
+            Step::EnableClock(i) => assert_eq!(SYSTEM.clock_offset(i), Some(0x180)),
+            Step::DeassertReset(i) => {
+                let r = SYSTEM.reset_bit(i).unwrap();
+                assert_eq!((r.assert_offset, r.mask), (0x2f8, 1 << 30));
+            }
+            _ => panic!("unexpected step {s:?}"),
+        }
+    }
+    for (port, plan) in PCI_EXPRESS_SYSTEM_TOP_GROUP_BRING_UP.iter().enumerate() {
+        assert_eq!(plan.len(), 9);
+        let clocks: Vec<u32> = plan
+            .iter()
+            .filter_map(|s| match *s {
+                Step::EnableClock(i) => Some(i),
+                _ => None,
+            })
+            .collect();
+        let resets: Vec<u32> = plan
+            .iter()
+            .filter_map(|s| match *s {
+                Step::DeassertReset(i) => Some(i),
+                _ => None,
+            })
+            .collect();
+        // Mainline's header: port 0's clocks are 8 to 10 and resets 11 to 16, port 1's three and
+        // six higher.
+        let mut sorted = clocks.clone();
+        sorted.sort_unstable();
+        let first_clock = 8 + 3 * port as u32;
+        assert_eq!(sorted, [first_clock, first_clock + 1, first_clock + 2]);
+        let first_reset = 11 + 6 * port as u32;
+        assert_eq!(resets, (first_reset..first_reset + 6).collect::<Vec<_>>());
+        for i in clocks {
+            assert!(SYSTEM_TOP_GROUP.clock_offset(i).is_some());
+        }
+        for i in resets {
+            assert!(SYSTEM_TOP_GROUP.reset_bit(i).is_some());
+        }
+    }
+}
