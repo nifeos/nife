@@ -99,10 +99,10 @@ The `unsafe` surface is two raw-address entry points, `publish` and `new`, behin
 contracts. No proof covers a caller's promise that the address names a mapped page, since Kani
 cannot see a mapping, and the README says so.
 
-Fourteen host tests cover the round trip, CPU 0 as a real answer, a zeroed frame, a thread that
-never ran, a wrong magic, a migration, every id in the bound, ids at and past the bound, the
-allowance and tick and their absence, the thread page slots, the frozen magic, the layout offsets
-and the page sharing the stack's last-level table. Four doctests run, the README's example among
+Fourteen host tests cover the readers: the round trip, CPU 0 as a real answer, a zeroed frame, a
+thread that never ran, a wrong magic, a migration, and ids inside, at and past the bound. Others
+cover the allowance and tick and their absence. The rest pin the thread page slots, the frozen
+magic, the layout offsets and the page sharing the stack's last-level table. Four doctests run, the README's example among
 them. The kernel-side tests that read the page from a running process belong to `system_tests` and
 stay in nife.
 
