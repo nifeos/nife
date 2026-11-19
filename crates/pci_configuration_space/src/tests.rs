@@ -789,6 +789,39 @@ fn the_intx_swizzle_rotates_by_device() {
     );
 }
 
+/// The swizzle against the routing table of QEMU's `virt` machine, restated here as numbers so the
+/// test reads no file. Each row is a device (0 to 3) and each column a legacy pin (INTA to INTD);
+/// the entry is the interrupt input the machine's `interrupt-map` names for that pair. Both tables
+/// are the sixteen entries of the `interrupt-map` property of the `pci-host-ecam-generic` node in
+/// QEMU's generated device tree: the RISC-V board's first and second cells of each row give inputs
+/// 32 to 35 of the platform-level interrupt controller (base 32), and the Arm board's give
+/// shared peripheral interrupts 3 to 6 of the generic interrupt controller, which are interrupt
+/// numbers 35 to 38 (base 35).
+#[test]
+fn the_intx_swizzle_matches_the_routing_tables_of_the_virt_machines() {
+    const RISCV_INPUTS: [[u32; 4]; 4] = [
+        [32, 33, 34, 35],
+        [33, 34, 35, 32],
+        [34, 35, 32, 33],
+        [35, 32, 33, 34],
+    ];
+    const ARM_SHARED_PERIPHERAL_INTERRUPTS: [[u32; 4]; 4] =
+        [[3, 4, 5, 6], [4, 5, 6, 3], [5, 6, 3, 4], [6, 3, 4, 5]];
+    for device in 0..4u8 {
+        for pin in 1..=4u8 {
+            let (row, column) = (device as usize, pin as usize - 1);
+            assert_eq!(
+                intx_interrupt_number(32, device, pin),
+                RISCV_INPUTS[row][column]
+            );
+            assert_eq!(
+                intx_interrupt_number(35, device, pin),
+                32 + ARM_SHARED_PERIPHERAL_INTERRUPTS[row][column],
+            );
+        }
+    }
+}
+
 /// The two command-register bits, pinned to their spec positions. This crate never reads
 /// them back (the kernel writes them into the register), so a wrong value here surfaces as a
 /// device that silently never decodes memory or never gets to DMA, with nothing in the decode
@@ -813,8 +846,7 @@ fn ranges(entries: &[[u32; 7]]) -> Vec<u8> {
 }
 
 /// The QEMU riscv `virt` ranges verbatim (IO, 32-bit memory, 64-bit memory): the parser must
-/// step past the IO entry, take the mem32 one, and never reach the mem64 one. The fixture
-/// test in `tests/qemu_virt_dtb.rs` holds the same claim against the real tree.
+/// step past the IO entry, take the mem32 one, and never reach the mem64 one.
 #[test]
 fn the_mem32_entry_is_found_among_its_neighbours() {
     let r = ranges(&[

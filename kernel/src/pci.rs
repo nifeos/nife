@@ -1340,7 +1340,7 @@ mod tests {
     /// The discovered PCIe windows are the machine's own, and on QEMU `virt` they equal the old
     /// `PCI_ECAM_BASE` and `PCI_BAR_BASE` constants. A fresh parse of the live DTB must agree with
     /// what `memory::initialize` recorded. The JH7110's answer (no generic-ECAM node, no window) is
-    /// witnessed on the host (`crates/pci_configuration_space/tests/qemu_virt_dtb.rs`). Not on `x86_64`, which has no
+    /// witnessed on the host (`crates/machine_discovery/tests/pci_host_bridge_windows.rs`). Not on `x86_64`, which has no
     /// device tree; see [`acpi_mcfg_wires_a_real_ecam_window_that_finds_the_host_bridge`].
     #[cfg(not(target_arch = "x86_64"))]
     #[test_case]

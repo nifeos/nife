@@ -10,10 +10,5 @@ license.workspace = true
 # the kernel supplies the volatile MMIO accessors, so all of this tests on the host against a fake
 # config space in milliseconds.
 
-[dev-dependencies]
-# The fixture-witness tests (tests/qemu_virt_dtb.rs) parse the riscv virt device tree to hold
-# the kernel's PCI hardcodes and the INTx swizzle against the machine's own routing table.
-device_tree_blob = { version = "0.1.0", path = "../device_tree_blob" }
-
 [lints]
 workspace = true
