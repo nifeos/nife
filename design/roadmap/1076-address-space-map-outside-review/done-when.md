@@ -8,7 +8,7 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
   sections, both license files, no path, section, milestone or person's name in the docs, every
   spelled-out word spelled out.
 - The crate root doc holds the band table and placement order. A recorded stranger run against the README has no open finding.
-- The architect rules the three decisions. Whichever renames the rulings call for land in the move pull request, with
+- The architect clears the review package. Whichever renames the rulings call for land in the move pull request, with
   `script/names` enumerating the sites before the sweep.
 - nife pins the crate by `rev` in every manifest in one pull request, with a `[workspace.dependencies]` entry. `cargo xtask std-src` still generates `memory_region_heap`'s core.
 - `.github/mutants-exempts` carries the one equivalent mutant. The first full `mutation` run on
