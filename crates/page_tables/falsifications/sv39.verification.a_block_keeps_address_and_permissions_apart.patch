@@ -11,14 +11,17 @@ Expected to fail: `assert_eq!(ppn_as_address, physical_address & physical_addres
 bit set below the superpage's alignment.
 
 diff --git a/crates/page_tables/src/sv39.rs b/crates/page_tables/src/sv39.rs
-index 2c4e4062..f3b03f86 100644
+index 25d13c00a..9fe1003e8 100644
 --- a/crates/page_tables/src/sv39.rs
 +++ b/crates/page_tables/src/sv39.rs
-@@ -120,7 +120,7 @@ impl PageFormat for Sv39 {
+@@ -130,10 +130,7 @@ impl PageFormat for Sv39 {
      /// the PPN: its low 9 (megapage) or 18 (gigapage) bits must be zero, or the hardware raises a
      /// misaligned-superpage page fault, so the address is masked to the block's alignment.
      fn block_entry(physical_address: u64, flags: Flags, size: PageSize) -> Option<u64> {
--        Some(Self::leaf_entry(physical_address & !(size.bytes() - 1), flags))
+-        Some(Self::leaf_entry(
+-            physical_address & !(size.bytes() - 1),
+-            flags,
+-        ))
 +        Some(Self::leaf_entry(physical_address, flags))
      }
  

@@ -19,9 +19,10 @@ Expected to fail: assertion (1), "table frame(s) handed out and unreachable from
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
+index a7b5ebb10..14aa6105f 100644
 --- a/crates/page_tables/src/mapper.rs
 +++ b/crates/page_tables/src/mapper.rs
-@@ -255,13 +255,21 @@ where
+@@ -269,14 +269,22 @@ where
          let leaf_level = F::LEVELS - 1 - size.levels_above_bottom();
  
          let mut table_physical_address = self.root;
@@ -29,7 +30,8 @@ diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
          for level in 0..leaf_level {
              let i = F::index(virtual_address, level);
              // SAFETY: `table_physical_address` is a page-aligned table, per the type's contract.
-             let entry = unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
+             let entry =
+                 unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
              if !F::is_present(*entry) {
 -                let new = self.fresh_table()?;
 +                let Ok(new) = self.fresh_table() else {

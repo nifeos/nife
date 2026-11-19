@@ -12,15 +12,15 @@ Expected to fail: `assert!(bytes <= remaining, ...)`, for any aligned `virtual_a
 with less than a block remaining.
 
 diff --git a/crates/page_tables/src/page_size.rs b/crates/page_tables/src/page_size.rs
-index b0b98588b..d8088d2fc 100644
+index cf9e4a78a..412431440 100644
 --- a/crates/page_tables/src/page_size.rs
 +++ b/crates/page_tables/src/page_size.rs
-@@ -59,7 +59,7 @@ impl PageSize {
-         // arithmetic. Every size is a power of two, so alignment is a mask test, not a division.
-         const fn fits(virtual_address: u64, physical_address: u64, remaining: u64, size: PageSize) -> bool {
+@@ -72,7 +72,7 @@ impl PageSize {
+             size: PageSize,
+         ) -> bool {
              let bytes = size.bytes();
 -            (virtual_address | physical_address) & (bytes - 1) == 0 && remaining >= bytes
 +            (virtual_address | physical_address) & (bytes - 1) == 0
          }
          let allowed = largest.levels_above_bottom();
-         if allowed >= 2 && fits(virtual_address, physical_address, remaining, PageSize::OneGibibyte) {
+         if allowed >= 2

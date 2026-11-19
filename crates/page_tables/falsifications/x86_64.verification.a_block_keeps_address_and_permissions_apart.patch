@@ -12,15 +12,15 @@ Expected to fail: `assert_eq!(block & 0x000f_ffff_ffff_f000 & !address_bits, 0, 
 for any `physical_address` with a bit set between 12 and the block's alignment.
 
 diff --git a/crates/page_tables/src/x86_64.rs b/crates/page_tables/src/x86_64.rs
-index 592f9abe..f391c15e 100644
+index b10f0b4b8..436e79c45 100644
 --- a/crates/page_tables/src/x86_64.rs
 +++ b/crates/page_tables/src/x86_64.rs
-@@ -190,7 +190,7 @@ impl PageFormat for Ia32e {
+@@ -212,7 +212,7 @@ impl PageFormat for Ia32e {
          match size {
              PageSize::FourKibibytes => Some(Self::leaf_entry(physical_address, flags)),
-             PageSize::TwoMebibytes | PageSize::OneGibibyte => {
--                Some((physical_address & ADDR_MASK & !(size.bytes() - 1)) | P | PS | Self::attributes(flags))
-+                Some((physical_address & ADDR_MASK) | P | PS | Self::attributes(flags))
-             }
-         }
-     }
+             PageSize::TwoMebibytes | PageSize::OneGibibyte => Some(
+-                (physical_address & ADDR_MASK & !(size.bytes() - 1))
++                (physical_address & ADDR_MASK)
+                     | P
+                     | PS
+                     | Self::attributes(flags),

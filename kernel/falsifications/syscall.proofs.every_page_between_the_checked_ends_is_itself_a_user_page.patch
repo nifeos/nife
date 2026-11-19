@@ -11,12 +11,12 @@ Expected to fail: the harness's last assertion, `is_user_page_virtual_address(pa
 aligned user-half page"), at the middle page `k` the solver picks.
 
 diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs
-index 476dfcac4..d5c3d2ee6 100644
+index 0e136dc39..ca8d4a566 100644
 --- a/crates/page_tables/src/page_format.rs
 +++ b/crates/page_tables/src/page_format.rs
-@@ -116,7 +116,7 @@ pub trait PageFormat {
-     fn is_in_half(half: Half, va: u64) -> bool {
-         let top = va >> Self::SPLIT_SHIFT;
+@@ -114,7 +114,7 @@ pub trait PageFormat {
+     fn is_in_half(half: Half, virtual_address: u64) -> bool {
+         let top = virtual_address >> Self::SPLIT_SHIFT;
          match half {
 -            Half::Low => top == 0,
 +            Half::Low => top == 0 || top == 2,
