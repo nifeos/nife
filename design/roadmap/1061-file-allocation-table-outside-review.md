@@ -35,7 +35,7 @@ name, a signature, a default that changes output bytes) gets settled before the 
 everything that only improves the crate waits for a later minor release.
 
 The organization's publishing hold covers this crate: no crate publishes until every outside review
-milestone is delivered, across all the crates under review (ruled 2026-11-18 UTC). This block is the
+milestone closes, across all the crates under review (ruled 2026-11-18 UTC). This block is the
 worklist that makes the crate complete before then. Nothing in it places a tag or publishes: each is
 a separate go of the architect.
 
@@ -171,7 +171,7 @@ general format's `FormatOptions` is: `VolumeLayoutOptions::new(total_sectors)`,
 `components/src/system_installer.rs`, move to the new shape when nife takes the release. One-way
 (signature). S to M.
 
-Status: Done in #19; the names are ratified as built (2026-11-16 UTC).
+Status: Done in #19; the names stand as built, ratified 2026-11-16 UTC.
 
 #### P1-6. `CivilDateTime` has public fields and stops at seconds
 
@@ -187,7 +187,7 @@ outside FAT's range. The error is `CivilDateTimeError`. nife's fuzz
 target `fuzz/fuzz_targets/file_allocation_table_writer.rs` builds the value by literal and moves to
 `new`. One-way (shape). S.
 
-Status: Done in #18; the names are ratified as built (2026-11-16 UTC).
+Status: Done in #18; the names stand as built, ratified 2026-11-16 UTC.
 
 #### P1-7. `VolumeLabel::trimmed` has a standard-library spelling
 
@@ -199,7 +199,7 @@ Ruled 2026-11-10. It takes the name `trim_ascii_end`, with no `doc(alias)` for t
 the crate has no release. A test pins that the result equals `as_bytes().trim_ascii_end()` for a label
 padded with spaces. One-way (name). S.
 
-Status: Done in #18; the name is ratified as built (2026-11-16 UTC).
+Status: Done in #18; the name stands as built, ratified 2026-11-16 UTC.
 
 #### P1-8. A directory is a bare `u32`
 
@@ -212,7 +212,7 @@ Ruled 2026-11-10. A `DirectoryCluster(u32)` type with the associated constant
 `NamedEntry::directory_cluster() -> Option<DirectoryCluster>` returns it for a directory entry and
 `None` for a file. One-way (signatures). M.
 
-Status: Done in #18; the names are ratified as built (2026-11-16 UTC).
+Status: Done in #18; the names stand as built, ratified 2026-11-16 UTC.
 
 #### P1-9. `open_file_reader` cannot report a device error
 
@@ -230,7 +230,7 @@ stale-entry entry in the README's `BUGS` shrinks to looking the entry up again a
 `fuzz/fuzz_targets/file_allocation_table_boot_sector.rs` matches the new error. One-way (shape). S
 to M.
 
-Status: Done in #18; the names are ratified as built (2026-11-16 UTC).
+Status: Done in #18; the names stand as built, ratified 2026-11-16 UTC.
 
 ## Decisions this block needs
 
@@ -254,9 +254,9 @@ They are `VolumeLayoutOptions` with `new`, `with_hidden_sectors`, `with_volume_i
 `NamedEntry::directory_cluster()`; and `OpenError<E>` (`IsADirectory`, `IsAVolumeLabel`,
 `EntryChanged`, `Chain`).
 
-The first publish waits until every outside review milestone is delivered, across all the crates
+The first publish waits until every outside review milestone closes, across all the crates
 under review, and this crate holds no exemption from that (ruled 2026-11-18 UTC). The first-publish
-token of P0-3 is closed as not yet.
+token of P0-3 waits with it.
 
 The maintainers make every two-way call above and in the appendix provisionally, among them the
 default cluster size (P1-4), untailed aliases (P2-2), the lenient open (P2-3) and the keywords
@@ -265,8 +265,8 @@ default cluster size (P1-4), untailed aliases (P2-2), the lenient open (P2-3) an
 ## Open decisions
 
 None. The tag `v0.1.0` and the first publish are the only steps left that need the architect, and
-they are not asked until every outside review milestone is delivered (ruled 2026-11-18 UTC). Then
-each is asked separately, with a fresh assessment of completeness and of what this crate offers that
+the maintainers do not ask them until every outside review milestone closes (ruled 2026-11-18
+UTC). Then they ask each separately, with a fresh assessment of completeness and of what this crate offers that
 no other FAT crate does.
 
 ## Prior art
@@ -301,7 +301,7 @@ Pull request numbers are in `nifeos/file_allocation_table` unless named otherwis
 - **Outstanding.** P0-3, the first-publish token: ruled not yet, and the `crates-io` environment
   lists no secret, read through the GitHub API.
 - **Outstanding.** The tag `v0.1.0` and the first publish, held until every outside review
-  milestone is delivered; the repository's tags are `v0.1.0-pre.1` and `v0.1.0-pre.2`.
+  milestone closes; the repository's tags are `v0.1.0-pre.1` and `v0.1.0-pre.2`.
 - **Outstanding.** At the release commit, once tagged: rerun `cargo test`, clippy, docs, the
   bare-metal builds, `cargo package`, `proofs` and a full `mutation` run (the last full run is at
   `6f8aa1d`, before #54's pin bump), and move nife's pins from `v0.1.0-pre.2` to the release.
@@ -313,4 +313,4 @@ full mutation run, a template pin behind the one-shard fix, the first-publish to
 before the release. Five carry rulings: a `VolumeLayoutOptions` builder, a checked `CivilDateTime`,
 `trim_ascii_end`, a `DirectoryCluster` handle and one `OpenError<E>`. Thirteen follow the release.
 The tag and the first publish wait until every outside review
-milestone is delivered.
+milestone closes.
