@@ -24,7 +24,7 @@ address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 # The JH7110 Ethernet control process's handoff and report carry the driver crate's types.
 designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/designware_ethernet", rev = "0e8f92bf67e58016983164cb52bf274e08e1d7ef" }
 # The xHCI register window is drawn from the controller's decoded capability registers.
-extensible_host_controller_interface = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "875a6401be12f311d925580901faf00cbcacbf99" }
+extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
 # The PMIC route's spawn words carry the I2C master's standard-mode timing.
 designware_inter_integrated_circuit = { version = "0.1.0", path = "../designware_inter_integrated_circuit" }
 # The block server answers `blk`, and its block size sets how many card sectors a block is.
