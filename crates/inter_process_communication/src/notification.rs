@@ -64,6 +64,9 @@ pub struct Notification<T: Node> {
 
 /// What a hang dump reads from a [`Notification`]:
 /// [`debug_counts`](Notification::debug_counts).
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1095-ipc-rulings-built. Replaces a tuple
+/// whose positions a reader had to remember. Considered: keeping the tuple.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NotificationCounts {
     /// Threads blocked waiting.
@@ -74,9 +77,9 @@ pub struct NotificationCounts {
 
 /// What a [`signal`](Notification::signal) decided.
 ///
-/// Name: provisional. The `Verdict` suffix keeps the type from sharing a name with
-/// the rest of the verdict enums, and is the word this crate's prose already uses
-/// for what an operation decided. Considered: `SignalOutcome` and keeping the bare name.
+/// Name: provisional. The `Verdict` suffix gives all five operation enums one shape, and is the
+/// word this crate's prose already uses for what an operation decided. Considered: `SignalOutcome` and
+/// keeping the bare name.
 pub enum SignalVerdict<T> {
     /// A thread was waiting on the notification itself: deliver this word to it and wake it. It is
     /// already off the queue, and this is its token.
@@ -93,9 +96,9 @@ pub enum SignalVerdict<T> {
 /// What a [`wait`](Notification::wait) decided. As for the rendezvous's verdicts, the one that
 /// leaves the caller off the queue hands its token back.
 ///
-/// Name: provisional. The `Verdict` suffix keeps the type from sharing a name with
-/// the rest of the verdict enums, and is the word this crate's prose already uses
-/// for what an operation decided. Considered: `WaitOutcome` and keeping the bare name.
+/// Name: provisional. The `Verdict` suffix gives all five operation enums one shape, and is the
+/// word this crate's prose already uses for what an operation decided. Considered: `WaitOutcome` and
+/// keeping the bare name.
 pub enum WaitVerdict<T> {
     /// The word was non-zero: here it is, and it is now clear. The caller does not block, and keeps
     /// its token.

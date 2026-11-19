@@ -63,6 +63,9 @@ pub struct Rendezvous<T: Node> {
 }
 
 /// What a hang dump reads from a [`Rendezvous`]: [`debug_counts`](Rendezvous::debug_counts).
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1095-ipc-rulings-built. Replaces a tuple
+/// whose positions a reader had to remember. Considered: keeping the tuple.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RendezvousCounts {
     /// Senders parked on the rendezvous.
@@ -98,10 +101,9 @@ pub enum SendVerdict<T> {
 /// What a [`receive`](Rendezvous::receive) decided. As for [`SendVerdict`], a verdict that leaves the
 /// receiver off a queue hands its token back.
 ///
-/// Name: provisional. The `Verdict` suffix keeps the type from sharing a name with
-/// `core::marker::Send` in the same namespace, and is the word this crate's prose already uses
-/// for what an operation decided. Considered: `Received`, `ReceiveOutcome`, and keeping
-/// the bare name.
+/// Name: provisional. The `Verdict` suffix matches `SendVerdict`, which needs it so the type does
+/// not share a name with `core::marker::Send`, and is the word this crate's prose already uses for
+/// what an operation decided. Considered: `Received`, `ReceiveOutcome`, and keeping the bare name.
 pub enum ReceiveVerdict<T> {
     /// A pending async signal was drained; the receiver does not block (its token).
     Signal(Unqueued<T>),

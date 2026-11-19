@@ -59,6 +59,9 @@ pub struct Key {
 }
 
 /// **The wait queues**, `BUCKETS` buckets of intrusive FIFOs.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1095-ipc-rulings-built. A table of futex wait
+/// queues, named for the thing; the module header gives what was considered.
 pub struct FutexTable<T: Node, const BUCKETS: usize> {
     buckets: [Queue<T>; BUCKETS],
 }
@@ -139,6 +142,9 @@ impl<T: Node, const BUCKETS: usize> FutexTable<T, BUCKETS> {
     /// **How many waiters are linked anywhere in the table**, whatever key they are under or
     /// whether they still have one. What catches a teardown that forgot to unlink a thread: a dead
     /// TCB has no key to count it by, but it is still a link.
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1095-ipc-rulings-built. The standard
+    /// library's spelling of a count.
     pub fn len(&self) -> usize {
         self.buckets.iter().map(Queue::len).sum()
     }

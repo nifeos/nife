@@ -50,9 +50,9 @@ pub const NEVER: u64 = u64::MAX;
 
 /// What [`Timer::arm`] decided.
 ///
-/// Name: provisional. The `Verdict` suffix keeps the type from sharing a name with
-/// the rest of the verdict enums, and is the word this crate's prose already uses
-/// for what an operation decided. Considered: `ArmOutcome` and keeping the bare name.
+/// Name: provisional. The `Verdict` suffix gives all five operation enums one shape, and is the
+/// word this crate's prose already uses for what an operation decided. Considered: `ArmOutcome` and
+/// keeping the bare name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArmVerdict<T> {
     /// The deadline is in the future: armed, and the caller lowers the cache with [`lowered`].
