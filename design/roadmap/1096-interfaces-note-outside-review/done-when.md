@@ -9,10 +9,10 @@ An appendix to [the milestone](../1096-interfaces-note-outside-review.md).
   `passive_voice.py` and `prose_acronyms.py` report nothing against it or `src/lib.rs`.
 - The README states the link-script requirement, the little-endian rule, where the id registry
   lives and that an absent entry passes.
-- The architect rules decision 1, and the lint and the move check accept the ruled form; `lint_externalized_crates.py`
+- The lint and the move check accept decision 1's marked lines; `lint_externalized_crates.py`
   drops this crate's waiver.
-- The architect rules decisions 2 and 3, the renames have landed, and `script/names interfaces_note` reads
-  `ratified` for every name.
+- Decision 2's renames have landed, calef has ratified the twenty public names, and
+  `script/names interfaces_note` reads `ratified` for every name.
 - Four doctests run under `cargo test`, none `ignore`.
 - `cargo kani` verifies three harnesses, each with a replayable falsification patch that
   `proofs / falsify` turns red.
