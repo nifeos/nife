@@ -175,8 +175,7 @@ crate's first publication.
    `jh7110_clock_and_reset`. The move lane places it once it finds the new repository matches this
    tree's copy and the release dry run is green, the same two conditions as the seven crates
    approved 2026-11-11. The tag names a commit for nife and basalt to pin and nothing publishes.
-   Creating the repository was approved with the review's clearance (2026-11-11 UTC), and no
-   repository exists yet. Prior art: Semantic Versioning 2.0.0 marks a candidate with a pre-release
+   The review's clearance (2026-11-11 UTC) approved creating the repository, and none exists yet. Prior art: Semantic Versioning 2.0.0 marks a candidate with a pre-release
    identifier, and Cargo never selects one for a requirement that does not name it. Example:
    `generational_table` carries `v0.1.0-pre.2`, and nife pins that tag's commit by `rev`.
 
@@ -244,7 +243,7 @@ The checks are in [the done-when appendix](1072-jh7110-clock-and-reset-outside-r
   198 high counts and 297 low counts at 49.5 MHz. Left: the crate README's BUGS still says no board has
   run that timing, and a lane corrects it, citing the log.
 - The `v0.1.0-pre.1` tag: Ruled (decision 6). Left: the move lane places it after the move check
-  and a green release dry run. The tag is not placed.
+  and a green release dry run. Nobody has placed it.
 - Publishing: Open. No first publish happens until the last outside-review milestone closes
   (ruled 2026-11-18 UTC).
 
