@@ -535,9 +535,9 @@ pub fn embedded_archive(blob: &[u8]) -> Option<std::ops::Range<usize>> {
         .filter(|(_, w)| *w == nifefs::MAGIC)
         .find_map(|(at, _)| {
             let candidate = &blob[at..];
-            let fs = nifefs::Fs::parse(candidate).ok()?;
-            fs.read(measured_boot::PROGENITOR)?;
-            let end = fs
+            let parsed = nifefs::Fs::parse(candidate).ok()?;
+            parsed.read(measured_boot::PROGENITOR)?;
+            let end = parsed
                 .entries()
                 .map(|e| e.start_block as usize * nifefs::BLOCK + e.len as usize)
                 .fold(nifefs::DIR_BLOCKS * nifefs::BLOCK, usize::max);

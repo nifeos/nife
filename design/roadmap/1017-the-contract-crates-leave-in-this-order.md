@@ -73,7 +73,7 @@ points from nife to the crate, which the direction permits. Beyond those, five r
 | `capability_manifest_note` | a test reads `../../fuzz/seeds/`, and nife's fuzz workspace builds it | its seeds and fuzz target leave with it |
 
 Six more of the 22 have fuzz targets in nife's `fuzz/` workspace. Those point from nife to the
-crate and do not block. Between 5 and 36 files in nife name each crate's path.
+crate and do not block.
 
 ## The recommended order
 
