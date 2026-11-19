@@ -7195,7 +7195,6 @@ crates/usb/src/boot_keyboard.rs::BootReport
 
 crates/usb/src/boot_keyboard.rs::ERROR_ROLL_OVER
 
-crates/usb/src/boot_keyboard.rs::MODIFIER_CODES
 
 crates/usb/src/boot_keyboard.rs::RELEASED
 
