@@ -239,7 +239,6 @@ None needs hardware or QEMU.
   check the template adds before a lane starts is missing from the list.
 - P1-1 waits on a template release; until then the lag check passes at the current pin, and nothing
   in this repository can move it.
-- P2-7 needs a template change first, so this block cannot close it alone.
 - The P2 order is the judgment of the reviewer on what a user asks for first. Nobody outside has
   asked for anything yet.
 
