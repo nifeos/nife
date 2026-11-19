@@ -35,9 +35,10 @@ Every item not Done blocks the first crates.io publish, which waits until every 
 milestone reaches delivery.
 
 - P0-1, no review package: Open. `notes/crate-reviews/` has none for this crate; a lane writes it
-  once the order of leaving has its ruling.
-- P0-2, the one dependency has not left and appears in no plan: Open. Calef's (see "`intrusive_queue`
-  leaves first" below).
+  now (ruled, maintainer, provisional, 2026-11-19 UTC, D6).
+- P0-2, the one dependency has not left and appears in no plan: Ruled (maintainer, provisional,
+  2026-11-19 UTC, D3). Not built: `intrusive_queue` leaves first, under
+  milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release).
 - P0-3, the crate does not stand alone: Open. The move strips the ten `Name:` lines and the
   citations, and gives the manifest its own `license`, `lints` and `rust-version` in place of
   `license.workspace` and the allowlist comment.
@@ -49,8 +50,8 @@ milestone reaches delivery.
   (`src/notification.rs` lines 58 and 328) and modeled (line 246), `queueing` (`src/futex.rs`
   line 5, `src/rendezvous.rs` line 38), two patch headers and the doc example's `pa`
   (`src/futex.rs` lines 27 and 33) remain. A lane fixes them.
-- P1-5c, gate names in the public parts: Open. Calef's (see "Two public names the gates refuse"
-  below).
+- P1-5c, gate names in the public parts: Ruled (maintainer, provisional, 2026-11-19 UTC, D4). Not
+  built: a rename lane does the two renames.
 - P1-6, the design record does not travel: Open. The move writes `docs/design.md` and the README
   in place of the links to `notes/inter-process-communication.md`.
 - P1-7, manifest metadata: Open. The move writes the description, repository, keywords and
@@ -64,8 +65,8 @@ milestone reaches delivery.
 - P2-11, the one-queue invariant could hold by construction: Open. Two-way, and the maintainer
   rules it after the move; it changes the proofs.
 - P2-12a, `Futexes<T, 0>` panics: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-12b, `Futexes` as a stranger reads it: Open. The names are calef's (see "The futex table's
-  names" below); the iterator lands in `intrusive_queue` and is the maintainer's.
+- P2-12b, `Futexes` as a stranger reads it: Ruled for the names (maintainer, provisional,
+  2026-11-19 UTC, D5); not built, a rename lane does them. The iterator lands in `intrusive_queue` and is the maintainer's.
 - P2-13, `Timer::deadline` answers with a sentinel: Open. `deadline()` returns `u64`
   (`src/timer.rs` line 112); `Option<u64>` is two-way until the publish, and the maintainer rules
   it.
@@ -77,103 +78,15 @@ milestone reaches delivery.
   `src/notification.rs` line 163 return tuples; a lane names them as structs.
 - P2-17, two Kani toolchain warnings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Follow-on, the externalization list: Open. `crates/externalization-list.txt` does not name this
-  crate.
-- Follow-on, review clearance and the repository: Open. Calef's (see "Review clearance and the
-  repository" below).
+  crate; milestone 1017's list records the pair, `intrusive_queue` first (D3).
+- Follow-on, review clearance and the repository: Ruled (maintainer, provisional, 2026-11-19 UTC,
+  D6). The package comes first; the architect ratifies the provisional names from it and gives the
+  go to create the repository once `intrusive_queue` has left.
 
 ## Open decisions
 
-### `intrusive_queue` leaves first
-
-Background. Every public signature here exposes `Unqueued<T>` and `Node` from `intrusive_queue`, a
-small crate in nife that no extraction plan names. Milestone 1097 (`intrusive_queue`: what an
-outside maintainer would fix before its first release) reviews it. A crate that has left may not
-depend back into nife, and a published crate cannot depend on an unpublished one, so this crate
-cannot leave before `intrusive_queue` does, or with it.
-
-Recommendation: A. `intrusive_queue` gets its own package and repository first; this crate then
-pins it by git revision on that repository's `main`, and milestone 1017's list records the pair in
-that order.
-
-- A. `intrusive_queue` first, then this crate.
-- B. Both in one lane as two repositories: one round trip fewer, two packages to rule at once.
-- C. Fold the queue into this crate: the kernel's run queue would carry a second copy of the type.
-
-Door: one-way: the order sets which repository pins which.
-
-Prior art. In this tree `generational_table` left before the kernel pinned it, and the kernel pins
-`extensible_host_controller_interface` by revision. Where nife differs: nothing; this is the same
-step one level down. Example: after the move the manifest line reads
-`intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "<full sha>" }`.
-
-Blocks: the move.
-
-### Two public names the gates refuse
-
-Background. The template's name gates run at zero tolerance in a crate's own repository. Two
-public names fail them. `Rendezvous::one_queue_invariant` returns `bool` and does not read as a
-question, where its twin `Notification::invariant_holds` does. `futex::Key::address` is a virtual
-address, and the naming rule says which kind of address a name holds. Both are provisional, and the
-first publish fixes them.
-
-Recommendation: A, `one_queue_invariant_holds` and `Key::virtual_address`.
-
-- A. `one_queue_invariant_holds` and `Key::virtual_address`.
-- B. As A, with `Key::address` kept and a gate exemption: the field is the only address in the
-  type.
-- C. `is_one_queue` for the method, shorter and still a question.
-
-Door: one-way at the first publish; two-way until then.
-
-Prior art. The standard library writes its predicates as questions (`is_empty`, `contains`);
-Linux's `futex_key` names the field `address` inside a union keyed by `private` or `shared`. Where
-nife differs: the address kind is in the name. Example: `Key { space: 7, virtual_address: 0x1000 }`
-in the crate's doc example.
-
-Blocks: the tag.
-
-### The futex table's names
-
-Background. `Futexes<T, const B: usize>` is a table of futex wait queues hashed by a `Key`. Four
-of its names are provisional, and a stranger meets each in the first screen: the plural type name,
-the const parameter `B`, the count method `queued()` and the field `Key::space`, which names an
-address space by a generic word.
-
-Recommendation: A, `FutexTable<T, const BUCKETS: usize>`, `len()` and `Key::address_space`.
-
-- A. `FutexTable`, `BUCKETS`, `len` and `address_space`.
-- B. Keep `Futexes` and rename only `B`, `queued` and `space`.
-- C. Keep all four; the documentation explains them.
-
-Door: one-way at the first publish; two-way until then.
-
-Prior art. Linux names the structure `futex_hash_bucket` and its table `futex_queues`;
-`parking_lot_core` keeps a `HashTable` of buckets. The standard library's count is `len`. Where
-nife differs: nothing; A follows them. Example: `let table: FutexTable<Thread, 64> =
-FutexTable::new();` and `table.len()`.
-
-Blocks: the first publish.
-
-### Review clearance and the repository
-
-Background. Clearing a crate review is the go to create its repository under nifeos. This crate
-has no review package yet (P0-1), and it waits on `intrusive_queue` leaving first.
-
-Recommendation: A, clear once the package exists, `intrusive_queue` has left and the names above
-have their rulings, with no tag and no publication.
-
-- A. Clear after those three.
-- B. Clear together with `intrusive_queue`, so both repositories open in one lane.
-- C. Hold until the P1 items land as well.
-
-Door: one-way: a repository that exists has a name others link to.
-
-Prior art. In this tree `generational_table`, `block_roster` and `file_allocation_table` each moved
-on a cleared review with no tag. Where nife differs: nothing outside nife links the crate. Example:
-under A, the kernel's manifest switches from a path to a pinned revision of
-`nifeos/inter_process_communication` in the move's pin pull request.
-
-Blocks: the move.
+None. The four that were open carry the maintainer's provisional ruling of 2026-11-19 (UTC),
+option A each, and are in the rules in force below.
 
 ## Goal
 
@@ -259,12 +172,20 @@ The rules in force, with their background and prior art, are in
   `ReceiveVerdict`, `SignalVerdict`, `WaitVerdict` and `ArmVerdict`, with no alias.
 - D2, the timer and the futex table: the maintainer's provisional ruling of 2026-11-14 (UTC). The
   four modules stay together, and a publish review settles the scope if the crate goes to one.
+- D3, the order of leaving: the maintainer's provisional ruling of 2026-11-19 (UTC). `intrusive_queue`
+  leaves first, then this crate pins it by git revision on that repository's `main`.
+- D4, two names the gates refuse: the maintainer's provisional ruling of 2026-11-19 (UTC).
+  `one_queue_invariant_holds` and `Key::virtual_address`.
+- D5, the futex table's names: the maintainer's provisional ruling of 2026-11-19 (UTC).
+  `FutexTable<T, const BUCKETS: usize>`, `len()` and `Key::address_space`.
+- D6, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC). The package is
+  written now; no tag and no publication.
 
-The order of leaving is calef's and is under "Open decisions" above.
+A rename lane does the renames of D4 and D5, not the pull request that records them.
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
+- **Outstanding.** Every finding marked Open or Ruled and not built under "Finding status", each checked against
   the crate's sources on main.
 
 ## Done when
@@ -292,5 +213,6 @@ An outside review of `inter_process_communication` before it leaves. Three items
 move (no review package, a dependency that has not left, text that does not stand alone). Six
 land before the first tag (a type named `Send`, five gate findings, the design record, manifest
 metadata, a harness whose unfalsifiable claim is false, a stale mutation record). Eight wait for
-later. The verdict names and the crate's scope are ruled provisionally; the order in which it and
-`intrusive_queue` leave, three public names and review clearance are calef's.
+later. The verdict names, the crate's scope, the order in which it and `intrusive_queue` leave, three
+public names, two gate-refused names and review clearance are all ruled provisionally; no decision
+is open.

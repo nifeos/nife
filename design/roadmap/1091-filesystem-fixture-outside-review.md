@@ -90,18 +90,13 @@ then the decisions and the release step.
   step 2, after items 1 to 5.
 - Decision 2, the names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: item 4 is the
   work.
-- Review clearance of the shared repository: Open. Under Open decisions.
+- Decision 3, the review package and clearance: Ruled (maintainer, provisional for the package step,
+  2026-11-19 UTC). Not built: the package, which is item 5.
 
 ## Open decisions
 
-### Clear the review of the shared `filesystem_contract` and `filesystem_fixture` repository
-
-This is one decision with the one in milestone 1090 (`filesystem_contract`: what an outside
-maintainer would fix before it leaves), and its brief is there: [clear the review of `filesystem_contract` and
-`filesystem_fixture`, and create their
-repository](1090-filesystem-contract-outside-review.md#clear-the-review-of-filesystem_contract-and-filesystem_fixture-and-create-their-repository).
-For this crate, the clearance ratifies the 244 names of item 5's package, after Decision 2's renames
-have landed. Door: one-way, a repository and names that other repositories pin. Blocks: the move.
+None. The review package carries the name ratification and the clearance of the review, which stay
+the architect's once the package exists.
 
 ## Goal
 
@@ -139,8 +134,8 @@ The P1 items are in [the appendix](1091-filesystem-fixture-outside-review/before
 
 ## Decisions for the architect
 
-Both decisions are ruled. Decision 1 was a one-way door; Decision 2 is the maintainer's provisional
-ruling on a two-way one. Everything else above is the maintainer's.
+All three decisions are ruled. Decision 1 was a one-way door; Decisions 2 and 3 are the maintainer's
+provisional rulings on two-way doors. Everything else above is the maintainer's.
 
 ### Decision 1: the fixture shares one repository with `filesystem_contract`
 
@@ -230,6 +225,22 @@ the door is two-way. The three tables hold as written, with no alias of the old 
 command names a reader types (`rm`, `RMDIR_*`, `PWD_*`, `RG_*` and the rest of the last row) keep
 their spelling, each with `#[doc(alias)]` and a doc line naming the command. Item 4 is the work.
 
+### Decision 3: the review package and clearance of the shared repository: maintainer ruling, provisional, 2026-11-19 (UTC)
+
+In force: one review package covers both crates of the shared repository. A lane writes it once the
+other items land, and the move is not held for it. The package step is the maintainer's provisional
+ruling on a two-way door. Ratifying the 244 names after Decision 2's renames, and clearing the review,
+which is also the go to create the repository as `publish = false`, stay the architect's and are asked
+from the package. This is one decision with the one in milestone 1090 (`filesystem_contract`: what an
+outside maintainer would fix before it leaves), Decision E there.
+
+Prior art: `jh7110_clock_and_reset` and `designware_ethernet` each had a review package cleared
+before the organization made their repositories. Outside, `futures-rs` keeps `futures-test` in the
+workspace of the library it tests.
+
+Concrete example: ratifying one fixture name such as `SCRATCH_INIT` after its rename fixes the
+spelling in every manifest that uses it, which is why one package lists both crates.
+
 ## Done when
 
 The checks are in [the appendix](1091-filesystem-fixture-outside-review/done-when.md).
@@ -262,5 +273,5 @@ the second crate of one workspace repository (ruled 2026-11-14 UTC), and never p
 template now allows git sources from the organization and several crates per repository. Four things
 come before the move. The crate's text states the shared workspace. A lane renames the names the
 gates refuse, as Decision 2 rules. The `EL0` literal and the mentions of this tree go. The architect
-ratifies the crate's names from a review package that does not yet exist and clears the shared
-repository.
+ratifies the crate's names and clears the shared repository from a review package that a lane
+writes once the other items land (Decision 3).
