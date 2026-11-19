@@ -1,5 +1,5 @@
-//! Where the JH7110's two Secure Digital (SD) and MultiMediaCard (MMC) controllers are, and how each slot is wired, for
-//! `designware_mobile_storage`.
+//! Where the JH7110's two Secure Digital (SD) and Multi-Media Card (MMC) controllers are, and how
+//! each slot is wired, for `designware_mobile_storage`.
 //!
 //! The controllers came with milestone 53 (the board's own peripherals: network and storage on
 //! real silicon). The driver crate knows no system-on-chip, so every JH7110 fact it needs is here.
