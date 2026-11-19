@@ -1229,6 +1229,9 @@ const CONFIG: u64 = 0x100;
 /// answered through the kernel-minted Reply, so this server can answer a client it was never wired
 /// to, exactly once each. The transfer unit is one filesystem block; the bulk rides in the shared
 /// page, the control (opcode, block index, result) rides in the message, the §10 split.
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1113-names-qemu-test. Renamed from
+/// `run_blk_server`, because `blk` is a failing abbreviation (design/naming.md).
 pub fn run_block_server(direct_memory_access_phys: u64) -> ! {
     // Whether VIRTIO_BLK_F_FLUSH was negotiated decides `block::FLUSH`: a device round trip, or a
     // loud refusal, never a yes that does nothing.

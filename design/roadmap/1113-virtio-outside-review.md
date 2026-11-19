@@ -40,9 +40,9 @@ logic is testable on the host, and its names pass `design/naming.md`.
 - P1-3, the ring layout is an unchecked copy of the proved layout: Ruled (maintainer,
   provisional, 2026-11-14 UTC, Decision 2). Not built: `QUEUE_ENTRIES` and the ring offsets are literals
   under a BUGS entry in `block_driver_roles.rs`, and `abi::virtio` holds no ring constant. It
-  waits on milestone 1075 item 11 (the version gate), which is Open: the `abi` review has not
-  settled how a change to a pinned value is held to an `ABI_VERSION` bump once the crate leaves
-  nife, so new public constants would join a surface whose gate is not ready.
+  waits on milestone 1075 item 11 (the version gate), which is Open. The `abi` review has not
+  settled how a change to a pinned value meets an `ABI_VERSION` bump once the crate leaves nife.
+  New public constants would join a surface whose gate is not ready.
 - P1-4, a client-caused device error kills the block server: Done, [#3520](https://github.com/nifeos/nife/pull/3520).
 - P1-5, two `unsafe` blocks state an unchecked precondition: Done, [#3520](https://github.com/nifeos/nife/pull/3520).
 - P1-6, a handshake step the specification requires: Done, [#3559](https://github.com/nifeos/nife/pull/3559), [#3574](https://github.com/nifeos/nife/pull/3574) and
