@@ -14,8 +14,8 @@ crate, every caller in the tree, the naming rules, the standalone gate and the `
 template. It changes nothing; it lists what the lanes that move the crate change, and the two
 one-way doors that need the architect.
 
-There is no review package for this crate in `notes/crate-reviews/` and no row for it in
-`notes/crate-reviews.md`. The review therefore took its baseline from the crate itself,
+The review package is [notes/crate-reviews/current-cpu-contract.md](../../notes/crate-reviews/current-cpu-contract.md),
+written after this review. The review took its baseline from the crate itself,
 [notes/current-cpu-page.md](../../notes/current-cpu-page.md), the sibling package
 [counter-frequency-contract.md](../../notes/crate-reviews/counter-frequency-contract.md), §204
 (how userspace asks where a thread runs), milestone 1017 (the contract crates leave in this order)
@@ -71,9 +71,8 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
   [#3542](https://github.com/nifeos/nife/pull/3542).
 - Decision B, the names: Done (ruled 2026-11-19 UTC, option A). Built
   ([#3657](https://github.com/nifeos/nife/pull/3657)) and ratified as built.
-- Review package: Open. No package for this crate exists under `notes/crate-reviews/`; a lane writes
-  one.
-- Review clearance: Done (ruled 2026-11-19 UTC, option A), once the package exists; no lane has written the package yet.
+- Review package: Done. [The package](../../notes/crate-reviews/current-cpu-contract.md).
+- Review clearance: Done (ruled 2026-11-19 UTC, option A); [the package](../../notes/crate-reviews/current-cpu-contract.md) exists.
 
 ## Goal
 
@@ -220,9 +219,9 @@ differs by spelling every abbreviation out. Concrete example: a runtime's one li
 
 ### The review clearance and the move
 
-Ruled 2026-11-19 (UTC), option A. Once a lane writes the review package, the review of this crate
-is clear, and that clearance is the go to create `nifeos/current_cpu_contract` and move the crate
-there. No lane has written the package yet, and the move starts after the package lands.
+Ruled 2026-11-19 (UTC), option A. With [the review package](../../notes/crate-reviews/current-cpu-contract.md)
+written, the review of this crate is clear, and that clearance is the go to create
+`nifeos/current_cpu_contract` and move the crate there.
 No tag is part of this ruling, and nothing is published. A public repository is one-way: others see
 and clone it once it exists, and nobody can withdraw its history.
 
@@ -237,9 +236,8 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## BUGS
 
-- No review package exists for this crate, so the baseline is the review's own reading. A package
-  written later may record rulings this block does not know; where the two disagree, the package
-  wins.
+- The review's baseline is its own reading, since the review package came after it. Where the two
+  disagree, the package wins.
 - Item 6 came from reading: no 32-bit build has run. The `rust-version` of 1.88 is checked by one
   build of the crate on that toolchain.
 - The farm check of item 12 is not built. The farm inlines a copied crate's `pub mod` files, so a
@@ -254,7 +252,7 @@ The checks are in [the appendix](1084-current-cpu-contract-outside-review/done-w
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 4 and 12 and the review package, each as [Finding status](#finding-status) gives it. Checked against the crate's
+- **Outstanding.** Items 1, 4 and 12, each as [Finding status](#finding-status) gives it. Checked against the crate's
   code and the template's naming helpers.
 - **Milestone 1017.** The contract crates leave in its order. This crate moves once the `Name:` blocks
   read ratified, so the standalone gate's `names` check can pass.

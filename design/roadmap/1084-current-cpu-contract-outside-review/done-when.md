@@ -22,5 +22,5 @@ An appendix to [the milestone](../1084-current-cpu-contract-outside-review.md).
 - `cargo test`, `cargo clippy --all-targets -D warnings`, `cargo doc -D warnings` and the three
   bare-metal `cargo build --lib` runs are green on the pinned nightly and on the stated
   `rust-version`.
-- The 14 programs, the kernel, the runtime, the fixtures, the system tests and the farm build
+- The 15 programs, the kernel, the runtime, the fixtures, the system tests and the farm build
   against the renamed items, and the system test still carries the bound across the boundary.
