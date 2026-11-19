@@ -115,7 +115,7 @@ The weekly median of the time between a hosted job's creation and its start, ove
 not counted. The record keeps one median a day, so a week's median is the days' medians weighted by
 their job counts, an approximation. The share of jobs that waited over five minutes is in
 `ci_wait_over_5_pct` of the `ci-job-waits` measure file. The line at one minute is the wait under which the queue's build window may rise
-from 5 to 8 ([the queue's own settings](merge-queue.md)). The record starts on 2026-11-09 (UTC).
+from 5 to 8 ([the queue's own settings](merge-queue.md)). The record starts on 2026-11-02 (UTC).
 
 ## How long a merge-group build takes
 
