@@ -179,10 +179,10 @@ Effort: XS.
 
 Rule (maintainer, provisional, 2026-11-19 UTC; two-way until the first tag). The crate renames
 `entry::SIZE` to `ENTRY_BYTES`, the private `SIZE_U32` to `ENTRY_BYTES_U32`, `HEADER_SIZE` to
-`HEADER_BYTES`, `at::HEADER_SIZE` and `at::ENTRY_SIZE` to `at::HEADER_BYTES` and `at::ENTRY_BYTES`,
-`Header::entry_size` to `entry_bytes` (alias `SizeOfPartitionEntry`), `MINIMUM_BLOCK_SIZE` and
-`MAXIMUM_BLOCK_SIZE` to `MINIMUM_BLOCK_BYTES` and `MAXIMUM_BLOCK_BYTES`, the field `block_size` to
-`block_bytes`, `mbr::SIZE_LBA` to `mbr::SIZE_BLOCKS` (alias `SizeInLBA`). The test becomes
+`HEADER_BYTES`. `at::HEADER_SIZE` and `at::ENTRY_SIZE` become `at::HEADER_BYTES` and `at::ENTRY_BYTES`.
+`Header::entry_size` becomes `entry_bytes` (alias `SizeOfPartitionEntry`), `MINIMUM_BLOCK_SIZE` and
+`MAXIMUM_BLOCK_SIZE` become `MINIMUM_BLOCK_BYTES` and `MAXIMUM_BLOCK_BYTES`. The field `block_size` becomes
+`block_bytes`. `mbr::SIZE_LBA` becomes `mbr::SIZE_BLOCKS` (alias `SizeInLBA`). The test becomes
 `the_three_reads_a_partition_table_reader_makes`. One rename lane does this with the package's
 name table. This pull request changes no crate code.
 
