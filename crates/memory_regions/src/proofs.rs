@@ -39,22 +39,23 @@ fn split_stays_within_budget_and_progresses() {
     }
 }
 
-/// **A retyped run is exactly the pages asked for, all fresh, all within budget, and `0` is
-/// one.** The `RETYPE` count's whole contract, over every watermark and every requested word.
-/// A refusal is exactly "does not fit": the table does not move, which its own host test shows.
-/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_retyped_run_is_the_pages_asked_for_and_zero_is_one.patch`
+/// **A retyped run is exactly the pages asked for, all fresh, all within budget, and a run of no
+/// pages is refused.** The retype count's whole contract, over every watermark and every count.
+/// A refusal is exactly "empty or does not fit": the table does not move, which its own host test
+/// shows.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_retyped_run_is_the_pages_asked_for_and_zero_is_refused.patch`
 #[kani::proof]
-fn a_retyped_run_is_the_pages_asked_for_and_zero_is_one() {
+fn a_retyped_run_is_the_pages_asked_for_and_zero_is_refused() {
     let pages: u64 = kani::any();
     let watermark: u64 = kani::any();
-    let requested: u64 = kani::any();
+    let count: u64 = kani::any();
     kani::assume(watermark <= pages);
-    let want = if requested == 0 { 1 } else { requested };
 
-    match retype_new_watermark(pages, watermark, requested) {
+    match retype_new_watermark(pages, watermark, count) {
         Some(new) => {
+            assert!(count > 0, "a run of no pages must be refused");
             assert!(
-                new == watermark + want,
+                new == watermark + count,
                 "the watermark advances by exactly the run"
             );
             assert!(new <= pages, "the run stays within the region's budget");
@@ -65,7 +66,9 @@ fn a_retyped_run_is_the_pages_asked_for_and_zero_is_one() {
         }
         None => {
             assert!(
-                watermark.checked_add(want).is_none() || watermark + want > pages,
+                count == 0
+                    || watermark.checked_add(count).is_none()
+                    || watermark + count > pages,
                 "a run that fits must not be refused"
             );
         }
@@ -217,7 +220,7 @@ struct Counts {
 /// released, and how many regions it split that are still live.
 struct Run {
     table: RegionTable<4>,
-    names: [Option<u64>; REGIONS],
+    names: [Option<RegionName>; REGIONS],
     root_ceilings: Ceilings,
     own: [[u32; 8]; REGIONS],
 }
@@ -355,7 +358,7 @@ impl Run {
         counts
     }
 
-    fn name(&self, r: usize) -> u64 {
+    fn name(&self, r: usize) -> RegionName {
         self.names[r].expect("a region of the tree")
     }
 
@@ -372,7 +375,7 @@ impl Run {
     /// [`fill_table`](Self::fill_table) makes a split here refused for a full table. The child is
     /// live and counted, a region nobody drives. Returns its name, or `None` when the table
     /// refused.
-    fn split(&mut self, r: usize) -> Option<u64> {
+    fn split(&mut self, r: usize) -> Option<RegionName> {
         let child = self.table.split(self.name(r), 1);
         if child.is_some() {
             self.own[r][REGION_COUNT] += 1;
@@ -609,6 +612,58 @@ fn a_release_of_nothing_held_moves_nothing() {
     );
 }
 
+/// **No call on a root the table accepts panics, whatever its page range**: a root at the top of
+/// the page-number space, any retype count, any split size and a return of a child and of a
+/// grandchild all run with the model checker's overflow checks as the assertion. A root of no
+/// pages or one whose end does not fit is refused, and for exactly that reason. Every region below
+/// a root lies inside it, so with those two refused no page number or end the table computes
+/// overflows.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_root_the_table_accepts_never_overflows.patch`
+#[kani::proof]
+#[kani::unwind(5)]
+fn a_root_the_table_accepts_never_overflows() {
+    let (base_page, pages): (u64, u64) = (kani::any(), kani::any());
+    let mut table = RegionTable::<3>::new();
+    let Some(root) = table.insert_root(base_page, pages) else {
+        assert!(
+            pages == 0 || base_page.checked_add(pages).is_none(),
+            "a root that fits was refused"
+        );
+        return;
+    };
+    kani::cover!(base_page > u64::MAX - 4, "a root at the top of the page numbers");
+    match kani::any::<u8>() % 4 {
+        0 => {
+            let _ = table.retype_run(root, kani::any());
+        }
+        1 => {
+            let _ = table.retype_object_page(root, any_object_kind());
+        }
+        2 => {
+            if let Some(child) = table.split(root, kani::any()) {
+                let _ = table.retype_run(child, kani::any());
+                table.unpin(child);
+                if let Some(claim) = table.claim_for_destroy(child) {
+                    table.return_to_parent(&claim);
+                }
+            }
+        }
+        _ => {
+            if let Some(child) = table.split(root, kani::any())
+                && let Some(grandchild) = table.split(child, kani::any())
+                && let Some(claim) = table.claim_for_destroy(grandchild)
+            {
+                table.return_to_parent(&claim);
+                kani::cover!(table.has_children(root), "the child stays below the root");
+            }
+        }
+    }
+    let _ = table.usage(root);
+    let _ = table.bounds(root);
+    let _ = table.spent(root, PageUse::Frames);
+    let _ = table.spent(root, PageUse::Children);
+}
+
 /// **A return keeps every region's run where the table's discipline puts it**: from any state of
 /// a root, a child and a grandchild, claiming the grandchild and giving its pages back leaves every
 /// live region with `retyped_to <= watermark <= pages`, and the child's run inside the part of the
@@ -632,7 +687,7 @@ fn a_return_keeps_every_run_inside_its_parents_spent_part() {
     // Each region sits inside its parent's spent part, retyped pages end by its watermark, and
     // the two parents hold at least the one child they have.
     let mut table = RegionTable::<4>::new();
-    let mut names = [0u64; 3];
+    let mut names = [NO_PARENT; 3];
     let mut parent = NO_PARENT;
     let (mut spent_from, mut spent_to) = (0u64, u64::MAX);
     for (r, name) in names.iter_mut().enumerate() {

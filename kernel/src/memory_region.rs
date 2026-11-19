@@ -8,7 +8,7 @@
 //! `Error::OutOfMemory` collapses three causes into one code (DECISIONS §119 (splitting
 //! `OutOfMemory`'s three causes is declined for want of a customer)); see the note.
 
-use memory_regions::{CeilingReached, PageUse, RegionTable};
+use memory_regions::{CeilingReached, PageUse, RegionName, RegionTable};
 pub use memory_regions::{Ceilings, Counted, ObjectKind};
 use page_frames::{FRAME_SIZE, PageFrame};
 
@@ -60,6 +60,11 @@ pub(crate) fn peak_region_count() -> usize {
 static REGIONS: InterruptSafeMutex<RegionTable<MAXIMUM_REGIONS>> =
     InterruptSafeMutex::new(rank::MEMORY_REGION, RegionTable::new());
 
+/// The table's typed name for a region's `u64` form, which is what a capability carries.
+fn typed(region: u64) -> RegionName {
+    RegionName::from_bits(region)
+}
+
 /// Carve `pages` of physical memory out of the frame allocator, once, and make it an untyped
 /// region. **This is the kernel's one allocation for this memory**: the seL4 boundary, where all
 /// free RAM becomes untyped handed to the first process. Everything the owner does afterward
@@ -78,7 +83,9 @@ pub fn create_with_ceilings(pages: u64, ceilings: Ceilings) -> Option<u64> {
 
     let name = {
         let mut table = REGIONS.lock();
-        let name = table.insert_root_with_ceilings(base / FRAME_SIZE, pages, ceilings);
+        let name = table
+            .insert_root_with_ceilings(base / FRAME_SIZE, pages, ceilings)
+            .map(RegionName::to_bits);
         note_peak(&table);
         name
     };
@@ -112,11 +119,11 @@ pub fn split(parent: u64, pages: u64) -> Option<u64> {
     }
     let (child, reached) = {
         let mut table = REGIONS.lock();
-        let child = table.split(parent, pages);
+        let child = table.split(typed(parent), pages).map(RegionName::to_bits);
         note_peak(&table);
         let reached = child
             .is_none()
-            .then(|| table.ceiling_reached(parent, Counted::Region))
+            .then(|| table.ceiling_reached(typed(parent), Counted::Region))
             .flatten();
         (child, reached)
     };
@@ -186,7 +193,7 @@ pub fn progenitor_ceilings() -> Ceilings {
 ///
 /// Name: provisional.
 pub fn release_object(region: u64, kind: ObjectKind) {
-    let released = REGIONS.lock().release_object(region, kind);
+    let released = REGIONS.lock().release_object(typed(region), kind);
     debug_assert!(
         released,
         "a release of a {kind:?} that region {region:#x} does not hold"
@@ -222,7 +229,7 @@ fn log_ceiling_refusal(counted: Counted, asked: u64, reached: CeilingReached) {
          {unprinted} more refused since the last line",
         reached.live,
         reached.ceiling,
-        reached.region,
+        reached.region.to_bits(),
         reached.levels_up,
     );
 }
@@ -232,7 +239,7 @@ fn log_ceiling_refusal(counted: Counted, asked: u64, reached: CeilingReached) {
 /// stale name. A parent with zero live children is destroyable again, the point of the count over a
 /// bool.
 pub fn has_children(region: u64) -> bool {
-    REGIONS.lock().has_children(region)
+    REGIONS.lock().has_children(typed(region))
 }
 
 /// **Retype one page out of the region**, zeroed, returning its physical address. `None` when the
@@ -245,11 +252,12 @@ pub fn retype_page(region: u64) -> Option<u64> {
     retype_run(region, 1).map(|(phys, _)| phys)
 }
 
-/// **Retype a run of pages out of the region** (`MemoryRegion::RETYPE`'s count, calef's ruling of
-/// 2026-09-26), zeroed, returning the first page's physical address and the run's length. The run
-/// is `requested` pages, or one when `requested` is `0` (`memory_regions::retype_pages`). `None`,
-/// with the region's watermark unmoved, when it does not fit: the proved arithmetic in
-/// `memory_regions::retype_new_watermark` decides, and this only does the I/O.
+/// **Retype a run of pages out of the region** (`MemoryRegion::RETYPE`'s count), zeroed, returning
+/// the first page's physical address and the run's length. The run is `requested` pages, or one
+/// when `requested` is `0`: the syscall word's zero means one page, and the table refuses a run of
+/// no pages, so the mapping is made here. `None`, with the region's watermark unmoved, when it does
+/// not fit: the proved arithmetic in `memory_regions::retype_new_watermark` decides, and this only
+/// does the I/O.
 pub fn retype_run(region: u64, requested: u64) -> Option<(u64, u64)> {
     // The test kernel's Nth-retype fault (milestone 757, provisional): refused before the lock,
     // so the region is left exactly as an exhausted one would be. Absent from every other build.
@@ -258,8 +266,8 @@ pub fn retype_run(region: u64, requested: u64) -> Option<(u64, u64)> {
         return None;
     }
     // Released at the semicolon: zeroing the whole run must not happen under the region lock.
-    let page = REGIONS.lock().retype_run(region, requested)?;
-    let count = memory_regions::retype_pages(requested);
+    let count = requested.max(1);
+    let page = REGIONS.lock().retype_run(typed(region), count)?;
     let phys = page * FRAME_SIZE;
 
     // SAFETY: the run is inside a region we carved from the allocator and own exclusively, and it
@@ -294,10 +302,10 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
     // the zeroing and the refusal line are not.
     let (page, reached) = {
         let mut table = REGIONS.lock();
-        let page = table.retype_object_page(region, kind);
+        let page = table.retype_object_page(typed(region), kind);
         let reached = page
             .is_none()
-            .then(|| table.ceiling_reached(region, Counted::Object(kind)))
+            .then(|| table.ceiling_reached(typed(region), Counted::Object(kind)))
             .flatten();
         (page, reached)
     };
@@ -322,6 +330,7 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
 /// `abi::usage::is_known`; `None` for a dead region.
 pub(crate) fn usage_record(region: u64, record: u64) -> Option<u64> {
     let table = REGIONS.lock();
+    let region = typed(region);
     let on = match record {
         abi::usage::SIZE => return table.usage(region).map(|(_, pages)| pages),
         abi::usage::COMMITTED => return table.usage(region).map(|(spent, _)| spent),
@@ -340,13 +349,13 @@ pub(crate) fn usage_record(region: u64, record: u64) -> Option<u64> {
 /// Name: provisional, minted 2026-11-05 (UTC) by the table-ceilings lane.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // only the system tests call it
 pub fn live_and_ceiling(region: u64, counted: Counted) -> Option<(u32, u32)> {
-    REGIONS.lock().live_and_ceiling(region, counted)
+    REGIONS.lock().live_and_ceiling(typed(region), counted)
 }
 
 /// How many pages the region has retyped, and its size. For the demo and tests.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the untyped property test is the only caller
 pub fn usage(region: u64) -> Option<(u64, u64)> {
-    REGIONS.lock().usage(region)
+    REGIONS.lock().usage(typed(region))
 }
 
 /// This region's physical span `(base, size_in_bytes)`, or `None` if the name is stale. Object
@@ -355,7 +364,7 @@ pub fn usage(region: u64) -> Option<(u64, u64)> {
 pub fn region_bounds(region: u64) -> Option<(u64, u64)> {
     REGIONS
         .lock()
-        .bounds(region)
+        .bounds(typed(region))
         .map(|(base_page, pages)| (base_page * FRAME_SIZE, pages * FRAME_SIZE))
 }
 
@@ -365,7 +374,7 @@ pub fn region_bounds(region: u64) -> Option<(u64, u64)> {
 /// Separate from [`destroy`] because [`destroy`] must never take `IPC_TABLES`: it is reachable from
 /// `AddressSpace::Drop`, which already runs under it. See notes/memory-regions.md.
 pub fn unpin(region: u64) {
-    REGIONS.lock().unpin(region);
+    REGIONS.lock().unpin(typed(region));
 }
 
 /// Return a region's whole backing, **safely**: a root's pages to the frame allocator, a child's to
@@ -381,7 +390,7 @@ pub fn destroy(region: u64) {
     // The guard is a temporary of this `let`, so `REGIONS` is released at the semicolon, before
     // the revoke: revocation takes `IPC_TABLES`, a higher rank, and holding `REGIONS` across it
     // would invert the order.
-    let Some(claim) = REGIONS.lock().claim_for_destroy(region) else {
+    let Some(claim) = REGIONS.lock().claim_for_destroy(typed(region)) else {
         return; // refused (pinned, or has live children), or a racing caller already won
     };
     let base = claim.base_page() * FRAME_SIZE;

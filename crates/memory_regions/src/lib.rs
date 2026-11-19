@@ -27,14 +27,15 @@
 mod table;
 
 pub use table::{
-    CeilingReached, Ceilings, Counted, DestroyClaim, NO_PARENT, ObjectKind, PageUse, RegionTable,
+    CeilingReached, Ceilings, Counted, DestroyClaim, NO_PARENT, ObjectKind, PageUse, Region,
+    RegionName, RegionTable,
 };
 
 mod destroy;
 mod watermark;
 
 pub use destroy::{DestroyOutcome, destroy_outcome};
-pub use watermark::{coalesced_watermark, retype_new_watermark, retype_pages, split_new_watermark};
+pub use watermark::{coalesced_watermark, retype_new_watermark, split_new_watermark};
 
 #[cfg(kani)]
 mod proofs;
