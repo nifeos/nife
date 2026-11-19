@@ -10,7 +10,7 @@ high bound.
 diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.rs
 --- a/crates/socket_contract/src/lib.rs
 +++ b/crates/socket_contract/src/lib.rs
-@@ -201,7 +201,7 @@
+@@ -279,7 +279,7 @@
  pub const fn udp_grant_allows(grant: u64, port: u16) -> bool {
      let lo = ((grant >> 32) & 0xffff) as u16;
      let hi = ((grant >> 48) & 0xffff) as u16;
@@ -18,4 +18,4 @@ diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.
 +    lo != 0 && port >= lo && port < hi
  }
  
- pub mod polled_wait {
+ /// Where a network stack finds the two capabilities that per-socket capabilities added to its
