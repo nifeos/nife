@@ -25,27 +25,82 @@ The crate is on `crates/externalization-list.txt`. Milestone 1017's table pairs 
 `filesystem_contract` ("the two leave together") because the contract had a dev-dependency on the
 fixture. That dev-dependency is gone: commit `ce4ea2015` (pull request #3042) moved the tests that
 needed the fixture into the fixture's own test file, and `crates/filesystem_contract/Cargo.toml`
-now has no dependency table of any kind. The dependency runs one way, fixture to contract, so the
-contract leaves first and the fixture follows, pinning the contract by `git` and `rev` as §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit)
-allows. The two can leave separately, and the README and crate-root `BUGS` that still say otherwise
-are stale (item 2). The sibling review of `filesystem_contract` reached the same conclusion.
+now has no dependency table of any kind. The dependency runs one way, fixture to contract. The two
+still leave together, for a different reason: Decision 1 puts them in one repository as a two-crate
+workspace, where the fixture links the contract by path. The README and crate-root `BUGS` that say
+the contract leaves first and this crate then pins it by revision are stale (item 2).
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold and helpers; `script/crate-standalone`,
 `script/crate-review-packet`, `helpers/lint_externalized_crates.py` and `helpers/name_release.py`
 in this tree; cargo-mutants' recorded census. No new tool.
 
-## Where this stands
+## Finding status
 
-Finished: the crate side of items 2, 3, 7 to 10 and 12 to 14 (#3566); item 1 in the template (crate-workflows#66, with workspace support in crate-workflows#64); Decision 2, ruled provisionally (#3589). A ruling settles Decision 1: the fixture shares one repository with `filesystem_contract` as a two-crate workspace and never publishes. The decision section does not yet record that ruling.
+One line per finding, in the review's order: items 1 to 5 in
+[the blocks-the-move appendix](1091-filesystem-fixture-outside-review/blocks-the-move.md), items 6
+to 12 in [the before-the-tag appendix](1091-filesystem-fixture-outside-review/before-the-tag.md),
+items 13 to 18 in [the later-items appendix](1091-filesystem-fixture-outside-review/later-items.md),
+then the decisions and the release step.
 
-- Item 2 (1017's step 2 row): ruled, not recorded; a lane restates the pairing's reason under the shared-repository ruling.
-- Item 3 (`EL0` in the `MOTD` literal): two-way, not built; a lane, with item 6.
-- Item 4 (names the gates refuse): ruled provisionally, not built; a lane renames across the nine manifests.
-- Item 5 (review package): not built; a lane writes it, then ratification is a decision for calef.
-- Item 6 (the crate describes this tree): two-way, not built; a lane that also changes the image builder and `xtask/src/disk_check.rs`.
-- Item 11 (manifest and caller workflows): the move, which waits on items 2 to 5 and the review clearance of the shared repository.
-- Items 15 to 17 (widths, `ALL` arrays, doc rewrite): two-way, not built; a lane.
-- Item 18 (a harness for outsiders): other; outside this block's scope.
+- Item 1 (P0), the template's cargo-deny refuses a nifeos git dependency: Done, in the template:
+  [crate-workflows#66](https://github.com/nifeos/crate-workflows/pull/66) allows git sources on the
+  organization, and [crate-workflows#64](https://github.com/nifeos/crate-workflows/pull/64) supports
+  a repository of several crates.
+- Item 2 (P0), the order and pairing are stale: Ruled (Decision 1, 2026-11-14 UTC). Not built: the
+  crate's README (line 58) and root `BUGS` (`src/lib.rs` line 12) still say the contract leaves
+  first and this crate then pins it by revision; under the ruling both say the crate depends on
+  `filesystem_contract` by path inside one workspace. Milestone 1017's step 2 row still gives the
+  removed dev-dependency as the reason for the pairing, and its owner corrects it.
+- Item 3 (P0), acronyms and British spelling: Open. The doc comments are fixed
+  ([#3566](https://github.com/nifeos/nife/pull/3566)); `EL0` remains in the `MOTD` literal
+  (`src/lib.rs` line 44), which the system tests compare, and changes with item 6.
+- Item 4 (P0), names the gates refuse: Ruled (Decision 2, maintainer, provisional, 2026-11-14 UTC).
+  Not built: `SCRATCH_INIT`, `MADE_DIR`, `NAV_DIR`, `TOUCH_MTIME_ADVANCED`, `twotrees`, `navscape`
+  and the rest of the three tables are still in the crate; one rename lane applies them across the
+  nine manifests, with aliases on the kept command names.
+- Item 5 (P0), no review package and 244 unratified names: Open. `notes/crate-reviews/` has no
+  package for this crate; it comes after item 4 and may cover both crates of the shared repository.
+- Item 6 (P1), the crate describes this tree: Open. Eight mentions of nife remain in `src/lib.rs`
+  and one in the README, and the data literals (`"nife walk entry\n"`, `"nife boot"`) change with
+  the image builder and `xtask/src/disk_check.rs`.
+- Item 7 (P1), history residue: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 8 (P1), the `durability` module is unused: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566). The module is deleted.
+- Item 9 (P1), the shared-frame witness doc states the refuted outcome: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 10 (P1), 14 equivalent mutants: Done, [#3566](https://github.com/nifeos/nife/pull/3566). The
+  sites are written as `1` and `0xFF`.
+- Item 11 (P1), caller workflows, manifest and stranger run: Open. The manifest has no
+  `repository` field and its `publish` comment cites this tree's allowlist; the caller workflows
+  (three targets, `allow-unpublished`), accepted words and the stranger run come with the move.
+- Item 12 (P1), the README's claims mislead: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 13 (P2), `rg_match_path` unbounded: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 14 (P2), `wide_name` wraps: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 15 (P2), the throughput widths are mixed: Open. `throughput::UNIT` is still a `usize`; one
+  width changes the casts in the kernel bench and the client with it.
+- Item 16 (P2), hand-copied distinct-bits lists: Open. Public `ALL` arrays per witness module, new
+  provisional names, with one test over them.
+- Item 17 (P2), the doc comments are a note: Open. A rewrite of about 11,000 words, the reasons
+  moving to the new repository's `docs/`.
+- Item 18 (P2), outsiders get nothing to run: Open. An outsider-runnable harness is outside this
+  milestone's scope and has no owner; this line is its record.
+- Decision 1, the repository: Ruled (2026-11-14 UTC): one workspace repository shared with
+  `filesystem_contract`. Not built: the crate text (item 2), and the move at milestone 1017's
+  step 2, after items 1 to 5.
+- Decision 2, the names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: item 4 is the
+  work.
+- Review clearance of the shared repository: Open. Under Open decisions.
+
+## Open decisions
+
+### Clear the review of the shared `filesystem_contract` and `filesystem_fixture` repository
+
+This is one decision with milestone 1090's, and its brief is there:
+[clear the review of `filesystem_contract` and `filesystem_fixture`, and create their
+repository](1090-filesystem-contract-outside-review.md#clear-the-review-of-filesystem_contract-and-filesystem_fixture-and-create-their-repository).
+For this crate, the clearance ratifies the 244 names of item 5's package, after Decision 2's
+renames have landed. Door: one-way, a repository and names that other repositories pin. Blocks: the
+move.
 
 ## Goal
 
@@ -81,45 +136,32 @@ The P2 items are in [the appendix](1091-filesystem-fixture-outside-review/later-
 
 The P1 items are in [the appendix](1091-filesystem-fixture-outside-review/before-the-tag.md).
 
-## Ledger
-
-The [ledger](1091-filesystem-fixture-outside-review/ledger.md) lists each item as done or left, with the test and the reason.
-
-## Follow-on
-
-- **Outstanding.** Items 1, 4, 5, 6, 11, 15, 16, 17 and 18 and the rest of items 2 and 3. They
-  wait on template work, the architect's naming rulings (Decision 2), the move commit and a
-  documentation rewrite. The ledger names each with its reason. Checked by reading the ledger rows
-  against the crate.
-
 ## Decisions for the architect
 
-Decision 1 is a one-way door. Decision 2 is decided, provisionally. Everything else above is the
-maintainer's.
+Both decisions are ruled. Decision 1 was a one-way door; Decision 2 is the maintainer's provisional
+ruling on a two-way one. Everything else above is the maintainer's.
 
-### Decision 1: the repository `nifeos/filesystem_fixture` is created, after `filesystem_contract` has left
+### Decision 1: the fixture shares one repository with `filesystem_contract`
 
-Recommendation first: approve the repository, on the condition that `filesystem_contract` has left
-and items 1 to 5 have landed, and not paired with any other crate.
+Ruled 2026-11-14 (UTC): `filesystem_fixture` gets no repository of its own. It shares one
+repository with `filesystem_contract`, as two crates in one Cargo workspace, and keeps
+`publish = false`. The two move together at milestone 1017's step 2, after items 1 to 5 have
+landed. Before the move a lane checks that the template handles a two-crate workspace, which
+[crate-workflows#64](https://github.com/nifeos/crate-workflows/pull/64) added.
 
-Background. A repository per crate exists only with the architect's approval of that exact
-repository; no lane creates one. The ruling that a crate leaves only if it is publishable or used by
-more than one repository is the test. This crate never publishes (it is test data, and the template's
-`allow-unpublished` input exists for the case), so the test is sharing. Today eleven manifests in
-this tree link it. After 1017's step 9, the `redoxfs` repository links it too: the server's
-compile-time assertion on `throughput::RECORD`, the crash injector's `crash::CUT`, `mkfs`'s
-`blank` layout and the walk model. That is two repositories, and the bottom-up rule puts the
-fixture before `redoxfs`.
-
-The alternative is that the crate stays in nife and `redoxfs` copies the four constants it needs.
-Every rule allows that, it costs nothing to undo, and this review refuses it for the reason the crate exists. Those four values are agreements between a server in one repository and a test in another,
-and a copied constant is how two sides drift. The sibling `block.rs` assertion is the concrete
-example: it holds only while both sides read one `RECORD`.
+Why. The test of whether a crate leaves is that it is publishable or used by more than one
+repository. This crate never publishes (it is test data, and the template's `allow-unpublished`
+input exists for the case), so the test is sharing: eleven manifests in this tree link it, and after
+1017's step 9 the `redoxfs` repository links it too (the server's compile-time assertion on
+`throughput::RECORD`, the crash injector's `crash::CUT`, `mkfs`'s `blank` layout and the walk
+model). Copying those four constants into `redoxfs` instead is refused, because they are agreements
+between a server in one repository and a test in another, and a copied constant is how two sides
+drift. The fixture depends on the contract, seven of its nine consumers link the contract as well,
+and one repository keeps the contract and its test data agreeing in one pull request.
 
 Prior art: xfstests and pjdfstest are repositories of filesystem test data shared by several
-implementations, each created once the second implementation needed them. `wasmtime-test-util`
-is a workspace test-utility crate that never publishes and stays with its consumers, which is the
-alternative above.
+implementations. `futures-test` and `tokio-test` are test-support crates kept in the workspace of
+the library they test. `wasmtime-test-util` is a workspace test-utility crate that never publishes.
 
 ### Decision 2: the names the template refuses, and the units and shapes the naming page requires
 
@@ -207,8 +249,10 @@ The checks are in [the appendix](1091-filesystem-fixture-outside-review/done-whe
 ## Index row
 
 `filesystem_fixture` is 1,178 lines of test vocabulary with no `unsafe`, no proof and sixteen
-passing tests, green on stable 1.88 and the pinned nightly. It can leave on its own after
-`filesystem_contract`, not paired with it: the dev-dependency that paired them is gone. Before it
-can, the template must allow git sources from the organization. Ten acronyms, two British spellings
-and ten names must pass the template's gates. 18 mentions of this tree must go. The architect must
-ratify 244 names from a review package that does not yet exist.
+passing tests, green on stable 1.88 and the pinned nightly. It leaves with `filesystem_contract`, as
+the second crate of one workspace repository (ruled 2026-11-14 UTC), and never publishes. The
+template now allows git sources from the organization and several crates per repository. Before the
+move the crate's text must state the shared workspace, the names the gates refuse must be renamed as
+Decision 2 rules, the `EL0` literal and the mentions of this tree must go, and the architect must
+ratify the crate's names from a review package that does not yet exist and clear the shared
+repository.

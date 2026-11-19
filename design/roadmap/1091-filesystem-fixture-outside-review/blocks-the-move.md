@@ -22,7 +22,8 @@ An appendix to [the milestone](../1091-filesystem-fixture-outside-review.md).
 2. The order and pairing are stale in three places.
    Finding: `README.md` line 56 and the crate root `BUGS` (lines 11 to 12) say the fixture and the
    contract leave together; 1017's step 2 row says the same, citing a dev-dependency that commit
-   `ce4ea2015` removed. The contract links nothing and leaves first; the fixture follows and pins it.
+   `ce4ea2015` removed. The contract links nothing; the fixture links it, and Decision 1 puts both
+   in one workspace repository.
    The reverse coupling is `byte_glob`, which dev-depends on the fixture and leaves in step 5, which the
    bottom-up rule allows. The sibling review of `byte_glob` proposes moving `crates/byte_glob/tests/
    fixture_agreement.rs` into `crates/filesystem_fixture/tests/` with `byte_glob` as a dev-dependency.
@@ -30,8 +31,8 @@ An appendix to [the milestone](../1091-filesystem-fixture-outside-review.md).
    `byte_glob` has left, which is the pairing problem reintroduced the other way round.
    Evidence: `README.md` lines 55 to 56; lines 11 to 12; 1017 step 2 row; `crates/byte_glob/Cargo.toml`
    dev-dependencies; `crates/byte_glob/tests/fixture_agreement.rs` header.
-   Change: restate both `BUGS` entries as "depends on `filesystem_contract` by path until that crate
-   has left; then by `git` and `rev`"; the recording lane corrects 1017's row. For the glob test,
+   Change: restate both `BUGS` entries as "depends on `filesystem_contract` by path, inside the
+   one workspace both crates share"; the owner of 1017 corrects its row's reason. For the glob test,
    `crates/grant_plan/tests/` (which already depends on `byte_glob` and leaves in step 6, after both) or
    leaving it in `byte_glob` keeps the order; this crate must not gain a dev-dependency on `byte_glob`.
    Door: two-way. Effort: XS.
