@@ -15,8 +15,8 @@ this file does not repeat them.
 A flattened device tree parser: bytes in, regions and property values out. The device tree blob is
 the machine describing itself, handed over by firmware (a bootloader, a UEFI loader or QEMU), and
 the crate reads it as untrusted input. It checks every offset, bounds every walk, and answers a
-malformed blob with an `Error`, never a panic. It reads the memory banks, the memory reservation
-block, the `/reserved-memory` children, the register regions of a node found by name prefix or by
+malformed blob with an `Error`, never a panic. It reads the memory banks and the memory reservation
+block. It also reads the `/reserved-memory` children, the register regions of a node found by name prefix or by
 `compatible` string, any property of a node, the parent's `compatible`, the initial ramdisk and the
 command line. The crate is `no_std` and has no run-time dependency. It has `unsafe` in one function:
 `DeviceTreeBlob::from_pointer`, which reads eight bytes through a raw pointer before it validates
