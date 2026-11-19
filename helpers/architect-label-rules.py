@@ -68,7 +68,7 @@ yields it, and drops one in a file that an open pull request carrying `architect
    or `#[cfg(test)]`, and a removed/added pair (in one file or across the diff) with the same
    constant or the same numbers and layout words do not fire: an identifier renamed in the
    sentence, a constant moved to another crate, `pub(crate)` widened to `pub`.
-4. **spawn_protocol**: a `pub const` changed in a file named `spawn_protocol.rs` (the wire layout
+4. **spawnproto**: a `pub const` changed in a file named `spawn_protocol.rs` (the wire layout
    `crates/program_table/src/spawn_protocol.rs` documents; matched by filename rather than the one path in
    the tree today, so a second one elsewhere is still caught). Same-value renames pair off as in
    rule 1.
@@ -107,7 +107,7 @@ to the graph, or a decisions edit):
     abi-surface      2      1  #1584 rename, value unchanged
     dependency       1      1  #1597 redox_syscall 0.9.0, already in three manifests
     format-crate     2      7  `//!` prose (#1289 #1369 #1374 #1443 #1511 #1527), a diagram (#1584); now quiet, #1402 still fires
-    spawn_protocol       3      3  #1377 #1419 #1421: IMAGE_MAXIMUM_PAGES, not in those PRs' diffs (not reproduced)
+    spawnproto       3      3  #1377 #1419 #1421: IMAGE_MAXIMUM_PAGES, not in those PRs' diffs (not reproduced)
     decisions       23      0  by definition; about 7 are link or rename sweeps (#1369 #1371 #1374 #1427 #1510 #1527 #1289)
 
 Narrowed on this evidence: rules 1, 2, 3 and 4 (above). Decisions was left alone that day, on the
@@ -200,7 +200,7 @@ syscall surface, a dependency new to the graph, a decision, or a published numbe
                                      pin before the 2026-11-09 approval, now exempt (2, counted real)
     decisions       70    61      9  criss-cross merge base (6); a split or stacked branch (3)
     syscall-error    7     2      5  rename (2); stacked parts inheriting #2809 (2); one of #2965's
-    spawn_protocol       5     4      1  a value naming a renamed constant (#2792)
+    spawnproto       5     4      1  a value naming a renamed constant (#2792)
     abi-surface      6     6      0
 
 Now quiet (22 pull requests, every one ruled a false positive): #2294 #2315 #2316 #2341 #2612
@@ -955,7 +955,7 @@ def layout_signature(line):
             tuple(m.group(0).strip().lower() for m in LAYOUT_COMMENT_RE.finditer(line)))
 
 
-# ---- rule 4: spawn_protocol ---------------------------------------------------------------------------
+# ---- rule 4: spawnproto ---------------------------------------------------------------------------
 
 SPAWNPROTO_CONST_RE = re.compile(r'^\s*pub const \w+\s*:')
 
@@ -967,7 +967,7 @@ def rule_spawnproto(fd, out, ctx):
         return
     left = unpaired_const_changes(fd, SPAWNPROTO_CONST_RE, ctx.renames)
     if left:
-        out.append(('spawn_protocol', fd['path'], left[0].strip()))
+        out.append(('spawnproto', fd['path'], left[0].strip()))
 
 
 # ---- rule 5: CLAUDE.md and design/decisions/*.md (outside frontmatter, past bookkeeping) ---------
@@ -1162,7 +1162,7 @@ QUESTIONS = {
     'format-crate': lambda p, d: (
         f"Does this change the bytes of `{_crate(p)}`'s format (a version, magic value or field "
         "layout) that another program reads?"),
-    'spawn_protocol': lambda p, d: (
+    'spawnproto': lambda p, d: (
         f"Does this change a spawn-protocol value another program sends or reads (`{d}`)?"),
     'decisions': lambda p, d: (
         "Do you approve this edit to CLAUDE.md?" if p == 'CLAUDE.md'
@@ -1183,7 +1183,7 @@ WHY_ONE_WAY = {
                   "and §46 rules each third-party crate",
     'format-crate': "a program built from another commit may read these bytes: an installed "
                     "package, a stored file, a page a previous kernel wrote, a live swap",
-    'spawn_protocol': "the spawner and every program it starts agree on these values",
+    'spawnproto': "the spawner and every program it starts agree on these values",
     'decisions': "a decision is the record every lane and reader acts on",
     'syscall-error': "programs branch on the errors a method returns, so a new or vanished error "
                      "changes what callers must handle",
@@ -1195,7 +1195,7 @@ RELEASED_BY = {
     'format-crate': "\"no bytes moved\"; or approval of the new layout, saying either "
                     "\"provisional, in-image\" (every reader and writer ships in one image from one "
                     "commit and nothing persists it) or that older readers must keep working",
-    'spawn_protocol': "\"nothing moved\", or approval of the new or changed value",
+    'spawnproto': "\"nothing moved\", or approval of the new or changed value",
     'decisions': "approval of the edit, or a send-back naming what to change",
     'syscall-error': "\"same errors\" (a refactor or rename), or approval of the new error "
                      "behavior",
@@ -1420,7 +1420,7 @@ diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
  }
 """, 'abi-surface'),
 
-    ("spawn_protocol: a rename with the same value stays quiet", """\
+    ("spawnproto: a rename with the same value stays quiet", """\
 diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
 --- a/crates/grant_plan/src/spawn_protocol.rs
 +++ b/crates/grant_plan/src/spawn_protocol.rs
@@ -1429,14 +1429,14 @@ diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spa
 +pub const RUN_UNVOUCHED_ENDPOINT_SLOT: u64 = 22;
 """, None),
 
-    ("spawn_protocol: a new wire value with no removed partner fires", """\
+    ("spawnproto: a new wire value with no removed partner fires", """\
 diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
 --- a/crates/grant_plan/src/spawn_protocol.rs
 +++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,2 @@
  pub const SPAWN_DISPLAY: u64 = u64::MAX - 3;
 +pub const SPAWN_NO_DISPLAY: u64 = u64::MAX - 4;
-""", 'spawn_protocol'),
+""", 'spawnproto'),
 
     ("dependency: a brand-new external crate fires", """\
 diff --git a/entropy_backend/Cargo.toml b/entropy_backend/Cargo.toml
@@ -1932,7 +1932,7 @@ diff --git a/crates/driver_process_contract/src/non_volatile_memory_express.rs b
  pub fn handoff() {}
 """, 'format-crate'),
 
-    ("spawn_protocol: #2792's shape, a value naming a constant the diff renames, stays quiet", """\
+    ("spawnproto: #2792's shape, a value naming a constant the diff renames, stays quiet", """\
 diff --git a/crates/grant_plan/src/lib.rs b/crates/grant_plan/src/lib.rs
 --- a/crates/grant_plan/src/lib.rs
 +++ b/crates/grant_plan/src/lib.rs
@@ -1947,16 +1947,16 @@ diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spa
 +pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
 """, None),
 
-    ("spawn_protocol: #2836's shape, a value that gains a term, fires", """\
+    ("spawnproto: #2836's shape, a value that gains a term, fires", """\
 diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
 --- a/crates/grant_plan/src/spawn_protocol.rs
 +++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
 +pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES + crate::JOB_POOL_PAGES;
-""", 'spawn_protocol'),
+""", 'spawnproto'),
 
-    ("spawn_protocol: a value re-pointed to another existing constant fires (no declaration renamed)",
+    ("spawnproto: a value re-pointed to another existing constant fires (no declaration renamed)",
      """\
 diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
 --- a/crates/grant_plan/src/spawn_protocol.rs
@@ -1964,7 +1964,7 @@ diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spa
 @@ -1,1 +1,1 @@
 -pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
 +pub const SHELL_BUDGET_PAGES: u64 = 128 + JOB_POOL_PAGES;
-""", 'spawn_protocol'),
+""", 'spawnproto'),
 
     ("syscall-error: #2779's shape, a function renamed around the same error, stays quiet", """\
 diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
@@ -1994,16 +1994,16 @@ diff --git a/kernel/src/syscall/object_methods.rs b/kernel/src/syscall/object_me
      Ok(0)
 """, 'syscall-error'),
 
-    ("spawn_protocol: a changed slot constant fires", """\
+    ("spawnproto: a changed slot constant fires", """\
 diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
 --- a/crates/grant_plan/src/spawn_protocol.rs
 +++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -pub const RUN_UNVOUCHED_SLOT: u64 = 22;
 +pub const RUN_UNVOUCHED_SLOT: u64 = 23;
-""", 'spawn_protocol'),
+""", 'spawnproto'),
 
-    ("spawn_protocol: prose-only doc change in the same file stays quiet", """\
+    ("spawnproto: prose-only doc change in the same file stays quiet", """\
 diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
 --- a/crates/grant_plan/src/spawn_protocol.rs
 +++ b/crates/grant_plan/src/spawn_protocol.rs
@@ -2012,14 +2012,14 @@ diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spa
 +//! clearer description, no constant moved
 """, None),
 
-    ("spawn_protocol: a const change in a same-named file elsewhere still fires", """\
+    ("spawnproto: a const change in a same-named file elsewhere still fires", """\
 diff --git a/crates/other/src/spawn_protocol.rs b/crates/other/src/spawn_protocol.rs
 --- a/crates/other/src/spawn_protocol.rs
 +++ b/crates/other/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -pub const SLOT: u64 = 1;
 +pub const SLOT: u64 = 2;
-""", 'spawn_protocol'),
+""", 'spawnproto'),
 
     ("decisions: any CLAUDE.md edit fires", """\
 diff --git a/CLAUDE.md b/CLAUDE.md
@@ -2257,7 +2257,7 @@ ASK_FIXTURES = [
     ("dependency: fuzz/Cargo.toml: brand_new 1.0", "taking `brand_new 1.0` as a dependency"),
     ("format-crate: crates/network_time_protocol/src/lib.rs: // the offset",
      "the bytes of `network_time_protocol`'s format"),
-    ("spawn_protocol: crates/grant_plan/src/spawn_protocol.rs: pub const SLOT: u64 = 2;", "spawn-protocol"),
+    ("spawnproto: crates/grant_plan/src/spawn_protocol.rs: pub const SLOT: u64 = 2;", "spawn-protocol"),
     ("decisions: design/decisions/0088-needs-architect-as-a-check.md: **What.**",
      "this edit to §88 (needs architect as a check)"),
     ("decisions: CLAUDE.md: (CLAUDE.md edited)", "this edit to CLAUDE.md"),
