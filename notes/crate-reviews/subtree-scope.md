@@ -4,7 +4,7 @@
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
-The architect reads this to clear the crate for its move to its own repository, as part of step 9 of
+The architect reads this to clear the crate for its move to its own repository. The move is step 9 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
 where it leaves with `memory_region_heap` and `redoxfs` as one repository. It describes the crate as
 `main` plus this branch leaves it. The outside review behind it is
@@ -82,10 +82,10 @@ All on the branch's tip, on a loaded shared host.
 
 The measurement behind P1-9 is below under Proofs.
 
-Not run, and so not claimed: the stranger test, the template's workflows (they run in the
-repository), a mutation census on the branch (the baseline row stands from 2026-10-19 and the
-renames change no logic), `cargo-semver-checks` (a first release has no baseline) and
-`cargo package` (the manifest has no `repository` key until the move).
+Not run, and so not claimed: the stranger test, and the template's workflows, which run in the
+repository. No mutation census ran on the branch: the baseline row stands from 2026-10-19, and the
+renames change no logic. Nor did `cargo-semver-checks`, because a first release has no baseline, or
+`cargo package`, because the manifest has no `repository` key until the move.
 
 ## Public API
 

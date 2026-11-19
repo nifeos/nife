@@ -54,15 +54,15 @@ the crate's own reasons.
   [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-7, names the rules refuse: Done, [#3813](https://github.com/nifeos/nife/pull/3813). The eight
   renames (`PROOF_PATH_BYTES`, `directories`, `want_directory`, `component`, `NodeKind`,
-  `Binding::Unbound`, `check_landing`, `Bindings::binding`) are in the tree and in
-  `redoxfs_server`, provisional (maintainer, 2026-11-19 UTC); the architect ratifies them from the
+  `Binding::Unbound`, `check_landing`, `Bindings::binding`) stand in the tree and in
+  `redoxfs_server`, provisional (maintainer, 2026-11-19 UTC). The architect ratifies them from the
   review package.
 - P1-8, no example anywhere: Open. The doctests on `walk` and `Bindings` landed in
   [#3580](https://github.com/nifeos/nife/pull/3580); the README's `## EXAMPLES` is move work.
 - P1-9, what the walk proofs leave out and cost: Measured, not added. The completeness harness
   `a_walk_asks_for_every_component_in_order` verifies at unwind 7, but costs 11 minutes of wall
   time on a loaded host (658 s of CPU) at a peak of 4.6 GiB, against the crate's whole row of 234
-  seconds. That overruns a prove shard's room, so it is not in the tree; the package records the
+  seconds. That overruns a prove shard's room, so it stays out of the tree. The package records the
   measurement and the harness's shape. A lane that makes room in the shards, or shrinks the
   harness, adds it.
 - P1-10, passive voice over the template's ceiling: Open. The template counts 26 passives in 4,081
@@ -91,11 +91,11 @@ and the standing rule is that clearing a crate's review package approves it. Thi
 package under `notes/crate-reviews/` yet, so there is nothing to clear.
 
 The move also waits on P0-3's pin, which needs `filesystem_contract`'s repository first. The
-renames of P1-7 are done, and the review package is
-[written](../../notes/crate-reviews/subtree-scope.md) (maintainer ruling, provisional, 2026-11-19
+renames of P1-7 are done, and a lane wrote the
+[review package](../../notes/crate-reviews/subtree-scope.md) (maintainer ruling, provisional, 2026-11-19
 UTC: option A for writing it). Clearing it, the go to create the step-9 repository with
-`memory_region_heap` and `redoxfs`, with no tag and no publish, stays open and is asked of the
-architect from the package.
+`memory_region_heap` and `redoxfs`, with no tag and no publish, stays open. The architect decides it
+from the package.
 
 Recommendation: A.
 
