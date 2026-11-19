@@ -27,17 +27,146 @@ leaves the reopening to the architect, under the ruling that a release review re
 ratified before a later rule.
 
 The crate is on `crates/externalization-list.txt` and is step 2 of milestone 1017 (the contract
-crates leave in this order), paired there with `filesystem_fixture` because of a dev-dependency.
-That dev-dependency no longer exists: the manifest has no dependencies of any kind, and the README
-says where the fixture's tests went. The two crates can leave separately.
+crates leave in this order), paired there with `filesystem_fixture`. The manifest has no
+dependencies of any kind, and the README says where the fixture's tests went. The two crates share
+one workspace repository, ruled 2026-11-14 (UTC); the fixture never publishes.
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold, its helpers (`standalone.py`,
 `falsify.py`, `coverage-floor.sh`, the name gates), Kani, cargo-mutants, cargo-llvm-cov, the
 classification of equivalent mutants already in `notes/mutation-testing/`. No new tool.
 
-## Where this stands
+## Finding status
 
-The appendix lists what remains and what holds each: [where this stands](1090-filesystem-contract-outside-review/where-this-stands.md).
+One line per finding, in the review's order: items 1 to 5 below, items 6 to 13 in
+[the before-the-tag appendix](1090-filesystem-contract-outside-review/before-the-tag.md), items 14
+to 22 in [the later-items appendix](1090-filesystem-contract-outside-review/later-items.md), then
+the decisions and the release steps. The item texts use the names the review read; Decision B's
+renames are in force (`dir` is `directory`, `xattr` is `extended_attribute`, `blk` is `block`).
+
+- Item 1 (P0), the crate does not stand alone: Open. `nife` still appears in `README.md` lines 5
+  and 87, `src/lib.rs` line 33, `src/grant.rs` lines 11 and 13 and `src/extended_attribute.rs` line
+  76; the `publish` comment points at a file of this tree, and the manifest has no `repository`
+  field. The move commit rewords them and strips the `Name:` blocks.
+- Item 2 (P0), clippy refuses `RedoxFS` without a `clippy.toml`: Open. The crate-root
+  `clippy.toml` with `doc-valid-idents` comes with the move commit.
+- Item 3 (P0), the falsification patches carry this tree's path: Open. All eleven patches diff
+  `a/crates/filesystem_contract/...` and the README says `patch -p3`; the move commit rewrites them
+  to `a/src/...` and `git apply -p1`.
+- Item 4 (P0), `rm.rs` uncovered: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+  `a_status_is_the_errno_and_success_is_zero`.
+- Item 5 (P0), names the gates refuse: Ruled (Decision B, maintainer, provisional, 2026-11-14 UTC).
+  The renames are in force ([#3726](https://github.com/nifeos/nife/pull/3726)). Not built: a
+  `doc(alias)` and source line on each kept POSIX verb and errno name (only `xattr` has an alias),
+  and the `register_names` exemption for `block::SIZE` once the template's exemption file exists.
+- Item 6 (P1), `reply_errno` not total: Done, [#3577](https://github.com/nifeos/nife/pull/3577).
+  Built with Decision C.
+- Item 7 (P1), the packers mask: Open. `fs::req`, `rename_dst` and both `specification` packers
+  still mask; each proxy call site that forwards a client's length or handle needs a refusal first,
+  so a client cannot crash a caretaker, and then the packers assert.
+- Item 8 (P1), seven unproven properties: Open. Six harnesses with falsification patches are in
+  [#3566](https://github.com/nifeos/nife/pull/3566) and
+  [#3637](https://github.com/nifeos/nife/pull/3637); the termination of the four walkers is still
+  unproven.
+- Item 9 (P1), equivalent mutants need a home: Open. The classes go into the new repository's
+  `.github/mutants-exempts`, with one green full run before the tag.
+- Item 10 (P1), the README is short of the scaffold: Open. No badge row, `patch -p3`, no Kani cost;
+  the move commit brings the scaffold's shape.
+- Item 11 (P1), twelve bare acronyms: Open. The crate's own text expands them
+  ([#3566](https://github.com/nifeos/nife/pull/3566)); the new repository's
+  `prose_acronyms.toml` carries the universally known ones.
+- Item 12 (P1), `rm` is not filesystem protocol: Open. `src/rm.rs` is still in the crate, and
+  `CLIENT_WINDOWS` is still documented as provisional with a citation of `abi::rendezvous::BADGE`;
+  where `rm` lands (the program or `byte_sink_contract`) and whether the window count is a contract
+  fact are placement calls the maintainer makes.
+- Item 13 (P1), dates and British spellings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 14 (P2), `req_blocks` decodes 256: Open. `block.rs` still returns `(w0 & 0xff) + 1`; clamp
+  or `Option` is a two-way door the maintainer rules provisionally.
+- Item 15 (P2), `directory_entry::encode` accepts an empty name: Open. Unchanged; refusing in the
+  encoder or documenting it is a two-way door the maintainer rules provisionally.
+- Item 16 (P2), three spellings of the errno vocabulary: Open. No `errno` module yet; its name is a
+  provisional maintainer call, since Decision B's table does not list it.
+- Item 17 (P2), the length-or-offset doc: Done, [#3566](https://github.com/nifeos/nife/pull/3566);
+  the name is `MAXIMUM_LENGTH_BYTES` ([#3726](https://github.com/nifeos/nife/pull/3726)).
+- Item 18 (P2), stale distinctness tests: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 19 (P2), `usize` width: Done, [#3566](https://github.com/nifeos/nife/pull/3566). A `const`
+  assertion that `usize::BITS >= 40`.
+- Item 20 (P2), `in_opcode_order` warns at 1.88: Done,
+  [#3566](https://github.com/nifeos/nife/pull/3566).
+- Item 21 (P2), no fuzz target: Open. A `fuzz/` crate with one target per walker and one for the
+  store, a lane of its own.
+- Item 22 (P2), `extended_attribute::reply` masks a kind: Open. It asserts once item 7's call sites
+  refuse.
+- Decision A, the store directory: Done, [#3577](https://github.com/nifeos/nife/pull/3577). Ruled
+  2026-11-14 UTC.
+- Decision B, the names and units: Done, [#3726](https://github.com/nifeos/nife/pull/3726).
+  Maintainer ruling, provisional, 2026-11-14 UTC; the aliases are item 5.
+- Decision C, the reply error range: Done, [#3577](https://github.com/nifeos/nife/pull/3577). Ruled
+  2026-11-14 UTC.
+- §99 still names the store `.nife-attrs`: Open. Under Open decisions.
+- Review package: Open. `notes/crate-reviews/` has no package for this crate; one package may cover
+  both crates of the shared repository.
+- Review clearance of the shared repository: Open. Under Open decisions.
+
+## Open decisions
+
+### Correct the store directory's name in §99
+
+Background. §99 decides where macOS metadata (resource forks, Finder information) lands on a nife
+filesystem: in a sidecar store directory beside the files. Decision A above renamed that directory
+`.extended-attributes` (2026-11-14 UTC), and the crate, the server, the host tool and the notes
+carry the new name. §99's own text still says `.nife-attrs`, in its bytes-at-rest row (line 160)
+and its closing paragraph (line 202). A reader of the decision record now meets a name that no
+code uses. A decision's words change only with the architect's approval, so no lane may make the
+edit on its own.
+
+Recommendation: A.
+
+- A. Approve the edit: §99's two mentions become `.extended-attributes`, stated as the rule in
+  force, with no other change to the section.
+- B. Leave §99 as written and add a line in Decision A that it supersedes §99's name.
+- C. Supersede §99 with a new section that carries the renamed store.
+
+Door: two-way. It is a record's wording, and no image outside the maintainers' own ever carried
+the old name. It comes to the architect only because §88 reserves a changed word in a decision to
+him.
+
+Prior art: §298 states that a document says what is in force now, with git as the history, which
+is option A. Python's PEPs and Rust's RFCs keep their original text and point to the successor,
+which is option B; this tree chose the other way. Concrete example: a reader of §99's cost table
+counts "one 4096-byte block for the node's blob under `.nife-attrs`" and then finds
+`STORE_DIRECTORY` holding `.extended-attributes`.
+
+Blocks: nothing in the move or the tag; it is the record's accuracy.
+
+### Clear the review of `filesystem_contract` and `filesystem_fixture`, and create their repository
+
+Background. `filesystem_contract` defines the two message protocols a filesystem server and a
+block server speak, and `filesystem_fixture` is the test image those servers are checked against.
+They leave together for one workspace repository, ruled 2026-11-14 UTC; the fixture never
+publishes. A crate leaves once its review package lists every public name and decision and the
+architect clears that review, and the clearance is also the go to create the repository. Most of
+the contract's public names are provisional, Decision B's renames included, and the fixture has
+244 unratified names (milestone 1091). The decision is one clearance for both crates.
+
+Recommendation: A, once the review package exists.
+
+- A. Clear one review covering both crates when its package is written: ratify the names as the
+  package lists them, and create the repository as `publish = false`. The move follows, with items
+  1 to 3 and 10 here and items 6 and 11 of milestone 1091.
+- B. Create the repository and leave the names provisional until the release review.
+- C. Clear the contract alone and keep the fixture in this repository, against the 2026-11-14 ruling
+  that they share one.
+
+Door: one-way. The repository is an outward step, and a ratified protocol name binds every server
+and client once anything outside this tree speaks it.
+
+Prior art: `jh7110_clock_and_reset` and `designware_ethernet` were cleared from review packages
+before their repositories were made. Outside, `rust-lang/futures-rs` and `tokio` keep a test
+utility crate (`futures-test`, `tokio-test`) in the same workspace as the library it tests, which is
+the shape ruled here. Concrete example: ratifying `nameset::IS_DIRECTORY` fixes the spelling
+in the filesystem servers and in the fixture's witness documentation at once.
+
+Blocks: the move.
 
 ## Goal
 
@@ -147,26 +276,6 @@ The P2 items are in [the appendix](1090-filesystem-contract-outside-review/later
 ### P1: before the tag
 
 The P1 items are in [the appendix](1090-filesystem-contract-outside-review/before-the-tag.md).
-
-## Ledger
-
-The [ledger](1090-filesystem-contract-outside-review/ledger.md) lists each item as done or left, with the test and the reason.
-
-## Follow-on
-
-- **Outstanding.** Items 1 to 3, 7, 9, 10, 12, 14 to 16, 21 and 22, and the rest of item 5, and the walkers' proofs in
-  item 8. They wait on the move commit, Decisions B and C, the call-site design that item 7 needs,
-  the template's exemption file, the README, the placement of `rm` and a fuzz crate. The ledger
-  names each with its reason. Checked by reading the ledger rows against the crate.
-- **Done.** The renames of decision B, which the maintainer decided provisionally. Checked
-  by reading each item and decision against the tree at this branch's head. The tree carries decisions A, B
-  and C. The store directory is `.extended-attributes` in the crate, the server, the host
-  tool and the notes. The reply word's error range is bounded, with its proofs. The items still
-  describe the tree as it stands.
-- **Decision.** `design/decisions/0099-apple-metadata-at-rest.md` still names the store directory
-  `.nife-attrs` in its bytes-at-rest row and in its closing paragraph. Under decision A the name is
-  `.extended-attributes`. A lane does not change a decision's words, so the change waits for the
-  decision's owner to approve it.
 
 ## Decisions for the architect
 
@@ -284,8 +393,6 @@ The checks are in [the appendix](1090-filesystem-contract-outside-review/done-wh
   template's helpers, which the reviewer ran by hand on a standalone copy with the same arguments
   the workflows pass. The exception is `coverage`, where the reviewer applied the floor to a locally
   produced lcov.
-- Milestone 1017's table pairs this crate with `filesystem_fixture` for a dev-dependency that is
-  gone; the recording lane should correct that row or note it here.
 
 ## Index row
 
@@ -293,5 +400,7 @@ An outside review of `filesystem_contract` before it leaves nife. Five items are
 commit (the stand-alone text, clippy's proper-noun list, the falsification patch paths, one
 uncovered file, 22 names the gates refuse). Eight come before the first tag (a non-total errno
 decoder, packers that mask, seven unproven properties, the equivalent-mutant list, the README and
-prose gates, the `rm` module). Nine are for later. Three decisions went to the architect: the on-disk
-name (A, ruled), the naming pass with units (B, open), and a bound on the error range of a reply word (C, ruled).
+prose gates, the `rm` module). Nine are for later. Three decisions: the on-disk name (A, ruled),
+the naming pass with units (B, the maintainer's provisional ruling, built), and a bound on the
+error range of a reply word (C, ruled). Two are open: §99's stale store name, and the clearance of
+the repository this crate shares with `filesystem_fixture`.
