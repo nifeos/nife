@@ -31,8 +31,7 @@ tool.
 
 The ids are the review's own; P0 and P1 are in [the
 appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
-items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Ruled decisions](#ruled-decisions), and the
-move under [Open decisions](#open-decisions).
+items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Ruled decisions](#ruled-decisions).
 
 - P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
   license and lints and reads `publish = false`; the README and both license files are missing. The
@@ -67,10 +66,9 @@ move under [Open decisions](#open-decisions).
   UEFI, NUL, GIC, PL031, PLIC, PMIC and PMP. The move's gate pass clears these.
 - F-dtoolkit, the switch to `dtoolkit`: Open, waiting for an upstream release; the wait is ruled,
   under [Ruled decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
-- F-package, the review package: Open. None exists under `notes/crate-reviews/`; it waits on the
-  decision to clear the move.
-- F-clearance, review clearance: Open, under [Open
-  decisions](#clear-the-move-or-hold-it-for-dtoolkit).
+- F-package, the review package: Open. None exists under `notes/crate-reviews/`; a lane writes it
+  now, as ruled under [Ruled decisions](#write-the-review-package-now-the-move-is-not-held-for-dtoolkit).
+- F-clearance, review clearance: Open. It follows the package and is asked of the architect.
 - BUGS-239: Open. Milestone 239 (radon's device tree does not describe the TRNG) gives the depth
   bound as a `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64. A lane corrects that milestone.
 
@@ -164,6 +162,17 @@ their own parser. nife differs by holding the dependency to its bar of proofs an
 architectures. Example: after the switch, the kernel's `DeviceTreeBlob::from_pointer` becomes
 `dtoolkit::Fdt::from_raw`, and P0-1, P1-5 and the P2-9 README lapse.
 
+### Write the review package now; the move is not held for `dtoolkit`
+
+Ruled 2026-11-19 (UTC): option A. A lane writes the `device_tree_blob` review package under
+`notes/crate-reviews/` now. The move does not wait for the `dtoolkit` switch, which may take a long
+time or never come. Clearance, the go to create the repository, follows the package and is asked
+of the architect when the package exists.
+
+Door: two-way until the repository exists. Prior art: `file_allocation_table` and `e1000e` cleared
+from a written package. Example: F-package and P0-1 each get a lane, and if the switch later comes
+first, the move items lapse with no loss to the kernel, which keeps the fixes either way.
+
 ### Property is spelled out across the crate
 
 The crate spells `property` out in every public item, parameter and doc comment. The one `prop`
@@ -186,20 +195,7 @@ Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`.
 
 ## Open decisions
 
-One decision is open. It decides whether the crate leaves at all.
-
-### Clear the move, or hold it for `dtoolkit`
-
-No review package exists, and clearance follows one. Recommendation: B, because every move item
-lapses if the switch comes first, and a package written first would go to waste.
-
-- A. Write the package now and clear the move.
-- B. Hold the package and the move until the `dtoolkit` decision; write the package only if C wins
-  there.
-
-Door: two-way until the repository exists. Prior art: `file_allocation_table` and `e1000e` cleared
-from a written package. Example: under B, F-package and P0-1 stay open with no lane. Blocks: the
-move, F-package, P0-1, P1-5 and P2-9.
+There are none.
 
 ## Goal
 
@@ -230,7 +226,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
-  half of P2-9, F-size, F-package and BUGS-239, and the one open decision.
+  half of P2-9, F-size, F-package, F-clearance and BUGS-239.
 
 ## BUGS
 
@@ -252,4 +248,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and eight decisions went to the architect; seven are ruled and one remains open.
+that does not move. Fourteen smaller items follow, and eight decisions went to the architect; all are ruled.
