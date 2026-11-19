@@ -121,6 +121,7 @@ Queue began 2026-08-15; W31 and W32 predate it.
 - 2026W47: CI job swish-check ran at 87% of its budget on its newest merge-group run; tracking issue #3651
 - 2026W47: CI job swish-check ran at 87% of its budget on its newest merge-group run; tracking issue #3681
 - 2026W47: CI job prove ran at 109% of its budget on its newest merge-group run; tracking issue #3713
+- 2026W47: CI job prove ran at 88% of its budget on its newest merge-group run; tracking issue #3763
 <!-- /week-notes -->
 
 ![Where a merge-group build's time goes](project-metrics/ci-critical-path.svg)
@@ -222,7 +223,7 @@ accounts for, read at each week's last merge. Above 5% is a lane (calef, 2026-10
 save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 <!-- baseline-drift: script/metrics writes this -->
-2026W47, `main` at `589e7fe65`: nothing unexplained past 5%; the largest, aarch64 `map_el0` +1.55%, riscv64 `sink_throughput` +1.45%, x86_64 `map_new` +1.58%.
+2026W47, `main` at `164e2ed92`: nothing unexplained past 5%; the largest, aarch64 `ipc_rtt_el0` +1.66%, riscv64 `sink_throughput` +1.48%, x86_64 `map_new` +1.57%.
 <!-- /baseline-drift -->
 
 ## Interface stability
