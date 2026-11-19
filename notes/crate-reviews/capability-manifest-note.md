@@ -7,13 +7,13 @@ shape of [universal-serial-bus.md](universal-serial-bus.md).*
 ## The package
 
 Name and version. `capability_manifest_note` `0.1.0`, edition 2024, `rust-version` 1.88, license
-`MIT OR Apache-2.0`, `publish = false`. The crate name was ratified on 2026-10-18 (UTC). The
+`MIT OR Apache-2.0`, `publish = false`. The architect ratified the crate name on 2026-10-18 (UTC). The
 repository is `nifeos/capability_manifest_note`, which does not exist yet. The crate is on
 `crates/externalization-list.txt`, in step 6 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
 after `machine_statistics_contract`, `domain_name_resolution_contract` and `grant_plan`. The review
 that this package answers is
-[milestone 1082 (the outside review of `capability_manifest_note`)](../../design/roadmap/1082-capability-manifest-note-outside-review.md).
+[milestone 1082 (`capability_manifest_note`: what an outside maintainer would fix)](../../design/roadmap/1082-capability-manifest-note-outside-review.md).
 
 API. The ELF note a program carries to ask for authority, its compile-time encoder and its strict
 decoder. One claim runs through it, in both directions: one manifest has exactly one encoding, so
@@ -32,7 +32,7 @@ the compiler refuses. It is `no_std`, allocates nothing and has no `unsafe` func
 
 The packet (`script/crate-review-packet capability_manifest_note`) lists the public signatures. Nine
 public signatures name a `grant_contract` type (`Manifest`, `ManifestAuthorities`, `VerbGrant`).
-That crate is the organization's own and is approved in advance; no nife type and no nife error
+That crate belongs to the organization and has advance approval; no nife type and no nife error
 enum appears in a signature.
 
 What a stranger may find surprising:
@@ -58,9 +58,7 @@ Proofs. Seven Kani harnesses, each with a falsification patch in `falsifications
 | `a_decoded_verb_table_finds_each_verb` | tables of one or two verbs of one or two bytes | `grants_for` finds every verb `decode_verbs` accepts, with its grants |
 | `decode_subtree_grants_never_panics` | up to one byte past 8 bytes | `decode_subtree_grants` is total |
 
-Outside the bounds: a zone walk with a count, a length byte or a length chosen freely (each variant
-ran out of memory under a 12 GiB cap, and the harness documentation says so), a verb table of more
-than two verbs, and a zone of more than the bytes the layouts use. The fuzz target
+Outside the bounds lie three things. The first is a zone walk with a count, a length byte or a length chosen freely; each variant ran out of memory under a 12 GiB cap, and the harness documentation says so. The second is a verb table of more than two verbs. The third is a zone of more than the bytes the layouts use. The fuzz target
 `capability_manifest_note_decode` and its 14 seeds reach those; the target is still in nife's fuzz
 workspace and the move gives the crate its own (item 8 of the milestone). The weekly fuzz opt-in
 stays off, and the project's own host fuzzes the crate.
@@ -89,8 +87,7 @@ literals in `src/lib.rs`, 3 in `src/tests.rs` and none elsewhere.
 
 Result of `script/crate-standalone`. Seven failures, all expected before the move. The check copies the
 crate alone, and its four path dependencies (`grant_contract`, `domain_name_resolution_contract`,
-`interfaces_note`, `program_table`) have not left the tree yet, so the manifest check fails once per
-dependency, the build is skipped and the proofs are skipped because the copy does not build. The seventh
+`interfaces_note`, `program_table`) have not left the tree yet, so the manifest check fails once per dependency. The build and the proofs do not run, because the copy does not build. The seventh
 failure is the names check: 56 names are not yet ratified, which is the list in the table above for this
 review. The harness and falsification steps could not run. The move lane reruns the check once the sibling
 crates are available.
@@ -114,8 +111,7 @@ Open items before the move. These are in the milestone and belong to the move la
 - The consumers' lines converted from path dependencies to `git` and `rev` with `version = "0.1.0"`.
 
 Recommendation. Ready for review. The names below are the only ones the architect has ratified
-beyond those the crate already carried; every other name is provisional. The clearance is the go for
-creating `nifeos/capability_manifest_note`; no tag and no publication is asked.
+beyond those the crate already carried; every other name is provisional. The clearance gives the go to create `nifeos/capability_manifest_note`; the package asks for no tag and no publication.
 
 ## Names
 

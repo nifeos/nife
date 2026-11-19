@@ -86,7 +86,7 @@ helpers, Kani, cargo-fuzz, the crate's own encoders as seed writers. No new tool
 
 Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
 architect reads; clearing it is the go to create the crate's repository and move the crate there.
-The package is written, and the statics it named are renamed. The crate leaves in step
+The lane wrote the package and renamed the statics it named. The crate leaves in step
 6 of milestone 1017, after `machine_statistics_contract`, `domain_name_resolution_contract` and
 `grant_plan`, and the move pull request carries the stranger run (P0-2) and the fuzz workspace
 (P1-8).
@@ -234,8 +234,7 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
   rename lane before its crate leaves; the lint counts them until then.
 - The review inferred item 8's failure of `tests/fuzz_seed.rs` in the staged repository. The dry run's build step stopped at the manifest before any test ran. The fix is right whether or not the
   inference is.
-- With item 9's opt-in off, the version 2 and 3 zone walk is fuzzed only on the project's own
-  host. Kani covers a version 3 descriptor with one zone; past that, if the host stops running the
+- With item 9's opt-in off, the version 2 and 3 zone walk gets fuzzing only on the project's own host. Kani covers a version 3 descriptor with one zone; past that, if the host stops running the
   target, the walk's coverage is the hand-written tests and the seeds alone.
 - The prior-art rows marked unverified (GNU property alignment and ordering, the OpenBSD, NetBSD
   and Go type numbers) are from memory. The README cites only the owners `FreeBSD`, `GNU` and
