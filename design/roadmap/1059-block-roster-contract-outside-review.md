@@ -298,6 +298,18 @@ change it has had to tag.
 
 **Blocks.** Nothing else waits on it. #20 merges either way.
 
+## Follow-on
+
+- **Done.** P0-1 to P0-2, P1-1 to P1-8 and every P2 item except P2-7 landed in
+  `nifeos/block_roster_contract`; the table above names the pull request of each. nife #3568 moved
+  the two call sites.
+- **Outstanding.** The rename of `capacity_of` to `entry_capacity` is `nifeos/block_roster_contract`
+  #20, open. Read from the repository through the GitHub API.
+- **Outstanding.** P2-7's topics: the repository carries `block-device`, `storage`, `no-std`,
+  `kani`, `formal-verification` and `rust`, without `virtio` and `nvme`. Read through the GitHub API.
+- **Outstanding.** The tag question in Open decisions: `v0.1.0-pre.2` is the last tag, and the
+  repository's tags list confirms it.
+
 ## Index row
 
 An outside reading of `block_roster_contract`: two red weekly jobs block the first release (no
