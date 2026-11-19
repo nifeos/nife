@@ -227,6 +227,10 @@ LEDGER_PATH = DATA_DIR / 'ledger.md'
 # `helpers/merge_queue_share.py update` writes from GitHub's merge-queue events. Read from the working
 # tree like `effort.csv`, and for its reason: a committed record of a fact git cannot reproduce.
 QUEUE_PATH = DATA_DIR / 'merge-queue-daily.csv'
+# Milestone 1042 (the merge queue is sized to the runner pool): the daily wait for a hosted runner,
+# `helpers/ci_job_times.py` writes it from the Actions API's job created and started times. Read
+# from the working tree for the queue file's reason.
+WAITS_PATH = DATA_DIR / 'ci-job-wait-days.csv'
 # The week notes (milestone 623, provisional): hand-appended rows, pruned by this script when a
 # week ages out of the chart window, rendered as bullets under the chart a row names. Like the two
 # above rather than like the measure files: it is a record of an explanation, not a series
@@ -434,6 +438,10 @@ MEASURES = [
     # `ci-builds.csv`. The per-job bars on `ci-jobs.svg` are read from that record when the chart is
     # drawn (`build_job_series`), not stored here, since which jobs clear the bar threshold changes.
     # Empty before 2026-08-15, the backfill's first day. Column names provisional.
+    # How long a hosted job waits for a runner, from `ci-job-wait-days.csv` (milestone 1042). Empty for a
+    # week the daily record does not cover, never zero: a zero would read as a pool that never
+    # made a job wait.
+    ('ci-job-waits', ['ci_hosted_jobs', 'ci_wait_median_minutes', 'ci_wait_over_5_pct']),
     ('ci-jobs', ['ci_builds', 'ci_build_median_minutes', 'ci_build_p90_minutes']),
     # The model-attribution columns (file name `models.csv`; Name: ratified 2026-09-24 (calef, in session, when asked to ratify the two metrics files the split produced; nothing refused)). Commits
     # and lines are one measure and one file rather than two, because a single pass over the same
@@ -1101,6 +1109,40 @@ def queue_by_week():
         held['entries'] += int(row['entries'] or 0)
         held['ejected'] += int(row['ejected'] or 0)
     return weeks
+
+
+def waits_by_week(path=WAITS_PATH):
+    """{ISO week: {jobs, over, median_seconds}} from `ci-job-wait-days.csv`, or {} without the file.
+
+    The share over five minutes is summed over the week's jobs. The median is the days' medians
+    weighted by their job counts (the record keeps one median a day, not every wait), so it is an
+    approximation of the week's median that a busy day pulls toward its own."""
+    if not path.exists():
+        return {}
+    days = {}
+    for row in csv.DictReader(path.read_text().splitlines()):
+        days.setdefault(week_of_date(row['date']), []).append(
+            (float(row['median_wait_seconds']), int(row['jobs']), int(row['over_5_minutes'])))
+    out = {}
+    for week, held in days.items():
+        total = sum(jobs for _m, jobs, _o in held)
+        seen, median = 0, held[0][0]
+        for m, jobs, _o in sorted(held):
+            seen += jobs
+            if seen * 2 >= total:
+                median = m
+                break
+        out[week] = {'jobs': total, 'over': sum(o for _m, _j, o in held), 'median_seconds': median}
+    return out
+
+
+def waits_cells(held):
+    """The `ci-job-waits` columns for one week's `waits_by_week` entry; empty without one."""
+    if not held or not held['jobs']:
+        return {'ci_hosted_jobs': '', 'ci_wait_median_minutes': '', 'ci_wait_over_5_pct': ''}
+    return {'ci_hosted_jobs': held['jobs'],
+            'ci_wait_median_minutes': '%.1f' % (held['median_seconds'] / 60.0),
+            'ci_wait_over_5_pct': '%.1f' % (100.0 * held['over'] / held['jobs'])}
 
 
 def debt_paydown_by_week(path=DEBT_PAYDOWN_PATH):
@@ -2785,6 +2827,12 @@ CHARTS = [
      'ejected over entered, summed across the week from GitHub\u2019s merge-queue events; the line '
      'is where trunk-health starts to say so',
      [('ejected share', 'queue_ejection_pct')], 1.0, (20, 'reported above'), 'queue_ejection_pct'),
+    # The wait for a hosted runner against the line that lets the build window rise (milestone 1042).
+    ('ci-job-waits.svg', 'How long a hosted job waits for a runner, in minutes',
+     'median of merge-group jobs, creation to start; the line is the wait under which the build '
+     'window may rise from 5 to 8',
+     [('median wait', 'ci_wait_median_minutes')], 1.0, (1, 'window may rise below'),
+     'ci_wait_median_minutes'),
     # How long a merge-group build takes against its lid (calef, 2026-10-11 UTC). The two lines are
     # the stored columns (LINES); the bars are every job past JOB_BAR_MINUTES, read from
     # `ci-builds.csv` when drawn (SERIES_FROM), so the column here is what the flag and `--charts`
@@ -3117,6 +3165,7 @@ def fill_derived(rows, rev):
     queue = queue_by_week()
     debt = debt_paydown_by_week()
     builds = builds_by_week()
+    waits = waits_by_week()
     restate_drift(rows)
     for week, row in rows.items():
         # Empty before the record starts, never zero, for the verify columns' reason.
@@ -3131,6 +3180,7 @@ def fill_derived(rows, rev):
         row['queue_ejected'] = '' if held_queue is None else held_queue['ejected']
         row['queue_ejection_pct'] = ('' if not held_queue or not held_queue['entries']
                                      else '%.1f' % (100.0 * held_queue['ejected'] / held_queue['entries']))
+        row.update(waits_cells(waits.get(week)))
         row.update(debt_paydown_cells(debt.get(week)))
         row.update(models.get(week, {}))
         held = effort.get(week) or {}
@@ -3690,12 +3740,27 @@ def selftest():
                                '13,2026-10-12,0\n')
         debt_weeks = debt_paydown_by_week(debt_record)
         debt_absent = debt_paydown_by_week(pathlib.Path(tmp) / 'absent.csv')
+        # The hosted-runner wait (milestone 1042): a Sunday and the Monday after it are two weeks,
+        # the share is summed over jobs, and no file is no weeks.
+        waits_record = pathlib.Path(tmp) / 'ci-job-waits.csv'
+        waits_record.write_text('date,jobs,median_wait_seconds,over_5_minutes\n'
+                                '2026-10-05,100,30,5\n2026-10-06,300,90,60\n2026-10-12,10,0,0\n')
+        wait_weeks = waits_by_week(waits_record)
+        wait_absent = waits_by_week(pathlib.Path(tmp) / 'absent.csv')
     debt_rows = {'2026W01': {'debt_paydown_merged_total': '', 'debt_paydown_merged': ''},
                  '2026W02': {'debt_paydown_merged_total': '10', 'debt_paydown_merged': '5'},
                  '2026W03': {'debt_paydown_merged_total': '30', 'debt_paydown_merged': '3'}}
     debt_pair = ('debt_paydown_merged', 'debt_paydown_merged_total')
 
     cases = [
+        ('ci-job-waits: a week sums its jobs and takes the days\u2019 median by job count', wait_weeks,
+         {'2026W41': {'jobs': 400, 'over': 65, 'median_seconds': 90.0},
+          '2026W42': {'jobs': 10, 'over': 0, 'median_seconds': 0.0}}),
+        ('ci-job-waits: no record is no weeks, not zeros', wait_absent, {}),
+        ('ci-job-waits: minutes to one place and the share of jobs', waits_cells(wait_weeks['2026W41']),
+         {'ci_hosted_jobs': 400, 'ci_wait_median_minutes': '1.5', 'ci_wait_over_5_pct': '16.2'}),
+        ('ci-job-waits: a week the record does not cover is empty, never zero', waits_cells(None),
+         {'ci_hosted_jobs': '', 'ci_wait_median_minutes': '', 'ci_wait_over_5_pct': ''}),
         ('debt-paydown: both counts from one file, weeks split at Monday UTC', debt_weeks,
          {'2026W41': {'merged': 3, 'labeled': 2}, '2026W42': {'merged': 1, 'labeled': 0}}),
         ('debt-paydown: no record is no weeks, not zeros', debt_absent, {}),
