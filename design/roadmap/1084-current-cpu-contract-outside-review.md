@@ -73,7 +73,7 @@ Reuse: `script/crate-standalone`, `helpers/name_release.py`, `helpers/lint_exter
   ([#3657](https://github.com/nifeos/nife/pull/3657)) and ratified as built.
 - Review package: Open. No package for this crate exists under `notes/crate-reviews/`; a lane writes
   one.
-- Review clearance: Done (ruled 2026-11-19 UTC, option A), once the package exists; the package is still to be written.
+- Review clearance: Done (ruled 2026-11-19 UTC, option A), once the package exists; no lane has written the package yet.
 
 ## Goal
 
@@ -220,9 +220,9 @@ differs by spelling every abbreviation out. Concrete example: a runtime's one li
 
 ### The review clearance and the move
 
-Ruled 2026-11-19 (UTC), option A. The review of this crate is cleared once a lane writes the review
-package, and that clearance is the go to create `nifeos/current_cpu_contract` and move the crate
-there. The package is still to be written by a lane, and the move starts after the package lands.
+Ruled 2026-11-19 (UTC), option A. Once a lane writes the review package, the review of this crate
+is clear, and that clearance is the go to create `nifeos/current_cpu_contract` and move the crate
+there. No lane has written the package yet, and the move starts after the package lands.
 No tag is part of this ruling, and nothing is published. A public repository is one-way: others see
 and clone it once it exists, and nobody can withdraw its history.
 
