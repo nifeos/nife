@@ -85,9 +85,10 @@ Every contract crate in this tree carries two numbers that a program checks when
 other side: an interface number that says which contract this is, and a version that says which
 revision of it. The socket contract is the agreement between the network stack and every program
 that opens a socket, including the standard library's platform layer, which copies this crate's
-source verbatim. Its numbers today are `INTERFACE_ID` 19, the row milestone 956 gives it, and
-`VERSION` 1. Both are provisional. No operation sends `VERSION` on the wire; the bind-time check
-that will read it belongs to milestone 1000.
+source verbatim. Its numbers today are `INTERFACE_ID` 19, the row milestone 956 (the linked
+interfaces carry checkable versions) gives it, and `VERSION` 1. Both are provisional. No operation
+sends `VERSION` on the wire; the bind-time check that will read it belongs to milestone 1000
+(message contracts carry bind-time version checks).
 
 The package records no magic for the socket frame, as `entropy_contract` has none. Milestone 1017
 asks for a frozen identity before a contract leaves.
@@ -121,8 +122,8 @@ platform layer's build.
 
 Recommendation: A.
 
-- A. Clear once the architect freezes the identity and PKG-2, PKG-3, P2-9 and PKG-4 have provisional rulings
-  and have landed, with no tag and no publish.
+- A. Clear once the architect freezes the identity and PKG-2, PKG-3, P2-9 and PKG-4 have
+  provisional rulings and have landed, with no tag and no publish.
 - B. Clear on the identity alone, and let the scope moves and renames land in the new repository.
 - C. Hold the clearance until the first publish is near, and move nothing before then.
 
