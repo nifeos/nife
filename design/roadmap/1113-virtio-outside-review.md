@@ -32,9 +32,45 @@ the architect decides about where that code lives, the code that stays is sound 
 device or a client can reach. Its layout constants are the kernel's and not a copy of them. Its pure
 logic is testable on the host, and its names pass `design/naming.md`.
 
-## Where this stands
+## Finding status
 
-[The appendix](1113-virtio-outside-review/where-this-stands.md).
+- P0-1, the crate cannot leave as it stands: Done, [#3662](https://github.com/nifeos/nife/pull/3662). The roles live in
+  `components/src/block_driver_roles.rs` (Decision 1, ruled 2026-11-16 UTC, option A).
+- P0-2, no test runs outside QEMU and no proof exists: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
+- P1-3, the ring layout is an unchecked copy of the proved layout: Ruled (maintainer,
+  provisional, 2026-11-14 UTC, Decision 2). Not built: `QSIZE` and the ring offsets are literals
+  under a BUGS entry (`block_driver_roles.rs` line 120), and `abi::virtio` holds no ring constant.
+  Their names join the `abi` review's pinned values (milestone 1075 item 11).
+- P1-4, a client-caused device error kills the block server: Done, [#3520](https://github.com/nifeos/nife/pull/3520).
+- P1-5, two `unsafe` blocks state an unchecked precondition: Done, [#3520](https://github.com/nifeos/nife/pull/3520).
+- P1-6, a handshake step the specification requires: Done, [#3559](https://github.com/nifeos/nife/pull/3559), [#3574](https://github.com/nifeos/nife/pull/3574) and
+  [#3628](https://github.com/nifeos/nife/pull/3628). The driver-side `Version` check stays closed on purpose (Decision 3).
+- P1-7, four completion loops and three submits: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
+- P1-8, the receive parser trusts the buffer: Done, [#3520](https://github.com/nifeos/nife/pull/3520).
+- P1-9, names against `design/naming.md`: Open. `DMA_VA` (line 50), `S_*` (lines 79 to 82),
+  `QSIZE` (line 93), `blk_*`, `mr` and `mw` remain in the roles file. A two-way door, since the
+  program publishes no name, so the maintainer decides; not calef's.
+- P1-10, the documentation describes a different crate: Done, [#3613](https://github.com/nifeos/nife/pull/3613) and [#3662](https://github.com/nifeos/nife/pull/3662).
+- P1-11, the manifest does not stand alone: Superseded. The fold ([#3662](https://github.com/nifeos/nife/pull/3662)) removed the
+  manifest.
+- P2-12, `find_file` trusts the name length: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
+- P2-13, `disk_size_bytes` and the configuration generation: Done, [#3520](https://github.com/nifeos/nife/pull/3520) and [#3613](https://github.com/nifeos/nife/pull/3613).
+- P2-14, one request in flight on the production path: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
+- P2-15, an unused parameter of `run_attack`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
+- P2-16, an unbounded `complete_block`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
+- Decision 1, fold the roles into `block_driver`: Done, [#3662](https://github.com/nifeos/nife/pull/3662) (ruled 2026-11-16 UTC, A).
+- Decision 2, the ring layout moves to `abi::virtio`: Ruled (maintainer, provisional,
+  2026-11-14 UTC). Not built; P1-3 is the work.
+- Decision 3, the kernel checks `Version` and the driver does not: Done, [#3628](https://github.com/nifeos/nife/pull/3628) (maintainer,
+  provisional, 2026-11-15 UTC).
+- A QEMU test that a block read or write past the disk's capacity answers an error and the server
+  keeps serving: Open. A host test of `transfer_first_sector` covers the refusal.
+- The shared library that holds the name `virtio`: Ruled (2026-11-16 UTC). Whether and when to cut
+  it waits on milestone 1062 step 7.
+
+## Open decisions
+
+None.
 
 ## What was checked, and how
 
@@ -53,7 +89,8 @@ format, identity, layout or dependency) or two-way.
 ### P0
 
 **1. The crate cannot leave as it stands, and by the standing rules it should not leave as a
-crate at all.** `Cargo.toml` lines 12 to 18 names four path dependencies. One of them is `user_mode_runtime`,
+crate at all.** DONE (#3662 folds the roles into `components/src/block_driver_roles.rs`).
+`Cargo.toml` lines 12 to 18 names four path dependencies. One of them is `user_mode_runtime`,
 the SDK. The contract-crate ordering (milestone 1017 (the contract crates leave in this order)) has the SDK leaving last, because a crate that
 leaves must reference nothing back into this tree. The crate's seven public items
 (`src/lib.rs` lines 198, 246, 297, 321, 352, 872 and 933) are `fn(u64) -> !` entry points: five test roles
@@ -90,7 +127,8 @@ The P1 items are in [the appendix](1113-virtio-outside-review/before-the-tag.md)
 ## Decisions for the architect
 
 Three decisions, each with the background first, then the recommendation, prior art and a
-concrete example. The maintainer decides Decision 2, provisionally, below.
+concrete example. Decision 1 is the architect's ruling; the maintainer decides Decisions 2 and 3,
+provisionally.
 
 ### Decision 1. Whether `crates/virtio` leaves this tree, and as what
 
@@ -98,7 +136,7 @@ Background. The crate is the shared body of one program, `block_driver`: five te
 confinement and parity suites spawn (`run`, `run_write`, `run_write_abandon`, `run_attack`,
 `run_attack_indirect`), one DHCP exerciser (`run_net`), and the block server RedoxFS runs on
 (`run_blk_server`). It became a crate when a second binary compiled the same file (the aarch64
-`hello` roles, per the comment at `components/Cargo.toml` lines 89 to 91); that second consumer is gone,
+`hello` roles, per the comment at `components/Cargo.toml` lines 106 to 108); that second consumer is gone,
 and `block_driver.rs` is the only caller. It depends on the SDK (`user_mode_runtime`), which the
 contract-crate ordering has leaving last. Two standing rules bear on it. First, a crate gets its own
 repository only when it would publish on its merits or when more than one repository consumes it.
@@ -126,10 +164,10 @@ Prior art. Linux (`drivers/virtio/virtio_ring.c` shared by every class driver), 
 it. None of them ships test roles as a library. The reuse record already names Redox's
 split as the shape nife chose when it refused `virtio-drivers`.
 
-Concrete example. `crates/virtio/src/lib.rs` lines 47 to 105 and `components/src/virtio_net_transport.rs` lines 54 to 87
-hold the same thirty constants. Folding the roles into `block_driver` changes neither line and
-removes a crate boundary that guards nothing; cutting the library later removes one of the two
-copies and the four others with it.
+Concrete example. `components/src/block_driver_roles.rs` lines 59 to 117 and
+`components/src/virtio_net_transport.rs` lines 54 to 87 hold the same handshake constants. The
+fold removes a crate boundary that guards nothing, and cutting the library later removes one of
+the two copies and the four others with it.
 
 ### Decision 2. Where the kernel-to-driver ring layout lives
 
@@ -156,8 +194,8 @@ both the kernel's ring code and every userspace consumer (QEMU, rust-vmm's `virt
 compile against; the layout is a contract, and the contract has one home. Nife's own `abi` crate
 is the same thing for the syscall boundary.
 
-Concrete example. `kernel/src/virtio.rs` lines 426 to 442 aliases the validator; `crates/virtio/src/lib.rs` line 72
-and `:99-101` and `components/src/virtio_net_transport.rs` lines 73 to 87 spell `8`, `0x000`, `0x080`,
+Concrete example. `kernel/src/virtio.rs` lines 497 to 513 alias the validator;
+`components/src/block_driver_roles.rs` lines 93 and 127 to 129 and `components/src/virtio_net_transport.rs` lines 73 to 87 spell `8`, `0x000`, `0x080`,
 `0x100`, `0x200`. After the move, each of those is `abi::virtio::RING_...` and a change to the
 proved layout is a compile error in every driver.
 
@@ -204,12 +242,8 @@ The kernel's scan does not offer the slot, so nothing starts a driver for it.
 
 ## Follow-on
 
-- **Outstanding.** The items in the lists above that do not read DONE, and Decision 3's driver-side
-  check, which waits for the ruling. The kernel's scan refuses a slot whose `Version` is not 2 in every
-  build, and the PCI transport answers the real configuration generation (item 6 and
-  `notes/virtio.md`).
-- **Done.** Item 10: the kernel comments and notes that named `crates/virtio` name `components/src/block_driver_roles.rs`.
-- **Outstanding.** Items 3 and 9, and the QEMU test of a block request past the disk's capacity.
+- **Outstanding.** The findings "Finding status" marks Open or Ruled, each line read against
+  `components/src/block_driver_roles.rs`.
 
 ## Done when
 

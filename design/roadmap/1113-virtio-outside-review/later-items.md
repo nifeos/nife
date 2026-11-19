@@ -17,7 +17,7 @@ makes a multi-word configuration read consistent. No QEMU disk reaches either. T
 with a saturating fallback, and a generation-bracketed read when the direct grant lands. Effort:
 S. Two-way.
 
-14. One request in flight, one interrupt per request, on the production path. DONE (the doc of `submit` in `crates/virtio` records the shape and the block figure). Every submit
+14. One request in flight, one interrupt per request, on the production path. DONE (the doc of `submit` in `components/src/block_driver_roles.rs` records the shape and the block figure). Every submit
 reuses descriptor head 0 (`:441`, `:1122`) and the block server waits on the interrupt for each
 request (`:986-1008`). `notes/virtio.md` records that the mount's read count stays in the low
 hundreds, so this fits the watchdog. It is still the slowest shape a virtio-blk driver can take,
