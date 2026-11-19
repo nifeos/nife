@@ -23,15 +23,127 @@ Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-sta
 `script/crate-review-packet`, `helpers/name_release.py`, cargo-mutants, Kani, and the policy copies
 in `patches/std-nife` and `redoxfs_server/src/bin/second_mount.rs`. No new tool.
 
-## Where this stands
+## Finding status
 
-Finished: decision A's names, the `Result` return, the two accessors and the `va` binding (#3597); the refused second wiring and zero grow (#3559); and the seam, host tests, Kani harnesses, refusals and documentation of items 7 to 14 (#3609).
+- P0-1, names and the missing `Name:` blocks: Done, [#3597](https://github.com/nifeos/nife/pull/3597).
+  The names later items added read provisional; ratifying them is an open decision below.
+- P0-2, `talc` and the path dependencies: Ruled (Decision B, option A, 2026-11-14 UTC). Not built:
+  the manifest keeps path dependencies on `abi`, `address_space_layout` and `user_mode_runtime`,
+  and no README states what the unpatched `talc` lacks.
+- P0-3, manifest, README and license files: Open. The manifest still inherits `license` and
+  `[lints]` from the workspace, and no README or license file exists.
+- P0-4, the `va` binding and `commit_all`: Done, [#3597](https://github.com/nifeos/nife/pull/3597).
+  The coverage half is Open: the template's `coverage` job first measures the host tests after the
+  move.
+- P1-5, a second `initialize`: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
+- P1-6, a grow of zero bytes: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
+- P1-7, kernel refusals read as budget spent: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
+- P1-8, page-source seam, host tests, proofs and one copy of the policy: Open. The seam, host tests
+  and three harnesses landed in [#3609](https://github.com/nifeos/nife/pull/3609); std's overlay
+  `heap.rs` still copies `MINIMUM_GROW_PAGES = 8`, and `second_mount.rs` keeps its own grow.
+- P1-9, documentation and the minimum cap: Open. The crate documentation landed in
+  [#3609](https://github.com/nifeos/nife/pull/3609); the README part waits for the move.
+- P2-10, `PAGE_BYTES`: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
+- P2-11, a panic inside the allocator: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
+- P2-12, growth is monotonic: Open. The crate documentation says so; the README sentence waits for
+  the move.
+- P2-13, accessors for the cap and the base: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
+- P2-14, the `Sync` argument: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
+- Decision A, the seven names and `commit_all`: Done (option A, 2026-11-14 UTC),
+  [#3597](https://github.com/nifeos/nife/pull/3597).
+- Decision B, which `talc` outside nife: Ruled (option A, 2026-11-14 UTC). Not built: the same
+  work as item 2.
+- A fork of `talc` if upstream stays silent: Open, and conditional. It is an open decision below.
+- Review package and repository: Open. No package exists in `notes/crate-reviews/`; the go is an
+  open decision below.
 
-- Item 1 (names): the seven ruled names read ratified; `Short`, `PageSource` and eleven other later names read provisional; ratification is a decision for calef, and the move strips the blocks.
-- Item 2 (`talc` and path dependencies): ruled as decision B, not built; the move, which waits on the `abi`, `address_space_layout` and `user_mode_runtime` repositories and on calef's review clearance.
-- Items 3, 9 and 12 (manifest, licenses, README): the crate documentation covers its part, and nobody has written the rest; the move.
-- Item 4 (coverage): host tests exist now, and the template's `coverage` job has not measured them; the move.
-- Item 8 (the std and `second_mount` copies): two-way, not built; other, a host-buildable path through `cargo xtask std-src`.
+## Open decisions
+
+### Ratify the names the later items added
+
+Background. The move to the crate's own repository strips every `Name:` block, so each public
+name must read `ratified` first. Decision A ratified the seven original names. The fixes for items
+5 to 13 then added more, and `helpers/name_release.py --draft memory_region_heap` lists them as
+provisional: `Short`, `PageSource`, `MemoryRegionPages`, `Refusal`, `WiringRefusal`,
+`base_virtual_address`, `maximum_bytes`, `initialize_source`, `with_source`, `is_budget_spent`,
+`is_initialized`, `last_refusal` and `map_page`. The unpublished fuzz crate adds the modules
+`src`, `policy` and `sequence` and the function `run`.
+
+Recommendation: A. The names follow the rules in force (spelled-out words, `is_` for a question,
+std's shapes), and `PageSource` follows prior art in `dlmalloc` and `rlsf`.
+
+- A. Ratify the thirteen crate names as they stand; leave the fuzz crate's names provisional, since
+  that crate never publishes.
+- B. Ratify with named changes, applied by one rename lane before the move.
+- C. Hold until a review package lists every public item with its signature.
+
+Door: one-way at the first publish, since a published name is a breaking change to rename. Before
+that it is two-way, but ratification is the architect's by the naming rule.
+
+Prior art. `dlmalloc` names its page seam `Allocator`, and `rlsf` names it `FlexSource`; both
+crates settled the name before 1.0. `Vec::try_reserve` returns a named error type, which is the
+shape `Short` and `Refusal` follow. nife differs in ratifying every public item, not only the
+ones a README shows. Concrete example: a consumer writes
+`MemoryRegionHeap::with_source(source)` and matches `Refusal` from `last_refusal()`; those
+spellings are what it compiles against.
+
+Blocks: the move.
+
+### Fork `talc` if upstream stays silent
+
+Background. The crate's allocator core is `talc` 5.1.1 from crates.io. nife builds a patched copy
+(`vendor/talc`, carrying upstream pull request 57, two fit-check overflow fixes), but a `[patch]`
+table does not travel with a library, so outside nife the crate builds the unpatched release.
+Decision B accepts that, because the overflow needs addresses that wrap at the top of a 64-bit
+space. It also rules that the question returns as a fork request if upstream stays silent past
+the next monthly `script/vendor-watch` report. Pull request 57 is open with no comments, and no
+release carries the fix. This decision exists only once that report passes in silence.
+
+Recommendation: A, when the question arises. The fix does not reach a 64-bit process, nife's own
+images build the patched source, and a fork adds a crate, a repository and a maintenance duty
+that a later upstream release would make redundant.
+
+- A. Keep the unpatched crates.io dependency and the README sentence, and keep watching upstream.
+- B. Fork `talc` under `nifeos`, publish the fork, and depend on it.
+- C. Replace `talc` with another allocator core.
+
+Door: one-way for B and C (a published crate and a dependency other repositories build); A
+changes nothing.
+
+Prior art. Rust's std depends on crates.io `dlmalloc` 0.2 for its wasm targets with no patch,
+and takes fixes only through releases. Debian and the BSD ports keep a patch at the distribution,
+which is the shape nife's root `[patch]` has today. A fork is the usual answer when an upstream has
+stopped, and `talc` has a working maintainer. Concrete example: under A, the crate's own repository runs its
+host tests against unpatched 5.1.1 and passes, while basalt's image, built in nife's workspace,
+links the patched source.
+
+Blocks: nothing until the vendor-watch report passes in silence; after that, the first publish.
+
+### Clear the review package and approve the repository
+
+Background. A crate leaves this tree for its own `nifeos` repository only when the architect
+clears its review package; that clearance approves the repository. A package lists every public
+item with its signature, and `script/crate-review-packet` writes it. This crate has none. The
+components, the fixtures and the RedoxFS server all depend on it, so it serves several consumers and
+meets the bar for leaving.
+
+Recommendation: A. A package written after the architect settles the names above shows the
+architect the crate as it will ship.
+
+- A. A lane writes the package; the architect's clearance creates the repository.
+- B. Clear on this outside review alone, without a package.
+- C. Keep the crate in nife and move it with the runtime package.
+
+Door: one-way. Creating a public repository and moving the crate there are outward steps that
+other pins then follow.
+
+Prior art. The Rust library team reviews a new std interface through an API change proposal
+before it stabilizes, and Fuchsia's API council reviews a library before it enters the SDK (both
+recalled, not re-read). nife differs in reviewing a whole crate once, before its first publish.
+Concrete example: the architect cleared `generational_table` on 2026-11-08 (UTC), and its
+repository `nifeos/generational_table` dates from that day.
+
+Blocks: the move.
 
 ## Goal
 
@@ -126,7 +238,7 @@ The P1 items are in [the appendix](1100-memory-region-heap-outside-review/before
 
 ## Decisions for the architect
 
-Two one-way doors. Everything else above is the maintainer's. The architect ruled Decisions A and B, and both hold.
+Two one-way doors, both ruled. The decisions still open are under "Open decisions" above.
 
 ### A. The seven public names, and the shape of `commit_all` (ruled 2026-11-14 UTC)
 
@@ -161,72 +273,18 @@ The rule in force, option A (block 1100 decision B):
 - If upstream stays silent past the next monthly `script/vendor-watch` report, the question
   returns as a request to fork. A fork under `nifeos` needs its own approval.
 
-Evidence the architect saw: `talc` 5.1.1 came out on 2026-09-09 and has 2.6 million downloads. One
-maintainer wrote most of its commits. Pull request 57 has been open since 2026-09-24 with no
-comments.
-
-Background. nife builds `talc` from `vendor/talc`, the crates.io 5.1.1 package plus upstream pull
-request 57, through `[patch.crates-io]` in each workspace root. A `[patch]` table does not travel
-with a library crate: the crate's own repository, and any consumer whose root workspace lacks the
-patch, builds the unpatched package. Pull request 57 fixes two fit checks that compared addresses
-where they meant sizes. The first fixes undefined behavior that Miri reports through
-`allocation_cache`'s host test, and both can hand out overlapping memory where addresses wrap, which
-a 64-bit process never reaches in practice (unverified as a proof). The pull request has been open
-for seven weeks with one commit and no maintainer comment. The step 9 appendix of milestone 1017
-already rules that `redoxfs` takes `talc` as a git dependency pinned by `rev` with `version`,
-divergence as a patch file in that repository, and that `talc` gets no repository of nife's own.
-That ruling does not say what this crate does, and this crate is a library that other repositories
-consume.
-
-Recommendation first. Depend on crates.io `talc = "5.1.1"` in the crate's manifest, unpatched, and
-state in the README what the package lacks and why it does not reach a 64-bit process. nife's own
-root `[patch.crates-io]` keeps applying to nife's whole graph, this crate included, so every nife
-image still builds the fixed source. The `redoxfs` repository carries the patch file that the ruling
-gave it. When a `talc` release carries pull request 57, bump and delete the README sentence. This
-keeps the crate publishable (crates.io publishes a git dependency only by its `version`, so a pin
-would not reach a registry consumer anyway), costs no fork, and leaves the fixed source in every
-build that ships.
-
-Prior art. Rust std's wasm target depends on `dlmalloc` from crates.io and carries no patch; a fix
-waits for a release. Debian and the BSD ports carry patches at the distribution, not in the library,
-which is the shape nife's `[patch]` has today.
-
-Concrete example. The crate repository's `check` runs its host tests (item 8) against the unpatched
-5.1.1 and passes, because the wrapped-address case needs a gap that ends within a chunk of the top
-of a 64-bit address space. basalt's image, built in nife's workspace, links the patched source. If
-upstream stays silent past the next monthly `script/vendor-watch` report, the question returns as a
-fork request, which this block does not make.
-
-Not taken. A git pin on upstream at a revision carrying the fix (there is none; the pull request has
-not merged). A fork under `nifeos` (refused in the step 9 appendix as needing its own approval). A
-`[patch]` instruction in the README for consumers (an instruction a build cannot check).
+The evidence, background, prior art and the options not taken are in
+[the appendix](1100-memory-region-heap-outside-review/talc-decision.md).
 
 ## Follow-on
 
-- **Done.** The branch `milestone/1100-memory-region-heap-names` applied the architect's ruling on
-  decision A: the names, the rename, the `Result` return, the two accessors and the local binding.
-  Decision B stands as the rule in force.
-- **Done.** The branch `lane/1100-outside-review-fixes` built the code items.
-  - A `PageSource` seam, 16 host tests and three Kani harnesses with falsification patches (item 8).
-  - A second `initialize` refused (item 5) and a zero grow refused (item 6).
-  - A refusal other than `OutOfMemory` stops growth and `last_refusal` reports it (item 7).
-  - Crate docs that gloss "untyped", state the minimum first heap (pinned at 1,575 bytes) and name
-    the spinlock (items 9 and 14).
-  - `PAGE_BYTES` (item 10), the reading of the panic handler (item 11), the never-shrinks paragraph
-    (item 12) and the two accessors (item 13).
-- **Outstanding.** The move lane does the items that need the new repository. The manifest keeps its
-  path dependencies and its `talc` line as they stand. The move lane also writes the README
-  and license files (items 2, 3 and the README sentence of item 12, to the rule of decision B). Item 4's
-  coverage-exemption half belongs to the move lane, now that a host test exists. Two code items
-  wait for a host-buildable path: generating the policy into std through `cargo xtask std-src`, and
-  `second_mount` consuming the crate with a host page source in place of its drifted copy. The fuzz
-  crate's copy of the policy may later take the seam. `script/crate-standalone` step 0 still needs
-  the move lane to strip the blocks. `Short`, `maximum_bytes` and `base_virtual_address` stay
-  provisional until a name review.
+- **Outstanding.** Each finding that "Finding status" marks Open or Ruled, checked against the
+  crate's source and manifest.
 
 ## Done when
 
-The checks are in [the appendix](1100-memory-region-heap-outside-review/done-when.md). What is done and what is left, item by item, is in [the ledger](1100-memory-region-heap-outside-review/ledger.md).
+The checks are in [the appendix](1100-memory-region-heap-outside-review/done-when.md). Each item's
+state is under "Finding status" above.
 
 ## BUGS
 
@@ -235,9 +293,8 @@ The checks are in [the appendix](1100-memory-region-heap-outside-review/done-whe
 - The page cost of a refused `MAP` at an already-mapped address comes from the kernel's own comment
   (`kernel/src/syscall/memory_region.rs` line 72), not from a run.
 - The minimum first-heap figure (1,575 bytes) comes from a hand computation over `DefaultBinning`'s
-  bit field (`[usize; 3]`, `BIN_COUNT = 191`) and talc's `min_first_heap_size`. Item 9 asks for a
-  test that pins it.
-- Whether the user-mode panic handler allocates was not read; item 11 asks for it.
+  bit field (`[usize; 3]`, `BIN_COUNT = 191`) and talc's `min_first_heap_size`;
+  `the_first_heap_fits_in_one_page` pins it.
 - Whether the unpatched `talc` 5.1.1 fit-check overflow can occur in a 64-bit process comes from
   reasoning over the patch, not from a proof. Decision B states it as practice, not as a theorem.
 - The mutation census groups this crate with two others; no per-crate figure exists to report, and
@@ -247,10 +304,7 @@ The checks are in [the appendix](1100-memory-region-heap-outside-review/done-whe
 
 ## Index row
 
-An outside review of `memory_region_heap` before it leaves. The code items are built: a page-source seam, host tests,
+An outside review of `memory_region_heap` before it leaves. The code fixes have landed: a page-source seam, host tests,
 three Kani harnesses, a refused second wiring and a readable refusal. What remains blocks on the
 move: path dependencies that become pins, a README and licenses, and the policy copies in std and
-`second_mount`.
-They are a re-callable `initialize` that can make talc span unmapped memory, a zero-byte grow that
-reports success, and every kernel refusal read as "budget spent". The other two are a growth policy
-with no host test and three copies, and documentation that assumes nife. Five items are for later.
+`second_mount`. Ratifying the later names and clearing a review package are open decisions.
