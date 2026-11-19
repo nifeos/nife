@@ -51,8 +51,8 @@ logic is testable on the host, and its names pass `design/naming.md`.
   `QSIZE` (line 93), `blk_*`, `mr` and `mw` remain in the roles file. A two-way door, since the
   program publishes no name, so the maintainer decides; not calef's.
 - P1-10, the documentation describes a different crate: Done, [#3613](https://github.com/nifeos/nife/pull/3613) and [#3662](https://github.com/nifeos/nife/pull/3662).
-- P1-11, the manifest does not stand alone: Superseded. The fold ([#3662](https://github.com/nifeos/nife/pull/3662)) removed the
-  manifest.
+- P1-11, the manifest does not stand alone: Declined. After the fold
+  ([#3662](https://github.com/nifeos/nife/pull/3662)) the roles have no manifest of their own.
 - P2-12, `find_file` trusts the name length: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-13, `disk_size_bytes` and the configuration generation: Done, [#3520](https://github.com/nifeos/nife/pull/3520) and [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-14, one request in flight on the production path: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
@@ -66,7 +66,7 @@ logic is testable on the host, and its names pass `design/naming.md`.
 - A QEMU test that a block read or write past the disk's capacity answers an error and the server
   keeps serving: Open. A host test of `transfer_first_sector` covers the refusal.
 - The shared library that holds the name `virtio`: Ruled (2026-11-16 UTC). Whether and when to cut
-  it waits on milestone 1062 step 7.
+  it waits on milestone 1062 (the device control planes leave the kernel), step 7.
 
 ## Open decisions
 
