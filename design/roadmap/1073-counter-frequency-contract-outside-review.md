@@ -51,23 +51,6 @@ Effort: XS is under an hour for a lane, S is half a day, M is a day or two. A do
 somebody outside the repository acts on it after the move (a published name, a wire value, a
 layout, a fixed address, a dependency); everything else is two-way and the maintainer decides it.
 
-### Where each item stands
-
-| item | state |
-|---|---|
-| 1, the `std` farm reads the source by path | landed, #3514 |
-| 2, clippy red on stable | landed, #3513 |
-| 3, BUGS in the contract's own terms | landed, #3556 |
-| 4, the band is the reader's to apply | landed, #3556: `hertz` documents it, a test pins `Some(0)`, `cntfrq_checked` applies `is_plausible` on both architectures |
-| 5, pointer-width assertion | landed, #3556 |
-| 6, manifest `publish` comment | landed, #3556 |
-| 7, documentation a stranger reads | landed, #3556, with the review package's three move edits and its proposed items 1 and 2 |
-| 8, the template's prose gates | landed, #3556 |
-| 9, two Kani harnesses with falsification patches | landed, #3556, and the verify table has a row for the crate |
-| 10, private offset constants | landed, #3571: `MAGIC_OFFSET_BYTES` and `HERTZ_OFFSET_BYTES`, under the family rule below |
-| 11, README says where the end-to-end test lives | landed, #3556 |
-| 12, `Debug` prints the address | no change, folds into the next API change |
-
 ### P0: blocks the move or the first green run
 
 1. nife's `std` build reads this crate's source by path, and loses it the day the crate leaves.
@@ -225,7 +208,9 @@ The P2 items are in [the appendix](1073-counter-frequency-contract-outside-revie
 
 ## Decisions for the architect
 
-The architect froze the identity on 2026-11-11 (#3516). No decision is open.
+The architect froze the identity: magic `TIMEBAS1`, version 1, interface 9 (ruled 2026-11-11 UTC,
+#3516).
+The decisions still open are under "Open decisions" below.
 
 ### How the page crates spell their offset constants (item 10)
 
@@ -240,9 +225,6 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
 
 ## BUGS
 
-- Item 1 serves thirteen copied crates and is a nife change, not a change to this crate.
-  Until it lands, no copied contract crate can leave without breaking the `std` build, and this
-  milestone's dependency on milestone 1017 stands in for that ordering.
 - `script/crate-move --dry-run` runs the pinned template's checks, not the template head's, and
   its notes say so. The dry run also runs no clippy pass, so item 2 was invisible to it, and its
   citation check did not report the manifest comment of item 6. The same gap hid two more refusals
@@ -257,32 +239,109 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
   them.
 - Item 5 came from reading, not from a build for a 32-bit target; the fix is cheap enough to land
   without one, and the three targets the crate names are all 64-bit.
-- The kernel's writer caches the page's physical frame on first use; if `frequency_checked` is
-  `None` at that moment, every later process reads the zeroed frame (`kernel/src/user/loader.rs`
-  lines 159 to 190). That is kernel behavior the kernel's own BUGS should carry, outside this
-  crate, and this note records it because the crate's contract does not cover it.
-- Nobody re-ran the mutation census since both harnesses and the out-of-band test landed; the
-  carried baseline row reads "missed 0". The review package names the run, for the 08:00 to 13:00
-  UTC window.
+- The kernel's writer caches the page's physical frame on first use. If the rate has not resolved
+  at that moment, the frame stays zeroed for the machine's lifetime, and every process reads the
+  rate as unknown (`timebase_page_phys` in `kernel/src/user/loader.rs`). The crate's contract does
+  not cover when the writer runs.
 
-## Where this stands
+## Finding status
 
-Finished: items 1 to 11 (#3513, #3514, #3556, #3571), item 12 recorded as no change, the frozen
-identity (#3516) and a review package brought current and marked ready (#3615, #3626, #3635). No
-repository exists.
+- Item 1, the `std` farm reads the source by path: Done,
+  [#3514](https://github.com/nifeos/nife/pull/3514).
+- Item 2, clippy red on stable: Done, [#3513](https://github.com/nifeos/nife/pull/3513).
+- Item 3, BUGS in the contract's own terms: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 4, the band is the reader's to apply: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 5, pointer-width assertion: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 6, manifest `publish` comment: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 7, documentation a stranger reads: Done, [#3556](https://github.com/nifeos/nife/pull/3556),
+  with the review package's three move edits.
+- Item 8, the template's prose gates: Done, [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 9, two Kani harnesses with falsification patches: Done,
+  [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 10, private offset constants: Done, [#3571](https://github.com/nifeos/nife/pull/3571).
+- Item 11, README says where the end-to-end test lives: Done,
+  [#3556](https://github.com/nifeos/nife/pull/3556).
+- Item 12, `Debug` prints the address: Declined. No change until the next change to the crate's
+  public interface ([the appendix](1073-counter-frequency-contract-outside-review/later-items.md)).
+- The frozen identity: Done, [#3516](https://github.com/nifeos/nife/pull/3516).
+- The mutation census after the harnesses: Done,
+  [run 43876176886](https://github.com/nifeos/nife/actions/runs/43876176886): 23 mutants tested,
+  0 missed.
+- The kernel's zeroed frame: Done, [#3283](https://github.com/nifeos/nife/pull/3283): the kernel
+  states the outcome at `timebase_page_phys` (BUGS below).
+- The move dry run's gaps: Open. `helpers/crate_move.py` runs no clippy pass and does not report a
+  manifest comment that cites a nife path (BUGS below); a lane of its own fixes both.
+- The review package: Done, [#3615](https://github.com/nifeos/nife/pull/3615),
+  [#3626](https://github.com/nifeos/nife/pull/3626) and
+  [#3635](https://github.com/nifeos/nife/pull/3635); it states that it is ready.
+- Clearance of the review package: Open. calef's, under "Open decisions" below.
+- The move to its own repository: Open. A lane moves the crate once the review has its clearance.
+- A pre-release tag: Open. calef's, under "Open decisions" below.
+- Publishing: Open. A contract crate never publishes to crates.io; the tag is its release.
 
-- Clearance of the review package. Blocker: decision for calef.
-- The move to its own repository once cleared. Blocker: other, a lane after clearance.
-- The mutation census rerun. Blocker: other, a lane in the heavy-run window.
-- A pre-release tag. Blocker: decision for calef, since the pre-release-tag ruling names other
-  crates.
-- Publishing. Blocker: publishing hold.
+## Open decisions
+
+### Clearing the review package
+
+Background. Before a crate leaves this tree, calef reads its code and its review package and
+clears it; the clearing is also the approval to create its repository. The package for this crate
+is [the review package](../../notes/crate-reviews/counter-frequency-contract.md). It states the
+crate, its thirteen ratified names, its frozen identity (`TIMEBAS1`, version 1, interface 9) and
+what the move changes, and it states that it is ready. Lanes have built every finding above that
+the crate itself can fix. The crate is a contract: the kernel writes a 16-byte page and every
+process reads it, so what leaves is an agreement between two programs.
+
+Recommendation: A.
+
+- A. Clear the review, which approves creating nifeos/counter_frequency_contract and moving the
+  crate there.
+- B. Send it back, naming what to change first.
+- C. Hold it until milestone 1017's order reaches the crate.
+
+Door: one-way. A public repository is an outward step: once it exists, strangers fetch and pin it,
+and the crate's name and page layout become what they rely on.
+
+Prior art. Debian's archive takes no new source package until a person in the `ftpmaster` team
+reviews it by hand in the NEW queue (recalled, not read here). nife differs in that the person who clears the
+crate is the architect who ratified its names, and a contract crate leaves with its wire identity
+already frozen. Example: `block_roster_contract` had its clearance on 2026-11-09 (UTC) and now
+lives at nifeos/block_roster_contract, which nife pins at the commit of a pre-release tag.
+
+Blocks: the move, and through it the tag.
+
+### The pre-release tag
+
+Background. After the move, nife depends on the crate by a git commit. A tag such as
+`v0.1.0-pre.1` names that commit as a release candidate, with `Cargo.toml` carrying the same
+version, so nife pins a tag and not an arbitrary commit. An approval of 2026-11-11 (UTC) gave seven
+cleared crates this tag, each after its move check passed and its release dry run was green. That
+approval named those crates, and this crate is not among them. A contract crate never publishes,
+so for it the tag is the release.
+
+Recommendation: A.
+
+- A. Approve now: the tag `v0.1.0-pre.1` once the move lane finds the repository matches nife's
+  copy and the release dry run is green, under the same two conditions as the seven.
+- B. Rule it when the move lands, as its own question then.
+- C. No tag: nife pins a commit of the repository's `main`.
+
+Door: one-way. Others fetch and pin a pushed tag at once, and a tag that moves breaks every pin
+that named it; nobody can reuse the version it burns for another commit.
+
+Prior art. Semantic Versioning 2.0.0 marks a candidate with a pre-release identifier
+(`0.1.0-pre.1`), and Cargo never selects a pre-release for a requirement that does not name one.
+nife differs in that the tag is never published: it exists only so nife and basalt pin a named
+commit. Example: nife pins `block_roster_contract` by `rev` at the commit of its `v0.1.0-pre.2`
+tag, with `version = "0.1.0-pre.2"`.
+
+Blocks: the tag, and with it nife's pin by tag; not the move.
 
 ## Follow-on
 
 - **Recorded.** Item 10, the spelling of the page crates' offset constants: ruled, see the decisions above.
-- **Outstanding.** The move itself, which waits on the architect's clearing of the review. The
-  review package states that it is ready.
+- **Outstanding.** The move itself, which waits on the architect's clearing of the review, and
+  the move dry run's two gaps in `helpers/crate_move.py`. The finding status above says what each
+  needs.
 - **Recorded.** Item 12 (`Debug` prints the address) is `design/roadmap/1073-counter-frequency-contract-outside-review/later-items.md`
   item 12: no change until the next API change.
 
