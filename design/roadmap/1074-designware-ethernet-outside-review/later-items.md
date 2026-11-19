@@ -14,6 +14,11 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    `_RFA_*` name them, not fetched for this review), a `FLUSH_LIMIT_MICROSECONDS`, and a named jumbo
    bit for the test.
    Door: two-way. Effort: S.
+   Status: built in nifeos/designware_ethernet#9, open. The four flow-control constants are
+   `RECEIVE_QUEUE_0_OPERATION_MODE_HARDWARE_FLOW_CONTROL_ENABLE` and the
+   `_FLOW_CONTROL_ACTIVATE_THRESHOLD_` and `_FLOW_CONTROL_DEACTIVATE_THRESHOLD_` `MASK` and
+   `SHIFT` pairs, the flush limit is `TRANSMIT_FLUSH_LIMIT_MICROSECONDS`, and the test bit is
+   `MAC_CONFIGURATION_JUMBO_PACKET_ENABLE`. Names provisional, the maintainer's.
 
 13. A caller's short buffer loses the frame.
    Finding: `receive` judges each descriptor against `out.len()` (`src/data_plane.rs:140`), so a <!-- line-citation: exception. Reason: pinned -->
@@ -25,6 +30,9 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    larger buffer, as `smoltcp`'s `RxToken` hands the frame to a closure sized by the device. The
    sentence is enough before the tag.
    Door: two-way. Effort: XS for the sentence.
+   Status: built in nifeos/designware_ethernet#9, open. The sentence is at `receive` and a test
+   shows the drop and its count. A short `out` stays a drop; the length-returning shape is not
+   taken (maintainer, provisional).
 
 14. The PHY's extended-address port comes back only on success.
    Finding: `configure` and `apply_speed` save the address port first and write it back last
@@ -33,6 +41,8 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    lands on the wrong register, which the module says it is restoring the port to avoid.
    Change: restore in both arms, or say the restore is best effort.
    Door: two-way. Effort: XS.
+   Status: built in nifeos/designware_ethernet#9, open. Both functions restore the port on every
+   path, the body's error wins, and a test fails each data write in turn.
 
 15. An unknown drive current gets the part's default without a word.
    Finding: `drive_code` returns 3 for a `(voltage, microamps)` pair the table does not hold
@@ -43,6 +53,9 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    Change: `Applied` carries which codes were defaults, or `SettingsSource` gains a variant; the
    kernel's report line can then print it.
    Door: two-way. Effort: S.
+   Status: built in nifeos/designware_ethernet#9, open. `Applied` carries
+   `receive_clock_drive_defaulted` and `receive_data_drive_defaulted`, and `SettingsSource` keeps
+   its variants. Names provisional, the maintainer's.
 
 16. The fallback settings claim both trees and the test checks half of it.
    Finding: `Settings::FALLBACK_GMAC0` says both trees give these values
@@ -53,6 +66,11 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    Change: compare the inversions too, or say in the fallback's documentation which tree it follows
    for the inversion and why.
    Door: two-way. Effort: XS.
+   Status: the settings left the crate in nifeos/designware_ethernet#5 and are
+   `PORT_0_FALLBACK_SETTINGS` in `crates/machine_discovery/src/jh7110/designware_ethernet.rs`.
+   Its documentation now says the inversion follows the vendor tree and that mainline does not
+   invert at 10 Mbit/s, and the test checks both (the pull request that carries this line). Which
+   tree is right at 10 Mbit/s is open: bench.
 
 17. One verdict name covers two disagreements, and one precondition is unsaid.
    Finding: `classify`'s last arm (`src/cache_coherence.rs:198`) returns `TransmittedPayloadStale` <!-- line-citation: exception. Reason: pinned -->
@@ -64,6 +82,9 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    Change: a `DescriptorDisagrees` verdict, or one sentence at the arm; one sentence in the header
    on the receive clock.
    Door: two-way (a new variant on a public enum before the tag). Effort: S.
+   Status: built in nifeos/designware_ethernet#9, open. One sentence at the arm and in the
+   verdict's documentation, and one in the header on the receive clock. No new variant
+   (maintainer, provisional).
 
 18. The transport re-derives the data plane's peek.
    Finding: `components/src/designware_ethernet_transport.rs:143-148` reads the next descriptor <!-- line-citation: exception. Reason: pinned -->
@@ -72,6 +93,8 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    Change: `DataPlane::is_frame_waiting(&self, region: &impl DirectMemoryAccessRegion) -> bool`,
    and the transport calls it.
    Door: two-way (an addition). Effort: XS.
+   Status: nifeos/designware_ethernet#9, open, adds `DataPlane::is_frame_waiting`. The
+   transport's switch to it is open: the pin bump that follows #9.
 
 19. `start` twice desynchronizes the cursors.
    Finding: `DataPlane::start` reposts the ring and clears the transmit ring but leaves
@@ -79,6 +102,8 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    the documentation says only to call it first.
    Change: reset the three cursors in `start`, or say it runs once after `new`.
    Door: two-way. Effort: XS.
+   Status: built in nifeos/designware_ethernet#9, open. `start` resets the three cursors, and a
+   test runs a second start after a reset.
 
 20. Small text fixes.
    Finding: "current current" (`src/motorcomm_physical_layer_device.rs:390`); the file uses `MTL` at <!-- line-citation: exception. Reason: pinned -->
@@ -86,6 +111,9 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    is a width, and the address rule reads it as an address
    (`src/network_interface_controller.rs:75`): `…_address_width_bits` says what it is. <!-- line-citation: exception. Reason: pinned -->
    Door: two-way, the last one one-way at the tag. Effort: XS.
+   Status: decision 4 settles the address width
+   (`direct_memory_access_physical_address_bits`). `registers.rs` expands MTL at its first use on
+   main. nifeos/designware_ethernet#9, open, fixes "current current".
 
 21. The crate root re-exports 27 descriptor items.
    Finding: `lib.rs` re-exports every descriptor bit and the two descriptor constructors at the
@@ -95,3 +123,6 @@ An appendix to [the milestone](../1074-designware-ethernet-outside-review.md).
    Change: a public `descriptor` module and a shorter root, or leave it and say why. The
    maintainer decides before the tag; after it the paths stay fixed.
    Door: two-way now, one-way at the tag. Effort: S.
+   Status: built in nifeos/designware_ethernet#9, open. The root keeps the data plane, `Hardware`
+   and the five size constants; every other descriptor item is `pub(crate)`, as item 6's rule
+   reads. No public `descriptor` module (maintainer, provisional; adding a module later breaks nobody).

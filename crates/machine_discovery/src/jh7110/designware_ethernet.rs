@@ -84,8 +84,11 @@ pub const BUS_CONFIGURATION: BusConfiguration = BusConfiguration {
 
 /// **The board's `gmac0` physical layer device settings when a tree states neither spelling**:
 /// delay selects of 10 each way, receive clock and data drive codes 6 and 3, and the transmit
-/// clock inverted at every speed. Both trees give these values for `gmac0`, so a tree that names
-/// neither spelling still gets the board it is on, and [`SettingsSource::Fallback`] says so.
+/// clock inverted at every speed. Both trees give these delays for `gmac0`, so a tree that names
+/// neither spelling still gets the board it is on, and [`SettingsSource::Fallback`] says so. The
+/// inversion follows the vendor tree, which inverts at all three speeds; mainline's v1.3b tree sets
+/// only `tx-clk-100-inverted` and `tx-clk-1000-inverted`, so the two disagree at 10 Mbit/s, and
+/// which is right there has not been measured on the board.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane jh7110-glue-leaves-designware-crates. calef
 /// has not named it.
@@ -690,8 +693,9 @@ mod tests {
         assert_eq!(gmac0_interface_select(0x0018_0000), 6);
     }
 
-    /// The two trees' spellings of `gmac0`'s physical layer device come to the same registers,
-    /// which are the fallback's.
+    /// The two trees' spellings of `gmac0`'s physical layer device come to the same delays, which
+    /// are the fallback's, and to the same inversion at 100 and 1000 Mbit/s. At 10 Mbit/s mainline
+    /// leaves the clock alone and the fallback follows the vendor tree, which inverts it.
     #[test]
     fn the_two_trees_spell_the_same_registers_for_the_boards_port_0() {
         let mainline = Settings::from_mainline(1500, 1500, 3970, 2910, Some([false, true, true]));
@@ -703,5 +707,7 @@ mod tests {
             mainline.transmit_clock_inverted[1..],
             fallback.transmit_clock_inverted[1..]
         );
+        assert!(!mainline.transmit_clock_inverted[0]);
+        assert!(fallback.transmit_clock_inverted[0]);
     }
 }
