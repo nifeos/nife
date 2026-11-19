@@ -40,10 +40,10 @@ static TIMEBASE_HERTZ: AtomicU64 = AtomicU64::new(0);
 /// If the tree is unreadable, states no frequency, or states one no real part runs at.
 pub(crate) fn initialize_frequency(dtb_ptr: usize) {
     // SAFETY: the pointer OpenSBI handed us in `a1`, named through the boot table's direct map.
-    // `DeviceTreeBlob::from_ptr` re-checks the magic, and this runs on the same map
+    // `DeviceTreeBlob::from_pointer` re-checks the magic, and this runs on the same map
     // `memory::initialize` uses.
     let dt = unsafe {
-        device_tree_blob::DeviceTreeBlob::from_ptr(
+        device_tree_blob::DeviceTreeBlob::from_pointer(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8
         )
     }
@@ -442,9 +442,9 @@ mod tests {
         let ptr = crate::DTB.load(O::Relaxed);
         // SAFETY: the pointer firmware handed us, already parsed twice on this boot.
         let dt = unsafe {
-            device_tree_blob::DeviceTreeBlob::from_ptr(
-                crate::arch::mmu::phys_to_virt(ptr as u64) as *const u8
-            )
+            device_tree_blob::DeviceTreeBlob::from_pointer(crate::arch::mmu::phys_to_virt(
+                ptr as u64,
+            ) as *const u8)
         }
         .expect("device tree is unreadable");
         let stated = machine_discovery::cpu_list::CpuList::from_device_tree(&dt)

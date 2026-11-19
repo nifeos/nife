@@ -27,7 +27,7 @@ fn discovery_finds_the_riscv_windows_the_constants_named() {
     let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
     assert_eq!(
-        dtb.node_reg_compatible(b"pci-host-ecam-generic", &mut regs)
+        dtb.node_register_regions_compatible(b"pci-host-ecam-generic", &mut regs)
             .unwrap(),
         1
     );
@@ -60,7 +60,7 @@ fn the_jh7110_has_no_generic_ecam_bridge_and_discovery_says_none() {
     let dtb = DeviceTreeBlob::from_bytes(JH7110).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
     assert_eq!(
-        dtb.node_reg_compatible(b"pci-host-ecam-generic", &mut regs)
+        dtb.node_register_regions_compatible(b"pci-host-ecam-generic", &mut regs)
             .unwrap(),
         0,
         "no node claims the generic-ECAM binding"
@@ -122,7 +122,7 @@ fn discovery_finds_the_aarch64_windows_the_constants_named() {
     let dtb = DeviceTreeBlob::from_bytes(QEMU_AARCH64_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
     assert_eq!(
-        dtb.node_reg_compatible(b"pci-host-ecam-generic", &mut regs)
+        dtb.node_register_regions_compatible(b"pci-host-ecam-generic", &mut regs)
             .unwrap(),
         1
     );

@@ -16,10 +16,9 @@ lanes that move the crate change, and what the kernel should take from the list 
 crate moves.
 
 The crate has no review package under `notes/crate-reviews/`, so the baseline this review takes is
-the names already ratified at the item (`device_tree_blob`, `DeviceTreeBlob`, `MAXIMUM_TOTALSIZE`,
-`initial_ramdisk`), the provisional names recorded there (`parent_prop_compatible`,
-`boot_arguments`), and the bounds notes/device-tree.md records. One ratified name meets a later
-rule (item D4). A ruling on record has nife working toward Google's `dtoolkit` as its device-tree
+the names already ratified at the item (`device_tree_blob`, `DeviceTreeBlob`, `initial_ramdisk`),
+the provisional name recorded there (`boot_arguments`), and the bounds notes/device-tree.md
+records. A ruling on record has nife working toward Google's `dtoolkit` as its device-tree
 dependency. The switch itself is a separate decision. Until that switch, this crate is what boots
 every nife machine. So the correctness items below (P1-1 to P1-4) are worth landing in the kernel's
 path whether or not the crate ever publishes.
@@ -32,8 +31,7 @@ tool.
 
 The ids are the review's own; P0 and P1 are in [the
 appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
-items](1085-device-tree-blob-outside-review/later-items.md), and D1 to D6 under [Open
-decisions](#open-decisions).
+items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Ruled decisions](#ruled-decisions).
 
 - P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
   license and lints and reads `publish = false`; the README and both license files are missing. The
@@ -53,158 +51,151 @@ decisions](#open-decisions).
 - P1-5, the fuzz target does not move with the crate: Open. The target is still in nife's `fuzz/`;
   the move stages it in the new repository with `public-crash-inputs: false`.
 - P2-1 to P2-8, the error's shape, cells above two, `memory_regions` and a disabled node, the token
-  loop, the proofs, the reservation overflow, `from_ptr`'s read and `from_bytes`'s trim: Done,
+  loop, the proofs, the reservation overflow, `from_pointer`'s read and `from_bytes`'s trim: Done,
   [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-9, one example, and it does not run: Open. [#3612](https://github.com/nifeos/nife/pull/3612)
   added the running doctests; the README's `## EXAMPLES` waits for P0-1.
 - P2-10 to P2-13, the depth counters, `MAXIMUM_DEPTH`, a trailing partial `reg` pair and private
   names: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
-- D1 to D6: Open. Built as recommended, awaiting ratification; each is a subsection under [Open
-  decisions](#open-decisions).
+- D1 to D6 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
 - F-size, `Region::size` is a length with no unit: Open. `register_names` refuses it at `src/lib.rs`
   line 26. It is two-way while unreleased, and the maintainer rules the rename provisionally; the
   new name joins the set for ratification. The same check refuses four test names in
   `tests/hostile.rs`, among them `SIZE_DT_STRUCT_AT` and `address_cells`, and `prose_acronyms` flags
   UEFI, NUL, GIC, PL031, PLIC, PMIC and PMP. The move's gate pass clears these.
-- F-dtoolkit, the switch to `dtoolkit`: Open, under [Open
-  decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
-- F-package, the review package: Open. None exists under `notes/crate-reviews/`; it waits on the
-  decision to clear the move.
-- F-clearance, review clearance: Open, under [Open
-  decisions](#clear-the-move-or-hold-it-for-dtoolkit).
+- F-dtoolkit, the switch to `dtoolkit`: Open, waiting for an upstream release; the wait is ruled,
+  under [Ruled decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
+- F-package, the review package: Open. None exists under `notes/crate-reviews/`; a lane writes it
+  now, as ruled under [Ruled decisions](#write-the-review-package-now-the-move-is-not-held-for-dtoolkit).
+- F-clearance, review clearance: Open. The architect decides it once the package exists.
 - BUGS-239: Open. Milestone 239 (radon's device tree does not describe the TRNG) gives the depth
   bound as a `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64. A lane corrects that milestone.
 
-## Open decisions
-
-Code carries the six name and surface decisions as recommended, each under a `Name: provisional`
-block. Each is two-way while the crate has no release and one-way at its first publish. The
-`dtoolkit` path makes it likely the crate never publishes, so every one of them waits on the last
-two decisions here.
+## Ruled decisions
 
 ### Spell `prop` out as `property` (D1)
 
-Six public lookups abbreviated "property": `node_prop`, `node_props`, `node_prop_compatible`,
-`parent_prop_compatible`, `node_prop_inherited` and `phandle_prop`. The naming rules spell out a
-word that needs a decoder, and the Devicetree Specification says "property". `prop` is libfdt's C
-spelling (`fdt_getprop`).
-
-Recommendation: A.
-
-- A. Ratify as built: `node_property`, `node_properties`, `node_property_compatible`,
-  `parent_property_compatible`, `node_property_inherited` and `phandle_property`, with no alias.
-- B. Restore `prop`, the libfdt spelling.
+Ruled 2026-11-19 (UTC): option A. The lookups spell `property` out, with no alias for the old
+`prop` spelling: `node_property`, `node_properties`, `node_property_compatible`,
+`parent_property_compatible`, `node_property_inherited` and `pointer_handle_property` (below). The
+six names stand as built. The naming rules spell out a word that needs a decoder, and the
+Devicetree Specification says "property"; `prop` is libfdt's C spelling (`fdt_getprop`).
 
 Door: one-way at publish. Prior art: the `fdt` crate and `dtoolkit` spell `property()` and
 `properties()`; libfdt abbreviates. nife differs from libfdt only where C's short names were a
-constraint. Example: `tree.node_property(b"chosen", b"stdout-path")`. Blocks: the tag.
+constraint. Example: `tree.node_property(b"chosen", b"stdout-path")`.
 
-### Name the needle parameter `compatible` (D2)
+### Spell `phandle` out as the pointer handle
 
-Three lookups took `compat: &[u8]`, and rustdoc shows parameters. Recommendation: A.
+Ruled 2026-11-19 (UTC): the specification's expansion of `phandle` is "pointer handle", and the
+lookup spells it out as `pointer_handle_property(pointer_handle, name)`. It carries
+`#[doc(alias = "phandle")]`, a search aid for the specification's term and not an old nife
+spelling. Its doc comment opens with the expansion and cites the Devicetree Specification. The ratification is the same as D1's, as built.
 
-- A. Ratify `compatible`, the property's own name, as built.
-- B. Restore `compat`.
+### Spell `reg` out as the register regions (D3)
 
-Door: two-way, since a parameter name is not part of the call. Prior art:
-`fdt::Fdt::find_compatible(with: ...)` and `dtoolkit`'s `is_compatible(&self, compatible: &str)`.
-Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`. Blocks: the tag.
+Ruled 2026-11-19 (UTC): option B. The two lookups that decode a node's `reg` spell the term out as
+`node_register_regions` and `node_register_regions_compatible`. Each carries `#[doc(alias =
+"reg")]`, a search aid for the specification's term and not an old nife spelling, and its doc
+comment opens with the expansion ("register regions") and cites the Devicetree Specification. The
+old `node_reg` spellings have no alias. The rule matches `pointer_handle_property`.
 
-### Keep `reg` and `phandle` as the specification's terms (D3)
+Door: one-way at publish. Prior art: the `fdt` crate's `NodeProperty::reg()` keeps the
+specification's spelling. nife spells the term out and carries the specification's term as a doc
+alias. Example: a search for "reg" lands on `node_register_regions`, and
+`tree.node_register_regions_compatible(b"arm,pl031", &mut regions)` reads the register regions of
+a PL031.
 
-`node_reg`, `node_reg_compatible` and `phandle_property` carry the specification's property names,
-which a reader searches for by that spelling. The rule for a term of art keeps it, opens the doc
-comment with the expansion and the source, and carries `#[doc(alias)]`. Recommendation: A.
+### Add the unit to the total size limit (D4)
 
-- A. Ratify as built: keep `reg` and `phandle`, with `#[doc(alias = "register regions")]` on the two
-  `reg` lookups.
-- B. Spell out, as `node_register_regions`.
-
-Door: one-way at publish. Prior art: the `fdt` crate's `NodeProperty::reg()` keeps the spelling.
-Example: a search for "register" or "reg" lands on `node_reg`. Blocks: the tag.
-
-### Add the unit to `MAXIMUM_TOTALSIZE` (D4)
-
-The name's ratification predates the rule that a limit ends with its unit, and the release review
-rechecks a ratified name. `totalsize` names the header field, so it keeps its spelling.
-Recommendation: A.
-
-- A. Ratify `MAXIMUM_TOTALSIZE_BYTES`, with `#[doc(alias = "MAX_FDT_SIZE")]`, as built.
-- B. Restore `MAXIMUM_TOTALSIZE`.
+Ruled 2026-11-19 (UTC): option A as amended. The limit is `MAXIMUM_TOTAL_SIZE_BYTES`, with the words
+separated and the unit last, which matches the existing `total_size()` method. It carries
+`#[doc(alias = "MAX_FDT_SIZE")]` and `#[doc(alias = "totalsize")]`. The header field's own spelling,
+`totalsize`, stays in doc comments, in backticks. A limit ends with its unit.
 
 Door: one-way at publish. Prior art: Linux's `MAX_FDT_SIZE`, which lends its value; `dtoolkit` has
-no ceiling. Example: `if total > MAXIMUM_TOTALSIZE_BYTES { return Err(Error::TooLarge(total)) }`.
-Blocks: the tag.
+no ceiling. Example: `if total > MAXIMUM_TOTAL_SIZE_BYTES { return Err(Error::TooLarge(total)) }`.
 
 ### Name the reservation block `memory_reservations` (D5)
 
-Two lookups read two sources: the memory reservation block before the structure block, and the
-`/reserved-memory` node's children. `reserved_regions` beside `reserved_memory_regions` did not say
-which is which, and the kernel calls both. Recommendation: A.
-
-- A. Ratify `memory_reservations` for the block, the specification's term, as built;
-  `reserved_memory_regions` keeps its name.
-- B. Restore `reserved_regions`.
+Ruled 2026-11-19 (UTC): option A. `memory_reservations`, the specification's term for the memory
+reservation block, stands as built. `reserved_memory_regions` keeps its name for the
+`/reserved-memory` node's children, and the old `reserved_regions` has no alias. Two lookups read
+two sources, and the kernel calls both, so the names say which is which.
 
 Door: one-way at publish. Prior art: the `fdt` crate's `memory_reservations()`, libfdt's
 `fdt_get_mem_rsv`, and `dtoolkit`'s `reserved_memory()` for the node. Example:
-`tree.memory_reservations(&mut out)` beside `tree.reserved_memory_regions(&mut out)`. Blocks: the
-tag.
+`tree.memory_reservations(&mut out)` beside `tree.reserved_memory_regions(&mut out)`.
 
-### Keep `from_ptr` as the crate's one `unsafe` function (D6)
+### Keep `from_pointer` as the crate's one `unsafe` function (D6)
 
-`from_ptr` reads the header through a raw pointer, checks the magic, caps the size at 2 MiB and
-builds the slice. Sixteen call sites outside the crate use it: nine in `kernel/`, four in
-`uefi_loader/`, two in `machine_discovery` and one in a board-check tool. Because of it, the
-template refuses the public fuzz opt-in (P1-5). Recommendation: A, because the one place that knows
-how to trust a firmware pointer should be the parser.
-
-- A. Ratify as built: `from_ptr` stays, and the weekly public fuzz opt-in stays off. The tree's own
-  fuzz host keeps the target.
-- B. Add a safe `declared_size(header: &[u8; 8])`, leave the slice to each caller, forbid `unsafe`
-  in the crate and turn the public fuzz job on.
+Ruled 2026-11-19 (UTC): option A. `DeviceTreeBlob::from_pointer` stays the crate's one `unsafe`
+function, and the weekly public fuzz opt-in stays off. The tree's own fuzz host keeps the target.
+The constructor spells `ptr` out and carries `#[doc(alias = "from_ptr")]`, a search aid
+for the standard library's spelling and not an old nife spelling. It reads the header through a raw
+pointer, checks the magic, caps the size at 2 MiB and builds the slice. Sixteen call sites outside
+the crate use it: nine in `kernel/`, four in `uefi_loader/`, two in `machine_discovery` and one in
+a board-check tool. Because of it, the template refuses the public fuzz opt-in (P1-5). The one
+place that knows how to trust a firmware pointer is the parser.
 
 Door: one-way at publish, since an `unsafe` constructor is a published contract. Prior art:
 `fdt::Fdt::from_ptr` and `dtoolkit::Fdt::from_raw` are `unsafe` constructors in the parser crate.
-nife differs in nothing here. Example: `unsafe { DeviceTreeBlob::from_ptr(pointer) }?` stays one
-line in the kernel. Blocks: the tag.
+nife differs in nothing here. Example: `unsafe { DeviceTreeBlob::from_pointer(pointer) }?` stays
+one line in the kernel.
 
 ### Take `dtoolkit` once a release carries the fixes
 
-Ruled 2026-11-11 (UTC): nife contributes five gaps to Google's `dtoolkit` and switches once a
-release ships them; the switch is its own ruling. Upstream merged [google/dtoolkit
-#108](https://github.com/google/dtoolkit/pull/108).
-[#111](https://github.com/google/dtoolkit/pull/111) and
-[#112](https://github.com/google/dtoolkit/pull/112) have changes requested; the answers went up on
-2026-11-16 and 2026-11-17, and both wait on the upstream maintainer. Release 0.5.0 (2026-11-03)
-carries neither. Until the switch, `device_tree_blob` boots every nife machine.
-
-Recommendation: A, the restrictive option, which keeps the kernel on the parser it proves today.
-
-- A. Wait for a release that carries #111 and #112, then rule the switch against the dependency bar.
-- B. Switch to 0.5.0 now with the two fixes vendored as patches.
-- C. Keep `device_tree_blob` and move it as its own crate.
+Ruled 2026-11-19 (UTC): option A. nife waits for a `dtoolkit` release that carries
+[google/dtoolkit #111](https://github.com/google/dtoolkit/pull/111) and
+[#112](https://github.com/google/dtoolkit/pull/112), then rules the switch against the dependency
+bar. Until then `device_tree_blob` boots every nife machine. An earlier ruling of 2026-11-11 (UTC)
+has nife contribute five gaps to Google's `dtoolkit` and switch once a release ships them; the
+switch is its own ruling. Upstream merged [#108](https://github.com/google/dtoolkit/pull/108). As
+of 2026-11-19, #111 and #112 are open with changes requested; the answers went up on 2026-11-16
+and 2026-11-17, and both wait on the upstream maintainer. Release 0.5.0 (2026-11-03), the latest,
+carries neither.
 
 Door: one-way, a third-party dependency on the boot path. Prior art: Linux, U-Boot and FreeBSD each
 vendor libfdt (`scripts/dtc/libfdt`, `sys/contrib/libfdt`; recalled, unverified) rather than keep
 their own parser. nife differs by holding the dependency to its bar of proofs and three
-architectures. Example: under A, the kernel's `DeviceTreeBlob::from_ptr` becomes
-`dtoolkit::Fdt::from_raw`, and P0-1, P1-5 and the P2-9 README lapse. Blocks: whether the move
-happens at all.
+architectures. Example: after the switch, the kernel's `DeviceTreeBlob::from_pointer` becomes
+`dtoolkit::Fdt::from_raw`, and P0-1, P1-5 and the P2-9 README lapse.
 
-### Clear the move, or hold it for `dtoolkit`
+### Write the review package now; the move is not held for `dtoolkit`
 
-No review package exists, and clearance follows one. Recommendation: B, because every move item
-lapses if the switch comes first, and a package written first would go to waste.
-
-- A. Write the package now and clear the move after the ratification of D1 to D6.
-- B. Hold the package and the move until the `dtoolkit` decision; write the package only if C wins
-  there.
+Ruled 2026-11-19 (UTC): option A. A lane writes the `device_tree_blob` review package under
+`notes/crate-reviews/` now. The move does not wait for the `dtoolkit` switch, which may take a long
+time or never come. The architect gives the clearance, the go to create the repository, once the package
+exists.
 
 Door: two-way until the repository exists. Prior art: `file_allocation_table` and `e1000e` cleared
-from a written package. Example: under B, F-package and P0-1 stay open with no lane. Blocks: the
-move, F-package, P0-1, P1-5 and P2-9.
+from a written package. Example: F-package and P0-1 each get a lane, and if the switch later comes
+first, the move items lapse with no loss to the kernel, which keeps the fixes either way.
+
+### Property is spelled out across the crate
+
+The crate spells `property` out in every public item, parameter and doc comment. The one `prop`
+left is the private `Blob::prop` test builder in `tests/hostile.rs`, which is not public.
+
+Door: one-way at publish. Prior art: libfdt's `fdt_node_offset_by_phandle` and the `fdt` crate's
+`find_phandle` keep the abbreviation; neither spells the specification's expansion. nife differs
+because its naming rules spell out a word that needs a decoder, and the alias keeps the term
+searchable. Example: `tree.pointer_handle_property(pointer_handle, b"#interrupt-cells")`.
+
+### Name the needle parameter `compatible` (D2)
+
+Ruled 2026-11-19 (UTC): option A. The three lookups that take a needle name the parameter
+`compatible: &[u8]`, the property's own name in the Devicetree Specification, ratified as built.
+Rustdoc shows parameters, and `compat` needs a decoder.
+
+Door: two-way, since a parameter name is not part of the call. Prior art:
+`fdt::Fdt::find_compatible(with: ...)` and `dtoolkit`'s `is_compatible(&self, compatible: &str)`.
+Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`.
+
+## Open decisions
+
+There are none.
 
 ## Goal
 
@@ -235,7 +226,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
-  half of P2-9, F-size, F-package and BUGS-239, and the eight open decisions.
+  half of P2-9, F-size, F-package, F-clearance and BUGS-239.
 
 ## BUGS
 
@@ -257,4 +248,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and eight decisions go to the architect.
+that does not move. Fourteen smaller items follow, and the architect ruled all eight decisions.

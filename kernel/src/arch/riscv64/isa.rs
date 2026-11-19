@@ -29,7 +29,7 @@ pub fn initialize(dtb_ptr: usize) {
     // SAFETY: the same pointer `memory::initialize` has already validated the magic of, named
     // through the boot table's direct map because we are running virtual.
     let dt = unsafe {
-        device_tree_blob::DeviceTreeBlob::from_ptr(
+        device_tree_blob::DeviceTreeBlob::from_pointer(
             super::mmu::phys_to_virt(dtb_ptr as u64) as *const u8
         )
     }

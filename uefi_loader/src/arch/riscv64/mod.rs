@@ -115,8 +115,8 @@ fn boot_hart_from_protocol(services: &BootServices) -> Option<u64> {
 
 fn boot_hart_from_device_tree(device_tree: *const u8) -> Option<u64> {
     // SAFETY: the firmware installed this table under the device-tree GUID and it outlives boot
-    // services; `from_ptr` checks the magic and the ceiling before it builds a slice.
-    let tree = unsafe { device_tree_blob::DeviceTreeBlob::from_ptr(device_tree) }.ok()?;
+    // services; `from_pointer` checks the magic and the ceiling before it builds a slice.
+    let tree = unsafe { device_tree_blob::DeviceTreeBlob::from_pointer(device_tree) }.ok()?;
     let value = tree.node_property(b"chosen", b"boot-hartid").ok()??;
     match value.len() {
         4 => Some(u64::from(u32::from_be_bytes(value.try_into().ok()?))),

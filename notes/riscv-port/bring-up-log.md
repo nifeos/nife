@@ -118,9 +118,9 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
    the byte, and re-arms the source. Boot shows "a keystroke reached a kernel driver through the
    PLIC: 0x41 ('A')". The shape is exactly aarch64's `handle_irq` (mask, notify, complete) and it
    reuses the arch-neutral routing (`bind_irq` / `irq_route` / `irq_notify`) unchanged. The PLIC's
-   base comes from the device tree, which exposed one parser bug: `node_reg` only matched nodes at
+   base comes from the device tree, which exposed one parser bug: `node_register_regions` only matched nodes at
    depth 2 (the aarch64 GIC is a direct child of the root), but the riscv PLIC is at
-   `/soc/plic@c000000`, depth 3. `node_reg` now matches at any depth and decodes `reg` with the
+   `/soc/plic@c000000`, depth 3. `node_register_regions` now matches at any depth and decodes `reg` with the
    parent's cell counts. Two test caveats: pipe the byte *after* boot (the console clears the RX FIFO
    during init), and the demo driver runs in the kernel for now.
 

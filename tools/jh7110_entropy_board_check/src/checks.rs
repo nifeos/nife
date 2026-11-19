@@ -218,14 +218,14 @@ fn distribution(kind: &str, samples: &mut [u32], timeouts: u32, polls_median: u3
 /// Runs every check on the block the device tree at `device_tree` describes, from hart `hart`.
 pub(crate) fn run(hart: u64, device_tree: u64) {
     // SAFETY: `booti` hands the payload the device tree's physical address in `a1`, and the hart
-    // runs with paging off, so the pointer is the blob. `from_ptr` checks its magic before trusting
+    // runs with paging off, so the pointer is the blob. `from_pointer` checks its magic before trusting
     // its length.
-    let tree = unsafe { DeviceTreeBlob::from_ptr(device_tree as *const u8) }.ok();
+    let tree = unsafe { DeviceTreeBlob::from_pointer(device_tree as *const u8) }.ok();
     let mut hertz_from_tree = 0;
     let mut hertz = 4_000_000;
     if let Some(tree) = &tree {
         let mut regions = [Region { start: 0, size: 0 }; 1];
-        if let Ok(1) = tree.node_reg(b"serial@10000000", &mut regions) {
+        if let Ok(1) = tree.node_register_regions(b"serial@10000000", &mut regions) {
             let shift = match tree.node_property(b"serial@10000000", b"reg-shift") {
                 Ok(Some(&[a, b, c, d])) => u32::from_be_bytes([a, b, c, d]),
                 _ => 0,
@@ -254,7 +254,7 @@ pub(crate) fn run(hart: u64, device_tree: u64) {
     if let Some(tree) = &tree {
         for compatible in COMPATIBLES {
             let mut regions = [Region { start: 0, size: 0 }; 1];
-            if let Ok(1) = tree.node_reg_compatible(compatible, &mut regions) {
+            if let Ok(1) = tree.node_register_regions_compatible(compatible, &mut regions) {
                 let status = tree
                     .node_property_compatible(compatible, b"status")
                     .ok()

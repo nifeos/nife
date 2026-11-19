@@ -92,7 +92,7 @@ Column 4 is a judgment in every row.
 | 7 | timer re-arm drift (milestone 6 (threads)) | the deadline advances one interval per delivered tick | yes, and the proof now exists elsewhere | none | measurement, 100 Hz became ~70 Hz |
 | 8 | FS-server stack 528 bytes short | the grant exceeds the deepest handler recursion | no (a property of codegen) | none | a wall-clock ceiling, misread for a day |
 | 9 | `nifefs::write_image` accepted a NUL name | every accepted name reads back as itself | yes, cheaply | 2 harnesses, neither states it | the fuzzer, under a minute |
-| 10 | `dtb::node_reg` indexed past its cell stack | the walker is total | no (the BMC wall, named in advance) | 4 harnesses, all on the leaves | reading, while writing the fuzz target |
+| 10 | `dtb::node_register_regions` indexed past its cell stack | the walker is total | no (the BMC wall, named in advance) | 4 harnesses, all on the leaves | reading, while writing the fuzz target |
 | 11 | `dtb::Region::end` overflowed | `start + size` does not wrap on a hostile memory map | yes | none for `end()` | the fuzzer, ten minutes cold |
 | 12 | `gpt::parse` accepted a backup-boundary equality | no accepted table puts a usable block in the backup array | yes | 9 harnesses, none states it | mutation testing |
 | 13 | `login::mint()` cspace slot leak | `mint` returns the cspace to its entry occupancy | yes, after an extraction | none | a 9th login answered DENIED |

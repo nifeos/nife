@@ -400,13 +400,13 @@ impl SystemController {
 pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> {
     for compatible in COMPATIBLES {
         let mut regions = [Region { start: 0, size: 0 }; 1];
-        if tree.node_reg_compatible(compatible, &mut regions)? == 0 {
+        if tree.node_register_regions_compatible(compatible, &mut regions)? == 0 {
             continue;
         }
         let prop = |name: &[u8]| tree.node_property_compatible(compatible, name);
         let physical_layer_device = match prop(b"phy-handle")?.and_then(first_cell) {
             Some(handle) => {
-                mainline_physical_layer_device(|name| tree.phandle_property(handle, name))?
+                mainline_physical_layer_device(|name| tree.pointer_handle_property(handle, name))?
             }
             None => vendor_physical_layer_device(|name| {
                 tree.node_property(VENDOR_PHYSICAL_LAYER_DEVICE_NODE, name)
@@ -436,8 +436,10 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
 /// `designware_ethernet::jh7110::discover_aon_syscon`. calef has not ruled on it.
 pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<SystemController, Error> {
     let mut regions = [Region { start: 0, size: 0 }; 1];
-    if tree.node_reg_compatible(COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER, &mut regions)? == 1
-        || tree.node_reg(ALWAYS_ON_SYSTEM_CONTROLLER_NODE, &mut regions)? == 1
+    if tree
+        .node_register_regions_compatible(COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER, &mut regions)?
+        == 1
+        || tree.node_register_regions(ALWAYS_ON_SYSTEM_CONTROLLER_NODE, &mut regions)? == 1
     {
         return Ok(SystemController {
             base_physical_address: regions[0].start,

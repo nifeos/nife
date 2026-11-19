@@ -87,7 +87,7 @@ pub fn discover<'a>(dtb: &DeviceTreeBlob<'a>) -> Result<Option<Gic>, Refusal<'a>
 
     for compat in GICV3_COMPATIBLE {
         let n = dtb
-            .node_reg_compatible(compat, &mut regs)
+            .node_register_regions_compatible(compat, &mut regs)
             .map_err(Refusal::Unreadable)?;
         if n == 0 {
             continue;
@@ -114,7 +114,7 @@ pub fn discover<'a>(dtb: &DeviceTreeBlob<'a>) -> Result<Option<Gic>, Refusal<'a>
 
     for compat in GICV2_COMPATIBLE {
         let n = dtb
-            .node_reg_compatible(compat, &mut regs)
+            .node_register_regions_compatible(compat, &mut regs)
             .map_err(Refusal::Unreadable)?;
         if n == 0 {
             continue;
