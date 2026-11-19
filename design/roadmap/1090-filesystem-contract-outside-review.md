@@ -262,7 +262,7 @@ An outside review of `filesystem_contract` before it leaves nife. Five items are
 commit (the stand-alone text, clippy's proper-noun list, the falsification patch paths, one
 uncovered file, 22 names the gates refuse). Eight come before the first tag (a non-total errno
 decoder, packers that mask, seven unproven properties, the equivalent-mutant list, the README and
-prose gates, the `rm` module). Nine are for later. Five decisions, none open: the on-disk name (A, ruled), the naming pass with units (B, the
-maintainer's provisional ruling, built), a bound on the error range of a reply word (C, ruled),
-§99's store name (D, ruled) and the review package for the shared repository (E, the maintainer's
-provisional ruling).
+prose gates, the `rm` module). Nine are for later. Five decisions, none open. The on-disk name (A) is ruled. The naming pass with units (B) is the
+maintainer's provisional ruling, built. A bound on the error range of a reply word (C) is ruled, and
+so is §99's store name (D). The review package for the shared repository (E) is the maintainer's
+provisional ruling.
