@@ -16,8 +16,7 @@ lanes change before the crate moves to a repository of its own (milestone 1017 (
 leave in this order), step 5).
 
 The crate has no review package in `notes/crate-reviews/` and no row in `notes/crate-reviews.md`.
-The settled baseline this review takes instead has three parts. The first is the layout proposal, milestone 672 (the argument page's layout). The second is the interface table of milestone 956 (the linked interfaces carry checkable versions), which gives the crate `INTERFACE_ID` 18. The third is milestone 1017's order, which has the crate leave after milestone 994 (the cross-repository pair is tested where the pin is) lands. Both 672 and
-994 are NOT-STARTED. The crate's name is ratified in its own `Name:` block and is not reopened. Every
+The settled baseline this review takes instead has three parts. The first is the layout proposal, milestone 672 (the argument page's layout). The second is the interface table of milestone 956 (the linked interfaces carry checkable versions), which gives the crate `INTERFACE_ID` 18. The third is milestone 1017's order, step 5. Milestone 672 is NOT-STARTED. The crate's name is ratified in its own `Name:` block and is not reopened. Every
 other public name in the crate is provisional by the crate's own manifest, and this block proposes
 the ones the template's gates refuse.
 
@@ -66,8 +65,8 @@ section number, a milestone or a person in another repository.
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - Ruling, the layout leaves as built with `VERSION` 1 and `INTERFACE_ID` 18: Done,
   [#3579](https://github.com/nifeos/nife/pull/3579) (ruled 2026-11-14 UTC; nothing to build).
-- Ruling, a numbered magic replaces `nifeargv` at milestone 994: Ruled (2026-11-14 UTC). Not built:
-  `MAGIC` still reads `b"nifeargv"`, and milestone 994 has not started.
+- Ruling, a numbered magic replaces `nifeargv`: Ruled (2026-11-14 UTC), and its condition is met
+  (below). Not built: `MAGIC` still reads `b"nifeargv"`.
 - Ruling, three public names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: the same
   renames as P0-4 and P1-5.
 - Ruling, the repository: Ruled (2026-11-14 UTC). Not built: a lane creates
@@ -273,12 +272,17 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
 
 ## Follow-on
 
-- **Done.** The three rulings above, recorded in this block, and the matching step in milestone
-  994's block.
+- **Done.** The three rulings above, recorded in this block.
+- **In force (maintainer's reading, provisional, 2026-11-19 UTC).** Milestone 1115 (the gate builds
+  basalt's delivered programs from the candidate tree) meets the layout ruling's condition: a
+  merge group rebuilds every delivered program from the candidate tree, and milestone 994 (the
+  cross-repository pair is tested where the pin is) has basalt test the published bytes at its pin.
+  The numbered magic replaces `nifeargv` in one nife pull request, with no reader-first rollout,
+  and basalt rebuilds its programs at its next pin bump. It is a lane of its own.
 - **Outstanding.** Every finding marked Open or Ruled under "Finding status" above, each with what
   remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
-- **Outstanding.** The three renames of the rulings, then milestone 994, then the repository and
-  its `v0.1.0-pre.1` tag.
+- **Outstanding.** The three renames of the rulings and the numbered magic, then the repository
+  and its `v0.1.0-pre.1` tag.
 
 ## Done when
 
@@ -293,9 +297,8 @@ The checks are in [the appendix](1106-program-argument-contract-outside-review/d
   does not.
 - The mutation figures are the weekly census's, read from the metrics files. This review ran no
   census.
-- Milestone 994 is NOT-STARTED, and this crate's order in 1017 waits on it. Nothing in this block
-  shortens that wait; items 1 to 15 can land in nife before the move, and most should, since each
-  is cheaper inside one repository.
+- Items 1 to 15 can land in nife before the move, and most should, since each is cheaper inside
+  one repository.
 - The prior-art rows for Linux, WASI, Hubris and Tock are from memory and unverified against
   source in this review; the four marked "from source" rest on the nife note on foreign program
   arguments.
