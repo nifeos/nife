@@ -1,7 +1,6 @@
 ---
-status: IN-PROGRESS
+status: PARTIAL
 raised: 2026-08-25
-branch: milestone/163-jh7110-pcie-root-complex
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: JH7110 silicon
@@ -126,6 +125,17 @@ on it yet.
 4. **PERST# through the GPIO controller's output registers directly.** The tree has no JH7110 GPIO
    driver. Recommended: the crate writes the one pin's output and output-enable fields, as
    `pinctrl-starfive-jh7110.c` does, rather than adding a GPIO driver for one pin.
+
+## Follow-on
+
+- **Outstanding.** The device-tree reader, the clock and reset plans and the kernel wiring, the
+  four unticked items under "Steps that need no hardware". Checked against this block's checklist:
+  nothing in `machine_discovery`, `jh7110_clock_and_reset` or `kernel/` names the PCI Express
+  controller yet.
+- **Outstanding.** The bench runbook, `notes/jh7110-pci-express-bench.md`, which needs the kernel
+  wiring's log lines. Checked: no such file exists.
+- **Outstanding.** Every item under "Steps that need the board", which needs a person at the board
+  with a drive fitted.
 
 ## Index row
 
