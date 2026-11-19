@@ -12,9 +12,9 @@ needs_person: yes
 Raised by the lane `milestone/1058-non-volatile-memory-express-outside-review`. A reviewer with no
 prior exposure to this project read `nifeos/non_volatile_memory_express` at commit `87bbef8`
 (`main`, after its pull request #12), against the step 5 section of
-[the review package](../../notes/crate-reviews.md). Every item below is work for a lane there. Milestone 814
-(`non_volatile_memory_express`: proven NVMe queue logic, released on its own) owns the extraction
-and the release path; this block owns the findings that land inside that path.
+[the review package](../../notes/crate-reviews.md). Every item below is work for a lane there.
+Milestone 814 (`non_volatile_memory_express`: proven NVMe queue logic, released on its own) owns
+the extraction and the release path; this block owns the findings that land inside that path.
 
 The review package settles the crate name, the version `0.1.0`, the dual license and every name it
 records as ratified, and those stay closed here. It clears the move, and neither the tag nor
