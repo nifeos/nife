@@ -10,7 +10,9 @@
 //!    mints each token from the node's owning pointer, never from a reference; stated at
 //!    [`Unqueued::new`].
 //!
-//! Name: ratified 2026-10-27 (#2797). The primary type is `Queue<T: Node>`.
+//! Name: ratified 2026-10-27 (#2797). The primary type is `Queue<T: Node>`. The seven names the
+//! first release also publishes were ratified 2026-11-19 (UTC): `Node` (`next`, `set_next`),
+//! `push_back`, `pop_front`, `is_empty`, `len` and `Unqueued` (`new`, `as_ptr`, `as_non_null`).
 
 #![cfg_attr(not(test), no_std)]
 
@@ -48,6 +50,8 @@ use core::ptr::NonNull;
 ///     }
 /// }
 /// ```
+///
+/// Name: ratified 2026-11-19 (UTC).
 pub unsafe trait Node: Sized {
     /// Read back the link stored by the most recent [`set_next`](Self::set_next).
     fn next(&self) -> Option<NonNull<Self>>;
@@ -63,9 +67,7 @@ pub unsafe trait Node: Sized {
 /// which [`Unqueued::new`] discharges once. A dropped token strands its node. See
 /// notes/intrusive-queues.md.
 ///
-/// Name: provisional (milestone 139, round 10, 2026-10-08 UTC). `Unqueued` is the name option C on
-/// #1842 carried when calef chose that option; whether choosing it ratified the name is his to say.
-/// `new`, `as_ptr` and `as_non_null` are this lane's: calef names public items.
+/// Name: ratified 2026-11-19 (UTC), with `new`, `as_ptr` and `as_non_null`.
 #[repr(transparent)]
 #[must_use = "a dropped token strands its node: nothing can queue it again without minting another"]
 pub struct Unqueued<T>(NonNull<T>);
@@ -88,6 +90,8 @@ impl<T> Unqueued<T> {
     ///   reborrow of the node from its owner invalidates every pointer derived from an earlier
     ///   reference, so the queue's next use of a token minted that way is undefined behavior,
     ///   while a token derived from the owning pointer stays valid across such reborrows.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     #[inline(always)]
     pub const unsafe fn new(node: NonNull<T>) -> Self {
         Self(node)
@@ -95,12 +99,16 @@ impl<T> Unqueued<T> {
 
     /// The node, as a pointer. Safe to take: holding a pointer grants nothing, and dereferencing it
     /// is still the caller's `unsafe`.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     #[inline(always)]
     pub const fn as_non_null(&self) -> NonNull<T> {
         self.0
     }
 
     /// The node, as a raw pointer. See [`as_non_null`](Self::as_non_null).
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     #[inline(always)]
     pub const fn as_ptr(&self) -> *mut T {
         self.0.as_ptr()
@@ -138,6 +146,23 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 /// Dropping a queue that still holds nodes strands them as dropping a token does: they stay linked,
 /// no token for them exists, and queueing one again needs a fresh [`Unqueued::new`]. `Queue` has no
 /// `Drop`, so pop every node before the queue goes.
+///
+/// A `Queue<T>` is [`Send`] only when `T` is, as `LinkedList<T>` is: a queue of nodes that hold
+/// an `Rc` cannot be handed to another thread.
+///
+/// ```compile_fail,E0277
+/// # use core::ptr::NonNull;
+/// # use std::rc::Rc;
+/// # use intrusive_queue::{Queue, Node};
+/// struct Logged { log: Rc<u32>, next: Option<NonNull<Logged>> }
+/// // SAFETY: plain field storage, which is the whole of the `Node` contract.
+/// unsafe impl Node for Logged {
+///     fn next(&self) -> Option<NonNull<Self>> { self.next }
+///     fn set_next(&mut self, next: Option<NonNull<Self>>) { self.next = next; }
+/// }
+/// let queue: Queue<Logged> = Queue::new();
+/// std::thread::spawn(move || drop(queue));
+/// ```
 ///
 /// Name: ratified 2026-10-27 (#2797).
 ///
@@ -182,12 +207,14 @@ pub struct Queue<T: Node> {
 }
 
 // SAFETY: the queue owns no data; it holds nodes only under the caller's contract (rule 3: all
-// access serialized by the caller). Same justification as the slab allocator's Send: sharing is
-// the caller's problem, solved with a lock or a single-owner rule.
-unsafe impl<T: Node> Send for Queue<T> {}
+// access serialized by the caller). Moving the queue moves access to its nodes with it, so the
+// nodes must be `Send`, as for `LinkedList`.
+unsafe impl<T: Node + Send> Send for Queue<T> {}
 
 impl<T: Node> Queue<T> {
     /// An empty queue.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     pub const fn new() -> Self {
         Self {
             head: None,
@@ -197,11 +224,15 @@ impl<T: Node> Queue<T> {
     }
 
     /// Whether the queue currently holds no nodes.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     pub fn is_empty(&self) -> bool {
         self.head.is_none()
     }
 
     /// The number of nodes currently queued. O(1): maintained on every push and pop.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     pub fn len(&self) -> usize {
         self.len
     }
@@ -228,6 +259,8 @@ impl<T: Node> Queue<T> {
     /// ready.push_back(token);
     /// inbox.push_back(token); // error[E0382]: use of moved value: `token`
     /// ```
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     pub fn push_back(&mut self, node: Unqueued<T>) {
         let node = node.0;
         // SAFETY: valid and on no queue, which is what `Unqueued::new`'s caller promised for this
@@ -248,6 +281,8 @@ impl<T: Node> Queue<T> {
     /// Detach and return the oldest node, with its token. The returned node's link is cleared: it
     /// leaves the queue carrying no dangling reference into it, and the token says it may be
     /// queued again.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     pub fn pop_front(&mut self) -> Option<Unqueued<T>> {
         let node = self.head?;
         // SAFETY: every node between head and tail was pushed with a token and is still valid
