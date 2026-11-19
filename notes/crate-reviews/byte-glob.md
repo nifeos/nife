@@ -114,8 +114,8 @@ Not run, and so not claimed:
   ran here, since heavy runs belong in the 08:00 to 13:00 UTC window. The template's weekly job
   runs it in the new repository.
 - The stranger test, which belongs to the new repository (`docs/stranger-test.md`).
-- Fuzzing. No target exists (item P2-4 of milestone 1092, what an outside maintainer would fix before
-  the crate leaves). The crate has no `unsafe`, so the opt-in rule allows one later.
+- Fuzzing. No target exists (P2-4 of milestone 1092 (`byte_glob`: what an outside maintainer would fix
+  before the crate leaves)). The crate has no `unsafe`, so the opt-in rule allows one later.
 - `cargo-semver-checks` (a first release has no baseline), the template's workflows and the
   publish rehearsal. No repository exists yet.
 
@@ -149,9 +149,9 @@ The move's own dry run lists the other files that name the crate: `.github/workf
 `helpers/verify_times.py`, `packages/contracts.package.toml`, `packages/homes.toml` and
 `script/verify`.
 
-The crate refers back into nife in two places the move handles: the comments in `src/` that cite
-this tree (17 path lines, one section citation, one milestone citation, found by the packet) and
-the manifest's `publish = false` comment, which cites the allowlist.
+The crate refers back into nife in two places, and the move handles both. The comments in `src/`
+cite this tree (17 path lines, one section citation and one milestone citation, found by the
+packet). The manifest's `publish = false` comment cites the allowlist.
 
 ## What still blocks the move
 
