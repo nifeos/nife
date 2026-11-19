@@ -48,7 +48,7 @@ An appendix to [the milestone](../1107-sealed-pair-outside-review.md).
     written here (ten lines, no dependency) or `memchr` behind the dependency rule.
     Door: two-way. Effort: XS to measure, S to change.
 
-14. No proof, in a crate whose two neighbors each carry two. DONE: `contains_finds_a_digest_exactly_when_it_is_there` and `a_table_line_vouches_for_an_entry_exactly_when_its_digest_is_the_entrys`, each with its falsification patch, and a `script/verify` row.
+14. No proof, in a crate whose two neighbors each carry two. DONE: `contains_finds_a_digest_exactly_when_it_is_there` and `a_table_line_vouches_for_an_entry_exactly_when_the_digests_are_equal`, each with its falsification patch, and a `script/verify` row.
     Finding: `nifefs` and `measured_boot` each have two Kani harnesses with falsification patches;
     this crate has none. Its logic is small and pure. It has `contains` (a window exists if and only
     if the needle is at some offset) and `embedded_archive` (the result starts with `MAGIC` and

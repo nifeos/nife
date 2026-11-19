@@ -1,4 +1,4 @@
-Falsifies `sealed_pair::verification::a_table_line_vouches_for_an_entry_exactly_when_its_digest_is_the_entrys`.
+Falsifies `sealed_pair::verification::a_table_line_vouches_for_an_entry_exactly_when_the_digests_are_equal`.
 
 The defect: the comparison looks only at the first byte of the two digests. An entry whose bytes
 changed but whose hash still starts with the table's first byte reads as described by the table, and

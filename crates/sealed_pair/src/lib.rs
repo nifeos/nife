@@ -679,10 +679,10 @@ mod verification {
     /// under proof. The entry's digest is an input here (hashing is `measured_boot`'s, proved
     /// there); both digests are any 32 bytes.
     ///
-    /// Falsification: replayable `crates/sealed_pair/falsifications/verification.a_table_line_vouches_for_an_entry_exactly_when_its_digest_is_the_entrys.patch`
+    /// Falsification: replayable `crates/sealed_pair/falsifications/verification.a_table_line_vouches_for_an_entry_exactly_when_the_digests_are_equal.patch`
     #[kani::proof]
     #[kani::unwind(35)]
-    fn a_table_line_vouches_for_an_entry_exactly_when_its_digest_is_the_entrys() {
+    fn a_table_line_vouches_for_an_entry_exactly_when_the_digests_are_equal() {
         let want: Digest = kani::any();
         let have: Digest = kani::any();
         let listed = [("progenitor", want)];
