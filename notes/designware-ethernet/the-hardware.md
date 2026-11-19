@@ -40,7 +40,9 @@ TRNG, so a working driver never runs)'s correction). The two describe the same c
 | interface select | not in the tree: board code writes `AON_SYSCON_BASE + AON_SYSCFG_12`, bits `0x1c0000` | `starfive,syscon = <&aon_syscon 0xc 0x12>` |
 
 Both say `0x1603_0000` and `0x1604_0000`, `phy-mode = "rgmii-id"`, interrupts 7 and 78, and the
-same AXI configuration (`jh7110::BUS_CONFIGURATION`). `jh7110.rs` follows OpenBSD's `if_dwqe_fdt.c`
+same AXI configuration (`BUS_CONFIGURATION`). nife's
+`crates/machine_discovery/src/jh7110/designware_ethernet.rs` holds these facts, since the driver
+crate knows no chip, and follows OpenBSD's `if_dwqe_fdt.c`
 (`dwqe_fdt_attach`, `dwqe_setup_jh7110`). The controller's address picks the port, the `phy-mode`
 picks the interface select, and the PHY's node supplies its delays.
 
@@ -57,8 +59,8 @@ quantities they encode. For radon's `gmac0` (VisionFive 2 v1.3B) they agree:
 | receive data drive | `rgmii_sw_dr = <0x3>` | `motorcomm,rx-data-drv-microamp = <2910>` | `3` at 1.8 V |
 | transmit clock inverted at 1000 | `tx_inverted_1000 = <0x1>` | `motorcomm,tx-clk-1000-inverted` | set |
 
-`motorcomm_physical_layer_device::Settings::FALLBACK_GMAC0` is the last column. It is used only when a tree states
-neither spelling, and `Settings::source` says which happened.
+`PORT_0_FALLBACK_SETTINGS`, in the same file, is the last column. It is used only when a tree
+states neither spelling, and `Settings::source` says which happened.
 
 The sequence in `motorcomm_physical_layer_device.rs` is OpenBSD's `ytphy_yt8521_init`, `ytphy_yt8531_init` and
 `ytphy_yt8521_update` (`sys/dev/mii/ytphy.c`, revision 1.6 of 2024-03-12, commit `9d7a05f92003`).

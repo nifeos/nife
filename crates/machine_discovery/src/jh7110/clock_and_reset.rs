@@ -137,7 +137,7 @@ pub fn pmic_bus(tree: &DeviceTreeBlob<'_>) -> Result<PowerManagementChipBus, Err
 pub fn first_ethernet_port_transmit_parent(
     tree: &DeviceTreeBlob<'_>,
 ) -> Result<TransmitParent, Error> {
-    for compatible in designware_ethernet::jh7110::COMPATIBLES {
+    for compatible in super::designware_ethernet::COMPATIBLES {
         if tree
             .node_property_compatible(compatible, b"compatible")?
             .is_none()

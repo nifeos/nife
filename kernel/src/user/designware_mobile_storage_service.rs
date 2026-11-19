@@ -7,11 +7,11 @@
 //! Its one caller is the `storage_bench` boot. On radon the booted system's block server serves a
 //! USB drive (§260 (radon's block server serves a USB drive)), not this card.
 
-use designware_mobile_storage::jh7110::Slot;
 use driver_process_contract::designware_mobile_storage::{
     Handoff, REGISTER_VIRTUAL_ADDRESS, TRANSFER_VIRTUAL_ADDRESS, Window,
 };
 use filesystem_contract::block;
+use machine_discovery::jh7110::designware_mobile_storage::Slot;
 
 use super::*;
 use crate::capability_object::{Rights, rendezvous_capability};

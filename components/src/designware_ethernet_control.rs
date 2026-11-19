@@ -31,12 +31,13 @@
 #![no_main]
 
 use designware_ethernet::bring_up::{self, Account, Port};
-use designware_ethernet::{DirectMemoryAccessRegion, Hardware, Tails, jh7110, layout, registers};
+use designware_ethernet::{DirectMemoryAccessRegion, Hardware, Tails, layout, registers};
 use driver_process_contract::designware_ethernet::{
     ACCOUNT_RECORDS, ALWAYS_ON_SYSTEM_CONTROLLER_KIND, CONTROL_REGISTER_KIND,
     CONTROL_REGISTER_PAGES, CONTROL_REPORT_SLOT, ControlRecord, ControlReport, DATA_PLANE_KIND,
     control_inputs,
 };
+use machine_discovery::jh7110::designware_ethernet as jh7110;
 use startup_page_contract::StartupWindow;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES, doorbell_barrier};
 
@@ -166,7 +167,7 @@ user_mode_runtime::program_entry!(start);
 
 fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
     // A spawn this process cannot read is no spawner's: say nothing and touch nothing.
-    let Some(inputs) = control_inputs([arg0, arg1, arg2]) else {
+    let Some(inputs) = control_inputs([arg0, arg1, arg2], jh7110::BUS_CONFIGURATION) else {
         user_mode_runtime::exit()
     };
     let system_controller = select_interface();

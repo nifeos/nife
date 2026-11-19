@@ -1,15 +1,15 @@
 //! The JH7110's first Ethernet port and its AON syscon, found in both of the chip's device trees
 //! and absent from QEMU's.
 //!
-//! `designware_ethernet::jh7110` names both spellings and decodes the properties;
-//! `machine_discovery::jh7110::designware_ethernet` walks the tree. These pin the walk against the
-//! board-shaped fixtures and the tree every CI boot uses.
+//! `machine_discovery::jh7110::designware_ethernet` names both spellings, decodes the properties
+//! and walks the tree. These pin the walk against the board-shaped fixtures and the tree every CI
+//! boot uses.
 
-use designware_ethernet::jh7110::{
-    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, GMAC0_REGISTERS_PHYSICAL_ADDRESS,
-};
 use designware_ethernet::motorcomm_physical_layer_device::{Settings, SettingsSource};
-use machine_discovery::jh7110::designware_ethernet::{discover, discover_aon_syscon};
+use machine_discovery::jh7110::designware_ethernet::{
+    COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR, GMAC0_REGISTERS_PHYSICAL_ADDRESS,
+    PORT_0_FALLBACK_SETTINGS, discover, discover_aon_syscon,
+};
 
 const VENDOR: &[u8] = include_bytes!("fixtures/jh7110-gmac-vendor.dtb");
 const MAINLINE: &[u8] = include_bytes!("fixtures/jh7110-gmac-mainline.dtb");
@@ -44,7 +44,7 @@ fn radons_vendor_tree_gives_gmac0_its_physical_layer_device_settings_and_its_add
             source: SettingsSource::Fallback,
             ..d.physical_layer_device
         },
-        Settings::FALLBACK_GMAC0,
+        PORT_0_FALLBACK_SETTINGS,
         "the vendor's gmac0 values are the fallback's, field for field"
     );
 }

@@ -200,13 +200,12 @@ The one decision left for the architect is placing the baseline tag.
 1. The go for the baseline tag (P0-4). The tag and its commit have their ruling. Placing it waits
    for the go of the architect once the P0 items have merged and `main` passes.
 
-Two more one-way doors wait for the combine review, each with a recommendation:
+One more one-way door waits for the combine review, and one is ruled:
 
-2. Where the JH7110 facts live. The `jh7110` module (`src/jh7110.rs`) holds the addresses,
-   interrupts and device-tree spellings of one chip inside a controller crate, as the
-   `dw_mmc-starfive.c` glue of Linux sits beside `dw_mmc.c`. Moving it out after a publish is a
-   break. Recommendation: keep it; revisit only if a second board arrives or the combine review
-   chooses a shared JH7110 crate.
+2. Where the JH7110 facts live. Ruled 2026-11-18 (UTC): the crate knows no chip. The addresses,
+   interrupts and device-tree spellings of the JH7110 live in nife's
+   `crates/machine_discovery/src/jh7110/designware_mobile_storage.rs`, and the crate has no
+   `jh7110` module. The same ruling moved `designware_ethernet`'s JH7110 facts beside them.
 3. A shared DMA region trait with the sibling crate. See
    [the pair section](1050-designware-mobile-storage-outside-review/prior-art.md). Recommendation:
    not yet; each crate keeps its own trait until a third consumer exists, since a shared trait is a

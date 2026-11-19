@@ -251,6 +251,7 @@ dependencies = [
  "line_editor",
  "line_editor_component",
  "login_contract",
+ "machine_discovery",
  "machine_statistics_contract",
  "measured_boot",
  "memory_region_heap",
@@ -403,7 +404,7 @@ dependencies = [
 [[package]]
 name = "designware_ethernet"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/designware_ethernet?rev=8d9cca0a044487403fd0d37e4fb34442c18b19d2#8d9cca0a044487403fd0d37e4fb34442c18b19d2"
+source = "git+https://github.com/nifeos/designware_ethernet?rev=0e8f92bf67e58016983164cb52bf274e08e1d7ef#0e8f92bf67e58016983164cb52bf274e08e1d7ef"
 
 [[package]]
 name = "designware_inter_integrated_circuit"
@@ -412,7 +413,7 @@ version = "0.1.0"
 [[package]]
 name = "designware_mobile_storage"
 version = "0.1.0-pre.2"
-source = "git+https://github.com/nifeos/designware_mobile_storage?rev=8bb45f85ad1a7b97614a5258a98c481701eda816#8bb45f85ad1a7b97614a5258a98c481701eda816"
+source = "git+https://github.com/nifeos/designware_mobile_storage?rev=ce50796532385586a46620bc9545b25b22593fae#ce50796532385586a46620bc9545b25b22593fae"
 
 [[package]]
 name = "device_tree_blob"
@@ -968,7 +969,6 @@ name = "machine_discovery"
 version = "0.1.0"
 dependencies = [
  "designware_ethernet",
- "designware_mobile_storage",
  "device_tree_blob",
  "jh7110_clock_and_reset",
  "jh7110_entropy",

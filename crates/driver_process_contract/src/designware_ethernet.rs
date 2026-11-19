@@ -13,6 +13,7 @@ use designware_ethernet::bring_up::{Account, AddressSource, Error, Inputs};
 use designware_ethernet::cache_coherence::{Observation, Payload, Verdict};
 use designware_ethernet::link::{Link, Speed};
 use designware_ethernet::motorcomm_physical_layer_device::{Settings, SettingsSource};
+use designware_ethernet::network_interface_controller::BusConfiguration;
 use designware_ethernet::{management_data_io as mdio, network_interface_controller as controller};
 use startup_page_contract::WindowKind;
 
@@ -105,10 +106,11 @@ pub fn control_spawn_words(inputs: &Inputs) -> Option<[u64; 3]> {
 }
 
 /// The inverse of [`control_spawn_words`], refusing settings no word carries, a zero base and any
-/// bit no field owns.
+/// bit no field owns. The words carry no bus configuration: it is the board's, the same for every
+/// spawn, so the control process passes the one its board's discovery module holds.
 ///
 /// Name: provisional.
-pub fn control_inputs(words: [u64; 3]) -> Option<Inputs> {
+pub fn control_inputs(words: [u64; 3], bus_configuration: BusConfiguration) -> Option<Inputs> {
     let [settings, base, station] = words;
     let physical_layer_device = Settings::from_word(settings)?;
     let region_physical_address = base & !(PAGE - 1);
@@ -124,6 +126,7 @@ pub fn control_inputs(words: [u64; 3]) -> Option<Inputs> {
     };
     Some(Inputs {
         region_physical_address,
+        bus_configuration,
         station_mac_address: tree_station,
         physical_layer_device_bus_address: (base & 0x1f) as u8,
         physical_layer_device,
@@ -215,6 +218,9 @@ const fn verdict_code(v: Verdict) -> u64 {
         Verdict::TransmittedPayloadStale => 5,
         Verdict::BusError => 6,
         Verdict::Inconclusive => 7,
+        // A verdict a later driver crate adds: a code `verdict_from_code` refuses, so the kernel
+        // reads a report it cannot decode rather than a wrong one.
+        _ => 0,
     }
 }
 
@@ -236,6 +242,8 @@ const fn source_code(s: SettingsSource) -> u64 {
         SettingsSource::VendorTree => 0,
         SettingsSource::MainlineTree => 1,
         SettingsSource::Fallback => 2,
+        // As in `verdict_code`: a code `source_from_code` refuses.
+        _ => 0xff,
     }
 }
 
@@ -286,6 +294,8 @@ fn outcome_code(outcome: Result<bool, Error>) -> (u64, u64) {
         })) => (6, u64::from(direct_memory_access_physical_address_bits)),
         Err(Error::Controller(controller::Error::FlushTimeout)) => (7, 0),
         Err(Error::NotCoherent(v)) => (8, verdict_code(v)),
+        // As in `verdict_code`: a code `outcome_from_code` refuses.
+        Err(_) => (u64::MAX, 0),
     }
 }
 
@@ -352,6 +362,8 @@ impl ControlReport {
                 Payload::Matches => 0,
                 Payload::Poison => 1,
                 Payload::Other => 2,
+                // As in `verdict_code`: a code `from_words` refuses.
+                _ => 0xff,
             };
             w[5] = verdict_code(verdict) | payload << 8 | u64::from(o.status) << 32;
             w[6] = u64::from(o.receive_descriptor_word_3)
@@ -363,6 +375,8 @@ impl ControlReport {
                 Speed::Ten => 0,
                 Speed::Hundred => 1,
                 Speed::Thousand => 2,
+                // As in `verdict_code`: a code `speed_from_code` refuses.
+                _ => 0xff,
             };
             w[7] = speed | u64::from(l.full_duplex) << 8;
         }
@@ -375,14 +389,12 @@ impl ControlReport {
     ///
     /// Name: provisional.
     pub fn from_words(w: &[u64; ACCOUNT_WORDS]) -> Option<ControlReport> {
-        let mut a = Account {
-            version: w[0] as u32,
-            direct_memory_access_physical_address_bits: (w[0] >> 32) as u8,
-            physical_layer_device_id: w[1] as u32,
-            resets_microseconds: [w[3], w[4]],
-            link_wait_milliseconds: w[8],
-            ..Account::default()
-        };
+        let mut a = Account::default();
+        a.version = w[0] as u32;
+        a.direct_memory_access_physical_address_bits = (w[0] >> 32) as u8;
+        a.physical_layer_device_id = w[1] as u32;
+        a.resets_microseconds = [w[3], w[4]];
+        a.link_wait_milliseconds = w[8];
         if w[0] & HAS_PHYSICAL_LAYER_DEVICE != 0 {
             a.physical_layer_device = Some((
                 ((w[1] >> 32) & 0xff_ffff) as u32,
@@ -406,12 +418,12 @@ impl ControlReport {
             };
             a.coherence = Some((
                 verdict_from_code(w[5] & 0xff)?,
-                Observation {
-                    receive_descriptor_word_3: w[6] as u32,
-                    transmit_descriptor_word_3: (w[6] >> 32) as u32,
-                    status: (w[5] >> 32) as u32,
+                Observation::new(
+                    w[6] as u32,
+                    (w[6] >> 32) as u32,
+                    (w[5] >> 32) as u32,
                     payload,
-                },
+                ),
             ));
         }
         if w[0] & HAS_LINK != 0 {
@@ -506,14 +518,45 @@ impl Handoff {
 #[cfg(test)]
 mod tests {
 
+    use designware_ethernet::motorcomm_physical_layer_device::PadDriveStrength;
+
     use super::*;
+
+    /// An account with the fields `fill` sets. `Account` is `#[non_exhaustive]`, so only its
+    /// default can be built outside the driver crate and then filled.
+    fn account(fill: impl FnOnce(&mut Account)) -> Account {
+        let mut a = Account::default();
+        fill(&mut a);
+        a
+    }
+
+    /// A bus configuration the words never carry, so the round trips below pass it back in.
+    const BUS: BusConfiguration = BusConfiguration {
+        fixed_burst: true,
+        channel_burst_beats_times_8: false,
+        transmit_channel_burst_beats: 16,
+        receive_channel_burst_beats: 16,
+        threshold_mode: true,
+        bus_burst_beats_permitted: 0xf0,
+        read_outstanding: 0xf,
+        write_outstanding: 0xf,
+    };
 
     fn inputs(station: Option<[u8; 6]>) -> Inputs {
         Inputs {
             region_physical_address: 0x4012_3000,
+            bus_configuration: BUS,
             station_mac_address: station,
             physical_layer_device_bus_address: 0,
-            physical_layer_device: Settings::FALLBACK_GMAC0,
+            physical_layer_device: Settings {
+                receive_delay: 0xa,
+                receive_fixed_delay: false,
+                transmit_delay: 0xa,
+                receive_clock_drive: PadDriveStrength::Code(6),
+                receive_data_drive: PadDriveStrength::Code(3),
+                transmit_clock_inverted: [true, true, true],
+                source: SettingsSource::Fallback,
+            },
         }
     }
 
@@ -526,15 +569,14 @@ mod tests {
                 physical_layer_device_bus_address: 7,
                 ..inputs(station)
             };
-            let [a0, a1, a2] =
-                control_spawn_words(&i).expect("the fallback settings fit their word");
-            assert_eq!(control_inputs([a0, a1, a2]), Some(i));
-            assert_eq!(control_inputs([a0, a1 | 0x20, a2]), None);
-            assert_eq!(control_inputs([a0, a1 & 0x1f, a2]), None);
-            assert_eq!(control_inputs([a0, a1, a2 | 1 << 50]), None);
+            let [a0, a1, a2] = control_spawn_words(&i).expect("these settings fit their word");
+            assert_eq!(control_inputs([a0, a1, a2], BUS), Some(i));
+            assert_eq!(control_inputs([a0, a1 | 0x20, a2], BUS), None);
+            assert_eq!(control_inputs([a0, a1 & 0x1f, a2], BUS), None);
+            assert_eq!(control_inputs([a0, a1, a2 | 1 << 50], BUS), None);
         }
         assert_eq!(
-            control_inputs([0, 0x4000_0000, 1]),
+            control_inputs([0, 0x4000_0000, 1], BUS),
             None,
             "a station with no flag"
         );
@@ -609,31 +651,24 @@ mod tests {
             Verdict::Inconclusive,
         ] {
             let r = ControlReport {
-                account: Account {
-                    version: 0x5251,
-                    direct_memory_access_physical_address_bits: 40,
-                    physical_layer_device_id: 0x4f51_e91b,
-                    physical_layer_device: Some((1800, SettingsSource::MainlineTree)),
-                    station_mac_address: Some((
-                        [0x6c, 0xcf, 0x39, 0, 0x47, 0x2c],
-                        AddressSource::Registers,
-                    )),
-                    resets_microseconds: [12, 34],
-                    coherence: Some((
+                account: account(|a| {
+                    a.version = 0x5251;
+                    a.direct_memory_access_physical_address_bits = 40;
+                    a.physical_layer_device_id = 0x4f51_e91b;
+                    a.physical_layer_device = Some((1800, SettingsSource::MainlineTree));
+                    a.station_mac_address =
+                        Some(([0x6c, 0xcf, 0x39, 0, 0x47, 0x2c], AddressSource::Registers));
+                    a.resets_microseconds = [12, 34];
+                    a.coherence = Some((
                         verdict,
-                        Observation {
-                            receive_descriptor_word_3: 0x3400_0080,
-                            transmit_descriptor_word_3: 0x3000_0080,
-                            status: 0x0000_0441,
-                            payload: Payload::Poison,
-                        },
-                    )),
-                    link: Some(Link {
+                        Observation::new(0x3400_0080, 0x3000_0080, 0x0000_0441, Payload::Poison),
+                    ));
+                    a.link = Some(Link {
                         speed: Speed::Hundred,
                         full_duplex: true,
-                    }),
-                    link_wait_milliseconds: 2900,
-                },
+                    });
+                    a.link_wait_milliseconds = 2900;
+                }),
                 system_controller: (0x0, 0x1),
             };
             assert_eq!(ControlReport::from_words(&r.to_words()), Some(r));
@@ -656,28 +691,21 @@ mod tests {
                     for full_duplex in [false, true] {
                         for station_origin in [AddressSource::Tree, AddressSource::Registers] {
                             let r = ControlReport {
-                                account: Account {
-                                    version: 0x5251,
-                                    direct_memory_access_physical_address_bits: 40,
-                                    physical_layer_device_id: 0x4f51_e91b,
-                                    physical_layer_device: Some((0xff_ffff, source)),
-                                    station_mac_address: Some((
-                                        [0x6c, 0xcf, 0x39, 0, 0x47, 0x2c],
-                                        station_origin,
-                                    )),
-                                    resets_microseconds: [12, 34],
-                                    coherence: Some((
+                                account: account(|a| {
+                                    a.version = 0x5251;
+                                    a.direct_memory_access_physical_address_bits = 40;
+                                    a.physical_layer_device_id = 0x4f51_e91b;
+                                    a.physical_layer_device = Some((0xff_ffff, source));
+                                    a.station_mac_address =
+                                        Some(([0x6c, 0xcf, 0x39, 0, 0x47, 0x2c], station_origin));
+                                    a.resets_microseconds = [12, 34];
+                                    a.coherence = Some((
                                         Verdict::Coherent,
-                                        Observation {
-                                            receive_descriptor_word_3: u32::MAX,
-                                            transmit_descriptor_word_3: u32::MAX,
-                                            status: u32::MAX,
-                                            payload,
-                                        },
-                                    )),
-                                    link: Some(Link { speed, full_duplex }),
-                                    link_wait_milliseconds: 2900,
-                                },
+                                        Observation::new(u32::MAX, u32::MAX, u32::MAX, payload),
+                                    ));
+                                    a.link = Some(Link { speed, full_duplex });
+                                    a.link_wait_milliseconds = 2900;
+                                }),
                                 system_controller: (u32::MAX, 0),
                             };
                             assert_eq!(ControlReport::from_words(&r.to_words()), Some(r));
@@ -695,24 +723,15 @@ mod tests {
     #[test]
     fn each_presence_bit_stands_alone() {
         let full = ControlReport {
-            account: Account {
-                physical_layer_device: Some((1800, SettingsSource::Fallback)),
-                station_mac_address: Some(([2, 0, 0, 0, 0, 1], AddressSource::Tree)),
-                coherence: Some((
-                    Verdict::BusError,
-                    Observation {
-                        receive_descriptor_word_3: 1,
-                        transmit_descriptor_word_3: 2,
-                        status: 3,
-                        payload: Payload::Other,
-                    },
-                )),
-                link: Some(Link {
+            account: account(|a| {
+                a.physical_layer_device = Some((1800, SettingsSource::Fallback));
+                a.station_mac_address = Some(([2, 0, 0, 0, 0, 1], AddressSource::Tree));
+                a.coherence = Some((Verdict::BusError, Observation::new(1, 2, 3, Payload::Other)));
+                a.link = Some(Link {
                     speed: Speed::Ten,
                     full_duplex: false,
-                }),
-                ..Account::default()
-            },
+                });
+            }),
             system_controller: (0, 0),
         };
         for keep in 0..4 {
@@ -748,8 +767,11 @@ mod tests {
             ..inputs(None)
         };
         let words = control_spawn_words(&i).expect("fits");
-        assert_eq!(control_inputs(words), Some(i));
-        assert_eq!(control_inputs([words[0], words[1] + 1, words[2]]), None);
+        assert_eq!(control_inputs(words, BUS), Some(i));
+        assert_eq!(
+            control_inputs([words[0], words[1] + 1, words[2]], BUS),
+            None
+        );
     }
 
     #[test]
