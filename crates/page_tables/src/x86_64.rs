@@ -18,9 +18,12 @@ use crate::{
 /// The same role as aarch64's `mair` module: the encoder below selects an entry by its `PWT`,
 /// `PCD` and `PAT` bits, and the value here is what that entry then means, so the two are one
 /// definition.
+#[doc(alias = "page attribute table")]
 pub mod pat {
-    /// `IA32_PAT`, MSR 0x277.
-    pub const MSR: u32 = 0x277;
+    /// The model-specific register `IA32_PAT`, number 0x277.
+    #[doc(alias = "IA32_PAT")]
+    #[doc(alias = "MSR")]
+    pub const MODEL_SPECIFIC_REGISTER: u32 = 0x277;
 
     /// The power-on value, entries 0 to 7: WB, WT, UC-, UC, WB, WT, UC-, UC (one byte each, low
     /// byte first). The Intel SDM, volume 3, "PAT Initial Value" (memory type encodings 06 WB, 04 WT, 07 UC-,
@@ -62,7 +65,7 @@ const XD: u64 = 1 << 63;
 const SW_KERNEL_EXEC: u64 = 1 << 9;
 
 /// Bit 10, the second software bit: this leaf is device memory. x86 expresses uncacheable memory
-/// through PWT/PCD (and the PAT), which [`Ia32e::attrs`] does set, but those bits are also what a
+/// through PWT/PCD (and the PAT), which [`Ia32e::attributes`] does set, but those bits are also what a
 /// cacheability policy would use for ordinary memory, so they are not a reliable read-back of the
 /// portable [`Flags::is_device`] intent. Same role as Sv39's `SW_DEVICE`.
 const SW_DEVICE: u64 = 1 << 10;
@@ -72,7 +75,7 @@ const SW_DEVICE: u64 = 1 << 10;
 const ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 
 /// **An IA-32e entry's fields share no bit**: the address field, P, RW, `USER_SUPERVISOR`, PWT, PCD, A, D, PS, G,
-/// the two software bits and XD. Every `|` in `Ia32e::attrs`, `table_entry`, `leaf_entry` and
+/// the two software bits and XD. Every `|` in `Ia32e::attributes`, `table_entry`, `leaf_entry` and
 /// `block_entry` joins words from this list, so each is its own `^`, and the mutation exclusions
 /// for them name this constant: the compiler checks what no test can.
 ///
@@ -95,8 +98,11 @@ pub const THE_ENTRY_FIELDS_SHARE_NO_BIT: () = {
     );
 };
 
-/// The `x86_64` four-level (IA-32e) page-table format. Named for Intel's own term, "IA-32e
+/// The `x86_64` four-level (IA-32e) page-table format (Intel SDM volume 3, "IA-32e Paging"). Named for Intel's own term, "IA-32e
 /// paging" (SDM volume 3, chapter 4), since `X86_64` is not camel case. Name provisional.
+#[doc(alias = "x86-64")]
+#[doc(alias = "x86_64")]
+#[doc(alias = "IA-32e paging")]
 pub struct Ia32e;
 
 impl Ia32e {
@@ -105,7 +111,7 @@ impl Ia32e {
     /// A and D are set eagerly for the same reason Sv39 does it: hardware that has to set them
     /// itself takes a fault on the first touch of every page, and there is nothing here that wants
     /// to know about first touches. D is set only where a write is possible at all.
-    const fn attrs(flags: Flags) -> u64 {
+    const fn attributes(flags: Flags) -> u64 {
         let mut bits = A;
         if flags.is_writable() {
             bits |= RW | D;
@@ -151,18 +157,18 @@ impl PageFormat for Ia32e {
         entry & P != 0
     }
 
-    fn entry_pa(entry: u64) -> u64 {
+    fn entry_physical_address(entry: u64) -> u64 {
         entry & ADDR_MASK
     }
 
-    fn table_entry(pa: u64, _level: usize) -> u64 {
+    fn table_entry(physical_address: u64, _level: usize) -> u64 {
         // Maximally permissive, because x86 ANDs the levels together and the leaf must be able to
         // grant anything. See notes/paging.md for what that trades away.
-        (pa & ADDR_MASK) | P | RW | USER_SUPERVISOR
+        (physical_address & ADDR_MASK) | P | RW | USER_SUPERVISOR
     }
 
-    fn leaf_entry(pa: u64, flags: Flags) -> u64 {
-        (pa & ADDR_MASK) | P | Self::attrs(flags)
+    fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {
+        (physical_address & ADDR_MASK) | P | Self::attributes(flags)
     }
 
     fn leaf_flags(entry: u64) -> Flags {
@@ -197,17 +203,20 @@ impl PageFormat for Ia32e {
     ///
     /// Bit 12 is `PAT` in a large-page entry, and bits 20:13 (2 MiB) or 29:13 (1 GiB) are reserved,
     /// so the address is masked to the block's own alignment: a stray low bit is a reserved-bit
-    /// fault. `attrs` never sets bit 12, so the memory type is the one a page leaf selects.
+    /// fault. `attributes` never sets bit 12, so the memory type is the one a page leaf selects.
     ///
     /// A 1 GiB leaf is usable only where `CPUID` leaf 0x80000001 reports `Page1GB` (EDX bit 26).
     /// This crate cannot ask, so the caller passes the largest size it has checked for
     /// ([`Mapper::map_span`](crate::Mapper::map_span)).
-    fn block_entry(pa: u64, flags: Flags, size: PageSize) -> Option<u64> {
+    fn block_entry(physical_address: u64, flags: Flags, size: PageSize) -> Option<u64> {
         match size {
-            PageSize::Size4KiB => Some(Self::leaf_entry(pa, flags)),
-            PageSize::Size2MiB | PageSize::Size1GiB => {
-                Some((pa & ADDR_MASK & !(size.bytes() - 1)) | P | PS | Self::attrs(flags))
-            }
+            PageSize::FourKibibytes => Some(Self::leaf_entry(physical_address, flags)),
+            PageSize::TwoMebibytes | PageSize::OneGibibyte => Some(
+                (physical_address & ADDR_MASK & !(size.bytes() - 1))
+                    | P
+                    | PS
+                    | Self::attributes(flags),
+            ),
         }
     }
 
@@ -222,6 +231,8 @@ impl PageFormat for Ia32e {
 /// `Ia32e`'s `USER_SUPERVISOR` and `XD` would fault every DMA. A device has no privilege level and no execute
 /// permission here, and [`leaf_flags`](Vtd::leaf_flags) reports only write. See notes/paging.md,
 /// "VT-d".
+#[doc(alias = "VT-d")]
+#[doc(alias = "Intel IOMMU")]
 pub struct Vtd;
 
 /// Read: the transaction may read through this entry. Bit 0, same position as `Ia32e`'s `P`,
@@ -268,27 +279,27 @@ impl PageFormat for Vtd {
         entry & (VTD_R | VTD_W) != 0
     }
 
-    fn entry_pa(entry: u64) -> u64 {
+    fn entry_physical_address(entry: u64) -> u64 {
         entry & VTD_ADDR_MASK
     }
 
     /// Both bits set: VT-d ANDs permissions down the walk exactly as the CPU's own tables do (an
     /// intermediate entry's `R`/`W` gate every leaf beneath it), so an intermediate must grant
     /// everything and let the leaf decide, the same reasoning `Ia32e::table_entry` documents.
-    fn table_entry(pa: u64, _level: usize) -> u64 {
-        (pa & VTD_ADDR_MASK) | VTD_R | VTD_W
+    fn table_entry(physical_address: u64, _level: usize) -> u64 {
+        (physical_address & VTD_ADDR_MASK) | VTD_R | VTD_W
     }
 
     /// Read is unconditional (every domain this seam builds is at least readable) and write
     /// follows `flags.is_writable()`. Nothing else: see this type's own doc for why `USER_SUPERVISOR` and `XD`
     /// would be reserved-bit violations here rather than the extra permissiveness they are on the
     /// CPU's own format.
-    fn leaf_entry(pa: u64, flags: Flags) -> u64 {
+    fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {
         let mut bits = VTD_R;
         if flags.is_writable() {
             bits |= VTD_W;
         }
-        (pa & VTD_ADDR_MASK) | bits
+        (physical_address & VTD_ADDR_MASK) | bits
     }
 
     /// The only two facts a second-level leaf carries: read (always, once present) and write.
@@ -304,10 +315,10 @@ impl PageFormat for Vtd {
     /// walks them is `CAP_REG.SLLPS`'s answer, which this crate cannot read and the driver does not
     /// check; and bit 7 is outside `VTD_PERMITTED_BITS`, in the reserved range, for exactly that reason.
     /// A DMA domain is a few granted pages, not a direct map, so there is nothing to win yet.
-    fn block_entry(pa: u64, flags: Flags, size: PageSize) -> Option<u64> {
+    fn block_entry(physical_address: u64, flags: Flags, size: PageSize) -> Option<u64> {
         match size {
-            PageSize::Size4KiB => Some(Self::leaf_entry(pa, flags)),
-            PageSize::Size2MiB | PageSize::Size1GiB => None,
+            PageSize::FourKibibytes => Some(Self::leaf_entry(physical_address, flags)),
+            PageSize::TwoMebibytes | PageSize::OneGibibyte => None,
         }
     }
 
@@ -326,10 +337,12 @@ impl PageFormat for Vtd {
 /// (bits 11:9), `LEVELS - 1 - L`, and a leaf says 0. Permissions (`IR`, `IW`) combine by AND
 /// down the walk, so a directory grants both. `FC` (bit 60, leaves only) keeps a device's DMA
 /// coherent whatever it asks for. See notes/paging.md, "AMD-Vi". Name provisional.
+#[doc(alias = "AMD-Vi")]
+#[doc(alias = "AMD IOMMU")]
 pub struct AmdVi;
 
 /// `PR`: present. Bit 0, at every level.
-const AMD_VI_PR: u64 = 1 << 0;
+const AMD_VI_PRESENT: u64 = 1 << 0;
 /// `NextLevel`, bits 11:9.
 const AMD_VI_NEXT_LEVEL_SHIFT: u64 = 9;
 const AMD_VI_NEXT_LEVEL_MASK: u64 = 0b111 << AMD_VI_NEXT_LEVEL_SHIFT;
@@ -354,7 +367,7 @@ const AMD_VI_ADDR_MASK: u64 = 0x000f_ffff_ffff_f000;
 pub const THE_AMD_VI_ENTRY_FIELDS_SHARE_NO_BIT: () = {
     assert_share_no_bit!(
         AMD_VI_ADDR_MASK,
-        AMD_VI_PR,
+        AMD_VI_PRESENT,
         AMD_VI_NEXT_LEVEL_MASK,
         AMD_VI_FC,
         AMD_VI_IR,
@@ -382,19 +395,19 @@ impl PageFormat for AmdVi {
     const SPLIT_SHIFT: u32 = 47;
 
     fn is_present(entry: u64) -> bool {
-        entry & AMD_VI_PR != 0
+        entry & AMD_VI_PRESENT != 0
     }
 
-    fn entry_pa(entry: u64) -> u64 {
+    fn entry_physical_address(entry: u64) -> u64 {
         entry & AMD_VI_ADDR_MASK
     }
 
-    /// A directory entry at walk level `level`, naming the AMD level of the table at `pa`
+    /// A directory entry at walk level `level`, naming the AMD level of the table at `physical_address`
     /// (`LEVELS - 1 - level`), granting read and write so the leaf decides.
-    fn table_entry(pa: u64, level: usize) -> u64 {
+    fn table_entry(physical_address: u64, level: usize) -> u64 {
         let next = (Self::LEVELS - 1 - level) as u64;
-        (pa & AMD_VI_ADDR_MASK)
-            | AMD_VI_PR
+        (physical_address & AMD_VI_ADDR_MASK)
+            | AMD_VI_PRESENT
             | (next << AMD_VI_NEXT_LEVEL_SHIFT)
             | AMD_VI_IR
             | AMD_VI_IW
@@ -403,12 +416,12 @@ impl PageFormat for AmdVi {
     /// A 4 KiB leaf: present, `NextLevel` 0, force coherent, readable, and writable when `flags`
     /// says so. A device has no privilege level and no execute permission in this mode, so `USER_SUPERVISOR`
     /// and `XD` have nowhere to go, exactly as on [`Vtd`].
-    fn leaf_entry(pa: u64, flags: Flags) -> u64 {
-        let mut bits = AMD_VI_PR | AMD_VI_FC | AMD_VI_IR;
+    fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {
+        let mut bits = AMD_VI_PRESENT | AMD_VI_FC | AMD_VI_IR;
         if flags.is_writable() {
             bits |= AMD_VI_IW;
         }
-        (pa & AMD_VI_ADDR_MASK) | bits
+        (physical_address & AMD_VI_ADDR_MASK) | bits
     }
 
     fn leaf_flags(entry: u64) -> Flags {
@@ -422,10 +435,10 @@ impl PageFormat for AmdVi {
     /// **Pages only**, the same call [`Vtd`] makes and for the same reason: a DMA domain is a few
     /// granted pages. AMD-Vi could say 2 MiB with a level-2 entry whose `NextLevel` is 0; nothing
     /// here needs it yet.
-    fn block_entry(pa: u64, flags: Flags, size: PageSize) -> Option<u64> {
+    fn block_entry(physical_address: u64, flags: Flags, size: PageSize) -> Option<u64> {
         match size {
-            PageSize::Size4KiB => Some(Self::leaf_entry(pa, flags)),
-            PageSize::Size2MiB | PageSize::Size1GiB => None,
+            PageSize::FourKibibytes => Some(Self::leaf_entry(physical_address, flags)),
+            PageSize::TwoMebibytes | PageSize::OneGibibyte => None,
         }
     }
 
@@ -569,11 +582,11 @@ mod tests {
     fn no_encoded_leaf_is_both_writable_and_executable() {
         for flags in [
             Flags::kernel_code(),
-            Flags::kernel_rodata(),
+            Flags::kernel_read_only_data(),
             Flags::kernel_data(),
             Flags::device(),
             Flags::user_code(),
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             Flags::user_data(),
             Flags::user_device(),
         ] {
@@ -606,7 +619,7 @@ mod tests {
             0,
             "an XD intermediate would veto an executable leaf"
         );
-        assert_eq!(Ia32e::entry_pa(e), 0x20_0000);
+        assert_eq!(Ia32e::entry_physical_address(e), 0x20_0000);
     }
 
     /// **Every constructor round-trips through encode/decode**, including the two software bits
@@ -615,18 +628,18 @@ mod tests {
     fn flags_round_trip_through_a_leaf() {
         for flags in [
             Flags::kernel_code(),
-            Flags::kernel_rodata(),
+            Flags::kernel_read_only_data(),
             Flags::kernel_data(),
             Flags::device(),
             Flags::user_code(),
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             Flags::user_data(),
             Flags::user_device(),
             Flags::write_combining(),
             Flags::user_write_combining(),
         ] {
             let leaf = Ia32e::leaf_entry(0x10_0000, flags);
-            assert_eq!(Ia32e::entry_pa(leaf), 0x10_0000);
+            assert_eq!(Ia32e::entry_physical_address(leaf), 0x10_0000);
             assert_eq!(
                 Ia32e::leaf_flags(leaf),
                 flags,
@@ -641,7 +654,7 @@ mod tests {
     #[test]
     fn kernel_code_and_rodata_are_distinguished_by_the_software_bit() {
         let code = Ia32e::leaf_entry(0x10_0000, Flags::kernel_code());
-        let rodata = Ia32e::leaf_entry(0x10_0000, Flags::kernel_rodata());
+        let rodata = Ia32e::leaf_entry(0x10_0000, Flags::kernel_read_only_data());
         assert_ne!(code & SW_KERNEL_EXEC, 0);
         assert_eq!(rodata & SW_KERNEL_EXEC, 0);
         assert_eq!(code & XD, 0, "kernel code must be executable");
@@ -694,26 +707,26 @@ mod tests {
     fn a_vtd_leaf_sets_no_bit_outside_read_write_and_address() {
         for flags in [
             Flags::kernel_code(),
-            Flags::kernel_rodata(),
+            Flags::kernel_read_only_data(),
             Flags::kernel_data(),
             Flags::device(),
             Flags::user_code(),
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             Flags::user_data(),
             Flags::user_device(),
         ] {
-            for pa in [
+            for physical_address in [
                 0x10_0000,
-                // Bits above 51 set: with a small address `(pa & M) == pa` for every wide enough
+                // Bits above 51 set: with a small address `(physical_address & M) == physical_address` for every wide enough
                 // M, and a widened `VTD_ADDR_MASK` would go unseen.
                 0x00ff_ffff_ffff_f000,
                 0xffff_ffff_ffff_f000,
             ] {
-                let leaf = Vtd::leaf_entry(pa, flags);
+                let leaf = Vtd::leaf_entry(physical_address, flags);
                 assert_eq!(
                     leaf & !VTD_PERMITTED_BITS,
                     0,
-                    "a reserved bit was set for {flags:?} at {pa:#x}: {leaf:#x}"
+                    "a reserved bit was set for {flags:?} at {physical_address:#x}: {leaf:#x}"
                 );
             }
         }
@@ -726,7 +739,7 @@ mod tests {
     fn a_vtd_leaf_is_present_and_writable_for_user_data() {
         let leaf = Vtd::leaf_entry(0x10_0000, Flags::user_data());
         assert!(Vtd::is_present(leaf));
-        assert_eq!(Vtd::entry_pa(leaf), 0x10_0000);
+        assert_eq!(Vtd::entry_physical_address(leaf), 0x10_0000);
         assert!(Vtd::leaf_flags(leaf).is_writable());
     }
 
@@ -735,7 +748,7 @@ mod tests {
     /// present/absent story.
     #[test]
     fn read_alone_is_present_but_not_writable_and_zero_is_absent() {
-        let ro = Vtd::leaf_entry(0x10_0000, Flags::kernel_rodata());
+        let ro = Vtd::leaf_entry(0x10_0000, Flags::kernel_read_only_data());
         assert!(Vtd::is_present(ro));
         assert!(!Vtd::leaf_flags(ro).is_writable());
         assert!(!Vtd::is_present(0), "R and W both clear: not present");
@@ -748,7 +761,7 @@ mod tests {
     fn a_vtd_table_entry_grants_everything() {
         let e = Vtd::table_entry(0x20_0000, 0);
         assert_eq!(e & (VTD_R | VTD_W), VTD_R | VTD_W);
-        assert_eq!(Vtd::entry_pa(e), 0x20_0000);
+        assert_eq!(Vtd::entry_physical_address(e), 0x20_0000);
         assert_eq!(
             e & !(VTD_ADDR_MASK | VTD_R | VTD_W),
             0,
@@ -764,20 +777,20 @@ mod tests {
     fn an_amd_vi_leaf_sets_no_bit_outside_its_permitted_set() {
         for flags in [
             Flags::kernel_code(),
-            Flags::kernel_rodata(),
+            Flags::kernel_read_only_data(),
             Flags::kernel_data(),
             Flags::device(),
             Flags::user_code(),
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             Flags::user_data(),
             Flags::user_device(),
         ] {
-            for pa in [0x10_0000, 0x00ff_ffff_ffff_f000, 0xffff_ffff_ffff_f000] {
-                let leaf = AmdVi::leaf_entry(pa, flags);
+            for physical_address in [0x10_0000, 0x00ff_ffff_ffff_f000, 0xffff_ffff_ffff_f000] {
+                let leaf = AmdVi::leaf_entry(physical_address, flags);
                 assert_eq!(
                     leaf & !AMD_VI_LEAF_PERMITTED_BITS,
                     0,
-                    "a reserved bit was set for {flags:?} at {pa:#x}: {leaf:#x}"
+                    "a reserved bit was set for {flags:?} at {physical_address:#x}: {leaf:#x}"
                 );
                 assert_eq!(leaf & 0xe00, 0, "a 4 KiB leaf's NextLevel is 0");
                 assert_eq!(leaf & 1, 1, "a leaf is present");
@@ -794,12 +807,15 @@ mod tests {
     #[test]
     fn an_amd_vi_directory_entry_names_the_next_level() {
         for (walk_level, next_level) in [(0usize, 3u64), (1, 2), (2, 1)] {
-            for pa in [0x20_0000, 0xffff_ffff_ffff_f000] {
-                let e = AmdVi::table_entry(pa, walk_level);
+            for physical_address in [0x20_0000, 0xffff_ffff_ffff_f000] {
+                let e = AmdVi::table_entry(physical_address, walk_level);
                 assert_eq!((e >> 9) & 7, next_level, "walk level {walk_level}");
                 assert_eq!(e & !AMD_VI_DIRECTORY_PERMITTED_BITS, 0, "{e:#x}");
                 assert_eq!(e & (3 << 61), 3 << 61, "a directory grants read and write");
-                assert_eq!(AmdVi::entry_pa(e), pa & 0x000f_ffff_ffff_f000);
+                assert_eq!(
+                    AmdVi::entry_physical_address(e),
+                    physical_address & 0x000f_ffff_ffff_f000
+                );
                 assert!(AmdVi::is_present(e));
                 assert!(!AmdVi::is_block(e), "a directory is not a page");
             }
@@ -811,7 +827,7 @@ mod tests {
     #[test]
     fn an_amd_vi_leaf_reads_back_and_pages_are_the_only_size() {
         let rw = AmdVi::leaf_entry(0x10_0000, Flags::user_data());
-        let ro = AmdVi::leaf_entry(0x10_0000, Flags::kernel_rodata());
+        let ro = AmdVi::leaf_entry(0x10_0000, Flags::kernel_read_only_data());
         assert!(AmdVi::leaf_flags(rw).is_writable());
         assert!(!AmdVi::leaf_flags(ro).is_writable());
         assert!(!AmdVi::is_present(0));
@@ -819,11 +835,11 @@ mod tests {
         assert!(AmdVi::is_block(1 | (7 << 9)));
         let data = Flags::user_data();
         assert_eq!(
-            AmdVi::block_entry(0x10_0000, data, PageSize::Size4KiB),
+            AmdVi::block_entry(0x10_0000, data, PageSize::FourKibibytes),
             Some(rw)
         );
         assert_eq!(
-            AmdVi::block_entry(0x20_0000, data, PageSize::Size2MiB),
+            AmdVi::block_entry(0x20_0000, data, PageSize::TwoMebibytes),
             None
         );
     }
@@ -836,8 +852,8 @@ mod tests {
         for flags in [
             Flags::kernel_code(),
             Flags::user_code(),
-            Flags::kernel_rodata(),
-            Flags::user_rodata(),
+            Flags::kernel_read_only_data(),
+            Flags::user_read_only_data(),
         ] {
             assert_eq!(
                 Ia32e::leaf_flags(Ia32e::leaf_entry(0x10_0000, flags)),
@@ -853,10 +869,13 @@ mod tests {
     fn vtd_writes_pages_only_and_knows_a_superpage_when_it_sees_one() {
         let data = Flags::user_data();
         assert_eq!(
-            Vtd::block_entry(0x10_0000, data, PageSize::Size4KiB),
+            Vtd::block_entry(0x10_0000, data, PageSize::FourKibibytes),
             Some(Vtd::leaf_entry(0x10_0000, data))
         );
-        assert_eq!(Vtd::block_entry(0x20_0000, data, PageSize::Size2MiB), None);
+        assert_eq!(
+            Vtd::block_entry(0x20_0000, data, PageSize::TwoMebibytes),
+            None
+        );
         assert!(Vtd::is_block(VTD_R | (1 << 7)));
         assert!(!Vtd::is_block(Vtd::leaf_entry(0x10_0000, data)));
         assert!(!Vtd::is_block(Vtd::table_entry(0x10_0000, 0)));
@@ -867,7 +886,7 @@ mod tests {
     #[test]
     fn a_kernel_leaf_without_the_exec_bit_is_not_executable() {
         assert_eq!(Ia32e::leaf_flags(P | RW | G), Flags::kernel_data());
-        assert_eq!(Ia32e::leaf_flags(P | G), Flags::kernel_rodata());
+        assert_eq!(Ia32e::leaf_flags(P | G), Flags::kernel_read_only_data());
         assert_eq!(
             Ia32e::leaf_flags(P | G | SW_KERNEL_EXEC),
             Flags::kernel_code()
@@ -935,23 +954,23 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/x86_64.verification.index_is_always_in_bounds.patch`
     #[kani::proof]
     fn index_is_always_in_bounds() {
-        let va: u64 = kani::any();
+        let virtual_address: u64 = kani::any();
         let level: usize = kani::any();
         kani::assume(level < Ia32e::LEVELS);
-        assert!(Ia32e::index(va, level) < crate::ENTRIES);
+        assert!(Ia32e::index(virtual_address, level) < crate::ENTRIES);
     }
 
     /// **The four indices and the offset tile the low 48 bits exactly.**
     /// Falsification: replayable `crates/page_tables/falsifications/x86_64.verification.the_indices_and_offset_tile_the_address.patch`
     #[kani::proof]
     fn the_indices_and_offset_tile_the_address() {
-        let va: u64 = kani::any();
-        let reconstructed = ((Ia32e::index(va, 0) as u64) << 39)
-            | ((Ia32e::index(va, 1) as u64) << 30)
-            | ((Ia32e::index(va, 2) as u64) << 21)
-            | ((Ia32e::index(va, 3) as u64) << 12)
-            | (va & (PAGE_SIZE - 1));
-        assert_eq!(reconstructed, va & 0x0000_ffff_ffff_ffff);
+        let virtual_address: u64 = kani::any();
+        let reconstructed = ((Ia32e::index(virtual_address, 0) as u64) << 39)
+            | ((Ia32e::index(virtual_address, 1) as u64) << 30)
+            | ((Ia32e::index(virtual_address, 2) as u64) << 21)
+            | ((Ia32e::index(virtual_address, 3) as u64) << 12)
+            | (virtual_address & (PAGE_SIZE - 1));
+        assert_eq!(reconstructed, virtual_address & 0x0000_ffff_ffff_ffff);
     }
 
     /// **Distinct pages take distinct paths** within the 48-bit VA.
@@ -973,21 +992,27 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/x86_64.verification.the_two_halves_are_disjoint.patch`
     #[kani::proof]
     fn the_two_halves_are_disjoint() {
-        let va: u64 = kani::any();
-        assert!(!(Ia32e::is_in_half(Half::Low, va) && Ia32e::is_in_half(Half::High, va)));
+        let virtual_address: u64 = kani::any();
+        assert!(
+            !(Ia32e::is_in_half(Half::Low, virtual_address)
+                && Ia32e::is_in_half(Half::High, virtual_address))
+        );
     }
 
     /// **The user-VA gate admits exactly the aligned low half**, never the high one.
     /// Falsification: replayable `crates/page_tables/falsifications/x86_64.verification.the_user_va_gate_admits_only_the_aligned_low_half.patch`
     #[kani::proof]
     fn the_user_va_gate_admits_only_the_aligned_low_half() {
-        let va: u64 = kani::any();
+        let virtual_address: u64 = kani::any();
         assert_eq!(
-            crate::is_user_page_va::<Ia32e>(va),
-            va & 0xfff == 0 && va >> 47 == 0
+            crate::is_user_page_virtual_address::<Ia32e>(virtual_address),
+            virtual_address & 0xfff == 0 && virtual_address >> 47 == 0
         );
-        if crate::is_user_page_va::<Ia32e>(va) {
-            assert!(Ia32e::is_in_half(Half::Low, va) && !Ia32e::is_in_half(Half::High, va));
+        if crate::is_user_page_virtual_address::<Ia32e>(virtual_address) {
+            assert!(
+                Ia32e::is_in_half(Half::Low, virtual_address)
+                    && !Ia32e::is_in_half(Half::High, virtual_address)
+            );
         }
     }
 
@@ -995,25 +1020,25 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/x86_64.verification.the_leaf_keeps_address_and_permissions_apart.patch`
     #[kani::proof]
     fn the_leaf_keeps_address_and_permissions_apart() {
-        let pa: u64 = kani::any();
-        kani::assume(pa & !ADDR_MASK == 0);
+        let physical_address: u64 = kani::any();
+        kani::assume(physical_address & !ADDR_MASK == 0);
 
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
 
-        let leaf = Ia32e::leaf_entry(pa, flags);
-        // The address field read out of the word as a literal, not through `entry_pa` or
+        let leaf = Ia32e::leaf_entry(physical_address, flags);
+        // The address field read out of the word as a literal, not through `entry_physical_address` or
         // `ADDR_MASK`: an encoder and its own decoder agree even when both shift wrong. See
         // notes/paging.md, "Reserved bits are spelled as literals".
         assert_eq!(
             leaf & 0x000f_ffff_ffff_f000,
-            pa,
+            physical_address,
             "the address left bits 12..52 of the entry"
         );
         assert_eq!(leaf & 1, 1, "a leaf must have the present bit set");
-        assert_eq!(Ia32e::entry_pa(leaf), pa);
+        assert_eq!(Ia32e::entry_physical_address(leaf), physical_address);
         assert_eq!(Ia32e::leaf_flags(leaf), flags);
     }
 
@@ -1023,14 +1048,14 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/x86_64.verification.no_encoded_leaf_is_both_writable_and_executable.patch`
     #[kani::proof]
     fn no_encoded_leaf_is_both_writable_and_executable() {
-        let pa: u64 = kani::any();
-        kani::assume(pa & !ADDR_MASK == 0);
+        let physical_address: u64 = kani::any();
+        kani::assume(physical_address & !ADDR_MASK == 0);
 
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
 
-        let leaf = Ia32e::leaf_entry(pa, all[i]);
+        let leaf = Ia32e::leaf_entry(physical_address, all[i]);
         assert!(leaf & XD != 0 || leaf & RW == 0);
     }
 
@@ -1039,28 +1064,29 @@ mod verification {
     /// at both block sizes. Every bit position is a literal, for the reason
     /// `the_leaf_keeps_address_and_permissions_apart` gives: the architecture chooses them.
     ///
-    /// No assumption on `pa`: masking it down to the block's alignment and the 52-bit field is the
+    /// No assumption on `physical_address`: masking it down to the block's alignment and the 52-bit field is the
     /// encoder's job, and a stray bit below the alignment is a reserved-bit fault (bits 20:13 or
     /// 29:13) or a different memory type (bit 12, `PAT`), so the claim is over every `u64`.
     /// Falsification: replayable `crates/page_tables/falsifications/x86_64.verification.a_block_keeps_address_and_permissions_apart.patch`
     #[kani::proof]
     fn a_block_keeps_address_and_permissions_apart() {
-        let pa: u64 = kani::any();
+        let physical_address: u64 = kani::any();
         let two_mebibytes: bool = kani::any();
         let (size, address_bits) = if two_mebibytes {
-            (PageSize::Size2MiB, 0x000f_ffff_ffe0_0000u64)
+            (PageSize::TwoMebibytes, 0x000f_ffff_ffe0_0000u64)
         } else {
-            (PageSize::Size1GiB, 0x000f_ffff_c000_0000u64)
+            (PageSize::OneGibibyte, 0x000f_ffff_c000_0000u64)
         };
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
 
-        let block = Ia32e::block_entry(pa, flags, size).expect("x86 encodes both block sizes");
+        let block = Ia32e::block_entry(physical_address, flags, size)
+            .expect("x86 encodes both block sizes");
         assert_eq!(
             block & address_bits,
-            pa & address_bits,
+            physical_address & address_bits,
             "the address left its field"
         );
         assert_eq!(
@@ -1083,8 +1109,8 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/x86_64.verification.a_table_entry_is_never_a_block.patch`
     #[kani::proof]
     fn a_table_entry_is_never_a_block() {
-        let pa: u64 = kani::any();
-        assert!(!Ia32e::is_block(Ia32e::table_entry(pa, 0)));
+        let physical_address: u64 = kani::any();
+        assert!(!Ia32e::is_block(Ia32e::table_entry(physical_address, 0)));
     }
 
     /// **No `Vtd` leaf or table entry ever sets a bit VT-d treats as reserved**, over every
@@ -1100,31 +1126,34 @@ mod verification {
         // The address field, bits 51:12, written out rather than cited.
         const ADDRESS_BITS: u64 = 0x000f_ffff_ffff_f000;
 
-        // No assumption on `pa`: an assumption through `VTD_ADDR_MASK` would widen with the mask.
-        // Masking is `leaf_entry`'s job, so the assertions below expect `pa & ADDRESS_BITS`.
-        let pa: u64 = kani::any();
+        // No assumption on `physical_address`: an assumption through `VTD_ADDR_MASK` would widen with the mask.
+        // Masking is `leaf_entry`'s job, so the assertions below expect `physical_address & ADDRESS_BITS`.
+        let physical_address: u64 = kani::any();
 
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
 
-        let leaf = Vtd::leaf_entry(pa, all[i]);
+        let leaf = Vtd::leaf_entry(physical_address, all[i]);
         assert_eq!(
             leaf & !VTD_PERMITTED_BITS,
             0,
             "a VT-d leaf set a bit the hardware reserves",
         );
         // Where the architecture puts the address, not where this crate says it does. The
-        // `entry_pa` round trip below is an encoder and its own decoder, so a shift wrong in both
+        // `entry_physical_address` round trip below is an encoder and its own decoder, so a shift wrong in both
         // satisfies it; this line is what that round trip is checked against.
         assert_eq!(
             leaf & ADDRESS_BITS,
-            pa & ADDRESS_BITS,
+            physical_address & ADDRESS_BITS,
             "the address left bits 12..52",
         );
-        assert_eq!(Vtd::entry_pa(leaf), pa & ADDRESS_BITS);
+        assert_eq!(
+            Vtd::entry_physical_address(leaf),
+            physical_address & ADDRESS_BITS
+        );
 
-        let table = Vtd::table_entry(pa, 0);
+        let table = Vtd::table_entry(physical_address, 0);
         assert_eq!(
             table & !VTD_PERMITTED_BITS,
             0,
@@ -1132,7 +1161,7 @@ mod verification {
         );
         assert_eq!(
             table & ADDRESS_BITS,
-            pa & ADDRESS_BITS,
+            physical_address & ADDRESS_BITS,
             "the address left bits 12..52",
         );
     }
@@ -1151,28 +1180,28 @@ mod eighth_pass_attacks {
     /// bits 2 and 3, bits 4 through 9, and everything above bit 51, the set QEMU's
     /// `VTD_SPTE_PAGE_L1_RSVD_MASK` faults on. `leaf_entry` must mask the address down to
     /// `VTD_ADDR_MASK` and leave the payload nowhere: the encoded leaf is exactly the permitted
-    /// bits, and `entry_pa` reads back the masked address rather than the hostile one.
+    /// bits, and `entry_physical_address` reads back the masked address rather than the hostile one.
     #[test]
     fn a_hostile_address_cannot_smuggle_reserved_bits_through_vtd() {
         let payload = !VTD_ADDR_MASK;
-        let pa = (0x0040_0000_0000_0000 & VTD_ADDR_MASK) | payload;
+        let physical_address = (0x0040_0000_0000_0000 & VTD_ADDR_MASK) | payload;
         assert_ne!(
-            pa & VTD_ADDR_MASK,
-            pa,
+            physical_address & VTD_ADDR_MASK,
+            physical_address,
             "the fixture: the payload is in the mask"
         );
 
-        for flags in [Flags::user_data(), Flags::kernel_rodata()] {
-            let leaf = Vtd::leaf_entry(pa, flags);
+        for flags in [Flags::user_data(), Flags::kernel_read_only_data()] {
+            let leaf = Vtd::leaf_entry(physical_address, flags);
             assert_eq!(
                 leaf & !VTD_PERMITTED_BITS,
                 0,
                 "a reserved bit survived the encode for {flags:?}: {leaf:#x}",
             );
             assert_eq!(
-                Vtd::entry_pa(leaf),
-                pa & VTD_ADDR_MASK,
-                "the hostile payload reached entry_pa for {flags:?}",
+                Vtd::entry_physical_address(leaf),
+                physical_address & VTD_ADDR_MASK,
+                "the hostile payload reached entry_physical_address for {flags:?}",
             );
         }
     }

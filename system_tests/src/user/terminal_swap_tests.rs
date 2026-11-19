@@ -46,7 +46,7 @@ static mut ELF_MAPS: [Mapping; MAXIMUM_WINDOWS] = [const {
     Mapping {
         va: 0,
         phys: 0,
-        flags: Flags::user_rodata(),
+        flags: Flags::user_read_only_data(),
     }
 }; MAXIMUM_WINDOWS];
 
@@ -387,7 +387,7 @@ fn copy_the_images_into_frames(
             maps[windows] = Mapping {
                 va: va + i as u64 * FRAME_SIZE,
                 phys,
-                flags: Flags::user_rodata(),
+                flags: Flags::user_read_only_data(),
             };
             windows += 1;
         }

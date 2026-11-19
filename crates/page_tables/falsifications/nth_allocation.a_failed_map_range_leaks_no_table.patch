@@ -24,13 +24,13 @@ diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
 @@ -190,6 +190,7 @@ where
          }
  
-         let mut table_pa = self.root;
+         let mut table_physical_address = self.root;
 +        let mut first: Option<*mut u64> = None;
  
          // Descend through every level but the last, creating intermediate tables as we go.
          for level in 0..F::LEVELS - 1 {
 @@ -199,9 +200,16 @@ where
-             let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
+             let entry = unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
  
              if !F::is_present(*entry) {
 -                let new = self.fresh_table()?;

@@ -3,7 +3,7 @@ Falsifies `system_tests::user::tests::a_user_program_cannot_read_a_kernel_addres
 Architecture: aarch64, x86_64
 
 The defect is the kernel mapping its own constants EL0-readable: one flag, in the one place
-the kernel image's sections are mapped at their linked addresses. `Flags::user_rodata()` is
+the kernel image's sections are mapped at their linked addresses. `Flags::user_read_only_data()` is
 `CAP_USER` alone, so the leaf encoder writes `AP_RO_EL0` where it wrote `AP_RO_EL1`, and
 nothing else about the page changes: still not writable, still not executable at either
 level. The kernel goes on reading its own `.rodata` because this kernel never sets
@@ -32,7 +32,7 @@ catches a kernel mapped user-readable; the fault counter is.
 **This record is red on aarch64 and on x86_64, and cannot be on riscv64.** The aarch64 hunk
 is the one above. The x86_64 hunk is the same one-flag defect at the same call site in
 `arch/x86_64/mmu/fine_map.rs` (in `mmu.rs` until 2026-10-12), which maps `.rodata` with
-`Flags::kernel_rodata()`; `user_rodata()` there writes the `U/S` bit, and the kernel goes on reading its own constants because this kernel never
+`Flags::kernel_read_only_data()`; `user_read_only_data()` there writes the `U/S` bit, and the kernel goes on reading its own constants because this kernel never
 sets `CR4.SMAP`. Only `CR4.SMEP` is set, which stops a fetch from a user page and has no bearing
 on a read, so nothing upstream of the page-table bit catches it. Replayed on 2026-10-03 (UTC) with
 `cargo xtask test --arch x86_64 --test a_user_program_cannot_read_a_kernel_address`: red at
@@ -57,8 +57,8 @@ index 746341dd..87854474 100644
  
      // 2. The kernel image, section by section, at its LINKED virtual addresses. This is W^X.
      map_range(m, text_start(), text_end(), Flags::kernel_code())?;
--    map_range(m, rodata_start(), rodata_end(), Flags::kernel_rodata())?;
-+    map_range(m, rodata_start(), rodata_end(), Flags::user_rodata())?;
+-    map_range(m, rodata_start(), rodata_end(), Flags::kernel_read_only_data())?;
++    map_range(m, rodata_start(), rodata_end(), Flags::user_read_only_data())?;
      map_range(m, data_start(), bss_end(), Flags::kernel_data())?;
  
      // 3. THE GUARD PAGE IS NOT MAPPED. That is its entire job.
@@ -69,8 +69,8 @@ diff --git a/kernel/src/arch/x86_64/mmu/fine_map.rs b/kernel/src/arch/x86_64/mmu
          ".rodata",
          rodata_start(),
          rodata_end(),
--        Flags::kernel_rodata(),
-+        Flags::user_rodata(),
+-        Flags::kernel_read_only_data(),
++        Flags::user_read_only_data(),
      )?;
      va(".data/.bss", data_start(), bss_end(), Flags::kernel_data())?;
  

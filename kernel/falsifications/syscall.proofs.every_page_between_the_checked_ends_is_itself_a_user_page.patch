@@ -7,7 +7,7 @@ the pages between them (band 1) are not user pages, and the map loop, which chec
 ends, walks straight through them. The patch is in `crates/page_tables`, the code the harness's guard
 model calls, so the harness is untouched.
 
-Expected to fail: the harness's last assertion, `is_user_page_va(page_va)` ("every page the map loop touches is an
+Expected to fail: the harness's last assertion, `is_user_page_virtual_address(page_va)` ("every page the map loop touches is an
 aligned user-half page"), at the middle page `k` the solver picks.
 
 diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page_format.rs

@@ -16,10 +16,10 @@ index 497feba6..9a543b50 100644
 +++ b/crates/page_tables/src/aarch64.rs
 @@ -173,7 +173,7 @@ impl PageFormat for Aarch64 {
          match size {
-             PageSize::Size4KiB => Some(Self::leaf_entry(pa, flags)),
-             PageSize::Size2MiB | PageSize::Size1GiB => {
--                Some((pa & ADDR_MASK & !(size.bytes() - 1)) | Self::attrs(flags) | VALID)
-+                Some((pa & ADDR_MASK & !(size.bytes() - 1)) | Self::attrs(flags) | TABLE_OR_PAGE | VALID)
+             PageSize::FourKibibytes => Some(Self::leaf_entry(physical_address, flags)),
+             PageSize::TwoMebibytes | PageSize::OneGibibyte => {
+-                Some((physical_address & ADDR_MASK & !(size.bytes() - 1)) | Self::attributes(flags) | VALID)
++                Some((physical_address & ADDR_MASK & !(size.bytes() - 1)) | Self::attributes(flags) | TABLE_OR_PAGE | VALID)
              }
          }
      }

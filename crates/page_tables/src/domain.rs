@@ -9,7 +9,7 @@ use crate::{Flags, Half, MapError, Mapper, PAGE_SIZE, PageFormat, PageTable};
 
 /// A physical region a device is allowed to touch: `[base, base + size)`, 4 KiB aligned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DmaRegion {
+pub struct DirectMemoryAccessRegion {
     /// Physical address of the first byte.
     pub base: u64,
     /// Length in bytes.
@@ -21,15 +21,15 @@ pub struct DmaRegion {
     pub writable: bool,
 }
 
-impl DmaRegion {
+impl DirectMemoryAccessRegion {
     /// The leaf flags a page of this region is mapped with: [`Flags::user_data`] when the device
-    /// may write, [`Flags::user_rodata`] when it may only read. Both set the U bit, which the
+    /// may write, [`Flags::user_read_only_data`] when it may only read. Both set the U bit, which the
     /// RISC-V IOMMU needs (this module's header says why); neither is executable.
     pub const fn flags(&self) -> Flags {
         if self.writable {
             Flags::user_data()
         } else {
-            Flags::user_rodata()
+            Flags::user_read_only_data()
         }
     }
 }
@@ -43,7 +43,7 @@ impl DmaRegion {
 /// [`MapError::BadRegion`] (such a region has no end). A trailing partial page is not refused and
 /// not mapped: the device reaches less than it was granted, never more. See notes/paging.md, "DMA
 /// domains".
-pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
+pub fn grant_pages(r: DirectMemoryAccessRegion) -> Result<u64, MapError> {
     if !r.base.is_multiple_of(PAGE_SIZE) {
         return Err(MapError::Misaligned);
     }
@@ -57,7 +57,7 @@ pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
 /// `None` if `i` does not name a whole page of this region; every add and multiply is checked, so
 /// the enumeration is total for any region and index. Soundness rests on [`grant_pages`] flooring
 /// the count, and the whole-page test below is defense in depth (notes/paging.md).
-pub fn grant_page(r: DmaRegion, i: u64) -> Option<u64> {
+pub fn grant_page(r: DirectMemoryAccessRegion, i: u64) -> Option<u64> {
     let off = i.checked_mul(PAGE_SIZE)?;
     // The whole page must fit: a trailing partial page is not one of the grant's pages.
     if off.checked_add(PAGE_SIZE)? > r.size {
@@ -67,20 +67,20 @@ pub fn grant_page(r: DmaRegion, i: u64) -> Option<u64> {
 }
 
 /// **Build a device's DMA domain: an identity map over `regions` and nothing else.** `root` becomes
-/// the top-level table (what the IOMMU's STE or context descriptor points at), `alloc_page_frame`
-/// supplies intermediate tables, `phys_to_ptr` is [`Mapper`]'s transform, and `F` is the format.
-/// Every page is mapped IOVA == PA with its region's [`DmaRegion::flags`]; overlapping regions fail
+/// the top-level table (what the IOMMU's STE or context descriptor points at), `allocate_page_frame`
+/// supplies intermediate tables, `physical_to_pointer` is [`Mapper`]'s transform, and `F` is the format.
+/// Every page is mapped IOVA == PA with its region's [`DirectMemoryAccessRegion::flags`]; overlapping regions fail
 /// with [`MapError::AlreadyMapped`].
 ///
 /// # Safety
-/// `root` and every frame `alloc_page_frame` returns must be zeroed and page-aligned, and `phys_to_ptr`
+/// `root` and every frame `allocate_page_frame` returns must be zeroed and page-aligned, and `physical_to_pointer`
 /// must satisfy [`Mapper`]'s contract (the tables are reachable through it). The caller owns `root`
 /// and must not install it anywhere until this returns `Ok`.
 pub unsafe fn build_identity_domain<A, P, F>(
     root: u64,
-    alloc_page_frame: A,
-    phys_to_ptr: P,
-    regions: &[DmaRegion],
+    allocate_page_frame: A,
+    physical_to_pointer: P,
+    regions: &[DirectMemoryAccessRegion],
 ) -> Result<(), MapError>
 where
     A: FnMut() -> Option<u64>,
@@ -90,10 +90,12 @@ where
     // IOVA == PA in the low half, so the WrongHalf guard refuses a region in the high half, which
     // the IOMMU would never consult.
     // SAFETY: forwarded from this function's contract.
-    let mut m = unsafe { Mapper::<A, P, F>::new(root, Half::Low, alloc_page_frame, phys_to_ptr) };
+    let mut m = unsafe {
+        Mapper::<A, P, F>::new(root, Half::Low, allocate_page_frame, physical_to_pointer)
+    };
     for r in regions {
         // The page set comes from the proved arithmetic, not `map_range`'s unchecked
-        // `va + i * PAGE_SIZE`.
+        // `virtual_address + i * PAGE_SIZE`.
         let pages = grant_pages(*r)?;
         for i in 0..pages {
             // Proved unreachable (`a_page_index_below_the_count_always_resolves`); an error rather
@@ -121,7 +123,7 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/domain.verification.the_grant_enumeration_is_total.patch`
     #[kani::proof]
     fn the_grant_enumeration_is_total() {
-        let r = DmaRegion {
+        let r = DirectMemoryAccessRegion {
             base: kani::any(),
             size: kani::any(),
             writable: kani::any(),
@@ -141,7 +143,7 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/domain.verification.an_enumerated_page_lies_inside_the_grant.patch`
     #[kani::proof]
     fn an_enumerated_page_lies_inside_the_grant() {
-        let r = DmaRegion {
+        let r = DirectMemoryAccessRegion {
             base: kani::any(),
             size: kani::any(),
             writable: kani::any(),
@@ -176,7 +178,7 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/domain.verification.a_page_index_below_the_count_always_resolves.patch`
     #[kani::proof]
     fn a_page_index_below_the_count_always_resolves() {
-        let r = DmaRegion {
+        let r = DirectMemoryAccessRegion {
             base: kani::any(),
             size: kani::any(),
             writable: kani::any(),
@@ -200,7 +202,7 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/domain.verification.every_whole_page_of_the_grant_is_enumerated.patch`
     #[kani::proof]
     fn every_whole_page_of_the_grant_is_enumerated() {
-        let r = DmaRegion {
+        let r = DirectMemoryAccessRegion {
             base: kani::any(),
             size: kani::any(),
             writable: kani::any(),
@@ -247,7 +249,7 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/domain.verification.the_enumeration_is_injective.patch`
     #[kani::proof]
     fn the_enumeration_is_injective() {
-        let r = DmaRegion {
+        let r = DirectMemoryAccessRegion {
             base: kani::any(),
             size: kani::any(),
             writable: kani::any(),
@@ -279,7 +281,7 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/domain.verification.a_grant_the_domain_cannot_express_is_refused.patch`
     #[kani::proof]
     fn a_grant_the_domain_cannot_express_is_refused() {
-        let r = DmaRegion {
+        let r = DirectMemoryAccessRegion {
             base: kani::any(),
             size: kani::any(),
             writable: kani::any(),
@@ -303,7 +305,7 @@ mod tests {
     use crate::{Aarch64, AmdVi, Sv39};
 
     // A synthetic physical address space: the tests choose "physical" addresses in the low half
-    // every format can express, and the host frames sit behind `phys_to_ptr`. A host allocator's
+    // every format can express, and the host frames sit behind `physical_to_pointer`. A host allocator's
     // addresses need not lie in the low half (on aarch64 Linux they do not), and
     // `build_identity_domain` rightly refuses those with `MapError::WrongHalf`.
 
@@ -350,17 +352,17 @@ mod tests {
             FramePool
         }
 
-        /// Back the synthetic physical address `pa` with a real zeroed host frame.
-        fn frame_at(&self, pa: u64) -> u64 {
+        /// Back the synthetic physical address `physical_address` with a real zeroed host frame.
+        fn frame_at(&self, physical_address: u64) -> u64 {
             assert!(
-                pa.is_multiple_of(PAGE_SIZE),
+                physical_address.is_multiple_of(PAGE_SIZE),
                 "a synthetic PA must be page-aligned"
             );
             // SAFETY: a valid non-zero layout; alloc_zeroed returns zeroed memory or null (asserted).
             let p = unsafe { alloc_zeroed(frame_layout()) };
             assert!(!p.is_null());
-            PHYS.with(|m| m.borrow_mut().push((pa, p as u64)));
-            pa
+            PHYS.with(|m| m.borrow_mut().push((physical_address, p as u64)));
+            physical_address
         }
 
         /// The next frame from the sequential pool: for roots and page tables, where the address does
@@ -372,13 +374,18 @@ mod tests {
 
         /// [`build_identity_domain`] over `regions` into a fresh root, every table from this pool,
         /// and the root back. The one place these tests argue the build's contract.
-        fn build_domain<F: PageFormat>(&self, regions: &[DmaRegion]) -> u64 {
+        fn build_domain<F: PageFormat>(&self, regions: &[DirectMemoryAccessRegion]) -> u64 {
             let root = self.frame();
             // SAFETY: `root` and every table the build asks for are zeroed, page-aligned host
-            // frames this pool just allocated and still holds; `phys_to_ptr` is the identity over
+            // frames this pool just allocated and still holds; `physical_to_pointer` is the identity over
             // exactly those frames; and nothing installs `root` anywhere.
             unsafe {
-                build_identity_domain::<_, _, F>(root, || Some(self.frame()), phys_to_ptr, regions)
+                build_identity_domain::<_, _, F>(
+                    root,
+                    || Some(self.frame()),
+                    physical_to_pointer,
+                    regions,
+                )
             }
             .expect("domain build failed");
             root
@@ -388,9 +395,9 @@ mod tests {
         /// place these tests argue `Mapper::new`'s contract.
         fn walker<F: PageFormat>(&self, root: u64) -> Walker<F> {
             // SAFETY: `root` is a page-aligned frame of this pool, zeroed when the pool made it and
-            // written since only by a build, and `phys_to_ptr` reaches every frame the pool holds.
+            // written since only by a build, and `physical_to_pointer` reaches every frame the pool holds.
             // It panics on any other address, so a walker kept past the pool fails loudly.
-            unsafe { Mapper::new(root, Half::Low, || None, phys_to_ptr) }
+            unsafe { Mapper::new(root, Half::Low, || None, physical_to_pointer) }
         }
     }
 
@@ -409,13 +416,13 @@ mod tests {
     /// Resolve a synthetic PA to the host frame behind it. Panics on an unregistered address, which
     /// would mean the walker followed a pointer nothing ever allocated: a loud test bug beats a
     /// segfault.
-    fn phys_to_ptr(pa: u64) -> *mut PageTable {
+    fn physical_to_pointer(physical_address: u64) -> *mut PageTable {
         PHYS.with(|m| {
             m.borrow()
                 .iter()
-                .find(|(p, _)| *p == pa)
+                .find(|(p, _)| *p == physical_address)
                 .map(|(_, host)| *host as *mut PageTable)
-                .unwrap_or_else(|| panic!("no host frame backs synthetic PA {pa:#x}"))
+                .unwrap_or_else(|| panic!("no host frame backs synthetic PA {physical_address:#x}"))
         })
     }
 
@@ -427,7 +434,7 @@ mod tests {
         // they say: `base + PAGE_SIZE` must be a page the domain was not given, and with a sequential
         // pool it would have been the next frame allocated instead.
         let base = pool.frame_at(0x2000_0000);
-        let regions = [DmaRegion {
+        let regions = [DirectMemoryAccessRegion {
             base,
             size: PAGE_SIZE,
             writable: true,
@@ -467,17 +474,17 @@ mod tests {
     fn amd_vi_domain_confines_a_region() {
         let pool = FramePool::new();
         let base = pool.frame_at(0x2000_0000);
-        let regions = [DmaRegion {
+        let regions = [DirectMemoryAccessRegion {
             base,
             size: PAGE_SIZE,
             writable: true,
         }];
         let root = pool.build_domain::<AmdVi>(&regions);
         let m = pool.walker::<AmdVi>(root);
-        let (pa, flags) = m
+        let (physical_address, flags) = m
             .translate(base)
             .expect("an in-region IOVA did not translate");
-        assert_eq!(pa, base);
+        assert_eq!(physical_address, base);
         assert!(flags.is_writable());
         assert_eq!(
             m.translate(base + PAGE_SIZE),
@@ -495,12 +502,12 @@ mod tests {
         let ro = pool.frame_at(0x2000_0000);
         let rw = pool.frame_at(0x3000_0000);
         let regions = [
-            DmaRegion {
+            DirectMemoryAccessRegion {
                 base: ro,
                 size: PAGE_SIZE,
                 writable: false,
             },
-            DmaRegion {
+            DirectMemoryAccessRegion {
                 base: rw,
                 size: PAGE_SIZE,
                 writable: true,
@@ -508,8 +515,8 @@ mod tests {
         ];
         let root = pool.build_domain::<F>(&regions);
         let m = pool.walker::<F>(root);
-        let (pa, flags) = m.translate(ro).expect("the read-only region did not map");
-        assert_eq!(pa, ro);
+        let (physical_address, flags) = m.translate(ro).expect("the read-only region did not map");
+        assert_eq!(physical_address, ro);
         assert!(
             !flags.is_writable(),
             "a region granted read-only is writable to the device"
@@ -534,7 +541,7 @@ mod tests {
     fn a_multi_page_grant_maps_its_whole_pages_and_not_the_partial_tail() {
         let pool = FramePool::new();
         let base = pool.frame_at(0x2000_0000);
-        let regions = [DmaRegion {
+        let regions = [DirectMemoryAccessRegion {
             base,
             size: 2 * PAGE_SIZE + PAGE_SIZE / 2,
             writable: true,
@@ -565,12 +572,12 @@ mod tests {
         let a = pool.frame_at(0x2000_0000);
         let b = pool.frame_at(0x3000_0000);
         let regions = [
-            DmaRegion {
+            DirectMemoryAccessRegion {
                 base: a,
                 size: PAGE_SIZE,
                 writable: true,
             },
-            DmaRegion {
+            DirectMemoryAccessRegion {
                 base: b,
                 size: PAGE_SIZE,
                 writable: true,

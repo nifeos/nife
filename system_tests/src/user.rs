@@ -1227,7 +1227,7 @@ mod ninth_pass_supervision_tests;
 /// **The map gate admits only the aligned low half, and no mapping flag is W+X** (a ninth outsider
 /// pass at the confinement claim, claims 10 and 11). A confined budget holder's `MemoryRegion::MAP`
 /// is refused `BadPointer` for a kernel-half and an unaligned address, tied to the proved
-/// `is_user_page_va` gate, and every `Flags` a mapping path installs is writable or user-executable,
+/// `is_user_page_virtual_address` gate, and every `Flags` a mapping path installs is writable or user-executable,
 /// never both. One layer up from `crates/page_tables`'s per-format proofs.
 ///
 /// Cross-ISA: the gate is instantiated at the running architecture's `Format` (DECISIONS §19).

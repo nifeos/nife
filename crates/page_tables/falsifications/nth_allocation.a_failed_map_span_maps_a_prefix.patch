@@ -26,10 +26,10 @@ diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
          let mut done = 0;
 +        let mut failed = None;
          while done < len {
-             let size = PageSize::largest_fitting(va + done, pa + done, len - done, largest);
--            self.map_block(va + done, pa + done, size, flags)?;
+             let size = PageSize::largest_fitting(virtual_address + done, physical_address + done, len - done, largest);
+-            self.map_block(virtual_address + done, physical_address + done, size, flags)?;
 +            // Best effort: map what can be mapped and report the first failure.
-+            if let Err(e) = self.map_block(va + done, pa + done, size, flags) {
++            if let Err(e) = self.map_block(virtual_address + done, physical_address + done, size, flags) {
 +                failed.get_or_insert(e);
 +            }
              done += size.bytes();

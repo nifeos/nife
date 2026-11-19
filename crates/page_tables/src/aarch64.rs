@@ -65,7 +65,7 @@ const UXN: u64 = 1 << 54;
 const ADDR_MASK: u64 = 0x0000_ffff_ffff_f000;
 
 /// **The descriptor's fields share no bit**: the address field, the valid and table-or-page bits,
-/// and every field `attrs` writes (the access flag, the shareability field, the three-bit
+/// and every field `attributes` writes (the access flag, the shareability field, the three-bit
 /// attribute index at \[4:2\], the two-bit access permission at \[7:6\], not-global, and the two
 /// execute-never bits). Every `|` in `table_entry`, `leaf_entry` and `block_entry` joins words
 /// from this list, so each is its own `^`, and the mutation exclusions for those three functions
@@ -90,6 +90,8 @@ pub const THE_DESCRIPTOR_FIELDS_SHARE_NO_BIT: () = {
 
 /// Which `MAIR_EL1` slot describes what. Set up in the kernel; the numbers must agree. Kept public
 /// because the kernel's `mmu::initialize` programs `MAIR_EL1` from these and a test cross-checks the UART.
+#[doc(alias = "MAIR_EL1")]
+#[doc(alias = "memory attribute indirection register")]
 pub mod mair {
     /// Slot 0: device memory, nGnRnE (no gathering, reordering, or early write ack): the strictest
     /// ordering, which MMIO needs. Mapping the UART as normal memory would let the CPU cache and
@@ -103,12 +105,15 @@ pub mod mair {
     pub const VALUE: u64 = 0xff << 8;
 }
 
-/// The aarch64 four-level descriptor format.
+/// The AArch64 stage 1 four-level descriptor format with a 4 KiB granule (Arm DDI 0487, "VMSAv8-64
+/// translation table format descriptors"). Name provisional.
+#[doc(alias = "AArch64")]
+#[doc(alias = "arm64")]
 pub struct Aarch64;
 
 impl Aarch64 {
     /// Encode the attribute/permission bits (not the address or valid/type bits) for `flags`.
-    const fn attrs(flags: Flags) -> u64 {
+    const fn attributes(flags: Flags) -> u64 {
         let mut bits = AF;
         if !flags.is_device() {
             bits |= SH_INNER; // shareability is meaningless (and ignored) for device memory
@@ -146,20 +151,20 @@ impl PageFormat for Aarch64 {
         entry & VALID != 0
     }
 
-    fn entry_pa(entry: u64) -> u64 {
+    fn entry_physical_address(entry: u64) -> u64 {
         entry & ADDR_MASK
     }
 
-    fn table_entry(pa: u64, _level: usize) -> u64 {
+    fn table_entry(physical_address: u64, _level: usize) -> u64 {
         // A table descriptor: address plus valid/table bits, no attributes. Permissions on an
         // intermediate table would be an additional restriction on everything beneath it; we want
         // the leaf to be the single source of truth.
-        (pa & ADDR_MASK) | TABLE_OR_PAGE | VALID
+        (physical_address & ADDR_MASK) | TABLE_OR_PAGE | VALID
     }
 
-    fn leaf_entry(pa: u64, flags: Flags) -> u64 {
+    fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {
         // At L3, `0b11` means PAGE, not TABLE. Same bits, different meaning by level.
-        (pa & ADDR_MASK) | Self::attrs(flags) | TABLE_OR_PAGE | VALID
+        (physical_address & ADDR_MASK) | Self::attributes(flags) | TABLE_OR_PAGE | VALID
     }
 
     fn leaf_flags(entry: u64) -> Flags {
@@ -190,12 +195,14 @@ impl PageFormat for Aarch64 {
     /// block's own alignment: below it, an L2 block's bits `[20:12]` and an L1 block's `[29:12]` are
     /// `RES0`. (An L0 block would be 512 GiB and does not exist with a 4 KiB granule, which
     /// [`PageSize`] cannot name anyway.)
-    fn block_entry(pa: u64, flags: Flags, size: PageSize) -> Option<u64> {
+    fn block_entry(physical_address: u64, flags: Flags, size: PageSize) -> Option<u64> {
         match size {
-            PageSize::Size4KiB => Some(Self::leaf_entry(pa, flags)),
-            PageSize::Size2MiB | PageSize::Size1GiB => {
-                Some((pa & ADDR_MASK & !(size.bytes() - 1)) | Self::attrs(flags) | VALID)
-            }
+            PageSize::FourKibibytes => Some(Self::leaf_entry(physical_address, flags)),
+            PageSize::TwoMebibytes | PageSize::OneGibibyte => Some(
+                (physical_address & ADDR_MASK & !(size.bytes() - 1))
+                    | Self::attributes(flags)
+                    | VALID,
+            ),
         }
     }
 
@@ -216,7 +223,7 @@ mod tests {
     fn every_leaf_sets_the_access_flag() {
         for flags in [
             Flags::kernel_code(),
-            Flags::kernel_rodata(),
+            Flags::kernel_read_only_data(),
             Flags::kernel_data(),
             Flags::device(),
             Flags::user_code(),
@@ -282,16 +289,16 @@ mod tests {
     fn flags_round_trip_through_a_leaf() {
         for flags in [
             Flags::kernel_code(),
-            Flags::kernel_rodata(),
+            Flags::kernel_read_only_data(),
             Flags::kernel_data(),
             Flags::device(),
             Flags::user_code(),
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             Flags::user_data(),
             Flags::user_device(),
         ] {
             let leaf = Aarch64::leaf_entry(0x4000_0000, flags);
-            assert_eq!(Aarch64::entry_pa(leaf), 0x4000_0000);
+            assert_eq!(Aarch64::entry_physical_address(leaf), 0x4000_0000);
             assert_eq!(
                 Aarch64::leaf_flags(leaf),
                 flags,
@@ -328,10 +335,10 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/aarch64.verification.index_is_always_in_bounds.patch`
     #[kani::proof]
     fn index_is_always_in_bounds() {
-        let va: u64 = kani::any();
+        let virtual_address: u64 = kani::any();
         let level: usize = kani::any();
         kani::assume(level < Aarch64::LEVELS);
-        assert!(Aarch64::index(va, level) < crate::ENTRIES);
+        assert!(Aarch64::index(virtual_address, level) < crate::ENTRIES);
     }
 
     /// **The four indices and the offset tile the address exactly**, which is what proves the shift
@@ -339,13 +346,13 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/aarch64.verification.the_indices_and_offset_tile_the_address.patch`
     #[kani::proof]
     fn the_indices_and_offset_tile_the_address() {
-        let va: u64 = kani::any();
-        let reconstructed = ((Aarch64::index(va, 0) as u64) << 39)
-            | ((Aarch64::index(va, 1) as u64) << 30)
-            | ((Aarch64::index(va, 2) as u64) << 21)
-            | ((Aarch64::index(va, 3) as u64) << 12)
-            | (va & (PAGE_SIZE - 1));
-        assert_eq!(reconstructed, va & 0x0000_ffff_ffff_ffff);
+        let virtual_address: u64 = kani::any();
+        let reconstructed = ((Aarch64::index(virtual_address, 0) as u64) << 39)
+            | ((Aarch64::index(virtual_address, 1) as u64) << 30)
+            | ((Aarch64::index(virtual_address, 2) as u64) << 21)
+            | ((Aarch64::index(virtual_address, 3) as u64) << 12)
+            | (virtual_address & (PAGE_SIZE - 1));
+        assert_eq!(reconstructed, virtual_address & 0x0000_ffff_ffff_ffff);
     }
 
     /// **Distinct pages take distinct paths.** Two page-aligned addresses with the same four indices
@@ -368,21 +375,27 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/aarch64.verification.the_two_halves_are_disjoint.patch`
     #[kani::proof]
     fn the_two_halves_are_disjoint() {
-        let va: u64 = kani::any();
-        assert!(!(Aarch64::is_in_half(Half::Low, va) && Aarch64::is_in_half(Half::High, va)));
+        let virtual_address: u64 = kani::any();
+        assert!(
+            !(Aarch64::is_in_half(Half::Low, virtual_address)
+                && Aarch64::is_in_half(Half::High, virtual_address))
+        );
     }
 
     /// **The user-VA gate admits exactly the aligned low half**, and never the high one.
     /// Falsification: replayable `crates/page_tables/falsifications/aarch64.verification.the_user_va_gate_admits_only_the_aligned_low_half.patch`
     #[kani::proof]
     fn the_user_va_gate_admits_only_the_aligned_low_half() {
-        let va: u64 = kani::any();
+        let virtual_address: u64 = kani::any();
         assert_eq!(
-            crate::is_user_page_va::<Aarch64>(va),
-            va & 0xfff == 0 && va >> 48 == 0
+            crate::is_user_page_virtual_address::<Aarch64>(virtual_address),
+            virtual_address & 0xfff == 0 && virtual_address >> 48 == 0
         );
-        if crate::is_user_page_va::<Aarch64>(va) {
-            assert!(Aarch64::is_in_half(Half::Low, va) && !Aarch64::is_in_half(Half::High, va));
+        if crate::is_user_page_virtual_address::<Aarch64>(virtual_address) {
+            assert!(
+                Aarch64::is_in_half(Half::Low, virtual_address)
+                    && !Aarch64::is_in_half(Half::High, virtual_address)
+            );
         }
     }
 
@@ -396,14 +409,14 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/aarch64.verification.no_encoded_leaf_is_both_writable_and_executable.patch`
     #[kani::proof]
     fn no_encoded_leaf_is_both_writable_and_executable() {
-        let pa: u64 = kani::any();
-        kani::assume(pa & !ADDR_MASK == 0);
+        let physical_address: u64 = kani::any();
+        kani::assume(physical_address & !ADDR_MASK == 0);
 
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
 
-        let leaf = Aarch64::leaf_entry(pa, all[i]);
+        let leaf = Aarch64::leaf_entry(physical_address, all[i]);
         assert!(leaf & (1 << 7) != 0 || (leaf & (1 << 53) != 0 && leaf & (1 << 54) != 0));
     }
 
@@ -414,22 +427,23 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/aarch64.verification.a_block_keeps_address_and_permissions_apart.patch`
     #[kani::proof]
     fn a_block_keeps_address_and_permissions_apart() {
-        let pa: u64 = kani::any();
+        let physical_address: u64 = kani::any();
         let two_mebibytes: bool = kani::any();
         let (size, address_bits) = if two_mebibytes {
-            (PageSize::Size2MiB, 0x0000_ffff_ffe0_0000u64)
+            (PageSize::TwoMebibytes, 0x0000_ffff_ffe0_0000u64)
         } else {
-            (PageSize::Size1GiB, 0x0000_ffff_c000_0000u64)
+            (PageSize::OneGibibyte, 0x0000_ffff_c000_0000u64)
         };
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
 
-        let block = Aarch64::block_entry(pa, flags, size).expect("aarch64 encodes both sizes");
+        let block = Aarch64::block_entry(physical_address, flags, size)
+            .expect("aarch64 encodes both sizes");
         assert_eq!(
             block & address_bits,
-            pa & address_bits,
+            physical_address & address_bits,
             "the address left its field"
         );
         assert_eq!(
@@ -446,28 +460,31 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/aarch64.verification.a_table_entry_is_never_a_block.patch`
     #[kani::proof]
     fn a_table_entry_is_never_a_block() {
-        let pa: u64 = kani::any();
-        assert!(!Aarch64::is_block(Aarch64::table_entry(pa, 0)));
+        let physical_address: u64 = kani::any();
+        assert!(!Aarch64::is_block(Aarch64::table_entry(
+            physical_address,
+            0
+        )));
     }
 
     /// **A leaf keeps the address and the permissions apart, and the permissions round-trip.**
-    /// `leaf_entry` writes address + attrs + valid/type; `entry_pa` and `leaf_flags` read the two
+    /// `leaf_entry` writes address + attributes + valid/type; `entry_physical_address` and `leaf_flags` read the two
     /// halves back exactly. No permission bit can redirect the address, no address bit can grant a
     /// permission, and decoding a freshly-encoded leaf returns the same `Flags`.
     /// Falsification: replayable `crates/page_tables/falsifications/aarch64.verification.the_leaf_keeps_address_and_permissions_apart.patch`
     #[kani::proof]
     fn the_leaf_keeps_address_and_permissions_apart() {
-        let pa: u64 = kani::any();
-        kani::assume(pa & !ADDR_MASK == 0);
+        let physical_address: u64 = kani::any();
+        kani::assume(physical_address & !ADDR_MASK == 0);
 
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
 
-        let leaf = Aarch64::leaf_entry(pa, flags);
-        // **The address field read out of the word, not through `entry_pa`** (milestone 211).
-        // `leaf_entry` and `entry_pa` are an encoder and its own decoder, so a round trip
+        let leaf = Aarch64::leaf_entry(physical_address, flags);
+        // **The address field read out of the word, not through `entry_physical_address`** (milestone 211).
+        // `leaf_entry` and `entry_physical_address` are an encoder and its own decoder, so a round trip
         // between them is satisfied by any pair that agree: a shift wrong in both would leave
         // this green while the hardware read the wrong page. The line below states where the
         // architecture puts the address, which is the one thing the implementation does not
@@ -478,11 +495,11 @@ mod verification {
         // is the same move on the portable leaf.
         assert_eq!(
             leaf & 0x0000_ffff_ffff_f000,
-            pa,
+            physical_address,
             "the address left bits 12..48 of the descriptor"
         );
         assert_eq!(leaf & 0b11, 0b11, "a leaf must be a valid page descriptor");
-        assert_eq!(Aarch64::entry_pa(leaf), pa);
+        assert_eq!(Aarch64::entry_physical_address(leaf), physical_address);
         // Write-combining is encoded as device memory here, so it decodes as device.
         assert_eq!(Aarch64::leaf_flags(leaf), flags.without_write_combining());
     }

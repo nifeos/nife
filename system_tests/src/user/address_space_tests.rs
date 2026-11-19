@@ -550,7 +550,7 @@ fn a_user_built_aspace_maps_translates_and_revokes() {
         name,
         va,
         phys,
-        Flags::user_rodata(),
+        Flags::user_read_only_data(),
         crate::revoke::PageMapSource::NoCapability,
     )
     .expect("map_into failed");
@@ -569,7 +569,7 @@ fn a_user_built_aspace_maps_translates_and_revokes() {
             name,
             va,
             phys,
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             crate::revoke::PageMapSource::NoCapability
         )
         .is_err(),
