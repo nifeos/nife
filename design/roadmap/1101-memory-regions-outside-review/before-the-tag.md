@@ -78,8 +78,7 @@ An appendix to [the milestone](../1101-memory-regions-outside-review.md).
    "corrupt patch at line 24" at `v7` and at head, so `proofs / falsify` is red. Any patch whose
    hunk ends on a blank line meets this. (e) `orphan_modules` at template `v7` reports
    `src/table/verification.rs` as in no module tree (the file sits under `#[cfg(kani)]`). The helper
-   at head passes it, so a pin at a release after that fix clears it (nobody has verified which
-   release).
+   at head passes it, and `v8` is the first release that carries the fix.
    Evidence: `src/table.rs` line 90. `src/proofs.rs` lines 199 and 337. `src/destroy.rs` line 14, `src/table.rs` lines 48 and 87.
    The staged tree's `falsifications/proofs.a_release_keeps_every_count_exact.patch` against the
    original at `falsifications/proofs.a_release_keeps_every_count_exact.patch:24`.
@@ -89,7 +88,7 @@ An appendix to [the milestone](../1101-memory-regions-outside-review.md).
    control block (TCB)" and "inter-process communication (IPC)" at each first use, or the plain
    words with no acronym. (d) in nife's `helpers/crate_move.py`, keep a hunk's trailing blank
    context line through regeneration and add a selftest patch whose hunk ends on one. (e) pin the
-   template at the release that carries the `orphan_modules` fix.
+   template at `v8`, which carries the `orphan_modules` fix.
    Door: two-way. Effort: S.
 
 7. The documentation says things the code does not do.
@@ -116,7 +115,7 @@ An appendix to [the milestone](../1101-memory-regions-outside-review.md).
 8. The manifest's metadata and its dependency line.
    Finding: no `description`, `repository`, `documentation`, `readme`, `keywords` or `categories`.
    `cargo package` would warn on the first three (inferred, not run). The dependency on
-   `generational_table` is by `git` and `rev`, at the commit the `v0.1.0-pre.1` tag names (verified
+   `generational_table` is by `git` and `rev`, at the commit the `v0.1.0-pre.2` tag names (verified
    with `git ls-remote`). Crates.io refuses a `git` dependency at publish, so the crate cannot
    publish until `generational_table` does, and the own-crate dependency rule already covers that.
    Evidence: `Cargo.toml` lines 1 to 14.
