@@ -16,7 +16,7 @@ The comparison with the `elf` and `object` crates is in
 ## In one paragraph
 
 The front half of a program loader. It parses a static, little-endian, 64-bit ELF executable
-(`ET_EXEC`) for one machine and checks what a loader needs before it maps a page: the header, the
+(`ET_EXEC`) for one machine and checks what a loader needs before it maps a page. It checks the header, the
 program-header table, each segment's bounds, the entry point, the permissions and the overlap of
 the segments. It hands back the segments to map and finds one note in a `PT_NOTE` segment, over a
 whole image or one segment at a time. It reads program headers only. Five refusals of well-formed
@@ -47,8 +47,8 @@ Eleven packages link it, each by a path dependency: `kernel` (its loader), `uefi
 is the main user. `jig` and the UEFI loader are not kernel code and link it too, so once the kernel
 moves, at least two repositories link the crate.
 
-Other places name it without a dependency line: `packages/contracts.package.toml` lists it,
-`helpers/trust_boundary_crates.tsv` classes it as shared, `helpers/template_report_baseline.txt`
+Other places name it without a dependency line: `packages/contracts.package.toml` lists it.
+`helpers/trust_boundary_crates.tsv` classes it as shared. `helpers/template_report_baseline.txt`
 holds four rows for it (abbreviations 102, prose acronyms 8, README acronyms 1, register names 9), and `packages/homes.toml` holds a note about it that leaves with it.
 About 36 further files outside `design/`, `notes/` and `briefs/` name `crates/static_elf` in a path
 or a comment; the dry run lists them, and the move lane updates each.
