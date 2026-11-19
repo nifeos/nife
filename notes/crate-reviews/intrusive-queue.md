@@ -12,13 +12,13 @@ It describes the crate as `main` plus this branch leaves it. The outside review 
 ## In one paragraph
 
 An intrusive first in, first out queue. The link lives inside the node, so a push and a pop cannot
-allocate or fail, and a pop hands back the node itself. A node is minted into an `Unqueued` token
-with one `unsafe` call, and a push consumes the token, so a node cannot sit on two queues without
-`unsafe`. The caller keeps three rules: a node is on at most one queue, a node outlives its time on
-the queue, and the caller serializes access and mints each token from the node's owning pointer. The
-crate is `no_std`, has no dependency, and has `unsafe` in the token's mint and the queue's own pointer
-walks. Two Kani harnesses prove first in, first out order and that a popped node leaves with a clear
-link. `Queue<T>` is `Send` only when `T` is. Nothing in it needs the kernel.
+allocate or fail, and a pop hands back the node itself. One `unsafe` call mints a node into an
+`Unqueued` token, and a push consumes the token, so a node cannot sit on two queues without `unsafe`.
+The caller keeps three rules. A node is on at most one queue. A node outlives its time on the queue.
+The caller serializes access and mints each token from the node's owning pointer. The crate is
+`no_std`, has no dependency, and has `unsafe` in the token's mint. Two Kani harnesses prove first in,
+first out order and that a popped node leaves with a clear link. `Queue<T>` is `Send` only when `T`
+is. Nothing in it needs the kernel.
 
 ## Identity
 
@@ -67,8 +67,8 @@ citation, and the `Name:` blocks (see What the move lane does).
 | `cargo test -p intrusive_queue` | 7 host tests and 2 doctests pass; 2 compile-fail doctests fail to compile as they should (the double push and the `Rc` node on a thread, `E0277`) |
 | `cargo clippy -p intrusive_queue -p inter_process_communication --all-targets -D warnings` | no warning |
 | `cargo kani -p intrusive_queue` | 2 of 2 harnesses verified, 0 failures, 27 seconds |
-| `script/crate-standalone intrusive_queue` | `build`, `proofs` and both `falsification` rows ok. Eight failures, all the move lane's: manifest inherits `license` and `lints`, no `rust-version`, no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, three notes path lines, one section citation line. The `names` check passes |
-| `script/crate-move --dry-run` | stages at template `v8` (a69ab4829b02); 27 scaffold files; builds for the host and three targets once the manifest is its own. Failures: no README, manifest inheritance, the same standalone and citation lines, a 56-line comment block at `src/lib.rs:130` over the 40-line cap, and README prose caps (the scaffold's placeholder) |
+| `script/crate-standalone intrusive_queue` | `names`, `build`, `proofs` and both `falsification` rows ok. Eight failures, all the move lane's: the manifest inherits `license` and `lints`, no `rust-version`, no README, no license files, three notes path lines and one section citation line |
+| `script/crate-move --dry-run` | stages at template `v8` (a69ab4829b02) with 27 scaffold files. The build fails until the manifest is its own. Further failures: no README, the same standalone and citation lines, a comment block over the 40-line cap, and the scaffold README's prose caps |
 | `python3 helpers/name_release.py --draft intrusive_queue` | all 11 names carry a ratified block, none missing |
 | `cargo build -p kernel -p components --target` for aarch64, riscv64 and x86_64 | each builds with the bound |
 | `cargo test -p inter_process_communication` | passes |
@@ -103,7 +103,7 @@ Done in #3523).
 - Write the README, the two license files, `CHANGELOG.md`, `_typos.toml`, `docs/stranger-test.md`
   and `accepted-words`, and run the stranger test (items 2 and 3).
 - Remove the notes pointers, the DECISIONS citation and the `Name:` blocks from `src/lib.rs`, and
-  split the 56-line comment block at line 130.
+  split the comment block the dry run names, over the 40-line cap.
 - Share one test node (item 13), and decide item 9 (`remove`) before the first release.
 - Pin `nifeos/intrusive_queue` by `rev` in `kernel` and `inter_process_communication`, drop the
   workspace member, and update the files listed above in the nife-side pull request.

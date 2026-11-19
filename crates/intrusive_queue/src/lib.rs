@@ -147,22 +147,7 @@ impl<T> core::fmt::Debug for Unqueued<T> {
 /// no token for them exists, and queueing one again needs a fresh [`Unqueued::new`]. `Queue` has no
 /// `Drop`, so pop every node before the queue goes.
 ///
-/// A `Queue<T>` is [`Send`] only when `T` is, as `LinkedList<T>` is: a queue of nodes that hold
-/// an `Rc` cannot be handed to another thread.
-///
-/// ```compile_fail,E0277
-/// # use core::ptr::NonNull;
-/// # use std::rc::Rc;
-/// # use intrusive_queue::{Queue, Node};
-/// struct Logged { log: Rc<u32>, next: Option<NonNull<Logged>> }
-/// // SAFETY: plain field storage, which is the whole of the `Node` contract.
-/// unsafe impl Node for Logged {
-///     fn next(&self) -> Option<NonNull<Self>> { self.next }
-///     fn set_next(&mut self, next: Option<NonNull<Self>>) { self.next = next; }
-/// }
-/// let queue: Queue<Logged> = Queue::new();
-/// std::thread::spawn(move || drop(queue));
-/// ```
+/// A `Queue<T>` is [`Send`] only when `T` is, as `LinkedList<T>` is.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 ///
@@ -206,6 +191,21 @@ pub struct Queue<T: Node> {
     len: usize,
 }
 
+/// An `Rc` in a node keeps the queue on its own thread:
+///
+/// ```compile_fail,E0277
+/// # use core::ptr::NonNull;
+/// # use std::rc::Rc;
+/// # use intrusive_queue::{Queue, Node};
+/// struct Logged { log: Rc<u32>, next: Option<NonNull<Logged>> }
+/// // SAFETY: plain field storage, which is the whole of the `Node` contract.
+/// unsafe impl Node for Logged {
+///     fn next(&self) -> Option<NonNull<Self>> { self.next }
+///     fn set_next(&mut self, next: Option<NonNull<Self>>) { self.next = next; }
+/// }
+/// let queue: Queue<Logged> = Queue::new();
+/// std::thread::spawn(move || drop(queue));
+/// ```
 // SAFETY: the queue owns no data; it holds nodes only under the caller's contract (rule 3: all
 // access serialized by the caller). Moving the queue moves access to its nodes with it, so the
 // nodes must be `Send`, as for `LinkedList`.

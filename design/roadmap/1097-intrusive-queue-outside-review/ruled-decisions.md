@@ -61,9 +61,9 @@ no review package and no extraction list named it. `inter_process_communication`
 before it (milestone 1095 (`inter_process_communication`: what an outside maintainer would fix
 before it leaves)).
 
-Options: A, a lane writes the package and adds the crate to the externalization list, and the
-architect clears once decisions 1 and 2 have their rulings, with no tag and no publication; B,
-clear together with `inter_process_communication`; C, hold until the maintainer rules item 9.
+Options: A, a lane writes the package and adds the crate to the externalization list. The architect
+then clears once decisions 1 and 2 are ruled, with no tag and no publication. B, clear together with
+`inter_process_communication`. C, hold until the maintainer rules item 9.
 
 Prior art. `generational_table`, `block_roster` and `file_allocation_table` each moved on a cleared
 review with no tag. Where nife differs: nothing outside nife links the crate. Example: under A, the

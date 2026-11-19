@@ -45,7 +45,7 @@ milestone reaches delivery.
 - Item 11, the standard traits: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 12, acronyms: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 13, one shared test node: Open. It waits for the move.
-- Follow-on, the externalization list: Done. Step 10 of milestone 1017 and
+- Follow-on, the externalization list: Done. Step 10 of milestone 1017 (the contract crates leave in this order) and
   `crates/externalization-list.txt` name the crate.
 - Follow-on, review clearance and the repository: Open. The package
   [`notes/crate-reviews/intrusive-queue.md`](../../notes/crate-reviews/intrusive-queue.md) is
