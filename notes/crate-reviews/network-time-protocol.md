@@ -10,7 +10,7 @@ It describes the crate as `main` plus this branch leaves it. It ratifies nothing
 
 ## In one paragraph
 
-The NTPv4 wire format of RFC 5905 as pure computation: the 48-byte packet, the 1900-epoch
+The NTPv4 wire format of RFC 5905 as pure computation. It holds the 48-byte packet, the 1900-epoch
 fixed-point timestamp with its era pivot, the offset and delay arithmetic, and the response checks
 that are the whole of plain NTP's spoofing resistance. It owns no socket, no clock and no policy.
 A `Query` carries a 64-bit nonce in the transmit field and `accept` refuses any reply whose origin
@@ -50,10 +50,13 @@ Each by a path dependency with `version = "0.1.0"`:
 need. Four rows of `helpers/template_report_baseline.txt`, one row of `.cargo/mutants-baseline.txt`
 and the lists in `helpers/` that name crates (the move lane's list from `script/crate-move`) refer to it.
 
-What the crate references back into nife: its manifest header comment (milestone 51 (Wall-clock time, the `date` command, and an NTP service) and
-`notes/ntp.md`), the milestone and section citations in `src/lib.rs` and `src/verification.rs`
-(`script/crate-move --dry-run` counts four milestone citations, nine nife paths and four section
-citations), and one workspace-inherited `license` and `[lints]`.
+What the crate references back into nife:
+
+- Its manifest header comment cites milestone 51 (Wall-clock time, the `date` command, and an NTP
+  service) and `notes/ntp.md`.
+- Its sources cite milestones and sections. `script/crate-move --dry-run` counts four milestone
+  citations, nine nife paths and four section citations.
+- Its manifest inherits `license` and `[lints]` from the workspace.
 
 ## What was run
 
@@ -105,13 +108,19 @@ What a stranger may find surprising:
 
 ## Proofs
 
-Eight Kani harnesses, each with a falsification patch under `falsifications/`: the era pivot is
-exact over every Unix second in the window; nanoseconds survive the fixed point; decoding any wire
-value is total; `from_unix` refuses exactly the out-of-range inputs; `parse` then `to_bytes` is the
-identity over all 2^384 packets; an unmatched origin is always rejected; `accept` is total and a
-sample is coherent; and `accept` takes a consistent exchange. The standalone run's result is in the
-checks table. `notes/ntp/what-is-proved.md` states each claim and the one place the solver was the
-wrong tool.
+Eight Kani harnesses, each with a falsification patch under `falsifications/`:
+
+- The era pivot is exact over every Unix second in the window.
+- Nanoseconds survive the fixed point.
+- Decoding any wire value is total.
+- `from_unix` refuses exactly the out-of-range inputs.
+- `parse` then `to_bytes` is the identity over all 2^384 packets.
+- An unmatched origin is always rejected.
+- `accept` is total, and a sample is coherent.
+- `accept` takes a consistent exchange.
+
+The standalone run's result is in the checks table. `notes/ntp/what-is-proved.md` states each
+claim, and the one place where a solver was the wrong tool.
 
 ## Names
 
