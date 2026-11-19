@@ -274,6 +274,41 @@ fn the_endowment_words_round_trip() {
 }
 
 #[test]
+fn only_the_two_defined_transports_are_known() {
+    assert!(endowment::is_known_transport(endowment::TRANSPORT_UDP));
+    assert!(endowment::is_known_transport(endowment::TRANSPORT_TCP));
+    assert!(!endowment::is_known_transport(2));
+    assert!(!endowment::is_known_transport(u64::MAX));
+    // The start word keeps a stranger's transport intact, so the resolver can refuse it.
+    let (_, transport) = endowment::port_and_transport_fields(endowment::port_and_transport(53, 2));
+    assert!(!endowment::is_known_transport(transport));
+}
+
+#[test]
+fn an_unknown_transport_reply_decodes_as_a_network_step() {
+    use wire::network_step;
+    let steps = [
+        network_step::NO_SOCKET_PAGE,
+        network_step::OPEN,
+        network_step::SEND,
+        network_step::CONNECT,
+        network_step::UNKNOWN_TRANSPORT,
+    ];
+    for (i, a) in steps.iter().enumerate() {
+        for b in &steps[i + 1..] {
+            assert_ne!(a, b);
+        }
+    }
+    assert_eq!(network_step::UNKNOWN_TRANSPORT, 5);
+    let refused = Outcome {
+        status: status::NETWORK,
+        detail: network_step::UNKNOWN_TRANSPORT,
+        count: 0,
+    };
+    assert_eq!(Outcome::from_word(refused.word()), Some(refused));
+}
+
+#[test]
 fn every_reject_has_its_own_code() {
     use domain_name_system::{Error, Reject};
     let all = [

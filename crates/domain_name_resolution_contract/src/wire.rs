@@ -105,7 +105,8 @@ pub mod status {
 /// the client half, so a standard library can say which step failed instead of one error for all
 /// four.
 ///
-/// Name: provisional, the riscv-cpu-net-flake lane, 2026-10-13 (UTC).
+/// Name: provisional, the riscv-cpu-net-flake lane, 2026-10-13 (UTC). `UNKNOWN_TRANSPORT` is
+/// provisional too, ruled in the milestone 1086 rulings lane, 2026-11-19 (UTC).
 pub mod network_step {
     /// The resolver has no socket page to attach.
     pub const NO_SOCKET_PAGE: u8 = 1;
@@ -115,6 +116,9 @@ pub mod network_step {
     pub const SEND: u8 = 3;
     /// The TCP connection to the name server was not established.
     pub const CONNECT: u8 = 4;
+    /// The spawner started the resolver with a transport word that is neither `TRANSPORT_UDP` nor
+    /// `TRANSPORT_TCP`. The resolver refuses it at start and answers every resolve with this step.
+    pub const UNKNOWN_TRANSPORT: u8 = 5;
 }
 
 /// A resolve reply's first word, decoded: `status | detail << 8 | count << 16`.

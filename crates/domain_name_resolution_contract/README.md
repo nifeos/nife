@@ -59,7 +59,7 @@ because "no such name" is a different fact from "you may not ask":
 - `DENIED`: the badge holds no grant, or the name is outside its zone. Nothing was sent.
 - `NO_SUCH_NAME`, `REFUSED`, `NO_ANSWER`, `SERVER_ERROR`: what the name server said, or did not.
 - `BAD_NAME`, `NOT_ATTACHED`, `NO_ENTROPY`, `NETWORK`, `BAD_REQUEST`: what stopped the resolver
-  before it could ask. `NETWORK`'s detail byte is a `network_step`.
+  before it could ask. `NETWORK`'s detail byte is a `network_step`, among them `UNKNOWN_TRANSPORT`, which answers every resolve when the spawner started the resolver with a transport other than `TRANSPORT_UDP` or `TRANSPORT_TCP`.
 
 `Outcome::from_word` refuses a word the resolver never sends, such as a failed `CALL`'s negative
 error. A control `CALL` is answered with an `Outcome` too: `OK` when the message was accepted, or

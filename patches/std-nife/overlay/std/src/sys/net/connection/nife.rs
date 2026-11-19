@@ -1201,6 +1201,10 @@ pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
                     io::ErrorKind::NetworkUnreachable,
                     "the resolver's connection to its name server was not established"
                 ),
+                resolve::network_step::UNKNOWN_TRANSPORT => io::const_error!(
+                    io::ErrorKind::NetworkUnreachable,
+                    "the resolver was started with a transport it does not know"
+                ),
                 _ => io::const_error!(
                     io::ErrorKind::NetworkUnreachable,
                     "the resolver was refused a step this program does not know"
