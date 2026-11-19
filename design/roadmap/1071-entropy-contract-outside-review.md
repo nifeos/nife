@@ -82,8 +82,8 @@ rechecks every name. Decision 2 is the architect's. Item 6 is decision 2.
 
 Ruled by the maintainer, provisional; landed in #3531. The readiness step `0x12` keeps the name
 `STEP_FIRST_ALL_SAME`. It pairs with `STEP_FIRST_ALL_ZERO`. `STEP_FIRST_ALL_EQUAL` and
-`STEP_FIRST_REPEATED` were the other options. That the step exists at all, refusing a first draw
-of eight or more bytes that are all one value, was ruled by the architect on 2026-11-11 (UTC).
+`STEP_FIRST_REPEATED` were the other options. The architect ruled on 2026-11-11 (UTC) that the
+step exists: `readiness` refuses a first draw of eight or more bytes that are all one value.
 
 ### Decision 2: What the contract says a service does
 
@@ -118,21 +118,22 @@ Ruled by the maintainer, provisional; landed in #3558. `Refusal`, `NoService`, `
 Ruled by the maintainer, provisional; landed in nifeos/entropy_contract#5. `request` and
 `bring_up_failure` return a `Result` and refuse a value past one byte in every build, where they
 had panicked in a debug build and accepted it in a release build. The restrictive form, since a
-later release can loosen it and cannot tighten it. The error types are named `OperationOutOfRange`
-and `StepOutOfRange`, both provisional. nife's callers already use the `Result` form.
+later release can loosen it and cannot tighten it. The error types `OperationOutOfRange` and
+`StepOutOfRange` carry provisional names. nife's callers already use the `Result` form.
 
 ### The pre-release tag
 
-Ruled by the architect, 2026-11-19 (UTC): the repository is tagged `v0.1.0-pre.1` once the release
-workflow's dry run is green on `main`; nothing publishes. Not built yet: the manifest already reads
+Ruled by the architect, 2026-11-19 (UTC): a lane tags the repository `v0.1.0-pre.1` once the
+release workflow's dry run is green on `main`; nothing publishes. Not built yet: the manifest already reads
 `0.1.0-pre.1` (nifeos/entropy_contract#8), and the dry run and the tag wait for
 nifeos/entropy_contract#10 to merge so the tag carries it. The pin bump below follows the tag.
 
 ## Open decisions
 
-None. Every finding and decision is built, ruled or held; nothing in this milestone waits on a
-question to the architect. The first publication waits for the publishing hold, which lifts only
-when every outside-review milestone is delivered, and is not asked crate by crate.
+None. Every finding and decision has landed, has a ruling or sits under a hold; nothing in this
+milestone waits on a question to the architect. The first publication waits for the publishing
+hold, which lifts only when every outside-review milestone has delivered, and nobody asks it crate
+by crate.
 
 ## Done when
 
@@ -142,10 +143,11 @@ nifeos/entropy_contract#10 answers the run's one open gap.
 
 ## Where this stands
 
-Done: every item and the four decisions (see the ledger), the move (#3627), the repository's
-stranger run with `Last run:` recorded in `docs/stranger-test.md` (nifeos/entropy_contract#7), the
-template bump to crate-workflows v8 (nifeos/entropy_contract#6), and a full mutation run green on
-`main` with the two equal clamp mutants exempt (nifeos/entropy_contract#9). `check`, `proofs`,
+Done: every item and the four decisions (see the ledger), and the move (#3627). In the
+repository: the stranger run, with `Last run:` in `docs/stranger-test.md`
+(nifeos/entropy_contract#7); the template bump to crate-workflows v8 (nifeos/entropy_contract#6);
+and a full mutation run, green on `main` with the two equal clamp mutants exempt
+(nifeos/entropy_contract#9). `check`, `proofs`,
 `mutation` and `weekly` are green on the repository's `main`. The `jh7110_entropy` crate's
 `Pool::take_into` serves bytes into the caller's slice (nifeos/jh7110_entropy#29), and nife's
 JH7110 service loop passes them through `reply`.
@@ -168,7 +170,8 @@ Open, in order:
   (nifeos/jh7110_entropy#29), and the JH7110 service loop builds the reply with `reply`.
 - **Done.** The move: the repository `nifeos/entropy_contract` holds the crate with the
   `allow-unpublished: true` line in its `ci.yml`, and nife pins it by commit.
-- **Ruled.** The pre-release tag, then the pin bump to the tagged commit.
+- **Outstanding.** The pre-release tag, which has its ruling, then the pin bump to the tagged
+  commit.
 
 ## BUGS
 
@@ -179,6 +182,6 @@ Open, in order:
 ## Index row
 
 An outside review of `entropy_contract` before its move. Every item and the four decisions have
-landed, the crate has moved and its own stranger run is recorded; the pre-release tag is ruled
-and waits for one README pull request, then the pin bump. The maintainer's names stay provisional
+landed, the crate has moved and the repository holds its own stranger run. The pre-release tag has
+its ruling and waits for one README pull request, then the pin bump. The maintainer's names stay provisional
 until the release review.
