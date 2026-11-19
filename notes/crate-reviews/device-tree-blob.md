@@ -14,8 +14,8 @@ this file does not repeat them.
 
 A flattened device tree parser: bytes in, regions and property values out. The device tree blob is
 the machine describing itself, handed over by firmware (a bootloader, a UEFI loader or QEMU), and
-the crate reads it as untrusted input. Every offset is checked, every walk is bounded, and a
-malformed blob is an `Error`, never a panic. It reads the memory banks, the memory reservation
+the crate reads it as untrusted input. It checks every offset, bounds every walk, and answers a
+malformed blob with an `Error`, never a panic. It reads the memory banks, the memory reservation
 block, the `/reserved-memory` children, the register regions of a node found by name prefix or by
 `compatible` string, any property of a node, the parent's `compatible`, the initial ramdisk and the
 command line. The crate is `no_std`, has no run-time dependency, and has `unsafe` in one function:
@@ -114,12 +114,12 @@ proof, and its harness must then fail.
 | `from_bytes_is_total` | a buffer of up to 48 bytes gives a tree or an error, and the tree lies inside the buffer |
 
 The walkers are not proved; the fuzz target covers them in nife, and the hostile suite pins the
-behavior of each lookup on hand-built blobs. P1-3 (32-bit arithmetic) was fixed from reading, and
-no 32-bit target was built.
+behavior of each lookup on hand-built blobs. a lane fixed P1-3 (32-bit arithmetic) from reading, and
+nobody built a 32-bit target.
 
 ## Names
 
-The rulings of 2026-11-19 (UTC) are merged ([#3783](https://github.com/nifeos/nife/pull/3783)) and
+The rulings of 2026-11-19 (UTC) merged as [#3783](https://github.com/nifeos/nife/pull/3783) and
 change nothing in this table except the status column. A name below reads "ratified as built" when
 the milestone's ruling covers it, "ratified" when an earlier lane recorded a ruling in its `Name:`
 block, and "provisional" when the block still says so or no block exists. The proposal column is for
@@ -160,7 +160,7 @@ for each name that has none; the move strips every block. This lane changes no c
 
 ## What was run
 
-All of it on the branch of this package, which leaves the crate's code as `main` has it, on the
+I ran all of it on the branch of this package, which leaves the crate's code as `main` has it, on the
 pinned nightly of the tree unless a row says otherwise. The host ran at a load average above 100
 because other lanes were running, so the wall times mean little.
 
@@ -175,11 +175,11 @@ because other lanes were running, so the wall times mean little.
 | `script/falsifications --sweep device_tree_blob` | the first sweep swept 9: eight turned red and the ninth, `a_token_step_is_total_and_moves_forward`, hit the 900 s limit with no verdict on the loaded host. `script/crate-standalone` ran all nine patches afterward and each fails its harness: 9 of 9, 0 survivors |
 | `cargo miri test -p device_tree_blob` | the unit test, the 46 hostile tests (331 s), the 10 riscv64 fixture tests and the 4 doctests pass. In the first full run, `refuses_to_overflow_the_callers_slice` of the aarch64 fixture suite failed once, with an index panic reported at `src/lib.rs` line 1237, whose code has no indexing (`out.get_mut(n)`). The test passed alone, and the whole aarch64 suite passed twice more (17 of 17) with the same sources. I could not reproduce the failure and do not know its cause; the move lane reruns the suite under Miri, and a second failure is a finding |
 | `script/crate-standalone device_tree_blob` | 8 failures, all the move's work: `names` (11 names not ratified, first `MAXIMUM_CELLS`), the manifest inherits `license` and `lints` and has no `rust-version`, no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, and one path into the nife tree at `tests/hostile.rs` line 1228. Passes: `build` for the host and the three targets, `proofs` (9 of 9) and all nine falsification patches |
-| `script/crate-move device_tree_blob --dry-run --into <scratch>` | stages at template `v8`; the nine patches apply exactly with no offset and no fuzz, the `Name:` blocks are stripped, the fuzz target stages with its six inputs, and the mutation baseline row is carried over. It reports six findings, all for the move lane: no README; `cargo generate-lockfile` and `cargo fuzz build` fail because the manifest inherits workspace fields; `standalone` (no license files and the same three manifest items); `prose caps` (the README that does not exist yet); and `citations` (a nife path at `fuzz/fuzz_targets/device_tree_blob_walk.rs` line 35). Spelled-out words, unit symbols, passive voice, history phrases, function and file length, comment blocks, orphan modules, markdown links, falsification records and `mentions nife` pass. The same nife pull request must remove the target from `fuzz/Cargo.toml`, `script/fuzz` and `notes/fuzzing/targets.md` |
+| `script/crate-move device_tree_blob --dry-run --into <scratch>` | stages at template `v8`; the nine patches apply exactly with no offset and no fuzz, the `Name:` blocks are stripped, the fuzz target stages with its six inputs, and the mutation baseline row is carried over. It reports six findings, all for the move lane: no README; `cargo generate-lockfile` and `cargo fuzz build` fail on the inherited workspace fields; `standalone` (no license files and the same three manifest items); `prose caps` (the README that does not exist yet); and `citations` (a nife path at `fuzz/fuzz_targets/device_tree_blob_walk.rs` line 35). Spelled-out words, unit symbols, passive voice, history phrases, function and file length, comment blocks, orphan modules, markdown links, falsification records and `mentions nife` pass. The same nife pull request must remove the target from `fuzz/Cargo.toml`, `script/fuzz` and `notes/fuzzing/targets.md` |
 
 Not run, and so not claimed:
 
-- Mutation. The census belongs in the 08:00 to 13:00 UTC window, and this package was written
+- Mutation. The census belongs in the 08:00 to 13:00 UTC window, and I wrote this package
   outside it, at about 22:00 UTC. The baseline row (389 caught, 1 missed, 29 timed out, 25 unviable)
   predates the fixes of #3559 and #3612, and the missed mutant was never identified. The move
   carries the row into the new repository, and its first weekly run lists survivors.
@@ -188,7 +188,7 @@ Not run, and so not claimed:
 - `cargo-semver-checks`: a first release has no baseline.
 - The fuzz target. It stays in nife until the move stages it, and the weekly public opt-in stays
   off because of `from_pointer` (D6).
-- A build for a 32-bit target. The host has none, and P1-3 was fixed from reading.
+- A build for a 32-bit target. The host has none, and a lane fixed P1-3 from reading.
 - The template's workflows, which run in the repository.
 
 ## The move lane's work
@@ -203,12 +203,12 @@ A lane after the go does these, in the order the milestone lists them:
    and the four test names, and clear the `prose_acronyms` and `abbreviations` findings in the
    `helpers/template_report_baseline.txt` rows.
 4. Convert the dependents' path dependencies (the six crates and two tools above) to `git` and
-   `rev` with `version = "0.1.0"`, per §305, and update `packages/contracts.package.toml`,
+   `rev` with `version = "0.1.0"`, per §305 (git dependencies on `nifeos/*` only, pinned to a landed commit), and update `packages/contracts.package.toml`,
    `.cargo/mutants-baseline.txt` and the CI references.
 5. Run the stranger test, the template's workflows and the first weekly mutation run in the new
    repository.
 
-The repository is created with `publish = false`, no tag and no publish.
+The new repository carries `publish = false`, no tag and no publish.
 
 ## The `dtoolkit` position
 
