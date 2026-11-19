@@ -17,8 +17,7 @@ crate moves.
 
 The crate has no review package under `notes/crate-reviews/`, so the baseline this review takes is
 the names already ratified at the item (`device_tree_blob`, `DeviceTreeBlob`, `MAXIMUM_TOTALSIZE`,
-`initial_ramdisk`), the provisional names recorded there (`parent_prop_compatible`,
-`boot_arguments`), and the bounds notes/device-tree.md records. One ratified name meets a later
+`initial_ramdisk`), the provisional names recorded there (`boot_arguments`), and the bounds notes/device-tree.md records. One ratified name meets a later
 rule (item D4). A ruling on record has nife working toward Google's `dtoolkit` as its device-tree
 dependency. The switch itself is a separate decision. Until that switch, this crate is what boots
 every nife machine. So the correctness items below (P1-1 to P1-4) are worth landing in the kernel's
@@ -32,7 +31,7 @@ tool.
 
 The ids are the review's own; P0 and P1 are in [the
 appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
-items](1085-device-tree-blob-outside-review/later-items.md), and D1 to D6 under [Open
+items](1085-device-tree-blob-outside-review/later-items.md), D1 under [Ruled decisions](#ruled-decisions), and D2 to D6 under [Open
 decisions](#open-decisions).
 
 - P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
@@ -60,7 +59,8 @@ decisions](#open-decisions).
 - P2-10 to P2-13, the depth counters, `MAXIMUM_DEPTH`, a trailing partial `reg` pair and private
   names: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
-- D1 to D6: Open. Built as recommended, awaiting ratification; each is a subsection under [Open
+- D1 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
+- D2 to D6: Open. Built as recommended, awaiting ratification; each is a subsection under [Open
   decisions](#open-decisions).
 - F-size, `Region::size` is a length with no unit: Open. `register_names` refuses it at `src/lib.rs`
   line 26. It is two-way while unreleased, and the maintainer rules the rename provisionally; the
@@ -76,29 +76,40 @@ decisions](#open-decisions).
 - BUGS-239: Open. Milestone 239 (radon's device tree does not describe the TRNG) gives the depth
   bound as a `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64. A lane corrects that milestone.
 
-## Open decisions
-
-Code carries the six name and surface decisions as recommended, each under a `Name: provisional`
-block. Each is two-way while the crate has no release and one-way at its first publish. The
-`dtoolkit` path makes it likely the crate never publishes, so every one of them waits on the last
-two decisions here.
+## Ruled decisions
 
 ### Spell `prop` out as `property` (D1)
 
-Six public lookups abbreviated "property": `node_prop`, `node_props`, `node_prop_compatible`,
-`parent_prop_compatible`, `node_prop_inherited` and `phandle_prop`. The naming rules spell out a
-word that needs a decoder, and the Devicetree Specification says "property". `prop` is libfdt's C
-spelling (`fdt_getprop`).
-
-Recommendation: A.
-
-- A. Ratify as built: `node_property`, `node_properties`, `node_property_compatible`,
-  `parent_property_compatible`, `node_property_inherited` and `phandle_property`, with no alias.
-- B. Restore `prop`, the libfdt spelling.
+Ruled 2026-11-19 (UTC): option A. The lookups spell `property` out, with no alias for the old
+`prop` spelling: `node_property`, `node_properties`, `node_property_compatible`,
+`parent_property_compatible`, `node_property_inherited` and `pointer_handle_property` (below). The
+six names are ratified as built. The naming rules spell out a word that needs a decoder, and the
+Devicetree Specification says "property"; `prop` is libfdt's C spelling (`fdt_getprop`).
 
 Door: one-way at publish. Prior art: the `fdt` crate and `dtoolkit` spell `property()` and
 `properties()`; libfdt abbreviates. nife differs from libfdt only where C's short names were a
-constraint. Example: `tree.node_property(b"chosen", b"stdout-path")`. Blocks: the tag.
+constraint. Example: `tree.node_property(b"chosen", b"stdout-path")`.
+
+### Spell `phandle` out as the pointer handle
+
+Ruled 2026-11-19 (UTC): the specification's expansion of `phandle` is "pointer handle", and the
+lookup spells it out as `pointer_handle_property(pointer_handle, name)`. It carries
+`#[doc(alias = "phandle")]`, a search aid for the specification's term and not an old nife
+spelling. Its doc comment opens with the expansion and cites the Devicetree Specification. This
+replaces the part of D3 that kept `phandle`; D3 now covers `reg` alone. The ratification is the
+same as D1's, as built.
+
+Door: one-way at publish. Prior art: libfdt's `fdt_node_offset_by_phandle` and the `fdt` crate's
+`find_phandle` keep the abbreviation; neither spells the specification's expansion. nife differs
+because its naming rules spell out a word that needs a decoder, and the alias keeps the term
+searchable. Example: `tree.pointer_handle_property(pointer_handle, b"#interrupt-cells")`.
+
+## Open decisions
+
+Code carries the remaining name and surface decisions as recommended, each under a `Name:
+provisional` block. Each is two-way while the crate has no release and one-way at its first publish. The
+`dtoolkit` path makes it likely the crate never publishes, so every one of them waits on the last
+two decisions here.
 
 ### Name the needle parameter `compatible` (D2)
 
@@ -111,14 +122,13 @@ Door: two-way, since a parameter name is not part of the call. Prior art:
 `fdt::Fdt::find_compatible(with: ...)` and `dtoolkit`'s `is_compatible(&self, compatible: &str)`.
 Example: `tree.node_reg_compatible(b"arm,pl031", &mut regions)`. Blocks: the tag.
 
-### Keep `reg` and `phandle` as the specification's terms (D3)
+### Keep `reg` as the specification's term (D3)
 
-`node_reg`, `node_reg_compatible` and `phandle_property` carry the specification's property names,
-which a reader searches for by that spelling. The rule for a term of art keeps it, opens the doc
-comment with the expansion and the source, and carries `#[doc(alias)]`. Recommendation: A.
+`node_reg` and `node_reg_compatible` carry the specification's property name, which a reader
+searches for by that spelling. The rule for a term of art keeps it, opens the doc comment with the
+expansion and the source, and carries `#[doc(alias)]`. Recommendation: A.
 
-- A. Ratify as built: keep `reg` and `phandle`, with `#[doc(alias = "register regions")]` on the two
-  `reg` lookups.
+- A. Ratify as built: keep `reg`, with `#[doc(alias = "register regions")]` on the two lookups.
 - B. Spell out, as `node_register_regions`.
 
 Door: one-way at publish. Prior art: the `fdt` crate's `NodeProperty::reg()` keeps the spelling.
@@ -198,7 +208,7 @@ happens at all.
 No review package exists, and clearance follows one. Recommendation: B, because every move item
 lapses if the switch comes first, and a package written first would go to waste.
 
-- A. Write the package now and clear the move after the ratification of D1 to D6.
+- A. Write the package now and clear the move after the ratification of D2 to D6.
 - B. Hold the package and the move until the `dtoolkit` decision; write the package only if C wins
   there.
 
@@ -235,7 +245,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
-  half of P2-9, F-size, F-package and BUGS-239, and the eight open decisions.
+  half of P2-9, F-size, F-package and BUGS-239, and the seven open decisions.
 
 ## BUGS
 
@@ -257,4 +267,4 @@ An outside review of `device_tree_blob` before it leaves. Three day-one gate fai
 (the manifest, the nife-only prose, 29 refused names). Five items come before the tag. They are a
 prefix lookup that contradicts its siblings, a reserved-memory match at any depth, unchecked cursor
 arithmetic on 32-bit targets, a walk that is not confined to the structure block, and a fuzz target
-that does not move. Fourteen smaller items follow, and eight decisions go to the architect.
+that does not move. Fourteen smaller items follow, and eight decisions went to the architect; D1 is ruled and seven remain open.
