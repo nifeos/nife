@@ -246,52 +246,28 @@ The P1 items are in [the appendix](1084-current-cpu-contract-outside-review/befo
 Decision A has its ruling, which is the rule in force. Decision B, the names, has landed in code
 and waits on ratification under [Open decisions](#ratify-the-provisional-names).
 
-### Decision A. Is the bound on CPU ids part of this page's identity?
+### Decision A. The bound on CPU ids is part of this page's identity
 
-Background. Every program that reads this page sizes its per-CPU arrays by a constant compiled into
-it, `CPU_ID_BOUND`, today 8. The kernel's own `MAXIMUM_CPUS` is the same constant, so inside this
-tree the two cannot drift, and a system test carries the bound back across the boundary to prove it.
-`machine_statistics_contract` re-exports the constant and its page's word count depends on it, so a
-change to the bound already changes that page's layout.
+Ruled 2026-11-12 (UTC), option A. A change to `CPU_ID_BOUND` re-mints `MAGIC` and bumps `VERSION`
+in the same change, and the constant's documentation says so. `cpu()` answers `None` for a
+published id at or past the bound. The documentation of `machine_statistics_contract`'s re-export
+states that its identity follows the same rule. Tests cover an id one below the bound (accepted)
+and an id at the bound (refused).
 
-Once the crate is in its own repository, the kernel and a published program may pin different
-versions. The page's magic and version cover its layout, and the layout does not change when the
-bound does. So a kernel with a bound of 16 writes a page a program built for 8 accepts, reads a CPU
-id of 9, and indexes past its array. Today the reader hands that id back without looking.
-
-Recommendation: the bound is part of the identity. A change to `CPU_ID_BOUND` re-mints `MAGIC` and
-bumps `VERSION` in the same change, and the constant's documentation says so. `cpu()` refuses an id
-at or past the bound with `None` (item 5), so a mismatch that slips through degrades to "unknown"
-rather than a panic. This is the restrictive option; loosening it later is compatible, tightening it
-later is not.
-
-Options:
-
-- A, recommended: the bound is identity; `cpu()` refuses ids at or past it. Costs one compare on a
-  path that already makes two, and a magic re-mint whenever a bigger machine arrives.
-- B: publish the writer's bound as a fourth word of the page (an append, which reads zero under an
-  older kernel and so as unknown), and have the reader compare it with its own. Costs eight bytes
-  and a compare, and makes the mismatch visible without a re-mint. A consumer still cannot size
-  a static array by a run-time word, so the compile-time constant stays and B is a check on top of A
-  rather than a replacement.
-- C: leave it; document that the two sides must agree. Costs nothing now and a panic in a published
-  program later.
+The reason. Every program that reads this page sizes its per-CPU arrays by `CPU_ID_BOUND`, a
+constant compiled into it, which equals the kernel's `MAXIMUM_CPUS`. Once the crate is in its own
+repository, the kernel and a published program may pin different versions, and the page's layout
+does not change when the bound does. Without the rule, a kernel with a bound of 16 writes a page a
+program built for 8 accepts, and the program indexes past its array. This is the restrictive
+option; loosening it later is compatible, tightening it later is not.
 
 Prior art: Linux's `rseq` publishes a `u32` with no bound and leaves sizing to a run-time query, so
 the mistake is the reader's own. FreeBSD compiles `MAXCPU` into the kernel and exposes the run-time
-`mp_maxid` (recalled, unverified). The sibling `counter_frequency_contract` has no bound to agree on.
+`mp_maxid` (recalled, unverified).
 
-Concrete example. A kernel with a bound of 16 publishes CPU 9 to a program built with 8. With no rule:
-`caches[9]` on an 8-element array panics. Under A: the kernel's crate carries a new magic, the
-program reads `None` for every word, and its standard library walks on one thread, which is the
-degradation the crate already documents for a magic mismatch.
-
-Ruled 2026-11-12 (UTC): option A. The bound is part of the page's identity. A change to
-`CPU_ID_BOUND` re-mints `MAGIC` and bumps `VERSION` in the same change, and the constant's
-documentation says so. `cpu()` answers `None` for a published id at or past the bound. The
-documentation of `machine_statistics_contract`'s re-export states that its identity follows the
-same rule. Tests cover an id one below the bound (accepted) and an id at the bound
-(refused). Item 5 is done by the pull request that carries this ruling.
+Concrete example. A kernel with a bound of 16 publishes CPU 9 to a program built with 8. The
+kernel's crate carries a new magic, the program reads `None` for every word, and its standard
+library walks on one thread, which is the degradation the crate documents for a magic mismatch.
 
 ## Done when
 
