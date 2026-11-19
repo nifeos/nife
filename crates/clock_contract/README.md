@@ -1,8 +1,13 @@
 # clock_contract
 
-The wall clock as a contract between a clock service and everything that reads or sets the time:
-the layout of a shared clock page, the small protocol for proposing a new time, and the policy a
-proposal must meet. `no_std`, no dependencies outside an optional model-checking build. A clock
+[![check](https://github.com/nifeos/clock_contract/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/clock_contract/actions/workflows/ci.yml?query=branch%3Amain)
+[![proofs](https://github.com/nifeos/clock_contract/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/nifeos/clock_contract/actions/workflows/proofs.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/clock_contract#license)
+[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/clock_contract/blob/main/Cargo.toml)
+
+The wall clock as a contract between a clock service and everything that reads or sets the time.
+It holds the layout of a shared clock page, the small protocol for proposing a new time, and the
+policy a proposal must meet. `no_std`, no dependencies outside an optional model-checking build. A clock
 service, its readers and a standard library's time support share this one definition, so they
 cannot drift. On its own the crate maps nothing and sets nothing; it is useful with a clock service
 that maps the page and a loader that grants it.
@@ -72,9 +77,9 @@ assert_eq!(
 ## What is proven
 
 Two Kani harnesses (`cargo kani`) cover every input. `policy::decide` accepts a proposal only inside the plausibility window and the step bounds, and accepts every plausible proposal when the time is unknown. The request word's opcode and the offset arithmetic round trip. Each has a patch under `falsifications/` that makes it fail. The loom run checks three claims against the C11 model, not against the
-Arm or RISC-V memory models: a reader never returns a torn pair, including a reader that sleeps
-across two publishes; a writer stopped at any point inside a publish never makes a reader wait; and
-two writers never interleave. Weakening any ordering on the page fails one of them, except the
+Arm or RISC-V memory models. A reader never returns a torn pair, including a reader that sleeps
+across two publishes. A writer stopped at any point inside a publish never makes a reader wait. Two
+writers never interleave. Weakening any ordering on the page fails one of them, except the
 release that gives the claim back, which loom passes and the argument in the source carries.
 
 ## Building and testing
