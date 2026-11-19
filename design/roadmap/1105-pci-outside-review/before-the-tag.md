@@ -122,7 +122,7 @@ counts them. The crate's two documentation tests are good; nothing else introduc
 Fix: document every public item (what it is, which register and bit, which specification section).
 Replace each tree reference with the specification or with a sentence that stands on its own. Drop
 the `allow`. Write the README from item 2 so its EXAMPLES section is the
-`enumerate` doctest and its "What is proven" section is the eight harness names in plain words.
+`enumerate` doctest and its "What is proven" section is the ten harness names in plain words.
 Effort: M. Door: two-way.
 
 **8. The MSI capability walk has no proof, and nothing proves the ceiling.**

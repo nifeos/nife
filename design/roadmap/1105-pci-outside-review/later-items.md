@@ -52,7 +52,7 @@ them for the move. A reader of the patch file meets names the crate no longer ha
 Fix: regenerate in place, in nife, when item 3's new patch lands.
 Effort: S. Door: two-way.
 
-#### The proof table in nife says four harnesses; the crate has eight
+#### The proof table in nife says four harnesses; the crate has ten
 Where: `notes/verification.md` line 123, `notes/verification/parser-harnesses.md` lines 35 to 45.
 Why: the four bus-queue and ranges harnesses are missing from the record a reader uses to learn what
 has a proof.
