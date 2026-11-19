@@ -190,14 +190,14 @@ Recommended: make both `pub`. Additive, two-way. Effort XS.
 
 #### Item 16: Decode the read-only build registers and the reseed-state field
 
-Status: Done. Landed in `nifeos/jh7110_entropy#21`; the new names are ratified, under *Open decisions*.
+Status: Done. Landed in `nifeos/jh7110_entropy#21`; the new names stand as ruled, under *Open decisions*.
 
 NetBSD names
 `FEATURES` bits (`MM_RESET_STATE` 3, `RAND_SEED_AVAIL` 2, `MAX_RAND_LENGTH` 1:0) and `BCONF`
 bits (`AUTO_RESEED_LOOPBACK` 5, `MODE_AFTER_RST` 4, `PRNG_LEN_AFTER_RST` 3, `MAX_PRNG_LEN` 2);
 Linux names the `STAT.LAST_RESEED` field at bit 16, whose value 7 the crate cites in prose. The crate names the two register offsets and
 no field, so a bench dump of them is undecodable with this crate alone, and exactly these fields answer item 4's width question. `SEED_1..6_REGISTER` are also absent while
-`RANDOM_NUMBER_0..7` are all present. Additive; the new names are ratified, under *Open decisions*.
+`RANDOM_NUMBER_0..7` are all present. Additive; the new names stand, under *Open decisions*.
 Two-way. Effort S.
 
 #### Item 17: A rand_core adapter behind a feature. Declined
@@ -234,7 +234,7 @@ toolchain. Two-way. Effort XS.
 None. The publication steps (items 1 to 3) wait on the publishing hold and ask nothing until it
 lifts.
 
-The twelve public names added since the last ratification are ratified as built (ruled 2026-11-19):
+Ruled 2026-11-19: the twelve public names added since the last ratification stand as built, ratifying each:
 `STATUS_LAST_RESEED_MASK`, `STATUS_LAST_RESEED_SHIFT`, `STATUS_LAST_RESEED_UNSEEDED`,
 `FEATURES_MISSION_MODE_RESET_STATE`, `FEATURES_RANDOM_SEED_AVAILABLE`, `FEATURES_WIDEST_OUTPUT_MASK`,
 `FEATURES_WIDEST_OUTPUT_256_BIT`, `BUILD_CONFIGURATION_AUTOMATIC_RESEED_LOOPBACK`,
