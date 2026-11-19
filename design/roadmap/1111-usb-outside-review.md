@@ -46,9 +46,114 @@ prove and falsify it from the README alone. That stranger can trust that the cra
 a device sends before it reads the byte. A UK, German or Japanese keyboard gives the same key that a
 US one gives. The template's gates are green for the crate's own reasons.
 
-## Where this stands
+## Finding status
 
-[The appendix](1111-usb-outside-review/where-this-stands.md).
+- P0-1, manifest that cannot stand alone: Open. The move lane writes the literal license and lint
+  table, `rust-version`, description, keywords, categories, readme and a publish comment.
+- P0-2, package name `universal_serial_bus` and its alias: Open. The move lane renames the
+  package, adds `#[doc(alias = "usb")]`, drops the `Name:` block at `src/lib.rs` line 42 and gives
+  the driver a `package =` dependency.
+- P0-3, 30 names the template gates refuse: Done,
+  [#3614](https://github.com/nifeos/nife/pull/3614).
+- P1-4, README, license files, changelog, scaffold files and stranger test: Open. The crate holds
+  only `Cargo.toml`, `src/` and `falsifications/`.
+- P1-5, review package and index row: Done,
+  [#3614](https://github.com/nifeos/nife/pull/3614)
+  ([the package](../../notes/crate-reviews/universal-serial-bus.md)).
+- P1-6, usage table stops at 0x63: Done, [#3614](https://github.com/nifeos/nife/pull/3614). The
+  table runs through 0x8b.
+- P1-7, two-interface paths and event order unproven: Done,
+  [#3614](https://github.com/nifeos/nife/pull/3614).
+- P1-8, short interface or endpoint descriptor leaves the candidate open: Done,
+  [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-9, duplicated usage releases twice: Done,
+  [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-10, no fuzz target: Open. The move lane writes two, `find_boot_keyboard` and `changes`.
+- P2-11, `control_max_packet` looser than the specification: Done,
+  [#3614](https://github.com/nifeos/nife/pull/3614).
+- P2-12, reserved bits of `bEndpointAddress` pass through: Done,
+  [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-13, four documentation gaps: Done, [#3614](https://github.com/nifeos/nife/pull/3614). The
+  README half is P1-4's.
+- P2-14, private names the report-only gate lists: Done,
+  [#3614](https://github.com/nifeos/nife/pull/3614).
+- Decision 1, public rename table: Done, [#3614](https://github.com/nifeos/nife/pull/3614)
+  (maintainer, provisional, 2026-11-14 UTC).
+- Decision 1, ratifying the public names: Open. calef's, under "Open decisions".
+- Decision 2, `changes` emits HID usages: Ruled (maintainer, provisional, 2026-11-14 UTC). Not
+  built: `changes` still emits evdev codes, `evdev_code` lacks the eight modifier rows, and
+  `MODIFIER_CODES` is still public (`boot_keyboard.rs` line 46).
+- Decision 3, one result type and a four-way `Speed`: Ruled (maintainer, provisional,
+  2026-11-14 UTC). [#3614](https://github.com/nifeos/nife/pull/3614) built the `Speed` half.
+  Not built: `DeviceDescriptor::parse` still answers `Option` (`descriptor.rs` line 100).
+- Prose acronyms, the 13 findings the review package lists: Open. The move lane expands each at
+  first use.
+- Clearing the review package, which approves the repository and the move: Open. calef's, under
+  "Open decisions".
+
+## Open decisions
+
+### Ratify the public names of `universal_serial_bus`
+
+Background. This crate is the host side of a USB boot keyboard: it parses what a device sends,
+builds the setup packets a host sends, and turns the eight-byte report into key events. nife's xHCI
+keyboard driver is its one caller, and it publishes on crates.io as `universal_serial_bus` beside
+`extensible_host_controller_interface`. The review found nine public names the template's gates
+refuse (`max_packet`, `DEVICE_LEN`, `config`). The maintainer chose new spellings on 2026-11-14
+(UTC), provisionally, and #3614 built them. The review package tables every public name as
+provisional. After the first publish, a rename is a breaking release every user must follow.
+
+Recommendation: A, ratify the names as built, with the specification's spellings kept as aliases
+(`bMaxPacketSize0`, `wTotalLength`, `wLength`, `ErrorRollOver`, `bcdUSB`), leaving out
+`MODIFIER_CODES`, which Decision 2's work removes from the public surface.
+
+- A. Ratify every name in the package as built.
+- B. Ratify all but named rows, which take new spellings; the likeliest are the two coined ones,
+  `control_packet_size_code` and `usb_release_binary_coded_decimal`.
+- C. Hold ratification until the work of Decisions 2 and 3 lands, so the ratified surface is the
+  final one.
+
+Door: one-way. A published name binds every user who builds against it; before the first publish
+it can still change, which is why this asks now.
+
+Prior art. Linux keeps the specification's field names (`bMaxPacketSize0` in
+`struct usb_device_descriptor`), which makes the specification searchable but leaves the unit and
+meaning to the reader. The `usb-device` crate spells it `max_packet_size_0` (from memory). nife's
+name says the unit or the encoding, and the specification's spelling is an alias. calef ratified
+the xHCI crate's names in this form on 2026-11-16 (UTC). Concrete example: a search of docs.rs for
+`bMaxPacketSize0` lands on `DeviceDescriptor::control_packet_size_code`, and
+`control_maximum_packet_bytes(code, Speed::High)` answers the size in bytes.
+
+What it blocks: the move, and with it the tag and the first publish.
+
+### Clear the review package
+
+Background. A crate leaves nife only after calef clears its review package, and clearing approves
+its repository (the rule of 2026-11-01 UTC). The package
+[`notes/crate-reviews/universal-serial-bus.md`](../../notes/crate-reviews/universal-serial-bus.md)
+asks for the names ruling above. The xHCI crate this one accompanies has moved.
+The move lane writes the manifest, the published name, the scaffold files and the fuzz targets
+(P0-1, P0-2, P1-4, P1-10), so clearing does not wait for them.
+
+Recommendation: A, clear the package after the names ruling, with the work of Decisions 2 and 3
+landing in nife before the move commit.
+
+- A. Clear after the names ruling; the move waits until nife builds Decisions 2 and 3.
+- B. Clear after the names ruling and move first; the new repository builds Decisions 2 and 3.
+- C. Do not clear; the crate stays in nife until a second consumer appears.
+
+Door: one-way. Clearing creates a public repository under its published name, and nife and basalt
+then pin it.
+
+Prior art. rust-vmm keeps each crate (`vm-memory`, `virtio-queue`) in a repository of its own and
+pins them from its consumers (from memory). nife cleared its xHCI, e1000e and FAT packages the
+same way, one approval each. The release order of milestone 857 refuses option C, since it
+publishes this crate with xHCI, and so does the rule that a crate leaves when it would publish on
+its merits. Concrete example: after clearing, `script/crate-move` creates
+`nifeos/universal_serial_bus`, and nife's driver depends on it as `usb = { package =
+"universal_serial_bus", git = ..., rev = ... }`.
+
+What it blocks: the move, and with it the tag and the first publish.
 
 ## What was checked, and how
 
@@ -67,64 +172,7 @@ maintainer decides it.
 
 ### P0: blocks the move or the first release
 
-1. The manifest cannot stand alone.
-   Finding: `Cargo.toml` has no `description`, `repository`, `readme`, `keywords`, `categories` or
-   `rust-version`. Its description is a comment, not a field. `license.workspace = true` and
-   `lints.workspace = true` inherit a workspace that will not exist after the move. The
-   `publish = false` line's comment points at `crates/publish-allowlist.txt`, a file of this
-   repository. `standalone.py` lists all of these and exits "does not stand alone yet".
-   Evidence: `crates/usb/Cargo.toml` lines 1 to 15.
-   Change: at the move, set `license = "MIT OR Apache-2.0"`. Set `rust-version` at the value the
-   `msrv` job confirms (1.88 or higher, since `changes` uses let chains; unverified). Add a
-   one-sentence `description` ("The host side of a USB boot keyboard: descriptors, setup packets
-   and reports, parsed to refuse"). Add `keywords = ["usb", "hid", "keyboard", "no-std", "kani"]`,
-   `categories = ["no-std", "hardware-support", "parser-implementations"]` and `readme =
-   "README.md"`. Copy the lint table in. Keep the `publish` line, with one sentence a stranger can
-   act on until the release that publishes.
-   Door: the metadata is two-way; the publication is one-way and already held by the standing
-   publishing hold. Effort: S.
-
-2. The crate contradicts its own published name, and the promised alias is missing.
-   Finding: the release ruling publishes the crate as `universal_serial_bus`, and the xHCI review
-   package says the crate "carries `#[doc(alias = "usb")]` so a search for `usb` still finds it".
-   The crate carries no such alias, and its `Name:` block argues for the opposite name ("`usb` and
-   not `universal_serial_bus` by DECISIONS §154"). Both readings are right about different things.
-   §154 governs `usb` as a word inside names    (`usb_keyboard_driver`), and crates.io forces the
-   published crate name. The package's claim about the alias is false today.
-   Evidence: `crates/usb/src/lib.rs` lines 32 to 34; the package's "Companion crate" paragraph;
-   `standalone.py`'s three findings on `src/lib.rs` lines 32 and 33 (a milestone citation, a
-   provenance block and a section citation).
-   Change: at the move, rename the package and the directory to `universal_serial_bus`. Add
-   `#[doc(alias = "usb")]` at the crate root. Delete the `Name:` block (the move commit strips
-   provenance blocks). Rewrite the first sentence of the crate documentation so a crates.io reader
-   learns in one line why the name is long. In nife, the dependency line becomes `usb = {
-   package = "universal_serial_bus", git = ..., rev = ... }` or the driver's `use` lines change;
-   the former keeps the driver's diff to one line.
-   Door: the published name is one-way and already ruled; the alias and the dependency form are
-   two-way. Effort: S.
-
-3. The template's naming gates fail on 30 names, 9 of them public.
-   Finding: `spelled_out.py` refuses `max` in `max_packet` (two fields), `max_packet0`,
-   `control_max_packet` and its parameter `b_max_packet0`. It also refuses `config` as the
-   parameter of `find_boot_keyboard`. `register_names.py` refuses `DEVICE_LEN`,
-   `CONFIGURATION_LEN`, `INTERFACE_LEN`, `ENDPOINT_LEN` and `REPORT_LEN` (a length carries its
-   unit). It refuses `total_length` and `SetupPacket::length` (the same, unless the item says it
-   mirrors the specification). It also refuses `ERROR_ROLL_OVER` (its doc comment names the source
-   spelling, so it carries `#[doc(alias = "ErrorRollOver")]`). The rest are locals and test names. The `check / standalone`
-   job runs these at a ceiling of 0, so the new repository is red on its first push.
-   Evidence: `crates/usb/src/descriptor.rs` lines 20 to 27, 63, 76, 111, 124, 159, 195, 234, 238,
-   260; `crates/usb/src/boot_keyboard.rs` lines 34 and 38; `crates/usb/src/request.rs` lines 38
-   and 124.
-   Change: the public renames are Decision 1's table, decided provisionally. Rename
-   locals `config` to `configuration` and `max_packet` to `maximum_packet_bytes`. Rename the test
-   `the_class_requests_address_the_interface` to `the_class_requests_are_sent_to_the_interface`
-   (the gate reads a leading `address` as a verb). Rename the binding `address` in the walk to
-   `endpoint_number_and_direction`, the spelling the xHCI package ratified for the same byte. The
-   caller changes with the public names: `usb_keyboard_driver.rs` reads `keyboard.max_packet`,
-   `descriptor::DEVICE_LEN`, `descriptor::CONFIGURATION_LEN`, `REPORT_LEN` and
-   `control_max_packet`.
-   Door: two-way before the first release. Effort: M, counting the
-   caller.
+The P0 items are in [the appendix](1111-usb-outside-review/blocks-the-move.md).
 
 ### P2: later
 
@@ -177,7 +225,7 @@ itself is not the name it publishes under. The table above is the rule, every ro
 including `parse(bytes)`. The specification's spellings stay as aliases (`bMaxPacketSize0`,
 `wTotalLength`, `wLength`, `ErrorRollOver`, `bcdUSB`). No old spelling of this tree stays as an
 alias. The premises hold at `crates/usb/src/descriptor.rs` lines 20 to 27, 76, 111, 159 and 195,
-and `boot_keyboard.rs` line 34. Item 3 is the work. Ratifying the names stays the architect's.
+and `boot_keyboard.rs` line 34. Item 3 is the work. Ratifying the names stays the architect's (see "Open decisions").
 
 ### Decision 2. What `changes` emits: Linux key codes or HID usages
 
@@ -210,9 +258,9 @@ Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door befor
 release, which the architect may revisit. The door is not one-way, as the background above
 reads it. Before the first release the only caller is in nife, and the codes cross no wire: the
 driver feeds them into its own keymap (`components/src/usb_keyboard_driver.rs`, `keys.event(EV_KEY,
-code, ...)` near line 906). `changes` (`boot_keyboard.rs` line 245) emits HID usages, modifiers as
+code, ...)` near line 906). `changes` (`boot_keyboard.rs` line 305) emits HID usages, modifiers as
 0xe0 to 0xe7, in the same order and under the same bound. The driver maps each usage through
-`evdev_code` (line 121), and `MODIFIER_CODES` (line 43) leaves the public surface. It also follows
+`evdev_code` (line 137), and `MODIFIER_CODES` (line 46) leaves the public surface. It also follows
 the rule that the usage table follows the HID Usage Tables. The block chose the evdev form only
 for effort.
 
@@ -241,39 +289,14 @@ Concrete example: a device descriptor whose `bDescriptorType` is 2 answers
 descriptor, 18 bytes".
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
-release, which the architect may revisit. `DeviceDescriptor::parse` (`descriptor.rs` line 88)
+release, which the architect may revisit. `DeviceDescriptor::parse` (`descriptor.rs` line 100)
 returns `Result<DeviceDescriptor, Refusal>`, and `BootReport::parse` keeps `Option`. The four-way
-`Speed` replaces `superspeed: bool` (line 111). Item 11 is the work.
+`Speed` replaces `superspeed: bool`. Item 11 is the work of the `Speed` half.
 
 ## Follow-on
 
-- **Done.** Items 8, 9 and 12: a type-4 or type-5 descriptor shorter than its layout is
-  `Malformed { at }` (`a_short_interface_or_endpoint_is_malformed_and_two_bytes_is_enough`), a
-  usage duplicated in the earlier report releases once (`a_duplicated_usage_releases_once`), and
-  `endpoint` carries only its number and direction (`the_endpoint_carries_only_its_number_and_direction`).
-- **Done.** Item 7: `a_boot_interface_without_an_endpoint_is_refused_by_number` covers the
-  `without_endpoint` path. `two_interfaces_are_walked_as_two` fixes a 41-byte shape of two
-  interfaces and reaches all three paths that need a second one (14 s under Kani), and
-  `two_reports_produce_their_events_in_order` proves the event order and that each event names a
-  key that changed (238 s). Each has a falsification patch, and `lib.rs` names the bounds and the
-  two things outside them.
-- **Done.** Item 13 in the crate: the walk's start, the report's tail and `get_descriptor`'s
-  `index`. The README sentences are item 4's.
-- **Done.** Item 3, by Decision 1's table: every public and private name the gates refused, and
-  the caller, with item 14's private locals. The template's naming helpers refuse 0 of 239 names.
-- **Done.** Item 11: `control_maximum_packet_bytes` takes a `Speed` and accepts 8 at low speed, 64
-  at high speed, 8, 16, 32 or 64 at full speed and the exponent 9 at SuperSpeed, and its
-  documentation states what Linux's hub driver does instead. The driver maps the xHCI port speed
-  to it.
-- **Done.** Item 6: the table runs through 0x8b, each row from the Usage Tables and
-  `input-event-codes.h`; the Linux cross-check agrees on 140 of 144 rows and names the four
-  choices.
-- **Done.** Item 5: [the review package](../../notes/crate-reviews/universal-serial-bus.md) and
-  its index row.
-- **Outstanding.** Items 1, 2, 4 and 10 are the move lane's (manifest, name, scaffold files, fuzz
-  crate), as are the 13 prose acronym findings the package lists.
-- **Outstanding.** The work of Decision 2 (`changes` emits HID usages) and of Decision 3's other
-  half (`DeviceDescriptor::parse` answers `Result`).
+- **Outstanding.** The findings "Finding status" marks Open or Ruled, each line read against
+  `crates/usb`.
 
 ## Done when
 

@@ -106,7 +106,7 @@ the program (Decision 1), the names become private and the same list becomes the
 worklist. The fix: one rename lane after Decision 1, bringing the public names to the architect.
 Effort: M. Two-way today (nothing has a release); one-way the day the crate publishes a name.
 
-10. The documentation describes a different crate. PARTLY DONE (the crate doc lists the roles, a report-code table sits beside `report_code`, and the example imports nothing unused; the README and the citations wait for Decision 1). The crate doc (`:2`) opens with "A virtio
+10. The documentation describes a different crate. DONE (the module doc lists the roles, a report-code table sits beside `report_code`, the example imports nothing unused, and the kernel comments and notes name `components/src/block_driver_roles.rs`; the fold leaves no README to write). The crate doc (`:2`) opens with "A virtio
 driver, block and net, at EL0". A stranger expects a library and finds seven `-> !` entry points.
 There is no README. Shipped text cites 17 paths into this tree, 9 milestones, 3 sections and the
 architect by name (`script/crate-standalone`), and a reader outside the tree can follow none of

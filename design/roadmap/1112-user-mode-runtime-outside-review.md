@@ -22,10 +22,9 @@ crate in step 3, after `abi`, `address_space_layout`, `current_cpu_contract` and
 crates it links. Nothing here reopens those. Where a later rule contradicts a recorded ruling, the
 item says so.
 
-Two pull requests in flight touch `src/socket_frame.rs`: #3517 (a send's length rides in the `CALL`
-argument word) and the ruling that `ACCEPT`'s second reply word carries the peer. Both are read
-against the items below; neither changes a line of code in this crate, only documentation and one
-example.
+Two rulings touch `src/socket_frame.rs`: a send's length rides in the `CALL` argument word
+(#3517), and `ACCEPT`'s second reply word carries the peer. The items below hold under both, which
+change only documentation and one example in this crate.
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-standalone`,
 `script/crate-move --dry-run`, the template's name and prose gates, cargo-llvm-cov, cargo-mutants.
@@ -41,9 +40,99 @@ function is safe to call with any argument. A wrong argument panics or meets a r
 kernel, and it never reads or writes memory the type did not promise. The repository's required checks are green for the
 crate's own reasons.
 
-## Where this stands
+## Finding status
 
-[The appendix](1112-user-mode-runtime-outside-review/where-this-stands.md).
+- P0-1, `MappedWindow::read<T>` and `write<T>` take any type at any offset: Done, [#3580](https://github.com/nifeos/nife/pull/3580). They
+  take the sealed `WindowInteger`, and a misaligned address panics.
+- P0-2, two barriers declared `nomem`: Done, [#3527](https://github.com/nifeos/nife/pull/3527).
+- P0-3, the manifest and the files the standalone check refuses: Open. The crate still inherits
+  its license and lints, and lacks `rust-version`, description, repository, keywords, categories,
+  a README for three targets, license files, a publish comment and a version on `jig`'s
+  dependency.
+- P0-4, no test target: Done, [#3611](https://github.com/nifeos/nife/pull/3611). Two doctests stay `ignore` with a stated reason
+  (`src/process.rs` lines 124 and 170).
+- P0-5, build scripts reach `link.ld` by a relative path: Done, [#3611](https://github.com/nifeos/nife/pull/3611).
+- P1-6, a zero `CNTFRQ_EL0` divides by zero: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-7, the aarch64 child stub hard-codes two `abi` constants: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-8, text that speaks to a reader inside nife: Open. Nine source files cite a section, about 64
+  lines cite a milestone, and 29 mention `notes/`. `notes/user-mode-runtime.md` and its directory
+  move into the crate's `docs/`, and the externalized-crates ceiling falls to zero.
+- P1-9, twenty-four acronyms not expanded at first use: Open, with `SEND` in backticks.
+- P1-10, `Frame::payload_read` trusts a reply length: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P1-11, `INITIAL_RAMDISK_VIRTUAL_ADDRESS` is a literal: Done, [#3611](https://github.com/nifeos/nife/pull/3611).
+- P2-12, an unused dependency on aarch64: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-13, names the abbreviation gate flags: Done, [#3611](https://github.com/nifeos/nife/pull/3611).
+- P2-14, two spellings of the empty-slot probe: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-15, ten receive functions in three shapes: Done, [#3611](https://github.com/nifeos/nife/pull/3611).
+- P2-16, a stale reason for `socket_frame` living here: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-17, no wrapper for `SYSCALL_EXIT_THREAD`: Done, [#3629](https://github.com/nifeos/nife/pull/3629) (maintainer, provisional,
+  2026-11-15 UTC); the docs of `exit` say why none is needed.
+- Decision 1, the rename table: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional, 2026-11-14 UTC).
+- Decision 1, ratifying the names and the sized accessors: Open. calef's, under "Open decisions".
+- Decision 2, `link.ld` on the link search path: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional,
+  2026-11-14 UTC). A two-way door until `disk-tools` leaves (milestone 1017 step 4), so not calef's
+  until then.
+- Decision 3, one `Message` and one `Received`: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional,
+  2026-11-14 UTC).
+- Review package: Open. `notes/crate-reviews/` has no package for this crate and no index row.
+- Clearing the review package, which approves the repository and the move: Open. calef's, under
+  "Open decisions". The move also waits on milestone 1017 step 3.
+
+## Open decisions
+
+### Ratify the names of `user_mode_runtime`, and keep or remove the sized accessors
+
+Background. This crate is what every nife program links: the syscall wrapper, the entry macro, the
+panic handler and typed windows over memory the kernel hands a process. It leaves nife for its own
+repository, and a crate leaves with ratified names. The maintainer ruled the renames on 2026-11-14
+(UTC), provisionally, and #3611 built them; each renamed name carries a provisional `Name:` block.
+One row stays open: the sized window accessors `read_u8` to `write_u64` (`src/mapped_window.rs`)
+sit beside the generic `read::<T>`, which takes the same sealed integer types. After the first tag
+a name, or an accessor, is a published surface.
+
+Recommendation: B. Ratify the names as built, and remove the sized accessors in favor of
+`read::<T>`. One way to read a window is the stricter surface; adding the sized forms back later is
+compatible, and removing them after the tag is not. The change touches about 147 call sites, which
+is effort, not a reason either way.
+
+- A. Ratify the names as built and keep both forms.
+- B. Ratify the names and remove `read_u8` to `write_u64`, so `read::<T>` and `write::<T>` stay.
+- C. Hold ratification until the review package exists, and rule there.
+
+Door: one-way at the first tag. Before it every name is two-way; after it, a rename or a removal is
+a breaking release for every program that links the crate.
+
+Prior art. Linux spells one function per width (`readb`, `readl`, `readq`), and OpenBSD does the
+same (`bus_space_read_1` to `_8`), because C has no generic. `tock-registers` and the `volatile`
+crate take one generic over an integer trait (`UIntLike`, from memory), as `WindowInteger` does
+here. nife differs from Linux and OpenBSD in having the generic already, so the sized forms are a second
+spelling of the same call. Concrete example: `window.read_u32(0x70)` and `window.read::<u32>(0x70)`
+read the same register today; under B only the second compiles.
+
+What it blocks: the move, and with it the tag.
+
+### Clear the review package once it is written
+
+Background. A crate leaves nife only after calef clears its review package, and clearing approves
+its repository (the rule of 2026-11-01 UTC). This crate has no package yet, and a lane writes it
+next. Every nife program and `disk-tools` depend on this crate, so it leaves at step 3 of milestone
+1017, after the contract crates it links.
+
+Recommendation: A, clear the package once it and P0-3 land; milestone 1017 step 3 times the move.
+
+- A. Clear when the package and the manifest work land.
+- B. Clear only after P1-8 and P1-9 land as well, so the repository opens with no nife-facing text.
+- C. Keep the crate in nife. Refused: `disk-tools` and every program outside the kernel use it, and
+  a crate used by more than one repository leaves.
+
+Door: one-way. Clearing creates a public repository, and nife, basalt and `disk-tools` then pin it.
+
+Prior art. `cortex-m-rt` lives in its own repository and every embedded binary pins it, which is
+the shape Decision 2 copied for `link.ld`. nife cleared its xHCI, e1000e and FAT packages one
+approval each. Concrete example: after clearing, `script/crate-move` creates
+`nifeos/user_mode_runtime`, and each program's manifest pins it by a full commit.
+
+What it blocks: the move, and with it `disk-tools` leaving (milestone 1017 step 4).
 
 ## What was checked, and how
 
@@ -118,11 +207,11 @@ Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, whic
 revisit. These are names in an unreleased crate, and a crate
 tag is a pre-release. The table above is the rule as written, with `counter_hertz` matching the
 ratified `counter_frequency_contract` method `hertz`. The open row takes the spelled-out form:
-`r8` to `w64` (`src/mapped_window.rs` lines 100 to 130, 147 call sites) become `read_u8` to
-`write_u64`. Removing them in favor of the existing `read::<T>` (line 84) is the stricter option,
-and it stays open for the architect at ratification. The premises hold at `src/clock.rs` lines 45,
-72 and 128 and `src/mapped_window.rs` lines 37, 66 and 145. Item 13 is the work. Ratifying the
-names stays the architect's.
+`r8` to `w64` (`src/mapped_window.rs` lines 146 to 193, 147 call sites) become `read_u8` to
+`write_u64`. Removing them in favor of the existing `read::<T>` (line 123) is the stricter option,
+and it stays open for the architect (see "Open decisions"). The renamed items are at
+`src/clock.rs` lines 48, 82 and 142 and `src/mapped_window.rs` lines 39, 94 and 203. Item 13 is
+the work. Ratifying the names stays the architect's.
 The abbreviation gate reads a bare `address` as ambiguous, so three rows land qualified:
 `virtual_address_space_slot`, `virtual_address_space_list` and `destination_network_address`.
 
@@ -180,34 +269,8 @@ has no caller outside the crate. Item 15 is the work.
 
 ## Follow-on
 
-- **Done.** Item 1: `read` and `write` take the sealed `WindowInteger`, and a misaligned address
-  panics. No host test yet, since the crate has no test target (item 4).
-- **Done.** Item 2: no barrier arm carries `nomem` at this head, checked in `mapped_window.rs` and
-  `virtio.rs`.
-- **Done.** Items 6, 7, 10, 12, 14 and 16: the zero `CNTFRQ_EL0` refusal, the aarch64 stub
-  immediates from `abi`, `Frame::len` with the `DATA_MAXIMUM` clamp, the target-gated
-  dependency, `retype_sleeper` through `is_granted`, and the dependency-direction sentence. Builds
-  on three targets, no test target for them.
-- **Done.** Item 4: the crate has a host test target. Host tests cover the window, the frame,
-  `Delivered::decode`, the three child stubs, the nanosecond conversion and the `link.ld` base.
-  `script/lint` runs them on the host and builds the crate with `--lib` on the bare-metal targets.
-  `xtask` runs them in the host suite.
-- **Done.** Item 5: a `build.rs` in the crate puts `link.ld` on the link search path, and every
-  consumer emits `-Tlink.ld` with no path. The std programs depend on the crate for it, which grew
-  their lockfiles. This lane does not build them.
-- **Done.** Item 11: `address_space_layout` derives `INITIAL_RAMDISK_VIRTUAL_ADDRESS` from the
-  runtime window base, and the kernel loader and this crate re-export it. The crate no longer sets
-  `test = false`.
-- **Done.** Item 13, under the provisional Decision 1: the crate and every caller spell out the abbreviated
-  names, with no alias for an old spelling. Every renamed public name carries a
-  provisional `Name:` block. The architect ratifies them.
-- **Done.** Item 15, under the provisional Decision 3: `Message`, `Received`, `receive_message` and
-  `receive_capability_message` replace the seven projections. `receive`, `receive_capability`,
-  `receive_request` and `call` stay. No wire byte or syscall moves.
-- **Done.** Item 17, provisional: the crate has no `exit_thread` wrapper and the docs of `exit` say
-  why. No `no_std` program needs the fifth number; a wrapper added later is compatible.
-- **Outstanding.** Items 3, 8 and 9 belong to the move lane.
-- **Done.** The two texts items 4 and 16 made stale: the `xtask` copy of the link-script test is gone, and the `socket_contract` manifest comment states the real reason.
+- **Outstanding.** The findings "Finding status" marks Open, each line read against
+  `crates/user_mode_runtime`.
 
 ## Done when
 
