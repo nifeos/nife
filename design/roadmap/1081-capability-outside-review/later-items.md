@@ -27,7 +27,7 @@ An appendix to [the milestone](../1081-capability-outside-review.md).
     the right", a different fact. Capsicum separates these (`ENOTCAPABLE` versus `EBADF`).
     Evidence: `src/lib.rs` lines 197 to 207, 397 to 403, 435 to 444.
     Change: implement `Display` (and `core::error::Error`, which is stable in `core`); consider
-    `SlotOccupied` and `InsufficientRights` variants (provisional), with the kernel mapping them
+    `SlotOccupied` and `InsufficientRights` variants, with the kernel mapping them
     onto its `abi::Error` as it does today.
     Door: two-way before the release; the variant set is a published name after it. Effort: S.
 

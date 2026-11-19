@@ -19,9 +19,9 @@ An appendix to [the milestone](../1081-capability-outside-review.md).
    Evidence: `src/lib.rs` lines 62 to 64, 453 to 472, 717 to 758; `kernel/src/sched/capabilities.rs`
    lines 340 to 400; `kernel/src/syscall.rs` lines 196 to 214; `grep -rn '\.derive(' kernel/src`.
    Change: put the rule in the crate once, as a method on `Capability<O>`: `delegate(&self,
-   rights: Rights) -> Result<Capability<O>, Error>` (name provisional), refusing without `GRANT`
-   and refusing a widening, with a new error variant for the first refusal (`GrantRequired`,
-   provisional). Have `Delegation::derive` and `CapabilityTable::derive` call it, so the kernel's
+   rights: Rights) -> Result<Capability<O>, Error>`, refusing without `GRANT`
+   and refusing a widening, with a new error variant for the first refusal (`GrantRequired`).
+   Have `Delegation::derive` and `CapabilityTable::derive` call it, so the kernel's
    lock discipline stays where it is and the rule has one body. Prove it: a harness over all 2^32
    source and requested rights that `Ok` implies `GRANT` held and the result's bits are within the
    source's, stated in raw bits as `derive_never_widens_rights` is, with a falsification patch that
@@ -52,7 +52,7 @@ An appendix to [the milestone](../1081-capability-outside-review.md).
    Evidence: `src/lib.rs` lines 377 to 385; `design/naming.md`, "Shapes".
    Change: rename to `capacity` (std's word for exactly this on `Vec` and `HashMap`), keep
    `is_empty` and `used`, add `len` only if it returns `used`. Four kernel call sites move with it.
-   Door: two-way before the release; a published name after it. Effort: S. Name provisional.
+   Door: two-way before the release; a published name after it. Effort: S.
 
 6. The move tool breaks every regenerated patch and skips the manifest step while reporting both
    as done.
