@@ -38,3 +38,10 @@ On hardware, with a VisionFive 2 on the bench; the review could run none of thes
 - A capture of at least one mebibyte run through a statistical suite, recorded as a measurement
   beside the README's "quality unmeasured" line, not as a proof.
 
+
+These hold on `main`. `cargo semver-checks --baseline-rev v0.2.0` finds the manifest already at a
+breaking version. Every harness and falsification patch passes in `proofs`, and the full mutation
+run at `v0.3.0-pre.1` is green. `cargo package --list` shows only what item 11 names. The naming
+checks and `standalone` pass at the current template, and the report-only README checks list
+nothing. Every hardware check above has a pass or a recorded answer from the board, except the two
+bench rows of the milestone's follow-on.

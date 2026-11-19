@@ -26,41 +26,8 @@ should carry. The items below say what stands between the repository as it is an
 
 ## What was verified firsthand
 
-The lane ran or read every claim in this section on a host; nothing here ran on a board.
-
-- `cargo build`, `cargo test` (18 unit tests, 2 doctests), `cargo clippy --all-targets -D warnings`,
-  `cargo doc` with warnings denied and `cargo fmt --check` pass on stable 1.99.1 and on 1.88, the
-  manifest's `rust-version`.
-- Kani 0.68.0 verifies all four harnesses. Each of the four falsification patches applies with
-  `git apply -p1` and makes its own harness fail.
-- cargo-mutants: 79 mutants, 76 caught, 1 unviable, 2 missed, and the 2 missed are the two
-  `1 << 0` constants `.github/mutants-exempts` exempts with a reason.
-- cargo-semver-checks reports no API change between the tag `v0.2.0` and `main`.
-- `cargo package` builds a 37,612-byte archive; `cargo publish --dry-run` was not run because the
-  manifest refuses it (`publish = false`).
-- The 20 register offsets, 4 command values and 20 bit constants match Linux's
-  `drivers/char/hw_random/jh7110-trng.c` and NetBSD's `sys/arch/riscv/starfive/jh7110_trng.c`,
-  read from their current trees. NetBSD also names field bits in `FEATURES` and `BCONF` that the
-  crate does not.
-- The source holds no `unsafe`, no dependency, no contraction in prose, and no mention of the
-  parent project beyond the organization and App names the workflows need.
-- The template pin `d332215` sits on `nifeos/crate-workflows` `main`, 57 commits behind it. Since the pin the template has moved the full mutation run into its own `mutation.yml`. It has made
-  `check / mutation-diff` a required check on every crate repository's `main`. It has also taught the release gate to refuse a release without a green full mutation run at the release commit.
-- The newest weekly run (`42658233510`) failed in `weekly / mutation`: the verdict step found
-  `0 of 1 shards left an outcomes.json` after the shard itself passed in 55 seconds. The weekly
-  run before it was green. The defect is in the pinned template's artifact handling, not in the crate.
-- The current template's helpers, run over the checkout, give this result. The seven naming checks refuse 0 of 162 names, and `standalone` passes. The report-only checks list three README section-order findings, one
-  acronym (`TRNG` in the crate doc's first sentence, before its expansion) and 20 name components
-  that are not dictionary words (`reseed`, `unseeded`, `buf`, and test-name components).
-- crates.io has no `jh7110_entropy`. rand_core's current release is 0.10.1; its traits are
-  `TryRng`, `Rng`, `CryptoRng` and `TryCryptoRng`, with `RngCore` and `TryRngCore` kept as
-  compatibility traits. getrandom's README documents an opt-in `custom` backend selected by the
-  `getrandom_backend` configuration flag.
-- The GitHub team `nifeos/crate-maintainers` that `CODEOWNERS` names exists.
-
-Not run: a comparison against the JH7110 Technical Reference Manual (no copy in hand), the vendor
-Linux and U-Boot trees, Miri, fuzzing, a build on a 1.85 toolchain, the template's release dry run,
-and anything on hardware.
+What the review ran or read on a host, and what it did not run, is in the
+[evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
 ## The items
 
@@ -71,6 +38,8 @@ lands before the first release, P2 can follow it.
 
 #### Item 1: The publishing hold
 
+Status: Ruled, held. 0.3.0 is the first published version; it waits on the publishing hold, which lasts until every outside review milestone is delivered.
+
 A standing ruling holds every crates.io publish from this organization
 until several crates have left and a review has decided whether any of them combine. No work in
 this repository changes that; the block records it so nobody reads a green gate as permission.
@@ -79,13 +48,17 @@ hold. One-way (a published version is permanent). Ruled. Effort none.
 
 #### Item 2: The manifest refuses to publish, by design
 
+Status: Ruled, held. The comment beside `publish = false` already says the line comes out in the release pull request; both lines come out there, after the hold.
+
 `Cargo.toml` carries `publish = false` and
 `.github/workflows/ci.yml` passes `allow-unpublished: true`. Both come out in the release
-pull request, and the comment beside `publish = false` ("release step 7 removes this line") is
+pull request. The comment beside `publish = false` ("release step 7 removes this line") is
 rewritten to say what a reader of this repository can act on: the line comes out when the
 crate publishes. Two-way. Effort XS.
 
 #### Item 3: The first publish needs a token
+
+Status: Held. A person's step after the hold lifts; no question is open until then.
 
 crates.io binds a trusted publisher only to a crate that
 exists, so the template's release path uses the `crates-io` environment secret
@@ -96,36 +69,21 @@ environment approval wait for the publishing hold to lift. Effort S.
 
 #### Item 4: The published tree ran on the board twice, at one commit
 
-The bench ran on radon (a VisionFive 2) on 2026-11-09 and 2026-11-10 (UTC) against crate commit
-`ee0bde8feb9f78a67da011c928f9a2a697f3bbc1`, with one payload built from
-nife `9a1c55963b`. It loaded over the network after a cold power-on; the person says the second followed
-an hour unpowered. The checker printed PASS both times. Tables, logs and SHA-256 sums are in
-[bench/radon-2026-11-09/](../../bench/radon-2026-11-09/README-1049.md) and
-[bench/radon-2026-11-10/](../../bench/radon-2026-11-10/README-1049.md).
+Status: Done. Landed in `nifeos/jh7110_entropy#22` and `#23` (`ee0bde8`) and `#25` (`v0.3.0-pre.1`, `497d3ec`, nife #3701). Two bench questions stay open, under *What remains*.
 
-- Passed, both runs: the polled reseed and generations, 256-bit output after `MODE_256_BIT_OUTPUT`, and
-  1,048,576 driver-path generations with no timeout, wrong width or all-zero output.
-- Recorded, not judged: the first `STAT` read was `0x08040308` both times (`SEEDED` = 1, `LAST_RESEED` = 4).
-  That repeats across two power-ons; it is the state after the bootloader, not shown to be silicon reset. `MODE`, `FEATURES` and `BCONF` were read before any `MODE` write, so "`BCONF` bit 3 set means
-  256-bit" holds only if nothing wrote `MODE` since reset. `STAT` bits 19 to 23
-  never set. The tables differ in the reseed median and the `RAND_RDY` with `RAND_GENERATING` counts.
-- Open: no `LFSR_LOCKUP` appeared, so whether a reseed clears it is unknown.
-- Statistics: two captures; 2 and 1 of 524 FIPS 140-2 blocks failed (bar at most 3). They show no gross defect. They prove nothing about unpredictability. The
-  second run's `ent` output recomputes the same statistics: a cross-check, not an independent suite.
-
-Two-way. Effort M, bench time.
+The finding as raised is in the [evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
 ### P1
 
 #### Item 5: Bump the template pin and adopt what the template now expects
 
-`ci.yml` and the five
-sibling callers pin `d332215`, 57 commits behind. At the current template the full mutation run lives in a caller `.github/workflows/mutation.yml`. That file carries the repository's own cron line, which `python3 helpers/mutation_plan.py schedule jh7110_entropy` prints in a template checkout. `check / mutation-diff` is a required check that `script/apply-settings` adds to the ruleset,
-`.github/ci-job-budgets` gains `mutation-diff 30` with its reason, and the release gate
-refuses a release with no green full mutation run at that commit. The red weekly run
-(`42658233510`) is the pinned template's defect and goes away with the bump. Two-way. Effort S.
+Status: Done. Landed in `nifeos/jh7110_entropy#26`, `#27`, `#30` and `#33`. The ruleset on `main` requires `check / mutation-diff` and `proofs / loom`.
+
+The finding as raised is in the [evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
 #### Item 6: The decode ignores the output width
+
+Status: Done. Landed in `nifeos/jh7110_entropy#19` (harness `a_128_bit_answer_is_never_served`).
 
 `generation_outcome` answers
 `Ready([u8; 32])` whenever `RAND_RDY` shows on a seeded core. It never looks at `STATUS_256_BIT_OUTPUT`, although `status` is in hand, and the doc comments
@@ -138,17 +96,13 @@ README's bring-up paragraph points at it. Adding a variant to an enum that is no
 
 #### Item 7: The decode ignores a generation or reseed in flight
 
-`STATUS_GENERATING` and
-`STATUS_RESEEDING` exist as constants, and `generation_outcome` does not
-read them. `generation_outcome` answers `Ready` for a snapshot with `RAND_RDY` latched while `STAT` reports a generation in flight, and `RANDOM_NUMBER_0..7` may be mid-rewrite at that instant. Linux's driver
-polls both bits clear before issuing a command, which is why it never meets this; a pure decoder
-can return `NotReady` while either bit shows, which costs a caller one more poll and nothing else.
-The hardware can show `RAND_RDY` and `RAND_GENERATING` together: the bench saw both in thousands of
-snapshots after a second `GENERATE` over a latched `RAND_RDY` (item 4). Recommended: fold the two bits into the `NotReady` arm, extend
-`neither_bit_set_is_always_not_ready` or add a harness, and add the falsification patch. The
-function's signature does not change; its answers for some inputs do. Two-way. Effort S.
+Status: Done. Landed in `nifeos/jh7110_entropy#19` (harness `work_in_flight_is_always_not_ready`).
+
+The finding as raised is in the [evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
 #### Item 8: `Pool` can be copied and printed
+
+Status: Done. Landed in `nifeos/jh7110_entropy#19`.
 
 `Pool` holds the 32 bytes and derives `Clone, Copy, Debug`. A copy serves the same bytes twice, which is the one property
 `no_byte_is_served_twice_across_refills` and the README promise; `Debug`
@@ -159,9 +113,11 @@ implementation is breaking, so one-way. Effort XS.
 
 #### Item 9: `Pool`'s names and answer shape at the release review
 
+Status: Done. Landed in `nifeos/jh7110_entropy#19`, with the ratified names.
+
 `Pool::remaining`
-returns a count of bytes and the units rule says a length carries its unit;
-`Pool::take`'s parameter `n` is a byte count with a one-letter name; `take`
+returns a count of bytes and the units rule says a length carries its unit.
+`Pool::take`'s parameter `n` is a byte count with a one-letter name, and `take`
 answers a `(u64, u64)` whose order (count, then word) a caller must remember. The earlier
 names predate the units rule, and the release review reopens them. Ratified: `Pool::remaining_bytes`;
 `take`'s parameter `byte_count`; the return becomes the struct
@@ -170,10 +126,13 @@ names predate the units rule, and the release review reopens them. Ratified: `Po
 
 #### Item 10: `Pool` has no proof
 
-The README says `Pool` has unit tests and no harness. Its invariants are small enough for Kani. For any `n: u64` and any generator that answers or refuses, `take` returns a count of at most `min(n, 8)`, serves the generator's bytes in order
-across one refill seam, zeroes what it served and never panics. When the generator refuses, it answers a short count rather than zeros. The buffer is 32 bytes and the gather loop runs at most 8 times, so the harnesses stay cheap. Each one carries a falsification patch. Two-way. Effort M.
+Status: Done. Landed in `nifeos/jh7110_entropy#19`; `nifeos/jh7110_entropy#29` moved both harnesses onto `take_into`.
+
+The finding as raised is in the [evidence appendix](1049-jh7110-entropy-release-review/review-evidence.md).
 
 #### Item 11: The package ships the repository's plumbing
+
+Status: Done. Landed in `nifeos/jh7110_entropy#20`.
 
 `cargo package --list` includes `.github/`
 (workflows, templates, budgets, exemptions), `.githooks/`, `.cargo/mutants.toml`,
@@ -185,6 +144,8 @@ those. Two-way. Effort XS.
 
 #### Item 12: Manifest metadata for crates.io
 
+Status: Done. Landed in `nifeos/jh7110_entropy#20`.
+
 `Cargo.toml` has `keywords = ["no-std", "kani",
 "driver"]` and no `documentation` field. Recommended: `documentation =
 "https://docs.rs/jh7110_entropy"`, keywords a searcher types (`jh7110`, `trng`, `starfive`,
@@ -193,6 +154,8 @@ three present (the slug exists). Metadata can change in a later version, so two-
 first version's page is what a search engine indexes first. Effort XS.
 
 #### Item 13: The changelog's order
+
+Status: Done. Landed in `nifeos/jh7110_entropy#19`; the header promises no dates.
 
 `CHANGELOG.md` has an `## Unreleased` section holding "First
 version" below `## 0.1.1`, while the tags `v0.1.0`, `v0.1.1` and `v0.2.0` exist, and the
@@ -204,15 +167,19 @@ Effort XS.
 
 #### Item 14: README shape per the template's report-only checks
 
+Status: Done. Landed in `nifeos/jh7110_entropy#20`; the report-only README checks list nothing on `main`.
+
 The README states the minimum
 Rust version as a bare line where the template's section order wants `## Minimum Rust
-version`; `## EXAMPLES` and `## What is proven` come after sections of the crate's own; the
+version`. `## EXAMPLES` and `## What is proven` come after sections of the crate's own; the
 crate doc's first sentence uses `TRNG` before expanding it. The README also
 never says the crate has no dependencies and no `unsafe`, which the stranger run inferred and
 could not confirm from the page. These are report-only today and may become required.
 Two-way. Effort XS.
 
 #### Item 15: Two named bits are private
+
+Status: Done. Landed in `nifeos/jh7110_entropy#21`.
 
 `INTERRUPT_STATUS_AGE_ALARM` and
 `INTERRUPT_STATUS_REQUEST_ALARM` are `pub(crate)`, yet both sit in
@@ -222,6 +189,8 @@ on the mask argues that a bit with no name leaves a status word undecodable.
 Recommended: make both `pub`. Additive, two-way. Effort XS.
 
 #### Item 16: Decode the read-only build registers and the reseed-state field
+
+Status: Done, names open. Landed in `nifeos/jh7110_entropy#21`; the new names wait on *Open decisions*.
 
 NetBSD names
 `FEATURES` bits (`MM_RESET_STATE` 3, `RAND_SEED_AVAIL` 2, `MAX_RAND_LENGTH` 1:0) and `BCONF`
@@ -233,6 +202,8 @@ name review. Two-way. Effort S.
 
 #### Item 17: A rand_core adapter behind a feature. Declined
 
+Status: Declined.
+
 A user of the embedded Rust ecosystem may
 reach for `rand_core::TryRng` (0.10) and find nothing here to implement it. There is no
 `rand_core` feature in 0.3.0. nife reaches the interface through `getrandom` at the contract
@@ -240,6 +211,8 @@ layer, and an optional feature nobody uses is API without evidence. Revisit if a
 asks or the contract layer needs the interface. Two-way (additive later). No effort.
 
 #### Item 18: Fuzz, or say why not
+
+Status: Done. Landed in `nifeos/jh7110_entropy#21`; the README's `BUGS` says why there is no fuzz target.
 
 The template's `fuzz.yml` caller is absent. The crate parses two
 byte strings (`interrupt_line`, `is_status_okay`), both trivial, and holds no `unsafe`, so
@@ -249,20 +222,77 @@ Two-way. Effort XS.
 
 #### Item 19: State why `rust-version` is 1.88
 
+Status: Done. Landed in `nifeos/jh7110_entropy#27`, which lowers `rust-version` to 1.85.
+
 The source needs edition 2024 (1.85) and
 `Option::is_none_or` (1.82); nothing read asks for 1.88. Either lower to 1.85 and let the
 `msrv` job prove it, or add a comment saying what needs 1.88. Not checked with a 1.85
 toolchain. Two-way. Effort XS.
 
-## Decisions for the architect
+## Open decisions
 
-No one-way door remains open except the publication steps. Those are the end of the publishing
-hold for this crate (item 1) and the first-publish token with the `crates-io` environment approval
-(item 3); both wait for the hold to lift. The items record the rulings: the first
-published version (item 1), the width outcome `WrongOutputWidth` (item 6), the `Pool` changes
-(item 8), the names (item 9) and the declined `rand_core` feature (item 17).
+The rulings this block records stand: the first published version (item 1), the width outcome
+`WrongOutputWidth` (item 6), the `Pool` changes (item 8), the names of item 9 and the declined
+`rand_core` feature (item 17). The publication steps (items 1 to 3) wait on the publishing hold and
+ask nothing until it lifts. The maintainers rule the parameter name `out` of `Pool::take_into`
+provisionally: a parameter name is not part of a Rust API, so changing it later breaks no caller.
+One decision is open.
 
-Everything else is the maintainers' provisional call.
+### Ratify the public names added since the last ratification
+
+The crate gained twelve public names after the four ratified groups. Item 16 added eleven constants
+that decode the read-only build registers and the reseed-state field of the status register, and
+the `take_into` method arrived with a caller's request to fill a byte slice. Each shipped as
+provisional, in the pre-release `v0.3.0-pre.1` that the kernel pins by commit. `SEED_1_REGISTER` to
+`SEED_6_REGISTER` follow the ratified `SEED_n_REGISTER` pattern and are not asked again.
+
+It matters now because a crates.io version is permanent. Once 0.3.0 publishes, a rename costs a
+0.4.0 and every user's edit; before it, a rename costs a new pre-release and one pin bump in the
+kernel. The publishing hold means nothing publishes soon, so the answer is not urgent, but it is the
+last thing between this repository and a release pull request.
+
+The constraint is the naming rules: names are spelled out, a length or limit carries its unit, and
+the specification's mnemonics stay as `#[doc(alias)]`. The specification's `MAX_RAND_LENGTH`,
+`PRNG_LEN_AFTER_RST` and `MAX_PRNG_LEN` are widths with no unit, and the units check refuses
+`LENGTH` without one, so the crate spells them `WIDEST_OUTPUT` and `OUTPUT_WIDTH`, which matches the
+ratified `MODE_256_BIT_OUTPUT` and `STATUS_256_BIT_OUTPUT`. The seven naming checks of the template
+refuse none of the twelve.
+
+The names, with the source mnemonic each decodes; the crate carries the mnemonic as an alias on the
+first constant of each field:
+
+| name | source mnemonic |
+|---|---|
+| `STATUS_LAST_RESEED_MASK`, `STATUS_LAST_RESEED_SHIFT` | Linux `STARFIVE_STAT_LAST_RESEED(x)` (bit 16) |
+| `STATUS_LAST_RESEED_UNSEEDED` (the value 7) | none; the crate's prose cited it |
+| `FEATURES_MISSION_MODE_RESET_STATE` | NetBSD `FEATURES_MM_RESET_STATE` |
+| `FEATURES_RANDOM_SEED_AVAILABLE` | NetBSD `FEATURES_RAND_SEED_AVAIL` |
+| `FEATURES_WIDEST_OUTPUT_MASK`, `FEATURES_WIDEST_OUTPUT_256_BIT` | NetBSD `FEATURES_MAX_RAND_LENGTH` |
+| `BUILD_CONFIGURATION_AUTOMATIC_RESEED_LOOPBACK` | NetBSD `BCONF_AUTO_RESEED_LOOPBACK` |
+| `BUILD_CONFIGURATION_MISSION_MODE_AFTER_RESET` | NetBSD `BCONF_MODE_AFTER_RST` |
+| `BUILD_CONFIGURATION_OUTPUT_WIDTH_AFTER_RESET` | NetBSD `BCONF_PRNG_LEN_AFTER_RST` |
+| `BUILD_CONFIGURATION_WIDEST_OUTPUT_256_BIT` | NetBSD `BCONF_MAX_PRNG_LEN` |
+| `Pool::take_into` | none |
+
+Prior art, read for this brief: NetBSD's `sys/arch/riscv/starfive/jh7110_trng.c` (trunk) names the
+`FEATURES` and `BCONF` bits above and describes bit 2 of `FEATURES` as "ring oscillator" present or
+not; Linux's `drivers/char/hw_random/jh7110-trng.c` (mainline) names only the `LAST_RESEED` field.
+For a method that fills a caller's slice and may stop short, the standard library's `Read::read`
+answers the count it wrote, as `take_into` does. rand_core 0.10's `fill_bytes(dst)` and getrandom
+0.4's `fill(dest)` fill the whole slice or fail, so a `fill` name would promise more than
+`take_into` gives. In the tree, `components/src/timetable.rs` has a private `read_into(..., out)`
+of the same shape, and the `_MASK` and `_SHIFT` suffixes appear in `boot_slot`,
+`byte_sink_contract`, `clock_contract` and `credential_contract`.
+
+Recommended: A.
+
+- A. Ratify all twelve names as built.
+- B. Ratify them except `take_into`, which takes a name you give; this
+  costs one rename, a `v0.3.0-pre.2` tag and a kernel pin bump.
+- C. Rename any of the eleven constants you name; the same cost as B.
+
+The door is one-way at the first publish and two-way until then. Blocked until it is answered: the
+release pull request for 0.3.0, which also waits on the publishing hold.
 
 ## The first published version
 
@@ -291,14 +321,27 @@ The review claims none of the hardware checks.
 - The prior-art rows marked *recalled* were not re-read; a lane that revisits item 17 reads the
   HAL crates it cites first.
 
-## Where this stands
-
-[The status appendix](1049-jh7110-entropy-release-review/where-this-stands.md) holds it.
-
 ## Follow-on
 
-- **Done.** Items 4 to 16, 18 and 19; the status appendix cites each.
-- **Outstanding.** Items 1 to 3 and four done-when checks, checked on `main`.
+Each item above carries its status. What is still open:
+
+- **Outstanding.** Items 1 to 3, the publication steps: publish 0.3.0, remove `publish = false` and
+  `allow-unpublished: true` in the release pull request, then pass `cargo publish --dry-run`, and
+  create the first-publish token. All wait on the publishing hold; checked on `main`, where the
+  manifest still refuses to publish.
+- **Outstanding.** The twelve provisional public names, under *Open decisions*; checked against
+  `src/lib.rs` on `main`.
+- **Outstanding.** The README's bring-up paragraph gives the measured poll times, a done-when check
+  the README contradicted; carried by `nifeos/jh7110_entropy#34`.
+- **Done.** `weekly` is green on `main` (run `44470342339`), with the `proofs / loom` check its
+  `settings drift` job asked for now required by the ruleset.
+- **Outstanding.** Bench: whether a reseed clears `LFSR_LOCKUP`, since no lockup appeared in either
+  board run.
+- **Outstanding.** Bench: `STATUS_SEEDED`, `LAST_RESEED` and `BCONF` bit 3 at the silicon's reset
+  state rather than after the bootloader. That read also settles which value of
+  `BUILD_CONFIGURATION_OUTPUT_WIDTH_AFTER_RESET` means 256 bits.
+- **Done.** The other checks of the [done-when appendix](1049-jh7110-entropy-release-review/done-when.md)
+  hold on `main`, as its closing paragraph lists.
 
 ## Index row
 
