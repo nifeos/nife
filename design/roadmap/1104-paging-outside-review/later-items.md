@@ -28,7 +28,7 @@ An appendix to [the milestone](../1104-paging-outside-review.md).
     is accurate (verified: `x86_64` 0.15.5 implements its `Mapper` for `Size4KiB`, `Size2MiB` and
     `Size1GiB`). The template's `unit_symbols.py` judges 1,077 names in this crate and refuses none,
     because it splits `Size4KiB` at the digit and never sees `kib` as one component, so the rule and
-    its check disagree here. Decision 2 below. BUGS records the template gap.
+    its check disagree here. Decision 2, under "Open decisions". BUGS records the template gap.
 
 15. What a user of the comparable crates will reach for and not find. The crate has no way to change
     the flags of a live mapping (`x86_64::Mapper::update_flags`, `pmap_protect`). It has no
