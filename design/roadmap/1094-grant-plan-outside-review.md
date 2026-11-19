@@ -231,7 +231,7 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 
 - **Done.** P0 item 1, the split, in #3584: `grant_plan`, `crates/grant_contract` and
   `crates/program_table` build and test on their own.
-- **Carried.** The rename lane builds the limits rule (P1-6); the review packages carry the
+- **Recorded.** The rename lane builds the limits rule (P1-6); the review packages carry the
   clearance, after which the repositories follow with no tag and no publish.
 - **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
   the three crates' sources on main.
