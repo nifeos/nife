@@ -253,7 +253,7 @@ pub fn conductor_move(ep: RendezvousId, word: u64) -> ConductorMove {
     };
     // The running thread's token; `me` is its pointer, for the removes below to compare.
     match rendezvous.send(take_token(sched, current)) {
-        inter_process_communication::Send::Rendezvous(receiver, token) => {
+        inter_process_communication::SendVerdict::Rendezvous(receiver, token) => {
             hold_token(token);
             let receiver = hold_token(receiver);
             let r = sched.threads.get_mut(receiver).unwrap();
@@ -264,18 +264,18 @@ pub fn conductor_move(ep: RendezvousId, word: u64) -> ConductorMove {
             ConductorMove::Sent
         }
         // An endpoint bound to an interrupt takes no message from anybody (§101 ruling B).
-        inter_process_communication::Send::Refused(token) => {
+        inter_process_communication::SendVerdict::Refused(token) => {
             hold_token(token);
             ConductorMove::None
         }
-        inter_process_communication::Send::Blocked => {
+        inter_process_communication::SendVerdict::Blocked => {
             // Take the speculative sender position back under the same hold, so no receiver
             // can match it; the removal returns the token the receive needs.
             let token = rendezvous
                 .remove_sender(me)
                 .expect("the send above queued this thread under this same hold");
             match rendezvous.receive(token) {
-                inter_process_communication::Receive::FromSender(sender, token) => {
+                inter_process_communication::ReceiveVerdict::FromSender(sender, token) => {
                     hold_token(token);
                     let sender = hold_token(sender);
                     let msg = sched.threads.get(sender).unwrap().mailbox;
@@ -303,11 +303,11 @@ pub fn conductor_move(ep: RendezvousId, word: u64) -> ConductorMove {
                     ConductorMove::Took([msg[0], slot, msg[1], msg[3], tag])
                 }
                 // A pending interrupt signal, as `inter_process_communication_receive_capability` would report it.
-                inter_process_communication::Receive::Signal(token) => {
+                inter_process_communication::ReceiveVerdict::Signal(token) => {
                     hold_token(token);
                     ConductorMove::Took([1, NO_CAPABILITY, 0, 0, 0])
                 }
-                inter_process_communication::Receive::Blocked => {
+                inter_process_communication::ReceiveVerdict::Blocked => {
                     // This hold queued `current`; this hold takes it back, token and all.
                     let token = rendezvous
                         .remove_receiver(me)
@@ -534,7 +534,7 @@ fn dump_thread_wait(t: &Thread) {
         Some(Wait::Rendezvous(ep, role)) => crate::println!(" wait={ep:#x}/{role:?}"),
         Some(Wait::Notification(n)) => crate::println!(" wait={n:#x}/Notification"),
         Some(Wait::Futex(k)) => {
-            crate::println!(" wait={:#x}@{:#x}/Futex", k.address, k.space);
+            crate::println!(" wait={:#x}@{:#x}/Futex", k.virtual_address, k.address_space);
         }
         Some(Wait::Resume) => crate::println!(" wait=Resume"),
         None => crate::println!(" wait=-"),
@@ -543,7 +543,12 @@ fn dump_thread_wait(t: &Thread) {
 
 /// [`dump_threads`]'s line for the rendezvous named `name`, printed only when it has a waiter.
 fn dump_rendezvous(name: u64, ep: &Rendezvous) {
-    let (senders, nr, np) = ep.debug_counts();
+    let counts = ep.debug_counts();
+    let (senders, nr, np) = (
+        counts.queued_senders,
+        counts.queued_receivers,
+        counts.pending_signals,
+    );
     if senders != 0 || nr != 0 || np != 0 {
         crate::println!("  ep={name:#06x} senders={senders} receivers={nr} pending={np}");
     }
@@ -552,7 +557,8 @@ fn dump_rendezvous(name: u64, ep: &Rendezvous) {
 /// [`dump_threads`]'s line for the notification named `name`, printed only when it has a waiter or
 /// a pending word.
 fn dump_notification(name: u64, n: &NotificationPage) {
-    let (waiters, word) = n.state.debug_counts();
+    let counts = n.state.debug_counts();
+    let (waiters, word) = (counts.waiters, counts.word);
     if waiters != 0 || word != 0 {
         crate::println!(
             "  notification={name:#06x} waiters={waiters} word={word:#x} bound={:?}",
@@ -596,7 +602,7 @@ pub fn rendezvous_waiting_senders(ep: RendezvousId) -> usize {
         return 0;
     };
     match rendezvous_of(sched, ep) {
-        Some(e) => e.debug_counts().0,
+        Some(e) => e.debug_counts().queued_senders,
         None => 0,
     }
 }
@@ -672,7 +678,7 @@ pub fn rendezvous_waiting_receivers(ep: RendezvousId) -> usize {
         return 0;
     };
     match rendezvous_of(sched, ep) {
-        Some(e) => e.debug_counts().1,
+        Some(e) => e.debug_counts().queued_receivers,
         None => 0,
     }
 }

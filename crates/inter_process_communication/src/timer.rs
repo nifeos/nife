@@ -8,23 +8,23 @@
 //! # Examples
 //!
 //! ```
-//! use inter_process_communication::timer::{Arm, Timer, earliest, lowered, next_due, NEVER};
+//! use inter_process_communication::timer::{ArmVerdict, Timer, earliest, lowered, next_due, NEVER};
 //!
-//! // Two timers, each signalling a different (notification, bits) target.
+//! // Two timers, each signaling a different (notification, bits) target.
 //! let mut a: Timer<(u64, u64)> = Timer::new();
 //! let mut b: Timer<(u64, u64)> = Timer::new();
 //! let mut cached = NEVER;
 //!
 //! // Arm both at time 100. A deadline in the future is pending; the cache moves down to meet it.
-//! assert_eq!(a.arm(150, (7, 0b01), 100), Arm::Pending);
+//! assert_eq!(a.arm(150, (7, 0b01), 100), ArmVerdict::Pending);
 //! cached = lowered(cached, 150);
-//! assert_eq!(b.arm(120, (7, 0b10), 100), Arm::Pending);
+//! assert_eq!(b.arm(120, (7, 0b10), 100), ArmVerdict::Pending);
 //! cached = lowered(cached, 120);
 //! assert_eq!(cached, 120);
 //!
 //! // A deadline already passed fires at once instead of waiting for a tick.
 //! let mut c: Timer<(u64, u64)> = Timer::new();
-//! assert_eq!(c.arm(90, (8, 1), 100), Arm::DueNow((8, 1)));
+//! assert_eq!(c.arm(90, (8, 1), 100), ArmVerdict::DueNow((8, 1)));
 //! assert!(!c.is_armed());
 //!
 //! // The tick at 130 is due (130 >= 120). The walk fires b and only b, then recomputes the cache.
@@ -49,8 +49,12 @@
 pub const NEVER: u64 = u64::MAX;
 
 /// What [`Timer::arm`] decided.
+///
+/// Name: provisional. The `Verdict` suffix keeps the type from sharing a name with
+/// the rest of the verdict enums, and is the word this crate's prose already uses
+/// for what an operation decided. Considered: `ArmOutcome` and keeping the bare name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Arm<T> {
+pub enum ArmVerdict<T> {
     /// The deadline is in the future: armed, and the caller lowers the cache with [`lowered`].
     Pending,
     /// The deadline is at or before `now`: nothing was armed, and the caller signals `T` at once
@@ -78,14 +82,14 @@ impl<T: Copy> Timer<T> {
     }
 
     /// Arm for `deadline`, replacing whatever was pending; a replaced deadline can never fire.
-    /// Returns [`Arm::DueNow`] without arming when `deadline` is at or before `now`.
-    pub fn arm(&mut self, deadline: u64, target: T, now: u64) -> Arm<T> {
+    /// Returns [`ArmVerdict::DueNow`] without arming when `deadline` is at or before `now`.
+    pub fn arm(&mut self, deadline: u64, target: T, now: u64) -> ArmVerdict<T> {
         if deadline <= now {
             self.armed = None;
-            Arm::DueNow(target)
+            ArmVerdict::DueNow(target)
         } else {
             self.armed = Some((deadline, target));
-            Arm::Pending
+            ArmVerdict::Pending
         }
     }
 
@@ -192,7 +196,7 @@ mod verification {
         match kani::any::<u8>() {
             0 => {
                 let deadline: u64 = kani::any();
-                if ts[i].arm(deadline, i as u8, now) == Arm::Pending {
+                if ts[i].arm(deadline, i as u8, now) == ArmVerdict::Pending {
                     cached = lowered(cached, deadline);
                 }
             }
@@ -251,7 +255,7 @@ mod verification {
         let mut t: Timer<u8> = Timer::new();
         let (d1, t0): (u64, u64) = (kani::any(), kani::any());
         kani::assume(d1 > t0);
-        assert_eq!(t.arm(d1, 1, t0), Arm::Pending);
+        assert_eq!(t.arm(d1, 1, t0), ArmVerdict::Pending);
         let rearm: bool = kani::any();
         let d2: u64 = kani::any();
         let t1: u64 = kani::any();
@@ -265,8 +269,8 @@ mod verification {
         let got = t.expire(now);
         assert!(got != Some(1));
         match arm2 {
-            Some(Arm::Pending) => assert_eq!(got.is_some(), d2 <= now),
-            Some(Arm::DueNow(x)) => {
+            Some(ArmVerdict::Pending) => assert_eq!(got.is_some(), d2 <= now),
+            Some(ArmVerdict::DueNow(x)) => {
                 assert_eq!(x, 2);
                 assert!(d2 <= t1);
                 assert_eq!(got, None);
@@ -283,7 +287,7 @@ mod tests {
     #[test]
     fn a_deadline_exactly_now_is_due_now_rather_than_a_tick_late() {
         let mut t: Timer<u8> = Timer::new();
-        assert_eq!(t.arm(100, 9, 100), Arm::DueNow(9));
+        assert_eq!(t.arm(100, 9, 100), ArmVerdict::DueNow(9));
         assert!(!t.is_armed());
         assert_eq!(t.deadline(), NEVER);
     }
@@ -325,7 +329,7 @@ mod tests {
     fn is_armed_follows_the_slot() {
         let mut t: Timer<u8> = Timer::new();
         assert!(!t.is_armed());
-        assert_eq!(t.arm(100, 1, 0), Arm::Pending);
+        assert_eq!(t.arm(100, 1, 0), ArmVerdict::Pending);
         assert!(t.is_armed());
         assert_eq!(t.expire(100), Some(1));
         assert!(!t.is_armed());

@@ -3876,7 +3876,7 @@ crates/http_response/src/lib.rs::status
 
 crates/http_response/src/lib.rs::with_room
 
-crates/inter_process_communication/src/futex.rs::Futexes
+crates/inter_process_communication/src/futex.rs::FutexTable
 
 crates/inter_process_communication/src/futex.rs::Key
 
