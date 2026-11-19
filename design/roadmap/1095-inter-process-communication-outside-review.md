@@ -86,9 +86,10 @@ milestone reaches delivery.
 ### `intrusive_queue` leaves first
 
 Background. Every public signature here exposes `Unqueued<T>` and `Node` from `intrusive_queue`, a
-small crate in nife that no extraction plan names (milestone 1097 reviews it). A crate that has
-left may not depend back into nife, and a published crate cannot depend on an unpublished one, so
-this crate cannot leave before `intrusive_queue` does, or with it.
+small crate in nife that no extraction plan names. Milestone 1097 (`intrusive_queue`: what an
+outside maintainer would fix before its first release) reviews it. A crate that has left may not
+depend back into nife, and a published crate cannot depend on an unpublished one, so this crate
+cannot leave before `intrusive_queue` does, or with it.
 
 Recommendation: A. `intrusive_queue` gets its own package and repository first; this crate then
 pins it by git revision on that repository's `main`, and milestone 1017's list records the pair in

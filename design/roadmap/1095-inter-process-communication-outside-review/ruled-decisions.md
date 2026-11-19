@@ -62,4 +62,4 @@ seL4" would find this one, and `timer::NEVER` in the sidebar would surprise the 
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
 revisit. The four modules stay together, and the scope is settled at the publish review if this
-crate ever goes to one. Nothing is published and nothing outside nife links the crate.
+crate ever goes to one. Nothing outside nife links the crate, and no release of it exists.
