@@ -751,7 +751,7 @@ fn through_idmac(
 /// `count` zeroed, contiguous pages as a byte slice, leaked: this boot halts.
 fn pages(count: usize) -> Option<&'static mut [u8]> {
     let frame = crate::memory::alloc_contiguous_zeroed(count)?;
-    let va = crate::arch::mmu::phys_to_virt(frame.addr()) as *mut u8;
+    let va = crate::arch::mmu::phys_to_virt(frame.physical_address()) as *mut u8;
     // SAFETY: the allocator handed out `count` contiguous pages that nothing else owns, and the
     // direct map covers all of RAM; nothing frees them, because the boot ends in a halt.
     Some(unsafe { core::slice::from_raw_parts_mut(va, count * 4096) })

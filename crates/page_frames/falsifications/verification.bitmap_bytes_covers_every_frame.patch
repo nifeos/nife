@@ -2,7 +2,7 @@ Falsifies `page_frames::verification::bitmap_bytes_covers_every_frame`.
 
 The defect: the bitmap is sized by floor division, `frames / 8` in place of `frames.div_ceil(8)`.
 It is the commonest sizing error there is: the two spellings agree on every multiple of eight,
-which is every number anyone types into a test. The same defect in a neighbouring
+which is every number anyone types into a test. The same defect in a nearby
 allocation helper was caught the same way.
 
 Expected to fail: the harness's `assert!(bitmap_bytes(frames) * 8 >= frames)`, for any frame

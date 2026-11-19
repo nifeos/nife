@@ -150,7 +150,7 @@ no text.
 | item | owner |
 |---|---|
 | Write the crate's own README, carrying the design arguments that stay behind in nife (milestone 1103 item 2). | move lane |
-| Make the manifest stand alone: literal `license`, `lints` and `rust-version`, and the two licence texts (item 1). | move lane |
+| Make the manifest stand alone: literal `license`, `lints` and `rust-version`, and the two license texts (item 1). | move lane |
 | Convert the two path dependencies in `kernel` and `system_tests` to `git` and `rev` with `version = "0.1.0"`. | move lane |
 | Rows for the crate in `helpers/template_report_baseline.txt`, `.cargo/mutants-baseline.txt`, `helpers/verify_times.py` and `packages/kernel.package.toml`. | move lane |
 | Rewrite the `Name:` blocks of the ratified names, and the two provisional blocks, to say ratified. | the lane that records the ratification |

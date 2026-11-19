@@ -127,7 +127,7 @@ fn an_asid_flush_reaches_the_other_cpus() {
     let fresh = crate::memory::alloc().expect("out of memory");
     // SAFETY: the allocator just handed us this frame exclusively; the direct map reaches it.
     unsafe {
-        core::ptr::write_volatile(mmu::phys_to_virt(fresh.physical_address()) as *mut u8, NEW)
+        core::ptr::write_volatile(mmu::phys_to_virt(fresh.physical_address()) as *mut u8, NEW);
     };
 
     let probe = sched::spawn_on(target, move || {
