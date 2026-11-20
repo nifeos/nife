@@ -26,7 +26,7 @@ use jh7110_pci_express::{
     Block, Port, PortNumber, Registers, SYSTEM_GENERAL_PURPOSE_INPUT_OUTPUT,
     SYSTEM_TOP_GROUP_CONTROLLER,
 };
-use pci_configuration_space::Bdf;
+use pci_configuration_space::BusDeviceFunction;
 
 /// One bus of configuration space in the ECAM layout.
 const BUS_BYTES: u64 = 0x10_0000;
@@ -181,22 +181,26 @@ impl<'a> Controller<'a> {
         Some((page.virtual_address + offset as usize) as *mut u32)
     }
 
-    fn configuration_word(&self, bdf: Bdf, offset: u64) -> Option<*mut u32> {
-        let at = bdf.ecam_offset() + (offset & !3);
-        (bdf.device < 32
-            && bdf.function < 8
+    fn configuration_word(
+        &self,
+        bus_device_function: BusDeviceFunction,
+        offset: u64,
+    ) -> Option<*mut u32> {
+        let at = bus_device_function.ecam_offset() + (offset & !3);
+        (bus_device_function.device < 32
+            && bus_device_function.function < 8
             && offset < FUNCTION_BYTES
             && at < self.windows.configuration.bytes)
             .then(|| (self.windows.configuration.virtual_address + at as usize) as *mut u32)
     }
 
-    /// **A configuration read** through the `cfg` window: the word at `offset` in `bdf`'s space,
+    /// **A configuration read** through the `cfg` window: the word at `offset` in `bus_device_function`'s space,
     /// or all ones (nothing there) for a bus that is not mapped.
     ///
     /// Name: provisional, minted 2026-11-19 (UTC) by lane lane/163-jh7110-pcie-kernel-wiring.
     #[must_use]
-    pub fn configuration_read(&self, bdf: Bdf, offset: u64) -> u32 {
-        match self.configuration_word(bdf, offset) {
+    pub fn configuration_read(&self, bus_device_function: BusDeviceFunction, offset: u64) -> u32 {
+        match self.configuration_word(bus_device_function, offset) {
             // SAFETY: `configuration_word` bounded the address inside the mapped `cfg` buses,
             // which `new`'s contract makes a device mapping of this port's window.
             Some(word) => unsafe { core::ptr::read_volatile(word) },
@@ -208,8 +212,13 @@ impl<'a> Controller<'a> {
     /// is not mapped.
     ///
     /// Name: provisional, minted 2026-11-19 (UTC) by lane lane/163-jh7110-pcie-kernel-wiring.
-    pub fn configuration_write(&self, bdf: Bdf, offset: u64, value: u32) {
-        if let Some(word) = self.configuration_word(bdf, offset) {
+    pub fn configuration_write(
+        &self,
+        bus_device_function: BusDeviceFunction,
+        offset: u64,
+        value: u32,
+    ) {
+        if let Some(word) = self.configuration_word(bus_device_function, offset) {
             // SAFETY: as `configuration_read`.
             unsafe { core::ptr::write_volatile(word, value) }
         }

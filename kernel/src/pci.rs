@@ -12,7 +12,7 @@
 use core::sync::atomic::{AtomicU16, AtomicU64, Ordering};
 
 use page_tables::PAGE_SIZE;
-use pci_configuration_space::{Bar, Bdf};
+use pci_configuration_space::{Bar, BusDeviceFunction};
 
 use crate::arch::mmu::{self, PCI_BAR_MAPPED, PCI_ECAM_BUSES, PCI_INTERRUPT_NUMBER_BASE};
 
@@ -88,16 +88,16 @@ pub(crate) fn survey() -> usize {
     let (mut functions, mut highest) = (0usize, 0u8);
     pci_configuration_space::walk(described, &mut |b, o| cfg_read32(b, o), &mut |f| {
         functions += 1;
-        highest = highest.max(f.bdf.bus);
+        highest = highest.max(f.bus_device_function.bus);
         match f.bridge {
             Some(b) => {
                 highest = highest.max(b.subordinate);
                 crate::println!(
                     "                {:02x}:{:02x}.{} {:04x}:{:04x} class {:06x} \
                      bridge to buses {:02x}..={:02x}",
-                    f.bdf.bus,
-                    f.bdf.device,
-                    f.bdf.function,
+                    f.bus_device_function.bus,
+                    f.bus_device_function.device,
+                    f.bus_device_function.function,
                     f.vendor,
                     f.device,
                     f.class,
@@ -107,9 +107,9 @@ pub(crate) fn survey() -> usize {
             }
             None => crate::println!(
                 "                {:02x}:{:02x}.{} {:04x}:{:04x} class {:06x}",
-                f.bdf.bus,
-                f.bdf.device,
-                f.bdf.function,
+                f.bus_device_function.bus,
+                f.bus_device_function.device,
+                f.bus_device_function.function,
                 f.vendor,
                 f.device,
                 f.class,
@@ -149,25 +149,25 @@ fn is_host_bridge_present() -> bool {
     true
 }
 
-/// Size the BARs of `bdf` with [`pci_configuration_space::read_bars`], saying which ones it refused and why. A
+/// Size the BARs of `bus_device_function` with [`pci_configuration_space::read_bars`], saying which ones it refused and why. A
 /// refused BAR is absent from the result, so a driver that needs it finds no BAR there.
-fn read_bars(bdf: Bdf) -> [Option<Bar>; 6] {
+fn read_bars(bus_device_function: BusDeviceFunction) -> [Option<Bar>; 6] {
     pci_configuration_space::read_bars(
-        bdf,
+        bus_device_function,
         &mut |b, o| cfg_read32(b, o),
         &mut |b, o, v| cfg_write32(b, o, v),
         &mut |index, reason| {
             crate::println!(
                 "  pci: {:02x}:{:02x}.{} BAR{index} refused ({reason:?}); leaving it out",
-                bdf.bus,
-                bdf.device,
-                bdf.function,
+                bus_device_function.bus,
+                bus_device_function.device,
+                bus_device_function.function,
             );
         },
     )
 }
 
-/// Place every unassigned BAR of `bdf` at a size-aligned address drawn from the shared cursor,
+/// Place every unassigned BAR of `bus_device_function` at a size-aligned address drawn from the shared cursor,
 /// writing the config-space BAR registers. Returns false (after saying so) if the window is
 /// exhausted.
 ///
@@ -175,7 +175,7 @@ fn read_bars(bdf: Bdf) -> [Option<Bar>; 6] {
 /// outside it is adopted where it stands ([`adopt`]); only one that is unassigned, or assigned
 /// somewhere this kernel cannot honour, is moved. Nonzero alone is not evidence of mapped: see
 /// notes/pcie.md, "Placing BARs, and routing interrupts".
-fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
+fn place_bars(bus_device_function: BusDeviceFunction, bars: &mut [Option<Bar>; 6]) -> bool {
     // The window `mmu::map_everything` mapped. `BAR_LIMIT` is the same `PCI_BAR_MAPPED` clamp that
     // call computed, so it agrees even where the tree describes a larger window.
     let mapped_lo = crate::memory::pci_regions().map(|(_, (base, _))| base);
@@ -194,7 +194,7 @@ fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
             continue; // already placed, and inside memory this kernel actually mapped
         }
         // The fine map covers only the kernel's own window, so adoption must map the BAR itself.
-        if bar.base_physical_address != 0 && adopt(bdf, i, bar) {
+        if bar.base_physical_address != 0 && adopt(bus_device_function, i, bar) {
             continue;
         }
         // A BAR's address must be aligned to its size (the writable-bits mask encodes that).
@@ -219,12 +219,12 @@ fn place_bars(bdf: Bdf, bars: &mut [Option<Bar>; 6]) -> bool {
         };
         let off = pci_configuration_space::BAR0_REGISTER + i as u64 * 4;
         cfg_write32(
-            bdf,
+            bus_device_function,
             off,
             base as u32 | if bar.is_64_bit { 0b100 } else { 0 },
         );
         if bar.is_64_bit {
-            cfg_write32(bdf, off + 4, (base >> 32) as u32);
+            cfg_write32(bus_device_function, off + 4, (base >> 32) as u32);
         }
         bar.base_physical_address = base;
     }
@@ -244,7 +244,11 @@ fn overlaps_ram(lo: u64, hi: u64) -> bool {
 /// `AlreadyMapped`, which is success here and nowhere else in this tree. Unreachable on the
 /// device-tree architectures, where every BAR arrives zero. See notes/pcie.md, "Placing BARs, and
 /// routing interrupts".
-fn adopt(bdf: Bdf, index: usize, bar: &pci_configuration_space::Bar) -> bool {
+fn adopt(
+    bus_device_function: BusDeviceFunction,
+    index: usize,
+    bar: &pci_configuration_space::Bar,
+) -> bool {
     let lo = bar.base_physical_address & !(PAGE_SIZE - 1);
     let Some(hi) = bar
         .base_physical_address
@@ -256,9 +260,9 @@ fn adopt(bdf: Bdf, index: usize, bar: &pci_configuration_space::Bar) -> bool {
     if overlaps_ram(lo, hi) {
         crate::println!(
             "  pci: {:02x}:{:02x}.{} BAR{index} at {:#x} overlaps RAM; moving it",
-            bdf.bus,
-            bdf.device,
-            bdf.function,
+            bus_device_function.bus,
+            bus_device_function.device,
+            bus_device_function.function,
             bar.base_physical_address,
         );
         return false;
@@ -271,9 +275,9 @@ fn adopt(bdf: Bdf, index: usize, bar: &pci_configuration_space::Bar) -> bool {
                 crate::println!(
                     "  pci: {:02x}:{:02x}.{} BAR{index} at {:#x} could not be mapped ({e:?}); \
                      moving it",
-                    bdf.bus,
-                    bdf.device,
-                    bdf.function,
+                    bus_device_function.bus,
+                    bus_device_function.device,
+                    bus_device_function.function,
                     bar.base_physical_address,
                 );
                 return false;
@@ -286,8 +290,10 @@ fn adopt(bdf: Bdf, index: usize, bar: &pci_configuration_space::Bar) -> bool {
 
 /// Callers sit behind [`is_host_bridge_present`], which is what makes the cached base nonzero and
 /// the window below it device-mapped.
-fn cfg_read32(bdf: Bdf, off: u64) -> u32 {
-    let va = mmu::phys_to_virt(ECAM_BASE.load(Ordering::Relaxed) + bdf.ecam_offset() + (off & !3));
+fn cfg_read32(bus_device_function: BusDeviceFunction, off: u64) -> u32 {
+    let va = mmu::phys_to_virt(
+        ECAM_BASE.load(Ordering::Relaxed) + bus_device_function.ecam_offset() + (off & !3),
+    );
     // SAFETY: the ECAM window for the buses we enumerate is device-mapped (mmu::map_everything's
     // PCIe step maps it whenever the tree described one), and ECAM config reads are
     // side-effect-free.
@@ -303,20 +309,28 @@ pub(crate) fn bridge_bus_range(bus: u8, dev: u8, func: u8) -> Option<(u8, u8)> {
     if !is_host_bridge_present() || dev > 31 || func > 7 {
         return None;
     }
-    let bdf = Bdf {
+    let bus_device_function = BusDeviceFunction {
         bus,
         device: dev,
         function: func,
     };
-    if cfg_read32(bdf, pci_configuration_space::VENDOR_ID_REGISTER) & 0xffff == 0xffff {
+    if cfg_read32(
+        bus_device_function,
+        pci_configuration_space::VENDOR_ID_REGISTER,
+    ) & 0xffff
+        == 0xffff
+    {
         return None;
     }
-    let header = (cfg_read32(bdf, pci_configuration_space::HEADER_TYPE_REGISTER & !3)
-        >> ((pci_configuration_space::HEADER_TYPE_REGISTER & 3) * 8)) as u8;
+    let header = (cfg_read32(
+        bus_device_function,
+        pci_configuration_space::HEADER_TYPE_REGISTER & !3,
+    ) >> ((pci_configuration_space::HEADER_TYPE_REGISTER & 3) * 8)) as u8;
     if header & 0x7f != pci_configuration_space::HEADER_TYPE_BRIDGE {
         return None;
     }
-    let b = pci_configuration_space::bridge_buses(bdf, &mut |b, o| cfg_read32(b, o));
+    let b =
+        pci_configuration_space::bridge_buses(bus_device_function, &mut |b, o| cfg_read32(b, o));
     Some((b.secondary, b.subordinate))
 }
 
@@ -327,7 +341,7 @@ pub(crate) fn bridge_bus_range(bus: u8, dev: u8, func: u8) -> Option<(u8, u8)> {
 /// at most, so the photograph holds them.
 #[cfg(feature = "disk_throughput")]
 pub(crate) fn print_dma_path(rid: u32) {
-    let ep = Bdf {
+    let ep = BusDeviceFunction {
         bus: (rid >> 8) as u8,
         device: ((rid >> 3) & 0x1f) as u8,
         function: (rid & 7) as u8,
@@ -350,7 +364,7 @@ pub(crate) fn print_dma_path(rid: u32) {
             if ep.bus == 0 || ep.bus < sec || ep.bus > sub {
                 continue;
             }
-            let b = Bdf { bus: 0, dev, func };
+            let b = BusDeviceFunction { bus: 0, dev, func };
             let w = cfg_read32(b, pci_configuration_space::COMMAND_REGISTER);
             // Secondary status is the upper half of the dword at 0x1c (I/O base and limit below).
             let sec_sts = cfg_read32(b, 0x1c) >> 16;
@@ -364,9 +378,11 @@ pub(crate) fn print_dma_path(rid: u32) {
     }
 }
 
-fn cfg_write32(bdf: Bdf, off: u64, v: u32) {
-    let va = mmu::phys_to_virt(ECAM_BASE.load(Ordering::Relaxed) + bdf.ecam_offset() + (off & !3));
-    // SAFETY: as above; config writes go to the one function this bdf names.
+fn cfg_write32(bus_device_function: BusDeviceFunction, off: u64, v: u32) {
+    let va = mmu::phys_to_virt(
+        ECAM_BASE.load(Ordering::Relaxed) + bus_device_function.ecam_offset() + (off & !3),
+    );
+    // SAFETY: as above; config writes go to the one function this bus_device_function names.
     unsafe { core::ptr::write_volatile(va as *mut u32, v) }
 }
 
@@ -380,7 +396,7 @@ pub(crate) struct PciVirtualIoDevice {
     /// and bench boots) drives the device without ever naming it, so the lint is quieted rather
     /// than chased through four cfg combinations.
     #[allow(dead_code)]
-    pub bdf: Bdf,
+    pub bus_device_function: BusDeviceFunction,
     /// The virtio common-config block (queue setup, status, features), physical.
     pub common: u64,
     /// The notify region base and the per-queue multiplier; queue N's doorbell is at
@@ -437,12 +453,15 @@ pub(crate) struct PciVirtualIoDirect {
 /// Find the first modern virtio-blk function on the bus and bring it up. `None` if there is no
 /// PCI disk (an empty bus reads all-ones and enumerates nothing).
 pub(crate) fn find_block_device() -> Option<PciVirtualIoDevice> {
-    let bdf = find_virtual_io_bdf(
+    let bus_device_function = find_virtual_io_bdf(
         pci_configuration_space::VIRTUAL_IO_BLOCK_MODERN,
         Some(pci_configuration_space::VIRTUAL_IO_BLOCK_TRANSITIONAL),
         "virtio-blk",
     )?;
-    bring_up(bdf, pci_configuration_space::VIRTUAL_IO_TYPE_BLOCK)
+    bring_up(
+        bus_device_function,
+        pci_configuration_space::VIRTUAL_IO_TYPE_BLOCK,
+    )
 }
 
 /// Find the `n`-th (0-based) modern virtio-blk function on the bus and bring it up, in
@@ -457,17 +476,17 @@ pub(crate) fn find_block_device_n(n: usize) -> Option<PciVirtualIoDevice> {
         return None;
     }
     let mut seen = 0;
-    let mut found: Option<Bdf> = None;
+    let mut found: Option<BusDeviceFunction> = None;
     pci_configuration_space::enumerate(
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
-        &mut |bdf, vendor, device| {
+        &mut |bus_device_function, vendor, device| {
             if found.is_none()
                 && vendor == pci_configuration_space::VIRTUAL_IO_VENDOR
                 && device == pci_configuration_space::VIRTUAL_IO_BLOCK_MODERN
             {
                 if seen == n {
-                    found = Some(bdf);
+                    found = Some(bus_device_function);
                 }
                 seen += 1;
             }
@@ -480,12 +499,15 @@ pub(crate) fn find_block_device_n(n: usize) -> Option<PciVirtualIoDevice> {
 /// PCI NIC. Same bring-up as the disk; the transport seam and the DMA confinement do not know or
 /// care that a NIC sits behind them (milestone 30).
 pub(crate) fn find_net_device() -> Option<PciVirtualIoDevice> {
-    let bdf = find_virtual_io_bdf(
+    let bus_device_function = find_virtual_io_bdf(
         pci_configuration_space::VIRTUAL_IO_NETWORK_MODERN,
         Some(pci_configuration_space::VIRTUAL_IO_NETWORK_TRANSITIONAL),
         "virtio-net",
     )?;
-    bring_up(bdf, pci_configuration_space::VIRTUAL_IO_TYPE_NETWORK)
+    bring_up(
+        bus_device_function,
+        pci_configuration_space::VIRTUAL_IO_TYPE_NETWORK,
+    )
 }
 
 /// Find the first modern virtio-gpu function on the bus and bring it up (milestone 29, the display
@@ -497,12 +519,15 @@ pub(crate) fn find_gpu_device() -> Option<PciVirtualIoDevice> {
     // No transitional twin exists for virtio-gpu (the legacy id range predates the device), so this
     // asks for the modern id and nothing else rather than warning about a legacy device that cannot
     // be on the bus.
-    let bdf = find_virtual_io_bdf(
+    let bus_device_function = find_virtual_io_bdf(
         pci_configuration_space::VIRTUAL_IO_GPU_MODERN,
         None,
         "virtio-gpu",
     )?;
-    bring_up(bdf, pci_configuration_space::VIRTUAL_IO_TYPE_GPU)
+    bring_up(
+        bus_device_function,
+        pci_configuration_space::VIRTUAL_IO_TYPE_GPU,
+    )
 }
 
 /// Find the first modern virtio-input function on the bus and bring it up (milestone 29's keyboard).
@@ -511,12 +536,15 @@ pub(crate) fn find_gpu_device() -> Option<PciVirtualIoDevice> {
 /// PCIe only by choice, so the keyboard sits behind the IOMMU the way the GPU does (notes/pcie.md,
 /// "Placing BARs, and routing interrupts").
 pub(crate) fn find_input_device() -> Option<PciVirtualIoDevice> {
-    let bdf = find_virtual_io_bdf(
+    let bus_device_function = find_virtual_io_bdf(
         pci_configuration_space::VIRTUAL_IO_INPUT_MODERN,
         None,
         "virtio-input",
     )?;
-    bring_up(bdf, pci_configuration_space::VIRTUAL_IO_TYPE_INPUT)
+    bring_up(
+        bus_device_function,
+        pci_configuration_space::VIRTUAL_IO_TYPE_INPUT,
+    )
 }
 
 /// Find the first modern virtio-rng function on the bus and bring it up (milestone 56's entropy
@@ -526,12 +554,15 @@ pub(crate) fn find_input_device() -> Option<PciVirtualIoDevice> {
 /// whichever the wiring asks for, and the milestone-56 test runs each.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // entropy_service is the caller, and the m56 tests drive it
 pub(crate) fn find_rng_device() -> Option<PciVirtualIoDevice> {
-    let bdf = find_virtual_io_bdf(
+    let bus_device_function = find_virtual_io_bdf(
         pci_configuration_space::VIRTUAL_IO_ENTROPY_MODERN,
         Some(pci_configuration_space::VIRTUAL_IO_ENTROPY_TRANSITIONAL),
         "virtio-rng",
     )?;
-    bring_up(bdf, pci_configuration_space::VIRTUAL_IO_TYPE_ENTROPY)
+    bring_up(
+        bus_device_function,
+        pci_configuration_space::VIRTUAL_IO_TYPE_ENTROPY,
+    )
 }
 
 /// How many modern virtio-blk functions are on the bus (milestone 57's roster).
@@ -575,12 +606,15 @@ pub(crate) fn bar_census() -> (usize, usize) {
     pci_configuration_space::enumerate(
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
-        &mut |bdf, _, _| {
+        &mut |bus_device_function, _, _| {
             functions += 1;
             // The raw BAR registers, not `pci_configuration_space::read_bars`, which sizes them by writing all-ones.
             // Unsized, so only a BAR's first page is checked against RAM; `adopt` refuses the rest.
             let stuck = (0..6).any(|i| {
-                let raw = cfg_read32(bdf, pci_configuration_space::BAR0_REGISTER + i * 4);
+                let raw = cfg_read32(
+                    bus_device_function,
+                    pci_configuration_space::BAR0_REGISTER + i * 4,
+                );
                 let base = u64::from(raw & !0xf);
                 raw & 1 == 0
                     && base != 0
@@ -600,25 +634,29 @@ pub(crate) fn bar_census() -> (usize, usize) {
 /// that warning. `transitional` is `None` for a device type that has no legacy id at all
 /// (virtio-gpu): there is then no such warning to give, and inventing an id to compare against
 /// would be a fact nobody checked.
-fn find_virtual_io_bdf(modern: u16, transitional: Option<u16>, kind: &str) -> Option<Bdf> {
+fn find_virtual_io_bdf(
+    modern: u16,
+    transitional: Option<u16>,
+    kind: &str,
+) -> Option<BusDeviceFunction> {
     if !is_host_bridge_present() {
         return None;
     }
-    let mut found: Option<Bdf> = None;
+    let mut found: Option<BusDeviceFunction> = None;
     pci_configuration_space::enumerate(
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
-        &mut |bdf, vendor, device| {
+        &mut |bus_device_function, vendor, device| {
             if found.is_none() && vendor == pci_configuration_space::VIRTUAL_IO_VENDOR {
                 if device == modern {
-                    found = Some(bdf);
+                    found = Some(bus_device_function);
                 } else if Some(device) == transitional {
                     crate::println!(
                         "  pci: {kind} at {:02x}:{:02x}.{} is transitional (legacy); \
                          we drive modern only",
-                        bdf.bus,
-                        bdf.device,
-                        bdf.function,
+                        bus_device_function.bus,
+                        bus_device_function.device,
+                        bus_device_function.function,
                     );
                 }
             }
@@ -634,9 +672,9 @@ fn find_virtual_io_bdf(modern: u16, transitional: Option<u16>, kind: &str) -> Op
 /// 3. parse the virtio vendor capabilities and resolve them against the assigned BARs;
 /// 4. only then set Memory-Space Enable, and Bus-Master last: DMA permission is granted at the
 ///    final moment, after the transport the confinement layer owns is fully described.
-fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtualIoDevice> {
-    let mut bars = read_bars(bdf);
-    if !place_bars(bdf, &mut bars) {
+fn bring_up(bus_device_function: BusDeviceFunction, device_type: u32) -> Option<PciVirtualIoDevice> {
+    let mut bars = read_bars(bus_device_function);
+    if !place_bars(bus_device_function, &mut bars) {
         return None;
     }
 
@@ -644,7 +682,9 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtualIoDevice> {
     // walk is the contract's, so the mediated transport and a direct grant's window read one list
     // the same way.
     let (structures, notify_mult) =
-        driver_process_contract::virtual_io::structures(bdf, &mut |b, o| cfg_read32(b, o))?;
+        driver_process_contract::virtual_io::structures(bus_device_function, &mut |b, o| {
+            cfg_read32(b, o)
+        })?;
     let resolve = |s: &driver_process_contract::virtual_io::Structure| -> Option<u64> {
         let bar = bars.get(s.bar as usize)?.as_ref()?;
         (s.offset.checked_add(s.length)? <= bar.size_bytes)
@@ -664,30 +704,36 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtualIoDevice> {
             bars[n].as_ref().map_or(0, |b| b.base_physical_address)
         }),
         bar_bytes: core::array::from_fn(|n| bars[n].as_ref().map_or(0, |b| b.size_bytes)),
-        withheld: driver_process_contract::virtual_io::withheld(bdf, &mut |b, o| cfg_read32(b, o)),
+        withheld: driver_process_contract::virtual_io::withheld(
+            bus_device_function,
+            &mut |b, o| cfg_read32(b, o),
+        ),
     };
 
     // The upper half of this dword is STATUS, whose error bits are write-1-to-clear, so it is
     // written as zero.
-    let cmd = cfg_read32(bdf, pci_configuration_space::COMMAND_REGISTER) as u16;
+    let cmd = cfg_read32(
+        bus_device_function,
+        pci_configuration_space::COMMAND_REGISTER,
+    ) as u16;
     cfg_write32(
-        bdf,
+        bus_device_function,
         pci_configuration_space::COMMAND_REGISTER,
         (cmd | pci_configuration_space::COMMAND_MEMORY_SPACE_ENABLE
             | pci_configuration_space::COMMAND_BUS_MASTER_ENABLE) as u32,
     );
 
-    let (intid, msix_vector) = function_interrupt(bdf, &bars, false)?;
+    let (intid, msix_vector) = function_interrupt(bus_device_function, &bars, false)?;
 
     Some(PciVirtualIoDevice {
-        bdf,
+        bus_device_function,
         common,
         notify_base,
         notify_mult,
         isr,
         intid,
         msix_vector,
-        rid: bdf.requester_id(),
+        rid: bus_device_function.requester_id(),
         device_type,
         device_config,
         direct,
@@ -702,24 +748,30 @@ fn bring_up(bdf: Bdf, device_type: u32) -> Option<PciVirtualIoDevice> {
 /// virtio functions pass `false`, since a virtio queue names its vector by MSI-X table index.
 /// `msix_vector` is `pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR` whenever the answer was not MSI-X. `None` when no
 /// route exists. See notes/pcie.md, "Placing BARs, and routing interrupts".
-fn function_interrupt(bdf: Bdf, bars: &[Option<Bar>; 6], msi_fallback: bool) -> Option<(u32, u16)> {
-    match crate::arch::interrupt_controller::alloc_msi_vector(bdf.requester_id()) {
+fn function_interrupt(
+    bus_device_function: BusDeviceFunction,
+    bars: &[Option<Bar>; 6],
+    msi_fallback: bool,
+) -> Option<(u32, u16)> {
+    match crate::arch::interrupt_controller::alloc_msi_vector(bus_device_function.requester_id()) {
         Some((intid, target)) => {
             // No fallback to INTx: on a machine that answered `Some`, `PCI_INTERRUPT_NUMBER_BASE`
             // is 0 and the
             // swizzle would resolve to the PIT's line, arming the driver on the timer.
             if msi_fallback
-                && pci_configuration_space::msix_capability(bdf, &mut |b, o| cfg_read32(b, o))
-                    .is_none()
-                && program_msi(bdf, target)
+                && pci_configuration_space::msix_capability(bus_device_function, &mut |b, o| {
+                    cfg_read32(b, o)
+                })
+                .is_none()
+                && program_msi(bus_device_function, target)
             {
                 return Some((intid, pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR));
             }
-            let vector = program_msix(bdf, bars, target)?;
+            let vector = program_msix(bus_device_function, bars, target)?;
             Some((intid, vector))
         }
         None => Some((
-            intx_intid(bdf)?,
+            intx_intid(bus_device_function)?,
             pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR,
         )),
     }
@@ -730,54 +782,59 @@ fn function_interrupt(bdf: Bdf, bars: &[Option<Bar>; 6], msi_fallback: bool) -> 
 ///
 /// Address and data first, enable last, so no half-written message is ever live; one vector
 /// (Multiple Message Enable left 0), because one is what every driver here asks for.
-fn program_msi(bdf: Bdf, target: pci_configuration_space::MsiTarget) -> bool {
+fn program_msi(
+    bus_device_function: BusDeviceFunction,
+    target: pci_configuration_space::MsiTarget,
+) -> bool {
     let Some(capability) =
-        pci_configuration_space::msi_capability(bdf, &mut |b, o| cfg_read32(b, o))
+        pci_configuration_space::msi_capability(bus_device_function, &mut |b, o| cfg_read32(b, o))
     else {
         return false;
     };
     cfg_write32(
-        bdf,
+        bus_device_function,
         capability.message_address_low(),
         target.message_address as u32,
     );
     if capability.is_64_bit {
         cfg_write32(
-            bdf,
+            bus_device_function,
             capability.message_address_low() + 4,
             (target.message_address >> 32) as u32,
         );
     }
     // The data register is 16 bits, and the dword holding it has the (64-bit) layout's reserved
     // half or the next register above it; a read-modify-write keeps whichever it is.
-    let old = cfg_read32(bdf, capability.data());
+    let old = cfg_read32(bus_device_function, capability.data());
     cfg_write32(
-        bdf,
+        bus_device_function,
         capability.data(),
         (old & 0xffff_0000) | (target.data & 0xffff),
     );
-    let head = cfg_read32(bdf, capability.capability_offset);
+    let head = cfg_read32(bus_device_function, capability.capability_offset);
     let control = ((head >> 16) as u16 & !(0x7 << 4)) | pci_configuration_space::MSI_ENABLE;
     cfg_write32(
-        bdf,
+        bus_device_function,
         capability.capability_offset,
         (head & 0xffff) | (control as u32) << 16,
     );
     true
 }
 
-/// **Where entry 0 of `bdf`'s MSI-X table lives, as a physical address**: the BAR its BIR names,
+/// **Where entry 0 of `bus_device_function`'s MSI-X table lives, as a physical address**: the BAR its BIR names,
 /// read back from configuration space as placed, plus the table's offset. `None` for a function
 /// with no MSI-X. The interrupt confinement tests write it, as a component holding the table's
 /// page could.
 #[cfg(all(test, target_arch = "x86_64"))]
-pub(crate) fn msix_table_entry(bdf: Bdf) -> Option<u64> {
-    let capability = pci_configuration_space::msix_capability(bdf, &mut |b, o| cfg_read32(b, o))?;
+pub(crate) fn msix_table_entry(bus_device_function: BusDeviceFunction) -> Option<u64> {
+    let capability = pci_configuration_space::msix_capability(bus_device_function, &mut |b, o| {
+        cfg_read32(b, o)
+    })?;
     let at = pci_configuration_space::BAR0_REGISTER + u64::from(capability.table_bar) * 4;
-    let low = cfg_read32(bdf, at);
+    let low = cfg_read32(bus_device_function, at);
     // Bits 2:1 = 10 is a 64-bit memory BAR, whose upper half is the next register.
     let high = if low & 0b110 == 0b100 {
-        u64::from(cfg_read32(bdf, at + 4)) << 32
+        u64::from(cfg_read32(bus_device_function, at + 4)) << 32
     } else {
         0
     };
@@ -789,20 +846,20 @@ pub(crate) fn msix_table_entry(bdf: Bdf) -> Option<u64> {
 /// `None`, loudly, for a function that declares no pin at all, because on a board that routes INTx
 /// a device with no pin has no way to interrupt anybody and a driver bound to whatever
 /// `intx_interrupt_number(base, dev, 0)` returned would wait forever on a line nothing drives.
-fn intx_intid(bdf: Bdf) -> Option<u32> {
+fn intx_intid(bus_device_function: BusDeviceFunction) -> Option<u32> {
     // config 0x3d; 1=INTA..4=INTD, 0=none. The dtb fixture test holds the swizzle against the
     // machine's own interrupt-map.
-    let pin = ((cfg_read32(bdf, 0x3c) >> 8) & 0xff) as u8;
+    let pin = ((cfg_read32(bus_device_function, 0x3c) >> 8) & 0xff) as u8;
     if pin == 0 {
         crate::println!(
             "  pci: the virtio function at {:02x} declares no INTx pin",
-            bdf.device
+            bus_device_function.device
         );
         return None;
     }
     Some(pci_configuration_space::intx_interrupt_number(
         PCI_INTERRUPT_NUMBER_BASE,
-        bdf.device,
+        bus_device_function.device,
         pin,
     ))
 }
@@ -815,19 +872,19 @@ fn intx_intid(bdf: Bdf) -> Option<u32> {
 /// Function Mask cleared explicitly because some parts set it at reset. See notes/pcie.md,
 /// "Placing BARs, and routing interrupts".
 fn program_msix(
-    bdf: Bdf,
+    bus_device_function: BusDeviceFunction,
     bars: &[Option<Bar>; 6],
     target: pci_configuration_space::MsiTarget,
 ) -> Option<u16> {
     let Some(capability) =
-        pci_configuration_space::msix_capability(bdf, &mut |b, o| cfg_read32(b, o))
+        pci_configuration_space::msix_capability(bus_device_function, &mut |b, o| cfg_read32(b, o))
     else {
         crate::println!(
             "  pci: the function at {:02x}:{:02x}.{} declares no MSI-X, and this machine has no \
              other route for a PCI interrupt",
-            bdf.bus,
-            bdf.device,
-            bdf.function,
+            bus_device_function.bus,
+            bus_device_function.device,
+            bus_device_function.function,
         );
         return None;
     };
@@ -838,7 +895,7 @@ fn program_msix(
     if entry + pci_configuration_space::MSIX_ENTRY_BYTES > bar.size_bytes {
         crate::println!(
             "  pci: the MSI-X table of the function at {:02x} does not fit its own BAR{}",
-            bdf.device,
+            bus_device_function.device,
             capability.table_bar,
         );
         return None;
@@ -858,11 +915,11 @@ fn program_msix(
     // Message Control is the upper half of the capability's first dword, so it is written back
     // with the (read-only) id and next-pointer bytes underneath it, which is what a 32-bit config
     // write to a capability header means.
-    let head = cfg_read32(bdf, capability.capability_offset);
+    let head = cfg_read32(bus_device_function, capability.capability_offset);
     let control = ((head >> 16) as u16 | pci_configuration_space::MSIX_ENABLE)
         & !pci_configuration_space::MSIX_FUNCTION_MASK;
     cfg_write32(
-        bdf,
+        bus_device_function,
         capability.capability_offset,
         (head & 0xffff) | ((control as u32) << 16),
     );
@@ -873,18 +930,21 @@ fn program_msix(
 /// Every function on the bus carrying the NVMe class code, in bus-walk order. One walk for the
 /// driver and the roster, so the controller [`find_nvme_device`] brings up is always the one the
 /// roster calls ordinal 0.
-fn each_non_volatile_memory_express_controller(found: &mut dyn FnMut(Bdf)) {
+fn each_non_volatile_memory_express_controller(found: &mut dyn FnMut(BusDeviceFunction)) {
     if !is_host_bridge_present() {
         return;
     }
     pci_configuration_space::enumerate(
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
-        &mut |bdf, _, _| {
-            if cfg_read32(bdf, pci_configuration_space::CLASS_REVISION_REGISTER) >> 8
+        &mut |bus_device_function, _, _| {
+            if cfg_read32(
+                bus_device_function,
+                pci_configuration_space::CLASS_REVISION_REGISTER,
+            ) >> 8
                 == pci_configuration_space::CLASS_NON_VOLATILE_MEMORY_EXPRESS
             {
-                found(bdf);
+                found(bus_device_function);
             }
         },
     );
@@ -928,23 +988,26 @@ pub(crate) struct PciNvmeDevice {
 /// permission is granted at the final moment, and on a machine with an IOMMU the device still
 /// cannot reach a byte until `iommu::confine` maps its region (denied by default, milestone 16b).
 pub(crate) fn find_nvme_device() -> Option<PciNvmeDevice> {
-    let mut found: Option<Bdf> = None;
-    each_non_volatile_memory_express_controller(&mut |bdf| {
+    let mut found: Option<BusDeviceFunction> = None;
+    each_non_volatile_memory_express_controller(&mut |bus_device_function| {
         if found.is_none() {
-            found = Some(bdf);
+            found = Some(bus_device_function);
         }
     });
-    let bdf = found?;
+    let bus_device_function = found?;
 
-    let mut bars = read_bars(bdf);
-    if !place_bars(bdf, &mut bars) {
+    let mut bars = read_bars(bus_device_function);
+    if !place_bars(bus_device_function, &mut bars) {
         return None;
     }
     let bar0 = bars[0].as_ref().map(|b| b.base_physical_address)?;
 
-    let cmd = cfg_read32(bdf, pci_configuration_space::COMMAND_REGISTER) as u16;
+    let cmd = cfg_read32(
+        bus_device_function,
+        pci_configuration_space::COMMAND_REGISTER,
+    ) as u16;
     cfg_write32(
-        bdf,
+        bus_device_function,
         pci_configuration_space::COMMAND_REGISTER,
         (cmd | pci_configuration_space::COMMAND_MEMORY_SPACE_ENABLE
             | pci_configuration_space::COMMAND_BUS_MASTER_ENABLE) as u32,
@@ -952,7 +1015,7 @@ pub(crate) fn find_nvme_device() -> Option<PciNvmeDevice> {
 
     Some(PciNvmeDevice {
         bar0,
-        rid: bdf.requester_id(),
+        rid: bus_device_function.requester_id(),
     })
 }
 
@@ -985,44 +1048,50 @@ pub(crate) fn find_xhci_device() -> Option<PciXhciDevice> {
     if !is_host_bridge_present() {
         return None;
     }
-    let mut found: Option<Bdf> = None;
+    let mut found: Option<BusDeviceFunction> = None;
     pci_configuration_space::enumerate(
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
-        &mut |bdf, _, _| {
+        &mut |bus_device_function, _, _| {
             if found.is_none()
-                && cfg_read32(bdf, pci_configuration_space::CLASS_REVISION_REGISTER) >> 8
+                && cfg_read32(
+                    bus_device_function,
+                    pci_configuration_space::CLASS_REVISION_REGISTER,
+                ) >> 8
                     == pci_configuration_space::CLASS_EXTENSIBLE_HOST_CONTROLLER_INTERFACE
             {
-                found = Some(bdf);
+                found = Some(bus_device_function);
             }
         },
     );
-    let bdf = found?;
+    let bus_device_function = found?;
 
-    let mut bars = read_bars(bdf);
-    if !place_bars(bdf, &mut bars) {
+    let mut bars = read_bars(bus_device_function);
+    if !place_bars(bus_device_function, &mut bars) {
         return None;
     }
     let bar = bars[0].as_ref()?;
     let (bar0, bar_bytes) = (bar.base_physical_address, bar.size_bytes);
 
-    let cmd = cfg_read32(bdf, pci_configuration_space::COMMAND_REGISTER) as u16;
+    let cmd = cfg_read32(
+        bus_device_function,
+        pci_configuration_space::COMMAND_REGISTER,
+    ) as u16;
     cfg_write32(
-        bdf,
+        bus_device_function,
         pci_configuration_space::COMMAND_REGISTER,
         (cmd | pci_configuration_space::COMMAND_MEMORY_SPACE_ENABLE
             | pci_configuration_space::COMMAND_BUS_MASTER_ENABLE) as u32,
     );
 
-    let (intid, _) = function_interrupt(bdf, &bars, true)?;
+    let (intid, _) = function_interrupt(bus_device_function, &bars, true)?;
 
     // The MSI-X table's and pending-bit array's byte ranges in BAR0, whether or not this machine
     // uses MSI-X: a driver that could write the table could enable and aim it, whatever this
     // kernel chose.
     let mut withheld = [(0, 0); 2];
     if let Some(capability) =
-        pci_configuration_space::msix_capability(bdf, &mut |b, o| cfg_read32(b, o))
+        pci_configuration_space::msix_capability(bus_device_function, &mut |b, o| cfg_read32(b, o))
     {
         if capability.table_bar == 0 {
             let at = u64::from(capability.table_offset);
@@ -1045,7 +1114,7 @@ pub(crate) fn find_xhci_device() -> Option<PciXhciDevice> {
     Some(PciXhciDevice {
         bar0,
         bar_bytes,
-        rid: bdf.requester_id(),
+        rid: bus_device_function.requester_id(),
         intid,
         withheld,
     })
@@ -1063,7 +1132,7 @@ pub(crate) struct PciE1000eDevice {
     pub rid: u32,
     /// The PCI device id, which says which part this is (`e1000e::model_name`).
     pub device: u16,
-    bdf: Bdf,
+    bus_device_function: BusDeviceFunction,
 }
 
 impl PciE1000eDevice {
@@ -1071,7 +1140,7 @@ impl PciE1000eDevice {
     /// reads its status word at `0xe4` (`e1000e::platform_controller_hub::flush`), which is the one reason a NIC
     /// driver here needs configuration space after bring-up.
     pub(crate) fn config_read32(&self, off: u64) -> u32 {
-        cfg_read32(self.bdf, off)
+        cfg_read32(self.bus_device_function, off)
     }
 }
 
@@ -1085,27 +1154,30 @@ pub(crate) fn find_e1000e_device() -> Option<PciE1000eDevice> {
     if !is_host_bridge_present() {
         return None;
     }
-    let mut found: Option<(Bdf, u16)> = None;
+    let mut found: Option<(BusDeviceFunction, u16)> = None;
     pci_configuration_space::enumerate(
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
-        &mut |bdf, vendor, device| {
+        &mut |bus_device_function, vendor, device| {
             if found.is_none() && ::e1000e::is_supported_device(vendor, device) {
-                found = Some((bdf, device));
+                found = Some((bus_device_function, device));
             }
         },
     );
-    let (bdf, device) = found?;
+    let (bus_device_function, device) = found?;
 
-    let mut bars = read_bars(bdf);
-    if !place_bars(bdf, &mut bars) {
+    let mut bars = read_bars(bus_device_function);
+    if !place_bars(bus_device_function, &mut bars) {
         return None;
     }
     let bar0 = bars[0].as_ref().map(|b| b.base_physical_address)?;
 
-    let cmd = cfg_read32(bdf, pci_configuration_space::COMMAND_REGISTER) as u16;
+    let cmd = cfg_read32(
+        bus_device_function,
+        pci_configuration_space::COMMAND_REGISTER,
+    ) as u16;
     cfg_write32(
-        bdf,
+        bus_device_function,
         pci_configuration_space::COMMAND_REGISTER,
         (cmd | pci_configuration_space::COMMAND_MEMORY_SPACE_ENABLE
             | pci_configuration_space::COMMAND_BUS_MASTER_ENABLE) as u32,
@@ -1113,9 +1185,9 @@ pub(crate) fn find_e1000e_device() -> Option<PciE1000eDevice> {
 
     Some(PciE1000eDevice {
         bar0,
-        rid: bdf.requester_id(),
+        rid: bus_device_function.requester_id(),
         device,
-        bdf,
+        bus_device_function,
     })
 }
 
@@ -1318,20 +1390,22 @@ pub(crate) fn initialize_iommu() {
     if !is_host_bridge_present() {
         return;
     }
-    let mut found: Option<Bdf> = None;
+    let mut found: Option<BusDeviceFunction> = None;
     pci_configuration_space::enumerate(
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
-        &mut |bdf, vendor, device| {
+        &mut |bus_device_function, vendor, device| {
             if found.is_none() && vendor == IOMMU_VENDOR && device == IOMMU_DEVICE {
-                found = Some(bdf);
+                found = Some(bus_device_function);
             }
         },
     );
-    let Some(bdf) = found else { return };
+    let Some(bus_device_function) = found else {
+        return;
+    };
 
-    let mut bars = read_bars(bdf);
-    if !place_bars(bdf, &mut bars) {
+    let mut bars = read_bars(bus_device_function);
+    if !place_bars(bus_device_function, &mut bars) {
         crate::println!("  pci: could not place the IOMMU's BAR; leaving the IOMMU off");
         return;
     }
@@ -1340,9 +1414,12 @@ pub(crate) fn initialize_iommu() {
         return;
     };
 
-    let cmd = cfg_read32(bdf, pci_configuration_space::COMMAND_REGISTER) as u16;
+    let cmd = cfg_read32(
+        bus_device_function,
+        pci_configuration_space::COMMAND_REGISTER,
+    ) as u16;
     cfg_write32(
-        bdf,
+        bus_device_function,
         pci_configuration_space::COMMAND_REGISTER,
         (cmd | pci_configuration_space::COMMAND_MEMORY_SPACE_ENABLE) as u32,
     );
@@ -1424,9 +1501,12 @@ mod tests {
         pci_configuration_space::enumerate(
             ecam_buses(),
             &mut |b, o| cfg_read32(b, o),
-            &mut |bdf, vendor, device| {
+            &mut |bus_device_function, vendor, device| {
                 count += 1;
-                if bdf.bus == 0 && bdf.device == 0 && bdf.function == 0 {
+                if bus_device_function.bus == 0
+                    && bus_device_function.device == 0
+                    && bus_device_function.function == 0
+                {
                     // The ids are a diagnostic, not a pass condition: a real machine's bridge
                     // answers an id other than q35's.
                     assert_ne!(
@@ -1481,7 +1561,7 @@ mod tests {
             if f.class == pci_configuration_space::CLASS_NON_VOLATILE_MEMORY_EXPRESS
                 && controller_on.is_none()
             {
-                controller_on = Some(f.bdf.bus);
+                controller_on = Some(f.bus_device_function.bus);
             }
         });
         let secondaries = &secondaries[..bridges];

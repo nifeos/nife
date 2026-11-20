@@ -1743,10 +1743,10 @@ mod tests {
             crate::testing::skip!("two PCI disks are needed, one to grant and one to forge");
         };
         assert_ne!(granted.rid, forger.rid);
-        let granted_entry =
-            crate::pci::msix_table_entry(granted.bdf).expect("the first disk has MSI-X");
-        let forger_entry =
-            crate::pci::msix_table_entry(forger.bdf).expect("the second disk has MSI-X");
+        let granted_entry = crate::pci::msix_table_entry(granted.bus_device_function)
+            .expect("the first disk has MSI-X");
+        let forger_entry = crate::pci::msix_table_entry(forger.bus_device_function)
+            .expect("the second disk has MSI-X");
         let (granted_address, granted_data) = read_message(granted_entry);
         let (own_address, own_data) = read_message(forger_entry);
 

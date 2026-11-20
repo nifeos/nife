@@ -25,11 +25,11 @@ Fix: state the precondition in the doc comment (bus 0, or a bridge path already 
 BUGS entry for `kernel/src/pci.rs`.
 Effort: S. Door: two-way.
 
-#### `Bdf` admits a device above 31 or a function above 7, and the ECAM proof assumes it does not
+#### `BusDeviceFunction` admits a device above 31 or a function above 7, and the ECAM proof assumes it does not
 Where: `crates/pci_configuration_space/src/lib.rs` lines 22 to 41, `:806` (`kani::assume`).
 Why: `ecam_offset` for `dev: 32` lands on the next bus's first device, and the mutation triage
 records two equivalent mutants there because no test can pin behavior nobody wants. The fields are
-public and the kernel builds `Bdf` values by hand.
+public and the kernel builds `BusDeviceFunction` values by hand.
 Fix: mask in `ecam_offset` and `requester_id` (`dev & 31`, `func & 7`) so the proof needs no
 assumption, or a checked constructor that returns `None`; both let the two mutants die.
 Effort: S. Door: two-way.

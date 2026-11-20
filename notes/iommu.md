@@ -81,7 +81,7 @@ can extend the context this directory already holds.
 ## The requester id is the key
 
 A PCIe function stamps a 16-bit requester id (`bus:8 | dev:5 | fn:3`) on every memory transaction
-it issues (`pci::Bdf::requester_id`). Both `virt` boards publish an identity `iommu-map` in the
+it issues (`pci::BusDeviceFunction::requester_id`). Both `virt` boards publish an identity `iommu-map` in the
 device tree, so that id is exactly what the IOMMU looks a device up by (SMMU StreamID, RISC-V
 `device_id`). It is threaded from `pci::find_block_device` through `virtio::register`, which gained an
 `Option<u32>` argument: `Some(rid)` for a PCI device, `None` for virtio-mmio (no IOMMU fronts the

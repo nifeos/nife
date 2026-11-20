@@ -103,8 +103,10 @@ Every other crate that has moved or passed clearance had a review package under
 clearance. This crate's package is
 [`pci-configuration-space.md`](../../notes/crate-reviews/pci-configuration-space.md). The maintainer
 took option A provisionally on 2026-11-19 (UTC), a two-way door the architect may revisit. Clearing
-the package approves the repository; nobody has cleared it yet. The move also waits on the architect
-ratifying the package's table of names and on the P2 move steps above.
+the package approves the repository; nobody has cleared it yet. The architect ruled the names on
+2026-11-20 (UTC), the names decision taken as option B: the whole table ratified as built, with one change, the struct `Bdf`
+becomes `BusDeviceFunction` and the specification spellings ride as aliases. The move waits on the
+clearance and on the P2 move steps above.
 
 Recommendation: A, taken provisionally.
 
@@ -230,7 +232,7 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 - **Outstanding.** Every finding marked Open under "Finding status" above (the `intx_interrupt_number`
   precondition, the fuzz targets and the mutation survivors), each with what remains, checked
   against the crate's manifest, `src/lib.rs`, `tests/` and `falsifications/`.
-- **Outstanding.** The architect ratifies the names in the review package, then clears it, which
+- **Outstanding.** The architect clears the review package, whose names are ratified, which
   approves the repository: the decision under "Open decisions" above.
 
 ## BUGS
