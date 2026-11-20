@@ -190,7 +190,7 @@ pub fn verb_key<'o>(
 /// ```
 /// use grant_contract::delegated_within;
 /// let mut page = [0u8; program_argument_contract::PAGE_BYTES];
-/// let mut builder = program_argument_contract::PageBuilder::new(&mut page);
+/// let mut builder = program_argument_contract::PageBuilder::new(&mut page).unwrap();
 /// for word in ["jig", "install", "--within", "lab-runner", "greeting"] {
 ///     builder.push(word.as_bytes()).unwrap();
 /// }
@@ -202,7 +202,7 @@ pub fn verb_key<'o>(
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
 pub fn delegated_within(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
-    let args = program_argument_contract::ArgPage::parse(page);
+    let args = program_argument_contract::ArgumentPage::parse(page);
     let mut words = args.iter().skip(1);
     while let Some(word) = words.next() {
         if word == b"--within" {
@@ -222,7 +222,7 @@ pub fn delegated_within(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
 /// assembled from the line, which is what the progenitor holds; `None` for a page that does not
 /// parse, has one word, or whose second is longer than [`MAXIMUM_VERB_BYTES`] or holds a space.
 pub fn verb_of_page<'o>(page: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
-    let args = program_argument_contract::ArgPage::parse(page);
+    let args = program_argument_contract::ArgumentPage::parse(page);
     let mut words = args.iter().skip(1);
     let verb = words.next()?;
     verb_key(verb, words.next(), out)
@@ -267,7 +267,7 @@ mod tests {
     /// An argument page carrying `words`, as a spawner receives one.
     fn page(words: &[&[u8]]) -> [u8; program_argument_contract::PAGE_BYTES] {
         let mut page = [0u8; program_argument_contract::PAGE_BYTES];
-        let mut builder = program_argument_contract::PageBuilder::new(&mut page);
+        let mut builder = program_argument_contract::PageBuilder::new(&mut page).unwrap();
         for word in words {
             builder.push(word).unwrap();
         }

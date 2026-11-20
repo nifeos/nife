@@ -5548,9 +5548,7 @@ crates/pmap/src/lib.rs::write_diagnostics
 
 crates/pmap/src/lib.rs::write_report
 
-crates/program_argument_contract/src/lib.rs::ArgPage
 
-crates/program_argument_contract/src/lib.rs::CAPACITY
 
 crates/program_argument_contract/src/lib.rs::EMPTY
 
@@ -5570,7 +5568,6 @@ crates/program_argument_contract/src/lib.rs::count
 
 crates/program_argument_contract/src/lib.rs::finish
 
-crates/program_argument_contract/src/lib.rs::from_va
 
 crates/program_argument_contract/src/lib.rs::is_empty
 
