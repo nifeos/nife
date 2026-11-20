@@ -17,7 +17,7 @@ hand, the same thing is:
     git apply -R xtask/falsifications/swish_check.boot.swish_check_leg.patch
 
 The defect is the progenitor placing copies of the gpu's four and the keyboard's three in the shell
-at `spawnproto::SHELL_GPU_SLOT` onward, with `GRANT`, which is what it did from milestone 632
+at `spawn_protocol::SHELL_GPU_SLOT` onward, with `GRANT`, which is what it did from milestone 632
 (graphics on demand) to milestone 715. The spawn service still holds its own, so launches keep
 working; only the shell's table is wider.
 
@@ -45,7 +45,7 @@ diff --git a/crates/system_initializer/src/boot_sequence.rs b/crates/system_init
 +        for (i, cap) in lent.iter().enumerate() {
 +            if t.keyboard || i < 4 {
 +                let g = rights[i] | abi::rights::GRANT;
-+                must_ok(place_at(shell.tcb, *cap, g, spawnproto::SHELL_GPU_SLOT + i as u64));
++                must_ok(place_at(shell.tcb, *cap, g, spawn_protocol::SHELL_GPU_SLOT + i as u64));
 +            }
 +        }
 +    }

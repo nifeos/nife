@@ -157,7 +157,7 @@ slower than CI's arm64 runner also fails, and the answer is a measurement and a 
 The graphical launch (milestone 632 (graphics on demand)) boots the normal UART system with a
 virtio-gpu attached. The swish prompt must reach the serial console before anything is typed, which
 asserts the boot stayed minimal. Then the leg types `graphical_terminal`. The shell asks for
-graphics (`spawnproto::GRAPHICS_BIT`), the progenitor builds the session's stack from the devices it
+graphics (`spawn_protocol::GRAPHICS_BIT`), the progenitor builds the session's stack from the devices it
 holds, and the session prints its own `$ ` on the screen. One key press must echo back.
 
 Any `$ ` decoded off the scanout is the proof. A capability-slot collision anywhere in the session's

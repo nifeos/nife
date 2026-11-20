@@ -81,8 +81,8 @@ cd                        pwd is /
 ## What is left, and when
 
 The boot shell holds one second tree: the disk tree, the NVMe disk as one read-only file, at
-`/disk` (milestone 834 (ioping on nife and Linux)). The progenitor places its endpoint at `spawnproto::MOUNTED_TREE_SLOT`, the
-shell probes that slot at `_start`, and `spawnproto` holds the mount name and rights. A directory
+`/disk` (milestone 834 (ioping on nife and Linux)). The progenitor places its endpoint at `spawn_protocol::MOUNTED_TREE_SLOT`, the
+shell probes that slot at `_start`, and `spawn_protocol` holds the mount name and rights. A directory
 grant under `/disk` is named through the mount (`disk/<dir>`), and the progenitor builds it against
 the disk tree. What is left for a filesystem that can come and go: a dead mount answers Gone and
 disappears, and a shell inside it goes home with a message (calef, 2026-09-26). The automatic mount
@@ -122,7 +122,7 @@ not fit in four pages, and the answer was smaller frames rather than a bigger st
 
 Seven came with this milestone, and it is a number rather than a smaller frame. Six pages ran within
 a few dozen bytes of the guard, and a `Holdings` that learned where a second tree is mounted crossed
-it, with a data abort on `sp` inside `nav::path`, under `designate`. The smaller frame is known, and
+it, with a data abort on `sp` inside `navigation::path`, under `designate`. The smaller frame is known, and
 the `Holdings` entry under BUGS below records it.
 
 ## BUGS
@@ -130,7 +130,7 @@ the `Holdings` entry under BUGS below records it.
 - `rm` under a mount point is refused at delivery. A program that hears words is granted its
   directory under `/disk` by name, but `rm`'s grant is not routed that way yet, and the disk tree
   would refuse every removal anyway (`EROFS`).
-- `spawnproto::SECOND_DIRECTORY_GRANT_BIT` has no emitter and no decoder in init. A second directory grant for one
+- `spawn_protocol::SECOND_DIRECTORY_GRANT_BIT` has no emitter and no decoder in init. A second directory grant for one
   spawned program needs a manifest declaring two directory operands, and none does. §170 (how a
   foreign program is told what to do), ruled 2026-09-26 to grant a named file or directory per the
   manifest, makes the manifest the only source of one.

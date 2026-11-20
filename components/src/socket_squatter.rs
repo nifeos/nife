@@ -136,7 +136,7 @@ pub fn run() -> ! {
     // 5. Arm a valid request in our page and watch it for the victim's reply.
     let mut p = PAYLOAD_OFFSET_BYTES;
     let mut put = |v: u8| {
-        WINDOW.write_u8(p, v);
+        WINDOW.write::<u8>(p, v);
         p += 1;
     };
     put(0x00);
@@ -150,22 +150,22 @@ pub fn run() -> ! {
     }
     put(0x00);
     for (i, &b) in GW_IP.iter().enumerate() {
-        WINDOW.write_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        WINDOW.write::<u8>(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    WINDOW.write_u16(DESTINATION_PORT_OFFSET_BYTES, TFTP_PORT);
+    WINDOW.write::<u16>(DESTINATION_PORT_OFFSET_BYTES, TFTP_PORT);
     // Clear the length field: only a RECEIVE writes it (a send carries its length in the CALL
     // argument), so a nonzero value below means the stack delivered something into this frame.
-    WINDOW.write_u16(LENGTH_OFFSET_BYTES, 0);
+    WINDOW.write::<u16>(LENGTH_OFFSET_BYTES, 0);
 
     send(REPORT, RPT_ARMED, refused, recv_refused);
 
     let deadline = now() + WATCH_SECONDS * user_mode_runtime::counter_hertz();
-    while now() < deadline && WINDOW.read_u16(LENGTH_OFFSET_BYTES) == 0 {
+    while now() < deadline && WINDOW.read::<u16>(LENGTH_OFFSET_BYTES) == 0 {
         yield_now();
     }
-    let len = WINDOW.read_u16(LENGTH_OFFSET_BYTES);
-    let opcode = ((WINDOW.read_u8(PAYLOAD_OFFSET_BYTES) as u16) << 8)
-        | WINDOW.read_u8(PAYLOAD_OFFSET_BYTES + 1) as u16;
+    let len = WINDOW.read::<u16>(LENGTH_OFFSET_BYTES);
+    let opcode = ((WINDOW.read::<u8>(PAYLOAD_OFFSET_BYTES) as u16) << 8)
+        | WINDOW.read::<u8>(PAYLOAD_OFFSET_BYTES + 1) as u16;
     send(
         REPORT,
         if len != 0 { RPT_LEAKED } else { RPT_QUIET },

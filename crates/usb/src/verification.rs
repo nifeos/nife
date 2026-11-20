@@ -1,5 +1,5 @@
 use super::Refusal;
-use super::boot_keyboard::{BootReport, MODIFIER_CODES, changes, evdev_code};
+use super::boot_keyboard::{BootReport, changes};
 use super::descriptor::{
     CLASS_HID, CONFIGURATION, ConfigurationHeader, DeviceDescriptor, ENDPOINT, INTERFACE,
     PROTOCOL_KEYBOARD, SUBCLASS_BOOT, find_boot_keyboard,
@@ -167,12 +167,11 @@ fn two_interfaces_are_walked_as_two() {
 }
 
 /// **Two reports' events come in the promised order and say what changed**: first one event per
-/// modifier bit that flipped, in [`MODIFIER_CODES`]' order, each pressed when the bit is now set;
-/// then releases, then presses, each the [`evdev_code`] of a usage held in exactly one of the two
-/// reports, pressed when it is the later one. Together with the bound of twenty this is the whole
-/// contract [`changes`] documents. It does not prove the converse, that every usage which
-/// changed produces an event: a usage reported twice in one report, or with no evdev code,
-/// produces none by design, and the unit tests pin those.
+/// modifier bit that flipped, as usage 0xe0 plus the bit, each pressed when the bit is now set;
+/// then releases, then presses, each a usage held in exactly one of the two reports, pressed when
+/// it is the later one. Together with the bound of twenty this is the whole contract [`changes`]
+/// documents. It does not prove the converse, that every usage which changed produces an event:
+/// a usage reported twice in one report produces one event by design, and the unit tests pin it.
 /// Falsification: replayable `crates/usb/falsifications/verification.two_reports_produce_their_events_in_order.patch`
 #[kani::proof]
 #[kani::unwind(10)]
@@ -189,19 +188,16 @@ fn two_reports_produce_their_events_in_order() {
     let mut n = 0usize;
     let mut next_bit = 0usize;
     let mut pressing = false;
-    changes(&before, &after, &mut |code, pressed| {
+    changes(&before, &after, &mut |usage, pressed| {
         if n < modifier_events {
-            while next_bit < MODIFIER_CODES.len() && flipped & (1 << next_bit) == 0 {
+            while next_bit < 8 && flipped & (1 << next_bit) == 0 {
                 next_bit += 1;
             }
+            assert!(next_bit < 8, "one event per flipped modifier");
             assert!(
-                next_bit < MODIFIER_CODES.len(),
-                "one event per flipped modifier"
-            );
-            assert!(
-                (code, pressed)
+                (usage, pressed)
                     == (
-                        MODIFIER_CODES[next_bit],
+                        0xe0 + next_bit as u8,
                         after.modifiers & (1 << next_bit) != 0
                     ),
                 "modifiers first"
@@ -218,8 +214,8 @@ fn two_reports_produce_their_events_in_order() {
             assert!(
                 from.keys
                     .iter()
-                    .any(|&u| u != 0 && !other.keys.contains(&u) && evdev_code(u) == Some(code)),
-                "the code of a usage held in exactly one report"
+                    .any(|&u| u != 0 && !other.keys.contains(&u) && u == usage),
+                "a usage held in exactly one report"
             );
         }
         n += 1;

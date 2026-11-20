@@ -42,7 +42,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use network_time_protocol::{Packet, Short, Timestamp, leap, mode};
+use network_time_protocol::{Packet, ShortFormat, Timestamp, leap, mode};
 // The socket contract, verbatim from the file `net_stack` compiles, so this server and the client
 // cannot drift from the real server's idea of the wire format. The TCP half is dead here and is
 // allowed rather than trimmed: the value of compiling the *same file* net_stack does is that the
@@ -115,7 +115,7 @@ fn start(variant: u64, claimed_nanoseconds: u64, _arg2: u64) -> ! {
 /// Serve the socket contract on [`STACK`], answering each request with an NTP reply built from
 /// `variant` at `claimed_nanoseconds`. See the module docs for what this does and does not prove.
 fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
-    let mut pending = [0u8; network_time_protocol::PACKET_LEN];
+    let mut pending = [0u8; network_time_protocol::PACKET_BYTES];
     let mut pending_len = 0usize;
     let mut reported = false;
 
@@ -152,9 +152,9 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
             }
             OPERATION_SENDTO => {
                 // The length the client declared, which is how the real server learns it too.
-                let mut wire = [0u8; network_time_protocol::PACKET_LEN];
+                let mut wire = [0u8; network_time_protocol::PACKET_BYTES];
                 let n = SHARED_FRAME.payload_read(
-                    (w1 as usize).min(network_time_protocol::PACKET_LEN),
+                    (w1 as usize).min(network_time_protocol::PACKET_BYTES),
                     &mut wire,
                 );
                 let request = Packet::parse(&wire[..n]).unwrap_or_default();
@@ -200,8 +200,8 @@ fn build_reply(request: &Packet, variant: u64, claimed_nanoseconds: u64, out: &m
         stratum: 2,
         poll: request.poll,
         precision: -20,
-        root_delay: Short(0x0000_1000),      // ~62 ms
-        root_dispersion: Short(0x0000_2000), // ~125 ms
+        root_delay: ShortFormat::from_bits(0x0000_1000), // ~62 ms
+        root_dispersion: ShortFormat::from_bits(0x0000_2000), // ~125 ms
         reference_id: *b"TEST",
         reference: t2,
         // A server echoes the client's transmit field into origin and interprets it no further.
@@ -227,8 +227,8 @@ fn build_reply(request: &Packet, variant: u64, claimed_nanoseconds: u64, out: &m
         _ => {}
     }
 
-    out[..network_time_protocol::PACKET_LEN].copy_from_slice(&p.to_bytes());
-    network_time_protocol::PACKET_LEN
+    out[..network_time_protocol::PACKET_BYTES].copy_from_slice(&p.to_bytes());
+    network_time_protocol::PACKET_BYTES
 }
 
 /// Unix nanoseconds to an NTP timestamp. `None` outside the crate's representable window. The

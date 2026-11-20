@@ -188,7 +188,7 @@ A death reaches one endpoint, and that single fact is what decided milestone 235
 of that endpoint is `job_undertaker`, whose whole job is collecting. The process that *needed* to
 know was `swish`, blocked in a `RECEIVE` on the progenitor's result endpoint for an answer a killed thread can
 never send. So the prompt hung, and only on a fault: an ordinary non-zero exit is a value the child
-sends before it exits, and a spawn the progenitor could not build already had `spawnproto::SPAWN_FAILED`.
+sends before it exits, and a spawn the progenitor could not build already had `spawn_protocol::SPAWN_FAILED`.
 
 Three couplings were available and two lose to properties recorded on this page.
 
@@ -202,7 +202,7 @@ Three couplings were available and two lose to properties recorded on this page.
   would take it. It also hands collection duty to the shell for every job, and takes every job out
   of the progenitor's supervision domain, which is what `ps`/`pgrep` read.
 - **The supervisor tells**, which is what was built. `job_undertaker` gained `WRITE` on the progenitor's
-  result endpoint and one constant, `spawnproto::JOB_FAULTED`, sent after the collect and only for
+  result endpoint and one constant, `spawn_protocol::JOB_FAULTED`, sent after the collect and only for
   `EVENT_FAULT`. Clean exits stay silent, so the ordinary path is byte-for-byte what it was.
 
 **The residual is a synchronous-send problem rather than a supervision one.** That `SEND` is a
