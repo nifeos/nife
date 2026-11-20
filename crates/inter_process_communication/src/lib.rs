@@ -34,4 +34,4 @@ mod tests;
 
 mod rendezvous;
 
-pub use rendezvous::{Receive, Rendezvous, Send};
+pub use rendezvous::{ReceiveVerdict, Rendezvous, RendezvousCounts, SendVerdict};

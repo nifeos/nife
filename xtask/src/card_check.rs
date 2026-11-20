@@ -227,23 +227,24 @@ fn collect(root: &Path) -> Result<Vec<Pair>, String> {
     Ok(pairs)
 }
 
-/// A single boot file with both halves in it: judge the file against the archive inside it.
+/// A single boot file with both halves in it: judge the bytes outside the archive against the
+/// archive inside it.
 ///
-/// The kernel side is the whole file rather than a slice of it, which is sound for the reason
-/// `sealed_pair` gives: the check is that the digest's bytes are somewhere in the image, and the
-/// image is in there.
+/// The kernel side is the whole file with the archive's span zeroed. The check is that each
+/// digest's bytes are somewhere in the kernel, and an archive entry that carried another entry's
+/// raw digest must not count as finding it.
 fn embedded(path: &Path) -> Result<Pair, String> {
-    let blob = read(path)?;
-    let archive = sealed_pair::embedded_archive(&blob)
-        .ok_or_else(|| {
-            format!(
-                "{} carries no nifefs archive. A boot file built with no archive is a legitimate \
-                 build (the kernel boots its tour and says it has no module), and there is nothing \
-                 here to check.",
-                path.display()
-            )
-        })?
-        .to_vec();
+    let mut blob = read(path)?;
+    let span = sealed_pair::embedded_archive(&blob).ok_or_else(|| {
+        format!(
+            "{} carries no nifefs archive. A boot file built with no archive is a legitimate \
+             build (the kernel boots its tour and says it has no module), and there is nothing \
+             here to check.",
+            path.display()
+        )
+    })?;
+    let archive = blob[span.clone()].to_vec();
+    blob[span].fill(0);
     Ok(Pair {
         kernel_label: format!("the kernel in {}", path.display()),
         archive_label: format!("the archive in {}", path.display()),
@@ -456,6 +457,80 @@ mod tests {
 
     fn words(pair: (Vec<u8>, Vec<u8>)) -> String {
         test_support::words_for(&pair.1)
+    }
+
+    /// An archive that carries, as one more entry, the raw digest of its own `progenitor`, listed in
+    /// its measurement table like every other entry.
+    fn archive_with_a_raw_digest() -> Vec<u8> {
+        let (_, archive) = test_support::matched_pair();
+        let fs = nifefs::Fs::parse(&archive).expect("an archive");
+        let catalog =
+            measured_boot::sha256(fs.read(measured_boot::PROGENITOR).expect("packed")).to_vec();
+        let mut table = String::from_utf8(
+            fs.read(measured_boot::PROGRAM_MEASUREMENTS)
+                .expect("packed")
+                .to_vec(),
+        )
+        .expect("ascii");
+        let text = measured_boot::digest_text(&measured_boot::sha256(&catalog));
+        table.push_str(&format!(
+            "catalog {}\n",
+            core::str::from_utf8(&text).expect("ascii")
+        ));
+        let names: Vec<String> = fs
+            .entries()
+            .filter_map(|e| e.name_str().map(str::to_owned))
+            .filter(|name| name != measured_boot::PROGRAM_MEASUREMENTS)
+            .collect();
+        let mut files: Vec<(&str, &[u8])> = names
+            .iter()
+            .map(|name| (name.as_str(), fs.read(name).expect("listed")))
+            .collect();
+        files.push(("catalog", &catalog));
+        files.push((measured_boot::PROGRAM_MEASUREMENTS, table.as_bytes()));
+        let mut packed = vec![0u8; nifefs::image_size(&files)];
+        let written = nifefs::write_image(&files, &mut packed).expect("fits");
+        packed.truncate(written);
+        packed
+    }
+
+    /// A stand-in kernel carrying the digest of the measurement table and, when asked, of the
+    /// `progenitor`. The table's digest cannot sit in the archive (it covers every other entry), so
+    /// only the `progenitor`'s can reach the archive's own `catalog` entry.
+    fn kernel_for(archive: &[u8], carrying_the_progenitor: bool) -> Vec<u8> {
+        let fs = nifefs::Fs::parse(archive).expect("an archive");
+        let mut kernel = vec![0xa5u8; 600];
+        for name in sealed_pair::measured_entries() {
+            if name == measured_boot::PROGENITOR && !carrying_the_progenitor {
+                continue;
+            }
+            kernel.extend_from_slice(&measured_boot::sha256(fs.read(name).expect("packed")));
+            kernel.extend_from_slice(&[0x5a; 64]);
+        }
+        kernel
+    }
+
+    /// **An archive entry that carries a digest does not vouch for it.** In a single boot file the
+    /// kernel side is the bytes outside the archive, so a file whose only copy of the `progenitor`
+    /// digest sits in the archive's own `catalog` entry is refused, and the same archive beside a
+    /// kernel that holds it is sealed.
+    #[test]
+    fn a_digest_inside_the_archive_does_not_vouch_for_itself() {
+        let scratch =
+            std::env::temp_dir().join(format!("nife-card-check-raw-{}", std::process::id()));
+        std::fs::create_dir_all(&scratch).expect("scratch");
+        let archive = archive_with_a_raw_digest();
+        let mut verdicts = Vec::new();
+        for (name, carrying) in [("bare.efi", false), ("carried.efi", true)] {
+            let mut blob = b"PE\0\0 firmware header".to_vec();
+            blob.extend_from_slice(&kernel_for(&archive, carrying));
+            blob.extend_from_slice(&archive);
+            let path = scratch.join(name);
+            std::fs::write(&path, blob).expect("file");
+            verdicts.push(judge(&embedded(&path).expect("a pair")));
+        }
+        let _ = std::fs::remove_dir_all(&scratch);
+        assert_eq!(verdicts, [true, false], "refused, then sealed");
     }
 
     /// **A card whose script names its own archive passes; one whose script names another

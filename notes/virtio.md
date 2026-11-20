@@ -218,7 +218,7 @@ One binary carries several roles, each called from a `_start`:
 - `run_net` is the virtio-net driver. It runs a DHCP exchange against QEMU's user-mode (slirp)
   network: it transmits a hand-built DISCOVER on queue 1 and receives the OFFER on queue 0. That
   exercises both queues and both directions of the confinement with no TCP/IP stack in the loop.
-- `run_blk_server` is the long-lived block server the FS server calls.
+- `run_block_server` is the long-lived block server the FS server calls.
 
 A one-shot role exits rather than spinning. A leaked spinner stays on a run queue, and enough of
 them starve a later heavy test (the RedoxFS mount) past the hang watchdog.

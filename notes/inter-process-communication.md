@@ -44,7 +44,7 @@ The verdict enums compare and print by hand rather than by derive. A derive woul
 
 §101 (notification objects), as amended on 2026-09-26, rules that an endpoint bound to an
 interrupt refuses every send. `bind_to_interrupt` sets a flag that is never cleared, and `send`
-then answers `Send::Refused` and touches nothing. The bind also empties the sender queue, handing
+then answers `SendVerdict::Refused` and touches nothing. The bind also empties the sender queue, handing
 each sender parked before it back to the caller, which wakes it with the same refusal
 (`bind_interrupt` in the kernel). A bound rendezvous therefore never holds a sender, and the only
 thing a receiver there can be handed is a signal, so an interrupt's `w0 = 1` cannot be forged by
@@ -113,7 +113,7 @@ its bits straight to it.
 §101's binding makes a signal wake a thread blocked receiving on an endpoint. That is state this
 crate cannot see, since it is the kernel's thread table and another object's queue. So `signal`
 takes `bound_receiving`, which says the bound thread is parked in a receive right now, and answers
-`Signal::ToBound` when the kernel should deliver there. The proofs here show no bit is lost on any
+`SignalVerdict::ToBound` when the kernel should deliver there. The proofs here show no bit is lost on any
 of the three paths. That the kernel computes `bound_receiving` correctly is argued at its call
 site, `signal_locked` in `kernel/src/sched/notification.rs`. Why a signal of no bits wakes nobody
 is in [notification-objects.md](notification-objects.md).
@@ -134,7 +134,7 @@ and that costs one walk that fires nothing. A later cache would be a missed expi
 notices, and it is the one bug this structure can have. The cache is lowered under the same lock
 as the arm, so anyone holding it sees the cache and the timers agree.
 
-A deadline at or before `now` is not armed. `arm` answers `Arm::DueNow` and the caller signals at
+A deadline at or before `now` is not armed. `arm` answers `ArmVerdict::DueNow` and the caller signals at
 once. Otherwise a deadline that passed between the caller reading the clock and the kernel taking
 the lock would still fire, but a tick late.
 

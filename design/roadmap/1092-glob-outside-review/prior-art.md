@@ -7,7 +7,7 @@ marked unverified were not checked against source during this review.
 
 | matcher | input | `**` | escape | malformed pattern | leading dot by default | worst case |
 |---|---|---|---|---|---|---|
-| this crate | bytes, one name | no | `\x`, also inside `[...]` | means itself; no error type | special (`*` skips `.x`) | polynomial, bounded by `cost_bound`, proven to 3 bytes, tested at 100,000 |
+| this crate | bytes, one name | no | `\x`, also inside `[...]` | means itself; no error type | special (`*` skips `.x`) | polynomial, bounded by `step_bound`, proven to 3 bytes, tested at 100,000 |
 | rust-lang `glob` 0.3 | `str`, paths | yes | none; `[*]` and `Pattern::escape` | `PatternError` | ordinary (`require_literal_leading_dot: false`) | iterative single-backtrack loop (unverified) |
 | `globset` 0.4 (ripgrep) | bytes, paths | yes, and `{a,b}` | `\` on Unix, optional | error | ordinary | compiles to a regex automaton; linear |
 | `glob-match` 0.2 | `str` | yes, `{}` and `!` | `\` | returns false | ordinary | single pass with one backtrack per `*` and one per `**` (unverified) |

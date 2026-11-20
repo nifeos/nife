@@ -27,9 +27,9 @@ candidate, which is more authority than listing a directory) and no POSIX (Porta
   `LeadingDot::Special` is the default; `LeadingDot::Ordinary` treats a leading `.` as any other byte.
 - `has_magic(pattern)` and `literal(pattern, out)`: is the word a pattern at all, and if not, what
   name is it with the escapes stripped. `literal` returns `None` rather than truncate.
-- `match_steps(pattern, name, dot)` and `cost_bound(pattern_bytes, name_bytes)`: the cost of a
+- `match_steps(pattern, name, dot)` and `step_bound(pattern_bytes, name_bytes)`: the cost of a
   match, and the most it can be, computed from the two lengths alone. `match_steps` is at most
-  `cost_bound`; its exact count is not promised across versions.
+  `step_bound`; its exact count is not promised across versions.
 
 Syntax: `*` any run of bytes, `?` one byte, `[abc]` a set, `[a-z]` a range, `[!abc]` or `[^abc]` the
 complement, `\x` the byte `x`, anything else itself.
@@ -54,7 +54,7 @@ assert_eq!(literal(br"a\*b", &mut buf), Some(&b"a*b"[..]));
 Six Kani harnesses (`src/verification.rs`), each with a falsification patch that turns it red.
 They quantify over every byte value of patterns and names up to three bytes (2^48 pairs per
 harness) but not over length: four bytes each was tried and did not finish. Matching is total under
-both dot rules, the step count never exceeds `cost_bound`, a pattern with no magic matches exactly
+both dot rules, the step count never exceeds `step_bound`, a pattern with no magic matches exactly
 itself, `*` and `?` have their base meanings, the dot rule touches only names that start with a
 dot, and a negated class is the exact complement of its class. The length-independent claims are
 host tests: an exhaustive cross-check against a naive matcher over every pattern of up to five

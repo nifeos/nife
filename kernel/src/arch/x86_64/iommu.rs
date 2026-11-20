@@ -464,7 +464,7 @@ const fn remapped_entry(vector: u8, destination: u8, source_id: u16, level: bool
 const fn remappable_message(handle: u16) -> MsiTarget {
     let handle = handle as u64;
     MsiTarget {
-        address: MESSAGE_ADDRESS_BASE
+        message_address: MESSAGE_ADDRESS_BASE
             | (handle & 0x7fff) << 5
             | MESSAGE_REMAPPABLE_FORMAT
             | MESSAGE_SUBHANDLE_VALID
@@ -1516,7 +1516,7 @@ mod proofs {
         let a: u16 = kani::any();
         let b: u16 = kani::any();
         let message = remappable_message(a);
-        let address = message.address;
+        let address = message.message_address;
         assert!(
             address >> 20 == 0xfee,
             "inside the interrupt address window, high half zero"
@@ -1533,7 +1533,7 @@ mod proofs {
         assert!(decoded == a, "the address names the handle granted");
         if a != b {
             assert!(
-                remappable_message(b).address != address,
+                remappable_message(b).message_address != address,
                 "two entries, two messages"
             );
         }
@@ -1640,8 +1640,9 @@ mod tests {
         let target = remap_message(d.rid, vector, 0)
             .expect("a remapping entry was free")
             .expect("the disk's unit remaps, so its message is remapped");
-        assert_ne!(target.address & MESSAGE_REMAPPABLE_FORMAT, 0);
-        let handle = ((target.address >> 5) & 0x7fff | ((target.address >> 2) & 1) << 15) as u16;
+        assert_ne!(target.message_address & MESSAGE_REMAPPABLE_FORMAT, 0);
+        let handle = ((target.message_address >> 5) & 0x7fff
+            | ((target.message_address >> 2) & 1) << 15) as u16;
         let i = owner_index(d.rid).expect("the disk has an owner");
         let g = IOMMU.lock();
         let Slot::Up(u) = &g.slots[i] else {

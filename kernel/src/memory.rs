@@ -219,7 +219,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     }
 
     // The PCIe host bridge, by the generic-ECAM binding: `reg` is the config window and the 32-bit
-    // non-prefetchable `ranges` entry the BAR window (`pci_configuration_space::mem32_window`). It must come from the
+    // non-prefetchable `ranges` entry the BAR window (`pci_configuration_space::memory_window_32_bit`). It must come from the
     // tree: QEMU's BAR window is DRAM on the JH7110, which has no such node.
     {
         let mut ecam = [Region { start: 0, size: 0 }; 1];
@@ -227,7 +227,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
             && n >= 1
             && let Ok(Some(ranges)) =
                 dtb.node_property_compatible(b"pci-host-ecam-generic", b"ranges")
-            && let Some(mem32) = ::pci_configuration_space::mem32_window(ranges)
+            && let Some(mem32) = ::pci_configuration_space::memory_window_32_bit(ranges)
         {
             *PCI_REGIONS.lock() = Some(((ecam[0].start, ecam[0].size), mem32));
         }
