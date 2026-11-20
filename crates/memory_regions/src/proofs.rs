@@ -702,6 +702,7 @@ fn a_root_the_table_accepts_never_overflows_returning_a_grandchild() {
     let Some(root) = any_root_or_refused_for_its_range(&mut table) else {
         return;
     };
+    let range = table.bounds(root);
     if let Some(child) = table.split(root, kani::any())
         && let Some(grandchild) = table.split(child, kani::any())
         && let Some(claim) = table.claim_for_destroy(grandchild)
@@ -709,6 +710,10 @@ fn a_root_the_table_accepts_never_overflows_returning_a_grandchild() {
         table.return_to_parent(&claim);
         kani::cover!(table.has_children(root), "the child stays below the root");
     }
+    assert!(
+        table.bounds(root) == range,
+        "returning a grandchild moved the root's range"
+    );
     read_every_report_of(&table, root);
 }
 
