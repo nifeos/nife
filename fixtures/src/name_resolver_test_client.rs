@@ -112,7 +112,7 @@ fn echo_at(address: [u8; 4]) -> u64 {
     // A socket of our own (§255 (each socket is its own capability)): the resolver shares this
     // stack, and before milestone 649 (every client of a network stack shares its socket numbers)
     // the two had to agree by convention on which socket number each used.
-    let (socket::REP_OK, _, Some(socket)) = call_receiving(STACK, socket::OPERATION_OPEN_TCP, 0)
+    let (socket::REPLY_OK, _, Some(socket)) = call_receiving(STACK, socket::OPERATION_OPEN_TCP, 0)
     else {
         return ECHO_FAILED;
     };
@@ -128,11 +128,11 @@ fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
         return ECHO_FAILED;
     }
     for (i, &b) in address.iter().enumerate() {
-        SOCKET_PAGE.write::<u8>(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET_PAGE.write::<u8>(socket::DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
     SOCKET_PAGE.write::<u16>(
         socket::DESTINATION_PORT_OFFSET_BYTES,
-        socket::fixture::ECHO_PEER_PORT,
+        socket_fixture::ECHO_PEER_PORT,
     );
     if call(socket, socket::OPERATION_CONNECT, 0).0 != socket::CONNECT_ESTABLISHED {
         return ECHO_FAILED;

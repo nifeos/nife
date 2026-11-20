@@ -691,6 +691,7 @@ current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contra
 # three are already in the shipping graph through `components`; nothing external was taken.
 network_time_protocol = { version = "0.1.0", path = "../crates/network_time_protocol" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
+socket_fixture = { version = "0.1.0", path = "../crates/socket_fixture" }
 # The name resolver's contract and the boot test's cases, which `name_resolver_test_client` and the
 # kernel's test must agree on (milestone 384, provisional name).
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
