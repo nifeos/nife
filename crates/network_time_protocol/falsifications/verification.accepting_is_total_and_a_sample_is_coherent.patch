@@ -17,15 +17,15 @@ diff against the old phrasing and watching it stay green. Stating the claim as
 covers `transmit`, whose `is_zero` guard had the identical shape.
 
 diff --git a/crates/network_time_protocol/src/lib.rs b/crates/network_time_protocol/src/lib.rs
-index 5577729d..5631e9d7 100644
+index eaff3d855..9d5f997e8 100644
 --- a/crates/network_time_protocol/src/lib.rs
 +++ b/crates/network_time_protocol/src/lib.rs
-@@ -468,7 +468,7 @@ impl Interval {
+@@ -349,7 +349,7 @@ impl Interval {
  
      /// Is this interval negative?
      pub const fn is_negative(self) -> bool {
 -        self.0 < 0
 +        self.0 < i128::MIN
      }
+ }
  
-     /// The magnitude, in ticks.

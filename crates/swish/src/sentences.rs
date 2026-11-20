@@ -12,7 +12,7 @@ use super::*;
 /// one tree the shell presents, so standing inside it prints the mount path (calef, 2026-09-26,
 /// for milestone 154 (a process that holds two directory capabilities)).
 pub fn write_pwd(holdings: &Holdings, out: &mut dyn FnMut(&[u8])) {
-    let mut buf = [0u8; nav::RENDER_MAXIMUM];
+    let mut buf = [0u8; navigation::MAXIMUM_RENDERED_PATH_BYTES];
     let n = holdings.cwd.render(&mut buf);
     out(b"  ");
     out(&buf[..n]);
@@ -138,23 +138,23 @@ pub fn write_refusal(spec: &ParsedInvocation, refusal: Refusal, out: &mut dyn Fn
 }
 
 /// **What the prompt says about a job the kernel killed** (milestone 235). One sentence, shared by
-/// every place in the shell that can read [`spawnproto::JOB_FAULTED`] off the result endpoint (an
+/// every place in the shell that can read [`spawn_protocol::JOB_FAULTED`] off the result endpoint (an
 /// answer, a byte stream being printed, a byte stream going into a file, a pipeline stage's ack),
 /// because a person meeting the same event in four places should not meet four wordings.
 pub const FAULTED_SENTENCE: &[u8] = b"  that command faulted and was killed before it answered\n";
 
 /// **What the prompt says when the progenitor refuses bytes nobody vouched for** (DECISIONS §219 (how the shell names an installed program to the spawner),
 /// milestone 198 (a package manager) rung 3a). One sentence for every place that can read
-/// [`spawnproto::SPAWN_UNVOUCHED`], for [`FAULTED_SENTENCE`]'s reason. It names both halves of the
+/// [`spawn_protocol::SPAWN_UNVOUCHED`], for [`FAULTED_SENTENCE`]'s reason. It names both halves of the
 /// rule: the digest was not found, and what would have let it run anyway is a capability, not a
-/// setting. That capability is §219's gate D2 (`spawnproto::RUN_UNVOUCHED_SLOT`), and a shell
+/// setting. That capability is §219's gate D2 (`spawn_protocol::RUN_UNVOUCHED_SLOT`), and a shell
 /// meets this sentence only when it does not hold it.
 pub const UNVOUCHED_SENTENCE: &[u8] = b"  refused: those bytes are not among the installed programs, and running unvouched bytes needs a capability this session does not hold\n";
 
 /// **What the prompt says when a file's own manifest refuses the line** (milestone 597
 /// (a program carries its manifest in an ELF note)), one sentence per
 /// [`program_table::ImageRefusal`]. The shell prints it at the prompt when it can tell before sending
-/// anything, and for the progenitor's [`spawnproto::SPAWN_REFUSED_BY_MANIFEST`] when it cannot.
+/// anything, and for the progenitor's [`spawn_protocol::SPAWN_REFUSED_BY_MANIFEST`] when it cannot.
 pub fn image_refusal_sentence(r: program_table::ImageRefusal) -> &'static [u8] {
     match r {
         program_table::ImageRefusal::Unreadable => {
@@ -172,13 +172,13 @@ pub fn image_refusal_sentence(r: program_table::ImageRefusal) -> &'static [u8] {
     }
 }
 
-/// What the prompt says for [`spawnproto::SPAWN_REFUSED_BY_MANIFEST`], when the shell did not see
+/// What the prompt says for [`spawn_protocol::SPAWN_REFUSED_BY_MANIFEST`], when the shell did not see
 /// the refusal coming: the file changed after the shell read it, or the progenitor's verdict on
 /// the vouch differs from what the note alone could say.
 pub const REFUSED_BY_MANIFEST_SENTENCE: &[u8] =
     b"  refused: the progenitor read those bytes' own manifest, and it does not allow this line\n";
 
-/// What the prompt says for [`spawnproto::SPAWN_NO_DISPLAY`] (milestone 715 (the spawn service
+/// What the prompt says for [`spawn_protocol::SPAWN_NO_DISPLAY`] (milestone 715 (the spawn service
 /// holds the display grants and the shell holds none)): the shell holds no display, so the spawn
 /// service decides this and the shell prints it.
 pub const NO_DISPLAY_SENTENCE: &[u8] =
@@ -186,12 +186,16 @@ pub const NO_DISPLAY_SENTENCE: &[u8] =
 
 /// **What `vouch` says about the edit it asked for** (DECISIONS §221 (the boot prompt is the
 /// owner's console)). `status` and `live` are the progenitor's reply
-/// (`spawnproto::activation_reply`). Every answer names the generation live afterwards, because
+/// (`spawn_protocol::activation_reply`). Every answer names the generation live afterwards, because
 /// after a refusal that is still the fact a person needs: nothing changed, and this is what is in
 /// force. Install, remove and rollback are `jig`'s (milestone 809 (the package client becomes a
 /// program)), and it says them itself.
-pub fn write_vouch(status: spawnproto::ActivationStatus, live: u64, out: &mut dyn FnMut(&[u8])) {
-    use spawnproto::ActivationStatus as S;
+pub fn write_vouch(
+    status: spawn_protocol::ActivationStatus,
+    live: u64,
+    out: &mut dyn FnMut(&[u8]),
+) {
+    use spawn_protocol::ActivationStatus as S;
     let said: &[u8] = match status {
         S::Done => b"  vouched",
         S::NotExecutable => b"  refused: those bytes are not a program this machine runs",
@@ -209,14 +213,14 @@ pub fn write_vouch(status: spawnproto::ActivationStatus, live: u64, out: &mut dy
 }
 
 /// **What the prompt says when a spawn was not built**, by the progenitor's word: a program this
-/// image does not carry ([`spawnproto::SPAWN_NOT_IN_IMAGE`]) is named as that, and anything else
+/// image does not carry ([`spawn_protocol::SPAWN_NOT_IN_IMAGE`]) is named as that, and anything else
 /// is the job pool. Every site that answers a failed spawn reads it here, so the two cannot drift
 /// apart one call site at a time.
 ///
 /// Name: provisional, minted 2026-10-18 (UTC) by lane/image-needs-jig.
 #[must_use]
 pub const fn spawn_failure_sentence(answer: u64) -> &'static [u8] {
-    if answer == spawnproto::SPAWN_NOT_IN_IMAGE {
+    if answer == spawn_protocol::SPAWN_NOT_IN_IMAGE {
         b"  could not spawn (this image was built without that program)\n"
     } else {
         b"  could not spawn (the progenitor is out of memory)\n"
@@ -232,25 +236,25 @@ pub const USER_USAGE: &[u8] = b"  user suspend <name> | user resume <name>\n";
 
 /// Report what `program`, spawned, did, in terms of the grant it was given.
 pub fn write_outcome(program: Program, e: &Endowment, answer: u64, out: &mut dyn FnMut(&[u8])) {
-    if answer == spawnproto::SPAWN_FAILED || answer == spawnproto::SPAWN_NOT_IN_IMAGE {
+    if answer == spawn_protocol::SPAWN_FAILED || answer == spawn_protocol::SPAWN_NOT_IN_IMAGE {
         out(spawn_failure_sentence(answer));
         return;
     }
-    if answer == spawnproto::SPAWN_UNVOUCHED {
+    if answer == spawn_protocol::SPAWN_UNVOUCHED {
         out(UNVOUCHED_SENTENCE);
         return;
     }
-    if answer == spawnproto::SPAWN_REFUSED_BY_MANIFEST {
+    if answer == spawn_protocol::SPAWN_REFUSED_BY_MANIFEST {
         out(REFUSED_BY_MANIFEST_SENTENCE);
         return;
     }
-    if answer == spawnproto::SPAWN_NO_DISPLAY {
+    if answer == spawn_protocol::SPAWN_NO_DISPLAY {
         out(NO_DISPLAY_SENTENCE);
         return;
     }
     // The job ran and the kernel killed it (milestone 235 (a command that faults hangs the
     // prompt)): something ran, unlike the lines above.
-    if answer == spawnproto::JOB_FAULTED {
+    if answer == spawn_protocol::JOB_FAULTED {
         out(FAULTED_SENTENCE);
         return;
     }

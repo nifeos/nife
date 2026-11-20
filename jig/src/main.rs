@@ -47,7 +47,7 @@ use package_index::{
 };
 use pinned_tls_client::listed::{self, root_der};
 use pinned_tls_client::{PinnedPeer, Session};
-use program_table::spawnproto::{self, Activation, ActivationStatus as S};
+use program_table::spawn_protocol::{self, Activation, ActivationStatus as S};
 use socket_contract::fixture::{PACKAGE_PEER_HOST, PACKAGE_PEER_IP, PACKAGE_PEER_PORT};
 use user_mode_runtime as rt;
 
@@ -69,7 +69,7 @@ capability_manifest_note::carry!(grant_contract::Manifest {
 
 /// **Where the staging run is mapped**: one package, read here and handed on a page at a time. A
 /// window of this program's own, so a pair page (`address_space_layout`'s rule 7), clear of everything
-/// a loader maps into a `std` program. Four MiB, `spawnproto::IMAGE_MAXIMUM_PAGES` pages.
+/// a loader maps into a `std` program. Four MiB, `spawn_protocol::IMAGE_MAXIMUM_PAGES` pages.
 const STAGING_VA: u64 = address_space_layout::pair_page(0x0400_0000);
 
 /// This machine's architecture, as a package stem spells it.
@@ -145,7 +145,7 @@ fn parse_flags<'a>(words: &'a [&'a str]) -> Option<Flags<'a>> {
 
 /// The console's one trailer message, the answered-by every install and removal sends
 /// (milestone 911): the kind word, and the progenitor reads no more of it.
-const CONSOLE_TRAILER: [(u64, u64, u64); 1] = [(spawnproto::ANSWERED_CONSOLE, 0, 0)];
+const CONSOLE_TRAILER: [(u64, u64, u64); 1] = [(spawn_protocol::ANSWERED_CONSOLE, 0, 0)];
 
 /// **One JSON string**, escaped: the quotes, the backslash and the controls a name could carry.
 fn json_string(text: &str) -> String {
@@ -194,7 +194,7 @@ fn catalog() -> Option<&'static str> {
     let page = unsafe {
         std::slice::from_raw_parts(
             std_runtime_contract::CATALOG_PAGE as *const u8,
-            spawnproto::IMAGE_PAGE as usize,
+            spawn_protocol::IMAGE_PAGE as usize,
         )
     };
     let end = page.iter().position(|&b| b == 0).unwrap_or(page.len());
@@ -348,8 +348,8 @@ struct Staged {
 impl Staged {
     /// Retype a run for `len` bytes from this program's region and map it at [`STAGING_VA`].
     fn new(len: u64) -> Result<Staged, &'static str> {
-        let pages = spawnproto::image_pages(len);
-        if pages == 0 || pages > spawnproto::IMAGE_MAXIMUM_PAGES {
+        let pages = spawn_protocol::image_pages(len);
+        if pages == 0 || pages > spawn_protocol::IMAGE_MAXIMUM_PAGES {
             return Err("that package is empty, or larger than a package may be (4 MiB)");
         }
         let run = rt::retype_page_frame_run(std_runtime_contract::MEMORY_REGION_SLOT, pages);
@@ -408,10 +408,10 @@ fn ask(
     trailer: &[(u64, u64, u64)],
 ) -> Reply {
     let len = staged.map_or(0, |s| s.len);
-    let (w0, w1, w2) = spawnproto::activation_request(verb, len);
+    let (w0, w1, w2) = spawn_protocol::activation_request(verb, len);
     rt::send(INSTALLER_SLOT, w0, w1, w2);
     if let Some(st) = staged {
-        for i in 0..spawnproto::image_pages(st.len) {
+        for i in 0..spawn_protocol::image_pages(st.len) {
             match u64::try_from(rt::slice_page_frame(st.run, i, 1)) {
                 Ok(page) => {
                     rt::send_capability(INSTALLER_SLOT, page, abi::rights::READ, i);
@@ -451,8 +451,8 @@ fn ask(
         let words: Vec<_> = (0..count)
             .map(|_| rt::receive(INSTALLER_REPLY_SLOT))
             .collect();
-        let mut out = [0u8; spawnproto::HOLDER_MAXIMUM];
-        holder = spawnproto::holder_from_words([words[0], words[1]], &mut out).to_string();
+        let mut out = [0u8; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES];
+        holder = spawn_protocol::holder_from_words([words[0], words[1]], &mut out).to_string();
         if count == 3 {
             let (a, b, c) = words[2];
             ask = Some([a, b, c]);
@@ -463,11 +463,11 @@ fn ask(
     // these, which the progenitor read from its own store.
     let mut stored = None;
     if status == S::Done && verb == Activation::Approve && r2 > 0 {
-        let len = r2.min(spawnproto::IMAGE_PAGE) as usize;
+        let len = r2.min(spawn_protocol::IMAGE_PAGE) as usize;
         let mut bytes = vec![0u8; len];
-        for i in 0..spawnproto::stored_messages(len as u64) {
+        for i in 0..spawn_protocol::stored_messages(len as u64) {
             let (a, b, c) = rt::receive(INSTALLER_REPLY_SLOT);
-            spawnproto::put_stored_words(&mut bytes, (i * 24) as usize, (a, b, c));
+            spawn_protocol::put_stored_words(&mut bytes, (i * 24) as usize, (a, b, c));
         }
         stored = String::from_utf8(bytes).ok();
     }
@@ -898,7 +898,7 @@ fn sources_text() -> Option<&'static str> {
     let page = unsafe {
         std::slice::from_raw_parts(
             std_runtime_contract::INDEX_SOURCES_PAGE as *const u8,
-            spawnproto::IMAGE_PAGE as usize,
+            spawn_protocol::IMAGE_PAGE as usize,
         )
     };
     let end = page.iter().position(|&b| b == 0).unwrap_or(page.len());
@@ -1030,10 +1030,11 @@ fn install_indexed(entry: &Entry<'_>, flags: &Flags<'_>) -> ExitCode {
     let Some(first) = sources.repositories().next() else {
         return refuse("this image names no index address");
     };
-    let mut staged = match Staged::new(spawnproto::IMAGE_MAXIMUM_PAGES * spawnproto::IMAGE_PAGE) {
-        Ok(s) => s,
-        Err(why) => return refuse(why),
-    };
+    let mut staged =
+        match Staged::new(spawn_protocol::IMAGE_MAXIMUM_PAGES * spawn_protocol::IMAGE_PAGE) {
+            Ok(s) => s,
+            Err(why) => return refuse(why),
+        };
     let listed = Index::sources(entry, &first.repository, None).filter_map(|s| match s {
         Source::Listed(at) => Some(at),
         Source::Repository(_) => None,
@@ -1253,7 +1254,7 @@ fn not_bounded(package: &str, path: &str, file: &approval_file::File<'_>, json: 
 /// **The answered trailer for an approval**: the file's name and the digest of the bytes the
 /// answer was given on, which the progenitor could not otherwise know (milestone 911).
 fn approval_trailer(text: &str, file: &approval_file::File<'_>) -> [(u64, u64, u64); 3] {
-    spawnproto::answered_approval(file.name(), &package_archive::sha256(text.as_bytes()))
+    spawn_protocol::answered_approval(file.name(), &package_archive::sha256(text.as_bytes()))
 }
 
 /// **`jig rollback`**: one generation back. Under `--within <name>` the delegated endpoint's
@@ -1538,9 +1539,9 @@ fn answer_words(
 ) -> (String, Vec<String>) {
     let mut extra = Vec::new();
     let mut zone = [0u8; 16];
-    let decoded = ask
-        .as_ref()
-        .and_then(|&[word, lo, hi]| spawnproto::refused_ask_from_words((word, lo, hi), &mut zone));
+    let decoded = ask.as_ref().and_then(|&[word, lo, hi]| {
+        spawn_protocol::refused_ask_from_words((word, lo, hi), &mut zone)
+    });
     let said_text = match (status, verb) {
         (S::Done, Activation::Install) if fetched => "fetched and installed".to_string(),
         (S::Done, Activation::Install) => "installed".to_string(),
@@ -1628,14 +1629,14 @@ fn answer_words(
 }
 
 /// **The ask the reply's third message named**, as a [`Granted`] for the wording and the data:
-/// the kinds and the rights bit spelling [`spawnproto::refused_ask_words`] keeps.
+/// the kinds and the rights bit spelling [`spawn_protocol::refused_ask_words`] keeps.
 fn ask_of(kind: u64, rights: u64, name: &str) -> installed_programs::Granted<'_> {
     use installed_programs::{DirectoryRights, Granted};
     match kind {
-        spawnproto::ASK_SERVICE => Granted::Service,
-        spawnproto::ASK_INSTALLER => Granted::Installer,
-        spawnproto::ASK_ZONE => Granted::Zone(name),
-        spawnproto::ASK_DIRECTORY => Granted::Directory(
+        spawn_protocol::ASK_SERVICE => Granted::Service,
+        spawn_protocol::ASK_INSTALLER => Granted::Installer,
+        spawn_protocol::ASK_ZONE => Granted::Zone(name),
+        spawn_protocol::ASK_DIRECTORY => Granted::Directory(
             name,
             if rights >= 3 {
                 DirectoryRights::RW

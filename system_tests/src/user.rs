@@ -803,7 +803,7 @@ mod shell_navigation_tests;
 /// One module for both ISAs, for [`dir_capability_tests`]'s reason (DECISIONS §19). The **real
 /// `rm` binary** (`components/src/rm.rs`) runs behind a real `fs_subtree_caretaker`, started as the
 /// shell would: the name in a grant's two argument words and the options in the spec word, in
-/// `grant_plan::rmopt`'s bit order. The claim is that **the walk stops exactly where the
+/// `grant_plan::rm_options`'s bit order. The claim is that **the walk stops exactly where the
 /// capabilities stop**: the same command line against the same tree does the whole job through one
 /// grant and cannot begin through a narrower one, and no branch in the program decides which.
 #[cfg(all(test, initial_ramdisk))]
@@ -852,7 +852,7 @@ mod riscv_virtio_tests;
 /// instead of a keyboard, with the interactive endowment (a terminal, a spawn channel, a result
 /// channel and a budget), and the kernel plays the other ends. The test serves
 /// `terminal_contract::OPERATION_WRITE` and collects every byte the shell prints, so assertions
-/// are against what a person would see. A second thread serves `program_table::spawnproto` as the
+/// are against what a person would see. A second thread serves `program_table::spawn_protocol` as the
 /// progenitor does, building each stage with the delegated sink and source: the same protocol, not
 /// the same code (notes/pipes.md's BUGS).
 #[cfg(test)]

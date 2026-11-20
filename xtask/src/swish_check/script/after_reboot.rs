@@ -34,7 +34,7 @@ pub(in crate::swish_check) static SWISH_CHECK_AFTER_REBOOT: LazyLock<Vec<Line>> 
         [
     // **The shell holds no display device** (milestone 715 (provisional); row 32 of
     // notes/confinement-claims.md). The spawn service keeps the gpu's four capabilities, which
-    // would otherwise sit from `spawnproto::SHELL_GPU_SLOT` (22), so " 21 62" asserts nothing sits
+    // would otherwise sit from `spawn_protocol::SHELL_GPU_SLOT` (22), so " 21 62" asserts nothing sits
     // between the configuration page (21) and the run-unvouched slot (62). On x86_64 this boot has
     // no gpu and the line holds trivially; that leg's gap is milestone 632 (graphics on demand)'s.
     line(0, "caps", &["slots held: 0 1 2", " 21 62\n"]),

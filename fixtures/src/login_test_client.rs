@@ -619,14 +619,14 @@ fn wait(done: impl Fn() -> bool) -> bool {
 /// Copy `bytes` into the shared filesystem page (a name to open/create, or data to write).
 fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        FS_WINDOW.write_u8(i as u64, b);
+        FS_WINDOW.write::<u8>(i as u64, b);
     }
 }
 
 /// Read `n` bytes out of the shared filesystem page into `out`.
 fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = FS_WINDOW.read_u8(i as u64);
+        *b = FS_WINDOW.read::<u8>(i as u64);
     }
 }
 

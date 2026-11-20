@@ -9,7 +9,7 @@ Name and version. `usb` `0.1.0` in this tree, published as `universal_serial_bus
 `usb` is taken on crates.io, as milestone 857 (crates released on their own) found. The package and the
 directory take the long name at the move, which is item 2 of
 [milestone 1111 (what an outside maintainer would fix before the first release)](../../design/roadmap/1111-usb-outside-review.md).
-Nine `Name:` blocks: the crate's own and eight public items, all provisional.
+Eight `Name:` blocks: the crate's own, which stays provisional for the move, and seven public items, all ratified.
 
 API. The host side of a USB boot keyboard, as pure computation: what a device says about itself,
 what a host asks it, and what a boot report means. It touches nothing.
@@ -18,18 +18,18 @@ what a host asks it, and what a boot report means. It touches nothing.
 |---|---|
 | `descriptor` | the four descriptor types, the four descriptor sizes, the HID class triple, `DeviceDescriptor::parse`, `ConfigurationHeader::parse`, `Speed`, `control_maximum_packet_bytes`, `find_boot_keyboard` and its `BootKeyboard`, `Refusal` |
 | `request` | `SetupPacket` and its four constructors (`get_descriptor`, `set_configuration`, `set_boot_protocol`, `set_idle_forever`), `is_device_to_host`, `to_u64`, and the eight request constants |
-| `boot_keyboard` | `BootReport::parse`, `BootReport::RELEASED`, `REPORT_BYTES`, `ERROR_ROLL_OVER`, `MODIFIER_CODES`, `evdev_code`, `changes` |
+| `boot_keyboard` | `BootReport::parse`, `BootReport::RELEASED`, `REPORT_BYTES`, `ERROR_ROLL_OVER`, `evdev_code`, `changes` |
 
 No public signature names another crate's type, and no nife type appears in one.
 
 What a stranger may find surprising:
 
-- `changes` speaks Linux evdev codes, not HID usages. Milestone 1111's Decision 2 decides,
-  provisionally, that it emits HID usages and the caller maps them through `evdev_code`; the crate
-  does not build that yet.
-- `DeviceDescriptor::parse` answers `Option`, where `ConfigurationHeader::parse` answers
-  `Result<_, Refusal>`. Decision 3 decides, provisionally, that it answers `Result` too; the crate
-  does not build that yet. `BootReport::parse` keeps `Option` by the same decision.
+- `changes` speaks HID usages, the modifiers as 0xe0 to 0xe7, and delivers a usage `evdev_code` does
+  not know; a caller that wants Linux evdev codes maps each usage through `evdev_code` and skips
+  what it cannot map.
+- `BootReport::parse` answers `Option`, where the two descriptor parsers answer
+  `Result<_, Refusal>`: a phantom report is not a refusal of a malformed thing but a report that
+  carries no state.
 - No enum is `#[non_exhaustive]`, so a variant added to `Refusal` or `Speed` after the first
   release breaks a caller's `match`.
 
@@ -41,7 +41,7 @@ Proofs. Five Kani harnesses, each with a falsification patch:
 | `the_configuration_walk_is_total_and_accepts_only_an_interrupt_in` | every configuration of up to 25 bytes | the walk never panics, and what it accepts is an interrupt IN endpoint numbered above zero |
 | `two_interfaces_are_walked_as_two` | 41 bytes in one fixed shape, cut at every length | across two interfaces the walk answers only a boot keyboard's endpoint, and a refusal names a boot interface the buffer holds |
 | `two_reports_produce_a_bounded_number_of_events` | every pair of eight-byte reports | at most twenty events |
-| `two_reports_produce_their_events_in_order` | every pair of eight-byte reports | modifiers first in bit order, then releases, then presses, each the code of a usage held in exactly one report |
+| `two_reports_produce_their_events_in_order` | every pair of eight-byte reports | modifiers first in bit order, then releases, then presses, each a usage held in exactly one report |
 
 Two things lie outside the bounds. The first is a configuration longer than 25 bytes in any shape but the fixed one, which is what a real composite keyboard sends; the unit tests walk several, and item 10's fuzz target is the check that reaches them. The second is the converse of the report proof: that every key which changed produces an event. The two-interface harness takes 14 s and the event-order harness 238 s, beside
 177 s for the 25-byte walk.
@@ -82,18 +82,18 @@ Outstanding before the move. These are milestone 1111's items for the move lane:
   (item 13), and a stranger test.
 - Item 10: two fuzz targets.
 - The 13 prose acronym findings above.
-- The work of Decision 2 (`changes` emits HID usages) and of Decision 3's other half
-  (`DeviceDescriptor::parse` answers `Result`), both decided provisionally by the maintainer and
-  not yet built.
 
-Recommendation. Ready for review of the names below. The move waits for items 1, 2, 4 and 10 and for
-the work of Decisions 2 and 3.
+Recommendation. Cleared on 2026-11-19 (UTC): the review approves the repository
+`nifeos/universal_serial_bus` with `publish = false`, no tag and no publish. The move waits for
+items 1, 2, 4 and 10.
 
 ## Names
 
-Every public name of the crate and its state. All are provisional; the architect ratifies.
+Every public name of the crate and its state. All are ratified as built (2026-11-19 UTC) with the
+specification's spellings as aliases (`bMaxPacketSize0`, `wTotalLength`, `wLength`,
+`ErrorRollOver`, `bcdUSB`).
 
-### Renamed by Decision 1's recommendation, provisional until it is ruled
+### Renamed, ratified
 
 | was | now |
 |---|---|
@@ -107,13 +107,13 @@ Every public name of the crate and its state. All are provisional; the architect
 | `DeviceDescriptor::usb` | `DeviceDescriptor::usb_release_binary_coded_decimal`, alias `bcdUSB` |
 | `parse(b)` on the three parsers | `parse(bytes)` |
 
-### New, provisional
+### New, ratified
 
 | name | what it is |
 |---|---|
 | `descriptor::Speed` (`Low`, `Full`, `High`, `Super`) | the bus speed `control_maximum_packet_bytes` judges a packet size by (item 11, the speed half of Decision 3). USB vocabulary, not a host controller's port speed id |
 
-### Kept as the specification spells them, provisional
+### Kept as the specification spells them, ratified
 
 | name | specification |
 |---|---|
@@ -121,12 +121,12 @@ Every public name of the crate and its state. All are provisional; the architect
 | `SetupPacket::length` | `wLength`, USB 2.0 Table 9-2 |
 | `ERROR_ROLL_OVER` | `ErrorRollOver`, Usage Tables section 10 |
 
-### Unchanged, provisional
+### Unchanged, ratified
 
 | module | names |
 |---|---|
 | `descriptor` | `DEVICE`, `CONFIGURATION`, `INTERFACE`, `ENDPOINT`, `CLASS_HID`, `SUBCLASS_BOOT`, `PROTOCOL_KEYBOARD`, `Refusal` and its variants `Truncated`, `NotThatDescriptor`, `Malformed { at }`, `NoBootKeyboard`, `NoInterruptIn { interface }`; `DeviceDescriptor` and its fields `class`, `vendor`, `product`, `configurations`; `ConfigurationHeader` and its fields `interfaces`, `value`; `BootKeyboard` and its fields `configuration`, `interface`, `endpoint`, `interval` |
 | `request` | `DEVICE_TO_HOST`, `CLASS`, `TO_INTERFACE`, `GET_DESCRIPTOR`, `SET_CONFIGURATION`, `SET_IDLE`, `SET_PROTOCOL`, `BOOT_PROTOCOL`, `SetupPacket` and its fields `request_type`, `request`, `value`, `index`; `get_descriptor`, `set_configuration`, `set_boot_protocol`, `set_idle_forever`, `is_device_to_host`, `to_u64` |
-| `boot_keyboard` | `BootReport` and its fields `modifiers`, `keys`; `BootReport::RELEASED`, `MODIFIER_CODES`, `evdev_code`, `changes` |
+| `boot_keyboard` | `BootReport` and its fields `modifiers`, `keys`; `BootReport::RELEASED`, `evdev_code` (usages 0x04 to 0x8b and the eight modifiers 0xe0 to 0xe7), `changes` |
 
-`MODIFIER_CODES` leaves the public surface when the work of Decision 2 lands.
+`MODIFIER_CODES` is private.

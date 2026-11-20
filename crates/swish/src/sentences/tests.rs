@@ -1,6 +1,6 @@
 //! Tests of the fixed sentences, `help`, and the outcome of a spawn.
 
-use grant_plan::nav::Cwd;
+use grant_plan::navigation::Cwd;
 
 use super::*;
 use crate::test_support::{endowment, shown, spec_of};
@@ -9,7 +9,7 @@ use crate::test_support::{endowment, shown, spec_of};
 /// nothing changed in words distinct from a success. `script/swish-check` asserts the first.
 #[test]
 fn a_vouch_answer_says_what_is_live() {
-    use spawnproto::ActivationStatus as S;
+    use spawn_protocol::ActivationStatus as S;
     assert_eq!(
         shown(|o| write_vouch(S::Done, 3, o)),
         "  vouched; generation 3 is live\n"
@@ -74,7 +74,7 @@ fn a_spawn_that_failed_says_so_whatever_the_program_was() {
         Program::MemoryGrantDepleter,
         Program::Date,
     ] {
-        let s = shown(|o| write_outcome(prog, &endowment(prog), spawnproto::SPAWN_FAILED, o));
+        let s = shown(|o| write_outcome(prog, &endowment(prog), spawn_protocol::SPAWN_FAILED, o));
         assert!(s.contains("could not spawn"), "{prog:?}: {s}");
     }
 }
@@ -87,7 +87,7 @@ fn a_program_missing_from_the_image_is_not_reported_as_out_of_memory() {
         write_outcome(
             Program::Date,
             &endowment(Program::Date),
-            spawnproto::SPAWN_NOT_IN_IMAGE,
+            spawn_protocol::SPAWN_NOT_IN_IMAGE,
             o,
         );
     });
@@ -96,7 +96,7 @@ fn a_program_missing_from_the_image_is_not_reported_as_out_of_memory() {
         "  could not spawn (this image was built without that program)\n"
     );
     assert_eq!(
-        spawn_failure_sentence(spawnproto::SPAWN_FAILED),
+        spawn_failure_sentence(spawn_protocol::SPAWN_FAILED),
         b"  could not spawn (the progenitor is out of memory)\n"
     );
 }

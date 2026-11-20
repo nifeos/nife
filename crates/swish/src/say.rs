@@ -31,14 +31,14 @@ pub enum Say {
     /// is refused before there is a program to attribute it to, and [`echo`] can reach the same
     /// refusals with no program on the line at all.
     Cannot(Refusal),
-    /// **`bind` refused**, in [`nav::BindRefused`]'s vocabulary: the name is already bound, the
+    /// **`bind` refused**, in [`navigation::BindRefused`]'s vocabulary: the name is already bound, the
     /// table is full, or (a two-grant shell only, not reachable from any real boot yet) the name
     /// collides with one of this shell's own grant labels. Distinct from
     /// [`Refused`](Say::Refused): that is a fact about the *path* being navigated, this is a fact
     /// about the *name being filed*, and the two vocabularies stay separate for the same reason
-    /// [`nav::Refused`] and [`nav::BindRefused`] are separate types rather than one enum with two
+    /// [`navigation::Refused`] and [`navigation::BindRefused`] are separate types rather than one enum with two
     /// unrelated halves.
-    CannotBind(nav::BindRefused),
+    CannotBind(navigation::BindRefused),
     /// **The shell's heap could not hold what the line needed**, so nothing ran. The heap is capped
     /// at [`HEAP_MAXIMUM_BYTES`] and every allocation in the shell is fallible (calef's ruling,
     /// milestone 47 (navigation and naming)): the boot shell is the owner's console, and running

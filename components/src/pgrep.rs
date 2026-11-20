@@ -122,7 +122,7 @@ fn rows() -> &'static mut [ps::Row] {
 
 user_mode_runtime::program_entry!(start);
 
-/// `a1` is the state mask, in `program_table::spawnproto`'s integer-argument position: the progenitor starts every
+/// `a1` is the state mask, in `program_table::spawn_protocol`'s integer-argument position: the progenitor starts every
 /// child `start_child(child, 0, arg, 0)`, so the endowment's `arg` is the second register and the first
 /// is always zero. Zero means every state (`pgrep::Selector::from_wire`), which is what a shell that
 /// cannot spell a selector sends and is why an unfiltered `pgrep` prints the whole domain rather than

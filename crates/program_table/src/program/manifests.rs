@@ -410,7 +410,7 @@ const fn rm_manifest() -> Manifest {
         directory: DirectoryGrantDeclaration::Required {
             subtree_option: Some(b'r'),
         },
-        // In `rmopt`'s bit order, which is what that module pins.
+        // In `rm_options`'s bit order, which is what that module pins.
         short_options: ShortOptions::new(b"rfv"),
         // `-v` prints names, and it prints them the way `date` prints a time. Piping `rm
         // -rv logs | wc` is therefore expressible; whether it is a good idea is the user's

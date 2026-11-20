@@ -171,7 +171,7 @@ program answers with a *value* (`least_authority_demo 7` answers 49), with bytes
 of those is a status. So `$?` is the shell's own reading of what happened to the line, which
 today is all there is.
 
-Inventing a per-program status would mean a `spawnproto` bit, a delegation position, and an edit to
+Inventing a per-program status would mean a `spawn_protocol` bit, a delegation position, and an edit to
 every program, which is a milestone and not a field.
 
 ### And what it cannot carry
@@ -260,7 +260,7 @@ against run, so a shell that ignored the feature fails both halves.
 ## BUGS, named where the reader meets them
 
 - No backslash escape, and none is planned while tokens are slices. `my\ notes.txt` is a file
-  whose name contains a backslash, and `nav::component_fits` refuses that byte, so the line is
+  whose name contains a backslash, and `navigation::component_fits` refuses that byte, so the line is
   refused rather than misread. The quoted spelling is the one that works.
 - **Adjacent pieces are not joined.** `a"b"` is `Refusal::PartlyQuoted` where POSIX reads `ab`, and
   `'it''s'` is the same where POSIX joins three pieces. Both are refused by name rather than
