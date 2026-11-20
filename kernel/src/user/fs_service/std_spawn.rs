@@ -65,7 +65,7 @@ pub(super) fn spawn_std(
         maps[maps_used] = Mapping {
             va: std_runtime_contract::ARGS_PAGE,
             phys,
-            flags: Flags::user_rodata(),
+            flags: Flags::user_read_only_data(),
         };
         maps_used += 1;
     }
@@ -74,7 +74,7 @@ pub(super) fn spawn_std(
         maps[maps_used] = Mapping {
             va: std_runtime_contract::CLOCK_PAGE,
             phys,
-            flags: Flags::user_rodata(),
+            flags: Flags::user_read_only_data(),
         };
         maps_used += 1;
     }

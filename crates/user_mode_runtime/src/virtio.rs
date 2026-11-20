@@ -65,7 +65,7 @@ pub fn notify(virtio_slot: u64, queue: u64) -> i64 {
 /// **Order this driver's ring writes before a doorbell store to device memory**: what a driver
 /// granted direct needs where a mediated one has a system call. `dmb oshst` on aarch64, the
 /// barrier Linux's `writel` takes, since `dmb ish` orders against other CPUs only; `fence w,o` on
-/// riscv64; on `x86_64` the device mapping is uncacheable and TSO keeps the stores in order, so
+/// riscv64; on `x86_64` the device mapping is uncacheable and total store ordering (TSO) keeps the stores in order, so
 /// only a compiler fence is needed.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-transport.

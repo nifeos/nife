@@ -69,7 +69,7 @@ use process_builder::{
     retype_into_page_frame_from as retype_page_frame, start_child,
 };
 use program_table::job_windows::{ReapsDue, Windows};
-use program_table::{Program, spawnproto};
+use program_table::{Program, spawn_protocol};
 use self_test::*;
 use spawn_loop::*;
 use std_layout::{NO_RESOLVERS, Resolvers, StdGrants, StdLayout};

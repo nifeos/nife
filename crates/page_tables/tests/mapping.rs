@@ -2,7 +2,7 @@
 //!
 //! The trick: a `Box<PageTable>` is 4 KiB-aligned (the type says so) and has a real
 //! address. So we hand those addresses to the mapper as "physical" frames, and
-//! `phys_to_ptr` is the identity cast. **The pointer arithmetic is bit-for-bit what the
+//! `physical_to_pointer` is the identity cast. **The pointer arithmetic is bit-for-bit what the
 //! kernel does.** We are testing the actual code path, not a model of it.
 //!
 //! Runs in milliseconds. No emulator, no hardware, no MMU.
@@ -63,8 +63,8 @@ fn fresh_table() -> u64 {
 type Fmt = Aarch64;
 
 /// The `index` free function moved onto the format; alias it so the arithmetic tests read unchanged.
-fn index(va: u64, level: usize) -> usize {
-    Fmt::index(va, level)
+fn index(virtual_address: u64, level: usize) -> usize {
+    Fmt::index(virtual_address, level)
 }
 
 /// A pretend physical frame allocator backed by the host heap. The tables outlive the mapper
@@ -80,8 +80,8 @@ fn page_frame_source(budget: &Cell<usize>) -> impl FnMut() -> Option<u64> + '_ {
     }
 }
 
-fn phys_to_ptr(pa: u64) -> *mut PageTable {
-    pa as *mut PageTable
+fn physical_to_pointer(physical_address: u64) -> *mut PageTable {
+    physical_address as *mut PageTable
 }
 
 #[allow(clippy::type_complexity)] // an opaque closure + fn pointer + format; no `type` alias without TAIT
@@ -90,14 +90,14 @@ fn mapper_in(
     budget: &Cell<usize>,
 ) -> Mapper<impl FnMut() -> Option<u64> + '_, fn(u64) -> *mut PageTable, Fmt> {
     let root = fresh_table();
-    // SAFETY: `root` is a fresh, zeroed, 4 KiB-aligned table, and `phys_to_ptr` is the
+    // SAFETY: `root` is a fresh, zeroed, 4 KiB-aligned table, and `physical_to_pointer` is the
     // identity, which is correct because these "physical" addresses ARE host addresses.
     unsafe {
         Mapper::new(
             root,
             half,
             page_frame_source(budget),
-            phys_to_ptr as fn(u64) -> *mut PageTable,
+            physical_to_pointer as fn(u64) -> *mut PageTable,
         )
     }
 }
@@ -112,12 +112,12 @@ fn mapper(
 /// Each level takes a 9-bit slice. L0 = 47:39, L1 = 38:30, L2 = 29:21, L3 = 20:12.
 #[test]
 fn index_slices_the_address_correctly() {
-    let va = (1u64 << 39) | (2 << 30) | (3 << 21) | (4 << 12) | 0xabc;
+    let virtual_address = (1u64 << 39) | (2 << 30) | (3 << 21) | (4 << 12) | 0xabc;
 
-    assert_eq!(index(va, 0), 1);
-    assert_eq!(index(va, 1), 2);
-    assert_eq!(index(va, 2), 3);
-    assert_eq!(index(va, 3), 4);
+    assert_eq!(index(virtual_address, 0), 1);
+    assert_eq!(index(virtual_address, 1), 2);
+    assert_eq!(index(virtual_address, 2), 3);
+    assert_eq!(index(virtual_address, 3), 4);
 }
 
 /// 9 bits. Anything above bit 47 belongs to the sign-extension, not to L0.
@@ -136,8 +136,8 @@ fn map_then_translate_round_trips() {
     m.map(0x4008_0000, 0x4008_0000, Flags::kernel_code())
         .unwrap();
 
-    let (pa, flags) = m.translate(0x4008_0000).expect("should be mapped");
-    assert_eq!(pa, 0x4008_0000);
+    let (physical_address, flags) = m.translate(0x4008_0000).expect("should be mapped");
+    assert_eq!(physical_address, 0x4008_0000);
     assert_eq!(flags, Flags::kernel_code());
 }
 
@@ -150,8 +150,8 @@ fn translate_carries_the_offset_within_the_page() {
     m.map(0x1000, 0x4000_0000, Flags::kernel_data()).unwrap();
 
     // The low 12 bits never go through translation. They are the offset.
-    let (pa, _) = m.translate(0x1abc).unwrap();
-    assert_eq!(pa, 0x4000_0abc);
+    let (physical_address, _) = m.translate(0x1abc).unwrap();
+    assert_eq!(physical_address, 0x4000_0abc);
 }
 
 #[test]
@@ -250,10 +250,11 @@ fn the_high_half_maps_normally_once_you_are_in_it() {
     let budget = Cell::new(16);
     let mut m = mapper_in(Half::High, &budget);
 
-    let va = 0xffff_0000_4008_0000;
-    m.map(va, 0x4008_0000, Flags::kernel_code()).unwrap();
+    let virtual_address = 0xffff_0000_4008_0000;
+    m.map(virtual_address, 0x4008_0000, Flags::kernel_code())
+        .unwrap();
 
-    assert_eq!(m.translate(va).unwrap().0, 0x4008_0000);
+    assert_eq!(m.translate(virtual_address).unwrap().0, 0x4008_0000);
 }
 
 /// Two pages in the same 2 MiB region differ only in their L3 index, so the walk should
@@ -328,8 +329,8 @@ fn map_range_maps_every_page() {
         .unwrap();
 
     for i in 0..4u64 {
-        let (pa, _) = m.translate(0x4000_0000 + i * PAGE_SIZE).unwrap();
-        assert_eq!(pa, 0x8000_0000 + i * PAGE_SIZE);
+        let (physical_address, _) = m.translate(0x4000_0000 + i * PAGE_SIZE).unwrap();
+        assert_eq!(physical_address, 0x8000_0000 + i * PAGE_SIZE);
     }
     assert_eq!(m.translate(0x4000_0000 + 4 * PAGE_SIZE), None);
 }
@@ -344,7 +345,7 @@ fn map_range_maps_every_page() {
 fn nothing_is_both_writable_and_executable() {
     for flags in [
         Flags::kernel_code(),
-        Flags::kernel_rodata(),
+        Flags::kernel_read_only_data(),
         Flags::kernel_data(),
         Flags::device(),
         Flags::user_code(),
@@ -402,13 +403,13 @@ fn unmap_removes_the_mapping_and_returns_the_page_frame() {
     m.map(0x1000, 0x4000_0000, Flags::kernel_data()).unwrap();
     assert!(m.translate(0x1000).is_some());
 
-    let (pa, flush) = m.unmap(0x1000).unwrap();
+    let (physical_address, flush) = m.unmap(0x1000).unwrap();
 
     // The frame comes BACK, it isn't dropped. The mapper doesn't own it: the caller took it
     // from the frame allocator and the caller must give it back. Silently dropping it would
     // leak a page per unmap, which at process teardown is a leak per page of every process
     // that ever exits.
-    assert_eq!(pa, 0x4000_0000);
+    assert_eq!(physical_address, 0x4000_0000);
     assert_eq!(m.translate(0x1000), None, "the mapping survived unmap");
 
     never_installed(flush);
@@ -428,7 +429,7 @@ fn the_tlb_obligation_names_the_address_it_is_about() {
     // And `flush()` hands the address to whatever the architecture wants to do with it. The
     // page_tables crate stays pure: it emits no instructions.
     let mut invalidated = None;
-    flush.flush(|va| invalidated = Some(va));
+    flush.flush(|virtual_address| invalidated = Some(virtual_address));
     assert_eq!(invalidated, Some(0x8000));
 }
 
@@ -499,8 +500,8 @@ fn unmap_then_map_reuses_the_intermediate_tables() {
         .expect("intermediate tables were thrown away");
 }
 
-/// `#[must_use]` catches `m.unmap(va);` as a bare statement. It does NOT catch
-/// `let (pa, _) = m.unmap(va)?;`, which is exactly the shape the mistake takes in real
+/// `#[must_use]` catches `m.unmap(virtual_address);` as a bare statement. It does NOT catch
+/// `let (physical_address, _) = m.unmap(virtual_address)?;`, which is exactly the shape the mistake takes in real
 /// code. Rust has no linear types, so the only way to make "you must consume this"
 /// enforceable is to make NOT consuming it fail loudly.
 #[test]
@@ -539,7 +540,7 @@ fn unlinking_a_table_cuts_its_whole_span_and_nothing_else() {
             fresh_table(),
             Half::Low,
             alloc,
-            phys_to_ptr as fn(u64) -> *mut PageTable,
+            physical_to_pointer as fn(u64) -> *mut PageTable,
         )
     };
 
@@ -565,7 +566,11 @@ fn unlinking_a_table_cuts_its_whole_span_and_nothing_else() {
 
     assert!(m.translate(2 * ONE_GIBIBYTE).is_none());
     assert!(m.translate(2 * ONE_GIBIBYTE + 0x1000).is_none());
-    assert_eq!(m.translate(0x1000).map(|(pa, _)| pa), Some(0x4000_0000));
+    assert_eq!(
+        m.translate(0x1000)
+            .map(|(physical_address, _)| physical_address),
+        Some(0x4000_0000)
+    );
     assert!(
         m.unlink_table(2 * ONE_GIBIBYTE, l3).is_none(),
         "a table below the cut is no longer on any walk"
@@ -601,12 +606,19 @@ fn a_walk_of_a_mapped_address_reports_every_level_down_to_the_leaf() {
     assert_eq!(steps.len(), Fmt::LEVELS);
     assert_eq!(steps[0].table, m.root());
     for (level, pair) in steps.windows(2).enumerate() {
-        assert_eq!(pair[1].table, Fmt::entry_pa(pair[0].entry), "level {level}");
+        assert_eq!(
+            pair[1].table,
+            Fmt::entry_physical_address(pair[0].entry),
+            "level {level}"
+        );
     }
     for (level, step) in steps.iter().enumerate() {
         assert_eq!(step.index, index(0x40_2000, level));
     }
-    assert_eq!(Fmt::entry_pa(steps[Fmt::LEVELS - 1].entry), 0x4000_0000);
+    assert_eq!(
+        Fmt::entry_physical_address(steps[Fmt::LEVELS - 1].entry),
+        0x4000_0000
+    );
 }
 
 /// **A cleared leaf stops the walk at the last level with the zero it found**, while the levels
@@ -644,7 +656,7 @@ fn a_walk_never_reads_a_table_the_caller_refuses() {
     let budget = Cell::new(16);
     let mut m = mapper(&budget);
     m.map(0x40_2000, 0x4000_0000, Flags::user_data()).unwrap();
-    let second = Fmt::entry_pa(m.walk(0x40_2000, |_| true).steps()[0].entry);
+    let second = Fmt::entry_physical_address(m.walk(0x40_2000, |_| true).steps()[0].entry);
 
     let walk = m.walk(0x40_2000, |table| table != second);
     assert_eq!(walk.end(), WalkEnd::Unreadable(second));
@@ -685,7 +697,7 @@ fn a_range_or_span_past_the_top_of_the_address_space_is_refused_whole() {
             top,
             2 * PAGE_SIZE,
             f,
-            page_tables::PageSize::Size4KiB
+            page_tables::PageSize::FourKibibytes
         ),
         Err(MapError::BadRegion)
     );
@@ -695,7 +707,7 @@ fn a_range_or_span_past_the_top_of_the_address_space_is_refused_whole() {
             0x1000,
             2 * PAGE_SIZE,
             f,
-            page_tables::PageSize::Size4KiB
+            page_tables::PageSize::FourKibibytes
         ),
         Err(MapError::BadRegion)
     );
@@ -717,7 +729,7 @@ fn a_misaligned_frame_from_the_allocator_is_refused() {
             root,
             Half::Low,
             || Some(fresh_table() + 8),
-            phys_to_ptr as fn(u64) -> *mut PageTable,
+            physical_to_pointer as fn(u64) -> *mut PageTable,
         )
     };
     assert_eq!(

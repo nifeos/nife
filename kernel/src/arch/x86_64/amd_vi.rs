@@ -723,13 +723,13 @@ pub(crate) fn quarantine(rid: u32) {
 /// **Every IVMD the firmware declared for `rid`**, as regions its domain must also map.
 pub(crate) fn for_each_reserved_region(
     rid: u32,
-    each: &mut dyn FnMut(page_tables::domain::DmaRegion),
+    each: &mut dyn FnMut(page_tables::domain::DirectMemoryAccessRegion),
 ) {
     let Some(ivrs) = *IVRS.lock() else {
         return;
     };
     ivrs.unity_for(rid as u16, &mut |r| {
-        each(page_tables::domain::DmaRegion {
+        each(page_tables::domain::DirectMemoryAccessRegion {
             base: r.base,
             size: r.size,
             writable: r.device_may_write(),

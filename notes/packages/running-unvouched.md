@@ -16,7 +16,7 @@ so its holder cannot pass it on, and the kernel refuses to `SEND_CAPABILITY` a c
 send on it.
 
 So D2 is one rendezvous, the run-unvouched endpoint. The progenitor holds the only `READ` on it.
-A session holds `WRITE` at slot 62 (`program_table::spawnproto::RUN_UNVOUCHED_SLOT`, just below the
+A session holds `WRITE` at slot 62 (`program_table::spawn_protocol::RUN_UNVOUCHED_SLOT`, just below the
 reserved fault slot). An image request that claims it sets `RUN_UNVOUCHED_BIT` and sends one word
 on that endpoint as its last message. The progenitor takes that word with a `RECEIVE` while serving
 the request. Only a holder can send there, so arriving is the proof.
@@ -102,7 +102,7 @@ it with `GRANT` turned that test red: the client's delegation arrived in place o
 
 - A session that sets the bit without holding the capability hangs the progenitor, which waits for
   a word nobody can send. Every promised message in the spawn protocol has this exposure
-  (`spawnproto`'s BUGS). Today only the boot prompt holds the spawn endpoint.
+  (`spawn_protocol`'s BUGS). Today only the boot prompt holds the spawn endpoint.
 - A holder can send its word early on purpose and let another session's claim through. That is a
   proxy, which no capability system prevents.
 - Only one session exercises D2. No session `login` builds holds a spawn endpoint, so a listed

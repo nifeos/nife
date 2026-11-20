@@ -60,10 +60,12 @@ fn every_page_between_the_checked_ends_is_itself_a_user_page() {
     let Some(last_va) = run_end_virtual_address(va, count) else {
         return;
     };
-    kani::assume(page_tables::is_user_page_va::<crate::arch::mmu::Format>(va));
-    kani::assume(page_tables::is_user_page_va::<crate::arch::mmu::Format>(
-        last_va,
-    ));
+    kani::assume(page_tables::is_user_page_virtual_address::<
+        crate::arch::mmu::Format,
+    >(va));
+    kani::assume(page_tables::is_user_page_virtual_address::<
+        crate::arch::mmu::Format,
+    >(last_va));
 
     // What the loop body computes. In a release build this is wrapping arithmetic; the claim
     // is that it never gets the chance to wrap.
@@ -74,7 +76,7 @@ fn every_page_between_the_checked_ends_is_itself_a_user_page() {
     );
     let page_va = va + k * page_tables::PAGE_SIZE;
     assert!(
-        page_tables::is_user_page_va::<crate::arch::mmu::Format>(page_va),
+        page_tables::is_user_page_virtual_address::<crate::arch::mmu::Format>(page_va),
         "every page the map loop touches is an aligned user-half page"
     );
 }

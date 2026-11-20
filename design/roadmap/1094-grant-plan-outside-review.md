@@ -43,13 +43,16 @@ milestone reaches delivery.
   [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-5, no proof: Open. Neither `grant_plan` nor `grant_contract` has a Kani harness; a lane writes
   one per claim, and the two `job_windows` patches in `program_table` replay host tests.
-- P1-6, limits carry their unit, and four fields named `len`: Ruled (maintainer, provisional,
-  2026-11-19 UTC; two-way until the first publish). A rename lane builds it;
-  `MAXIMUM_WORDS_NAME_BYTES` already carries its unit.
-- P1-7, public names that need a decoder: Ruled (maintainer, provisional, 2026-11-14 UTC,
-  [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `nav`, `rmopt`, `BindEntry::pos`,
-  `COOP_GRACE_TICKS`, `THE_RIGHTS_BITS_SHARE_NO_BIT`, `spawnproto`, `prog_id` and
-  `job_page_frame` keep their spellings; calef ratifies once the rename lane lands.
+- P1-6, limits carry their unit, and four fields named `len`: Done (ruled by the maintainer,
+  provisional, 2026-11-19 UTC; two-way until the first publish). Every limit now ends in
+  `_BYTES` or `_POLLS`, `MAXIMUM_VERB_BYTES` and `MAXIMUM_HOLDER_NAME_BYTES` among them, and the
+  fields that held a length are `length_bytes` or `name_length_bytes`. The names are provisional
+  until the architect ratifies them from the review packages.
+- P1-7, public names that need a decoder: Done (ruled by the maintainer, provisional, 2026-11-14
+  UTC, [#3589](https://github.com/nifeos/nife/pull/3589)). The modules are `navigation`,
+  `rm_options`, `spawn_protocol` and `job_channel_page`; `BindEntry::position`,
+  `COOPERATIVE_GRACE_POLLS`, `RIGHTS_BITS_DO_NOT_OVERLAP` and `program_id` follow. The names are
+  provisional until the architect ratifies them from the review packages.
 - P1-8, British spellings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-9, documentation for a stranger: Open.
   [#3566](https://github.com/nifeos/nife/pull/3566) closes `grant_plan`'s `missing_docs` worklist;
@@ -81,8 +84,8 @@ milestone reaches delivery.
   [#3584](https://github.com/nifeos/nife/pull/3584).
 - Decision, the names of the split crates: Done (ruled 2026-11-19 UTC). `grant_contract` and
   `program_table` stand as built.
-- Follow-on, a review package: Open. `notes/crate-reviews/` has none for `grant_plan` or
-  `grant_contract`; a lane runs `script/crate-review-packet` and writes one before the move.
+- Follow-on, a review package: Done. `notes/crate-reviews/grant-plan.md` and
+  `notes/crate-reviews/grant-contract.md` are ready for review and clear nothing.
 - Follow-on, the externalization list: Open. `crates/externalization-list.txt` names `grant_plan`
   and not `grant_contract`, which leaves too; `program_table` stays in nife and needs no row.
 - Follow-on, review clearance and the repositories: Ruled (maintainer, provisional, 2026-11-19
@@ -91,7 +94,7 @@ milestone reaches delivery.
 
 ## Open decisions
 
-None. The rename lane carries the limits rule (P1-6), and the review packages carry the clearance.
+None. The review packages carry the ratification of the provisional names and the clearance.
 
 ## Goal
 
@@ -123,9 +126,9 @@ and the maintainer decides it.
    with wire ids, archive names and, in `src/program/manifests.rs`, each one's manifest and verbs.
    `Endowment::program` (`src/command.rs` line 175) ties the planner's one output type to that
    catalog; `NO_NOTE_MANIFEST` is `Program::Uptime.manifest()` (`src/image.rs` line 24) and
-   `IMAGE_ROW` is `Program::Uptime` (line 37); `spawnproto::held_shares` takes a `Program`
-   (`src/spawnproto.rs` line 925); `ISOLATION_WORD` is the shell's own name (`src/planning.rs` line
-   56) and `MOUNTED_TREE_NAME` a mount point of one machine's boot shell (`src/spawnproto.rs` line
+   `IMAGE_ROW` is `Program::Uptime` (line 37); `spawn_protocol::held_shares` takes a `Program`
+   (`src/spawn_protocol.rs` line 925); `ISOLATION_WORD` is the shell's own name (`src/planning.rs` line
+   56) and `MOUNTED_TREE_NAME` a mount point of one machine's boot shell (`src/spawn_protocol.rs` line
    236). The region budgets (`JOB_REGION_PAGES`, `DIRECTORY_JOB_REGION_PAGES`, `STD_REGION_PAGES`,
    `JOB_POOL_PAGES`, `SHELL_BUDGET_PAGES`, `IMAGE_MAXIMUM_PAGES`) are one progenitor's numbers.
    The externalization lint waives 103 consumer-name hits for this crate; `standalone.py` counts 96
@@ -137,13 +140,13 @@ and the maintainer decides it.
    Evidence: the files and lines above; `helpers/lint_externalized_crates.py` lines 32 to 50;
    `design/roadmap/1017-the-contract-crates-leave-in-this-order.md` lines 116 to 121.
    Change: split before the move, as the ruled boundary decision lays out. What leaves as `grant_plan`:
-   `word`, `lexing`, `parsing`, `line`, `expand`, `nav`, `planning`, `refusal`, `command` and
+   `word`, `lexing`, `parsing`, `line`, `expand`, `navigation`, `planning`, `refusal`, `command` and
    `escalation`. They plan against a `Manifest` the caller passes. `Endowment` carries the
    `Manifest` its plan used instead of a `Program`, which also closes the `IMAGE_ROW` foot
    gun its own doc describes. What becomes a leaf crate: the `Manifest` types,
    the slot constants and `verbs`, with `VERSION` and `INTERFACE_ID` 17 beside them, since that is
    the interface programs declare. What stays in nife: the `programs!` table and its manifests,
-   `spawnproto`, `job_windows`, `job_page_frame`, `image` and the region budgets, which are the
+   `spawn_protocol`, `job_windows`, `job_channel_page`, `image` and the region budgets, which are the
    shell's and the progenitor's agreement with each other.
    Door: one-way (crate boundaries and the public API of a released crate). Effort: L.
 
@@ -152,7 +155,7 @@ and the maintainer decides it.
    `cargo doc --no-deps` with `-D warnings` stops there. The template's `standalone` job denies
    only `rustdoc::broken_intra_doc_links` and `rustdoc::invalid_html_tags`, so under the template
    this is a warning in the log, not a red job; whether nife's own lint denies it was not checked.
-   Evidence: `src/spawnproto.rs` line 650; `.github/workflows/check.yml` of the template, line 233.
+   Evidence: `src/spawn_protocol.rs` line 650; `.github/workflows/check.yml` of the template, line 233.
    Change: link `pack_name` as plain code, or make the packing a public function with its own doc,
    which the four `ASK_*` constants and `refused_ask_words` already describe. Then add
    `-D rustdoc::private_intra_doc_links` to the repository's documentation gate so the gate
@@ -231,8 +234,8 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 
 - **Done.** P0 item 1, the split, in #3584: `grant_plan`, `crates/grant_contract` and
   `crates/program_table` build and test on their own.
-- **Recorded.** The rename lane builds the limits rule (P1-6); the review packages carry the
-  clearance, after which the repositories follow with no tag and no publish.
+- **Done.** The limits rule (P1-6) and the eight renames (P1-7) are built, and the review packages
+  are written. The review packages carry the clearance, after which the repositories follow with no tag and no publish.
 - **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
   the three crates' sources on main.
 - **Recorded.** `grant_plan`'s tests plan against the catalog, and `ISOLATION_WORD` names the

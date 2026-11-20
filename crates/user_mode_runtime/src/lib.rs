@@ -5,7 +5,7 @@
 //! it, and [`require`] is how a program says no. [`panic_handler!`] expands to each binary's
 //! handler over [`trap`]. Opt-in modules ([`mapped_window`], [`initial_ramdisk`], [`virtio`]) hold
 //! what only some programs need. Nothing here runs on the host, so the examples are `no_run`. The
-//! signatures and `abi` constants are identical on all three ABIs (§124 (ratify the x86_64 syscall
+//! signatures and `abi` constants are identical on all three application binary interfaces (ABIs) (§124 (ratify the x86_64 syscall
 //! ABI) for `x86_64`'s). See notes/user-mode-runtime.md.
 //!
 //! Name: ratified 2026-09-13 (calef), replacing `user_rt`: `rt` is an abbreviation

@@ -43,7 +43,7 @@ host test in the crate pins the widths and the identity.
 
 ## What's built end to end
 
-- `crates/environment_contract`: the page layout, the three validated domains, `PageBuilder` (assemble,
+- the `environment_contract` package: the page layout, the three validated domains, `PageBuilder` (assemble,
   validated) and `ConfigurationPage` (read). Host-tested: round trips, refusals, an unrecognized magic
   or a zeroed frame reading as "no configuration" (DECISIONS §42's rule, applied here), every
   domain member fitting its field's byte cap.
@@ -57,7 +57,7 @@ host test in the crate pins the widths and the identity.
 - `patches/std-nife/overlay/std/src/sys/pal/nife/rt.rs`: `CONFIG_SLOT`/`CONFIG_PAGE` constants,
   the std PAL's twin of the kernel-side ones.
 - `patches/std-nife/overlay/std/src/sys/pal/nife/mod.rs`: the `envproto` module (generated
-  verbatim from `crates/environment_contract` by `cargo xtask std-src`, the same mechanism `clockproto` and
+  verbatim from the `environment_contract` package by `cargo xtask std-src`, the same mechanism `clockproto` and
   `fsproto` use) and the call into `sys::env::seed()` from `pal::nife::init`, before `main` runs.
 - `patches/std-nife/overlay/std/src/sys/env/nife.rs`: `seed()`, which probes `CONFIG_SLOT` the
   same way `sys/time/nife.rs` probes `CLOCK_SLOT` (an invocation with a method number no object
@@ -97,7 +97,7 @@ host test in the crate pins the widths and the identity.
 
 ## Tests
 
-`crates/environment_contract` host suite: 13 unit tests plus 2 doctests. They cover the round trip,
+the `environment_contract` package host suite: 13 unit tests plus 2 doctests. They cover the round trip,
 every domain check, and an undeclared key reading as absent rather than empty. Then a zeroed frame
 and an unrecognized
 magic both reading as "no configuration," and the layout offsets not overlapping. A length byte past its field, and a recognized page whose
@@ -116,7 +116,7 @@ round trip.
   values a child will read. The chosen half is not: a shell cannot hand a child a different set
   (`TZ=Europe/Paris printenv`), because the page is the progenitor's and one frame serves every
   child. Building it means a per-spawn page and a way for the shell to say what goes on it, a
-  change to `spawnproto` that two programs agree on, and nothing needs it yet.
+  change to `spawn_protocol` that two programs agree on, and nothing needs it yet.
 - A `login` session's shell cannot see the values. `login` holds no configuration page, so the
   shells it builds find `SHELL_CONFIGURATION_SLOT` empty and `caps printenv` says it "cannot show their
   values". Only the boot prompt's shell holds the view. Children spawned from a session are still

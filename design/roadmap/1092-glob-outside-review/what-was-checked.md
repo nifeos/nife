@@ -35,7 +35,7 @@ pinned toolchain, every run under a 12 GiB memory cap:
   7 confirmed hangs, none deferred), and the first weekly census reports 100% caught. No census ran here.
 - Every call site in the tree, read: `swish::words` asks `has_magic` before anything else;
   `grant_plan::expand::offer` matches with the default dot rule; `pgrep` matches state names with
-  `Dot::Ordinary`.
+  `LeadingDot::Ordinary`.
 
 Read and reasoned about, not run: the correctness of `match_steps`, `decode` and `class_at` on every
 corner the tests name and on the ones they do not (the escaped range endpoint, a class ending in a

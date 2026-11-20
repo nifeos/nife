@@ -4,7 +4,7 @@
 //! versioned), §270 (a package manager holds an installer endpoint, not the spawn endpoint)). The
 //! spawn loop calls in. See notes/packages.md.
 
-use spawnproto::Activation;
+use spawn_protocol::Activation;
 
 use super::*;
 
@@ -35,7 +35,7 @@ pub(super) fn serve_installer(
     // own approval nor mint another), and a request whose approval is not stored is answered
     // `Revoked` with nothing acted on. The request's own trailing messages come off the endpoint
     // first whatever the answer, so none of them is left for the next one to read as its own.
-    let verb = spawnproto::activation(w1, w2);
+    let verb = spawn_protocol::activation(w1, w2);
     // The page the delegated check reads its approval into, and the one an `Approve`'s reply
     // carries the stored records back in: the two never meet, because a delegated badge can
     // send neither an `Approve` nor the check that would read over it.
@@ -43,7 +43,7 @@ pub(super) fn serve_installer(
     let answer = match (approval, verb) {
         (Some(_), Some(Some(Activation::Approve | Activation::Revoke))) => {
             drain(spawn, verb, w0);
-            Answer::from((spawnproto::ActivationStatus::NotServedHere, 0))
+            Answer::from((spawn_protocol::ActivationStatus::NotServedHere, 0))
         }
         (Some(id), _) => 'delegated: {
             // The file service's calls, mapped once for the read and the activation both
@@ -51,7 +51,7 @@ pub(super) fn serve_installer(
             let Some(files) = FsCalls::map(fs, own_ut, fs_mapped) else {
                 // No file service this boot: nothing is stored and nothing is checked against.
                 drain(spawn, verb, w0);
-                break 'delegated Answer::from((spawnproto::ActivationStatus::StoreFailed, 0));
+                break 'delegated Answer::from((spawn_protocol::ActivationStatus::StoreFailed, 0));
             };
             // The approval is read before the request is decided on, into the one page buffer
             // the check keeps (`with_approval`'s doc): the read is done by the time `activate`
@@ -62,10 +62,10 @@ pub(super) fn serve_installer(
             match (allowed, verb) {
                 (None, _) => {
                     drain(spawn, verb, w0);
-                    break 'delegated Answer::from((spawnproto::ActivationStatus::Revoked, 0));
+                    break 'delegated Answer::from((spawn_protocol::ActivationStatus::Revoked, 0));
                 }
                 (Some(allowed), _) => match verb {
-                    Some(Some(verb)) if spawnproto::installer_serves(verb) => activate(
+                    Some(Some(verb)) if spawn_protocol::installer_serves(verb) => activate(
                         Some(verb),
                         w0,
                         spawn,
@@ -85,7 +85,7 @@ pub(super) fn serve_installer(
                     _ => {
                         drain(spawn, verb, w0);
                         break 'delegated Answer::from((
-                            spawnproto::ActivationStatus::NotServedHere,
+                            spawn_protocol::ActivationStatus::NotServedHere,
                             0,
                         ));
                     }
@@ -93,7 +93,7 @@ pub(super) fn serve_installer(
             }
         }
         _ => match verb {
-            Some(Some(verb)) if spawnproto::installer_serves(verb) => activate(
+            Some(Some(verb)) if spawn_protocol::installer_serves(verb) => activate(
                 Some(verb),
                 w0,
                 spawn,
@@ -113,7 +113,7 @@ pub(super) fn serve_installer(
             ),
             _ => {
                 drain(spawn, verb, w0);
-                Answer::from((spawnproto::ActivationStatus::NotServedHere, 0))
+                Answer::from((spawn_protocol::ActivationStatus::NotServedHere, 0))
             }
         },
     };
@@ -121,22 +121,23 @@ pub(super) fn serve_installer(
     // console places later, and the standing form 910 will, badge with the same key the store's
     // file is read by.
     if verb == Some(Some(Activation::Approve))
-        && answer.status == spawnproto::ActivationStatus::Done
+        && answer.status == spawn_protocol::ActivationStatus::Done
     {
         let _ = spawn.approval_id_for(answer.holder().as_bytes());
     }
     if !spawn.abandoned {
-        let (r0, r1, r2) = spawnproto::activation_reply(answer.status, answer.live, answer.member);
+        let (r0, r1, r2) =
+            spawn_protocol::activation_reply(answer.status, answer.live, answer.member);
         send(reply, r0, r1, r2);
         // A name taken by another package, and a delegated request the approval does not allow,
         // are refused with the package's name, which `jig` reads after the reply (milestone 919
         // (a package carries several programs); milestone 911). The owner's own `--approved`
         // install is refused with the ask that exceeded the entry as the third message
         // (`refused_ask_words`), which the reply's word 2 counts.
-        if answer.status == spawnproto::ActivationStatus::NameTaken
-            || answer.status == spawnproto::ActivationStatus::NotApproved
+        if answer.status == spawn_protocol::ActivationStatus::NameTaken
+            || answer.status == spawn_protocol::ActivationStatus::NotApproved
         {
-            for (a, b, c) in spawnproto::holder_words(answer.holder()) {
+            for (a, b, c) in spawn_protocol::holder_words(answer.holder()) {
                 send(reply, a, b, c);
             }
             if answer.member == 3 {
@@ -148,12 +149,12 @@ pub(super) fn serve_installer(
         // console's re-approval shows what changed against the store it now holds. The length
         // is the reply's word 2; the bytes are three words a message, tail padded.
         if verb == Some(Some(Activation::Approve))
-            && answer.status == spawnproto::ActivationStatus::Done
+            && answer.status == spawn_protocol::ActivationStatus::Done
             && answer.member > 0
         {
             let records = &text[..answer.member as usize];
-            for m in 0..spawnproto::stored_messages(answer.member) as usize {
-                let (a, b, c) = spawnproto::stored_words(records, m * 24);
+            for m in 0..spawn_protocol::stored_messages(answer.member) as usize {
+                let (a, b, c) = spawn_protocol::stored_words(records, m * 24);
                 send(reply, a, b, c);
             }
         }
@@ -189,7 +190,7 @@ fn drain(spawn: &mut SpawnEndpoint, verb: Option<Option<Activation>>, w0: u64) {
 /// approval sent it. An `Approve`'s records are their own payload; it sends none.
 fn drain_trailer(spawn: &mut SpawnEndpoint) {
     let (kind, _, _) = spawn.receive();
-    if kind == spawnproto::ANSWERED_APPROVAL {
+    if kind == spawn_protocol::ANSWERED_APPROVAL {
         let _ = spawn.receive();
         let _ = spawn.receive();
     }
@@ -264,16 +265,16 @@ fn name_of<'o>(name: &[u8], out: &'o mut [u8; 16]) -> &'o str {
 }
 
 /// **What [`activate`] answers**: the status, the generation live afterwards, and for a refused
-/// install the member whose program was refused (`spawnproto::activation_reply`'s word 2) and,
+/// install the member whose program was refused (`spawn_protocol::activation_reply`'s word 2) and,
 /// for `NameTaken`, the package that holds the name. Name: provisional, milestone 919's lane.
 pub(super) struct Answer {
-    pub(super) status: spawnproto::ActivationStatus,
+    pub(super) status: spawn_protocol::ActivationStatus,
     pub(super) live: u32,
     pub(super) member: u64,
-    holder: [u8; spawnproto::HOLDER_MAXIMUM],
+    holder: [u8; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES],
     holder_len: usize,
     /// **The ask an undelegated `--approved` install's check refused** (milestone 911), as
-    /// [`spawnproto::refused_ask_words`] spelled it, all zero when the refusal names no ask.
+    /// [`spawn_protocol::refused_ask_words`] spelled it, all zero when the refusal names no ask.
     ask: [u64; 3],
 }
 
@@ -290,7 +291,7 @@ impl Answer {
         got: &package_archive::Installable,
         live: u32,
     ) -> Self {
-        use spawnproto::ActivationStatus as S;
+        use spawn_protocol::ActivationStatus as S;
         let status = match refused.error {
             installed_programs::Error::ImageName => S::ImageName,
             installed_programs::Error::Taken => S::NameTaken,
@@ -304,12 +305,12 @@ impl Answer {
             status,
             live,
             member,
-            holder: [0; spawnproto::HOLDER_MAXIMUM],
+            holder: [0; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES],
             holder_len: 0,
             ask: [0; 3],
         };
         if let Some(holder) = refused.holder {
-            let len = holder.len().min(spawnproto::HOLDER_MAXIMUM);
+            let len = holder.len().min(spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES);
             answer.holder[..len].copy_from_slice(&holder.as_bytes()[..len]);
             answer.holder_len = len;
         }
@@ -317,13 +318,13 @@ impl Answer {
     }
 }
 
-impl From<(spawnproto::ActivationStatus, u32)> for Answer {
-    fn from((status, live): (spawnproto::ActivationStatus, u32)) -> Self {
+impl From<(spawn_protocol::ActivationStatus, u32)> for Answer {
+    fn from((status, live): (spawn_protocol::ActivationStatus, u32)) -> Self {
         Answer {
             status,
             live,
             member: 0,
-            holder: [0; spawnproto::HOLDER_MAXIMUM],
+            holder: [0; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES],
             holder_len: 0,
             ask: [0; 3],
         }
@@ -350,8 +351,8 @@ pub(super) fn package_manager_parts(
         // **The delegated endpoint is the same object, badged for one job and one approval**
         // (milestone 911 (scripted installs grant only what the owner's approval file allows)),
         // never a second one; §270's amendment records the semantics.
-        let badge = delegated.map_or(spawnproto::installer_badge(label), |id| {
-            spawnproto::delegated_installer_badge(label, id)
+        let badge = delegated.map_or(spawn_protocol::installer_badge(label), |id| {
+            spawn_protocol::delegated_installer_badge(label, id)
         });
         let inst = badged(spawn_ep, badge).ok();
         match (inst, reply) {
@@ -383,7 +384,7 @@ pub(super) fn package_manager_parts(
 /// The image's index sources travel the same way since milestone 801 (packages over the
 /// internet), to `std_runtime_contract::INDEX_SOURCES_PAGE`.
 pub(super) fn copy_text(own_ut: u64, region: u64, catalog: &str) -> Option<u64> {
-    if catalog.len() >= spawnproto::IMAGE_PAGE as usize {
+    if catalog.len() >= spawn_protocol::IMAGE_PAGE as usize {
         return None;
     }
     let page = retype_page_frame(region).ok()?;
@@ -430,7 +431,7 @@ pub(super) struct Activating<'a> {
 /// places. See notes/packages.md.
 #[inline(never)]
 pub(super) fn activate(
-    verb: Option<spawnproto::Activation>,
+    verb: Option<spawn_protocol::Activation>,
     w0: u64,
     spawn: &mut SpawnEndpoint,
     a: &Activating,
@@ -441,7 +442,7 @@ pub(super) fn activate(
     // read, and from the spawn endpoint, whose verbs are the boot shell's.
     store: Option<&mut [u8; PAGE_BYTES]>,
 ) -> Answer {
-    use spawnproto::{Activation, ActivationStatus as S};
+    use spawn_protocol::{Activation, ActivationStatus as S};
     // The request's own trailing messages come off the endpoint first, whatever happens next, so a
     // refusal never leaves words behind that the next request would read as its own. The frames
     // are copied only once the name after them is read too ([`take_frames`]).
@@ -469,29 +470,34 @@ pub(super) fn activate(
     // request's badge overrides it with the approval the check ran against, in
     // [`EditContext::answered_of`].
     let mut answered_words = [0u8; 16];
-    let answered =
-        if matches!(verb, Some(Activation::Install | Activation::Remove)) && !spawn.abandoned {
-            let (kind, lo, hi) = spawn.receive();
-            let more = if kind == spawnproto::ANSWERED_APPROVAL {
-                [spawn.receive(), spawn.receive()]
-            } else {
-                [(0, 0, 0); 2]
-            };
-            spawnproto::answered_from_trailer((kind, lo, hi), &more, &mut answered_words)
-                .map(|a| match a {
-                    spawnproto::Answered::Console => installed_programs::Answered::Console,
-                    spawnproto::Answered::Approval { name, len, digest } => {
-                        // The name is copied into `answered_words`, which outlives the Answered:
-                        // the line's text is the record's `answered` line's own.
-                        answered_words[..len].copy_from_slice(&name[..len]);
-                        let name = core::str::from_utf8(&answered_words[..len]).unwrap_or("");
-                        installed_programs::Answered::Approval(name, digest)
-                    }
-                })
-                .unwrap_or(installed_programs::Answered::Console)
+    let answered = if matches!(verb, Some(Activation::Install | Activation::Remove))
+        && !spawn.abandoned
+    {
+        let (kind, lo, hi) = spawn.receive();
+        let more = if kind == spawn_protocol::ANSWERED_APPROVAL {
+            [spawn.receive(), spawn.receive()]
         } else {
-            installed_programs::Answered::Console
+            [(0, 0, 0); 2]
         };
+        spawn_protocol::answered_from_trailer((kind, lo, hi), &more, &mut answered_words)
+            .map(|a| match a {
+                spawn_protocol::Answered::Console => installed_programs::Answered::Console,
+                spawn_protocol::Answered::Approval {
+                    name,
+                    length_bytes,
+                    digest,
+                } => {
+                    // The name is copied into `answered_words`, which outlives the Answered:
+                    // the line's text is the record's `answered` line's own.
+                    answered_words[..length_bytes].copy_from_slice(&name[..length_bytes]);
+                    let name = core::str::from_utf8(&answered_words[..length_bytes]).unwrap_or("");
+                    installed_programs::Answered::Approval(name, digest)
+                }
+            })
+            .unwrap_or(installed_programs::Answered::Console)
+    } else {
+        installed_programs::Answered::Console
+    };
     let staging = frames
         .and_then(|f| stage_frames(spawn, &f, w0, a.own_ut, a.images_ut, true).map(|st| (st, w0)));
     let named = &named[..named_len];
@@ -548,7 +554,7 @@ pub(super) fn activate(
 fn edit(
     files: &FsCalls,
     act: u64,
-    verb: spawnproto::Activation,
+    verb: spawn_protocol::Activation,
     live: u32,
     table: &str,
     staging: Option<(u64, u64)>,
@@ -559,8 +565,8 @@ fn edit(
     answered: &installed_programs::Answered<'_>,
     store: Option<&mut [u8; PAGE_BYTES]>,
 ) -> Answer {
-    use spawnproto::Activation;
-    let refused = core::cell::Cell::new(([0u8; spawnproto::HOLDER_MAXIMUM], 0usize));
+    use spawn_protocol::Activation;
+    let refused = core::cell::Cell::new(([0u8; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES], 0usize));
     let ask = core::cell::Cell::new([0u64; 3]);
     let cx = EditContext {
         files,
@@ -589,7 +595,7 @@ fn edit(
         Activation::Approve => store_approval(&cx, staging, named, store),
         Activation::Revoke => drop_approval(&cx, named),
     };
-    if answer.status == spawnproto::ActivationStatus::NotApproved {
+    if answer.status == spawn_protocol::ActivationStatus::NotApproved {
         // The delegated check's refusal names the package it refused, which the reply's follower
         // carries (milestone 911), as a NameTaken's does; the owner's own `--approved` install
         // carries the ask too, and the reply's word 2 counts the messages.
@@ -616,9 +622,9 @@ struct EditContext<'a> {
     answered: &'a installed_programs::Answered<'a>,
     /// **Where the delegated check's refused package is named** (milestone 911), for the reply's
     /// follower: the caller's cell, read after the verb returns.
-    refused: &'a core::cell::Cell<([u8; spawnproto::HOLDER_MAXIMUM], usize)>,
+    refused: &'a core::cell::Cell<([u8; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES], usize)>,
     /// **Where the owner's `--approved` check's refused ask is named** (milestone 911), for the
-    /// reply's third follower, as [`spawnproto::refused_ask_words`] spells it; all zero when the
+    /// reply's third follower, as [`spawn_protocol::refused_ask_words`] spells it; all zero when the
     /// refusal names no ask.
     ask: &'a core::cell::Cell<[u64; 3]>,
 }
@@ -651,8 +657,11 @@ impl EditContext<'_> {
 
 /// **Rollback**: make the generation one below the live one current, if this manager may undo
 /// every row that differs.
-fn rollback(cx: &EditContext, new: &mut [u8; PAGE_BYTES]) -> (spawnproto::ActivationStatus, u32) {
-    use spawnproto::ActivationStatus as S;
+fn rollback(
+    cx: &EditContext,
+    new: &mut [u8; PAGE_BYTES],
+) -> (spawn_protocol::ActivationStatus, u32) {
+    use spawn_protocol::ActivationStatus as S;
     // The verbs read the context by field; the refused package's name is theirs to write.
     let files = cx.files;
     let act = cx.act;
@@ -727,8 +736,8 @@ fn remove(
     cx: &EditContext,
     named: &[u8],
     new: &mut [u8; PAGE_BYTES],
-) -> (spawnproto::ActivationStatus, u32) {
-    use spawnproto::ActivationStatus as S;
+) -> (spawn_protocol::ActivationStatus, u32) {
+    use spawn_protocol::ActivationStatus as S;
     // The verbs borrow the context, since the refused package's name is theirs to write.
     let files = cx.files;
     let act = cx.act;
@@ -794,8 +803,8 @@ fn vouch(
     staging: Option<(u64, u64)>,
     named: &[u8],
     new: &mut [u8; PAGE_BYTES],
-) -> (spawnproto::ActivationStatus, u32) {
-    use spawnproto::ActivationStatus as S;
+) -> (spawn_protocol::ActivationStatus, u32) {
+    use spawn_protocol::ActivationStatus as S;
     // The verbs borrow the context, since the refused package's name is theirs to write.
     let files = cx.files;
     let act = cx.act;
@@ -841,7 +850,7 @@ fn approval_gate(
     got: &package_archive::Installable<'_>,
     store: Option<&mut [u8; PAGE_BYTES]>,
 ) -> Option<Answer> {
-    use spawnproto::ActivationStatus as S;
+    use spawn_protocol::ActivationStatus as S;
     let files = cx.files;
     let act = cx.act;
     let live = cx.live;
@@ -920,7 +929,7 @@ fn install(
     new: &mut [u8; PAGE_BYTES],
 ) -> Answer {
     use package_archive::Refusal;
-    use spawnproto::ActivationStatus as S;
+    use spawn_protocol::ActivationStatus as S;
     // The verbs borrow the context, since the refused package's name is theirs to write.
     let files = cx.files;
     let act = cx.act;
@@ -999,7 +1008,7 @@ fn install(
 /// digest are the header's, which is what the answered lines of the requests under it carry.
 /// The answer carries the approval's name, which is how the caller mints the badge's id for it,
 /// and its word 2 is the length of the records that were stored before this one, whose bytes
-/// `store` holds for the reply to carry back ([`spawnproto::stored_words`]), 0 when the name was
+/// `store` holds for the reply to carry back ([`spawn_protocol::stored_words`]), 0 when the name was
 /// not stored. A store write that fails is [`ActivationStatus::StoreFailed`]; nothing else is
 /// changed.
 fn store_approval(
@@ -1008,7 +1017,7 @@ fn store_approval(
     _named: &[u8],
     store: Option<&mut [u8; PAGE_BYTES]>,
 ) -> Answer {
-    use spawnproto::ActivationStatus as S;
+    use spawn_protocol::ActivationStatus as S;
     let EditContext {
         files, act, live, ..
     } = *cx;
@@ -1063,7 +1072,10 @@ fn store_approval(
         return Answer::from((S::StoreFailed, live));
     }
     let mut answer = Answer::from((S::Done, live));
-    let len = document.name().len().min(spawnproto::HOLDER_MAXIMUM);
+    let len = document
+        .name()
+        .len()
+        .min(spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES);
     answer.holder[..len].copy_from_slice(&document.name().as_bytes()[..len]);
     answer.holder_len = len;
     answer.member = replaced as u64;
@@ -1077,7 +1089,7 @@ fn store_approval(
 /// the name it was asked to drop answers [`ActivationStatus::StoreFailed`], since a `Done` that
 /// left the records in force would be a lie.
 fn drop_approval(cx: &EditContext, named: &[u8]) -> Answer {
-    use spawnproto::ActivationStatus as S;
+    use spawn_protocol::ActivationStatus as S;
     let EditContext {
         files, act, live, ..
     } = *cx;
@@ -1139,14 +1151,14 @@ fn drop_approval(cx: &EditContext, named: &[u8]) -> Answer {
 fn refused_not_approved(
     cx: &EditContext<'_>,
     package: &str,
-) -> (spawnproto::ActivationStatus, u32) {
+) -> (spawn_protocol::ActivationStatus, u32) {
     // The name rides the caller's buffer, which the Answer reads after the verb returns, as a
     // NameTaken's holder does (milestone 911).
-    let mut bytes = [0u8; spawnproto::HOLDER_MAXIMUM];
-    let len = package.len().min(spawnproto::HOLDER_MAXIMUM);
+    let mut bytes = [0u8; spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES];
+    let len = package.len().min(spawn_protocol::MAXIMUM_HOLDER_NAME_BYTES);
     bytes[..len].copy_from_slice(&package.as_bytes()[..len]);
     cx.refused.set((bytes, len));
-    (spawnproto::ActivationStatus::NotApproved, cx.live)
+    (spawn_protocol::ActivationStatus::NotApproved, cx.live)
 }
 
 /// **The owner's `--approved` check's refusal** (milestone 911): the ask that exceeded the entry
@@ -1156,17 +1168,17 @@ fn refused_with_ask(
     cx: &EditContext<'_>,
     package: &str,
     what: installed_programs::Granted<'_>,
-) -> (spawnproto::ActivationStatus, u32) {
+) -> (spawn_protocol::ActivationStatus, u32) {
     let refused = refused_not_approved(cx, package);
     // The directory rights ride the kind word as 1 for `r` and 3 for `rw`, the bit spelling
-    // `spawnproto::refused_ask_words` keeps, so the owner's console spells the ask whole.
+    // `spawn_protocol::refused_ask_words` keeps, so the owner's console spells the ask whole.
     let (kind, rights, name) = match what {
-        installed_programs::Granted::Network => (spawnproto::ASK_NETWORK, 0, ""),
-        installed_programs::Granted::Service => (spawnproto::ASK_SERVICE, 0, ""),
-        installed_programs::Granted::Installer => (spawnproto::ASK_INSTALLER, 0, ""),
-        installed_programs::Granted::Zone(zone) => (spawnproto::ASK_ZONE, 0, zone),
+        installed_programs::Granted::Network => (spawn_protocol::ASK_NETWORK, 0, ""),
+        installed_programs::Granted::Service => (spawn_protocol::ASK_SERVICE, 0, ""),
+        installed_programs::Granted::Installer => (spawn_protocol::ASK_INSTALLER, 0, ""),
+        installed_programs::Granted::Zone(zone) => (spawn_protocol::ASK_ZONE, 0, zone),
         installed_programs::Granted::Directory(name, rights) => (
-            spawnproto::ASK_DIRECTORY,
+            spawn_protocol::ASK_DIRECTORY,
             match rights {
                 installed_programs::DirectoryRights::R => 1,
                 installed_programs::DirectoryRights::RW => 3,
@@ -1174,7 +1186,7 @@ fn refused_with_ask(
             name,
         ),
     };
-    let (a, b, c) = spawnproto::refused_ask_words(kind, rights, name);
+    let (a, b, c) = spawn_protocol::refused_ask_words(kind, rights, name);
     cx.ask.set([a, b, c]);
     refused
 }
