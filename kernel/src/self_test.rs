@@ -234,7 +234,7 @@ fn mapping(tally: &mut Checks) {
         );
         return;
     };
-    let pa = frame.addr();
+    let pa = frame.physical_address();
 
     if let Err(e) = arch::mmu::map_page(va, pa, Flags::kernel_data()) {
         tally.record(
@@ -350,22 +350,22 @@ fn frames(tally: &mut Checks) {
         tally.record(
             check!("frames"),
             false,
-            format_args!("no frame available ({} free)", before.free()),
+            format_args!("no frame available ({} free)", before.free_frames()),
         );
         return;
     };
-    let addr = frame.addr();
-    let held = memory::stats().map(|s| s.used);
+    let addr = frame.physical_address();
+    let held = memory::stats().map(|s| s.used_frames);
     memory::free(frame);
-    let after = memory::stats().map(|s| s.used);
+    let after = memory::stats().map(|s| s.used_frames);
 
-    let ok = held == Some(before.used + 1) && after == Some(before.used);
+    let ok = held == Some(before.used_frames + 1) && after == Some(before.used_frames);
     tally.record(
         check!("frames"),
         ok,
         format_args!(
             "one frame out and back at {addr:#x}; used {} -> {:?} -> {:?}",
-            before.used, held, after
+            before.used_frames, held, after
         ),
     );
 }

@@ -546,10 +546,10 @@ fn a_retyped_rendezvous_carries_ipc_and_pins_its_region() {
         "no rendezvous over the retyped rendezvous"
     );
 
-    let free_before = crate::memory::stats().unwrap().free();
+    let free_before = crate::memory::stats().unwrap().free_frames();
     crate::memory_region::destroy(region);
     assert_eq!(
-        crate::memory::stats().unwrap().free(),
+        crate::memory::stats().unwrap().free_frames(),
         free_before,
         "destroy reclaimed a pinned region hosting a live rendezvous",
     );

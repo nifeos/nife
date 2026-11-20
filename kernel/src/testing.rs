@@ -1313,7 +1313,7 @@ impl RegionRun {
             crate::memory_region::region_bounds(region).expect("no bounds for a live region");
         let run = RegionRun {
             base,
-            pages: size / page_frames::FRAME_SIZE,
+            pages: size / page_frames::FRAME_BYTES,
         };
         run.assert_all(
             true,
@@ -1340,12 +1340,14 @@ impl RegionRun {
 
     fn assert_all(&self, used: bool, what: &str) {
         for i in 0..self.pages {
-            let frame = page_frames::PageFrame::from_addr(self.base + i * page_frames::FRAME_SIZE);
+            let frame = page_frames::PageFrame::from_physical_address(
+                self.base + i * page_frames::FRAME_BYTES,
+            );
             assert_eq!(
                 crate::memory::is_page_frame_used(frame),
                 Some(used),
                 "{what}: frame {:#x} (page {i} of the {}-page run at {:#x})",
-                frame.addr(),
+                frame.physical_address(),
                 self.pages,
                 self.base,
             );

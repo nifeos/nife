@@ -138,7 +138,7 @@ pub fn phys_to_ptr(pa: u64) -> *mut PageTable {
 pub fn initialize() {
     let root = memory::alloc()
         .expect("no frame for the root page table")
-        .addr();
+        .physical_address();
 
     // SAFETY: a fresh frame. Zero it before the hardware can ever walk it: a page table
     // full of whatever was in RAM is a set of pointers to nowhere, followed at speed.
@@ -155,7 +155,7 @@ pub fn initialize() {
         Mapper::<_, _, Aarch64>::new(
             root,
             Half::High,
-            || memory::alloc().map(|f| f.addr()),
+            || memory::alloc().map(|f| f.physical_address()),
             phys_to_ptr,
         )
     };
@@ -495,7 +495,7 @@ static RESERVED_TTBR0: AtomicU64 = AtomicU64::new(0);
 fn install_reserved_ttbr0() {
     let root = memory::alloc()
         .expect("no frame for the reserved TTBR0 root")
-        .addr();
+        .physical_address();
 
     // SAFETY: a fresh frame, and nothing walks it until the `msr` below.
     unsafe {
@@ -860,7 +860,7 @@ fn kernel_mapper() -> Mapper<impl FnMut() -> Option<u64>, fn(u64) -> *mut PageTa
         Mapper::<_, _, Aarch64>::new(
             root,
             Half::High,
-            || memory::alloc().map(|f| f.addr()),
+            || memory::alloc().map(|f| f.physical_address()),
             phys_to_ptr,
         )
     }
@@ -1060,16 +1060,16 @@ mod tests {
         use crate::arch::mmu::{phys_to_virt, virt_to_phys};
 
         let frame = crate::memory::alloc().expect("out of memory");
-        let va = phys_to_virt(frame.addr());
+        let va = phys_to_virt(frame.physical_address());
 
         assert_eq!(
             virt_to_phys(va),
-            frame.addr(),
+            frame.physical_address(),
             "the transform is not reversible"
         );
 
         let (pa, flags) = crate::arch::mmu::translate(va).expect("frame is NOT in the direct map");
-        assert_eq!(pa, frame.addr());
+        assert_eq!(pa, frame.physical_address());
         assert!(flags.is_writable());
 
         // And it is real memory: write through the virtual name, read it back.
@@ -1176,10 +1176,10 @@ mod tests {
         use crate::arch::mmu;
 
         let frame = crate::memory::alloc().expect("out of memory");
-        let va = mmu::phys_to_virt(frame.addr());
+        let va = mmu::phys_to_virt(frame.physical_address());
         let (pa, flags) = mmu::translate(va).expect("allocated frame is NOT MAPPED");
 
-        assert_eq!(pa, frame.addr());
+        assert_eq!(pa, frame.physical_address());
         assert!(flags.is_writable());
         assert!(!flags.is_kernel_executable(), "RAM is executable");
 
@@ -1214,11 +1214,11 @@ mod tests {
         // SAFETY: two frames the allocator just gave us exclusively, reached via the direct
         // map.
         unsafe {
-            core::ptr::write_volatile(phys_to_virt(a.addr()) as *mut u64, PATTERN_A);
-            core::ptr::write_volatile(phys_to_virt(b.addr()) as *mut u64, PATTERN_B);
+            core::ptr::write_volatile(phys_to_virt(a.physical_address()) as *mut u64, PATTERN_A);
+            core::ptr::write_volatile(phys_to_virt(b.physical_address()) as *mut u64, PATTERN_B);
         }
 
-        mmu::map_page(test_va, a.addr(), Flags::kernel_data()).expect("map A");
+        mmu::map_page(test_va, a.physical_address(), Flags::kernel_data()).expect("map A");
 
         // SAFETY: just mapped, writable.
         let seen = unsafe { core::ptr::read_volatile(test_va as *const u64) };
@@ -1226,9 +1226,13 @@ mod tests {
         // ^ that read is the point: it pulls the translation into the TLB.
 
         let returned = mmu::unmap_page(test_va).expect("unmap");
-        assert_eq!(returned, a.addr(), "unmap returned the wrong frame");
+        assert_eq!(
+            returned,
+            a.physical_address(),
+            "unmap returned the wrong frame"
+        );
 
-        mmu::map_page(test_va, b.addr(), Flags::kernel_data()).expect("map B");
+        mmu::map_page(test_va, b.physical_address(), Flags::kernel_data()).expect("map B");
 
         // SAFETY: mapped again, to a different frame.
         let seen = unsafe { core::ptr::read_volatile(test_va as *const u64) };
@@ -1254,12 +1258,12 @@ mod tests {
         let va = mmu::KERNEL_VA_BASE | 0xfe00_0000;
         let f = crate::memory::alloc().unwrap();
 
-        mmu::map_page(va, f.addr(), Flags::kernel_data()).unwrap();
+        mmu::map_page(va, f.physical_address(), Flags::kernel_data()).unwrap();
 
         // aarch64 does not permit valid -> valid directly: it can raise a TLB conflict abort.
         // The API makes it unrepresentable.
         assert_eq!(
-            mmu::map_page(va, f.addr(), Flags::kernel_data()),
+            mmu::map_page(va, f.physical_address(), Flags::kernel_data()),
             Err(MapError::AlreadyMapped)
         );
 

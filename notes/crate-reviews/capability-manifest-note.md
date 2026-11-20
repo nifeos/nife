@@ -110,8 +110,10 @@ Open items before the move. These are in the milestone and belong to the move la
 - The README under the template's prose caps and passive-voice ratchet (1382 words; 8 passives in 1520).
 - The consumers' lines converted from path dependencies to `git` and `rev` with `version = "0.1.0"`.
 
-Recommendation. Ready for review. The names below are the only ones the architect has ratified
-beyond those the crate already carried; every other name is provisional. The clearance gives the go to create `nifeos/capability_manifest_note`; the package asks for no tag and no publication.
+Clearance. Cleared on 2026-11-20 (UTC), with `publish = false`, no tag and no publish. The go creates
+`nifeos/capability_manifest_note`; the move waits for its place in step 6 of milestone 1017. The names
+below are the only ones the architect has ratified beyond those the crate already carried; every
+other name is provisional.
 
 ## Names
 
@@ -148,5 +150,3 @@ Every public name of the crate and its state. The architect ratifies; the state 
 `decode_verbs`, `Verbs::grants_for` and the methods `of`, `declared`, `iter`, `len`, `is_empty`.
 `python3 helpers/name_release.py --draft capability_manifest_note` prints the full table, and a
 release names each of these before the first tag.
-
-Ready for review.

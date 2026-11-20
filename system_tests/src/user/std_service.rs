@@ -337,7 +337,7 @@ fn spawn_std(
     let config_phys = crate::memory_region::retype_page(region)
         .expect("no frame for the std program's config page");
     // SAFETY: `config_phys` is that fresh frame, direct-mapped and owned by nobody else, and
-    // `config_bytes` is `PAGE_CONTENT_BYTES` long, far under `FRAME_SIZE`.
+    // `config_bytes` is `PAGE_CONTENT_BYTES` long, far under `FRAME_BYTES`.
     unsafe {
         core::ptr::copy_nonoverlapping(
             config_bytes.as_ptr(),
@@ -365,7 +365,7 @@ fn spawn_std(
     for (k, m) in maps[2..].iter_mut().enumerate() {
         // Zeroed by the retype, so the new process starts clean.
         let phys = crate::memory_region::retype_page(region).expect("no frame for the std stack");
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = phys;
     }
 

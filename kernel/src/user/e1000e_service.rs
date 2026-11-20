@@ -216,7 +216,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
         let phys =
             crate::memory_region::retype_page(stack_region).expect("no frame for the net stack");
         maps[PLANE + 2 + k] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
             phys,
             flags: Flags::user_data(),
         };

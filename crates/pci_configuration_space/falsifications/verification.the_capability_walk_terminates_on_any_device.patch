@@ -14,8 +14,12 @@ patch ever reports something else.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -504,3 +504,3 @@ pub fn virtio_caps(
-     let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
--    for _ in 0..64 {
-+    for _ in 0..65 {
+@@ -636,7 +636,7 @@
+         return;
+     }
+     let mut at = (read32(bdf, CAPABILITIES_POINTER_REGISTER) & 0xfc) as u64;
+-    for _ in 0..CAPABILITY_HOPS {
++    for _ in 0..CAPABILITY_HOPS + 1 {
          if at == 0 {
+             return;
+         }

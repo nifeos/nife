@@ -107,7 +107,6 @@ components/src/block_driver_roles.rs::run_attack
 
 components/src/block_driver_roles.rs::run_attack_indirect
 
-components/src/block_driver_roles.rs::run_blk_server
 
 components/src/block_driver_roles.rs::run_net
 
@@ -628,17 +627,11 @@ crates/boot_slot/src/lib.rs::select_excluding
 crates/boot_slot/src/lib.rs::unreadable
 
 
-crates/byte_glob/src/lib.rs::cost_bound
 
-crates/byte_glob/src/lib.rs::has_magic
 
-crates/byte_glob/src/lib.rs::literal
 
-crates/byte_glob/src/lib.rs::match_steps
 
-crates/byte_glob/src/lib.rs::matches
 
-crates/byte_glob/src/lib.rs::matches_with
 
 crates/byte_sink_contract/src/lib.rs::BAD
 
@@ -2947,7 +2940,6 @@ crates/globally_unique_identifier_partition_table/src/entry.rs::NAME
 
 crates/globally_unique_identifier_partition_table/src/entry.rs::NAME_UNITS
 
-crates/globally_unique_identifier_partition_table/src/entry.rs::SIZE
 
 crates/globally_unique_identifier_partition_table/src/entry.rs::UNUSED
 
@@ -2971,7 +2963,6 @@ crates/globally_unique_identifier_partition_table/src/error.rs::BackupMismatch
 
 crates/globally_unique_identifier_partition_table/src/error.rs::Error
 
-crates/globally_unique_identifier_partition_table/src/error.rs::MbrProblem
 
 crates/globally_unique_identifier_partition_table/src/guid.rs
 
@@ -2985,9 +2976,7 @@ crates/globally_unique_identifier_partition_table/src/guid.rs::LINUX_FILESYSTEM
 
 crates/globally_unique_identifier_partition_table/src/guid.rs::MICROSOFT_BASIC_DATA
 
-crates/globally_unique_identifier_partition_table/src/guid.rs::NIFE_BOOT
 
-crates/globally_unique_identifier_partition_table/src/guid.rs::NIFE_DATA
 
 crates/globally_unique_identifier_partition_table/src/guid.rs::UNUSED
 
@@ -2995,13 +2984,10 @@ crates/globally_unique_identifier_partition_table/src/guid.rs::name
 
 crates/globally_unique_identifier_partition_table/src/header.rs
 
-crates/globally_unique_identifier_partition_table/src/header.rs::ALTERNATE_LBA
 
-crates/globally_unique_identifier_partition_table/src/header.rs::FIRST_USABLE_LBA
 
 crates/globally_unique_identifier_partition_table/src/header.rs::Header
 
-crates/globally_unique_identifier_partition_table/src/header.rs::LAST_USABLE_LBA
 
 crates/globally_unique_identifier_partition_table/src/header.rs::RESERVED
 
@@ -3017,15 +3003,11 @@ crates/globally_unique_identifier_partition_table/src/lib.rs::DEFAULT_ENTRY_COUN
 
 crates/globally_unique_identifier_partition_table/src/lib.rs::ENTRY_ARRAY_BYTES
 
-crates/globally_unique_identifier_partition_table/src/lib.rs::PRIMARY_HEADER_LBA
 
 crates/globally_unique_identifier_partition_table/src/lib.rs::is_block_size_ok
 
-crates/globally_unique_identifier_partition_table/src/mbr.rs
 
-crates/globally_unique_identifier_partition_table/src/mbr.rs::validate
 
-crates/globally_unique_identifier_partition_table/src/mbr.rs::write
 
 crates/globally_unique_identifier_partition_table/src/span.rs
 
@@ -3035,19 +3017,14 @@ crates/globally_unique_identifier_partition_table/src/span.rs::buffer_bytes
 
 crates/globally_unique_identifier_partition_table/src/span.rs::covering
 
-crates/globally_unique_identifier_partition_table/src/table.rs::GloballyUniqueIdentifierPartitionTable
 
-crates/globally_unique_identifier_partition_table/src/table.rs::backup_entry_lba
 
-crates/globally_unique_identifier_partition_table/src/table.rs::backup_header_lba
 
 crates/globally_unique_identifier_partition_table/src/table.rs::block_count
 
-crates/globally_unique_identifier_partition_table/src/table.rs::block_size
 
 crates/globally_unique_identifier_partition_table/src/table.rs::check_backup
 
-crates/globally_unique_identifier_partition_table/src/table.rs::check_protective_mbr
 
 crates/globally_unique_identifier_partition_table/src/table.rs::create
 
@@ -3061,23 +3038,19 @@ crates/globally_unique_identifier_partition_table/src/table.rs::entry_array_bloc
 
 crates/globally_unique_identifier_partition_table/src/table.rs::entry_count
 
-crates/globally_unique_identifier_partition_table/src/table.rs::first_usable_lba
 
 crates/globally_unique_identifier_partition_table/src/table.rs::header
 
-crates/globally_unique_identifier_partition_table/src/table.rs::last_usable_lba
 
 crates/globally_unique_identifier_partition_table/src/table.rs::parse
 
 crates/globally_unique_identifier_partition_table/src/table.rs::partitions
 
-crates/globally_unique_identifier_partition_table/src/table.rs::primary_entry_lba
 
 crates/globally_unique_identifier_partition_table/src/table.rs::write_backup_header
 
 crates/globally_unique_identifier_partition_table/src/table.rs::write_primary_header
 
-crates/globally_unique_identifier_partition_table/src/table.rs::write_protective_mbr
 
 crates/globally_unique_identifier_partition_table/src/testing.rs
 
@@ -3870,7 +3843,6 @@ crates/http_response/src/lib.rs::status
 
 crates/http_response/src/lib.rs::with_room
 
-crates/inter_process_communication/src/futex.rs::Futexes
 
 crates/inter_process_communication/src/futex.rs::Key
 
@@ -3878,7 +3850,6 @@ crates/inter_process_communication/src/futex.rs::new
 
 crates/inter_process_communication/src/futex.rs::park
 
-crates/inter_process_communication/src/futex.rs::queued
 
 crates/inter_process_communication/src/futex.rs::remove
 
@@ -3888,11 +3859,8 @@ crates/inter_process_communication/src/futex.rs::waiters
 
 crates/inter_process_communication/src/notification.rs::Notification
 
-crates/inter_process_communication/src/notification.rs::Signal
 
-crates/inter_process_communication/src/notification.rs::Wait
 
-crates/inter_process_communication/src/notification.rs::debug_counts
 
 crates/inter_process_communication/src/notification.rs::drain_waiters
 
@@ -3910,13 +3878,10 @@ crates/inter_process_communication/src/notification.rs::wait
 
 crates/inter_process_communication/src/notification.rs::word
 
-crates/inter_process_communication/src/rendezvous.rs::Receive
 
 crates/inter_process_communication/src/rendezvous.rs::Rendezvous
 
-crates/inter_process_communication/src/rendezvous.rs::Send
 
-crates/inter_process_communication/src/rendezvous.rs::debug_counts
 
 crates/inter_process_communication/src/rendezvous.rs::drain_waiters
 
@@ -3938,7 +3903,6 @@ crates/inter_process_communication/src/tests.rs
 
 crates/inter_process_communication/src/timer.rs
 
-crates/inter_process_communication/src/timer.rs::Arm
 
 crates/inter_process_communication/src/timer.rs::NEVER
 
@@ -4788,67 +4752,37 @@ crates/machine_discovery/src/x86_64.rs::unpromised
 
 crates/machine_discovery/src/x86_64/verification.rs
 
-crates/machine_statistics_contract/src/lib.rs::BUSY_TICKS
-
-crates/machine_statistics_contract/src/lib.rs::CONTEXT_SWITCHES
-
-crates/machine_statistics_contract/src/lib.rs::Cpu
-
-crates/machine_statistics_contract/src/lib.rs::FRAME_BYTES
-
-crates/machine_statistics_contract/src/lib.rs::FREE_FRAMES
-
-crates/machine_statistics_contract/src/lib.rs::IDLE_TICKS
-
-crates/machine_statistics_contract/src/lib.rs::INTERRUPTS
-
-crates/machine_statistics_contract/src/lib.rs::LINE
-
-crates/machine_statistics_contract/src/lib.rs::MAGIC
-
-crates/machine_statistics_contract/src/lib.rs::MAGIC
-
-crates/machine_statistics_contract/src/lib.rs::ONLINE
-
-crates/machine_statistics_contract/src/lib.rs::PAGE_BYTES
 
 
-crates/machine_statistics_contract/src/lib.rs::RUNNABLE
-
-crates/machine_statistics_contract/src/lib.rs::Snapshot
 
 
-crates/machine_statistics_contract/src/lib.rs::TICK_HERTZ
 
-crates/machine_statistics_contract/src/lib.rs::TOTAL_FRAMES
 
-crates/machine_statistics_contract/src/lib.rs::WORDS
 
-crates/machine_statistics_contract/src/lib.rs::build_header
 
-crates/machine_statistics_contract/src/lib.rs::busy_ticks
 
-crates/machine_statistics_contract/src/lib.rs::context_switches
 
-crates/machine_statistics_contract/src/lib.rs::counter
 
-crates/machine_statistics_contract/src/lib.rs::cpu
 
-crates/machine_statistics_contract/src/lib.rs::free_bytes
 
-crates/machine_statistics_contract/src/lib.rs::from_words
 
-crates/machine_statistics_contract/src/lib.rs::idle_ticks
 
-crates/machine_statistics_contract/src/lib.rs::interrupts
 
-crates/machine_statistics_contract/src/lib.rs::online_cpus
 
-crates/machine_statistics_contract/src/lib.rs::read
 
-crates/machine_statistics_contract/src/lib.rs::runnable
 
-crates/machine_statistics_contract/src/lib.rs::total_bytes
+
+
+
+
+
+
+
+
+
+
+
+
 
 crates/measured_boot/src/lib.rs::BadLine
 
@@ -5268,15 +5202,11 @@ crates/package_index/src/lib.rs::sources
 
 crates/package_index/src/lib.rs::target_path
 
-crates/page_frames/src/lib.rs::FRAME_SIZE
-
 crates/page_frames/src/lib.rs::PageFrame
 
 crates/page_frames/src/lib.rs::PageFrameAllocator
 
 crates/page_frames/src/lib.rs::Stats
-
-crates/page_frames/src/lib.rs::addr
 
 crates/page_frames/src/lib.rs::alloc
 
@@ -5287,10 +5217,6 @@ crates/page_frames/src/lib.rs::bitmap_bytes
 crates/page_frames/src/lib.rs::containing
 
 crates/page_frames/src/lib.rs::free
-
-crates/page_frames/src/lib.rs::free
-
-crates/page_frames/src/lib.rs::from_addr
 
 crates/page_frames/src/lib.rs::is_used
 
@@ -5453,33 +5379,20 @@ crates/page_tables/src/x86_64.rs::blocked_device_table_entry
 
 crates/page_tables/src/x86_64.rs::device_table_entry
 
-crates/pci_configuration_space/src/lib.rs::BAR0
 
-crates/pci_configuration_space/src/lib.rs::BUS_NUMBERS
 
-crates/pci_configuration_space/src/lib.rs::Bar
 
-crates/pci_configuration_space/src/lib.rs::Bdf
 
-crates/pci_configuration_space/src/lib.rs::CLASS_NVME
 
-crates/pci_configuration_space/src/lib.rs::CLASS_REVISION
 
-crates/pci_configuration_space/src/lib.rs::CLASS_XHCI
 
-crates/pci_configuration_space/src/lib.rs::CMD_BUS_MASTER
 
-crates/pci_configuration_space/src/lib.rs::CMD_MEMORY_SPACE
 
-crates/pci_configuration_space/src/lib.rs::COMMAND
 
-crates/pci_configuration_space/src/lib.rs::HEADER_TYPE
 
 crates/pci_configuration_space/src/lib.rs::HEADER_TYPE_BRIDGE
 
-crates/pci_configuration_space/src/lib.rs::INTERRUPT_PIN
 
-crates/pci_configuration_space/src/lib.rs::MESSAGE_CONTROL
 
 crates/pci_configuration_space/src/lib.rs::MSIX_ENABLE
 
@@ -5493,11 +5406,8 @@ crates/pci_configuration_space/src/lib.rs::MSI_64_BIT
 
 crates/pci_configuration_space/src/lib.rs::MSI_ENABLE
 
-crates/pci_configuration_space/src/lib.rs::VENDOR_ID
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_MODERN
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_TRANSITIONAL
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_GPU_MODERN
 
@@ -5505,13 +5415,9 @@ crates/pci_configuration_space/src/lib.rs::VIRTIO_INPUT_MODERN
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_MSIX_NO_VECTOR
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_MODERN
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_TRANSITIONAL
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_MODERN
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_TRANSITIONAL
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_BLOCK
 
@@ -5521,11 +5427,9 @@ crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_GPU
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_INPUT
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_NET
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_VENDOR
 
-crates/pci_configuration_space/src/lib.rs::address_low
 
 crates/pci_configuration_space/src/lib.rs::bridge_buses
 
@@ -5535,7 +5439,6 @@ crates/pci_configuration_space/src/lib.rs::ecam_offset
 
 crates/pci_configuration_space/src/lib.rs::enumerate
 
-crates/pci_configuration_space/src/lib.rs::mem32_window
 
 crates/pci_configuration_space/src/lib.rs::read_bars
 
@@ -5609,9 +5512,7 @@ crates/pmap/src/lib.rs::write_diagnostics
 
 crates/pmap/src/lib.rs::write_report
 
-crates/program_argument_contract/src/lib.rs::ArgPage
 
-crates/program_argument_contract/src/lib.rs::CAPACITY
 
 crates/program_argument_contract/src/lib.rs::EMPTY
 
@@ -5631,7 +5532,6 @@ crates/program_argument_contract/src/lib.rs::count
 
 crates/program_argument_contract/src/lib.rs::finish
 
-crates/program_argument_contract/src/lib.rs::from_va
 
 crates/program_argument_contract/src/lib.rs::is_empty
 

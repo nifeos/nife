@@ -532,7 +532,7 @@ fn call_reply_el0() -> Option<()> {
     let ep = sched::create_rendezvous_from(region).expect("no call endpoint");
     // The soaker writes its progress counters to this page; nothing here reads them.
     let page = crate::memory::alloc_zeroed().expect("ipc_stack_depth: no page for the soaker");
-    let phys = page.addr();
+    let phys = page.physical_address();
     let cpu = crate::cpu::id();
 
     reset_el0();

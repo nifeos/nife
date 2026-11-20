@@ -45,7 +45,7 @@ pub(crate) fn start(fs_window_zero: u64) -> Option<DiskTree> {
     let window = ::driver_process_contract::non_volatile_memory_express::DISK_TREE_WINDOW;
     let blk = disk.client_capability(window);
     let staged = disk.window_phys(window);
-    let pool = crate::memory::alloc_contiguous_zeroed(POOL_PAGES)?.addr();
+    let pool = crate::memory::alloc_contiguous_zeroed(POOL_PAGES)?.physical_address();
     let request = crate::sched::create_rendezvous();
     let report = crate::sched::create_rendezvous();
 
@@ -58,8 +58,8 @@ pub(crate) fn start(fs_window_zero: u64) -> Option<DiskTree> {
         // Read-only: the controller fills these by DMA, and this server only copies out of them.
         for (i, m) in maps.iter_mut().take(BLK_PAGES).enumerate() {
             *m = Mapping {
-                va: BLK_PAGE + i as u64 * page_frames::FRAME_SIZE,
-                phys: staged + i as u64 * page_frames::FRAME_SIZE,
+                va: BLK_PAGE + i as u64 * page_frames::FRAME_BYTES,
+                phys: staged + i as u64 * page_frames::FRAME_BYTES,
                 flags: Flags::user_read_only_data(),
             };
         }

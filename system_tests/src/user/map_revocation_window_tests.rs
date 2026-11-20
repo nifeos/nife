@@ -79,7 +79,7 @@ fn holds_frame(tid: crate::thread::ThreadId, phys: u64) -> bool {
         (0..crate::capability_object::CAPABILITY_TABLE_SLOTS as u64).any(|slot| {
             table.get(slot).is_ok_and(|c| match c.object {
                 Object::PageFrame(p, n) => {
-                    p <= phys && phys < p + n.get() * page_frames::FRAME_SIZE
+                    p <= phys && phys < p + n.get() * page_frames::FRAME_BYTES
                 }
                 _ => false,
             })
@@ -337,7 +337,7 @@ fn a_destroy_inside_a_memory_region_map_leaves_no_mapping() {
             encode(call(
                 tables_slot,
                 abi::memory_region::MAP,
-                VA + page_frames::FRAME_SIZE,
+                VA + page_frames::FRAME_BYTES,
                 0,
                 0,
             )),

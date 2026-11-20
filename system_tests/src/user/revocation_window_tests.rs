@@ -43,13 +43,13 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 
 /// Does any slot of `tid`'s table name a `PageFrame` overlapping `[base, base + pages)`?
 fn holds_frame_in(tid: crate::thread::ThreadId, base: u64, pages: u64) -> bool {
-    let end = base + pages * page_frames::FRAME_SIZE;
+    let end = base + pages * page_frames::FRAME_BYTES;
     // Lent rather than copied out: a 64-slot copy in this frame is what put the nth-retype tests
     // over the guard page (milestone 754 (the capability table grows to 64 slots)).
     sched::with_capability_table(tid, |table| {
         (0..crate::capability_object::CAPABILITY_TABLE_SLOTS as u64).any(|slot| {
             table.get(slot).is_ok_and(|c| match c.object {
-                Object::PageFrame(p, n) => p < end && base < p + n.get() * page_frames::FRAME_SIZE,
+                Object::PageFrame(p, n) => p < end && base < p + n.get() * page_frames::FRAME_BYTES,
                 _ => false,
             })
         })
@@ -274,7 +274,7 @@ fn a_reclamation_inside_a_slice_leaves_the_slicer_no_slice() {
         wait_for(delegation_pause::is_parked),
         "the slicer never reached the delegation seam, so no sweep landed inside its SLICE",
     );
-    crate::revoke::revoke_region(base, 2 * page_frames::FRAME_SIZE);
+    crate::revoke::revoke_region(base, 2 * page_frames::FRAME_BYTES);
     let premise = holds_frame_in(SLICER.load(Ordering::SeqCst), base, 2);
     delegation_pause::release();
     assert!(

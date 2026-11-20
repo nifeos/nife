@@ -36,17 +36,17 @@ The repository's `check` and `proofs` runs are green on the first push for the c
 - P0-1, the manifest stands alone: Open. It still inherits `license` and the lints from the
   workspace, carries `publish = false` and has no license files.
 - P0-2, a README: Open. None exists; a lane writes it once the architect clears the crate.
-- P0-3, documentation that cites this tree: Open. The `Name:` paragraph no longer garbles its
-  story, but section, milestone and path citations remain in `src/lib.rs` and
-  `tests/allocator.rs`.
+- P0-3, documentation that cites this tree: Done, [#3805](https://github.com/nifeos/nife/pull/3805).
+  The sentences in `src/lib.rs`, `tests/allocator.rs` and the falsification headers carry their
+  reasons and cite no section, milestone, path or program of this tree.
 - P1-4, `mark_free` rounds outward: Done, [#3524](https://github.com/nifeos/nife/pull/3524).
 - P1-5, `forbid(unsafe_code)`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-6, three more harnesses: Done, [#3567](https://github.com/nifeos/nife/pull/3567), each with a
   falsification patch.
 - P1-7, the acronyms gate: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-8, the names the release review meets: Ruled for `addr` and `from_addr` (Decision 2,
-  maintainer, provisional, 2026-11-14 UTC). Not built: `from_addr` and `addr()` keep their
-  spelling at 191 sites, and the rename lane also takes Decision 1 and the two-way names.
+- P1-8, the names the release review meets: Done, [#3805](https://github.com/nifeos/nife/pull/3805).
+  Decisions 1 and 2 and the two-way renames are built across the crate, `kernel/` and
+  `system_tests/`, with no alias of an old spelling. Every renamed name stays provisional.
 - P1-9, `page_frames_in` truncates: Done, [#3567](https://github.com/nifeos/nife/pull/3567), with
   `page_frames_covering` (provisional).
 - P1-10, the falsification patches drift: Done, [#3521](https://github.com/nifeos/nife/pull/3521)
@@ -64,15 +64,17 @@ The repository's `check` and `proofs` runs are green on the first push for the c
 - P2-18, `Hash`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-19, the scan hint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-20, the stale note: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- Decision 1, `FRAME_SIZE` or `FRAME_BYTES`: Open, two-way while nobody outside the tree uses
-  the crate, so the maintainer rules it provisionally, as with Decision 2. The ratification below takes the result.
+- Decision 1, `FRAME_SIZE` or `FRAME_BYTES`: Ruled (maintainer, provisional, 2026-11-19 UTC), and
+  built in [#3805](https://github.com/nifeos/nife/pull/3805).
 - Decision 2, `physical_address` and `from_physical_address`: Ruled (maintainer, provisional,
-  2026-11-14 UTC). Not built: the rename lane of item 8.
-- The template's gates refuse two names no item lists, the private `fn get` (`question_shape`)
-  and the test `an_unaligned_address_is_refused_without_a_panic` (`register_names`): Open. A
-  two-way rename or exemption, the maintainer's.
-- Ratifying the public names: Open, below.
-- Clearing a review package: Open, below. No package exists yet.
+  2026-11-14 UTC), and built in [#3805](https://github.com/nifeos/nife/pull/3805).
+- The template's gates refused two names no item lists, the private `fn get` (`question_shape`)
+  and the test `an_unaligned_address_is_refused_without_a_panic` (`register_names`): Done,
+  [#3805](https://github.com/nifeos/nife/pull/3805), as `is_index_used` and
+  `an_unaligned_physical_address_is_refused_without_a_panic`.
+- Ratifying the public names: Open, below. The review package lists every public name for it.
+- Clearing a review package: Open, below. The package is
+  [notes/crate-reviews/page-frames.md](../../notes/crate-reviews/page-frames.md).
 
 ## Open decisions
 
@@ -82,16 +84,16 @@ Background. `page_frames` is the kernel's physical page frame allocator: a bitma
 of RAM, borrowed from the caller, with every frame used until the boot code declares it free. Its
 public names are what every user compiles against. No item below the crate level carries a `Name:`
 block, so every public name is provisional, and this review is the first time they meet
-[design/naming.md](../naming.md). Decision 2 settles `physical_address` and
-`from_physical_address`; Decision 1 settles the constant; the fixes added `page_frames_covering`
-and `try_aligned`. Ratification is the architect's by the naming rule.
+[design/naming.md](../naming.md). The rename lane has built Decision 1 (`FRAME_BYTES`), Decision 2
+(`physical_address`, `from_physical_address`) and the two-way renames, and the fixes added
+`page_frames_covering` and `try_aligned`. The package lists each public name with its status and a
+proposal. Ratification is the architect's by the naming rule.
 
-Recommendation: A. One lane performs Decisions 1 and 2 and the two-way renames of item 8, then
-the architect ratifies the result in one pass, so the names read are the names that ship.
+Recommendation: A. The names read in the package are the names that ship.
 
-- A. Ratify after the rename lane lands, against the renamed source.
-- B. Ratify the names as they stand now, before the renames.
-- C. Ratify with changes the architect names; the rename lane applies them.
+- A. Ratify against the renamed source, as the package lists it.
+- B. Ratify with changes the architect names; a lane applies them.
+- C. Ratify some names and leave the rest provisional.
 
 Door: one-way at the first publish. A published public name is a breaking change to rename.
 
@@ -109,13 +111,15 @@ Blocks: the move.
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package, and that clearance approves the repository. A crate leaves when it is
 publishable or used by more than one repository. `page_frames` is a general bitmap frame allocator
-with no `unsafe` and no nife vocabulary in its code, so it can meet that bar. No package exists in
-`notes/crate-reviews/` yet, and items 1 to 3 wait on the answer.
+with no `unsafe` and no nife vocabulary in its code, so it can be publishable. Its only consumers
+today are the kernel and `system_tests`, both in this repository, so the bar rests on that
+publishability alone. The package at
+[notes/crate-reviews/page-frames.md](../../notes/crate-reviews/page-frames.md) shows the crate as it
+will ship. Items 1 and 2 wait on the answer.
 
-Recommendation: A. A package written after the rename lane shows the crate as it will ship.
+Recommendation: A. The package shows the crate as it will ship.
 
-- A. A lane writes the package after the rename lane; the architect's clearance creates the
-  repository.
+- A. Clear the package; the clearance creates the repository.
 - B. Clear on this outside review alone.
 - C. Keep the crate in nife, used only by the kernel.
 
@@ -262,14 +266,14 @@ Example. `kernel/src/memory.rs` line 569 reads `.is_used(PageFrame::from_addr(pa
 and would read `.is_used(PageFrame::containing(physical_address))` after the rename lane also
 takes the chance to use the method the crate already has for that rounding.
 
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, since the crate stays
+Decided by the maintainer on 2026-11-14 (UTC), provisional, and built: a two-way door, since the crate stays
 with the kernel and is unpublished, which the architect may revisit. The names go one step past the
 recommendation: `physical_address` and `from_physical_address` (`src/lib.rs` lines 48 and 62),
 because [design/naming.md](../naming.md) asks every address to say which kind it is. The std rule
 does not bind here: std's pointer `addr` returns a pointer's integer without its provenance, a
-different meaning. `containing` (line 57) stays. The kernel and `system_tests` call `from_addr` and
-`addr()` at 191 sites, all renamed in item 8's lane, with no alias of the old spelling. Ratifying
-the names stays the architect's.
+different meaning. `containing` (line 57) stays. The kernel and `system_tests` called `from_addr` and
+`addr()` at 191 sites, all renamed, with no alias of the old spelling. Ratifying the names stays
+the architect's.
 
 ## Done when
 
@@ -277,8 +281,9 @@ The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Each finding that "Finding status" marks Open or Ruled, checked against
-  `crates/page_frames` and its manifest.
+- **Outstanding.** Each finding that "Finding status" marks Open, checked against
+  `crates/page_frames` and its manifest. Items 1, 2, 12 and 17 are the move lane's, after the
+  architect clears the review package.
 
 ## BUGS
 
@@ -296,9 +301,9 @@ The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
 
 ## Index row
 
-An outside review of `page_frames` before its move. Three items block the move: a manifest that does
-not stand alone, no README while the design arguments stay behind in nife, and documentation that
-cites the tree. Seven land before the first release. Among them are `mark_free` rounding usable
+An outside review of `page_frames` before its move. Two items block the move: a manifest that does
+not stand alone and no README while the design arguments stay behind in nife; the third, documentation
+that cites the tree, is done. Seven land before the first release. Among them are `mark_free` rounding usable
 memory outward against its own documentation and every comparable system, and proofs that leave the
 rounding and the accounting unproven. Another is a malformed regenerated falsification patch that
 stops the dry run, and two public names that fail the naming rules. Ten

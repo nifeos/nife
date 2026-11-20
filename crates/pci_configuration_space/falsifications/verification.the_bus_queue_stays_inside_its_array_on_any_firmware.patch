@@ -13,9 +13,13 @@ defect firmware that names one bus from several bridges walks `tail` past the en
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -290,5 +290,2 @@ impl BusQueue {
+@@ -319,9 +319,6 @@
+     /// the whole walk.
+     fn enqueue(&mut self, bus: u8) {
          let (word, bit) = (bus as usize >> 6, 1u64 << (bus & 63));
 -        if self.seen[word] & bit != 0 {
 -            return;
 -        }
          self.seen[word] |= bit;
+         self.queue[self.tail] = bus;
+         self.tail += 1;

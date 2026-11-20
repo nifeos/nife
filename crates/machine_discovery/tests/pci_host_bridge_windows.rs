@@ -1,17 +1,19 @@
 //! Hold the kernel's PCI reads and hardcodes against the machine's own device tree.
 //!
 //! The kernel's PCIe windows come from the tree at boot (`memory::initialize` reads the
-//! `pci-host-ecam-generic` node's `reg` and `ranges`; the parse is this crate's
-//! `mem32_window`); the tests here run the same reads over the fixture trees and pin the
+//! `pci-host-ecam-generic` node's `reg` and `ranges`; the parse is
+//! `pci_configuration_space::memory_window_32_bit`); the tests here run the same reads over the fixture trees and pin the
 //! answers, so a QEMU layout change fails on the host before the kernel maps the wrong window
 //! on the machine. What is still a hardcode under witness: `PCI_INTERRUPT_NUMBER_BASE` in each
-//! kernel/src/arch/*/mmu.rs and the swizzle in this crate (`intx_interrupt_number`); a bare-metal
-//! crate
-//! cannot be a dev-dependency, so those values are asserted as literals, the same
-//! hardcode-with-a-witness pattern as the UART test in the `device_tree_blob` crate.
+//! kernel/src/arch/*/mmu.rs and the swizzle in `pci_configuration_space` (`intx_interrupt_number`);
+//! the kernel is bare-metal and cannot be a dev-dependency, so those values are asserted as
+//! literals, the same hardcode-with-a-witness pattern as the UART test in the `device_tree_blob`
+//! crate. The tests live here, not in `pci_configuration_space`, because they read fixtures of two
+//! other crates and pin constants only the kernel carries; the decoder crate keeps its own tests
+//! over inlined cells.
 
 use device_tree_blob::{DeviceTreeBlob, Region};
-use pci_configuration_space::{intx_interrupt_number, mem32_window};
+use pci_configuration_space::{intx_interrupt_number, memory_window_32_bit};
 
 const QEMU_RISCV_VIRT: &[u8] =
     include_bytes!("../../machine_discovery/tests/fixtures/qemu-riscv64-virt.dtb");
@@ -46,12 +48,12 @@ fn discovery_finds_the_riscv_windows_the_constants_named() {
         .unwrap()
         .expect("the bridge states its ranges");
     assert_eq!(
-        mem32_window(ranges),
+        memory_window_32_bit(ranges),
         Some((0x4000_0000, 0x4000_0000)), // base was PCI_BAR_BASE in arch/riscv64/mmu.rs
     );
 }
 
-const JH7110: &[u8] = include_bytes!("../../machine_discovery/tests/fixtures/jh7110.dtb");
+const JH7110: &[u8] = include_bytes!("fixtures/jh7110.dtb");
 
 /// **The JH7110 describes no generic-ECAM bridge, and discovery must say so.** Its PCIe
 /// controller is a PLDA core (`starfive,jh7110-pcie`), a different device this kernel does not
@@ -147,7 +149,7 @@ fn discovery_finds_the_aarch64_windows_the_constants_named() {
         .unwrap()
         .expect("the bridge states its ranges");
     assert_eq!(
-        mem32_window(ranges),
+        memory_window_32_bit(ranges),
         Some((0x1000_0000, 0x2eff_0000)), // base was PCI_BAR_BASE in arch/aarch64/mmu.rs
     );
 }

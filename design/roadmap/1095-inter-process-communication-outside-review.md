@@ -34,24 +34,23 @@ the items say which.
 Every item not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- P0-1, no review package: Open. `notes/crate-reviews/` has none for this crate; a lane writes it
-  now (ruled, maintainer, provisional, 2026-11-19 UTC, D6).
+- P0-1, no review package: Done. [`notes/crate-reviews/inter-process-communication.md`](../../notes/crate-reviews/inter-process-communication.md)
+  is the package, with a row in the index (ruled, maintainer, provisional, 2026-11-19 UTC, D6).
 - P0-2, the one dependency has not left and appears in no plan: Ruled (maintainer, provisional,
   2026-11-19 UTC, D3). Not built: `intrusive_queue` leaves first, under
   milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release).
 - P0-3, the crate does not stand alone: Open. The move strips the ten `Name:` lines and the
   citations, and gives the manifest its own `license`, `lints` and `rust-version` in place of
   `license.workspace` and the allowlist comment.
-- P1-4, a public type named `Send`: Ruled (maintainer, provisional, 2026-11-14 UTC,
-  [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `src/lib.rs` line 37 exports
-  `Send` and `Receive`, and `Signal`, `Wait` and `Arm` keep their names.
+- P1-4, a public type named `Send`: Done (ruled, maintainer, provisional, 2026-11-14 UTC,
+  [#3589](https://github.com/nifeos/nife/pull/3589)). The five operation enums are `SendVerdict`,
+  `ReceiveVerdict`, `SignalVerdict`, `WaitVerdict` and `ArmVerdict`, each with a provisional
+  `Name:` block.
 - P1-5a, gate names in the private parts: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-5b, prose spellings: Open. The British forms of signaling (`src/timer.rs` line 13), signaled
-  (`src/notification.rs` lines 58 and 328) and modeled (line 246), `queueing` (`src/futex.rs`
-  line 5, `src/rendezvous.rs` line 38), two patch headers and the doc example's `pa`
-  (`src/futex.rs` lines 27 and 33) remain. A lane fixes them.
-- P1-5c, gate names in the public parts: Ruled (maintainer, provisional, 2026-11-19 UTC, D4). Not
-  built: a rename lane does the two renames.
+- P1-5b, prose spellings: Done. No British form, no `queueing` and no `pa` remains in the crate.
+- P1-5c, gate names in the public parts: Done (ruled, maintainer, provisional, 2026-11-19 UTC, D4).
+  `Rendezvous::one_queue_invariant_holds` and `futex::Key::virtual_address`, each with a
+  provisional `Name:` block.
 - P1-6, the design record does not travel: Open. The move writes `docs/design.md` and the README
   in place of the links to `notes/inter-process-communication.md`.
 - P1-7, manifest metadata: Open. The move writes the description, repository, keywords and
@@ -65,8 +64,10 @@ milestone reaches delivery.
 - P2-11, the one-queue invariant could hold by construction: Open. Two-way, and the maintainer
   rules it after the move; it changes the proofs.
 - P2-12a, `Futexes<T, 0>` panics: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-12b, `Futexes` as a stranger reads it: Ruled for the names (maintainer, provisional,
-  2026-11-19 UTC, D5); not built, a rename lane does them. The iterator lands in `intrusive_queue` and is the maintainer's.
+- P2-12b, `Futexes` as a stranger reads it: Done for the names (maintainer, provisional,
+  2026-11-19 UTC, D5): `FutexTable<T, const BUCKETS: usize>`, `len()` with `is_empty()` and
+  `Key::address_space`, each with a provisional `Name:` block. The iterator lands in
+  `intrusive_queue` and is the maintainer's.
 - P2-13, `Timer::deadline` answers with a sentinel: Open. `deadline()` returns `u64`
   (`src/timer.rs` line 112); `Option<u64>` is two-way until the publish, and the maintainer rules
   it.
@@ -74,8 +75,8 @@ milestone reaches delivery.
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-15, five copies of the test node: Open. One shared node, after the move.
 - P2-16a, documentation details: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-16b, tuples from `debug_counts`: Open. `src/rendezvous.rs` line 202 and
-  `src/notification.rs` line 163 return tuples; a lane names them as structs.
+- P2-16b, tuples from `debug_counts`: Done. `Rendezvous::debug_counts` returns `RendezvousCounts`
+  and `Notification::debug_counts` returns `NotificationCounts`, both provisional.
 - P2-17, two Kani toolchain warnings: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Follow-on, the externalization list: Open. `crates/externalization-list.txt` does not name this
   crate; milestone 1017's list records the pair, `intrusive_queue` first (D3).
@@ -181,7 +182,6 @@ The rules in force, with their background and prior art, are in
 - D6, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC). The package is
   written now; no tag and no publication.
 
-A rename lane does the renames of D4 and D5, not the pull request that records them.
 
 ## Follow-on
 

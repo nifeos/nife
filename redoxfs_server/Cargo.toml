@@ -123,6 +123,7 @@ filesystem_fixture = { version = "0.1.0", path = "../crates/filesystem_fixture" 
 # dependencies of its own and no I/O at all, so it costs the host build nothing and the sans-IO core
 # never sees it.
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
+nife_partition_types = { version = "0.1.0", path = "../crates/nife_partition_types" }
 
 # EL0-only, optional (behind `el0`): the syscall runtime. It does not compile for the host, so it is
 # absent from the host test build. (`abi` went with milestone 706 (a `CALL` server can tell a Reply

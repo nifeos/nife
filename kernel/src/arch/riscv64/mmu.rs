@@ -278,7 +278,7 @@ pub fn initialize() {
     refuse_unnameable_ram();
     let root = memory::alloc()
         .expect("no frame for the root page table")
-        .addr();
+        .physical_address();
     // SAFETY: a fresh frame; zero it before the hardware can ever walk it.
     unsafe {
         (*phys_to_ptr(root)).entries = [0; page_tables::ENTRIES];
@@ -290,7 +290,7 @@ pub fn initialize() {
         Mapper::<_, _, Format>::new(
             root,
             Half::High,
-            || memory::alloc().map(|f| f.addr()),
+            || memory::alloc().map(|f| f.physical_address()),
             phys_to_ptr,
         )
     };
@@ -977,7 +977,7 @@ fn kernel_mapper() -> Mapper<impl FnMut() -> Option<u64>, fn(u64) -> *mut PageTa
         Mapper::new(
             root,
             Half::High,
-            || memory::alloc().map(|f| f.addr()),
+            || memory::alloc().map(|f| f.physical_address()),
             phys_to_ptr,
         )
     }

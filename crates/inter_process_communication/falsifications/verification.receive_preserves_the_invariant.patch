@@ -5,7 +5,7 @@ The defect: a receiver with nothing to collect joins the sender queue, the mirro
 rather than folded into one, because each harness is evidence about its own operation and a
 shared patch would leave either one unable to say it had been falsified.
 
-Expected to fail: the harness's `assert!(e.one_queue_invariant())`, on a rendezvous already
+Expected to fail: the harness's `assert!(e.one_queue_invariant_holds())`, on a rendezvous already
 holding a queued receiver: both queues end up non-empty, and a later send would hand a receiver a
 receiver as its rendezvous partner.
 
@@ -15,10 +15,10 @@ index 845029a65..95d8ee0d6 100644
 +++ b/crates/inter_process_communication/src/rendezvous.rs
 @@ -283,7 +283,7 @@ impl<T: Node> Rendezvous<T> {
          } else if let Some(sender) = self.senders.pop_front() {
-             Receive::FromSender(sender, me)
+             ReceiveVerdict::FromSender(sender, me)
          } else {
 -            self.receivers.push_back(me);
 +            self.senders.push_back(me);
-             Receive::Blocked
+             ReceiveVerdict::Blocked
          }
      }

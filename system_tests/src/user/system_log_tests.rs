@@ -131,7 +131,7 @@ fn two_badged_writers_are_attributed_by_the_badge_and_a_per_user_read_filters() 
         crate::memory::alloc_zeroed().expect("no frame for window 0"),
         crate::memory::alloc_zeroed().expect("no frame for window 1"),
     ];
-    let phys = [windows[0].addr(), windows[1].addr()];
+    let phys = [windows[0].physical_address(), windows[1].physical_address()];
 
     let tid = crate::sched::spawn(move || {
         run(

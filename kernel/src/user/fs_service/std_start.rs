@@ -89,7 +89,7 @@ impl NarrowedStd {
         );
         let _ = crate::sched::reclaim_region(self.heap);
         for phys in self.stack.into_iter().chain(self.args) {
-            crate::memory::free(page_frames::PageFrame::from_addr(phys));
+            crate::memory::free(page_frames::PageFrame::from_physical_address(phys));
         }
         self.caretaker.release()
     }
@@ -197,7 +197,7 @@ impl BoundStd {
         release_window(self.window);
         let _ = crate::sched::reclaim_region(self.heap);
         for phys in self.stack {
-            crate::memory::free(page_frames::PageFrame::from_addr(phys));
+            crate::memory::free(page_frames::PageFrame::from_physical_address(phys));
         }
         let _ = crate::sched::reclaim_region(self.ep_region);
         unbound

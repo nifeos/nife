@@ -104,7 +104,7 @@ fn the_machine_statistics_page_is_published_and_its_counters_move() {
     let before = unsafe { machine_statistics_contract::Snapshot::read(va) }
         .expect("the page carries its magic");
     assert!(before.total_frames > 0 && before.free_frames <= before.total_frames);
-    assert_eq!(before.frame_bytes, page_frames::FRAME_SIZE);
+    assert_eq!(before.frame_bytes, page_frames::FRAME_BYTES);
     assert!(before.online_cpus() >= 1, "no core has ticked since boot");
 
     // Free frames track the allocator: after an allocation the page agrees with the allocator's own

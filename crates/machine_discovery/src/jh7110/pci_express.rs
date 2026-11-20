@@ -56,7 +56,7 @@ fn cell(bytes: &[u8], index: usize) -> Option<u32> {
 /// bus, two for the processor, two for the size), when its bus and processor addresses agree.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane lane/163-jh7110-pcie-kernel-wiring, beside
-/// `pci_configuration_space::mem32_window`.
+/// `pci_configuration_space::memory_window_32_bit`.
 #[must_use]
 pub fn prefetch_window(ranges: &[u8]) -> Option<Window> {
     const ENTRY: usize = 7 * 4;
@@ -126,7 +126,7 @@ impl RootPort {
         };
         let ranges = property(b"ranges")?.unwrap_or_default();
         let Some((memory_physical_address, memory_size)) =
-            pci_configuration_space::mem32_window(ranges)
+            pci_configuration_space::memory_window_32_bit(ranges)
         else {
             return Ok(None);
         };

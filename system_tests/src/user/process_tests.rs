@@ -26,7 +26,7 @@ use crate::syscall::invoke;
 const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
 pub(super) const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 /// A second stack, two pages below the first so a guard page sits between them.
-const STACK_B_VA: u64 = STACK_VA - 2 * page_frames::FRAME_SIZE;
+const STACK_B_VA: u64 = STACK_VA - 2 * page_frames::FRAME_BYTES;
 /// The shared page: the futex word at `+0`, the waiter's return count at `+8` and results at
 /// `+16` (as `futex_tests` lays them out), the waker's `WAKE` result at `+24`.
 const VA: u64 = address_space_layout::pair_page(0x0060_0000);
@@ -143,7 +143,7 @@ pub(super) fn lay_out(region: u64, programs: &[&[u32]]) -> (u64, u64) {
     let name = user_address_space_create(region).expect("no address space");
     for (i, program) in programs.iter().enumerate() {
         let code = code_page(region, program);
-        let va = CODE_VA + i as u64 * page_frames::FRAME_SIZE;
+        let va = CODE_VA + i as u64 * page_frames::FRAME_BYTES;
         user_address_space_map(name, va, code, Flags::user_code(), none).expect("map code");
     }
     for va in [STACK_VA, STACK_B_VA] {
@@ -230,8 +230,8 @@ fn try_join(
     let page = call(
         tcb,
         abi::thread_control_block::CONFIGURE,
-        CODE_VA + index * page_frames::FRAME_SIZE,
-        stack + page_frames::FRAME_SIZE,
+        CODE_VA + index * page_frames::FRAME_BYTES,
+        stack + page_frames::FRAME_BYTES,
         process_slot,
     );
     (tid, tcb, page)
@@ -448,7 +448,7 @@ fn each_member_of_a_process_has_its_own_current_cpu_page() {
     let region = crate::memory_region::create(64).expect("no region");
     let (space, _) = lay_out(region, &[SPINNER, THREAD_EXITER]);
     let (process, _) = create_process(region, space);
-    let below = current_cpu_contract::PAGE_VIRTUAL_ADDRESS - page_frames::FRAME_SIZE;
+    let below = current_cpu_contract::PAGE_VIRTUAL_ADDRESS - page_frames::FRAME_BYTES;
 
     let (a, a_tcb, a_page) = try_join(region, process, 0, STACK_VA);
     let (b, b_tcb, b_page) = try_join(region, process, 0, STACK_B_VA);
@@ -490,7 +490,7 @@ fn each_member_of_a_process_has_its_own_current_cpu_page() {
 
     // A member that ends gives its slot back: the next join takes the slot below again.
     let (exiter, exiter_tcb, exiter_page) = try_join(region, process, 1, STACK_B_VA);
-    let third = below - page_frames::FRAME_SIZE;
+    let third = below - page_frames::FRAME_BYTES;
     assert_eq!(exiter_page, Ok(third as i64), "the third member's page");
     sched::start_thread_control_block(exiter, [0; 3]).expect("start");
     assert!(
@@ -562,7 +562,7 @@ fn a_process_refuses_what_its_contract_refuses() {
             tcb,
             abi::thread_control_block::CONFIGURE,
             CODE_VA,
-            STACK_VA + page_frames::FRAME_SIZE,
+            STACK_VA + page_frames::FRAME_BYTES,
             through,
         )
     };
