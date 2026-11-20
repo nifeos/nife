@@ -1,188 +1,288 @@
-//! PCI configuration space: the decode logic, and none of the MMIO. ECAM addressing, walking a
-//! config space for devices, sizing a BAR and finding the virtio vendor capabilities, all over
-//! read/write closures on `(bdf, offset)`: the kernel passes volatile accessors into the mapped
-//! ECAM window and the tests pass an array, which is why this is host-testable. See notes/pcie.md.
+//! PCI configuration space: the decode logic, and none of the memory-mapped input and output. It
+//! addresses a function in the enhanced configuration access mechanism (ECAM) window, walks a
+//! machine's buses for functions, sizes a function's base address registers, and decodes its
+//! capability lists, all over read and write closures on `(Bdf, offset)`. A host operating system
+//! passes volatile accessors into the mapped ECAM window and a test passes an array, which is why
+//! the crate tests on a host in milliseconds.
 //!
-//! A function is addressed by **BDF** (bus, device, function) and has 4 KB of configuration space
-//! at `(bus << 20) | (dev << 15) | (fn << 12)` in the flat ECAM window. Its first 64 bytes are the
-//! standard header: ids, command and status, class, the **BARs** (where its register blocks live)
-//! and the capability list pointer, whose vendor capabilities carry what virtio-modern needs.
+//! A function is addressed by **Bdf** (bus, device, function) and has 4 KiB of configuration space
+//! at `(bus << 20) | (device << 15) | (function << 12)` in the flat ECAM window (PCI Express Base
+//! Specification, "Enhanced Configuration Access Mechanism"). Its first 64 bytes are the standard
+//! header (PCI Local Bus Specification 3.0, section 6.1): the ids, the command and status
+//! registers, the class code, the base address registers (BARs) that say where its register blocks
+//! live, and the pointer to its capability list. Message-signaled interrupts (MSI and MSI-X) and
+//! the virtio vendor capabilities hang off that list.
 //!
-//! Name: ratified 2026-09-18 (calef, §154 (the acronym test is whether the phrase is spoken)):
+//! What the crate refuses to decode: a header of any type but 0 (an endpoint) and 1 (a PCI-to-PCI
+//! bridge) has no BARs it knows, I/O-space BARs are skipped, a 64-bit BAR in a header's last slot
+//! is refused, and a BAR whose writable address bits are not contiguous is refused rather than
+//! sized. Every function here is total: a device that answers every read with arbitrary bytes
+//! leaves the caller with a bounded, well-formed answer or `None`.
+//!
+//! # Examples
+//!
+//! See [`enumerate`] for finding a function, and [`intx_interrupt_number`] for the legacy
+//! interrupt swizzle.
+//!
+//! Name: ratified 2026-09-18, under the acronym test (the name is whether the phrase is spoken):
 //! nobody says "peripheral component interconnect", so the short name stays `pci`. Refused
-//! `peripheral_component_interconnect` (§154). The package name is `pci_configuration_space`, ruled
+//! `peripheral_component_interconnect`. The package name is `pci_configuration_space`, ruled
 //! 2026-11-14 (UTC) because `pci` is taken on crates.io; the repository will carry that name.
 
 #![cfg_attr(not(test), no_std)]
 #![forbid(unsafe_code)]
-// milestone 68's ratchet is workspace-wide (§107); this crate opts out until its 24-item
-// worklist (notes/doc-coverage.md) is burned down.
-#![allow(missing_docs)]
 
-/// A function's address: (bus, device, function).
+/// A function's address: bus, device and function number (**Bdf**).
+///
+/// The ECAM window and the PCI Express requester id both pack these three fields as
+/// `bus:8 | device:5 | function:3`. A device number wider than five bits or a function number wider
+/// than three is masked to its field by [`Bdf::ecam_offset`] and [`Bdf::requester_id`], so it can
+/// never name another bus's or another device's page.
+///
+/// Name: provisional. The fields were `dev` and `func`; `pci_types::PciAddress` and
+/// `virtio-drivers`' `DeviceFunction` both spell them `device` and `function`. `Bdf` reads as a
+/// word aloud and stays.
+#[doc(alias = "bus device function")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Bdf {
+    /// The bus number, 0 to 255.
     pub bus: u8,
-    pub dev: u8,
-    pub func: u8,
+    /// The device number on the bus; only the low five bits address a device.
+    pub device: u8,
+    /// The function number in the device; only the low three bits address a function.
+    pub function: u8,
 }
 
 impl Bdf {
-    /// The function's byte offset inside the ECAM window: 4 KB per function, laid out
-    /// `bus:8 | dev:5 | fn:3 | offset:12`. This shift-and-or IS the ECAM spec.
+    /// The function's byte offset inside the ECAM window: 4 KiB per function, laid out
+    /// `bus:8 | device:5 | function:3 | offset:12`. This shift-and-or is the ECAM layout.
     ///
-    /// `dev` and `func` are the 5- and 3-bit fields of the address; a larger value is masked to its
-    /// field here, so it can never land on the next bus's or the next device's page.
+    /// A `device` or `function` wider than its field is masked to the field here, so it can never
+    /// land on the next bus's or the next device's page.
+    #[doc(alias = "enhanced configuration access mechanism")]
     pub fn ecam_offset(self) -> u64 {
         ((self.bus as u64) << 20)
-            | (((self.dev & 0x1f) as u64) << 15)
-            | (((self.func & 0x7) as u64) << 12)
+            | (((self.device & 0x1f) as u64) << 15)
+            | (((self.function & 0x7) as u64) << 12)
     }
 
-    /// The **PCIe requester id**: the 16-bit `bus:8 | dev:5 | fn:3` a function stamps on every
-    /// memory transaction it issues, and the key an IOMMU (SMMUv3 `StreamID`, RISC-V IOMMU `device_id`)
-    /// looks a device up by. Both `virt` boards publish an identity `iommu-map` in the device tree,
-    /// so this number is exactly the id the IOMMU sees. See kernel/src/iommu.rs (milestone 16b).
+    /// The **PCIe requester id**: the 16-bit `bus:8 | device:5 | function:3` a function stamps on
+    /// every memory transaction it issues (PCI Express Base Specification, "Requester ID"), and
+    /// the key an input and output memory management unit looks a device up by: the Arm SMMUv3
+    /// `StreamID` and the RISC-V IOMMU `device_id` are both this number when the machine's
+    /// `iommu-map` is the identity.
     pub fn requester_id(self) -> u32 {
-        ((self.bus as u32) << 8) | (((self.dev & 0x1f) as u32) << 3) | ((self.func & 0x7) as u32)
+        ((self.bus as u32) << 8)
+            | (((self.device & 0x1f) as u32) << 3)
+            | ((self.function & 0x7) as u32)
     }
 }
 
-// Standardized config-space header offsets (type 0).
-pub const VENDOR_ID: u64 = 0x00;
-pub const COMMAND: u64 = 0x04;
-/// Class code (24 bits) over revision id (8): `cfg_read32(bdf, CLASS_REVISION) >> 8` is the class.
-pub const CLASS_REVISION: u64 = 0x08;
-pub const HEADER_TYPE: u64 = 0x0e;
-pub const BAR0: u64 = 0x10;
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `CAP_PTR` under the capability ruling of 2026-10-06 (UTC).
-pub const CAPABILITIES_POINTER: u64 = 0x34;
-pub const INTERRUPT_PIN: u64 = 0x3d;
+/// Byte offset of the Vendor ID and Device ID dword in the standard header (PCI Local Bus
+/// Specification 3.0, section 6.2.1): the vendor in the low half, the device in the high half. A
+/// vendor of `0xffff` means no function answers.
+///
+/// Name: provisional. Was `VENDOR_ID`; a register offset ends in `_REGISTER`.
+pub const VENDOR_ID_REGISTER: u64 = 0x00;
+/// Byte offset of the Command and Status dword (section 6.2.2 and 6.2.3): the command register in
+/// the low half and the status register in the high half. The capability walks read the status
+/// half from this dword.
+///
+/// Name: provisional. Was `COMMAND`; a register offset ends in `_REGISTER`.
+pub const COMMAND_REGISTER: u64 = 0x04;
+/// Byte offset of the Class Code and Revision ID dword (section 6.2.4): the 24-bit class code over
+/// the 8-bit revision id. `read32(bdf, CLASS_REVISION_REGISTER) >> 8` is the class code.
+///
+/// Name: provisional. Was `CLASS_REVISION`; a register offset ends in `_REGISTER`.
+pub const CLASS_REVISION_REGISTER: u64 = 0x08;
+/// Byte offset of the Header Type byte (section 6.2.5): bits 6:0 give the layout, bit 7 says the
+/// device is multifunction. The byte sits in the dword at `HEADER_TYPE_REGISTER & !3`.
+///
+/// Name: provisional. Was `HEADER_TYPE`; a register offset ends in `_REGISTER`.
+pub const HEADER_TYPE_REGISTER: u64 = 0x0e;
+/// Byte offset of Base Address Register 0 (section 6.2.5.1); the six BARs of a type-0 header follow
+/// at four-byte steps.
+///
+/// Name: provisional. Was `BAR0`; a register offset ends in `_REGISTER`.
+pub const BAR0_REGISTER: u64 = 0x10;
+/// Byte offset of the Capabilities Pointer byte (section 6.7): where the capability list starts.
+///
+/// Name: provisional. Spelled out from `CAP_PTR`; the register offsets end in `_REGISTER`.
+pub const CAPABILITIES_POINTER_REGISTER: u64 = 0x34;
+/// Byte offset of the Interrupt Pin byte (section 6.2.4): 0 for none, then 1 to 4 for INTA to INTD.
+///
+/// Name: provisional. Was `INTERRUPT_PIN`; a register offset ends in `_REGISTER`.
+pub const INTERRUPT_PIN_REGISTER: u64 = 0x3d;
 
-/// **Header type 1: a PCI-to-PCI bridge**, which is what a PCIe root port and every switch port
-/// present themselves as. The low seven bits of [`HEADER_TYPE`] are the layout code (0 an endpoint,
-/// 1 a bridge, 2 the long-dead `CardBus` shape); bit 7 is the multifunction flag and is masked off
-/// before comparing. A bridge's header has two BAR slots where an endpoint has six, and where an
-/// endpoint's third BAR sits it carries [`BUS_NUMBERS`] instead.
+/// **Header type 1: a PCI-to-PCI bridge**, which is what a PCI Express root port and every switch
+/// port present themselves as (PCI-to-PCI Bridge Architecture Specification 1.2, section 3.2). The
+/// low seven bits of [`HEADER_TYPE_REGISTER`] are the layout code (0 an endpoint, 1 a bridge, 2 the
+/// long-dead `CardBus` shape); bit 7 is the multifunction flag and is masked off before comparing. A
+/// bridge's header has two BAR slots where an endpoint has six, and where an endpoint's third BAR
+/// sits it carries [`BUS_NUMBERS_REGISTER`] instead.
 pub const HEADER_TYPE_BRIDGE: u8 = 1;
 
-/// **Where a type-1 header states the buses behind it**: primary, secondary and subordinate bus
-/// numbers in the low three bytes of the dword at 0x18, then the secondary latency timer. Firmware
-/// writes these during its own enumeration and they are the only record of the topology that
-/// exists; nothing derives them, and a kernel that does not read them cannot find a device behind a
-/// root port. See [`bridge_buses`].
-pub const BUS_NUMBERS: u64 = 0x18;
+/// **Where a type-1 header states the buses behind it**: the primary, secondary and subordinate
+/// bus numbers in the low three bytes of the dword at 0x18, then the secondary latency timer
+/// (PCI-to-PCI Bridge Architecture Specification 1.2, section 3.2). Firmware writes these during
+/// its own enumeration and they are the only record of the topology that exists; nothing derives
+/// them, and software that does not read them cannot find a device behind a root port. See
+/// [`bridge_buses`].
+///
+/// Name: provisional. Was `BUS_NUMBERS`; a register offset ends in `_REGISTER`.
+pub const BUS_NUMBERS_REGISTER: u64 = 0x18;
 
-/// The NVMe class code: mass storage (0x01) / non-volatile memory (0x08) / NVMe I/O (0x02).
-/// Matched by class rather than by vendor/device id on purpose: QEMU's controller is Red Hat
-/// 1b36:0010, real drives are anything at all, and the class triple is the one identity the spec
-/// requires of every one of them (NVMe 1.4 §3.1's PCI header requirements).
-pub const CLASS_NVME: u32 = 0x01_08_02;
+/// The non-volatile memory express (NVMe) class code: mass storage (0x01), non-volatile memory
+/// (0x08), NVMe I/O (0x02). Matched by class rather than by vendor and device id on purpose:
+/// QEMU's controller is Red Hat 1b36:0010, real drives are anything at all, and the class triple
+/// is the one identity the NVM Express Base Specification 1.4, section 3.1 requires of every one
+/// of them.
+///
+/// Name: provisional. Spelled out from `CLASS_NVME`.
+#[doc(alias = "NVMe")]
+pub const CLASS_NON_VOLATILE_MEMORY_EXPRESS: u32 = 0x01_08_02;
 
-/// The xHCI class code: serial bus (0x0c) / USB (0x03) / xHCI (0x30). Matched by class for
-/// [`CLASS_NVME`]'s reason: QEMU's `qemu-xhci` is Red Hat 1b36:000d, an Intel PCH's is 8086:a2af
-/// or a hundred others, and the class triple is what the xHCI specification requires of all of
-/// them (xHCI 1.2 section 5.2.1). Milestone 242 (USB host and HID).
-pub const CLASS_XHCI: u32 = 0x0c_03_30;
+/// The extensible host controller interface (xHCI) class code: serial bus (0x0c), USB (0x03), xHCI
+/// (0x30). Matched by class for [`CLASS_NON_VOLATILE_MEMORY_EXPRESS`]'s reason: QEMU's `qemu-xhci`
+/// is Red Hat 1b36:000d, an Intel chipset's is 8086:a2af or a hundred others, and the class triple
+/// is what the eXtensible Host Controller Interface specification 1.2, section 5.2.1 requires of
+/// all of them.
+///
+/// Name: provisional. Spelled out from `CLASS_XHCI`.
+#[doc(alias = "xHCI")]
+pub const CLASS_EXTENSIBLE_HOST_CONTROLLER_INTERFACE: u32 = 0x0c_03_30;
 
-/// Command register bits we set to bring a device up.
-pub const CMD_MEMORY_SPACE: u16 = 1 << 1;
-/// Bus mastering is DMA permission at the PCI level: without it the device cannot issue a single
-/// memory transaction. The kernel-side confinement (the shadow ring) polices *where* the DMA
-/// goes; this bit is what allows DMA to exist at all, so it is set last, after the transport is
-/// registered.
-pub const CMD_BUS_MASTER: u16 = 1 << 2;
+/// Command register bit 1, Memory Space Enable (PCI Local Bus Specification 3.0, section 6.2.2):
+/// the function responds to memory accesses that hit its BARs.
+///
+/// Name: provisional. Spelled out from `CMD_MEMORY_SPACE`, with the specification's bit name.
+pub const COMMAND_MEMORY_SPACE_ENABLE: u16 = 1 << 1;
+/// Command register bit 2, Bus Master Enable (section 6.2.2). Bus mastering is DMA permission at
+/// the PCI level: without it the function cannot issue a single memory transaction. A caller that
+/// polices where the DMA goes sets this bit last, after its own checks are in place.
+///
+/// Name: provisional. Spelled out from `CMD_BUS_MASTER`, with the specification's bit name.
+pub const COMMAND_BUS_MASTER_ENABLE: u16 = 1 << 2;
 
-/// Status register bit 4: this function has a capability list.
+/// Status register bit 4, Capabilities List (PCI Local Bus Specification 3.0, section 6.2.3): this
+/// function has a capability list.
 const STATUS_CAPABILITIES_LIST: u16 = 1 << 4;
 
-/// virtio's PCI vendor id, and the modern virtio-blk device id (0x1040 + device type 2).
+/// virtio's PCI vendor id (Red Hat, 0x1af4), from virtio 1.2, section 4.1.2.
 pub const VIRTIO_VENDOR: u16 = 0x1af4;
-pub const VIRTIO_BLK_MODERN: u16 = 0x1042;
-/// The transitional (legacy-capable) virtio-blk id. We do not drive legacy, but we recognize it
-/// so enumeration can say "found a disk, but it is transitional" instead of "no disk".
-pub const VIRTIO_BLK_TRANSITIONAL: u16 = 0x1001;
+/// The modern virtio block device id: 0x1040 plus device type 2 (virtio 1.2, section 4.1.2.1).
+///
+/// Name: provisional. Spelled out from `VIRTIO_BLK_MODERN`, which also matches
+/// [`VIRTIO_TYPE_BLOCK`].
+pub const VIRTIO_BLOCK_MODERN: u16 = 0x1042;
+/// The transitional (legacy-capable) virtio block device id (virtio 1.2, section 4.1.2.1). The
+/// crate does not decode legacy functions, but it recognizes the id so a caller can say "found a
+/// disk, but it is transitional" instead of "no disk".
+///
+/// Name: provisional. Spelled out from `VIRTIO_BLK_TRANSITIONAL`.
+pub const VIRTIO_BLOCK_TRANSITIONAL: u16 = 0x1001;
 
-/// The modern virtio-net device id (0x1040 + device type 1), and its transitional twin. Same
-/// recognition role as the blk pair: the net stack (milestone 30) drives modern only, and a
-/// transitional NIC is reported as such rather than counted as absent.
-pub const VIRTIO_NET_MODERN: u16 = 0x1041;
-pub const VIRTIO_NET_TRANSITIONAL: u16 = 0x1000;
+/// The modern virtio network device id: 0x1040 plus device type 1 (virtio 1.2, section 4.1.2.1).
+///
+/// Name: provisional. Spelled out from `VIRTIO_NET_MODERN`.
+pub const VIRTIO_NETWORK_MODERN: u16 = 0x1041;
+/// The transitional virtio network device id, the legacy twin of [`VIRTIO_NETWORK_MODERN`]. A
+/// caller that drives modern functions only still reports a transitional one as such rather than
+/// as absent.
+///
+/// Name: provisional. Spelled out from `VIRTIO_NET_TRANSITIONAL`.
+pub const VIRTIO_NETWORK_TRANSITIONAL: u16 = 0x1000;
 
-/// The modern virtio-gpu device id (0x1040 + device type 16), milestone 29. There is **no
-/// transitional twin**: the legacy id space (0x1000..0x103f) was allocated before virtio-gpu
-/// existed, so a GPU is modern-or-nothing and enumeration passes `None` for the legacy id rather
-/// than inventing one. QEMU's `virtio-gpu-pci` presents exactly this id.
+/// The modern virtio GPU device id: 0x1040 plus device type 16 (virtio 1.2, section 4.1.2.1). There
+/// is **no transitional twin**: the legacy id space (0x1000 to 0x103f) was allocated before
+/// virtio-gpu existed, so a GPU is modern or nothing and a caller passes `None` for the legacy id
+/// rather than inventing one. QEMU's `virtio-gpu-pci` presents exactly this id.
 pub const VIRTIO_GPU_MODERN: u16 = 0x1050;
 
-/// The modern virtio-input device id (0x1040 + device type 18), milestone 29's keyboard. **No
-/// transitional twin**, for the same reason virtio-gpu has none: the device type was allocated long
-/// after the legacy id space. QEMU's `virtio-keyboard-pci` presents exactly this id, and so does
-/// `virtio-tablet-pci`, which is worth knowing rather than discovering: **the id names the device
-/// class, not the keyboard**, so a machine with both would have to read the device's configuration
-/// space to tell them apart. We attach only a keyboard.
+/// The modern virtio input device id: 0x1040 plus device type 18 (virtio 1.2, section 4.1.2.1).
+/// **No transitional twin**, for the reason [`VIRTIO_GPU_MODERN`] has none. QEMU's
+/// `virtio-keyboard-pci` presents exactly this id, and so does `virtio-tablet-pci`: **the id names
+/// the device class, not the keyboard**, so a machine with both must read the function's
+/// configuration to tell them apart.
 pub const VIRTIO_INPUT_MODERN: u16 = 0x1052;
 
-/// The modern virtio-rng device id (0x1040 + device type 4), milestone 56's entropy source, and its
-/// transitional twin. Unlike the GPU and the keyboard this one **does** have a legacy id: virtio-rng
-/// is device type 4, early enough to have been allocated a slot in the 0x1000..0x103f space. We
-/// drive modern only, so the legacy id is here for the same reason blk's and net's are, to let
-/// enumeration say "found an RNG, but it is transitional" rather than "no RNG".
-pub const VIRTIO_RNG_MODERN: u16 = 0x1044;
-pub const VIRTIO_RNG_TRANSITIONAL: u16 = 0x1005;
+/// The modern virtio entropy device id: 0x1040 plus device type 4 (virtio 1.2, section 4.1.2.1).
+/// Unlike the GPU and the input device this one **does** have a legacy id, [`VIRTIO_ENTROPY_TRANSITIONAL`]:
+/// device type 4 is early enough to have been allocated a slot in the 0x1000 to 0x103f space.
+///
+/// Name: provisional. Spelled out from `VIRTIO_RNG_MODERN`; the virtio specification calls device
+/// type 4 the entropy device, as [`VIRTIO_TYPE_ENTROPY`] does.
+pub const VIRTIO_ENTROPY_MODERN: u16 = 0x1044;
+/// The transitional virtio entropy device id, the legacy twin of [`VIRTIO_ENTROPY_MODERN`].
+///
+/// Name: provisional. Spelled out from `VIRTIO_RNG_TRANSITIONAL`.
+pub const VIRTIO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
 
-/// The virtio **device type** numbers, as the virtio-mmio `DeviceID` register reports them and as
-/// the PCI ids above encode them (`0x1040 + type`). The kernel carries the type through the PCI
-/// transport so a driver's `DeviceID` read answers truthfully on either bus; see
-/// `kernel/src/virtio.rs`.
-pub const VIRTIO_TYPE_NET: u32 = 1;
+/// The virtio **device type** numbers (virtio 1.2, section 5), as the virtio-mmio `DeviceID`
+/// register reports them and as the PCI ids above encode them (`0x1040 + type`). A host that wraps
+/// a PCI function in a virtio transport carries the type so a driver's `DeviceID` read answers
+/// truthfully on either bus.
+///
+/// Network device.
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_NET`.
+pub const VIRTIO_TYPE_NETWORK: u32 = 1;
+/// The virtio block device type (virtio 1.2, section 5.2).
 pub const VIRTIO_TYPE_BLOCK: u32 = 2;
+/// The virtio entropy device type (virtio 1.2, section 5.4).
 pub const VIRTIO_TYPE_ENTROPY: u32 = 4;
+/// The virtio GPU device type (virtio 1.2, section 5.7).
 pub const VIRTIO_TYPE_GPU: u32 = 16;
+/// The virtio input device type (virtio 1.2, section 5.8).
 pub const VIRTIO_TYPE_INPUT: u32 = 18;
 
 /// **The buses a type-1 header says lie behind it.** Firmware's own enumeration wrote these; a
-/// kernel that does not read them enumerates bus 0 and calls the rest of the machine absent.
+/// caller that does not read them enumerates bus 0 and calls the rest of the machine absent (PCI-to-PCI
+/// Bridge Architecture Specification 1.2, section 3.2).
 ///
 /// `subordinate` is the *highest* bus number reachable through this bridge, so `secondary ..=
 /// subordinate` is the whole subtree. A bridge that firmware configured but left empty states
 /// `secondary == subordinate`; one firmware never configured at all reads back zeros, which
 /// [`walk`] treats as "nothing behind it" rather than as a second route to bus 0.
 ///
-/// Name: provisional (milestone 320 (every PCI bus the machine has)), every name listed here: this
-/// type, [`bridge_buses`], [`Function`], [`walk`], [`BUS_NUMBERS`] and [`HEADER_TYPE_BRIDGE`].
-/// calef names public items.
+/// Name: provisional, with every name in this group: this type, [`bridge_buses`], [`Function`],
+/// [`walk`], [`BUS_NUMBERS_REGISTER`] and [`HEADER_TYPE_BRIDGE`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BridgeBuses {
+    /// The bus the bridge itself sits on.
     pub primary: u8,
+    /// The bus directly behind the bridge.
     pub secondary: u8,
+    /// The highest bus number behind the bridge.
     pub subordinate: u8,
 }
 
 /// Decode the three bus numbers of a type-1 header. Total for any device response: it is three
 /// byte fields of one dword and there is no arithmetic to overflow.
 pub fn bridge_buses(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> BridgeBuses {
-    let w = read32(bdf, BUS_NUMBERS);
+    let word = read32(bdf, BUS_NUMBERS_REGISTER);
     BridgeBuses {
-        primary: (w & 0xff) as u8,
-        secondary: ((w >> 8) & 0xff) as u8,
-        subordinate: ((w >> 16) & 0xff) as u8,
+        primary: (word & 0xff) as u8,
+        secondary: ((word >> 8) & 0xff) as u8,
+        subordinate: ((word >> 16) & 0xff) as u8,
     }
 }
 
 /// **One function the walk met**, with everything a census needs to print and everything the
 /// walk itself needs to decide where to go next.
 ///
-/// Name: provisional (milestone 320): calef names public items.
+/// Name: provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Function {
+    /// Where the function lives.
     pub bdf: Bdf,
+    /// The Vendor ID half of the first header dword (PCI Local Bus Specification 3.0, section 6.2.1).
     pub vendor: u16,
+    /// The Device ID half of the first header dword.
     pub device: u16,
-    /// Class over subclass over programming interface, 24 bits: `CLASS_REVISION >> 8`. This is the
-    /// identity [`CLASS_NVME`] is matched against, and the one thing on the bus that says what a
-    /// function *is* rather than who made it.
+    /// Class over subclass over programming interface, 24 bits: `CLASS_REVISION_REGISTER >> 8`.
+    /// This is the identity [`CLASS_NON_VOLATILE_MEMORY_EXPRESS`] is matched against, and the one
+    /// thing on the bus that says what a function *is* rather than who made it.
     pub class: u32,
     /// The header layout code, **with the multifunction bit already masked off**: 0 an endpoint,
     /// [`HEADER_TYPE_BRIDGE`] a bridge. Masked here rather than at every call site because an
@@ -190,7 +290,7 @@ pub struct Function {
     /// switch's upstream port is.
     pub header_type: u8,
     /// Whether this function reported itself multifunction, which is the bit that decides whether
-    /// functions 1..8 were probed at all.
+    /// functions 1 to 7 were probed at all.
     pub multifunction: bool,
     /// The buses behind it, for a bridge; `None` for an endpoint.
     pub bridge: Option<BridgeBuses>,
@@ -202,9 +302,9 @@ pub struct Function {
 ///
 /// Every bus number a bridge states comes from firmware, so the queue is fed arbitrary bytes. What
 /// keeps `queue[tail]` in bounds is that a bus is enqueued only when its bit in `seen` is clear and
-/// the bit is set in the same breath, so at most 256 pushes can ever happen; `verification` proves
-/// exactly that against any sequence of arbitrary bus numbers, which is the property no fixture
-/// test can establish.
+/// the bit is set in the same breath, so at most 256 pushes can ever happen; the crate's Kani proofs
+/// prove exactly that against any sequence of arbitrary bus numbers, which is the property no
+/// fixture test can establish.
 struct BusQueue {
     /// Bus numbers waiting to be scanned, `head..tail`.
     queue: [u8; 256],
@@ -259,7 +359,8 @@ impl BusQueue {
 /// A bridge's bus numbers come from firmware and can name anything, a visited bus or its own
 /// included, so the walk is a breadth-first queue over a 256-bit visited set: **each bus is scanned
 /// at most once**, a cycle terminates, and nothing recurses or allocates (the queue is a 256-byte
-/// array). See notes/pcie.md, "More than one bus (milestone 320)", for why it walks the bridges.
+/// array). Walking the bridges, rather than assuming bus 0 is the whole machine, is what finds a
+/// device behind a PCI Express root port.
 pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn FnMut(Function)) {
     let ceiling = ceiling.min(256);
     if ceiling == 0 {
@@ -268,21 +369,33 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
     let mut buses = BusQueue::from_the_root();
 
     while let Some(bus) = buses.next_bus() {
-        for dev in 0..32 {
-            let bdf0 = Bdf { bus, dev, func: 0 };
-            if read32(bdf0, VENDOR_ID) & 0xffff == 0xffff {
+        for device in 0..32 {
+            let bdf0 = Bdf {
+                bus,
+                device,
+                function: 0,
+            };
+            if read32(bdf0, VENDOR_ID_REGISTER) & 0xffff == 0xffff {
                 continue; // empty slot: one config read, which is the whole point of this guard
             }
-            let type0 = (read32(bdf0, HEADER_TYPE & !3) >> ((HEADER_TYPE & 3) * 8)) & 0xff;
+            let type0 = (read32(bdf0, HEADER_TYPE_REGISTER & !3)
+                >> ((HEADER_TYPE_REGISTER & 3) * 8))
+                & 0xff;
             let multifunction = type0 & 0x80 != 0;
-            let funcs = if multifunction { 8 } else { 1 };
-            for func in 0..funcs {
-                let bdf = Bdf { bus, dev, func };
-                let id = read32(bdf, VENDOR_ID);
+            let functions = if multifunction { 8 } else { 1 };
+            for function in 0..functions {
+                let bdf = Bdf {
+                    bus,
+                    device,
+                    function,
+                };
+                let id = read32(bdf, VENDOR_ID_REGISTER);
                 if id & 0xffff == 0xffff {
                     continue;
                 }
-                let raw = (read32(bdf, HEADER_TYPE & !3) >> ((HEADER_TYPE & 3) * 8)) & 0xff;
+                let raw = (read32(bdf, HEADER_TYPE_REGISTER & !3)
+                    >> ((HEADER_TYPE_REGISTER & 3) * 8))
+                    & 0xff;
                 let header_type = (raw & 0x7f) as u8;
                 let bridge = (header_type == HEADER_TYPE_BRIDGE).then(|| {
                     let behind = bridge_buses(bdf, read32);
@@ -299,7 +412,7 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
                     bdf,
                     vendor: (id & 0xffff) as u16,
                     device: (id >> 16) as u16,
-                    class: read32(bdf, CLASS_REVISION) >> 8,
+                    class: read32(bdf, CLASS_REVISION_REGISTER) >> 8,
                     header_type,
                     multifunction,
                     bridge,
@@ -318,17 +431,17 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
 /// Enumerating a bus with no bus: a test's closure over an array stands in for the ECAM window.
 ///
 /// ```
-/// use pci_configuration_space::{Bdf, VENDOR_ID, VIRTIO_VENDOR, enumerate};
+/// use pci_configuration_space::{Bdf, VENDOR_ID_REGISTER, VIRTIO_VENDOR, enumerate};
 ///
-/// // A config space with exactly one device: modern virtio-blk at 00:01.0. Everything else reads
+/// // A config space with exactly one function: modern virtio-blk at 00:01.0. Everything else reads
 /// // 0xffff, which is the bus's way of saying nobody is home.
 /// let mut read32 = |bdf: Bdf, off: u64| -> u32 {
-///     if bdf == (Bdf { bus: 0, dev: 1, func: 0 }) && off == VENDOR_ID {
+///     if bdf == (Bdf { bus: 0, device: 1, function: 0 }) && off == VENDOR_ID_REGISTER {
 ///         (0x1042 << 16) | VIRTIO_VENDOR as u32 // device 0x1042 in the high half
-///     } else if off == VENDOR_ID {
+///     } else if off == VENDOR_ID_REGISTER {
 ///         0xffff_ffff
 ///     } else {
-///         0 // header type 0: single function, so functions 1..8 are skipped
+///         0 // header type 0: single function, so functions 1 to 7 are skipped
 ///     }
 /// };
 ///
@@ -341,12 +454,10 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
 /// let (bdf, vendor, device) = found[0];
 /// assert_eq!((vendor, device), (VIRTIO_VENDOR, 0x1042));
 ///
-/// // ECAM addressing: 4 KB per function, `bus:8 | dev:5 | fn:3 | offset:12`. This shift-and-or is
-/// // the whole of the spec.
+/// // ECAM addressing: 4 KiB per function, `bus:8 | device:5 | function:3 | offset:12`.
 /// assert_eq!(bdf.ecam_offset(), 1 << 15);
 ///
-/// // And the requester id, which is the key an IOMMU looks the device up by. Both `virt` boards
-/// // publish an identity `iommu-map`, so this number is exactly what the IOMMU sees.
+/// // And the requester id, which is the key an IOMMU looks the function up by.
 /// assert_eq!(bdf.requester_id(), 0b0000_0000_0000_1000);
 /// ```
 pub fn enumerate(
@@ -354,29 +465,34 @@ pub fn enumerate(
     read32: &mut dyn FnMut(Bdf, u64) -> u32,
     f: &mut dyn FnMut(Bdf, u16, u16),
 ) {
-    walk(ceiling, read32, &mut |fun| {
-        f(fun.bdf, fun.vendor, fun.device);
+    walk(ceiling, read32, &mut |function| {
+        f(function.bdf, function.vendor, function.device);
     });
 }
 
-/// One decoded Base Address Register: where the register block is, how big, and how wide.
+/// One decoded Base Address Register: where the register block is, how big, and how wide (PCI
+/// Local Bus Specification 3.0, section 6.2.5.1).
+///
+/// Name: provisional. `base` and `size` were unqualified and `is_64` did not say what is 64.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Bar {
     /// The assigned base address (0 if firmware assigned nothing; the caller must then place it).
-    pub base: u64,
+    /// It is the address a bus master puts on the bus; on a machine with no translation between the
+    /// bus and the processor it is also the processor's physical address, which is what the name
+    /// says.
+    pub base_physical_address: u64,
     /// The region size in bytes, from the write-ones probe: a power of two of at least 16, and
-    /// `base + size` does not overflow.
-    pub size: u64,
+    /// `base_physical_address + size_bytes` does not overflow.
+    pub size_bytes: u64,
     /// A 64-bit BAR consumes two BAR slots; the caller's index bookkeeping needs to know.
-    pub is_64: bool,
+    pub is_64_bit: bool,
 }
 
 /// **Why [`read_bars`] refused a memory BAR.** A refused BAR is left out of the result, as if the
 /// slot were empty, and the reason goes to the caller's `refused` closure so it can say why a
-/// device came up without one.
+/// function came up without one.
 ///
-/// Name: provisional, minted 2026-11-11 (UTC) by lane pci-bar-size-from-lowest-bit, as are its
-/// variants.
+/// Name: provisional, as are its variants.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BarRefusal {
     /// The register answered the probe, but no address bit is writable, so there is no size.
@@ -404,9 +520,9 @@ const BAR_DECODE_BITS_64: u64 = 0xffff_ffff_ffff_fff0;
 /// proofs build with.
 ///
 /// The probe can only describe a size if every address bit from that lowest one to the top of
-/// the width is writable, so any other mask is refused rather than sized: `!mask + 1`, which this
-/// replaced, gives a size that is not a power of two for a mask with a hole, and one near
-/// `u64::MAX` for a 64-bit BAR whose upper half reads zero.
+/// the width is writable, so any other mask is refused rather than sized: `!mask + 1` gives a
+/// size that is not a power of two for a mask with a hole, and one near `u64::MAX` for a 64-bit
+/// BAR whose upper half reads zero.
 fn size_from_mask(mask: u64, decode_bits: u64) -> Result<u64, BarRefusal> {
     if mask == 0 {
         return Err(BarRefusal::NoWritableBits);
@@ -420,14 +536,15 @@ fn size_from_mask(mask: u64, decode_bits: u64) -> Result<u64, BarRefusal> {
 
 /// Read and size the memory BARs of a header: six slots for an endpoint (type 0), two for a bridge
 /// (type 1), and none for any other layout, whose BAR slots this crate does not know. Returns one
-/// entry per **slot** (six), `None` for the upper half of a 64-bit BAR, for I/O-space BARs (we
-/// drive memory BARs only), for an unimplemented BAR, for a slot past the header's last, and for a
-/// BAR it refused. A refusal also calls `refused` with the slot and the reason.
+/// entry per **slot** (six), `None` for the upper half of a 64-bit BAR, for I/O-space BARs (the
+/// crate decodes memory BARs only), for an unimplemented BAR, for a slot past the header's last, and
+/// for a BAR it refused. A refusal also calls `refused` with the slot and the reason.
 ///
-/// Sizing is the standard dance the spec prescribes: write all-ones, read back the mask of
-/// writable bits (the low bits that stay zero encode the alignment/size), restore the original.
-/// The device is quiescent during this (memory decoding is off until the command register is
-/// set), which is why enumeration runs before enable.
+/// Sizing is the dance PCI Local Bus Specification 3.0, section 6.2.5.1 prescribes: write all-ones,
+/// read back the mask of writable bits (the low bits that stay zero encode the alignment and size),
+/// restore the original. The function must be quiescent during this (memory decoding is off until
+/// the command register enables it), which is why a caller sizes BARs before it enables the
+/// function.
 pub fn read_bars(
     bdf: Bdf,
     read32: &mut dyn FnMut(Bdf, u64) -> u32,
@@ -435,7 +552,8 @@ pub fn read_bars(
     refused: &mut dyn FnMut(usize, BarRefusal),
 ) -> [Option<Bar>; 6] {
     let mut out = [None; 6];
-    let header_type = (read32(bdf, HEADER_TYPE & !3) >> ((HEADER_TYPE & 3) * 8)) as u8 & 0x7f;
+    let header_type =
+        (read32(bdf, HEADER_TYPE_REGISTER & !3) >> ((HEADER_TYPE_REGISTER & 3) * 8)) as u8 & 0x7f;
     let slots = match header_type {
         0 => 6,
         HEADER_TYPE_BRIDGE => 2,
@@ -448,14 +566,14 @@ pub fn read_bars(
         if core::mem::take(&mut upper_half) {
             continue;
         }
-        let off = BAR0 + i as u64 * 4;
-        let orig = read32(bdf, off);
-        if orig & 1 != 0 {
-            // An I/O-space BAR. x86 legacy; nothing we drive uses one.
+        let off = BAR0_REGISTER + i as u64 * 4;
+        let original = read32(bdf, off);
+        if original & 1 != 0 {
+            // An I/O-space BAR. x86 legacy; the crate decodes memory BARs only.
             continue;
         }
-        let is_64 = orig & 0b110 == 0b100;
-        if is_64 && i + 1 == slots {
+        let is_64_bit = original & 0b110 == 0b100;
+        if is_64_bit && i + 1 == slots {
             // Refused before the probe, so the register after the last slot is never written.
             refused(i, BarRefusal::SixtyFourBitInLastSlot);
             continue;
@@ -463,22 +581,22 @@ pub fn read_bars(
 
         write32(bdf, off, u32::MAX);
         let mask_lo = read32(bdf, off);
-        write32(bdf, off, orig);
+        write32(bdf, off, original);
 
-        let (base, mask, decode_bits) = if is_64 {
+        let (base, mask, decode_bits) = if is_64_bit {
             let off_hi = off + 4;
-            let orig_hi = read32(bdf, off_hi);
+            let original_high = read32(bdf, off_hi);
             write32(bdf, off_hi, u32::MAX);
             let mask_hi = read32(bdf, off_hi);
-            write32(bdf, off_hi, orig_hi);
+            write32(bdf, off_hi, original_high);
             (
-                ((orig_hi as u64) << 32) | (orig as u64 & BAR_DECODE_BITS_32),
+                ((original_high as u64) << 32) | (original as u64 & BAR_DECODE_BITS_32),
                 (((mask_hi as u64) << 32) | mask_lo as u64) & BAR_DECODE_BITS_64,
                 BAR_DECODE_BITS_64,
             )
         } else {
             (
-                orig as u64 & BAR_DECODE_BITS_32,
+                original as u64 & BAR_DECODE_BITS_32,
                 mask_lo as u64 & BAR_DECODE_BITS_32,
                 BAR_DECODE_BITS_32,
             )
@@ -486,84 +604,139 @@ pub fn read_bars(
 
         // An unimplemented BAR is hardwired to zero and reads back zero, type bits included.
         // That is an empty slot, not a malformed one.
-        if !(orig == 0 && mask_lo == 0) {
+        if !(original == 0 && mask_lo == 0) {
             match size_from_mask(mask, decode_bits).and_then(|size| {
                 base.checked_add(size)
                     .map(|_| size)
                     .ok_or(BarRefusal::EndOverflows)
             }) {
-                Ok(size) => *slot = Some(Bar { base, size, is_64 }),
+                Ok(size) => {
+                    *slot = Some(Bar {
+                        base_physical_address: base,
+                        size_bytes: size,
+                        is_64_bit,
+                    });
+                }
                 Err(reason) => refused(i, reason),
             }
         }
-        upper_half = is_64;
+        upper_half = is_64_bit;
     }
     out
 }
 
-/// What each virtio vendor capability describes (virtio spec 4.1.4: `cfg_type`).
-///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `VIRTIO_CAP_COMMON` under the capability ruling of 2026-10-06 (UTC).
-pub const VIRTIO_CAPABILITY_COMMON: u8 = 1;
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `VIRTIO_CAP_NOTIFY` under the capability ruling of 2026-10-06 (UTC).
-pub const VIRTIO_CAPABILITY_NOTIFY: u8 = 2;
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `VIRTIO_CAP_ISR` under the capability ruling of 2026-10-06 (UTC).
-pub const VIRTIO_CAPABILITY_ISR: u8 = 3;
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `VIRTIO_CAP_DEVICE` under the capability ruling of 2026-10-06 (UTC).
-pub const VIRTIO_CAPABILITY_DEVICE: u8 = 4;
+/// The most entries of a capability list any walk in this crate follows. A list is a linked list
+/// the function supplies, so a cycle or a very long chain must end the walk rather than hang the
+/// caller that is enumerating hardware nobody has vetted. A conforming list fits: capabilities are
+/// at least four bytes and live in the 192 bytes above the standard header, so it has at most 48
+/// entries.
+const CAPABILITY_HOPS: usize = 64;
 
-/// A virtio vendor capability, decoded: which register block it names, and where that block
-/// lives as (BAR index, offset into the BAR, length). `notify_off_multiplier` is meaningful only
-/// for the notify capability (the doorbell for queue N is at
-/// `offset + queue_notify_off * multiplier`).
+/// What [`capabilities`] hands each entry: its offset, its first dword and `read32` for the rest.
+/// Returns `true` to stop the walk.
+type CapabilityVisitor<'a> = dyn FnMut(u64, u32, &mut dyn FnMut(Bdf, u64) -> u32) -> bool + 'a;
+
+/// **The one walk of a function's capability list** (PCI Local Bus Specification 3.0, section 6.7),
+/// which [`virtio_capabilities`], [`msi_capability`] and [`msix_capability`] share so a single bound
+/// and a single proof cover all three.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `VirtioCap` under the capability ruling of 2026-10-06 (UTC).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VirtioCapability {
-    pub cfg_type: u8,
-    pub bar: u8,
-    pub offset: u32,
-    pub length: u32,
-    pub notify_off_multiplier: u32,
+/// Status bit 4 says a list exists, the pointer at [`CAPABILITIES_POINTER_REGISTER`] gives the first
+/// entry, and each entry starts `{capability_id: u8, next: u8, ...}` with the pointer's low two bits
+/// reserved. `visit` gets the entry's offset (nonzero, a multiple of four), its first dword and
+/// `read32` for the rest of the entry; it returns `true` to stop. At most [`CAPABILITY_HOPS`]
+/// entries are visited, so a cycle ends the walk.
+fn capabilities(
+    bdf: Bdf,
+    read32: &mut dyn FnMut(Bdf, u64) -> u32,
+    visit: &mut CapabilityVisitor<'_>,
+) {
+    let status = (read32(bdf, COMMAND_REGISTER) >> 16) as u16;
+    if status & STATUS_CAPABILITIES_LIST == 0 {
+        return;
+    }
+    let mut at = (read32(bdf, CAPABILITIES_POINTER_REGISTER) & 0xfc) as u64;
+    for _ in 0..CAPABILITY_HOPS {
+        if at == 0 {
+            return;
+        }
+        let head = read32(bdf, at);
+        if visit(at, head, read32) {
+            return;
+        }
+        at = ((head >> 8) & 0xfc) as u64;
+    }
 }
 
-/// Walk the capability list and call `f` for each **virtio vendor capability** (cap id 0x09).
-/// The list is a linked list in config space: status bit 4 says one exists, 0x34 points at the
-/// first entry, each entry is `{capability_id: u8, next: u8, ...}`. Bounded at 64 hops so a cycle in a
-/// hostile or broken device terminates instead of hanging the walk.
+/// The virtio vendor capability id in a function's capability list (virtio 1.2, section 4.1.4).
+const CAPABILITY_ID_VENDOR: u8 = 0x09;
+
+/// The virtio vendor capability's `cfg_type` for the common configuration structure (virtio 1.2,
+/// section 4.1.4).
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `virtio_caps` under the capability ruling of 2026-10-06 (UTC).
+/// Name: provisional. Spelled out from `VIRTIO_CAP_COMMON`.
+pub const VIRTIO_CAPABILITY_COMMON: u8 = 1;
+/// The `cfg_type` for the notification structure: the doorbells (virtio 1.2, section 4.1.4.4).
+///
+/// Name: provisional. Spelled out from `VIRTIO_CAP_NOTIFY`.
+pub const VIRTIO_CAPABILITY_NOTIFY: u8 = 2;
+/// The `cfg_type` for the interrupt status structure (virtio 1.2, section 4.1.4.5): one byte whose
+/// read acknowledges a legacy interrupt.
+///
+/// Name: provisional. Spelled out from `VIRTIO_CAP_ISR`, with the specification's abbreviation as
+/// the alias.
+#[doc(alias = "ISR")]
+pub const VIRTIO_CAPABILITY_INTERRUPT_STATUS: u8 = 3;
+/// The `cfg_type` for the device-specific configuration structure (virtio 1.2, section 4.1.4.6).
+///
+/// Name: provisional. Spelled out from `VIRTIO_CAP_DEVICE`.
+pub const VIRTIO_CAPABILITY_DEVICE: u8 = 4;
+
+/// A virtio vendor capability, decoded (virtio 1.2, section 4.1.4, `struct virtio_pci_cap`): which
+/// register block it names, and where that block lives as (BAR index, offset into the BAR,
+/// length). `notify_offset_multiplier` is meaningful only for the notify capability: the doorbell
+/// for queue N is at `offset + queue_notify_off * notify_offset_multiplier`.
+///
+/// Name: provisional. Spelled out from `VirtioCap`. `configuration_type` and
+/// `notify_offset_multiplier` spell out the specification's `cfg_type` and `notify_off_multiplier`,
+/// which stay as aliases because they are the specification's own field names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct VirtioCapability {
+    /// Which structure this capability describes: one of the `VIRTIO_CAPABILITY_` constants, or a
+    /// value a later specification adds.
+    #[doc(alias = "cfg_type")]
+    pub configuration_type: u8,
+    /// The BAR index (0 to 5) that holds the structure.
+    pub bar: u8,
+    /// The structure's byte offset into that BAR.
+    pub offset: u32,
+    /// The structure's length in bytes. Mirrors the specification's `length` field.
+    #[doc(alias = "length")]
+    pub length_bytes: u32,
+    /// The notify capability's `notify_off_multiplier`; 0 for every other capability.
+    #[doc(alias = "notify_off_multiplier")]
+    pub notify_offset_multiplier: u32,
+}
+
+/// Walk the capability list and call `f` for each **virtio vendor capability** (capability id
+/// 0x09, virtio 1.2, section 4.1.4). The list walk and its 64-entry bound are the crate's one
+/// capability walk, so a cycle in a hostile or broken function terminates instead of hanging.
+///
+/// A vendor capability states its own length in byte 2 (`cap_len`): the specification fixes 16
+/// bytes as the least a vendor capability holds (20 for the notify one, which carries a
+/// multiplier). One that states less is bad data, and the fields past its end belong to the next
+/// entry, so it is skipped.
+///
+/// Name: provisional. Spelled out from `virtio_caps`.
 pub fn virtio_capabilities(
     bdf: Bdf,
     read32: &mut dyn FnMut(Bdf, u64) -> u32,
     f: &mut dyn FnMut(VirtioCapability),
 ) {
-    const CAPABILITY_ID_VENDOR: u8 = 0x09;
-
-    let status = (read32(bdf, COMMAND) >> 16) as u16;
-    if status & STATUS_CAPABILITIES_LIST == 0 {
-        return;
-    }
-    let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
-    for _ in 0..64 {
-        if at == 0 {
-            return;
-        }
-        let head = read32(bdf, at);
+    capabilities(bdf, read32, &mut |at, head, read32| {
         let capability_id = (head & 0xff) as u8;
-        let next = ((head >> 8) & 0xfc) as u64;
-        // `cap_len`, byte 2: virtio 1.2 section 4.1.4 fixes 16 bytes as the least a vendor
-        // capability holds (20 for the notify one, which carries a multiplier). A function that
-        // states less is bad data, and the fields past its end belong to the next entry.
         let capability_length = (head >> 16) & 0xff;
-        let configuration_type_of_head = (head >> 24) & 0xff;
-        let least_length = if configuration_type_of_head == VIRTIO_CAPABILITY_NOTIFY as u32 {
+        let configuration_type = ((head >> 24) & 0xff) as u8;
+        let least_length = if configuration_type == VIRTIO_CAPABILITY_NOTIFY {
             20
         } else {
             16
@@ -571,235 +744,233 @@ pub fn virtio_capabilities(
         if capability_id == CAPABILITY_ID_VENDOR && capability_length >= least_length {
             // struct virtio_pci_cap: u8 id, next, cap_len, cfg_type; u8 bar; 3 pad; u32 offset,
             // length; the notify capability carries one extra u32 after that.
-            let cfg_type = ((head >> 24) & 0xff) as u8;
-            let bar = (read32(bdf, at + 4) & 0xff) as u8;
             f(VirtioCapability {
-                cfg_type,
-                bar,
+                configuration_type,
+                bar: (read32(bdf, at + 4) & 0xff) as u8,
                 offset: read32(bdf, at + 8),
-                length: read32(bdf, at + 12),
-                notify_off_multiplier: if cfg_type == VIRTIO_CAPABILITY_NOTIFY {
+                length_bytes: read32(bdf, at + 12),
+                notify_offset_multiplier: if configuration_type == VIRTIO_CAPABILITY_NOTIFY {
                     read32(bdf, at + 16)
                 } else {
                     0
                 },
             });
         }
-        at = next;
-    }
+        false
+    });
 }
 
-/// A function's **MSI-X capability**, decoded (PCI 3.0 §6.8.2). Where its vector table lives, as
-/// a (BAR index, byte offset into that BAR) pair, how many entries it has, and where the
-/// capability itself sits in config space so a caller can write its Message Control word.
+/// A function's **MSI-X capability**, decoded (PCI Local Bus Specification 3.0, section 6.8.2).
+/// Where its vector table lives, as a (BAR index, byte offset into that BAR) pair, how many
+/// entries it has, and where the capability itself sits in config space so a caller can write its
+/// Message Control word.
 ///
 /// **Why this and not MSI.** MSI (capability 0x05) puts its address and data in config space and
 /// gives a function one contiguous block of vectors; MSI-X puts them in a table in a BAR, one
-/// independently maskable entry per vector, and every device this tree attaches has it. The
-/// deciding property is not the count: it is that neither of them consults a board-specific
-/// interrupt routing table, because the *device* is told where to deliver. See
-/// `kernel/src/pci.rs` and design/roadmap/0215-x86-64-pci-interrupt-routing.md.
+/// independently maskable entry per vector. The deciding property for a host with no board-specific
+/// interrupt routing table is not the count: neither of them consults one, because the *function*
+/// is told where to deliver.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `MsixCap` under the capability ruling of 2026-10-06 (UTC).
+/// Name: provisional. Spelled out from `MsixCap`; `pending_bit_array_*` spell out `pba_*`.
+#[doc(alias = "message signaled interrupt extended")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MsixCapability {
-    /// Where the capability structure starts in config space, so [`MESSAGE_CONTROL`] can be
-    /// written to enable the function's MSI-X.
+    /// Where the capability structure starts in config space, so [`MESSAGE_CONTROL_REGISTER`]
+    /// can be written to enable the function's MSI-X.
     ///
-    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-    /// `cap_offset` under the capability ruling of 2026-10-06 (UTC).
+    /// Name: provisional. Spelled out from `cap_offset`.
     pub capability_offset: u64,
     /// How many table entries the function has. At least 1, at most 2048, by the field's own
     /// encoding (it holds the count minus one in eleven bits).
-    pub table_size: u16,
-    /// Which BAR the vector table lives in ("BIR", 0..=5).
+    ///
+    /// Name: provisional. Was `table_size`; a count names the things counted.
+    pub table_entries: u16,
+    /// Which BAR the vector table lives in (the table BIR, 0 to 7 by the field's width).
     pub table_bar: u8,
     /// The table's byte offset into that BAR. Eight-byte aligned by the field's encoding.
     pub table_offset: u32,
-    /// Which BAR the pending-bit array lives in. Often the table's, sometimes not.
-    pub pba_bar: u8,
-    /// The pending-bit array's byte offset into that BAR. A driver mapped the page this sits on
-    /// could not aim an interrupt, but milestone 242's xHCI driver is denied it anyway, because
-    /// the rule "never the pages the interrupt message lives on" is easier to check whole.
-    pub pba_offset: u32,
+    /// Which BAR the pending bit array lives in. Often the table's, sometimes not.
+    pub pending_bit_array_bar: u8,
+    /// The pending bit array's byte offset into that BAR. A driver that maps the page this sits on
+    /// cannot aim an interrupt, but a caller may still deny the page, because the rule "never the
+    /// pages the interrupt message lives on" is easier to check whole.
+    pub pending_bit_array_offset: u32,
 }
 
-/// The MSI-X capability id in a config-space capability list.
+/// The MSI-X capability id in a config-space capability list (PCI Local Bus Specification 3.0,
+/// section 6.8.2).
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `CAP_ID_MSIX` under the capability ruling of 2026-10-06 (UTC).
+/// Name: provisional. Spelled out from `CAP_ID_MSIX`.
 pub const CAPABILITY_ID_MSIX: u8 = 0x11;
 
-/// The MSI capability id in a config-space capability list.
+/// The MSI capability id in a config-space capability list (PCI Local Bus Specification 3.0,
+/// section 6.8.1).
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `CAP_ID_MSI` under the capability ruling of 2026-10-06 (UTC).
+/// Name: provisional. Spelled out from `CAP_ID_MSI`.
 pub const CAPABILITY_ID_MSI: u8 = 0x05;
 
-/// MSI Message Control bit 0: **MSI Enable**.
+/// MSI Message Control bit 0: **MSI Enable** (PCI Local Bus Specification 3.0, section 6.8.1.3).
 pub const MSI_ENABLE: u16 = 1 << 0;
 
 /// MSI Message Control bit 7: the function takes a 64-bit message address, which moves the data
-/// register from offset 8 to offset 12.
+/// register from offset 8 to offset 12 (PCI Local Bus Specification 3.0, section 6.8.1.3).
 pub const MSI_64_BIT: u16 = 1 << 7;
 
-/// A function's **MSI capability** (PCI 3.0 section 6.8.1), decoded: where it is, and where its
-/// message data register sits, which depends on whether the address is 64-bit.
+/// A function's **MSI capability** (PCI Local Bus Specification 3.0, section 6.8.1), decoded:
+/// where it is, and where its message data register sits, which depends on whether the address is
+/// 64-bit.
 ///
-/// **Why this exists beside [`MsixCapability`]** (milestone 242 (USB host and HID)): some functions have
-/// MSI and no MSI-X, and the one that made it matter is the xHCI on an Intel PCH, which is the USB
-/// controller on xenon. MSI keeps its address and data in config space rather than in a BAR, so a
-/// driver mapped every page of its BAR still cannot reach them.
+/// **Why this exists beside [`MsixCapability`]:** some functions have MSI and no MSI-X; one that
+/// made it matter is the xHCI controller of an Intel chipset. MSI keeps its address and data in
+/// config space rather than in a BAR, so a driver that maps every page of its BAR still cannot
+/// reach them.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `MsiCap` under the capability ruling of 2026-10-06 (UTC).
+/// Name: provisional. Spelled out from `MsiCap`; `is_64` was `is_64` and did not say what is 64.
+#[doc(alias = "message signaled interrupt")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MsiCapability {
     /// Where the capability starts in config space.
     ///
-    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-    /// `cap_offset` under the capability ruling of 2026-10-06 (UTC).
+    /// Name: provisional. Spelled out from `cap_offset`.
     pub capability_offset: u64,
     /// Whether the message address is 64 bits.
-    pub is_64: bool,
+    pub is_64_bit: bool,
 }
 
 impl MsiCapability {
-    /// Config-space offset of the message address's low dword.
-    pub const fn address_low(&self) -> u64 {
+    /// Config-space offset of the Message Address register's low dword (PCI Local Bus
+    /// Specification 3.0, section 6.8.1.4).
+    ///
+    /// Name: provisional. Was `address_low`; the specification's name is "Message Address".
+    #[doc(alias = "Message Address")]
+    pub const fn message_address_low(&self) -> u64 {
         self.capability_offset + 4
     }
 
-    /// Config-space offset of the message data word: 8 past the capability for a 32-bit
-    /// address, 12 for a 64-bit one.
+    /// Config-space offset of the Message Data register: 8 past the capability for a 32-bit
+    /// address, 12 for a 64-bit one (section 6.8.1.5).
     pub const fn data(&self) -> u64 {
-        self.capability_offset + if self.is_64 { 12 } else { 8 }
+        self.capability_offset + if self.is_64_bit { 12 } else { 8 }
     }
 }
 
-/// Find the **MSI capability** of `bdf`, or `None`. The same bounded walk as [`msix_capability`]:
-/// at most 64 entries, so a cycle in the list ends the walk, and an offset that is a multiple of
-/// four, since the list's pointers drop their low two bits.
+/// Find the **MSI capability** of `bdf`, or `None`. The same bounded walk as [`msix_capability`]
+/// and [`virtio_capabilities`]: at most 64 entries, so a cycle in the list ends the walk, and an
+/// offset that is a multiple of four, since the list's pointers drop their low two bits.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `msi_cap` under the capability ruling of 2026-10-06 (UTC).
+/// Name: provisional. Spelled out from `msi_cap`.
 pub fn msi_capability(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<MsiCapability> {
-    let status = (read32(bdf, COMMAND) >> 16) as u16;
-    if status & STATUS_CAPABILITIES_LIST == 0 {
-        return None;
-    }
-    let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
-    for _ in 0..64 {
-        if at == 0 {
-            return None;
-        }
-        let head = read32(bdf, at);
+    let mut found = None;
+    capabilities(bdf, read32, &mut |at, head, _| {
         if (head & 0xff) as u8 == CAPABILITY_ID_MSI {
             let control = (head >> 16) as u16;
-            return Some(MsiCapability {
+            found = Some(MsiCapability {
                 capability_offset: at,
-                is_64: control & MSI_64_BIT != 0,
+                is_64_bit: control & MSI_64_BIT != 0,
             });
         }
-        at = ((head >> 8) & 0xfc) as u64;
-    }
-    None
+        found.is_some()
+    });
+    found
 }
 
-/// Offset of the Message Control word from the start of an MSI-X capability. It is the upper half
-/// of the capability's first dword, so a driver writes it with a 32-bit config write that also
-/// rewrites the (read-only) id and next-pointer bytes, which is what the hardware expects.
-pub const MESSAGE_CONTROL: u64 = 0x02;
+/// Offset of the Message Control word from the start of an MSI-X capability (PCI Local Bus
+/// Specification 3.0, section 6.8.2.3). It is the upper half of the capability's first dword, so
+/// a driver writes it with a 32-bit config write that also rewrites the (read-only) id and
+/// next-pointer bytes, which is what the hardware expects.
+///
+/// Name: provisional. Was `MESSAGE_CONTROL`; a register offset ends in `_REGISTER`.
+pub const MESSAGE_CONTROL_REGISTER: u64 = 0x02;
 
-/// Message Control bit 15: **MSI-X Enable**. Until it is set the function delivers INTx.
+/// Message Control bit 15: **MSI-X Enable** (PCI Local Bus Specification 3.0, section 6.8.2.3).
+/// Until it is set the function delivers INTx.
 pub const MSIX_ENABLE: u16 = 1 << 15;
 
-/// Message Control bit 14: **Function Mask**. Set, every vector is masked whatever its own
-/// per-entry control bit says. It is set at reset on some parts, so it is cleared explicitly.
+/// Message Control bit 14: **Function Mask** (section 6.8.2.3). Set, every vector is masked
+/// whatever its own per-entry control bit says. It is set at reset on some parts, so a driver
+/// clears it explicitly.
 pub const MSIX_FUNCTION_MASK: u16 = 1 << 14;
 
 /// How many bytes one MSI-X table entry occupies: message address (64 bits), message data (32),
-/// vector control (32). Fixed by the specification, not by the device.
+/// vector control (32) (PCI Local Bus Specification 3.0, section 6.8.2.7). Fixed by the
+/// specification, not by the function.
 pub const MSIX_ENTRY_BYTES: u64 = 16;
 
-/// Vector control bit 0: this entry is masked. An entry powers on masked, so unmasking is a
-/// deliberate act, the same posture `arch::x86_64::interrupt_controller::initialize_io_apic` takes with its own table.
+/// Vector control bit 0: this entry is masked (PCI Local Bus Specification 3.0, section 6.8.2.9).
+/// An entry powers on masked, so unmasking is a deliberate act.
 pub const MSIX_ENTRY_MASKED: u32 = 1;
 
-/// The virtio-pci "no vector" value for `config_msix_vector` and `queue_msix_vector` (virtio 1.1
-/// §4.1.4.3). Written to a queue's vector field it means "raise no MSI-X for this queue", which is
-/// also what a device reset leaves there.
+/// The virtio-pci "no vector" value for `config_msix_vector` and `queue_msix_vector` (virtio 1.2,
+/// section 4.1.4.3). Written to a queue's vector field it means "raise no MSI-X for this queue",
+/// which is also what a device reset leaves there.
 pub const VIRTIO_MSIX_NO_VECTOR: u16 = 0xffff;
 
-/// **Where a device should write to raise an interrupt, and what to write there.** One MSI-X
-/// table entry's payload, as the interrupt controller of the machine defines it.
+/// **Where a function should write to raise an interrupt, and what to write there.** One MSI-X
+/// table entry's payload (PCI Local Bus Specification 3.0, section 6.8.2.7), as the interrupt
+/// controller of the machine defines it.
 ///
-/// It is in this crate rather than in an arch module because the pair is the PCI specification's,
-/// not any one architecture's: x86's local APIC takes a vector in `data` at an address encoding
-/// the destination CPU, and an arm `GICv3` ITS takes an event id at a doorbell register in the
-/// interrupt translation service.
-/// The kernel's enumerator writes whatever pair the machine hands it and understands neither.
+/// The pair is the PCI specification's, not any one architecture's: the x86 local APIC takes a
+/// vector in `data` at an address encoding the destination processor, and an Arm GICv3 interrupt
+/// translation service takes an event id at its doorbell register. A caller writes whatever pair
+/// the machine hands it and understands neither.
 ///
-/// Name: provisional (milestone 215 (a PCI function's interrupt reaches nothing)), with
-/// [`MsixCapability`] and [`msix_capability`]: calef names public items.
+/// Name: provisional, with [`MsixCapability`] and [`msix_capability`]. `message_address` was
+/// `address`; the specification's name is "Message Address".
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct MsiTarget {
-    /// The address the device writes to. 64-bit, written to the entry's low two dwords.
-    pub address: u64,
-    /// The value it writes there.
+    /// The address the function writes to (the specification's "Message Address"). 64-bit,
+    /// written to the entry's low two dwords.
+    #[doc(alias = "Message Address")]
+    pub message_address: u64,
+    /// The value it writes there (the specification's "Message Data").
     pub data: u32,
 }
 
 /// Find the **MSI-X capability** of `bdf`, or `None` if the function has none.
 ///
 /// Same walk as [`virtio_capabilities`], and bounded the same way (64 hops), for the same reason: the
-/// list is a device-supplied linked list, so a broken or hostile function must terminate the walk
-/// rather than hang the kernel that is enumerating it.
+/// list is a function-supplied linked list, so a broken or hostile function must terminate the walk
+/// rather than hang the caller that is enumerating it.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-2. Spelled out from
-/// `msix_cap` under the capability ruling of 2026-10-06 (UTC).
+/// Name: provisional. Spelled out from `msix_cap`.
 pub fn msix_capability(
     bdf: Bdf,
     read32: &mut dyn FnMut(Bdf, u64) -> u32,
 ) -> Option<MsixCapability> {
-    let status = (read32(bdf, COMMAND) >> 16) as u16;
-    if status & STATUS_CAPABILITIES_LIST == 0 {
-        return None;
-    }
-    let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
-    for _ in 0..64 {
-        if at == 0 {
-            return None;
-        }
-        let head = read32(bdf, at);
+    let mut found = None;
+    capabilities(bdf, read32, &mut |at, head, read32| {
         if (head & 0xff) as u8 == CAPABILITY_ID_MSIX {
             let control = (head >> 16) as u16;
             let table = read32(bdf, at + 4);
-            let pba = read32(bdf, at + 8);
-            return Some(MsixCapability {
+            let pending = read32(bdf, at + 8);
+            found = Some(MsixCapability {
                 capability_offset: at,
                 // Bits 10:0 hold the count MINUS ONE, so a one-entry table reads as zero and the
                 // maximum 2048-entry table reads as 0x7ff. Reading it as the count itself gives a
-                // table one short of the truth on every device, and zero entries on a device that
+                // table one short of the truth on every function, and zero entries on a function that
                 // has one, which is the shape of failure that looks like "no MSI-X here".
-                table_size: (control & 0x7ff) + 1,
+                table_entries: (control & 0x7ff) + 1,
                 table_bar: (table & 0x7) as u8,
                 table_offset: table & !0x7,
-                pba_bar: (pba & 0x7) as u8,
-                pba_offset: pba & !0x7,
+                pending_bit_array_bar: (pending & 0x7) as u8,
+                pending_bit_array_offset: pending & !0x7,
             });
         }
-        at = ((head >> 8) & 0xfc) as u64;
-    }
-    None
+        found.is_some()
+    });
+    found
 }
 
 /// The INTx swizzle on QEMU's `virt` boards: the function at device `d` using legacy pin `p`
-/// (1=INTA..4=INTD) lands on PLIC/GIC input `base + ((d + p - 1) % 4)`, the bridge swizzle the PCI
-/// spec prescribes for a flat bus, which QEMU's generic ECAM bridge implements.
-/// `tests/qemu_virt_dtb.rs` holds it against the machine's own `interrupt-map`, so a board that
-/// routes differently fails a host test. See notes/pcie.md, "INTx".
+/// (1 is INTA to 4 is INTD) lands on interrupt input `base + ((d + p - 1) % 4)`, the bridge
+/// swizzle the PCI-to-PCI Bridge Architecture Specification 1.2, section 9 prescribes for a flat
+/// bus, which QEMU's generic ECAM host bridge implements. A board that routes differently needs its
+/// own `interrupt-map`, which is the authoritative routing table the device tree states (Devicetree
+/// Specification, section 2.4.3).
+///
+/// Precondition: the function sits on bus 0, directly under the host bridge. A function behind a
+/// bridge has its pin rotated by every bridge between it and the host first; this function does not
+/// do that rotation.
 ///
 /// # Examples
 ///
@@ -808,7 +979,7 @@ pub fn msix_capability(
 ///
 /// // Four devices, each on INTA, spread across four interrupt inputs rather than sharing one.
 /// let base = 32;
-/// let spread: Vec<u32> = (0..4).map(|dev| intx_interrupt_number(base, dev, 1)).collect();
+/// let spread: Vec<u32> = (0..4).map(|device| intx_interrupt_number(base, device, 1)).collect();
 /// assert_eq!(spread, vec![32, 33, 34, 35]);
 ///
 /// // The swizzle wraps, which is what makes it a swizzle rather than an offset.
@@ -817,27 +988,35 @@ pub fn msix_capability(
 /// assert_eq!(intx_interrupt_number(base, 0, 4), 35);
 /// ```
 ///
-/// Name: ratified 2026-10-27 (#2797).
+/// Name: ratified 2026-10-27.
 #[doc(alias = "irq")]
-pub fn intx_interrupt_number(base: u32, dev: u8, pin: u8) -> u32 {
+#[doc(alias = "INTx")]
+pub fn intx_interrupt_number(base: u32, device: u8, pin: u8) -> u32 {
     // Total for every input, proved in the verification module. Pins are 1-based (1=INTA); the
     // saturating_sub means a (contract-violating) pin of 0 behaves as INTA instead of
     // underflowing, and the saturating_add means a nonsense base cannot wrap. The callers all
     // check pin == 0 before calling; this is defence in depth, not an invitation.
-    base.saturating_add((dev as u32 + (pin as u32).saturating_sub(1)) % 4)
+    base.saturating_add((device as u32 + (pin as u32).saturating_sub(1)) % 4)
 }
 
 /// The 32-bit non-prefetchable memory window from a PCI host bridge's `ranges` property, as
 /// `(cpu_base, size)`. `None` when no entry qualifies, or the property is not the standard shape.
 ///
 /// `ranges` is big-endian cells, seven per entry (child `#address-cells = 3`, parent 2,
-/// `#size-cells = 2`). `phys.hi` carries the space code at bits 25:24 (0b01 IO, 0b10 32-bit
-/// memory, 0b11 64-bit memory) and prefetchability at bit 30; then come the 64-bit PCI address, CPU
-/// address and size. The first 32-bit non-prefetchable entry is the window kernel/src/pci.rs
-/// assigns BARs from. An entry whose PCI and CPU addresses differ is skipped, not translated: the
-/// BAR assigner writes one number into both the BAR and its page tables (both QEMU `virt` boards
-/// state identity windows). A ragged length returns `None` rather than a guess.
-pub fn mem32_window(ranges: &[u8]) -> Option<(u64, u64)> {
+/// `#size-cells = 2`; Devicetree Specification, section 2.3.8, with the PCI binding's
+/// `phys.hi` encoding from the "PCI Bus Binding to Open Firmware", section 2.2.1). `phys.hi`
+/// carries the space code at bits 25:24 (0b01 I/O, 0b10 32-bit memory, 0b11 64-bit memory) and
+/// prefetchability at bit 30; then come the 64-bit PCI address, CPU address and size. The first
+/// 32-bit non-prefetchable entry is the window a caller assigns BARs from, and a prefetchable
+/// 32-bit entry is not taken. An entry whose PCI and CPU addresses differ is skipped, not
+/// translated: a caller that writes one number into both a BAR and its page tables needs an
+/// identity window, and both QEMU `virt` boards state identity windows. A ragged length returns
+/// `None` rather than a guess.
+///
+/// Name: provisional. Was `mem32_window`; the function takes the first 32-bit window that is not
+/// prefetchable, and `non_prefetchable_memory_window` was considered, since it names the entry
+/// kind it refuses.
+pub fn memory_window_32_bit(ranges: &[u8]) -> Option<(u64, u64)> {
     const ENTRY: usize = 7 * 4;
     if ranges.is_empty() || !ranges.len().is_multiple_of(ENTRY) {
         return None;
@@ -854,18 +1033,18 @@ pub fn mem32_window(ranges: &[u8]) -> Option<(u64, u64)> {
         if space != 0b10 || prefetchable {
             continue;
         }
-        let pci_addr = (cell(1) << 32) | cell(2);
-        let cpu_addr = (cell(3) << 32) | cell(4);
+        let pci_address = (cell(1) << 32) | cell(2);
+        let cpu_address = (cell(3) << 32) | cell(4);
         let size = (cell(5) << 32) | cell(6);
-        if pci_addr != cpu_addr || size == 0 {
+        if pci_address != cpu_address || size == 0 {
             continue;
         }
-        return Some((cpu_addr, size));
+        return Some((cpu_address, size));
     }
     None
 }
 
-/// Machine-checked proofs (`script/verify`; notes/verification.md).
+/// Machine-checked proofs, run with `cargo kani`.
 ///
 /// A hostile or broken PCI function can return any bytes through the config-space closures, and
 /// the decode runs in the kernel, so the properties proved are the hostile-input ones: the walks
@@ -873,7 +1052,9 @@ pub fn mem32_window(ranges: &[u8]) -> Option<(u64, u64)> {
 /// what a device said, is proved for every sequence firmware could write, which no fixture can
 /// show. The scan loops are bounded by literals and not proved: a bounded model checker does not
 /// finish unrolling 256 buses of 32 devices, and the queue's bound settles the only part a device
-/// controls. `enumerate` is [`walk`] with a field dropped, so it has no proof of its own.
+/// controls. A harness of [`walk`] itself on a two-bus machine was tried and stopped after more
+/// than twelve CPU-minutes without a result, so it is not kept. `enumerate` is [`walk`] with a
+/// field dropped, so it has no proof of its own.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -887,10 +1068,10 @@ mod verification {
     fn ecam_offset_stays_inside_the_window() {
         let bdf = Bdf {
             bus: kani::any(),
-            dev: kani::any(),
-            func: kani::any(),
+            device: kani::any(),
+            function: kani::any(),
         };
-        // No assumption on `dev` and `func`: the offset masks them to their fields.
+        // No assumption on `device` and `function`: the offset masks them to their fields.
         assert!(bdf.ecam_offset() + 0xfff < 0x1000_0000);
     }
 
@@ -903,9 +1084,9 @@ mod verification {
     #[doc(alias = "irq")]
     fn intx_interrupt_number_is_total_and_bounded() {
         let base: u32 = kani::any();
-        let dev: u8 = kani::any();
+        let device: u8 = kani::any();
         let pin: u8 = kani::any();
-        let interrupt_number = intx_interrupt_number(base, dev, pin);
+        let interrupt_number = intx_interrupt_number(base, device, pin);
         assert!(interrupt_number >= base || interrupt_number == u32::MAX);
         assert!(interrupt_number.saturating_sub(base) <= 3 || interrupt_number == u32::MAX);
     }
@@ -921,8 +1102,8 @@ mod verification {
     fn read_bars_is_total_for_any_device() {
         let bdf = Bdf {
             bus: kani::any(),
-            dev: kani::any(),
-            func: kani::any(),
+            device: kani::any(),
+            function: kani::any(),
         };
         let bars = read_bars(
             bdf,
@@ -931,8 +1112,12 @@ mod verification {
             &mut |_, _| {},
         );
         for bar in bars.iter().flatten() {
-            assert!(bar.size.is_power_of_two() && bar.size >= 16);
-            assert!(bar.base.checked_add(bar.size).is_some());
+            assert!(bar.size_bytes.is_power_of_two() && bar.size_bytes >= 16);
+            assert!(
+                bar.base_physical_address
+                    .checked_add(bar.size_bytes)
+                    .is_some()
+            );
         }
     }
 
@@ -976,8 +1161,8 @@ mod verification {
     fn the_capability_walk_terminates_on_any_device() {
         let bdf = Bdf {
             bus: kani::any(),
-            dev: kani::any(),
-            func: kani::any(),
+            device: kani::any(),
+            function: kani::any(),
         };
         let mut calls = 0u32;
         virtio_capabilities(bdf, &mut |_, _| kani::any(), &mut |_| calls += 1);
@@ -995,11 +1180,11 @@ mod verification {
     fn the_msix_walk_terminates_and_bounds_its_table_size() {
         let bdf = Bdf {
             bus: kani::any(),
-            dev: kani::any(),
-            func: kani::any(),
+            device: kani::any(),
+            function: kani::any(),
         };
         if let Some(capability) = msix_capability(bdf, &mut |_, _| kani::any()) {
-            assert!(capability.table_size >= 1 && capability.table_size <= 2048);
+            assert!(capability.table_entries >= 1 && capability.table_entries <= 2048);
             assert!(capability.table_bar < 8);
             assert!(capability.table_offset % 8 == 0);
         }
@@ -1015,8 +1200,8 @@ mod verification {
     fn the_message_signaled_interrupt_walk_terminates_on_any_device() {
         let location = Bdf {
             bus: kani::any(),
-            dev: kani::any(),
-            func: kani::any(),
+            device: kani::any(),
+            function: kani::any(),
         };
         let mut reads = 0u32;
         let found = msi_capability(location, &mut |_, _| {
@@ -1086,7 +1271,7 @@ mod verification {
         let bytes: [u8; 3 * 28] = kani::any();
         let len: usize = kani::any();
         kani::assume(len <= bytes.len());
-        let _ = mem32_window(&bytes[..len]);
+        let _ = memory_window_32_bit(&bytes[..len]);
     }
 }
 

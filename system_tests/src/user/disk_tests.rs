@@ -504,3 +504,67 @@ fn mkfs_phase(
     );
     assert_eq!(n, blank::MADE_BODY.len() as u64);
 }
+
+/// **A block read or write past the disk's capacity answers an error, and the block server keeps
+/// serving.**
+///
+/// The server checks every transfer against the capacity it read once at start-up, so a request
+/// past the end is refused (`EINVAL`) before it reaches the device. The test calls the server the
+/// way the filesystem server does, with the first block past the end, then a block index whose
+/// sector arithmetic overflows, for a read and for a write each. Then it asks the same server for
+/// its size and for block 0, because an error that left the server dead or wedged would answer
+/// neither. A host test covers the arithmetic (`transfer_first_sector`); this one covers the whole
+/// server, over the device, in the guest.
+///
+/// Falsification: unfalsified. No replay patch exists yet. Removing the capacity check in
+/// `transfer_first_sector` would turn this test red, but that run has not been made.
+#[test_case]
+fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serving() {
+    use filesystem_contract::{block, reply_err};
+
+    let Some(disk) = disk_service::blank_disk(fs_service::blk_server_image()) else {
+        skip_unless_required!(
+            X86_FIXTURES_REQUIRED,
+            "no blank-disk fixture attached (this boot did not build one)"
+        );
+    };
+    if let Some(ready) = disk.blk_ready {
+        // Past device bring-up, so a hang below is a hang in a request rather than in the driver.
+        let [word, ..] = crate::sched::ipc_receive(ready);
+        assert_eq!(word, filesystem_contract::READY);
+    }
+    let call = |operation, index| {
+        crate::sched::ipc_call(disk.blk_ep, [block::req(operation, 1), index])[0] as i64
+    };
+    let size = call(block::SIZE, 0);
+    assert!(size > 0, "the server answered {size} for the disk's size");
+    let first_past_the_end = size as u64 / block::BLOCK_BYTES as u64;
+    // The largest index whose sector number (eight sectors to a block) still fits a `u64` is
+    // `u64::MAX / 8`, so one more overflows the multiplication the server must check.
+    let overflowing = u64::MAX / block::SECTORS_PER_BLOCK + 1;
+
+    for (what, index) in [
+        ("the first block past the end", first_past_the_end),
+        ("a block index whose sector number overflows", overflowing),
+    ] {
+        for (verb, operation) in [("read", block::READ), ("write", block::WRITE)] {
+            assert_eq!(
+                call(operation, index),
+                reply_err(22),
+                "a {verb} of {what} must answer EINVAL"
+            );
+        }
+    }
+
+    // Still serving: the same size, and a read of block 0 that the device completes.
+    assert_eq!(
+        call(block::SIZE, 0),
+        size,
+        "the server answered a different size after a refusal"
+    );
+    assert_eq!(
+        call(block::READ, 0),
+        0,
+        "the server could not read block 0 after refusing a transfer past the end"
+    );
+}

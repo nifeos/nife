@@ -99,7 +99,7 @@ differs: the address kind is in the name. Example: `Key { space: 7, virtual_addr
 
 Decided by the maintainer on 2026-11-19 (UTC), provisional: a two-way door until the first publish.
 `one_queue_invariant` becomes `one_queue_invariant_holds` and `Key::address` becomes
-`Key::virtual_address`. A rename lane builds it.
+`Key::virtual_address`.
 
 ## D5. The futex table's names
 
@@ -117,7 +117,7 @@ differs in nothing. Example: `let table: FutexTable<Thread, 64> = FutexTable::ne
 
 Decided by the maintainer on 2026-11-19 (UTC), provisional: a two-way door until the first publish.
 `Futexes` becomes `FutexTable<T, const BUCKETS: usize>`, `queued()` becomes `len()` and
-`Key::space` becomes `Key::address_space`. A rename lane builds it.
+`Key::space` becomes `Key::address_space`.
 
 ## D6. Review clearance and the repository
 

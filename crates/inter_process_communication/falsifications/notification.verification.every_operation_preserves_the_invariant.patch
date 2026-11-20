@@ -15,14 +15,14 @@ index c20bff922..9df161f4b 100644
 +++ b/crates/inter_process_communication/src/notification.rs
 @@ -177,11 +177,7 @@ impl<T: Node> Notification<T> {
          if bits == 0 {
-             return Signal::Empty;
+             return SignalVerdict::Empty;
          }
 -        if let Some(waiter) = self.waiters.pop_front() {
 -            // The invariant says the word is zero while anyone waits, so these bits are the whole
 -            // of what is pending. `| self.word` would be a no-op, and writing it would hide that.
--            Signal::Woke(waiter, bits)
+-            SignalVerdict::Woke(waiter, bits)
 -        } else if bound_receiving {
 +        if bound_receiving {
              let word = self.word | bits;
              self.word = 0;
-             Signal::ToBound(word)
+             SignalVerdict::ToBound(word)

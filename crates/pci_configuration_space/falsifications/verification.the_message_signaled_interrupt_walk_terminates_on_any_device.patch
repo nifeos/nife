@@ -9,12 +9,12 @@ Expected to fail: the harness's `assert!(reads <= 66)`, on a device whose list n
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -689,7 +689,7 @@
-         return None;
+@@ -636,7 +636,7 @@
+         return;
      }
-     let mut at = (read32(bdf, CAPABILITIES_POINTER) & 0xfc) as u64;
--    for _ in 0..64 {
-+    for _ in 0..65 {
+     let mut at = (read32(bdf, CAPABILITIES_POINTER_REGISTER) & 0xfc) as u64;
+-    for _ in 0..CAPABILITY_HOPS {
++    for _ in 0..CAPABILITY_HOPS + 1 {
          if at == 0 {
-             return None;
+             return;
          }

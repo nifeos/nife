@@ -42,29 +42,28 @@ crate's own reasons.
 
 ## Finding status
 
-- P0-1, fixture tests that reach into nife: Open. The five witness tests still `include_bytes!`
-  two other crates' fixtures and link `device_tree_blob` by path; they move into nife beside the
-  constants they pin, the crate inlines the swizzle cells, and the dev-dependency goes.
-- P0-2, the staged tree's red gates: Open. [#3521](https://github.com/nifeos/nife/pull/3521) fixed
-  the patch regeneration. The manifest literals (license, lints, `rust-version`), the README, the
-  license files and specification citations in place of tree paths remain. A fresh dry run
-  confirms the regenerated patches apply.
+- P0-1, fixture tests that reach into nife: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
+  The five witness tests moved to `crates/machine_discovery/tests/pci_host_bridge_windows.rs`, the
+  crate inlines the swizzle cells, and the dev-dependency is gone.
+- P0-2, the staged tree's red gates: Done, [#3807](https://github.com/nifeos/nife/pull/3807)
+  ([#3521](https://github.com/nifeos/nife/pull/3521) fixed the patch regeneration earlier). The
+  manifest states its license, lints and `rust-version` as literals, the README and both license
+  files exist, doc comments cite specifications, and all ten patches regenerate against the new source and apply.
 - P1-3, BAR size trusts the mask: Done, [#3519](https://github.com/nifeos/nife/pull/3519).
 - P1-4, BAR probing on any header and past slot 5: Done,
   [#3519](https://github.com/nifeos/nife/pull/3519).
-- P1-5, names the template's gates refuse: Open. `mem32_window`, `CLASS_NVME`, `size`, `length`,
-  `table_size`, `address_low` and `address` keep their old spellings; two-way before the first tag, so the
-  maintainer rules the spellings provisionally and one rename lane covers the crate, the kernel
-  and `driver_process_contract`.
-- P1-6, names the naming rules refuse: Open. The `VIRTIO_BLK_*`, `VIRTIO_RNG_*`, `VIRTIO_NET_*`
-  and `CMD_*` constants, `dev` and `func`, `cfg_type`, `CLASS_XHCI`, `pba_*`, `ISR`, `is_64` and
-  the `_REGISTER` suffixes keep their old spellings; the same provisional ruling and rename lane as P1-5.
-- P1-7, documentation that assumes the tree: Open. `#![allow(missing_docs)]` stands and doc
-  comments still cite nife paths and milestones; every public item needs a doc comment that cites
-  a specification.
-- P1-8, the MSI walk and the ceiling: Open. The MSI termination harness and its patch are in
-  place; the three capability walks are not yet one shared walk and no ceiling proof has been
-  attempted.
+- P1-5, names the template's gates refuse: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
+  The crate, the kernel, `driver_process_contract`, `jh7110_pci_express`
+  and `machine_discovery` carry the new spellings. Every one is provisional, and the review
+  package asks the architect to ratify them.
+- P1-6, names the naming rules refuse: Done, [#3807](https://github.com/nifeos/nife/pull/3807). The
+  same renames and the same provisional status as P1-5.
+- P1-7, documentation that assumes the tree: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
+  Every public item has a doc comment that cites a specification, and `allow(missing_docs)` is gone.
+- P1-8, the MSI walk and the ceiling: Done, [#3807](https://github.com/nifeos/nife/pull/3807). The
+  three capability walks are one shared walk with one bound. A Kani harness of `walk` on a two-bus
+  machine ran over twelve CPU-minutes without a result and is not kept; the scan loops stay bounded
+  by literals and the bus queue, the part a device controls, stays proved.
 - P2, `virtio_capabilities` ignores `cap_len`: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2, `intx_interrupt_number` precondition: Open. The doc comment states no bus-0 precondition,
@@ -73,10 +72,10 @@ crate's own reasons.
 - P2, `#![forbid(unsafe_code)]`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2, fuzz targets: Open. No target covers `mem32_window` or the walks; the opt-in waits for the
   repository.
-- P2, stale patch headers: Open. Two patches still name `virtio_caps` and `msix_cap`, and their
-  headers name the old module path; regenerate them in nife.
-- P2, the proof table: Open. `notes/verification.md` and `parser-harnesses.md` still count four
-  harnesses against the crate's ten; the rows land in the move pull request.
+- P2, stale patch headers: Done, [#3807](https://github.com/nifeos/nife/pull/3807). All ten patches
+  regenerate against the renamed source.
+- P2, the proof table: Done, [#3807](https://github.com/nifeos/nife/pull/3807).
+  `notes/verification/parser-harnesses.md` lists all ten harnesses.
 - P2, mutation survivors: Open. The baseline row carries counts only; the first run in the
   repository exempts the 11 equivalent survivors.
 - Decision, the package name: Done, [#3588](https://github.com/nifeos/nife/pull/3588) (ruled
@@ -84,6 +83,8 @@ crate's own reasons.
 - Decision, the crate moves before the bus server: Done,
   [#3589](https://github.com/nifeos/nife/pull/3589) (maintainer, provisional, 2026-11-14 UTC;
   nothing to build).
+- Review package: Done, [#3807](https://github.com/nifeos/nife/pull/3807):
+  [`pci-configuration-space.md`](../../notes/crate-reviews/pci-configuration-space.md) and its row.
 - Follow-on, creating `nifeos/pci_configuration_space`: Open, and an open decision below.
 
 ## Open decisions
@@ -99,13 +100,16 @@ standing rule is that clearing a crate's review is what approves it.
 
 Every other crate that has moved or passed clearance had a review package under
 `notes/crate-reviews/`: a short record of the names, the identity and the gates, written for the
-clearance. This crate has none, so there is nothing yet to clear. The move itself also waits on
-P0-1, P0-2, P1-5 to P1-8 and the P2 move steps above.
+clearance. This crate's package is
+[`pci-configuration-space.md`](../../notes/crate-reviews/pci-configuration-space.md). The maintainer
+took option A provisionally on 2026-11-19 (UTC), a two-way door the architect may revisit. Clearing
+the package approves the repository; nobody has cleared it yet. The move also waits on the architect
+ratifying the package's table of names and on the P2 move steps above.
 
-Recommendation: A.
+Recommendation: A, taken provisionally.
 
 - A. A lane writes the review package once P0-1, P0-2 and P1-5 to P1-8 land; clearing that
-  package approves the repository.
+  package approves the repository. This is the option in force.
 - B. Clear on this milestone alone, without a package, once the same items land.
 - C. Keep the crate in nife until the bus server of milestone 1064 exists, and clear both
   together.
@@ -223,10 +227,11 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Every finding marked Open under "Finding status" above, each with what
-  remains, checked against the crate's manifest, `src/lib.rs`, `tests/` and `falsifications/`.
-- **Outstanding.** Clearing the review, which approves the repository: the decision under "Open
-  decisions" above.
+- **Outstanding.** Every finding marked Open under "Finding status" above (the `intx_interrupt_number`
+  precondition, the fuzz targets and the mutation survivors), each with what remains, checked
+  against the crate's manifest, `src/lib.rs`, `tests/` and `falsifications/`.
+- **Outstanding.** The architect ratifies the names in the review package, then clears it, which
+  approves the repository: the decision under "Open decisions" above.
 
 ## BUGS
 
@@ -235,8 +240,6 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
   reproduction.
 - The review ran the template's name gates from the template's head; the release the move pins
   (`v7` today) runs fewer of them, so some of item 5 becomes red only at a later template bump.
-- No review package exists for this crate. This block reads as if one did; a package lane
-  may still help so the index at `notes/crate-reviews.md` has a row.
 - The crates.io figures are a point reading and will drift.
 
 ## Index row
@@ -244,5 +247,7 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 An outside review of `pci` before it leaves. It finds two blockers (the fixture tests that reach
 into nife, and the staged tree's red gates). It finds six items to land before the tag (BAR sizing
 that trusts the mask, BAR probing on any header, two name lists, documentation for a stranger, a
-missing MSI proof), and seven for later. The package name, because another author holds `pci` on
-crates.io, has a ruling; clearing the review, which approves the repository, stays open.
+missing MSI proof), and seven for later. Both blockers and the six items have landed, with every
+renamed name provisional, and the review package exists. The package name, because another author
+holds `pci` on crates.io, has a ruling; clearing the review, which approves the repository, stays
+open.
