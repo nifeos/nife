@@ -185,7 +185,7 @@ fn run_measured(
                     abi::address_space::MAP_READ_ONLY,
                 ),
                 (
-                    machine_statistics_contract::PAGE_VA,
+                    machine_statistics_contract::PAGE_VIRTUAL_ADDRESS,
                     g.machine_page,
                     abi::address_space::MAP_READ_ONLY,
                 ),
