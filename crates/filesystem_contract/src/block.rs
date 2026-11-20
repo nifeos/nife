@@ -26,7 +26,7 @@ pub const WRITE: u64 = 2;
 /// Ask the disk's size in bytes. `w1` ignored. Reply `r0` = the size (always non-negative here).
 pub const SIZE: u64 = 3;
 /// **Make everything the device has already acknowledged durable**:
-/// a `VIRTIO_BLK_T_FLUSH` the block server does not reply to until the device completes it. `w1`
+/// a `VIRTUAL_IO_BLK_T_FLUSH` the block server does not reply to until the device completes it. `w1`
 /// is 0 and ignored.
 ///
 /// Reply `r0` = how many flushes this block server has completed since it started, this one

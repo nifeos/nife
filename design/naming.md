@@ -42,7 +42,7 @@ against three failure modes:
   `tx`, `phy`, `init`, `irq`, `fifo`, `min`, `max`, `os`, `config`, `spec`, `arg`, `mem`, `dir`,
   `prog`, `pos`, `opt` and `mtime`. The same holds for `va`, `pa`, `ipi`, `nmi`, `ist`, `msr`,
   `dtb`, `ipc`, `asid`, `gpt`, `nvme`, `pcie`, `dma`, `pr`, `initrd`, `proto`, `rgmii`, `mdio`,
-  `sdio` and `syscall`. The appendix gives each spelling and the cases that decide it. The words are the
+  `sdio`, `virtio` and `syscall`. The appendix gives each spelling and the cases that decide it. The words are the
   `[spelled_out]` list in `vendor/crate-workflows/helpers/naming_words.toml`, the template's, and
   `script/lint` fails when this paragraph and that list disagree.
 - These stay: `pci`, `elf`, `usb`, `cpu`, `xor`, `io`, `bios`, `id`, `efi`, `crc`,

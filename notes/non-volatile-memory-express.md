@@ -70,7 +70,7 @@ IDENTIFY tells the driver the format and `IdentifyNamespace::blocks_per` does th
 ## The confinement story, which is the interesting part
 
 This is the first DMA device in the tree whose addresses the kernel cannot validate before the
-device uses them. The virtio drivers run at EL0 behind a `Virtio` capability: the kernel owns the
+device uses them. The virtio drivers run at EL0 behind a `VirtualIo` capability: the kernel owns the
 queue addresses and checks every descriptor against the driver's DMA region before ringing the
 device. NVMe's equivalent of a descriptor is the PRP inside a command the controller fetches from
 driver-written memory, and nothing kernel-side parses commands on their way past.
@@ -105,7 +105,7 @@ are below offset `1000h` and the first doorbell is at `1000h`.
 - The data plane starts with three endpoints and its own address space. It receives three
   words of geometry and then the two capabilities from the admin process, narrowed so it cannot
   pass them on, and maps them into its own space with `AddressSpace::MAP_INTO`. It holds no
-  `Interrupt` and no `Virtio` capability, and nothing names the register page or the admin pages.
+  `Interrupt` and no `VirtualIo` capability, and nothing names the register page or the admin pages.
 
 What the split withholds from the data plane, stated precisely because it is easy to overclaim.
 Creating a queue is what names the physical address a ring lives at, in a PRP field of an admin

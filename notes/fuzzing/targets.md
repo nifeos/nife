@@ -75,11 +75,6 @@ fuzz_seed.rs` holds to the encoders), and a custom mutator builds more. It makes
 descriptor from a pool of canonical zones, or a verb table, and sometimes breaks one thing. A
 sixty-second smoke run left versions 2 and 3 past the count byte in its corpus.
 
-## `domain_name_system_reply`
-
-The real captures in `tests/fixtures` seed the target unmodified, and the fuzz run passes that
-directory read-only, as it passes every seed directory.
-
 ## `http_response_feed`
 
 The digest decides whether a package may run, but it cannot stop a head that panics the reader, and

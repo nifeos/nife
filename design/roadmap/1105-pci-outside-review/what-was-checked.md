@@ -23,7 +23,7 @@ Verified firsthand, on the clone, with every cargo run under a 12 GiB memory cap
   `enumerate`, both capability walks, both MSI decoders, `intx_interrupt_number`,
   `bridge_buses`), `kernel/src/memory.rs` (`mem32_window`), the three interrupt controllers
   (`MsiTarget`) and `crates/driver_process_contract/src/virtual_input_output.rs`
-  (`virtio_capabilities`, `msix_capability`, `MSIX_ENTRY_BYTES`).
+  (`virtual_io_capabilities`, `msix_capability`, `MSIX_ENTRY_BYTES`).
 - The recorded mutation figures: the baseline row in `.cargo/mutants-baseline.txt` (246 caught, 11
   missed, 8 timed out, 10 unviable) and the triage page that classifies the 11 as equivalent (`|`
   for `^` on disjoint operands in `mem32_window`, `read_bars`, `ecam_offset` and `requester_id`).

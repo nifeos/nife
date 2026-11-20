@@ -425,4 +425,19 @@ def census(paths, read, british=None):
         _pulled, bad = name_rules.apply(records, name_rules.parse_rules(rules_text), markdown,
                                         lambda rel: read(rel) or "", british)
         problems.extend(bad)
+        # A standing module name (`tests`, `verification`) is ratified wherever its `mod` line is
+        # gated by the matching cfg, with or without a block of its own (calef, 2026-11-20 UTC).
+        for rid, rule in name_rules.parse_rules(rules_text).items():
+            if rule["applies"] != name_rules.STANDING_MODULE_RULE:
+                continue
+            cite = f"{name_rules.RULES_DOC}, {rid}"
+            standing = {p: n for p in paths if is_module_file(p)
+                        for n in [name_rules.standing_module(p, lambda r: read(r) or "")] if n}
+            records = [r for r in records if not (r["kind"] == "module" and r["path"] in standing)]
+            unblocked = [u for u in unblocked if u not in standing]
+            records.extend({"kind": "module", "name": n, "path": p, "status": "ratified",
+                            "date": rule["date"], "refused": [], "what": "module",
+                            "text": f"ratified {rule['date']} (UTC), standing module name",
+                            "legacy": False, "rule": f"{cite}: `{n}` is a standing module name"}
+                           for p, n in sorted(standing.items()))
     return records, problems, missing, unblocked

@@ -100,7 +100,7 @@ rendezvous capabilities, no DMA page and no `Irq` cap).
 | the UART receive `Irq` (slot 1) | `READ` | WAIT and ACK. No `GRANT`, so it cannot hand the interrupt on |
 | one page of UART registers | device-typed | the receive side of a PL011 or an NS16550 |
 
-It holds no DMA page, no `Virtio` transport, no budget, no report endpoint, and no
+It holds no DMA page, no `VirtualIo` transport, no budget, no report endpoint, and no
 capability naming any other process. It cannot print, cannot spawn, and cannot read what anyone
 else typed. This is `components/src/input.rs`'s documented authority.
 

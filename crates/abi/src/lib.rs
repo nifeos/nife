@@ -252,10 +252,11 @@ pub mod cycle_counter;
 /// Methods on an `Interrupt` capability. **How a userspace driver owns an interrupt.**
 pub mod interrupt;
 
-/// Methods on a `Virtio` capability. **How a driver operates a device it cannot point out of its
+/// Methods on a `VirtualIo` capability. **How a driver operates a device it cannot point out of its
 /// own DMA region.** The kernel owns the queue addresses and the notify; the driver builds
 /// requests in its DMA region and submits through here.
-pub mod virtio;
+#[doc(alias = "virtio")]
+pub mod virtual_io;
 
 /// Methods on a `MemoryRegion` capability. **How a process spends its own memory.**
 pub mod memory_region;

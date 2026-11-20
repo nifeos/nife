@@ -1,4 +1,4 @@
-Falsifies `kernel::virtio::tests::the_iommu_faults_a_dma_that_escapes_the_domain` on AMD-Vi.
+Falsifies `kernel::virtual_io::tests::the_iommu_faults_a_dma_that_escapes_the_domain` on AMD-Vi.
 
 Architecture: x86_64
 Environment: NIFE_IOMMU=amd

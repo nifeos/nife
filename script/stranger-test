@@ -283,7 +283,7 @@
 #
 # **Coined, not standard, and recorded rather than assumed.** The field's words are "soak test" and
 # "smoke test"; "stranger test" is this tree's own. It claims none of the protected-class shelter
-# `virtio` and `elf` get, the same position as `boot_ladder` and `loaded_image_check`.
+# `elf` gets, the same position as `boot_ladder` and `loaded_image_check`.
 #
 # **It works because of a local meaning, which is the honest caveat.** `onboarding-test` was refused
 # for naming the subject rather than the method, and `stranger` *is* the subject, so that refusal

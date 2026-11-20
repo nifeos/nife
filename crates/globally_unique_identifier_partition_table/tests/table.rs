@@ -82,7 +82,10 @@ fn a_table_we_build_is_a_table_we_parse() {
     assert_eq!(table.first_usable_logical_block_address(), 34);
     assert_eq!(table.last_usable_logical_block_address(), BLOCKS - 34);
     assert_eq!(table.backup_header_logical_block_address(), BLOCKS - 1);
-    assert_eq!(table.backup_entry_logical_block_address(), BLOCKS - 33);
+    assert_eq!(
+        table.backup_entry_array_logical_block_address(),
+        BLOCKS - 33
+    );
 
     let found: Vec<_> = table.partitions().collect();
     assert_eq!(found, vec![(0usize, part)]);
@@ -109,7 +112,7 @@ fn a_4k_native_disk_works_and_the_geometry_moves() {
         "MBR, header, four array blocks"
     );
     assert_eq!(table.last_usable_logical_block_address(), 8192 - 6);
-    assert_eq!(table.backup_entry_logical_block_address(), 8192 - 5);
+    assert_eq!(table.backup_entry_array_logical_block_address(), 8192 - 5);
     table.check_backup(disk.backup(), &disk.array).unwrap();
     assert_eq!(table.partitions().count(), 1);
 }
@@ -123,7 +126,10 @@ fn partitions_that_share_one_block_overlap() {
     let touching = Entry::new(types::LINUX_FILESYSTEM, PART, 4096, 8192);
     assert_eq!(
         build(&[a, touching]).err(),
-        Some(Error::PartitionsOverlap { a: 0, b: 1 })
+        Some(Error::PartitionsOverlap {
+            first: 0,
+            second: 1
+        })
     );
 
     let adjacent = Entry::new(types::LINUX_FILESYSTEM, PART, 4097, 8192);
@@ -132,13 +138,19 @@ fn partitions_that_share_one_block_overlap() {
     // Order does not matter: the pair is caught whichever way round it is given.
     assert_eq!(
         build(&[touching, a]).err(),
-        Some(Error::PartitionsOverlap { a: 0, b: 1 })
+        Some(Error::PartitionsOverlap {
+            first: 0,
+            second: 1
+        })
     );
     // Nor does distance in the array: entry 0 against entry 3, with holes between.
     let far = [a, Entry::UNUSED, Entry::UNUSED, touching];
     assert_eq!(
         build(&far).err(),
-        Some(Error::PartitionsOverlap { a: 0, b: 3 })
+        Some(Error::PartitionsOverlap {
+            first: 0,
+            second: 3
+        })
     );
 }
 
@@ -536,7 +548,7 @@ fn an_entry_is_exactly_its_bytes() {
         unique_guid: PART,
         first_logical_block_address: 0x0102_0304_0506_0708,
         last_logical_block_address: 0x1112_1314_1516_1718,
-        attributes: entry::ATTR_REQUIRED | entry::ATTR_LEGACY_BIOS_BOOTABLE,
+        attributes: entry::ATTRIBUTE_REQUIRED_PARTITION | entry::ATTRIBUTE_LEGACY_BIOS_BOOTABLE,
         name: [0; entry::NAME_UNITS],
     };
     let bytes = e.encode();
@@ -751,7 +763,7 @@ fn entry_sizes_other_than_128_are_judged_not_assumed() {
             b[84..88].copy_from_slice(&64u32.to_le_bytes());
         })
         .err(),
-        Some(Error::EntrySize(64))
+        Some(Error::EntryBytes(64))
     );
 }
 
@@ -815,9 +827,9 @@ fn an_error_formats_to_its_own_words() {
 fn the_attribute_bits_are_the_disk_format() {
     assert_eq!(
         [
-            entry::ATTR_REQUIRED,
-            entry::ATTR_NO_BLOCK_IO,
-            entry::ATTR_LEGACY_BIOS_BOOTABLE
+            entry::ATTRIBUTE_REQUIRED_PARTITION,
+            entry::ATTRIBUTE_NO_BLOCK_IO_PROTOCOL,
+            entry::ATTRIBUTE_LEGACY_BIOS_BOOTABLE
         ],
         [1, 2, 4]
     );
@@ -890,8 +902,8 @@ fn parse_backup_returns_the_table_write_backup_header_described() {
                 .unwrap_or_else(|e| panic!("{block_bytes} byte blocks, {blocks} blocks: {e}"));
             assert_eq!(again.header(), table.header());
             assert_eq!(
-                again.backup_entry_logical_block_address(),
-                table.backup_entry_logical_block_address()
+                again.backup_entry_array_logical_block_address(),
+                table.backup_entry_array_logical_block_address()
             );
         }
     }
@@ -909,7 +921,7 @@ fn parse_backup_bounds_the_backup_array_on_both_sides() {
     let canonical = Header::decode(disk.backup()).unwrap();
     assert_eq!(
         canonical.entry_array_logical_block_address,
-        table.backup_entry_logical_block_address()
+        table.backup_entry_array_logical_block_address()
     );
 
     let with_array_at = |lba: u64, last_usable_logical_block_address: u64| {

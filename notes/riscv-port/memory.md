@@ -93,7 +93,7 @@ before the switch.
 Every device window beyond the UART is mapped only when the device tree names the device. That
 refusal to overwrite is why ([notes/visionfive2.md](../visionfive2.md)). QEMU's BAR window at
 `0x4000_0000` is the JH7110's DRAM base, and its virtio window at `0x1000_1000` is TH1520 DRAM and a
-JH7110 UART. Mapping either from QEMU's constants ends the boot at the overwrite. `virtio_slots`
+JH7110 UART. Mapping either from QEMU's constants ends the boot at the overwrite. `virtual_io_slots`
 reads whether the virtio window was mapped, so the probe never reads one that is not. The
 `sifive_test` finisher is QEMU's alone and is not mapped under the `board` feature.
 

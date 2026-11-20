@@ -18,7 +18,7 @@ pub(crate) fn instant() -> Instant {
 /// component)) or the `e1000e` family (milestone 494). One enum rather than a generic parameter,
 /// so the dispatch below is compiled once.
 pub(crate) enum Nic {
-    Virtio(virtio_net_transport::VirtioNet),
+    VirtualIo(virtual_io_net_transport::VirtualIoNet),
     Gigabit(e1000e_transport::GigabitNic),
     DesignWare(designware_ethernet_transport::DesignWareNic),
 }
@@ -26,21 +26,21 @@ pub(crate) enum Nic {
 impl Nic {
     pub(crate) fn mac(&self) -> [u8; 6] {
         match self {
-            Nic::Virtio(_) => MAC,
+            Nic::VirtualIo(_) => MAC,
             Nic::Gigabit(n) => n.station_address(),
             Nic::DesignWare(n) => n.mac(),
         }
     }
     #[doc(alias = "irq")]
     pub(crate) fn acknowledge_interrupt(&self) {
-        if let Nic::Virtio(v) = self {
+        if let Nic::VirtualIo(v) = self {
             v.acknowledge_interrupt();
         }
     }
     fn receive_frame(&mut self) -> Option<alloc::vec::Vec<u8>> {
         let frame = match self {
             // virtio's wait is its interrupt; only a polled NIC's wait reads the stamp below.
-            Nic::Virtio(v) => return v.receive_frame(),
+            Nic::VirtualIo(v) => return v.receive_frame(),
             Nic::Gigabit(n) => n.receive_frame(),
             Nic::DesignWare(n) => n.receive_frame(),
         };
@@ -51,7 +51,7 @@ impl Nic {
     }
     fn transmit_frame(&mut self, frame: &[u8]) {
         match self {
-            Nic::Virtio(v) => v.transmit_frame(frame),
+            Nic::VirtualIo(v) => v.transmit_frame(frame),
             Nic::Gigabit(n) => n.transmit_frame(frame),
             Nic::DesignWare(n) => n.transmit_frame(frame),
         }
@@ -75,7 +75,7 @@ impl smoltcp::phy::Device for Nic {
         let mut capabilities = smoltcp::phy::DeviceCapabilities::default();
         capabilities.medium = smoltcp::phy::Medium::Ethernet;
         capabilities.max_transmission_unit = match self {
-            Nic::Virtio(_) => virtio_net_transport::MTU,
+            Nic::VirtualIo(_) => virtual_io_net_transport::MTU,
             Nic::Gigabit(_) => e1000e::MAXIMUM_FRAME_BYTES,
             Nic::DesignWare(_) => designware_ethernet::MAXIMUM_FRAME_BYTES,
         };
@@ -118,7 +118,7 @@ impl smoltcp::phy::TxToken for NicTransmitToken {
         let mut buf = vec![0u8; len];
         let r = f(&mut buf);
         // SAFETY: single-threaded; the device outlives this token, and the `&mut self` borrow that
-        // produced the token has ended (the token is an owned value). `virtio_net_transport`'s own
+        // produced the token has ended (the token is an owned value). `virtual_io_net_transport`'s own
         // token made the same argument before this enum took its place.
         unsafe {
             (*self.dev).transmit_frame(&buf);

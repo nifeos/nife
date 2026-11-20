@@ -11,7 +11,7 @@ by re-running the sweep's own method 3. It had the same two arms, no third, and 
 it was the one copy nobody had even recorded. A sixth `barrier()` exists in
 `components/src/non_volatile_memory_express.rs` and was never in this class: it has all three arms.
 
-They are now one function, `user_mode_runtime::virtio::virtio_ring_barrier` (name provisional),
+They are now one function, `user_mode_runtime::virtual_io::virtual_io_ring_barrier` (name provisional),
 in the module where those four programs already get `virtio::read_register` and its siblings
 (`virtio_read_reg` and so on until 2026-10-12). That is a higher rung than five `compile_error!`
 arms would have been, which is what option B priced. The fallback now exists once, and a seventh driver gets the third architecture by calling the

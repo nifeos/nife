@@ -36,7 +36,7 @@ architecture.
 
 | starter | call site | spawns | arch | what the process is handed |
 |---|---|---|---|---|
-| `fs_service::root_directory` | `boot_progenitor` (`user/progenitor_boot.rs`) | `block_driver` (`spawn_block_server`, `fs_service/wiring.rs`), `redoxfs_server` (`spawn_fs_server`, `fs_service/wiring.rs`) | all | virtio: a `Virtio` cap, an `Interrupt`, DMA pages as spawn-time mappings; the FS server gets a `MemoryRegion` budget and the channel pages |
+| `fs_service::root_directory` | `boot_progenitor` (`user/progenitor_boot.rs`) | `block_driver` (`spawn_block_server`, `fs_service/wiring.rs`), `redoxfs_server` (`spawn_fs_server`, `fs_service/wiring.rs`) | all | virtio: a `VirtualIo` cap, an `Interrupt`, DMA pages as spawn-time mappings; the FS server gets a `MemoryRegion` budget and the channel pages |
 | the NVMe arm of the above | `nvme_disk` (`fs_service/wiring.rs`), only when booted from NVMe | `non_volatile_memory_express` (§86's data plane) | all (exercised on `x86_64`) | BAR0's doorbell page and a DMA run, as mappings; the kernel keeps the admin plane |
 | `boot_clock_page` | `boot_progenitor`; starter in `user/device_starters.rs` | `clock` (`start` in `clock_service.rs`) | all | the clock page, and the RTC page as a mapping on aarch64 and riscv64; on `x86_64` a `PortRange` over the CMOS ports 0x70 and 0x71 (§130 (how the userspace clock service reads the x86 CMOS RTC)) |
 | `boot_instruction_entropy` | `boot_progenitor`; starter in `user/device_starters.rs` | `entropy` in instruction mode | `x86_64`, aarch64 with `FEAT_RNG`; riscv64 answers `None` | two endpoints; no device |
@@ -53,7 +53,7 @@ architecture.
 | `install_service::offer` | `hand_over` in `kernel/src/boot.rs` | `non_volatile_memory_express`, `entropy`, `system_installer`, `mkfs` | `x86_64`, a boot from a file only |
 | `x86_userspace_demo` | the x86_64 boot path in `kernel/src/lib.rs`; the demo is in `user/boot_demos.rs` | two hand-assembled children | `x86_64`, every boot |
 | tour: `console_service::start` | the aarch64 tour in `kernel/src/lib.rs` | `console` | aarch64 |
-| tour: `virtio_service::start`, `start_pci` | `blockdev` in `kernel/src/self_test.rs` | the virtio and PCIe block demos | aarch64 |
+| tour: `virtual_io_service::start`, `start_pci` | `blockdev` in `kernel/src/self_test.rs` | the virtio and PCIe block demos | aarch64 |
 | tour: `kernel_test_subject` | `userspace` in `kernel/src/self_test.rs` | `kernel_test_subject` | aarch64, riscv64 |
 | tour: `memory_region_service::start` | `budget` in `kernel/src/self_test.rs` | `memory_region_depleter` | aarch64 |
 | tour: `riscv_least_authority_demo`, `riscv_uart_driver_demo` | the riscv64 tour in `kernel/src/lib.rs` | demo programs | riscv64 |
@@ -82,7 +82,7 @@ the driver, not the boot.
 
 | device authority | capability kind | exists? | needed by |
 |---|---|---|---|
-| virtio transport, interrupt, DMA run | `Virtio`, `Interrupt`, `PageFrame` run (§102) | yes, granted today for rng, net, gpu, keyboard | `block_driver` |
+| virtio transport, interrupt, DMA run | `VirtualIo`, `Interrupt`, `PageFrame` run (§102) | yes, granted today for rng, net, gpu, keyboard | `block_driver` |
 | file-service channel pages, a budget | `PageFrame` run, `MemoryRegion` | yes | `redoxfs_server` |
 | one MMIO page | `DeviceFrame` | yes | RTC for `clock`, NVMe doorbell, e1000e's two queue pages |
 | a DMA run for a PCIe device | `PageFrame` run | yes (unverified that the IOMMU binding survives a grant rather than a kernel-built mapping) | NVMe, e1000e, xHCI |

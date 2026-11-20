@@ -11,7 +11,7 @@
 use super::*;
 
 /// `socket_test_client`'s TCP echo selector and its success word; the same numbers `network_tests.rs` and
-/// `riscv_virtio_tests` spell for the virtio gates (`components/src/socket_test_client.rs`).
+/// `riscv_virtual_io_tests` spell for the virtio gates (`components/src/socket_test_client.rs`).
 const NET_TEST_TCP_ECHO: u64 = 2;
 /// `socket_test_client`'s UDP selector against slirp's TFTP server.
 const NET_TEST_UDP_TFTP: u64 = 4;

@@ -9,7 +9,7 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/header.rs b/c
 index f017d9048..7004a6b64 100644
 --- a/crates/globally_unique_identifier_partition_table/src/header.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/header.rs
-@@ -211,7 +211,7 @@ impl Header {
+@@ -239,7 +239,7 @@ impl Header {
          put64(
              block,
              at::LAST_USABLE_LOGICAL_BLOCK_ADDRESS,

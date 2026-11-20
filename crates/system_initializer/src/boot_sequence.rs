@@ -32,9 +32,9 @@ use super::*;
 ///     let endowment = BootEndowment {
 ///         untyped: 2, uart_dev: 3, uart_interrupt: 4, clock_page: 5, config_page: 6,
 ///         fs_ep: 7, fs_page: 8,
-///         virtio_rng: 9, virtio_rng_interrupt: 10, virtio_rng_dma: 11,
+///         virtual_io_rng: 9, virtual_io_rng_interrupt: 10, virtual_io_rng_dma: 11,
 ///         disp_term_ep: 12, disp_term_page: 13,
-///         virtio_net: 15, virtio_net_interrupt: 16, virtio_net_dma: 17,
+///         virtual_io_net: 15, virtual_io_net_interrupt: 16, virtual_io_net_dma: 17,
 ///         entropy_ep: 18,
 ///         gpu_surface: 14, gpu: 19, gpu_interrupt: 20, gpu_dma: 21,
 ///         keyboard: 22, keyboard_interrupt: 23, keyboard_dma: 1,

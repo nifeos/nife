@@ -147,17 +147,17 @@ pub(super) const PROGENITOR_SHELL_OUTPUT_VIRTUAL_ADDRESS: u64 =
 pub(super) const RNG_DMA_PEEK_VA: u64 = address_space_layout::pair_page(0x0f10_0000);
 
 /// The DMA region's own physical base, written inside the page itself at its last eight bytes
-/// (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, which carries the
+/// (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, which carries the
 /// reasoning for exactly this offset), shared with the drivers that read it.
 pub(super) const DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET: u64 =
-    abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
+    abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
 
 /// Where entropy maps its own DMA page. Must match `components/src/entropy.rs`'s `DMA_VA`.
 pub(super) const RNG_DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
-/// `components/src/entropy.rs`'s `MODE_VIRTIO`: a spawner's understanding with the one program it
+/// `components/src/entropy.rs`'s `MODE_VIRTUAL_IO`: a spawner's understanding with the one program it
 /// spawns, not a contract between two user programs, so rule 7 does not make it a crate.
-pub(super) const RNG_MODE_VIRTIO: u64 = 0;
+pub(super) const RNG_MODE_VIRTUAL_IO: u64 = 0;
 
 // -------------------------------------------------------------------------------------------
 // The network stack (milestone 590 (the booted system starts its network stack)).
@@ -168,17 +168,17 @@ pub(super) const RNG_MODE_VIRTIO: u64 = 0;
 /// [`RNG_DMA_PEEK_VA`]'s twin: given up with `UNMAP` once the offset is read.
 pub(super) const NET_DMA_PEEK_VA: u64 = address_space_layout::pair_page(0x0f30_0000);
 
-/// Where `net_stack` maps its DMA page. Must match `components/src/virtio_net_transport.rs`'s `DMA_VA`, the
+/// Where `net_stack` maps its DMA page. Must match `components/src/virtual_io_net_transport.rs`'s `DMA_VA`, the
 /// same kernel-and-spawner convention [`RNG_DMA_VA`] is.
 pub(super) const NET_DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// `net_stack`'s heap budget, in pages: matches
-/// `kernel::user::virtio_service::NET_SERVER_BUDGET_PAGES`, which carries the measurement. A
+/// `kernel::user::virtual_io_service::NET_SERVER_BUDGET_PAGES`, which carries the measurement. A
 /// spawner states the budget it hands; see notes/system-initializer/budgets.md.
 pub(super) const NET_STACK_BUDGET_PAGES: u64 = 128;
 
 /// `net_stack`'s stack, in pages: the kernel harness maps eight extra pages under the one every
-/// process gets (`kernel::user::virtio_service::NET_SERVER_STACK_PAGES`, "smoltcp builds packets
+/// process gets (`kernel::user::virtual_io_service::NET_SERVER_STACK_PAGES`, "smoltcp builds packets
 /// on the stack"), and nine is those together, since `build_child` counts the whole stack.
 pub(super) const NET_STACK_STACK_PAGES: u64 = 9;
 
@@ -201,10 +201,10 @@ pub(super) const RESOLVER_STACK_PAGES: u64 = 9;
 
 /// `net_stack`'s own spawn-argument convention: entry role 0 is the server
 /// (`components/src/net_stack.rs`'s
-/// `_start`). [`RNG_MODE_VIRTIO`]'s reasoning.
+/// `_start`). [`RNG_MODE_VIRTUAL_IO`]'s reasoning.
 pub(super) const NET_STACK_ROLE_SERVER: u64 = 0;
 
-/// `components/src/line_editor.rs`'s `MODE_CONSOLE`, for [`RNG_MODE_VIRTIO`]'s reasoning: prints
+/// `components/src/line_editor.rs`'s `MODE_CONSOLE`, for [`RNG_MODE_VIRTUAL_IO`]'s reasoning: prints
 /// through the console's two-endpoint protocol.
 pub(super) const LINE_EDITOR_MODE_CONSOLE: u64 = 0;
 /// `line_editor.rs`'s own `MODE_DISPLAY`: the `graphical_terminal` session's wiring, prints through

@@ -253,7 +253,7 @@ impl MappedWindow {
 ///
 /// For a driver whose doorbell is a direct store to a device-typed page in its own address space,
 /// with no syscall between the ring stores and it: `dmb sy` on aarch64, `fence` on riscv64,
-/// `mfence` on x86_64. Stronger than [`crate::virtio::virtio_ring_barrier`], whose drivers notify
+/// `mfence` on x86_64. Stronger than [`crate::virtual_io::virtual_io_ring_barrier`], whose drivers notify
 /// through a syscall, and not to be merged with it. See notes/user-mode-runtime.md.
 ///
 /// Name: provisional (milestone 494's lane, 2026-10-04).

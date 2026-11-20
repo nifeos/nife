@@ -43,6 +43,7 @@ Every name this tree authors spells these out, function parameters included.
 | `rgmii`, `mdio` | `reduced_gigabit_media_independent_interface`, `management_data_io` | the same test; `io` stays whole inside the expansion |
 | `sdio` | `sd_io` (`SD_IO` in a constant) | `SD` and `io` both stay, so only the join changes: `SD_IO_BRING_UP` |
 | `syscall`, `syscalls` | `system_call`, `system_calls` (`SystemCall`, `SYSTEM_CALL_EXIT`, `raw_system_call`) | every name, path and line of prose the tree authors; the x86 `syscall` instruction, Linux and POSIX call names and `SYS_*` numbers, rustc, LLVM and target names, upstream and vendored code, and quoted text keep the owner's word, and a public item that keeps it carries `#[doc(alias = "syscall")]`; `helpers/system_call_names.py` holds the one boundary list |
+| `virtio` | `virtual_io` (`VirtualIo`, `VIRTUAL_IO_` in a constant) | ruled 2026-11-20 (UTC), with no kept exception: `virtual_io_ring_barrier`, `VirtualIoMmioDevice`, `VIRTUAL_IO_TYPE_BLOCK`; a renamed public item carries `#[doc(alias = "virtio")]`; the boundary keeps the owner's spelling (below), and `helpers/name_checks.py` lists the files that hold it |
 
 ## Short forms that stay
 
@@ -59,7 +60,7 @@ Every name this tree authors spells these out, function parameters included.
   `DEVICE_IDS`. Spell `identifier` out only where ID is one letter of a compound specification
   acronym: `address_space_identifier`, `CardIdentification`, `version_identification`.
 - `io` stays whole inside an expansion, as it does alone: `management_data_io`, `sd_io`,
-  `virtual_io` (the expansion of `virtio`) and `programmed_io`, never `input_output`.
+  `virtual_io` and `programmed_io`, never `input_output`.
 - `IPC` in `notes/stack-high-water/per-ipc-depth.md` is a term of art, and the document keeps it.
   `helpers/name_checks.py` carries the exception beside its check.
 - `os_primitives_benchmarker` keeps its name until the variable-width step of

@@ -455,8 +455,8 @@ const fn context_descriptor(ttb: u64, asid: u16) -> [u32; 8] {
         0,
         // MAIR0/MAIR1: the same palette mmu::initialize programs into MAIR_EL1 (slot 0 device, slot
         // 1 normal write-back). QEMU does not model attributes; real silicon reads these.
-        page_tables::aarch64::mair::VALUE as u32,
-        (page_tables::aarch64::mair::VALUE >> 32) as u32,
+        page_tables::aarch64::memory_attribute_indirection::VALUE as u32,
+        (page_tables::aarch64::memory_attribute_indirection::VALUE >> 32) as u32,
     ]
 }
 

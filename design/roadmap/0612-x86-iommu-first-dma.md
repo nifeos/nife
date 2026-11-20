@@ -85,7 +85,7 @@ bitten. The BUGS section says so explicitly, so the next caller does not redisco
 
 ## The test
 
-`kernel::virtio::tests::the_iommu_faults_a_dma_that_escapes_the_domain`, un-skipped on `x86_64`.
+`kernel::virtual_io::tests::the_iommu_faults_a_dma_that_escapes_the_domain`, un-skipped on `x86_64`.
 Run by name (`script/test --arch x86_64 --test the_iommu_faults`) five times across two runs: twice
 with the RedoxFS fixture attached, twice on the bridged/UEFI leg without it. No failure.
 `aarch64`/`riscv64` legs re-ran the same filter to confirm no regression there. `pgrep -l qemu`

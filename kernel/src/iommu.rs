@@ -245,8 +245,8 @@ pub(crate) fn build_identity<F: page_tables::PageFormat>(
 ///
 /// The shadow page is read-only to the device, which only reads a split virtqueue's descriptor
 /// table and available ring (virtio 1.2, section 2.7).
-/// `virtio::tests::a_device_write_to_the_read_only_shadow_is_refused` holds it on every IOMMU.
-pub(crate) fn virtio_regions(
+/// `virtual_io::tests::a_device_write_to_the_read_only_shadow_is_refused` holds it on every IOMMU.
+pub(crate) fn virtual_io_regions(
     direct_memory_access_base: u64,
     direct_memory_access_size: u64,
     shadow_base: u64,

@@ -311,11 +311,11 @@ fn the_last_object_modules_are_pinned() {
         crate::usage::ADDRESS_SPACES => 4,
         crate::usage::THREADS => 5,
         crate::usage::CHILDREN => 6,
-        crate::virtio::READ_REGISTER => 0,
-        crate::virtio::WRITE_REGISTER => 1,
-        crate::virtio::SETUP_QUEUE => 2,
-        crate::virtio::NOTIFY => 3,
-        crate::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET => 4088,
+        crate::virtual_io::READ_REGISTER => 0,
+        crate::virtual_io::WRITE_REGISTER => 1,
+        crate::virtual_io::SETUP_QUEUE => 2,
+        crate::virtual_io::NOTIFY => 3,
+        crate::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET => 4088,
     }
 }
 
@@ -383,7 +383,7 @@ fn every_public_number_is_pinned() {
         "timer",
         "uart",
         "usage",
-        "virtio",
+        "virtual_io",
     ];
     let source_directory = concat!(env!("CARGO_MANIFEST_DIR"), "/src/");
     let read = |file: &str| {

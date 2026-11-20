@@ -15,7 +15,7 @@ use crate::sched;
 
 /// The `net_stack` program's ELF bytes (milestone 30, piece 3): the smoltcp net server, a distinct
 /// binary loaded by name. Used only by the net tests, whose RISC-V twins live in
-/// `riscv_virtio_tests`.
+/// `riscv_virtual_io_tests`.
 #[cfg(target_arch = "aarch64")]
 fn net_stack_image() -> &'static [u8] {
     program("net_stack").expect("no net_stack program in the initial ramdisk")
@@ -74,7 +74,7 @@ const NET_CLIENT_NO_ANSWER: u64 = 2;
 /// **A userspace driver completes a DHCP round trip over virtio-net.** Milestone 30, end to
 /// end, and the proof the multi-queue confinement carries a real NIC.
 ///
-/// The kernel enumerates the NIC and hands a driver at EL0 a confined `Virtio` capability, a DMA
+/// The kernel enumerates the NIC and hands a driver at EL0 a confined `VirtualIo` capability, a DMA
 /// page, and an interrupt. The driver brings up BOTH virtqueues (receive = 0, transmit = 1),
 /// posts a receive buffer, transmits a hand-built DHCP DISCOVER, and waits for QEMU user-mode
 /// networking's OFFER. It reports the offered address, which must land in slirp's 10.0.2.0/24.
@@ -82,14 +82,16 @@ const NET_CLIENT_NO_ANSWER: u64 = 2;
 /// DISCOVER left (TX) and the OFFER returned (RX), across both queues and both directions of the
 /// confinement, with no TCP/IP stack in the loop.
 // RISC-V twin:
-// `riscv_virtio_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net`. Gated here
+// `riscv_virtual_io_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net`. Gated here
 // rather than run twice: that module drives the same property on the other instruction set through
 // the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
 // slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
-fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net() {
-    let Some(report) = virtio_service::start_net(blk_image()) else {
+fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net() {
+    let Some(report) = virtual_io_service::start_net(blk_image()) else {
         // No NIC on this run (a bare boot). The test runners always attach one, so this
         // branch is not the parity gate. See helpers/qemu-runner-*.sh (NIFE_NET).
         crate::testing::skip!("no virtio-net device attached");
@@ -113,14 +115,16 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net() {
 /// mmio one. Proves the multi-queue confinement and the net driver work over the bus real
 /// hardware uses.
 // RISC-V twin:
-// `riscv_virtio_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net_pci`. Gated
+// `riscv_virtual_io_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net_pci`. Gated
 // here rather than run twice: that module drives the same property on the other instruction set
 // through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
-fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net_pci() {
-    let Some(report) = virtio_service::start_net_pci(blk_image()) else {
+fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net_pci() {
+    let Some(report) = virtual_io_service::start_net_pci(blk_image()) else {
         crate::testing::skip!("no virtio-net-pci device attached");
     };
 
@@ -134,19 +138,19 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net_pci() {
 
 /// **The net server: smoltcp running DHCP over the confined NIC** (milestone 30, piece 3). The
 /// integration proof and the thesis headline for networking: a real, reused TCP/IP stack
-/// (smoltcp, not hand-built) runs entirely at EL0, brings the NIC up through the `Virtio`
+/// (smoltcp, not hand-built) runs entirely at EL0, brings the NIC up through the `VirtualIo`
 /// capability, and completes a DHCP handshake against QEMU user-mode networking. The kernel
 /// knows nothing about DHCP; it owns only the DMA confinement. The server reports the acquired
 /// address, which must land in slirp's 10.0.2.0/24, so only a real DHCP round trip driven by
 /// smoltcp over the confined NIC can produce it.
-// RISC-V twin: `riscv_virtio_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp`. Gated here
+// RISC-V twin: `riscv_virtual_io_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp`. Gated here
 // rather than run twice: that module drives the same property on the other instruction set through
 // the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
 // slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_net_server_acquires_a_dhcp_lease_over_smoltcp() {
-    let Some((report, net)) = virtio_service::start_net_server(net_stack_image()) else {
+    let Some((report, net)) = virtual_io_service::start_net_server(net_stack_image()) else {
         crate::testing::skip!("no virtio-net device attached");
     };
     let [addr, nameserver, ..] = sched::ipc_receive(report);
@@ -169,14 +173,14 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp() {
 
 /// The net server over the PCIe transport, behind the IOMMU (milestone 30, §20): smoltcp drives
 /// a NIC confined in hardware and still gets its lease.
-// RISC-V twin: `riscv_virtio_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci`. Gated
+// RISC-V twin: `riscv_virtual_io_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci`. Gated
 // here rather than run twice: that module drives the same property on the other instruction set
 // through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci() {
-    let Some((report, net)) = virtio_service::start_net_server_pci(net_stack_image()) else {
+    let Some((report, net)) = virtual_io_service::start_net_server_pci(net_stack_image()) else {
         crate::testing::skip!("no virtio-net-pci device attached");
     };
     let addr = sched::ipc_receive(report)[0] as u32;
@@ -199,14 +203,14 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci() {
 /// deterministic and never leaves the emulator. 10.0.2.3:53 is not a local resolver: libslirp NATs
 /// it to the host's nameserver, which fails about 2.5% of queries (measured), so it cannot gate.
 // RISC-V twin:
-// `riscv_virtio_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract`. Gated here
+// `riscv_virtual_io_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract`. Gated here
 // rather than run twice: that module drives the same property on the other instruction set through
 // the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
 // slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_client_completes_a_udp_round_trip_through_the_socket_contract() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_UDP_TFTP,
         false,
@@ -224,14 +228,14 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract() {
 
 /// The same UDP round trip over the PCIe transport, behind the IOMMU.
 // RISC-V twin:
-// `riscv_virtio_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract_pci`. Gated
+// `riscv_virtual_io_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract_pci`. Gated
 // here rather than run twice: that module drives the same property on the other instruction set
 // through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_client_completes_a_udp_round_trip_through_the_socket_contract_pci() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_UDP_TFTP,
         true,
@@ -259,7 +263,7 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract_pci() {
 #[test_case]
 fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
     let started = crate::arch::timer::now();
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_ACCEPT_UNHEARD,
         true,
@@ -292,15 +296,15 @@ fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
 /// second half, real DNS via 10.0.2.3 (forwarded to the host's nameserver), does not gate: no answer
 /// skips (milestone 214's partial shape), and only a reply that is not a valid answer fails.
 // RISC-V twin:
-// `riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers`.
+// `riscv_virtual_io_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers`.
 // Gated here rather than run twice: that module drives the same property on the other instruction
 // set through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
-/// Falsification: replayable `system_tests/falsifications/user.network_tests.a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers.patch`
+/// Falsification: attested 2026-10-04. On aarch64, with `Query::accept` taking every class-IN A record in the answer and not only those owned by the end of the canonical name chain, the gating assertion failed with client code 0xe14f (case 4, `poisoned.nife.test`, a wrong verdict). The defect was a patch to the `domain_name_system` crate, which has left the tree, so nothing here replays it.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_NAME_RESOLUTION,
         false,
@@ -336,14 +340,14 @@ fn a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers() {
 /// sends a payload, receives the echo, and closes. The full round trip, handshake through
 /// bidirectional data to teardown, deterministic and zero-host-setup (nothing outlives QEMU),
 /// through the client, `net_stack`, smoltcp, and the confined NIC.
-// RISC-V twin: `riscv_virtio_tests::a_client_echoes_over_tcp_through_the_socket_contract`. Gated
+// RISC-V twin: `riscv_virtual_io_tests::a_client_echoes_over_tcp_through_the_socket_contract`. Gated
 // here rather than run twice: that module drives the same property on the other instruction set
 // through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_client_echoes_over_tcp_through_the_socket_contract() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_ECHO,
         false,
@@ -370,13 +374,13 @@ fn a_client_echoes_over_tcp_through_the_socket_contract() {
 /// virtio slot for the rest of the boot (`MAXIMUM_DEVICES`). Nothing else in the tree fetches a
 /// file over TCP or checks a package's digest on a target.
 // RISC-V twin:
-// `riscv_virtio_tests::a_package_fetched_over_http_is_accepted_only_by_the_image_digest`.
+// `riscv_virtual_io_tests::a_package_fetched_over_http_is_accepted_only_by_the_image_digest`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_package_fetched_over_http_is_accepted_only_by_the_image_digest() {
     let catalogue = program(package_archive::CATALOG)
         .expect("no package catalogue in the initial ramdisk: the archive build packs one");
-    let Some((report, net)) = virtio_service::start_package_fetch(
+    let Some((report, net)) = virtual_io_service::start_package_fetch(
         net_stack_image(),
         NET_TEST_HTTP_PACKAGE,
         catalogue.len() as u64,
@@ -399,14 +403,14 @@ fn a_package_fetched_over_http_is_accepted_only_by_the_image_digest() {
 }
 
 /// The same TCP echo round trip over the PCIe transport, behind the IOMMU.
-// RISC-V twin: `riscv_virtio_tests::a_client_echoes_over_tcp_through_the_socket_contract_pci`.
+// RISC-V twin: `riscv_virtual_io_tests::a_client_echoes_over_tcp_through_the_socket_contract_pci`.
 // Gated here rather than run twice: that module drives the same property on the other instruction
 // set through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_client_echoes_over_tcp_through_the_socket_contract_pci() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_ECHO,
         true,
@@ -427,14 +431,14 @@ fn a_client_echoes_over_tcp_through_the_socket_contract_pci() {
 /// again. `net_stack` derived the local port from the socket id, so the reopen reused the exact
 /// port and the second connect stalled on a slirp flow that had not cleared; the rotating allocator
 /// hands the reopen a fresh port, so both connects complete. The client reports OK only if they do.
-// RISC-V twin: `riscv_virtio_tests::a_reopened_socket_id_connects_again_over_tcp`. Gated here
+// RISC-V twin: `riscv_virtual_io_tests::a_reopened_socket_id_connects_again_over_tcp`. Gated here
 // rather than run twice: that module drives the same property on the other instruction set through
 // the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
 // slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_reopened_socket_id_connects_again_over_tcp() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_REOPEN,
         false,
@@ -460,7 +464,7 @@ fn a_reopened_socket_id_connects_again_over_tcp() {
 /// `Stack` rendezvous and a shared frame, listens on the one port its spawn granted, and serves two
 /// connections on one listener, which proves it re-arms. The listen and UDP bind grants are
 /// refused, bound and collided in the same spawn; notes/net/the-inbound-half.md has both halves.
-// RISC-V twin: `riscv_virtio_tests::a_host_process_connects_to_the_guest_and_is_answered`.
+// RISC-V twin: `riscv_virtual_io_tests::a_host_process_connects_to_the_guest_and_is_answered`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_host_process_connects_to_the_guest_and_is_answered() {
@@ -468,7 +472,7 @@ fn a_host_process_connects_to_the_guest_and_is_answered() {
     // thread in the whole boot, and the suite runs in one boot, so only a delta against this
     // isolates this topology.
     let e2_baseline_threads = sched::thread_count();
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_ACCEPT,
         false,
@@ -529,7 +533,7 @@ const STD_LISTEN_EXPECTED: &[u8] =
 /// `net honestly unsupported` gap from phase one: std's networking runs on the native ABI,
 /// reaching the same path the hand-written client does through std's blocking API. Its stdout
 /// is reassembled off the rendezvous and compared byte for byte, the `std_exerciser` discipline.
-// RISC-V twin: `riscv_virtio_tests::std_net_runs_over_the_socket_contract`. Gated here rather than
+// RISC-V twin: `riscv_virtual_io_tests::std_net_runs_over_the_socket_contract`. Gated here rather than
 // run twice: that module drives the same property on the other instruction set through the same
 // `block_driver` and `net_stack` binaries, and a second copy would double the suite's slowest tests
 // to prove nothing.
@@ -539,7 +543,7 @@ fn std_net_runs_over_the_socket_contract() {
     if std_service::std_exerciser_image().is_none() {
         crate::testing::skip!(std_service::NO_STD_EXERCISER);
     }
-    let Some((report, writer, net)) = virtio_service::start_net_std(
+    let Some((report, writer, net)) = virtual_io_service::start_net_std(
         net_stack_image(),
         std_exerciser_image(),
         socket_contract::NO_PORT_GRANT,
@@ -560,14 +564,14 @@ fn std_net_runs_over_the_socket_contract() {
 /// refused` (`AddrInUse`) ride the same spawn, because a boot is the expensive unit; the sibling
 /// test above is the stack with no grant. xtask's inbound prober checks the answer was the guest's
 /// own, which the guest cannot know. See notes/net/std-tcp-listener.md.
-// RISC-V twin: `riscv_virtio_tests::a_std_program_serves_a_granted_listening_port`.
+// RISC-V twin: `riscv_virtual_io_tests::a_std_program_serves_a_granted_listening_port`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_std_program_serves_a_granted_listening_port() {
     if std_service::std_exerciser_image().is_none() {
         crate::testing::skip!(std_service::NO_STD_EXERCISER);
     }
-    let Some((report, writer, net)) = virtio_service::start_net_std(
+    let Some((report, writer, net)) = virtual_io_service::start_net_std(
         net_stack_image(),
         std_exerciser_image(),
         socket_contract::listen_grant(NET_LISTEN_PORT, NET_LISTEN_PORT),

@@ -74,7 +74,7 @@ contain **no unsafe operation**:
 | Site | Why it is `unsafe fn` anyway |
 |---|---|
 | `Clock::new` in `crates/clock_contract/src/lib.rs` | takes a VA the caller promises is a mapped clock page |
-| `assume_no_stale_entry` in `crates/page_tables/src/tlb_flush.rs` | the name is the contract: the caller asserts a TLB fact |
+| `assume_no_stale_entry` in `crates/page_tables/src/translation_lookaside_buffer_flush.rs` | the name is the contract: the caller asserts a TLB fact |
 | `Mapper::new` in `crates/page_tables/src/mapper.rs` | the caller promises `root` is a live table |
 | `GlobalAlloc::alloc` in `crates/memory_region_heap/src/lib.rs` | unsafe because the trait method is |
 | `activate_user` in `kernel/src/arch/riscv64/mmu.rs` | forwards to `write_satp`, which is a safe fn |
@@ -101,7 +101,7 @@ Four sites in `kernel/`:
 
 | Site | The comment's claim |
 |---|---|
-| `pread` in `kernel/src/virtio.rs` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
+| `pread` in `kernel/src/virtual_io.rs` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
 | `paint` in `kernel/src/stack.rs` | "the caller hands us a mapped, unused stack region" (`#[cfg(test)]`, so test builds only) |
 | `switch_user_root` in `kernel/src/arch/aarch64/mmu.rs` | "the caller passes either a live `AddressSpace`'s composed value or ..." |
 | `write_satp` in `kernel/src/arch/riscv64/mmu.rs` | "the caller guarantees `satp` names a well-formed Sv39 root" |

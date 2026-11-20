@@ -87,7 +87,7 @@ draft carried. This section records them as performed, so a reader meets the rat
 | `set_port_range_grant` | the arch setter | **renamed from `set_port_grant`**, same reason |
 | `revoke_port_range` / `_from_others` | the revoke.rs functions | verb, matches the revoke family |
 | `X86_COM1_PORT_BASE` / `_COUNT` | COM1's ports (`0x3F8`, 8) | arch prefix, standard `COM1`, `PortRange`'s fields |
-| `outb` / `inb` | userspace byte port I/O | the universal x86 term, the `elf`/`pci` case |
+| `port_write_byte` / `port_read_byte` | userspace byte port I/O | spelled out; `outb` and `inb` are the x86 names and stay as `doc(alias)` (ruled 2026-11-20 UTC) |
 | `port_range_cap` | the capability constructor | shares the stem |
 | `port_out` / `recv_then_port_out` | hand-assembled test fixtures | describe what each tiny program does |
 

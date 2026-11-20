@@ -161,7 +161,7 @@ mod retype_fault;
 mod delegation_pause;
 mod trust;
 mod user;
-mod virtio;
+mod virtual_io;
 
 // The boot itself (milestone 876 (the kernel crate root is split along its seams)): `kernel_main`
 // and the steps all three boots share, and the machine description.

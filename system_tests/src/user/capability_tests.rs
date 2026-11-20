@@ -131,7 +131,7 @@ fn map_physical_maps_a_shared_frame_and_a_device_page() {
     // A real device's MMIO on this machine, whichever machine it is: the virtio-mmio bus base.
     // It was the PL011's `0x0900_0000`, which is an aarch64 `virt` fact; the point of the test
     // is that a device-typed mapping lands where it was asked to, and either address serves it.
-    let device_phys = mmu::VIRTIO_MMIO_BASE;
+    let device_phys = mmu::VIRTUAL_IO_MMIO_BASE;
 
     let mut space = AddressSpace::new(2).expect("no address space");
     let frame = crate::memory::alloc().expect("no frame").physical_address();

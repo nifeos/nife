@@ -56,9 +56,10 @@ No new tool.
 - P2-15, `Snapshot` size: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Decision 1, identity with the line count inside it: Done (option A, 2026-11-14 UTC),
   [#3582](https://github.com/nifeos/nife/pull/3582).
-- Review package: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The repository stays Open: the clearance remains an open
-  decision below, and the move waits for `address_space_layout` and `current_cpu_contract` to leave
-  first (milestone 1017 step 6).
+- Review package: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The review clearance: Done (ruled 2026-11-20 UTC, option A;
+  `nifeos/machine_statistics_contract` approved with `publish = false`, no tag, no publish). The
+  move stays Open and waits for `address_space_layout` and `current_cpu_contract` to leave first
+  (milestone 1017 step 6).
 
 ## Open decisions
 
@@ -68,7 +69,10 @@ Ruled 2026-11-19 (UTC), option A. The table stands as the maintainer set it: `PA
 `PAGE_VIRTUAL_ADDRESS`, the parameters `page_va` and `va` as `virtual_address`, `PAGE_WORDS`,
 `word::LINE_WORDS` and `atomic_word` for `counter`. `Snapshot` stays, and the lane rewords the module sentence. Every other name stays as written, and no alias carries an old spelling. The names ship, and each public name's `Name:` block reads ratified 2026-11-19 (UTC).
 
-### Clear the review package and approve the repository
+### Clear the review package and approve the repository (ruled)
+
+Ruled 2026-11-20 (UTC), option A: the package is cleared and the clearance creates the repository,
+`nifeos/machine_statistics_contract`, with `publish = false`. No tag and no publish.
 
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package; that clearance is the approval to create the repository. A package
@@ -173,8 +177,7 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Follow-on
 
-- **Outstanding.** The clearance of the review package, an open decision above; then the move,
-  after `address_space_layout` and `current_cpu_contract` leave.
+- **Outstanding.** The move, after `address_space_layout` and `current_cpu_contract` leave.
 
 ## Decisions for the architect
 

@@ -212,7 +212,7 @@ fn fr8(va: u64) -> u8 {
 fn set_dst(id: u64, ip: Ipv4Addr, port: u16) {
     let base = page_frame_va(id);
     for (i, b) in ip.octets().iter().enumerate() {
-        fw8(base + DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, *b);
+        fw8(base + DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, *b);
     }
     // Port, little-endian, matching the frame header (netproto).
     fw8(base + DESTINATION_PORT_OFFSET_BYTES, port as u8);

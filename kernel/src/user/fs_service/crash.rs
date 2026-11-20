@@ -41,7 +41,7 @@ const CRASH_DISK_INDEX: usize = 2;
 /// written in and a helper cannot skip on a test's behalf; [`NO_FS_SERVER`] has the same shape.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn is_crash_disk_present() -> bool {
-    crate::virtio::find_block_device_n(CRASH_DISK_INDEX).is_some()
+    crate::virtual_io::find_block_device_n(CRASH_DISK_INDEX).is_some()
 }
 
 /// Phase one: wire a filesystem on virtio block device 2, which nothing else touches, and kill it
@@ -59,7 +59,7 @@ pub fn start_crash(
     use core::sync::atomic::Ordering;
     let (blk_ep, blk_ready, blk_shared) = spawn_block_server(
         blk_image,
-        crate::virtio::find_block_device_n(CRASH_DISK_INDEX)?,
+        crate::virtual_io::find_block_device_n(CRASH_DISK_INDEX)?,
     )?;
     CRASH_BLK_EP.store(blk_ep, Ordering::Relaxed);
     CRASH_BLK_SHARED.store(blk_shared, Ordering::Relaxed);

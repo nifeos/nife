@@ -12,7 +12,6 @@ byte_sink_contract
 capability_manifest_note
 current_cpu_contract
 domain_name_resolution_contract
-domain_name_system
 filesystem_contract
 filesystem_fixture
 globally_unique_identifier_partition_table

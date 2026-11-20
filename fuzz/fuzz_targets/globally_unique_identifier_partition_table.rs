@@ -42,8 +42,8 @@ fuzz_target!(|data: &[u8]| {
     let _ = table.first_usable_logical_block_address();
     let _ = table.last_usable_logical_block_address();
     let _ = table.backup_header_logical_block_address();
-    let _ = table.primary_entry_logical_block_address();
-    let _ = table.backup_entry_logical_block_address();
+    let _ = table.primary_entry_array_logical_block_address();
+    let _ = table.backup_entry_array_logical_block_address();
     let _ = table.entry_array_blocks();
     let _ = table.entry_count();
     let _ = table.entry_array();
@@ -60,9 +60,9 @@ fuzz_target!(|data: &[u8]| {
     }
     // Past the end of the array as well as inside it: `entry` is documented to answer `None` there
     // rather than to index, and `entry_count` is a header field a hostile table sets to 2^32-1.
-    let _ = table.entry(0);
-    let _ = table.entry(table.entry_count() as usize);
-    let _ = table.entry(usize::MAX);
+    let _ = table.get(0);
+    let _ = table.get(table.entry_count() as usize);
+    let _ = table.get(usize::MAX);
 
     // The two checks a caller runs against blocks it read separately. Feeding them the same bytes
     // will almost always be a mismatch, which is fine: the property under test is that a mismatch is

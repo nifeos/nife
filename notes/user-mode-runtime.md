@@ -145,7 +145,7 @@ a process can have threads, so the claim covers this process's own threads too.
 
 ### Barriers
 
-`virtio_ring_barrier` orders a virtio driver's accesses to a virtqueue against the device's. aarch64
+`virtual_io_ring_barrier` orders a virtio driver's accesses to a virtqueue against the device's. aarch64
 and riscv64 are weakly ordered, so both the machine and the compiler need a real instruction.
 `dmb ish` orders the inner shareable domain, where a coherent DMA agent observes. RISC-V takes one
 full `fence`, the same conservative choice `kernel::arch::direct_memory_access_write_barrier` makes.
@@ -165,7 +165,7 @@ in-tree precedent for ending in `compile_error!` rather than a fallback.
 
 `doorbell_barrier` is the stronger barrier, for a driver whose doorbell is a direct store to a
 device-typed page in its own address space with no syscall in between. It is `dmb sy`, `fence` and
-`mfence`. It must not be merged with `virtio_ring_barrier`, whose drivers notify through a syscall.
+`mfence`. It must not be merged with `virtual_io_ring_barrier`, whose drivers notify through a syscall.
 `components/src/non_volatile_memory_express.rs` was its first caller, and the `e1000e` data plane
 its second.
 
@@ -202,8 +202,8 @@ refusals live, is `entropy_contract::fill_with`, host-tested there, and this mod
 `CALL` as a closure. The std PAL's `fill_bytes` cannot be shared: it lives inside `std`, these
 callers are `no_std`, and it panics where they must refuse quietly.
 
-The `virtio` module wraps the four `Virtio` capability methods. The `SAFETY` argument at each raw
-call site was `invoke`'s own contract and nothing more. `abi::virtio` states what the kernel checks:
+The `virtio` module wraps the four `VirtualIo` capability methods. The `SAFETY` argument at each raw
+call site was `invoke`'s own contract and nothing more. `abi::virtual_io` states what the kernel checks:
 `WRITE_REGISTER` refuses the queue-address and notify registers, and `SETUP_QUEUE` and `NOTIFY` are
 bounds-checked against the DMA region and its high-water mark.
 

@@ -30,7 +30,7 @@ against the tree rather than assumed.
 ## What stops it, measured
 
 **1. Nothing nife runs on radon can read a disk.** Every file-service path in the kernel starts at
-`crate::virtio::find_block_device_n` (`kernel/src/user/fs_service.rs`, `wire_servers` and
+`crate::virtual_io::find_block_device_n` (`kernel/src/user/fs_service.rs`, `wire_servers` and
 `start_crash`), and radon has no virtio. The NVMe driver exists
 (`kernel/src/user/non_volatile_memory_express_service.rs`) and its test self-skips on the board
 because only QEMU attaches a controller (`notes/visionfive2.md`, the milestone 145 section). No SD

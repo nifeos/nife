@@ -32,6 +32,11 @@ import sys
 
 RULES_DOC = "design/naming/convention-rulings.md"
 APPENDIX_RULE = "appendix-stems"
+STANDING_MODULE_RULE = "standing-modules"
+
+# The two private module names ratified for every crate (calef, 2026-11-20 UTC), each with the cfg
+# word that must gate its `mod` declaration: a host unit-test module and a Kani proof module.
+STANDING_MODULES = {"tests": "test", "verification": "kani"}
 
 # Spelled in two halves because script/lint's naming check refuses the word itself outside
 # design/ and itself, and this is the one place a script has to name what it refuses.
@@ -68,6 +73,47 @@ def parse_rules(text):
         if line.startswith("Not covered:"):
             cur["not_covered"] = re.findall(r"`([^`]+)`", line)
     return rules
+
+
+def _declares_gated(text, name, word):
+    """True when `text` declares `mod name;` under a `#[cfg(...)]` attribute naming `word`.
+
+    Only the attribute and comment lines directly above the declaration are read.
+    """
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        if not re.match(rf"^\s*(pub(\([^)]*\))?\s+)?mod {name}\s*[;{{]", line):
+            continue
+        j = i - 1
+        while j >= 0 and lines[j].strip().startswith(("#[", "//")):
+            if re.match(r"^\s*#\[cfg\(.*\b" + word + r"\b", lines[j]):
+                return True
+            j -= 1
+    return False
+
+
+def standing_module(rel, read):
+    """The standing module name (`tests` or `verification`) a file is, else None.
+
+    A file `tests.rs` or `tests/mod.rs` under a `src/` directory counts only when its parent module
+    declares it under `#[cfg(test)]` (`verification`: `#[cfg(kani)]`), so a module that merely
+    shares the name is not ratified.
+    """
+    parts = rel.split("/")
+    if not rel.endswith(".rs") or "src" not in parts[:-1]:
+        return None
+    stem = parts[-1][:-3]
+    if stem == "mod" and len(parts) > 2:
+        stem, parent = parts[-2], parts[:-2]
+    else:
+        parent = parts[:-1]
+    word = STANDING_MODULES.get(stem)
+    if word is None or not parent:
+        return None
+    owners = [f"{'/'.join(parent)}/{n}.rs" for n in ("mod", "lib", "main")]
+    if parent[-1] != "src":
+        owners.append("/".join(parent) + ".rs")
+    return stem if any(_declares_gated(read(o) or "", stem, word) for o in owners) else None
 
 
 def _tokens(text):
@@ -172,6 +218,17 @@ def apply(records, rules, files, read, british=()):
 
 
 def _selftest():
+    tree0 = {"c/src/lib.rs": "#[cfg(test)]\nmod tests;\n#[cfg(kani)]\n// why\nmod verification;\n"
+             "mod other;\n", "c/src/tests.rs": "", "c/src/verification.rs": "", "c/src/other.rs": "",
+             "c/src/a.rs": "#[cfg(all(test, unix))]\nmod tests;\n", "c/src/a/tests.rs": "",
+             "c/src/b.rs": "mod tests;\n", "c/src/b/tests.rs": "",
+             "c/src/m/mod.rs": "#[cfg(test)]\nmod verification;\n", "c/src/m/verification.rs": ""}
+    got = {p: standing_module(p, tree0.get) for p in tree0}
+    assert got["c/src/tests.rs"] == "tests" and got["c/src/verification.rs"] == "verification", got
+    assert got["c/src/a/tests.rs"] == "tests", "cfg(all(test, ..)) gates it"
+    assert got["c/src/b/tests.rs"] is None, "an ungated module of that name is not covered"
+    assert got["c/src/m/verification.rs"] is None, "verification needs cfg(kani), not cfg(test)"
+    assert got["c/src/other.rs"] is None and got["c/src/lib.rs"] is None, got
     rules = parse_rules("\n".join([
         "## Rule 1: appendix stems", "Applies: appendix-stems", "Ratified: 2026-10-17 (UTC)",
         "Not covered: `notes/coes`"]))

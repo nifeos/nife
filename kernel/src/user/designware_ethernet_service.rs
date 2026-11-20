@@ -44,7 +44,7 @@ use crate::capability_object::{
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 use crate::user::jh7110_clock_and_reset_service::BroughtUp;
-use crate::user::virtio_service::{NET_SERVER_BUDGET_PAGES, NET_SERVER_STACK_PAGES};
+use crate::user::virtual_io_service::{NET_SERVER_BUDGET_PAGES, NET_SERVER_STACK_PAGES};
 
 /// Why a port the tree describes was not brought up.
 ///
@@ -406,7 +406,7 @@ pub(crate) fn start_drain(
 ) -> Result<(RendezvousId, Wiring), NotStarted> {
     const TEST_TCP_DRAIN: u64 = 7;
     let mut w = start_net_server(image, socket_contract::NO_PORT_GRANT)?;
-    let cli = super::virtio_service::spawn_stack_client(
+    let cli = super::virtual_io_service::spawn_stack_client(
         image,
         TEST_TCP_DRAIN,
         peer,
@@ -422,7 +422,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
     let [arg0, arg1] = found.handoff.pack();
 
     // The endpoints, the notification and the timer out of one region, so reclaiming it wakes a
-    // server blocked on any of them, as in `virtio_service::wire_net_server`.
+    // server blocked on any of them, as in `virtual_io_service::wire_net_server`.
     let ep_region = crate::memory_region::create(5).expect("no endpoint region for net_stack");
     let report = crate::sched::create_rendezvous_from(ep_region).expect("no report endpoint");
     let stack = crate::sched::create_rendezvous_from(ep_region).expect("no stack endpoint");

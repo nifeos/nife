@@ -44,7 +44,7 @@ Each variant of `Object` is a decision. What follows is why each is there.
 - `AddressSpace`, `ThreadControlBlock`, `Notification`, `Timer` and `Process` are objects a process
   builds from its own region, each by generational name, so a capability that outlives its object
   resolves to nothing rather than to a stranger.
-- `Virtio`: a virtio device's transport. The device has no IOMMU, so the kernel keeps the two
+- `VirtualIo`: a virtio device's transport. The device has no IOMMU, so the kernel keeps the two
   DMA-critical powers, programming the queue's ring addresses and ringing the device, and checks
   every descriptor against the driver's own DMA region before the device sees it.
 - `PortRange`: x86 I/O ports, by base and count. Port I/O has no page in front of it, so the MMU

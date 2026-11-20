@@ -77,7 +77,7 @@ modules hold 84 of riscv64's 129 seconds:
 |---|---|---|
 | `compositor_tests` | 24.5 | 14.1 |
 | `login_tests` | 18.0 | 11.4 |
-| `riscv_virtio_tests` | 14.8 | (riscv64 only) |
+| `riscv_virtual_io_tests` | 14.8 | (riscv64 only) |
 | `display_tests` | 14.6 | 9.3 |
 | `timetable_tests` | 12.2 | 11.6 |
 

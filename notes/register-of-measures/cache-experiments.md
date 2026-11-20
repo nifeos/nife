@@ -192,7 +192,7 @@ table carried them before the split.
 - E2's naive reading was wrong. `sched::thread_count()` taken partway through the full test suite
   (279 `#[test_case]`s in one continuous boot) read 95 and 82 on the two ISAs. Both were dominated
   by threads that earlier, unrelated tests left allocated. The fix is in `system_tests/src/user/tests.rs`
-  and `riscv_virtio_tests.rs`: a baseline taken at the top of the same test, with the census
+  and `riscv_virtual_io_tests.rs`: a baseline taken at the top of the same test, with the census
   reported as a delta. Any future count of "how many threads does X create" taken inside the
   shared-boot suite should take the same delta rather than trust an absolute `thread_count()`.
 

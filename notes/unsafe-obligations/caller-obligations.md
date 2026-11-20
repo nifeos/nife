@@ -19,7 +19,7 @@ whether anything closes the set of callers.
 | `arch/riscv64/mmu.rs` `write_satp` | `unsafe fn` | aarch64's `set_ttbr0` already was, so the same register write was a contract on one ISA and an ordinary call on the other |
 | `arch/{aarch64,riscv64}/mmu.rs` `switch_user_root` | `unsafe fn` | `pub`, called cross-module from `sched.rs`, and no type can carry the obligation (below) |
 | `stack.rs` `paint`, and its sibling `high_water` | `unsafe fn` | `pub` in the crate, so any kernel code could have written the pattern over an arbitrary range |
-| `virtio.rs` `pread` / `pwrite` | stayed safe fns | private to one module, so the compiler closes the caller set at twenty sites in one `impl` block |
+| `virtual_io.rs` `pread` / `pwrite` | stayed safe fns | private to one module, so the compiler closes the caller set at twenty sites in one `impl` block |
 
 ## What makes an obligation binding, which is the whole distinction
 
@@ -95,7 +95,7 @@ to resolve. That is why the defect was invisible from the syscall and only appea
 
 ## The worst SAFETY comment in the tree, and it passed every gate
 
-`components/src/virtio_net_transport.rs`'s `w16` carried this, over a `write_volatile` into the DMA
+`components/src/virtual_io_net_transport.rs`'s `w16` carried this, over a `write_volatile` into the DMA
 page:
 
 ```
@@ -163,7 +163,7 @@ reads rather than in a report:
 
 | Site | The comment's claim |
 |---|---|
-| `components/src/virtio_net_transport.rs` `r8` `r16` `r32` `w8` `w16` `write_desc` | "callers pass offsets inside it" (the DMA frame) |
+| `components/src/virtual_io_net_transport.rs` `r8` `r16` `r32` `w8` `w16` `write_desc` | "callers pass offsets inside it" (the DMA frame) |
 | `fill_page` in `fixtures/src/fs_test_client/extended_attributes.rs` | "the caller keeps within it" |
 | `get` in `components/src/fs_file_caretaker.rs` | "callers clamp `out` to the page" |
 | `get_at` in `components/src/fs_nameset_caretaker.rs` | "every caller clamps `out` and `off` to the page" |

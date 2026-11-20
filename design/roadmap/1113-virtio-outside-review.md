@@ -39,7 +39,7 @@ logic is testable on the host, and its names pass `design/naming.md`.
 - P0-2, no test runs outside QEMU and no proof exists: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P1-3, the ring layout is an unchecked copy of the proved layout: Ruled (maintainer,
   provisional, 2026-11-14 UTC, Decision 2). Not built: `QUEUE_ENTRIES` and the ring offsets are literals
-  under a BUGS entry in `block_driver_roles.rs`, and `abi::virtio` holds no ring constant. It
+  under a BUGS entry in `block_driver_roles.rs`, and `abi::virtual_io` holds no ring constant. It
   waits on milestone 1075 item 11 (the version gate), which is Open. The `abi` review has not
   settled how a change to a pinned value meets an `ABI_VERSION` bump once the crate leaves nife.
   New public constants would join a surface whose gate is not ready.
@@ -66,7 +66,7 @@ logic is testable on the host, and its names pass `design/naming.md`.
 - P2-15, an unused parameter of `run_attack`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - P2-16, an unbounded `complete_block`: Done, [#3613](https://github.com/nifeos/nife/pull/3613).
 - Decision 1, fold the roles into `block_driver`: Done, [#3662](https://github.com/nifeos/nife/pull/3662) (ruled 2026-11-16 UTC, A).
-- Decision 2, the ring layout moves to `abi::virtio`: Ruled (maintainer, provisional,
+- Decision 2, the ring layout moves to `abi::virtual_io`: Ruled (maintainer, provisional,
   2026-11-14 UTC). Not built; P1-3 is the work.
 - Decision 3, the kernel checks `Version` and the driver does not: Done, [#3628](https://github.com/nifeos/nife/pull/3628) (maintainer,
   provisional, 2026-11-15 UTC).
@@ -121,7 +121,7 @@ tests, no Kani harness, and one `no_run` doctest (`:192-197`). Its pure logic is
 volatile pointers, so none of it can run on the host. `notes/mutation-testing.md` records that a
 census of this crate measures nothing. Why it matters: every behavior below that this review
 found by reading would have been a one-line host test. The fix: route the DMA accesses through a
-window value (`user_mode_runtime::mapped_window::MappedWindow`, which `virtio_net_transport`
+window value (`user_mode_runtime::mapped_window::MappedWindow`, which `virtual_io_net_transport`
 already uses, or a `&mut [u8]` for the parsers), so the parsers and builders take a buffer and a
 host test can hand them one. Effort: M. Two-way.
 
@@ -174,7 +174,7 @@ it. None of them ships test roles as a library. The reuse record already names R
 split as the shape nife chose when it refused `virtio-drivers`.
 
 Concrete example. `components/src/block_driver_roles.rs` lines 59 to 117 and
-`components/src/virtio_net_transport.rs` lines 54 to 87 hold the same handshake constants. The
+`components/src/virtual_io_net_transport.rs` lines 54 to 87 hold the same handshake constants. The
 fold removes a crate boundary that guards nothing, and cutting the library later removes one of
 the two copies and the four others with it.
 
@@ -186,26 +186,26 @@ proves (`LAYOUT_QSIZE`, `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`). The 
 the validator's constants so the layout it runs is the proved one. Every userspace driver spells
 the same numbers as literals. §46 (thin primitives or whole subsystems; we write everything in between) priced the edge from `components` to the validator, and the
 tree did not take it (milestone 410 (six copies of the shared-frame accessors), per `notes/net/the-driver-and-dhcp.md` lines 130 to 137). The
-validator has no dependencies. `abi::virtio` already carries one DMA-layout fact for drivers, the
+validator has no dependencies. `abi::virtual_io` already carries one DMA-layout fact for drivers, the
 word offset at which the kernel writes the region's physical base.
 
-Recommendation. The five layout constants move to `abi::virtio`, which is the contract the driver
+Recommendation. The five layout constants move to `abi::virtual_io`, which is the contract the driver
 already speaks (`SETUP_QUEUE`'s documentation there already describes "the fixed offsets of that
 queue's ring block"). The validator and the kernel alias them from there, so the proof still runs on
 the layout the kernel runs. Every driver then imports what it already depends on through
 `user_mode_runtime`, and no new edge is taken. The alternative, drivers importing the validator
 directly, is the smaller edit and a zero-dependency edge. This review sets it aside only because it
 makes a proof crate a contract crate. If neither is wanted, the fallback is a `BUGS` entry at every
-copy, which is what `virtio_net_transport` has today and this crate lacks.
+copy, which is what `virtual_io_net_transport` has today and this crate lacks.
 
 Prior art. Linux puts the ring layout in a UAPI header (`include/uapi/linux/virtio_ring.h`) that
 both the kernel's ring code and every userspace consumer (QEMU, rust-vmm's `virtio-bindings`)
 compile against; the layout is a contract, and the contract has one home. Nife's own `abi` crate
 is the same thing for the syscall boundary.
 
-Concrete example. `kernel/src/virtio.rs` lines 497 to 513 alias the validator;
-`components/src/block_driver_roles.rs` lines 93 and 127 to 129 and `components/src/virtio_net_transport.rs` lines 73 to 87 spell `8`, `0x000`, `0x080`,
-`0x100`, `0x200`. After the move, each of those is `abi::virtio::RING_...` and a change to the
+Concrete example. `kernel/src/virtual_io.rs` lines 497 to 513 alias the validator;
+`components/src/block_driver_roles.rs` lines 93 and 127 to 129 and `components/src/virtual_io_net_transport.rs` lines 73 to 87 spell `8`, `0x000`, `0x080`,
+`0x100`, `0x200`. After the move, each of those is `abi::virtual_io::RING_...` and a change to the
 proved layout is a compile error in every driver.
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
@@ -213,8 +213,8 @@ revisit. The layout values are already the agreement between kernel and driver a
 only the home of their names moves, inside unreleased crates. They stay relevant after the virtio
 default ruling of 2026-11-11, because every mediated grant still uses `SETUP_QUEUE` at the
 validator's layout. The five constants (`crates/direct_memory_access_validator/src/lib.rs` lines
-294 to 304) move to `abi::virtio`, beside the DMA-layout fact already there
-(`crates/abi/src/virtio.rs` line 38), with `RING_END`, which the validator derives from them and
+294 to 304) move to `abi::virtual_io`, beside the DMA-layout fact already there
+(`crates/abi/src/virtual_io.rs` line 38), with `RING_END`, which the validator derives from them and
 the kernel also aliases. The validator and the kernel alias them from there. The present names fail
 the spelled-out rule (`QSIZE`, `DESC`, `OFF`), so the lane that moves them proposes spelled-out
 names in `abi`, provisional. They join the pinned-value list and version gate of milestone 1075 (what an outside
@@ -239,7 +239,7 @@ commit `oasis-tcs/virtio-spec@bb1dd2e1` (2026-06-01) adds mmio version 3. It kee
 register layout and makes reset asynchronous: the driver polls `Status` until it reads 0. So
 versions other than 2 exist, and the kernel's `SUPPORTED_VERSION` of 2 refuses version 3 too,
 which is the strict choice. Accepting 3 later needs the kernel's `reset_to_features_ok` to poll
-`Status` the way `unregister` does after its reset (`kernel/src/virtio.rs`).
+`Status` the way `unregister` does after its reset (`kernel/src/virtual_io.rs`).
 
 Prior art, from memory and not re-read. Linux's `virtio_mmio` drives version 1 and version 2 with
 a layout each and refuses any other; it is one layer that both reads and drives. Redox's
@@ -261,7 +261,7 @@ The checks are in [the appendix](1113-virtio-outside-review/done-when.md).
 ## BUGS
 
 - The review did not boot the QEMU suite. The review took the roles' behavior under test from the
-  entry points and from `notes/virtio.md`, and did not observe it.
+  entry points and from `notes/virtual-io.md`, and did not observe it.
 - Items 6 and 13 cite specification requirements from memory; nobody has verified the section
   numbers,   and the recording lane should confirm them against virtio 1.2 before the text lands.
 - Item 14's figure is the storage benchmark already recorded in `notes/benchmarks.md`; nobody ran

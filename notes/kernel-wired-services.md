@@ -46,7 +46,7 @@ buffers, the rest for the surface. Registering the whole run as the driver's DMA
 framebuffer inside the grant. The shadow-ring validator bounds every descriptor to it, and
 `iommu::confine` maps exactly it, so the device can reach the pixels and nothing else. The client
 maps only the surface frames. It never sees page 0, so it cannot touch a descriptor ring, and it
-holds no `Virtio` capability, no interrupt and no physical address. See
+holds no `VirtualIo` capability, no interrupt and no physical address. See
 [the framebuffer contract](framebuffer-contract.md).
 
 ## The compositor

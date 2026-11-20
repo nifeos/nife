@@ -66,7 +66,7 @@ The TH1520 is not.
    provisional). The address was written three times and now lives once, in
    `arch/riscv64/machine.rs`.
 4. Built: the virtio-mmio window is mapped only when the tree names a `virtio,mmio` node, and the
-   probe asks `arch::mmu::virtio_slots()`. On the TH1520 that address is DRAM; on radon it is
+   probe asks `arch::mmu::virtual_io_slots()`. On the TH1520 that address is DRAM; on radon it is
    UART0, which the probe had been reading as virtio slots.
 5. Built: XTheadMae. `page_tables::Sv39Mae` (name provisional) is Sv39 plus Linux's memory types and is
    `arch::mmu::Format` under `board_th1520`; the boot table carries the same bits.

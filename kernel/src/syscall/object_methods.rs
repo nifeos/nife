@@ -225,26 +225,28 @@ pub(super) fn interrupt_acknowledge(intid: u32) -> Result<i64, Error> {
     Ok(0)
 }
 
-/// `Virtio`'s four register-level methods (`READ_REGISTER`, `WRITE_REGISTER`, `SETUP_QUEUE`,
+/// `VirtualIo`'s four register-level methods (`READ_REGISTER`, `WRITE_REGISTER`, `SETUP_QUEUE`,
 /// `NOTIFY`). `DeviceRefused` for a DMA address outside the device's confinement.
 #[inline(never)]
-pub(super) fn virtio_invoke(id: u64, method: u64, a0: u64, a1: u64) -> Result<i64, Error> {
-    use crate::virtio::TransportError;
+pub(super) fn virtual_io_invoke(id: u64, method: u64, a0: u64, a1: u64) -> Result<i64, Error> {
+    use crate::virtual_io::TransportError;
     let map = |e: TransportError| match e {
         TransportError::DmaEscape => Error::DeviceRefused,
         _ => Error::WrongObject,
     };
     match method {
-        abi::virtio::READ_REGISTER => crate::virtio::read_register(id, a0)
+        abi::virtual_io::READ_REGISTER => crate::virtual_io::read_register(id, a0)
             .map(|v| v as i64)
             .ok_or(Error::WrongObject),
-        abi::virtio::WRITE_REGISTER => crate::virtio::write_register(id, a0, a1 as u32)
+        abi::virtual_io::WRITE_REGISTER => crate::virtual_io::write_register(id, a0, a1 as u32)
             .map(|_| 0)
             .map_err(map),
-        abi::virtio::SETUP_QUEUE => crate::virtio::setup_queue(id, a0 as u16, a1 as u16)
+        abi::virtual_io::SETUP_QUEUE => crate::virtual_io::setup_queue(id, a0 as u16, a1 as u16)
             .map(|_| 0)
             .map_err(map),
-        abi::virtio::NOTIFY => crate::virtio::notify(id, a0 as u16).map(|_| 0).map_err(map),
+        abi::virtual_io::NOTIFY => crate::virtual_io::notify(id, a0 as u16)
+            .map(|_| 0)
+            .map_err(map),
         _ => Err(Error::BadMethod),
     }
 }

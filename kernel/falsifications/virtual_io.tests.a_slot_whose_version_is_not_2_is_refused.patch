@@ -1,4 +1,4 @@
-Falsifies `kernel::virtio::tests::a_slot_whose_version_is_not_2_is_refused`.
+Falsifies `kernel::virtual_io::tests::a_slot_whose_version_is_not_2_is_refused`.
 
 Architecture: aarch64
 
@@ -8,12 +8,12 @@ does not have. This is what a release build did while the check was a `debug_ass
 
 Expected to fail: the test's first `assert_eq!`, on version 1, which classifies as `Device`.
 
-diff --git a/kernel/src/virtio.rs b/kernel/src/virtio.rs
+diff --git a/kernel/src/virtual_io.rs b/kernel/src/virtual_io.rs
 index eaf4f1b9e..991054833 100644
---- a/kernel/src/virtio.rs
-+++ b/kernel/src/virtio.rs
+--- a/kernel/src/virtual_io.rs
++++ b/kernel/src/virtual_io.rs
 @@ -69,7 +69,7 @@ fn classify(magic: u32, version: u32, device_id: u32) -> SlotIdentity {
-         SlotIdentity::NotVirtio
+         SlotIdentity::NotVirtualIo
      } else if device_id == 0 {
          SlotIdentity::Empty
 -    } else if version != SUPPORTED_VERSION {

@@ -27,6 +27,12 @@ current check so he can reopen it. Spelling and `cap` have ratchets of their own
 - `wire or format`: defined in a package two programs agree through (`WIRE`). A rename there
   changes what another program parses, so it is listed for calef and never renamed by a lane.
 
+**`virtio`.** `--check` also refuses any Rust identifier or tracked path that says `virtio` outside
+`VIRTIO_BOUNDARY`, with no baseline (ruled 2026-11-20 UTC). Its BUGS: it reads Rust identifiers and
+paths only, so a shell or Python identifier, a Cargo feature or a package name that says `virtio`
+passes it; and the template's `[spelled_out]` list has no `virtio` row yet, so a crate outside this
+tree is not held to it (`PROSE_ONLY_WORDS` in helpers/vendored_name_gates.py).
+
 A name that passes every check is not thereby right: design/naming/rules-a-script-can-check.md
 lists the rules no script can apply.
 
@@ -347,6 +353,128 @@ def load(root):
     return records, unblocked, manifests, sources
 
 
+# --- `virtio` is spelled `virtual_io`, with no kept exception --------------------------------------
+
+# Ruled 2026-11-20 (UTC): a name this tree authors spells `virtio` as `virtual_io`, `VirtualIo` or
+# `VIRTUAL_IO_` (design/naming/acronyms-and-abbreviations.md), and no name is kept. This check has
+# no baseline and no ratchet: an identifier in Rust code (comments and literals stripped, so a
+# `#[doc(alias = "virtio")]` and the specification's word in prose are not names) or a tracked path
+# that says `virtio` fails, wherever it is, unless it is past the boundary below.
+#
+# The boundary is the one list of where the owner's spelling stands, keyed by path. A key ending in
+# `/` covers a directory. The value is the reason, or `(reason, names)` when only those identifiers
+# are excused in that file. An entry nothing in the tree matches any more fails, so the list only
+# empties.
+_DEVICE_OWNERS = ("the owner's spelling: QEMU device names, the devicetree's `virtio,mmio`, Linux "
+                  "module names and captured device output")
+_BLOCK_ROSTER = ("nifeos/block_roster_contract defines these constants, and its own repository "
+                 "renames them first; nife follows when its pin moves")
+_TRANSPORTS = frozenset({"TRANSPORT_VIRTIO_MEMORY_MAPPED_IO", "TRANSPORT_VIRTIO_PCI"})
+VIRTIO_BOUNDARY = {
+    "vendor/": "vendored third-party code keeps its upstream's names",
+    "bench/": "bench logs and captured fixtures keep what the device and the host printed, " + _DEVICE_OWNERS,
+    "design/roadmap/": "a milestone's file slug is its record and the branch it was cut on",
+    "components/src/disk_surveyor.rs": (_BLOCK_ROSTER, _TRANSPORTS),
+    "kernel/src/user/disk_service.rs": (_BLOCK_ROSTER, _TRANSPORTS),
+    "system_tests/src/user/disk_tests.rs": (_BLOCK_ROSTER, _TRANSPORTS),
+}
+_VIRTIO = re.compile(r"virtio", re.I)
+_IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+
+
+def _boundary_of(path, boundary):
+    """The boundary key that covers `path`, or None."""
+    for key in boundary:
+        if path == key or (key.endswith("/") and path.startswith(key)):
+            return key
+    return None
+
+
+def virtio_problems(paths, sources, boundary=None):
+    """Each place a name says `virtio`, as `path: why` strings; empty when there is none.
+
+    `paths` is every tracked path, `sources` maps a Rust path to its text. A boundary entry that
+    excuses nothing is a problem too, so a renamed foreign name takes its entry with it.
+    """
+    boundary = VIRTIO_BOUNDARY if boundary is None else boundary
+    bad, used = [], set()
+    for path in sorted(paths):
+        if not _VIRTIO.search(path):
+            continue
+        key = _boundary_of(path, boundary)
+        if key is None:
+            bad.append(f"{path}: the path says `virtio`; spell it `virtual_io` (`virtual-io` in a "
+                       f"document stem), or add the file to VIRTIO_BOUNDARY with the owner")
+        else:
+            used.add(key)
+    for path in sorted(sources):
+        key = _boundary_of(path, boundary)
+        entry = boundary.get(key) if key else None
+        if key and not isinstance(entry, tuple):
+            used.add(key)
+            continue
+        allowed = entry[1] if entry else frozenset()
+        stripped = name_crossings.strip(sources[path] or "")
+        for number, line in enumerate(stripped.split("\n"), 1):
+            for m in _IDENTIFIER.finditer(line):
+                word = m.group(0)
+                if not _VIRTIO.search(word):
+                    continue
+                if word in allowed:
+                    used.add(key)
+                    continue
+                bad.append(f"{path}:{number}: `{word}` says `virtio`; spell it `virtual_io`, "
+                           f"`VirtualIo` or `VIRTUAL_IO_`, with `#[doc(alias = \"virtio\")]` on a "
+                           f"public item")
+    for key in sorted(set(boundary) - used):
+        bad.append(f"VIRTIO_BOUNDARY lists `{key}`, and nothing there says `virtio` any more. "
+                   f"Remove the entry")
+    return bad
+
+
+def run_virtio_check(root):
+    out = subprocess.run(["git", "-C", root, "ls-files", "-z"], capture_output=True, text=True,
+                         check=True).stdout
+    paths = [p for p in out.split("\0") if p]
+    sources = {}
+    for p in paths:
+        if p.endswith(".rs") and os.path.isfile(os.path.join(root, p)):
+            sources[p] = open(os.path.join(root, p), errors="replace").read()
+    bad = virtio_problems(paths, sources)
+    if bad:
+        print("names: `virtio` is spelled `virtual_io` (design/naming/acronyms-and-abbreviations.md):",
+              file=sys.stderr)
+        for b in bad:
+            print(f"  {b}", file=sys.stderr)
+        return 1
+    print(f"names: no name says `virtio` outside the {len(VIRTIO_BOUNDARY)} boundary entries")
+    return 0
+
+
+def _selftest_virtio():
+    boundary = {"vendor/": "upstream", "a/uses.rs": ("foreign", frozenset({"FOREIGN_VIRTIO"}))}
+    clean = {"a/lib.rs": '#[doc(alias = "virtio")]\npub fn virtual_io_ring_barrier() {}\n'
+                         '// a virtio device\nconst S: &str = "virtio-blk-pci";\n',
+             "a/uses.rs": "use other::FOREIGN_VIRTIO;\n",
+             "vendor/x/lib.rs": "pub fn virtio_probe() {}\n"}
+    paths = list(clean) + ["vendor/x/virtio.rs"]
+    assert virtio_problems(paths, clean, boundary) == [], \
+        "an alias, a comment, a string, an excused foreign name and vendored code all pass"
+    for text in ("pub struct VirtioMmioDevice;", "const VIRTIO_SLOTS: u64 = 8;",
+                 "fn boot_virtio_net_device() {}", "let virtio = 1;", "mod virtio;"):
+        got = virtio_problems(paths, dict(clean, **{"a/lib.rs": text}), boundary)
+        # line-citation: exception. Reason: the expected failure text, a fixture file and line.
+        assert len(got) == 1 and got[0].startswith("a/lib.rs:1:"), (text, got)
+    got = virtio_problems(paths, dict(clean, **{"a/uses.rs": "use other::{FOREIGN_VIRTIO, OUR_VIRTIO};"}),
+                          boundary)
+    assert len(got) == 1 and "`OUR_VIRTIO`" in got[0], "a file entry excuses only its listed names"
+    got = virtio_problems(paths + ["notes/virtio.md"], clean, boundary)
+    assert len(got) == 1 and got[0].startswith("notes/virtio.md:"), "a path outside the boundary fails"
+    got = virtio_problems(["a/lib.rs"], {"a/lib.rs": ""}, boundary)
+    assert len(got) == 2 and all("Remove the entry" in g for g in got), \
+        "an entry that excuses nothing fails, so the boundary only empties"
+
+
 # --- the ratchet: names meet the current rules ------------------------------------------------------
 
 BASELINE = "design/naming-rule-baseline.txt"
@@ -642,6 +770,7 @@ def _selftest():
     RULED.clear()
     RULED.update(saved_ruled)
     _selftest_split()
+    _selftest_virtio()
     assert baseline_layout.problems("# rules 1\na x\nb x\n\n", BASELINE), \
         "rows on adjacent lines fail the layout check"
     spaced = baseline_layout.spaced(HEADER.format(rules=RULES), collections.Counter(["a x", "b x"]))
@@ -744,7 +873,8 @@ def main(argv):
     british = british_of(c[1] for c in cands + kept)
     rows = survey(cands, sources, manifests, british, reach)
     if mode == "--check":
-        return run_check(root, rows_of(rows), {f"{c[2]}::{c[1]}" for c in cands})
+        status = run_check(root, rows_of(rows), {f"{c[2]}::{c[1]}" for c in cands})
+        return run_virtio_check(root) or status
     if mode in ("--bank", "--init"):
         path = os.path.join(root, BASELINE)
         if mode == "--init" and os.path.exists(path):

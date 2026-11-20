@@ -5,13 +5,13 @@
 
 use super::*;
 
-/// Where [`boot_virtio_mmio_device`](super::device_starters), [`display_service`] and
+/// Where [`boot_virtual_io_mmio_device`](super::device_starters), [`display_service`] and
 /// [`keyboard_service`] write a DMA region's own physical base, in its first page's last eight
-/// bytes (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`). No
+/// bytes (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`). No
 /// driver's layout reaches there: entropy's rings and pool end at 0x500, `net_stack`'s rings and
 /// frame buffers at 0xF00.
 pub(crate) const DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET: u64 =
-    abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
+    abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
 const _: () =
     assert!(DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET + 8 <= FRAME_BYTES);
 

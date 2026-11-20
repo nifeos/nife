@@ -20,7 +20,7 @@
 //!   The virtio transport makes the same trade.
 //!
 //! Name: ratified 2026-10-06 (calef, "Yes", in conversation). A network card transport is
-//! `<device family>_transport`, as `virtio_net_transport` beside it in the same binary; the family
+//! `<device family>_transport`, as `virtual_io_net_transport` beside it in the same binary; the family
 //! is qualified only when its name covers more than one kind of device, as Synopsys's does. Refused
 //! `intel_e1000e_transport` and `e1000e_ethernet_transport` (nothing else is called e1000e; Linux
 //! names the driver `e1000e` and puts the vendor in the directory; vendors rebrand while family

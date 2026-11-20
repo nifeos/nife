@@ -35,6 +35,8 @@ rule for naming conventions and this one is the bug; this file keeps only the au
 
 A new or provisional hardware register, field or bit constant copied from a cited source takes the spelled-out identifier that says what the thing is. The source's spelling (the databook's or the BSD driver's) goes in `#[doc(alias = "...")]` and in the opening of the doc comment, with the source cited. OpenBSD's spelling is the one cited first, then FreeBSD's, and Linux's only when no BSD source names it. Ruled 2026-11-02 (UTC). A name already ratified keeps its spelling until its own name review. This does not cover a program, crate, command or other software name, which says what the thing does and follows the tree's own pattern (`system_installer`). The rule is in [design/naming.md](../../../design/naming.md).
 
+The private modules `tests` (host unit tests, declared under `#[cfg(test)]`) and `verification` (Kani proof harnesses, declared under `#[cfg(kani)]`) are ratified for every crate, present and future (ruled 2026-11-20 UTC). `script/names` and `helpers/name_release.py --draft` read them as ratified, so a review package never asks about them. The rule is Rule 4 of [design/naming/convention-rulings.md](../../../design/naming/convention-rulings.md).
+
 A name you mint or rename must pass the mechanical naming checks, which `script/lint` runs as
 "names meet the current naming rules" (`helpers/name_checks.py`). Renaming an unratified name to
 comply leaves it provisional; only calef ratifies.

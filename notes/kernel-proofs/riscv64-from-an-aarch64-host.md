@@ -101,7 +101,7 @@ stays near 400 MB peak resident.
 - Everything that touches the hardware is unreached: `init`, `cmd_push`, `take_fault`, and the write
   order in `attach` (valid bit last).
 - The register offsets and bit constants cannot be checked against the RISC-V IOMMU specification by
-  anything here. The boot-time confinement test in `kernel/src/virtio.rs` still stands against that.
+  anything here. The boot-time confinement test in `kernel/src/virtual_io.rs` still stands against that.
 - About 91% of `arch/riscv64/` is still reached by nothing, and so are the riscv64-only `cfg` sites
   outside `arch/`. `iommu.rs` is 564 of its 6,083 Rust lines (`wc -l`, 2026-09-25). This said 94%,
   from a total that counted every file twice.

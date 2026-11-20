@@ -24,8 +24,8 @@ out a library of nife's own holding the part every nife virtio driver shares. Th
 register vocabulary, the status and feature bits, the handshake, the descriptor and ring accessors
 at the fixed layout, the blk request chain and the net header. That part exists six times in the tree
 today, and the crate named `virtio` is not where it lives. The concrete example is
-`crates/virtio/src/lib.rs` lines 47 to 105 beside `components/src/virtio_net_transport.rs` lines 54 to 87: the same
-constants, spelled twice, with `virtio_net_transport` recording the copy as a bug and this crate
+`crates/virtio/src/lib.rs` lines 47 to 105 beside `components/src/virtual_io_net_transport.rs` lines 54 to 87: the same
+constants, spelled twice, with `virtual_io_net_transport` recording the copy as a bug and this crate
 recording nothing.
 
 The crate name `virtio` appears unclaimed on crates.io (one API call returned no crate; unverified

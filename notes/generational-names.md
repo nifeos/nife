@@ -165,7 +165,7 @@ crate keeps the form whose proofs finish, and the kernel accepts its `spawn_reap
 
 Next-fit is also visible to the kernel. Fresh-table names are the same (0, 1, 2 and on), but after
 a removal the next name lands at the cursor and not in the hole, and
-`a_name_to_a_released_device_is_refused_and_never_names_its_successor` in `kernel/src/virtio/tests.rs`
+`a_name_to_a_released_device_is_refused_and_never_names_its_successor` in `kernel/src/virtual_io/tests.rs`
 asserts that the successor reuses the released slot. And it does not delay exhaustion: `N` times
 2^32 inserts retire every slot under either order, so next-fit only trades a gradual shrink for all
 slots retiring at once.

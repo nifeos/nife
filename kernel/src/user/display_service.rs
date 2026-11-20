@@ -13,7 +13,7 @@ use core::num::NonZeroU64;
 use super::*;
 use crate::capability_object::{
     Rights, interrupt_capability, memory_region_capability, page_frame_run_capability,
-    page_frame_run_len, rendezvous_capability, virtio_capability,
+    page_frame_run_len, rendezvous_capability, virtual_io_capability,
 };
 use crate::sched::RendezvousId;
 
@@ -42,7 +42,7 @@ const MAP_BUDGET_PAGES: u64 = 24;
 const DRIVER_SLOT_REPORT: u64 = 0;
 #[doc(alias = "irq")]
 const DRIVER_SLOT_INTERRUPT: u64 = 1;
-const DRIVER_SLOT_VIRTIO: u64 = 2;
+const DRIVER_SLOT_VIRTUAL_IO: u64 = 2;
 const DRIVER_SLOT_DISPLAY: u64 = 3;
 const DRIVER_SLOT_BUDGET: u64 = 4;
 /// The whole DMA region, one capability (§102).
@@ -156,12 +156,12 @@ pub fn start_backing_escape(driver_image: &'static [u8]) -> Option<(RendezvousId
 ///
 /// The transport is registered and confined to [`dma`](GpuDevice::dma)'s run, the interrupt routed
 /// and enabled, and the region's physical base written into its first page at
-/// `abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. [`wire_driver`]
+/// `abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. [`wire_driver`]
 /// spawns a driver on it; the progenitor is granted it as capabilities by
 /// `kernel::user::boot_progenitor` and builds `gpu_driver` and `display_terminal` itself.
 /// Name: provisional.
 pub struct GpuDevice {
-    /// The `Virtio` capability's id (`crate::virtio::register`'s return value).
+    /// The `VirtualIo` capability's id (`crate::virtual_io::register`'s return value).
     pub vid: u64,
     /// The completion interrupt, routed and enabled.
     pub intid: u32,
@@ -185,7 +185,7 @@ pub(crate) const GPU_SURFACE_RUN: NonZeroU64 = SURFACE_RUN;
 /// spawning nothing. `None` if no virtio-gpu function is on the bus.
 ///
 /// The region is one contiguous, zeroed run of [`DMA_PAGE_FRAMES`] frames, registered with
-/// `crate::virtio` as one region and granted as one `PageFrame` capability (§102).
+/// `crate::virtual_io` as one region and granted as one `PageFrame` capability (§102).
 pub(crate) fn wire_device() -> Option<GpuDevice> {
     let d = crate::pci::find_gpu_device()?;
 
@@ -204,8 +204,8 @@ pub(crate) fn wire_device() -> Option<GpuDevice> {
 
     // Register the transport: the kernel keeps the registers and the two DMA-critical powers,
     // and confines the device in hardware to exactly this region plus the shadow page.
-    let vid = crate::virtio::register(
-        crate::virtio::Transport::pci(&d),
+    let vid = crate::virtual_io::register(
+        crate::virtual_io::Transport::pci(&d),
         dma,
         DMA_PAGE_FRAMES * FRAME_BYTES,
         Some(d.rid), // the PCIe requester id the IOMMU keys its tables on
@@ -239,7 +239,7 @@ fn wire_driver(
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the driver");
     crate::sched::spawn(move || {
         // The driver's death gives the slot back (§16 (object revocation), amendment of 2026-10-27).
-        crate::virtio::bind_to_current_thread(vid);
+        crate::virtual_io::bind_to_current_thread(vid);
         crate::sched::grant_at(
             DRIVER_SLOT_REPORT,
             rendezvous_capability(driver_report, Rights::WRITE),
@@ -247,7 +247,7 @@ fn wire_driver(
         .expect("driver slot 0 was occupied");
         crate::sched::grant_at(DRIVER_SLOT_INTERRUPT, interrupt_capability(intid))
             .expect("driver slot 1 was occupied");
-        crate::sched::grant_at(DRIVER_SLOT_VIRTIO, virtio_capability(vid))
+        crate::sched::grant_at(DRIVER_SLOT_VIRTUAL_IO, virtual_io_capability(vid))
             .expect("driver slot 2 was occupied");
         crate::sched::grant_at(
             DRIVER_SLOT_DISPLAY,

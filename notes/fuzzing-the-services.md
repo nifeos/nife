@@ -105,7 +105,7 @@ One more target adds one minute.
 because `user_mode_runtime` carries EL0 assembly. Giving it a host part means a sans-IO crate,
 measured by reading rather than by doing it:
 
-- about 630 lines moved, with seven helper signatures taking `virtio_net_transport::VirtioNet` that
+- about 630 lines moved, with seven helper signatures taking `virtual_io_net_transport::VirtualIoNet` that
   would take smoltcp's `phy::Device` instead, so a host test supplies a loopback device;
 - the clock (`instant` at 7 sites, `now`) and the two blocking waits (`wait_for_nic`,
   `service_until` at 8 sites, which sleep on the NIC interrupt and a timer) become an edge trait,

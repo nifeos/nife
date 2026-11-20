@@ -10,7 +10,7 @@ diff --git a/crates/socket_contract/src/lib.rs b/crates/socket_contract/src/lib.
 +++ b/crates/socket_contract/src/lib.rs
 @@ -135,7 +135,7 @@
  ///
- /// Name: provisional, minted 2026-11-11 (UTC) by lane/accept-reply-carries-the-peer.
+ /// Name: ratified 2026-11-20 (UTC).
  pub const fn peer_word(octets: [u8; 4], port: u16) -> u64 {
 -    (u32::from_be_bytes(octets) as u64) << 16 | port as u64
 +    (u32::from_be_bytes(octets) as u64) << 15 | port as u64

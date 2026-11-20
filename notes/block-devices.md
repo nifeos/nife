@@ -33,7 +33,7 @@ a program holds moves one filesystem block per request, 4096 bytes, because that
 So "read LBA 1" is "read transfer block 0, take bytes 512..1024", and the backup table's 33 logical
 blocks start partway into a transfer block at an offset that depends on the disk's size.
 
-`globally_unique_identifier_partition_table::span::Span::covering(byte_offset, len, transfer)` is that arithmetic, in one host-tested
+`globally_unique_identifier_partition_table::span::Span::covering(byte_offset, len, transfer_bytes)` is that arithmetic, in one host-tested
 place, because three open-coded divisions in a driver is how you get an off-by-one that reads a
 plausible-looking buffer full of the wrong bytes and then blames the CRC. It does not break the
 crate's no-I/O rule: it computes *where* to read and the caller reads.
@@ -241,7 +241,7 @@ says the fix is an unregister on process death rather than counting to seven.
 
 And then the write half counted to seven, the same day, for the blank disk's block server. The
 comment records that it was told not to and why it did anyway: the unregister has to decide what a
-`Virtio` capability *is* once its holder is dead. It must also decide whether a transport may be
+`VirtualIo` capability *is* once its holder is dead. It must also decide whether a transport may be
 handed to a second driver after the first programmed the device. That is a lifetime decision about a
 kernel object rather than a bookkeeping change. Worth flagging as a real piece of work now: two
 bumps in one day is a different signal from one every few milestones.

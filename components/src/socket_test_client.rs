@@ -352,7 +352,7 @@ fn attach_page_frame() {
 /// **`TEST_NAME_RESOLUTION`**: the gating exchange against the runners' name server, then the
 /// non-gating one against the host's resolver, reported together as `(gating, real)`. One role and
 /// one `net_stack` for both, because every stack a test starts holds a virtio slot for the rest of
-/// the boot and the table is at its ceiling (`MAXIMUM_DEVICES` in kernel/src/virtio.rs).
+/// the boot and the table is at its ceiling (`MAXIMUM_DEVICES` in `kernel/src/virtual_io.rs`).
 fn name_resolution() -> ! {
     attach_page_frame();
     let gating = against_the_name_server();
@@ -802,7 +802,7 @@ fn udp_bind_half() {
 
 /// Where the spawner maps the image's package catalogue (`package_archive::CATALOG`) for
 /// [`TEST_HTTP_PACKAGE`], read-only. The kernel test and this file must agree; see
-/// `kernel/src/user/virtio_service.rs`'s `NET_CLIENT_CATALOGUE_VA`.
+/// `kernel/src/user/virtual_io_service.rs`'s `NET_CLIENT_CATALOGUE_VA`.
 const CATALOGUE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00C0_0000);
 /// Reported in a word of its own when the fetched bytes did not match the catalogue's digest, which
 /// is the refusal the tampered fetch must produce. Distinct from `OK` and from every stage failure,

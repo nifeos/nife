@@ -143,7 +143,7 @@ Memory reads back as the previous owner's data.
 That is a security hole, and it is close to undebuggable: the page tables in memory are
 correct. The lie lives in a CPU cache you cannot inspect.
 
-So `unmap` doesn't do the work and trust you to remember. It hands back a `TlbFlush`.
+So `unmap` doesn't do the work and trust you to remember. It hands back a `TranslationLookasideBufferFlush`.
 
 `#[must_use]` alone is not enough. It warns on `mapper.unmap(va);` as a bare statement, but says
 nothing about
@@ -154,7 +154,7 @@ let (pa, _) = mapper.unmap(va)?;   // obligation destructured away, silently
 
 which is exactly the shape the mistake takes in real code. Rust has no linear types, so the
 only way to make "you must consume this" enforceable is to make *not* consuming it fail loudly:
-`TlbFlush` has a `Drop` that panics. The only ways out are `.flush()` or the `unsafe`
+`TranslationLookasideBufferFlush` has a `Drop` that panics. The only ways out are `.flush()` or the `unsafe`
 `.assume_no_stale_entry()`, which makes you say why.
 
 There is a kernel test that makes staleness *observable*: map a VA to frame A (holding

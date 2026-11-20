@@ -59,8 +59,11 @@ fn sgdisk_writes_a_table_we_accept_whole() {
         "1 MBR + 1 header + 32 array"
     );
     assert_eq!(table.last_usable_logical_block_address(), BLOCKS - 34);
-    assert_eq!(table.primary_entry_logical_block_address(), 2);
-    assert_eq!(table.backup_entry_logical_block_address(), BLOCKS - 33);
+    assert_eq!(table.primary_entry_array_logical_block_address(), 2);
+    assert_eq!(
+        table.backup_entry_array_logical_block_address(),
+        BLOCKS - 33
+    );
     assert_eq!(table.backup_header_logical_block_address(), BLOCKS - 1);
 
     let parts: Vec<_> = table.partitions().collect();
@@ -242,8 +245,8 @@ fn creating_the_same_table_from_scratch_matches_sgdisk_byte_for_byte() {
         original.last_usable_logical_block_address()
     );
     assert_eq!(
-        rebuilt.backup_entry_logical_block_address(),
-        original.backup_entry_logical_block_address()
+        rebuilt.backup_entry_array_logical_block_address(),
+        original.backup_entry_array_logical_block_address()
     );
     assert_eq!(rebuilt.entry_array(), original.entry_array());
 
@@ -473,7 +476,7 @@ fn the_backup_alone_restores_the_primary_byte_for_byte() {
     table.write_primary_header(&mut restored).unwrap();
     assert_eq!(&restored[..], header_block, "the primary header, restored");
     assert_eq!(table.entry_array(), original.entry_array());
-    assert_eq!(table.primary_entry_logical_block_address(), 2);
+    assert_eq!(table.primary_entry_array_logical_block_address(), 2);
     assert_eq!(table.partitions().count(), 3);
     table
         .check_backup(backup_header_block, backup_array)

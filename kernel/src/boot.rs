@@ -325,7 +325,7 @@ fn bring_up_machine(boot_info_pointer: usize) {
     }
 
     // The SMMUv3, if present, after `mmu::initialize` mapped its block: default-deny, so every PCIe
-    // stream aborts until `virtio::register` confines its device. The CPU's own ECAM and BAR reads
+    // stream aborts until `virtual_io::register` confines its device. The CPU's own ECAM and BAR reads
     // are not DMA, so PCI enumeration below is unaffected. See notes/iommu.md.
     #[cfg(not(target_arch = "x86_64"))]
     if let Some((smmu_base, _)) = memory::smmu_region() {

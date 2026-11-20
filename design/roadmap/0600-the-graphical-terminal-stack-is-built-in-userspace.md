@@ -18,7 +18,7 @@ x86_64 has no virtio-gpu, and its screen terminal is a separate case; both are r
 The proposal asked whether the gpu's DMA pages are one frame run, and whether its `virtio`
 registration accepts one. Yes to both, since milestone 142 (a text display good enough that people
 use it instead of a GUI). `display_service::wire_device` allocates the region with one
-`alloc_contiguous_zeroed(DMA_PAGE_FRAMES)`. It registers it with `crate::virtio::register` as one
+`alloc_contiguous_zeroed(DMA_PAGE_FRAMES)`. It registers it with `crate::virtual_io::register` as one
 region, and grants it as one `PageFrame` capability (DECISIONS §102 (a Frame names a run of pages)).
 `gpu_driver` maps it in one `MAP`.
 
@@ -50,7 +50,7 @@ is how it already built `entropy` and `net_stack`.
 - The drivers read their DMA base out of their DMA region. A process that holds a run as a
   capability knows no physical address, which is the point. So the kernel writes each region's
   physical base into its first page at
-  `abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, and `gpu_driver`
+  `abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, and `gpu_driver`
   and `keyboard_driver` read it there instead of from `x1`. The rng and the NIC have used that
   convention since DECISIONS §120 (a QEMU-only virtio-rng stopgap for the interactive boot). The
   kernel's test wiring writes it the same way, so the harness and the boot give each driver one

@@ -37,7 +37,7 @@ has built it. As the tree stands at `eb037d373`, the aarch64 kernel can only run
 | physical load address | `kernel/link-aarch64.ld` `PHYS_START`, `image_header.s` `text_offset` 0x80000 | RAM at 0x4000_0000, so 0x4008_0000 | DRAM at 0x8000_0000 (127's step 2 expects it), so `booti` puts the image at 0x8008_0000 |
 | boot block map | `boot.s`: L1[0] device, L1[1] normal RAM | right | the kernel's own RAM is unmapped, and the UART at 0x7000_6000 falls in L1[1] as *normal* memory |
 | console UART | `console.rs` picks `Pl011` on aarch64; `mmu.rs` `UART_BASE` 0x0900_0000 | PL011 | 16550, `reg-shift=2`, at 0x7000_6000 (the survey) |
-| virtio-mmio window | `mmu.rs` `VIRTIO_MMIO_BASE` 0x0a00_0000, mapped and probed unconditionally | 32 slots | unknown; riscv64 found QEMU's constants colliding with the JH7110's map on radon's first boot |
+| virtio-mmio window | `mmu.rs` `VIRTUAL_IO_MMIO_BASE` 0x0a00_0000, mapped and probed unconditionally | 32 slots | unknown; riscv64 found QEMU's constants colliding with the JH7110's map on radon's first boot |
 
 So a TX1 `booti` today jumps into an image linked 1 GiB below where it sits. The MMU-on jump
 lands on unmapped memory before `console::initialize`, and the board prints nothing. That silence

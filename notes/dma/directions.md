@@ -74,7 +74,7 @@ descriptor table, available ring, and used ring sit at `q * RING_BLOCK` (0x200).
 the driver's DMA region and the one kernel-private shadow frame (two queues fit in 0x400 of a 4 KiB
 frame, asserted at compile time). Queue 0's offsets are exactly the old single-queue layout, so the
 disk driver did not change. Its data buffers already start at 0x200, which is queue 1's block, and a
-disk has no queue 1. The `Virtio` capability's methods grew a queue argument rather than gaining new
+disk has no queue 1. The `VirtualIo` capability's methods grew a queue argument rather than gaining new
 methods. The disk passes queue 0 and its ABI is byte-identical (DECISIONS §23 (multi-queue DMA confinement)).
 
 The validation that is NOT new, and why that is the honest finding. `validate_and_shadow` did not

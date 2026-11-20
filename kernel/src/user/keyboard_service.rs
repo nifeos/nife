@@ -1,6 +1,6 @@
 use super::*;
 use crate::capability_object::{
-    Rights, interrupt_capability, rendezvous_capability, virtio_capability,
+    Rights, interrupt_capability, rendezvous_capability, virtual_io_capability,
 };
 use crate::sched::RendezvousId;
 
@@ -28,12 +28,12 @@ pub struct Wiring {
 /// [`display_service::GpuDevice`]'s twin. [`start`] drives it, and `kernel::user::boot_progenitor`
 /// grants it to the progenitor. Name: provisional.
 pub(crate) struct KeyboardDevice {
-    /// The `Virtio` capability's id.
+    /// The `VirtualIo` capability's id.
     pub vid: u64,
     /// The event interrupt, routed and enabled.
     pub intid: u32,
     /// The one DMA page's physical base, which the page also carries at
-    /// `abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`.
+    /// `abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`.
     pub dma: u64,
     /// The rendezvous the interrupt is bound to, which a bench row watches.
     pub interrupt_ep: RendezvousId,
@@ -49,7 +49,7 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
         .expect("no DMA region for the keyboard driver")
         .physical_address();
     // Where the page is, in the page
-    // (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`): the driver
+    // (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`): the driver
     // reads it there rather than from `arg1`, so a supervisor that holds only the frame capability
     // can build it.
     super::write_dma_phys(dma);
@@ -58,8 +58,8 @@ pub(crate) fn wire_device() -> Option<KeyboardDevice> {
     crate::sched::bind_interrupt(d.intid, interrupt_ep);
     crate::arch::interrupt_controller::enable(d.intid);
 
-    let vid = crate::virtio::register(
-        crate::virtio::Transport::pci(&d),
+    let vid = crate::virtual_io::register(
+        crate::virtual_io::Transport::pci(&d),
         dma,
         DMA_PAGE_FRAMES * FRAME_BYTES,
         Some(d.rid),
@@ -112,7 +112,7 @@ pub fn start(image: &'static [u8]) -> Option<Wiring> {
                 grants: &[
                     rendezvous_capability(report, Rights::WRITE), // slot 0: status
                     interrupt_capability(intid),                  // slot 1: the event interrupt
-                    virtio_capability(vid),                       // slot 2: the confined transport
+                    virtual_io_capability(vid),                   // slot 2: the confined transport
                     rendezvous_capability(doorbell, Rights::WRITE), // slot 3: ring the compositor
                 ],
                 maps: &maps,

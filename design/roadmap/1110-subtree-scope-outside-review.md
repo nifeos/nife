@@ -77,7 +77,7 @@ the crate's own reasons.
   `cap-std` is move work, with P0-1.
 - Decision, the crate's name: Done, [#3589](https://github.com/nifeos/nife/pull/3589) (maintainer,
   provisional, 2026-11-14 UTC; nothing to build).
-- Follow-on, the move into the step-9 repository: Open, and an open decision below.
+- Follow-on, the move out of the tree at step 9, on this crate's own clearance: Open, and an open decision below.
 
 ## Open decisions
 
@@ -85,27 +85,25 @@ the crate's own reasons.
 
 The crate decides two things for a file server: whether a path stays beneath one directory, and
 which handles one client may use. Its one consumer is `redoxfs_server`. Milestone 1017's step 9
-moves it with `memory_region_heap` and `redoxfs` into one new public repository, ruled 2026-11-01
-(UTC), after the ten contract crates those link. Creating a public repository is an outward step,
+moves it, after the ten contract crates it links, on its own clearance. `subtree_scope` and
+`memory_region_heap` leave as one repository or two, decided at the move. `redoxfs` keeps its own
+track (ruled 2026-11-20 UTC). Creating a public repository is an outward step,
 and the standing rule is that clearing a crate's review package approves it. This crate has no
 package under `notes/crate-reviews/` yet, so there is nothing to clear.
 
 The move also waits on P0-3's pin, which needs `filesystem_contract`'s repository first. The
 renames of P1-7 are done, and a lane wrote the
 [review package](../../notes/crate-reviews/subtree-scope.md) (maintainer ruling, provisional, 2026-11-19
-UTC: option A for writing it). Clearing it, the go to create the step-9 repository with
-`memory_region_heap` and `redoxfs`, with no tag and no publish, stays open. The architect decides it
+UTC: option A for writing it). Clearing it, the go to create the repository with no tag and no publish, stays open. The architect decides it
 from the package.
 
 Recommendation: A.
 
 - A. A lane writes the review package once P1-7's renames land and `filesystem_contract` has its
-  tag; clearing it approves the move, together with the step-9 packages of `memory_region_heap`
-  and `redoxfs`, with no tag and no publish.
-- B. Clear this crate's package on its own, ahead of the other two, so its renames and pin land in
-  the new repository.
-- C. Keep the crate inside `redoxfs`'s package and clear the repository once, with no package of
-  its own.
+  tag; clearing it approves the move, with no tag and no publish; it does not wait for the
+  packages of `memory_region_heap` or `redoxfs`.
+- B. Clear this crate's package on its own, so its renames and pin land in the new repository.
+- C. Keep the crate inside `redoxfs`'s package, with no package of its own.
 
 Door: one-way. The repository is public the moment it exists, and `redoxfs_server`'s manifest
 switches to it; a rename or a split after that breaks every pin.
@@ -115,7 +113,7 @@ beneath the `Dir` type (from memory, unverified), the shape A keeps. Linux keeps
 as `RESOLVE_BENEATH` in `openat2`. nife differs by putting the decision in a crate a server links
 and a prover checks. In this tree, `generational_table` and `e1000e` each moved after a cleared
 package of their own. Example: under A, the server's manifest reads `subtree_scope = { version =
-"0.1.0", git = "https://github.com/nifeos/<step-9 repository>", rev = "<sha>" }`.
+"0.1.0", git = "https://github.com/nifeos/<repository>", rev = "<sha>" }`.
 
 Blocks: the move, and with it any tag and the first publish.
 
@@ -209,7 +207,7 @@ The crate keeps `subtree_scope` (maintainer, provisional, 2026-11-14 UTC). It is
 spelled out, and it says what the crate is: the scope of a subtree grant. `use
 subtree_scope::{walk, admit}` reads as what the two calls do. The door is two-way. The crate's one
 consumer is `redoxfs_server`, and step 9 of milestone 1017 places it in one repository with
-`memory_region_heap` and `redoxfs`, so its name is a workspace crate's name and not a repository's.
+`memory_region_heap` or in one of its own, decided at the move. Its name may be a workspace crate's name and not a repository's.
 The publishing hold keeps it off crates.io. If the crate is ever published on
 its merits, its crates.io name comes to the architect then, and ratifying it stays the architect's.
 

@@ -30,7 +30,7 @@ pub mod slot {
     ///
     /// Name: ratified 2026-11-14 (UTC), block 1078.
     pub const TRUE_RANDOM_NUMBER_GENERATOR: u64 = 3;
-    /// Disk 0's `Virtio` transport, when this machine has a virtio disk.
+    /// Disk 0's `VirtualIo` transport, when this machine has a virtio disk.
     ///
     /// Name: provisional.
     pub const DISK_TRANSPORT: u64 = 4;

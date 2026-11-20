@@ -27,7 +27,7 @@ Ruled out: the guest quietly serving fewer than four. Every guest path that serv
 rounds is loud. `socket_test_client::serve_one_inbound` calls `done(0xE060)`/`done(0xE070)` when
 `ACCEPT` returns `REP_ERR`, and `std_exerciser::serve_one_inbound` panics, because the overlay's
 `accept` turns the bounded wait's expiry into `WouldBlock` and the exerciser unwraps it. There is
-exactly one silent path, and it is worth knowing: `virtio_service::start_net_std` and its SMB
+exactly one silent path, and it is worth knowing: `virtual_io_service::start_net_std` and its SMB
 sibling begin with `find_net_device()?`, so a leg that cannot find the NIC prints
 `(no virtio-net device attached; skipping)` and the test passes having offered nothing. That would
 produce 2 of 4 on the nose, which is the second observation's number.

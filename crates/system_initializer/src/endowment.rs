@@ -44,18 +44,21 @@ pub struct BootEndowment {
     /// can delegate it to an entropy service it builds. **Absent** on real hardware or a run with
     /// `NIFE_RNG` unset. [`boot`](crate::boot) probes for it, because all three `START` words are
     /// spent (`role`, `initial_ramdisk_len`, `fs_rights`).
-    pub virtio_rng: u64,
-    /// The device's completion interrupt; see [`virtio_rng`](BootEndowment::virtio_rng). `READ |
-    /// GRANT`, routed by the kernel but left unenabled on riscv64 (`kernel::user::VirtioBootGrant`'s
+    #[doc(alias = "virtio")]
+    pub virtual_io_rng: u64,
+    /// The device's completion interrupt; see [`virtual_io_rng`](BootEndowment::virtual_io_rng). `READ |
+    /// GRANT`, routed by the kernel but left unenabled on riscv64 (`kernel::user::VirtualIoBootGrant`'s
     /// own doc: the board's hart-lottery hazard means only the kernel, which knows the true boot
     /// hart, may enable it, and it already did before granting this).
-    pub virtio_rng_interrupt: u64,
+    #[doc(alias = "virtio")]
+    pub virtual_io_rng_interrupt: u64,
     /// **The DMA page the kernel wrote `direct_memory_access_phys` into**, at its own last eight bytes; see
-    /// [`virtio_rng`](BootEndowment::virtio_rng). `READ | WRITE | GRANT`: this process maps it to
+    /// [`virtual_io_rng`](BootEndowment::virtual_io_rng). `READ | WRITE | GRANT`: this process maps it to
     /// read that value back out (entropy needs its own DMA region's physical base as a plain
     /// value; no capability exposes one), then delegates the same frame to the entropy service it
     /// builds, unread by anything else in between.
-    pub virtio_rng_dma: u64,
+    #[doc(alias = "virtio")]
+    pub virtual_io_rng_dma: u64,
     /// **`display_terminal`'s served endpoint, on a boot whose terminal is a screen beside the
     /// serial console**: the kernel put `display_terminal` on the firmware's framebuffer
     /// (`kernel::user::boot_screen_terminal`), and the UART is still the console and the keystroke
@@ -74,7 +77,7 @@ pub struct BootEndowment {
     /// four.
     pub gpu_surface: u64,
     /// **A virtio-gpu, when this boot has one**: the confined transport, `WRITE | GRANT`, the
-    /// [`virtio_rng`](BootEndowment::virtio_rng) trio's shape plus
+    /// [`virtual_io_rng`](BootEndowment::virtual_io_rng) trio's shape plus
     /// [`gpu_surface`](BootEndowment::gpu_surface). Nothing is built from it at boot; the spawn
     /// service keeps it and its three siblings and builds each `graphical_terminal` session's
     /// drivers from them, and the shell holds none. **Absent** with no GPU on the bus; deleted at
@@ -85,11 +88,11 @@ pub struct BootEndowment {
     /// The gpu's whole DMA region: one `PageFrame` capability naming the run (DECISIONS §102 (a Frame names a run of pages)), rings
     /// and control buffers in the first page and the surface after it. `READ | WRITE | GRANT`. The
     /// region carries its own physical base at
-    /// `abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, which
+    /// `abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, which
     /// `gpu_driver` reads itself, so this process never maps it.
     pub gpu_dma: u64,
     /// **A virtio keyboard, when this boot has a gpu too**: the confined transport, `WRITE |
-    /// GRANT`, the [`virtio_rng`](BootEndowment::virtio_rng) trio's shape. The spawn service keeps
+    /// GRANT`, the [`virtual_io_rng`](BootEndowment::virtual_io_rng) trio's shape. The spawn service keeps
     /// it beside the gpu's four and builds a session's `keyboard_driver` from it. **Absent** on
     /// every real board, and then a session reads keystrokes from the boot's line discipline over
     /// the UART. Only ever granted beside [`gpu`](BootEndowment::gpu).
@@ -97,21 +100,24 @@ pub struct BootEndowment {
     /// The keyboard's event interrupt, `READ | GRANT`.
     pub keyboard_interrupt: u64,
     /// The keyboard's one DMA page, `READ | WRITE | GRANT`, carrying its own physical base at
-    /// `abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET` as
+    /// `abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET` as
     /// [`gpu_dma`](BootEndowment::gpu_dma) does.
     pub keyboard_dma: u64,
     /// **A virtio-net device, when this boot has one.** The confined transport, `WRITE | GRANT`,
-    /// the [`virtio_rng`](BootEndowment::virtio_rng) trio's shape exactly: this process delegates
+    /// the [`virtual_io_rng`](BootEndowment::virtual_io_rng) trio's shape exactly: this process delegates
     /// it into the `net_stack` it builds and keeps nothing. **Absent** on every real board today
     /// and on any QEMU run with `NIFE_NET` unset, and [`boot`](crate::boot) probes for it the way
     /// it probes for the rng.
-    pub virtio_net: u64,
-    /// The network card's interrupt, `READ | GRANT`; see [`virtio_net`](BootEndowment::virtio_net)
-    /// and, for why it arrives unenabled on riscv64, [`virtio_rng_interrupt`](BootEndowment::virtio_rng_interrupt).
-    pub virtio_net_interrupt: u64,
+    #[doc(alias = "virtio")]
+    pub virtual_io_net: u64,
+    /// The network card's interrupt, `READ | GRANT`; see [`virtual_io_net`](BootEndowment::virtual_io_net)
+    /// and, for why it arrives unenabled on riscv64, [`virtual_io_rng_interrupt`](BootEndowment::virtual_io_rng_interrupt).
+    #[doc(alias = "virtio")]
+    pub virtual_io_net_interrupt: u64,
     /// The network card's DMA page, with its own physical base written at its last eight bytes;
-    /// [`virtio_rng_dma`](BootEndowment::virtio_rng_dma)'s shape and reason. `READ | WRITE | GRANT`.
-    pub virtio_net_dma: u64,
+    /// [`virtual_io_rng_dma`](BootEndowment::virtual_io_rng_dma)'s shape and reason. `READ | WRITE | GRANT`.
+    #[doc(alias = "virtio")]
+    pub virtual_io_net_dma: u64,
     /// **An entropy service the kernel already built on the CPU's seed instruction** (`RDSEED` on
     /// `x86_64`, `RNDRRS` on aarch64), when this boot has no virtio-rng. The request endpoint,
     /// `WRITE | GRANT`, already proven: the kernel waited for the service's readiness report and
@@ -167,7 +173,7 @@ pub struct BootEndowment {
     /// **A network stack the kernel already built on an `e1000e` NIC**: its `Stack` endpoint with
     /// every right, the same endpoint to everything downstream as the virtio path's. The kernel
     /// builds this server for `kernel::user::boot_usb_keyboard`'s reason (spawn-time mappings no
-    /// capability names). **Never both** this and [`virtio_net`](BootEndowment::virtio_net).
+    /// capability names). **Never both** this and [`virtual_io_net`](BootEndowment::virtual_io_net).
     /// **Absent** on every `virt` boot, on a NIC with no link, and on a part no gate has driven,
     /// such as the I219 that milestone 494 (a driver for the network card a PC actually has) is
     /// for. [`boot`](crate::boot) probes.
@@ -222,7 +228,7 @@ pub struct BootEndowment {
     ///
     /// Name: provisional, milestone 1063's lane, 2026-11-10 (UTC).
     pub self_test_random_number_generator: u64,
-    /// Disk 0's `Virtio` transport, interrupt and DMA page, all with `GRANT`, for the
+    /// Disk 0's `VirtualIo` transport, interrupt and DMA page, all with `GRANT`, for the
     /// `block_device` check. **Absent** on a machine with no virtio disk; [`boot`](crate::boot)
     /// probes. Passed to `boot_self_test` and then deleted.
     ///

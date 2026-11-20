@@ -76,3 +76,17 @@ below. It expires on its end date, and the check then fails again. A bullet name
 exception is never silent.
 
 - (none)
+
+## Rule 4: the private modules `tests` and `verification` are ratified for every crate
+
+Applies: standing-modules
+Ratified: 2026-11-20 (UTC)
+
+What it covers. A module file named `tests` (host unit tests) whose `mod` line sits under a
+`#[cfg(...)]` attribute naming `test`, and a module file named `verification` (Kani proof harnesses)
+whose `mod` line sits under one naming `kani`. This holds in any crate, present and future.
+The file is `tests.rs` or `tests/mod.rs` (likewise `verification`) under a `src/` directory. Both
+names count as ratified, with or without a `Name:` block, so a review package never asks about them.
+
+What it pulls aside. A module of either name whose `mod` line lacks the gating attribute. Also a
+`pub` item inside one of them, which keeps its own status.

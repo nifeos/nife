@@ -1,13 +1,13 @@
-//! **Thin safe wrappers over the four `Virtio` capability methods**, and the barrier that orders
+//! **Thin safe wrappers over the four `VirtualIo` capability methods**, and the barrier that orders
 //! a virtqueue against the device.
 //!
-//! Each wrapper's only obligation is `invoke`'s own; `abi::virtio` states what the kernel checks
+//! Each wrapper's only obligation is `invoke`'s own; `abi::virtual_io` states what the kernel checks
 //! (`WRITE_REGISTER` refuses the queue-address and notify registers; `SETUP_QUEUE` and `NOTIFY` are
 //! bounds-checked against the DMA region and its high-water mark). A module rather than crate-root
-//! items, because only a program that owns a `Virtio` capability needs them. See
+//! items, because only a program that owns a `VirtualIo` capability needs them. See
 //! notes/user-mode-runtime.md.
 
-/// `READ_REGISTER` at `off` on the `Virtio` capability in `virtio_slot`. Reads are DMA-safe, so any
+/// `READ_REGISTER` at `off` on the `VirtualIo` capability in `virtual_io_slot`. Reads are DMA-safe, so any
 /// aligned register in the device's own slot. Returns the register value, or a negative
 /// `abi::Error`.
 ///
@@ -15,27 +15,35 @@
 /// question 2), with [`write_register`], [`setup_queue`] and [`notify`]. His words: "Yes". Refused
 /// `virtio_read_reg` (round 7's provisional name; the module already says virtio, and reg is an
 /// abbreviation).
-pub fn read_register(virtio_slot: u64, off: u64) -> i64 {
-    // SAFETY: `svc`/`ecall`. The kernel validates the Virtio capability before it reads the
+pub fn read_register(virtual_io_slot: u64, off: u64) -> i64 {
+    // SAFETY: `svc`/`ecall`. The kernel validates the VirtualIo capability before it reads the
     // register and refuses an offset outside the device's slot.
-    unsafe { super::invoke(virtio_slot, abi::virtio::READ_REGISTER, off, 0, 0) }
+    unsafe { super::invoke(virtual_io_slot, abi::virtual_io::READ_REGISTER, off, 0, 0) }
 }
 
-/// `WRITE_REGISTER` `value` at `off` on the `Virtio` capability in `virtio_slot`. `0` on success; a
+/// `WRITE_REGISTER` `value` at `off` on the `VirtualIo` capability in `virtual_io_slot`. `0` on success; a
 /// negative `abi::Error` (`NotPermitted` for a queue-address or notify register, which only
 /// [`setup_queue`]/[`notify`] may touch).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`read_register`]. His words: "Yes". Refused `virtio_write_reg` (round 7's
 /// provisional name).
-pub fn write_register(virtio_slot: u64, off: u64, value: u64) -> i64 {
-    // SAFETY: `svc`/`ecall`. The kernel validates the Virtio capability and refuses any register
+pub fn write_register(virtual_io_slot: u64, off: u64, value: u64) -> i64 {
+    // SAFETY: `svc`/`ecall`. The kernel validates the VirtualIo capability and refuses any register
     // this call is not DMA-safe to write.
-    unsafe { super::invoke(virtio_slot, abi::virtio::WRITE_REGISTER, off, value, 0) }
+    unsafe {
+        super::invoke(
+            virtual_io_slot,
+            abi::virtual_io::WRITE_REGISTER,
+            off,
+            value,
+            0,
+        )
+    }
 }
 
 /// `SETUP_QUEUE` virtqueue `queue` (0-indexed; a virtio-net device uses 0 = receive, 1 = transmit)
-/// with `descriptors` descriptors, on the `Virtio` capability in `virtio_slot`. The kernel programs the
+/// with `descriptors` descriptors, on the `VirtualIo` capability in `virtual_io_slot`. The kernel programs the
 /// ring addresses to the fixed offsets of that queue's ring block in the driver's own DMA region;
 /// the driver never chooses them. `0` on success; a negative `abi::Error` (`BadQueue`/`WrongObject`
 /// if `queue` is out of range or the block does not fit the region).
@@ -43,23 +51,31 @@ pub fn write_register(virtio_slot: u64, off: u64, value: u64) -> i64 {
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`read_register`]. His words: "Yes". Refused `virtio_setup_queue` (round 7's
 /// provisional name).
-pub fn setup_queue(virtio_slot: u64, descriptors: u64, queue: u64) -> i64 {
-    // SAFETY: `svc`/`ecall`. The kernel validates the Virtio capability, `queue`, and that the
+pub fn setup_queue(virtual_io_slot: u64, descriptors: u64, queue: u64) -> i64 {
+    // SAFETY: `svc`/`ecall`. The kernel validates the VirtualIo capability, `queue`, and that the
     // ring block fits the driver's DMA region before it programs anything.
-    unsafe { super::invoke(virtio_slot, abi::virtio::SETUP_QUEUE, descriptors, queue, 0) }
+    unsafe {
+        super::invoke(
+            virtual_io_slot,
+            abi::virtual_io::SETUP_QUEUE,
+            descriptors,
+            queue,
+            0,
+        )
+    }
 }
 
-/// `NOTIFY` the device that virtqueue `queue` has new descriptors, on the `Virtio` capability in
-/// `virtio_slot`. `0` on success; a negative `abi::Error` (`DeviceRefused` if a newly-published
+/// `NOTIFY` the device that virtqueue `queue` has new descriptors, on the `VirtualIo` capability in
+/// `virtual_io_slot`. `0` on success; a negative `abi::Error` (`DeviceRefused` if a newly-published
 /// descriptor points outside the driver's DMA region, in which case the device is not told to go).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`read_register`]. His words: "Yes". Refused `virtio_notify` (round 7's
 /// provisional name).
-pub fn notify(virtio_slot: u64, queue: u64) -> i64 {
+pub fn notify(virtual_io_slot: u64, queue: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates every published descriptor on `queue` against the
     // driver's own high-water mark before it lets the device see them.
-    unsafe { super::invoke(virtio_slot, abi::virtio::NOTIFY, queue, 0, 0) }
+    unsafe { super::invoke(virtual_io_slot, abi::virtual_io::NOTIFY, queue, 0, 0) }
 }
 
 /// **Order this driver's ring writes before a doorbell store to device memory**: what a driver
@@ -107,7 +123,8 @@ pub fn doorbell_barrier() {
 /// (UTC); marker written 2026-10-12 (UTC). Milestone 139 (drive the unsafe count down) round 11
 /// recorded it as outside calef's 2026-10-08 (UTC) renames of this module's wrappers. No other
 /// name is recorded.
-pub fn virtio_ring_barrier() {
+#[doc(alias = "virtio")]
+pub fn virtual_io_ring_barrier() {
     // No `nomem`. The Rust reference (Inline assembly, Options) defines it as a block that "does not
     // read or write to any memory accessible outside of the `asm!` block", which lets the compiler
     // cache values in registers and move loads and stores across it, and it adds that the compiler
@@ -141,7 +158,7 @@ pub fn virtio_ring_barrier() {
         target_arch = "x86_64"
     )))]
     compile_error!(
-        "virtio_ring_barrier(): this architecture has no ordering named here. Decide what orders a \
+        "virtual_io_ring_barrier(): this architecture has no ordering named here. Decide what orders a \
          virtqueue publish against a device's read on it, and add an arm; do not let this fall \
          through to an empty body."
     );

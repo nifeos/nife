@@ -2,7 +2,7 @@
 
 Part of [the notes index](../README.md), which says how to add a line.
 
-- [virtio-blk, driven from userspace](../virtio.md): a block device driven from EL0 with DMA.
+- [virtio-blk, driven from userspace](../virtual-io.md): a block device driven from EL0 with DMA.
 - [PCIe, and driving a disk over it](../pcie.md): the PCIe transport, with the kernel as firmware.
 - [Scoping a PCIe transport](../pcie-transport-scope.md): the pre-build scope for PCIe and virtio-pci.
 - [NVMe: the first non-virtio disk](../non-volatile-memory-express.md): an NVMe driver confined by the IOMMU alone.

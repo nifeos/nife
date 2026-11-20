@@ -144,7 +144,7 @@ applies and the tour's line already says where it is not apples-to-apples.
 `NIFE_RNG=1` without `NIFE_DISK` panicked the kernel, on both riscv64 and aarch64, and had done
 since virtio-rng was added. `-global virtio-mmio.force-legacy=false` lived inside the runners' disk
 block, so every mmio device was modern only when a disk happened to be attached; the RNG came up
-legacy (VERSION 1) and `virtio.rs`'s scan asserts 2. The whole test suite always builds disks, which
+legacy (VERSION 1) and `virtual_io.rs`'s scan asserts 2. The whole test suite always builds disks, which
 is why nothing met it. Fixed in both runners by hoisting the global. The latent twin on
 `virtio-net-device` under `NIFE_NET` went with it.
 

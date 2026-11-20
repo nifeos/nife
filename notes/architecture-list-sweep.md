@@ -65,12 +65,12 @@ re-checking each row will fix something twice and miss what moved.
 
 The sweep named four `barrier()` copies and there were five: `components/src/entropy.rs` had the
 same two arms and no `BUGS` note. They are now one function,
-`user_mode_runtime::virtio::virtio_ring_barrier` (name provisional), so a seventh driver gets the
+`user_mode_runtime::virtual_io::virtual_io_ring_barrier` (name provisional), so a seventh driver gets the
 third architecture by calling it. On x86_64 it is a compiler fence: every call site needs only
 store-store or load-load ordering, which TSO gives, and every notify leaves through a serializing
 syscall. `non_volatile_memory_express.rs` keeps `dmb sy` and a real `mfence`, because its doorbell
 is a direct store with no syscall in between. The argument site by site is in
-[architecture-list-sweep/virtio-ring-barrier.md](architecture-list-sweep/virtio-ring-barrier.md).
+[architecture-list-sweep/virtual-io-ring-barrier.md](architecture-list-sweep/virtual-io-ring-barrier.md).
 
 ### What is still open after this milestone
 
@@ -79,7 +79,7 @@ is a direct store with no syscall in between. The argument site by site is in
   audit used).
 - The rung-1 limit this note already stated and which still holds: deriving the list removes the
   copy, not the incompleteness. Nothing stops a new gate writing `for arch in aarch64
-  riscv64`, and `deny.toml` cannot read the derivation at all. `virtio_ring_barrier`'s
+  riscv64`, and `deny.toml` cannot read the derivation at all. `virtual_io_ring_barrier`'s
   `compile_error!` is the one place in this sweep's territory where a missing architecture now
   fails to build rather than failing to order.
 
