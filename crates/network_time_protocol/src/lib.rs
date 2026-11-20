@@ -104,7 +104,7 @@ pub const MAXIMUM_ROOT_DISTANCE: ShortFormat = ShortFormat::from_bits(16 << 16);
 /// Name: provisional.
 pub const DEFAULT_POLL_EXPONENT: i8 = 6;
 
-/// The NTP mode field (`RFC 5905` §7.3). Three bits, in the low bits of the first octet.
+/// The NTP mode field (`RFC 5905` section 7.3). Three bits, in the low bits of the first octet.
 pub mod mode {
     /// Symmetric active. We never send it and never accept it.
     pub const SYMMETRIC_ACTIVE: u8 = 1;
@@ -120,7 +120,7 @@ pub mod mode {
     pub const BROADCAST: u8 = 5;
 }
 
-/// The leap indicator (`RFC 5905` §7.3). Two bits, the top of the first octet.
+/// The leap indicator (`RFC 5905` section 7.3). Two bits, the top of the first octet.
 pub mod leap {
     /// No warning: the server is synchronized and the day is 86400 seconds long.
     pub const NONE: u8 = 0;
@@ -358,7 +358,7 @@ impl Interval {
 // The packet
 // =================================================================================================
 
-/// **A parsed NTP packet.** The 48 bytes of `RFC 5905` §7.3, decoded field by field and judged not at
+/// **A parsed NTP packet.** The 48 bytes of `RFC 5905` section 7.3, decoded field by field and judged not at
 /// all: [`Packet::parse`] cannot reject a 48-byte input, so every judgement is in one place
 /// ([`Query::accept`]) and parse-then-serialize is the identity on every packet that exists.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -767,7 +767,7 @@ impl Query {
 mod tests {
     use super::*;
 
-    /// A server reply, assembled by hand from the `RFC 5905` §7.3 field layout rather than captured
+    /// A server reply, assembled by hand from the `RFC 5905` section 7.3 field layout rather than captured
     /// off a wire, and said plainly because the difference matters: these bytes prove the decoder
     /// agrees with the *specification*, which is the thing a capture could not tell us (a capture
     /// only proves we agree with whatever produced it).

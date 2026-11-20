@@ -31,9 +31,9 @@ Verified firsthand, on a fresh shallow clone of `nifeos/nife` at the head of `ma
   `notes/project-metrics/mutation-triage.csv`.
 
 Also run, against the source as it now stands: Kani over `Interval`'s accessors for every `i128`
-(item 12), the exhaustive sweep at `opt-level = 0` and `2` and `cargo llvm-cov` at `2` (item 10), and
-`script/crate-move --dry-run` with `rustfmt --check` over the staged crate root, which showed the
-provenance strip reaching the `//!` paragraph (item 8). Miri, the MSRV build and
+(item 12), and the exhaustive sweep at `opt-level = 0` and `2` with `cargo llvm-cov` at `2` (item 10).
+`script/crate-move --dry-run` and `rustfmt --check` over the staged crate root showed the provenance
+strip reaching the `//!` paragraph (item 8). Miri, the MSRV build and
 `script/crate-standalone` are in the review package.
 
 Not run: a mutation census (outside its window), the stranger test, `cargo-semver-checks` (no
