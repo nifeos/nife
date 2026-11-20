@@ -6,7 +6,7 @@ page.*
 
 The architect reads this to clear the crate for its move to its own repository. The move is step 9 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
-where it leaves with `memory_region_heap` and `redoxfs` as one repository. It describes the crate as
+where it leaves on its own clearance, as one repository with `memory_region_heap` or as a repository of its own, decided at the move. `redoxfs` keeps its own track. It describes the crate as
 `main` plus this branch leaves it. The outside review behind it is
 [milestone 1110 (`subtree_scope`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1110-subtree-scope-outside-review.md).
 
@@ -201,13 +201,13 @@ and it copies no Linux or `cap-std` text.
 | P1-10: put the passive constructions the template counts (26 in 4,081 words, against 8) into the active voice, with P0-2 | move lane |
 | P2-15: the README's section on where the crate is stricter than `openat2` and `cap-std` | move lane |
 | `redoxfs_server`'s manifest switches from the path to the repository's `git` and `rev`, and `packages/filesystem.package.toml`, `packages/redoxfs.package.toml`, `crates/externalization-list.txt`, `.cargo/mutants-baseline.txt` and `helpers/template_report_baseline.txt` follow | move lane |
-| The step-9 repository holds `subtree_scope`, `memory_region_heap` and `redoxfs`, so the move needs the other two packages cleared too | the architect, from those packages |
+| Decide at the move whether `subtree_scope` shares a repository with `memory_region_heap` or has its own; the move needs no other package cleared | the architect, at the move |
 | Run the stranger test, the template's workflows and the first weekly mutation run in the new repository | move lane |
 
 ## Open questions
 
-1. Clearing the move: the go to create the step-9 repository with this crate, `memory_region_heap`
-   and `redoxfs`, with no tag and no publish. The architect decides it from this package, which
+1. Clearing the move: the go to create its repository (alone or with `memory_region_heap`), with
+   no tag and no publish. The architect decides it from this package, which
    ratifies and clears nothing.
 2. Whether to spend a prove shard's room on the completeness harness of P1-9. Recommendation: not
    before the move; add it in the new repository, where the crate's own proofs job has the

@@ -105,7 +105,7 @@ order too (ruled 2026-11-01 UTC); only the offer waits.
 | 6 | `machine_statistics_contract`, `domain_name_resolution_contract`, `grant_plan`, then `capability_manifest_note` | `grant_plan` is the largest coordination cost of all 22 |
 | 7, second package | `process-tools` | leaves once its shared crates have, taking `number_writer` |
 | 8 | `calendar`, `environment_contract`, then `core-tools` | the last two crates `core-tools` reaches; the kernel links both; the third package leaves as soon as they have |
-| 9, `redoxfs` | `subtree_scope`, `memory_region_heap`, then `redoxfs` as one repository | after the 10 contract crates it links; ruled 2026-11-01 (UTC) in the questions appendix; `talc` becomes a pinned upstream dependency (below) |
+| 9, `redoxfs` | `subtree_scope` and `memory_region_heap`, then `redoxfs` | each of the first two leaves on its own clearance as one repository or two, decided at the move (ruled 2026-11-20 UTC); `redoxfs` keeps its own track, as one repository (ruled 2026-11-01 UTC); `talc` becomes a pinned upstream dependency (below) |
 | 10 | `intrusive_queue`, then `inter_process_communication` | `intrusive_queue` is a leaf (milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release)) |
 
 `sealed_pair` is not one of the 22. It leaves after `nifefs` and `measured_boot` have repositories
@@ -278,7 +278,7 @@ name is a provisional maintainer decision.
   update the declaration check and the 15 programs. The leaf crate is a 23rd contract crate; its
   repository waits for the architect's approval.
 - Proposed milestone, provisional and unnumbered: the QEMU runners start `redoxfs_server` from a
-  pinned image, not a tree path. It blocks step 9.
+  pinned image, not a tree path. It blocks `redoxfs`.
 - The packet omits the test list, the license notices and the `cargo-semver-checks` output.
 
 ## Index row
