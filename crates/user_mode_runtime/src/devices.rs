@@ -55,7 +55,8 @@ pub fn reboot(slot: u64) -> i64 {
 /// guess. Here rather than in each driver because an instruction belongs with the code that knows
 /// the instruction set architecture (ISA).
 #[cfg(target_arch = "x86_64")]
-pub fn outb(port: u16, value: u8) {
+#[doc(alias = "outb")]
+pub fn port_write_byte(port: u16, value: u8) {
     // SAFETY: `out` has no memory effect and no flag effect; `nostack` holds. The caller promises it
     // holds the port capability, so the CPU permits the instruction; without it this faults, which
     // is the enforcement working rather than undefined behaviour.
@@ -64,14 +65,15 @@ pub fn outb(port: u16, value: u8) {
     }
 }
 
-/// **Read one byte from an x86 I/O port** (milestone 299). The `in` twin of [`outb`]; the same
+/// **Read one byte from an x86 I/O port** (milestone 299). The `in` twin of [`port_write_byte`]; the same
 /// capability rule and the same fault on a port the caller does not hold. A read is not automatically
 /// harmless: several legacy devices (the 16550's receive register at `COM1`'s base) have read side
 /// effects, which is exactly why a driver, not the kernel, decides when to issue one.
 #[cfg(target_arch = "x86_64")]
-pub fn inb(port: u16) -> u8 {
+#[doc(alias = "inb")]
+pub fn port_read_byte(port: u16) -> u8 {
     let value: u8;
-    // SAFETY: as `outb`; the caller holds the port capability or this faults.
+    // SAFETY: as `port_write_byte`; the caller holds the port capability or this faults.
     unsafe {
         core::arch::asm!("in al, dx", out("al") value, in("dx") port, options(nostack, preserves_flags));
     }
