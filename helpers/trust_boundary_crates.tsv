@@ -129,7 +129,7 @@ machine_statistics_contract	shared	components,fixtures,kernel
 machine_statistics_protocol	shared	retired
 manifest_note	userspace	retired
 manual	userspace	retired
-master_boot_record	kernel	kernel
+master_boot_record	shared	components,kernel,redoxfs_server,uefi_loader
 mdns_config	userspace	retired
 mdns_proto	userspace	retired
 measured_boot	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
