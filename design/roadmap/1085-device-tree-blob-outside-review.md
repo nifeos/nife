@@ -67,7 +67,7 @@ items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Rul
 - F-dtoolkit, the switch to `dtoolkit`: Open, waiting for an upstream release; the wait is ruled,
   under [Ruled decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
 - F-package, the review package: Done, [the package](../../notes/crate-reviews/device-tree-blob.md).
-- F-clearance, review clearance: Open. The architect decides it once the package exists.
+- F-clearance, review clearance: Done, ruled 2026-11-20 UTC under [Ruled decisions](#clear-the-device_tree_blob-package-for-the-move).
 - BUGS-239: Open. Milestone 239 (radon's device tree does not describe the TRNG) gives the depth
   bound as a `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64. A lane corrects that milestone.
 
@@ -171,6 +171,16 @@ exists.
 Door: two-way until the repository exists. Prior art: `file_allocation_table` and `e1000e` cleared
 from a written package. Example: F-package and P0-1 each get a lane, and if the switch later comes
 first, the move items lapse with no loss to the kernel, which keeps the fixes either way.
+
+### Clear the `device_tree_blob` package for the move
+
+Ruled 2026-11-20 (UTC): option A. The review package is cleared. The repository
+`nifeos/device_tree_blob` is a go, with `publish = false`, no tag and no publish. The move does not
+wait for the `dtoolkit` switch. The move lane runs the stranger test, the template's workflows and the
+first weekly mutation run in the new repository.
+
+Door: two-way until the repository exists. Example: the move lane creates the repository and lands P0-1,
+P1-5 and the renames there, as the package lists them.
 
 ### Property is spelled out across the crate
 
