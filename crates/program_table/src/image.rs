@@ -132,7 +132,7 @@ pub enum Vouch {
 /// An image travels as a plain line (DECISIONS §219 option D's first cut): an argument and a
 /// `--mem` count, the progenitor endowing what the manifest names. A manifest that needs a file,
 /// a directory, an input, an option, a supervised job, a second stream or a silent output is
-/// refused here and again at the progenitor (`spawnproto`'s BUGS). A `std` image is carried when
+/// refused here and again at the progenitor (`spawn_protocol`'s BUGS). A `std` image is carried when
 /// it hears words and only then, with no memory grant or domain: the progenitor sizes its region
 /// from the argv bit before it can read the note ([`image_hears_words`], milestone 205 (how a
 /// foreign program is told what to do)). The network is carried and judged by the vouch
@@ -170,7 +170,7 @@ pub fn image_can_carry(m: &Manifest) -> bool {
 
 /// **Whether an image is sent its line as an argv**, which for an image is also whether it is built
 /// in the `std` layout ([`image_can_carry`] ties the two). The shell asks it of the note it read and
-/// sets `spawnproto::PROGRAM_ARGUMENTS_BIT`; the progenitor sizes the region from that bit and then checks its
+/// sets `spawn_protocol::PROGRAM_ARGUMENTS_BIT`; the progenitor sizes the region from that bit and then checks its
 /// own reading of the note agrees ([`image_request_fits`]). Name: provisional.
 pub const fn image_hears_words(m: &Manifest) -> bool {
     m.program_argument.hears_words()
@@ -216,7 +216,7 @@ pub fn image_manifest(declared: Option<Manifest>, vouch: Vouch) -> Result<Manife
 /// file changed in between (or a shell that lies) can send an argument or a `--mem` grant the
 /// endowed manifest forbids. That is refused rather than half-honored.
 ///
-/// `words` is whether the request carried an argv (`spawnproto::PROGRAM_ARGUMENTS_BIT`), which sized the
+/// `words` is whether the request carried an argv (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`), which sized the
 /// region: it must agree with [`image_hears_words`] of the manifest, or a `std` program would be
 /// built in a native job's forty pages.
 pub fn image_request_fits(m: &Manifest, arg: u64, mem_pages: u64, words: bool) -> bool {

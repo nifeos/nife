@@ -230,7 +230,7 @@ none has no slot and no stream, which is where the model differs from Unix's fd 
 `SHELL_CONFIGURATION_SLOT` (21) is where the boot shell holds the same configuration frame the
 progenitor endows a child with, so `caps` prints the values a child would read. A copy of the
 defaults would agree with the child by coincidence and drift the first time either changed. It is
-probed at `_start`, before the shell allocates anything, as `spawnproto::RUN_UNVOUCHED_SLOT` is. A
+probed at `_start`, before the shell allocates anything, as `spawn_protocol::RUN_UNVOUCHED_SLOT` is. A
 shell built any other way finds it empty and says it cannot see the values.
 
 ## What grows from here

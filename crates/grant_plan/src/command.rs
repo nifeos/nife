@@ -6,7 +6,7 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::expand::{Name, NameSet};
-use crate::{Manifest, ParsedInvocation, line, nav};
+use crate::{Manifest, ParsedInvocation, line, navigation};
 
 /// A parsed command line. The shell dispatches on this; only [`Command::Run`] carries a grant
 /// expression that must be planned against a manifest.
@@ -52,12 +52,12 @@ pub enum Command<'a> {
     /// `cd [path]`: rebind the shell's position inside the directory capability it already holds.
     /// **A builtin, in the same category as `caps`**: it spawns nothing, grants nothing, and confers
     /// no new authority, because a working directory *is* a capability the shell holds used as the
-    /// default base for resolving names (see [`nav`]).
+    /// default base for resolving names (see [`navigation`]).
     ///
     /// An empty operand means **your root**. There is no `HOME` here, and the root of your namespace
     /// is the one distinguished place you have: it is exactly what you were granted.
     Cd(&'a [u8]),
-    /// `pwd`: print where you are, **relative to your root** ([`nav::Cwd::render`]). Naming anything
+    /// `pwd`: print where you are, **relative to your root** ([`navigation::Cwd::render`]). Naming anything
     /// above it would imply a namespace that does not exist.
     Pwd,
     /// `ls [path]`: enumerate a directory you can reach, the cwd by default. A builtin rather than a
@@ -78,7 +78,7 @@ pub enum Command<'a> {
     /// `components/src/swish/navigation.rs`). See notes/touch.md.
     Touch(TouchOperands<'a>),
     /// `bind <target> <name>`: name a position this shell already reached some other way, so
-    /// `/<name>/...` reaches it too ([`nav::Bindings`]). A builtin in [`Mkdir`](Command::Mkdir)'s
+    /// `/<name>/...` reaches it too ([`navigation::Bindings`]). A builtin in [`Mkdir`](Command::Mkdir)'s
     /// category: it mints no capability and spawns nothing.
     ///
     /// `target` is resolved at bind time against wherever this shell stands, as any operand is;
@@ -96,7 +96,7 @@ pub enum Command<'a> {
     Apropos(&'a [u8]),
     /// `vouch <path>`: **the owner vouches for a file's bytes** (DECISIONS §221 (the boot prompt is
     /// the owner's console)), so they run vouched, recorded under the path's last component. An
-    /// activation request (`spawnproto::Activation::Vouch`) on the spawn endpoint, which `jig`'s
+    /// activation request (`spawn_protocol::Activation::Vouch`) on the spawn endpoint, which `jig`'s
     /// installer endpoint refuses (milestone 809 (the package client becomes a program)), so a
     /// vouch stays the owner's console's, and the tail is classified by [`vouch_verb`](crate::vouch_verb).
     /// A builtin because it names no package: the bytes are what is vouched. Name: provisional
@@ -194,7 +194,7 @@ pub struct Endowment {
     /// **The short options that were on the line**, as a bitmask: bit `i` is set when the manifest's
     /// `short_options[i]` was typed. Numbered by position in the manifest rather than by letter, so nothing
     /// here has to know what any option means; the program and the manifest agree on the order, and
-    /// a host test pins them (`grant_plan::rmopt`).
+    /// a host test pins them (`grant_plan::rm_options`).
     ///
     /// Name: ratified 2026-10-18 (calef: "Yes").
     pub short_options: u64,
@@ -238,14 +238,14 @@ pub struct Endowment {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct FileGrant {
     /// **Which of the shell's trees `dir` is in**, since milestone 154 (a process that holds two
-    /// directory capabilities): always [`nav::Which::A`] for a
+    /// directory capabilities): always [`navigation::Which::A`] for a
     /// shell holding one directory, and whichever tree the operand named for a shell holding two.
     /// A required field rather than a default, so nothing that builds a grant can forget that a
     /// position means nothing without the tree it is a position in.
-    pub which: nav::Which,
+    pub which: navigation::Which,
     /// The directory the name was resolved in, relative to the root of [`FileGrant::which`]'s
     /// tree, fixed at plan time.
-    pub directory: nav::Cwd,
+    pub directory: navigation::Cwd,
     /// The final component. Always a single component: a path was resolved into `dir`, not passed
     /// on, because the FS contract takes one component per request and no server here walks a path.
     ///
@@ -270,10 +270,10 @@ pub struct FileGrant {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct DirectoryGrant {
     /// **Which of the shell's trees `dir` is in**, [`FileGrant::which`]'s reason (milestone 154).
-    pub which: nav::Which,
+    pub which: navigation::Which,
     /// The directory the capability designates, relative to the root of [`DirectoryGrant::which`]'s
     /// tree, fixed at plan time.
-    pub directory: nav::Cwd,
+    pub directory: navigation::Cwd,
     /// The names in it the program is to act on: exactly one for a literal operand, the matched set
     /// for a pattern. Each is a single component, for [`FileGrant`]'s reason: a path was resolved
     /// into `dir` rather than passed on.
@@ -290,7 +290,9 @@ pub struct DirectoryGrant {
 /// **`rm`'s options**, by the bit they occupy in [`Endowment::short_options`], which is their position in
 /// `rm`'s manifest. Named here so the shell, the program and the tests share one definition
 /// rather than three copies of an ordering; `rm_options_are_numbered_by_their_position` pins them.
-pub mod rmopt {
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, spelled out.
+pub mod rm_options {
     /// `-r`: recurse. It is also `rm`'s `subtree_option`, so typing it visibly widens the grant.
     pub const RECURSIVE: u64 = 1 << 0;
     /// `-f`: ignore a name that is not there, and do not let its absence change the exit status.
@@ -321,12 +323,12 @@ pub struct Holdings {
     /// is and where inside it). A working directory is a directory capability used as the default
     /// base for resolving names, so it belongs here beside the fact that there is one. Defaults to
     /// the root, which is also the only position a shell holding no directory can be in.
-    pub cwd: nav::Cwd,
+    pub cwd: navigation::Cwd,
     /// **Names this shell has bound to a position it already reached some other way**
-    /// (`bind`, milestone 47 (navigation and naming); [`nav::Bindings`]'s own doc has the full
+    /// (`bind`, milestone 47 (navigation and naming); [`navigation::Bindings`]'s own doc has the full
     /// design). A bound position is a path in the one tree, like [`Holdings::cwd`], so a bind can
     /// point through a mount point with nothing special to say about it.
-    pub binds: nav::Bindings,
+    pub binds: navigation::Bindings,
 }
 
 /// **A second tree, and where it is mounted in the first** (milestone 154).
@@ -340,18 +342,18 @@ pub struct Holdings {
 /// Name: ratified 2026-10-18 (calef: "Yes"). The shape is provisional.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct MountedTree {
-    mount: nav::Cwd,
+    mount: navigation::Cwd,
 }
 
 impl MountedTree {
     /// A second tree mounted at `mount`. `None` at the root: the root is the first tree's, and a
     /// mount there would hide all of it.
-    pub fn mounted_at(mount: nav::Cwd) -> Option<Self> {
+    pub fn mounted_at(mount: navigation::Cwd) -> Option<Self> {
         (!mount.is_root()).then_some(MountedTree { mount })
     }
 
     /// Where the second tree is mounted, as a path in the one tree.
-    pub fn mount(&self) -> nav::Cwd {
+    pub fn mount(&self) -> navigation::Cwd {
         self.mount
     }
 }
@@ -365,13 +367,16 @@ impl Holdings {
     /// from a bound position when its first component is a bound name. `..` is plain path
     /// arithmetic, so `..` from a mount point is its parent in the first tree, as a Unix mount is,
     /// and `..` at the root refuses as it always has.
-    pub fn resolve(&self, token: &[u8]) -> Result<nav::Cwd, nav::Refused> {
-        let p = nav::path(token)?;
+    pub fn resolve(&self, token: &[u8]) -> Result<navigation::Cwd, navigation::Refused> {
+        let p = navigation::path(token)?;
         self.resolve_path(&p)
     }
 
     /// [`Holdings::resolve`] for a token already parsed.
-    pub fn resolve_path(&self, p: &nav::Path<'_>) -> Result<nav::Cwd, nav::Refused> {
+    pub fn resolve_path(
+        &self,
+        p: &navigation::Path<'_>,
+    ) -> Result<navigation::Cwd, navigation::Refused> {
         self.resolve_steps(p.is_from_root(), p.steps())
     }
 
@@ -380,9 +385,9 @@ impl Holdings {
     pub fn resolve_steps(
         &self,
         from_root: bool,
-        steps: &[nav::Step<'_>],
-    ) -> Result<nav::Cwd, nav::Refused> {
-        let mut pos = nav::Cwd::root();
+        steps: &[navigation::Step<'_>],
+    ) -> Result<navigation::Cwd, navigation::Refused> {
+        let mut pos = navigation::Cwd::root();
         let rest = self.anchor(from_root, steps, &mut pos);
         pos.apply(rest)?;
         Ok(pos)
@@ -399,18 +404,18 @@ impl Holdings {
     pub fn anchor<'s, 'p>(
         &self,
         from_root: bool,
-        steps: &'s [nav::Step<'p>],
-        pos: &mut nav::Cwd,
-    ) -> &'s [nav::Step<'p>] {
+        steps: &'s [navigation::Step<'p>],
+        pos: &mut navigation::Cwd,
+    ) -> &'s [navigation::Step<'p>] {
         if !from_root {
             *pos = self.cwd;
             return steps;
         }
-        *pos = nav::Cwd::root();
-        if let Some((nav::Step::Down(first), rest)) = steps.split_first()
+        *pos = navigation::Cwd::root();
+        if let Some((navigation::Step::Down(first), rest)) = steps.split_first()
             && let Some(entry) = self.binds.lookup(first)
         {
-            *pos = entry.pos();
+            *pos = entry.position();
             return rest;
         }
         steps
@@ -420,28 +425,28 @@ impl Holdings {
     /// its own root, for a path that runs through its mount point; the first tree, unchanged, for
     /// everything else. This is the bookkeeping calef's ruling keeps out of sight: a path never
     /// says which tree it is in, and this is the one place that decides.
-    pub fn locate(&self, place: &nav::Cwd) -> (nav::Which, nav::Cwd) {
+    pub fn locate(&self, place: &navigation::Cwd) -> (navigation::Which, navigation::Cwd) {
         if let Some(sd) = &self.mounted {
             let m = &sd.mount;
             if place.depth() >= m.depth()
                 && (0..m.depth()).all(|l| place.component(l) == m.component(l))
             {
-                let mut inside = nav::Cwd::root();
+                let mut inside = navigation::Cwd::root();
                 for l in m.depth()..place.depth() {
                     inside.descend(place.component(l));
                 }
-                return (nav::Which::B, inside);
+                return (navigation::Which::B, inside);
             }
         }
-        (nav::Which::A, *place)
+        (navigation::Which::A, *place)
     }
 
     /// [`Holdings::locate`] reversed: the path in the one tree for a position inside `which`. What
     /// `caps` prints for a planned grant, which records the tree and the position rather than the
     /// path it came from.
-    pub fn place(&self, which: nav::Which, pos: &nav::Cwd) -> nav::Cwd {
+    pub fn place(&self, which: navigation::Which, pos: &navigation::Cwd) -> navigation::Cwd {
         match (which, &self.mounted) {
-            (nav::Which::B, Some(sd)) => {
+            (navigation::Which::B, Some(sd)) => {
                 let mut place = sd.mount;
                 for l in 0..pos.depth() {
                     place.descend(pos.component(l));
@@ -453,14 +458,18 @@ impl Holdings {
     }
 
     /// **`bind`'s mutator**: name a position this shell already reached some other way
-    /// ([`nav::Bindings::add`]'s own doc has the full design), refusing, in addition to everything
+    /// ([`navigation::Bindings::add`]'s own doc has the full design), refusing, in addition to everything
     /// the bind table itself refuses, a name that would hide the path to the mount point: a bound
     /// name wins over the literal first component of an absolute path.
-    pub fn bind(&mut self, name: &[u8], pos: nav::Cwd) -> Result<(), nav::BindRefused> {
+    pub fn bind(
+        &mut self,
+        name: &[u8],
+        pos: navigation::Cwd,
+    ) -> Result<(), navigation::BindRefused> {
         if let Some(sd) = &self.mounted
             && name == sd.mount.component(0)
         {
-            return Err(nav::BindRefused::ReservedLabel);
+            return Err(navigation::BindRefused::ReservedLabel);
         }
         self.binds.add(name, pos)
     }

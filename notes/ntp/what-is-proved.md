@@ -17,7 +17,7 @@ The Kani harnesses, run by `script/verify`:
 | `nanoseconds_survive_the_fixed_point` | nanoseconds under 2^16 (see below) |
 | `decoding_any_wire_value_is_total` | all 2^64 timestamp bit patterns: no panic, and the nanosecond returned is always a valid sub-second |
 | `out_of_range_is_refused` | every input to `from_unix`: `Some` exactly inside the window, never an aliased answer |
-| `parse_then_serialise_is_the_identity` | all 2^384 48-byte packets |
+| `parse_then_serialize_is_the_identity` | all 2^384 48-byte packets |
 | `an_unmatched_origin_is_always_rejected` | all 2^384 packets: no combination of the other 40 bytes gets one past the nonce check |
 | `accepting_is_total_and_a_sample_is_coherent` | all 2^384 packets and any three timestamps: `accept` never panics or overflows, and an accepted sample has a non-negative delay, a stratum in 1..=15, mode 4, and a non-zero transmit |
 | `a_consistent_exchange_is_accepted` | any four timestamps whose modular differences are non-negative, with a round trip covering the turnaround: `accept` takes the reply, and the delay and offset are the RFC's |

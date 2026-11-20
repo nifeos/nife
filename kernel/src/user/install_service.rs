@@ -350,7 +350,7 @@ fn system_installer_maps(boot_file_len: u64) -> &'static [Mapping] {
         m.va = BOOT_FILE_VA + i as u64 * FRAME_SIZE;
         m.phys = boot_file_phys + i as u64 * FRAME_SIZE;
         // Read-only: the whole of what keeps a program holding a disk from rewriting the image.
-        m.flags = Flags::user_rodata();
+        m.flags = Flags::user_read_only_data();
     }
     maps
 }

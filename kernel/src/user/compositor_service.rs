@@ -251,7 +251,7 @@ impl Wiring {
             maps[m] = Mapping {
                 va: C_WLIST_VA,
                 phys: self.wlist,
-                flags: Flags::user_rodata(),
+                flags: Flags::user_read_only_data(),
             };
             m += 1;
         }

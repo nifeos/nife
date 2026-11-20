@@ -108,13 +108,13 @@ pub const MAXIMUM_INTERFACES: usize = 64;
 /// One record: the interface id, then its version, little-endian.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
-pub const INTERFACE_RECORD: usize = 12;
+pub const INTERFACE_RECORD_BYTES: usize = 12;
 
 /// One declared interface: the id its crate owns and the version the program was built against.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct Declared {
+pub struct DeclaredInterface {
     /// The crate's `INTERFACE_ID`.
     pub id: u64,
     /// The crate's version constant when the program was built.
@@ -124,35 +124,35 @@ pub struct Declared {
 /// An [`INTERFACES`] descriptor's length for `count` records.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
-pub const fn interfaces_len(count: usize) -> usize {
-    8 + count * INTERFACE_RECORD
+pub const fn descriptor_bytes(count: usize) -> usize {
+    8 + count * INTERFACE_RECORD_BYTES
 }
 
 /// The bytes of an interface list. A `const fn`, so a program's list is computed by the compiler;
-/// `LEN` is [`interfaces_len`] of the list's length. It panics, a compile error in a constant, on a
+/// `LEN` is [`descriptor_bytes`] of the list's length. It panics, a compile error in a constant, on a
 /// `LEN` that is not that length, more than [`MAXIMUM_INTERFACES`] entries, or ids that do not
 /// strictly ascend.
 ///
 /// # Examples
 ///
 /// ```
-/// use interfaces_note::{Declared, decode_interfaces, encode_interfaces, interfaces_len};
-/// let bytes: [u8; interfaces_len(2)] = encode_interfaces(&[
-///     Declared { id: 1, version: 3 },
-///     Declared { id: 9, version: 1 },
+/// use interfaces_note::{DeclaredInterface, decode_interfaces, encode_interfaces, descriptor_bytes};
+/// let bytes: [u8; descriptor_bytes(2)] = encode_interfaces(&[
+///     DeclaredInterface { id: 1, version: 3 },
+///     DeclaredInterface { id: 9, version: 1 },
 /// ]);
 /// assert_eq!(decode_interfaces(&bytes).unwrap().len(), 2);
 /// ```
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
-pub const fn encode_interfaces<const LEN: usize>(list: &[Declared]) -> [u8; LEN] {
+pub const fn encode_interfaces<const LEN: usize>(list: &[DeclaredInterface]) -> [u8; LEN] {
     assert!(
         list.len() <= MAXIMUM_INTERFACES,
         "an interface list holds at most 64 entries"
     );
     assert!(
-        LEN == interfaces_len(list.len()),
-        "LEN must be interfaces_len(list.len())"
+        LEN == descriptor_bytes(list.len()),
+        "LEN must be descriptor_bytes(list.len())"
     );
     let mut out = [0u8; LEN];
     put4(&mut out, 0, INTERFACES_VERSION.to_le_bytes());
@@ -165,7 +165,7 @@ pub const fn encode_interfaces<const LEN: usize>(list: &[Declared]) -> [u8; LEN]
                 "interface ids strictly ascend, each once"
             );
         }
-        let at = 8 + i * INTERFACE_RECORD;
+        let at = 8 + i * INTERFACE_RECORD_BYTES;
         let id = list[i].id.to_le_bytes();
         put4(&mut out, at, [id[0], id[1], id[2], id[3]]);
         put4(&mut out, at + 4, [id[4], id[5], id[6], id[7]]);
@@ -188,7 +188,7 @@ impl<'a> Interfaces<'a> {
     ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
     pub fn len(&self) -> usize {
-        self.records.len() / INTERFACE_RECORD
+        self.records.len() / INTERFACE_RECORD_BYTES
     }
 
     /// Whether the list is empty, which a descriptor may say.
@@ -203,18 +203,19 @@ impl<'a> Interfaces<'a> {
     /// borrow.
     ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
-    pub fn iter(&self) -> impl Iterator<Item = Declared> + use<'a> {
+    pub fn iter(&self) -> impl Iterator<Item = DeclaredInterface> + use<'a> {
         let records = self.records;
-        (0..records.len() / INTERFACE_RECORD)
-            .map(move |i| record(&records[i * INTERFACE_RECORD..(i + 1) * INTERFACE_RECORD]))
+        (0..records.len() / INTERFACE_RECORD_BYTES).map(move |i| {
+            record(&records[i * INTERFACE_RECORD_BYTES..(i + 1) * INTERFACE_RECORD_BYTES])
+        })
     }
 
     /// The version declared for `id`, or `None` when the program declares nothing about it. A
     /// linear walk: a list holds at most 64 records.
     ///
     /// ```
-    /// use interfaces_note::{Declared, decode_interfaces, encode_interfaces, interfaces_len};
-    /// let bytes: [u8; interfaces_len(1)] = encode_interfaces(&[Declared { id: 4, version: 7 }]);
+    /// use interfaces_note::{DeclaredInterface, decode_interfaces, encode_interfaces, descriptor_bytes};
+    /// let bytes: [u8; descriptor_bytes(1)] = encode_interfaces(&[DeclaredInterface { id: 4, version: 7 }]);
     /// let list = decode_interfaces(&bytes).unwrap();
     /// assert_eq!(list.version_of(4), Some(7));
     /// assert_eq!(list.version_of(5), None);
@@ -226,8 +227,8 @@ impl<'a> Interfaces<'a> {
     }
 }
 
-fn record(r: &[u8]) -> Declared {
-    Declared {
+fn record(r: &[u8]) -> DeclaredInterface {
+    DeclaredInterface {
         id: u64::from_le_bytes([r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7]]),
         version: u32::from_le_bytes([r[8], r[9], r[10], r[11]]),
     }
@@ -257,13 +258,13 @@ pub fn decode_interfaces(d: &[u8]) -> Result<Interfaces<'_>, Error> {
     if count > MAXIMUM_INTERFACES {
         return Err(Error::BadField(4));
     }
-    if d.len() != interfaces_len(count) {
+    if d.len() != descriptor_bytes(count) {
         return Err(Error::WrongLength);
     }
     let mut previous: Option<u64> = None;
     for i in 0..count {
-        let at = 8 + i * INTERFACE_RECORD;
-        let id = record(&d[at..at + INTERFACE_RECORD]).id;
+        let at = 8 + i * INTERFACE_RECORD_BYTES;
+        let id = record(&d[at..at + INTERFACE_RECORD_BYTES]).id;
         if previous.is_some_and(|p| p >= id) {
             return Err(Error::BadField(at));
         }
@@ -295,8 +296,8 @@ impl Interfaces<'_> {
     /// is equality, not set membership: the syscall ABI never dual-serves.
     ///
     /// ```
-    /// use interfaces_note::{Declared, decode_interfaces, encode_interfaces, interfaces_len};
-    /// let bytes: [u8; interfaces_len(1)] = encode_interfaces(&[Declared { id: 4, version: 7 }]);
+    /// use interfaces_note::{DeclaredInterface, decode_interfaces, encode_interfaces, descriptor_bytes};
+    /// let bytes: [u8; descriptor_bytes(1)] = encode_interfaces(&[DeclaredInterface { id: 4, version: 7 }]);
     /// let list = decode_interfaces(&bytes).unwrap();
     /// assert!(list.check_served(4, 7).is_ok());
     /// assert!(list.check_served(4, 8).is_err());
@@ -320,12 +321,12 @@ impl Interfaces<'_> {
 /// part is a multiple of four, so there is no trailing pad.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
-pub const fn interfaces_note_len(count: usize) -> usize {
-    HEADER_BYTES + NAME_FIELD_BYTES + interfaces_len(count)
+pub const fn note_bytes(count: usize) -> usize {
+    HEADER_BYTES + NAME_FIELD_BYTES + descriptor_bytes(count)
 }
 
 /// **A whole [`INTERFACES`] note**, what [`carry_interfaces!`] places. `N` is
-/// [`interfaces_note_len`] of the list.
+/// [`note_bytes`] of the list.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 #[repr(C, align(4))]
@@ -335,10 +336,10 @@ impl<const N: usize> InterfacesNote<N> {
     /// The note declaring `list`.
     ///
     /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
-    pub const fn of<const LEN: usize>(list: &[Declared]) -> Self {
+    pub const fn of<const LEN: usize>(list: &[DeclaredInterface]) -> Self {
         assert!(
-            N == interfaces_note_len(list.len()),
-            "N must be interfaces_note_len(list.len())"
+            N == note_bytes(list.len()),
+            "N must be note_bytes(list.len())"
         );
         let mut out = [0u8; N];
         put4(&mut out, 0, ((OWNER.len() + 1) as u32).to_le_bytes());
@@ -360,27 +361,29 @@ impl<const N: usize> InterfacesNote<N> {
 }
 
 /// **Declare the interface versions this program was built against.** One line at module scope in
-/// the program's root. It takes a `&[Declared]` in ascending id order, each version read from the
+/// the program's root. It takes a `&[DeclaredInterface]` in ascending id order, each version read from the
 /// interface crate's constant, and places one [`InterfacesNote`] in `.note.nife.manifest`, the
 /// section and `PT_NOTE` a manifest uses:
 ///
 /// ```
 /// interfaces_note::carry_interfaces!(&[
-///     interfaces_note::Declared { id: 1, version: 1 },
+///     interfaces_note::DeclaredInterface { id: 1, version: 1 },
 /// ]);
 /// ```
 ///
-/// An unsorted list is a compile error.
+/// An unsorted list is a compile error. The static it declares is named `CARRIED_INTERFACES_NOTE`,
+/// so a program carries one list.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// The static's name `CARRIED_INTERFACES_NOTE` is provisional too.
 #[macro_export]
 macro_rules! carry_interfaces {
     ($list:expr) => {
         #[used]
         #[unsafe(link_section = ".note.nife.manifest")] // wire literal
-        static NIFE_INTERFACES_NOTE: $crate::InterfacesNote<
-            { $crate::interfaces_note_len($list.len()) },
-        > = $crate::InterfacesNote::of::<{ $crate::interfaces_len($list.len()) }>($list);
+        static CARRIED_INTERFACES_NOTE: $crate::InterfacesNote<
+            { $crate::note_bytes($list.len()) },
+        > = $crate::InterfacesNote::of::<{ $crate::descriptor_bytes($list.len()) }>($list);
     };
 }
 
@@ -396,16 +399,16 @@ mod interface_verification {
     #[kani::proof]
     #[kani::unwind(33)]
     fn a_decoded_interface_list_encodes_back_to_its_bytes() {
-        let d: [u8; interfaces_len(2)] = kani::any();
+        let d: [u8; descriptor_bytes(2)] = kani::any();
         if let Ok(list) = decode_interfaces(&d) {
-            let mut declared = [Declared { id: 0, version: 0 }; 2];
+            let mut declared = [DeclaredInterface { id: 0, version: 0 }; 2];
             let mut n = 0;
             for entry in list.iter() {
                 declared[n] = entry;
                 n += 1;
             }
             assert!(n == 2);
-            assert!(encode_interfaces::<{ interfaces_len(2) }>(&declared) == d);
+            assert!(encode_interfaces::<{ descriptor_bytes(2) }>(&declared) == d);
         }
     }
 
@@ -420,16 +423,16 @@ mod interface_verification {
         let (first_id, second_id): (u64, u64) = (kani::any(), kani::any());
         kani::assume(first_id < second_id);
         let list = [
-            Declared {
+            DeclaredInterface {
                 id: first_id,
                 version: kani::any(),
             },
-            Declared {
+            DeclaredInterface {
                 id: second_id,
                 version: kani::any(),
             },
         ];
-        let bytes: [u8; interfaces_len(2)] = encode_interfaces(&list);
+        let bytes: [u8; descriptor_bytes(2)] = encode_interfaces(&list);
         let Ok(decoded) = decode_interfaces(&bytes) else {
             panic!("an encoded list was refused");
         };
@@ -447,7 +450,7 @@ mod interface_verification {
     #[kani::proof]
     #[kani::unwind(34)]
     fn decode_interfaces_never_panics() {
-        let d: [u8; interfaces_len(2) + 1] = kani::any();
+        let d: [u8; descriptor_bytes(2) + 1] = kani::any();
         let len: usize = kani::any();
         kani::assume(len <= d.len());
         let _ = decode_interfaces(&d[..len]);
@@ -460,10 +463,10 @@ mod interface_tests {
 
     use super::*;
 
-    const LIST: [Declared; 3] = [
-        Declared { id: 1, version: 1 },
-        Declared { id: 4, version: 7 },
-        Declared {
+    const LIST: [DeclaredInterface; 3] = [
+        DeclaredInterface { id: 1, version: 1 },
+        DeclaredInterface { id: 4, version: 7 },
+        DeclaredInterface {
             id: 0x0102_0304_0506_0708,
             version: 0x0a0b_0c0d,
         },
@@ -473,7 +476,7 @@ mod interface_tests {
     /// all differ and a version whose four differ, so a swapped or shifted byte shows.
     #[test]
     fn a_list_round_trips_at_the_documented_offsets() {
-        let bytes: [u8; interfaces_len(3)] = encode_interfaces(&LIST);
+        let bytes: [u8; descriptor_bytes(3)] = encode_interfaces(&LIST);
         assert_eq!(&bytes[..8], &[1, 0, 0, 0, 3, 0, 0, 0]);
         assert_eq!(
             &bytes[8 + 24..],
@@ -491,11 +494,12 @@ mod interface_tests {
     /// **An empty list is a list**: a program may declare nothing and still carry the note.
     #[test]
     fn an_empty_list_round_trips() {
-        let bytes: [u8; interfaces_len(0)] = encode_interfaces(&[]);
+        let bytes: [u8; descriptor_bytes(0)] = encode_interfaces(&[]);
         let list = decode_interfaces(&bytes).unwrap();
         assert!(list.is_empty());
         assert_eq!(list.version_of(1), None);
-        let one: [u8; interfaces_len(1)] = encode_interfaces(&[Declared { id: 9, version: 2 }]);
+        let one: [u8; descriptor_bytes(1)] =
+            encode_interfaces(&[DeclaredInterface { id: 9, version: 2 }]);
         assert!(!decode_interfaces(&one).unwrap().is_empty());
     }
 
@@ -503,20 +507,20 @@ mod interface_tests {
     /// bound is on the count, `MAXIMUM_INTERFACES` itself being allowed.
     #[test]
     fn a_list_of_exactly_the_maximum_round_trips() {
-        let mut list = [Declared { id: 0, version: 0 }; MAXIMUM_INTERFACES];
+        let mut list = [DeclaredInterface { id: 0, version: 0 }; MAXIMUM_INTERFACES];
         for (i, entry) in list.iter_mut().enumerate() {
-            *entry = Declared {
+            *entry = DeclaredInterface {
                 id: i as u64 + 1,
                 version: i as u32 + 100,
             };
         }
-        let bytes: [u8; interfaces_len(MAXIMUM_INTERFACES)] = encode_interfaces(&list);
+        let bytes: [u8; descriptor_bytes(MAXIMUM_INTERFACES)] = encode_interfaces(&list);
         let decoded = decode_interfaces(&bytes).unwrap();
         assert_eq!(decoded.len(), MAXIMUM_INTERFACES);
         assert_eq!(decoded.version_of(1), Some(100));
         assert_eq!(decoded.version_of(64), Some(163));
         assert_eq!(decoded.version_of(65), None);
-        let mut over = [0u8; interfaces_len(MAXIMUM_INTERFACES + 1)];
+        let mut over = [0u8; descriptor_bytes(MAXIMUM_INTERFACES + 1)];
         over[..bytes.len()].copy_from_slice(&bytes);
         over[0..4].copy_from_slice(&INTERFACES_VERSION.to_le_bytes());
         over[4..8].copy_from_slice(&(MAXIMUM_INTERFACES as u32 + 1).to_le_bytes());
@@ -526,7 +530,7 @@ mod interface_tests {
     /// **One list, one encoding**: each byte the layout fixes is checked, and so is the order.
     #[test]
     fn a_respelled_list_is_refused() {
-        let good: [u8; interfaces_len(3)] = encode_interfaces(&LIST);
+        let good: [u8; descriptor_bytes(3)] = encode_interfaces(&LIST);
         let refused = |at: usize, b: u8| {
             let mut d = good;
             d[at] = b;
@@ -559,9 +563,9 @@ mod interface_tests {
     #[test]
     #[should_panic(expected = "ascend")]
     fn a_list_out_of_order_is_not_encoded() {
-        let _: [u8; interfaces_len(2)] = encode_interfaces(&[
-            Declared { id: 2, version: 1 },
-            Declared { id: 1, version: 1 },
+        let _: [u8; descriptor_bytes(2)] = encode_interfaces(&[
+            DeclaredInterface { id: 2, version: 1 },
+            DeclaredInterface { id: 1, version: 1 },
         ]);
     }
 
@@ -569,15 +573,15 @@ mod interface_tests {
     /// finds, and nothing after.
     #[test]
     fn a_whole_note_carries_its_header_and_descriptor() {
-        const N: usize = interfaces_note_len(3);
-        let note = InterfacesNote::<N>::of::<{ interfaces_len(3) }>(&LIST);
+        const N: usize = note_bytes(3);
+        let note = InterfacesNote::<N>::of::<{ descriptor_bytes(3) }>(&LIST);
         let b = note.0;
         assert_eq!(&b[..4], &5u32.to_le_bytes());
-        assert_eq!(&b[4..8], &(interfaces_len(3) as u32).to_le_bytes());
+        assert_eq!(&b[4..8], &(descriptor_bytes(3) as u32).to_le_bytes());
         assert_eq!(&b[8..12], &INTERFACES.to_le_bytes());
         assert_eq!(&b[12..16], b"nife"); // wire literal
         assert_eq!(&b[16..20], &[0, 0, 0, 0]);
-        assert_eq!(b.len(), 20 + interfaces_len(3));
+        assert_eq!(b.len(), 20 + descriptor_bytes(3));
         assert_eq!(decode_interfaces(&b[20..]).unwrap().version_of(4), Some(7));
     }
 
@@ -587,7 +591,7 @@ mod interface_tests {
     /// refuses, so an older program is not read as compatible with a newer host.
     #[test]
     fn a_declared_version_must_be_the_one_served() {
-        let bytes: [u8; interfaces_len(3)] = encode_interfaces(&LIST);
+        let bytes: [u8; descriptor_bytes(3)] = encode_interfaces(&LIST);
         let list = decode_interfaces(&bytes).unwrap();
         assert_eq!(list.check_served(4, 7), Ok(()));
         let refused = |served| list.check_served(4, served);
@@ -612,7 +616,7 @@ mod interface_tests {
             Ok(()),
             "no entry, nothing to refuse"
         );
-        let empty: [u8; interfaces_len(0)] = encode_interfaces(&[]);
+        let empty: [u8; descriptor_bytes(0)] = encode_interfaces(&[]);
         assert_eq!(
             decode_interfaces(&empty).unwrap().check_served(1, 1),
             Ok(())

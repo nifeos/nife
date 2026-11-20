@@ -547,7 +547,7 @@ fn feed(nav: &mut Nav, stage: &[u8], w: &mut dyn ByteOut) {
             if nav.dir.is_none() {
                 Say::NoDirectory
             } else {
-                let mut buf = [0u8; nav::RENDER_MAXIMUM];
+                let mut buf = [0u8; grant_navigation::MAXIMUM_RENDERED_PATH_BYTES];
                 let k = nav.holds.cwd.render(&mut buf);
                 w.push(&buf[..k]);
                 w.push(b"\n");
@@ -641,7 +641,7 @@ fn open_at(
     nav: &Nav,
     t: Tree,
     at: Cwd,
-    tmp: &mut [u64; nav::MAXIMUM_DEPTH],
+    tmp: &mut [u64; grant_navigation::MAXIMUM_DEPTH],
 ) -> Result<(u64, usize), Say> {
     let mut handle = fs::ROOT;
     let mut n = 0usize;
@@ -669,7 +669,7 @@ fn open_at(
 /// See notes/pipes/the-file-end.md.
 fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Result<FileOut, Say> {
     let t = nav.tree(g.which);
-    let mut tmp = [0u64; nav::MAXIMUM_DEPTH];
+    let mut tmp = [0u64; grant_navigation::MAXIMUM_DEPTH];
     let (dir_handle, opened) = open_at(nav, t, g.directory, &mut tmp)?;
     let name = g.name.as_bytes();
     let dir = t.slot;
@@ -720,7 +720,7 @@ fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Resul
 /// person would believe.
 pub(super) fn open_source(nav: &mut Nav, g: grant_plan::FileGrant) -> Result<FileIn, Say> {
     let t = nav.tree(g.which);
-    let mut tmp = [0u64; nav::MAXIMUM_DEPTH];
+    let mut tmp = [0u64; grant_navigation::MAXIMUM_DEPTH];
     let (dir_handle, opened) = open_at(nav, t, g.directory, &mut tmp)?;
     let handle = nav.name_call_in(t, fs::OPEN, dir_handle, g.name.as_bytes(), 0);
     for h in tmp.iter().take(opened) {
@@ -850,14 +850,14 @@ impl FileIn {
 fn drain_into(f: &mut FileOut) {
     for _ in 0..MAXIMUM_OUTPUT_CHUNKS {
         let (w0, w1, w2) = receive(RESULT);
-        if w0 == spawnproto::SPAWN_FAILED || w0 == spawnproto::SPAWN_NOT_IN_IMAGE {
+        if w0 == spawn_protocol::SPAWN_FAILED || w0 == spawn_protocol::SPAWN_NOT_IN_IMAGE {
             failed();
             print(swish::spawn_failure_sentence(w0));
             return;
         }
         // The writer died mid-stream (milestone 235 (a command that faults hangs the prompt)):
         // the file keeps what arrived and is closed.
-        if w0 == spawnproto::JOB_FAULTED {
+        if w0 == spawn_protocol::JOB_FAULTED {
             failed();
             f.finish();
             print(swish::FAULTED_SENTENCE);
@@ -920,7 +920,7 @@ fn spawn_stage(
         None
     };
 
-    let wiring = spawnproto::Wiring {
+    let wiring = spawn_protocol::Wiring {
         interruptible: false,
         sink: sink.is_some(),
         source: source.is_some(),
@@ -943,7 +943,7 @@ fn spawn_stage(
         keyboard: false,
         held: false,
     };
-    let (w0, w1, w2) = spawnproto::request(
+    let (w0, w1, w2) = spawn_protocol::request(
         program.id(),
         e.program_argument,
         e.memory_grant_pages,
@@ -956,7 +956,7 @@ fn spawn_stage(
         send(SPAWN, child.0, child.1, child.2);
     }
     // **The argv's frame, then the name set's, before every other capability**
-    // (`spawnproto::PROGRAM_ARGUMENTS_BIT`, `NAMESET_BIT`), as `spawn` sends them.
+    // (`spawn_protocol::PROGRAM_ARGUMENTS_BIT`, `NAMESET_BIT`), as `spawn` sends them.
     if let Some(a) = argv {
         user_mode_runtime::send_capability(SPAWN, a.frame, abi::rights::READ, 0);
         capability_delete(a.frame);
@@ -992,8 +992,8 @@ fn spawn_stage(
     // failed spawn is invisible. A fault word here is an earlier stage's (milestone 235).
     if wiring.sink || wiring.screen {
         match receive(RESULT).0 {
-            w if w == spawnproto::SPAWN_OK => {}
-            w if w == spawnproto::JOB_FAULTED => {
+            w if w == spawn_protocol::SPAWN_OK => {}
+            w if w == spawn_protocol::JOB_FAULTED => {
                 failed();
                 print(swish::FAULTED_SENTENCE);
                 return false;

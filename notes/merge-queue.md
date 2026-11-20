@@ -183,6 +183,10 @@ logs the run it cites; otherwise it runs everything. The queue's check timeout i
 [`merge-queue/main-push-and-check-timeout.md`](merge-queue/main-push-and-check-timeout.md) has the
 premise checked against history and the eviction timeline.
 
+Settings in force: 5 builds at once, `ALLGREEN`, one entry per group, and `NIFE_RUNNER_OWNED` set
+after the owned-runner canary. [`merge-queue/queue-sizing.md`](merge-queue/queue-sizing.md) has each
+trigger and the measurement.
+
 ## The heavy gates run only in the queue, and the proofs also on a harness change
 
 COE action item: notes/coes/2026-11-03-merge-queue-backlog.md, action 1.
@@ -221,9 +225,8 @@ The queue's prevention has a price, and a red member is where it is paid. A grou
 is built as one, and a member that is red on top of the entries ahead of it fails the whole group,
 which is then rebuilt without it. Every other member's build is thrown away. Per-pull-request CI
 cannot see this case at all, because the failing input is the stack, not the branch. On 2026-09-24 a
-lane replayed the queue by hand (23 entries, about 40 minutes) and found three pull requests, #1194,
-#1222 and #1182, green alone and red on top of what was ahead of them. Each would have cost a group
-roughly an hour of runner time per member.
+hand replay of 23 entries found three pull requests (#1194, #1222, #1182) green alone and red on
+top of what was ahead of them.
 
 `script/preflight-queue` makes that replay a command. It walks the queue in order, then the pull
 requests armed but not yet queued. It merges each onto the green ones ahead in a scratch worktree, and

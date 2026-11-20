@@ -36,7 +36,7 @@ const PPN_MASK: u64 = (1 << 44) - 1;
 /// **A PTE's fields share no bit**: the PPN field (bits 53 to 10, written as a literal mask
 /// because the encoder shifts a masked address into it, and the Kani harnesses and tests spell the
 /// same positions as literals), V, and each of R, W, X, U, G, A, D and the software
-/// device bit. Every `|` in `Sv39::attrs`, `table_entry`, `leaf_entry` and `is_block` joins words
+/// device bit. Every `|` in `Sv39::attributes`, `table_entry`, `leaf_entry` and `is_block` joins words
 /// from this list, so each is its own `^`, and the mutation exclusions for them name this
 /// constant: the compiler checks what no test can.
 ///
@@ -45,14 +45,17 @@ pub const THE_PAGE_TABLE_ENTRY_FIELDS_SHARE_NO_BIT: () = {
     assert_share_no_bit!(0x003f_ffff_ffff_fc00, V, R, W, X, U, G, A, D, SW_DEVICE);
 };
 
-/// The RISC-V Sv39 three-level page-table format.
+/// The RISC-V Sv39 three-level page-table format (the RISC-V privileged architecture, "Sv39: Page-Based
+/// 39-bit Virtual-Memory System"). Name provisional.
+#[doc(alias = "RISC-V")]
+#[doc(alias = "riscv64")]
 pub struct Sv39;
 
 impl Sv39 {
     /// Encode the permission/attribute bits (not the PPN or V) for a leaf with `flags`. A leaf is
     /// always readable (R), and we set A/D eagerly so the hardware never faults to update them (the
     /// Sv39 analog of always setting aarch64's Access Flag). D is set only for writable pages.
-    const fn attrs(flags: Flags) -> u64 {
+    const fn attributes(flags: Flags) -> u64 {
         let mut bits = R | A;
         if flags.is_writable() {
             bits |= W | D;
@@ -84,17 +87,17 @@ impl PageFormat for Sv39 {
         entry & V != 0
     }
 
-    fn entry_pa(entry: u64) -> u64 {
+    fn entry_physical_address(entry: u64) -> u64 {
         ((entry >> PPN_SHIFT) & PPN_MASK) << 12
     }
 
-    fn table_entry(pa: u64, _level: usize) -> u64 {
+    fn table_entry(physical_address: u64, _level: usize) -> u64 {
         // A pointer PTE: PPN plus V, and R=W=X=0 (that zero is what marks it a pointer, not a leaf).
-        (((pa >> 12) & PPN_MASK) << PPN_SHIFT) | V
+        (((physical_address >> 12) & PPN_MASK) << PPN_SHIFT) | V
     }
 
-    fn leaf_entry(pa: u64, flags: Flags) -> u64 {
-        (((pa >> 12) & PPN_MASK) << PPN_SHIFT) | V | Self::attrs(flags)
+    fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {
+        (((physical_address >> 12) & PPN_MASK) << PPN_SHIFT) | V | Self::attributes(flags)
     }
 
     fn leaf_flags(entry: u64) -> Flags {
@@ -126,8 +129,11 @@ impl PageFormat for Sv39 {
     /// a higher level**, since Sv39 marks a leaf by R/W/X rather than by position. What changes is
     /// the PPN: its low 9 (megapage) or 18 (gigapage) bits must be zero, or the hardware raises a
     /// misaligned-superpage page fault, so the address is masked to the block's alignment.
-    fn block_entry(pa: u64, flags: Flags, size: PageSize) -> Option<u64> {
-        Some(Self::leaf_entry(pa & !(size.bytes() - 1), flags))
+    fn block_entry(physical_address: u64, flags: Flags, size: PageSize) -> Option<u64> {
+        Some(Self::leaf_entry(
+            physical_address & !(size.bytes() - 1),
+            flags,
+        ))
     }
 
     /// R, W or X set: a leaf, at whatever level. All three clear: a pointer.
@@ -147,6 +153,8 @@ impl PageFormat for Sv39 {
 /// time (`board_th1520`). See notes/paging.md, "T-Head memory types".
 ///
 /// Name: provisional, milestone 89 (Scaleway EM-RV1)'s lane, 2026-10-06 (UTC).
+#[doc(alias = "XTheadMae")]
+#[doc(alias = "T-Head memory attribute extension")]
 pub struct Sv39Mae;
 
 /// Strongly ordered: no speculation, no reordering, which a device register needs.
@@ -203,25 +211,25 @@ impl PageFormat for Sv39Mae {
         Sv39::is_present(entry)
     }
 
-    fn entry_pa(entry: u64) -> u64 {
+    fn entry_physical_address(entry: u64) -> u64 {
         // The PPN mask already stops at bit 53, so the memory type cannot leak into the address.
-        Sv39::entry_pa(entry)
+        Sv39::entry_physical_address(entry)
     }
 
-    fn table_entry(pa: u64, level: usize) -> u64 {
-        Sv39::table_entry(pa, level)
+    fn table_entry(physical_address: u64, level: usize) -> u64 {
+        Sv39::table_entry(physical_address, level)
     }
 
-    fn leaf_entry(pa: u64, flags: Flags) -> u64 {
-        Sv39::leaf_entry(pa, flags) | Self::memory_type(flags)
+    fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {
+        Sv39::leaf_entry(physical_address, flags) | Self::memory_type(flags)
     }
 
     fn leaf_flags(entry: u64) -> Flags {
         Sv39::leaf_flags(entry & !MAE_MASK)
     }
 
-    fn block_entry(pa: u64, flags: Flags, size: PageSize) -> Option<u64> {
-        Some(Sv39::block_entry(pa, flags, size)? | Self::memory_type(flags))
+    fn block_entry(physical_address: u64, flags: Flags, size: PageSize) -> Option<u64> {
+        Some(Sv39::block_entry(physical_address, flags, size)? | Self::memory_type(flags))
     }
 
     fn is_block(entry: u64) -> bool {
@@ -235,11 +243,11 @@ mod mae_tests {
 
     const ALL: [Flags; 8] = [
         Flags::kernel_code(),
-        Flags::kernel_rodata(),
+        Flags::kernel_read_only_data(),
         Flags::kernel_data(),
         Flags::device(),
         Flags::user_code(),
-        Flags::user_rodata(),
+        Flags::user_read_only_data(),
         Flags::user_data(),
         Flags::user_device(),
     ];
@@ -258,7 +266,7 @@ mod mae_tests {
             let leaf = Sv39Mae::leaf_entry(0xff_e701_4000, flags);
             assert_eq!(leaf >> 59 << 59, want, "{flags:?}");
             assert_eq!(Sv39Mae::memory_type_of(leaf), want, "{flags:?}");
-            for size in [PageSize::Size2MiB, PageSize::Size1GiB] {
+            for size in [PageSize::TwoMebibytes, PageSize::OneGibibyte] {
                 let block = Sv39Mae::block_entry(0x8000_0000, flags, size).unwrap();
                 assert_eq!(block >> 59 << 59, want, "{flags:?} block");
             }
@@ -270,10 +278,10 @@ mod mae_tests {
     #[test]
     fn below_the_memory_type_it_is_sv39() {
         for flags in ALL {
-            for pa in [0, 0x8020_0000, 0xff_e701_4000, 0x3_ffff_f000] {
-                let leaf = Sv39Mae::leaf_entry(pa, flags);
-                assert_eq!(leaf & !MAE_MASK, Sv39::leaf_entry(pa, flags));
-                assert_eq!(Sv39Mae::entry_pa(leaf), pa);
+            for physical_address in [0, 0x8020_0000, 0xff_e701_4000, 0x3_ffff_f000] {
+                let leaf = Sv39Mae::leaf_entry(physical_address, flags);
+                assert_eq!(leaf & !MAE_MASK, Sv39::leaf_entry(physical_address, flags));
+                assert_eq!(Sv39Mae::entry_physical_address(leaf), physical_address);
                 assert_eq!(Sv39Mae::leaf_flags(leaf), flags);
                 assert!(Sv39Mae::is_block(leaf));
             }
@@ -337,7 +345,7 @@ mod tests {
         let e = Sv39::table_entry(0x8100_0000, 0);
         assert_ne!(e & V, 0);
         assert_eq!(e & (R | W | X), 0, "a pointer must have R=W=X clear");
-        assert_eq!(Sv39::entry_pa(e), 0x8100_0000);
+        assert_eq!(Sv39::entry_physical_address(e), 0x8100_0000);
     }
 
     /// **Every constructor round-trips through encode/decode**, including the RSW device bit.
@@ -345,16 +353,16 @@ mod tests {
     fn flags_round_trip_through_a_leaf() {
         for flags in [
             Flags::kernel_code(),
-            Flags::kernel_rodata(),
+            Flags::kernel_read_only_data(),
             Flags::kernel_data(),
             Flags::device(),
             Flags::user_code(),
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             Flags::user_data(),
             Flags::user_device(),
         ] {
             let leaf = Sv39::leaf_entry(0x8020_0000, flags);
-            assert_eq!(Sv39::entry_pa(leaf), 0x8020_0000);
+            assert_eq!(Sv39::entry_physical_address(leaf), 0x8020_0000);
             assert_eq!(
                 Sv39::leaf_flags(leaf),
                 flags,
@@ -398,22 +406,22 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/sv39.verification.index_is_always_in_bounds.patch`
     #[kani::proof]
     fn index_is_always_in_bounds() {
-        let va: u64 = kani::any();
+        let virtual_address: u64 = kani::any();
         let level: usize = kani::any();
         kani::assume(level < Sv39::LEVELS);
-        assert!(Sv39::index(va, level) < crate::ENTRIES);
+        assert!(Sv39::index(virtual_address, level) < crate::ENTRIES);
     }
 
     /// **The three indices and the offset tile the low 39 bits exactly.**
     /// Falsification: replayable `crates/page_tables/falsifications/sv39.verification.the_indices_and_offset_tile_the_address.patch`
     #[kani::proof]
     fn the_indices_and_offset_tile_the_address() {
-        let va: u64 = kani::any();
-        let reconstructed = ((Sv39::index(va, 0) as u64) << 30)
-            | ((Sv39::index(va, 1) as u64) << 21)
-            | ((Sv39::index(va, 2) as u64) << 12)
-            | (va & (PAGE_SIZE - 1));
-        assert_eq!(reconstructed, va & 0x0000_007f_ffff_ffff);
+        let virtual_address: u64 = kani::any();
+        let reconstructed = ((Sv39::index(virtual_address, 0) as u64) << 30)
+            | ((Sv39::index(virtual_address, 1) as u64) << 21)
+            | ((Sv39::index(virtual_address, 2) as u64) << 12)
+            | (virtual_address & (PAGE_SIZE - 1));
+        assert_eq!(reconstructed, virtual_address & 0x0000_007f_ffff_ffff);
     }
 
     /// **Distinct pages take distinct paths** within the 39-bit VA.
@@ -434,21 +442,27 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/sv39.verification.the_two_halves_are_disjoint.patch`
     #[kani::proof]
     fn the_two_halves_are_disjoint() {
-        let va: u64 = kani::any();
-        assert!(!(Sv39::is_in_half(Half::Low, va) && Sv39::is_in_half(Half::High, va)));
+        let virtual_address: u64 = kani::any();
+        assert!(
+            !(Sv39::is_in_half(Half::Low, virtual_address)
+                && Sv39::is_in_half(Half::High, virtual_address))
+        );
     }
 
     /// **The user-VA gate admits exactly the aligned low half**, never the high one.
     /// Falsification: replayable `crates/page_tables/falsifications/sv39.verification.the_user_va_gate_admits_only_the_aligned_low_half.patch`
     #[kani::proof]
     fn the_user_va_gate_admits_only_the_aligned_low_half() {
-        let va: u64 = kani::any();
+        let virtual_address: u64 = kani::any();
         assert_eq!(
-            crate::is_user_page_va::<Sv39>(va),
-            va & 0xfff == 0 && va >> 38 == 0
+            crate::is_user_page_virtual_address::<Sv39>(virtual_address),
+            virtual_address & 0xfff == 0 && virtual_address >> 38 == 0
         );
-        if crate::is_user_page_va::<Sv39>(va) {
-            assert!(Sv39::is_in_half(Half::Low, va) && !Sv39::is_in_half(Half::High, va));
+        if crate::is_user_page_virtual_address::<Sv39>(virtual_address) {
+            assert!(
+                Sv39::is_in_half(Half::Low, virtual_address)
+                    && !Sv39::is_in_half(Half::High, virtual_address)
+            );
         }
     }
 
@@ -462,14 +476,14 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/sv39.verification.no_encoded_leaf_is_both_writable_and_executable.patch`
     #[kani::proof]
     fn no_encoded_leaf_is_both_writable_and_executable() {
-        let pa: u64 = kani::any();
-        kani::assume(pa & !0x00ff_ffff_ffff_f000 == 0);
+        let physical_address: u64 = kani::any();
+        kani::assume(physical_address & !0x00ff_ffff_ffff_f000 == 0);
 
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
 
-        let leaf = Sv39::leaf_entry(pa, all[i]);
+        let leaf = Sv39::leaf_entry(physical_address, all[i]);
         assert!(leaf & (1 << 2) == 0 || leaf & (1 << 3) == 0);
     }
 
@@ -480,23 +494,28 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/sv39.verification.a_block_keeps_address_and_permissions_apart.patch`
     #[kani::proof]
     fn a_block_keeps_address_and_permissions_apart() {
-        let pa: u64 = kani::any();
-        kani::assume(pa >> 56 == 0); // Sv39 physical addresses are 56 bits
+        let physical_address: u64 = kani::any();
+        kani::assume(physical_address >> 56 == 0); // Sv39 physical addresses are 56 bits
         let two_mebibytes: bool = kani::any();
-        let (size, pa_bits) = if two_mebibytes {
-            (PageSize::Size2MiB, 0x00ff_ffff_ffe0_0000u64)
+        let (size, physical_address_bits) = if two_mebibytes {
+            (PageSize::TwoMebibytes, 0x00ff_ffff_ffe0_0000u64)
         } else {
-            (PageSize::Size1GiB, 0x00ff_ffff_c000_0000u64)
+            (PageSize::OneGibibyte, 0x00ff_ffff_c000_0000u64)
         };
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
 
-        let block = Sv39::block_entry(pa, flags, size).expect("Sv39 encodes both sizes");
-        // PPN at [53:10] is pa[55:12]; read it out of the word by hand.
+        let block =
+            Sv39::block_entry(physical_address, flags, size).expect("Sv39 encodes both sizes");
+        // PPN at [53:10] is physical_address[55:12]; read it out of the word by hand.
         let ppn_as_address = ((block >> 10) & 0x0000_0fff_ffff_ffff) << 12;
-        assert_eq!(ppn_as_address, pa & pa_bits, "the address left its field");
+        assert_eq!(
+            ppn_as_address,
+            physical_address & physical_address_bits,
+            "the address left its field"
+        );
         assert_eq!(block & 1, 1, "a block must be valid");
         assert_ne!(
             block & 0b1110,
@@ -511,8 +530,8 @@ mod verification {
     /// Falsification: replayable `crates/page_tables/falsifications/sv39.verification.a_table_entry_is_never_a_block.patch`
     #[kani::proof]
     fn a_table_entry_is_never_a_block() {
-        let pa: u64 = kani::any();
-        assert!(!Sv39::is_block(Sv39::table_entry(pa, 0)));
+        let physical_address: u64 = kani::any();
+        assert!(!Sv39::is_block(Sv39::table_entry(physical_address, 0)));
     }
 
     /// **A leaf keeps the address and the permissions apart, and the permissions round-trip.**
@@ -520,17 +539,19 @@ mod verification {
     #[kani::proof]
     fn the_leaf_keeps_address_and_permissions_apart() {
         // Page-aligned physical address within Sv39's 56-bit physical space.
-        let pa: u64 = kani::any();
-        kani::assume(pa & !(PPN_MASK << 12) == 0);
+        let physical_address: u64 = kani::any();
+        kani::assume(physical_address & !(PPN_MASK << 12) == 0);
 
         let all = Flags::ALL;
         let i: usize = kani::any();
         kani::assume(i < all.len());
         let flags = all[i];
 
-        let leaf = Sv39::leaf_entry(pa, flags);
-        // **The address field read out of the word, not through `entry_pa`** (milestone 211).
-        // `leaf_entry` and `entry_pa` are an encoder and its own decoder, so a round trip
+        let leaf = Sv39::leaf_entry(physical_address, flags);
+        // **The address field read out of the word, not through `entry_physical_address`**
+        // (milestone 211 (a harness that states its property through the function under test
+        // cannot see that function break)).
+        // `leaf_entry` and `entry_physical_address` are an encoder and its own decoder, so a round trip
         // between them is satisfied by any pair that agree: a shift wrong in both would leave
         // this green while the hardware read the wrong page. The line below states where the
         // architecture puts the address, which is the one thing the implementation does not
@@ -541,11 +562,11 @@ mod verification {
         // is the same move on the portable leaf.
         assert_eq!(
             ((leaf >> 10) & ((1 << 44) - 1)) << 12,
-            pa,
+            physical_address,
             "the address left bits 10..54 of the PTE",
         );
         assert_eq!(leaf & 1, 1, "a leaf must have the valid bit set");
-        assert_eq!(Sv39::entry_pa(leaf), pa);
+        assert_eq!(Sv39::entry_physical_address(leaf), physical_address);
         // Write-combining is encoded as plain device memory here, so it decodes as device.
         assert_eq!(Sv39::leaf_flags(leaf), flags.without_write_combining());
     }
