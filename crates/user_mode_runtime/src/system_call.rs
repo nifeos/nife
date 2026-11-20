@@ -7,7 +7,7 @@
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
-/// **The one trap in this crate**, one per architecture, used by every system_call: the number in
+/// **The one trap in this crate**, one per architecture, used by every system call: the number in
 /// `x8`/`a7`/`rax` and six words in both directions. No register survives: the kernel writes the
 /// first on every system call and some methods write up to the sixth, which goes in as zero so
 /// [`receive_message`] reads `0` unless the kernel labelled a death (§148 (resolves by asking the

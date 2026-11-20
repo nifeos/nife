@@ -221,7 +221,7 @@ pub(crate) fn enable_software_interrupts() {
     // Takes effect under sstatus.SIE.
     super::instructions::set_sie(SSIE);
 }
-/// `scause` exception code for `ecall` taken from U-mode: the system_call.
+/// `scause` exception code for `ecall` taken from U-mode: the system call.
 const CAUSE_ECALL_U: u64 = 8;
 /// `scause` exception code for a breakpoint (`ebreak`).
 const CAUSE_BREAKPOINT: u64 = 3;

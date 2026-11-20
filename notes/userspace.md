@@ -191,7 +191,7 @@ address ([higher-half.md](higher-half.md)). So:
 The user program executes `svc #0` and asks for nothing. No system call number, no argument
 convention, no return value. The kernel counts it.
 
-That restraint is the point. §8 said "if we find ourselves hacking in a system call without having
+That restraint is the point. §8 (process model / system call ABI) said "if we find ourselves hacking in a system call without having
 had that conversation, the plan has failed." We had the conversation, and the answer was
 [capabilities](capabilities.md). The system call surface gets designed at 7d, in one piece, against
 a capability table.

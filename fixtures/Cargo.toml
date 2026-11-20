@@ -440,7 +440,7 @@ bench = false
 # and which alternatives were refused.
 
 # The self-checker (milestone 7): a real ELF that verifies its own loaded image
-# and makes one capability-free system_call. `hello`'s SELF_CHECK role until milestone 291.
+# and makes one capability-free system call. `hello`'s SELF_CHECK role until milestone 291 (thirty-one programs wearing one name).
 [[bin]]
 name = "image_self_checker"
 path = "src/image_self_checker.rs"

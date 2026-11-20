@@ -22,7 +22,7 @@ No `open`. No `read`. No `write`. No `fork`. A process acts on the things it was
 because *a capability is authority over something else* and you do not need to be granted the
 right to stop running.
 
-This is DECISIONS §4 rule 3 ("the system call surface stays narrow and explicit, a boundary not a
+This is DECISIONS §4 (kernel shape: a microkernel) rule 3 ("the system call surface stays narrow and explicit, a boundary not a
 habit") meeting §10, and §10 is what makes three enough. A monolithic kernel needs a system call per
 verb because the verb is where the authority check lives. Here the authority is the capability,
 and there is one verb: invoke it.

@@ -67,7 +67,7 @@ divergence §121 requires stays entirely below the interface.
   be verified rather than argued about. And it is a real, if narrow, concession against §14's
   minimal-core claim: seL4's position is that the kernel provides mechanism and no services.
 
-Option 2: a console system_call. The kernel exposes a write/read pair and `swish` calls it directly
+Option 2: a console system call. The kernel exposes a write/read pair and `swish` calls it directly
 on x86.
 
 - *For*: smaller to build; no kernel thread to schedule or wedge.

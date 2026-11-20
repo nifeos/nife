@@ -68,7 +68,7 @@ caller). `handshake.wait_on` names the endpoint. `set_ipc_aborted` plus `wake` i
 abort-and-resume pair. `Endpoint::remove_sender` already exists for surgical unlinking and its
 receiver twin is the same twelve lines. And `reap_region_objects` already reaches into an endpoint
 *outside* the region being destroyed, with its reasoning written down. So the kernel could end any
-blocked thread today in about thirty lines with no new system_call. **What has never been decided is who
+blocked thread today in about thirty lines with no new system call. **What has never been decided is who
 may ask, and that is the milestone.**
 
 The prior art says nobody else blocks forever. seL4 folds cancellation into `seL4_TCB_Suspend`
@@ -163,7 +163,7 @@ case is the miss rather than the hit, because the kernel asks both queues on eve
   test was sampling its baseline after the driver had already been spawned, and `ROUTED_IRQS` meant
   something different on `x86_64` than on the other two architectures; both are fixed, and
   notes/load-sensitive-assertions.md carries the account.
-- **Milestone 368.** `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`.
+- **Milestone 368 (its entry set is flat).** `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`.
   `script/fastpath-footprint`'s `system_call_entry` set is flat and so cannot exclude anything, and this
   lane's change to region teardown made LLVM fold `timer::tick` into `riscv_trap_body`, putting 226
   bytes (12.1%, against a 5% bound) onto a number that measures the system call path. Closed here with

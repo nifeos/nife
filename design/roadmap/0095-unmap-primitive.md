@@ -46,7 +46,7 @@ decides revoke's answer, and this must not contradict it.) Is unmapping enough, 
 window want a narrower shape: mapping one page at a time and releasing it before the next? That
 needs no new method at all if the loader is restructured instead.
 
-That last possibility is why this is not obviously a system_call. The cheapest fix may be a loader that
+That last possibility is why this is not obviously a system call. The cheapest fix may be a loader that
 never holds more than one page. The measurement that decides it is how much slower a
 one-page-at-a-time loader boots.
 

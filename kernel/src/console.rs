@@ -599,7 +599,7 @@ pub fn enter_panic() {
 
 /// A reset's escape from the ring, [`enter_panic`]'s move: a line left for the drainer is one
 /// nobody reads once the machine stops. What the drainer had not printed goes out first, then
-/// every later line is direct. Takes the lock the ordinary way; the caller is a system_call.
+/// every later line is direct. Takes the lock the ordinary way; the caller is a system call.
 ///
 /// # BUGS
 ///

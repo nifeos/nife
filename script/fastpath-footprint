@@ -478,7 +478,7 @@ COLD = re.compile(
 #                        them, on x86_64 it does not. Including them here for symmetry with the
 #                        other list would put 918 bytes on this number that no system call fetches.
 #   user_return,         first entry to ring 3, and the interrupt-stack trampoline. Once per thread
-#   dispatch_on_...      and per IDT trap respectively, neither per system_call.
+#   dispatch_on_...      and per IDT trap respectively, neither per system call.
 #
 # **aarch64 counts ONE vector entry, not the whole table** (milestone 188 phase 2, 2026-09-04).
 # `exception_vectors` is 2,020 bytes and is not code in the ordinary sense: vectors.s builds it as

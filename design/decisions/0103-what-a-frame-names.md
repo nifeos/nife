@@ -65,7 +65,7 @@ The four options are set out in full in section 6 below with their measured pric
 |---|---|---|
 | **A. A `Frame` names a run** `(pa, pages)` | `Object::Frame`, `frame::MAP`, `frame::REVOKE`, the revocation database's key | Live. The most general answer and the one that most changes what a capability means. |
 | **B. Grow `CSPACE_SLOTS`** | one constant | **Dominated, and by arithmetic rather than taste.** See section 5. A TCB is written into one 4 KiB page and a slot is 24 bytes, so **at most 170 slots fit a page even if a `Thread` held nothing else**; 475 frames needs 480. This is not "a one-number change paid in TCB size", which is what `kernel/src/cap.rs` currently says. |
-| **C. `aspace::MAP_INTO` at spawn** | nothing in the model | Live, and the only option that changes no system call meaning. Costs 475 map calls, and the client ends up holding **no capability for its own pixels**, which is what milestone 108 spent itself closing on this exact path. |
+| **C. `aspace::MAP_INTO` at spawn** | nothing in the model | Live, and the only option that changes no system call meaning. Costs 475 map calls, and the client ends up holding **no capability for its own pixels**, which is what milestone 108 (the drivers move onto frame capabilities) spent itself closing on this exact path. |
 | **D. A large `Frame`: one 2 MiB page** | `PageFormat` gains block descriptors; `Object::Frame` gains an order | Live, and cheaper than this lane expected. `800x608x4 = 1,945,600` fits one 2 MiB page with 37 pages to spare, and `SURFACE_VA` is already 2 MiB-aligned. |
 
 A and D are the same decision at different granularity, which is the useful way to see them. Both

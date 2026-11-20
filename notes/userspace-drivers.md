@@ -1,6 +1,6 @@
 # The console driver leaves the kernel
 
-Milestone 8. The one that decides whether DECISIONS §10 was a real architecture or a system call
+Milestone 8 (the console driver leaves the kernel). The one that decides whether DECISIONS §10 (process model: capability-based, microkernel) was a real architecture or a system call
 table with an unusual shape.
 
 ## What actually moved, stated precisely so we don't lie to ourselves

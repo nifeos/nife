@@ -54,7 +54,7 @@ next to its commit. It is not what lmbench measures. lmbench runs a userspace pr
 system calls, so its numbers include the EL0→EL1 trap and return that a kernel-side benchmark skips.
 
 So the cross-OS primitive numbers come from EL0, from a userspace program that self-times a
-loop of real `svc` system_calls. That is why milestone 19e (run a real workload) opened EL0 access to the virtual counter
+loop of real `svc` system calls. That is why milestone 19e (run a real workload) opened EL0 access to the virtual counter
 (`CNTKCTL_EL1.EL0VCTEN`; `user_mode_runtime::now`/`cntfrq`; [notes/abi.md](../abi.md)). CoreMark is
 the first program to use it, reporting `[crc, ticks, freq]`. The EL0 primitive benchmarks (null
 system call, context switch, IPC round trip, page map, all measured the lmbench way) build on the same

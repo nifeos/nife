@@ -68,7 +68,7 @@ same two arms and no `BUGS` note. They are now one function,
 `user_mode_runtime::virtual_io::virtual_io_ring_barrier` (name provisional), so a seventh driver gets the
 third architecture by calling it. On x86_64 it is a compiler fence: every call site needs only
 store-store or load-load ordering, which TSO gives, and every notify leaves through a serializing
-system_call. `non_volatile_memory_express.rs` keeps `dmb sy` and a real `mfence`, because its doorbell
+system call. `non_volatile_memory_express.rs` keeps `dmb sy` and a real `mfence`, because its doorbell
 is a direct store with no system call in between. The argument site by site is in
 [architecture-list-sweep/virtual-io-ring-barrier.md](architecture-list-sweep/virtual-io-ring-barrier.md).
 

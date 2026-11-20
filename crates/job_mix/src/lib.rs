@@ -101,11 +101,13 @@ pub const KIND: &str = "job-mix-kind:";
 /// provisional.
 pub const LOCK: &str = "job-mix-lock:";
 
-/// A compute-bound arithmetic loop, [`COMPUTE_ITERS`] iterations. No system_call.
+/// A compute-bound arithmetic loop, [`COMPUTE_ITERS`] iterations. No system call.
 pub const COMPUTE: u8 = 0;
-/// A walk over [`TOUCH_WORDS`] words of the task's own memory, read and written. No system_call.
+/// A walk over [`TOUCH_WORDS`] words of the task's own memory, read and written. No system call.
 pub const TOUCH: u8 = 1;
 /// [`NULL_SYSTEM_CALL_CALLS`] trips through the cheapest system call this ABI has.
+///
+/// Name: provisional. Spelled out from `NULL_SYSCALL`.
 pub const NULL_SYSTEM_CALL: u8 = 2;
 /// [`YIELD_CALLS`] voluntary yields, each a trip through the ready queue.
 pub const YIELD: u8 = 3;
@@ -186,6 +188,8 @@ pub const COMPUTE_ITERS: u64 = 20_000;
 pub const TOUCH_WORDS: usize = 4_096;
 
 /// System calls in one [`NULL_SYSTEM_CALL`] job.
+///
+/// Name: provisional. Spelled out from `NULL_SYSCALL_CALLS`.
 pub const NULL_SYSTEM_CALL_CALLS: u64 = 64;
 
 /// Yields in one [`YIELD`] job.

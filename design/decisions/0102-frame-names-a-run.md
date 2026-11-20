@@ -93,7 +93,7 @@ same as today.
 ### What does NOT change
 
 - `frame::MAP`'s argument shape. `va`, `writable`, `untyped_slot` are the same. The `count` is
-  on the capability, not in the system_call.
+  on the capability, not in the system call.
 - The revocation table. It is per-page (`revoke::record_mapping(phys, root, va)`), not per-capability.
   A `REVOKE` on a run walks the same table N times, once per page in the run. No format change.
 - **`aspace::MAP_INTO`.** The spawner-side mapping path is unchanged. It takes a `Frame` capability

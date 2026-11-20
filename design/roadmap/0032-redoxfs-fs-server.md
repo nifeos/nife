@@ -14,7 +14,7 @@ built, read path (2026-07-28; DECISIONS §27, notes/fs-server.md): RedoxFS runs 
 three-process userspace service (block server over blk IPC, FS server over the vendored no_std core
 with its own untyped heap, client holding a directory capability). A client opens the shipped
 `motd` through a granted directory capability and reads it back, proven on aarch64 and riscv64 with
-a host-tool consistency check. The contract is capability-shaped from birth and adds no system_call. The
+a host-tool consistency check. The contract is capability-shaped from birth and adds no system call. The
 error type maps to the wire exactly once; creation stays host-side. Phase 2 write path proven
 too (2026-07-29, through `std::fs`): the old "on-device writes loop inside RedoxFS's allocator
 commit" open item was stale and is corrected in DECISIONS §27 and notes/fs-server.md. A guest write

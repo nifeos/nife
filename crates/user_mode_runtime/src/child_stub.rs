@@ -46,7 +46,7 @@ pub const SEND_THEN_EXIT: [u32; 9] = [
 ];
 
 /// `x86_64`: rdi=slot 0, rsi=`SEND`, rdx=1, r10=0, r8=0, rax=`SYSTEM_CALL_INVOKE`, system call; then rax=`SYSTEM_CALL_EXIT`,
-/// rdi=0, system call (DECISIONS §124).
+/// rdi=0, system call (DECISIONS §124 (the x86_64 system call ABI)).
 ///
 /// Bytes rather than words, because x86 instructions are not a fixed width. Each immediate uses
 /// `mov r32, imm32`, which zeroes the upper half and keeps a small constant to five bytes; `r10`

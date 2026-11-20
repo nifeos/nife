@@ -47,7 +47,7 @@ path's stack together. The two doors into the kernel cannot come to name differe
 That is a decision rather than an omission. `sysret` returns to `rcx` without checking it is
 canonical. A non-canonical `rcx` faults in ring 0 on the user's stack, the shape of CVE-2012-0217.
 Using it safely needs an explicit canonicality check and an `iretq` fallback. Sharing one restore
-path costs some tens of cycles per system_call. It buys one `swapgs` rule with one place to get it
+path costs some tens of cycles per system call. It buys one `swapgs` rule with one place to get it
 wrong. Recorded in that function's `BUGS` as worth revisiting with a benchmark, once there is a
 system-call-heavy workload here to measure.
 

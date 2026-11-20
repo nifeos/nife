@@ -1,5 +1,5 @@
 //! What a component declares it needs, and how a supervisor wires it: the capability half of a §41
-//! (the endpoint is the broker) component. No IO and no system_calls: a [`Requirements`] and the
+//! (the endpoint is the broker) component. No IO and no system call: a [`Requirements`] and the
 //! supervisor's [`Provisions`] become a [`Plan`] (exactly what to endow) or a typed [`Refusal`]. A
 //! manifest is a request and the provisions are the authority: a name the supervisor did not list
 //! is [`Refusal::Unprovided`] before the component is built, so a manifest can be unsatisfiable but

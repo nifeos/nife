@@ -1367,7 +1367,7 @@ def selftest():
         ('the renumbered system call is a system call change', counts['system_call_changed'], 1),
         ('the new object type is a system call addition', counts['system_call_added'], 1),
         ('the version constant is a format bump', counts['format_bumps'], 1),
-        ('the renumber is classed as a system_call', system_call_class('SYSTEM_CALL_EXIT'), 'system_call'),
+        ('the renumber is classed as a system call', system_call_class('SYSTEM_CALL_EXIT'), 'system_call'),
         ('an object type is classed as one', system_call_class('object_type::NOTIFICATION'), 'object type'),
         ('an error code is classed as one', system_call_class('Error::NoSuchSlot'), 'error code'),
         ('a renumbered abi error code is boundary',

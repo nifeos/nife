@@ -14,7 +14,7 @@ move back by moving the files back.
 
 **In brief.** `crates/user_rt` is excluded from the host pass, from coverage, from mutation and from
 Kani, and correctly so. It is the EL0 system call floor, and `svc` on a machine with no nife kernel
-under it is a fault rather than a system_call. The exclusion is crate-level. Two of the crate's
+under it is a fault rather than a system call. The exclusion is crate-level. Two of the crate's
 modules make no system call at all, and they inherit the exclusion because of the file they are declared
 in.
 

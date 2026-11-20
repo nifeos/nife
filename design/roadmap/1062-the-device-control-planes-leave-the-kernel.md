@@ -217,7 +217,7 @@ table in BAR1. The starter reads the capability list instead. It lists the pages
 The driver writes 0 to `device_status`, accepts `VERSION_1` and `ACCESS_PLATFORM`, selects queue
 0, writes ring addresses inside its region, enables the queue and sets `DRIVER_OK`. To submit a
 read it publishes the descriptor and stores the queue number at `queue_notify_off * 4` in the
-notify page: one store, no system_call. A descriptor aimed at kernel memory faults at the IOMMU, where
+notify page: one store, no system call. A descriptor aimed at kernel memory faults at the IOMMU, where
 the mediated grant refuses it at `NOTIFY` with `DmaEscape`.
 
 ### Tests, proofs and starters

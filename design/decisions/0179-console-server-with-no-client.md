@@ -104,7 +104,7 @@ refuses, because it leaves a grant standing with no grantee.
 ## How reversible, and who has acted on it
 
 High, and nobody outside this tree has acted. B is one line and one kernel module; re-adding the
-call is the same edit backwards. Nothing two programs agree on changes, no wire format, no system_call.
+call is the same edit backwards. Nothing two programs agree on changes, no wire format, no system call.
 This is the category AGENTS.md says to decide quickly.
 
 ## What is blocked until this is answered

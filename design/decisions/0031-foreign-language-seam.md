@@ -38,7 +38,7 @@ process's capability table, not by what it can name. The text below is the July 
    (`fixtures/src/c_shim.rs`) holds every capability and performs every IPC; the C is called over the C
    ABI and gets a pointer and a length. This is not a request the C is trusted to honor, it is a
    property of what it can name: a system call needs a capability slot, and the C never sees one. So a
-   foreign component **cannot widen the kernel's system call surface** (§4 rule 3), and the confinement
+   foreign component **cannot widen the kernel's system call surface** (§4 (kernel shape: a microkernel) rule 3), and the confinement
    claim is exactly as narrow as it should be: the C can corrupt memory inside a grant the shell
    already had, and nothing else.
 2. What crosses is scalars and buffers only. `(u8*, usize) -> u32`. No structs, no callbacks into
@@ -113,7 +113,7 @@ construction authority, or proxies the reap through something that does.
   and the requirement is the interesting part. **The concrete requirement, for whoever decides the
   fork: a supervisor needs exactly `DESTROY` on one region it did not create.** Neither a rights bit
   on `WRITE` nor an `Untyped::REAP` method was invented here; that is a rights-model and
-  system-call-surface decision, and §26's phase-B block already records it as one.
+  system-call-surface decision, and §26's (the fault endpoint) phase-B block already records it as one.
 
 ## The honest caveats, including what a spike does not prove
 

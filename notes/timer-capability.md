@@ -85,7 +85,7 @@ was deleted. Three figures came out of it:
   `Timer` capability costs nothing per slot, per capability table or per TCB.
 - `ipc_fastpath` does not move on any architecture. `system_call_entry` grows by 12 bytes on aarch64,
   158 on riscv64 and 96 on x86_64, because one more `Object` arm is one more decode step for every
-  system_call.
+  system call.
 - The kernel grows by under a quarter of a per cent: 738 bytes on aarch64, 2,266 on riscv64, 1,386
   on x86_64.
 

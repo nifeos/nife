@@ -200,7 +200,7 @@ meets it.
   wakeup to a test that probed this way (milestone 72 (a lost wakeup that a hundred leaked threads
   may be causing)).
 - `Ok` is destructive too. A `Blocked` resident is ended by the call that succeeded, without
-  returning from its system_call. The peer it was queued beside on somebody else's rendezvous sees a
+  returning from its system call. The peer it was queued beside on somebody else's rendezvous sees a
   caller that never arrived, which it cannot tell from one that never called. §24 (interrupting the
   foreground process)'s `^C` escalation depends on this.
 - **It reaches outside the region.** Tearing down a rendezvous aborts every waiter wherever it

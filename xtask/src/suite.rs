@@ -493,7 +493,7 @@ fn host_tests() -> bool {
 
     // `user_mode_runtime` is in the excluded set (its system calls fault without a kernel) and has a
     // host test target all the same: its tests cover the pure logic (bounds checks, the frame
-    // layout, the tick conversion, the linker script's base) and never execute a system_call.
+    // layout, the tick conversion, the linker script's base) and never execute a system call.
     if !cargo(&["test", "-p", "user_mode_runtime"]) {
         return false;
     }

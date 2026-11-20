@@ -147,7 +147,7 @@ draw, and `notes/job-mix.md` step 3 tells the operator to read them before readi
 
 There is no userspace path to that fact, and it is not a gap in one place:
 
-- No system_call. `crates/abi` mentions a CPU only in prose.
+- No system call. `crates/abi` mentions a CPU only in prose.
 - `abi::rendezvous::SURVEY` returns exactly `(next_cursor, tid, state)`
   (`kernel/src/system_call/rendezvous.rs::rendezvous_survey`), and `state` is one of `READY`, `RUNNING`, `BLOCKED`, `DEAD`.
   `RUNNING` means *on a CPU right now*; it does not say which.

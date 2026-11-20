@@ -225,7 +225,7 @@ The refusal now rests on §28's trigger alone. A reader who thinks that trigger 
 reopen B, and this paragraph is the invitation.
 
 C is declined in favor of D, having established that its userspace half already exists and its
-kernel half does not need a system_call.
+kernel half does not need a system call.
 
 ## What is blocked until this is answered
 

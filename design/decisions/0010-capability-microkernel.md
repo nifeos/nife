@@ -11,7 +11,7 @@ Settled at the §8 (DEFERRED to a hard decision point) decision point, before an
 
 **A process names a resource by holding an unforgeable token it was handed. There is no
 ambient authority, and there is no global namespace.** Drivers and services are userspace
-processes. IPC is the primary system_call.
+processes. IPC is the primary system call.
 
 ## What a capability is, so the word means something
 

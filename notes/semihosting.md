@@ -34,7 +34,7 @@ The operations are a small fixed ABI: `SYS_OPEN` (0x01), `SYS_WRITEC` (0x03), `S
 A trap instruction. An operation number in a register. Arguments pointed to by another
 register. A result returned in a register.
 
-That is a system_call. Semihosting is a system call ABI, and the kernel answering it is QEMU. We
+That is a system call. Semihosting is a system call ABI, and the kernel answering it is QEMU. We
 are the userspace program.
 
 Which makes it a preview of milestone 7 (user mode: EL0, capabilities, the ELF loader, and IPC), running in reverse. At milestone 7 we build the *other*

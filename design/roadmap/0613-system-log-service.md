@@ -27,7 +27,7 @@ forwards whole lines to the console. It becomes the one thing writing kernel out
 
 Out of scope: persisting any of this to RedoxFS. That has its own proposal,
 [`design/roadmap/0687-a-system-log-on-redoxfs.md`](0687-a-system-log-on-redoxfs.md). Also
-out of scope: the kernel-side ring and its drain system_call. Those are milestone 342 (the kernel and
+out of scope: the kernel-side ring and its drain system call. Those are milestone 342 (the kernel and
 the `console` server drive one UART from two address spaces).
 
 ## What was built, 2026-10-02 (UTC)

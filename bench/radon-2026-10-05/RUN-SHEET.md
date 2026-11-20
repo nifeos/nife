@@ -2,7 +2,7 @@
 
 *Uncommitted run sheet, written before any boot. One evening answers two outstanding radon runs:
 milestone 761 (capability lookup off the global lock), against
-[`notes/job-mix/null-syscall-under-load.md`](../../notes/job-mix/null-syscall-under-load.md#the-radon-run-that-decides-it),
+[`notes/job-mix/null-system-call-under-load.md`](../../notes/job-mix/null-syscall-under-load.md#the-radon-run-that-decides-it),
 and milestone 766 (each core's PerCpu on its own cache line), against
 [its roadmap block](../../design/roadmap/0766-each-cores-percpu-on-its-own-cache-line.md).*
 
@@ -177,7 +177,7 @@ LC_ALL=C grep -a 'site=reap' boot[67]-*.log | grep 'tasks=4 '                   
 
 ## After
 
-- Results go to `notes/job-mix/null-syscall-under-load.md` (761) and 766's roadmap block, and both
+- Results go to `notes/job-mix/null-system-call-under-load.md` (761) and 766's roadmap block, and both
   verdicts to fatal risk 4's line, whose colour is calef's.
 - Commit the cleaned logs, the netboot logs, `payloads.sha256` and `unaligned.patch` with the
   results; the `raw-*` logs need not be.

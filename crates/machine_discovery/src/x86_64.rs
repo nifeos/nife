@@ -346,6 +346,8 @@ impl Features {
 /// No-execute. `CPUID.80000001H:EDX[20]`.
 pub const NX: Features = Features(1 << 0);
 /// The `syscall`/`sysret` instruction pair. `CPUID.80000001H:EDX[11]`.
+///
+/// Name: provisional. Spelled out from `SYSCALL`, the instruction's mnemonic.
 pub const SYSTEM_CALL: Features = Features(1 << 1);
 /// The TSC ticks at a rate that does not move with the core's frequency or idle state.
 /// `CPUID.80000007H:EDX[8]`.

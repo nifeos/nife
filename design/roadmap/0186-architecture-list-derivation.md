@@ -199,7 +199,7 @@ x86_64 got a compiler fence, and the reason is per-site rather than a default. E
 in those five programs asks for store-store (descriptor before available index; index before notify)
 or load-load (used index before the payload it gates). Both are orders TSO gives for the write-back
 memory a coherent DMA agent shares. The store-load case, the one TSO does not give, is unreachable,
-because every notify and register access in these drivers leaves the process through a serializing system_call.
+because every notify and register access in these drivers leaves the process through a serializing system call.
 `components/src/non_volatile_memory_express.rs` keeps `dmb sy` and a real `mfence` and did not join
 the shared function: its doorbell is a direct store to a device-typed page in this address space,
 with no system call between the ring stores and it. Same hardware, different answer, which is what makes

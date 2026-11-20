@@ -3938,10 +3938,6 @@ crates/job_mix/src/lib.rs::MIX
 
 crates/job_mix/src/lib.rs::MIX_LEN
 
-crates/job_mix/src/lib.rs::NULL_SYSTEM_CALL
-
-crates/job_mix/src/lib.rs::NULL_SYSTEM_CALL_CALLS
-
 crates/job_mix/src/lib.rs::POINT
 
 crates/job_mix/src/lib.rs::REPEATS
@@ -4668,8 +4664,6 @@ crates/machine_discovery/src/x86_64.rs::RDSEED
 crates/machine_discovery/src/x86_64.rs::REQUIRED
 
 crates/machine_discovery/src/x86_64.rs::Row
-
-crates/machine_discovery/src/x86_64.rs::SYSTEM_CALL
 
 crates/machine_discovery/src/x86_64.rs::TABLE
 

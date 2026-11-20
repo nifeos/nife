@@ -112,7 +112,7 @@ the single most useful field in the machine when something has gone wrong.
 
 | EC | Meaning |
 |---|---|
-| `0x15` | **SVC from AArch64**: a system_call. Milestone 7. |
+| `0x15` | **SVC from AArch64**: a system call. Milestone 7 (user mode). |
 | `0x21` | Instruction abort, same EL: we jumped somewhere bad |
 | `0x24` | Data abort, **lower** EL: *userspace* touched bad memory. Milestone 7 makes this a segfault. |
 | `0x25` | Data abort, same EL: **the kernel** touched bad memory. Our bug. |
@@ -254,7 +254,7 @@ the machine at slot 4 and a user bug that kills one thread at slot 8.
   EL0, for the reason in [aarch64-port.md](aarch64-port.md), "Floating point and SIMD". When there
   is no thread to record against, the arm falls through, because returning would retake the trap
   forever.
-- `svc` from EL0 is the system_call. The dispatcher writes its result into `frame.x[0]`, and
+- `svc` from EL0 is the system call. The dispatcher writes its result into `frame.x[0]`, and
   `RESTORE_CONTEXT` puts it in the register the program is waiting on: writing the trap frame is
   writing the user's registers.
 - Anything else from EL0 kills the thread and leaves the kernel running. Anything else from

@@ -139,7 +139,7 @@ an event-based (single-stack) kernel with continuations on an ARMv5 processor"* 
 1:16) and never says what userland AIM7 ran under. Warton's own thesis does (*Single Kernel Stack
 L4*, BE thesis, UNSW, November 2005, section 5.4): *"The AIM7 benchmark was modified slightly so that
 it could run on Wombat."* Wombat is the paravirtualised ARM Linux, so the 20% is a delta between
-two microkernels measured through a hosted Linux's system call path, where milestone 168's instrument
+two microkernels measured through a hosted Linux's system call path, where milestone 168's (a multi-tasking workload benchmark) instrument
 runs native tasks on this kernel's own primitives. It is also a ratio between two kernel models,
 and this tree has one, so the instrument produces one arm and no ratio.
 

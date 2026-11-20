@@ -50,7 +50,7 @@ Every crate under `crates/` has at least one worked example, in one of two treat
 2. **`no_run`, with the reason stated in the prose** (`user_mode_runtime`, `virtio`, `system_initializer`,
    `process_builder`, `hot_swap_server`). These have nothing to assert: every entry point is a
    system call from EL0 or returns `!`. `svc` on a machine with no nife kernel under it is a fault, not
-   a system_call. The examples are type-checked against the real signatures and executed by the QEMU
+   a system call. The examples are type-checked against the real signatures and executed by the QEMU
    boot and `script/swish-check`.
 
 No crate under `crates/` has an executing doctest that the gate skips. `script/test`'s host pass

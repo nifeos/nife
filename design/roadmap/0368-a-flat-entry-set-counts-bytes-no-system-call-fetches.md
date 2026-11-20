@@ -38,7 +38,7 @@ bytes really are on a system call's path. But that handler has arms, and **the t
 system call fetches.**
 
 Milestone 133 changed `sched::reap_region_objects` and `crates/inter_process_communication`. It touches no timer, no trap
-path, and no system_call. LLVM nonetheless decided to inline `arch::riscv64::timer::tick` into
+path, and no system call. LLVM nonetheless decided to inline `arch::riscv64::timer::tick` into
 `riscv_trap_body` in the new build and not the old one, which put 226 bytes (1870 to 2096, 12.1%
 against a 5% bound) onto a number that measures the system call path. Confirmed by diffing the two
 disassemblies symbol by symbol: `system_call::dispatch`, `trap_entry`, `trap_return` and
@@ -78,7 +78,7 @@ Three things this instance settles that the milestone 133 one could only assert:
 ### And a third instance the same day, in the opposite direction
 
 2026-09-04, milestone 220's lane, whose change adds a clock-and-reset driver and touches no
-trap path, no timer and no system_call. It failed this gate on aarch64 at 35.1%, and the sign is
+trap path, no timer and no system call. It failed this gate on aarch64 at 35.1%, and the sign is
 the point: `system_call_entry` shrank, 3304 to 2144, because
 `_RNvNt...6kernel7system_call8dispatch` (1160 bytes) vanished from the symbol table entirely. LLVM
 folded the dispatcher into the exception handler in the new build and not the old one. The only

@@ -146,7 +146,7 @@ scratch:
   to "the aspace cap may be bound without consuming it" (or a `SHARE`-shaped rights bit
   distinguishes the two calls). This is the system-call-surface line: every existing caller of
   `CONFIGURE` (the progenitor, every service spawn today) is written against the consuming contract, and
-  `design/decisions/` would owe a section under §10/§16's existing surface, not a new system call number.
+  `design/decisions/` would owe a section under §10 (process model: capability-based, microkernel)/§16's existing surface, not a new system call number.
 - `kernel/src/thread.rs`: `Thread.space` stops being uniquely owned; needs the same
   liveness-tracking shape `Rendezvous` already has (§16's "region... an endpoint in it has a
   blocked waiter" check), so `AddressSpace` teardown waits for the last referencing TCB, not the
@@ -164,7 +164,7 @@ scratch:
   kernel primitive, join).
 
 Option B, sibling processes with replicated frames. Touches no system call and no capability
-method, matching §22's own discipline for `std::fs`/`std::net` ("no new system call and no new
+method, matching §22's (Rust std on the native ABI) own discipline for `std::fs`/`std::net` ("no new system call and no new
 capability method"). The cost is not at the kernel boundary; it is what "shared heap" actually
 demands once you look past the first allocation:
 

@@ -106,7 +106,7 @@ failure a data abort at an address derived from the return address, because `far
 ## Time
 
 The counter, its frequency, monotonic nanoseconds, the cycle counter and the current CPU each
-read a register or a kernel-filled page with no system_call. Why each target differs, and what each
+read a register or a kernel-filled page with no system call. Why each target differs, and what each
 refuses, is in [the time appendix](user-mode-runtime/time.md).
 
 ## Memory a process was handed
@@ -165,7 +165,7 @@ in-tree precedent for ending in `compile_error!` rather than a fallback.
 
 `doorbell_barrier` is the stronger barrier, for a driver whose doorbell is a direct store to a
 device-typed page in its own address space with no system call in between. It is `dmb sy`, `fence` and
-`mfence`. It must not be merged with `virtual_io_ring_barrier`, whose drivers notify through a system_call.
+`mfence`. It must not be merged with `virtual_io_ring_barrier`, whose drivers notify through a system call.
 `components/src/non_volatile_memory_express.rs` was its first caller, and the `e1000e` data plane
 its second.
 

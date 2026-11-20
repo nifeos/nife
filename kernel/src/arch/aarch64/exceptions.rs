@@ -1,6 +1,6 @@
 //! Exception handling.
 //!
-//! One mechanism serves faults, interrupts and system_calls: each switches to EL1 and jumps to the
+//! One mechanism serves faults, interrupts and system calls: each switches to EL1 and jumps to the
 //! vector table the kernel installed. See notes/exceptions.md, "The dispatcher's arms".
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
@@ -42,7 +42,7 @@ pub struct TrapFrame {
 const _: () = assert!(size_of::<TrapFrame>() == 272);
 
 impl TrapFrame {
-    /// The system call number the caller passed. aarch64 ABI: register `x8` (DECISIONS §10). The
+    /// The system call number the caller passed. aarch64 ABI: register `x8` (DECISIONS §10 (process model: capability-based, microkernel)). The
     /// portable system call dispatcher reads it through here so it never names a register directly.
     pub(crate) fn system_call_nr(&self) -> u64 {
         self.x[8]
@@ -298,7 +298,7 @@ unsafe extern "C" {
 extern "C" fn exception_dispatch(frame: &mut TrapFrame, index: u64) {
     let top = crate::interrupt_stack::top_for_trap(is_from_lower_el(index));
     let deferred_switch = if top == 0 {
-        // Every system_call: branched in Rust, because the debug build the icount gate measures pays
+        // Every system call: branched in Rust, because the debug build the icount gate measures pays
         // for a trampoline call that moves no stack.
         exception_body(frame, index)
     } else {
@@ -341,7 +341,7 @@ extern "C" fn exception_body(frame: &mut TrapFrame, index: u64) -> bool {
         // retaking the trap forever.
         ec::FP_SIMD_ACCESS if crate::fp::enable_for_current() => {}
 
-        // The system_call. ELR already points past the `svc`, and `dispatch` writes its result into
+        // The system call. ELR already points past the `svc`, and `dispatch` writes its result into
         // the frame, which RESTORE_CONTEXT returns to the user's registers.
         ec::SVC64 if is_from_lower_el(index) => {
             #[cfg(any(test, feature = "system_tests"))]

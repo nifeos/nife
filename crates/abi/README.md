@@ -12,7 +12,7 @@ sides of the system call boundary.
 - The five system calls are `SYSTEM_CALL_EXIT` (0), `SYSTEM_CALL_YIELD` (1), `SYSTEM_CALL_INVOKE` (2),
   `SYSTEM_CALL_CAPABILITY_DELETE` (3) and `SYSTEM_CALL_EXIT_THREAD` (4). Everything else is
   `invoke(capability, method, a0, a1, a2)`, which acts on a capability the caller holds in its own
-  table. Adding an operation is a new method, never a new system_call.
+  table. Adding an operation is a new method, never a new system call.
 - The trap moves six words in each direction. The crate root's table names the register that
   holds each word on aarch64, riscv64 and `x86_64`: the system call number, then the slot, the method
   and the arguments. Word 0 returns a result or a negative `Error`.

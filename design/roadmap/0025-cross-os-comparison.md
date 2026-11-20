@@ -16,7 +16,7 @@ longer 16a's board: milestone 127 bought the machine under the only published aa
 days rather than waiting on a decision. Milestone 74 is the driver that reads that counter, and 74's block states the
 dependency this one does not.
 
-In brief. EL0-measured primitive benchmarks (system_call, context switch, IPC, map, spawn) the lmbench
+In brief. EL0-measured primitive benchmarks (system call, context switch, IPC, map, spawn) the lmbench
 way, so the numbers include the trap the kernel-side benchmarks skip. Then line them up against
 lmbench (Linux, macOS guests) and `sel4bench` (seL4), at a matched virtualization tier, with release
 builds. Fold in the icount codegen-sensitivity fix.

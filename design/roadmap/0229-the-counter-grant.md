@@ -135,7 +135,7 @@ return.
 The gate fired once, on the ABI that was then removed, and the number is worth keeping because
 it is an argument. Written as an ordinary arm inside `invoke`, the method put 224 bytes on
 riscv64's `system_call_entry`, 12% against the 5% bound, because `invoke` inlines into the dispatcher
-every system call fetches. Extracting it `#[inline(never)]` the way milestone 156 extracted the other
+every system call fetches. Extracting it `#[inline(never)]` the way milestone 156 (`system_call_entry`'s measured size) extracted the other
 spawn-path bodies brought it to +1.5%; removing the method brought it to zero. A method on this
 object is not free even when nothing calls it, which is one more thing to weigh when somebody
 mints the real surface.

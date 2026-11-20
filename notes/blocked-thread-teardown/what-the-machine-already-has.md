@@ -56,6 +56,6 @@ endpoint, which "is not in this region and the endpoint sweep above did not touc
 with `remove_sender` before its TCB is freed. Endpoint wait queues are kernel state under `SCHED`,
 not the endpoint owner's property, and the tree has decided that once.
 
-So: the kernel could end any blocked thread today, in about thirty lines, with no new system_call.
+So: the kernel could end any blocked thread today, in about thirty lines, with no new system call.
 Every proposal below differs in who may ask and in what the victim and its peers observe, not in
 whether it can be done.

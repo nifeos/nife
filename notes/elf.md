@@ -313,7 +313,7 @@ constructors, no widening:
 
 ## The program has no system calls, and says so in the only two words it has
 
-There is no ABI yet ([DECISIONS §10](../design/decisions/0010-capability-microkernel.md): the system call surface gets designed at 7d,
+There is no ABI yet ([DECISIONS §10 (process model: capability-based, microkernel)](../design/decisions/0010-capability-microkernel.md): the system call surface gets designed at 7d,
 against a capability table). So the test binary cannot tell the kernel anything.
 
 Instead it checks its own image and speaks with:

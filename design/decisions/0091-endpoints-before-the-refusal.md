@@ -8,7 +8,7 @@ ratified_by: calef
 # 91. A region's endpoints are swept before its refusal, not after
 
 The change is milestone-level rather than architectural. It reorders two phases inside an existing
-verb and adds no method, no object and no system_call. Recorded here because §16 (object revocation)'s
+verb and adds no method, no object and no system call. Recorded here because §16 (object revocation)'s
 revocation semantics are stated here, and a reader who learns that reclamation refuses a busy region
 deserves to learn in the same place why it does not refuse forever.
 

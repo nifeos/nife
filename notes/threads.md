@@ -202,7 +202,7 @@ exactly zero additional frames.
 sched::spawn(|| {
     while !STOP.load(Relaxed) {
         SPINNING.fetch_add(1, Relaxed);
-        // Deliberately nothing else. No yield. No system_call. Not even a function call.
+        // Deliberately nothing else. No yield. No system call. Not even a function call.
     }
 });
 ```

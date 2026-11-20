@@ -3,7 +3,7 @@
 //!
 //! It needs no capabilities and no shared memory, so `kernel::user::tests` spawns it bare; its one
 //! system call, a yield, is authority over itself. The kernel test reads the absence of a fault plus
-//! that system_call: `.text` ran, `.rodata` was readable, `.data` was copied, `.bss` was zeroed, and
+//! that system call: `.text` ran, `.rodata` was readable, `.data` was copied, `.bss` was zeroed, and
 //! the stack recursed eight frames. The checks are [`loaded_image_check`], shared with
 //! `console_test_client`. It exits rather than spinning, because a one-shot fixture that never
 //! exits holds a core for the rest of the boot (`no_leaked_threads`).

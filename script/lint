@@ -3554,7 +3554,7 @@ python3 "$(dirname "$0")/../helpers/orphan_rust.py"
 
 # 15. **A userspace trap declares every register the kernel answers in** (2026-10-05,
 #     lane/hvf-spawn-destroy-gone; helpers/system_call_asm.py, name provisional). The kernel writes up to
-#     six argument registers on the way out of a system_call. `user_mode_runtime::yield_now` declared
+#     six argument registers on the way out of a system call. `user_mode_runtime::yield_now` declared
 #     none, and the job mix's spawn job was compiled to trap `DESTROY`'s arguments across a yield
 #     that zeroed `x0`: 19 of 20 HVF sweeps refused with `Gone`, the twentieth wedged
 #     (notes/job-mix/spawn-destroy-gone.md). A missing declaration is invisible in review, which is

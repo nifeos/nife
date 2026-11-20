@@ -33,7 +33,7 @@ endgame, and POSIX posture). The entries here remain the detailed source for eac
   `Call` so a server can answer whoever called, with a kernel-tracked call chain that also enables
   priority donation. We can emulate reply-to-caller with `SEND_CAP` (the client passes a
   reply-endpoint cap in the request), but *not* the one-shot safety or the call chain. Those need a
-  `Reply` object and a `Call` method, which widen the §4 system call surface and so should not be added
+  `Reply` object and a `Call` method, which widen the §4 (kernel shape: a microkernel) system call surface and so should not be added
   speculatively.
 
   Two triggers to build. *Functional:* the first server that must serve clients it was not
@@ -90,7 +90,7 @@ endgame, and POSIX posture). The entries here remain the detailed source for eac
   surface" as designing the pause in the frame of §26 (the fault endpoint), and built for milestone 48 (job control): two
   silent methods on the TCB capability. Kept for the record of the reasoning that led there. The two-tier interrupt design covers notify and kill; suspend is the third
   verb that would make "interrupt" mean pause-and-inspect. Deferred because it widens the §4
-  system call surface with no consumer yet, and because it should be designed next to milestone 22's
+  system call surface with no consumer yet, and because it should be designed next to milestone 22's (trusted init)
   fault endpoints (both are "the kernel turns a thread's state into a message a supervisor
   holds"). Triggers to build: (1) a userspace pager (demand paging is fault-message,
   fix, resume: the fault endpoint of §26 is its front half); (2) real job control (`fg`/`bg`, a

@@ -71,7 +71,7 @@ has the reading behind each point:
 - Reaching outside the region is settled precedent: `reap_region_objects` already unlinks a corpse
   from its supervisor's endpoint, which lives in another region.
 
-So: the kernel could end any blocked thread today, in about thirty lines, with no new system_call.
+So: the kernel could end any blocked thread today, in about thirty lines, with no new system call.
 Every proposal below differs in who may ask and in what the victim and its peers observe, not in
 whether it can be done.
 

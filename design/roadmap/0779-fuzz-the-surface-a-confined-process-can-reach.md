@@ -108,7 +108,7 @@ calef asked for this on 2026-10-04 (UTC), as a proposal, not a build. It propose
 
 §60 (fuzzing complements the proofs) put `cargo-fuzz` over parsers of bytes we did not write. Its
 six targets in `fuzz/fuzz_targets/` read a device tree, an ELF, a GPT, an HTTP head, a nifefs
-archive and a package archive. None reads an IPC message, and nothing makes a system_call. The two
+archive and a package archive. None reads an IPC message, and nothing makes a system call. The two
 audits that cover this ground read it once: 2026-08-15 (`notes/untrusted-input-audit.md`) and
 2026-09-29 (`design/audit-reports/2026-09-29-system-call-surface-whole.md`). A reading does not recheck
 after the next change, and the 2026-09-29 audit was followed four days later by three kernel

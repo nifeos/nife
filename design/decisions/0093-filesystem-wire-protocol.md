@@ -23,7 +23,7 @@ extending a convention with no argument behind it.
 
 ## What `fs_proto` is, so the comparison is fair
 
-It is the message protocol between a program and the FS server (§27), not the system call surface. The
+It is the message protocol between a program and the FS server (§27 (the filesystem service)), not the system call surface. The
 kernel routes these words the way it routes any IPC and never reads an opcode, so adding one is a
 change to a crate and a note. `OPEN` is 1, `READ` 2, up through `REMOVEXATTR` at 17 and now
 `STATFS` at 18. A handle carries a rights bitfield (`ENUMERATE`, `READ`, `WRITE`, `CREATE`,

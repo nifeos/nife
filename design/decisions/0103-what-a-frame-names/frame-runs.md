@@ -142,7 +142,7 @@ The price the prior art names and this lane would otherwise have missed: `revoke
 a mapping up by equality on a physical address, and runs turn that into containment, over
 ranges that may overlap. Barrelfish, which built exactly this capability, pays for it with a mapping
 database whose insert is *"logarithmic time in the size of the mapping database"*. That is the real
-cost of option A, and it is not in the system_call.
+cost of option A, and it is not in the system call.
 
 And the prior art also names the mitigation. Barrelfish keeps its *allocation* type
 (RAM) naturally-aligned and power-of-two and relaxes only its *mappable* type (Frame) to a

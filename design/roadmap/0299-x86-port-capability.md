@@ -44,7 +44,7 @@ Genode and L4Re.
 ## What to build
 
 1. A port-range capability, a new `Object` kind naming a `(base, count)` range of I/O ports.
-   This is system call surface (DECISIONS §10, §16), the irreversible category, so it is designed against
+   This is system call surface (DECISIONS §10 (process model: capability-based, microkernel), §16 (object revocation)), the irreversible category, so it is designed against
    the one real consumer it has (the console driver) rather than in the abstract. Granularity is a
    port range because a 16550 is eight consecutive ports, and the semantics are the honest analogue
    of the mapping-based device capability the other two architectures already use.

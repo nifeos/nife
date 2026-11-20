@@ -39,7 +39,7 @@ platform's own real hardware/OS system call convention rather than invent one.
   caller passed. aarch64 ABI: register `x8` (DECISIONS §10)."* Arguments ride `x0`..`x5`.
 - riscv64: `TrapFrame::system_call_nr`'s doc comment: *"The system call number the caller passed. RISC-V
   `ecall` ABI: register `a7` (`x17`)... This, with `arg`/`set_arg`, is the resolution of the
-  system-call-ABI leak flagged during the port (DECISIONS §17): aarch64 uses x8 + x0..x5, RISC-V uses a7
+  system-call-ABI leak flagged during the port (DECISIONS §17 (the second architecture: RISC-V)): aarch64 uses x8 + x0..x5, RISC-V uses a7
   + a0..a5, and each maps its own registers."* Arguments ride `a0`..`a5` (`x10`..`x15`).
 
 Both are the same registers Linux uses for the system call number and arguments on those ISAs. They are

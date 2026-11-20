@@ -123,7 +123,7 @@ it does, this belongs there.
 - Option 2a adds no system call surface at all, so the only durable commitment is what an
   `nvme_server`'s spawn contract says, and this tree changes spawn contracts routinely.
 - Options 2b and 4 add an `Object` variant and its methods. The precedent says these grow
-  compatibly: §23 added a queue argument to `SETUP_QUEUE` and `NOTIFY` without a new system call and
+  compatibly: §23 (multi-queue DMA confinement) added a queue argument to `SETUP_QUEUE` and `NOTIFY` without a new system call and
   without changing the disk's ABI.
 - The genuinely expensive thing is the one this section already named, and it is not the
   capability. It is the wire shape `block_roster` grows for an NVMe transport kind, because that is

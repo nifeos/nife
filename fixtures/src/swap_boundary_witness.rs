@@ -222,7 +222,7 @@ fn produce() -> ! {
 /// uses it: `user_mode_runtime::receive_capability` is written for a caller that is allowed to
 /// receive, and the whole question here is what happens to one that is not.
 fn try_receive_capability(slot: u64) -> i64 {
-    // SAFETY: a plain system_call. If it succeeds we have stolen a request, which is the failure.
+    // SAFETY: a plain system call. If it succeeds we have stolen a request, which is the failure.
     unsafe { user_mode_runtime::invoke(slot, abi::rendezvous::RECEIVE_CAPABILITY, 0, 0, 0) }
 }
 

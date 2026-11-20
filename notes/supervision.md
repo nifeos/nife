@@ -210,7 +210,7 @@ rendezvous with no non-blocking form, so it completes only when someone reads th
 Every ordinary job leaves the shell with a read outstanding there; a screen-narrowed line does not,
 so a *non-tail* stage of one faulting parks the undertaker until the next command reads, which then
 takes the stale word. Closing it needs either a non-blocking send or a receive that waits on two
-endpoints, and both are the system call surface (§10, §16). Recorded in `components/src/job_undertaker.rs`'s
+endpoints, and both are the system call surface (§10 (process model: capability-based, microkernel), §16). Recorded in `components/src/job_undertaker.rs`'s
 `BUGS`, where the next person to touch that loop will meet it.
 
 **A job that hangs without faulting is untouched by any of this.** A live thread blocked in a `RECEIVE`

@@ -59,7 +59,7 @@ machinery, and whether the extra check earns its keep is part of the same decisi
 PR #716 is the daily toolchain bump: one line of `rust-toolchain.toml`, no kernel source. It failed
 the `system_call_entry` check at 10.4% on riscv64 because the newer compiler inlined a device-interrupt
 helper into the trap handler (the full account is in the
-`a-flat-entry-set-counts-bytes-no-system-call-fetches` proposal, which milestone 433 numbers 368).
+`a-flat-entry-set-counts-bytes-no-system-call-fetches` proposal, which milestone 433 (drain the proposal pile to zero) numbers 368).
 
 **A delta-against-`main` gate would have failed this too, and for a worse reason.** `main` would
 have been built under the *old* pin, so the comparison would have attributed the entire 194 bytes to

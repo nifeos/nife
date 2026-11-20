@@ -113,7 +113,7 @@ it is a worse version of the thing it would be a fallback from. The spike is not
 
 The HPET is also not free to reach. `crates/machine_discovery/src/acpi.rs` sees the `HPET` table in
 the XSDT walk and does nothing with it. So this route costs table parsing, an MMIO mapping, and a way
-to hand that mapping to a program, before it buys a clock that loses to a system_call.
+to hand that mapping to a program, before it buys a clock that loses to a system call.
 
 The local APIC. Not a candidate, for three independent reasons. In x2APIC mode, which is what
 this era's machines and this era's kernels use (cordoba's `/proc/cpuinfo` reports the `x2apic`
@@ -211,7 +211,7 @@ falsifiable, and it has three clauses:
    an analogue of `PMUSERENR_EL0.CR`. It is an analogue of `PMUSERENR_EL0.CR` *and*
    `CNTKCTL_EL1.EL0VCTEN` at once. aarch64 and riscv64 can close the fine one because they have a
    second, coarser, architecturally guaranteed user-readable clock; x86 has no second one at all.
-2. The alternatives exist and all of them lose to a system_call. The HPET is mappable and costs
+2. The alternatives exist and all of them lose to a system call. The HPET is mappable and costs
    several microseconds a read, which Linux measured and acted on in 2016. The ACPI PM timer is
    279 ns but lives behind an I/O port grant that is a larger authority than the thing being denied.
    The APIC is not addressable from ring 3 in x2APIC mode. So closing the TSC on `x86_64` does not

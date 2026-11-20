@@ -21,7 +21,7 @@ Two mechanisms, because there are two different questions.
    which record the caller wants, and returns that record's words. A new fact is a new selector
    value, not a new register.
 2. A thread observing itself is a per-thread page, on the shape Linux's `rseq` uses: the kernel
-   writes the current CPU into a small per-thread structure the thread reads with no system_call.
+   writes the current CPU into a small per-thread structure the thread reads with no system call.
 
 ## What this overturns, and why that is on purpose
 

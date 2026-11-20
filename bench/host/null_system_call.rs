@@ -1,5 +1,5 @@
 //! Null-system-call latency on the host OS (macOS or Linux), the lmbench `lat_syscall null` metric, and
-//! the host side of nife's EL0 `null_system_call` bench (notes/benchmarks.md, milestone 25).
+//! the host side of nife's EL0 `null_system_call` bench (notes/benchmarks.md, milestone 25 (cross-OS performance comparison)).
 //!
 //! A **raw** syscall through the syscall gate, not libc's `getpid`, because libc caches the pid and
 //! would turn the call into a userspace read that never traps. This is the real EL0->kernel crossing.

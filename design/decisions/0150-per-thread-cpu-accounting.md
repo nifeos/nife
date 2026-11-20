@@ -68,7 +68,7 @@ argued, and the third is the one that is expensive to un-ship.
 3. **A widened `SURVEY` return, not a second method.** `abi::rendezvous::SURVEY` returns three words
    (`next_cursor`, `tid`, `state`); a fourth carries the figure. This widens an existing method's
    shape rather than adding a system call number, mirroring how `pmap` added a method to a different
-   object type instead of a system call (§114).
+   object type instead of a system call (§114 (`pmap` gets its listing)).
 
 Sub-choice 3 is the irreversible one and is called out here so a reader meets it. It is a wire
 format the kernel and every future `SURVEY` reader agree on, which the *move fast on what can be

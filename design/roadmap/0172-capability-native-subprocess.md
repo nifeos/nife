@@ -49,7 +49,7 @@ that crate and against `kernel/src/user.rs`'s spawn path: a synchronous, ergonom
 shape. A caller like `cargo` would use it in a loop ("run this, block until it's done, give me
 its output"). The death-notification/supervision-endpoint pattern was built for long-lived
 service supervision. §301 rules they are the same mechanism used differently: the wait is the §26
-receive, the status rides `SYSTEM_CALL_EXIT` into the `EVENT_EXIT` message, and there is no new system_call.
+receive, the status rides `SYSTEM_CALL_EXIT` into the `EVENT_EXIT` message, and there is no new system call.
 
 ## How a caller starts the child is decided
 
