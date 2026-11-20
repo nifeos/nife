@@ -80,6 +80,10 @@ BUGS:
   recognizes a rename inside `helpers/moved_rows.py`, and a lane that sweeps those units fixes it.
 - The template has no `proto` or `virtio` row, so design/naming.md's prose names words the list
   does not hold (`PROSE_ONLY_WORDS`).
+- The template's `naming_words.toml` still lists `syscall` as an accepted word, and this tree
+  strikes it. The vendored file stays byte-identical to its source, so the fix is upstream: drop
+  the row in crate-workflows, then bump the vendored copy and remove the `syscall` entry of
+  `PROSE_ONLY_WORDS`.
 """
 
 import os
