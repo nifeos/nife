@@ -118,12 +118,12 @@ decisions below and the release steps follow.
 - The crate name: Done, [#3595](https://github.com/nifeos/nife/pull/3595). Ruled 2026-11-14 UTC.
 - Review package: Done. [`notes/crate-reviews/static-elf.md`](../../notes/crate-reviews/static-elf.md)
   lists the identity, the dependents, the checks and every public name, all provisional.
-- Review clearance: Done. Ruled 2026-11-20 (UTC), option A: the review package is cleared and
-  `nifeos/static_elf` may be created. Name ratification: Open. The names stay provisional.
+- Review clearance: Done. Ruled 2026-11-20 (UTC), option A: the architect cleared the review package
+  and gave the go for `nifeos/static_elf`. Name ratification: Open. The names stay provisional.
 
 ## Open decisions
 
-None. The clearance is ruled, in Decisions for the architect below. The ratification of the
+None. The architect ruled the clearance; Decisions for the architect below records it. The ratification of the
 package's provisional names, one at a time, waits for the architect.
 
 ## Goal
@@ -166,10 +166,10 @@ Each decision's background, options and prior art are in
 [the appendix](1088-elf-outside-review/decisions.md). The rules in force:
 
 - The clearance of the review of `static_elf` and its repository. Ruled 2026-11-20 (UTC), option
-  A: the review package (`notes/crate-reviews/static-elf.md`) is cleared, and `nifeos/static_elf`
-  is created as a `publish = false` repository, with no tag and no publish. The clearance does not
-  ratify the package's provisional public names; the architect ratifies them later, one at a time,
-  and each stays provisional until then. The move lane runs the stranger test, the template's
+  A: the architect cleared the review package (`notes/crate-reviews/static-elf.md`) and gave the go
+  for `nifeos/static_elf` as a `publish = false` repository, with no tag and no publish. The
+  clearance does not ratify the package's provisional public names; the architect ratifies them
+  later, one at a time, and each stays provisional until then. The move lane runs the stranger test, the template's
   workflows and the first weekly mutation run in the new repository. The clearance gates
   milestone 1039.
 - D1, which machine the parser accepts. Decided by the maintainer on 2026-11-14 (UTC),
@@ -228,5 +228,5 @@ An outside reading of `static_elf` (then named `elf`) before it leaves. The crat
 shared ground: the kernel links it and must follow it out. Of 22 findings and steps, 15 are done.
 D1 has a ruling the crate does not yet follow, since `NATIVE_MACHINE` stays public. Five are open:
 the move's fuzz target and scaffold, the stranger run, the four mutation timeouts and the LLVM
-padding check. The review is cleared (2026-11-20 UTC) and the repository may be created; the
+padding check. The architect cleared the review (2026-11-20 UTC) and gave the go for the repository; the
 public names stay provisional until the architect ratifies them.
