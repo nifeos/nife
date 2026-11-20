@@ -181,9 +181,10 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
 - The stranger test: Done. The record is `docs/stranger-test.md` in the new repository
   ([nifeos/counter_frequency_contract#2](https://github.com/nifeos/counter_frequency_contract/pull/2)),
   and [#3](https://github.com/nifeos/counter_frequency_contract/pull/3) closed its README findings.
-- A pre-release tag: Done. `v0.1.0-pre.1` was made by the release workflow after the first full
-  mutation run was green ([#4](https://github.com/nifeos/counter_frequency_contract/pull/4) left
-  the Kani harness module out of mutation) and the release dry run passed.
+- A pre-release tag: Done. The release workflow made `v0.1.0-pre.1` once the first full mutation
+  run and the release dry run passed
+  ([#4](https://github.com/nifeos/counter_frequency_contract/pull/4) left the Kani harness module
+  out of mutation).
 - Publishing: Open. A contract crate never publishes to crates.io; the tag is its release.
 
 ## Open decisions
