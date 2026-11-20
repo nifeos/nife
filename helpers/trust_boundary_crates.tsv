@@ -203,9 +203,9 @@ timebase_proto	shared	retired
 timetable	userspace	components,fixtures
 timetable_store	userspace	components,fixtures
 top	userspace	components
+universal_serial_bus	userspace	retired
 universally_unique_identifier	shared	retired
 uptime	userspace	components
-usb	userspace	components
 usb_keyboard_report	shared	retired
 user_heap	userspace	retired
 user_mode_heap	userspace	retired

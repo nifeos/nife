@@ -285,8 +285,8 @@ dependencies = [
  "timetable_store",
  "tock-registers",
  "top",
+ "universal_serial_bus",
  "uptime",
- "usb",
  "user_mode_runtime",
  "uuid",
  "video_terminal",
@@ -1907,15 +1907,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
+name = "universal_serial_bus"
+version = "0.1.0"
+source = "git+https://github.com/nifeos/universal_serial_bus?rev=0fbceff0ce9577cf8beb0b82b0f34360a86a5216#0fbceff0ce9577cf8beb0b82b0f34360a86a5216"
+
+[[package]]
 name = "uptime"
 version = "0.1.0"
 dependencies = [
  "clock_contract",
 ]
-
-[[package]]
-name = "usb"
-version = "0.1.0"
 
 [[package]]
 name = "user_mode_runtime"

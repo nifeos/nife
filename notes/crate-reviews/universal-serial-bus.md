@@ -48,7 +48,7 @@ Two things lie outside the bounds. The first is a configuration longer than 25 b
 
 Dependencies. None. The one consumer in nife is `components` (`usb_keyboard_driver.rs`), by path.
 
-Naming rules. The template's checks, run with `--manifest crates/usb/Cargo.toml` over every
+Naming rules. The template's checks, run with `--manifest crates/universal_serial_bus/Cargo.toml` over every
 tracked `.rs` file of the crate.
 
 | rule | result |
@@ -68,24 +68,15 @@ numbers from the `KEY_*` names of Linux's `input-event-codes.h`, an ABI header. 
 cross-check agrees on 140 of its 144 rows; the four differences are this crate's choices, which
 `the_table_matches_its_linux_cross_check` lists.
 
-Result of `script/crate-standalone`. Eight failures, each one of the move's own steps. The crate name and 48 names in the crate are not ratified (`python3 helpers/name_release.py --draft usb` prints the table). The manifest inherits `license` and `lints` and has no `rust-version` (item 1), and the README and both license files are missing (item 4). The build passes for the host and the
-three bare-metal targets on stable, all five harnesses prove, and each of the five falsification
-patches turns its harness red.
+Result of `script/crate-move --dry-run`. Clean: the build passes on Rust 1.85 for the host and the
+three bare-metal targets, both fuzz targets build and run over their corpus, all five harnesses
+prove, and each of the five falsification patches turns its harness red. On a desktop the five
+proofs take about 7 minutes and peak near 2.2 gigabytes of memory.
 
-Outstanding before the move. These are milestone 1111's items for the move lane:
+Repository. `nifeos/universal_serial_bus`, with `publish = false`, no tag and no publish. The
+cleared review approved it on 2026-11-19 (UTC). `components` depends on it by git revision.
 
-- Item 1: the manifest (`description`, `repository`, `readme`, `keywords`, `categories`,
-  `rust-version`, the license and lint tables written out).
-- Item 2: the package and directory renamed to `universal_serial_bus`, `#[doc(alias = "usb")]` at
-  the crate root, the `Name:` blocks stripped.
-- Item 4: the scaffold files, the README with the three bounds above and the cross-check's two facts
-  (item 13), and a stranger test.
-- Item 10: two fuzz targets.
-- The 13 prose acronym findings above.
-
-Recommendation. Cleared on 2026-11-19 (UTC): the review approves the repository
-`nifeos/universal_serial_bus` with `publish = false`, no tag and no publish. The move waits for
-items 1, 2, 4 and 10.
+Recommendation. Cleared to move; the repository exists.
 
 ## Names
 

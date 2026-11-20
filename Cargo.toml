@@ -65,7 +65,6 @@ members = [
     "crates/machine_discovery",
     "crates/page_tables",
     "crates/pci_configuration_space",
-    "crates/usb",
     "crates/timetable_store",
     "crates/sealed_pair",
     "crates/screen_console",

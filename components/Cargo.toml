@@ -786,7 +786,7 @@ designware_ethernet = { version = "0.1.0", git = "https://github.com/nifeos/desi
 # usb_keyboard_driver.rs is the volatile shell over these two (milestone 242 (USB host and HID)):
 # descriptors and boot reports, and the xHCI ring and context arithmetic. What it agrees on with the
 # kernel (the handoff, the register window and the bring-up report) is in `driver_process_contract`.
-usb = { version = "0.1.0", path = "../crates/usb" }
+usb = { package = "universal_serial_bus", version = "0.1.0", git = "https://github.com/nifeos/universal_serial_bus", rev = "0fbceff0ce9577cf8beb0b82b0f34360a86a5216" }
 extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
 graphics_contract = { version = "0.1.0", path = "../crates/graphics_contract" }
 # The aperture arithmetic `framebuffer_driver` copies through: the clipped geometry, the stride and

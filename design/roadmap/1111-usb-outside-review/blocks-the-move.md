@@ -8,7 +8,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    `lints.workspace = true` inherit a workspace that will not exist after the move. The
    `publish = false` line's comment points at `crates/publish-allowlist.txt`, a file of this
    repository. `standalone.py` lists all of these and exits "does not stand alone yet".
-   Evidence: `crates/usb/Cargo.toml` lines 1 to 15.
+   Evidence: `crates/universal_serial_bus/Cargo.toml` lines 1 to 15.
    Change: at the move, set `license = "MIT OR Apache-2.0"`. Set `rust-version` at the value the
    `msrv` job confirms (1.88 or higher, since `changes` uses let chains; unverified). Add a
    one-sentence `description` ("The host side of a USB boot keyboard: descriptors, setup packets
@@ -26,7 +26,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    not `universal_serial_bus` by DECISIONS §154"). Both readings are right about different things.
    §154 governs `usb` as a word inside names    (`usb_keyboard_driver`), and crates.io forces the
    published crate name. The package's claim about the alias is false today.
-   Evidence: `crates/usb/src/lib.rs` lines 32 to 34; the package's "Companion crate" paragraph;
+   Evidence: `crates/universal_serial_bus/src/lib.rs` lines 32 to 34; the package's "Companion crate" paragraph;
    `standalone.py`'s three findings on `src/lib.rs` lines 32 and 33 (a milestone citation, a
    provenance block and a section citation).
    Change: at the move, rename the package and the directory to `universal_serial_bus`. Add
@@ -47,8 +47,8 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    mirrors the specification). It also refuses `ERROR_ROLL_OVER` (its doc comment names the source
    spelling, so it carries `#[doc(alias = "ErrorRollOver")]`). The rest are locals and test names. The `check / standalone`
    job runs these at a ceiling of 0, so the new repository is red on its first push.
-   Evidence: `crates/usb/src/descriptor.rs` lines 20 to 27, 63, 76, 111, 124, 159, 195, 234, 238,
-   260; `crates/usb/src/boot_keyboard.rs` lines 34 and 38; `crates/usb/src/request.rs` lines 38
+   Evidence: `crates/universal_serial_bus/src/descriptor.rs` lines 20 to 27, 63, 76, 111, 124, 159, 195, 234, 238,
+   260; `crates/universal_serial_bus/src/boot_keyboard.rs` lines 34 and 38; `crates/universal_serial_bus/src/request.rs` lines 38
    and 124.
    Change: the public renames are Decision 1's table, decided provisionally. Rename
    locals `config` to `configuration` and `max_packet` to `maximum_packet_bytes`. Rename the test

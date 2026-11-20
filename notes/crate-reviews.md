@@ -26,9 +26,9 @@ Every result below comes from `main` as it stands.
 
 Not run, and so not claimed: the stranger test, coverage, mutation, `cargo-semver-checks` (a first
 release has no baseline) and the publish rehearsal. The template's `check`, `proofs` and `weekly`
-workflows did not run either, because a repository exists for only seven of these crates:
+workflows did not run either, because a repository exists for only eight of these crates:
 `file_allocation_table`, `non_volatile_memory_express`, `generational_table`, `e1000e`,
-`designware_mobile_storage`, `extensible_host_controller_interface` and `designware_ethernet`. The
+`designware_mobile_storage`, `extensible_host_controller_interface`, `designware_ethernet` and `universal_serial_bus`. The
 stranger record lives in the crate repository, in `docs/stranger-test.md`. The `file_allocation_table`
 package is the exception: it ran the README's commands in a scratch copy and `cargo-semver-checks`
 against itself.
@@ -69,7 +69,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 |---|---|---|
 | [`file_allocation_table`](crate-reviews/file-allocation-table.md) | 2 | cleared to move; repository exists |
 | [`extensible_host_controller_interface`](crate-reviews/extensible-host-controller-interface.md) | 3 | cleared to move; repository exists |
-| [`universal_serial_bus`](crate-reviews/universal-serial-bus.md) (`usb` in this tree) | 3 | cleared to move (2026-11-19 UTC, no tag, no publish); the move waits for items 1, 2, 4 and 10 of milestone 1111 (what an outside maintainer would fix before its first release) |
+| [`universal_serial_bus`](crate-reviews/universal-serial-bus.md) | 3 | cleared to move; repository exists |
 | [`generational_table`](crate-reviews/generational-table.md) | 4 | cleared to move; repository exists |
 | [`non_volatile_memory_express`](crate-reviews/non-volatile-memory-express.md) | 5 | cleared to move; repository exists |
 | [`grant_plan`](crate-reviews/grant-plan.md) | 5 | ready for review |
