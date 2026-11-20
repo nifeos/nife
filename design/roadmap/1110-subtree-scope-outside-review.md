@@ -72,7 +72,7 @@ the crate's own reasons.
 - P2-12, `admit` takes three `u64` words in a row: Done,
   [#3610](https://github.com/nifeos/nife/pull/3610).
 - P2-13, `cfg_attr(not(test), no_std)`: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
-- P2-14, how the hop word masks: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-14, how the requested rights mask: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P2-15, where the crate is stricter than Linux: Open. The README's section on `openat2` and
   `cap-std` is move work, with P0-1.
 - Decision, the crate's name: Done, [#3589](https://github.com/nifeos/nife/pull/3589) (maintainer,

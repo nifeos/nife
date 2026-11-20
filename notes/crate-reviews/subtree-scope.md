@@ -158,31 +158,25 @@ The README the move lane writes says the unit tests cover those two refusals and
 
 ## Names
 
-This package ratifies nothing. The architect ratifies from it. The maintainer ruled the
-eight spellings below provisional on 2026-11-19 (UTC), two-way before the first tag. Each public
-one is one-way after it. Where milestone 1110 had no proposal, the lane chose by
-`design/naming.md`; there was no such case, all eight came from the milestone.
+The architect ratified the names below on 2026-11-20 (UTC). The `Name:` block of each public item
+says so. No alias carries an old spelling.
 
 | item | kind | spelling and status |
 |---|---|---|
 | `subtree_scope` | crate | provisional since 2026-09-27; its `Name:` block and `script/names` say so |
-| `PROOF_PATH_BYTES` | constant | provisional; a length carries its unit (was `PROOF_PATH`) |
+| `PROOF_PATH_BYTES` | constant | ratified 2026-11-20 |
 | `PROOF_BADGES`, `PROOF_OPERATIONS` | constants | stand: counts of things; no block, in the baseline |
-| `walk`'s `directories` | binding | provisional; spelled out (was `dirs`) |
-| `check_landing`'s `want_directory` | parameter | provisional; spelled out (was `want_dir`) |
-| `is_name`'s `component` | parameter | provisional; one letter was refused (was `c`) |
-| `NodeKind` | enum | provisional; `Kind` is a generic word (was `Kind`) |
-| `Binding::Unbound` | variant | provisional; `Open` collided with the file verb |
-| `check_landing` | function | provisional; a function that judges, beside `check_path` (was `landing`) |
-| `Bindings::binding` | method | provisional; `get` would promise an `Option` (was `of`) |
-| `Refusal::IsADirectory` | variant | provisional, minted 2026-11-14 (UTC) |
+| `walk`'s `directories` | binding | ratified 2026-11-20 |
+| `check_landing`'s `want_directory` | parameter | ratified 2026-11-20 |
+| `is_name`'s `component` | parameter | ratified 2026-11-20 |
+| `NodeKind` | enum | ratified 2026-11-20 |
+| `Binding::Unbound` | variant | ratified 2026-11-20 |
+| `check_landing` | function | ratified 2026-11-20 |
+| `Bindings::binding` | method | ratified 2026-11-20 |
+| `Refusal::IsADirectory` | variant | ratified 2026-11-20 |
 | `Binding::SyncOnly`, `Bindings::bind_sync_only` | variant, method | ratified 2026-10-06 |
-| `walk`'s `hop` | parameter | keeps its name; the milestone suggested `requested` and the maintainer left it |
+| `walk`'s `requested_rights` | parameter | ratified 2026-11-20; a `u64` of rights bits added to `DESCEND` at every step |
 | the other items | | `Refusal` and its other variants, `is_name`, `check_path`, `walk`, `Handle`, `admit`, `Bindings`, `new`, `bind`, `unbind`, `Binding`, `Bound`, `Revoked` pass the rules as written; 13 have no `Name:` block and sit in `design/module-block-baseline.txt` |
-
-No alias carries an old spelling. The `Name:` blocks of the eight carry the date the lane minted
-them. The `redoxfs_server` code, the falsification patches, `notes/walk-cost.md` and milestones 633,
-634 and 726 use the new spellings.
 
 ## License
 

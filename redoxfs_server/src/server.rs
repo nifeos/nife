@@ -841,14 +841,14 @@ impl<D: Disk> Server<D> {
     /// Every component of `path` but the last, descended from `handle`, and the last component.
     /// The descent is `subtree_scope::walk`, which ruling D (milestone 606, 2026-09-27) makes the one
     /// place any path is resolved: each step is exactly the `OPENDIR` a client could have sent,
-    /// asking for `DESCEND | hop`, and a step through a symbolic link or a mount point is refused.
+    /// asking for `DESCEND | requested_rights`, and a step through a symbolic link or a mount point is refused.
     /// This server's own naming rules (`check_component`) run on every component first, so a
     /// malformed path is `EINVAL` whatever the tree holds.
     fn walk_prefix<'n>(
         &mut self,
         handle: u32,
         path: &'n NameCopy,
-        hop: u64,
+        requested_rights: u64,
     ) -> Result<(TreePtr<Node>, Rights, &'n str)> {
         let (ptr, rights) = self.dir_at(handle)?;
         // Checked here, after `dir_at`, so a bad handle answers before a bad name, as it always has.
@@ -857,7 +857,7 @@ impl<D: Disk> Server<D> {
         // name this server's type. A deliberate exception to the typed boundary, and safe only because
         // this is its one caller here and the bytes are the checked copy's, never the window's.
         let (ptr, rights, last) =
-            subtree_scope::walk(ptr, rights, path.as_bytes(), hop, |dir, name| {
+            subtree_scope::walk(ptr, rights, path.as_bytes(), requested_rights, |dir, name| {
                 let name = core::str::from_utf8(name).map_err(|_| Fault(Error::new(EINVAL)))?;
                 self.lookup(dir, name).map_err(Fault)
             })
