@@ -619,7 +619,7 @@ fn any_small_page_count() -> u64 {
 
 /// A root over any page range, as the four "never overflows" harnesses below build it, in a table of two slots (a root and one child). A root of
 /// no pages or one whose end does not fit is refused, and for exactly that reason; otherwise the
-/// root is returned. `small` draws the root's first page from the top 256 page numbers, where an
+/// root is returned, and it is checked to fit. `small` draws the root's first page from the top 256 page numbers, where an
 /// end can overflow, and its size from a byte, for the harnesses that go on to split it.
 fn any_root_or_refused_for_its_range(
     table: &mut RegionTable<2>,
@@ -637,6 +637,10 @@ fn any_root_or_refused_for_its_range(
         );
         return None;
     };
+    assert!(
+        pages != 0 && base_page.checked_add(pages).is_some(),
+        "a root that does not fit was accepted"
+    );
     kani::cover!(
         base_page > u64::MAX - 4,
         "a root at the top of the page numbers"
