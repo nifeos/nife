@@ -105,6 +105,7 @@ page_frames = { version = "0.1.0", path = "../crates/page_frames" }
 machine_statistics_contract = { version = "0.1.0", path = "../crates/machine_statistics_contract" }
 page_tables = { version = "0.1.0", path = "../crates/page_tables" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
+socket_fixture = { version = "0.1.0", path = "../crates/socket_fixture" }
 # The name resolver's grant messages and endowment, and the boot test's cases the test client
 # agrees on (milestone 384 (in a capability system the resolver is a grant), provisional name). `domain_name_system` for DNS's port.
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }

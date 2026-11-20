@@ -340,6 +340,10 @@ name = "socket_contract"
 version = "0.1.0"
 
 [[package]]
+name = "socket_fixture"
+version = "0.1.0"
+
+[[package]]
 name = "std_exerciser"
 version = "0.1.0"
 dependencies = [
@@ -351,7 +355,7 @@ dependencies = [
  "grant_contract",
  "program_table",
  "rayon",
- "socket_contract",
+ "socket_fixture",
  "user_mode_runtime",
  "walk_pricing",
 ]

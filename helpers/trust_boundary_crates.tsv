@@ -138,6 +138,7 @@ memory_corruption_canary_gate	kernel	kernel
 memory_region_heap	userspace	components,fixtures,redoxfs_server
 memory_regions	kernel	kernel
 name_resolution_protocol	userspace	retired
+network_stack	userspace	components
 network_time_protocol	userspace	components,fixtures
 nife_partition_types	userspace	components,redoxfs_server,uefi_loader
 nifefs	shared	components,fixtures,kernel
@@ -173,6 +174,7 @@ slots	kernel	retired
 smb_proto	userspace	retired
 soak_page	shared	fixtures,kernel
 socket_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
+socket_fixture	userspace	components,fixtures,jig,std_exerciser
 socket_proto	shared	retired
 socket_protocol	shared	retired
 startup_page_contract	shared	components,fixtures,kernel

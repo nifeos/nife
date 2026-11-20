@@ -15,7 +15,7 @@ use std::net::{TcpStream, ToSocketAddrs};
 
 use domain_name_resolution_contract::status;
 use domain_name_resolution_fixture::CASES;
-use socket_contract::fixture::ECHO_PEER_PORT;
+use socket_fixture::ECHO_PEER_PORT;
 
 /// The first case whose expected reply has this status.
 fn case(want: u8) -> &'static str {
