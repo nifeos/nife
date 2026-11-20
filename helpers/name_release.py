@@ -100,8 +100,6 @@ def rows(crate, paths, read):
 PRE_RULED = {
     "current_cpu_contract": {"PAGE_BYTES": "PAGE_CONTENT_BYTES", "PAGE_VA": "PAGE_VIRTUAL_ADDRESS"},
     "environment_contract": {"PAGE_BYTES": "PAGE_CONTENT_BYTES"},
-    "machine_statistics_contract": {"PAGE_BYTES": "PAGE_CONTENT_BYTES",
-                                    "PAGE_VA": "PAGE_VIRTUAL_ADDRESS"},
 }
 
 

@@ -76,36 +76,14 @@ helpers, Kani, cargo-fuzz, the crate's own encoders as seed writers. No new tool
   are `MANIFEST_NOTE` and `SUBTREE_GRANTS_NOTE`, provisional (a two-way door, ruled by the
   maintainer). `globally_unique_identifier_partition_table`'s `NIFE_DATA` and `NIFE_BOOT` are that
   crate's own.
-- The move: Open. The review package is
-  [`notes/crate-reviews/capability-manifest-note.md`](../../notes/crate-reviews/capability-manifest-note.md);
-  nifeos/capability_manifest_note does not exist, and the clearance is under Open decisions.
+- The review clearance: Done (ruled 2026-11-20 UTC, option A). The review package is
+  [`notes/crate-reviews/capability-manifest-note.md`](../../notes/crate-reviews/capability-manifest-note.md).
+- The move: Open. nifeos/capability_manifest_note does not exist; the move waits for its place in
+  step 6 of milestone 1017.
 
 ## Open decisions
 
-### Clear the review, which creates nifeos/capability_manifest_note
-
-Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
-architect reads; clearing it is the go to create the crate's repository and move the crate there.
-The lane wrote the package and renamed the statics it named. The crate leaves in step
-6 of milestone 1017, after `machine_statistics_contract`, `domain_name_resolution_contract` and
-`grant_plan`, and the move pull request carries the stranger run (P0-2) and the fuzz workspace
-(P1-8).
-
-Recommendation: A.
-
-- A. The architect reads the review package and clears it; the move waits for its place in step 6.
-- B. Hold the clearance until the maintainers have rechecked the package against the crate's head.
-
-Door: one-way. The template's workflows and nife's pins act on a repository and a moved
-crate from the first day; moving back is a second move.
-
-Prior art (recalled, not read): the Rust project moved `libc` out of the compiler's tree into a
-repository of its own, and the compiler consumes it back by version. Where nife differs: a review
-package checks that the crate stands alone before it leaves, not after. Example:
-`jh7110_entropy`, whose review the architect cleared on 2026-11-01 (UTC), lives in nifeos/jh7110_entropy,
-and nife depends on it at a pinned revision.
-
-What it blocks: the move, and so the first tag and the first publish.
+None.
 
 ## Goal
 
@@ -141,8 +119,21 @@ The P1 items are in [the appendix](1082-capability-manifest-note-outside-review/
 
 ## Decisions for the architect
 
-The architect ruled the `_BYTES` names, `asks_service`, `BARE_VERSION` and the wire literal, below.
-The review clearance that creates the repository waits under [Open decisions](#open-decisions).
+The architect ruled the review clearance, the `_BYTES` names, `asks_service`, `BARE_VERSION` and the
+wire literal, below.
+
+### The review clearance
+
+Ruled 2026-11-20 UTC (option A): the review package is cleared. The go is given to create
+`nifeos/capability_manifest_note` with `publish = false`; no tag and no publish. The move waits for
+its place in step 6 of milestone 1017, after `machine_statistics_contract`,
+`domain_name_resolution_contract` and `grant_plan`. The move pull request carries the stranger run
+(P0-2) and the fuzz workspace (P1-8).
+
+Prior art: the Rust project moved `libc` out of the compiler's tree into a repository of its own,
+and the compiler consumes it back by version. Where nife differs: a review package checks that the
+crate stands alone before it leaves. Example: `jh7110_entropy`, cleared on 2026-11-01 (UTC), lives
+in nifeos/jh7110_entropy, and nife depends on it at a pinned revision.
 
 ### The `_BYTES` names
 
@@ -224,8 +215,7 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 
 ## Follow-on
 
-- **Outstanding.** The Open lines under [Finding status](#finding-status) and the items under
-  [Open decisions](#open-decisions).
+- **Outstanding.** The Open lines under [Finding status](#finding-status).
 
 ## BUGS
 
@@ -244,4 +234,4 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 ## Index row
 
 An outside review of `capability_manifest_note` before it leaves. Three items block the move (a manifest that cannot stand alone, no README, and two encoders that build notes their own decoder refuses). Six land before the first tag. They are project-internal citations in shipped text, stale documentation, private names against the spelled-out rule, tests bound to nife's program catalog, the fuzz target and seeds left behind, and the template's `unsafe` scan refusing the opt-in. Six more come after. Four decisions on names: the architect ruled that the wire literal `nife` keeps its bytes and that
-the eleven `_BYTES` names, `asks_service` and `BARE_VERSION` stand. The review package is written, and the clearance that creates the repository waits.
+the eleven `_BYTES` names, `asks_service` and `BARE_VERSION` stand. The review package is written and cleared (2026-11-20 UTC); the move waits for its place in step 6 of milestone 1017.
