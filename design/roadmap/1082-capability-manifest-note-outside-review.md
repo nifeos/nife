@@ -68,83 +68,33 @@ helpers, Kani, cargo-fuzz, the crate's own encoders as seed writers. No new tool
   [#3575](https://github.com/nifeos/nife/pull/3575).
 - The `_LEN` family: Done (ruled 2026-11-19 UTC, option A). The `_BYTES` names stand as built
   ([#3643](https://github.com/nifeos/nife/pull/3643)).
-- `service` as a yes-or-no function: Open. Built as `asks_service`
-  ([#3643](https://github.com/nifeos/nife/pull/3643)), provisional; ratification is under Open
-  decisions.
-- `VERSION` as the name of version 1: Open. Built as `BARE_VERSION`
-  ([#3643](https://github.com/nifeos/nife/pull/3643)), provisional; ratification is under Open
-  decisions.
-- BUGS, the two statics `carry!` emits: Open. `NIFE_MANIFEST_NOTE` and `NIFE_SUBTREE_GRANTS_NOTE`
-  are identifiers, not wire literals, so a rename lane gives them names that do not spell nife
-  before the move; the names are two-way, and the maintainer rules them provisionally.
-  `globally_unique_identifier_partition_table`'s `NIFE_DATA` and `NIFE_BOOT` are that crate's own.
-- The move: Open. No review package exists under `notes/crate-reviews/`, and
-  nifeos/capability_manifest_note does not exist; a package lane comes first, then the clearance
-  under Open decisions.
+- `service` as a yes-or-no function: Done (ruled 2026-11-19 UTC, option A). `asks_service` stands as
+  built ([#3643](https://github.com/nifeos/nife/pull/3643)).
+- `VERSION` as the name of version 1: Done (ruled 2026-11-19 UTC, option A). `BARE_VERSION` stands as
+  built ([#3643](https://github.com/nifeos/nife/pull/3643)).
+- BUGS, the two statics `carry!` emits: Done, [#3817](https://github.com/nifeos/nife/pull/3817). They
+  are `MANIFEST_NOTE` and `SUBTREE_GRANTS_NOTE`, provisional (a two-way door, ruled by the
+  maintainer). `globally_unique_identifier_partition_table`'s `NIFE_DATA` and `NIFE_BOOT` are that
+  crate's own.
+- The move: Open. The review package is
+  [`notes/crate-reviews/capability-manifest-note.md`](../../notes/crate-reviews/capability-manifest-note.md);
+  nifeos/capability_manifest_note does not exist, and the clearance is under Open decisions.
 
 ## Open decisions
-
-### Ratify `asks_service`
-
-Background: `pub fn asks_service(d: &[u8]) -> Result<bool, Error>` answers whether a program's
-manifest asks to run as a service. It was `service`. The rule for a function that answers yes or no
-asks for `is_`, `has_`, `can_` or a third-person verb phrase, because a bare noun reads as a getter.
-The maintainer decided `asks_service` on 2026-11-14 (UTC), provisionally, using the crate's own
-word for the request; `zones` keeps its name, since it returns a view. Its callers are
-`program_asks` and `jig`.
-
-Recommendation: A.
-
-- A. Ratify `asks_service` as built.
-- B. `is_service`, the plain predicate.
-
-Door: two-way inside nife; one-way at the first publish.
-
-Prior art: std's `Path::is_absolute` and `Metadata::is_dir`; the crate's own `Zones::has_root` and
-`Verbs::is_empty` follow the same rule. `is_service` reads as a property of the program, while the
-manifest only asks and the reader may refuse. Example:
-`if capability_manifest_note::asks_service(d)? { ... }` reads as the condition it is, where
-`service(d)?` read as a getter.
-
-What it blocks: the first publish.
-
-### Ratify `BARE_VERSION`
-
-Background: the note's descriptor has three layouts. Version 1 has no zones and no service byte,
-version 2 (`ZONED_VERSION`) adds zones, and version 3 (`SERVICED_VERSION`) adds the service byte;
-`decode` reads all three. Version 1's constant was `VERSION`, which a stranger reads as the crate's
-or the format's current version. The maintainer decided `BARE_VERSION` on 2026-11-14 (UTC),
-provisionally. The value is a wire byte, 1, and does not change; only the identifier did.
-
-Recommendation: A.
-
-- A. Ratify `BARE_VERSION` as built.
-- B. `PLAIN_VERSION`, or another word for the layout with nothing added.
-
-Door: two-way inside nife; one-way at the first publish.
-
-Prior art: FreeBSD's `NT_FREEBSD_ABI_TAG` names what the version is of, and GNU's
-`GNU_PROPERTY_*` constants name the property, never a bare `VERSION`. Where nife differs: the three
-layouts take names from what each adds. Example:
-`match version { BARE_VERSION => ..., ZONED_VERSION => ..., SERVICED_VERSION => ... }` reads as
-three layouts, where `VERSION` in that list read as a mistake.
-
-What it blocks: the first publish.
 
 ### Clear the review, which creates nifeos/capability_manifest_note
 
 Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
 architect reads; clearing it is the go to create the crate's repository and move the crate there.
-No package exists for this crate yet, so a package lane writes one first. The crate leaves in step
+The lane wrote the package and renamed the statics it named. The crate leaves in step
 6 of milestone 1017, after `machine_statistics_contract`, `domain_name_resolution_contract` and
 `grant_plan`, and the move pull request carries the stranger run (P0-2) and the fuzz workspace
 (P1-8).
 
 Recommendation: A.
 
-- A. A package lane writes the review package once a lane renames the two statics (BUGS), and the
-  architect clears it when it arrives; the move waits for its place in step 6.
-- B. Write the package now, with the statics as a condition of the clearance.
+- A. The architect reads the review package and clears it; the move waits for its place in step 6.
+- B. Hold the clearance until the maintainers have rechecked the package against the crate's head.
 
 Door: one-way. The template's workflows and nife's pins act on a repository and a moved
 crate from the first day; moving back is a second move.
@@ -191,10 +141,8 @@ The P1 items are in [the appendix](1082-capability-manifest-note-outside-review/
 
 ## Decisions for the architect
 
-The architect ruled the `_BYTES` names and the wire literal, below. The two decisions on public
-names (`asks_service` and `BARE_VERSION`) stand under provisional names and wait for the
-architect's ratification under [Open decisions](#open-decisions), with the review clearance that
-creates the repository.
+The architect ruled the `_BYTES` names, `asks_service`, `BARE_VERSION` and the wire literal, below.
+The review clearance that creates the repository waits under [Open decisions](#open-decisions).
 
 ### The `_BYTES` names
 
@@ -213,14 +161,39 @@ spells the unit out. Example: a reader of
 `const D: [u8; capability_manifest_note::zoned_descriptor_bytes(ZONES)]` learns at the call that the
 number is bytes of descriptor, not a count of zones.
 
+### `asks_service`
+
+Ruled 2026-11-19 UTC (option A): `asks_service` stands as built. `pub fn asks_service(d: &[u8]) ->
+Result<bool, Error>` answers whether a program's manifest asks to run as a service, and a function
+that answers yes or no takes a third-person verb phrase. The crate's own word for the request is
+`service`, and the manifest only asks; the reader may refuse. `zones` keeps its name, since it
+returns a view. Its callers are `program_asks` and `jig`.
+
+Prior art: std's `Path::is_absolute` and `Metadata::is_dir`; the crate's own `Zones::has_root` and
+`Verbs::is_empty` follow the same rule. Example: `if capability_manifest_note::asks_service(d)? {
+... }` reads as the condition it is.
+
+### `BARE_VERSION`
+
+Ruled 2026-11-19 UTC (option A): `BARE_VERSION` stands as built. The note's descriptor has three
+layouts: version 1 has no zones and no service byte, version 2 (`ZONED_VERSION`) adds zones, and
+version 3 (`SERVICED_VERSION`) adds the service byte. The name of version 1 says it is the layout
+with nothing added, so a stranger does not read it as the current version of the crate or of the
+format. The value is a wire byte, 1.
+
+Prior art: FreeBSD's `NT_FREEBSD_ABI_TAG` names what the version is of, and GNU's
+`GNU_PROPERTY_*` constants name the property, never a bare `VERSION`. Example:
+`match version { BARE_VERSION => ..., ZONED_VERSION => ..., SERVICED_VERSION => ... }` reads as
+three layouts.
+
 ### The wire literal `nife` in a crate that may not mention nife
 
 Background: every manifest note begins with the owner string `nife` and its NUL; every program
 basalt has built carries those bytes, and every reader compares them. The macro places the note in
 a section named `.note.nife.manifest`, and the link script keeps `.note.nife.*` in the `PT_NOTE`.
 The rule for a leaving crate is that it never mentions nife; the externalization lint holds this
-crate at a ceiling of 37 hits, of which 10 lines in `src/lib.rs` are these literals and the static's
-name `NIFE_MANIFEST_NOTE`. The prose mentions can all go (item 4). The literals cannot change
+crate at a ceiling of 37 hits, of which the lines in `src/lib.rs` that carry these literals are the ones
+that must stay. The prose mentions can all go (item 4). The literals cannot change
 without a new owner string, which is a wire break. A progenitor reading the new string would find no note in any program built so far. A program carrying the new string would be a native program with no authority to an old progenitor.
 
 Ruled 2026-11-14 UTC (decision O): the owner string and the section name keep their bytes. Bytes
@@ -257,13 +230,11 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 ## BUGS
 
 - Identifiers that spell the word are not wire literals, so the marker does not cover them: the
-  `NIFE_MANIFEST_NOTE` and `NIFE_SUBTREE_GRANTS_NOTE` statics that the `carry!` macros emit, and the
   `NIFE_DATA` and `NIFE_BOOT` constants of `globally_unique_identifier_partition_table`. Each needs a
   rename lane before its crate leaves; the lint counts them until then.
 - The review inferred item 8's failure of `tests/fuzz_seed.rs` in the staged repository. The dry run's build step stopped at the manifest before any test ran. The fix is right whether or not the
   inference is.
-- With item 9's opt-in off, the version 2 and 3 zone walk is fuzzed only on the project's own
-  host. Kani covers a version 3 descriptor with one zone; past that, if the host stops running the
+- With item 9's opt-in off, the version 2 and 3 zone walk gets fuzzing only on the project's own host. Kani covers a version 3 descriptor with one zone; past that, if the host stops running the
   target, the walk's coverage is the hand-written tests and the seeds alone.
 - The prior-art rows marked unverified (GNU property alignment and ordering, the OpenBSD, NetBSD
   and Go type numbers) are from memory. The README cites only the owners `FreeBSD`, `GNU` and
@@ -273,4 +244,4 @@ The checks are in [the appendix](1082-capability-manifest-note-outside-review/do
 ## Index row
 
 An outside review of `capability_manifest_note` before it leaves. Three items block the move (a manifest that cannot stand alone, no README, and two encoders that build notes their own decoder refuses). Six land before the first tag. They are project-internal citations in shipped text, stale documentation, private names against the spelled-out rule, tests bound to nife's program catalog, the fuzz target and seeds left behind, and the template's `unsafe` scan refusing the opt-in. Six more come after. Four decisions on names: the architect ruled that the wire literal `nife` keeps its bytes and that
-the eleven `_BYTES` names stand, and two public names wait for ratification.
+the eleven `_BYTES` names, `asks_service` and `BARE_VERSION` stand. The review package is written, and the clearance that creates the repository waits.

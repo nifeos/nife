@@ -15,9 +15,8 @@ recording lane's to assign.
 
 The review took its baseline from `notes/heap.md` ("The `memory_region_heap` crate's contract"),
 from milestone 1017 (the contract crates leave in this order), step 9 and its appendix on where
-`talc` goes, and from the vendoring record in `vendor/README.md` and `vendor/talc.pin`. It raises none of the decisions those settle. Those are the algorithm (`talc` 5.1.1's core, `Manual` source), the geometric growth with a floor of eight pages and the one contiguous heap. They also include the untyped slot as part of the program's capability contract, and the step at which the crate leaves. **There is no package
-for this crate in `notes/crate-reviews/`**, so no name ruling exists to reopen; every name below is
-provisional or unmarked.
+`talc` goes, and from the vendoring record in `vendor/README.md` and `vendor/talc.pin`. It raises none of the decisions those settle. Those are the algorithm (`talc` 5.1.1's core, `Manual` source), the geometric growth with a floor of eight pages and the one contiguous heap. They also include the untyped slot as part of the program's capability contract, and the step at which the crate leaves. The review package is
+[`notes/crate-reviews/memory-region-heap.md`](../../notes/crate-reviews/memory-region-heap.md).
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-standalone`,
 `script/crate-review-packet`, `helpers/name_release.py`, cargo-mutants, Kani, and the policy copies
@@ -26,7 +25,7 @@ in `patches/std-nife` and `redoxfs_server/src/bin/second_mount.rs`. No new tool.
 ## Finding status
 
 - P0-1, names and the missing `Name:` blocks: Done, [#3597](https://github.com/nifeos/nife/pull/3597).
-  The names later items added read provisional; ratifying them is an open decision below.
+  The names later items added are ratified (ruled 2026-11-19 UTC).
 - P0-2, `talc` and the path dependencies: Ruled (Decision B, option A, 2026-11-14 UTC). Not built:
   the manifest keeps path dependencies on `abi`, `address_space_layout` and `user_mode_runtime`,
   and no README states what the unpatched `talc` lacks.
@@ -54,31 +53,19 @@ in `patches/std-nife` and `redoxfs_server/src/bin/second_mount.rs`. No new tool.
 - Decision B, which `talc` outside nife: Ruled (option A, 2026-11-14 UTC). Not built: the same
   work as item 2.
 - A fork of `talc` if upstream stays silent: Open, and conditional. It is an open decision below.
-- Review package and repository: Open. No package exists in `notes/crate-reviews/`; the go is an
-  open decision below.
+- Review package: Done, [memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md).
+  The repository: Open. The go is an open decision below.
 
 ## Open decisions
 
-### Ratify the names the later items added
+### Ratify the names the later items added (ruled 2026-11-19 UTC)
 
-Background. The move to the crate's own repository strips every `Name:` block, so each public
-name must read `ratified` first. Decision A ratified the seven original names. The fixes for items
-5 to 13 then added more, and `helpers/name_release.py --draft memory_region_heap` lists them as
-provisional: `Short`, `PageSource`, `MemoryRegionPages`, `Refusal`, `WiringRefusal`,
-`base_virtual_address`, `maximum_bytes`, `initialize_source`, `with_source`, `is_budget_spent`,
-`is_initialized`, `last_refusal` and `map_page`. The unpublished fuzz crate adds the modules
-`src`, `policy` and `sequence` and the function `run`.
-
-Recommendation: A. The names follow the rules in force (spelled-out words, `is_` for a question,
-std's shapes), and `PageSource` follows prior art in `dlmalloc` and `rlsf`.
-
-- A. Ratify the thirteen crate names as they stand; leave the fuzz crate's names provisional, since
-  that crate never publishes.
-- B. Ratify with named changes, applied by one rename lane before the move.
-- C. Hold until a review package lists every public item with its signature.
-
-Door: one-way at the first publish, since a published name is a breaking change to rename. Before
-that it is two-way, but ratification is the architect's by the naming rule.
+The rule in force, option A. The thirteen names the fixes for items 5 to 13 added stand as built:
+`Short`, `PageSource`, `MemoryRegionPages`, `Refusal`, `WiringRefusal`, `base_virtual_address`,
+`maximum_bytes`, `initialize_source`, `with_source`, `is_budget_spent`, `is_initialized`,
+`last_refusal` and `map_page`. Each public item's `Name:` block reads ratified. The unpublished
+fuzz crate's names (the modules `src`, `policy` and `sequence` and the function `run`) stay
+provisional, since that crate never publishes.
 
 Prior art. `dlmalloc` names its page seam `Allocator`, and `rlsf` names it `FlexSource`; both
 crates settled the name before 1.0. `Vec::try_reserve` returns a named error type, which is the
@@ -86,8 +73,6 @@ shape `Short` and `Refusal` follow. nife differs in ratifying every public item,
 ones a README shows. Concrete example: a consumer writes
 `MemoryRegionHeap::with_source(source)` and matches `Refusal` from `last_refusal()`; those
 spellings are what it compiles against.
-
-Blocks: the move.
 
 ### Fork `talc` if upstream stays silent
 
@@ -123,12 +108,14 @@ Blocks: nothing until the vendor-watch report passes in silence; after that, the
 
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package; that clearance approves the repository. A package lists every public
-item with its signature, and `script/crate-review-packet` writes it. This crate has none. The
+item with its signature, and `script/crate-review-packet` writes it. The package for this crate is
+[memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md), written under the
+recommendation below; clearance stays open. The
 components, the fixtures and the RedoxFS server all depend on it, so it serves several consumers and
 meets the bar for leaving.
 
-Recommendation: A. A package written after the architect settles the names above shows the
-architect the crate as it will ship.
+Recommendation: A. A package written after the names are ratified shows the architect the crate
+as it will ship.
 
 - A. A lane writes the package; the architect's clearance creates the repository.
 - B. Clear on this outside review alone, without a package.
