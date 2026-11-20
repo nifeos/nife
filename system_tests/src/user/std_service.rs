@@ -355,12 +355,12 @@ fn spawn_std(
     maps[0] = Mapping {
         va: CLOCK_PAGE_STD,
         phys: clock.page_phys,
-        flags: Flags::user_rodata(), // a READER, and the mapping is what says so
+        flags: Flags::user_read_only_data(), // a READER, and the mapping is what says so
     };
     maps[1] = Mapping {
         va: CONFIG_PAGE_STD,
         phys: config_phys,
-        flags: Flags::user_rodata(), // same shape as the clock page: a READER, never a writer
+        flags: Flags::user_read_only_data(), // same shape as the clock page: a READER, never a writer
     };
     for (k, m) in maps[2..].iter_mut().enumerate() {
         // Zeroed by the retype, so the new process starts clean.

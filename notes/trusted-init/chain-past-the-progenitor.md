@@ -195,7 +195,7 @@ nife: handing the system to userspace init.
   spawn is `could not spawn (the progenitor is out of memory)`, which predates this and is now sometimes a
   lie: the progenitor refused the program. The boot line names it, so the information is there, but the
   sentence at the prompt asserts a cause it does not know. Fixing it means either a second
-  `spawnproto` reply code or rewording five call sites in `swish`.
+  `spawn_protocol` reply code or rewording five call sites in `swish`.
 - A pipeline whose stage cannot be spawned hangs the prompt. `echo hi | wc` with a refused `wc`
   never returns. This is not new: a refused program takes exactly the value in the progenitor's program table
   that a program missing from the archive always took, so the hang is the pre-existing behavior of

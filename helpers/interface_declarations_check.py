@@ -77,7 +77,7 @@ INTERFACE_ID = re.compile(r'^\s*pub\s+const\s+INTERFACE_ID\s*:\s*u64\s*=\s*([^;]
 VERSION_CONST = re.compile(r'^\s*pub\s+const\s+([A-Z0-9_]*VERSION[A-Z0-9_]*)\s*:\s*u32\s*=', re.M)
 CARRY = re.compile(r'carry_interfaces!\s*\(\s*&\[(.*?)\]\s*\)', re.S)
 DECLARED = re.compile(
-    r'Declared\s*\{\s*id\s*:\s*(' + PATH + r')::INTERFACE_ID\s*,'
+    r'DeclaredInterface\s*\{\s*id\s*:\s*(' + PATH + r')::INTERFACE_ID\s*,'
     r'\s*version\s*:\s*(' + PATH + r')::([A-Z][A-Z0-9_]*)\s*,?\s*\}')
 ROW = re.compile(r'^\|\s*(\d+)\s*\|\s*(retired,\s*)?`(' + PATH + r')`\s*\|', re.M)
 
@@ -302,7 +302,7 @@ def selftest():
                 'fsc::fs': {'VERSION'}}
 
     def entry(path, vpath=None, vconst='VERSION'):
-        return (f'interfaces_note::Declared {{ id: {path}::INTERFACE_ID, '
+        return (f'interfaces_note::DeclaredInterface {{ id: {path}::INTERFACE_ID, '
                 f'version: {vpath or path}::{vconst} }},')
 
     def carry(*entries):

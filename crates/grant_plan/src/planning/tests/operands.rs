@@ -75,7 +75,7 @@ fn the_recursion_option_is_what_widens_the_grant() {
     assert!(!narrow.directory.unwrap().subtree);
     assert!(wide.directory.unwrap().subtree, "-r must widen the grant");
     assert_eq!(narrow.short_options, 0);
-    assert_eq!(wide.short_options, rmopt::RECURSIVE);
+    assert_eq!(wide.short_options, rm_options::RECURSIVE);
 }
 
 /// A manifest whose recursion letter is not its first option, which no shipped program has:
@@ -106,7 +106,7 @@ fn the_recursion_letter_widens_by_its_own_bit_wherever_it_is_declared() {
     );
 }
 
-/// The option letters and the bits `rmopt` names are one thing spelled twice (the manifest has
+/// The option letters and the bits `rm_options` names are one thing spelled twice (the manifest has
 /// the letters, the program has the bits), so a change to either without the other has to fail
 /// here in milliseconds. A cluster is one token, as every Unix `rm -rf` is typed.
 #[test]
@@ -118,7 +118,7 @@ fn rm_options_are_numbered_by_their_position_in_its_manifest() {
     let e = plan(&r, WITH_DIRECTORY).unwrap();
     assert_eq!(
         e.short_options,
-        rmopt::RECURSIVE | rmopt::FORCE | rmopt::VERBOSE
+        rm_options::RECURSIVE | rm_options::FORCE | rm_options::VERBOSE
     );
     // Separately typed, in any order, is the same grant: options are a set.
     let Command::Run(r) = parse(b"rm -v -f -r doomed") else {
@@ -130,9 +130,9 @@ fn rm_options_are_numbered_by_their_position_in_its_manifest() {
     );
     // And each letter alone lands on exactly its own bit.
     for (line, want) in [
-        (&b"rm -r x"[..], rmopt::RECURSIVE),
-        (b"rm -f x", rmopt::FORCE),
-        (b"rm -v x", rmopt::VERBOSE),
+        (&b"rm -r x"[..], rm_options::RECURSIVE),
+        (b"rm -f x", rm_options::FORCE),
+        (b"rm -v x", rm_options::VERBOSE),
     ] {
         let Command::Run(r) = parse(line) else {
             panic!()
@@ -247,7 +247,12 @@ fn rm_takes_one_operand_because_a_manifest_grants_one_directory() {
 #[test]
 fn a_directory_grant_is_fixed_where_it_was_planned() {
     let mut holds = WITH_DIRECTORY;
-    assert!(holds.cwd.apply(nav::path(b"logs").unwrap().steps()).is_ok());
+    assert!(
+        holds
+            .cwd
+            .apply(navigation::path(b"logs").unwrap().steps())
+            .is_ok()
+    );
     let Command::Run(r) = parse(b"rm -r old") else {
         panic!()
     };
@@ -445,7 +450,12 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
 #[test]
 fn a_pattern_is_resolved_where_the_shell_was_standing() {
     let mut holds = WITH_DIRECTORY;
-    assert!(holds.cwd.apply(nav::path(b"logs").unwrap().steps()).is_ok());
+    assert!(
+        holds
+            .cwd
+            .apply(navigation::path(b"logs").unwrap().steps())
+            .is_ok()
+    );
     let Command::Run(r) = parse(b"rm -r 2026/*.txt") else {
         panic!()
     };
@@ -461,7 +471,7 @@ fn a_pattern_is_resolved_where_the_shell_was_standing() {
     assert_eq!(g.directory.depth(), 2, "the grant followed the shell");
 }
 
-/// The set bound is one number spelled in two crates, for [`MAXIMUM_FILE_NAME`]'s reason:
+/// The set bound is one number spelled in two crates, for [`MAXIMUM_FILE_NAME_BYTES`]'s reason:
 /// `grant_plan` must be able to check a command line without linking the filesystem contract, so
 /// the pair is pinned here rather than shared.
 #[test]
@@ -469,7 +479,7 @@ fn the_set_bound_matches_the_contract_that_carries_the_set() {
     assert_eq!(MAXIMUM_NAMES, filesystem_contract::nameset::MAXIMUM_NAMES);
     assert_eq!(expand::NAME_BYTES, filesystem_contract::nameset::NAME_BYTES);
     assert_eq!(
-        expand::MAXIMUM_NAME,
+        expand::MAXIMUM_NAME_BYTES,
         filesystem_contract::grant::MAXIMUM_NAME_BYTES
     );
     // And the widest set this crate can plan must fit the buffer that contract sizes for it: every

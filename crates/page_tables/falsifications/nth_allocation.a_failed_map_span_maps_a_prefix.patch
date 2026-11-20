@@ -18,18 +18,24 @@ Expected to fail: assertion (2), "what is left mapped is not a prefix of the req
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
+index a7b5ebb10..59d4ca750 100644
 --- a/crates/page_tables/src/mapper.rs
 +++ b/crates/page_tables/src/mapper.rs
-@@ -303,12 +303,16 @@ where
+@@ -320,6 +320,7 @@ where
              return Err(MapError::BadRegion);
          }
          let mut done = 0;
 +        let mut failed = None;
          while done < len {
-             let size = PageSize::largest_fitting(va + done, pa + done, len - done, largest);
--            self.map_block(va + done, pa + done, size, flags)?;
+             let size = PageSize::largest_fitting(
+                 virtual_address + done,
+@@ -327,10 +328,13 @@ where
+                 len - done,
+                 largest,
+             );
+-            self.map_block(virtual_address + done, physical_address + done, size, flags)?;
 +            // Best effort: map what can be mapped and report the first failure.
-+            if let Err(e) = self.map_block(va + done, pa + done, size, flags) {
++            if let Err(e) = self.map_block(virtual_address + done, physical_address + done, size, flags) {
 +                failed.get_or_insert(e);
 +            }
              done += size.bytes();

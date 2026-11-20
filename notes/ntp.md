@@ -114,11 +114,11 @@ In order:
 In plain NTP the client's transmit timestamp is echoed back in the origin field, so it is the only
 thing an off-path attacker has to guess. RFC 5905 says to randomize its low-order bits, and how many
 bits are random is set by the clock's precision: a microsecond-resolution clock leaves about
-12, which is 4096 guesses. `Timestamp::randomise_low` does that and takes the bit count as a
-parameter, because the caller knows its precision and the crate does not.
+12, which is 4096 guesses. The crate offers no such path: a caller with no random source has no
+business proposing a wall clock from an unauthenticated protocol.
 
-`Query::with_nonce` does better, and the reason it is free is worth stating: a server never
-interprets the client's transmit timestamp. It copies it into the origin field and does nothing
+`Query::with_nonce` is the only constructor, and the reason it is free is worth stating: a server
+never interprets the client's transmit timestamp. It copies it into the origin field and does nothing
 else. So the value on the wire need not be a time at all. Send 64 random bits, keep the true send
 time locally for the arithmetic, and the attacker's guess goes from a dozen bits to sixty-four. This
 is what chrony does by default and it costs one extra field.

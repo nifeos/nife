@@ -284,9 +284,9 @@ fn announce_login_credentials(term_ep: u64, login_password: &[u8; PASSWORD_HEX_L
 fn start_undertaker(own_ut: u64, reaper_elf: &static_elf::Elf<'static>, chan: SpawnChannel) {
     // 6. The undertaker, out of what is left of our own budget: `READ` on the supervision endpoint,
     // `WRITE` on the result endpoint, and `WRITE` on a copy of the spawn endpoint badged
-    // `spawnproto::UNDERTAKER_BADGE` (see the module's note). Slot order is the contract with the
+    // `spawn_protocol::UNDERTAKER_BADGE` (see the module's note). Slot order is the contract with the
     // program, which names them `DEATHS` (0), `REPORT` (1) and `SPAWN` (2).
-    let reaper_spawn = must(badged(chan.spawn_ep, spawnproto::UNDERTAKER_BADGE));
+    let reaper_spawn = must(badged(chan.spawn_ep, spawn_protocol::UNDERTAKER_BADGE));
     let reaper = must(build_child(
         own_ut,
         own_ut,

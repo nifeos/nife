@@ -105,6 +105,18 @@ The line is the same trailing mean.
 
 Queue began 2026-08-15; W31 and W32 predate it.
 
+## How long a hosted job waits for a runner
+
+![How long a hosted job waits for a runner](project-metrics/ci-job-waits.svg)
+
+The weekly median of the time between a hosted job's creation and its start, over the jobs of every
+`ci.yml` and `verify.yml` merge-group run, from the Actions API (`helpers/ci_job_times.py`;
+[milestone 1042 (a queue sized to the runner pool)](../design/roadmap/1042-the-merge-queue-is-sized-to-the-runner-pool.md)). The count skips skipped jobs and jobs on an
+owned runner. The record keeps one median a day, so a week's median is the days' medians weighted by
+their job counts, an approximation. The share of jobs that waited over five minutes is in
+`ci_wait_over_5_pct` of the `ci-job-waits` measure file. The line at one minute is the wait under which the queue's build window may rise
+from 5 to 8 ([the queue's own settings](merge-queue.md)). The record starts on 2026-11-02 (UTC).
+
 ## How long a merge-group build takes
 
 ![How long a merge-group build takes](project-metrics/ci-jobs.svg)

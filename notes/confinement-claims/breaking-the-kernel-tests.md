@@ -75,7 +75,7 @@ tenet) makes parity a gate for the capability; this is a gap in the evidence.
 
 The `x86_64` leg had no evidence until milestone 323 (the falsification record is incomplete in five
 ways). The same one-flag defect works there. `arch/x86_64/mmu.rs` maps `.rodata` with
-`Flags::kernel_rodata()`, and `user_rodata()` writes the `U/S` bit while SMAP stays off. It was
+`Flags::kernel_read_only_data()`, and `user_read_only_data()` writes the `U/S` bit while SMAP stays off. It was
 replayed 2026-10-03 (UTC), red at the same assertion of `a_user_program_cannot_read_a_kernel_address` on both. The record names
 `Architecture: aarch64, x86_64`. Read the row as aarch64 twice, `x86_64` once, riscv64 once.
 

@@ -1,7 +1,7 @@
 //! **`program_table`: the programs nife's shell can spawn, and how a spawn is carried** (milestone
 //! 1094 (an outside review of `grant_plan`), its first decision). The planner in `grant_plan` knows
 //! only manifests; this crate is nife's side of it. [`Program`] is the 28-program catalog and what
-//! each row declares, [`spawnproto`] the spawn protocol's word layout, [`job_windows`] the shell's
+//! each row declares, [`spawn_protocol`] the spawn protocol's word layout, [`job_windows`] the shell's
 //! window pool, and [`budgets`] the region sizes the shell splits and the progenitor counts.
 //! [`plan`] and [`plan_stage`] resolve a typed name against the catalog and plan the line against
 //! its manifest, returning the row beside the endowment, because the shell and the progenitor speak
@@ -17,9 +17,9 @@
 
 pub mod budgets;
 pub mod image;
-pub mod job_page_frame;
+pub mod job_channel_page;
 pub mod job_windows;
-pub mod spawnproto;
+pub mod spawn_protocol;
 
 mod planning;
 mod program;

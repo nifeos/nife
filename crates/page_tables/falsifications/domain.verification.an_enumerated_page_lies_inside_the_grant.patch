@@ -22,7 +22,7 @@ diff --git a/crates/page_tables/src/domain.rs b/crates/page_tables/src/domain.rs
 @@ -44,9 +44,6 @@
  /// not mapped: the device reaches less than it was granted, never more. See notes/paging.md, "DMA
  /// domains".
- pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
+ pub fn grant_pages(r: DirectMemoryAccessRegion) -> Result<u64, MapError> {
 -    if !r.base.is_multiple_of(PAGE_SIZE) {
 -        return Err(MapError::Misaligned);
 -    }

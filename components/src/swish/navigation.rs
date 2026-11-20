@@ -31,14 +31,14 @@ pub(super) struct Nav {
     /// the one tree it presents), the names it has bound (`holds.binds`, values rather than
     /// capabilities, so no cspace slot is spent), and where a second tree is mounted
     /// (`holds.second`, `Some` only for the two-tree witness [`two_trees`] and for the boot shell
-    /// that finds an NVMe disk tree at `spawnproto::MOUNTED_TREE_SLOT` and mounts it at `/disk`,
+    /// that finds an NVMe disk tree at `spawn_protocol::MOUNTED_TREE_SLOT` and mounts it at `/disk`,
     /// milestone 834 (ioping on nife and Linux)). Kept whole because the resolver reads it on
     /// every walk: an 800-byte `Holdings` built per walking frame overflowed the globbing witness's
     /// stack, the frame budget `glob_grant_tests` records.
     pub(super) holds: grant_plan::Holdings,
     /// `handles[i]` is the directory capability for level `i + 1`; level 0 is [`fs::ROOT`], the
     /// capability the rendezvous itself designates.
-    handles: [u64; nav::MAXIMUM_DEPTH],
+    handles: [u64; grant_navigation::MAXIMUM_DEPTH],
     /// The sweep in progress, when the line is under `xargs` (milestone 109). Zeroed outside one.
     pub(super) batching: Batching,
     /// **The second tree, when this shell holds two**: milestone 154 (a process that holds two
@@ -96,7 +96,7 @@ pub(super) struct Walk {
     /// The directory the lead designates.
     pub(super) handle: u64,
     /// The capabilities opened on the way down, in order.
-    tmp: [u64; nav::MAXIMUM_DEPTH],
+    tmp: [u64; grant_navigation::MAXIMUM_DEPTH],
     n: usize,
 }
 
@@ -108,7 +108,7 @@ impl Nav {
             dir: None,
             rights: 0,
             holds: grant_plan::Holdings::default(),
-            handles: [0; nav::MAXIMUM_DEPTH],
+            handles: [0; grant_navigation::MAXIMUM_DEPTH],
             batching: Batching::default(),
             second: None,
             jobs: Jobs::new(),
@@ -126,7 +126,7 @@ impl Nav {
                 directory: true,
                 ..grant_plan::Holdings::default()
             },
-            handles: [0; nav::MAXIMUM_DEPTH],
+            handles: [0; grant_navigation::MAXIMUM_DEPTH],
             batching: Batching::default(),
             second: None,
             jobs: Jobs::new(),
@@ -135,17 +135,17 @@ impl Nav {
 
     /// Which tree this shell stands in: the second when its path runs through the mount point,
     /// the first otherwise ([`grant_plan::Holdings::locate`]).
-    fn which(&self) -> nav::Which {
+    fn which(&self) -> grant_navigation::Which {
         self.holds.locate(&self.holds.cwd).0
     }
 
     /// The tree `which` names. The second tree of a shell that holds one is the first, which no
-    /// caller reaches: `which` only comes back [`nav::Which::B`] out of a two-grant [`Holdings`].
+    /// caller reaches: `which` only comes back [`grant_navigation::Which::B`] out of a two-grant [`Holdings`].
     ///
     /// [`Holdings`]: grant_plan::Holdings
-    pub(super) fn tree(&self, which: nav::Which) -> Tree {
+    pub(super) fn tree(&self, which: grant_navigation::Which) -> Tree {
         match (which, self.second) {
-            (nav::Which::B, Some(t)) => t,
+            (grant_navigation::Which::B, Some(t)) => t,
             _ => Tree {
                 slot: self.dir.unwrap_or(DIR),
                 rights: self.rights,
@@ -161,7 +161,7 @@ impl Nav {
     /// The first tree, which is where this system keeps its own files (the manual, the activation
     /// table, a package to install) whichever tree the shell stands in.
     pub(super) fn first(&self) -> Tree {
-        self.tree(nav::Which::A)
+        self.tree(grant_navigation::Which::A)
     }
 
     /// The handle for the level we are standing on. [`Nav::handles`] holds the levels of the
@@ -207,7 +207,7 @@ impl Nav {
 
     /// **Resolve a path without moving and open it**, from the root when the token began with `/`
     /// and from where the shell stands otherwise; [`Nav::walk_steps`] has the whole of it.
-    fn walk(&mut self, p: &nav::Path<'_>) -> Result<Walk, Say> {
+    fn walk(&mut self, p: &grant_navigation::Path<'_>) -> Result<Walk, Say> {
         self.walk_steps(p.is_from_root(), p.steps())
     }
 
@@ -215,7 +215,7 @@ impl Nav {
     ///
     /// The path is resolved first, then opened: [`grant_plan::Holdings::anchor`] says where the
     /// steps start, [`Cwd::apply`] applies them (refusing `..` past the root with nothing sent, and
-    /// a path deeper than [`nav::MAXIMUM_DEPTH`], which bounds [`Walk::tmp`]), and
+    /// a path deeper than [`grant_navigation::MAXIMUM_DEPTH`], which bounds [`Walk::tmp`]), and
     /// [`grant_plan::Holdings::locate`] says which tree serves the result. The walk opens it one
     /// `OPENDIR` at a time from that tree's root, since the FS contract takes one component per
     /// request. So `..` from a mount point is its parent in the first tree, and a bound name can
@@ -228,7 +228,7 @@ impl Nav {
         let mut w = Walk {
             tree: self.tree(which),
             handle: fs::ROOT,
-            tmp: [0; nav::MAXIMUM_DEPTH],
+            tmp: [0; grant_navigation::MAXIMUM_DEPTH],
             n: 0,
         };
         // One level at a time from that tree's own root. One step per call rather than a staged
@@ -266,22 +266,28 @@ impl Nav {
     /// [`grant_plan::Holdings::resolve_path`], so a bound name and the root are told apart exactly
     /// as [`Nav::walk_steps`] and the planner tell them apart. A shell with one tree and nothing
     /// bound resolves byte for byte as it did before either existed.
-    pub(super) fn plan_path<'a>(&self, token: &'a [u8]) -> Result<(nav::Path<'a>, Cwd), Say> {
-        let p = nav::path(token).map_err(Say::Refused)?;
+    pub(super) fn plan_path<'a>(
+        &self,
+        token: &'a [u8],
+    ) -> Result<(grant_navigation::Path<'a>, Cwd), Say> {
+        let p = grant_navigation::path(token).map_err(Say::Refused)?;
         let target = self.holds.resolve_path(&p).map_err(Say::Refused)?;
         Ok((p, target))
     }
 
     /// **Parse and validate a path to a name**, for a verb that opens or makes its last component
     /// rather than standing in it: [`Nav::plan_path`] for every step but the last, which is a name
-    /// in that directory and so may be as long as a file's ([`nav::MAXIMUM_NAME`], milestone 946 (a
+    /// in that directory and so may be as long as a file's ([`grant_navigation::MAXIMUM_NAME_BYTES`], milestone 946 (a
     /// granted file name can be longer than sixteen bytes)) where a directory the shell stands in
-    /// may not ([`nav::MAXIMUM_DIRECTORY_NAME`]). A path ending in `..` names a directory, and is
+    /// may not ([`grant_navigation::MAXIMUM_DIRECTORY_NAME_BYTES`]). A path ending in `..` names a directory, and is
     /// validated whole.
     ///
     /// Name: provisional (milestone 946).
-    pub(super) fn plan_name_path<'a>(&self, token: &'a [u8]) -> Result<nav::Path<'a>, Say> {
-        let p = nav::path(token).map_err(Say::Refused)?;
+    pub(super) fn plan_name_path<'a>(
+        &self,
+        token: &'a [u8],
+    ) -> Result<grant_navigation::Path<'a>, Say> {
+        let p = grant_navigation::path(token).map_err(Say::Refused)?;
         match p.split_last_component() {
             Some((lead, _)) => self.holds.resolve_steps(p.is_from_root(), lead),
             None => self.holds.resolve_path(&p),
@@ -339,7 +345,7 @@ impl Nav {
         if target.is_root() {
             return self.go_home();
         }
-        let mut steps = [Step::Up; nav::MAXIMUM_DEPTH];
+        let mut steps = [Step::Up; grant_navigation::MAXIMUM_DEPTH];
         for (level, step) in steps.iter_mut().enumerate().take(target.depth()) {
             *step = Step::Down(target.component(level));
         }
@@ -437,7 +443,7 @@ impl Nav {
     }
 
     /// **`bind <target> <name>`**: name a position this shell already reached some other way, so
-    /// `/<name>/...` reaches it too (milestone 47; [`nav::Bindings`] is the mechanism milestone 154's
+    /// `/<name>/...` reaches it too (milestone 47; [`grant_navigation::Bindings`] is the mechanism milestone 154's
     /// second grant unblocked). `target` resolves through the bind-aware [`Nav::plan_path`], so a
     /// bind under a bind composes. A builtin like [`Nav::mkdir`]: it mints no capability, spawns
     /// nothing, and files a value under a name. A bound position is a path in the one tree, so it
