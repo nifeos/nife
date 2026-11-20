@@ -39,8 +39,8 @@ An appendix to [the milestone](../1104-paging-outside-review.md).
     say so in the README's BUGS, and add `core::error::Error` for `MapError`, which costs one
     `impl`. Effort S for the documentation. M for any method. Two-way.
 
-16. Documentation that drifted or stops short. `TlbFlush::flush` names `tlbi vaae1is` and
-`sfence.vma` and not `invlpg` (`src/tlb_flush.rs` line 22). `PageFormat::LEVELS` and `SPLIT_SHIFT`
+16. Documentation that drifted or stops short. `TranslationLookasideBufferFlush::flush` names `tlbi vaae1is` and
+`sfence.vma` and not `invlpg` (`src/translation_lookaside_buffer_flush.rs` line 22). `PageFormat::LEVELS` and `SPLIT_SHIFT`
 document aarch64 and Sv39 only (`src/page_format.rs` lines 55 to 60), and `Half`'s doc the same
 (`src/page_format.rs` lines 13 to 16). `src/flag_tests.rs` line 78 says "the CAP_* bit positions" for constants
 now named `ACCESS_*`. `src/x86_64.rs` line 26 says the PAT reset value was "recalled rather than

@@ -95,7 +95,7 @@ you must hand it a capability to that file. And you cannot hand it one you do no
 
 The bug is not defended against. It is not constructible.
 
-That is the same move as [`TlbFlush`'s `Drop`](page-tables.md) and the [lock
+That is the same move as [`TranslationLookasideBufferFlush`'s `Drop`](page-tables.md) and the [lock
 ranking](deadlock.md): make the bad state *unrepresentable* rather than checking for it at
 runtime and hoping.
 

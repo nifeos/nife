@@ -250,7 +250,7 @@ Background. `PageFrame` has three methods: `from_addr`, `containing` and `addr`.
 carry `addr`, an abbreviation [design/naming.md](../naming.md) counts among those that need a
 decoder, and the template's abbreviations report names it five times in this crate. The list of
 words the gate refuses outright does not include `addr` yet, so nothing mechanical fails. The one
-sibling accessor with the same meaning spells `address` (`crates/page_tables/src/tlb_flush.rs` line 41). The
+sibling accessor with the same meaning spells `address` (`crates/page_tables/src/translation_lookaside_buffer_flush.rs` line 41). The
 kernel calls `from_addr` at about a dozen sites and `addr()` at more. Both are public methods, so
 after 0.1.0 the names are a one-way door.
 
