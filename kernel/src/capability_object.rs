@@ -94,8 +94,9 @@ pub enum Object {
     /// DMA-critical powers (programming the queue's ring addresses and ringing the device) and
     /// validates that every descriptor stays within the driver's own DMA region before the device
     /// sees it. The holder drives the device (status, features, submit) through this, but cannot
-    /// point it outside its region. See kernel/src/virtio.rs.
-    Virtio(u64),
+    /// point it outside its region. See `kernel/src/virtual_io.rs`.
+    #[doc(alias = "virtio")]
+    VirtualIo(u64),
 
     /// A contiguous range of x86 I/O ports, by base port and count, enforced by the TSS I/O
     /// permission bitmap rather than the MMU. The holder may execute `in`/`out` on `[base, base +
@@ -408,9 +409,9 @@ pub fn memory_region_root_capability(region: u64) -> Capability {
 }
 
 /// A capability to a virtio device's transport. `WRITE` lets the holder operate it.
-pub(crate) fn virtio_capability(id: u64) -> Capability {
+pub(crate) fn virtual_io_capability(id: u64) -> Capability {
     Capability {
-        object: Object::Virtio(id),
+        object: Object::VirtualIo(id),
         rights: Rights::WRITE,
     }
 }
@@ -419,9 +420,9 @@ pub(crate) fn virtio_capability(id: u64) -> Capability {
 /// The progenitor holds one with `GRANT` so it can delegate the device to an entropy service it builds,
 /// [`interrupt_capability_rights`]'s own reason one object type over.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub(crate) fn virtio_capability_rights(id: u64, rights: Rights) -> Capability {
+pub(crate) fn virtual_io_capability_rights(id: u64, rights: Rights) -> Capability {
     Capability {
-        object: Object::Virtio(id),
+        object: Object::VirtualIo(id),
         rights,
     }
 }

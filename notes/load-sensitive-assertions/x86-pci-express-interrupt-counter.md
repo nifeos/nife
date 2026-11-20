@@ -45,7 +45,7 @@ not come back with the right bytes and a still counter. The only remaining way t
 delta is a baseline sampled after the increments, and the test sampled it in exactly the wrong place:
 
 ```rust
-let Some(report) = virtio_service::start_pci(init_image()) else { ... };
+let Some(report) = virtual_io_service::start_pci(init_image()) else { ... };
 
 let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);   // <- after the driver is
 spawned
@@ -145,7 +145,7 @@ routed test interrupt. They are real on all three architectures now, without the
 
 Both halves are ordering arguments rather than margins, which is what this register keeps asking for.
 
-- The baseline moves to before `virtio_service::start_pci`. Until it runs there is no queue, no route
+- The baseline moves to before `virtual_io_service::start_pci`. Until it runs there is no queue, no route
   and no driver, so nothing this device does can be counted before that line. No wait was added,
   because there is nothing to wait for. The increment is upstream of the wakeup, which is upstream of
   the report.
@@ -163,7 +163,7 @@ itself is broken: a driver completing without an interrupt, the confinement-adja
 waking up for.
 
 The same one-line move went into the three sibling tests with the identical shape. They are
-`a_userspace_driver_reads_a_file_from_a_virtio_disk` here and its riscv64 twin, and the riscv64 pcie
+`a_userspace_driver_reads_a_file_from_a_virtual_io_disk` here and its riscv64 twin, and the riscv64 pcie
 twin. None was ever observed to flake, and all had the same window.
 
 ### BUGS

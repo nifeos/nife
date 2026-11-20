@@ -22,7 +22,7 @@ Premise re-checked 2026-09-19: five copies, not six, and this file already recor
 `multicast_dns_responder` went at milestone 298 and the table below struck it out at the time. The
 five that remain are `components/src/socket_test_client.rs`, `components/src/network_time_client.rs`
 and `fixtures/src/network_time_test_server.rs`, which carry the absolute-VA accessors the title is
-about. The remaining two, `components/src/entropy.rs` and `components/src/virtio_net_transport.rs`,
+about. The remaining two, `components/src/entropy.rs` and `components/src/virtual_io_net_transport.rs`,
 take an offset rather than a VA and are the virtio pair this file says to price separately. The title
 keeps the count it was filed under.
 
@@ -51,8 +51,8 @@ duplicate the base `MappedWindow` already carries.
 ## Follow-on
 
 - **Recorded.** The virtio pair's shared fact, the kernel's ring layout spelled as literals in
-  `components/src/entropy.rs` and `components/src/virtio_net_transport.rs` (and in the net driver of
-  `components/src/block_driver_roles.rs`), is recorded as a `BUGS` entry on `components/src/virtio_net_transport.rs`,
+  `components/src/entropy.rs` and `components/src/virtual_io_net_transport.rs` (and in the net driver of
+  `components/src/block_driver_roles.rs`), is recorded as a `BUGS` entry on `components/src/virtual_io_net_transport.rs`,
   beside its own copy of the layout.
 
 ## What is duplicated
@@ -72,7 +72,7 @@ fn read_payload(n: usize, out: &mut [u8]) -> usize { ... PAYLOAD_OFFSET_BYTES ..
 | program | where | what the page is |
 |---|---|---|
 | `components/src/entropy.rs` | `components/` | a virtio DMA region |
-| `components/src/virtio_net_transport.rs` | `components/` | a virtio DMA region |
+| `components/src/virtual_io_net_transport.rs` | `components/` | a virtio DMA region |
 | ~~`components/src/multicast_dns_responder.rs`~~ | retired 2026-09-15 (milestone 298) | the socket contract's frame |
 | `components/src/socket_test_client.rs` | `components/` | the socket contract's frame |
 | `components/src/network_time_client.rs` | `components/` | the socket contract's frame |

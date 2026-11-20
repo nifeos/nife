@@ -25,7 +25,7 @@ What each holds is the whole design:
 |---|---|---|
 | slot 0 | report endpoint (status to its spawner) | report endpoint |
 | slot 1 | `Interrupt`, the device's completion interrupt | the display endpoint, WRITE (it CALLs) |
-| slot 2 | `Virtio`, the confined transport | |
+| slot 2 | `VirtualIo`, the confined transport | |
 | slot 3 | the display endpoint, READ (it serves) | |
 | mapped | the whole DMA region (rings + surface) | the surface frames only |
 | knows | its DMA region's physical base | no physical address at all |

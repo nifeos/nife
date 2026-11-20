@@ -27,7 +27,7 @@ Each site's own comment already states the cause correctly and calls it "an hone
 rather than a bug" (milestone 164 (x86_64 userspace can't build `aes`)'s shape: a scope gap named
 where the reader meets the feature). It is not a capability gap. virtio-gpu and virtio-input are
 PCIe, their BARs are memory, and neither driver maps device registers directly; both hold a
-kernel-mediated `Virtio` capability (`components/src/gpu_driver.rs`,
+kernel-mediated `VirtualIo` capability (`components/src/gpu_driver.rs`,
 `components/src/keyboard_driver.rs`). DECISIONS §121 (what a device capability is when the device
 has no page) does not touch them.
 

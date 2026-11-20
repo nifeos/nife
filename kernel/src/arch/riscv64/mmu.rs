@@ -177,28 +177,32 @@ const fn boot_table() -> BootTable {
 static BOOT_PAGE_TABLE: BootTable = boot_table();
 
 /// The physical base of the virtio-mmio transport window on QEMU's `virt` machine.
-pub const VIRTIO_MMIO_BASE: u64 = 0x1000_1000;
+///
+/// Name: provisional. Spelled out from `VIRTIO_MMIO_BASE`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_MMIO_BASE: u64 = 0x1000_1000;
 /// The size of the virtio-mmio window (8 slots of 0x1000).
-pub(crate) const VIRTIO_MMIO_SIZE: u64 = 8 * 0x1000;
+pub(crate) const VIRTUAL_IO_MMIO_SIZE: u64 = 8 * 0x1000;
 /// The PLIC interrupt id of the first virtio-mmio slot on `virt`; the driver adds the slot index.
 #[doc(alias = "irq")]
-pub(crate) const VIRTIO_INTERRUPT_NUMBER_BASE: u32 = 1;
-/// The distance between virtio-mmio slots on RISC-V's `virt`, which `virtio::find_block_device`
+pub(crate) const VIRTUAL_IO_INTERRUPT_NUMBER_BASE: u32 = 1;
+/// The distance between virtio-mmio slots on RISC-V's `virt`, which `virtual_io::find_block_device`
 /// walks.
-pub(crate) const VIRTIO_SLOT_STRIDE: u64 = 0x1000;
-pub(crate) const VIRTIO_SLOTS: u64 = 8;
+pub(crate) const VIRTUAL_IO_SLOT_STRIDE: u64 = 0x1000;
+pub(crate) const VIRTUAL_IO_SLOTS: u64 = 8;
 
 /// Whether `map_everything` mapped the virtio-mmio window, which it does only when the device tree
 /// names a `virtio,mmio` node (milestone 89). Written once on the primary hart before any probe.
-static VIRTIO_MMIO_MAPPED: AtomicBool = AtomicBool::new(false);
+static VIRTUAL_IO_MMIO_MAPPED: AtomicBool = AtomicBool::new(false);
 
-/// How many virtio-mmio slots the probe may read: [`VIRTIO_SLOTS`] when the device tree names the
+/// How many virtio-mmio slots the probe may read: [`VIRTUAL_IO_SLOTS`] when the device tree names the
 /// bus, else zero. On the JH7110 and the TH1520 that address is a UART and DRAM.
 ///
 /// Name: provisional, milestone 89 (Scaleway EM-RV1)'s lane, 2026-10-06 (UTC). The same name on all three architectures.
-pub fn virtio_slots() -> u64 {
-    if VIRTIO_MMIO_MAPPED.load(Ordering::Relaxed) {
-        VIRTIO_SLOTS
+#[doc(alias = "virtio")]
+pub fn virtual_io_slots() -> u64 {
+    if VIRTUAL_IO_MMIO_MAPPED.load(Ordering::Relaxed) {
+        VIRTUAL_IO_SLOTS
     } else {
         0
     }
@@ -533,11 +537,11 @@ where
     if named {
         direct_map(
             m,
-            VIRTIO_MMIO_BASE,
-            VIRTIO_MMIO_BASE + VIRTIO_MMIO_SIZE,
+            VIRTUAL_IO_MMIO_BASE,
+            VIRTUAL_IO_MMIO_BASE + VIRTUAL_IO_MMIO_SIZE,
             Flags::device(),
         )?;
-        VIRTIO_MMIO_MAPPED.store(true, Ordering::Relaxed);
+        VIRTUAL_IO_MMIO_MAPPED.store(true, Ordering::Relaxed);
     }
 
     // 9. The PCIe ECAM and BAR windows, only where the device tree names a host, for 8's reason.

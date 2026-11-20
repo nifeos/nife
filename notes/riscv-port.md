@@ -23,7 +23,7 @@ rest of the kernel calls through `crate::arch`:
   `map_page`/`unmap_page`, `activate_user`/`deactivate_user`, `switch_user_root`, `reserved_root`,
   `flush_asid`, `flush_tlb`, `user_can_read`/`write`, `current_user_root`,
   `translate`/`translate_user`, `is_enabled`), and the
-  `VIRTIO_MMIO_BASE`/`SIZE`/`INTERRUPT_NUMBER_BASE` consts.
+  `VIRTUAL_IO_MMIO_BASE`/`SIZE`/`INTERRUPT_NUMBER_BASE` consts.
 - `interrupts`: `enabled`/`disable`/`restore`/`enable`.
 - `timer`: `TIMER_INTID`, `TICK_HERTZ`, `init`, `tick`, `ticks`, `now`, `frequency`, `uptime_milliseconds`,
   `spin_for`, `interval`, `missed_ticks`.

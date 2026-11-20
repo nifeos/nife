@@ -139,6 +139,6 @@ hackbench's own default, 10 groups of 40, is 400.
 ## Transports and devices
 
 `block_driver_tests`' PCIe test proves the transport on two interrupt controllers, the GIC and the
-local APIC, where `riscv_virtio_tests` proves it on the PLIC board. On `x86_64` it is the whole of
+local APIC, where `riscv_virtual_io_tests` proves it on the PLIC board. On `x86_64` it is the whole of
 milestone 215 (a PCI function's interrupt reaches nothing on `x86_64`)'s claim, not one more
 transport.

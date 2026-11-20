@@ -110,7 +110,7 @@ fn a_faulting_user_thread_is_killed_and_the_kernel_survives() {
 /// line between U-mode and kernel memory (aarch64 also splits TTBR0/TTBR1). The precondition checks
 /// the kernel is mapped here at all, which also proves the kernel-half share happened.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.riscv_virtio_tests.the_page_tables_say_u_mode_cannot_read_the_kernels_memory.patch`
+/// Falsification: replayable `system_tests/falsifications/user.riscv_virtual_io_tests.the_page_tables_say_u_mode_cannot_read_the_kernels_memory.patch`
 #[test_case]
 fn the_page_tables_say_u_mode_cannot_read_the_kernels_memory() {
     // Inside the direct map, so it is mapped for certain and it is the kernel's own memory.
@@ -148,8 +148,11 @@ fn the_page_tables_say_u_mode_cannot_read_the_kernels_memory() {
 /// DMA and reads a file off it, with the kernel owning only the confinement. Interrupt
 /// delivery is asserted too: the completion reached the driver as a message through its Interrupt
 /// capability, via the PLIC rather than the GIC.
+///
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
-fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
+fn a_userspace_driver_reads_a_file_from_a_virtual_io_disk() {
     use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
     // Sampled before the device is wired, not after: `ROUTED_INTERRUPTS` is bumped ahead of the
@@ -159,7 +162,7 @@ fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
     // notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
     let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
-    let Some(report) = virtio_service::start(blk_image()) else {
+    let Some(report) = virtual_io_service::start(blk_image()) else {
         // No disk attached to this run. Nothing to test; do not fail.
         crate::testing::skip!("no virtio disk attached");
     };
@@ -342,9 +345,12 @@ fn the_redoxfs_servers_stack_still_has_headroom() {
 /// The virtio-net DHCP round trip, on the second ISA (milestone 30): a driver at EL0 brings up
 /// both queues, transmits a DHCP DISCOVER, and receives slirp's OFFER, all behind the multi-queue
 /// confinement, with the completion delivered via the PLIC. Parity with the aarch64 net test.
+///
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
-fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net() {
-    let Some(report) = virtio_service::start_net(blk_image()) else {
+fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net() {
+    let Some(report) = virtual_io_service::start_net(blk_image()) else {
         crate::testing::skip!("no virtio-net device attached");
     };
 
@@ -360,9 +366,12 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net() {
 }
 
 /// The riscv net round trip over PCIe, behind the RISC-V IOMMU (milestone 30, §20).
+///
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
-fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net_pci() {
-    let Some(report) = virtio_service::start_net_pci(blk_image()) else {
+fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net_pci() {
+    let Some(report) = virtual_io_service::start_net_pci(blk_image()) else {
         crate::testing::skip!("no virtio-net-pci device attached");
     };
 
@@ -378,7 +387,7 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtio_net_pci() {
 /// (milestone 30, piece 3). A reused userspace TCP/IP stack, driving a kernel-confined device.
 #[test_case]
 fn the_net_server_acquires_a_dhcp_lease_over_smoltcp() {
-    let Some((report, net)) = virtio_service::start_net_server(net_stack_image()) else {
+    let Some((report, net)) = virtual_io_service::start_net_server(net_stack_image()) else {
         crate::testing::skip!("no virtio-net device attached");
     };
     let [addr, nameserver, ..] = sched::ipc_receive(report);
@@ -402,7 +411,7 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp() {
 /// The riscv net server over PCIe, behind the RISC-V IOMMU (milestone 30, §20).
 #[test_case]
 fn the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci() {
-    let Some((report, net)) = virtio_service::start_net_server_pci(net_stack_image()) else {
+    let Some((report, net)) = virtual_io_service::start_net_server_pci(net_stack_image()) else {
         crate::testing::skip!("no virtio-net-pci device attached");
     };
     let addr = sched::ipc_receive(report)[0] as u32;
@@ -420,7 +429,7 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci() {
 /// the aarch64 twin for why the old DNS-based version was environment-dependent.
 #[test_case]
 fn a_client_completes_a_udp_round_trip_through_the_socket_contract() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_UDP_TFTP,
         false,
@@ -439,7 +448,7 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract() {
 /// The riscv UDP round trip over PCIe, behind the RISC-V IOMMU.
 #[test_case]
 fn a_client_completes_a_udp_round_trip_through_the_socket_contract_pci() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_UDP_TFTP,
         true,
@@ -461,7 +470,7 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract_pci() {
 /// Falsification: attested 2026-10-04. On riscv64, with `Query::accept` taking every class-IN A record in the answer and not only those owned by the end of the canonical name chain, the gating assertion failed with client code 0xe14f (case 4, `poisoned.nife.test`, a wrong verdict). The defect was a patch to the `domain_name_system` crate, which has left the tree, so nothing here replays it.
 #[test_case]
 fn a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_NAME_RESOLUTION,
         false,
@@ -495,7 +504,7 @@ fn a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers() {
 /// send, receive the echo, close, the full round trip through the confined NIC.
 #[test_case]
 fn a_client_echoes_over_tcp_through_the_socket_contract() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_ECHO,
         false,
@@ -517,7 +526,7 @@ fn a_client_echoes_over_tcp_through_the_socket_contract() {
 fn a_package_fetched_over_http_is_accepted_only_by_the_image_digest() {
     let catalogue = program(package_archive::CATALOG)
         .expect("no package catalogue in the initial ramdisk: the archive build packs one");
-    let Some((report, net)) = virtio_service::start_package_fetch(
+    let Some((report, net)) = virtual_io_service::start_package_fetch(
         net_stack_image(),
         NET_TEST_HTTP_PACKAGE,
         catalogue.len() as u64,
@@ -542,7 +551,7 @@ fn a_package_fetched_over_http_is_accepted_only_by_the_image_digest() {
 /// The riscv TCP echo round trip over PCIe, behind the RISC-V IOMMU.
 #[test_case]
 fn a_client_echoes_over_tcp_through_the_socket_contract_pci() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_ECHO,
         true,
@@ -561,11 +570,11 @@ fn a_client_echoes_over_tcp_through_the_socket_contract_pci() {
 /// **An accept nobody answers ends at `net_stack`'s bound** (the riscv-cpu-net-flake lane,
 /// 2026-10-13 UTC). The aarch64 twin in `network_tests` carries the reasoning.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.riscv_virtio_tests.an_accept_nobody_answers_ends_at_the_stacks_bound.patch`
+/// Falsification: replayable `system_tests/falsifications/user.riscv_virtual_io_tests.an_accept_nobody_answers_ends_at_the_stacks_bound.patch`
 #[test_case]
 fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
     let started = crate::arch::timer::now();
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_ACCEPT_UNHEARD,
         true,
@@ -591,7 +600,7 @@ fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
 /// ephemeral-port fix). See the aarch64 twin for the finding.
 #[test_case]
 fn a_reopened_socket_id_connects_again_over_tcp() {
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_REOPEN,
         false,
@@ -624,7 +633,7 @@ fn a_host_process_connects_to_the_guest_and_is_answered() {
     // is what "before this test wired anything" means, and the census below reports the delta
     // against it rather than an absolute reading contaminated by whatever ran first.
     let e2_baseline_threads = sched::thread_count();
-    let Some((report, net)) = virtio_service::start_net_stack(
+    let Some((report, net)) = virtual_io_service::start_net_stack(
         net_stack_image(),
         NET_TEST_TCP_ACCEPT,
         false,
@@ -680,7 +689,7 @@ const STD_LISTEN_EXPECTED: &[u8] =
 /// architectures (the §19 parity gate). Its stdout is reassembled and compared byte for byte.
 #[test_case]
 fn std_net_runs_over_the_socket_contract() {
-    let Some((report, writer, net)) = virtio_service::start_net_std(
+    let Some((report, writer, net)) = virtual_io_service::start_net_std(
         net_stack_image(),
         std_exerciser_image(),
         socket_contract::NO_PORT_GRANT,
@@ -703,7 +712,7 @@ fn std_net_runs_over_the_socket_contract() {
 /// that has broken this stack's timing twice.
 #[test_case]
 fn a_std_program_serves_a_granted_listening_port() {
-    let Some((report, writer, net)) = virtio_service::start_net_std(
+    let Some((report, writer, net)) = virtual_io_service::start_net_std(
         net_stack_image(),
         std_exerciser_image(),
         socket_contract::listen_grant(NET_LISTEN_PORT, NET_LISTEN_PORT),
@@ -719,7 +728,7 @@ fn a_std_program_serves_a_granted_listening_port() {
 /// the device is never rung. The attacker reports `1` (refused).
 #[test_case]
 fn the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region() {
-    let Some(report) = virtio_service::start_attacker(blk_image()) else {
+    let Some(report) = virtual_io_service::start_attacker(blk_image()) else {
         crate::testing::skip!("no virtio disk attached");
     };
     let refused = sched::ipc_receive(report)[0];
@@ -734,7 +743,7 @@ fn the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region() {
 /// subtle case needs its own test.
 #[test_case]
 fn the_kernel_refuses_an_indirect_descriptor_escape() {
-    let Some(report) = virtio_service::start_attacker_indirect(blk_image()) else {
+    let Some(report) = virtual_io_service::start_attacker_indirect(blk_image()) else {
         crate::testing::skip!("no virtio disk attached");
     };
     let refused = sched::ipc_receive(report)[0];
@@ -763,7 +772,7 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     // notes/load-sensitive-assertions.md and the aarch64/x86_64 twin.
     let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
-    let Some(report) = virtio_service::start_pci(blk_image()) else {
+    let Some(report) = virtual_io_service::start_pci(blk_image()) else {
         crate::testing::skip!("no virtio-pci disk on the bus");
     };
 
@@ -778,7 +787,8 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
     // a disk the runner's IOMMU confines is granted direct, so this read drove the direct
     // transport.
     assert!(
-        virtio_service::pci_disk_was_granted_direct() == Some(true) || !crate::iommu::is_active(),
+        virtual_io_service::pci_disk_was_granted_direct() == Some(true)
+            || !crate::iommu::is_active(),
         "the runner's IOMMU confines the PCI disk, yet the default granted it mediated",
     );
     let interrupts_after = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
@@ -794,7 +804,7 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
 /// what the report certifies.
 #[test_case]
 fn a_userspace_driver_writes_a_block_and_reads_it_back() {
-    let Some(report) = virtio_service::start_writer(blk_image()) else {
+    let Some(report) = virtual_io_service::start_writer(blk_image()) else {
         crate::testing::skip!("no virtio disk attached");
     };
     let word = sched::ipc_receive(report)[0];
@@ -808,7 +818,7 @@ fn a_userspace_driver_writes_a_block_and_reads_it_back() {
 /// The write round trip over the PCIe transport, on the second ISA.
 #[test_case]
 fn a_userspace_driver_writes_a_block_over_the_pcie_transport() {
-    let Some(report) = virtio_service::start_writer_pci(blk_image()) else {
+    let Some(report) = virtual_io_service::start_writer_pci(blk_image()) else {
         crate::testing::skip!("no virtio-pci disk on the bus");
     };
     let word = sched::ipc_receive(report)[0];
@@ -827,7 +837,7 @@ fn a_driver_killed_mid_write_leaves_the_device_and_transport_sane() {
     use crate::arch::exceptions::USER_FAULTS;
 
     let faults = USER_FAULTS.load(Ordering::Relaxed);
-    let Some(report) = virtio_service::start_write_abandoner(blk_image()) else {
+    let Some(report) = virtual_io_service::start_write_abandoner(blk_image()) else {
         crate::testing::skip!("no virtio disk attached");
     };
 
@@ -841,7 +851,7 @@ fn a_driver_killed_mid_write_leaves_the_device_and_transport_sane() {
         "the abandoner never died; nothing was killed mid-write",
     );
 
-    let report = virtio_service::start_writer(blk_image())
+    let report = virtual_io_service::start_writer(blk_image())
         .expect("the disk vanished between the abandoner and the survivor");
     let word = sched::ipc_receive(report)[0];
     assert_eq!(

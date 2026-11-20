@@ -33,7 +33,7 @@ x86_64 also ran the probe under OVMF, the system image booted by `uefi_loader`, 
 result: the key press, no fault, and in the control reason 5 at the pool's first byte.
 
 Status `0x0f` is `ACKNOWLEDGE | DRIVER | FEATURES_OK | DRIVER_OK`. An `iommu_platform=on` device
-leaves `FEATURES_OK` clear for a driver that does not accept bit 33 (`kernel/src/virtio.rs`,
+leaves `FEATURES_OK` clear for a driver that does not accept bit 33 (`kernel/src/virtual_io.rs`,
 `reset_to_features_ok`), so `0x0f` is the negotiation succeeding. The control is what shows the DMA is translated rather than merely permitted. With the
 event buffers' pages left out of the domain, the device's event writes fault in the IOMMU at the
 address the driver handed it, and nothing arrives. With the pages in, the same writes land.
@@ -57,7 +57,7 @@ keyboard test.
 ## What it does not show
 
 - It does not drive the device through nife's confined transport. The keyboard driver is a
-  userspace program behind the kernel's `virtio_service`, which places the queues itself and shadows
+  userspace program behind the kernel's `virtual_io_service`, which places the queues itself and shadows
   the descriptor table and available ring. The crate's `VirtQueue` allocates its own layout and
   hands the addresses to `Transport::queue_set`. Joining the two is (c1)'s design.
 - `Hal`'s methods are static, so the probe holds its DMA region in globals. A driver built on the

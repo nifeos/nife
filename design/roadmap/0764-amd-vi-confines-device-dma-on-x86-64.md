@@ -57,7 +57,7 @@ On the AMD-Vi QEMU machine, the whole x86_64 kernel and system suites pass (129 
 virtio and NVMe DMA-escape tests among them, with the same skips as the VT-d machine. The
 falsification is a device table entry with `Mode` 0 and `IR`/`IW` kept. It turns the virtio escape
 test red, replayable through
-`kernel/falsifications/virtio.tests.the_iommu_faults_a_dma_that_escapes_the_domain.patch`. It turns
+`kernel/falsifications/virtual_io.tests.the_iommu_faults_a_dma_that_escapes_the_domain.patch`. It turns
 the NVMe escape test red too, attested on 2026-10-05, since that test's one record is the
 domain-widening patch every unit shares.
 

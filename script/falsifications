@@ -280,7 +280,7 @@
 #   and never happened. Found still repeating it here 2026-09-23.)
 # - **A file's module path is derived from the Cargo target it belongs to, and one shape defeats
 #   that.** `components/src` holds 49 `[[bin]]` roots and two single-consumer `#[path]` modules that rule 7
-#   permits (`virtio_net_transport.rs`, `socket_test_client.rs`). A root contributes no module segment and a
+#   permits (`virtual_io_net_transport.rs`, `socket_test_client.rs`). A root contributes no module segment and a
 #   `#[path]` module contributes whatever the including file calls it, which need not be its
 #   filename. Neither carries a harness today; one that arrived in a `#[path]` module would get a
 #   patch path naming the file rather than the module, and `--check` would report it as a path that

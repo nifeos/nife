@@ -72,11 +72,11 @@ green this pass. `read` means source review only.
 | 14 | A driver cannot send its device to unvalidated descriptors | held | host | `direct_memory_access_validator::an_accepted_descriptor_is_confined` |
 | 15 | A driver cannot make the validator walk out or forever | held | host | `direct_memory_access_validator` walk/batch suite |
 | 16 | One queue's validation cannot touch another's rings | held | host | `direct_memory_access_validator::distinct_queues_occupy_disjoint_blocks` |
-| 17 | A descriptor changed after validation cannot reach the device | near miss | host, read | device reads the shadow (`setup_queue` in `kernel/src/virtio.rs`); the test is vacuous, see below |
+| 17 | A descriptor changed after validation cannot reach the device | near miss | host, read | device reads the shadow (`setup_queue` in `kernel/src/virtual_io.rs`); the test is vacuous, see below |
 | 18 | A wiring plan grants no unasked right | held | host | `component_plan` suite (ran green, 31 tests) |
 | 19 | A directory capability reaches its subtree and nothing above | held | host, booted aarch64/riscv64 | `filesystem_protocol` (66) and `subtree_scope` (7) ran green; `dir_capability_tests` ran green on aarch64/riscv64 (x86 has no disk); cited proofs cover rights bits only, see below |
 | 20 | A memory-unsafe C component faults and changes nothing outside its grant | held | booted aarch64/riscv64 | `c_seam_tests::...` ran green; x86 skips (no C program for `x86_64-unknown-none`) |
-| 21 | A user program cannot read a kernel address, every ISA | held | booted aarch64/riscv64/x86_64 | `tests::a_user_program_cannot_read_a_kernel_address`, `..._el0_cannot_read...`, `riscv_virtio_tests::the_page_tables_say_u_mode_cannot_read...` |
+| 21 | A user program cannot read a kernel address, every ISA | held | booted aarch64/riscv64/x86_64 | `tests::a_user_program_cannot_read_a_kernel_address`, `..._el0_cannot_read...`, `riscv_virtual_io_tests::the_page_tables_say_u_mode_cannot_read...` |
 | 22 | An ELF cannot load over the kernel or ask for a W+X page | held | booted aarch64/riscv64/x86_64 | `tests::an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused` and sibling, ran green |
 | 23 | The progenitor cannot rebuild after dropping construction authority | held | booted aarch64/riscv64/x86_64 | `authority_tests::the_root_supervisor_drops_its_construction_authority_and_cannot_build_again` |
 | 24 | Two shells with different roots cannot name each other's files | near miss | booted aarch64/riscv64 (the sequential test); read (the reuse leak) | `shell_navigation_tests::two_shells_...` ran green; a reachable window-reuse leak, see below |
@@ -135,7 +135,7 @@ should withhold `GRANT` from its retypes is owed a claim or a ruling.
 ### Claim 17: the device reads the shadow, but the test proves only that two arrays are two arrays
 
 The property holds in its narrow form. A virtio queue's descriptor table and avail ring point at a
-kernel-private shadow (`setup_queue` in `kernel/src/virtio.rs`). The device never reads the driver's writable
+kernel-private shadow (`setup_queue` in `kernel/src/virtual_io.rs`). The device never reads the driver's writable
 copy, so changing a descriptor after validation cannot steer it. The regression test does not prove
 this. Both the Kani harness and the kernel twin write the driver's frame and read back the shadow
 frame. Those are separate allocations, so the final assertion cannot fail. Nothing checks the line
@@ -196,7 +196,7 @@ A note is not a home, so each finding is recorded where a reader meets the code,
   budget should withhold `GRANT` from its retypes is an architect's question, carried in the
   milestone 633 block.
 - Claim 17's vacuous test: `BUGS` on `the_shadow_ring_is_immune_to_a_descriptor_mutated_after_validation`
-  in `kernel/src/virtio.rs`. The publish race: the crate's own `BUGS` and the existing proposal
+  in `kernel/src/virtual_io.rs`. The publish race: the crate's own `BUGS` and the existing proposal
   `the-shadow-descriptor-is-published-in-two-stores`.
 - Claim 24's window reuse: `BUGS` on `system_initializer`'s `Windows`, already there. The fix is the
   "job reaped" signal of milestone 685 (a job is finished when its memory is back), which does not

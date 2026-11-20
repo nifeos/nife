@@ -14,7 +14,7 @@ needs_person: no
 *Title and slug are drafts.*
 Raised by milestone 198 (a package manager)'s rung 3a, whose package-fetch test ran the virtio
 device table out after its thirty-third slot: both QEMU legs panicked with `more virtio devices
-than MAX_DEVICES` in CI, and `MAX_DEVICES` took its tenth bump. `kernel/src/virtio.rs`'s own comment
+than MAX_DEVICES` in CI, and `MAX_DEVICES` took its tenth bump. `kernel/src/virtual_io.rs`'s own comment
 on `MAX_DEVICES` names the unregister as "the next lane's work item"; a bump is not that.
 **Name provisional**: this file's stem is a lane's coinage.
 
@@ -52,7 +52,7 @@ The device table is a `generational_table::Table`, and `Object::Virtio` carries 
 name. A starter binds the driver thread with `virtio::bind_to_current_thread`, and `Threads::remove`
 runs `virtio::release_owned_by`, which resets the device, bumps the generation and frees the slot
 and the shadow frame. `MAXIMUM_DEVICES` falls from 34 to 12. The tests live in
-`kernel/src/virtio/tests.rs`.
+`kernel/src/virtual_io/tests.rs`.
 
 ## Follow-on
 

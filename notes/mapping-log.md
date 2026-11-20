@@ -183,7 +183,7 @@ page inside it would hold more authority than one page grants; §132 refused tha
 Revocation owes a device nothing. `PageFrame::REVOKE` is a CPU-side operation. The gpu driver
 registers its DMA window with `virtio::register`, that window is derived from no capability, and
 revoking a capability does not narrow it. So the device can write those pages until the driver's
-virtio registration is torn down. Coupling `PageFrame` and `Virtio` is an architect's call, left
+virtio registration is torn down. Coupling `PageFrame` and `VirtualIo` is an architect's call, left
 open by §132.
 
 `revoke_page_frame` is the one-page case. It deletes only an exact `PageFrame(phys, 1)`, so a run

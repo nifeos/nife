@@ -13,4 +13,4 @@ crates = ["http_response", "network_stack"]
 # resolve. Interface rather than internal for the reason every *_protocol is.
 interfaces = ["domain_name_resolution_contract"]
 programs = ["net_stack", "domain_name_resolver"]
-paths = ["components/src/virtio_net_transport.rs", "components/src/socket_test_client.rs"]
+paths = ["components/src/virtual_io_net_transport.rs", "components/src/socket_test_client.rs"]

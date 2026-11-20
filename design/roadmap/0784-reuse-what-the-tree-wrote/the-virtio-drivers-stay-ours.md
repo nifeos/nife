@@ -7,7 +7,7 @@ net. nife's virtio drivers stay its own.
 
 ## The reason, as each component carries it
 
-`keyboard_driver`, `gpu_driver`, the `virtio` crate and `virtio_net_transport` each carry this line:
+`keyboard_driver`, `gpu_driver`, the `virtio` crate and `virtual_io_net_transport` each carry this line:
 
 > Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 > (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).

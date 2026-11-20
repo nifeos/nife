@@ -149,7 +149,7 @@ one word.
 ### What the run establishes for fatal risk 6
 
 - Confined: demonstrated 2026-09-03, and again here. The driver holds two rendezvous capabilities
-  and one page of device memory, no IRQ, no DMA, no `Virtio` capability.
+  and one page of device memory, no IRQ, no DMA, no `VirtualIo` capability.
 - Drives real hardware: demonstrated on 2026-09-04, which is the half that was blocked. A confined
   EL0 process wrote a JH7110 register, polled it, and handed a client bytes that were not zero and
   that changed between draws. It did so through a capability that names no device. The clock work

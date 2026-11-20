@@ -108,7 +108,7 @@ Not run, and so not claimed:
 | `devices` | `interrupt_wait`, `interrupt_acknowledge`, `reboot`, and on `x86_64` `port_write_byte` and `port_read_byte` |
 | `mapped_window` | `MappedWindow` with `new` (`unsafe`), `window`, `read::<T>`, `write::<T>`, `copy_within`, `copy_to_slice`, `copy_from_slice`, `as_slice` and `as_mut_slice` (both `unsafe`); the sealed trait `WindowInteger`; `PAGE_BYTES`; `doorbell_barrier` |
 | `socket_frame` | `Frame` with `new` (`unsafe`), `set_destination`, `destination_network_address`, `destination_port`, `len`, `set_len`, `payload_write`, `payload_read` |
-| `virtio` | `read_register`, `write_register`, `setup_queue`, `notify`, `doorbell_barrier`, `virtio_ring_barrier` |
+| `virtio` | `read_register`, `write_register`, `setup_queue`, `notify`, `doorbell_barrier`, `virtual_io_ring_barrier` |
 | `initial_ramdisk` | `bytes` (`unsafe`), `INITIAL_RAMDISK_VIRTUAL_ADDRESS` (re-exported from `address_space_layout`) |
 | `entropy` | `fill` |
 | `child_stub` | `SEND_THEN_EXIT`, the machine code a child runs |
@@ -156,7 +156,7 @@ spelling meets `design/naming.md` as written and the block only needs the ratifi
 | `INTERFACE_ID`, `VERSION` | provisional | stand: the names every contract crate carries |
 | `CycleReading`, `cycle_reading`, `counter_hertz`, `counter_hertz_checked`, `tick_hertz` | provisional | stand: a rate ends in `_hertz` |
 | `Message`, `Received`, `Request`, `Reply`, `Delivered`, `receive_message`, `receive_capability_message`, `receive_request`, `receive_capability`, `into_message`, `into_reply`, `decode`, `slot`, `virtual_address_space_list`, `survey`, `survey_record` | provisional or no block | stand. `receive` and its variants are one family in two shapes (the raw words and the decoded value), the result of milestone 1112's P2-15 |
-| `MappedWindow`, `WindowInteger`, `PAGE_BYTES`, `new`, `window`, `read`, `write`, `copy_within`, `copy_to_slice`, `copy_from_slice`, `doorbell_barrier`, `virtio_ring_barrier` | provisional or no block | stand. `copy_within` keeps the standard library's argument order; `window` replaced `sub`, which is the standard library's subtraction |
+| `MappedWindow`, `WindowInteger`, `PAGE_BYTES`, `new`, `window`, `read`, `write`, `copy_within`, `copy_to_slice`, `copy_from_slice`, `doorbell_barrier`, `virtual_io_ring_barrier` | provisional or no block | stand. `copy_within` keeps the standard library's argument order; `window` replaced `sub`, which is the standard library's subtraction |
 | `Frame`, `set_destination`, `destination_network_address`, `destination_port`, `len`, `set_len`, `payload_read`, `payload_write` | provisional or no block | stand. `len` returns a header field of `u16` bytes and is not a collection's length; its doc and an `allow` say so |
 | `send`, `reap`, `badge`, `call`, `call_receiving`, `reply`, `reply_capability`, `notification_signal`, `notification_wait`, `notification_poll`, `notification_bind`, `timer_arm`, `timer_cancel`, `retype_sleeper`, `sleep_until` | no block | stand. Each is the method it invokes, spelled out |
 | `map_page_frame`, `slice_page_frame`, `memory_region_usage`, `retype_page_frame_run`, `capability_delete`, `thread_control_block_suspend`, `thread_control_block_resume` | provisional or no block | stand |

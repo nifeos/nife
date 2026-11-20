@@ -241,7 +241,7 @@ says the fix is an unregister on process death rather than counting to seven.
 
 And then the write half counted to seven, the same day, for the blank disk's block server. The
 comment records that it was told not to and why it did anyway: the unregister has to decide what a
-`Virtio` capability *is* once its holder is dead. It must also decide whether a transport may be
+`VirtualIo` capability *is* once its holder is dead. It must also decide whether a transport may be
 handed to a second driver after the first programmed the device. That is a lifetime decision about a
 kernel object rather than a bookkeeping change. Worth flagging as a real piece of work now: two
 bumps in one day is a different signal from one every few milestones.

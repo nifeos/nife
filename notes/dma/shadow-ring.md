@@ -96,7 +96,7 @@ device bounds its own chain walk to the queue size. A descriptor the driver muta
 check lands only in the driver's own copy, which nothing reads. `the_shadow_ring_is_immune_to_a_
 descriptor_mutated_after_validation` proves exactly that: validate, then point the driver's
 descriptor at the kernel, and assert the shadow still holds the validated address. The end-to-end
-disk read (`a_userspace_driver_reads_a_file_from_a_virtio_disk`) still passes, which is the proof
+disk read (`a_userspace_driver_reads_a_file_from_a_virtual_io_disk`) still passes, which is the proof
 the copy is functionally transparent: the device reads its descriptors from the shadow, DMAs into
 the driver's data buffers, and the driver gets its file.
 

@@ -1,5 +1,5 @@
 //! **Which grant a starter gives a virtio driver, and the direct grant's carve-out.** Mediated:
-//! a `Virtio` capability, and the kernel validates every descriptor on `NOTIFY`. Direct: the
+//! a `VirtualIo` capability, and the kernel validates every descriptor on `NOTIFY`. Direct: the
 //! function's structure pages and a DMA region the IOMMU confines. See
 //! design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
 //!
@@ -24,7 +24,7 @@ use driver_process_contract::virtual_io::{
 };
 
 use super::*;
-use crate::pci::PciVirtioDevice;
+use crate::pci::PciVirtualIoDevice;
 use crate::sync::{InterruptSafeMutex, rank};
 
 /// Where a direct driver's register window starts. The driver reads it from the startup page.
@@ -54,7 +54,7 @@ const MAXIMUM_CARVED_FUNCTIONS: usize = 8;
 /// once per function per boot (a second attach leaks the first domain's tables), so a function
 /// granted direct again gets its first region back, reset and zeroed.
 static CARVED: InterruptSafeMutex<[Option<(u32, u64, usize)>; MAXIMUM_CARVED_FUNCTIONS]> =
-    InterruptSafeMutex::new(rank::VIRTIO, [None; MAXIMUM_CARVED_FUNCTIONS]);
+    InterruptSafeMutex::new(rank::VIRTUAL_IO, [None; MAXIMUM_CARVED_FUNCTIONS]);
 
 /// **Why a function gets the mediated grant.**
 ///
@@ -93,7 +93,7 @@ fn decide(
 /// device acts on.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
-pub(crate) fn choose(d: &PciVirtioDevice) -> Result<RegisterWindow, Mediated> {
+pub(crate) fn choose(d: &PciVirtualIoDevice) -> Result<RegisterWindow, Mediated> {
     let confining = crate::iommu::is_active() && crate::iommu::scope_of(d.rid).is_confining();
     let common = mmu::phys_to_virt(d.common);
     // SAFETY: `common` is the common configuration `pci::bring_up` resolved inside a placed BAR,
@@ -146,7 +146,7 @@ impl Direct {
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
 pub(crate) fn carve(
-    d: &PciVirtioDevice,
+    d: &PciVirtualIoDevice,
     window: &RegisterWindow,
     role: u16,
     pages: usize,
@@ -231,7 +231,7 @@ pub(crate) fn carve(
         interrupt_status: window.interrupt_status,
         device: window.device,
         notify_off_multiplier: d.notify_mult,
-        interrupt_vector: (d.msix_vector != pci_configuration_space::VIRTIO_MSIX_NO_VECTOR)
+        interrupt_vector: (d.msix_vector != pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR)
             .then_some(d.msix_vector),
         role,
         data_plane_physical_address: dma,
@@ -256,9 +256,9 @@ pub(crate) fn carve(
 }
 
 /// **Reset `d`** before its region goes to a new driver: write zero to the device status and wait
-/// for it to read back zero, as `virtio::unregister` does for a mediated function, so the device
+/// for it to read back zero, as `virtual_io::unregister` does for a mediated function, so the device
 /// holds no queue the last driver programmed and stops writing the region.
-fn reset(d: &PciVirtioDevice) {
+fn reset(d: &PciVirtualIoDevice) {
     let status = (mmu::phys_to_virt(d.common) + DEVICE_STATUS) as *mut u8;
     // SAFETY: as in `choose`: the common configuration is mapped device memory, and the status
     // byte lies in its first 0x38 bytes.

@@ -101,7 +101,7 @@ Four sites in `kernel/`:
 
 | Site | The comment's claim |
 |---|---|
-| `pread` in `kernel/src/virtio.rs` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
+| `pread` in `kernel/src/virtual_io.rs` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
 | `paint` in `kernel/src/stack.rs` | "the caller hands us a mapped, unused stack region" (`#[cfg(test)]`, so test builds only) |
 | `switch_user_root` in `kernel/src/arch/aarch64/mmu.rs` | "the caller passes either a live `AddressSpace`'s composed value or ..." |
 | `write_satp` in `kernel/src/arch/riscv64/mmu.rs` | "the caller guarantees `satp` names a well-formed Sv39 root" |

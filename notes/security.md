@@ -73,7 +73,7 @@ pointer path at all. Corrected, and the historical `abi::console` methods are ma
   would DMA over it. QEMU `virt` has no IOMMU that covers virtio-mmio, so the fix is software. The
   kernel keeps the two DMA-critical powers (programming the queue's ring addresses and ringing the
   device). It validates that every descriptor stays within the driver's own DMA region before
-  the device sees it. The driver drives the device through a `Virtio` capability and can no longer
+  the device sees it. The driver drives the device through a `VirtualIo` capability and can no longer
   aim it anywhere else. A malicious driver pointing a descriptor at the kernel image is now refused
   end to end, and there is a test that proves it (and that the legit block read still works).
   Fault isolation *and* malice isolation now hold. A second audit pass found the in-place check was

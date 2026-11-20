@@ -25,7 +25,7 @@ use crate::capability_object::{
 };
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
-use crate::user::virtio_service::{NET_SERVER_BUDGET_PAGES, NET_SERVER_STACK_PAGES};
+use crate::user::virtual_io_service::{NET_SERVER_BUDGET_PAGES, NET_SERVER_STACK_PAGES};
 
 /// Why no server was started.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -177,7 +177,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
     let [arg0, arg1] = found.handoff.pack();
 
     // The endpoints, the notification and the timer out of one region, so reclaiming it wakes a
-    // server blocked on any of them, as in `virtio_service::wire_net_server`.
+    // server blocked on any of them, as in `virtual_io_service::wire_net_server`.
     let ep_region = crate::memory_region::create(5).expect("no endpoint region for net_stack");
     let report = crate::sched::create_rendezvous_from(ep_region).expect("no report endpoint");
     let stack = crate::sched::create_rendezvous_from(ep_region).expect("no stack endpoint");
@@ -273,7 +273,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
     }
 }
 
-/// [`start_net_server`] plus one socket-contract client, `virtio_service::start_net_stack`'s shape:
+/// [`start_net_server`] plus one socket-contract client, `virtual_io_service::start_net_stack`'s shape:
 /// the client's selector is `cli_arg`, and the server's lease is drained before this returns so the
 /// client's first request is served. Returns the client's report endpoint with the wiring.
 pub fn start_net_stack(
@@ -284,7 +284,7 @@ pub fn start_net_stack(
     start_with_client(image, cli_arg, 0, None, listen_grant)
 }
 
-/// `virtio_service::start_package_fetch`'s client, `catalogue` mapped into it read-only, over the
+/// `virtual_io_service::start_package_fetch`'s client, `catalogue` mapped into it read-only, over the
 /// `e1000e` server instead of the virtio one.
 pub fn start_package_fetch(
     image: &'static [u8],
@@ -327,7 +327,7 @@ fn start_with_client(
     listen_grant: u64,
 ) -> Result<(RendezvousId, Wiring), Absent> {
     let mut w = start_net_server(image, listen_grant)?;
-    let cli = super::virtio_service::spawn_stack_client(
+    let cli = super::virtual_io_service::spawn_stack_client(
         image,
         cli_arg,
         cli_arg1,

@@ -48,8 +48,8 @@ use device_starters::*;
 mod self_test_hand_over;
 #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
 use self_test_hand_over::*;
-mod virtio_dma;
-pub(crate) use virtio_dma::*;
+mod virtual_io_direct_memory_access;
+pub(crate) use virtual_io_direct_memory_access::*;
 mod terminal_print;
 use terminal_print::*;
 #[cfg(any(test, feature = "system_tests"))]
@@ -78,20 +78,22 @@ pub mod supervised_child;
 
 /// Bringing the virtio block driver up in userspace.
 ///
-/// **Milestone 9's headline.** The kernel enumerates the bus (kernel/src/virtio.rs) to find the
-/// block device, then hands a userspace driver everything it needs and nothing it does not: the
-/// device's registers, a DMA page, an interrupt, and an endpoint to report what it read. The
-/// kernel does not touch the device.
+/// **The headline of milestone 9 (a virtio-blk driver at EL0).** The kernel enumerates the bus
+/// (`kernel/src/virtual_io.rs`) to find the block device, then hands a userspace driver everything
+/// it needs and nothing it does not: the device's registers, a DMA page, an interrupt, and an
+/// endpoint to report what it read. The kernel does not touch the device.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // the hand-over's network and disk wiring use it; the tests drive the rest
-pub mod virtio_service;
+#[doc(alias = "virtio")]
+pub mod virtual_io_service;
 
 /// **Which grant a starter gives a virtio driver**, mediated or direct, and the direct grant's
 /// carve-out: the confinement, the structure pages and the handoff. See
 /// design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
-// The PCI disk's starters in `virtio_service` are its callers, and the tour does not start them.
+// The PCI disk's starters in `virtual_io_service` are its callers, and the tour does not start them.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
-pub mod virtio_grant;
+#[doc(alias = "virtio")]
+pub mod virtual_io_grant;
 
 /// **A service's memory, remembered so a finished test can hand it back.** The bookkeeping half of
 /// DECISIONS §16 object revocation, applied to the services the test boot builds: without it a boot

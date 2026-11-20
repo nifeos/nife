@@ -1,5 +1,5 @@
 //! The DMA-confinement validator, as pure logic: [`validate_and_shadow`], lifted out of
-//! `kernel/src/virtio.rs` so Kani proves the code the kernel calls (notes/verification.md). A
+//! `kernel/src/virtual_io.rs` so Kani proves the code the kernel calls (notes/verification.md). A
 //! userspace virtio driver programs the descriptors a device does DMA against, and the device has
 //! no MMU in front of it (or an IOMMU, and this is defense in depth), so something trusted checks
 //! every address the device will touch. Proved for every input: no descriptor the device can read
@@ -284,13 +284,13 @@ fn shadow_one_head(
 }
 
 // ---------------------------------------------------------------------------------------------
-// The queue ring layout, owned here and used by the kernel (kernel/src/virtio.rs defines its
+// The queue ring layout, owned here and used by the kernel (kernel/src/virtual_io.rs defines its
 // `QSIZE`, `RING_BLOCK`, `MAXIMUM_QUEUES` and the three ring offsets as aliases of these), because
 // a proof about a copy of the layout proves nothing about the layout that runs. The kernel keeps
 // its own compile-time asserts as well, so drift is a compile error in two places.
 // ---------------------------------------------------------------------------------------------
 
-/// The negotiated queue size the kernel drives (`QSIZE` in kernel/src/virtio.rs).
+/// The negotiated queue size the kernel drives (`QSIZE` in `kernel/src/virtual_io.rs`).
 pub const LAYOUT_QSIZE: u16 = 8;
 /// Offsets of a queue's three rings, relative to its ring block.
 pub const DESC_OFF: u64 = 0x000;

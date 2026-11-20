@@ -78,7 +78,7 @@ over every access word, with its own patch.
   both:
   - `net_stack`, built by `system_initializer::children` with its own space at
     `socket_contract::stack_slots::OWN_SPACE`, and by the kernel's `run_with_own_space` spawns in
-    `virtio_service`, `e1000e_service` and `designware_ethernet_service`. `socket_table::attach`
+    `virtual_io_service`, `e1000e_service` and `designware_ethernet_service`. `socket_table::attach`
     receives each client's socket page as a frame capability and holds it until it maps it and
     deletes it.
   - `domain_name_resolver`, own space at `endowment::OWN_SPACE_SLOT`. `attach_client` keeps each

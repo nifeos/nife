@@ -125,7 +125,7 @@ the runners already fail loudly on for a missing disk: a plausible-looking succe
 configuration gap.
 
 So the confinement is not trusted, it is proven. `the_iommu_faults_a_dma_that_escapes_the_domain`
-(kernel/src/virtio.rs, runs on both ISAs) confines the real PCIe disk, then points its available ring
+(kernel/src/virtual_io.rs, runs on both ISAs) confines the real PCIe disk, then points its available ring
 at a frame the domain does not map and kicks it. The device's first act on the kick is to read the
 available ring, at an out-of-domain IOVA, so the IOMMU faults and records it; the test drains the
 fault queue and asserts a fault at that exact frame. If translation were absent (a missing

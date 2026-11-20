@@ -82,7 +82,7 @@ fixture attached" instead of blaming `aes`.
 
 The disk. With the server packed, `fs_service::wire_servers` still asks
 `virtio::find_block_device_n(1)` for its disk, and `q35` has no virtio-mmio bus at all
-(`arch::x86_64::mmu::VIRTIO_SLOTS` is 0). Attaching the fixtures as `virtio-blk-pci` and making the
+(`arch::x86_64::mmu::VIRTUAL_IO_SLOTS` is 0). Attaching the fixtures as `virtio-blk-pci` and making the
 lookup transport-blind was built in this lane, run, and reverted, because it does not work and
 the reason is structural rather than a bug:
 

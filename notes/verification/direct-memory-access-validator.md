@@ -15,7 +15,7 @@ virtio driver's DMA. On every `NOTIFY` the kernel walks the driver's descriptors
 whose buffer escapes the driver's granted region, or is indirect. It copies the validated ones into a
 kernel-private shadow ring the device reads, so the driver cannot touch what the device acts on.
 
-The logic was lifted out of `kernel/src/virtio.rs::validate_and_shadow`, which now calls it, so it
+The logic was lifted out of `kernel/src/virtual_io.rs::validate_and_shadow`, which now calls it, so it
 could be proved. That is the same Phase-2 move `memory_regions` and `inter_process_communication`
 made. The kernel's QEMU attacker suite is unchanged and green: the DMA-escape and indirect-escape
 end-to-end tests, on both ISAs. So the extraction is faithful.

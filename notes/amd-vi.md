@@ -92,7 +92,7 @@ device reaches everything, untranslated. With it applied, on the AMD-Vi machine:
 
 - `virtio::tests::the_iommu_faults_a_dma_that_escapes_the_domain` fails with "the IOMMU recorded no
   fault". This is the replayable record,
-  `kernel/falsifications/virtio.tests.the_iommu_faults_a_dma_that_escapes_the_domain.patch`, and the
+  `kernel/falsifications/virtual_io.tests.the_iommu_faults_a_dma_that_escapes_the_domain.patch`, and the
   first to carry an `Environment:` line, which `script/falsifications` now reads.
 - the NVMe escape test fails with "the IOMMU recorded no fault", both escapes completing with status
   0. Attested 2026-10-05, not replayable: that test already carries its one record, which widens the

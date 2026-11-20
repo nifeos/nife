@@ -32,7 +32,7 @@ Modules by riscv64 median, in seconds. The ratio is riscv64 over aarch64 where b
 | module | aarch64 | riscv64 | x86_64 | ratio |
 |---|---|---|---|---|
 | `compositor_tests` | 21.5 | 31.7 | 34.6 | 1.47 |
-| `riscv_virtio_tests` | none | 30.3 | none | none |
+| `riscv_virtual_io_tests` | none | 30.3 | none | none |
 | `package_index_tests` | 19.5 | 19.9 | 18.9 | 1.02 |
 | `display_tests` | 9.2 | 14.9 | 14.8 | 1.63 |
 | `login_user_schedule_tests` | 8.4 | 12.8 | 0.0 | 1.53 |
@@ -49,12 +49,12 @@ The ten slowest tests on riscv64, median seconds:
 | s | test |
 |---|---|
 | 19.9 | `package_index_tests::a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_digest` |
-| 15.2 | `riscv_virtio_tests::an_accept_nobody_answers_ends_at_the_stacks_bound` |
+| 15.2 | `riscv_virtual_io_tests::an_accept_nobody_answers_ends_at_the_stacks_bound` |
 | 10.1 | `display_tests::a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout` |
 | 7.8 | `compositor_tests::three_clients_compose_into_one_scanout_and_the_host_sees_it` |
 | 6.3 | `login_user_schedule_tests::suspending_a_user_ends_their_schedule_and_refuses_them_until_resumed` |
 | 5.3 | `net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic` |
-| 5.3 | `riscv_virtio_tests::a_host_process_connects_to_the_guest_and_is_answered` |
+| 5.3 | `riscv_virtual_io_tests::a_host_process_connects_to_the_guest_and_is_answered` |
 | 5.2 | `net_confinement_tests::a_socket_holder_cannot_receive_on_its_socket_capability` |
 | 4.7 | `confined_fuzzer_tests::a_confined_fuzzer_reaches_nothing_it_was_not_granted` |
 | 3.9 | `nth_retype_tests::login_gives_back_everything_when_any_retype_of_a_login_fails` |
@@ -66,7 +66,7 @@ The comparison points are two scrapes recorded in milestone 807's block (the ris
 Between the 2026-10-06 scrape (320 `system_tests`, 129.0 s) and these runs (391 tests, 185.0 s), the suite gained 71 tests and about 56 s. What the data attributes:
 
 - **`package_index_tests`, about 20 s.** One test, added on 2026-10-09 (`git log` for the file). It did not exist at the scraped commit. It takes 19 to 20 s on all three architectures, so it is wall time, not emulation. It is the largest single cause and it is not riscv64-specific.
-- **`riscv_virtio_tests`, about 15 s.** The module went from 14.8 s (31 tests at the scraped commit) to 30.3 s (32 tests). One added test cannot account for a doubling, and the record does not say which test grew. Unexplained.
+- **`riscv_virtual_io_tests`, about 15 s.** The module went from 14.8 s (31 tests at the scraped commit) to 30.3 s (32 tests). One added test cannot account for a doubling, and the record does not say which test grew. Unexplained.
 - **`compositor_tests`, about 7 s.** 24.5 s over 11 tests became 31.7 s over 12.
 - `login_user_schedule_tests`, 12.8 s. Commit 642f021d4 (2026-10-12) moved login's schedule tests out of `login_tests` into this module. The two modules together are 17.6 s against the scrape's 18.0 s, so this is a move and not growth.
 - Falls. `timetable_tests` fell from 12.2 s to 4.2 s, which is consistent with the calendar test's two five-second waits removed in PR #1779. `login_tests` fell from 18.0 s to 4.8 s because of that move.

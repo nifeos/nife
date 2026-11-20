@@ -34,7 +34,7 @@
 
 use graphics_contract as gfx;
 use user_mode_runtime::mapped_window::{MappedWindow, WindowInteger};
-use user_mode_runtime::virtio::virtio_ring_barrier;
+use user_mode_runtime::virtual_io::virtual_io_ring_barrier;
 use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
 };
@@ -45,10 +45,10 @@ const REPORT: u64 = 0;
 /// Slot 1, an `Interrupt`: the device's completion interrupt, arriving as a message.
 #[doc(alias = "irq")]
 const INTERRUPT: u64 = 1;
-/// Slot 2, a `Virtio`: the confined transport. The device's registers are not mapped here, so this
+/// Slot 2, a `VirtualIo`: the confined transport. The device's registers are not mapped here, so this
 /// process cannot program a queue address or ring a doorbell; the kernel does both, and validates
 /// every descriptor first (notes/dma.md).
-const VIRTIO: u64 = 2;
+const VIRTUAL_IO: u64 = 2;
 /// Slot 3, the display endpoint this driver receives on: where clients ask for a flush.
 const DISPLAY: u64 = 3;
 /// Slot 4: the untyped this driver spends on the page tables its DMA region needs.
@@ -65,7 +65,7 @@ const DMA_PAGE_FRAMES: u64 = 1 + gfx::SURFACE_PAGE_FRAMES as u64;
 
 /// Where this driver puts its DMA region. Its choice, not the kernel's: it holds the frames and maps
 /// them (milestone 108). The physical base, which descriptors need, is read out of the region
-/// itself (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`; see
+/// itself (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`; see
 /// `_start`).
 ///
 /// **2 MiB-aligned** (milestone 142 (a text display good enough that people use it instead of a
@@ -75,7 +75,7 @@ const DMA_PAGE_FRAMES: u64 = 1 + gfx::SURFACE_PAGE_FRAMES as u64;
 const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0100_0000);
 
 // --- virtio-mmio v2 register offsets. The PCI transport answers this same vocabulary
-// (kernel/src/virtio.rs, the transport seam), so this driver reads like every other one here even
+// (kernel/src/virtual_io.rs, the transport seam), so this driver reads like every other one here even
 // though a virtio-gpu only ever arrives over PCIe on our boards. ---
 const MAGIC: u64 = 0x000;
 const DEVICE_ID: u64 = 0x008;
@@ -102,7 +102,7 @@ const F_ACCESS_PLATFORM_HI: u32 = 1 << 1;
 
 /// The virtio device type a GPU reports. The kernel's PCI transport answers `DEVICE_ID` with the
 /// type recovered from the PCI id, so this check means the same thing on either bus.
-const VIRTIO_ID_GPU: u32 = 16;
+const VIRTUAL_IO_ID_GPU: u32 = 16;
 
 /// The control virtqueue. A virtio-gpu also has a cursor queue (1); this driver has no cursor, so it
 /// never sets that queue up, which keeps the confinement's two-queue ceiling untouched.
@@ -116,7 +116,7 @@ const VIRTQ_DESC_F_WRITE: u16 = 2;
 
 // --- The DMA region's layout. Page 0 is driver-private; the surface starts at page 1. ---
 //
-// The ring offsets are the kernel's contract (kernel/src/virtio.rs: queue q's rings sit at
+// The ring offsets are the kernel's contract (kernel/src/virtual_io.rs: queue q's rings sit at
 // q * 0x200 + {0x000, 0x080, 0x100}); queue 0 is the only one we use. The request and response
 // buffers sit above both queues' ring blocks, the same place the net driver puts its packet buffers.
 const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000;
@@ -155,7 +155,7 @@ const ROLE_BACKING_ESCAPE: u64 = 1;
 
 /// Failure codes reported to the spawner, so a bring-up failure names its step instead of hanging.
 /// Each is OR'd into a `0xDEAD_...` word the kernel test prints.
-const E_NOT_VIRTIO: u64 = 0x01;
+const E_NOT_VIRTUAL_IO: u64 = 0x01;
 const E_NOT_GPU: u64 = 0x02;
 const E_FEATURES: u64 = 0x03;
 const E_QUEUE: u64 = 0x04;
@@ -168,13 +168,13 @@ const E_DMA_REFUSED: u64 = 0x0A;
 const E_NO_COMPLETION: u64 = 0x0B;
 
 fn mr(off: u64) -> u32 {
-    user_mode_runtime::virtio::read_register(VIRTIO, off) as u32
+    user_mode_runtime::virtual_io::read_register(VIRTUAL_IO, off) as u32
 }
 
 fn mw(off: u64, v: u32) {
     // Only DMA-*safe* registers reach the device; the queue-address and notify registers are
     // refused by the kernel and go through SETUP_QUEUE / NOTIFY instead.
-    user_mode_runtime::virtio::write_register(VIRTIO, off, v as u64);
+    user_mode_runtime::virtual_io::write_register(VIRTUAL_IO, off, v as u64);
 }
 
 // SAFETY: the `MAP` loop in `_start` maps `DMA_PAGE_FRAMES` frames read/write at `DMA_VA` before any
@@ -262,13 +262,13 @@ fn submit(direct_memory_access_phys: u64, req_len: u32) -> u32 {
         AVAILABLE_RING_OFFSET_BYTES + 4 + (idx as u64 % QSIZE as u64) * 2,
         0,
     ); // ring[idx] = head 0
-    virtio_ring_barrier(); // the descriptors and the ring slot must be visible before idx moves
+    virtual_io_ring_barrier(); // the descriptors and the ring slot must be visible before idx moves
     direct_memory_access_write::<u16>(AVAILABLE_RING_OFFSET_BYTES + 2, idx.wrapping_add(1));
-    virtio_ring_barrier(); // idx must be visible before the kernel rings the device
+    virtual_io_ring_barrier(); // idx must be visible before the kernel rings the device
 
     // The kernel validates both descriptors against our DMA region, copies them into the shadow
     // ring the device actually reads, and only then rings the doorbell.
-    if user_mode_runtime::virtio::notify(VIRTIO, CONTROL_Q) < 0 {
+    if user_mode_runtime::virtual_io::notify(VIRTUAL_IO, CONTROL_Q) < 0 {
         die(E_DMA_REFUSED);
     }
 
@@ -282,7 +282,7 @@ fn submit(direct_memory_access_phys: u64, req_len: u32) -> u32 {
         let istatus = mr(INTERRUPT_STATUS);
         mw(INTERRUPT_ACK, istatus);
         interrupt_acknowledge(INTERRUPT); // re-enable the line the kernel masked when it fired
-        virtio_ring_barrier();
+        virtual_io_ring_barrier();
         if direct_memory_access_read::<u16>(USED_RING_OFFSET_BYTES + 2) != used_before {
             return direct_memory_access_read::<u32>(RESPONSE_OFFSET_BYTES);
         }
@@ -295,9 +295,9 @@ fn submit(direct_memory_access_phys: u64, req_len: u32) -> u32 {
 /// device inside our grant.
 fn initialize(direct_memory_access_phys: u64) -> (u32, u32) {
     if mr(MAGIC) != 0x7472_6976 {
-        die(E_NOT_VIRTIO); // not "virt": we are not talking to a virtio device at all
+        die(E_NOT_VIRTUAL_IO); // not "virt": we are not talking to a virtio device at all
     }
-    if mr(DEVICE_ID) != VIRTIO_ID_GPU {
+    if mr(DEVICE_ID) != VIRTUAL_IO_ID_GPU {
         die(E_NOT_GPU); // the kernel handed us something that is not a GPU
     }
 
@@ -325,7 +325,7 @@ fn initialize(direct_memory_access_phys: u64) -> (u32, u32) {
     }
 
     // The kernel places queue 0's rings at the contract's offsets.
-    if user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, CONTROL_Q) != 0 {
+    if user_mode_runtime::virtual_io::setup_queue(VIRTUAL_IO, QSIZE as u64, CONTROL_Q) != 0 {
         die(E_QUEUE);
     }
 
@@ -489,13 +489,14 @@ fn start(role: u64, _arg1: u64, arg2: u64) -> ! {
     // Where the region is, read out of the region (milestone 600 (provisional)): descriptors speak
     // physical addresses, and the progenitor that builds this driver holds the run as a capability
     // and knows none, so whoever built this process wrote the base into the tail of the first page
-    // (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past
+    // (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past
     // `RESPONSE_OFFSET_BYTES`'s 408 bytes).
     // SAFETY: the whole run was just mapped read/write at `DMA_VA`, and the offset is inside its
     // first page.
     let direct_memory_access_phys = unsafe {
         core::ptr::read_volatile(
-            (DMA_VA + abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET)
+            (DMA_VA
+                + abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET)
                 as *const u64,
         )
     };

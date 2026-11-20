@@ -171,54 +171,69 @@ pub const COMMAND_BUS_MASTER_ENABLE: u16 = 1 << 2;
 const STATUS_CAPABILITIES_LIST: u16 = 1 << 4;
 
 /// virtio's PCI vendor id (Red Hat, 0x1af4), from virtio 1.2, section 4.1.2.
-pub const VIRTIO_VENDOR: u16 = 0x1af4;
+///
+/// Name: provisional. Spelled out from `VIRTIO_VENDOR`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_VENDOR: u16 = 0x1af4;
 /// The modern virtio block device id: 0x1040 plus device type 2 (virtio 1.2, section 4.1.2.1).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_BLK_MODERN`, which also matches
-/// [`VIRTIO_TYPE_BLOCK`].
-pub const VIRTIO_BLOCK_MODERN: u16 = 0x1042;
+/// [`VIRTUAL_IO_TYPE_BLOCK`].
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_BLOCK_MODERN: u16 = 0x1042;
 /// The transitional (legacy-capable) virtio block device id (virtio 1.2, section 4.1.2.1). The
 /// crate does not decode legacy functions, but it recognizes the id so a caller can say "found a
 /// disk, but it is transitional" instead of "no disk".
 ///
 /// Name: provisional. Spelled out from `VIRTIO_BLK_TRANSITIONAL`.
-pub const VIRTIO_BLOCK_TRANSITIONAL: u16 = 0x1001;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_BLOCK_TRANSITIONAL: u16 = 0x1001;
 
 /// The modern virtio network device id: 0x1040 plus device type 1 (virtio 1.2, section 4.1.2.1).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_NET_MODERN`.
-pub const VIRTIO_NETWORK_MODERN: u16 = 0x1041;
-/// The transitional virtio network device id, the legacy twin of [`VIRTIO_NETWORK_MODERN`]. A
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_NETWORK_MODERN: u16 = 0x1041;
+/// The transitional virtio network device id, the legacy twin of [`VIRTUAL_IO_NETWORK_MODERN`]. A
 /// caller that drives modern functions only still reports a transitional one as such rather than
 /// as absent.
 ///
 /// Name: provisional. Spelled out from `VIRTIO_NET_TRANSITIONAL`.
-pub const VIRTIO_NETWORK_TRANSITIONAL: u16 = 0x1000;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_NETWORK_TRANSITIONAL: u16 = 0x1000;
 
 /// The modern virtio GPU device id: 0x1040 plus device type 16 (virtio 1.2, section 4.1.2.1). There
 /// is **no transitional twin**: the legacy id space (0x1000 to 0x103f) was allocated before
 /// virtio-gpu existed, so a GPU is modern or nothing and a caller passes `None` for the legacy id
 /// rather than inventing one. QEMU's `virtio-gpu-pci` presents exactly this id.
-pub const VIRTIO_GPU_MODERN: u16 = 0x1050;
+///
+/// Name: provisional. Spelled out from `VIRTIO_GPU_MODERN`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_GPU_MODERN: u16 = 0x1050;
 
 /// The modern virtio input device id: 0x1040 plus device type 18 (virtio 1.2, section 4.1.2.1).
-/// **No transitional twin**, for the reason [`VIRTIO_GPU_MODERN`] has none. QEMU's
+/// **No transitional twin**, for the reason [`VIRTUAL_IO_GPU_MODERN`] has none. QEMU's
 /// `virtio-keyboard-pci` presents exactly this id, and so does `virtio-tablet-pci`: **the id names
 /// the device class, not the keyboard**, so a machine with both must read the function's
 /// configuration to tell them apart.
-pub const VIRTIO_INPUT_MODERN: u16 = 0x1052;
+///
+/// Name: provisional. Spelled out from `VIRTIO_INPUT_MODERN`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_INPUT_MODERN: u16 = 0x1052;
 
 /// The modern virtio entropy device id: 0x1040 plus device type 4 (virtio 1.2, section 4.1.2.1).
-/// Unlike the GPU and the input device this one **does** have a legacy id, [`VIRTIO_ENTROPY_TRANSITIONAL`]:
+/// Unlike the GPU and the input device this one **does** have a legacy id, [`VIRTUAL_IO_ENTROPY_TRANSITIONAL`]:
 /// device type 4 is early enough to have been allocated a slot in the 0x1000 to 0x103f space.
 ///
 /// Name: provisional. Spelled out from `VIRTIO_RNG_MODERN`; the virtio specification calls device
-/// type 4 the entropy device, as [`VIRTIO_TYPE_ENTROPY`] does.
-pub const VIRTIO_ENTROPY_MODERN: u16 = 0x1044;
-/// The transitional virtio entropy device id, the legacy twin of [`VIRTIO_ENTROPY_MODERN`].
+/// type 4 the entropy device, as [`VIRTUAL_IO_TYPE_ENTROPY`] does.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_ENTROPY_MODERN: u16 = 0x1044;
+/// The transitional virtio entropy device id, the legacy twin of [`VIRTUAL_IO_ENTROPY_MODERN`].
 ///
 /// Name: provisional. Spelled out from `VIRTIO_RNG_TRANSITIONAL`.
-pub const VIRTIO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
 
 /// The virtio **device type** numbers (virtio 1.2, section 5), as the virtio-mmio `DeviceID`
 /// register reports them and as the PCI ids above encode them (`0x1040 + type`). A host that wraps
@@ -228,15 +243,28 @@ pub const VIRTIO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
 /// Network device.
 ///
 /// Name: provisional. Spelled out from `VIRTIO_TYPE_NET`.
-pub const VIRTIO_TYPE_NETWORK: u32 = 1;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_NETWORK: u32 = 1;
 /// The virtio block device type (virtio 1.2, section 5.2).
-pub const VIRTIO_TYPE_BLOCK: u32 = 2;
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_BLOCK`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_BLOCK: u32 = 2;
 /// The virtio entropy device type (virtio 1.2, section 5.4).
-pub const VIRTIO_TYPE_ENTROPY: u32 = 4;
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_ENTROPY`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_ENTROPY: u32 = 4;
 /// The virtio GPU device type (virtio 1.2, section 5.7).
-pub const VIRTIO_TYPE_GPU: u32 = 16;
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_GPU`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_GPU: u32 = 16;
 /// The virtio input device type (virtio 1.2, section 5.8).
-pub const VIRTIO_TYPE_INPUT: u32 = 18;
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_INPUT`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_INPUT: u32 = 18;
 
 /// **The buses a type-1 header says lie behind it.** Firmware's own enumeration wrote these; a
 /// caller that does not read them enumerates bus 0 and calls the rest of the machine absent (PCI-to-PCI
@@ -440,13 +468,13 @@ pub fn walk(
 /// Enumerating a bus with no bus: a test's closure over an array stands in for the ECAM window.
 ///
 /// ```
-/// use pci_configuration_space::{BusDeviceFunction, VENDOR_ID_REGISTER, VIRTIO_VENDOR, enumerate};
+/// use pci_configuration_space::{BusDeviceFunction, VENDOR_ID_REGISTER, VIRTUAL_IO_VENDOR, enumerate};
 ///
 /// // A config space with exactly one function: modern virtio-blk at 00:01.0. Everything else reads
 /// // 0xffff, which is the bus's way of saying nobody is home.
 /// let mut read32 = |bus_device_function: BusDeviceFunction, off: u64| -> u32 {
 ///     if bus_device_function == (BusDeviceFunction { bus: 0, device: 1, function: 0 }) && off == VENDOR_ID_REGISTER {
-///         (0x1042 << 16) | VIRTIO_VENDOR as u32 // device 0x1042 in the high half
+///         (0x1042 << 16) | VIRTUAL_IO_VENDOR as u32 // device 0x1042 in the high half
 ///     } else if off == VENDOR_ID_REGISTER {
 ///         0xffff_ffff
 ///     } else {
@@ -461,7 +489,7 @@ pub fn walk(
 ///
 /// assert_eq!(found.len(), 1);
 /// let (bus_device_function, vendor, device) = found[0];
-/// assert_eq!((vendor, device), (VIRTIO_VENDOR, 0x1042));
+/// assert_eq!((vendor, device), (VIRTUAL_IO_VENDOR, 0x1042));
 ///
 /// // ECAM addressing: 4 KiB per function, `bus:8 | device:5 | function:3 | offset:12`.
 /// assert_eq!(bus_device_function.ecam_offset(), 1 << 15);
@@ -652,7 +680,7 @@ type CapabilityVisitor<'a> =
     dyn FnMut(u64, u32, &mut dyn FnMut(BusDeviceFunction, u64) -> u32) -> bool + 'a;
 
 /// **The one walk of a function's capability list** (PCI Local Bus Specification 3.0, section 6.7),
-/// which [`virtio_capabilities`], [`msi_capability`] and [`msix_capability`] share so a single bound
+/// which [`virtual_io_capabilities`], [`msi_capability`] and [`msix_capability`] share so a single bound
 /// and a single proof cover all three.
 ///
 /// Status bit 4 says a list exists, the pointer at [`CAPABILITIES_POINTER_REGISTER`] gives the first
@@ -689,22 +717,26 @@ const CAPABILITY_ID_VENDOR: u8 = 0x09;
 /// section 4.1.4).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_CAP_COMMON`.
-pub const VIRTIO_CAPABILITY_COMMON: u8 = 1;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_CAPABILITY_COMMON: u8 = 1;
 /// The `cfg_type` for the notification structure: the doorbells (virtio 1.2, section 4.1.4.4).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_CAP_NOTIFY`.
-pub const VIRTIO_CAPABILITY_NOTIFY: u8 = 2;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_CAPABILITY_NOTIFY: u8 = 2;
 /// The `cfg_type` for the interrupt status structure (virtio 1.2, section 4.1.4.5): one byte whose
 /// read acknowledges a legacy interrupt.
 ///
 /// Name: provisional. Spelled out from `VIRTIO_CAP_ISR`, with the specification's abbreviation as
 /// the alias.
 #[doc(alias = "ISR")]
-pub const VIRTIO_CAPABILITY_INTERRUPT_STATUS: u8 = 3;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_CAPABILITY_INTERRUPT_STATUS: u8 = 3;
 /// The `cfg_type` for the device-specific configuration structure (virtio 1.2, section 4.1.4.6).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_CAP_DEVICE`.
-pub const VIRTIO_CAPABILITY_DEVICE: u8 = 4;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_CAPABILITY_DEVICE: u8 = 4;
 
 /// A virtio vendor capability, decoded (virtio 1.2, section 4.1.4, `struct virtio_pci_cap`): which
 /// register block it names, and where that block lives as (BAR index, offset into the BAR,
@@ -715,8 +747,9 @@ pub const VIRTIO_CAPABILITY_DEVICE: u8 = 4;
 /// `notify_offset_multiplier` spell out the specification's `cfg_type` and `notify_off_multiplier`,
 /// which stay as aliases because they are the specification's own field names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VirtioCapability {
-    /// Which structure this capability describes: one of the `VIRTIO_CAPABILITY_` constants, or a
+#[doc(alias = "virtio")]
+pub struct VirtualIoCapability {
+    /// Which structure this capability describes: one of the `VIRTUAL_IO_CAPABILITY_` constants, or a
     /// value a later specification adds.
     #[doc(alias = "cfg_type")]
     pub configuration_type: u8,
@@ -742,16 +775,17 @@ pub struct VirtioCapability {
 /// entry, so it is skipped.
 ///
 /// Name: provisional. Spelled out from `virtio_caps`.
-pub fn virtio_capabilities(
+#[doc(alias = "virtio")]
+pub fn virtual_io_capabilities(
     bus_device_function: BusDeviceFunction,
     read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
-    f: &mut dyn FnMut(VirtioCapability),
+    f: &mut dyn FnMut(VirtualIoCapability),
 ) {
     capabilities(bus_device_function, read32, &mut |at, head, read32| {
         let capability_id = (head & 0xff) as u8;
         let capability_length = (head >> 16) & 0xff;
         let configuration_type = ((head >> 24) & 0xff) as u8;
-        let least_length = if configuration_type == VIRTIO_CAPABILITY_NOTIFY {
+        let least_length = if configuration_type == VIRTUAL_IO_CAPABILITY_NOTIFY {
             20
         } else {
             16
@@ -759,12 +793,12 @@ pub fn virtio_capabilities(
         if capability_id == CAPABILITY_ID_VENDOR && capability_length >= least_length {
             // struct virtio_pci_cap: u8 id, next, cap_len, cfg_type; u8 bar; 3 pad; u32 offset,
             // length; the notify capability carries one extra u32 after that.
-            f(VirtioCapability {
+            f(VirtualIoCapability {
                 configuration_type,
                 bar: (read32(bus_device_function, at + 4) & 0xff) as u8,
                 offset: read32(bus_device_function, at + 8),
                 length_bytes: read32(bus_device_function, at + 12),
-                notify_offset_multiplier: if configuration_type == VIRTIO_CAPABILITY_NOTIFY {
+                notify_offset_multiplier: if configuration_type == VIRTUAL_IO_CAPABILITY_NOTIFY {
                     read32(bus_device_function, at + 16)
                 } else {
                     0
@@ -870,7 +904,7 @@ impl MsiCapability {
 }
 
 /// Find the **MSI capability** of `bus_device_function`, or `None`. The same bounded walk as [`msix_capability`]
-/// and [`virtio_capabilities`]: at most 64 entries, so a cycle in the list ends the walk, and an
+/// and [`virtual_io_capabilities`]: at most 64 entries, so a cycle in the list ends the walk, and an
 /// offset that is a multiple of four, since the list's pointers drop their low two bits.
 ///
 /// Name: provisional. Spelled out from `msi_cap`.
@@ -921,7 +955,10 @@ pub const MSIX_ENTRY_MASKED: u32 = 1;
 /// The virtio-pci "no vector" value for `config_msix_vector` and `queue_msix_vector` (virtio 1.2,
 /// section 4.1.4.3). Written to a queue's vector field it means "raise no MSI-X for this queue",
 /// which is also what a device reset leaves there.
-pub const VIRTIO_MSIX_NO_VECTOR: u16 = 0xffff;
+///
+/// Name: provisional. Spelled out from `VIRTIO_MSIX_NO_VECTOR`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_MSIX_NO_VECTOR: u16 = 0xffff;
 
 /// **Where a function should write to raise an interrupt, and what to write there.** One MSI-X
 /// table entry's payload (PCI Local Bus Specification 3.0, section 6.8.2.7), as the interrupt
@@ -946,7 +983,7 @@ pub struct MsiTarget {
 
 /// Find the **MSI-X capability** of `bus_device_function`, or `None` if the function has none.
 ///
-/// Same walk as [`virtio_capabilities`], and bounded the same way (64 hops), for the same reason: the
+/// Same walk as [`virtual_io_capabilities`], and bounded the same way (64 hops), for the same reason: the
 /// list is a function-supplied linked list, so a broken or hostile function must terminate the walk
 /// rather than hang the caller that is enumerating it.
 ///
@@ -1183,7 +1220,7 @@ mod verification {
             function: kani::any(),
         };
         let mut calls = 0u32;
-        virtio_capabilities(bus_device_function, &mut |_, _| kani::any(), &mut |_| {
+        virtual_io_capabilities(bus_device_function, &mut |_, _| kani::any(), &mut |_| {
             calls += 1;
         });
         assert!(calls <= 64);

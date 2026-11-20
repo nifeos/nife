@@ -206,7 +206,7 @@ components/src/timetable.rs::load
 
 components/src/timetable.rs::staged
 
-components/src/virtio_net_transport.rs::bring_up
+components/src/virtual_io_net_transport.rs::bring_up
 
 crates/abi/src/address_space.rs
 
@@ -422,11 +422,11 @@ crates/abi/src/usage.rs::THREADS
 
 crates/abi/src/usage.rs::is_known
 
-crates/abi/src/virtio.rs
+crates/abi/src/virtual_io.rs
 
-crates/abi/src/virtio.rs::NOTIFY
+crates/abi/src/virtual_io.rs::NOTIFY
 
-crates/abi/src/virtio.rs::SETUP_QUEUE
+crates/abi/src/virtual_io.rs::SETUP_QUEUE
 
 crates/address_space_identifier/src/lib.rs::ASIDS
 
@@ -5360,26 +5360,10 @@ crates/pci_configuration_space/src/lib.rs::MSI_ENABLE
 
 
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_GPU_MODERN
-
-crates/pci_configuration_space/src/lib.rs::VIRTIO_INPUT_MODERN
-
-crates/pci_configuration_space/src/lib.rs::VIRTIO_MSIX_NO_VECTOR
 
 
 
 
-
-crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_BLOCK
-
-crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_ENTROPY
-
-crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_GPU
-
-crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_INPUT
-
-
-crates/pci_configuration_space/src/lib.rs::VIRTIO_VENDOR
 
 
 crates/pci_configuration_space/src/lib.rs::bridge_buses
@@ -7197,7 +7181,7 @@ crates/user_mode_runtime/src/socket_frame.rs::set_len
 
 crates/user_mode_runtime/src/syscall.rs::invoke
 
-crates/user_mode_runtime/src/virtio.rs
+crates/user_mode_runtime/src/virtual_io.rs
 
 crates/video_terminal/src/cell.rs::Attr
 
@@ -7683,8 +7667,6 @@ kernel/src/arch/aarch64/mmu.rs::Format
 
 kernel/src/arch/aarch64/mmu.rs::KERNEL_VA_BASE
 
-kernel/src/arch/aarch64/mmu.rs::VIRTIO_MMIO_BASE
-
 kernel/src/arch/aarch64/mmu.rs::activate_user
 
 kernel/src/arch/aarch64/mmu.rs::asid_of
@@ -7857,8 +7839,6 @@ kernel/src/arch/riscv64/mmu.rs
 kernel/src/arch/riscv64/mmu.rs::Format
 
 kernel/src/arch/riscv64/mmu.rs::KERNEL_VA_BASE
-
-kernel/src/arch/riscv64/mmu.rs::VIRTIO_MMIO_BASE
 
 kernel/src/arch/riscv64/mmu.rs::activate_user
 
@@ -8033,14 +8013,6 @@ kernel/src/arch/x86_64/mmu.rs
 kernel/src/arch/x86_64/mmu.rs::Format
 
 kernel/src/arch/x86_64/mmu/device_windows.rs::PCI_BAR_MAPPED
-
-kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_MMIO_BASE
-
-kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_SLOTS
-
-kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTIO_SLOT_STRIDE
-
-kernel/src/arch/x86_64/mmu/device_windows.rs::virtio_slots
 
 kernel/src/arch/x86_64/mmu/kernel_map.rs::translate
 
@@ -9257,35 +9229,35 @@ kernel/src/user/raw_mode_service.rs::start_replaceable
 
 kernel/src/user/test_support.rs::wait_for
 
-kernel/src/user/virtio_service.rs
+kernel/src/user/virtual_io_service.rs
 
-kernel/src/user/virtio_service.rs::start
+kernel/src/user/virtual_io_service.rs::start
 
-kernel/src/user/virtio_service.rs::start_attacker
+kernel/src/user/virtual_io_service.rs::start_attacker
 
-kernel/src/user/virtio_service.rs::start_attacker_indirect
+kernel/src/user/virtual_io_service.rs::start_attacker_indirect
 
-kernel/src/user/virtio_service.rs::start_net
+kernel/src/user/virtual_io_service.rs::start_net
 
-kernel/src/user/virtio_service.rs::start_net_pci
+kernel/src/user/virtual_io_service.rs::start_net_pci
 
-kernel/src/user/virtio_service.rs::start_net_server
+kernel/src/user/virtual_io_service.rs::start_net_server
 
-kernel/src/user/virtio_service.rs::start_net_server_pci
+kernel/src/user/virtual_io_service.rs::start_net_server_pci
 
-kernel/src/user/virtio_service.rs::start_net_stack
+kernel/src/user/virtual_io_service.rs::start_net_stack
 
-kernel/src/user/virtio_service.rs::start_net_std
+kernel/src/user/virtual_io_service.rs::start_net_std
 
-kernel/src/user/virtio_service.rs::start_package_fetch
+kernel/src/user/virtual_io_service.rs::start_package_fetch
 
-kernel/src/user/virtio_service.rs::start_pci
+kernel/src/user/virtual_io_service.rs::start_pci
 
-kernel/src/user/virtio_service.rs::start_write_abandoner
+kernel/src/user/virtual_io_service.rs::start_write_abandoner
 
-kernel/src/user/virtio_service.rs::start_writer
+kernel/src/user/virtual_io_service.rs::start_writer
 
-kernel/src/user/virtio_service.rs::start_writer_pci
+kernel/src/user/virtual_io_service.rs::start_writer_pci
 
 kernel/src/user/x86_programs.rs
 
@@ -9315,8 +9287,7 @@ kernel/src/user/x86_programs.rs::receive_then_port_out
 
 kernel/src/user/x86_programs.rs::report
 
-kernel/src/virtio.rs
-
+kernel/src/virtual_io.rs
 
 notes/a-frame-per-filesystem-client-channel.md
 
@@ -9831,8 +9802,6 @@ notes/verification.md
 
 notes/verus.md
 
-notes/virtio.md
-
 notes/virtualization.md
 
 notes/visionfive2.md
@@ -10297,7 +10266,7 @@ system_tests/src/user/revoke_service.rs::wire
 
 system_tests/src/user/ripgrep_tests.rs
 
-system_tests/src/user/riscv_virtio_tests.rs
+system_tests/src/user/riscv_virtual_io_tests.rs
 
 system_tests/src/user/rm_program_tests.rs
 

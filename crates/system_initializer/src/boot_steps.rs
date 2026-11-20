@@ -362,7 +362,7 @@ fn start_entropy(
     let mut entropy_ready = false;
     let mut entropy_client: Option<u64> = None;
     if let Some(ent_program) = ent_elf {
-        entropy_client = start_virtio_entropy(g, ut, ent_program);
+        entropy_client = start_virtual_io_entropy(g, ut, ent_program);
         entropy_ready = entropy_client.is_some();
     }
     // Already proven by the kernel, and granted only when the trio was not.
@@ -383,15 +383,15 @@ fn start_entropy(
 /// exactly when the service answered `READY`; every path releases the trio, and every path but
 /// that one releases `request`.
 #[inline(never)]
-fn start_virtio_entropy(
+fn start_virtual_io_entropy(
     g: &BootEndowment,
     ut: u64,
     ent_program: &static_elf::Elf<'static>,
 ) -> Option<u64> {
     // `NoSuchSlot` on an ungranted slot is the probe; the trio is granted whole or not at all.
-    let magic = user_mode_runtime::virtio::read_register(g.virtio_rng, 0);
+    let magic = user_mode_runtime::virtual_io::read_register(g.virtual_io_rng, 0);
     if magic >= 0 {
-        if map_page_frame(g.virtio_rng_dma, RNG_DMA_PEEK_VA, true, ut) {
+        if map_page_frame(g.virtual_io_rng_dma, RNG_DMA_PEEK_VA, true, ut) {
             // SAFETY: just mapped read/write, one page, ours alone until entropy is built and holds
             // its own copy of the same frame;
             // `DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET` is inside it and
@@ -420,13 +420,13 @@ fn start_virtio_entropy(
                 &ChildEndowment {
                     capabilities: &[
                         (request, abi::rights::READ),
-                        (g.virtio_rng_interrupt, abi::rights::READ),
-                        (g.virtio_rng, abi::rights::WRITE),
+                        (g.virtual_io_rng_interrupt, abi::rights::READ),
+                        (g.virtual_io_rng, abi::rights::WRITE),
                         (ready, abi::rights::WRITE),
                     ],
                     maps: &[(
                         RNG_DMA_VA,
-                        g.virtio_rng_dma,
+                        g.virtual_io_rng_dma,
                         abi::address_space::MAP_READ_WRITE,
                     )],
                     stack_pages: CHILD_STACK_PAGES,
@@ -435,13 +435,13 @@ fn start_virtio_entropy(
             ));
             must_ok(start_child(
                 entropy,
-                RNG_MODE_VIRTIO,
+                RNG_MODE_VIRTUAL_IO,
                 direct_memory_access_phys,
                 0,
             ));
-            capability_delete(g.virtio_rng_interrupt);
-            capability_delete(g.virtio_rng);
-            capability_delete(g.virtio_rng_dma);
+            capability_delete(g.virtual_io_rng_interrupt);
+            capability_delete(g.virtual_io_rng);
+            capability_delete(g.virtual_io_rng_dma);
             // `READY` comes after the service's first bufferful from the device.
             let (verdict, _, _) = receive(ready);
             capability_delete(ready);
@@ -453,9 +453,9 @@ fn start_virtio_entropy(
                 None
             }
         } else {
-            capability_delete(g.virtio_rng_interrupt);
-            capability_delete(g.virtio_rng);
-            capability_delete(g.virtio_rng_dma);
+            capability_delete(g.virtual_io_rng_interrupt);
+            capability_delete(g.virtual_io_rng);
+            capability_delete(g.virtual_io_rng_dma);
             None
         }
     } else {
@@ -474,11 +474,15 @@ fn start_network(
     net_elf: Option<&static_elf::Elf<'static>>,
 ) -> Option<(u64, u64, u64)> {
     let mut network: Option<(u64, u64, u64)> = None;
-    if is_granted(g.virtio_net) {
+    if is_granted(g.virtual_io_net) {
         if let Some(net_program) = net_elf {
             network = Some(build_net_stack(ut, net_program, g));
         }
-        for trio in [g.virtio_net_interrupt, g.virtio_net, g.virtio_net_dma] {
+        for trio in [
+            g.virtual_io_net_interrupt,
+            g.virtual_io_net,
+            g.virtual_io_net_dma,
+        ] {
             capability_delete(trio);
         }
     } else if is_granted(g.net_stack_ep) {

@@ -31,9 +31,9 @@ exactly those thread ids. Every other kill after the hand-over still fails the g
 
 `kernel/src/self_test.rs` runs on every default boot and spawns, from the kernel,
 `kernel_test_subject`, `memory_region_depleter`, `block_driver` (through
-`user::virtio_service`) and, on a JH7110, `jh7110_entropy`, plus `user::supervised_child`'s fault
+`user::virtual_io_service`) and, on a JH7110, `jh7110_entropy`, plus `user::supervised_child`'s fault
 stub. Its own `BUGS` count up to six spawns per boot. The kernel files those checks need
-(`user/virtio_service.rs`, `user/x86_programs.rs`, `user/supervised_child.rs`,
+(`user/virtual_io_service.rs`, `user/x86_programs.rs`, `user/supervised_child.rs`,
 `user/memory_region_service.rs`) are about 900 code lines.
 
 ## The shape

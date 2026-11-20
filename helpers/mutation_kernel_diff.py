@@ -411,10 +411,10 @@ def selftest():
             ("kernel/src/self_test.rs", 7, "replace < with <= in check"),
             ("kernel/src/cap/proofs.rs", 4, "replace | with ^ in subset"),
             ("kernel/src/glob.rs", 2, "replace == with != in tests::helper"),
-            ("kernel/src/virtio.rs", 5, "replace * with / in Wire::step"),
+            ("kernel/src/virtual_io.rs", 5, "replace * with / in Wire::step"),
         ))
         kept, dropped, listed = plan([str(raw)], str(toml), roots)
-        assert [b.file for b in kept["aarch64"]] == ["kernel/src/revoke.rs", "kernel/src/virtio.rs"]
+        assert [b.file for b in kept["aarch64"]] == ["kernel/src/revoke.rs", "kernel/src/virtual_io.rs"]
         assert dropped == 4 and listed == 6, (dropped, listed)
 
         # The route: an arch file boots on its own architecture, everything else on aarch64.

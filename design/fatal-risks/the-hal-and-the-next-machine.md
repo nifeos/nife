@@ -228,7 +228,7 @@ driver was x86_64's own reason for existing (DECISIONS §86 (whether an NVMe dri
 kernel, and what capability would let it)), which is the control case. When a driver is built *for*
 the new architecture the third arm arrives with it. And when it predates the architecture it does
 not. Closed 2026-09-23 by milestone 186 into one function,
-`user_mode_runtime::virtio::virtio_ring_barrier` (name provisional), whose fourth-architecture arm
+`user_mode_runtime::virtual_io::virtual_io_ring_barrier` (name provisional), whose fourth-architecture arm
 is a `compile_error!`; [`notes/architecture-list-sweep.md`](../../notes/architecture-list-sweep.md)
 has the eleven findings, the classification and what is still open.
 

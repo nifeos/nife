@@ -114,7 +114,7 @@ removes nothing on that architecture and never has. riscv64's arm halts too, and
 its own arch tour for `user::boot_progenitor`, so 5,828 bytes is the difference between two RISC-V
 boot paths rather than the cost of the aarch64 tour. The thing the surviving feature removes is one
 architecture's 14 KB, and symbol attribution says almost none of it was ever the narrative.
-`console_service` ~3.0 KB; the two never-yielding spinner closures ~3.3 KB; `virtio_service` ~1.7 KB;
+`console_service` ~3.0 KB; the two never-yielding spinner closures ~3.3 KB; `virtual_io_service` ~1.7 KB;
 `memory_region_service` ~1.3 KB; `kernel_main` itself +1,460. Each of those is a demonstration
 needing a kernel privilege, which is why milestone 267 (the tour is three things wearing one name) left them where they are.
 

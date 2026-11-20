@@ -91,7 +91,7 @@ timetable" (the package was named `coreutils` then), and a planted untracked-the
 | `kernel` | base | crates: `address_space_identifier`, `capability_table`, `cpu_set`, `direct_memory_access_validator`, `firmware_configuration`, `inter_process_communication`, `intrusive_queue`, `jh7110_clock_and_reset*`, `jh7110_pci_express*`, `jh7110_watchdog`, `kernel`, `memory_corruption_canary_gate`, `memory_regions`, `page_frames`, `page_tables`, `pci_configuration_space*`, `test_and_set_lock*`, `thread_wake_handshake`, `work_steal_slot`; programs: `kernel` | interfaces only; 3 dated exception(s) | `kernel` (provisional) |
 | `login` | base | crates: `credentialer`; programs: `credentialer`, `identity_provisioner`, `login`, `login_audit_receiver`, `user_timetable_keeper` | `timetable` | `login` (provisional) |
 | `mdr` | base | crates: `mdr`; programs: `mdr` | interfaces only | `mdr` (provisional) |
-| `network` | base | crates: `domain_name_resolution_contract*`, `http_response`, `network_stack`; programs: `domain_name_resolver`, `net_stack`; paths: `components/src/virtio_net_transport.rs`, `components/src/socket_test_client.rs` | interfaces only | `network` (provisional) |
+| `network` | base | crates: `domain_name_resolution_contract*`, `http_response`, `network_stack`; programs: `domain_name_resolver`, `net_stack`; paths: `components/src/virtual_io_net_transport.rs`, `components/src/socket_test_client.rs` | interfaces only | `network` (provisional) |
 | `process-tools` | base | crates: `free`, `number_writer`, `pgrep`, `pmap`, `ps`, `slabtop`, `top`, `uptime`, `vmstat`; programs: `free`, `pgrep`, `pmap`, `ps`, `slabtop`, `top`, `uptime`, `vmstat`; paths: `packages/uptime.recipe.toml`, `packages/uptime-riscv64.recipe.toml`, `packages/uptime-x86_64.recipe.toml` | interfaces only | `process-tools` (provisional) |
 | `swish` | base | crates: `swish`; programs: `swish` | interfaces only | `swish` (provisional) |
 | `terminal` | base | crates: `line_editor*`, `line_editor_component*`; programs: `console`, `input`, `line_editor`, `terminal_sink_caretaker`, `terminal_supervisor` | interfaces only | `terminal` (provisional) |
@@ -155,7 +155,7 @@ The judgment calls, each a place the table could reasonably differ:
 - `line_editor` is an interface of `terminal`, and `compositor` of `display`. Each crate is the
   contract its package serves and the engine behind it at once.
 - The `components` crate itself sits in `init`. It is a build container that the moves dissolve.
-- `socket_test_client.rs` and `virtio_net_transport.rs` are `path` members of `network`, because
+- `socket_test_client.rs` and `virtual_io_net_transport.rs` are `path` members of `network`, because
   `net_stack` includes both through `#[path]` and neither is a binary.
 - `redoxfs` holds the vendored library, the server and the host tool. calef ruled its home with
   the name (2026-10-28, relayed by the maintainer): the package leaves as `nifeos/redoxfs` under

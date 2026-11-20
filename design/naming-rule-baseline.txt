@@ -296,8 +296,6 @@ kernel/src/user/non_volatile_memory_express_service.rs::DmaEscape spelled-out
 
 kernel/src/user/non_volatile_memory_express_service.rs::start_dma_escape spelled-out
 
-kernel/src/user/virtio_dma.rs::virtio_dma spelled-out
-
 notes/capabilities/ipc-endpoints.md::ipc-endpoints spelled-out
 
 notes/cross-os-reference-columns.md::cross-os-reference-columns spelled-out

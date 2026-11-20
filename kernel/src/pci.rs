@@ -391,7 +391,7 @@ fn cfg_write32(bus_device_function: BusDeviceFunction, off: u64, v: u32) {
 /// (a disk and a NIC differ only in the driver above this), so both `find_block_device` and
 /// `find_net_device` return it.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct PciVirtioDevice {
+pub(crate) struct PciVirtualIoDevice {
     /// Which function this is, for the boot tours' prints; every other build (tests, the shell
     /// and bench boots) drives the device without ever naming it, so the lint is quieted rather
     /// than chased through four cfg combinations.
@@ -412,12 +412,12 @@ pub(crate) struct PciVirtioDevice {
     /// arch layer resolves it.
     pub intid: u32,
     /// Which MSI-X table entry [`intid`](Self::intid) was programmed into, or
-    /// `pci_configuration_space::VIRTIO_MSIX_NO_VECTOR` when this function delivers INTx (both `virt` boards). It
+    /// `pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR` when this function delivers INTx (both `virt` boards). It
     /// travels with the transport because a virtio queue is told its vector at queue-setup time, in
-    /// `virtio::setup_queue`, and a device reset clears it.
+    /// `virtual_io::setup_queue`, and a device reset clears it.
     pub msix_vector: u16,
     /// The PCIe requester id (`bus:8 | dev:5 | fn:3`), the id the IOMMU keys its per-device tables
-    /// on (milestone 16b). Carried through to `virtio::register` so the device is confined to its
+    /// on (milestone 16b (real hardware and IOMMU-backed driver isolation)). Carried through to `virtual_io::register` so the device is confined to its
     /// DMA region in hardware.
     pub rid: u32,
     /// The virtio device type (2 = block, 1 = net, 16 = gpu), recovered from the PCI device id
@@ -433,13 +433,13 @@ pub(crate) struct PciVirtioDevice {
     /// (`driver_process_contract::virtual_io::register_window`): the four structures as the capability
     /// list names them, each BAR's base and size, and the MSI-X table and pending-bit array this
     /// function must never map. A mediated grant reads none of it.
-    pub direct: PciVirtioDirect,
+    pub direct: PciVirtualIoDirect,
 }
 
 /// The parts of a virtio-pci function a direct grant is drawn from, read once at bring-up.
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-starter.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct PciVirtioDirect {
+pub(crate) struct PciVirtualIoDirect {
     /// The four structures, by BAR and offset.
     pub structures: driver_process_contract::virtual_io::Structures,
     /// Each BAR's physical base, zero for one the function does not have.
@@ -452,26 +452,26 @@ pub(crate) struct PciVirtioDirect {
 
 /// Find the first modern virtio-blk function on the bus and bring it up. `None` if there is no
 /// PCI disk (an empty bus reads all-ones and enumerates nothing).
-pub(crate) fn find_block_device() -> Option<PciVirtioDevice> {
-    let bus_device_function = find_virtio_bdf(
-        pci_configuration_space::VIRTIO_BLOCK_MODERN,
-        Some(pci_configuration_space::VIRTIO_BLOCK_TRANSITIONAL),
+pub(crate) fn find_block_device() -> Option<PciVirtualIoDevice> {
+    let bus_device_function = find_virtual_io_bdf(
+        pci_configuration_space::VIRTUAL_IO_BLOCK_MODERN,
+        Some(pci_configuration_space::VIRTUAL_IO_BLOCK_TRANSITIONAL),
         "virtio-blk",
     )?;
     bring_up(
         bus_device_function,
-        pci_configuration_space::VIRTIO_TYPE_BLOCK,
+        pci_configuration_space::VIRTUAL_IO_TYPE_BLOCK,
     )
 }
 
 /// Find the `n`-th (0-based) modern virtio-blk function on the bus and bring it up, in
 /// bus:device.function order. `None` if the bus has no such function.
 ///
-/// The PCI half of [`crate::virtio::find_block_device_n`]'s ordering, for `q35`, which has no
+/// The PCI half of [`crate::virtual_io::find_block_device_n`]'s ordering, for `q35`, which has no
 /// virtio-mmio bus. [`find_block_device`] stays separate because the PCIe transport tests
-/// (`virtio_service::start_role_pci`) want "the PCI disk", not an ordinal across both buses.
+/// (`virtual_io_service::start_role_pci`) want "the PCI disk", not an ordinal across both buses.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the mmio half answers first on both virt boards
-pub(crate) fn find_block_device_n(n: usize) -> Option<PciVirtioDevice> {
+pub(crate) fn find_block_device_n(n: usize) -> Option<PciVirtualIoDevice> {
     if !is_host_bridge_present() {
         return None;
     }
@@ -482,8 +482,8 @@ pub(crate) fn find_block_device_n(n: usize) -> Option<PciVirtioDevice> {
         &mut |b, o| cfg_read32(b, o),
         &mut |bus_device_function, vendor, device| {
             if found.is_none()
-                && vendor == pci_configuration_space::VIRTIO_VENDOR
-                && device == pci_configuration_space::VIRTIO_BLOCK_MODERN
+                && vendor == pci_configuration_space::VIRTUAL_IO_VENDOR
+                && device == pci_configuration_space::VIRTUAL_IO_BLOCK_MODERN
             {
                 if seen == n {
                     found = Some(bus_device_function);
@@ -492,21 +492,21 @@ pub(crate) fn find_block_device_n(n: usize) -> Option<PciVirtioDevice> {
             }
         },
     );
-    bring_up(found?, pci_configuration_space::VIRTIO_TYPE_BLOCK)
+    bring_up(found?, pci_configuration_space::VIRTUAL_IO_TYPE_BLOCK)
 }
 
 /// Find the first modern virtio-net function on the bus and bring it up. `None` if there is no
 /// PCI NIC. Same bring-up as the disk; the transport seam and the DMA confinement do not know or
 /// care that a NIC sits behind them (milestone 30).
-pub(crate) fn find_net_device() -> Option<PciVirtioDevice> {
-    let bus_device_function = find_virtio_bdf(
-        pci_configuration_space::VIRTIO_NETWORK_MODERN,
-        Some(pci_configuration_space::VIRTIO_NETWORK_TRANSITIONAL),
+pub(crate) fn find_net_device() -> Option<PciVirtualIoDevice> {
+    let bus_device_function = find_virtual_io_bdf(
+        pci_configuration_space::VIRTUAL_IO_NETWORK_MODERN,
+        Some(pci_configuration_space::VIRTUAL_IO_NETWORK_TRANSITIONAL),
         "virtio-net",
     )?;
     bring_up(
         bus_device_function,
-        pci_configuration_space::VIRTIO_TYPE_NETWORK,
+        pci_configuration_space::VIRTUAL_IO_TYPE_NETWORK,
     )
 }
 
@@ -515,18 +515,18 @@ pub(crate) fn find_net_device() -> Option<PciVirtioDevice> {
 ///
 /// PCIe only: no configuration we attach puts a virtio-gpu on either `virt` machine's mmio bus.
 /// Same bring-up and IOMMU confinement as the disk.
-pub(crate) fn find_gpu_device() -> Option<PciVirtioDevice> {
+pub(crate) fn find_gpu_device() -> Option<PciVirtualIoDevice> {
     // No transitional twin exists for virtio-gpu (the legacy id range predates the device), so this
     // asks for the modern id and nothing else rather than warning about a legacy device that cannot
     // be on the bus.
-    let bus_device_function = find_virtio_bdf(
-        pci_configuration_space::VIRTIO_GPU_MODERN,
+    let bus_device_function = find_virtual_io_bdf(
+        pci_configuration_space::VIRTUAL_IO_GPU_MODERN,
         None,
         "virtio-gpu",
     )?;
     bring_up(
         bus_device_function,
-        pci_configuration_space::VIRTIO_TYPE_GPU,
+        pci_configuration_space::VIRTUAL_IO_TYPE_GPU,
     )
 }
 
@@ -535,33 +535,33 @@ pub(crate) fn find_gpu_device() -> Option<PciVirtioDevice> {
 ///
 /// PCIe only by choice, so the keyboard sits behind the IOMMU the way the GPU does (notes/pcie.md,
 /// "Placing BARs, and routing interrupts").
-pub(crate) fn find_input_device() -> Option<PciVirtioDevice> {
-    let bus_device_function = find_virtio_bdf(
-        pci_configuration_space::VIRTIO_INPUT_MODERN,
+pub(crate) fn find_input_device() -> Option<PciVirtualIoDevice> {
+    let bus_device_function = find_virtual_io_bdf(
+        pci_configuration_space::VIRTUAL_IO_INPUT_MODERN,
         None,
         "virtio-input",
     )?;
     bring_up(
         bus_device_function,
-        pci_configuration_space::VIRTIO_TYPE_INPUT,
+        pci_configuration_space::VIRTUAL_IO_TYPE_INPUT,
     )
 }
 
 /// Find the first modern virtio-rng function on the bus and bring it up (milestone 56's entropy
 /// source). `None` if there is no PCI RNG.
 ///
-/// The mmio twin is [`crate::virtio::find_entropy_device`]; the entropy service is wired over
+/// The mmio twin is [`crate::virtual_io::find_entropy_device`]; the entropy service is wired over
 /// whichever the wiring asks for, and the milestone-56 test runs each.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // entropy_service is the caller, and the m56 tests drive it
-pub(crate) fn find_rng_device() -> Option<PciVirtioDevice> {
-    let bus_device_function = find_virtio_bdf(
-        pci_configuration_space::VIRTIO_ENTROPY_MODERN,
-        Some(pci_configuration_space::VIRTIO_ENTROPY_TRANSITIONAL),
+pub(crate) fn find_rng_device() -> Option<PciVirtualIoDevice> {
+    let bus_device_function = find_virtual_io_bdf(
+        pci_configuration_space::VIRTUAL_IO_ENTROPY_MODERN,
+        Some(pci_configuration_space::VIRTUAL_IO_ENTROPY_TRANSITIONAL),
         "virtio-rng",
     )?;
     bring_up(
         bus_device_function,
-        pci_configuration_space::VIRTIO_TYPE_ENTROPY,
+        pci_configuration_space::VIRTUAL_IO_TYPE_ENTROPY,
     )
 }
 
@@ -578,8 +578,8 @@ pub fn count_block_devices() -> usize {
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
         &mut |_, vendor, device| {
-            if vendor == pci_configuration_space::VIRTIO_VENDOR
-                && device == pci_configuration_space::VIRTIO_BLOCK_MODERN
+            if vendor == pci_configuration_space::VIRTUAL_IO_VENDOR
+                && device == pci_configuration_space::VIRTUAL_IO_BLOCK_MODERN
             {
                 n += 1;
             }
@@ -634,7 +634,7 @@ pub(crate) fn bar_census() -> (usize, usize) {
 /// that warning. `transitional` is `None` for a device type that has no legacy id at all
 /// (virtio-gpu): there is then no such warning to give, and inventing an id to compare against
 /// would be a fact nobody checked.
-fn find_virtio_bdf(
+fn find_virtual_io_bdf(
     modern: u16,
     transitional: Option<u16>,
     kind: &str,
@@ -647,7 +647,7 @@ fn find_virtio_bdf(
         ecam_buses(),
         &mut |b, o| cfg_read32(b, o),
         &mut |bus_device_function, vendor, device| {
-            if found.is_none() && vendor == pci_configuration_space::VIRTIO_VENDOR {
+            if found.is_none() && vendor == pci_configuration_space::VIRTUAL_IO_VENDOR {
                 if device == modern {
                     found = Some(bus_device_function);
                 } else if Some(device) == transitional {
@@ -672,7 +672,10 @@ fn find_virtio_bdf(
 /// 3. parse the virtio vendor capabilities and resolve them against the assigned BARs;
 /// 4. only then set Memory-Space Enable, and Bus-Master last: DMA permission is granted at the
 ///    final moment, after the transport the confinement layer owns is fully described.
-fn bring_up(bus_device_function: BusDeviceFunction, device_type: u32) -> Option<PciVirtioDevice> {
+fn bring_up(
+    bus_device_function: BusDeviceFunction,
+    device_type: u32,
+) -> Option<PciVirtualIoDevice> {
     let mut bars = read_bars(bus_device_function);
     if !place_bars(bus_device_function, &mut bars) {
         return None;
@@ -698,7 +701,7 @@ fn bring_up(bus_device_function: BusDeviceFunction, device_type: u32) -> Option<
     );
     // Optional per the spec; absent or unresolvable stays `None` rather than failing bring-up.
     let device_config = structures.device.as_ref().and_then(resolve);
-    let direct = PciVirtioDirect {
+    let direct = PciVirtualIoDirect {
         structures,
         bar_bases: core::array::from_fn(|n| {
             bars[n].as_ref().map_or(0, |b| b.base_physical_address)
@@ -725,7 +728,7 @@ fn bring_up(bus_device_function: BusDeviceFunction, device_type: u32) -> Option<
 
     let (intid, msix_vector) = function_interrupt(bus_device_function, &bars, false)?;
 
-    Some(PciVirtioDevice {
+    Some(PciVirtualIoDevice {
         bus_device_function,
         common,
         notify_base,
@@ -746,7 +749,7 @@ fn bring_up(bus_device_function: BusDeviceFunction, device_type: u32) -> Option<
 ///
 /// `msi_fallback` lets a function with MSI and no MSI-X (the xHCI on an Intel PCH) take plain MSI;
 /// virtio functions pass `false`, since a virtio queue names its vector by MSI-X table index.
-/// `msix_vector` is `pci_configuration_space::VIRTIO_MSIX_NO_VECTOR` whenever the answer was not MSI-X. `None` when no
+/// `msix_vector` is `pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR` whenever the answer was not MSI-X. `None` when no
 /// route exists. See notes/pcie.md, "Placing BARs, and routing interrupts".
 fn function_interrupt(
     bus_device_function: BusDeviceFunction,
@@ -765,14 +768,14 @@ fn function_interrupt(
                 .is_none()
                 && program_msi(bus_device_function, target)
             {
-                return Some((intid, pci_configuration_space::VIRTIO_MSIX_NO_VECTOR));
+                return Some((intid, pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR));
             }
             let vector = program_msix(bus_device_function, bars, target)?;
             Some((intid, vector))
         }
         None => Some((
             intx_intid(bus_device_function)?,
-            pci_configuration_space::VIRTIO_MSIX_NO_VECTOR,
+            pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR,
         )),
     }
 }
@@ -974,7 +977,7 @@ pub(crate) fn count_non_volatile_memory_express_controllers() -> usize {
 pub(crate) struct PciNvmeDevice {
     /// The register file's physical base (BAR0; the doorbells live in it too).
     pub bar0: u64,
-    /// The PCIe requester id, the key the IOMMU confines DMA by (as `PciVirtioDevice::rid`).
+    /// The PCIe requester id, the key the IOMMU confines DMA by (as `PciVirtualIoDevice::rid`).
     pub rid: u32,
 }
 
@@ -1030,7 +1033,7 @@ pub(crate) struct PciXhciDevice {
     pub bar_bytes: u64,
     /// The PCIe requester id the IOMMU confines DMA by.
     pub rid: u32,
-    /// The interrupt a driver binds and waits on, as [`PciVirtioDevice::intid`].
+    /// The interrupt a driver binds and waits on, as [`PciVirtualIoDevice::intid`].
     pub intid: u32,
     /// The MSI-X table and pending-bit array, as byte ranges into BAR0, `(0, 0)` where one is
     /// absent or lives in another BAR. Withheld from the driver's mapping.

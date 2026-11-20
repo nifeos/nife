@@ -3,7 +3,7 @@
 //!
 //! [`invoke`] is the one syscall wrapper. [`send`], [`receive`], [`call`] and [`exit`] are built on
 //! it, and [`require`] is how a program says no. [`panic_handler!`] expands to each binary's
-//! handler over [`trap`]. Opt-in modules ([`mapped_window`], [`initial_ramdisk`], [`virtio`]) hold
+//! handler over [`trap`]. Opt-in modules ([`mapped_window`], [`initial_ramdisk`], [`virtual_io`]) hold
 //! what only some programs need. Nothing here runs on the host, so the examples are `no_run`. The
 //! signatures and `abi` constants are identical on all three application binary interfaces (ABIs) (§124 (ratify the x86_64 syscall
 //! ABI) for `x86_64`'s). See notes/user-mode-runtime.md.
@@ -36,7 +36,8 @@ pub mod entropy;
 pub mod initial_ramdisk;
 pub mod mapped_window;
 pub mod socket_frame;
-pub mod virtio;
+#[doc(alias = "virtio")]
+pub mod virtual_io;
 
 mod clock;
 mod devices;

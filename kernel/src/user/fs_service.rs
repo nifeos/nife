@@ -1,7 +1,7 @@
 use super::*;
 use crate::capability_object::{
     Rights, interrupt_capability, memory_region_capability, page_frame_capability,
-    rendezvous_capability, rendezvous_capability_badged, virtio_capability,
+    rendezvous_capability, rendezvous_capability_badged, virtual_io_capability,
 };
 use crate::sched::RendezvousId;
 

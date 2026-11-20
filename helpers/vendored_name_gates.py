@@ -78,8 +78,8 @@ BUGS:
   that builds an identifier from a string is not read.
 - `respell` still writes `nanos` as `ns` and `millis` as `ms`, which the rule refuses; it only
   recognizes a rename inside `helpers/moved_rows.py`, and a lane that sweeps those units fixes it.
-- The template has no `proto` row, so design/naming.md's prose names a word the list does not hold
-  (`PROSE_ONLY_WORDS`).
+- The template has no `proto` or `virtio` row, so design/naming.md's prose names words the list
+  does not hold (`PROSE_ONLY_WORDS`).
 """
 
 import os
@@ -673,7 +673,9 @@ def unit_main(argv):
 NAMING = 'design/naming.md'
 # Words the prose spells out that the template's list does not hold. An entry is a gap in the
 # template, to be closed there; the check fails when the list gains the word, so this empties.
-PROSE_ONLY_WORDS = {'proto': 'the template has no `proto` row'}
+PROSE_ONLY_WORDS = {'proto': 'the template has no `proto` row',
+                    'virtio': 'the template has no `virtio` row; helpers/name_checks.py refuses it '
+                              'in this tree'}
 _BACKTICKED = re.compile(r'`([A-Za-z_]+)`')
 
 
@@ -759,7 +761,7 @@ def words_selftest():
     words = {'spelled_out': {'op': 'operation', 'ops': 'operations', 'sdio': 'x', 'cap': 'capability'},
              'units': {'ns': 'nanoseconds', 'kib': 'kibibytes', 'mbps': 'megabits_per_second'}}
     good = ('## Acronyms and abbreviations\n\n'
-            '- Every name this tree authors spells these out: `op`, `cap` and `proto`.\n'
+            '- Every name this tree authors spells these out: `op`, `cap`, `proto` and `virtio`.\n'
             '  It continues here.\n'
             '- These stay: `pci`. `SDIO` is not accepted.\n\n'
             '## Units\n\n'
@@ -787,7 +789,7 @@ def words_selftest():
            good.replace('`op`, ', ''), '`op` is in the template word list')
     expect('a prose word the list lacks',
            good.replace('`op`,', '`op`, `zzz`,'), '`zzz` is spelled out')
-    expect('an exception that went stale', good.replace(' and `proto`', ''),
+    expect('an exception that went stale', good.replace(', `proto` and', ' and'),
            'PROSE_ONLY_WORDS lists `proto`')
     expect('a unit that stays', good.replace('are symbols too', 'are allowed, `kib` stays'),
            'says `kib` stays')

@@ -874,7 +874,7 @@ pub(crate) fn print_faults(rid: u32) {
 mod tests {
     //! What a boot on an AMD-Vi machine can say about the unit itself. The confinement claim (a
     //! device's DMA outside its grant is refused) is the escape tests', which run on the same
-    //! machine: `virtio::tests` and `system_tests`' NVMe test.
+    //! machine: `virtual_io::tests` and `system_tests`' NVMe test.
 
     use super::*;
 

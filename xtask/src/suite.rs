@@ -965,7 +965,7 @@ fn x86_64_on_amd_vi() -> bool {
 /// capability FS server) phase 2): reopen the images with the host tool and confirm the FS server's
 /// writes persisted and the filesystems still parse. The images are the last leg's: x86_64 in a
 /// full run, riscv64 when `--arch x86_64` was not asked for, aarch64 when it was the only leg. No
-/// crash test runs on x86_64 (the twins in `filesystem_tests` and `riscv_virtio_tests` are cfg-gated
+/// crash test runs on x86_64 (the twins in `filesystem_tests` and `riscv_virtual_io_tests` are cfg-gated
 /// to their ISAs), so after an x86_64 leg the crash check is skipped: a check whose subject did not
 /// happen is worse than no check. See notes/xtask-test.md.
 fn images_after_the_run(legs: ArchLegs, filtered: bool) -> bool {

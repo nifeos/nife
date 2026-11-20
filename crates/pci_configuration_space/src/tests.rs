@@ -29,14 +29,14 @@ impl FakeCfg {
         s.insert((f.0, f.1, f.2, 0x34), 0x40);
         s.insert(
             (f.0, f.1, f.2, 0x40),
-            u32::from_le_bytes([0x09, 0x50, 16, VIRTIO_CAPABILITY_COMMON]),
+            u32::from_le_bytes([0x09, 0x50, 16, VIRTUAL_IO_CAPABILITY_COMMON]),
         );
         s.insert((f.0, f.1, f.2, 0x44), 4); // bar 4
         s.insert((f.0, f.1, f.2, 0x48), 0x0); // offset
         s.insert((f.0, f.1, f.2, 0x4c), 0x1000); // length
         s.insert(
             (f.0, f.1, f.2, 0x50),
-            u32::from_le_bytes([0x09, 0x70, 20, VIRTIO_CAPABILITY_NOTIFY]),
+            u32::from_le_bytes([0x09, 0x70, 20, VIRTUAL_IO_CAPABILITY_NOTIFY]),
         );
         s.insert((f.0, f.1, f.2, 0x54), 4);
         s.insert((f.0, f.1, f.2, 0x58), 0x3000);
@@ -221,8 +221,8 @@ fn enumeration_follows_the_multifunction_bit_and_skips_what_does_not_answer() {
                     device: 1,
                     function: 0
                 },
-                VIRTIO_VENDOR,
-                VIRTIO_BLOCK_MODERN
+                VIRTUAL_IO_VENDOR,
+                VIRTUAL_IO_BLOCK_MODERN
             ),
             (
                 BusDeviceFunction {
@@ -230,8 +230,8 @@ fn enumeration_follows_the_multifunction_bit_and_skips_what_does_not_answer() {
                     device: 2,
                     function: 0
                 },
-                VIRTIO_VENDOR,
-                VIRTIO_NETWORK_MODERN
+                VIRTUAL_IO_VENDOR,
+                VIRTUAL_IO_NETWORK_MODERN
             ),
             (
                 BusDeviceFunction {
@@ -239,8 +239,8 @@ fn enumeration_follows_the_multifunction_bit_and_skips_what_does_not_answer() {
                     device: 2,
                     function: 1
                 },
-                VIRTIO_VENDOR,
-                VIRTIO_ENTROPY_MODERN
+                VIRTUAL_IO_VENDOR,
+                VIRTUAL_IO_ENTROPY_MODERN
             ),
             (
                 BusDeviceFunction {
@@ -248,8 +248,8 @@ fn enumeration_follows_the_multifunction_bit_and_skips_what_does_not_answer() {
                     device: 3,
                     function: 0
                 },
-                VIRTIO_VENDOR,
-                VIRTIO_GPU_MODERN
+                VIRTUAL_IO_VENDOR,
+                VIRTUAL_IO_GPU_MODERN
             ),
         ],
     );
@@ -751,7 +751,7 @@ fn the_largest_regions_are_sized() {
 /// The capability walk yields the two virtio vendor capabilities with their (bar, offset,
 /// length) and the notify multiplier, and skips the MSI-X capability in the same list.
 #[test]
-fn the_capability_walk_finds_virtio_vendor_capabilities_only() {
+fn the_capability_walk_finds_virtual_io_vendor_capabilities_only() {
     let mut cfg = FakeCfg::new();
     let bus_device_function = BusDeviceFunction {
         bus: 0,
@@ -759,7 +759,7 @@ fn the_capability_walk_finds_virtio_vendor_capabilities_only() {
         function: 0,
     };
     let mut capabilities = Vec::new();
-    virtio_capabilities(
+    virtual_io_capabilities(
         bus_device_function,
         &mut |b, o| cfg.read32(b, o),
         &mut |c| {
@@ -772,7 +772,10 @@ fn the_capability_walk_finds_virtio_vendor_capabilities_only() {
         2,
         "exactly the two vendor caps, MSI-X skipped"
     );
-    assert_eq!(capabilities[0].configuration_type, VIRTIO_CAPABILITY_COMMON);
+    assert_eq!(
+        capabilities[0].configuration_type,
+        VIRTUAL_IO_CAPABILITY_COMMON
+    );
     assert_eq!(
         (
             capabilities[0].bar,
@@ -781,7 +784,10 @@ fn the_capability_walk_finds_virtio_vendor_capabilities_only() {
         ),
         (4, 0, 0x1000)
     );
-    assert_eq!(capabilities[1].configuration_type, VIRTIO_CAPABILITY_NOTIFY);
+    assert_eq!(
+        capabilities[1].configuration_type,
+        VIRTUAL_IO_CAPABILITY_NOTIFY
+    );
     assert_eq!((capabilities[1].bar, capabilities[1].offset), (4, 0x3000));
     assert_eq!(capabilities[1].notify_offset_multiplier, 4);
 }
@@ -801,7 +807,7 @@ fn a_function_without_a_capability_list_is_not_walked() {
     };
     cfg.space.insert((0, 1, 0, COMMAND_REGISTER), 0);
     let mut capabilities = Vec::new();
-    virtio_capabilities(
+    virtual_io_capabilities(
         bus_device_function,
         &mut |b, o| cfg.read32(b, o),
         &mut |c| {
@@ -827,10 +833,10 @@ fn a_cyclic_capability_list_terminates() {
     // Point the second cap's `next` back at the first.
     cfg.space.insert(
         (0, 1, 0, 0x50),
-        u32::from_le_bytes([0x09, 0x40, 20, VIRTIO_CAPABILITY_NOTIFY]),
+        u32::from_le_bytes([0x09, 0x40, 20, VIRTUAL_IO_CAPABILITY_NOTIFY]),
     );
     let mut n = 0;
-    virtio_capabilities(
+    virtual_io_capabilities(
         bus_device_function,
         &mut |b, o| cfg.read32(b, o),
         &mut |_| n += 1,
@@ -946,12 +952,24 @@ fn a_ragged_or_empty_ranges_is_refused() {
 }
 
 #[test]
-fn a_modern_virtio_pci_id_is_0x1040_plus_the_device_type() {
-    assert_eq!(VIRTIO_NETWORK_MODERN as u32, 0x1040 + VIRTIO_TYPE_NETWORK);
-    assert_eq!(VIRTIO_BLOCK_MODERN as u32, 0x1040 + VIRTIO_TYPE_BLOCK);
-    assert_eq!(VIRTIO_ENTROPY_MODERN as u32, 0x1040 + VIRTIO_TYPE_ENTROPY);
-    assert_eq!(VIRTIO_GPU_MODERN as u32, 0x1040 + VIRTIO_TYPE_GPU);
-    assert_eq!(VIRTIO_INPUT_MODERN as u32, 0x1040 + VIRTIO_TYPE_INPUT);
+fn a_modern_virtual_io_pci_id_is_0x1040_plus_the_device_type() {
+    assert_eq!(
+        VIRTUAL_IO_NETWORK_MODERN as u32,
+        0x1040 + VIRTUAL_IO_TYPE_NETWORK
+    );
+    assert_eq!(
+        VIRTUAL_IO_BLOCK_MODERN as u32,
+        0x1040 + VIRTUAL_IO_TYPE_BLOCK
+    );
+    assert_eq!(
+        VIRTUAL_IO_ENTROPY_MODERN as u32,
+        0x1040 + VIRTUAL_IO_TYPE_ENTROPY
+    );
+    assert_eq!(VIRTUAL_IO_GPU_MODERN as u32, 0x1040 + VIRTUAL_IO_TYPE_GPU);
+    assert_eq!(
+        VIRTUAL_IO_INPUT_MODERN as u32,
+        0x1040 + VIRTUAL_IO_TYPE_INPUT
+    );
 }
 
 /// **The MSI-X capability decodes, and the table size is the field plus one.** The fake's
@@ -1181,14 +1199,14 @@ fn a_vendor_capability_shorter_than_its_type_needs_is_skipped() {
     };
     configuration.space.insert(
         (0, 1, 0, 0x40),
-        u32::from_le_bytes([0x09, 0x50, 12, VIRTIO_CAPABILITY_COMMON]),
+        u32::from_le_bytes([0x09, 0x50, 12, VIRTUAL_IO_CAPABILITY_COMMON]),
     );
     configuration.space.insert(
         (0, 1, 0, 0x50),
-        u32::from_le_bytes([0x09, 0x70, 16, VIRTIO_CAPABILITY_NOTIFY]),
+        u32::from_le_bytes([0x09, 0x70, 16, VIRTUAL_IO_CAPABILITY_NOTIFY]),
     );
     let mut seen = 0;
-    virtio_capabilities(
+    virtual_io_capabilities(
         location,
         &mut |b, o| configuration.read32(b, o),
         &mut |_| seen += 1,

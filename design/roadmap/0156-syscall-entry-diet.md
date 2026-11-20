@@ -16,7 +16,7 @@ one milestone since the second is what makes the first's gains actually stick.
 ## What was built
 
 Both parts landed. Part one: `Untyped::{MAP,RETYPE_OBJ,RETYPE,SPLIT,DESTROY}`, `Frame::{MAP,REVOKE}`,
-`Tcb::{CONFIGURE,CAP_INSERT}`, `Irq::{WAIT,ACK}`, `Virtio`'s four register methods, and
+`Tcb::{CONFIGURE,CAP_INSERT}`, `Irq::{WAIT,ACK}`, `VirtualIo`'s four register methods, and
 `Endpoint::REAP` all moved into `#[inline(never)]` functions, the same shape as `LIST`'s own fix.
 `DeviceFrame::REVOKE` and `Tcb::START` were tried and reverted: the byte delta was negligible and not
 worth carrying the diff. `Endpoint::{SEND,RECV,CALL}` and `Reply::REPLY`, the genuine IPC round trip,

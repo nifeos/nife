@@ -39,7 +39,7 @@ does not, and the naming question dissolved into a retirement.
 2. The two crates: `crates/multicast_dns_protocol` and `crates/multicast_dns_config`, their
    workspace members, and every dependency on them (`components`, `xtask`).
 3. The tests that spawn it, in `kernel/src/user/tests.rs` and
-   `kernel/src/user/riscv_virtio_tests.rs`. Those tests also exercise the network stack and a second
+   `kernel/src/user/riscv_virtual_io_tests.rs`. Those tests also exercise the network stack and a second
    socket client, and that coverage must survive: remove the responder from them, not them.
 4. `xtask`'s multicast prober and its term in the test run's pass condition, together with the
    constants and the `include_str!` of the configuration file. The inbound and scanout checks stay.
@@ -101,7 +101,7 @@ it.
   `notes/mdns.md` and `notes/net.md`.
 - **Recorded.** `NET_CLIENT_STACK_PAGES` stays at six, a number measured for the retired responder's
   call frame rather than for the socket client that is left; lowering it wants a stack-depth reading,
-  written beside the constant in `kernel/src/user/virtio_service.rs`.
+  written beside the constant in `kernel/src/user/virtual_io_service.rs`.
 - **Recorded.** The general DNS parsing the retirement loses is pointed at by commit in
   `design/roadmap/0384-a-name-resolver-and-who-holds-it.md`, milestone 384 since 2026-09-19.
 

@@ -272,11 +272,11 @@ where
     }
 
     // 7. The virtio-mmio window, mapped only to enumerate it; a driver gets its own slot. See
-    // kernel/src/virtio.rs.
+    // kernel/src/virtual_io.rs.
     direct_map(
         m,
-        VIRTIO_MMIO_BASE,
-        VIRTIO_MMIO_BASE + VIRTIO_MMIO_SIZE,
+        VIRTUAL_IO_MMIO_BASE,
+        VIRTUAL_IO_MMIO_BASE + VIRTUAL_IO_MMIO_SIZE,
         Flags::device(),
     )?;
 
@@ -302,20 +302,23 @@ where
 
 /// The virtio-mmio device window on QEMU `virt`: 32 slots of 0x200 bytes at 0x0a000000, with
 /// interrupts SPI 16..47 (INTID 48..79). Fixed by the machine, like [`UART_BASE`].
-pub const VIRTIO_MMIO_BASE: u64 = 0x0a00_0000;
-pub(crate) const VIRTIO_MMIO_SIZE: u64 = 32 * 0x200;
-/// SPI 16 becomes INTID 48 (SPIs start at 32). Slot `i` uses INTID `VIRTIO_INTERRUPT_NUMBER_BASE +
+///
+/// Name: provisional. Spelled out from `VIRTIO_MMIO_BASE`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_MMIO_BASE: u64 = 0x0a00_0000;
+pub(crate) const VIRTUAL_IO_MMIO_SIZE: u64 = 32 * 0x200;
+/// SPI 16 becomes INTID 48 (SPIs start at 32). Slot `i` uses INTID `VIRTUAL_IO_INTERRUPT_NUMBER_BASE +
 /// i`.
 #[doc(alias = "irq")]
-pub(crate) const VIRTIO_INTERRUPT_NUMBER_BASE: u32 = 48;
+pub(crate) const VIRTUAL_IO_INTERRUPT_NUMBER_BASE: u32 = 48;
 /// aarch64's `virt` lays out 32 virtio-mmio slots 0x200 apart (RISC-V's are 8, 0x1000 apart). The
-/// probe (`virtio::find_block_device`) walks them.
-pub(crate) const VIRTIO_SLOT_STRIDE: u64 = 0x200;
-pub(crate) const VIRTIO_SLOTS: u64 = 32;
+/// probe (`virtual_io::find_block_device`) walks them.
+pub(crate) const VIRTUAL_IO_SLOT_STRIDE: u64 = 0x200;
+pub(crate) const VIRTUAL_IO_SLOTS: u64 = 32;
 /// How many slots the probe walks. All of them: aarch64 `virt` is the only machine this
 /// architecture maps the window on. A function because riscv64's answer depends on the device tree.
-pub(crate) const fn virtio_slots() -> u64 {
-    VIRTIO_SLOTS
+pub(crate) const fn virtual_io_slots() -> u64 {
+    VIRTUAL_IO_SLOTS
 }
 
 /// How many ECAM buses the kernel maps: bus 0, 1 MB. The window comes from the device tree's

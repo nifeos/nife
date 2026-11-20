@@ -747,7 +747,7 @@ for c in $crates; do
         # this can catch a binary missing from within one.
         #
         # It selects on the FILE name, and `components/src` holds two files that are not binaries
-        # (`virtio_net_transport.rs` and `socket_test_client.rs`, `net_stack`'s single-consumer
+        # (`virtual_io_net_transport.rs` and `socket_test_client.rs`, `net_stack`'s single-consumer
         # `#[path]` modules, which rule 7 permits). A harness in one of those would produce a
         # `--bin` cargo does not know, and cargo says so and stops; the failure is loud, which
         # is the direction that is safe to leave alone.

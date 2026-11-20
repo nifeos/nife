@@ -42,7 +42,7 @@ milestone's deliverable:
   `the_write_half_needs_a_disk_and_an_entropy_rendezvous_and_holds_nothing_else` skipped twice
   over, no disk and no entropy. It now runs. Its entropy rendezvous rides the PCIe transport,
   which is the bus `q35` has.
-- RNG: `a_client_obtains_unpredictable_bytes_from_a_virtio_rng_over_pcie` now runs on x86_64. It
+- RNG: `a_client_obtains_unpredictable_bytes_from_a_virtual_io_rng_over_pcie` now runs on x86_64. It
   asserts the device sits behind the IOMMU (VT-d, or AMD-Vi on that leg). The mmio entropy arm
   still skips, and every wiring that asks for mmio by name (credentials, NTP, login) with it.
   `q35` has no virtio-mmio bus. That arm's skip line is a machine fact, not a missing device.
@@ -60,7 +60,7 @@ milestone's deliverable:
   because the inbound listeners ride a virtio-mmio NIC that `q35` lacks. It presses the key the
   keyboard test waits for and grades the three pictures. The compositor, display-terminal and
   pattern checks reach the device's scanout pixel for pixel on the VT-d leg and the AMD-Vi leg,
-  and `a_keystroke_from_a_virtio_keyboard_becomes_a_terminal_byte`,
+  and `a_keystroke_from_a_virtual_io_keyboard_becomes_a_terminal_byte`,
   `a_confined_userspace_driver_puts_a_known_pattern_in_a_framebuffer`,
   `a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout`,
   `a_backing_outside_the_grant_is_refused_by_the_iommu` and the compositor test run instead of

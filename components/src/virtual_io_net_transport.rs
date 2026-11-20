@@ -1,7 +1,7 @@
 //! A virtio-net transport for smoltcp, at EL0, behind the multi-queue DMA confinement.
 //!
 //! The driver half of the net server (milestone 30 (the network stack as a confined component),
-//! piece 3): it brings the NIC up through the confined `Virtio` capability, manages the receive and
+//! piece 3): it brings the NIC up through the confined `VirtualIo` capability, manages the receive and
 //! transmit rings, and moves Ethernet frames across them for `net_stack`'s `Nic`, which presents
 //! smoltcp's `phy::Device` over this NIC and the `e1000e` one. smoltcp does the TCP/IP. Everything
 //! the device DMAs stays inside the one page the spawn service maps, which the kernel's validator
@@ -19,7 +19,7 @@
 //! ratified 2026-08-01 (calef, milestone 63 (one spelling per thing)) replacing `vnet`. A network
 //! card transport is `<device family>_transport`, as `e1000e_transport` beside it. Refused
 //! `net_transport` (right while it was the only one; beside a second card's transport it no longer
-//! says which), `vnet` (an abbreviation, milestone 63) and `virtio_net` (milestone 63: the block driver's roles
+//! says which), `vnet` (an abbreviation, milestone 63) and `virtual_io_net` (milestone 63: the block driver's roles
 //! also drive net, so the device-class name alone would collide). This file is a single-consumer
 //! `#[path]` module rather than a `[[bin]]`, which is why rule 7's check leaves it alone.
 
@@ -34,7 +34,7 @@ use alloc::vec::Vec;
 
 use user_mode_runtime::interrupt_acknowledge;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
-use user_mode_runtime::virtio::virtio_ring_barrier;
+use user_mode_runtime::virtual_io::virtual_io_ring_barrier;
 
 /// The DMA page's virtual address, matching the kernel's `net_server` mapping.
 const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
@@ -48,7 +48,7 @@ const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE_BYTES) };
 /// Capability slots the kernel granted, by convention.
 #[doc(alias = "irq")]
 const INTERRUPT: u64 = 1;
-const VIRTIO: u64 = 2;
+const VIRTUAL_IO: u64 = 2;
 
 // virtio-mmio register offsets (the transport seam speaks this vocabulary on both buses).
 const MAGIC: u64 = 0x000;
@@ -125,10 +125,10 @@ fn w16(off: u64, v: u16) {
 }
 
 fn mr(off: u64) -> u32 {
-    user_mode_runtime::virtio::read_register(VIRTIO, off) as u32
+    user_mode_runtime::virtual_io::read_register(VIRTUAL_IO, off) as u32
 }
 fn mw(off: u64, v: u32) {
-    user_mode_runtime::virtio::write_register(VIRTIO, off, v as u64);
+    user_mode_runtime::virtual_io::write_register(VIRTUAL_IO, off, v as u64);
 }
 
 fn write_desc(desc_base: u64, i: u64, addr: u64, len: u32, flags: u16, next: u16) {
@@ -141,7 +141,7 @@ fn write_desc(desc_base: u64, i: u64, addr: u64, len: u32, flags: u16, next: u16
 
 /// The virtio-net device, behind `net_stack`'s `Nic`. Holds the ring bookkeeping; the buffers
 /// and descriptor tables live in the DMA page at fixed offsets.
-pub(crate) struct VirtioNet {
+pub(crate) struct VirtualIoNet {
     direct_memory_access_phys: u64,
     receive_avail: u16,
     receive_seen: u16, // receive used-ring index already drained
@@ -149,10 +149,10 @@ pub(crate) struct VirtioNet {
     transmit_next: usize,
 }
 
-impl VirtioNet {
+impl VirtualIoNet {
     /// Bring the NIC up: the modern handshake, both queues through the kernel, and every receive
     /// buffer posted so the device has somewhere to put inbound frames from the first instant.
-    pub fn bring_up(direct_memory_access_phys: u64) -> VirtioNet {
+    pub fn bring_up(direct_memory_access_phys: u64) -> VirtualIoNet {
         assert_eq!(mr(MAGIC), 0x7472_6976, "not a virtio device");
 
         mw(STATUS, 0);
@@ -176,11 +176,11 @@ impl VirtioNet {
 
         // Set up both queues through the kernel; it programs each queue's ring addresses.
         assert_eq!(
-            user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, RECEIVE_Q),
+            user_mode_runtime::virtual_io::setup_queue(VIRTUAL_IO, QSIZE as u64, RECEIVE_Q),
             0
         );
         assert_eq!(
-            user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, TRANSMIT_Q),
+            user_mode_runtime::virtual_io::setup_queue(VIRTUAL_IO, QSIZE as u64, TRANSMIT_Q),
             0
         );
 
@@ -189,7 +189,7 @@ impl VirtioNet {
             S_ACKNOWLEDGE | S_DRIVER | S_FEATURES_OK | S_DRIVER_OK,
         );
 
-        let mut dev = VirtioNet {
+        let mut dev = VirtualIoNet {
             direct_memory_access_phys,
             receive_avail: 0,
             receive_seen: 0,
@@ -213,15 +213,15 @@ impl VirtioNet {
             w16(RECEIVE_AVAIL + 4 + slot * 2, i as u16);
             dev.receive_avail = dev.receive_avail.wrapping_add(1);
         }
-        virtio_ring_barrier();
+        virtual_io_ring_barrier();
         w16(RECEIVE_AVAIL + 2, dev.receive_avail);
-        virtio_ring_barrier();
+        virtual_io_ring_barrier();
         dev.notify(RECEIVE_Q);
         dev
     }
 
     fn notify(&self, q: u64) {
-        user_mode_runtime::virtio::notify(VIRTIO, q);
+        user_mode_runtime::virtual_io::notify(VIRTUAL_IO, q);
     }
 
     /// Quiet the device's interrupt and re-enable the line at the controller, after a `WAIT`
@@ -266,10 +266,10 @@ impl VirtioNet {
         // Re-post this buffer (its descriptor is permanent) so the device reuses it.
         let aslot = (self.receive_avail % QSIZE) as u64;
         w16(RECEIVE_AVAIL + 4 + aslot * 2, id as u16);
-        virtio_ring_barrier();
+        virtual_io_ring_barrier();
         self.receive_avail = self.receive_avail.wrapping_add(1);
         w16(RECEIVE_AVAIL + 2, self.receive_avail);
-        virtio_ring_barrier();
+        virtual_io_ring_barrier();
         self.notify(RECEIVE_Q);
         Some(v)
     }
@@ -307,10 +307,10 @@ impl VirtioNet {
         );
         let slot = (self.transmit_avail % QSIZE) as u64;
         w16(TRANSMIT_AVAIL + 4 + slot * 2, i as u16);
-        virtio_ring_barrier();
+        virtual_io_ring_barrier();
         self.transmit_avail = self.transmit_avail.wrapping_add(1);
         w16(TRANSMIT_AVAIL + 2, self.transmit_avail);
-        virtio_ring_barrier();
+        virtual_io_ring_barrier();
         self.notify(TRANSMIT_Q);
         self.transmit_next = (self.transmit_next + 1) % TRANSMIT_BUFS;
     }

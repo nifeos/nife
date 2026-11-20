@@ -1,4 +1,4 @@
-Falsifies `system_tests::user::riscv_virtio_tests::an_accept_nobody_answers_ends_at_the_stacks_bound`.
+Falsifies `system_tests::user::riscv_virtual_io_tests::an_accept_nobody_answers_ends_at_the_stacks_bound`.
 
 Architecture: riscv64 (the hunk is portable userspace code in `net_stack`; the aarch64 twin, `network_tests`, falls to the same patch, and x86_64 has no such test)
 

@@ -38,7 +38,7 @@ Milestones 53 (network and storage on real silicon) and 157 (real display output
 U-Boot's `simple-framebuffer` handoff) both exist because virtio only carries an emulator's
 paravirtual devices, and real hardware has none. Entropy is the same story one subsystem over.
 `entropy_service`, from milestone 56 (secrets, credentials, and the entropy to make them safe),
-speaks to a `Virtio` capability, proven end to end in QEMU. Until this milestone it had never run
+speaks to a `VirtualIo` capability, proven end to end in QEMU. Until this milestone it had never run
 against real hardware, because nothing here had a driver for the JH7110's TRNG.
 
 ## What was built
@@ -59,7 +59,7 @@ against real hardware, because nothing here had a driver for the JH7110's TRNG.
   and knows nothing else.
 - The wiring. `entropy_service`'s `Bus` enum has a `Jh7110` variant, and the riscv64 boot tour
   spawns it when the machine's device tree describes the device. The driver holds two rendezvous
-  capabilities and one page of device memory: no IRQ, no DMA page, no `Virtio` capability.
+  capabilities and one page of device memory: no IRQ, no DMA page, no `VirtualIo` capability.
 - A falsifiable boot-tour line, `hw entropy`. It plays a client over the same endpoint any client
   would hold, and passes only if the service says `READY`, both 32-byte draws come back full, the
   first is not all zeros, and the two differ. On QEMU, which has no TRNG node, it prints `skipped`,

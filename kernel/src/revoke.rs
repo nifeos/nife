@@ -700,7 +700,7 @@ pub fn revoke_page_frame(phys: u64) {
 /// # BUGS
 ///
 /// - An overlapping capability keeps its authority and its own mappings (§132's option B, refused).
-/// - A device keeps its DMA window: a revoke does not narrow `virtio::register` (§132's question
+/// - A device keeps its DMA window: a revoke does not narrow `virtual_io::register` (§132's question
 ///   3).
 ///
 /// notes/mapping-log.md has both.

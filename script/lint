@@ -557,8 +557,8 @@ cargo clippy -p components --features confinement_attackers --target aarch64-unk
 #   this flag is the x86 boot joining the shared path**; see design/roadmap/0161-x86-64-kernel-port.md.
 #
 # - **`-A clippy::reversed_empty_ranges`** is a smaller thing and is not a suppression of a real
-#   finding: `arch::mmu::VIRTIO_SLOTS` is genuinely ZERO on q35 (a PC has no virtio-mmio bus; every
-#   virtio device is a PCI function), so `virtio.rs`'s three scan loops correctly iterate over
+#   finding: `arch::mmu::VIRTUAL_IO_SLOTS` is genuinely ZERO on q35 (a PC has no virtio-mmio bus; every
+#   virtio device is a PCI function), so `virtual_io.rs`'s three scan loops correctly iterate over
 #   nothing. The alternative, a non-zero slot count over a zero base, would make the kernel probe
 #   address 0.
 #
@@ -3015,7 +3015,7 @@ rm -f "/tmp/nife-fixed-tmp-paths.$$"
 #    drift would have surfaced as a C component writing to the wrong offset.
 #
 #    A module with exactly ONE consumer is fine and stays fine: that is an ordinary submodule, and
-#    the rule is about agreement between binaries, not about file layout. `virtio_net_transport` and
+#    the rule is about agreement between binaries, not about file layout. `virtual_io_net_transport` and
 #    `socket_test_client` are that case today.
 #
 #    This check is the one that would have caught the whole class. It counts consumers per include

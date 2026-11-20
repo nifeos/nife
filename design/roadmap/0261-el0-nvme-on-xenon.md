@@ -110,7 +110,7 @@ buffer).
   own interrupt finding (this tree runs `intel-iommu` with no `intremap=on` and `gic-version=2` with
   no ITS, so nothing would confine an interrupt a userspace driver aimed) is the reason not to reach
   for MSI-X casually.
-- A `Virtio` capability, because there is no kernel-mediated transport here; that absence is
+- A `VirtualIo` capability, because there is no kernel-mediated transport here; that absence is
   §86's reason for existing.
 - A `DeviceFrame` or `PageFrame` capability. Both windows arrive as `Mapping`s installed before
   `_start` runs, so the server holds no *name* for either and can neither delegate nor revoke them.
