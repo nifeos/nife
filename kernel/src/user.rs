@@ -78,7 +78,7 @@ pub mod supervised_child;
 
 /// Bringing the virtio block driver up in userspace.
 ///
-/// **Milestone 9's headline.** The kernel enumerates the bus (kernel/src/virtual_io.rs) to find the
+/// **Milestone 9's headline.** The kernel enumerates the bus (`kernel/src/virtual_io.rs`) to find the
 /// block device, then hands a userspace driver everything it needs and nothing it does not: the
 /// device's registers, a DMA page, an interrupt, and an endpoint to report what it read. The
 /// kernel does not touch the device.
