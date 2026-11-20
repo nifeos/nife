@@ -447,14 +447,14 @@ fn gic_from_madt(madt: &Madt) -> Result<Gic, &'static str> {
     // entries used: a redistributor (per-core or as a range) exists only on a GICv3, and a
     // memory-mapped CPU interface only on a GICv2. A machine that states neither is one this loader
     // will not guess about.
-    let v3 = version >= 3 || redistributors.size != 0 || per_cpu_redistributor != 0;
+    let v3 = version >= 3 || redistributors.size_bytes != 0 || per_cpu_redistributor != 0;
     let v2 = version == 2 || (version == 0 && cpu_interface != 0);
     let distributor = Region {
         start: madt.distributor,
         size_bytes: device_tree_from_acpi::GICD_LEN,
     };
     let gic = if v3 {
-        if redistributors.size == 0 {
+        if redistributors.size_bytes == 0 {
             // The per-core spelling: each GICC entry carries its own frame and the MADT states no
             // range. Two 64 KiB frames per core is the GICv3 architecture's own layout, and the
             // frames are contiguous from the first, which is what `GICR_TYPER`'s Last bit then
