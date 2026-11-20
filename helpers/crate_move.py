@@ -754,11 +754,36 @@ def stage(root, crate, into, tree, sha, report):
                             f'for -p1 over the stripped source, {paths} paths made repository-relative, '
                             f'falsification records moved to the head of their comments in {records} '
                             f'files, {repository}')
+    staged_manifest(root, into, report)
     check_patches(into, report)
     moved, opted_in = stage_fuzz(root, crate, into, report)
     if opted_in:
         turn_on_weekly_fuzz(into, report)
-    return manifest, targets, moved
+    own = {os.path.relpath(f, f'crates/{crate}') for f in files}
+    return manifest, targets, moved, own
+
+
+def staged_manifest(root, into, report):
+    """Report what the staged manifest still takes from nife, then inline what it inherits.
+
+    The findings are `script/crate-standalone`'s step 1, from the same function, so the dry run and
+    the standalone check list the same manifest blockers. Inlining the inherited keys from the
+    workspace root afterwards lets the build report the next blocker (a path dependency that leaves
+    the copy) instead of stopping at the inherited `license`.
+    """
+    path = os.path.join(into, 'Cargo.toml')
+    text = open(path).read()
+    found, _leaves = crate_release.manifest_findings(text)
+    for _step, why in found:
+        report('FAIL', 'manifest', why)
+    if not found:
+        report('ok', 'manifest', 'no path dependency leaves the crate and nothing is inherited')
+    workspace = tomllib.load(open(os.path.join(root, 'Cargo.toml'), 'rb')).get('workspace', {})
+    inlined = crate_release.inline_inherited(text, workspace.get('package', {}))
+    if inlined != text:
+        open(path, 'w').write(inlined)
+        report('note', 'manifest', 'inherited keys inlined in the staged copy so the build runs; '
+                                   'the move writes them literally (the lint tables in full)')
 
 
 def check_patches(into, report):
@@ -797,8 +822,13 @@ def build(into, manifest, targets, work, report):
         report('FAIL' if code else 'ok', 'build', f'{t} on {toolchain}' + (f': {tail(out)}' if code else ''))
 
 
-def checks(into, tree, rev, report):
-    """The template's cheap checks, then the two rules the template does not hold."""
+def checks(into, tree, rev, report, own=frozenset()):
+    """The template's cheap checks, then the two rules the template does not hold.
+
+    The two rules report the crate's own files (`own`, relative to the staged root) first and the
+    template's scaffold after, under their own step names, so the move lane reads its crate's
+    findings without the scaffold's lines ahead of them.
+    """
     staged = Staged(into)
     helpers = os.path.join(tree, 'helpers')
     for label, helper, argv in TEMPLATE_CHECKS:
@@ -812,13 +842,20 @@ def checks(into, tree, rev, report):
                f'{len(lines)} line(s), first: {lines[0][:300]}' if code and lines else '')
     texts = {f: open(os.path.join(into, f), errors='replace').read()
              for f in staged.files if f.endswith(crate_release.TEXT) or f.startswith('.githooks/')}
-    for step, why in crate_release.citation_findings(texts):
-        report('FAIL', 'citations', why)
-    hits = [f'{f}:{n}' for f, t in sorted(texts.items()) for n in nife_mentions(t)]
-    if hits:
-        report('FAIL', 'mentions nife', f'{len(hits)} line(s), first {", ".join(hits[:4])}')
-    else:
-        report('ok', 'mentions nife', 'none')
+    for suffix, part in split_own(texts, own):
+        for _step, why in crate_release.citation_findings(part):
+            report('FAIL', 'citations' + suffix, why)
+        hits = [f'{f}:{n}' for f, t in sorted(part.items()) for n in nife_mentions(t)]
+        if hits:
+            report('FAIL', 'mentions nife' + suffix, f'{len(hits)} line(s), first {", ".join(hits[:4])}')
+        else:
+            report('ok', 'mentions nife' + suffix, 'none')
+
+
+def split_own(texts, own):
+    """[(step suffix, {path: text})]: the crate's own files, then the template's scaffold."""
+    return [('', {f: t for f, t in texts.items() if f in own}),
+            (' (template scaffold)', {f: t for f, t in texts.items() if f not in own})]
 
 
 def follow_up(root, crate, version, moved=()):
@@ -1012,6 +1049,9 @@ def selftest():
     assert nife_mentions('a nife line\nb"nife"; // wire literal\nx\n') == [1]
     assert nife_mentions('KEEP(*(.note.nife.*)) /* wire literal */') == []
     assert nife_mentions('// wire literal nife') == [1]
+    texts = {'src/lib.rs': 'a', 'CONTRIBUTING.md': 'b', 'README.md': 'c'}
+    assert split_own(texts, {'src/lib.rs', 'README.md'}) == \
+        [('', {'src/lib.rs': 'a', 'README.md': 'c'}), (' (template scaffold)', {'CONTRIBUTING.md': 'b'})]
     print('crate_move selftest: ok')
 
 
@@ -1043,7 +1083,7 @@ def main(argv):
     print(f'crate-move: {args.crate}, a dry run into {into}')
     tree, sha, rev = template_tree(args, work)
     report('ok', 'template', f'{TEMPLATE_URL} at {rev} ({sha})')
-    manifest, targets, moved = stage(root, args.crate, into, tree, sha, report)
+    manifest, targets, moved, own = stage(root, args.crate, into, tree, sha, report)
     if args.no_build:
         report('note', 'build', 'skipped (--no-build); the staged tree has no Cargo.lock')
     else:
@@ -1054,7 +1094,7 @@ def main(argv):
         seed_script_reproduces(into, moved, work, report)
     run(['git', 'init', '--quiet', '--initial-branch=main'], into)
     run(['git', 'add', '--all'], into)
-    checks(into, tree, rev, report)
+    checks(into, tree, rev, report, own)
     shutil.rmtree(work, ignore_errors=True)
     follow_up(root, args.crate, manifest.get('package', {}).get('version', '0.1.0'), moved)
     print(f'crate-move: staged in {into}, with git initialized and every file added, nothing committed;'

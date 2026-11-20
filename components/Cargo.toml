@@ -685,7 +685,7 @@ abi = { version = "0.1.0", path = "../crates/abi" }
 # Named here so the first cut's `carry_interfaces!` lists can read these interfaces' ids and
 # versions (milestone 956 (the linked interfaces carry checkable versions)); each program already
 # links them through `user_mode_runtime` or `grant_plan`.
-counter_frequency_contract = { version = "0.1.0", path = "../crates/counter_frequency_contract" }
+counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
 program_argument_contract = { version = "0.1.0", path = "../crates/program_argument_contract" }
 supervision_contract = { version = "0.1.0", path = "../crates/supervision_contract" }

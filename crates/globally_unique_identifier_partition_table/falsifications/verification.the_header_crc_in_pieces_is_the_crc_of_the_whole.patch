@@ -1,0 +1,21 @@
+Falsifies `globally_unique_identifier_partition_table::verification::the_header_crc_in_pieces_is_the_crc_of_the_whole`.
+
+The defect: each piece restarts the running CRC from its initial value, so the CRC of a header taken
+in three pieces (before the CRC field, the field read as zero, after it) is the CRC of the last
+piece alone. Every header this crate writes or checks would carry a CRC that covers only its tail.
+
+Expected to fail: the harness's `assert_eq!(crc::crc32_pieces(&pieces), whole)`, on any input whose cuts
+leave a nonempty piece before a later one.
+diff --git a/crates/globally_unique_identifier_partition_table/src/crc.rs b/crates/globally_unique_identifier_partition_table/src/crc.rs
+index 9d40df3d1..b39714c2a 100644
+--- a/crates/globally_unique_identifier_partition_table/src/crc.rs
++++ b/crates/globally_unique_identifier_partition_table/src/crc.rs
+@@ -47,7 +47,7 @@ pub fn crc32(bytes: &[u8]) -> u32 {
+ pub(crate) fn crc32_pieces(pieces: &[&[u8]]) -> u32 {
+     let mut crc = !0u32;
+     for piece in pieces {
+-        crc = update(crc, piece);
++        crc = update(!0u32, piece);
+     }
+     !crc
+ }

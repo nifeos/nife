@@ -1,7 +1,7 @@
 //! The TSC calibration's stopping rule, fed hand-written windows (`estimator`), and the two
 //! assertions that need a boot (`boot`): the windows were timed, and the stored rate is the
 //! smallest. Under QEMU because `timer.rs` builds only for `x86_64-unknown-none`; a second caller
-//! would move the rule to `crates/counter_frequency_contract`. See
+//! would move the rule to the `counter_frequency_contract` crate. See
 //! design/roadmap/0571-the-x86-boot-calibrates-once-and-can-be-wrong-by-4x.md.
 //!
 //! # BUGS

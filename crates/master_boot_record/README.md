@@ -1,8 +1,9 @@
 # master_boot_record
 
 The master boot record (MBR): sector 0 of a disk, four primary partition entries and a two-byte
-signature. This crate parses it and names the sectors that belong to no partition. It is `no_std`,
-allocates nothing, has no `unsafe` and no dependency.
+signature. This crate parses it, names the sectors that belong to no partition, and writes and
+checks the protective MBR a `GPT` disk carries. It is `no_std`, allocates nothing, has no `unsafe`
+and no dependency.
 
 ## The contract
 
@@ -15,6 +16,12 @@ allocates nothing, has no `unsafe` and no dependency.
   first used partition and starting no lower than sector 1, as `(first, count)`. It is `None` for a
   protective MBR (a `GPT` disk keeps its header in that gap), a table with no partitions, a first
   partition at sector 0 or 1, or a `want` of 0. A caller that gets `None` must refuse to write.
+- `protective::write(sector, block_count)` writes a protective MBR: one record of type `0xEE`
+  starting at sector 1 and covering the disk, its size saturated to `0xFFFFFFFF` when 32 bits
+  cannot hold it. `protective::validate(sector, block_count)` accepts exactly such a record, either
+  size, and refuses a hybrid MBR (a second record with a type and a size) with
+  `protective::Problem::ExtraRecord`. Both take the first 512 bytes of the disk's first block,
+  whatever its block size.
 
 ## EXAMPLES
 
@@ -34,9 +41,11 @@ assert_eq!(table.scratch_sector_range(8), Some((2040, 8)));
 
 ## What is proven
 
-Two Kani harnesses (`src/verification.rs`), each with a falsification patch that turns it red. No
-partition table makes the scratch range touch a used partition or sector 0, and the parse accepts
-exactly the sectors that end in the signature and reads each entry from its own bytes.
+Three Kani harnesses (`src/verification.rs`), each with a falsification patch that turns it red. No
+partition table makes the scratch range touch a used partition or sector 0. The parse accepts
+exactly the sectors that end in the signature and reads each entry from its own bytes. The
+protective check never panics and accepts only a sector with the signature, a protective record
+starting at sector 1 and covering the disk, and no second partition.
 
 ## BUGS
 

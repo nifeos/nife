@@ -147,11 +147,7 @@ def check_static(copy, files, fail):
     m = tomllib.loads(text)
     pkg = m.get("package", {})
     # Inline what was inherited, in the copy only, so the steps after this one still say something.
-    if m.get("lints", {}).get("workspace"):
-        text = re.sub(r"(?ms)^\[lints\]\s*\nworkspace\s*=\s*true\s*\n", "", text)
-    for key, value in workspace.get("package", {}).items():
-        text = re.sub(rf"(?m)^{re.escape(key)}\.workspace\s*=\s*true", f'{key} = "{value}"', text)
-    open(path, "w").write(text)
+    open(path, "w").write(crate_release.inline_inherited(text, workspace.get("package", {})))
     targets = pkg.get("metadata", {}).get("docs", {}).get("rs", {}).get("targets") or BARE_METAL
     return pkg.get("rust-version") or "stable", targets, leaves
 

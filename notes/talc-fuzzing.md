@@ -43,39 +43,9 @@ fixed has to come from this tree.
 `crates/memory_region_heap/fuzz/` is an unpublished fuzz workspace with one target. It drives talc
 the way a nife program's heap does and checks the heap after every step.
 
-`MemoryRegionHeap` cannot run on a host yet. Its `grow` calls `user_mode_runtime::invoke`, which on
-an `x86_64` host is the host's own `syscall` instruction with nife's method number in `rax`.
-Milestone 1100 (`memory_region_heap`: what an outside maintainer would fix before it leaves) item
-8 adds a page-source seam for this. Until then, `src/policy.rs` restates the
-crate's `grow`, `shortfall`, `nonempty`, `initialize`, `commit_all` and the three `GlobalAlloc`
-methods, and lists every place it differs. A `PageSource` stands in for `memory_region::MAP`: it
-maps one page at a time from a host arena and refuses when its page budget runs out, as the kernel
-does.
-
-An input is a four-byte header (arena size in pages, page budget) and up to 512 operations. An
-operation initializes, commits all, allocates, frees, reallocates, sets the budget, reads every
-block back, or allocates a block that ends at the top of the heap. Sizes come in classes: empty, small, a page, a
-mebibyte, the cap and just past it, powers of two and their neighbors, and sizes near `isize::MAX`.
-Alignments run from 1 to 64 KiB, with the 64-byte cache line on its own bit.
-
-After every operation the target checks:
-
-- every live block has the alignment it asked for, lies inside the committed pages and overlaps no other;
-- the first and last 16 bytes of every block hold its own pattern, and the whole block does when the
-  target frees, moves or reads it;
-- reallocation keeps the old contents up to the smaller size;
-- committed bytes are whole pages, never past the cap, and equal to the pages mapped;
-- talc's heap end is the top of the committed pages;
-- talc's counters agree with the target: live allocations, live bytes, claimed bytes no more than
-  committed, at most one heap;
-- an initialize after the first effective one changes nothing;
-- the heap refuses an allocation only when it has no region, too little room under the cap, or no
-  budget left;
-- `commit_all` reports success only when the heap holds its whole cap;
-- talc's consistency scan passes before each operation, and AddressSanitizer sees no access to a
-  page the heap has not mapped.
-
-At the end the target frees every block and checks that talc counts none live.
+Its [README](../crates/memory_region_heap/fuzz/README.md) holds the input format, every invariant
+it checks and its BUGS. It drives a copy of the crate's policy rather than `MemoryRegionHeap`,
+because it reads talc's counters and heap end, which the crate keeps private.
 
 ## How to run it
 
@@ -113,13 +83,6 @@ asked to grow past the arena's end.
 
 ## BUGS
 
-- The target drives a copy of the policy, not `MemoryRegionHeap`. A change to the crate that the
-  copy misses goes unchecked. Milestone 1100 item 8's page source ends this.
-- The spinlock is out of scope: the target is single-threaded.
-- A heap whose top is the top of the address space, where a pointer sum wraps, cannot exist on a
-  64-bit host. The target puts blocks at the top of its arena instead; only Miri can tell that talc
-  formed a pointer past the arena there.
+- The target's own BUGS, the copy of the policy among them, are in its README.
 - Neither script/fuzz nor the CI fuzz job runs this target yet. script/lint type-checks it, and
   script/fmt formats it.
-- A run reaches about 120 inputs a second, because talc's consistency scan runs before every
-  operation and the target fills and reads every block byte by byte.

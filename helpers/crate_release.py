@@ -162,6 +162,21 @@ def manifest_findings(manifest):
     return found, leaves
 
 
+def inline_inherited(manifest, workspace_package):
+    """`manifest` with each key it inherits from the workspace written out, for a copy outside it.
+
+    A `<key>.workspace = true` line becomes `<key> = "<value>"` from `workspace_package` (the root
+    manifest's `[workspace.package]` table), and a `[lints]` table that only says
+    `workspace = true` is dropped, since its tables cannot be inlined line for line. The result
+    builds outside the workspace, so the build reports what blocks it next. `manifest_findings` has
+    already reported each inherited key; inlining them does not clear that finding.
+    """
+    text = re.sub(r'(?ms)^\[lints\]\s*\nworkspace\s*=\s*true\s*\n', '', manifest)
+    for key, value in workspace_package.items():
+        text = re.sub(rf'(?m)^{re.escape(key)}\.workspace\s*=\s*true', f'{key} = "{value}"', text)
+    return text
+
+
 def file_findings(root_names, license_field):
     """[(step, why)] for what a stranger needs at the crate's root."""
     found = []
@@ -304,6 +319,10 @@ def selftest():
     assert len(unbacked) == 1 and 'names ISC' in unbacked[0], unbacked
     wrong = why(f'({LICENSE}) AND BSD-2-Clause', {'src/lib.rs': notice})
     assert len(wrong) == 2, wrong
+    inherited = '[package]\nname = "x"\nlicense.workspace = true\n\n[lints]\nworkspace = true\n\n[dependencies]\n'
+    assert inline_inherited(inherited, {'license': LICENSE}) == \
+        f'[package]\nname = "x"\nlicense = "{LICENSE}"\n\n[dependencies]\n', inline_inherited(inherited, {'license': LICENSE})
+    assert 'workspace' not in inline_inherited(inherited, {'license': LICENSE})
     print('crate_release selftest: ok')
 
 

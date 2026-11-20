@@ -237,3 +237,153 @@ fn an_entries_block_count_never_panics_and_is_exact() {
         .and_then(|count| u64::try_from(count).ok());
     assert_eq!(entry.blocks(), wide);
 }
+
+/// **A backup header restores the table it was written from**, for every disk size `create`
+/// accepts.
+///
+/// The recovery path's field mapping: the header [`PartitionTable::write_backup_header`] encodes
+/// sits on the last block, points back at block 1 and puts its array after the last usable block
+/// and before itself, which is what [`PartitionTable::parse_backup`] checks, and the primary that
+/// `parse_backup` rebuilds from it is the table's own header, field for field. The bytes between
+/// are `encode_into` and `decode`, whose fields are proved by
+/// `a_headers_fields_survive_the_round_trip`; a harness through them as well carries two symbolic
+/// CRCs and did not finish in seventeen minutes. `tests/table.rs` runs the whole round trip at
+/// both block sizes over bytes.
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.a_backup_header_restores_the_table_it_was_written_from.patch`
+#[kani::proof]
+fn a_backup_header_restores_the_table_it_was_written_from() {
+    let part = Entry::new(types::LINUX_FILESYSTEM, Uuid::from_bytes([7; 16]), 3, 3);
+    let blocks: u64 = kani::any();
+
+    let mut array = [0u8; entry::ENTRY_BYTES];
+    let Ok(table) = PartitionTable::create(
+        Uuid::from_bytes([3; 16]),
+        MINIMUM_BLOCK_BYTES,
+        blocks,
+        &[part],
+        &mut array,
+    ) else {
+        return;
+    };
+
+    let backup = table.backup_header();
+    let last = blocks - 1;
+    assert_eq!(backup.my_logical_block_address, last);
+    assert_eq!(backup.alternate_logical_block_address, 1);
+    assert!(backup.entry_array_logical_block_address > backup.last_usable_logical_block_address);
+    assert!(
+        u128::from(backup.entry_array_logical_block_address)
+            + u128::from(table.entry_array_blocks())
+            <= u128::from(last)
+    );
+    assert_eq!(table::primary_from_backup(backup, last), *table.header());
+}
+
+/// **The checks `Header::decode` makes before its CRC are total**, on every 92-byte header in a
+/// 512-byte block: no panic, and a size that the CRC step can slice by.
+///
+/// The first of the two stages of `decode`'s totality. The second is
+/// `the_header_crc_in_pieces_is_the_crc_of_the_whole`, and `decode_fields` is total by
+/// `the_header_fields_partition_the_block`. A harness through the CRC as well would reason about a
+/// polynomial over 92 symbolic bytes, which is what the split avoids. The rest of the block is
+/// zero: every field these checks read is in the first 92 bytes, and with the whole block symbolic
+/// the harness took 158 seconds against 28. The host tests refuse a nonzero tail byte.
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.the_header_checks_before_the_crc_are_total.patch`
+#[kani::proof]
+#[kani::unwind(513)]
+fn the_header_checks_before_the_crc_are_total() {
+    let mut block = [0u8; MINIMUM_BLOCK_BYTES];
+    let fields: [u8; header::HEADER_BYTES as usize] = kani::any();
+    block[..fields.len()].copy_from_slice(&fields);
+    if let Ok(size) = Header::decode_checks(&block) {
+        assert!(size >= header::HEADER_BYTES as usize);
+        assert!(size <= block.len());
+    }
+}
+
+/// The input length the pieces harness quantifies over, shorter than [`PROVED_BYTES`] because it
+/// takes one CRC per pair of cuts. **Measured**: two bytes prove in 40 seconds, three in 139, and
+/// four did not finish in eight minutes. The property is the running CRC's carry from one piece to
+/// the next, which a cut between two bytes exercises.
+const PIECES_BYTES: usize = 2;
+
+/// **The CRC fed in pieces is the CRC of the pieces joined**, for every 2-byte input cut into
+/// three pieces at every pair of places.
+///
+/// The second stage of `decode`'s totality, and what lets the header's CRC be taken with its own
+/// CRC field read as zero without a scratch block: three pieces through one running CRC equal one
+/// CRC over the joined bytes. The cuts are enumerated rather than symbolic, so each comparison is
+/// between two fixed shapes of one computation and the solver does not search over lengths.
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.the_header_crc_in_pieces_is_the_crc_of_the_whole.patch`
+#[kani::proof]
+#[kani::unwind(4)]
+fn the_header_crc_in_pieces_is_the_crc_of_the_whole() {
+    let bytes: [u8; PIECES_BYTES] = kani::any();
+    let whole = crc::crc32(&bytes);
+    for first in 0..=PIECES_BYTES {
+        for second in first..=PIECES_BYTES {
+            let pieces = [&bytes[..first], &bytes[first..second], &bytes[second..]];
+            assert_eq!(crc::crc32_pieces(&pieces), whole);
+        }
+    }
+}
+
+/// **A span always contains what was asked for**, on every offset and length, at every transfer
+/// size a device in this tree reports and at 3, which divides nothing evenly: it starts at or
+/// before the range, ends at or after it, puts `offset` on the first wanted byte and reads no
+/// spare block. `None` only for a zero length or arithmetic that would leave a `u64`.
+///
+/// Stated in 128-bit arithmetic, which cannot overflow, so the proof is not the code compared with
+/// itself. The transfer size is concrete because a symbolic 64-bit divisor did not finish in
+/// seventeen minutes; the test `a_span_always_contains_what_was_asked_for` covers other sizes over
+/// a grid, and a zero transfer.
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.a_span_always_contains_what_was_asked_for.patch`
+#[kani::proof]
+fn a_span_always_contains_what_was_asked_for() {
+    for transfer in [1, 3, 512, 4096] {
+        a_span_contains_what_was_asked_for_at(transfer);
+    }
+}
+
+fn a_span_contains_what_was_asked_for_at(transfer: u64) {
+    let byte_offset: u64 = kani::any();
+    let len: u64 = kani::any();
+    let wanted_end = u128::from(byte_offset) + u128::from(len);
+    let t = u128::from(transfer);
+    match span::Span::covering(byte_offset, len, transfer) {
+        Some(s) => {
+            let start = u128::from(s.first_block) * t;
+            let end = start + u128::from(s.blocks) * t;
+            assert!(start <= u128::from(byte_offset));
+            assert!(end >= wanted_end);
+            assert_eq!(start + s.offset as u128, u128::from(byte_offset));
+            assert!(end - t < wanted_end);
+            assert!(u128::from(s.first_block) + u128::from(s.blocks) <= u128::from(u64::MAX));
+        }
+        None => {
+            if len != 0 {
+                // The two pieces of arithmetic the documentation names: the last wanted byte
+                // counted from the start of the first block, and the block one past the run.
+                let last_byte = u128::from(byte_offset) % t + u128::from(len) - 1;
+                let past_the_run = (wanted_end - 1) / t + 1;
+                let most = u128::from(u64::MAX);
+                assert!(last_byte > most || past_the_run > most);
+            }
+        }
+    }
+}
+
+/// **`name_utf8` is total and its documented buffer is always enough**, on every 36 code units a
+/// hostile entry can carry, unpaired surrogates included: with 144 bytes it always succeeds and stops
+/// inside the buffer. What it writes is `char::encode_utf8`'s, valid by construction.
+/// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.a_name_always_decodes_into_its_documented_buffer.patch`
+#[kani::proof]
+#[kani::unwind(37)]
+fn a_name_always_decodes_into_its_documented_buffer() {
+    let mut entry = Entry::new(types::LINUX_FILESYSTEM, Uuid::nil(), 3, 3);
+    entry.name = kani::any();
+    let mut out = [0u8; 4 * entry::NAME_UNITS];
+    let written = entry.name_utf8(&mut out);
+    assert!(written.is_ok());
+    assert!(written.unwrap() <= out.len());
+}

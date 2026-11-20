@@ -37,6 +37,7 @@
 //! - Boot 3's unchanged disk is proved under OVMF only (notes/installing.md says why).
 //! - Boot 3 needs the disk in the firmware's boot order (`NIFE_NVME_DEVICE_OPTS=,bootindex=1`).
 //! - A failure leaves the NVMe image behind, on purpose: it is the evidence.
+//! - The table it reads back is not checked against the image's size (`check_disk_size`).
 
 use std::io::{Read, Write};
 use std::path::PathBuf;
