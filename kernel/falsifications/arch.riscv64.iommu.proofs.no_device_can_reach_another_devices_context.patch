@@ -7,7 +7,7 @@ which is every device the one-frame directory held, so the edit reads as correct
 from the old shape. For id 64 and above the context is written past the end of its leaf's single
 frame into whatever the allocator handed out next.
 
-Expected to fail: `assert!(pa.offset + dc_bytes <= page_frames::FRAME_SIZE, "every context the
+Expected to fail: `assert!(pa.offset + dc_bytes <= page_frames::FRAME_BYTES, "every context the
 bound admits lies inside its leaf's single frame")`. Confirmed red on 2026-11-11 (UTC), on an
 x86_64 host, against this file's pure functions and harness compiled on their own.
 
@@ -19,7 +19,7 @@ diff --git a/kernel/src/arch/riscv64/iommu.rs b/kernel/src/arch/riscv64/iommu.rs
 --- a/kernel/src/arch/riscv64/iommu.rs
 +++ b/kernel/src/arch/riscv64/iommu.rs
 @@ -199,7 +199,7 @@
-     let per_leaf = page_frames::FRAME_SIZE / dc_bytes;
+     let per_leaf = page_frames::FRAME_BYTES / dc_bytes;
      Some(DirectoryPosition {
          leaf: (rid as u64 / per_leaf) as usize,
 -        offset: (rid as u64 % per_leaf) * dc_bytes,

@@ -53,8 +53,13 @@ fn destroy_force_kills_a_runaway_and_reclaims_its_region() {
     .expect("map stack");
 
     let tid = sched::create_thread_control_block(region).expect("no tcb");
-    sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_SIZE, aspace)
-        .expect("configure");
+    sched::configure_thread_control_block(
+        tid,
+        CODE_VA,
+        STACK_VA + page_frames::FRAME_BYTES,
+        aspace,
+    )
+    .expect("configure");
     sched::start_thread_control_block(tid, [0; 3]).expect("start");
 
     // Let the runaway reach EL0, so the teardown is of a running thread, not an embryo.
@@ -196,8 +201,13 @@ fn child_blocked_on(
         slot, 0,
         "the rendezvous must land in slot 0 (every stub here assumes it)"
     );
-    sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_SIZE, aspace)
-        .expect("configure");
+    sched::configure_thread_control_block(
+        tid,
+        CODE_VA,
+        STACK_VA + page_frames::FRAME_BYTES,
+        aspace,
+    )
+    .expect("configure");
     sched::start_thread_control_block(tid, [0; 3]).expect("start");
     (region, tid)
 }
@@ -266,8 +276,13 @@ fn destroy_reclaims_a_region_whose_resident_is_blocked_in_receive() {
         slot, 0,
         "the rendezvous must land in slot 0 (the stub assumes it)"
     );
-    sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_SIZE, aspace)
-        .expect("configure");
+    sched::configure_thread_control_block(
+        tid,
+        CODE_VA,
+        STACK_VA + page_frames::FRAME_BYTES,
+        aspace,
+    )
+    .expect("configure");
     sched::start_thread_control_block(tid, [0; 3]).expect("start");
 
     // Wait until it is queued: a child still `Ready` would take the ordinary force-kill path.

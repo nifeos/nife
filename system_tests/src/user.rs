@@ -11,7 +11,7 @@
 // private or not; a glob across crates sees only `pub` items, so the suite's half repeats them.
 pub use kernel::system_test_access::user::*;
 #[allow(unused_imports)]
-use page_frames::{FRAME_SIZE, PageFrame};
+use page_frames::{FRAME_BYTES, PageFrame};
 #[allow(unused_imports)]
 use page_tables::{Flags, Half, MapError, Mapper};
 #[allow(unused_imports)]
@@ -29,7 +29,7 @@ use crate::memory;
 /// The frame size as the page size `static_elf` rounds segments to, as the kernel's loader uses it.
 ///
 /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
-const FRAME_PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(FRAME_SIZE).unwrap();
+const FRAME_PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(FRAME_BYTES).unwrap();
 
 /// **Whether the x86_64 runner was told to attach a device** (milestone 420 (x86_64 has one fixture
 /// of five and no NIC, GPU, keyboard or RNG)), baked in by `build.rs` because the guest cannot read

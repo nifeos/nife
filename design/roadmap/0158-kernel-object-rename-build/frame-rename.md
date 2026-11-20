@@ -64,7 +64,7 @@ These renamed once the four collisions above were excluded.
   - the `kernel/src/user/frame_service.rs` module (a kernel-side Frame-producer/consumer test
     wiring) -> `page_frame_service.rs`, now in `system_tests/src/user/`.
 
-`FRAME_SIZE` was checked and left alone deliberately. Every use names the size of one physical page
+`FRAME_BYTES` was checked and left alone deliberately. Every use names the size of one physical page
 frame, which is the correct, unambiguous sense already.
 
 ## `DeviceFrame`, left unrenamed

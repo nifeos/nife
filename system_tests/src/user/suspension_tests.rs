@@ -116,7 +116,7 @@ fn a_suspended_user_thread_stands_still_and_resumes_with_its_registers() {
     call(
         tcb,
         abi::thread_control_block::CONFIGURE,
-        [CODE_VA, STACK_VA + page_frames::FRAME_SIZE, given],
+        [CODE_VA, STACK_VA + page_frames::FRAME_BYTES, given],
     )
     .expect("CONFIGURE");
     sched::start_thread_control_block(tid, [VA, 0, 0]).expect("start");

@@ -78,13 +78,13 @@ pub(super) fn release_window(w: u64) {
     let phys = WINDOWS[w as usize].load(Ordering::Relaxed);
     if phys != 0 {
         // SAFETY: a frame this module allocated and still owns, via the direct map; FILE_PAGES
-        // frames of FRAME_SIZE bytes, reachable and mapped only into the FS server and whatever
+        // frames of FRAME_BYTES bytes, reachable and mapped only into the FS server and whatever
         // client last held this window (now gone).
         unsafe {
             core::ptr::write_bytes(
                 mmu::phys_to_virt(phys) as *mut u8,
                 0,
-                FILE_PAGES * FRAME_SIZE as usize,
+                FILE_PAGES * FRAME_BYTES as usize,
             );
         }
     }

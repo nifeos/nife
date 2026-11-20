@@ -17,7 +17,7 @@ An appendix to [the milestone](../1103-page-frames-outside-review.md).
   `patch -p1 --dry-run -F0` at no offset, and `falsify.py` passes on the staged tree.
 - `prose_acronyms.py` over `src/` and `tests/` reports nothing.
 - Decisions 1 and 2 have rulings, one rename lane has performed them and the two-way
-  renames of item 8, and `cargo build` of the kernel for all three architectures is green.
+  renames of item 8, and `cargo build` of the kernel for all three architectures is green. Done.
 - `page_frames_covering` (or the ratified name) exists and `kernel/src/memory.rs` calls it.
 - Every pure function and both allocation functions carry `#[must_use]`.
 - `check` and `proofs` are green on `main` in the new repository for the crate's own reasons.

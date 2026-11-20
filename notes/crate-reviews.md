@@ -75,7 +75,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`grant_plan`](crate-reviews/grant-plan.md) | 5 | ready for review |
 | [`grant_contract`](crate-reviews/grant-contract.md) | contract | ready for review |
 | [`domain_name_system`](crate-reviews/domain-name-system.md) | 5 | ready for review |
-| [`interfaces_note`](crate-reviews/interfaces-note.md) | 3 | ready for review |
+| [`interfaces_note`](crate-reviews/interfaces-note.md) | 3 | cleared to move (2026-11-20 UTC, no tag, no publish) |
 | [`static_elf`](crate-reviews/static-elf.md) | kernel | cleared to move (2026-11-20 UTC, no tag, no publish); the public names stay provisional until the architect ratifies them |
 | [`e1000e`](crate-reviews/e1000e.md) | 6 | cleared to move; repository exists |
 | [`designware_ethernet`](crate-reviews/designware-ethernet.md) | 7 | cleared to move; repository exists |
@@ -98,6 +98,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`user_mode_runtime`](crate-reviews/user-mode-runtime.md) | 3 | ready for review |
 | [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | ready for review |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |
+| [`page_frames`](crate-reviews/page-frames.md) | kernel | ready for review |
 | [`inter_process_communication`](crate-reviews/inter-process-communication.md) | - | ready for review; the move waits for `intrusive_queue` (milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release)) |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |
 | [`byte_glob`](crate-reviews/byte-glob.md) | contract | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for the prove shard and the `step_bound` rename to land |

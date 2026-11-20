@@ -80,7 +80,7 @@ fn a_process_can_build_start_and_run_a_child_thread() {
     crate::sched::configure_thread_control_block(
         tid,
         CODE_VA,
-        STACK_VA + page_frames::FRAME_SIZE,
+        STACK_VA + page_frames::FRAME_BYTES,
         aspace,
     )
     .expect("configure");
@@ -168,7 +168,7 @@ fn reclaim_frees_a_started_then_exited_childs_regions() {
     crate::sched::configure_thread_control_block(
         tid,
         CODE_VA,
-        STACK_VA + page_frames::FRAME_SIZE,
+        STACK_VA + page_frames::FRAME_BYTES,
         aspace,
     )
     .expect("configure");
@@ -257,7 +257,7 @@ fn spawn_to_reap_repeats_without_leaking() {
         crate::sched::configure_thread_control_block(
             tid,
             CODE_VA,
-            STACK_VA + page_frames::FRAME_SIZE,
+            STACK_VA + page_frames::FRAME_BYTES,
             aspace,
         )
         .expect("configure");

@@ -43,7 +43,9 @@ fn a_user_client_moves_data_through_shared_memory() {
     // The shared page, owned by the test (not by either address space), so `map_physical`
     // will not free it. Deliberately leaked: the client spins forever, so there is no safe
     // moment to reclaim it, and one page is a fine price for the test.
-    let shared = crate::memory::alloc().expect("no shared frame").addr();
+    let shared = crate::memory::alloc()
+        .expect("no shared frame")
+        .physical_address();
 
     // The server: a kernel thread that reads the shared page and records the first message.
     sched::spawn(move || {
@@ -132,7 +134,7 @@ fn map_physical_maps_a_shared_frame_and_a_device_page() {
     let device_phys = mmu::VIRTIO_MMIO_BASE;
 
     let mut space = AddressSpace::new(2).expect("no address space");
-    let frame = crate::memory::alloc().expect("no frame").addr();
+    let frame = crate::memory::alloc().expect("no frame").physical_address();
 
     space
         .map_physical(
@@ -164,7 +166,7 @@ fn map_physical_maps_a_shared_frame_and_a_device_page() {
         );
         assert!(dev_f.is_user_accessible() && dev_f.is_writable());
     });
-    crate::memory::free(PageFrame::from_addr(frame));
+    crate::memory::free(PageFrame::from_physical_address(frame));
     drop(space);
 }
 
