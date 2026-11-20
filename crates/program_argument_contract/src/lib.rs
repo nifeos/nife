@@ -426,6 +426,18 @@ mod tests {
             .collect()
     }
 
+    /// The builder prints its counts and not the page, so the output is short and names both.
+    #[test]
+    fn builder_debug_shows_counts_only() {
+        let mut page = [0u8; PAGE_BYTES];
+        let mut b = PageBuilder::new(&mut page).unwrap();
+        b.push(b"rg").unwrap();
+        let text = format!("{b:?}");
+        assert!(text.starts_with("PageBuilder"));
+        assert!(text.contains("count: 1"));
+        assert!(text.contains("used: "));
+    }
+
     /// Any byte survives, which is the reason the layout is length-prefixed: a NUL and a `0xff`
     /// in the middle of an argument, and an argument that is empty.
     #[test]
