@@ -106,6 +106,12 @@ def values(text, path):
     return found
 
 
+def one_spelling(doc):
+    """The system call spelling is one word read two ways: `syscall` and `system call` (or
+    `system_call`) mean the same in a doc comment, so respelling it is not a new meaning."""
+    return re.sub(r'(?i)system[ _]call|syscall', 'syscall', doc)
+
+
 def renames(before, after, renamed_names=None):
     """{removed key: added key} for the one-to-one renames: same kind, value and meaning.
 
@@ -121,7 +127,7 @@ def renames(before, after, renamed_names=None):
         groups = {}
         for key in keys:
             value, (kind, doc) = side[key]
-            groups.setdefault((key[0], (value, (kind, spell(doc)))), []).append(key)
+            groups.setdefault((key[0], (value, (kind, one_spelling(spell(doc))))), []).append(key)
         return groups
     removed = by_signature(set(before) - set(after), before, respell)
     added = by_signature(set(after) - set(before), after, lambda doc: doc)
@@ -292,6 +298,14 @@ def selftest():
           {'crates/abi/src/memory_region.rs': (named.format('OLD', ''),
                                                named.format('NEW', '').replace('makes one', 'OTHER makes one'))},
           True)
+    spelled = ('pub const ABI_VERSION: u32 = 1;\n/// The {} number is not one of the five.\n'
+               'pub const {}: u64 = 6;\n')
+    fails('a renamed constant whose doc respells the system call passes',
+          {'crates/abi/src/lib.rs': (spelled.format('syscall', 'BAD_SYSCALL'),
+                                     spelled.format('system call', 'BAD_SYSTEM_CALL'))}, False)
+    fails('a renamed constant whose doc changes more than the spelling still fails',
+          {'crates/abi/src/lib.rs': (spelled.format('syscall', 'BAD_SYSCALL'),
+                                     spelled.format('system call', 'BAD_SYSTEM_CALL').replace('five', 'six'))}, True)
     siblings = ('pub const ABI_VERSION: u32 = 1;\n/// End the process.\npub const {0}EXIT: u64 = 0;\n'
                 '/// End the thread; the last one ends the process, as [`{0}EXIT`] would.\n'
                 'pub const {0}EXIT_THREAD: u64 = 4;\n')

@@ -28,7 +28,7 @@ fn qemu_max() -> CpuidWords {
         // Leaf 7 subleaf 0. EBX bit 18 is RDSEED, which this model reports.
         leaf7_0: [0, 1 << 18, 0, 0],
         extended_maximum_leaf: 0x8000_0021,
-        // EDX bit 20 NX, bit 11 SYSTEM CALL, plus the bits every long-mode part sets that this
+        // EDX bit 20 NX, bit 11 `SYSCALL`, plus the bits every long-mode part sets that this
         // decoder does not read.
         extended_leaf1_edx: (1 << 20) | (1 << 11) | (1 << 29),
         // No invariant TSC. See the doc comment.

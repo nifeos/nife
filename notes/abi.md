@@ -29,7 +29,7 @@ One instruction, `svc #0`. The kernel reads the registers, does the work, and re
 | `x0` | first argument | the `i64` result |
 | `x1`–`x4` | further arguments | (see the specific system call) |
 
-Five system call numbers <!--count:system-calls-->, and that is the whole width of the trap:
+Five system call numbers <!--count:system_calls-->, and that is the whole width of the trap:
 
 | `x8` | name | meaning |
 |---|---|---|

@@ -1,4 +1,4 @@
-//! The system call boundary. **Five calls <!--count:system-calls-->.**
+//! The system call boundary. **Five calls <!--count:system_calls-->.**
 //!
 //! `exit`, `exit_thread`, `yield` and `capability_delete` are authority over the caller itself, and
 //! `invoke(capability, method, a0, a1, a2)` is everything else, on a capability the caller was handed.

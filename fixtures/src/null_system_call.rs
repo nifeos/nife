@@ -65,7 +65,7 @@ fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
     exit();
 }
 
-/// One null system_call: a trap with an unrecognized number. The kernel returns an error, which we
+/// One null system call: a trap with an unrecognized number. The kernel returns an error, which we
 /// discard; we are timing the crossing, not the result. aarch64 `svc` + `x8`, RISC-V `ecall` + `a7`,
 /// `x86_64` `system_call` + `rax`.
 #[inline(never)]

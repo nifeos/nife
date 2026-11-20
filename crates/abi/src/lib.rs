@@ -1,7 +1,7 @@
 //! The system call boundary, as one crate the kernel and every user program depend on, so a change
 //! to the application binary interface (ABI) fails to compile on both sides at once.
 //!
-//! The surface is five calls <!--count:system-calls-->. `exit`, `exit_thread`, `yield` and
+//! The surface is five calls <!--count:system_calls-->. `exit`, `exit_thread`, `yield` and
 //! `capability_delete` act on the caller itself, and `invoke(capability, method, a0, a1, a2)` acts on everything
 //! else. The trap moves six words in each direction, and the table below names the register that
 //! holds each one. On `invoke`, word 0 is the slot, word 1 the method and words 2 to 4 the
@@ -340,7 +340,7 @@ pub enum Error {
     /// No such method on that object.
     BadMethod = -5,
 
-    /// The system call number is not one of the five <!--count:system-calls-->.
+    /// The system call number is not one of the five <!--count:system_calls-->.
     BadSystemCall = -6,
 
     /// **The untyped region is exhausted.** The process ran out of the memory it was handed. The

@@ -51,7 +51,7 @@ fn a_range_read_out_of_the_memory_map_never_wraps_to_look_empty() {
 /// **A feature is never reported from a leaf the part does not answer.** A `CPUID` read above
 /// the maximum answers with another leaf's data, so only the maximum tells "clear" from "absent",
 /// and [`Isa::decode`] states that four times against two maxima. Milestone 524 (the three
-/// `x86_64` boot gates) refuses the boot on NX and SYSTEM CALL, which every machine here reports, so a
+/// `x86_64` boot gates) refuses the boot on NX and `SYSCALL`, which every machine here reports, so a
 /// wrong gate would be silent; gating an extended leaf on the standard maximum is one character.
 /// Falsification: replayable `crates/machine_discovery/falsifications/x86_64.verification.a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer.patch`
 #[kani::proof]

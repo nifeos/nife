@@ -7,7 +7,7 @@ An appendix to [`notes/capabilities.md`](../capabilities.md). It is the record o
 The decision (§10) is now code. Three things landed: an ABI that is one artifact, a capability
 table, and a system call dispatcher whose most important function is the one that says *no*.
 
-## 7d landed three calls; the surface is five today <!--count:system-calls-->
+## 7d landed three calls; the surface is five today <!--count:system_calls-->
 
 What 7d shipped, and the numbers in this section are 7d's rather than today's:
 

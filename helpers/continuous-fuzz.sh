@@ -228,7 +228,7 @@ classify() {
     status=ok
     next=$((first + 1))
     # The driver's own end line: `<n> seeds, <ms> ms (...)`.
-    line="$(grep -E '(system_call|confined) fuzzer: [0-9]+ seeds, ' "$log" | tail -1 || true)"
+    line="$(grep -E '(system call|confined) fuzzer: [0-9]+ seeds, ' "$log" | tail -1 || true)"
     replay="$(sed -n 's/.*replay: NIFE_[A-Z_]*=\([0-9][0-9]*\):1.*/\1/p' "$log" | head -1)"
     # A wait that ran out its tick budget says so first (`BUDGET_EXPIRED_MARKER` in kernel/src/testing.rs,
     # which the selftest checks against this word). It is held like a finding, but apart from one: it
