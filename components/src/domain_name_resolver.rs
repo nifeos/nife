@@ -21,7 +21,7 @@
 //!
 //! Name: ratified 2026-10-17 (calef, a program-naming session), replacing `name_resolver`: he
 //! proposed "`domain_name_resolver`" and confirmed it over `domain_name_system_resolver`. Refused
-//! `name_resolver` ("name" is ambiguous: `bare::resolve` resolves program names, `grant_plan::nav`
+//! `name_resolver` ("name" is ambiguous: `bare::resolve` resolves program names, `grant_plan::navigation`
 //! paths), `domain_name_system_resolver`, `dns_resolver` (§154 (the acronym test)), `resolver`.
 
 #![no_std]

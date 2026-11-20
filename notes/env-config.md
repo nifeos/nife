@@ -116,7 +116,7 @@ round trip.
   values a child will read. The chosen half is not: a shell cannot hand a child a different set
   (`TZ=Europe/Paris printenv`), because the page is the progenitor's and one frame serves every
   child. Building it means a per-spawn page and a way for the shell to say what goes on it, a
-  change to `spawnproto` that two programs agree on, and nothing needs it yet.
+  change to `spawn_protocol` that two programs agree on, and nothing needs it yet.
 - A `login` session's shell cannot see the values. `login` holds no configuration page, so the
   shells it builds find `SHELL_CONFIGURATION_SLOT` empty and `caps printenv` says it "cannot show their
   values". Only the boot prompt's shell holds the view. Children spawned from a session are still

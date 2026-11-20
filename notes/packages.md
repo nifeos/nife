@@ -159,7 +159,7 @@ option D, the executable's bytes as frames the caller owns, with gate D2. Both a
 
 A command word with a `/` in it is a file. The shell binds the line against the manifest the file
 carries as an ELF note, or `uptime`'s if it has none: milestone 597 (a program carries its manifest
-in an ELF note). It opens the file and sends `spawnproto::request(len, ..)` with `IMAGE_BIT` set: word 0 is the byte length, then
+in an ELF note). It opens the file and sends `spawn_protocol::request(len, ..)` with `IMAGE_BIT` set: word 0 is the byte length, then
 one `SEND_CAPABILITY` per page narrowed to `READ`, then the grants as today, holding one frame at a time.
 
 The progenitor maps each frame through the loader's scratch window (`process_builder::map_scratch`), copies it into a
@@ -227,7 +227,7 @@ The progenitor is the installer, not a program, for §208's own reason: the auth
 which version is active performs the swap, and §219 already made it the table's reader. It holds the file service with `WRITE`, the image's catalog in its
 archive, and the frame-staging path an image request built. The client is `jig`
 ([milestone 809 (the package client becomes a program)](../design/roadmap/0809-the-package-client-becomes-a-program.md),
-[packages/jig.md](packages/jig.md)). It sends `spawnproto::ACTIVATION_BIT` (provisional) on an
+[packages/jig.md](packages/jig.md)). It sends `spawn_protocol::ACTIVATION_BIT` (provisional) on an
 installer endpoint (§270 (a package manager holds an installer endpoint, not the spawn endpoint)),
 and each row records it as the manager.
 
@@ -280,7 +280,7 @@ removed) is met, and so is §219's gate D2. The boot prompt is the owner's conso
   file, directory, input, option or `std` runtime yet. Milestone 597's BUGS has the list.
 - Only a plain line runs an image. A path in a pipe or behind a redirection reaches the planner as
   a program name and is refused as "no such program", and `caps <path>` prints no `provenance:`
-  row. `crates/program_table/src/spawnproto.rs`'s `BUGS` has the full list.
+  row. `crates/program_table/src/spawn_protocol.rs`'s `BUGS` has the full list.
 - The package source is compiled into `jig`: the runners' peer at 10.0.2.9:8080
   (`socket_contract::fixture`). A booted system outside QEMU has no source to fetch from, and §195's
   per-source trust needs a way to name one.

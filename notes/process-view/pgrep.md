@@ -101,7 +101,7 @@ cannot recover from. So `Selector::from_pattern` goes through `Selector::of` and
 ## The limitation that shaped it, which is a property of the boundary
 
 Nothing in this system delivers bytes from a command line to a program. `Endowment::program_argument` is one
-`u64`, and `spawnproto` carries three words. Every string-shaped designation a person types (a file,
+`u64`, and `spawn_protocol` carries three words. Every string-shaped designation a person types (a file,
 a directory) arrives at the child as a capability. That is what `rm logs/old` and `doc
 notes/glob.md` both are, and it is why `rm` learns nothing about the name it removes.
 
