@@ -10,7 +10,7 @@
 
 use filesystem_contract::fs;
 use filesystem_fixture as fixture;
-use grant_plan::nav::{TwoRoots, Which};
+use grant_plan::navigation::{TwoRoots, Which};
 use user_mode_runtime::{call, exit, send};
 
 use crate::channel::put_page;
@@ -20,7 +20,7 @@ use crate::channel::put_page;
 /// `b` (`other`), per `start_granted_two_dirs` in `kernel/src/user/fs_service/two_dirs.rs`.
 ///
 /// It proves the block's deliverable: `/a/inner` and `/b/secret` (its `/a/x` and `/b/y`) resolve
-/// through [`grant_plan::nav::TwoRoots`] and then open on the named caretaker; `/a/../b` is refused
+/// through [`grant_plan::navigation::TwoRoots`] and then open on the named caretaker; `/a/../b` is refused
 /// by `TwoRoots::resolve` before any request is sent; and neither caretaker's tree is reachable
 /// through the other's endpoint, asked directly of each (notes/dir-capability.md).
 pub(crate) fn two_dir() -> ! {

@@ -87,7 +87,7 @@ impl ManifestAuthorities {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct VerbGrant {
     /// The word, as typed after the program's name, or that word, one space and the word after
-    /// it, for a verb whose option changes what it holds (`list -u`). At most [`MAXIMUM_VERB`]
+    /// it, for a verb whose option changes what it holds (`list -u`). At most [`MAXIMUM_VERB_BYTES`]
     /// bytes. [`narrow_by_verb`] tries the two words first and then the first alone.
     pub verb: &'static str,
     /// What a line with this verb is endowed with, of what the manifest declares.
@@ -96,8 +96,8 @@ pub struct VerbGrant {
 
 /// The longest verb a verb table may hold, in bytes: `capability_manifest_note`'s record gives each sixteen.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_VERB: usize = 16;
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
+pub const MAXIMUM_VERB_BYTES: usize = 16;
 
 /// **A manifest narrowed by the verb a line used** (milestone 809 (the package client becomes a
 /// program), option V2, which calef's "One program." ruling of 2026-10-06 kept): with an empty
@@ -152,9 +152,9 @@ pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) ->
 }
 
 /// **The key [`narrow_by_verb`] looks up for a verb and the word after it**, copied into `out`: the
-/// verb, then a space and the word after it when both fit in [`MAXIMUM_VERB`] bytes, which is the
+/// verb, then a space and the word after it when both fit in [`MAXIMUM_VERB_BYTES`] bytes, which is the
 /// key a verb with an option has (`list -u`). `None` for an empty verb, one longer than
-/// [`MAXIMUM_VERB`], or one that holds a space itself. [`verb_of_page`] reads its two words off an
+/// [`MAXIMUM_VERB_BYTES`], or one that holds a space itself. [`verb_of_page`] reads its two words off an
 /// argument page, and a planner that reads them off a command line calls this with the same two.
 ///
 /// Name: provisional; public since lane `milestone/1094-grant-plan-split`, so that a planner in
@@ -162,14 +162,16 @@ pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) ->
 pub fn verb_key<'o>(
     verb: &[u8],
     option: Option<&[u8]>,
-    out: &'o mut [u8; MAXIMUM_VERB],
+    out: &'o mut [u8; MAXIMUM_VERB_BYTES],
 ) -> Option<&'o [u8]> {
-    if verb.is_empty() || verb.len() > MAXIMUM_VERB || verb.contains(&b' ') {
+    if verb.is_empty() || verb.len() > MAXIMUM_VERB_BYTES || verb.contains(&b' ') {
         return None;
     }
     out[..verb.len()].copy_from_slice(verb);
     let mut len = verb.len();
-    if let Some(option) = option.filter(|o| !o.is_empty() && len + 1 + o.len() <= MAXIMUM_VERB) {
+    if let Some(option) =
+        option.filter(|o| !o.is_empty() && len + 1 + o.len() <= MAXIMUM_VERB_BYTES)
+    {
         out[len] = b' ';
         out[len + 1..len + 1 + option.len()].copy_from_slice(option);
         len += 1 + option.len();
@@ -218,8 +220,8 @@ pub fn delegated_within(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
 /// **The verb on an argument page**: its `argv[1]`, and `argv[2]` after a space when both fit,
 /// as the program will read them. `grant_plan::verb_of`'s reading of the page `grant_plan::argv`
 /// assembled from the line, which is what the progenitor holds; `None` for a page that does not
-/// parse, has one word, or whose second is longer than [`MAXIMUM_VERB`] or holds a space.
-pub fn verb_of_page<'o>(page: &[u8], out: &'o mut [u8; MAXIMUM_VERB]) -> Option<&'o [u8]> {
+/// parse, has one word, or whose second is longer than [`MAXIMUM_VERB_BYTES`] or holds a space.
+pub fn verb_of_page<'o>(page: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
     let args = program_argument_contract::ArgPage::parse(page);
     let mut words = args.iter().skip(1);
     let verb = words.next()?;
@@ -274,13 +276,13 @@ mod tests {
     }
 
     /// **A page's verb fits the key buffer, and an empty word is no verb.** The shell's reading
-    /// caps a word at [`MAXIMUM_VERB`] before it reaches [`verb_key`], but the progenitor reads the
+    /// caps a word at [`MAXIMUM_VERB_BYTES`] before it reaches [`verb_key`], but the progenitor reads the
     /// page, where an argument may be any length: one byte too long would overrun `out`.
     #[test]
     fn a_page_verb_is_bounded_and_never_empty() {
         let read = |words: &[&[u8]]| {
             let page = page(words);
-            let mut out = [0u8; MAXIMUM_VERB];
+            let mut out = [0u8; MAXIMUM_VERB_BYTES];
             verb_of_page(&page, &mut out).map(<[u8]>::to_vec)
         };
         assert_eq!(
@@ -401,5 +403,42 @@ mod tests {
             None
         );
         assert_eq!(named(&[b"jig", b"install", b"greeting"], &mut out), None);
+    }
+
+    #[test]
+    fn verb_key_joins_verb_and_option_with_one_space() {
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(b"list", None, &mut out), Some(&b"list"[..]));
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(
+            verb_key(b"list", Some(b"-u"), &mut out),
+            Some(&b"list -u"[..])
+        );
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(b"list", Some(b""), &mut out), Some(&b"list"[..]));
+    }
+
+    #[test]
+    fn verb_key_refuses_an_empty_long_or_spaced_verb() {
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(b"", None, &mut out), None);
+        assert_eq!(verb_key(b"a b", None, &mut out), None);
+        let long = [b'x'; MAXIMUM_VERB_BYTES + 1];
+        assert_eq!(verb_key(&long, None, &mut out), None);
+        let exact = [b'x'; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(&exact, None, &mut out), Some(&exact[..]));
+    }
+
+    #[test]
+    fn verb_key_drops_an_option_that_does_not_fit() {
+        // 10 + 1 + 5 = 16 fits exactly; one more byte does not.
+        let verb = [b'v'; 10];
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        let key = verb_key(&verb, Some(b"-aaaa"), &mut out).unwrap();
+        assert_eq!(key.len(), 16);
+        assert_eq!(key[10], b' ');
+        assert_eq!(&key[11..], b"-aaaa");
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
+        assert_eq!(verb_key(&verb, Some(b"-aaaaa"), &mut out), Some(&verb[..]));
     }
 }

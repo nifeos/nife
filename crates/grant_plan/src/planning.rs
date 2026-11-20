@@ -11,7 +11,7 @@ use crate::line::{Sink, Source};
 use crate::{
     CapabilityKind, DirectoryGrant, DirectoryGrantDeclaration, Endowment, FileGrant,
     FileGrantDeclaration, Holdings, InputDeclaration, Manifest, MemoryGrantDeclaration,
-    ParsedInvocation, ProgramArgumentDeclaration, Refusal, check_words, expand, line, nav,
+    ParsedInvocation, ProgramArgumentDeclaration, Refusal, check_words, expand, line, navigation,
     parse_u64,
 };
 
@@ -472,11 +472,11 @@ fn designate(
     at: usize,
     holds: &Holdings,
     expanded: &Expansion,
-) -> Result<(nav::Which, nav::Cwd, NameSet), Refusal> {
+) -> Result<(navigation::Which, navigation::Cwd, NameSet), Refusal> {
     // Refuses a pattern anywhere but the last component before anything else looks at the token,
     // because `a*/b` is not a smaller question than `a*`, it is a different one (notes/glob.md).
     let magic = expand::magic_component(token)?;
-    let parsed = nav::path(token).map_err(nav_refusal)?;
+    let parsed = navigation::path(token).map_err(nav_refusal)?;
     let (lead, last) = parsed
         .split_last_component()
         .ok_or(Refusal::FileNotNameable)?;
@@ -484,7 +484,7 @@ fn designate(
     // [`Holdings::locate`] says which tree serves it. The anchor and the apply are spelled out
     // rather than through `resolve_steps` because this runs on the shell's planning path on a few
     // pages of stack, and one frame fewer is the margin `glob_grant_tests` records.
-    let mut place = nav::Cwd::root();
+    let mut place = navigation::Cwd::root();
     let rest = holds.anchor(parsed.is_from_root(), lead, &mut place);
     place.apply(rest).map_err(nav_refusal)?;
     let (which, dir) = holds.locate(&place);
@@ -511,11 +511,11 @@ fn designate(
 /// A navigation refusal, in the vocabulary the prompt prints for a *grant*.
 ///
 /// Every navigation refusal now reads as a fact about the token's shape, which it did not before
-/// 2026-08-18: `nav::Refused::Absolute` had its own line here because "there is no namespace to
+/// 2026-08-18: `navigation::Refused::Absolute` had its own line here because "there is no namespace to
 /// root a path in" was a statement about the model rather than about the token. A leading `/` roots
-/// in the holder's own namespace now (`nav::Path::is_from_root`), so the case is gone rather than
+/// in the holder's own namespace now (`navigation::Path::is_from_root`), so the case is gone rather than
 /// re-worded.
-pub(crate) fn nav_refusal(_r: nav::Refused) -> Refusal {
+pub(crate) fn nav_refusal(_r: navigation::Refused) -> Refusal {
     Refusal::FileNotNameable
 }
 

@@ -11,7 +11,7 @@ Three things a caller does not guess:
 - **One name, not a path.** `/` is an ordinary byte, so `matches(b"*.txt", b"dir/notes.txt")` is
   `true`. A caller that matches a path splits it first. Recursive descent (`**`) belongs to the
   layer that walks directories, because descending is an authority, not a match.
-- **A leading `.` needs a literal `.`** by default (`Dot::Special`), the reading that grants less.
+- **A leading `.` needs a literal `.`** by default (`LeadingDot::Special`), the reading that grants less.
   `*` does not match `.config`; `[.]config` does not either, because a bracket expression is a
   wildcard however few members it has. `.` and `..` are ordinary names to the matcher, so `.*`
   matches both. The layer that enumerates a directory decides whether to offer them.
@@ -24,7 +24,7 @@ candidate, which is more authority than listing a directory) and no POSIX (Porta
 ## The contract
 
 - `matches(pattern, name)` and `matches_with(pattern, name, dot)`: does the pattern match the name.
-  `Dot::Special` is the default; `Dot::Ordinary` treats a leading `.` as any other byte.
+  `LeadingDot::Special` is the default; `LeadingDot::Ordinary` treats a leading `.` as any other byte.
 - `has_magic(pattern)` and `literal(pattern, out)`: is the word a pattern at all, and if not, what
   name is it with the escapes stripped. `literal` returns `None` rather than truncate.
 - `match_steps(pattern, name, dot)` and `cost_bound(pattern_bytes, name_bytes)`: the cost of a
@@ -37,11 +37,11 @@ complement, `\x` the byte `x`, anything else itself.
 ## EXAMPLES
 
 ```rust
-use byte_glob::{matches, matches_with, has_magic, literal, Dot};
+use byte_glob::{matches, matches_with, has_magic, literal, LeadingDot};
 
 assert!(matches(b"*.txt", b"notes.txt"));
 assert!(!matches(b"*", b".hidden"));
-assert!(matches_with(b"*", b".hidden", Dot::Ordinary));
+assert!(matches_with(b"*", b".hidden", LeadingDot::Ordinary));
 assert!(matches(b"*.txt", b"dir/notes.txt")); // one name: `/` is a byte
 
 assert!(has_magic(b"*.txt"));

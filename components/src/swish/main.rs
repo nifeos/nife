@@ -8,7 +8,7 @@
 //! # Capability contract
 //!
 //! - slot 0: the terminal rendezvous (CALL: `OPERATION_WRITE` / `OPERATION_READLINE`).
-//! - slot 1: a spawn rendezvous (direct the progenitor to start a program; `program_table::spawnproto`).
+//! - slot 1: a spawn rendezvous (direct the progenitor to start a program; `program_table::spawn_protocol`).
 //! - slot 2: a result rendezvous (receive a spawned program's answer).
 //! - slot 3: an untyped budget, the memory it grants with `--mem`.
 //! - `OUT_VA` (text out) and `LINE_VA` (lines in): pages shared with the terminal. The directory
@@ -41,12 +41,12 @@
 use filesystem_contract::{directory_entry, fs};
 use grant_plan::expand::{Expander, NameSet, Resume};
 use grant_plan::line::{self, Line, Source};
-use grant_plan::nav::{self, Cwd, Refused, Step};
+use grant_plan::navigation::{self as grant_navigation, Cwd, Refused, Step};
 use grant_plan::{
     Action, Command, DirectoryGrant as GrantDir, Endowment, Escalation, ParsedInvocation, Refusal,
     Streams, TouchOperands,
 };
-use program_table::{Program, job_page_frame, spawnproto};
+use program_table::{Program, job_channel_page, spawn_protocol};
 use swish::{Route, Say, Status, Untimed, sequence};
 use terminal_contract as proto;
 use user_mode_runtime::mapped_window::MappedWindow;

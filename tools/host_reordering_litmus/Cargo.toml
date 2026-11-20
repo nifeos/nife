@@ -17,7 +17,7 @@ test = false
 bench = false
 
 [dependencies]
-spin_lock = { path = "../../crates/spin_lock" }
+test_and_set_lock = { path = "../../crates/test_and_set_lock" }
 
 [profile.dev]
 panic = "abort"

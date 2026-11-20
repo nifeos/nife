@@ -19,7 +19,7 @@
 
 pub mod expand;
 pub mod line;
-pub mod nav;
+pub mod navigation;
 pub mod word;
 
 mod command;
@@ -34,9 +34,9 @@ mod tests;
 
 pub use command::{
     Command, DirectoryGrant, Endowment, FileGrant, Holdings, MAXIMUM_SHORT_OPTIONS, MountedTree,
-    TouchOperands, rmopt,
+    TouchOperands, rm_options,
 };
-pub use escalation::{Action, COOP_GRACE_TICKS, Escalation};
+pub use escalation::{Action, COOPERATIVE_GRACE_POLLS, Escalation};
 // The declarations a line is planned against, in scope under the names the modules here always
 // used. Not re-exported: each item has one public path, in `grant_contract`.
 pub(crate) use grant_contract::*;
@@ -57,6 +57,8 @@ pub use refusal::{CapabilityKind, Refusal};
 mod lexing;
 
 use lexing::*;
-pub use lexing::{MAXIMUM_FILE_NAME, MAXIMUM_WORDS_NAME_BYTES, file_name_fits, parse_u64, trim};
+pub use lexing::{
+    MAXIMUM_FILE_NAME_BYTES, MAXIMUM_WORDS_NAME_BYTES, file_name_fits, parse_u64, trim,
+};
 
 // ---- small byte helpers (no_std, no alloc) ----

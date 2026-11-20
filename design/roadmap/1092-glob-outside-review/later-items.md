@@ -44,9 +44,9 @@ matcher moves behind `#[cfg(any(test, fuzzing))]` or into the target. M.
 #### P2-5. Two harnesses quantify over one dot rule where both are cheap
 
 `the_cost_never_exceeds_the_bound` and `no_magic_means_the_pattern_is_its_own_only_match` fix
-`Dot::Ordinary`. Under `Dot::Special` the first is trivially stronger (a refused name costs zero
+`LeadingDot::Ordinary`. Under `LeadingDot::Special` the first is trivially stronger (a refused name costs zero
 steps) and the second is the claim the shell's grant planner relies on with the default rule. Both
-can take a symbolic `Dot` as `matching_is_total` does, at the cost of a second path through the
+can take a symbolic `LeadingDot` as `matching_is_total` does, at the cost of a second path through the
 loop. The first also redefines its own `SHORT` bound instead of calling `any_lengths()`
 (`src/lib.rs` lines 931 to 937). Two-way. S, plus solver time to re-measure.
 
