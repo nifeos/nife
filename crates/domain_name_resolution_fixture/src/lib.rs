@@ -10,10 +10,10 @@
 //!
 //! Not published: nothing outside this tree has a reason to read it.
 //!
-//! Name: provisional, minted 2026-11-20 (UTC) by lane 1086-resolver-contract-before-the-move; the
-//! crate holds what `domain_name_resolution_contract` held as its `fixture` module. Considered
-//! `name_resolver_fixture`, after the program, and followed `filesystem_fixture` and
-//! `socket_fixture`, which take their contract's name. Calef names crates.
+//! Name: ratified 2026-11-20 (UTC) (block 1086): `domain_name_resolution_fixture`, the crate that
+//! holds what `domain_name_resolution_contract` held as its `fixture` module. It takes its
+//! contract's name, as `filesystem_fixture` and `socket_fixture` do. Refused
+//! `name_resolver_fixture`, after the program.
 
 use domain_name_resolution_contract::{reject_code, status};
 use domain_name_system::{Error, Reject};
@@ -45,10 +45,10 @@ pub const ECHO_SKIPPED: u64 = 2;
 /// The test client's last report when the first name did not resolve, so there was nowhere to
 /// connect.
 ///
-/// Name: provisional, minted 2026-11-20 (UTC) by lane 1086-resolver-contract-before-the-move.
-/// Refused `ECHO_NO_ADDRESS`, the module's spelling, which the template's register check reads as a
-/// memory address that says neither virtual nor physical.
-pub const ECHO_NOTHING_RESOLVED: u64 = 3;
+/// Name: ratified 2026-11-20 (UTC) (block 1086). Refused `ECHO_NO_ADDRESS`, the module's spelling,
+/// which the template's register check reads as a memory address that says neither virtual nor
+/// physical, and `ECHO_NOTHING_RESOLVED`.
+pub const ECHO_UNRESOLVED: u64 = 3;
 /// The test client's last report when the connection or the echo failed.
 ///
 /// Name: provisional; the contract crate's `fixture` module held it under the same name.

@@ -36,7 +36,7 @@ use domain_name_resolution_contract::{
     OPERATION_RESOLVE, Outcome, endowment, request, status,
 };
 use domain_name_resolution_fixture::{
-    CASES, ECHO_FAILED, ECHO_NOTHING_RESOLVED, ECHO_OK, ECHO_SKIPPED, WITH_NETWORK,
+    CASES, ECHO_FAILED, ECHO_OK, ECHO_SKIPPED, ECHO_UNRESOLVED, WITH_NETWORK,
 };
 use socket_contract as socket;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
@@ -78,7 +78,7 @@ fn start(mode: u64, _a1: u64, _a2: u64) -> ! {
     }
     let echo = match (mode == WITH_NETWORK, first) {
         (false, _) => ECHO_SKIPPED,
-        (true, None) => ECHO_NOTHING_RESOLVED,
+        (true, None) => ECHO_UNRESOLVED,
         (true, Some(address)) => echo_at(endowment::server_octets(address)),
     };
     send(REPORT, CASES.len() as u64, echo, 0);

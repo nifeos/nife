@@ -44,7 +44,7 @@ appendix](1086-domain-name-resolution-contract-outside-review/before-the-tag.md)
 - 2, `fixture` is nife's boot-test data: Done, [#3838](https://github.com/nifeos/nife/pull/3838). The cases live in
   `crates/domain_name_resolution_fixture`, which stays in nife and is never published, the shape the
   maintainer's provisional ruling of 2026-11-19 (UTC) gave `socket_fixture`. Its crate name and
-  `ECHO_NOTHING_RESOLVED` (for `ECHO_NO_ADDRESS`, which `register_names` refuses) are provisional.
+  `ECHO_UNRESOLVED` (for `ECHO_NO_ADDRESS`, which `register_names` refuses) are ratified (decision 7).
 - 3, the manifest does not stand alone: Open. [#3641](https://github.com/nifeos/nife/pull/3641)
   wrote the manifest and [#3838](https://github.com/nifeos/nife/pull/3838) added the two license files. The pinned `git` dependency on
   `domain_name_system` waits until that crate has left, at step 5 of milestone 1017.
@@ -85,7 +85,8 @@ appendix](1086-domain-name-resolution-contract-outside-review/before-the-tag.md)
   `crates/system_initializer`. The spawner reads why the resolver refused a grant, but cannot write
   a line once the shell runs.
 - F-package, the review package: Done, [the review package](../../notes/crate-reviews/domain-name-resolution-contract.md) (decision 6).
-- F-clearance, review clearance: Open. [#3838](https://github.com/nifeos/nife/pull/3838) asks for the repository go.
+- F-clearance, review clearance: Done, decision 7. The architect cleared the review package and
+  approved `nifeos/domain_name_resolution_contract` on 2026-11-20 (UTC).
 
 ## Open decisions
 
@@ -183,7 +184,8 @@ The P1 items are in [the appendix](1086-domain-name-resolution-contract-outside-
 ## Decisions for the architect
 
 The doors that someone outside this repository acts on after the first tag. Every decision here is a rule
-in force. The architect ruled 2 and 3 on 2026-11-14 (UTC), and 1 and 4 to 6 on 2026-11-19 (UTC).
+in force. The architect ruled 2 and 3 on 2026-11-14 (UTC), 1 and 4 to 6 on 2026-11-19 (UTC), and 7
+on 2026-11-20 (UTC).
 
 1. The names (item 4). Ruled 2026-11-19 (UTC), option A. The 30 provisional names stand as built. A
    limit opens `MAXIMUM_` and ends with its unit, an address that is not a memory location says
@@ -246,6 +248,14 @@ in force. The architect ruled 2 and 3 on 2026-11-14 (UTC), and 1 and 4 to 6 on 2
    from a written package. Example: the move runs `script/crate-move` on a tree whose `standalone`
    check reports nothing.
 
+7. The fixture's names and the repository go. Ruled 2026-11-20 (UTC). The crate that holds the
+   boot-test fixture is `domain_name_resolution_fixture`, ratified, and the code for a client whose
+   first name did not resolve is `ECHO_UNRESOLVED`, with no alias. The review package is cleared:
+   the go creates `nifeos/domain_name_resolution_contract` with `publish = false`, no tag and no
+   publish, and the move waits for the `domain_name_system` tag. Door: one-way once the repository
+   exists. Prior art: `device_tree_blob` and `interfaces_note` cleared the same way. Example: the
+   test client reports `ECHO_UNRESOLVED` (3) when `packages.nife.test` does not resolve.
+
 ## Done when
 
 The checks are in [the appendix](1086-domain-name-resolution-contract-outside-review/done-when.md).
@@ -263,8 +273,8 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
 
 ## Follow-on
 
-- **Outstanding.** The open lines under [Finding status](#finding-status): items 3, 4 and 11, and
-  F-clearance.
+- **Outstanding.** The open lines under [Finding status](#finding-status): items 3, 4 and 11, which
+  the move carries out.
 
 ## Index row
 
@@ -273,5 +283,6 @@ An outside review of `domain_name_resolution_contract` before it leaves. Three i
 Eight land before the first tag. They are the reopened names, the interface identity, an undefined
 control reply word, three bounds for one field, an unchecked reply count, the README and a broken
 doc table, a proof over the grant table, and the six equivalent mutants. Three more are for later.
-The architect has ruled all six decisions: the control reply word, the identity, the names, the
-reply to an unknown transport, the attach operation's name and the review package and move.
+The architect has ruled all seven decisions: the control reply word, the identity, the names, the
+reply to an unknown transport, the attach operation's name, the review package and move, and the
+fixture's names with the repository go.
