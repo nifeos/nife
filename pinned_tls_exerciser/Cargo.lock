@@ -153,7 +153,8 @@ checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
 
 [[package]]
 name = "counter_frequency_contract"
-version = "0.1.0"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
 
 [[package]]
 name = "cpubits"

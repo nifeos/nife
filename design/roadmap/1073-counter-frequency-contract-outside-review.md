@@ -176,10 +176,15 @@ The checks are in [the done-when appendix](1073-counter-frequency-contract-outsi
   [#3635](https://github.com/nifeos/nife/pull/3635); it states that it is ready.
 - Clearance of the review package: Done. Ruled 2026-11-19 (UTC), under "Clearing the review
   package" above.
-- The move to its own repository: Open. A lane creates `nifeos/counter_frequency_contract` and
-  moves the crate there.
-- A pre-release tag: Open until the move. Ruled 2026-11-19 (UTC): `v0.1.0-pre.1` once the move
-  check and the release dry run pass, under "The pre-release tag" above.
+- The move to its own repository: Done. The crate lives at `nifeos/counter_frequency_contract`
+  and nife pins it by the commit of its tag.
+- The stranger test: Done. The record is `docs/stranger-test.md` in the new repository
+  ([nifeos/counter_frequency_contract#2](https://github.com/nifeos/counter_frequency_contract/pull/2)),
+  and [#3](https://github.com/nifeos/counter_frequency_contract/pull/3) closed its README findings.
+- A pre-release tag: Done. The release workflow made `v0.1.0-pre.1` once the first full mutation
+  run and the release dry run passed
+  ([#4](https://github.com/nifeos/counter_frequency_contract/pull/4) left the Kani harness module
+  out of mutation).
 - Publishing: Open. A contract crate never publishes to crates.io; the tag is its release.
 
 ## Open decisions
@@ -192,8 +197,8 @@ None. The publishing hold stands.
 - **Recorded.** The architect cleared the review (ruled 2026-11-19 UTC), which approves creating
   the repository and moving the crate. The same ruling approves the tag `v0.1.0-pre.1`, after the
   move check and the release dry run pass.
-- **Outstanding.** The move itself, which a lane carries out, and the move dry run's two gaps in
-  `helpers/crate_move.py`. The finding status above says what each needs.
+- **Outstanding.** The move dry run's two gaps in `helpers/crate_move.py`. The finding status
+  above says what each needs.
 - **Recorded.** Item 12 (`Debug` prints the address) is `design/roadmap/1073-counter-frequency-contract-outside-review/later-items.md`
   item 12: no change until the next API change.
 

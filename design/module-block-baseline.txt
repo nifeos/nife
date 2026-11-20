@@ -1762,25 +1762,15 @@ crates/domain_name_resolution_contract/src/endowment.rs::server
 
 crates/domain_name_resolution_contract/src/endowment.rs::server_octets
 
-crates/domain_name_resolution_contract/src/fixture.rs
 
-crates/domain_name_resolution_contract/src/fixture.rs::CASES
 
-crates/domain_name_resolution_contract/src/fixture.rs::Case
 
-crates/domain_name_resolution_contract/src/fixture.rs::ECHO_FAILED
 
-crates/domain_name_resolution_contract/src/fixture.rs::ECHO_NO_ADDRESS
 
-crates/domain_name_resolution_contract/src/fixture.rs::ECHO_OK
 
-crates/domain_name_resolution_contract/src/fixture.rs::ECHO_SKIPPED
 
-crates/domain_name_resolution_contract/src/fixture.rs::SERVER
 
-crates/domain_name_resolution_contract/src/fixture.rs::WITH_NETWORK
 
-crates/domain_name_resolution_contract/src/fixture.rs::ZONE
 
 crates/domain_name_resolution_contract/src/grants.rs::Control
 

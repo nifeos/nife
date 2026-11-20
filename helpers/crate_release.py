@@ -162,6 +162,21 @@ def manifest_findings(manifest):
     return found, leaves
 
 
+def inline_inherited(manifest, workspace_package):
+    """`manifest` with each key it inherits from the workspace written out, for a copy outside it.
+
+    A `<key>.workspace = true` line becomes `<key> = "<value>"` from `workspace_package` (the root
+    manifest's `[workspace.package]` table), and a `[lints]` table that only says
+    `workspace = true` is dropped, since its tables cannot be inlined line for line. The result
+    builds outside the workspace, so the build reports what blocks it next. `manifest_findings` has
+    already reported each inherited key; inlining them does not clear that finding.
+    """
+    text = re.sub(r'(?ms)^\[lints\]\s*\nworkspace\s*=\s*true\s*\n', '', manifest)
+    for key, value in workspace_package.items():
+        text = re.sub(rf'(?m)^{re.escape(key)}\.workspace\s*=\s*true', f'{key} = "{value}"', text)
+    return text
+
+
 def file_findings(root_names, license_field):
     """[(step, why)] for what a stranger needs at the crate's root."""
     found = []
@@ -202,6 +217,15 @@ def strip_name_blocks(text, remove=False):
             gone.add(i)
             i += 1
     if remove:
+        # A block set off by empty lines on both sides, as a crate root's `//!` paragraph is,
+        # would leave two empty lines in a row, which rustfmt refuses: one of them goes too.
+        for n in sorted(gone):
+            if n + 1 not in gone and n + 1 < len(lines) and not lines[n + 1].strip():
+                start = n
+                while start - 1 in gone:
+                    start -= 1
+                if start == 0 or not lines[start - 1].strip():
+                    gone.add(n + 1)
         return '\n'.join(line for n, line in enumerate(lines) if n not in gone)
     return '\n'.join('' if n in gone else line for n, line in enumerate(lines))
 
@@ -304,6 +328,10 @@ def selftest():
     assert len(unbacked) == 1 and 'names ISC' in unbacked[0], unbacked
     wrong = why(f'({LICENSE}) AND BSD-2-Clause', {'src/lib.rs': notice})
     assert len(wrong) == 2, wrong
+    inherited = '[package]\nname = "x"\nlicense.workspace = true\n\n[lints]\nworkspace = true\n\n[dependencies]\n'
+    assert inline_inherited(inherited, {'license': LICENSE}) == \
+        f'[package]\nname = "x"\nlicense = "{LICENSE}"\n\n[dependencies]\n', inline_inherited(inherited, {'license': LICENSE})
+    assert 'workspace' not in inline_inherited(inherited, {'license': LICENSE})
     print('crate_release selftest: ok')
 
 

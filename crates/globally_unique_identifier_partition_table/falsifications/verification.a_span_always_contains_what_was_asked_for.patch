@@ -1,0 +1,22 @@
+Falsifies `globally_unique_identifier_partition_table::verification::a_span_always_contains_what_was_asked_for`.
+
+The defect: the check that the span's end still names a block is gone, so a range near the top of
+a 64-bit disk gets a span whose first block plus its length passes `u64::MAX`. A caller that adds
+them to find the end wraps around to the start of the disk.
+
+Expected to fail: the harness's `assert!(u128::from(s.first_block) + u128::from(s.blocks) <= u128::from(u64::MAX))`,
+on an offset in the last block of the address space with a length that reaches past it.
+diff --git a/crates/globally_unique_identifier_partition_table/src/span.rs b/crates/globally_unique_identifier_partition_table/src/span.rs
+index c32845331..9a9602893 100644
+--- a/crates/globally_unique_identifier_partition_table/src/span.rs
++++ b/crates/globally_unique_identifier_partition_table/src/span.rs
+@@ -52,9 +52,6 @@ impl Span {
+         };
+         let blocks = last / transfer + 1;
+         // The read must still name a block: `first_block + blocks` is the one past the end.
+-        if first_block.checked_add(blocks).is_none() {
+-            return None;
+-        }
+         // A 32-bit host cannot hold an offset past `usize::MAX`; refuse rather than truncate.
+         if offset > usize::MAX as u64 {
+             return None;

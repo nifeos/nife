@@ -4,10 +4,7 @@
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
 use super::*;
-
-pub(super) const PAGE: u64 = 4096;
-
-pub(super) const MINIMUM_GROW_PAGES: u64 = 8;
+use super::heap_growth::{PAGE_BYTES, growth_pages, required_bytes, run_succeeded};
 
 pub(super) type Talc = talc::base::Talc<talc::source::Manual, talc::base::binning::DefaultBinning>;
 
@@ -16,6 +13,9 @@ pub(super) struct Inner {
     /// Where talc's one heap ends, which the next grow extends; `None` before the first claim.
     heap_end: Option<NonNull<u8>>,
     committed: u64,
+    /// Set when `MAP` refuses for any reason but a spent budget, which every retry would meet
+    /// again (an already-mapped address costs the region a page each time).
+    stopped: bool,
 }
 
 pub(super) struct SpinHeap {
@@ -32,6 +32,7 @@ pub(super) static HEAP: SpinHeap = SpinHeap {
         heap: Talc::new(talc::source::Manual),
         heap_end: None,
         committed: 0,
+        stopped: false,
     }),
 };
 
@@ -64,31 +65,35 @@ impl Guard {
 }
 
 /// Map at least `need` more contiguous bytes at the top of the committed range, from the
-/// untyped in slot 0. Same growth policy as `memory_region_heap`: geometric, floor of 8 pages,
-/// capped by `rt::HEAP_MAXIMUM`; only a fresh run big enough for the request counts as success.
+/// untyped in slot 0, by `memory_region_heap`'s growth policy (`heap_growth`): geometric, floor of
+/// 8 pages, capped by `rt::HEAP_MAXIMUM`, and only a fresh run big enough for the request counts as
+/// success. A refusal other than a spent budget stops growth for good, as it does there.
 pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
-    let need_pages = need.div_ceil(PAGE);
-    let want_pages = need_pages
-        .max(inner.committed / PAGE)
-        .max(MINIMUM_GROW_PAGES)
-        .min((rt::HEAP_MAXIMUM - inner.committed) / PAGE);
-    if want_pages < need_pages {
+    if inner.stopped {
         return false;
     }
+    let Some((need_pages, want_pages)) = growth_pages(inner.committed, rt::HEAP_MAXIMUM, need)
+    else {
+        return false;
+    };
     let start = rt::HEAP_BASE + inner.committed;
     let mut got: u64 = 0;
     while got < want_pages {
-        let va = start + got * PAGE;
-        // SAFETY: plain syscall; the kernel validates the slot, the va, and the budget.
-        if unsafe { rt::invoke(rt::MEMORY_REGION_SLOT, abi::memory_region::MAP, va, 0, 0) } != 0 {
+        let virtual_address = start + got * PAGE_BYTES;
+        // SAFETY: plain syscall; the kernel validates the slot, the address, and the budget.
+        let code = unsafe {
+            rt::invoke(rt::MEMORY_REGION_SLOT, abi::memory_region::MAP, virtual_address, 0, 0)
+        };
+        if code != 0 {
+            inner.stopped = abi::Error::from_ret(code) != Some(abi::Error::OutOfMemory);
             break;
         }
         got += 1;
     }
     if got > 0 {
-        inner.committed += got * PAGE;
+        inner.committed += got * PAGE_BYTES;
         let run = crate::ptr::with_exposed_provenance_mut::<u8>(start as usize);
-        let bytes = (got * PAGE) as usize;
+        let bytes = (got * PAGE_BYTES) as usize;
         // SAFETY: the range was just mapped writable for this process alone, adjacent to the heap
         // `heap_end` ends, or the first run of all, which `shortfall` sizes for talc's bins.
         inner.heap_end = unsafe {
@@ -98,21 +103,18 @@ pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
             }
         };
     }
-    got >= need_pages
+    run_succeeded(got, need_pages)
 }
 
 /// What a fresh run must add for `layout` to fit, as `memory_region_heap`'s `shortfall` reckons it:
-/// the chunk, alignment past talc's grid, and the bins on the first run, less what is free at the top.
+/// talc's bins on the first run, and what is already free at the top, given to `required_bytes`.
 fn shortfall(inner: &Inner, layout: Layout) -> u64 {
-    let unit = talc::base::CHUNK_UNIT;
-    let chunk = (layout.size() + crate::mem::size_of::<usize>()).next_multiple_of(unit);
-    let over_aligned = if layout.align() > unit { layout.align() } else { 0 };
     let (first, free_top) = match inner.heap_end {
         // SAFETY: `end` is the heap end talc last returned, and the heap has not changed since.
         Some(end) => (0, end.addr().get() - unsafe { inner.heap.reserved(end) }.up_to.addr().get()),
         None => (talc::min_first_heap_size::<talc::base::binning::DefaultBinning>(), 0),
     };
-    (chunk + over_aligned + first).saturating_sub(free_top) as u64
+    required_bytes(layout, talc::base::CHUNK_UNIT, first, free_top)
 }
 
 /// A block from the heap itself, growing it as needed; `None` when the region is spent. `layout` is

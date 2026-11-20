@@ -2,9 +2,9 @@
 """Write the seeds for the `memory_region_heap_sequence` fuzz target.
 
 Each seed is the target's header (arena pages, page budget; two little-endian bytes each) and a
-list of operations in the format crates/memory_region_heap/fuzz/src/lib.rs reads. Each seed names
-one shape a nife program's heap meets, so the fuzzer starts past the first initialize. Run from
-the repository root: python3 crates/memory_region_heap/fuzz/seeds/make-seeds.py
+list of operations in the format src/sequence.rs reads. Each seed names one shape a program's heap
+meets, so the fuzzer starts past the first initialize. The script writes beside itself, from any
+directory: python3 fuzz/seeds/make-seeds.py from the crate's root
 """
 import pathlib
 import struct

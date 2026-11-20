@@ -34,7 +34,7 @@ pub(super) struct CopiedFile {
 /// Every file [`std_generate_modules`] copies, in the order it copies them.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/farm-sources-from-cargo-metadata.
-pub(super) const COPIED_FILES: [CopiedFile; 14] = [
+pub(super) const COPIED_FILES: [CopiedFile; 15] = [
     CopiedFile {
         package: "abi",
         file: "src/lib.rs",
@@ -46,6 +46,14 @@ pub(super) const COPIED_FILES: [CopiedFile; 14] = [
         package: "allocation_cache",
         file: "src/lib.rs",
         destination: "sys/alloc/nife/allocation_cache.rs",
+    },
+    // The heap's growth arithmetic (how many pages a grow plans, when a run succeeds, and what a
+    // fresh run must add for a layout to fit), so std's heap grows by the same rule as
+    // `memory_region_heap` rather than a restatement of it.
+    CopiedFile {
+        package: "memory_region_heap",
+        file: "src/growth.rs",
+        destination: "sys/alloc/nife/heap_growth.rs",
     },
     // The net_stack socket-contract wire format, so the net PAL cannot drift from the server it
     // talks to.

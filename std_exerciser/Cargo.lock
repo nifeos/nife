@@ -58,7 +58,8 @@ dependencies = [
 
 [[package]]
 name = "counter_frequency_contract"
-version = "0.1.0"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
 
 [[package]]
 name = "crossbeam-deque"
@@ -96,6 +97,14 @@ dependencies = [
 name = "domain_name_resolution_contract"
 version = "0.1.0"
 dependencies = [
+ "domain_name_system",
+]
+
+[[package]]
+name = "domain_name_resolution_fixture"
+version = "0.1.0"
+dependencies = [
+ "domain_name_resolution_contract",
  "domain_name_system",
 ]
 
@@ -342,6 +351,7 @@ version = "0.1.0"
 dependencies = [
  "capability_manifest_note",
  "domain_name_resolution_contract",
+ "domain_name_resolution_fixture",
  "filesystem_contract",
  "filesystem_fixture",
  "grant_contract",

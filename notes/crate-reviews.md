@@ -89,7 +89,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`pci_configuration_space`](crate-reviews/pci-configuration-space.md) | 9 | ready for review; the move waits for the names |
 | [`page_tables`](crate-reviews/page-tables.md) | milestone 1104 (`paging`: what an outside maintainer would fix before the move) | names for the architect, then clearance |
 | [`subtree_scope`](crate-reviews/subtree-scope.md) | step 9 | eight provisional names for the architect; the move waits on P0-3's pin |
-| [`network_time_protocol`](crate-reviews/network-time-protocol.md) | 1102 | names and clearance for the architect |
+| [`network_time_protocol`](crate-reviews/network-time-protocol.md) | 1102 | cleared 2026-11-20; names ratified; move lane next |
 | [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | ready for review |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
 | [`domain_name_resolution_contract`](crate-reviews/domain-name-resolution-contract.md) | 6 | ready for review |

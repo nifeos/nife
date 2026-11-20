@@ -1,11 +1,13 @@
-//! GPT's GUIDs: how a GPT stores a UUID on disk, and the partition types worth recognizing by name.
+//! GPT's GUIDs: how a GPT stores a universally unique identifier (UUID) on disk, and the partition
+//! types worth recognizing by name.
 //!
-//! [`Uuid`] is in RFC 9562 byte order. On a GPT the first three groups are integers stored
-//! little-endian and the last two are stored as written (Microsoft's `GUID` struct, which RFC 9562
-//! section 4 names as the one known exception to big-endian storage): `C12A7328-F81F-11D2-BA4B-...`
-//! is `28 73 2A C1 1F F8 D2 11 BA 4B ...` on disk. [`from_disk`] and [`to_disk`] alone see that
-//! order, so a [`Uuid`] here is always canonical. This module says GUID, as the UEFI fields do
-//! (`PartitionTypeGUID`, `UniquePartitionGUID`, `DiskGUID`); the rest says UUID.
+//! [`Uuid`] is in Request for Comments (RFC) 9562 byte order. On a GPT the first three groups are
+//! integers stored little-endian and the last two are stored as written (Microsoft's `GUID` struct,
+//! which RFC 9562 section 4 names as the one known exception to big-endian storage):
+//! `C12A7328-F81F-11D2-BA4B-...` is `28 73 2A C1 1F F8 D2 11 BA 4B ...` on disk. [`from_disk`] and
+//! [`to_disk`] alone see that order, so a [`Uuid`] here is always canonical. This module says GUID,
+//! as the UEFI fields do (`PartitionTypeGUID`, `UniquePartitionGUID`, `DiskGUID`); the rest says
+//! UUID.
 
 pub use uuid::Uuid;
 
@@ -47,9 +49,9 @@ pub const fn to_disk(id: Uuid) -> [u8; 16] {
 ///
 /// Not an attempt at the full registry, which runs to several hundred entries and is a data problem
 /// rather than a kernel problem. These are the well-known types that answer the questions a
-/// partitioning tool asks: which partition holds the firmware's boot volume, which one holds a Linux
-/// filesystem, and what are the two things a Mac will have put on a disk. A system's own private
-/// types belong to that system and are not listed here.
+/// partitioning tool asks: which partition holds the firmware's boot volume, which one holds a
+/// Linux filesystem, and what are the two things a Mac will have put on a disk. A system's own
+/// private types belong to that system and are not listed here.
 ///
 /// Every value here was read back out of `sgdisk` on the machine rather than typed from memory, and
 /// four of them are pinned by the committed fixtures.
@@ -59,7 +61,8 @@ pub mod types {
     /// An unused entry. The type GUID is what marks an entry live, not the LBA fields.
     pub const UNUSED: Uuid = Uuid::nil();
 
-    /// EFI System Partition: the FAT volume firmware loads a bootloader from.
+    /// Extensible Firmware Interface (EFI) System Partition: the File Allocation Table (FAT) volume
+    /// firmware loads a bootloader from.
     pub const EFI_SYSTEM: Uuid = Uuid::from_fields(
         0xC12A_7328,
         0xF81F,
@@ -67,8 +70,8 @@ pub mod types {
         &[0xBA, 0x4B, 0x00, 0xA0, 0xC9, 0x3E, 0xC9, 0x3B],
     );
 
-    /// BIOS boot partition, where GRUB puts its core image on a legacy-booted GPT disk. The GUID
-    /// spells `Hah!IdontNeedEFI` in ASCII, which is the only joke in the UEFI ecosystem.
+    /// BIOS boot partition, where a bootloader puts its core image on a legacy-booted GPT disk. The
+    /// GUID spells `Hah!IdontNeedEFI` in ASCII, which is the only joke in the UEFI ecosystem.
     pub(crate) const BIOS_BOOT: Uuid = Uuid::from_fields(
         0x2168_6148,
         0x6449,
@@ -112,8 +115,9 @@ pub mod types {
         &[0xAF, 0x44, 0x4C, 0x6F, 0x28, 0x0D, 0x3F, 0xAE],
     );
 
-    /// LUKS, Linux's encrypted-volume container. Recognised so that a tool can say "encrypted, and
-    /// this crate does not open it" instead of reporting an unreadable filesystem.
+    /// Linux Unified Key Setup (LUKS), Linux's encrypted-volume container. Recognised so that a
+    /// tool can say "encrypted, and this crate does not open it" instead of reporting an unreadable
+    /// filesystem.
     pub(crate) const LINUX_LUKS: Uuid = Uuid::from_fields(
         0xCA7D_7CCB,
         0x63ED,
@@ -121,7 +125,7 @@ pub mod types {
         &[0x86, 0x1C, 0x17, 0x42, 0x53, 0x60, 0x59, 0xCC],
     );
 
-    /// Apple HFS+.
+    /// Apple Hierarchical File System (HFS) Plus.
     pub const APPLE_HFS_PLUS: Uuid = Uuid::from_fields(
         0x4846_5300,
         0x0000,
@@ -129,7 +133,7 @@ pub mod types {
         &[0xAA, 0x11, 0x00, 0x30, 0x65, 0x43, 0xEC, 0xAC],
     );
 
-    /// Apple APFS, which is what any Mac disk made since 2017 is.
+    /// The Apple File System, which is what any Mac disk made since 2017 is.
     pub const APPLE_APFS: Uuid = Uuid::from_fields(
         0x7C34_57EF,
         0x0000,
@@ -221,8 +225,8 @@ mod tests {
     }
 
     /// **RFC 9562 Appendix A.3, end to end, through the calls a partitioning tool makes**: the
-    /// sixteen random bytes the RFC starts from, stamped by `uuid::Builder::from_random_bytes`
-    /// (how a tool mints a disk or partition GUID), printed by the uppercase hyphenated encoder, and
+    /// sixteen random bytes the RFC starts from, stamped by `uuid::Builder::from_random_bytes` (how
+    /// a tool mints a disk or partition GUID), printed by the uppercase hyphenated encoder, and
     /// read back in lower case. A `uuid` release that moved the stamp or the case would fail here
     /// and nowhere else on the host.
     #[test]

@@ -14,7 +14,7 @@ use super::*;
 /// the parse of a zone inside the run, each made the proof outrun its twenty-minute shard (the
 /// parse of up to 32 free bytes, over a table of 256-byte names, passed the memory fence), so the
 /// run stays at two and the parse is stubbed here and proved in the name crate. Two
-/// messages prove in about eleven minutes and 7.4 GB.
+/// messages prove in about eleven minutes and 7.4 gigabytes of memory.
 const STEPS: usize = 2;
 
 /// The stand-in for `core::str::from_utf8` in the bookkeeping proof: the text is accepted whole.

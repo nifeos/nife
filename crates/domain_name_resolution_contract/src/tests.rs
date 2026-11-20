@@ -196,9 +196,8 @@ fn the_longest_zone_with_a_trailing_dot_is_granted_and_one_byte_more_is_not() {
     );
 }
 
-/// Milestone 892 (a std program at the prompt holds the network and a resolver): a spawner that
-/// outlives its clients forgets each one, and the window comes back, so the ninth client of a
-/// resolver whose first eight have ended is not refused.
+/// A spawner that outlives its clients forgets each one, and the window comes back, so the ninth
+/// client of a resolver whose first eight have ended is not refused.
 #[test]
 fn a_forgotten_badge_is_denied_and_its_window_serves_the_next_grant() {
     let mut g = Grants::new();

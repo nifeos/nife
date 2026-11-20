@@ -6,11 +6,11 @@
 //! sends anything. The README has the sequence and its diagram.
 //!
 //! The acronyms, once: the Domain Name System (DNS) maps names to Internet Protocol version 4
-//! (IPv4) addresses. An RFC (Request for Comments) is one of the standards that define it; RFC 1035
-//! is DNS itself. A name server answers over the User Datagram Protocol (UDP) or the Transmission
-//! Control Protocol (TCP). An answer carries a TTL (time-to-live), and NXDOMAIN (non-existent
-//! domain) is a server's answer that a name does not exist. The Dynamic Host Configuration
-//! Protocol (DHCP) lease is where a spawner learns which name server to use.
+//! (IPv4) addresses, and the Internet standard `RFC 1035` defines it. A name server answers over
+//! the User Datagram Protocol (UDP) or the Transmission Control Protocol (TCP). An answer carries
+//! its time to live, how many seconds a client may keep it, and `NXDOMAIN` is a server's answer
+//! that a name does not exist. The Dynamic Host Configuration Protocol (DHCP) lease is where a
+//! spawner learns which name server to use.
 //!
 //! | bytes | field | written by |
 //! |---|---|---|
@@ -46,9 +46,8 @@ pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 11, naming the name resolver
 /// protocol and its zone limits. The number is this interface's for good: no other interface takes
-/// it, and a format change is a new version, never a new number. Milestone 956 (the linked
-/// interfaces carry checkable versions) holds the table of numbers, and `script/lint` holds the
-/// tree to it. A program declares the pair of this id and [`VERSION`].
+/// it, and a format change is a new version, never a new number. A program declares the pair of
+/// this id and [`VERSION`].
 ///
 /// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its interface
 /// identity. The value is frozen at 11, ruled 2026-11-14 (UTC).
@@ -75,13 +74,6 @@ const _: () = assert!(MAXIMUM_IPV4_ADDRESSES == domain_name_system::MAXIMUM_IPV4
 /// the spawner's decision, made from the DHCP lease (`socket_contract::lease`) or from a
 /// configuration, never the resolver's, the way the network time client is told its server.
 pub mod endowment;
-
-/// **The boot test's cases**, in one place for the two programs that must agree on them: the test
-/// client asks each name in order, and the kernel's test (`system_tests/src/user/name_resolver_tests.rs`)
-/// judges each reply by its index. `socket_fixture`'s split: the peer that answers,
-/// `helpers/name-server-peer`, spells its zone again in Python, so the two sides are written
-/// independently.
-pub mod fixture;
 
 mod grants;
 pub use grants::*;
