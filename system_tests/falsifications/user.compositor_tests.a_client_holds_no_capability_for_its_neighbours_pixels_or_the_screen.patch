@@ -37,5 +37,5 @@ index e870c21d..20c10c62 100644
 -        for k in 0..frames {
 +        for k in 0..frames + 2 {
              maps[m] = Mapping {
-                 va: SURFACE_VA + k * FRAME_SIZE,
-                 phys: self.client[i] + (1 + k) * FRAME_SIZE,
+                 va: SURFACE_VA + k * FRAME_BYTES,
+                 phys: self.client[i] + (1 + k) * FRAME_BYTES,

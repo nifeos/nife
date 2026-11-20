@@ -38,7 +38,7 @@ fn stack_maps(frames: [u64; EXTRA_STACK_PAGES]) -> [Mapping; EXTRA_STACK_PAGES] 
         flags: Flags::user_data(),
     }; EXTRA_STACK_PAGES];
     for (k, m) in maps.iter_mut().enumerate() {
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = frames[k];
     }
     maps
@@ -95,14 +95,14 @@ pub(crate) fn start(
     }
     let transfer_phys = crate::memory::alloc_contiguous_zeroed(block::TRANSFER_BLOCKS)
         .ok_or(NotStarted::NoMemory)?
-        .addr();
+        .physical_address();
 
     let mut frames = [0u64; EXTRA_STACK_PAGES];
     for f in &mut frames {
         // Zeroed, as every stack page is: nothing of a previous owner sits in the server's frames.
         *f = crate::memory::alloc_zeroed()
             .ok_or(NotStarted::NoMemory)?
-            .addr();
+            .physical_address();
     }
     let stack = stack_maps(frames);
 
@@ -173,7 +173,7 @@ mod tests {
     fn the_extra_stack_pages_are_contiguous_below_the_stack_page() {
         let maps = stack_maps([1, 2, 3, 4]);
         for (k, m) in maps.iter().enumerate() {
-            assert_eq!(m.va, USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE);
+            assert_eq!(m.va, USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES);
             assert_eq!(m.phys, k as u64 + 1);
         }
     }

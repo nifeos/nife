@@ -214,7 +214,7 @@ fn region() -> Result<u64, Error> {
     let base =
         crate::memory::alloc_contiguous_zeroed(layout::DIRECT_MEMORY_ACCESS_REGION_PAGES as usize)
             .ok_or(Error::NoRegion)?
-            .addr();
+            .physical_address();
     REGION.store(base, Ordering::Release);
     Ok(base)
 }
@@ -226,7 +226,9 @@ fn control_stack() -> Result<[u64; CONTROL_EXTRA_STACK_PAGES], Error> {
     for (frame, kept) in frames.iter_mut().zip(&CONTROL_STACK) {
         *frame = match kept.load(Ordering::Acquire) {
             0 => {
-                let fresh = crate::memory::alloc_zeroed().ok_or(Error::NoRegion)?.addr();
+                let fresh = crate::memory::alloc_zeroed()
+                    .ok_or(Error::NoRegion)?
+                    .physical_address();
                 kept.store(fresh, Ordering::Release);
                 fresh
             }
@@ -252,7 +254,7 @@ fn start_control(
         crate::user::program("designware_ethernet_control").ok_or(Error::NoControlProgram)?;
     let stack = control_stack()?;
     let base = e.port.registers_physical_address;
-    let syscon_page = e.syscon.base_physical_address & !(FRAME_SIZE - 1);
+    let syscon_page = e.syscon.base_physical_address & !(FRAME_BYTES - 1);
     let region = inputs.region_physical_address;
     let report = crate::sched::create_rendezvous();
 
@@ -268,8 +270,8 @@ fn start_control(
         .enumerate()
     {
         *m = Mapping {
-            va: CONTROL_REGISTER_VIRTUAL_ADDRESS + page as u64 * FRAME_SIZE,
-            phys: base + page as u64 * FRAME_SIZE,
+            va: CONTROL_REGISTER_VIRTUAL_ADDRESS + page as u64 * FRAME_BYTES,
+            phys: base + page as u64 * FRAME_BYTES,
             flags: Flags::user_device(),
         };
     }
@@ -287,7 +289,7 @@ fn start_control(
     );
     for (k, &frame) in stack.iter().enumerate() {
         maps[syscon_at + 1 + PLANE + k] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
             phys: frame,
             flags: Flags::user_data(),
         };
@@ -403,7 +405,7 @@ pub(crate) fn start_drain(
     peer: u64,
 ) -> Result<(RendezvousId, Wiring), NotStarted> {
     const TEST_TCP_DRAIN: u64 = 7;
-    let mut w = start_net_server(image, socket_contract::NO_LISTEN_GRANT)?;
+    let mut w = start_net_server(image, socket_contract::NO_PORT_GRANT)?;
     let cli = super::virtio_service::spawn_stack_client(
         image,
         TEST_TCP_DRAIN,
@@ -453,7 +455,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
         let phys =
             crate::memory_region::retype_page(stack_region).expect("no frame for the net stack");
         maps[PLANE + 1 + k] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
             phys,
             flags: Flags::user_data(),
         };
@@ -473,7 +475,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
         // What each socket is minted from (§255 (each socket is its own capability)); slot 8, the
         // server's own address space, `run_with_own_space` adds once the space exists.
         at(
-            socket_contract::stack_slots::MINT,
+            socket_contract::stack_slots::MINTING_ENDPOINT_SLOT,
             rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
         );
         run_with_own_space(
@@ -497,7 +499,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: Found) -> Wiring
                     },
                 ],
             },
-            socket_contract::stack_slots::OWN_SPACE,
+            socket_contract::stack_slots::OWN_ADDRESS_SPACE_SLOT,
         )
     })
     .expect("could not spawn net_stack over the JH7110 Ethernet port");
@@ -529,7 +531,7 @@ mod tests {
     fn with_no_port_the_starter_refuses_before_spawning_anything() {
         assert!(crate::memory::jh7110_ethernet().is_none());
         assert!(matches!(
-            start_net_server(&[], socket_contract::NO_LISTEN_GRANT),
+            start_net_server(&[], socket_contract::NO_PORT_GRANT),
             Err(NotStarted::Absent(Absent::NoController))
         ));
         assert!(last_report().is_none());

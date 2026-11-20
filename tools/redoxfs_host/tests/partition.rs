@@ -15,7 +15,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use globally_unique_identifier_partition_table::guid::types;
-use globally_unique_identifier_partition_table::{Entry, GloballyUniqueIdentifierPartitionTable};
+use globally_unique_identifier_partition_table::{Entry, PartitionTable};
 use uuid::Uuid;
 
 /// The built binary, not the library: `cargo test` compiles it and hands us the path.
@@ -119,12 +119,12 @@ fn build_device(device: &Path, payload: &[u8], data: (u64, u64), device_blocks: 
             MISALIGNED.0,
             MISALIGNED.1,
         ),
-        Entry::new(types::NIFE_DATA, guid(0x33), data.0, data.1)
+        Entry::new(nife_partition_types::NIFE_DATA, guid(0x33), data.0, data.1)
             .with_name("nife data")
             .unwrap(),
     ];
     let mut array = [0u8; globally_unique_identifier_partition_table::ENTRY_ARRAY_BYTES];
-    let table = GloballyUniqueIdentifierPartitionTable::create(
+    let table = PartitionTable::create(
         guid(0x44),
         LBA as usize,
         device_blocks,
@@ -145,7 +145,7 @@ fn build_device(device: &Path, payload: &[u8], data: (u64, u64), device_blocks: 
 
     let mut block = [0u8; LBA as usize];
     table
-        .write_protective_mbr(&mut block)
+        .write_protective_master_boot_record(&mut block)
         .expect("protective MBR");
     file.write_all_at(&block, 0).unwrap();
     table
@@ -153,15 +153,18 @@ fn build_device(device: &Path, payload: &[u8], data: (u64, u64), device_blocks: 
         .expect("primary header");
     file.write_all_at(
         &block,
-        globally_unique_identifier_partition_table::PRIMARY_HEADER_LBA * LBA,
+        globally_unique_identifier_partition_table::PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS * LBA,
     )
     .unwrap();
     table
         .write_backup_header(&mut block)
         .expect("backup header");
-    file.write_all_at(&block, table.backup_header_lba() * LBA)
+    file.write_all_at(&block, table.backup_header_logical_block_address() * LBA)
         .unwrap();
-    for lba in [table.primary_entry_lba(), table.backup_entry_lba()] {
+    for lba in [
+        table.primary_entry_logical_block_address(),
+        table.backup_entry_logical_block_address(),
+    ] {
         file.write_all_at(table.entry_array(), lba * LBA).unwrap();
     }
 
@@ -186,7 +189,7 @@ fn a_filesystem_inside_a_partition_reads_back_through_the_tool() {
     let payload = b"CRK110: this filesystem lives in partition 3 of a device\n";
     build_device(&device, payload, DATA, DEVICE_BLOCKS);
     let dev = device.display().to_string();
-    let data_type = format!("{:X}", types::NIFE_DATA);
+    let data_type = format!("{:X}", nife_partition_types::NIFE_DATA);
 
     let before = digest(&std::fs::read(&device).unwrap());
 

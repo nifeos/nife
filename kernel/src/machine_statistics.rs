@@ -53,9 +53,9 @@ fn mine(offset: usize) -> &'static AtomicU64 {
 /// the frame's physical address.
 pub fn publish() -> u64 {
     let frame = crate::memory::alloc_zeroed().expect("no frame for the machine statistics page");
-    let phys = frame.addr();
+    let phys = frame.physical_address();
     let base = crate::arch::mmu::phys_to_virt(phys) as *mut AtomicU64;
-    let header = build_header(page_frames::FRAME_SIZE, crate::arch::timer::TICK_HERTZ);
+    let header = build_header(page_frames::FRAME_BYTES, crate::arch::timer::TICK_HERTZ);
     for (i, w) in header.iter().enumerate() {
         // SAFETY: a frame just allocated and zeroed for us alone, reached through the direct map,
         // and the header is one line, far under a frame.
@@ -65,7 +65,7 @@ pub fn publish() -> u64 {
     // Release: a core that sees the new pointer sees the header written above.
     PAGE.store(base, Ordering::Release);
     if let Some(s) = crate::memory::stats() {
-        frames(s.total, s.total - s.used);
+        frames(s.frames, s.frames - s.used_frames);
     }
     phys
 }

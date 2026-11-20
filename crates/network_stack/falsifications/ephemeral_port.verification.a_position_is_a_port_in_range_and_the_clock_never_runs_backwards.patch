@@ -1,0 +1,20 @@
+Falsifies `network_stack::ephemeral_port::verification::a_position_is_a_port_in_range_and_the_clock_never_runs_backwards`.
+
+The defect: `port_at` takes the remainder modulo one more than the range, so the top position maps
+past `HIGHEST_PORT`.
+
+Expected to fail: the harness's range assertion on the port.
+
+diff --git a/crates/network_stack/src/ephemeral_port.rs b/crates/network_stack/src/ephemeral_port.rs
+index 4ff507d82..9a1e2923e 100644
+--- a/crates/network_stack/src/ephemeral_port.rs
++++ b/crates/network_stack/src/ephemeral_port.rs
+@@ -79,7 +79,7 @@ fn clock(milliseconds: u64) -> u64 {
+ }
+ 
+ fn port_at(position: u64) -> u16 {
+-    LOWEST_PORT + (position % PORT_COUNT) as u16
++    LOWEST_PORT + (position % (PORT_COUNT + 1)) as u16
+ }
+ 
+ /// Machine-checked proofs, run with `cargo kani`: the clock and the position-to-port map hold

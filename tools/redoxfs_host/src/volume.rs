@@ -168,7 +168,7 @@ impl Volume<'_> {
                 })?,
         };
 
-        let start = entry.first_lba * lba;
+        let start = entry.first_logical_block_address * lba;
         // `GloballyUniqueIdentifierPartitionTable::parse` has already rejected an entry whose last
         // LBA is below its first, so this cannot be `None`; the arm exists so that a change there
         // cannot turn into an offset of zero.

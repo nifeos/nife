@@ -38,7 +38,7 @@
 //!   so it is not in `script/test`'s default legs.
 
 use boot_slot::State;
-use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable as Table;
+use globally_unique_identifier_partition_table::PartitionTable;
 
 use crate::install;
 use crate::rollback::{
@@ -210,7 +210,7 @@ fn the_disk_agrees(gate: &str, disk: &std::path::Path) -> bool {
     if !read_table(disk, &mut head) {
         return false;
     }
-    let Ok(table) = Table::parse(
+    let Ok(table) = PartitionTable::parse(
         &head[LBA as usize..2 * LBA as usize],
         &head[2 * LBA as usize..],
     ) else {

@@ -44,7 +44,7 @@ use file_allocation_table as fat;
 use globally_unique_identifier_partition_table::entry::Entry;
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
-    DEFAULT_ENTRY_COUNT, GloballyUniqueIdentifierPartitionTable, PRIMARY_HEADER_LBA, entry,
+    DEFAULT_ENTRY_COUNT, PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, PartitionTable, entry,
 };
 use uuid::Builder;
 
@@ -101,15 +101,9 @@ pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
     let esp = Entry::new(types::EFI_SYSTEM, part_guid, ALIGN, ALIGN + ESP_SECTORS - 1)
         .with_name("EFI system partition")
         .map_err(|e| format!("the partition entry: {e:?}"))?;
-    let mut array = vec![0u8; DEFAULT_ENTRY_COUNT as usize * entry::SIZE];
-    let table = GloballyUniqueIdentifierPartitionTable::create(
-        disk_guid,
-        LBA as usize,
-        blocks,
-        &[esp],
-        &mut array,
-    )
-    .map_err(|e| format!("the partition table: {e:?}"))?;
+    let mut array = vec![0u8; DEFAULT_ENTRY_COUNT as usize * entry::ENTRY_BYTES];
+    let table = PartitionTable::create(disk_guid, LBA as usize, blocks, &[esp], &mut array)
+        .map_err(|e| format!("the partition table: {e:?}"))?;
 
     let path = image_path(arch);
     if let Some(dir) = path.parent() {
@@ -124,21 +118,33 @@ pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
 
     let mut block = [0u8; LBA as usize];
     table
-        .write_protective_mbr(&mut block)
+        .write_protective_master_boot_record(&mut block)
         .map_err(|e| format!("the protective MBR: {e:?}"))?;
     put(&mut out, 0, &block)?;
     block.fill(0);
     table
         .write_primary_header(&mut block)
         .map_err(|e| format!("the primary header: {e:?}"))?;
-    put(&mut out, PRIMARY_HEADER_LBA, &block)?;
-    put(&mut out, table.primary_entry_lba(), table.entry_array())?;
-    put(&mut out, table.backup_entry_lba(), table.entry_array())?;
+    put(&mut out, PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, &block)?;
+    put(
+        &mut out,
+        table.primary_entry_logical_block_address(),
+        table.entry_array(),
+    )?;
+    put(
+        &mut out,
+        table.backup_entry_logical_block_address(),
+        table.entry_array(),
+    )?;
     block.fill(0);
     table
         .write_backup_header(&mut block)
         .map_err(|e| format!("the backup header: {e:?}"))?;
-    put(&mut out, table.backup_header_lba(), &block)?;
+    put(
+        &mut out,
+        table.backup_header_logical_block_address(),
+        &block,
+    )?;
 
     for sector in 0..volume.metadata_sectors() {
         if !volume.fill_sector(sector, &mut block) {

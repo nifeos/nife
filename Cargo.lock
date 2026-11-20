@@ -257,7 +257,9 @@ dependencies = [
  "machine_statistics_contract",
  "measured_boot",
  "memory_region_heap",
+ "network_stack",
  "network_time_protocol",
+ "nife_partition_types",
  "nifefs",
  "non_volatile_memory_express",
  "pgrep",
@@ -270,6 +272,7 @@ dependencies = [
  "slabtop",
  "smoltcp",
  "socket_contract",
+ "socket_fixture",
  "startup_page_contract",
  "static_elf",
  "supervision_contract",
@@ -576,6 +579,7 @@ dependencies = [
  "program_table",
  "soak_page",
  "socket_contract",
+ "socket_fixture",
  "startup_page_contract",
  "static_elf",
  "supervision_contract",
@@ -761,6 +765,7 @@ dependencies = [
 [[package]]
 name = "interfaces_note"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/interfaces_note?rev=bfa27187a87e0cc1916efb06238b2dd2ece004eb#bfa27187a87e0cc1916efb06238b2dd2ece004eb"
 
 [[package]]
 name = "intrusive_queue"
@@ -1064,8 +1069,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "network_stack"
+version = "0.1.0"
+
+[[package]]
 name = "network_time_protocol"
 version = "0.1.0"
+
+[[package]]
+name = "nife_partition_types"
+version = "0.1.0"
+dependencies = [
+ "globally_unique_identifier_partition_table",
+ "uuid",
+]
 
 [[package]]
 name = "nifefs"
@@ -1423,6 +1440,13 @@ name = "socket_contract"
 version = "0.1.0"
 
 [[package]]
+name = "socket_fixture"
+version = "0.1.0"
+dependencies = [
+ "socket_contract",
+]
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1614,6 +1638,7 @@ dependencies = [
  "program_table",
  "ps",
  "socket_contract",
+ "socket_fixture",
  "startup_page_contract",
  "static_elf",
  "std_runtime_contract",
@@ -1843,6 +1868,7 @@ dependencies = [
  "globally_unique_identifier_partition_table",
  "machine_discovery",
  "measured_boot",
+ "nife_partition_types",
  "nifefs",
  "r-efi",
  "screen_console",
@@ -2002,6 +2028,7 @@ dependencies = [
  "initial_ramdisk_writer",
  "installed_programs",
  "measured_boot",
+ "nife_partition_types",
  "nifefs",
  "object",
  "package_archive",

@@ -170,25 +170,27 @@ pub(crate) fn carve(
                 core::ptr::write_bytes(
                     mmu::phys_to_virt(dma) as *mut u8,
                     0,
-                    carved_pages * FRAME_SIZE as usize,
+                    carved_pages * FRAME_BYTES as usize,
                 );
             }
             dma
         }
         _ => {
-            let dma = crate::memory::alloc_contiguous_zeroed(pages)?.addr();
+            let dma = crate::memory::alloc_contiguous_zeroed(pages)?.physical_address();
             let confined = crate::iommu::confine(
                 d.rid,
                 &[page_tables::domain::DirectMemoryAccessRegion {
                     base: dma,
-                    size: pages as u64 * FRAME_SIZE,
+                    size: pages as u64 * FRAME_BYTES,
                     writable: true,
                 }],
             );
             if confined.is_err() {
                 // The device stays blocked, and the region goes back: no domain maps it.
                 for k in 0..pages as u64 {
-                    crate::memory::free(page_frames::PageFrame::from_addr(dma + k * FRAME_SIZE));
+                    crate::memory::free(page_frames::PageFrame::from_physical_address(
+                        dma + k * FRAME_BYTES,
+                    ));
                 }
                 return None;
             }
@@ -211,15 +213,15 @@ pub(crate) fn carve(
     let registers = window.pages();
     for (n, page) in registers.iter().enumerate() {
         maps[n] = Mapping {
-            va: REGISTERS_VA + n as u64 * FRAME_SIZE,
+            va: REGISTERS_VA + n as u64 * FRAME_BYTES,
             phys: d.direct.bar_bases[usize::from(page.bar)] + page.offset,
             flags: Flags::user_device(),
         };
     }
     for k in 0..pages {
         maps[registers.len() + k] = Mapping {
-            va: DMA_VA + k as u64 * FRAME_SIZE,
-            phys: dma + k as u64 * FRAME_SIZE,
+            va: DMA_VA + k as u64 * FRAME_BYTES,
+            phys: dma + k as u64 * FRAME_BYTES,
             flags: Flags::user_data(),
         };
     }
@@ -339,13 +341,13 @@ mod tests {
         let registers = window.pages().len();
         assert_eq!(maps.len(), registers + 2);
         for (n, page) in window.pages().iter().enumerate() {
-            assert_eq!(maps[n].va, REGISTERS_VA + n as u64 * FRAME_SIZE);
+            assert_eq!(maps[n].va, REGISTERS_VA + n as u64 * FRAME_BYTES);
             assert_eq!(
                 maps[n].phys,
                 d.direct.bar_bases[usize::from(page.bar)] + page.offset
             );
         }
-        assert_eq!(maps[registers + 1].va, DMA_VA + FRAME_SIZE);
+        assert_eq!(maps[registers + 1].va, DMA_VA + FRAME_BYTES);
         assert_eq!(direct.windows[0].pages as usize, registers);
         assert_eq!(direct.windows[1].pages, 2);
 
@@ -359,11 +361,11 @@ mod tests {
         assert!(h.fits(direct.windows[0].pages));
         // The common configuration the driver will find at its window offset is the one the
         // mediated transport drives.
-        let page = window.pages()[usize::from(h.common) / FRAME_SIZE as usize];
+        let page = window.pages()[usize::from(h.common) / FRAME_BYTES as usize];
         assert_eq!(
             d.direct.bar_bases[usize::from(page.bar)]
                 + page.offset
-                + u64::from(h.common) % FRAME_SIZE,
+                + u64::from(h.common) % FRAME_BYTES,
             d.common
         );
     }

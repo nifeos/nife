@@ -102,8 +102,8 @@ pub fn publish() {
     let Some(n) = crate::sched::create_notification_from(region) else {
         return;
     };
-    let ring_va = crate::arch::mmu::phys_to_virt(frames.addr()) as *mut AtomicU64;
-    let cursor_va = crate::arch::mmu::phys_to_virt(page.addr()) as *mut AtomicU64;
+    let ring_va = crate::arch::mmu::phys_to_virt(frames.physical_address()) as *mut AtomicU64;
+    let cursor_va = crate::arch::mmu::phys_to_virt(page.physical_address()) as *mut AtomicU64;
     // SAFETY: both are fresh frames this function owns, reached through the direct map.
     let words = unsafe { core::slice::from_raw_parts(ring_va, kernel_ring::WORDS) };
     if let Some(r) = Ring::new(words) {
@@ -111,8 +111,8 @@ pub fn publish() {
     }
     // SAFETY: as above.
     unsafe { &*cursor_va }.store(DETACHED, Ordering::Release);
-    RING_PHYS.store(frames.addr(), Ordering::Relaxed);
-    CURSOR_PHYS.store(page.addr(), Ordering::Relaxed);
+    RING_PHYS.store(frames.physical_address(), Ordering::Relaxed);
+    CURSOR_PHYS.store(page.physical_address(), Ordering::Relaxed);
     NOTIFY.store(n, Ordering::Relaxed);
     CURSOR.store(cursor_va, Ordering::Release);
     RING.store(ring_va, Ordering::Release);

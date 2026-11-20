@@ -699,6 +699,8 @@ system_initializer = { version = "0.1.0", path = "../crates/system_initializer" 
 capability_plan = { version = "0.1.0", path = "../crates/capability_plan" }
 hot_swap_contract = { version = "0.1.0", path = "../crates/hot_swap_contract" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
+socket_fixture = { version = "0.1.0", path = "../crates/socket_fixture" }
+network_stack = { version = "0.1.0", path = "../crates/network_stack" }
 # Rung 3a's package fetch (milestone 198), in `net_stack`'s socket-contract client.
 http_response = { version = "0.1.0", path = "../crates/http_response" }
 # Milestone 384 (in a capability system the resolver is a grant): the DNS exchange in
@@ -708,6 +710,7 @@ domain_name_system = { version = "0.1.0", path = "../crates/domain_name_system" 
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
 block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
 globally_unique_identifier_partition_table = { version = "0.1.0", path = "../crates/globally_unique_identifier_partition_table" }
+nife_partition_types = { version = "0.1.0", path = "../crates/nife_partition_types" }
 # RFC 9562's UUID: what `uuid` prints and what `disk_partitioner` and `system_installer` stamp
 # before the partition table stores it mixed-endian. Taken, not written: calef's "A" on #2548
 # (§46 (thin primitives or whole subsystems)), default features off, so `no_std` with no dependencies of its own.
@@ -729,7 +732,7 @@ program_table = { version = "0.1.0", path = "../crates/program_table" }
 # carries one with `capability_manifest_note::carry!`.
 capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
 # The `INTERFACES` note each program carries with `interfaces_note::carry_interfaces!`.
-interfaces_note = { version = "0.1.0", path = "../crates/interfaces_note" }
+interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfaces_note", rev = "bfa27187a87e0cc1916efb06238b2dd2ece004eb" }
 # The system log service's logic and its wire contracts (milestone 613, provisional names).
 system_log = { version = "0.1.0", path = "../crates/system_log" }
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }

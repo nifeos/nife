@@ -59,14 +59,14 @@ Not run, and so not claimed: the stranger test, mutation (the baseline row recor
 
 | kind | items |
 |---|---|
-| table | `GloballyUniqueIdentifierPartitionTable`: `parse`, `create`, `check_backup`, `check_protective_mbr`, `write_protective_mbr`, `write_primary_header`, `write_backup_header`, and 14 readers (`header`, `disk_guid`, `block_size`, `block_count`, `first_usable_lba`, `last_usable_lba`, `backup_header_lba`, `primary_entry_lba`, `backup_entry_lba`, `entry_array_blocks`, `entry_count`, `entry_array`, `entry`, `partitions`) |
+| table | `PartitionTable`: `parse`, `create`, `check_backup`, `check_protective_master_boot_record`, `write_protective_master_boot_record`, `write_primary_header`, `write_backup_header`, and 14 readers (`header`, `disk_guid`, `block_bytes`, `block_count`, `first_usable_logical_block_address`, `last_usable_logical_block_address`, `backup_header_logical_block_address`, `primary_entry_logical_block_address`, `backup_entry_logical_block_address`, `entry_array_blocks`, `entry_count`, `entry_array`, `entry`, `partitions`) |
 | header | `header::Header` with nine public fields, `decode`, `encode_into`, `SIGNATURE`, `REVISION` |
-| entry | `entry::Entry` with six public fields, `UNUSED`, `new`, `with_name`, `is_used`, `blocks`, `name_utf8`, `decode`, `encode`, `overlaps`; `SIZE`, `NAME_UNITS` and three `ATTR_` bits |
-| GUIDs | `guid::from_disk`, `guid::to_disk`, the `Uuid` re-export, and `guid::types` with eight constants and `name` |
-| MBR | `mbr::write`, `mbr::validate`, `PROTECTIVE_OPERATING_SYSTEM_TYPE` |
+| entry | `entry::Entry` with six public fields, `UNUSED`, `new`, `with_name`, `is_used`, `blocks`, `name_utf8`, `decode`, `encode`, `overlaps`; `ENTRY_BYTES`, `NAME_UNITS` and three `ATTR_` bits |
+| GUIDs | `guid::from_disk`, `guid::to_disk`, the `Uuid` re-export, and `guid::types` with six constants and `name` (nife's two type GUIDs are in `nife_partition_types`) |
+| master boot record | `master_boot_record::write`, `master_boot_record::validate`, `PROTECTIVE_OPERATING_SYSTEM_TYPE` |
 | reads | `span::Span { first_block, blocks, offset }`, `covering`, `buffer_bytes` |
-| errors | `Error` (23 variants, `Display`), `BackupMismatch` (9), `MbrProblem` (5) |
-| root | `MINIMUM_BLOCK_SIZE`, `MAXIMUM_BLOCK_SIZE`, `PRIMARY_HEADER_LBA`, `DEFAULT_ENTRY_COUNT`, `ENTRY_ARRAY_BYTES`, `VERSION`, `is_block_size_ok` |
+| errors | `Error` (23 variants, `Display`), `BackupMismatch` (9), `MasterBootRecordProblem` (5) |
+| root | `MINIMUM_BLOCK_BYTES`, `MAXIMUM_BLOCK_BYTES`, `PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS`, `DEFAULT_ENTRY_COUNT`, `ENTRY_ARRAY_BYTES`, `VERSION`, `is_block_size_ok` |
 | helpers | `crc::crc32`, `testing::sample_disk` |
 
 The one foreign type in a public signature is `uuid::Uuid`. No nife type, capability or handoff
@@ -106,35 +106,34 @@ The CRC harnesses stop at 8 bytes, and the tests cover the real lengths.
 
 ## Names
 
-`script/crate-standalone` fails on names alone. Six items read ratified: `from_disk` and
-`to_disk` (#1795), `MINIMUM_BLOCK_SIZE`, `MAXIMUM_BLOCK_SIZE` and
-`PROTECTIVE_OPERATING_SYSTEM_TYPE` (#2797), and the crate. `REVISION` reads "recorded", the
-specification's field. `VERSION`, `error` and `table` read provisional, and 77 items have no
-block. The ratification is one pull request with the table `name_release.py --draft` prints.
+Ratified before the rename: `from_disk` and `to_disk` (#1795), `PROTECTIVE_OPERATING_SYSTEM_TYPE`
+(#2797) and the crate. `MINIMUM_BLOCK_BYTES` and `MAXIMUM_BLOCK_BYTES` replace two names #2797
+ratified, so the release review reopens them. `REVISION` is recorded, the specification's field.
+The ratification is one pull request with the table `name_release.py --draft` prints.
 
-The list below proposes a name, provisional, for each item a rule reaches. The lane renames none.
-Every other unratified item passes the rules as it stands and is proposed for ratification under
-its present name. The fields of `Header` and `Entry` and the variants of the three error enums are
-not listed by `name_release.py`, and are listed here.
+The crate carries decisions 1, 2 and 5 of
+[milestone 1093 (what an outside maintainer would fix before 0.1.0)](../../design/roadmap/1093-globally-unique-identifier-partition-table-outside-review.md)
+as provisional names, each with a `Name:` block. The architect ratifies nothing here, and does it
+later, one name at a time. The rows below say what stands, and what is still only proposed.
 
-| # | items | rule | proposed |
-|---|---|---|---|
-| 1 | `types::NIFE_DATA`, `types::NIFE_BOOT` | a crate repository does not mention nife | decision 1; no new name in this crate |
-| 2 | every `lba` component: the five `Header` LBA fields, `Entry::first_lba` and `last_lba`, `PRIMARY_HEADER_LBA`, six table readers, `BackupMismatch::MyLba` to `EntryArrayLba`, `MbrProblem::StartLba` and `SizeLba` | the acronym test | decision 2 |
-| 3 | `mbr`, `MbrProblem`, `Error::Mbr`, `check_protective_mbr`, `write_protective_mbr` | the acronym test | decision 2 |
-| 4 | `MINIMUM_BLOCK_SIZE`, `MAXIMUM_BLOCK_SIZE` | a limit ends with its unit; ratified before that rule, so the release review reopens them | `MINIMUM_BLOCK_BYTES`, `MAXIMUM_BLOCK_BYTES` |
-| 5 | `entry::SIZE` | a size carries its unit | `entry::ENTRY_BYTES`, as `block_roster_contract` spells it |
-| 6 | `Header::entry_size`, `BackupMismatch::EntrySize`, `Error::EntrySize` | a size carries its unit; UEFI's field is `SizeOfPartitionEntry` | `entry_bytes`, `EntryBytes`, each with `#[doc(alias = "SizeOfPartitionEntry")]` |
-| 7 | `GloballyUniqueIdentifierPartitionTable::block_size`, `create`'s parameter `block_size` | a size carries its unit | `block_bytes` |
-| 8 | `ATTR_REQUIRED`, `ATTR_NO_BLOCK_IO`, `ATTR_LEGACY_BIOS_BOOTABLE` | a bit constant copied from a source is spelled out, its source spelling the alias | `ATTRIBUTE_REQUIRED_PARTITION`, `ATTRIBUTE_NO_BLOCK_IO_PROTOCOL`, `ATTRIBUTE_LEGACY_BIOS_BOOTABLE`, each aliased to UEFI's attribute name |
-| 9 | `primary_entry_lba`, `backup_entry_lba` | one concept, one word: the header field is `entry_array_lba` and the reader `entry_array_blocks` | `primary_entry_array_lba`, `backup_entry_array_lba`, under decision 2's spelling |
-| 10 | `GloballyUniqueIdentifierPartitionTable::entry(index)` | a method takes std's spelling | `get`, as `block_roster_contract::Roster::get` returns a value |
-| 11 | `Span::covering`'s and `buffer_bytes`'s parameter `transfer` | a size carries its unit, parameters included | `transfer_bytes` |
-| 12 | `Error::PartitionsOverlap { a, b }` | single letters in a public field | `first`, `second` |
-| 13 | the `Header` and `Entry` fields that mirror UEFI's (`my_lba`, `disk_guid`, `entry_count`, `entry_array_crc`, `type_guid`, `unique_guid`) | a specification's spelling goes in `#[doc(alias)]` | no rename; add `MyLBA`, `DiskGUID`, `NumberOfPartitionEntries`, `PartitionEntryArrayCRC32`, `PartitionTypeGUID`, `UniquePartitionGUID` |
-| 14 | `APPLE_HFS_PLUS`, `APPLE_APFS` | a kept foreign name opens its doc with its full name and carries an alias | no rename; aliases `Mac OS Extended` and `Apple File System` |
-| 15 | the private test `the_three_reads_a_gpt_reader_makes` | `gpt` is spelled out; the template's `spelled_out` fails it at a ceiling of 0 | `the_three_reads_a_partition_table_reader_makes` |
-| 16 | `VERSION` | provisional; see [Identity values](#identity-values) | keep the name |
+| # | items | state |
+|---|---|---|
+| 1 | `types::NIFE_DATA`, `types::NIFE_BOOT` | moved to the crate `nife_partition_types` (provisional name), values unchanged; `types::name` stays here and knows only the well-known types, and `nife_partition_types::name` adds nife's two |
+| 2 | every `lba` component: the five `Header` fields, `Entry::first_lba` and `last_lba`, `PRIMARY_HEADER_LBA`, the table readers, `BackupMismatch::MyLba` to `EntryArrayLba`, `MbrProblem::StartLba` and `SizeLba` | built, spelled `logical_block_address`, each specification spelling a `#[doc(alias)]` |
+| 3 | `mbr`, `MbrProblem`, `Error::Mbr`, `check_protective_mbr`, `write_protective_mbr` | built as `master_boot_record`, `MasterBootRecordProblem`, `Error::MasterBootRecord`, `check_protective_master_boot_record`, `write_protective_master_boot_record`, with alias `MBR` |
+| 4 | `MINIMUM_BLOCK_SIZE`, `MAXIMUM_BLOCK_SIZE` | built as `MINIMUM_BLOCK_BYTES`, `MAXIMUM_BLOCK_BYTES` |
+| 5 | `entry::SIZE`, `SIZE_U32`, `HEADER_SIZE`, `at::HEADER_SIZE`, `at::ENTRY_SIZE` | built as `ENTRY_BYTES`, `ENTRY_BYTES_U32`, `HEADER_BYTES`, `at::HEADER_BYTES`, `at::ENTRY_BYTES` |
+| 6 | `Header::entry_size` | built as `entry_bytes`, alias `SizeOfPartitionEntry`; `BackupMismatch::EntrySize` and `Error::EntrySize` are not reached by the rulings and keep their names, proposed `EntryBytes` |
+| 7 | `GloballyUniqueIdentifierPartitionTable`, `block_size`, `create`'s parameter `block_size` | built as `PartitionTable` (no alias), `block_bytes` |
+| 8 | `ATTR_REQUIRED`, `ATTR_NO_BLOCK_IO`, `ATTR_LEGACY_BIOS_BOOTABLE` | not ruled; proposed `ATTRIBUTE_REQUIRED_PARTITION`, `ATTRIBUTE_NO_BLOCK_IO_PROTOCOL`, `ATTRIBUTE_LEGACY_BIOS_BOOTABLE`, each aliased to UEFI's attribute name |
+| 9 | the two entry-array readers | spelled `primary_entry_logical_block_address` and `backup_entry_logical_block_address`; proposed `primary_entry_array_logical_block_address` and `backup_entry_array_logical_block_address`, since the header field is `entry_array_logical_block_address` |
+| 10 | `PartitionTable::entry(index)` | not ruled; proposed `get` |
+| 11 | `Span::covering`'s and `buffer_bytes`'s parameter `transfer` | not ruled; proposed `transfer_bytes` |
+| 12 | `Error::PartitionsOverlap { a, b }` | not ruled; proposed `first`, `second` |
+| 13 | `Header` and `Entry` fields that mirror UEFI's | the `LBA` aliases exist; `DiskGUID`, `NumberOfPartitionEntries`, `PartitionEntryArrayCRC32`, `PartitionTypeGUID`, `UniquePartitionGUID` stay proposed |
+| 14 | `APPLE_HFS_PLUS`, `APPLE_APFS` | no rename; aliases `Mac OS Extended` and `Apple File System` stay proposed |
+| 15 | the private test | built as `the_three_reads_a_partition_table_reader_makes` |
+| 16 | `VERSION` | provisional; see [Identity values](#identity-values) |
 
 The crate's documentation already quotes most of row 13's spellings. `MyLBA`,
 `PartitionEntryArrayCRC32` and row 8's attribute names come from memory of UEFI 2.10 section 5.3.
@@ -156,10 +155,10 @@ table, whose revision the header carries. So it has no row in 956's id table and
 | `VERSION` | `1` | the generation of this crate's reading and writing; a declaration nothing reads at run time, and no file in nife names `globally_unique_identifier_partition_table::VERSION` |
 | `header::SIGNATURE` | `EFI PART` | UEFI's, not the crate's |
 | `header::REVISION` | `0x0001_0000` | UEFI's, the only revision there is |
-| `types::NIFE_DATA` | `EC5CC08B-D749-4434-AC38-A274C50385BA` | nife's data partition type; fixed on every disk written |
-| `types::NIFE_BOOT` | `11631EE3-E18F-4AFC-9D7F-171572635629` | nife's boot slot type; `boot_slot` owns its attribute bits 48 to 63 |
+| `nife_partition_types::NIFE_DATA` | `EC5CC08B-D749-4434-AC38-A274C50385BA` | nife's data partition type; fixed on every disk written |
+| `nife_partition_types::NIFE_BOOT` | `11631EE3-E18F-4AFC-9D7F-171572635629` | nife's boot slot type; `boot_slot` owns its attribute bits 48 to 63 |
 
-The lane changes no value. The two type GUIDs act as the crate's real identity values: every
+No value changes. The two type GUIDs, now in `nife_partition_types`, are nife's real identity values: every
 installed disk carries them, and the loader, the installer and the surveyor match on them.
 
 ## What points back into nife
@@ -192,16 +191,14 @@ For the template, already in [the runbook](../crate-move.md)'s `BUGS`: the scaff
 lacks the naming gates. The dry run also reports the pull request template's architect line and
 `CONTRIBUTING.md`'s `script/record-ruling` path; the template's `main` has neither.
 
-For the move lane, or for decision 1:
+For the move lane:
 
 | item | owner |
 |---|---|
-| `NIFE_DATA` and `NIFE_BOOT`, their `name` strings, `testing::sample_disk`'s "nife data" partition, and the tests and harnesses that use them | architect, decision 1 |
-| `guid::types`' doc says the constants answer "which one is ours" | the lane that applies decision 1 |
 | `tests/real_disks.rs` and the README's fixture recipe label one partition "cricker data", the operating system's earlier name, on purpose: the fixture is a disk from before the rename. A stranger meets the old name without the reason | move lane: say in the README that the label is arbitrary |
-| the 23 undocumented items, and `#![allow(missing_docs)]` | the lane that ratifies the names, since it touches each item |
-| `Display` for `BackupMismatch` and `MbrProblem`, `core::error::Error` for `Error` | maintainer, provisional; nothing outside nife has acted on the enums |
-| `script/crate-move`'s nife check skips a word joined by an underscore, so it passes `NIFE_DATA` that the externalized-crates lint catches | the runbook's `BUGS` |
+| the 23 undocumented items | done; the crate has no `#![allow(missing_docs)]` |
+| `Display` for `BackupMismatch` and `MasterBootRecordProblem`, `core::error::Error` for `Error` | maintainer, provisional; nothing outside nife has acted on the enums |
+| `script/crate-move`'s nife check skips a word joined by an underscore, so it passes `NIFE_DATA` that the externalized-crates lint catches | the runbook's `BUGS`; the constants have left the crate |
 | convert the seven path dependencies; move the fuzz target; read the 37 listed files | move lane |
 
 ## Open questions
@@ -216,17 +213,15 @@ For the move lane, or for decision 1:
 
 ## Decisions for the architect
 
-Decision 1 comes first, since the move cannot proceed without it, and decision 2 settles most of
-the name table.
+The milestone's decisions 1 to 5 are ruled, and the crate carries them as provisional names. What remains is the
+architect's:
 
-1. Where nife's two partition type GUIDs live. Recommendation: in a crate that stays in nife, with
-   their values unchanged, and `types::name` in this crate drops them.
-2. Whether `lba` and `mbr` stay whole or are spelled out. Recommendation: spell both out, as §154
-   spelled out `gpt`, the same specification's acronym.
-3. Clear the move to `nifeos/globally_unique_identifier_partition_table` once 1, 2 and the name
-   ratification land, with no tag and no publication.
+1. Ratify the provisional names, one at a time, and rule the names no decision reaches (rows 6, 8
+   to 14 above).
+2. Clear the move to `nifeos/globally_unique_identifier_partition_table` after the ratification,
+   with no tag and no publication.
 
 ## Recommendation
 
-Not ready for review. The crate builds, proves and passes its patches on its own, and points
-nowhere into nife. Its two nife type GUIDs and its unratified names block the move.
+Not cleared. The crate builds, proves and passes its patches on its own, points nowhere into nife,
+and carries no nife type GUID. Its names are provisional until ratified.

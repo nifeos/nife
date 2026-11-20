@@ -126,7 +126,7 @@ fn start_reader(region: u64) -> (u64, u64, u64, u64, u64) {
             tcb,
             abi::thread_control_block::CONFIGURE,
             CODE_VA,
-            STACK_VA + page_frames::FRAME_SIZE,
+            STACK_VA + page_frames::FRAME_BYTES,
             given,
         ),
         Ok(current_cpu_contract::PAGE_VIRTUAL_ADDRESS as i64),
@@ -335,7 +335,7 @@ fn a_second_bind_of_a_bound_space_is_refused() {
             tcb,
             abi::thread_control_block::CONFIGURE,
             CODE_VA,
-            STACK_VA + page_frames::FRAME_SIZE,
+            STACK_VA + page_frames::FRAME_BYTES,
             aspace,
         )
     };
@@ -455,7 +455,7 @@ fn a_corpse_does_not_keep_a_space_rooted_in_a_destroyed_region() {
         Some(FAULT_RENDEZVOUS_SLOT),
     )
     .expect("insert the supervision endpoint");
-    sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_SIZE, name)
+    sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_BYTES, name)
         .expect("configure");
     sched::start_thread_control_block(tid, [0; 3]).expect("start");
 
@@ -521,7 +521,7 @@ fn start_witness(own_space: bool) -> (u64, sched::RendezvousId, [u64; 4]) {
         .segments()
         .map(|seg| {
             let (s, e) = seg.page_range(FRAME_PAGE_BYTES);
-            (e - s) / FRAME_SIZE
+            (e - s) / FRAME_BYTES
         })
         .sum::<u64>()
         + 8;

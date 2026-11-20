@@ -101,20 +101,20 @@ pub fn bring_up() -> Result<Found, Absent> {
     // and the scratchpads are the controller's own memory, which must hold nothing of anyone's.
     let dma = crate::memory::alloc_contiguous_zeroed(pages as usize)
         .ok_or(Absent::NoMemory(pages))?
-        .addr();
+        .physical_address();
     if crate::iommu::confine(
         dev.rid,
         &[page_tables::domain::DirectMemoryAccessRegion {
             base: dma,
-            size: pages * page_frames::FRAME_SIZE,
+            size: pages * page_frames::FRAME_BYTES,
             writable: true,
         }],
     )
     .is_err()
     {
         for page in 0..pages {
-            crate::memory::free(page_frames::PageFrame::from_addr(
-                dma + page * page_frames::FRAME_SIZE,
+            crate::memory::free(page_frames::PageFrame::from_physical_address(
+                dma + page * page_frames::FRAME_BYTES,
             ));
         }
         return Err(Absent::Unconfined);

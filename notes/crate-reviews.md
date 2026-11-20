@@ -98,6 +98,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`user_mode_runtime`](crate-reviews/user-mode-runtime.md) | 3 | ready for review |
 | [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | ready for review |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |
+| [`page_frames`](crate-reviews/page-frames.md) | kernel | ready for review |
 | [`inter_process_communication`](crate-reviews/inter-process-communication.md) | - | ready for review; the move waits for `intrusive_queue` (milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release)) |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |
 | [`byte_glob`](crate-reviews/byte-glob.md) | contract | cleared and moved (2026-11-20 UTC, no tag, no publish); nife pins `nifeos/byte_glob` by commit |

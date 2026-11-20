@@ -43,7 +43,7 @@ fn a_package_is_fetched_through_the_index_by_name_over_tls_and_judged_by_its_dig
     let image = |name: &str| program(name).unwrap_or_else(|| panic!("no {name} in the archive"));
     let mut w = wired_or_skip!(e1000e_service::start_net_server(
         image("net_stack"),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ));
     let _ = crate::sched::ipc_receive(w.report);
     let service = start_resolver(w.stack, entropy, &mut w.held);

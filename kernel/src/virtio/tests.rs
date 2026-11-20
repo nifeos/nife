@@ -37,13 +37,17 @@ fn write_desc(desc: u64, i: u64, addr: u64, len: u32, flags: u16, next: u16) {
 /// A fake driver DMA region and a fake shadow region, each a real frame reached through the
 /// direct map. Returns their physical bases and the region size. Free both with [`free_regions`].
 fn two_regions() -> (u64, u64, u64) {
-    let driver = crate::memory::alloc().expect("no driver frame").addr();
-    let shadow = crate::memory::alloc().expect("no shadow frame").addr();
-    (driver, shadow, page_frames::FRAME_SIZE)
+    let driver = crate::memory::alloc()
+        .expect("no driver frame")
+        .physical_address();
+    let shadow = crate::memory::alloc()
+        .expect("no shadow frame")
+        .physical_address();
+    (driver, shadow, page_frames::FRAME_BYTES)
 }
 fn free_regions(driver: u64, shadow: u64) {
-    crate::memory::free(page_frames::PageFrame::from_addr(driver));
-    crate::memory::free(page_frames::PageFrame::from_addr(shadow));
+    crate::memory::free(page_frames::PageFrame::from_physical_address(driver));
+    crate::memory::free(page_frames::PageFrame::from_physical_address(shadow));
 }
 
 /// Drive `validate_and_shadow` against the fake regions with the standard closures. Queue 0,
@@ -438,17 +442,21 @@ fn the_iommu_faults_a_dma_that_escapes_the_domain() {
     }
 
     // Register (and thereby confine) the device to its DMA region + shadow page.
-    let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+    let dma = crate::memory::alloc_zeroed()
+        .expect("no DMA frame")
+        .physical_address();
     let id = register(
         Transport::pci(&d),
         dma,
-        page_frames::FRAME_SIZE,
+        page_frames::FRAME_BYTES,
         Some(d.rid),
     )
     .expect("the IOMMU refused to attach the PCIe disk");
 
     // A frame the domain does not map: the device's escape target.
-    let victim = crate::memory::alloc().expect("no victim frame").addr();
+    let victim = crate::memory::alloc()
+        .expect("no victim frame")
+        .physical_address();
     let victim_page = victim & !0xfff;
 
     // Drain any stale fault first, so what we observe is ours.
@@ -514,11 +522,13 @@ fn a_device_write_to_the_read_only_shadow_is_refused() {
             other.transport.write_reg(REG_STATUS, 0);
         }
     }
-    let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+    let dma = crate::memory::alloc_zeroed()
+        .expect("no DMA frame")
+        .physical_address();
     let id = register(
         Transport::pci(&d),
         dma,
-        page_frames::FRAME_SIZE,
+        page_frames::FRAME_BYTES,
         Some(d.rid),
     )
     .expect("the IOMMU refused to attach the PCIe disk");
@@ -555,9 +565,11 @@ fn borrow_block_transport() -> Option<Transport> {
 /// [`release_borrowed`] does both.
 fn register_borrowed() -> Option<(u64, u64)> {
     let transport = borrow_block_transport()?;
-    let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+    let dma = crate::memory::alloc_zeroed()
+        .expect("no DMA frame")
+        .physical_address();
     Some((
-        register(transport, dma, page_frames::FRAME_SIZE, None)?,
+        register(transport, dma, page_frames::FRAME_BYTES, None)?,
         dma,
     ))
 }
@@ -565,7 +577,7 @@ fn register_borrowed() -> Option<(u64, u64)> {
 /// [`unregister`] a borrowed device and return its DMA frame.
 fn release_borrowed(id: u64, dma: u64) -> bool {
     let released = unregister(id);
-    crate::memory::free(page_frames::PageFrame::from_addr(dma));
+    crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
     released
 }
 
@@ -660,7 +672,7 @@ fn a_dying_owner_releases_its_device() {
         "the owner died and its device stayed registered"
     );
     let _ = tid;
-    crate::memory::free(page_frames::PageFrame::from_addr(dma));
+    crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
 }
 
 /// An unowned device survives any thread's death: only a bound owner releases.
@@ -716,7 +728,7 @@ fn a_slot_without_magic_or_device_is_not_reported_as_refused() {
 /// Falsification: replayable `kernel/falsifications/virtio.tests.the_pci_transport_answers_the_device_configuration_generation.patch`
 #[test_case]
 fn the_pci_transport_answers_the_device_configuration_generation() {
-    let common = crate::memory::alloc().expect("no frame").addr();
+    let common = crate::memory::alloc().expect("no frame").physical_address();
     let t = Transport::Pci {
         common,
         notify_base: 0,
@@ -743,5 +755,5 @@ fn the_pci_transport_answers_the_device_configuration_generation() {
              bracketed configuration read on that bus checks nothing",
         );
     }
-    crate::memory::free(page_frames::PageFrame::from_addr(common));
+    crate::memory::free(page_frames::PageFrame::from_physical_address(common));
 }

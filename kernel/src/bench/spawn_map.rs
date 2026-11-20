@@ -50,7 +50,7 @@ pub(super) fn map_new() {
         for i in 0..MAP_ITERS {
             let page = space
                 .map_new(
-                    base + i * page_frames::FRAME_SIZE,
+                    base + i * page_frames::FRAME_BYTES,
                     page_tables::Flags::user_data(),
                 )
                 .expect("bench: map failed");
@@ -98,11 +98,11 @@ pub(super) fn rfence_self() {
     let me = 1usize << crate::cpu::id();
 
     for _ in 0..WARMUP {
-        crate::arch::sbi_remote_sfence_vma(me, va, page_frames::FRAME_SIZE as usize);
+        crate::arch::sbi_remote_sfence_vma(me, va, page_frames::FRAME_BYTES as usize);
     }
     timed("rfence_self", RFENCE_ITERS, || {
         for _ in 0..RFENCE_ITERS {
-            crate::arch::sbi_remote_sfence_vma(me, va, page_frames::FRAME_SIZE as usize);
+            crate::arch::sbi_remote_sfence_vma(me, va, page_frames::FRAME_BYTES as usize);
         }
     });
 }

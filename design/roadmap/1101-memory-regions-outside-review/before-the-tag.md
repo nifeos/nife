@@ -13,7 +13,7 @@ An appendix to [the milestone](../1101-memory-regions-outside-review.md).
    release profile with overflow checks on, so a kernel would panic too. A build without them hands
    out a wrong page number. `insert_root(0x100, 0)` succeeds and makes a zero-page region, while
    `split` refuses a zero-page child. The kernel never passes such values (its `base` is a physical
-   address over `FRAME_SIZE`), so no program breaks today. A stranger's first `Table` with a
+   address over `FRAME_BYTES`), so no program breaks today. A stranger's first `Table` with a
    sentinel base does.
    Evidence: `src/table.rs` lines 377 to 406 (no check), `449`, `604`, `632`, `787`, `792` (the sums).
    `Cargo.toml` of the workspace, `[profile.release] overflow-checks = true`.

@@ -38,10 +38,10 @@ pub(super) const FS_SERVERS: usize = 3;
 pub(super) fn poisoned_stack_page_frame(server: usize, index: usize) -> u64 {
     let p = crate::memory::alloc()
         .expect("no frame for the fs server's stack")
-        .addr();
-    // SAFETY: fresh frame, reachable through the direct map, exactly FRAME_SIZE bytes.
+        .physical_address();
+    // SAFETY: fresh frame, reachable through the direct map, exactly FRAME_BYTES bytes.
     let words = unsafe {
-        core::slice::from_raw_parts_mut(mmu::phys_to_virt(p) as *mut u64, FRAME_SIZE as usize / 8)
+        core::slice::from_raw_parts_mut(mmu::phys_to_virt(p) as *mut u64, FRAME_BYTES as usize / 8)
     };
     words.fill(STACK_POISON);
     FS_STACK_PHYS[server][index].store(p, core::sync::atomic::Ordering::Relaxed);
@@ -65,8 +65,8 @@ pub(super) static FS_STACK_PHYS: [[core::sync::atomic::AtomicU64; FS_STACK_PAGES
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn fs_stack_used() -> Option<(u64, u64)> {
     use core::sync::atomic::Ordering;
-    let total = (FS_STACK_PAGES + 1) * FRAME_SIZE;
-    let mut deepest = FRAME_SIZE; // the base page, always used
+    let total = (FS_STACK_PAGES + 1) * FRAME_BYTES;
+    let mut deepest = FRAME_BYTES; // the base page, always used
     let mut wired = false;
     for bank in FS_STACK_PHYS.iter() {
         for (i, slot) in bank.iter().enumerate() {
@@ -79,14 +79,14 @@ pub fn fs_stack_used() -> Option<(u64, u64)> {
             let words = unsafe {
                 core::slice::from_raw_parts(
                     mmu::phys_to_virt(phys) as *const u64,
-                    FRAME_SIZE as usize / 8,
+                    FRAME_BYTES as usize / 8,
                 )
             };
             // Page `i` spans [USER_STACK_VA - (i+1)*FRAME, USER_STACK_VA - i*FRAME). Word `w` in
             // it sits that far above the page's base, so a touched word means at least this much
             // depth.
             if let Some(w) = words.iter().position(|&x| x != STACK_POISON) {
-                let depth = (i as u64 + 2) * FRAME_SIZE - w as u64 * 8;
+                let depth = (i as u64 + 2) * FRAME_BYTES - w as u64 * 8;
                 deepest = deepest.max(depth);
             }
         }

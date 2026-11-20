@@ -12,7 +12,7 @@
 # something in the world.
 #
 # So the allowlist below is proper nouns and deliberate prose capitalisations ONLY. Everything else
-# clippy flagged (registers like TTBR0_EL1, types like BTreeMap, constants like FRAME_SIZE, paths
+# clippy flagged (registers like TTBR0_EL1, types like BTreeMap, constants like FRAME_BYTES, paths
 # like crates/measured_boot) got real backticks in the source, because the lint was right about them.
 # Roughly 200 of each, which is the honest split and the reason this list is not longer.
 #

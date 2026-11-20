@@ -136,7 +136,7 @@ pub(crate) fn start_for_boot(image: &'static [u8]) -> Result<Wiring, NotAtBoot> 
     {
         return Err(NotAtBoot::Unproven { device: dev.device });
     }
-    start_net_server(image, socket_contract::NO_LISTEN_GRANT).map_err(NotAtBoot::Absent)
+    start_net_server(image, socket_contract::NO_PORT_GRANT).map_err(NotAtBoot::Absent)
 }
 
 /// Whether the booted system may bring up an I219 on its own, gated on silicon, not on review.
@@ -216,7 +216,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
         let phys =
             crate::memory_region::retype_page(stack_region).expect("no frame for the net stack");
         maps[PLANE + 2 + k] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
             phys,
             flags: Flags::user_data(),
         };
@@ -236,7 +236,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
         // What each socket is minted from (§255 (each socket is its own capability)); slot 8, the
         // server's own address space, `run_with_own_space` adds once the space exists.
         at(
-            socket_contract::stack_slots::MINT,
+            socket_contract::stack_slots::MINTING_ENDPOINT_SLOT,
             rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
         );
         run_with_own_space(
@@ -249,7 +249,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
                 maps: &maps,
                 windows: &SERVER_WINDOWS,
             },
-            socket_contract::stack_slots::OWN_SPACE,
+            socket_contract::stack_slots::OWN_ADDRESS_SPACE_SLOT,
         )
     })
     .expect("could not spawn net_stack over the e1000e NIC");
@@ -297,7 +297,7 @@ pub fn start_package_fetch(
         cli_arg,
         arg1,
         Some(catalogue),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     )
 }
 
@@ -315,7 +315,7 @@ pub(crate) fn start_drain(
         TEST_TCP_DRAIN,
         peer,
         None,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     )
 }
 

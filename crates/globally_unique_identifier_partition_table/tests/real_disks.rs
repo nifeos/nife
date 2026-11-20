@@ -9,7 +9,7 @@
 
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
-    BackupMismatch, Entry, Error, GloballyUniqueIdentifierPartitionTable, MbrProblem, entry,
+    BackupMismatch, Entry, Error, MasterBootRecordProblem, PartitionTable, entry,
 };
 use uuid::Uuid;
 
@@ -43,10 +43,9 @@ fn name_of(part: &Entry) -> String {
 #[test]
 fn sgdisk_writes_a_table_we_accept_whole() {
     let (header, array) = primary(SGDISK_HEAD);
-    let table = GloballyUniqueIdentifierPartitionTable::parse(header, array)
-        .expect("sgdisk writes a valid GPT");
+    let table = PartitionTable::parse(header, array).expect("sgdisk writes a valid GPT");
 
-    assert_eq!(table.block_size(), BLOCK);
+    assert_eq!(table.block_bytes(), BLOCK);
     assert_eq!(table.block_count(), BLOCKS);
     assert_eq!(
         table.disk_guid(),
@@ -54,19 +53,23 @@ fn sgdisk_writes_a_table_we_accept_whole() {
         "the disk GUID we told sgdisk to use, decoded through the mixed-endian rule"
     );
     assert_eq!(table.entry_count(), 128);
-    assert_eq!(table.first_usable_lba(), 34, "1 MBR + 1 header + 32 array");
-    assert_eq!(table.last_usable_lba(), BLOCKS - 34);
-    assert_eq!(table.primary_entry_lba(), 2);
-    assert_eq!(table.backup_entry_lba(), BLOCKS - 33);
-    assert_eq!(table.backup_header_lba(), BLOCKS - 1);
+    assert_eq!(
+        table.first_usable_logical_block_address(),
+        34,
+        "1 MBR + 1 header + 32 array"
+    );
+    assert_eq!(table.last_usable_logical_block_address(), BLOCKS - 34);
+    assert_eq!(table.primary_entry_logical_block_address(), 2);
+    assert_eq!(table.backup_entry_logical_block_address(), BLOCKS - 33);
+    assert_eq!(table.backup_header_logical_block_address(), BLOCKS - 1);
 
     let parts: Vec<_> = table.partitions().collect();
     assert_eq!(parts.len(), 3);
 
     assert_eq!(parts[0].0, 0, "sgdisk partition 1 is array index 0");
     assert_eq!(parts[0].1.type_guid, types::EFI_SYSTEM);
-    assert_eq!(parts[0].1.first_lba, 2048);
-    assert_eq!(parts[0].1.last_lba, 10239);
+    assert_eq!(parts[0].1.first_logical_block_address, 2048);
+    assert_eq!(parts[0].1.last_logical_block_address, 10239);
     assert_eq!(parts[0].1.blocks(), Some(8192), "4 MiB");
     assert_eq!(name_of(&parts[0].1), "EFI system");
 
@@ -78,40 +81,47 @@ fn sgdisk_writes_a_table_we_accept_whole() {
         Uuid::try_parse_ascii(b"11111111-2222-4333-8444-555555555502").unwrap()
     );
 
-    // The one that matters for this OS: our own type GUID, recognised on a disk written by a tool
-    // that has never heard of it. This is the recovery story in one assertion.
-    assert_eq!(parts[2].1.type_guid, types::NIFE_DATA);
-    assert_eq!(types::name(parts[2].1.type_guid), Some("nife data"));
+    // A type GUID this crate has no name for, read back exactly from a disk written by a tool that
+    // has never heard of it: the crate keeps the value and names nothing it does not know.
+    let private_type = Uuid::try_parse_ascii(b"EC5CC08B-D749-4434-AC38-A274C50385BA").unwrap();
+    assert_eq!(parts[2].1.type_guid, private_type);
+    assert_eq!(types::name(parts[2].1.type_guid), None);
     // The fixture's label is "cricker data", from before the operating system was renamed, on purpose: a pre-rename disk is the recovery case, and the GUID, not the label, is
     // what is recognised.
     assert_eq!(name_of(&parts[2].1), "cricker data");
-    assert_eq!(parts[2].1.last_lba, table.last_usable_lba());
+    assert_eq!(
+        parts[2].1.last_logical_block_address,
+        table.last_usable_logical_block_address()
+    );
 }
 
 #[test]
 fn sgdisks_backup_and_protective_mbr_check_out() {
     let (header, array) = primary(SGDISK_HEAD);
-    let table = GloballyUniqueIdentifierPartitionTable::parse(header, array).unwrap();
+    let table = PartitionTable::parse(header, array).unwrap();
     let (backup_array, backup_header) = backup(SGDISK_TAIL);
 
     table.check_backup(backup_header, backup_array).unwrap();
-    table.check_protective_mbr(&SGDISK_HEAD[..BLOCK]).unwrap();
+    table
+        .check_protective_master_boot_record(&SGDISK_HEAD[..BLOCK])
+        .unwrap();
 }
 
 #[test]
 fn macos_writes_a_table_we_accept_whole() {
     let (header, array) = primary(APPLE_HEAD);
-    let table = GloballyUniqueIdentifierPartitionTable::parse(header, array)
-        .expect("diskutil writes a valid GPT");
+    let table = PartitionTable::parse(header, array).expect("diskutil writes a valid GPT");
     let (backup_array, backup_header) = backup(APPLE_TAIL);
     table.check_backup(backup_header, backup_array).unwrap();
-    table.check_protective_mbr(&APPLE_HEAD[..BLOCK]).unwrap();
+    table
+        .check_protective_master_boot_record(&APPLE_HEAD[..BLOCK])
+        .unwrap();
 
     // Same geometry as sgdisk's, independently arrived at. 128 entries at 128 bytes is not in the
     // spec as a requirement, it is just what everybody does, and here are two everybodies.
     assert_eq!(table.entry_count(), 128);
-    assert_eq!(table.first_usable_lba(), 34);
-    assert_eq!(table.last_usable_lba(), BLOCKS - 34);
+    assert_eq!(table.first_usable_logical_block_address(), 34);
+    assert_eq!(table.last_usable_logical_block_address(), BLOCKS - 34);
 
     let parts: Vec<_> = table.partitions().collect();
     assert_eq!(parts.len(), 2);
@@ -128,19 +138,19 @@ fn macos_writes_a_table_we_accept_whole() {
 #[test]
 fn macos_leaves_the_partition_names_empty_and_sgdisk_does_not() {
     let (header, array) = primary(APPLE_HEAD);
-    let apple = GloballyUniqueIdentifierPartitionTable::parse(header, array).unwrap();
+    let apple = PartitionTable::parse(header, array).unwrap();
     for (index, part) in apple.partitions() {
         assert_eq!(part.name, [0u16; entry::NAME_UNITS], "entry {index}");
         assert_eq!(name_of(&part), "");
     }
 
     let (header, array) = primary(SGDISK_HEAD);
-    let sgdisk = GloballyUniqueIdentifierPartitionTable::parse(header, array).unwrap();
+    let sgdisk = PartitionTable::parse(header, array).unwrap();
     assert!(sgdisk.partitions().all(|(_, p)| !name_of(&p).is_empty()));
 }
 
 /// The two tools write different CHS bytes in the protective MBR and both are right, which is why
-/// [`globally_unique_identifier_partition_table::mbr::validate`] does not look at them.
+/// [`globally_unique_identifier_partition_table::master_boot_record::validate`] does not look at them.
 ///
 /// `sgdisk` computes the real cylinder/head/sector of the last block; macOS writes `FE FF FF`, the
 /// "out of range, use LBA" marker. Nothing has read a CHS field in thirty years. A validator
@@ -158,7 +168,11 @@ fn the_two_tools_disagree_about_chs_and_it_does_not_matter() {
             &head[RECORD + 12..RECORD + 16],
             &(BLOCKS as u32 - 1).to_le_bytes()
         );
-        globally_unique_identifier_partition_table::mbr::validate(&head[..BLOCK], BLOCKS).unwrap();
+        globally_unique_identifier_partition_table::master_boot_record::validate(
+            &head[..BLOCK],
+            BLOCKS,
+        )
+        .unwrap();
     }
 }
 
@@ -171,7 +185,7 @@ fn the_two_tools_disagree_about_chs_and_it_does_not_matter() {
 #[test]
 fn re_emitting_sgdisks_table_reproduces_it_exactly() {
     let (header_block, array) = primary(SGDISK_HEAD);
-    let table = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+    let table = PartitionTable::parse(header_block, array).unwrap();
     let (backup_array, backup_header_block) = backup(SGDISK_TAIL);
 
     let mut out = [0u8; BLOCK];
@@ -181,7 +195,7 @@ fn re_emitting_sgdisks_table_reproduces_it_exactly() {
     table.write_backup_header(&mut out).unwrap();
     assert_eq!(out, backup_header_block, "backup header");
 
-    table.write_protective_mbr(&mut out).unwrap();
+    table.write_protective_master_boot_record(&mut out).unwrap();
     // The ending CHS (record offset 5..8, absolute 451..454) is the one place we differ from
     // sgdisk on purpose: it writes the real cylinder/head/sector of the last block and we write
     // the "beyond CHS" marker. See the test above for why neither is wrong.
@@ -206,11 +220,11 @@ fn re_emitting_sgdisks_table_reproduces_it_exactly() {
 #[test]
 fn creating_the_same_table_from_scratch_matches_sgdisk_byte_for_byte() {
     let (header_block, array) = primary(SGDISK_HEAD);
-    let original = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+    let original = PartitionTable::parse(header_block, array).unwrap();
     let parts: Vec<Entry> = original.partitions().map(|(_, e)| e).collect();
 
     let mut rebuilt_array = [0u8; globally_unique_identifier_partition_table::ENTRY_ARRAY_BYTES];
-    let rebuilt = GloballyUniqueIdentifierPartitionTable::create(
+    let rebuilt = PartitionTable::create(
         original.disk_guid(),
         BLOCK,
         original.block_count(),
@@ -219,9 +233,18 @@ fn creating_the_same_table_from_scratch_matches_sgdisk_byte_for_byte() {
     )
     .unwrap();
 
-    assert_eq!(rebuilt.first_usable_lba(), original.first_usable_lba());
-    assert_eq!(rebuilt.last_usable_lba(), original.last_usable_lba());
-    assert_eq!(rebuilt.backup_entry_lba(), original.backup_entry_lba());
+    assert_eq!(
+        rebuilt.first_usable_logical_block_address(),
+        original.first_usable_logical_block_address()
+    );
+    assert_eq!(
+        rebuilt.last_usable_logical_block_address(),
+        original.last_usable_logical_block_address()
+    );
+    assert_eq!(
+        rebuilt.backup_entry_logical_block_address(),
+        original.backup_entry_logical_block_address()
+    );
     assert_eq!(rebuilt.entry_array(), original.entry_array());
 
     let mut out = [0u8; BLOCK];
@@ -245,8 +268,7 @@ fn creating_the_same_table_from_scratch_matches_sgdisk_byte_for_byte() {
 )]
 fn every_single_byte_corruption_of_the_header_is_caught() {
     let (header_block, array) = primary(SGDISK_HEAD);
-    GloballyUniqueIdentifierPartitionTable::parse(header_block, array)
-        .expect("the clean fixture parses");
+    PartitionTable::parse(header_block, array).expect("the clean fixture parses");
 
     let mut corrupt = [0u8; BLOCK];
     let mut checked = 0u32;
@@ -258,7 +280,7 @@ fn every_single_byte_corruption_of_the_header_is_caught() {
             corrupt.copy_from_slice(header_block);
             corrupt[position] = value;
             assert!(
-                GloballyUniqueIdentifierPartitionTable::parse(&corrupt, array).is_err(),
+                PartitionTable::parse(&corrupt, array).is_err(),
                 "byte {position} changed to {value:#04x} was accepted"
             );
             checked += 1;
@@ -270,7 +292,7 @@ fn every_single_byte_corruption_of_the_header_is_caught() {
 /// **Every single-bit corruption of a real 16 KiB entry array is rejected.** All 131,072 of them,
 /// plus the complement of every byte.
 ///
-/// The array holds every partition's bounds, so a corrupt `last_lba` let through is a filesystem
+/// The array holds every partition's bounds, so a corrupt `last_logical_block_address` let through is a filesystem
 /// writing over the next partition. Bits, not every value: the full sweep below is 163 seconds,
 /// and the header's can afford every value because its CRC covers 92 bytes, not 16,384. Skipped
 /// under Miri, as the header sweep is.
@@ -281,7 +303,7 @@ fn every_single_byte_corruption_of_the_header_is_caught() {
 )]
 fn every_single_bit_corruption_of_the_entry_array_is_caught() {
     let (header_block, array) = primary(SGDISK_HEAD);
-    let clean = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+    let clean = PartitionTable::parse(header_block, array).unwrap();
     let len = clean.entry_array().len();
     assert_eq!(len, 16384);
 
@@ -291,7 +313,7 @@ fn every_single_bit_corruption_of_the_entry_array_is_caught() {
         for mask in [1u8, 2, 4, 8, 16, 32, 64, 128, 255] {
             corrupt[position] = original ^ mask;
             assert!(
-                GloballyUniqueIdentifierPartitionTable::parse(header_block, &corrupt).is_err(),
+                PartitionTable::parse(header_block, &corrupt).is_err(),
                 "entry-array byte {position} xor {mask:#04x} was accepted"
             );
         }
@@ -310,7 +332,7 @@ fn every_single_bit_corruption_of_the_entry_array_is_caught() {
 #[ignore = "163 seconds: 68 GB of CRC-32. The bit-flip sweep is the gate."]
 fn every_single_byte_corruption_of_the_entry_array_is_caught() {
     let (header_block, array) = primary(SGDISK_HEAD);
-    let len = GloballyUniqueIdentifierPartitionTable::parse(header_block, array)
+    let len = PartitionTable::parse(header_block, array)
         .unwrap()
         .entry_array()
         .len();
@@ -324,7 +346,7 @@ fn every_single_byte_corruption_of_the_entry_array_is_caught() {
             }
             corrupt[position] = value;
             assert!(
-                GloballyUniqueIdentifierPartitionTable::parse(header_block, &corrupt).is_err(),
+                PartitionTable::parse(header_block, &corrupt).is_err(),
                 "entry-array byte {position} changed to {value:#04x} was accepted"
             );
         }
@@ -340,7 +362,7 @@ fn every_single_byte_corruption_of_the_entry_array_is_caught() {
 #[test]
 fn a_backup_that_belongs_to_another_disk_is_refused_field_by_field() {
     let (header_block, array) = primary(SGDISK_HEAD);
-    let table = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+    let table = PartitionTable::parse(header_block, array).unwrap();
     let (backup_array, backup_header_block) = backup(SGDISK_TAIL);
     table
         .check_backup(backup_header_block, backup_array)
@@ -357,10 +379,19 @@ fn a_backup_that_belongs_to_another_disk_is_refused_field_by_field() {
     );
 
     let cases: [Case; 6] = [
-        (|h| h.my_lba += 1, BackupMismatch::MyLba),
-        (|h| h.alternate_lba += 1, BackupMismatch::AlternateLba),
+        (
+            |h| h.my_logical_block_address += 1,
+            BackupMismatch::MyLogicalBlockAddress,
+        ),
+        (
+            |h| h.alternate_logical_block_address += 1,
+            BackupMismatch::AlternateLogicalBlockAddress,
+        ),
         (|h| h.disk_guid = Uuid::nil(), BackupMismatch::DiskGuid),
-        (|h| h.last_usable_lba -= 1, BackupMismatch::LastUsableLba),
+        (
+            |h| h.last_usable_logical_block_address -= 1,
+            BackupMismatch::LastUsableLogicalBlockAddress,
+        ),
         (|h| h.entry_count -= 1, BackupMismatch::EntryCount),
         (|h| h.entry_array_crc ^= 1, BackupMismatch::EntryArrayCrc),
     ];
@@ -378,11 +409,11 @@ fn a_backup_that_belongs_to_another_disk_is_refused_field_by_field() {
 
     // A backup header that is internally consistent but sits at the wrong LBA: the CRC is fine,
     // every field agrees, and it is still not this disk's backup.
-    header.entry_array_lba += 1;
+    header.entry_array_logical_block_address += 1;
     header.encode_into(&mut block).unwrap();
     assert_eq!(
         table.check_backup(&block, backup_array),
-        Err(Error::Backup(BackupMismatch::EntryArrayLba))
+        Err(Error::Backup(BackupMismatch::EntryArrayLogicalBlockAddress))
     );
 }
 
@@ -394,28 +425,31 @@ fn a_backup_that_belongs_to_another_disk_is_refused_field_by_field() {
 #[test]
 fn a_hybrid_mbr_is_refused_by_name() {
     let mut block = SGDISK_HEAD[..BLOCK].to_vec();
-    globally_unique_identifier_partition_table::mbr::validate(&block, BLOCKS).unwrap();
+    globally_unique_identifier_partition_table::master_boot_record::validate(&block, BLOCKS)
+        .unwrap();
 
     let second = 446 + 16;
     block[second + 4] = 0x83; // Linux, in the old MBR type space
     block[second + 8..second + 12].copy_from_slice(&2048u32.to_le_bytes());
     block[second + 12..second + 16].copy_from_slice(&8192u32.to_le_bytes());
     assert_eq!(
-        globally_unique_identifier_partition_table::mbr::validate(&block, BLOCKS),
-        Err(Error::Mbr(MbrProblem::ExtraRecord { index: 1 }))
+        globally_unique_identifier_partition_table::master_boot_record::validate(&block, BLOCKS),
+        Err(Error::MasterBootRecord(
+            MasterBootRecordProblem::ExtraRecord { index: 1 }
+        ))
     );
 }
 
 /// The primary of one fixture with the backup of the other is caught immediately.
 ///
 /// The disk GUIDs differ, which is the first thing
-/// [`GloballyUniqueIdentifierPartitionTable::check_backup`] compares that can differ between two
+/// [`PartitionTable::check_backup`] compares that can differ between two
 /// disks of the same size. Two 64 MiB images with identical geometry is the case where a lazier
 /// check (sizes match, so it must be fine) would say yes.
 #[test]
 fn one_disks_primary_with_a_foreign_backup_is_caught() {
     let (header, array) = primary(SGDISK_HEAD);
-    let table = GloballyUniqueIdentifierPartitionTable::parse(header, array).unwrap();
+    let table = PartitionTable::parse(header, array).unwrap();
     let (apple_array, apple_header) = backup(APPLE_TAIL);
     assert_eq!(
         table.check_backup(apple_header, apple_array),
@@ -429,21 +463,17 @@ fn one_disks_primary_with_a_foreign_backup_is_caught() {
 #[test]
 fn the_backup_alone_restores_the_primary_byte_for_byte() {
     let (header_block, array) = primary(SGDISK_HEAD);
-    let original = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+    let original = PartitionTable::parse(header_block, array).unwrap();
 
     let (backup_array, backup_header_block) = backup(SGDISK_TAIL);
-    let table = GloballyUniqueIdentifierPartitionTable::parse_backup(
-        backup_header_block,
-        backup_array,
-        BLOCKS,
-    )
-    .expect("the backup is a valid table");
+    let table = PartitionTable::parse_backup(backup_header_block, backup_array, BLOCKS)
+        .expect("the backup is a valid table");
 
     let mut restored = [0u8; BLOCK];
     table.write_primary_header(&mut restored).unwrap();
     assert_eq!(&restored[..], header_block, "the primary header, restored");
     assert_eq!(table.entry_array(), original.entry_array());
-    assert_eq!(table.primary_entry_lba(), 2);
+    assert_eq!(table.primary_entry_logical_block_address(), 2);
     assert_eq!(table.partitions().count(), 3);
     table
         .check_backup(backup_header_block, backup_array)
@@ -457,21 +487,17 @@ fn parse_backup_refuses_a_primary_a_wrong_size_and_a_damaged_array() {
     let (backup_array, backup_header_block) = backup(SGDISK_TAIL);
 
     assert!(matches!(
-        GloballyUniqueIdentifierPartitionTable::parse_backup(header_block, array, BLOCKS),
+        PartitionTable::parse_backup(header_block, array, BLOCKS),
         Err(Error::NotBackup { claimed_block: 1 })
     ));
     assert!(matches!(
-        GloballyUniqueIdentifierPartitionTable::parse_backup(
-            backup_header_block,
-            backup_array,
-            BLOCKS + 1
-        ),
+        PartitionTable::parse_backup(backup_header_block, backup_array, BLOCKS + 1),
         Err(Error::NotBackup { .. })
     ));
     let mut damaged = backup_array.to_vec();
     damaged[0] ^= 1;
     assert!(matches!(
-        GloballyUniqueIdentifierPartitionTable::parse_backup(backup_header_block, &damaged, BLOCKS),
+        PartitionTable::parse_backup(backup_header_block, &damaged, BLOCKS),
         Err(Error::EntryArrayCrc { .. })
     ));
 }
@@ -480,7 +506,7 @@ fn parse_backup_refuses_a_primary_a_wrong_size_and_a_damaged_array() {
 #[test]
 fn a_table_cloned_onto_another_size_of_disk_is_refused_by_the_size_check() {
     let (header_block, array) = primary(SGDISK_HEAD);
-    let table = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+    let table = PartitionTable::parse(header_block, array).unwrap();
     assert_eq!(table.check_disk_size(BLOCKS), Ok(()));
     assert_eq!(
         table.check_disk_size(BLOCKS * 2),
@@ -504,12 +530,14 @@ fn a_typed_record_of_zero_blocks_is_not_a_hybrid() {
     let mut block = SGDISK_HEAD[..BLOCK].to_vec();
     let second = 446 + 16;
     block[second + 4] = 0x83;
-    globally_unique_identifier_partition_table::mbr::validate(&block, BLOCKS)
+    globally_unique_identifier_partition_table::master_boot_record::validate(&block, BLOCKS)
         .expect("a zero-size record may be ignored");
     block[second + 12] = 1;
     assert_eq!(
-        globally_unique_identifier_partition_table::mbr::validate(&block, BLOCKS),
-        Err(Error::Mbr(MbrProblem::ExtraRecord { index: 1 }))
+        globally_unique_identifier_partition_table::master_boot_record::validate(&block, BLOCKS),
+        Err(Error::MasterBootRecord(
+            MasterBootRecordProblem::ExtraRecord { index: 1 }
+        ))
     );
 }
 
@@ -517,7 +545,7 @@ fn a_typed_record_of_zero_blocks_is_not_a_hybrid() {
 #[test]
 fn a_table_debug_prints_a_summary_and_every_refusal_is_an_error() {
     let (header_block, array) = primary(SGDISK_HEAD);
-    let table = GloballyUniqueIdentifierPartitionTable::parse(header_block, array).unwrap();
+    let table = PartitionTable::parse(header_block, array).unwrap();
     let shown = format!("{table:?}");
     assert!(shown.len() < 600, "{} characters", shown.len());
     assert!(shown.contains("used_entries: 3"));
@@ -528,7 +556,7 @@ fn a_table_debug_prints_a_summary_and_every_refusal_is_an_error() {
         "the backup header disagrees about the disk GUID"
     );
     assert_eq!(
-        Error::Mbr(MbrProblem::ExtraRecord { index: 1 }).to_string(),
+        Error::MasterBootRecord(MasterBootRecordProblem::ExtraRecord { index: 1 }).to_string(),
         "the protective MBR is wrong: record 1 is a second partition: a hybrid MBR"
     );
 }

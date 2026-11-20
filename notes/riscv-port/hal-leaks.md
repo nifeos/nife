@@ -113,7 +113,7 @@ The port is worth doing precisely because it finds where the abstraction leaked.
 
    The two paths are not distinguishable from a panic message, and an early reading of this
    investigation got it wrong by trying. A TCB child configured at `CODE_VA` 0x40_0000 with
-   `STACK_VA + FRAME_SIZE` and an exec child at an ELF base of 0x40_0000 with `USER_STACK_TOP` print
+   `STACK_VA + FRAME_BYTES` and an exec child at an ELF base of 0x40_0000 with `USER_STACK_TOP` print
    the same two numbers. Read the path from the test, not from the entry and stack values.
 
    The fix is a reservation, not a moving target: `user_entry_trampoline` drops `sp` by a frame's

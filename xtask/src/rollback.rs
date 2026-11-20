@@ -62,8 +62,7 @@ use std::path::Path;
 
 use boot_slot::{SlotHeader, State};
 use globally_unique_identifier_partition_table as gpt;
-use gpt::guid::types;
-use gpt::{Entry, GloballyUniqueIdentifierPartitionTable as Table};
+use gpt::{Entry, PartitionTable};
 
 use crate::install;
 
@@ -208,7 +207,7 @@ pub(crate) fn stage_an_upgrade(disk: &Path, boot_file: &Path) -> bool {
         );
         return false;
     };
-    if !write_slot_image(&mut file, parts[second].first_lba, &image) {
+    if !write_slot_image(&mut file, parts[second].first_logical_block_address, &image) {
         return false;
     }
 
@@ -217,7 +216,9 @@ pub(crate) fn stage_an_upgrade(disk: &Path, boot_file: &Path) -> bool {
         State::on_trial(TRIAL_PRIORITY, TRIAL_TRIES).into_attributes(parts[second].attributes);
 
     let mut array = [0u8; gpt::ENTRY_ARRAY_BYTES];
-    let Ok(table) = Table::create(disk_guid, LBA as usize, block_count, &parts, &mut array) else {
+    let Ok(table) =
+        PartitionTable::create(disk_guid, LBA as usize, block_count, &parts, &mut array)
+    else {
         eprintln!("rollback-boot: could not rebuild the partition table");
         return false;
     };
@@ -240,8 +241,10 @@ pub(crate) fn stage_an_upgrade(disk: &Path, boot_file: &Path) -> bool {
 
 /// **The installed disk's table, its entries, and which of them are boot slots**, from the head of
 /// the disk. `None` after saying why the disk is not one this gate can stage onto.
-fn installed_table(head: &[u8; PRIMARY_BYTES]) -> Option<(Table<'_>, Vec<Entry>, Vec<usize>)> {
-    let Ok(table) = Table::parse(
+fn installed_table(
+    head: &[u8; PRIMARY_BYTES],
+) -> Option<(PartitionTable<'_>, Vec<Entry>, Vec<usize>)> {
+    let Ok(table) = PartitionTable::parse(
         &head[LBA as usize..2 * LBA as usize],
         &head[2 * LBA as usize..],
     ) else {
@@ -255,7 +258,7 @@ fn installed_table(head: &[u8; PRIMARY_BYTES]) -> Option<(Table<'_>, Vec<Entry>,
             eprintln!("rollback-boot: the installed disk's entries are not contiguous");
             return None;
         }
-        if part.type_guid == types::NIFE_BOOT {
+        if part.type_guid == nife_partition_types::NIFE_BOOT {
             slots.push(parts.len());
         }
         parts.push(part);
@@ -263,16 +266,20 @@ fn installed_table(head: &[u8; PRIMARY_BYTES]) -> Option<(Table<'_>, Vec<Entry>,
     Some((table, parts, slots))
 }
 
-/// **The image into the slot at `first_lba`, header first.** Written in the order the installer
+/// **The image into the slot at `first_logical_block_address`, header first.** Written in the order the installer
 /// writes it so that a failure here looks like the failure there.
-fn write_slot_image(file: &mut std::fs::File, first_lba: u64, image: &[u8]) -> bool {
+fn write_slot_image(
+    file: &mut std::fs::File,
+    first_logical_block_address: u64,
+    image: &[u8],
+) -> bool {
     let mut header = vec![0u8; boot_slot::SLOT_IMAGE_OFFSET as usize];
     if !SlotHeader::of(image).encode(&mut header) {
         eprintln!("rollback-boot: could not encode the slot header");
         return false;
     }
     let written = file
-        .seek(SeekFrom::Start(first_lba * LBA))
+        .seek(SeekFrom::Start(first_logical_block_address * LBA))
         .and_then(|_| file.write_all(&header))
         .and_then(|()| file.write_all(image));
     if let Err(e) = written {
@@ -284,7 +291,7 @@ fn write_slot_image(file: &mut std::fs::File, first_lba: u64, image: &[u8]) -> b
 
 /// **The rebuilt table back onto the disk**: the primary header, both entry arrays, and the
 /// backup header, then a flush.
-fn write_table_back(file: &mut std::fs::File, table: &Table) -> bool {
+fn write_table_back(file: &mut std::fs::File, table: &PartitionTable) -> bool {
     let mut block = [0u8; LBA as usize];
     if table.write_primary_header(&mut block).is_err() {
         eprintln!("rollback-boot: could not build the primary header");
@@ -295,16 +302,22 @@ fn write_table_back(file: &mut std::fs::File, table: &Table) -> bool {
             .and_then(|_| file.write_all(bytes))
             .is_ok()
     };
-    if !put(gpt::PRIMARY_HEADER_LBA, &block)
-        || !put(table.primary_entry_lba(), table.entry_array())
-        || !put(table.backup_entry_lba(), table.entry_array())
+    if !put(gpt::PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, &block)
+        || !put(
+            table.primary_entry_logical_block_address(),
+            table.entry_array(),
+        )
+        || !put(
+            table.backup_entry_logical_block_address(),
+            table.entry_array(),
+        )
     {
         eprintln!("rollback-boot: could not write the partition table back");
         return false;
     }
     let mut backup = [0u8; LBA as usize];
     if table.write_backup_header(&mut backup).is_err()
-        || !put(table.backup_header_lba(), &backup)
+        || !put(table.backup_header_logical_block_address(), &backup)
         || file.flush().is_err()
     {
         eprintln!("rollback-boot: could not write the backup header");
@@ -325,7 +338,7 @@ fn the_disk_agrees(disk: &Path) -> bool {
         eprintln!("rollback-boot: could not read the partition table back");
         return false;
     }
-    let Ok(table) = Table::parse(
+    let Ok(table) = PartitionTable::parse(
         &head[LBA as usize..2 * LBA as usize],
         &head[2 * LBA as usize..],
     ) else {
@@ -367,10 +380,10 @@ fn the_disk_agrees(disk: &Path) -> bool {
 /// them in and therefore the order a slot number means.
 ///
 /// Shared by this gate and `confirm`'s, which assert opposite things about the same bits.
-pub(crate) fn slot_states(table: &Table) -> Vec<State> {
+pub(crate) fn slot_states(table: &PartitionTable) -> Vec<State> {
     table
         .partitions()
-        .filter(|(_, p)| p.type_guid == types::NIFE_BOOT)
+        .filter(|(_, p)| p.type_guid == nife_partition_types::NIFE_BOOT)
         .map(|(_, p)| State::from_attributes(p.attributes))
         .collect()
 }
