@@ -1006,6 +1006,17 @@ mod tests {
         // The span ends at the last entry's last byte; the packed image may pad past it.
         assert!(archive.starts_with(&blob[span.clone()]));
         assert!(span.len() > nifefs::DIR_BLOCKS * nifefs::BLOCK);
+        // The span reaches exactly the end of the furthest entry, so a change to how an entry's
+        // end is computed (start block times block size plus length) moves it.
+        let parsed = nifefs::Fs::parse(&archive).expect("an archive");
+        let furthest = parsed
+            .entries()
+            .map(|e| e.start_block as usize * nifefs::BLOCK + e.len as usize)
+            .max()
+            .expect("the archive has entries");
+        assert!(furthest > nifefs::DIR_BLOCKS * nifefs::BLOCK);
+        assert_eq!(span.len(), furthest);
+        assert_eq!(span.start, blob.len() - archive.len());
         let seal = inspect(&blob, &blob[span]).expect("readable");
         assert!(seal.is_sealed(), "{seal:?}");
     }
