@@ -446,7 +446,7 @@ pub(super) fn spawn_stack_client(
             maps[n_maps] = Mapping {
                 va: NET_CLIENT_CATALOGUE_VA + k as u64 * FRAME_SIZE,
                 phys,
-                flags: Flags::user_rodata(),
+                flags: Flags::user_read_only_data(),
             };
             n_maps += 1;
         }

@@ -7,8 +7,8 @@ because a 39-bit address has bits 38:0 and the count of bits and the index of th
 by one. With bit 37 standing in for it, every address with bit 37 set is in the kernel half,
 including addresses that are squarely in the user half by the low test.
 
-Expected to fail: `assert!(!(Sv39::is_in_half(Half::Low, va) && Sv39::is_in_half(Half::High, va)))`,
-for any `va` with bit 37 set and bits 63:38 clear, `0x20_0000_0000` being the smallest.
+Expected to fail: `assert!(!(Sv39::is_in_half(Half::Low, virtual_address) && Sv39::is_in_half(Half::High, virtual_address)))`,
+for any `virtual_address` with bit 37 set and bits 63:38 clear, `0x20_0000_0000` being the smallest.
 
 **The half test is shared and the proof is not.** The `aarch64` record makes the low half an
 inclusive range and the `x86_64` one turns the high test into a fits-in-the-mask test.
@@ -18,11 +18,11 @@ index 476dfcac4..b7877d4f1 100644
 --- a/crates/page_tables/src/page_format.rs
 +++ b/crates/page_tables/src/page_format.rs
 @@ -117,7 +117,7 @@ pub trait PageFormat {
-         let top = va >> Self::SPLIT_SHIFT;
+         let top = virtual_address >> Self::SPLIT_SHIFT;
          match half {
              Half::Low => top == 0,
 -            Half::High => top == (u64::MAX >> Self::SPLIT_SHIFT),
-+            Half::High => (va >> (Self::SPLIT_SHIFT - 1)) & 1 == 1,
++            Half::High => (virtual_address >> (Self::SPLIT_SHIFT - 1)) & 1 == 1,
          }
      }
  

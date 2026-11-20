@@ -45,10 +45,9 @@ and the release steps.
 - Item 5 (P1), no Kani proof: Open. Kani proves `field_bytes_never_panics_for_any_length_byte`, with
   a falsification patch; the round-trip and domain-member harnesses each ran past 25 minutes under
   Kani and return only with the text scan bounded or the shape split, each with its patch.
-- Item 6 (P1), the crate does not stand alone: Open. The manifest still inherits `license` and
-  `lints` and has no `rust-version`, there is no README or license file, and `src/lib.rs` cites
-  §111, §46 (thin primitives, whole subsystems) and `notes/env-config.md`. All of it is the move's
-  work, with a README that says fuzzing stays off because the crate has `unsafe`.
+- Item 6 (P1), the crate does not stand alone: Done, [#3827](https://github.com/nifeos/nife/pull/3827).
+  The manifest carries its license, lints and `rust-version`, the crate has a README that says
+  fuzzing stays off because it has `unsafe`, and both license files, and no text cites this tree.
 - Item 7 (P1), the identity is provisional and unpinned: Done,
   [#3585](https://github.com/nifeos/nife/pull/3585). `the_frozen_identity_and_widths_are_pinned`
   asserts the literals and that `MAGIC[7]` is `b'0' + VERSION`, as a test assertion rather than the
@@ -170,8 +169,8 @@ public name with its ruling. The architect ratified these names:
 - `Refused::UnknownTimeZone`, `UnknownLocale` and `UnknownTerminalType`.
 - `PageBuilder`, `new`, `build`, `Refused`, the module `domain` and the module `verification`.
 
-The repository waits on the architect's clearance of the review. The move follows, with item 6's
-files.
+The architect cleared the review on 2026-11-19 UTC. The repository is `nifeos/environment_contract`,
+with `publish = false`, no tag and no publication, and nife pins the commit of its `main`.
 
 Background. `environment_contract` is the agreement between the program that writes a process's
 inert configuration page (time zone, locale, terminal type) and every reader of that page, the

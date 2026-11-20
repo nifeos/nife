@@ -18,17 +18,18 @@ Expected to fail: assertion (2), "what is left mapped is not a prefix of the req
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/page_tables/src/domain.rs b/crates/page_tables/src/domain.rs
+index 86f8bde05..5d014f7b6 100644
 --- a/crates/page_tables/src/domain.rs
 +++ b/crates/page_tables/src/domain.rs
-@@ -89,6 +89,7 @@
-     // the IOMMU would never consult.
-     // SAFETY: forwarded from this function's contract.
-     let mut m = unsafe { Mapper::<A, P, F>::new(root, Half::Low, alloc_page_frame, phys_to_ptr) };
+@@ -93,6 +93,7 @@ where
+     let mut m = unsafe {
+         Mapper::<A, P, F>::new(root, Half::Low, allocate_page_frame, physical_to_pointer)
+     };
 +    let mut failed = None;
      for r in regions {
          // The page set comes from the proved arithmetic, not `map_range`'s unchecked
-         // `va + i * PAGE_SIZE`.
-@@ -99,10 +100,13 @@
+         // `virtual_address + i * PAGE_SIZE`.
+@@ -103,10 +104,13 @@ where
              let page = grant_page(*r, i).ok_or(MapError::BadRegion)?;
              // The tables are not installed yet, so no leaf needs a flush. `AlreadyMapped` means two
              // grants overlap, and fails the build closed.
