@@ -64,10 +64,10 @@ milestone reaches delivery.
 - BUGS, the static that `carry_interfaces!` emits: Done, [#3823](https://github.com/nifeos/nife/pull/3823).
   It is `CARRIED_INTERFACES_NOTE`, provisional.
 - Decision 4, review clearance and the repository: Ruled 2026-11-19 UTC (maintainer, provisional).
-  Superseded by decision 5.
-- Decision 5, the repository: Ruled 2026-11-20 UTC. The architect cleared the review package,
-  [notes/crate-reviews/interfaces-note.md](../../notes/crate-reviews/interfaces-note.md). The go to
-  create `nifeos/interfaces_note` is given, with `publish = false`, no tag and no publish. The move
+  Decision 5 replaces it.
+- Decision 5, the repository: 2026-11-20 UTC. The architect cleared the review package,
+  [notes/crate-reviews/interfaces-note.md](../../notes/crate-reviews/interfaces-note.md). The architect
+  gives the go to create `nifeos/interfaces_note`, with `publish = false`, no tag and no publish. The move
   lane runs the stranger test, the template's workflows and the first weekly mutation run there.
 
 ## Open decisions
@@ -187,11 +187,11 @@ The rules in force, with their background and prior art, are in
   when the renames land.
 - Decision 3, the crate name: ruled 2026-11-14 (UTC). The crate and repository take
   `interfaces_note`.
-- Decision 4, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC), superseded
-  by decision 5.
-- Decision 5, the repository: ruled 2026-11-20 (UTC), option A. The architect cleared the review
-  package. The go to create `nifeos/interfaces_note` is given, with `publish = false`, no tag and no
-  publish. The twenty public names stay as decision 2 ratified them. The move lane runs the
+- Decision 4, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC). Decision 5
+  replaces it.
+- Decision 5, the repository: 2026-11-20 (UTC), option A. The architect cleared the review
+  package and gives the go to create `nifeos/interfaces_note`, with `publish = false`, no tag and no
+  publish. The twenty public names keep decision 2's spelling. The move lane runs the
   stranger test, the template's workflows and the first weekly mutation run in the new repository.
 
 ## Prior art
