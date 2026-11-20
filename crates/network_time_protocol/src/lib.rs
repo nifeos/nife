@@ -1,14 +1,14 @@
-//! **The Network Time Protocol (NTP) version 4 (NTPv4) wire format** (RFC 5905), as
-//! pure computation: no socket, clock, service or policy.
+//! **The Network Time Protocol (NTP) version 4 (NTPv4) wire format** (`network_time_protocol`,
+//! `RFC 5905`), as pure computation: no socket, clock, service or policy.
 //!
 //! The clock service owns the offset and the authority to set it; these 48 bytes and the arithmetic
-//! over them are here. Unauthenticated NTPv4 only, with no Network Time Security (NTS, RFC 8915)
-//! and no RFC 5905 symmetric-key message authentication code (MAC): an off-path attacker must guess
-//! the 64-bit nonce [`Query::accept`] checks and an on-path one reads it, so a time from here is
-//! untrusted input the client may propose and never set. [`Packet::parse`] is total on 48 bytes;
-//! [`Query::accept`] alone rejects. A timestamp counts from 1900 in binary fractions
-//! ([`Timestamp`]), its seconds wrap on 7 February 2036 at 06:28:16 UTC ([`Timestamp::to_unix`]),
-//! and offsets are modular ([`Interval`]). See notes/ntp.md.
+//! over them are here. Unauthenticated NTPv4 only, with no Network Time Security (NTS) of
+//! `RFC 8915` and no `RFC 5905` symmetric-key message authentication code (MAC): an off-path
+//! attacker must guess the 64-bit nonce [`Query::accept`] checks and an on-path one reads it, so a
+//! time from here is untrusted input the client may propose and never set. [`Packet::parse`] is
+//! total on 48 bytes; [`Query::accept`] alone rejects. A timestamp counts from 1900 in binary
+//! fractions ([`Timestamp`]), its seconds wrap on 7 February 2036 at 06:28:16 UTC
+//! ([`Timestamp::to_unix`]), and offsets are modular ([`Interval`]). See notes/ntp.md.
 
 //! Name: ratified 2026-10-18 (calef, a crate-naming session). Kept: the NTPv4 standard's own full
 //! name, so its `_protocol` is the standard's word and not nife's contract suffix. His answer was
@@ -34,7 +34,7 @@ pub const PORT: u16 = 123;
 /// Name: provisional.
 pub const PACKET_BYTES: usize = 48;
 
-/// The version this crate speaks and requires in a reply. NTPv4 (RFC 5905). A server echoes the
+/// The version this crate speaks and requires in a reply. NTPv4 (`RFC 5905`). A server echoes the
 /// version it was asked in, so a reply that is not 4 did not come from a server we spoke to.
 pub const VERSION: u8 = 4;
 
@@ -76,25 +76,25 @@ pub const MINIMUM_UNIX_SECONDS: u64 = 0;
 /// Name: provisional.
 pub const MAXIMUM_UNIX_SECONDS: u64 = (TICKS_PER_SECOND - UNIX_EPOCH_DELTA_SECONDS) + (1 << 31) - 1;
 
-/// The highest stratum a synchronized server may claim (RFC 5905 `MAXSTRAT`). 1 is a reference
+/// The highest stratum a synchronized server may claim (`RFC 5905` `MAXSTRAT`). 1 is a reference
 /// clock, 15 is fifteen hops from one, 16 means "unsynchronized" and anything above is reserved.
 /// A reply outside `1..=15` is not a time source ([`Reject::Stratum`]).
 ///
-/// Name: recorded (RFC 5905's `MAXSTRAT`).
+/// Name: recorded (`RFC 5905`'s `MAXSTRAT`).
 pub const MAXIMUM_STRATUM: u8 = 15;
 
-/// The root distance we refuse outright, in [`ShortFormat`] units: 16 seconds, RFC 5905's `MAXDISP`.
-/// A reply whose root distance is this or more is refused, as the RFC's reference `packet()`
+/// The root distance we refuse outright, in [`ShortFormat`] units: 16 seconds, `RFC 5905`'s `MAXDISP`.
+/// A reply whose root distance is this or more is refused, as `RFC 5905`'s reference `packet()`
 /// routine refuses `rootdelay / 2 + rootdisp >= MAXDISP`.
 ///
-/// This is deliberately far looser than the RFC's `MAXDIST` selection threshold (1 s by default).
+/// This is deliberately far looser than `RFC 5905`'s `MAXDIST` selection threshold (1 s by default).
 /// The distinction is whose job it is: **this crate rejects the impossible, the clock service
 /// applies policy.** A server whose root distance exceeds the protocol's own maximum dispersion is
 /// describing something the protocol cannot mean; a server 200 ms away over a bad path is merely a
 /// poor sample, and deciding what to do with a poor sample is the service's call, made with the
 /// other samples in front of it.
 ///
-/// Name: recorded (RFC 5905's `MAXDISP`).
+/// Name: recorded (`RFC 5905`'s `MAXDISP`).
 pub const MAXIMUM_ROOT_DISTANCE: ShortFormat = ShortFormat::from_bits(16 << 16);
 
 /// The poll interval a request advertises, as log2 seconds: 6, which is 64 seconds. The server does
@@ -104,7 +104,7 @@ pub const MAXIMUM_ROOT_DISTANCE: ShortFormat = ShortFormat::from_bits(16 << 16);
 /// Name: provisional.
 pub const DEFAULT_POLL_EXPONENT: i8 = 6;
 
-/// The NTP mode field (RFC 5905 §7.3). Three bits, in the low bits of the first octet.
+/// The NTP mode field (`RFC 5905` §7.3). Three bits, in the low bits of the first octet.
 pub mod mode {
     /// Symmetric active. We never send it and never accept it.
     pub const SYMMETRIC_ACTIVE: u8 = 1;
@@ -120,7 +120,7 @@ pub mod mode {
     pub const BROADCAST: u8 = 5;
 }
 
-/// The leap indicator (RFC 5905 §7.3). Two bits, the top of the first octet.
+/// The leap indicator (`RFC 5905` §7.3). Two bits, the top of the first octet.
 pub mod leap {
     /// No warning: the server is synchronized and the day is 86400 seconds long.
     pub const NONE: u8 = 0;
@@ -131,7 +131,7 @@ pub mod leap {
     /// **The clock is not synchronized.** The server is telling us its own time is not to be
     /// trusted, and [`super::Query::accept`] believes it.
     ///
-    /// Name: recorded (RFC 5905's leap indicator 3).
+    /// Name: recorded (`RFC 5905`'s leap indicator 3).
     pub const UNSYNCHRONIZED: u8 = 3;
 }
 
@@ -207,7 +207,7 @@ impl Timestamp {
     /// **An NTP timestamp to Unix seconds and nanoseconds.** Total: every one of the 2<sup>64</sup>
     /// bit patterns decodes to some instant, because on the wire every one of them is one.
     ///
-    /// The 32-bit seconds field rolls over every 136 years, so RFC 5905 section 6's era rule is a
+    /// The 32-bit seconds field rolls over every 136 years, so `RFC 5905` section 6's era rule is a
     /// fixed pivot, not a guess against the current time: high bit set (seconds ≥ 2<sup>31</sup>)
     /// is era 0, counted from 1900 (20 January 1968 to 7 February 2036 at 06:28:16 UTC); clear is
     /// era 1, counted from the rollover (to 26 February 2104). The window is
@@ -232,7 +232,7 @@ impl Timestamp {
     /// The signed difference `self - other`, in fraction ticks, taken **modulo 2<sup>64</sup>** and
     /// read back as signed.
     ///
-    /// This is the RFC's arithmetic and it is not an implementation detail. Two absolute decodings
+    /// This is `RFC 5905`'s arithmetic and it is not an implementation detail. Two absolute decodings
     /// subtracted would go wrong across the 2036 rollover by 2<sup>32</sup> seconds; wrapping
     /// subtraction is right there and everywhere else, as long as the true difference is under
     /// 68 years, which for the four timestamps of one exchange it always is.
@@ -357,7 +357,7 @@ impl Interval {
 // The packet
 // =================================================================================================
 
-/// **A parsed NTP packet.** The 48 bytes of RFC 5905 §7.3, decoded field by field and judged not at
+/// **A parsed NTP packet.** The 48 bytes of `RFC 5905` §7.3, decoded field by field and judged not at
 /// all: [`Packet::parse`] cannot reject a 48-byte input, so every judgement is in one place
 /// ([`Query::accept`]) and parse-then-serialize is the identity on every packet that exists.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -380,8 +380,9 @@ pub struct Packet {
     /// Maximum error relative to the reference clock.
     pub root_dispersion: ShortFormat,
     /// Four bytes identifying the reference source. For stratum 1 it is ASCII naming the clock
-    /// (`GPS`, `PPS`, `DCF`); for stratum 2 and up it is (in Internet Protocol version 4, IPv4) the upstream server's address;
-    /// for stratum 0 it is the **kiss code**, which is why it is bytes here and not a `u32`.
+    /// (`GPS`, `PPS`, `DCF`); for stratum 2 and up it is the upstream server's Internet Protocol
+    /// version 4 (IPv4) address; for stratum 0 it is the **kiss code**, which is why it is bytes
+    /// here and not a `u32`.
     pub reference_id: [u8; 4],
     /// When the server last set or corrected its own clock.
     pub reference: Timestamp,
@@ -440,7 +441,7 @@ impl Packet {
         w
     }
 
-    /// **The synchronization distance to the root**, RFC 5905's λ: half the root delay plus the root
+    /// **The synchronization distance to the root**, `RFC 5905`'s λ: half the root delay plus the root
     /// dispersion. The server's own claim about how far from a real clock it is. Compared against
     /// [`MAXIMUM_ROOT_DISTANCE`] by [`Query::accept`]; saturating, so a server claiming the maximum
     /// of both fields gets a large answer rather than a wrapped small one.
@@ -549,7 +550,7 @@ pub enum Reject {
     /// The server's own claimed distance from a reference clock reaches [`MAXIMUM_ROOT_DISTANCE`].
     RootDistance,
     /// The server's reference timestamp is later than its transmit timestamp: it claims to have
-    /// last synchronized after it sent this reply, which RFC 5905's reference `packet()` routine
+    /// last synchronized after it sent this reply, which `RFC 5905`'s reference `packet()` routine
     /// refuses. A zero reference timestamp, which says only that the server never synchronized, is
     /// not judged here.
     ///
@@ -565,12 +566,12 @@ pub enum Reject {
 /// service's, not this crate's; here they have only been checked for being possible.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Sample {
-    /// **How far our clock is behind the server's**, so a reader adds it. RFC 5905's θ:
+    /// **How far our clock is behind the server's**, so a reader adds it. `RFC 5905`'s θ:
     /// `((T2 - T1) + (T3 - T4)) / 2`, which cancels the path delay exactly when the path is
     /// symmetric and is wrong by half the asymmetry when it is not. Truncated toward zero by the
     /// halving, which is under a quarter of a nanosecond.
     pub offset: Interval,
-    /// **The round-trip time, less the server's turnaround.** RFC 5905's δ:
+    /// **The round-trip time, less the server's turnaround.** `RFC 5905`'s δ:
     /// `(T4 - T1) - (T3 - T2)`. Never negative in an accepted sample ([`Reject::NegativeDelay`]),
     /// and the bound on how wrong `offset` can be: the true offset is within ±δ/2 of it.
     pub delay: Interval,
@@ -694,7 +695,7 @@ impl Query {
     /// non-zero reference timestamp later than the transmit timestamp. Each is its [`Reject`]
     /// variant. None authenticates: an on-path attacker sees the nonce. See notes/ntp.md.
     ///
-    /// **A `Query` is for one request, and the replay test is the caller's.** RFC 5905 drops a
+    /// **A `Query` is for one request, and the replay test is the caller's.** `RFC 5905` drops a
     /// packet whose transmit timestamp equals the last one accepted; this crate keeps no state, so
     /// it cannot. A reply to an earlier `Query` fails the origin check because each carries its own
     /// nonce. A caller that keeps one nonce across requests must refuse a repeated transmit
@@ -765,7 +766,7 @@ impl Query {
 mod tests {
     use super::*;
 
-    /// A server reply, assembled by hand from the RFC 5905 §7.3 field layout rather than captured
+    /// A server reply, assembled by hand from the `RFC 5905` §7.3 field layout rather than captured
     /// off a wire, and said plainly because the difference matters: these bytes prove the decoder
     /// agrees with the *specification*, which is the thing a capture could not tell us (a capture
     /// only proves we agree with whatever produced it).
@@ -1204,7 +1205,7 @@ mod tests {
         assert!(!earlier.since(earlier).is_negative());
     }
 
-    /// RFC 5905's lambda with a delay big enough that halving and remainder-by-2 differ; the
+    /// `RFC 5905`'s lambda with a delay big enough that halving and remainder-by-2 differ; the
     /// fixture reply's tiny delay could not tell them apart.
     #[test]
     fn root_distance_halves_the_delay_it_is_given() {
@@ -1214,7 +1215,7 @@ mod tests {
         assert_eq!(p.root_distance().seconds(), 4);
     }
 
-    /// Stratum 15 is the last hop that still counts as synchronized (RFC 5905 `MAXSTRAT`); the
+    /// Stratum 15 is the last hop that still counts as synchronized (`RFC 5905` `MAXSTRAT`); the
     /// rejection tests only ever probed 16, so > could rot to >= and refuse a legal server.
     #[test]
     fn the_fifteenth_stratum_is_still_a_time_source() {
