@@ -6404,13 +6404,9 @@ crates/subtree_scope/src/lib.rs::Binding
 
 crates/subtree_scope/src/lib.rs::Bindings
 
-crates/subtree_scope/src/lib.rs::Kind
-
 crates/subtree_scope/src/lib.rs::PROOF_BADGES
 
 crates/subtree_scope/src/lib.rs::PROOF_OPERATIONS
-
-crates/subtree_scope/src/lib.rs::PROOF_PATH
 
 crates/subtree_scope/src/lib.rs::Refusal
 
@@ -6424,11 +6420,7 @@ crates/subtree_scope/src/lib.rs::errno
 
 crates/subtree_scope/src/lib.rs::is_name
 
-crates/subtree_scope/src/lib.rs::landing
-
 crates/subtree_scope/src/lib.rs::new
-
-crates/subtree_scope/src/lib.rs::of
 
 crates/subtree_scope/src/lib.rs::unbind
 
