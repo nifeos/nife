@@ -2899,11 +2899,11 @@ crates/globally_unique_identifier_partition_table/src/crc.rs::crc32
 
 crates/globally_unique_identifier_partition_table/src/entry.rs
 
-crates/globally_unique_identifier_partition_table/src/entry.rs::ATTR_LEGACY_BIOS_BOOTABLE
 
-crates/globally_unique_identifier_partition_table/src/entry.rs::ATTR_NO_BLOCK_IO
 
-crates/globally_unique_identifier_partition_table/src/entry.rs::ATTR_REQUIRED
+
+
+
 
 crates/globally_unique_identifier_partition_table/src/entry.rs::Entry
 
@@ -3001,7 +3001,7 @@ crates/globally_unique_identifier_partition_table/src/table.rs::create
 
 crates/globally_unique_identifier_partition_table/src/table.rs::disk_guid
 
-crates/globally_unique_identifier_partition_table/src/table.rs::entry
+
 
 crates/globally_unique_identifier_partition_table/src/table.rs::entry_array
 

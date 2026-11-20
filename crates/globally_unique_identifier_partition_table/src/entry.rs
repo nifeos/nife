@@ -23,16 +23,25 @@ pub const NAME_UNITS: usize = 36;
 /// Attribute bit 0: the platform must not alter this partition. Firmware sets it on partitions it
 /// needs (an original equipment manufacturer (OEM) recovery partition, for instance), and a
 /// partition editor is expected to refuse to touch one.
+///
+/// Name: ratified 2026-11-20 (#3864). Spelled out from UEFI 2.10 section 5.3's attribute name,
+/// kept as the alias.
 #[doc(alias = "Required Partition")]
 pub const ATTRIBUTE_REQUIRED_PARTITION: u64 = 1 << 0;
 
 /// Attribute bit 1: no block input/output (IO) protocol. UEFI firmware will not expose this
 /// partition as a filesystem.
+///
+/// Name: ratified 2026-11-20 (#3864). Spelled out from UEFI 2.10 section 5.3's attribute name,
+/// kept as the alias.
 #[doc(alias = "No Block IO Protocol")]
 pub const ATTRIBUTE_NO_BLOCK_IO_PROTOCOL: u64 = 1 << 1;
 
 /// Attribute bit 2: legacy Basic Input/Output System (BIOS) bootable. What `sgdisk -A n:set:2`
 /// sets, and what a BIOS-emulating bootloader looks for in place of the MBR active flag.
+///
+/// Name: ratified 2026-11-20 (#3864). Spelled out from UEFI 2.10 section 5.3's attribute name,
+/// kept as the alias.
 #[doc(alias = "Legacy BIOS Bootable")]
 pub const ATTRIBUTE_LEGACY_BIOS_BOOTABLE: u64 = 1 << 2;
 

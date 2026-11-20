@@ -444,6 +444,9 @@ impl<'a> PartitionTable<'a> {
     }
 
     /// Entry `index`, used or not. `None` past the end of the array.
+    ///
+    /// Name: ratified 2026-11-20 (#3864). `get` is the standard library's word for a checked lookup
+    /// by index.
     pub fn get(&self, index: usize) -> Option<Entry> {
         let start = index.checked_mul(self.header.entry_bytes as usize)?;
         let end = start.checked_add(entry::ENTRY_BYTES)?;

@@ -9,7 +9,7 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/entry.rs b/cr
 index 9aff667e7..7ecfabc74 100644
 --- a/crates/globally_unique_identifier_partition_table/src/entry.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/entry.rs
-@@ -140,12 +140,10 @@ impl Entry {
+@@ -149,12 +149,10 @@ impl Entry {
      /// range `0 ..= u64::MAX`). [`crate::PartitionTable`] rejects both, so a partition obtained
      /// from a parsed table always has a size.
      pub const fn blocks(&self) -> Option<u64> {

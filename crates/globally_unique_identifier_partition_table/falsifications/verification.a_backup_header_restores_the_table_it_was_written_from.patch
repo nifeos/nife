@@ -10,7 +10,7 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/table.rs b/cr
 index 0e923df03..05ff5f500 100644
 --- a/crates/globally_unique_identifier_partition_table/src/table.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/table.rs
-@@ -506,7 +506,6 @@ impl<'a> PartitionTable<'a> {
+@@ -509,7 +509,6 @@ impl<'a> PartitionTable<'a> {
          Header {
              my_logical_block_address: self.header.alternate_logical_block_address,
              alternate_logical_block_address: self.header.my_logical_block_address,
