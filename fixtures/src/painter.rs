@@ -11,7 +11,7 @@
 
 //! # What it does not hold
 //!
-//! No `Virtio` capability, no interrupt, no device mapping, and no way to name a physical address;
+//! No `VirtualIo` capability, no interrupt, no device mapping, and no way to name a physical address;
 //! it has never heard of virtio-gpu. The pixels are the only memory it shares, so a hostile version
 //! can draw nonsense but cannot program a queue, ring a doorbell, or aim a device at a byte it does
 //! not already own. That separation is what rung two (the compositor) is built on, and why this

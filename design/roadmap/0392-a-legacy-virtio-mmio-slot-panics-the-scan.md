@@ -12,14 +12,14 @@ needs_person: no
 Filed 2026-09-10 as an unnumbered proposal by the lane that built milestone
 306, which met this as a boot panic in a step that had nothing to do with virtio; numbered
 2026-09-19 by milestone 433's drain of the proposal pile. Premise re-read against the tree on
-2026-09-19 and still true: `kernel/src/virtio.rs` still reaches the `debug_assert_eq!` on
+2026-09-19 and still true: `kernel/src/virtual_io.rs` still reaches the `debug_assert_eq!` on
 `REG_VERSION` at line 67, inside `find_by_device_id`'s walk, immediately after the `DeviceID` match
 and before the device is returned. The message still reads "expected modern virtio-mmio", naming
 neither the slot nor the runner flag. The runner bug that exposed it was fixed in both
 runners at the time; the shape that turns a missing command-line flag into a kernel panic is
 untouched. *(Number provisional until the merge queue lands it.)*
 
-It is one `debug_assert_eq!` in `kernel/src/virtio.rs` and whatever the tree decides
+It is one `debug_assert_eq!` in `kernel/src/virtual_io.rs` and whatever the tree decides
 should stand in its place, plus a test that a legacy slot is not returned.
 
 **In brief.** `virtio::find_by_device_id` walks the mmio slots, matches on `DeviceID`, and then

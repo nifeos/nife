@@ -46,7 +46,7 @@ fi
 
 # Attach the nifefs image as a virtio-mmio block device (parity C), exactly as the aarch64 runner
 # does: `if=none` + `-device virtio-blk-device` puts a block device in one of the `virt` machine's
-# virtio-mmio slots (0x1000_1000..), which virtio::find_block_device probes. force-legacy=false picks
+# virtio-mmio slots (0x1000_1000..), which virtual_io::find_block_device probes. force-legacy=false picks
 # modern virtio (version 2). Without a disk the kernel simply finds no block device and says so.
 #
 # A SET NIFE_DISK naming a missing file is an error, not a silent no-op; see the same check in
@@ -132,7 +132,7 @@ fi
 # has to outlive the disk block** (found 2026-09-10, timing the `hw entropy` step).
 #
 # `virtio-mmio.force-legacy` defaults to TRUE in QEMU, and a legacy slot reports VERSION 1 where
-# this kernel requires 2 (`virtio.rs`'s `find_by_device_id`). The `-global` that turns it off used
+# this kernel requires 2 (`virtual_io.rs`'s `find_by_device_id`). The `-global` that turns it off used
 # to live inside `$DISK`, so **every mmio device on this command line was modern only when a disk
 # happened to be attached**. That held for the whole test suite, which always builds disks, and it
 # is why nothing caught it: the two other mmio devices here (`virtio-rng-device` under `NIFE_RNG`,

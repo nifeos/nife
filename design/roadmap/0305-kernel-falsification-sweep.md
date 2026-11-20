@@ -74,7 +74,7 @@ into the wrong answer."* `user_can_read` went on calling `translate_user`.
 
 Fixed here (`translate_in_either_half`, `kernel/src/arch/riscv64/mmu.rs`), measured both ways on
 riscv64: green with the fix, and red under the patch in `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` in
-`system_tests/src/user/riscv_virtio_tests.rs` with the test's
+`system_tests/src/user/riscv_virtual_io_tests.rs` with the test's
 own sentence, *"the page tables say U-mode could read the kernel's own memory."*
 
 Two things follow and both are larger than this row. A green confinement test is consistent with
@@ -242,7 +242,7 @@ keeps comparing two derivations of one fact; that check fired on the first run h
 - **Done.** `user_can_read` and `user_can_write` on riscv64, which answered by refusing to look at a
   high-half address, so `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` could not fail.
   Fixed by `translate_in_either_half`; checked both ways on riscv64 (green with the fix, red in
-  `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` in `system_tests/src/user/riscv_virtio_tests.rs` under the patch).
+  `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` in `system_tests/src/user/riscv_virtual_io_tests.rs` under the patch).
 - **Recorded.** In this block's own `BUGS`, because there is nowhere nearer a reader:
   `design/fatal-risks/README.md` risk 7 says "Six kernel confinement rows still have no mechanism at all",
   which is now false. A lane may not edit `design/` outside its own block and nothing gates that

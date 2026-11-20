@@ -68,7 +68,7 @@ fn assert_unpredictable(words: &[u64; WORDS], what: &str) {
 /// **The headline, over virtio-mmio.** A client that holds one endpoint and no device gets
 /// bytes off a real random-number generator, 512 of them, across a refill, all different.
 #[test_case]
-fn a_client_obtains_unpredictable_bytes_from_a_virtio_rng_over_mmio() {
+fn a_client_obtains_unpredictable_bytes_from_a_virtual_io_rng_over_mmio() {
     let Some(w) = start(Bus::Mmio) else {
         crate::testing::skip!("no virtio-rng device on the mmio bus (NIFE_RNG not set?)");
     };
@@ -80,7 +80,7 @@ fn a_client_obtains_unpredictable_bytes_from_a_virtio_rng_over_mmio() {
 /// it is there. An entropy source's buffer is the one page in memory whose contents must not be
 /// guessable, so an unconfined device writing it is worth asserting against rather than hoping.
 #[test_case]
-fn a_client_obtains_unpredictable_bytes_from_a_virtio_rng_over_pcie() {
+fn a_client_obtains_unpredictable_bytes_from_a_virtual_io_rng_over_pcie() {
     let Some(w) = start(Bus::Pci) else {
         skip_unless_required!(
             X86_RNG_ATTACHED,

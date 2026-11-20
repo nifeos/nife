@@ -101,7 +101,7 @@ DECISIONS §9 (locking: IrqSafeMutex, plus a discipline) is about.
 
 ## The kernel's half
 
-The design behind `kernel/src/virtio.rs`, the enumeration and the confined transport.
+The design behind `kernel/src/virtual_io.rs`, the enumeration and the confined transport.
 notes/dma.md has the confinement itself and notes/pcie.md the transport seam.
 
 On riscv64 the virtio-mmio window is mapped only when the device tree names a `virtio,mmio` node.
@@ -113,7 +113,7 @@ virtio-mmio slot in slot order, then every modern virtio-pci function in bus:dev
 `disk_service::devices` lists the roster in the same order, so a listing and a wiring cannot
 disagree about which disk is which. On aarch64 and riscv64 both boards have five mmio block
 devices, attached nifefs first and RedoxFS second, so every ordinal a wiring asks for resolves
-before the PCI half. `q35` has no virtio-mmio bus (`arch::x86_64::mmu::VIRTIO_SLOTS` is 0), so
+before the PCI half. `q35` has no virtio-mmio bus (`arch::x86_64::mmu::VIRTUAL_IO_SLOTS` is 0), so
 ordinal 0 is the first `virtio-blk-pci` function, attached in the same order. The FS server drives
 ordinal 1, the crash test ordinal 2, and the roster wirings 3 and 4.
 
@@ -126,7 +126,7 @@ The PCI accessors `pread` and `pwrite` are safe functions over a module invarian
 `unsafe fn`s. They are private, and every call site passes `common` plus a constant offset under
 0x40, `isr`, `notify_addr[q]`, or `device_config` plus an offset the capability's length bounds.
 All four are fields of `Transport::Pci`, set in one place, `Transport::pci`, from a BAR that
-`pci::PciVirtioDevice` mapped. Twenty `unsafe` blocks restating one sentence would make nothing
+`pci::PciVirtualIoDevice` mapped. Twenty `unsafe` blocks restating one sentence would make nothing
 checkable. One gap: `notify_addr[q]` is zero until `setup_queue` resolves it, so `notify` refuses a
 queue whose doorbell is not ready rather than write through `phys_to_virt(0)`.
 
@@ -162,7 +162,7 @@ the device itself could point a descriptor at the kernel image or another proces
 device would read or write it. So the kernel keeps the two DMA-critical powers: programming the
 ring addresses and the "go" signal, and validates that every descriptor stays within the
 driver's own DMA region before the device sees it. The driver operates the device through a
-`Virtio` capability (status, features, submit) but cannot aim it outside its region. A malicious
+`VirtualIo` capability (status, features, submit) but cannot aim it outside its region. A malicious
 descriptor pointing at kernel memory is refused, end to end, and the device is never told to go.
 See [dma.md](dma.md).
 
@@ -195,10 +195,10 @@ crate). See [nifefs.md](nifefs.md).
 
 The driver runs at EL0 and holds three things the kernel handed it. The DMA page is mapped at
 `DMA_VA`, and its physical address arrives as `_start`'s argument, because descriptors speak
-physical addresses. The other two are an `Interrupt` capability in slot 1 and a `Virtio` capability
+physical addresses. The other two are an `Interrupt` capability in slot 1 and a `VirtualIo` capability
 in
 slot 2. The device registers are not mapped. Every register access, the queue setup and the "go" go
-through the `Virtio` capability, so the driver cannot point the device outside its DMA region
+through the `VirtualIo` capability, so the driver cannot point the device outside its DMA region
 ([dma.md](dma.md)). If anything here is wrong, this process faults and the kernel does not. The
 transport is modern virtio-mmio (version 2), virtio 1.x sections 4.2 (MMIO) and 5.2 (block).
 
@@ -237,7 +237,7 @@ The driver's acknowledgement is always a subset of the device's offer.
 - `VIRTIO_BLK_F_FLUSH` (bit 9) is asked for only when offered. A driver that sent
   `VIRTIO_BLK_T_FLUSH` without it would get `VIRTIO_BLK_S_UNSUPP` from a careful device and
   undefined behavior from a careless one. The kernel's `sanitize_driver_features` strips only bits
-  28 and 34, and `feature_negotiation_leaves_the_blk_flush_bit_alone` in `kernel/src/virtio.rs`
+  28 and 34, and `feature_negotiation_leaves_the_blk_flush_bit_alone` in `kernel/src/virtual_io.rs`
   holds that.
 - The low word the caller passes is not masked against the offer. The indirect attacker's point is
   to ask for a bit the device does offer and be stripped by the kernel.

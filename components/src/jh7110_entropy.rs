@@ -305,5 +305,5 @@ user_mode_runtime::panic_handler!();
 // There is no capability slot for the registers, and that is worth a sentence rather than a
 // silence: this driver reaches them by direct volatile access at `TRNG_VA`, the same way
 // `console.rs` reaches the UART, not through a kernel-mediated `invoke` the way the virtio
-// backends reach `Virtio` capabilities. The authority is the mapping the spawner installed; the
+// backends reach `VirtualIo` capabilities. The authority is the mapping the spawner installed; the
 // driver holds no name for it.

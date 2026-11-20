@@ -4,7 +4,7 @@ An appendix to [the milestone](../1105-pci-outside-review.md).
 
 ## P2
 
-#### `virtio_capabilities` ignores `cap_len`
+#### `virtual_io_capabilities` ignores `cap_len`
 Where: `crates/pci_configuration_space/src/lib.rs` lines 485 to 499.
 Why: a notify capability whose `cap_len` is 16 has no multiplier, and the walk reads one from the
 next entry's header. The virtio specification fixes 16 and 20 as the minimum lengths. A function

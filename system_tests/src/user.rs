@@ -478,7 +478,7 @@ mod capability_tests;
 mod filesystem_tests;
 
 /// **The network path**: virtio-net, DHCP, the socket contract, name resolution, TCP, HTTP and
-/// `std::net`. aarch64 only; the RISC-V twins are in `riscv_virtio_tests`.
+/// `std::net`. aarch64 only; the RISC-V twins are in `riscv_virtual_io_tests`.
 #[cfg(all(test, initial_ramdisk))]
 mod network_tests;
 
@@ -839,11 +839,11 @@ mod fs_shared_page_tests;
 /// the PL011-wired `hello` roles), while these need only the ELF loader and the initial ramdisk
 /// archive. The driver is the SAME `virtio` module the aarch64 roles compile, packed as the
 /// dedicated `block_driver` binary (`components/src/block_driver.rs`); the kernel-side wiring
-/// (`virtio_service`) is the same code,
+/// (`virtual_io_service`) is the same code,
 /// unconditionally. What these prove that aarch64's runs do not: userspace device drivers with
 /// DMA, and the kernel's DMA confinement, on the second ISA.
 #[cfg(all(test, target_arch = "riscv64"))]
-mod riscv_virtio_tests;
+mod riscv_virtual_io_tests;
 
 /// **The operators, end to end: `|` is two processes and an endpoint** (milestone 50,
 /// notes/pipes.md).

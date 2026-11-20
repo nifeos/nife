@@ -99,7 +99,7 @@ Effort is session-sized: S = part of a session, M = one to two, L = several.
   shadow the device actually reads. The only additions are PCI Bus-Master enable (P2) and reading the
   queue registers from the common-config block instead of the mmio offsets.
 - Proves: a userspace driver reads a file off a PCIe virtio disk - the aarch64 mmio milestone
-  (`a_userspace_driver_reads_a_file_from_a_virtio_disk`), now over PCIe, and on both architectures.
+  (`a_userspace_driver_reads_a_file_from_a_virtual_io_disk`), now over PCIe, and on both architectures.
 
 ---
 

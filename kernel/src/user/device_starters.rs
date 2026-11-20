@@ -72,8 +72,8 @@ pub(super) fn boot_clock_page() -> u64 {
 /// The confined transport, the completion interrupt, and the DMA page's physical base, for a
 /// virtio device (the rng or the NIC) this kernel discovered and wired at boot. Returned rather
 /// than stored, so the caller grants them at the slots it chooses.
-pub(super) struct VirtioBootGrant {
-    /// The `Virtio` capability's id (`crate::virtio::register`'s return value).
+pub(super) struct VirtualIoBootGrant {
+    /// The `VirtualIo` capability's id (`crate::virtual_io::register`'s return value).
     pub(super) vid: u64,
     /// The device's completion interrupt, **routed** (`crate::sched::bind_interrupt`) but not
     /// **enabled**: aarch64's GIC enables inline and riscv64 pins the PLIC source to the boot hart
@@ -96,8 +96,8 @@ pub(super) struct VirtioBootGrant {
 /// The MMIO transport only, not PCIe. It does `entropy_service::start`'s kernel-side setup and then
 /// hands the three capabilities back, because on this boot the progenitor builds the entropy
 /// service. See notes/progenitor-boot.md.
-pub(super) fn boot_virtio_rng_device() -> Option<VirtioBootGrant> {
-    boot_virtio_mmio_device(crate::virtio::find_entropy_device()?)
+pub(super) fn boot_virtual_io_rng_device() -> Option<VirtualIoBootGrant> {
+    boot_virtual_io_mmio_device(crate::virtual_io::find_entropy_device()?)
 }
 
 /// **An entropy service on the CPU's own seed instruction, for a boot with no virtio-rng**
@@ -139,8 +139,8 @@ pub(super) fn boot_instruction_entropy() -> Option<crate::sched::RendezvousId> {
 /// The MMIO NIC has no IOMMU in front of it, so its DMA is confined by the transport's shadow-ring
 /// validator alone, not the SMMU of DECISIONS §20 (IOMMU-backed DMA isolation); the PCIe NIC sits
 /// unclaimed on this boot, for the reason milestone 590's block records.
-pub(super) fn boot_virtio_net_device() -> Option<VirtioBootGrant> {
-    boot_virtio_mmio_device(crate::virtio::find_net_device()?)
+pub(super) fn boot_virtual_io_net_device() -> Option<VirtualIoBootGrant> {
+    boot_virtual_io_mmio_device(crate::virtual_io::find_net_device()?)
 }
 
 /// **A network stack over an `e1000e`, when this boot has one and no virtio-net** (milestone 198 (a
@@ -257,11 +257,13 @@ pub(super) fn boot_designware_network()
     }
 }
 
-/// The shared body of [`boot_virtio_rng_device`] and [`boot_virtio_net_device`]: a zeroed DMA frame
+/// The shared body of [`boot_virtual_io_rng_device`] and [`boot_virtual_io_net_device`]: a zeroed DMA frame
 /// with its own physical base written at
 /// [`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`], the interrupt routed but not
 /// enabled, and the transport registered with the kernel, confined to that one frame.
-fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioBootGrant> {
+fn boot_virtual_io_mmio_device(
+    d: crate::virtual_io::VirtualIoMmioDevice,
+) -> Option<VirtualIoBootGrant> {
     // Zeroed first, so no stale descriptor or buffer content is visible to the device or to the
     // driver's own first read.
     let dma = crate::memory::alloc_contiguous_zeroed(1)
@@ -270,17 +272,17 @@ fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioB
     // Its physical base goes in the page's tail
     // ([`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`]).
     write_dma_phys(dma);
-    // Routed, not yet enabled: [`VirtioBootGrant::intid`].
+    // Routed, not yet enabled: [`VirtualIoBootGrant::intid`].
     crate::sched::bind_interrupt(d.intid, crate::sched::create_rendezvous());
-    let vid = crate::virtio::register(
-        crate::virtio::Transport::Mmio {
+    let vid = crate::virtual_io::register(
+        crate::virtual_io::Transport::Mmio {
             mmio_phys: d.mmio_phys,
         },
         dma,
         FRAME_BYTES,
         None,
     )?;
-    Some(VirtioBootGrant {
+    Some(VirtualIoBootGrant {
         vid,
         intid: d.intid,
         dma,

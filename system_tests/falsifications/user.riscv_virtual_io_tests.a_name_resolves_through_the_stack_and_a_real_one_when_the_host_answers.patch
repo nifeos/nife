@@ -1,4 +1,4 @@
-Falsifies `system_tests::user::riscv_virtio_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers`.
+Falsifies `system_tests::user::riscv_virtual_io_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers`.
 
 Architecture: riscv64
 

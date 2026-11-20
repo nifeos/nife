@@ -72,14 +72,14 @@ fn wire_servers(
     // The NVMe arm is for a machine with no virtio block device at all (an installed system), so
     // it tests device 0, not device 1: a boot with one virtio disk and an NVMe controller must not
     // hand the FS server a disk with no filesystem on it.
-    let (blk_ep, blk_ready, blk_shared) = match crate::virtio::find_block_device_n(1) {
+    let (blk_ep, blk_ready, blk_shared) = match crate::virtual_io::find_block_device_n(1) {
         Some(dev) => {
             let (ep, ready, shared) = spawn_block_server(blk_image, dev)?;
             (ep, Some(ready), shared)
         }
         // Only when the boot came from that disk: RedoxFS writes on mount, so a stick booted on an
         // installed machine must not mount it (`boot_slot::medium`, calef, PR #1652, 2026-10-04).
-        None if crate::virtio::find_block_device_n(0).is_none()
+        None if crate::virtual_io::find_block_device_n(0).is_none()
             && crate::memory::booted_from_nvme() =>
         {
             nvme_disk()?
@@ -139,7 +139,7 @@ fn nvme_disk() -> Option<(RendezvousId, Option<RendezvousId>, u64)> {
 /// own. See notes/fs-server/block-server.md.
 pub(in crate::user) fn spawn_block_server(
     blk_image: &'static [u8],
-    dev: crate::virtio::BlockDevice,
+    dev: crate::virtual_io::BlockDevice,
 ) -> Option<(RendezvousId, RendezvousId, u64)> {
     // Zeroed so neither stale descriptors nor stale file bytes are ever visible to the device
     // or the FS server.
@@ -147,7 +147,7 @@ pub(in crate::user) fn spawn_block_server(
         .expect("no DMA region for the block server")
         .physical_address();
     // First, so a refused device leaves nothing else behind.
-    let Some(vid) = crate::virtio::register(
+    let Some(vid) = crate::virtual_io::register(
         dev.transport,
         dma,
         (1 + BLK_PAGES) as u64 * FRAME_BYTES, // every page: the device may touch the rings AND the data buffer
@@ -170,7 +170,7 @@ pub(in crate::user) fn spawn_block_server(
     crate::arch::interrupt_controller::enable(dev.intid);
     crate::sched::spawn(move || {
         // The driver's death gives the slot back (§16 (object revocation), amendment of 2026-10-27).
-        crate::virtio::bind_to_current_thread(vid);
+        crate::virtual_io::bind_to_current_thread(vid);
         // The rings page, then the BLK_PAGES data pages, contiguous at DMA_VA.
         let mut maps = [Mapping {
             va: 0,
@@ -192,7 +192,7 @@ pub(in crate::user) fn spawn_block_server(
                 grants: &[
                     rendezvous_capability(blk_ep, Rights::READ), // slot 0: RECEIVE blk requests
                     interrupt_capability(dev.intid),             // slot 1: the device interrupt
-                    virtio_capability(vid),                      // slot 2: the confined transport
+                    virtual_io_capability(vid),                  // slot 2: the confined transport
                     rendezvous_capability(blk_ready, Rights::WRITE), // slot 3: signal readiness once
                 ],
                 maps: &maps,

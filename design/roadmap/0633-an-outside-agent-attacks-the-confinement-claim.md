@@ -224,7 +224,7 @@ for every ISA; rows 31 and 32 are `script/swish-check` censuses graded by read.
   685's priority against risk 7.
 - Near misses, each with a home. Claim 3: a `GRANT`-less budget retypes a `GRANT`-bearing frame,
   booted as a characterization on all three ISAs, with `BUGS` on `cap::memory_region_cap`. Its retype
-  question is ruled below. Claim 17: the regression test cannot fail, with `BUGS` on it in `kernel/src/virtio.rs`. Claim 25: stale
+  question is ruled below. Claim 17: the regression test cannot fail, with `BUGS` on it in `kernel/src/virtual_io.rs`. Claim 25: stale
   pixels on a respawn nobody performs, in an existing `BUGS`. Claim 28: the test does not check the fault pc, with `BUGS` on
   it. The unauthenticated `OPERATION_QUIESCE` is a denial of service, with `BUGS` at its arm.
 

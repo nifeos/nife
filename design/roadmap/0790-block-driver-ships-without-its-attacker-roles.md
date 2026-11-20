@@ -17,8 +17,8 @@ Raised by the lane for milestone 261 (the NVMe driver leaves the kernel) (`lane/
 ## The defect
 
 `components/src/block_driver.rs` dispatches on the role word its spawner passes in `arg0`, and two
-of those roles are the DMA-confinement tests' attackers: `VIRTIO_ATTACK` (8, a descriptor aimed at
-kernel memory) and `VIRTIO_ATTACK_INDIRECT` (13, the indirect-descriptor escape). Their bodies are
+of those roles are the DMA-confinement tests' attackers: `VIRTUAL_IO_ATTACK` (8, a descriptor aimed at
+kernel memory) and `VIRTUAL_IO_ATTACK_INDIRECT` (13, the indirect-descriptor escape). Their bodies are
 `virtio::run_attack` and `virtio::run_attack_indirect` in `crates/virtio/src/lib.rs`, and nothing
 gates them. So every shipped `block_driver` binary contains both attacks, and any spawner that
 passes 8 or 13 selects one. The module doc says the attackers share the binary on purpose: they
@@ -36,7 +36,7 @@ Do what #1647 did for NVMe:
 - Gate the two match arms in `block_driver`'s `_start` on `confinement_attackers`, and gate
   `run_attack` and `run_attack_indirect` behind a `virtio` crate feature that the components feature
   turns on. A shipped driver handed role 8 or 13 then reaches the `_ => panic!()` arm.
-- Gate the kernel spawners, `virtio_service::start_attacker` and `start_attacker_indirect` (and
+- Gate the kernel spawners, `virtual_io_service::start_attacker` and `start_attacker_indirect` (and
   their role constants), on `system_tests`, if a check finds they are not already.
 - `xtask`'s `CONFINEMENT_ATTACKERS` switch and `script/lint`'s feature clippy already cover
   `components`, so the build side needs nothing new.
@@ -51,7 +51,7 @@ whole: the `components/confinement_attackers` feature, `xtask`'s `CONFINEMENT_AT
 
 ## BUGS
 
-- `VIRTIO_BLK_WRITE_ABANDON` (31, panics mid-operation) looks test-only as well. Whether it belongs
+- `VIRTUAL_IO_BLK_WRITE_ABANDON` (31, panics mid-operation) looks test-only as well. Whether it belongs
   behind the same feature has not been checked.
 
 ## Index row

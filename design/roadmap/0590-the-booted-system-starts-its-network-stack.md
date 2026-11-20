@@ -45,15 +45,15 @@ $ unreachable_network_witness
 
 That transcript is `script/swish-check`'s, on both legs, and it is the milestone's claim. Every
 earlier network test started `net_stack` from the kernel harness
-(`kernel/src/user/virtio_service.rs`), so none of them said anything about the system a person
+(`kernel/src/user/virtual_io_service.rs`), so none of them said anything about the system a person
 boots.
 
 ## The pieces
 
-- The kernel grants the NIC at slots 13 to 15 (`kernel::user::boot_virtio_net_device`). That is
+- The kernel grants the NIC at slots 13 to 15 (`kernel::user::boot_virtual_io_net_device`). That is
   the confined transport, the interrupt, and a DMA page with its physical base in its last eight
   bytes: the virtio-rng trio's shape. The two devices now share one body,
-  `boot_virtio_mmio_device`.
+  `boot_virtual_io_mmio_device`.
 - The progenitor builds `net_stack` (`build_net_stack`) straight after entropy and before the
   terminal plumbing, then deletes the trio on every path. The endowment is
   `wire_net_server`'s slot for slot, because that is the one every network test proves.
@@ -118,7 +118,7 @@ move is milestone 198's, and needs no new mechanism from this one.
   (`design/roadmap/0646-a-typed-prompt-outruns-the-undertaker.md`).
 - **Recorded.** The package client's move to the prompt is milestone 198's, in this block's section
   on it. The DHCP wait and the DMA view are in `crates/system_initializer`'s BUGS. The MMIO NIC with
-  no IOMMU is at `kernel::user::boot_virtio_net_device`, and the last capability slot at
+  no IOMMU is at `kernel::user::boot_virtual_io_net_device`, and the last capability slot at
   `kernel::cap::CAPABILITY_TABLE_SLOTS`. x86_64's missing NIC is in
   `swish_check_omits(arch, line)`, and milestone 494 (a driver for the network card a PC actually
   has) closes it.

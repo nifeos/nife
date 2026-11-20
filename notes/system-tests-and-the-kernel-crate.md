@@ -18,7 +18,7 @@ Reading each use site gives three kinds, and a fourth turned up when the new gat
 |---|---|---|
 | `ps`, `pgrep`, `pmap` | `survey_tests`, `pmap_tests` only | dev-dependency |
 | `network_time_protocol` | `ntp_tests` only (the service file names it in a comment) | dev-dependency |
-| `package_archive` | `tests.rs` and `riscv_virtio_tests.rs` only; not one of the twelve, found by the gate | dev-dependency |
+| `package_archive` | `tests.rs` and `riscv_virtual_io_tests.rs` only; not one of the twelve, found by the gate | dev-dependency |
 | `coremark` | `bench.rs` (feature `bench`) and one suite test | optional behind `bench`, and a dev-dependency |
 | `job_mix` | `job_mix.rs` (feature `job_mix`) | optional behind `job_mix` |
 | `soak_page` | `soak.rs` (`soak_test`), `ipc_stack_depth.rs` (`ipc_stack_depth`, and tests) | optional behind both, and a dev-dependency |

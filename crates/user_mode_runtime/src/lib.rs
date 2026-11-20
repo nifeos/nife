@@ -36,7 +36,8 @@ pub mod entropy;
 pub mod initial_ramdisk;
 pub mod mapped_window;
 pub mod socket_frame;
-pub mod virtio;
+#[doc(alias = "virtio")]
+pub mod virtual_io;
 
 mod clock;
 mod devices;

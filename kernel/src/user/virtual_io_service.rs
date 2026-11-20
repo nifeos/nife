@@ -1,33 +1,33 @@
 use super::*;
 use crate::capability_object::{
     Rights, interrupt_capability, notification_capability, rendezvous_capability, timer_capability,
-    virtio_capability,
+    virtual_io_capability,
 };
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
 /// Where the driver expects its DMA page. Must match `DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS` in `components/src/block_driver_roles.rs`. The
-/// driver holds no device registers: it drives the device through a `Virtio` capability, so it
+/// driver holds no device registers: it drives the device through a `VirtualIo` capability, so it
 /// cannot point the device outside this DMA region.
 const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
-const ROLE_VIRTIO_BLK: u64 = 3;
+const ROLE_VIRTUAL_IO_BLK: u64 = 3;
 /// The write-path roles (milestone 32 (a real filesystem) phase 1); must match `block_driver.rs`.
-const ROLE_VIRTIO_BLK_WRITE: u64 = 30;
-const ROLE_VIRTIO_BLK_WRITE_ABANDON: u64 = 31;
+const ROLE_VIRTUAL_IO_BLK_WRITE: u64 = 30;
+const ROLE_VIRTUAL_IO_BLK_WRITE_ABANDON: u64 = 31;
 /// The virtio-net driver role (milestone 30 (the network stack as a confined component)); must
 /// match `block_driver.rs`.
-const ROLE_VIRTIO_NET: u64 = 40;
+const ROLE_VIRTUAL_IO_NET: u64 = 40;
 
 /// Start a driver role against a discovered transport, and return its report endpoint.
 ///
 /// The shared body of [`start`] (mmio), [`start_pci`] (PCIe) and the writer starters; every bus and
 /// every role gets the same world. `rid` is the PCIe requester id the IOMMU keys its tables on;
 /// mmio devices have no IOMMU in front of them and pass `None`. `None` when the IOMMU refuses to
-/// attach the device. See notes/virtio.md.
+/// attach the device. See notes/virtual-io.md.
 fn wire(
     image: &'static [u8],
-    transport: crate::virtio::Transport,
+    transport: crate::virtual_io::Transport,
     intid: u32,
     role: u64,
     rid: Option<u32>,
@@ -38,7 +38,7 @@ fn wire(
         .expect("no DMA frame for the virtio driver")
         .physical_address();
     // First, so a refused device leaves nothing else behind.
-    let Some(vid) = crate::virtio::register(transport, dma, FRAME_BYTES, rid) else {
+    let Some(vid) = crate::virtual_io::register(transport, dma, FRAME_BYTES, rid) else {
         crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
         return None;
     };
@@ -51,7 +51,7 @@ fn wire(
 
     crate::sched::spawn(move || {
         // The driver's death gives the slot back (§16, amendment of 2026-10-27).
-        crate::virtio::bind_to_current_thread(vid);
+        crate::virtual_io::bind_to_current_thread(vid);
         run(
             image,
             Spawn {
@@ -61,7 +61,7 @@ fn wire(
                 grants: &[
                     rendezvous_capability(report, Rights::WRITE), // slot 0: SEND the result
                     interrupt_capability(intid), // slot 1: WAIT / ACKNOWLEDGE the interrupt
-                    virtio_capability(vid),      // slot 2: drive the device, confined
+                    virtual_io_capability(vid),  // slot 2: drive the device, confined
                 ],
                 maps: &[Mapping {
                     va: DMA_VA,
@@ -80,7 +80,7 @@ fn wire(
 /// Start the driver against the virtio-mmio disk. Returns the endpoint it will report its
 /// result on, or `None` if there is no disk attached to enumerate.
 pub fn start(image: &'static [u8]) -> Option<RendezvousId> {
-    start_role(image, ROLE_VIRTIO_BLK)
+    start_role(image, ROLE_VIRTUAL_IO_BLK)
 }
 
 /// Start the same driver binary against the PCIe disk (§18 (the PCIe transport: one driver, two
@@ -88,40 +88,40 @@ pub fn start(image: &'static [u8]) -> Option<RendezvousId> {
 /// confinement, backed by the IOMMU when the machine has one (§20 (IOMMU-backed DMA isolation)).
 /// The driver cannot tell which bus it is on.
 pub fn start_pci(image: &'static [u8]) -> Option<RendezvousId> {
-    start_role_pci(image, ROLE_VIRTIO_BLK)
+    start_role_pci(image, ROLE_VIRTUAL_IO_BLK)
 }
 
 /// Start the write-path driver against the mmio disk: it writes a
 /// pattern to the scratch block, reads it back, re-checks the filesystem around it, and
 /// reports the read-back bytes.
 pub fn start_writer(image: &'static [u8]) -> Option<RendezvousId> {
-    start_role(image, ROLE_VIRTIO_BLK_WRITE)
+    start_role(image, ROLE_VIRTUAL_IO_BLK_WRITE)
 }
 
 /// The same writer over the PCIe transport.
 pub fn start_writer_pci(image: &'static [u8]) -> Option<RendezvousId> {
-    start_role_pci(image, ROLE_VIRTIO_BLK_WRITE)
+    start_role_pci(image, ROLE_VIRTUAL_IO_BLK_WRITE)
 }
 
 /// Start the abandoning writer (the kill-mid-write case): it submits a validated write and
 /// dies on purpose before collecting the completion. Reports 1 after the submit, so the test
 /// knows the request genuinely left before the death.
 pub fn start_write_abandoner(image: &'static [u8]) -> Option<RendezvousId> {
-    start_role(image, ROLE_VIRTIO_BLK_WRITE_ABANDON)
+    start_role(image, ROLE_VIRTUAL_IO_BLK_WRITE_ABANDON)
 }
 
 /// Start the virtio-net driver against the mmio NIC. It does a DHCP round trip over QEMU
 /// user-mode networking and reports the offered address. `None` if no NIC is attached. The DMA
-/// confinement polices both queues through the one `Virtio` capability.
+/// confinement polices both queues through the one `VirtualIo` capability.
 pub fn start_net(image: &'static [u8]) -> Option<RendezvousId> {
-    let dev = crate::virtio::find_net_device()?;
+    let dev = crate::virtual_io::find_net_device()?;
     wire(
         image,
-        crate::virtio::Transport::Mmio {
+        crate::virtual_io::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
         },
         dev.intid,
-        ROLE_VIRTIO_NET,
+        ROLE_VIRTUAL_IO_NET,
         None, // virtio-mmio has no IOMMU in front of it on either board
     )
 }
@@ -132,9 +132,9 @@ pub fn start_net_pci(image: &'static [u8]) -> Option<RendezvousId> {
     let d = crate::pci::find_net_device()?;
     wire(
         image,
-        crate::virtio::Transport::pci(&d),
+        crate::virtual_io::Transport::pci(&d),
         d.intid,
-        ROLE_VIRTIO_NET,
+        ROLE_VIRTUAL_IO_NET,
         Some(d.rid),
     )
 }
@@ -154,10 +154,10 @@ pub(super) const NET_SERVER_STACK_PAGES: u64 = 8;
 /// DHCP; see [`wire_net_server`]. Returns the endpoint it reports its acquired address on and what
 /// ends it, or `None` if no NIC is attached.
 pub fn start_net_server(image: &'static [u8]) -> Option<(RendezvousId, Holding)> {
-    let dev = crate::virtio::find_net_device()?;
+    let dev = crate::virtual_io::find_net_device()?;
     let (report, _stack, holding) = wire_net_server(
         image,
-        crate::virtio::Transport::Mmio {
+        crate::virtual_io::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
         },
         dev.intid,
@@ -172,7 +172,7 @@ pub fn start_net_server_pci(image: &'static [u8]) -> Option<(RendezvousId, Holdi
     let d = crate::pci::find_net_device()?;
     let (report, _stack, holding) = wire_net_server(
         image,
-        crate::virtio::Transport::pci(&d),
+        crate::virtual_io::Transport::pci(&d),
         d.intid,
         Some(d.rid),
         socket_contract::NO_PORT_GRANT,
@@ -189,7 +189,7 @@ pub fn start_net_server_pci(image: &'static [u8]) -> Option<(RendezvousId, Holdi
 /// notes/net/memory-and-reclamation.md.
 fn wire_net_server(
     image: &'static [u8],
-    transport: crate::virtio::Transport,
+    transport: crate::virtual_io::Transport,
     intid: u32,
     rid: Option<u32>,
     listen_grant: u64,
@@ -202,7 +202,7 @@ fn wire_net_server(
         .expect("no DMA frame for the net server")
         .physical_address();
     // First, so a refused NIC leaves nothing else behind.
-    let Some(vid) = crate::virtio::register(transport, dma, FRAME_BYTES, rid) else {
+    let Some(vid) = crate::virtual_io::register(transport, dma, FRAME_BYTES, rid) else {
         crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
         return None;
     };
@@ -253,7 +253,7 @@ fn wire_net_server(
 
     let tid = crate::sched::spawn(move || {
         // The driver's death gives the slot back (§16, amendment of 2026-10-27).
-        crate::virtio::bind_to_current_thread(vid);
+        crate::virtual_io::bind_to_current_thread(vid);
         run_with_own_space(
             image,
             Spawn {
@@ -263,7 +263,7 @@ fn wire_net_server(
                 grants: &[
                     rendezvous_capability(report, Rights::WRITE), // slot 0: report the acquired address
                     interrupt_capability(intid), // slot 1: WAIT / ACKNOWLEDGE the interrupt
-                    virtio_capability(vid),      // slot 2: the confined transport
+                    virtual_io_capability(vid),  // slot 2: the confined transport
                     memory_region_capability(budget), // slot 3: the heap's budget
                     rendezvous_capability(stack, Rights::READ), // slot 4: serve clients' requests
                     notification_capability(wake, Rights::ALL), // slot 5: bound; arm it, poll it
@@ -358,11 +358,11 @@ fn start_net_stack_with(
 ) -> Option<(RendezvousId, Holding)> {
     let (transport, intid, rid) = if pci {
         let d = crate::pci::find_net_device()?;
-        (crate::virtio::Transport::pci(&d), d.intid, Some(d.rid))
+        (crate::virtual_io::Transport::pci(&d), d.intid, Some(d.rid))
     } else {
-        let dev = crate::virtio::find_net_device()?;
+        let dev = crate::virtual_io::find_net_device()?;
         (
-            crate::virtio::Transport::Mmio {
+            crate::virtual_io::Transport::Mmio {
                 mmio_phys: dev.mmio_phys,
             },
             dev.intid,
@@ -501,8 +501,8 @@ pub fn start_net_std(
     std_image: &'static [u8],
     listen_grant: u64,
 ) -> Option<(RendezvousId, crate::thread::ThreadId, Holding)> {
-    let dev = crate::virtio::find_net_device()?;
-    let transport = crate::virtio::Transport::Mmio {
+    let dev = crate::virtual_io::find_net_device()?;
+    let transport = crate::virtual_io::Transport::Mmio {
         mmio_phys: dev.mmio_phys,
     };
     let (net_stack_report, stack, mut held) =
@@ -580,10 +580,10 @@ fn spawn_std_net_client(
 
 /// [`wire`] against the enumerated mmio disk, at `role`.
 fn start_role(image: &'static [u8], role: u64) -> Option<RendezvousId> {
-    let dev = crate::virtio::find_block_device()?;
+    let dev = crate::virtual_io::find_block_device()?;
     wire(
         image,
-        crate::virtio::Transport::Mmio {
+        crate::virtual_io::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
         },
         dev.intid,
@@ -596,10 +596,10 @@ fn start_role(image: &'static [u8], role: u64) -> Option<RendezvousId> {
 static PCI_DISK_GRANT: core::sync::atomic::AtomicU8 = core::sync::atomic::AtomicU8::new(0);
 
 /// Start a driver role against the enumerated PCIe disk, with the grant the default gives it
-/// (`virtio_grant::choose`): direct where the IOMMU confines the function, mediated otherwise.
+/// (`virtual_io_grant::choose`): direct where the IOMMU confines the function, mediated otherwise.
 fn start_role_pci(image: &'static [u8], role: u64) -> Option<RendezvousId> {
     let d = crate::pci::find_block_device()?;
-    let (grant, report) = match super::virtio_grant::choose(&d) {
+    let (grant, report) = match super::virtual_io_grant::choose(&d) {
         Ok(window) => (2, wire_direct(image, &d, &window, role)?),
         Err(_) => (1, wire_mediated_pci(image, &d, role)?),
     };
@@ -622,12 +622,12 @@ pub fn pci_disk_was_granted_direct() -> Option<bool> {
 /// [`wire`] against a PCIe function, mediated. `None` when the IOMMU refuses the function.
 fn wire_mediated_pci(
     image: &'static [u8],
-    d: &crate::pci::PciVirtioDevice,
+    d: &crate::pci::PciVirtualIoDevice,
     role: u64,
 ) -> Option<RendezvousId> {
     wire(
         image,
-        crate::virtio::Transport::pci(d),
+        crate::virtual_io::Transport::pci(d),
         d.intid,
         role,
         Some(d.rid), // the PCIe requester id, the IOMMU keys its tables on it
@@ -635,16 +635,16 @@ fn wire_mediated_pci(
 }
 
 /// **Start a driver role on a direct grant** of `d`: its structure pages and a one-page DMA region
-/// the IOMMU confines, an interrupt and a report endpoint, and no `Virtio` capability. The same
+/// the IOMMU confines, an interrupt and a report endpoint, and no `VirtualIo` capability. The same
 /// role numbers and slots 0 and 1 as [`wire`], so the driver binary runs either grant. `None` when
-/// [`super::virtio_grant::carve`] finds no frame or the IOMMU refuses the function.
+/// [`super::virtual_io_grant::carve`] finds no frame or the IOMMU refuses the function.
 fn wire_direct(
     image: &'static [u8],
-    d: &crate::pci::PciVirtioDevice,
+    d: &crate::pci::PciVirtualIoDevice,
     window: &driver_process_contract::virtual_io::RegisterWindow,
     role: u64,
 ) -> Option<RendezvousId> {
-    let direct = super::virtio_grant::carve(d, window, role as u16, 1)?;
+    let direct = super::virtual_io_grant::carve(d, window, role as u16, 1)?;
     let interrupt_ep = crate::sched::create_rendezvous();
     crate::sched::bind_interrupt(d.intid, interrupt_ep);
     crate::arch::interrupt_controller::enable(d.intid);
@@ -671,18 +671,18 @@ fn wire_direct(
     Some(report)
 }
 
-const ROLE_VIRTIO_ATTACK: u64 = 8;
+const ROLE_VIRTUAL_IO_ATTACK: u64 = 8;
 
 /// Spawn a MALICIOUS driver that tries to DMA over kernel memory, for the security test. It
-/// holds a real `Virtio` capability and its own DMA region, and points a descriptor at the
+/// holds a real `VirtualIo` capability and its own DMA region, and points a descriptor at the
 /// kernel image. Returns the endpoint on which it reports whether the kernel refused it.
 pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
-    let dev = crate::virtio::find_block_device()?;
+    let dev = crate::virtual_io::find_block_device()?;
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame")
         .physical_address();
-    let vid = crate::virtio::register(
-        crate::virtio::Transport::Mmio {
+    let vid = crate::virtual_io::register(
+        crate::virtual_io::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
         },
         dma,
@@ -693,17 +693,17 @@ pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
 
     crate::sched::spawn(move || {
         // The driver's death gives the slot back (§16, amendment of 2026-10-27).
-        crate::virtio::bind_to_current_thread(vid);
+        crate::virtual_io::bind_to_current_thread(vid);
         run(
             image,
             Spawn {
-                arg0: ROLE_VIRTIO_ATTACK,
+                arg0: ROLE_VIRTUAL_IO_ATTACK,
                 arg1: dma,
                 arg2: 0,
                 grants: &[
                     rendezvous_capability(report, Rights::WRITE),
                     interrupt_capability(dev.intid), // slot 1 (unused by the attacker)
-                    virtio_capability(vid),          // slot 2
+                    virtual_io_capability(vid),      // slot 2
                 ],
                 maps: &[Mapping {
                     va: DMA_VA,
@@ -719,7 +719,7 @@ pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
     Some(report)
 }
 
-const ROLE_VIRTIO_ATTACK_INDIRECT: u64 = 13;
+const ROLE_VIRTUAL_IO_ATTACK_INDIRECT: u64 = 13;
 
 /// Spawn a malicious driver that tries the indirect-descriptor escape: it negotiates
 /// `INDIRECT_DESC` and submits one descriptor flagged indirect whose inner table aims the
@@ -727,12 +727,12 @@ const ROLE_VIRTIO_ATTACK_INDIRECT: u64 = 13;
 /// strips the feature and refuses the flag, so the attacker reports `1` (refused). Returns the
 /// report endpoint.
 pub fn start_attacker_indirect(image: &'static [u8]) -> Option<RendezvousId> {
-    let dev = crate::virtio::find_block_device()?;
+    let dev = crate::virtual_io::find_block_device()?;
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame")
         .physical_address();
-    let vid = crate::virtio::register(
-        crate::virtio::Transport::Mmio {
+    let vid = crate::virtual_io::register(
+        crate::virtual_io::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
         },
         dma,
@@ -743,17 +743,17 @@ pub fn start_attacker_indirect(image: &'static [u8]) -> Option<RendezvousId> {
 
     crate::sched::spawn(move || {
         // The driver's death gives the slot back (§16, amendment of 2026-10-27).
-        crate::virtio::bind_to_current_thread(vid);
+        crate::virtual_io::bind_to_current_thread(vid);
         run(
             image,
             Spawn {
-                arg0: ROLE_VIRTIO_ATTACK_INDIRECT,
+                arg0: ROLE_VIRTUAL_IO_ATTACK_INDIRECT,
                 arg1: dma,
                 arg2: 0,
                 grants: &[
                     rendezvous_capability(report, Rights::WRITE),
                     interrupt_capability(dev.intid), // slot 1 (unused; keeps virtio at slot 2)
-                    virtio_capability(vid),          // slot 2
+                    virtual_io_capability(vid),      // slot 2
                 ],
                 maps: &[Mapping {
                     va: DMA_VA,

@@ -40,7 +40,7 @@ provisional, so the move waits on the architect's ratification of the table unde
   `kernel/src/memory.rs` (the host bridge window), `kernel/src/drivers/jh7110_pci_express.rs`,
   `kernel/src/arch/x86_64/interrupt_controller.rs` and `kernel/src/arch/x86_64/iommu.rs` (the
   requester identifier).
-- `crates/driver_process_contract`: `virtual_io` uses the virtio constants and `VirtioCapability`.
+- `crates/driver_process_contract`: `virtual_io` uses the virtio constants and `VirtualIoCapability`.
 - `crates/jh7110_pci_express`: the root port and its simulation decode through `Bdf` and the register
   offsets.
 - `crates/machine_discovery`: `src/jh7110/pci_express.rs`, and `tests/pci_host_bridge_windows.rs`, which
@@ -93,15 +93,15 @@ Not run, and so not claimed:
 | address | `Bdf { bus, device, function }`, `Bdf::ecam_offset`, `Bdf::requester_id` |
 | header registers | `VENDOR_ID_REGISTER`, `COMMAND_REGISTER`, `CLASS_REVISION_REGISTER`, `HEADER_TYPE_REGISTER`, `BAR0_REGISTER`, `CAPABILITIES_POINTER_REGISTER`, `INTERRUPT_PIN_REGISTER`, `BUS_NUMBERS_REGISTER`, `HEADER_TYPE_BRIDGE` |
 | classes and command bits | `CLASS_NON_VOLATILE_MEMORY_EXPRESS`, `CLASS_EXTENSIBLE_HOST_CONTROLLER_INTERFACE`, `COMMAND_MEMORY_SPACE_ENABLE`, `COMMAND_BUS_MASTER_ENABLE` |
-| virtio identifiers | `VIRTIO_VENDOR`, `VIRTIO_BLOCK_{MODERN,TRANSITIONAL}`, `VIRTIO_NETWORK_{MODERN,TRANSITIONAL}`, `VIRTIO_ENTROPY_{MODERN,TRANSITIONAL}`, `VIRTIO_GPU_MODERN`, `VIRTIO_INPUT_MODERN`, `VIRTIO_TYPE_{BLOCK,NETWORK,ENTROPY,GPU,INPUT}` |
+| virtio identifiers | `VIRTUAL_IO_VENDOR`, `VIRTIO_BLOCK_{MODERN,TRANSITIONAL}`, `VIRTIO_NETWORK_{MODERN,TRANSITIONAL}`, `VIRTIO_ENTROPY_{MODERN,TRANSITIONAL}`, `VIRTUAL_IO_GPU_MODERN`, `VIRTUAL_IO_INPUT_MODERN`, `VIRTIO_TYPE_{BLOCK,NETWORK,ENTROPY,GPU,INPUT}` |
 | the bus walk | `walk`, `enumerate`, `Function`, `BridgeBuses`, `bridge_buses` |
 | base address registers | `read_bars`, `Bar { base_physical_address, size_bytes, is_64_bit }`, `BarRefusal` |
-| virtio capabilities | `virtio_capabilities`, `VirtioCapability { configuration_type, bar, offset, length_bytes, notify_offset_multiplier }`, `VIRTIO_CAPABILITY_{COMMON,NOTIFY,INTERRUPT_STATUS,DEVICE}` |
-| interrupts | `msi_capability`, `MsiCapability` (`message_address_low`, `data`), `msix_capability`, `MsixCapability`, `MsiTarget`, `CAPABILITY_ID_{MSI,MSIX}`, `MESSAGE_CONTROL_REGISTER`, `MSI_ENABLE`, `MSI_64_BIT`, `MSIX_ENABLE`, `MSIX_FUNCTION_MASK`, `MSIX_ENTRY_BYTES`, `MSIX_ENTRY_MASKED`, `VIRTIO_MSIX_NO_VECTOR`, `intx_interrupt_number` |
+| virtio capabilities | `virtual_io_capabilities`, `VirtualIoCapability { configuration_type, bar, offset, length_bytes, notify_offset_multiplier }`, `VIRTIO_CAPABILITY_{COMMON,NOTIFY,INTERRUPT_STATUS,DEVICE}` |
+| interrupts | `msi_capability`, `MsiCapability` (`message_address_low`, `data`), `msix_capability`, `MsixCapability`, `MsiTarget`, `CAPABILITY_ID_{MSI,MSIX}`, `MESSAGE_CONTROL_REGISTER`, `MSI_ENABLE`, `MSI_64_BIT`, `MSIX_ENABLE`, `MSIX_FUNCTION_MASK`, `MSIX_ENTRY_BYTES`, `MSIX_ENTRY_MASKED`, `VIRTUAL_IO_MSIX_NO_VECTOR`, `intx_interrupt_number` |
 | host bridge | `memory_window_32_bit` |
 
 No nife type, capability or handoff appears in a public signature. The three capability walks
-(`virtio_capabilities`, `msi_capability`, `msix_capability`) share one private walk with one hop bound
+(`virtual_io_capabilities`, `msi_capability`, `msix_capability`) share one private walk with one hop bound
 of 64, so one bound and one proof cover all three.
 
 What a stranger may find surprising:
@@ -145,11 +145,11 @@ package leaves the two ratified names, the crate and `intx_interrupt_number`, as
 | `CAPABILITIES_POINTER_REGISTER` | constant | `CAP_PTR` | renamed, provisional | keep |
 | `CLASS_NON_VOLATILE_MEMORY_EXPRESS`, `CLASS_EXTENSIBLE_HOST_CONTROLLER_INTERFACE` | constants | `CLASS_NVME`, `CLASS_XHCI` | renamed, provisional | keep; both crates in the tree are already spelled this way |
 | `COMMAND_MEMORY_SPACE_ENABLE`, `COMMAND_BUS_MASTER_ENABLE` | constants | `CMD_MEMORY_SPACE`, `CMD_BUS_MASTER` | renamed, provisional | keep; the specification's bit names |
-| `VIRTIO_BLOCK_*`, `VIRTIO_NETWORK_*`, `VIRTIO_ENTROPY_*`, `VIRTIO_TYPE_NETWORK` | constants | `VIRTIO_BLK_*`, `VIRTIO_NET_*`, `VIRTIO_RNG_*`, `VIRTIO_TYPE_NET` | renamed, provisional | keep; the virtio specification calls the device `entropy` |
-| `VIRTIO_GPU_MODERN`, `VIRTIO_INPUT_MODERN`, `VIRTIO_TYPE_{BLOCK,ENTROPY,GPU,INPUT}`, `VIRTIO_VENDOR` | constants | unchanged | provisional | keep |
+| `VIRTIO_BLOCK_*`, `VIRTIO_NETWORK_*`, `VIRTIO_ENTROPY_*`, `VIRTUAL_IO_TYPE_NETWORK` | constants | `VIRTIO_BLK_*`, `VIRTIO_NET_*`, `VIRTIO_RNG_*`, `VIRTIO_TYPE_NET` | renamed, provisional | keep; the virtio specification calls the device `entropy` |
+| `VIRTUAL_IO_GPU_MODERN`, `VIRTUAL_IO_INPUT_MODERN`, `VIRTIO_TYPE_{BLOCK,ENTROPY,GPU,INPUT}`, `VIRTUAL_IO_VENDOR` | constants | unchanged | provisional | keep |
 | `VIRTIO_CAPABILITY_{COMMON,NOTIFY,INTERRUPT_STATUS,DEVICE}` | constants | `VIRTIO_CAP_*`, `ISR` | renamed, provisional | keep; alias `ISR` |
-| `VirtioCapability` and its fields `configuration_type`, `length_bytes`, `notify_offset_multiplier` | struct | `VirtioCap`, `cfg_type`, `length`, `notify_off_multiplier` | renamed, provisional | keep; the specification's names as aliases; the unit is on the length |
-| `virtio_capabilities` | function | `virtio_caps` | renamed, provisional | keep |
+| `VirtualIoCapability` and its fields `configuration_type`, `length_bytes`, `notify_offset_multiplier` | struct | `VirtioCap`, `cfg_type`, `length`, `notify_off_multiplier` | renamed, provisional | keep; the specification's names as aliases; the unit is on the length |
+| `virtual_io_capabilities` | function | `virtio_caps` | renamed, provisional | keep |
 | `MsixCapability` and its fields `capability_offset`, `table_entries`, `pending_bit_array_bar`, `pending_bit_array_offset` | struct | `MsixCap`, `cap_offset`, `table_size`, `pba_bar`, `pba_offset` | renamed, provisional | keep; a count names the things counted |
 | `msix_capability`, `msi_capability` | functions | `msix_cap`, `msi_cap` | renamed, provisional | keep |
 | `MsiCapability`, `capability_offset`, `is_64_bit`, `message_address_low` | struct, fields, method | `MsiCap`, `cap_offset`, `is_64`, `address_low` | renamed, provisional | keep |
@@ -158,12 +158,12 @@ package leaves the two ratified names, the crate and `intx_interrupt_number`, as
 | `Bar { base_physical_address, size_bytes, is_64_bit }` | struct | `base`, `size`, `is_64` | fields renamed, provisional | keep; the unit is on the size |
 | `memory_window_32_bit` | function | `mem32_window` | renamed, provisional | keep |
 | `walk`, `enumerate`, `Function`, `BridgeBuses`, `bridge_buses`, `read_bars`, `BarRefusal` | | unchanged | provisional | keep |
-| `HEADER_TYPE_BRIDGE`, `MSI_ENABLE`, `MSI_64_BIT`, `MSIX_ENABLE`, `MSIX_FUNCTION_MASK`, `MSIX_ENTRY_BYTES`, `MSIX_ENTRY_MASKED`, `VIRTIO_MSIX_NO_VECTOR` | constants | unchanged | provisional | keep |
+| `HEADER_TYPE_BRIDGE`, `MSI_ENABLE`, `MSI_64_BIT`, `MSIX_ENABLE`, `MSIX_FUNCTION_MASK`, `MSIX_ENTRY_BYTES`, `MSIX_ENTRY_MASKED`, `VIRTUAL_IO_MSIX_NO_VECTOR` | constants | unchanged | provisional | keep |
 | `intx_interrupt_number` | function | unchanged | ratified 2026-10-27 | untouched |
 
 Names the architect might prefer otherwise: `Bdf` keeps an abbreviation because the specification's
 phrase is spoken as the letters (the acronym test), which the template's report counts but does not
-refuse. `VIRTIO_CAPABILITY_INTERRUPT_STATUS` is long where `ISR` is what the specification and every
+refuse. `VIRTUAL_IO_CAPABILITY_INTERRUPT_STATUS` is long where `ISR` is what the specification and every
 driver say; the proposal is the long form with `ISR` as the alias.
 
 ## License

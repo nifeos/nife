@@ -119,7 +119,7 @@ Before renting, measured on this branch against its base `e8834c988`:
 | `kernel/src/arch/riscv64/mod.rs` | a | one `mod` line |
 | `crates/page_tables/src/sv39.rs`, `lib.rs` | c, additive | a new `PageFormat` implementation; no trait or walk change |
 | `kernel/src/console.rs`, `kernel/src/user.rs` | c, seam repair | the riscv64 console constant now names `arch::machine`'s |
-| `kernel/src/virtio.rs`, `arch/aarch64/mmu.rs`, `arch/x86_64/mmu.rs` | c, seam repair | the probe asks the architecture how many slots exist |
+| `kernel/src/virtual_io.rs`, `arch/aarch64/mmu.rs`, `arch/x86_64/mmu.rs` | c, seam repair | the probe asks the architecture how many slots exist |
 | `kernel/Cargo.toml` | build | the `board_th1520` feature |
 | `script/board-image` | packaging | `--th1520` |
 

@@ -29,7 +29,7 @@ use memory_region::memory_region_invoke;
 use object_methods::port_range_invoke;
 use object_methods::{
     aborted_send_error, interrupt_acknowledge, interrupt_wait, notification_invoke, process_invoke,
-    reboot_invoke, rendezvous_badge, rendezvous_reap, reply_other, timer_invoke, virtio_invoke,
+    reboot_invoke, rendezvous_badge, rendezvous_reap, reply_other, timer_invoke, virtual_io_invoke,
 };
 use page_frame::{page_frame_map, page_frame_revoke, page_frame_slice};
 use rendezvous::{
@@ -218,11 +218,11 @@ pub fn invoke(
             _ => Err(Error::BadMethod),
         },
 
-        Object::Virtio(id) => {
+        Object::VirtualIo(id) => {
             if !capability.rights.allows(Rights::WRITE) {
                 return Err(Error::NotPermitted);
             }
-            virtio_invoke(id, method, a0, a1)
+            virtual_io_invoke(id, method, a0, a1)
         }
 
         Object::Interrupt(intid) => match method {

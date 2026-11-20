@@ -12,7 +12,7 @@
 //! # Capability contract
 //!
 //! Slot 0 the lease's report endpoint (`WRITE`); 1 the NIC interrupt (`WAIT`/`ACKNOWLEDGE`); 2 the confined
-//! `Virtio` transport; 3 an untyped budget, for the heap and clients' frames; 4 `Stack` (`READ`),
+//! `VirtualIo` transport; 3 an untyped budget, for the heap and clients' frames; 4 `Stack` (`READ`),
 //! where requests arrive; 5 and 6 a notification bound to this thread and its retransmit timer (not
 //! in the progenitor's spawn); 7 `Stack` (`WRITE | GRANT`) to mint sockets from; 8 this address
 //! space (`WRITE`), to unmap a closed socket's page. `arg1` is the DMA page's physical address and
@@ -62,8 +62,8 @@ use user_mode_runtime::{
 mod designware_ethernet_transport;
 #[path = "e1000e_transport.rs"]
 mod e1000e_transport;
-#[path = "virtio_net_transport.rs"]
-mod virtio_net_transport;
+#[path = "virtual_io_net_transport.rs"]
+mod virtual_io_net_transport;
 // The server's start-up: the heap, the interface, and the DHCP lease it reports.
 #[path = "interface_bring_up.rs"]
 mod interface_bring_up;

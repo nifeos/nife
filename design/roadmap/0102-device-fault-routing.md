@@ -34,7 +34,7 @@ already clears it) was never blocked.
 fault queue. Milestone 16b built both drivers and proved the stop happens on both ISAs. Nothing
 reads the queue in a real boot. `crate::iommu::take_fault` has five call sites and every one is a
 test: `system_tests/src/user/display_tests.rs` (three, milestone 29's framebuffer work) and
-`kernel/src/virtio.rs` (two, the DMA-escape test). So a confined device that faults during an
+`kernel/src/virtual_io.rs` (two, the DMA-escape test). So a confined device that faults during an
 ordinary boot reports to nobody, and the kernel's evidence that its own hardware confinement fired
 is discarded.
 

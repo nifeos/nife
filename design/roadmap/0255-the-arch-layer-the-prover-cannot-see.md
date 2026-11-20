@@ -161,7 +161,7 @@ Not a survey of what could be proved, and not a harness over a function moved ou
   which needs `aarch64-cpu` behind a target `cfg` first.
 - **Recorded.** notes/iommu.md, "What is proved, as against tested". The SMMUv3's register constants
   cannot be proved against Arm IHI 0070 by anything in this tree, so the boot-time confinement test
-  in `kernel/src/virtio.rs` is not made redundant by these harnesses and neither replaces the other.
+  in `kernel/src/virtual_io.rs` is not made redundant by these harnesses and neither replaces the other.
 - **Recorded.** notes/kernel-proofs.md, "The stub boundary, enumerated" and BUGS. Everything in
   `aarch64/iommu.rs` that touches the SMMU (`init`, `cmd_push`, `attach`, `take_fault`) is
   unreachable to a harness because it dereferences `phys_to_virt`, so what is proved is the

@@ -1,4 +1,4 @@
-Falsifies `kernel::virtio::tests::the_pci_transport_answers_the_device_configuration_generation`.
+Falsifies `kernel::virtual_io::tests::the_pci_transport_answers_the_device_configuration_generation`.
 
 Architecture: aarch64
 
@@ -8,10 +8,10 @@ generation hold across a resize and returns halves from two configurations.
 
 Expected to fail: the test's `assert_eq!`, on generation 0x5a, which reads back 0.
 
-diff --git a/kernel/src/virtio.rs b/kernel/src/virtio.rs
+diff --git a/kernel/src/virtual_io.rs b/kernel/src/virtual_io.rs
 index eaf4f1b9e..8da0319e7 100644
---- a/kernel/src/virtio.rs
-+++ b/kernel/src/virtio.rs
+--- a/kernel/src/virtual_io.rs
++++ b/kernel/src/virtual_io.rs
 @@ -363,9 +363,7 @@ impl Transport {
                  REG_STATUS => pread::<u8>(common + PCI_DEVICE_STATUS) as u32,
                  // The device's own generation, so a driver's bracketed configuration read checks

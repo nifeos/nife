@@ -46,7 +46,7 @@ Where and what, each a rename:
   prefetchable entry.
 - `CLASS_NVME` (`:74`): `nvme` is a spelled-out word. Recommend
   `CLASS_NON_VOLATILE_MEMORY_EXPRESS`, matching the kernel module and the crate of that name.
-- `Bar.size` (`:361`), `VirtioCapability.length` (`:454`), `MsixCapability.table_size` (`:528`): a
+- `Bar.size` (`:361`), `VirtualIoCapability.length` (`:454`), `MsixCapability.table_size` (`:528`): a
   size carries its unit and a count names the things. Recommend `size_bytes`, `length_bytes` and
   `table_entries`. `length` mirrors `struct virtio_pci_cap`'s field; keeping it needs the kept form
   (the source named in the first line of its doc comment, plus `#[doc(alias)]`), which it lacks.
@@ -67,10 +67,10 @@ Effort: M. Door: two-way until the first tag.
 **6. Names outside the gates that the naming rules still rule against.**
 Where and what, with the recommendation:
 - `VIRTIO_BLK_MODERN`, `VIRTIO_BLK_TRANSITIONAL` (`:95, :98`): the acronyms appendix names `blk`
-  as a word that fails the spoken test. `VIRTIO_BLOCK_MODERN`, `VIRTIO_BLOCK_TRANSITIONAL`, which
-  also matches `VIRTIO_TYPE_BLOCK` four lines below.
-- `VIRTIO_RNG_MODERN`, `VIRTIO_RNG_TRANSITIONAL` (`:125-126`) beside `VIRTIO_TYPE_ENTROPY`
-  (`:134`): one device, two spellings. `VIRTIO_ENTROPY_MODERN`, `VIRTIO_ENTROPY_TRANSITIONAL`;
+  as a word that fails the spoken test. `VIRTUAL_IO_BLOCK_MODERN`, `VIRTUAL_IO_BLOCK_TRANSITIONAL`, which
+  also matches `VIRTUAL_IO_TYPE_BLOCK` four lines below.
+- `VIRTIO_RNG_MODERN`, `VIRTIO_RNG_TRANSITIONAL` (`:125-126`) beside `VIRTUAL_IO_TYPE_ENTROPY`
+  (`:134`): one device, two spellings. `VIRTUAL_IO_ENTROPY_MODERN`, `VIRTUAL_IO_ENTROPY_TRANSITIONAL`;
   the virtio specification's own name for device type 4 is the entropy device.
 - `VIRTIO_NET_MODERN`, `VIRTIO_NET_TRANSITIONAL`, `VIRTIO_TYPE_NET` (`:103-104, :132`):
   `network`.
@@ -81,7 +81,7 @@ Where and what, with the recommendation:
   `func` abbreviates `function`. `Bdf { bus, device, function }`, as `pci_types::PciAddress` and
   `virtio-drivers`' `DeviceFunction` both spell them. `Bdf` itself reads as a word aloud and stays,
   with `#[doc(alias = "bus device function")]`.
-- `VirtioCapability.cfg_type` (`:451`): `cfg` abbreviates `configuration`. The field mirrors
+- `VirtualIoCapability.cfg_type` (`:451`): `cfg` abbreviates `configuration`. The field mirrors
   `struct virtio_pci_cap`; either `configuration_type` with the alias `cfg_type`, or the kept form.
   `notify_off_multiplier` (`:455`) is the same case and the same choice; `off` for `offset` has no
   owner but the specification.
@@ -90,7 +90,7 @@ Where and what, with the recommendation:
   the alias `xHCI`.
 - `pba_bar`, `pba_offset` (`:534, :538`): "pending bit array" reads as words aloud. `pending_bit_array_bar`,
   `pending_bit_array_offset`.
-- `VIRTIO_CAPABILITY_ISR` (`:437`): "interrupt status" reads as words aloud; `VIRTIO_CAPABILITY_INTERRUPT_STATUS`
+- `VIRTIO_CAPABILITY_ISR` (`:437`): "interrupt status" reads as words aloud; `VIRTUAL_IO_CAPABILITY_INTERRUPT_STATUS`
   with the alias `ISR`.
 - `Bar.is_64`, `MsiCapability.is_64` (`:363, :578`): `is_64_bit`; the bare number does not say what
   is 64.
@@ -112,9 +112,9 @@ Effort: M with item 5. Door: two-way until the first tag.
 
 **7. The documentation assumes this tree, and 26 public items have none.**
 Where: `crates/pci_configuration_space/src/lib.rs` line 18 (`#![allow(missing_docs)]` against a 24-item worklist), the
-undocumented fields of `Bdf`, `BridgeBuses`, `Function` and `VirtioCapability`, and the constants at
+undocumented fields of `Bdf`, `BridgeBuses`, `Function` and `VirtualIoCapability`, and the constants at
 `:45-54, :95, :104, :126, :133-136`. Doc comments at `:4, :38, :79, :131, :514, :566, :638,
-:656, :711-713` cite `notes/pcie.md`, `kernel/src/iommu.rs`, `kernel/src/virtio.rs`,
+:656, :711-713` cite `notes/pcie.md`, `kernel/src/iommu.rs`, `kernel/src/virtual_io.rs`,
 `design/roadmap/0215-...`, `arch::x86_64::interrupt_controller::initialize_io_apic`,
 `tests/qemu_virt_dtb.rs`, a bench machine, and milestones 16b, 29, 30, 56, 215, 242 and 320.
 Why: a stranger cannot follow one of these references, and the template's `check / standalone`
@@ -127,7 +127,7 @@ Effort: M. Door: two-way.
 
 **8. The MSI capability walk has no proof, and nothing proves the ceiling.**
 Where: `crates/pci_configuration_space/src/lib.rs` lines 598 to 619 (`msi_capability`), `:256-303` (`walk`).
-Why: `msix_capability` and `virtio_capabilities` each prove termination on any device;
+Why: `msix_capability` and `virtual_io_capabilities` each prove termination on any device;
 `msi_capability` is the same loop written a third time, and neither harness covers it. A future
 edit that drops its hop bound goes unnoticed. One fixture test holds the ceiling property
 (`walk` never reads a bus at or above `ceiling`), and the doc comment argues it. A proof would need

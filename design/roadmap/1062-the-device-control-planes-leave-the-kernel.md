@@ -77,8 +77,8 @@ Ruled 2026-11-10 (UTC). The starter that spawns a virtio driver grants its devic
 ways, and the grant decides how the driver reaches the device. The kernel has no mode flag, no
 build feature and no boot parameter for it, and the choice can differ per device.
 
-- Mediated. The driver holds the `Virtio` capability, as every virtio driver does today.
-  `kernel/src/virtio.rs` keeps the device's registers, places the descriptor table and available
+- Mediated. The driver holds the `VirtualIo` capability, as every virtio driver does today.
+  `kernel/src/virtual_io.rs` keeps the device's registers, places the descriptor table and available
   ring in a kernel-private shadow page, validates each new descriptor on `NOTIFY` with
   `crates/direct_memory_access_validator`, and only then rings the device. This path does not change.
 - Direct. The driver holds its device's register pages as plain device frames, listed on its
@@ -89,10 +89,10 @@ build feature and no boot parameter for it, and the choice can differ per device
   confinement.
 
 The direct grant applies to virtio-pci devices only while the runners keep virtio-mmio. On
-aarch64's `virt` the virtio-mmio slots sit 0x200 apart (`VIRTIO_SLOT_STRIDE`), so one 4 KiB page
+aarch64's `virt` the virtio-mmio slots sit 0x200 apart (`VIRTUAL_IO_SLOT_STRIDE`), so one 4 KiB page
 holds eight devices' registers, and no IOMMU fronts virtio-mmio on any machine nife runs on.
 
-A new `Virtio` method that switches a device to direct, or a new object kind for a direct
+A new `VirtualIo` method that switches a device to direct, or a new object kind for a direct
 transport, would each add to the syscall surface what a grant of frames already says, so the
 design uses neither.
 
@@ -139,7 +139,7 @@ One condition holds the argument up. A virtio device may treat a driver that dec
 `VIRTIO_F_ACCESS_PLATFORM` as one whose addresses are physical and untranslated (virtio 1.2
 section 6). The runners attach every virtio-pci function with `iommu_platform=on` (§20). There
 QEMU sends the function's DMA through the IOMMU, and it refuses `FEATURES_OK` to a driver that
-declines the bit (`reset_to_features_ok` in `kernel/src/virtio.rs` records it). So a direct grant
+declines the bit (`reset_to_features_ok` in `kernel/src/virtual_io.rs` records it). So a direct grant
 counts as confined only when the function offers `ACCESS_PLATFORM` and the active IOMMU owns its
 requester id (`iommu::Scope::is_confining`). Without both, nothing confines a direct driver, and
 nife trusts it as it trusts an NVMe driver on a machine without an IOMMU.
@@ -161,7 +161,7 @@ limit a mediated one meets, and milestone 1065 (MSI replaces the interrupt lines
 riscv64) lifts it for both. Until that lands, a direct driver's test reads its used ring before it blocks, as the
 entropy driver does.
 
-### What stays in `kernel/src/virtio.rs`
+### What stays in `kernel/src/virtual_io.rs`
 
 All of it, for the mediated grant: both transports, `register`, `setup_queue`, `notify`, the
 validator adapter, the shadow page, the reset in `unregister`, `release_owned_by` and the test

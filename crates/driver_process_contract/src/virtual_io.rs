@@ -1,6 +1,6 @@
 //! **What the kernel and a virtio driver granted direct agree on**: which pages of the function's
 //! BARs the driver is mapped ([`register_window`]), where each virtio-pci structure sits in that
-//! window, and the three spawn words ([`HandOff`]). A driver granted mediated holds a `Virtio`
+//! window, and the three spawn words ([`HandOff`]). A driver granted mediated holds a `VirtualIo`
 //! capability instead and uses none of this. The virtio-pci layout itself is the specification's
 //! (virtio 1.2 section 4.1.4); this module holds only nife's process plan around it. See
 //! design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
@@ -15,8 +15,8 @@
 //! whole as every name does.
 
 use pci_configuration_space::{
-    Bdf, VIRTIO_CAPABILITY_COMMON, VIRTIO_CAPABILITY_DEVICE, VIRTIO_CAPABILITY_INTERRUPT_STATUS,
-    VIRTIO_CAPABILITY_NOTIFY,
+    Bdf, VIRTUAL_IO_CAPABILITY_COMMON, VIRTUAL_IO_CAPABILITY_DEVICE,
+    VIRTUAL_IO_CAPABILITY_INTERRUPT_STATUS, VIRTUAL_IO_CAPABILITY_NOTIFY,
 };
 use startup_page_contract::WindowKind;
 
@@ -96,7 +96,7 @@ pub struct Structures {
 /// `None` for a function that lacks a common configuration, a notify structure or an ISR byte. The
 /// first capability of each type wins, as virtio 1.2 section 4.1.4 tells a driver to prefer it.
 ///
-/// `read32` reads the function's configuration space, as [`pci_configuration_space::virtio_capabilities`] takes it.
+/// `read32` reads the function's configuration space, as [`pci_configuration_space::virtual_io_capabilities`] takes it.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-contract.
 pub fn structures(
@@ -105,22 +105,22 @@ pub fn structures(
 ) -> Option<(Structures, u32)> {
     let (mut common, mut notify, mut interrupt_status, mut device) = (None, None, None, None);
     let mut multiplier = 0;
-    pci_configuration_space::virtio_capabilities(function, read32, &mut |c| {
+    pci_configuration_space::virtual_io_capabilities(function, read32, &mut |c| {
         let s = Structure {
             bar: c.bar,
             offset: u64::from(c.offset),
             length: u64::from(c.length_bytes),
         };
         match c.configuration_type {
-            VIRTIO_CAPABILITY_COMMON if common.is_none() => common = Some(s),
-            VIRTIO_CAPABILITY_NOTIFY if notify.is_none() => {
+            VIRTUAL_IO_CAPABILITY_COMMON if common.is_none() => common = Some(s),
+            VIRTUAL_IO_CAPABILITY_NOTIFY if notify.is_none() => {
                 notify = Some(s);
                 multiplier = c.notify_offset_multiplier;
             }
-            VIRTIO_CAPABILITY_INTERRUPT_STATUS if interrupt_status.is_none() => {
+            VIRTUAL_IO_CAPABILITY_INTERRUPT_STATUS if interrupt_status.is_none() => {
                 interrupt_status = Some(s);
             }
-            VIRTIO_CAPABILITY_DEVICE if device.is_none() => device = Some(s),
+            VIRTUAL_IO_CAPABILITY_DEVICE if device.is_none() => device = Some(s),
             _ => {}
         }
     });

@@ -111,7 +111,7 @@ capability-semantics change rather than a counter change. Its own lane. Mileston
 `components/src/net_stack.rs` lists these as one line each in its `BUGS`. This is the long form.
 
 **No host fuzz target reaches the dispatch** (proposal #1592 part a, rank 2). The request match and
-every helper under it live in the EL0 binary. They take `virtio_net_transport::VirtioNet`, the clock
+every helper under it live in the EL0 binary. They take `virtual_io_net_transport::VirtualIoNet`, the clock
 and two blocking waits directly, so nothing builds for the host. Measured by reading on 2026-10-04
 (UTC), a host part would move about 630 lines into a sans-IO crate over smoltcp's `phy::Device`,
 with the clock and the waits behind an edge trait. `notes/fuzzing-the-services.md` has the pricing.

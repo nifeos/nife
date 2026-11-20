@@ -137,7 +137,7 @@ RedoxFS round trip and the `redoxfs_server` sans-IO core. That is the criterion 
 set: the pass now *reaches* the kernel legs, which on this machine it had never done.
 
 `script/test` still exits 1, on the aarch64 kernel leg, at
-`a_keystroke_from_a_virtio_keyboard_becomes_a_terminal_byte`, whose own failure message names the
+`a_keystroke_from_a_virtual_io_keyboard_becomes_a_terminal_byte`, whose own failure message names the
 cause: *"the host's `sendkey a` is not reaching the device (is the monitor socket attached?)"*. That
 is host-side QEMU interaction in a headless sandbox, and this lane changed no code the kernel runs.
 Outside `#[cfg(test)]` the whole diff is three removed `allow(dead_code)` attributes and three

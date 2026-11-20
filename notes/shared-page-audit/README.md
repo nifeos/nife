@@ -6,7 +6,7 @@ lens, and the candidates that were cleared.
 
 - [`filesystem-findings.md`](filesystem-findings.md): findings 1 and 2, the FS service's one shared
   frame and the nameset caretaker that did not re-stage what it checked.
-- [`console-and-virtio-findings.md`](console-and-virtio-findings.md): findings 3 and 6, the console's
+- [`console-and-virtual-io-findings.md`](console-and-virtual-io-findings.md): findings 3 and 6, the console's
   unbounded byte count and the drivers that trusted a device's used-ring index.
 - [`compositor-findings.md`](compositor-findings.md): findings 4, 5 and 7, all in the compositor's
   subsystem.

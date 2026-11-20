@@ -4,14 +4,16 @@
 //! The kernel reads each slot's identity registers and hands the device to the driver that claims
 //! its type (`components/src/block_driver.rs` for a disk). It keeps the two DMA-critical powers,
 //! the ring addresses and the "go", and validates every descriptor before the device sees it. See
-//! notes/virtio.md, "The kernel's half", and notes/dma.md.
+//! notes/virtual-io.md, "The kernel's half", and notes/dma.md.
 
-use crate::arch::mmu::{self, VIRTIO_INTERRUPT_NUMBER_BASE, VIRTIO_MMIO_BASE, VIRTIO_SLOT_STRIDE};
+use crate::arch::mmu::{
+    self, VIRTUAL_IO_INTERRUPT_NUMBER_BASE, VIRTUAL_IO_MMIO_BASE, VIRTUAL_IO_SLOT_STRIDE,
+};
 
 /// The virtio-mmio slot stride, from the arch: aarch64's `virt` has 32 slots 0x200 apart, RISC-V's
-/// has 8 slots 0x1000 apart. The probe walks `mmu::virtio_slots()` of them, which is zero on a
+/// has 8 slots 0x1000 apart. The probe walks `mmu::virtual_io_slots()` of them, which is zero on a
 /// machine whose tree names no `virtio,mmio` node (on the TH1520 that address is DRAM).
-const SLOT_STRIDE: u64 = VIRTIO_SLOT_STRIDE;
+const SLOT_STRIDE: u64 = VIRTUAL_IO_SLOT_STRIDE;
 
 /// "virt", little-endian, at offset 0x000 of every slot.
 const MAGIC: u32 = 0x7472_6976;
@@ -30,7 +32,7 @@ const REG_DEVICE_ID: u64 = 0x008;
 /// Device-neutral on purpose, because the fields the kernel hands a driver (a register base and an
 /// interrupt) are the same whether the device is a disk or a NIC; only the driver differs.
 #[derive(Debug, Clone, Copy)]
-pub(crate) struct VirtioMmioDevice {
+pub(crate) struct VirtualIoMmioDevice {
     /// Physical address of this slot's registers. Handed to the driver as a device mapping.
     pub mmio_phys: u64,
     /// The interrupt this device raises. Handed to the driver as an `Interrupt` capability.
@@ -38,7 +40,7 @@ pub(crate) struct VirtioMmioDevice {
 }
 
 fn read_reg(slot: u64, offset: u64) -> u32 {
-    let va = mmu::phys_to_virt(VIRTIO_MMIO_BASE + slot * SLOT_STRIDE + offset);
+    let va = mmu::phys_to_virt(VIRTUAL_IO_MMIO_BASE + slot * SLOT_STRIDE + offset);
     // SAFETY: the virtio-mmio window is mapped device memory (mmu::map_everything), and these
     // offsets are within a slot. Reading an ID register has no side effect.
     unsafe { core::ptr::read_volatile(va as *const u32) }
@@ -55,7 +57,7 @@ const SUPPORTED_VERSION: u32 = 2;
 #[derive(Debug, PartialEq, Eq)]
 enum SlotIdentity {
     /// No `virt` magic: not a virtio-mmio slot at all.
-    NotVirtio,
+    NotVirtualIo,
     /// A virtio slot with no device behind it (`DeviceID` 0), whatever its version.
     Empty,
     /// A device whose `Version` is not [`SUPPORTED_VERSION`]. No walk offers it.
@@ -67,7 +69,7 @@ enum SlotIdentity {
 /// Classify a slot from its three identity registers. Pure, so a test can drive it with any values.
 fn classify(magic: u32, version: u32, device_id: u32) -> SlotIdentity {
     if magic != MAGIC {
-        SlotIdentity::NotVirtio
+        SlotIdentity::NotVirtualIo
     } else if device_id == 0 {
         SlotIdentity::Empty
     } else if version != SUPPORTED_VERSION {
@@ -96,7 +98,7 @@ fn slot_device_id(slot: u64) -> Option<u32> {
         read_reg(slot, REG_DEVICE_ID),
     ) {
         SlotIdentity::Device(id) => Some(id),
-        SlotIdentity::NotVirtio | SlotIdentity::Empty => None,
+        SlotIdentity::NotVirtualIo | SlotIdentity::Empty => None,
         SlotIdentity::Refused { version, device_id } => {
             let bit = 1u64 << (slot % 64);
             let before = REPORTED_REFUSED.fetch_or(bit, core::sync::atomic::Ordering::Relaxed);
@@ -112,22 +114,22 @@ fn slot_device_id(slot: u64) -> Option<u32> {
 
 /// Scan the bus for the first virtio device of type `device_id`. The kernel's whole knowledge of a
 /// device at this layer is its type number and its slot; which driver claims the type is a userspace
-/// decision (see `virtio_service`).
-fn find_by_device_id(device_id: u32) -> Option<VirtioMmioDevice> {
-    for slot in 0..mmu::virtio_slots() {
+/// decision (see `virtual_io_service`).
+fn find_by_device_id(device_id: u32) -> Option<VirtualIoMmioDevice> {
+    for slot in 0..mmu::virtual_io_slots() {
         if slot_device_id(slot) != Some(device_id) {
             continue; // not virtio, empty, refused, or some other kind of device
         }
-        return Some(VirtioMmioDevice {
-            mmio_phys: VIRTIO_MMIO_BASE + slot * SLOT_STRIDE,
-            intid: VIRTIO_INTERRUPT_NUMBER_BASE + slot as u32,
+        return Some(VirtualIoMmioDevice {
+            mmio_phys: VIRTUAL_IO_MMIO_BASE + slot * SLOT_STRIDE,
+            intid: VIRTUAL_IO_INTERRUPT_NUMBER_BASE + slot as u32,
         });
     }
     None
 }
 
 /// Scan the bus for the first virtio block device. `None` if there is no disk attached.
-pub(crate) fn find_block_device() -> Option<VirtioMmioDevice> {
+pub(crate) fn find_block_device() -> Option<VirtualIoMmioDevice> {
     find_by_device_id(DEVICE_ID_BLOCK)
 }
 
@@ -136,7 +138,7 @@ pub(crate) fn find_block_device() -> Option<VirtioMmioDevice> {
 /// [`mmio_block_device_n`], so the ordinals agree by construction; reads up to three ID registers per slot.
 pub(crate) fn count_block_devices() -> usize {
     let mut n = 0;
-    for slot in 0..mmu::virtio_slots() {
+    for slot in 0..mmu::virtual_io_slots() {
         if slot_device_id(slot) == Some(DEVICE_ID_BLOCK) {
             n += 1;
         }
@@ -145,7 +147,7 @@ pub(crate) fn count_block_devices() -> usize {
 }
 
 /// Scan the bus for the first virtio network device. `None` if there is no NIC attached.
-pub(crate) fn find_net_device() -> Option<VirtioMmioDevice> {
+pub(crate) fn find_net_device() -> Option<VirtualIoMmioDevice> {
     find_by_device_id(DEVICE_ID_NET)
 }
 
@@ -153,14 +155,14 @@ pub(crate) fn find_net_device() -> Option<VirtioMmioDevice> {
 /// twin is [`crate::pci::find_rng_device`], and the tests run the entropy service over each (§18
 /// (the PCIe transport: one driver, two buses, the seam in the kernel)).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // entropy_service is the caller, and the m56 tests drive it
-pub(crate) fn find_entropy_device() -> Option<VirtioMmioDevice> {
+pub(crate) fn find_entropy_device() -> Option<VirtualIoMmioDevice> {
     find_by_device_id(DEVICE_ID_ENTROPY)
 }
 
 /// One block device, resolved on whichever bus it is on (provisional name): what
 /// [`find_block_device_n`] hands a wiring. Holds the transport, the interrupt to bind, and the
 /// IOMMU requester id, `None` on virtio-mmio (no IOMMU fronts that bus) and `Some` on PCI, where
-/// `virtio::register` keys the domain on it.
+/// `virtual_io::register` keys the domain on it.
 pub(crate) struct BlockDevice {
     pub transport: Transport,
     pub intid: u32,
@@ -172,7 +174,7 @@ pub(crate) struct BlockDevice {
 ///
 /// The order is a contract, the roster's row order: every virtio-mmio slot in slot order, then
 /// every modern virtio-pci function in bus:device.function order. Resolving a PCI ordinal brings
-/// the function up; the mmio half only reads identity registers. See notes/virtio.md, "The
+/// the function up; the mmio half only reads identity registers. See notes/virtual-io.md, "The
 /// kernel's half".
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // fs_service is the caller, and the phase-2 test drives it
 pub(crate) fn find_block_device_n(n: usize) -> Option<BlockDevice> {
@@ -194,16 +196,16 @@ pub(crate) fn find_block_device_n(n: usize) -> Option<BlockDevice> {
 }
 
 /// The mmio half of [`find_block_device_n`]: the `n`-th virtio-mmio block slot, in slot order.
-fn mmio_block_device_n(n: usize) -> Option<VirtioMmioDevice> {
+fn mmio_block_device_n(n: usize) -> Option<VirtualIoMmioDevice> {
     let mut seen = 0;
-    for slot in 0..mmu::virtio_slots() {
+    for slot in 0..mmu::virtual_io_slots() {
         if slot_device_id(slot) != Some(DEVICE_ID_BLOCK) {
             continue;
         }
         if seen == n {
-            return Some(VirtioMmioDevice {
-                mmio_phys: VIRTIO_MMIO_BASE + slot * SLOT_STRIDE,
-                intid: VIRTIO_INTERRUPT_NUMBER_BASE + slot as u32,
+            return Some(VirtualIoMmioDevice {
+                mmio_phys: VIRTUAL_IO_MMIO_BASE + slot * SLOT_STRIDE,
+                intid: VIRTUAL_IO_INTERRUPT_NUMBER_BASE + slot as u32,
             });
         }
         seen += 1;
@@ -253,7 +255,7 @@ const REG_CONFIGURATION_GENERATION: u64 = 0x0fc;
 const REG_DEVICE_CONFIG: u64 = 0x100;
 
 /// The transport seam: everything above it speaks virtio-mmio's register vocabulary, the one
-/// `abi::virtio` exposes, and a `Transport` answers it on whichever bus the device sits. The mmio
+/// `abi::virtual_io` exposes, and a `Transport` answers it on whichever bus the device sits. The mmio
 /// variant passes through; the pci variant translates to the common-config layout, the ISR byte
 /// and the notify doorbell. See notes/pcie.md, "The transport seam".
 pub(crate) enum Transport {
@@ -274,7 +276,7 @@ pub(crate) enum Transport {
         notify_addr: [u64; MAXIMUM_QUEUES],
         isr: u64,
         /// Which MSI-X table entry this function's queues should raise, or
-        /// `pci_configuration_space::VIRTIO_MSIX_NO_VECTOR` when it delivers INTx. Written at
+        /// `pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR` when it delivers INTx. Written at
         /// [`Transport::setup_queue`], since the field is behind the queue selector and a device
         /// reset clears it.
         msix_vector: u16,
@@ -312,7 +314,7 @@ const PCI_QUEUE_DEVICE: u64 = 0x30;
 /// Safe fns over a module invariant: they are private, and every call site passes a field of
 /// `Transport::Pci` (resolved from a mapped BAR, copied only by `Transport::pci`) plus a bounded
 /// offset. `notify_addr[q]` is zero until set up, so [`notify`] checks
-/// [`Transport::is_doorbell_ready`] first. See notes/virtio.md, "The kernel's half".
+/// [`Transport::is_doorbell_ready`] first. See notes/virtual-io.md, "The kernel's half".
 fn pread<T: Copy>(phys: u64) -> T {
     // SAFETY: `phys` is a field of a `Transport::Pci`, plus at most a common-config offset or a
     // device-config offset. Those fields come from `pci.rs`'s BAR resolution and reach this module
@@ -328,7 +330,7 @@ fn pwrite<T: Copy>(phys: u64, v: T) {
 impl Transport {
     /// The PCI transport for an enumerated function (kernel/src/pci.rs). The one place its fields
     /// are copied, which [`pread`]'s invariant rests on.
-    pub(crate) fn pci(d: &crate::pci::PciVirtioDevice) -> Transport {
+    pub(crate) fn pci(d: &crate::pci::PciVirtualIoDevice) -> Transport {
         Transport::Pci {
             common: d.common,
             notify_base: d.notify_base,
@@ -445,7 +447,7 @@ impl Transport {
                 pwrite::<u16>(*common + PCI_QUEUE_SIZE, num);
                 // Selected, and after the driver's reset cleared it. A device that refuses the
                 // vector reads back `NO_VECTOR`, and would otherwise hang its first completion.
-                if *msix_vector != pci_configuration_space::VIRTIO_MSIX_NO_VECTOR {
+                if *msix_vector != pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR {
                     pwrite::<u16>(*common + PCI_QUEUE_MSIX_VECTOR, *msix_vector);
                     let accepted = pread::<u16>(*common + PCI_QUEUE_MSIX_VECTOR);
                     if accepted != *msix_vector {
@@ -538,7 +540,7 @@ const VIRTQ_DESC_F_INDIRECT: u16 = 4;
 
 /// One block device the kernel operates the transport for.
 struct Device {
-    /// This slot's generational name: what an `Object::Virtio` capability carries, and what
+    /// This slot's generational name: what an `Object::VirtualIo` capability carries, and what
     /// [`unregister`] takes. Kept in the entry so a walk by owner can name the device it finds.
     name: u64,
     /// The thread whose death releases this device (see [`bind_to_current_thread`]), or `None`
@@ -567,7 +569,7 @@ struct Device {
 /// A slot comes back when its driver dies ([`bind_to_current_thread`], [`unregister`]), so this
 /// counts live transports, not every transport a boot has wired. A name that outlives its device
 /// is refused, not resolved to the device that took the slot next (§16 (object revocation), amendment of 2026-10-27).
-/// See notes/virtio.md, "The kernel's half".
+/// See notes/virtual-io.md, "The kernel's half".
 ///
 /// Twelve: the full kernel and system suites pass on all three architectures at twelve, where
 /// thirty-four were needed while no slot came back. Ten bumps of this number are not coming back.
@@ -598,7 +600,7 @@ impl Devices {
 }
 
 static DEVICES: InterruptSafeMutex<Devices> = InterruptSafeMutex::new(
-    rank::VIRTIO,
+    rank::VIRTUAL_IO,
     Devices {
         table: generational_table::Table::new(),
     },
@@ -609,7 +611,7 @@ static DEVICES: InterruptSafeMutex<Devices> = InterruptSafeMutex::new(
 static OWNED: core::sync::atomic::AtomicUsize = core::sync::atomic::AtomicUsize::new(0);
 
 /// Register the block device and its DMA region with the transport layer. Returns its id, which
-/// is what goes inside an `Object::Virtio` capability. The driver never sees the device's
+/// is what goes inside an `Object::VirtualIo` capability. The driver never sees the device's
 /// registers on either bus; it drives the device through that capability.
 ///
 /// `rid` is the PCIe requester id, `None` on virtio-mmio. With an IOMMU active and a `rid`, the
@@ -634,7 +636,7 @@ pub(crate) fn register(
     if let Some(rid) = rid
         && crate::iommu::is_active()
     {
-        let regions = crate::iommu::virtio_regions(
+        let regions = crate::iommu::virtual_io_regions(
             direct_memory_access_base,
             direct_memory_access_size,
             shadow_base,
@@ -712,7 +714,7 @@ pub(crate) fn release_owned_by(tid: crate::thread::ThreadId) {
 /// specification asks of a driver, so the device holds no queue, feature or interrupt the dead
 /// driver programmed and stops reading memory that is about to be reused. The kernel-private shadow
 /// frame goes back to the allocator after the reset. The driver's DMA region is the caller's, as it
-/// was at `register`. See notes/virtio.md, "The kernel's half".
+/// was at `register`. See notes/virtual-io.md, "The kernel's half".
 pub(crate) fn unregister(id: u64) -> bool {
     let removed = {
         let mut devs = DEVICES.lock();
@@ -1021,7 +1023,7 @@ const TEST_HOOK_DRIVER_OK: u32 = 1 | 2 | 8 | 4;
 ///
 /// Points queue 0's used ring into the shadow page, fills `flags` with `0xffff`, and kicks with
 /// nothing available, so the device's one write is clearing `VRING_USED_F_NO_NOTIFY`. No fault
-/// record is promised. See notes/virtio.md, "The kernel's half".
+/// record is promised. See notes/virtual-io.md, "The kernel's half".
 #[cfg(test)]
 pub(crate) fn provoke_write_to_shadow(id: u64) -> u16 {
     let mut devs = DEVICES.lock();

@@ -108,7 +108,7 @@ global for the *other* instance's frame (`login_service::start`, `credential_ser
 read the wrong page. Fixed by removing the global and its two accessors entirely: `Wiring` now
 carries `verify_frame`/`provision_frame` itself, and every one of those call sites was updated to
 read the specific `Wiring` it already holds rather than ask a shared global. All of it was exercised
-by the existing `credential_tests`/`login_tests`/`riscv_virtio_tests`/`tests`/`std_tests` suites
+by the existing `credential_tests`/`login_tests`/`riscv_virtual_io_tests`/`tests`/`std_tests` suites
 before this milestone's own tests were added, so this is a fix with the tree's own pre-existing
 coverage behind it, not an untested change riding along.
 

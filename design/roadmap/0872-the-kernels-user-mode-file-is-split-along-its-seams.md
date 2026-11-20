@@ -59,7 +59,7 @@ where a doc comment belongs to the item below it.
 | 2964 to 3001 | 38 | `boot_usb_keyboard` |
 | 3002 to 3866 | 865 | 25 `mod` declarations with their docs (333 lines), interleaved with `term_print`, `wait_for` and the device starters |
 
-The device starters (3220 to 3687, 468 lines) are `boot_clock_page`, `VirtioBootGrant`,
+The device starters (3220 to 3687, 468 lines) are `boot_clock_page`, `VirtualIoBootGrant`,
 `write_dma_phys`, the virtio, e1000e and DesignWare network starters, `boot_config_page` and
 `boot_screen_terminal`. `boot_progenitor` calls each one.
 
@@ -180,11 +180,11 @@ now an index, so its file-length row is gone. Every name below is provisional.
 | `user/progenitor_boot.rs` | 735 | `PROGENITOR_ENTRY`, `PROGENITOR_ROLE`, `INIT_STACK_PAGES`, `boot_progenitor` |
 | `user/entry.rs` | 532 | `Mapping`, `Spawn`, the test roles, `spawn_hello`, the `run` family, `enter_frame` |
 | `user/address_space.rs` | 509 | `AddressSpace`, `Backing`, the overhead constants, `ASIDS`, `Drop` |
-| `user/device_starters.rs` | 488 | the eleven starters and `VirtioBootGrant` |
+| `user/device_starters.rs` | 488 | the eleven starters and `VirtualIoBootGrant` |
 | `user/boot_demos.rs` | 377 | the `x86_64` and riscv64 demos, compiled only there |
 | `user/loader.rs` | 316 | `LoadError` through `program`, and `INITRD_VA` |
 | `user/console_device.rs` | 109 | the console UART's interrupt, page and port-range constants |
-| `user/terminal_print.rs`, `user/virtio_dma.rs`, `user/test_support.rs` | 46, 38, 34 | `term_print`; `write_dma_phys`; `wait_for` |
+| `user/terminal_print.rs`, `user/virtual_io_dma.rs`, `user/test_support.rs` | 46, 38, 34 | `term_print`; `write_dma_phys`; `wait_for` |
 
 Each child takes `use super::*`, and the index re-exports each at the visibility its items had, so
 no `user::` path changed. A private item a sibling reaches became `pub(super)`, as §281 rules,

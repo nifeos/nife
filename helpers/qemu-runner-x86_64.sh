@@ -248,14 +248,14 @@ esac
 # NIFE_NVME naming a missing file is an error, the same NIFE_INITIAL_RAMDISK lesson above: a
 # silently absent controller would read as a machine fact when it is a build-order mistake.
 # The PCIe transport's disk (milestone 215) and the RedoxFS disk (milestone 303). `q35` has no
-# virtio-mmio bus at all (`arch::x86_64::mmu::VIRTIO_SLOTS` is 0), so unlike the other two runners
+# virtio-mmio bus at all (`arch::x86_64::mmu::VIRTUAL_IO_SLOTS` is 0), so unlike the other two runners
 # every block device here is a PCI function, and `NIFE_DISK` names the fixture set the same way it
 # does there: the siblings `-pci.img` (mkdisk writes it) and `-redoxfs.img` (mkredoxfs does). A
 # separate file rather than the main image because both are attached writable elsewhere and QEMU's
 # image locking refuses one file to two writers.
 #
 # **The ORDER of these two -device arguments is a contract**, not a formatting choice.
-# `virtio::find_block_device_n` orders block devices mmio-first-then-PCI-in-bdf-order, QEMU assigns
+# `virtual_io::find_block_device_n` orders block devices mmio-first-then-PCI-in-bdf-order, QEMU assigns
 # `pcie.0` slots in command-line order, and the wirings ask for ordinals: the nifefs image is
 # ordinal 0 (the PCIe transport tests' disk) and the RedoxFS image is ordinal 1 (what
 # `fs_service::wire_servers` mounts). Swapping these two lines hands the FS server the nifefs image,
@@ -269,7 +269,7 @@ esac
 # between a confinement claim and a decoration: QEMU's virtio-pci device uses the *system* address
 # space unless the flag is set, so without it the device would bypass `-device intel-iommu`
 # silently and every DMA would land wherever the driver asked. With it the device emits IOVAs the
-# unit translates through the domain `virtio::register` builds, and a stray address faults at the
+# unit translates through the domain `virtual_io::register` builds, and a stray address faults at the
 # IOMMU instead of reaching RAM. The same flag, for the same reason, is on the riscv64 runner's PCI
 # disk. NVMe below needs no such flag: a real PCI device model always goes through the PCI address
 # space.

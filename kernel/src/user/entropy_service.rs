@@ -1,6 +1,6 @@
 use super::*;
 use crate::capability_object::{
-    Rights, interrupt_capability, rendezvous_capability, virtio_capability,
+    Rights, interrupt_capability, rendezvous_capability, virtual_io_capability,
 };
 use crate::sched::RendezvousId;
 
@@ -14,7 +14,7 @@ const DMA_PAGE_FRAMES: u64 = 1;
 /// What `Spawn::arg0` means. Must match `components/src/entropy.rs`; the kernel's own spawn-argument
 /// convention with the one program it spawns (not a wire contract between two user programs, so
 /// rule 7 does not apply), the same footing `DMA_VA` above is already on.
-const MODE_VIRTIO: u64 = 0;
+const MODE_VIRTUAL_IO: u64 = 0;
 const MODE_INSTRUCTION: u64 = 1;
 
 /// Which source to take randomness from: a virtio-rng on mmio or PCIe (one binary over both,
@@ -122,9 +122,9 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
             unreachable!("the two early returns above handle these; see start()'s first lines")
         }
         Bus::Mmio => {
-            let d = crate::virtio::find_entropy_device()?;
+            let d = crate::virtual_io::find_entropy_device()?;
             (
-                crate::virtio::Transport::Mmio {
+                crate::virtual_io::Transport::Mmio {
                     mmio_phys: d.mmio_phys,
                 },
                 d.intid,
@@ -133,7 +133,7 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
         }
         Bus::Pci => {
             let d = crate::pci::find_rng_device()?;
-            (crate::virtio::Transport::pci(&d), d.intid, Some(d.rid))
+            (crate::virtual_io::Transport::pci(&d), d.intid, Some(d.rid))
         }
     };
 
@@ -150,7 +150,7 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
     // Asked of the unit that owns the device, not of "is any IOMMU up": on a VT-d machine with
     // more than one unit those differ (`iommu::scope_of`).
     let confined_by_iommu = rid.is_some_and(|rid| crate::iommu::scope_of(rid).is_confining());
-    let vid = crate::virtio::register(transport, dma, DMA_PAGE_FRAMES * FRAME_BYTES, rid)?;
+    let vid = crate::virtual_io::register(transport, dma, DMA_PAGE_FRAMES * FRAME_BYTES, rid)?;
 
     let ready = crate::sched::create_rendezvous();
     let request = crate::sched::create_rendezvous();
@@ -164,13 +164,13 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
         run(
             image,
             Spawn {
-                arg0: MODE_VIRTIO,
+                arg0: MODE_VIRTUAL_IO,
                 arg1: dma, // the DMA region's PHYSICAL base: descriptors speak physical
                 arg2: 0,
                 grants: &[
                     rendezvous_capability(request, Rights::READ), // slot 0: RECEIVE client requests
                     interrupt_capability(intid), // slot 1: the completion interrupt
-                    virtio_capability(vid),      // slot 2: the confined transport
+                    virtual_io_capability(vid),  // slot 2: the confined transport
                     rendezvous_capability(ready, Rights::WRITE), // slot 3: signal readiness once
                 ],
                 maps: &maps,
@@ -191,7 +191,7 @@ fn start(image: &'static [u8], bus: Bus) -> Option<Wiring> {
 
 /// Does this machine implement an instruction source `entropy` can use? The kernel's call to
 /// make, not the process's: `ID_AA64ISAR0_EL1` (aarch64) is not readable from EL0, so `entropy.rs`
-/// cannot check `FEAT_RNG` itself, the same way it cannot check whether a `Virtio` capability really
+/// cannot check `FEAT_RNG` itself, the same way it cannot check whether a `VirtualIo` capability really
 /// names a device; it trusts what it was spawned with.
 #[cfg(target_arch = "aarch64")]
 fn is_instruction_backend_available() -> bool {

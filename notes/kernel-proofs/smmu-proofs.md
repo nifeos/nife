@@ -46,7 +46,7 @@ halves every leaf on silicon. `script/falsifications --sweep kernel` replays all
 What this does not cover, said here as well as at the harness. The register offsets and bit
 constants are unproved and unprovable in this tree. A harness asserting the constant it was given is
 a tautology, and if Arm IHI 0070 was misread then the code and the proof are wrong together. That is
-why `the_iommu_faults_a_dma_that_escapes_the_domain` in `kernel/src/virtio.rs` is not made redundant
+why `the_iommu_faults_a_dma_that_escapes_the_domain` in `kernel/src/virtual_io.rs` is not made redundant
 by this. And a property proved of the SMMUv3 is not proved of the other two IOMMUs.
 `riscv64/iommu.rs` writes its device context in 64-bit stores with no split at all, so this property
 has no counterpart there. `x86_64/` is not even compiled under Kani on an aarch64 host.

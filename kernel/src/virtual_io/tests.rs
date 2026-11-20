@@ -253,7 +253,7 @@ fn a_pci_queue_has_no_doorbell_until_it_is_set_up() {
         device_type: 2,
         notify_addr: [0; MAXIMUM_QUEUES],
         isr: 0x4010_2000,
-        msix_vector: pci_configuration_space::VIRTIO_MSIX_NO_VECTOR,
+        msix_vector: pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR,
         device_config: None,
     };
     assert!(
@@ -400,7 +400,7 @@ fn a_second_queue_validates_on_its_own_block() {
 ///
 /// The record below is AMD-Vi's, replayed on the `NIFE_IOMMU=amd` machine; the other three units
 /// carry this claim without one.
-/// Falsification: replayable `kernel/falsifications/virtio.tests.the_iommu_faults_a_dma_that_escapes_the_domain.patch`
+/// Falsification: replayable `kernel/falsifications/virtual_io.tests.the_iommu_faults_a_dma_that_escapes_the_domain.patch`
 #[test_case]
 fn the_iommu_faults_a_dma_that_escapes_the_domain() {
     let Some(d) = crate::pci::find_block_device() else {
@@ -503,7 +503,7 @@ fn the_iommu_faults_a_dma_that_escapes_the_domain() {
 /// The device's used ring is pointed into the shadow page and kicked, and the write must not land
 /// (`provoke_write_to_shadow` says why the word is a canary and no fault record is asked for).
 ///
-/// Falsification: replayable `kernel/falsifications/virtio.tests.a_device_write_to_the_read_only_shadow_is_refused.patch`
+/// Falsification: replayable `kernel/falsifications/virtual_io.tests.a_device_write_to_the_read_only_shadow_is_refused.patch`
 #[test_case]
 fn a_device_write_to_the_read_only_shadow_is_refused() {
     let Some(d) = crate::pci::find_block_device() else {
@@ -542,7 +542,7 @@ fn a_device_write_to_the_read_only_shadow_is_refused() {
 }
 
 /// A register read cannot leave the device's slot. The mmio arm reads `slot base + off` through
-/// the direct map, so without the bound a `Virtio` capability would read any physical address.
+/// the direct map, so without the bound a `VirtualIo` capability would read any physical address.
 #[test_case]
 fn a_register_read_outside_the_slot_is_refused() {
     assert!(register_in_slot(0));
@@ -693,7 +693,7 @@ fn a_device_nobody_bound_outlives_other_threads() {
 /// A slot whose `Version` is not 2 is refused whatever the device type, so a legacy or undefined
 /// layout never reaches the kernel's modern queue setup or a driver written for it.
 ///
-/// Falsification: replayable `kernel/falsifications/virtio.tests.a_slot_whose_version_is_not_2_is_refused.patch`
+/// Falsification: replayable `kernel/falsifications/virtual_io.tests.a_slot_whose_version_is_not_2_is_refused.patch`
 #[test_case]
 fn a_slot_whose_version_is_not_2_is_refused() {
     for version in [0, 1, 3, u32::MAX] {
@@ -714,7 +714,7 @@ fn a_slot_whose_version_is_not_2_is_refused() {
 /// Slots that are not devices stay quiet whatever their version.
 #[test_case]
 fn a_slot_without_magic_or_device_is_not_reported_as_refused() {
-    assert_eq!(classify(0, 1, DEVICE_ID_NET), SlotIdentity::NotVirtio);
+    assert_eq!(classify(0, 1, DEVICE_ID_NET), SlotIdentity::NotVirtualIo);
     assert_eq!(classify(MAGIC, 1, 0), SlotIdentity::Empty);
     assert_eq!(classify(MAGIC, 2, 0), SlotIdentity::Empty);
 }
@@ -725,7 +725,7 @@ fn a_slot_without_magic_or_device_is_not_reported_as_refused() {
 /// A real frame stands in for the common configuration block, so the test needs no PCI function:
 /// it writes a generation byte where the device keeps it and reads it back in the mmio vocabulary.
 ///
-/// Falsification: replayable `kernel/falsifications/virtio.tests.the_pci_transport_answers_the_device_configuration_generation.patch`
+/// Falsification: replayable `kernel/falsifications/virtual_io.tests.the_pci_transport_answers_the_device_configuration_generation.patch`
 #[test_case]
 fn the_pci_transport_answers_the_device_configuration_generation() {
     let common = crate::memory::alloc().expect("no frame").physical_address();
@@ -736,7 +736,7 @@ fn the_pci_transport_answers_the_device_configuration_generation() {
         device_type: DEVICE_ID_BLOCK,
         notify_addr: [0; MAXIMUM_QUEUES],
         isr: 0,
-        msix_vector: pci_configuration_space::VIRTIO_MSIX_NO_VECTOR,
+        msix_vector: pci_configuration_space::VIRTUAL_IO_MSIX_NO_VECTOR,
         device_config: None,
     };
     for generation in [0x5a_u8, 0xff, 0x01] {

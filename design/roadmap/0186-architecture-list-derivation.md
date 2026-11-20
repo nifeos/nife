@@ -81,7 +81,7 @@ gated before, so each is a commit and a green run with no follow-on work possibl
   sh, replacing four hand-written `case "$arch" in` blocks and four bare triple lists.
 - Option B's `compile_error!` arm, for the `#[cfg]` pairs with no fallback. Three lines at four
   sites (`crates/virtio`, `components/src/gpu_driver.rs`, `components/src/keyboard_driver.rs`,
-  `components/src/virtio_net_transport.rs`),
+  `components/src/virtual_io_net_transport.rs`),
   with `entropy_backend`'s backend ladder as the in-tree precedent for ending in `compile_error!`
   rather than a fallback.
 - Option C is refused, and the refusal is the valuable half. A gate comparing each
@@ -190,7 +190,7 @@ Option B, and it went further than the block priced. The block said three lines 
 It was five sites: `components/src/entropy.rs` had the same two-arm `barrier()` and, unlike the
 other four, had no `BUGS` note recording it, so it was the copy nobody knew about. Rather than five
 `compile_error!` arms, the five are now one function,
-`user_mode_runtime::virtio::virtio_ring_barrier` (name provisional), in the module where four of
+`user_mode_runtime::virtual_io::virtual_io_ring_barrier` (name provisional), in the module where four of
 those programs already get `virtio_read_reg` and its siblings. That is the higher rung: the fallback
 exists once, and a sixth driver gets the third architecture by calling the function rather than by
 remembering to write an arm.
@@ -243,13 +243,13 @@ in `kernel/src/pci.rs` is fixed.
   for `iommu::init`'s frame). `script/lint`'s clippy block for the build-mode features x86_64 does
   not compile. And `xtask`'s `icount` (no x86_64 leg, reason in its source). Not checked by any
   mechanism: nothing stops a new gate spelling its own list.
-- **Recorded.** `virtio_ring_barrier` is a provisional name. It is a new public function, which
-  is an architect's call; it sits in `user_mode_runtime::virtio` and carries that module's `virtio_`
+- **Recorded.** `virtual_io_ring_barrier` is a provisional name. It is a new public function, which
+  is an architect's call; it sits in `user_mode_runtime::virtual_io` and carries that module's `virtio_`
   prefix, which is the argument for it, and nothing about the fix depends on the spelling.
 - **Recorded.** The rung-1 limit this milestone's own note states still holds: deriving the list
   removes the copy, not the incompleteness. Nothing stops a new gate writing
   `for arch in aarch64 riscv64`, and `deny.toml` cannot read the derivation at all. The
-  `compile_error!` in `virtio_ring_barrier` is the one place in this territory where a missing
+  `compile_error!` in `virtual_io_ring_barrier` is the one place in this territory where a missing
   architecture now fails to build rather than failing to order.
 - **Milestone 187.** Finding 8, the unaudited x86_64 arch tree, is milestone 187 (read the x86_64
   arch tree through the lens the first arch audit used), which was minted for it.

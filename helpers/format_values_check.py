@@ -281,7 +281,7 @@ def selftest():
     word = ('pub const ABI_VERSION: u32 = 1;\n/// The word\'s offset.\n///\n/// Name: provisional.\n'
             '#[doc(alias = "w")]\npub const {}: u64 = 4096 - 8;\n')
     fails('a renamed constant with its value, type and doc passes',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW'))}, False)
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW'))}, False)
     named = ('pub const ABI_VERSION: u32 = 1;\n/// `invoke(c, {0}, _)` makes one object.\n{1}'
              'pub const {0}: u64 = 2;\n')
     fails('a renamed constant whose doc names it, gaining a Name: block, passes',
@@ -302,13 +302,13 @@ def selftest():
                                      siblings.format('NEW_').replace('[`NEW_EXIT`]', '[`OTHER`]'))},
           True)
     fails('a renamed constant whose value changed fails',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW').replace('- 8', '- 16'))}, True)
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW').replace('- 8', '- 16'))}, True)
     fails('a renamed constant whose type changed fails',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW').replace('u64', 'usize'))}, True)
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW').replace('u64', 'usize'))}, True)
     fails('a deleted constant fails',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'), 'pub const ABI_VERSION: u32 = 1;\n')}, True)
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), 'pub const ABI_VERSION: u32 = 1;\n')}, True)
     fails('a value reused under a new name for a different meaning fails',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'),
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'),
                                         word.format('NEW').replace("word's offset", 'ring length'))}, True)
     fails('a value moved onto a name that already held another fails',
           {'crates/abi/src/lib.rs': ('pub const A: u64 = 5;\npub const B: u64 = 6;\n',
@@ -328,7 +328,7 @@ def selftest():
     fails('a renamed magic with its value passes',
           {'crates/x/src/lib.rs': (magic_old, magic_old.replace('MAGIC', 'FORMAT_MAGIC'))}, False)
     fails('a rename with a version bump still passes',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'),
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'),
                                         word.format('NEW').replace('VERSION: u32 = 1', 'VERSION: u32 = 2'))},
           False)
 

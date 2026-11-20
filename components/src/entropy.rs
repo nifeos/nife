@@ -29,7 +29,7 @@
 
 use entropy_contract as proto;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
-use user_mode_runtime::virtio::virtio_ring_barrier;
+use user_mode_runtime::virtual_io::virtual_io_ring_barrier;
 use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
 };
@@ -40,8 +40,8 @@ const REQ: u64 = 0;
 /// Slot 1, the device's `Interrupt`.
 #[doc(alias = "irq")]
 const INTERRUPT: u64 = 1;
-/// Slot 2, the confined `Virtio` transport.
-const VIRTIO: u64 = 2;
+/// Slot 2, the confined `VirtualIo` transport.
+const VIRTUAL_IO: u64 = 2;
 /// Slot 3, a readiness endpoint (WRITE).
 const READY: u64 = 3;
 
@@ -49,10 +49,10 @@ const READY: u64 = 3;
 /// `::start_instruction`. Not a wire contract between two *user* programs (rule 7 does not apply):
 /// it is the kernel's own spawn-argument convention with the one program it spawns, the same
 /// footing `DMA_VA` below is already on.
-const MODE_VIRTIO: u64 = 0;
+const MODE_VIRTUAL_IO: u64 = 0;
 const MODE_INSTRUCTION: u64 = 1;
 
-/// Capability slots for the instruction backend: two, not four. No `Interrupt`, no `Virtio`, no DMA
+/// Capability slots for the instruction backend: two, not four. No `Interrupt`, no `VirtualIo`, no DMA
 /// mapping at all, because `RNDRRS`/`RDSEED` need none of them. Smaller authority than the virtio
 /// backend's, which is itself already minimal.
 const I_REQ: u64 = 0;
@@ -89,7 +89,7 @@ const VIRTQ_DESC_F_WRITE: u16 = 2;
 /// The virtio device type this driver will talk to. Checked, not assumed: the display driver found
 /// the PCI transport answering every driver's `DeviceID` read with a hardcoded 2, and it found it
 /// because it was the first driver that looked.
-const VIRTIO_ID_ENTROPY: u32 = 4;
+const VIRTUAL_IO_ID_ENTROPY: u32 = 4;
 
 /// virtio-rng has exactly one virtqueue, the request queue. Nothing rides the second slot of the
 /// two-queue confinement ceiling here.
@@ -159,11 +159,11 @@ fn r32(off: u64) -> u32 {
 }
 
 fn mr(off: u64) -> u32 {
-    user_mode_runtime::virtio::read_register(VIRTIO, off) as u32
+    user_mode_runtime::virtual_io::read_register(VIRTUAL_IO, off) as u32
 }
 
 fn mw(off: u64, v: u32) {
-    user_mode_runtime::virtio::write_register(VIRTIO, off, v as u64);
+    user_mode_runtime::virtual_io::write_register(VIRTUAL_IO, off, v as u64);
 }
 
 fn die(code: u64) -> ! {
@@ -209,14 +209,14 @@ impl Pool {
     fn request(&mut self) -> u64 {
         write_desc(self.direct_memory_access_phys + POOL_OFF, POOL_LEN as u32);
         w16(Q_AVAIL + 4 + (self.avail % QSIZE) as u64 * 2, 0); // ring[idx] = descriptor head 0
-        virtio_ring_barrier(); // the descriptor must be visible before the index that advertises it
+        virtual_io_ring_barrier(); // the descriptor must be visible before the index that advertises it
         self.avail = self.avail.wrapping_add(1);
         w16(Q_AVAIL + 2, self.avail);
-        virtio_ring_barrier(); // and the index before the doorbell
+        virtual_io_ring_barrier(); // and the index before the doorbell
 
         // The kernel walks the descriptor we just published, refuses it if it leaves our region,
         // and only then rings the device.
-        if user_mode_runtime::virtio::notify(VIRTIO, RNG_Q) < 0 {
+        if user_mode_runtime::virtual_io::notify(VIRTUAL_IO, RNG_Q) < 0 {
             return 0; // the kernel refused our own in-region descriptor: a bug here, not a dry device
         }
 
@@ -230,7 +230,7 @@ impl Pool {
         // is bounded so a silent device is an honest "no entropy" rather than a hang.
         let mut len = 0;
         for _ in 0..WAIT_WAKEUPS {
-            virtio_ring_barrier();
+            virtual_io_ring_barrier();
             if r16(Q_USED + 2) != self.seen {
                 // used-ring element: { u32 id; u32 len }. `len` is the device saying how many
                 // bytes it actually wrote, and it is allowed to be short.
@@ -310,17 +310,20 @@ fn start(mode: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
         // No virtio device, no DMA page, no interrupt: the kernel would not have spawned this mode
         // unless it already confirmed the instruction's feature bit (aarch64's `ID_AA64ISAR0_EL1`,
         // checked at EL1 because EL0 cannot read it). This process trusts that the same way it
-        // trusts a granted `Virtio` capability to name a real device.
+        // trusts a granted `VirtualIo` capability to name a real device.
         serve_instruction();
     }
-    debug_assert_eq!(mode, MODE_VIRTIO, "entropy: unknown spawn mode {mode:#x}");
+    debug_assert_eq!(
+        mode, MODE_VIRTUAL_IO,
+        "entropy: unknown spawn mode {mode:#x}"
+    );
     if mr(MAGIC) != 0x7472_6976 {
         die(E_MAGIC);
     }
     // **Check what we are talking to**, for the reason the keyboard driver records: a transport
     // that answered every `DeviceID` read with a hardcoded number went unnoticed until a driver
     // looked. An entropy service that programmed a disk's queue would be worse than most.
-    if mr(DEVICE_ID) != VIRTIO_ID_ENTROPY {
+    if mr(DEVICE_ID) != VIRTUAL_IO_ID_ENTROPY {
         die(E_DEVICE_ID);
     }
 
@@ -346,7 +349,7 @@ fn start(mode: u64, direct_memory_access_phys: u64, _arg2: u64) -> ! {
 
     // The kernel programs the queue's ring addresses; this service never writes a queue-address
     // register, which is the §18 seam and the reason the shadow ring can be trusted.
-    if user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, RNG_Q) != 0 {
+    if user_mode_runtime::virtual_io::setup_queue(VIRTUAL_IO, QSIZE as u64, RNG_Q) != 0 {
         die(E_QUEUE);
     }
     mw(

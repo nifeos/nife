@@ -20,13 +20,13 @@ each bus at most once, so a bridge that names its own bus or a loop terminates.
 ## EXAMPLES
 
 ```rust
-use pci_configuration_space::{Bdf, VENDOR_ID_REGISTER, VIRTIO_VENDOR, enumerate};
+use pci_configuration_space::{Bdf, VENDOR_ID_REGISTER, VIRTUAL_IO_VENDOR, enumerate};
 
 // A configuration space with exactly one function: a modern virtio block device at 00:01.0.
 // Every other slot reads 0xffff, the bus's way of saying nobody is home.
 let mut read32 = |bdf: Bdf, offset: u64| -> u32 {
     if bdf == (Bdf { bus: 0, device: 1, function: 0 }) && offset == VENDOR_ID_REGISTER {
-        (0x1042 << 16) | VIRTIO_VENDOR as u32
+        (0x1042 << 16) | VIRTUAL_IO_VENDOR as u32
     } else if offset == VENDOR_ID_REGISTER {
         0xffff_ffff
     } else {
@@ -65,7 +65,7 @@ CPU-minutes without finishing and was not kept.
   restored afterwards. A register whose writable bits are not contiguous, whose base plus size
   overflows, or whose 64-bit upper half would fall outside the header is refused with a
   `BarRefusal` rather than sized.
-- `virtio_capabilities`, `msi_capability`, `msix_capability`: the capability list, decoded.
+- `virtual_io_capabilities`, `msi_capability`, `msix_capability`: the capability list, decoded.
 - `intx_interrupt_number`: the legacy interrupt swizzle of QEMU's `virt` boards.
 - `memory_window_32_bit`: the 32-bit non-prefetchable window from a PCI host bridge's `ranges`
   property.

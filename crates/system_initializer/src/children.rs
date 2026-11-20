@@ -155,7 +155,7 @@ const RECLAIM_ATTEMPTS: usize = 64;
 /// name server)`: the full-rights endpoint its clients `CALL`, which this process keeps, the IPv4
 /// address `net_stack` reported, big-endian in the low 32 bits, and the lease's name server in
 /// `socket_contract::lease`'s encoding. The endowment is
-/// `kernel::user::virtio_service::wire_net_server`'s, slot for slot, with
+/// `kernel::user::virtual_io_service::wire_net_server`'s, slot for slot, with
 /// `socket_contract::NO_PORT_GRANT`. The caller deletes the trio; this deletes everything else it
 /// made but the endpoint. Failures trap: one means the boot's arithmetic is wrong.
 pub(super) fn build_net_stack(
@@ -163,10 +163,10 @@ pub(super) fn build_net_stack(
     program: &static_elf::Elf,
     g: &BootEndowment,
 ) -> (u64, u64, u64) {
-    let mapped = map_page_frame(g.virtio_net_dma, NET_DMA_PEEK_VA, true, ut);
+    let mapped = map_page_frame(g.virtual_io_net_dma, NET_DMA_PEEK_VA, true, ut);
     must_ok(mapped);
     // SAFETY: just mapped read/write, one page; the offset is inside it and outside
-    // `virtio_net_transport`'s rings and buffers (see
+    // `virtual_io_net_transport`'s rings and buffers (see
     // `kernel::user::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`).
     let direct_memory_access_phys = unsafe {
         core::ptr::read_unaligned(
@@ -193,8 +193,8 @@ pub(super) fn build_net_stack(
         &ChildEndowment {
             capabilities: &[
                 (report, abi::rights::WRITE),
-                (g.virtio_net_interrupt, abi::rights::READ),
-                (g.virtio_net, abi::rights::WRITE),
+                (g.virtual_io_net_interrupt, abi::rights::READ),
+                (g.virtual_io_net, abi::rights::WRITE),
                 (budget, abi::rights::SPEND_ONLY),
                 (stack, abi::rights::READ),
             ],
@@ -214,7 +214,7 @@ pub(super) fn build_net_stack(
             ],
             maps: &[(
                 NET_DMA_VA,
-                g.virtio_net_dma,
+                g.virtual_io_net_dma,
                 abi::address_space::MAP_READ_WRITE,
             )],
             stack_pages: NET_STACK_STACK_PAGES,
@@ -408,7 +408,7 @@ const GRAPHICAL_MAP_BUDGET_PAGES: u64 = 24;
 const KBD_DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// `keyboard_driver.rs`'s own `MODE_DIRECT`: a fixed `CALL` to the terminal endpoint instead of a
-/// compositor's ring and doorbell (milestone 177). [`RNG_MODE_VIRTIO`]'s reasoning.
+/// compositor's ring and doorbell (milestone 177). [`RNG_MODE_VIRTUAL_IO`]'s reasoning.
 const KBD_MODE_DIRECT: u64 = 1;
 
 /// Where a `graphical_terminal` session's program writes its screen text and reads its lines.
@@ -573,7 +573,7 @@ fn start_gpu_driver(
     };
     capability_delete(budget);
     // Role 0, the honest driver. No physical address: the run's first page carries it
-    // (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`), and this
+    // (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`), and this
     // process could not supply one anyway.
     if !start_child(driver, 0, 0, 0) {
         drop_capabilities(&[display, driver_report]);

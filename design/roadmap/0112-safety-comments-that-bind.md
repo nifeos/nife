@@ -20,7 +20,7 @@ stricter ISA. `switch_user_root` is `unsafe fn` on both ISAs
 (in `kernel/src/arch/aarch64/mmu.rs` and `kernel/src/arch/riscv64/mmu.rs`). `stack::paint` is
 `unsafe fn` (in `kernel/src/stack.rs`), and its sibling `high_water` went with it. `virtio::pread`
 stayed a safe fn on purpose, with the argument written where a reader meets it
-(`pread` in `kernel/src/virtio.rs`, "Safe fns over a module invariant"). It is private, all twenty call sites
+(`pread` in `kernel/src/virtual_io.rs`, "Safe fns over a module invariant"). It is private, all twenty call sites
 are one `impl Transport` block, and the compiler closes the caller set. So the obligation really is
 discharged by the module rather than onto nobody.
 
@@ -44,7 +44,7 @@ no undocumented block for either to fire on.
 
 | Site | The comment's claim |
 |---|---|
-| `pread` in `kernel/src/virtio.rs` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
+| `pread` in `kernel/src/virtual_io.rs` | "the caller passes addresses inside a device-mapped BAR or mmio window" |
 | `paint` in `kernel/src/stack.rs` | "the caller hands us a mapped, unused stack region" (`#[cfg(test)]`, so test builds only) |
 | `switch_user_root` in `kernel/src/arch/aarch64/mmu.rs` | "the caller passes either a live `AddressSpace`'s composed value or ..." |
 | `write_satp` in `kernel/src/arch/riscv64/mmu.rs` | "the caller guarantees `satp` names a well-formed Sv39 root" |
@@ -95,7 +95,7 @@ tree), not an assumption to start from.
 ## Follow-on
 
 - **Refused.** Converting `virtio::pread` to an `unsafe fn`, the fourth of the four sites. The
-  argument is written where a reader meets it, at `pread` in `kernel/src/virtio.rs` under "Why these two
+  argument is written where a reader meets it, at `pread` in `kernel/src/virtual_io.rs` under "Why these two
   stay safe fns". It is private, all twenty call sites sit in one `impl Transport` block, and the
   compiler closes the caller set. So the obligation is discharged by the module rather than onto
   nobody. That is the case the other three could not make.

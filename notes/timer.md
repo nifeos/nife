@@ -91,7 +91,7 @@ Nothing in milestone 106 waits on the answer. Each of those has a spawner that h
 
 `SYSCALL_EXIT` and `SYSCALL_YIELD` are authority over yourself with no capability. `abi::rendezvous::NO_CAPABILITY`
 is a sentinel in a slot argument. Every capability a process holds arrived from its spawner, and
-`kernel/src/user/virtio_service.rs` now binds `net_stack`'s notification that way.
+`kernel/src/user/virtual_io_service.rs` now binds `net_stack`'s notification that way.
 
 ### Prior art, from memory and marked as such
 

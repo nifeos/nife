@@ -63,7 +63,7 @@ cancel, a consumer would re-arm to a far deadline, which is a cancel spelled wor
 | the network time client's retry gap | `yield` for 2 ms | one tick asleep |
 | `swish`'s `^C` watch | `yield` between looks | 10 ms asleep between looks |
 
-`net_stack`'s notification is made and bound by its spawner (`kernel/src/user/virtio_service.rs`),
+`net_stack`'s notification is made and bound by its spawner (`kernel/src/user/virtual_io_service.rs`),
 because a running thread cannot bind itself. See the proposal below.
 
 ### Confirmed, and still provisional

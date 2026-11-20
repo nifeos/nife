@@ -23,8 +23,8 @@ Verified firsthand, on a fresh shallow clone of `nifeos/nife` at `cf1328af6` and
   the section numbers   below, and it marks them unverified.
 - Every caller: `components/Cargo.toml` is the only manifest that depends on the crate, and
   `components/src/block_driver.rs` is the only file that calls it.
-- The five other virtio drivers in the tree (`components/src/virtio_net_transport.rs`,
-  `keyboard_driver.rs`, `gpu_driver.rs`, `entropy.rs`, and `kernel/src/virtio.rs`), for what they
+- The five other virtio drivers in the tree (`components/src/virtual_io_net_transport.rs`,
+  `keyboard_driver.rs`, `gpu_driver.rs`, `entropy.rs`, and `kernel/src/virtual_io.rs`), for what they
   share with this crate: a `grep` for the magic value and for `S_FEATURES_OK` finds the same
   handshake constants in all six places.
 - Download figures for the prior-art crates, from the crates.io API at the time of the review.
@@ -33,7 +33,7 @@ Verified firsthand, on a fresh shallow clone of `nifeos/nife` at `cf1328af6` and
   that the crate compiles for the host but cannot run a line without a kernel, so a census would
   measure nothing.
 - Not run: the QEMU suite. `system_tests/src/user/block_driver_tests.rs` and
-  `riscv_virtio_tests.rs` exercise the roles. The review read the entry points and did not boot
+  `riscv_virtual_io_tests.rs` exercise the roles. The review read the entry points and did not boot
   them.
 - Not run: the template's workflows, because no repository exists.
 - Not run: the publish rehearsal, because the crate carries `publish = false`.

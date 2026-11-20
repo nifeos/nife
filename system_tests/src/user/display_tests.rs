@@ -350,7 +350,7 @@ fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
 /// the seam of DECISIONS §33 (the compositor's authority is memory, not messages)
 /// (notes/glyphs/terminal-and-proof.md).
 #[test_case]
-fn a_keystroke_from_a_virtio_keyboard_becomes_a_terminal_byte() {
+fn a_keystroke_from_a_virtual_io_keyboard_becomes_a_terminal_byte() {
     let keyboard_driver =
         program("keyboard_driver").expect("no keyboard_driver program in the initial ramdisk");
     let Some(mut w) = keyboard_service::start(keyboard_driver) else {

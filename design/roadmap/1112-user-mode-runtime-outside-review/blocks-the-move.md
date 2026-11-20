@@ -27,7 +27,7 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
    Door: two-way now (every caller already uses an integer type); one-way after the first tag,
    because narrowing a generic bound is a breaking change. Effort: S.
 
-2. `doorbell_barrier` and `virtio_ring_barrier` tell the compiler they are not barriers on
+2. `doorbell_barrier` and `virtual_io_ring_barrier` tell the compiler they are not barriers on
    aarch64 and `x86_64`.
    Finding: the `dmb sy`, `dmb ish` and `mfence` arms carry `options(nomem)`. The Rust reference
    says of `nomem`: "The assembly code does not read from or write to any memory accessible

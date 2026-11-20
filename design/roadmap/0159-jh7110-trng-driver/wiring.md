@@ -38,7 +38,7 @@ non-virtio device.
 - The authority, which is the risk-6 claim. The driver is granted two rendezvous capabilities (a
   request endpoint it RECVs on, a readiness endpoint it SENDs once) and one page of device memory:
   the TRNG's register block, device-typed. There is no DMA page (the device writes nothing to
-  memory), no `Irq` capability (it polls) and no `Virtio` capability (there is no transport). The
+  memory), no `Irq` capability (it polls) and no `VirtualIo` capability (there is no transport). The
   binding's `reg` window is `0x4000` and the spawner maps `0x1000` of it, because
   `jh7110_trng::regs` reaches only `0x68`. An earlier draft of the program named a third slot for a
   `DeviceFrame` capability. The spawner that exists grants the page as a `Mapping`, so the slot

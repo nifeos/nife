@@ -2115,7 +2115,7 @@ notes/session-identity.md	9
 notes/shared-page-audit.md	17
 notes/shared-page-audit/candidates-cleared.md	10
 notes/shared-page-audit/compositor-findings.md	7
-notes/shared-page-audit/console-and-virtio-findings.md	9
+notes/shared-page-audit/console-and-virtual-io-findings.md	9
 notes/shared-page-audit/filesystem-findings.md	10
 notes/shell-line-editing.md	17
 notes/shell-navigation.md	24
@@ -2277,7 +2277,7 @@ notes/verus/what-verus-is.md	12
 notes/video-terminal.md	22
 notes/video-terminal/handoff-and-component.md	8
 notes/video-terminal/palette-keymap-and-script.md	6
-notes/virtio.md	13
+notes/virtual-io.md	13
 notes/virtualization.md	5
 notes/visionfive2.md	14
 notes/visionfive2/README.md	1

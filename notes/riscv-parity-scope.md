@@ -69,7 +69,7 @@ property". Four assertions were broken on purpose
 and went red on both ISAs. What stays aarch64-only, and why, is written at each test. The full
 record is in [riscv-parity-scope/user-tests-port.md](riscv-parity-scope/user-tests-port.md).
 
-### Open gap: `tests` and `riscv_virtio_tests` overlap by 24 tests
+### Open gap: `tests` and `riscv_virtual_io_tests` overlap by 24 tests
 
 The 24 are gated to aarch64 only because the twin exists. The overlap was measured: nine bodies are
 byte-identical and no behavior diverges
@@ -100,7 +100,7 @@ PCIe transport keeps its own justification (notes/pcie-transport-scope.md: the d
 real hardware) but is not a parity-C prerequisite.
 
 Over mmio: the `blk` dedicated binary (the shared
-`virtio` module behind the 19f skeleton), `virtio_service` wiring unchanged, and the three disk
+`virtio` module behind the 19f skeleton), `virtual_io_service` wiring unchanged, and the three disk
 tests (read, DMA-escape attacker, indirect attacker) green on riscv. The PLIC is programmed for
 the boot hart's own context, not a hardcoded context 1, because `sie.SEIE` is set on whatever hart
 OpenSBI elects.
@@ -181,7 +181,7 @@ interrupt. A twin would share that one source between the builder's UART capabil
 delegated one. It would then prove delivery through whichever route was bound last, not through the
 delegated capability, which is the whole claim. On RISC-V the property (an interrupt arriving as a
 message through a delegated Interrupt cap) is proved by
-`riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`, which asserts that
+`riscv_virtual_io_tests::a_userspace_driver_reads_a_file_from_a_virtual_io_disk`, which asserts that
 `ROUTED_INTERRUPTS` rises while a userspace driver waits on its own Interrupt cap, and by
 `sched::tests::an_interrupt_becomes_a_message`.
 

@@ -36,7 +36,7 @@ pub(crate) const OWN_SPACE: u64 = socket_contract::stack_slots::OWN_ADDRESS_SPAC
 ///
 /// Paired with the spawn service's `NET_SERVER_BUDGET_PAGES = 128`: the 32 pages between them pay
 /// for the heap's page tables and for mapping clients' shared frames, and the budget is small
-/// because no `net_stack` region is ever reclaimed (`kernel/src/user/virtio_service.rs` has the
+/// because no `net_stack` region is ever reclaimed (`kernel/src/user/virtual_io_service.rs` has the
 /// measurement). If either number moves, both must.
 pub(crate) const HEAP_MAXIMUM: u64 = 96 * 4096;
 
@@ -58,7 +58,7 @@ user_mode_runtime::program_entry!(start);
 /// ignores it.
 fn start(role: u64, direct_memory_access_phys: u64, a2: u64) -> ! {
     if role == 0 {
-        let dev = Nic::Virtio(virtio_net_transport::VirtioNet::bring_up(
+        let dev = Nic::VirtualIo(virtual_io_net_transport::VirtualIoNet::bring_up(
             direct_memory_access_phys,
         ));
         server(dev, a2)

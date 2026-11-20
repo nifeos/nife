@@ -33,7 +33,7 @@ matters, because it says the narrative is not where the bytes are:
 |---|---|
 | `console_service::start` + `spawn_client` and their closures | ~3,040 |
 | the two never-yielding spinner closures in `kernel_main` | ~3,336 |
-| `virtio_service::wire` and its closures | ~1,692 |
+| `virtual_io_service::wire` and its closures | ~1,692 |
 | `memory_region_service::start` and its closures | ~1,276 |
 | `kernel_main` itself (the driving code and the format strings) | +1,460 |
 | `pci::find_block_device` | 436 |

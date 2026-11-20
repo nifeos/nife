@@ -20,8 +20,8 @@ needed for that machine's first light.
 ## What is true today
 
 Every riscv64 machine nife has run on keeps DMA coherent with the caches. The DMA write barrier in
-`kernel/src/arch/riscv64/mod.rs` is a plain `fence`, and so is `virtio_ring_barrier` in
-`crates/user_mode_runtime/src/virtio.rs`. Nothing on riscv64 cleans or invalidates a data cache.
+`kernel/src/arch/riscv64/mod.rs` is a plain `fence`, and so is `virtual_io_ring_barrier` in
+`crates/user_mode_runtime/src/virtual_io.rs`. Nothing on riscv64 cleans or invalidates a data cache.
 
 The TH1520 is the first machine where that is wrong. Its `/soc` node states `dma-noncoherent`
 (Linux `th1520.dtsi` at `165768bb7`), and its C910 cores lack Zicbom. Linux uses T-Head's own

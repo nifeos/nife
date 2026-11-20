@@ -13,7 +13,7 @@ translation switched off rather than pointed somewhere wrong.
 
 Unlike the SMMU's falsifications, **this one is probably not invisible to the tests**: on
 QEMU's `virt` board every root is wrong under it, so the boot-time confinement test in
-`kernel/src/virtio.rs` would most likely fail too. That was reasoned, not run (no riscv64
+`kernel/src/virtual_io.rs` would most likely fail too. That was reasoned, not run (no riscv64
 QEMU boot was taken for this record). The harness is the one that says why.
 
 Expected to fail: `assert!(dc[3] >> 60 == 8, ...)` (MODE, for an unconstrained root) and

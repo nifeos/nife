@@ -1,6 +1,6 @@
 # Shared-page audit: findings 3 and 6, the console and two virtio drivers
 
-*Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
+*Name: ratified 2026-11-20, with `virtio` spelled `virtual_io` as every name in the tree spells it.*
 
 An appendix to [notes/shared-page-audit.md](../shared-page-audit.md), the tree's second security
 audit (2026-08-04). The parent states the lens and its four questions: (a) the window, (b) what can
@@ -53,7 +53,7 @@ Not a double fetch. It is what the enumeration the lens required turned up: to a
 checked twice" you must first list every value read from a page a hostile party writes, and two of
 those values are not checked at all.
 
-(a) The window. `components/src/virtio_net_transport.rs`'s `rx_take` and `components/src/keyboard_driver.rs`'s drain loop both
+(a) The window. `components/src/virtual_io_net_transport.rs`'s `rx_take` and `components/src/keyboard_driver.rs`'s drain loop both
 take a used-ring element and use its 32-bit `id` as a buffer index:
 
 ```rust

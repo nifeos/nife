@@ -64,7 +64,7 @@ crate's own reasons.
   three capability walks are one shared walk with one bound. A Kani harness of `walk` on a two-bus
   machine ran over twelve CPU-minutes without a result and is not kept; the scan loops stay bounded
   by literals and the bus queue, the part a device controls, stays proved.
-- P2, `virtio_capabilities` ignores `cap_len`: Done,
+- P2, `virtual_io_capabilities` ignores `cap_len`: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2, `intx_interrupt_number` precondition: Open. The doc comment states no bus-0 precondition,
   `intx_pin_through_bridge` does not exist, and `kernel/src/pci.rs` has no BUGS entry for it.
