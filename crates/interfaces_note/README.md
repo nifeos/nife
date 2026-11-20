@@ -11,14 +11,14 @@ version. The host that spawns the program decodes the note and refuses a program
 version of an interface the host serves at another version. `no_std`, no allocator, no dependencies.
 
 The note is a compatibility check and not an authority check. A program with no note declares
-nothing and is spawned unchecked.
+nothing, and the host spawns it without a check.
 
 ## The note
 
 The note has type `4` (`INTERFACES`). Its descriptor is little-endian: a version word
 (`INTERFACES_VERSION`, 1), a count word, then `count` records of `INTERFACE_RECORD_BYTES` (12)
 bytes. Each record is an interface id (`u64`, strictly ascending) and that interface's version
-(`u32`). One list has one encoding. A count past `MAXIMUM_INTERFACES` (64) is refused. This
+(`u32`). One list has one encoding. The decoder refuses a count past `MAXIMUM_INTERFACES` (64). This
 crate's own interface id is 21 (`INTERFACE_ID`).
 
 - Write with `encode_interfaces`, which is `const` and refuses an unsorted or repeated list, so in
@@ -63,7 +63,7 @@ assert_eq!(
 - The note's owner string names the operating system that reads it, and the crate repeats it as a
   constant so that it depends on nothing.
 
-## What is proven
+## What the proofs cover
 
 Three Kani harnesses in `src/lib.rs` prove the codec. Each has a falsification patch in
 `falsifications/` that breaks the code under proof and turns the harness red.
@@ -129,7 +129,7 @@ Once a pre-release tag exists, use `tag = "<that tag>"` in place of `rev`.
 - A program names its interfaces by hand in `carry_interfaces!`, although each version comes from
   the interface crate's constant. Deriving the list from the dependency graph at package build is
   not built.
-- A program with no note declares nothing and is spawned unchecked.
+- A program with no note declares nothing, and the host spawns it without a check.
 
 ## Minimum Rust version
 
