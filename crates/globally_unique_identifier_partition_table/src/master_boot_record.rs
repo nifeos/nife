@@ -44,9 +44,9 @@ pub fn validate(block: &[u8], block_count: u64) -> Result<(), Error> {
     if !is_block_size_ok(block.len()) {
         return Err(Error::BlockSize(block.len()));
     }
-    let sector: &[u8; SECTOR_BYTES] = block[..SECTOR_BYTES]
-        .try_into()
-        .map_err(|_| Error::BlockSize(block.len()))?;
+    let sector = block
+        .first_chunk::<SECTOR_BYTES>()
+        .ok_or(Error::BlockSize(block.len()))?;
     ::master_boot_record::protective::validate(sector, block_count).map_err(Error::MasterBootRecord)
 }
 
@@ -59,7 +59,7 @@ fn first_sector(block: &mut [u8]) -> Result<&mut [u8; SECTOR_BYTES], Error> {
     if !is_block_size_ok(len) {
         return Err(Error::BlockSize(len));
     }
-    (&mut block[..SECTOR_BYTES])
-        .try_into()
-        .map_err(|_| Error::BlockSize(len))
+    block
+        .first_chunk_mut::<SECTOR_BYTES>()
+        .ok_or(Error::BlockSize(len))
 }

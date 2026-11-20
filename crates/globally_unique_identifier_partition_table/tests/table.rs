@@ -401,6 +401,27 @@ fn two_equal_stray_bytes_after_the_header_are_refused() {
     assert_eq!(Header::decode(&block).err(), Some(Error::BlockTailNotZero));
 }
 
+/// A 4096-byte block keeps the record in its first 512 bytes and zeroes the rest, and a block size
+/// the crate does not accept is refused by both calls.
+#[test]
+fn the_protective_mbr_fits_any_accepted_block_and_refuses_the_rest() {
+    let mut big = [0xA5u8; 4096];
+    master_boot_record::write(&mut big, BLOCKS).unwrap();
+    master_boot_record::validate(&big, BLOCKS).unwrap();
+    assert_eq!(big[510..512], [0x55, 0xAA]);
+    assert!(big[512..].iter().all(|&b| b == 0));
+
+    let mut odd = [0u8; 1000];
+    assert_eq!(
+        master_boot_record::write(&mut odd, BLOCKS),
+        Err(Error::BlockSize(1000))
+    );
+    assert_eq!(
+        master_boot_record::validate(&odd, BLOCKS),
+        Err(Error::BlockSize(1000))
+    );
+}
+
 #[test]
 fn the_protective_mbr_round_trips_and_saturates() {
     let mut block = [0u8; BLOCK];
