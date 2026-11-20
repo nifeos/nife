@@ -856,12 +856,17 @@ impl<D: Disk> Server<D> {
         // `subtree_scope::walk` takes bytes rather than a `NameCopy`: it is a shared crate and cannot
         // name this server's type. A deliberate exception to the typed boundary, and safe only because
         // this is its one caller here and the bytes are the checked copy's, never the window's.
-        let (ptr, rights, last) =
-            subtree_scope::walk(ptr, rights, path.as_bytes(), requested_rights, |dir, name| {
+        let (ptr, rights, last) = subtree_scope::walk(
+            ptr,
+            rights,
+            path.as_bytes(),
+            requested_rights,
+            |dir, name| {
                 let name = core::str::from_utf8(name).map_err(|_| Fault(Error::new(EINVAL)))?;
                 self.lookup(dir, name).map_err(Fault)
-            })
-            .map_err(|Fault(e)| e)?;
+            },
+        )
+        .map_err(|Fault(e)| e)?;
         // `last` is a suffix of `path`, which is UTF-8, cut at a `/`.
         Ok((ptr, rights, &path[path.len() - last.len()..]))
     }
