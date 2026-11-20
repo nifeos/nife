@@ -96,7 +96,6 @@ members = [
     "crates/terminal_contract",
     "crates/loaded_image_check",
     "crates/documentation",
-    "crates/domain_name_system",
     "crates/domain_name_resolution_contract",
     "crates/measured_boot",
     "crates/capability_manifest_note",

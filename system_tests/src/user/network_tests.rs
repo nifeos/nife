@@ -296,7 +296,7 @@ fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
 // Gated here rather than run twice: that module drives the same property on the other instruction
 // set through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
-/// Falsification: replayable `system_tests/falsifications/user.network_tests.a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers.patch`
+/// Falsification: attested 2026-10-04. On aarch64, with `Query::accept` taking every class-IN A record in the answer and not only those owned by the end of the canonical name chain, the gating assertion failed with client code 0xe14f (case 4, `poisoned.nife.test`, a wrong verdict). The defect was a patch to the `domain_name_system` crate, which has left the tree, so nothing here replays it.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers() {

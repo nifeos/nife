@@ -458,7 +458,7 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract_pci() {
 /// A host name resolves through the socket contract on the second ISA, and the lies do not
 /// (milestone 384 (in a capability system the resolver is a grant)). The first half gates and the
 /// real-DNS half does not, for the aarch64 twin's reasons.
-/// Falsification: replayable `system_tests/falsifications/user.riscv_virtio_tests.a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers.patch`
+/// Falsification: attested 2026-10-04. On riscv64, with `Query::accept` taking every class-IN A record in the answer and not only those owned by the end of the canonical name chain, the gating assertion failed with client code 0xe14f (case 4, `poisoned.nife.test`, a wrong verdict). The defect was a patch to the `domain_name_system` crate, which has left the tree, so nothing here replays it.
 #[test_case]
 fn a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers() {
     let Some((report, net)) = virtio_service::start_net_stack(
