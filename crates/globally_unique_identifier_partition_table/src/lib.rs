@@ -49,10 +49,10 @@ use uuid::Uuid;
 pub const MINIMUM_BLOCK_BYTES: usize = 512;
 
 /// The format's version: the generation of this crate's reading and writing of the two on-disk
-/// tables it implements, the GUID partition table and the MBR. The tables' own identities are the
-/// specifications' (`header::REVISION`, the `EFI PART` and `0x55AA` signatures); this constant is
-/// a declaration, so assembly can check what a package was built against. Nothing checks it at run
-/// time.
+/// tables it implements, the GUID partition table and the master boot record (MBR). The tables' own
+/// identities are the specifications' (`header::REVISION`, the `EFI PART` and `0x55AA` signatures);
+/// this constant is a declaration, so assembly can check what a package was built against. Nothing
+/// checks it at run time.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
@@ -94,11 +94,9 @@ pub const fn is_block_size_ok(len: usize) -> bool {
 }
 
 /// The protective MBR at LBA 0: one classic MBR record of type `0xEE` covering the whole disk, so
-/// a tool that predates GPT sees a disk entirely spoken for and does not offer to initialise it.
-///
-/// Only the two fields that do the protecting are checked (it starts at LBA 1 and covers the disk).
-/// The CHS fields are vestigial: `sgdisk` writes the real cylinder/head/sector of the last block,
-/// macOS writes `FE FF FF`, and both are correct because nothing reads them.
+/// a tool that predates GPT sees a disk entirely spoken for and does not offer to initialize it.
+/// The record and its check are [`::master_boot_record::protective`]'s; this module fits them to a
+/// block of any accepted size.
 ///
 /// Name: provisional.
 #[doc(alias = "MBR")]

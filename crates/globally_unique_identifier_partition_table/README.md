@@ -5,8 +5,9 @@ Interface (UEFI) 2.10, section 5.3, the GPT (GUID
 Partition Table): reading one, writing one, and refusing a bad one. The three letters "GPT" are the
 UEFI disk format and have nothing to do with language models. `no_std`, no allocation, no `unsafe`,
 no I/O of any kind. Every function takes bytes the caller already read and returns bytes the caller
-is about to place, so the tests run on the host against disks that real tools made. The only
-dependency is `uuid` (default features off).
+is about to place, so the tests run on the host against disks that real tools made. Its
+dependencies are `uuid` (default features off) and `master_boot_record`, which writes and checks the
+protective master boot record (MBR).
 
 ## The contract
 
@@ -21,7 +22,7 @@ dependency is `uuid` (default features off).
   table normalized to the primary's orientation, so `write_primary_header` and `entry_array`
   restore the primary. `create` builds a table, and
   `write_protective_master_boot_record`, `write_primary_header` and `write_backup_header` lay it out. `master_boot_record::validate`
-  refuses a hybrid master boot record (MBR) on purpose (one disk described twice by tools that will
+  refuses a hybrid MBR on purpose (one disk described twice by tools that will
   not agree for long).
 - `Entry::decode` judges nothing: every one of 2^1024 bit patterns is an entry, so the round trip
   is provable over all of them. An entry is unused when its type GUID is all zero, and only then.

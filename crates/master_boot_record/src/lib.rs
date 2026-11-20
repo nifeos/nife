@@ -10,6 +10,9 @@
 //! Kani harness (`verification`) proves the range never touches a partition or sector 0, for every
 //! table.
 //!
+//! The [`protective`] module writes and checks the protective MBR a `GPT` disk carries: one record
+//! of type `0xEE` that covers the disk.
+//!
 //! Pure computation: no I/O, no allocation, no `unsafe`, no dependency.
 //!
 //! Name: provisional, minted 2026-11-19 (UTC) for the module's move out of
@@ -20,9 +23,10 @@
 
 /// The MBR's last two bytes on a valid table.
 pub(crate) const MASTER_BOOT_RECORD_SIGNATURE: [u8; 2] = [0x55, 0xaa];
-/// The partition type a `GUID` partition table (`GPT`) disk's protective MBR carries.
-#[doc(alias = "gpt")]
-pub(crate) const TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE: u8 = 0xee;
+
+pub mod protective;
+
+use protective::PROTECTIVE_OPERATING_SYSTEM_TYPE;
 
 /// One of the four primary partition entries.
 ///
@@ -154,7 +158,7 @@ impl MasterBootRecord {
             || self
                 .entries
                 .iter()
-                .any(|e| e.kind == TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE)
+                .any(|e| e.kind == PROTECTIVE_OPERATING_SYSTEM_TYPE)
         {
             return None;
         }
@@ -206,12 +210,9 @@ mod tests {
 
     #[test]
     fn a_protective_master_boot_record_or_a_partition_at_sector_one_has_no_scratch() {
-        let protective = MasterBootRecord::parse(&sector(&[(
-            TYPE_PROTECTIVE_GLOBALLY_UNIQUE_IDENTIFIER_PARTITION_TABLE,
-            1,
-            u32::MAX,
-        )]))
-        .unwrap();
+        let protective =
+            MasterBootRecord::parse(&sector(&[(PROTECTIVE_OPERATING_SYSTEM_TYPE, 1, u32::MAX)]))
+                .unwrap();
         assert_eq!(protective.scratch_sector_range(1), None);
         let tight = MasterBootRecord::parse(&sector(&[(0x0b, 1, 100)])).unwrap();
         assert_eq!(tight.scratch_sector_range(1), None);
