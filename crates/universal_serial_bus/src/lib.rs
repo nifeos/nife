@@ -40,6 +40,9 @@
 //!   Caps Lock or Num Lock state and builds no request that sets a keyboard's LEDs.
 //!
 
+//! Name: ratified 2026-11-19 (UTC), on #3814. `universal_serial_bus` for the package, with `usb` as a
+//! `doc(alias)` on each public module.
+
 #[doc(alias = "usb")]
 pub mod boot_keyboard;
 #[doc(alias = "usb")]

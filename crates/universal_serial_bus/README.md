@@ -97,7 +97,8 @@ The proofs need Kani, which `rustup` does not install. Install it once, with net
 since the setup step downloads a model checker:
 
 ```sh
-cargo install --locked kani-verifier --version 0.68.0
+cargo install --locked \
+  kani-verifier --version 0.68.0
 cargo kani setup
 ```
 
