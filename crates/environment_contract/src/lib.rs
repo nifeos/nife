@@ -124,17 +124,15 @@ pub mod domain {
 pub const MAGIC: [u8; 8] = *b"ENVCONF1";
 
 /// The page layout's version, the digit [`MAGIC`] carries. A reader's check is the magic itself;
-/// a break bumps this and re-mints the magic in one change, with the dated ledger entry the
-/// interface-stability discipline owes.
+/// a break bumps this and re-mints the magic in one change.
 ///
 /// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 13, naming the inert-configuration
 /// page. The number is this interface's for good: no other interface takes it, and a format change
-/// is a new version, never a new number. Milestone 956 (the linked interfaces carry checkable
-/// versions) holds the table of numbers, and `script/lint` holds the tree to it. A program declares
-/// the pair of this id and [`VERSION`].
+/// is a new version, never a new number. A program declares the pair of this id and
+/// [`VERSION`].
 ///
 /// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const INTERFACE_ID: u64 = 13;
