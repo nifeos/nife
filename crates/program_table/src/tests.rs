@@ -34,12 +34,12 @@ fn the_region_a_job_is_held_in_has_exactly_the_pages_both_sides_count() {
 /// answer in either direction sends a capability nobody reads or reads one nobody sent.
 #[test]
 fn only_a_program_that_declares_a_share_view_is_sent_one() {
-    assert!(spawnproto::held_shares(Program::Free));
-    assert!(spawnproto::held_shares(Program::Slabtop));
-    assert!(!spawnproto::held_shares(Program::Date));
-    assert!(!spawnproto::held_shares(Program::Ps));
+    assert!(spawn_protocol::held_shares(Program::Free));
+    assert!(spawn_protocol::held_shares(Program::Slabtop));
+    assert!(!spawn_protocol::held_shares(Program::Date));
+    assert!(!spawn_protocol::held_shares(Program::Ps));
     for p in Program::ALL {
-        assert_eq!(spawnproto::held_shares(*p), p.manifest().share, "{p:?}");
+        assert_eq!(spawn_protocol::held_shares(*p), p.manifest().share, "{p:?}");
     }
 }
 
@@ -67,7 +67,7 @@ fn an_installer_region_holds_one_more_package() {
     assert!(jig.installer);
     assert_eq!(
         named_std_region_pages(&jig),
-        STD_REGION_PAGES + spawnproto::IMAGE_MAXIMUM_PAGES
+        STD_REGION_PAGES + spawn_protocol::IMAGE_MAXIMUM_PAGES
     );
     let plain = Manifest {
         installer: false,
@@ -85,7 +85,7 @@ fn an_installer_region_holds_one_more_package() {
 fn a_verb_narrows_and_never_widens() {
     let jig = Program::Jig.manifest();
     let as_typed = |line: &[u8]| {
-        let mut buf = [0u8; MAXIMUM_VERB];
+        let mut buf = [0u8; MAXIMUM_VERB_BYTES];
         narrow_by_verb(&jig, Program::Jig.verbs(), verb_of(line, &mut buf))
     };
     let list = as_typed(b"jig list");
@@ -107,7 +107,7 @@ fn a_verb_narrows_and_never_widens() {
     // The progenitor's reading of the page the shell assembles agrees with the shell's.
     let mut page = [0u8; program_argument_contract::PAGE_BYTES];
     argv(b"jig 'install' greeting", &mut page).unwrap();
-    let mut read = [0u8; MAXIMUM_VERB];
+    let mut read = [0u8; MAXIMUM_VERB_BYTES];
     assert_eq!(
         verb_of_page(&page, &mut read),
         Some(&b"install greeting"[..])
@@ -122,7 +122,7 @@ fn a_verb_narrows_and_never_widens() {
     assert_eq!(as_typed(b"jig 'list -u'"), as_typed(b"jig upgrade"));
     let mut page = [0u8; program_argument_contract::PAGE_BYTES];
     argv(b"jig list -u", &mut page).unwrap();
-    let mut read = [0u8; MAXIMUM_VERB];
+    let mut read = [0u8; MAXIMUM_VERB_BYTES];
     assert_eq!(verb_of_page(&page, &mut read), Some(&b"list -u"[..]));
     let nothing = as_typed(b"jig upgrade");
     assert!(!nothing.installer && !nothing.catalog && !nothing.network);
@@ -134,7 +134,7 @@ fn a_verb_narrows_and_never_widens() {
     for &p in Program::ALL {
         let m = p.manifest();
         for v in p.verbs() {
-            assert!(v.verb.len() <= MAXIMUM_VERB, "{}", v.verb);
+            assert!(v.verb.len() <= MAXIMUM_VERB_BYTES, "{}", v.verb);
             // Everything the verb names survives the narrowing: it names only what the
             // manifest declares.
             let narrowed = narrow_by_verb(&m, p.verbs(), Some(v.verb.as_bytes()));

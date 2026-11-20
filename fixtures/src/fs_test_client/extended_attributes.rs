@@ -22,7 +22,7 @@ use crate::channel::{
 /// than any local this program could afford, so it goes straight to the page.
 fn fill_page(off: usize, len: usize, b: u8) {
     for i in 0..len {
-        WINDOW.write_u8((off + i) as u64, b);
+        WINDOW.write::<u8>((off + i) as u64, b);
     }
 }
 

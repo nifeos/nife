@@ -899,12 +899,12 @@ dependencies = [
  "screen_console",
  "soak_page",
  "socket_contract",
- "spin_lock",
  "startup_page_contract",
  "static_elf",
  "std_runtime_contract",
  "system_log_contract",
  "terminal_contract",
+ "test_and_set_lock",
  "test_times",
  "thread_wake_handshake",
  "video_terminal",
@@ -1421,13 +1421,6 @@ name = "socket_contract"
 version = "0.1.0"
 
 [[package]]
-name = "spin_lock"
-version = "0.1.0"
-dependencies = [
- "loom",
-]
-
-[[package]]
 name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1619,12 +1612,12 @@ dependencies = [
  "program_table",
  "ps",
  "socket_contract",
- "spin_lock",
  "startup_page_contract",
  "static_elf",
  "std_runtime_contract",
  "system_log_contract",
  "terminal_contract",
+ "test_and_set_lock",
  "timetable",
  "timetable_store",
  "video_terminal",
@@ -1641,6 +1634,13 @@ dependencies = [
 [[package]]
 name = "terminal_contract"
 version = "0.1.0"
+
+[[package]]
+name = "test_and_set_lock"
+version = "0.1.0"
+dependencies = [
+ "loom",
+]
 
 [[package]]
 name = "test_times"

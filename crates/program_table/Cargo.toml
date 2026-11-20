@@ -19,7 +19,7 @@ grant_contract = { version = "0.1.0", path = "../grant_contract" }
 # The planner: `plan` and `plan_stage` resolve a name here and plan against its manifest there.
 grant_plan = { version = "0.1.0", path = "../grant_plan" }
 
-# Dev dependencies only: host tests pin `spawnproto`'s rights words to the filesystem contract's bits
+# Dev dependencies only: host tests pin `spawn_protocol`'s rights words to the filesystem contract's bits
 # and `map_el0`'s budget to the one the primitive benchmark measured, without linking either, and
 # read a verb back off an argument page the way the progenitor does.
 [dev-dependencies]

@@ -19,7 +19,7 @@ sub-server holds the initrd, which is every program in the system. So "it can bu
 program" (the property that makes `spawner` worth having) does not survive the move. The sub-server
 would hold strictly more than the progenitor does today, and the progenitor would hold nothing but a pipe. That is a
 relocation of the authority, not a reduction of it, and it costs an IPC hop on every capability the
-shell delegates, because `spawnproto` moves capabilities and not just words.
+shell delegates, because `spawn_protocol` moves capabilities and not just words.
 
 So the interactive progenitor keeps the loader and gives up three other things instead.
 
@@ -50,7 +50,7 @@ Why a second process rather than the progenitor collecting its own children. The
 receive, and the progenitor is parked in `RECEIVE` on the shell's spawn channel for its whole life. Multiplexing
 deaths onto that same endpoint was considered and rejected: the shell holds `WRITE` on it, so a
 compromised shell could forge death messages, and `EVENT_FAULT`/`EVENT_EXIT` (1 and 2) collide with
-the program ids `spawnproto` already sends in word 0.
+the program ids `spawn_protocol` already sends in word 0.
 
 ## Proven, both ISAs
 

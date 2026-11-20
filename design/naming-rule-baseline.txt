@@ -68,7 +68,6 @@ crates/filesystem_fixture/src/lib.rs::TOUCH_MTIME_ADVANCED spelled-out
 
 crates/firmware_configuration/src/lib.rs::DmaCommand spelled-out
 
-crates/grant_plan/src/nav.rs::pos spelled-out
 
 
 crates/grant_plan/src/word.rs::span question-shape
@@ -131,7 +130,6 @@ crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
 
 crates/program_argument_contract/src/lib.rs::from_va spelled-out
 
-crates/program_table/src/spawnproto.rs::prog_id spelled-out
 
 crates/screen_console/src/lib.rs::copy question-shape
 

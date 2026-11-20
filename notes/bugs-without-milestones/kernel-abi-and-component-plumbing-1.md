@@ -11,7 +11,7 @@ Entries from the [survey](README.md) of `BUGS` sections that are real future wor
 |  crates/capability_plan/src/lib.rs | plan() does not refuse two roles routed to one supervisor slot (near miss from outsider pass 8) | capability_plan refuses a doubly routed slot | S  |
 |  crates/current_cpu_contract/src/lib.rs | reader forms &AtomicU64 over read-only memory; Miri rejects it, soundness unsettled; raw atomic load is the fallback | current_cpu reader uses a raw atomic load | S  |
 |  crates/grant_plan/src/line.rs | `<<` is refused with the wrong message (NoRedirectTarget) | grant_plan: a refusal that says `<<` is unsupported | S  |
-|  crates/program_table/src/spawnproto.rs | any promised message a caller withholds hangs the progenitor; no way to abandon a half-sent request | Spawn protocol: abandon a half-sent request | M  |
+|  crates/program_table/src/spawn_protocol.rs | any promised message a caller withholds hangs the progenitor; no way to abandon a half-sent request | Spawn protocol: abandon a half-sent request | M  |
 |  crates/pmap/src/lib.rs (resumed cursor bullet) | A resumed LIST cursor can land on a recycled log slot because entries carry no generation. | Give revocation-log entries a generation so pmap's cursor cannot resume wrongly | M  |
 |  crates/system_initializer/src/std_layout.rs | A std child holds WRITE (which is SPLIT) on its heap region; a program that splits pins its job region for good. Needs a MAP-not-SPLIT right (architect's call). | A region right that allows MAP and not SPLIT | M  |
 |  crates/thread_wake_handshake/src/lib.rs (2nd bullet) | `park` does not clear a stale `ipc_aborted`; every caller collects it today, nothing enforces it. Not clearly inside 366. | Make park refuse or clear a stale ipc_aborted | S  |
