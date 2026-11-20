@@ -32,6 +32,7 @@ direct_memory_access_validator 79 0 0 6
 disk_tree 73 2 0 20
 documentation 966 30 50 41
 domain_name_resolution_contract 112 6 0 17
+domain_name_system 200 3 4 21
 e1000e 705 72 4 9
 elf 178 0 4 40
 entropy_contract 37 3 0 0
