@@ -152,7 +152,7 @@ fn lock_order_violation(rank: u32, held: u32) -> ! {
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "irq")]
 pub struct InterruptSafeMutex<T> {
-    inner: spin_lock::SpinLock<T>,
+    inner: test_and_set_lock::SpinLock<T>,
     rank: u32,
 }
 
@@ -160,7 +160,7 @@ impl<T> InterruptSafeMutex<T> {
     /// Make a lock of `rank`, from [`rank`], holding `value`.
     pub const fn new(rank: u32, value: T) -> Self {
         Self {
-            inner: spin_lock::SpinLock::new(value),
+            inner: test_and_set_lock::SpinLock::new(value),
             rank,
         }
     }
@@ -250,7 +250,7 @@ pub(crate) fn lock_found<'a, T>(
 /// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "irq")]
 pub struct InterruptSafeGuard<'a, T> {
-    guard: ManuallyDrop<spin_lock::SpinLockGuard<'a, T>>,
+    guard: ManuallyDrop<test_and_set_lock::SpinLockGuard<'a, T>>,
     interrupts_were_enabled: bool,
     previous_rank: u32,
 }

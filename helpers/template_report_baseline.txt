@@ -238,9 +238,6 @@ soak_page prose_acronyms 1
 socket_contract abbreviations 17
 socket_contract prose_acronyms 1
 socket_contract register_names 1
-spin_lock abbreviations 1
-spin_lock prose_acronyms 1
-spin_lock readme_acronyms 1
 static_elf abbreviations 98
 static_elf prose_acronyms 6
 static_elf register_names 8
@@ -275,6 +272,9 @@ system_manifest abbreviations 1
 system_manifest prose_acronyms 1
 terminal_contract abbreviations 14
 terminal_contract prose_acronyms 3
+test_and_set_lock abbreviations 1
+test_and_set_lock prose_acronyms 1
+test_and_set_lock readme_acronyms 1
 test_times prose_acronyms 3
 test_times readme_acronyms 1
 thread_wake_handshake abbreviations 13
