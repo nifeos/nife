@@ -420,6 +420,7 @@ dependencies = [
  "filesystem_contract",
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
+ "nife_partition_types",
  "redox_syscall",
  "redoxfs",
  "subtree_scope",
