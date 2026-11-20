@@ -22,8 +22,8 @@ endpoint capabilities) says a server does with a badge it has no window for.
 `crates/subtree_scope` is the one implementation of a subtree grant that an eligible file server
 links, under milestone 606 (a directory walk costs what it does on Linux)'s ruling D. Its
 `Bindings::<B>::of(badge)` maps a badge to what it may reach. Badge 0, the unbadged value, is
-`Binding::Open`, the whole endpoint's authority, and that is load-bearing: caretakers hold such
-badges. A nonzero badge at or past `B` is also mapped to `Binding::Open`, by `index` folding it to
+`Binding::Unbound`, the whole endpoint's authority, and that is load-bearing: caretakers hold such
+badges. A nonzero badge at or past `B` is also mapped to `Binding::Unbound`, by `index` folding it to
 0. The crate's own comment says this is deliberate, "what the server already does with such a
 badge's window (§230)".
 

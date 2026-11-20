@@ -75,6 +75,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`grant_plan`](crate-reviews/grant-plan.md) | 5 | ready for review |
 | [`grant_contract`](crate-reviews/grant-contract.md) | contract | ready for review |
 | [`domain_name_system`](crate-reviews/domain-name-system.md) | 5 | ready for review |
+| [`interfaces_note`](crate-reviews/interfaces-note.md) | 3 | ready for review |
 | [`static_elf`](crate-reviews/static-elf.md) | kernel | ready for review |
 | [`e1000e`](crate-reviews/e1000e.md) | 6 | cleared to move; repository exists |
 | [`designware_ethernet`](crate-reviews/designware-ethernet.md) | 7 | cleared to move; repository exists |
@@ -85,6 +86,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | ready for the architect's review |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
+| [`subtree_scope`](crate-reviews/subtree-scope.md) | step 9 | eight provisional names for the architect; the move waits on P0-3's pin |
 | [`network_time_protocol`](crate-reviews/network-time-protocol.md) | 1102 | names and clearance for the architect |
 | [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | ready for review |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
@@ -94,5 +96,6 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | ready for review |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |
+| [`device_tree_blob`](crate-reviews/device-tree-blob.md) | 4 | names for the architect, then clearance |
 | [`byte_glob`](crate-reviews/byte-glob.md) | contract | names and clearance for the architect |
 | [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | ready for review |

@@ -46,7 +46,7 @@ pub(crate) fn encode_listing(listing: &[memo::Child], cursor: u32, out: &mut [u8
         match filesystem_contract::directory_entry::encode(
             &mut out[used..],
             child.name.as_bytes(),
-            child.kind == Kind::Directory,
+            child.kind == NodeKind::Directory,
         ) {
             Some(n) => used += n,
             // A record is never split: stop before one that will not fit and let the caller's next

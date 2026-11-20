@@ -6,13 +6,13 @@
 use super::*;
 
 /// What a RedoxFS node is, in the terms `subtree_scope` decides with. RedoxFS has no mount points.
-pub(crate) fn kind_of(node: &Node) -> Kind {
+pub(crate) fn kind_of(node: &Node) -> NodeKind {
     if node.is_dir() {
-        Kind::Directory
+        NodeKind::Directory
     } else if node.is_symlink() {
-        Kind::Symlink
+        NodeKind::Symlink
     } else {
-        Kind::File
+        NodeKind::File
     }
 }
 
