@@ -5,7 +5,7 @@
 //! no client sends, are in `control`; the grant table and the reject codes need
 //! `domain_name_system`, and are in their own modules.
 
-/// The longest host name a client may write, in dotted text without a trailing dot. RFC 1035's
+/// The longest host name a client may write, in dotted text without a trailing dot. `RFC 1035`'s
 /// 255-byte wire limit is 253 characters of dotted text.
 ///
 /// Name: provisional, decided by the maintainer on 2026-11-14 (UTC) at the crate's outside review:
@@ -39,9 +39,12 @@ pub const NAME_OFFSET_BYTES: usize = 0x000;
 /// the field is spelled `IPV4_ADDRESSES` as `MAXIMUM_IPV4_ADDRESSES` is.
 pub const IPV4_ADDRESSES_OFFSET_BYTES: usize = 0x100;
 
+/// The size of the page a client attaches, the smallest page every supported architecture maps.
+const PAGE_BYTES: usize = 4096;
+
 // The name field ends before the addresses begin, and the addresses end inside the page.
 const _: () = assert!(NAME_OFFSET_BYTES + MAXIMUM_NAME_FIELD_BYTES <= IPV4_ADDRESSES_OFFSET_BYTES);
-const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <= 4096);
+const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <= PAGE_BYTES);
 
 // =================================================================================================
 // The words.
@@ -56,7 +59,7 @@ const _: () = assert!(IPV4_ADDRESSES_OFFSET_BYTES + 4 * MAXIMUM_IPV4_ADDRESSES <
 /// in the socket contract.
 pub const OPERATION_ATTACH_SHARED_PAGE: u64 = 1;
 /// **A client resolves the name in its page.** A `CALL` whose second word is the name's length in
-/// bytes. The reply is an [`Outcome`] word and the answer's TTL in seconds.
+/// bytes. The reply is an [`Outcome`] word and the answer's time to live in seconds.
 pub const OPERATION_RESOLVE: u64 = 2;
 /// A client's request word.
 pub const fn request(operation: u64) -> u64 {
@@ -81,14 +84,14 @@ pub mod status {
     /// **This client may not ask about this name**: no grant for its badge, or the name is outside
     /// the zone it was granted. Nothing was sent to the network.
     pub const DENIED: u8 = 1;
-    /// The name server says the name does not exist (NXDOMAIN).
+    /// The name server says the name does not exist (`NXDOMAIN`).
     pub const NO_SUCH_NAME: u8 = 2;
     /// A reply came back and `domain_name_system::Query::accept` refused it. The detail byte is
     /// the protocol crate's `reject_code` of the reason.
     pub const REFUSED: u8 = 3;
     /// No reply the resolver could believe arrived before it gave up.
     pub const NO_ANSWER: u8 = 4;
-    /// The name server answered with a failure other than NXDOMAIN. The detail byte is its response
+    /// The name server answered with a failure other than `NXDOMAIN`. The detail byte is its response
     /// code.
     pub const SERVER_ERROR: u8 = 5;
     /// The page did not hold a host name `domain_name_system::Name::from_dotted` accepts.
@@ -133,7 +136,7 @@ pub struct Outcome {
     pub status: u8,
     /// What else the status carries: a reject code, a response code, a network step, or 0.
     pub detail: u8,
-    /// How many addresses the resolver wrote at [`IPV4_ADDRESSES_OFFSET_BYTES`]: 0 unless the status is OK.
+    /// How many addresses the resolver wrote at [`IPV4_ADDRESSES_OFFSET_BYTES`]: 0 unless the status is [`status::OK`].
     pub count: u8,
 }
 

@@ -1,7 +1,7 @@
-/// Ask over UDP, and again over TCP when the reply comes back truncated (RFC 1035 and RFC 7766's
+/// Ask over UDP, and again over TCP when the reply comes back truncated (`RFC 1035` and `RFC 7766`'s
 /// ordinary behavior).
 pub const TRANSPORT_UDP: u64 = 0;
-/// Ask over TCP only (RFC 7766 lets a stub resolver do this). For a name server that does not
+/// Ask over TCP only (`RFC 7766` lets a stub resolver do this). For a name server that does not
 /// answer UDP at all, which is the QEMU runners' peer: slirp forwards only TCP to a host process.
 pub const TRANSPORT_TCP: u64 = 1;
 
