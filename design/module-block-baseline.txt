@@ -2096,20 +2096,15 @@ crates/domain_name_resolution_contract/src/wire.rs::word
 
 
 
-crates/environment_contract/src/lib.rs::PageBuilder
-
-crates/environment_contract/src/lib.rs::Refused
-
-crates/environment_contract/src/lib.rs::build
 
 
 
 
 
 
-crates/environment_contract/src/lib.rs::new
 
-crates/environment_contract/src/lib.rs::new
+
+
 
 
 

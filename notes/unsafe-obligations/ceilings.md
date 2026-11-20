@@ -154,7 +154,7 @@ argument that one already carries: a scratch buffer one thread at a time touches
 caller rather than by a lock. Same shape, same reasoning, a different file.
 
 Raised from 18 to 20 by milestone 47's environment-variable fork (2026-08-23, DECISIONS §111):
-`crates/environment_contract::ConfigurationPage`'s `unsafe impl Send`/`Sync`. That is the exact pair
+`environment_contract::ConfigurationPage`'s `unsafe impl Send`/`Sync`. That is the exact pair
 `clock_contract::ClockPage` already carries, for the same argument, restated for a type with a
 plainer contract. The config page is shared across address spaces by construction; that is the
 whole point of a page-shaped endowment. Every access goes through the same immutable byte reads,

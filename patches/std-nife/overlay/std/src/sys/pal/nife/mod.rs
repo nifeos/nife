@@ -40,7 +40,7 @@ pub(crate) mod entropyproto;
 pub(crate) mod sinkproto;
 // The inert-configuration contract (milestone 47's environment-variable fork, DECISIONS §111):
 // the config page's layout and the closed, validated domains TZ/LANG/TERM are checked against,
-// generated verbatim from `crates/environment_contract/src/lib.rs` by the same xtask step. `sys/env` is a
+// generated verbatim from `src/lib.rs` of the `environment_contract` package by the same xtask step. `sys/env` is a
 // *reader* of the page; `PageBuilder` and the domain tables belong to whoever assembles one
 // (init, or today's kernel test harness standing in for it), hence the allow.
 #[allow(dead_code)]
