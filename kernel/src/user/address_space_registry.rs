@@ -228,7 +228,7 @@ pub fn user_address_space_map(
 /// The root table of a space the registry names, bound or not.
 ///
 /// Built for tests (so a walker can ask what a space really maps) and now also
-/// `abi::address_space::LIST`'s way in (milestone 126's (the `procps` package) `pmap`, DECISIONS §114 (`pmap` gets its listing)): the system call handler
+/// `abi::address_space::LIST`'s way in (milestone 126 (the `procps` package)'s `pmap`, DECISIONS §114 (`pmap` gets its listing)): the system call handler
 /// resolves the capability's `name` to a root here before consulting `revoke::list_mapping` and
 /// `arch::mmu::translate_at`. `None` once the space is gone: its thread was reaped or its region
 /// destroyed (§249). A `LIST` against a capability that outlived its space reads as "nothing to

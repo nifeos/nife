@@ -189,7 +189,7 @@ the ABI.
 ### What this does NOT add
 
 - No new system call. `SIGNAL`, `WAIT`, `POLL`, and `BIND` are methods under the existing
-  `SYS_INVOKE` dispatch, the same way `SEND`, `RECV`, `REAP`, and `SURVEY` are. §4's (kernel shape: a microkernel) "the system call
+  `SYS_INVOKE` dispatch, the same way `SEND`, `RECV`, `REAP`, and `SURVEY` are. §4 (kernel shape: a microkernel)'s "the system call
   surface stays narrow" holds: `SYS_INVOKE` already exists, and this adds one new `objtype` and four
   new method constants under it.
 

@@ -163,7 +163,7 @@ case is the miss rather than the hit, because the kernel asks both queues on eve
   test was sampling its baseline after the driver had already been spawned, and `ROUTED_IRQS` meant
   something different on `x86_64` than on the other two architectures; both are fixed, and
   notes/load-sensitive-assertions.md carries the account.
-- **Milestone 368 (its entry set is flat).** `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`.
+- **Milestone 368.** `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md` (milestone 368 (its entry set is flat)).
   `script/fastpath-footprint`'s `system_call_entry` set is flat and so cannot exclude anything, and this
   lane's change to region teardown made LLVM fold `timer::tick` into `riscv_trap_body`, putting 226
   bytes (12.1%, against a 5% bound) onto a number that measures the system call path. Closed here with

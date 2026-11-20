@@ -164,7 +164,7 @@ scratch:
   kernel primitive, join).
 
 Option B, sibling processes with replicated frames. Touches no system call and no capability
-method, matching §22's (Rust std on the native ABI) own discipline for `std::fs`/`std::net` ("no new system call and no new
+method, matching §22 (Rust std on the native ABI)'s own discipline for `std::fs`/`std::net` ("no new system call and no new
 capability method"). The cost is not at the kernel boundary; it is what "shared heap" actually
 demands once you look past the first allocation:
 

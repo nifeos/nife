@@ -113,7 +113,7 @@ construction authority, or proxies the reap through something that does.
   and the requirement is the interesting part. **The concrete requirement, for whoever decides the
   fork: a supervisor needs exactly `DESTROY` on one region it did not create.** Neither a rights bit
   on `WRITE` nor an `Untyped::REAP` method was invented here; that is a rights-model and
-  system-call-surface decision, and §26's (the fault endpoint) phase-B block already records it as one.
+  system-call-surface decision, and §26 (the fault endpoint)'s phase-B block already records it as one.
 
 ## The honest caveats, including what a spike does not prove
 
