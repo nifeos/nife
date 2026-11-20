@@ -88,7 +88,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
 | [`pci_configuration_space`](crate-reviews/pci-configuration-space.md) | 9 | cleared to move (2026-11-20 UTC, `publish = false`, no tag, no publish); the move waits on the virtio to `virtual_io` sweep (#3854) |
 | [`page_tables`](crate-reviews/page-tables.md) | milestone 1104 (`paging`: what an outside maintainer would fix before the move) | cleared to move (2026-11-20 UTC, repository `nifeos/page_tables` approved, `publish = false`, no tag, no publish); names ratified; the move follows this lane |
-| [`subtree_scope`](crate-reviews/subtree-scope.md) | step 9 | eight provisional names for the architect; the move waits on P0-3's pin |
+| [`subtree_scope`](crate-reviews/subtree-scope.md) | step 9 | cleared to move (2026-11-20 UTC, `publish = false`, no tag, no publish); names ratified; the move waits on P0-3's pin |
 | [`network_time_protocol`](crate-reviews/network-time-protocol.md) | 1102 | cleared 2026-11-20; names ratified; move lane next |
 | [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | cleared to move (2026-11-20 UTC, no tag, no publish) |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |

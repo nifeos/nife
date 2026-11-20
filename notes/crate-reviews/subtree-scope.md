@@ -4,9 +4,9 @@
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
-The architect reads this to clear the crate for its move to its own repository. The move is step 9 of
+The architect cleared this package for the crate's move to its own repository. The move is step 9 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
-where it leaves on its own clearance, as one repository with `memory_region_heap` or as a repository of its own, decided at the move. `redoxfs` keeps its own track. It describes the crate as
+where it leaves as the repository `nifeos/subtree_scope`. It describes the crate as
 `main` plus this branch leaves it. The outside review behind it is
 [milestone 1110 (`subtree_scope`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1110-subtree-scope-outside-review.md).
 
@@ -158,31 +158,25 @@ The README the move lane writes says the unit tests cover those two refusals and
 
 ## Names
 
-This package ratifies nothing. The architect ratifies from it. The maintainer ruled the
-eight spellings below provisional on 2026-11-19 (UTC), two-way before the first tag. Each public
-one is one-way after it. Where milestone 1110 had no proposal, the lane chose by
-`design/naming.md`; there was no such case, all eight came from the milestone.
+The architect ratified the names below on 2026-11-20 (UTC). The `Name:` block of each public item
+says so. No alias carries an old spelling.
 
 | item | kind | spelling and status |
 |---|---|---|
 | `subtree_scope` | crate | provisional since 2026-09-27; its `Name:` block and `script/names` say so |
-| `PROOF_PATH_BYTES` | constant | provisional; a length carries its unit (was `PROOF_PATH`) |
+| `PROOF_PATH_BYTES` | constant | ratified 2026-11-20 |
 | `PROOF_BADGES`, `PROOF_OPERATIONS` | constants | stand: counts of things; no block, in the baseline |
-| `walk`'s `directories` | binding | provisional; spelled out (was `dirs`) |
-| `check_landing`'s `want_directory` | parameter | provisional; spelled out (was `want_dir`) |
-| `is_name`'s `component` | parameter | provisional; one letter was refused (was `c`) |
-| `NodeKind` | enum | provisional; `Kind` is a generic word (was `Kind`) |
-| `Binding::Unbound` | variant | provisional; `Open` collided with the file verb |
-| `check_landing` | function | provisional; a function that judges, beside `check_path` (was `landing`) |
-| `Bindings::binding` | method | provisional; `get` would promise an `Option` (was `of`) |
-| `Refusal::IsADirectory` | variant | provisional, minted 2026-11-14 (UTC) |
+| `walk`'s `directories` | binding | ratified 2026-11-20 |
+| `check_landing`'s `want_directory` | parameter | ratified 2026-11-20 |
+| `is_name`'s `component` | parameter | ratified 2026-11-20 |
+| `NodeKind` | enum | ratified 2026-11-20 |
+| `Binding::Unbound` | variant | ratified 2026-11-20 |
+| `check_landing` | function | ratified 2026-11-20 |
+| `Bindings::binding` | method | ratified 2026-11-20 |
+| `Refusal::IsADirectory` | variant | ratified 2026-11-20 |
 | `Binding::SyncOnly`, `Bindings::bind_sync_only` | variant, method | ratified 2026-10-06 |
-| `walk`'s `hop` | parameter | keeps its name; the milestone suggested `requested` and the maintainer left it |
+| `walk`'s `requested_rights` | parameter | ratified 2026-11-20; a `u64` of rights bits added to `DESCEND` at every step |
 | the other items | | `Refusal` and its other variants, `is_name`, `check_path`, `walk`, `Handle`, `admit`, `Bindings`, `new`, `bind`, `unbind`, `Binding`, `Bound`, `Revoked` pass the rules as written; 13 have no `Name:` block and sit in `design/module-block-baseline.txt` |
-
-No alias carries an old spelling. The `Name:` blocks of the eight carry the date the lane minted
-them. The `redoxfs_server` code, the falsification patches, `notes/walk-cost.md` and milestones 633,
-634 and 726 use the new spellings.
 
 ## License
 
@@ -201,18 +195,17 @@ and it copies no Linux or `cap-std` text.
 | P1-10: put the passive constructions the template counts (26 in 4,081 words, against 8) into the active voice, with P0-2 | move lane |
 | P2-15: the README's section on where the crate is stricter than `openat2` and `cap-std` | move lane |
 | `redoxfs_server`'s manifest switches from the path to the repository's `git` and `rev`, and `packages/filesystem.package.toml`, `packages/redoxfs.package.toml`, `crates/externalization-list.txt`, `.cargo/mutants-baseline.txt` and `helpers/template_report_baseline.txt` follow | move lane |
-| Decide at the move whether `subtree_scope` shares a repository with `memory_region_heap` or has its own; the move needs no other package cleared | the architect, at the move |
 | Run the stranger test, the template's workflows and the first weekly mutation run in the new repository | move lane |
 
 ## Open questions
 
-1. Clearing the move: the go to create its repository (alone or with `memory_region_heap`), with
-   no tag and no publish. The architect decides it from this package, which
-   ratifies and clears nothing.
+1. Clearing the move: answered. The architect cleared this package on 2026-11-20 (UTC) and approved
+   the repository `nifeos/subtree_scope` with `publish = false`, no tag and no publish. The move
+   waits on `filesystem_contract`'s repository for the `git` pin of P0-3.
 2. Whether to spend a prove shard's room on the completeness harness of P1-9. Recommendation: not
    before the move; add it in the new repository, where the crate's own proofs job has the
    budget to itself, and the measurement above sets its cost.
 
 ## Recommendation
 
-Ready for review.
+Cleared to move (2026-11-20 UTC, no tag, no publish).

@@ -5,7 +5,7 @@ milestone_dependencies: 1017
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1110. `subtree_scope`: what an outside maintainer would fix before it leaves
 
@@ -72,50 +72,21 @@ the crate's own reasons.
 - P2-12, `admit` takes three `u64` words in a row: Done,
   [#3610](https://github.com/nifeos/nife/pull/3610).
 - P2-13, `cfg_attr(not(test), no_std)`: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
-- P2-14, how the hop word masks: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
+- P2-14, how the requested rights mask: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P2-15, where the crate is stricter than Linux: Open. The README's section on `openat2` and
   `cap-std` is move work, with P0-1.
 - Decision, the crate's name: Done, [#3589](https://github.com/nifeos/nife/pull/3589) (maintainer,
   provisional, 2026-11-14 UTC; nothing to build).
-- Follow-on, the move out of the tree at step 9, on this crate's own clearance: Open, and an open decision below.
+- Follow-on, the move into the repository `nifeos/subtree_scope`: Open; it waits on P0-3's pin.
 
-## Open decisions
+## Decisions
 
 ### Clearing the move of `subtree_scope`
 
-The crate decides two things for a file server: whether a path stays beneath one directory, and
-which handles one client may use. Its one consumer is `redoxfs_server`. Milestone 1017's step 9
-moves it, after the ten contract crates it links, on its own clearance. `subtree_scope` and
-`memory_region_heap` leave as one repository or two, decided at the move. `redoxfs` keeps its own
-track (ruled 2026-11-20 UTC). Creating a public repository is an outward step,
-and the standing rule is that clearing a crate's review package approves it. This crate has no
-package under `notes/crate-reviews/` yet, so there is nothing to clear.
-
-The move also waits on P0-3's pin, which needs `filesystem_contract`'s repository first. The
-renames of P1-7 are done, and a lane wrote the
-[review package](../../notes/crate-reviews/subtree-scope.md) (maintainer ruling, provisional, 2026-11-19
-UTC: option A for writing it). Clearing it, the go to create the repository with no tag and no publish, stays open. The architect decides it
-from the package.
-
-Recommendation: A.
-
-- A. A lane writes the review package once P1-7's renames land and `filesystem_contract` has its
-  tag; clearing it approves the move, with no tag and no publish; it does not wait for the
-  packages of `memory_region_heap` or `redoxfs`.
-- B. Clear this crate's package on its own, so its renames and pin land in the new repository.
-- C. Keep the crate inside `redoxfs`'s package, with no package of its own.
-
-Door: one-way. The repository is public the moment it exists, and `redoxfs_server`'s manifest
-switches to it; a rename or a split after that breaks every pin.
-
-Prior art: `cap-std` makes its beneath-the-directory check in `cap-primitives`, a crate of its own
-beneath the `Dir` type (from memory, unverified), the shape A keeps. Linux keeps it in the kernel,
-as `RESOLVE_BENEATH` in `openat2`. nife differs by putting the decision in a crate a server links
-and a prover checks. In this tree, `generational_table` and `e1000e` each moved after a cleared
-package of their own. Example: under A, the server's manifest reads `subtree_scope = { version =
-"0.1.0", git = "https://github.com/nifeos/<repository>", rev = "<sha>" }`.
-
-Blocks: the move, and with it any tag and the first publish.
+Ruled 2026-11-20 (UTC): the architect cleared the
+[review package](../../notes/crate-reviews/subtree-scope.md) and approved the repository
+`nifeos/subtree_scope` with `publish = false`, no tag and no publish. The move waits on
+`filesystem_contract`'s repository for P0-3's `git` pin. The package holds the ratified names.
 
 ## What was checked, and how
 
@@ -206,8 +177,8 @@ One decision, ruled; the move is under "Open decisions" above.
 The crate keeps `subtree_scope` (maintainer, provisional, 2026-11-14 UTC). It is a noun phrase,
 spelled out, and it says what the crate is: the scope of a subtree grant. `use
 subtree_scope::{walk, admit}` reads as what the two calls do. The door is two-way. The crate's one
-consumer is `redoxfs_server`, and step 9 of milestone 1017 places it in one repository with
-`memory_region_heap` or in one of its own, decided at the move. Its name may be a workspace crate's name and not a repository's.
+consumer is `redoxfs_server`, and step 9 of milestone 1017 places it in its own repository,
+`nifeos/subtree_scope`.
 The publishing hold keeps it off crates.io. If the crate is ever published on
 its merits, its crates.io name comes to the architect then, and ratifying it stays the architect's.
 

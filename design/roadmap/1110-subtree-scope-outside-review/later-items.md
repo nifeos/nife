@@ -32,9 +32,9 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
     Change: try `#![no_std]`; keep the attribute if a test needs `std`.
     Door: two-way. Effort: XS.
 
-14. The doc says nothing about how the hop word masks. DONE (`undefined_bits_of_the_hop_word_change_nothing`; `walk`'s doc says so).
-    Finding: `walk` compares `rights.attenuate(DESCEND | hop)` with `Rights::root(DESCEND | hop)`,
-    so the comparison silently drops bits of `hop` outside `dir::ALL`, and the contract's `PARENT_RIGHTS`
+14. The doc says nothing about how the requested rights mask. DONE (`undefined_bits_of_requested_rights_change_nothing`; `walk`'s doc says so).
+    Finding: `walk` compares `rights.attenuate(DESCEND | requested_rights)` with `Rights::root(DESCEND | requested_rights)`,
+    so the comparison silently drops bits of `requested_rights` outside `dir::ALL`, and the contract's `PARENT_RIGHTS`
     sentinel, if it reached `walk` unresolved, would ask for `DESCEND` alone. The directory verb
     resolves the sentinel first (`open_dir`, line 127); the file verb passes its word through
     (`open_file_path`, line 97). Whether a client can put the sentinel in `OPEN`'s second word is
