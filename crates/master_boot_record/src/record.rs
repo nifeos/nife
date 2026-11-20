@@ -3,7 +3,7 @@
 //!
 //! Name: provisional, minted 2026-11-20 (UTC) by lane/1093-partition-table-before-the-move, a
 //! private module the crate root re-exports, split out when `protective` made the root an index
-//! (§282).
+//! (§282, when a file is split, the parent becomes an index).
 
 use crate::MASTER_BOOT_RECORD_SIGNATURE;
 use crate::protective::PROTECTIVE_OPERATING_SYSTEM_TYPE;
