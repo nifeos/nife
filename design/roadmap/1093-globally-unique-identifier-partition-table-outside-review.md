@@ -48,8 +48,10 @@ milestone reaches delivery.
 - P1-7, twenty-three undocumented public items: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-8, the error type is not an `Error`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-9, the name gates refuse ten register names and one test name: Open. The replacement names
-  Decision 2 below rules them; the rename lane builds them.
+- P1-9, the name gates refuse ten register names and one test name: Done for the names Decisions 2
+  and 5 rule, as provisional names in [#3821](https://github.com/nifeos/nife/pull/3821). The names
+  the decisions do not reach (`ATTR_*`, `Error::EntrySize`, `BackupMismatch::EntrySize`, the
+  `transfer` parameters, `PartitionsOverlap { a, b }`, `entry`) stay in the package's name table.
 - P1-10, the prose gate refuses nineteen acronyms: Open. The move lane runs the template's
   `prose_acronyms` gate and expands each at first use.
 - P1-11, the mutation verdict needs the recorded equivalents: Open. The move lane carries the six
@@ -73,15 +75,22 @@ milestone reaches delivery.
 - P2-20, a dead MBR record reads as a hybrid: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - Decision 1, the type name `PartitionTable`: Ruled (maintainer, provisional, 2026-11-14 UTC,
-  [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `src/table.rs` line 13 still
-  declares `GloballyUniqueIdentifierPartitionTable`; the architect ratifies it with the name table.
+  [#3589](https://github.com/nifeos/nife/pull/3589)). Built as a provisional name
+  ([#3821](https://github.com/nifeos/nife/pull/3821)), with no alias; the architect ratifies it with
+  the name table.
 - Decision 2, the size constants take their unit: Ruled (maintainer, provisional, 2026-11-19 UTC).
-  Not built: the rename lane carries it.
-- Decision 3, `uuid` stays in the public API: Ruled (architect, 2026-11-19 UTC). The rename lane adds
-  the documentation item.
-- Decision 4, where the nife type GUIDs live: Ruled (architect, 2026-11-19 UTC). Not built;
-  `NIFE_DATA` is at `src/guid.rs` line 146.
-- Decision 5, spelling out `lba` and `mbr`: Ruled (architect, 2026-11-19 UTC). Not built.
+  Built as provisional names ([#3821](https://github.com/nifeos/nife/pull/3821)).
+- Decision 3, `uuid` stays in the public API: Ruled (architect, 2026-11-19 UTC). The crate documentation
+  carries the item ([#3821](https://github.com/nifeos/nife/pull/3821)); the dependency was already
+  `1.28.0` with default features off.
+- Decision 4, where the nife type GUIDs live: Ruled (architect, 2026-11-19 UTC). Built
+  ([#3821](https://github.com/nifeos/nife/pull/3821)): `NIFE_DATA` and `NIFE_BOOT` live in the
+  crate `nife_partition_types` (provisional name), values unchanged, and `uefi_loader` and every
+  reader use it.
+- Decision 5, spelling out `lba` and `mbr`: Ruled (architect, 2026-11-19 UTC). Built as
+  provisional names ([#3821](https://github.com/nifeos/nife/pull/3821)); the spelling-out reaches
+  every `lba` component and the `mbr` module, with the specification's spellings as
+  `#[doc(alias)]`.
 - Decision 6, review clearance and repository go: Ruled (maintainer, provisional, 2026-11-19 UTC).
   Clearance follows decisions 4 and 5 and the name ratification.
 - Package questions, a totality harness for `parse` and whether `VERSION` stays: Open. Both are
@@ -93,7 +102,7 @@ milestone reaches delivery.
 
 ## Open decisions
 
-None. The rename lane carries items 1 to 4 of "Decisions for the architect" below (the size constants, the `uuid` documentation, the nife type GUIDs, `logical_block_address` and `master_boot_record`), and the review clearance follows it.
+None. The review clearance follows the name ratification, which is the architect's, one name at a time.
 
 ## Goal
 
