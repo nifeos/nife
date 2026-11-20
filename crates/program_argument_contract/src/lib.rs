@@ -310,15 +310,6 @@ impl<'a> ArgumentPage<'a> {
     }
 }
 
-impl<'a> IntoIterator for &ArgumentPage<'a> {
-    type Item = &'a [u8];
-    type IntoIter = Iter<'a>;
-
-    fn into_iter(self) -> Iter<'a> {
-        self.iter()
-    }
-}
-
 /// The arguments of an [`ArgumentPage`], in order.
 #[derive(Clone, Debug)]
 pub struct Iter<'a> {
@@ -513,7 +504,7 @@ mod tests {
         let page = build(&[b"a", b"bb"]);
         let parsed = ArgumentPage::parse(&page);
         let mut seen = Vec::new();
-        for argument in &parsed {
+        for argument in parsed.iter() {
             seen.push(argument.to_vec());
         }
         assert_eq!(seen, [b"a".to_vec(), b"bb".to_vec()]);
