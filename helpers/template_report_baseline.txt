@@ -16,10 +16,6 @@ boot_slot abbreviations 8
 boot_slot prose_acronyms 5
 boot_slot readme_acronyms 1
 boot_slot register_names 3
-byte_glob abbreviations 22
-byte_glob prose_acronyms 1
-byte_glob readme_acronyms 1
-byte_glob register_names 3
 byte_sink_contract abbreviations 8
 byte_sink_contract prose_acronyms 2
 c_library_errno abbreviations 45

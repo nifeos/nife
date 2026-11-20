@@ -8,7 +8,6 @@
 # this file by the pull request that moves it.
 abi
 address_space_layout
-byte_glob
 byte_sink_contract
 capability_manifest_note
 counter_frequency_contract
