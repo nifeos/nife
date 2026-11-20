@@ -26,7 +26,7 @@ S for the rename, since the crate is small and has three dependents.
 #### P0-2. Seven public names carry no provenance and are not ratified
 
 `LeadingDot` (and its variants `Special` and `Ordinary`), `matches`, `matches_with`, `has_magic`,
-`literal`, `match_steps` and `cost_bound` had no `Name:` block; `helpers/name_release.py --draft
+`literal`, `match_steps` and `step_bound` had no `Name:` block; `helpers/name_release.py --draft
 byte_glob` reports "no block" for each. The move strips `Name:` blocks, so whatever is not ratified
 in a review package before the move leaves the tree as an unratified public API. Decision 2 in the
 milestone decides them, provisionally, with one change: the enum is `LeadingDot` (not `Dot`), and

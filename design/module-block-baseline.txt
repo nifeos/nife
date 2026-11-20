@@ -628,17 +628,11 @@ crates/boot_slot/src/lib.rs::select_excluding
 crates/boot_slot/src/lib.rs::unreadable
 
 
-crates/byte_glob/src/lib.rs::cost_bound
 
-crates/byte_glob/src/lib.rs::has_magic
 
-crates/byte_glob/src/lib.rs::literal
 
-crates/byte_glob/src/lib.rs::match_steps
 
-crates/byte_glob/src/lib.rs::matches
 
-crates/byte_glob/src/lib.rs::matches_with
 
 crates/byte_sink_contract/src/lib.rs::BAD
 
