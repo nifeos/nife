@@ -19,7 +19,7 @@ bytes, which version of each such format it expects, so the other side can check
 ## What a program writes
 
 One line at module scope in the program's root, the macro `interfaces_note::carry_interfaces!`,
-given a list of `interfaces_note::Declared { id, version }` with each id read from the interface
+given a list of `interfaces_note::DeclaredInterface { id, version }` with each id read from the interface
 crate's `INTERFACE_ID` and each version from that crate's version constant. The macro places one
 static, `InterfacesNote`, in the section `.note.nife.manifest`, which the link script
 (`crates/user_mode_runtime/link.ld`) gathers into the output section `.note.nife` and its

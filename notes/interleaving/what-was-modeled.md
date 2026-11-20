@@ -205,11 +205,11 @@ bound. The harnesses use `RegionTable<2>` or `<4>` rather than the kernel's 256,
 is exponential and nothing in the protocol depends on capacity. Two threads is the entire cast of
 the recorded bug.
 
-## `crates/spin_lock`, the kernel's lock (2026-10-25)
+## `crates/test_and_set_lock`, the kernel's lock (2026-10-25)
 
 `InterruptSafeMutex` (`kernel/src/sync.rs`) masks interrupts and checks lock ranks, and under that
 it
-takes `spin_lock::SpinLock`: a flag set with an Acquire compare-exchange and cleared with a Release
+takes `test_and_set_lock::SpinLock`: a flag set with an Acquire compare-exchange and cleared with a Release
 store. Most of the kernel's happens-before edges come from that pair
 ([memory-ordering.md](../memory-ordering.md)). The crate is the protocol and nothing else, so the
 model searches exactly what the kernel compiles. The data sits in a loom cell that the guard's

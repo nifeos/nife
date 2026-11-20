@@ -32,7 +32,7 @@ use alloc::collections::{BTreeMap, BTreeSet};
 use alloc::vec::Vec;
 
 use redoxfs::{Node, TreePtr};
-use subtree_scope::Kind;
+use subtree_scope::NodeKind;
 
 /// The largest file whose bytes are kept. The walk fixture's largest is 256 KiB, and a source
 /// tree's files are almost all smaller.
@@ -53,11 +53,11 @@ pub struct Child {
     pub ptr: TreePtr<Node>,
     /// What the node is, as `subtree_scope` needs to know it: a symbolic link is kept apart from
     /// a file so that no walk steps through one and no open lands on one (ruling D).
-    pub kind: Kind,
+    pub kind: NodeKind,
 }
 
 /// The names found in one directory: name to its node and what it is.
-type Found = BTreeMap<Box<str>, (TreePtr<Node>, Kind)>;
+type Found = BTreeMap<Box<str>, (TreePtr<Node>, NodeKind)>;
 
 /// See the module header.
 #[derive(Default)]
@@ -128,7 +128,13 @@ impl Memo {
     }
 
     /// Keep one name `find_node` found in `dir`.
-    pub fn keep_found(&mut self, dir: TreePtr<Node>, name: &str, child: TreePtr<Node>, kind: Kind) {
+    pub fn keep_found(
+        &mut self,
+        dir: TreePtr<Node>,
+        name: &str,
+        child: TreePtr<Node>,
+        kind: NodeKind,
+    ) {
         if self.listings.contains_key(&dir.id()) {
             return; // the listing already answers it
         }
@@ -150,7 +156,11 @@ impl Memo {
 
     /// `name` in `dir`: `None` if nothing is memoized that answers it, `Some(None)` if `dir`'s
     /// listing is memoized and the name is not in it, which is as good as `find_node`'s `ENOENT`.
-    pub fn lookup(&self, dir: TreePtr<Node>, name: &str) -> Option<Option<(TreePtr<Node>, Kind)>> {
+    pub fn lookup(
+        &self,
+        dir: TreePtr<Node>,
+        name: &str,
+    ) -> Option<Option<(TreePtr<Node>, NodeKind)>> {
         let Some(list) = self.listing(dir) else {
             let found = self.found.get(&dir.id())?.get(name)?;
             return Some(Some(*found));

@@ -164,7 +164,7 @@ exclude_re = [
     "proofs::",
 
     # The loom models: 5 `mod interleavings` blocks (memory_corruption_canary_gate, memory_regions,
-    # spin_lock, thread_wake_handshake, work_steal_slot), every one behind
+    # test_and_set_lock, thread_wake_handshake, work_steal_slot), every one behind
     # `#[cfg(all(test, loom))]`, so `cargo test` never compiles them and a mutant there always
     # "survives". Exactly the case above wearing different clothes, and found the same way:
     # milestone 326's triage of the 2026-09-14 census reported `Reached::mark` and `Reached::assert`

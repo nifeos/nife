@@ -69,13 +69,13 @@ reordering counted is the host's.
   is the positive control that the guest cores really ran in parallel.
 - LOCK. All four cores increment one counter under a spinlock; lost updates are the reordering.
   Two locks: a copy shaped like the kernel's, its unlock Release or Relaxed, with the counter on
-  its own line; and `crates/spin_lock` itself, the lock under the kernel's `InterruptSafeMutex`,
+  its own line; and `crates/test_and_set_lock` itself, the lock under the kernel's `InterruptSafeMutex`,
   with the
   counter inside it (the `spin-lock-crate` row).
 
 ### The weakened suite
 
-`weaken-spin.sh` edits `crates/spin_lock` in place to make its unlock Relaxed (`release`), or
+`weaken-spin.sh` edits `crates/test_and_set_lock` in place to make its unlock Relaxed (`release`), or
 that and its compare-exchanges Relaxed (`both`). Then `script/test --arch
 aarch64,riscv64 --no-host` runs, `NIFE_SMP` at its default of 4, as many times as fit a bounded
 job. The suite counts below ran against `spin` 0.12.3 patched the same two ways, before the kernel's
@@ -131,11 +131,11 @@ the BUGS of [the page frame budget](../frames/page-frame-budget.md), and not the
 ## The kernel's lock, measured beside the shaped copy
 
 Run 40248532720, the same hosts and scale, twice per host, after the kernel's lock became
-`crates/spin_lock`. The shaped copy's `release-unlock` row is the lock as it was; the
+`crates/test_and_set_lock`. The shaped copy's `release-unlock` row is the lock as it was; the
 `spin-lock-crate` row is the lock the kernel takes now. Milliseconds of guest time for 48 million
 contended increments, first run / second run, and every lost-update count of both rows is 0:
 
-| guest, host | shaped copy, Release | `crates/spin_lock` | shaped copy, Relaxed: lost per million |
+| guest, host | shaped copy, Release | `crates/test_and_set_lock` | shaped copy, Relaxed: lost per million |
 |---|---|---|---|
 | aarch64, aarch64 host | 5,088 / 6,073 | 5,646 / 5,698 | 99,268 / 139,640 |
 | riscv64, aarch64 host | 1,224 / 1,308 | 1,342 / 1,531 | 474 / 4 |

@@ -57,7 +57,7 @@ three records; `interfaces_len(3)` reads as a count of three.
 Ruled 2026-11-19 UTC (option A): the architect ratified the twenty names with the four renames,
 `INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface`, and no alias of
 the old spellings. Sixteen names keep their spelling. Ratification takes effect for the `Name:`
-blocks when the renames land; items 9 and 10 are that work, done by a rename lane. The names are
+blocks when the architect ratifies them; items 9 and 10 are the renames, built. The names are
 one-way at the first tag that nife pins, and ratifying them is what lets the move begin.
 
 ## The crate name
