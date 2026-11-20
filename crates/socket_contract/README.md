@@ -33,7 +33,7 @@ never assumed.
   word and `udp_bind_grant(lo, hi)` a UDP range into the high half, and the two compose with `|`.
   `listen_grant_allows` and `udp_bind_grant_allows` are the whole check, and the halves are independent
   authorities. A low bound of 0 or an inverted range grants nothing (`NO_PORT_GRANT`).
-- The shared frame: a 4 KiB frame with the destination address at `DESTINATION_IP_ADDRESS_OFFSET_BYTES`, the port at
+- The shared frame: a 4 KiB frame with the destination address at `DESTINATION_IPV4_ADDRESS_OFFSET_BYTES`, the port at
   `DESTINATION_PORT_OFFSET_BYTES`, the length of a received payload at `PAYLOAD_LENGTH_OFFSET_BYTES` (only `RECEIVE` writes it; a send carries its
   length in the argument word) and up to `MAXIMUM_PAYLOAD_BYTES` payload bytes at `PAYLOAD_OFFSET_BYTES`.
 - `stack_slots` names where a network stack finds the two capabilities it is spawned with.

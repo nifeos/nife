@@ -489,7 +489,7 @@ fn socket_page() -> Option<u64> {
 
 fn set_destination(server: &Server) {
     for (i, &b) in server.ip.iter().enumerate() {
-        SOCKET.write::<u8>(socket::DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET.write::<u8>(socket::DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
     SOCKET.write::<u16>(socket::DESTINATION_PORT_OFFSET_BYTES, server.port);
 }
@@ -498,7 +498,7 @@ fn set_destination(server: &Server) {
 fn source() -> ([u8; 4], u16) {
     let mut ip = [0u8; 4];
     for (i, b) in ip.iter_mut().enumerate() {
-        *b = SOCKET.read::<u8>(socket::DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64);
+        *b = SOCKET.read::<u8>(socket::DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64);
     }
     (
         ip,

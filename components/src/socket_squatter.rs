@@ -150,7 +150,7 @@ pub fn run() -> ! {
     }
     put(0x00);
     for (i, &b) in GW_IP.iter().enumerate() {
-        WINDOW.write::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
+        WINDOW.write::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
     WINDOW.write::<u16>(DESTINATION_PORT_OFFSET_BYTES, TFTP_PORT);
     // Clear the length field: only a RECEIVE writes it (a send carries its length in the CALL

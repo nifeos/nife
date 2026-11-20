@@ -17,7 +17,7 @@ It changes nothing; it lists what the next lanes change.
 The review took its accepted baseline from
 [the review package](../../notes/crate-reviews/socket-contract.md). It raises none of the
 decisions it puts to the architect. They are the identity values (`INTERFACE_ID` 19, `VERSION` 1, since ruled), where
-`fixture`, `ephemeral` and `polled_wait` live, the table of 55 proposed names, and the clearance
+`fixture`, `ephemeral` and `polled_wait` live, the table of 55 proposed names (since ratified), and the clearance
 itself. Nothing here reopens them. Where this review reads a later rule differently from the
 package, it says so at the item. The bind-time version check belongs to
 [milestone 1000 (message contracts carry bind-time version checks)](1000-message-contracts-carry-bind-time-version-checks.md)
@@ -57,13 +57,12 @@ package, `notes/crate-reviews/socket-contract.md`.
 - P2-8, offsets and lengths of mixed types: Open. `FRAME_BYTES` and the byte order are in place;
   the offsets stay `u64` while `MAXIMUM_PAYLOAD_BYTES` (was `DATA_MAXIMUM`) is `usize`, and one type waits on a change to
   `user_mode_runtime`'s window API that no milestone holds.
-- P2-9, names: Partly done, [#3811](https://github.com/nifeos/nife/pull/3811). The package's names
-  table is built as provisional names, ruled by the maintainer on 2026-11-19 UTC, two-way before the
-  first tag; the architect ratifies nothing here. `Cursor::next` and `polled_wait::next` keep their spelling (the
+- P2-9, names: Done, [#3811](https://github.com/nifeos/nife/pull/3811) built the package's names
+  table, and the architect ratified it as built on 2026-11-20 UTC. `Cursor::next` and `polled_wait::next` keep their spelling (the
   table keeps them). `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC); adding `tcp`
   and `udp` to the template's accepted words is in another repository and not done.
-- P2-10, inline "provisional" prose: Open. Seven doc comments in `src/lib.rs` still say it; the
-  move removes them with the `Name:` blocks.
+- P2-10, inline "provisional" prose: Done. No doc comment in `src/lib.rs` says it; the move strips
+  the ratified `Name:` blocks.
 - P2-11, vocabulary undefined: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - D1, a send's length in the argument word: Done,
   [#3517](https://github.com/nifeos/nife/pull/3517) (ruled 2026-11-11 UTC).
@@ -77,8 +76,8 @@ package, `notes/crate-reviews/socket-contract.md`.
 - PKG-3, `ephemeral` and `polled_wait` move to the stack's own crate: Done as provisional,
   [#3811](https://github.com/nifeos/nife/pull/3811), into `network_stack`, with the module renamed
   `ephemeral_port`.
-- PKG-4, the package's names table: Done as provisional, [#3811](https://github.com/nifeos/nife/pull/3811),
-  with one difference: the four offset rows keep `_BYTES`, because the family's
+- PKG-4, the package's names table: Done and ratified (2026-11-20 UTC),
+  [#3811](https://github.com/nifeos/nife/pull/3811), with one difference: the four offset rows keep `_BYTES`, because the family's
   `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) wins, and only their stems changed.
 - PKG-5, clearing the move with no tag and no publish: Open, and an open decision below.
 
@@ -96,16 +95,16 @@ package, `notes/crate-reviews/socket-contract.md`.
 
 Clearing a crate's review package is what approves its repository, here
 `nifeos/socket_contract`. The package says the crate builds, proves and stands alone, and it
-recommends against clearing yet. It waits on the ratification of its names (P2-9 and PKG-4); where `fixture`, `ephemeral_port`
-and `polled_wait` live (PKG-2 and PKG-3) has a provisional answer. The package also lists
+recommends against clearing yet, until the maintainer brings the clearance. Its names are ratified (P2-9 and PKG-4), and where `fixture`, `ephemeral_port`
+and `polled_wait` live (PKG-2 and PKG-3) is settled provisionally. The package also lists
 a maintainer step: the `std` farm must read the pinned checkout's source, or the move breaks the
 platform layer's build.
 
 Recommendation: A.
 
-- A. Clear once PKG-2, PKG-3, P2-9 and PKG-4 have
-  landed (they are built in #3811, provisionally), with no tag and no publish.
-- B. Clear now, before the architect ratifies the names, and let the scope moves and renames land in the new repository.
+- A. Clear once the maintainer's step on the `std` farm has landed (PKG-2, PKG-3, P2-9 and PKG-4
+  are built in #3811 and the names ratified), with no tag and no publish.
+- B. Clear before the scope moves land, and let them happen in the new repository.
 - C. Hold the clearance until the first publish is near, and move nothing before then.
 
 Door: one-way. A public repository is visible and forkable the moment it exists, and the eight
@@ -222,7 +221,7 @@ per-peer limit, or speaks a protocol that embeds the peer address (FTP, SIP) can
 already holds this as a contract change.
 
 Recommendation: carry the peer in the second reply word. Pack it as the IPv4 address big-endian in
-bits 16 to 47 and the port in bits 0 to 15 (`peer_word`, `word_peer`, names provisional), with a
+bits 16 to 47 and the port in bits 0 to 15 (`peer_word`, `word_peer`), with a
 harness proving the round trip for every address and port. The word is already on the wire and
 always 0; filling it changes no client that ignores it. The alternative, writing the peer into the
 connection's frame once attached, delays the fact until a second operation and ties it to a frame
@@ -258,9 +257,7 @@ What is left is under "Finding status" above.
 - **Milestone 1017.** The crate moves in its order, and the move lane takes items 2, 5, 6 and 10.
 - **Outstanding.** Item 8's single offset type, which waits on the window API's offset type.
   Item 7's loop proof is bounded at four candidates, as the appendix says.
-- **Outstanding.** Item 9's names and the package's decisions 2 to 4, which the maintainer rules
-  provisionally, checked against `crates/socket_contract/src/lib.rs`.
-- **Outstanding.** The names (P2-9 and PKG-4) and the clearance, under "Open decisions" above.
+- **Outstanding.** The clearance, under "Open decisions" above.
 
 ## Index row
 
