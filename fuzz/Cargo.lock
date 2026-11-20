@@ -215,7 +215,8 @@ dependencies = [
 
 [[package]]
 name = "domain_name_system"
-version = "0.1.0"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/domain_name_system?rev=c656cdd9206149dd147d6550c339f1cc520aadd0#c656cdd9206149dd147d6550c339f1cc520aadd0"
 
 [[package]]
 name = "endian-num"
@@ -275,7 +276,6 @@ dependencies = [
  "device_tree_blob",
  "device_tree_patch",
  "domain_name_resolution_contract",
- "domain_name_system",
  "filesystem_contract",
  "globally_unique_identifier_partition_table",
  "grant_contract",

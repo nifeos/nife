@@ -518,7 +518,6 @@ jh7110_pci_express	2	the PCI Express outbound window encoder round-trips its siz
 usb	112	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
 direct_memory_access_validator	126	the DMA-confinement validator, no descriptor escapes the grant
 network_time_protocol	18	the 1900-epoch era pivot, and no hostile packet moves the clock
-domain_name_system	130	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
 globally_unique_identifier_partition_table	68	the partition table's CRC-32, its round trips, and partitions that overlap
 master_boot_record	6	the MBR parse reads each entry from its own bytes, and the scratch range never touches a partition or sector 0
 filesystem_contract	4	a directory capability's child never exceeds its parent, at any depth

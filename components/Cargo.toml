@@ -511,7 +511,7 @@ bench = false
 # The name resolver (milestone 384 (in a capability system the resolver is a grant), §248 (the name
 # resolver is its own confined program)): a client of `net_stack` that turns a host name into
 # addresses for a client whose badge was granted the name's zone, and for nobody else. The contract
-# is `crates/domain_name_resolution_contract`, the wire format `crates/domain_name_system`. Provisional name.
+# is `crates/domain_name_resolution_contract`, the wire format `domain_name_system`. Provisional name.
 [[bin]]
 name = "domain_name_resolver"
 path = "src/domain_name_resolver.rs"
@@ -705,7 +705,7 @@ network_stack = { version = "0.1.0", path = "../crates/network_stack" }
 http_response = { version = "0.1.0", path = "../crates/http_response" }
 # Milestone 384 (in a capability system the resolver is a grant): the DNS exchange in
 # `net_stack`'s socket-contract client, against the runners' name server peer.
-domain_name_system = { version = "0.1.0", path = "../crates/domain_name_system" }
+domain_name_system = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/domain_name_system", rev = "c656cdd9206149dd147d6550c339f1cc520aadd0" }
 # The name resolver's contract with its clients and its spawner (milestone 384, provisional name).
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
 block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }

@@ -65,7 +65,7 @@ dma_validator	kernel	retired
 documentation	userspace	components,mdr
 domain_name_resolution_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 domain_name_resolution_fixture	userspace	fixtures,std_exerciser
-domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+domain_name_system	shared	retired
 driver_process_contract	shared	components,kernel
 dtb	shared	retired
 e1000e	shared	retired

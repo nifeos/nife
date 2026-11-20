@@ -32,7 +32,5 @@ manual_let_else = "warn"
 doc_markdown = "warn"
 
 [dependencies]
-# A path until `domain_name_system` has left the tree; then a `git` dependency with `rev` and
-# `version`.
-domain_name_system = { version = "0.1.0", path = "../domain_name_system" }
+domain_name_system = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/domain_name_system", rev = "c656cdd9206149dd147d6550c339f1cc520aadd0" }
 

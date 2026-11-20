@@ -11,9 +11,9 @@ badge) records them. Fork 2 and Fork 3 below keep the options and the reasoning.
 
 | Piece | Where | Evidence |
 |---|---|---|
-| The DNS wire format a stub resolver needs: a query for one name's A records, and `Query::accept`, the checks a reply must pass | `crates/domain_name_system` | 35 host tests, three of them on replies captured from 1.1.1.1 |
-| The name decoder, header codec and TCP reassembly, proved | `crates/domain_name_system/src/proofs.rs` | 3 Kani harnesses, about 34 s; each falsified by a replayable patch |
-| `accept` fuzzed with a property, not only for panics | `fuzz/fuzz_targets/domain_name_system_reply.rs` | 5.2 million runs in 120 s clean; deleting the owner check was caught |
+| The DNS wire format a stub resolver needs: a query for one name's A records, and `Query::accept`, the checks a reply must pass | `nifeos/domain_name_system` | host tests, three of them on replies captured from 1.1.1.1 |
+| The name decoder, header codec and TCP reassembly, proved | `nifeos/domain_name_system`, `src/proofs.rs` | 4 Kani harnesses, about 5 minutes; each falsified by a replayable patch |
+| `accept` fuzzed with a property, not only for panics | `fuzz/` in `nifeos/domain_name_system` | 5.2 million runs in 120 s clean; deleting the owner check was caught |
 | A name resolved end to end through `net_stack`, with lies refused, then connected to | `components/src/socket_test_client.rs`, `helpers/name-server-peer` | green on aarch64 and riscv64; the same deleted check fails it with `0xe14f` |
 | The resolver, §248's confined program: a `Stack` endpoint, an entropy endpoint, and a zone grant per client badge, judged before anything is sent | `components/src/domain_name_resolver.rs` | the gate below |
 | What the resolver, its clients and its spawner agree on, and the grant table | `crates/domain_name_resolution_contract`; [its parties](name-resolution/the-contract.md) | 11 host tests |
@@ -43,12 +43,10 @@ through slirp's 10.0.2.3, non-gating.
 ### EXAMPLES
 
 ```
-$ cargo test -p domain_name_system
-test result: ok. 35 passed
-$ (cd crates/domain_name_system && cargo kani)
-Complete - 3 successfully verified harnesses, 0 failures, 3 total.
-$ script/fuzz --time 120 domain_name_system_reply
-==> fuzz: no crashes in 1 targets at 120s each
+$ cargo test
+test result: ok. 43 passed
+$ cargo kani
+Complete - 4 successfully verified harnesses, 0 failures, 4 total.
 $ script/test --arch aarch64 --test a_name_resolves_through_the_stack
 test system_tests::user::tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers ... ok
 $ script/test --arch x86_64 --test a_granted_client_resolves

@@ -2,7 +2,7 @@
 //! IPv4 addresses for a client holding a grant to ask, and nobody else (notes/name-resolution.md).
 //!
 //! A client of `net_stack` and a server to its own clients: the contract is
-//! `crates/domain_name_resolution_contract`, and `crates/domain_name_system`'s `Query::accept`
+//! `crates/domain_name_resolution_contract`, and the `domain_name_system` crate's `Query::accept`
 //! decides what is believed. **A name is judged against its badge's granted zone before anything is
 //! sent**, so a client granted `nife.test` asking about `example.com` gets [`status::DENIED`] and
 //! the network sees nothing. Only badge 0, the spawner's, can grant. **With no entropy it asks
