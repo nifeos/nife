@@ -18,7 +18,7 @@ carried had no home. *(Number provisional until the merge queue lands it.)*
 
 A lane can start by reading the seam and proposing where it falls. Nothing has to
 build or boot first, and the decision it reaches is a lane's own: where to cut a proof boundary is
-reversible, and no wire format, name or syscall is on the other side of it.
+reversible, and no wire format, name or system call is on the other side of it.
 
 Premise re-checked 2026-09-19, and half of it had stopped being true the day before it was
 filed. This block says the walk's parsing half "already lives in `crates/machine_discovery`, which

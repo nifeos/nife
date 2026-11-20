@@ -10,7 +10,7 @@ Part of [the notes index](../README.md), which says how to add a line.
 - [Reading aarch64 assembly](../reading-assembly.md): five rules for decoding assembly; start here.
 - [The stack, `sp`, and `x30`](../stack.md): how the stack works, and our stack incidents.
 - [Stack high-water](../stack-high-water.md): measuring how deep each kernel stack actually goes.
-- [Exceptions](../exceptions.md): faults, interrupts and syscalls as one aarch64 mechanism.
+- [Exceptions](../exceptions.md): faults, interrupts and system calls as one aarch64 mechanism.
 - [Interrupts: the GIC and the timer](../interrupts.md): the GIC, the timer, and interrupts as messages.
 - [The device tree](../device-tree.md): the machine's self-description, and how we parse it.
 - [ISA discovery](../isa-discovery.md): reading each CPU's features and core list at boot.

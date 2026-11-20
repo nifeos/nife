@@ -57,7 +57,7 @@ milestone 324 (the bench console cannot speak to any of the three boards)).
 `job_mix::MAP` splits a region from the task's own budget, builds an address space and a frame in
 it, maps the frame at 32 addresses and `DESTROY`s the lot. `job_mix::SPAWN` builds two children from
 EL0 (address space, stack, thread, the shared child code), `RECEIVE`s each one's exit and reclaims its
-region. No syscall, method or object type was added. Each task is granted an untyped budget
+region. No system call, method or object type was added. Each task is granted an untyped budget
 (`memory_region_cap`) and a child-done endpoint through the existing spawn grants. That is the shape
 `kernel/src/bench.rs`'s `map_el0` and `spawn_el0` already had. The proposal worried that a map job
 "needs the spawn path to hand a task a capability on its own address space"; that dissolved once the

@@ -150,7 +150,7 @@ lives and who runs it. Porting each runtime is per-workload milestone work.
 
 Native compiled. Each language needs its runtime ported, and the shape differs. C runs today only
 as §31 (the foreign-language seam) builds it: `fixtures/c/c_seam.c` is linked into `c_shim`, a Rust
-shell that holds every capability, and the C makes no syscalls. Full POSIX, §31's tier three, is
+shell that holds every capability, and the C makes no system calls. Full POSIX, §31's tier three, is
 unbuilt. C++, Zig and Swift need a libc or their own runtime ported; nothing has started. Go is
 different: its runtime makes system calls itself per `GOOS` rather than through a libc (recalled),
 so Go needs a `GOOS=nife` port. `git grep GOOS` finds nothing. §83 (take the Rust one) still

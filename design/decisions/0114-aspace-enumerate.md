@@ -25,21 +25,21 @@ mapped without granting the ability to map or unmap. `pmap` is built against it.
 ## Why this was not really a live fork
 
 The call site has been waiting for exactly this since the object was created.
-`kernel/src/syscall.rs`'s `RETYPE_OBJ` handler for `ASPACE` carries a comment written when the
+`kernel/src/system_call.rs`'s `RETYPE_OBJ` handler for `ASPACE` carries a comment written when the
 object was first built: "`Aspace` does not consult `ENUMERATE` today and is expected to when `pmap`
 is built." Every address-space object already receives `Rights::ALL` at creation (the same invariant
 `Endpoint`/`Rendezvous` uses). So the bit has been present and unused the whole time; nothing is
 retrofitted.
 
 The analogous case is already built and proven. `Endpoint::SURVEY` (milestone 126's first stratum,
-2026-08-16) gates on `Rights::ENUMERATE` and adds no new syscall number. Three Kani harnesses hold
+2026-08-16) gates on `Rights::ENUMERATE` and adds no new system call number. Three Kani harnesses hold
 the property that the domain a monitor sees and the domain a supervisor may collect from cannot
 diverge. This is the same shape one object type over: read a mapping without being able to change
 it.
 
-Cost and reversibility, per the six-questions framework. There is no new right, no new syscall
+Cost and reversibility, per the six-questions framework. There is no new right, no new system call
 number, and no wire commitment two programs already depend on. A new method on an existing object
-type is exactly what CLAUDE.md's syscall-surface rule calls fine to add within the established
+type is exactly what CLAUDE.md's system-call-surface rule calls fine to add within the established
 capability model. Fully reversible if it turns out wrong.
 
 **One real cost the first pass at this decision missed, caught rereading `notes/process-view.md`

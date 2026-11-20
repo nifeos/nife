@@ -324,7 +324,7 @@ impl CurrentCpuPage {
     /// An id at or past [`CPU_ID_BOUND`] reads as unknown, so the answer always indexes an array
     /// of `CPU_ID_BOUND` elements.
     ///
-    /// Two aligned loads and three comparisons, no syscall.
+    /// Two aligned loads and three comparisons, no system_call.
     pub fn cpu(&self) -> Option<usize> {
         match self.word(CPU_OFFSET)? {
             UNSCHEDULED => None,

@@ -86,7 +86,7 @@ whole family. Every harness was read.
   from an unsafe one took reading the code rather than applying a rule.
 - A model of a caller cannot be repaired this way.
   `kernel::every_page_between_the_checked_ends_is_itself_a_user_page` restates the guard two
-  syscall paths apply. Both were read and both still match, so it is faithful; there is nothing to
+  system call paths apply. Both were read and both still match, so it is faithful; there is nothing to
   extract and call, because what is duplicated is control flow rather than a function, and nothing
   re-reads those call sites when they change.
 - The 147 cleared harnesses carry no artifact, the same limit 211 records for its own 135. A
@@ -115,7 +115,7 @@ whole family. Every harness was read.
   reading the code.
 - **Recorded.** `design/roadmap/0213-harnesses-that-duplicate-the-implementation.md`. A model of a
   caller cannot be repaired this way.
-  `kernel::every_page_between_the_checked_ends_is_itself_a_user_page` restates a guard two syscall
+  `kernel::every_page_between_the_checked_ends_is_itself_a_user_page` restates a guard two system call
   paths apply; both were read and both still match, so it is faithful, but what is duplicated is
   control flow rather than a function and nothing re-reads those call sites when they change.
 - **Recorded.** `design/roadmap/0213-harnesses-that-duplicate-the-implementation.md`. Some

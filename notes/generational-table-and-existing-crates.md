@@ -38,7 +38,7 @@ Each of these is a requirement some kernel code depends on today:
 5. A resumable walk. `iter_from(slot)` yields `(slot, name, &T)` from a slot onward, and
    `rendezvous::SURVEY` hands that slot to userspace as a cursor. Every walk stops at `top`, one past
    the highest live slot, so it costs what the table holds and not `N`.
-6. A name the table never minted resolves to nothing. Names arrive in syscall registers, so any
+6. A name the table never minted resolves to nothing. Names arrive in system call registers, so any
    `u64` at all must either fail or land on the entry whose minted name is exactly that `u64`.
 
 Its stated limits: insert scans first-fit in O(N), `[Option<T>; N]` spends a tag per slot on a `T`
@@ -175,7 +175,7 @@ version odd (`(value >> 32) | 1`), so two different `u64`s decode to the same ke
 map holding one live entry named `0x3_0000_0001` resolves `from_ffi(0x2_0000_0001)` to that entry,
 though the map never minted `0x2_0000_0001`. Its documentation allows this ("the behavior is safe but
 unspecified" for a value that did not come from `as_ffi`), and for a game it does not matter. For a
-kernel that takes names from syscall registers, it means two names reach one object, and nife's
+kernel that takes names from system call registers, it means two names reach one object, and nife's
 claim that nobody can forge a name would weaken to "nobody can forge one, except in the low bit of
 the generation". The harness that finds it:
 
@@ -208,7 +208,7 @@ ship with the crate, each with a patch that makes it fail.
   fixed-capacity generational arena. It does not fit the kernel. `Arena::new` is not `const`, so it
   cannot sit in a `static`. Its single arena-wide generation means a removal anywhere changes the
   generation every later insert carries. Its first handle has index 1 and generation 2, not `0`,
-  and the handle is a struct, not a word a syscall register carries. It has no slot cursor, and its
+  and the handle is a struct, not a word a system call register carries. It has no slot cursor, and its
   stack backing keeps `MaybeUninit` behind 72 lines of `unsafe` with no proofs.
 - `coca`: the other true match on storage. It has no release or commit since March 2022, no
   reverse dependencies, 19 downloads in 90 days, a non-`const` constructor, a first name of

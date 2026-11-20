@@ -55,7 +55,7 @@ Now it degrades: a failed spawn returns a sentinel result to the shell ("could n
 process") and the service keeps serving. Per-process spawn *quotas* are the real fix and are
 deferred with untyped kernel objects; not turning OOM into a panic is the cheap, honest hardening.
 
-3. A failed `MemoryRegion::MAP` silently burned the process's own budget. The syscall retyped a page
+3. A failed `MemoryRegion::MAP` silently burned the process's own budget. The system call retyped a page
 before attempting the map, so a bad `va` (misaligned, or high-half) spent a page for nothing. Now
 those cheap cases are rejected before any page is retyped. (An already-mapped `va` still costs one
 page, which is process-local and bounded by the untyped, so it is left as-is.)
@@ -91,7 +91,7 @@ pointer path at all. Corrected, and the historical `abi::console` methods are ma
   (§10 (process model), §16 (object revocation)): the budget is the limit, and retyping enforces it. The per-spawner quota in
   notes/quotas.md still exists in the kernel but has had no caller since §28 retired the kernel-wired
   shell, which milestone 41 found and recorded there. Read that note as a description of the
-  mechanism, not of what is running. What remains unbounded is any kernel object a future syscall
+  mechanism, not of what is running. What remains unbounded is any kernel object a future system call
   might create outside the untyped model.
 - No IPC timeouts and no revocation. A thread blocked on an endpoint that never gets a peer is
   never reclaimed. This is the accumulation primitive above, and it is the seL4 depth (capability

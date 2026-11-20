@@ -18,7 +18,7 @@ verbatim:
 > sysenter (123 lines), initialize per-CPU data structures and application processes, etc.
 
 Read that list against this tree's `arch/x86_64/`. IOMMU configuration, interrupt setup, the
-APIC, the IDT, the GDT, the TSS, the syscall entry: it is the same file list, and in Atmosphere it is
+APIC, the IDT, the GDT, the TSS, the system call entry: it is the same file list, and in Atmosphere it is
 trusted, not verified. A 6K-line verified kernel carries 3,172 lines of hand-trusted hardware
 code beside it, and that trusted code is more than half the size of the verified part.
 

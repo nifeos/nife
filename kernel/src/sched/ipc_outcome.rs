@@ -1,5 +1,5 @@
 //! **How a blocking IPC learned it failed**: resolving a rendezvous name, and the aborted and
-//! refused flags the syscall layer reads and clears after the primitive returns.
+//! refused flags the system call layer reads and clears after the primitive returns.
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
@@ -21,7 +21,7 @@ pub(super) fn rendezvous_of(
 }
 
 /// Mark thread `tid`'s blocking IPC as aborted (a stale rendezvous, or one revoked while it
-/// blocked); the syscall layer reads and clears it after the primitive returns, and hands back an
+/// blocked); the system call layer reads and clears it after the primitive returns, and hands back an
 /// error. Drops any capability staged for the aborted send.
 ///
 /// `#[cold]`: every call site is the miss of a `rendezvous_of`, on `script/fastpath-footprint`'s
@@ -58,7 +58,7 @@ pub(super) fn set_ipc_refused(sched: &mut IpcTables, tid: ThreadId) {
 
 /// **Read and clear why the current thread's aborted send was aborted**: `true` when the rendezvous
 /// carries an interrupt and refused it ([`set_ipc_refused`]), `false` when it was stale or revoked.
-/// Called by the syscall layer only after [`take_ipc_aborted`] returned `true`, so an IPC that was
+/// Called by the system call layer only after [`take_ipc_aborted`] returned `true`, so an IPC that was
 /// not aborted never pays for it.
 ///
 /// Name: provisional (milestone 603 (provisional)): calef names public items.

@@ -64,7 +64,7 @@ A `PageFrame` count is `NonZeroU64`. Every dispatch path derives an end address 
 debug build panics and a release build wraps. The type removes the branch at no cost, since the
 niche keeps `Option<Object>` the same size. `page_frame_run_len` is `const`, so a caller passing a
 literal gets the refusal at compile time. The count rides on the capability, not on `MAP`'s
-arguments, so the syscall's argument shape is the same for a run as for one page. §102 (a Frame names a run of pages) is the ruling.
+arguments, so the system call's argument shape is the same for a run as for one page. §102 (a Frame names a run of pages) is the ruling.
 
 ## What a slot costs
 
@@ -119,7 +119,7 @@ be the wrong yardstick for the suite's much larger workload.
 
 ## Two rights vocabularies, one meaning
 
-`abi::rights` is the word that travels in a syscall register, from the progenitor's grant tables to
+`abi::rights` is the word that travels in a system call register, from the progenitor's grant tables to
 every `SEND_CAPABILITY` and `CAPABILITY_INSERT` in `components/` and `fixtures/`. `capability_table::Rights` is what the
 kernel means by one. They are two arrays of numbers in two dependency-free crates that cannot see
 each other, so `cap.rs` compares them at compile time.
@@ -128,7 +128,7 @@ The failure this closes is a right added to one crate and not the other. A bit i
 missing from `Rights::ALL` is a right userspace can name that `Rights::from_bits` masks to zero, so a
 delegation asking for it succeeds and confers nothing. A bit in `ALL` with no ABI name is a right the
 kernel honors that no caller can ask for, which is how a hand-listed set drifts into granting more
-than any manifest says. The syscall path narrows with `a1 as u32`, so a right at bit 32 or above
+than any manifest says. The system call path narrows with `a1 as u32`, so a right at bit 32 or above
 would be truncated to nothing on the way in; an assertion stops anyone defining one.
 
 ## What a budget's rights mean

@@ -5,13 +5,13 @@ decided: 2026-09-15
 ratified_by: calef
 ---
 
-# 152. The port-range capability: object and method semantics on the syscall surface
+# 152. The port-range capability: object and method semantics on the system call surface
 
 calef, 2026-09-15, ratified the object, its one method, and the x86-only scope together. He ratified
 them when milestone 299 (the x86 port-range capability) landed the working driver behind them. This
 section records the one thing milestone 299 puts on the capability surface. The reason is that a new
 object type there is calef's to ratify (§10 (process model), §16 (object revocation)). The *move
-fast on what can be undone* tenet also files the syscall surface under the irreversible category.
+fast on what can be undone* tenet also files the system call surface under the irreversible category.
 **The provisional names for the object, its method, and their fields are not ratified here.** They
 stay on the worklist (`script/names`); calef takes those separately. DECISIONS §121 (what a device
 capability is) decided *that* x86 gets a port capability and *why* (the reversal at the end of that
@@ -40,14 +40,14 @@ by the CPU's TSS I/O permission bitmap.
 - The object is `x86_64`-only, unlike `DeviceFrame` (which every architecture has, because MMIO is
   universal). Port I/O exists on no other architecture, so omitting it there is not a parity gap
   (§19 (architectural parity is a tenet)). It is the absence of the hardware. Compiling the variant
-  only where it exists also keeps a new enum arm off the other two architectures' syscall
+  only where it exists also keeps a new enum arm off the other two architectures' system call
   dispatcher. The IPC round trip's instruction-footprint bound is measured against that dispatcher
   (`script/fastpath-footprint`). A variant present everywhere grew riscv64's dispatcher past that
   bound for hardware it can never name.
 
 ## What invoking it does
 
-Almost nothing, on purpose. Enforcement is at the context switch, not on the syscall path, so a
+Almost nothing, on purpose. Enforcement is at the context switch, not on the system call path, so a
 holder never invokes the capability to *use* the ports. It executes `in`/`out` directly. On
 switch-in, the kernel writes the holder's ports into the current core's TSS bitmap, so those
 `in`/`out` are permitted from ring 3 and no others (the lazy write; see §121's 2026-08-25
@@ -66,7 +66,7 @@ strand the device forever. No other method exists; `MAP` has no meaning for an o
 - **It does not replace `DeviceFrame`.** This is a *second* device-capability kind, for the one
   class with no page. PCI/PCIe devices, whose registers are memory, are unchanged and keep the
   mapping-based capability on all three architectures.
-- **It does not add a syscall number.** `REVOKE` is a method on the existing `SYSCALL_INVOKE`
+- **It does not add a system call number.** `REVOKE` is a method on the existing `SYSTEM_CALL_INVOKE`
   surface (its name spelled out by the ruling of 2026-11-11 (UTC)), within the established
   capability model. That is the bar §10/§16 set for a new method.
 - It does not give a way to *acquire* a port from userspace. A `PortRange` is minted by the kernel

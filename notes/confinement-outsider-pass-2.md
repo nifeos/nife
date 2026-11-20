@@ -33,7 +33,7 @@ cannot see; the detail sections say which is which.
 | # | Attack | Outcome | Evidence |
 |---|---|---|---|
 | 1 | Derive a cap that gains a bit its source lacks | Held | `from_bits` masks `& ALL`; `is_subset_of`/`allows` sound; kernel uses `Delegation::derive` (GRANT + subset). The Kani proof targets `CapabilityTable::derive`, which the kernel never calls. |
-| 2 | Forge a right from the syscall register | Held | `from_bits(aN as u32)` masks `& ALL`; the `u32` cast drops high bits, which can only remove rights. |
+| 2 | Forge a right from the system call register | Held | `from_bits(aN as u32)` masks `& ALL`; the `u32` cast drops high bits, which can only remove rights. |
 | 3 | No-GRANT budget produces a child that can delegate | Near miss | SPLIT is sound (`mint_child` copies rights). `RETYPE`/`RETYPE_OBJ` need only WRITE and mint the new object with `Rights::ALL`, GRANT included, which SEND_CAP then passes on. The `cap.rs` comment "GRANT never appears anywhere it was not present at the root" overstates this. |
 | 4 | Reuse a consumed capability | Held | `delete` empties the slot; a later `get` is `NoSuchSlot`. |
 | 5 | Disturb one cap by dropping another | Near miss | On x86 `delete_current_cap` of a `PortRange` clears the thread-wide `port_range_grant` with no sibling check, so deleting one of two copies disables the other. Fails safe. |
@@ -93,7 +93,7 @@ the new `port_out_then_exit` stub, and asserts the child faults. The stub is use
 row-26 hazard. Booted red on x86_64: the supervision message was `[EVENT_EXIT, ..]`, meaning the
 `out` was permitted, where the secure behavior is `EVENT_FAULT`. It is opt-in (skips unless named
 with `--test`) so the default suite stays green, since whether a non-WRITE `PortRange` should deny
-I/O is the x86 port syscall surface and so an architect's call. Run it with
+I/O is the x86 port system call surface and so an architect's call. Run it with
 `script/test --arch x86_64 --test a_read_only_port_capability`.
 
 Proposed claim 31: port I/O honors the capability's WRITE right; a thread whose only `PortRange`

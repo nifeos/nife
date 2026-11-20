@@ -38,7 +38,7 @@ network. A compromised entropy service is a machine whose random numbers an atta
 is exactly as much damage as owning the entropy source should be worth, and it is the reason the
 device is not sitting inside every program.
 
-It needed nothing new in the kernel. No capability type, no syscall, no method number: an
+It needed nothing new in the kernel. No capability type, no system call, no method number: an
 `Rendezvous` with WRITE is the whole grant, and `caps` already prints it. That is the third time this
 pattern has paid (the framebuffer, the clock, now this), and it is worth noticing that a capability
 system's answer to "add a new privilege" keeps being "hand out a smaller object you already have".

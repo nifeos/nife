@@ -148,7 +148,7 @@ fn a_child_holds_exactly_what_its_caller_granted_and_no_device() {
     sched::reclaim_region(region).expect("the region did not come back");
 }
 
-/// A program with no construction authority cannot build, from inside, through the real syscall.
+/// A program with no construction authority cannot build, from inside, through the real system_call.
 ///
 /// The `kernel_test_subject`'s `BUILD_WITH_NOTHING` role reports the errnos of a `RETYPE`, a
 /// `SEND` and a `RETYPE_OBJECT` on ungranted slots. Each must be `NoSuchSlot` ("nothing there"), not

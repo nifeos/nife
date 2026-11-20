@@ -63,7 +63,7 @@ and the crates it misses stay green because nothing runs them.
 
 The host-excluded set is derived by `helpers/host-excluded-crates.sh`. Every workspace member that
 reaches `crates/user_mode_runtime` cannot compile for the host, because `svc` and `ecall` there are
-EL0 syscalls. The whole set must be excluded: `--exclude` removes a package from the test selection
+EL0 system_calls. The whole set must be excluded: `--exclude` removes a package from the test selection
 and not from the dependency graph, so cargo still builds an excluded crate that another member
 needs. On an aarch64 host the bare-metal crates can compile by accident, which hides the gap on CI's
 aarch64 runners. A derivation takes in the next crate to gain such a dependency without anyone

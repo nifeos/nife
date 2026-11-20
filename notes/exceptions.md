@@ -9,7 +9,7 @@ mechanism.
 |---|---|---|
 | **Fault** | bad memory access, illegal instruction, misaligned `sp` | **2** (here) |
 | **Interrupt** | the timer fires, the UART has a byte | **5** |
-| **Syscall** | userspace executes `svc` | **7** |
+| **System call** | userspace executes `svc` | **7** |
 
 All three suspend the current instruction stream, switch to EL1, and jump to an address the
 kernel chose. Only the *reason* differs. So we build the plumbing once, in milestone 2, and
@@ -64,7 +64,7 @@ test for it.
 - Current EL, SP_EL0: we're at EL1 but using `SP_EL0`. Kernels almost never do this.
 - Current EL, SP_ELx: we're at EL1 using `SP_EL1`. This is where our own bugs land.
 - Lower EL, AArch64: came from EL0. This is where userspace lands, and where milestone
-  7's syscalls will arrive.
+  7's system calls will arrive.
 - Lower EL, AArch32: 32-bit userspace. We will never support it.
 
 ## 128 bytes is 32 instructions
@@ -112,7 +112,7 @@ the single most useful field in the machine when something has gone wrong.
 
 | EC | Meaning |
 |---|---|
-| `0x15` | **SVC from AArch64**: a syscall. Milestone 7. |
+| `0x15` | **SVC from AArch64**: a system_call. Milestone 7. |
 | `0x21` | Instruction abort, same EL: we jumped somewhere bad |
 | `0x24` | Data abort, **lower** EL: *userspace* touched bad memory. Milestone 7 makes this a segfault. |
 | `0x25` | Data abort, same EL: **the kernel** touched bad memory. Our bug. |
@@ -128,7 +128,7 @@ it unconditionally would be a lie, so `fatal()` checks the EC first.
 `ELR_EL1` points at different places depending on the exception.
 
 For `svc`, the hardware sets `ELR_EL1` to the instruction *after* the `svc`. You handle the
-syscall and `eret`, and the program continues normally.
+system call and `eret`, and the program continues normally.
 
 For `brk`, `ELR_EL1` points at the `brk` itself. So a naive `eret` re-executes it,
 forever.
@@ -254,7 +254,7 @@ the machine at slot 4 and a user bug that kills one thread at slot 8.
   EL0, for the reason in [aarch64-port.md](aarch64-port.md), "Floating point and SIMD". When there
   is no thread to record against, the arm falls through, because returning would retake the trap
   forever.
-- `svc` from EL0 is the syscall. The dispatcher writes its result into `frame.x[0]`, and
+- `svc` from EL0 is the system_call. The dispatcher writes its result into `frame.x[0]`, and
   `RESTORE_CONTEXT` puts it in the register the program is waiting on: writing the trap frame is
   writing the user's registers.
 - Anything else from EL0 kills the thread and leaves the kernel running. Anything else from
@@ -295,8 +295,8 @@ returning, so the GIC is not left refusing interrupts to the thread switched to.
 ### Costs the debug build pays
 
 The icount gate measures an opt-level 0 kernel, where nothing inlines. So the branch for "no stack
-switch", which every syscall takes, is made in Rust rather than in the trampoline (routing it
-through anyway cost 8.6 instructions per `null_syscall`). And `is_from_lower_el` is two comparisons
+switch", which every system call takes, is made in Rust rather than in the trampoline (routing it
+through anyway cost 8.6 instructions per `null_system_call`). And `is_from_lower_el` is two comparisons
 written out under `#[inline(always)]`, because `(8..=11).contains(&index)` is a real call into
 `RangeInclusive` on every trap at opt-level 0.
 
@@ -309,7 +309,7 @@ handlers:
   was swapped out, or copy-on-write needs to duplicate it).
 - Milestone 5 (the GIC and the timer): interrupt stops being fatal and becomes the timer tick that
   drives preemption.
-- Milestone 7: EC `0x15` (`svc`) stops being fatal and becomes the syscall dispatcher.
+- Milestone 7: EC `0x15` (`svc`) stops being fatal and becomes the system call dispatcher.
 
 The plumbing is already there. Those milestones are mostly a matter of adding arms to a
 `match`.

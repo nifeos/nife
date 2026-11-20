@@ -49,7 +49,7 @@ body:
     attributes:
       label: How reversible is it, and who has already acted on it
       description: >-
-        The test is not "can the commit be reverted". Names, wire formats, dependencies, the syscall
+        The test is not "can the commit be reverted". Names, wire formats, dependencies, the system call
         surface, and anything that has left the machine are the expensive category; almost everything
         else is an hour.
     validations:

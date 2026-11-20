@@ -106,10 +106,10 @@ binary never sees. It does not meet the ruling.
 whose `sel4test-driver` is the root task and runs each test in its own process, reporting over IPC
 (read, docs.sel4.systems). Hubris keeps a `test/` tree with `test-runner` and `test-suite` tasks and
 per-board test apps (directory listing read; that it builds them as separate images from the same
-kernel is recalled, not read). It proves the syscall surface rather than kernel internals, which is
+kernel is recalled, not read). It proves the system call surface rather than kernel internals, which is
 the better test. It loses here because 1,414 references into `sched`, `testing` and `memory_region`
-observe state no syscall exposes. Porting means rewriting 20,000 lines and either dropping those
-observations or widening the syscall surface (§10 (process model: capability-based, microkernel)) to reach them. Right for new tests, wrong as the
+observe state no system call exposes. Porting means rewriting 20,000 lines and either dropping those
+observations or widening the system call surface (§10 (process model: capability-based, microkernel)) to reach them. Right for new tests, wrong as the
 move.
 
 **D. A feature on the kernel instead of dev-dependencies**, `system_tests = [ "dep:ps", ... ]`.
@@ -167,7 +167,7 @@ That backlog is small, measured over the 66 files on 2026-09-27 (UTC):
 `measured_boot_tests` avoids the three named modules but reads `cap` and `trust`, so it observes
 internals after all. The honest backlog is the three harness-only files: the shell language,
 pipeline and redirection tests, which drive `swish` and read what it printed. Every other file
-observes kernel state no syscall exposes, which is the case rule 2 allows.
+observes kernel state no system call exposes, which is the case rule 2 allows.
 
 ## What each test cost, and its budget
 

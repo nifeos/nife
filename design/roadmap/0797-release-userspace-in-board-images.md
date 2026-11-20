@@ -19,9 +19,9 @@ Raised 2026-10-05 (UTC) by `lane/radon-2026-10-05-record`. Title and slug are dr
 `cargo xtask initial-ramdisk-riscv`, which packs `target/<target>/debug/` because nothing sets xtask's
 `RELEASE` flag on that path (`xtask/src/archive.rs`, `profile_dir()`). So every radon payload runs a
 release kernel under debug programs. The job mix measures user code as well as the kernel's: a
-syscall's userspace stub, `compute`'s grind, the spawn job's loader.
+system call's userspace stub, `compute`'s grind, the spawn job's loader.
 
-On 2026-10-05 the stub alone was worth 3 to 8 ticks of a 110-tick `null_syscall` job, depending on
+On 2026-10-05 the stub alone was worth 3 to 8 ticks of a 110-tick `null_system_call` job, depending on
 the build ([`notes/job-mix/radon-2026-10-05.md`](../../notes/job-mix/radon-2026-10-05.md)). A
 debug stub is larger and spills more, which makes it both dearer and more sensitive to where it
 lands than the shipped code would be.
@@ -47,4 +47,4 @@ already set; nothing new is built.
 
 ## Index row
 
-`script/board-image` builds a release kernel but packs debug userspace, so every radon payload measures a debug syscall stub worth 3 to 8 ticks of a 110-tick job. Building release userspace makes the board numbers match what a customer would run, and starts a new radon baseline.
+`script/board-image` builds a release kernel but packs debug userspace, so every radon payload measures a debug system call stub worth 3 to 8 ticks of a 110-tick job. Building release userspace makes the board numbers match what a customer would run, and starts a new radon baseline.

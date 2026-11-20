@@ -21,7 +21,7 @@ design/decisions/0095-a-proven-ipc-fastpath.md is deciding about.
 | 2 | Replaced: sync IPC augmented with async notification | yes | `inter_process_communication::Rendezvous::signal`, with `receive_drains_a_pending_signal_first` proving a signal is never lost |
 | 3 | Replaced: physical by virtual message registers | yes | three words in registers, a five-word mailbox in the TCB, no user-visible buffer address |
 | 4 | Abandoned: long IPC | yes | no multi-buffer transfer exists; bulk goes through shared frames |
-| 5 | Replaced: thread IDs by endpoints as destinations | yes | endpoint-only naming, and no syscall names a receiver |
+| 5 | Replaced: thread IDs by endpoints as destinations | yes | endpoint-only naming, and no system call names a receiver |
 | 6 | Abandoned: IPC timeouts | yes | none, and the resulting hang is recorded as a limitation where the reader meets it |
 | 7 | Abandoned: clans and chiefs | yes | never had it; capabilities do the job it was invented for |
 | 8 | Retained: user-level drivers | yes | `components/src/{block_driver,input,net_stack}.rs`; the kernel validates DMA and never drives |

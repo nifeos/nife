@@ -155,7 +155,7 @@ whole suite, so most rows are `read`; the falsification records each row cites w
 | # | Claim | Outcome | Grade | Test / evidence |
 |---|---|---|---|---|
 | 1 | A derive holds no more than its source | held | read | `derive_never_widens_rights` cited; masking and subset checks read unchanged |
-| 2 | No right forged from a syscall register | held | read | `from_bits` masks `& ALL`; the cast drops high bits |
+| 2 | No right forged from a system call register | held | read | `from_bits` masks `& ALL`; the cast drops high bits |
 | 3 | A non-delegating budget cannot mint a delegating child | near miss | read | `a_grant_less_budget_mints_a_grant_bearing_frame` still characterizes the retype gap; ruled (a) 2026-10-07, the fix is milestone 824 |
 | 4 | A consumed capability cannot be reused | held | read | `delete` empties the slot; unchanged |
 | 5 | Dropping one capability spares the others | held, x86 exception | read | the port grant's two-copies limb stays recorded, fails safe |

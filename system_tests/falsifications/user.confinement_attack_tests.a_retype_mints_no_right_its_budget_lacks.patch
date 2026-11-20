@@ -10,10 +10,10 @@ Expected to fail: `assert_eq!` "a GRANT-less budget RETYPEd a frame carrying rig
 `left: Rights(31)` and `right: Rights(2)`. Replayed on 2026-10-12 (UTC) by milestone 824's lane:
 red at exactly that assertion on aarch64.
 
-diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_region.rs
+diff --git a/kernel/src/system_call/memory_region.rs b/kernel/src/system_call/memory_region.rs
 index 63ae133a0..ce6f46023 100644
---- a/kernel/src/syscall/memory_region.rs
-+++ b/kernel/src/syscall/memory_region.rs
+--- a/kernel/src/system_call/memory_region.rs
++++ b/kernel/src/system_call/memory_region.rs
 @@ -131,7 +131,10 @@ pub(super) fn memory_region_retype(
      // The run is non-empty by construction (`memory_region::retype_run` maps a zero count to one).
      let count = core::num::NonZeroU64::new(count).ok_or(Error::OutOfMemory)?;

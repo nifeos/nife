@@ -186,7 +186,7 @@ $ script/audits --baseline     # the counts to paste into both index tables
 
 - The worklist cannot see a doc comment, so it cannot see the ABI. Added by the 2026-08-17 sweep,
   which took its lens from the trigger instead and found five stale claims about the width of the
-  syscall surface. Not one ABI document was in the worklist's top twenty, and the reason is
+  system call surface. Not one ABI document was in the worklist's top twenty, and the reason is
   structural: the ranking asks how much of the code a document *cites* has moved, and
   `crates/abi/src/lib.rs` does not cite code, it is the code. Its doc comments are the
   most-depended-on prose in the tree and they are invisible to the heuristic, along with every other

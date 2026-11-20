@@ -51,7 +51,7 @@ the cost this page was chosen to avoid.
 ## What would make it not worth doing
 
 If the answer to the correctness question turns out to want restartable sequences, this stops being
-an allocator milestone and becomes an `rseq` milestone, which is a much larger thing and a syscall
+an allocator milestone and becomes an `rseq` milestone, which is a much larger thing and a system call
 surface question. Finding that out early is a good outcome of starting it.
 
 ## The consumer, measured

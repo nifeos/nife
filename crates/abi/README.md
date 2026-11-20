@@ -1,20 +1,20 @@
 # abi
 
 The application binary interface (ABI) between a program and a capability kernel. It holds the
-five syscall numbers, the method number of every operation on every kind of capability, the error
+five system call numbers, the method number of every operation on every kind of capability, the error
 codes, the rights bits and the shapes of the replies. The crate is `no_std` with no dependencies,
 and carries no code beyond constants, a handful of `const fn` helpers and tests. A kernel and the
 programs that run on it share this one definition, so a number cannot mean two things on the two
-sides of the syscall boundary.
+sides of the system call boundary.
 
 ## The contract
 
-- The five syscalls are `SYSCALL_EXIT` (0), `SYSCALL_YIELD` (1), `SYSCALL_INVOKE` (2),
-  `SYSCALL_CAPABILITY_DELETE` (3) and `SYSCALL_EXIT_THREAD` (4). Everything else is
+- The five system calls are `SYSTEM_CALL_EXIT` (0), `SYSTEM_CALL_YIELD` (1), `SYSTEM_CALL_INVOKE` (2),
+  `SYSTEM_CALL_CAPABILITY_DELETE` (3) and `SYSTEM_CALL_EXIT_THREAD` (4). Everything else is
   `invoke(capability, method, a0, a1, a2)`, which acts on a capability the caller holds in its own
-  table. Adding an operation is a new method, never a new syscall.
+  table. Adding an operation is a new method, never a new system_call.
 - The trap moves six words in each direction. The crate root's table names the register that
-  holds each word on aarch64, riscv64 and `x86_64`: the syscall number, then the slot, the method
+  holds each word on aarch64, riscv64 and `x86_64`: the system call number, then the slot, the method
   and the arguments. Word 0 returns a result or a negative `Error`.
 - Every method constant says what it takes, what it returns, the right it needs and its refusals.
   The modules are listed below.
@@ -48,10 +48,10 @@ sides of the syscall boundary.
 ## EXAMPLES
 
 ```rust
-use abi::{Error, SYSCALL_EXIT, SYSCALL_INVOKE, SYSCALL_YIELD, rendezvous};
+use abi::{Error, SYSTEM_CALL_EXIT, SYSTEM_CALL_INVOKE, SYSTEM_CALL_YIELD, rendezvous};
 
-assert_eq!([SYSCALL_EXIT, SYSCALL_YIELD, SYSCALL_INVOKE], [0, 1, 2]);
-// Sending on a rendezvous is a method number, not a syscall number.
+assert_eq!([SYSTEM_CALL_EXIT, SYSTEM_CALL_YIELD, SYSTEM_CALL_INVOKE], [0, 1, 2]);
+// Sending on a rendezvous is a method number, not a system call number.
 assert_eq!(rendezvous::SEND, 0);
 // Errors are negative, and "empty slot" is not "gone".
 assert_eq!(Error::NoSuchSlot as i64, -1);

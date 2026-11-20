@@ -6,7 +6,7 @@
 //! **reader**, which `SEND`s a read through its own badge and waits on its notification. The two
 //! writers are real user programs (`sink_transcript_writer`), each holding nothing but a badged
 //! copy of the intake endpoint and a report endpoint, so the badge reaches the service through the
-//! syscall path every writer will use.
+//! system call path every writer will use.
 
 use byte_sink_contract::fixture;
 use system_log_contract::{control, read};

@@ -30,7 +30,7 @@ const ENTROPY: u64 = rt::ENTROPY_SLOT;
 // The probe is a real request, which is what this contract buys over `fs`'s and `time`'s: a reply's
 // first word is a byte count in `0..=MAXIMUM_BYTES`, and every failure the kernel can return from a
 // `CALL` is one of its small negatives, which read as enormous `u64`s. So `proto::delivered_bytes`
-// separates "the service answered" from "there is no service" with no extra syscall and no
+// separates "the service answered" from "there is no service" with no extra system call and no
 // collision to reason about (contrast the errno/kernel-error overlap notes/std/fs.md records).
 //
 // Cached, because the answer cannot change: a capability table slot's contents are fixed at spawn on this

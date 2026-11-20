@@ -334,7 +334,7 @@ def nm_ask_no_hold($now; $minutes):
 
 # A diff helpers/architect-label-rules.py fires on, and no hold or ruling label: the labeler did not
 # run or did not finish. #1745 conflicted with `main`, and GitHub runs no `pull_request` workflow on
-# a conflicting pull request, so its syscall change was never read. `architectSurface` is not a
+# a conflicting pull request, so its system call change was never read. `architectSurface` is not a
 # GraphQL field: the shell runs the rules on each head and splices their lines into the node.
 def nm_surface_no_hold:
   select(((.architectSurface // []) | length) > 0)

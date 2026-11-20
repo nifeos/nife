@@ -118,7 +118,7 @@ took it unconditionally would store to `0x1023_0000` on every board this kernel 
 The block left this open as the interesting question. It is answered by reusing DECISIONS §86
 (whether an NVMe driver can leave the kernel, and what capability would let it) rather than
 inventing a second argument. The kernel keeps the admin plane, EL0 gets the data path, and no
-new syscall surface is added. Three things make a clock controller a stronger case for that
+new system call surface is added. Three things make a clock controller a stronger case for that
 split than NVMe was:
 
 - **Granting it would widen a driver's authority, not confine it.** One 64 KiB window holds the
@@ -129,7 +129,7 @@ split than NVMe was:
   `0x1600_8000`, which is why nothing here offers an assert.
 - It is one-shot setup, off every hot path. The performance argument that makes EL0 attractive
   for a data path does not exist for three register writes at boot.
-- Zero new syscall surface, which is what makes it a decision a lane could take: nothing two
+- Zero new system call surface, which is what makes it a decision a lane could take: nothing two
   programs agree on changed, so an EL0 clock service remains available to a later milestone that
   has evidence for it.
 
@@ -155,10 +155,10 @@ split than NVMe was:
   would not have.
 - **Recorded.** A third instance of `script/fastpath-footprint`'s flat entry set moving under an
   inlining flip, and the first in the *shrinking* direction. Adding a dependency to the `kernel`
-  crate made LLVM fold `syscall::dispatch` into the aarch64 exception handler, so the gate reported
-  `syscall_entry` 35% smaller while the code a syscall fetches was identical. Closed the way the
+  crate made LLVM fold `system_call::dispatch` into the aarch64 exception handler, so the gate reported
+  `system_call_entry` 35% smaller while the code a system call fetches was identical. Closed the way the
   tree already closes this, with `#[inline(never)]` and the reasoning beside it, and written up in
-  `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-syscall-fetches.md`, which owns the
+  `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`, which owns the
   mechanism question.
 - **Refused.** A general JH7110 clock driver covering all five domains and every clock. The
   milestone's own `BUGS` named unbounded scope as its main risk and the two ends differ by an

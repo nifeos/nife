@@ -53,7 +53,7 @@ So availability is not the dependency. The newest released images on 2026-10-23 
 | `ci.yml` `main-caches` | matrix leg | matrix leg (with Kani) |
 | `verify.yml` | 5: gate, scope, prove, falsify, verify | 3: prove-kernel-aarch64, prove-kernel-riscv64, falsify-shard |
 | `codeql.yml` | 4: gate, analyze, upload, upload-retry | |
-| `falsifications.yml` | 3: record-times, sweep-swish-x86_64, sweep-x86_64 | 4: plan, sweep, syscall-fuzz, confined-fuzz |
+| `falsifications.yml` | 3: record-times, sweep-swish-x86_64, sweep-x86_64 | 4: plan, sweep, system-call-fuzz, confined-fuzz |
 | `toolchain-bump.yml` | 2: restamp, propose-kani | 1: propose |
 | `mutation-gate.yml` | 1: gate | 1: mutation-gate |
 | `fleet-metrics.yml`, `verify-shard-refresh.yml`, `stick-maker-hosts.yml` (linux) | 1 each | |

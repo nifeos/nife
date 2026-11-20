@@ -13,7 +13,7 @@ Milestone 124 (a thread is born where it lives) built the proof this section rel
 `script/stack-depth-check` proves in CI, on both ISAs, that no context switch is reachable from the
 interrupt-stack entry point, and `schedule()` carries the runtime half as a `debug_assert!`. No
 proposal here delivers an abort from an interrupt context. Every one of them is entered from a
-syscall on the *destroyer's* own thread stack, takes `SCHED`, mutates the victim's `Handshake` and
+system call on the *destroyer's* own thread stack, takes `SCHED`, mutates the victim's `Handshake` and
 possibly one endpoint queue, and returns. The victim is touched as data, never switched to, and the
 destroyer never calls `schedule()` from anywhere new.
 

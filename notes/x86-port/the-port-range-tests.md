@@ -7,7 +7,7 @@ It holds why each test is shaped the way it is. The claims they prove are rows 2
 ## Why a ring-3 `out` is the only honest test
 
 A `PortRange` capability is enforced entirely at the context switch, by the TSS I/O permission
-bitmap. Nothing on the syscall path can be asserted on. So each test runs a hand-assembled ring-3
+bitmap. Nothing on the system call path can be asserted on. So each test runs a hand-assembled ring-3
 child that executes `out`, and reads the outcome from the child's supervision endpoint: a word if
 the CPU allowed the `out`, an `EVENT_FAULT` if it did not.
 
@@ -35,7 +35,7 @@ executes next must fault.
 The delete test is milestone 313 (the security audit that was due since August)'s audit
 (2026-09-17). The first two properties show the grant following the capability across a switch and
 across a revoke. Neither could see whether it followed the capability out of the thread's own table.
-The grant is a cached field the switch installs, so `SYSCALL_CAPABILITY_DELETE` has to clear the cache as well
+The grant is a cached field the switch installs, so `SYSTEM_CALL_CAPABILITY_DELETE` has to clear the cache as well
 as the slot. Otherwise a thread that dropped its port capability would keep the ports for life,
 which is §12 (call/reply IPC: a one-shot reply capability)'s "a consumed capability cannot be used
 again" failing for the one object enforced outside the table. The progenitor makes exactly this drop
@@ -53,7 +53,7 @@ hang instead of going red. That is row 26's shape in `notes/confinement-claims.m
 
 In the delete test, a permitted `out` means the child exits cleanly. The supervisor's message is
 then `EVENT_EXIT`, and the first `assert_eq!` is the one that fails, holding `EVENT_EXIT` where it
-wanted `EVENT_FAULT`. The pc equality below it guards the other direction: a `syscall` that
+wanted `EVENT_FAULT`. The pc equality below it guards the other direction: a `system_call` that
 faulted, or a bad slot, would report a different pc.
 
 ## Rights

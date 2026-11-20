@@ -3,7 +3,7 @@
 
 §88 (`needs-architect` as a required check, rather than as a script's restraint) built the
 enforcement half -- `architect-hold.yml` fails while the label is present -- and named plainly what
-it did not build: *"a check that reads the diff and demands the label when the syscall surface or
+it did not build: *"a check that reads the diff and demands the label when the system call surface or
 the dependency graph moved... the second is the real answer."* `.github/workflows/coe-architect-
 label.yml` built that answer for one shape, a correction of error. This is the general one, wired
 by `.github/workflows/architect-label.yml`.
@@ -34,11 +34,11 @@ yields it, and drops one in a file that an open pull request carrying `architect
 
 # The six rules (the brief's wording; this file is the one place that has to agree with it)
 
-1. **abi-surface**: an object type, method number or syscall number moved under `crates/abi/`.
+1. **abi-surface**: an object type, method number or system call number moved under `crates/abi/`.
    Detected as any changed `pub const NAME: <int type> = ...` line under that path. Broad on
    purpose: `crates/abi/src/lib.rs` also declares rights bitflags and the register convention's
    constants the same way, so this also fires on those (see BUGS). A false positive there costs a
-   human one look; a syscall number landing unlabelled costs more. A removed `pub const A: T = V`
+   human one look; a system call number landing unlabelled costs more. A removed `pub const A: T = V`
    paired with an added `pub const B: T = V` (same type, same value) is a rename and does not fire;
    a changed value, an added constant with no removed partner, and a deleted one still do.
 2. **dependency**: a (name, version requirement) entered a `Cargo.toml` that the base tree does not
@@ -80,8 +80,8 @@ yields it, and drops one in a file that an open pull request carrying `architect
    repository paths, wrapping and whitespace are normalized away (`rule_decisions` has the exact
    terms). A changed word, number, quotation, heading, list item or table cell fires, and so does
    a link added or removed rather than retargeted.
-6. **syscall-error**: a changed code line in `kernel/src/syscall.rs` (or a future
-   `kernel/src/syscall/`) that names an `Error::` variant: a method returns an error it did not, or
+6. **system-call-error**: a changed code line in `kernel/src/system_call.rs` (or a future
+   `kernel/src/system_call/`) that names an `Error::` variant: a method returns an error it did not, or
    stops returning one. Added by lane/architect-queue, 2026-10-06 (UTC), after #1745's forged-cursor
    refusal went unlabeled. A line removed and re-added verbatim (a move) pairs off; comments do
    not count. Measured over the 31 merges that touched the file from 2026-09-01 to 2026-10-06: it
@@ -100,7 +100,7 @@ yields it, and drops one in a file that an open pull request carrying `architect
 # Measured rate, 2026-10-04 UTC
 
 The bot's own comments on the 70 most recent PRs labelled `needs-architect` or `architect-ruled`
-(one count per PR per rule; "true" means a new or changed wire value, syscall number, dependency new
+(one count per PR per rule; "true" means a new or changed wire value, system call number, dependency new
 to the graph, or a decisions edit):
 
     rule          true  false  the false ones
@@ -190,7 +190,7 @@ Every pull request created from 2026-10-14 to 2026-11-11 (1,264) was read for `n
 221 received it, 145 from this file (the labeler's or the drain's finding comment), the rest by
 hand. Each of the 145 was rerun at its final head, and the drain's 34 firings at the head and main
 it saw. Real means the rules' own test: a wire or persisted format another program reads, the
-syscall surface, a dependency new to the graph, a decision, or a published number or name.
+system call surface, a dependency new to the graph, a decision, or a published number or name.
 
     rule           PRs  real  false  the false ones, by class
     format-crate    45    18     27  comment-only edit, no code moved (13); identifier rename (8);
@@ -199,7 +199,7 @@ syscall surface, a dependency new to the graph, a decision, or a published numbe
     dependency      24    20      4  a stacked branch carrying a ruled dependency (2); an own-crate
                                      pin before the 2026-11-09 approval, now exempt (2, counted real)
     decisions       70    61      9  criss-cross merge base (6); a split or stacked branch (3)
-    syscall-error    7     2      5  rename (2); stacked parts inheriting #2809 (2); one of #2965's
+    system-call-error    7     2      5  rename (2); stacked parts inheriting #2809 (2); one of #2965's
     spawnproto       5     4      1  a value naming a renamed constant (#2792)
     abi-surface      6     6      0
 
@@ -229,7 +229,7 @@ by design: #2416's handoff crosses a live swap and #2512's page is read by publi
   a rename by definition.
 - **Rule 2's lock test is caret-only.** A requirement with a comma, operator or wildcard is never
   matched against a lockfile (it fires unless an identical manifest entry exists).
-- **syscall-error reads one file.** An error moved into a helper the dispatcher calls (`revoke.rs`,
+- **system-call-error reads one file.** An error moved into a helper the dispatcher calls (`revoke.rs`,
   `sched.rs`) is missed, and a refactor that rewrites a line holding `Error::` fires. Both measured
   at zero and unknown respectively on the 31 merges above; revisit on the first miss.
 - **format-crate reads only `VERSION`/`MAGIC` constants.** A format crate's other wire values
@@ -320,7 +320,7 @@ def changed_lines(fd):
 
 # ---- code tokens, and the renames a diff performs -------------------------------------------------
 #
-# A format's bytes, a syscall's errors and a protocol's values are made by code, never by comments.
+# A format's bytes, a system call's errors and a protocol's values are made by code, never by comments.
 # So the rules below ask first whether a file's code moved at all: its tokens with every comment
 # dropped, base against head. A file whose code is identical, or identical once each identifier the
 # diff renames at its declaration is read under its new name, moved no byte, and those rules stay
@@ -1094,27 +1094,27 @@ def rule_decisions(fd, out, _ctx=None):
     out.append(('decisions', path, '(a blank line moved a block boundary)'))
 
 
-# ---- rule 6: syscall-error -----------------------------------------------------------------------
+# ---- rule 6: system-call-error -----------------------------------------------------------------------
 #
 # #1745 (2026-10-06): `AddressSpace::LIST` began refusing a forged cursor with `BadPointer`, a new
 # answer from an existing method, and no rule fired, because the constants were untouched and the
-# change was seven lines of `kernel/src/syscall.rs`. A method's errors are part of what a program is
+# change was seven lines of `kernel/src/system_call.rs`. A method's errors are part of what a program is
 # written against (§10 (the capability-based microkernel process model), §16 (object revocation)),
 # so a changed line there naming an `Error::` variant fires. A line removed and added back verbatim
 # is a move, not a change, and pairs off.
 
-SYSCALL_ERROR_RE = re.compile(r'\bError::[A-Z]\w*')
+SYSTEM_CALL_ERROR_RE = re.compile(r'\bError::[A-Z]\w*')
 
 
-def rule_syscall_error(fd, out, ctx):
+def rule_system_call_error(fd, out, ctx):
     path = fd['path']
-    if not (path == 'kernel/src/syscall.rs' or path.startswith('kernel/src/syscall/')):
+    if not (path == 'kernel/src/system_call.rs' or path.startswith('kernel/src/system_call/')):
         return
     if code_unchanged(fd, ctx.renames):
         return  # the same code once renames read under their new names (#2779, #2809)
     added, removed = [], []
     for prefix, line in changed_lines(fd):
-        if is_comment_only(line) or not SYSCALL_ERROR_RE.search(line.split('//')[0]):
+        if is_comment_only(line) or not SYSTEM_CALL_ERROR_RE.search(line.split('//')[0]):
             continue
         toks = line_tokens(line)
         if prefix == '-':
@@ -1125,13 +1125,13 @@ def rule_syscall_error(fd, out, ctx):
         if hit is not None:
             removed.pop(hit)  # moved, or renamed around the same error
             continue
-        out.append(('syscall-error', path, line))
+        out.append(('system-call-error', path, line))
         return
     if removed:
-        out.append(('syscall-error', path, removed[0][1]))
+        out.append(('system-call-error', path, removed[0][1]))
 
 
-RULES = (rule_abi_surface, rule_spawnproto, rule_decisions, rule_syscall_error)
+RULES = (rule_abi_surface, rule_spawnproto, rule_decisions, rule_system_call_error)
 
 
 # ---- the question each finding puts to calef ------------------------------------------------------
@@ -1156,7 +1156,7 @@ def _section(path):
 
 QUESTIONS = {
     'abi-surface': lambda p, d: (
-        f"Does this add or change a syscall number, object type or method (`{d}`)?"),
+        f"Does this add or change a system call number, object type or method (`{d}`)?"),
     'dependency': lambda p, d: (
         f"Do you approve taking `{d}` as a dependency (§46), in `{p}`?"),
     'format-crate': lambda p, d: (
@@ -1168,8 +1168,8 @@ QUESTIONS = {
         "Do you approve this edit to CLAUDE.md?" if p == 'CLAUDE.md'
         else f"Do you approve this edit to {_section(p)}? It changes more than link targets, "
         "repository paths or wrapping, which no longer need you (your ruling, 2026-10-11 UTC)."),
-    'syscall-error': lambda p, d: (
-        f"Does this change which error a syscall method can return (`{d}`)?"),
+    'system-call-error': lambda p, d: (
+        f"Does this change which error a system call method can return (`{d}`)?"),
 }
 
 # Why each finding might be a one-way door, and what answer releases the hold. A false positive
@@ -1185,7 +1185,7 @@ WHY_ONE_WAY = {
                     "package, a stored file, a page a previous kernel wrote, a live swap",
     'spawnproto': "the spawner and every program it starts agree on these values",
     'decisions': "a decision is the record every lane and reader acts on",
-    'syscall-error': "programs branch on the errors a method returns, so a new or vanished error "
+    'system-call-error': "programs branch on the errors a method returns, so a new or vanished error "
                      "changes what callers must handle",
 }
 RELEASED_BY = {
@@ -1197,12 +1197,12 @@ RELEASED_BY = {
                     "commit and nothing persists it) or that older readers must keep working",
     'spawnproto': "\"nothing moved\", or approval of the new or changed value",
     'decisions': "approval of the edit, or a send-back naming what to change",
-    'syscall-error': "\"same errors\" (a refactor or rename), or approval of the new error "
+    'system-call-error': "\"same errors\" (a refactor or rename), or approval of the new error "
                      "behavior",
 }
 
 UNEXAMINED_QUESTION = (
-    "The rules could not read this diff. Does any of it need your ruling (the syscall surface, a "
+    "The rules could not read this diff. Does any of it need your ruling (the system call surface, a "
     "dependency, a wire format or a decision)?")
 
 
@@ -1329,7 +1329,7 @@ def evaluate(diff_text, known=None):
 
 # What the fixtures' pretend base tree already depends on (one manifest, one lock).
 KNOWN_BASE = KnownDeps(
-    manifests=['[dependencies]\nredox_syscall = { version = "0.9.0", default-features = false }\n'
+    manifests=['[dependencies]\nredox_system_call = { version = "0.9.0", default-features = false }\n'
                'getrandom = "0.4"\n'],
     locks=['[[package]]\nname = "libc"\nversion = "0.2.150"\n'])
 
@@ -1353,7 +1353,7 @@ diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
 @@ -1,3 +1,3 @@
 -/// old wording
 +/// new wording, no number moved
- pub const SYSCALL_EXIT: u64 = 0;
+ pub const SYSTEM_CALL_EXIT: u64 = 0;
 """, None),
 
     ("abi: outside crates/abi, the same const shape stays quiet", """\
@@ -1966,16 +1966,16 @@ diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spa
 +pub const SHELL_BUDGET_PAGES: u64 = 128 + JOB_POOL_PAGES;
 """, 'spawnproto'),
 
-    ("syscall-error: #2779's shape, a function renamed around the same error, stays quiet", """\
+    ("system-call-error: #2779's shape, a function renamed around the same error, stays quiet", """\
 diff --git a/kernel/src/sched.rs b/kernel/src/sched.rs
 --- a/kernel/src/sched.rs
 +++ b/kernel/src/sched.rs
 @@ -1,1 +1,1 @@
 -pub fn irq_route(intid: u32) -> Option<u64> { None }
 +pub fn interrupt_route(intid: u32) -> Option<u64> { None }
-diff --git a/kernel/src/syscall/object_methods.rs b/kernel/src/syscall/object_methods.rs
---- a/kernel/src/syscall/object_methods.rs
-+++ b/kernel/src/syscall/object_methods.rs
+diff --git a/kernel/src/system_call/object_methods.rs b/kernel/src/system_call/object_methods.rs
+--- a/kernel/src/system_call/object_methods.rs
++++ b/kernel/src/system_call/object_methods.rs
 @@ -1,3 +1,3 @@
  fn wait(intid: u32) -> Result<i64, Error> {
 -    let ep = sched::irq_route(intid).ok_or(Error::WrongObject)?;
@@ -1983,16 +1983,16 @@ diff --git a/kernel/src/syscall/object_methods.rs b/kernel/src/syscall/object_me
      Ok(0)
 """, None),
 
-    ("syscall-error: one error swapped for another fires (no declaration renamed)", """\
-diff --git a/kernel/src/syscall/object_methods.rs b/kernel/src/syscall/object_methods.rs
---- a/kernel/src/syscall/object_methods.rs
-+++ b/kernel/src/syscall/object_methods.rs
+    ("system-call-error: one error swapped for another fires (no declaration renamed)", """\
+diff --git a/kernel/src/system_call/object_methods.rs b/kernel/src/system_call/object_methods.rs
+--- a/kernel/src/system_call/object_methods.rs
++++ b/kernel/src/system_call/object_methods.rs
 @@ -1,3 +1,3 @@
  fn wait(intid: u32) -> Result<i64, Error> {
 -    let ep = sched::interrupt_route(intid).ok_or(Error::WrongObject)?;
 +    let ep = sched::interrupt_route(intid).ok_or(Error::NotPermitted)?;
      Ok(0)
-""", 'syscall-error'),
+""", 'system-call-error'),
 
     ("spawnproto: a changed slot constant fires", """\
 diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
@@ -2205,32 +2205,32 @@ diff --git a/design/naming.md b/design/naming.md
 +new rule
 """, None),
 
-    ("syscall-error: a method's new refusal fires (#1745's shape)", """\
-diff --git a/kernel/src/syscall.rs b/kernel/src/syscall.rs
---- a/kernel/src/syscall.rs
-+++ b/kernel/src/syscall.rs
+    ("system-call-error: a method's new refusal fires (#1745's shape)", """\
+diff --git a/kernel/src/system_call.rs b/kernel/src/system_call.rs
+--- a/kernel/src/system_call.rs
++++ b/kernel/src/system_call.rs
 @@ -1,3 +1,6 @@
  fn address_space_list(frame: &mut TrapFrame, name: u64, cursor: u64) -> Result<i64, Error> {
 +    if cursor != 0 && !crate::revoke::cursor_is_ours(root, cursor) {
 +        return Err(Error::BadPointer);
 +    }
      Ok(0)
-""", 'syscall-error'),
+""", 'system-call-error'),
 
-    ("syscall-error: an error a method stops returning fires too", """\
-diff --git a/kernel/src/syscall.rs b/kernel/src/syscall.rs
---- a/kernel/src/syscall.rs
-+++ b/kernel/src/syscall.rs
+    ("system-call-error: an error a method stops returning fires too", """\
+diff --git a/kernel/src/system_call.rs b/kernel/src/system_call.rs
+--- a/kernel/src/system_call.rs
++++ b/kernel/src/system_call.rs
 @@ -1,3 +1,2 @@
  fn f() -> Result<i64, Error> {
 -    if x { return Err(Error::Busy); }
      Ok(0)
-""", 'syscall-error'),
+""", 'system-call-error'),
 
-    ("syscall-error: a moved line, a comment, and a line with no error stay quiet", """\
-diff --git a/kernel/src/syscall.rs b/kernel/src/syscall.rs
---- a/kernel/src/syscall.rs
-+++ b/kernel/src/syscall.rs
+    ("system-call-error: a moved line, a comment, and a line with no error stay quiet", """\
+diff --git a/kernel/src/system_call.rs b/kernel/src/system_call.rs
+--- a/kernel/src/system_call.rs
++++ b/kernel/src/system_call.rs
 @@ -1,5 +1,6 @@
 -    let a = lookup(cap).ok_or(Error::InvalidCapability)?;
      let b = 2;
@@ -2240,7 +2240,7 @@ diff --git a/kernel/src/syscall.rs b/kernel/src/syscall.rs
      Ok(0)
 """, None),
 
-    ("syscall-error: Error:: in a kernel file outside the dispatcher stays quiet", """\
+    ("system-call-error: Error:: in a kernel file outside the dispatcher stays quiet", """\
 diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
 --- a/kernel/src/revoke.rs
 +++ b/kernel/src/revoke.rs
@@ -2253,7 +2253,7 @@ diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
 
 # (report line, a phrase its question must contain): one per rule, plus the unexamined case.
 ASK_FIXTURES = [
-    ("abi-surface: crates/abi/src/lib.rs: pub const NOTIFICATION: u64 = 8;", "syscall number"),
+    ("abi-surface: crates/abi/src/lib.rs: pub const NOTIFICATION: u64 = 8;", "system_call number"),
     ("dependency: fuzz/Cargo.toml: brand_new 1.0", "taking `brand_new 1.0` as a dependency"),
     ("format-crate: crates/network_time_protocol/src/lib.rs: // the offset",
      "the bytes of `network_time_protocol`'s format"),
@@ -2261,7 +2261,7 @@ ASK_FIXTURES = [
     ("decisions: design/decisions/0088-needs-architect-as-a-check.md: **What.**",
      "this edit to §88 (needs architect as a check)"),
     ("decisions: CLAUDE.md: (CLAUDE.md edited)", "this edit to CLAUDE.md"),
-    ("syscall-error: kernel/src/syscall.rs: return Err(Error::BadPointer);", "which error"),
+    ("system-call-error: kernel/src/system_call.rs: return Err(Error::BadPointer);", "which error"),
     ("unexamined: no base to diff against, so no rule read this pull request", "could not read"),
 ]
 

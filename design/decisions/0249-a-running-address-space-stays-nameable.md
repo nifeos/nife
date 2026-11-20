@@ -15,7 +15,7 @@ amendments from `notes/naming-a-running-address-space.md` (#1685). Recorded by t
 
 This is a section rather than a second amendment to §162 (whether a holder can give up a mapping)
 because it changes what an existing method promises. `ThreadControlBlock::CONFIGURE` stops retiring
-the name it is passed, and refuses a case it used to make unreachable. That is the syscall surface
+the name it is passed, and refuses a case it used to make unreachable. That is the system call surface
 of §10 (the capability-based microkernel process model) and §16 (object revocation), and §246 (a
 plain `RECEIVE` never takes a capability) is the precedent for recording such a narrowing as its own
 section.
@@ -127,7 +127,7 @@ This unblocks milestone 95 (an unmap primitive, and the mappings init never lets
 ## Amendment (2026-10-10): a space has one holder, and threads share it through a process
 
 calef ruled on #1892 on 2026-10-10 (UTC) that `BIND` lives on a process capability and that this
-section's bound mark retires; §276 (the thread syscalls as built) records it. What changed in the
+section's bound mark retires; §276 (the thread system calls as built) records it. What changed in the
 merged code (`ddd38f0b0`):
 
 - Amendment (b) applies per holder, not per thread. A holder is a thread that is its own process, or

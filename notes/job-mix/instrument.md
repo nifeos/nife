@@ -13,9 +13,9 @@ channel would be raced by 32 tasks.
 
 | job | AIM7 category | what it costs here |
 |---|---|---|
-| `COMPUTE` | compute-bound arithmetic loops | no syscall at all; the control arm |
-| `TOUCH` | user virtual-memory operations | a working set walked in user mode, no syscall |
-| `NULL_SYSCALL` | (the trap itself) | EL0 to EL1 and back, the cheapest kernel entry |
+| `COMPUTE` | compute-bound arithmetic loops | no system call at all; the control arm |
+| `TOUCH` | user virtual-memory operations | a working set walked in user mode, no system call |
+| `NULL_SYSTEM_CALL` | (the trap itself) | EL0 to EL1 and back, the cheapest kernel entry |
 | `YIELD` | (scheduling pressure) | a full context switch through the ready queue |
 | `ROUND_TRIP` | pipe I/O | `CALL` to a shared server and its `REPLY`: two rendezvous |
 | `MAP` | user virtual-memory operations (mapping) | split a region, build a space, 32 `MAP_INTO`s, `DESTROY` |
@@ -24,7 +24,7 @@ channel would be raced by 32 tasks.
 `ROUND_TRIP` answers §96 (process kernel or event kernel, and how to decide it), since a process
 kernel's cost is the stack a blocking thread leaves behind. `COMPUTE` and `TOUCH` displace the
 cache between kernel entries, which a ping-pong micro-benchmark leaves out. `MAP` and `SPAWN` build
-from each task's own budget, with no new syscall, method or object type.
+from each task's own budget, with no new system call, method or object type.
 
 The workfile, `MIX`, gives `ROUND_TRIP` a quarter of its sixteen entries because IPC is the
 primitive this kernel exists to be fast at. The other six kinds split the rest evenly, two each.

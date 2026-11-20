@@ -123,7 +123,7 @@ column counts the times the file names calef.
 | Pull requests and comments an agent writes | 8 | 3 | The agent `**Lane:**` line and the smelter identity |
 | Measuring, pushing back, correcting the record | 18 | 2 | |
 | The rules that hold the codebase together | 31 | 2 | Rule 5 names machines by their public names only |
-| The syscall surface | 8 | 2 | |
+| The system call surface | 8 | 2 | |
 | Testing | 13 | 1 | |
 | Every date is UTC | 9 | 2 | |
 | Comments | 10 | 2 | |

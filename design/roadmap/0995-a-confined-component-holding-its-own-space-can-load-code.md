@@ -39,7 +39,7 @@ The question for an architect, not answered here: whether introducing code is a 
 nife, separate from `WRITE` on a space. Options a lane would cost out include an execute right on
 `PageFrame` capabilities that a retype never mints from a leaf budget, or an execute right on the
 address-space capability that the components above do not receive. Either one changes the rights
-model, which makes it a syscall-surface ruling. The tree has no claim that states this property, so
+model, which makes it a system-call-surface ruling. The tree has no claim that states this property, so
 a ruling either way also decides whether the claims table gains a row.
 
 ## Index row

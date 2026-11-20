@@ -8,13 +8,13 @@ built: 2026-09-04
 `design/decisions/0144-fastpath-footprint-ceiling.md` already carries this correction, so nothing in
 this file is unfinished work. It states the ceiling as *"an absolute ceiling of 16 KiB, per
 architecture, on `script/fastpath-footprint`'s `total`"*, gives both reasons below, concludes that
-*"the ceiling's subject is `max(ipc_send_recv, ipc_call_reply) + syscall_entry`"*, and prints the
+*"the ceiling's subject is `max(ipc_send_recv, ipc_call_reply) + system_call_entry`"*, and prints the
 same three-row table, 52%, 47% and 60% of 16 KiB. The body below is the case that was made.
 
 ## In brief
 
 §144 sets an absolute ceiling of 16 KiB per architecture "on the sum of `ipc_fastpath` and
-`syscall_entry`", and derives the number from `notes/target-hardware.md`'s 32 KB L1i requirement. It
+`system_call_entry`", and derives the number from `notes/target-hardware.md`'s 32 KB L1i requirement. It
 records the totals it was measured against as aarch64 9,156, x86_64 8,404, riscv64 7,174.
 
 Milestone 188 phases 1 to 3 (pull request #732) moved both terms, on the same day:
@@ -22,13 +22,13 @@ Milestone 188 phases 1 to 3 (pull request #732) moved both terms, on the same da
 - `ipc_fastpath` measured the SEND/RECV shape, which essentially no service in this tree runs.
   The gate now reports `ipc_send_recv` and `ipc_call_reply` separately and keeps `ipc_fastpath` as
   the worse of the two, since one round trip is one shape or the other.
-- **aarch64's `syscall_entry` counted all sixteen exception vector entries** where an `svc` fetches
+- **aarch64's `system_call_entry` counted all sixteen exception vector entries** where an `svc` fetches
   one, so 1,892 of its 3,304 bytes were never fetched.
 - Phase 3 then took 6 to 10% off both closures by outlining cold arms.
 
 ## What the sentence should say
 
-**The ceiling's subject is `max(ipc_send_recv, ipc_call_reply) + syscall_entry`**, which is what
+**The ceiling's subject is `max(ipc_send_recv, ipc_call_reply) + system_call_entry`**, which is what
 `script/fastpath-footprint` now prints as `total`. That is the same claim §144 already makes,
 evaluated on numbers that are true.
 
@@ -70,9 +70,9 @@ finding by accident.
 ## Index row
 
 DECISIONS §144 (the fastpath footprint gate gets a delta and a ceiling, and the ceiling is 16 KiB)
-set a 16 KiB ceiling "on the sum of `ipc_fastpath` and `syscall_entry`", and milestone 188 (the IPC
+set a 16 KiB ceiling "on the sum of `ipc_fastpath` and `system_call_entry`", and milestone 188 (the IPC
 fastpath) changed both terms. The gate now reports two IPC shapes and keeps the worse, and aarch64's
 entry figure stopped counting fifteen exception-vector entries an `svc` never fetches. The ceiling's
-subject is `max(ipc_send_recv, ipc_call_reply) + syscall_entry`, which the script prints as `total`.
+subject is `max(ipc_send_recv, ipc_call_reply) + system_call_entry`, which the script prints as `total`.
 The headroom §144 recorded was 9 points optimistic on x86_64, which is now 60% of the ceiling and
 not 51%.

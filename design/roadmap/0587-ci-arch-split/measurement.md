@@ -92,7 +92,7 @@ Beyond pass/fail:
 
 - Host tests: 3,067 `ok` lines on both hosts, and the same distribution of per-binary results.
 - bench: every instruction count matched to within one tick (`coremark` 20,913,779 against
-  20,913,778; `null_syscall` 410,003 against 410,004). `-icount` is host-independent in practice,
+  20,913,778; `null_system_call` 410,003 against 410,004). `-icount` is host-independent in practice,
   as `ci.yml` says it is designed to be.
 - fastpath footprint and stack frames: the check output was identical line for line; the only
   differences were cache keys and temporary paths in the post-job cleanup.

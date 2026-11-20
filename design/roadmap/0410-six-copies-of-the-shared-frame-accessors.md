@@ -16,7 +16,7 @@ filed 2026-09-14 by milestone 290, which added the sixth copy and said so rather
 *(Number provisional until the merge queue lands it.)*
 
 A lane can close this. It is a refactor inside userspace with no wire format, no
-syscall surface and no name calef has not already ruled on. If a new crate is wanted, the name is his.
+system call surface and no name calef has not already ruled on. If a new crate is wanted, the name is his.
 
 Premise re-checked 2026-09-19: five copies, not six, and this file already records why.
 `multicast_dns_responder` went at milestone 298 and the table below struck it out at the time. The

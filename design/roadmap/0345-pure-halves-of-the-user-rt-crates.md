@@ -19,10 +19,10 @@ No decision is owed and nothing is missing. The split is ordinary refactoring in
 crates this tree owns, and the gate that would prove it is the one already running.
 
 **In brief.** `hot_swap_contract`, `virtio`, `supervision_contract` and `system_initializer` each take an
-unconditional dependency on `user_mode_runtime`, which is EL0 syscall `asm!` and cannot compile for the host.
+unconditional dependency on `user_mode_runtime`, which is EL0 system call `asm!` and cannot compile for the host.
 `--exclude` removes a package from the test selection but not from the dependency graph, so all four
 are excluded by name in `xtask`, along with `user_mode_runtime` itself. Split each one so the pure logic lives
-where the host can build it and the syscall half is what depends on `user_mode_runtime`. Then the host pass
+where the host can build it and the system call half is what depends on `user_mode_runtime`. Then the host pass
 runs their tests and their doctests instead of skipping them.
 
 ## Why this matters
@@ -49,7 +49,7 @@ build. That is a tripwire on the growth of the problem, not a fix for it.
 ## What it would take
 
 Five crates, each a separate piece of work, and they are not equal. `hot_swap_contract` and
-`supervision_contract` are protocol crates whose pure half is message layout and whose syscall half is
+`supervision_contract` are protocol crates whose pure half is message layout and whose system call half is
 the `CALL`, which is the cleanest shape. `virtio` and `system_initializer` carry more. The measure
 of success is mechanical and already automated: a crate leaves the `--exclude` list in
 `xtask/src/main.rs`, `script/lint`'s derived-set check agrees, and the host pass runs its doctests.
@@ -57,10 +57,10 @@ of success is mechanical and already automated: a crate leaves the `--exclude` l
 ## Index row
 
 `hot_swap_contract`, `virtio`, `supervision_contract` and `system_initializer` each depend
-unconditionally on `user_mode_runtime`, which is EL0 syscall `asm!` and cannot compile for the host.
+unconditionally on `user_mode_runtime`, which is EL0 system call `asm!` and cannot compile for the host.
 So the host pass excludes all four by name, along with `user_mode_runtime` itself. Nothing runs their
 tests or doctests. Splitting each ends the skipping. The pure logic builds on the host, and only the
-syscall half depends on `user_mode_runtime`. Milestone 68 (code-quality gates:
+system call half depends on `user_mode_runtime`. Milestone 68 (code-quality gates:
 one lint policy, and the lints that lost) is the gate that keeps documented examples honest, and
 five crates sit in its blind spot. The class has cost before: five crates once missing from the host
 selection carried 82 tests the gate never ran, and all passed when run. Success is mechanical: a

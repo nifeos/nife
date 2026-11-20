@@ -8,9 +8,9 @@ name: architect label
 # architect` as a required check, rather than as a script's restraint): it built the enforcement
 # half of `needs-architect` (`architect-hold.yml` fails while the label sits on a pull request) and
 # named the harder half it did not build, *"a check that reads the diff and demands
-# the label when the syscall surface or the dependency graph moved... the second is the real
+# the label when the system call surface or the dependency graph moved... the second is the real
 # answer,"* then built one shape of it, a correction of error. This workflow is the rest of it: the
-# syscall surface, the dependency graph, a format crate's wire layout, the spawn protocol, and
+# system call surface, the dependency graph, a format crate's wire layout, the spawn protocol, and
 # CLAUDE.md/`design/decisions/`. A bookkeeping edit to a decision (a link retargeted, a backticked
 # path moved, a paragraph rewrapped) no longer fires: calef ruled on 2026-10-11 (UTC) that it does
 # not need him, and §88 (`needs-architect` as a required check)'s amendment records it.
@@ -47,7 +47,7 @@ name: architect label
 # scratch, so any push that leaves a matched rule's line still in the diff, including an ordinary
 # rebase that carries no new decision at all, re-adds `needs-architect` the moment the maintainer
 # removes it. That happened twice within hours, 2026-09-27 04:10 UTC: #1378 and #1400, both
-# unlabelled by hand after calef ruled on their syscall surface, both re-labelled by the next push.
+# unlabelled by hand after calef ruled on their system call surface, both re-labelled by the next push.
 # `architect-ruled` records that the ruling happened, not just that someone once removed the
 # consequence of it: a pull request that carries it is skipped outright, logged and not
 # re-evaluated, regardless of what its diff still matches. The maintainer applies it with
@@ -67,7 +67,7 @@ on:
   # no chance of a different answer (this job removes the label only when a new commit stops a
   # rule firing, so `unlabeled` in particular has nothing to react to). No draft-skip condition: a lane's first act is a draft
   # pull request (AGENTS.md; DECISIONS §90 (the claim is a draft pull request; the status flip is
-  # a gate)), and the whole point of a diff-reading check is to tell a lane about its own syscall
+  # a gate)), and the whole point of a diff-reading check is to tell a lane about its own system call
   # or dependency change before it asks to be reviewed, not after.
   pull_request:
     types: [opened, reopened, synchronize]
@@ -98,7 +98,7 @@ concurrency:
 
 jobs:
   label:
-    name: label the diff's syscall/dependency/format/decision surface
+    name: label the diff's system_call/dependency/format/decision surface
     runs-on: ubuntu-26.04-arm
     timeout-minutes: 10
     steps:

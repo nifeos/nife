@@ -1,6 +1,6 @@
 # The scheduler's two diagnostic instruments: the event rings and the canary
 
-*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.*
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-system-call-selftest.*
 
 `kernel/src/sched.rs` declares two instruments built for first silicon, when a hang on a board had
 to be diagnosed from a serial log alone. Both module names are provisional. Both are compiled out of
@@ -13,7 +13,7 @@ tour build carries no features and keeps both.
 
 A dump of the end state of a wedge cannot say which transition wrote it. A boot-7 bench dump on the
 VisionFive 2 showed a state no legal sequence produces: a thread `Blocked` at a pc that was not a
-syscall, and a receiver `Running` as another core's current for ten seconds. So each core keeps its
+system call, and a receiver `Running` as another core's current for ten seconds. So each core keeps its
 last `trace::DEPTH` events, and `dump_threads` prints them, which puts the path into the wedge on the
 log.
 

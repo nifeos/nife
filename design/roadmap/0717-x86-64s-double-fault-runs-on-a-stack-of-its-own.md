@@ -111,7 +111,7 @@ Read from source on 2026-10-03 (UTC):
   about 80 lines. This is an estimate, not a diff.
 - Risk: low. The handler runs only after the machine was about to reset anyway, so a mistake in it
   cannot make a working boot worse. The one live-path edit is the `x86_trap_dispatch` exemption.
-- Reversibility: fully; all of it is code in `arch/x86_64/`, and no wire format, name or syscall is
+- Reversibility: fully; all of it is code in `arch/x86_64/`, and no wire format, name or system call is
   touched. The new region's linker symbol is a provisional name.
 - Would we choose this if both options cost the same? Yes. The alternative, leaving it, is the one
   case on this port where the kernel's own comment promises a report and delivers a reset.

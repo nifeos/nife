@@ -218,7 +218,7 @@ mod entropy_tests;
 #[cfg(all(test, initial_ramdisk))]
 mod counter_frequency_tests;
 
-/// **A thread's own CPU, read from a page with no syscall** (calef's 2026-09-21 ruling that
+/// **A thread's own CPU, read from a page with no system call** (calef's 2026-09-21 ruling that
 /// observing yourself is a page and observing another thread is a selector; that decision's
 /// section is on another branch and is named here rather than cited).
 ///
@@ -563,7 +563,7 @@ mod c_seam_tests;
 
 /// **A running component replaced under a talking client** (milestone 23, DECISIONS §41).
 ///
-/// The kernel has no component object, no swap syscall and no naming service: `swapper` is an
+/// The kernel has no component object, no swap system call and no naming service: `swapper` is an
 /// unprivileged process with a budget, one device capability and four endpoints, and the only
 /// kernel addition is `PageFrame::REVOKE` taking a `DeviceFrame` back (§41 (a device is revoked
 /// by taking it back)). **The claim is that a client does not notice**, held by the client's own
@@ -608,7 +608,7 @@ mod x86_port_tests;
 /// `rendezvous::REAP`). Cross-ISA: the check reads two fields of a TCB and compares two
 /// generational names, so a divergence would mean something is wrong under `arch/`.
 ///
-/// Every reap goes through `syscall::invoke` from a thread whose table holds **endpoint
+/// Every reap goes through `system_call::invoke` from a thread whose table holds **endpoint
 /// capabilities and nothing else**, and the building is done with kernel-internal calls, so
 /// "unable to build" is a fact about the table these tests audit. The builder's region is one the
 /// test owns, and its watermark must come back down and spend again while the supervisor's table
@@ -617,7 +617,7 @@ mod x86_port_tests;
 mod reap_tests;
 
 /// **Notification objects** (milestone 151 (notification objects), DECISIONS §101 (notification objects)): the kernel half of the binding, the
-/// syscall layer's rights and registers, teardown, and a program binding a notification to itself
+/// system call layer's rights and registers, teardown, and a program binding a notification to itself
 /// through the real boundary. Cross-ISA: nothing here is architecture-specific except the register
 /// each `TrapFrame::arg` names, which is exactly what the `Interrupt::WAIT` and program tests read.
 #[cfg(test)]
@@ -626,7 +626,7 @@ mod notification_tests;
 /// **Timers** (milestone 106 (a wait that ends on either the interrupt or the deadline), DECISIONS
 /// §147 (a timer a userspace service cannot hold)): the tick reaching the expiry walk, a wait ending
 /// on a signal or on the deadline (in `WAIT` and in a bound `RECEIVE`), a replaced or cancelled deadline
-/// never firing, and the syscall layer's rights. Cross-ISA: the counter each test reads is the one
+/// never firing, and the system call layer's rights. Cross-ISA: the counter each test reads is the one
 /// the walk compares, on every architecture.
 #[cfg(test)]
 mod timer_tests;
@@ -634,7 +634,7 @@ mod timer_tests;
 /// **A process listing is a capability, not a fact about the machine** (milestone 126,
 /// `rendezvous::SURVEY`, notes/process-view.md). Cross-ISA for `reap_tests`' reason.
 ///
-/// Every survey goes through `syscall::invoke`, driven by `ps::collect` (the loop
+/// Every survey goes through `system_call::invoke`, driven by `ps::collect` (the loop
 /// `components/src/ps.rs` runs), over real supervised children. A viewer of a domain it was not
 /// granted is **refused loudly**, and an empty domain answers, both in one test. `pgrep`'s filter
 /// is driven here too, the only place it can be (the prompt cannot spell a selector,
@@ -657,11 +657,11 @@ mod survey_record_tests;
 
 /// **An endpoint that carries an interrupt refuses every send** (milestone 603 (an interrupt's
 /// endpoint refuses every send), DECISIONS §101 (notification objects) ruling B). Driven through
-/// the real dispatcher (`syscall::invoke`) on the sending side and through `Interrupt::WAIT` on the
+/// the real dispatcher (`system_call::invoke`) on the sending side and through `Interrupt::WAIT` on the
 /// driver's, because the ruling is about what a program can do at the boundary.
 ///
 /// Cross-ISA, and it has to be: the refusal is `Rendezvous::send`'s and the error mapping is
-/// `syscall`'s, neither under `arch/`. The interrupt is delivered with `sched::interrupt_notify`,
+/// `system_call`'s, neither under `arch/`. The interrupt is delivered with `sched::interrupt_notify`,
 /// the
 /// function every ISA's handler calls, which keeps the test off each machine's interrupt wiring.
 #[cfg(test)]
@@ -681,7 +681,7 @@ mod cpu_time_tests;
 /// DECISIONS §114). Cross-ISA for `survey_tests`'s reason: the method reads `Flags` through
 /// `arch::mmu::translate_at`, so a divergence here means something is wrong under `arch/`.
 ///
-/// Every listing goes through the real syscall dispatcher, driven by `pmap::collect`, the loop
+/// Every listing goes through the real system call dispatcher, driven by `pmap::collect`, the loop
 /// `components/src/pmap.rs` really runs, `survey_tests`'s discipline verbatim. The negative control is
 /// the one that matters: a capability holding `ENUMERATE` alone can list every mapping and is
 /// refused `MAP_INTO`, and a capability holding `WRITE` alone can map and is refused `LIST`, so
@@ -705,7 +705,7 @@ mod unmap_tests;
 #[cfg(test)]
 mod running_space_tests;
 
-/// **`ThreadControlBlock::SUSPEND` and `RESUME` from the syscall boundary** (DECISIONS §300 (the
+/// **`ThreadControlBlock::SUSPEND` and `RESUME` from the system call boundary** (DECISIONS §300 (the
 /// paused state, a TCB verb, silent)): a user thread stops, resumes with its registers, obeys only a
 /// TCB capability with `WRITE`, and dies with its region while stopped. Cross-ISA, one hand-written
 /// spinner per ISA (DECISIONS §19).
@@ -978,7 +978,7 @@ mod revocation_in_flight_tests;
 
 /// **A revocation sweep that lands inside a delegation leaves no copy behind** (the
 /// revocation-race lane, 2026-10-04 UTC, provisional). Milestone 761 (capability lookup off the global lock)'s `BUGS` recorded the gap
-/// between a delegating syscall's read of its source and its filing of the copy; these tests hold a
+/// between a delegating system call's read of its source and its filing of the copy; these tests hold a
 /// thread in that gap with `delegation_pause` and run the sweep. Its own header has the reasoning.
 ///
 /// Cross-ISA: the delegations, the sweeps and the seam are portable kernel code (DECISIONS §19).
@@ -994,16 +994,16 @@ mod revocation_window_tests;
 #[cfg(test)]
 mod map_revocation_window_tests;
 
-/// **A seeded syscall driver with a shadow model** (milestone 752 (a seeded syscall driver with a
+/// **A seeded system call driver with a shadow model** (milestone 752 (a seeded system call driver with a
 /// shadow model), provisional). Random capability operations from a seed, every answer and every table
 /// predicted by a model and compared. Its own header has the oracle, the replay and the `BUGS`;
 /// a module of its own for `tests.rs`' merge-hotspot reason, named to sort before
 /// [`thread_leak_police`].
 ///
-/// Cross-ISA: one portable body through the portable syscall layer, run on every architecture
+/// Cross-ISA: one portable body through the portable system call layer, run on every architecture
 /// (DECISIONS §19).
 #[cfg(test)]
-mod syscall_fuzzer_tests;
+mod system_call_fuzzer_tests;
 
 /// **The fuzz drivers' wait counts ticks on every core** (lane
 /// fuzz-deadlines-count-guest-progress, provisional). A core that takes no ticks holds the wait
@@ -1014,13 +1014,13 @@ mod syscall_fuzzer_tests;
 #[cfg(test)]
 mod every_core_tick_budget_tests;
 
-/// **A confined EL0 process fuzzes the syscall surface under a conductor** (milestone 779 (fuzz
+/// **A confined EL0 process fuzzes the system call surface under a conductor** (milestone 779 (fuzz
 /// the surface a confined process can reach), part (b), provisional). The sibling of
-/// [`syscall_fuzzer_tests`] one level down: real EL0 programs through the real trap entry, one
+/// [`system_call_fuzzer_tests`] one level down: real EL0 programs through the real trap entry, one
 /// random call at a time, judged between calls by an escape oracle rather than a shadow model. Its
 /// own header has the conductor, the oracles and the `BUGS`; a module of its own for `tests.rs`']
 /// merge-hotspot reason, named to sort before [`thread_leak_police`]. It spawns the
-/// `confined_syscall_fuzzer` fixture, so it carries the initial ramdisk gate.
+/// `confined_system_call_fuzzer` fixture, so it carries the initial ramdisk gate.
 ///
 /// Cross-ISA: the trap entries differ by ISA, which is the point, and the conductor is portable
 /// kernel code, run on every architecture (DECISIONS §19).
@@ -1074,7 +1074,7 @@ mod page_table_region_tests;
 /// **A client holding one right on a rendezvous cannot reach the operations another right gates**
 /// (milestone 633 (an outside agent attacks the confinement claim), fatal risk 7's confinement
 /// claim, third outsider pass). The kernel half of claim 26 ("a client cannot become its server")
-/// and claim 2 ("userspace cannot forge a right out of a syscall register"), driven through the
+/// and claim 2 ("userspace cannot forge a right out of a system call register"), driven through the
 /// real dispatcher, and since milestone 824 claim 3's retype side (a retype mints no right its
 /// budget lacks). Its own header has the reasoning and why it sits beside `live_swap_tests` rather
 /// than extending it; a module of its own for `tests`' merge-hotspot reason.
@@ -1108,7 +1108,7 @@ mod seventh_pass_delegation_tests;
 
 /// **A consumed capability stays consumed, and deleting one disturbs nothing else** (an eighth
 /// outsider pass at the confinement claim, claims 4 and 5). Attacks the live kernel paths the host
-/// crate's pure-logic tests cannot reach: a stale slot number after `SYSCALL_CAPABILITY_DELETE`, an
+/// crate's pure-logic tests cannot reach: a stale slot number after `SYSTEM_CALL_CAPABILITY_DELETE`, an
 /// out-of-range index forged in a register, a double delete, a neighbor that must keep working
 /// through the real dispatcher, and a freed slot regranted with narrower rights that must carry
 /// nothing of its deleted tenant. Nothing blocks. Its own header has the reasoning.
@@ -1173,7 +1173,7 @@ mod eighth_pass_port_boundary_tests;
 /// program granted the unvouched shape (one endpoint, two read-only pages) has its whole table
 /// read back slot for slot: exactly those three, and no device capability of any kind. The
 /// `kernel_test_subject`'s `BUILD_WITH_NOTHING` role answers NoSuchSlot to every minting attempt
-/// from inside, through the real `SYSCALL_INVOKE`.
+/// from inside, through the real `SYSTEM_CALL_INVOKE`.
 ///
 /// Cross-ISA: the spawn path, the census and the `kernel_test_subject` are portable (DECISIONS
 /// §19).
@@ -1275,7 +1275,7 @@ mod ninth_pass_port_tests;
 /// **A holder that drops its construction authority cannot build again** (a ninth outsider pass at
 /// the confinement claim, claim 23). `authority_tests` boots the real `root_supervisor` for this;
 /// this drives the mechanism through the dispatcher with no ramdisk. A full untyped budget retypes
-/// and splits, is deleted the way `SYSCALL_CAPABILITY_DELETE` deletes it, and the identical build operations
+/// and splits, is deleted the way `SYSTEM_CALL_CAPABILITY_DELETE` deletes it, and the identical build operations
 /// then answer `NoSuchSlot`.
 ///
 /// Cross-ISA: untyped retype and split and the capability table are portable kernel code

@@ -70,7 +70,7 @@ See `notes/what-a-session-carries.md`.
   is the merge problem this vocabulary exists to prevent.
 - Steward. Runs on an interval and holds a *lent* authority, which is what the name says. It merges
   what has earned it (green on every check, from a developer briefed this session, touching no
-  syscall surface, no `design/decisions/` section and no dependency addition). It cleans up behind
+  system call surface, no `design/decisions/` section and no dependency addition). It cleans up behind
   finished work (delete the branch, prune the worktree, relink `nife-dev`), reports queue depth
   against the target, and raises what has stalled or gone unanswered. It exists because the
   maintainer is structurally bad at noticing its own idleness: when it is busy, it is busy.

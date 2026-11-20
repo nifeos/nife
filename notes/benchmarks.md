@@ -74,8 +74,8 @@ numbers.
 | `spawn_reap` | kernel | spawn a thread, let it exit, reap it |
 | `map_new` | kernel | retype a fresh page from a region, walk, write the leaf (interrupts masked) |
 | `coremark` | EL0 | pure compute; the control that must never move |
-| `null_syscall` | EL0 | one `svc` the kernel rejects at once |
-| `ctx_switch` | EL0 | `SYSCALL_YIELD` to a peer process and back |
+| `null_system_call` | EL0 | one `svc` the kernel rejects at once |
+| `ctx_switch` | EL0 | `SYSTEM_CALL_YIELD` to a peer process and back |
 | `ipc_rtt_el0` | EL0 | `SEND` and `RECEIVE` between two processes: four traps |
 | `map_el0` | EL0 | `MAP_INTO` of an aliased frame: the mapping mechanism with no zeroing |
 | `spawn_el0` | EL0 | build a child from nothing, run it to exit, reap, reclaim its region |
@@ -92,7 +92,7 @@ Native macOS is the bare-metal ceiling. The host side is `bench/host/`.
 
 | metric | nife | date | Linux (HVF) | macOS (native) |
 |---|---|---|---|---|
-| null syscall | 27 ns | 2026-08-04 | ~139 ns | ~76 ns |
+| null system call | 27 ns | 2026-08-04 | ~139 ns | ~76 ns |
 | context switch, per switch, derived | ~29 ns | 2026-07-29 | ~415 ns | ~818 ns |
 | IPC round trip, EL0 | 350 ns | 2026-08-04 | ~1,723 ns | ~2,620 ns |
 | provision and map a fresh page | ~500 ns (`map_new` + one trap) | 2026-07-29 | ~534 ns | ~556 ns |
@@ -102,7 +102,7 @@ Native macOS is the bare-metal ceiling. The host side is `bench/host/`.
 The Linux and macOS columns date from 2026-07-25 (spawn 2026-07-26); the nife column is the
 latest release reading of each row, and the 2026-08-04 figures are a median of five boots.
 
-nife wins four rows and ties one. The null syscall and the IPC round trip are about 5x faster than
+nife wins four rows and ties one. The null system call and the IPC round trip are about 5x faster than
 Linux at the same tier. Page provisioning is a three-way tie near 500 ns, because zeroing 4 KiB is
 bandwidth-bound on all three. The 92 ns mechanism is not a page a program can use, so it
 is no win. [Cross-OS primitives](benchmarks/cross-os-primitives.md) has the
@@ -140,7 +140,7 @@ corrects the cross-arch table.
 | `yield_switch` | 563 | 94 | 9,594 |
 | `spawn_reap` | 3,383 | 538 | 44,469 |
 | `map_new` | 240 | 37 | 2,758 |
-| `null_syscall` | 20.5 | 3.7 | (EL0 plane not in this leg) |
+| `null_system_call` | 20.5 | 3.7 | (EL0 plane not in this leg) |
 | `ctx_switch` | 612 | 103 | |
 | `ipc_rtt_el0` | 2,203 | 372 | |
 | `spawn_el0` | 13,721 | 2,167 | |
@@ -188,7 +188,7 @@ round trip can fetch. It fails on 5% growth against `bench/fastpath-<arch>.txt`,
 |---|---:|---:|---:|
 | `ipc_call_reply`, stored 2026-09-04 | 7,028 | 5,936 | 8,122 |
 | `ipc_call_reply`, measured 2026-09-21 on `nightly-2026-09-20` | 7,104 | 6,038 | 8,234 |
-| `syscall_entry`, stored | 1,508 | 1,828 | 1,637 |
+| `system_call_entry`, stored | 1,508 | 1,828 | 1,637 |
 
 The target is under 4 KiB, about an eighth of the smallest L1i we run on (radon's U74, 32 KB). The
 shape the system runs is 1.47x to 2.01x that target. calef ruled on 2026-09-21 that the target is
@@ -232,8 +232,8 @@ underneath, an L1 large enough to hide any footprint effect. argon's PMU is wher
 - The context switch is derived by subtraction from two different mechanisms, a yield on our side
   and a pipe pass on theirs. Read the gap as a direction.
 - Our IPC is a synchronous five-word rendezvous; `lat_pipe` is a buffered byte stream. A Mach port
-  would likely beat the pipe. XNU is a hybrid whose syscalls are mostly in-kernel BSD calls.
-- Against seL4 on one core: their round trip is two syscalls with a fastpath; a service here issues
+  would likely beat the pipe. XNU is a hybrid whose system calls are mostly in-kernel BSD calls.
+- Against seL4 on one core: their round trip is two system calls with a fastpath; a service here issues
   three and `ipc_rtt_el0` four, and no EL0 twin of `call_reply` exists. Both run as HVF guests.
 - Filesystem: the other side has a page cache and in-kernel metadata caching. Our write commits a
   transaction per request but issues no device flush unless asked, which sits between ext4's

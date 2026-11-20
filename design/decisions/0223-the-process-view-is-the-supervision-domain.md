@@ -69,7 +69,7 @@ than the note assumed.
 
 1. What else was considered, and why did each lose?
    - B, a separate namespace object. Loses because it is a second source of truth for membership,
-     and because it is a new kernel object type on the syscall surface (§10 (process model: capability-based) and §16 (object revocation)) to buy
+     and because it is a new kernel object type on the system call surface (§10 (process model: capability-based) and §16 (object revocation)) to buy
      expressiveness nobody has asked for.
    - An ambient listing, Linux's `/proc`. Refused in milestone 126's block before any code: any
      process reads every command line on the machine with no grant.
@@ -97,9 +97,9 @@ than the note assumed.
      needs nothing new. Its granularity is whole domains: it cannot pick one member out of a
      domain it does not supervise, and that is the confinement working.
 5. What does each option cost? A is built and paid for: `survey_supervised` in
-   `kernel/src/sched.rs` is 39 lines, the syscall arm about 35, the predicate one, plus one Kani
+   `kernel/src/sched.rs` is 39 lines, the system call arm about 35, the predicate one, plus one Kani
    proof. B was never built, so its cost is not measured. Its parts are nameable: a new object
-   type, create and membership methods on the syscall surface, and membership upkeep on the death
+   type, create and membership methods on the system call surface, and membership upkeep on the death
    path that §40 (no reaper of last resort) already keeps careful.
 6. How reversible is it, and who has acted on it? `SURVEY` is method 6 on the wire (`crates/abi`)
    with a record selector ruled 2026-09-21. `ps`, `pgrep`, `top` and `swapper` read it, through

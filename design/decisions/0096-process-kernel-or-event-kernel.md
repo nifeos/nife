@@ -39,7 +39,7 @@ NOVA are all this.
 Run this tree's own test from CLAUDE.md, which is **not** "can I revert the commit" but "who else
 has already acted on this":
 
-- **No user program can tell.** The syscall ABI does not change. Nothing about `SEND`, `RECV` or
+- **No user program can tell.** The system call ABI does not change. Nothing about `SEND`, `RECV` or
   `CALL` is different under either model.
 - **No wire format, no name, no published fact, no stored secret.** None of the irreversible
   categories is touched.
@@ -139,7 +139,7 @@ an event-based (single-stack) kernel with continuations on an ARMv5 processor"* 
 1:16) and never says what userland AIM7 ran under. Warton's own thesis does (*Single Kernel Stack
 L4*, BE thesis, UNSW, November 2005, section 5.4): *"The AIM7 benchmark was modified slightly so that
 it could run on Wombat."* Wombat is the paravirtualised ARM Linux, so the 20% is a delta between
-two microkernels measured through a hosted Linux's syscall path, where milestone 168's instrument
+two microkernels measured through a hosted Linux's system call path, where milestone 168's instrument
 runs native tasks on this kernel's own primitives. It is also a ratio between two kernel models,
 and this tree has one, so the instrument produces one arm and no ratio.
 
@@ -207,7 +207,7 @@ not currently use.
 Their stated argument is specific: an event kernel avoiding in-kernel page-fault exceptions
 "preserves the semantics of the C language", and staying inside C's semantics reduces verification
 complexity. We are not verifying C, so that argument is simply not ours. Milestone 193 (put
-`kernel/src` within reach of the prover) proves two syscall properties in `kernel/src`, and
+`kernel/src` within reach of the prover) proves two system call properties in `kernel/src`, and
 `kernel/src/arch/` is unreachable, but the conclusion is about C's semantics rather than about
 coverage.
 

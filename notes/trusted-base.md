@@ -122,7 +122,7 @@ kernel's code, and it is not Tock's ratio, for two reasons:
    ranges from a one-line register write to a page of context-switch glue.
 2. **The denominator is not measuring the same thing.** Tock's 6,000 lines is a base of which only the
    1,000 is trusted. nife's 39,892 lines is trusted in its entirety, unsafe or not: a safe-Rust
-   bug in `kernel/src/syscall.rs` can mint an authority nobody should hold, and no type system
+   bug in `kernel/src/system_call.rs` can mint an authority nobody should hold, and no type system
    prevents that. The unsafe census is therefore not a TCB measurement at all. It measures how much
    of the code the compiler cannot check, which is a proof-burden and review-burden number, and the
    tree says so in its own words: the density exists to hold the claim that *"the tree is getting
@@ -145,14 +145,14 @@ not longer**, and every deletion has a reason in the architecture rather than in
 | **Context switches** | yes, and the assembly is separated from the Rust | `kernel/src/arch/<isa>/context.s` holds the register save/restore; `context.rs` has **zero** `unsafe` blocks, because the unsafety is in the `.s` file the Rust calls |
 | **Memory-mapped I/O and structures** | yes | `kernel/src/drivers/` (`pl011.rs`, `ns16550.rs`, `gic.rs`, `gicv3.rs`, `plic.rs`, `ramfb.rs`): volatile accesses at named offsets, each under a `SAFETY` comment, and no register crate |
 | **The memory allocator** | **no. The kernel has no allocator** | there is no `#[global_allocator]` anywhere in `kernel/src`. milestone 14 (kernel objects from untyped: remove the kernel heap) is the decision; `kernel/src/kmem.rs` is a fixed carve, not a heap; `notes/kernel-budget.md` has the one draw it missed and how 19c.1 closed it |
-| **Userspace buffers** | **no. No pointer crosses the boundary** | `kernel/src/syscall.rs`'s own header: *"Today every argument is a scalar in a register ... so the kernel follows no user pointer and there is no deputy to confuse."* The console is a userspace server, milestone 8 (the console driver leaves the kernel). The primitive is kept (`mmu::user_can_read`) for the next syscall that needs it |
+| **Userspace buffers** | **no. No pointer crosses the boundary** | `kernel/src/system_call.rs`'s own header: *"Today every argument is a scalar in a register ... so the kernel follows no user pointer and there is no deputy to confuse."* The console is a userspace server, milestone 8 (the console driver leaves the kernel). The primitive is kept (`mmu::user_can_read`) for the next system call that needs it |
 | **Interrupt and exception handlers** | yes | `kernel/src/arch/<isa>/exceptions.rs` (10 `unsafe` blocks on aarch64), `vectors.s`, `interrupt_controller.rs` |
 | **`TakeCell`** | **no, and the reason is the whole difference** | see the next section |
 
 Two of their six do not exist here, and neither absence is an accident. The allocator is gone
 because of the capability model: milestone 14 (remove the kernel heap) has as its thesis that the kernel spends nothing it was not
 handed, so there is no heap to write unsafely. The userspace-buffer category is gone because of the
-syscall surface: a kernel that follows no user pointer has no buffer to validate, and DECISIONS §10 (process model: capability-based, microkernel) is why. Both are cases where hardware isolation plus
+system call surface: a kernel that follows no user pointer has no buffer to validate, and DECISIONS §10 (process model: capability-based, microkernel) is why. Both are cases where hardware isolation plus
 a capability discipline removed an unsafe category outright, which is the opposite of the direction
 the 2017 paper predicts for a hardware-isolated kernel.
 
@@ -203,7 +203,7 @@ neither of the two things Levy is choosing between applies.
 Checked rather than asserted: there is no `Cell<T>` and no `RefCell` in `kernel/src` at all. The
 only interior mutability in the kernel is `UnsafeCell`, in six places. Every one of them is static
 per-CPU or per-core storage (`interrupt_stack.rs`, `cpu.rs` for the run queue and the x86_64
-syscall-stack scratch words, `smp.rs`), plus two test-local `Racy<T>` wrappers in `bench.rs` and
+system-call-stack scratch words, `smp.rs`), plus two test-local `Racy<T>` wrappers in `bench.rs` and
 `sched.rs`. None of that is the pattern `TakeCell` addresses.
 
 So: nothing to propose, and one thing worth recording. The two designs differ in what happens when
@@ -239,7 +239,7 @@ kernel that must keep running on a battery, which is the system Tock is.
 - **The six-category audit is a reading, not a proof.** "nife has no allocator in the kernel" was
   checked by grepping for `#[global_allocator]` in `kernel/src` and reading
   `notes/kernel-budget.md`; "no pointer crosses the boundary" was checked by reading
-  `kernel/src/syscall.rs`'s header, which is documentation. Neither is a gate, and neither would
-  catch a new syscall that reintroduced the category tomorrow.
+  `kernel/src/system_call.rs`'s header, which is documentation. Neither is a gate, and neither would
+  catch a new system call that reintroduced the category tomorrow.
 - **Tock today was not read.** The 2017 paper is treated as an argument. Nothing
   here is a claim about what Tock's trusted base looks like in 2026.

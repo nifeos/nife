@@ -40,7 +40,7 @@ only thing standing between a `ps` and a reap was the program's own source code.
 - `crates/pgrep` is the filter: a selector, the match, the four answers, the output format. It
   does not walk, because `ps::collect` already does. A second implementation of `SURVEY`'s
   resume protocol is a second thing that can be wrong. Twelve host tests, no emulator.
-- `components/src/pgrep.rs` is the syscall and two sinks. Its capability contract is `ps`'s three
+- `components/src/pgrep.rs` is the system call and two sinks. Its capability contract is `ps`'s three
   exactly: the output sink, the domain with `ENUMERATE`, the diagnostics sink. The two manifests
   in `grant_plan` are identical field for field. That sameness is the readable form of the ruling,
   not a coincidence worth deduplicating.

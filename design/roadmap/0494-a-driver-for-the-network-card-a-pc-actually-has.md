@@ -35,7 +35,7 @@ needs a person and a cable, and its result goes in the Results table of
   than assumed: with the kernel's `iommu::confine` skipped, QEMU's VT-d refused the NIC's first
   ring fetch and no lease came.
 - Milestone 261 (the NVMe driver leaves the kernel)'s shape, which DECISIONS §86 (whether an NVMe
-  driver can leave the kernel) authorized for NVMe, and no new syscall surface. The kernel
+  driver can leave the kernel) authorized for NVMe, and no new system call surface. The kernel
   (`kernel/src/e1000e.rs`) resets the NIC, reads its MAC address and programs the ring bases. The
   process is handed BAR0's two queue pages and an 18-page confined DMA region, and is denied page 0
   and page 5 (reset, the receive filter, the MAC address, the PHY). It polls; no interrupt is
@@ -123,7 +123,7 @@ Two drivers in this tree are the analogues, and they differ in the way that matt
   None of that mediation exists for a non-virtio device.
 - The EL0 NVMe server (milestone 261, DECISIONS §86 option 2a) is the precedent for a real
   device. The kernel keeps the admin plane, the process holds a page of BAR0 and a confined DMA
-  window, and on xenon VT-d is the confinement. It added no syscall surface.
+  window, and on xenon VT-d is the confinement. It added no system call surface.
 
 So the I219 driver takes 261's shape, and one difference is worth checking before the design is
 drawn. NVMe's specification put a page boundary exactly where the authority boundary belongs

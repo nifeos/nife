@@ -7,7 +7,7 @@ built: 2026-07-14
 
 Built in `a5533cb` (2026-07-14). The revised milestone table (`491f23d`) called this "the milestone
 that proves §10 (process model: capability-based, microkernel) was real": if the console could not
-be taken out, "we did not build a microkernel; we built a monolithic kernel with an unusual syscall
+be taken out, "we did not build a microkernel; we built a monolithic kernel with an unusual system call
 table."
 
 This is the milestone where plan and outcome diverge, and the divergence is the history worth

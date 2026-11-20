@@ -112,7 +112,7 @@ pub fn doorbell_barrier() {
 /// **Order this driver's normal-memory accesses to a virtqueue against the device's**: a descriptor
 /// before its available index, that index before the notify, a used index before its payload.
 ///
-/// `dmb ish` on aarch64, `fence` on riscv64; on `x86_64`, TSO and a serializing syscall leave only a
+/// `dmb ish` on aarch64, `fence` on riscv64; on `x86_64`, TSO and a serializing system call leave only a
 /// compiler fence to supply. A fourth architecture fails to build. See notes/user-mode-runtime.md
 /// and notes/architecture-list-sweep.md, finding 9.
 ///

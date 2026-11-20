@@ -64,7 +64,7 @@ and the PAL, and it deletes both the probe and the same trap in `MKDIR`.
 ## Why this was an architect's
 
 It is a thing two programs agree on, which the *move fast on what can be undone* tenet puts in the
-irreversible column alongside names, dependencies and the syscall surface. The code is a morning; the
+irreversible column alongside names, dependencies and the system call surface. The code is a morning; the
 un-shipping is not.
 
 ## BUGS

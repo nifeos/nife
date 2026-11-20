@@ -3,20 +3,20 @@
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
-the ring-3 syscall stubs, why `rdtsc` is ambient here, the `CR4.PCE` door, and `cntfrq()`. It exists
+the ring-3 system call stubs, why `rdtsc` is ambient here, the `CR4.PCE` door, and `cntfrq()`. It exists
 to verify or challenge the main page. A reader who only needs to build, boot or test the x86_64 port
 should not have to open it.*
 
-*Records cited below: §121 (a device with no page) and §124 (the x86_64 syscall ABI).*
+*Records cited below: §121 (a device with no page) and §124 (the x86_64 system call ABI).*
 
 ## `user_mode_runtime` needed five transliterations and two decisions
 
-The five are mechanical once DECISIONS §124 is read: `syscall` where aarch64 writes `svc` and
+The five are mechanical once DECISIONS §124 is read: `system_call` where aarch64 writes `svc` and
 RISC-V writes `ecall`, the number in `rax`, the arguments in `rdi`/`rsi`/`rdx`/`r10`/`r8`/`r9`.
 Three facts at those sites have no counterpart on either other architecture and all three are the
 instruction rather than a choice. `syscall` clobbers `rcx` (the return address) and `r11` (the
 caller's `RFLAGS`) unconditionally, so every site declares them. `r10` carries the fourth argument
-because `syscall` has already taken `rcx`. And `syscall` pushes nothing. That is why the kernel's
+because `system_call` has already taken `rcx`. And `system_call` pushes nothing. That is why the kernel's
 entry path parks `rsp` by hand and why `options(nostack)` is honest here.
 
 The two that are not transliterations are `now()` and `cntfrq()`. aarch64 reads `CNTVCT_EL0`

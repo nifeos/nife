@@ -416,7 +416,7 @@ def harness_count(files):
     for path, text in files:
         if path.startswith(NOT_A_PACKAGE):
             continue
-        # Stripped, so the sentence in `kernel/src/syscall.rs` explaining what a `#[kani::proof]`
+        # Stripped, so the sentence in `kernel/src/system_call.rs` explaining what a `#[kani::proof]`
         # is does not count as one. A raw grep counts 151 where the tree has 146.
         total += len(PROOF.findall(strip_non_code(text)))
         # Raw, because a falsification record lives in a doc comment by construction, and

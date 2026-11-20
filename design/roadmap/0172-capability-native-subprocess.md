@@ -16,9 +16,9 @@ compilation unit and links via a spawned linker. Structurally there is no suppor
 bypass in either case, even in "self-contained" builds. nife has no primitive for one program to
 start another, wait for it, and read back what it produced.
 
-This is a new syscall-surface question, and [DECISIONS
+This is a new system-call-surface question, and [DECISIONS
 §10 (process model: capability-based, microkernel)](../decisions/0010-capability-microkernel.md)'s own rule applies: "A method that does not fit the
-model, or a brand-new syscall number, is a design fork, raise it before building it."
+model, or a brand-new system call number, is a design fork, raise it before building it."
 
 ## This does not reopen §10
 
@@ -49,7 +49,7 @@ that crate and against `kernel/src/user.rs`'s spawn path: a synchronous, ergonom
 shape. A caller like `cargo` would use it in a loop ("run this, block until it's done, give me
 its output"). The death-notification/supervision-endpoint pattern was built for long-lived
 service supervision. §301 rules they are the same mechanism used differently: the wait is the §26
-receive, the status rides `SYSCALL_EXIT` into the `EVENT_EXIT` message, and there is no new syscall.
+receive, the status rides `SYSTEM_CALL_EXIT` into the `EVENT_EXIT` message, and there is no new system_call.
 
 ## How a caller starts the child is decided
 
@@ -68,7 +68,7 @@ status word on the death message.
 the `posix_spawn`-shaped path for foreign programs. `std::process::Command::spawn` and a
 `posix_spawn` shim for ported C are both thin layers over the request §219 settled, plus the wait
 this milestone owes. Neither gets a milestone of its own. The shim also needs a C library, which
-does not exist. §31 (the foreign-language seam: C holds no capabilities and makes no syscalls) and
+does not exist. §31 (the foreign-language seam: C holds no capabilities and makes no system calls) and
 the refused milestone 478 (tier three: full POSIX behind the foreign-language seam) stand in the
 way. That is calef's call, not this block's.
 
@@ -76,10 +76,10 @@ way. That is calef's call, not this block's.
 
 - The design fork is decided:
   [§301 (exit status and output)](../decisions/0301-exit-status-and-output.md), 2026-10-15, carries
-  the status word on `SYSCALL_EXIT` into the death message, and keeps output grant-routed. The
+  the status word on `SYSTEM_CALL_EXIT` into the death message, and keeps output grant-routed. The
   primitive is a userspace composition of `build_child` plus the receive on the supervision
   endpoint. What remains here is §301's one kernel touch on the exit path: `sched::exit` forwards
-  `SYSCALL_EXIT`'s first word, and `user_mode_runtime` passes the code it is given. Then the loop:
+  `SYSTEM_CALL_EXIT`'s first word, and `user_mode_runtime` passes the code it is given. Then the loop:
   spawn, endow, receive, read the code, and return the output the grants carried.
 - Stdin/stdout/stderr as capabilities, not ambient file descriptors: a spawned child's I/O needs
   to be handed explicitly, the same "additive, not ambient" shape §10 already committed to.
@@ -113,4 +113,4 @@ The real architectural piece the self-hosting question surfaced: `cargo`/`rustc`
 process per compilation unit and to invoke a linker, structurally, with no bypass. DECISIONS §10
 already rejected Unix-shaped fork/exec but explicitly endorsed the additive direction (Fuchsia's `fdio` shape); this is that direction applied to one more convenience. The wait is decided:
 [§301 (exit status and output)](../decisions/0301-exit-status-and-output.md) carries the status
-word on `SYSCALL_EXIT` and the death message.
+word on `SYSTEM_CALL_EXIT` and the death message.

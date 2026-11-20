@@ -501,7 +501,7 @@ OQ_JQ="$(dirname "$0")/open-question.jq"
 STUCK_JQ="$(dirname "$0")/stuck-head.jq"
 # The diff rules architect-label.yml runs on each push, run here again on every head that carries no
 # hold or ruling label, because a push event is not guaranteed: GitHub runs no `pull_request`
-# workflow while a pull request conflicts with its base, which is how #1745's syscall change went
+# workflow while a pull request conflicts with its base, which is how #1745's system call change went
 # unread (2026-10-06).
 RULES_PY="$(dirname "$0")/architect-label-rules.py"
 # Every field helpers/needs-maintainer.jq reads, in one call. helpers/needs-maintainer-selftest.sh

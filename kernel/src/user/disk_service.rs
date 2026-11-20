@@ -148,7 +148,7 @@ pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the surveyor");
 
     crate::sched::spawn(move || {
-        // The stack is wired at spawn: a process needs one before it can make the syscall that
+        // The stack is wired at spawn: a process needs one before it can make the system call that
         // would map it.
         let mut stack = [Mapping {
             va: 0,

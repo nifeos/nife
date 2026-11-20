@@ -10,7 +10,7 @@ measurement behind these numbers is in [census.md](census.md). Both are the work
 
 At most 52 <!--count-at-most:unsafe-density-outside-arch--> unsafe blocks per 10,000 lines
 outside `kernel/src/arch/`. The direction is down, because unsafe outside `arch/` is not paying
-for hardware access. It is a raw syscall, a shared page, or a hand-rolled data structure, and each
+for hardware access. It is a raw system call, a shared page, or a hand-rolled data structure, and each
 of those has a safe wrapper somebody could write. The ceiling was first written at a threshold the
 tree crossed the day before, rather than at slack. Every sample before 2026-08-18 would have failed
 it, 2026-08-16 included at 111.7. That is what makes it a ratchet instead of decoration.
@@ -173,7 +173,7 @@ Raised from 22 to 23 by milestone 161's x86_64 SMP item (2026-08-25): `kernel::c
 `unsafe impl Sync`. It is a single claim over a struct of three plain `u64`s reached through
 `PerCpu` (`x86_trap`), via the `gs`-relative addressing `IA32_GS_BASE` already gives every core to
 its own block. It carries no lock because it needs none. `trap.s`'s `isr_restore` and
-`x86_syscall_entry` are the only readers or writers, both running on the core whose own slot they
+`x86_system_call_entry` are the only readers or writers, both running on the core whose own slot they
 touch. `IA32_GS_BASE` is an MSR no context switch saves or restores and no other core's write can
 name. So two cores can never reach the same instance. That is the argument `PerCpu` itself already
 carries (`unsafe impl Sync for PerCpu`, cpu.rs's own comment: "no two cores ever reach the same

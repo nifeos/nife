@@ -68,7 +68,7 @@ All three now say so and name milestone 172 as the build.
 
 `notes/std/caveats.md`, `notes/std.md` and milestone 64's ranked list called carrying the code "a
 wire-format change" still to be decided, and milestone 172's block called the wait's sizing its own
-open work. §301 decided both: the status rides the message's zero word, with no new syscall. Each
+open work. §301 decided both: the status rides the message's zero word, with no new system_call. Each
 now states the ruling and that the build is 172's.
 
 ### 4. FIXED: nobody owned the one kernel change §301 names

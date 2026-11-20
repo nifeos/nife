@@ -27,9 +27,9 @@ old hunk no longer applied. The defect is the same: the page is retyped and mapp
 the registry and recorded in another, with the seam between. Replayed red on aarch64 against the
 re-cut, at the headline assertion.
 
-diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_region.rs
---- a/kernel/src/syscall/memory_region.rs
-+++ b/kernel/src/syscall/memory_region.rs
+diff --git a/kernel/src/system_call/memory_region.rs b/kernel/src/system_call/memory_region.rs
+--- a/kernel/src/system_call/memory_region.rs
++++ b/kernel/src/system_call/memory_region.rs
 @@ -74,8 +74,6 @@
      if !page_tables::is_user_page_virtual_address::<crate::arch::mmu::Format>(va) {
          return Err(Error::BadPointer);

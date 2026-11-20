@@ -79,7 +79,7 @@ Each belief the brief carried, against the code.
    refusals keep `jig`'s five owner's-console fields off every image. The ruling of 2026-11-02 makes
    each an owner's grant; the code does not follow yet.
 4. **About 28 rows.** Exactly 28, ids 0 to 27, no hole. `Program::manifest` has 27 arms because
-   `NullSyscall | SinkProducer` share one, and 26 manifest functions serve them. The wire-id pin
+   `NullSystemCall | SinkProducer` share one, and 26 manifest functions serve them. The wire-id pin
    covers ids 0 to 12 only. Fixtures sit in the table because it is the only way to make a program
    spawnable by bare name on a boot with no disk. With a disk a fixture could run by path, but most
    declare grants the frames path cannot carry.

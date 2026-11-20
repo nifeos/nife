@@ -49,7 +49,7 @@ names what a program cannot learn through any capability that exists.
 | `job_mix` | jobs per minute against task count | tasks EL0; supervisor in the kernel | placement census; counter frequency | moves, after 523 |
 | `lock_wait` | kernel lock contention under the job mix | kernel counters on every `invoke` | all of it | stays |
 | `tsc_probe` | TSC rate against CMOS second edges | kernel, ring 0 | the CMOS ports themselves | deleted |
-| `bench`, EL0 rows | `null_syscall`, `ctx_switch`, `ipc_rtt_el0`, `sink_throughput`, `map_el0`, `spawn_el0`, the `fs_*` rows, `rg_search` | `os_primitives_benchmarker` and the fs clients, EL0 | none; the kernel only spawns and grants | `null_syscall`, `sink_throughput` and `map_el0` also run from the shell |
+| `bench`, EL0 rows | `null_system_call`, `ctx_switch`, `ipc_rtt_el0`, `sink_throughput`, `map_el0`, `spawn_el0`, the `fs_*` rows, `rg_search` | `os_primitives_benchmarker` and the fs clients, EL0 | none; the kernel only spawns and grants | `null_system_call`, `sink_throughput` and `map_el0` also run from the shell |
 | `bench`, kernel rows | `yield_switch`, `ipc_rtt`, `relay_rtt`, `call_reply`, `broker_rtt`, `spawn_reap`, `map_new`, `rfence_self`, `tss_iomap_*`, `ipc_scale_*`, `appdisp_*`, `smp_*`, `coremark` | kernel threads and kernel calls | the cost of the kernel path itself | stays |
 | `icount` | timer arrival, handler bound, missed ticks | the kernel's timer interrupt path | all of it, under `-icount` | stays |
 | `soak_test` and its four variants | cross-core IPC under saturation | `soaker` workers EL0; detection and tick route in the kernel | wake refusals; the `on_tick` route | stays |
@@ -141,7 +141,7 @@ These already measure a userspace program: `os_primitives_benchmarker` self-time
 boot stays. The same program also becomes a command, so a board on the production kernel gives the
 same rows.
 
-Three rows run as commands: `null_syscall`, `sink_throughput` (`sink_producer | sink_consumer`) and
+Three rows run as commands: `null_system_call`, `sink_throughput` (`sink_producer | sink_consumer`) and
 `map_el0`. The last builds its own address space and frame from a ten-page `--mem`, which the first
 `USAGE` reading of the bench boot's `map_el0` sized (8 pages committed by 508 maps). The bench boot
 spawns the same programs, with the loop counts in `primitive_benchmark_contract`. `ctx_switch` and
@@ -164,7 +164,7 @@ and are recorded in `bench/` beside the quiet boot's numbers. Nothing gates on t
   a different placement distribution. One radon boot is one draw (milestone 225 (run the soak on
   radon, argon and xenon)), and those draws are only comparable with each other.
 - `icount` and the kernel `bench` rows. What they time is the kernel path. A program can time a
-  syscall, but not `sched::yield_now` between kernel threads.
+  system call, but not `sched::yield_now` between kernel threads.
 - `lock_wait`, `ipc_stack_depth`, `cycle_counter_grant`, `fastpath_pad`, `single_hart`. Each
   changes the kernel's code or layout to see itself. A production build carrying any of them would
   be a different kernel from the one being measured.
@@ -177,7 +177,7 @@ its input works under milestone 890 (riscv64 and x86_64 join the shared boot pat
 prompt echoes the first keystroke and no later one (pull request #2485), so nothing can be typed
 there yet. QEMU and xenon can start sooner.
 
-1. The `bench` EL0 rows as a command. LANDED for `null_syscall`, `sink_throughput` and `map_el0`
+1. The `bench` EL0 rows as a command. LANDED for `null_system_call`, `sink_throughput` and `map_el0`
    (ruled 2026-10-31). Each is a program of its own with a catalog entry. Its manifest asks for no
    authority (`map_el0` asks for a ten-page `--mem`), and the bench boot spawns the same programs. `ctx_switch`, `ipc_rtt_el0` and `spawn_el0` stay in the bench boot.
 2. `network_bench` on radon, with the production kernel printing D1's lines at bring-up. No new
@@ -279,7 +279,7 @@ The quiet-machine baseline stays the tripwire.
 
 - **Done.** Step 7, the deletion of `tsc_probe`, landed in pull request #2921. Checked by
   `grep -rn tsc_probe kernel script xtask .github`, which finds nothing.
-- **Done.** Step 1: `null_syscall`, `sink_producer | sink_consumer` and `map_el0 --mem 10` run
+- **Done.** Step 1: `null_system_call`, `sink_producer | sink_consumer` and `map_el0 --mem 10` run
   at the production shell and print `bench-production:` rows, and the bench boot spawns the same
   programs (pull request #2933). Checked by `script/swish-check --arch aarch64` and
   `script/bench --check` on aarch64 and x86_64. CI runs the riscv64 leg.

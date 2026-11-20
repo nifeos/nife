@@ -44,7 +44,7 @@
 #   ABI constants        the `pub const NAME: u64` surface of crates/abi (see BUGS)
 #   external packages    distinct registry packages across every committed Cargo.lock but vendor's
 #
-# ABI constants are milestone 92's syscall event trigger made countable: a new method arrives as a new
+# ABI constants are milestone 92's system call event trigger made countable: a new method arrives as a new
 # constant, and both cadence rows set it to 1, so any change at all fires. External packages are a
 # count, not an event, because §46 (thin primitives or whole subsystems) already rules on each
 # dependency; the README says why security's number is what it is.
@@ -57,7 +57,7 @@
 #   This prints them on every run rather than filing them somewhere, which is rung four of CLAUDE.md's
 #   ladder and is known to be the weakest part of the mechanism. The count triggers reach the same
 #   place later, and later is the wrong word for an attack surface.
-# - **The ABI-constant count is a superset of "a new syscall method".** It counts the rights bits,
+# - **The ABI-constant count is a superset of "a new system call method".** It counts the rights bits,
 #   the object types and the sentinels alongside the methods, so a new error sentinel fires the
 #   trigger too. That is the tolerable direction for an audit signal, and separating them would mean
 #   teaching this script the shape of every module in crates/abi, which is a copy of a fact that

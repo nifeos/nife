@@ -22,7 +22,7 @@ fn cycle_counter_image() -> &'static [u8] {
 /// trying.** Both halves, in one test, because each is the other's control.
 ///
 /// The program reads `PMCCNTR_EL0` (aarch64) or the `cycle` CSR (riscv64) at EL0. Granted through
-/// the test-only `sched::grant_cycle_counter_to_current` (no syscall sets it yet), it reports;
+/// the test-only `sched::grant_cycle_counter_to_current` (no system call sets it yet), it reports;
 /// ungranted, the closed default of milestone 228 (the cycle counters are closed by assumption)
 /// traps the read and `USER_FAULTS` counts the kill. The reported meaning is checked against
 /// `expected_cycle_meaning` (milestone 353 (the aarch64 half of 74), calef's ruling B4 of

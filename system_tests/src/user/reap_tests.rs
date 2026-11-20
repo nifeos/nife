@@ -5,7 +5,7 @@ use super::supervision_tests::{FAULT_STUB, REPORT_STUB, REPORT_WORD, build_child
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, Rights};
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// The builder's whole budget. Room for three instances plus slack, so the LIFO return-of-pages
 /// (§16) can be watched happening more than once.

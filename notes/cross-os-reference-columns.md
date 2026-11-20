@@ -17,8 +17,8 @@ how an evening runs.
 | program | what it isolates | nife row | runs on |
 |---|---|---|---|
 | `coremark` | pure compute; the control that must tie | the EL0 row, [benchmarks.md](benchmarks.md) | every unix, both boards |
-| STREAM, Copy, Scale, Add, Triad | memory bandwidth, zero syscalls; the second control | [832](../design/roadmap/0832-stream-on-nife-and-linux.md) | every unix, both boards |
-| lmbench: `lat_syscall null`, `lat_ctx`, `lat_pipe`, `lat_proc exec`, `bw_mem`, `lat_mem_rd` | [risk 4](../design/fatal-risks/4-the-per-crossing-cost.md)'s per-crossing cost: trap, switch, pipe, fault, cache latency | [826](../design/roadmap/0826-an-lmbench-subset-on-nife-and-linux.md) | every unix |
+| STREAM, Copy, Scale, Add, Triad | memory bandwidth, zero system calls; the second control | [832](../design/roadmap/0832-stream-on-nife-and-linux.md) | every unix, both boards |
+| lmbench: `lat_system_call null`, `lat_ctx`, `lat_pipe`, `lat_proc exec`, `bw_mem`, `lat_mem_rd` | [risk 4](../design/fatal-risks/4-the-per-crossing-cost.md)'s per-crossing cost: trap, switch, pipe, fault, cache latency | [826](../design/roadmap/0826-an-lmbench-subset-on-nife-and-linux.md) | every unix |
 | lmbench: `lat_proc fork` | what process creation costs a Unix | recorded-not-run, [decision 264](../design/decisions/0264-fork-is-declined-and-spawn-is-supported.md) | every unix; the recorded absence beside the spawn caveat ([benchmarks.md](benchmarks.md)) is the comparison |
 | `hackbench` | scheduler and socket pressure under load | [827](../design/roadmap/0827-hackbench-on-nife-and-linux.md) | every unix; source where not packaged |
 | sqlite `speedtest1` | a real workload, stranger-credible | [831](../design/roadmap/0831-sqlite-speedtest1-on-nife-and-linux.md) | source or package everywhere |
@@ -30,7 +30,7 @@ how an evening runs.
 
 ## Controls first
 
-`coremark` and STREAM make no syscalls, so on the same silicon they must tie across operating
+`coremark` and STREAM make no system calls, so on the same silicon they must tie across operating
 systems. Take them first on every fresh install. A disagreement indicts the rig, not the operating
 system: the governor, the turbo state, the memory population or the mitigations moved between
 installs. A tie on both controls makes the later rows evidence about the operating system.
@@ -42,7 +42,7 @@ installs. A tie on both controls makes the later rows evidence about the operati
   population.
 - The tools' exact versions.
 - On x86_64, the mitigations state: defaults by default, plus an optional labeled `mitigations=off`
-  row for attribution; mitigations move `null_syscall` and `lat_ctx` most.
+  row for attribution; mitigations move `null_system_call` and `lat_ctx` most.
 - Network rows: link speed first, so a 100 Mbit fallback does not read as slowness; then offloads
   and coalescing, parity or both modes reported
   ([milestone 829 (netperf TCP_RR)](../design/roadmap/0829-netperf-tcp-rr-on-nife-and-linux.md)).
@@ -132,7 +132,7 @@ netperf -H <peer> -t TCP_RR -l 30 -- -r 1,1
 netperf -H <peer> -t UDP_RR -l 30 -- -r 1,1
 
 # lmbench, milestone 826
-lat_syscall -P 1 -W 1 -N 5 null
+lat_system_call -P 1 -W 1 -N 5 null
 ```
 
 Every lmbench program takes the same three flags. The fio job file is

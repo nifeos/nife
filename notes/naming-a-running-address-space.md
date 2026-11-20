@@ -15,7 +15,7 @@ True, at `origin/main` e1f3ddf8c:
 - `RETYPE_OBJECT(ADDRESS_SPACE)` is the only mint (`user::user_address_space_create`,
   `kernel/src/user/address_space_registry.rs`), and the name lives in that file's `USER_SPACES`.
 - `CONFIGURE` deletes the caller's capability (`thread_control_block_configure`,
-  `kernel/src/syscall/thread_control_block.rs`) after `sched::configure_thread_control_block`
+  `kernel/src/system_call/thread_control_block.rs`) after `sched::configure_thread_control_block`
   (`sched/configure.rs`) has called `user::take_user_address_space`. The space
   moves into `Thread::space: Option<AddressSpace>` (`kernel/src/thread.rs`), owned outright.
   The comment above that delete in `thread_control_block_configure` says why the delete is there: "a second bind must not find it".
@@ -180,7 +180,7 @@ is B's mechanism, applied to one program.
 ## How A composes with 765
 
 765 stands as ruled. Its semantics (a live thread whose bound root is in the destroyed span is a
-resident: refuse, kill, retry) are what A needs, and A adds nothing to the syscall surface there.
+resident: refuse, kill, retry) are what A needs, and A adds nothing to the system call surface there.
 What A changes is the bookkeeping. With registry ownership,
 `reap_address_spaces_in_region` sees bound spaces for the first time. It must not drop one whose
 thread can still run, and the existing order already guarantees that: `reclaim_region` calls

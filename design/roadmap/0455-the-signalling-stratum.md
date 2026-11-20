@@ -31,11 +31,11 @@ end one lives with whoever holds the child's region.
 - **Condition.** A capability that names a thread's life. The refusal states exactly what is missing
   ("a tid is not a capability, and killing stays with whoever holds the child's region"), so either a
   verb on a thread handle or a supervision-domain right to end a child is what would make `kill`
-  expressible at all. Both are syscall-surface questions, which is an architect's call rather than a
+  expressible at all. Both are system-call-surface questions, which is an architect's call rather than a
   lane's.
 
 ## Index row
 
 A capability system cannot implement `kill` by handing a program a number, which is why the survey
 half of `procps` shipped and the signaling half did not. The refusal names precisely the missing
-primitive, so the condition is concrete even though meeting it is a syscall-surface decision.
+primitive, so the condition is concrete even though meeting it is a system-call-surface decision.

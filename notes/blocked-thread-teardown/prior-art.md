@@ -75,7 +75,7 @@ holding the thread.
 Cancellation is not a message; it is a state. The suspended thread is `ThreadState_Inactive`. It
 does not resume, does not return an error to userspace, and does not run another user instruction. A
 later `seL4_TCB_Resume` calls `restart()`, which sets `ThreadState_Restart` and re-executes the
-interrupted syscall from the top. seL4 never hands a cancelled thread an error code, so it never
+interrupted system call from the top. seL4 never hands a cancelled thread an error code, so it never
 has to define one, and userspace never has to handle one.
 
 The reply relationship is a first-class object with a back-pointer. Under MCS a `reply_t` holds
@@ -152,7 +152,7 @@ victim's own invariants broken and one that refuses rather than do so, and it ne
 Mach threads block inside arbitrary kernel work. This kernel's blocked threads are all parked at one
 of three well-defined points, with no kernel state in flight, so every abort here is
 `thread_abort_safely`-shaped and the dangerous variant has no reason to exist. That is a real
-advantage of a microkernel with four syscalls, and it is worth stating out loud rather than
+advantage of a microkernel with four system calls, and it is worth stating out loud rather than
 assuming.
 
 ## L4 (Fiasco.OC / L4Re): cancellation as a side effect of touching registers
@@ -199,12 +199,12 @@ The most valuable entry, because Fuchsia shipped thread killing, lived with it, 
 >
 > The dangers listed: "Locks can be left acquired, including global locks like ones controlling the
 > heap." "Memory can be leaked. At the very least the thread stack, but often many other pieces."
-> "Runtime left in an inconsistent state." "Killing a thread in its way to a syscall leaves the
+> "Runtime left in an inconsistent state." "Killing a thread in its way to a system call leaves the
 > process in an unknown state." "Defeats RAII wrappers and automatic cleanup."
 >
 > Source: [RFC-0007: Zircon removal of thread killing](https://fuchsia.dev/fuchsia-src/contribute/governance/rfcs/0007_remove_thread_killing)
 
-The current syscall documentation is the outcome:
+The current system call documentation is the outcome:
 
 > "This asynchronously kills the given process or job and its children recursively, until the entire
 > task tree rooted at handle is dead. Killing a thread is not supported." Rights: "_handle_ must
@@ -230,7 +230,7 @@ handle, which is the closest match in the survey to how this tree thinks.
 Zircon also documents the stale-transaction problem in its own vocabulary:
 
 > "If a `zx_channel_call()` returns due to `ZX_ERR_TIMED_OUT`, if the server eventually replies, at
-> some point in the future, the reply _could_ match another outbound request [...] This syscall is
+> some point in the future, the reply _could_ match another outbound request [...] This system call is
 > designed around the expectation that timeouts are generally fatal and clients do not expect to
 > continue communications on a channel that is timing out."
 

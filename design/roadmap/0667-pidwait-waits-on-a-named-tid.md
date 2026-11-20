@@ -15,7 +15,7 @@ Raised by milestone 126 (the `procps` package), building `pidwait` under DECISIO
 takes tids and composes with `pgrep`). It is a milestone of its own because it needs a new kernel
 method.
 
-The wait primitive is a method on the syscall surface, so it is calef's, and
+The wait primitive is a method on the system call surface, so it is calef's, and
 the options are written but not chosen.
 
 ## What is owed
@@ -52,4 +52,4 @@ interrupt or the deadline).
 
 ## Index row
 
-`pidwait` is ruled a program that waits on named tids, but nothing lets a program observe a tid's exit with less authority than `pgrep` holds. Proposed: a wait primitive, which is a new syscall method and so an architect's call; options are written, none chosen.
+`pidwait` is ruled a program that waits on named tids, but nothing lets a program observe a tid's exit with less authority than `pgrep` holds. Proposed: a wait primitive, which is a new system call method and so an architect's call; options are written, none chosen.

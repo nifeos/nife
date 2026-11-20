@@ -36,8 +36,8 @@ returns the count paired with what it counts. On riscv64 that is core cycles, fl
 probe was handed `hpmcounter3`. On x86_64 it is the TSC, labeled as constant-rate reference cycles
 and not core cycles; `rdpmc` and `CR4.PCE` are not reopened. On aarch64 it is core cycles counting
 user and kernel, per A1. A program knows whether it may read from its own manifest's grant, so
-step 1 needs no syscall-surface change. Step 2, a kernel-provided "may I read" page or method, is a
-later syscall-surface fork and is not built.
+step 1 needs no system-call-surface change. Step 2, a kernel-provided "may I read" page or method, is a
+later system-call-surface fork and is not built.
 
 ### What was built
 
@@ -219,7 +219,7 @@ trying.
   with §19 as a gate needs a scope note for x86_64.
 - B3. A portable read that promises core cycles on all three, which on x86_64 means `rdpmc` of
   fixed counter 1 and therefore reopening `CR4.PCE` behind the grant. That is a §139 extension
-  (a new door, granted) and a syscall-surface-adjacent change, so it is two decisions wearing one
+  (a new door, granted) and a system-call-surface-adjacent change, so it is two decisions wearing one
   name.
 - **B4. A read paired with its meaning**, a function returning the count together with what it
   counts (the filter, the core it ran on), in the shape the kernel's probe prints a meaning line.
@@ -264,7 +264,7 @@ The riscv64 lane's handoff (2026-09-03) and the aarch64 lane that built the coun
 - **Milestone 856.** Milestone 856 (a program asks whether it may read the cycle counter):
   *step 2 of decision B, and the riscv64 flag that needs it.* A kernel-provided way for
   a program to ask whether it may read the counter, and to learn which counter the kernel's own
-  probe reads, is a syscall-surface fork calef deferred.
+  probe reads, is a system-call-surface fork calef deferred.
 - **Recorded.** *No manifest field grants the cycle counter yet*, so no real aarch64 or riscv64
   program can call `cycle_reading` without being killed; only the kernel's test grants it, through
   a test-only door. DECISIONS §139 (who may read the cycle counter, and by what authority) put the
@@ -283,4 +283,4 @@ and x86_64, and the boot and bench lines stopped saying `PROVISIONAL`; argon's f
 read for milestone 25 (cross-OS comparison) only. B4 step 1: `user_mode_runtime::cycle_reading()`
 returns the count with an `abi::cycle_counter::CycleMeaning`, core cycles on aarch64 and riscv64
 and constant-rate reference cycles on x86_64, proved on all three by the granted-read test. Step 2,
-a "may I read" page or method, is a deferred syscall-surface fork and is proposed, not built.
+a "may I read" page or method, is a deferred system-call-surface fork and is proposed, not built.

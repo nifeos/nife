@@ -17,7 +17,7 @@ aarch64 hands us the answer directly: two translation table base registers.
 | all **zero** | `TTBR0_EL1` | the process (swapped on every context switch) |
 | all **one** | `TTBR1_EL1` | the kernel (never moves) |
 
-The kernel's mappings are in `TTBR1` and simply never change. A syscall requires no address
+The kernel's mappings are in `TTBR1` and simply never change. A system call requires no address
 space switch at all: the trap goes to EL1, the kernel is already mapped, and it can read the
 user's memory through `TTBR0`, which is still loaded.
 

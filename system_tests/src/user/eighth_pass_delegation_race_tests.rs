@@ -15,9 +15,9 @@ use crate::capability_object::{
     Object, Rights, page_frame_run_capability, page_frame_run_len, rendezvous_capability,
 };
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
-/// What the paused sender's `SEND_CAPABILITY` answered, as one word: the syscall's return on success, or
+/// What the paused sender's `SEND_CAPABILITY` answered, as one word: the system call's return on success, or
 /// the `Error` code negated the way `abi` represents it (`Error as i64` is already negative).
 const UNANSWERED: i64 = i64::MIN;
 

@@ -53,7 +53,7 @@ Giving it the archive was the option refused, and the refusal has two reasons ra
 could not be done with what init holds. `supervision_proto::build_child` maps only pages the spawner
 has a `PageFrame` capability for, and the archive is reserved RAM the frame allocator does not own
 and nothing names. It would have needed a new kernel object naming reserved RAM, which is a
-syscall-surface decision and calef's. And it is the wrong shape anyway. This program needs one
+system-call-surface decision and calef's. And it is the wrong shape anyway. This program needs one
 program's bytes and a table to check them against, and a service that can read every file in the boot
 image to answer a password holds authority it never exercises.
 
@@ -120,7 +120,7 @@ is not this case.
 - **Refused.** Handing `login` a mapping of the boot archive, for two reasons rather than one. It
   could not be done with what init holds, since `supervision_proto::build_child` maps only pages
   the spawner has a `PageFrame` capability for and the archive is reserved RAM nothing names. It
-  would need a new kernel object naming reserved RAM, and that is a syscall-surface decision. And it
+  would need a new kernel object naming reserved RAM, and that is a system-call-surface decision. And it
   is the wrong shape anyway: a program that answers a password should not be able to read every
   file in the boot image.
 - **Milestone 235.** A spawned command that traps hangs the prompt, found by this milestone's own

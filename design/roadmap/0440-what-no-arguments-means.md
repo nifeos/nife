@@ -126,7 +126,7 @@ on its part of speech.
 
 High, and that is why the mechanism shipped under a recommendation. The tags appear in one
 column of one table, in `--list` output, and in three sentences of prose. Renaming them is one
-commit and no wire format, no syscall, and nothing two programs agree on. **What is not cheap is
+commit and no wire format, no system call, and nothing two programs agree on. **What is not cheap is
 the default**. `CONTRIBUTING.md` and `.github/pull_request_template.md` now tell a stranger that
 `script/ci-build` is the one command to remember. A contributor who learns it and then finds it
 means something else is the expensive half of `AGENTS.md`'s *move fast on what can be undone*.

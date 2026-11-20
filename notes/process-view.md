@@ -40,10 +40,10 @@ is *before* anything is spawned. On Linux there is no such distinction to print,
 entire difference. This is Fuchsia's job-handle shape: their `ps` needs a handle to the root job to
 see everything, and a handle to a smaller job to see less.
 
-## The surface: one new method, no new syscall
+## The surface: one new method, no new system call
 
 `abi::endpoint::SURVEY`, method 6 on an endpoint capability. A new method inside the established
-capability model, not a new syscall number.
+capability model, not a new system call number.
 
 ```text
 invoke(cap, SURVEY, cursor, record, 0) -> (next_cursor, tid, word)
@@ -122,7 +122,7 @@ Two halves at the IO boundary, which is the crate-and-program pair convention.
 - `crates/ps` is the listing: the cursor walk, the buffer, the columns, the refusal catalog.
   Host-tested in milliseconds, nine tests, and total for *every* reader including one that never
   advances its cursor.
-- `components/src/ps.rs` is the syscall and two sinks, about sixty lines.
+- `components/src/ps.rs` is the system call and two sinks, about sixty lines.
 
 The kernel's survey tests drive `ps::collect` against the real `endpoint::SURVEY`, so the cursor
 protocol is proved end to end rather than by a second copy of the walk written in a test.
@@ -217,7 +217,7 @@ and ends the thread. Killing stays with the shell that spawned the job, which ho
 `pkill` cannot be assembled out of a view, and `procps` is ported without its signaling stratum.
 A kernel test asserts that the capability that printed a corpse's tid is refused the reap.
 
-`crates/pgrep` is the filter and `components/src/pgrep.rs` the syscall, with `ps`'s three grants
+`crates/pgrep` is the filter and `components/src/pgrep.rs` the system call, with `ps`'s three grants
 exactly. It tells four answers apart where upstream's exit 1 tells none: matched, none matched,
 empty domain, and refused. Its pattern is a glob over the four run-state words, because a process
 has no name. The prompt cannot deliver a pattern today, so the shipped program is `pgrep '*'`. The

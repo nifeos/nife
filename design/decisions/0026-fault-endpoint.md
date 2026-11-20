@@ -40,7 +40,7 @@ The five parts, each decided explicitly:
    badged capabilities; that mechanism returns as its own decision if shared endpoints ever need
    trustworthy identity from userspace senders.
 
-Surface cost: no new syscall and no new method. Spawn already carries grants; delivery is a
+Surface cost: no new system call and no new method. Spawn already carries grants; delivery is a
 kernel-internal send. The additions are a message-format convention and a spawn-slot convention,
 recorded in notes/abi.md when built.
 
@@ -196,7 +196,7 @@ of the §14 soft spot. Recorded here with the rest of milestone 22 for the same 
 
 4. Restart policy is userspace code and stays there. Bounded retries, a clean exit read as
    "finished" rather than "crashed" (which is why §26 delivers both events), a give-up. The kernel's
-   whole contribution is one five-word message, unchanged from phase A. No new syscall, no new method.
+   whole contribution is one five-word message, unchanged from phase A. No new system call, no new method.
 
 5. **Proven by authority, not by timing.** Two cross-ISA tests (`authority_tests`): after the handoff
    both construction primitives fail from inside init with `NoSuchSlot` (nothing there) rather than
@@ -213,7 +213,7 @@ Two design forks found, reported rather than built through.
   unable to build, and its policy for a tier-one death is "report and stop", the fail-closed floor.
   Splitting a reap-only right out of `WRITE` (a rights bit, or a distinct `Untyped::REAP` method)
   would let a root recover without regaining construction authority. That changes the rights model and
-  the syscall surface, so it is a decision, not an implementation detail.
+  the system call surface, so it is a decision, not an implementation detail.
 - **A supervisor cannot turn a tid into a handle.** The fault message names the dead thread by tid
   (§26.5), but nothing maps a tid to something a builder holds, so `sub_server_supervisor` names instances by a handle
   the spawner issues. That is sufficient for one child at a time and insufficient in general. Options:

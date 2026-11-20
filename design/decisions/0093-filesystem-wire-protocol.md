@@ -23,7 +23,7 @@ extending a convention with no argument behind it.
 
 ## What `fs_proto` is, so the comparison is fair
 
-It is the message protocol between a program and the FS server (§27), not the syscall surface. The
+It is the message protocol between a program and the FS server (§27), not the system call surface. The
 kernel routes these words the way it routes any IPC and never reads an opcode, so adding one is a
 change to a crate and a note. `OPEN` is 1, `READ` 2, up through `REMOVEXATTR` at 17 and now
 `STATFS` at 18. A handle carries a rights bitfield (`ENUMERATE`, `READ`, `WRITE`, `CREATE`,
@@ -79,7 +79,7 @@ it where both ends are ours and the framing is the thing we designed.
 ## What this does not decide
 
 **Op-by-op semantics are not recorded here.** They live in `crates/fs_proto` beside the constant
-and in notes/fs-server.md, because `fs_proto` is not the syscall surface and a `DECISIONS` section
+and in notes/fs-server.md, because `fs_proto` is not the system call surface and a `DECISIONS` section
 per opcode would put the contract in two places that can disagree. This section records the choice
 of *whose* opcode space, once. `STATFS`'s own four wire choices are in pull request #255 and in the
 crate. They are a record in the page rather than a packed word, the record's length serving as its

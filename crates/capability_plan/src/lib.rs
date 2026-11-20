@@ -1,5 +1,5 @@
 //! What a component declares it needs, and how a supervisor wires it: the capability half of a §41
-//! (the endpoint is the broker) component. No IO and no syscalls: a [`Requirements`] and the
+//! (the endpoint is the broker) component. No IO and no system_calls: a [`Requirements`] and the
 //! supervisor's [`Provisions`] become a [`Plan`] (exactly what to endow) or a typed [`Refusal`]. A
 //! manifest is a request and the provisions are the authority: a name the supervisor did not list
 //! is [`Refusal::Unprovided`] before the component is built, so a manifest can be unsatisfiable but
@@ -102,7 +102,7 @@ pub enum PageKind {
     /// a device the supervisor is about to take back **cannot be installed at build time**. A plan
     /// sorts these last and [`Plan::devices`] hands them over separately, so the operator can endow
     /// everything else early and map the registers on the far side of the revoke, which is what keeps
-    /// the down window four syscalls wide.
+    /// the down window four system calls wide.
     DeviceRegisters,
 }
 
@@ -454,7 +454,7 @@ impl Plan {
     /// revoke would lose its copy to the revoke, and since the kernel mints a device capability once
     /// at boot nothing could hand one back. A supervisor building a replacement therefore endows it
     /// with this, revokes, and then installs [`devices`](Plan::devices) into the child's address
-    /// space. That is what keeps the down window four syscalls wide.
+    /// space. That is what keeps the down window four system calls wide.
     pub fn maps_without_devices(&self) -> &[(u64, u64, u64)] {
         &self.maps[..self.nmaps - self.ndevices]
     }

@@ -9,9 +9,9 @@ needs_person: no
 ---
 # A caller gives up on a call at a deadline
 
-Raised by lane/timed-call-proposal. On 2026-11-11 (UTC) the architect accepted, on #3499, that the board's PMIC route bounds its own wait because `reboot` cannot bound its call. The same ruling named a timed call as its own milestone. This file is that milestone. The syscall surface is the architect's call, and the architect ruled its shape on 2026-11-11 (UTC); the ruling is below.
+Raised by lane/timed-call-proposal. On 2026-11-11 (UTC) the architect accepted, on #3499, that the board's PMIC route bounds its own wait because `reboot` cannot bound its call. The same ruling named a timed call as its own milestone. This file is that milestone. The system call surface is the architect's call, and the architect ruled its shape on 2026-11-11 (UTC); the ruling is below.
 
-Reuse: the `Timer` object and the bound notification, both already built; `remove_sender` in `crates/inter_process_communication`; milestone 371 (a reply capability that names a call). No new object, syscall number or dependency.
+Reuse: the `Timer` object and the bound notification, both already built; `remove_sender` in `crates/inter_process_communication`; milestone 371 (a reply capability that names a call). No new object, system call number or dependency.
 
 Name: provisional. Every new name below is the lane's, not a ruling.
 
@@ -35,7 +35,7 @@ So a client cannot bound a call. §101's rule 3 says a signal that arriving whil
 
 ## The design
 
-Option A, as ruled: a new `Rendezvous` method, `CALL_BOUND`, which is `CALL` that the caller's bound notification can end in either phase. The caller arms its `Timer` onto that notification and calls. The call returns the reply, or the notification's word with a tag in `x4`, as a bound receive already does. No syscall number changes, and plain `CALL` keeps §101's rule 3 unchanged.
+Option A, as ruled: a new `Rendezvous` method, `CALL_BOUND`, which is `CALL` that the caller's bound notification can end in either phase. The caller arms its `Timer` onto that notification and calls. The call returns the reply, or the notification's word with a tag in `x4`, as a bound receive already does. No system call number changes, and plain `CALL` keeps §101's rule 3 unchanged.
 
 It is the composition §147 chose. The timer supplies the deadline and the notification is the wake source, so a call also ends on anything else that signals that word, such as a `^C` or a supervisor's cancel.
 
@@ -89,7 +89,7 @@ Each option keeps plain `CALL` and its round trip unchanged. Every new path is o
 ### A. `CALL_BOUND`: the bound notification ends the call (ruled)
 
 - Cost: a per-thread flag that marks the call as one the notification may end, and two new cases in `bound_receiver`. The sender phase reuses `remove_sender`. The reply phase needs milestone 371. A caller needs a `Timer`, a notification and a binding, which `retype_sleeper` in `user_mode_runtime` already makes from a memory region.
-- ABI: method 8 on `Rendezvous` and two `x3` values, with no new syscall number. No existing encoding changes, so by the precedent of the 2026-11-11 rename that kept method 2, `ABI_VERSION` stays 1. The tree has no ruled rule for an added method, and the version check is by equality, so a bump would refuse every program built before it.
+- ABI: method 8 on `Rendezvous` and two `x3` values, with no new system call number. No existing encoding changes, so by the precedent of the 2026-11-11 rename that kept method 2, `ABI_VERSION` stays 1. The tree has no ruled rule for an added method, and the version check is by equality, so a bump would refuse every program built before it.
 - A late reply: dropped by 371's guard. The caller learns from `x3` whether the server ever took the request.
 
 ### B. A deadline argument: `CALL_BEFORE(w0, w1, deadline)`

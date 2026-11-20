@@ -39,7 +39,7 @@ own threaded `sys` code for every platform shape it can, and writes only the nif
 Kernel, on all three architectures:
 
 1. An address-space capability can be bound to a TCB without being consumed. This changes what an
-   existing method promises, so it is a syscall-surface change and owes a `design/decisions/`
+   existing method promises, so it is a system-call-surface change and owes a `design/decisions/`
    section ruled by calef before code. Whether the change is a new rights bit or a second
    `CONFIGURE` form is part of that ruling.
 2. `AddressSpace` gains multi-holder liveness, the shape `Endpoint` already has under §16 (object
@@ -102,7 +102,7 @@ second. Search for more before building; this list is what a grep found on 2026-
 
 Ruled 2026-10-09 (UTC) by calef, all seven, in [§269 (how threads share a process)](../decisions/0269-how-threads-share-a-process.md). Forks 4, 5 and 6 went differently from the recommendations below, and forks 2 and 7 were widened; §269 is the record, and the list below is kept as the question calef was asked. One consequence is open: fork 5 makes a thread join a process object, so whether fork 1's `BIND` right moves onto it comes back to calef before that code.
 
-As first written: none is decided here. Each needs a ruling before its code, since 1, 2, 3 and 6 are syscall surface
+As first written: none is decided here. Each needs a ruling before its code, since 1, 2, 3 and 6 are system call surface
 under §10 (process model: capability-based, microkernel), and the rest are agreements between the
 kernel and `std`.
 
@@ -115,10 +115,10 @@ kernel and `std`.
 2. The wait/wake primitive under `std`'s locks. (a) Futex-shaped wait and wake, keyed by a virtual
    address in the caller's own space, as methods on that space's capability. (b) A capability object
    per lock, such as §101 (notification objects). (c) Spin and yield in userspace only. Recommended:
-   (a). `std`'s `Mutex::new` is `const` and makes no syscall, which a capability per lock cannot
+   (a). `std`'s `Mutex::new` is `const` and makes no system call, which a capability per lock cannot
    honor, and a key inside one's own memory carries no authority beyond that memory. Zircon, also
    handle-based, chose address-keyed futexes (from memory). (c) Burns a core under exactly the
-   contention schbench measures. If a method on the space is refused, the fallback is a new syscall
+   contention schbench measures. If a method on the space is refused, the fallback is a new system call
    number, which is a bigger ask.
 3. Whether sibling threads share one capability table. (a) Shared. (b) One each. Recommended: (a).
    A `File` or `TcpStream` is `Send` in `std`, and a handle moved to another thread must still name
@@ -194,7 +194,7 @@ exit. A second check runs `rayon`'s parallel sum to the same answer.
   per spawn. See the notes above.
 - This block gives Rust programs threads. `fio`, `hackbench` and `iperf3` are C, and
   want pthreads from a C library nife does not have. §31 (the foreign-language seam: C holds no
-  capabilities and makes no syscalls) bars C from syscalls. Full POSIX, milestone 478 (tier three),
+  capabilities and makes no system calls) bars C from system calls. Full POSIX, milestone 478 (tier three),
   is refused. How those benchmarks get threads is not decided here; the maintainer is taking it to
   calef.
 
@@ -205,7 +205,7 @@ exit. A second check runs `rayon`'s parallel sum to the same answer.
 - **Recorded.** `notes/futex.md`, `notes/processes.md`, `notes/thread-pointer.md` and
   `notes/std/threads.md` carry this milestone's limits in their `BUGS`, each where its code is read.
 - **Recorded.** The semantics of `SYS_EXIT_THREAD`, `abi::process`, `BIND`, the futex methods,
-  `SET_THREAD_POINTER`, and `CONFIGURE`'s sixth word and result are §276 (the thread syscalls as
+  `SET_THREAD_POINTER`, and `CONFIGURE`'s sixth word and result are §276 (the thread system calls as
   built), written after the merge from the merged code.
 
 ## Index row

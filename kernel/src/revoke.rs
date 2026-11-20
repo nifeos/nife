@@ -573,7 +573,7 @@ impl MappingHold {
 }
 
 /// What one [`list_mapping`] call found: one entry to show, the end of the listing, or a cursor
-/// this space's own log never minted, which the syscall layer refuses rather than walks.
+/// this space's own log never minted, which the system call layer refuses rather than walks.
 ///
 /// Name: provisional (the lane for milestone 779 (fuzz the surface a confined process can
 /// reach), 2026-10-06 UTC); calef names public types.
@@ -582,9 +582,9 @@ pub enum Listing {
     Entry(u64, u64),
     /// The listing is exhausted, or the space is gone (a race with teardown, or a stale cursor
     /// from a caller that kept one past the space's life): nothing to report. Not a refusal;
-    /// the syscall layer already checked the capability before calling here.
+    /// the system call layer already checked the capability before calling here.
     Done,
-    /// The cursor names a log page this space's chain never held. The syscall layer refuses it
+    /// The cursor names a log page this space's chain never held. The system call layer refuses it
     /// rather than walking it.
     ForeignCursor,
 }

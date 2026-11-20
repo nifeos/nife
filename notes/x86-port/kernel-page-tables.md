@@ -145,5 +145,5 @@ implementation that keeps `crates/address_space_identifier`'s reuse contract. Wi
   host bridge routes. Windows no table names are a residual risk.
 - SMAP is off, so ring 0 can load and store through user pages, as aarch64 never sets `PSTATE.PAN`.
   Turning it on is worth doing, for the reason RISC-V leaves `SUM` clear: a kernel bug that strays
-  into the low half should fault rather than succeed. Nothing has measured its cost on the syscall
+  into the low half should fault rather than succeed. Nothing has measured its cost on the system call
   path, and a protection turned on without a number is the change this tree asks evidence for.

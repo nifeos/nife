@@ -9,7 +9,7 @@ headline figure. This holds the tables and the working.
 
 `script/fastpath-footprint`, before and after, on this tree:
 
-| ISA | `ipc_send_recv` | `ipc_call_reply` | `syscall_entry` |
+| ISA | `ipc_send_recv` | `ipc_call_reply` | `system_call_entry` |
 |---|---|---|---|
 | aarch64 | 6256 → 6300 (+0.7%) | 8190 → 8234 (+0.5%) | 1701 → 1701 (0) |
 | riscv64 | 4632 → 4700 (+1.5%) | 5936 → 6004 (+1.1%) | 1870 → 1912 (+2.2%) |
@@ -29,8 +29,8 @@ shipping boot.
 
 `enable_for_current` being cold matters a second time on RISC-V. It is called from
 `riscv_trap_body`, one of the symbols this gate measures flat. The trap decoder's bytes are on
-every `ecall`, so an arm that inlined a register-file load there would be charged to every syscall
-this kernel serves. The decoder's own compare and branch is riscv64's `syscall_entry` row above.
+every `ecall`, so an arm that inlined a register-file load there would be charged to every system call
+this kernel serves. The decoder's own compare and branch is riscv64's `system_call_entry` row above.
 That row is +2.2%, measured on 2026-09-20 on the shipped shape (commit `28e165e26`).
 
 
@@ -45,7 +45,7 @@ that moved them, per `bench/baseline-*.txt`'s own header.
 | `ctx_switch` | 2922971 → 3007320 (+2.9%) | 495050 → 504958 (+2.0%) | not measured on this ISA |
 | `ipc_rtt` | 1026311 → 1045670 (+1.9%) | 169382 → 172373 (+1.8%) | 17068218 → 17252344 (+1.1%) |
 | `ipc_rtt_el0` | 10755621 → 10949404 (+1.8%) | 1829296 → 1847912 (+1.0%) | not measured on this ISA |
-| `null_syscall` | 405004 → 410004 (+1.2%) | 72200 → 73029 (+1.1%) | not measured on this ISA |
+| `null_system_call` | 405004 → 410004 (+1.2%) | 72200 → 73029 (+1.1%) | not measured on this ISA |
 | `spawn_reap` | 210224 → 214922 (+2.2%) | 33756 → 34277 (+1.5%) | 2779705 → 2830510 (+1.8%) |
 | `coremark` | 20915599 → 20913256 (-0.01%) | 3654349 → 3654349 (0) | 306261408 → 306259744 (-0.001%) |
 
@@ -64,10 +64,10 @@ Every figure is inside the 10% tripwire. Read the table as three facts rather th
   went very slightly negative are code layout, not an improvement; nothing here makes arithmetic
   faster.
 
-`null_syscall`'s +1.2% on aarch64 is the new `ec::FP_SIMD_ACCESS` arm in the exception decoder. It
-is a quarter of an instruction per syscall: one compare, amortized over the arms that precede it.
+`null_system_call`'s +1.2% on aarch64 is the new `ec::FP_SIMD_ACCESS` arm in the exception decoder. It
+is a quarter of an instruction per system call: one compare, amortized over the arms that precede it.
 It is identical between the two shapes, as it should be. Nothing about where the register file
-lives is on the syscall path.
+lives is on the system call path.
 
 ## The memory: none, and that is not a rounding of 544 down
 

@@ -13,7 +13,7 @@ script](video-terminal/palette-keymap-and-script.md).
 
 ## One definition, three witnesses
 
-The engine is a value with no IO. It holds no endpoint, makes no syscall and owns no framebuffer;
+The engine is a value with no IO. It holds no endpoint, makes no system call and owns no framebuffer;
 `components/src/display_terminal.rs` feeds it and paints what it says. So anyone holding the same
 bytes can compute the expected picture. The terminal component runs it to draw, the kernel-side
 test runs it to predict the framebuffer, and `cargo xtask` runs it on the host to grade what QEMU

@@ -13,7 +13,7 @@ possible). That lane found its package fetch could run only inside the kernel's 
 2026-09-24 on aarch64 and riscv64 under QEMU; x86_64 has no NIC under QEMU, recorded below.
 
 The proposal was filed at `Gate: DECISION`, naming three questions. The maintainer promoted it for
-building with a standing limit (no new syscall, spawner method or wire format), and each question
+building with a standing limit (no new system call, spawner method or wire format), and each question
 got the answer the tree already gives in the analogous case. All three are code and cheap to
 reverse; calef can overrule any of them without a migration.
 

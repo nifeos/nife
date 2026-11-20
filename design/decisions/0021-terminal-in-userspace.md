@@ -21,9 +21,9 @@ in code:
   (`OP_WRITE`/`OP_READLINE`/`OP_BYTES`), the read flags, and the shared-page convention live in
   `line_editor::proto` and are written up in [notes/terminal-contract.md](../../notes/terminal-contract.md).
   Every request is an endpoint `CALL` served through `RECV_CAP` and answered through the one-shot
-  Reply capability (§12 (call/reply IPC: a one-shot reply capability)); the kernel routes the words without reading them. No new syscall and no
+  Reply capability (§12 (call/reply IPC: a one-shot reply capability)); the kernel routes the words without reading them. No new system call and no
   new kernel method were added. This is the §4 (kernel shape) boundary held on purpose: a whole tty layer landed
-  as userspace composition, not as syscall surface.
+  as userspace composition, not as system call surface.
 
 - **The kernel is retired as the interactive system's builder.** The aarch64 kernel-wired
   `shell_service` (the pre-19d.2c path) cannot host a shell that speaks the terminal contract. So

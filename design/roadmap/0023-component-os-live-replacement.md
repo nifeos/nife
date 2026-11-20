@@ -44,7 +44,7 @@ incumbent, takes the device back, and starts the replacement. A client (`chatty`
 swap and is its own witness. An attacker holding the client's exact capabilities cannot become the
 server. The outgoing instance reads the UART after the revoke and faults at the device's own page.
 And the replacement is written in C over §31 (the foreign-language seam: C holds no capabilities and
-makes no syscalls), so what held across the swap is the contract.
+makes no system calls), so what held across the swap is the contract.
 
 Three things the build settled. No forwarding process is needed as the broker: endpoint-only
 naming makes the endpoint object the stable name, so a swap costs nothing in steady state and the

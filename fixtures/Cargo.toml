@@ -265,7 +265,7 @@ path = "src/fs_test_client/main.rs"
 test = false
 bench = false
 
-# The EL0 microbenchmark program (primitive suite): self-times syscall/IPC primitives from EL0, the
+# The EL0 microbenchmark program (primitive suite): self-times system_call/IPC primitives from EL0, the
 # lmbench way, so the numbers include the trap the kernel-side benchmarks skip. Run by the bench boot.
 [[bin]]
 name = "map_el0"
@@ -274,8 +274,8 @@ test = false
 bench = false
 
 [[bin]]
-name = "null_syscall"
-path = "src/null_syscall.rs"
+name = "null_system_call"
+path = "src/null_system_call.rs"
 test = false
 bench = false
 
@@ -440,7 +440,7 @@ bench = false
 # and which alternatives were refused.
 
 # The self-checker (milestone 7): a real ELF that verifies its own loaded image
-# and makes one capability-free syscall. `hello`'s SELF_CHECK role until milestone 291.
+# and makes one capability-free system_call. `hello`'s SELF_CHECK role until milestone 291.
 [[bin]]
 name = "image_self_checker"
 path = "src/image_self_checker.rs"
@@ -595,7 +595,7 @@ test = false
 bench = false
 
 # The current-CPU reader (calef's 2026-09-21 ruling that a thread observing itself reads a page):
-# reads its own core twice across a yield, with no syscall, and reports both plus the id bound the
+# reads its own core twice across a yield, with no system call, and reports both plus the id bound the
 # kernel and userspace have to agree on.
 [[bin]]
 name = "current_cpu_reader"
@@ -603,12 +603,12 @@ path = "src/current_cpu_reader.rs"
 test = false
 bench = false
 
-# The confined syscall fuzzer (milestone 779 (fuzz the surface a confined process can reach),
-# provisional): an EL0 program that makes one random syscall per word on its conductor's channel.
+# The confined system call fuzzer (milestone 779 (fuzz the surface a confined process can reach),
+# provisional): an EL0 program that makes one random system call per word on its conductor's channel.
 # `system_tests`' `confined_fuzzer_tests` spawns and conducts it. Name provisional.
 [[bin]]
-name = "confined_syscall_fuzzer"
-path = "src/confined_syscall_fuzzer.rs"
+name = "confined_system_call_fuzzer"
+path = "src/confined_system_call_fuzzer.rs"
 test = false
 bench = false
 
@@ -627,9 +627,9 @@ abi = { version = "0.1.0", path = "../crates/abi" }
 # The words the milestone 7-19 capability demonstrations agree on, now that each is its own
 # binary (milestone 291). AGENTS.md rule 7: what two binaries must agree on is a crate.
 capability_witness_contract = { version = "0.1.0", path = "../crates/capability_witness_contract" }
-# The slots, the conductor's words and the report page `confined_syscall_fuzzer` shares with its
+# The slots, the conductor's words and the report page `confined_system_call_fuzzer` shares with its
 # conductor in `system_tests` (milestone 779, provisional).
-confined_syscall_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_syscall_fuzzer_contract" }
+confined_system_call_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_system_call_fuzzer_contract" }
 # A program's check that its own ELF image was loaded correctly (milestone 291). Two fixtures
 # need it, so it is a crate rather than a second copy.
 loaded_image_check = { version = "0.1.0", path = "../crates/loaded_image_check" }

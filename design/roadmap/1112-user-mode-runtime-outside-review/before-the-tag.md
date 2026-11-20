@@ -18,12 +18,12 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
 
 7. The aarch64 child stub hard-codes two `abi` constants the other two architectures derive.
    Finding: `SEND_THEN_EXIT` on aarch64 encodes `movz x1, #0` for `rendezvous::SEND` and
-   `movz x8, #0` for `SYSCALL_EXIT` as literal words, while the riscv64 and `x86_64` arrays shift
-   `abi::rendezvous::SEND` and `abi::SYSCALL_EXIT` into their immediates. A renumbering of either
+   `movz x8, #0` for `SYSTEM_CALL_EXIT` as literal words, while the riscv64 and `x86_64` arrays shift
+   `abi::rendezvous::SEND` and `abi::SYSTEM_CALL_EXIT` into their immediates. A renumbering of either
    constant breaks one architecture silently. No test decodes any of the three arrays.
    Evidence: `src/child_stub.rs` lines 22, 26 and 28 against lines 38, 44 and 56 to 58.
    Change: `0xD280_0001 | ((abi::rendezvous::SEND as u32) << 5)` and
-   `0xD280_0008 | ((abi::SYSCALL_EXIT as u32) << 5)`, and the decoding test of item 4.
+   `0xD280_0008 | ((abi::SYSTEM_CALL_EXIT as u32) << 5)`, and the decoding test of item 4.
    Door: two-way. Effort: XS.
 
 8. The text speaks to a reader inside nife.

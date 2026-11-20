@@ -33,7 +33,7 @@ alone, which is why the table exists.
 - Whether RedLeaf boots on anything current. Not attempted. It wants `nightly-2021-12-15`, `nasm`,
   `grub-mkrescue`, and CloudLab-class Intel hardware for anything but QEMU.
 - The SOSP '25 Atmosphere evaluation beyond Tables 1-3. Its driver and application benchmarks were
-  not read in full; only the verification-effort and syscall-latency tables were.
+  not read in full; only the verification-effort and system-call-latency tables were.
 - How Atmosphere's authors would characterize the relationship between the two systems. Not asked,
   and not inferable from the text.
 - Whether anyone has independently reproduced RedLeaf's 124-cycle figure. Not searched

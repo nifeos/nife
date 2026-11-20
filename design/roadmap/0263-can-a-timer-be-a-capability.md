@@ -29,7 +29,7 @@ No, and therefore the userspace-timer-service answer to milestone 106 does not s
    available. Both real boards have generous spare timer blocks (argon fourteen channels, radon four,
    each channel with its own interrupt line), but QEMU's aarch64 `virt` has no MMIO timer device at
    all. And QEMU is what every gate in this tree runs on. A userspace timer service would be three
-   different drivers and a hole, against one syscall method.
+   different drivers and a hole, against one system call method.
 
 And the block's aarch64 negative was wrong, which is the correction worth having: aarch64 *can*
 grant a comparator to one thread rather than to all of EL0. The machinery to do it was built
@@ -111,7 +111,7 @@ service, and because a fork should not be settled by discovering an option late.
   because the maintainer's reading is the thing most likely to be wrong here.
 - It prices nothing about a timer service itself, only whether one can hold a timer. If the
   answer is yes on all three, the service is still unbuilt, unpriced, and unnamed.
-- The fourth shape is a syscall-surface addition whatever its size, so it is an architect's
+- The fourth shape is a system-call-surface addition whatever its size, so it is an architect's
   under §10 (process) and this spike may only measure it.
 - Milestone 151 is unbuilt, so every option here that composes with a notification composes with
   something that does not exist yet, and the spike should say what it assumes about it.
@@ -120,7 +120,7 @@ service, and because a fork should not be settled by discovering an option late.
 
 Built as a throwaway scaffold on 2026-09-05, gated green with `script/test` (205 passed, 69 skipped,
 all three ISAs plus the OVMF leg), and deleted. That is milestone 106's own pricing method and
-its reason: shipping it would settle a syscall-surface fork by accident. Method and error bars:
+its reason: shipping it would settle a system-call-surface fork by accident. Method and error bars:
 [`notes/timer-capability/first-scaffold.md`](../../notes/timer-capability/first-scaffold.md#method) and
 [`notes/timer-capability/second-scaffold.md`](../../notes/timer-capability/second-scaffold.md#method-and-error-bars-both-scaffolds).
 
@@ -128,14 +128,14 @@ its reason: shipping it would settle a syscall-surface fork by accident. Method 
 |---|---|
 | the `Object` variant | **free.** `size_of::<Object>() == 24` and `size_of::<Cap>() == 32` still hold with `Timer(u64)` added, because `PageFrame(u64, NonZeroU64)` is the widest arm. Zero bytes per slot, per capability table, per TCB |
 | `ipc_fastpath` | **unchanged on all three ISAs** (7,028 / 5,936 / 8,122). An IPC round trip fetches what it fetched before |
-| `syscall_entry`, flat | aarch64 **+12 B** (+0.8%), riscv64 **+158 B** (+8.6%), x86_64 **+96 B** (+5.9%). One more `Object` arm in `invoke`, measured with `#[inline(never)]` already applied to both method bodies |
+| `system_call_entry`, flat | aarch64 **+12 B** (+0.8%), riscv64 **+158 B** (+8.6%), x86_64 **+96 B** (+5.9%). One more `Object` arm in `invoke`, measured with `#[inline(never)]` already applied to both method bodies |
 | kernel symbol bytes | aarch64 **+738 B** (+0.073%), riscv64 **+2,266 B** (+0.224%), x86_64 **+1,386 B** (+0.144%) |
 | per-tick bookkeeping | **not re-measured.** `notes/timed-wait.md` already has it: one comparison per idle tick, +30/+31 instructions, and a per-thread `deadline: u64` at zero bytes |
 
 **What it assumes about milestone 151, which is item 4 of the brief and is a finding rather than a
 footnote.** The scaffold signaled a `Rendezvous`, because that is what exists; §101's whole argument
 is that a notification is *its own object*. If 151 builds that, the byte figures barely move and the
-syscall's meaning does. More importantly: **the fourth shape is not independently useful.** Milestone
+system call's meaning does. More importantly: **the fourth shape is not independently useful.** Milestone
 106's title ("wake on either a message or a deadline") is met only by §101's TCB binding. Without
 151, this buys a thread a timer it can block on and no way to block on a timer *and* a message at once.
 That is 106's actual complaint. The fourth shape is 151 plus one object, and it should be priced that
@@ -166,7 +166,7 @@ attack as a side effect.
 
 **And the kernel thread cannot be served by the fourth shape either**, which is the finding this
 block did not have on 2026-09-05 because milestone 106's consumer census had not been run. The
-reason is not architectural: a kernel thread runs at EL1 and cannot issue a syscall at all, so
+reason is not architectural: a kernel thread runs at EL1 and cannot issue a system call at all, so
 `Timer::ARM` is as unreachable to it as a userspace timer service is. Not for want of a cspace,
 which is the thing a reader expects to be missing and is not (`Thread::spawn_into` gives every
 kernel thread an empty `CapabilityTable`). What it needs is *smaller* than the fourth shape, because
@@ -190,7 +190,7 @@ block only says what it costs.
   they were presented:
   1. The fourth shape (`Timer::ARM(deadline, notification)`), priced above and cheap. The kernel
      owns the comparator on every architecture, which is where two of three put it anyway, and the
-     authority to wait on time stays a capability. Costs a syscall-surface addition and depends on
+     authority to wait on time stays a capability. Costs a system-call-surface addition and depends on
      milestone 151.
   2. A userspace service on aarch64 and x86_64 only, with riscv64 carrying a scope note under §19.
      This is the option §19 exists to make expensive, and it is worse than it looks: the riscv64 gap

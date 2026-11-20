@@ -17,7 +17,7 @@ to do, and what each would cost. `--features job_mix` is how the number is taken
 
 
 Five of them, and they are not one question wearing five hats. Two are the
-syscall surface (a thread's placement, a `START` return value), one is the spawn manifest, one is
+system call surface (a thread's placement, a `START` return value), one is the spawn manifest, one is
 the rights the progenitor puts on a memory grant. One is an ABI fact about what a process may know
 about its machine. Any single one left unanswered leaves an
 instrument that either cannot be built or produces a number its own page says is not quotable.
@@ -42,7 +42,7 @@ already self-times with it today.
 
 The cycle counter is the *other* counter: `PMCCNTR_EL0` and the `cycle` CSR, which milestone 228 (the cycle counters are closed by assumption, and on two architectures the assumption is a comment)
 deliberately closed and which only `fixtures/src/cycle_counter_reader.rs` reads. Nothing in this
-instrument wants it. So there is no syscall to invent here and `abi::thread_control_block`'s
+instrument wants it. So there is no system call to invent here and `abi::thread_control_block`'s
 deliberate absence of a grant method stays undisturbed.
 
 **A tick is a tick across the move**, on aarch64 and x86_64. The one architecture where it is not is
@@ -147,30 +147,30 @@ draw, and `notes/job-mix.md` step 3 tells the operator to read them before readi
 
 There is no userspace path to that fact, and it is not a gap in one place:
 
-- No syscall. `crates/abi` mentions a CPU only in prose.
+- No system_call. `crates/abi` mentions a CPU only in prose.
 - `abi::rendezvous::SURVEY` returns exactly `(next_cursor, tid, state)`
-  (`kernel/src/syscall/rendezvous.rs::rendezvous_survey`), and `state` is one of `READY`, `RUNNING`, `BLOCKED`, `DEAD`.
+  (`kernel/src/system_call/rendezvous.rs::rendezvous_survey`), and `state` is one of `READY`, `RUNNING`, `BLOCKED`, `DEAD`.
   `RUNNING` means *on a CPU right now*; it does not say which.
 - `crates/ps` has no CPU column, by construction (`crates/ps/src/lib.rs::write_report`).
 - `crates/cpu_set` is kernel-internal mask arithmetic and exports nothing to EL0.
 - No mapped page carries it: the only pages a job can be endowed are the clock and config pages.
-- `abi::thread_control_block::START` returns `Ok(0)` (`kernel/src/syscall/thread_control_block.rs::START`). Returning
+- `abi::thread_control_block::START` returns `Ok(0)` (`kernel/src/system_call/thread_control_block.rs::START`). Returning
   the placed core instead would be `spawn_reporting_placement` exactly, available to any builder,
-  and it is one line of kernel -- and it changes a syscall's return contract, which existing
+  and it is one line of kernel -- and it changes a system call's return contract, which existing
   callers test for equality with zero (`fixtures/src/os_primitives_benchmarker.rs`).
 
 Three options, and all three are an architect's:
 
 - A. `START` returns the placed CPU instead of zero. Smallest change, gives a builder exactly
   what the kernel supervisor gets, ships on all three architectures for free because placement is
-  `sched`'s and not `arch`'s. Costs: a syscall return contract that today means only "ok", and every
+  `sched`'s and not `arch`'s. Costs: a system call return contract that today means only "ok", and every
   caller that compares it to zero.
 - B. A fourth word from `SURVEY`. Fits an existing method and a supervision endpoint is already
   the thing that names a domain's threads. `crates/program_table/src/program/catalog.rs::Program` already reserves
   the idea of a fourth `SURVEY` word for scheduled CPU *time* (milestone 282 (a thread's CPU time, and the `top` it makes possible), DECISIONS §150 (how does a thread's CPU time reach userspace?)).
   This would want to be decided alongside that rather than ahead of it.
 - C. An EL0-readable core id, written by the context switch into a register the way milestone
-  229 (a thread reading the CPU's cycle counter from user mode) writes its grant. No syscall number
+  229 (a thread reading the CPU's cycle counter from user mode) writes its grant. No system call number
   at all, and the same mechanism shape this tree already chose once. It is nonetheless an ABI
   fact: a register a program may read and rely on, on three architectures, forever.
 

@@ -24,8 +24,8 @@ An appendix to [the milestone](../1075-abi-outside-review.md).
     `#[doc(alias = "reg-io-width")]` on the constructor; or the foreign-name form as written.
     Effort: S. Door: two-way.
 
-17. `cycle_counter::CycleMeaning` is not a syscall contract.
-    Finding: `src/lib.rs` line 222 to 229 say no syscall carries it; it is a message word a program
+17. `cycle_counter::CycleMeaning` is not a system call contract.
+    Finding: `src/lib.rs` line 222 to 229 say no system call carries it; it is a message word a program
     sends a test harness, keyed to what a runtime wrapper returns. In a crate whose claim is "the
     numbers a program and a kernel agree on", a stranger reads it as a method and looks for one.
     Fix: decide whether it moves to the runtime crate or the witness contract that reads it, or stays with one sentence saying it is a message-word convention and not a method.

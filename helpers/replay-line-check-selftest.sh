@@ -27,7 +27,7 @@ expect() {
 # Rule 1, a replay line.
 expect refuse "plain replay line" "fix the thing
 
-replay: NIFE_SYSCALL_FUZZ_SEEDS=planted:1"
+replay: NIFE_SYSTEM_CALL_FUZZ_SEEDS=planted:1"
 expect refuse "replay line, upper case" "REPLAY: planted"
 expect refuse "replay line, quoted" "> replay: planted"
 expect refuse "replay line, in a list" "- replay: planted"
@@ -35,19 +35,19 @@ expect refuse "replay line, in backticks" '`replay: planted`'
 expect refuse "replay line, indented" "    replay: planted"
 # Rule 2, a seed assignment.
 expect refuse "assignment" "run it with NIFE_CONFINED_FUZZ_SEEDS=planted"
-expect refuse "export" "export NIFE_SYSCALL_FUZZ_SEEDS=planted:1"
+expect refuse "export" "export NIFE_SYSTEM_CALL_FUZZ_SEEDS=planted:1"
 expect refuse "single seed name" "NIFE_X_SEED=planted"
-expect refuse "spaced assignment" "NIFE_SYSCALL_FUZZ_SEEDS = planted"
+expect refuse "spaced assignment" "NIFE_SYSTEM_CALL_FUZZ_SEEDS = planted"
 expect refuse "assignment on a later line" "title
 
 body line
-more NIFE_SYSCALL_FUZZ_SEEDS=planted at the end"
+more NIFE_SYSTEM_CALL_FUZZ_SEEDS=planted at the end"
 # Clean text, including prose that names the forms.
 expect pass "plain message" "the allocator now rejects a zero-length extent
 
 Co-Authored-By: Someone <noreply@example.invalid>"
 expect pass "family named with a star" "the gate refuses a NIFE_*_SEEDS= assignment in a body"
-expect pass "variable named without an equals sign" "NIFE_SYSCALL_FUZZ_SEEDS is read by the driver"
+expect pass "variable named without an equals sign" "NIFE_SYSTEM_CALL_FUZZ_SEEDS is read by the driver"
 expect pass "replay mid-sentence" "the host will replay: it reruns the shard"
 expect pass "replayed word" "replayed: the shard was rerun"
 expect pass "other NIFE variables" "set NIFE_FUZZ_HOME=/srv/fuzz"

@@ -120,12 +120,12 @@ pub(crate) struct X86TrapPerCpu {
     /// `isr_restore` writes the outgoing thread's kernel-stack top through it on every return to
     /// ring 3.
     pub tss_rsp0_ptr: UnsafeCell<u64>,
-    /// The `syscall` path's kernel stack top, loaded by `x86_syscall_entry`. `isr_restore` keeps
+    /// The `system_call` path's kernel stack top, loaded by `x86_system_call_entry`. `isr_restore` keeps
     /// it in step with `TSS.rsp0` on every return to ring 3.
-    pub syscall_kernel_rsp: UnsafeCell<u64>,
-    /// The interrupted user `rsp`, parked by `x86_syscall_entry` between its `swapgs` and the push
-    /// into the trap frame, because `syscall` does not switch stacks.
-    pub syscall_user_rsp: UnsafeCell<u64>,
+    pub system_call_kernel_rsp: UnsafeCell<u64>,
+    /// The interrupted user `rsp`, parked by `x86_system_call_entry` between its `swapgs` and the push
+    /// into the trap frame, because `system_call` does not switch stacks.
+    pub system_call_user_rsp: UnsafeCell<u64>,
     /// This block's own address, written by `arch::x86_64::set_percpu`, so `arch::x86_64::percpu`
     /// is one `gs`-relative load instead of an `rdmsr` (Linux's `this_cpu_off`).
     pub self_ptr: UnsafeCell<u64>,
@@ -140,8 +140,8 @@ impl X86TrapPerCpu {
     const fn new() -> Self {
         Self {
             tss_rsp0_ptr: UnsafeCell::new(0),
-            syscall_kernel_rsp: UnsafeCell::new(0),
-            syscall_user_rsp: UnsafeCell::new(0),
+            system_call_kernel_rsp: UnsafeCell::new(0),
+            system_call_user_rsp: UnsafeCell::new(0),
             self_ptr: UnsafeCell::new(0),
         }
     }

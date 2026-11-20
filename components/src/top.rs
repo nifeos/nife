@@ -1,7 +1,7 @@
 //! **`top`: the domain `ps` lists, ordered by what it is costing** (§150 (how does a thread's CPU
 //! time reach userspace?)). It walks one supervision domain twice, for run states and for CPU time,
 //! ranks by the second, reports on [`REPORT`] and complains on [`DIAG_SLOT`]. The walk and table
-//! are `crates/ps`, the summary `crates/top`; this is the syscalls and the two sinks. It holds
+//! are `crates/ps`, the summary `crates/top`; this is the system calls and the two sinks. It holds
 //! `ps`'s authority plus one read-only page (slot 11, the machine statistics page, for the machine
 //! line that is what became of `tload`, §225 (`free` sees the machine and your share)), so it can
 //! name no process outside its domain. No clock: uptime is the ambient monotonic counter. CPU time

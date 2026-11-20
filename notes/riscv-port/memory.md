@@ -155,7 +155,7 @@ a lock whose holder may be the thread that just died. aarch64's twin needs no lo
 
 RISC-V forbids S-mode loads and stores through `U` pages unless `sstatus.SUM` is set; aarch64
 permits EL1 to read EL0 pages because this kernel does not enable `PAN`. A test that reads through
-a user address to observe the TLB therefore needs `SUM` here. It is built only in tests. No syscall
+a user address to observe the TLB therefore needs `SUM` here. It is built only in tests. No system call
 dereferences a user pointer, so a shipping kernel that strays into the low half faults.
 
 ## What the tests can and cannot see

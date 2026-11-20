@@ -134,7 +134,7 @@ Each line is one lane. "Proposed" means a new milestone an integrator would numb
 13. calef's homelab agent: the cordoba index (Fork 8), from the spec.
 
 Candidate, not proposed: kernel N-1 compatibility (Fork 5), triggered when the stability chart's
-syscall rows stay at zero changed for several weeks, or when a first customer arrives.
+system call rows stay at zero changed for several weeks, or when a first customer arrives.
 
 Reuse: `crates/boot_slot`, `uefi_loader`'s chooser, `crates/installed_programs`, `crates/capability_plan`'s
 dependency graph, the `reboot` program, `helpers/package-http-peer` and basalt's gate. MINIX 3's

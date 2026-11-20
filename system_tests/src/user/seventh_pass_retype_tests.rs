@@ -5,7 +5,7 @@
 //! Claim 3 ("a budget that cannot delegate cannot split itself a child that can") is proved on its
 //! SPLIT side by `capability_table::split_never_widens_rights` and on its retype side by
 //! `confinement_attack_tests::a_retype_mints_no_right_its_budget_lacks`. This module puts the two
-//! side by side in one boot through `syscall::invoke`: the same WRITE-only budget shape is SPLIT
+//! side by side in one boot through `system_call::invoke`: the same WRITE-only budget shape is SPLIT
 //! and RETYPEd, and both come back WRITE-only. One body serves every ISA (DECISIONS §19
 //! (architectural parity is a tenet)).
 
@@ -17,7 +17,7 @@ use abi::Error;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, Rights, memory_region_capability_rights};
 use crate::sched::{self, current_capability, delete_current_capability};
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it. Copied in
 /// shape from `confinement_attack_tests::call`.

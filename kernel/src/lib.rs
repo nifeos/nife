@@ -1,6 +1,6 @@
 //! nife
 //!
-//! `no_std`, because there is no operating system beneath us to answer `std`'s syscalls, and
+//! `no_std`, because there is no operating system beneath us to answer `std`'s system calls, and
 //! `no_main`, because no C runtime sets up a stack and calls `main`: the entry point is `_start`,
 //! in assembly. See notes/no-std.md.
 //!
@@ -144,7 +144,7 @@ mod progenitor_stack;
 mod reboot;
 mod stack;
 mod sync;
-mod syscall;
+mod system_call;
 mod thread;
 // The measured-boot trust root: the digest of the boot program this kernel image was built
 // against (milestone 22 phase B.1, DECISIONS §22). Generated into the image by build.rs.
@@ -191,7 +191,7 @@ pub use testing::{SKIP_REASON, SKIP_REASON_LEN};
 /// The kernel's insides, for the system-test image and nothing else.
 ///
 /// Under the `system_tests` feature each module `system_tests/` names is re-exported here, and that
-/// crate glob-imports this one, so its tests can observe state no syscall exposes. The modules stay
+/// crate glob-imports this one, so its tests can observe state no system call exposes. The modules stay
 /// private, because a library's public items are never dead and `pub` would switch off dead-code
 /// warnings kernel-wide. Each `pub use` brings only `pub` items.
 #[cfg(feature = "system_tests")]
@@ -245,8 +245,8 @@ pub mod system_test_access {
     pub mod smp {
         pub use crate::smp::*;
     }
-    pub mod syscall {
-        pub use crate::syscall::*;
+    pub mod system_call {
+        pub use crate::system_call::*;
     }
     pub mod testing {
         pub use crate::testing::*;

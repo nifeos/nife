@@ -8,7 +8,7 @@ free list instead of the caller's region, so a confined process that retypes a r
 notification or an address space holds, and can map, a page outside every grant. The kernel stays
 healthy: no panic, no wrong register, nothing a crash oracle would see. The conductor's capability
 oracle reads the fill's page against the granted extents and says
-"slot N filled with Rendezvous(..) (rights ..) after syscall 2 words [.., 2, ..], which grants
+"slot N filled with Rendezvous(..) (rights ..) after system call 2 words [.., 2, ..], which grants
 nothing" (or the object-page twin, "an object outside every grant"), naming the seed and step.
 
 Expected to fail: the first seed whose fuzzers draw a `RETYPE_OBJECT` on their region, which the

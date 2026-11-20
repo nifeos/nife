@@ -2,7 +2,7 @@
 //! claim, claims 2, 4, 5 and 26).
 //!
 //! Each test is a hostile program reduced to the kernel operations it would issue, driven through
-//! the real dispatcher (`syscall::invoke`) the way a program's `svc`/`ecall` reaches it. Each comes
+//! the real dispatcher (`system_call::invoke`) the way a program's `svc`/`ecall` reaches it. Each comes
 //! at its claim from an angle the suite did not already have, and its own doc says which. Nothing
 //! blocks, and every capability and region is reclaimed. See notes/confinement-outsider-pass-9.md,
 //! "The kernel tests".
@@ -20,7 +20,7 @@ use crate::capability_object::{
     memory_region_capability_rights as region_capability_rights, rendezvous_capability,
 };
 use crate::sched::{self, current_capability, delete_current_capability};
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// `invoke` through the real dispatcher. Copied in shape from `confinement_attack_tests::call`.
 fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error> {
@@ -33,7 +33,7 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
 /// lives under).
 ///
 /// A `PageFrame` from a `Rights::ALL` budget carries `GRANT`, so one `SLICE` succeeds (the positive
-/// control). Deleted on the `SYSCALL_CAPABILITY_DELETE` path, the same slot answers `NoSuchSlot`. Unlike
+/// control). Deleted on the `SYSTEM_CALL_CAPABILITY_DELETE` path, the same slot answers `NoSuchSlot`. Unlike
 /// `revocation_in_flight_tests`, which attack the hand-off slot, this drives plain `capability_delete`.
 ///
 /// Falsification: unfalsified. Written by the ninth outsider pass's reviewer, who booted it

@@ -115,7 +115,7 @@ Milestone 415 (sub-tripwire drift accumulates across baseline saves) requires th
 ## The counter cost 150 bytes of IPC fastpath, and not for the reason anyone guessed
 
 `script/fastpath-footprint` was not on this lane's gate list and caught this after the fact.
-riscv64 `ipc_send_recv` grew 5.4% (4,632 to 4,884) against a 5% bound, and `syscall_entry` 6.8%.
+riscv64 `ipc_send_recv` grew 5.4% (4,632 to 4,884) against a 5% bound, and `system_call_entry` 6.8%.
 That gate exists for Liedtke's 1995 argument that Mach's IPC was slow. A kernel touching a lot of
 memory per IPC evicts the *application's* working set, so it is not a style bound.
 
@@ -157,7 +157,7 @@ change that the footprint gate failed on. That is the argument for having both.
 - **`map_el0` has the same shape and is not fixed.** It times a mapping loop from EL0. The
   kernel cannot mask interrupts around a window it does not own, so this milestone's mechanism
   does not reach it. It has not been measured for the same fragility. Fixing it needs a different
-  instrument (a syscall that brackets the window, or reporting the marginal cost after all). That
+  instrument (a system call that brackets the window, or reporting the marginal cost after all). That
   is a design fork rather than a lane's call.
 - **The masked window is not the benchmark's own claim, and cannot be.** `--features bench`
   compiles the tour out and runs no tests, so nothing in the suite ever executes `map_new`'s
@@ -181,7 +181,7 @@ change that the footprint gate failed on. That is the argument for having both.
   because the kernel does not own a window that runs in EL0. The limitation is beside the feature in
   this block's `BUGS` and in `notes/benchmarks/preemption-in-the-window.md`'s 2026-09-21 entries,
   which is where a reader meets the row. It is not promoted to a milestone because the instrument is
-  undecided. The choice is a design fork (a syscall that brackets the window, or reporting the
+  undecided. The choice is a design fork (a system call that brackets the window, or reporting the
   marginal cost), not work a lane can pick up.
 - **Recorded.** The one relaxed increment this adds to every preemption on every core is
   unmeasured in isolation in *time*. The `BUGS` entry beside it says so and bounds it by the

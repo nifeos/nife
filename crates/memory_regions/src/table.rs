@@ -18,7 +18,7 @@ mod verification;
 pub(crate) use verification::RegionSnapshot;
 
 /// **The name of a region in a [`RegionTable`]**, a generational name that carries its table's
-/// entry type. It crosses a syscall boundary as a plain word through `to_bits` and `from_bits`.
+/// entry type. It crosses a system call boundary as a plain word through `to_bits` and `from_bits`.
 /// A name that has been claimed stops resolving, and a name minted by another kind of table does
 /// not type-check here.
 ///

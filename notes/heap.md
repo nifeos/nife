@@ -235,7 +235,7 @@ the process's own untyped budget. The pair that landed:
   measurements that chose it are in
   `design/roadmap/0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md`.
 
-- `memory_region_heap::MemoryRegionHeap`: the policy and the syscall glue. A `#[global_allocator]`
+- `memory_region_heap::MemoryRegionHeap`: the policy and the system call glue. A `#[global_allocator]`
   static the program wires with one call, `HEAP.initialize(untyped_slot, base_va, maximum_bytes)`,
   first thing in `_start`. Growth maps pages at the top of `[base, base+committed)` via
   `untyped::MAP` (one page per invoke, zeroed by the kernel, paid from the budget). It grows
@@ -262,7 +262,7 @@ the stack), so the spawn maps three extra stack pages.
 ## The `memory_region_heap` crate's contract
 
 The crate is the policy around talc's core: a spinlock, a committed-range cursor and grow on
-demand. It uses talc's `Manual` source, because growing is a syscall that can fail on a budget, so
+demand. It uses talc's `Manual` source, because growing is a system call that can fail on a budget, so
 the retry lives in the crate, beside the cap. It is a crate of its own because `talc` brings
 `alloc` into a program's crate graph (through `allocator-api2`), and a graph with `alloc` in it
 must name a global allocator. Only a program that names the crate links it, so a program with no

@@ -22,7 +22,7 @@ otherwise, so a `0` tells the caller any signal has already happened.
 section 2 is churn: an ACK arrives and the retransmit timer is thrown away. Without a cancel, a
 consumer would re-arm to a far deadline instead, which is a cancel spelled worse.
 
-Deadlines are absolute counter ticks. That is the counter a program already reads without a syscall,
+Deadlines are absolute counter ticks. That is the counter a program already reads without a system call,
 so nothing converts between clocks. `abi::timer::counter_ticks_for` turns a duration into ticks,
 rounded up so a sleep is never short.
 
@@ -89,7 +89,7 @@ Nothing in milestone 106 waits on the answer. Each of those has a spawner that h
 
 ### What the tree already does
 
-`SYSCALL_EXIT` and `SYSCALL_YIELD` are authority over yourself with no capability. `abi::rendezvous::NO_CAPABILITY`
+`SYSTEM_CALL_EXIT` and `SYSTEM_CALL_YIELD` are authority over yourself with no capability. `abi::rendezvous::NO_CAPABILITY`
 is a sentinel in a slot argument. Every capability a process holds arrived from its spawner, and
 `kernel/src/user/virtual_io_service.rs` now binds `net_stack`'s notification that way.
 
@@ -112,7 +112,7 @@ What each costs:
 
 - A is what `net_stack` does now: a region page per object, in a spawner willing to do it. A thread
   cannot get a binding later.
-- B is under twenty lines in `syscall.rs` and one wrapper. Consent is not in question, since binding
+- B is under twenty lines in `system_call.rs` and one wrapper. Consent is not in question, since binding
   changes only what your own receives return.
 - C is a line in each spawner and one of 24 slots per process. It also hands out `CAPABILITY_INSERT` on
   yourself, which nothing uses and nobody has reviewed.

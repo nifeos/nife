@@ -201,7 +201,7 @@ pub(crate) fn set_cycle_counter_grant(granted: bool) {
 /// pending interrupt. Called from the trap dispatcher on `scause` = timer.
 ///
 /// `#[inline(never)]` keeps these bytes out of `riscv_trap_body`, which `script/fastpath-footprint`
-/// counts as syscall entry. See notes/riscv-port/timer.md.
+/// counts as system call entry. See notes/riscv-port/timer.md.
 ///
 /// Context: interrupt context.
 #[inline(never)]

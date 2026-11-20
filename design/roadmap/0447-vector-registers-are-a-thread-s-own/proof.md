@@ -41,5 +41,5 @@ target in `targets/` is soft-float, so no userspace binary in this tree can exec
 instruction to be tested with. That is why all three first-use handlers serve the kernel's own
 exception level as well as userspace. Refusing EL1 would have meant a mechanism whose only possible
 test was a different mechanism. The C seam of §31 (the foreign-language seam: C holds no
-capabilities and makes no syscalls) is untouched for the same reason. It is the first thing that
+capabilities and makes no system calls) is untouched for the same reason. It is the first thing that
 changes if the target flip is taken.

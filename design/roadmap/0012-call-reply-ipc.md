@@ -24,14 +24,14 @@ Prior art. Mach's `send-once` right (it had this in the 1980s); seL4's `Reply` c
 `Call`, with a call chain that also enables priority donation.
 
 Detail. design/open-design-ideas.md (Call/Reply) and notes/ipc-naming.md already work the
-functional and safety triggers. It widens the §4 syscall surface (a `Call` method, a `Reply`
+functional and safety triggers. It widens the §4 system call surface (a `Call` method, a `Reply`
 object), so it is a real decision, not a speculative add. This milestone turns that entry into code
 and gives it its own numbered §.
 
 ## Follow-on
 
 - **None.** The block is a proposal and its own build; the reply capability, the `Call` method and
-  the syscall-surface widening it named all landed, and it names nothing left over.
+  the system-call-surface widening it named all landed, and it names nothing left over.
 
 ## Index row
 

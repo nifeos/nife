@@ -42,7 +42,7 @@ rather than after.
   442 is NOT-STARTED and owes that re-measurement. It should be run before the flip, not after. If
   those crates build against nife's targets on the pinned nightly, this half of the case
   evaporates. If they do not, 442 has the specific list the flip would have to fix.
-- The seam of §31 (the foreign-language seam: C holds no capabilities and makes no syscalls)
+- The seam of §31 (the foreign-language seam: C holds no capabilities and makes no system calls)
   widens. A C component compiled by bare-metal clang currently cannot use vector registers at all.
   After the flip it can, and §31's sentence about "a trap or a corruption depending on which of
   those two bit first" stops being true. That is a real gain for the vendored-component rung the

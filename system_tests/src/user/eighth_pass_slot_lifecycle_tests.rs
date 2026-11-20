@@ -3,7 +3,7 @@
 //!
 //! Claims 4 and 5 are proved on host logic (`capability_table::a_deleted_capability_stays_deleted`,
 //! `delete_touches_only_its_slot`). This module drives the live kernel, `delete_current_capability` then
-//! `syscall::invoke`, with a stale slot number, an out-of-range index forged in a register, and a
+//! `system_call::invoke`, with a stale slot number, an out-of-range index forged in a register, and a
 //! deleted slot the table hands out again. Nothing blocks, and the frame and region ledgers end
 //! flat. Cross-ISA (DECISIONS §19 (architectural parity is a tenet)). See
 //! notes/confinement-claims/the-eighth-pass-tests.md.
@@ -13,7 +13,7 @@ use abi::Error;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::{self, current_capability, delete_current_capability};
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it. Copied in
 /// shape from `confinement_attack_tests::call`.

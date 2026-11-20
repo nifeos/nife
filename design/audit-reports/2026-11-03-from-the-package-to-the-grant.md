@@ -32,7 +32,7 @@ The delta, counted the way `script/audits` counts, between `d8255188e` (the comm
 | What | Added | Left |
 |---|---|---|
 | crates | `approval_file`, `base_digest_contract`, `device_tree_patch`, `hot_swap_server`, `initial_ramdisk_writer`, `interfaces_note`, `intrusive_queue`, `periodic_deadline`, `primitive_benchmark_contract`, `process_builder`, `program_asks`, `supervision_contract`, `system_manifest` | `intrusive_fifo` and `supervision_protocol` (renamed), `jh7110_entropy` (moved to its own repository), `usb_keyboard_report` (folded into a driver contract) |
-| programs | fixtures `job_sleeper`, `servant`, `seeker`, `seeker_v2`, `map_el0`, `null_syscall`, `sink_consumer`, `sink_producer` | `rmle` (removed) |
+| programs | fixtures `job_sleeper`, `servant`, `seeker`, `seeker_v2`, `map_el0`, `null_system_call`, `sink_consumer`, `sink_producer` | `rmle` (removed) |
 | ABI constants | `INTERFACE_ID` and `survey::record::PROCESS` | none; four capability names were spelled out, which moves no count |
 
 Six of the new crates carry the window's largest new trust path: a package's bytes, an owner's
@@ -152,7 +152,7 @@ stops. The crate's fuzz target has not reached the case. Severity low. Proposed 
 ### 5. FIXED: the `INTERFACES` note's doc said more than the spawn check does
 
 `crates/interfaces_note` said the progenitor refuses a program built against "an interface version
-it does not serve". `serves_declared_abi` compares only the syscall ABI's entry
+it does not serve". `serves_declared_abi` compares only the system call ABI's entry
 (`abi::INTERFACE_ID` against `abi::ABI_VERSION`); the other ids a note lists are carried and not
 compared. The module doc now says exactly that. An overclaim about a refusal is itself a finding
 under the index's step 4, so it is fixed here.

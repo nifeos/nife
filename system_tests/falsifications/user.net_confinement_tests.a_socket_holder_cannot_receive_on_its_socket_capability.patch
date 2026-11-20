@@ -7,7 +7,7 @@ The defect is the socket capability carrying `READ`. The stack mints each socket
 `socket_contract::stack_slots::MINTING_ENDPOINT_SLOT`, a copy of its own serve endpoint. The mint is `WRITE | GRANT`
 on purpose, with no `READ`, because a socket holder that could `RECEIVE` on its capability would
 dequeue the stack's own incoming queue, every other client's request to the stack. This hunk gives
-the mint `READ`, so the kernel's `RECEIVE` rights check (kernel/src/syscall.rs) passes and the
+the mint `READ`, so the kernel's `RECEIVE` rights check (kernel/src/system_call.rs) passes and the
 squatter's probe blocks on the stack's endpoint instead of being refused.
 
 Expected to fail: the squatter's kernel `RECEIVE` on its own socket capability no longer returns

@@ -107,7 +107,7 @@ Two of the four were one-shot roles with nothing left to do and now `exit()`. Th
 and that is the obstacle:
 
 - `a_user_program_that_never_yields_is_preempted_anyway` runs `interrupt_ignorer`, whose entire point is that
-  it never yields, never syscalls, and never returns. A thread that exits would not test anything.
+  it never yields, never system calls, and never returns. A thread that exits would not test anything.
 - `a_process_spends_untyped_and_the_kernel_never_allocates` reads the kernel's free-frame count the
   instant its child reports. If the child exited there, the number read would be the teardown's
   rather than the measurement's, so the child spins to hold the state still.
@@ -127,8 +127,8 @@ armed kill, the tier §24's `^C` escalation stands on). What is missing is only 
 one thread instead of a region.
 
 1. `sched::kill_thread(tid: ThreadId)`, test-support, roughly ten lines: take `SCHED`, resolve `tid`, set
-   `killed = true`. No new syscall and no change to the user-visible surface (rule 3 is about the
-   syscall boundary; this is an in-kernel function for in-kernel tests).
+   `killed = true`. No new system call and no change to the user-visible surface (rule 3 is about the
+   system call boundary; this is an in-kernel function for in-kernel tests).
 2. The two tests above kill their subject after asserting, and wait for `is_thread_present` to go
    false.
 3. `no_leaked_threads` then moves to run last, and polices the module for the first time.

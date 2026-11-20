@@ -43,7 +43,7 @@ const MODE_STAND_IN: u64 = 2;
 /// A stand-in's slots: the terminal endpoint it quiesces, and the notification it answers on.
 const STAND_IN_TERMINAL: u64 = 0;
 const STAND_IN_ANSWER: u64 = 1;
-/// A stand-in makes three syscalls from `_start`'s own frame.
+/// A stand-in makes three system calls from `_start`'s own frame.
 const STAND_IN_STACK_PAGES: u64 = 4;
 /// The bits of the quiesce's notification: the timer's deadline, and the stand-in's two answers.
 const DEADLINE: u64 = 1 << 0;

@@ -18,7 +18,7 @@ use super::supervision_tests::{REPORT_WORD, build_child_in};
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::{self, delete_current_capability};
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// `invoke` through the real dispatcher. Copied in shape from `confinement_attack_tests::call`.
 fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error> {

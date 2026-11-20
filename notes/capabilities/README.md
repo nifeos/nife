@@ -4,7 +4,7 @@
 `open()`, the confused deputy, the cost argument and a summary of what milestones 7d and 7e built.
 Both are parts of milestone 7 (user mode: EL0, capabilities, the ELF loader, and IPC). These files carry the full record of those two milestones, which its prose budget has no room for.
 
-- [`syscall-surface.md`](syscall-surface.md): milestone 7d. The three calls, the ABI crate, the
+- [`system-call-surface.md`](system-call-surface.md): milestone 7d. The three calls, the ABI crate, the
   capability table and `derive`, a process that holds nothing, and the kernel refusing to be a
   confused deputy by asking the hardware.
 - [`ipc-endpoints.md`](ipc-endpoints.md): milestone 7e. The endpoint as a rendezvous, rights as

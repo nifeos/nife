@@ -2,7 +2,7 @@
 //! library, stage 1: files, clock and memory), §265 (a C library started from relibc, whose Rust
 //! platform layer holds the capabilities)).
 //!
-//! Nothing here makes a syscall or names a capability slot. Every file, clock, stdout and heap call
+//! Nothing here makes a system call or names a capability slot. Every file, clock, stdout and heap call
 //! goes through `std`, so a C program and a Rust program share one client of each protocol.
 //! `c_library/README.md` ("Why the platform layer is built on `std`") has the argument. nife issues
 //! no process identifier or user identity (milestone 49 (users, login, and attribution: what

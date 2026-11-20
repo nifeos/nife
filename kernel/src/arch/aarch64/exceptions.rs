@@ -1,6 +1,6 @@
 //! Exception handling.
 //!
-//! One mechanism serves faults, interrupts and syscalls: each switches to EL1 and jumps to the
+//! One mechanism serves faults, interrupts and system_calls: each switches to EL1 and jumps to the
 //! vector table the kernel installed. See notes/exceptions.md, "The dispatcher's arms".
 
 use core::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
@@ -42,18 +42,18 @@ pub struct TrapFrame {
 const _: () = assert!(size_of::<TrapFrame>() == 272);
 
 impl TrapFrame {
-    /// The syscall number the caller passed. aarch64 ABI: register `x8` (DECISIONS §10). The
-    /// portable syscall dispatcher reads it through here so it never names a register directly.
-    pub(crate) fn syscall_nr(&self) -> u64 {
+    /// The system call number the caller passed. aarch64 ABI: register `x8` (DECISIONS §10). The
+    /// portable system call dispatcher reads it through here so it never names a register directly.
+    pub(crate) fn system_call_nr(&self) -> u64 {
         self.x[8]
     }
 
-    /// Syscall argument register `i` (aarch64: `x0`..`x5`).
+    /// System call argument register `i` (aarch64: `x0`..`x5`).
     pub fn arg(&self, i: usize) -> u64 {
         self.x[i]
     }
 
-    /// Set syscall argument/return register `i`. The syscall return value and the IPC message words
+    /// Set system call argument/return register `i`. The system call return value and the IPC message words
     /// ride in these same registers, which is why the setter is general.
     pub fn set_arg(&mut self, i: usize, v: u64) {
         self.x[i] = v;
@@ -125,7 +125,7 @@ fn entered_user_with_no_entry_point(sp_el0: u64) -> ! {
 }
 
 /// **Diagnostic: the EL0 PC of a thread from the `TrapFrame` at the top of its kernel stack.** A
-/// thread that trapped from EL0 (a syscall, or a timer preemption while spinning) left its frame at
+/// thread that trapped from EL0 (a system call, or a timer preemption while spinning) left its frame at
 /// `stack_top - size_of::<TrapFrame>()`, where `elr` is its EL0 PC. Used by the watchdog dump to say
 /// *where* each thread is, not just its scheduler state. Meaningless for a pure kernel thread.
 pub(crate) fn user_pc(stack_top: u64) -> u64 {
@@ -136,12 +136,12 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
 
 /// **Write argument register `i` of a thread's saved user frame**, the one at the top of its kernel
 /// stack that [`user_pc`] reads, so a blocked or trapped thread gets a result word beyond the five
-/// its syscall path writes. The death message's label uses register 5: DECISIONS §148 (resolves
+/// its system call path writes. The death message's label uses register 5: DECISIONS §148 (resolves
 /// by asking the kernel), as amended 2026-10-04.
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap
-/// from user mode (blocked in a syscall, or the caller's own), and nothing else may be writing that
+/// from user mode (blocked in a system call, or the caller's own), and nothing else may be writing that
 /// frame. A pure kernel thread has no frame there: those bytes are its own stack.
 ///
 /// Name: provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC). Named for `TrapFrame::set_arg`, which it applies to a
@@ -208,7 +208,7 @@ fn ec_name(class: u64) -> &'static str {
         ec::UNKNOWN => "Unknown reason",
         ec::TRAPPED_WFI_WFE => "Trapped WFI/WFE",
         ec::ILLEGAL_EXECUTION_STATE => "Illegal execution state",
-        ec::SVC64 => "SVC (syscall) from AArch64",
+        ec::SVC64 => "SVC (system_call) from AArch64",
         ec::TRAPPED_MSR_MRS => "Trapped system register access",
         ec::INSTRUCTION_ABORT_LOWER_EL => "Instruction abort from a lower EL",
         ec::INSTRUCTION_ABORT_SAME_EL => "Instruction abort from the same EL",
@@ -298,7 +298,7 @@ unsafe extern "C" {
 extern "C" fn exception_dispatch(frame: &mut TrapFrame, index: u64) {
     let top = crate::interrupt_stack::top_for_trap(is_from_lower_el(index));
     let deferred_switch = if top == 0 {
-        // Every syscall: branched in Rust, because the debug build the icount gate measures pays
+        // Every system_call: branched in Rust, because the debug build the icount gate measures pays
         // for a trampoline call that moves no stack.
         exception_body(frame, index)
     } else {
@@ -341,12 +341,12 @@ extern "C" fn exception_body(frame: &mut TrapFrame, index: u64) -> bool {
         // retaking the trap forever.
         ec::FP_SIMD_ACCESS if crate::fp::enable_for_current() => {}
 
-        // The syscall. ELR already points past the `svc`, and `dispatch` writes its result into
+        // The system_call. ELR already points past the `svc`, and `dispatch` writes its result into
         // the frame, which RESTORE_CONTEXT returns to the user's registers.
         ec::SVC64 if is_from_lower_el(index) => {
             #[cfg(any(test, feature = "system_tests"))]
             SVC_COUNT.fetch_add(1, Ordering::Relaxed);
-            crate::syscall::dispatch(frame);
+            crate::system_call::dispatch(frame);
         }
 
         // Anything else from EL0 kills the thread, not the kernel.
@@ -373,7 +373,7 @@ fn is_from_lower_el(index: u64) -> bool {
 
 /// **System calls served, counted for the system tests only** (`system_tests/src/user/el0_boundary_tests.rs`
 /// watches it rise). Compiled out of every other build: it is a shared write on the cheapest
-/// syscall's path (notes/job-mix/null-syscall-under-load.md).
+/// system call's path (notes/job-mix/null-system-call-under-load.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 

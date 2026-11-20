@@ -204,8 +204,8 @@ fn direct(fs: &nifefs::Fs, w: &Wiring) -> ! {
 
     // Step 1: build the replacement before anyone is talking, endowed with everything except the
     // device and not configured, so it cannot race the incumbent for requests. A build is a few
-    // hundred syscalls; done after the trigger it lost the race on RISC-V, and done here it keeps
-    // the down window four syscalls wide.
+    // hundred system calls; done after the trigger it lost the race on RISC-V, and done here it keeps
+    // the down window four system calls wide.
 
     let replacement = build_without_devices(&v2, &component, w.faultep, 20);
 
@@ -1013,7 +1013,7 @@ fn hung(fs: &nifefs::Fs, w: &Wiring, device: bool) -> ! {
     let replacement = build_without_devices(&v2, &component, w.faultep, 75);
 
     // The stand-in that will carry the quiesce, built now for the replacement's reason: starting it
-    // is then one syscall, so the bound measures the incumbent and not a build.
+    // is then one system call, so the bound measures the incumbent and not a build.
     let stand_in = build_unstarted(&client_img, &client, w.faultep, 110);
 
     start_child(
@@ -1220,7 +1220,7 @@ fn survey_domain(faultep: u64) -> (u64, u64) {
 /// killing is the stronger act and lives elsewhere. Side-effect free: `reap_supervised` decides
 /// `StillAlive` before it looks up a region, so a refused reap moves nothing and frees nothing.
 fn ask_the_domain_to_be_collected(faultep: u64) -> (u64, u64) {
-    // The raw syscall return is the negative discriminant (`StillAlive = -9`), which `invoke`
+    // The raw system call return is the negative discriminant (`StillAlive = -9`), which `invoke`
     // hands back unchanged; a reporter that negates it (`swap_boundary_witness`) is the other case.
     let still_alive = abi::Error::StillAlive as i64;
     let mut asked = 0u64;

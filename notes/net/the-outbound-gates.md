@@ -107,7 +107,7 @@ the exchange, and by a 15 s per-call backstop well under the 60 s watchdog). The
 through the backoff instead of spinning. That is a small kernel-surface addition (an
 `Interrupt::WAIT`
 timeout, or a timer notification) and is left as the follow-up. The yield-poll is correct and needs no
-new syscall.
+new system_call.
 
 ## The wait ends at the caller's deadline
 

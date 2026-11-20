@@ -13,7 +13,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
 - `initialize` refuses a second call and a misaligned or sub-minimum cap, and says so in its return
   value. `grow` returns `false` for a request of zero. A non-`OutOfMemory` refusal stops growth for
   good and is readable through one accessor.
-- A `PageSource` seam exists with the syscall as its default. Host tests cover doubling, the cap,
+- A `PageSource` seam exists with the system call as its default. Host tests cover doubling, the cap,
   exactness at a power-of-two cap, both `realloc` paths, zero-size layouts and the three refusals.
   At least three Kani harnesses with falsification patches prove the arithmetic. std's heap module
   and `second_mount` consume the crate's policy instead of a copy.

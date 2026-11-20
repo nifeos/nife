@@ -7,7 +7,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# 391. Kernel introspection over an endpoint, rather than one syscall per fact
+# 391. Kernel introspection over an endpoint, rather than one system call per fact
 
 Premise re-read against the tree on 2026-09-19 and still true: nothing has answered the fork.
 `design/decisions/0149-kernel-served-console-endpoint.md` still refuses to settle it on the
@@ -33,28 +33,28 @@ exact thing §149 refused. The section gets minted when 269 is taken.
 
 Some facts exist only in the kernel: preemption counts, scheduler state, the machine description
 milestone 268 prints at boot. Today there is no way for a program to ask for any of them, and the
-obvious route is a syscall per fact, which grows a surface DECISIONS §10 and §16 exist to keep
+obvious route is a system call per fact, which grows a surface DECISIONS §10 and §16 exist to keep
 narrow.
 
 The alternative is a kernel thread parked on a rendezvous, answering questions. That mechanism
 was verified while deciding the console case (`design/decisions/0149-kernel-served-console-endpoint.md`):
 `inter_process_communication::Rendezvous` is generic over `T: Node` and has no privilege level in it, and kernel threads
-already exist. It needs no new object type and no new syscall number.
+already exist. It needs no new object type and no new system call number.
 
 ## The argument that makes this more than tidiness
 
-In a capability system, an endpoint is a better security primitive than a syscall, and it is easy
-to get this backwards. A syscall is reachable by every thread in the system, so restricting who may
+In a capability system, an endpoint is a better security primitive than a system call, and it is easy
+to get this backwards. A system call is reachable by every thread in the system, so restricting who may
 read the scheduler's state means writing a check inside the kernel and a rule about who should call
 it. An endpoint is reachable only by a program that was handed the capability, and the right can be
-revoked. One is rung one of AGENTS.md's ladder; the other is rung four wearing a syscall's clothes.
+revoked. One is rung one of AGENTS.md's ladder; the other is rung four wearing a system call's clothes.
 
-It also changes the growth rate of the boundary. Over a syscall, each new fact the kernel learns is a
+It also changes the growth rate of the boundary. Over a system call, each new fact the kernel learns is a
 new method to design, document and never remove. Over an endpoint, it is a message.
 
 ## What argues against it
 
-- The kernel becomes a parser of untrusted input, inside the trusted computing base. A syscall is
+- The kernel becomes a parser of untrusted input, inside the trusted computing base. A system call is
   already that, so this is more of it rather than new, but it is code that must be verified rather
   than argued about, and milestone 193 only recently put `kernel/src` within reach of the prover.
 - It erodes §14's minimal-core claim. seL4's position is that the kernel provides mechanism and
@@ -85,11 +85,11 @@ when that milestone is taken rather than before.
 ## Index row
 
 Some facts exist only in the kernel (preemption counts, scheduler state, the machine description
-milestone 268 (every architecture boots the same way: describe) prints at boot) and no program can ask for them. The obvious route is a syscall per
+milestone 268 (every architecture boots the same way: describe) prints at boot) and no program can ask for them. The obvious route is a system call per
 fact, which grows the surface DECISIONS §10 (process model) and §16 (object revocation) keep narrow.
 The alternative is a kernel thread parked on a rendezvous, answering questions, with no new object
-type and no new syscall number, because `ipc::Rendezvous` is generic over `T: Node`. The argument is
-easy to get backwards. A syscall is reachable by every thread, so restricting who may read
+type and no new system call number, because `ipc::Rendezvous` is generic over `T: Node`. The argument is
+easy to get backwards. A system call is reachable by every thread, so restricting who may read
 scheduler state means a check inside the kernel. An endpoint is reachable only by a program handed
 the capability, and the right can be revoked. Against it: the kernel becomes a parser of untrusted
 input inside the trusted computing base, and "only the kernel knows it" sometimes means the data

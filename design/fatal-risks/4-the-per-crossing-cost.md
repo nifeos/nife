@@ -11,7 +11,7 @@ and on workloads that cross constantly the cost is architectural rather than a m
 
 GREEN (calef, 2026-10-05); amber 2026-10-04, #1613. The throughput defense
 held on step 7's first outcome. The one number not fully explained was a per-crossing cost under load, the
-null syscall going from 108 to 202 ticks between one task and four, and that is exactly this risk's
+null system call going from 108 to 202 ticks between one task and four, and that is exactly this risk's
 claim. What turned it green was explaining that
 slowdown and showing it is a fixable defect, lock contention on `IPC_TABLES` and false sharing between
 cores' per-core blocks, rather than an architectural cost. Both are fixed and the growth is 10 ticks. Everything measured before it is a single crossing, and the claim is about a cost that cannot be amortized.
@@ -44,26 +44,26 @@ retired, and seven things bound it:
 - Every radon number used debug userspace. That moves the level, not the growth
   ([`release-userspace-in-board-images`](../roadmap/0797-release-userspace-in-board-images.md)).
 
-One finding was open and is now explained. The null syscall's near-doubling from one busy core
+One finding was open and is now explained. The null system call's near-doubling from one busy core
 to four was half a defect and half contention. The defect:
 the reaper held the global `IPC_TABLES` lock while freeing a dead thread's kernel stack, six
-TLB shootdowns that interrupt every core. Fixing it on radon (2026-10-04) cut the null syscall's
+TLB shootdowns that interrupt every core. Fixing it on radon (2026-10-04) cut the null system call's
 growth from one task to four from 94 ticks to 48, and raised throughput 9% at four tasks and 11% at
 32. The rest was the same lock on every capability lookup, which milestone 761 removed, and false
 sharing between cores' per-core blocks, which milestone 766 (each core's PerCpu on its own cache
 line) removed. On radon (2026-10-05) the
-null syscall's growth from one task to four fell from 48 ticks to 10, half of it the preemption
+null system call's growth from one task to four fell from 48 ticks to 10, half of it the preemption
 every job pays; undoing 766 alone puts back 7.5. One caveat travels with every single-crossing
 number on radon: moving the kernel's text by a few bytes, with no code change, moves the null
-syscall by up to 8 ticks (7%), so builds are compared on growth, not level
-(notes/job-mix/null-syscall-under-load.md).
+system call by up to 8 ticks (7%), so builds are compared on growth, not level
+(notes/job-mix/null-system-call-under-load.md).
 
 Measured 2026-10-05 (UTC), recorded by `lane/radon-2026-10-05-record`; calef read it and ruled this risk green on 2026-10-05.
 Radon ran milestone 761 (capability lookup off the global lock) and milestone 766 (each core's
-PerCpu on its own cache line). The null syscall's growth from one task to four fell from 48 ticks to
+PerCpu on its own cache line). The null system call's growth from one task to four fell from 48 ticks to
 10, and `current_cap` found its lock held on 0.05% of calls. The one-task level moved up to 8 ticks
 with code placement alone, so builds are compared on growth. The replacement for the open finding above is the sentence that page proposed
-(`notes/job-mix/null-syscall-under-load.md`, "What risk 4's line should say"), applied as written.
+(`notes/job-mix/null-system-call-under-load.md`, "What risk 4's line should say"), applied as written.
 
 Two caveats. The counter-thesis is published: the crossing can be removed rather than made cheap. If
 RedLeaf and the 2017 Rust-kernel paper are right, a capability crossing is a cost this project chose

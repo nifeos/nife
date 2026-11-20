@@ -13,22 +13,22 @@ A packaging change. Nothing here is a design fork, and it is reversible: the mod
 move back by moving the files back.
 
 **In brief.** `crates/user_rt` is excluded from the host pass, from coverage, from mutation and from
-Kani, and correctly so. It is the EL0 syscall floor, and `svc` on a machine with no nife kernel
-under it is a fault rather than a syscall. The exclusion is crate-level. Two of the crate's
-modules make no syscall at all, and they inherit the exclusion because of the file they are declared
+Kani, and correctly so. It is the EL0 system call floor, and `svc` on a machine with no nife kernel
+under it is a fault rather than a system_call. The exclusion is crate-level. Two of the crate's
+modules make no system call at all, and they inherit the exclusion because of the file they are declared
 in.
 
 ## What is actually in there
 
 Measured 2026-09-12, on `4306c8c1`.
 
-| Module | Lines | Syscalls | Consumers | Excluded for a real reason? |
+| Module | Lines | System calls | Consumers | Excluded for a real reason? |
 |---|---|---|---|---|
 | `mapped_window` | 176 | **0** | **29 files** | No. Pointer arithmetic with bounds checks |
 | `initial_ramdisk` | 60 | **0** | 9 files | No. A `'static` slice over a fixed VA |
 | `heap` | 220 | yes (`memory_region::MAP`) | 7 files | Yes |
 | `virtio` | 53 | yes (5 sites) | 4 files | Yes |
-| core (`invoke` and its wrappers) | ~500 | yes, it *is* the syscall | all | Yes |
+| core (`invoke` and its wrappers) | ~500 | yes, it *is* the system call | all | Yes |
 
 `mapped_window` is the most-used thing in the crate and the least entitled to the exclusion.
 
@@ -84,16 +84,16 @@ a name had been refused. Read before sweeping.
 
 - Make the runtime a program. Refused on a bootstrapping impossibility rather than on taste.
   `invoke` *is* `svc`/`ecall`, and IPC is built on it. So a program that had to send a message to
-  reach the syscall layer would need the syscall layer to send the message. The upper modules escape
-  that circle and still lose, for the opposite reason. They make no syscalls, so routing them
-  through a server would add syscalls to code that has none, and a `GlobalAlloc` that performs IPC
+  reach the system call layer would need the system call layer to send the message. The upper modules escape
+  that circle and still lose, for the opposite reason. They make no system calls, so routing them
+  through a server would add system calls to code that has none, and a `GlobalAlloc` that performs IPC
   per allocation is its own disaster. In a capability system the program already holds its budget;
   there is nothing for a server to arbitrate.
 - Move `heap` as well. It calls `memory_region::MAP` (`grow` in `crates/memory_region_heap/src/lib.rs`). It belongs with the runtime.
-- Move `virtio` as well. Five syscall sites, device-specific, and already opt-in and scoped for
+- Move `virtio` as well. Five system call sites, device-specific, and already opt-in and scoped for
   the reason `mapped_window`'s own header gives.
 - Split `user_rt` further, by concern. Refused as gold-plating. The line this milestone draws is
-  falsifiable and mechanical, *does this code make a syscall*, and no second line in there is.
+  falsifiable and mechanical, *does this code make a system call*, and no second line in there is.
 - **Do nothing, and record it in `BUGS` instead.** Defensible, and it is what the tree has done by
   accident until now. The cost of continuing is that a bounds check standing behind 29 call sites
   stays unprovable, on a project whose thesis is a machine-checked capability core.
@@ -122,8 +122,8 @@ a name had been refused. Read before sweeping.
 ## Index row
 
 `crates/user_rt` is excluded from the host pass, coverage, mutation and Kani because it is
-the EL0 syscall floor. The exclusion is crate-level: `mapped_window` (176 lines, 29 consumers)
-and `initial_ramdisk` (60 lines) make no syscall at all and inherit it from the file they are declared
+the EL0 system call floor. The exclusion is crate-level: `mapped_window` (176 lines, 29 consumers)
+and `initial_ramdisk` (60 lines) make no system call at all and inherit it from the file they are declared
 in. `MappedWindow`'s one-line bounds check with an overflow guard stands behind 29 call sites and
 cannot be reached by a prover; the crate has zero harnesses. Milestone 191's finding one scale
 down. Touches the four exclusion lists milestone 244 found drifting. Does not settle whether `user_rt` keeps its name.

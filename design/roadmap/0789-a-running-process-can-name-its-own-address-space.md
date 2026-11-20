@@ -13,7 +13,7 @@ needs_person: no
 Raised by milestone 95 (an unmap primitive, and the mappings init never lets go)'s lane on
 2026-10-05 (UTC), while building `AddressSpace::UNMAP` on §162 (whether a holder can give up a
 mapping). The method works, and it cannot reach the window it was decided to close.
-`notes/unmap.md` has the finding in full. This is a fork on the syscall surface, so the options
+`notes/unmap.md` has the finding in full. This is a fork on the system call surface, so the options
 below wait for an architect.
 
 Reuse: none exists; searched `kernel/src` for every mint of `cap::address_space_cap` (only
@@ -73,4 +73,4 @@ time, which changes that proposal's options. Decide the two together.
 
 ## Index row
 
-A process cannot name its own running address space, so the progenitor cannot give up the pages it mapped for boot servers and `AddressSpace::UNMAP` cannot reach the window it was decided to close. The options are a fork on the syscall surface and wait for an architect.
+A process cannot name its own running address space, so the progenitor cannot give up the pages it mapped for boot servers and `AddressSpace::UNMAP` cannot reach the window it was decided to close. The options are a fork on the system call surface and wait for an architect.

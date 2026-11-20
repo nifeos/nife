@@ -234,7 +234,7 @@ three.
    recommended for falsifications.
 5. Every file name in the cut.
 
-No wire format, syscall or public crate path changes under any answer here.
+No wire format, system call or public crate path changes under any answer here.
 
 ## What it is not
 

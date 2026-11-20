@@ -75,7 +75,7 @@ aarch64	228e8024a	ipc_rtt	*	milestone 629's own save; #1486 attributed the drift
 aarch64	228e8024a	ipc_rtt_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
 aarch64	228e8024a	map_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
 aarch64	228e8024a	map_new	*	milestone 629's own save; #1486 attributed the drift it absorbed
-aarch64	228e8024a	null_syscall	*	milestone 629's own save; #1486 attributed the drift it absorbed
+aarch64	228e8024a	null_system_call	*	milestone 629's own save; #1486 attributed the drift it absorbed
 aarch64	228e8024a	relay_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
 aarch64	228e8024a	sink_throughput	*	milestone 629's own save; #1486 attributed the drift it absorbed
 aarch64	228e8024a	spawn_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
@@ -87,7 +87,7 @@ riscv64	228e8024a	ctx_switch	*	milestone 629's own save; #1486 attributed the dr
 riscv64	228e8024a	ipc_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
 riscv64	228e8024a	ipc_rtt_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
 riscv64	228e8024a	map_el0	*	milestone 629's own save; #1486 attributed the drift it absorbed
-riscv64	228e8024a	null_syscall	*	milestone 629's own save; #1486 attributed the drift it absorbed
+riscv64	228e8024a	null_system_call	*	milestone 629's own save; #1486 attributed the drift it absorbed
 riscv64	228e8024a	relay_rtt	*	milestone 629's own save; #1486 attributed the drift it absorbed
 riscv64	228e8024a	rfence_self	*	milestone 629's own save; #1486 attributed the drift it absorbed
 riscv64	228e8024a	sink_throughput	*	milestone 629's own save; #1486 attributed the drift it absorbed
@@ -111,7 +111,7 @@ aarch64	62619d7ff	ipc_rtt	*	fatal risk 4: SVC_COUNT leaves non-test builds
 aarch64	62619d7ff	ipc_rtt_el0	*	fatal risk 4: SVC_COUNT leaves non-test builds
 aarch64	62619d7ff	map_el0	*	fatal risk 4: SVC_COUNT leaves non-test builds
 aarch64	62619d7ff	map_new	*	fatal risk 4: SVC_COUNT leaves non-test builds
-aarch64	62619d7ff	null_syscall	*	fatal risk 4: SVC_COUNT leaves non-test builds
+aarch64	62619d7ff	null_system_call	*	fatal risk 4: SVC_COUNT leaves non-test builds
 aarch64	62619d7ff	relay_rtt	*	fatal risk 4: SVC_COUNT leaves non-test builds
 aarch64	62619d7ff	sink_throughput	*	fatal risk 4: SVC_COUNT leaves non-test builds
 aarch64	62619d7ff	spawn_el0	*	fatal risk 4: SVC_COUNT leaves non-test builds
@@ -134,7 +134,7 @@ riscv64	bc06c6a23	broker_rtt	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 riscv64	bc06c6a23	call_reply	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 riscv64	bc06c6a23	ctx_switch	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 riscv64	bc06c6a23	map_el0	*	QEMU 11.1.2 alone, and #1852 for the switch rows
-riscv64	bc06c6a23	null_syscall	*	QEMU 11.1.2 alone, and #1852 for the switch rows
+riscv64	bc06c6a23	null_system_call	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 riscv64	bc06c6a23	relay_rtt	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 riscv64	bc06c6a23	sink_throughput	*	QEMU 11.1.2 alone, and #1852 for the switch rows
 riscv64	bc06c6a23	spawn_el0	*	QEMU 11.1.2 alone, and #1852 for the switch rows
@@ -158,7 +158,7 @@ riscv64	ae940dc46	map_el0	+0.002	nightly-2026-10-22, the compiler term measured 
 riscv64	ae940dc46	ipc_rtt_el0	-0.473	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
 riscv64	ae940dc46	sink_throughput	+0.008	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
 riscv64	ae940dc46	spawn_el0	-0.002	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
-riscv64	ae940dc46	null_syscall	-0.001	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
+riscv64	ae940dc46	null_system_call	-0.001	nightly-2026-10-22, the compiler term measured alone (#2563's restamp A/B)
 
 # #1486 (notes/benchmarks/drift-since-the-2026-09-26-floors.md): riscv64 ticks per merge, as a
 # percent of the 2026-09-26 floor, inside the step 2026-10-03's save absorbed.
@@ -181,7 +181,7 @@ aarch64	ddd38f0b0	relay_rtt	+0.70	#1892, milestone 812: threads in one address s
 aarch64	ddd38f0b0	call_reply	+0.71	#1892, milestone 812: threads in one address space
 aarch64	ddd38f0b0	broker_rtt	+0.71	#1892, milestone 812: threads in one address space
 aarch64	ddd38f0b0	spawn_reap	+1.63	#1892, milestone 812: threads in one address space
-aarch64	ddd38f0b0	null_syscall	+1.40	#1892, milestone 812: threads in one address space
+aarch64	ddd38f0b0	null_system_call	+1.40	#1892, milestone 812: threads in one address space
 aarch64	ddd38f0b0	ctx_switch	+1.21	#1892, milestone 812: threads in one address space
 aarch64	ddd38f0b0	ipc_rtt_el0	+0.69	#1892, milestone 812: threads in one address space
 aarch64	ddd38f0b0	sink_throughput	+0.47	#1892, milestone 812: threads in one address space
@@ -280,7 +280,7 @@ x86_64	cb1819920	*	*	milestone 939: no preemption tick in a timed window; ipc_rt
 # milestone 761 (capability lookup off the global lock), milestone 812 (threads in one address
 # space), milestone 961 (the kernel's special boots become commands typed at the production
 # shell), milestone 969 (no frame is writable and executable in one address space),
-# fatal risk 4 (null_syscall under load).
+# fatal risk 4 (null_system_call under load).
 riscv64	d621759ec	yield_switch	+2.87	#1360, milestone 126: the switch counter
 riscv64	d621759ec	ipc_rtt	+1.57	#1360, milestone 126: the switch counter
 riscv64	d621759ec	relay_rtt	+1.56	#1360, milestone 126: the switch counter
@@ -322,18 +322,18 @@ riscv64	476641ddf	ipc_rtt_el0	+0.23	#1620, milestone 758: the IPC fast paths shr
 riscv64	476641ddf	sink_throughput	+0.22	#1620, milestone 758: the IPC fast paths shrunk
 riscv64	476641ddf	map_el0	+0.16	#1620, milestone 758: the IPC fast paths shrunk
 riscv64	476641ddf	spawn_el0	+0.18	#1620, milestone 758: the IPC fast paths shrunk
-riscv64	62619d7ff	null_syscall	-7.99	#1614, fatal risk 4: the syscall counter leaves non-test builds
-riscv64	62619d7ff	ctx_switch	-0.53	#1614, fatal risk 4: the syscall counter leaves non-test builds
-riscv64	62619d7ff	ipc_rtt_el0	-0.39	#1614, fatal risk 4: the syscall counter leaves non-test builds
-riscv64	62619d7ff	sink_throughput	-0.32	#1614, fatal risk 4: the syscall counter leaves non-test builds
-riscv64	62619d7ff	map_el0	-0.19	#1614, fatal risk 4: the syscall counter leaves non-test builds
-riscv64	62619d7ff	spawn_el0	+0.32	#1614, fatal risk 4: the syscall counter leaves non-test builds
+riscv64	62619d7ff	null_system_call	-7.99	#1614, fatal risk 4: the system call counter leaves non-test builds
+riscv64	62619d7ff	ctx_switch	-0.53	#1614, fatal risk 4: the system call counter leaves non-test builds
+riscv64	62619d7ff	ipc_rtt_el0	-0.39	#1614, fatal risk 4: the system call counter leaves non-test builds
+riscv64	62619d7ff	sink_throughput	-0.32	#1614, fatal risk 4: the system call counter leaves non-test builds
+riscv64	62619d7ff	map_el0	-0.19	#1614, fatal risk 4: the system call counter leaves non-test builds
+riscv64	62619d7ff	spawn_el0	+0.32	#1614, fatal risk 4: the system call counter leaves non-test builds
 riscv64	ddd38f0b0	yield_switch	+0.59	#1892, milestone 812: threads in one address space
 riscv64	ddd38f0b0	ipc_rtt	+0.36	#1892, milestone 812: threads in one address space
 riscv64	ddd38f0b0	relay_rtt	+0.37	#1892, milestone 812: threads in one address space
 riscv64	ddd38f0b0	call_reply	+0.37	#1892, milestone 812: threads in one address space
 riscv64	ddd38f0b0	broker_rtt	+0.37	#1892, milestone 812: threads in one address space
-riscv64	ddd38f0b0	null_syscall	+1.20	#1892, milestone 812: threads in one address space
+riscv64	ddd38f0b0	null_system_call	+1.20	#1892, milestone 812: threads in one address space
 riscv64	ddd38f0b0	ctx_switch	+0.62	#1892, milestone 812: threads in one address space
 riscv64	ddd38f0b0	ipc_rtt_el0	+0.38	#1892, milestone 812: threads in one address space
 riscv64	ddd38f0b0	sink_throughput	+0.27	#1892, milestone 812: threads in one address space
@@ -637,7 +637,7 @@ aarch64	c4d491b81	call_reply	-1.94	#2735, milestone 707: aarch64 registers read 
 aarch64	c4d491b81	broker_rtt	-1.94	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
 aarch64	c4d491b81	spawn_reap	-2.88	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
 aarch64	c4d491b81	map_new	-0.36	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
-aarch64	c4d491b81	null_syscall	-2.41	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
+aarch64	c4d491b81	null_system_call	-2.41	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
 aarch64	c4d491b81	ctx_switch	-2.76	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
 aarch64	c4d491b81	ipc_rtt_el0	-2.20	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
 aarch64	c4d491b81	sink_throughput	-1.76	#2735, milestone 707: aarch64 registers read and written by in-tree inline(always) accessors
@@ -652,7 +652,7 @@ riscv64	f47530910	spawn_el0	+1.04	#3225: generational_table saturates a slot's g
 # lane/bench/w45-unexplained-drift: `main`'s gap from 7ea93b038 (the 2026W44 reading) to 81a1cbbc7
 # (2026W45), all three architectures, each candidate merge against its first parent on
 # nightly-2026-11-08 held for the window. Held, 81a1cbbc7 reads the merge queue's rows exactly and
-# 7ea93b038 reads them to within 0.15%, apart from `null_syscall` (+0.35% aarch64, +0.30% riscv64):
+# 7ea93b038 reads them to within 0.15%, apart from `null_system_call` (+0.35% aarch64, +0.30% riscv64):
 # that is the compiler term from the nightly 7ea93b038 pins, and no line here claims it. Together with
 # #3225's lines above, the merges below account for the window's step to within 0.05% on every row;
 # #3339 (generational_table leaves the tree) moves no row. Every row a merge moved by 0.1% or more.
@@ -755,7 +755,7 @@ aarch64	1547eb2af	broker_rtt	-18.10	nightly-2026-11-18, measured alone on one ma
 aarch64	1547eb2af	spawn_reap	-14.81	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 aarch64	1547eb2af	map_new	-10.54	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 aarch64	1547eb2af	coremark	-15.14	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
-aarch64	1547eb2af	null_syscall	-11.27	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
+aarch64	1547eb2af	null_system_call	-11.27	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 aarch64	1547eb2af	ctx_switch	-17.81	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 aarch64	1547eb2af	ipc_rtt_el0	-18.15	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 aarch64	1547eb2af	sink_throughput	-18.06	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
@@ -770,7 +770,7 @@ riscv64	1547eb2af	spawn_reap	-12.75	nightly-2026-11-18, measured alone on one ma
 riscv64	1547eb2af	map_new	-9.04	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 riscv64	1547eb2af	rfence_self	-1.70	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 riscv64	1547eb2af	coremark	-11.36	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
-riscv64	1547eb2af	null_syscall	-8.55	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
+riscv64	1547eb2af	null_system_call	-8.55	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 riscv64	1547eb2af	ctx_switch	-15.92	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 riscv64	1547eb2af	ipc_rtt_el0	-15.99	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified
 riscv64	1547eb2af	sink_throughput	-15.98	nightly-2026-11-18, measured alone on one machine by running the same tree at both pins: rustc code generation for the -O0 bench kernel (LLVM 23.1.5 on both), cause within rustc not identified

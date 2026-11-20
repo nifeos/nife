@@ -200,7 +200,7 @@ runs N independent workloads and times them by wall clock. It needs more than on
 only on the `--real --smp` boot and never gates. The scaling factor is the solo ns/iter over the all
 ns/iter.
 
-- Compute workers make no syscalls, so they make no cross-core wakes and scale cleanly to the core
+- Compute workers make no system calls, so they make no cross-core wakes and scale cleanly to the core
   count: the direct picture of placement filling the machine.
 - Ping-pong pipelines do not scale under HVF. The host deschedules a semi-idle guest vCPU, so
   each cross-core wake a split pair needs pays host reschedule latency. That is a virtualization

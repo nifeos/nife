@@ -17,7 +17,7 @@ oversubscription. See notes/load-sensitive-assertions/caretaker-teardown-wait.md
 
 The shape is already built once, in the same lane's fix to `login_test_client.rs`:
 wait on the property (the region actually coming down) with a clock-bounded watchdog rather than a
-syscall count. This milestone repeats that pattern at four more sites; it is not a design fork.
+system call count. This milestone repeats that pattern at four more sites; it is not a design fork.
 
 ## What this is, in brief
 
@@ -25,7 +25,7 @@ DECISIONS §16 (object revocation) says a `MemoryRegion::DESTROY` on a region th
 live thread is refused. The refusal *arms* a kill on that thread that lands at its next
 preemption. That is a timer tick away (10 ms at 100 Hz, milestone 62's own unit). Five places in
 userspace wait out that refusal with a fixed count of attempts, yielding between each. None of
-them has a clock in it. A count of syscalls is not a way to buy a tick: `yield_now` returns in
+them has a clock in it. A count of system calls is not a way to buy a tick: `yield_now` returns in
 about 130 microseconds when this core has other work and parks until the next tick when it does
 not. Which kind a given call gets is a scheduling outcome the host decides, not something the
 loop controls.
@@ -83,15 +83,15 @@ ordinary loaded run that just needed a few more milliseconds.
 Milestone 62 re-denominated the kernel's own equivalent waits in delivered timer ticks rather
 than wall clock, specifically because a tick-counted deadline cannot be fooled by a descheduled
 guest the way a wall-clock one can. That unit is not reachable from a process. Nothing publishes
-the kernel's per-core tick count across the syscall boundary. A userspace loop can only read the
+the kernel's per-core tick count across the system call boundary. A userspace loop can only read the
 raw counter (`user_rt::now()`, backed by `CNTVCT_EL0` on aarch64, `rdtime` on riscv64, `rdtsc` on
 x86_64) and `user_rt::cntfrq()` to convert it. `login_test_client.rs`'s fix already documents this
 gap in its own BUGS section rather than pretending the wall clock is the right unit. The four sites
 here inherit the same limitation and should record it the same way, once each.
 
 **This is recorded as the open question, not as a plan.** Giving a process a delivered-tick reading
-would be a syscall ABI addition (an `svc` returning what the kernel currently keeps to itself in
-`TICKS`/`PerCpu`). The syscall surface is a boundary calef decides, not a lane's call to make
+would be a system call ABI addition (an `svc` returning what the kernel currently keeps to itself in
+`TICKS`/`PerCpu`). The system call surface is a boundary calef decides, not a lane's call to make
 while fixing five retry loops. Until that exists, safety here comes from margin (a watchdog wide
 enough that the wait never legitimately approaches it) rather than from the right unit. That is
 exactly the trade `login_test_client.rs`'s own BUGS section names for itself.
@@ -114,7 +114,7 @@ exactly the trade `login_test_client.rs`'s own BUGS section names for itself.
 
 ## What this does not decide
 
-Whether userspace ever gets a delivered-tick counter of its own. That is a syscall ABI question
+Whether userspace ever gets a delivered-tick counter of its own. That is a system call ABI question
 outside this milestone's gate; if a future lane wants it, it is a design fork for calef, not
 something to fold into a retry-loop sweep.
 

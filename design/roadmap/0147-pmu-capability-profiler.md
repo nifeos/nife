@@ -84,7 +84,7 @@ counter set":
   than the one counter 74 ports. This is where 74's scope note's restraint gets spent. The type
   should be able to hold a *set* from day one so it is not re-designed the day a second event type is
   asked for, but the set is still a capability's contents, not an ambient enable bit.
-- The read is a syscall against a held capability, not a register the kernel opened to EL0
+- The read is a system call against a held capability, not a register the kernel opened to EL0
   wholesale. This is the fork 75 already frames as "trap-and-check on the register read". The
   profiler never gets ambient `PMUSERENR_EL0`/`scounteren` access; every read is checked against the
   capability it presented.

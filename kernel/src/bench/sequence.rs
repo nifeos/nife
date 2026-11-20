@@ -43,7 +43,7 @@ pub fn run() -> ! {
     rfence_self();
     cycles_per_tick();
     coremark_compute();
-    null_syscall_el0();
+    null_system_call_el0();
     ctx_switch_el0();
     ipc_rtt_el0();
     #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]

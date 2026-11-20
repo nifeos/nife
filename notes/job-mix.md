@@ -33,7 +33,7 @@ single-operation or single-shape measurements. This is the one that is not.
 
 The 20% is the retrospective's summary of Warton, not his own claim. His BE thesis (UNSW, 2005)
 ran a modified AIM7 with two tasks and no sweep, on Wombat, a paravirtualized ARM Linux. So the
-figure is a ratio between two microkernels, measured through a hosted Linux's syscall path. This
+figure is a ratio between two microkernels, measured through a hosted Linux's system call path. This
 tree has one kernel and runs native tasks, so the mix produces one arm and no ratio. Warton himself
 called the result something to treat with skepticism until explained, and never ran the cache
 simulation that would have explained it.
@@ -58,7 +58,7 @@ per-task ordering, a task-count sweep, and a throughput metric.
 
 It keeps none of AIM7's 53 jobs, which name Unix services this system does not have and should
 not grow in order to be measured. Seven jobs stand in for AIM7's categories. Five are a compute grind, a
-32 KiB working-set walk, a null syscall, a yield burst, and a `CALL`/`REPLY` round trip against a
+32 KiB working-set walk, a null system call, a yield burst, and a `CALL`/`REPLY` round trip against a
 shared server. Since 2026-09-19 a page-mapping job and a process-creation job build
 their objects from a per-task untyped budget. `crates/job_mix`'s `BUGS` records the one category
 still missing (disk-file operations) and why, and

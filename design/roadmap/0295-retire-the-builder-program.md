@@ -65,7 +65,7 @@ answer is half-proved, and the missing half is real:
   (retype an address space and a TCB, map code and stack, insert the report rendezvous, configure,
   start) and the child runs and sends its word home. It is a kernel-side test: it calls
   `memory_region::create`, `user_address_space_map` and the rest directly, rather than a program
-  making those calls across the syscall boundary out of a budget it was granted. So the verbs
+  making those calls across the system call boundary out of a budget it was granted. So the verbs
   compose; what it does not witness is a *userspace* program driving them from a fixed endowment.
 - **Not proved anywhere.** Those two facts joined: a userspace program holding exactly two
   capabilities reading an ELF out of an archive by name, laying its segments down, retyping a TCB,

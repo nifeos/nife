@@ -52,7 +52,7 @@ and it closed unmerged.
 
 No failure was a label-change cancellation. The workflow starts on opened, reopened, synchronize
 and ready for review, so a label never starts it, and its concurrency group never cancels a run in
-progress. The two cancelled runs were on branches `comments/929-kernel-syscall-selftest` and
+progress. The two cancelled runs were on branches `comments/929-kernel-system-call-selftest` and
 `comments/929-crates-09`. They ran 52 seconds and 5 minutes, so neither is a zero-second
 cancellation. They are not failures, so the 609 exclude them.
 

@@ -8,7 +8,7 @@ built: 2026-07-29
 **In brief.** Built (2026-07-29), both ISAs, rung two of the display ladder: `compositor`
 multiplexing one screen among three clients, each holding a capability to its own surface. Software
 composition honouring a damage rectangle; input routed by capability over the terminal contract's
-`OP_BYTES`; enumeration and screenshots as read-only mappings rather than verbs. No new syscall and
+`OP_BYTES`; enumeration and screenshots as read-only mappings rather than verbs. No new system call and
 no new method. notes/compositor.md, DECISIONS §33 (the compositor's authority is memory, not messages)
 
 Why it matters. the canonical multiplexer of one device among distrusting clients, and the thesis at

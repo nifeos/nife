@@ -1,6 +1,6 @@
 //! Same-hardware Linux side of the primitive suite (milestone 25). Built as a static aarch64 binary
 //! and booted as PID 1 in a one-file initramfs under QEMU-HVF, so it runs on the *same* M-series core
-//! at the *same* virtualization tier as nife. It measures null syscall, IPC round trip, the derived
+//! at the *same* virtualization tier as nife. It measures null system call, IPC round trip, the derived
 //! context switch, map and spawn (the metrics of the native programs beside it), prints them, and
 //! powers the machine off (it is PID 1: exiting would panic the kernel).
 //!
@@ -56,7 +56,7 @@ fn self_pipe_pass() -> f64 {
 const SYS_GETPID: std::os::raw::c_long = 172; // aarch64 Linux
 const RB_POWER_OFF: i32 = 0x4321fedc_u32 as i32;
 
-fn null_syscall() -> f64 {
+fn null_system_call() -> f64 {
     let iters: u64 = 5_000_000;
     for _ in 0..100_000 {
         unsafe { syscall(SYS_GETPID) };
@@ -73,7 +73,7 @@ fn null_syscall() -> f64 {
 /// Page-map (fault-in) latency, lmbench's `lat_mmap`: the host side of nife's `map_el0`. `mmap`
 /// a large anonymous region, then touch one byte per page; the first touch faults and the kernel
 /// installs the PTE. See bench/host/mmap.rs for the method and the two asymmetries to our `MAP_INTO`
-/// (fault vs syscall trigger; the host also allocates and zeroes a page where we alias one frame).
+/// (fault vs system call trigger; the host also allocates and zeroes a page where we alias one frame).
 fn map_fault() -> f64 {
     const PAGE: usize = 4096;
     const PROT_READ: i32 = 0x1;
@@ -173,7 +173,7 @@ fn ipc_rtt() -> f64 {
 fn main() {
     // devtmpfs is auto-mounted by the kernel (CONFIG_DEVTMPFS_MOUNT), so /dev/console exists and PID
     // 1's stdout reaches the serial line: a plain println works.
-    println!("linux null_syscall (raw getpid): {:.1} ns/iter", null_syscall());
+    println!("linux null_system_call (raw getpid): {:.1} ns/iter", null_system_call());
     let rt = ipc_rtt();
     println!("linux ipc_rtt (pipe round trip, 2 processes): {rt:.1} ns/iter");
     let p = self_pipe_pass();

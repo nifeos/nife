@@ -16,18 +16,18 @@ radon's bench.
 
 ## Index row
 
-The cheapest syscall stops taking the kernel's one global lock: each thread's capability table gets
-its own lock, so a lookup contends with nobody. Fatal risk 4's open finding is the null syscall
+The cheapest system call stops taking the kernel's one global lock: each thread's capability table gets
+its own lock, so a lookup contends with nobody. Fatal risk 4's open finding is the null system call
 costing 147 ticks a job at four busy cores on radon against 99 at one. 41% of its lookups found
 `IPC_TABLES` held. This is the change that finding pointed at. On radon (2026-10-05) the lookups
 that wait fell to 0.05% and the job's rise from one task to four from 48 ticks to 10.
 
 ## Why
 
-Every syscall that names a capability starts in `sched::current_cap`, which took `IPC_TABLES`, the
+Every system call that names a capability starts in `sched::current_cap`, which took `IPC_TABLES`, the
 kernel's one global lock, to read the calling thread's own table. On radon at four busy tasks 41%
-of those lookups found the lock held, and the null syscall cost 147 ticks a job against 99 at one
-task ([`notes/job-mix/null-syscall-under-load.md`](../../notes/job-mix/null-syscall-under-load.md)).
+of those lookups found the lock held, and the null system call cost 147 ticks a job against 99 at one
+task ([`notes/job-mix/null-system-call-under-load.md`](../../notes/job-mix/null-system-call-under-load.md)).
 A capability table has exactly one owner thread; it shared the global lock only because it was a
 field of the thread table's entries. This is fatal risk 4's open finding.
 
@@ -53,7 +53,7 @@ field of the thread table's entries. This is fatal risk 4's open finding.
   `sched::deliver_capability` is one out-of-line copy of the IPC delivery insert. Both exist to keep
   the fast paths inside their bands (below).
 
-No syscall semantics, ABI or wire format changed. Names `CAPABILITY_TABLE` (rank),
+No system call semantics, ABI or wire format changed. Names `CAPABILITY_TABLE` (rank),
 `CapabilityTableLock`, `capability_table_of`, `init_capability_table`, `CURRENT_CAPABILITIES`,
 `set_current`, `current_capabilities`, `lock_found`, `deliver_capability`,
 `get_mut_with_capabilities`, `iter_mut_with_capabilities` and `capabilities` are provisional.
@@ -70,8 +70,8 @@ interleaved on the same host:
 | rank 57 (`capability_table`) contended | (no such lock) | 30 and 42 |
 
 The counts are the result TCG can give. Its ticks cannot: the host carried other lanes' builds, and
-`null_syscall` at four tasks read 1,066 to 1,861 across six runs a side with no separation, which is
-the null-syscall note's own caveat. The size of the win is radon's to say.
+`null_system_call` at four tasks read 1,066 to 1,861 across six runs a side with no separation, which is
+the null-system-call note's own caveat. The size of the win is radon's to say.
 
 ## Gates
 
@@ -96,7 +96,7 @@ carries milestone 766 (each core's PerCpu on its own cache line). At four tasks:
 |---|---|---|
 | `current_cap` calls that found their lock held (`lock_wait` boots) | 41.4%, 41.8% | 0.048%, 0.049% |
 | `IPC_TABLES` wait (`lock_wait` boots) | 2,593,130 ticks | 1,241,793 and 1,278,777 |
-| `null_syscall` `per_job`, 1 / 4 tasks (three boots) | 99 / 147 | 110 / 120 |
+| `null_system_call` `per_job`, 1 / 4 tasks (three boots) | 99 / 147 | 110 / 120 |
 | growth from 1 task to 4 | 48 | 10 |
 
 By the pre-written bands, 120 reads PARTIAL and the one-task guard failed (110, above 101). The
@@ -108,7 +108,7 @@ across those layouts, and it is what fell. This milestone is done; what remains 
 ## BUGS
 
 - A capability read and a capability granted are two critical sections, so a revocation sweep
-  can fall between them. Take a syscall that derives: it reads a capability with `current_cap`,
+  can fall between them. Take a system call that derives: it reads a capability with `current_cap`,
   then `grant`s a narrowed copy. A sweep in between deletes the source and the copy is still filed. Unverified, found by reading while proving this milestone's linearizability argument, and
   not new: with one global lock the two steps were already two acquisitions. This milestone neither
   widens nor narrows the window. It lives here until somebody drives a sweep into that gap.
@@ -122,7 +122,7 @@ across those layouts, and it is what fell. This milestone is done; what remains 
   rise, and the job's empty slot (63) is odd. Unmeasured; aligning the table's start to 64 would
   remove it. Found reading the layout for the radon bisect.
 - The `site=current_cap` counter now measures the thread's own table lock. Its meaning is the same
-  (how often the cheapest syscall waited), and its rank in the per-rank lines moved from 60 to 57.
+  (how often the cheapest system call waited), and its rank in the per-rank lines moved from 60 to 57.
 
 ## Follow-on
 

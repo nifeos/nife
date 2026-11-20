@@ -61,13 +61,13 @@ answers, in the prose's own words, and a derivation.
 | `kani-harnesses` | how many Kani proof harnesses the tree carries, which is what `script/verify` proves | `#[kani::proof…]` alone on its line, in any workspace package |
 | `harness-crates` | how many workspace packages carry at least one Kani proof harness | distinct packages among those files |
 | `sh-scripts` | how many `#!/bin/sh` scripts there are under `script/` and `helpers/`, which is the set shellcheck gates | files whose first line is exactly `#!/bin/sh` |
-| `syscalls` | how many syscall numbers the ABI defines, which is the whole width of the trap | `pub const SYSCALL_*: u64` in `crates/abi/src/lib.rs` |
+| `system_calls` | how many system call numbers the ABI defines, which is the whole width of the trap | `pub const SYSTEM_CALL_*: u64` in `crates/abi/src/lib.rs` |
 | `rights-bits` | how many named single-bit rights a capability can carry | `pub const NAME: Rights = Rights(1 << N)` in `crates/capability_table` |
 | `loom-harnesses` | how many loom harnesses the tree carries, which is what `script/interleaving-check` runs | `loom::model(` calls in `crates//*.rs` |
 | `loom-crates` | how many crates carry at least one loom harness | distinct crate directories among those files |
 
-The last four arrived with the 2026-08-17 documentation sweep, whose lens was the ABI. `syscalls`
-exists because the ABI crate's own front page, the kernel's syscall module, an `Error` variant's
+The last four arrived with the 2026-08-17 documentation sweep, whose lens was the ABI. `system_calls`
+exists because the ABI crate's own front page, the kernel's system call module, an `Error` variant's
 description and two notes all said the surface was three calls; `SYS_CAPABILITY_DELETE` had landed
 three weeks earlier and moved none of them. `rights-bits` exists because `ENUMERATE` made the rights
 four and `notes/capability-lifecycle.md` still said three the next day. The `loom-*` pair is the one
@@ -206,7 +206,7 @@ refusal in full.
   honest.
 
 - **A marker works in a `.rs` doc comment, and the fence exemption does not follow it there.** The
-  2026-08-17 sweep put four in `crates/abi/src/lib.rs` and `kernel/src/syscall.rs`, because the
+  2026-08-17 sweep put four in `crates/abi/src/lib.rs` and `kernel/src/system_call.rs`, because the
   claims it was gating live in the boundary artifact rather than in a note, and an HTML comment is
   invisible in rustdoc. The gate finds them: it greps every tracked file. But the fenced-block skip
   is implemented for `.md` only, so a marker inside a ```` ```text ```` block in Rust source is
@@ -252,7 +252,7 @@ refusal in full.
 - Counts that span the tree are still the integrator's at merge (AGENTS.md). Two lanes can each
   mark a number correctly for their own branch and disagree after the merge. The gate turns that from
   a silent wrong number into a failing group build, which is the improvement rather than a cure.
-  So an equality marker goes only on a count that moves at the pace of a decision (`syscalls`,
+  So an equality marker goes only on a count that moves at the pace of a decision (`system_calls`,
   `rights-bits`, `security-audits`). It also suits one whose every change edits the same lines
   anyway, such as a crate's own harness count beside that crate's harnesses. A count that unrelated
   lanes move takes a floor or a ceiling with headroom. `harness-crates` is that case: a new crate

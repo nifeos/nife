@@ -44,14 +44,14 @@ format (the user-VA gate, the user `Mapper`) refers to `arch::mmu::Format`, so t
 The whole capability core runs on RISC-V today. That covers boot (higher-half Sv39, `.bss`, the `tp`
 per-CPU register, an NS16550 console, the OpenSBI device-tree handoff). It covers the MMU
 (fine-grained W^X Sv39 tables + `satp`, the single-`satp` process model where every root carries the
-kernel high half). It covers traps (`stvec`, the `sscratch` dance, the syscall-ABI reconciliation),
-the SBI timer, the scheduler and context switch, and U-mode user programs making syscalls. It covers
+kernel high half). It covers traps (`stvec`, the `sscratch` dance, the system-call-ABI reconciliation),
+the SBI timer, the scheduler and context switch, and U-mode user programs making system_calls. It covers
 a capability invocation (`SYS_INVOKE` → lookup → rights check → endpoint SEND) from U-mode and
 **preemption** (the timer preempts a thread that never yields, DECISIONS §5 (execution model)). And
 it covers a real compiled ELF at U-mode: the `worker` Rust binary, delivered as the initrd and run
 through the kernel's arch-neutral ELF loader, squares an input and SENDs it home.
 
-The ELF step needed three small aarch64 assumptions closed. `user_rt` grew a RISC-V syscall ABI
+The ELF step needed three small aarch64 assumptions closed. `user_rt` grew a RISC-V system call ABI
 (`ecall`+`a7`). The `elf` crate accepts the running kernel's machine (a symmetric, cfg-selected
 `EXPECTED_MACHINE`, so each kernel refuses the other's binaries). One trap instruction in the
 program was arch-gated. The loader itself was already portable.
@@ -66,7 +66,7 @@ Userspace init builds the system too. From a nifefs archive holding `init` (a po
 builder) and `worker`, the kernel loads only `init`, maps the archive into it, and grants it a
 budget and a report endpoint. `init` loads `worker` by name and builds it as a child through the
 capability verbs, wiring it to the report. The kernel never touches the child's bytes. That
-exercised the full userspace capability syscall surface on RISC-V.
+exercised the full userspace capability system call surface on RISC-V.
 
 Device interrupts flow through the PLIC too. A keystroke raises the NS16550's line into the PLIC,
 which delivers a supervisor external interrupt. The handler claims it, masks the source, and

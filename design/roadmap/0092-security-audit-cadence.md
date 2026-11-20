@@ -25,7 +25,7 @@ that produces a report and no state change is wallpaper with a security label.
 The mechanism, in four parts:
 
 1. A cadence and its tripwire. Audits run on a recorded schedule (quarterly is the starting
-   proposal; calef sets it) plus event triggers that queue one early. The triggers are a new syscall
+   proposal; calef sets it) plus event triggers that queue one early. The triggers are a new system call
    method, a new component holding device or network authority, a new dependency class (§46 (thin
    primitives or whole subsystems)), or
    first boot on a new machine class (a board, a cloud). The tripwire follows the toolchain-drift

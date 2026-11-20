@@ -6,7 +6,7 @@
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// `WAIT` on the `Interrupt` capability in `interrupt_slot`: block until the interrupt fires. The
 /// kernel masks
@@ -47,7 +47,7 @@ pub fn reboot(slot: u64) -> i64 {
     unsafe { invoke(slot, abi::reboot::REBOOT, 0, 0, 0) }
 }
 
-/// **Write one byte to an x86 I/O port** (milestone 299 (the x86 port-range capability)). Not a syscall: `out` is an instruction,
+/// **Write one byte to an x86 I/O port** (milestone 299 (the x86 port-range capability)). Not a system call: `out` is an instruction,
 /// and a ring-3 program may execute it exactly when it holds a `PortRange` capability naming `port`,
 /// which the kernel enforces through the task state segment (TSS) I/O permission bitmap (§121 (what a device capability
 /// is when the device has no page: x86 port I/O)). A port it does not hold raises a general

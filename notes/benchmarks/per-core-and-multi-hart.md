@@ -33,7 +33,7 @@ bounds, like the other `--real` numbers, not a tick baseline.
 
 | bench | workload | one batch |
 |---|---|---|
-| `smp_compute_*` | N independent CPU-bound grinders, no syscalls | `solo` = 1 worker; `all` = 16 workers, each the same fixed grind |
+| `smp_compute_*` | N independent CPU-bound grinders, no system calls | `solo` = 1 worker; `all` = 16 workers, each the same fixed grind |
 | `smp_pipe_*` | N independent synchronous IPC ping-pong pairs | `solo` = 1 pair; `all` = 16 pairs, each 2000 round trips |
 
 The scaling factor for either is the `solo` throughput divided by the `all` throughput. Read it from
@@ -117,7 +117,7 @@ HVF, `--release`, `-smp 1`, medians of 5 boots, ns/iter:
 
 | primitive | 2026-07-29 (per-core) | previously recorded | what moved, and why |
 |---|---|---|---|
-| `null_syscall` (EL0) | ~27 | ~27 | unchanged |
+| `null_system_call` (EL0) | ~27 | ~27 | unchanged |
 | `ipc_rtt_el0` (EL0) | ~361 | ~337 | **+7%**, the milestone-22 §26 mailbox widening 3->5 words; matches the icount +5% exactly, real and expected |
 | `ctx_switch` (EL0, round trip) | ~112 | ~28/switch (~56 rt) | ~29 ns/switch derived, unchanged |
 | `map_el0` (mechanism, aliased) | ~92 | ~91 | unchanged |

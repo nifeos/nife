@@ -17,7 +17,7 @@ below. The driver itself is buildable and testable under QEMU and does not wait 
 
 ## What §86 decided, so this block does not reopen it
 
-Option 2a, in its own words: an EL0 NVMe server that adds no syscall surface at all, so *"the
+Option 2a, in its own words: an EL0 NVMe server that adds no system call surface at all, so *"the
 only durable commitment is what an `nvme_server`'s spawn contract says, and this tree changes spawn
 contracts routinely."* Designed so option 4 can be added later without reshaping the driver, and the
 choice between them settled by measurement rather than argument.
@@ -78,8 +78,8 @@ the program is `non_volatile_memory_express`, sharing its crate's name.
 
 ## What was built, 2026-09-17
 
-The data plane left the kernel and nothing about the syscall surface moved, which is option 2a's
-whole claim and is the thing to check first: no new `Object` variant, no new syscall number, no new
+The data plane left the kernel and nothing about the system call surface moved, which is option 2a's
+whole claim and is the thing to check first: no new `Object` variant, no new system call number, no new
 method constant. The split is expressible because NVMe 1.4 §3.1 already put a page boundary where the
 authority boundary belongs. The controller registers (`CC`, `CSTS`, `AQA`, `ASQ`, `ACQ`) are at
 offsets `0x000..0x1000` and the doorbells start at `0x1000`, so "the kernel keeps the admin plane and
@@ -266,5 +266,5 @@ about a real device at real speed.
 
 §86 was DECIDED 2026-09-03 and its work had no milestone. Built 2026-09-17 under QEMU on all three
 architectures: the data plane is an EL0 process holding one page of BAR0 and a confined DMA window,
-at zero new syscall surface. What remains is the machine, and one thing on it is calef's: wiping the
+at zero new system call surface. What remains is the machine, and one thing on it is calef's: wiping the
 disk

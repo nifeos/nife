@@ -42,7 +42,7 @@ Three things do not move, and each is a constraint rather than an omission.
   arbitrarily later, and a per-core stack cannot promise that. 272 bytes on aarch64, 288 on riscv64,
   still billed to the interrupted stack.
 - A trap from user mode. That thread's kernel stack is empty at the moment it traps, so there is
-  nothing to relieve. And the syscall it is probably taking may block, which means its frames have
+  nothing to relieve. And the system call it is probably taking may block, which means its frames have
   to live on a stack that belongs to the thread.
 - The deferred `schedule()`. This is the one that shapes the whole design, below.
 
@@ -152,7 +152,7 @@ bootloader the memory is ours.
 And instructions per trap, which the icount tripwire caught and which is the more interesting
 half. The first version failed `script/bench --check` on three benchmarks at once: `ctx_switch`
 +49.7%, `ipc_rtt_el0` +26.5%, `sink_throughput` +17.5%. None of those is a trap-heavy benchmark in
-the way `null_syscall` is, and that pattern was the clue: all three are scheduler-heavy, and the
+the way `null_system_call` is, and that pattern was the clue: all three are scheduler-heavy, and the
 cost was the `debug_assert!` in `schedule()`. It asked each of eight slots in turn through two
 non-inlined helpers, which is the obvious way to write "is this address in one of these ranges" and
 costs about 145 ticks per context switch in the debug build the tripwire measures. Rewritten as one
@@ -167,7 +167,7 @@ because they are properties of the *debug* build rather than of the code:
 - `from_lower_el` (now `is_from_lower_el`) was `(8..=11).contains(&index)`, which compiles to a real
   call into `RangeInclusive::<u64>::contains::<u64>` at `-O0`, on every trap, three times over.
   Written as two comparisons it is free. That alone more than paid for this milestone's extra
-  dispatcher frame: `null_syscall` ended 11.7% faster than its old baseline on aarch64 while
+  dispatcher frame: `null_system_call` ended 11.7% faster than its old baseline on aarch64 while
   riscv64, which had no equivalent generic call to lose, paid the split at +10.1%. Both baselines
   were re-recorded in their own commit; nothing else moved by more than 1.9%, so nothing else was
   touched.

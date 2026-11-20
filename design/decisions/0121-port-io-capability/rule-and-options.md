@@ -54,9 +54,9 @@ mapping-based capability and work identically on all three architectures.
 Option 3: an I/O-port *service*. A kernel-side port broker holding the ranges, with userspace
 drivers issuing reads and writes as IPC.
 
-- *For*: no new capability type in the syscall surface; the grant is an endpoint, which the system
+- *For*: no new capability type in the system call surface; the grant is an endpoint, which the system
   already has; revocation is endpoint revocation, which already works.
-- *Against*: it is a syscall per register access, on a device whose driver polls a status register in
+- *Against*: it is a system call per register access, on a device whose driver polls a status register in
   a loop. Measured on nothing yet, but the shape is obviously wrong for a UART, and it reintroduces
   the kernel as the thing that actually touches the hardware, which is the arrangement being argued
   against.

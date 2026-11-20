@@ -14,7 +14,7 @@ needs_person: no
 Filed by the lane of milestone 601 (the region table prints its
 peak), from the rendezvous ledger at `sched::PEAK_RENDEZVOUS`. The title is provisional.
 
-Test and service wiring; no syscall surface, no dependency.
+Test and service wiring; no system call surface, no dependency.
 
 ## What was measured
 

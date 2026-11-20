@@ -21,14 +21,14 @@ all compile and link against the PAL already: nothing is blocked on code, everyt
 whether nife should build real shared-memory threads at all, and if so, how.
 
 The lane costed three options rather than building any of them, per this project's rule that the
-syscall surface is calef's call:
+system call surface is calef's call:
 
 - Option A, shared VSpace (seL4-style). Change `CONFIGURE`'s contract so an aspace capability
   can be bound without being consumed, and extend `AddressSpace` with the same multi-holder liveness
   tracking `Endpoint` already has (§16). The correct design, and the expensive one: it changes what
-  an *existing* syscall method promises, which every future program written against `CONFIGURE`
+  an *existing* system call method promises, which every future program written against `CONFIGURE`
   would inherit.
-- Option B, sibling processes with replicated frames. Touches no syscall at all. Looked cheap
+- Option B, sibling processes with replicated frames. Touches no system call at all. Looked cheap
   going in; measured out not cheap. A fixed shared arena is free (the same pattern `net_stack` and
   the compositor already use). But a *growing* heap kept consistent across independent address
   spaces needs a from-scratch, race-free synchronization protocol that no surveyed prior art (seL4,
@@ -75,7 +75,7 @@ current priority."*
 So option A is minted as milestone 812 (`std::thread::spawn` runs real threads in one address
 space), not yet scheduled. Several wants now share it: read-write ZFS through `libzpool`, Linux's
 btrfs through LKL, the `tough` TUF client, `ripgrep`'s parallel walk, and parallel `rustc` and
-`cargo` for milestone 173 (`rustc`/`cargo`/LLVM natively on nife). The syscall-surface change in
+`cargo` for milestone 173 (`rustc`/`cargo`/LLVM natively on nife). The system-call-surface change in
 option A still owes its own section, ruled before code. The evidence is in
 [notes/filesystem-crates-2026-10-07.md](../../notes/filesystem-crates-2026-10-07.md).
 

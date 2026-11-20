@@ -2,8 +2,8 @@
 //! the ELF loader, and IPC)): the "a real ELF ran and verified itself" fixture.
 //!
 //! It needs no capabilities and no shared memory, so `kernel::user::tests` spawns it bare; its one
-//! syscall, a yield, is authority over itself. The kernel test reads the absence of a fault plus
-//! that syscall: `.text` ran, `.rodata` was readable, `.data` was copied, `.bss` was zeroed, and
+//! system call, a yield, is authority over itself. The kernel test reads the absence of a fault plus
+//! that system_call: `.text` ran, `.rodata` was readable, `.data` was copied, `.bss` was zeroed, and
 //! the stack recursed eight frames. The checks are [`loaded_image_check`], shared with
 //! `console_test_client`. It exits rather than spinning, because a one-shot fixture that never
 //! exits holds a core for the rest of the boot (`no_leaked_threads`).
@@ -27,7 +27,7 @@ user_mode_runtime::program_entry!(start);
 fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
     loaded_image_check::verify(user_mode_runtime::trap);
 
-    // One syscall that needs no capability at all, to prove we reached EL0 and can trap back in.
+    // One system call that needs no capability at all, to prove we reached EL0 and can trap back in.
     user_mode_runtime::yield_now();
 
     user_mode_runtime::exit();

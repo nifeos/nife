@@ -47,7 +47,7 @@ existing `<n> seeds, <ms> ms` line that `helpers/continuous-fuzz.sh` already par
 Without the counters, almost nothing. The kernel-thread driver prints a `Census` of its own calls
 (calls, refused, parked, delegated, replied, revoked and a few more) after the seed count. Those are
 counts of what the driver did, not of which kernel code ran, and the confined driver prints no
-census. A count of distinct syscall numbers hit would need a small change in each driver, because
+census. A count of distinct system call numbers hit would need a small change in each driver, because
 neither tracks the set. It would be cheap and dependency free, but it measures the driver's
 alphabet, not the kernel's reach, and it saturates within the first few seeds. It is a weaker stand-in
 for condition 2, not the same measure. This lane did not build it, because building it would choose a
@@ -92,7 +92,7 @@ report 9,128".
 
 Decided by the maintainer on 2026-11-01 (UTC), provisional; reversing costs one pull request.
 
-1. Condition 2 reads edge counters only. There is no syscall-number interim figure.
+1. Condition 2 reads edge counters only. There is no system-call-number interim figure.
 2. The privacy line holds: bare totals per driver, no bitmap, and no counters at all for a held
    window. Restrictive first; loosening later is compatible.
 3. The column layout above stands. `windows.tsv` is a host-local log that only scripts in this tree

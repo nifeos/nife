@@ -50,7 +50,7 @@
 
 use user_mode_runtime::{exit, yield_now};
 
-/// **Leave user mode and come back, twice.** The kernel counts syscalls from user mode; two of them
+/// **Leave user mode and come back, twice.** The kernel counts system calls from user mode; two of them
 /// is the assertion, because the second can only happen if the return from the first genuinely put
 /// us back at EL0/U-mode. One proves we left. Two prove we came back.
 /// It is also the default, so nothing branches on this constant; it is here because the kernel side
@@ -108,7 +108,7 @@ fn read_kernel(addr: u64) -> ! {
 
 fn build_with_nothing() -> ! {
     // Three minting attempts against an empty table: a page, a message, a kernel object. Each
-    // rides `SYSCALL_INVOKE` with a slot number this program was never granted, which is the wire form
+    // rides `SYSTEM_CALL_INVOKE` with a slot number this program was never granted, which is the wire form
     // of "a program with no construction authority tries to build anyway".
     // SAFETY: `svc`/`ecall` traps to the kernel, which validates the named slot before acting;
     // there is nothing at these slots, which is the whole attack.

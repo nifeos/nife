@@ -20,7 +20,7 @@ and a lane could start it today.
 **In brief.** Milestone 235 fixed a shell that hangs forever when a spawned command traps. Nobody
 knows how many programs could trigger it. The tree ships 68 programs, and every one that can
 fault reached that path. The work is to go through them and produce a number. Which programs have a
-reachable fault (an unwrapped index, a `panic!` on bad input, a syscall that returns an error the
+reachable fault (an unwrapped index, a `panic!` on bad input, a system call that returns an error the
 program does not handle), and which cannot fault by construction.
 
 ## Why this matters
@@ -42,7 +42,7 @@ it, and it is why the bar is a number a claim rests on rather than a bug a user 
 Milestone 235 fixed a shell that hangs forever when a spawned command traps, and nobody knows how
 many programs could trigger it, so the value of that fix is unmeasured. Two programs could hit the
 defect, or forty. The work is to go through the tree's programs and produce a number: which have a
-reachable fault (an unwrapped index, a `panic!` on bad input, a syscall error the program does not
+reachable fault (an unwrapped index, a `panic!` on bad input, a system call error the program does not
 handle), and which cannot fault by construction. The survey also yields a list of programs whose
 failure mode a user will eventually meet. It changes no behavior, and its output is a number and a
 table in a note.

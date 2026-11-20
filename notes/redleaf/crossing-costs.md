@@ -59,7 +59,7 @@ each measured against a different seL4 run on a different machine.
 ## Atmosphere's Table 3
 
 The strongest evidence on this axis was published by RedLeaf's own authors, against themselves. Atmosphere (SOSP '25) is a verified Rust microkernel from the same group that *does*
-use hardware isolation and a conventional syscall interface. Its Table 3, on CloudLab c220g5 (two
+use hardware isolation and a conventional system call interface. Its Table 3, on CloudLab c220g5 (two
 Intel Xeon Silver 4114 10-core at 2.20 GHz):
 
 | system call | Atmosphere | seL4 |

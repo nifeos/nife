@@ -28,7 +28,7 @@ Nothing else in the document can be firing while that wait is blocked, which is 
 next death on `DEATHS` unambiguous.
 
 The cost is real and is paid by every other entry, not by `--mem` ones. While a grant is
-outstanding this process is blocked in one syscall and cannot poll the clock at all. An interval
+outstanding this process is blocked in one system call and cannot poll the clock at all. An interval
 entry due during that window is not skipped; it simply runs late once the loop resumes. Several
 periods elapsing during a slow instance still produce one fire on resumption, `next_after`'s
 ordinary skip-not-catch-up rule, not a special case for this path. `timetable.conf`'s `at-boot

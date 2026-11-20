@@ -44,7 +44,7 @@ answer there was a `threads:` line on every run. Nothing printed the region peak
 - A split refused for a full table moves nothing. `RegionTable::split` makes every check, then
   takes the child's table slot, and only then advances the parent's watermark and raises its child
   count, so a refusal leaves no child count without a child and the parent stays reclaimable.
-- A sibling leak, fixed rather than recorded. `syscall::memory_region_split` minted the child,
+- A sibling leak, fixed rather than recorded. `system_call::memory_region_split` minted the child,
   then returned `OutOfMemory` when the caller's capability table was full. The orphaned child had
   the same permanent consequence. It now destroys the child.
   `split_refused_for_a_full_capability_table_orphans_no_child` proves the parent comes back

@@ -2,7 +2,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 01	76	context	at-creation	2026-08-03	2026-08-03	Backfilled 2026-08-03 from the first day's history (M-76). This is a record of what the
 01	2	context	at-creation	2026-08-03	2026-08-03	starts at `543d390` (M-2), so no commit names M-1. The boot commit and the plan
 02	76	context	at-creation	2026-08-03	2026-08-03	Backfilled 2026-08-03 from history (M-76). Built in `543d390` (2026-07-13), the first
-02	5	context	at-creation	2026-08-03	2026-08-03	and a syscall are the same mechanism, so this is also the plumbing for M-5 (the timer)
+02	5	context	at-creation	2026-08-03	2026-08-03	and a system call are the same mechanism, so this is also the plumbing for M-5 (the timer)
 02	7	context	at-creation	2026-08-03	2026-08-03	and M-7 (`svc`), and those became "mostly a matter of adding arms to a match."
 02	449	context	later	2026-09-20	2026-08-03	This refusal is M-449 (design/roadmap/0449-the-el2-to-el1-drop.md), which carries it with
 03	76	context	at-creation	2026-08-03	2026-08-03	Backfilled 2026-08-03 from history (M-76). Built in `ba47a27` (2026-07-13), written up in
@@ -885,7 +885,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 133	366	context	later	2026-09-19	2026-08-18	- **M-366.** `design/roadmap/0366-a-block-site-that-writes-blocked-by-hand.md`. Nothing
 133	254	context	later	2026-09-19	2026-08-18	- **M-371.** `design/roadmap/0371-a-reply-capability-that-names-a-call.md`, M-254's,
 133	371	context	later	2026-09-19	2026-08-18	- **M-371.** `design/roadmap/0371-a-reply-capability-that-names-a-call.md`, M-254's,
-133	368	context	later	2026-09-19	2026-08-18	- **M-368.** `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-syscall-fetches.md`.
+133	368	context	later	2026-09-19	2026-08-18	- **M-368.** `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`.
 133	23	context	later	2026-09-14	2026-08-18	M-23's case (c): `DESTROY` arms a kill that `schedule()` spends only for a `Running`
 134	74	prerequisite	later	2026-09-04	2026-08-18	Tier B remains gated on M-74's counters and
 134	127	context	later	2026-09-04	2026-08-18	M-127's silicon (see "What is built, and what is not" below for both). What landed
@@ -901,7 +901,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 134	127	context	at-creation	2026-08-18	2026-08-18	are blocked on M-74 (the counters), M-75 (who may read the cycle counter, and by what authority) and M-127
 134	101	context	at-creation	2026-08-18	2026-08-18	±1.5x uncertainty M-101 records, which comes from not knowing whether the vCPU thread ran on
 134	132	context	at-creation	2026-08-18	2026-08-18	a measurement of. M-132 says so in its own BUGS. A footprint of 5.6 KiB against a 32 KB L1i
-134	132	context	at-creation	2026-08-18	2026-08-18	effort should go, which nothing currently knows. M-132 found `syscall::dispatch` is the
+134	132	context	at-creation	2026-08-18	2026-08-18	effort should go, which nothing currently knows. M-132 found `system_call::dispatch` is the
 134	25	context	at-creation	2026-08-18	2026-08-18	M-25's deliverable on M-127's TX1, cited rather than duplicated. What belongs **here**
 134	127	context	at-creation	2026-08-18	2026-08-18	M-25's deliverable on M-127's TX1, cited rather than duplicated. What belongs **here**
 134	101	context	at-creation	2026-08-18	2026-08-18	M-101 recorded, where three separate mistakes cancelled into a plausible-looking ratio.
@@ -1084,7 +1084,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 188	132	context	at-creation	2026-08-28	2026-08-28	M-132 (the fast path's footprint) owns.
 142	141	context	at-creation	2026-08-20	2026-08-20	twelve. And **M-141's gate does not choose between them.** It says both are admissible. The
 188	132	context	at-creation	2026-08-28	2026-08-28	above it before touching any of this; both `script/fastpath-footprint`'s header and M-132's
-188	132	context	at-creation	2026-08-28	2026-08-28	`riscv64`'s `syscall_entry` is 1,870 and not 1,866. And M-132's "the largest single item is
+188	132	context	at-creation	2026-08-28	2026-08-28	`riscv64`'s `system_call_entry` is 1,870 and not 1,866. And M-132's "the largest single item is
 188	23	context	at-creation	2026-08-28	2026-08-28	*"the one-endpoint shape real services use"*, and M-23's queue-broker note adds that the
 188	132	context	at-creation	2026-08-28	2026-08-28	which is precisely the hole M-132 was built to close, and it is currently pointed at the
 142	141	context	at-creation	2026-08-20	2026-08-20	**And one property that anti-aliasing quietly retires**, which M-141 could not have known
@@ -1307,7 +1307,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 198	242	context	later	2026-09-19	2026-08-30	  M-242.
 198	242	context	later	2026-09-19	2026-08-30	- **Rung 1 cannot be finished in "a milestone or two"**, and the reason is M-242 (USB host
 198	40	context	UNKNOWN	247	2026-08-30	package would install once (M-40 already ships "installed by the package that owns it",
-156	126	context	at-creation	2026-08-23	2026-08-23	None needed outside this tree: `LIST`'s own fix (M-126, `kernel/src/syscall.rs`'s
+156	126	context	at-creation	2026-08-23	2026-08-23	None needed outside this tree: `LIST`'s own fix (M-126, `kernel/src/system_call.rs`'s
 198	242	prerequisite	later	2026-09-19	2026-08-30	needs nothing new; the screen and the USB keyboard, M-242, are the rest), that system
 198	261	context	later	2026-09-19	2026-08-30	installed onto the disk (a new installer proposal plus M-261's bench step), growing by
 156	126	context	later	2026-09-14	2026-08-23	method's bytes, not just the IPC round trip, since before M-126's `pmap` tripped it.
@@ -1530,7 +1530,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 169	181	context	later	2026-08-27	2026-08-25	`kilo.c` port through M-181's extended seam exists; see `rmle.rs`'s own module doc for the
 220	376	context	UNKNOWN	137	2026-09-01	  `design/roadmap/0376-nothing-turns-a-device-back-off.md`.
 220	159	context	later	2026-09-04	2026-09-01	  `READY` while holding zeros, which was M-159's defect and not this one. Fixed on
-220	368	context	UNKNOWN	156	2026-09-01	  `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-syscall-fetches.md`, which owns the
+220	368	context	UNKNOWN	156	2026-09-01	  `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`, which owns the
 169	181	context	later	2026-09-14	2026-08-25	support an interactive event loop; that gap is M-181); the raw-keystroke primitive itself
 170	169	context	at-creation	2026-08-25	2026-08-25	# 170. `nano`: a real, full-featured screen editor on the primitive M-169 builds
 220	474	context	later	2026-09-20	2026-09-01	  This refusal is M-474 (design/roadmap/0474-a-general-jh7110-clock-driver.md), which carries
@@ -1643,7 +1643,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 229	147	context	at-creation	2026-09-02	2026-09-02	`sched_control_cap`**. seL4 could not see that corner coming. This tree can: M-147 (a
 229	74	prerequisite	at-creation	2026-09-02	2026-09-02	has no consumer: M-74's aarch64 half is the first and does not exist. Whoever needs it
 229	228	context	at-creation	2026-09-02	2026-09-02	  M-228's write. The grant is `CR` (bit 2) alone: `EN` would open every PMU register and
-229	156	context	at-creation	2026-09-02	2026-09-02	every syscall fetches. Extracting it `#[inline(never)]` the way M-156 extracted the other
+229	156	context	at-creation	2026-09-02	2026-09-02	every system call fetches. Extracting it `#[inline(never)]` the way M-156 extracted the other
 229	228	context	at-creation	2026-09-02	2026-09-02	  either way, which is the same blindness M-228 recorded, so a green run says little. The
 229	74	context	at-creation	2026-09-02	2026-09-02	  the question of what the surface should be, which is M-74's or 147's to answer.
 230	192	context	at-creation	2026-09-02	2026-09-02	**Status: BUILT 2026-09-02.** Minted the same day by the maintainer, from M-192's (a
@@ -2355,7 +2355,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 336	247	context	at-creation	2026-09-19	2026-09-19	**Status: NOT-STARTED.** Filed 2026-09-03 as an unnumbered proposal by the M-247 sweep,
 336	237	context	at-creation	2026-09-19	2026-09-19	from M-237's block; numbered 2026-09-19 by M-433. **Premise re-checked 2026-09-19 and
 336	433	context	at-creation	2026-09-19	2026-09-19	from M-237's block; numbered 2026-09-19 by M-433. **Premise re-checked 2026-09-19 and
-336	433	context	at-creation	2026-09-19	2026-09-19	`a-flat-entry-set-counts-bytes-no-syscall-fetches` proposal, which M-433 numbers 368).
+336	433	context	at-creation	2026-09-19	2026-09-19	`a-flat-entry-set-counts-bytes-no-system-call-fetches` proposal, which M-433 numbers 368).
 336	433	context	at-creation	2026-09-19	2026-09-19	proposal, which M-433 numbers 361: all
 336	237	context	later	2026-09-04	2026-09-19	M-237 re-recording it, which is this proposal's own failure mode recurring on schedule.
 337	247	context	at-creation	2026-09-19	2026-09-19	**Status: NOT-STARTED.** Filed 2026-09-03 as an unnumbered proposal by the M-247 sweep,
@@ -2535,7 +2535,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 368	156	context	later	2026-09-04	2026-09-19	M-156's spawn-path bodies. The cost is that the pattern is invisible until you trip it,
 368	132	followon	later	2026-09-04	2026-09-19	M-133's Follow-on. `design/roadmap/0132-the-fastpath-footprint.md` owns the gate.
 368	133	context	at-creation	2026-09-19	2026-09-19	`riscv_trap_body` under M-133's change, +12.1%; `plic::disable` under a one-line toolchain
-368	220	context	at-creation	2026-09-19	2026-09-19	bump, +10.4%; and `syscall::dispatch` vanishing into the exception handler under M-220's,
+368	220	context	at-creation	2026-09-19	2026-09-19	bump, +10.4%; and `system_call::dispatch` vanishing into the exception handler under M-220's,
 369	243	context	at-creation	2026-09-19	2026-09-19	**Status: NOT-STARTED.** Filed as a proposal on 2026-09-04 by the M-243 lane, from its own
 369	433	context	at-creation	2026-09-19	2026-09-19	block's second problem; promoted by M-433 on 2026-09-19. Checked that day: the gate it names
 369	216	context	later	2026-09-04	2026-09-19	reading a monitor and taking a photograph, which is precisely the state M-216 got the
@@ -2747,7 +2747,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 400	198	context	at-creation	2026-09-19	2026-09-19	never seen**. This is rung 1b of M-198's trivial install (DECISIONS S-157): the output half of
 400	157	context	at-creation	2026-09-19	2026-09-19	for), and the driver is the one M-157 describes for the boards. S3 stays refused on S-121's
 400	192	context	at-creation	2026-09-19	2026-09-19	**What the proposal assumed and the code did not support**: that S1 plugs into M-192's
-400	159	context	at-creation	2026-09-19	2026-09-19	run would be new syscall surface, which is calef's. M-261's NVMe server and M-159's
+400	159	context	at-creation	2026-09-19	2026-09-19	run would be new system call surface, which is calef's. M-261's NVMe server and M-159's
 400	230	context	at-creation	2026-09-19	2026-09-19	the defect M-230 found on the UART, with pixels in place of bytes. So:
 400	177	context	at-creation	2026-09-19	2026-09-19	**The FLUSH hang M-177 recorded does not occur here.** `notes/framebuffer-contract.md`'s BUGS
 400	157	context	at-creation	2026-09-19	2026-09-19	riscv64 lack is a screen the kernel console was told about, which is M-157's U-Boot
@@ -3378,5 +3378,5 @@ source	target	kind	discovery	blame_date	file_created	evidence
 555	442	context	later	2026-09-20	2026-09-22	`vector 6 (invalid opcode)` **before printing anything**. M-442 (a crypto provider `rustls`
 555	447	context	later	2026-09-20	2026-09-22	**It is not a bug in the kernel and the fault is correct.** M-447 (a thread's vector
 555	447	context	later	2026-09-20	2026-09-22	M-447 also established the trap in reasoning about this: **the target flip does not retire
-555	447	context	later	2026-09-20	2026-09-22	is the syscall surface's neighbourhood. It costs what M-447 measured for the narrow state
+555	447	context	later	2026-09-20	2026-09-22	is the system call surface's neighbourhood. It costs what M-447 measured for the narrow state
 557	132	context	at-creation	2026-09-21	2026-09-22	`ipc_fastpath` on aarch64, over the 5% bound of M-132 (the fast path's footprint). That

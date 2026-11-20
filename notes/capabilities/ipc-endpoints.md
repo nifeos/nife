@@ -68,8 +68,8 @@ it (or the reverse). The mailbox is the one place both threads can agree on when
 is running at a time.
 
 For a user thread, the received words have to end up in its EL0 registers. Word 0 rides back the
-way every syscall result does, in `x0` (the dispatcher writes it from the return value). Words 1
-and 2 the kernel places into the trap frame's `x1`/`x2` directly, because a syscall return is one
+way every system call result does, in `x0` (the dispatcher writes it from the return value). Words 1
+and 2 the kernel places into the trap frame's `x1`/`x2` directly, because a system call return is one
 register and a message is three. Writing the trap frame is writing the user's registers ([see
 7a](../userspace.md)).
 

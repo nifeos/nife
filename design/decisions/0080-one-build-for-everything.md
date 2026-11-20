@@ -50,7 +50,7 @@ naive measurement misleading, and the correction belongs here rather than in a c
 
 **It does not change the conclusion, and the reason is the 51%.** A build split has to cut somewhere,
 and the natural line, "userland builds separately", runs straight through 20 crates both sides use,
-`abi` among them. That is not a seam; it is the thing holding the syscall agreement together at rung
+`abi` among them. That is not a seam; it is the thing holding the system call agreement together at rung
 one. The split would run *across* the shared code rather than *between* the two halves.
 
 The user-only list is instructive about what would be orphaned: `supervision_proto`,
@@ -60,7 +60,7 @@ the driver transport. Userland-only by reachability, load-bearing by function.
 ## What one build buys, which is the part worth defending
 
 `crates/abi` is shared, so the compiler enforces that programs and the kernel agree about the
-syscall surface. That is rung one of the ladder: the wrong state is unrepresentable. Split the
+system call surface. That is rung one of the ladder: the wrong state is unrepresentable. Split the
 build and that agreement falls to rung three or four, two artifacts asserting a shared layout with
 nothing checking.
 
@@ -79,7 +79,7 @@ That moment is already on the roadmap: milestone 64 (enough `std` to run somebod
 milestone 99 (`git` on nife) and milestone 66 (Vaultwarden). What they need is what a split build
 needs anyway, and the sequencing follows from that rather than from a size:
 
-- a versioned syscall ABI, rather than one the compiler happens to agree on today;
+- a versioned system call ABI, rather than one the compiler happens to agree on today;
 - a sysroot to build against out of tree.
 
 In-tree programs can stay in-tree indefinitely, because they are cheap. Build the ABI-and-sysroot

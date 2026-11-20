@@ -59,7 +59,7 @@ through several global namespaces at once:
 
 Every ambient one lets a process reach something by *knowing its name* rather than *having been
 handed access*. Ours has exactly one mechanism (a rendezvous capability) and no back door. §10's
-whole argument is that the moment one syscall accepts a global name, you have rebuilt the thing
+whole argument is that the moment one system call accepts a global name, you have rebuilt the thing
 capabilities exist to avoid.
 
 ## Two corollaries the code already shows
@@ -133,13 +133,13 @@ We could go part of the way with the machinery we already have: a client could c
 rendezvous and pass a `SEND` cap to it *in the request* via `SEND_CAPABILITY`, so the server receives "reply
 here" alongside the message. That fixes anonymity without pre-wiring. It still would not be
 one-shot, and still would carry no call chain: those need real kernel support (a `Reply` object and
-a `Call` syscall).
+a `Call` system call).
 
 ### The decision: design now, build at the trigger
 
 Following the advice that the reply path is *rendezvous semantics, not a separate feature*, it is
 designed here rather than left implicit. But building a kernel `Call`/`Reply` primitive now would
-violate DECISIONS §4 (the syscall surface stays narrow and explicit):
+violate DECISIONS §4 (the system call surface stays narrow and explicit):
 every server we have has a static client topology and the two-rendezvous pattern serves it.
 
 **Two triggers to build it.** *Functional:* the first server that must answer clients it was not

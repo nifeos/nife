@@ -34,7 +34,7 @@ no capability and no other space.
 A builder that mapped the wrong page into a child before starting it:
 
 ```rust
-// SAFETY: invoke is the syscall; the kernel validates the capability, method and address.
+// SAFETY: invoke is the system call; the kernel validates the capability, method and address.
 unsafe { invoke(aspace, abi::address_space::MAP_INTO, va, frame, abi::address_space::MAP_READ_WRITE) };
 // ... wrong frame. Give the page up and map the right one at the same address.
 let r = unsafe { invoke(aspace, abi::address_space::UNMAP, va, 0, 0) };
@@ -132,7 +132,7 @@ on it.
 
 The evidence, each one a lookup:
 
-- `AddressSpace` capabilities are minted in one place, `RETYPE_OBJECT(ADDRESS_SPACE)` (`kernel/src/syscall.rs`).
+- `AddressSpace` capabilities are minted in one place, `RETYPE_OBJECT(ADDRESS_SPACE)` (`kernel/src/system_call.rs`).
   The kernel grants none at boot, so init holds none for the space it runs in.
 - `ThreadControlBlock::CONFIGURE` consumes the builder's capability and calls
   `user::take_user_address_space`, which removes the name from `USER_SPACES`. A copy made earlier
@@ -143,7 +143,7 @@ The evidence, each one a lookup:
 So `UNMAP` today reaches a space under construction, which serves a builder that mapped a wrong
 page, and nothing more. The negative control §162 and the roadmap block name (the progenitor writes
 to a boot server's page and faults) cannot be built until a running space can be named. This is a
-design fork on the syscall surface, so it is an architect's call and this lane did not build an
+design fork on the system call surface, so it is an architect's call and this lane did not build an
 answer. The proposal is
 `design/roadmap/0789-a-running-process-can-name-its-own-address-space.md`, with the options and
 a recommendation.
@@ -202,7 +202,7 @@ the branch against its base `c8b5fd09e`, 2026-10-05:
 | `map_el0` | 355,903 | 356,621 | +718 (+0.2%) |
 | `ctx_switch` | 3,166,067 | 3,156,704 | -9,363 (-0.3%) |
 | `ipc_rtt` | 1,088,038 | 1,064,781 | -23,257 (-2.1%) |
-| `yield_switch`, `null_syscall` | | | identical |
+| `yield_switch`, `null_system_call` | | | identical |
 
 The spawn rows pay for `CONFIGURE` taking `IPC_TABLES` under the registry's lock and for the reaper's
 registry take, which is the cost the ruling buys. The switch rows did not get slower: the switch

@@ -199,7 +199,7 @@ the RISC-V linker relaxation mechanism"* to do what `zpoline` does on x86-64 *"w
 intrinsic limitation of requiring privileged access."*
 
 What it means here. Adjacent rather than actionable, and interesting for one reason: it is a
-technique for putting a policy layer in front of a program's syscalls without the kernel's help,
+technique for putting a policy layer in front of a program's system calls without the kernel's help,
 which is the thing a capability kernel claims you should not need. Worth a reader's attention next
 to milestone 205 (how a foreign program is told what to do) if the argument-vector work ever grows a
 shim.

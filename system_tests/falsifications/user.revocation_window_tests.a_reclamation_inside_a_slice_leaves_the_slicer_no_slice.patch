@@ -18,12 +18,12 @@ day against the fixed tree at `revocation_window_tests.rs:297`, the assertion pr
 the claim rather than the fixture: the vacuity guard says the thread really was held inside its
 delegation, and the premise check says the sweep really did reach that thread's own table.
 
-Nothing here is architecture-specific: the syscall layer, the sweeps and the seam are portable
+Nothing here is architecture-specific: the system call layer, the sweeps and the seam are portable
 code, so one patch serves every leg.
 
-diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
---- a/kernel/src/syscall/page_frame.rs
-+++ b/kernel/src/syscall/page_frame.rs
+diff --git a/kernel/src/system_call/page_frame.rs b/kernel/src/system_call/page_frame.rs
+--- a/kernel/src/system_call/page_frame.rs
++++ b/kernel/src/system_call/page_frame.rs
 @@ -110,9 +110,10 @@
  pub(super) fn page_frame_slice(slot: u64, first: u64, len: u64) -> Result<i64, Error> {
      // The source is read under the table lock the slice is filed under, so no reclamation sweep

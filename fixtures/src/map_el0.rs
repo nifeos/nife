@@ -96,7 +96,7 @@ fn sink(w0: u64, w1: u64, w2: u64) -> byte_sink_contract::Sent {
 }
 
 /// One `MAP_INTO`: map `frame` read-only into `space` at `va`. Read-only needs only `READ` on the
-/// frame. Returns the syscall result: 0 on success, a negative error otherwise.
+/// frame. Returns the system call result: 0 on success, a negative error otherwise.
 #[inline(never)]
 fn map_one(space: u64, frame: u64, va: u64) -> i64 {
     address_space_layout_into(space, va, frame, abi::address_space::MAP_READ_ONLY)

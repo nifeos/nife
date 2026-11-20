@@ -93,7 +93,7 @@ reason the runner comment says so at the attach line.
 
 ### Two processes, and what each holds
 
-The split costs no new syscall surface, because NVMe 1.4 section 3.1 already put a page boundary
+The split costs no new system call surface, because NVMe 1.4 section 3.1 already put a page boundary
 where the authority boundary belongs. The controller registers (`CC`, `CSTS`, `AQA`, `ASQ`, `ACQ`)
 are below offset `1000h` and the first doorbell is at `1000h`.
 

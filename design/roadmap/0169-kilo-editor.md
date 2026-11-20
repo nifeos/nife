@@ -13,8 +13,8 @@ loop without new seam infrastructure (that infrastructure is
 
 A dependency review of Emacs, nano and vim, for a lightweight first text editor, found the same wall
 under all three. [DECISIONS §31 (the foreign-language
-seam)](../decisions/0031-foreign-language-seam.md) forbids C code from making a syscall or holding a
-capability directly. So any C program's port is really "rewrite its syscall layer against nife's
+seam)](../decisions/0031-foreign-language-seam.md) forbids C code from making a system call or holding a
+capability directly. So any C program's port is really "rewrite its system call layer against nife's
 Rust-mediated shim," and no editor sidesteps that by being smaller. What *does* scale with size is
 how much of that rewrite there is to do. antirez's `kilo` (<https://github.com/antirez/kilo>) is a
 public-domain, single-file, roughly 1,000-line terminal text editor written explicitly to have
@@ -75,7 +75,7 @@ separable pieces of work.
 ## What this does not decide
 
 Whether `SIGWINCH`-equivalent resize notification is worth building now or left as a recorded gap.
-Whether the raw-input primitive should be a new syscall, a new `line_editor` opcode, or a capability
+Whether the raw-input primitive should be a new system call, a new `line_editor` opcode, or a capability
 narrowing of the existing terminal object. And whether `kilo`'s optional syntax-highlighting feature
 (a few hundred lines, off by default without a language database) is in scope for a first cut. Left
 for whoever picks this up, informed by how the raw-input primitive actually gets designed.
@@ -93,7 +93,7 @@ for whoever picks this up, informed by how the raw-input primitive actually gets
 ## Index row
 
 A dependency review of Emacs, nano and vim for a possible nife port found the same wall under all
-three (DECISIONS §31's C-syscall seam), and one real, reusable gap behind it. Nife's terminal
+three (DECISIONS §31's C-system-call seam), and one real, reusable gap behind it. Nife's terminal
 contract is a line discipline with no raw-keystroke input. The raw-keystroke primitive
 (`OP_RAWMODE`/`OP_READRAW`) is the milestone's own real deliverable; the seam as built cannot
 support an interactive event loop (milestone 181 (the foreign-language seam, extended)).

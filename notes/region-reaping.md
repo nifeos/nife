@@ -94,7 +94,7 @@ a thread whose state is `Running`, and a thread blocked on a rendezvous nobody w
 becomes `Running` again. The finish phase is calef's proposal A, ruled 2026-09-03, of milestone 133
 (ending a permanently blocked thread). The holder of the untyped capability could already end every
 runnable thread in the region, and now it can also finish a blocked one. Nothing is added to the
-syscall surface.
+system call surface.
 
 A `Dead` corpse never runs again, so it is reapable exactly like an `Embryo` or a `Finished` thread;
 that is what §26 (the fault endpoint) means by reaped with §16 revocation.
@@ -200,7 +200,7 @@ meets it.
   wakeup to a test that probed this way (milestone 72 (a lost wakeup that a hundred leaked threads
   may be causing)).
 - `Ok` is destructive too. A `Blocked` resident is ended by the call that succeeded, without
-  returning from its syscall. The peer it was queued beside on somebody else's rendezvous sees a
+  returning from its system_call. The peer it was queued beside on somebody else's rendezvous sees a
   caller that never arrived, which it cannot tell from one that never called. §24 (interrupting the
   foreground process)'s `^C` escalation depends on this.
 - **It reaches outside the region.** Tearing down a rendezvous aborts every waiter wherever it

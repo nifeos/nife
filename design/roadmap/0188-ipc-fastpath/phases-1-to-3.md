@@ -12,7 +12,7 @@ lane's worktree; the control runs are named where one was needed.*
 
 Re-measured at `61e30dcb`, the SEND/RECEIVE closure is 5,888 on aarch64 (the block said 5,788 at
 `fc7b04e7`). The CALL/reply closure is 7,576 (the block said 7,516). `exception_vectors` is still
-2,020 bytes of sixteen entries of which a syscall fetches one. Both findings the milestone was built
+2,020 bytes of sixteen entries of which a system call fetches one. Both findings the milestone was built
 on are true.
 
 Two of the block's supporting counts were low and are worth correcting, because they were counted
@@ -30,13 +30,13 @@ shape or the other. It keeps its old name because a dozen places in the tree cit
 rather than checked, since it is the max of two numbers that are each already checked.
 
 `notes/benchmarks.md`'s "`SEND`, `RECEIVE`, `SEND`, `RECEIVE`" claim is corrected there: three
-syscalls to seL4's two, not four.
+system calls to seL4's two, not four.
 
 ## Phase 2: aarch64's entry figure is honest, and nothing got faster
 
 The figure now counts one 128-byte vector slot instead of all sixteen. It adds `exception_restore`
-(92 bytes), which runs on every syscall's return leg and was in neither figure. aarch64
-`syscall_entry` went 3,304 to 1,508. riscv64 needs no equivalent (`stvec` is direct-mode, one
+(92 bytes), which runs on every system call's return leg and was in neither figure. aarch64
+`system_call_entry` went 3,304 to 1,508. riscv64 needs no equivalent (`stvec` is direct-mode, one
 handler, no table) and x86_64 needs none (no IDT entry at all). So the asymmetry the milestone
 predicted is confirmed in both directions, and is now argued in the script beside the `ENTRY` table.
 
@@ -46,7 +46,7 @@ The `#[inline(never)]` extraction of milestone 156 (extract the rest and ratchet
 applied to the closure, made the number bigger. Four
 cold arms went out of line and aarch64's `ipc_send_receive` moved 5,888 to 6,220, because a closure
 walk follows the new call and counts the same bytes under a new name. 156's method works on
-`syscall_entry` because that half is flat. On a closure, extraction is a no-op unless the walk is
+`system_call_entry` because that half is flat. On a closure, extraction is a no-op unless the walk is
 told the callee is cold.
 
 So the gate now reads `#[cold]` out of the workspace's own source rather than from a
@@ -59,7 +59,7 @@ The four arms: `finish_switch`'s reap, `schedule`'s killed-thread conversion (th
 two loads and a compare; only the body moved), `schedule`'s self-pop heal, and `set_ipc_aborted`,
 whose four call sites are all on these closures.
 
-| | `ipc_send_receive` | `ipc_call_reply` | `syscall_entry` | total |
+| | `ipc_send_receive` | `ipc_call_reply` | `system_call_entry` | total |
 |---|---|---|---|---|
 | aarch64, before | 5,888 | (7,576) | 3,304 | 9,192 |
 | aarch64, after | 5,356 (-9.0%) | 7,028 (-7.2%) | 1,508 | 8,536 |

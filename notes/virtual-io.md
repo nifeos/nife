@@ -4,7 +4,7 @@
 
 Milestone 9. A real block device, driven by an unprivileged process at EL0, reading a file off a
 disk. It builds on everything: EL0 (7a), address spaces and shared mappings (7c/8), the capability
-syscall surface (7d), IPC (7e), the userspace-driver pattern (8), and interrupt-as-message (9a).
+system call surface (7d), IPC (7e), the userspace-driver pattern (8), and interrupt-as-message (9a).
 
 ## What virtio is, briefly
 

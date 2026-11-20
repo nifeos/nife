@@ -27,5 +27,5 @@ through a syscall instruction, which is serializing. So the compiler is the enti
 
 `non_volatile_memory_express.rs` is the control that makes this argument falsifiable rather than
 convenient. It keeps `dmb sy` and a real `mfence`, because its doorbell is a direct store to a
-device-typed page in this address space with no syscall between the ring stores and it. Same
+device-typed page in this address space with no system call between the ring stores and it. Same
 hardware, different answer, for a stated reason.

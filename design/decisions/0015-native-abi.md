@@ -12,7 +12,7 @@ system that could finally run and deliver distinct programs (19f). The full cont
 notes/abi.md; this records the decision and why.
 
 §10 already settled the model (capability-based, not Unix). What 19f forced open was the smaller
-question: what is the contract between a program and the system? The syscall convention (`svc`, four
+question: what is the contract between a program and the system? The system call convention (`svc`, four
 numbers, everything through `SYS_INVOKE`) and the object surface were already built and stable. The
 one genuinely open piece was how a program meets its initial capabilities and arguments.
 

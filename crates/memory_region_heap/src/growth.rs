@@ -14,7 +14,7 @@ use core::alloc::Layout;
 pub(crate) const PAGE_BYTES: u64 = 4096;
 
 /// The smallest growth step, in pages. Growing one page per allocation would make every early
-/// `Vec` push a syscall; 8 pages (32 KiB) amortizes that without hoarding a small budget.
+/// `Vec` push a system call; 8 pages (32 KiB) amortizes that without hoarding a small budget.
 pub(crate) const MINIMUM_GROW_PAGES: u64 = 8;
 
 /// The pages a grow of `need` bytes plans over a heap of `committed` bytes under a cap of
@@ -23,7 +23,7 @@ pub(crate) const MINIMUM_GROW_PAGES: u64 = 8;
 ///
 /// Growth is geometric (double the committed range) but never less than the request, never less
 /// than [`MINIMUM_GROW_PAGES`], and never past the cap, so a burst of small allocations costs
-/// O(log n) syscall batches.
+/// O(log n) system call batches.
 pub(crate) fn growth_pages(committed: u64, maximum: u64, need: u64) -> Option<(u64, u64)> {
     let need_pages = need.div_ceil(PAGE_BYTES);
     let want_pages = need_pages

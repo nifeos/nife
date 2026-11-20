@@ -33,7 +33,7 @@ a gap: a decision, recorded three times and enforced by construction.
 - Milestone 184 (extend the `std` port to x86_64), in [its own block](0184-std-x86-64.md), calls
   that feature string "a correctness requirement" in its target table. The reason is beside it:
   "`kernel/src/arch/x86_64/` saves no FPU or SSE state on a context switch."
-- §31 (the foreign-language seam: C holds no capabilities and makes no syscalls), in
+- §31 (the foreign-language seam: C holds no capabilities and makes no system calls), in
   [its own section](../decisions/0031-foreign-language-seam.md), says the same about the C boundary.
   "The kernel never enables FP/SIMD for EL0, and the context switch" saves nothing. So a vector
   register in a confined component would be a trap or a corruption, depending on which bit first.
@@ -119,7 +119,7 @@ account is in [`riscv.md`](0447-vector-registers-are-a-thread-s-own/riscv.md#wha
 The tables and working are in [`costs.md`](0447-vector-registers-are-a-thread-s-own/costs.md).
 
 - IPC fastpath: `script/fastpath-footprint` is within the 5% bound on every ISA; the largest
-  increase is riscv64's `syscall_entry`, +2.2%. `hand_over`'s register-touching half and
+  increase is riscv64's `system_call_entry`, +2.2%. `hand_over`'s register-touching half and
   `enable_for_current` are `#[cold]` and out of line, which keeps riscv64's `ipc_send_recv` inside
   the bound. `crate::fp::ENABLES` checks the claim: it counts threads that ever asked for the unit,
   and it is zero on every shipping boot.

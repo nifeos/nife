@@ -17,7 +17,7 @@ A program written by somebody else hears its arguments as bytes. What those byte
 decided separately, by the program's manifest and by the directories the line grants.
 
 1. Arguments arrive as plain bytes: a POSIX-shaped argv in one page, carrying no authority. The
-   measurement priced this at about 50 lines, written once, with no new syscall.
+   measurement priced this at about 50 lines, written once, with no new system_call.
 2. A command-line word that resolves to an existing file is granted that file, in the way the
    program's own manifest declares: read-only, read-write, or the file's directory. The manifest
    travels in the ELF, per §197 (a package is one archive file), M2, ruled the same day.

@@ -137,7 +137,7 @@ Two numbers, two checkers, already separate in this tree:
   constant and the Cargo minor. A Rust-only break bumps only the Cargo minor.
 
 The rule a peer checks is the one milestone 979 (interfaces a peer can check) ruled on 2026-10-29
-(UTC). The syscall ABI must match at spawn and never dual-serves. A shared page stays
+(UTC). The system call ABI must match at spawn and never dual-serves. A shared page stays
 single-version and its reader refuses another magic. A message contract serves N and N-1. This
 proposal decides no wire format.
 

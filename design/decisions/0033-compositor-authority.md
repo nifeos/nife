@@ -43,7 +43,7 @@ kind from Wayland, which attaches client identity at the transport and then deci
 security properties are properties of that code. Wayland's model approximates capability routing; this
 is capability routing.
 
-**No new syscall, no new method, no widened surface (§4).** The whole rung is endpoints, shared frames,
+**No new system call, no new method, no widened surface (§4).** The whole rung is endpoints, shared frames,
 and `Spawn` grants that already existed. The one kernel-resource change is a constant: `KERNEL_EP_PAGES`
 128 → 160, the third bump of a number whose comment has always said it grows with the suite. Recorded
 with the standing suggestion it repeats: next time, reap the harness's boot services instead, which is

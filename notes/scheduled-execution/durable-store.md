@@ -23,7 +23,7 @@ the reader walked.
 
 ## What the crate is not
 
-It performs no IO and makes no syscalls. Both sides are `components/src/login.rs`. It writes an
+It performs no IO and makes no system_calls. Both sides are `components/src/login.rs`. It writes an
 identity's line when a schedule opens at a login, and reads the manifest at start-up to re-derive
 each session. The parser and the renderer stay one function each in the crate. It does not touch
 `timetable::Schedule` or `timetable::parse`, and depends on nothing.

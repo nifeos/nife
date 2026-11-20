@@ -3,7 +3,7 @@ name: decisions
 description: >-
   How nife decides, recommends, and takes a question to an architect. Load before choosing between
   options, making a recommendation, or deciding how much care a choice deserves; and when something
-  may be an architect's call (a design fork, a wire format, a name, the syscall surface, a new
+  may be an architect's call (a design fork, a wire format, a name, the system call surface, a new
   dependency, a design/decisions/ section, a published number), when holding work for an architect,
   adding the needs-architect label, writing a "## What I need from you" comment or a PROPOSED
   decision file. Holds: move fast on what can be undone and be methodical on what cannot (the test
@@ -37,7 +37,7 @@ A few decisions are expensive, and the expense is almost never the code. Be meth
   to disagree. This is why names are an architect's call, and why a lane ships a provisional one
   instead of waiting.
 - Dependencies, §46 (thin primitives or whole subsystems), especially in the shipping graph.
-- The syscall surface: §10 (the capability-based microkernel process model) and §16 (object
+- The system call surface: §10 (the capability-based microkernel process model) and §16 (object
   revocation), which every future program is written against.
 - Facts that leave the machine: a published claim, a benchmark number a stranger quotes, a secret
   material once stored. This is the truly irreversible category.
@@ -86,7 +86,7 @@ the moment the decision to hold is made and not later:
 
 - The `needs-architect` label, so the queue is `gh pr list --label needs-architect` rather than a
   paragraph somebody has to have read. It names the role, not the person. A thing lands there when
-  it is outside standing merge authority: the syscall surface, a new dependency, or a
+  it is outside standing merge authority: the system call surface, a new dependency, or a
   `design/decisions/` section owed. It means waiting on calef and nothing else, so the list is his
   worklist. An edit to a decision is his to approve unless it is bookkeeping: a link retargeted, a
   backticked path moved, a paragraph rewrapped (calef, 2026-10-11 UTC; §88 (`needs-architect` as a

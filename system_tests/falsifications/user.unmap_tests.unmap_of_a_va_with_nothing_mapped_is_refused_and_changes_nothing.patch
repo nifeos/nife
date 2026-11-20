@@ -7,9 +7,9 @@ come earlier and are unaffected.
 Expected to fail: the first case, a `va` never mapped, which gets `Ok(0)` where it wants
 `BadPointer`.
 
-diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
---- a/kernel/src/syscall/address_space.rs
-+++ b/kernel/src/syscall/address_space.rs
+diff --git a/kernel/src/system_call/address_space.rs b/kernel/src/system_call/address_space.rs
+--- a/kernel/src/system_call/address_space.rs
++++ b/kernel/src/system_call/address_space.rs
 @@ -180,9 +180,7 @@
          // and a record with no page is still one a later revoke would act on.
          let unmapped = mmu::unmap_user_at(root, va);

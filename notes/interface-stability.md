@@ -14,11 +14,11 @@ column's are provisional.*
 What a program that is not the kernel is written against, and what would break it if it changed.
 The headline measures the boundary, two parts:
 
-- The syscall surface: every public constant in `abi`, the `SYSCALL_*` numbers, the `object_type::*`
+- The system call surface: every public constant in `abi`, the `SYSTEM_CALL_*` numbers, the `object_type::*`
   object types, and the method numbers and argument or result encodings in the object modules.
   The values of `abi`'s enums (the `Error::*` codes) count too, because a program matches
   them by number exactly as it does a constant.
-  A new syscall number or a method outside the capability model is a design fork, so this
+  A new system call number or a method outside the capability model is a design fork, so this
   surface moves by decision.
 - The wire formats: a contract crate's public constant named `*VERSION*`, `*MAGIC*` or
   `*REVISION*` is a format identity, and a value change is a format bump.
@@ -47,9 +47,9 @@ commit (the same commit `script/metrics` picks) is compared with the previous we
 | `interface_additions` | `abi` constants and enum variants added |
 | `interface_std_abi_breaking`, `_additions` | item-level churn in the std copy set; reported, not thresholded |
 | `interface_contract_api_breaking`, `_additions` | item-level churn in the contract crates beyond the boundary; reported, not thresholded |
-| `interface_syscall_changed` | `abi` constants and enum variants removed or renumbered with no successor |
-| `interface_syscall_renamed` | `abi` constants renamed with the number kept |
-| `interface_syscall_added` | `abi` constants and enum variants added |
+| `interface_system_call_changed` | `abi` constants and enum variants removed or renumbered with no successor |
+| `interface_system_call_renamed` | `abi` constants renamed with the number kept |
+| `interface_system_call_added` | `abi` constants and enum variants added |
 | `interface_format_bumps` | a format identity's value changed |
 | `interface_format_amendments` | dated entries in a format's own amendment ledger |
 | `interface_contract_commits`, `_crossing`, `_cochange_pct` | co-change, below |
@@ -78,7 +78,7 @@ path a consumer writes is the re-export; format 61 carries the local name and th
 the parent becomes an index) split does, moves no surface. A foreign re-export contributes the
 name without a shape.
 
-**The syscall rename rule.** `endpoint::SEND` becoming `rendezvous::SEND` at the same value breaks
+**The system call rename rule.** `endpoint::SEND` becoming `rendezvous::SEND` at the same value breaks
 every caller's source and no binary. A removed `abi` constant is a rename when exactly one added
 constant has its value and keeps either its leaf name or its module; a module another constant
 already moved unambiguously resolves the rest. Anything less certain stays a change.
@@ -142,12 +142,12 @@ on a branch not yet merged, is the first that should.
 ## First reading, and the trend
 
 The series restated 2026-10-16 under the boundary headline and the re-export rule. Over the last
-four weeks (2026W39 to 2026W42): 10 boundary moves, 49 syscall additions, no format bump, and 74%
+four weeks (2026W39 to 2026W42): 10 boundary moves, 49 system call additions, no format bump, and 74%
 of 297 contract commits crossing another division. The same four weeks read 674 breaking changes
 under the previous headline, 246 of them the filesystem test fixture moving to its own crate and
 176 of them three crate-root index splits that kept every consumer path.
 
-| weeks | boundary breaking | syscall additions | what moved |
+| weeks | boundary breaking | system call additions | what moved |
 |---|---:|---:|---|
 | W29 to W30 | 0 | 38 | the first weeks |
 | W31 to W33 | 1 | 5 | |
@@ -163,10 +163,10 @@ campaign crossed the contract crates, and reads 17 in 2026W42.
 
 A threshold proposal only. The threshold is calef's call.
 
-Over a trailing four weeks, `interface_breaking` is zero: no syscall number renumbered or
+Over a trailing four weeks, `interface_breaking` is zero: no system call number renumbered or
 removed, no number-kept rename, no format changed in place without a bump. Additions are growth,
 not instability, and they are the leading indicator: the boundary has never broken much, and it is
-still gaining about a dozen syscall constants a week. Contract API churn, std copy churn and
+still gaining about a dozen system call constants a week. Contract API churn, std copy churn and
 co-change are reported and not thresholded; §151 (the goal of the repository split is independent
 release and third-party programs) wants them low before a split.
 
@@ -199,7 +199,7 @@ either, and taking one is a §46 (thin primitives or whole subsystems) decision 
 - Items that reach a consumer only through a glob re-export (`pub use module::*`) are unseen: the
   glob is keyed by its source text and not expanded. No measured crate re-exports this way today;
   `domain_name_resolution_contract` and `user_mode_runtime` do, and are not measured.
-- The syscall rename rule overcounts on purpose: `CSPACE_SLOTS` becoming `CAPABILITY_TABLE_SLOTS`
+- The system call rename rule overcounts on purpose: `CSPACE_SLOTS` becoming `CAPABILITY_TABLE_SLOTS`
   in 2026W35 had no unique successor, so it counts as removed.
 - A macro's fingerprint is its source text, so an edit to its body is a change even when its
   expansion is not.

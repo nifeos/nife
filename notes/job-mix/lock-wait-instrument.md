@@ -6,7 +6,7 @@ describes. Naming is an architect's.*
 `kernel/src/lock_wait.rs`, built only with `--features lock_wait`, which implies `job_mix`. It
 answers one question about the job mix: how often its threads found a kernel lock held, and how long
 they waited. No other kernel carries a byte of it, and `script/fastpath-footprint` builds neither
-feature. [null-syscall-under-load.md](null-syscall-under-load.md) is what it was built to explain
+feature. [null-system-call-under-load.md](null-system-call-under-load.md) is what it was built to explain
 and what it found.
 
 ## What it counts
@@ -18,9 +18,9 @@ Per sweep point, summed over cores:
   and the ticks its final `IPC_TABLES` section held the lock to remove them.
 - For `sched::current_capability`: every call, and the calls whose one acquisition found its lock held,
   with their wait. Every `invoke` makes exactly one such call, so `contended / calls` is the chance
-  the cheapest syscall waits, and `wait_ticks / calls` is what that costs it on average. That is
-  directly comparable with the `null_syscall` job's per-trap growth. The lock is the running
-  thread's own capability table, so `site=current_cap` means "how often the cheapest syscall waited
+  the cheapest system call waits, and `wait_ticks / calls` is what that costs it on average. That is
+  directly comparable with the `null_system_call` job's per-trap growth. The lock is the running
+  thread's own capability table, so `site=current_cap` means "how often the cheapest system call waited
   for anything".
 
 Counting runs only while the supervisor has armed it, for each timed subrun, and not during the
@@ -39,7 +39,7 @@ with
 counter increment and a flag clear, all on its own core's line. The clock is read only on the
 contended path, twice per wait. On radon a `rdtime` may be emulated by firmware (a recollection about
 the SiFive U74, not checked against radon's OpenSBI), and reading it on every call would add to the
-cheapest syscall the very cost this is trying to find. The reaper reads the clock on every reap,
+cheapest system call the very cost this is trying to find. The reaper reads the clock on every reap,
 which is cold: one call per thread exit.
 
 ## What it cannot see
@@ -53,4 +53,4 @@ which is cold: one call per thread exit.
   the counted wait is where it would show.
 - The `current_capability` attribution is a per-core flag set around the acquisition. An interrupt that
   arrived after the flag and before the lock masked interrupts, and took a contended lock of its own,
-  would be charged to `current_capability`. On the syscall path interrupts are already masked there.
+  would be charged to `current_capability`. On the system call path interrupts are already masked there.

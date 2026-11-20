@@ -95,9 +95,9 @@ The binary interface is the platform a developer targets. A program cannot tell 
 kernels runs it, just as it cannot tell which build of Zircon runs it.
 
 The cost: kernels that serve one binary interface move together. The capability monokernel serves
-the same syscall numbers, object methods, error codes and right bits as the microkernel. A new
+the same system call numbers, object methods, error codes and right bits as the microkernel. A new
 number goes into both kernels or neither, and one version gate binds them. A kernel that wants a
-private syscall takes a binary interface of its own. The kernels stay free in everything a program
+private system call takes a binary interface of its own. The kernels stay free in everything a program
 cannot observe: where a service runs, how the scheduler works, what the proofs cover.
 
 The gain: one `target_os`, one published ABI crate and one `std` port per binary interface. A

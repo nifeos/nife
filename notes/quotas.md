@@ -63,7 +63,7 @@ dead-code cleanup. The rest of this note describes the mechanism as designed; re
 It is a per-spawner quota, and when it had a caller there was exactly one spawner (the shell's
 service), so it was a per-process quota for the process that mattered. Generalizing to many spawners is a table of
 counters instead of one static, not a new idea. And it bounds *spawns*; it does not bound every
-kind of kernel object a future syscall might create. The complete answer is still the
+kind of kernel object a future system call might create. The complete answer is still the
 untyped-kernel-objects model (a process's entire kernel footprint drawn from its own untyped, as
 seL4 does), where a `Thread` and its stack are retyped from untyped exactly as pages are in
 milestone 11. This quota is the pragmatic bound that closes the reachable exhaustion vector now;

@@ -213,7 +213,7 @@ fn run_script() -> ([Result<i64, abi::Error>; 3], u64) {
     ))
     .expect("grant it");
     let answers =
-        SCRIPT.map(|(method, a0, _)| crate::syscall::invoke(&mut trap, slot, method, a0, 0, 0));
+        SCRIPT.map(|(method, a0, _)| crate::system_call::invoke(&mut trap, slot, method, a0, 0, 0));
     let spent = crate::memory_region::usage(region)
         .expect("the region is live")
         .0;

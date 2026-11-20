@@ -110,7 +110,7 @@ the vacuity guard: with the caretaker serving the filesystem root, the shell cou
 its own files, so *"every refusal it reported proves nothing"*. Nothing crossed. It proves the test
 is wired to the real root handle; it does not demonstrate a crossing.
 
-### Row 26 cannot be falsified as written, and the reason is the syscall rather than the test
+### Row 26 cannot be falsified as written, and the reason is the system call rather than the test
 
 `a_client_of_the_stable_rendezvous_cannot_become_its_server` got the honest defect: delete the
 kernel's `Rights::READ` check on `RECV_CAP`, so a client really can receive on the stable
@@ -228,7 +228,7 @@ keeps comparing two derivations of one fact; that check fired on the first run h
   the kernel fails to refuse reports an escape instead of taking the honest server's message and
   hanging the run. Row 26 of `notes/confinement-claims.md` is `unfalsified` for exactly this reason,
   measured here as a 60-second lost-wakeup watchdog. It needs a non-blocking or timed `RECV_CAP`,
-  which is the syscall surface and therefore calef's.
+  which is the system call surface and therefore calef's.
 - **Recorded.** In `script/falsifications`' own `BUGS`: a kernel record costs about a minute rather
   than a second, so `--sweep` is no longer a thirty-second command. `--affected-since`, the per-PR
   half, covers only the Kani records. A kernel record is swept on the one architecture its patch

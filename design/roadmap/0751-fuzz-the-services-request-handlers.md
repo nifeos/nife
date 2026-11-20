@@ -12,7 +12,7 @@ needs_person: no
 
 Built by the lane `lane/fuzz-service-handlers` from part (a) of the proposal on #1592 (*fuzz the
 surface a confined process can reach*), which calef ruled yes on 2026-10-04 (UTC). Part (b), the
-syscall fuzzer, was not ruled and is not here. The number 751 is provisional until the queue lands
+system call fuzzer, was not ruled and is not here. The number 751 is provisional until the queue lands
 it, and the proposal is promoted into this block once #1592 merges. *(Title and slug are drafts;
 target, helper and module names are provisional.)*
 

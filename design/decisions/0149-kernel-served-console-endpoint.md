@@ -49,7 +49,7 @@ consequence for the shell unstated.
   a thread queued on a rendezvous is permanently `Blocked`, "and the commonest such thread is a
   server".
 
-So the mechanism needs no new object type, no new syscall number, and no change to the surface
+So the mechanism needs no new object type, no new system call number, and no change to the surface
 (§10, §16). That is the strongest argument here and it is worth stating plainly: this is the option
 that does not grow the boundary.
 
@@ -67,13 +67,13 @@ divergence §121 requires stays entirely below the interface.
   be verified rather than argued about. And it is a real, if narrow, concession against §14's
   minimal-core claim: seL4's position is that the kernel provides mechanism and no services.
 
-Option 2: a console syscall. The kernel exposes a write/read pair and `swish` calls it directly
+Option 2: a console system_call. The kernel exposes a write/read pair and `swish` calls it directly
 on x86.
 
 - *For*: smaller to build; no kernel thread to schedule or wedge.
-- *Against*: it is syscall surface, the expensive kind under the *move fast on what can be undone*
+- *Against*: it is system call surface, the expensive kind under the *move fast on what can be undone*
   tenet, and every future program is written against it. It is also worse on security grounds in a
-  capability system, and this is the part that is easy to get backwards. A syscall is reachable by
+  capability system, and this is the part that is easy to get backwards. A system call is reachable by
   every thread in the system, where an endpoint is reachable only by whoever was handed the
   capability, and can be revoked. Option 2 asks for a rule about who should call it; option 1 makes
   most programs unable to.
@@ -113,7 +113,7 @@ separated so that the general case is not decided on the momentum of the narrow 
 | Blocks a kernel thread indefinitely | yes | no |
 | `swish` works without it | no | yes |
 | Architectures | x86 only, a divergence | all three, parity |
-| Why we would do it | **forced** by the hardware | **chosen**, because it beats a syscall |
+| Why we would do it | **forced** by the hardware | **chosen**, because it beats a system call |
 
 That last row is why they are separate. One is a concession with no alternative; the other is a
 design we would pick freely. A reader citing this section for the general case is misreading it,
@@ -142,7 +142,7 @@ implicitly, by citing §121: change §121 so there is a userspace holder. That i
 §121 was reopened and reversed to its own option 1 (the port-range capability); x86's console and
 input become userspace drivers holding a `(base, count)` port capability. So every option this section
 weighed is moot: there is no kernel-resident console driver to serve behind an endpoint, no console
-syscall, and no need to reach the shell through graphics. `swish` talks to a userspace console server
+system call, and no need to reach the shell through graphics. `swish` talks to a userspace console server
 on x86 exactly as it does on aarch64 and riscv64, and this section's recommended option 1 (the kernel
 thread) is **not** built.
 

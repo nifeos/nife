@@ -21,10 +21,10 @@ the stack's top.
 - Kernel threads, E1's own shape (`bench.rs`'s `ipc_rtt`, `call_reply` and
   `ipc_thread_scaling` are all kernel-thread pairs): the thread wraps each call.
 - EL0 threads, the shape every service runs (`os_primitives_benchmarker`'s SEND/RECEIVE pair and
-  `soaker`'s CALL/REPLY pair). A user thread cannot paint. So `syscall::dispatch` ends with a call
-  that, for a registered thread only, scans what the finishing syscall reached and paints for the
+  `soaker`'s CALL/REPLY pair). A user thread cannot paint. So `system_call::dispatch` ends with a call
+  that, for a registered thread only, scans what the finishing system call reached and paints for the
   next. An EL0 thread's trap frame sits at the very top of its kernel stack, so the distance from the
-  top is the whole of what one syscall touches.
+  top is the whole of what one system call touches.
 
 ### It measures its own reach first
 
@@ -52,7 +52,7 @@ And 256 bytes was too small for the debug build, whose paint loop keeps real cal
 
 Nothing in any default build. Every piece is `any(test, feature = "ipc_stack_depth")`, including the
 call in `dispatch`. So `script/fastpath-footprint`, `script/bench` and the icount tripwire build none
-of it. In the test build an unregistered syscall pays one relaxed load. A measured operation pays a
+of it. In the test build an unregistered system call pays one relaxed load. A measured operation pays a
 paint of up to 24 KiB before it. That is why this is never on in a build that times anything, and
 why a series stops painting once it is full. The frames the instrument itself occupies sit above the
 paint and are never counted; the null line is the proof.
@@ -184,7 +184,7 @@ Two readings.
    352 and 320, are QEMU boot 2's minimums, QEMU's server RECEIVE median of 544 is radon's max,
    and QEMU boot 2's server SEND max is radon's median of 480.
 2. Every EL0 series is 16 bytes deeper on radon, floor included, so the difference sits above
-   `syscall::dispatch`. It is `riscv_trap_body`: its frame is 176 bytes in the board build and 160
+   `system_call::dispatch`. It is `riscv_trap_body`: its frame is 176 bytes in the board build and 160
    in QEMU's, with `s5` to `s7` saved as well. Building each feature alone settles which one:
    `bench,single_hart,ipc_stack_depth` gives the 176-byte frame, `bench,board,ipc_stack_depth`
    the 160-byte one. `single_hart` adds no code to the trap path; its one `cfg` returns early from

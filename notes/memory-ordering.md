@@ -62,7 +62,7 @@ fence is, and until this milestone nothing said.
 
 The exception is the clock page, which is the only cross-address-space protocol with no
 rendezvous underneath it at all: a process reads the wall clock out of a shared mapping with no
-syscall. That is exactly where milestone 80's loom harness found a real bug, and it is not a
+system_call. That is exactly where milestone 80's loom harness found a real bug, and it is not a
 coincidence.
 
 ## The fences, all fourteen, adjudicated

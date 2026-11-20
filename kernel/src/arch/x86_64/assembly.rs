@@ -17,7 +17,7 @@ global_asm!(include_str!("context.s"));
 // a register file rather than a calling convention's callee-saved set; see fp.rs.
 global_asm!(include_str!("fp.s"));
 
-// The 256 trap stubs, the shared restore path, the `syscall` entry, and the door into ring 3
+// The 256 trap stubs, the shared restore path, the `system_call` entry, and the door into ring 3
 // (the asm half of exceptions.rs). The constants are substituted rather than duplicated: a 64-bit
 // assembler cannot read a Rust `const`, and the alternative is two files that can drift. The three
 // `*_OFF` ones are `gs`-relative byte offsets into `cpu::PerCpu::x86_trap` (milestone 161's SMP
@@ -27,10 +27,10 @@ global_asm!(
     include_str!("trap.s"),
     USER_CODE = const segments::USER_CODE as u64,
     USER_DATA = const segments::USER_DATA as u64,
-    SYSCALL_VECTOR = const exceptions::SYSCALL_VECTOR,
+    SYSTEM_CALL_VECTOR = const exceptions::SYSTEM_CALL_VECTOR,
     TSS_RSP0_PTR_OFF = const core::mem::offset_of!(crate::cpu::PerCpu, x86_trap.tss_rsp0_ptr),
-    SYSCALL_KERNEL_RSP_OFF =
-        const core::mem::offset_of!(crate::cpu::PerCpu, x86_trap.syscall_kernel_rsp),
-    SYSCALL_USER_RSP_OFF =
-        const core::mem::offset_of!(crate::cpu::PerCpu, x86_trap.syscall_user_rsp),
+    SYSTEM_CALL_KERNEL_RSP_OFF =
+        const core::mem::offset_of!(crate::cpu::PerCpu, x86_trap.system_call_kernel_rsp),
+    SYSTEM_CALL_USER_RSP_OFF =
+        const core::mem::offset_of!(crate::cpu::PerCpu, x86_trap.system_call_user_rsp),
 );

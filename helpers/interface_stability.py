@@ -122,7 +122,7 @@ FIELDS = [
     'interface_breaking', 'interface_additions',
     'interface_std_abi_breaking', 'interface_std_abi_additions',
     'interface_contract_api_breaking', 'interface_contract_api_additions',
-    'interface_syscall_added', 'interface_syscall_changed', 'interface_syscall_renamed',
+    'interface_system_call_added', 'interface_system_call_changed', 'interface_system_call_renamed',
     'interface_format_bumps', 'interface_format_amendments',
     'interface_contract_commits', 'interface_contract_commits_crossing',
     'interface_cochange_pct', 'interface_cochange_pct_excluding_mass',
@@ -475,10 +475,10 @@ def is_wire_variant(fingerprint):
     return isinstance(d, dict) and set(d) == {'fields', 'discriminant'}
 
 
-def is_syscall_item(crate, path, fingerprint):
-    """Is this item part of the syscall surface? abi's public constants and enum variants.
+def is_system_call_item(crate, path, fingerprint):
+    """Is this item part of the system call surface? abi's public constants and enum variants.
 
-    The syscall numbers (`SYSCALL_*`), the object types (`object_type::*`), and every method number and
+    The system call numbers (`SYSTEM_CALL_*`), the object types (`object_type::*`), and every method number and
     argument or result encoding the object modules define are constants. The error codes
     (`Error::*`) and the other `#[repr]` enums' values are variants, and a program outside the
     tree matches on them by number exactly as it does on a constant, so a renumbered or removed
@@ -489,10 +489,10 @@ def is_syscall_item(crate, path, fingerprint):
                                or is_wire_variant(fingerprint))
 
 
-def syscall_class(path):
+def system_call_class(path):
     leaf = path.rsplit('::', 1)[-1]
-    if '::' not in path and leaf.startswith('SYSCALL_'):
-        return 'syscall'
+    if '::' not in path and leaf.startswith('SYSTEM_CALL_'):
+        return 'system_call'
     if path.startswith('object_type::'):
         return 'object type'
     if path.startswith('Error::'):
@@ -507,7 +507,7 @@ def _const_value(fingerprint):
         return None
 
 
-def syscall_renames(crate, removed, added, old, new):
+def system_call_renames(crate, removed, added, old, new):
     """{removed abi constant: its successor} where only the NAME changed and the number did not.
 
     `endpoint::SEND` becoming `rendezvous::SEND` at the same value breaks every caller's source
@@ -519,11 +519,11 @@ def syscall_renames(crate, removed, added, old, new):
     if crate != 'abi':
         return out
     for p in removed:
-        v = _const_value(old[p]) if is_syscall_item(crate, p, old[p]) else None
+        v = _const_value(old[p]) if is_system_call_item(crate, p, old[p]) else None
         if v is None:
             continue
         parent, _, leaf = p.rpartition('::')
-        match = [q for q in added if is_syscall_item(crate, q, new[q]) and _const_value(new[q]) == v
+        match = [q for q in added if is_system_call_item(crate, q, new[q]) and _const_value(new[q]) == v
                  and (q.rpartition('::')[2] == leaf or q.rpartition('::')[0] == parent)]
         if len(match) == 1:
             out[p] = match[0]
@@ -557,7 +557,7 @@ def compare(old, new, std_abi):
     """
     counts = {'breaking': 0, 'additions': 0, 'std_breaking': 0, 'std_additions': 0,
               'contract_breaking': 0, 'contract_additions': 0,
-              'syscall_added': 0, 'syscall_changed': 0, 'syscall_renamed': 0, 'format_bumps': 0,
+              'system_call_added': 0, 'system_call_changed': 0, 'system_call_renamed': 0, 'format_bumps': 0,
               'renamed': 0}
     per_crate = {}
     events = []
@@ -583,41 +583,41 @@ def compare(old, new, std_abi):
         added = [p for p in b if p not in a]
         mine['breaking'] += len(removed) + len(changed)
         mine['additions'] += len(added)
-        renamed_to = syscall_renames(crate, removed, added, a, b)
+        renamed_to = system_call_renames(crate, removed, added, a, b)
         for p in added:
-            if is_syscall_item(crate, p, b[p]):
-                counts['syscall_added'] += 1
+            if is_system_call_item(crate, p, b[p]):
+                counts['system_call_added'] += 1
             elif std:
                 counts['std_additions'] += 1
             else:
                 counts['contract_additions'] += 1
-        # Every event lands in exactly one bucket, widest first: the syscall surface, then a
+        # Every event lands in exactly one bucket, widest first: the system call surface, then a
         # format identity, then the std copy set, then the contract crates' remaining API. The
         # headline (`interface_breaking`, `interface_additions`) is the boundary a program
-        # outside the tree is written against, the syscall surface and the wire formats (calef,
+        # outside the tree is written against, the system call surface and the wire formats (calef,
         # 2026-10-16 UTC). The std copy set and the contract API are reported beside it, like
         # co-change: a program built from packages is written against stable `std` and the
         # kernel boundary, not against a contract crate's internals.
         for p in sorted(removed + changed):
             what = 'removed' if p in removed else 'changed'
             if p in renamed_to:
-                counts['syscall_renamed'] += 1
-                what = 'syscall renamed, number kept (%s), now `%s`' % (syscall_class(p),
+                counts['system_call_renamed'] += 1
+                what = 'system_call renamed, number kept (%s), now `%s`' % (system_call_class(p),
                                                                        renamed_to[p])
             elif p in changed and is_format_const(p, a[p]):
                 counts['format_bumps'] += 1
                 what = 'format bump'
-            elif is_syscall_item(crate, p, a[p]):
-                counts['syscall_changed'] += 1
-                what = 'syscall %s, %s' % (what, syscall_class(p))
+            elif is_system_call_item(crate, p, a[p]):
+                counts['system_call_changed'] += 1
+                what = 'system_call %s, %s' % (what, system_call_class(p))
             elif std:
                 counts['std_breaking'] += 1
             else:
                 counts['contract_breaking'] += 1
             events.append((crate, what, p))
-    counts['breaking'] = (counts['syscall_changed'] + counts['syscall_renamed']
+    counts['breaking'] = (counts['system_call_changed'] + counts['system_call_renamed']
                           + counts['format_bumps'])
-    counts['additions'] = counts['syscall_added']
+    counts['additions'] = counts['system_call_added']
     return counts, per_crate, events
 
 
@@ -1113,9 +1113,9 @@ def cells_for(week, prev_measure, this_measure, std_abi, cochange):
         'interface_std_abi_additions': counts['std_additions'],
         'interface_contract_api_breaking': counts['contract_breaking'],
         'interface_contract_api_additions': counts['contract_additions'],
-        'interface_syscall_added': counts['syscall_added'],
-        'interface_syscall_changed': counts['syscall_changed'],
-        'interface_syscall_renamed': counts['syscall_renamed'],
+        'interface_system_call_added': counts['system_call_added'],
+        'interface_system_call_changed': counts['system_call_changed'],
+        'interface_system_call_renamed': counts['system_call_renamed'],
         'interface_format_bumps': counts['format_bumps'],
         'interface_format_amendments': amendments,
         'interface_contract_commits': cc[0],
@@ -1231,15 +1231,15 @@ def selftest():
         return {'inner': {'impl': {'trait': {'path': 'From'}, 'items': [],
                                    'blanket_impl': {'generic': 'T'}}}}
 
-    old = surface(doc({1: const('SYSCALL_EXIT', '0'), 2: module('object_type', [3]),
+    old = surface(doc({1: const('SYSTEM_CALL_EXIT', '0'), 2: module('object_type', [3]),
                        3: const('RENDEZVOUS', '1'), 4: fn('helper', 'u8', 1),
                        5: strukt('Header', [6, 7], [10, 11]), 6: field('len', 'u32'),
                        7: field('kind', 'u16'), 8: const('VERSION', '1'),
                        10: trait_impl('Clone'), 11: blanket()},
                       [1, 2, 4, 5, 8]))
-    # Renumbered SYSCALL_EXIT; a new object type; helper's id moved (not a change); fields swapped
+    # Renumbered SYSTEM_CALL_EXIT; a new object type; helper's id moved (not a change); fields swapped
     # (a layout change in a repr(C) struct even though no field changed type); version bumped.
-    new = surface(doc({1: const('SYSCALL_EXIT', '9'), 2: module('object_type', [3, 12]),
+    new = surface(doc({1: const('SYSTEM_CALL_EXIT', '9'), 2: module('object_type', [3, 12]),
                        3: const('RENDEZVOUS', '1'), 12: const('NOTIFICATION', '2'),
                        4: fn('helper', 'u8', 44),
                        5: strukt('Header', [7, 6], [10, 11]), 6: field('len', 'u32'),
@@ -1269,7 +1269,7 @@ def selftest():
         {'grant_plan': {'dir': 'grant_plan',
                         'items': {'trim': _fp(_clean(const('trim', '9')['inner']))}}},
         set())
-    renamed_syscall, _pc, _e = compare(
+    renamed_system_call, _pc, _e = compare(
         {'abi': {'dir': 'abi', 'items': {'irq::ACK': _fp(_clean(const('ACK', '3')['inner']))}}},
         {'abi': {'dir': 'abi',
                  'items': {'interrupt::ACK': _fp(_clean(const('ACK', '3')['inner']))}}},
@@ -1302,12 +1302,12 @@ def selftest():
     rows = {'2026W38': {f: '' for f in FIELDS}, '2026W39': {f: str(i) for i, f in enumerate(FIELDS)}}
     rows['2026W38']['interface_breaking'] = '0'
     cases = [
-        ('a module rename that keeps the number is a syscall rename, not a change',
+        ('a module rename that keeps the number is a system call rename, not a change',
          compare({'abi': {'dir': 'abi', 'items': {'endpoint::SEND': _fp(_clean(const('SEND', '0')['inner']))}}},
                  {'abi': {'dir': 'abi', 'items': {'rendezvous::SEND': _fp(_clean(const('SEND', '0')['inner']))}}},
-                 set())[0]['syscall_renamed'], 1),
+                 set())[0]['system_call_renamed'], 1),
         ('a module rename learned from a sibling resolves an ambiguous constant',
-         sorted(syscall_renames('abi', ['frame::MAP', 'frame::REVOKE', 'untyped::MAP'],
+         sorted(system_call_renames('abi', ['frame::MAP', 'frame::REVOKE', 'untyped::MAP'],
                                 ['page_frame::MAP', 'page_frame::REVOKE', 'region::MAP'],
                                 {'frame::MAP': _fp(_clean(const('MAP', '0')['inner'])),
                                  'frame::REVOKE': _fp(_clean(const('REVOKE', '1')['inner'])),
@@ -1320,7 +1320,7 @@ def selftest():
          compare({'abi': {'dir': 'abi', 'items': {'m::A': _fp(_clean(const('A', '0')['inner']))}}},
                  {'abi': {'dir': 'abi', 'items': {'m::B': _fp(_clean(const('B', '0')['inner'])),
                                                   'm::C': _fp(_clean(const('C', '0')['inner']))}}},
-                 set())[0]['syscall_changed'], 1),
+                 set())[0]['system_call_changed'], 1),
         ('a byte-string magic rustdoc cannot evaluate is read from source',
          const_source('pub const MAGIC: [u8; 8] = *b"CRKR0002";'), '*b"CRKR0002"'),
         ('a renamed parameter is not a change',
@@ -1354,7 +1354,7 @@ def selftest():
          (churn['breaking'], churn['contract_breaking']), (0, 1)),
         ('per-crate breaking keeps the item truth the weekly view demotes',
          churn_pc['grant_plan']['breaking'], 1),
-        ('a number-kept syscall rename is boundary', renamed_syscall['breaking'], 1),
+        ('a number-kept system call rename is boundary', renamed_system_call['breaking'], 1),
         ('a format bump in a contract crate is boundary',
          (bumped['breaking'], bumped['format_bumps'], bumped['contract_breaking']), (1, 1, 0)),
         ('a std crate addition is reported, not headline',
@@ -1364,17 +1364,17 @@ def selftest():
         ('additions: the new object type', counts['additions'], 1),
         ('an id rustdoc renumbered is not a change', 'helper' not in
          [e[2].split(' ')[0] for e in events], True),
-        ('the renumbered syscall is a syscall change', counts['syscall_changed'], 1),
-        ('the new object type is a syscall addition', counts['syscall_added'], 1),
+        ('the renumbered system call is a system call change', counts['system_call_changed'], 1),
+        ('the new object type is a system call addition', counts['system_call_added'], 1),
         ('the version constant is a format bump', counts['format_bumps'], 1),
-        ('the renumber is classed as a syscall', syscall_class('SYSCALL_EXIT'), 'syscall'),
-        ('an object type is classed as one', syscall_class('object_type::NOTIFICATION'), 'object type'),
-        ('an error code is classed as one', syscall_class('Error::NoSuchSlot'), 'error code'),
+        ('the renumber is classed as a system_call', system_call_class('SYSTEM_CALL_EXIT'), 'system_call'),
+        ('an object type is classed as one', system_call_class('object_type::NOTIFICATION'), 'object type'),
+        ('an error code is classed as one', system_call_class('Error::NoSuchSlot'), 'error code'),
         ('a renumbered abi error code is boundary',
-         (err_renumbered['breaking'], err_renumbered['syscall_changed'],
+         (err_renumbered['breaking'], err_renumbered['system_call_changed'],
           err_renumbered['contract_breaking']), (1, 1, 0)),
         ('a new abi error code is a boundary addition',
-         (err_added['additions'], err_added['syscall_added']), (1, 1)),
+         (err_added['additions'], err_added['system_call_added']), (1, 1)),
         ('a removed abi error code is boundary', err_removed['breaking'], 1),
         ('the enum item itself is not boundary',
          (enum_item['breaking'], enum_item['contract_breaking']), (0, 1)),

@@ -37,7 +37,7 @@ least_authority_demo at all. Two headless tests pin it:
 binary, gets 81) and `the_least_authority_demo_builder_passes_its_demo_an_argument` (init loads it by name, gets
 49).
 
-The tiny syscall runtime in `least_authority_demo.rs` (`invoke`/`send`/`exit`) is duplicated from
+The tiny system call runtime in `least_authority_demo.rs` (`invoke`/`send`/`exit`) is duplicated from
 hello on purpose. When 19f.3 splits the next binary, that second copy is the signal to lift a shared
 user-runtime crate, with the requirements known rather than guessed (DECISIONS: don't build the
 abstraction before the requirements are).
@@ -107,7 +107,7 @@ corrected; fully closing the window is a separate input-driver fix, not part of 
 
 With the split done, the `invoke`/`send`/`receive`/`exit` runtime was copied verbatim into five
 binaries (hello and the four it shed). `crates/user_mode_runtime` is that runtime, lifted into one
-library crate all five now depend on: one `invoke` (the single syscall), and `send`/`receive`/`exit`
+library crate all five now depend on: one `invoke` (the single system call), and `send`/`receive`/`exit`
 built on it. The extraction waited on purpose until the split was complete, so the shared surface
 was known rather than guessed (the DECISIONS rule about not building an abstraction before its
 requirements exist).

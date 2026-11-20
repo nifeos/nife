@@ -26,7 +26,7 @@ the answer rather than raced for it, which is unusual for a family that usually 
 
 Three links, none of them timing-dependent:
 
-1. `Interrupt::WAIT` is not a poll. `syscall::interrupt_wait` is `sched::interrupt_route(intid)`
+1. `Interrupt::WAIT` is not a poll. `system_call::interrupt_wait` is `sched::interrupt_route(intid)`
    followed by
    `sched::ipc_receive(ep)`. It returns only when that endpoint is signaled or has a counted pending
    signal, and both come from `sched::interrupt_notify`.
@@ -173,7 +173,7 @@ interrupt became some driver's message in this window, not that this device's co
 ordering argument above makes it sound for this test. It would stop being sound if a second driver
 were running concurrently in the same window. Saying exactly the narrow thing wants a per-intid
 delivery count. That cannot simply live in `sched::interrupt_route`, because
-`syscall::interrupt_wait` and
+`system_call::interrupt_wait` and
 `soak.rs` both call it outside the handler, so counting there would count lookups rather than
 deliveries. So it wants the three arch handlers to route through one portable call. That is a
 refactor rather than a patch, and it is not done here.

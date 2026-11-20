@@ -231,7 +231,7 @@ problems, and only the first was large.
 
    **But it should not be done that way.** `riscv_virtual_io_tests` already showed the alternative: load
    a real ELF from the initrd and drive that. The programs are tiny and their behaviors are
-   ordinary (return, syscall twice, read a forbidden address, spin forever, die on purpose), so they
+   ordinary (return, system call twice, read a forbidden address, spin forever, die on purpose), so they
    are `user/` binaries or entry roles of one binary, built by the existing toolchain for both
    targets. That deletes the aarch64 hand-assembly rather than duplicating it.
 
@@ -260,7 +260,7 @@ problems, and only the first was large.
 
 The plan did not anticipate a third thing: the module was blocked on a stale comment as much as on
 machine code. `hello` carries milestone 7 (user mode) through 19 role catalog and xtask called it
-"aarch64-wired". Three quarters of that sentence had been false. The last quarter was six syscalls
+"aarch64-wired". Three quarters of that sentence had been false. The last quarter was six system calls
 hand-rolled in aarch64 `asm!` that `user_mode_runtime` had had portable versions of since
 19f.6. Deleting the duplicates was the whole port for roughly twenty of the tests. Sizing a job from
 what the comments say it needs is how an afternoon's work stays undone for a year.

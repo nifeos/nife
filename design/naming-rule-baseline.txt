@@ -25,11 +25,11 @@ crates/c_seam/src/lib.rs::WITNESS_FAR_VA spelled-out
 
 crates/c_seam/src/lib.rs::WITNESS_RO_VA spelled-out
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::ARGS spelled-out
+crates/confined_system_call_fuzzer_contract/src/lib.rs::ARGS spelled-out
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::PLAYGROUND_VA spelled-out
+crates/confined_system_call_fuzzer_contract/src/lib.rs::PLAYGROUND_VA spelled-out
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::REPORT_VA spelled-out
+crates/confined_system_call_fuzzer_contract/src/lib.rs::REPORT_VA spelled-out
 
 
 

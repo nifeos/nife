@@ -8,7 +8,7 @@ license.workspace = true
 # The system log service's logic (milestone 613 (a system log service: the in-memory half), for
 # §242 (a system log)): stamping from the badge, assembling a writer's chunks into lines, F3 to
 # JSONL, the 64 KiB ring and the per-user read. Pure, no_std, host-tested, so
-# `components/src/system_log.rs` is the syscalls around it and nothing else. Name provisional.
+# `components/src/system_log.rs` is the system calls around it and nothing else. Name provisional.
 
 [lints]
 workspace = true

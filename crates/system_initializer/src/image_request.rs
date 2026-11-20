@@ -737,7 +737,7 @@ fn with_live_table<R>(
     answer
 }
 
-/// **Whether this kernel serves the syscall ABI the bytes were built against** (milestone 956 (the
+/// **Whether this kernel serves the system call ABI the bytes were built against** (milestone 956 (the
 /// linked interfaces carry checkable versions)). Bytes whose `INTERFACES` note declares an ABI
 /// version other than [`abi::ABI_VERSION`] are refused, and so is a note that does not decode, as a
 /// manifest is. The ABI never dual-serves, so the comparison is equality. Bytes with no note

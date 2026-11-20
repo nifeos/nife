@@ -31,7 +31,7 @@ measured on, and its error bar, is in its own section.
 | interrupt-stack chain | 4352 B aarch64, 4160 B riscv64, of 16384 | 3888 B / 4208 B | `script/stack-depth-check`, prototype wired in |
 | a context switch is reachable from the interrupt stack | no | still no, both ISAs | the same gate, gating mode |
 | threads blocked at once, suite peak | 97 of 128 (mean 37, live peak 102) | unchanged | `#[cfg(test)]` census, 31,371 samples, full suite |
-| one second of the current yield-spin | a whole core-second, 10^5 to 10^6 syscalls | ~12,400 instructions | derived from `bench/baseline-*.txt` and notes/benchmarks.md |
+| one second of the current yield-spin | a whole core-second, 10^5 to 10^6 system calls | ~12,400 instructions | derived from `bench/baseline-*.txt` and notes/benchmarks.md |
 
 The two numbers that decide anything are the last two, and neither is a data structure.
 
@@ -102,7 +102,7 @@ why the cached `earliest` is load-bearing rather than an optimization: it is a w
 Five consumers spin today. The `std` PAL's `thread::sleep` loops on `rt::yield_now()` until its
 deadline, and `net_stack`'s `wait_for_nic` does the same over every retransmit backoff. From the
 tree's own icount baselines, one second of that spinning is between 10^5 and a few times 10^6
-syscalls, and 100% of a hart. The same second waited on a deadline is about 12,400 instructions,
+system calls, and 100% of a hart. The same second waited on a deadline is about 12,400 instructions,
 with the hart in `wfi` for the rest.
 
 The ratio is at least 10^5 to 1, and it grows with core clock. That is the number the fork is

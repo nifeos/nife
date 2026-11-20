@@ -77,7 +77,7 @@ Eight boots of each, five back to back and three alternating seL4 with nife, at 
 | seL4, the same with FPU context | 118 ns | 110 to 121 ns |
 | seL4, the same with 10 message words | 146 ns | 136 to 149 ns |
 | nife, `ipc_rtt_el0`, two address spaces | **442 ns** | 395 to 444 ns |
-| nife, `null_syscall`, for scale | 30 ns | 27 to 33 ns |
+| nife, `null_system_call`, for scale | 30 ns | 27 to 33 ns |
 
 On identical silicon, nife's EL0 round trip costs about 4.6 times seL4's. Even if the two extra
 traps in nife's shape cost nothing, at about 30 ns each, the ratio stays near 4. It is the
@@ -85,7 +85,7 @@ same-silicon figure [benchmarks.md](benchmarks.md#against-sel4s-published-cycles
 
 What is not apples to apples:
 
-- The shapes differ. seL4 issues two syscalls per round trip (`Call`, `ReplyRecv`) over one
+- The shapes differ. seL4 issues two system calls per round trip (`Call`, `ReplyRecv`) over one
   endpoint and takes its fastpath. `ipc_rtt_el0` issues four (`SEND`, `RECEIVE`, twice) over two
   endpoints, and no EL0 bench times nife's `CALL`/`REPLY` path.
 - Both run as guests. Each user address-space switch also changes stage-2 state the host owns.

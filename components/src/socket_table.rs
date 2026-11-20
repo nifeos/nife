@@ -186,7 +186,7 @@ impl Table {
         if !self.mapped[entry] {
             return true;
         }
-        // SAFETY: the syscall; the kernel checks the capability, the right and the address.
+        // SAFETY: the system call; the kernel checks the capability, the right and the address.
         let gone = unsafe {
             user_mode_runtime::invoke(OWN_SPACE, abi::address_space::UNMAP, socket_va(entry), 0, 0)
         } == 0;

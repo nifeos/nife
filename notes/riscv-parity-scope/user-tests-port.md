@@ -51,7 +51,7 @@ tests came along unchanged once three things moved.
    through 19: printing client, the untyped demo, the granter and receiver, the call server, the
    aspace builder, the init roles. xtask's comment claimed it was "aarch64-wired". Three quarters of
    that claim was already false: console, input and shell were in the riscv build list directly
-   below it. The last quarter was six syscalls hand-rolled in aarch64 `asm!` naming x0/x2/x3/x4/x8.
+   below it. The last quarter was six system calls hand-rolled in aarch64 `asm!` naming x0/x2/x3/x4/x8.
    On RISC-V those are the zero register, sp, gp, tp and fp. `user_mode_runtime` had had portable versions of
    all six since 19f.6 lifted the runtime out; the duplicates never got deleted. A stale
    comment stood in for a real blocker for a year, which is this note's recurring lesson in a new

@@ -7,7 +7,7 @@
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
-use crate::syscall::{invoke, trap6};
+use crate::system_call::{invoke, trap6};
 
 /// **Map the `PageFrame` capability in `frame_slot` at `virtual_address`**, drawing the page tables from the untyped
 /// in `memory_region_slot`. `true` if the page is now there.
@@ -57,7 +57,7 @@ pub fn map_page_frame(
 pub fn is_granted(slot: u64) -> bool {
     /// A method number no object type defines, so the invocation can only ever be refused.
     const NO_SUCH_METHOD: u64 = 0xffff;
-    // SAFETY: a syscall that cannot succeed; the kernel validates the slot before the method.
+    // SAFETY: a system call that cannot succeed; the kernel validates the slot before the method.
     let r = unsafe { invoke(slot, NO_SUCH_METHOD, 0, 0, 0) };
     r != abi::Error::NoSuchSlot as i64
 }
@@ -288,7 +288,7 @@ pub fn thread_control_block_configure(
 /// `START`: make the TCB in `thread_control_block_slot` runnable. `argument0`, `argument1` and `argument2` seed the child's first three argument registers (`x0`/`x1`/`x2` on
 /// aarch64, `a0`/`a1`/`a2` on RISC-V) on its first instruction, the kernel-side spelling of "this
 /// thread's input" (`abi::thread_control_block::START`'s own doc comment says `_, _, _`, which is
-/// stale: `kernel/src/syscall.rs`'s `START` arm forwards all three to `sched::start_thread_control_block`
+/// stale: `kernel/src/system_call.rs`'s `START` arm forwards all three to `sched::start_thread_control_block`
 /// unconditionally). Refuses a half-built thread (no bound address space, or no entry). `0` on
 /// success; a negative `abi::Error`.
 ///
@@ -350,7 +350,7 @@ pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
     }
 }
 
-/// Drop the capability in `slot` from this thread's capability table (`SYSCALL_CAPABILITY_DELETE`). Deleting an empty
+/// Drop the capability in `slot` from this thread's capability table (`SYSTEM_CALL_CAPABILITY_DELETE`). Deleting an empty
 /// slot is a no-op. A program that retypes many objects (a loader, a spawner) frees each slot as
 /// soon as it is done with it, so its fixed capability table does not fill. Through `trap6` for
 /// [`yield_now`](crate::yield_now)'s reason: the kernel answers in the register `slot` went in on.
@@ -358,6 +358,6 @@ pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `cap_delete` under the capability ruling of 2026-10-06 (UTC).
 pub fn capability_delete(slot: u64) {
-    // SAFETY: SYSCALL_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
-    let _ = unsafe { trap6(abi::SYSCALL_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
+    // SAFETY: SYSTEM_CALL_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
+    let _ = unsafe { trap6(abi::SYSTEM_CALL_CAPABILITY_DELETE, [slot, 0, 0, 0, 0, 0]) };
 }

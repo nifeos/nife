@@ -15,4 +15,4 @@ microkernel)). A piece of code earns a place in the kernel by naming which of th
 Two rules keep it that way:
 
 1. **A driver never reaches into a kernel global.** It gets what it needs passed in.
-2. **The syscall surface stays narrow and explicit.** It is a boundary, not a habit.
+2. **The system call surface stays narrow and explicit.** It is a boundary, not a habit.

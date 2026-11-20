@@ -55,7 +55,7 @@ IPC costs nothing in cache.
 | on the path | bytes |
 |---|---|
 | `exception_dispatch` | 124 |
-| `syscall::dispatch` | **2,024** |
+| `system_call::dispatch` | **2,024** |
 | `sched::current_capability` | 376 |
 | `sched::ipc_send` | 952 |
 | `sched::schedule` | 1,240 |
@@ -70,7 +70,7 @@ Data touched per round trip: two `TrapFrame`s (288 bytes, asserted in
 `arch/riscv64/exceptions.rs`), two `Thread`s (744 bytes, from the census in milestone 106 (a wait that ends on either the interrupt or the deadline)), the endpoint,
 and the run queue. Roughly 2 to 3 KiB, about 40 cache lines of 64 bytes.
 
-`syscall::dispatch` is 37% of the instruction path on its own. It is a general decoder over every
+`system_call::dispatch` is 37% of the instruction path on its own. It is a general decoder over every
 object type and method, which is exactly what seL4's fastpath exists to skip. It is the first place
 to look if this ever needs to shrink.
 
@@ -180,11 +180,11 @@ It needs a build lane before it needs an evening.
 
 ### The hot section (2026-10-07)
 
-Milestone 796 (pin the hot trap path's placement). On 2026-10-05 radon's one-task `null_syscall`
+Milestone 796 (pin the hot trap path's placement). On 2026-10-05 radon's one-task `null_system_call`
 read 110, 118, 116 and 111 ticks across four builds that only shifted kernel text, and a merge that
 added no instruction to the trap path moved it 16
 ([`notes/job-mix/radon-2026-10-05.md`](../job-mix/radon-2026-10-05.md)). So every function a
-syscall or an IPC round trip runs now lives at one address in every build.
+system call or an IPC round trip runs now lives at one address in every build.
 
 **How.** Each such function carries a `.text.hot.<name>` section: `#[link_section]` on the Rust
 (gated on `target_os = "none"`, since the prover builds `kernel/src` for the host), a `.section`
@@ -214,7 +214,7 @@ function to give a section to. On aarch64 and riscv64 it also builds two `fastpa
 broken on purpose before landing and both failed.
 
 **What radon shows.** The milestone's sweep, repeated on 2026-10-20 with the pin, read the one-task
-`null_syscall` at 121 ticks in all four shifted images, where the unpinned 2026-10-05 sweep read 110
+`null_system_call` at 121 ticks in all four shifted images, where the unpinned 2026-10-05 sweep read 110
 to 118 ([`bench/radon-2026-10-20/`](../../bench/radon-2026-10-20/README.md)). The number no longer
 moves with kernel text. What it has not shown is why it moved: the leading reading was hot code
 evicting itself, which a contiguous block under one way cannot do, but nothing counted misses.
@@ -232,5 +232,5 @@ evicting itself, which a contiguous block under one way cannot do, but nothing c
   2026-10-07, and is a `tail` now. Hand-written jumps into `.text.hot` from outside it must be `tail`
   or `call`.
 - x86_64 has no `fastpath_pad`, so it gets the containment check and not the shift check.
-- aarch64 pins the whole 2 KiB vector table for the one 128-byte slot a syscall runs, and x86_64
+- aarch64 pins the whole 2 KiB vector table for the one 128-byte slot a system call runs, and x86_64
   pins `isr_common` because it falls through into `isr_restore`.

@@ -177,7 +177,7 @@ before `finish_switch` would overwrite `switched_from` and strand the predecesso
 be preempted, and the scheduler would be cooperative with extra steps.
 
 `a_thread_that_never_yields_is_preempted_anyway` spawns a thread whose whole body is
-`loop { count += 1 }`, with no yield, no syscall and no call, and it is preempted anyway.
+`loop { count += 1 }`, with no yield, no system call and no call, and it is preempted anyway.
 
 ## The address-space leak that hid behind a two-frame test failure
 
@@ -202,7 +202,7 @@ exactly zero additional frames.
 sched::spawn(|| {
     while !STOP.load(Relaxed) {
         SPINNING.fetch_add(1, Relaxed);
-        // Deliberately nothing else. No yield. No syscall. Not even a function call.
+        // Deliberately nothing else. No yield. No system_call. Not even a function call.
     }
 });
 ```

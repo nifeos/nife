@@ -1,4 +1,4 @@
-//! The thread running on this core: its id, and its capability table held per core so a syscall's
+//! The thread running on this core: its id, and its capability table held per core so a system call's
 //! lookup takes no global lock. See notes/thread-control-block.md ("The running thread, per core").
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
@@ -13,7 +13,7 @@ use super::*;
 /// `smp::tests::a_migrated_kernel_thread_reads_its_own_name` is the test.
 ///
 /// `#[inline(always)]` on riscv64 so it lands in `.text.hot` beside its IPC callers; the other two
-/// inline it unforced, and forcing it grows aarch64's `syscall_entry` past its band.
+/// inline it unforced, and forcing it grows aarch64's `system_call_entry` past its band.
 #[cfg_attr(target_arch = "riscv64", inline(always))]
 pub(super) fn current_thread_id() -> ThreadId {
     crate::arch::read_current_thread()

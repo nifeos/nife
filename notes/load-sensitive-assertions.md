@@ -40,7 +40,7 @@ empty run queue returns in microseconds. Fifty of them can elapse before the awa
 scheduled at all. The error runs both ways: a loaded host burns yields while another vCPU is
 descheduled, and a native host under Hypervisor.framework burns them in nanoseconds
 ([notes/hvf-leg.md](hvf-leg.md)). The same holds in a user program. A retry loop over a refusal that
-a timer tick has to clear cannot buy the tick with syscalls
+a timer tick has to clear cannot buy the tick with system calls
 ([the caretaker teardown wait](load-sensitive-assertions/caretaker-teardown-wait.md)).
 
 ### 3. Does the window include instructions outside the property?
@@ -164,7 +164,7 @@ cover everything the rounds found by reading:
 1. a global count taken as a baseline: `thread_count()`, `free_page_frames()`, `memory::stats()`;
 2. a loop with no clock in it;
 3. a frame count standing in for a mechanism;
-4. a bounded retry count in a user program, over a syscall that a timer tick has to clear.
+4. a bounded retry count in a user program, over a system call that a timer tick has to clear.
 
 The 2026-09-23 sweep closed the first grep for `free_page_frames()` only. On 2026-09-24,
 `memory::stats()` still had 22 matches in `kernel/src` and `thread_count()` had 36, and neither has

@@ -21,7 +21,7 @@ the reboot object at slot 31 (milestone 805 (`reboot` at the prompt)), so add tw
 There was no trace path in the tree, so the instrument is a patch kept beside this note rather than
 a feature in the build: [instrument.patch](capability-peak-trace/instrument.patch). It hooks the
 capability table's two mutation doors (`fill` and `empty` in `crates/capability_table`). It records every
-change to the progenitor's table into a kernel ring, with the syscall's user PC and a frame-pointer
+change to the progenitor's table into a kernel ring, with the system call's user PC and a frame-pointer
 backtrace. The idle loop drains the ring through semihosting to `target/cap-trace/boot-<time>.txt`,
 one file per boot, so the console transcript `script/swish-check` reads is untouched. It also
 records any other table that reaches 25. None did on any boot, so the peak `report_peak` prints is
@@ -174,7 +174,7 @@ x86_64):
 |---|---|---|---|
 | `ipc_send_receive` | 5,612 to 5,612 | 5,002 to 5,118 | 6,832 to 6,832 |
 | `ipc_call_reply` | 6,912 to 6,904 | 6,094 to 6,218 | 8,467 to 8,467 |
-| `syscall_entry` | 1,640 to 1,640 | 2,008 to 2,008 | 1,797 to 1,797 |
+| `system_call_entry` | 1,640 to 1,640 | 2,008 to 2,008 | 1,797 to 1,797 |
 
 x86_64 `ipc_send_receive` was already at +4.4% of its 5% band and did not move. riscv64
 `ipc_send_receive` went from +2.0% to +4.4% against its baseline, inside the band, and is now the

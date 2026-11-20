@@ -171,7 +171,7 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
         // Lent: the caller holds this region's `MemoryRegion` capability (`Backing`).
         backing: Backing::Lent(region),
         // Attached when a TCB binds the space (`bind_user_address_space`): most callers of this
-        // syscall never run a thread, and some are sized to the page.
+        // system call never run a thread, and some are sized to the page.
         current_cpu_page: None,
         thread_pages: [0; current_cpu_contract::THREAD_PAGE_SLOTS],
         thread_pages_made: 0,
@@ -192,12 +192,12 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
 
 /// Map `phys` into the user-built space `name` at `va`, one page under one hold. Tables and the
 /// §13 record come from the space's own backing region; an unrecordable mapping is unmapped and
-/// refused, exactly as at the `page_frame::MAP` syscall, because a mapping revocation cannot see is
+/// refused, exactly as at the `page_frame::MAP` system call, because a mapping revocation cannot see is
 /// the §13 use-after-free.
 ///
 /// `under` says which capability's authority this mapping was made with, which is what scopes a
 /// later `PageFrame::REVOKE` to that capability's derivation family rather than to the physical
-/// page (DECISIONS §132). The `MAP_INTO` syscall passes the invoked frame capability's object; the
+/// page (DECISIONS §132). The `MAP_INTO` system call passes the invoked frame capability's object; the
 /// kernel's own callers, which build a space directly out of a region, pass
 /// `PageMapSource::NoCapability`.
 // The kernel's own wiring calls this only in test builds; the system tests build spaces with it.
@@ -228,7 +228,7 @@ pub fn user_address_space_map(
 /// The root table of a space the registry names, bound or not.
 ///
 /// Built for tests (so a walker can ask what a space really maps) and now also
-/// `abi::address_space::LIST`'s way in (milestone 126's `pmap`, DECISIONS §114): the syscall handler
+/// `abi::address_space::LIST`'s way in (milestone 126's `pmap`, DECISIONS §114): the system call handler
 /// resolves the capability's `name` to a root here before consulting `revoke::list_mapping` and
 /// `arch::mmu::translate_at`. `None` once the space is gone: its thread was reaped or its region
 /// destroyed (§249). A `LIST` against a capability that outlived its space reads as "nothing to

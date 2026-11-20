@@ -19,9 +19,9 @@
 #                   system actually runs**, and it is the larger of the two; see below.
 #   ipc_fastpath    the worse of those two, which is what a round trip costs. Derived, and kept
 #                   under its old name because the tree cites it in a dozen places.
-#   syscall_entry   the trap entry, the exception dispatcher, the return path and
-#                   `syscall::dispatch`, FLAT with no closure. A syscall traverses one path through
-#                   the decoder, but the decoder's own bytes are on every syscall, and its other
+#   system_call_entry   the trap entry, the exception dispatcher, the return path and
+#                   `system_call::dispatch`, FLAT with no closure. A system call traverses one path through
+#                   the decoder, but the decoder's own bytes are on every system call, and its other
 #                   arms are not on this path at all.
 #
 # **Two closures and not one, since 2026-09-04 (milestone 188 phase 1).** This gate measured only
@@ -40,9 +40,9 @@
 # are
 # expected to change.
 #
-# **`syscall_entry` is not like for like across the three ISAs, and the reason is architectural.**
-# aarch64 and riscv64 route a syscall through the same vector table and cause decoder as every other
-# exception, so their entry numbers carry the whole trap path. x86_64 does not: `syscall` jumps
+# **`system_call_entry` is not like for like across the three ISAs, and the reason is architectural.**
+# aarch64 and riscv64 route a system call through the same vector table and cause decoder as every other
+# exception, so their entry numbers carry the whole trap path. x86_64 does not: `system_call` jumps
 # through `IA32_LSTAR` and never touches the 256-entry IDT, so its entry number covers four symbols
 # and legitimately excludes 3,330 bytes of stubs and trap handlers that the other two ISAs' figures
 # have no equivalent of. x86_64's entry figure being the smallest of the three is that fact, not a
@@ -74,7 +74,7 @@
 #   **The bound is drift from a recorded figure, not distance from a target**, so headroom is
 #   whatever the last save happened to leave and a branch can be near the bound without having
 #   done anything. On 2026-09-21 riscv64 sat at +2.2% on `ipc_send_receive` and +4.7% on
-#   `syscall_entry` before the branch under test contributed anything, so a 150-byte change failed
+#   `system_call_entry` before the branch under test contributed anything, so a 150-byte change failed
 #   the gate while a much larger one would have passed a year earlier. Milestone 541 (a timed
 #   window that excludes preemption) hit this and did not re-save; a lane is re-shaping this gate
 #   to report distance from a 4 KiB target and a 32 KB L1i instead.
@@ -82,7 +82,7 @@
 #   **A field added to `cpu::PerCpu` moves these numbers even when the fastpath never reads it**,
 #   which is the failure mode this script is worst at explaining. `PERCPU[id]` indexes an array of
 #   that struct, so its size decides whether the address is a shift or a multiply: taking it from
-#   128 to 136 bytes cost 150 bytes here on riscv64 and 38 on `syscall_entry`, with the code that
+#   128 to 136 bytes cost 150 bytes here on riscv64 and 38 on `system_call_entry`, with the code that
 #   wrote the new field costing nothing measurable. `kernel/src/cpu.rs` now asserts the size is a
 #   power of two so that arrives as a failing build instead of as this gate's output.
 #
@@ -145,16 +145,16 @@
 #     below, and milestone 370 (a layout control)). Until that save, a failure here cannot say which
 #     compiler its floor came from, and the check says so. The erosion is not hypothetical: measured
 #     2026-09-21 on `nightly-2026-09-20`, every figure on every ISA was above its baseline, and
-#     riscv64's `syscall_entry` was **+4.7% against a 5% band**.
+#     riscv64's `system_call_entry` was **+4.7% against a 5% band**.
 #   - **Once stamped, nothing compares the stamp against the pin.** `script/lint`'s
 #     baseline-toolchain check globs `bench/baseline-*.txt` only. Widening it to these files would
 #     make every toolchain bump re-save the footprint floors, which is the re-save the 2026-09-21
 #     ruling holds back, so that is an architect's call rather than a lint edit. Until then the
 #     stamp is
 #     a record a failing run prints, not a gate.
-#   - **`syscall_entry` is flat, so an inlining decision can move bytes into it that no syscall
+#   - **`system_call_entry` is flat, so an inlining decision can move bytes into it that no system call
 #     fetches.** Three instances in two days on 2026-09-04, each closed with `#[inline(never)]` on
-#     the folded callee. `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-syscall-fetches.md`
+#     the folded callee. `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`
 #     holds them and the options. Milestone 188 phase 2 fixed the largest *structural* instance of
 #     the same shape (aarch64's sixteen-entry vector table, at `ENTRY_SLICE`) but did nothing about
 #     the inlining one, which is a different mechanism with the same symptom.
@@ -395,14 +395,14 @@ SHAPES = [
 ]
 INLINED = {"10rendezvous8ipc_send", "10rendezvous8ipc_call"}
 # **`ipc_call_badged` is a root because it IS the CALL body** (milestone 599 (a frame per filesystem
-# client channel), 2026-09-26). The syscall's `CALL` dispatches to it, and `ipc_call` became an
+# client channel), 2026-09-26). The system call's `CALL` dispatches to it, and `ipc_call` became an
 # `#[inline(always)]` wrapper that passes badge 0, so the `ipc_call` symbol no longer exists in a
 # release build. Without this root the closure silently lost the whole CALL body and reported an
 # 18-30% "shrink" on every ISA; a root list that does not follow a rename measures less than the
 # path the system runs, which is the failure this gate exists to rule out.
 #
 # **`ipc_send_badged` is a root for the same reason, one shape over** (milestone 613 (a system log
-# service: the in-memory half), 2026-10-03). A plain `SEND` now carries its badge, so the syscall
+# service: the in-memory half), 2026-10-03). A plain `SEND` now carries its badge, so the system call
 # dispatches to `ipc_send_badged` and `ipc_send` is the inlined badge-0 wrapper. The first CI run
 # without this root reported `ipc_send_receive` shrinking 16-18% on all three ISAs: the same rename
 # blindness, caught by the same 5% band.
@@ -450,35 +450,35 @@ COLD = re.compile(
 )
 
 # **The entry set, and x86_64 is not the same shape as the other two.** On aarch64 and riscv64 a
-# syscall IS an exception: `svc` lands in the same vector table as a page fault, `ecall` in the same
+# system call IS an exception: `svc` lands in the same vector table as a page fault, `ecall` in the same
 # `stvec` handler as a timer interrupt, so the whole vector and the whole cause decoder are bytes
-# every syscall fetches and both lists carry them. On x86_64 a ring-3 `syscall` reads `IA32_LSTAR`
+# every system call fetches and both lists carry them. On x86_64 a ring-3 `syscall` reads `IA32_LSTAR`
 # and jumps, consulting **no IDT entry at all** (kernel/src/arch/x86_64/trap.s says so at its
-# `x86_syscall_entry` header: "THIS IS NOT AN IDT VECTOR AND THE DIFFERENCES ALL MATTER"). So the
+# `x86_system_call_entry` header: "THIS IS NOT AN IDT VECTOR AND THE DIFFERENCES ALL MATTER"). So the
 # correct x86_64 set is NARROWER than the other two, not wider, and a reader comparing the three
 # numbers should not read the difference as this port having a leaner decoder.
 #
-# Included, each because a `syscall` fetches its bytes:
-#   x86_syscall_entry    the `IA32_LSTAR` target, written by `initialize_syscall` in exceptions.rs. The
+# Included, each because a `system_call` fetches its bytes:
+#   x86_system_call_entry    the `IA32_LSTAR` target, written by `initialize_system_call` in exceptions.rs. The
 #                        hardware jumps straight here.
-#   x86_syscall_handler  "the one Rust function every `syscall` reaches" (exceptions.rs), which
+#   x86_system_call_handler  "the one Rust function every `system_call` reaches" (exceptions.rs), which
 #                        bumps the counter and tail-calls the portable dispatcher.
-#   isr_restore          the return path. `x86_syscall_entry` ends `jmp isr_restore`, and trap.s
+#   isr_restore          the return path. `x86_system_call_entry` ends `jmp isr_restore`, and trap.s
 #                        names it "the RISC-V twin of `trap_return`", which riscv64's list already
-#                        carries for the same reason. Shared with the IDT path; a syscall runs it.
-#   syscall::dispatch    as on both other architectures.
+#                        carries for the same reason. Shared with the IDT path; a system call runs it.
+#   system_call::dispatch    as on both other architectures.
 #
-# Excluded, each because a `syscall` never reaches it:
+# Excluded, each because a `system_call` never reaches it:
 #   isr_0 .. isr_255     the 256 IDT stubs, 2,412 bytes of them. Reached only through an IDT gate.
-#   isr_common           the stubs' shared save path, which `x86_syscall_entry` duplicates inline
+#   isr_common           the stubs' shared save path, which `x86_system_call_entry` duplicates inline
 #                        rather than jumping to (it has a different frame to reconstruct).
 #   x86_trap_dispatch,   the Rust trap handlers. These ARE the twins of riscv64's
 #   x86_trap_body        `riscv_trap_dispatch` / `riscv_trap_body`, which riscv64's list includes,
-#                        and that is exactly the asymmetry: on riscv64 the syscall arrives through
+#                        and that is exactly the asymmetry: on riscv64 the system call arrives through
 #                        them, on x86_64 it does not. Including them here for symmetry with the
-#                        other list would put 918 bytes on this number that no syscall fetches.
+#                        other list would put 918 bytes on this number that no system call fetches.
 #   user_return,         first entry to ring 3, and the interrupt-stack trampoline. Once per thread
-#   dispatch_on_...      and per IDT trap respectively, neither per syscall.
+#   dispatch_on_...      and per IDT trap respectively, neither per system_call.
 #
 # **aarch64 counts ONE vector entry, not the whole table** (milestone 188 phase 2, 2026-09-04).
 # `exception_vectors` is 2,020 bytes and is not code in the ordinary sense: vectors.s builds it as
@@ -493,7 +493,7 @@ COLD = re.compile(
 # aligned 128-byte slot and the fetch is of cache lines rather than of instructions. This stays an
 # upper bound, which is the direction every other choice in this script leans.
 #
-# **This is an accounting fix and nothing got faster.** aarch64's `syscall_entry` drops about 1,892
+# **This is an accounting fix and nothing got faster.** aarch64's `system_call_entry` drops about 1,892
 # bytes on the day this lands. The reason it is a fix rather than a saving is that the old figure was
 # gameable in exactly the way AGENTS.md's ranking function forbids: a lane could have "improved" this
 # gate by 57% without changing one fetched instruction.
@@ -503,16 +503,16 @@ COLD = re.compile(
 # already argued below: it consults no IDT entry at all.
 ENTRY_SLICE = {"exception_vectors": 128}
 
-# `exception_restore` runs on the return leg of every syscall on aarch64 and was in neither figure
+# `exception_restore` runs on the return leg of every system call on aarch64 and was in neither figure
 # until 2026-09-04. It is the twin of riscv64's `trap_return` and x86_64's `isr_restore`, both of
 # which their lists already carry, so its absence was an asymmetry rather than a judgement.
 ENTRY = {
     "aarch64": [r"^exception_vectors$", r"^exception_dispatch$", r"^exception_restore$",
-                r"kernel7syscall8dispatch"],
+                r"kernel11system_call8dispatch"],
     "riscv64": [r"^trap_entry$", r"^trap_return$", r"^riscv_trap_dispatch$", r"^riscv_trap_body$",
-                r"kernel7syscall8dispatch"],
-    "x86_64": [r"^x86_syscall_entry$", r"^x86_syscall_handler$", r"^isr_restore$",
-               r"kernel7syscall8dispatch"],
+                r"kernel11system_call8dispatch"],
+    "x86_64": [r"^x86_system_call_entry$", r"^x86_system_call_handler$", r"^isr_restore$",
+               r"kernel11system_call8dispatch"],
 }[arch]
 
 shape_totals, shape_syms = {}, {}
@@ -590,8 +590,8 @@ print(f"    ipc_fastpath   {closure_total:6d} B  {against(closure_total)}"
       f"  the worse of the two shapes")
 # No target ratio on the entry set: the 4 KiB target is stated over the IPC fastpath's
 # instructions, and the trap path is not part of what it bounds. Its L1i share is still the
-# quantity that matters, since a syscall fetches these bytes too.
-print(f"    syscall_entry  {entry_total:6d} B  {' ' * 15}{100 * entry_total / L1I:4.1f}% of L1i"
+# quantity that matters, since a system call fetches these bytes too.
+print(f"    system_call_entry  {entry_total:6d} B  {' ' * 15}{100 * entry_total / L1I:4.1f}% of L1i"
       f"  over {len(entry_syms)} symbols (flat, no closure)")
 print(f"    total          {total:6d} B  {against(total)}"
       f"  ({total/1024:.2f} KiB), an upper bound")
@@ -639,7 +639,7 @@ def short(n):
 #
 # The other direction is reported and not gated: a symbol in the section that this walk did not
 # reach costs its bytes inside the block and nothing more. Two are there by design (x86_64's
-# `isr_common`, which falls through into `isr_restore`; aarch64's vector table, of which a syscall
+# `isr_common`, which falls through into `isr_restore`; aarch64's vector table, of which a system call
 # runs one 128-byte slot); anything else is a stale attribute worth removing.
 pin_bad = False
 pin_dump = []
@@ -832,7 +832,7 @@ if os.environ.get("LAYOUT"):
 # not checked on its own, because it is the max of two numbers that are each already checked: a
 # separate check on it could only ever fire alongside one of theirs and would say less about which.
 GATED = tuple(
-    [(label, shape_totals[label]) for label, _ in SHAPES] + [("syscall_entry", entry_total)]
+    [(label, shape_totals[label]) for label, _ in SHAPES] + [("system_call_entry", entry_total)]
 )
 
 nocheck = os.environ.get("NOCHECK", "")
@@ -882,8 +882,8 @@ if save:
             "# `ipc_send_receive` and `ipc_call_reply` are the two IPC shapes, measured separately since\n"
             "# milestone 188 phase 1 because the system runs the second and this gate measured only the\n"
             "# first. `ipc_fastpath` is DERIVED, the worse of the two, kept under its old name because\n"
-            "# the tree cites it; it is not checked separately. Both shapes and `syscall_entry` are.\n"
-            "ipc_send_receive %d\nipc_call_reply %d\nipc_fastpath %d\nsyscall_entry %d\n"
+            "# the tree cites it; it is not checked separately. Both shapes and `system_call_entry` are.\n"
+            "ipc_send_receive %d\nipc_call_reply %d\nipc_fastpath %d\nsystem_call_entry %d\n"
             % (arch, shape_totals["ipc_send_receive"], shape_totals["ipc_call_reply"],
                closure_total, entry_total)
         )

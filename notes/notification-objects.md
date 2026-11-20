@@ -5,7 +5,7 @@ provisional, like everything a lane mints. It records what was built, the semant
 and the one place §101's specification could not be built as written.)*
 
 §101 decided the design on 2026-08-20: a page-resident object holding a data word and a wait queue,
-with four methods under the existing `SYSCALL_INVOKE` (`SIGNAL`, `WAIT`, `POLL`, `BIND`). A TCB binding
+with four methods under the existing `SYSTEM_CALL_INVOKE` (`SIGNAL`, `WAIT`, `POLL`, `BIND`). A TCB binding
 lets a thread blocked receiving on an endpoint wake on either a message or a signal. This note
 is the implementation record and the one proposal the build produced.
 
@@ -28,7 +28,7 @@ was reached is part of the record. Its measured cost on the call/reply path is i
 > `w0 = 2`: this was a bound notification.
 
 `RECEIVE` does not return a tag in `w0`. It returns the sender's own first data word
-(`kernel/src/syscall.rs`, the `RECEIVE` arm: `Ok(msg[0] as i64)`, where `msg[0]` is whatever the sender
+(`kernel/src/system_call.rs`, the `RECEIVE` arm: `Ok(msg[0] as i64)`, where `msg[0]` is whatever the sender
 passed as `a0` to `SEND`). So `w0 = 0` does not mean "a message arrived"; it means a sender chose to
 send 0. Any holder of a `WRITE` capability to the endpoint can `SEND(2, word, 0)` and be
 indistinguishable from the bound notification under §101's encoding. The existing `w0 = 1` for an

@@ -21,7 +21,7 @@ themselves. The last column is this milestone's result.
 | # | The claim | Stated in | Tested by | Falsified |
 |---|---|---|---|---|
 | 1 | A component cannot widen its own rights: a derive holds no more than its source | §14, `crates/capability_table` | `capability_table::derive_never_widens_rights` | milestone 194 |
-| 2 | Userspace cannot forge a right out of a syscall register | §14 | `capability_table::from_bits_cannot_forge_a_right` | milestone 194 |
+| 2 | Userspace cannot forge a right out of a system call register | §14 | `capability_table::from_bits_cannot_forge_a_right` | milestone 194 |
 | 3 | A budget that cannot delegate cannot split itself a child that can, nor retype a page or kernel object that can | §16 (object revocation), `Cap::mint_child`; the retype half, milestone 824 (a retype mints no right its budget lacks) | `capability_table::split_never_widens_rights`; `kernel::user::confinement_attack_tests::a_retype_mints_no_right_its_budget_lacks`, `seventh_pass_retype_tests::a_grant_less_budget_narrows_a_split_child_and_every_retype_alike` | **yes**; the retype half [for a frame](../system_tests/falsifications/user.confinement_attack_tests.a_retype_mints_no_right_its_budget_lacks.patch) and [for an object](../system_tests/falsifications/user.seventh_pass_retype_tests.a_grant_less_budget_narrows_a_split_child_and_every_retype_alike.patch), 2026-10-12 |
 | 4 | A consumed capability cannot be used again | §12 | `capability_table::a_deleted_capability_stays_deleted` | **yes** |
 | 5 | Dropping one capability does not disturb the others | §12 | `capability_table::delete_touches_only_its_slot` | **yes** |

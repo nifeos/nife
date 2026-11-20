@@ -2,17 +2,17 @@
 # script/apropos: search every document in this repository and say where each one lives.
 #
 #   script/apropos capability          what this tree says about capabilities, strongest first
-#   script/apropos syscall             ... and where the syscall numbers actually are
+#   script/apropos system call             ... and where the system call numbers actually are
 #
 # EXAMPLES
 #
-#     $ script/apropos syscall
+#     $ script/apropos system call
 #     844 pages, 11023655 bytes of documentation in this repository
 #
-#     searching for: syscall
+#     searching for: system call
 #
-#          25  design/decisions/0124-x86-64-syscall-abi.md        124. Ratify the x86_64 syscall ABI
-#           3  design/decisions/0008-process-model-deferred.md     8. Process model / syscall ABI: ...
+#          25  design/decisions/0124-x86-64-system-call-abi.md        124. Ratify the x86_64 system call ABI
+#           3  design/decisions/0008-process-model-deferred.md     8. Process model / system call ABI: ...
 #         ...
 #           5  crates/abi/src/lib.rs                             crate abi
 #         ...
@@ -31,7 +31,7 @@
 # **Why it exists**, and it is a finding rather than a nicety. Milestone 117 has run three strangers
 # at this tree with no help. What none of them could do is on the record in notes/stranger-test.md:
 # reach notes/net.md, notes/capabilities.md or ANY design/decisions/ file by following the tree
-# while doing ordinary work, or find crates/abi/src/lib.rs, which is four syscall numbers and the
+# while doing ordinary work, or find crates/abi/src/lib.rs, which is four system call numbers and the
 # whole design on one screen. None of those is hidden; nothing a person would type led to them.
 # This is the thing to type. It is also why the crate and program headers are indexed: the document
 # a reader wants about `abi` *is* that file's header, and no markdown page was ever going to fix it.
@@ -43,7 +43,7 @@
 #
 # BUGS
 #
-# - **Whole words only, and no stemming.** `syscall` and `syscalls` are two terms, so a search for
+# - **Whole words only, and no stemming.** `system_call` and `system_calls` are two terms, so a search for
 #   one does not find the other. `documentation::index::normalize` is what decides that and it is the
 #   guest's tokeniser, which has to run with no allocator.
 # - **Underscores join and hyphens do not.** `apropos line_editor` works, because the builder writes

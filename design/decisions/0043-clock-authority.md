@@ -31,7 +31,7 @@ property directly (`adjusting_the_wall_clock_leaves_the_monotonic_counter_alone`
 
 ## Three authorities, three different objects, and only one of them is a message
 
-- Read is a read-only mapping of the clock page. No endpoint, no syscall, no round trip: two
+- Read is a read-only mapping of the clock page. No endpoint, no system call, no round trip: two
   loads and an add. This is what "reading the clock is near-harmless" looks like when it is
   expressed as a capability rather than asserted in prose.
 - Set is a read/write mapping of the same page. Writing the offset *is* setting the clock,
@@ -40,7 +40,7 @@ property directly (`adjusting_the_wall_clock_leaves_the_monotonic_counter_alone`
   only thing it can do is ask, and `clock_proto::policy::decide` answers.
 
 So the ladder is the kernel's own and needed nothing new: no capability, `Frame` with `READ`,
-`Frame` with `WRITE`, `Endpoint` with `WRITE`. **No new syscall, no new method number, no new object
+`Frame` with `WRITE`, `Endpoint` with `WRITE`. **No new system call, no new method number, no new object
 type**, and the authority a process holds is already introspectable, which is what `caps` prints.
 
 **Why set is memory and not a message, which is the one judgment call here.** A process has exactly

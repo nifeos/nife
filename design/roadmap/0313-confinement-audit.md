@@ -92,7 +92,7 @@ code was touched, and a comment in a shared crate is code that was touched.
 - **`design/fatal-risks/README.md` risk 7 does not yet carry this audit's answer** (one claim false as
   stated, fixed), for the same reason.
 - The report reads no `arch/` assembly and none of the IPC model. Its own scope section says
-  what it excluded; the syscall surface is the remaining untaken lens.
+  what it excluded; the system call surface is the remaining untaken lens.
 
 ## Follow-on
 
@@ -101,7 +101,7 @@ code was touched, and a comment in a shared crate is code that was touched.
 - **Milestone 323.**: a kernel
   record per architecture, so a portable confinement test can carry evidence on every leg it runs on.
 - **Milestone 424.** The
-  test finding 3 could not have, and SMAP with the syscall-path number its `BUGS` asks for.
+  test finding 3 could not have, and SMAP with the system-call-path number its `BUGS` asks for.
 - **Milestone 425.** The
   boot-stack high-water that is 62456 for one test run alone and 53144 for the suite that contains it.
 - **Recorded.** The one-tick cross-core window on a revoked `x86_64` port range, in

@@ -113,7 +113,7 @@ declaration. `kernel_main` falls to about 520 lines.
    this file for the tests.
 4. Every module name in the table.
 
-No public crate API, wire format or syscall changes under any answer here.
+No public crate API, wire format or system call changes under any answer here.
 
 ## What it is not
 

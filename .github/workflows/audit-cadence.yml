@@ -12,7 +12,7 @@ name: audit cadence
 # into.
 #
 # §74 decided what "due" means, on measured intervals rather than on a calendar anybody liked: event
-# triggers first (a new syscall method, a new component holding device or network authority, a new
+# triggers first (a new system call method, a new component holding device or network authority, a new
 # dependency class, first boot on a new machine class), a count second (15 milestones built or 8 new
 # components since the last audit), and six weeks as a backstop whose job is catching a *quiet*
 # period rather than a busy one. script/audits evaluates the four of those that a script can count

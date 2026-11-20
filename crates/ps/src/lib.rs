@@ -1,5 +1,5 @@
 //! **`ps`: what a process listing is when there is no `/proc`** (notes/process-view.md). The
-//! program's logic, lifted out to run on the host; `components/src/ps.rs` is the syscall and the
+//! program's logic, lifted out to run on the host; `components/src/ps.rs` is the system call and the
 //! two output streams. The listing is a capability, not ambient `/proc`: this crate is handed a
 //! function that reads one entry of a domain, backed by `abi::rendezvous::SURVEY` on an endowed
 //! supervision endpoint, so it cannot widen the domain or learn that another exists. Rows, an
@@ -21,7 +21,7 @@
 //! - `TIME` is a second walk ([`Survey::join_cpu_time`]); a thread that dies between prints `-`.
 //! - Each row is its own snapshot, so an early row may be stale when the table prints.
 //! - Nothing automated spawns `ps` or `pgrep`; only a static stack measurement covers the buffer
-//!   (host tests and `kernel::user::survey_tests` cover the logic and the syscall).
+//!   (host tests and `kernel::user::survey_tests` cover the logic and the system call).
 //!
 //! Name: ratified 2026-08-23 (calef): the name every reader knows, shared with
 //! `components/src/ps.rs` as one thing split at the IO boundary.
@@ -108,7 +108,7 @@ pub struct Survey<'a> {
 ///
 /// `read(cursor)` is one `abi::rendezvous::SURVEY`: it answers `(next_cursor, tid, state)`, where a
 /// negative first word is a refusal and `abi::survey::DONE` means the walk is over. Start at 0,
-/// feed each `next_cursor` back; this function is that loop. A closure rather than a syscall, so
+/// feed each `next_cursor` back; this function is that loop. A closure rather than a system call, so
 /// every case is reachable from a host test. The walk stops at the first refusal and reports it
 /// rather than skipping the entry.
 ///

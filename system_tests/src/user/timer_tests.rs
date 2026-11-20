@@ -3,7 +3,7 @@
 //!
 //! Each proves the kernel half the crate's Kani harnesses cannot: that the real tick reaches the
 //! walk, that the walk's signal wakes a real waiter (and a bound receiver parked in `RECEIVE`)
-//! through §101 (notification objects)'s path, and that the syscall layer checks the right rights
+//! through §101 (notification objects)'s path, and that the system call layer checks the right rights
 //! on the right objects. The arithmetic (the cache never passes an armed deadline, a walk fires
 //! exactly the due timers, a replaced or cancelled deadline never fires) is proved in
 //! `crates/inter_process_communication/src/timer.rs`. See notes/timer.md.
@@ -45,10 +45,10 @@ fn milliseconds(n: u64) -> u64 {
     frequency() * n / 1000
 }
 
-/// Invoke through the real syscall layer, from this kernel thread's own capability table.
+/// Invoke through the real system call layer, from this kernel thread's own capability table.
 fn invoke(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error> {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    crate::syscall::invoke(&mut frame, slot, method, a0, a1, a2)
+    crate::system_call::invoke(&mut frame, slot, method, a0, a1, a2)
 }
 
 /// Is `tid` blocked the way `want` says?
@@ -236,7 +236,7 @@ fn a_cancelled_or_rearmed_timer_never_fires_stale() {
     reclaim(r);
 }
 
-/// **The syscall layer**: `RETYPE_OBJECT` mints a full-rights timer from a full-rights budget (since
+/// **The system call layer**: `RETYPE_OBJECT` mints a full-rights timer from a full-rights budget (since
 /// milestone 824 (a retype mints no right its budget lacks) it carries the budget's rights); `ARM` needs `WRITE` on the timer
 /// and on the notification and refuses a slot that is not a notification; a deadline already
 /// passed signals before `ARM` returns; and a notification destroyed under an armed timer turns the
@@ -335,8 +335,8 @@ fn arm_checks_both_capabilities_and_a_past_deadline_signals_at_once() {
 }
 
 /// **The before and after, measured**: 200 ms asleep by a yield loop (read the counter, `yield`,
-/// repeat) against arm and `WAIT`. Two kernel threads run the PAL's two loops with the syscall
-/// boundary taken out; what the boundary adds per iteration is `null_syscall`'s cost, which
+/// repeat) against arm and `WAIT`. Two kernel threads run the PAL's two loops with the system call
+/// boundary taken out; what the boundary adds per iteration is `null_system_call`'s cost, which
 /// `bench/` records.
 ///
 /// The printed line is the measurement, read once per ISA in CI's log. The test asserts only the

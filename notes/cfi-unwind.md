@@ -190,7 +190,7 @@ against the commit before this milestone and this branch's tip.
 `script/fastpath-footprint` measures ELF symbol sizes in `.text`; CFI lives in `.eh_frame`, a
 different section. Run before and after, on the same machine, same profile (release, which is what
 the gate builds): byte-identical on every reported number (`ipc_send_receive` 6300, `ipc_call_reply`
-8234, `ipc_fastpath` 8234, `syscall_entry` 1701). The gate's own printed "+N% against baseline" lines
+8234, `ipc_fastpath` 8234, `system_call_entry` 1701). The gate's own printed "+N% against baseline" lines
 are unchanged too, which makes sense: they compare against a stored reference figure from an earlier
 point in the project's history that has nothing to do with this branch, and this branch moves
 neither. The kernel's `__image_size` numbers (a different, and initially surprising, place this

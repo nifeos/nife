@@ -33,8 +33,8 @@ calef ruled at 2026-09-27T06:40Z:
 
 calef asked whether porting every test to userspace, the option rule 2's converse would suggest,
 would win if it cost the same as option A. It would not, even at equal cost. 1,414 references in
-those files observe kernel state no syscall exposes. Porting would either drop those observations,
-or widen the syscall surface that §10 (process model: capability-based, microkernel) bounds, just
+those files observe kernel state no system call exposes. Porting would either drop those observations,
+or widen the system call surface that §10 (process model: capability-based, microkernel) bounds, just
 to make them visible.
 
 Rule 2 exists because that answer only holds for the *existing* tests. They were written against

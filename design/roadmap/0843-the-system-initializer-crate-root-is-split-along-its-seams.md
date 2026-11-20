@@ -99,7 +99,7 @@ items, so `components/src/progenitor.rs` and `fixtures/src/hello.rs` do not chan
    each one. Most are read by `boot` and one builder, so either is defensible.
 3. Every module name in the table.
 
-No public crate API, wire format or syscall changes under any answer here.
+No public crate API, wire format or system call changes under any answer here.
 
 ## What moving the code breaks
 

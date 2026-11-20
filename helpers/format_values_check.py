@@ -14,7 +14,7 @@ changed lines (the merge base against the tree) and fails in two cases:
    changed in that crate. A magic is a format's identity, and a format never changes in place, so
    a new magic is a new version.
 2. A public number in `crates/abi` changed or was removed (a `pub const` of any module, or an
-   `Error` discriminant), and `ABI_VERSION` did not change. The syscall surface is one version;
+   `Error` discriminant), and `ABI_VERSION` did not change. The system call surface is one version;
    adding a number is an addition and owes nothing.
 
 A rename is not a move (the maintainer's ruling of 2026-11-08 UTC): the number a reader of the
@@ -133,7 +133,7 @@ def all_renames(sides):
     """{path: {removed key: added key}} over every judged file, to a fixed point.
 
     A rename found in one pass lets the next read a sibling's doc comment that names it, so the
-    syscalls renamed together, whose docs name each other, pair; a doc that names a constant no
+    system calls renamed together, whose docs name each other, pair; a doc that names a constant no
     rename in the change accounts for still does not."""
     names = {}
     while True:
@@ -260,16 +260,16 @@ def selftest():
     fails('a multi-line value is read whole',
           {'crates/x/src/lib.rs': ('pub const MAGIC: u64 =\n    1;\n', 'pub const MAGIC: u64 =\n    2;\n')}, True)
 
-    abi = 'pub const ABI_VERSION: u32 = 1;\npub const SYSCALL_EXIT: u64 = 0;\n'
-    fails('a renumbered syscall without the version fails',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYSCALL_EXIT: u64 = 9;\n')}, True)
-    fails('a renumbered syscall with the version passes',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYSCALL_EXIT: u64 = 9;\n')}, False)
+    abi = 'pub const ABI_VERSION: u32 = 1;\npub const SYSTEM_CALL_EXIT: u64 = 0;\n'
+    fails('a renumbered system call without the version fails',
+          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYSTEM_CALL_EXIT: u64 = 9;\n')}, True)
+    fails('a renumbered system call with the version passes',
+          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYSTEM_CALL_EXIT: u64 = 9;\n')}, False)
     fails('a number in a module of abi without the version fails',
           {'crates/abi/src/timer.rs': ('pub const ARM: u64 = 0;\n', 'pub const ARM: u64 = 1;\n'),
            'crates/abi/src/lib.rs': (abi, abi)}, True)
-    fails('an added syscall is an addition',
-          {'crates/abi/src/lib.rs': (abi, abi + 'pub const SYSCALL_NEW: u64 = 5;\n')}, False)
+    fails('an added system call is an addition',
+          {'crates/abi/src/lib.rs': (abi, abi + 'pub const SYSTEM_CALL_NEW: u64 = 5;\n')}, False)
     fails('a removed number fails',
           {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\n')}, True)
     fails('a renumbered error without the version fails',

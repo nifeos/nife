@@ -17,7 +17,7 @@ set in PR #1375: a helper, a CSV under `notes/project-metrics/`, a chart and a g
   dependency), over a `git archive` of the week's tree. It writes
   `notes/project-metrics/interface-stability.csv`, back-filled to 2026W29. Five measures:
   - breaking changes and additions to the public API, with the std ABI broken out;
-  - syscall surface changes: renumbered or removed, renamed with the number kept, and added;
+  - system call surface changes: renumbered or removed, renamed with the number kept, and added;
   - format bumps, derived from `*VERSION*`, `*MAGIC*` and `*REVISION*` constants;
   - amendments, from a ledger at the format;
   - co-change, by the method behind #1389's 76%.
@@ -41,7 +41,7 @@ set in PR #1375: a helper, a CSV under `notes/project-metrics/`, a chart and a g
 
 Ruled 2026-10-28 (UTC), on the threshold proposal above: the policy is to accommodate change rather
 than wait for a lull. Frozen identifiers and additive growth are review discipline, not a gate:
-nobody renumbers or removes a syscall number, nobody changes a format in place (bump or amend), and
+nobody renumbers or removes a system call number, nobody changes a format in place (bump or amend), and
 growth happens by addition. This series reports violations weekly. The four-week-zero reading (a
 crate settled after four weeks with none) is a reported interpretation on the metrics page and
 gates nothing. The "at most four contract breaking changes" proposal is dropped: it has no
@@ -83,9 +83,9 @@ Names provisional: the helper, the note, both CSVs, the appendix, the chart, eve
 ## Index row
 
 The interface a program is written against now has a weekly series on the metrics page: the
-contract crates, the syscall surface in `abi`, the wire formats and the std ABI. It is back-filled
+contract crates, the system call surface in `abi`, the wire formats and the std ABI. It is back-filled
 from git to 2026W29 by reading each week's public API from rustdoc's JSON. It counts breaking changes next to
-additions, syscall renumbers apart from renames, format bumps and recorded amendments, and how often
+additions, system call renumbers apart from renames, format bumps and recorded amendments, and how often
 a contract commit also touches another division. Its first reading is 121 breaking changes and 449
 additions over the last four weeks, which is what "not yet stable" looks like in numbers. The
 stability policy it serves is ruled 2026-10-28: accommodate change rather than wait for a lull, and

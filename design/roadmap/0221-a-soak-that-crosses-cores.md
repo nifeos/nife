@@ -40,7 +40,7 @@ device interrupt runs, down through `wake_load_aware`, `pick_wake_target`, `plac
 reschedule IPI.
 
 The research lane spiked this and threw the spike away, so the shape is known rather than
-guessed: about 53 lines across three files, no syscall, no architecture-specific code. Measured:
+guessed: about 53 lines across three files, no system call, no architecture-specific code. Measured:
 
 | | today | with the spike |
 |---|---|---|
@@ -76,7 +76,7 @@ gained a waiter role that loops on `user_rt::irq_wait`. `crates/soak_page` gaine
 array so a wake is never mistaken for a round trip. `crates/serial_console` and the `script/soak`
 summary carry the new field and the sentence that says what the crossings are.
 
-No syscall, no architecture-specific code, and no new feature: it is all behind the `soak` feature
+No system call, no architecture-specific code, and no new feature: it is all behind the `soak` feature
 milestone 219 already had.
 
 Measured on patagonia under QEMU, 2026-09-02, `script/soak --for 30s`, each pair back to back on
@@ -99,7 +99,7 @@ re-measured.
 
 A production build is unchanged, checked rather than asserted. Without the feature, on all three
 architectures, every symbol and every loaded section has the same size and `ipc_fastpath` and
-`syscall_entry` are unchanged at 6,687 and 1,637 bytes. The loadable image differs by 45 bytes on
+`system_call_entry` are unchanged at 6,687 and 1,637 bytes. The loadable image differs by 45 bytes on
 aarch64, all of them panic-location line numbers below the insertion point, and rebuilding the base
 commit with ten comment lines at the same place gives a byte-identical image on all three.
 
@@ -145,7 +145,7 @@ are bound before the first waiter; only the signaling is switched on last.
 `sched::on_tick` signals a routed rendezvous under `--features soak` and one worker per group
 blocks on it through the `Irq::WAIT` a device driver already uses. A tick runs the whole real
 wake path down through `wake_load_aware`, `pick_wake_target`, `place_on` and the reschedule IPI.
-That is DECISIONS 138's option D, which calef approved: no syscall, no architecture-specific code,
+That is DECISIONS 138's option D, which calef approved: no system call, no architecture-specific code,
 and nothing in a production build. Checked, not asserted: every symbol and every loaded section
 the same size on all three architectures, and a base commit padded with ten comment lines builds a
 byte-identical image. aarch64 went from 15 crossings, frozen from the first beat, to 1,452 and

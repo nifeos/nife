@@ -101,7 +101,7 @@ Three of them stopped carrying a word that had become false. `EP_MAKER` and `EP_
 abbreviation needing a decoder over an object this tree calls `RENDEZVOUS` everywhere else, and
 `user` already means two other things here. `CYCLE_COUNTER_CHILD` was never anybody's child: the
 kernel's own test starts it directly, because milestone 229 shipped the grant mechanism without a
-syscall method to set it.
+system call method to set it.
 
 Every split program ignores `x0`. A one-job program has no role selector, so the role numbers
 simply stop existing for these fourteen rather than being renumbered. `hello`'s remaining nine keep
@@ -123,7 +123,7 @@ it). `CYCLE_COUNTER_WORD` (the reader and the kernel test, likewise duplicated).
 
 `loaded_image_check` holds the self-check and its `.rodata`/`.data`/`.bss` markers, which two
 fixtures need. It takes its `fail` as a `fn() -> !` parameter rather than calling `user_rt`, and
-that is worth a sentence. A crate that reaches `user_rt` reaches EL0 syscall `asm!` and compiles for
+that is worth a sentence. A crate that reaches `user_rt` reaches EL0 system call `asm!` and compiles for
 aarch64 or riscv64 only, which `script/lint` catches and which would have put this crate in four
 separate host-pass exclusion lists to buy one function call. As a parameter it costs the two callers
 one argument, stays host-buildable, and carries two host tests.

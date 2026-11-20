@@ -131,7 +131,7 @@ rules below on reading the advisory and naming no reproducer.
   and no lane publishes.
 - **The public window is the time the pull request spends in the merge queue.** Push only once the
   fix is approved, so the window holds no review. If a hold lengthens it (`needs-architect` on a fix
-  that touches the syscall surface, or a red trunk), say so in the report, with the push and merge
+  that touches the system call surface, or a red trunk), say so in the report, with the push and merge
   times, so the window is measured.
 - **Name no reproducer in public text.** The fix carries the fix and a regression test of the
   invariant that broke. The test names no seed, input or replay line. The title, body, commit

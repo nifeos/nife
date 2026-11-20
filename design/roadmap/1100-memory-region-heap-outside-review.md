@@ -229,7 +229,7 @@ dependency). Everything else is two-way and the maintainer decides it.
    Change: rename the binding to `virtual_address` now (XS). For `commit_all`, Decision A carries
    the recommendation. For the tests, item 8 is the real fix. Until it lands, the move lane either
    exempts `src/lib.rs` in `.github/coverage-exemptions` with the stated reason ("every path ends in
-   a syscall; tested under QEMU") or lands item 8 first.
+   a system call; tested under QEMU") or lands item 8 first.
    Door: `va` is two-way. `commit_all` is one-way (a public name). Effort: XS, plus item 8.
 
 ### P2: later
@@ -299,7 +299,7 @@ state is under "Finding status" above.
 - The fuzz target drives a copy of the policy, so a change to the crate's policy that the copy
   misses goes unchecked there.
 - The page cost of a refused `MAP` at an already-mapped address comes from the kernel's own comment
-  (`kernel/src/syscall/memory_region.rs` line 72), not from a run.
+  (`kernel/src/system_call/memory_region.rs` line 72), not from a run.
 - The minimum first-heap figure (1,575 bytes) comes from a hand computation over `DefaultBinning`'s
   bit field (`[usize; 3]`, `BIN_COUNT = 191`) and talc's `min_first_heap_size`;
   `the_first_heap_fits_in_one_page` pins it.

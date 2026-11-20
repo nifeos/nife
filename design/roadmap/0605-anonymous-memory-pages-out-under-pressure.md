@@ -14,7 +14,7 @@ drop their swap rows rather than printing zeros. Promoted from the proposal
 `anonymous-memory-pages-out-under-pressure`, filed 2026-09-26 by the lane `proposal/swap`. calef had
 asked for it ("Add a proposal for swap") while ruling how milestone 126 (the `procps` package: who
 else is running, and who is allowed to ask) reports memory. The argument below is the proposal's
-own, kept because its four syscall-surface questions are where a reopening should start.
+own, kept because its four system-call-surface questions are where a reopening should start.
 
 ## The ruling
 
@@ -150,7 +150,7 @@ The one memory-pressure failure on record is not a shortage of RAM. The proposal
 240-page pool when a job's region is reclaimed below the watermark. Paging out cannot fill a hole
 in a watermark allocator, so it would not have helped.
 
-## The syscall surface: what building it would ask
+## The system call surface: what building it would ask
 
 Four questions, each calef's, and none of them ruled: the refusal made them moot for now, not
 answered. They are kept as the record of what a reopening owes a ruling on.

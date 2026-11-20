@@ -20,12 +20,12 @@ pub fn initialize() {
     // SAFETY: called once per CPU during boot, with a valid stack, before interrupts are unmasked.
     unsafe { segments::initialize() };
     exceptions::initialize();
-    // Per-CPU like the GDT and IDT, and before anything can `syscall`: until this runs, a
+    // Per-CPU like the GDT and IDT, and before anything can `system_call`: until this runs, a
     // `syscall` jumps to whatever `IA32_LSTAR` holds, which on a cold machine is zero.
     //
     // SAFETY: `segments::initialize` above installed the GDT these selectors index, and nothing has
     // entered ring 3 (nothing can: this is the boot CPU's own bring-up).
-    unsafe { exceptions::initialize_syscall() };
+    unsafe { exceptions::initialize_system_call() };
 
     close_performance_counters_to_ring3();
     close_ring3_pages_to_ring0_execution();

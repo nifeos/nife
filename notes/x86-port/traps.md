@@ -43,17 +43,17 @@ faults and dies, and whatever it served never answers: a lost-wakeup hang far fr
 check is a load and a branch on a frame the function already touches, so it pushes nothing over
 the frame at the top of the stack. The RISC-V twin carries the same check.
 
-## The syscall ABI
+## The system call ABI
 
-The syscall number rides in `rax`, following Linux. The tree's shape is one number register plus
+The system call number rides in `rax`, following Linux. The tree's shape is one number register plus
 six argument registers, with argument 0 doubling as the return: aarch64 uses `x8` and `x0`..`x5`,
 RISC-V `a7` and `a0`..`a5`. On x86 that gives `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`.
 
 `r10` replaces `rcx` because of the instruction, not taste. `syscall` overwrites `rcx` with the
 return address and `r11` with the caller's RFLAGS, so the C ABI's fourth register cannot carry an
-argument. Every x86_64 kernel makes the same substitution. §124 (the x86-64 syscall ABI) is the
-ruling. Every hand-assembled program in `user::x86_programs` reaches `crate::syscall::dispatch`
-through `TrapFrame::{syscall_nr, arg, set_arg}`, so the portable dispatcher never names an x86
+argument. Every x86_64 kernel makes the same substitution. §124 (the x86-64 system call ABI) is the
+ruling. Every hand-assembled program in `user::x86_programs` reaches `crate::system_call::dispatch`
+through `TrapFrame::{system_call_nr, arg, set_arg}`, so the portable dispatcher never names an x86
 register.
 
 ### Why the return is `iretq`
@@ -61,12 +61,12 @@ register.
 `sysret` is the faster half of the pair, and this port does not use it. It returns to whatever
 `rcx` holds without checking that the address is canonical. A non-canonical `rcx` faults in ring 0
 on the user's stack, the shape of CVE-2012-0217. Using it safely needs an explicit canonicality
-check and an `iretq` fallback. Sharing `isr_restore` costs some tens of cycles per syscall and buys
+check and an `iretq` fallback. Sharing `isr_restore` costs some tens of cycles per system call and buys
 one return path with one `swapgs` rule. A benchmark should decide it, once this architecture has a
-syscall-heavy workload to measure.
+system-call-heavy workload to measure.
 
-The `syscall` path's kernel stack is a per-CPU slot (`SYSCALL_KERNEL_RSP_OFF`). `isr_restore`
-writes it and `TSS.RSP0` together on every return to ring 3, so a trap and a `syscall` cannot name
+The `system_call` path's kernel stack is a per-CPU slot (`SYSTEM_CALL_KERNEL_RSP_OFF`). `isr_restore`
+writes it and `TSS.RSP0` together on every return to ring 3, so a trap and a `system_call` cannot name
 different stacks. RISC-V does the same job with `sscratch`; aarch64 banks `SP_EL1` and needs nothing.
 
 ## The vectors the trap body serves
@@ -224,7 +224,7 @@ take-back yet.
 ## BUGS
 
 - The IO APIC's index and data window are a pair with nothing serializing them. A driver's
-  `Interrupt::ACKNOWLEDGE` reaches `interrupt_controller::enable` on whichever core ran the syscall, and the
+  `Interrupt::ACKNOWLEDGE` reaches `interrupt_controller::enable` on whichever core ran the system call, and the
   trap handler calls
   `interrupt_controller::disable` on whichever core took the line. With two cores these can
   interleave, and each

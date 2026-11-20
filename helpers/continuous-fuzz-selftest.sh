@@ -66,9 +66,9 @@ want() { # NAME GOT WANT
     [ "$2" = "$3" ] || fail "$1: got '$2', wanted '$3'"
 }
 
-want "clean" "$(verdict 'syscall fuzzer: 50 seeds, 900 ms (x)' 0 100)" "ok 50 150"
-want "mismatch" "$(verdict 'syscall fuzzer: seed 0x6f step 3: a slot differs (replay: NIFE_SYSCALL_FUZZ_SEEDS=111:1)' 1 100)" "held-finding 11 112"
-want "teardown budget" "$(verdict "syscall fuzzer: seed 0x6f step 3: $marker teardown should have woken actor 1 (replay: NIFE_SYSCALL_FUZZ_SEEDS=111:1)" 1 100)" "held-budget-expired 11 112"
+want "clean" "$(verdict 'system call fuzzer: 50 seeds, 900 ms (x)' 0 100)" "ok 50 150"
+want "mismatch" "$(verdict 'system call fuzzer: seed 0x6f step 3: a slot differs (replay: NIFE_SYSTEM_CALL_FUZZ_SEEDS=111:1)' 1 100)" "held-finding 11 112"
+want "teardown budget" "$(verdict "system call fuzzer: seed 0x6f step 3: $marker teardown should have woken actor 1 (replay: NIFE_SYSTEM_CALL_FUZZ_SEEDS=111:1)" 1 100)" "held-budget-expired 11 112"
 want "confined budget" "$(verdict "confined fuzzer: seed 0x6f step 3: $marker fuzzer 0 never came back (replay: NIFE_CONFINED_FUZZ_SEEDS=111:1)" 1 100)" "held-budget-expired 11 112"
 want "budget panic" "$(verdict "panicked at x: $marker actor 2 neither finished nor parked" 1 100)" "held-budget-expired 0 101"
 want "crash" "$(verdict 'panicked at x: index out of bounds' 1 100)" "held-crash 0 101"

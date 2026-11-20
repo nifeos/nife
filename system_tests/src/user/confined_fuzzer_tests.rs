@@ -1,5 +1,5 @@
-//! **A confined process that fuzzes the syscall surface, conducted one call at a time.**
-//! `fixtures/src/confined_syscall_fuzzer.rs` is an EL0 program that draws one syscall at a time
+//! **A confined process that fuzzes the system call surface, conducted one call at a time.**
+//! `fixtures/src/confined_system_call_fuzzer.rs` is an EL0 program that draws one system call at a time
 //! from a seed and makes it through the real trap entry. This conductor spawns two endowed fuzzers
 //! (`ROLE_A`, `ROLE_B`) and a witness (`ROLE_WITNESS`), steps each with `GO_STEP` on its slot 0,
 //! and after every completed call checks that nothing escaped: the table diff, the delegation
@@ -23,8 +23,8 @@
 //! Name: provisional, as are the fixture's and the protocol crate's.
 
 use abi::Error;
-use confined_syscall_fuzzer_contract as proto;
-use confined_syscall_fuzzer_contract::report;
+use confined_system_call_fuzzer_contract as proto;
+use confined_system_call_fuzzer_contract::report;
 
 use super::*;
 use crate::capability_object::{
@@ -444,7 +444,7 @@ impl Conductor {
         // The witness holds only GO, which the generator never names: every invoke must be
         // refused, and its table must never fill at all.
         if x == WITNESS {
-            if call.number == abi::SYSCALL_INVOKE && (call.rets[0] as i64) >= 0 {
+            if call.number == abi::SYSTEM_CALL_INVOKE && (call.rets[0] as i64) >= 0 {
                 escape!(
                     self,
                     "the witness's invoke on slot {} method {} succeeded with {:#x}",
@@ -530,7 +530,7 @@ impl Conductor {
             if !ok {
                 escape!(
                     self,
-                    "fuzzer {x}'s slot {s} filled with {:?} (rights {rights:#x}) after syscall {} \
+                    "fuzzer {x}'s slot {s} filled with {:?} (rights {rights:#x}) after system call {} \
                      words {:?} on held {:?}, which grants nothing",
                     obj,
                     call.number,
@@ -556,7 +556,7 @@ impl Conductor {
         // A plain `RECEIVE` defines w0..w3 only and leaves x4 as the caller left it, so there is
         // nothing to check there. A deferred fill is checked at the quiet point, with its own x1
         // and x4.
-        if call.number == abi::SYSCALL_INVOKE
+        if call.number == abi::SYSTEM_CALL_INVOKE
             && (call.rets[0] as i64) >= 0
             && self.was_receive_capability(x, call)
             && (self.pending.is_none() || self.pending.as_ref().unwrap().fuzzer != x)
@@ -583,7 +583,7 @@ impl Conductor {
     /// Keep the ledger and the badge record current with a step that revoked a frame or minted a badge.
     fn note_revoke_or_badge(&mut self, x: usize, call: &Call) {
         // A revoke kills the in-flight copy; a badge minted is a badge that may be seen.
-        if call.number == abi::SYSCALL_INVOKE {
+        if call.number == abi::SYSTEM_CALL_INVOKE {
             match call.words[1] {
                 abi::page_frame::REVOKE => {
                     if let Some(Some((Object::PageFrame(phys, _), _))) =
@@ -628,7 +628,7 @@ impl Conductor {
         // A SEND_CAPABILITY that completed spent its delegation: its receiver may be waiting on the
         // record to judge the fill. (Gated on the slot holding an endpoint: `SEND_CAPABILITY` and
         // `RETYPE_OBJECT` share the number 2.)
-        if call.number == abi::SYSCALL_INVOKE
+        if call.number == abi::SYSTEM_CALL_INVOKE
             && call.words[1] == proto::SEND_CAPABILITY
             && matches!(self.held(x, call), Some(Object::Rendezvous(..)))
             && (call.rets[0] as i64) >= 0
@@ -661,7 +661,7 @@ impl Conductor {
 
     /// Was this call a `RECEIVE_CAPABILITY` on an endpoint, the one call whose fills are deliveries?
     fn was_receive_capability(&self, x: usize, call: &Call) -> bool {
-        call.number == abi::SYSCALL_INVOKE
+        call.number == abi::SYSTEM_CALL_INVOKE
             && call.words[1] == proto::RECEIVE_CAPABILITY
             && matches!(self.held(x, call), Some(Object::Rendezvous(..)))
     }
@@ -677,7 +677,7 @@ impl Conductor {
         obj: Object,
         rights: u32,
     ) -> bool {
-        if call.number != abi::SYSCALL_INVOKE {
+        if call.number != abi::SYSTEM_CALL_INVOKE {
             return false;
         }
         match self.held(x, call) {
@@ -748,7 +748,7 @@ impl Conductor {
         }
     }
 
-    /// The `PROCESS` arm of `MemoryRegion::RETYPE_OBJECT` (`kernel/src/syscall/retype.rs`), as the
+    /// The `PROCESS` arm of `MemoryRegion::RETYPE_OBJECT` (`kernel/src/system_call/retype.rs`), as the
     /// caller's tables must show it: the kind is `PROCESS`, the space slot (word 3) held an
     /// address space with `WRITE`, that space is gone from the slot now (it is consumed), and the
     /// process carries no right the invoked region capability lacks. Where the process's page
@@ -971,7 +971,7 @@ impl Conductor {
                 let call = read_call(self, x);
                 escape!(
                     self,
-                    "fuzzer {x} died mid-call: syscall {} words {:?} rets {:?}",
+                    "fuzzer {x} died mid-call: system call {} words {:?} rets {:?}",
                     call.number,
                     call.words,
                     call.rets
@@ -994,7 +994,7 @@ impl Conductor {
                 let call = read_call(self, x);
                 escape!(
                     self,
-                    "{BUDGET_EXPIRED_MARKER} fuzzer {x} never came back: syscall {} words {:?} rets {:?}, now {:?}, after {budget}",
+                    "{BUDGET_EXPIRED_MARKER} fuzzer {x} never came back: system call {} words {:?} rets {:?}, now {:?}, after {budget}",
                     call.number,
                     call.words,
                     call.rets,
@@ -1085,7 +1085,7 @@ impl Conductor {
         let (_, Some(Wait::Rendezvous(_, WaitRole::Sender))) = disposition(self, x)? else {
             return None;
         };
-        if report_word(self, x, report::NUMBER) != abi::SYSCALL_INVOKE {
+        if report_word(self, x, report::NUMBER) != abi::SYSTEM_CALL_INVOKE {
             return None;
         }
         if report_word(self, x, report::ARGS + 1) != proto::SEND_CAPABILITY {
@@ -1128,7 +1128,7 @@ impl Rng {
     }
 }
 
-/// The endowment, in the slot order `confined_syscall_fuzzer_contract` lays out, plus how many slots of it
+/// The endowment, in the slot order `confined_system_call_fuzzer_contract` lays out, plus how many slots of it
 /// this fuzzer gets: seven for a fuzzer, one for the witness (GO alone). The unused tail of the
 /// witness's array holds its GO capability again, which `run` never sees, because the slice stops first:
 /// there is no filler capability to invent.
@@ -1428,7 +1428,7 @@ fn a_caller_chosen_list_cursor_is_refused() {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
     // A cursor from nowhere: not this space's chain, and page-aligned onto a page the kernel
     // would have walked as a log. The refusal is the whole fix.
-    let r = crate::syscall::invoke(
+    let r = crate::system_call::invoke(
         &mut frame,
         slot,
         abi::address_space::LIST,
@@ -1442,7 +1442,7 @@ fn a_caller_chosen_list_cursor_is_refused() {
         "a LIST cursor this space never minted was followed rather than refused"
     );
     // The walk's own start cursor stays good: an empty space answers DONE.
-    let r0 = crate::syscall::invoke(&mut frame, slot, abi::address_space::LIST, 0, 0, 0);
+    let r0 = crate::system_call::invoke(&mut frame, slot, abi::address_space::LIST, 0, 0, 0);
     assert_eq!(
         r0,
         Ok(abi::survey::DONE as i64),
@@ -1467,11 +1467,11 @@ fn own_snapshot() -> Snap {
     s
 }
 
-/// One `MemoryRegion::RETYPE_OBJECT` through the real syscall entry, as the test thread.
+/// One `MemoryRegion::RETYPE_OBJECT` through the real system call entry, as the test thread.
 fn retype_into_kernel_object(region_slot: u64, kind: u64, space_slot: u64, floor: u64) -> u64 {
     use crate::arch::exceptions::TrapFrame;
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    let slot = crate::syscall::invoke(
+    let slot = crate::system_call::invoke(
         &mut frame,
         region_slot,
         abi::memory_region::RETYPE_OBJECT,
@@ -1486,7 +1486,7 @@ fn retype_into_kernel_object(region_slot: u64, kind: u64, space_slot: u64, floor
 /// The `RETYPE_OBJECT` call the conductor reads back from a fuzzer's report page.
 fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u64) -> Call {
     Call {
-        number: abi::SYSCALL_INVOKE,
+        number: abi::SYSTEM_CALL_INVOKE,
         words: [
             region_slot,
             abi::memory_region::RETYPE_OBJECT,
@@ -1502,7 +1502,7 @@ fn retype_call(region_slot: u64, kind: u64, space_slot: u64, floor: u64, slot: u
 /// **The oracle accepts a process retyped from the caller's own region, and nothing else shaped
 /// like it.** A caller retypes an address space from its region, then retypes a process from the
 /// same region naming that space: the kernel takes a page from the region, consumes the space
-/// and files the process (`kernel/src/syscall/retype.rs`). The oracle once reported that fill as
+/// and files the process (`kernel/src/system_call/retype.rs`). The oracle once reported that fill as
 /// an escape, because it could not find a process's page. This builds both retypes by hand, with
 /// the process filed above the space's slot and then in the space's own freed slot (a replaced
 /// slot, which the oracle once never judged), and refuses a process whose page lies in another
@@ -1617,15 +1617,15 @@ fn the_oracle_accepts_a_process_retyped_from_the_callers_own_region() {
     sched::reclaim_region(other).expect("reclaim the second region");
 }
 
-/// **A confined fuzzer's random syscalls never move its reach outside its endowment** (milestone
+/// **A confined fuzzer's random system calls never move its reach outside its endowment** (milestone
 /// 779, part (b), provisional). See the module header for the conductor, the oracles and the
 /// services that keep a blocking call from ending the run.
 ///
 /// Falsification: replayable `system_tests/falsifications/user.confined_fuzzer_tests.a_confined_fuzzer_reaches_nothing_it_was_not_granted.patch`
 #[test_case]
 fn a_confined_fuzzer_reaches_nothing_it_was_not_granted() {
-    let Some(image) = program("confined_syscall_fuzzer") else {
-        crate::testing::skip!("no confined_syscall_fuzzer program in the archive");
+    let Some(image) = program("confined_system_call_fuzzer") else {
+        crate::testing::skip!("no confined_system_call_fuzzer program in the archive");
     };
     let hertz = crate::arch::timer::frequency();
     let start = crate::arch::timer::now();

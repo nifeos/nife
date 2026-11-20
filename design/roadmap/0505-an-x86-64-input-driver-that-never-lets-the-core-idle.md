@@ -23,7 +23,7 @@ As far as the lane could see, nothing gates it. The `Irq` capability, `irq_wait`
 input driver's interrupt-driven arm all exist on aarch64 and riscv64. Milestone 299 (the x86
 port-range capability)'s follow-on names what x86_64 lacks: delivering a device line (COM1's legacy IRQ 4, through the IO APIC) to a
 userspace waiter, where today the kernel delivers only self-directed vectors to a driver. If that
-turns out to need a new capability method or syscall, it becomes a design fork and stops there.
+turns out to need a new capability method or system call, it becomes a design fork and stops there.
 
 In brief. `components/src/input.rs`'s x86_64 `_start` is `loop { drain(); yield_now(); }`. A
 thread that always yields is always runnable, so from the moment it starts the run queue is never
@@ -55,7 +55,7 @@ other two run: drain, arm, then `irq_wait`/drain/`irq_ack`. Then delete the x86 
 ## What was built
 
 Built 2026-10-03 (UTC) by the 505 lane, on calef's approval of the merge-rate correction's action
-items. Within the existing capability model: no new method, no new syscall, no ABI change.
+items. Within the existing capability model: no new method, no new system call, no ABI change.
 
 1. The IO APIC's device vector becomes a driver's message. `kernel/src/arch/x86_64/exceptions.rs`
    asks `irq::intid_of_vector` which intid armed the line, then routes it through
@@ -72,7 +72,7 @@ items. Within the existing capability model: no new method, no new syscall, no A
    MCR's `OUT2`, the gate a real PC puts between the 16550 and the ISA line (QEMU does not model
    it). The polled twin is deleted.
 5. The workarounds for the starved idle loop are deleted: `progenitor_stack::on_yield` and its
-   yield-syscall hook, `swish-check`'s "that gauge is the mark at the hand-over" caveat and header
+   yield-system-call hook, `swish-check`'s "that gauge is the mark at the hand-over" caveat and header
    paragraph. Milestone 182's two `BUGS` entries are marked answered.
 
 ## How it was proved

@@ -15,7 +15,7 @@ Raised by the lane for milestone 106 (a wait that ends on either
 the interrupt or the deadline), which built the `Timer` object and converted four consumers. This
 records the ones it did not convert, and what each needs.
 
-The first two items below are code in one file each, with no syscall, wire format or
+The first two items below are code in one file each, with no system call, wire format or
 dependency. The timetable item is gated as its own section says.
 
 ## What milestone 106 converted
@@ -72,7 +72,7 @@ The PAL refuses to make one while any contract slot is empty, and such a program
 The fix is the loader granting the pair in two new contract slots, as `net_stack`'s spawner does.
 That changes `crates/std_runtime_contract`, which the progenitor, the kernel's `std_service` and the
 PAL all read, so it wants the contract's owner, milestone 595 (provisional), in the room. The
-alternative, a way to retype into a named slot, is a syscall-surface change and calef's.
+alternative, a way to retype into a named slot, is a system-call-surface change and calef's.
 
 ### The shell's `^C` watch, the rest of the way
 

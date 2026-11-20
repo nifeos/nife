@@ -13,7 +13,7 @@ outside review that produced the work is
 
 ## In one paragraph
 
-What every nife program links: one syscall wrapper (`invoke`) and the calls built on it, the entry
+What every nife program links: one system call wrapper (`invoke`) and the calls built on it, the entry
 macro, the panic handler macro, and typed, bounds-checked, alignment-checked windows over memory the
 kernel handed a process (`MappedWindow`, `socket_frame::Frame`). It covers `aarch64`, `riscv64` and
 `x86_64`. The crate is `no_std`, has about 2,700 lines of source in 14 files and 100 `unsafe` sites,
@@ -35,7 +35,7 @@ no block.
 | license | `MIT OR Apache-2.0`, both texts at the crate root, written in the manifest. The crate adapts no source |
 | `publish` | `false`, with the one-sentence reason in the manifest: milestone 1017 keeps moved crates unpublished under §305 (git dependencies are allowed on `nifeos/*` only, pinned to a landed commit) until their release milestone |
 | dependencies | `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` by path, `counter_frequency_contract` by path outside `aarch64`, and `clock_contract` and `entropy_contract` already by git `rev` |
-| manifest metadata | description, keywords (`no-std`, `runtime`, `syscall`), categories (`no-std`, `embedded`, `os`), `readme`, and `[package.metadata.docs.rs]` for the three targets. The `repository` key waits for the move |
+| manifest metadata | description, keywords (`no-std`, `runtime`, `system_call`), categories (`no-std`, `embedded`, `os`), `readme`, and `[package.metadata.docs.rs]` for the three targets. The `repository` key waits for the move |
 | size | 14 files under `src`, 2,689 lines |
 | lints | literal `[lints.rust]` and `[lints.clippy]` tables, the same set `current_cpu_contract` carries |
 | `link.ld` | delivered by the crate's `build.rs` through `OUT_DIR` and `cargo::rustc-link-search`; no program names a path into the crate |
@@ -100,7 +100,7 @@ Not run, and so not claimed:
 | module | items |
 |---|---|
 | crate root | `VERSION`, `INTERFACE_ID`, `CycleMeaning` (re-exported from `abi`), the macros `program_entry!` and `panic_handler!` |
-| `syscall` | `invoke`, `raw_syscall`; both `unsafe` |
+| `system_call` | `invoke`, `raw_system_call`; both `unsafe` |
 | `process` | `exit`, `trap`, `yield_now`, `require`, and the entry symbol `_start` |
 | `clock` | `now`, `counter_hertz`, `counter_hertz_checked`, `cycle_reading` with `CycleReading { count, meaning }`, `current_cpu`, `tick_hertz`, `monotonic_nanoseconds` |
 | `inter_process_communication` | `send`, `receive`, `receive_capability`, `receive_message`, `receive_capability_message`, `receive_request`, `call`, `call_receiving`, `reply`, `reply_capability`, `send_capability`, `badge`, `reap`, `survey`, `survey_record`, `virtual_address_space_list`, the notification calls `notification_signal`, `notification_wait`, `notification_poll` and `notification_bind`, `timer_arm`, `timer_cancel`, `retype_sleeper`, `sleep_until`, and the types `Message`, `Received`, `Request`, `Reply` (with `slot`) and `Delivered` (with `decode` and `into_reply`) |
@@ -151,7 +151,7 @@ spelling meets `design/naming.md` as written and the block only needs the ratifi
 |---|---|---|
 | crate `user_mode_runtime` | ratified | stands |
 | modules `initial_ramdisk`, and the items `bytes`, `fill`, `interrupt_acknowledge`, `interrupt_wait`, `send_capability`, `as_slice`, `as_mut_slice`, `address_space_layout_into`, `destroy_memory_region`, `is_granted`, `map_memory_region_page`, `retype_into_kernel_object`, `retype_into_page_frame`, `revoke_page_frame`, `split_memory_region`, `thread_control_block_capability_insert`, `thread_control_block_configure`, `thread_control_block_start`, `notify`, `read_register`, `write_register`, `setup_queue` | ratified (24 with the crate) | stand |
-| modules `child_stub`, `clock`, `devices`, `inter_process_communication`, `objects`, `process`, `socket_frame`, `syscall` | provisional | stand. The ratified `initial_ramdisk` and the contract crates set the pattern: a module named for the seam it holds |
+| modules `child_stub`, `clock`, `devices`, `inter_process_communication`, `objects`, `process`, `socket_frame`, `system_call` | provisional | stand. The ratified `initial_ramdisk` and the contract crates set the pattern: a module named for the seam it holds |
 | modules `entropy`, `mapped_window`, `virtio` | no block | stand; `virtio` is an accepted word, like `pci` |
 | `INTERFACE_ID`, `VERSION` | provisional | stand: the names every contract crate carries |
 | `CycleReading`, `cycle_reading`, `counter_hertz`, `counter_hertz_checked`, `tick_hertz` | provisional | stand: a rate ends in `_hertz` |
@@ -162,7 +162,7 @@ spelling meets `design/naming.md` as written and the block only needs the ratifi
 | `map_page_frame`, `slice_page_frame`, `memory_region_usage`, `retype_page_frame_run`, `capability_delete`, `thread_control_block_suspend`, `thread_control_block_resume` | provisional or no block | stand |
 | `exit`, `trap`, `yield_now`, `require`, `program_entry`, `_start` | no block, provisional, recorded | stand. `require` halts on a mismatch that cannot be recovered; the kernel's `trust::require` has the same meaning. `_start` is the entry symbol every toolchain uses |
 | `now`, `monotonic_nanoseconds`, `current_cpu`, `port_read_byte`, `port_write_byte`, `reboot`, `SEND_THEN_EXIT` | no block or provisional | `port_read_byte` and `port_write_byte` keep `inb` and `outb` as `doc(alias)`. The rest stand. `now` returns ticks, which its doc says, and `counter_hertz` is its pair. A reader may prefer `counter_ticks`; the architect can rule it, and the cost is every program that reads the counter |
-| `invoke`, `raw_syscall` | no block or provisional | stand |
+| `invoke`, `raw_system_call` | no block or provisional | stand |
 | private: `Sealed`, `invoke6`, `trap6`, `linker_script` | provisional | not public; the move lane rewrites the blocks with the rest |
 
 Two judgments in the table are the lane's and not a ruling: that every provisional name stands, and
@@ -174,7 +174,7 @@ each block with a ratified one, and that is the move lane's step once the archit
 
 `license = "MIT OR Apache-2.0"`, both texts at the crate root. The crate adapts no source, so no
 `AND` term follows the pair. Register and instruction names (`CNTVCT_EL0`, `rdtime`, `rdtsc`,
-`syscall`) are architecture facts, and the crate copies no text from a manual or a kernel.
+`system_call`) are architecture facts, and the crate copies no text from a manual or a kernel.
 
 ## What still blocks the move
 

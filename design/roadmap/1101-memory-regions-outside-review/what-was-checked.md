@@ -44,7 +44,7 @@ nightly.
   falsification witness among them, in 0.21 seconds after the build.
 
 Inferred from reading, not run: the behavior of the kernel's `SPLIT` after item 1. The proposal
-note says the syscall still answers `OutOfMemory`.
+note says the system call still answers `OutOfMemory`.
 
 Not run: a mutation census (outside its window; the figures above are the tree's records). Also not
 run: the template's workflows (no repository exists), a build at a `rust-version` (the manifest has

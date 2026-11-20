@@ -15,10 +15,10 @@ An appendix to [notes/job-mix.md](../job-mix.md), whose BUGS section lists each 
   margin reads as wedged when it is merely slow. `--quiet-after 0` is the escape and it gives up the
   detection. A heartbeat in the supervisor is the real fix and is a kernel change; milestone 324's
   block records it as follow-on.
-- The trap still slows with busy cores, a little. On radon `null_syscall` grew 94 ticks a job from
+- The trap still slows with busy cores, a little. On radon `null_system_call` grew 94 ticks a job from
   one task to four, then 48 after the reaper fix, then 10 after milestones 761 and 766. Its one-task
   level moves up to 8 ticks with code placement alone.
-  [`null-syscall-under-load.md`](null-syscall-under-load.md) has every evening.
+  [`null-system-call-under-load.md`](null-system-call-under-load.md) has every evening.
 - There is no committed baseline and no `--check`. `script/bench` gates because its icount counts
   are deterministic; a sweep whose entire subject is scheduling under contention is not, on any
   accelerator this tree has. A gate here would be asserting a tolerance nobody has measured.

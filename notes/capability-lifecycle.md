@@ -40,7 +40,7 @@ src.delegate(self.rights).map_err(|_| NotPermitted)  // the crate's rule: GRANT 
 ```
 
 **The read and the filing are one critical section, and that is a revocation property, not a
-tidiness one** (2026-10-04 UTC). Until then the syscall layer read the source with `current_capability`
+tidiness one** (2026-10-04 UTC). Until then the system call layer read the source with `current_capability`
 and handed the copy to `inter_process_communication_send_capability`, which filed it under a second hold of the lock. A
 `PageFrame::REVOKE` or `MemoryRegion::DESTROY` sweep could run between the two, delete the source,
 and pass by before the copy was filed, so the copy survived the revoke. `CAPABILITY_INSERT` and `SLICE`
@@ -78,7 +78,7 @@ capability (was I trusted to lend it?). Two rights, two objects, two questions.
 
 The frame path shows every piece confining the next:
 
-1. `MemoryRegion::RETYPE` mints the owner a `PageFrame` with `READ|WRITE|GRANT` (`memory_region_retype` in `kernel/src/syscall/memory_region.rs`).
+1. `MemoryRegion::RETYPE` mints the owner a `PageFrame` with `READ|WRITE|GRANT` (`memory_region_retype` in `kernel/src/system_call/memory_region.rs`).
 2. The owner maps it writable (`PageFrame::MAP` with the writable flag needs `WRITE`).
 3. The owner delegates a `READ`-only, no-`GRANT` derivative with `SEND_CAPABILITY`.
 4. The consumer's `PageFrame::MAP` sees `READ` without `WRITE`, so it is confined to `user_read_only_data`: it
@@ -271,7 +271,7 @@ capability's family, and object-blind over the range).
 ### BUGS
 
 - A port range revoke matches by object equality, not overlap. A capability naming a wider or
-  narrower range over the same ports keeps its capability and its cached grant. No syscall reaches
+  narrower range over the same ports keeps its capability and its cached grant. No system call reaches
   that, because `PortRange::REVOKE` takes `(base, count)` from the invoker's own capability. A change
   that let a caller name a sub-range would open it (`notes/confinement-outsider-pass-8.md`, near
   miss 1).

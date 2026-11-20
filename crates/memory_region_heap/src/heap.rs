@@ -65,7 +65,7 @@ impl MemoryRegionPages {
 
 impl PageSource for MemoryRegionPages {
     fn map_page(&mut self, virtual_address: u64) -> Result<(), Refusal> {
-        // SAFETY: plain syscall; the kernel validates the slot, the virtual address, and the budget.
+        // SAFETY: plain system call; the kernel validates the slot, the virtual address, and the budget.
         let answer = unsafe {
             user_mode_runtime::invoke(self.slot, abi::memory_region::MAP, virtual_address, 0, 0)
         };

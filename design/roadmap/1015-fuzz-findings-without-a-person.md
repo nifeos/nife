@@ -194,7 +194,7 @@ Read on 2026-11-01 (UTC):
 
 - How long a fix pull request stays public is unmeasured. The window runs from the push of the
   approved fix to the merge, about an hour of merge queue by estimate. It grows whenever a hold
-  applies: `needs-architect` on a fix that touches the syscall surface, or a red trunk. The first
+  applies: `needs-architect` on a fix that touches the system call surface, or a red trunk. The first
   fix measures it.
 - Whether a draft advisory needs private vulnerability reporting switched on (from memory: it does
   not).

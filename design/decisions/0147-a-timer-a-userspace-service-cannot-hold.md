@@ -107,11 +107,11 @@ Measured (milestone 263's scaffold, built, gated green with `script/test`, and d
 |---|---|
 | the `Object` variant | **free**; the enum is already 24 bytes wide because of `PageFrame` |
 | `ipc_fastpath` | **unchanged on all three ISAs** |
-| `syscall_entry` (flat) | aarch64 +12 B, riscv64 +158 B, x86_64 +96 B |
+| `system_call_entry` (flat) | aarch64 +12 B, riscv64 +158 B, x86_64 +96 B |
 | kernel symbol bytes | +738 B / +2,266 B / +1,386 B, all under 0.25% |
 | per-tick bookkeeping | already priced in `notes/timed-wait.md`: one comparison per idle tick |
 
-What it costs that is not bytes. A syscall-surface addition, permanent, that every future program is
+What it costs that is not bytes. A system-call-surface addition, permanent, that every future program is
 written against. And a dependency on milestone 151, which is unbuilt. Without §101 (notification
 objects)'s TCB binding this buys a thread a timer it can block on and no way to block on a timer
 *and* a message at once, which is milestone 106's actual complaint. Option 1 is 151 plus one object,
@@ -151,7 +151,7 @@ service, and that reason is gone.
 ## What this file does not do
 
 It did not recommend, and that was on purpose. AGENTS.md: *"Recommend on reversible forks; give
-options only on irreversible ones"*, and a syscall-surface addition is the named example on the
+options only on irreversible ones"*, and a system-call-surface addition is the named example on the
 irreversible side. Milestone 263's lane priced the options and stopped there; calef ruled from the
 prices. Kept in the past tense rather than deleted, because how a decision was reached is part of
 the record. A reader who finds a file that names a winner should be able to see that the winner
@@ -164,7 +164,7 @@ in this tree for a per-thread system-register bit maintained across a context sw
 and 237 built one, so that sentence is stale inside its own decision. The correction is recorded in
 [`notes/timer-capability/specifications.md`](../../notes/timer-capability/specifications.md#aarch64-the-blocks-negative-is-refuted) and in 263's block; amending a decision section is not a lane's to do.
 
-## Amendment (milestone 106): the syscall numbers, `bits`, and no slack argument
+## Amendment (milestone 106): the system call numbers, `bits`, and no slack argument
 
 This section's option 1 named the shape, `Timer::ARM(deadline, notification)`, and left the numbers
 and one detail to the building lane. Milestone 106's PR (#1378) asked for both, and calef ruled on
@@ -188,7 +188,7 @@ and on the notification (the same right `SIGNAL` itself needs, because arming is
 armed makes the expiry a no-op, not an error: there is nobody left to tell.
 
 Deadlines are absolute counter ticks, the same counter a program already reads without a
-syscall (`CNTVCT_EL0`, `rdtime`, `rdtsc`); nothing converts between clocks. Resolution is the
+system call (`CNTVCT_EL0`, `rdtime`, `rdtsc`); nothing converts between clocks. Resolution is the
 scheduler tick, 100 Hz / 10 ms: a deadline fires at the first tick at or after it, never before.
 
 `Timer::CANCEL = 1`. `invoke(cap, CANCEL, _, _, _)` disarms the timer: `1` if a deadline was
@@ -201,7 +201,7 @@ No slack argument. calef, 2026-09-27T02:00:47Z (UTC), on PR #1378, after reading
 this section's option 1 did not need to (Zircon's `zx_timer_set`, which carries one; Mach's
 `mk_timer`; seL4's badge bits; Linux `timerfd`; kqueue): *"Keep it confirmed. We will build a slack
 if we need it."* `ARM` takes exactly three arguments beyond the object and method. A slack would be
-a later, additive syscall change, only if a tickless kernel ever needs one; this kernel's timer is
+a later, additive system call change, only if a tickless kernel ever needs one; this kernel's timer is
 tick-resolution already, so there is nothing for a slack to buy today.
 
 Both rulings are calef's own comments on #1378, relayed there under his account by the maintainer

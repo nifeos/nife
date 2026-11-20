@@ -55,7 +55,7 @@ Agent review is enough to approve and merge a pull request through the merge que
 UTC). Do not ask an architect to approve each one.
 
 Escalate what the standing rules say to escalate: an edit to a `design/decisions/` section, the
-syscall surface, a new dependency, a name, a departure from a brief. [§88
+system call surface, a new dependency, a name, a departure from a brief. [§88
 (`needs-architect` as a required check)](../../../design/decisions/0088-needs-architect-as-a-check.md)
 is the gate, and the [decisions skill](../decisions/SKILL.md) holds the label, the hold and the ask.
 

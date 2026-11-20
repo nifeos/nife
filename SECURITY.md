@@ -85,7 +85,7 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
   capability be used twice or by the wrong thread, or a server be confused about which client it is
   answering (DECISIONS §12 (Call/Reply IPC), §26 (the fault endpoint);
   `crates/inter_process_communication`).
-- **The syscall surface.** Any `svc`/`ecall` argument, from EL0, that panics the kernel, corrupts
+- **The system call surface.** Any `svc`/`ecall` argument, from EL0, that panics the kernel, corrupts
   kernel state, leaks kernel memory, or costs unbounded kernel time. The surface is deliberately
   narrow and every method is meant to validate its own inputs (DECISIONS §4 (kernel shape) rule 3,
   §16 (object revocation)).
@@ -97,7 +97,7 @@ reach past the boundaries the kernel enforces. Anything that breaks one of these
   keeping them apart is who happens to be blocked, not a mapping), and no test in this tree can make
   a virtio **device** misbehave, so the direction the IOMMU exists for has no negative control.
 - **The foreign-language and vendored seams.** The C component holds no capabilities and makes no
-  syscalls; the vendored RedoxFS engine runs as a confined EL0 server. A way for either to reach
+  system calls; the vendored RedoxFS engine runs as a confined EL0 server. A way for either to reach
   authority it was not given is exactly the claim under test (DECISIONS §27 (the filesystem
   service), §31 (the foreign-language seam); notes/c-seam.md,
   notes/redoxfs-audit.md).
@@ -226,7 +226,7 @@ disagreeing.)
   secrets. Closed in the script; the ruleset is a proposal. In the kernel, a port take-back on
   `x86_64` reset the invoker's own bitmap (fails closed, fixed), the SVE/SME and V enables are now
   closed beside the FP one, and a device tree's `totalsize` is bounded before it becomes a slice.
-- **design/audit-reports/2026-09-29-syscall-surface-whole.md**: the `invoke` surface entire, read
+- **design/audit-reports/2026-09-29-system-call-surface-whole.md**: the `invoke` surface entire, read
   from inside a confined process: the two object types, the rendezvous method and the wake tag the
   window added, beside the older seams. Nothing lets a confined process take authority it was not
   granted; three recorded risks confirmed where they are stated.

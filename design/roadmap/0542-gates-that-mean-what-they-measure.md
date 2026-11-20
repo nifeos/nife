@@ -153,7 +153,7 @@ What it prints now, per architecture, with drift kept, demoted and relabelled:
     ipc_send_recv    4734 B   1.16x target  14.4% of L1i  over 8 symbols
     ipc_call_reply   6038 B   1.47x target  18.4% of L1i  over 10 symbols  <- the shape the system runs
     ipc_fastpath     6038 B   1.47x target  18.4% of L1i  the worse of the two shapes
-    syscall_entry    1914 B                  5.8% of L1i  over 5 symbols (flat, no closure)
+    system_call_entry    1914 B                  5.8% of L1i  over 5 symbols (flat, no closure)
     total            7952 B   1.94x target  24.3% of L1i  (7.77 KiB), an upper bound
     49% of the 16 KiB ceiling §144 (a delta and a ceiling) decides and does not yet enforce
     drift: ipc_send_recv +2.2% against baseline (4632), within the 5% band
@@ -167,9 +167,9 @@ Measured 2026-09-21 on `nightly-2026-09-20`, all three:
 | riscv64 | 6,038 | 1.47x | 18.4% | 7,952 | 1.94x | 49% |
 | x86_64 | **8,234** | **2.01x** | **25.1%** | **9,935** | **2.43x** | **61%** |
 
-`syscall_entry` gets the L1i share and no target ratio, because the 4 KiB target is stated over
+`system_call_entry` gets the L1i share and no target ratio, because the 4 KiB target is stated over
 the IPC fastpath's instructions and the trap path is not part of what it bounds. Its bytes are
-fetched on every syscall, so the share is still the quantity that matters.
+fetched on every system call, so the share is still the quantity that matters.
 
 The 16 KiB line is the third distance and the only one the tree has already voted on. §144 (a
 delta and a ceiling) decides an absolute 16 KiB per architecture on exactly this `total`, derived as
@@ -212,7 +212,7 @@ would fail on the day it was written and be turned off on the next.
 
 - **Recorded.** The footprint baselines have the icount ones' old problem and the erosion is
   measured, not hypothetical: on `nightly-2026-09-20` every figure on every ISA sits above its
-  baseline, and riscv64's `syscall_entry` is +4.7% against a 5% band. One more bump can fail
+  baseline, and riscv64's `system_call_entry` is +4.7% against a 5% band. One more bump can fail
   that gate for a reason no commit is responsible for. Stamping it means re-saving it, and
   re-saving was refused for this milestone, so the first deliberate `--save` there is where the
   stamp belongs. In `script/fastpath-footprint`'s `BUGS`.

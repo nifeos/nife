@@ -126,7 +126,7 @@ has each piece, its test and its date.
 ## Attribution is the actual work, and the one place Unix does something we do not
 
 A capability says what you may do. It says nothing about who did it. Unix gets audit almost free
-because the uid is present at every syscall and doubles as the answer. Measured boot (milestone 22,
+because the uid is present at every system call and doubles as the answer. Measured boot (milestone 22,
 trusted init) establishes *what code* is running and capabilities establish *what it can reach*. Nothing
 records *who asked*, and that gap is real.
 

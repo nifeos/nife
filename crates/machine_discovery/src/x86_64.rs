@@ -346,7 +346,7 @@ impl Features {
 /// No-execute. `CPUID.80000001H:EDX[20]`.
 pub const NX: Features = Features(1 << 0);
 /// The `syscall`/`sysret` instruction pair. `CPUID.80000001H:EDX[11]`.
-pub const SYSCALL: Features = Features(1 << 1);
+pub const SYSTEM_CALL: Features = Features(1 << 1);
 /// The TSC ticks at a rate that does not move with the core's frequency or idle state.
 /// `CPUID.80000007H:EDX[8]`.
 pub const INVARIANT_TSC: Features = Features(1 << 2);
@@ -367,8 +367,8 @@ pub const TABLE: [Row; 4] = [
         why: "the hardware bit W^X is made of; without it the page tables' no-execute is a comment",
     },
     Row {
-        name: "syscall",
-        bit: SYSCALL,
+        name: "system call",
+        bit: SYSTEM_CALL,
         gate: Gate::Refuse,
         cite: "CPUID.80000001H:EDX[11]",
         why: "the kernel's whole ring-3 entry path; absent, the ABI is #UD on the first call",
@@ -537,7 +537,7 @@ impl Isa {
                 features = features.union(NX);
             }
             if w.extended_leaf1_edx & (1 << 11) != 0 {
-                features = features.union(SYSCALL);
+                features = features.union(SYSTEM_CALL);
             }
         }
         if w.extended_maximum_leaf >= 0x8000_0007 && w.extended_leaf7_edx & (1 << 8) != 0 {
@@ -884,6 +884,6 @@ mod tests {
         w.leaf7_0[1] = 1 << 18;
         assert!(Isa::decode(&w).features.contains(RDSEED));
         assert_eq!(NX.union(NX), NX);
-        assert!(NX.union(SYSCALL).contains(NX) && NX.union(SYSCALL).contains(SYSCALL));
+        assert!(NX.union(SYSTEM_CALL).contains(NX) && NX.union(SYSTEM_CALL).contains(SYSTEM_CALL));
     }
 }

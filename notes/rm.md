@@ -129,10 +129,10 @@ refuses the second `SEND` and `rm` exits.
   every architecture: the first descends one name with `OPENDIR`, the second narrows the root with
   `NARROW`, the verb §173 (narrowing the root of the shell's namespace) ruled. See notes/dir-capability.md's BUGS.
 - **The shell does not see `rm`'s exit status.** The spawn service grants no verdict endpoint,
-  and the shell reads no exit status from any program it spawns (`SYSCALL_EXIT` carries none). The
+  and the shell reads no exit status from any program it spawns (`SYSTEM_CALL_EXIT` carries none). The
   status and count reach a guest test, through the verdict endpoint, and nothing at the prompt. A
   status carried on the death message would reach every program at once; that is a change to the
-  syscall surface and has no milestone yet.
+  system call surface and has no milestone yet.
 - **A report that holds only its end means the run printed nothing**, and that is checkable
   because a text frame's first word is a byte count of at most 16, which no end of stream equals.
   The status cannot ride the end of stream's other two words, since the sink contract reserves

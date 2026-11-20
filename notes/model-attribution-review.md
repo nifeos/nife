@@ -53,7 +53,7 @@ Seven findings, in the order they were run. Each, with its tables, is in
    unknown.
 4. The work is not mostly code. Sonnet is second only to Opus 4.8 in kernel share and lowest in
    tooling. It wrote 46,223 diff lines, 38,459 of them in commits that touch code.
-5. It sat squarely on the irreversible list: 25 commits and 649 diff lines on the syscall surface
+5. It sat squarely on the irreversible list: 25 commits and 649 diff lines on the system call surface
    and the wire crates, milestone 158 (build the eleven kernel object and identifier renames), and
    new crates and programs. The naming half needs no study, because `script/names` already tracks
    it.
@@ -103,7 +103,7 @@ direction the reader expects. Six axes, each scored 0 to 2 with the anchors writ
 
 1. **Correctness.** Does the change do what its message says, on the paths it touches.
 2. **Confinement.** Does it widen authority, and does the message say so if it does.
-3. **Irreversibility handled.** If it touches the syscall surface, a wire format, a name, or a
+3. **Irreversibility handled.** If it touches the system call surface, a wire format, a name, or a
    dependency, is the decision recorded and is it calef's where it should be.
 4. Test earns its keep. Does the test prove something nothing else would have proved, or is it
    filler.
@@ -142,7 +142,7 @@ differential, and the expensive evidence would be hard to obtain and easy to fak
 
 ### Tier 1: the irreversible surface, unblinded, no control. 1 lane, 2 to 3 hours, ~400k tokens.
 
-Read every Sonnet diff touching `crates/abi`, `kernel/src/syscall.rs`, and `crates/*_proto`: 25
+Read every Sonnet diff touching `crates/abi`, `kernel/src/system_call.rs`, and `crates/*_proto`: 25
 commits, 649 diff lines. Then the 7 new crates' and 7 new programs' manifests and capability
 declarations, and the 14 Cargo manifest changes against §46's rule that a dependency is a decision.
 

@@ -228,7 +228,7 @@ fn a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic() {
 ///
 /// The stack mints each socket's capability from a `WRITE | GRANT` copy of its serve endpoint
 /// (`socket_contract::stack_slots::MINTING_ENDPOINT_SLOT`), badged and without `READ`, and the kernel refuses a
-/// receive on a `READ`-less endpoint (`kernel/src/syscall.rs`). With `READ`, a plain `RECEIVE` or
+/// receive on a `READ`-less endpoint (`kernel/src/system_call.rs`). With `READ`, a plain `RECEIVE` or
 /// `RECEIVE_CAPABILITY` would dequeue other clients' requests, milestone 649's capture class by IPC. The
 /// squatter (role 8) runs both probes on its own socket, so no victim is needed.
 ///

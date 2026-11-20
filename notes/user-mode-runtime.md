@@ -4,7 +4,7 @@
 
 `crates/user_mode_runtime` is what every nife userspace program links, on all three architectures.
 User mode is `EL0` on aarch64, U-mode on riscv64 and ring 3 on `x86_64`. The crate holds one
-syscall wrapper, `invoke`, and the calls every program builds on it: `send`, `receive`, `call`,
+system call wrapper, `invoke`, and the calls every program builds on it: `send`, `receive`, `call`,
 `exit` and `require`. Each wrapper discharges `invoke`'s safety obligation once, so a call site
 does not repeat it. This note carries the design the crate's doc comments link to.
 
@@ -29,11 +29,11 @@ are `no_run` and only type-checked. The wire contracts layered over this crate c
 ## Three ABIs, one surface
 
 aarch64 uses `svc #0` with the number in `x8` and arguments in `x0..x5`. RISC-V uses `ecall` with
-`a7` and `a0..a5`. `x86_64` uses `syscall` with `rax` and `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`,
-as §124 (ratify the x86_64 syscall ABI) records. All three return in the first argument register,
+`a7` and `a0..a5`. `x86_64` uses `system_call` with `rax` and `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`,
+as §124 (ratify the x86_64 system call ABI) records. All three return in the first argument register,
 the kernel reconciles them in `TrapFrame`, and every signature and `abi` constant is identical.
 
-`x86_64` costs more in three places. `syscall` clobbers `rcx` and `r11` at every site, `rdtsc`
+`x86_64` costs more in three places. `system_call` clobbers `rcx` and `r11` at every site, `rdtsc`
 answers in two halves, and there is no architected counter frequency, so `cntfrq` reads a page the
 kernel fills and panics when the page is zeroed or unrecognized.
 
@@ -41,12 +41,12 @@ kernel fills and panics when the page is zeroed or unrecognized.
 
 `trap6` is the one place the trap instruction appears. It passes the number and six words in, and
 reads six words back. The kernel writes its result into the first register on the way out of every
-syscall, and some methods write up to the sixth, so no caller may declare a register as surviving
+system call, and some methods write up to the sixth, so no caller may declare a register as surviving
 the trap. A yield comes back with `x0 = 0`, and a retry loop that kept its arguments live across
-one sent the wrong call (notes/job-mix/spawn-job-miscompiled-yield.md). `helpers/syscall_asm.py`
+one sent the wrong call (notes/job-mix/spawn-job-miscompiled-yield.md). `helpers/system_call_asm.py`
 gates every userspace trap.
 
-For `SYSCALL_INVOKE`, the capability, the method and three arguments go in the first five registers, and
+For `SYSTEM_CALL_INVOKE`, the capability, the method and three arguments go in the first five registers, and
 the reply comes back in the same five. The sixth register is an output and goes in as zero. The
 kernel writes argument register 5 (`x5`, `a5`, `r9`) with a dead child's label when it delivers a
 death message to a plain `RECEIVE`, and leaves it alone otherwise (§148 (resolves by asking the
@@ -58,10 +58,10 @@ the instruction. `syscall` writes the return address into `rcx` and the caller's
 `r11`, so both are declared clobbered. A version without them compiles, then corrupts whichever
 local the register allocator had put there. `r10` carries the fourth word in place of the C ABI's
 `rcx` for the same reason, which is why §124 records that substitution as forced. `options(nostack)`
-still holds, because `syscall` does not push. That is also why the kernel's entry path parks `rsp`
+still holds, because `system_call` does not push. That is also why the kernel's entry path parks `rsp`
 by hand (`arch/x86_64/trap.s`).
 
-`raw_syscall` is `trap6` made public for one caller, `fixtures/src/confined_syscall_fuzzer.rs`.
+`raw_system_call` is `trap6` made public for one caller, `fixtures/src/confined_system_call_fuzzer.rs`.
 It draws the number and all six words at random, unknown numbers included, which no typed wrapper
 can express.
 
@@ -106,7 +106,7 @@ failure a data abort at an address derived from the return address, because `far
 ## Time
 
 The counter, its frequency, monotonic nanoseconds, the cycle counter and the current CPU each
-read a register or a kernel-filled page with no syscall. Why each target differs, and what each
+read a register or a kernel-filled page with no system_call. Why each target differs, and what each
 refuses, is in [the time appendix](user-mode-runtime/time.md).
 
 ## Memory a process was handed
@@ -153,7 +153,7 @@ full `fence`, the same conservative choice `kernel::arch::direct_memory_access_w
 `x86_64` is TSO. The orderings this barrier is asked for are store-store (descriptor before index,
 index before notify) and load-load (used index before payload). The machine already guarantees both
 for the write-back memory a coherent device shares. The store-load case TSO does not give is not
-reachable here, because every notify and register access in these drivers leaves through a syscall
+reachable here, because every notify and register access in these drivers leaves through a system call
 instruction, which is serializing. So on `x86_64` the compiler is the whole exposure, and
 `compiler_fence` is the whole answer.
 
@@ -164,8 +164,8 @@ finding 9). A fourth architecture now fails to build. `entropy_backend`'s backen
 in-tree precedent for ending in `compile_error!` rather than a fallback.
 
 `doorbell_barrier` is the stronger barrier, for a driver whose doorbell is a direct store to a
-device-typed page in its own address space with no syscall in between. It is `dmb sy`, `fence` and
-`mfence`. It must not be merged with `virtual_io_ring_barrier`, whose drivers notify through a syscall.
+device-typed page in its own address space with no system call in between. It is `dmb sy`, `fence` and
+`mfence`. It must not be merged with `virtual_io_ring_barrier`, whose drivers notify through a system_call.
 `components/src/non_volatile_memory_express.rs` was its first caller, and the `e1000e` data plane
 its second.
 
@@ -218,7 +218,7 @@ workload benchmark)'s `SPAWN` job share the one copy.
 The `x86_64` stub is bytes, because x86 instructions are not a fixed width. Each immediate uses the
 32-bit form, `mov r32, imm32`, which zeroes the upper half of the register and is the only encoding
 that keeps a small constant to five bytes. `r10` and `r8` need a REX prefix (`0x41`) to be named at
-all, so those rows are six bytes. The registers the `syscall` ABI's fourth and fifth arguments use
+all, so those rows are six bytes. The registers the `system_call` ABI's fourth and fifth arguments use
 did not exist on the 386 whose opcode map this still is.
 
 ## Address spaces

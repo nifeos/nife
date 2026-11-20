@@ -101,19 +101,19 @@ and, on the point that decides it here:
 
 > The vclock HPET code has also always been a questionable speedup.
 > Accessing an HPET is exceedingly slow (on the order of several
-> microseconds), so the added overhead in requiring a syscall to read
+> microseconds), so the added overhead in requiring a system call to read
 > the HPET is a small fraction of the total code of accessing it.
 
 A time source whose read costs several microseconds is slower than asking the kernel. Measured
 on cordoba (x86_64, Linux, four cores, load average 3.6) with a throwaway spike on 2026-09-02: a
 `clock_gettime(CLOCK_MONOTONIC)` through the vDSO costs 28.4 ns, and the same call forced through
 `syscall(SYS_clock_gettime, ...)` costs 596.9 ns. So an HPET read at "several microseconds" is
-several times *more* expensive than the syscall that a closed TSC would force. It is not a fallback;
+several times *more* expensive than the system call that a closed TSC would force. It is not a fallback;
 it is a worse version of the thing it would be a fallback from. The spike is not shipped.
 
 The HPET is also not free to reach. `crates/machine_discovery/src/acpi.rs` sees the `HPET` table in
 the XSDT walk and does nothing with it. So this route costs table parsing, an MMIO mapping, and a way
-to hand that mapping to a program, before it buys a clock that loses to a syscall.
+to hand that mapping to a program, before it buys a clock that loses to a system_call.
 
 The local APIC. Not a candidate, for three independent reasons. In x2APIC mode, which is what
 this era's machines and this era's kernels use (cordoba's `/proc/cpuinfo` reports the `x2apic`
@@ -171,7 +171,7 @@ clocksources. `arch/x86/kernel/tsc.c` sets `.vdso_clock_mode = VDSO_CLOCKMODE_TS
 `clocksource_tsc_early` and `clocksource_tsc`, while `clocksource_hpet` in `arch/x86/kernel/hpet.c`
 and `clocksource_acpi_pm` in `drivers/clocksource/acpi_pm.c` set no such field, which leaves it at
 `VDSO_CLOCKMODE_NONE`, the zero value of the enum in `include/vdso/clocksource.h`. A zero mode falls
-through `__arch_get_hw_counter` to `return U64_MAX;` and the caller takes the syscall path.
+through `__arch_get_hw_counter` to `return U64_MAX;` and the caller takes the system call path.
 
 **So the answer to the question the brief singled out is no: Linux's x86 vDSO fast path cannot work
 without a userspace TSC read, and Linux does not pretend otherwise.** Boot an x86 Linux with
@@ -211,11 +211,11 @@ falsifiable, and it has three clauses:
    an analogue of `PMUSERENR_EL0.CR`. It is an analogue of `PMUSERENR_EL0.CR` *and*
    `CNTKCTL_EL1.EL0VCTEN` at once. aarch64 and riscv64 can close the fine one because they have a
    second, coarser, architecturally guaranteed user-readable clock; x86 has no second one at all.
-2. The alternatives exist and all of them lose to a syscall. The HPET is mappable and costs
+2. The alternatives exist and all of them lose to a system_call. The HPET is mappable and costs
    several microseconds a read, which Linux measured and acted on in 2016. The ACPI PM timer is
    279 ns but lives behind an I/O port grant that is a larger authority than the thing being denied.
    The APIC is not addressable from ring 3 in x2APIC mode. So closing the TSC on `x86_64` does not
-   demote userspace from 0.25 ns to 70 ns. It demotes userspace to a syscall, or to a published page
+   demote userspace from 0.25 ns to 70 ns. It demotes userspace to a system call, or to a published page
    at tick resolution, which is DECISIONS §43 (reading the clock is a page) one axis over.
 3. A published page cannot close the gap by being updated more often, because its update rate is
    the interrupt rate. Getting from a 10 ms tick to a microsecond costs ten thousand interrupts a
@@ -229,7 +229,7 @@ second time source, and there is no cheap one to give. The realistic order for t
 therefore a tick-resolution page, and it is a decision with a price rather than a gap in §19
 (architectural parity) that a lane can close by trying harder. Trap-and-emulate was the other
 candidate, and it lost: [`trap-and-emulate.md`](trap-and-emulate.md) measures it at 1,667 ns on
-cordoba, four times the syscall it was meant to beat. `x86_64` keeping `rdtsc` ambient, with a recorded
+cordoba, four times the system call it was meant to beat. `x86_64` keeping `rdtsc` ambient, with a recorded
 reason, remains the right state until one of those is chosen. That is a published confinement
 position and it is still calef's.
 

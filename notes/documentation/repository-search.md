@@ -8,7 +8,7 @@ An appendix to [`notes/documentation.md`](../documentation.md), which states the
 image. It is milestone 117 (the stranger test)'s finding rather than a convenience. Three stranger
 runs have measured what a newcomer cannot reach by following this tree while doing ordinary work. It
 is a list rather than an impression: `notes/net.md`, `notes/capabilities.md`, any
-`design/decisions/` file, and `crates/abi/src/lib.rs`, which is four syscall numbers and the whole
+`design/decisions/` file, and `crates/abi/src/lib.rs`, which is four system call numbers and the whole
 design on one screen. None of them is hidden. Nothing a person would type led to them.
 
 ```text

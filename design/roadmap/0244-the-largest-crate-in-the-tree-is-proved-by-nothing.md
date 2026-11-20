@@ -19,7 +19,7 @@ Nothing is missing; what is missing is a way for a test to reach the code.
 
 ## Revisit
 
-- **Condition.** `cargo mutants --list -p system_initializer` attributes most of its mutants to pure functions rather than to the boot sequence and its syscalls, or the boot wiring becomes data (the follow-up proposed below), which would give a host test something to reach.
+- **Condition.** `cargo mutants --list -p system_initializer` attributes most of its mutants to pure functions rather than to the boot sequence and its system calls, or the boot wiring becomes data (the follow-up proposed below), which would give a host test something to reach.
 
 ## What the lane was asked to do, and what it found
 
@@ -36,8 +36,8 @@ attribution:
 | | mutants | share | what it is |
 |---|---|---|---|
 | `boot` | 97 | 49% | the build sequence |
-| `spawn_service` | 32 | 16% | the `RECV` loop, one syscall per step |
-| `fill_entropy`, `build_caretaker`, `announce`, `reclaim`, `must`, `must_ok`, `memory_region_split` | 28 | 14% | syscalls with a loop around them |
+| `spawn_service` | 32 | 16% | the `RECV` loop, one system call per step |
+| `fill_entropy`, `build_caretaker`, `announce`, `reclaim`, `must`, `must_ok`, `memory_region_split` | 28 | 14% | system calls with a loop around them |
 | `hex_password`, `sentence` and its `push`, `boot`'s own second copy of that `push`, `opt_cap`, `archive_name`, `measured` | **33** | **17%** | pure: bytes in, bytes out, no capability touched |
 | top-level `const` arithmetic | 6 | 3% | not movable; they are what the rest is written against |
 
@@ -88,7 +88,7 @@ of `boot`'s 97 delete a field from a `ChildEndowment` struct expression: a child
 `caps`, or no `stack_pages`, or no `maps`. Twenty-four more are slot-counter arithmetic and twelve
 flip a rights mask's `|` to `&` or `^`. Those are not logic with a wrong answer. They are a
 declaration of what each component of the system may do, expressed as inline struct literals in
-the middle of a syscall sequence. The only two things that can check a declaration are the boot
+the middle of a system call sequence. The only two things that can check a declaration are the boot
 itself and a test comparing it against a separately written expectation. That is the lane worth
 having, and it is proposed below rather than attempted here.
 
@@ -174,7 +174,7 @@ The crate holds two kinds of code and they are not mixed evenly:
 - Logic with a right answer that a host can check. Reading the archive, decoding a `grant_plan`
   off the spawn channel, checking a `measured_boot` manifest against what it is about to load,
   choosing addresses to map an image at. All of this is `no_std` arithmetic and parsing over bytes.
-- Syscalls on capabilities the kernel granted at spawn. `boot` returns `!`, and every step it
+- System calls on capabilities the kernel granted at spawn. `boot` returns `!`, and every step it
   takes is an `svc`. There is nothing to assert and nowhere to assert it.
 
 **The deliverable is the first kind moved somewhere a test can reach, not the second kind
@@ -193,7 +193,7 @@ Not a line count moved, and not a test count. Either of those is satisfiable by 
 
 Worth stating in advance, because a lane that finds it should say so rather than build anyway:
 
-If the pure fraction turns out to be small. The crate may be mostly syscall sequencing with
+If the pure fraction turns out to be small. The crate may be mostly system call sequencing with
 arithmetic threaded through it, in which case lifting it produces a crate of fragments, a wider
 public surface, and a reader who now has to hold two files. That is a worse tree than a 2,632-line
 crate with an honest note saying `script/shell-check` is what proves it. Measure the fraction

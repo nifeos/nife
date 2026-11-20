@@ -188,7 +188,7 @@ nife: handing the system to userspace init.
 - A refused `console` or `line_editor` stops in silence. Those two carry the progenitor's output, so a
   refusal of either has no route to a person: the progenitor traps and an operator sees the kernel's fault
   line for the progenitor, indistinguishable from any other early progenitor failure. Everything refused after them
-  is named on the console. There is no debug-print syscall (the kernel-served `Console` object went
+  is named on the console. There is no debug-print system call (the kernel-served `Console` object went
   away at milestone 8 (the console driver leaves the kernel)). Driving the UART from the progenitor would be a second copy of the console
   driver, per ISA, inside the process the drivers exist to keep small.
 - The prompt says the wrong thing about a refused program. The shell's message for a failed

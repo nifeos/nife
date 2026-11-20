@@ -77,7 +77,7 @@ TRANSFER_MAXIMUM`. The progenitor holds a pool of K (badged endpoint, frame) pai
 each caretaker chain, taking it back at reap.
 
 - `filesystem_contract`'s message layout and opcodes do not change.
-- The syscall surface does. A method to mint a badged endpoint, and a fourth return value from
+- The system call surface does. A method to mint a badged endpoint, and a fourth return value from
   `RECEIVE_CAPABILITY` (it already returns the first word, the Reply slot and the second word).
 - Per request: nothing added. No extra rendezvous, no copy.
 - Server address space: K windows of 64 KiB. K = 8 is 512 KiB, inside the 8 MiB above `BLK_PAGE` that
@@ -136,7 +136,7 @@ lock) from before staging until after the copy-out, so no two writers of the ser
 
 ## Reversibility, and who has acted on it
 
-A and B change the syscall surface, which every future program is written against: the expensive
+A and B change the system call surface, which every future program is written against: the expensive
 side of the line. C is reversible in code but adds a cross-program convention that is not. Nobody
 has built against any of them. The network-stack proposal is waiting on the same question in A's
 form. Per the rule for irreversible forks, this note gives options rather than a recommendation.
@@ -199,11 +199,11 @@ client, and passes the server a capability to it.
 
 Let the progenitor map a physical address it was told, with no frame capability.
 
-- Cost: zero slots, zero per-client syscalls beyond the map.
+- Cost: zero slots, zero per-client system calls beyond the map.
 - It breaks the property `Object::PageFrame`'s doc states: the only ways to hold a frame are to
   retype it or be handed it. Even for the privileged progenitor, that is a new ambient power over
-  physical memory in the syscall surface.
-- Reversibility: syscall surface. Irreversible.
+  physical memory in the system call surface.
+- Reversibility: system call surface. Irreversible.
 
 ### 4. One run capability over the pool, sliced per client (found)
 
@@ -219,7 +219,7 @@ only its window. `MAP_INTO` maps a capability's whole run, and the whole pool in
 client's window, the original bug. So one operation is still owed, this slice or option 5's offset,
 and neither §102 nor #1373 provides it.
 
-- Cost: one transient slot and two syscalls per spawn, noise against a spawn of about 2.8 µs
+- Cost: one transient slot and two system calls per spawn, noise against a spawn of about 2.8 µs
   (`notes/benchmarks/calibration-against-sel4.md`). The slice can be one page: the progenitor's
   `fs_page` is a one-page capability today, so real-boot clients map only page 0 of a channel.
 - §102 anticipates the shape: a consumer "can hold two capabilities: `Frame(phys, 401)` and
@@ -234,10 +234,10 @@ and neither §102 nor #1373 provides it.
 Same single run capability as option 4, but `MAP_INTO` itself takes a page offset and count, packed
 into its third argument beside the map kind.
 
-- Cost: zero permanent and zero transient slots, one syscall per spawn.
+- Cost: zero permanent and zero transient slots, one system call per spawn.
 - It changes an existing method's argument shape, which §102 went out of its way to keep fixed, and
   it is the per-page narrowing within a run that §102 lists under "What this does NOT decide".
-- Reversibility: syscall surface. Irreversible.
+- Reversibility: system call surface. Irreversible.
 
 ### 6. A window broker (found)
 
@@ -250,7 +250,7 @@ window is free.
   `notes/benchmarks/calibration-against-sel4.md`). One more process, estimated at a caretaker's size
   (a stack page, `CARETAKER_STACK_PAGES` of four more, and its tables), about 32 KiB. Estimated, not
   measured.
-- No syscall change and no change to `filesystem_contract`. It adds a small protocol between two
+- No system call change and no change to `filesystem_contract`. It adds a small protocol between two
   in-tree programs, which rule 7 puts in a crate.
 - §102 does not speak to it.
 - Reversibility: a protocol between two programs is on the tenet's expensive list, but both parties
@@ -268,19 +268,19 @@ window is free.
 |---|---|---|---|---|
 | 1. Wider table | +7 (of 8 added) | nothing | 64 KiB, every thread | table size, `FAULT_EP_SLOT` |
 | 2. Retype per client | 0 | 1 attach rendezvous | 64 KiB per client | wire verb |
-| 3. Map by phys | 0 | nothing | none | syscall |
-| 4. Sliced run | 0 | 2 syscalls | none extra | new `PageFrame` method |
+| 3. Map by phys | 0 | nothing | none | system call |
+| 4. Sliced run | 0 | 2 system calls | none extra | new `PageFrame` method |
 | 5. Offset in `MAP_INTO` | 0 | nothing | none extra | method argument shape |
 | 6. Broker | 0 | 1 call round trip | about 32 KiB, once | two-program protocol |
 
 ### Recommendation, and where it stops
 
-Options 2 to 5 touch the syscall surface or a wire format, so under the rule for irreversible forks
+Options 2 to 5 touch the system call surface or a wire format, so under the rule for irreversible forks
 this note gives them as options, not a recommendation. Between the two that do not, 6 over 1: 1
 spends 64 KiB and the table's headroom on every thread in the machine to fix one process, which is
 the representation §102 already refused.
 
 Would we still choose 6 if 4 cost the same? No. Option 4 has fewer moving parts and is the shape
-§102 describes; 6's case is only that it avoids new syscall surface. The question for calef is
+§102 describes; 6's case is only that it avoids new system call surface. The question for calef is
 therefore one method: a `PageFrame` slice (4) or a `MAP_INTO` offset (5). With either, the pool is
 one capability and the slot problem is gone.

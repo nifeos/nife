@@ -57,10 +57,10 @@ and other cores write a neighbor's `inbox` and `steal_request` when they place w
 
 The span is 128 on every architecture, not 64. Apple's cores have a 128-byte line, and common
 64-byte parts often prefetch lines in adjacent pairs (Intel's spatial prefetcher; recalled, not
-measured here). With the blocks packed and 8-aligned, the null syscall's per-trap excess at four
+measured here). With the blocks packed and 8-aligned, the null system call's per-trap excess at four
 busy cores on an Apple M3 under HVF was 0.041 ticks of a 24 MHz counter, about 1.7 ns on a 33 ns
 trap. Aligned, it was within noise of zero
-([job-mix/null-syscall-hvf-full-mix.md](job-mix/null-syscall-hvf-full-mix.md)). The block is 128
+([job-mix/null-system-call-hvf-full-mix.md](job-mix/null-system-call-hvf-full-mix.md)). The block is 128
 bytes on aarch64 and riscv64, so the alignment costs no padding there.
 
 ## How many seats

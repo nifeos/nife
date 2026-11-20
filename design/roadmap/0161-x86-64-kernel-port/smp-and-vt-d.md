@@ -32,9 +32,9 @@ logical id agree. Then it jumps to the portable `secondary_main` the other two a
 use.
 
 A per-CPU TSS and GDT (`segments.rs`, indexed by `cpu::id()`) replace the single boot-CPU pair item 4
-left behind. `trap.s`'s `isr_restore` and `x86_syscall_entry` reach three words per CPU:
+left behind. `trap.s`'s `isr_restore` and `x86_system_call_entry` reach three words per CPU:
 
-- the syscall path's kernel stack;
+- the system call path's kernel stack;
 - its scratch for the interrupted user `rsp`;
 - a pointer to this core's own `TSS.rsp0`.
 

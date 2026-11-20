@@ -2,7 +2,7 @@
 //! readers, and check what every read returns (proposal #1592 part a, rank 3).
 //!
 //! It runs `system_log::Log::handle` and `Log::fill`, the two calls `components/src/system_log.rs`
-//! makes per message, with no syscalls between. A session interleaves byte-sink chunks from several
+//! makes per message, with no system calls between. A session interleaves byte-sink chunks from several
 //! writer badges (hostile bytes included), end-of-stream, the spawner's registrations, and reads at
 //! chosen cursors. The registry model is this file's own, kept from the control messages sent. The
 //! spawner's words are always well formed (`control::name_messages`, `control::word`), because a

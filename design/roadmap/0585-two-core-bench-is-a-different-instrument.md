@@ -19,7 +19,7 @@ failure on milestone 315 (a port revoke that reaches every core). The evidence i
 `notes/benchmarks/x86-instruments.md`, the 2026-09-23 section; this block is the work that evidence
 leaves behind.
 
-No syscall surface, no dependency, no hardware.
+No system call surface, no dependency, no hardware.
 
 ## What happened
 

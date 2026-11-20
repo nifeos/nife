@@ -17,14 +17,14 @@ itself is a per-thread page, on the shape Linux's `rseq(2)` uses. That ruling's
 than cited. This block is the self half.
 
 The kernel writes the running core's id into a page it owns and has mapped read-only into the
-thread's address space. Userspace reads it with an ordinary load. No syscall, no crossing, no
+thread's address space. Userspace reads it with an ordinary load. No system call, no crossing, no
 capability to hold.
 
 ## Why a load and not a crossing
 
 The consumer decides it. A memory allocator keeping a per-CPU cache asks which core it is on once
 per allocation, which is millions of times a second. An IPC round trip measures about 705 ns in
-this tree and a bare syscall is cheaper than that. Neither is in the same decade as a load.
+this tree and a bare system call is cheaper than that. Neither is in the same decade as a load.
 
 ## Why a page and not a register, checked against our own targets
 
@@ -65,7 +65,7 @@ register has none.
 Per thread or per CPU. Per thread, and here that is free: `Tcb::CONFIGURE` consumes the
 address-space capability, so no two TCBs name one space: §105 (`std::thread::spawn` stays
 declined).
-A page per address space is a page per thread, at a fixed address, with no registration syscall
+A page per address space is a page per thread, at a fixed address, with no registration system call
 and no circularity. The circular shape the other answer would have had (a shared page indexed by the
 CPU the thread is trying to learn) never arises. What has to change when §105 is lifted is in the
 crate's `BUGS` section, beside the field it constrains.
@@ -97,7 +97,7 @@ same flags, the store commented out and back:
 | riscv64 | 6004 | 6082 | **+78 bytes, +1.3%** |
 | x86_64 | 8234 | 8350 | **+116 bytes, +1.4%** |
 
-`syscall_entry` is byte-for-byte identical with the line and without it on all three. That is what
+`system_call_entry` is byte-for-byte identical with the line and without it on all three. That is what
 says the measurement is measuring the right thing: this code is not on that path.
 
 The comparison that matters is with `Thread::last_cpu`, which sits two lines away in the same
@@ -168,9 +168,9 @@ their own commit. Nothing else was.
 - **`CPU_ID_BOUND` is a compile-time constant, not the live online set.** Correct for sizing an
   array, useless for iterating one. Iterating the online set is the other question.
 - **`script/fastpath-footprint`'s recorded baselines are stale on `main`, and this lane did not
-  touch them.** Every leg reads over its baseline here, `syscall_entry` included, and that set is
+  touch them.** Every leg reads over its baseline here, `system_call_entry` included, and that set is
   provably not this change's: it is byte-for-byte identical with this line and without it
-  (riscv64 `syscall_entry` reads +4.6% against a 5% bound either way). The gate still passes on all
+  (riscv64 `system_call_entry` reads +4.6% against a 5% bound either way). The gate still passes on all
   three, so nothing is broken, but the headroom the next lane inherits is smaller than the file
   says. `maintainer/icount-baselines-stale` is an existing branch on the same subject and is where
   this belongs rather than here. Re-saving baselines is a statement that a change is intended, and
@@ -198,7 +198,7 @@ their own commit. Nothing else was.
 ## Index row
 
 A thread learns which core it is running on by loading a word from a page the kernel wrote, with no
-syscall, because the consumer that decides the shape is a memory allocator asking once per
+system call, because the consumer that decides the shape is a memory allocator asking once per
 allocation. The register path was checked against all three targets rather than taken from Linux's
 account of its own. riscv64 has no user-readable core id at all, and aarch64 has only a register this
 tree reserves for nothing. x86_64's `RDPID` would have made the mechanism an x86 story with a

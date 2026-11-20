@@ -3,7 +3,7 @@ status: BUILT
 raised: 2026-09-21
 built: 2026-10-22
 ---
-# 524. The three x86_64 boot gates: NX, SYSCALL, and the invariant TSC
+# 524. The three x86_64 boot gates: NX, SYSTEM CALL, and the invariant TSC
 
 All three gates refuse, are tested on the host, and have been watched refusing a real boot. The
 third refuses only on bare metal. Under a hypervisor it warns, because a guest's clock is the
@@ -14,7 +14,7 @@ warn.").
 The defect was one defect. `kernel/src/arch/x86_64/isa.rs`'s own `BUGS` said it plainly:
 *"Nothing is recorded or checked yet. The other two implementations gate the boot on the features
 the kernel actually uses (RISC-V refuses a firmware without the SBI extensions it calls). The x86
-equivalents worth gating on are NX, SYSCALL, and the invariant TSC; this reports and does not
+equivalents worth gating on are NX, SYSTEM CALL, and the invariant TSC; this reports and does not
 refuse."* x86_64 booted on three assumptions it never confirmed, and the file that would confirm
 them already existed and already executed `CPUID`.
 
@@ -26,7 +26,7 @@ one could not, and the exception is the interesting one.
 | Feature | `CPUID` | Where | Why there |
 |---|---|---|---|
 | NX | `80000001H:EDX[20]` | `boot.s`, in the 32-bit trampoline, before `EFER.NXE` is written | that `wrmsr` is itself the hazard |
-| `syscall` | `80000001H:EDX[11]` | `isa::init`, six lines before `arch::init` programs the four MSRs | the console is up by then |
+| `system_call` | `80000001H:EDX[11]` | `isa::init`, six lines before `arch::init` programs the four MSRs | the console is up by then |
 | invariant TSC | `80000007H:EDX[8]` | `isa::init`, before `timer::init_frequency` measures a rate | same, and see below |
 
 **NX has to be checked in assembly, and that is not a stylistic preference.** `boot.s` sets
@@ -47,7 +47,7 @@ gate can only halt and this one can say what is wrong.
 
 ## The third one is a different kind of check
 
-NX and `syscall` announce their own absence the moment the kernel uses them: a `#GP` on the `EFER`
+NX and `system_call` announce their own absence the moment the kernel uses them: a `#GP` on the `EFER`
 write, a `#UD` on the first system call. **The invariant TSC does not, and no care at boot would
 find it.** `arch::timer::init_frequency` measures the TSC's rate once, against the PIT, and stores
 it. On a part without `CPUID.80000007H:EDX[8]` the counter's tick rate moves with the core's
@@ -79,7 +79,7 @@ That is worth stating as a finding rather than as an obstacle: **the rate `arch:
 measures under QEMU is one the machine underneath has never promised.**
 
 Real silicon does promise it. Every x86 part since about 2008 has the bit, and xenon, milestone 87 (the
-x86_64 bare-metal machine), an Intel Core i5-7500T, prints `features : nx syscall invariant-tsc
+x86_64 bare-metal machine), an Intel Core i5-7500T, prints `features : nx system call invariant-tsc
 rdseed` (`bench/xenon-2026-10-21/README-524.md`). So the rule splits on who keeps the clock, and
 `CPUID.1:ECX[31]`, the hypervisor bit, says which. It reads zero on silicon. QEMU sets it under TCG,
 measured on the boot below.
@@ -89,7 +89,7 @@ them. This one has three:
 
 | `Gate` | Means |
 |---|---|
-| `Refuse` | the boot stops and says what is missing (NX, `syscall`) |
+| `Refuse` | the boot stops and says what is missing (NX, `system_call`) |
 | `RefuseUnlessHypervisor` | on bare metal, as `Refuse`; under a hypervisor the boot says so on its own line every time and continues (invariant TSC) |
 | `Report` | useful to know, never fatal (`RDSEED`) |
 
@@ -104,7 +104,7 @@ that. Both new names are provisional.
 ## How the refusal was tested, given that it is unreachable
 
 **A gate that has never refused is a gate nobody has tested**, and every machine available here has
-NX and `syscall`. Both halves of the answer are in the tree.
+NX and `system_call`. Both halves of the answer are in the tree.
 
 On the host, `crates/machine_discovery/tests/x86_64_cpu_features.rs`: the decision function
 takes the `CPUID` words as an argument, so a part that does not exist can be handed to it and the
@@ -121,7 +121,7 @@ feature from the guest.
 
 ```
 NIFE_CPU="max,nx=off"         helpers/qemu-bounded.sh 60 cargo xtask boot-check --arch x86_64
-NIFE_CPU="max,syscall=off"    helpers/qemu-bounded.sh 60 cargo xtask boot-check --arch x86_64
+NIFE_CPU="max,system call=off"    helpers/qemu-bounded.sh 60 cargo xtask boot-check --arch x86_64
 NIFE_CPU="max,hypervisor=off" helpers/qemu-bounded.sh 60 cargo xtask boot-check --arch x86_64
 ```
 
@@ -163,7 +163,7 @@ On QEMU `q35`, `-cpu max`, TCG, on an Apple Silicon host, 2026-10-22:
                 warned, not refused: CPUID.1:ECX[31] reads 1; a guest's clock is its hypervisor's
   cpu         : x86_64, vendor AuthenticAMD, cpuid leaves 0..0xd and 0x80000000..0x80000021, under a hypervisor
               : QEMU TCG CPU version 2.5+
-  features    : nx syscall no-invariant-tsc rdseed
+  features    : nx system call no-invariant-tsc rdseed
 ```
 
 The vendor is `AuthenticAMD`, which is not what anyone guesses about QEMU's `max` model, and
@@ -192,7 +192,7 @@ rather than in a guess.
 
 x86_64 booted on three assumptions it never confirmed, where the other two architectures refuse a
 machine that cannot run them. NX is checked in the 32-bit trampoline before `EFER.NXE` is written,
-because that write is itself the hazard and there is no console yet to explain a `#GP`; `syscall`
+because that write is itself the hazard and there is no console yet to explain a `#GP`; `system_call`
 and the invariant TSC are checked in `isa::init` before their consumers. The decision takes the
 `CPUID` words as an argument, so the refusal path is exercised on the host in milliseconds although
 no machine here lacks any of the three, and it was also watched refusing a real boot with

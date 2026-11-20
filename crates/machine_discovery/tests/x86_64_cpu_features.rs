@@ -1,6 +1,6 @@
 //! Deciding what a `CPUID` answer means, on the host, including the answers that refuse the boot.
 //!
-//! Every `x86_64` part this project runs on reports NX and `syscall`, so the refusal path is a
+//! Every `x86_64` part this project runs on reports NX and `system_call`, so the refusal path is a
 //! branch no machine takes. Here the feature words are an argument, so the part that does not exist
 //! can be handed to the decision. A boot with `NIFE_CPU=max,nx=off` hides NX from a whole guest
 //! (milestone 524 (the three `x86_64` boot gates)), but cannot assert on the decision in isolation.
@@ -28,7 +28,7 @@ fn qemu_max() -> CpuidWords {
         // Leaf 7 subleaf 0. EBX bit 18 is RDSEED, which this model reports.
         leaf7_0: [0, 1 << 18, 0, 0],
         extended_maximum_leaf: 0x8000_0021,
-        // EDX bit 20 NX, bit 11 SYSCALL, plus the bits every long-mode part sets that this
+        // EDX bit 20 NX, bit 11 SYSTEM CALL, plus the bits every long-mode part sets that this
         // decoder does not read.
         extended_leaf1_edx: (1 << 20) | (1 << 11) | (1 << 29),
         // No invariant TSC. See the doc comment.
@@ -39,7 +39,7 @@ fn qemu_max() -> CpuidWords {
 
 /// xenon, an Intel Core i5-7500T: milestone 87 (the x86_64 bare-metal machine), as its boot line
 /// printed it on 2026-10-21 (`cpuid leaves 0..0x16 and 0x80000000..0x80000008`, `features : nx
-/// syscall invariant-tsc rdseed`). Only the words the decoder reads are filled in, and the
+/// system call invariant-tsc rdseed`). Only the words the decoder reads are filled in, and the
 /// hypervisor bit is clear because nothing sits between this part and the kernel.
 fn xenon() -> CpuidWords {
     CpuidWords {
@@ -108,18 +108,18 @@ fn a_part_without_nx_is_refused_and_nothing_else_is_blamed() {
 }
 
 #[test]
-fn a_part_without_syscall_is_refused_and_nothing_else_is_blamed() {
+fn a_part_without_system_call_is_refused_and_nothing_else_is_blamed() {
     let mut w = qemu_max();
     w.extended_leaf1_edx &= !(1 << 11);
     let missing = Isa::decode(&w).missing_requirements();
 
     assert!(missing.any());
-    assert_eq!(missing.features, SYSCALL);
+    assert_eq!(missing.features, SYSTEM_CALL);
 }
 
 /// **The one whose absence nothing else would catch, and the one gated on who keeps the clock.**
 ///
-/// NX and `syscall` announce themselves the moment they are used (a `#GP` on the `EFER` write, a
+/// NX and `system_call` announce themselves the moment they are used (a `#GP` on the `EFER` write, a
 /// `#UD` on the first system call); a TSC that is not invariant measures perfectly at boot and is
 /// wrong later, when the core changes power state and the stored rate keeps saying what it always
 /// said. No amount of measuring at boot finds that, which is why it belongs in this table at all.
@@ -191,7 +191,7 @@ fn a_part_below_leaf_one_is_not_taken_for_a_guest() {
 /// the maximum-leaf gate exists for. Every bit the kernel needs lives above `0x80000000`, and a
 /// part that stops below there answers those leaves with some *other* leaf's data. Believing the
 /// words would report whatever the highest implemented leaf happens to hold, which on this
-/// fixture reads as a part with NX and `syscall` that has neither.
+/// fixture reads as a part with NX and `system_call` that has neither.
 #[test]
 fn a_part_with_no_extended_leaves_reports_no_features_rather_than_another_leaf_bits() {
     let mut w = qemu_max();
@@ -243,7 +243,7 @@ fn the_derived_sets_are_exactly_the_rows_that_say_so() {
     assert_eq!(refuse, REQUIRED);
     assert_eq!(unless_hypervisor, REQUIRED_UNLESS_HYPERVISOR);
     assert!(REQUIRED.contains(NX));
-    assert!(REQUIRED.contains(SYSCALL));
+    assert!(REQUIRED.contains(SYSTEM_CALL));
     assert!(!REQUIRED.contains(RDSEED));
     assert_eq!(
         REQUIRED_UNLESS_HYPERVISOR, INVARIANT_TSC,

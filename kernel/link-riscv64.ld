@@ -36,7 +36,7 @@ SECTIONS
         KEEP(*(.text.boot))
         /* **The hot trap path, at one address in every build**: milestone 796 (pin the hot trap
          * path's placement). Every function a
-         * syscall or an IPC round trip runs (`script/fastpath-footprint`'s two closures plus its
+         * system call or an IPC round trip runs (`script/fastpath-footprint`'s two closures plus its
          * entry set) carries a `.text.hot.*` section, by `#[link_section]` on the Rust and a
          * `.section` directive in the assembly. They land here, contiguous, sorted by section name
          * so the order does not follow which codegen unit rustc put each one in, and starting on a
@@ -44,7 +44,7 @@ SECTIONS
          * same whatever the boot stub weighs. Nothing but the boot stub precedes it, so code added
          * anywhere else moves none of it, and while the block is under 16 KiB no two of its lines
          * share a set. On 2026-10-05 a text shift that changed no instruction moved radon's
-         * one-task `null_syscall` between 110 and 118 ticks; whether this flattens that is the
+         * one-task `null_system_call` between 110 and 118 ticks; whether this flattens that is the
          * radon sweep in design/roadmap/0796-pin-the-hot-trap-paths-placement.md.
          * `script/fastpath-footprint` fails the build when a hot symbol is outside these bounds.
          * See notes/benchmarks/kernel-footprint-and-caches.md, "The hot section". */

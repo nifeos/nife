@@ -74,7 +74,7 @@ them is the ring, exactly where §33 (the compositor's authority is memory) put 
 boundary. Naming the seam is better than one test that hides it. Verified headlessly on QEMU 11.0.2,
 both ISAs.
 
-**No new syscall, no new method, no widened surface (§4).** The whole increment is endpoints, shared
+**No new system call, no new method, no widened surface (§4).** The whole increment is endpoints, shared
 frames, and `Spawn` grants that already existed. One constant moved: `MAX_DEVICES` 24 → 26, because a
 third `display` programs the same physical GPU and no transport is ever released. Recorded with the
 standing suggestion the number keeps earning, the same one §33 made about `KERNEL_EP_PAGES`: the

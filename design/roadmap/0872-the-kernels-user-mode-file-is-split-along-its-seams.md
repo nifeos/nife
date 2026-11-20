@@ -120,7 +120,7 @@ ships provisional. The questions stay here as they were asked.
    every file under `arch/`, so they would leave its check. These reasons hold at equal cost.
 4. Every module name in the table.
 
-No public crate API, wire format or syscall changes under any answer here.
+No public crate API, wire format or system call changes under any answer here.
 
 ## What moving the code breaks
 
@@ -146,7 +146,7 @@ Found with `grep` at `396187b0b`. A lane has to carry each one.
   keep true.
 - 95 tracked files name the path, 63 of them Markdown. `xtask/src/swish_check.rs`'s progenitor-stack failure
   tells a reader to raise `INIT_STACK_PAGES` in this file.
-- `script/fastpath-footprint` keys on `kernel5sched` and `kernel7syscall` symbols, and its cold
+- `script/fastpath-footprint` keys on `kernel5sched` and `kernel7system_call` symbols, and its cold
   list names `12AddressSpace` by type, so no regex follows this file's module path.
   `script/stack-frame-check` names `kernel::user::disk_service::*`, which does not move.
   `script/icount` names no symbol here. `helpers/cap_abbreviation.py` has no row for this path.
@@ -196,7 +196,7 @@ AMD-Vi and OVMF legs), with the same counts milestone 840 recorded. They ran on 
 kernel, system-test, crate or xtask code between it and `97650277b`. `script/icount` reads
 identically, and `script/bench --check` and `script/stack-frame-check` pass on all three. On
 riscv64, `riscv_trap_dispatch` stopped inlining `preempt_if_needed`, undoing what 840 recorded, so
-`syscall_entry` fell 2,136 to 1,918 bytes and `bench/fastpath-riscv64.txt` was re-recorded with
+`system_call_entry` fell 2,136 to 1,918 bytes and `bench/fastpath-riscv64.txt` was re-recorded with
 the reason. The one falsification record that patched this file was regenerated at its hunk's new
 home and replayed red at its headline assertion on aarch64.
 
@@ -204,7 +204,7 @@ home and replayed red at its headline assertion on aarch64.
 
 - **Decision.** Every module name is provisional and is calef's to rule, per
   `design/decisions/0281-the-kernels-user-mode-file-splits-into-child-modules-of-user.md`.
-- **Done.** The riscv64 `syscall_entry` change is recorded in `bench/fastpath-riscv64.txt`.
+- **Done.** The riscv64 `system_call_entry` change is recorded in `bench/fastpath-riscv64.txt`.
 - **Recorded.** The `user.rs:NNNN` citations in other milestones' blocks go to a maintainer follow-up,
   listed on pull request #1959.
 

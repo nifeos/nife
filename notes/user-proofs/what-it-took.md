@@ -17,7 +17,7 @@ had already paid for most of it.
 
 There is no `--ignore-global-asm`, which is the difference from the kernel. It is DECISIONS §4
 (kernel shape) rule 1 paying out again. There is no `global_asm!` anywhere under `user/`. The only
-assembly a program has any business containing is the syscall itself, and that lives in
+assembly a program has any business containing is the system call itself, and that lives in
 `user_mode_runtime`.
 
 The `--bin` selection is the one piece of machinery worth arguing about. The argument is in

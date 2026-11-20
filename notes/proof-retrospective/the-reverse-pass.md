@@ -57,7 +57,7 @@ description of what it is for and not a claim that it constrains anything.
 
 Its siblings are not in this category. `subset_is_transitive` is the property that licenses a flat
 check instead of a derivation-tree walk, and it is exactly the sort of thing a hand-rolled rights
-check gets wrong. `from_bits_cannot_forge_a_right` quantifies over an attacker-controlled syscall
+check gets wrong. `from_bits_cannot_forge_a_right` quantifies over an attacker-controlled system call
 register. `derive_never_widens_rights` runs over the real `CapabilityTable::derive`.
 
 Restated-implementation harnesses. `be32_reads_big_endian_when_in_bounds` asserts that an

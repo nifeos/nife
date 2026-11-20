@@ -446,12 +446,12 @@ fn enter_frame(entry: u64, user_sp: u64, arg0: u64, arg1: u64, arg2: u64) -> ! {
 /// The `kernel_test_subject` program's roles (`fixtures/src/kernel_test_subject.rs`), passed in the
 /// first argument register.
 ///
-/// `ROUND_TRIP` yields twice and exits: two syscalls from user mode, where the second can only
+/// `ROUND_TRIP` yields twice and exits: two system calls from user mode, where the second can only
 /// happen if the return from the first genuinely put the thread back at EL0/U-mode.
 ///
 /// Name: provisional, minted 2026-10-22 (UTC) by lane maintainer/rename-outlaw: the program's
 /// ratified name and the role.
-// The tests use it on both ISAs; of the two boot tours only RISC-V's has a syscall-count step.
+// The tests use it on both ISAs; of the two boot tours only RISC-V's has a system-call-count step.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub const KERNEL_TEST_SUBJECT_ROUND_TRIP: u64 = 0;
 

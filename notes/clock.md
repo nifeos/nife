@@ -51,12 +51,12 @@ requires the counter to have moved only by the cost of the round trip.
 | authority | the capability | cost of a read/write |
 |---|---|---|
 | none | nothing | the machine does not know what time it is, and says so |
-| read | the clock page, `MAP_READ_ONLY` | a few loads and an add; no syscall, no server, no wait |
+| read | the clock page, `MAP_READ_ONLY` | a few loads and an add; no system call, no server, no wait |
 | set | the clock page, `MAP_READ_WRITE` | one publish; nothing polices it |
 | propose | the propose endpoint, `WRITE` | one `CALL`; the service may refuse |
 
 Nothing new was needed in the kernel: the ladder is `PageFrame` with `READ`, `PageFrame` with `WRITE`, and
-`Rendezvous` with `WRITE`. No new syscall, no new method, no new object type. Rights are already
+`Rendezvous` with `WRITE`. No new system call, no new method, no new object type. Rights are already
 introspectable, so `caps` shows which rung a process is on.
 
 **Why set is a page and not a message.** A process has exactly one blocking wait point, because this

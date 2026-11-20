@@ -92,7 +92,7 @@ Built in #1993 and its follow-up, under milestone 888 (a ratchet on function len
 - `spawn_service` went from 609 code lines to 13 in #1993. A `Service` struct now serves one
   request per call, with one function per stage.
 - Item 2: a temporary kernel patch, never committed, made the progenitor print the occupancy mask
-  of its 64 slots after every syscall that changed it, with a running FNV-1a hash of every mask so
+  of its 64 slots after every system call that changed it, with a running FNV-1a hash of every mask so
   far. It ran on one `script/swish-check` leg per architecture, before (`8daf695a9`) and after.
   - At the giveaway, the kernel-computed hash is identical before and after on every boot
     configuration: three on aarch64, one each on riscv64 and x86_64.

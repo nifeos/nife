@@ -80,7 +80,7 @@ pub(super) fn grow(inner: &mut Inner, need: u64) -> bool {
     let mut got: u64 = 0;
     while got < want_pages {
         let virtual_address = start + got * PAGE_BYTES;
-        // SAFETY: plain syscall; the kernel validates the slot, the address, and the budget.
+        // SAFETY: plain system call; the kernel validates the slot, the address, and the budget.
         let code = unsafe {
             rt::invoke(rt::MEMORY_REGION_SLOT, abi::memory_region::MAP, virtual_address, 0, 0)
         };

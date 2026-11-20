@@ -220,13 +220,13 @@ waiting sender, so no request was ever built.
 
 ## One shot, and why that is now a choice
 
-When the client was built (2026-07-31) the syscall surface was `EXIT`, `YIELD`, `INVOKE` and
+When the client was built (2026-07-31) the system call surface was `EXIT`, `YIELD`, `INVOKE` and
 `CAP_DELETE`, with no sleep, no timeout and no deadline anywhere in it. That was the milestone 51
 block's open fork. A poll interval was a yield-spin, a thread that stays runnable for the whole
 interval, and at NTP's ordinary 64-second poll that is not a service anybody should ship.
 
 So this is a one-shot synchronizer: up to three requests a couple of milliseconds apart, one
-proposal, exit. It was the honest shape available then, and adding a sleep syscall to escape it
+proposal, exit. It was the honest shape available then, and adding a sleep system call to escape it
 would have settled the timed-wait fork by accident.
 
 *Corrected 2026-10-11 (UTC), verified against `components/src/network_time_client.rs`:* milestone

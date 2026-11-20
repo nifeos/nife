@@ -270,7 +270,7 @@ exception_vectors:
 .size exception_vectors, . - exception_vectors
 
 // Off the hot section: the interrupt-stack trampoline runs on traps taken in the kernel, never on
-// a syscall from EL0.
+// a system call from EL0.
 .section ".text", "ax"
 
 // RUN THE HANDLER ON THIS CORE'S INTERRUPT STACK (milestone 124).
@@ -330,7 +330,7 @@ dispatch_on_interrupt_stack:
     .cfi_endproc
 .size dispatch_on_interrupt_stack, . - dispatch_on_interrupt_stack
 
-// The return leg of every syscall, so in the hot section with the vectors.
+// The return leg of every system call, so in the hot section with the vectors.
 .section ".text.hot.exception_restore", "ax"
 
 // `eret` is the counterpart to the exception: it restores the processor state from

@@ -17,7 +17,7 @@ use abi::Error;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{memory_region_capability, memory_region_lending_capability};
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// A one-instruction runaway, as `force_kill_tests` has it: the process a job built and left
 /// running when it exited.

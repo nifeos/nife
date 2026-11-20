@@ -1,7 +1,7 @@
 //! IPC round-trip latency on the host OS, lmbench's `lat_pipe`, and the host side of nife's
 //! EL0 `ipc_rtt_el0` bench (notes/benchmarks.md, milestone 25).
 //!
-//! Two forked processes and a pair of pipes: one round trip is four syscalls and two context
+//! Two forked processes and a pair of pipes: one round trip is four system calls and two context
 //! switches across an address-space boundary, the shape of nife's SEND / RECEIVE+SEND / RECEIVE.
 //! It calls libc's `read` and `write` directly, and `rustc`'s "suspicious runtime symbol" warning
 //! for them is expected; notes/benchmarks/host-programs.md has why, and why to take a median.

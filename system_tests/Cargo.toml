@@ -69,7 +69,7 @@ counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.co
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 credential_contract = { version = "0.1.0", path = "../crates/credential_contract" }
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
-confined_syscall_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_syscall_fuzzer_contract" }
+confined_system_call_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_system_call_fuzzer_contract" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
 environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "b4925221c6d33163c6217aa2b118ba29f0be5379" }

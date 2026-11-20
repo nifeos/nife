@@ -276,7 +276,7 @@ reversible one; (c) loses on §40's guarantee, not on effort.
 
 ## What follows
 
-- (a2) is additive: method 6 under `invoke`, with no new syscall number.
+- (a2) is additive: method 6 under `invoke`, with no new system call number.
 - Building it serves milestone 933's recursive-teardown follow-on and §40's guarantee for
   supervisors that build in split regions.
 - The closing mark is also the fix for the race in `reclaim_region` that

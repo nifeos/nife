@@ -1,5 +1,5 @@
 //! The test kernel fails one thread's Nth retype, answering exactly as a region with nothing left
-//! would: the spending function returns `None` with the region untouched, and the syscall returns
+//! would: the spending function returns `None` with the region untouched, and the system call returns
 //! `OutOfMemory` (milestone 757 (a test kernel fails a process on its Nth retype)). Sweeping N from
 //! 1 fails a program at every allocation it makes, in order. Names provisional: the module,
 //! [`arm`], [`disarm`], [`Tally`] and [`fails_now`].

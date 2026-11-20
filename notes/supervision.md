@@ -12,7 +12,7 @@ back off, give up, escalate) is a userspace supervisor's business, layered with 
 
 ## What the kernel does, exactly
 
-Three pieces, and the surface cost is zero new syscalls and zero new methods.
+Three pieces, and the surface cost is zero new system calls and zero new methods.
 
 1. Designation, at spawn only. A supervised thread is spawned with its supervision endpoint in a
    reserved capability table slot (`abi::fault::FAULT_RENDEZVOUS_SLOT`, the last one). At `START` the kernel reads that
@@ -24,7 +24,7 @@ Three pieces, and the surface cost is zero new syscalls and zero new methods.
    hot-swap work needs it.
 
 2. Delivery, without blocking the faulting path. When the thread dies (`sched::depart`, reached
-   from both the arch fault handlers and `SYSCALL_EXIT`), the kernel builds the five-word message and
+   from both the arch fault handlers and `SYSTEM_CALL_EXIT`), the kernel builds the five-word message and
    delivers it to the fault endpoint. Delivery is the ordinary synchronous-send rendezvous, reused.
    If a supervisor is already blocked in `RECEIVE`, hand it the message and wake it. If none is, the
    corpse itself parks on the endpoint's sender queue with the message in its mailbox, so the
@@ -131,7 +131,7 @@ child is a supervisor that can build processes, unless it proxies the reap throu
   for its whole life, which is exactly the bundling the open fork is about.
 - The requirement, in one sentence: a supervisor needs `DESTROY` on one region it did not create.
   Not `RETYPE`, not `SPLIT`, not a whole budget. Whether that becomes a rights bit split out of `WRITE`
-  or a distinct `Untyped::REAP` method changes the rights model and the syscall surface, so it stays a
+  or a distinct `Untyped::REAP` method changes the rights model and the system call surface, so it stays a
   decision rather than an implementation detail.
 
 ## Resolved: `Rendezvous::REAP` (DECISIONS §32 (supervisor))
@@ -210,7 +210,7 @@ rendezvous with no non-blocking form, so it completes only when someone reads th
 Every ordinary job leaves the shell with a read outstanding there; a screen-narrowed line does not,
 so a *non-tail* stage of one faulting parks the undertaker until the next command reads, which then
 takes the stale word. Closing it needs either a non-blocking send or a receive that waits on two
-endpoints, and both are the syscall surface (§10, §16). Recorded in `components/src/job_undertaker.rs`'s
+endpoints, and both are the system call surface (§10, §16). Recorded in `components/src/job_undertaker.rs`'s
 `BUGS`, where the next person to touch that loop will meet it.
 
 **A job that hangs without faulting is untouched by any of this.** A live thread blocked in a `RECEIVE`
@@ -251,6 +251,6 @@ other side.
   **Not fixed here because the fix is a choice, not a correction.** Requiring `WRITE` at `START`
   would make the rights mean something and would refuse every current caller, since they all place
   `READ`; requiring `READ` would encode the accident. Deciding which right a supervision placement
-  should demand is a syscall-surface question and belongs to an architect (§16 (object revocation),
+  should demand is a system-call-surface question and belongs to an architect (§16 (object revocation),
   §26 (the fault endpoint)). Until then, read the `READ` in `process_builder` as arbitrary and
   the deletion as the mechanism.

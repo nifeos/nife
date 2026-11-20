@@ -21,7 +21,7 @@ measures, so every cost below is a debug-build cost. Release costs are smaller a
 Bisected over `main`'s 469 first-parent merges, finding every step on `ipc_rtt`, `relay_rtt`,
 `spawn_el0` and `ctx_switch` rather than only the first. Rows in percent of the merge's parent:
 
-| merge | `yield_switch` | `ipc_rtt` | `relay_rtt` | `call_reply` | `broker_rtt` | `null_syscall` | `ctx_switch` | `ipc_rtt_el0` | `spawn_el0` |
+| merge | `yield_switch` | `ipc_rtt` | `relay_rtt` | `call_reply` | `broker_rtt` | `null_system_call` | `ctx_switch` | `ipc_rtt_el0` | `spawn_el0` |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | #1892, milestone 812 (threads in one address space) | +1.22 | +2.04 | +0.71 | +0.71 | +0.71 | +1.49 | +1.19 | +1.53 | +3.51 |
 | #2025, `schedule` split | +0.45 | **-3.24** | +0.23 | +0.22 | +0.22 | -0.09 | +0.41 | -0.47 | +0.12 |
@@ -68,13 +68,13 @@ which way two ticks happened to fall.
 |---|---|---:|---|---|
 | `4eeb67dc3` (#1892) | `TPIDR_EL0` saved and installed at every switch | +6,000 (+0.54%) | `yield_switch` +1.08%, `ctx_switch` +1.00% | yes, §269 (how threads share a process) fork 4. About 48 instructions a switch, because `TPIDR_EL0.get()` and `.set()` are out-of-line calls at opt-level 0 |
 | `3d0f1543d` (#1892) | the futex | +750 (+0.07%) | | yes |
-| `4a8adf510` (#1892) | threads join a process | +750 (+0.07%) | `spawn_el0` +4.11%, `null_syscall` +1.40%, `spawn_reap` +0.88% | yes: spawn does more, and `syscall::dispatch` has new arms, which cost every syscall at opt-level 0 |
+| `4a8adf510` (#1892) | threads join a process | +750 (+0.07%) | `spawn_el0` +4.11%, `null_system_call` +1.40%, `spawn_reap` +0.88% | yes: spawn does more, and `system_call::dispatch` has new arms, which cost every system call at opt-level 0 |
 | `44e1e0b59` (#2025) | `schedule` split into `choose_next` and `switch_operands` | +2,500 (+0.22%) | `yield_switch` +0.45%, `ctx_switch` +0.45% | a refactor; its commit records the debug-build cost and inlined both helpers to hold it there |
 | `642db52f6` (#2188) | `read_current_thread` masks IRQs around the per-CPU load | **+13,875 (+1.24%)** | `relay_rtt` +1.72%, `ipc_rtt_el0` +1.45%, `sink_throughput` +1.41% | the read, yes (it closes a migration race); the cost, no. Its commit sized it on a release build at "the `DAIF` read and a branch". At opt-level 0 it is five calls on every IPC |
 | `f7b50a1d4`, `83b761954` (#2331) | the suspension check in `schedule` | +2,000 (+0.18%) | | yes; the first cut cost +40,375 and the second commit took it back |
 
 These sum to the whole tick-free drift on `yield_switch`, `ipc_rtt`, `relay_rtt`, `call_reply`,
-`broker_rtt`, `null_syscall` and `ctx_switch`, each to within two ticks. What remains is
+`broker_rtt`, `null_system_call` and `ctx_switch`, each to within two ticks. What remains is
 `ipc_rtt_el0` +17,463 (+0.16%), `sink_throughput` +8,750 (+0.20%), `spawn_reap` +1,386 (+0.61%),
 and `spawn_el0` -14,241 (-1.01%), which commits after these four took back. Those four remainders
 are not attributed.

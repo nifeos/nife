@@ -64,7 +64,7 @@ EXCLUDED_PREFIXES = ('vendor/', 'target/')
 
 # The count when this check landed, lowered by each sweep's `--bank`. Never raise it by hand: a new
 # `syscall` is spelled `system_call`, or it is a foreign name and goes in KEPT with its owner.
-CEILING = 295
+CEILING = 0
 
 # The identifiers and paths that keep `syscall`, by file, each group with whose word it is. See the
 # header before adding one.
@@ -93,7 +93,7 @@ KEPT = {
     # The host benchmarks call the C library's `syscall` function, which Linux and macOS name.
     'bench/host/linux_all.rs': ({'syscall'}, _LINUX),
     'bench/host/linux_fs.rs': ({'syscall'}, _LINUX),
-    'bench/host/null_syscall.rs': ({'syscall'}, _LINUX),
+    'bench/host/null_system_call.rs': ({'syscall'}, _LINUX),
 }
 
 

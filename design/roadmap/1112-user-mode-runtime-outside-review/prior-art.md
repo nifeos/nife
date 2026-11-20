@@ -7,10 +7,10 @@ at the time of the review.
 
 | crate | recent / all-time | what it is | what it does that this crate does not, or does differently |
 |---|---|---|---|
-| `libc` 1.0 | 479M / 1.96G | the C ABI, syscall numbers and `syscall(2)` | one untyped `syscall` plus typed wrappers per call; this crate has the same two tiers (`raw_syscall`, the wrappers) |
-| `rustix` 1.1 | 358M / 1.39G | safe, typed wrappers over Linux syscalls | every return is a `Result<T, Errno>`; this crate returns `i64` and leaves decoding to `abi::Error::from_ret` on 30 of 60 functions |
-| `linux-raw-sys` 0.12 | 339M / 1.31G | raw syscall numbers and structs | the `abi` crate's role |
-| `syscalls` 0.8 | 486k / 1.56M | `syscall!` over raw numbers, per architecture | this crate's `raw_syscall` |
+| `libc` 1.0 | 479M / 1.96G | the C ABI, system call numbers and `syscall(2)` | one untyped `syscall` plus typed wrappers per call; this crate has the same two tiers (`raw_system_call`, the wrappers) |
+| `rustix` 1.1 | 358M / 1.39G | safe, typed wrappers over Linux system calls | every return is a `Result<T, Errno>`; this crate returns `i64` and leaves decoding to `abi::Error::from_ret` on 30 of 60 functions |
+| `linux-raw-sys` 0.12 | 339M / 1.31G | raw system call numbers and structs | the `abi` crate's role |
+| `system_calls` 0.8 | 486k / 1.56M | `system_call!` over raw numbers, per architecture | this crate's `raw_system_call` |
 | `zerocopy` 0.9 | 329M / 1.13G | `FromBytes` and friends for reading a `T` out of bytes | a trait bound that makes "any bit pattern is a valid `T`" a type-level claim; item 1 |
 | `bytemuck` 1.25 | 140M / 470M | `Pod` | the same bound, derivable |
 | `volatile-register` 0.2 | 2.0M / 12.6M | `RO<T>`, `RW<T>`, `WO<T>` over a typed place | reads take `&self` on a real `T`, so alignment and validity come from the place; item 1 |
@@ -19,7 +19,7 @@ at the time of the review.
 | `volatile` 0.6 | 1.5M / 7.5M | `VolatilePtr`, `VolatileRef` with access markers | a pointer-shaped window with read-only and write-only variants |
 | `cortex-m-rt` 0.7 | 2.4M / 10.6M | `#[entry]`, the reset vector, `link.x` shipped from a build script | the link script lives in the runtime crate and reaches a binary through `OUT_DIR` and `cargo:rustc-link-search`; item 5 |
 | `riscv-rt` 0.18 | 772k / 3.0M | the same for RISC-V | same mechanism |
-| `fuchsia-zircon` 0.3 | 6.4M / 29.6M | typed handles over Zircon syscalls | one `channel_read` returns bytes and handles together; this crate has ten `receive_*` functions (item 15) |
+| `fuchsia-zircon` 0.3 | 6.4M / 29.6M | typed handles over Zircon system calls | one `channel_read` returns bytes and handles together; this crate has ten `receive_*` functions (item 15) |
 | `sel4` 0.0.12 | 55 / 18.9k | Rust bindings for seL4 | `seL4_Recv` returns the badge through one out-parameter on every receive; the Reply object is a typed capability, as this crate's `Reply` is |
 
 Where this crate differs: it puts three architectures behind one signature set. It has a six-word

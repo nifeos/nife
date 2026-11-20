@@ -18,7 +18,7 @@ milestone 74's cycle counters and milestone 127's Jetson TX1 to produce the one 
 would justify it, and neither exists yet. So building it now would be arguing on an estimate rather
 than measuring, exactly the move this project's benchmark discipline refuses. Option 2, the
 eligibility predicate and its proof in `crates/inter_process_communication`, is ratified as
-buildable now. It is cheap, touches no syscall surface, and turns "the fastpath would be correct"
+buildable now. It is cheap, touches no system call surface, and turns "the fastpath would be correct"
 from an argument into a harness whether or not a fastpath is ever built on top of it. A lane may
 pursue Option 2 without further sign-off; Option 3 stays gated on the measurement per this
 decision's own text.
@@ -109,7 +109,7 @@ than it is.
 The quantity actually being spent is unverified TCB: how much unproved code sits on a
 security-critical path, and what compensating control covers it. That is a trade this tree has
 already priced once. Milestone 20 accepted a new architecture knowing it "enlarges the unverified TCB
-(one hand-written boot/MMU/trap/syscall layer per arch, the least-verifiable code)" and paid for it
+(one hand-written boot/MMU/trap/system_call layer per arch, the least-verifiable code)" and paid for it
 with sequencing rather than with a refusal. §14 concedes the frame outright: not a seL4-scale proof of
 the whole kernel, because that is person-decades.
 
@@ -155,10 +155,10 @@ invariants that would need to hold under a second path, and none of them is abou
 
 ## The other thing it touches, which makes it calef's rather than a lane's
 
-`syscall::dispatch` at 2,024 bytes is the largest single item in the measured footprint, and skipping
-it means decoding the operation before the general decoder runs. That is the syscall surface
+`system_call::dispatch` at 2,024 bytes is the largest single item in the measured footprint, and skipping
+it means decoding the operation before the general decoder runs. That is the system call surface
 (§10, §16), which this project treats as a boundary rather than a habit, so the shape of the check
-is a design fork even though no new syscall number appears.
+is a design fork even though no new system call number appears.
 
 ## Options
 
@@ -182,7 +182,7 @@ Option 2 now, option 3 only behind a measurement.
 
 The predicate and its proof are worth having on their own, because they turn "the fastpath would be
 correct" from an argument into a harness, and because they cost little and are the part that cannot
-be retrofitted honestly. That work is startable today and touches no syscall surface.
+be retrofitted honestly. That work is startable today and touches no system call surface.
 
 The fastpath itself should wait for milestone 127's Jetson TX1 and milestone 74's cycle counters.
 The reason is this project's own standard rather than caution: **the entire case for a fastpath is a

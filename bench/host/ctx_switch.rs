@@ -21,7 +21,7 @@ unsafe extern "C" {
 }
 
 /// One process, one pipe: `write` a byte then `read` it back. No context switch; measures the pipe
-/// pass overhead (two syscalls plus two buffer copies) to subtract out.
+/// pass overhead (two system calls plus two buffer copies) to subtract out.
 fn self_pipe_pass_nanoseconds(iters: u64) -> f64 {
     let mut p = [0i32; 2];
     unsafe { pipe(p.as_mut_ptr()) };

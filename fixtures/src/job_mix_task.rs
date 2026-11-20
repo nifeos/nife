@@ -50,7 +50,7 @@ use user_mode_runtime::{call, now, receive, receive_request, reply, send, yield_
 /// measuring a cache line's worth of sharing instead of displacement.
 static mut WORKING_SET: [u64; job_mix::TOUCH_WORDS] = [0; job_mix::TOUCH_WORDS];
 
-/// A capability slot this task was given nothing in, for the [`job_mix::NULL_SYSCALL`] job to be
+/// A capability slot this task was given nothing in, for the [`job_mix::NULL_SYSTEM_CALL`] job to be
 /// refused on. Past every slot `kernel/src/job_mix.rs` grants, and it must stay that way: a slot
 /// that ever held an object would make the job invoke it rather than bounce off the kernel's
 /// slot check.
@@ -107,16 +107,16 @@ const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
 /// the loader maps, which is the choice `os_primitives_benchmarker` made for the same frame.
 const STUB_SCRATCH_VA: u64 = address_space_layout::pair_page(0x0100_0000);
 
-/// A job's syscall was refused: the refusal, as the negative `abi::Error` the kernel returned.
+/// A job's system call was refused: the refusal, as the negative `abi::Error` the kernel returned.
 type Refused = i64;
 
-/// A syscall's result as a slot or a refusal: the retype and split verbs return the new slot, or a
+/// A system call's result as a slot or a refusal: the retype and split verbs return the new slot, or a
 /// negative error.
 fn slot(r: i64) -> Result<u64, Refused> {
     if r < 0 { Err(r) } else { Ok(r as u64) }
 }
 
-/// A syscall that answers zero on success.
+/// A system call that answers zero on success.
 fn zero(r: i64) -> Result<(), Refused> {
     if r == 0 { Ok(()) } else { Err(r) }
 }
@@ -272,14 +272,14 @@ fn run_job(job: u8, seed: u64, code_frame: u64) -> Result<(u64, u64), Refused> {
     let value = match job {
         job_mix::COMPUTE => grind(job_mix::COMPUTE_ITERS, seed),
         job_mix::TOUCH => touch(seed),
-        job_mix::NULL_SYSCALL => {
+        job_mix::NULL_SYSTEM_CALL => {
             let mut i = 0;
-            while i < job_mix::NULL_SYSCALL_CALLS {
+            while i < job_mix::NULL_SYSTEM_CALL_CALLS {
                 // **A real trap, and the cheapest one this ABI has.** `is_granted` invokes a method
                 // number no object type defines on a slot this task was given nothing in, so the
                 // kernel validates the slot, refuses, and returns: an entry and an exit with no
                 // object work between them. `now()` was refused for this job because it is *not* a
-                // syscall on any of the three architectures (an unprivileged counter read), so a
+                // system call on any of the three architectures (an unprivileged counter read), so a
                 // job named for the trap would have measured a loop.
                 core::hint::black_box(user_mode_runtime::is_granted(EMPTY_SLOT));
                 i += 1;
@@ -378,7 +378,7 @@ fn start(role: u64, index: u64, seed: u64) -> ! {
         let mut round = 0;
         'subrun: while round < job_mix::ROUNDS_PER_TASK {
             for &job in &order {
-                // Two counter reads per job, and neither is a syscall on any architecture this
+                // Two counter reads per job, and neither is a system call on any architecture this
                 // tree targets, so the breakdown costs the subrun a few instructions a job.
                 let j0 = now();
                 match run_job(job, acc, code) {

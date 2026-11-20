@@ -45,7 +45,7 @@ of the hot path a pad perturbed was an accident of that day's build.
 They are variables rather than a feature per size because it was built that way first, and measured.
 A feature's name enters cargo's `-C metadata` hash, which renames every symbol and reorders codegen
 units. Seven sibling features moved code linked *ahead* of the sled by up to 11 KB on the card build.
-`syscall::dispatch` wandered across 240 of the 256 L1i sets. So each image was an uncontrolled layout
+`system_call::dispatch` wandered across 240 of the 256 L1i sets. So each image was an uncontrolled layout
 draw. Editing this module's own source does the same thing for the same reason, which is why every
 image in an evening must come from one commit.
 

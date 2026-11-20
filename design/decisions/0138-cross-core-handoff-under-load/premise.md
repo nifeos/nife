@@ -39,13 +39,13 @@ Four greps, and they move the argument more than any of the options do.
 placement grant in the spawn manifest (milestone 23's contract; overrides the default, recovering
 seL4's userspace-owns-placement story for pinned components)"*. So affinity is not a new idea here.
 It was considered at ratification, deferred deliberately, and its shape was already chosen: a
-grant in the spawn manifest, not a syscall on a running thread. Any proposal that reaches for a
+grant in the spawn manifest, not a system call on a running thread. Any proposal that reaches for a
 `Thread::SET_AFFINITY` method is reopening a decision rather than making one, and owes a reason.
 
 This tree already has affinity, and it is kernel-internal. Device-line IRQ affinity picks which
 hart's PLIC context a source lands on (`kernel/src/drivers/plic.rs`, `kernel/src/arch/riscv64/irq.rs`).
 It is policy the kernel decides and remembers; no program asks for it and no capability names it.
-That is the precedent for "affinity exists here" and it is on the opposite side of the syscall
+That is the precedent for "affinity exists here" and it is on the opposite side of the system call
 boundary from option A.
 
 This tree has already refused to pin threads once, on instrument grounds. `kernel/src/cpu.rs`,

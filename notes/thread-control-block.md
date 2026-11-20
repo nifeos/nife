@@ -192,9 +192,9 @@ would get another thread's name. `adopt_address_space` would then bind a new spa
 it.
 
 `CURRENT_CAPABILITIES` is its own array, because `PerCpu` is held to 128 bytes. Each entry fills a
-cache line. Every core writes its entry on every switch and reads it on every syscall, and a shared
+cache line. Every core writes its entry on every switch and reads it on every system call, and a shared
 line would trade the lock for line traffic between the same cores
-(notes/job-mix/null-syscall-under-load.md's BUGS has that shape).
+(notes/job-mix/null-system-call-under-load.md's BUGS has that shape).
 
 The pointer is valid without a lock, because it names the page of the thread running on this core,
 and a running thread's page is not recycled. `Threads::remove` is reached only from
@@ -205,7 +205,7 @@ replaces the pointer before the switch that makes the old thread reapable.
 `current_thread_id` and `set_current` are on every IPC and must land in `.text.hot` beside their
 callers. Whether LLVM inlines them moves with the codegen unit and the build host. So they are
 forced inline where that does not cost the band: `current_thread_id` on riscv64, and `set_current`
-on riscv64 and `x86_64`. On aarch64, forcing either grows `syscall_entry` past its band. There
+on riscv64 and `x86_64`. On aarch64, forcing either grows `system_call_entry` past its band. There
 `set_current` carries a `.text.hot` section instead. Inlined, the section is unused; out of line, the
 copy lands beside its caller.
 

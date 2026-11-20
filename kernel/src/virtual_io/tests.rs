@@ -240,7 +240,7 @@ fn feature_negotiation_leaves_the_blk_flush_bit_alone() {
 /// A PCI queue in range but never set up has no doorbell, so `notify` refuses it rather than
 /// write through `phys_to_virt(0)`.
 ///
-/// A unit test of the predicate, not the syscall: it builds both transports by hand and touches
+/// A unit test of the predicate, not the system_call: it builds both transports by hand and touches
 /// no device, so it runs in configurations with no PCI virtio function.
 #[test_case]
 fn a_pci_queue_has_no_doorbell_until_it_is_set_up() {

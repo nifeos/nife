@@ -58,12 +58,12 @@ auditing". It comes out when Kani's pin passes the change.
 
 | host | `arch/` subtree compiled | harnesses run |
 |---|---|---|
-| aarch64 (dev Mac, `ubuntu-24.04-arm` runners) | `arch/aarch64/` | 4: two in `syscall.rs`, two in `arch/aarch64/iommu.rs` |
-| x86_64 (cordoba, the new `ubuntu-24.04` runner) | `arch/x86_64/` | 4: the same two in `syscall.rs`, two new in `arch/x86_64/irq.rs` |
+| aarch64 (dev Mac, `ubuntu-24.04-arm` runners) | `arch/aarch64/` | 4: two in `system_call.rs`, two in `arch/aarch64/iommu.rs` |
+| x86_64 (cordoba, the new `ubuntu-24.04` runner) | `arch/x86_64/` | 4: the same two in `system_call.rs`, two new in `arch/x86_64/irq.rs` |
 | riscv64 | nothing | nothing here; milestone 589 reaches it |
 
 Six distinct harnesses in `kernel`, up from four. No harness went red on a newly-reachable
-architecture, which is the question this lane was sent to answer: the two portable `syscall.rs`
+architecture, which is the question this lane was sent to answer: the two portable `system_call.rs`
 properties pass on x86_64 exactly as they do on aarch64, so nothing there was quietly
 architecture-specific. That is a clean result and a small one, because the portable harnesses were
 the only pre-existing candidates. The two `arch/aarch64/iommu.rs` harnesses cannot run on an x86_64
@@ -145,7 +145,7 @@ aarch64. It is now in `script/falsifications`' `BUGS`.
   enough to look like a job that proved nothing, and that exact failure is on this file's record
   twice. The log names all four harnesses:
   `arch::x86_64::irq::proofs::no_vector_belongs_to_two_bands`,
-  `arch::x86_64::irq::proofs::an_owned_gsi_routes_inside_the_io_apic_band`, and `syscall.rs`'s two.
+  `arch::x86_64::irq::proofs::an_owned_gsi_routes_inside_the_io_apic_band`, and `system_call.rs`'s two.
   A pass here is a pass on the architecture this milestone exists to reach.
 - One extra CI runner, in parallel with the two `prove` shards, which are 15 minutes each. It
   adds nothing to the critical path. `VERIFY_JOBS` is left at the script's default rather than
@@ -154,7 +154,7 @@ aarch64. It is now in `script/falsifications`' `BUGS`.
 - What each host actually proves, measured on 2026-09-16. `VERIFY_JOBS=2 script/verify` on the
   dev Mac: exit 0, 25 crate runs, 148 harnesses. `script/verify --only kernel` on cordoba: exit
   0, 4 harnesses. The tree carries 150. No single machine proves all of them, and that is now
-  a property of the suite rather than an oversight: the two figures overlap on `syscall.rs`'s two
+  a property of the suite rather than an oversight: the two figures overlap on `system_call.rs`'s two
   and differ on the four architecture-specific ones. A reader who takes "148" as the tree's coverage
   is off by the two this milestone added, which is why notes/verification.md's counted claim now
   says so on the same line as the number.

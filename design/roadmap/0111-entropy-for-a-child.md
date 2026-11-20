@@ -120,7 +120,7 @@ whole stream is the one refusal sentence, not one hyphen of identifier-shaped ou
 sink, and the process ends normally rather than faulting on a `CALL` that cannot succeed.
 
 That direction is the one carrying the claim, and randomness is the authority where it is hardest to
-check by looking. A process that draws a key and a process that hardcodes one make the same syscalls
+check by looking. A process that draws a key and a process that hardcodes one make the same system calls
 and produce output of the same shape. Only taking the capability away tells them apart, which is why
 `crates/globally_unique_identifier_partition_table` refuses to invent a GUID and `disk_partitioner` reports `R_NO_ENTROPY` instead of
 falling back to a counter.

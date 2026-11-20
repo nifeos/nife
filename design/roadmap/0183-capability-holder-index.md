@@ -15,7 +15,7 @@ finding a capability's holders. calef asked for it to be a milestone rather than
 
 The data-structure shape (extend an existing structure vs. build a new one, see "The
 starting point" below) is a real choice but not one that needs calef's decision before a lane starts.
-It is kernel-internal, changes no syscall, no wire format, and no name. A lane picking this up should
+It is kernel-internal, changes no system call, no wire format, and no name. A lane picking this up should
 investigate and decide, the same latitude this project already gives reversible engineering calls.
 
 ## In brief

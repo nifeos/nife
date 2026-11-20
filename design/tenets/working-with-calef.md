@@ -84,9 +84,9 @@ not finished.
 **Recommend on reversible forks; give options only on irreversible ones.** The lane of
 milestone 54 (a network file service a Mac can actually mount) recommended keeping the demo share guest-writable,
 usefully, because it can be undone. The blocked-thread lane named no winner, correctly, because a
-syscall-surface decision arriving with a recommendation is already most of the way made. The line is
+system-call-surface decision arriving with a recommendation is already most of the way made. The line is
 the one the *move fast* tenet draws: anything two programs agree on, a name, a dependency, the
-syscall surface, a fact that leaves the machine.
+system call surface, a fact that leaves the machine.
 
 **A fork only earns a lane when nobody can say what the options cost.** A lane costs a few hundred
 thousand tokens and up to an hour. If an architect can answer in a sentence, researching first

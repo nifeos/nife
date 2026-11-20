@@ -258,8 +258,8 @@ const _: () = assert!(
             | abi::rights::BIND
 );
 
-// `abi::rights` is `u64` and `Rights` is `u32`, and the syscall path narrows with `a1 as u32`
-// (`SEND_CAPABILITY` and `CAPABILITY_INSERT` in kernel/src/syscall.rs). A right defined at bit 32 or above would
+// `abi::rights` is `u64` and `Rights` is `u32`, and the system call path narrows with `a1 as u32`
+// (`SEND_CAPABILITY` and `CAPABILITY_INSERT` in kernel/src/system_call.rs). A right defined at bit 32 or above would
 // therefore be truncated to nothing on the way in, silently, and the delegation would appear to
 // succeed. Nothing about the ABI's type stops somebody writing `1 << 32`; this does.
 const _: () = assert!(

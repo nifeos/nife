@@ -209,7 +209,7 @@ fn tear_down(
         assert!(
             wait_for(5, || {
                 let mut frame = crate::arch::exceptions::TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-                crate::syscall::invoke(&mut frame, supervisor, abi::rendezvous::REAP, tid, 0, 0)
+                crate::system_call::invoke(&mut frame, supervisor, abi::rendezvous::REAP, tid, 0, 0)
                     == Ok(0)
             }),
             "a member could not be collected through the rendezvous that showed it",

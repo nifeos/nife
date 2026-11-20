@@ -16,14 +16,14 @@ longer 16a's board: milestone 127 bought the machine under the only published aa
 days rather than waiting on a decision. Milestone 74 is the driver that reads that counter, and 74's block states the
 dependency this one does not.
 
-In brief. EL0-measured primitive benchmarks (syscall, context switch, IPC, map, spawn) the lmbench
+In brief. EL0-measured primitive benchmarks (system_call, context switch, IPC, map, spawn) the lmbench
 way, so the numbers include the trap the kernel-side benchmarks skip. Then line them up against
 lmbench (Linux, macOS guests) and `sel4bench` (seL4), at a matched virtualization tier, with release
 builds. Fold in the icount codegen-sensitivity fix.
 
 Why it matters. turns perf claims into cross-OS numbers: where does a Rust capability microkernel
 stand next to Linux, macOS's XNU, and seL4 on the primitives that define an OS. Largely done: four
-EL0 primitives (null syscall, context switch, IPC, page map) on both instruments, and a release
+EL0 primitives (null system call, context switch, IPC, page map) on both instruments, and a release
 build path. Also the three-way comparison (nife vs Linux-under-HVF vs native macOS) with nife
 winning null/IPC ~5x. `spawn` landed too. Its real prerequisite was never retype, which had already
 shipped, but object revocation: reclaiming a child's TCB/aspace/endpoint so a spawn loop can repeat.

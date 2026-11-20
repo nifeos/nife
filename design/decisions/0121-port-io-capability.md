@@ -88,7 +88,7 @@ the wrong implementation.
 
 **This was not a lane's call, and still is not retroactively**: option 1 would have added an object
 type to the capability surface and option 2 permanently declares a parity gap. Both are calef's
-under the tenets: the syscall surface is a boundary, and a parity gap needs a recorded plan rather
+under the tenets: the system call surface is a boundary, and a parity gap needs a recorded plan rather
 than a silence. That recorded plan is exactly what this decision now is.
 
 ### Amended 2026-08-24: option 2 now, but not argued blind against the alternatives
@@ -99,7 +99,7 @@ comes back. It can, and neither half needs the feature it is pricing.
 
 **Option 3's cost is already on record, just never cited here.** The dominant cost of an I/O-port
 broker is one IPC round trip per register access. This kernel's own IPC round trip is measured: ~337
-ns (release, HVF, aarch64), against a null syscall at ~27 ns, both from `notes/benchmarks.md`'s
+ns (release, HVF, aarch64), against a null system call at ~27 ns, both from `notes/benchmarks.md`'s
 cross-OS table. Neither number is x86-specific, and citing it here is not a claim that it transfers
 unchanged to different silicon; it is the order-of-magnitude confirmation this file's own "obviously
 wrong for a UART" already asserted without a number. A raw `in`/`out` instruction is single-digit
@@ -118,7 +118,7 @@ Whether it does is this decision's own next input, not something to guess now.
 
 **So the plan, not just the recommendation:** option 2 stands. Once x86 has two threads actually
 switching, a small follow-on benchmark (unscoped as its own milestone; whoever picks it up mints the
-number) measures the TSS-bitmap-write cost the same way `ipc_rtt` and `null_syscall` already measure
+number) measures the TSS-bitmap-write cost the same way `ipc_rtt` and `null_system_call` already measure
 theirs. That turns the next 1-vs-3 call into one made on both sides' numbers, not one side's.
 
 ### Measured 2026-08-24: the write costs more, not less, than the prose above guessed
@@ -234,7 +234,7 @@ where realistically one process (the console driver) ever holds one, that is nea
 overwhelming majority of switches. Milestone 299's own first measurement is the lazy write's real
 cost, taken the way this file already specified, not a second run of `tss_iomap_switch`.
 
-What this does not reopen. Option 3 (the I/O-port broker, a syscall per register access) stays
+What this does not reopen. Option 3 (the I/O-port broker, a system call per register access) stays
 refused on its measured ~337 ns-per-round-trip cost against single-digit-cycle `in`/`out`; nothing
 here revisits it. And the mapping-based capability for MMIO devices is unchanged: this adds a second
 kind of device capability for the one class that has no page, it does not replace the first.

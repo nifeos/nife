@@ -249,7 +249,7 @@ while the stack pointer, or the per-CPU pointer, still holds a value the kernel 
   `sstatus.SPP`, which the hardware sets, and recovers the kernel `tp` from the per-hart stash
   `sscratch` names, which U-mode cannot reach.
 - x86_64: yes, for three vectors, and they have their own stacks. An NMI or machine check
-  ignores `RFLAGS.IF`, and both the `syscall` entry and the exit before `iretq` run briefly in ring 0
+  ignores `RFLAGS.IF`, and both the `system_call` entry and the exit before `iretq` run briefly in ring 0
   with the user's GS base (and, at entry, the user's `rsp`). The NMI, double fault and machine
   check switch to per-core IST stacks and set the GS base without trusting the saved `CS`
   (milestone 915 (NMI, double fault and machine check run on their own stacks), provisional;

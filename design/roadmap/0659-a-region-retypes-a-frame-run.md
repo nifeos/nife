@@ -13,14 +13,14 @@ OS with live replacement) while starting the handoff page count the `line_editor
 state with history is a little over one page (notes/interactive-stack-swap.md).
 
 It changes the meaning of an argument of an existing method,
-`MemoryRegion::RETYPE`, which is the syscall surface and so an architect's call under §10 (process model:
+`MemoryRegion::RETYPE`, which is the system call surface and so an architect's call under §10 (process model:
 capability-based, microkernel).
 
 ## The finding
 
 §102 (a Frame names a run of pages) made a `PageFrame` capability able to name a run, and `MAP` and
 `MAP_INTO` map a whole run in one call. Only the kernel can mint one. `MemoryRegion::RETYPE` takes
-no arguments and always makes a one-page frame (`kernel/src/syscall.rs`, `memory_region_retype`).
+no arguments and always makes a one-page frame (`kernel/src/system_call.rs`, `memory_region_retype`).
 So a supervisor that wants a two-page handoff page for a component has no one-capability way to
 make it, although the pages it would get are already contiguous: a region hands pages out from a
 watermark (`crates/memory_regions/src/table.rs`, `retype_page`).
@@ -54,4 +54,4 @@ The handoff page count (`component_plan::Handoff` grows `pages`), then the `line
 
 ## Index row
 
-`MemoryRegion::RETYPE` always makes a one-page frame, so a supervisor cannot make a two-page handoff page in one capability. Proposed: let it retype a run, which changes an argument of an existing syscall and is an architect's call.
+`MemoryRegion::RETYPE` always makes a one-page frame, so a supervisor cannot make a two-page handoff page in one capability. Proposed: let it retype a run, which changes an argument of an existing system call and is an architect's call.

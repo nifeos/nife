@@ -11,7 +11,7 @@ categories = ["no-std", "memory-management"]
 publish = false     # `false` until the release that publishes; that release deletes the line
 
 # The host tests and the README example drive the growth and wiring logic through a page source
-# that hands out host memory, so no syscall runs. There are no benches.
+# that hands out host memory, so no system call runs. There are no benches.
 [lib]
 bench = false
 

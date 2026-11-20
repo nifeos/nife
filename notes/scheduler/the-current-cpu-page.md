@@ -1,7 +1,7 @@
 # The current-CPU page and its tests
 
 An appendix to [notes/scheduler.md](../scheduler.md). A userspace thread learns which core it is on
-by loading from a page, with no syscall. [The switch](switch.md) says where the scheduler writes it.
+by loading from a page, with no system_call. [The switch](switch.md) says where the scheduler writes it.
 This page holds what the kernel tests in `system_tests/src/user/current_cpu_tests.rs` prove about
 it, and why each assertion has its shape.
 

@@ -34,7 +34,7 @@ wake(sched, tid);              // Blocked -> Ready, onto a run queue
 ```
 
 Those two lines are what `reap_region_objects` runs against every waiter it drains from a doomed
-endpoint. The syscall layer then reads the flag through `take_ipc_aborted` and hands userspace
+endpoint. The system call layer then reads the flag through `take_ipc_aborted` and hands userspace
 `abi::Error::Gone`. The abort path is complete; it is only ever entered from an endpoint's wait
 queue, which is the whole of `Error::Gone`'s reach.
 
@@ -56,6 +56,6 @@ endpoint, which "is not in this region and the endpoint sweep above did not touc
 with `remove_sender` before its TCB is freed. Endpoint wait queues are kernel state under `SCHED`,
 not the endpoint owner's property, and the tree has decided that once.
 
-So: the kernel could end any blocked thread today, in about thirty lines, with no new syscall.
+So: the kernel could end any blocked thread today, in about thirty lines, with no new system_call.
 Every proposal below differs in who may ask and in what the victim and its peers observe, not in
 whether it can be done.

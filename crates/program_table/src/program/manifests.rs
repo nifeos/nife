@@ -125,7 +125,7 @@ impl Program {
             Program::StdExerciser => std_exerciser_manifest(),
             Program::Jig => jig_manifest(),
             Program::JobSleeper => job_sleeper_manifest(),
-            Program::NullSyscall | Program::SinkProducer => bench_row_manifest(),
+            Program::NullSystemCall | Program::SinkProducer => bench_row_manifest(),
             Program::SinkConsumer => wc_manifest(),
             Program::MapEl0 => map_el0_manifest(),
         }
@@ -168,7 +168,7 @@ const fn least_authority_demo_manifest() -> Manifest {
     }
 }
 
-/// The manifest of `null_syscall` and `sink_producer` (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1): a stream of bytes out,
+/// The manifest of `null_system_call` and `sink_producer` (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1): a stream of bytes out,
 /// and no argument, memory, file, directory or input. The bench rows a production shell can run
 /// need no authority, so the manifest asks for none.
 const fn bench_row_manifest() -> Manifest {

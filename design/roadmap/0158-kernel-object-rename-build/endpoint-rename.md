@@ -16,7 +16,7 @@ files. It also covered:
 
 - a whole ABI module, `abi::endpoint` -> `abi::rendezvous`. This is the
   `SEND`/`RECV`/`SEND_CAP`/`RECV_CAP`/`CALL`/`REAP`/`SURVEY` method-number namespace every user
-  program and the kernel's `syscall.rs` dispatch on;
+  program and the kernel's `system_call.rs` dispatch on;
 - an `objtype::ENDPOINT` -> `objtype::RENDEZVOUS` object-kind discriminant;
 - `MAX_ENDPOINTS` -> `MAX_RENDEZVOUS`;
 - a family of lowercase function and field names spelling the same concept: `create_endpoint` ->

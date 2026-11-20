@@ -23,7 +23,7 @@ members = [
     "crates/compositor",
     "crates/cpu_set",
     "crates/current_cpu_contract",
-    "crates/confined_syscall_fuzzer_contract",
+    "crates/confined_system_call_fuzzer_contract",
     "crates/grant_plan",
     "crates/grant_contract",
     "crates/program_table",

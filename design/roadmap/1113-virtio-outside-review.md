@@ -201,7 +201,7 @@ copy, which is what `virtual_io_net_transport` has today and this crate lacks.
 Prior art. Linux puts the ring layout in a UAPI header (`include/uapi/linux/virtio_ring.h`) that
 both the kernel's ring code and every userspace consumer (QEMU, rust-vmm's `virtio-bindings`)
 compile against; the layout is a contract, and the contract has one home. Nife's own `abi` crate
-is the same thing for the syscall boundary.
+is the same thing for the system call boundary.
 
 Concrete example. `kernel/src/virtual_io.rs` lines 497 to 513 alias the validator;
 `components/src/block_driver_roles.rs` lines 93 and 127 to 129 and `components/src/virtual_io_net_transport.rs` lines 73 to 87 spell `8`, `0x000`, `0x080`,

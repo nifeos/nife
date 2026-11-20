@@ -7,7 +7,7 @@ Part of the survey behind [§103 (what a `Frame` names)](../0103-what-a-frame-na
 ### Fuchsia VMOs: correct, and the qualification is where the size lives
 
 The claim was that one handle names an arbitrarily-sized memory object and page granularity is not
-in the capability model. **Correct.** From Zircon's own syscall definitions
+in the capability model. **Correct.** From Zircon's own system call definitions
 (`zircon/vdso/vmo.fidl`, read at `fuchsia.googlesource.com`):
 
 > `zx_vmo_create()` creates a new, zero-filled, [virtual memory object] (VMO), which represents a
@@ -134,7 +134,7 @@ What changes. `Object::Frame` carries a length, or (following `Untyped`) a gener
 a kernel table that holds it. `frame::MAP` maps the whole run and needs a page count or a per-page
 loop inside the kernel. `frame::REVOKE` and `revoke::record_mapping` key on a run rather than a page.
 
-Cost. The syscall surface (`frame::MAP`'s meaning changes for every existing caller), the
+Cost. The system call surface (`frame::MAP`'s meaning changes for every existing caller), the
 revocation database's key, and the overlap invariant above. No paging change at all: a run of 4 KiB
 pages is 475 ordinary leaf mappings, so `crates/paging` and its 18 harnesses are untouched.
 
@@ -142,7 +142,7 @@ The price the prior art names and this lane would otherwise have missed: `revoke
 a mapping up by equality on a physical address, and runs turn that into containment, over
 ranges that may overlap. Barrelfish, which built exactly this capability, pays for it with a mapping
 database whose insert is *"logarithmic time in the size of the mapping database"*. That is the real
-cost of option A, and it is not in the syscall.
+cost of option A, and it is not in the system_call.
 
 And the prior art also names the mitigation. Barrelfish keeps its *allocation* type
 (RAM) naturally-aligned and power-of-two and relaxes only its *mappable* type (Frame) to a

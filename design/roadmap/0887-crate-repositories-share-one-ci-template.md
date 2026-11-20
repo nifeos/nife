@@ -191,7 +191,7 @@ roadmap or merge queue; each row applies that test.
 | CodeQL (Rust) | keep | Same job |
 | commit-msg `Co-Authored-By` hook | keep | Agent attribution everywhere nife writes |
 | empty diff | keep | Same check |
-| architect label (`helpers/architect-label-rules.py`, `architect-label.yml`) | adapt | Keeps the new-dependency rule and adds a semver rule (below); drops the abi-surface, spawnproto, syscall-error and decisions rules |
+| architect label (`helpers/architect-label-rules.py`, `architect-label.yml`) | adapt | Keeps the new-dependency rule and adds a semver rule (below); drops the abi-surface, spawnproto, system-call-error and decisions rules |
 | architect hold (`architect-hold.yml`) | keep | Red while `needs-architect` is on, and a required check |
 | `script/record-ruling` | adapt | The same label swap, from a template script |
 | name provenance blocks (`script/names`) | drop | A published crate carries no `Name:` block; git holds a name's history, and `crate-standalone` refuses a block |
@@ -200,7 +200,7 @@ roadmap or merge queue; each row applies that test.
 | naming checks 1 to 3, branch names, ready-status, script docs, env names in prose, agent instructions | drop | nife's own vocabulary and lane process |
 | merge drain, trunk health, ci-failing, verify shard refresh | drop | No merge queue at one crate's traffic |
 | audit and stranger cadence | adapt | A stranger builds and proves the crate from its README |
-| kernel and image gates: boot, swish, icount, bench, cpu-matrix, stack frames, W^X, reproducible image, arch rules, syscall registers, `#[path]` sharing | drop | A library crate has no kernel, QEMU or image |
+| kernel and image gates: boot, swish, icount, bench, cpu-matrix, stack frames, W^X, reproducible image, arch rules, system call registers, `#[path]` sharing | drop | A library crate has no kernel, QEMU or image |
 
 ## Reuse
 

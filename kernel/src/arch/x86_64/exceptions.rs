@@ -61,18 +61,18 @@ const _: () = {
 };
 
 impl TrapFrame {
-    /// The syscall number the caller passed: `rax`, following Linux.
+    /// The system call number the caller passed: `rax`, following Linux.
     ///
     /// The arguments are `rdi`, `rsi`, `rdx`, `r10`, `r8`, `r9`, argument 0 doubling as the
     /// return: the tree's one number register plus six (aarch64 `x8` + `x0`..`x5`, RISC-V `a7` +
-    /// `a0`..`a5`). `r10` stands in for `rcx` because `syscall` overwrites `rcx` with the return
-    /// address and `r11` with RFLAGS. The ABI is §124 (the x86-64 syscall ABI); see
+    /// `a0`..`a5`). `r10` stands in for `rcx` because `system_call` overwrites `rcx` with the return
+    /// address and `r11` with RFLAGS. The ABI is §124 (the x86-64 system call ABI); see
     /// notes/x86-port/traps.md.
-    pub(crate) fn syscall_nr(&self) -> u64 {
+    pub(crate) fn system_call_nr(&self) -> u64 {
         self.rax
     }
 
-    /// Syscall argument register `i`. See [`syscall_nr`](Self::syscall_nr) for the register list
+    /// System call argument register `i`. See [`system_call_nr`](Self::system_call_nr) for the register list
     /// and why `r10` is in it.
     pub fn arg(&self, i: usize) -> u64 {
         match i {
@@ -82,11 +82,11 @@ impl TrapFrame {
             3 => self.r10,
             4 => self.r8,
             5 => self.r9,
-            _ => panic!("x86_64 syscall argument {i} does not exist (there are six)"),
+            _ => panic!("x86_64 system call argument {i} does not exist (there are six)"),
         }
     }
 
-    /// Set syscall argument/return register `i`. The return value and IPC message words ride back
+    /// Set system call argument/return register `i`. The return value and IPC message words ride back
     /// in the first three, exactly as they do on the other two architectures.
     pub fn set_arg(&mut self, i: usize, v: u64) {
         match i {
@@ -96,7 +96,7 @@ impl TrapFrame {
             3 => self.r10 = v,
             4 => self.r8 = v,
             5 => self.r9 = v,
-            _ => panic!("x86_64 syscall argument {i} does not exist (there are six)"),
+            _ => panic!("x86_64 system call argument {i} does not exist (there are six)"),
         }
     }
 
@@ -246,10 +246,10 @@ pub(crate) static NMIS_UNCLAIMED: AtomicUsize = AtomicUsize::new(0);
 pub(crate) static DEVICE_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// **System calls served, counted for the system tests only** (`system_tests/src/user/el0_boundary_tests.rs`
-/// proves a program reached user mode and came back by watching it rise). Every syscall on every
+/// proves a program reached user mode and came back by watching it rise). Every system call on every
 /// core bumps this one line, so it is compiled out of every other build: until 2026-10-04 it was
-/// in all of them, and it was one of two shared writes on the cheapest syscall's path
-/// (notes/job-mix/null-syscall-under-load.md).
+/// in all of them, and it was one of two shared writes on the cheapest system call's path
+/// (notes/job-mix/null-system-call-under-load.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -297,13 +297,13 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
 }
 
 /// Write argument register `i` of a thread's saved user frame, the one [`user_pc`] reads. The
-/// return to user mode restores it, so this hands a trapped user thread a word its syscall path
+/// return to user mode restores it, so this hands a trapped user thread a word its system call path
 /// does not write; the death message's label rides in register 5 (§148 (resolves by asking the
 /// kernel), as amended 2026-10-04).
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap
-/// from user mode (blocked in a syscall, or the caller's own), and nothing else may be writing that
+/// from user mode (blocked in a system call, or the caller's own), and nothing else may be writing that
 /// frame. A pure kernel thread has no frame there: those bytes are its own stack.
 ///
 /// Name: provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC). Named for `TrapFrame::set_arg`, which it applies to a
@@ -440,7 +440,7 @@ pub(crate) fn self_test() -> usize {
 /// `IA32_EFER`. Bit 0, `SCE`, is what makes `syscall` a legal instruction rather than `#UD`. The
 /// same register carries `LME` and `NXE`, which `boot.s` set before any table was built.
 const IA32_EFER: u32 = 0xC000_0080;
-/// `IA32_STAR`: the selectors. `[47:32]` is what `syscall` loads into CS (and, plus 8, into SS);
+/// `IA32_STAR`: the selectors. `[47:32]` is what `system_call` loads into CS (and, plus 8, into SS);
 /// `[63:48]` is the base `sysret` derives the user pair from.
 const IA32_STAR: u32 = 0xC000_0081;
 /// `IA32_LSTAR`: where a 64-bit `syscall` jumps. There is no default and no descriptor: this is a
@@ -472,11 +472,11 @@ const _: () = {
     );
     assert!(
         KERNEL_CODE + 8 == super::segments::KERNEL_DATA,
-        "syscall computes the kernel SS as IA32_STAR[47:32] + 8"
+        "system call computes the kernel SS as IA32_STAR[47:32] + 8"
     );
 };
 
-/// The `RFLAGS` bits cleared on every `syscall`, each a hazard.
+/// The `RFLAGS` bits cleared on every `system_call`, each a hazard.
 ///
 /// `IF` (9) masks interrupts on entry, as an interrupt gate does, so the handler cannot be
 /// re-entered before it has a stack. `TF` (8) would single-step the kernel for a user debugger.
@@ -484,7 +484,7 @@ const _: () = {
 /// not the kernel's choice. `NT` (14) changes what `iret` means. `RF` (16) suppresses instruction
 /// breakpoints. `AC` (18) suspends SMAP for ring-0 accesses, a known privilege-escalation lever
 /// (this kernel leaves SMAP off; `cpu_initialization.rs`).
-const SYSCALL_FLAG_MASK: u64 = (1 << 8)      // TF
+const SYSTEM_CALL_FLAG_MASK: u64 = (1 << 8)      // TF
     | (1 << 9)                               // IF
     | (1 << 10)                              // DF
     | (0b11 << 12)                           // IOPL
@@ -492,16 +492,16 @@ const SYSCALL_FLAG_MASK: u64 = (1 << 8)      // TF
     | (1 << 16)                              // RF
     | (1 << 18); // AC
 
-/// The pseudo-vector a `syscall` frame carries, so a fault report or a dump can say where the frame
+/// The pseudo-vector a `system_call` frame carries, so a fault report or a dump can say where the frame
 /// came from. **256 is out of the IDT's range by construction**, which is what keeps it from
 /// colliding with a real vector; the assertion says so rather than leaving it to be noticed.
-pub(crate) const SYSCALL_VECTOR: u64 = 0x100;
+pub(crate) const SYSTEM_CALL_VECTOR: u64 = 0x100;
 const _: () = assert!(
-    SYSCALL_VECTOR > 255,
+    SYSTEM_CALL_VECTOR > 255,
     "a real IDT vector would be ambiguous here"
 );
 
-/// Program the four MSRs that make `syscall` work, once per CPU, at boot. The `syscall` path's
+/// Program the four MSRs that make `syscall` work, once per CPU, at boot. The `system_call` path's
 /// kernel stack is not among them: `isr_restore` in trap.s sets it with `TSS.RSP0`.
 ///
 /// `SCE` is enabled last, so the instruction is legal only once its target and flag mask are in
@@ -510,15 +510,15 @@ const _: () = assert!(
 /// # Safety
 /// Must be called with the GDT installed (the selectors this writes index it) and before anything
 /// enters ring 3.
-pub(crate) unsafe fn initialize_syscall() {
+pub(crate) unsafe fn initialize_system_call() {
     let star = ((SYSRET_SELECTOR_BASE as u64) << 48) | ((KERNEL_CODE as u64) << 32);
     // SAFETY: these are the architectural `syscall` MSRs, present on every long-mode CPU (they are
     // part of the mode itself, not an optional feature). The values are checked against the GDT by
     // the const assertions above.
     unsafe {
         super::write_msr(IA32_STAR, star);
-        super::write_msr(IA32_LSTAR, x86_syscall_entry as *const () as u64);
-        super::write_msr(IA32_FMASK, SYSCALL_FLAG_MASK);
+        super::write_msr(IA32_LSTAR, x86_system_call_entry as *const () as u64);
+        super::write_msr(IA32_FMASK, SYSTEM_CALL_FLAG_MASK);
         let efer = super::read_msr(IA32_EFER);
         super::write_msr(IA32_EFER, efer | EFER_SCE);
     }
@@ -526,10 +526,10 @@ pub(crate) unsafe fn initialize_syscall() {
 
 unsafe extern "C" {
     /// The `IA32_LSTAR` target: where a ring-3 `syscall` lands. Defined in trap.s.
-    fn x86_syscall_entry();
+    fn x86_system_call_entry();
 }
 
-/// The Rust function every `syscall` reaches, with the [`TrapFrame`] `x86_syscall_entry` built;
+/// The Rust function every `system_call` reaches, with the [`TrapFrame`] `x86_system_call_entry` built;
 /// the twin of [`x86_trap_dispatch`]. The dispatcher reads it only through `TrapFrame`'s accessors.
 ///
 /// # BUGS
@@ -537,21 +537,21 @@ unsafe extern "C" {
 /// non-canonical `rcx` (CVE-2012-0217). See notes/x86-port/traps.md.
 ///
 /// # Safety
-/// Called only from `x86_syscall_entry`, which has just constructed a complete [`TrapFrame`] at the
+/// Called only from `x86_system_call_entry`, which has just constructed a complete [`TrapFrame`] at the
 /// address it passes. Nothing else may call it.
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
     target_os = "none",
-    unsafe(link_section = ".text.hot.x86_syscall_handler")
+    unsafe(link_section = ".text.hot.x86_system_call_handler")
 )]
-pub(crate) unsafe extern "C" fn x86_syscall_handler(frame: *mut TrapFrame) {
-    // SAFETY: `x86_syscall_entry` built the frame directly below the pointer it passed, and no
+pub(crate) unsafe extern "C" fn x86_system_call_handler(frame: *mut TrapFrame) {
+    // SAFETY: `x86_system_call_entry` built the frame directly below the pointer it passed, and no
     // other caller exists (the symbol is only referenced from trap.s).
     let frame = unsafe { &mut *frame };
     #[cfg(any(test, feature = "system_tests"))]
     SVC_COUNT.fetch_add(1, Ordering::Relaxed);
-    crate::syscall::dispatch(frame);
+    crate::system_call::dispatch(frame);
 }
 
 /// Read `CR2`, which holds the faulting address after a page fault (vector 14) and nothing
@@ -620,7 +620,7 @@ pub(crate) unsafe extern "C" fn x86_trap_dispatch(frame: *mut TrapFrame) {
     let from_user = unsafe { (*frame).cs } & 3 == 3;
     let top = crate::interrupt_stack::top_for_trap(from_user);
     let deferred_switch = if top == 0 {
-        // No trampoline here: the other ports measured 8.6 instructions per syscall for it.
+        // No trampoline here: the other ports measured 8.6 instructions per system call for it.
         // SAFETY: the caller's contract; forwarded unchanged.
         unsafe { x86_trap_body(frame) }
     } else {

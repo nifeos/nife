@@ -26,7 +26,7 @@ that cannot be recalled:
   names are an architect's, and why a lane ships a provisional one instead of waiting.
 - Dependencies, §46 (thin primitives or whole subsystems), especially in the shipping graph.
   Adding one is a morning; removing one after a subsystem is built on it is a project.
-- The syscall surface: §10 (the capability-based microkernel process model) and §16 (object
+- The system call surface: §10 (the capability-based microkernel process model) and §16 (object
   revocation), which is a boundary rather than a habit, and which every future program is written
   against.
 - Facts that leave the machine, and this is the truly irreversible category. A published claim,

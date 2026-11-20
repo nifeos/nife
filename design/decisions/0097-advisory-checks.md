@@ -29,7 +29,7 @@ The ruleset on `main` requires **seven** status checks:
 `cpu matrix (riscv64 across QEMU CPU models)`, `fuzz`, `stack frames`, `verify scope`, and `prove`.
 
 The live case: PR #316's `fastpath footprint` check **failed**, the merge queue merged it anyway,
-and `main` went red on a gate nobody had been told was advisory. riscv64's `syscall_entry` had grown
+and `main` went red on a gate nobody had been told was advisory. riscv64's `system_call_entry` had grown
 8.2% past its bound, for a good reason that nobody recorded, because the mechanism that exists to
 force the recording could not fire.
 

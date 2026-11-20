@@ -11,7 +11,7 @@
 
 //! # BUGS
 //!
-//! - A trap from user mode does not switch, so a deep syscall is still charged to the thread.
+//! - A trap from user mode does not switch, so a deep system call is still charged to the thread.
 //! - The trap frame itself is still built on the interrupted stack, which must keep it.
 //! - An overflow whose first fault is the vector's own frame store still cascades.
 //! - The stacks cost `MAXIMUM_CPUS` slots whether or not the cores exist.
@@ -111,7 +111,7 @@ pub fn initialize() {
 /// stack, where resetting `sp` would drop a nested fault through the frames of the handler it hit.
 /// The cheap tests come first because `cpu::id()` is a real division in a debug build, and the
 /// nesting test asks about the whole region because a core only ever stands on its own slot.
-/// `#[inline(always)]` so the debug build the icount tripwire measures adds no call per syscall.
+/// `#[inline(always)]` so the debug build the icount tripwire measures adds no call per system_call.
 ///
 /// Context: every trap, from each architecture's dispatcher, interrupts included; no lock.
 #[inline(always)]

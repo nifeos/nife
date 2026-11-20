@@ -1589,7 +1589,7 @@ def table(hs, pkgs, kts=()):
     print("%d of %d harnesses (%.0f%%) carry evidence a machine can replay." % (evidence, total, 100.0 * evidence / total if total else 0))
     # The denominator, beside the number (milestone 641, provisional). Code no harness covers is not
     # in it, so this ratio says how much of what is proved carries evidence, never how much of the
-    # code is proved: milestone 524 (the three x86_64 boot gates: NX, SYSCALL, and the invariant
+    # code is proved: milestone 524 (the three x86_64 boot gates: NX, SYSTEM_CALL, and the invariant
     # TSC) added 338 unharnessed lines to one crate and it did not move.
     print("The denominator is harnesses, not code: code no harness covers is outside it (notes/denominators.md).")
     # Records that exist, that a person performed, and that no sweep can replay, printed rather

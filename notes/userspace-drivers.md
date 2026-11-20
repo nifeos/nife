@@ -1,6 +1,6 @@
 # The console driver leaves the kernel
 
-Milestone 8. The one that decides whether DECISIONS §10 was a real architecture or a syscall
+Milestone 8. The one that decides whether DECISIONS §10 was a real architecture or a system call
 table with an unusual shape.
 
 ## What actually moved, stated precisely so we don't lie to ourselves
@@ -18,7 +18,7 @@ must be able to put a byte on a wire by itself. The honest claim is therefore na
 
 > There is no code path a user program can take that reaches kernel UART code.
 
-`Object::Console` is gone from the syscall dispatch. `console::write_bytes` is gone. The kernel
+`Object::Console` is gone from the system call dispatch. `console::write_bytes` is gone. The kernel
 no longer reads a user's bytes and puts them on the wire. That is the part that left.
 
 ## The kernel is no longer on the data path, and a bug went with it
@@ -54,7 +54,7 @@ data. Put the bytes in the message and you copy twice and you are Mach; put a sh
 them and the data moves once, by the client's own store and the server's own load.
 
 (`mmu::user_can_read` stays in the tree, marked `allow(dead_code)`. Its caller left with the
-console, but it is the tool the *next* syscall that takes a user pointer: a filesystem server's
+console, but it is the tool the *next* system call that takes a user pointer: a filesystem server's
 `read`: will need, and it is not speculative: the technique is load-bearing and documented.)
 
 ## One binary, several roles

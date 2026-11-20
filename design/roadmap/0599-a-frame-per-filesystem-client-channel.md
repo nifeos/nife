@@ -69,7 +69,7 @@ windows, and a new `PageFrame` method that derives a capability naming part of i
 (a Frame names a run of pages).
 
 - `abi::page_frame::SLICE` (method 2, provisional), GRANT-gated, on all three architectures (it is
-  portable kernel code). `kernel::syscall::tests::a_slice_maps_only_its_window` proves that a slice
+  portable kernel code). `kernel::system_call::tests::a_slice_maps_only_its_window` proves that a slice
   maps its window and neither neighbor.
 - `fs_service` allocates the windows as one contiguous run, and the progenitor's slot 6 names the
   whole run.

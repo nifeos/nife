@@ -15,7 +15,7 @@ and clears it if non-zero. `seL4_Poll` is the non-blocking version.
 The key mechanism is binding (`seL4_TCB_BindNotification`): a notification bound to a TCB
 delivers signals even while the thread is blocked in `RECV` on an endpoint. The receiver
 distinguishes "this was IPC" from "this was a notification" by checking the badge. This is how seL4
-does `select` without a `select` syscall: one blocking wait point that can be woken by either a
+does `select` without a `select` system_call: one blocking wait point that can be woken by either a
 synchronous IPC message or an async notification, and the badge tells you which.
 
 ### Unix, Fuchsia, Mach and Redox

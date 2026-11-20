@@ -10,7 +10,7 @@ use abi::Error;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// An interrupt number no device on any of the three machines raises, so binding it steals no real
 /// route. aarch64 and riscv64 deliver a routed interrupt only if something enabled it at the

@@ -4,7 +4,7 @@
 //! multiply and a state machine) for a fixed iteration count, so the run's CRC is a fixed value
 //! (`coremark::PINNED_CRC_64`) that init and the kernel test check. It times itself with
 //! `user_mode_runtime::now` and SENDs `[crc, ticks, freq]` on slot 0, its one capability, so the
-//! receiver computes iterations per second without a second syscall. Under HVF the ticks are real
+//! receiver computes iterations per second without a second system_call. Under HVF the ticks are real
 //! nanoseconds; under TCG they are icount fiction, and only the CRC means anything. The compute is
 //! a portable crate, so the identical code runs on macOS and Linux too (notes/benchmarks.md).
 //!

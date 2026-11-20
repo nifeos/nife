@@ -4,7 +4,7 @@
 //!
 //! The host crate proves both claims (`capability_table::derive_never_widens_rights`,
 //! `from_bits_cannot_forge_a_right`), and `confinement_attack_tests` drives neither case; this
-//! drives `SEND_CAPABILITY`'s `a1` rights register through `syscall::invoke`. `inter_process_communication_send_capability_from` refuses
+//! drives `SEND_CAPABILITY`'s `a1` rights register through `system_call::invoke`. `inter_process_communication_send_capability_from` refuses
 //! before touching the rendezvous, so a refusal parks nothing, and a regression parks the test
 //! thread and fails by the watchdog's dump. See notes/confinement-outsider-pass-7.md.
 
@@ -18,7 +18,7 @@ use crate::capability_object::{Rights, rendezvous_capability};
 use crate::sched::{self, delete_current_capability};
 
 const SEND_CAPABILITY: u64 = abi::rendezvous::SEND_CAPABILITY;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// `invoke` through the real dispatcher. Copied in shape from `confinement_attack_tests::call`.
 fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error> {

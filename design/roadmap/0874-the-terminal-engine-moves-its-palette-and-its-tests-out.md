@@ -102,7 +102,7 @@ first cut.
    near 1,490.
 3. Every file name in the table.
 
-No public crate API, wire format or syscall changes under any answer here.
+No public crate API, wire format or system call changes under any answer here.
 
 ## What moving the code breaks
 

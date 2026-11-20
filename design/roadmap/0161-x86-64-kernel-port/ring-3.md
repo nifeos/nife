@@ -1,4 +1,4 @@
-# Milestone 161 appendix: ring 3 and the `syscall` pair, step 11
+# Milestone 161 appendix: ring 3 and the `system_call` pair, step 11
 
 An appendix to [milestone 161 (the x86_64 kernel port)](../0161-x86-64-kernel-port.md), moved out
 of that page on 2026-10-12 (UTC) under [§212 (a prose budget)](../../decisions/0212-a-prose-budget-for-every-document.md).
@@ -8,7 +8,7 @@ meet [§213 (writing standards)](../../decisions/0213-writing-standards.md); no 
 
 ## What was built
 
-Ring 3, the `syscall` pair, and a program the page tables refuse. Four pieces, and the order below
+Ring 3, the `system_call` pair, and a program the page tables refuse. Four pieces, and the order below
 is the order they have to work in.
 
 ### The user address spaces
@@ -31,15 +31,15 @@ that segment's base MSR. This code writes the MSR pair and loads no selector. Th
 against the instruction's definition rather than assumed. It is exactly the shape of bug that cost
 this port an afternoon once.
 
-### The `syscall` entry
+### The `system_call` entry
 
 Four MSRs are programmed in `arch::init`, beside the GDT and the IDT, because they are per-CPU state
 of the same kind. They are `IA32_STAR`, `IA32_LSTAR`, `IA32_FMASK`, and `EFER.SCE` last. Setting
 `EFER.SCE` last makes the instruction legal only after the address it jumps to exists.
 
-The entry path is the part with no counterpart on the other two architectures. `syscall` does not
+The entry path is the part with no counterpart on the other two architectures. `system_call` does not
 switch stacks and pushes nothing. So the first three instructions are `swapgs`, park the user's
-`rsp`, and load the kernel's. `segments::set_kernel_stack` writes `TSS.RSP0` and the `syscall`
+`rsp`, and load the kernel's. `segments::set_kernel_stack` writes `TSS.RSP0` and the `system_call`
 path's stack together. The two doors into the kernel cannot come to name different stacks.
 
 ### The return is an `iretq`, not a `sysretq`
@@ -47,9 +47,9 @@ path's stack together. The two doors into the kernel cannot come to name differe
 That is a decision rather than an omission. `sysret` returns to `rcx` without checking it is
 canonical. A non-canonical `rcx` faults in ring 0 on the user's stack, the shape of CVE-2012-0217.
 Using it safely needs an explicit canonicality check and an `iretq` fallback. Sharing one restore
-path costs some tens of cycles per syscall. It buys one `swapgs` rule with one place to get it
+path costs some tens of cycles per system_call. It buys one `swapgs` rule with one place to get it
 wrong. Recorded in that function's `BUGS` as worth revisiting with a benchmark, once there is a
-syscall-heavy workload here to measure.
+system-call-heavy workload here to measure.
 
 ## What it was proved with, and the honest size of the claim
 
@@ -58,16 +58,16 @@ is a hand-assembled probe (`arch/x86_64/ring3_probe.s`) entered from the boot th
 ports shipped the same shape on their first day. Verified on q35:
 
 ```
-  ring 3      : a program ran at cpl 3 (cs 0x0023, ss 0x001b) and made 2 syscalls
-                the portable dispatcher answered BadSyscall (-6) to an unknown number
+  ring 3      : a program ran at cpl 3 (cs 0x0023, ss 0x001b) and made 2 system calls
+                the portable dispatcher answered BadSystemCall (-6) to an unknown number
                 reading the kernel's .text at 0xffffffff80109000 from ring 3: Permission(Read)
 ```
 
 Three separate facts, and the third is the strongest.
 
 - `cs 0x23` is the hardware's answer to what ring this is, since CPL is literally `CS[1:0]`.
-- `BadSyscall (-6)` came out of the portable `crate::syscall::dispatch`, through
-  `TrapFrame::{syscall_nr, arg, set_arg}`, and reached the program in `rdi`. So the ABI accessors,
+- `BadSystemCall (-6)` came out of the portable `crate::system_call::dispatch`, through
+  `TrapFrame::{system_call_nr, arg, set_arg}`, and reached the program in `rdi`. So the ABI accessors,
   the entry and the return all work. Asking for a refusal is deliberate. It is the one answer that
   dispatcher can give on a kernel with no scheduler.
 - `Permission(Read)` rather than `Translation(Read)` is the page tables saying the walk found the
@@ -89,8 +89,8 @@ entered through `enter_user` directly.
 ## What item 3 said was proven, and what was not
 
 What is proven is the arch layer, and the boundary between that and a process is where item 3
-stopped. A program runs at CPL 3; the hardware's own `cs` reads `0x23`. It makes syscalls that reach
-the portable `crate::syscall::dispatch` and gets its answer back in `rdi`. It returns to ring 3, and
+stopped. A program runs at CPL 3; the hardware's own `cs` reads `0x23`. It makes system calls that reach
+the portable `crate::system_call::dispatch` and gets its answer back in `rdi`. It returns to ring 3, and
 it is refused by the page tables when it reads the kernel's `.text`.
 
 What was not proven was anything above the arch layer. There was no ELF loader path, no capability
@@ -99,13 +99,13 @@ was no scheduler, so the program was a hand-assembled probe rather than a proces
 that gap closed (see [processes-and-userspace.md](processes-and-userspace.md)), and it is why item 4
 came next.
 
-## The syscall ABI went up as a decision
+## The system call ABI went up as a decision
 
-The syscall ABI is `rax` + `rdi`/`rsi`/`rdx`/`r10`/`r8`/`r9`. It is a boundary rather than a habit:
+The system call ABI is `rax` + `rdi`/`rsi`/`rdx`/`r10`/`r8`/`r9`. It is a boundary rather than a habit:
 [DECISIONS §10 (process model: capability-based, microkernel)](../../decisions/0010-capability-microkernel.md)
 and [§16 (object revocation)](../../decisions/0016-object-revocation.md). One probe program
 agreeing with the kernel was not the same as a decision having been made. So it went up as
-[DECISIONS §124 (ratify the x86_64 syscall ABI)](../../decisions/0124-x86-64-syscall-abi.md),
+[DECISIONS §124 (ratify the x86_64 system call ABI)](../../decisions/0124-x86-64-system-call-abi.md),
 which calef ratified on 2026-08-24.
 
 ## The two `CR4` bits

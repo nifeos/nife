@@ -31,8 +31,8 @@ right now.
 
 | Option | Shape | Loses because |
 |---|---|---|
-| **A. Shared VSpace, kernel-level** | `ThreadControlBlock::CONFIGURE`'s existing contract changes so an `AddressSpace` capability can be *bound* to more than one TCB instead of consumed by the first one. The object itself gains multi-holder liveness tracking. | Real cost: a syscall-surface change, the exact irreversible category CLAUDE.md names. Not proposed as a loser, just costed below. |
-| **B. Sibling processes, shared frames** | Keep every existing verb's contract unchanged (`RETYPE_OBJECT`, `MAP_INTO`, `CONFIGURE`, `CAPABILITY_INSERT`, `START`, all exactly as they are). A "thread" is a second TCB with its own fresh `AddressSpace`, into which the parent re-maps its own frames at matching virtual addresses. | Looks free (no syscall touched) until you account for what a *growing* heap needs: every future allocation has to be mapped into every sibling space, at the same VA, before either side can safely dereference it. That is a live synchronization protocol built from scratch in userspace, is race-prone the instant two "threads" grow the heap concurrently (which is the ordinary case), and no prior art actually does this for the general shared-heap case. Costed in full below. |
+| **A. Shared VSpace, kernel-level** | `ThreadControlBlock::CONFIGURE`'s existing contract changes so an `AddressSpace` capability can be *bound* to more than one TCB instead of consumed by the first one. The object itself gains multi-holder liveness tracking. | Real cost: a system-call-surface change, the exact irreversible category CLAUDE.md names. Not proposed as a loser, just costed below. |
+| **B. Sibling processes, shared frames** | Keep every existing verb's contract unchanged (`RETYPE_OBJECT`, `MAP_INTO`, `CONFIGURE`, `CAPABILITY_INSERT`, `START`, all exactly as they are). A "thread" is a second TCB with its own fresh `AddressSpace`, into which the parent re-maps its own frames at matching virtual addresses. | Looks free (no system call touched) until you account for what a *growing* heap needs: every future allocation has to be mapped into every sibling space, at the same VA, before either side can safely dereference it. That is a live synchronization protocol built from scratch in userspace, is race-prone the instant two "threads" grow the heap concurrently (which is the ordinary case), and no prior art actually does this for the general shared-heap case. Costed in full below. |
 | **C. Decline** | `thread::spawn` stays `Unsupported`, permanently rather than "phase one". Parallelism on nife stays process-plus-IPC-shaped, which is what the rest of the system already is. | Not really a loser: it is the cheapest, most reversible option and the one this note ends up suggesting for *now*, precisely because it forecloses nothing. |
 
 Two things that were not separately costed. A pure userspace "green threads" library
@@ -144,9 +144,9 @@ scratch:
 
 - `crates/abi/src/lib.rs`: `tcb::CONFIGURE`'s contract changes from "the aspace cap is consumed"
   to "the aspace cap may be bound without consuming it" (or a `SHARE`-shaped rights bit
-  distinguishes the two calls). This is the syscall-surface line: every existing caller of
+  distinguishes the two calls). This is the system-call-surface line: every existing caller of
   `CONFIGURE` (the progenitor, every service spawn today) is written against the consuming contract, and
-  `design/decisions/` would owe a section under §10/§16's existing surface, not a new syscall number.
+  `design/decisions/` would owe a section under §10/§16's existing surface, not a new system call number.
 - `kernel/src/thread.rs`: `Thread.space` stops being uniquely owned; needs the same
   liveness-tracking shape `Rendezvous` already has (§16's "region... an endpoint in it has a
   blocked waiter" check), so `AddressSpace` teardown waits for the last referencing TCB, not the
@@ -163,8 +163,8 @@ scratch:
   comment already names as missing regardless of the kernel side (TLS story, park/unpark on a
   kernel primitive, join).
 
-Option B, sibling processes with replicated frames. Touches no syscall and no capability
-method, matching §22's own discipline for `std::fs`/`std::net` ("no new syscall and no new
+Option B, sibling processes with replicated frames. Touches no system call and no capability
+method, matching §22's own discipline for `std::fs`/`std::net` ("no new system call and no new
 capability method"). The cost is not at the kernel boundary; it is what "shared heap" actually
 demands once you look past the first allocation:
 
@@ -183,7 +183,7 @@ demands once you look past the first allocation:
   Nothing in this tree's frame-sharing precedent (§2 above) does this, because every existing user
   of shared frames shares one buffer whose owner is unambiguous, not a heap two independent
   allocators both mutate.
-- So Option B's apparent saving (no syscall touched) is real only for the small-fixed-arena case,
+- So Option B's apparent saving (no system call touched) is real only for the small-fixed-arena case,
   and disappears for anything that wants to behave like an ordinary multithreaded Rust program.
   `rayon`'s work-stealing pool and `tokio`'s executor both allocate continuously across worker
   threads; a fixed arena sized in advance is a real constraint they were not written to expect.
@@ -197,16 +197,16 @@ write down (a `BUGS` entry or a roadmap scope note, per §71's convention), not 
 
 ## 6. Reversibility
 
-**Option A is the expensive, hard-to-undo one, correctly**: it changes what an existing syscall
+**Option A is the expensive, hard-to-undo one, correctly**: it changes what an existing system call
 method promises, and every future program written against `CONFIGURE` inherits that promise.
 Once something depends on shared-VSpace semantics, walking it back costs a rewrite of whatever
 was built on it.
 
 Option B is not actually cheap to reverse either, and that is the finding worth carrying. It looks
-reversible because no syscall changes. But a fixed-arena version ships a real constraint into every
+reversible because no system call changes. But a fixed-arena version ships a real constraint into every
 consumer built against it (rayon-shaped or not). *That* is exactly as hard to
 walk back as a capability promise once real programs exist that assume a bounded shared arena.
-"No syscall touched" is not the same test as "cheap to undo."
+"No system call touched" is not the same test as "cheap to undo."
 
 **Option C is the only genuinely free-to-reverse choice available right now.** Declining today
 forecloses neither A nor B later: nothing is built, nothing is promised, and the only cost is
@@ -214,7 +214,7 @@ naming the scope limit honestly where milestone 149 and any future consumer meet
 
 ## What this note is not
 
-It does not pick A or B. That is the syscall-surface fork CLAUDE.md says is an architect's, and
+It does not pick A or B. That is the system-call-surface fork CLAUDE.md says is an architect's, and
 "which option costs less" only resolves once there is a concrete customer for real OS threads on
 nife. There is not one today (the NPB Rayon-parallel variants are useful evidence, not a paying
 workload). What it does do is retire the "B is the free option" intuition. Measured against what

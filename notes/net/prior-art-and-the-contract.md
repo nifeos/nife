@@ -149,7 +149,7 @@ a per-connection shared frame delegated at open time.
 Why this fits. It is the disk driver's discipline one layer up. The kernel confines the NIC's
 DMA (Piece 1), the net server owns the smoltcp state and the NIC driver capability, and a client
 gets exactly the sockets it was granted and no interface handle at all. Bytes never cross the
-syscall boundary in a message (DECISIONS §10); they cross in a shared frame the two parties both
+system call boundary in a message (DECISIONS §10); they cross in a shared frame the two parties both
 map.
 
 The questions.
@@ -164,7 +164,7 @@ The questions.
    being the capability itself, which is weaker designation. The shared frame stays the real
    per-connection resource either way, which is what makes the later migration cheap.
 
-2. How does the shared frame's producer/consumer protocol work without a syscall per byte? A
+2. How does the shared frame's producer/consumer protocol work without a system call per byte? A
    ring buffer in the shared frame with head/tail indices, the driver pattern, so `send(len)` just
    advances a tail and messages the server. Straightforward, but the exact layout (one frame split
    TX/RX, or two frames) is a contract detail to pin.

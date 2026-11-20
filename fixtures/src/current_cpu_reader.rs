@@ -1,4 +1,4 @@
-//! A thread reading its own CPU from user mode, with no syscall at all.
+//! A thread reading its own CPU from user mode, with no system call at all.
 //!
 //! calef ruled on 2026-09-21 that a thread observing itself reads a page rather than making a
 //! crossing, because the consumer is a memory allocator asking on every allocation. This proves the

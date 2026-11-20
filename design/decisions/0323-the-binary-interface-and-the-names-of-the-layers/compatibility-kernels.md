@@ -14,7 +14,7 @@ that binary interface alone.
 
 | system | where Linux's binary interface lives | what its documentation says |
 |---|---|---|
-| Starnix on Fuchsia | a user-space program over Zircon | "a Fuchsia user-space program" and "a compatibility layer that translates requests (syscalls) from Linux programs to the appropriate Fuchsia subsystems" (fuchsia.dev, Starnix) |
+| Starnix on Fuchsia | a user-space program over Zircon | "a Fuchsia user-space program" and "a compatibility layer that translates requests (system calls) from Linux programs to the appropriate Fuchsia subsystems" (fuchsia.dev, Starnix) |
 | gVisor | a user-space application kernel over Linux | "an application kernel that implements a Linux-like interface", "written in a memory-safe language (Go) and runs in userspace"; its Sentry handles the calls and does not pass them to the host (gvisor.dev) |
 | WSL 1 | inside the Windows kernel | WSL 1 "used a translation layer that was built by the WSL team"; WSL 2 replaced it with a real Linux kernel in a managed virtual machine for "full system call compatibility" (Microsoft Learn, comparing WSL versions) |
 | FreeBSD's Linuxulator | inside the FreeBSD kernel, as loadable modules | "optional binary compatibility with Linux", with a separate Linux userland under `/compat/linux`; "Linux software requires more than just an ABI to work" (FreeBSD Handbook) |
@@ -35,7 +35,7 @@ project's library idea, rather than a foreign binary interface served.
 
 ## Licensing
 
-Linux's `LICENSES/exceptions/Linux-syscall-note` says its copyright "does *not* cover user programs
+Linux's `LICENSES/exceptions/Linux-system-call-note` says its copyright "does *not* cover user programs
 that use kernel services by normal system calls". That note concerns programs that call Linux, not
 a kernel that serves the same calls. The evidence for the second case is the projects that do it
 under other licenses: gVisor (Apache-2.0), Asterinas (MPL-2.0), Starry OS (Apache-2.0). Starry

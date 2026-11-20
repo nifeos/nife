@@ -16,7 +16,7 @@ the table names the eight this appendix adjudicated:
 |---|---|
 | `subset_is_reflexive` | every capability is a subset of itself |
 | `subset_is_transitive` | rights cannot be laundered through a derivation chain (why a *flat* subset check suffices, with no tree walk) |
-| `from_bits_cannot_forge_a_right` | an attacker-controlled syscall register cannot conjure an undefined right |
+| `from_bits_cannot_forge_a_right` | an attacker-controlled system call register cannot conjure an undefined right |
 | `subset_matches_allows` | the two phrasings of the order agree, so a bug in one shows against the other |
 | `derive_never_widens_rights` | the central theorem, on the real `CapabilityTable::derive` |
 | `split_never_widens_rights` | authority never widens at the *other* mint site: `Cap::mint_child` (the inheriting mint `MemoryRegion::SPLIT` now uses) hands a child no more than the parent held (milestone 35 (Prove the DMA-confinement boundary), below) |
@@ -70,7 +70,7 @@ inward).
 | `the_offset_does_not_change_the_walk` | changing only the page offset leaves all four indices fixed: a whole 4 KiB page shares one leaf (page granularity) |
 | `distinct_pages_take_distinct_paths` | two page-aligned addresses with the same four indices are the same page (the arithmetic core of isolation) |
 | `the_two_halves_are_disjoint` | no address is in both `TTBR0` (low) and `TTBR1` (high) |
-| `the_user_va_gate_admits_only_the_aligned_low_half` | `is_user_page_virtual_address` equals the bit test the syscall layer used to hand-roll, and admits no address in the kernel's half |
+| `the_user_va_gate_admits_only_the_aligned_low_half` | `is_user_page_virtual_address` equals the bit test the system call layer used to hand-roll, and admits no address in the kernel's half |
 | `the_leaf_descriptor_keeps_address_and_permissions_apart` | the L3 descriptor `map` writes decomposes back into exactly the address and exactly the flags, for every representable physical page and every `Flags` constructor: no permission bit can redirect the address, no address bit can grant a permission |
 | `the_low_half_mapper_rejects_the_high_half_untouched` | for every address outside the low half (every kernel address included), `map`/`unmap`/`translate` on a `TTBR0` mapper reject before touching any memory (the harness gives the mapper a null root and a panicking frame source, so a touch is a proof failure) |
 
@@ -182,13 +182,13 @@ legs. It is worth recording which kind of evidence each one rests on.
    name for the blocked caller anywhere in the system. (The caller is never in the receiver queue:
    `ipc_call` does not `receive`, and a blocked thread cannot run to enqueue itself again.)
 2. Consume-on-use is final: `a_deleted_capability_stays_deleted` and `delete_touches_only_its_slot`
-   in `crates/capability_table`. The syscall layer deletes the Reply capability the instant it is invoked.
+   in `crates/capability_table`. The system call layer deletes the Reply capability the instant it is invoked.
    The proofs say no table state exists in which the consumed slot can be invoked again, and that
    consuming one caller's Reply cannot disturb another's.
 3. The capability cannot be duplicated or delegated. This leg is structural, not a harness. There is
-   no syscall that copies a capability within a capability table (`CapabilityTable::derive` is
-   kernel-internal). The only cap-moving syscall, `SEND_CAPABILITY`, requires `GRANT`, which `reply_capability`
-   deliberately never mints. This leg lives in the shape of the syscall surface (§4 (kernel shape): narrow and
+   no system call that copies a capability within a capability table (`CapabilityTable::derive` is
+   kernel-internal). The only cap-moving system call, `SEND_CAPABILITY`, requires `GRANT`, which `reply_capability`
+   deliberately never mints. This leg lives in the shape of the system call surface (§4 (kernel shape): narrow and
    explicit), so it is an inspection argument. It is backed end to end by the QEMU test in which the
    call server invokes its Reply twice and the kernel refuses the second (`fixtures/src/hello.rs`,
    `call_server`).

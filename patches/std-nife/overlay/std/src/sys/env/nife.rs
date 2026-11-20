@@ -119,7 +119,7 @@ fn is_config_granted() -> bool {
         1 => true,
         2 => false,
         _ => {
-            // SAFETY: a plain syscall that cannot succeed; the kernel validates the slot.
+            // SAFETY: a plain system call that cannot succeed; the kernel validates the slot.
             let r = unsafe { rt::invoke(rt::CONFIG_SLOT, NO_SUCH_METHOD, 0, 0, 0) };
             let ok = r != -1; // anything but "the slot is empty" means a capability is there
             CONFIG_GRANTED.store(if ok { 1 } else { 2 }, Ordering::Relaxed);

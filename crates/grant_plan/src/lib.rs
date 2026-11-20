@@ -1,7 +1,7 @@
 //! **`grant_plan`: the grant-expression logic of the capability shell** (milestone 31, phase 1).
 //!
 //! On a nife command line *designation is authorization* (Mark Miller's principle): naming a
-//! resource in a command is how you grant it. The crate performs no IO and makes no syscalls.
+//! resource in a command is how you grant it. The crate performs no IO and makes no system_calls.
 //! [`parse`] turns a line of bytes into a [`Command`]. For a program invocation, [`plan_against`]
 //! places its tokens into the slots a program's [`Manifest`] declares and yields an [`Endowment`],
 //! exactly what to grant the child, or a typed [`Refusal`] the shell prints at the prompt. The

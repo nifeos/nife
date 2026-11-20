@@ -3,7 +3,7 @@ Falsification for lane/hvf-spawn-destroy-gone (notes/job-mix/spawn-destroy-gone.
 Restores `user_mode_runtime::yield_now` as it was before 2026-10-05: its own `asm!` block on each
 architecture, declaring no output register. Expected with this applied:
 
-  python3 helpers/syscall_asm.py      fails, naming the three yield_now blocks
+  python3 helpers/system_call_asm.py      fails, naming the three yield_now blocks
   script/job-mix --hvf --release --smp 4
                                       refuses with -11 in a spawn job within a minute on
                                       patagonia (19 of 20 before the fix), because the spawn
@@ -20,7 +20,7 @@ diff --git a/crates/user_mode_runtime/src/process.rs b/crates/user_mode_runtime/
 index 125a93bd6..6846f93aa 100644
 --- a/crates/user_mode_runtime/src/process.rs
 +++ b/crates/user_mode_runtime/src/process.rs
-@@ -11,14 +11,37 @@ use crate::syscall::trap6;
+@@ -11,14 +11,37 @@ use crate::system_call::trap6;
  
  /// Give up the CPU (`SYS_YIELD`). Returns when the scheduler runs this thread again; if another
  /// thread is ready, control goes there and back, which is one context-switch round trip.
@@ -52,10 +52,10 @@ index 125a93bd6..6846f93aa 100644
 +/// instruction itself, and `nomem` survives that: neither is memory.
 +#[cfg(target_arch = "x86_64")]
 +pub fn yield_now() {
-+    // SAFETY: `syscall`; SYS_YIELD gives up the CPU and returns with nothing to clean up.
++    // SAFETY: `system_call`; SYS_YIELD gives up the CPU and returns with nothing to clean up.
 +    unsafe {
 +        core::arch::asm!(
-+            "syscall",
++            "system call",
 +            in("rax") abi::SYS_YIELD,
 +            lateout("rcx") _,
 +            lateout("r11") _,

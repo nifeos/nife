@@ -119,7 +119,7 @@ Read `notes/scripts.md` and `notes/qemu.md`. The two test files above are a work
 - Layout: one module per attack family under `system_tests/src/user/`, declared in
   `system_tests/src/user.rs` under `#[cfg(test)]` with a doc comment saying which claims it
   attacks. Each test drives the real dispatcher through a local `call` helper over
-  `syscall::invoke`.
+  `system_call::invoke`.
 - Names: new code spells `capability` out. Alias the kernel's `cap` names at the import, as those
   files do (`rendezvous_cap as rendezvous_capability`, a `const SEND_CAPABILITY`), because
   `script/lint` refuses new `cap` identifiers.

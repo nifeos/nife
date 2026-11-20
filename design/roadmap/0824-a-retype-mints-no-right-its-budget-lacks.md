@@ -31,7 +31,7 @@ case in it.
 
 ## The work
 
-- Intersect the rights at every retype arm in `kernel/src/syscall.rs` that mints from a budget
+- Intersect the rights at every retype arm in `kernel/src/system_call.rs` that mints from a budget
   (`RETYPE`, and `RETYPE_OBJ` if the same reasoning applies; say which and why).
 - Flip `confinement_attack_tests::a_grant_less_budget_mints_a_grant_bearing_frame` from a
   characterization to a held assertion, renamed to say what it now holds, with a replayable

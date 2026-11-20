@@ -32,7 +32,7 @@ has not been picked up elsewhere.
 And the group's next kernel took the other bet. Atmosphere is *"a full-featured microkernel
 developed in Rust and verified with Verus"*, *"conceptually similar to the line of classical L4
 microkernels, i.e., without the capability interface"* (KISV '23). It uses hardware isolation, a
-conventional syscall interface, and a proof effort rather than a compiler assumption: SOSP '25 reports
+conventional system call interface, and a proof effort rather than a compiler assumption: SOSP '25 reports
 *"6K lines of executable code"* against *"20.1K lines of proof code"*, a 3.32:1 proof-to-code
 ratio, *"less than 2.5 person-years"*, and full verification *"in under 20 seconds"* on an i9-13900hx.
 Their own Table 1 puts that beside seL4's 20:1 and CertiKOS's 14.9:1.

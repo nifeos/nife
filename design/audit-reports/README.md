@@ -76,7 +76,7 @@ to something a person can hold.
 
 Read a cell as "fires when this many have been added since the last audit of this kind". So `1`
 means any change at all fires, which is how the one event trigger a script can count is expressed: a
-new syscall method shows up as a new ABI constant. `15` and `8` are the count trigger of §74 (audits
+new system call method shows up as a new ABI constant. `15` and `8` are the count trigger of §74 (audits
 run on change, not on the calendar). `6` is the calendar backstop, and its job is the opposite of
 what a reader assumes: it does not catch a busy period, because the count catches that sooner. It
 catches a **quiet** one, a tree that sits untouched while the field's threat model moves anyway,
@@ -142,7 +142,7 @@ malformed it.
 | 2026-09-24 | documentation | Split documents read from the inbound side: every citation into the day's eight split documents, every anchor, every appendix's parent link, and every phrase quoted after a path | fixed 4, minted 1, accepted 3 | [Split documents, read from the inbound side](2026-09-24-split-documents-read-from-the-inbound-side.md) |
 | 2026-09-24 | security | New trust boundaries, read where the week's change concentrated: the automation that merges, the bytes a file supplies, and the state a core carries for a thread | fixed 5, minted 1, accepted 5 | [New trust boundaries](2026-09-24-new-trust-boundaries.md) |
 | 2026-09-29 | documentation | Names and numbers a reader would act on, in the worklist's top three, the inbound side of the six notes the window split, and the window's two new notes read against the kernel | fixed 6, minted 1, accepted 1 | [Names and numbers the window moved past](2026-09-29-names-and-numbers.md) |
-| 2026-09-29 | security | The syscall surface as a whole, read as a confined process trying to widen: the two object types, the rendezvous method and the wake tag the window added, line by line, beside the older seams | fixed 0, minted 0, accepted 3 | [The syscall surface as a whole](2026-09-29-syscall-surface-whole.md) |
+| 2026-09-29 | security | The system call surface as a whole, read as a confined process trying to widen: the two object types, the rendezvous method and the wake tag the window added, line by line, beside the older seams | fixed 0, minted 0, accepted 3 | [The system call surface as a whole](2026-09-29-system-call-surface-whole.md) |
 | 2026-10-03 | security | The window's delta, read as a confined process trying to widen: the eight ABI constants `MemoryRegion::USAGE` added, the capability table's growth to 32, the plain-`SEND` badge, and the thirteen components, each for what it holds against what it uses | fixed 5, minted 4, accepted 6 | [Eight constants and thirteen components](2026-10-03-eight-constants-and-thirteen-components.md) |
 | 2026-10-15 | documentation | The staleness worklist's top six, read for what a reader would act on: a path to type, a count to trust, a tense that names the present, and a named lane that already built the thing a note still argues for | fixed 9, minted 0, accepted 0 | [The worklist's top six](2026-10-15-the-worklists-top-six.md) |
 | 2026-10-19 | documentation | Decisions read forward: the ten sections minted since the last sweep, §300 (the paused state) to §309 (a supervised job's `ThreadControlBlock` goes to the shell that asked for it), each read for what it closed, against the prose that still argued the closed side | fixed 11, minted 2, accepted 4 | [Decisions read forward](2026-10-19-decisions-read-forward.md) |

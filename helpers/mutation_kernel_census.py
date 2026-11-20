@@ -131,7 +131,7 @@ Slice = collections.namedtuple("Slice", "name globs arch cost")
 # "kernel" mutants mostly die in the kernel tier; "system" slices (components and the crates that
 # only the system image builds) pay both tiers on nearly every mutant.
 SLICES = (
-    Slice("syscall", ("kernel/src/syscall.rs", "kernel/src/syscall/**"), "aarch64", "kernel"),
+    Slice("system_call", ("kernel/src/system_call.rs", "kernel/src/system_call/**"), "aarch64", "kernel"),
     Slice("revoke", ("kernel/src/revoke.rs",), "aarch64", "kernel"),
     Slice("cap", ("kernel/src/capability_object.rs",), "aarch64", "kernel"),
     Slice("memory_region", ("kernel/src/memory_region.rs",), "aarch64", "kernel"),
@@ -611,9 +611,9 @@ def selftest():
         # the named slices win over the catch-all, and the arch slices carry their architecture.
         for r in ROOTS:
             assert slice_of(f"{r}/src/x.rs") is not None, r
-        assert slice_of("kernel/src/syscall/entry.rs") == "syscall"
-        assert slice_of("kernel/src/syscall/memory_region.rs") == "syscall"  # first match wins
-        assert slice_of("kernel/src/syscall.rs") == "syscall"
+        assert slice_of("kernel/src/system_call/entry.rs") == "system_call"
+        assert slice_of("kernel/src/system_call/memory_region.rs") == "system_call"  # first match wins
+        assert slice_of("kernel/src/system_call.rs") == "system_call"
         assert slice_of("kernel/src/revoke.rs") == "revoke"
         assert slice_of("kernel/src/capability_object.rs") == "cap"
         assert slice_of("kernel/src/memory_region.rs") == "memory_region"
@@ -636,12 +636,12 @@ def selftest():
         assert cap("riscv64", "kernel") == cap("x86_64", "kernel")   # the estimate borrows x86_64
         assert cap("aarch64", "system") == (WINDOW_SECONDS - SETUP_SECONDS - 380 - MARGIN_SECONDS) // (81 + SYSTEM_TIER_ADDER)
 
-        big = listing(*[("kernel/src/syscall/entry.rs", i + 2,
+        big = listing(*[("kernel/src/system_call/entry.rs", i + 2,
                          f"replace == with != in f{i}") for i in range(300)])
         raw = root / "listing.txt"
         raw.write_text(listing(
-            ("kernel/src/syscall/entry.rs", 9, "replace == with != in Entry::fire"),
-            ("kernel/src/syscall.rs", 3, "replace < with <= in dispatch"),
+            ("kernel/src/system_call/entry.rs", 9, "replace == with != in Entry::fire"),
+            ("kernel/src/system_call.rs", 3, "replace < with <= in dispatch"),
             ("kernel/src/revoke.rs", 9, "replace == with != in Revoke::revoke"),
             ("kernel/src/capability_object.rs", 4, "replace | with ^ in Cap::subset"),
             ("kernel/src/memory_region.rs", 6, "replace == with != in Region::map"),
@@ -649,7 +649,7 @@ def selftest():
             ("kernel/src/arch/x86_64/gdt.rs", 7, "replace + with - in Gdt::load"),
             ("kernel/src/user.rs", 2, "replace == with != in User::wire"),
             ("kernel/src/bench/meters.rs", 3, "replace + with - in Meters::add"),   # toml drops
-            ("kernel/src/syscall/proofs.rs", 1, "replace | with ^ in subset"),      # toml drops
+            ("kernel/src/system_call/proofs.rs", 1, "replace | with ^ in subset"),      # toml drops
             ("kernel/src/glob.rs", 2, "replace == with != in tests::helper"),       # regex drops
             ("kernel/src/kmem.rs", 4, "replace == with != in Kmem::pool"),
             ("components/src/init.rs", 6, "replace == with != in Init::start"),
@@ -671,7 +671,7 @@ def selftest():
         assert code == 0, err
         matrix = json.loads(out.removeprefix("matrix="))["include"]
         assert [e["slot"] for e in matrix] == [1, 2] and not any(e["noop"] for e in matrix), out
-        assert matrix[0]["slice"] == "syscall" and matrix[0]["arch"] == "aarch64"
+        assert matrix[0]["slice"] == "system_call" and matrix[0]["arch"] == "aarch64"
         assert matrix[0]["count"] == cap("aarch64", "kernel"), matrix[0]
         assert matrix[1]["slice"] == "revoke" and matrix[1]["count"] == 1, matrix[1]
         assert matrix[0]["rotation"] == 1
@@ -681,13 +681,13 @@ def selftest():
         with _driver_parser() as mutant_patches:
             pairs = mutant_patches(job1, None)
             assert len(pairs) == cap("aarch64", "kernel"), len(pairs)
-            assert pairs[0][0] == "kernel/src/syscall/entry.rs:9:5: replace == with != in Entry::fire", pairs[0]
+            assert pairs[0][0] == "kernel/src/system_call/entry.rs:9:5: replace == with != in Entry::fire", pairs[0]
 
-        # The resume: a state covering syscall and revoke pushes both windows to the next slices.
+        # The resume: a state covering system call and revoke pushes both windows to the next slices.
         st = root / "state.json"
-        syscall_kept = _all_kept(raw, str(toml))["syscall"]
+        system_call_kept = _all_kept(raw, str(toml))["system_call"]
         st.write_text(json.dumps({"rotation": 3, "night": "2026-10-27", "run": 99, "covered": {
-            "syscall": [b.full for b in syscall_kept],
+            "system_call": [b.full for b in system_call_kept],
             "revoke": ["kernel/src/revoke.rs:9:5: replace == with != in Revoke::revoke"],
         }}))
         code, out, err = _capture_shards(cmd_plan, plan_args(state=str(st)))
@@ -699,10 +699,10 @@ def selftest():
 
         # A stale covered name (the tree shifted the line) is pruned, not carried.
         st.write_text(json.dumps({"rotation": 4, "night": "2026-10-28", "run": 100, "covered": {
-            "syscall": ["kernel/src/syscall/entry.rs:999:5: gone"]}}))
+            "system_call": ["kernel/src/system_call/entry.rs:999:5: gone"]}}))
         code, out, err = _capture_shards(cmd_plan, plan_args(state=str(st)))
         material = json.loads((root / "s" / "state-material.json").read_text())
-        assert material["covered"]["syscall"] == [], material
+        assert material["covered"]["system_call"] == [], material
         assert material["rotation"] == 4
 
         # The rollover: a state covering every slice restarts the rotation from the front.
@@ -712,11 +712,11 @@ def selftest():
         code, out, err = _capture_shards(cmd_plan, plan_args(state=str(st)))
         assert code == 0, err
         matrix = json.loads(out.removeprefix("matrix="))["include"]
-        assert matrix[0]["rotation"] == 8 and matrix[0]["slice"] == "syscall", out
+        assert matrix[0]["rotation"] == 8 and matrix[0]["slice"] == "system_call", out
         assert "begins rotation 8" in err, err
 
         # The proof path: --only with --limit gives both slots the same slice in disjoint windows.
-        code, out, err = _capture_shards(cmd_plan, plan_args(only="syscall", limit=1))
+        code, out, err = _capture_shards(cmd_plan, plan_args(only="system_call", limit=1))
         matrix = json.loads(out.removeprefix("matrix="))["include"]
         assert matrix[0]["count"] == 1 and matrix[1]["count"] == 1, out
         assert matrix[0]["file"] != matrix[1]["file"]
@@ -727,8 +727,8 @@ def selftest():
 
         # An --only slice the state already covers: both slots noop, exit 0, nothing to run.
         st.write_text(json.dumps({"rotation": 5, "night": "2026-10-28", "run": 102, "covered": {
-            "syscall": [b.full for b in _all_kept(raw, str(toml))["syscall"]]}}))
-        code, out, err = _capture_shards(cmd_plan, plan_args(state=str(st), only="syscall"))
+            "system_call": [b.full for b in _all_kept(raw, str(toml))["system_call"]]}}))
+        code, out, err = _capture_shards(cmd_plan, plan_args(state=str(st), only="system_call"))
         matrix = json.loads(out.removeprefix("matrix="))["include"]
         assert all(e["noop"] for e in matrix) and code == 0, out
         # An unknown slice name is a broken plan, exit 2.
@@ -873,10 +873,10 @@ def selftest():
         rec.write_text(RECORD_HEADER)
         ns = lambda today: argparse.Namespace(csv=str(rec), today=today)
         assert _capture_code(cmd_rotation, ns("2027-01-01"))[0] == 0
-        rec.write_text(RECORD_HEADER + "2026-10-29,1,1,syscall,aarch64,4,1,1,1,0,1\n")
+        rec.write_text(RECORD_HEADER + "2026-10-29,1,1,system_call,aarch64,4,1,1,1,0,1\n")
         assert _capture_code(cmd_rotation, ns("2026-12-01"))[0] == 0
         code, text = _capture_code(cmd_rotation, ns("2027-01-10"))
-        assert code == 1 and "syscall: last worked 2026-10-29" in text and "revoke: never worked" in text, text
+        assert code == 1 and "system_call: last worked 2026-10-29" in text and "revoke: never worked" in text, text
         rec.write_text(RECORD_HEADER + "".join(f"2026-12-30,{i},2,{n},aarch64,1,0,1,0,0,0\n" for i, n in enumerate(SLICE_ORDER)))
         assert _capture_code(cmd_rotation, ns("2027-01-10"))[0] == 0
         assert _capture_code(cmd_rotation, argparse.Namespace(csv=str(root / "none.csv"), today=None))[0] == 2

@@ -95,7 +95,7 @@ sees exactly those and nothing else. It is the same move `rm -r` makes with a di
 handed: authority is held, not global. A scope the system already keeps cannot drift out of
 agreement with reality.
 
-The view is `abi::rendezvous::SURVEY`, a method on the supervision endpoint and no new syscall
+The view is `abi::rendezvous::SURVEY`, a method on the supervision endpoint and no new system call
 number. Membership is `capability_table::survey_includes`, the same relationship that authorizes a reap
 under §32 (a supervisor may collect a corpse without being able to build one). So the domain a
 monitor sees and the domain a supervisor may collect from cannot diverge; three Kani harnesses hold
@@ -130,7 +130,7 @@ the shipped `pgrep` names every member. That lifts when `ArgSpec` grows mileston
 arity.
 
 `pmap` extended `ENUMERATE` to the address-space object (§114) as `abi::address_space::LIST`, a
-method and no new syscall number. It reads the space's revocation log rather than walking page
+method and no new system call number. It reads the space's revocation log rather than walking page
 tables. A capability holding `ENUMERATE` alone lists every mapping and is refused `MAP_INTO`, proved
 both ways by `kernel::user::pmap_tests`. The delegation audit §114 required found nothing that hands
 an address-space capability to a second program. Building it also found that `CONFIGURE` removes a
@@ -202,7 +202,7 @@ still put process state in a namespace a program reaches by naming rather than b
   What-is-left.md, section 5.
 - `pmap` shows one row per mapped page with no range coalescing, because the revocation log records
   one entry per page and nothing about adjacency. It also cannot tell a device mapping from ordinary
-  read/write memory, since `page_tables::Flags` carries no device bit the syscall handler can see.
+  read/write memory, since `page_tables::Flags` carries no device bit the system call handler can see.
 - `procps` ships without `sysctl` (§115) and without its signaling stratum (milestone 455). A
   reader who expects `kill` or `sysctl` to be a program will not find one.
 - Aggregate statistics are a side channel, and capabilities do not close it. CPU time per thread,
@@ -241,7 +241,7 @@ still put process state in a namespace a program reaches by naming rather than b
   `design/decisions/0226-pidwait-takes-tids.md` (calef, 2026-09-26). `pgrep --wait`, one binary with
   two names, and a pattern-taking `pidwait` are refused there.
 - **Milestone 667.** Milestone 667 (`pidwait`: a way to wait on a named tid with less authority than `pgrep`'s). `pidwait` needs a new kernel method to wait on a named tid with less authority
-  than `pgrep`'s, which is the syscall surface and calef's: the options are in
+  than `pgrep`'s, which is the system call surface and calef's: the options are in
   `design/roadmap/0667-pidwait-waits-on-a-named-tid.md`.
 - **Recorded.** `pmap` is unreachable from the prompt, because `take_user_address_space` in
   `kernel/src/user.rs` deregisters a space at `CONFIGURE`. calef moved it out of this milestone on

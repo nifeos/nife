@@ -439,7 +439,7 @@ fn host_pass(hvf: bool, filtered: bool) -> bool {
 /// `helpers/host-excluded-crates.sh` rather than listed. Panics when the helper cannot run or fails.
 ///
 /// Every member that reaches `crates/user_mode_runtime` cannot compile for the host (`svc` and
-/// `ecall` there are EL0 syscalls), and the whole set must go: `--exclude` removes a package from
+/// `ecall` there are EL0 system calls), and the whole set must go: `--exclude` removes a package from
 /// the test selection, not from the dependency graph. One derivation serves script/lint's two
 /// clippy passes, script/coverage, script/mutation and this file's host and Miri passes.
 /// script/lint's "the host pass excludes exactly the bare-metal crates" gate fails if this file
@@ -491,9 +491,9 @@ fn host_tests() -> bool {
         return false;
     }
 
-    // `user_mode_runtime` is in the excluded set (its syscalls fault without a kernel) and has a
+    // `user_mode_runtime` is in the excluded set (its system calls fault without a kernel) and has a
     // host test target all the same: its tests cover the pure logic (bounds checks, the frame
-    // layout, the tick conversion, the linker script's base) and never execute a syscall.
+    // layout, the tick conversion, the linker script's base) and never execute a system_call.
     if !cargo(&["test", "-p", "user_mode_runtime"]) {
         return false;
     }

@@ -15,7 +15,7 @@ Filed by the lane of milestone 601 (the region table prints its
 peak), from the per-test measurement that built the ledger at `memory_region::MAX_REGIONS`. The
 title is provisional.
 
-Test wiring and service teardown; no syscall surface, no dependency.
+Test wiring and service teardown; no system call surface, no dependency.
 
 ## What was measured
 

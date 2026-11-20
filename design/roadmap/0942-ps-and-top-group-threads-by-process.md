@@ -82,7 +82,7 @@ holding only part of a process would learn that a sibling exists outside its dom
 were the process's total. The count should then be the count within its domain. Whether that is
 acceptable, or the count must be the true total, is the open question below.
 
-This is a wire-and-authority question on the syscall surface (§10 (process model: capability-based, microkernel); rule 3 in
+This is a wire-and-authority question on the system call surface (§10 (process model: capability-based, microkernel); rule 3 in
 `AGENTS.md`). §313 (`ENUMERATE` on a domain covers which of its threads share a process) records the ruling below.
 
 ## Where the data comes from
@@ -102,7 +102,7 @@ meets is 1) would reveal nothing but the grouping and costs the kernel one compa
 makes the label differ between the two walks if a process ends in between. The label design is
 for the lane that builds this, inside whatever the ruling allows.
 
-A `SURVEY` selector adds no register and no syscall, so it does not widen the surface beyond
+A `SURVEY` selector adds no register and no system call, so it does not widen the surface beyond
 the rule §204 already set. Adding a value to `is_known` and an arm in `survey_supervised` is the
 change.
 

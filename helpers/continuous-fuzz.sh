@@ -8,12 +8,12 @@
 #     helpers/continuous-fuzz.sh --ci SHARD   one bounded CI window of shard SHARD (0 to 3), then exit
 #     helpers/continuous-fuzz.sh --replay COMMIT SHARD RED_AT   replay one red CI shard, then exit
 #
-# DRIVER is `kernel-thread` (milestone 752 (a seeded syscall driver with a shadow model)) or
+# DRIVER is `kernel-thread` (milestone 752 (a seeded system call driver with a shadow model)) or
 # `confined` (milestone 779 (fuzz the surface a confined process can reach)). Guests alternate
 # between them, so the default four guests are two of each.
 #
 # **What one window is.** Both drivers take their seed range at build time
-# (`NIFE_SYSCALL_FUZZ_SEEDS` and `NIFE_CONFINED_FUZZ_SEEDS`, `<first>:<count>`) and stop between seeds
+# (`NIFE_SYSTEM_CALL_FUZZ_SEEDS` and `NIFE_CONFINED_FUZZ_SEEDS`, `<first>:<count>`) and stop between seeds
 # after 60 s of guest time. A window builds the x86_64 archive and the system test image once for the
 # range, then starts one QEMU process through the PVH runner (`helpers/qemu-runner-x86_64.sh`) with
 # `-accel kvm` and sweeps in that one guest. It does not call `cargo xtask test`: that clears
@@ -134,7 +134,7 @@ PATH="$HOME/.cargo/bin:$PATH"
 
 driver_test() {
     case "$1" in
-        kernel-thread) echo "seeded_syscalls NIFE_SYSCALL_FUZZ_SEEDS" ;;
+        kernel-thread) echo "seeded_system_calls NIFE_SYSTEM_CALL_FUZZ_SEEDS" ;;
         confined) echo "a_confined_fuzzer NIFE_CONFINED_FUZZ_SEEDS" ;;
         *) echo "continuous-fuzz: unknown driver '$1'" >&2; return 1 ;;
     esac
@@ -228,7 +228,7 @@ classify() {
     status=ok
     next=$((first + 1))
     # The driver's own end line: `<n> seeds, <ms> ms (...)`.
-    line="$(grep -E '(syscall|confined) fuzzer: [0-9]+ seeds, ' "$log" | tail -1 || true)"
+    line="$(grep -E '(system_call|confined) fuzzer: [0-9]+ seeds, ' "$log" | tail -1 || true)"
     replay="$(sed -n 's/.*replay: NIFE_[A-Z_]*=\([0-9][0-9]*\):1.*/\1/p' "$log" | head -1)"
     # A wait that ran out its tick budget says so first (`BUDGET_EXPIRED_MARKER` in kernel/src/testing.rs,
     # which the selftest checks against this word). It is held like a finding, but apart from one: it

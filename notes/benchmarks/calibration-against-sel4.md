@@ -53,7 +53,7 @@ from the same boot on every boot, the property the old comparison lacked.
 |---|---|---|---|---|
 | `ipc_rtt` | kernel-side | **46** | 46, 46, 46, 46, 49 | two rendezvous, one address space, no trap |
 | `ipc_rtt_el0` | EL0 to EL0 | **350** | 347, 348, 350, 357, 369 | two rendezvous, two address spaces, four `svc`s |
-| `null_syscall` | EL0 | 27 | 27, 27, 27, 27, 28 | one trap and return, for scale |
+| `null_system_call` | EL0 | 27 | 27, 27, 27, 27, 28 | one trap and return, for scale |
 
 These agree with [the 2026-07-29 refresh](per-core-and-multi-hart.md) (~50 and ~361) within
 run-to-run noise. What was missing was never a measurement; it was the paragraph.
@@ -94,15 +94,15 @@ That is the same class of mistake in the other direction: a debug number in a re
   proved rendezvous, generational ThreadId checks. Read the ratio as "the general path is within a small
   factor of a tuned fastpath on this silicon", a statement about headroom, not about having matched
   them.
-- Their round trip is two syscalls; the `ipc_rtt_el0` benchmark's is four. seL4 fuses send-and-wait
+- Their round trip is two system calls; the `ipc_rtt_el0` benchmark's is four. seL4 fuses send-and-wait
   into `Call` and reply-and-wait into `ReplyRecv`. Our benchmark issues `SEND`, `RECEIVE`, `SEND`,
   `RECEIVE`. At ~27 ns (~110 cycles) per trap, the two extra crossings are ~220 cycles, a sixth to a
   quarter of our round trip, and self-inflicted rather than structural. The kernel-side
   `call_reply` bench measures the fused shape, but it has no EL0 twin. So the structurally matched
   comparison to seL4's published pair is not measured at all.
   *Corrected 2026-09-04 by milestone 188 (the IPC fastpath): a real service issues `CALL`,
-  `RECEIVE_CAPABILITY`, `REPLY`, three syscalls to seL4's two, not four. Four is only `ipc_rtt_el0`'s count.
-  The residual one is the `ReplyRecv` fusion this tree lacks, a syscall-surface question and
+  `RECEIVE_CAPABILITY`, `REPLY`, three system calls to seL4's two, not four. Four is only `ipc_rtt_el0`'s count.
+  The residual one is the `ReplyRecv` fusion this tree lacks, a system-call-surface question and
   calef's. See [the fastpath footprint appendix](fastpath-footprint-gate.md).*
 - Different measurement methods. seL4 times a single operation through the PMU with the caches hot
   and a measured overhead subtracted. We average a 5,000-iteration loop against a 41.67 ns counter
@@ -212,7 +212,7 @@ podman run --rm -v "$PWD":/sel4bench:Z docker.io/trustworthysystems/sel4 bash -l
   the real core), not emulation, so nife and Linux run virtualized under QEMU-HVF. macOS runs as a
   guest under Apple's Virtualization.framework: same hypervisor, different VMM shell. Native macOS
   is the bare-metal ceiling. For guest-internal microbenchmarks the VMM layer is off the hot path (no
-  VM exit on a null syscall or context switch), so the QEMU-vs-VZ difference is a footnote.
+  VM exit on a null system call or context switch), so the QEMU-vs-VZ difference is a footnote.
 - XNU is a hybrid; name it. macOS's kernel has a Mach core but runs BSD and drivers in the kernel,
-  so most macOS syscalls are in-kernel BSD calls. Mach IPC is not on its hot path the way our
-  endpoints are on ours. "Our IPC" against "macOS syscall latency" measures two different things.
+  so most macOS system calls are in-kernel BSD calls. Mach IPC is not on its hot path the way our
+  endpoints are on ours. "Our IPC" against "macOS system call latency" measures two different things.

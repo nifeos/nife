@@ -32,7 +32,7 @@ read, no fence: the 10ms calibration window is coarse enough that reordering noi
 at the call site.
 
 The `cntfrq()` contract matches the other two architectures' own shape rather than inventing one.
-aarch64 and riscv64 both answer it as an ambient, no-syscall read (a system register on aarch64; a
+aarch64 and riscv64 both answer it as an ambient, no-system-call read (a system register on aarch64; a
 hardcoded QEMU constant on riscv64). That constant's own doc comment already predicts its eventual
 real-hardware answer is "an aux-vector entry, the way Linux passes `AT_HWCAP`", since real riscv64
 silicon has no register either. x86_64's answer, a kernel-computed frequency delivered to userspace

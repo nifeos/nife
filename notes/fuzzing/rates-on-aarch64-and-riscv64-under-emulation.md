@@ -9,7 +9,7 @@ x86_64.
 
 ## What ran
 
-The kernel-thread driver, milestone 752 (a seeded syscall driver with a shadow model), and the
+The kernel-thread driver, milestone 752 (a seeded system call driver with a shadow model), and the
 user-mode confinement driver, milestone 779 (fuzz the surface a confined process can reach), each
 ran a 60-second sweep per guest on aarch64 and riscv64. The ladder was 1, 2, 4, 8 and 16 guests at
 once, one run per level. The host was a shared multi-core build host with other lanes' load on it.

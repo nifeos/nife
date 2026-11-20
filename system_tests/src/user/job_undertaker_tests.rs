@@ -6,7 +6,7 @@ use super::*;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 use crate::user::holding::Holding;
 
 /// Pages per job region: what `build_child_in` lays down (an address space and its tables, a code

@@ -9,13 +9,13 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# 779. Fuzz the surface a confined process can reach: the services' decoders, and the syscalls
+# 779. Fuzz the surface a confined process can reach: the services' decoders, and the system calls
 
 Part (a) was built as milestone 751 (fuzz the services' request handlers) and part (b) as
-milestone 752 (a seeded syscall driver with a shadow model), the kernel-thread driver. This block
+milestone 752 (a seeded system call driver with a shadow model), the kernel-thread driver. This block
 now
 records part (b)'s completion in the form the proposal actually recommended, an **EL0** driver:
-`fixtures/src/confined_syscall_fuzzer.rs` plus its conductor,
+`fixtures/src/confined_system_call_fuzzer.rs` plus its conductor,
 `system_tests/src/user/confined_fuzzer_tests.rs`. Two arrivals this driver cannot reach are
 recorded as misses below rather than reached; proof condition 2 allows a miss whose reason is in
 the driver's `BUGS`. The block is BUILT with that limitation recorded.
@@ -23,7 +23,7 @@ the driver's `BUGS`. The block is BUILT with that limitation recorded.
 ## What the EL0 driver is (b, built)
 
 Three spawned programs, two endowed and a witness holding only the conductor's channel, each
-make one seeded random syscall at a time through the real trap entry. Between calls an escape
+make one seeded random system call at a time through the real trap entry. Between calls an escape
 oracle that is the conductor's alone judges them. A capability-table diff holds that every fill
 was granted by the call that made it, and a delegation ledger marks revocations in flight.
 Register truth checks `RECEIVE_CAP`'s `x1` and `x4`, and the badged server endpoint checks badges.
@@ -108,9 +108,9 @@ calef asked for this on 2026-10-04 (UTC), as a proposal, not a build. It propose
 
 §60 (fuzzing complements the proofs) put `cargo-fuzz` over parsers of bytes we did not write. Its
 six targets in `fuzz/fuzz_targets/` read a device tree, an ELF, a GPT, an HTTP head, a nifefs
-archive and a package archive. None reads an IPC message, and nothing makes a syscall. The two
+archive and a package archive. None reads an IPC message, and nothing makes a system_call. The two
 audits that cover this ground read it once: 2026-08-15 (`notes/untrusted-input-audit.md`) and
-2026-09-29 (`design/audit-reports/2026-09-29-syscall-surface-whole.md`). A reading does not recheck
+2026-09-29 (`design/audit-reports/2026-09-29-system-call-surface-whole.md`). A reading does not recheck
 after the next change, and the 2026-09-29 audit was followed four days later by three kernel
 confinement defects on the same surface.
 
@@ -123,9 +123,9 @@ The census, run on `1a145fcaa`:
 - Three decoders are partly proven. `credential_protocol::read` has 3 Kani harnesses (it stays in
   the page). `network_time_protocol::Packet::parse` has 7 (parse is total). `filesystem_protocol`'s
   3 cover rights attenuation, not decoding.
-- On the syscall side, `crates/capability_table` carries 14 Kani harnesses and
+- On the system call side, `crates/capability_table` carries 14 Kani harnesses and
   `crates/inter_process_communication` 14 (the endpoint, notification and timer state machines).
-  `kernel/src/syscall.rs` and `kernel/src/sched.rs`, which join them to threads and mailboxes, carry
+  `kernel/src/system_call.rs` and `kernel/src/sched.rs`, which join them to threads and mailboxes, carry
   none that reach the dispatcher.
 
 That last point decides part (b). The three confinement defects found on 2026-10-03 were all in
@@ -198,7 +198,7 @@ minutes.
 Estimate: one lane. Ranks 1, 3 and 5 are about two days of agent time; rank 2's extraction is
 unknown and may want its own milestone.
 
-## (b) A syscall fuzzer
+## (b) A system call fuzzer
 
 ### The hard part
 
@@ -211,12 +211,12 @@ semihosting exit and the icount determinism conventions". Any snapshot design in
 
 ### Prior art, read
 
-- syzkaller describes syscalls in syzlang, with handles as typed resources a call produces and a
+- syzkaller describes system calls in syzlang, with handles as typed resources a call produces and a
   later call consumes. It detects bugs by matching console output (`BUG: KASAN:`, panics, hangs)
   and needs KCOV for coverage. Its one microkernel port, Fuchsia, is documented as incomplete, with
   "coverage feedback is not supported" and "crash parsing does not work reliably"
   (`docs/fuchsia/README.md`).
-- seL4: no syscall fuzzer found; its assurance is the proof. The FAQ lists what the proof assumes:
+- seL4: no system call fuzzer found; its assurance is the proof. The FAQ lists what the proof assumes:
   the assembly, the hardware, TLB and cache management, and the boot code.
 - Hubris faults a task that misuses `SEND` or `RECV` rather than returning an error, and idol
   servers answer a malformed message with `REPLY_FAULT`. No fuzzing found.
@@ -248,13 +248,13 @@ semihosting exit and the icount determinism conventions". Any snapshot design in
 
 Option 4 needs no snapshot, so it does not meet 615's objection. The seed is the reproducer, and
 the run is deterministic under icount. A later phase may add an invariant walk at the tail of
-`syscall::dispatch`, where `ipc_stack_depth`, from milestone 134 (the register of measures), already hooks, under the same
+`system_call::dispatch`, where `ipc_stack_depth`, from milestone 134 (the register of measures), already hooks, under the same
 `any(test, ...)` gating, so no shipping kernel carries it. That is worth building only if phase 1
 measurably misses a class.
 
 Cadence follows milestone 616 (constrained hardware fuzzing): a short fixed seed list in the suite,
 and a long sweep on the weekly `falsifications.yml` schedule, where a finding is a report and not a
-red trunk. Syscalls per second under QEMU are not measured; that is the lane's first number.
+red trunk. System calls per second under QEMU are not measured; that is the lane's first number.
 
 ### Proof condition: BUILT when
 
@@ -271,7 +271,7 @@ and the QEMU runners, the test-wiring hotspot, so it should not run beside anoth
 
 ## Reversibility, and what is calef's
 
-- Neither part needs a new syscall or a new method. (b) uses only the existing surface.
+- Neither part needs a new system call or a new method. (b) uses only the existing surface.
 - Neither needs a new dependency. `arbitrary` is already in `fuzz/Cargo.lock` through
   `libfuzzer-sys`, and the driver's PRNG is a few lines.
 - (b)'s phase 2 is test-build code. Putting it in a release kernel would need a cargo feature, which
@@ -293,7 +293,7 @@ defects that motivated this.
 ## Index row
 
 (a) host fuzz targets over the services' request handlers, each with an oracle and a planted
-defect it must find (milestone 751). (b) seeded syscall drivers under the conductor's eye: a
+defect it must find (milestone 751). (b) seeded system call drivers under the conductor's eye: a
 kernel-thread driver whose shadow model predicts every answer (milestone 752); and an EL0 driver
 judged by an escape oracle between calls. That driver turned red under four recorded kernel
 falsifications, found and fixed a live kernel-memory-read defect in `AddressSpace::LIST`, and

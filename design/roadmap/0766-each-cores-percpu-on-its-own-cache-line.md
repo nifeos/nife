@@ -6,19 +6,19 @@ promoted_from: each-cores-percpu-on-its-own-cache-line
 milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: riscv64 silicon with four or more harts
-specific_machine: radon (fatal risk 4's null-syscall numbers were taken there)
+specific_machine: radon (fatal risk 4's null-system-call numbers were taken there)
 needs_person: yes
 ---
 # 766. Each core's PerCpu on its own cache line
 
-Raised by measuring fatal risk 4's null syscall under load. *(Title, slug and every name below
+Raised by measuring fatal risk 4's null system call under load. *(Title, slug and every name below
 are drafts.)*
 `needs_person` is yes only because the acceptance measurement is taken at radon's bench.
 
 ## Index row
 
 No two cores' per-core blocks share a cache line on any architecture, which takes the last
-measured per-trap growth out of the null syscall under load on Apple cores. A compile-time
+measured per-trap growth out of the null system call under load on Apple cores. A compile-time
 assertion keeps it that way.
 
 ## The defect
@@ -31,9 +31,9 @@ neighbors. In the aarch64 job-mix build `PERCPU` sat at 24 mod 64; on riscv64 th
 
 ## The evidence
 
-From [the HVF appendix](../../notes/job-mix/null-syscall-hvf-full-mix.md): four Apple M3 cores
+From [the HVF appendix](../../notes/job-mix/null-system-call-hvf-full-mix.md): four Apple M3 cores
 under HVF, the full job mix, with milestone 761 (capability lookup off the global lock) in. The
-null syscall's per-trap excess from one task to four, in 24 MHz ticks:
+null system call's per-trap excess from one task to four, in 24 MHz ticks:
 
 | Build | boots | excess at 4 tasks, 95% interval |
 |---|---|---|
@@ -74,7 +74,7 @@ crate is involved, since the change is one attribute and one assertion in the ke
 ## What HVF said
 
 Patagonia, 2026-10-05 (UTC), by the parent note's method; the full reading is the
-[note's section on this milestone](../../notes/job-mix/null-syscall-hvf-full-mix.md#milestone-766-from-committed-code).
+[note's section on this milestone](../../notes/job-mix/null-system-call-hvf-full-mix.md#milestone-766-from-committed-code).
 Per-trap excess at four tasks, 24 MHz ticks, bootstrap 95% intervals, boots interleaved:
 
 | Build | boots | excess at 4 | minus the parent commit |
@@ -97,7 +97,7 @@ and against today's lucky one nothing, within an interval of zero either way.
 ([`bench/radon-2026-10-05/`](../../bench/radon-2026-10-05/README.md); the full reading is
 [the appendix](../../notes/job-mix/radon-2026-10-05.md#milestone-766-the-alignment-is-material-on-radon)).
 `main` at `c8b5fd09e` against the same commit with this milestone undone and the blocks forced to
-24 mod 128, `null_syscall` `per_job` in 4 MHz ticks:
+24 mod 128, `null_system_call` `per_job` in 4 MHz ticks:
 
 | | 1 task | 4 tasks | growth |
 |---|---|---|---|
@@ -115,7 +115,7 @@ growth with cores held within a tick across those layouts, and `D` is a differen
 
 - E's result from committed code: the HVF sweep above, at least 18 boots interleaved against the
   parent commit, four-task excess within its interval of zero.
-- A radon run by [the parent note's](../../notes/job-mix/null-syscall-under-load.md) procedure
+- A radon run by [the parent note's](../../notes/job-mix/null-system-call-under-load.md) procedure
   and its one-task guard, recording the excess before and after. That is the acceptance
   measurement, and its result goes to risk 4's line whatever it is.
 - `script/fastpath-footprint` and `script/bench` unchanged within their floors on all three ISAs.
@@ -125,7 +125,7 @@ growth with cores held within a tick across those layouts, and `D` is a differen
 - Only `PerCpu` is covered. About thirty other statics are `[T; MAX_CPUS]` arrays, most packed, so
   a core's slot shares a line with its neighbors'. Some are on hot paths: `sched::PREEMPTIONS_PER_CPU`
   and each architecture's per-core `TICKS`. `sched::CURRENT_CAPABILITIES` (written on every switch,
-  read by every capability syscall) is `align(64)`, so two cores share each 128-byte Apple line,
+  read by every capability system call) is `align(64)`, so two cores share each 128-byte Apple line,
   and this milestone's span would say 128. Unmeasured. The aligned build reads within 0.003 [-0.006, +0.011]
   ticks a trap of the parent at four Apple cores, so whatever they cost is below this instrument
   there. Found by reading while building this milestone; it wants a measurement before a remedy.

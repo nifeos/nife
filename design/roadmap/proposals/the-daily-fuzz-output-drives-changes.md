@@ -26,8 +26,8 @@ are under "Recommendation" below, and moving to option B later stays compatible.
 
 ## Background
 
-The continuous fuzzing host is one x86_64 machine with KVM. It runs the two in-guest syscall
-drivers all the time: the kernel-thread driver of milestone 752 (a seeded syscall driver with a
+The continuous fuzzing host is one x86_64 machine with KVM. It runs the two in-guest system call
+drivers all the time: the kernel-thread driver of milestone 752 (a seeded system call driver with a
 shadow model) and the confined driver of milestone 779 (fuzz the surface a confined process can
 reach). Each window builds an image with a seed range baked in, boots one guest, sweeps seeds for 60
 seconds and appends one row to `windows.tsv`. A row holds the driver, slot, first seed, seeds run,
@@ -50,7 +50,7 @@ Two facts narrow the question, and this lane checked both against the tree.
 - The host runs no `cargo-fuzz` target. The 18 targets that `script/fuzz --list` names run only in
   the merge group's two `fuzz-shard` jobs, 60 seconds each, from the committed seeds, with no corpus
   kept between runs. The daily release says nothing about them.
-- The in-guest drivers are coverage-blind ([the driver note](../../../notes/fuzzing/the-syscall-driver.md)).
+- The in-guest drivers are coverage-blind ([the driver note](../../../notes/fuzzing/the-system-call-driver.md)).
   Every seed is an independent draw, so a seed corpus cannot grow in the libFuzzer sense. The only
   corpus is the clean ranges. An architect ruled for coverage counters on 2026-10-31 (UTC) in milestone 1003
   (continuous fuzzing for risk 7's criterion (d)), and milestone 1008 (a fuzz window reports what it

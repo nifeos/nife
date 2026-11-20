@@ -3,7 +3,7 @@
 //!
 //! Walk one supervision domain with `abi::rendezvous::SURVEY`, filter it, then say what matched on
 //! one stream and what went wrong on the other. The walk is `crates/ps` and the filter is
-//! `crates/pgrep`, both host-tested; what lives here is the syscall and the two sinks. There is no
+//! `crates/pgrep`, both host-tested; what lives here is the system call and the two sinks. There is no
 //! `pkill`: a domain names its members and does not act on them (calef, 2026-08-17), and no method
 //! turns a tid into authority over its thread (notes/process-view/pgrep.md has the argument and
 //! the examples at the prompt).

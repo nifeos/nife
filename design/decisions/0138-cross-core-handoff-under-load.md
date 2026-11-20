@@ -14,12 +14,12 @@ soak) measured that it never happens today.
 
 calef approved option D, the `--features soak` hook that signals a routed rendezvous from
 `sched::on_tick`, so soak workers block on it through the `Irq::WAIT` that already exists. It adds
-no syscall and nothing of it exists in a production build. That unblocks the second half of fatal
+no system call and nothing of it exists in a production build. That unblocks the second half of fatal
 risk 5's decisive experiment, which had never been runnable.
 
 Two things stay open on purpose and neither is blocking.
 
-**Option A, thread affinity, is not refused; it is not yet asked.** It is syscall surface, so this
+**Option A, thread affinity, is not refused; it is not yet asked.** It is system call surface, so this
 section gives options rather than a recommendation, and it should be taken on its own merits rather
 than carried in on the back of an experiment D can run without it. What the prior art narrowed:
 the core belongs in a capability rather than in a message, and DECISIONS §28 already chose the shape
@@ -165,7 +165,7 @@ Option C is in
 
 What it is. Under `--features soak` and nowhere else, the kernel signals a routed rendezvous from
 inside a real interrupt handler, and soak workers block on it through the existing `Irq::WAIT`. No
-syscall is added. Nothing exists in a production build.
+system call is added. Nothing exists in a production build.
 
 How option D was read, run and costed is in
 [`options.md`](0138-cross-core-handoff-under-load/options.md#d-a-soak-only-kernel-side-interrupt-raiser-this-lanes-finding-and-it-was-measured).
@@ -195,7 +195,7 @@ than the counter. D also leaves the machine unchanged when nobody is testing, wh
 the maintainer's provisional pick of A was reaching for. D has it more completely: A is inert only
 if no program uses it, and a mechanism that is only inert by convention is rung four.
 
-**On the irreversible part, this lane gives options and does not recommend.** A is syscall surface
+**On the irreversible part, this lane gives options and does not recommend.** A is system call surface
 and its capability question is genuinely open. This document's contribution to it is to narrow what
 must be decided rather than to decide it:
 
@@ -225,7 +225,7 @@ The refusal now rests on §28's trigger alone. A reader who thinks that trigger 
 reopen B, and this paragraph is the invitation.
 
 C is declined in favor of D, having established that its userspace half already exists and its
-kernel half does not need a syscall.
+kernel half does not need a system_call.
 
 ## What is blocked until this is answered
 

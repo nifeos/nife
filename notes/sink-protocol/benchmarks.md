@@ -13,7 +13,7 @@ Deterministic icount ticks against `bench/baseline-aarch64.txt`, on the pinned Q
 | `ipc_rtt_el0` (an EL0 send/receive round trip, the closest thing to a `println!`) | +0.13% | -0.63% |
 | `relay_rtt` (a hop through a userspace relay) | +0.01% | +0.02% |
 | `call_reply` | 0.00% | +0.00% |
-| `null_syscall` | +0.00% | -0.04% |
+| `null_system_call` | +0.00% | -0.04% |
 
 Everything moved by less than 1% and in both directions, which is build noise on an instruction
 count. The baseline file was deliberately not updated, because updating it is a statement that a

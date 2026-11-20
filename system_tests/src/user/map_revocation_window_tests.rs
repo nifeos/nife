@@ -20,7 +20,7 @@ use abi::Error;
 
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, Rights, page_frame_run_capability, page_frame_run_len};
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 use crate::{delegation_pause, sched};
 
 /// Where every test here maps its frame: an aligned low-half page well away from anything a kernel
@@ -88,7 +88,7 @@ fn holds_frame(tid: crate::thread::ThreadId, phys: u64) -> bool {
     .unwrap_or(false)
 }
 
-/// A syscall answer as `x0` carries it: the value, or the error's negative code.
+/// A system call answer as `x0` carries it: the value, or the error's negative code.
 fn encode(answer: Result<i64, Error>) -> u64 {
     answer.unwrap_or_else(|e| e as i64) as u64
 }

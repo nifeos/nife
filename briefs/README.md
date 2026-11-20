@@ -58,7 +58,7 @@ half-hour run is spent on them. `briefs/gate-a-lane.md` has the order and the tr
 
 Work that recurs, whose failure modes are already known, and whose correctness a gate can check.
 Rebases, triage, sweeps, the boilerplate every lane's gating step repeats. Not a one-off design
-question, not prose a reader will trust on its own authority, not anything touching the syscall
+question, not prose a reader will trust on its own authority, not anything touching the system call
 surface or a wire format. Those stay judgement calls made fresh, by whoever is making them, because
 no brief can encode a decision that has not been made yet.
 
