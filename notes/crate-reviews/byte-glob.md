@@ -83,7 +83,8 @@ in rust-lang/glob, `dotglob` in bash and `GLOB_PERIOD` in glibc's `glob(3)`. At 
 `matches_with(b"*", b".config", LeadingDot::Ordinary)` reads without the documentation.
 
 `script/names byte_glob` lists the crate name, the seven public names and their blocks as ratified.
-The module names `tests` and `verification` carry provisional blocks.
+The module names `tests` and `verification` are ratified by the standing ruling of 2026-11-20 (UTC),
+with or without a block.
 `helpers/name_release.py --draft byte_glob` agrees.
 
 ## What was run
