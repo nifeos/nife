@@ -140,6 +140,17 @@ def selftest():
             "crates/other/Cargo.toml": '[package]\nname = "other"\n',
             "design/naming/convention-rulings.md": ""}
 
+    def standing_cases(tree):
+        rule = ("## Rule 4: standing\n\nApplies: standing-modules\nRatified: 2026-11-20 (UTC)\n")
+        t = dict(tree, **{"design/naming/convention-rulings.md": rule,
+                          "crates/fat/src/lib.rs": tree["crates/fat/src/lib.rs"]
+                          + "#[cfg(test)]\nmod tests;\nmod verification;\n",
+                          "crates/fat/src/tests.rs": "//! Name: provisional.\n",
+                          "crates/fat/src/verification.rs": "//! Verification.\n"})
+        got = {(n, k): s for n, k, _p, s in table(t)}
+        return (got[("tests", "module")].startswith("ratified 2026-11-20")
+                and got[("verification", "module")] == "no block")
+
     def table(tree, name="fat"):
         return rows(name, sorted(tree), tree.get)
 
@@ -167,6 +178,8 @@ def selftest():
          crate_release.strip_name_blocks(
              "//! A.\n//!\n//! Name: provisional. Long\n//! more.\n\nfn f() {}\n")
          == "//! A.\n\n\n\n\nfn f() {}\n"),
+        ("a gated `tests` module reads ratified by the standing rule, block or none, and an ungated "
+         "one reads `no block`", standing_cases(base)),
         ("no record file is read: a stale one changes nothing",
          table(dict(base, **{"design/roadmap/0857-crates-released-on-their-own/fat-names.md":
                              "Ratified: 2026-11-02 (#1).\n"})) == table(base)),

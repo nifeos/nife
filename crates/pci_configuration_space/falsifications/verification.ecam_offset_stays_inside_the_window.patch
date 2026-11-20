@@ -5,7 +5,7 @@ devices of 8 functions of 4 KiB, which is 20 bits, and a reader who counts the f
 than the bits can land on 21. Every device on bus 0 addresses correctly under this defect, which
 is every device on both QEMU `virt` boards, so nothing in this tree's fixtures would notice.
 
-Expected to fail: the harness's `assert!(bdf.ecam_offset() + 0xfff < 0x1000_0000)`, at any bus
+Expected to fail: the harness's `assert!(bus_device_function.ecam_offset() + 0xfff < 0x1000_0000)`, at any bus
 above 127, where a config read leaves the 256-bus window the kernel mapped and the volatile
 accessor touches whatever is next in the address space.
 

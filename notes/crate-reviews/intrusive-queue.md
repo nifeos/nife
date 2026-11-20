@@ -4,7 +4,7 @@
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
-The architect reads this to clear the crate for its move to its own repository, step 10 of
+The architect cleared this package on 2026-11-20 (UTC) for the crate's move to its own repository, step 10 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 It describes the crate as `main` plus this branch leaves it. The outside review is
 [milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release)](../../design/roadmap/1097-intrusive-queue-outside-review.md).
@@ -118,5 +118,8 @@ None. Item 9's surface question is two-way and the maintainer's.
 
 ## Recommendation
 
-Ready for review. Decisions 1 to 3 of milestone 1097 are ruled. The go to create `nifeos/intrusive_queue`
-(no tag, no publish) is the architect's.
+Cleared to move (2026-11-20 UTC, no tag, no publish). Decisions 1 to 3 of milestone 1097 are ruled.
+The clearance is the go to create `nifeos/intrusive_queue` with `publish = false`. The move lane is
+item 10 of milestone 1017 and also serves `inter_process_communication`. An outside-crate
+comparison (`intrusive-collections`, `cordyceps`, `embed-slist`) found none with matching proofs, so
+the crate stays and moves.
