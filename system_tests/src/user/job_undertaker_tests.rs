@@ -83,7 +83,7 @@ const ENDPOINT_PAGES: u64 = 4;
 
 /// [`spawn_job_undertaker`], with the two endpoints the progenitor adds when there is one to tell
 /// (milestone 685): `REPORT` at slot 1 and, at slot 2, the spawn endpoint badged
-/// `spawnproto::UNDERTAKER_BADGE`, both `WRITE`. Without them the program's two sends are refused
+/// `spawn_protocol::UNDERTAKER_BADGE`, both `WRITE`. Without them the program's two sends are refused
 /// for an empty slot and dropped, which is what the tests above run.
 fn spawn_job_undertaker_with(
     deaths: sched::RendezvousId,
@@ -120,7 +120,7 @@ fn spawn_job_undertaker_with(
                 crate::capability_object::rendezvous_capability_badged(
                     spawn,
                     Rights::WRITE,
-                    program_table::spawnproto::UNDERTAKER_BADGE,
+                    program_table::spawn_protocol::UNDERTAKER_BADGE,
                 ),
             ),
         ] {
@@ -250,7 +250,7 @@ fn job_undertaker_returns_every_finished_job_to_the_pool() {
 /// The reap protocol (milestone 685 (a job is finished when its memory is back), calef's ruling of
 /// 2026-10-06 UTC, option A).
 ///
-/// After collecting a job, `job_undertaker` sends `spawnproto::reaped(label, tid)` (label: the job's
+/// After collecting a job, `job_undertaker` sends `spawn_protocol::reaped(label, tid)` (label: the job's
 /// supervision badge) on its `UNDERTAKER_BADGE` endpoint; the job's window frees on that message,
 /// not before (`program_table::job_windows::Windows`). The booted half of confinement claim 24 (fatal
 /// risk 7's criterion (a)); the host test is the rule. The replayable falsification breaks the
@@ -260,7 +260,7 @@ fn job_undertaker_returns_every_finished_job_to_the_pool() {
 #[test_case]
 fn job_undertaker_says_which_job_it_reaped_and_only_then_is_its_window_free() {
     use program_table::job_windows::Windows;
-    use program_table::spawnproto;
+    use program_table::spawn_protocol;
 
     /// The job's label, as the progenitor would have minted it. Any nonzero value.
     const LABEL: u64 = 0x685;
@@ -306,13 +306,13 @@ fn job_undertaker_says_which_job_it_reaped_and_only_then_is_its_window_free() {
     let msg = sched::ipc_receive(spawn);
     assert_eq!(
         msg[3],
-        spawnproto::UNDERTAKER_BADGE,
+        spawn_protocol::UNDERTAKER_BADGE,
         "the reaped message did not carry the undertaker's badge, so the progenitor would read it \
          as a request"
     );
     assert_eq!(
         (msg[0], msg[1], msg[2]),
-        spawnproto::reaped(LABEL, tid),
+        spawn_protocol::reaped(LABEL, tid),
         "the reaped message named the wrong job (label, tid)"
     );
     assert_eq!(

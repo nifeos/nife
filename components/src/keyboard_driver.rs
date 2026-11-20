@@ -124,15 +124,15 @@ fn event_buf(i: usize) -> u64 {
 }
 
 fn r16(off: u64) -> u16 {
-    DMA.read_u16(off)
+    DMA.read::<u16>(off)
 }
 
 fn r32(off: u64) -> u32 {
-    DMA.read_u32(off)
+    DMA.read::<u32>(off)
 }
 
 fn w16(off: u64, v: u16) {
-    DMA.write_u16(off, v);
+    DMA.write::<u16>(off, v);
 }
 
 fn mr(off: u64) -> u32 {
@@ -166,7 +166,7 @@ fn die(code: u64) -> ! {
 fn ring_push(tail: &mut u32, byte: u8) {
     use compositor::proto::ring;
     let at = ring::BYTES + (*tail % ring::CAPACITY) as u64;
-    RING.write_u8(at, byte);
+    RING.write::<u8>(at, byte);
     *tail = tail.wrapping_add(1);
 }
 
@@ -180,7 +180,7 @@ fn ring_publish(tail: u32) {
     // after `ring_publish` orders it against the compositor anyway, because the compositor is
     // blocked in `receive_capability` on that doorbell. See notes/memory-ordering.md.
     core::sync::atomic::fence(core::sync::atomic::Ordering::SeqCst);
-    RING.write_u32(ring::TAIL, tail);
+    RING.write::<u32>(ring::TAIL, tail);
 }
 
 /// **[`MODE_DIRECT`]: send whatever is buffered as one `OPERATION_BYTES` `CALL`.** Byte for byte the

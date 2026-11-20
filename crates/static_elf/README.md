@@ -1,13 +1,13 @@
 # static_elf
 
-The front half of a program loader: it parses a static, little-endian, 64-bit ELF (Executable and
-Linkable Format) executable (`ET_EXEC`) for one machine, checks everything a loader needs before it maps a page, and hands back the
-segments to map. It reads program headers only, never section headers. It also finds one note in
+The front half of a program loader. It parses a static, little-endian, 64-bit ELF (Executable and
+Linkable Format) executable (`ET_EXEC`) for one machine. It checks everything a loader needs before
+it maps a page, and it hands back the segments to map. It reads program headers only, never section headers. It also finds one note in
 a `PT_NOTE` segment, over a whole image or one segment at a time. It is `no_std`, needs no
 allocator and has no dependencies.
 
-It does not relocate, link or run anything. A position-independent executable, a shared object or
-a file that names an interpreter is refused, not loaded. A reader that must accept every
+It does not relocate, link or run anything. The parse refuses a position-independent executable, a shared object and
+a file that names an interpreter. A reader that must accept every
 well-formed ELF file wants a general reader such as `object` or `goblin`.
 
 ## EXAMPLES
@@ -34,8 +34,8 @@ another one, and `Elf::parse_with` also names the page size the overlap check ro
 ### Finding a note
 
 `Elf::note(owner, kind)` returns the descriptor of the one note with that owner and type, or
-`None`. Two copies of the same note are refused, since a reader that took the first and another
-that took the last would disagree about the file:
+`None`. The parse refuses two copies of the same note, since a reader that took the first and another
+that took the last would disagree about the file. Here is a lookup:
 
 ```rust,ignore
 let build_id = elf.note(b"GNU", 3)?; // NT_GNU_BUILD_ID
@@ -65,9 +65,9 @@ assertion, which shows the proof checks something. `patch -R -p1 < <file>` takes
 ## What it refuses, and why
 
 The parse refuses a malformed file: one that is too short or has the wrong magic, class, byte
-order, version or machine, or whose headers or segments run past the end of the file. It also
-refuses five things that are well-formed ELF. They are this loader's policy, with no setting to
-turn one off:
+order, version or machine. It also refuses a file whose headers or segments run past its end. Five
+more refusals cover well-formed ELF. They are this loader's policy, with no setting to
+turn one off. The table lists them.
 
 | refusal | why |
 |---|---|
@@ -81,9 +81,9 @@ turn one off:
 
 ## What it does not check
 
-None of these fields is read. For a loader that copies file bytes into fresh pages, none matters.
+The parse reads none of these fields. For a loader that copies file bytes into fresh pages, none matters.
 
-- `EI_OSABI` and `EI_ABIVERSION`: the operating system the file was built for.
+- `EI_OSABI` and `EI_ABIVERSION`: the operating system the file targets.
 - `e_flags`, which on RISC-V carries the floating-point calling convention and whether the code
   uses compressed instructions. A loader for one calling convention checks it itself.
 - `e_ehsize`. The parse reads the fixed ELF64 header size.

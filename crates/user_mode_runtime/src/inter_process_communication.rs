@@ -79,7 +79,7 @@ pub fn virtual_address_space_list(slot: u64, cursor: u64) -> (i64, u64, u64) {
 ///
 /// # Examples
 /// A pipeline stage. There is no `open` and no path: nothing that was not handed over can be named.
-/// The rendezvous is the flow control, and `Gone` from `send` is this system's SIGPIPE.
+/// The rendezvous is the flow control, and `Gone` from `send` is this system's `SIGPIPE`.
 ///
 /// ```no_run
 /// use user_mode_runtime::{exit, receive, send};

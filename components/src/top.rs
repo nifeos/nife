@@ -118,7 +118,7 @@ fn rows() -> &'static mut [ps::Row] {
 
 user_mode_runtime::program_entry!(start);
 
-/// `a1` is the flag word, in `program_table::spawnproto`'s integer-argument position (as `pgrep`'s
+/// `a1` is the flag word, in `program_table::spawn_protocol`'s integer-argument position (as `pgrep`'s
 /// selector): [`top::RANK_BY_PROCESS`] ranks by process, and zero, which is all a shell can send,
 /// ranks by thread.
 fn start(_a0: u64, a1: u64, _a2: u64) -> ! {

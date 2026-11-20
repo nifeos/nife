@@ -50,8 +50,8 @@ way to notice when it expires.
 ## The spawn endpoint's senders
 
 Three kinds of sender share the spawn endpoint: the boot shell, unbadged; `job_undertaker`, which
-reports each collect under `spawnproto::UNDERTAKER_BADGE`; and a program holding an installer
-endpoint, under `spawnproto::installer_badge` of its job's label. Each sender's next `SEND` waits
+reports each collect under `spawn_protocol::UNDERTAKER_BADGE`; and a program holding an installer
+endpoint, under `spawn_protocol::installer_badge` of its job's label. Each sender's next `SEND` waits
 until its last is taken. So a reaped message can arrive between any two of the shell's messages,
 and a message from a sender the loop is not serving is always that sender's first. Every receive
 takes reaped messages out of the way, and keeps another sender's first message to serve next.
