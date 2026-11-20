@@ -69,7 +69,7 @@ pub(super) struct IpcTables {
     /// The futex wait queues (§269 (how threads share a process) fork 2): threads parked in
     /// `AddressSpace::WAIT`, by `(space, address)`. Under this lock so that the check of the word,
     /// the park, and a waker's take are one order. See [`futex_wait`].
-    pub(super) futexes: inter_process_communication::futex::Futexes<Thread, FUTEX_BUCKETS>,
+    pub(super) futexes: inter_process_communication::futex::FutexTable<Thread, FUTEX_BUCKETS>,
     /// The process registry: name to the physical address of a process's page.
     pub(super) processes:
         generational_table::Table<ProcessPageAddress, { process::MAXIMUM_PROCESSES }>,
@@ -277,7 +277,7 @@ pub(super) static EMPTY_INSTALLED_TABLES: IpcTablesImage = IpcTablesImage(Some(I
     kernel_ep_chunks: 0,
     notification_table: generational_table::Table::new(),
     timer_table: generational_table::Table::new(),
-    futexes: inter_process_communication::futex::Futexes::new(),
+    futexes: inter_process_communication::futex::FutexTable::new(),
     processes: generational_table::Table::new(),
 }));
 

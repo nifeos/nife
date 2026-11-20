@@ -203,7 +203,7 @@ pub fn ipc_send_badged(ep: RendezvousId, msg: [u64; 3], badge: u64) {
         // rendezvous is Blocked, which the reaper never touches. Every verdict that did not queue
         // it hands it back, and it goes home to the thread (`hold_token`).
         match rendezvous.send(take_token(sched, current)) {
-            inter_process_communication::Send::Rendezvous(receiver, me) => {
+            inter_process_communication::SendVerdict::Rendezvous(receiver, me) => {
                 hold_token(me);
                 let receiver = hold_token(receiver);
                 let r = sched.threads.get_mut(receiver).unwrap();
@@ -213,7 +213,7 @@ pub fn ipc_send_badged(ep: RendezvousId, msg: [u64; 3], badge: u64) {
                 wake(sched, receiver);
                 false
             }
-            inter_process_communication::Send::Blocked => {
+            inter_process_communication::SendVerdict::Blocked => {
                 #[cfg(feature = "bench")]
                 SENDS_BLOCKED.fetch_add(1, core::sync::atomic::Ordering::Relaxed);
                 // `send` has already queued `current` as a sender; we record why it is parked.
@@ -224,7 +224,7 @@ pub fn ipc_send_badged(ep: RendezvousId, msg: [u64; 3], badge: u64) {
                 true
             }
             // The rendezvous carries an interrupt (§101 ruling B): nothing was delivered or queued.
-            inter_process_communication::Send::Refused(me) => {
+            inter_process_communication::SendVerdict::Refused(me) => {
                 hold_token(me);
                 set_ipc_refused(sched, current);
                 false
@@ -276,11 +276,11 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
             // As in ipc_send: the running thread's token, and Blocked-while-queued keeps it live.
             match rendezvous.receive(token) {
                 // An interrupt already fired while we were not waiting. Take it and do not block.
-                inter_process_communication::Receive::Signal(me) => {
+                inter_process_communication::ReceiveVerdict::Signal(me) => {
                     hold_token(me);
                     Some([1, 0, 0, 0, 0])
                 }
-                inter_process_communication::Receive::FromSender(sender, me) => {
+                inter_process_communication::ReceiveVerdict::FromSender(sender, me) => {
                     hold_token(me);
                     let sender = hold_token(sender);
                     let msg = sched.threads.get(sender).unwrap().mailbox;
@@ -312,7 +312,7 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
                     }
                     Some(msg)
                 }
-                inter_process_communication::Receive::Blocked => {
+                inter_process_communication::ReceiveVerdict::Blocked => {
                     // `receive` has already queued `current` as a receiver.
                     let me = sched.threads.get_mut(current).unwrap();
                     me.handshake.park(Wait::Rendezvous(ep, WaitRole::Receiver)); // only a delivering sender may wake us
@@ -501,7 +501,7 @@ pub(super) fn inter_process_communication_send_capability_from(
         };
         // As in ipc_send.
         match rendezvous.send(take_token(sched, current)) {
-            inter_process_communication::Send::Rendezvous(receiver, me) => {
+            inter_process_communication::SendVerdict::Rendezvous(receiver, me) => {
                 hold_token(me);
                 let receiver = hold_token(receiver);
                 let (r, capabilities) = sched.threads.get_mut_with_capabilities(receiver).unwrap();
@@ -524,7 +524,7 @@ pub(super) fn inter_process_communication_send_capability_from(
                 wake(sched, receiver);
                 false
             }
-            inter_process_communication::Send::Blocked => {
+            inter_process_communication::SendVerdict::Blocked => {
                 // `send` queued `current`; we park the data word and the capability to hand over.
                 // Word 3 is the badge, read back by the eventual RECEIVE_CAPABILITY (milestone 599).
                 let me = sched.threads.get_mut(current).unwrap();
@@ -535,7 +535,7 @@ pub(super) fn inter_process_communication_send_capability_from(
                 true
             }
             // As in `ipc_send`. The capability stays with the sender: it was never moved.
-            inter_process_communication::Send::Refused(me) => {
+            inter_process_communication::SendVerdict::Refused(me) => {
                 hold_token(me);
                 set_ipc_refused(sched, current);
                 false
@@ -607,11 +607,11 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
         } else {
             match rendezvous.receive(token) {
                 // An interrupt signal is not a delegation; it carries no capability and no badge.
-                inter_process_communication::Receive::Signal(me) => {
+                inter_process_communication::ReceiveVerdict::Signal(me) => {
                     hold_token(me);
                     Some([1, NO_CAPABILITY, 0, 0, 0])
                 }
-                inter_process_communication::Receive::FromSender(sender, me) => {
+                inter_process_communication::ReceiveVerdict::FromSender(sender, me) => {
                     hold_token(me);
                     let sender = hold_token(sender);
                     let msg = sched.threads.get(sender).unwrap().mailbox;
@@ -645,7 +645,7 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
                     let tag = if is_reply { reply_tag(slot) } else { 0 };
                     Some([msg[0], slot, msg[1], msg[3], tag])
                 }
-                inter_process_communication::Receive::Blocked => {
+                inter_process_communication::ReceiveVerdict::Blocked => {
                     let me = sched.threads.get_mut(current).unwrap();
                     // Clear before parking: whoever wakes us sets this iff it installs a
                     // capability, so a plain SEND (which installs none) leaves it false (milestone 634).
@@ -747,7 +747,7 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
         // meets a server is blocked too, but on nothing, so its token goes home to its TCB, where
         // the reply's wake finds it.
         match rendezvous.send(take_token(sched, current)) {
-            inter_process_communication::Send::Rendezvous(receiver, me) => {
+            inter_process_communication::SendVerdict::Rendezvous(receiver, me) => {
                 hold_token(me);
                 let receiver = hold_token(receiver);
                 // A server is parked in RECEIVE_CAPABILITY: hand it the reply cap and the two words now.
@@ -770,7 +770,7 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
                 trace::record(trace::Event::Served, receiver, 5);
                 wake(sched, receiver);
             }
-            inter_process_communication::Send::Blocked => {
+            inter_process_communication::SendVerdict::Blocked => {
                 // No server yet; `send` queued us as a sender. Park the words and ride the reply cap
                 // in `outgoing_capability` so the eventual RECEIVE_CAPABILITY hands it over and, seeing a Reply, leaves
                 // us blocked (see inter_process_communication_receive_capability).
@@ -782,7 +782,7 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
             }
             // The rendezvous carries an interrupt (§101 ruling B). Return before parking: a caller
             // whose request was refused has no reply coming, and would otherwise wait for ever.
-            inter_process_communication::Send::Refused(me) => {
+            inter_process_communication::SendVerdict::Refused(me) => {
                 hold_token(me);
                 set_ipc_refused(sched, current);
                 return [0, 0, 0];
