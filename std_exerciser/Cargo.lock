@@ -99,6 +99,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "domain_name_resolution_fixture"
+version = "0.1.0"
+dependencies = [
+ "domain_name_resolution_contract",
+ "domain_name_system",
+]
+
+[[package]]
 name = "domain_name_system"
 version = "0.1.0"
 
@@ -337,6 +345,7 @@ version = "0.1.0"
 dependencies = [
  "capability_manifest_note",
  "domain_name_resolution_contract",
+ "domain_name_resolution_fixture",
  "filesystem_contract",
  "filesystem_fixture",
  "grant_contract",

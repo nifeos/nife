@@ -108,6 +108,7 @@ socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
 # The name resolver's grant messages and endowment, and the boot test's cases the test client
 # agrees on (milestone 384 (in a capability system the resolver is a grant), provisional name). `domain_name_system` for DNS's port.
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
+domain_name_resolution_fixture = { version = "0.1.0", path = "../crates/domain_name_resolution_fixture" }
 # The package index's test names (milestone 801 (packages over the internet)): the zone the test
 # grants and the program asks inside, one definition for both.
 package_index = { version = "0.1.0", path = "../crates/package_index" }

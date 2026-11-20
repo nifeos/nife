@@ -3,7 +3,7 @@
 //!
 //! The kernel test (`a_std_program_resolves_its_granted_zone_and_nothing_without_a_grant` in
 //! `system_tests/src/user/name_resolver_tests.rs`) starts it holding a resolver badge granted
-//! `nife.test` at `RESOLVER_SLOT`. Each name it asks is a case of `domain_name_resolution_contract::fixture`,
+//! `nife.test` at `RESOLVER_SLOT`. Each name it asks is a case of `domain_name_resolution_fixture`,
 //! so the zone, the peer and the answers are the ones milestone 384 (in a capability system the
 //! resolver is a grant)'s native client is judged by, and this program adds only the std half:
 //! `lookup_host` in `patches/std-nife`. Run with the slot empty, every lookup is `Unsupported`.
@@ -13,7 +13,7 @@
 use std::io::{ErrorKind, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 
-use domain_name_resolution_contract::fixture::CASES;
+use domain_name_resolution_fixture::CASES;
 use domain_name_resolution_contract::status;
 use socket_contract::fixture::ECHO_PEER_PORT;
 

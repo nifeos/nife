@@ -76,13 +76,6 @@ const _: () = assert!(MAXIMUM_IPV4_ADDRESSES == domain_name_system::MAXIMUM_IPV4
 /// configuration, never the resolver's, the way the network time client is told its server.
 pub mod endowment;
 
-/// **The boot test's cases**, in one place for the two programs that must agree on them: the test
-/// client asks each name in order, and the kernel's test (`system_tests/src/user/name_resolver_tests.rs`)
-/// judges each reply by its index. `socket_contract::fixture`'s split: the peer that answers,
-/// `helpers/name-server-peer`, spells its zone again in Python, so the two sides are written
-/// independently.
-pub mod fixture;
-
 mod grants;
 pub use grants::*;
 

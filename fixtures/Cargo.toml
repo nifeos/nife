@@ -414,7 +414,7 @@ test = false
 bench = false
 
 # The name resolver's test client (milestone 384 (in a capability system the resolver is a grant)):
-# asks the resolver about each name in `domain_name_resolution_contract::fixture::CASES` through the one
+# asks the resolver about each name in `domain_name_resolution_fixture::CASES` through the one
 # badged capability it holds, reports every reply, then connects to the first address. The shape
 # milestone 801 (packages over the internet)'s package client will have. Provisional name.
 [[bin]]
@@ -691,9 +691,10 @@ current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contra
 # three are already in the shipping graph through `components`; nothing external was taken.
 network_time_protocol = { version = "0.1.0", path = "../crates/network_time_protocol" }
 socket_contract = { version = "0.1.0", path = "../crates/socket_contract" }
-# The name resolver's contract and the boot test's cases, which `name_resolver_test_client` and the
-# kernel's test must agree on (milestone 384, provisional name).
+# The name resolver's contract, and the boot test's cases, which `name_resolver_test_client` and the
+# kernel's test must agree on (milestone 384, provisional names).
 domain_name_resolution_contract = { version = "0.1.0", path = "../crates/domain_name_resolution_contract" }
+domain_name_resolution_fixture = { version = "0.1.0", path = "../crates/domain_name_resolution_fixture" }
 clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 # `unreachable_network_witness`'s entropy probe (milestone 202's unvouched-child claim, DECISIONS
 # §219 (how the shell names an installed program to the spawner) gate D2): a real `GET`, so a child wrongly handed the service gets an answer rather than a
