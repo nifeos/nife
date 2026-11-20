@@ -73,7 +73,7 @@ enumerate, not a better tool for domains that are not. Two places it decided the
   cross-check compares is therefore the search strategy and nothing else: if the two disagree, the
   greedy loop is wrong rather than the syntax being read two ways.
 
-- The blowup itself. `cost_bound(3, 3)` is 285, and no matcher at all is slow enough to exceed
+- The blowup itself. `step_bound(3, 3)` is 285, and no matcher at all is slow enough to exceed
   that on three bytes. So the Kani harness is not where exponential backtracking would be caught.
   What it catches is an error in the *accounting*, which is what would otherwise let the big test
   pass while measuring the wrong thing. The blowup evidence is the host test. It runs
@@ -91,7 +91,7 @@ pass.
 These are the measurements behind the shape of the harnesses in `crates/byte_glob/src/lib.rs`, which
 link here.
 
-- Totality and the cost bound are separate harnesses. `cost_bound` is three saturating 64-bit
+- Totality and the cost bound are separate harnesses. `step_bound` is three saturating 64-bit
   multiplies, and a bit-blasting model checker is bad at multiplication: `network_time_protocol`
   measured about four times the work per bit of operand ([ntp.md](../ntp.md)). Composed with a
   match loop unrolled twenty times over two symbolic lengths, one harness passed 3 GB and was
