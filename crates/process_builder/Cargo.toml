@@ -19,7 +19,7 @@ address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
 # The x86_64 timebase page's fixed VA (milestone 161's `cntfrq` follow-up): this crate's own
 # x86_64-gated code in `lay_out_child` needs the same constant `kernel::user::load` and
 # `user_mode_runtime::cntfrq` agree on, so no party keeps its own copy.
-counter_frequency_contract = { version = "0.1.0", path = "../counter_frequency_contract" }
+counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
 # The protocol words, the endowment and the retention declaration. The loader consumes them and
 # the contract never depends on this crate (DECISIONS §235 (the OS is built and updated from packages, and its source divides by purpose) P3).
 supervision_contract = { version = "0.1.0", path = "../supervision_contract" }

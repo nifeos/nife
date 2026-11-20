@@ -10,7 +10,6 @@ abi
 address_space_layout
 byte_sink_contract
 capability_manifest_note
-counter_frequency_contract
 current_cpu_contract
 domain_name_resolution_contract
 domain_name_system

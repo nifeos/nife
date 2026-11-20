@@ -31,7 +31,6 @@ members = [
     "crates/credential_contract",
     "crates/program_argument_contract",
     "crates/std_runtime_contract",
-    "crates/counter_frequency_contract",
     "crates/startup_page_contract",
     "crates/base_digest_contract",
     "crates/login_contract",
