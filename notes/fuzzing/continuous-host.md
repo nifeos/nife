@@ -17,7 +17,7 @@ the repository supplies to it.
 Each guest slot owns a git worktree and a `target/` directory, so two windows never share a build
 directory. A window builds the x86_64 archive and the system test image once, baking the seed
 range in at build time, then starts one QEMU process through the PVH runner with `-accel kvm` and sweeps
-in that guest. It does not call `cargo xtask test`, which clears `NIFE_ACCEL` and also boots the
+in that guest. It does not call `cargo xtask test`, which clears `NIFE_ACCEL` and boots the
 OVMF legs under TCG. The driver stops itself after 60 seconds of guest time, so each window costs a
 rebuild, a boot and one minute of seeds. The BUGS list below records that limit.
 

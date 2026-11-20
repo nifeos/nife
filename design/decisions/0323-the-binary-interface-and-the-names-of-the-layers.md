@@ -80,7 +80,7 @@ A program here targets three things. The compiler builds it for `target_os = "ni
 `std` port, and it calls the kernel through the numbers in `crates/abi`. At spawn, the kernel
 compares the program's `ABI_VERSION` with its own and refuses a mismatch.
 
-Some bytes in every image also spell the project's name. Every program's capability manifest has
+Some bytes in every image spell the project's name. Every program's capability manifest has
 the ELF note owner `b"nife"` (`crates/capability_manifest_note`, ratified 2026-09-26). The boot
 slot header reads `NIFESLOT` and the boot stack magic `NIFESTK1`. Packages travel as `.nifepkg`
 files. §45 (a nife partition is `EC5CC08B-D749-4434-AC38-A274C50385BA`, and that never changes)

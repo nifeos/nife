@@ -113,7 +113,7 @@ Per fork 1, needs live only in program manifests and the build derives the rest.
 
 1. Use: `grant_plan::Manifest`, carried as in fork A. Add `Manifest::contracts()`, mapping each
    service field to a contract identifier. Write it as a destructure with no `..`, so a new field is
-   a compile error until it is mapped (rung 1). A manifest also names its runner (fork B).
+   a compile error until it is mapped (rung 1). A manifest names its runner (fork B).
 2. Expose: a `provides` table in a package file, covering contracts and runners (fork 2).
    `packages.py` checks each named program is a member, the `subtree_grants` precedent
    (`evaluate`).

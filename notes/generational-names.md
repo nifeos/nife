@@ -88,7 +88,7 @@ audit may pass over it; §71 says what would promote it. See notes/untracked-wor
 - **The boot thread is tid 0 by construction**: a fresh table's first insert mints slot 0,
   generation 0, which packs to 0. That is a property, not a hardcoded key.
 - **`u64::MAX` can never be minted**: it is `EntryName::NEVER_MINTED`, above. The kernel's
-  `cpu::NO_TID` is that word, the "no thread" sentinel, and it is also the `UNNAMED` placeholder a
+  `cpu::NO_TID` is that word, the "no thread" sentinel, and it is the `UNNAMED` placeholder a
   `Thread` carries between construction and insertion.
 - Generations are 32-bit and saturate. A slot whose generation reaches `u32::MAX` retires: insert
   passes over it, so no name carries that generation and a removed name never comes back. The

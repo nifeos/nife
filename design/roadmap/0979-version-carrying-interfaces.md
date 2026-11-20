@@ -19,7 +19,7 @@ because the compiler catches every consumer in the same tree, so churn prices no
 is what prices breaks; waiting for stability inverts the causality.
 
 calef ruled the shape on 2026-10-29 (UTC), in PR #2852's comment. The five questions below record
-what calef weighed and ruled; the ruling also added a compatibility obligation and a retirement
+what calef weighed and ruled; the ruling added a compatibility obligation and a retirement
 provision. The implementing work is milestone 956 (the linked interfaces carry checkable
 versions); [that block](0956-the-linked-interfaces-carry-checkable-versions.md) builds it. This
 proposal writes no code (§311 (a contract is code, not prose)), and every new name below is

@@ -30,13 +30,13 @@ client side only. The server is the other holder of every channel, and it:
 - maps one window at `FILE_PAGE`, `fs::TRANSFER_PAGES` (16) pages wide, and reads every name and
   every `WRITE` payload from its start.
 
-So if two clients each had a private frame, the server would still read one window, and there is
+So if two clients each had a private frame, the server would read one window, and there is
 nothing in a request that could tell it which frame to look in. A per-client frame the server can
 read needs one of the mechanisms below.
 
 ## The premise, checked
 
-It is true, and it is a correctness bug as well as a confinement one. Honest clients race too:
+It is true, and it is a correctness bug and a confinement one. Honest clients race too:
 a client stages its name or data in the page and *then* calls, so its use straddles the call. While
 the server is blocked on the block server serving someone else, a second client's staging lands on
 top. The tree already designs around this. `notes/pipes/the-file-end.md` is why the shell
@@ -132,19 +132,19 @@ lock) from before staging until after the copy-out, so no two writers of the ser
   They do not let a server receive on several endpoints or learn who called, so on their own they
   answer nothing here.
 - Keep serializing by construction (one FS client active at a time, as the shell does). That is
-  the status quo, and the set grant is exactly the case it cannot cover.
+  the status quo, and the set grant is the case it cannot cover.
 
 ## Reversibility, and who has acted on it
 
 A and B change the system call surface, which every future program is written against: the expensive
 side of the line. C is reversible in code but adds a cross-program convention that is not. Nobody
 has built against any of them. The network-stack proposal is waiting on the same question in A's
-form. Per the rule for irreversible forks, this note gives options rather than a recommendation.
+form. Per the rule for irreversible forks, this note gives options not a recommendation.
 
 ## The ruling, and what it left open
 
 calef ruled option A on 2026-09-26, and the mechanism is built (milestone 599's block). The
-production progenitor still hands every client window 0, and wiring it raises a second fork.
+production progenitor hands every client window 0, and wiring it raises a second fork.
 
 ## The progenitor's pool: the fork
 
@@ -174,7 +174,7 @@ Raise `CAPABILITY_TABLE_SLOTS` from 24 to 32 and hold the seven window capabilit
 - It moves `abi::fault::FAULT_EP_SLOT` (always `CAPABILITY_TABLE_SLOTS - 1`) from 23 to 31, which
   every supervised program agrees on. It has moved three times already (16, 17, 24), each a
   one-number change with the tree rebuilt around it.
-- §102 (a Frame names a run of pages) considered exactly this for a different consumer and called it brute force: it "buys room for
+- §102 (a Frame names a run of pages) considered this for a different consumer and called it brute force: it "buys room for
   the wrong representation". `cap.rs` says the same of raising the ceiling reactively.
 - Reversibility: raised three times in practice, never lowered. Lowering it later breaks any program
   that grew into the room.
@@ -260,7 +260,7 @@ window is free.
 
 - Holding the windows permanently at today's size: seven slots against one free.
 - Shrinking K until it fits: one free slot allows K = 2, the shell and one caretaker, which is
-  exactly the concurrency the set grant needs to exceed.
+  the concurrency the set grant needs to exceed.
 
 ### Costs side by side
 
@@ -280,7 +280,7 @@ this note gives them as options, not a recommendation. Between the two that do n
 spends 64 KiB and the table's headroom on every thread in the machine to fix one process, which is
 the representation §102 already refused.
 
-Would we still choose 6 if 4 cost the same? No. Option 4 has fewer moving parts and is the shape
+Would we choose 6 if 4 cost the same? No. Option 4 has fewer moving parts and is the shape
 §102 describes; 6's case is only that it avoids new system call surface. The question for calef is
 therefore one method: a `PageFrame` slice (4) or a `MAP_INTO` offset (5). With either, the pool is
 one capability and the slot problem is gone.

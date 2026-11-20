@@ -114,7 +114,7 @@ that is off by four lands in one or the other. It still earns its keep as the on
 shift.
 
 Milestone 58 (RISC-V TLB shootdown) closed it. The follow-up this section once described (drop the flush and the aarch64
-property becomes true) was right about the goal and understated the work: the flush was covering for the fact that `flush_asid` was local, because
+property becomes true) was right about the goal and understated the work: the flush was covering for `flush_asid` being local, because
 `sfence.vma` does not broadcast. So the order was the shootdown first, then the removal, gated on a
 runtime probe of `satp.ASID`'s implemented width. The witness now runs on both ISAs and a new
 portable test, `an_asid_flush_reaches_the_other_cores`, proves the broadcast half. See

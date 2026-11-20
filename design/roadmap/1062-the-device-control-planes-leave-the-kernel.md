@@ -106,7 +106,7 @@ things, in this order.
    queue exists. It maps no shadow page, because none exists.
 2. It maps, device-typed, the pages that hold the four virtio-pci structures the capability list
    names (common configuration, notify, ISR and device configuration, virtio 1.2 section 4.1.4),
-   and nothing else of the BARs. A page that also holds the function's MSI-X table or pending-bit
+   and nothing else of the BARs. A page that holds the function's MSI-X table or pending-bit
    array is never mapped, as `PciXhciDevice::withheld` keeps them from the xHCI driver, and a
    function whose structures share a page with either gets the mediated grant. The structures lie
    in the function's own BARs, so no mapped page holds another device's registers.

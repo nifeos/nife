@@ -219,15 +219,15 @@ icount models no caches, no TLB and no branch predictor. So:
   gate failed. Neither tripwire substitutes for the other.
 
 HVF sees real magnitudes on one machine only: no PMU, a 41 ns counter grain, a desktop OS
-underneath, an L1 large enough to hide any footprint effect. argon's PMU is where that changes.
+underneath, an L1 hiding any footprint effect. argon's PMU is where that changes.
 
 ## What is not apples to apples
 
 - Map is a tie, as above. `map_el0` aliases a frame and skips
   the zeroing, so it measures a different operation from Linux's first-touch fault.
 - Spawn builds a lighter object. `fork` duplicates the parent; `spawn_el0` builds a minimal process
-  from nothing, paying about ten traps to Unix's two. Most of the gap is that structural difference.
-  The 4.4 us is also older than the path: icount has since measured it 41% shorter (2026-08-27), then
+  from nothing, paying about ten traps to Unix's two. That structural difference is most of the gap.
+  The 4.4 us is older than the path: icount has since measured it 41% shorter (2026-08-27), then
   6.3% longer for the current-CPU page (2026-09-21) ([`spawn_el0`](benchmarks/spawn-el0.md)).
 - The context switch is derived by subtraction from two different mechanisms, a yield on our side
   and a pipe pass on theirs. Read the gap as a direction.

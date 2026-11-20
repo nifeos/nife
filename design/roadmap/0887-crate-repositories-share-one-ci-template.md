@@ -20,7 +20,7 @@ words: *"Every crate repository uses one shared CI template (Kani, lint, release
 workflows."*
 
 Fork 4 ruled the proof job (`kani-github-action`), plus a job that applies each falsification
-patch and expects Kani to fail. It also ruled that the release refuses to publish unless the
+patch and expects Kani to fail. It ruled that the release refuses to publish unless the
 proofs are green. Fork 6 ruled trusted publishing from a `nifeos` workflow. Until this block, no milestone
 built any of it, and every per-crate block from 813 to 821 said so in its `BUGS`.
 

@@ -14,7 +14,7 @@ needs_person: no
 Part (a) was built as milestone 751 (fuzz the services' request handlers) and part (b) as
 milestone 752 (a seeded system call driver with a shadow model), the kernel-thread driver. This block
 now
-records part (b)'s completion in the form the proposal actually recommended, an **EL0** driver:
+records part (b)'s completion in the form the proposal recommended, an **EL0** driver:
 `fixtures/src/confined_system_call_fuzzer.rs` plus its conductor,
 `system_tests/src/user/confined_fuzzer_tests.rs`. Two arrivals this driver cannot reach are
 recorded as misses below rather than reached; proof condition 2 allows a miss whose reason is in
@@ -64,7 +64,7 @@ red at seed 0.
 **A wrong oracle, fixed here.** The weekly sweep's seed `0x2f2e76cb02` failed at step 34 on a
 whole-run `PageFrame::SLICE`: the new capability names the same run at the same rights, so the
 table diff saw a copy. The kernel was right (milestone 599 (a frame per filesystem client channel)'s method, `GRANT` held, range inside the
-run). The conductor's table diff had no `SLICE` arm, and now admits exactly a sub-run of a held
+run). The conductor's table diff had no `SLICE` arm, and now admits a sub-run of a held
 frame at its rights from a source holding `GRANT`. The seed is in the corpus because no suite seed
 reaches that arm.
 
@@ -76,7 +76,7 @@ The scaffolding's conductor channel is slot 0, and the endowment slots 1..6. Not
 - **Done.** Part (a) as milestone 751; the kernel-thread driver as milestone 752; the EL0 driver
   and the `LIST` cursor fix here.
 - **Recorded.** The two unreachable arrival orders are in the driver's `BUGS`; reaching them
-  needs a conductor that lets two fuzzers interact mid-call, which is a protocol redesign rather
+  needs a conductor that lets two fuzzers interact mid-call, a protocol redesign rather
   than a patch.
 
 ## BUGS
@@ -126,7 +126,7 @@ The census, run on `1a145fcaa`:
 - On the system call side, `crates/capability_table` carries 14 Kani harnesses and
   `crates/inter_process_communication` 14 (the endpoint, notification and timer state machines).
   `kernel/src/system_call.rs` and `kernel/src/sched.rs`, which join them to threads and mailboxes, carry
-  none that reach the dispatcher.
+  none reaching the dispatcher.
 
 That last point decides part (b). The three confinement defects found on 2026-10-03 were all in
 `kernel/src/sched.rs`:
@@ -175,7 +175,7 @@ against `Server<DiskMemory>` with the subtree oracle above.
   over a `Vec`, should remove most of it. Not measured.
 - It cannot reach the binary's own dispatch, so it mirrors the admit-then-dispatch order by hand.
   The real target needs the `match code` moved from the binary into the library as one
-  `Server::handle` function. That is about 285 lines moved, not written, and it is also what the
+  `Server::handle` function. That is ~285 lines moved, not written, and it is what the
   host tests would want.
 - `net_stack` and the caretakers need the same extraction, with no library half to move into today.
   That is the bulk of (a)'s cost, and it is not measured.
@@ -287,7 +287,7 @@ libFuzzer's coverage guidance, and the extraction it needs is what the host test
 (b): yes for the oracle, and no for the blindness. If a coverage-guided port cost the same as
 option 4, its coverage would be worth having. Option 4 is coverage-blind partly because coverage
 under QEMU costs more than it does, and that part of the choice is about effort. The shadow model
-would still be chosen at equal cost, because a crash-only oracle would have missed all three
+would be chosen at equal cost, because a crash-only oracle would have missed all three
 defects that motivated this.
 
 ## Index row

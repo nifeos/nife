@@ -52,7 +52,7 @@ port-range capability; option 2, legacy devices stay in the kernel; option 3, an
 
 **x86's legacy port-I/O devices, the console included, stay kernel-resident. This is not an interim
 stance to be revisited on a schedule; it is a permanent architectural boundary.** Only memory-mapped
-devices get a userspace driver on x86 -- which is everything on the machine that actually matters to
+devices get a userspace driver on x86 -- which is everything on the machine that matters to
 this project's own ranking function. Milestone 87's real target (a Dell OptiPlex 7050 Micro with the
 Dell C4PDJ serial module, already on calef's desk) almost certainly exposes its serial port through
 the traditional Super I/O / COM1 legacy interface rather than a memory-mapped UART. True MMIO UARTs
@@ -145,7 +145,7 @@ The debug row is the reassuring one and the release row is the honest one, and t
 on "how bad is this." A debug build's baseline switch carries so much fixed cost (unelided checks,
 unoptimized bookkeeping) that the write is a modest ~25% addition to a slow number. Strip that in
 release and the baseline switch itself gets ~10x faster while the write's own cost barely moves,
-both being close to plain memory bandwidth. On the switch path option 1 would actually run on, the
+both being close to plain memory bandwidth. On the switch path option 1 would run on, the
 write does not add a quarter of the cost; it is most of the cost. That is a stronger statement than
 this file's own prose made before there was a number to check it against: "the dominant cost"
 undersold it. Correcting the record rather than the prose that was already qualified: nothing above
@@ -158,7 +158,7 @@ measured rather than assumed, is exactly as unattractive as the prose already ar
 so. What changes is that the next 1-vs-3 call is now made on both sides' numbers: option 3's ~337 ns
 per IPC round trip (already on record above) against option 1's ~1.5-2.7 us per switch for the write
 alone. That figure is before the capability type, the revocation shootdown, or anything else option
-1 would also cost. Whether that gap is worth paying for a userspace `x86_64` console is still
+1 would cost. Whether that gap is worth paying for a userspace `x86_64` console is still
 calef's call, per this file's own closing question.
 
 ### Refined 2026-08-25: the number prices the naive write, not the write option 1 would actually ship

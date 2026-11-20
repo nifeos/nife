@@ -242,7 +242,7 @@ kernel cannot adopt one without an allocator, or a non-`const` constructor and a
 dependency with no proofs. The README's
 first paragraph should say what the crate is for: fixed capacity, no allocation, a `const`
 constructor usable in a `static`, unforgeable typed names with a proof, and a resumable walk. It
-should also say what it is not for, and send growable tables to `slotmap` or `thunderdome`. It should name
+should say what it is not for, and send growable tables to `slotmap` or `thunderdome`. It should name
 the costs in its `BUGS` section: O(N) first-fit insert, one `Option` tag per slot, and a slot
 retiring after 2^32 - 1 occupants.
 

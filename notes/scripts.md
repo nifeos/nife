@@ -153,7 +153,7 @@ Full rows: the appendices above.
 
 The scripts do almost nothing themselves. `script/test` is `cargo xtask test`; `script/server`
 is `cargo xtask run`; `script/console` is `cargo xtask shell`. `cargo xtask` is still the
-engine, where the real build logic lives (it also exposes `gdb`, `objdump`, `image`, `std-aborts`).
+engine, where the real build logic lives (it exposes `gdb`, `objdump`, `image`, `std-aborts`).
 The scripts add a normalized interface on top, and `cargo xtask …` still works.
 
 ## `script/` and `helpers/`

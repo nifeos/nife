@@ -70,7 +70,7 @@ The I219's PHY half; QEMU never takes the PCH path, so xenon is the test.
   so a PHY access without it does not compile. One falsifiable Kani harness; writing it found that
   FreeBSD truncates a page select above `0x7ff`, which this port refuses.
 - QEMU proves the MDIO read: the DHCP gate asserts the 82574L's PHY identifier, `0x01410cb0`.
-- The boot refusal's lift is one constant, `e1000e_service::PCH_PROVEN_ON_SILICON`, still `false`.
+- The boot refusal's lift is one constant, `e1000e_service::PCH_PROVEN_ON_SILICON`, `false`.
 
 ## Bench runbook: one boot on xenon (calef)
 
@@ -126,7 +126,7 @@ Two drivers in this tree are the analogues, and they differ in the way that matt
   window, and on xenon VT-d is the confinement. It added no system call surface.
 
 So the I219 driver takes 261's shape, and one difference is worth checking before the design is
-drawn. NVMe's specification put a page boundary exactly where the authority boundary belongs
+drawn. NVMe's specification put a page boundary where the authority boundary belongs
 (controller registers below `0x1000`, doorbells above). For the `e1000e` family the ring base
 registers and the ring tail registers sit in the same 4 KiB page (recalled from the older 8254x
 datasheets, not read from the I219's). So the page split that let 261's server ring doorbells
@@ -188,7 +188,7 @@ No Rust crate covers the 82574L or any I219, and no crate on crates.io names `e1
 Adapting Redox's driver would not have been better than writing `crates/e1000e`, then or now. Its 364 lines map almost one for one onto this crate's 297 lines of register map and ring
 logic, which is the easy part. It would not have run under QEMU without adding `10d3`, and every
 line that allocates DMA, maps a BAR or waits on an interrupt is a Redox interface that 261's
-shape replaces with a kernel control plane and spawn-time mappings. Its data path also trusts the
+shape replaces with a kernel control plane and spawn-time mappings. Its data path trusts the
 device: it slices a receive buffer by the descriptor's length unchecked (a length above 16 KiB
 panics the driver), it enables promiscuous receive, and its reset, link and full-ring waits spin
 without a bound. Adapting it would have saved perhaps a day on the register table and bought those
