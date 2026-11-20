@@ -17,7 +17,7 @@ It changes nothing; it lists what the next lanes change.
 The review took its accepted baseline from
 [the review package](../../notes/crate-reviews/socket-contract.md). It raises none of the
 decisions it puts to the architect. They are the identity values (`INTERFACE_ID` 19, `VERSION` 1, since ruled), where
-`fixture`, `ephemeral` and `polled_wait` live, the table of 55 proposed names (since ratified), and the clearance
+`fixture`, `ephemeral` and `polled_wait` live, the table of 55 proposed names (ratified 2026-11-20 UTC), and the clearance
 itself. Nothing here reopens them. Where this review reads a later rule differently from the
 package, it says so at the item. The bind-time version check belongs to
 [milestone 1000 (message contracts carry bind-time version checks)](1000-message-contracts-carry-bind-time-version-checks.md)
@@ -95,15 +95,15 @@ package, `notes/crate-reviews/socket-contract.md`.
 
 Clearing a crate's review package is what approves its repository, here
 `nifeos/socket_contract`. The package says the crate builds, proves and stands alone, and it
-recommends against clearing yet, until the maintainer brings the clearance. Its names are ratified (P2-9 and PKG-4), and where `fixture`, `ephemeral_port`
-and `polled_wait` live (PKG-2 and PKG-3) is settled provisionally. The package also lists
+recommends against clearing yet, until the maintainer brings the clearance. The architect ratified its names (P2-9 and PKG-4); where `fixture`, `ephemeral_port`
+and `polled_wait` live (PKG-2 and PKG-3) has a provisional answer. The package also lists
 a maintainer step: the `std` farm must read the pinned checkout's source, or the move breaks the
 platform layer's build.
 
 Recommendation: A.
 
-- A. Clear once the maintainer's step on the `std` farm has landed (PKG-2, PKG-3, P2-9 and PKG-4
-  are built in #3811 and the names ratified), with no tag and no publish.
+- A. Clear once the maintainer's step on the `std` farm has landed (#3811 built PKG-2, PKG-3, P2-9 and PKG-4,
+  and the architect ratified the names), with no tag and no publish.
 - B. Clear before the scope moves land, and let them happen in the new repository.
 - C. Hold the clearance until the first publish is near, and move nothing before then.
 

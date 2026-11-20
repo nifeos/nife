@@ -111,7 +111,7 @@ Three modules left the crate. `ephemeral_port` and `polled_wait` are in `network
 `fixture` is now the crate `socket_fixture` (`crates/socket_fixture`, `publish = false`, a
 development dependency on `socket_contract`): `LISTEN_PORT`, `DENIED_PORT`, `INBOUND_MESSAGE`,
 `OUTBOUND_MESSAGE`, `ROUNDS`, `ECHO_PEER_ADDRESS`, `ECHO_PEER_PORT`, `PACKAGE_PEER_ADDRESS`,
-`PACKAGE_PEER_PORT`, `PACKAGE_PEER_HOST`. The three crate names are provisional; the items are ratified (2026-11-20 UTC).
+`PACKAGE_PEER_PORT`, `PACKAGE_PEER_HOST`. The three crate names are provisional; the architect ratified the items (2026-11-20 UTC).
 
 No nife type appears in a signature. What a stranger may find surprising:
 
@@ -132,7 +132,7 @@ No nife type appears in a signature. What a stranger may find surprising:
   accessor state it, and a documentation test on `OPERATION_SEND` sends with the length in the
   argument. 
 - `ACCEPT`'s second reply word carries the peer: the IPv4 address in bits 47 to 16 and the port in
-  bits 15 to 0, packed by `peer_word` and read by `word_peer` (names ratified 2026-11-20 UTC), the architect's
+  bits 15 to 0, packed by `peer_word` and read by `word_peer` (the architect ratified both names 2026-11-20 UTC), the architect's
   ruling of 2026-11-11 UTC. The frame's `dst` fields are not used for it, and the word stays the
   IPv4 answer; another family would need a second route.
 
@@ -186,8 +186,8 @@ and `ADDRESSES_OFFSET_BYTES` in the same style, and no other crate defines `REP_
 
 ## Recommendation
 
-Not ready to clear. The crate builds, proves and stands alone, its names are ratified, and its scope is
-settled: `fixture`, `ephemeral_port` and `polled_wait` live in crates that stay in nife. It still
+Not ready to clear. The crate builds, proves and stands alone, its names carry the architect's ratification, and its scope has a
+provisional answer: `fixture`, `ephemeral_port` and `polled_wait` live in crates that stay in nife. It still
 waits on the clearance itself.
 
 ## Decisions for the architect
