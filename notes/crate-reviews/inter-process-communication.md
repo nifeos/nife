@@ -45,7 +45,7 @@ What a stranger may find surprising:
   non-empty. A single queue with a tag would hold that by construction (milestone 1095 (`inter_process_communication`: what an outside maintainer would fix before it leaves), P2-11,
   open after the move).
 - `Timer::deadline` and `earliest` answer `Option<u64>`, `None` when nothing is armed. `NEVER`
-  (`u64::MAX`) is only the word a kernel stores for its cached earliest (P2-13, provisional).
+  (`u64::MAX`) is only the word a kernel stores for its cached earliest (P2-13; maintainer, provisional, 2026-11-20 UTC, D7).
 - `debug_counts` on `Rendezvous` and `Notification` answers a struct with field names.
 
 ## Proofs and falsification patches
@@ -123,10 +123,6 @@ None beyond the milestone's open items (P0-3, P1-6, P1-7, P1-9, P2-11).
    `space` handling to the template's address rule (a change to `crate-workflows`, not to this
    crate), or rename the field. The ruling of D5 names it `address_space` and the gate runs only
    in the new repository, so this package raises the question and renames nothing.
-2. Is `Option<u64>` the published answer of `Timer::deadline` and `earliest`? The crate answers that way
-   (P2-13), so a timer armed at `u64::MAX` no longer reads as disarmed, and the kernel maps `None`
-   to `NEVER` at its one cache store. The other option is the sentinel `u64` it replaced. The
-   signature freezes at the first publish.
 
 ## Result of `script/crate-standalone`
 

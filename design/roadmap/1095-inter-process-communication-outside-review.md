@@ -68,9 +68,9 @@ milestone reaches delivery.
   2026-11-19 UTC, D5): `FutexTable<T, const BUCKETS: usize>`, `len()` with `is_empty()` and
   `Key::address_space`, each with a provisional `Name:` block. The iterator lands in
   `intrusive_queue` and is the maintainer's.
-- P2-13, `Timer::deadline` answers with a sentinel: Done, provisionally. `Timer::deadline` and
-  `earliest` answer `Option<u64>`, and `NEVER` is only the kernel's cache word. The signature is
-  one-way at the publish, so the architect confirms it from the package.
+- P2-13, `Timer::deadline` answers with a sentinel: Done (ruled, maintainer, provisional,
+  2026-11-20 UTC, D7). `Timer::deadline` and `earliest` answer `Option<u64>`, and `NEVER` is only
+  the kernel's cache word.
 - P2-14, the pending count's saturation has no host test: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-15, five copies of the test node: Done. `src/test_node.rs` holds the one node, its two token
@@ -88,10 +88,8 @@ milestone reaches delivery.
 
 ## Open decisions
 
-One. P2-13 is built provisionally: `Timer::deadline` and `earliest` answer `Option<u64>`. Whether
-that signature is the one to publish is the architect's, and the review package asks it. The four
-decisions that were open carry the maintainer's provisional ruling of 2026-11-19 (UTC), option A
-each, and are in the rules in force below.
+None. Each decision carries the maintainer's provisional ruling and is in the rules in force
+below.
 
 ## Goal
 
@@ -185,6 +183,8 @@ The rules in force, with their background and prior art, are in
   `FutexTable<T, const BUCKETS: usize>`, `len()` and `Key::address_space`.
 - D6, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC). The package is
   written now; no tag and no publication.
+- D7, the timer's deadline type: the maintainer's provisional ruling of 2026-11-20 (UTC).
+  `Timer::deadline` and `earliest` answer `Option<u64>`; `NEVER` stays as the kernel's cache word.
 
 
 ## Follow-on
