@@ -338,13 +338,15 @@ fn a_redirection_needs_a_directory_to_resolve_against() {
 /// stands, and records the result as a value.
 #[test]
 fn a_redirection_resolves_its_leading_path() {
-    let mut deeper = nav::Cwd::root();
-    deeper.apply(nav::path(b"logs").unwrap().steps()).unwrap();
+    let mut deeper = navigation::Cwd::root();
+    deeper
+        .apply(navigation::path(b"logs").unwrap().steps())
+        .unwrap();
     let holds = Holdings {
         directory: true,
         mounted: None,
         cwd: deeper,
-        binds: nav::Bindings::none(),
+        binds: navigation::Bindings::none(),
     };
     let (p, _) = plan_line(b"date > old/report.txt", holds).unwrap();
     let line::Sink::File(g, _) = p[0].unwrap().sink else {
@@ -352,7 +354,7 @@ fn a_redirection_resolves_its_leading_path() {
     };
     assert_eq!(g.name.as_bytes(), b"report.txt");
     assert!(g.writable, "a `>` target is written");
-    let mut buf = [0u8; nav::RENDER_MAXIMUM];
+    let mut buf = [0u8; navigation::MAXIMUM_RENDERED_PATH_BYTES];
     let n = g.directory.render(&mut buf);
     assert_eq!(&buf[..n], b"/logs/old");
     // An absolute path resolves from this shell's root rather than from where it stands, so
@@ -457,8 +459,8 @@ fn plan_as(m: Manifest, text: &[u8], streams: Streams) -> Endowment {
 fn writing_while_reading_is_a_declaration_the_plan_carries() {
     let streams = Streams {
         source: line::Source::File(FileGrant {
-            which: nav::Which::A,
-            directory: nav::Cwd::root(),
+            which: navigation::Which::A,
+            directory: navigation::Cwd::root(),
             name: Name::new(b"page.md").unwrap(),
             writable: false,
         }),
@@ -478,8 +480,8 @@ fn writing_while_reading_is_a_declaration_the_plan_carries() {
 fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
     let src = Streams {
         source: line::Source::File(FileGrant {
-            which: nav::Which::A,
-            directory: nav::Cwd::root(),
+            which: navigation::Which::A,
+            directory: navigation::Cwd::root(),
             name: Name::new(b"page.md").unwrap(),
             writable: false,
         }),
@@ -515,8 +517,8 @@ fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
     let to_file = Streams {
         sink: line::Sink::File(
             FileGrant {
-                which: nav::Which::A,
-                directory: nav::Cwd::root(),
+                which: navigation::Which::A,
+                directory: navigation::Cwd::root(),
                 name: Name::new(b"out.txt").unwrap(),
                 writable: true,
             },

@@ -28,7 +28,7 @@ lives in the manifest.
 
 The crate performs no IO and makes no syscalls, so all of this is tested on the host (DECISIONS §7
 (testing: QEMU harness + host-testable crates)). A program that needs something the command did not
-grant fails legibly ("you hold no such capability"), not with a Unix-flavored `EPERM`. `spawnproto`
+grant fails legibly ("you hold no such capability"), not with a Unix-flavored `EPERM`. `spawn_protocol`
 is the word layout of the shell-to-progenitor spawn protocol. It is a userspace protocol (DECISIONS
 §21 (the terminal is a userspace component)): the kernel routes the words and never reads them.
 

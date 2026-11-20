@@ -43,7 +43,7 @@ $ alto
   (installing a package is granting it, and the installed programs are versioned)). One refused
   program refuses the package with nothing written.
 - A held name's refusal carries the refused member's index in the reply's word 2, and two more
-  messages carry the holder's name (`spawnproto::holder_words`). `jig` names the program from the
+  messages carry the holder's name (`spawn_protocol::holder_words`). `jig` names the program from the
   bytes it sent.
 - `jig remove` is `installed_programs::without_package`.
 
@@ -52,6 +52,6 @@ $ alto
 - A generation is one 4,096-byte page, and a program's row and pointer take about 170 bytes. So
   the live set holds about two dozen installed programs, by arithmetic on `installed_programs`'s
   writer rather than measured.
-- Every program of a package shares the 4 MiB staging limit (`spawnproto::IMAGE_MAXIMUM_PAGES`).
+- Every program of a package shares the 4 MiB staging limit (`spawn_protocol::IMAGE_MAXIMUM_PAGES`).
 - A holder's name longer than 32 bytes, which only a hand-written table holds, is cut at that
   width in the refusal.

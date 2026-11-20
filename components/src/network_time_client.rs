@@ -156,7 +156,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
         if call(
             socket,
             OPERATION_SEND_TO,
-            network_time_protocol::PACKET_LEN as u64,
+            network_time_protocol::PACKET_BYTES as u64,
         )
         .0 != REPLY_OK
         {
@@ -174,7 +174,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
         let Some(t4) = stamp(local.now()) else {
             done(RPT_BAD_LOCAL_TIME, local.now(), 0);
         };
-        let mut wire = [0u8; network_time_protocol::PACKET_LEN];
+        let mut wire = [0u8; network_time_protocol::PACKET_BYTES];
         let n = SHARED_FRAME.payload_read(n as usize, &mut wire);
 
         match query.accept(&wire[..n], t4) {
@@ -318,7 +318,7 @@ fn reject_code(r: Reject) -> u64 {
         Reject::Mode(_) => 3,
         Reject::KissOfDeath(_) => 4,
         Reject::Stratum(_) => 5,
-        Reject::Unsynchronised => 6,
+        Reject::Unsynchronized => 6,
         Reject::OriginMismatch => 7,
         Reject::TransmitZero => 8,
         Reject::ServerOrderReversed => 9,

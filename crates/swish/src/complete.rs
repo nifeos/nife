@@ -168,7 +168,7 @@ impl<'p> Matches<'p> {
         }
     }
 
-    /// Whether `name` would be offered. Dot-names only when the prefix asks for them, as in bash:
+    /// Whether `name` would be offered. LeadingDot-names only when the prefix asks for them, as in bash:
     /// `.` and `..` are never a useful completion, and neither is a hidden file you did not start.
     pub fn wants(&self, name: &[u8]) -> bool {
         name.starts_with(self.prefix)

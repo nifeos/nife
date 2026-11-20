@@ -13,7 +13,7 @@ diff --git a/crates/interfaces_note/src/lib.rs b/crates/interfaces_note/src/lib.
 index 70afb0cb6..6ee7b05d0 100644
 --- a/crates/interfaces_note/src/lib.rs
 +++ b/crates/interfaces_note/src/lib.rs
-@@ -203,7 +203,7 @@ fn record(r: &[u8]) -> Declared {
+@@ -203,7 +203,7 @@ fn record(r: &[u8]) -> DeclaredInterface {
  ///
  /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
  pub fn decode_interfaces(d: &[u8]) -> Result<Interfaces<'_>, Error> {

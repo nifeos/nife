@@ -277,11 +277,11 @@ pub(crate) fn udp_socket() -> udp::Socket<'static> {
 /// Read the destination (octets + little-endian port) from a shared frame's header.
 pub(crate) fn read_dst(window: MappedWindow) -> IpEndpoint {
     let ip = Ipv4Address::new(
-        window.read_u8(DESTINATION_IP_ADDRESS_OFFSET_BYTES),
-        window.read_u8(DESTINATION_IP_ADDRESS_OFFSET_BYTES + 1),
-        window.read_u8(DESTINATION_IP_ADDRESS_OFFSET_BYTES + 2),
-        window.read_u8(DESTINATION_IP_ADDRESS_OFFSET_BYTES + 3),
+        window.read::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES),
+        window.read::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + 1),
+        window.read::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + 2),
+        window.read::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + 3),
     );
-    let port = window.read_u16(DESTINATION_PORT_OFFSET_BYTES);
+    let port = window.read::<u16>(DESTINATION_PORT_OFFSET_BYTES);
     IpEndpoint::new(IpAddress::Ipv4(ip), port)
 }

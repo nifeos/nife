@@ -71,13 +71,13 @@ pub(super) const fn mounted_job_windows() -> Windows {
 }
 
 /// **A directory grant in the second mounted tree, as the disk tree will see it**: the caretaker's
-/// words with `disk/` taken off the name (`program_table::spawnproto::in_mounted_tree`), or `None` for
+/// words with `disk/` taken off the name (`program_table::spawn_protocol::in_mounted_tree`), or `None` for
 /// a grant in the first tree.
 pub(super) fn mounted_grant((lo, hi, spec): (u64, u64, u64)) -> Option<(u64, u64, u64)> {
     use filesystem_contract::grant;
     let mut buf = [0u8; grant::MAXIMUM_WORDS_NAME_BYTES];
     let n = grant::unpack_name(lo, hi, grant::specification_len(spec), &mut buf);
-    let rest = spawnproto::in_mounted_tree(&buf[..n])?;
+    let rest = spawn_protocol::in_mounted_tree(&buf[..n])?;
     let (lo, hi) = grant::pack_name(rest)?;
     Some((
         lo,
@@ -625,4 +625,4 @@ impl FsCalls {
 }
 
 /// One page, the unit the file service trades bytes in, and the most a generation may hold.
-pub(super) const PAGE_BYTES: usize = spawnproto::IMAGE_PAGE as usize;
+pub(super) const PAGE_BYTES: usize = spawn_protocol::IMAGE_PAGE as usize;

@@ -169,7 +169,7 @@ across two trees, and the long form of the program's `BUGS` entries.
 milestone 844 (the shell program is split along its seams) moved it to `components/src/swish/` on
 2026-10-11 (UTC) and its block forbade touching Rust outside that directory. They are
 `components/src/timetable.rs`, `crates/address_space_layout/src/lib.rs`, `crates/boot_ladder/src/lib.rs`,
-`crates/filesystem_contract/src/lib.rs`, `crates/grant_plan/src/{lib,nav,spawnproto}.rs`,
+`crates/filesystem_contract/src/lib.rs`, `crates/grant_plan/src/{lib,nav,spawn_protocol}.rs`,
 `crates/swish/src/lib.rs`, seven files under `system_tests/src/user/` and
 `xtask/src/swish_check.rs`. `git grep -l 'components/src/swish\.rs' -- '*.rs'` lists them. Each
 names a thing that still exists under the new directory, so a reader who follows one finds the
