@@ -4,12 +4,11 @@
 package of [crate-reviews.md](../crate-reviews.md), in its own file because the packages together
 outgrow the page.*
 
-The architect reads this to clear the crate for its move to its own repository, in step 6 of
+The architect cleared this package on 2026-11-20 (UTC) for the crate's move to its own repository, in step 6 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 It describes the crate as the branch leaves it. The outside review behind it is
 [milestone 1099 (`machine_statistics_contract`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1099-machine-statistics-contract-outside-review.md).
-Every item of that review has landed, except the work the move itself does and the architect's
-clearance of this package.
+Every item of that review has landed, except the work the move itself does.
 
 ## In one paragraph
 
@@ -153,10 +152,8 @@ them. The architect clears the package, and that clearance covers these two modu
 
 ## Recommendation
 
-Ready for review. The names are ratified, every finding of the outside review has landed or is work
-the move does, and the crate's own tests, clippy, docs, Miri, Kani harnesses and falsification
-patches pass. Clearing this package is the architect's act, and it is the go to create
-`nifeos/machine_statistics_contract`, which then waits for the two crates it depends on to leave
-first.
-
-Ready for review.
+Cleared to move (2026-11-20 UTC, no tag, no publish). The names are ratified, every finding of the
+outside review has landed or is work the move does, and the crate's own tests, clippy, docs, Miri,
+Kani harnesses and falsification patches pass. The clearance is the go to create
+`nifeos/machine_statistics_contract` with `publish = false`, which then waits for the two crates it
+depends on, `address_space_layout` and `current_cpu_contract`, to leave first.
