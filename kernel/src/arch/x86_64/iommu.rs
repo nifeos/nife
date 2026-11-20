@@ -1700,6 +1700,16 @@ mod tests {
         }
     }
 
+    /// Whether `vector` lands within a bounded wait: the message follows the request's
+    /// completion, possibly on another host thread, so one read could miss a message that
+    /// lands, and a refusal is only believed after the whole wait.
+    fn vector_pends_within_wait(vector: u32) -> bool {
+        (0..200_000).any(|_| {
+            core::hint::spin_loop();
+            super::super::interrupt_controller::is_vector_pending(vector)
+        })
+    }
+
     /// **A message forged in one device's MSI-X table, naming a vector granted to another, is
     /// refused** (milestone 1068 step 5, in the shape of the confinement tests of
     /// milestone 202 (every confinement test is a ritual until somebody breaks the confinement)). The
@@ -1751,15 +1761,7 @@ mod tests {
         .expect("the IOMMU refused the second disk");
         let was = super::super::interrupts::disable();
         while take_fault().is_some() {}
-        // Whether `vector` lands within a bounded wait: the message follows the request's
-        // completion, possibly on another host thread, so one read could miss a message that
-        // lands, and a refusal is only believed after the whole wait.
-        let pending = |vector: u32| {
-            (0..200_000).any(|_| {
-                core::hint::spin_loop();
-                super::super::interrupt_controller::is_vector_pending(vector)
-            })
-        };
+        let pending = vector_pends_within_wait;
         assert!(
             !pending(granted.intid),
             "the first disk's vector was pending before the test"

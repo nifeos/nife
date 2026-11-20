@@ -92,8 +92,11 @@ fn mark_used_claims_partially_covered_frames() {
     );
 
     // And prove it by exhausting the allocator: neither frame may come back.
+    // The loop is bounded by the frame count, so an allocator that never runs dry fails the
+    // assertions below and does not hang the run.
     let mut handed_out = Vec::new();
-    while let Some(f) = a.alloc() {
+    for _ in 0..64 {
+        let Some(f) = a.alloc() else { break };
         handed_out.push(f.physical_address());
     }
     assert!(!handed_out.contains(&BASE), "handed out frame 0");
