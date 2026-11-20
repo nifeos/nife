@@ -16,12 +16,12 @@ would meet it. The review read the crate's two tracked files, every caller in th
 rules, the crate template and the sibling contract crates, and ran the standalone check and a local
 dry run of the move. It changes nothing; it lists what the next lanes change.
 
-There is no review package for this crate in `notes/crate-reviews/`, and no row for it in
-`notes/crate-reviews.md`. The accepted baseline is therefore thinner than the sibling reviews had. It holds the crate name, ratified on pull request 1360's table. It holds the two provisional identity constants `VERSION` and `INTERFACE_ID` that milestone 956 (the linked interfaces carry checkable versions) minted, with the version word placed beside the magic by ruling. It holds the fixed address, ratified on the same table. It holds the two renames `helpers/name_release.py` already carries as pre-ruled for this crate, `PAGE_BYTES` to `PAGE_CONTENT_BYTES` and `PAGE_VA` to `PAGE_VIRTUAL_ADDRESS`. The review
-reopens none of these. The fixed address predates the rule that an address is `_VIRTUAL_ADDRESS`
-in every location, and the pre-ruled rename already resolves that contradiction; the review flags
-nothing else in the baseline against a later rule. Every other public name has no `Name:` block
-at all, so the ratification pass this crate still owes is where the architect meets them.
+The review package is [`notes/crate-reviews/machine-statistics-contract.md`](../../notes/crate-reviews/machine-statistics-contract.md),
+with its row in `notes/crate-reviews.md`. The review reopened no earlier ruling. The crate name,
+the identity constants `VERSION` and `INTERFACE_ID` (milestone 956 (the linked interfaces carry
+checkable versions)) and the fixed address stand. The fixed address follows the rule that an address
+is `_VIRTUAL_ADDRESS` in every location. Every public name now carries a `Name:` block that reads
+ratified.
 
 Reuse: the template `nifeos/crate-workflows` and its helpers, `script/crate-move --dry-run`,
 `script/crate-standalone`, `helpers/name_release.py`, Kani, Miri, cargo-llvm-cov, and
@@ -30,12 +30,10 @@ No new tool.
 
 ## Finding status
 
-- P0-1, names and the ratification table: Ruled (maintainer provisional, 2026-11-14 UTC). Not
-  built: the code still says `PAGE_BYTES`, `PAGE_VA`, `page_va`, `va`, `word::LINE` and
-  `counter`. Ratifying the table is an open decision below.
-- P0-2, manifest, license files and README: Open. The manifest still inherits `license` and
-  `[lints]` from the workspace, keeps path dependencies and the allowlist comment, and no README or
-  license file exists.
+- P0-1, names and the ratification table: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The 2026-11-19 (UTC) ruling
+  ratified the table. The names ship, and every public name carries a ratified block.
+- P0-2, manifest, license files and README: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The move changes the two path
+  dependencies to pinned git dependencies and adds `repository`.
 - P0-3, citations of this tree: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-4, saturating totals: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-5, `counter` lifetime and read-only contract: Done,
@@ -43,70 +41,44 @@ No new tool.
 - P1-6, line count owned by this crate: Done, [#3582](https://github.com/nifeos/nife/pull/3582).
 - P1-7, three Kani harnesses: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-8, host tests over an aligned frame: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-  Miri over the same tests is Open: it runs in the template's Miri job after the move.
-- P1-9, header and line namespaces: Ruled (maintainer provisional, 2026-11-14 UTC, in item 1's
-  table). Not built: `word::ONLINE` still sits beside `word::MAGIC` in one namespace.
-- P1-10, `online_cpus` type and the word core: Done,
-  [#3566](https://github.com/nifeos/nife/pull/3566).
+  Miri over the same tests ran on the package branch; the package records the result.
+- P1-9, header and line namespaces: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The header indices live in
+  `word::header` and the per-cpu offsets in `word::line`.
+- P1-10, `online_cpus` type and the word core: Done, [#3566](https://github.com/nifeos/nife/pull/3566)
+  and [#3801](https://github.com/nifeos/nife/pull/3801). `online_cpus` stays `usize`, and the prose says "cpu".
 - P1-11, documentation defects: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-12, dry run against the standalone check: Open. `helpers/crate_move.py` runs
   `cargo generate-lockfile` before it inlines the inherited manifest keys, so the dry run stops
   before it can report the path dependencies.
-- P2-13, end-to-end test note: Open. The sentence belongs in the README that item 2 writes.
+- P2-13, end-to-end test note: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The README says the test lives with the kernel.
 - P2-14, unconditional `no_std`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-15, `Snapshot` size: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Decision 1, identity with the line count inside it: Done (option A, 2026-11-14 UTC),
   [#3582](https://github.com/nifeos/nife/pull/3582).
-- Review package and repository: Open. No package exists in `notes/crate-reviews/`; the go is an
-  open decision below.
+- Review package: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The repository stays Open: the clearance remains an open
+  decision below, and the move waits for `address_space_layout` and `current_cpu_contract` to leave
+  first (milestone 1017 step 6).
 
 ## Open decisions
 
-### Ratify the names of item 1's table
+### Ratified: the names of item 1's table (ruled)
 
-Background. Every public name in this crate carries a `Name:` provenance block. The move to the
-crate's own repository strips those blocks, so each name must read `ratified` before the move.
-Only the architect's ratification settles a name. The maintainer set the table on 2026-11-14
-(UTC), provisionally: `PAGE_CONTENT_BYTES`, `PAGE_VIRTUAL_ADDRESS`, `virtual_address` for the
-parameters, `PAGE_WORDS`, `word::LINE_WORDS` and `atomic_word` for `counter`. `Snapshot` stays,
-the header and line offsets take separate namespaces (item 9), and the remaining names stay as
-written, with no alias of the old spellings. After the first publish, every user compiles against these names.
-
-Recommendation: A. The table follows the rules in force (spelled-out words, units on constants,
-std spellings), and ratifying it before the rename lane runs means the lane lands ratified names in
-one pass, with no second ratification round.
-
-- A. Ratify the maintainer's table as it stands; one rename lane applies it.
-- B. Ratify it with named changes (for example a different name for `counter` than
-  `atomic_word`); the lane applies the changed table.
-- C. Hold ratification until the rename lane has landed, and ratify against the built code.
-
-Door: one-way at the first publish, because a published name is a breaking change to rename.
-Before then it is two-way, but ratification is the architect's by the naming rule.
-
-Prior art. Linux fixes the names of a published interface in `Documentation/ABI/stable/` and
-never renames them afterwards; FreeBSD's `sysctl` names behave the same way. Rust's API
-guidelines (C-CASE, C-CONV) settle spelling before 1.0 for the same reason. nife differs in
-ratifying every public item of a small crate, not only the interface surface. Concrete example:
-`machine_statistics_contract::counter(page_va, ...)` becomes
-`machine_statistics_contract::atomic_word(virtual_address, ...)`.
-
-Blocks: the move.
+Ruled 2026-11-19 (UTC), option A. The table stands as the maintainer set it: `PAGE_CONTENT_BYTES`,
+`PAGE_VIRTUAL_ADDRESS`, the parameters `page_va` and `va` as `virtual_address`, `PAGE_WORDS`,
+`word::LINE_WORDS` and `atomic_word` for `counter`. `Snapshot` stays, and the lane rewords the module sentence. Every other name stays as written, and no alias carries an old spelling. The names ship, and each public name's `Name:` block reads ratified 2026-11-19 (UTC).
 
 ### Clear the review package and approve the repository
 
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package; that clearance is the approval to create the repository. A package
-lists every public item with its signature for the architect's reading, and
-`script/crate-review-packet` writes it. This crate has none: this outside review stands in for one
-on its own items only (BUGS, first entry). The kernel, the spawn service and three programs share
+lists every public item with its signature for the architect's reading.
+[The package](../../notes/crate-reviews/machine-statistics-contract.md) shows the
+names as they ship. The kernel, the spawn service and three programs share
 the contract, so it meets the bar for leaving.
 
-Recommendation: A. A package written after the rename lane shows the architect the names as they
-will ship, so one reading covers both the ratified table and the clearance.
+Recommendation: A. The package shows the names as they ship, so one reading covers the clearance.
 
-- A. A lane writes the package after the rename lane lands; the architect's clearance creates the
-  repository.
+- A. Clear the package; the clearance creates the repository.
 - B. Clear on this outside review alone, without a package.
 - C. Keep the crate in nife for now and revisit when a second repository needs it.
 
@@ -126,7 +98,7 @@ Blocks: the move.
 
 A stranger who finds `machine_statistics_contract` in its own repository can tell in one screen what the page is and who writes it. The stranger can build and test it from the README alone. The stranger can read its one `unsafe` reader with a safety contract that matches the signature. The stranger can trust that every accessor is a total function over any page that carries the magic. The repository's gates are green on the day the crate arrives for the crate's own reasons. Nife's own build keeps working the day it leaves.
 
-## What was checked, and how
+## How the review checked
 
 The tools run, the sources read and what was not run are in [the appendix](1099-machine-statistics-contract-outside-review/what-was-checked.md).
 
@@ -205,18 +177,17 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Decisions for the architect
 
-Decision 1 below is the one one-way door, and it carries its ruling. The table of item 1 follows it with
-the review's flags and the maintainer's provisional names; ratifying it is the architect's by the
-naming rule and is under "Open decisions". Everything else above is two-way and the maintainer
-decides it.
+Decision 1 below is the one one-way door, and it carries its ruling. The table of item 1 follows it
+with the review's flags and the names ratified on 2026-11-19 (UTC). Everything else above is
+two-way and the maintainer decides it.
 
 ### Decision 1: Freeze the contract's identity before it leaves, with the line count inside it
 
 Ruling of 2026-11-14 (UTC), option A. The rule in force: the identity stays as built. `MAGIC` is
-`MACHSTA1`, `VERSION` is 1, `INTERFACE_ID` is 4, and `PAGE_VA` is the fixed pair page. The page
+`MACHSTA1`, `VERSION` is 1, `INTERFACE_ID` is 4, and `PAGE_VIRTUAL_ADDRESS` is the fixed pair page. The page
 holds one header line of eight words plus one eight-word line per processor, 576 bytes, and header
 words 6 and 7 stay reserved and read zero. The processor-line count belongs to this crate as its
-own constant, `PROCESSOR_LINES` (name provisional), and replaces the re-export of
+own constant, `PROCESSOR_LINES`, and replaces the re-export of
 `current_cpu_contract::CPU_ID_BOUND`. A compile-time assertion keeps it equal to that bound, so a
 change to the bound fails this crate's build until this page's magic and version move too.
 
@@ -235,11 +206,11 @@ might misread, it says so here; the lane carries these beside the rows.
   type is one copy taken once, and rewording the sentence to say a reader loads the words one at a time
   and are not consistent with each other.
 - `WORDS` and `LINE`: generic words under the naming rules; `PAGE_WORDS` and `LINE_WORDS` say what
-  they count (provisional; item 9).
+  they count (item 9).
 - `word::ONLINE` through `word::RUNNABLE`: offsets, not indices, and the module does not say so
   in the name (item 9).
 - `counter`: returns the atomic word for a writer; `word_at` or `atomic_word` would say that it is
-  the word and not a count (provisional; the review has no strong view).
+  the word and not a count.
 - `Cpu`, `cpus`, `online_cpus`: consistent with the vocabulary rule; the prose around them says
   "core" (item 10).
 - `build_header`, `from_words`, `read`, `total_bytes`, `free_bytes`, `busy_ticks`, `idle_ticks`,
@@ -247,23 +218,18 @@ might misread, it says so here; the lane carries these beside the rows.
   `TICK_HERTZ`, `TOTAL_FRAMES`, `FREE_FRAMES`, `BUSY_TICKS`, `IDLE_TICKS`, `CONTEXT_SWITCHES`,
   `INTERRUPTS`, `RUNNABLE`, `cpu`: units spelled out, std spellings where std has one, no flag.
 
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The names the table carries into item 1's pull request are these.
+Ratified 2026-11-19 (UTC). The names the table carries into item 1's pull request are these.
 `PAGE_CONTENT_BYTES` and `PAGE_VIRTUAL_ADDRESS`, with the parameters `page_va` and `va` as
 `virtual_address`. `PAGE_WORDS` and `word::LINE_WORDS`. `Snapshot` stays, and a lane rewords the module
 sentence. `counter` becomes `atomic_word`. The rest stay as written. There is no alias of the
-old spellings. Ratifying the table is an open decision.
+old spellings.
 
 ## Done when
 
-The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). The finding status above says, item by item, what is done and what each open item still needs.
+The checks are in [the appendix](1099-machine-statistics-contract-outside-review/done-when.md). The finding status above says, item by item, what has landed and what each open item still needs.
 
 ## BUGS
 
-- The crate has no review package. This block stands in for one on the items it lists, but it
-  did not do what a package does: enumerate every public item with its signature for the
-  architect's reading, or run `script/crate-review-packet`. A package lane can still write one
-  before the architect reads the crate.
 - `cargo +1.88 clippy --all-targets -- -D warnings` is red in `address_space_layout` (an unused
   `LOW_HALF_SPLIT_SHIFTS`), which this crate links. In the crate's own repository a git dependency
   is not linted, so this does not block here; it is `address_space_layout`'s finding, for that
@@ -282,5 +248,5 @@ The checks are in [the appendix](1099-machine-statistics-contract-outside-review
 
 ## Index row
 
-An outside review of `machine_statistics_contract` before it leaves this tree. Three items block the move: thirty-four names without a `Name:` block, a manifest and file set the standalone check refuses, and citations of this tree throughout the source. Eight land before the first tag. Three concern the code: totals that overflow on a page the reader accepted, a `'static` reference under a weaker contract, and a layout whose line count another crate owns. Three concern the proofs and tests: no Kani harness, two `unsafe` functions no host test reaches, and one namespace for indices and offsets. The last two are a type-width inconsistency and six documentation defects. Four follow later. The one one-way door, freezing the identity set with the line count inside it,
-has its ruling of 2026-11-14 (UTC); ratifying the names and clearing a review package stay open.
+An outside review of `machine_statistics_contract` before it leaves this tree. Three items block the move: thirty-four names without a `Name:` block, a manifest and file set the standalone check refuses, and citations of this tree throughout the source. Eight land before the first tag. Three concern the code: totals that overflow on a page the reader accepted, a `'static` reference under a weaker contract, and a layout whose line count another crate owns. Three concern the proofs and tests: no Kani harness, two `unsafe` functions no host test reaches, and one namespace for indices and offsets. The last two are a type-width inconsistency and six documentation defects. Four follow later. The one one-way door, freezing the identity set with the line count inside it, has its ruling of 2026-11-14 (UTC).
+The 2026-11-19 (UTC) ruling ratified the names, and clearing the review package stays open.

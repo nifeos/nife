@@ -8,10 +8,15 @@ Expected to fail: the multiplication overflow check in `total_bytes`, on any adm
 total frames and frame size overflow when multiplied.
 
 diff --git a/crates/machine_statistics_contract/src/lib.rs b/crates/machine_statistics_contract/src/lib.rs
+index d70573b6e..bd91aa769 100644
 --- a/crates/machine_statistics_contract/src/lib.rs
 +++ b/crates/machine_statistics_contract/src/lib.rs
-@@ -291,3 +291,3 @@
+@@ -365,7 +365,7 @@ impl Snapshot {
+     /// Name: ratified 2026-11-19 (UTC). Units spelled out.
+     #[must_use]
      pub fn total_bytes(&self) -> u64 {
 -        self.total_frames.saturating_mul(self.frame_bytes)
 +        self.total_frames * self.frame_bytes
      }
+ 
+     /// Bytes free.
