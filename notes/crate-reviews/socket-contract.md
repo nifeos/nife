@@ -141,9 +141,8 @@ No nife type appears in a signature. What a stranger may find surprising:
 The architect ratified the crate name on 2026-08-01 and every item in the table below, as built, on
 2026-11-20 UTC. Each item's `Name:` block reads ratified; the move strips the blocks. The three
 crate names (`socket_contract` is ratified; `network_stack` and `socket_fixture` are provisional)
-and the `Cursor` and `Next` types' own spelling follow the table. A release review reopens the
-names ratified before a later rule, such as `MAXIMUM_PAYLOAD_BYTES`, which replaced a name ratified
-before the rule that a limit opens `MAXIMUM_` and ends with its unit.
+and the `Cursor` and `Next` types' own spelling follow the table. A release review reopens a name ratified before a later rule. `MAXIMUM_PAYLOAD_BYTES` replaced a
+name ratified before the rule that a limit opens `MAXIMUM_` and ends with its unit.
 
 | item before | built | rule |
 |---|---|---|
