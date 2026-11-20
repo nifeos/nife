@@ -1,6 +1,6 @@
 //! **glob: does this pattern match this name?** An `fnmatch(3)`-style matcher for one file name. It
 //! is a total function on two byte strings: no IO, no allocation, no `unsafe`, a cost bound a caller
-//! can compute before matching, and Kani proofs of the corners. See notes/glob.md.
+//! can compute before matching, and Kani proofs of the corners. See the README.
 //!
 //! Three things a caller does not guess:
 //!
@@ -11,8 +11,8 @@
 //!   names to the matcher, so `.*` matches both; the layer that enumerates a directory decides
 //!   whether to offer them.
 //!
-//! A malformed pattern means itself, and there is no `**`, qualifier or POSIX class
-//! (notes/glob-scope.md). The work of [`match_steps`] is bounded by [`step_bound`]. [`has_magic`]
+//! A malformed pattern means itself, and there is no `**`, qualifier or POSIX class.
+//! The work of [`match_steps`] is bounded by [`step_bound`]. [`has_magic`]
 //! and [`literal`] are not counted: each decodes a `[` by scanning to its closing `]` or the end,
 //! so a pattern of `n` unterminated brackets costs about `n * n / 2` byte reads in either, which is
 //! small at the lengths of a shell word.
@@ -121,7 +121,7 @@ pub fn matches_with(pattern: &[u8], name: &[u8], dot: LeadingDot) -> bool {
 /// closed. False means the pattern is a literal, and [`literal`] will give you the name it is.
 ///
 /// Precise rather than eager, so an unterminated `[` is a literal byte: a false "yes" costs the
-/// shell a directory enumeration for a word that names one file. See notes/glob.md.
+/// shell a directory enumeration for a word that names one file.
 ///
 /// Name: ratified 2026-11-20 (#3832). `has_` and `is_` are for a `bool` only; "magic" is the word
 /// shell manuals use for an unquoted wildcard.
@@ -188,7 +188,7 @@ pub fn match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> (bool, usize
 
     // The single backtrack point: where to resume in the pattern after the most recent `*`, and how
     // much of the name that `*` is currently absorbing. `None` until a `*` is seen, and a later `*`
-    // simply replaces it. This is the whole anti-blowup argument (notes/glob.md, "The algorithm").
+    // simply replaces it. This is the whole anti-blowup argument (the README, "How it avoids blowup").
     let mut star_next: Option<usize> = None;
     let mut star_absorbed = 0usize;
 
@@ -268,7 +268,7 @@ pub fn match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> (bool, usize
 /// `name_bytes + pattern_bytes`, and each iteration is at most one pass over the pattern to decode and
 /// one to test a bracket expression. Saturating, so absurd lengths give `usize::MAX` rather than a
 /// wrapped bound. Loose on purpose: the point is polynomial in both lengths with no term in the
-/// number of `*`s. See notes/glob.md ("The algorithm, and why it cannot be made to hang").
+/// number of `*`s. The README, "How it avoids blowup", gives the argument.
 ///
 /// Name: ratified 2026-11-20 (#3832). It sits beside `match_steps` and states the unit, steps.
 /// Refused `cost_bound` (the quantity counted is steps).
@@ -288,7 +288,7 @@ pub const fn step_bound(pattern_bytes: usize, name_bytes: usize) -> usize {
 ///
 /// [`Element::Class`] carries a `hit` rather than its body's bounds because a bracket expression is
 /// scanned once, deciding membership as it goes: two loops nested in the match loop were past what
-/// Kani could unroll (notes/glob/proofs.md, §46 (thin primitives or whole subsystems) rule 1).
+/// Kani could unroll.
 ///
 /// Callers with no name byte in hand ([`has_magic`], [`literal`], [`opens_with_a_literal_dot`]) pass
 /// any byte and read only the variant.

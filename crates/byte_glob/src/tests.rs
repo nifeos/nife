@@ -54,8 +54,8 @@ fn classes_ranges_and_negation() {
     assert!(!matches(b"[!a]", b"bb"));
 }
 
-/// The corners real glob implementations get wrong, each a decision notes/glob.md ("Corners")
-/// records, pinned so a rewrite has to argue with a test rather than with prose.
+/// The corners real glob implementations get wrong, each a row of the README's "Corners"
+/// table, pinned so a rewrite has to argue with a test rather than with prose.
 #[test]
 fn the_corners_everyone_gets_wrong() {
     // An unterminated `[` is a literal `[`, not an error and not a wildcard.
@@ -229,8 +229,7 @@ fn naive_matches(pattern: &[u8], name: &[u8], j: usize, i: usize) -> bool {
 /// Every pattern of length 0..=5 over one representative of each syntactic role (`a`, `b`, `*`,
 /// `?`, `[`, `]`, `!`, `-`, `\`) against every name of length 0..=3 over `a`, `b`, `-`: 66,430
 /// patterns times 40 names, 2,657,200 comparisons. Five is the shortest length that reaches
-/// `[a-b]` and `[!ab]`. Enumeration settles the equivalence a solver struggles to unwind; see
-/// notes/glob/proofs.md ("What enumeration proves instead").
+/// `[a-b]` and `[!ab]`. Enumeration settles the equivalence a solver struggles to unwind.
 #[test]
 fn greedy_agrees_with_exhaustive_search_over_every_short_pattern() {
     const PAT: &[u8] = b"ab*?[]!-\\";
@@ -243,7 +242,7 @@ fn greedy_agrees_with_exhaustive_search_over_every_short_pattern() {
 
     // Under Miri, every 61st pattern: 61 is prime and not a power of the 9-byte alphabet, so
     // the sample lands on every length and role, ~44,000 comparisons. The complete enumeration
-    // is native-only; "Miri-clean" means the sample (notes/undefined-behavior.md).
+    // is native-only; "Miri-clean" means the sample.
     let stride: u64 = if cfg!(miri) { 61 } else { 1 };
     for plen in 0..=5usize {
         let combos = (PAT.len() as u64).pow(plen as u32);
@@ -293,8 +292,7 @@ fn greedy_agrees_with_exhaustive_search_over_every_short_pattern() {
 /// the formula for nothing. Every outer iteration adds at least one step, so the worst step
 /// count is a safe bound on iterations. The nine-byte alphabet is sound because the step count
 /// depends on a byte's syntactic role, not its value. Skipped under Miri: a strided sample can
-/// miss the pinned argmax (`at_three == 10`) and fail against correct code. See
-/// notes/glob/proofs.md.
+/// miss the pinned argmax (`at_three == 10`) and fail against correct code.
 #[test]
 #[cfg_attr(
     miri,
@@ -351,8 +349,7 @@ fn the_worst_case_over_the_proof_domain_is_what_the_unwind_bounds_are_set_from()
 #[test]
 fn the_pathological_pattern_stays_inside_its_bound() {
     // 100,000 bytes native, where a quadratic matcher would show; 2,000 under Miri, which
-    // cannot afford ~4M matcher steps. Both assertions run at both sizes
-    // (notes/undefined-behavior.md).
+    // cannot afford ~4M matcher steps. Both assertions run at both sizes.
     const NAME_LEN: usize = if cfg!(miri) { 2_000 } else { 100_000 };
     let name = [b'a'; NAME_LEN];
     let pattern = b"a*a*a*a*a*a*a*a*a*a*b";
@@ -416,9 +413,9 @@ fn the_step_count_grows_with_the_work() {
     assert!(short > 0);
 }
 
-// ---- what mutation testing found (milestone 85) -------------------------------------------
+// ---- what mutation testing found ----------------------------------------------
 //
-// These run under `cargo test`, outside `#[cfg(kani)]`. See notes/mutation-testing.md.
+// These run under `cargo test`, outside `#[cfg(kani)]`.
 
 /// **Each syntactic extra costs exactly what it scans**: a negation marker one step, an escape
 /// one step, a range's tail its two bytes, a trailing star one step. Kani proves only that the

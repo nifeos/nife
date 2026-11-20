@@ -2,8 +2,8 @@
 //!
 //! The harnesses quantify over every byte value of patterns and names up to three bytes (2^48
 //! pairs, every arm of the decoder) but not over length. The length-independent claims are the
-//! host tests': the exhaustive cross-check and the 100,000-byte blowup tests. See notes/glob.md
-//! ("What is proved") and notes/glob/proofs.md.
+//! host tests': the exhaustive cross-check and the 100,000-byte blowup tests. The README's
+//! "What is proven" says the same.
 //!
 //! Name: provisional, minted 2026-11-14 (UTC) by lane/outside-review-1089-1100.
 
@@ -55,7 +55,6 @@ fn matching_is_total() {
 /// This proves the accounting, not the absence of blowup: `step_bound(3, 3)` is 285, which no
 /// matcher exceeds on three bytes, but an off-by-one in the charging shows here. Separate from
 /// totality because `step_bound`'s multiplies on top of the match loop exhausted the solver.
-/// See notes/glob/proofs.md.
 /// Falsification: replayable `crates/byte_glob/falsifications/verification.the_cost_never_exceeds_the_bound.patch`
 #[kani::proof]
 #[kani::unwind(11)]
@@ -81,8 +80,7 @@ fn no_magic_means_the_pattern_is_its_own_only_match() {
     let p = &pattern[..plen];
     let n = &name[..nlen];
 
-    // An assumption rather than an early `return`, to state the restriction; it is no faster
-    // (notes/glob/proofs.md, "The cost").
+    // An assumption rather than an early `return`, to state the restriction; it is no faster.
     kani::assume(!has_magic(p));
     let mut buf = [0u8; P];
     let lit = literal(p, &mut buf).expect("a magic-free pattern always has a literal");
@@ -116,7 +114,7 @@ fn star_matches_anything_and_question_matches_one_byte() {
 /// Under [`LeadingDot::Special`] a name beginning with `.` matches only a pattern beginning with a
 /// literal `.`, and any other name matches identically under both settings. The name is bounded
 /// at two bytes, enough for a predicate on its first byte; the pattern keeps three so `.*`,
-/// `\.x` and `[.]` are reachable. See notes/glob/proofs.md.
+/// `\.x` and `[.]` are reachable.
 /// Falsification: replayable `crates/byte_glob/falsifications/verification.the_dot_rule_only_touches_names_that_start_with_a_dot.patch`
 #[kani::proof]
 #[kani::unwind(9)]

@@ -8,7 +8,7 @@ license = "MIT OR Apache-2.0"
 readme = "README.md"
 keywords = ["no-std", "glob", "fnmatch", "pattern-matching"]
 categories = ["no-std", "algorithms", "filesystem"]
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+publish = false     # not published yet: the crate waits for its first release
 include = ["src/**", "falsifications/**", "README.md", "LICENSE-*"]
 
 # A pattern matcher, and only the matcher: a pattern and a name in, a yes or no out. No filesystem

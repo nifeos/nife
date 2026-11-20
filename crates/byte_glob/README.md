@@ -6,18 +6,18 @@ bound a caller can compute before matching, and six Kani proofs of its corners.
 
 Three things a caller does not guess:
 
-- **Bytes, not characters.** The match is `fnmatch(3)` in the C locale, so `?` matches one byte,
+- Bytes, not characters. The match is `fnmatch(3)` in the C locale, so `?` matches one byte,
   which is half of a two-byte UTF-8 character.
-- **One name, not a path.** `/` is an ordinary byte, so `matches(b"*.txt", b"dir/notes.txt")` is
+- One name, not a path. `/` is an ordinary byte, so `matches(b"*.txt", b"dir/notes.txt")` is
   `true`. A caller that matches a path splits it first. Recursive descent (`**`) belongs to the
   layer that walks directories, because descending is an authority, not a match.
-- **A leading `.` needs a literal `.`** by default (`LeadingDot::Special`), the reading that grants less.
+- A leading `.` needs a literal `.` by default (`LeadingDot::Special`), the reading that grants less.
   `*` does not match `.config`; `[.]config` does not either, because a bracket expression is a
   wildcard however few members it has. `.` and `..` are ordinary names to the matcher, so `.*`
   matches both. The layer that enumerates a directory decides whether to offer them.
 
 A malformed pattern means itself: an unterminated `[` is a literal `[`, and a trailing `\` is a
-literal `\`. There is no error case, because a pattern is untrusted input and an error path for
+literal `\`. There is no error case, because a pattern comes from outside and an error path for
 every typo is a cost. There are no `**`, no zsh-style qualifiers (they need type, time and size per
 candidate, which is more authority than listing a directory) and no POSIX (Portable Operating System Interface) classes.
 
@@ -53,10 +53,10 @@ assert_eq!(literal(br"a\*b", &mut buf), Some(&b"a*b"[..]));
 
 Six Kani harnesses (`src/verification.rs`), each with a falsification patch that turns it red.
 They quantify over every byte value of patterns and names up to three bytes (2^48 pairs per
-harness) but not over length: four bytes each was tried and did not finish. Matching is total under
-both dot rules, the step count never exceeds `step_bound`, a pattern with no magic matches exactly
-itself, `*` and `?` have their base meanings, the dot rule touches only names that start with a
-dot, and a negated class is the exact complement of its class. The length-independent claims are
+harness) but not over length: four bytes each did not finish. Matching is total under
+both dot rules. The step count never exceeds `step_bound`. A pattern with no magic matches exactly
+itself. `*` and `?` have their base meanings. The dot rule touches only names that start with a
+dot. A negated class is the exact complement of its class. The length-independent claims are
 host tests: an exhaustive cross-check against a naive matcher over every pattern of up to five
 bytes and every name of up to three, and a 100,000-byte adversarial run held under the bound.
 
