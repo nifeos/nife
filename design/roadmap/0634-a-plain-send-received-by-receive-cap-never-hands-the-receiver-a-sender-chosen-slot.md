@@ -77,7 +77,7 @@ and kills networking for every client.
 `SEND` syscall carries no badge: it calls `sched::ipc_send(ep, [a0,a1,a2])` with no badge argument
 and `wide` fills word 3 with 0. So a client that `SEND`s on its per-window badged `FILE` capability
 instead of `CALL`ing arrives as badge 0, and `subtree_scope::Bindings::of(0)` returns
-`Binding::Open` unconditionally (`Bindings::of` in `crates/subtree_scope/src/lib.rs`). The server then admits any
+`Binding::Unbound` unconditionally (`Bindings::binding` in `crates/subtree_scope/src/lib.rs`). The server then admits any
 handle with root authority. The attack confirmed the kernel half:
 
 ```

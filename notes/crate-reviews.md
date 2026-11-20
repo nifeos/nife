@@ -86,6 +86,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | ready for the architect's review |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
+| [`subtree_scope`](crate-reviews/subtree-scope.md) | step 9 | eight provisional names for the architect; the move waits on P0-3's pin |
 | [`network_time_protocol`](crate-reviews/network-time-protocol.md) | 1102 | names and clearance for the architect |
 | [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | ready for review |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
