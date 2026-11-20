@@ -215,6 +215,12 @@ fn distribution(kind: &str, samples: &mut [u32], timeouts: u32, polls_median: u3
     ));
 }
 
+/// A region that holds nothing, the starting value of each lookup buffer.
+const EMPTY_REGION: Region = Region {
+    start: 0,
+    size_bytes: 0,
+};
+
 /// Runs every check on the block the device tree at `device_tree` describes, from hart `hart`.
 pub(crate) fn run(hart: u64, device_tree: u64) {
     // SAFETY: `booti` hands the payload the device tree's physical address in `a1`, and the hart
@@ -224,10 +230,7 @@ pub(crate) fn run(hart: u64, device_tree: u64) {
     let mut hertz_from_tree = 0;
     let mut hertz = 4_000_000;
     if let Some(tree) = &tree {
-        let mut regions = [Region {
-            start: 0,
-            size_bytes: 0,
-        }; 1];
+        let mut regions = [EMPTY_REGION; 1];
         if let Ok(1) = tree.node_register_regions(b"serial@10000000", &mut regions) {
             let shift = match tree.node_property(b"serial@10000000", b"reg-shift") {
                 Ok(Some(&[a, b, c, d])) => u32::from_be_bytes([a, b, c, d]),
@@ -256,10 +259,7 @@ pub(crate) fn run(hart: u64, device_tree: u64) {
     let mut found = None;
     if let Some(tree) = &tree {
         for compatible in COMPATIBLES {
-            let mut regions = [Region {
-                start: 0,
-                size_bytes: 0,
-            }; 1];
+            let mut regions = [EMPTY_REGION; 1];
             if let Ok(1) = tree.node_register_regions_compatible(compatible, &mut regions) {
                 let status = tree
                     .node_property_compatible(compatible, b"status")
