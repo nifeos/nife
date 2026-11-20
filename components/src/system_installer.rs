@@ -350,7 +350,10 @@ fn confirm(slot: u64) -> ! {
     // half-written primary fails its own CRC rather than pointing at an array it does not
     // describe. The protective MBR is not rewritten: the attribute bits are the only thing
     // changing and the MBR does not describe them.
-    if !write_at(table.backup_entry_array_logical_block_address(), entry_array) {
+    if !write_at(
+        table.backup_entry_array_logical_block_address(),
+        entry_array,
+    ) {
         send(REPORT, R_DISK_FAILED, 5, 0);
         user_mode_runtime::exit()
     }
@@ -361,7 +364,10 @@ fn confirm(slot: u64) -> ! {
         send(REPORT, R_DISK_FAILED, 6, 0);
         user_mode_runtime::exit()
     }
-    if !write_at(table.primary_entry_array_logical_block_address(), entry_array) {
+    if !write_at(
+        table.primary_entry_array_logical_block_address(),
+        entry_array,
+    ) {
         send(REPORT, R_DISK_FAILED, 7, 0);
         user_mode_runtime::exit()
     }

@@ -220,8 +220,14 @@ fn partition() -> ! {
     let steps: [(u64, Option<&[u8]>); 5] = [
         (0, None),                                    // the protective MBR
         (PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, None), // the primary header
-        (table.primary_entry_array_logical_block_address(), Some(entries)),
-        (table.backup_entry_array_logical_block_address(), Some(entries)),
+        (
+            table.primary_entry_array_logical_block_address(),
+            Some(entries),
+        ),
+        (
+            table.backup_entry_array_logical_block_address(),
+            Some(entries),
+        ),
         (table.backup_header_logical_block_address(), None), // the backup header, on the last block
     ];
     for (n, (lba, bytes)) in steps.iter().enumerate() {
