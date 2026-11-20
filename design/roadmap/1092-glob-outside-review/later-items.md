@@ -6,7 +6,7 @@ An appendix to [the milestone](../1092-glob-outside-review.md).
 
 #### P2-1. `has_magic` and `literal` have no cost bound, and the doc says the work is bounded
 
-The module doc says "the work is bounded by `cost_bound`" (`src/lib.rs` lines 8 to 9). Only `match_steps` is.
+The module doc says "the work is bounded by `step_bound`" (`src/lib.rs` lines 8 to 9). Only `match_steps` is.
 `has_magic` and `literal` decode each `[` by scanning to the closing `]` or the end, so a pattern of
 n unterminated brackets costs about n²/2 byte reads in either function, with no counter. Harmless at
 shell-word lengths, and still a claim the doc overstates. Change: say which function the bound
@@ -28,7 +28,7 @@ carry them, so that a server which does is a change it sees. Two-way. S.
 `match_steps` returns `(bool, usize)` and its doc says the count "is not stable across changes to
 this crate". A published function whose second value is explicitly unstable is a compatibility
 statement no tool checks. Change: a named return (`Outcome { matched, steps }`) whose doc states the
-one promise the crate makes about `steps`, that it is at most `cost_bound` of the two lengths; or
+one promise the crate makes about `steps`, that it is at most `step_bound` of the two lengths; or
 keep the tuple and state the promise in the README. Two-way before the first release; one-way
 after. S.
 
@@ -37,7 +37,7 @@ after. S.
 The crate has no `unsafe` and takes two untrusted byte strings, which is what the weekly fuzz run
 is for, and `fuzz/Cargo.toml` names no target for it. The naive matcher that the exhaustive test
 uses is the oracle a target wants. Change: `fuzz/fuzz_targets/glob.rs` over an arbitrary split of
-the input into pattern and name, asserting no panic, `steps <= cost_bound`, agreement with the
+the input into pattern and name, asserting no panic, `steps <= step_bound`, agreement with the
 naive matcher under both dot rules, and `has_magic` false implying `literal` round-trips. The naive
 matcher moves behind `#[cfg(any(test, fuzzing))]` or into the target. M.
 

@@ -52,9 +52,9 @@ fn matching_is_total() {
 /// **The cost of a match never exceeds the bound computed from the two lengths alone**, over
 /// every pattern and name of up to three arbitrary bytes.
 ///
-/// This proves the accounting, not the absence of blowup: `cost_bound(3, 3)` is 285, which no
+/// This proves the accounting, not the absence of blowup: `step_bound(3, 3)` is 285, which no
 /// matcher exceeds on three bytes, but an off-by-one in the charging shows here. Separate from
-/// totality because `cost_bound`'s multiplies on top of the match loop exhausted the solver.
+/// totality because `step_bound`'s multiplies on top of the match loop exhausted the solver.
 /// See notes/glob/proofs.md.
 /// Falsification: replayable `crates/byte_glob/falsifications/verification.the_cost_never_exceeds_the_bound.patch`
 #[kani::proof]
@@ -65,7 +65,7 @@ fn the_cost_never_exceeds_the_bound() {
     let (plen, nlen) = any_lengths();
 
     let (_, steps) = match_steps(&pattern[..plen], &name[..nlen], any_dot());
-    assert!(steps <= cost_bound(plen, nlen));
+    assert!(steps <= step_bound(plen, nlen));
 }
 
 /// **A pattern with no magic in it matches exactly one name: itself, unescaped**, over every

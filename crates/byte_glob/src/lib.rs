@@ -12,7 +12,7 @@
 //!   whether to offer them.
 //!
 //! A malformed pattern means itself, and there is no `**`, qualifier or POSIX class
-//! (notes/glob-scope.md). The work of [`match_steps`] is bounded by [`cost_bound`]. [`has_magic`]
+//! (notes/glob-scope.md). The work of [`match_steps`] is bounded by [`step_bound`]. [`has_magic`]
 //! and [`literal`] are not counted: each decodes a `[` by scanning to its closing `]` or the end,
 //! so a pattern of `n` unterminated brackets costs about `n * n / 2` byte reads in either, which is
 //! small at the lengths of a shell word.
@@ -39,9 +39,8 @@
 /// This is `fnmatch(3)`'s `FNM_PERIOD` as a two-valued type rather than a flag bit, because there
 /// are exactly two answers and the compiler should be able to say which one a call site chose.
 ///
-/// Name: provisional, ruled provisionally by the maintainer on 2026-11-14 (UTC) (block 1092
-/// decision 2); the architect may revisit it before the first tag. The spelling says which dot the
-/// policy is about, as `FNM_PERIOD` and `require_literal_leading_dot` do.
+/// Name: ratified 2026-11-20 (#3832), with its variants `Special` and `Ordinary`. The spelling says
+/// which dot the policy is about, as `FNM_PERIOD` and `require_literal_leading_dot` do.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum LeadingDot {
     /// A name starting with `.` matches only a pattern starting with a **literal** `.` (which `\.`
@@ -91,6 +90,9 @@ pub enum LeadingDot {
 /// assert_eq!(literal(br"a\*b", &mut buf), Some(&b"a*b"[..]));
 /// assert_eq!(literal(b"*.txt", &mut buf), None); // it has magic; expand it instead
 /// ```
+///
+/// Name: ratified 2026-11-20 (#3832). A third-person verb phrase for a `bool`, as the question rule
+/// asks.
 pub fn matches(pattern: &[u8], name: &[u8]) -> bool {
     match_steps(pattern, name, LeadingDot::Special).0
 }
@@ -106,6 +108,9 @@ pub fn matches(pattern: &[u8], name: &[u8]) -> bool {
 /// assert!(matches(b".*", b".config"));                       // an explicit dot does
 /// assert!(matches_with(b"*", b".config", LeadingDot::Ordinary));    // ... unless you ask otherwise
 /// ```
+///
+/// Name: ratified 2026-11-20 (#3832). The same phrase, with `_with` for the policy argument, as std
+/// uses it.
 pub fn matches_with(pattern: &[u8], name: &[u8], dot: LeadingDot) -> bool {
     match_steps(pattern, name, dot).0
 }
@@ -117,6 +122,9 @@ pub fn matches_with(pattern: &[u8], name: &[u8], dot: LeadingDot) -> bool {
 ///
 /// Precise rather than eager, so an unterminated `[` is a literal byte: a false "yes" costs the
 /// shell a directory enumeration for a word that names one file. See notes/glob.md.
+///
+/// Name: ratified 2026-11-20 (#3832). `has_` and `is_` are for a `bool` only; "magic" is the word
+/// shell manuals use for an unquoted wildcard.
 pub fn has_magic(pattern: &[u8]) -> bool {
     let mut j = 0;
     while let Some((elem, _)) = decode(pattern, j, 0) {
@@ -133,6 +141,9 @@ pub fn has_magic(pattern: &[u8]) -> bool {
 /// `Some(name)` when the pattern has no magic and `out` was long enough; `None` when it has magic
 /// (call the expander instead) or would not fit. `a\*b` is the file called `a*b`; this exists so
 /// no caller reimplements escape-stripping.
+///
+/// Name: ratified 2026-11-20 (#3832). A noun for the `Option` value it returns, the pattern's one
+/// literal name.
 pub fn literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]> {
     let mut j = 0;
     let mut n = 0;
@@ -153,9 +164,12 @@ pub fn literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]> {
 ///
 /// A "step" is one byte of pattern examined, including the bytes a bracket expression is scanned
 /// over and the ones re-examined after a backtrack. It is not a wall-clock measure. The one
-/// promise about the count is that it is at most [`cost_bound`] of the two lengths; its exact value
+/// promise about the count is that it is at most [`step_bound`] of the two lengths; its exact value
 /// is not promised across versions. It exists so the claim "this cannot blow up" is an
-/// inequality something checks rather than a paragraph, by way of [`cost_bound`].
+/// inequality something checks rather than a paragraph, by way of [`step_bound`].
+///
+/// Name: ratified 2026-11-20 (#3832). The steps of a match. The tuple return stays the maintainer's
+/// provisional call.
 pub fn match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> (bool, usize) {
     let mut steps = 0usize;
 
@@ -255,7 +269,10 @@ pub fn match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> (bool, usize
 /// one to test a bracket expression. Saturating, so absurd lengths give `usize::MAX` rather than a
 /// wrapped bound. Loose on purpose: the point is polynomial in both lengths with no term in the
 /// number of `*`s. See notes/glob.md ("The algorithm, and why it cannot be made to hang").
-pub const fn cost_bound(pattern_bytes: usize, name_bytes: usize) -> usize {
+///
+/// Name: ratified 2026-11-20 (#3832). It sits beside `match_steps` and states the unit, steps.
+/// Refused `cost_bound` (the quantity counted is steps).
+pub const fn step_bound(pattern_bytes: usize, name_bytes: usize) -> usize {
     let iterations = name_bytes
         .saturating_add(2)
         .saturating_mul(name_bytes.saturating_add(pattern_bytes).saturating_add(1));

@@ -73,7 +73,7 @@ spelled with the same four words `ps` prints in its `STATE` column. `pgrep dead`
 `pgrep 'r*'` the ready and the running, `pgrep '*'` everything.
 
 `crates/byte_glob` does the matching, unchanged and unextended. It was the right tool rather than the
-nearest one. It is on the verification path already, it has a `cost_bound` nothing can blow past,
+nearest one. It is on the verification path already, it has a `step_bound` nothing can blow past,
 and four short words is exactly the shape it is good at. There are two deliberate departures from
 its defaults, both recorded at the call site. The first is `LeadingDot::Ordinary`, because a state name
 never begins with a dot and the leading-dot rule is a filename-listing convention. The second is
