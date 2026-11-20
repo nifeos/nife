@@ -78,18 +78,18 @@ merged (pull request 3785). They are one run each.
 
 | check | result |
 |---|---|
-| `cargo test -p domain_name_resolution_contract` | 31 unit tests and 2 doctests pass |
+| `cargo test -p domain_name_resolution_contract` | 30 unit tests and 2 doctests pass |
 | `cargo clippy -p domain_name_resolution_contract --all-targets -- -D warnings` | no warning |
 | `cargo doc` with `RUSTDOCFLAGS="-D warnings"` | no warning |
 | bare-metal builds, `--lib`, for `x86_64-unknown-none`, `aarch64-unknown-none-softfloat` and `riscv64imac-unknown-none-elf` | all three build |
-| MSRV copy outside the tree (`src/` and the manifest of this crate and of `domain_name_system`, in a scratch directory, `cargo +1.88.0 test`) | 31 unit tests and 2 doctests pass on 1.88.0 |
-| `cargo +nightly miri test -p domain_name_resolution_contract` | 31 unit tests and 2 doctests pass under Miri; the crate has no `unsafe`, so this checks the safe code's arithmetic and indexing at run time |
-| Kani, `cargo kani -Z stubbing -p domain_name_resolution_contract` | KANI_RESULT |
-| the two falsification patches, each applied to the tree and its own harness run | KANI_FALSIFY |
-| `script/crate-standalone domain_name_resolution_contract` | exits 1 with 8 failures, all the move's work or the fixture's: `names` (82 names not ratified), `manifest` (the path dependency leaves the crate), `files` (no `LICENSE-MIT`, no `LICENSE-APACHE`), `citations` (3 paths into the nife tree, 2 milestone citations), and `build` and `proofs`, both skipped because the dependency is outside the copy. Its Kani step therefore did not run, which is why the two rows above ran by hand |
-| `script/crate-move --dry-run --into <scratch directory> domain_name_resolution_contract` | stages at template `v8` (`a69ab4829b02`); exits 1 with 7 findings for the move lane. Passing: the copy of 13 tracked files, the mutation cron, the scaffold of 27 files, the rewrite (`Name:` blocks removed from 7 files, 2 falsification patches regenerated for `-p1`, both apply with no offset and no fuzz), history phrases, file length, comment blocks, function length, spelled-out words, unit symbols, orphan modules, markdown links and falsification records. Failing: the build (the dependency is outside the staged copy), `standalone` (no license files), prose caps, passive voice, citations into the nife tree, milestone citations, and 12 mentions of nife |
-| `python3 helpers/lint_externalized_crates.py` | no failure; the crate has 14 hits against its waiver ceiling of 54, and the tool says to lower the waiver. The 14 sit in `src/fixture.rs` |
-| `python3 helpers/name_release.py --draft domain_name_resolution_contract` | 85 names: 5 ratified, 30 provisional, 50 with no block |
+| MSRV copy outside the tree (`src/` and the manifest of this crate and of `domain_name_system`, in a scratch directory, `cargo +1.88.0 test`) | 30 unit tests and 2 doctests pass on 1.88.0 |
+| `cargo +nightly miri test -p domain_name_resolution_contract` | 30 unit tests and 2 doctests pass under Miri; the crate has no `unsafe`, so this checks the safe code's arithmetic and indexing at run time |
+| Kani, `cargo kani -Z stubbing -p domain_name_resolution_contract` | both harnesses verify: `the_one_message_zone_parses_or_is_refused` in 300 s and `the_grant_table_grants_only_what_it_said` in 1231 s, 25 minutes 40 seconds of wall time in all |
+| the two falsification patches, each applied to the tree and its own harness run | each patch makes its harness fail, as it should: `the_grant_table_grants_only_what_it_said` fails in 13 minutes and `the_one_message_zone_parses_or_is_refused` in 5 minutes; the tree was restored after each |
+| `script/crate-standalone domain_name_resolution_contract` | exits 1 with 4 failures, all the move's work: `names` (72 names not ratified), `manifest` (the path dependency leaves the crate), and `build` and `proofs`, both skipped because the dependency is outside the copy. Its Kani step therefore did not run, which is why the two rows above ran by hand |
+| `script/crate-move --dry-run --into <scratch directory> domain_name_resolution_contract` | stages at template `v8` (`a69ab4829b02`); exits 1 with 3 findings for the move lane. Passing: the copy of 18 tracked files, the mutation cron, the scaffold of 27 files, the rewrite (`Name:` blocks removed from 8 files, 2 falsification patches regenerated for `-p1`, both apply with no offset and no fuzz), `standalone`, history phrases, file length, comment blocks, function length, spelled-out words, unit symbols, orphan modules, markdown links, falsification records and mentions of nife (none). Failing: the build (the dependency is outside the staged copy), prose caps and passive voice in `README.md` |
+| `python3 helpers/lint_externalized_crates.py` | no failure; the crate has 1 hit against its waiver ceiling of 1, the ratified crate-name `Name:` block, which the move strips |
+| `python3 helpers/name_release.py --draft domain_name_resolution_contract` | 78 names: 6 ratified, 31 provisional, 41 with no block |
 | `script/names domain_name_resolution_contract` | the crate name is ratified |
 | `script/lint --quick` | passes on this branch |
 
