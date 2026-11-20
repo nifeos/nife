@@ -64,7 +64,6 @@ jh7110_pci_express,bus_numbers,replace | with ^,equivalent,"the kept latency tim
 jh7110_pci_express,configure,replace | with ^,equivalent,"the mutant on the inner | joins CMD_MEMORY_SPACE (bit 1) and CMD_BUS_MASTER (bit 2), which share no bit; the outer | is killed by tests::configure_keeps_the_command_bits_and_writes_no_status_bit",algebraic,2026-11-19,
 loaded_image_check,stack_works,replace stack_works -> bool with true,equivalent,"every path returns true; its job is to touch stack, which only a run in the guest shows",unclassified,,
 loaded_image_check,verify,replace verify with (),killed,killed; the ledger's loaded_image_check and uptime section (census-2026-10-03-triage.md) says the sweep afterwards reports only that section's equivalents and gaps,,,
-master_boot_record,MasterBootRecord::scratch_sector_range,replace < with <=,equivalent,"the count is the smaller of want and gap, and at want == gap both arms return the same value",algebraic,2026-11-20,
 paging,<impl PageFormat for Ia32e>::leaf_flags,replace & with ^,killed,killed; the ledger's paging section (census-2026-10-03-triage-part-3.md) says the sweep afterwards reports only that section's equivalents and gaps,,,
 paging,<impl PageFormat for Ia32e>::leaf_flags,replace & with |,killed,killed; the ledger's paging section (census-2026-10-03-triage-part-3.md) says the sweep afterwards reports only that section's equivalents and gaps,,,
 pgrep,,replace | with ^,equivalent,"the four state bits in state::EVERY are disjoint, so OR and XOR agree",unclassified,,
