@@ -1,10 +1,10 @@
-//! Drive talc the way a nife program's heap does, from a byte string, and check the heap after
+//! Drive talc the way `memory_region_heap` does, from a byte string, and check the heap after
 //! every step.
 //!
 //! [`run`] reads the bytes as a header and a sequence of operations, applies each to a copy of
 //! `memory_region_heap`'s policy over a host arena ([`policy`]), and panics on the first broken
-//! invariant ([`sequence`]). The fuzz target and the seed replay test both call it. See
-//! notes/talc-fuzzing.md for the invariants, the input format and what this does not cover.
+//! invariant ([`sequence`]). The fuzz target and the seed replay test both call it. [`sequence`]
+//! documents the input format and the invariants.
 //!
 //! Name: provisional, minted 2026-11-14 (UTC) by lane talc-fuzz-and-miri, matching the directory cargo-fuzz finds.
 

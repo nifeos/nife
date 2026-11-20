@@ -7,11 +7,11 @@ and the request both reach it, and the committed range then leaves the cap.
 Expected to fail: the harness's arithmetic on the committed range after a run of `got` pages
 (an addition overflow, and the bound `after <= maximum`). Red in under a second on 2026-11-15.
 
-diff --git a/crates/memory_region_heap/src/lib.rs b/crates/memory_region_heap/src/lib.rs
-index b961c1948..bfbbaa69f 100644
---- a/crates/memory_region_heap/src/lib.rs
-+++ b/crates/memory_region_heap/src/lib.rs
-@@ -473,7 +473,7 @@ fn growth_pages(committed: u64, maximum: u64, need: u64) -> Option<(u64, u64)> {
+diff --git a/crates/memory_region_heap/src/growth.rs b/crates/memory_region_heap/src/growth.rs
+index 21337a449..cbbb7f84a 100644
+--- a/crates/memory_region_heap/src/growth.rs
++++ b/crates/memory_region_heap/src/growth.rs
+@@ -29,7 +29,7 @@ pub(crate) fn growth_pages(committed: u64, maximum: u64, need: u64) -> Option<(u
      let want_pages = need_pages
          .max(committed / PAGE_BYTES) // doubling: as many again as we have
          .max(MINIMUM_GROW_PAGES)

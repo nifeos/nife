@@ -1,5 +1,5 @@
 //! The input format and the invariants: decode a byte string into heap operations, apply each,
-//! and check the heap after every one. See notes/talc-fuzzing.md.
+//! and check the heap after every one. The fuzz workspace's README.md lists both.
 //!
 //! Name: provisional, minted 2026-11-14 (UTC) by lane talc-fuzz-and-miri.
 
@@ -7,7 +7,7 @@ use core::alloc::Layout;
 
 use crate::policy::{Heap, PAGE, PageSource, nonempty};
 
-/// The largest arena an input may ask for, 16 MiB: past a nife program's usual heap, and small
+/// The largest arena an input may ask for, 16 MiB: past a typical program's heap, and small
 /// enough that a run stays inside libFuzzer's memory limit.
 pub(crate) const MAXIMUM_ARENA_PAGES: u64 = 4096;
 
@@ -112,7 +112,7 @@ fn size(class: u8, raw: u32, maximum: u64) -> usize {
     }
 }
 
-/// An alignment from one byte: bit 7 asks for 64, the cache line nife's per-CPU data uses;
+/// An alignment from one byte: bit 7 asks for 64, a common cache line;
 /// otherwise a power of two up to 64 KiB.
 fn alignment(raw: u8) -> usize {
     if raw & 0x80 != 0 { 64 } else { 1 << (raw % 17) }
@@ -246,7 +246,7 @@ impl Run {
         unsafe { self.heap.dealloc(block.pointer, block.layout) };
     }
 
-    /// The invariants every step keeps. See notes/talc-fuzzing.md.
+    /// The invariants every step keeps, as the fuzz workspace's README.md lists them.
     fn check(&mut self) {
         let committed = self.heap.committed_bytes();
         let (base, maximum) = self.heap.base_and_maximum();
