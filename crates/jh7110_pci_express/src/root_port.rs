@@ -10,8 +10,8 @@
 //! calef has not named it.
 
 use pci_configuration_space::{
-    BUS_NUMBERS_REGISTER, Bdf, COMMAND_BUS_MASTER_ENABLE, COMMAND_MEMORY_SPACE_ENABLE,
-    COMMAND_REGISTER, HEADER_TYPE_BRIDGE, HEADER_TYPE_REGISTER,
+    BUS_NUMBERS_REGISTER, BusDeviceFunction, COMMAND_BUS_MASTER_ENABLE,
+    COMMAND_MEMORY_SPACE_ENABLE, COMMAND_REGISTER, HEADER_TYPE_BRIDGE, HEADER_TYPE_REGISTER,
 };
 
 use crate::Window;
@@ -19,7 +19,7 @@ use crate::Window;
 /// The root port's address: bus 0, device 0, function 0.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
-pub const LOCATION: Bdf = Bdf {
+pub const LOCATION: BusDeviceFunction = BusDeviceFunction {
     bus: 0,
     device: 0,
     function: 0,
@@ -111,7 +111,7 @@ pub enum Configured {
 }
 
 /// **Configure the root port to forward bus [`SECONDARY_BUS`] and `memory`**, through `read32` and
-/// `write32`, the caller's configuration accessors (`Bdf`, byte offset of an aligned word).
+/// `write32`, the caller's configuration accessors (`BusDeviceFunction`, byte offset of an aligned word).
 ///
 /// Writes the bus numbers, the memory window, closes the I/O and prefetchable windows, and turns on
 /// memory decoding and bus mastering, so the BARs the kernel places behind it are reachable and
@@ -119,8 +119,8 @@ pub enum Configured {
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 pub fn configure(
-    read32: &mut dyn FnMut(Bdf, u64) -> u32,
-    write32: &mut dyn FnMut(Bdf, u64, u32),
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
+    write32: &mut dyn FnMut(BusDeviceFunction, u64, u32),
     memory: Window,
 ) -> Configured {
     if read32(LOCATION, 0) & 0xffff == 0xffff {

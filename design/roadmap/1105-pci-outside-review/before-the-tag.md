@@ -79,8 +79,8 @@ Where and what, with the recommendation:
   bit names.
 - `Bdf { bus, dev, func }` (`:22-26`): `dev` is in the abbreviations table (`device`), and
   `func` abbreviates `function`. `Bdf { bus, device, function }`, as `pci_types::PciAddress` and
-  `virtio-drivers`' `DeviceFunction` both spell them. `Bdf` itself reads as a word aloud and stays,
-  with `#[doc(alias = "bus device function")]`.
+  `virtio-drivers`' `DeviceFunction` both spell them. The struct is spelled out as `BusDeviceFunction`,
+  with `#[doc(alias)]` on `Bdf`, `BDF` and "bus device function".
 - `VirtioCapability.cfg_type` (`:451`): `cfg` abbreviates `configuration`. The field mirrors
   `struct virtio_pci_cap`; either `configuration_type` with the alias `cfg_type`, or the kept form.
   `notify_off_multiplier` (`:455`) is the same case and the same choice; `off` for `offset` has no
