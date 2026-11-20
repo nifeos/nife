@@ -16,7 +16,7 @@ Why sixty seconds. Measured rather than felt. Ten minutes on each target, on the
 | **total** | **317,296,022** | |
 
 The targets were named `gpt_table` and `dtb_walk` when this table was measured; they have been
-`globally_unique_identifier_partition_table` and `device_tree_blob_walk` since calef's 2026-09-19
+`globally_unique_identifier_partition_table` and `device_tree_blob_walk` (since moved with its crate) since calef's 2026-09-19
 ruling that a fuzz target follows the crate it fuzzes. The rows keep the names the run printed.
 
 The spread is the shape of each parser rather than noise: `elf_parse` rejects most inputs in its first

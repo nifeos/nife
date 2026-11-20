@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # 1085. `device_tree_blob`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only review of the `device_tree_blob` package as a stranger to this tree would meet
+Raised by a read-only review of `device_tree_blob` as a stranger to this tree would meet
 it, on the assumption that the crate leaves for its own repository under the shared template
 (milestone 857 (crates released on their own), item 4). It changes nothing; it lists what the
 lanes that move the crate change, and what the kernel should take from the list whether or not the

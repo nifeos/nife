@@ -242,7 +242,7 @@ in a tracked form:
    which it was. `cargo mutants --list` will not find it, because the mutation is in the type rather
    than in the expression. A `git grep` for specification fields documented as "one less than" is
    cheap and is not this lane's.
-- **Milestone 323.**. the `device_tree_blob` package's four harnesses are all `unfalsified`. They are the sibling this lane was argued
+- **Milestone 323.** Milestone 323 (the falsification record is incomplete in five ways) found the four harnesses of the `device_tree_blob` package all `unfalsified`. They are the sibling this lane was argued
    from, and the argument cuts both ways: a harness with no falsification record is counted as
    `unfalsified` and says so. Four patches is an afternoon.
 
