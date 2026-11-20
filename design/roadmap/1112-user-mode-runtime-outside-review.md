@@ -98,15 +98,13 @@ repository, and a crate leaves with ratified names. The maintainer ruled the ren
 (UTC), provisionally, and #3611 built them; each renamed name carried a provisional `Name:` block until the ruling below.
 The maintainer ruled on 2026-11-19 UTC, provisionally, to remove the sized window accessors
 `read_u8` to `write_u64`, and #3815 built it, so a window has one spelling, `read::<T>` and
-`write::<T>`, which the 2026-11-20 UTC ruling spelled `read_volatile::<T>` and `write_volatile::<T>`. After the first tag a name is a published surface. The package
+`write::<T>` (now `read_volatile` and `write_volatile`). After the first tag a name is a published surface. The package
 (`notes/crate-reviews/user-mode-runtime.md`) lists every public name with its status and a
 proposal.
 
-Ruled 2026-11-20 UTC: A, with the short forms spelled out as the status list above names. The text
-below is the question as asked.
+Ruled 2026-11-20 UTC: A, with the short forms spelled out (see the status list).
 
-Recommendation: A. Ratify the names as built, one table at a time from the package; the table
-stands each name as written and flags one optional question (`now`, which returns ticks).
+Recommendation: A. Ratify the names as built, from the package's tables.
 
 - A. Ratify the names as built.
 - B. Ratify them except the rows the architect names, which keep their provisional blocks.
