@@ -364,7 +364,7 @@ struct Madt {
 fn read_madt(body: &[u8]) -> Madt {
     let mut distributor = 0u64;
     let mut version = 0u8;
-    let mut redistributors = Region { start: 0, size: 0 };
+    let mut redistributors = Region { start: 0, size_bytes: 0 };
     let mut cpu_interface = 0u64;
     let mut per_cpu_redistributor = 0u64;
     let mut cpus = [device_tree_from_acpi::Cpu::default(); device_tree_from_acpi::MAXIMUM_CPUS];
@@ -383,7 +383,7 @@ fn read_madt(body: &[u8]) -> Madt {
             acpi::MadtEntry::GenericRedistributor { address, length } => {
                 redistributors = Region {
                     start: address,
-                    size: u64::from(length),
+                    size_bytes: u64::from(length),
                 };
             }
             acpi::MadtEntry::GenericInterruptController {
@@ -451,7 +451,7 @@ fn gic_from_madt(madt: &Madt) -> Result<Gic, &'static str> {
     let v2 = version == 2 || (version == 0 && cpu_interface != 0);
     let distributor = Region {
         start: madt.distributor,
-        size: device_tree_from_acpi::GICD_LEN,
+        size_bytes: device_tree_from_acpi::GICD_LEN,
     };
     let gic = if v3 {
         if redistributors.size == 0 {
@@ -461,7 +461,7 @@ fn gic_from_madt(madt: &Madt) -> Result<Gic, &'static str> {
             // confirms when the kernel walks them.
             redistributors = Region {
                 start: per_cpu_redistributor,
-                size: 0x2_0000 * madt.cpu_count.max(1) as u64,
+                size_bytes: 0x2_0000 * madt.cpu_count.max(1) as u64,
             };
         }
         Gic::V3 {
@@ -473,7 +473,7 @@ fn gic_from_madt(madt: &Madt) -> Result<Gic, &'static str> {
             distributor,
             cpu_interface: Region {
                 start: cpu_interface,
-                size: device_tree_from_acpi::GICC_LEN,
+                size_bytes: device_tree_from_acpi::GICC_LEN,
             },
         }
     } else {
