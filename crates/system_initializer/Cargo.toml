@@ -32,7 +32,7 @@ program_table = { version = "0.1.0", path = "../program_table" }
 capability_manifest_note = { version = "0.1.0", path = "../capability_manifest_note" }
 # The `INTERFACES` note the progenitor reads at spawn (milestone 956 (the linked interfaces carry
 # checkable versions) step 3).
-interfaces_note = { version = "0.1.0", path = "../interfaces_note" }
+interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfaces_note", rev = "bfa27187a87e0cc1916efb06238b2dd2ece004eb" }
 # The filesystem contract, for exactly one word: the readiness sentinel a `fs_subtree_caretaker`
 # answers a directory grant's descent with (milestone 31 phase 3). An in-tree protocol crate rather
 # than a constant copied here, which is rule 7: what two binaries agree on is a crate. It brings
@@ -97,7 +97,7 @@ login_contract = { version = "0.1.0", path = "../login_contract" }
 entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
 # The socket contract (milestone 590 (the booted system starts its network stack)), for exactly one
 # word: the inbound authority this
-# crate hands the `net_stack` it builds (`NO_LISTEN_GRANT`). Pure logic, no dependencies of its own.
+# crate hands the `net_stack` it builds (`NO_PORT_GRANT`). Pure logic, no dependencies of its own.
 socket_contract = { version = "0.1.0", path = "../socket_contract" }
 # The name resolver's contract (milestone 892 (a std program at the prompt holds the network and a
 # resolver)): the start words this crate tells `domain_name_resolver`, and the grant and forget messages

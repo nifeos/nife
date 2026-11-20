@@ -52,9 +52,7 @@ fn measure() -> &'static str {
     }
     let started = match peer {
         Some(word) => service::start_drain(image, word).map(|(cli, w)| (Some(cli), w)),
-        None => {
-            service::start_net_server(image, socket_contract::NO_LISTEN_GRANT).map(|w| (None, w))
-        }
+        None => service::start_net_server(image, socket_contract::NO_PORT_GRANT).map(|w| (None, w)),
     };
     let (client, w) = match started {
         Ok(v) => v,
@@ -212,8 +210,9 @@ mod radon {
     pub(super) fn measure(image: &'static [u8], peer: Option<u64>) -> &'static str {
         let started = match peer {
             Some(word) => service::start_drain(image, word).map(|(cli, w)| (Some(cli), w)),
-            None => service::start_net_server(image, socket_contract::NO_LISTEN_GRANT)
-                .map(|w| (None, w)),
+            None => {
+                service::start_net_server(image, socket_contract::NO_PORT_GRANT).map(|w| (None, w))
+            }
         };
         let (client, w) = match started {
             Ok(v) => v,

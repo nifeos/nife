@@ -42,7 +42,7 @@ fn image() -> &'static [u8] {
 fn net_stack_gets_a_dhcp_lease_over_the_e1000e_nic_behind_the_iommu() {
     let w = wired_or_skip!(e1000e_service::start_net_server(
         image(),
-        socket_contract::NO_LISTEN_GRANT
+        socket_contract::NO_PORT_GRANT
     ));
     assert!(
         w.confined_by_iommu,
@@ -90,7 +90,7 @@ fn a_client_echoes_over_tcp_through_the_e1000e_nic() {
     let (report, w) = wired_or_skip!(e1000e_service::start_net_stack(
         image(),
         NET_TEST_TCP_ECHO,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ));
     let verdict = crate::sched::ipc_receive(report)[0];
     assert_eq!(
@@ -111,7 +111,7 @@ fn a_client_completes_a_udp_round_trip_through_the_e1000e_nic() {
     let (report, w) = wired_or_skip!(e1000e_service::start_net_stack(
         image(),
         NET_TEST_UDP_TFTP,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ));
     let verdict = crate::sched::ipc_receive(report)[0];
     assert_eq!(
