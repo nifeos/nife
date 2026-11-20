@@ -9,11 +9,11 @@ Expected to fail: the bounds check on `out[n]`, for any value of three nonempty,
 under one-cell addresses and sizes (24 bytes, two slots).
 
 diff --git a/crates/device_tree_blob/src/lib.rs b/crates/device_tree_blob/src/lib.rs
-index e2cc7dc99..8418c113d 100644
+index e6b016945..b378ea444 100644
 --- a/crates/device_tree_blob/src/lib.rs
 +++ b/crates/device_tree_blob/src/lib.rs
-@@ -1210,3 +1210,3 @@ fn decode_regions(
+@@ -1268,3 +1268,3 @@ fn decode_regions(
  
--        *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region { start, size };
-+        out[n] = Region { start, size };
-         n += 1;
+-        *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region {
++        out[n] = Region {
+             start,

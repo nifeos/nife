@@ -18,6 +18,9 @@
 #![no_std]
 
 /// A contiguous span of physical memory.
+///
+/// Name: ratified 2026-11-20 as built, with the review package's clearance. The field `size_bytes`
+/// carries its unit, as every length here does; `size` was refused as a length with no unit.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Region {
     /// The physical address of the first byte.
@@ -34,6 +37,9 @@ impl Region {
     /// before it can report a failure; a plain add would panic there under overflow checks
     /// (regression in `tests/hostile.rs`). A saturated end is still wrong, so the parser refuses a
     /// wrapping region with [`Error::RegionOverflow`]; this is the backstop, not the check.
+    ///
+    /// Name: ratified 2026-11-20 as built, with the review package's clearance. The saturating end
+    /// of the span, as `Range::end` is the end of a range.
     pub fn end(&self) -> u64 {
         self.start.saturating_add(self.size_bytes)
     }
@@ -44,6 +50,9 @@ impl Region {
 /// Each fault has its own variant, as libfdt separates `FDT_ERR_TRUNCATED`, `FDT_ERR_BADVALUE` and
 /// `FDT_ERR_BADSTRUCTURE`, so a caller printing the error at boot names the fault the firmware made.
 /// The enum is `#[non_exhaustive]`: a later fault gets its own variant without breaking a caller.
+///
+/// Name: ratified 2026-11-20 as built, with the review package's clearance. Each variant names its
+/// fault, as libfdt's `FDT_ERR_*` codes do.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Error {
@@ -139,7 +148,8 @@ pub const MAXIMUM_TOTAL_SIZE_BYTES: usize = 2 * 1024 * 1024;
 /// The most cells a `#address-cells` or `#size-cells` declaration may give a `reg` value, as
 /// libfdt's `FDT_MAX_NCELLS`. A `reg` read under a larger count is [`Error::BadValue`].
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 as built, with the review package's clearance. libfdt's
+/// `FDT_MAX_NCELLS` spelled out, with that spelling kept as a doc alias.
 #[doc(alias = "FDT_MAX_NCELLS")]
 pub const MAXIMUM_CELLS: u32 = 4;
 
@@ -150,7 +160,8 @@ pub const MAXIMUM_CELLS: u32 = 4;
 /// tree nested deeper is refused with [`Error::TooDeep`] by every lookup alike, rather than read by
 /// some and not others. Real trees nest well under ten deep.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 as built, with the review package's clearance. Linux's `FDT_MAX_DEPTH`
+/// spelled out, with that spelling kept as a doc alias.
 #[doc(alias = "FDT_MAX_DEPTH")]
 pub const MAXIMUM_DEPTH: usize = 64;
 
@@ -176,6 +187,9 @@ fn be64(bytes: &[u8], at: usize) -> Result<u64, Error> {
 /// a tree whose nesting does not balance ([`Error::BadStructure`]), one nested deeper than
 /// [`MAXIMUM_DEPTH`] ([`Error::TooDeep`]), and a structure block that ends before its end token
 /// ([`Error::Truncated`]). A lookup that finds its answer first returns it without walking on.
+///
+/// Name: ratified 2026-11-20 as built, with the review package's clearance. The type takes the
+/// crate's phrase spelled out, for the reason the crate refused `dtb`.
 #[derive(Debug)]
 pub struct DeviceTreeBlob<'a> {
     bytes: &'a [u8],
@@ -250,6 +264,9 @@ impl<'a> DeviceTreeBlob<'a> {
     /// assert_eq!(tree.total_size(), blob.len());
     /// # Ok::<(), device_tree_blob::Error>(())
     /// ```
+    ///
+    /// Name: ratified 2026-11-20 as built, with the review package's clearance. The standard
+    /// library's spelling for a constructor from a byte slice.
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, Error> {
         let magic = be32(bytes, 0)?;
         if magic != MAGIC {
@@ -307,6 +324,9 @@ impl<'a> DeviceTreeBlob<'a> {
 
     /// How many bytes the blob occupies. We need this to mark it as reserved: it is
     /// sitting in the very RAM we are about to start handing out.
+    ///
+    /// Name: ratified 2026-11-20 as built, with the review package's clearance. The header's
+    /// `totalsize` with the words split, and `MAXIMUM_TOTAL_SIZE_BYTES` shares the split.
     pub fn total_size(&self) -> usize {
         self.bytes.len()
     }
@@ -378,6 +398,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// assert_eq!(&ram[..banks], [Region { start: 0x8000_0000, size_bytes: 0x800_0000 }]);
     /// # Ok::<(), device_tree_blob::Error>(())
     /// ```
+    ///
+    /// Name: ratified 2026-11-20 as built, with the review package's clearance. One of three
+    /// lookups that read three sources, with `memory_reservations` and `reserved_memory_regions`;
+    /// this one reads the memory nodes' register regions.
     pub fn memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
         // `reg` is a list of (address, size) pairs, but how many 32-bit cells each of those takes
         // is not fixed. It is declared by #address-cells and #size-cells on the PARENT node, which
@@ -903,6 +927,9 @@ impl<'a> DeviceTreeBlob<'a> {
     /// [`memory_reservations`](Self::memory_reservations) reads; on RISC-V, OpenSBI reserves its PMP-guarded
     /// region here, and missing it faults the first write into it. Each depth-3 child's `reg` is
     /// decoded with `/reserved-memory`'s own cell counts, which default to the root's.
+    ///
+    /// Name: ratified 2026-11-20 as built, with the review package's clearance. Reads the children
+    /// of `/reserved-memory`; `memory_reservations` reads the reservation block.
     pub fn reserved_memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
         let mut bus_address_cells = 2u32;
         let mut bus_size_cells = 2u32;
@@ -1004,8 +1031,10 @@ impl<'a> DeviceTreeBlob<'a> {
     /// [`Self::initial_ramdisk`]. A value with no NUL is returned whole, since the property's
     /// length bounds it either way.
     ///
-    /// Name: provisional, minted 2026-11-01 (UTC). Spelled out rather than `bootargs`, the
-    /// binding's spelling, for the reason the ramdisk's accessor refused `initrd`.
+    /// Name: ratified 2026-11-20 as built, with the review package's clearance. Spelled out rather
+    /// than `bootargs`, the binding's spelling, for the reason the ramdisk's accessor refused
+    /// `initrd`; `bootargs` stays a doc alias as a search aid.
+    #[doc(alias = "bootargs")]
     pub fn boot_arguments(&self) -> Result<Option<&'a [u8]>, Error> {
         let mut in_chosen = false;
         let mut tokens = self.tokens();

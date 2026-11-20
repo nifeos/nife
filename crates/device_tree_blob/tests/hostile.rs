@@ -1276,7 +1276,7 @@ fn a_totalsize_past_the_ceiling_is_refused_before_a_slice_is_built() {
 
 /// `from_pointer` reads the magic and `totalsize`, 8 bytes, before it trusts anything, and no more:
 /// a pointer to 8 bytes that fail the magic, or that pass it and claim a size of 8, is refused
-/// without a read past them. Miri (`script/undefined-behavior-check`) is what sees a read past the
+/// without a read past them. Miri is what sees a read past the
 /// allocation; natively the test pins the answers.
 #[test]
 fn from_ptr_reads_eight_bytes_before_it_trusts_the_size() {
@@ -1601,7 +1601,7 @@ fn a_property_length_past_the_blob_is_truncated_in_every_lookup() {
 
 /// Header offsets of the fields the structure-block bound reads.
 const VERSION_AT: usize = 20;
-const SIZE_DT_STRUCT_AT: usize = 36;
+const STRUCTURE_BLOCK_SIZE_AT: usize = 36;
 
 /// A structure block with no `FDT_END` is not walked on into the strings block. The last token is
 /// overwritten with `FDT_NOP`, so the walk runs out of structure and must say so. It used to read
@@ -1646,18 +1646,18 @@ fn the_declared_structure_size_bounds_the_walk() {
     let blob = minimal_tree();
     let total = blob.len() as u32;
     assert_eq!(
-        DeviceTreeBlob::from_bytes(&patched(&blob, SIZE_DT_STRUCT_AT, total)).err(),
+        DeviceTreeBlob::from_bytes(&patched(&blob, STRUCTURE_BLOCK_SIZE_AT, total)).err(),
         Some(Error::Truncated),
         "a structure block longer than the blob"
     );
     assert_eq!(
-        DeviceTreeBlob::from_bytes(&patched(&blob, SIZE_DT_STRUCT_AT, u32::MAX)).err(),
+        DeviceTreeBlob::from_bytes(&patched(&blob, STRUCTURE_BLOCK_SIZE_AT, u32::MAX)).err(),
         Some(Error::Truncated),
         "a structure size that wraps the offset"
     );
 
     // Two bytes short of the first token: no walker may read it.
-    let short = patched(&blob, SIZE_DT_STRUCT_AT, 2);
+    let short = patched(&blob, STRUCTURE_BLOCK_SIZE_AT, 2);
     let dt = DeviceTreeBlob::from_bytes(&short).unwrap();
     let mut out = [Region {
         start: 0,
@@ -1671,7 +1671,7 @@ fn the_declared_structure_size_bounds_the_walk() {
 #[test]
 fn a_blob_older_than_version_17_ends_its_structure_at_the_strings() {
     let blob = minimal_tree();
-    let old = patched(&patched(&blob, VERSION_AT, 16), SIZE_DT_STRUCT_AT, 0);
+    let old = patched(&patched(&blob, VERSION_AT, 16), STRUCTURE_BLOCK_SIZE_AT, 0);
     let dt = DeviceTreeBlob::from_bytes(&old).unwrap();
     let mut out = [Region {
         start: 0,
@@ -1762,11 +1762,11 @@ fn a_property_value_is_bounded_by_the_structure_block_exactly() {
     b.end_node();
     let blob = b.finish();
     let size_dt_struct = u32::from_be_bytes(
-        blob[SIZE_DT_STRUCT_AT..SIZE_DT_STRUCT_AT + 4]
+        blob[STRUCTURE_BLOCK_SIZE_AT..STRUCTURE_BLOCK_SIZE_AT + 4]
             .try_into()
             .unwrap(),
     );
-    let at_the_end = patched(&blob, SIZE_DT_STRUCT_AT, size_dt_struct - AFTER_THE_VALUE);
+    let at_the_end = patched(&blob, STRUCTURE_BLOCK_SIZE_AT, size_dt_struct - AFTER_THE_VALUE);
     let dt = DeviceTreeBlob::from_bytes(&at_the_end).unwrap();
     let value = reg64(0x4000_0000, 0x1000);
     assert_eq!(value.len(), VALUE_BYTES as usize);
@@ -1820,11 +1820,11 @@ fn a_value_of_the_wrong_shape_is_a_bad_value() {
     b.structure.extend_from_slice(b"abcd");
     let blob = b.finish();
     let name_ends = u32::from_be_bytes(
-        blob[SIZE_DT_STRUCT_AT..SIZE_DT_STRUCT_AT + 4]
+        blob[STRUCTURE_BLOCK_SIZE_AT..STRUCTURE_BLOCK_SIZE_AT + 4]
             .try_into()
             .unwrap(),
     ) - 4;
-    let blob = patched(&blob, SIZE_DT_STRUCT_AT, name_ends);
+    let blob = patched(&blob, STRUCTURE_BLOCK_SIZE_AT, name_ends);
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
     assert_eq!(dt.boot_arguments(), Err(Error::BadValue));
 }

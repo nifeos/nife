@@ -3,10 +3,10 @@
 //!
 //! The device tree is parsed before anything else exists, on both ISAs, from bytes QEMU, OpenSBI or
 //! a board's firmware wrote; a panic here is a kernel that cannot boot and cannot say why.
-//! `crates/device_tree_blob`'s Kani harnesses prove the leaf readers (`be32`, `be64`) total but not
+//! The crate's Kani harnesses prove the leaf readers (`be32`, `be64`) total but not
 //! the walkers, whose depth counter, per-depth stacks and current-node slot are indexed by numbers
 //! the blob controls. This target found an out-of-bounds index in `node_register_regions` within seconds of its
-//! first run (`crates/device_tree_blob/tests/hostile.rs`). notes/fuzzing/targets.md has the rest.
+//! first run (`tests/hostile.rs` keeps its regression).
 
 #![no_main]
 
@@ -32,7 +32,7 @@ fuzz_target!(|data: &[u8]| {
     // The three lookups that take a caller-supplied needle, with the arch layer's real needles
     // (`intc`/`plic`, `pl031`/`goldfish-rtc`, `virtio_mmio`). The empty prefix reaches the decode
     // path cheapest, since it matches the first node at depth >= 2, and for that reason it cannot
-    // reach the deep-nesting bug: matching stops at the first candidate (notes/fuzzing.md's BUGS).
+    // reach the deep-nesting bug: matching stops at the first candidate.
     for prefix in [&b""[..], b"intc", b"plic", b"memory", b"virtio_mmio"] {
         let _ = dtb.node_register_regions(prefix, &mut out);
         let _ = dtb.node_property(prefix, b"reg");

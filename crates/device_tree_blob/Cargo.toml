@@ -2,8 +2,31 @@
 name = "device_tree_blob"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "A flattened device tree parser: bytes in, memory regions, register regions and property values out, with every offset checked"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nifeos/device_tree_blob"
+readme = "README.md"
+keywords = ["no-std", "device-tree", "devicetree", "fdt", "parser"]
+categories = ["no-std", "no-std::no-alloc", "parser-implementations", "embedded"]
+documentation = "https://docs.rs/device_tree_blob"
+publish = false     # set to true only in the release that publishes
 
-[lints]
-workspace = true
+# A flattened device tree parser. The blob is the machine describing itself, handed over by
+# firmware, and the crate reads it as untrusted input: every offset is checked, every walk is
+# bounded, and a malformed blob is an `Error`, never a panic. `no_std`, no allocator, no
+# dependencies.
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
