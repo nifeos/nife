@@ -67,6 +67,9 @@ fn assert_unpredictable(words: &[u64; WORDS], what: &str) {
 
 /// **The headline, over virtio-mmio.** A client that holds one endpoint and no device gets
 /// bytes off a real random-number generator, 512 of them, across a refill, all different.
+///
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
 fn a_client_obtains_unpredictable_bytes_from_a_virtual_io_rng_over_mmio() {
     let Some(w) = start(Bus::Mmio) else {
@@ -79,6 +82,9 @@ fn a_client_obtains_unpredictable_bytes_from_a_virtual_io_rng_over_mmio() {
 /// **The same service, the same binary, over PCIe** (DECISIONS §18), and behind the IOMMU while
 /// it is there. An entropy source's buffer is the one page in memory whose contents must not be
 /// guessable, so an unconfined device writing it is worth asserting against rather than hoping.
+///
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
 fn a_client_obtains_unpredictable_bytes_from_a_virtual_io_rng_over_pcie() {
     let Some(w) = start(Bus::Pci) else {

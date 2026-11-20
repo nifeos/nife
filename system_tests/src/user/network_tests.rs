@@ -87,6 +87,8 @@ const NET_CLIENT_NO_ANSWER: u64 = 2;
 // the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
 // slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
 fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net() {
     let Some(report) = virtual_io_service::start_net(blk_image()) else {
@@ -118,6 +120,8 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net() {
 // through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
 #[cfg(target_arch = "aarch64")]
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
 fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net_pci() {
     let Some(report) = virtual_io_service::start_net_pci(blk_image()) else {

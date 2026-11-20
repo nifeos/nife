@@ -35,6 +35,8 @@ use crate::sched;
 /// idles rather than declaring a deadlock while the driver waits with nothing else to run.
 // RISC-V twin: `riscv_virtual_io_tests::a_userspace_driver_reads_a_file_from_a_virtual_io_disk`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
 fn a_userspace_driver_reads_a_file_from_a_virtual_io_disk() {
     use crate::arch::exceptions::ROUTED_INTERRUPTS;

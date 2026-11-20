@@ -349,6 +349,9 @@ fn a_bitmap_font_and_a_vt_engine_put_readable_text_on_the_scanout() {
 /// is `compositor_tests::focus_routes_a_keystroke_to_one_terminals_grid_and_not_its_neighbours`, at
 /// the seam of DECISIONS §33 (the compositor's authority is memory, not messages)
 /// (notes/glyphs/terminal-and-proof.md).
+///
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
 fn a_keystroke_from_a_virtual_io_keyboard_becomes_a_terminal_byte() {
     let keyboard_driver =

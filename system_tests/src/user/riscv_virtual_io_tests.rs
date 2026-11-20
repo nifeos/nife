@@ -148,6 +148,9 @@ fn the_page_tables_say_u_mode_cannot_read_the_kernels_memory() {
 /// DMA and reads a file off it, with the kernel owning only the confinement. Interrupt
 /// delivery is asserted too: the completion reached the driver as a message through its Interrupt
 /// capability, via the PLIC rather than the GIC.
+///
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
 fn a_userspace_driver_reads_a_file_from_a_virtual_io_disk() {
     use crate::arch::exceptions::ROUTED_INTERRUPTS;
@@ -342,6 +345,9 @@ fn the_redoxfs_servers_stack_still_has_headroom() {
 /// The virtio-net DHCP round trip, on the second ISA (milestone 30): a driver at EL0 brings up
 /// both queues, transmits a DHCP DISCOVER, and receives slirp's OFFER, all behind the multi-queue
 /// confinement, with the completion delivered via the PLIC. Parity with the aarch64 net test.
+///
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
 fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net() {
     let Some(report) = virtual_io_service::start_net(blk_image()) else {
@@ -360,6 +366,9 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net() {
 }
 
 /// The riscv net round trip over PCIe, behind the RISC-V IOMMU (milestone 30, §20).
+///
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
 fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net_pci() {
     let Some(report) = virtual_io_service::start_net_pci(blk_image()) else {
