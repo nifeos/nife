@@ -7,10 +7,15 @@ the shortened compare still catches, so the defect is invisible to them.
 Expected to fail: the harness's `assert!(admitted)` in the arm that returned a page, on a page whose upper magic bytes differ.
 
 diff --git a/crates/machine_statistics_contract/src/lib.rs b/crates/machine_statistics_contract/src/lib.rs
+index d70573b6e..e747443ce 100644
 --- a/crates/machine_statistics_contract/src/lib.rs
 +++ b/crates/machine_statistics_contract/src/lib.rs
-@@ -238,3 +238,3 @@
-     pub fn from_words(words: &[u64; WORDS]) -> Option<Snapshot> {
--        if words[word::MAGIC] != u64::from_le_bytes(MAGIC) {
-+        if words[word::MAGIC] as u32 != u64::from_le_bytes(MAGIC) as u32 {
+@@ -308,7 +308,7 @@ impl Snapshot {
+     /// Name: ratified 2026-11-19 (UTC). Reads a page from its words.
+     #[must_use]
+     pub fn from_words(words: &[u64; PAGE_WORDS]) -> Option<Snapshot> {
+-        if words[word::header::MAGIC] != u64::from_le_bytes(MAGIC) {
++        if words[word::header::MAGIC] as u32 != u64::from_le_bytes(MAGIC) as u32 {
              return None;
+         }
+         // The version check beside the magic, before any counter word is trusted: a page written

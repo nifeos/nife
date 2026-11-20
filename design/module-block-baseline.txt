@@ -4796,67 +4796,37 @@ crates/machine_discovery/src/x86_64.rs::unpromised
 
 crates/machine_discovery/src/x86_64/verification.rs
 
-crates/machine_statistics_contract/src/lib.rs::BUSY_TICKS
-
-crates/machine_statistics_contract/src/lib.rs::CONTEXT_SWITCHES
-
-crates/machine_statistics_contract/src/lib.rs::Cpu
-
-crates/machine_statistics_contract/src/lib.rs::FRAME_BYTES
-
-crates/machine_statistics_contract/src/lib.rs::FREE_FRAMES
-
-crates/machine_statistics_contract/src/lib.rs::IDLE_TICKS
-
-crates/machine_statistics_contract/src/lib.rs::INTERRUPTS
-
-crates/machine_statistics_contract/src/lib.rs::LINE
-
-crates/machine_statistics_contract/src/lib.rs::MAGIC
-
-crates/machine_statistics_contract/src/lib.rs::MAGIC
-
-crates/machine_statistics_contract/src/lib.rs::ONLINE
-
-crates/machine_statistics_contract/src/lib.rs::PAGE_BYTES
 
 
-crates/machine_statistics_contract/src/lib.rs::RUNNABLE
-
-crates/machine_statistics_contract/src/lib.rs::Snapshot
 
 
-crates/machine_statistics_contract/src/lib.rs::TICK_HERTZ
 
-crates/machine_statistics_contract/src/lib.rs::TOTAL_FRAMES
 
-crates/machine_statistics_contract/src/lib.rs::WORDS
 
-crates/machine_statistics_contract/src/lib.rs::build_header
 
-crates/machine_statistics_contract/src/lib.rs::busy_ticks
 
-crates/machine_statistics_contract/src/lib.rs::context_switches
 
-crates/machine_statistics_contract/src/lib.rs::counter
 
-crates/machine_statistics_contract/src/lib.rs::cpu
 
-crates/machine_statistics_contract/src/lib.rs::free_bytes
 
-crates/machine_statistics_contract/src/lib.rs::from_words
 
-crates/machine_statistics_contract/src/lib.rs::idle_ticks
 
-crates/machine_statistics_contract/src/lib.rs::interrupts
 
-crates/machine_statistics_contract/src/lib.rs::online_cpus
 
-crates/machine_statistics_contract/src/lib.rs::read
 
-crates/machine_statistics_contract/src/lib.rs::runnable
 
-crates/machine_statistics_contract/src/lib.rs::total_bytes
+
+
+
+
+
+
+
+
+
+
+
+
 
 crates/measured_boot/src/lib.rs::BadLine
 
