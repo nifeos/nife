@@ -50,7 +50,7 @@ milestone reaches delivery.
   [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-8, the error type is not an `Error`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P1-9, the name gates refuse ten register names and one test name: Done. Decisions 2 and 5 built
-  the names in [#3821](https://github.com/nifeos/nife/pull/3821), and the architect ratified them
+  the names in [#3821](https://github.com/nifeos/nife/pull/3821). The architect ratified them
   and the seven that the decisions did not reach on 2026-11-20 UTC (`ATTRIBUTE_*`,
   `Error::EntryBytes`, `BackupMismatch::EntryBytes`, the `transfer_bytes` parameters,
   `PartitionsOverlap { first, second }`, `get`, the two entry-array readers), built in
