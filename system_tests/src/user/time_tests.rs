@@ -146,7 +146,7 @@ fn a_shell_with_no_usable_clock_times_the_command_anyway() {
     // holds. Zeroed, which `clock_contract`'s `a_zeroed_page_reads_as_unknown` pins as UNKNOWN.
     let blank = crate::memory::alloc_zeroed()
         .expect("no frame for a blank clock page")
-        .addr();
+        .physical_address();
 
     // Ten seconds, the sibling test's bound and for its reason: this proves a stopwatch exists,
     // it does not benchmark one.

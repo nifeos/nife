@@ -48,7 +48,7 @@ use package_index::{
 use pinned_tls_client::listed::{self, root_der};
 use pinned_tls_client::{PinnedPeer, Session};
 use program_table::spawn_protocol::{self, Activation, ActivationStatus as S};
-use socket_contract::fixture::{PACKAGE_PEER_HOST, PACKAGE_PEER_IP, PACKAGE_PEER_PORT};
+use socket_fixture::{PACKAGE_PEER_ADDRESS, PACKAGE_PEER_HOST, PACKAGE_PEER_PORT};
 use user_mode_runtime as rt;
 
 // **What these bytes ask for when they are run by path, as installed bytes** (milestone 597 (a
@@ -847,7 +847,7 @@ fn install_name(name: &str, flags: &Flags<'_>) -> ExitCode {
 /// body goes straight into the run.
 fn fetch(stem: &str) -> Result<Staged, &'static str> {
     const FAILED: &str = "the package source did not send a whole package";
-    let mut tcp = TcpStream::connect((Ipv4Addr::from(PACKAGE_PEER_IP), PACKAGE_PEER_PORT))
+    let mut tcp = TcpStream::connect((Ipv4Addr::from(PACKAGE_PEER_ADDRESS), PACKAGE_PEER_PORT))
         .map_err(|_| "the package source did not answer")?;
     let path = format!("/{stem}.nifepkg");
     let mut request = [0u8; 160];

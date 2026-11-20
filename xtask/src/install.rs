@@ -274,16 +274,19 @@ fn disk_changes(before: &std::path::Path, after: &std::path::Path) -> Option<Vec
         33,
         "LBA 0-33, the protective MBR and the primary partition table".into(),
     )];
-    if let Ok(table) = gpt::GloballyUniqueIdentifierPartitionTable::parse(
+    if let Ok(table) = gpt::PartitionTable::parse(
         &head[LBA as usize..2 * LBA as usize],
         &head[2 * LBA as usize..],
     ) {
         for (i, p) in table.partitions() {
-            let name = gpt::guid::types::name(p.type_guid).unwrap_or("unknown type");
+            let name = nife_partition_types::name(p.type_guid).unwrap_or("unknown type");
             regions.push((
-                p.first_lba,
-                p.last_lba,
-                format!("partition {i} ({name}, LBA {}-{})", p.first_lba, p.last_lba),
+                p.first_logical_block_address,
+                p.last_logical_block_address,
+                format!(
+                    "partition {i} ({name}, LBA {}-{})",
+                    p.first_logical_block_address, p.last_logical_block_address
+                ),
             ));
         }
     }

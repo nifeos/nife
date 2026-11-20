@@ -6,14 +6,14 @@ arguments, so the type system cannot tell them apart.
 
 Expected to fail: both of the harness's assertions. A range starting partway into a frame frees
 that frame, which begins below `start`; a range ending partway into a frame frees that frame,
-which ends past `start + size`. That is a frame only partly inside a usable region becoming
+which ends past `start + bytes`. That is a frame only partly inside a usable region becoming
 allocatable.
 
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -224,3 +224,3 @@
-     pub fn mark_free(&mut self, start: u64, size: u64) {
--        for i in self.whole_frames_in(start, size) {
-+        for i in self.page_frame_range(start, size) {
-             if self.get(i) {
+@@ -232,3 +232,3 @@
+     pub fn mark_free(&mut self, start: u64, bytes: u64) {
+-        for i in self.whole_frames_in(start, bytes) {
++        for i in self.page_frame_range(start, bytes) {
+             if self.is_index_used(i) {

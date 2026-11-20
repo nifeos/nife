@@ -20,8 +20,8 @@ pub fn destroy(region: u64) {
     if REGIONS.lock().has_children(region) { return; }
     let Some((base, size)) = REGIONS.lock().bounds(region) else { return };
     crate::revoke::revoke_region(base, size);
-    for i in 0..(size / FRAME_SIZE) {
-        memory::free(PageFrame::from_addr(base + i * FRAME_SIZE));
+    for i in 0..(size / FRAME_BYTES) {
+        memory::free(PageFrame::from_physical_address(base + i * FRAME_BYTES));
     }
 }
 ```

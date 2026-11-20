@@ -6,7 +6,7 @@ use crate::capability_object::{
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
-/// Where the driver expects its DMA page. Must match `DMA_VA` in `components/src/block_driver_roles.rs`. The
+/// Where the driver expects its DMA page. Must match `DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS` in `components/src/block_driver_roles.rs`. The
 /// driver holds no device registers: it drives the device through a `Virtio` capability, so it
 /// cannot point the device outside this DMA region.
 const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
@@ -36,10 +36,10 @@ fn wire(
     // Zeroed so stale RAM cannot look like a valid descriptor to the device.
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame for the virtio driver")
-        .addr();
+        .physical_address();
     // First, so a refused device leaves nothing else behind.
-    let Some(vid) = crate::virtio::register(transport, dma, FRAME_SIZE, rid) else {
-        crate::memory::free(page_frames::PageFrame::from_addr(dma));
+    let Some(vid) = crate::virtio::register(transport, dma, FRAME_BYTES, rid) else {
+        crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
         return None;
     };
 
@@ -162,7 +162,7 @@ pub fn start_net_server(image: &'static [u8]) -> Option<(RendezvousId, Holding)>
         },
         dev.intid,
         None,
-        socket_contract::NO_LISTEN_GRANT, // a DHCP bring-up serves nobody inbound
+        socket_contract::NO_PORT_GRANT, // a DHCP bring-up serves nobody inbound
     )?;
     Some((report, holding))
 }
@@ -175,7 +175,7 @@ pub fn start_net_server_pci(image: &'static [u8]) -> Option<(RendezvousId, Holdi
         crate::virtio::Transport::pci(&d),
         d.intid,
         Some(d.rid),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     )?;
     Some((report, holding))
 }
@@ -200,10 +200,10 @@ fn wire_net_server(
     // writes the real ones.
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame for the net server")
-        .addr();
+        .physical_address();
     // First, so a refused NIC leaves nothing else behind.
-    let Some(vid) = crate::virtio::register(transport, dma, FRAME_SIZE, rid) else {
-        crate::memory::free(page_frames::PageFrame::from_addr(dma));
+    let Some(vid) = crate::virtio::register(transport, dma, FRAME_BYTES, rid) else {
+        crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
         return None;
     };
 
@@ -245,7 +245,7 @@ fn wire_net_server(
         let phys =
             crate::memory_region::retype_page(stack_region).expect("no frame for the net stack");
         maps[k + 1] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
             phys,
             flags: Flags::user_data(),
         };
@@ -275,7 +275,7 @@ fn wire_net_server(
                 maps: &maps,
                 windows: &[],
             },
-            socket_contract::stack_slots::OWN_SPACE,
+            socket_contract::stack_slots::OWN_ADDRESS_SPACE_SLOT,
         )
     })
     .expect("could not spawn the net server");
@@ -310,7 +310,7 @@ const NET_CLIENT_BLOB_PAGES: u64 = 1;
 ///
 /// They share a `Stack` endpoint, the server holding `READ` and the client `WRITE`. `pci` picks the
 /// transport. `listen_grant` is the port range a `LISTEN` may bind
-/// (`socket_contract::listen_grant`), or [`socket_contract::NO_LISTEN_GRANT`]; the spawner decides
+/// (`socket_contract::listen_grant`), or [`socket_contract::NO_PORT_GRANT`]; the spawner decides
 /// it, not the client. Returns the client's report endpoint and what ends the service, or `None` if
 /// no NIC is attached. See notes/net.md.
 pub fn start_net_stack(
@@ -344,7 +344,7 @@ pub fn start_package_fetch(
         arg1,
         Some(catalogue),
         false,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     )
 }
 
@@ -406,7 +406,7 @@ pub(super) fn spawn_stack_client(
         .expect("no untyped for the net client");
     // The blob's pages ride in the stack region: the same lifetime (they may not go while the
     // client exists) and one fewer region to account for.
-    let blob_pages = blob.map_or(0, |b| (b.len() as u64).div_ceil(FRAME_SIZE));
+    let blob_pages = blob.map_or(0, |b| (b.len() as u64).div_ceil(FRAME_BYTES));
     assert!(
         blob_pages <= NET_CLIENT_BLOB_PAGES,
         "a {}-byte blob is more than a stack client's {NET_CLIENT_BLOB_PAGES} blob pages",
@@ -426,12 +426,12 @@ pub(super) fn spawn_stack_client(
     {
         let phys = crate::memory_region::retype_page(cli_stack_region)
             .expect("no frame for the net client");
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = phys;
     }
     let mut n_maps = NET_CLIENT_STACK_PAGES as usize;
     if let Some(bytes) = blob {
-        for (k, chunk) in bytes.chunks(FRAME_SIZE as usize).enumerate() {
+        for (k, chunk) in bytes.chunks(FRAME_BYTES as usize).enumerate() {
             let phys = crate::memory_region::retype_page(cli_stack_region)
                 .expect("no frame for the net client's blob");
             // SAFETY: the page was just retyped (exclusively ours, zeroed, direct-mapped), and
@@ -444,7 +444,7 @@ pub(super) fn spawn_stack_client(
                 );
             }
             maps[n_maps] = Mapping {
-                va: NET_CLIENT_CATALOGUE_VA + k as u64 * FRAME_SIZE,
+                va: NET_CLIENT_CATALOGUE_VA + k as u64 * FRAME_BYTES,
                 phys,
                 flags: Flags::user_read_only_data(),
             };
@@ -491,7 +491,7 @@ const STD_NET_STACK_PAGES: u64 = 32;
 /// The client gets the std slots (heap untyped at 0, stdout at 1) plus the `Stack` endpoint's
 /// `WRITE` at 2 and a budget for per-socket shared frames at 3; without 2 and 3 the same binary runs
 /// its offline transcript. `listen_grant` decides whether `std::net::TcpListener::bind` may succeed:
-/// `socket_contract::NO_LISTEN_GRANT` answers `PermissionDenied` for every port.
+/// `socket_contract::NO_PORT_GRANT` answers `PermissionDenied` for every port.
 ///
 /// Returns the program's stdout endpoint, its thread (so a test can tell a dead program from a busy
 /// one) and what ends the service, or `None` if no NIC is attached or the IOMMU refuses it. See
@@ -546,7 +546,7 @@ fn spawn_std_net_client(
     for (k, m) in stackmaps.iter_mut().enumerate() {
         let phys = crate::memory_region::retype_page(std_stack_region)
             .expect("no frame for the std net stack");
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = phys;
     }
 
@@ -678,13 +678,15 @@ const ROLE_VIRTIO_ATTACK: u64 = 8;
 /// kernel image. Returns the endpoint on which it reports whether the kernel refused it.
 pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
     let dev = crate::virtio::find_block_device()?;
-    let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+    let dma = crate::memory::alloc_zeroed()
+        .expect("no DMA frame")
+        .physical_address();
     let vid = crate::virtio::register(
         crate::virtio::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
         },
         dma,
-        FRAME_SIZE,
+        FRAME_BYTES,
         None,
     )?;
     let report = crate::sched::create_rendezvous();
@@ -726,13 +728,15 @@ const ROLE_VIRTIO_ATTACK_INDIRECT: u64 = 13;
 /// report endpoint.
 pub fn start_attacker_indirect(image: &'static [u8]) -> Option<RendezvousId> {
     let dev = crate::virtio::find_block_device()?;
-    let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+    let dma = crate::memory::alloc_zeroed()
+        .expect("no DMA frame")
+        .physical_address();
     let vid = crate::virtio::register(
         crate::virtio::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
         },
         dma,
-        FRAME_SIZE,
+        FRAME_BYTES,
         None,
     )?;
     let report = crate::sched::create_rendezvous();

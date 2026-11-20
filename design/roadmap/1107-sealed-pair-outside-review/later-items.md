@@ -22,7 +22,7 @@ An appendix to [the milestone](../1107-sealed-pair-outside-review.md).
     and change nothing.
     Door: two-way. Effort: S.
 
-12. In the stick path the haystack contains the archive. LEFT: the condition is in the crate's `BUGS`; the span change is a lane of its own.
+12. In the stick path the haystack contains the archive. DONE: `embedded_archive` returns the archive's span and the checker searches the bytes outside it.
     Finding: `card_check` passes the whole boot file as the kernel and the archive found inside it
     as the archive, so `contains` searches the archive too. Today no archive entry carries another
     entry's digest as raw bytes (the table and the loader's words are hex text), so the search
@@ -48,7 +48,7 @@ An appendix to [the milestone](../1107-sealed-pair-outside-review.md).
     written here (ten lines, no dependency) or `memchr` behind the dependency rule.
     Door: two-way. Effort: XS to measure, S to change.
 
-14. No proof, in a crate whose two neighbors each carry two. PARTIAL: `contains_finds_a_digest_exactly_when_it_is_there`, with its falsification patch and a `script/verify` row. LEFT: the table comparison, the second harness the item allows.
+14. No proof, in a crate whose two neighbors each carry two. DONE: `contains_finds_a_digest_exactly_when_it_is_there` and `a_table_line_vouches_for_an_entry_exactly_when_the_digests_are_equal`, each with its falsification patch, and a `script/verify` row.
     Finding: `nifefs` and `measured_boot` each have two Kani harnesses with falsification patches;
     this crate has none. Its logic is small and pure. It has `contains` (a window exists if and only
     if the needle is at some offset) and `embedded_archive` (the result starts with `MAGIC` and

@@ -1,62 +1,24 @@
 //! The crate's host tests.
 //!
 //! Every node in these tests is minted once, through [`token`], on an [`Owned`] node declared
-//! before its `Rendezvous`; Rust drops locals in reverse declaration order, so the rendezvous goes
-//! first and a node parked on a queue when a test ends was valid for all of its time there.
+//! before its `Rendezvous`, which meets the two obligations [`test_node`] states.
 
 use super::*;
 
-struct N {
-    next: Option<NonNull<N>>,
-}
-
-// SAFETY: `next` and `set_next` read and write the same `next` field and nothing else, which is the whole of the `Node` contract.
-unsafe impl Node for N {
-    fn next(&self) -> Option<NonNull<Self>> {
-        self.next
-    }
-    fn set_next(&mut self, next: Option<NonNull<Self>>) {
-        self.next = next;
-    }
-}
-
-/// A test's node, owned through the pointer `Box::into_raw` returned. Every access, the
-/// token's and the test's, derives from that one pointer (`Unqueued::new`'s provenance
-/// clause), and dropping it frees the node.
-struct Owned(NonNull<N>);
-
-impl Drop for Owned {
-    fn drop(&mut self) {
-        // SAFETY: the pointer came from `Box::into_raw` in `node`, and is freed only here.
-        drop(unsafe { Box::from_raw(self.0.as_ptr()) });
+/// The counts a rendezvous reports, written out in the order the old tuple used.
+fn counts(
+    queued_senders: usize,
+    queued_receivers: usize,
+    pending_signals: u32,
+) -> RendezvousCounts {
+    RendezvousCounts {
+        queued_senders,
+        queued_receivers,
+        pending_signals,
     }
 }
 
-impl core::ops::Deref for Owned {
-    type Target = N;
-    fn deref(&self) -> &N {
-        // SAFETY: live until `drop`; the reference is the test's, taken between queue
-        // operations.
-        unsafe { self.0.as_ref() }
-    }
-}
-
-impl core::ops::DerefMut for Owned {
-    fn deref_mut(&mut self) -> &mut N {
-        // SAFETY: as `deref`.
-        unsafe { self.0.as_mut() }
-    }
-}
-
-fn node() -> Owned {
-    Owned(NonNull::new(Box::into_raw(Box::new(N { next: None }))).unwrap())
-}
-
-fn token(n: &mut Owned) -> Unqueued<N> {
-    // SAFETY: a live boxed node declared before its rendezvous, on no queue, minted once per
-    // test (see the module note), from the pointer every other access derives from.
-    unsafe { Unqueued::new(n.0) }
-}
+use test_node::{N, Owned, node, token};
 
 /// **Two verdicts are equal when they decided the same thing about the same nodes**, and a
 /// verdict about other nodes, or of another kind, is not. Every node here has one token, so a
@@ -68,11 +30,11 @@ fn a_verdict_equals_itself_and_no_other() {
         let mut t = n.iter_mut().map(token);
         let mut next = || t.next().unwrap();
         let sends = [
-            Send::Rendezvous(next(), next()),
-            Send::Rendezvous(next(), next()),
-            Send::Refused(next()),
-            Send::Refused(next()),
-            Send::Blocked,
+            SendVerdict::Rendezvous(next(), next()),
+            SendVerdict::Rendezvous(next(), next()),
+            SendVerdict::Refused(next()),
+            SendVerdict::Refused(next()),
+            SendVerdict::Blocked,
         ];
         for (i, x) in sends.iter().enumerate() {
             for (j, y) in sends.iter().enumerate() {
@@ -84,11 +46,11 @@ fn a_verdict_equals_itself_and_no_other() {
     let mut t = n.iter_mut().map(token);
     let mut next = || t.next().unwrap();
     let receives = [
-        Receive::Signal(next()),
-        Receive::Signal(next()),
-        Receive::FromSender(next(), next()),
-        Receive::FromSender(next(), next()),
-        Receive::Blocked,
+        ReceiveVerdict::Signal(next()),
+        ReceiveVerdict::Signal(next()),
+        ReceiveVerdict::FromSender(next(), next()),
+        ReceiveVerdict::FromSender(next(), next()),
+        ReceiveVerdict::Blocked,
     ];
     for (i, x) in receives.iter().enumerate() {
         for (j, y) in receives.iter().enumerate() {
@@ -106,13 +68,13 @@ fn sender_first_then_receiver_rendezvous() {
     let (st, rt) = (token(&mut s), token(&mut r));
     let mut e: Rendezvous<N> = Rendezvous::new();
 
-    assert_eq!(e.send(st), Send::Blocked); // nobody waiting: park the sender
+    assert_eq!(e.send(st), SendVerdict::Blocked); // nobody waiting: park the sender
     match e.receive(rt) {
         // receiver collects it, and keeps its own token
-        Receive::FromSender(got, back) => assert!(got == sp && back == rp),
+        ReceiveVerdict::FromSender(got, back) => assert!(got == sp && back == rp),
         other => panic!("{other:?}"),
     }
-    assert!(e.one_queue_invariant());
+    assert!(e.one_queue_invariant_holds());
 }
 
 /// **A driver waiting on its interrupt is handed the interrupt and nothing else** (DECISIONS
@@ -126,13 +88,13 @@ fn a_driver_waiting_on_its_interrupt_is_not_handed_a_send() {
     let mut e: Rendezvous<N> = Rendezvous::new();
     e.bind_to_interrupt(|_| panic!("nobody was queued"));
 
-    assert_eq!(e.receive(dt), Receive::Blocked);
+    assert_eq!(e.receive(dt), ReceiveVerdict::Blocked);
     match e.send(ft) {
-        Send::Refused(back) => assert!(back == fp, "the forger keeps its own token"),
+        SendVerdict::Refused(back) => assert!(back == fp, "the forger keeps its own token"),
         other => panic!("{other:?}"),
     }
     // Still parked, still the only waiter, and the interrupt still reaches it.
-    assert_eq!(e.debug_counts(), (0, 1, 0));
+    assert_eq!(e.debug_counts(), counts(0, 1, 0));
     assert!(e.signal().is_some_and(|t| t == dp));
     assert!(e.is_idle());
 }
@@ -148,8 +110,8 @@ fn binding_refuses_the_senders_already_parked() {
     let driver_at = NonNull::from(&mut *driver);
     let (first, second, driver) = (token(&mut first), token(&mut second), token(&mut driver));
     let mut e: Rendezvous<N> = Rendezvous::new();
-    assert_eq!(e.send(first), Send::Blocked);
-    assert_eq!(e.send(second), Send::Blocked);
+    assert_eq!(e.send(first), SendVerdict::Blocked);
+    assert_eq!(e.send(second), SendVerdict::Blocked);
 
     let mut refused = Vec::new();
     e.bind_to_interrupt(|t| refused.push(t.as_non_null()));
@@ -158,9 +120,9 @@ fn binding_refuses_the_senders_already_parked() {
         [first_at, second_at],
         "every parked sender, oldest first"
     );
-    assert_eq!(e.debug_counts(), (0, 0, 0));
+    assert_eq!(e.debug_counts(), counts(0, 0, 0));
 
-    assert_eq!(e.receive(driver), Receive::Blocked);
+    assert_eq!(e.receive(driver), ReceiveVerdict::Blocked);
     assert!(e.signal().is_some_and(|t| t == driver_at));
     assert!(e.is_idle());
 }
@@ -172,10 +134,10 @@ fn receiver_first_then_sender_rendezvous() {
     let (st, rt) = (token(&mut s), token(&mut r));
     let mut e: Rendezvous<N> = Rendezvous::new();
 
-    assert_eq!(e.receive(rt), Receive::Blocked);
+    assert_eq!(e.receive(rt), ReceiveVerdict::Blocked);
     match e.send(st) {
         // sender meets the waiter
-        Send::Rendezvous(got, back) => assert!(got == rp && back == sp),
+        SendVerdict::Rendezvous(got, back) => assert!(got == rp && back == sp),
         other => panic!("{other:?}"),
     }
 }
@@ -188,15 +150,15 @@ fn senders_queue_in_arrival_order() {
     let (at, bt, rt) = (token(&mut a), token(&mut b), token(&mut r));
     let mut e: Rendezvous<N> = Rendezvous::new();
 
-    assert_eq!(e.send(at), Send::Blocked);
-    assert_eq!(e.send(bt), Send::Blocked);
+    assert_eq!(e.send(at), SendVerdict::Blocked);
+    assert_eq!(e.send(bt), SendVerdict::Blocked);
     // The receiver's token comes back from each collect, and is what the next receive takes:
     // that it was never queued is now a fact the second call cannot be written without.
-    let Receive::FromSender(first, rt) = e.receive(rt) else {
+    let ReceiveVerdict::FromSender(first, rt) = e.receive(rt) else {
         panic!("no sender collected")
     };
     assert!(first == ap);
-    let Receive::FromSender(second, _) = e.receive(rt) else {
+    let ReceiveVerdict::FromSender(second, _) = e.receive(rt) else {
         panic!("no sender collected")
     };
     assert!(second == bp);
@@ -211,13 +173,13 @@ fn a_signal_to_an_empty_rendezvous_is_counted_then_drained() {
 
     assert!(e.signal().is_none()); // counted
     assert!(e.signal().is_none());
-    let Receive::Signal(rt) = e.receive(rt) else {
+    let ReceiveVerdict::Signal(rt) = e.receive(rt) else {
         panic!("the first counted signal was not drained")
     };
-    let Receive::Signal(rt) = e.receive(rt) else {
+    let ReceiveVerdict::Signal(rt) = e.receive(rt) else {
         panic!("the second counted signal was not drained")
     };
-    assert_eq!(e.receive(rt), Receive::Blocked);
+    assert_eq!(e.receive(rt), ReceiveVerdict::Blocked);
 }
 
 /// The rendezvous-destroy contract (object revocation): `drain_waiters` hands back every parked
@@ -236,8 +198,8 @@ fn drain_hands_back_every_waiter_and_leaves_the_rendezvous_idle() {
     // Via `default()`: the kernel retypes rendezvous pages through it, not through `new()`.
     let mut e: Rendezvous<N> = Rendezvous::default();
 
-    assert_eq!(e.send(at), Send::Blocked);
-    assert_eq!(e.send(bt), Send::Blocked);
+    assert_eq!(e.send(at), SendVerdict::Blocked);
+    assert_eq!(e.send(bt), SendVerdict::Blocked);
     assert!(!e.is_idle(), "parked senders hold the rendezvous live");
 
     let mut drained = Vec::new();
@@ -246,7 +208,7 @@ fn drain_hands_back_every_waiter_and_leaves_the_rendezvous_idle() {
     assert!(e.is_idle());
 
     // The other queue drains through the same path: a receiver can be parked too.
-    assert_eq!(e.receive(rt), Receive::Blocked);
+    assert_eq!(e.receive(rt), ReceiveVerdict::Blocked);
     drained.clear();
     e.drain_waiters(|w| drained.push(w.as_non_null()));
     assert_eq!(drained, [rp]);
@@ -271,12 +233,12 @@ fn the_pending_count_saturates_and_a_receive_still_drains_one() {
     let mut e: Rendezvous<N> = Rendezvous::new();
     e.pending = u32::MAX;
     assert!(e.signal().is_none());
-    assert_eq!(e.debug_counts(), (0, 0, u32::MAX));
+    assert_eq!(e.debug_counts(), counts(0, 0, u32::MAX));
     let mut driver = node();
-    let Receive::Signal(back) = e.receive(token(&mut driver)) else {
+    let ReceiveVerdict::Signal(back) = e.receive(token(&mut driver)) else {
         panic!("a pending signal was not drained");
     };
-    assert_eq!(e.debug_counts(), (0, 0, u32::MAX - 1));
+    assert_eq!(e.debug_counts(), counts(0, 0, u32::MAX - 1));
     drop(back);
 }
 
@@ -298,19 +260,23 @@ fn a_queued_sender_can_be_removed_from_the_middle() {
     let mut e: Rendezvous<N> = Rendezvous::new();
 
     for t in [token(&mut a), token(&mut b), token(&mut c)] {
-        assert_eq!(e.send(t), Send::Blocked);
+        assert_eq!(e.send(t), SendVerdict::Blocked);
     }
     assert!(e.remove_sender(bp).is_some_and(|t| t == bp), "b was queued");
-    assert_eq!(e.debug_counts().0, 2, "exactly one sender left the queue");
-    let Receive::FromSender(first, rt) = e.receive(rt) else {
+    assert_eq!(
+        e.debug_counts().queued_senders,
+        2,
+        "exactly one sender left the queue"
+    );
+    let ReceiveVerdict::FromSender(first, rt) = e.receive(rt) else {
         panic!("a was not collected")
     };
     assert!(first == ap);
-    let Receive::FromSender(second, rt) = e.receive(rt) else {
+    let ReceiveVerdict::FromSender(second, rt) = e.receive(rt) else {
         panic!("c was not collected")
     };
     assert!(second == cp);
-    assert_eq!(e.receive(rt), Receive::Blocked);
+    assert_eq!(e.receive(rt), ReceiveVerdict::Blocked);
 
     // Not queued (already collected, the ordinary case): a no-op that says so.
     let mut e2: Rendezvous<N> = Rendezvous::new();
@@ -328,12 +294,12 @@ fn removing_the_only_sender_leaves_the_rendezvous_idle() {
     let (at, rt) = (token(&mut a), token(&mut r));
     let mut e: Rendezvous<N> = Rendezvous::new();
 
-    assert_eq!(e.send(at), Send::Blocked);
+    assert_eq!(e.send(at), SendVerdict::Blocked);
     assert!(e.remove_sender(ap).is_some());
     assert!(e.is_idle(), "the rendezvous still holds a sender");
-    assert_eq!(e.receive(rt), Receive::Blocked);
+    assert_eq!(e.receive(rt), ReceiveVerdict::Blocked);
     // And it can be used again afterwards: push, pop, no ghost.
-    assert!(e.one_queue_invariant());
+    assert!(e.one_queue_invariant_holds());
 }
 
 /// **A queued receiver can be taken back out of the middle**, which is what milestone 133's
@@ -354,31 +320,39 @@ fn a_queued_receiver_can_be_removed_from_the_middle() {
 
     let mut a_again = None;
     for t in [token(&mut a), token(&mut b), token(&mut c)] {
-        assert_eq!(e.receive(t), Receive::Blocked);
+        assert_eq!(e.receive(t), ReceiveVerdict::Blocked);
     }
     assert!(
         e.remove_receiver(bp).is_some_and(|t| t == bp),
         "b was queued"
     );
-    assert_eq!(e.debug_counts().1, 2, "exactly one receiver left the queue");
-    let Send::Rendezvous(first, st) = e.send(st) else {
+    assert_eq!(
+        e.debug_counts().queued_receivers,
+        2,
+        "exactly one receiver left the queue"
+    );
+    let SendVerdict::Rendezvous(first, st) = e.send(st) else {
         panic!("a was not met")
     };
     assert!(first == ap);
     a_again.replace(first);
-    let Send::Rendezvous(second, _) = e.send(st) else {
+    let SendVerdict::Rendezvous(second, _) = e.send(st) else {
         panic!("c was not met")
     };
     assert!(second == cp);
 
     // Not queued: a no-op that says so, and it does not reach into the *sender* queue either.
     let mut e2: Rendezvous<N> = Rendezvous::new();
-    assert_eq!(e2.send(a_again.take().unwrap()), Send::Blocked);
+    assert_eq!(e2.send(a_again.take().unwrap()), SendVerdict::Blocked);
     assert!(
         e2.remove_receiver(ap).is_none(),
         "a queued sender is not a receiver"
     );
-    assert_eq!(e2.debug_counts().0, 1, "the sender queue was left alone");
+    assert_eq!(
+        e2.debug_counts().queued_senders,
+        1,
+        "the sender queue was left alone"
+    );
 }
 
 /// Removing the *only* queued receiver leaves the rendezvous idle rather than a queue with a
@@ -391,11 +365,11 @@ fn removing_the_only_receiver_leaves_the_rendezvous_idle() {
     let (at, st) = (token(&mut a), token(&mut sdr));
     let mut e: Rendezvous<N> = Rendezvous::new();
 
-    assert_eq!(e.receive(at), Receive::Blocked);
+    assert_eq!(e.receive(at), ReceiveVerdict::Blocked);
     assert!(e.remove_receiver(ap).is_some());
     assert!(e.is_idle(), "the rendezvous still holds a receiver");
-    assert_eq!(e.send(st), Send::Blocked);
-    assert!(e.one_queue_invariant());
+    assert_eq!(e.send(st), SendVerdict::Blocked);
+    assert!(e.one_queue_invariant_holds());
 }
 
 /// A signal with a receiver waiting hands it back directly and counts nothing.
@@ -406,9 +380,9 @@ fn a_signal_wakes_a_waiting_receiver() {
     let rt = token(&mut r);
     let mut e: Rendezvous<N> = Rendezvous::new();
 
-    assert_eq!(e.receive(rt), Receive::Blocked);
+    assert_eq!(e.receive(rt), ReceiveVerdict::Blocked);
     assert!(e.signal().is_some_and(|t| t == rp)); // the waiter, dequeued
-    assert!(e.one_queue_invariant());
+    assert!(e.one_queue_invariant_holds());
 }
 
 /// The manual `PartialEq` and `Debug` impls answer for themselves. Every use above compares
@@ -418,13 +392,13 @@ fn a_signal_wakes_a_waiting_receiver() {
 fn verdict_variants_are_distinct_and_print_their_names() {
     let mut n: Vec<Owned> = (0..6).map(|_| node()).collect();
     let [s1, s2, s3, s4, s5, t1] = [0, 1, 2, 3, 4, 5].map(|i| token(&mut n[i]));
-    assert_ne!(Send::<N>::Blocked, Send::Rendezvous(s1, s2));
-    assert_ne!(Receive::Signal(s3), Receive::Blocked);
-    let from = Receive::FromSender(s4, t1);
+    assert_ne!(SendVerdict::<N>::Blocked, SendVerdict::Rendezvous(s1, s2));
+    assert_ne!(ReceiveVerdict::Signal(s3), ReceiveVerdict::Blocked);
+    let from = ReceiveVerdict::FromSender(s4, t1);
     assert!(format!("{from:?}").starts_with("FromSender"));
-    assert_ne!(from, Receive::Signal(s5));
-    assert_eq!(format!("{:?}", Send::<N>::Blocked), "Blocked");
-    assert_eq!(format!("{:?}", Receive::<N>::Blocked), "Blocked");
+    assert_ne!(from, ReceiveVerdict::Signal(s5));
+    assert_eq!(format!("{:?}", SendVerdict::<N>::Blocked), "Blocked");
+    assert_eq!(format!("{:?}", ReceiveVerdict::<N>::Blocked), "Blocked");
 }
 
 /// A rendezvous starts as an ordinary one, and binding it to an interrupt is visible and stays.

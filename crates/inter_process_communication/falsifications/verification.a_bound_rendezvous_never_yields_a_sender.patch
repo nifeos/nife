@@ -5,7 +5,7 @@ natural reading of milestone 603 (an interrupt's endpoint refuses every send), s
 already checks the flag, and it misses the senders that queued before the bind.
 
 Expected to fail: `refused == usize::from(sender_was_queued)` when `seed` queued a sender, and
-the closing `!matches!(e.receive(me), Receive::FromSender(..))`, because the driver's receive
+the closing `!matches!(e.receive(me), ReceiveVerdict::FromSender(..))`, because the driver's receive
 collects the parked sender and wakes holding its words.
 
 diff --git a/crates/inter_process_communication/src/rendezvous.rs b/crates/inter_process_communication/src/rendezvous.rs

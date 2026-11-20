@@ -12,12 +12,12 @@ accessor touches whatever is next in the address space.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -33,7 +33,7 @@ impl Bdf {
-     /// `dev` and `func` are the 5- and 3-bit fields of the address; a larger value is masked to its
-     /// field here, so it can never land on the next bus's or the next device's page.
+@@ -61,7 +61,7 @@
+     /// land on the next bus's or the next device's page.
+     #[doc(alias = "enhanced configuration access mechanism")]
      pub fn ecam_offset(self) -> u64 {
 -        ((self.bus as u64) << 20)
 +        ((self.bus as u64) << 21)
-             | (((self.dev & 0x1f) as u64) << 15)
-             | (((self.func & 0x7) as u64) << 12)
+             | (((self.device & 0x1f) as u64) << 15)
+             | (((self.function & 0x7) as u64) << 12)
      }

@@ -148,9 +148,9 @@ const DESCRIPTOR_WAIT: u64 = 0x5 | 1 << 5 | 1 << 6; // status write, fence
 /// The value a wait descriptor writes to its status word when every earlier descriptor is done.
 const WAIT_DONE: u32 = 1;
 /// The queue is one frame of 128-bit descriptors: `IQA.QS` = 0 is 256 of them.
-const QUEUE_DESCRIPTORS: u64 = page_frames::FRAME_SIZE / 16;
+const QUEUE_DESCRIPTORS: u64 = page_frames::FRAME_BYTES / 16;
 /// The interrupt remapping table is one frame of 128-bit entries, `IRTA.S` = 7 (2^(S+1) = 256).
-const REMAPPING_ENTRIES: u16 = (page_frames::FRAME_SIZE / 16) as u16;
+const REMAPPING_ENTRIES: u16 = (page_frames::FRAME_BYTES / 16) as u16;
 const IRTA_SIZE_256: u64 = 7;
 
 // Root entry (one page, 256 x 16 bytes, one per PCI bus): lower qword only, in legacy mode.
@@ -270,7 +270,7 @@ impl Unit {
         if self.coherent {
             return;
         }
-        self.publish(table, page_frames::FRAME_SIZE);
+        self.publish(table, page_frames::FRAME_BYTES);
         if level == 1 {
             return;
         }
@@ -464,7 +464,7 @@ const fn remapped_entry(vector: u8, destination: u8, source_id: u16, level: bool
 const fn remappable_message(handle: u16) -> MsiTarget {
     let handle = handle as u64;
     MsiTarget {
-        address: MESSAGE_ADDRESS_BASE
+        message_address: MESSAGE_ADDRESS_BASE
             | (handle & 0x7fff) << 5
             | MESSAGE_REMAPPABLE_FORMAT
             | MESSAGE_SUBHANDLE_VALID
@@ -561,13 +561,13 @@ fn w64(base: u64, off: u64, v: u64) {
 fn zeroed_page_frame(what: &str) -> u64 {
     let pa = crate::memory::alloc()
         .unwrap_or_else(|| panic!("no frame for the IOMMU {what}"))
-        .addr();
+        .physical_address();
     // SAFETY: a fresh frame, reachable through the direct map, owned by this module from here on.
     unsafe {
         core::ptr::write_bytes(
             phys_to_virt(pa) as *mut u8,
             0,
-            page_frames::FRAME_SIZE as usize,
+            page_frames::FRAME_BYTES as usize,
         );
     }
     pa
@@ -638,7 +638,7 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
     }
     // The all-absent root goes to memory before the unit is pointed at it. Zero is what the
     // walk must read; whatever the frame held before is what it would read otherwise.
-    unit.publish(unit.root, page_frames::FRAME_SIZE);
+    unit.publish(unit.root, page_frames::FRAME_BYTES);
     mfence();
 
     // Firmware may hand over with translation already on (a pre-boot DMA protection setting, or
@@ -682,7 +682,7 @@ fn root_up(d: &Drhd) -> Result<Unit, &'static str> {
             tail: 0,
             status: zeroed_page_frame("invalidation status"),
         };
-        unit.publish(queue.base, page_frames::FRAME_SIZE);
+        unit.publish(queue.base, page_frames::FRAME_BYTES);
         mfence();
         w64(base, IQT, 0);
         // `IQA.DW` clear (128-bit descriptors) and `IQA.QS` zero (one frame, 256 of them).
@@ -707,7 +707,7 @@ fn remapping_up(u: &mut Unit) -> Result<(), &'static str> {
         return Err("ECAP.QI is clear, so the interrupt entry cache cannot be invalidated");
     }
     let table = zeroed_page_frame("interrupt remapping table");
-    u.publish(table, page_frames::FRAME_SIZE);
+    u.publish(table, page_frames::FRAME_BYTES);
     mfence();
     // `IRTA.EIME` clear: destinations are xAPIC ids (this module's BUGS).
     w64(u.base, IRTA, table | IRTA_SIZE_256);
@@ -1230,7 +1230,7 @@ pub fn attach(rid: u32, root: u64, _tag: u16) -> Result<(), crate::iommu::Attach
         Some(ctp) => ctp,
         None => {
             let ctp = zeroed_page_frame("context table");
-            s.publish(ctp, page_frames::FRAME_SIZE);
+            s.publish(ctp, page_frames::FRAME_BYTES);
             // Publish the (still all-absent) context table before the root entry that makes it
             // reachable, so the IOMMU can never walk to a root entry whose context table isn't
             // there yet.
@@ -1516,7 +1516,7 @@ mod proofs {
         let a: u16 = kani::any();
         let b: u16 = kani::any();
         let message = remappable_message(a);
-        let address = message.address;
+        let address = message.message_address;
         assert!(
             address >> 20 == 0xfee,
             "inside the interrupt address window, high half zero"
@@ -1533,7 +1533,7 @@ mod proofs {
         assert!(decoded == a, "the address names the handle granted");
         if a != b {
             assert!(
-                remappable_message(b).address != address,
+                remappable_message(b).message_address != address,
                 "two entries, two messages"
             );
         }
@@ -1640,8 +1640,9 @@ mod tests {
         let target = remap_message(d.rid, vector, 0)
             .expect("a remapping entry was free")
             .expect("the disk's unit remaps, so its message is remapped");
-        assert_ne!(target.address & MESSAGE_REMAPPABLE_FORMAT, 0);
-        let handle = ((target.address >> 5) & 0x7fff | ((target.address >> 2) & 1) << 15) as u16;
+        assert_ne!(target.message_address & MESSAGE_REMAPPABLE_FORMAT, 0);
+        let handle = ((target.message_address >> 5) & 0x7fff
+            | ((target.message_address >> 2) & 1) << 15) as u16;
         let i = owner_index(d.rid).expect("the disk has an owner");
         let g = IOMMU.lock();
         let Slot::Up(u) = &g.slots[i] else {
@@ -1700,6 +1701,16 @@ mod tests {
         }
     }
 
+    /// Whether `vector` lands within a bounded wait: the message follows the request's
+    /// completion, possibly on another host thread, so one read could miss a message that
+    /// lands, and a refusal is only believed after the whole wait.
+    fn vector_pends_within_wait(vector: u32) -> bool {
+        (0..200_000).any(|_| {
+            core::hint::spin_loop();
+            super::super::interrupt_controller::is_vector_pending(vector)
+        })
+    }
+
     /// **A message forged in one device's MSI-X table, naming a vector granted to another, is
     /// refused** (milestone 1068 step 5, in the shape of the confinement tests of
     /// milestone 202 (every confinement test is a ritual until somebody breaks the confinement)). The
@@ -1739,25 +1750,19 @@ mod tests {
         let (granted_address, granted_data) = read_message(granted_entry);
         let (own_address, own_data) = read_message(forger_entry);
 
-        let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+        let dma = crate::memory::alloc_zeroed()
+            .expect("no DMA frame")
+            .physical_address();
         let id = crate::virtio::register(
             crate::virtio::Transport::pci(&forger),
             dma,
-            page_frames::FRAME_SIZE,
+            page_frames::FRAME_BYTES,
             Some(forger.rid),
         )
         .expect("the IOMMU refused the second disk");
         let was = super::super::interrupts::disable();
         while take_fault().is_some() {}
-        // Whether `vector` lands within a bounded wait: the message follows the request's
-        // completion, possibly on another host thread, so one read could miss a message that
-        // lands, and a refusal is only believed after the whole wait.
-        let pending = |vector: u32| {
-            (0..200_000).any(|_| {
-                core::hint::spin_loop();
-                super::super::interrupt_controller::is_vector_pending(vector)
-            })
-        };
+        let pending = vector_pends_within_wait;
         assert!(
             !pending(granted.intid),
             "the first disk's vector was pending before the test"
@@ -1824,7 +1829,7 @@ mod tests {
         while take_fault().is_some() {}
         super::super::interrupts::restore(was);
         crate::virtio::unregister(id);
-        crate::memory::free(page_frames::PageFrame::from_addr(dma));
+        crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
     }
 
     /// **Every unit the DMAR names is translating** (milestone 594). Before it, one unit came up

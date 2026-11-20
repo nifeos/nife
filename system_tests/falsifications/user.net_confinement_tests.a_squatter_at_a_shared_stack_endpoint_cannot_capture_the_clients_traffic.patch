@@ -41,6 +41,6 @@ index 5e2b1b9d6..7faffc0d5 100644
 +            .find(badge)
 +            .or_else(|| table.socks.iter().position(Option::is_some))
 +        else {
-             reply(to, REP_ERR, 0);
+             reply(to, REPLY_ERROR, 0);
              continue;
          };

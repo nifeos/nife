@@ -3,17 +3,17 @@ Falsifies `inter_process_communication::notification::verification::a_wait_retur
 The defect: `WAIT` reads the word and forgets to clear it, so the same bits are delivered again
 on every later wait. A copy where a take was meant.
 
-Expected to fail: `assert_eq!(n.word, 0)` after `Wait::Word`.
+Expected to fail: `assert_eq!(n.word, 0)` after `WaitVerdict::Word`.
 
 diff --git a/crates/inter_process_communication/src/notification.rs b/crates/inter_process_communication/src/notification.rs
 --- a/crates/inter_process_communication/src/notification.rs
 +++ b/crates/inter_process_communication/src/notification.rs
 @@ -192,7 +192,7 @@ impl<T: Node> Notification<T> {
      /// `me`, and the caller blocks it.
-     pub fn wait(&mut self, me: Unqueued<T>) -> Wait<T> {
+     pub fn wait(&mut self, me: Unqueued<T>) -> WaitVerdict<T> {
          if self.word != 0 {
--            Wait::Word(core::mem::take(&mut self.word), me)
-+            Wait::Word(self.word, me)
+-            WaitVerdict::Word(core::mem::take(&mut self.word), me)
++            WaitVerdict::Word(self.word, me)
          } else {
              self.waiters.push_back(me);
-             Wait::Blocked
+             WaitVerdict::Blocked

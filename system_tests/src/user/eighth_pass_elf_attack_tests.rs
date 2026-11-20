@@ -107,7 +107,7 @@ fn an_elf_whose_segment_arithmetic_overflows_is_refused_as_an_overflow() {
 #[test_case]
 fn an_elf_that_reaches_from_its_band_into_the_kernel_half_is_refused() {
     let reach = mmu::KERNEL_VA_BASE.wrapping_sub(address_space_layout::IMAGE_BASE)
-        + page_frames::FRAME_SIZE;
+        + page_frames::FRAME_BYTES;
     let image = forged(
         address_space_layout::IMAGE_BASE,
         static_elf::READABLE | static_elf::EXECUTABLE,
@@ -142,7 +142,7 @@ fn an_elf_whose_second_segment_names_the_kernel_is_refused() {
         load(&image, 0, &[]).err(),
         Some(LoadError::Misplaced(
             address_space_layout::ImagePlacement::TooLarge {
-                image_end: mmu::KERNEL_VA_BASE + page_frames::FRAME_SIZE,
+                image_end: mmu::KERNEL_VA_BASE + page_frames::FRAME_BYTES,
                 stack_base: address_space_layout::STACK.start,
             }
         )),

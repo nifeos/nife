@@ -22,7 +22,7 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// ```
 /// use core::ptr::NonNull;
 /// use intrusive_queue::{Node, Unqueued};
-/// use inter_process_communication::notification::{Notification, Signal, Wait};
+/// use inter_process_communication::notification::{Notification, SignalVerdict, WaitVerdict};
 /// # struct ThreadControlBlock {
 /// #     next: Option<NonNull<ThreadControlBlock>>,
 /// # }
@@ -36,34 +36,51 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// let mut n: Notification<ThreadControlBlock> = Notification::new();
 ///
 /// // Two signals with nobody waiting accumulate into one word. Neither is lost.
-/// assert_eq!(n.signal(0b01, false), Signal::Counted);
-/// assert_eq!(n.signal(0b10, false), Signal::Counted);
+/// assert_eq!(n.signal(0b01, false), SignalVerdict::Counted);
+/// assert_eq!(n.signal(0b10, false), SignalVerdict::Counted);
 ///
 /// // SAFETY: from a live local's place, declared before `n`, not named again, on no queue.
 /// let token = unsafe { Unqueued::new(waiter) };
 ///
 /// // A wait takes the whole word and clears it, without blocking, and hands the token back.
-/// let Wait::Word(word, token) = n.wait(token) else { panic!("blocked on a non-zero word") };
+/// let WaitVerdict::Word(word, token) = n.wait(token) else { panic!("blocked on a non-zero word") };
 /// assert_eq!(word, 0b11);
 ///
 /// // The next wait finds nothing and queues; a signal now wakes it with its bits, already dequeued.
-/// assert_eq!(n.wait(token), Wait::Blocked);
+/// assert_eq!(n.wait(token), WaitVerdict::Blocked);
 /// match n.signal(0b100, false) {
-///     Signal::Woke(woken, bits) => assert!(woken == waiter && bits == 0b100),
+///     SignalVerdict::Woke(woken, bits) => assert!(woken == waiter && bits == 0b100),
 ///     other => panic!("{other:?}"),
 /// }
 /// assert!(n.is_idle());
 /// ```
 pub struct Notification<T: Node> {
-    /// Bits signalled since the last wait, poll or bound delivery took them. A bitfield of binary
+    /// Bits signaled since the last wait, poll or bound delivery took them. A bitfield of binary
     /// semaphores, as seL4's is: a signal ORs in, a take clears all of it.
     word: u64,
     /// Threads blocked in `WAIT`, oldest first.
     waiters: Queue<T>,
 }
 
+/// What a hang dump reads from a [`Notification`]:
+/// [`debug_counts`](Notification::debug_counts).
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane 1095-ipc-rulings-built. Replaces a tuple
+/// whose positions a reader had to remember. Considered: keeping the tuple.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NotificationCounts {
+    /// Threads blocked waiting.
+    pub waiters: usize,
+    /// The accumulated word.
+    pub word: u64,
+}
+
 /// What a [`signal`](Notification::signal) decided.
-pub enum Signal<T> {
+///
+/// Name: provisional. The `Verdict` suffix gives all five operation enums one shape, and is the
+/// word this crate's prose already uses for what an operation decided. Considered: `SignalOutcome` and
+/// keeping the bare name.
+pub enum SignalVerdict<T> {
     /// A thread was waiting on the notification itself: deliver this word to it and wake it. It is
     /// already off the queue, and this is its token.
     Woke(Unqueued<T>, u64),
@@ -78,7 +95,11 @@ pub enum Signal<T> {
 
 /// What a [`wait`](Notification::wait) decided. As for the rendezvous's verdicts, the one that
 /// leaves the caller off the queue hands its token back.
-pub enum Wait<T> {
+///
+/// Name: provisional. The `Verdict` suffix gives all five operation enums one shape, and is the
+/// word this crate's prose already uses for what an operation decided. Considered: `WaitOutcome` and
+/// keeping the bare name.
+pub enum WaitVerdict<T> {
     /// The word was non-zero: here it is, and it is now clear. The caller does not block, and keeps
     /// its token.
     Word(u64, Unqueued<T>),
@@ -86,47 +107,50 @@ pub enum Wait<T> {
     Blocked,
 }
 
-impl<T> PartialEq for Wait<T> {
+impl<T> PartialEq for WaitVerdict<T> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Wait::Word(x, a), Wait::Word(y, b)) => x == y && a.as_non_null() == b.as_non_null(),
-            (Wait::Blocked, Wait::Blocked) => true,
+            (WaitVerdict::Word(x, a), WaitVerdict::Word(y, b)) => {
+                x == y && a.as_non_null() == b.as_non_null()
+            }
+            (WaitVerdict::Blocked, WaitVerdict::Blocked) => true,
             _ => false,
         }
     }
 }
-impl<T> Eq for Wait<T> {}
-impl<T> core::fmt::Debug for Wait<T> {
+impl<T> Eq for WaitVerdict<T> {}
+impl<T> core::fmt::Debug for WaitVerdict<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Wait::Word(w, t) => f.debug_tuple("Word").field(w).field(t).finish(),
-            Wait::Blocked => f.write_str("Blocked"),
+            WaitVerdict::Word(w, t) => f.debug_tuple("Word").field(w).field(t).finish(),
+            WaitVerdict::Blocked => f.write_str("Blocked"),
         }
     }
 }
 
-// Manual impls, for the reason the rendezvous's `Send` gives: only the pointer is compared, and the
+// Manual impls, for the reason the rendezvous's `SendVerdict` gives: only the pointer is compared, and the
 // kernel's `T` (a TCB) is neither `PartialEq` nor `Debug`.
-impl<T> PartialEq for Signal<T> {
+impl<T> PartialEq for SignalVerdict<T> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Signal::Woke(a, x), Signal::Woke(b, y)) => {
+            (SignalVerdict::Woke(a, x), SignalVerdict::Woke(b, y)) => {
                 a.as_non_null() == b.as_non_null() && x == y
             }
-            (Signal::ToBound(x), Signal::ToBound(y)) => x == y,
-            (Signal::Counted, Signal::Counted) | (Signal::Empty, Signal::Empty) => true,
+            (SignalVerdict::ToBound(x), SignalVerdict::ToBound(y)) => x == y,
+            (SignalVerdict::Counted, SignalVerdict::Counted)
+            | (SignalVerdict::Empty, SignalVerdict::Empty) => true,
             _ => false,
         }
     }
 }
-impl<T> Eq for Signal<T> {}
-impl<T> core::fmt::Debug for Signal<T> {
+impl<T> Eq for SignalVerdict<T> {}
+impl<T> core::fmt::Debug for SignalVerdict<T> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            Signal::Woke(p, w) => f.debug_tuple("Woke").field(p).field(w).finish(),
-            Signal::ToBound(w) => f.debug_tuple("ToBound").field(w).finish(),
-            Signal::Counted => f.write_str("Counted"),
-            Signal::Empty => f.write_str("Empty"),
+            SignalVerdict::Woke(p, w) => f.debug_tuple("Woke").field(p).field(w).finish(),
+            SignalVerdict::ToBound(w) => f.debug_tuple("ToBound").field(w).finish(),
+            SignalVerdict::Counted => f.write_str("Counted"),
+            SignalVerdict::Empty => f.write_str("Empty"),
         }
     }
 }
@@ -142,8 +166,8 @@ impl<T: Node> Notification<T> {
 
     /// **A non-zero word and a queued waiter never coexist.** The load-bearing invariant.
     ///
-    /// Name: provisional, and deliberately the verb form calef ratified for Rust predicates on
-    /// 2026-09-24, unlike its rendezvous twin (`one_queue_invariant`), which predates the rule.
+    /// Name: provisional, and deliberately the verb form the Rust predicate rule asks for, as its
+    /// rendezvous twin (`one_queue_invariant_holds`) has.
     pub fn invariant_holds(&self) -> bool {
         self.word == 0 || self.waiters.is_empty()
     }
@@ -159,45 +183,51 @@ impl<T: Node> Notification<T> {
         self.word
     }
 
-    /// Diagnostic: `(waiters, word)`, for a hang dump.
-    pub fn debug_counts(&self) -> (usize, u64) {
-        (self.waiters.len(), self.word)
+    /// Diagnostic: how many threads are waiting and the accumulated word, for a hang dump.
+    ///
+    /// Name: provisional, with [`NotificationCounts`] and its two fields: they replace a tuple
+    /// whose positions a reader had to remember.
+    pub fn debug_counts(&self) -> NotificationCounts {
+        NotificationCounts {
+            waiters: self.waiters.len(),
+            word: self.word,
+        }
     }
 
     /// A signal arrives carrying `bits`. Never blocks, never queues the signaler, never loses a
-    /// bit. In §101's order: a thread waiting here takes the bits ([`Signal::Woke`]); otherwise, if
+    /// bit. In §101's order: a thread waiting here takes the bits ([`SignalVerdict::Woke`]); otherwise, if
     /// `bound_receiving` says the bound thread is parked in a receive, it takes the whole word
-    /// ([`Signal::ToBound`]); otherwise the bits are merged into the word by OR
-    /// ([`Signal::Counted`]).
+    /// ([`SignalVerdict::ToBound`]); otherwise the bits are merged into the word by OR
+    /// ([`SignalVerdict::Counted`]).
     ///
-    /// Zero bits is [`Signal::Empty`] and changes nothing, for the reason
+    /// Zero bits is [`SignalVerdict::Empty`] and changes nothing, for the reason
     /// `notes/notification-objects.md` gives.
-    pub fn signal(&mut self, bits: u64, bound_receiving: bool) -> Signal<T> {
+    pub fn signal(&mut self, bits: u64, bound_receiving: bool) -> SignalVerdict<T> {
         if bits == 0 {
-            return Signal::Empty;
+            return SignalVerdict::Empty;
         }
         if let Some(waiter) = self.waiters.pop_front() {
             // The invariant says the word is zero while anyone waits, so these bits are the whole
             // of what is pending. `| self.word` would be a no-op, and writing it would hide that.
-            Signal::Woke(waiter, bits)
+            SignalVerdict::Woke(waiter, bits)
         } else if bound_receiving {
             let word = self.word | bits;
             self.word = 0;
-            Signal::ToBound(word)
+            SignalVerdict::ToBound(word)
         } else {
             self.word |= bits;
-            Signal::Counted
+            SignalVerdict::Counted
         }
     }
 
     /// A thread `me` waits. Take the word if it is non-zero, handing `me` back; otherwise queue
     /// `me`, and the caller blocks it.
-    pub fn wait(&mut self, me: Unqueued<T>) -> Wait<T> {
+    pub fn wait(&mut self, me: Unqueued<T>) -> WaitVerdict<T> {
         if self.word != 0 {
-            Wait::Word(core::mem::take(&mut self.word), me)
+            WaitVerdict::Word(core::mem::take(&mut self.word), me)
         } else {
             self.waiters.push_back(me);
-            Wait::Blocked
+            WaitVerdict::Blocked
         }
     }
 
@@ -243,47 +273,16 @@ impl<T: Node> Default for Notification<T> {
 }
 
 /// Machine-checked proofs of the notification state machine, in the rendezvous module's shape:
-/// inductive steps from an arbitrary valid state, with a non-empty queue modelled as one waiter,
+/// inductive steps from an arbitrary valid state, with a non-empty queue modeled as one waiter,
 /// because every decision here depends on whether the queue is *empty* and never on its length.
 ///
-/// The only `unsafe` left is minting tokens, and its obligations are the rendezvous harness's,
-/// stated there once: every node is declared before the notification (so it outlives it), and no
-/// node is minted twice.
+/// The only `unsafe` left is minting tokens, and its two obligations are stated once in
+/// `test_node`: every node is declared before the notification (so it outlives it), and no node is
+/// minted twice.
 #[cfg(kani)]
 mod verification {
     use super::*;
-
-    struct N {
-        next: Option<NonNull<N>>,
-    }
-
-    impl N {
-        fn new() -> Self {
-            N { next: None }
-        }
-    }
-
-    // SAFETY: `next` and `set_next` read and write the same field and nothing else.
-    unsafe impl Node for N {
-        fn next(&self) -> Option<NonNull<Self>> {
-            self.next
-        }
-        fn set_next(&mut self, next: Option<NonNull<Self>>) {
-            self.next = next;
-        }
-    }
-
-    /// Mint `n`'s token, from `&raw mut` on the harness local rather than from a reference
-    /// (`Unqueued::new`'s provenance clause).
-    ///
-    /// # Safety
-    /// `n` is `&raw mut` on a harness local declared before the notification, on no queue, minted only
-    /// once, and not named again.
-    unsafe fn mint(n: *mut N) -> Unqueued<N> {
-        // SAFETY: this function's own contract is `Unqueued::new`'s, and `&raw mut` on a local is
-        // never null.
-        unsafe { Unqueued::new(NonNull::new_unchecked(n)) }
-    }
+    use crate::test_node::{N, mint};
 
     /// An arbitrary valid state: either a symbolic non-zero word and nobody waiting, or a zero word
     /// and at most one waiter. Safe: the waiter arrives as a token.
@@ -325,7 +324,7 @@ mod verification {
         assert!(n.invariant_holds());
     }
 
-    /// **A signal loses no bit.** Whatever was pending plus what was signalled ends up either in
+    /// **A signal loses no bit.** Whatever was pending plus what was signaled ends up either in
     /// the word or in the delivery, exactly: `delivered | word_after == word_before | bits`.
     /// Falsification: replayable `crates/inter_process_communication/falsifications/notification.verification.a_signal_loses_no_bit.patch`
     #[kani::proof]
@@ -337,8 +336,8 @@ mod verification {
         let before = n.word;
         let bits: u64 = kani::any();
         let delivered = match n.signal(bits, kani::any()) {
-            Signal::Woke(_, word) | Signal::ToBound(word) => word,
-            Signal::Counted | Signal::Empty => 0,
+            SignalVerdict::Woke(_, word) | SignalVerdict::ToBound(word) => word,
+            SignalVerdict::Counted | SignalVerdict::Empty => 0,
         };
         assert_eq!(delivered | n.word, before | bits);
     }
@@ -359,17 +358,17 @@ mod verification {
         kani::assume(bits != 0);
         let bound: bool = kani::any();
         match n.signal(bits, bound) {
-            Signal::Woke(got, _) => {
+            SignalVerdict::Woke(got, _) => {
                 assert!(had_waiter);
                 assert!(got == waiter);
             }
-            Signal::ToBound(_) => {
+            SignalVerdict::ToBound(_) => {
                 assert!(!had_waiter && bound);
             }
-            Signal::Counted => {
+            SignalVerdict::Counted => {
                 assert!(!had_waiter && !bound);
             }
-            Signal::Empty => panic!("a non-zero signal reported nothing to deliver"),
+            SignalVerdict::Empty => panic!("a non-zero signal reported nothing to deliver"),
         }
     }
 
@@ -386,12 +385,12 @@ mod verification {
         seed(&mut n, w);
         let before = n.word;
         match n.wait(me) {
-            Wait::Word(word, _) => {
+            WaitVerdict::Word(word, _) => {
                 assert!(word != 0);
                 assert_eq!(word, before);
                 assert_eq!(n.word, 0);
             }
-            Wait::Blocked => assert_eq!(before, 0),
+            WaitVerdict::Blocked => assert_eq!(before, 0),
         }
     }
 }
@@ -399,59 +398,7 @@ mod verification {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    struct N {
-        next: Option<NonNull<N>>,
-    }
-
-    // SAFETY: plain field storage.
-    unsafe impl Node for N {
-        fn next(&self) -> Option<NonNull<Self>> {
-            self.next
-        }
-        fn set_next(&mut self, next: Option<NonNull<Self>>) {
-            self.next = next;
-        }
-    }
-
-    /// A test's node, owned through the pointer `Box::into_raw` returned. Every access, the
-    /// token's and the test's, derives from that one pointer (`Unqueued::new`'s provenance
-    /// clause), and dropping it frees the node.
-    struct Owned(NonNull<N>);
-
-    impl Drop for Owned {
-        fn drop(&mut self) {
-            // SAFETY: the pointer came from `Box::into_raw` in `node`, and is freed only here.
-            drop(unsafe { Box::from_raw(self.0.as_ptr()) });
-        }
-    }
-
-    impl core::ops::Deref for Owned {
-        type Target = N;
-        fn deref(&self) -> &N {
-            // SAFETY: live until `drop`; the reference is the test's, taken between queue
-            // operations.
-            unsafe { self.0.as_ref() }
-        }
-    }
-
-    impl core::ops::DerefMut for Owned {
-        fn deref_mut(&mut self) -> &mut N {
-            // SAFETY: as `deref`.
-            unsafe { self.0.as_mut() }
-        }
-    }
-
-    fn node() -> Owned {
-        Owned(NonNull::new(Box::into_raw(Box::new(N { next: None }))).unwrap())
-    }
-
-    /// Mint a node's token from its owning pointer. Every test calls this once per node, on a node
-    /// declared before its notification, so the node outlives it and is on no queue yet.
-    fn token(n: &mut Owned) -> Unqueued<N> {
-        // SAFETY: as the doc comment says.
-        unsafe { Unqueued::new(n.0) }
-    }
+    use crate::test_node::{N, node, token};
 
     /// **A wait's verdict is equal only to itself**: the same word for another node, another word,
     /// or a block are all different verdicts. Each node has one token, so only a verdict compared
@@ -460,10 +407,10 @@ mod tests {
     fn a_wait_verdict_equals_itself_and_no_other() {
         let (mut a, mut b, mut c) = (node(), node(), node());
         let waits = [
-            Wait::Word(1, token(&mut a)),
-            Wait::Word(1, token(&mut b)),
-            Wait::Word(2, token(&mut c)),
-            Wait::Blocked,
+            WaitVerdict::Word(1, token(&mut a)),
+            WaitVerdict::Word(1, token(&mut b)),
+            WaitVerdict::Word(2, token(&mut c)),
+            WaitVerdict::Blocked,
         ];
         for (i, x) in waits.iter().enumerate() {
             for (j, y) in waits.iter().enumerate() {
@@ -478,8 +425,8 @@ mod tests {
     #[test]
     fn the_bound_receiver_takes_what_accumulated() {
         let mut n: Notification<N> = Notification::new();
-        assert_eq!(n.signal(0b001, false), Signal::Counted);
-        assert_eq!(n.signal(0b100, true), Signal::ToBound(0b101));
+        assert_eq!(n.signal(0b001, false), SignalVerdict::Counted);
+        assert_eq!(n.signal(0b100, true), SignalVerdict::ToBound(0b101));
         assert_eq!(n.word(), 0);
     }
 
@@ -491,22 +438,40 @@ mod tests {
         let (pointer_a, pointer_b) = (NonNull::from(&mut *a), NonNull::from(&mut *b));
         let mut n: Notification<N> = Notification::default();
         assert!(n.is_idle() && n.invariant_holds());
-        assert_eq!(n.debug_counts(), (0, 0));
-        assert_eq!(n.wait(token(&mut a)), Wait::Blocked);
-        assert_eq!(n.wait(token(&mut b)), Wait::Blocked);
+        assert_eq!(
+            n.debug_counts(),
+            NotificationCounts {
+                waiters: 0,
+                word: 0
+            }
+        );
+        assert_eq!(n.wait(token(&mut a)), WaitVerdict::Blocked);
+        assert_eq!(n.wait(token(&mut b)), WaitVerdict::Blocked);
         assert!(!n.is_idle());
-        assert_eq!(n.debug_counts(), (2, 0));
+        assert_eq!(
+            n.debug_counts(),
+            NotificationCounts {
+                waiters: 2,
+                word: 0
+            }
+        );
         let mut drained = Vec::new();
         n.drain_waiters(|w| drained.push(w.as_non_null()));
         assert_eq!(drained, vec![pointer_a, pointer_b]);
         assert!(n.is_idle());
         assert_eq!(
             n.signal(0, true),
-            Signal::Empty,
+            SignalVerdict::Empty,
             "no bits is nothing to deliver"
         );
-        assert_eq!(n.signal(0b10, false), Signal::Counted);
-        assert_eq!(n.debug_counts(), (0, 0b10));
+        assert_eq!(n.signal(0b10, false), SignalVerdict::Counted);
+        assert_eq!(
+            n.debug_counts(),
+            NotificationCounts {
+                waiters: 0,
+                word: 0b10
+            }
+        );
     }
 
     /// The outcome enums compare and print by variant and payload, which is what every assertion in
@@ -514,28 +479,28 @@ mod tests {
     #[test]
     fn outcomes_compare_and_print_by_variant() {
         let (mut a, mut b, mut c) = (node(), node(), node());
-        let all: [Signal<N>; 4] = [
-            Signal::Woke(token(&mut a), 1),
-            Signal::ToBound(2),
-            Signal::Counted,
-            Signal::Empty,
+        let all: [SignalVerdict<N>; 4] = [
+            SignalVerdict::Woke(token(&mut a), 1),
+            SignalVerdict::ToBound(2),
+            SignalVerdict::Counted,
+            SignalVerdict::Empty,
         ];
         for (i, x) in all.iter().enumerate() {
             for (j, y) in all.iter().enumerate() {
                 assert_eq!(x == y, i == j);
             }
         }
-        assert_ne!(Signal::<N>::ToBound(1), Signal::ToBound(2));
+        assert_ne!(SignalVerdict::<N>::ToBound(1), SignalVerdict::ToBound(2));
         assert_ne!(
-            Signal::Woke(token(&mut b), 1),
-            Signal::Woke(token(&mut c), 1)
+            SignalVerdict::Woke(token(&mut b), 1),
+            SignalVerdict::Woke(token(&mut c), 1)
         );
         let printed: Vec<String> = all.iter().map(|s| format!("{s:?}")).collect();
         assert!(printed[0].starts_with("Woke("));
         assert_eq!(printed[1], "ToBound(2)");
         assert_eq!(printed[2], "Counted");
         assert_eq!(printed[3], "Empty");
-        assert_eq!(format!("{:?}", Wait::<N>::Blocked), "Blocked");
+        assert_eq!(format!("{:?}", WaitVerdict::<N>::Blocked), "Blocked");
     }
 
     /// Waiters leave in arrival order, and removing one from the middle keeps the others.
@@ -548,14 +513,14 @@ mod tests {
             NonNull::from(&mut *c),
         );
         let mut n: Notification<N> = Notification::new();
-        assert_eq!(n.wait(token(&mut a)), Wait::Blocked);
-        assert_eq!(n.wait(token(&mut b)), Wait::Blocked);
-        assert_eq!(n.wait(token(&mut c)), Wait::Blocked);
+        assert_eq!(n.wait(token(&mut a)), WaitVerdict::Blocked);
+        assert_eq!(n.wait(token(&mut b)), WaitVerdict::Blocked);
+        assert_eq!(n.wait(token(&mut c)), WaitVerdict::Blocked);
         assert!(n.remove_waiter(pointer_b).is_some_and(|t| t == pointer_b));
         assert!(n.remove_waiter(pointer_b).is_none());
-        assert!(matches!(n.signal(1, false), Signal::Woke(t, 1) if t == pointer_a));
-        assert!(matches!(n.signal(2, false), Signal::Woke(t, 2) if t == pointer_c));
-        assert_eq!(n.signal(4, false), Signal::Counted);
+        assert!(matches!(n.signal(1, false), SignalVerdict::Woke(t, 1) if t == pointer_a));
+        assert!(matches!(n.signal(2, false), SignalVerdict::Woke(t, 2) if t == pointer_c));
+        assert_eq!(n.signal(4, false), SignalVerdict::Counted);
         assert_eq!(n.poll(), 4);
         assert_eq!(n.poll(), 0);
     }
@@ -571,7 +536,7 @@ mod tests {
         n.word = 0b1;
         assert!(n.invariant_holds(), "a word, nobody waiting");
         n.word = 0;
-        assert_eq!(n.wait(token(&mut a)), Wait::Blocked);
+        assert_eq!(n.wait(token(&mut a)), WaitVerdict::Blocked);
         assert!(n.invariant_holds(), "a waiter, no word");
         n.word = 0b1;
         assert!(!n.invariant_holds(), "a word and a waiter");
@@ -584,11 +549,11 @@ mod tests {
     #[test]
     fn counted_bits_accumulate_as_a_union_and_are_readable() {
         let mut n: Notification<N> = Notification::new();
-        assert_eq!(n.signal(0b0101, false), Signal::Counted);
+        assert_eq!(n.signal(0b0101, false), SignalVerdict::Counted);
         assert_eq!(n.word(), 0b0101);
-        assert_eq!(n.signal(0b0100, false), Signal::Counted);
+        assert_eq!(n.signal(0b0100, false), SignalVerdict::Counted);
         assert_eq!(n.word(), 0b0101, "an overlapping bit is not a toggle");
-        assert_eq!(n.signal(0b0110, true), Signal::ToBound(0b0111));
+        assert_eq!(n.signal(0b0110, true), SignalVerdict::ToBound(0b0111));
         assert_eq!(n.word(), 0);
     }
 }

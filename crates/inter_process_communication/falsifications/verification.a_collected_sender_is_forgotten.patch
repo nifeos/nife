@@ -23,11 +23,11 @@ index 845029a65..4b526b611 100644
 +++ b/crates/inter_process_communication/src/rendezvous.rs
 @@ -281,6 +281,9 @@ impl<T: Node> Rendezvous<T> {
              self.pending -= 1;
-             Receive::Signal(me)
+             ReceiveVerdict::Signal(me)
          } else if let Some(sender) = self.senders.pop_front() {
 +            // SAFETY: none. This is the defect: a second token for a node that keeps the first.
 +            self.senders
 +                .push_back(unsafe { Unqueued::new(sender.as_non_null()) });
-             Receive::FromSender(sender, me)
+             ReceiveVerdict::FromSender(sender, me)
          } else {
              self.receivers.push_back(me);

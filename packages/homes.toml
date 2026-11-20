@@ -149,11 +149,6 @@ paths = ["notes/file-allocation-table.md"]
 
 [[home]]
 status = "undecided"
-reason = "about crates/byte_glob alone; it leaves with that crate (§315)"
-paths = ["notes/glob.md", "notes/glob/"]
-
-[[home]]
-status = "undecided"
 reason = "about crates/globally_unique_identifier_partition_table alone; it leaves with that crate (§315)"
 paths = ["notes/globally-unique-identifier-partition-table.md", "notes/globally-unique-identifier-partition-table/"]
 

@@ -178,11 +178,11 @@ pub(super) fn signal_locked(
     bits: u64,
     placement: WakePlacement,
 ) -> Result<Option<usize>, abi::Error> {
-    use inter_process_communication::notification::Signal;
+    use inter_process_communication::notification::SignalVerdict;
     let page = notification_of(sched, id).ok_or(abi::Error::Gone)?;
     let bound = bound_receiver(sched, page);
     match page.state.signal(bits, bound.is_some()) {
-        Signal::Woke(waiter, word) => {
+        SignalVerdict::Woke(waiter, word) => {
             let tid = hold_token(waiter);
             let t = sched
                 .threads
@@ -193,12 +193,12 @@ pub(super) fn signal_locked(
             trace::record(trace::Event::Served, tid, 9);
             Ok(wake_placed(sched, tid, placement))
         }
-        Signal::ToBound(word) => {
+        SignalVerdict::ToBound(word) => {
             let (tid, ep) = bound.expect("the crate answered ToBound without a bound receiver");
             deliver_bound(sched, tid, ep, word);
             Ok(wake_placed(sched, tid, placement))
         }
-        Signal::Counted | Signal::Empty => Ok(None),
+        SignalVerdict::Counted | SignalVerdict::Empty => Ok(None),
     }
 }
 
@@ -234,7 +234,7 @@ pub fn signal_notification_from_interrupt(id: NotificationId, bits: u64) {
 /// `Notification::WAIT`: take the word, or block until a signal arrives. `Err(Gone)` if the
 /// notification is stale or destroyed while this thread waits (the region sweep aborts waiters).
 pub fn notification_wait(id: NotificationId) -> Result<u64, abi::Error> {
-    use inter_process_communication::notification::Wait as Waited;
+    use inter_process_communication::notification::WaitVerdict as Waited;
     let immediate = {
         let mut guard = IPC_TABLES.lock();
         let sched = guard.as_mut().expect("no scheduler");

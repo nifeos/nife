@@ -1,0 +1,5 @@
+# `doc_markdown` asks for backticks around anything that looks like an identifier. These are the
+# specifications' own names for protocols and devices, so backticks would say "an identifier you
+# could type" where the word names something in the world. `".."` extends clippy's defaults
+# instead of replacing them.
+doc-valid-idents = ["..", "PCIe", "NVMe", "xHCI", "SMMUv3", "CardBus", "INTx", "GICv3"]

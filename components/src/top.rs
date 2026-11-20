@@ -154,10 +154,12 @@ fn start(_a0: u64, a1: u64, _a2: u64) -> ! {
         // What became of `tload` (milestone 126, DECISIONS §225): the machine's run queue and busy
         // share, from the machine statistics page when the owner granted it.
         let machine = if is_granted(grant_contract::MACHINE_SLOT) {
-            // SAFETY: granted only alongside a read-only mapping of the same frame at `PAGE_VA`,
+            // SAFETY: granted only alongside a read-only mapping of the same frame at `PAGE_VIRTUAL_ADDRESS`,
             // which lives as long as this process (`system_initializer`'s spawn service).
             unsafe {
-                machine_statistics_contract::Snapshot::read(machine_statistics_contract::PAGE_VA)
+                machine_statistics_contract::Snapshot::read(
+                    machine_statistics_contract::PAGE_VIRTUAL_ADDRESS,
+                )
             }
         } else {
             None

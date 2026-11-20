@@ -264,7 +264,7 @@ pub const INDEX_SOURCES_SLOT: u64 = 18;
 /// **Where a program that declares [`Manifest::machine`] finds the machine statistics page's
 /// capability** (milestone 126 (the `procps` package), DECISIONS §225 (`free` sees the machine and
 /// your share)). Eleven, one past [`NETWORK_SLOT`], for that constant's reasons. The page itself is
-/// mapped at `machine_statistics_contract::PAGE_VA`; the capability is here so `caps` has a slot to
+/// mapped at `machine_statistics_contract::PAGE_VIRTUAL_ADDRESS`; the capability is here so `caps` has a slot to
 /// print and so the grant is visible in the table.
 ///
 /// Name: ratified 2026-09-27 (calef, #1360's table).
@@ -561,12 +561,12 @@ pub struct Manifest {
     /// right to `CALL` the socket contract, and the declaration is the whole of who may reach the
     /// network from this prompt. It reaches no other program's sockets, each being its own
     /// capability (§255 (each socket is its own capability)), and the stack holds
-    /// `socket_contract::NO_LISTEN_GRANT`, so a declaring program can connect out and cannot listen.
+    /// `socket_contract::NO_PORT_GRANT`, so a declaring program can connect out and cannot listen.
     ///
     /// **Provisional field name.**
     pub network: bool,
     /// **Endowed the machine statistics page** (milestone 126, DECISIONS §225 part 2;
-    /// `crates/machine_statistics_contract`): a read-only mapping at that crate's `PAGE_VA`, and
+    /// `crates/machine_statistics_contract`): a read-only mapping at that crate's `PAGE_VIRTUAL_ADDRESS`, and
     /// the frame's capability at [`MACHINE_SLOT`] carrying `READ`.
     ///
     /// [`clock`](Manifest::clock)'s family. §225 grants it to every login by default, withholdable

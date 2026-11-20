@@ -164,17 +164,17 @@ impl Simulated {
     fn forwards_bus_one(&self) -> bool {
         let buses = self
             .root_port
-            .get(&pci_configuration_space::BUS_NUMBERS)
+            .get(&pci_configuration_space::BUS_NUMBERS_REGISTER)
             .copied()
             .unwrap_or(0);
         let command = self
             .root_port
-            .get(&pci_configuration_space::COMMAND)
+            .get(&pci_configuration_space::COMMAND_REGISTER)
             .copied()
             .unwrap_or(0);
         (buses >> 8) & 0xff == 1
             && (buses >> 16) & 0xff >= 1
-            && command & u32::from(pci_configuration_space::CMD_MEMORY_SPACE) != 0
+            && command & u32::from(pci_configuration_space::COMMAND_MEMORY_SPACE_ENABLE) != 0
     }
 
     /// A configuration read at `offset` bytes into the `cfg` window, as the processor sees it.
@@ -240,7 +240,7 @@ impl Simulated {
         match register {
             // A Samsung vendor identifier, as a typical M.2 drive reports.
             0x00 => 0xa808_144d,
-            0x08 => pci_configuration_space::CLASS_NVME << 8,
+            0x08 => pci_configuration_space::CLASS_NON_VOLATILE_MEMORY_EXPRESS << 8,
             0x0c => 0,
             0x10 => {
                 let written = self.endpoint_bars[0];

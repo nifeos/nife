@@ -131,15 +131,15 @@ fn row(label: &[u8], total: u64, used: u64, free: u64, out: &mut dyn FnMut(&[u8]
 
 #[cfg(test)]
 mod tests {
-    use machine_statistics_contract::{WORDS, build_header, word};
+    use machine_statistics_contract::{PAGE_WORDS, build_header, word};
 
     use super::*;
 
     fn machine(total: u64, free: u64) -> Snapshot {
-        let mut w = [0u64; WORDS];
-        w[..word::LINE].copy_from_slice(&build_header(4096, 100));
-        w[word::TOTAL_FRAMES] = total;
-        w[word::FREE_FRAMES] = free;
+        let mut w = [0u64; PAGE_WORDS];
+        w[..word::LINE_WORDS].copy_from_slice(&build_header(4096, 100));
+        w[word::header::TOTAL_FRAMES] = total;
+        w[word::header::FREE_FRAMES] = free;
         Snapshot::from_words(&w).unwrap()
     }
 

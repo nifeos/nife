@@ -13,10 +13,10 @@ index c20bff922..6386474ae 100644
 +++ b/crates/inter_process_communication/src/notification.rs
 @@ -182,7 +182,7 @@ impl<T: Node> Notification<T> {
              // of what is pending. `| self.word` would be a no-op, and writing it would hide that.
-             Signal::Woke(waiter, bits)
+             SignalVerdict::Woke(waiter, bits)
          } else if bound_receiving {
 -            let word = self.word | bits;
 +            let word = bits;
              self.word = 0;
-             Signal::ToBound(word)
+             SignalVerdict::ToBound(word)
          } else {

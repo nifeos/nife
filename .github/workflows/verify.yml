@@ -371,7 +371,7 @@ jobs:
       # and 1.24 at the 90th percentile, setup included. Five shards plan 15.9 minutes each, and
       # over the 33 complete five-shard merge-group runs of 2026-11-17 and 2026-11-18 (UTC) the
       # slowest took 17.0 minutes at the median and 19.7 at the most, on a smaller table. Six plan
-      # 13.2. The floor is `byte_glob` (9.3 minutes, most of it one harness), which fills a shard
+      # 13.2. The floor is the longest single harness of the largest row, which fills a shard
       # alone. notes/verification/ci-timings.md has the table.
       # The balance is by measured seconds from the table in script/verify, which
       # verify-shard-refresh.yml keeps current daily, and each shard warns when it ran more than 30%

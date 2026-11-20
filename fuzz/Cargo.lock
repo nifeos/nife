@@ -81,6 +81,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
 
 [[package]]
 name = "byte_sink_contract"
@@ -459,6 +460,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
+name = "nife_partition_types"
+version = "0.1.0"
+dependencies = [
+ "globally_unique_identifier_partition_table",
+ "uuid",
+]
+
+[[package]]
 name = "nifefs"
 version = "0.1.0"
 
@@ -603,6 +612,7 @@ dependencies = [
  "filesystem_contract",
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
+ "nife_partition_types",
  "redox_syscall",
  "redoxfs",
  "subtree_scope",

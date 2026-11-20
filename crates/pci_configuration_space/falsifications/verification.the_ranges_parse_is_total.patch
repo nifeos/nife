@@ -13,8 +13,12 @@ hostile-input class as a device's config space, so a panic here is a kernel that
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -686,3 +686,3 @@ pub fn mem32_window(ranges: &[u8]) -> Option<(u64, u64)> {
-         let cpu_addr = (cell(3) << 32) | cell(4);
+@@ -1014,7 +1014,7 @@
+         }
+         let pci_address = (cell(1) << 32) | cell(2);
+         let cpu_address = (cell(3) << 32) | cell(4);
 -        let size = (cell(5) << 32) | cell(6);
 +        let size = (cell(6) << 32) | cell(7);
-         if pci_addr != cpu_addr || size == 0 {
+         if pci_address != cpu_address || size == 0 {
+             continue;
+         }

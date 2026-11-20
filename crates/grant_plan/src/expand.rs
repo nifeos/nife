@@ -1,6 +1,6 @@
 //! **Expansion: what a pattern on the command line designates** (milestone 47's globbing lane).
 //!
-//! `crates/byte_glob` answers whether a pattern matches a name; this module turns that into an
+//! The `byte_glob` crate answers whether a pattern matches a name; this module turns that into an
 //! authority. The expansion you see is the grant: `echo *.txt` prints the authority `rm *.txt`
 //! would transfer, because both drive one [`Expander`] over the same listing. [`Name`] and
 //! [`NameSet`] own their bytes, since a matched name comes out of a listing read into a reused

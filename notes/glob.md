@@ -1,6 +1,6 @@
 # The glob matcher
 
-`crates/byte_glob`, milestone 47's navigation-and-naming lane. A pattern and a name go in, a `bool` comes
+`byte_glob` (the repository `nifeos/byte_glob`), milestone 47's navigation-and-naming lane. A pattern and a name go in, a `bool` comes
 out. No IO, no syscalls, no directory, no allocation, no capability, and no idea what a file is.
 
 This note is the working reference: what the crate does, the four scope decisions it settled and why,
@@ -48,7 +48,7 @@ pub fn matches_with(pattern: &[u8], name: &[u8], dot: LeadingDot) -> bool;
 pub fn has_magic(pattern: &[u8]) -> bool;
 pub fn literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]>;
 pub fn match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> (bool, usize);
-pub const fn cost_bound(pattern_bytes: usize, name_bytes: usize) -> usize;
+pub const fn step_bound(pattern_bytes: usize, name_bytes: usize) -> usize;
 ```
 
 Six functions, and each is there for a caller that exists:
@@ -60,7 +60,7 @@ Six functions, and each is there for a caller that exists:
   enumeration and wants a caretaker over the matched set. `literal` exists so escape-stripping is
   written once: `a\*b` is the file called `a*b`, and getting that wrong means asking the filesystem
   for a name nobody has.
-- **`match_steps`** and `cost_bound` are the anti-blowup claim made checkable. See below.
+- **`match_steps`** and `step_bound` are the anti-blowup claim made checkable. See below.
 
 Everything is bytes. A name here is a byte string (`filesystem_contract::grant::MAXIMUM_NAME_BYTES` is 252
 of them). So a matcher that decoded UTF-8 would have to decide what to do with a name that is not
@@ -164,12 +164,12 @@ together they are the whole argument:
 The work is therefore polynomial in the two lengths, with no term that grows with the number of
 `*`s. That last part is the entire difference between this and the naive matcher.
 
-The bound is not left as prose. `cost_bound(pattern_bytes, name_bytes)` computes it from the two lengths
+The bound is not left as prose. `step_bound(pattern_bytes, name_bytes)` computes it from the two lengths
 alone, before any matching happens, saturating rather than wrapping (a wrapped bound would be a small
 number, and every `steps <= bound` assertion would then be checking nothing). `match_steps` reports
 what a match actually cost, counting every pattern byte examined including the ones a bracket
 expression is scanned over and the ones re-examined after a backtrack. A caller that wants to refuse
-an expensive pattern before running it can ask `cost_bound` and never start.
+an expensive pattern before running it can ask `step_bound` and never start.
 
 The one place per-step cost is not constant is a bracket expression, which has to be scanned. An
 unterminated `[` is the worst case: it rescans to the end of the pattern every time, and a
@@ -183,7 +183,7 @@ Six Kani harnesses, run by `script/verify`, and the split with the host tests is
 | harness | what it quantifies over |
 |---|---|
 | `matching_is_total` | every pattern of 0..=3 arbitrary bytes against every name of 0..=3 arbitrary bytes, both `LeadingDot` settings: no panic, no overflow, no out-of-bounds index, and the loop terminates |
-| `the_cost_never_exceeds_the_bound` | the same domain: `steps <= cost_bound(pattern_bytes, name_bytes)`, which is the *accounting* rather than the blowup (see below) |
+| `the_cost_never_exceeds_the_bound` | the same domain: `steps <= step_bound(pattern_bytes, name_bytes)`, which is the *accounting* rather than the blowup (see below) |
 | `no_magic_means_the_pattern_is_its_own_only_match` | the same domain: if `has_magic` is false, the pattern matches a name **iff** that name is `literal(pattern)` |
 | `star_matches_anything_and_question_matches_one_byte` | every name of 0..=3 arbitrary bytes: `*` and `**` always match, `?` matches iff the name is one byte, `??` iff two, `*?*` iff non-empty |
 | `the_dot_rule_only_touches_names_that_start_with_a_dot` | the same domain: `Special` is never more permissive than `Ordinary`, it is permissive only for a pattern opening with a literal `.`, and for a name not starting with `.` the two settings are **identical** |

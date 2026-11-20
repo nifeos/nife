@@ -29,7 +29,7 @@ quantified over table states, not sampled.
 
 ## `crates/memory_regions`
 
-Thirteen in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
+Seventeen in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
 untyped-region accounting behind object revocation
 (DECISIONS §16 (object revocation)). Two when this was written, and in `src/lib.rs`, where they no
 longer live; the table names those two and the eight that count objects under subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). The scary property there is no double-free:
@@ -101,7 +101,7 @@ Nine in `crates/page_frames/src/lib.rs` <!--count:page-frames-harnesses-->, the 
 | Harness | Property |
 |---|---|
 | `two_allocations_are_distinct` | over any bitmap, two back-to-back `alloc`s never return the same frame (the property isolation rests on: one physical page is never handed to two owners) |
-| `an_allocated_frame_is_aligned_and_in_range` | an allocated frame is frame-aligned and within `[base, base + total*FRAME_SIZE)` |
+| `an_allocated_frame_is_aligned_and_in_range` | an allocated frame is frame-aligned and within `[base, base + total*FRAME_BYTES)` |
 | `index_of_inverts_frame_addressing` | frame address and bitmap index are inverses, so naming is unambiguous |
 | `containing_rounds_down_within_a_frame` | `PageFrame::containing` returns an aligned frame that holds the address |
 | `bitmap_bytes_covers_every_frame` | the bitmap is always sized to hold one bit per frame (no out-of-bounds in `get`/`set`) |

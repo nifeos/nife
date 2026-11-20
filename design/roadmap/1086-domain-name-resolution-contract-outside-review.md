@@ -13,8 +13,9 @@ Raised by a read-only review lane that met `crates/domain_name_resolution_contra
 maintainer outside this tree would, on a fresh clone of `main`. It changes nothing; it lists what
 the next lanes change before the crate moves to `nifeos/domain_name_resolution_contract`.
 
-There is no review package for this crate in `notes/crate-reviews/`, so this block has no settled
-baseline to defer to. It takes as settled only what the tree itself records.
+The review package for this crate is in `notes/crate-reviews/`
+([domain-name-resolution-contract.md](../../notes/crate-reviews/domain-name-resolution-contract.md)).
+Where it and this block differ, the package wins.
 The architect ratified the crate name (`src/lib.rs` lines 22 to 24). Pull request #2797 ratified
 the three constants `NAME_TEXT_MAXIMUM`, `MAXIMUM_ADDRESSES` and `GRANTS_MAXIMUM`. The architect
 froze the interface identity, `INTERFACE_ID` 11 and `VERSION` 1 (decision 3). Milestone 956 (the linked
@@ -82,8 +83,7 @@ appendix](1086-domain-name-resolution-contract-outside-review/before-the-tag.md)
 - F-attach, the attach operation's name: Done, decision 5.
 - F-log, a runtime log channel for the spawner: Open. The spawner reads why the resolver refused a
   grant, but cannot write a line once the shell runs. No lane holds it.
-- F-package, the review package: Open. None exists under `notes/crate-reviews/`; a lane writes it
-  once the rulings pull request merges (decision 6).
+- F-package, the review package: Done, [the review package](../../notes/crate-reviews/domain-name-resolution-contract.md) (decision 6).
 - F-clearance, review clearance: Open. The repository go is asked when the package exists.
 
 ## Open decisions
@@ -251,7 +251,6 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
 
 ## BUGS
 
-- This block has no review package to defer to. If a package follows it, that package's rulings win where they differ, and this block then changes to say so.
 - The dry run ran without its build half and against the template at `v7` from a local checkout.
   The template's head carries checks `v7` lacks (passive voice, history phrases, function length,
   spelled-out words, unit symbols), which this block ran by hand. A later template release may add
@@ -265,7 +264,7 @@ The checks are in [the appendix](1086-domain-name-resolution-contract-outside-re
 ## Follow-on
 
 - **Outstanding.** The open lines under [Finding status](#finding-status): items 1 to 4, 9 to 11
-  and 14, F-log, F-package and F-clearance. The review package follows this pull request.
+  and 14, F-log and F-clearance.
 
 ## Index row
 

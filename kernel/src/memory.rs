@@ -9,7 +9,7 @@
 //! §7). What's left here is the part that can only happen on the real machine: the **bootstrap**.
 
 use device_tree_blob::Region;
-use page_frames::{FRAME_SIZE, PageFrame, PageFrameAllocator, Stats};
+use page_frames::{FRAME_BYTES, PageFrame, PageFrameAllocator, Stats};
 
 use crate::arch::mmu::{phys_to_virt, virt_to_phys};
 use crate::println;
@@ -219,7 +219,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     }
 
     // The PCIe host bridge, by the generic-ECAM binding: `reg` is the config window and the 32-bit
-    // non-prefetchable `ranges` entry the BAR window (`pci_configuration_space::mem32_window`). It must come from the
+    // non-prefetchable `ranges` entry the BAR window (`pci_configuration_space::memory_window_32_bit`). It must come from the
     // tree: QEMU's BAR window is DRAM on the JH7110, which has no such node.
     {
         let mut ecam = [Region { start: 0, size: 0 }; 1];
@@ -227,7 +227,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
             && n >= 1
             && let Ok(Some(ranges)) =
                 dtb.node_property_compatible(b"pci-host-ecam-generic", b"ranges")
-            && let Some(mem32) = ::pci_configuration_space::mem32_window(ranges)
+            && let Some(mem32) = ::pci_configuration_space::memory_window_32_bit(ranges)
         {
             *PCI_REGIONS.lock() = Some(((ecam[0].start, ecam[0].size), mem32));
         }
@@ -449,12 +449,12 @@ pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
 /// a 200 KiB initial ramdisk one page at a time would be silly.
 fn place_bitmap(need: u64, ram: &[Region], forbidden: &[Region]) -> u64 {
     for region in ram {
-        let mut candidate = align_up(region.start, FRAME_SIZE);
+        let mut candidate = align_up(region.start, FRAME_BYTES);
 
         'scan: while candidate + need <= region.end() {
             for f in forbidden {
                 if overlaps(candidate, need, f.start, f.size) {
-                    candidate = align_up(f.start + f.size, FRAME_SIZE);
+                    candidate = align_up(f.start + f.size, FRAME_BYTES);
                     continue 'scan;
                 }
             }
@@ -486,7 +486,7 @@ static LARGEST_REFUSED: AtomicUsize = AtomicUsize::new(0);
 /// allocator still held, so the reading is the one this allocation produced.
 fn note_allocation(allocator: &PageFrameAllocator<'static>, count: usize, granted: bool) {
     publish_counts(allocator);
-    let free = allocator.stats().free();
+    let free = allocator.stats().free_frames();
     if free < FREE_LOW_WATER.load(core::sync::atomic::Ordering::Relaxed) {
         FREE_LOW_WATER.store(free, core::sync::atomic::Ordering::Relaxed);
     }
@@ -531,7 +531,7 @@ pub(crate) fn alloc_contiguous(count: usize) -> Option<PageFrame> {
 /// The argument that writing over a fresh frame is sound is made once, in `zero_frames`, rather
 /// than at every caller (DECISIONS §94 (what may live in a userspace library, and what must be
 /// per-binary)). Callers who want the bytes left alone call [`alloc`].
-/// Zeroing is a `FRAME_SIZE` memory touch, done after the allocator lock is released.
+/// Zeroing is a `FRAME_BYTES` memory touch, done after the allocator lock is released.
 pub fn alloc_zeroed() -> Option<PageFrame> {
     let frame = alloc()?;
     zero_frames(frame, 1);
@@ -558,9 +558,9 @@ fn zero_frames(frame: PageFrame, count: usize) {
     // map, which covers all of RAM, so the destination is writable for the whole run.
     unsafe {
         core::ptr::write_bytes(
-            phys_to_virt(frame.addr()) as *mut u8,
+            phys_to_virt(frame.physical_address()) as *mut u8,
             0,
-            count * FRAME_SIZE as usize,
+            count * FRAME_BYTES as usize,
         );
     }
 }
@@ -570,7 +570,7 @@ fn zero_frames(frame: PageFrame, count: usize) {
 /// under the same lock, so the page never shows a count the allocator never had.
 fn publish_counts(allocator: &PageFrameAllocator<'_>) {
     let s = allocator.stats();
-    crate::machine_statistics::frames(s.total, s.free());
+    crate::machine_statistics::frames(s.frames, s.free_frames());
 }
 
 pub fn free(frame: PageFrame) {
@@ -591,7 +591,10 @@ pub fn stats() -> Option<Stats> {
 /// bring this exactly back to where it stood before the region was created.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the reclamation tests in sched.rs and user/tests.rs
 pub fn free_page_frames() -> usize {
-    ALLOCATOR.lock().as_ref().map_or(0, |a| a.stats().free())
+    ALLOCATOR
+        .lock()
+        .as_ref()
+        .map_or(0, |a| a.stats().free_frames())
 }
 
 /// **Is the frame at `pa` allocated right now?** `None` when the allocator does not manage that
@@ -606,7 +609,7 @@ pub fn frame_is_allocated(pa: u64) -> Option<bool> {
     ALLOCATOR
         .lock()
         .as_ref()?
-        .is_used(PageFrame::from_addr(pa & !(FRAME_SIZE - 1)))
+        .is_used(PageFrame::from_physical_address(pa & !(FRAME_BYTES - 1)))
 }
 
 /// **The longest run of free frames**, in frames: what `alloc_contiguous` could still satisfy.
@@ -1219,14 +1222,14 @@ pub(crate) fn print_summary() {
         return;
     };
 
-    let mebibytes = |frames: usize| (frames as u64 * FRAME_SIZE) / (1024 * 1024);
-    let kibibytes = |frames: usize| (frames as u64 * FRAME_SIZE) / 1024;
+    let mebibytes = |frames: usize| (frames as u64 * FRAME_BYTES) / (1024 * 1024);
+    let kibibytes = |frames: usize| (frames as u64 * FRAME_BYTES) / 1024;
 
     println!(
         "  memory           : {} MiB total, {} MiB free ({} KiB in use)",
-        mebibytes(s.total),
-        mebibytes(s.free()),
-        kibibytes(s.used),
+        mebibytes(s.frames),
+        mebibytes(s.free_frames()),
+        kibibytes(s.used_frames),
     );
 }
 
@@ -1280,7 +1283,7 @@ mod tests {
     /// endianness reads back as.
     #[test_case]
     fn memory_map_came_from_the_device_tree() {
-        use page_frames::FRAME_SIZE;
+        use page_frames::FRAME_BYTES;
 
         let s = crate::memory::stats().expect("allocator not initialized");
 
@@ -1289,7 +1292,7 @@ mod tests {
         // wrong). 16 MiB is well below every machine this kernel has run on (QEMU's 256 MiB
         // runner default, the VisionFive 2's 4 GiB tree) and well above what a cell-width or
         // endianness bug would produce.
-        let total_bytes = s.total as u64 * FRAME_SIZE;
+        let total_bytes = s.frames as u64 * FRAME_BYTES;
         assert!(
             total_bytes >= 16 * 1024 * 1024,
             "unexpectedly small RAM size: {total_bytes} bytes; likely a misparsed reg property"
@@ -1298,8 +1301,8 @@ mod tests {
         // Some memory must already be spoken for: at minimum the kernel image, the
         // bitmap, and the device tree. A zero here means we reserved nothing, which
         // means we are about to hand out our own code.
-        assert!(s.used > 0, "nothing is reserved?");
-        assert!(s.free() > 0, "no free memory at all?");
+        assert!(s.used_frames > 0, "nothing is reserved?");
+        assert!(s.free_frames() > 0, "no free memory at all?");
     }
 
     /// **The one that matters.** Every frame the kernel image touches must be reserved.
@@ -1309,18 +1312,18 @@ mod tests {
     /// covers every frame of the image and allocates nothing. See notes/physical-memory.md.
     #[test_case]
     fn every_frame_of_the_kernel_image_is_reserved() {
-        use page_frames::{FRAME_SIZE, PageFrame};
+        use page_frames::{FRAME_BYTES, PageFrame};
 
         let (start, end) = crate::memory::image_bounds();
-        let mut addr = start - start % FRAME_SIZE; // round DOWN to the containing frame
+        let mut addr = start - start % FRAME_BYTES; // round DOWN to the containing frame
 
         while addr < end {
             assert_eq!(
-                crate::memory::is_page_frame_used(PageFrame::from_addr(addr)),
+                crate::memory::is_page_frame_used(PageFrame::from_physical_address(addr)),
                 Some(true),
                 "frame {addr:#x} overlaps the kernel image but is marked FREE"
             );
-            addr += FRAME_SIZE;
+            addr += FRAME_BYTES;
         }
     }
 
@@ -1339,9 +1342,9 @@ mod tests {
                 break;
             };
             assert!(
-                !crate::memory::is_in_kernel_image(frame.addr()),
+                !crate::memory::is_in_kernel_image(frame.physical_address()),
                 "allocator handed out {:#x}, which is inside the kernel image",
-                frame.addr()
+                frame.physical_address()
             );
             *slot = Some(frame);
         }
@@ -1362,12 +1365,12 @@ mod tests {
     /// the cheapest way to find out we've been handing out an MMIO hole.
     #[test_case]
     fn an_allocated_frame_is_real_memory() {
-        use page_frames::FRAME_SIZE;
+        use page_frames::FRAME_BYTES;
 
         let frame = crate::memory::alloc().expect("out of memory");
         // The allocator speaks physical; we must name it virtually to touch it.
-        let ptr = crate::arch::mmu::phys_to_virt(frame.addr()) as *mut u64;
-        let words = (FRAME_SIZE / 8) as usize;
+        let ptr = crate::arch::mmu::phys_to_virt(frame.physical_address()) as *mut u64;
+        let words = (FRAME_BYTES / 8) as usize;
 
         // SAFETY: the allocator just gave us this frame, so we own it exclusively. The
         // MMU is off, so the physical address is directly usable.
@@ -1380,7 +1383,7 @@ mod tests {
                     core::ptr::read_volatile(ptr.add(i)),
                     0xcafe_f00d_0000_0000 | i as u64,
                     "frame {:#x} word {i} did not hold what we wrote",
-                    frame.addr()
+                    frame.physical_address()
                 );
             }
         }
@@ -1421,20 +1424,20 @@ mod tests {
     /// counted as a pass.
     #[test_case]
     fn initial_ramdisk_is_reserved_if_present() {
-        use page_frames::{FRAME_SIZE, PageFrame};
+        use page_frames::{FRAME_BYTES, PageFrame};
 
         let Some((start, size)) = crate::memory::initial_ramdisk_region() else {
             crate::testing::skip!("no initial ramdisk region on this boot (no -initrd passed)");
         };
 
-        let mut addr = start - start % FRAME_SIZE;
+        let mut addr = start - start % FRAME_BYTES;
         while addr < start + size {
             assert_eq!(
-                crate::memory::is_page_frame_used(PageFrame::from_addr(addr)),
+                crate::memory::is_page_frame_used(PageFrame::from_physical_address(addr)),
                 Some(true),
                 "frame {addr:#x} is part of the initial ramdisk but is marked FREE"
             );
-            addr += FRAME_SIZE;
+            addr += FRAME_BYTES;
         }
     }
 
@@ -1446,12 +1449,15 @@ mod tests {
         let a = crate::memory::alloc().unwrap();
         let b = crate::memory::alloc_contiguous(8).unwrap();
 
-        assert_eq!(crate::memory::stats().unwrap().used, before.used + 9);
+        assert_eq!(
+            crate::memory::stats().unwrap().used_frames,
+            before.used_frames + 9
+        );
 
         crate::memory::free(a);
         for i in 0..8u64 {
-            crate::memory::free(page_frames::PageFrame::from_addr(
-                b.addr() + i * page_frames::FRAME_SIZE,
+            crate::memory::free(page_frames::PageFrame::from_physical_address(
+                b.physical_address() + i * page_frames::FRAME_BYTES,
             ));
         }
 

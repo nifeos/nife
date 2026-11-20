@@ -1,38 +1,6 @@
+use test_node::{N, mint};
+
 use super::*;
-
-/// A minimal node: a link and nothing else, the way the proofs like it.
-struct N {
-    next: Option<NonNull<N>>,
-}
-
-impl N {
-    fn new() -> Self {
-        N { next: None }
-    }
-}
-
-// SAFETY: `next` and `set_next` read and write the same `next` field and nothing else, which is
-// the whole of the `Node` contract.
-unsafe impl Node for N {
-    fn next(&self) -> Option<NonNull<Self>> {
-        self.next
-    }
-    fn set_next(&mut self, next: Option<NonNull<Self>>) {
-        self.next = next;
-    }
-}
-
-/// Mint `n`'s token, from `&raw mut` on the harness local rather than from a reference
-/// (`Unqueued::new`'s provenance clause).
-///
-/// # Safety
-/// `n` is `&raw mut` on a harness local declared before the rendezvous, on no queue, minted only
-/// once, and not named again.
-unsafe fn mint(n: *mut N) -> Unqueued<N> {
-    // SAFETY: this function's own contract is `Unqueued::new`'s, and `&raw mut` on a local is
-    // never null.
-    unsafe { Unqueued::new(NonNull::new_unchecked(n)) }
-}
 
 /// Put `e` into an arbitrary valid state: at most one queue non-empty (modeled as one waiter), a
 /// symbolic pending count and a symbolic interrupt binding. A token that is not queued is dropped,
@@ -58,7 +26,7 @@ fn send_preserves_the_invariant() {
     let (s, r, me) = unsafe { (mint(&raw mut s), mint(&raw mut r), mint(&raw mut me)) };
     seed(&mut e, s, r);
     let _ = e.send(me);
-    assert!(e.one_queue_invariant());
+    assert!(e.one_queue_invariant_holds());
 }
 
 /// Falsification: replayable `crates/inter_process_communication/falsifications/verification.receive_preserves_the_invariant.patch`
@@ -70,7 +38,7 @@ fn receive_preserves_the_invariant() {
     let (s, r, me) = unsafe { (mint(&raw mut s), mint(&raw mut r), mint(&raw mut me)) };
     seed(&mut e, s, r);
     let _ = e.receive(me);
-    assert!(e.one_queue_invariant());
+    assert!(e.one_queue_invariant_holds());
 }
 
 /// **A signal preserves the one-queue invariant**, and it does not panic on any count. `signal`
@@ -86,12 +54,12 @@ fn signal_preserves_the_invariant() {
     let (s, r) = unsafe { (mint(&raw mut s), mint(&raw mut r)) };
     seed(&mut e, s, r);
     let _ = e.signal();
-    assert!(e.one_queue_invariant());
+    assert!(e.one_queue_invariant_holds());
 }
 
 /// **A rendezvous bound to an interrupt never hands a receiver a sender's words.** From every
 /// seeded state, binding refuses the parked sender (exactly that one, if `seed` queued it), and
-/// after any one further send, signal or receive, a receive is never [`Receive::FromSender`].
+/// after any one further send, signal or receive, a receive is never [`ReceiveVerdict::FromSender`].
 /// `unwind(3)` is sound for `removing_a_waiter_preserves_the_invariant`'s reason: `seed` queues at
 /// most one waiter, and Kani checks the unwinding assertion.
 /// Falsification: replayable `crates/inter_process_communication/falsifications/verification.a_bound_rendezvous_never_yields_a_sender.patch`
@@ -117,12 +85,12 @@ fn a_bound_rendezvous_never_yields_a_sender() {
         refused += 1;
     });
     assert_eq!(refused, usize::from(sender_was_queued));
-    assert!(e.one_queue_invariant());
+    assert!(e.one_queue_invariant_holds());
 
     // One symbolic step between the bind and the receive: a send (refused), a signal, a receive.
     match kani::any::<u8>() {
         0 => {
-            assert!(matches!(e.send(other), Send::Refused(_)));
+            assert!(matches!(e.send(other), SendVerdict::Refused(_)));
         }
         1 => {
             let _ = e.signal();
@@ -132,7 +100,7 @@ fn a_bound_rendezvous_never_yields_a_sender() {
         }
         _ => {}
     }
-    assert!(!matches!(e.receive(me), Receive::FromSender(..)));
+    assert!(!matches!(e.receive(me), ReceiveVerdict::FromSender(..)));
 }
 
 /// **A send rendezvouses exactly when a receiver was waiting**, and with exactly *that*
@@ -153,19 +121,19 @@ fn send_rendezvous_iff_a_receiver_waited() {
     let bound = e.bound_to_interrupt;
     let before = (e.senders.is_empty(), e.receivers.is_empty(), e.pending);
     match e.send(me) {
-        Send::Rendezvous(got, _) => {
+        SendVerdict::Rendezvous(got, _) => {
             assert!(had_receiver && !bound);
             assert!(
                 got == receiver_ptr,
                 "rendezvoused with a thread nobody queued"
             );
         }
-        Send::Blocked => {
+        SendVerdict::Blocked => {
             assert!(!had_receiver && !bound);
         }
         // Refused, and nothing touched: not the waiting driver popped, not the sender parked
         // where the driver's next receive would find it, not the pending interrupt count.
-        Send::Refused(_) => {
+        SendVerdict::Refused(_) => {
             assert!(bound);
             assert_eq!(
                 (e.senders.is_empty(), e.receivers.is_empty(), e.pending),
@@ -193,16 +161,16 @@ fn a_token_comes_back_exactly_when_its_node_did_not_queue() {
 
     if kani::any() {
         match e.send(me) {
-            Send::Blocked => assert_eq!(e.senders.len(), senders + 1),
-            Send::Rendezvous(_, back) | Send::Refused(back) => {
+            SendVerdict::Blocked => assert_eq!(e.senders.len(), senders + 1),
+            SendVerdict::Rendezvous(_, back) | SendVerdict::Refused(back) => {
                 assert!(back == me_ptr, "handed back somebody else's token");
                 assert_eq!(e.senders.len(), senders);
             }
         }
     } else {
         match e.receive(me) {
-            Receive::Blocked => assert_eq!(e.receivers.len(), receivers + 1),
-            Receive::Signal(back) | Receive::FromSender(_, back) => {
+            ReceiveVerdict::Blocked => assert_eq!(e.receivers.len(), receivers + 1),
+            ReceiveVerdict::Signal(back) | ReceiveVerdict::FromSender(_, back) => {
                 assert!(back == me_ptr, "handed back somebody else's token");
                 assert_eq!(e.receivers.len(), receivers);
             }
@@ -242,7 +210,7 @@ fn removing_a_waiter_preserves_the_invariant() {
     } else {
         e.remove_receiver(victim)
     };
-    assert!(e.one_queue_invariant());
+    assert!(e.one_queue_invariant_holds());
     // A remove that reports a hit really emptied the queue it was given: `seed` queues at most
     // one waiter, so a hit leaves both queues empty and the rendezvous idle.
     assert!(found.is_none() || e.is_idle());
@@ -262,7 +230,7 @@ fn receive_drains_a_pending_signal_first() {
     seed(&mut e, s, r);
     if e.pending > 0 {
         let outcome = e.receive(me);
-        assert!(matches!(outcome, Receive::Signal(_)));
+        assert!(matches!(outcome, ReceiveVerdict::Signal(_)));
     }
 }
 
@@ -287,8 +255,8 @@ fn a_collected_sender_is_forgotten() {
         )
     };
     seed(&mut e, s, r);
-    if matches!(e.receive(me), Receive::FromSender(..)) {
+    if matches!(e.receive(me), ReceiveVerdict::FromSender(..)) {
         assert!(e.senders.is_empty() && e.receivers.is_empty());
-        assert!(!matches!(e.receive(me2), Receive::FromSender(..)));
+        assert!(!matches!(e.receive(me2), ReceiveVerdict::FromSender(..)));
     }
 }

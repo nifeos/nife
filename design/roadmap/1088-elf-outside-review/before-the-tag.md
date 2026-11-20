@@ -12,7 +12,7 @@ range that is not page-aligned. The harness `page_range_is_panic_free_and_ordere
 (`src/verification.rs` lines 55 to 65) fixes 4096, and the doc of the harness says "for any segment", which
 is true of the segment and not of the page size. The crate's claim, stated in the module doc of
 `verification`, is that the public helper is safe on its own without `parse`'s guarantee. Both
-callers today pass a constant (`FRAME_SIZE`, 4096 and 16384 in the fuzz target), so no caller is
+callers today pass a constant (`FRAME_BYTES`, 4096 and 16384 in the fuzz target), so no caller is
 wrong; the claim is. Inferred from reading; no test shows it.
 
 Change: make the precondition a type. A `PageBytes` (name provisional) that `const fn new(u64) ->
@@ -24,7 +24,7 @@ that can panic. Door: one-way at release (the signature). Effort: S.
 #### The overlap check hard-codes 4 KiB pages while the loaders map at their own frame size
 
 Finding: `validate` (`src/parse.rs` lines 177 to 178) calls `page_range(4096)` for both segments. The
-kernel's loader maps with `FRAME_SIZE` (`kernel/src/user/loader.rs` lines 66 and 227), and the fuzz target's
+kernel's loader maps with `FRAME_BYTES` (`kernel/src/user/loader.rs` lines 66 and 227), and the fuzz target's
 comment says 16 KiB pages are on the aarch64 roadmap. On a 16 KiB kernel, two segments in distinct
 4 KiB pages of one 16 KiB page pass `parse`, and `map_new` then meets an already-mapped page after
 part of the program is in the new address space. That is the failure "validate once, up front"
