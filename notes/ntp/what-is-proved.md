@@ -21,6 +21,7 @@ The Kani harnesses, run by `script/verify`:
 | `an_unmatched_origin_is_always_rejected` | all 2^384 packets: no combination of the other 40 bytes gets one past the nonce check |
 | `accepting_is_total_and_a_sample_is_coherent` | all 2^384 packets and any three timestamps: `accept` never panics or overflows, and an accepted sample has a non-negative delay, a stratum in 1..=15, mode 4, and a non-zero transmit |
 | `a_consistent_exchange_is_accepted` | any four timestamps whose modular differences are non-negative, with a round trip covering the turnaround: `accept` takes the reply, and the delay and offset are the RFC's |
+| `the_interval_accessors_are_total` | every `i128` tick count `Interval::from_ticks` takes: `nanoseconds` and `microseconds` never overflow, and neither changes the interval's sign |
 
 The three 2^384 harnesses are the ones a model checker exists for. The domain is unenumerable and
 the code is fed by the network.

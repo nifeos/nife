@@ -1,0 +1,18 @@
+Falsifies `network_time_protocol::verification::the_interval_accessors_are_total`.
+
+The defect: `Interval::nanoseconds` multiplies with `wrapping_mul` instead of `saturating_mul`, so a
+tick count above about 1.7 x 10^29 wraps past `i128::MAX` and a huge positive interval reads back
+as a negative number of nanoseconds.
+
+Expected to fail: both of the harness's sign assertions, `assert!(ticks < 0 || (nanoseconds >= 0 &&
+microseconds >= 0))` on a positive interval that wraps negative and its mirror on a negative one.
+
+diff --git a/crates/network_time_protocol/src/lib.rs b/crates/network_time_protocol/src/lib.rs
+index c2fdbec48..f3c8ce74d 100644
+--- a/crates/network_time_protocol/src/lib.rs
++++ b/crates/network_time_protocol/src/lib.rs
+@@ -341,3 +341,3 @@ impl Interval {
+     pub const fn nanoseconds(self) -> i128 {
+-        self.0.saturating_mul(NANOSECONDS_PER_SECOND as i128) / TICKS_PER_SECOND as i128
++        self.0.wrapping_mul(NANOSECONDS_PER_SECOND as i128) / TICKS_PER_SECOND as i128
+     }

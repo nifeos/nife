@@ -315,7 +315,8 @@ impl ShortFormat {
 /// 2<sup>63</sup> ticks, and the offset formula adds two such differences, so an `i64` accumulator
 /// would overflow on a packet an attacker can send for free. Widening costs nothing here (this is
 /// arithmetic done once per sample, not per byte) and it means the computation is **total**: there
-/// is no input, however absurd, on which it panics. Kani proves that.
+/// is no input, however absurd, on which it panics. Kani proves that for `accept`, and for the two
+/// accessors over every `i128` [`Interval::from_ticks`] takes.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug, Default, Hash)]
 pub struct Interval(i128);
 

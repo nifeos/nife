@@ -137,7 +137,7 @@ fn accepting_is_total_and_a_sample_is_coherent() {
     }
 }
 
-/// **A consistent exchange is accepted, with the RFC's offset and delay.** Without this, an
+/// **A consistent exchange is accepted, with `RFC 5905`'s offset and delay.** Without this, an
 /// `accept` that refused every packet would satisfy
 /// [`accepting_is_total_and_a_sample_is_coherent`]. From any four timestamps whose modular
 /// differences are non-negative and whose round trip covers the server's turnaround, a version 4,
@@ -184,4 +184,20 @@ fn a_consistent_exchange_is_accepted() {
     let to_server = t2.wrapping_sub(t1) as i64 as i128;
     let from_server = t3.wrapping_sub(t4) as i64 as i128;
     assert_eq!(sample.offset.ticks(), (to_server + from_server) / 2);
+}
+
+/// **The interval accessors are total over the public constructor, and keep the sign.** For every
+/// tick count [`Interval::from_ticks`] takes, `nanoseconds` and `microseconds` return without an
+/// overflow, and neither turns a positive interval negative or a negative one positive. The
+/// multiplication saturates before the division, so an interval no exchange can produce reads as
+/// a huge one of the same sign rather than wrapping onto the other.
+/// Falsification: replayable `crates/network_time_protocol/falsifications/verification.the_interval_accessors_are_total.patch`
+#[kani::proof]
+fn the_interval_accessors_are_total() {
+    let ticks: i128 = kani::any();
+    let interval = Interval::from_ticks(ticks);
+    let nanoseconds = interval.nanoseconds();
+    let microseconds = interval.microseconds();
+    assert!(ticks < 0 || (nanoseconds >= 0 && microseconds >= 0));
+    assert!(ticks > 0 || (nanoseconds <= 0 && microseconds <= 0));
 }
