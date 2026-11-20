@@ -1,6 +1,6 @@
 Falsifies `page_tables::sv39::verification::no_encoded_leaf_is_both_writable_and_executable`.
 
-The defect: `Sv39::attrs` sets `X` on a writable page as well, on the reasoning that the U bit
+The defect: `Sv39::attributes` sets `X` on a writable page as well, on the reasoning that the U bit
 already decides which privilege may execute it. U does not make the page non-executable, it only
 picks who executes it, and a leaf with W and X both set is exactly the page W^X refuses.
 

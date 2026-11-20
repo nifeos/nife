@@ -5,9 +5,9 @@ use super::*;
 /// `bytes` at all, which is the trap milestone 211 and milestone 307 each found once.
 fn literal_bytes(size: PageSize) -> u64 {
     match size {
-        PageSize::Size4KiB => 0x1000,
-        PageSize::Size2MiB => 0x20_0000,
-        PageSize::Size1GiB => 0x4000_0000,
+        PageSize::FourKibibytes => 0x1000,
+        PageSize::TwoMebibytes => 0x20_0000,
+        PageSize::OneGibibyte => 0x4000_0000,
     }
 }
 
@@ -19,21 +19,23 @@ fn any_size() -> PageSize {
 
 /// **Soundness, the security direction: every leaf `map_span` writes is aligned at both ends
 /// and lies wholly inside what is left of the span**, and is never larger than the caller
-/// allowed, for every page-aligned `va`, `pa` and length. With this, the blocks cover no byte
+/// allowed, for every page-aligned `virtual_address`, `physical_address` and length. With this, the blocks cover no byte
 /// the equivalent run of pages would not.
 /// Falsification: replayable `crates/page_tables/falsifications/verification.a_chosen_leaf_is_aligned_and_inside_the_span.patch`
 #[kani::proof]
 fn a_chosen_leaf_is_aligned_and_inside_the_span() {
-    let va: u64 = kani::any();
-    let pa: u64 = kani::any();
+    let virtual_address: u64 = kani::any();
+    let physical_address: u64 = kani::any();
     let remaining: u64 = kani::any();
     kani::assume(
-        va.is_multiple_of(0x1000) && pa.is_multiple_of(0x1000) && remaining.is_multiple_of(0x1000),
+        virtual_address.is_multiple_of(0x1000)
+            && physical_address.is_multiple_of(0x1000)
+            && remaining.is_multiple_of(0x1000),
     );
     kani::assume(remaining >= 0x1000);
     let largest = any_size();
 
-    let size = PageSize::largest_fitting(va, pa, remaining, largest);
+    let size = PageSize::largest_fitting(virtual_address, physical_address, remaining, largest);
     let bytes = literal_bytes(size);
     assert_eq!(
         size.bytes(),
@@ -41,8 +43,16 @@ fn a_chosen_leaf_is_aligned_and_inside_the_span() {
         "PageSize::bytes disagrees with the architecture"
     );
     assert!(size <= largest, "a leaf larger than the caller allowed");
-    assert_eq!(va % bytes, 0, "the leaf's virtual start is misaligned");
-    assert_eq!(pa % bytes, 0, "the leaf's physical start is misaligned");
+    assert_eq!(
+        virtual_address % bytes,
+        0,
+        "the leaf's virtual start is misaligned"
+    );
+    assert_eq!(
+        physical_address % bytes,
+        0,
+        "the leaf's physical start is misaligned"
+    );
     assert!(bytes <= remaining, "the leaf runs past the end of the span");
 }
 
@@ -53,16 +63,20 @@ fn a_chosen_leaf_is_aligned_and_inside_the_span() {
 /// Falsification: replayable `crates/page_tables/falsifications/verification.the_chosen_leaf_is_the_largest_that_fits.patch`
 #[kani::proof]
 fn the_chosen_leaf_is_the_largest_that_fits() {
-    let va: u64 = kani::any();
-    let pa: u64 = kani::any();
+    let virtual_address: u64 = kani::any();
+    let physical_address: u64 = kani::any();
     let remaining: u64 = kani::any();
     let largest = any_size();
     let candidate = any_size();
     let want = literal_bytes(candidate);
     kani::assume(candidate <= largest);
-    kani::assume(va.is_multiple_of(want) && pa.is_multiple_of(want) && remaining >= want);
+    kani::assume(
+        virtual_address.is_multiple_of(want)
+            && physical_address.is_multiple_of(want)
+            && remaining >= want,
+    );
 
-    let size = PageSize::largest_fitting(va, pa, remaining, largest);
+    let size = PageSize::largest_fitting(virtual_address, physical_address, remaining, largest);
     assert!(
         literal_bytes(size) >= want,
         "a fitting larger leaf was passed over"

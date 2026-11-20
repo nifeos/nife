@@ -25,7 +25,7 @@ index 611a21980..a438c3510 100644
 +        maps[m] = Mapping {
 +            va: SURFACE_VA + (frames + 1) * FRAME_SIZE,
 +            phys: self.client[i] + (frames + 2) * FRAME_SIZE,
-+            flags: Flags::user_rodata(),
++            flags: Flags::user_read_only_data(),
 +        };
 +        m += 1;
          if role & ROLE_CAPTURE != 0 {

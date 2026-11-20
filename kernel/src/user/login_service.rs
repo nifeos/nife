@@ -145,7 +145,7 @@ fn map_blob(space: &mut AddressSpace, base: u64, bytes: &[u8]) {
     let mut off = 0usize;
     while off < bytes.len() {
         let page = space
-            .map_new(base + off as u64, Flags::user_rodata())
+            .map_new(base + off as u64, Flags::user_read_only_data())
             .expect("could not map a login blob");
         let n = core::cmp::min(FRAME_SIZE as usize, bytes.len() - off);
         page[..n].copy_from_slice(&bytes[off..off + n]);

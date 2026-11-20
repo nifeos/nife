@@ -81,7 +81,7 @@ The frame path shows every piece confining the next:
 1. `MemoryRegion::RETYPE` mints the owner a `PageFrame` with `READ|WRITE|GRANT` (`memory_region_retype` in `kernel/src/syscall/memory_region.rs`).
 2. The owner maps it writable (`PageFrame::MAP` with the writable flag needs `WRITE`).
 3. The owner delegates a `READ`-only, no-`GRANT` derivative with `SEND_CAPABILITY`.
-4. The consumer's `PageFrame::MAP` sees `READ` without `WRITE`, so it is confined to `user_rodata`: it
+4. The consumer's `PageFrame::MAP` sees `READ` without `WRITE`, so it is confined to `user_read_only_data`: it
    maps the same physical page but cannot write it, and cannot pass it on.
 
 The test `a_frame_capability_shares_a_page_and_a_read_only_view_cannot_write_it` pins exactly this.
