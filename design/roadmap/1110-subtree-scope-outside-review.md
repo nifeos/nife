@@ -83,10 +83,10 @@ the crate's own reasons.
 
 ### Clearing the move of `subtree_scope`
 
-Ruled 2026-11-20 (UTC): the [review package](../../notes/crate-reviews/subtree-scope.md) is cleared,
-and the repository `nifeos/subtree_scope` is approved with `publish = false`, no tag and no
-publish. The move waits on `filesystem_contract`'s repository for P0-3's `git` pin. The package
-holds the names, which are ratified.
+Ruled 2026-11-20 (UTC): the architect cleared the
+[review package](../../notes/crate-reviews/subtree-scope.md) and approved the repository
+`nifeos/subtree_scope` with `publish = false`, no tag and no publish. The move waits on
+`filesystem_contract`'s repository for P0-3's `git` pin. The package holds the ratified names.
 
 ## What was checked, and how
 
