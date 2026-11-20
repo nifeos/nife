@@ -46,7 +46,7 @@ What is bad about Unix's cwd is three specific things, and `cd` is none of them:
 
 The third was "no absolute paths", and it came out on 2026-08-18 (milestone 47's namespace half).
 It was never a position, it was the honest state of a system that had no namespace to root a path in:
-the syntax was refused rather than quietly reinterpreted as relative, and `grant_plan::nav::Refused`
+the syntax was refused rather than quietly reinterpreted as relative, and `grant_plan::navigation::Refused`
 carried an `Absolute` variant saying so. What replaced it is Plan 9's answer, which this note's own
 first paragraph on the subject named as the recommendation for later:
 
@@ -83,7 +83,7 @@ This is the rule most likely to be got wrong, and the place it is made true is `
 
 ```rust
 pub struct FileGrant<'a> {
-    pub dir: nav::Cwd,   // where the name was resolved, fixed at plan time
+    pub dir: navigation::Cwd,   // where the name was resolved, fixed at plan time
     pub name: &'a [u8],  // always a single component
     pub writable: bool,
 }
@@ -214,10 +214,10 @@ should be able to answer for every capability rather than a flag on one verb.
   the navigating role on both ISAs; what is missing is a boot that wires an FS service into the
   interactive system, which is a wiring change and not a change here.
 - The shell tracks 8 levels, and a directory it stands in or walks through is named in at most 16
-  bytes (`nav::MAXIMUM_DIRECTORY_NAME`, `grant::WORDS_NAME`). The path stack is an array because
+  bytes (`navigation::MAXIMUM_DIRECTORY_NAME_BYTES`, `grant::WORDS_NAME`). The path stack is an array because
   this program has no allocator. A directory grant names its directory in a caretaker's two `START`
   words, and a name you could `cd` into but not grant would be a place you cannot talk about. A
-  file, the last component, may be 252 bytes (`nav::MAXIMUM_NAME`, milestone 946 (a granted file
+  file, the last component, may be 252 bytes (`navigation::MAXIMUM_NAME_BYTES`, milestone 946 (a granted file
   name can be longer than sixteen bytes)). A longer directory name is `DirectoryNameTooLong` and
   deeper is `TooDeep`, refused rather than truncated.
 - `ls` reads a directory in rounds of 256 bytes and re-reads it per round, so a name added or

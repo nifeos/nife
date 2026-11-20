@@ -88,7 +88,7 @@ prints, so a pipeline that ran but printed the wrong thing fails. Its second thr
 progenitor's spawn protocol because the shell cannot tell the difference, and neither should the
 test.
 
-`rm_program_tests` takes its option bits from `grant_plan::rmopt`, so the numbers come from the
+`rm_program_tests` takes its option bits from `grant_plan::rm_options`, so the numbers come from the
 manifest the prompt checks against rather than from a second copy of an ordering. The claim is not
 that a loop can delete a tree; it is that the walk stops where the capabilities stop.
 

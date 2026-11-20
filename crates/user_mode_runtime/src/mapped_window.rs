@@ -19,8 +19,8 @@
 //! const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, PAGE_BYTES) };
 //!
 //! // Every access below is safe: bounds-checked against `PAGE_BYTES`, no unsafe at the call site.
-//! WINDOW.write_u16(0x080, 7);
-//! assert_eq!(WINDOW.read_u16(0x080), 7);
+//! WINDOW.write::<u16>(0x080, 7);
+//! assert_eq!(WINDOW.read::<u16>(0x080), 7);
 //! ```
 
 //! An offset that would read or write past the window panics instead of touching memory outside
@@ -29,11 +29,11 @@
 //! ```should_panic
 //! # use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 //! # const WINDOW: MappedWindow = unsafe { MappedWindow::new(0x0090_0000, PAGE_BYTES) };
-//! WINDOW.read_u32(PAGE_BYTES); // one past the last valid u32, deliberately
+//! WINDOW.read::<u32>(PAGE_BYTES); // one past the last valid u32, deliberately
 //! ```
 
 /// The page size every migrated caller was already assuming (each one's own comment said "one
-/// page" or "single-page DMA region"; none of them checked it).
+/// page" or "single-page direct memory access (DMA) region"; none of them checked it).
 ///
 /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub const PAGE_BYTES: u64 = 4096;
@@ -65,7 +65,7 @@ impl WindowInteger for u64 {}
 impl<T: WindowInteger, const N: usize> WindowInteger for [T; N] {}
 
 /// A caller-owned window onto one page this process was handed at a fixed virtual address: a DMA
-/// page a driver's wiring mapped before `_start` ran, or a shared IPC frame the program mapped
+/// page a driver's wiring mapped before `_start` ran, or a shared inter-process communication (IPC) frame the program mapped
 /// itself with `PageFrame::MAP`. Every read and write is bounds-checked against `len`, so the only
 /// trust this type asks for is the one made at construction. Accesses are native-endian, which is
 /// little-endian on every architecture this tree targets.
@@ -138,55 +138,6 @@ impl MappedWindow {
         self.check_aligned(off, core::mem::align_of::<T>() as u64);
         // SAFETY: as `read`'s.
         unsafe { core::ptr::write_volatile((self.base + off) as *mut T, value) }
-    }
-
-    /// Read one byte at `off`.
-    ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn read_u8(&self, off: u64) -> u8 {
-        self.read(off)
-    }
-    /// Write one byte at `off`.
-    ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn write_u8(&self, off: u64, value: u8) {
-        self.write(off, value);
-    }
-    /// Read a `u16` at `off`.
-    ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn read_u16(&self, off: u64) -> u16 {
-        self.read(off)
-    }
-    /// Write a `u16` at `off`.
-    ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn write_u16(&self, off: u64, value: u16) {
-        self.write(off, value);
-    }
-    /// Read a `u32` at `off`.
-    ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn read_u32(&self, off: u64) -> u32 {
-        self.read(off)
-    }
-    /// Write a `u32` at `off`.
-    ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn write_u32(&self, off: u64, value: u32) {
-        self.write(off, value);
-    }
-    /// Read a `u64` at `off`. Panics unless the address is 8-aligned.
-    ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn read_u64(&self, off: u64) -> u64 {
-        self.read(off)
-    }
-    /// Write a `u64` at `off`. Panics unless the address is 8-aligned.
-    ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn write_u64(&self, off: u64, value: u64) {
-        self.write(off, value);
     }
 
     /// **Move `bytes` bytes from offset `source` to offset `destination` inside the window**, the ranges allowed
@@ -353,14 +304,14 @@ mod tests {
     fn integers_round_trip_at_every_width() {
         let mut storage = [0u64; 8];
         let w = window(&mut storage);
-        w.write_u8(1, 0xAB);
-        w.write_u16(2, 0xBEEF);
-        w.write_u32(4, 0xDEAD_BEEF);
-        w.write_u64(8, 0x0123_4567_89AB_CDEF);
-        assert_eq!(w.read_u8(1), 0xAB);
-        assert_eq!(w.read_u16(2), 0xBEEF);
-        assert_eq!(w.read_u32(4), 0xDEAD_BEEF);
-        assert_eq!(w.read_u64(8), 0x0123_4567_89AB_CDEF);
+        w.write::<u8>(1, 0xAB);
+        w.write::<u16>(2, 0xBEEF);
+        w.write::<u32>(4, 0xDEAD_BEEF);
+        w.write::<u64>(8, 0x0123_4567_89AB_CDEF);
+        assert_eq!(w.read::<u8>(1), 0xAB);
+        assert_eq!(w.read::<u16>(2), 0xBEEF);
+        assert_eq!(w.read::<u32>(4), 0xDEAD_BEEF);
+        assert_eq!(w.read::<u64>(8), 0x0123_4567_89AB_CDEF);
         w.write(16, [1u32, 2, 3, 4]);
         assert_eq!(w.read::<[u32; 4]>(16), [1, 2, 3, 4]);
     }
@@ -369,21 +320,21 @@ mod tests {
     #[should_panic(expected = "outside the 64-byte window")]
     fn an_access_past_the_end_panics() {
         let mut storage = [0u64; 8];
-        window(&mut storage).read_u64(60);
+        window(&mut storage).read::<u64>(60);
     }
 
     #[test]
     #[should_panic(expected = "outside the 64-byte window")]
     fn an_offset_that_wraps_panics() {
         let mut storage = [0u64; 8];
-        window(&mut storage).read_u8(u64::MAX);
+        window(&mut storage).read::<u8>(u64::MAX);
     }
 
     #[test]
     #[should_panic(expected = "not 4-byte aligned")]
     fn a_misaligned_access_panics() {
         let mut storage = [0u64; 8];
-        window(&mut storage).read_u32(2);
+        window(&mut storage).read::<u32>(2);
     }
 
     #[test]
@@ -391,9 +342,9 @@ mod tests {
         let mut storage = [0u64; 8];
         let w = window(&mut storage);
         let inner = w.window(16, 8);
-        inner.write_u64(0, 7);
-        assert_eq!(w.read_u64(16), 7);
-        let caught = std::panic::catch_unwind(|| inner.read_u8(8));
+        inner.write::<u64>(0, 7);
+        assert_eq!(w.read::<u64>(16), 7);
+        let caught = std::panic::catch_unwind(|| inner.read::<u8>(8));
         assert!(caught.is_err());
     }
 

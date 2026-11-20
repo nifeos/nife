@@ -2,7 +2,7 @@
 
 Status: DECIDED. calef ruled on 2026-09-27 at 15:14Z (UTC), on #1402: option A as built by
 milestone 205 (how a foreign program is told what to do), which is this note's option 3 with the
-copy. The set travels as one read-only frame the shell owns (`spawnproto::NAMESET_BIT`, `1 << 43`,
+copy. The set travels as one read-only frame the shell owns (`spawn_protocol::NAMESET_BIT`, `1 << 43`,
 name still provisional), and the progenitor copies it into a page from the job's region before
 `fs_nameset_caretaker` maps it, so the shell's write access reaches nothing. The ruling's option B,
 this note's option 2 (the set as data words), lost because it would be a second way to move bytes
@@ -18,7 +18,7 @@ as it was written.
 Written 2026-09-26 (UTC) by milestone 47 (navigation and
 naming)'s lane `milestone/47-navigation`. It answers the item milestone 47's block and milestone 109
 (`xargs`) both carry: "the shell cannot ask the progenitor to mint a per-batch caretaker." It is a
-change to `spawnproto`, which the shell and the progenitor both read, so it is an architect's call.
+change to `spawn_protocol`, which the shell and the progenitor both read, so it is an architect's call.
 The file name is provisional.
 
 ## The premise, checked, and it is wider than the record says
@@ -30,7 +30,7 @@ without `xargs`:
 - `components/src/swish/running.rs`, `dir_grant`: `g.names.only()` is `None` for a set, and the shell answers
   "a set of names is delivered by a nameset caretaker, and the progenitor builds the subtree one;
   name a single file".
-- `crates/program_table/src/spawnproto.rs`: `DIRECTORY_GRANT_BIT` announces two more `SEND`s carrying the caretaker's
+- `crates/program_table/src/spawn_protocol.rs`: `DIRECTORY_GRANT_BIT` announces two more `SEND`s carrying the caretaker's
   and the child's three start words. A single name fits in two words. A set does not, and no bit
   says one follows.
 - The set caretaker exists and is proven (`components/src/fs_nameset_caretaker.rs`,
@@ -88,10 +88,10 @@ which a set capability cannot express by design (`notes/glob-grant.md`); and the
 ## The limits 2b asks for, proposed
 
 calef's ruling asked the building lane to propose the page limit, its memory cost, and a new
-`grant::MAXIMUM_NAME`. They are proposed here, before 2b is built, so the numbers can be ruled on
+`grant::MAXIMUM_NAME_BYTES`. They are proposed here, before 2b is built, so the numbers can be ruled on
 first.
 
-`grant::MAXIMUM_NAME`: 252 bytes. That is RedoxFS's own limit (`DIR_ENTRY_MAX_LENGTH` in
+`grant::MAXIMUM_NAME_BYTES`: 252 bytes. That is RedoxFS's own limit (`DIR_ENTRY_MAX_LENGTH` in
 `vendor/redoxfs/src/lib.rs`). Unix's 255 would let a grant name a file the filesystem can never
 hold, and 16 is today's two-register limit, which 2b's page removes.
 

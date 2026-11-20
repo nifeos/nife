@@ -33,7 +33,7 @@ fn no_page_is_executable_across_the_privilege_split() {
 
 #[test]
 fn user_rodata_is_readable_and_nothing_else() {
-    let f = Flags::user_rodata();
+    let f = Flags::user_read_only_data();
     assert!(f.is_user_accessible());
     assert!(!f.is_writable());
     assert!(!f.is_user_executable());
@@ -78,11 +78,11 @@ fn user_mappings_are_tagged_and_kernel_mappings_are_global() {
 #[test]
 fn bits_returns_the_exact_capability_word() {
     assert_eq!(Flags::kernel_code().bits(), 0b01_1000);
-    assert_eq!(Flags::kernel_rodata().bits(), 0b01_0000);
+    assert_eq!(Flags::kernel_read_only_data().bits(), 0b01_0000);
     assert_eq!(Flags::kernel_data().bits(), 0b01_0001);
     assert_eq!(Flags::device().bits(), 0b11_0001);
     assert_eq!(Flags::user_code().bits(), 0b00_0110);
-    assert_eq!(Flags::user_rodata().bits(), 0b00_0010);
+    assert_eq!(Flags::user_read_only_data().bits(), 0b00_0010);
     assert_eq!(Flags::user_data().bits(), 0b00_0011);
     assert_eq!(Flags::user_device().bits(), 0b10_0011);
     assert_eq!(Flags::user_device_read_only().bits(), 0b10_0010);
@@ -98,12 +98,12 @@ fn bits_returns_the_exact_capability_word() {
 fn only_writable_beside_executable_makes_the_pair() {
     let every = [
         Flags::kernel_code(),
-        Flags::kernel_rodata(),
+        Flags::kernel_read_only_data(),
         Flags::kernel_data(),
         Flags::device(),
         Flags::write_combining(),
         Flags::user_code(),
-        Flags::user_rodata(),
+        Flags::user_read_only_data(),
         Flags::user_data(),
         Flags::user_device(),
         Flags::user_device_read_only(),
@@ -130,8 +130,8 @@ fn only_writable_beside_executable_makes_the_pair() {
         }
     }
     // The cases the narrow rule exists to let through, named.
-    assert!(!Flags::user_rodata().makes_writable_executable_pair(Flags::user_data()));
-    assert!(!Flags::user_rodata().makes_writable_executable_pair(Flags::user_code()));
+    assert!(!Flags::user_read_only_data().makes_writable_executable_pair(Flags::user_data()));
+    assert!(!Flags::user_read_only_data().makes_writable_executable_pair(Flags::user_code()));
     assert!(!Flags::user_data().makes_writable_executable_pair(Flags::user_data()));
     assert!(!Flags::user_code().makes_writable_executable_pair(Flags::user_code()));
 }

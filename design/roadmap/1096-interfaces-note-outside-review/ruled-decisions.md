@@ -1,7 +1,7 @@
 # Ruled decisions
 
-An appendix to [the milestone](../1096-interfaces-note-outside-review.md). The three decisions
-below are the rules in force; the milestone's "Open decisions" holds the ones still calef's.
+An appendix to [the milestone](../1096-interfaces-note-outside-review.md). The four decisions
+below are the rules in force.
 
 ## The owner string `nife` in a crate that may not say `nife`
 
@@ -54,11 +54,11 @@ name, not in a doc comment.
 Example. `let bytes: [u8; descriptor_bytes(3)] = encode_interfaces(&list);` reads as 44 bytes for
 three records; `interfaces_len(3)` reads as a count of three.
 
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The recommendation holds: sixteen keep their spelling, and
-`INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface` replace the
-four, with no alias of the old spellings. Items 9 and 10 are the work. Ratifying the twenty is
-calef's, under the milestone's "Open decisions".
+Ruled 2026-11-19 UTC (option A): the architect ratified the twenty names with the four renames,
+`INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface`, and no alias of
+the old spellings. Sixteen names keep their spelling. Ratification takes effect for the `Name:`
+blocks when the architect ratifies them; items 9 and 10 are the renames, built. The names are
+one-way at the first tag that nife pins, and ratifying them is what lets the move begin.
 
 ## The crate name
 
@@ -78,3 +78,22 @@ Where nife differs: the `_note` suffix says the carrier, which the alternatives 
 
 Example. The README's first line under either name: "An ELF note that lists the interface versions
 a program was built against, and a decoder that refuses every other spelling of that list."
+
+## Review clearance and the repository
+
+Background. Clearing a crate review is the go to create its repository under nifeos. This crate
+has no review package in `notes/crate-reviews/`; milestone 1096 is its review. It leaves last in
+step 3 of milestone 1017 (the contract crates leave in this order), after the three crates ahead of
+it. The repository name is one-way: a repository that exists has a name others link to.
+
+Ruled 2026-11-19 UTC (option A, the maintainer's provisional ruling): clear the review once the
+four renames land. The architect then gives the go to create `nifeos/interfaces_note`, with no tag
+and no publication, and the maintainer asks for that go from milestone 1096. Clearing now with the move waiting
+(B), and holding until a dry run also stages the move's own items 1 to 5, 11 and 15 (C), were the
+alternatives.
+
+Prior art. In this tree `generational_table`, `block_roster` and `file_allocation_table` each moved
+on a cleared review with no tag. Where nife differs: nothing outside nife links the crate.
+
+Example. Once the renames land, `nifeos/interfaces_note` opens with the README of item 2, and nife
+pins it by revision.

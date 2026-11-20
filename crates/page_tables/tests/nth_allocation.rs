@@ -13,8 +13,8 @@ use std::collections::BTreeSet;
 
 use page_tables::domain::build_identity_domain;
 use page_tables::{
-    Aarch64, DmaRegion, Flags, Half, Ia32e, MapError, Mapper, PAGE_SIZE, PageFormat, PageSize,
-    PageTable, Sv39, Vtd,
+    Aarch64, DirectMemoryAccessRegion, Flags, Half, Ia32e, MapError, Mapper, PAGE_SIZE, PageFormat,
+    PageSize, PageTable, Sv39, Vtd,
 };
 
 const TWO_MEBIBYTES: u64 = 2 << 20;
@@ -56,9 +56,9 @@ impl FailingPool {
         if Some(n) == self.fail_at {
             return None;
         }
-        let pa = self.frame();
-        self.handed.borrow_mut().push(pa);
-        Some(pa)
+        let physical_address = self.frame();
+        self.handed.borrow_mut().push(physical_address);
+        Some(physical_address)
     }
 
     #[allow(clippy::type_complexity)]
@@ -66,9 +66,9 @@ impl FailingPool {
         &self,
         root: u64,
     ) -> Mapper<impl FnMut() -> Option<u64> + '_, fn(u64) -> *mut PageTable, F> {
-        // SAFETY: `root` is fresh, zeroed and 4 KiB-aligned; `phys_to_ptr` is the identity, right
+        // SAFETY: `root` is fresh, zeroed and 4 KiB-aligned; `physical_to_pointer` is the identity, right
         // because these "physical" addresses are host addresses.
-        unsafe { Mapper::new(root, Half::Low, move || self.alloc(), phys_to_ptr) }
+        unsafe { Mapper::new(root, Half::Low, move || self.alloc(), physical_to_pointer) }
     }
 }
 
@@ -81,16 +81,16 @@ impl Drop for FailingPool {
     }
 }
 
-fn phys_to_ptr(pa: u64) -> *mut PageTable {
-    pa as *mut PageTable
+fn physical_to_pointer(physical_address: u64) -> *mut PageTable {
+    physical_address as *mut PageTable
 }
 
 /// One leaf as the tables hold it: where it starts, how much it covers, what it maps to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct Leaf {
-    va: u64,
+    virtual_address: u64,
     bytes: u64,
-    pa: u64,
+    physical_address: u64,
 }
 
 /// What the tables under `root` actually hold: every table frame reachable, every leaf, and how
@@ -110,20 +110,25 @@ fn walk_table<F: PageFormat>(table: u64, level: usize, base: u64, out: &mut Walk
     let mut any = false;
     for i in 0..512u64 {
         // SAFETY: `table` is a frame this file's pool owns, reached through a present table entry.
-        let entry = unsafe { (*phys_to_ptr(table)).entries[i as usize] };
+        let entry = unsafe { (*physical_to_pointer(table)).entries[i as usize] };
         if !F::is_present(entry) {
             continue;
         }
-        let va = base + i * span;
+        let virtual_address = base + i * span;
         if level == F::LEVELS - 1 || F::is_block(entry) {
             out.leaves.push(Leaf {
-                va,
+                virtual_address,
                 bytes: span,
-                pa: F::entry_pa(entry) & !(span - 1),
+                physical_address: F::entry_physical_address(entry) & !(span - 1),
             });
             any = true;
         } else {
-            any |= walk_table::<F>(F::entry_pa(entry), level + 1, va, out);
+            any |= walk_table::<F>(
+                F::entry_physical_address(entry),
+                level + 1,
+                virtual_address,
+                out,
+            );
         }
     }
     if !any && level > 0 {
@@ -240,10 +245,14 @@ fn sweep<F: PageFormat>(
 /// failing run per level above the leaf, none for an Sv39 gigapage, which sits in the root.
 fn a_failed_map_block_leaves_nothing<F: PageFormat>(sizes: &[PageSize]) {
     for &size in sizes {
-        let va = 4 * ONE_GIBIBYTE - size.bytes();
+        let virtual_address = 4 * ONE_GIBIBYTE - size.bytes();
         let (failures, _) = sweep::<F>(&format!("map_block({size:?})"), |root, pool| {
-            pool.mapper::<F>(root)
-                .map_block(va, 7 * ONE_GIBIBYTE, size, Flags::user_data())
+            pool.mapper::<F>(root).map_block(
+                virtual_address,
+                7 * ONE_GIBIBYTE,
+                size,
+                Flags::user_data(),
+            )
         });
         let above = F::LEVELS - 1 - size.levels_above_bottom();
         assert_eq!(
@@ -265,10 +274,10 @@ fn a_failed_map_block_leaks_no_table() {
 /// **`map_range` straddling a 1 GiB boundary**, so the second page needs two new tables after the
 /// first page is mapped: the case where something is already taken when the allocator fails.
 fn a_failed_map_range_leaves_a_prefix<F: PageFormat>() {
-    let va = ONE_GIBIBYTE - 2 * PAGE_SIZE;
+    let virtual_address = ONE_GIBIBYTE - 2 * PAGE_SIZE;
     let (failures, _) = sweep::<F>("map_range", |root, pool| {
         pool.mapper::<F>(root)
-            .map_range(va, 9 * ONE_GIBIBYTE, 4, Flags::user_data())
+            .map_range(virtual_address, 9 * ONE_GIBIBYTE, 4, Flags::user_data())
     });
     assert!(
         failures > F::LEVELS - 1,
@@ -288,15 +297,15 @@ fn a_failed_map_range_leaks_no_table() {
 /// **`map_span` with every leaf size in play**: a 4 KiB head, a 2 MiB block, a 1 GiB block, a 2 MiB
 /// block and a 4 KiB tail, in that order, so a failure can land after any number of them.
 fn a_failed_map_span_leaves_a_prefix<F: PageFormat>() {
-    let va = 2 * ONE_GIBIBYTE - TWO_MEBIBYTES - PAGE_SIZE;
+    let virtual_address = 2 * ONE_GIBIBYTE - TWO_MEBIBYTES - PAGE_SIZE;
     let len = PAGE_SIZE + TWO_MEBIBYTES + ONE_GIBIBYTE + TWO_MEBIBYTES + PAGE_SIZE;
     let (failures, _) = sweep::<F>("map_span", |root, pool| {
         pool.mapper::<F>(root).map_span(
-            va,
-            va + 4 * ONE_GIBIBYTE,
+            virtual_address,
+            virtual_address + 4 * ONE_GIBIBYTE,
             len,
             Flags::user_data(),
-            PageSize::Size1GiB,
+            PageSize::OneGibibyte,
         )
     });
     assert!(
@@ -318,12 +327,12 @@ fn a_failed_map_span_maps_a_prefix() {
 /// tables, several pages each, so a failure can land after the first region is wholly mapped.
 fn a_failed_domain_build_leaves_a_prefix<F: PageFormat>() {
     let regions = [
-        DmaRegion {
+        DirectMemoryAccessRegion {
             base: ONE_GIBIBYTE - 2 * PAGE_SIZE,
             size: 3 * PAGE_SIZE,
             writable: true,
         },
-        DmaRegion {
+        DirectMemoryAccessRegion {
             base: 3 * ONE_GIBIBYTE,
             size: 2 * PAGE_SIZE,
             writable: true,
@@ -331,8 +340,10 @@ fn a_failed_domain_build_leaves_a_prefix<F: PageFormat>() {
     ];
     let (failures, _) = sweep::<F>("build_identity_domain", |root, pool| {
         // SAFETY: `root` and every frame `alloc` returns are fresh, zeroed and page-aligned, and
-        // the identity is the right `phys_to_ptr` for host frames.
-        unsafe { build_identity_domain::<_, _, F>(root, || pool.alloc(), phys_to_ptr, &regions) }
+        // the identity is the right `physical_to_pointer` for host frames.
+        unsafe {
+            build_identity_domain::<_, _, F>(root, || pool.alloc(), physical_to_pointer, &regions)
+        }
     });
     assert!(
         failures > F::LEVELS - 1,

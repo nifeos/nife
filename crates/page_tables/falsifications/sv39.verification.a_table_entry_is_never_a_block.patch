@@ -8,7 +8,7 @@ leaf whose physical address is the next table's. The privilege model makes this 
 looks on aarch64: the entry is `U`-clear, so the fault the hardware raises on a user access is
 not the one anybody expects to debug.
 
-Expected to fail: `assert!(!Sv39::is_block(Sv39::table_entry(pa)))`, for every `pa`, since
+Expected to fail: `assert!(!Sv39::is_block(Sv39::table_entry(physical_address)))`, for every `physical_address`, since
 `is_block` here is `entry & (R | W | X) != 0`.
 
 **Stated where a reader of the encoder will look**: `table_entry`'s own comment already says the
@@ -20,10 +20,10 @@ diff --git a/crates/page_tables/src/sv39.rs b/crates/page_tables/src/sv39.rs
 +++ b/crates/page_tables/src/sv39.rs
 @@ -83,7 +83,7 @@ impl PageFormat for Sv39 {
  
-     fn table_entry(pa: u64, _level: usize) -> u64 {
+     fn table_entry(physical_address: u64, _level: usize) -> u64 {
          // A pointer PTE: PPN plus V, and R=W=X=0 (that zero is what marks it a pointer, not a leaf).
--        (((pa >> 12) & PPN_MASK) << PPN_SHIFT) | V
-+        (((pa >> 12) & PPN_MASK) << PPN_SHIFT) | V | R
+-        (((physical_address >> 12) & PPN_MASK) << PPN_SHIFT) | V
++        (((physical_address >> 12) & PPN_MASK) << PPN_SHIFT) | V | R
      }
  
-     fn leaf_entry(pa: u64, flags: Flags) -> u64 {
+     fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {

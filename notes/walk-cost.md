@@ -179,7 +179,7 @@ A badge is a window and a grant at once. Under §230 (badged endpoint capabiliti
 index of the client's staging window, and the crate binds a grant to that same index. So a revoked
 badge must not be handed to a new client while its old holder is alive. The progenitor's window pool
 releases a window at reap, after the holder is dead, and nothing in the crate can check that. The
-proof is bounded: paths up to `PROOF_PATH` bytes, and binding tables of `PROOF_BADGES` badges over
+proof is bounded: paths up to `PROOF_PATH_BYTES` bytes, and binding tables of `PROOF_BADGES` badges over
 `PROOF_OPERATIONS` operations. The functions have no loops whose behavior changes past those bounds,
 which is the argument that the bound is enough.
 

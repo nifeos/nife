@@ -30,7 +30,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use program_table::spawnproto;
+use program_table::spawn_protocol;
 use user_mode_runtime::{Message, reap, receive_message, send, yield_now};
 
 /// The supervision endpoint the progenitor endows every job with, held `READ`: the right to receive deaths
@@ -43,7 +43,7 @@ const DEATHS: u64 = 0;
 const REPORT: u64 = 1;
 
 /// **The progenitor's spawn endpoint, held `WRITE` through a copy badged
-/// [`spawnproto::UNDERTAKER_BADGE`]** (milestone 685): where [`announce`] says a job is reaped. No
+/// [`spawn_protocol::UNDERTAKER_BADGE`]** (milestone 685 (a job is finished when its memory is back)): where [`announce`] says a job is reaped. No
 /// `GRANT`, so the badge cannot be passed on, and the progenitor is the only receiver.
 const SPAWN: u64 = 2;
 
@@ -92,7 +92,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 /// it before the reap would hand out a window or wait for a pool that has not changed. The return
 /// value is dropped for [`report`]'s reason.
 fn announce(label: u64, tid: u64) {
-    let (w0, w1, w2) = spawnproto::reaped(label, tid);
+    let (w0, w1, w2) = spawn_protocol::reaped(label, tid);
     let _ = send(SPAWN, w0, w1, w2);
 }
 
@@ -107,7 +107,7 @@ fn announce(label: u64, tid: u64) {
 /// only failure the kernel could return here is one this program has no second channel to report on
 /// and no authority to do anything about.
 fn report() {
-    let _ = send(REPORT, spawnproto::JOB_FAULTED, 0, 0);
+    let _ = send(REPORT, spawn_protocol::JOB_FAULTED, 0, 0);
 }
 
 /// Collect one corpse, retrying while the region still holds something that can run.

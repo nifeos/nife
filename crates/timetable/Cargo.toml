@@ -22,7 +22,7 @@ program_table = { version = "0.1.0", path = "../program_table" }
 # dependency was ruled 2026-11-12 (UTC) under §46 (thin primitives or whole subsystems), and
 # notes/calendar.md says why it was chosen.
 jiff = { version = "1.0.0", default-features = false }
-clock_contract = { version = "0.1.0", path = "../clock_contract" }
+clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 # The fire arithmetic, `next_after`, and its Kani proofs (milestone 360 (`crates/timetable`'s proved `next_after` is not what the timer calls)). The kernel's timer re-arm
 # links the same crate, so the proof binds the code that runs. `timetable` re-exports it.
 periodic_deadline = { version = "0.1.0", path = "../periodic_deadline" }

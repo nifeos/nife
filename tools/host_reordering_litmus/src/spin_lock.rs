@@ -1,6 +1,6 @@
 //! LOCK: four cores increment one counter under a spinlock, in two builds. [`test`] uses a copy
 //! shaped like the kernel's lock, whose unlock ordering is a parameter; [`test_kernel_lock`] uses
-//! `crates/spin_lock` itself, the lock under the kernel's `InterruptSafeMutex`, with the counter
+//! `crates/test_and_set_lock` itself, the lock under the kernel's `InterruptSafeMutex`, with the counter
 //! inside
 //! it as a kernel lock's data is.
 //!
@@ -15,7 +15,7 @@
 use core::hint::spin_loop;
 use core::sync::atomic::{AtomicBool, Ordering};
 
-use ::spin_lock::SpinLock;
+use ::test_and_set_lock::SpinLock;
 
 use crate::cores::{CORES, Line, REORDERS, SAMPLES, barrier, scale};
 
@@ -75,7 +75,7 @@ pub(crate) fn test<const RELEASE: bool>(id: usize) {
     REORDERS[id].store(lost, Ordering::Relaxed);
 }
 
-/// Runs one LOCK test on core `id` against `crates/spin_lock`; core 0 reports the lost updates.
+/// Runs one LOCK test on core `id` against `crates/test_and_set_lock`; core 0 reports the lost updates.
 pub(crate) fn test_kernel_lock(id: usize) {
     if id == 0 {
         *KERNEL_LOCK.0.lock() = 0;

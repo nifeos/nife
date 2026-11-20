@@ -67,7 +67,7 @@ const ENOENT: i32 = 2;
 const ELOOP: i32 = 40;
 
 /// How deep the walk goes. This program has no allocator, so the recursion is real stack, and each
-/// level holds a listing buffer by value. Eight matches the shell's path stack (`grant_plan::nav`) and
+/// level holds a listing buffer by value. Eight matches the shell's path stack (`grant_plan::navigation`) and
 /// is well inside the sixteen handles a `fs_subtree_caretaker` will mint. Deeper is refused rather
 /// than silently leaving a tree half-removed with a zero exit status.
 const MAXIMUM_DEPTH: usize = 8;
@@ -99,14 +99,14 @@ fn put_page(bytes: &[u8]) {
         .take(filesystem_contract::PAGE_BYTES)
         .enumerate()
     {
-        WINDOW.write_u8(i as u64, b);
+        WINDOW.write::<u8>(i as u64, b);
     }
 }
 
 /// Copy `n` bytes out of it (a listing landed there).
 fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = WINDOW.read_u8(i as u64);
+        *b = WINDOW.read::<u8>(i as u64);
     }
 }
 
@@ -134,7 +134,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     let r = name_call(fs::UNLINK, parent, name, 0);
     if r == 0 {
         *count += 1;
-        if flags & grant_plan::rmopt::VERBOSE != 0 {
+        if flags & grant_plan::rm_options::VERBOSE != 0 {
             say(name, b"");
         }
         return Ok(());
@@ -146,7 +146,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     // still reports, and so does an `ENOENT` from elsewhere in the walk: the `OPENDIR` below
     // answers `ENOENT` when the capability may not descend, and swallowing that would turn a walk
     // that could not start into a silent success.
-    if errno == ENOENT && flags & grant_plan::rmopt::FORCE != 0 {
+    if errno == ENOENT && flags & grant_plan::rm_options::FORCE != 0 {
         return Ok(());
     }
     if errno != directory::EISDIR {
@@ -155,7 +155,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
     }
 
     // It is a directory. Without `-r` that is the answer, and it is `rm`'s answer.
-    if flags & grant_plan::rmopt::RECURSIVE == 0 {
+    if flags & grant_plan::rm_options::RECURSIVE == 0 {
         diagnose(name, directory::EISDIR);
         return Err(directory::EISDIR);
     }
@@ -185,7 +185,7 @@ fn remove(parent: u64, name: &[u8], flags: u64, depth: usize, count: &mut u64) -
         return Err((-r) as i32);
     }
     *count += 1;
-    if flags & grant_plan::rmopt::VERBOSE != 0 {
+    if flags & grant_plan::rm_options::VERBOSE != 0 {
         say(name, b"/");
     }
     Ok(())
@@ -352,55 +352,55 @@ fn verdict(status: u64, count: u64) {
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: abi::INTERFACE_ID,
         version: abi::ABI_VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,
         version: address_space_layout::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: byte_sink_contract::INTERFACE_ID,
         version: byte_sink_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: clock_contract::INTERFACE_ID,
         version: clock_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: counter_frequency_contract::INTERFACE_ID,
         version: counter_frequency_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: current_cpu_contract::INTERFACE_ID,
         version: current_cpu_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: entropy_contract::INTERFACE_ID,
         version: entropy_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: filesystem_contract::fs::INTERFACE_ID,
         version: filesystem_contract::fs::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: grant_contract::INTERFACE_ID,
         version: grant_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: program_argument_contract::INTERFACE_ID,
         version: program_argument_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: socket_contract::INTERFACE_ID,
         version: socket_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: user_mode_runtime::INTERFACE_ID,
         version: user_mode_runtime::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: interfaces_note::INTERFACE_ID,
         version: interfaces_note::INTERFACES_VERSION
     },
@@ -413,7 +413,7 @@ fn start(spec: u64, name_lo: u64, name_hi: u64) -> ! {
     let n = grant::unpack_name(name_lo, name_hi, grant::specification_len(spec), &mut buf);
     // The options ride in the spec word's mask field, the same field a caretaker's rights ride in:
     // both are "what this process was started with", and neither needs a frame. The bit order is
-    // `grant_plan::rmopt`, which is the shell's own numbering, so the program and the prompt cannot
+    // `grant_plan::rm_options`, which is the shell's own numbering, so the program and the prompt cannot
     // disagree about what `-r` means.
     let flags = grant::specification_rights(spec);
 

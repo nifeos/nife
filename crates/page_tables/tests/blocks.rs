@@ -1,7 +1,7 @@
 //! Blocks (2 MiB and 1 GiB leaves) in real tables, on the host, for every CPU format.
 //!
 //! The same trick as `mapping.rs`: a `Box<PageTable>` is 4 KiB-aligned and its address serves as a
-//! "physical" frame. Blocks never dereference the address they map, so the mapped `pa`s here are
+//! "physical" frame. Blocks never dereference the address they map, so the mapped `physical_address`s here are
 //! plain numbers; only the tables are real memory.
 //!
 //! Generic over the format, because the point of `PageFormat::block_entry` and `is_block` is that
@@ -62,14 +62,15 @@ impl Pool {
         half: Half,
     ) -> Mapper<impl FnMut() -> Option<u64> + '_, fn(u64) -> *mut PageTable, F> {
         let root = self.fresh().expect("no budget for a root");
-        // SAFETY: `root` is fresh, zeroed and 4 KiB-aligned; `phys_to_ptr` is the identity, which
+        // SAFETY: `root` is fresh, zeroed and 4 KiB-aligned; `physical_to_pointer` is the identity, which
         // is right because these "physical" addresses are host addresses.
         unsafe {
             Mapper::new(
                 root,
                 half,
                 move || self.fresh(),
-                (|pa| pa as *mut PageTable) as fn(u64) -> *mut PageTable,
+                (|physical_address| physical_address as *mut PageTable)
+                    as fn(u64) -> *mut PageTable,
             )
         }
     }
@@ -97,24 +98,28 @@ fn a_block_translates_with_its_offset<F: PageFormat>() {
     let pool = Pool::new(8);
     let mut m = pool.mapper::<F>(Half::Low);
     for (size, flags) in [
-        (PageSize::Size2MiB, Flags::user_data()),
-        (PageSize::Size1GiB, Flags::user_rodata()),
+        (PageSize::TwoMebibytes, Flags::user_data()),
+        (PageSize::OneGibibyte, Flags::user_read_only_data()),
     ] {
-        let va = VA
-            + if size == PageSize::Size2MiB {
+        let virtual_address = VA
+            + if size == PageSize::TwoMebibytes {
                 0
             } else {
                 ONE_GIBIBYTE
             };
-        m.map_block(va, PA, size, flags).unwrap();
+        m.map_block(virtual_address, PA, size, flags).unwrap();
         for off in [0, PAGE_SIZE, size.bytes() / 2 + 0x123, size.bytes() - 1] {
             assert_eq!(
-                m.translate(va + off),
+                m.translate(virtual_address + off),
                 Some((PA + off, flags)),
                 "{size:?} at offset {off:#x}"
             );
         }
-        assert_eq!(m.translate(va + size.bytes()), None, "{size:?} overran");
+        assert_eq!(
+            m.translate(virtual_address + size.bytes()),
+            None,
+            "{size:?} overran"
+        );
     }
 }
 
@@ -133,7 +138,7 @@ fn a_leaf_or_a_block_is_never_cut_as_a_table<F: PageFormat>() {
     let mut m = pool.mapper::<F>(Half::Low);
     let flags = Flags::user_data();
     m.map(VA, PA, flags).unwrap();
-    m.map_block(VA + ONE_GIBIBYTE, PA, PageSize::Size1GiB, flags)
+    m.map_block(VA + ONE_GIBIBYTE, PA, PageSize::OneGibibyte, flags)
         .unwrap();
     assert!(m.unlink_table(VA, PA).is_none(), "a 4 KiB leaf");
     assert!(
@@ -157,7 +162,7 @@ fn a_leaf_or_a_block_is_never_cut_as_a_table_on_every_format() {
 fn a_page_inside_a_block_is_refused<F: PageFormat>() {
     let pool = Pool::new(8);
     let mut m = pool.mapper::<F>(Half::Low);
-    m.map_block(VA, PA, PageSize::Size2MiB, Flags::user_data())
+    m.map_block(VA, PA, PageSize::TwoMebibytes, Flags::user_data())
         .unwrap();
     let used = pool.used();
     assert_eq!(
@@ -172,13 +177,13 @@ fn a_page_inside_a_block_is_refused<F: PageFormat>() {
     );
     // And a block over a block, and a 2 MiB block under a 1 GiB one.
     assert_eq!(
-        m.map_block(VA, PA, PageSize::Size2MiB, Flags::user_data()),
+        m.map_block(VA, PA, PageSize::TwoMebibytes, Flags::user_data()),
         Err(MapError::AlreadyMapped)
     );
     m.map_block(
         VA + ONE_GIBIBYTE,
         PA,
-        PageSize::Size1GiB,
+        PageSize::OneGibibyte,
         Flags::user_data(),
     )
     .unwrap();
@@ -186,7 +191,7 @@ fn a_page_inside_a_block_is_refused<F: PageFormat>() {
         m.map_block(
             VA + ONE_GIBIBYTE + TWO_MEBIBYTES,
             PA,
-            PageSize::Size2MiB,
+            PageSize::TwoMebibytes,
             Flags::user_data()
         ),
         Err(MapError::AlreadyMapped)
@@ -204,7 +209,7 @@ fn a_page_inside_a_block_is_refused_on_every_format() {
 fn unmapping_inside_a_block_is_refused<F: PageFormat>() {
     let pool = Pool::new(8);
     let mut m = pool.mapper::<F>(Half::Low);
-    m.map_block(VA, PA, PageSize::Size2MiB, Flags::user_data())
+    m.map_block(VA, PA, PageSize::TwoMebibytes, Flags::user_data())
         .unwrap();
     assert_eq!(m.unmap(VA).map(|_| ()), Err(MapError::InsideBlock));
     assert_eq!(
@@ -230,7 +235,7 @@ fn a_block_over_a_table_is_refused<F: PageFormat>() {
     let (_, flush) = m.unmap(VA + PAGE_SIZE).unwrap();
     never_installed(flush);
     assert_eq!(
-        m.map_block(VA, PA, PageSize::Size2MiB, Flags::user_data()),
+        m.map_block(VA, PA, PageSize::TwoMebibytes, Flags::user_data()),
         Err(MapError::AlreadyMapped)
     );
 }
@@ -247,14 +252,19 @@ fn a_misaligned_block_is_refused() {
     let pool = Pool::new(8);
     let mut m = pool.mapper::<Ia32e>(Half::Low);
     assert_eq!(
-        m.map_block(VA + PAGE_SIZE, PA, PageSize::Size2MiB, Flags::user_data()),
+        m.map_block(
+            VA + PAGE_SIZE,
+            PA,
+            PageSize::TwoMebibytes,
+            Flags::user_data()
+        ),
         Err(MapError::Misaligned)
     );
     assert_eq!(
         m.map_block(
             VA,
             PA + TWO_MEBIBYTES,
-            PageSize::Size1GiB,
+            PageSize::OneGibibyte,
             Flags::user_data()
         ),
         Err(MapError::Misaligned)
@@ -268,12 +278,12 @@ fn vtd_declines_blocks() {
     let pool = Pool::new(8);
     let mut m = pool.mapper::<Vtd>(Half::Low);
     assert_eq!(
-        m.map_block(VA, PA, PageSize::Size2MiB, Flags::user_data()),
+        m.map_block(VA, PA, PageSize::TwoMebibytes, Flags::user_data()),
         Err(MapError::UnsupportedSize)
     );
     assert_eq!(pool.used(), 1);
     // And a 4 KiB "block" is a page, on every format, this one included.
-    m.map_block(VA, PA, PageSize::Size4KiB, Flags::user_data())
+    m.map_block(VA, PA, PageSize::FourKibibytes, Flags::user_data())
         .unwrap();
     assert!(m.translate(VA).is_some());
 }
@@ -284,38 +294,58 @@ fn vtd_declines_blocks() {
 fn a_span_maps_exactly_its_pages<F: PageFormat>() {
     // Starts one page below a 2 MiB boundary and ends three pages past the second one after it, so
     // there is a one-page head, two blocks, and a three-page tail.
-    let va = VA + TWO_MEBIBYTES - PAGE_SIZE;
-    let pa = PA + TWO_MEBIBYTES - PAGE_SIZE;
+    let virtual_address = VA + TWO_MEBIBYTES - PAGE_SIZE;
+    let physical_address = PA + TWO_MEBIBYTES - PAGE_SIZE;
     let len = PAGE_SIZE + 2 * TWO_MEBIBYTES + 3 * PAGE_SIZE;
 
     let blocks = Pool::new(16);
     let mut m = blocks.mapper::<F>(Half::Low);
-    m.map_span(va, pa, len, Flags::kernel_rodata(), PageSize::Size1GiB)
-        .unwrap();
+    m.map_span(
+        virtual_address,
+        physical_address,
+        len,
+        Flags::kernel_read_only_data(),
+        PageSize::OneGibibyte,
+    )
+    .unwrap();
     for off in (0..len).step_by(PAGE_SIZE as usize) {
         assert_eq!(
-            m.translate(va + off),
-            Some((pa + off, Flags::kernel_rodata())),
+            m.translate(virtual_address + off),
+            Some((physical_address + off, Flags::kernel_read_only_data())),
             "page at offset {off:#x}"
         );
     }
-    assert_eq!(m.translate(va - PAGE_SIZE), None, "mapped below the span");
-    assert_eq!(m.translate(va + len), None, "mapped above the span");
+    assert_eq!(
+        m.translate(virtual_address - PAGE_SIZE),
+        None,
+        "mapped below the span"
+    );
+    assert_eq!(
+        m.translate(virtual_address + len),
+        None,
+        "mapped above the span"
+    );
     // The head is a page, so `unmap` takes it; the first block starts one page later, so `unmap`
     // refuses there. That is the leaf sizes checked directly rather than through `translate`.
     assert_eq!(
-        m.unmap(va + PAGE_SIZE).map(|_| ()),
+        m.unmap(virtual_address + PAGE_SIZE).map(|_| ()),
         Err(MapError::InsideBlock)
     );
-    let (_, flush) = m.unmap(va).unwrap();
+    let (_, flush) = m.unmap(virtual_address).unwrap();
     never_installed(flush);
 
     // The same span in pages alone costs strictly more tables: the two blocks' worth of bottom
     // tables that blocks do not need.
     let pages = Pool::new(16);
     let mut p = pages.mapper::<F>(Half::Low);
-    p.map_span(va, pa, len, Flags::kernel_rodata(), PageSize::Size4KiB)
-        .unwrap();
+    p.map_span(
+        virtual_address,
+        physical_address,
+        len,
+        Flags::kernel_read_only_data(),
+        PageSize::FourKibibytes,
+    )
+    .unwrap();
     assert!(
         pages.used() > blocks.used(),
         "pages {} blocks {}",
@@ -333,26 +363,32 @@ fn a_span_maps_exactly_its_pages_on_every_format() {
 
 /// **A block needs both addresses aligned, not either.** When the virtual and physical addresses
 /// sit at different offsets within a 2 MiB region, no leaf in the span can be a block, however
-/// long it is: a 2 MiB leaf at a misaligned `va` faults, and at a misaligned `pa` the hardware
+/// long it is: a 2 MiB leaf at a misaligned `virtual_address` faults, and at a misaligned `physical_address` the hardware
 /// (or the format's mask) maps a different 2 MiB than the one granted. A span with the two at
 /// the same offset cannot tell `map_span` computing either address at the wrong offset.
 fn skewed_spans_are_mapped_in_pages<F: PageFormat>() {
-    for (va, pa) in [(VA + PAGE_SIZE, PA), (VA, PA + PAGE_SIZE)] {
+    for (virtual_address, physical_address) in [(VA + PAGE_SIZE, PA), (VA, PA + PAGE_SIZE)] {
         let len = 2 * TWO_MEBIBYTES;
         let pool = Pool::new(16);
         let mut m = pool.mapper::<F>(Half::Low);
-        m.map_span(va, pa, len, Flags::kernel_data(), PageSize::Size1GiB)
-            .unwrap();
+        m.map_span(
+            virtual_address,
+            physical_address,
+            len,
+            Flags::kernel_data(),
+            PageSize::OneGibibyte,
+        )
+        .unwrap();
         for off in (0..len).step_by(PAGE_SIZE as usize) {
             assert_eq!(
-                m.translate(va + off),
-                Some((pa + off, Flags::kernel_data())),
-                "va {va:#x} pa {pa:#x} offset {off:#x}"
+                m.translate(virtual_address + off),
+                Some((physical_address + off, Flags::kernel_data())),
+                "virtual_address {virtual_address:#x} physical_address {physical_address:#x} offset {off:#x}"
             );
         }
         // A page, not a block, at the one place a block could have started on either side.
         for off in [0, TWO_MEBIBYTES - PAGE_SIZE] {
-            let (_, flush) = m.unmap(va + off).unwrap();
+            let (_, flush) = m.unmap(virtual_address + off).unwrap();
             never_installed(flush);
         }
     }
@@ -377,7 +413,7 @@ fn the_largest_size_is_a_ceiling() {
         PA,
         ONE_GIBIBYTE,
         Flags::kernel_data(),
-        PageSize::Size2MiB,
+        PageSize::TwoMebibytes,
     )
     .unwrap();
     // Root, PDPT, one PD holding 512 blocks.
@@ -394,7 +430,7 @@ fn the_largest_size_is_a_ceiling() {
         PA,
         ONE_GIBIBYTE,
         Flags::kernel_data(),
-        PageSize::Size1GiB,
+        PageSize::OneGibibyte,
     )
     .unwrap();
     // Root and a PDPT holding the one leaf.
@@ -411,7 +447,7 @@ fn a_span_that_is_not_whole_pages_is_refused() {
             PA,
             PAGE_SIZE + 1,
             Flags::kernel_data(),
-            PageSize::Size2MiB
+            PageSize::TwoMebibytes
         ),
         Err(MapError::Misaligned)
     );

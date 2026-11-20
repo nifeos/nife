@@ -1,7 +1,35 @@
-# Decisions 2 to 4: the case behind each ruling
+# Decisions 1 to 4: the case behind each ruling
 
 An appendix to [the milestone](../1101-memory-regions-outside-review.md). The rulings themselves are
-in the milestone's "Decisions for the architect".
+in the milestone's "Held decision" and "Decisions for the architect".
+
+## Decision 1: Whether `memory_regions` leaves nife, and in what shape
+
+Ruled 2026-11-19 (UTC): option A.
+
+Background. `memory_regions` is the kernel's bookkeeping for untyped memory: each region has a page
+budget, a watermark that only moves down when nothing is live above it, per-kind object ceilings
+and a claim that lets exactly one caller destroy a region. Its one consumer is the kernel, which
+reaches it by path. Its vocabulary is the kernel's: `ObjectKind` lists seven nife kernel object
+kinds and the table counts nothing else. The standing rule lets a crate leave only when it is
+publishable or used by more than one repository.
+
+- A. Hold the move until the crate has a second consumer or its object kinds are the caller's to
+  define, whichever comes first.
+- B. Leave now with `Counted` generic over the caller's kind set (a `Kinds` trait the kernel
+  implements with its seven), so the published interface names no nife kernel object.
+- C. Leave now as it stands, with nife's seven kinds in the published interface.
+
+Door: one-way for B and C. Creating a repository and publishing are outward steps, and the
+crate's shape on arrival is what a second consumer builds on. A changes nothing outside the tree.
+
+Prior art. seL4 fixes its object types in the kernel and ships them to user space as constants in
+`libsel4`, not as a library another kernel reuses. Linux's `page_counter` is a generic
+hierarchical counter that lives inside one tree. `slotmap` and `generational_table` are generic over
+the value they hold (all recalled, not re-read). nife differs in counting kernel objects against a
+budget tree in a library at all. Concrete example: a hypervisor accounting guest pages would call
+`retype_object_page(name, ObjectKind::Rendezvous)` for a thing that is not a rendezvous, or fork
+the crate; under B it calls `retype_object_page(name, MyKind::Vcpu)`.
 
 ## Decision 2: Whether region names cross the crate's boundary as `u64` or as a typed name
 

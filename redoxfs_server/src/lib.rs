@@ -56,7 +56,7 @@ pub use dispatch::ServeEdges;
 use filesystem_contract::directory::{self, Rights};
 use filesystem_contract::extended_attribute;
 use redoxfs::{Disk, FileSystem, Node, Transaction, TreePtr};
-use subtree_scope::Kind;
+use subtree_scope::NodeKind;
 /// **The engine's error type, for a host caller that implements [`redoxfs::Disk`]** (a fuzz target's
 /// in-memory disk). Re-exported so such a caller spells it through this crate rather than naming
 /// `redox_syscall` itself; it is the type every [`Server`] method returns. Host-only, because

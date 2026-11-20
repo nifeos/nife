@@ -29,7 +29,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use program_table::spawnproto;
+use program_table::spawn_protocol;
 use timetable::{Registry, contract, registration};
 use user_mode_runtime::{
     Message, capability_delete, exit, monotonic_nanoseconds, reap, receive_message, send, yield_now,
@@ -80,10 +80,10 @@ use contract::{E_ARCHIVE, E_BUDGET, E_CONFIG, E_IMAGE, E_STORE, E_UNVOUCHED};
 
 // The relation `grant_plan` cannot state without depending on `abi`, held here as every reader of
 // the slot holds it (`components/src/swish.rs` does the same).
-const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
+const _: () = assert!(spawn_protocol::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 // No slot this program hands a job is the run-unvouched slot. The job's other capability is a
 // region this program split for it, which cannot be the run-unvouched capability (see `_start`).
-const _: () = assert!(CHILD_REPORT != spawnproto::RUN_UNVOUCHED_SLOT);
+const _: () = assert!(CHILD_REPORT != spawn_protocol::RUN_UNVOUCHED_SLOT);
 
 /// **What an admitted row is built from.**
 enum Image {
@@ -125,7 +125,7 @@ fn start(fires_wanted: u64, initial_ramdisk_len: u64, registration_page: u64) ->
     // Every probe here runs before anything is allocated, because a region split later could land
     // in the slot and read as held. See `notes/scheduled-execution/the-program.md`.
     let store = user_mode_runtime::is_granted(ACTIVATION);
-    if user_mode_runtime::is_granted(spawnproto::RUN_UNVOUCHED_SLOT) {
+    if user_mode_runtime::is_granted(spawn_protocol::RUN_UNVOUCHED_SLOT) {
         say(
             b"timetable: it holds the run-unvouched capability, which no scheduled job may hold, \
               so it runs nothing\n",

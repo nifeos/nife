@@ -19,10 +19,10 @@ index 476dfcac4..ef6fe64fb 100644
 +++ b/crates/page_tables/src/page_format.rs
 @@ -107,7 +107,7 @@ pub trait PageFormat {
      /// [`LEVELS`](Self::LEVELS) so it is right for both a 4- and a 3-level walk.
-     fn index(va: u64, level: usize) -> usize {
+     fn index(virtual_address: u64, level: usize) -> usize {
          let shift = 9 * (Self::LEVELS - 1 - level) as u32 + 12;
--        ((va >> shift) & 0x1ff) as usize
-+        ((va >> shift) % 0x1ff) as usize
+-        ((virtual_address >> shift) & 0x1ff) as usize
++        ((virtual_address >> shift) % 0x1ff) as usize
      }
  
-     /// Does `va` lie in `half` for this format? The top bits (above [`SPLIT_SHIFT`](Self::SPLIT_SHIFT))
+     /// Does `virtual_address` lie in `half` for this format? The top bits (above [`SPLIT_SHIFT`](Self::SPLIT_SHIFT))

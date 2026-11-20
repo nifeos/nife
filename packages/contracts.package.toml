@@ -12,7 +12,6 @@ interfaces = [
     "byte_sink_contract",
     "primitive_benchmark_contract",
     "capability_witness_contract",
-    "clock_contract",
     "confined_syscall_fuzzer_contract",
     "counter_frequency_contract",
     "startup_page_contract",
@@ -22,7 +21,6 @@ interfaces = [
     "credential_contract",
     "current_cpu_contract",
     "machine_statistics_contract",
-    "environment_contract",
     "filesystem_contract",
     # The C programs' test-image directory and command lines, which xtask and system_tests
     # agree on (milestone 835 (a C library, stage 1: files, clock and memory)).

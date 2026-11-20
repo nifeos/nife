@@ -157,7 +157,7 @@ milestone 57 attribute store.
 | New code | **estimated 500 to 700 lines** plus tests: a stream-name parse in `path.rs` and the colon fix beside it, stream-aware CREATE with dispositions, READ/WRITE/CLOSE and `SET_INFO`'s end-of-file on a stream handle, `FileStreamInformation` enumeration, delete-on-close as a remove. The estimate's basis is ksmbd's equivalent at roughly 200 lines of C over an existing xattr syscall, times this tree's usual ratio of documented Rust with host tests to reference C. |
 | `Share` methods added | **4 to 6**, in all three implementations. |
 | Wire surface added | one volume-attribute bit, one `QUERY_INFO` class widened, one path grammar. **No new `fs_proto` op**, which is the option's best property: ops 14-17 already do the work. |
-| Bytes at rest | one extra directory entry, one extra node, one 4096-byte block for the node's blob under `.nife-attrs`. **The same order as option 1**, which was not obvious before it was counted. |
+| Bytes at rest | one extra directory entry, one extra node, one 4096-byte block for the node's blob under `.extended-attributes`. **The same order as option 1**, which was not obvious before it was counted. |
 | The 3 KiB ceiling | **decides this option.** `AFP_AfpInfo` is 60 bytes and fits. A resource fork is unbounded and does not. Every write is a whole-value read-modify-write of up to 3 KiB, because the contract has no partial-value verb. |
 | `MAX_COUNT = 16` | a file may carry at most 16 attributes, and macOS turns *every* extended attribute into a stream, so a file with 16 xattrs meets `ENOSPC`. |
 
@@ -199,7 +199,7 @@ that puts *us* on the writing end of it rather than the storing end.
 ### Option 4: named streams, streams stored as files under a reserved name
 
 Claim the bit, and store every stream as a real file under a reserved directory the way
-`.nife-attrs` already holds attribute blobs. No AppleDouble, no 3 KiB ceiling, no compatibility with
+`.extended-attributes` already holds attribute blobs. No AppleDouble, no 3 KiB ceiling, no compatibility with
 anything outside this tree.
 
 | | |

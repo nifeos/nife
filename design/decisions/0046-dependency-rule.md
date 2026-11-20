@@ -166,7 +166,7 @@ adds no more than three crates on any target. It builds `no_std` with default fe
 depends on nothing. The kernel only builds identifiers from bytes the partition table crate has
 already reordered, and calls its text parser nowhere outside tests. Its listing of `unsafe` for
 condition 4 is `notes/kernel-dependency-unsafe.md`, and a proposal that touches it rereads it. The
-kernel's lock is the in-tree `crates/spin_lock`, which milestone 953 (the kernel's lock proves what
+kernel's lock is the in-tree `crates/test_and_set_lock`, which milestone 953 (the kernel's lock proves what
 it takes from spin) wrote because the kernel's ordering claims rest on proofs of it. Nothing here
 changes the ABI, capabilities or the verification path.
 
