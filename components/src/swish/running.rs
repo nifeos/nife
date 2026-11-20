@@ -708,7 +708,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
                 read_ok = false;
             } else {
                 for at in 0..n as u64 {
-                    window.write::<u8>(at, FS_WINDOW.read::<u8>(at));
+                    window.write_volatile::<u8>(at, FS_WINDOW.read_volatile::<u8>(at));
                 }
             }
         } else {
@@ -1332,7 +1332,7 @@ pub(super) fn screen_rendezvous() -> Option<u64> {
 pub(super) fn await_screen(ep: u64) {
     let Message { w1: tid, .. } = receive_message(ep).into_message();
     for _ in 0..SCREEN_REAP_ATTEMPTS {
-        if reap(ep, tid) == 0 {
+        if reap_thread(ep, tid) == 0 {
             return;
         }
         yield_now();

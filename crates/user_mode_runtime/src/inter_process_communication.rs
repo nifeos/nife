@@ -4,7 +4,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: provisional, minted 2026-10-18 (UTC) by maintainer/names-comply-free-crates, for the
+//! Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-18 (UTC) by maintainer/names-comply-free-crates, for the
 //! module and the file. Named for the calls it holds, one module per seam of the old crate root.
 //! Refused `ipc` (§154 (the acronym test is whether the phrase is spoken) spells it out).
 
@@ -12,13 +12,13 @@ use crate::objects::{self, retype_into_kernel_object};
 use crate::system_call::{invoke, invoke5, invoke6};
 
 /// `SEND` three words on the endpoint capability in `slot`. Blocks until a receiver takes them.
-pub fn send(slot: u64, w0: u64, w1: u64, w2: u64) -> i64 {
+pub fn send(slot: u64, word_zero: u64, word_one: u64, word_two: u64) -> i64 {
     // SAFETY: `svc` traps to EL1, which validates the capability named by `slot`.
-    unsafe { invoke(slot, abi::rendezvous::SEND, w0, w1, w2) }
+    unsafe { invoke(slot, abi::rendezvous::SEND, word_zero, word_one, word_two) }
 }
 
 /// **Collect the corpse of a child this supervision endpoint supervises** (DECISIONS §32).
-/// `tid` is the thread id the kernel stamped on the death message [`receive_message`] returned. `0` on
+/// `thread_id` is the thread id the kernel stamped on the death message [`receive_message`] returned. `0` on
 /// success; a negative [`abi::Error`] otherwise, and the three that matter are worth telling apart:
 /// `StillAlive` (not dead yet, so wait or escalate to the owner's `MemoryRegion::DESTROY`),
 /// `NotSupervised` (not a child of this endpoint, or already collected), and `NotPermitted` (the
@@ -26,9 +26,13 @@ pub fn send(slot: u64, w0: u64, w1: u64, w2: u64) -> i64 {
 ///
 /// The point of the method: this needs no capability to the child's memory, so a supervisor can be
 /// a process that cannot build one. The reclaimed pages go back to the builder's budget.
-pub fn reap(slot: u64, tid: u64) -> i64 {
+///
+/// Name: ratified 2026-11-20 (UTC), replacing `reap`, which stays as a `doc(alias)`: the word
+/// alone does not say what is collected, so the thread is named.
+#[doc(alias = "reap")]
+pub fn reap_thread(slot: u64, thread_id: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the capability and the supervision relationship.
-    unsafe { invoke(slot, abi::rendezvous::REAP, tid, 0, 0) }
+    unsafe { invoke(slot, abi::rendezvous::REAP, thread_id, 0, 0) }
 }
 
 /// **Read one entry of the domain this supervision endpoint supervises** (milestone 126,
@@ -51,7 +55,7 @@ pub fn survey(slot: u64, cursor: u64) -> (i64, u64, u64) {
 /// (the capability lacks `ENUMERATE`) and `BadMethod` (a record this kernel does not answer, as a
 /// program built against a later kernel gets). A caller must print either as a refusal.
 ///
-/// Name: provisional. calef names public items.
+/// Name: ratified 2026-11-20 (UTC).
 pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; SURVEY reads no more than the three words used.
     let (r0, w1, w2, ..) = unsafe { invoke5(slot, abi::rendezvous::SURVEY, cursor, record, 0) };
@@ -67,7 +71,7 @@ pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
 /// capability does not carry `ENUMERATE`, so the holder may map into the space but not list it.
 /// **That is a refusal and not an empty listing**, and a caller must print it as one.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn virtual_address_space_list(slot: u64, cursor: u64) -> (i64, u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; LIST reads no more than the three words used.
     let (r0, w1, w2, ..) = unsafe { invoke5(slot, abi::address_space::LIST, cursor, 0, 0) };
@@ -114,7 +118,7 @@ pub fn receive(slot: u64) -> (u64, u64, u64) {
 /// instead: `capability_slot` here is whatever the sender chose, a Reply only if the sender `CALL`ed, and
 /// [`reply`] takes the typed [`Reply`] only `receive_request` returns (milestone 706).
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `receive_cap` under the capability ruling of 2026-10-06 (UTC).
 pub fn receive_capability(slot: u64) -> (u64, u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; RECEIVE_CAPABILITY reads no more than the three words used.
@@ -122,7 +126,7 @@ pub fn receive_capability(slot: u64) -> (u64, u64, u64) {
     (w0, w1, w2)
 }
 
-/// **Mint a badged copy of the endpoint capability in `slot`** (milestone 599, provisional):
+/// **Mint a badged copy of the endpoint capability in `slot`** (milestone 599 (a frame per filesystem client channel)):
 /// `abi::rendezvous::BADGE`. Returns the slot the badged copy landed in, or a negative error
 /// (`NotPermitted` without `GRANT`, or for a zero badge or an already-badged source). The new slot
 /// holds a copy of the endpoint with `badge` stamped on it. The kernel delivers
@@ -135,8 +139,8 @@ pub fn badge(slot: u64, badge: u64) -> i64 {
 
 /// **One message a receive returned**: the three words the sender passed, the badge on the endpoint
 /// capability it invoked, the label the kernel stamped, and what came with the first word, typed.
-/// *(Name provisional: milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix
-/// before it leaves), Decision 3.)*
+/// Milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves),
+/// Decision 3, made it one type.
 ///
 /// The fields are the registers the kernel wrote, so each receive is one projection of the same
 /// words rather than its own return shape:
@@ -152,7 +156,7 @@ pub fn badge(slot: u64, badge: u64) -> i64 {
 /// A death message from a supervision endpoint (`abi::fault`) is the same words read another way:
 /// `w0` is the event, `w1` the thread id, `w2` the program counter and `badge` the faulting address.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Message {
     /// `x0`: the sender's first word, or a death message's event.
@@ -173,7 +177,7 @@ pub struct Message {
 }
 
 /// **What a receive on a thread with a bound notification returned** (milestone 151 (notification
-/// objects)): an ordinary message, or the bound notification's word. *(Name provisional.)*
+/// objects)): an ordinary message, or the bound notification's word.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Received {
     /// A sender's message.
@@ -189,7 +193,7 @@ impl Received {
     /// # Panics
     /// If the receive was ended by a notification: the caller bound one and should match instead.
     ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn into_message(self) -> Message {
         match self {
             Received::Message(message) => message,
@@ -209,9 +213,9 @@ impl Received {
 /// **It tests `x4`, not `x0`**: `x0` is the sender's own first word, so a sender can put
 /// [`abi::notification::BOUND`] there, while `x4` is written only by the kernel. See
 /// `abi::notification::BOUND` and notes/notification-objects.md. A caller with no bound notification
-/// takes the message with [`Received::into_message`]. *(Name provisional.)*
+/// takes the message with [`Received::into_message`].
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn receive_message(slot: u64) -> Received {
     // SAFETY: forwarded from `invoke6`'s contract; RECEIVE returns up to six words.
     let (w0, w1, w2, badge, w4, label) =
@@ -233,9 +237,9 @@ pub fn receive_message(slot: u64) -> Received {
 /// **`RECEIVE_CAPABILITY` on the endpoint capability in `slot`, every word the kernel returns**:
 /// [`receive_message`] for a message that may carry a capability. `w1` is where the capability
 /// landed (or [`abi::rendezvous::NO_CAPABILITY`]), and `delivered` types it by the kernel's `x4`,
-/// as [`receive_request`] does for a `CALL` server. *(Name provisional.)*
+/// as [`receive_request`] does for a `CALL` server.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn receive_capability_message(slot: u64) -> Received {
     // SAFETY: forwarded from `invoke6`'s contract; RECEIVE_CAPABILITY returns up to six words.
     let (w0, w1, w2, badge, w4, label) =
@@ -283,7 +287,7 @@ pub fn notification_bind(slot: u64, thread_slot: u64) -> i64 {
 
 /// `Timer::ARM` (milestone 106 (a wait that ends on either the interrupt or the deadline),
 /// DECISIONS §147 (a timer a userspace service cannot hold)): when the counter
-/// ([`now`](crate::now)) reaches `deadline`, OR `bits` into the notification in
+/// ([`counter_ticks`](crate::counter_ticks)) reaches `deadline`, OR `bits` into the notification in
 /// `notification_slot`. Replaces any pending deadline; a deadline already reached signals at once.
 /// `0`, or a negative [`abi::Error`].
 ///
@@ -370,21 +374,22 @@ pub fn sleep_until(timer_slot: u64, notification_slot: u64, deadline: u64) -> i6
 /// # let _ = r1;
 /// # }
 /// ```
-pub fn call(slot: u64, w0: u64, w1: u64) -> (u64, u64) {
+pub fn call(slot: u64, word_zero: u64, word_one: u64) -> (u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; CALL reads no more than the two words used.
-    let (r0, r1, ..) = unsafe { invoke5(slot, abi::rendezvous::CALL, w0, w1, 0) };
+    let (r0, r1, ..) = unsafe { invoke5(slot, abi::rendezvous::CALL, word_zero, word_one, 0) };
     (r0, r1)
 }
 
 /// [`call`], also returning the capability the server's reply carried, if it carried one: the slot
 /// a [`reply_capability`] filed in this process's table, or `None` after a plain [`reply`] or when the
-/// table was full (§255 (each socket is its own capability)). Name provisional.
-pub fn call_receiving(slot: u64, w0: u64, w1: u64) -> (u64, u64, Option<u64>) {
+/// table was full (§255 (each socket is its own capability)).
+pub fn call_receiving(slot: u64, word_zero: u64, word_one: u64) -> (u64, u64, Option<u64>) {
     // `NO_CAPABILITY` goes in as the unused third argument: a refused CALL returns without writing x2,
     // so x2 is then this value rather than a 0 that would read as slot 0.
     let none = abi::rendezvous::NO_CAPABILITY;
     // SAFETY: forwarded from `invoke5`'s contract; CALL returns the delivered slot in x2.
-    let (r0, r1, x2, ..) = unsafe { invoke5(slot, abi::rendezvous::CALL, w0, w1, none) };
+    let (r0, r1, x2, ..) =
+        unsafe { invoke5(slot, abi::rendezvous::CALL, word_zero, word_one, none) };
     let delivered = (x2 != none).then_some(x2);
     (r0, r1, delivered)
 }
@@ -397,12 +402,20 @@ pub fn call_receiving(slot: u64, w0: u64, w1: u64) -> (u64, u64, Option<u64>) {
 /// back in `Err` to be answered with [`reply`].
 pub fn reply_capability(
     to: Reply,
-    r0: u64,
-    r1: u64,
+    result_word_zero: u64,
+    result_word_one: u64,
     capability: u64,
 ) -> Result<bool, (Reply, i64)> {
     // SAFETY: `svc`/`ecall`; the kernel validates the Reply and the carried capability.
-    let r = unsafe { invoke(to.0, abi::reply::REPLY_CAPABILITY, r0, r1, capability) };
+    let r = unsafe {
+        invoke(
+            to.0,
+            abi::reply::REPLY_CAPABILITY,
+            result_word_zero,
+            result_word_one,
+            capability,
+        )
+    };
     if r < 0 { Err((to, r)) } else { Ok(r == 0) }
 }
 
@@ -416,13 +429,20 @@ pub fn reply_capability(
 /// rendezvous is `SEND`: a server that answered a delegated rendezvous parked itself in that `SEND`
 /// for the life of the machine. A [`Reply`] comes only from [`receive_request`], which built it from
 /// the kernel's own tag, so the type is the check and no server has to remember it.
-pub fn reply(to: Reply, r0: u64, r1: u64) -> i64 {
+pub fn reply(to: Reply, result_word_zero: u64, result_word_one: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the Reply capability and consumes it.
-    unsafe { invoke(to.0, abi::reply::REPLY, r0, r1, 0) }
+    unsafe {
+        invoke(
+            to.0,
+            abi::reply::REPLY,
+            result_word_zero,
+            result_word_one,
+            0,
+        )
+    }
 }
 
-/// **A `CALL`'s one-shot Reply capability, known to be one** (milestone 706, DECISIONS §245; the
-/// name is provisional). The only constructor is [`receive_request`]'s reading of the kernel-written
+/// **A `CALL`'s one-shot Reply capability, known to be one** (milestone 706, DECISIONS §245). The only constructor is [`receive_request`]'s reading of the kernel-written
 /// `x4` ([`abi::rendezvous::REPLY_DELIVERED`]), and the only consumer is [`reply`], so a server
 /// cannot answer through a slot a client delegated. Neither `Copy` nor `Clone`, because a Reply
 /// answers once.
@@ -439,7 +459,7 @@ impl Reply {
 }
 
 /// **What a `RECEIVE_CAPABILITY` put in `x1`, told apart by the kernel-written `x4`** (milestone 706,
-/// DECISIONS §245; names provisional).
+/// DECISIONS §245).
 #[derive(Debug, PartialEq, Eq)]
 pub enum Delivered {
     /// A `CALL`: `x1` is the Reply the kernel minted for this caller, and `x4` said so.
@@ -453,16 +473,16 @@ pub enum Delivered {
 }
 
 impl Delivered {
-    /// Read `x1` with the tag beside it. Only `0` in `x4` makes a real slot a delegation; a bound
-    /// notification's `x4` means `x1` is its word, not a slot, so it reads as
+    /// Read `capability_word` (the kernel's `x1`) with `tag_word` (`x4`) beside it. Only `0` in `x4` makes a real slot a delegation; a bound
+    /// notification's `tag_word` means `capability_word` is its word, not a slot, so it reads as
     /// [`Delivered::Nothing`] rather than as a capability to delete.
-    pub fn decode(x1: u64, x4: u64) -> Self {
-        if x1 == abi::rendezvous::NO_CAPABILITY {
+    pub fn decode(capability_word: u64, tag_word: u64) -> Self {
+        if capability_word == abi::rendezvous::NO_CAPABILITY {
             Delivered::Nothing
-        } else if x4 == abi::rendezvous::REPLY_DELIVERED {
-            Delivered::Reply(Reply(x1))
-        } else if x4 == 0 {
-            Delivered::Delegation(x1)
+        } else if tag_word == abi::rendezvous::REPLY_DELIVERED {
+            Delivered::Reply(Reply(capability_word))
+        } else if tag_word == 0 {
+            Delivered::Delegation(capability_word)
         } else {
             Delivered::Nothing
         }
@@ -483,7 +503,7 @@ impl Delivered {
     }
 }
 
-/// **One message a `CALL` server received** (milestone 706, DECISIONS §245; name provisional): the
+/// **One message a `CALL` server received** (milestone 706, DECISIONS §245): the
 /// two data words, the sender's badge, and what came with it, typed.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Request {
@@ -497,7 +517,7 @@ pub struct Request {
     pub delivered: Delivered,
 }
 
-/// **`RECEIVE_CAPABILITY` for a `CALL` server** (milestone 706, DECISIONS §245; name provisional): blocks
+/// **`RECEIVE_CAPABILITY` for a `CALL` server** (milestone 706, DECISIONS §245): blocks
 /// until a message arrives and returns it with `x1` typed by the kernel's `x4`. The receive every
 /// server that answers with [`reply`] uses, because it is the only source of a [`Reply`].
 pub fn receive_request(slot: u64) -> Request {
@@ -513,13 +533,13 @@ pub fn receive_request(slot: u64) -> Request {
 }
 
 /// `SEND_CAPABILITY` on the endpoint capability in `slot`: delegate a (possibly narrowed) copy of the
-/// capability in `capability_slot`, narrowed to `rights`, alongside the data word `w1`, and block until a
+/// capability in `capability_slot`, narrowed to `rights`, alongside the data word `word_one`, and block until a
 /// receiver takes them. `0` or a positive ack on success; a negative `abi::Error`.
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2). His words: "Ratify ... `send_capability`, ..." Refused `send_capability` (round 7's
 /// provisional name; capability is spelled out, calef, 2026-10-06).
-pub fn send_capability(slot: u64, capability_slot: u64, rights: u64, w1: u64) -> i64 {
+pub fn send_capability(slot: u64, capability_slot: u64, rights: u64, word_one: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the endpoint, `GRANT` on the delegated capability,
     // and narrows it to `rights` before it delegates anything.
     unsafe {
@@ -528,7 +548,7 @@ pub fn send_capability(slot: u64, capability_slot: u64, rights: u64, w1: u64) ->
             abi::rendezvous::SEND_CAPABILITY,
             capability_slot,
             rights,
-            w1,
+            word_one,
         )
     }
 }

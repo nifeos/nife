@@ -3,7 +3,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
+//! Name: ratified 2026-11-20 (UTC); first minted, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
@@ -39,7 +39,7 @@ pub fn exit() -> ! {
 /// (§26 (the fault endpoint)), so a panic must take this path. The trailing spin only satisfies
 /// `-> !`; calling `exit` would make an impossible return look like a clean death.
 ///
-/// A verb, like `send`, `receive`, `reap` and `exit`: the naming tenet's noun rule is about crates,
+/// A verb, like `send`, `receive`, `reap_thread` and `exit`: the naming tenet's noun rule is about crates,
 /// programs and modules, not the things they do.
 ///
 /// # BUGS
@@ -84,7 +84,7 @@ pub fn trap() -> ! {
     }
 }
 
-/// Require that `ok` holds, or die on the line that does not. The one way a nife program says
+/// Require that `condition` holds, or die on the line that does not. The one way a nife program says
 /// "no": there is no error value to return, and limping past a failed check turns a detected
 /// mistake into an undetected one, so this [`trap`]s at the call.
 ///
@@ -96,7 +96,7 @@ pub fn trap() -> ! {
 /// require(frame < 4096);
 /// ```
 ///
-/// Name: provisional, minted by milestone 408 (one home for `fn check(ok: bool)`) on
+/// Name: ratified 2026-11-20 (UTC); first minted, minted by milestone 408 (one home for `fn check(ok: bool)`) on
 /// 2026-10-15 (UTC). The kernel spends `require` on a mismatch that must not be recovered from
 /// (`trust::require`, which halts), so the same idea one privilege level down wears the same
 /// word. Refused `check`, what every copy was called, because
@@ -104,8 +104,8 @@ pub fn trap() -> ! {
 /// something, and the crate every program links is the worst place to spend a vague word. Refused
 /// `insist` (unusual enough to need explaining) and `must` (reads as a modal verb at the call
 /// site, so the line parses as a fragment rather than a call).
-pub fn require(ok: bool) {
-    if !ok {
+pub fn require(condition: bool) {
+    if !condition {
         trap()
     }
 }
@@ -175,7 +175,7 @@ macro_rules! panic_handler {
 /// }
 /// ```
 ///
-/// Name: provisional. Refused `entry!` alone (every crate has entries) and `start!` (reads as an
+/// Name: ratified 2026-11-20 (UTC). Refused `entry!` alone (every crate has entries) and `start!` (reads as an
 /// imperative at the call site).
 #[macro_export]
 macro_rules! program_entry {

@@ -171,7 +171,7 @@ fn read_line(prompt: &[u8], out: &mut [u8]) -> (usize, u64) {
     };
     let len = (len as usize).min(out.len());
     for (i, b) in out[..len].iter_mut().enumerate() {
-        *b = LINE_WINDOW.read::<u8>(i as u64);
+        *b = LINE_WINDOW.read_volatile::<u8>(i as u64);
     }
     (len, flags)
 }
@@ -240,7 +240,7 @@ impl line_editor::Sink for Echo {
             if self.used == user_mode_runtime::mapped_window::PAGE_BYTES as usize {
                 self.flush();
             }
-            OUT_WINDOW.write::<u8>(self.used as u64, b);
+            OUT_WINDOW.write_volatile::<u8>(self.used as u64, b);
             self.used += 1;
         }
     }

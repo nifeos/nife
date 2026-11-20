@@ -132,7 +132,8 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // end-of-stream before it reads a byte of output, so the complaint is finished before the
     // identifier starts.
     let mut random = [0u8; 16];
-    let drawn = user_mode_runtime::entropy::fill(ENTROPY_SLOT, &mut random).map(|()| random);
+    let drawn =
+        user_mode_runtime::entropy::fill_random_bytes(ENTROPY_SLOT, &mut random).map(|()| random);
 
     if drawn.is_none() {
         write_on(

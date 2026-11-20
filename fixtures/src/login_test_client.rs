@@ -606,8 +606,8 @@ fn store_schedule(dir: u64, doc: &[u8]) -> bool {
 /// Poll `done` until it holds or [`DESTROY_WAIT_SECONDS`] of counter time pass, yielding between.
 fn wait(done: impl Fn() -> bool) -> bool {
     let ceiling = user_mode_runtime::counter_hertz().saturating_mul(DESTROY_WAIT_SECONDS);
-    let started = user_mode_runtime::now();
-    while user_mode_runtime::now().wrapping_sub(started) < ceiling {
+    let started = user_mode_runtime::counter_ticks();
+    while user_mode_runtime::counter_ticks().wrapping_sub(started) < ceiling {
         if done() {
             return true;
         }
@@ -619,14 +619,14 @@ fn wait(done: impl Fn() -> bool) -> bool {
 /// Copy `bytes` into the shared filesystem page (a name to open/create, or data to write).
 fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        FS_WINDOW.write::<u8>(i as u64, b);
+        FS_WINDOW.write_volatile::<u8>(i as u64, b);
     }
 }
 
 /// Read `n` bytes out of the shared filesystem page into `out`.
 fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = FS_WINDOW.read::<u8>(i as u64);
+        *b = FS_WINDOW.read_volatile::<u8>(i as u64);
     }
 }
 
@@ -753,14 +753,14 @@ const DESTROY_WAIT_SECONDS: u64 = 5;
 /// a process cannot read delivered ticks; [`DESTROY_WAIT_SECONDS`]'s 40x margin is what makes it safe.
 fn destroy_with_retry(ut: u64) -> bool {
     let ceiling = user_mode_runtime::counter_hertz().saturating_mul(DESTROY_WAIT_SECONDS);
-    let started = user_mode_runtime::now();
+    let started = user_mode_runtime::counter_ticks();
     loop {
         if destroy_memory_region(ut) == 0 {
-            record(user_mode_runtime::now().wrapping_sub(started));
+            record(user_mode_runtime::counter_ticks().wrapping_sub(started));
             return true;
         }
-        if user_mode_runtime::now().wrapping_sub(started) >= ceiling {
-            record(user_mode_runtime::now().wrapping_sub(started));
+        if user_mode_runtime::counter_ticks().wrapping_sub(started) >= ceiling {
+            record(user_mode_runtime::counter_ticks().wrapping_sub(started));
             return false;
         }
         yield_now();

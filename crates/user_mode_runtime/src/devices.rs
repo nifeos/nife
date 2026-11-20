@@ -2,7 +2,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
+//! Name: ratified 2026-11-20 (UTC); first minted, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
@@ -41,7 +41,7 @@ pub fn interrupt_acknowledge(interrupt_slot: u64) -> i64 {
 /// `abi::Error`: one of the four `Reset…` errors (`abi::Error::ResetDenied` and its kin) when the firmware
 /// refused, `NoSuchSlot` when nothing is held there.
 ///
-/// Name: provisional, milestone 805's lane, 2026-10-06 (UTC).
+/// Name: ratified 2026-11-20 (UTC); first minted, milestone 805's lane, 2026-10-06 (UTC).
 pub fn reboot(slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the capability before it touches the firmware.
     unsafe { invoke(slot, abi::reboot::REBOOT, 0, 0, 0) }

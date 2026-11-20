@@ -404,14 +404,14 @@ fn install(boot_file_len: u64) -> ! {
     let mut guids = [Uuid::nil(); 1 + 2 + SLOTS];
     for g in guids.iter_mut() {
         let mut bytes = [0u8; 16];
-        if user_mode_runtime::entropy::fill(ENTROPY, &mut bytes).is_none() {
+        if user_mode_runtime::entropy::fill_random_bytes(ENTROPY, &mut bytes).is_none() {
             send(REPORT, R_NO_ENTROPY, 0, 0);
             user_mode_runtime::exit()
         }
         *g = uuid::Builder::from_random_bytes(bytes).into_uuid();
     }
     let mut serial = [0u8; 4];
-    if user_mode_runtime::entropy::fill(ENTROPY, &mut serial).is_none() {
+    if user_mode_runtime::entropy::fill_random_bytes(ENTROPY, &mut serial).is_none() {
         send(REPORT, R_NO_ENTROPY, 0, 0);
         user_mode_runtime::exit()
     }

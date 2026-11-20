@@ -60,14 +60,14 @@ const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
 /// Copy `bytes` into the shared page.
 fn put(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(PAGE).enumerate() {
-        WINDOW.write::<u8>(i as u64, b);
+        WINDOW.write_volatile::<u8>(i as u64, b);
     }
 }
 
 /// Read `out.len()` bytes out of the shared page.
 fn get(out: &mut [u8]) {
     for (i, b) in out.iter_mut().enumerate() {
-        *b = WINDOW.read::<u8>(i as u64);
+        *b = WINDOW.read_volatile::<u8>(i as u64);
     }
 }
 

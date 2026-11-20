@@ -10,7 +10,7 @@
 
 use filesystem_contract::fs;
 use filesystem_fixture as fixture;
-use user_mode_runtime::{call, exit, now, require, send};
+use user_mode_runtime::{call, counter_ticks, exit, require, send};
 
 use crate::channel::{FILE, REPORT, STAGE_WRITE, WINDOW, fail, open, put_page, read};
 
@@ -40,11 +40,11 @@ pub(crate) fn throughput() -> ! {
 
     // What that costs, measured on its own so a reader can take it back out of the write phases,
     // which pay it inside their window because a client that writes data has to produce the data.
-    let start = now();
+    let start = counter_ticks();
     for _ in 0..tp::BLOCKS {
         paint_page(&mut payload);
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     send(REPORT, ticks, tp::BLOCKS, tp::PAYLOAD_FILL);
 
     // --- Phase 1: sequential write. This is also the file's creation. ---
@@ -52,12 +52,12 @@ pub(crate) fn throughput() -> ! {
     // the window; this phase's whole subject is the cold path, because writing a file that did not
     // exist is what allocates its blocks. Warming it would mean overwriting the first few blocks
     // before timing them, which measures a different operation than the rest of the loop.
-    let start = now();
+    let start = counter_ticks();
     for k in 0..tp::BLOCKS {
         paint_page(&mut payload);
         write_unit(handle, k * tp::UNIT as u64);
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     // The file is exactly as long as the phase claims to have written it. Without this a server
     // that answered every write with a short count would still produce a throughput number.
     let (size, _) = call(FILE, fs::req(fs::FSTAT, handle, 0), 0);
@@ -68,12 +68,12 @@ pub(crate) fn throughput() -> ! {
     for _ in 0..tp::WARMUP {
         require(read(handle, 0, tp::UNIT) == tp::UNIT);
     }
-    let start = now();
+    let start = counter_ticks();
     let mut got = 0u64;
     for k in 0..tp::BLOCKS {
         got += read(handle, k * tp::UNIT as u64, tp::UNIT) as u64;
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     require(got == tp::BLOCKS * tp::UNIT as u64);
     send(REPORT, ticks, tp::BLOCKS, tp::SEQ_READ);
 
@@ -82,12 +82,12 @@ pub(crate) fn throughput() -> ! {
     for _ in 0..tp::WARMUP {
         require(read(handle, next_offset(&mut rng), tp::UNIT) == tp::UNIT);
     }
-    let start = now();
+    let start = counter_ticks();
     let mut got = 0u64;
     for _ in 0..tp::BLOCKS {
         got += read(handle, next_offset(&mut rng), tp::UNIT) as u64;
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     require(got == tp::BLOCKS * tp::UNIT as u64);
     send(REPORT, ticks, tp::BLOCKS, tp::RAND_READ);
 
@@ -100,12 +100,12 @@ pub(crate) fn throughput() -> ! {
     for k in 0..tp::WARMUP {
         require(read(handle, (k % records) * tp::RECORD, tp::UNIT) == tp::UNIT);
     }
-    let start = now();
+    let start = counter_ticks();
     let mut got = 0u64;
     for k in 0..tp::BLOCKS {
         got += read(handle, (k % records) * tp::RECORD, tp::UNIT) as u64;
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     require(got == tp::BLOCKS * tp::UNIT as u64);
     send(REPORT, ticks, tp::BLOCKS, tp::RECORD_READ);
 
@@ -116,12 +116,12 @@ pub(crate) fn throughput() -> ! {
         paint_page(&mut payload);
         write_unit(handle, next_offset(&mut rng));
     }
-    let start = now();
+    let start = counter_ticks();
     for _ in 0..tp::BLOCKS {
         paint_page(&mut payload);
         write_unit(handle, next_offset(&mut rng));
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     // The file did not grow: a random write that appended would be measuring allocation.
     let (size, _) = call(FILE, fs::req(fs::FSTAT, handle, 0), 0);
     require(size == tp::BLOCKS * tp::UNIT as u64);
@@ -168,7 +168,7 @@ fn paint_page(state: &mut u64) {
         x ^= x >> 7;
         x ^= x << 17;
         *state = x;
-        WINDOW.write::<u64>(i as u64, x);
+        WINDOW.write_volatile::<u64>(i as u64, x);
         i += 8;
     }
 }

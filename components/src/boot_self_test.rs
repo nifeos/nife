@@ -40,8 +40,8 @@ use boot_ladder::verdict::{CheckLine, Outcome, SubjectLine, Tally, check};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
     Message, Received, capability_delete, destroy_memory_region, is_granted, map_page_frame,
-    notification_bind, notification_poll, reap, receive_message, retype_into_kernel_object, send,
-    survey, timer_arm, timer_cancel, yield_now,
+    notification_bind, notification_poll, reap_thread, receive_message, retype_into_kernel_object,
+    send, survey, timer_arm, timer_cancel, yield_now,
 };
 
 user_mode_runtime::program_entry!(start);
@@ -294,12 +294,12 @@ fn microseconds(ticks: u64) -> u64 {
 
 /// **Wait up to `seconds` for `done`, yielding between looks.** `true` once `done` held.
 fn wait_until(seconds: u64, mut done: impl FnMut() -> bool) -> bool {
-    let deadline = user_mode_runtime::now() + seconds * frequency();
+    let deadline = user_mode_runtime::counter_ticks() + seconds * frequency();
     loop {
         if done() {
             return true;
         }
-        if user_mode_runtime::now() >= deadline {
+        if user_mode_runtime::counter_ticks() >= deadline {
             return done();
         }
         yield_now();
@@ -311,7 +311,7 @@ fn wait_until(seconds: u64, mut done: impl FnMut() -> bool) -> bool {
 fn receive_within(ep: u64, seconds: u64, d: Option<&Deadline>) -> Option<(u64, u64, u64)> {
     let armed = d.filter(|d| {
         let _ = notification_poll(d.notification);
-        let at = user_mode_runtime::now() + seconds * frequency();
+        let at = user_mode_runtime::counter_ticks() + seconds * frequency();
         timer_arm(d.timer, at, d.notification, 1) >= 0
     });
     let Some(d) = armed else {
@@ -397,7 +397,7 @@ impl Child {
     /// **Collect the dead child**, which reclaims its region; `false`, with the region destroyed
     /// instead, when the reap refused.
     fn collect(self) -> bool {
-        let reaped = reap(self.supervisor, self.tid) == 0;
+        let reaped = reap_thread(self.supervisor, self.tid) == 0;
         if !reaped {
             end_region(self.region);
         }
@@ -921,16 +921,18 @@ impl Draw {
 /// **Draw two 32-byte buffers from the entropy service at `service`, as a client**, timed.
 fn draw_twice(service: u64) -> Draw {
     let (mut a, mut b) = ([0u8; 32], [0u8; 32]);
-    let start = user_mode_runtime::now();
-    let first = user_mode_runtime::entropy::fill(service, &mut a).map_or(0, |()| a.len());
-    let second = user_mode_runtime::entropy::fill(service, &mut b).map_or(0, |()| b.len());
+    let start = user_mode_runtime::counter_ticks();
+    let first =
+        user_mode_runtime::entropy::fill_random_bytes(service, &mut a).map_or(0, |()| a.len());
+    let second =
+        user_mode_runtime::entropy::fill_random_bytes(service, &mut b).map_or(0, |()| b.len());
     Draw {
         first,
         second,
         zeros: a.iter().all(|&x| x == 0),
         differ: a != b,
         head: [a[0], a[1], a[2], a[3]],
-        ticks: user_mode_runtime::now().wrapping_sub(start),
+        ticks: user_mode_runtime::counter_ticks().wrapping_sub(start),
     }
 }
 

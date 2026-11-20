@@ -1,7 +1,7 @@
 //! **The linker script and the address-space map agree**: `link.ld`, which this crate delivers to
 //! every program through `build.rs`, links at `address_space_layout::IMAGE_BASE`.
 //!
-//! Name: provisional. A test-only module, named for the file it checks.
+//! Name: ratified 2026-11-20 (UTC). A test-only module, named for the file it checks.
 
 use std::vec::Vec;
 

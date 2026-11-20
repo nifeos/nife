@@ -104,16 +104,17 @@ pub(crate) fn sock_receive(
                 // answer whoever asked, as TFTP's transfer ids do.
                 let IpAddress::Ipv4(src) = meta.endpoint.addr;
                 for (i, &b) in src.octets().iter().enumerate() {
-                    window.write::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
+                    window
+                        .write_volatile::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
                 }
-                window.write::<u16>(DESTINATION_PORT_OFFSET_BYTES, meta.endpoint.port);
+                window.write_volatile::<u16>(DESTINATION_PORT_OFFSET_BYTES, meta.endpoint.port);
                 n
             }
             Err(_) => 0,
         }
     };
     window.copy_from_slice(PAYLOAD_OFFSET_BYTES, &buf[..n]);
-    window.write::<u16>(PAYLOAD_LENGTH_OFFSET_BYTES, n as u16);
+    window.write_volatile::<u16>(PAYLOAD_LENGTH_OFFSET_BYTES, n as u16);
     n as u64
 }
 

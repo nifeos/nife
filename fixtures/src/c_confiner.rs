@@ -176,7 +176,7 @@ fn start(_a0: u64, initial_ramdisk_len: u64, _a2: u64) -> ! {
         // until now and the verdict above was computed while it was still there to inspect. We hold no
         // capability to that region: the authority for this is the supervision relationship, and the
         // pages go back to ROOT_UT, which is where they came from.
-        if user_mode_runtime::reap(faultep, tid) != 0 {
+        if user_mode_runtime::reap_thread(faultep, tid) != 0 {
             bail(13)
         }
 

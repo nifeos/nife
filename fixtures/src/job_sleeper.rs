@@ -38,7 +38,7 @@
 #![no_main]
 
 use user_mode_runtime::{
-    counter_hertz, exit, notification_wait, now, retype_sleeper, send, sleep_until,
+    counter_hertz, counter_ticks, exit, notification_wait, retype_sleeper, send, sleep_until,
 };
 
 /// Slot 0: where the one line goes.
@@ -58,7 +58,7 @@ fn start(_a0: u64, milliseconds: u64, _a2: u64) -> ! {
         // Nothing signals it and nothing arms the timer: blocked until its region is destroyed.
         let _ = notification_wait(notification);
     } else {
-        let deadline = now() + counter_hertz() / 1000 * milliseconds;
+        let deadline = counter_ticks() + counter_hertz() / 1000 * milliseconds;
         let _ = sleep_until(timer, notification, deadline);
     }
     say(b"the sleeper woke\n");

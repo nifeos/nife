@@ -24,7 +24,7 @@ use domain_name_system::{Query, Reject, TcpReply};
 use socket_contract::*;
 use user_mode_runtime::socket_frame::Frame;
 use user_mode_runtime::{
-    call, call_receiving, capability_delete, exit, map_page_frame, now, receive,
+    call, call_receiving, capability_delete, counter_ticks, exit, map_page_frame, receive,
     receive_capability, retype_into_page_frame, send, send_capability,
 };
 
@@ -937,15 +937,15 @@ fn tcp_drain(peer: u64) -> ! {
     }
     let mut bytes: u64 = 0;
     let (mut calls, mut inside, mut full) = (0u64, 0u64, 0u64);
-    let first = now();
+    let first = counter_ticks();
     let mut last = first;
     loop {
-        let asked = now();
+        let asked = counter_ticks();
         let (got, _) = on(SOCKET, OPERATION_RECEIVE, 0);
         if got == 0 || got > MAXIMUM_PAYLOAD_BYTES as u64 {
             break;
         }
-        last = now();
+        last = counter_ticks();
         bytes += got;
         calls += 1;
         inside += last.saturating_sub(asked);

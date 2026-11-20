@@ -69,10 +69,10 @@ struct Controller;
 
 impl Hardware for Controller {
     fn read(&mut self, off: u32) -> u32 {
-        mapped(&REGISTERS).read::<u32>(u64::from(off))
+        mapped(&REGISTERS).read_volatile::<u32>(u64::from(off))
     }
     fn write(&mut self, off: u32, v: u32) {
-        mapped(&REGISTERS).write::<u32>(u64::from(off), v);
+        mapped(&REGISTERS).write_volatile::<u32>(u64::from(off), v);
     }
     fn delay_microseconds(&mut self, microseconds: u64) {
         let until = now_microseconds() + microseconds;
@@ -87,10 +87,10 @@ struct Plane;
 
 impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
-        mapped(&REGION).read::<u64>(off)
+        mapped(&REGION).read_volatile::<u64>(off)
     }
     fn write_u64(&mut self, off: u64, v: u64) {
-        mapped(&REGION).write::<u64>(off, v);
+        mapped(&REGION).write_volatile::<u64>(off, v);
     }
     fn read_bytes(&self, off: u64, out: &mut [u8]) {
         mapped(&REGION).copy_to_slice(off, out);
@@ -140,12 +140,12 @@ fn now_microseconds() -> u64 {
 fn select_interface() -> (u32, u32) {
     let syscon = mapped(&SYSTEM_CONTROLLER);
     let offset = jh7110::GMAC0_INTERFACE_SELECT_REGISTER;
-    let before = syscon.read::<u32>(offset);
-    syscon.write::<u32>(
+    let before = syscon.read_volatile::<u32>(offset);
+    syscon.write_volatile::<u32>(
         offset,
         jh7110::select_reduced_gigabit_media_independent_interface(before),
     );
-    (before, syscon.read::<u32>(offset))
+    (before, syscon.read_volatile::<u32>(offset))
 }
 
 /// Send `report` in its parts, then `outcome`, to the spawner.

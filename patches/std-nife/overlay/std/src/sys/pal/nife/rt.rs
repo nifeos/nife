@@ -209,7 +209,7 @@ pub fn abort() -> ! {
 
 /// The monotonic tick count: the one ambient readable this ABI grants (notes/abi.md, "the one
 /// ambient thing"). aarch64 `CNTVCT_EL0`; RISC-V `rdtime`; `x86_64` `rdtsc`, which ring 3 may execute
-/// because the kernel leaves `CR4.TSD` clear (see `user_mode_runtime::now`'s `x86_64` arm for what that
+/// because the kernel leaves `CR4.TSD` clear (see `user_mode_runtime::counter_ticks`'s `x86_64` arm for what that
 /// costs).
 pub fn now() -> u64 {
     #[cfg(target_arch = "aarch64")]

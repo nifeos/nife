@@ -14,18 +14,19 @@
 //!   platform abstraction layer (PAL) accepts a partial count and loops; the two policies differ on purpose and are recorded at
 //!   both ends.
 
-/// Fill `out` with random bytes from the entropy service whose endpoint is in `slot`, or `None` if
+/// Fill `output` with random bytes from the entropy service whose endpoint is in `slot`, or `None` if
 /// that cannot be done in full.
 ///
 /// `None` covers both refusals of `entropy_contract::fill_with`, which every caller so far treats
 /// alike: this process holds no entropy endpoint in `slot`, or the service answered with fewer
 /// bytes than asked. A caller that must tell them apart calls `fill_with` itself. On `None` the
-/// contents of `out` are unspecified and must not be used. See `entropy_contract::fill_with` for
+/// contents of `output` are unspecified and must not be used. See `entropy_contract::fill_with` for
 /// the loop and its tests.
 ///
-/// Name: ratified 2026-10-07 (calef, #1795). His word: "Yes". getrandom's verb; the module already
-/// says entropy.
+/// Name: ratified 2026-11-20 (UTC), replacing `fill`, which stays as a `doc(alias)`: getrandom's
+/// verb, with what it fills spelled out.
 #[must_use]
-pub fn fill(slot: u64, out: &mut [u8]) -> Option<()> {
-    entropy_contract::fill_with(out, |w0| super::call(slot, w0, 0)).ok()
+#[doc(alias = "fill")]
+pub fn fill_random_bytes(slot: u64, output: &mut [u8]) -> Option<()> {
+    entropy_contract::fill_with(output, |w0| super::call(slot, w0, 0)).ok()
 }

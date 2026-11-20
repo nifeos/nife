@@ -156,7 +156,7 @@ fn start(role: u64, _a1: u64, _a2: u64) -> ! {
     // **Before the first write.** A program that cannot be given randomness must find out while the
     // partition still holds whatever it held.
     let mut uuid = [0u8; 16];
-    if user_mode_runtime::entropy::fill(ENTROPY, &mut uuid).is_none() {
+    if user_mode_runtime::entropy::fill_random_bytes(ENTROPY, &mut uuid).is_none() {
         send(REPORT, R_NO_ENTROPY, 0, 0);
         user_mode_runtime::exit()
     }

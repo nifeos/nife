@@ -88,12 +88,12 @@ struct Page;
 impl RegisterWindowAndClock for Page {
     fn read(&mut self, offset: u32) -> u32 {
         debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
-        mapped(&REGISTERS).read::<u32>(u64::from(offset))
+        mapped(&REGISTERS).read_volatile::<u32>(u64::from(offset))
     }
 
     fn write(&mut self, offset: u32, value: u32) {
         debug_assert!(offset < registers::USED_REGISTER_WINDOW_BYTES);
-        mapped(&REGISTERS).write::<u32>(u64::from(offset), value);
+        mapped(&REGISTERS).write_volatile::<u32>(u64::from(offset), value);
     }
 
     fn now_microseconds(&mut self) -> u64 {

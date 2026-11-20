@@ -7070,11 +7070,8 @@ crates/user_mode_runtime/src/clock.rs::current_cpu
 
 crates/user_mode_runtime/src/clock.rs::monotonic_nanoseconds
 
-crates/user_mode_runtime/src/clock.rs::now
 
-crates/user_mode_runtime/src/clock.rs::now
 
-crates/user_mode_runtime/src/clock.rs::now
 
 
 
@@ -7107,7 +7104,6 @@ crates/user_mode_runtime/src/inter_process_communication.rs::notification_signal
 
 crates/user_mode_runtime/src/inter_process_communication.rs::notification_wait
 
-crates/user_mode_runtime/src/inter_process_communication.rs::reap
 
 crates/user_mode_runtime/src/inter_process_communication.rs::receive
 
@@ -7142,13 +7138,11 @@ crates/user_mode_runtime/src/mapped_window.rs::new
 
 
 
-crates/user_mode_runtime/src/mapped_window.rs::read
 
 
 
 
 
-crates/user_mode_runtime/src/mapped_window.rs::write
 
 crates/user_mode_runtime/src/objects.rs::map_page_frame
 
@@ -7171,7 +7165,6 @@ crates/user_mode_runtime/src/socket_frame.rs::payload_read
 crates/user_mode_runtime/src/socket_frame.rs::payload_write
 
 
-crates/user_mode_runtime/src/socket_frame.rs::set_len
 
 crates/user_mode_runtime/src/system_call.rs::invoke
 

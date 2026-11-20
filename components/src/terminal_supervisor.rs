@@ -29,9 +29,9 @@ use line_editor_component::{self as component, supervisor as s};
 use supervision_contract::{Child as Built, ChildEndowment, Retention};
 use terminal_contract as proto;
 use user_mode_runtime::{
-    Delivered, Message, capability_delete as delete_capability, counter_hertz, notification_poll,
-    notification_signal, notification_wait, now, receive, receive_message, receive_request, reply,
-    send, send_capability, timer_arm,
+    Delivered, Message, capability_delete as delete_capability, counter_hertz, counter_ticks,
+    notification_poll, notification_signal, notification_wait, receive, receive_message,
+    receive_request, reply, send, send_capability, timer_arm,
 };
 use video_terminal::component as display;
 
@@ -669,7 +669,7 @@ impl Supervisor<'_> {
         let Ok(child) = built else { fail() };
 
         let bound = counter_hertz() * s::QUIESCE_BOUND_MILLISECONDS / 1000;
-        let started = now();
+        let started = counter_ticks();
         if !process_builder::start_child(child, MODE_STAND_IN, 0, 0)
             || timer_arm(d.timer, started + bound, d.wake, DEADLINE) < 0
         {
@@ -693,7 +693,7 @@ impl Supervisor<'_> {
             }
             return Quiesce::Answered;
         }
-        let waited = now() - started;
+        let waited = counter_ticks() - started;
         // First, because the stand-in's request is still queued on the served endpoint, and the
         // replacement about to serve it would otherwise be quiesced by it. Then clear an answer the
         // stand-in managed to signal before it was finished, which the next quiesce would read.
@@ -756,7 +756,7 @@ fn give_back(region: u64) {
 /// the region capability that was kept for it.
 fn collect(faultep: u64, region: u64) {
     let Message { w1: tid, .. } = receive_message(faultep).into_message();
-    if user_mode_runtime::reap(faultep, tid) != 0 {
+    if user_mode_runtime::reap_thread(faultep, tid) != 0 {
         fail()
     }
     delete_capability(region);

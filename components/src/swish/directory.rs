@@ -54,13 +54,13 @@ pub(super) fn put_page(bytes: &[u8]) {
         .take(filesystem_contract::PAGE_BYTES)
         .enumerate()
     {
-        FS_WINDOW.write::<u8>(i as u64, b);
+        FS_WINDOW.write_volatile::<u8>(i as u64, b);
     }
 }
 
 /// Copy `n` bytes out of that page (a listing landed there).
 pub(super) fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = FS_WINDOW.read::<u8>(i as u64);
+        *b = FS_WINDOW.read_volatile::<u8>(i as u64);
     }
 }

@@ -72,7 +72,7 @@ const EBADF: i32 = 9;
 /// Copy `bytes` into the shared page.
 fn put(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(PAGE).enumerate() {
-        WINDOW.write::<u8>(i as u64, b);
+        WINDOW.write_volatile::<u8>(i as u64, b);
     }
 }
 

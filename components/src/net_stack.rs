@@ -53,9 +53,9 @@ use smoltcp::time::Instant;
 use smoltcp::wire::{EthernetAddress, HardwareAddress, IpAddress, IpCidr, IpEndpoint, Ipv4Address};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
-    Delivered, Reply, capability_delete, counter_hertz, interrupt_wait, map_page_frame,
-    notification_poll, now, receive_request, reply, reply_capability, send, sleep_until, timer_arm,
-    timer_cancel,
+    Delivered, Reply, capability_delete, counter_hertz, counter_ticks, interrupt_wait,
+    map_page_frame, notification_poll, receive_request, reply, reply_capability, send, sleep_until,
+    timer_arm, timer_cancel,
 };
 
 #[path = "designware_ethernet_transport.rs"]

@@ -3,7 +3,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
+//! Name: ratified 2026-11-20 (UTC); first minted, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
@@ -82,7 +82,7 @@ pub fn retype_into_page_frame(memory_region_slot: u64) -> i64 {
 /// it to that ("every RETYPE outside the run wrapper passes 0"), so a caller cannot ask for a run
 /// by accident through a raw `invoke`.
 ///
-/// Name: provisional (the lane for milestone 23 (a capability-routed component OS with live
+/// Name: ratified 2026-11-20 (UTC); first minted (the lane for milestone 23 (a capability-routed component OS with live
 /// replacement), 2026-09-26).
 pub fn retype_page_frame_run(memory_region_slot: u64, pages: u64) -> i64 {
     // SAFETY: as `retype_into_page_frame`; the kernel checks the count against the remaining budget.
@@ -93,7 +93,7 @@ pub fn retype_page_frame_run(memory_region_slot: u64, pages: u64) -> i64 {
 /// `first`**, with that capability's rights (milestone 599 (a frame per filesystem client channel)).
 /// The new slot, or a negative `abi::Error`. Needs `GRANT`. `jig` reads a package into one run and
 /// hands the installer a page of it at a time (milestone 809 (the package client becomes a
-/// program)). Name follows the method; provisional.
+/// program)). Name follows the method.
 pub fn slice_page_frame(frame_slot: u64, first: u64, count: u64) -> i64 {
     // SAFETY: `svc`/`ecall`; the kernel validates the capability, the range and the right.
     unsafe { invoke(frame_slot, abi::page_frame::SLICE, first, count, 0) }
@@ -148,7 +148,7 @@ pub fn destroy_memory_region(memory_region_slot: u64) -> i64 {
 /// [`abi::usage`]'s selectors. The page count, or a negative `abi::Error` (`NotPermitted` without
 /// `ENUMERATE`, `BadMethod` for an unknown record).
 ///
-/// Name: provisional. The method and its object, the shape [`split_memory_region`] has.
+/// Name: ratified 2026-11-20 (UTC). The method and its object, the shape [`split_memory_region`] has.
 pub fn memory_region_usage(memory_region_slot: u64, record: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. USAGE reads one record and writes nothing of the caller's; the kernel
     // validates `ENUMERATE` and the record before it answers.
@@ -285,7 +285,7 @@ pub fn thread_control_block_configure(
     }
 }
 
-/// `START`: make the TCB in `thread_control_block_slot` runnable. `argument0`, `argument1` and `argument2` seed the child's first three argument registers (`x0`/`x1`/`x2` on
+/// `START`: make the TCB in `thread_control_block_slot` runnable. `argument_zero`, `argument_one` and `argument_two` seed the child's first three argument registers (`x0`/`x1`/`x2` on
 /// aarch64, `a0`/`a1`/`a2` on RISC-V) on its first instruction, the kernel-side spelling of "this
 /// thread's input" (`abi::thread_control_block::START`'s own doc comment says `_, _, _`, which is
 /// stale: `kernel/src/system_call.rs`'s `START` arm forwards all three to `sched::start_thread_control_block`
@@ -298,9 +298,9 @@ pub fn thread_control_block_configure(
 /// 7's provisional name).
 pub fn thread_control_block_start(
     thread_control_block_slot: u64,
-    argument0: u64,
-    argument1: u64,
-    argument2: u64,
+    argument_zero: u64,
+    argument_one: u64,
+    argument_two: u64,
 ) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE` and that the TCB is whole before it joins
     // the run queue.
@@ -308,9 +308,9 @@ pub fn thread_control_block_start(
         invoke(
             thread_control_block_slot,
             abi::thread_control_block::START,
-            argument0,
-            argument1,
-            argument2,
+            argument_zero,
+            argument_one,
+            argument_two,
         )
     }
 }
@@ -319,7 +319,7 @@ pub fn thread_control_block_start(
 /// keeping its registers (DECISIONS §300 (the paused state, a TCB verb, silent)). Silent: nobody is told. When this returns 0 the thread
 /// is off every core. `0` on success; a negative `abi::Error`.
 ///
-/// Name: provisional (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
+/// Name: ratified 2026-11-20 (UTC); first minted (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
 pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE`; nothing in this address space changes.
     unsafe {
@@ -336,7 +336,7 @@ pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
 /// `RESUME`: let the thread whose TCB is in `thread_control_block_slot` run on from where it was suspended
 /// (DECISIONS §300). `0` on success, also when it was not suspended; a negative `abi::Error`.
 ///
-/// Name: provisional (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
+/// Name: ratified 2026-11-20 (UTC); first minted (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
 pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
     // SAFETY: as `thread_control_block_suspend`.
     unsafe {
@@ -355,7 +355,7 @@ pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
 /// soon as it is done with it, so its fixed capability table does not fill. Through `trap6` for
 /// [`yield_now`](crate::yield_now)'s reason: the kernel answers in the register `slot` went in on.
 ///
-/// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `cap_delete` under the capability ruling of 2026-10-06 (UTC).
 pub fn capability_delete(slot: u64) {
     // SAFETY: SYSTEM_CALL_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.

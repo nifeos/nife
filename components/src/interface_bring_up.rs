@@ -22,7 +22,7 @@ pub(super) fn heap_and_interface(dev: &mut Nic) -> Interface {
     );
 
     let mut config = Config::new(HardwareAddress::Ethernet(EthernetAddress(dev.mac())));
-    config.random_seed = now();
+    config.random_seed = counter_ticks();
     Interface::new(config, dev, instant())
 }
 

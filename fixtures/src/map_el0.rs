@@ -44,7 +44,8 @@
 
 use primitive_benchmark_contract::{MAP_ITERATIONS, MAP_WARMUP, Prefix, write_row};
 use user_mode_runtime::{
-    address_space_layout_into, exit, now, retype_into_kernel_object, retype_into_page_frame, send,
+    address_space_layout_into, counter_ticks, exit, retype_into_kernel_object,
+    retype_into_page_frame, send,
 };
 
 /// Slot 0: where the row goes.
@@ -76,11 +77,11 @@ fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
     for i in 0..MAP_WARMUP {
         map_one(space, frame, WARM_BASE + i * PAGE);
     }
-    let start = now();
+    let start = counter_ticks();
     for i in 0..MAP_ITERATIONS {
         map_one(space, frame, TIMED_BASE + i * PAGE);
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     write_row(
         sink,
         Prefix::from_startup_word(startup_word),

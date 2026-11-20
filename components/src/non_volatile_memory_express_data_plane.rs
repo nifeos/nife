@@ -137,10 +137,11 @@ impl Plane {
             .sq
             .push()
             .expect("one command in flight per queue, so the ring cannot be full");
-        self.data.write(IO_SQ_OFF + slot as u64 * 64, cmd.0);
+        self.data
+            .write_volatile(IO_SQ_OFF + slot as u64 * 64, cmd.0);
         // Publish the command before the doorbell: the controller is another observer.
         barrier();
-        self.bells.write::<u32>(
+        self.bells.write_volatile::<u32>(
             non_volatile_memory_express::doorbell(
                 IO_QID,
                 Doorbell::SubmissionTail,
@@ -159,7 +160,7 @@ impl Plane {
             // payload reads that follow it (the block's bytes).
             done = take_completion(
                 &self.cq,
-                |i| self.data.read::<u32>(cqe + 4 * i as u64),
+                |i| self.data.read_volatile::<u32>(cqe + 4 * i as u64),
                 barrier,
             );
             if done.is_some() {
@@ -170,7 +171,7 @@ impl Plane {
         let c = done.ok_or(u16::MAX)?;
 
         let new_head = self.cq.pop();
-        self.bells.write::<u32>(
+        self.bells.write_volatile::<u32>(
             non_volatile_memory_express::doorbell(
                 IO_QID,
                 Doorbell::CompletionHead,
@@ -297,10 +298,10 @@ pub(crate) fn run(data_address: u64, doorbell_address: u64) -> ! {
     // zeroed. Read before the readiness transfer, which reuses transfer page 0. See
     // notes/non-volatile-memory-express/the-direct-memory-access-escape-test.md.
     #[cfg(feature = "confinement_attackers")]
-    if plane.data.read::<u64>(TRANSFER_OFF)
+    if plane.data.read_volatile::<u64>(TRANSFER_OFF)
         == driver_process_contract::non_volatile_memory_express::ESCAPE_MAGIC
     {
-        let victim = plane.data.read::<u64>(TRANSFER_OFF + 8);
+        let victim = plane.data.read_volatile::<u64>(TRANSFER_OFF + 8);
         run_dma_escape(&mut plane, victim);
     }
 

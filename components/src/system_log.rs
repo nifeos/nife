@@ -37,8 +37,8 @@ use system_log_contract::kernel_ring::{self, Cursor, DETACHED, Read, Ring};
 use system_log_contract::record::{self, flags};
 use system_log_contract::{console, read};
 use user_mode_runtime::{
-    Message, Received, counter_hertz, exit, monotonic_nanoseconds, notification_signal, now,
-    receive_message, send, timer_arm,
+    Message, Received, counter_hertz, counter_ticks, exit, monotonic_nanoseconds,
+    notification_signal, receive_message, send, timer_arm,
 };
 
 /// Slot 0, the intake endpoint, `READ`: writers, readers and the spawner all `SEND` here. The
@@ -191,11 +191,9 @@ fn drain(log: &mut Log, flush_armed: &mut bool) {
                 if h.flags & flags::DIRECT == 0 {
                     forward(&text[..n]);
                     if !*flush_armed {
-                        let deadline = now().saturating_add(abi::timer::counter_ticks_for(
-                            0,
-                            FLUSH_NANOSECONDS,
-                            counter_hertz(),
-                        ));
+                        let deadline = counter_ticks().saturating_add(
+                            abi::timer::counter_ticks_for(0, FLUSH_NANOSECONDS, counter_hertz()),
+                        );
                         *flush_armed = timer_arm(TIMER, deadline, KERNEL_NOTIFIED, FLUSH_BIT) >= 0;
                     }
                 }

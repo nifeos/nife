@@ -8,7 +8,7 @@
 //! file.
 
 use filesystem_fixture as fixture;
-use user_mode_runtime::{exit, now, send};
+use user_mode_runtime::{counter_ticks, exit, send};
 
 use crate::channel::{REPORT, open, read};
 
@@ -32,11 +32,11 @@ pub(crate) fn bench() -> ! {
     for _ in 0..BENCH_WARMUP {
         let _ = read(handle, 0, block);
     }
-    let start = now();
+    let start = counter_ticks();
     for _ in 0..BENCH_ITERS {
         let _ = read(handle, 0, block);
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     // slot 1 is REPORT; carry ticks and the iteration count, the bench line's two fields.
     send(REPORT, ticks, BENCH_ITERS, 0);
     exit();

@@ -52,11 +52,11 @@ struct Page(MappedWindow);
 
 impl Registers for Page {
     fn read(&mut self, offset: u32) -> u32 {
-        self.0.read::<u32>(u64::from(offset))
+        self.0.read_volatile::<u32>(u64::from(offset))
     }
 
     fn write(&mut self, offset: u32, value: u32) {
-        self.0.write::<u32>(u64::from(offset), value);
+        self.0.write_volatile::<u32>(u64::from(offset), value);
     }
 }
 

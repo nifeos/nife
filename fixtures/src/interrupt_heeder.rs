@@ -41,11 +41,11 @@ const WINDOW: MappedWindow =
     unsafe { MappedWindow::new(JOB_PAGE_FRAME_VA as u64, mapped_window::PAGE_BYTES) };
 
 fn load(off: usize) -> u64 {
-    WINDOW.read(off as u64)
+    WINDOW.read_volatile(off as u64)
 }
 
 fn store(off: usize, v: u64) {
-    WINDOW.write(off as u64, v);
+    WINDOW.write_volatile(off as u64, v);
 }
 
 user_mode_runtime::program_entry!(start);
