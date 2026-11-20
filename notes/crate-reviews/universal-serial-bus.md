@@ -48,7 +48,7 @@ Two things lie outside the bounds. The first is a configuration longer than 25 b
 
 Dependencies. None. The one consumer in nife is `components` (`usb_keyboard_driver.rs`), by path.
 
-Naming rules. The template's checks, run with `--manifest crates/usb/Cargo.toml` over every
+Naming rules. The template's checks, run with `--manifest crates/universal_serial_bus/Cargo.toml` over every
 tracked `.rs` file of the crate.
 
 | rule | result |

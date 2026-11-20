@@ -6,10 +6,10 @@ present, still says the right thing, and the count is unchanged, so the bound ha
 
 Expected to fail: the harness's "modifiers first" assertion.
 
-diff --git a/crates/usb/src/boot_keyboard.rs b/crates/usb/src/boot_keyboard.rs
+diff --git a/crates/universal_serial_bus/src/boot_keyboard.rs b/crates/universal_serial_bus/src/boot_keyboard.rs
 index 49c427569..846ef704c 100644
---- a/crates/usb/src/boot_keyboard.rs
-+++ b/crates/usb/src/boot_keyboard.rs
+--- a/crates/universal_serial_bus/src/boot_keyboard.rs
++++ b/crates/universal_serial_bus/src/boot_keyboard.rs
 @@ -316,7 +316,7 @@ const CODE_BY_USAGE: [Option<u16>; 0x88] = [
  /// ```
  pub fn changes(before: &BootReport, after: &BootReport, event: &mut dyn FnMut(u8, bool)) {

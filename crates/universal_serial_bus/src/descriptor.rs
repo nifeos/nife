@@ -61,7 +61,7 @@ pub enum Refusal {
     /// The configuration has no interface of class 3, subclass 1, protocol 1. The device is not a
     /// keyboard, or is one that does not offer the boot protocol.
     NoBootKeyboard,
-    /// A boot keyboard interface with no interrupt IN endpoint, which no conforming keyboard sends.
+    /// A boot keyboard interface with no interrupt `IN` endpoint, which no conforming keyboard sends.
     NoInterruptIn {
         /// The interface that had none.
         interface: u8,
@@ -199,7 +199,7 @@ pub struct BootKeyboard {
     pub configuration: u8,
     /// The interface number, for the class requests `SET_PROTOCOL` and `SET_IDLE`.
     pub interface: u8,
-    /// The interrupt IN endpoint's number and direction (`0x81` for endpoint 1 IN). The
+    /// The interrupt `IN` endpoint's number and direction (`0x81` for endpoint 1 `IN`). The
     /// specification's reserved bits 6:4 of `bEndpointAddress` are cleared.
     pub endpoint: u8,
     /// The endpoint's packet size in bytes (`wMaxPacketSize` bits 10:0); at least 8, or the walk
@@ -211,7 +211,7 @@ pub struct BootKeyboard {
 }
 
 /// **Find the boot keyboard in a configuration**: the first interface (alternate setting 0) of
-/// class 3, subclass 1, protocol 1, and the first interrupt IN endpoint beneath it.
+/// class 3, subclass 1, protocol 1, and the first interrupt `IN` endpoint beneath it.
 ///
 /// The walk begins after the configuration header's own `bLength`, so a header longer than nine
 /// bytes skips what the device says it carries.
@@ -228,13 +228,13 @@ pub struct BootKeyboard {
 /// A boot keyboard's configuration as QEMU's `usb-kbd` reports it, trimmed to what matters:
 ///
 /// ```
-/// use usb::descriptor::find_boot_keyboard;
+/// use universal_serial_bus::descriptor::find_boot_keyboard;
 ///
 /// let configuration = [
 ///     9, 2, 34, 0, 1, 1, 0, 0xa0, 50, // configuration 1, 34 bytes, one interface
 ///     9, 4, 0, 0, 1, 3, 1, 1, 0, // interface 0: HID, boot, keyboard, one endpoint
 ///     9, 0x21, 0x11, 1, 0, 1, 0x22, 63, 0, // the HID descriptor, which the walk skips
-///     7, 5, 0x81, 3, 8, 0, 10, // endpoint 1 IN, interrupt, 8 bytes, every 10 frames
+///     7, 5, 0x81, 3, 8, 0, 10, // endpoint 1 `IN`, interrupt, 8 bytes, every 10 frames
 /// ];
 /// let keyboard = find_boot_keyboard(&configuration).unwrap();
 /// assert_eq!(keyboard.configuration, 1);
@@ -406,7 +406,7 @@ mod tests {
         );
     }
 
-    /// An OUT endpoint, or a bulk one, under a keyboard interface is not where reports arrive.
+    /// An endpoint in the direction `OUT`, host to device, or a bulk one, under a keyboard interface is not where reports arrive.
     #[test]
     fn only_an_interrupt_in_endpoint_counts() {
         let configuration = [
@@ -422,7 +422,7 @@ mod tests {
     }
 
     /// Endpoint number 0 is the control endpoint, which no endpoint descriptor may name: an
-    /// interrupt IN descriptor claiming it is not where reports arrive.
+    /// interrupt `IN` descriptor claiming it is not where reports arrive.
     #[test]
     fn an_endpoint_numbered_zero_is_not_the_report_endpoint() {
         let mut configuration = QEMU_USB_KEYBOARD;

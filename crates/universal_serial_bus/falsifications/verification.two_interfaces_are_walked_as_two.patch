@@ -7,9 +7,9 @@ interface.
 
 Expected to fail: the harness's "an endpoint of the boot interface it names" assertion.
 
-diff --git a/crates/usb/src/descriptor.rs b/crates/usb/src/descriptor.rs
---- a/crates/usb/src/descriptor.rs
-+++ b/crates/usb/src/descriptor.rs
+diff --git a/crates/universal_serial_bus/src/descriptor.rs b/crates/universal_serial_bus/src/descriptor.rs
+--- a/crates/universal_serial_bus/src/descriptor.rs
++++ b/crates/universal_serial_bus/src/descriptor.rs
 @@ -288,3 +288,5 @@
                      && d[7] == PROTOCOL_KEYBOARD;
 -                candidate = is_boot_keyboard.then_some(d[2]);

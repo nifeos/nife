@@ -5,9 +5,9 @@ endpoint some keyboards carry) is returned as the keyboard's input endpoint.
 
 Expected to fail: the harness's `assert!(k.endpoint & 0x80 != 0, "an IN endpoint")`.
 
-diff --git a/crates/usb/src/descriptor.rs b/crates/usb/src/descriptor.rs
---- a/crates/usb/src/descriptor.rs
-+++ b/crates/usb/src/descriptor.rs
+diff --git a/crates/universal_serial_bus/src/descriptor.rs b/crates/universal_serial_bus/src/descriptor.rs
+--- a/crates/universal_serial_bus/src/descriptor.rs
++++ b/crates/universal_serial_bus/src/descriptor.rs
 @@ -282,3 +282,3 @@
                      let interrupt = d[3] & 0x3 == 0x3;
 -                    let inbound = endpoint_number_and_direction & 0x80 != 0;

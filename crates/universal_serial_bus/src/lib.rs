@@ -1,5 +1,6 @@
 #![no_std]
-//! **What a USB device says, what a host asks it, and what a boot keyboard's report means**: the
+#![forbid(unsafe_code)]
+//! **What a Universal Serial Bus (USB) device says, what a host asks it, and what a boot keyboard's report means**: the
 //! half of a USB keyboard driver that is about USB, not the host controller. It touches nothing.
 //! Every descriptor and every report is whatever the device chose to send, and a device is whatever
 //! a stranger plugged in, so its parsers are total: they bound every walk, check every length
@@ -17,15 +18,15 @@
 //! converse of the report proof, that every key which changed produces an event.
 //!
 //! - [`descriptor`]: the device descriptor, the configuration header, and
-//!   [`descriptor::find_boot_keyboard`], the walk to a boot keyboard's interrupt IN endpoint.
+//!   [`descriptor::find_boot_keyboard`], the walk to a boot keyboard's interrupt endpoint, the direction `IN`, device to host.
 //! - [`request`]: the four standard and class requests the driver sends, as setup packets.
-//! - [`boot_keyboard`]: the eight-byte boot report, and two reports' difference as evdev key
-//!   presses and releases, so a keymap that already reads evdev codes (as from a virtio keyboard)
-//!   does the rest.
+//! - [`boot_keyboard`]: the eight-byte boot report, and two reports' difference as key presses
+//!   and releases in Human Interface Device (HID) usages. [`boot_keyboard::evdev_code`] maps a usage to an evdev code, for a
+//!   keymap that already reads those (as from a virtio keyboard).
 //!
-//! Reuse: the usage to evdev table takes its usages and names from the USB-IF HID Usage Tables 1.5
-//! and its numbers from the `KEY_*` names of Linux's `input-event-codes.h`, an ABI header. It
-//! copies no driver. Six mappings the sources leave open are this crate's choices, which
+//! Reuse: the usage to evdev table takes its usages and names from the USB Implementers Forum (USB-IF)
+//! HID Usage Tables 1.5 and its numbers from the `KEY_*` names of Linux's `input-event-codes.h`, an
+//! Application Binary Interface (ABI) header. It copies no driver. Six mappings the sources leave open are this crate's choices, which
 //! [`boot_keyboard`]'s documentation states.
 
 //! # BUGS
@@ -35,16 +36,15 @@
 //! - The first boot keyboard interface wins; a second keyboard is not looked for.
 //! - No key repeat: a boot keyboard reports state, not events, and typematic repeat is the
 //!   host's job.
-//! - No lock state and no LEDs: the lock keys are reported as key presses, and the crate keeps no
+//! - No lock state and no light-emitting diodes (LEDs): the lock keys are reported as key presses, and the crate keeps no
 //!   Caps Lock or Num Lock state and builds no request that sets a keyboard's LEDs.
 //!
 
-//! Name: provisional, for milestone 242 (USB host and HID). `usb` and not `universal_serial_bus`
-//! by DECISIONS §154 (the acronym test is whether the phrase is spoken), as `pci` was: nobody says
-//! the expansion.
-
+#[doc(alias = "usb")]
 pub mod boot_keyboard;
+#[doc(alias = "usb")]
 pub mod descriptor;
+#[doc(alias = "usb")]
 pub mod request;
 
 pub use descriptor::Refusal;

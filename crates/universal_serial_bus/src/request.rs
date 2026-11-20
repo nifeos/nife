@@ -2,7 +2,7 @@
 //!
 //! Every control transfer opens with eight bytes saying who the request is for, what it is, and
 //! how much data follows in which direction. A host controller carries them as the immediate data
-//! of a setup-stage TRB, which is why [`SetupPacket::to_u64`] exists: the packet is one little-
+//! of a setup-stage transfer request block (TRB), which is why [`SetupPacket::to_u64`] exists: the packet is one little-
 //! endian quadword there.
 
 /// `bmRequestType` bit 7: data flows device to host.

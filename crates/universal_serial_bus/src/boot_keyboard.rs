@@ -46,7 +46,7 @@ pub const ERROR_ROLL_OVER: u8 = 0x01;
 const FIRST_MODIFIER_USAGE: u8 = 0xe0;
 
 /// The evdev codes of the eight modifier keys, usages 0xe0 to 0xe7, in the bit order of byte 0:
-/// left control, shift, alt, GUI, then the right-hand four. The module documentation says where
+/// left control, shift, alt, graphical user interface (GUI) key, then the right-hand four. The module documentation says where
 /// the numbers come from, and [`evdev_code`] why the GUI keys are Meta.
 const MODIFIER_CODES: [u16; 8] = [
     29,  // 0xe0 LeftControl: KEY_LEFTCTRL
@@ -121,11 +121,11 @@ impl BootReport {
 /// The sources leave six things open, and this crate chose them:
 ///
 /// - **Usage 0x32 (`Non-US # and ~`) is `KEY_BACKSLASH`.** The header has no key for it. The
-///   usage sits at AT-101 position 42, beside Return, and footnote 5 gives `\` and `|` as its US
-///   legends, so a US layout reads it as the backslash key.
+///   usage sits at Advanced Technology (AT) 101-key position 42, beside Return, and footnote 5 gives `\` and `|` as its
+///   United States (US) legends, so a US layout reads it as the backslash key.
 /// - **Usage 0x46 (`PrintScreen`) is `KEY_SYSRQ`.** The header's `KEY_PRINT` carries the comment
 ///   `AC Print`, the Consumer page's print command, not a keyboard key. System Request is the
-///   function a PC keyboard puts on the Print Screen keycap.
+///   function a personal computer (PC) keyboard puts on the Print Screen keycap.
 /// - **A usage named for two legends takes the first.** `Keypad Num Lock and Clear` (0x53) is
 ///   `KEY_NUMLOCK`, and `Keypad 1 and End` (0x59) through `Keypad . and Delete` (0x63) are the
 ///   keypad keys `KEY_KP1` through `KEY_KPDOT`. The second legend is what the key does in another
@@ -305,7 +305,7 @@ const CODE_BY_USAGE: [Option<u16>; 0x88] = [
 /// Shift and `h` arrive together in one report, so the shift press is delivered first:
 ///
 /// ```
-/// use usb::boot_keyboard::{BootReport, changes, evdev_code};
+/// use universal_serial_bus::boot_keyboard::{BootReport, changes, evdev_code};
 ///
 /// let before = BootReport::parse(&[0, 0, 0, 0, 0, 0, 0, 0]).unwrap();
 /// let after = BootReport::parse(&[0x02, 0, 0x0b, 0, 0, 0, 0, 0]).unwrap(); // left shift, usage 0x0b (h)

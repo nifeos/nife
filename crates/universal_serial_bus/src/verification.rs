@@ -5,7 +5,7 @@ use super::descriptor::{
     PROTOCOL_KEYBOARD, SUBCLASS_BOOT, find_boot_keyboard,
 };
 
-/// **The configuration walk never panics, and anything it accepts is a real interrupt IN
+/// **The configuration walk never panics, and anything it accepts is a real interrupt `IN`
 /// endpoint**, for every configuration of up to 25 bytes the solver can choose. This is the
 /// one function in the driver that walks a device-supplied linked structure.
 ///
@@ -13,8 +13,8 @@ use super::descriptor::{
 /// a keyboard endpoint is a 9-byte header, a 9-byte interface and a 7-byte endpoint, which is
 /// 25 bytes. At 24 the walk could never reach an endpoint descriptor, so the three assertions
 /// below were never evaluated and the harness proved only totality. Found by trying to
-/// falsify it: a walk that accepted an OUT endpoint stayed green.
-/// Falsification: replayable `crates/usb/falsifications/verification.the_configuration_walk_is_total_and_accepts_only_an_interrupt_in.patch`
+/// falsify it: a walk that accepted an `OUT` endpoint stayed green.
+/// Falsification: replayable `crates/universal_serial_bus/falsifications/verification.the_configuration_walk_is_total_and_accepts_only_an_interrupt_in.patch`
 #[kani::proof]
 #[kani::unwind(27)]
 fn the_configuration_walk_is_total_and_accepts_only_an_interrupt_in() {
@@ -35,7 +35,7 @@ fn the_configuration_walk_is_total_and_accepts_only_an_interrupt_in() {
 }
 
 /// **The device descriptor and configuration header parsers are total.**
-/// Falsification: replayable `crates/usb/falsifications/verification.the_header_parsers_are_total.patch`
+/// Falsification: replayable `crates/universal_serial_bus/falsifications/verification.the_header_parsers_are_total.patch`
 #[kani::proof]
 fn the_header_parsers_are_total() {
     let bytes: [u8; 20] = kani::any();
@@ -47,7 +47,7 @@ fn the_header_parsers_are_total() {
 
 /// **Two reports a keystroke apart produce at most twenty events**: eight modifier changes and
 /// six releases and six presses at the very most, so a driver's fixed buffer cannot overflow.
-/// Falsification: replayable `crates/usb/falsifications/verification.two_reports_produce_a_bounded_number_of_events.patch`
+/// Falsification: replayable `crates/universal_serial_bus/falsifications/verification.two_reports_produce_a_bounded_number_of_events.patch`
 #[kani::proof]
 #[kani::unwind(10)]
 fn two_reports_produce_a_bounded_number_of_events() {
@@ -60,7 +60,7 @@ fn two_reports_produce_a_bounded_number_of_events() {
     }
 }
 
-/// **Across two interfaces, the walk picks only a boot keyboard's interrupt IN endpoint, and a
+/// **Across two interfaces, the walk picks only a boot keyboard's interrupt `IN` endpoint, and a
 /// refusal names a boot keyboard interface.** The fully symbolic harness above cannot reach a
 /// second interface: that needs 41 bytes, a header, two interfaces and an endpoint after each,
 /// and a symbolic byte string that long does not finish. This one fixes the shape instead. Every
@@ -71,7 +71,7 @@ fn two_reports_produce_a_bounded_number_of_events() {
 /// walk keeps state for: a boot interface left with no endpoint and then closed by the next
 /// interface, a candidate replaced by a later interface, and an endpoint refused as too small
 /// followed by one that is accepted. The `kani::cover!`s below say each is reached.
-/// Falsification: replayable `crates/usb/falsifications/verification.two_interfaces_are_walked_as_two.patch`
+/// Falsification: replayable `crates/universal_serial_bus/falsifications/verification.two_interfaces_are_walked_as_two.patch`
 #[kani::proof]
 #[kani::unwind(8)]
 fn two_interfaces_are_walked_as_two() {
@@ -172,7 +172,7 @@ fn two_interfaces_are_walked_as_two() {
 /// it is the later one. Together with the bound of twenty this is the whole contract [`changes`]
 /// documents. It does not prove the converse, that every usage which changed produces an event:
 /// a usage reported twice in one report produces one event by design, and the unit tests pin it.
-/// Falsification: replayable `crates/usb/falsifications/verification.two_reports_produce_their_events_in_order.patch`
+/// Falsification: replayable `crates/universal_serial_bus/falsifications/verification.two_reports_produce_their_events_in_order.patch`
 #[kani::proof]
 #[kani::unwind(10)]
 fn two_reports_produce_their_events_in_order() {

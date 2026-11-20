@@ -9,7 +9,7 @@ needs_person: no
 ---
 # 1111. `usb` (to be published as `universal_serial_bus`): what an outside maintainer would fix before its first release
 
-Raised by a read-only outside review of `crates/usb` in `nifeos/nife` at commit `cf1328a`
+Raised by a read-only outside review of `crates/universal_serial_bus` in `nifeos/nife` at commit `cf1328a`
 (`main`), read as a stranger meeting the crate for the first time would read it. It changes
 nothing; it lists what the next lanes change, in nife before the move and in the new repository
 after it.
@@ -169,7 +169,7 @@ release, which the architect may revisit. These are names in an unreleased crate
 itself is not the name it publishes under. The table above is the rule, every row as recommended,
 including `parse(bytes)`. The specification's spellings stay as aliases (`bMaxPacketSize0`,
 `wTotalLength`, `wLength`, `ErrorRollOver`, `bcdUSB`). No old spelling of this tree stays as an
-alias. The premises hold at `crates/usb/src/descriptor.rs` lines 20 to 27, 76, 111, 159 and 195,
+alias. The premises hold at `crates/universal_serial_bus/src/descriptor.rs` lines 20 to 27, 76, 111, 159 and 195,
 and `boot_keyboard.rs` line 34. Item 3 is the work. The architect ratified the names on 2026-11-19 (UTC).
 
 ### Decision 2. What `changes` emits: Linux key codes or HID usages
@@ -240,7 +240,7 @@ returns `Result<DeviceDescriptor, Refusal>`, and `BootReport::parse` keeps `Opti
 
 ## Follow-on
 
-- **Outstanding.** The findings "Finding status" marks Open, each line read against `crates/usb`.
+- **Outstanding.** The findings "Finding status" marks Open, each line read against `crates/universal_serial_bus`.
 - **Milestone 820.** A move lane creates `nifeos/universal_serial_bus` after #3814 merges, runs the move
   check and a dry run, and tags `v0.1.0-pre.1` only after separate approval. No publish.
 
