@@ -78,10 +78,10 @@ pub mod supervised_child;
 
 /// Bringing the virtio block driver up in userspace.
 ///
-/// **Milestone 9's headline.** The kernel enumerates the bus (`kernel/src/virtual_io.rs`) to find the
-/// block device, then hands a userspace driver everything it needs and nothing it does not: the
-/// device's registers, a DMA page, an interrupt, and an endpoint to report what it read. The
-/// kernel does not touch the device.
+/// **The headline of milestone 9 (a virtio-blk driver at EL0).** The kernel enumerates the bus
+/// (`kernel/src/virtual_io.rs`) to find the block device, then hands a userspace driver everything
+/// it needs and nothing it does not: the device's registers, a DMA page, an interrupt, and an
+/// endpoint to report what it read. The kernel does not touch the device.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 // the hand-over's network and disk wiring use it; the tests drive the rest
 #[doc(alias = "virtio")]
