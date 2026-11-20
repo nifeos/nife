@@ -6,7 +6,7 @@ use std::string::String;
 use std::vec::Vec;
 
 use grant_contract::{FileGrantDeclaration, InputDeclaration, MemoryGrantDeclaration};
-use grant_plan::nav::Cwd;
+use grant_plan::navigation::Cwd;
 
 use super::*;
 use crate::test_support::{endowment, listing, shown};
@@ -102,7 +102,7 @@ fn capabilities_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks
     assert!(!held.contains("cap 10"), "an unvouched note grants nothing");
     assert!(held.contains("asks for: output bytes, the network"));
     assert!(held.contains("its note grants nothing"));
-    let slot = std::format!("slot {}", program_table::spawnproto::RUN_UNVOUCHED_SLOT);
+    let slot = std::format!("slot {}", program_table::spawn_protocol::RUN_UNVOUCHED_SLOT);
     assert!(held.contains(&slot), "{held}");
 
     let asks_arg = program_table::Program::LeastAuthorityDemo.manifest();
@@ -149,7 +149,7 @@ fn a_memory_grant_is_a_row_and_no_grant_is_no_row() {
 #[test]
 fn append_and_truncate_differ_in_exactly_one_line_of_the_preview() {
     let grant = grant_plan::FileGrant {
-        which: grant_plan::nav::Which::A,
+        which: grant_plan::navigation::Which::A,
         directory: Cwd::root(),
         name: grant_plan::expand::Name::new(b"out.txt").expect("a nameable file"),
         writable: true,
@@ -185,7 +185,7 @@ fn append_and_truncate_differ_in_exactly_one_line_of_the_preview() {
 fn a_directory_grant_prints_every_name_and_says_whether_r_was_typed() {
     let mut e = endowment(Program::Rm);
     e.directory = Some(grant_plan::DirectoryGrant {
-        which: grant_plan::nav::Which::A,
+        which: grant_plan::navigation::Which::A,
         directory: Cwd::root(),
         names: listing(&[b"a.txt", b"b.txt"]),
         subtree: false,
@@ -752,7 +752,7 @@ fn a_declarer_shows_where_its_second_stream_goes() {
     let mut e = endowment(Program::Date);
     e.sink = line::Sink::File(
         grant_plan::FileGrant {
-            which: grant_plan::nav::Which::A,
+            which: grant_plan::navigation::Which::A,
             directory: Cwd::root(),
             name: grant_plan::expand::Name::new(b"when.txt").expect("a nameable file"),
             writable: true,
@@ -795,7 +795,7 @@ fn capabilities_refuses_a_second_stream_the_program_never_declared() {
                 directory: true,
                 mounted: None,
                 cwd: Cwd::root(),
-                binds: nav::Bindings::none(),
+                binds: navigation::Bindings::none(),
             },
             None,
             None,
@@ -878,7 +878,7 @@ fn the_jig_preview_shows_the_index_store_the_verb_holds_and_yields_it_to_a_desig
     assert!(!list.contains("/activation  read-only"), "{list}");
     let mut designated = endowment(Program::Jig);
     designated.directory = Some(grant_plan::DirectoryGrant {
-        which: grant_plan::nav::Which::A,
+        which: grant_plan::navigation::Which::A,
         directory: Cwd::root(),
         names: listing(&[b"x.nifepkg"]),
         subtree: false,

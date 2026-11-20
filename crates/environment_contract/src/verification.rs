@@ -2,7 +2,7 @@
 //! panics, whatever the length byte says, and reports absence for a length past its field. Behind
 //! `#[cfg(kani)]`, so only `cargo kani` (script/verify) compiles them. See notes/verification.md.
 //!
-//! Name: provisional, after the module every other crate's harnesses live in.
+//! Name: ratified 2026-11-19 (calef), after the module every other crate's harnesses live in.
 
 use super::*;
 /// **`field_bytes`, which `read_field` is built on, never panics for any length byte, and a length

@@ -15,10 +15,10 @@ pub(super) const RESULT: u64 = 2; // RECEIVE a spawned program's answer
 
 pub(super) const BUDGET: u64 = 3; // our own untyped; SPLIT a grant off it for `--mem`
 
-/// The budget the progenitor granted us at boot, [`spawnproto::SHELL_BUDGET_PAGES`], which it reads
+/// The budget the progenitor granted us at boot, [`spawn_protocol::SHELL_BUDGET_PAGES`], which it reads
 /// too. We cannot query how much remains (there is no such syscall), so `caps` prints the initial
 /// grant.
-pub(super) const SH_BUDGET_PAGES: u64 = spawnproto::SHELL_BUDGET_PAGES;
+pub(super) const SH_BUDGET_PAGES: u64 = spawn_protocol::SHELL_BUDGET_PAGES;
 
 /// **The slot holding the clock page**, or [`NO_CLOCK`] when this wiring granted none. Told to us in
 /// `x2` at [`_start`](crate::entry::_start) rather than fixed, because the clock is granted after the filesystem pair and a
@@ -28,7 +28,7 @@ pub(super) static CLOCK_SLOT: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(NO_CLOCK);
 
 /// **Whether this session holds the run-unvouched capability** (DECISIONS §219 gate D2), at
-/// [`spawnproto::RUN_UNVOUCHED_SLOT`], `WRITE` only.
+/// [`spawn_protocol::RUN_UNVOUCHED_SLOT`], `WRITE` only.
 ///
 /// Probed once, at [`_start`](crate::entry::_start), before this shell allocates anything, so the
 /// slot holds only what its builder placed. Holding it lets an image request ([`run_image`]) run a
@@ -38,7 +38,7 @@ pub(super) static HOLDS_RUN_UNVOUCHED: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
 // `grant_plan` states the slot without depending on `abi`; the relation is held by each reader.
-const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
+const _: () = assert!(spawn_protocol::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 
 /// **Whether this shell holds a read-only view of the inert-configuration page**
 /// ([`grant_contract::SHELL_CONFIGURATION_SLOT`], mapped at [`grant_contract::SHELL_CONFIGURATION_VIRTUAL_ADDRESS`]; milestone 47
@@ -50,21 +50,22 @@ const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZ
 pub(super) static HOLDS_CONFIG: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
-/// **Whether this shell holds a second mounted tree** ([`spawnproto::MOUNTED_TREE_SLOT`],
+/// **Whether this shell holds a second mounted tree** ([`spawn_protocol::MOUNTED_TREE_SLOT`],
 /// milestone 834 (ioping on nife and Linux)): the disk tree, which the progenitor places in the boot shell on a machine with
 /// an NVMe disk. Probed once at `_start` for [`HOLDS_RUN_UNVOUCHED`]'s reason; `interactive`
-/// mounts it at [`spawnproto::MOUNTED_TREE_NAME`].
+/// mounts it at [`spawn_protocol::MOUNTED_TREE_NAME`].
 pub(super) static HOLDS_MOUNTED_TREE: core::sync::atomic::AtomicBool =
     core::sync::atomic::AtomicBool::new(false);
 
-const _: () = assert!(spawnproto::MOUNTED_TREE_SLOT < abi::fault::FAULT_RENDEZVOUS_SLOT);
+const _: () = assert!(spawn_protocol::MOUNTED_TREE_SLOT < abi::fault::FAULT_RENDEZVOUS_SLOT);
 
 // The named slot sits under the run-unvouched one and so under the kernel's fault slot.
-const _: () = assert!(grant_contract::SHELL_CONFIGURATION_SLOT < spawnproto::RUN_UNVOUCHED_SLOT);
+const _: () =
+    assert!(grant_contract::SHELL_CONFIGURATION_SLOT < spawn_protocol::RUN_UNVOUCHED_SLOT);
 
 /// **Whether this session holds the machine statistics page** (milestone 126 (the `procps`
 /// package), DECISIONS §225 (`free` sees the machine and your share)), at
-/// [`spawnproto::MACHINE_PAGE_SLOT`], `READ | GRANT`. Probed once at [`_start`](crate::entry::_start), for
+/// [`spawn_protocol::MACHINE_PAGE_SLOT`], `READ | GRANT`. Probed once at [`_start`](crate::entry::_start), for
 /// [`HOLDS_RUN_UNVOUCHED`]'s reason.
 ///
 /// Holding it changes one thing: a program whose manifest declares `machine` is sent the page with
@@ -80,11 +81,11 @@ pub(super) fn machine_wiring(e: &Endowment) -> bool {
 }
 
 /// **Send the machine statistics page, the last delegated capability of a request that set
-/// `machine`** (`spawnproto::MACHINE_BIT`). We keep our own copy.
+/// `machine`** (`spawn_protocol::MACHINE_BIT`). We keep our own copy.
 pub(super) fn delegate_machine_page(wired: bool) {
     if wired {
         delegate(
-            spawnproto::MACHINE_PAGE_SLOT,
+            spawn_protocol::MACHINE_PAGE_SLOT,
             abi::rights::READ | abi::rights::GRANT,
         );
     }
@@ -154,5 +155,5 @@ pub(super) fn send_capability(slot: u64) {
 /// end goes as `WRITE|GRANT` and its read end as `READ|GRANT`, so the child on the right of a `|`
 /// cannot write back up its own input, by the narrowing rather than by convention.
 pub(super) fn delegate(slot: u64, rights: u64) {
-    user_mode_runtime::send_capability(SPAWN, slot, rights, spawnproto::CAPABILITY_TAG);
+    user_mode_runtime::send_capability(SPAWN, slot, rights, spawn_protocol::CAPABILITY_TAG);
 }

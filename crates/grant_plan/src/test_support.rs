@@ -90,14 +90,14 @@ pub(crate) const READS_A_FILE: Manifest = Manifest {
 pub(crate) const WITH_DIRECTORY: Holdings = Holdings {
     directory: true,
     mounted: None,
-    cwd: nav::Cwd::root(),
-    binds: nav::Bindings::none(),
+    cwd: navigation::Cwd::root(),
+    binds: navigation::Bindings::none(),
 };
 
 // ---- milestone 154 (a process that holds two directory capabilities): one tree, a mount ----
 
-pub(crate) fn at(components: &[&[u8]]) -> nav::Cwd {
-    let mut c = nav::Cwd::root();
+pub(crate) fn at(components: &[&[u8]]) -> navigation::Cwd {
+    let mut c = navigation::Cwd::root();
     for name in components {
         assert!(c.descend(name));
     }
@@ -174,10 +174,10 @@ pub(crate) fn plan_line(text: &[u8], holds: Holdings) -> Planned {
 
 /// **A line naming a file one byte longer than a grant can carry**, `<prefix>xxx...x`, built in
 /// `buf` because this crate has no allocator in tests either. Every test that proves the name
-/// bound is refused uses it, so the bound is [`crate::MAXIMUM_FILE_NAME`] and never a spelled-out
+/// bound is refused uses it, so the bound is [`crate::MAXIMUM_FILE_NAME_BYTES`] and never a spelled-out
 /// literal that a raised bound would silently make legal.
 pub(crate) fn with_too_long_name<'a>(prefix: &[u8], buf: &'a mut [u8; 512]) -> &'a [u8] {
-    let n = prefix.len() + crate::MAXIMUM_FILE_NAME + 1;
+    let n = prefix.len() + crate::MAXIMUM_FILE_NAME_BYTES + 1;
     buf[..prefix.len()].copy_from_slice(prefix);
     buf[prefix.len()..n].fill(b'x');
     &buf[..n]

@@ -111,7 +111,7 @@ pub const MANIFEST: u32 = 1;
 /// no zones and no service byte. [`decode`] reads this version and [`ZONED_VERSION`] and
 /// [`SERVICED_VERSION`], and refuses any later one.
 ///
-/// Name: provisional. `BARE` says it is the version with nothing after the fixed fields, beside
+/// Name: ratified 2026-11-19. `BARE` says it is the version with nothing after the fixed fields, beside
 /// [`ZONED_VERSION`] and [`SERVICED_VERSION`]; a bare `VERSION` read as the current version of the
 /// format or of the crate, which it is not.
 pub const BARE_VERSION: u32 = 1;
@@ -783,7 +783,7 @@ fn check_serviced(d: &[u8]) -> Result<&[u8], Error> {
 /// descriptor.
 /// `false` for version 1 and version 2, whose grammar cannot say it.
 ///
-/// Name: provisional. A question, so a caller's `if asks_service(d)? { ... }` reads as the
+/// Name: ratified 2026-11-19. A question, so a caller's `if asks_service(d)? { ... }` reads as the
 /// condition it tests; `service` read as a noun.
 pub fn asks_service(d: &[u8]) -> Result<bool, Error> {
     decode(d)?;
@@ -1033,24 +1033,25 @@ const _: () = assert!(OWNER.len() < NAME_FIELD_BYTES && NAME_FIELD_BYTES.is_mult
 /// capability_manifest_note::carry!(MANIFEST, zones = &["example.net"]);
 /// ```
 ///
-/// Name: provisional, milestone 597's lane, 2026-09-26.
+/// Name: provisional. The static it emits is `MANIFEST_NOTE`, the note's own name with no
+/// project word, so the crate can leave nife.
 #[macro_export]
 macro_rules! carry {
     ($manifest:expr) => {
         #[used]
         #[unsafe(link_section = ".note.nife.manifest")] // wire literal
-        static NIFE_MANIFEST_NOTE: $crate::Note = $crate::Note::of(&$manifest);
+        static MANIFEST_NOTE: $crate::Note = $crate::Note::of(&$manifest);
     };
     ($manifest:expr, zones = $zones:expr) => {
         #[used]
         #[unsafe(link_section = ".note.nife.manifest")] // wire literal
-        static NIFE_MANIFEST_NOTE: $crate::ZonedNote<{ $crate::zoned_note_bytes($zones) }> =
+        static MANIFEST_NOTE: $crate::ZonedNote<{ $crate::zoned_note_bytes($zones) }> =
             $crate::ZonedNote::of::<{ $crate::zoned_descriptor_bytes($zones) }>(&$manifest, $zones);
     };
     ($manifest:expr, service = true) => {
         #[used]
         #[unsafe(link_section = ".note.nife.manifest")] // wire literal
-        static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_bytes(&[]) }> =
+        static MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_bytes(&[]) }> =
             $crate::ServicedNote::of::<{ $crate::serviced_descriptor_bytes(&[]) }>(
                 &$manifest,
                 &[],
@@ -1060,7 +1061,7 @@ macro_rules! carry {
     ($manifest:expr, zones = $zones:expr, service = true) => {
         #[used]
         #[unsafe(link_section = ".note.nife.manifest")] // wire literal
-        static NIFE_MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_bytes($zones) }> =
+        static MANIFEST_NOTE: $crate::ServicedNote<{ $crate::serviced_note_bytes($zones) }> =
             $crate::ServicedNote::of::<{ $crate::serviced_descriptor_bytes($zones) }>(
                 &$manifest, $zones, true,
             );
@@ -1157,13 +1158,14 @@ impl SubtreeGrantsNote {
 /// Carrying it is a claim the loader acts on, so a build should hold it to account: the crate
 /// must depend on `subtree_scope`, and its package declaration must say so too.
 ///
-/// Name: provisional, milestone 606's lane, 2026-09-27.
+/// Name: provisional. The static it emits is `SUBTREE_GRANTS_NOTE`, the note's own name with no
+/// project word, so the crate can leave nife.
 #[macro_export]
 macro_rules! carry_subtree_grants {
     ($scope:expr) => {
         #[used]
         #[unsafe(link_section = ".note.nife.manifest")] // wire literal
-        static NIFE_SUBTREE_GRANTS_NOTE: $crate::SubtreeGrantsNote =
+        static SUBTREE_GRANTS_NOTE: $crate::SubtreeGrantsNote =
             $crate::SubtreeGrantsNote::of($scope);
     };
 }
@@ -1189,11 +1191,11 @@ pub const VERBS_VERSION: u32 = 1;
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_VERBS: usize = 256;
 
-/// One verb's record: the word in `grant_contract::MAXIMUM_VERB` bytes, zero-padded; then the grants'
+/// One verb's record: the word in `grant_contract::MAXIMUM_VERB_BYTES` bytes, zero-padded; then the grants'
 /// bits, little-endian; then two zero bytes.
 ///
 /// Name: provisional. A length carries its unit (`design/naming.md`, units).
-pub const VERB_RECORD_BYTES: usize = grant_contract::MAXIMUM_VERB + 4;
+pub const VERB_RECORD_BYTES: usize = grant_contract::MAXIMUM_VERB_BYTES + 4;
 
 /// A [`VERBS`] descriptor's length for `count` verbs: the version word, the count word, and
 /// exactly `count` records. Variable in length; one table still has one encoding, because the
@@ -1244,7 +1246,7 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_contract::VerbGrant])
     while i < verbs.len() {
         let word = verbs[i].verb.as_bytes();
         assert!(
-            !word.is_empty() && word.len() <= grant_contract::MAXIMUM_VERB,
+            !word.is_empty() && word.len() <= grant_contract::MAXIMUM_VERB_BYTES,
             "a verb is one to sixteen bytes"
         );
         if i > 0 {
@@ -1261,8 +1263,8 @@ pub const fn encode_verbs<const LEN: usize>(verbs: &[grant_contract::VerbGrant])
             b += 1;
         }
         let bits = verbs[i].authorities.bits().to_le_bytes();
-        out[at + grant_contract::MAXIMUM_VERB] = bits[0];
-        out[at + grant_contract::MAXIMUM_VERB + 1] = bits[1];
+        out[at + grant_contract::MAXIMUM_VERB_BYTES] = bits[0];
+        out[at + grant_contract::MAXIMUM_VERB_BYTES + 1] = bits[1];
         i += 1;
     }
     out
@@ -1338,11 +1340,11 @@ impl<'a> Verbs<'a> {
     /// Record `i`, which [`decode_verbs`] has already checked.
     fn record(&self, i: usize) -> (&'a [u8], grant_contract::ManifestAuthorities) {
         let r = &self.records[i * VERB_RECORD_BYTES..(i + 1) * VERB_RECORD_BYTES];
-        let word = &r[..grant_contract::MAXIMUM_VERB];
+        let word = &r[..grant_contract::MAXIMUM_VERB_BYTES];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
         let bits = u16::from_le_bytes([
-            r[grant_contract::MAXIMUM_VERB],
-            r[grant_contract::MAXIMUM_VERB + 1],
+            r[grant_contract::MAXIMUM_VERB_BYTES],
+            r[grant_contract::MAXIMUM_VERB_BYTES + 1],
         ]);
         (
             &word[..len],
@@ -1412,7 +1414,7 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
     for i in 0..count {
         let at = 8 + i * VERB_RECORD_BYTES;
         let record = &d[at..at + VERB_RECORD_BYTES];
-        let word = &record[..grant_contract::MAXIMUM_VERB];
+        let word = &record[..grant_contract::MAXIMUM_VERB_BYTES];
         let len = word.iter().position(|&b| b == 0).unwrap_or(word.len());
         if len == 0 {
             return Err(Error::BadField(at));
@@ -1421,16 +1423,16 @@ pub fn decode_verbs(d: &[u8]) -> Result<Verbs<'_>, Error> {
             return Err(Error::BadField(at + len + k));
         }
         let bits = u16::from_le_bytes([
-            record[grant_contract::MAXIMUM_VERB],
-            record[grant_contract::MAXIMUM_VERB + 1],
+            record[grant_contract::MAXIMUM_VERB_BYTES],
+            record[grant_contract::MAXIMUM_VERB_BYTES + 1],
         ]);
         if grant_contract::ManifestAuthorities::from_bits(bits).is_none() {
-            return Err(Error::BadField(at + grant_contract::MAXIMUM_VERB));
+            return Err(Error::BadField(at + grant_contract::MAXIMUM_VERB_BYTES));
         }
-        if record[grant_contract::MAXIMUM_VERB + 2] != 0
-            || record[grant_contract::MAXIMUM_VERB + 3] != 0
+        if record[grant_contract::MAXIMUM_VERB_BYTES + 2] != 0
+            || record[grant_contract::MAXIMUM_VERB_BYTES + 3] != 0
         {
-            return Err(Error::BadField(at + grant_contract::MAXIMUM_VERB + 2));
+            return Err(Error::BadField(at + grant_contract::MAXIMUM_VERB_BYTES + 2));
         }
         if previous.is_some_and(|p| !before(p, &word[..len])) {
             return Err(Error::BadField(at));
