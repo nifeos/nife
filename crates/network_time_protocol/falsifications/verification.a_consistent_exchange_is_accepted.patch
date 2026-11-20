@@ -17,4 +17,4 @@ diff --git a/crates/network_time_protocol/src/lib.rs b/crates/network_time_proto
 +        if p.stratum >= MAXIMUM_STRATUM {
              return Err(Reject::Stratum(p.stratum));
          }
-         if p.leap == leap::UNSYNCHRONISED {
+         if p.leap == leap::UNSYNCHRONIZED {
