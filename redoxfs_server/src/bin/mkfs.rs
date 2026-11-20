@@ -44,7 +44,7 @@ extern crate alloc;
 use filesystem_contract::{block, req};
 use filesystem_fixture::blank;
 use globally_unique_identifier_partition_table::PartitionTable;
-use nife_partition_NIFE_DATA;
+use nife_partition_types::NIFE_DATA;
 use redoxfs::{BLOCK_SIZE, Disk, FileSystem};
 use redoxfs_server::{NameCopy, Server};
 use syscall::error::{EIO, Error, Result};
