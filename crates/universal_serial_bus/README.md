@@ -40,7 +40,7 @@ let configuration = [
 let keyboard = find_boot_keyboard(&configuration).unwrap();
 assert_eq!((keyboard.configuration, keyboard.interface, keyboard.endpoint), (1, 0, 0x81));
 
-// Shift and `h` arrive in one report: the shift press is delivered first.
+// Shift and `h` arrive in one report: `changes` delivers the shift press first.
 let before = BootReport::RELEASED;
 let after = BootReport::parse(&[0x02, 0, 0x0b, 0, 0, 0, 0, 0]).unwrap();
 let mut seen = Vec::new();
@@ -71,7 +71,7 @@ holds for every input up to the bound it names.
 Two things lie outside the proofs. A configuration longer than 25 bytes in any shape but the fixed
 one is what a real composite keyboard sends. The unit tests walk several, and a fuzz target in
 `fuzz/` reaches the rest. The converse of the report proof, that every key which changed produces an
-event, is checked by tests and not proven.
+event, has tests and no proof.
 
 The usage table of `evdev_code` takes its usages and names from the USB Implementers Forum's
 HID Usage Tables 1.5 and its numbers from the `KEY_*` names of Linux's `input-event-codes.h`, an
@@ -112,7 +112,7 @@ Then `cargo kani`, from the crate's directory, runs all five harnesses. On a des
 cargo kani --harness verification::the_header_parsers_are_total --exact
 ```
 
-A passing run prints several lines that look alarming. All of them are expected:
+A passing run prints several lines that look alarming. Expect all of them:
 
 - `warning: use of an unstable feature`, about `#![feature(register_tool)]`, which Kani sets.
 - `warning: Found the following unsupported constructs`, followed by "Verification will fail if
@@ -140,12 +140,12 @@ the assertion that the patch breaks. `git checkout -- src` reverts the patch.
 
 ## BUGS
 
-- Boot protocol only: a keyboard is found by its interface triple (class 3, subclass 1,
-  protocol 1), no HID report descriptor is parsed, and a device with no boot interface is refused
-  as `Refusal::NoBootKeyboard`.
-- The first boot keyboard interface wins; a second keyboard is not looked for.
+- Boot protocol only: the crate finds a keyboard by its interface triple (class 3, subclass 1,
+  protocol 1), parses no HID report descriptor, and refuses a device with no boot interface as
+  `Refusal::NoBootKeyboard`.
+- The first boot keyboard interface wins; the crate looks for no second keyboard.
 - No key repeat: a boot keyboard reports state, not events, and typematic repeat is the host's job.
-- No lock state and no light-emitting diodes (LEDs): the lock keys are reported as key presses, and the crate keeps no Caps
+- No lock state and no light-emitting diodes (LEDs): the crate reports the lock keys as key presses, keeps no Caps
   Lock or Num Lock state and builds no request that sets a keyboard's LEDs.
 - No enum is `#[non_exhaustive]`, so a variant added to `Refusal` or `Speed` after the first
   release breaks a caller's `match`.

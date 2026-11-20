@@ -470,7 +470,7 @@ mod tests {
         ] {
             for next in [report(0, &[usage]), BootReport::RELEASED] {
                 changes(&state, &next, &mut |usage, pressed| {
-                    if pressed && let Some(code) = evdev_code(usage) {
+                    if let (true, Some(code)) = (pressed, evdev_code(usage)) {
                         presses.push(code);
                     }
                 });
