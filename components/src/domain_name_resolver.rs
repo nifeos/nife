@@ -91,7 +91,7 @@ struct State {
     attached: [Option<u64>; protocol::MAXIMUM_GRANTS],
     request: [u8; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES],
     reply: [u8; TCP_REPLY_MAXIMUM],
-    chunk: [u8; socket::DATA_MAXIMUM],
+    chunk: [u8; socket::MAXIMUM_PAYLOAD_BYTES],
 }
 
 static mut STATE: State = State {
@@ -99,7 +99,7 @@ static mut STATE: State = State {
     attached: [None; protocol::MAXIMUM_GRANTS],
     request: [0; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES],
     reply: [0; TCP_REPLY_MAXIMUM],
-    chunk: [0; socket::DATA_MAXIMUM],
+    chunk: [0; socket::MAXIMUM_PAYLOAD_BYTES],
 };
 
 /// Where and how to ask, from the start words.
@@ -362,7 +362,7 @@ fn open(server: &Server, operation: u64) -> Result<u64, Fail> {
     let frame = server
         .frame
         .ok_or(Fail::Status(network(network_step::NO_SOCKET_PAGE)))?;
-    let (socket::REP_OK, _, Some(socket)) = call_receiving(STACK, operation, 0) else {
+    let (socket::REPLY_OK, _, Some(socket)) = call_receiving(STACK, operation, 0) else {
         return Err(Fail::Status(network(network_step::OPEN)));
     };
     if send_capability(
@@ -398,12 +398,13 @@ fn exchange_udp(
     for _ in 0..ATTEMPTS {
         set_destination(server);
         write_payload(&state.request[..n]);
-        if call(socket, socket::OPERATION_SENDTO, n as u64).0 != socket::REP_OK {
+        if call(socket, socket::OPERATION_SEND_TO, n as u64).0 != socket::REPLY_OK {
             return Err(Fail::Status(network(network_step::SEND)));
         }
         for _ in 0..DATAGRAMS_PER_ATTEMPT {
             let (got, _) = call(socket, socket::OPERATION_RECEIVE, 0);
-            if got == socket::REP_ERR || got == 0 || got > socket::DATA_MAXIMUM as u64 {
+            if got == socket::REPLY_ERROR || got == 0 || got > socket::MAXIMUM_PAYLOAD_BYTES as u64
+            {
                 break; // nothing came: the next attempt
             }
             // A UDP RECEIVE reply carries the datagram's source in the destination fields
@@ -460,7 +461,7 @@ fn exchange_tcp(
     let mut framed = TcpReply::new(&mut state.reply);
     loop {
         let (got, _) = call(socket, socket::OPERATION_RECEIVE, 0);
-        if got == 0 || got > socket::DATA_MAXIMUM as u64 {
+        if got == 0 || got > socket::MAXIMUM_PAYLOAD_BYTES as u64 {
             // The server closed, or the stack gave up, before the reply was whole.
             return Err(Fail::Status(Outcome::of(status::NO_ANSWER)));
         }
@@ -488,7 +489,7 @@ fn socket_page() -> Option<u64> {
 
 fn set_destination(server: &Server) {
     for (i, &b) in server.ip.iter().enumerate() {
-        SOCKET.write::<u8>(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET.write::<u8>(socket::DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
     SOCKET.write::<u16>(socket::DESTINATION_PORT_OFFSET_BYTES, server.port);
 }
@@ -497,7 +498,7 @@ fn set_destination(server: &Server) {
 fn source() -> ([u8; 4], u16) {
     let mut ip = [0u8; 4];
     for (i, b) in ip.iter_mut().enumerate() {
-        *b = SOCKET.read::<u8>(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
+        *b = SOCKET.read::<u8>(socket::DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64);
     }
     (
         ip,

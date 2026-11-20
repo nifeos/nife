@@ -6,8 +6,8 @@
 
 use core::sync::atomic::{AtomicU64, Ordering};
 
+use network_stack::polled_wait;
 use smoltcp::time::Duration;
-use socket_contract::polled_wait;
 
 use super::*;
 
@@ -84,7 +84,7 @@ pub(super) fn wait_for_nic(
 /// real silicon) radon's Ethernet port's. Neither holds an interrupt
 /// (`kernel/src/user/e1000e_service.rs` says why). A frame already waiting returns at once. Within
 /// a scheduler tick of the last frame taken, the wait is a yield, because a sleep could not end
-/// before that tick and a stream's next segment comes sooner (`socket_contract::polled_wait` has
+/// before that tick and a stream's next segment comes sooner (`network_stack::polled_wait` has
 /// the argument and its measurements). After that it sleeps until smoltcp's own deadline or
 /// `e1000e_transport::POLL_MILLISECONDS`, whichever is sooner, and the timer rounds that up to a tick. The
 /// timer and notification are the same pair the virtio server's retransmit wait uses (slots 5
@@ -112,8 +112,8 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
             user_mode_runtime::yield_now();
             return;
         }
-        polled_wait::Next::Sleep(0) => return,
-        polled_wait::Next::Sleep(microseconds) => microseconds,
+        polled_wait::Next::SleepMicroseconds(0) => return,
+        polled_wait::Next::SleepMicroseconds(microseconds) => microseconds,
     };
     let ticks = abi::timer::counter_ticks_for(0, (microseconds * 1000) as u32, counter_hertz());
     if sleep_until(RETRANSMIT, WAKE, now().saturating_add(ticks)) < 0 {

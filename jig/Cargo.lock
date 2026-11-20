@@ -577,7 +577,7 @@ dependencies = [
  "package_index",
  "pinned_tls_client",
  "program_table",
- "socket_contract",
+ "socket_fixture",
  "static_elf",
  "std_runtime_contract",
  "user_mode_runtime",
@@ -1052,6 +1052,10 @@ checksum = "d0d5d4b1981b8bbbb7aed204cae5726d683d5d6ac7e74ec54122ea28f315e7c8"
 
 [[package]]
 name = "socket_contract"
+version = "0.1.0"
+
+[[package]]
+name = "socket_fixture"
 version = "0.1.0"
 
 [[package]]

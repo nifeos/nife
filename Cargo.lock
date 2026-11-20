@@ -256,6 +256,7 @@ dependencies = [
  "machine_statistics_contract",
  "measured_boot",
  "memory_region_heap",
+ "network_stack",
  "network_time_protocol",
  "nife_partition_types",
  "nifefs",
@@ -270,6 +271,7 @@ dependencies = [
  "slabtop",
  "smoltcp",
  "socket_contract",
+ "socket_fixture",
  "startup_page_contract",
  "static_elf",
  "supervision_contract",
@@ -576,6 +578,7 @@ dependencies = [
  "program_table",
  "soak_page",
  "socket_contract",
+ "socket_fixture",
  "startup_page_contract",
  "static_elf",
  "supervision_contract",
@@ -1065,6 +1068,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "network_stack"
+version = "0.1.0"
+
+[[package]]
 name = "network_time_protocol"
 version = "0.1.0"
 
@@ -1432,6 +1439,13 @@ name = "socket_contract"
 version = "0.1.0"
 
 [[package]]
+name = "socket_fixture"
+version = "0.1.0"
+dependencies = [
+ "socket_contract",
+]
+
+[[package]]
 name = "stable_deref_trait"
 version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1623,6 +1637,7 @@ dependencies = [
  "program_table",
  "ps",
  "socket_contract",
+ "socket_fixture",
  "startup_page_contract",
  "static_elf",
  "std_runtime_contract",

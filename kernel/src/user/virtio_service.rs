@@ -162,7 +162,7 @@ pub fn start_net_server(image: &'static [u8]) -> Option<(RendezvousId, Holding)>
         },
         dev.intid,
         None,
-        socket_contract::NO_LISTEN_GRANT, // a DHCP bring-up serves nobody inbound
+        socket_contract::NO_PORT_GRANT, // a DHCP bring-up serves nobody inbound
     )?;
     Some((report, holding))
 }
@@ -175,7 +175,7 @@ pub fn start_net_server_pci(image: &'static [u8]) -> Option<(RendezvousId, Holdi
         crate::virtio::Transport::pci(&d),
         d.intid,
         Some(d.rid),
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     )?;
     Some((report, holding))
 }
@@ -275,7 +275,7 @@ fn wire_net_server(
                 maps: &maps,
                 windows: &[],
             },
-            socket_contract::stack_slots::OWN_SPACE,
+            socket_contract::stack_slots::OWN_ADDRESS_SPACE_SLOT,
         )
     })
     .expect("could not spawn the net server");
@@ -310,7 +310,7 @@ const NET_CLIENT_BLOB_PAGES: u64 = 1;
 ///
 /// They share a `Stack` endpoint, the server holding `READ` and the client `WRITE`. `pci` picks the
 /// transport. `listen_grant` is the port range a `LISTEN` may bind
-/// (`socket_contract::listen_grant`), or [`socket_contract::NO_LISTEN_GRANT`]; the spawner decides
+/// (`socket_contract::listen_grant`), or [`socket_contract::NO_PORT_GRANT`]; the spawner decides
 /// it, not the client. Returns the client's report endpoint and what ends the service, or `None` if
 /// no NIC is attached. See notes/net.md.
 pub fn start_net_stack(
@@ -344,7 +344,7 @@ pub fn start_package_fetch(
         arg1,
         Some(catalogue),
         false,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     )
 }
 
@@ -491,7 +491,7 @@ const STD_NET_STACK_PAGES: u64 = 32;
 /// The client gets the std slots (heap untyped at 0, stdout at 1) plus the `Stack` endpoint's
 /// `WRITE` at 2 and a budget for per-socket shared frames at 3; without 2 and 3 the same binary runs
 /// its offline transcript. `listen_grant` decides whether `std::net::TcpListener::bind` may succeed:
-/// `socket_contract::NO_LISTEN_GRANT` answers `PermissionDenied` for every port.
+/// `socket_contract::NO_PORT_GRANT` answers `PermissionDenied` for every port.
 ///
 /// Returns the program's stdout endpoint, its thread (so a test can tell a dead program from a busy
 /// one) and what ends the service, or `None` if no NIC is attached or the IOMMU refuses it. See
