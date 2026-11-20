@@ -39,7 +39,7 @@ milestone reaches delivery.
 - P0-2, the one dependency has not left and appears in no plan: Ruled (maintainer, provisional,
   2026-11-19 UTC, D3). Not built: `intrusive_queue` leaves first, under
   milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release).
-- P0-3, the crate does not stand alone: Open. The move strips every `Name:` block (22 lines
+- P0-3, the crate does not stand alone: Open. The move strips every `Name:` block (23 lines
   under `src/` and one in a patch header) and the citations, and gives the manifest its own `license`, `lints` and `rust-version` in place of
   `license.workspace` and the allowlist comment.
 - P1-4, a public type named `Send`: Done (ruled, maintainer, provisional, 2026-11-14 UTC,
