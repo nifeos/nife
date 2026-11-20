@@ -32,7 +32,7 @@ program_table = { version = "0.1.0", path = "../program_table" }
 capability_manifest_note = { version = "0.1.0", path = "../capability_manifest_note" }
 # The `INTERFACES` note the progenitor reads at spawn (milestone 956 (the linked interfaces carry
 # checkable versions) step 3).
-interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfaces_note", rev = "8a634ffc08af031b2b8b6a3912b986cfbd6ff055" }
+interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfaces_note", rev = "bfa27187a87e0cc1916efb06238b2dd2ece004eb" }
 # The filesystem contract, for exactly one word: the readiness sentinel a `fs_subtree_caretaker`
 # answers a directory grant's descent with (milestone 31 phase 3). An in-tree protocol crate rather
 # than a constant copied here, which is rule 7: what two binaries agree on is a crate. It brings

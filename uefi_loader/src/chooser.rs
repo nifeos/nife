@@ -34,8 +34,7 @@ use core::ptr::{self, NonNull};
 
 use boot_slot::{SlotHeader, State, select_excluding};
 use globally_unique_identifier_partition_table as gpt;
-use gpt::guid::types;
-use gpt::{Entry, GloballyUniqueIdentifierPartitionTable as Table};
+use gpt::{Entry, PartitionTable};
 use r_efi::efi::{self, BY_PROTOCOL, BootServices, Handle, SystemTable};
 use r_efi::protocols::block_io::{self, Protocol as BlockIo};
 use r_efi::protocols::loaded_image;
@@ -352,7 +351,7 @@ fn read_table(handle: Handle, services: &BootServices, scratch: &mut Scratch) ->
     }
 
     let head: &[u8] = head;
-    let table = Table::parse(&head[LBA..2 * LBA], &head[2 * LBA..]).ok()?;
+    let table = PartitionTable::parse(&head[LBA..2 * LBA], &head[2 * LBA..]).ok()?;
 
     let mut disk = Disk {
         block_io,
@@ -373,7 +372,7 @@ fn read_table(handle: Handle, services: &BootServices, scratch: &mut Scratch) ->
             return None;
         }
         disk.parts[disk.used] = part;
-        if part.type_guid == types::NIFE_BOOT && disk.slots < MAXIMUM_SLOTS {
+        if part.type_guid == nife_partition_types::NIFE_BOOT && disk.slots < MAXIMUM_SLOTS {
             disk.at[disk.slots] = disk.used;
             disk.states[disk.slots] = State::from_attributes(part.attributes);
             disk.slots += 1;
@@ -400,7 +399,7 @@ impl Disk {
         self.parts[at].attributes = self.states[slot].into_attributes(self.parts[at].attributes);
 
         let (head, array) = scratch.primary.0.split_at_mut(2 * LBA);
-        let Ok(built) = Table::create(
+        let Ok(built) = PartitionTable::create(
             self.disk_guid,
             LBA,
             self.block_count,
@@ -420,8 +419,8 @@ impl Disk {
         if built.write_primary_header(header_block).is_err() {
             return false;
         }
-        let backup_entry_lba = built.backup_entry_lba();
-        let backup_header_lba = built.backup_header_lba();
+        let backup_entry_logical_block_address = built.backup_entry_logical_block_address();
+        let backup_header_logical_block_address = built.backup_header_logical_block_address();
 
         let backup_header = &mut scratch.block.0;
         backup_header.fill(0);
@@ -433,10 +432,12 @@ impl Disk {
         // Four ranges and no journal; see BUGS. The primary header goes last of the two primary
         // writes so that a table whose array landed and whose header did not fails its own CRC
         // rather than pointing at an array that is not the one it describes.
-        self.write(built.primary_entry_lba(), built.entry_array())
-            && self.write(backup_entry_lba, built.entry_array())
-            && self.write(backup_header_lba, backup_header)
-            && self.write(gpt::PRIMARY_HEADER_LBA, header_block)
+        self.write(
+            built.primary_entry_logical_block_address(),
+            built.entry_array(),
+        ) && self.write(backup_entry_logical_block_address, built.entry_array())
+            && self.write(backup_header_logical_block_address, backup_header)
+            && self.write(gpt::PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, header_block)
             && self.flush()
     }
 
@@ -471,7 +472,7 @@ impl Disk {
         slot: usize,
         scratch: &mut Scratch,
     ) -> Started {
-        let first = self.parts[self.at[slot]].first_lba;
+        let first = self.parts[self.at[slot]].first_logical_block_address;
         let block = &mut scratch.block.0;
         // SAFETY: `block_io` is the firmware's protocol and `block` is one page-aligned block.
         if unsafe {

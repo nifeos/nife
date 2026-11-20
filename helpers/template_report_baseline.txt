@@ -176,6 +176,7 @@ network_time_protocol abbreviations 18
 network_time_protocol prose_acronyms 9
 network_time_protocol readme_acronyms 3
 network_time_protocol register_names 1
+nife_partition_types abbreviations 3
 nifefs abbreviations 30
 nifefs prose_acronyms 4
 nifefs readme_acronyms 2
