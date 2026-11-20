@@ -3806,6 +3806,15 @@ echo "==> unit symbols are spelled out (2026-10-27)"
 # fails a count over its ceiling or a branch that adds any net. Fixtures first.
 python3 helpers/vendored_name_gates.py unit --selftest
 python3 helpers/vendored_name_gates.py unit --check
+echo "==> syscall is spelled out as system_call (2026-11-20)"
+# lint-scope: code
+# lint-quick
+# design/naming.md: the tree spells `syscall` out. helpers/system_call_names.py counts Rust and Python
+# identifiers and tracked paths that carry `syscall` or `syscalls`, less the foreign uses its one
+# boundary list (KEPT) names, and fails a count over its ceiling or a branch that adds any net.
+# Fixtures first.
+python3 helpers/system_call_names.py --selftest
+python3 helpers/system_call_names.py --check
 echo "==> a component reads its window addresses from the startup page (ceiling only falls)"
 # lint-scope: code
 # lint-quick

@@ -675,7 +675,10 @@ def unit_main(argv):
 NAMING = 'design/naming.md'
 # Words the prose spells out that the template's list does not hold. An entry is a gap in the
 # template, to be closed there; the check fails when the list gains the word, so this empties.
-PROSE_ONLY_WORDS = {'proto': 'the template has no `proto` row'}
+PROSE_ONLY_WORDS = {
+    'proto': 'the template has no `proto` row',
+    'syscall': 'the template lists `syscall` as accepted; helpers/system_call_names.py checks it here',
+}
 _BACKTICKED = re.compile(r'`([A-Za-z_]+)`')
 
 

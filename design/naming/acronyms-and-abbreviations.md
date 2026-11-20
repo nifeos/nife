@@ -25,7 +25,7 @@ Every name this tree authors spells these out, function parameters included.
 |---|---|---|
 | `cap`, `caps` | `capability`, `capabilities` | every name, PCI capability structures included; comments and prose are outside the rule |
 | `op`, `ops` | `operation`, `operations` | `OPERATION_READLINE`; not `opcode`, which names the number and not the request |
-| `recv` | `receive` | a syscall this tree defines is its own name, whatever POSIX calls it |
+| `recv` | `receive` | a system call this tree defines is its own name, whatever POSIX calls it |
 | `rx`, `tx` | `receive`, `transmit` | where the word names a side and not a direction, the name says what it holds: `read_pipe`, `write_pipe` |
 | `phy` | `physical_layer_device` | IEEE 802.3's phrase for the chip; not `physical_layer`, which blurs the chip with the layer smoltcp's `phy` module abstracts; prose gives "PHY" on first use |
 | `init` | `initialize` | where it means initialize: `initialize_hardware` |
@@ -42,11 +42,12 @@ Every name this tree authors spells these out, function parameters included.
 | `proto` | `protocol` | a truncation, equally short for `prototype` |
 | `rgmii`, `mdio` | `reduced_gigabit_media_independent_interface`, `management_data_io` | the same test; `io` stays whole inside the expansion |
 | `sdio` | `sd_io` (`SD_IO` in a constant) | `SD` and `io` both stay, so only the join changes: `SD_IO_BRING_UP` |
+| `syscall`, `syscalls` | `system_call`, `system_calls` (`SystemCall`, `SYSTEM_CALL_EXIT`, `raw_system_call`) | every name, path and line of prose the tree authors; the x86 `syscall` instruction, Linux and POSIX call names and `SYS_*` numbers, rustc, LLVM and target names, upstream and vendored code, and quoted text keep the owner's word, and a public item that keeps it carries `#[doc(alias = "syscall")]`; `helpers/system_call_names.py` holds the one boundary list |
 
 ## Short forms that stay
 
-- Earned, because nobody says the expansion: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`,
-  `bios`, `efi`, `tcp`, `udp`, `ipv4`, QEMU, and the hardware acronyms `MAC`, `GMAC` and `SD`. `glob` and `paging` are words.
+- Earned, because nobody says the expansion: `pci`, `elf`, `usb`, `cpu`, `xor`, `io`, `bios`,
+  `efi`, `tcp`, `udp`, `ipv4`, QEMU, and the hardware acronyms `MAC`, `GMAC` and `SD`. `glob` and `paging` are words.
 - `tcp`, `udp` and `ipv4` stay, because nobody says transmission control protocol, user datagram
   protocol or internet protocol version 4 aloud. Rust casing applies: `TcpStream`, `UdpSocket`,
   `Ipv4Address` in CamelCase, `tcp_close`, `ipv4_addresses` in snake case, `OPERATION_OPEN_TCP`,
