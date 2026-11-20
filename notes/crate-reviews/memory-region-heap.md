@@ -4,11 +4,12 @@
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
-The architect reads this to clear the crate for its move to its own repository, in step 9 of
+The architect cleared this package on 2026-11-20 (UTC) for the crate's move to its own repository, in step 9 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 It describes the crate as `main` leaves it. The outside review behind it is
 [milestone 1100 (`memory_region_heap`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1100-memory-region-heap-outside-review.md).
-The ruling of 2026-11-19 (UTC) ratified the names. This package ratifies and clears nothing.
+The ruling of 2026-11-19 (UTC) ratified the names. The clearance of 2026-11-20 (UTC) approves
+`nifeos/memory_region_heap` with `publish = false`; there is no tag and no publish.
 
 ## In one paragraph
 
@@ -168,6 +169,7 @@ The move is step 9 of milestone 1017, after the contract crates it links and wit
 
 ## Open questions
 
-None for the maintainer. The architect's clearance of this package approves the repository.
-
-Ready for review.
+None for the maintainer. The package is cleared (2026-11-20 UTC, no tag, no publish), and the
+clearance approves the repository, `nifeos/memory_region_heap`, with `publish = false`. The move, in
+step 9 of milestone 1017, waits for `abi`, `address_space_layout` and `user_mode_runtime` to get
+repositories, and it leaves with `subtree_scope` and before `redoxfs`.

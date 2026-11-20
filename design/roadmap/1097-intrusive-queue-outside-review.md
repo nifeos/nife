@@ -47,10 +47,10 @@ milestone reaches delivery.
 - Item 13, one shared test node: Open. It waits for the move.
 - Follow-on, the externalization list: Done. Step 10 of milestone 1017 (the contract crates leave in this order) and
   `crates/externalization-list.txt` name the crate.
-- Follow-on, review clearance and the repository: Open. The package
+- Follow-on, review clearance and the repository: Done (ruled 2026-11-20 UTC, option A). The package
   [`notes/crate-reviews/intrusive-queue.md`](../../notes/crate-reviews/intrusive-queue.md) is
-  written (decision 3). The go to create `nifeos/intrusive_queue`, with no tag and no publish, is
-  the architect's.
+  cleared, and `nifeos/intrusive_queue` is approved with `publish = false`, no tag and no publish.
+  The move is item 10 of milestone 1017.
 
 ## Open decisions
 
@@ -218,12 +218,12 @@ The rules in force, each with its background and prior art, are in
 - Decision 1, the `Send` bound: the maintainer's provisional A, 2026-11-19 (UTC).
 - Decision 2, the seven public names: ratified by the architect, A, 2026-11-19 (UTC). The
   maintainer's provisional ruling of 2026-11-14 (UTC) preceded it.
-- Decision 3, review clearance and the repository: the maintainer's provisional A, 2026-11-19 (UTC).
+- Decision 3, review clearance and the repository: ruled by the architect, A, 2026-11-20 (UTC). The maintainer's provisional A of 2026-11-19 (UTC) preceded it.
 
 ## Follow-on
 
 - **Outstanding.** Every finding marked Open under "Finding status", each checked against the
-  crate's sources on main. The architect's go on the package comes first.
+  crate's sources on main.
 
 ## Done when
 
@@ -253,4 +253,4 @@ The two experiments are in [the appendix](1097-intrusive-queue-outside-review/mi
 
 An outside review of `intrusive_queue` before its first release. Eight findings have landed, the
 `Send` bound and the seven names among them. The move's skeleton, a shared test node and item 9
-remain; the architect's go on the review package comes first.
+remain; the review package is cleared (2026-11-20 UTC).

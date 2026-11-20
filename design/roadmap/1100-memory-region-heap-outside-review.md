@@ -63,7 +63,9 @@ copied-file list (`xtask/src/farm/copied.rs`). No new tool.
   stands; the pins wait on the same steps of milestone 1017.
 - A fork of `talc` if upstream stays silent: Open, and conditional. It is an open decision below.
 - Review package: Done, [memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md).
-  The repository: Open. The go is an open decision below.
+  The review clearance: Done (ruled 2026-11-20 UTC, option A;
+  the architect approved `nifeos/memory_region_heap` with `publish = false`, no tag, no publish). The move stays
+  Open.
 
 ## Open decisions
 
@@ -113,13 +115,18 @@ links the patched source.
 
 Blocks: nothing until the vendor-watch report passes in silence; after that, the first publish.
 
-### Clear the review package and approve the repository
+### Clear the review package and approve the repository (ruled)
+
+Ruled 2026-11-20 (UTC), option A: the architect clears the package, and the clearance creates the
+repository, `nifeos/memory_region_heap`, with `publish = false`. No tag and no publish. The move waits for `abi`,
+`address_space_layout` and `user_mode_runtime` to get repositories and leaves with `subtree_scope`
+and before `redoxfs`.
 
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package; that clearance approves the repository. A package lists every public
 item with its signature, and `script/crate-review-packet` writes it. The package for this crate is
 [memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md), written under the
-recommendation below; clearance stays open. The
+recommendation below. The
 components, the fixtures and the RedoxFS server all depend on it, so it serves several consumers and
 meets the bar for leaving.
 
@@ -274,7 +281,7 @@ The evidence, background, prior art and the options not taken are in
 
 ## Follow-on
 
-- **Outstanding.** The move. The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
+- **Outstanding.** The move, which leaves with `subtree_scope` and before `redoxfs`. The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
   give `abi`, `address_space_layout` and `user_mode_runtime` repositories. The move drops the fuzz
   workspace's `[patch.crates-io]` line for the vendored talc, and the template's `coverage` job
   then measures the host tests for the first time.
