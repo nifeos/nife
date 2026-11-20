@@ -280,13 +280,12 @@ impl<S: PageSource> MemoryRegionHeap<S> {
     /// `Err(`[`Short`]`)` when the budget could not cover it, naming the bytes left unmapped; whatever
     /// was mapped stays usable.
     ///
-    /// For a program that carves its budget last-in first-out (the shell's `--mem` grants, pipes and
-    /// staging regions come back only while they are the budget's newest carve): committing at
-    /// `_start` puts every heap page and its page tables under all of those, so a later grow can
-    /// never land above one and strand it. The alternative, a region split off for the heap, is
-    /// worse: a region that has been split cannot be destroyed until its child is, so the whole
-    /// budget would stay held after the program exits. Milestone 47 (navigation and naming) met
-    /// that first: its shell's kernel tests kept a budget's worth of frames each.
+    /// For a program that carves its budget last-in first-out (grants, pipes and staging regions
+    /// come back only while they are the budget's newest carve): committing at `_start` puts every
+    /// heap page and its page tables under all of those, so a later grow can never land above one
+    /// and strand it. The alternative, a region split off for the heap, is worse: a region that has
+    /// been split cannot be destroyed until its child is, so the whole budget would stay held after
+    /// the program exits.
     ///
     /// Name: ratified 2026-11-14 (UTC) (block 1100 decision A). The return changed from `bool` to
     /// `Result<(), Short>` under the same ruling.

@@ -1,10 +1,10 @@
 //! The memory-region-backed heap, a [`GlobalAlloc`] paid from the process's own memory region
-//! (milestone 27 (Rust `std` on the native ABI)). A memory region is the budget of pages a
-//! process was handed; the kernel's own word for its capability is "untyped". Pages are mapped out
+//! on a capability microkernel. A memory region is the budget of pages a process was handed; the
+//! kernel's own word for its capability is "untyped". Pages are mapped out
 //! of it one at a time and given to the allocator, so the region is what pays for the heap, the
 //! heap lives at one virtual range the program picks, and nothing else supplies memory.
 //!
-//! A program declares it (see notes/heap.md):
+//! A program declares it:
 //! ```ignore
 //! #[global_allocator]
 //! static HEAP: memory_region_heap::MemoryRegionHeap = memory_region_heap::MemoryRegionHeap::new();
@@ -41,6 +41,10 @@
 
 #![no_std]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 mod growth;
 mod heap;
 #[cfg(kani)]
@@ -48,7 +52,8 @@ mod verification;
 
 pub use heap::{MemoryRegionHeap, MemoryRegionPages, PageSource, Refusal, Short, WiringRefusal};
 
-/// The suggested heap base: 1 GiB, the start of the address-space map's heap band (milestone 206 (a program image has under 896 KiB)).
+/// The suggested heap base: 1 GiB, the start of the address-space map's heap band, which sits above
+/// any program image under 896 KiB.
 /// A convention, not a law; a program with its own layout passes its own base to [`initialize`],
 /// and one that does should still keep it inside `address_space_layout::HEAP`.
 ///
