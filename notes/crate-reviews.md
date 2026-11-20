@@ -72,15 +72,19 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`universal_serial_bus`](crate-reviews/universal-serial-bus.md) (`usb` in this tree) | 3 | names for the architect; the move waits for items 1, 2, 4 and 10 of milestone 1111 (what an outside maintainer would fix before its first release) and the work of its Decisions 2 and 3 |
 | [`generational_table`](crate-reviews/generational-table.md) | 4 | cleared to move; repository exists |
 | [`non_volatile_memory_express`](crate-reviews/non-volatile-memory-express.md) | 5 | cleared to move; repository exists |
+| [`domain_name_system`](crate-reviews/domain-name-system.md) | 5 | ready for review |
 | [`e1000e`](crate-reviews/e1000e.md) | 6 | cleared to move; repository exists |
 | [`designware_ethernet`](crate-reviews/designware-ethernet.md) | 7 | cleared to move; repository exists |
 | [`designware_mobile_storage`](crate-reviews/designware-mobile-storage.md) | 8 | cleared to move; repository exists |
 | [`jh7110_clock_and_reset`](crate-reviews/jh7110-clock-and-reset.md) | 10 | cleared to move; the move waits for the template gates |
 | [`block_roster_contract`](crate-reviews/block-roster-contract.md) | contract | ready for review |
+| [`capability_manifest_note`](crate-reviews/capability-manifest-note.md) | contract | ready for review |
 | [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | ready for the architect's review |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
+| [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | ready for review |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |
-| [`environment_contract`](crate-reviews/environment-contract.md) | contract | names for the architect, then clearance |
+| [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | ready for review |
+| [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |

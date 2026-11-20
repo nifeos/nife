@@ -43,10 +43,10 @@ milestone reaches delivery.
 - Item 7, a stranger cannot place the note: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 8, the only example does not compile: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - Item 9, private lengths carry a unit: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- Item 9, public lengths carry a unit: Ruled (decision 2, maintainer, provisional, 2026-11-14 UTC,
+- Item 9, public lengths carry a unit: Ruled (decision 2, ratified 2026-11-19 UTC,
   [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `INTERFACE_RECORD` (`src/lib.rs`
   line 111), `interfaces_len` (line 127) and `interfaces_note_len` (line 323) keep their names.
-- Item 10, `Declared` names a state: Ruled (decision 2, maintainer, provisional, 2026-11-14 UTC,
+- Item 10, `Declared` names a state: Ruled (decision 2, ratified 2026-11-19 UTC,
   [#3589](https://github.com/nifeos/nife/pull/3589)). Not built: `struct Declared` (`src/lib.rs`
   line 117) is not yet `DeclaredInterface`.
 - Item 11, no fuzz target: Open. The opt-in is a per-repository choice, off by default, made at the
@@ -58,64 +58,20 @@ milestone reaches delivery.
 - Item 15, the triaged timeouts travel nowhere: Open. The move carries the three rows into
   `.github/mutants-exempts`.
 - Decision 1, the owner string: Done, [#3575](https://github.com/nifeos/nife/pull/3575).
-- Decision 2, ratifying the twenty public names: Open. Calef's (see "Ratify the twenty public
-  names" below).
+- Decision 2, ratifying the twenty public names: Ruled 2026-11-19 UTC. The `Name:` blocks read
+  ratified when items 9 and 10 land.
 - Decision 3, the crate name: Done, ruled 2026-11-14 UTC with nothing to build; the crate's `Name:`
   block records it ([#3589](https://github.com/nifeos/nife/pull/3589)).
 - BUGS, the `NIFE_INTERFACES_NOTE` static: Open. `src/lib.rs` line 381; two-way, so the maintainer
   rules its new name provisionally and a lane renames it before the move.
-- Follow-on, review clearance and the repository: Open. Calef's (see "Review clearance and the
-  repository" below).
+- Decision 4, review clearance and the repository: Ruled 2026-11-19 UTC (maintainer, provisional).
+  The go to create the repository follows the renames.
+- Follow-on, the repository: Open. The rename lane carries items 9 and 10, and the go to create
+  `nifeos/interfaces_note` (no tag, no publish) follows it.
 
 ## Open decisions
 
-### Ratify the twenty public names
-
-Background. Every `Name:` block in the crate reads `provisional`, and `script/crate-standalone`
-step 0 refuses to move a crate whose names are not ratified. The names become one-way at the first
-tag that nife pins, because every program built against the crate spells them. The maintainer
-ruled four renames provisionally (decision 2 in
-[the appendix](1096-interfaces-note-outside-review/ruled-decisions.md)): `INTERFACE_RECORD_BYTES`,
-`descriptor_bytes`, `note_bytes` and `DeclaredInterface`. Sixteen names keep their spelling. Only
-calef ratifies.
-
-Recommendation: A, ratify the twenty as decision 2 leaves them, once the four renames land.
-
-- A. Ratify the twenty with the four renames, no alias of the old spellings.
-- B. Ratify the sixteen now and the four once they land.
-- C. Send one or more back, named, for a new provisional spelling.
-
-Door: one-way at the tag; ratifying is what lets the move begin.
-
-Prior art. `goblin::elf::note::Note` and `object::read::elf::Note` name the record for what it is,
-and std names an element count `len` and a byte count `size_of`. Where nife differs: the unit is in
-the name and not only in a doc comment. Example: under A,
-`let bytes: [u8; descriptor_bytes(3)] = encode_interfaces(&list);` reads as 44 bytes for three
-records.
-
-Blocks: the move.
-
-### Review clearance and the repository
-
-Background. Clearing a crate review is the go to create its repository under nifeos. This crate
-has no review package in `notes/crate-reviews/`; this milestone is its review. It leaves last in
-step 3 of milestone 1017 (the contract crates leave in this order), after the three crates ahead of
-it.
-
-Recommendation: A, clear once the four renames land and calef ratifies the names, with no tag and
-no publication.
-
-- A. Clear after the renames and the ratification.
-- B. Clear now, and let the move wait for them.
-- C. Hold until a dry run also stages the move's own items (1 to 5, 11, 15).
-
-Door: one-way: a repository that exists has a name others link to.
-
-Prior art. In this tree `generational_table`, `block_roster` and `file_allocation_table` each moved
-on a cleared review with no tag. Where nife differs: nothing outside nife links the crate. Example:
-under A, `nifeos/interfaces_note` opens with the README of item 2, and nife pins it by revision.
-
-Blocks: the move.
+None. The rename lane carries items 9 and 10, and the go to create the repository follows it.
 
 ## Goal
 
@@ -224,11 +180,15 @@ The rules in force, with their background and prior art, are in
 
 - Decision 1, the owner string: ruled 2026-11-14 (UTC). The owner and the section name keep their
   bytes, each line marked `// wire literal`, and prose says "the owner string".
-- Decision 2, the public names: the maintainer's provisional ruling of 2026-11-14 (UTC).
-  `INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface`, with no
-  alias; sixteen names keep their spelling.
+- Decision 2, the public names: ruled 2026-11-19 (UTC). The architect ratified the twenty names with four
+  renames, `INTERFACE_RECORD_BYTES`, `descriptor_bytes`, `note_bytes` and `DeclaredInterface`, and
+  no alias; sixteen names keep their spelling. Ratification takes effect for the `Name:` blocks
+  when the renames land.
 - Decision 3, the crate name: ruled 2026-11-14 (UTC). The crate and repository take
   `interfaces_note`.
+- Decision 4, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC). Clear once
+  the four renames land; the architect then gives the go to create `nifeos/interfaces_note`, with
+  no tag and no publish.
 
 ## Prior art
 
@@ -237,7 +197,8 @@ The comparison with nearby work is in [the appendix](1096-interfaces-note-outsid
 ## Follow-on
 
 - **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
-  the crate's sources on main.
+  the crate's sources on main. The rename lane builds items 9 and 10; the go to create the
+  repository follows it.
 
 ## Done when
 
@@ -261,6 +222,7 @@ The checks are in [the appendix](1096-interfaces-note-outside-review/done-when.m
 ## Index row
 
 An outside review of `interfaces_note` before its move. Eight findings are done. The owner string
-keeps its bytes behind a marker, and calef ratified the crate name. The maintainer ruled four
-renames provisionally, and no lane has built them. The move's own work remains: the manifest, README, citations, prose,
-fuzz opt-in and mutation exemptions. Ratifying the public names and review clearance are calef's.
+keeps its bytes behind a marker, and calef ratified the crate name. The architect ratified the twenty public
+names with four renames, and no lane has built them yet. The move's own work remains:
+the manifest, README, citations, prose, fuzz opt-in and mutation exemptions. Review clearance
+follows the renames, and the maintainer asks for the go to create the repository then.
