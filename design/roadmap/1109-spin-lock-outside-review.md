@@ -69,6 +69,12 @@ proof the crate has runs somewhere after the move.
 
 None.
 
+The review package is cleared (2026-11-20 UTC). The repository `nifeos/test_and_set_lock` is approved
+with `publish = false`, no tag and no publish. `get_mut` and `into_inner` are ratified, in the
+standard library's spelling and meaning. The crate's first tag waits for `tools/host_reordering_litmus`
+(or an equivalent) to run on real Arm and RISC-V hardware, not QEMU TCG, with the result recorded in
+the package, because loom checks C11 only. That run is hardware work and blocks no merge.
+
 The crate is `test_and_set_lock`: the package, the library and the repository it moves to. The
 architect ruled on 2026-11-19 (UTC) to rename it from `spin_lock` before the move, so the
 repository, the package and the registry agree from the first commit. crates.io reads `_` and `-`

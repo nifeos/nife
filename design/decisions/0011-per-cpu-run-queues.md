@@ -29,7 +29,7 @@ load-balancing, and migration costs an IPI, neither of which matters on a 4-core
 Two earlier decisions paid forward, and the starting point is cleaner for it:
 
 - `IrqSafeMutex` is already a real cross-core spinlock. Its inner primitive is
-  `spin_lock::SpinLock` (`crates/test_and_set_lock`), which provides mutual exclusion and the
+  `test_and_set_lock::SpinLock` (`crates/test_and_set_lock`), which provides mutual exclusion and the
   acquire/release fences on lock and unlock. Anything touched under a lock is already correct
   across cores. §9 (locking)'s "every kernel lock is an `IrqSafeMutex`" was SMP groundwork we
   didn't label as such.

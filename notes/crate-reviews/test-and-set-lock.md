@@ -1,13 +1,13 @@
 # Review package: `test_and_set_lock`
 
-*Name: provisional, minted by lane 1109-test-and-set-lock. The `test_and_set_lock` package of
+*Name: ratified 2026-11-19 (UTC). The `test_and_set_lock` package of
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
 The architect reads this to clear the crate for its move to its own repository, as part of
 [milestone 1109 (what an outside maintainer would fix before it leaves)](../../design/roadmap/1109-spin-lock-outside-review.md).
-It describes the crate as `main` plus this branch leaves it. This package ratifies nothing and
-clears nothing.
+It describes the crate as `main` leaves it. The architect cleared it on 2026-11-20 (UTC): the
+repository `nifeos/test_and_set_lock` is approved with `publish = false`, no tag and no publish.
 
 ## In one paragraph
 
@@ -51,8 +51,7 @@ mutation triage and survivor rows, and the notes that describe the kernel's lock
 library overlay does not name it. Four design records name the old spelling and were left alone:
 `design/decisions/0011-per-cpu-run-queues.md` and `design/decisions/0046-dependency-rule.md` cite
 `crates/spin_lock`, and `0009-irq-safe-locking.md` names the Linux call `spin_lock_irqsave`.
-Section 11 and section 46 want a pointer to the new path; this lane did not edit
-`design/decisions/`.
+Section 11 names the new path.
 
 What references back into nife from the crate: the module comment and `Cargo.toml` cite
 `notes/interleaving.md`, `notes/memory-ordering.md`, `script/interleaving-check` and
@@ -115,14 +114,14 @@ Loom judges against C11, not the Arm or RISC-V model, and the crate's `BUGS` say
 
 ## Names
 
-The ruling renames the crate and nothing inside it. This package ratifies none of the names below.
+The ruling renames the crate and nothing inside it.
 
 | item | kind | status | proposal |
 |---|---|---|---|
 | `test_and_set_lock` | crate, package, repository | ratified by the architect's ruling on 2026-11-19 (UTC), recorded in the crate's `Name:` block and in milestone 1109 | none |
 | `SpinLock`, `SpinLockGuard` | types | ratified 2026-10-26 (UTC), on #2760 (milestone 953 (the kernel's lock proves what it takes from spin)) | none; the type keeps its spelling, so the crate name and the type name differ on purpose |
 | `SpinLock::new`, `lock`, `try_lock`, `force_unlock` | functions | ratified 2026-10-26 (UTC), on #2760 | none |
-| `get_mut`, `into_inner` | functions | provisional, minted 2026-11-14 (UTC), in the standard library's spelling and meaning | keep; no rename is proposed |
+| `get_mut`, `into_inner` | functions | ratified 2026-11-20 (UTC), in the standard library's spelling and meaning | none |
 
 No later rule contradicts a ratified name. `lock` and `try_lock` are the standard library's
 spellings, and no name carries a unit or an abbreviation.
@@ -136,8 +135,15 @@ spellings, and no name carries a unit or an abbreviation.
 | Add one `.github/mutants-exempts` line for the `pause` survivor, with the triage's reason. | move lane |
 | Ship `falsifications/interleavings.two_takers_are_exclusive_and_ordered.patch` and a loom form of the template's falsify gate (item 7 of the milestone). | move lane, with `nifeos/crate-workflows` |
 | Convert the three dependents to `git` and `rev` with `version = "0.1.0"`; keep `weaken-spin.sh` and `script/interleaving-check` pointed at the pinned checkout. | move lane |
-| Rewrite `crates/spin_lock` in `design/decisions/0011-per-cpu-run-queues.md` and `0046-dependency-rule.md` to the new path. | an architect, since the lane does not edit `design/decisions/` |
 | Run the stranger test, the template's workflows and the first weekly mutation run in the new repository. | move lane |
+
+## What still blocks the move
+
+Nothing blocks the repository. One condition holds the first tag, not the repository: before the
+crate's first tag, `tools/host_reordering_litmus` (or an equivalent) must run on real Arm and RISC-V
+hardware, not QEMU TCG, and its result is recorded in this package. Loom checks C11 only, so the
+hardware run is the one check of the lock's ordering against the machines that run it. A bench run
+is hardware work and never blocks a merge.
 
 ## Open questions
 
@@ -145,4 +151,5 @@ None.
 
 ## Recommendation
 
-Ready for review.
+Cleared on 2026-11-20 (UTC). The go creates `nifeos/test_and_set_lock` with `publish = false`, no
+tag and no publish. The first tag waits for the hardware litmus run above.
