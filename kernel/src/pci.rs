@@ -672,7 +672,10 @@ fn find_virtual_io_bdf(
 /// 3. parse the virtio vendor capabilities and resolve them against the assigned BARs;
 /// 4. only then set Memory-Space Enable, and Bus-Master last: DMA permission is granted at the
 ///    final moment, after the transport the confinement layer owns is fully described.
-fn bring_up(bus_device_function: BusDeviceFunction, device_type: u32) -> Option<PciVirtualIoDevice> {
+fn bring_up(
+    bus_device_function: BusDeviceFunction,
+    device_type: u32,
+) -> Option<PciVirtualIoDevice> {
     let mut bars = read_bars(bus_device_function);
     if !place_bars(bus_device_function, &mut bars) {
         return None;
