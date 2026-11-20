@@ -314,7 +314,8 @@ version = "0.1.0"
 
 [[package]]
 name = "counter_frequency_contract"
-version = "0.1.0"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
 
 [[package]]
 name = "cpu_set"

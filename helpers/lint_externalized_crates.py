@@ -46,7 +46,6 @@ PENDING = "a text or value hit in the crate on the day the lint was added; rewor
 WAIVERS = {
     "byte_sink_contract": (1, PENDING),
     "capability_manifest_note": (2, PENDING),
-    "counter_frequency_contract": (1, PENDING),
     "current_cpu_contract": (3, PENDING),
     "domain_name_resolution_contract": (54, PENDING),
     "domain_name_system": (12, PENDING),

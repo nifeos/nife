@@ -64,8 +64,8 @@ pub(crate) mod resolveproto;
 pub(crate) mod runtimeproto;
 // The timebase page (milestone 184; riscv64 joined 2026-09-21): where `rt::cntfrq` reads the rate
 // on the two architectures that have no register stating it. Generated verbatim from
-// `crates/counter_frequency_contract/src/lib.rs` by the same xtask step, so the page's address and
-// layout cannot drift from the kernel that writes it. Compiled only where it is read; aarch64
+// `src/lib.rs` of the `counter_frequency_contract` package by the same xtask step, so the page's
+// address and layout cannot drift from the kernel that writes it. Compiled only where it is read; aarch64
 // states its rate in `CNTFRQ_EL0`. `build_page` is the kernel's half.
 #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
 #[allow(dead_code)]

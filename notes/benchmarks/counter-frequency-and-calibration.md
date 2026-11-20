@@ -7,7 +7,7 @@ them. Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it
 
 ## The page and its bounds
 
-`crates/counter_frequency_contract` defines the page that tells a process how many counter ticks
+`counter_frequency_contract` (the repository `nifeos/counter_frequency_contract`) defines the page that tells a process how many counter ticks
 make a second where no register says so. `x86_64`'s TSC rate comes from `CPUID` leaf `0x15` or from
 a measurement, and `riscv64`'s is `/cpus/timebase-frequency` in a device tree no process can read.
 Either way the kernel learns it once, at boot. A hardcoded rate is not an answer: radon's `time`

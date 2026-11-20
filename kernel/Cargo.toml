@@ -84,7 +84,7 @@ std_runtime_contract = { version = "0.1.0", path = "../crates/std_runtime_contra
 # TSC rate into a frame once, at boot, and `kernel::user::load` maps it read-only into every
 # x86_64 process; `user_mode_runtime::cntfrq` is the reader, through this same crate, so neither side keeps
 # its own copy of the page's layout or its fixed address.
-counter_frequency_contract = { version = "0.1.0", path = "../crates/counter_frequency_contract" }
+counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 # The block-device roster (milestone 57). The kernel writes the page and the surveyor reads it, and
 # the kernel's own tests read it back through this crate rather than by trusting the count the
