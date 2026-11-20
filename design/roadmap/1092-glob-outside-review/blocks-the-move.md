@@ -25,13 +25,13 @@ S for the rename, since the crate is small and has three dependents.
 
 #### P0-2. Seven public names carry no provenance and are not ratified
 
-`Dot` (and its variants `Special` and `Ordinary`), `matches`, `matches_with`, `has_magic`,
-`literal`, `match_steps` and `cost_bound` have no `Name:` block; `helpers/name_release.py --draft
-byte_glob` reports "no block" for each, and `design/module-block-baseline.txt` lines 3146 to 3158 hold
-them as baseline violators. The move strips `Name:` blocks, so whatever is not ratified in a review
-package before the move leaves the tree as an unratified public API. The names themselves are mostly
-right; Decision 2 in the milestone decides them, provisionally, with one change. Evidence:
-`crates/byte_glob/src/lib.rs` lines 33, 76, 91, 102, 118, 140 and 236. Two-way before the first tag. S.
+`LeadingDot` (and its variants `Special` and `Ordinary`), `matches`, `matches_with`, `has_magic`,
+`literal`, `match_steps` and `cost_bound` had no `Name:` block; `helpers/name_release.py --draft
+byte_glob` reports "no block" for each. The move strips `Name:` blocks, so whatever is not ratified
+in a review package before the move leaves the tree as an unratified public API. Decision 2 in the
+milestone decides them, provisionally, with one change: the enum is `LeadingDot` (not `Dot`), and
+the rename is built. The review package asks the architect to ratify the seven. Two-way before the
+first tag. S.
 
 #### P0-3. The integration test links two crates that do not leave with it
 

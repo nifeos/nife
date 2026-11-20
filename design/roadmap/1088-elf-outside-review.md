@@ -61,9 +61,10 @@ decisions below and the release steps follow.
 - Item 1 (P0), shipped text cites this tree: Done,
   [#3642](https://github.com/nifeos/nife/pull/3642). The provisional `Name:` blocks that remain go
   in the move commit.
-- Item 2 (P0), fuzz seeds and target: Open. The seeds live in `tests/fixtures/`; the `elf_parse`
-  target and its `fuzz/Cargo.toml` entry are still in this repository's fuzz workspace and move to
-  the new repository's `fuzz/`, opted in since the crate has no `unsafe`.
+- Item 2 (P0), fuzz seeds and target: Open. The seeds live in `tests/fixtures/`, and the target
+  cites nothing in this tree. The `elf_parse` target and its `fuzz/Cargo.toml` entry are still in
+  this repository's fuzz workspace and move to the new repository's `fuzz/`, opted in since the
+  crate has no `unsafe`.
 - Item 3 (P0), manifest and repository files: Open. The manifest states every key as a literal with
   `rust-version` 1.88, and the license files are in the crate
   ([#3642](https://github.com/nifeos/nife/pull/3642)); the scaffold's `CHANGELOG.md`,
@@ -115,8 +116,8 @@ decisions below and the release steps follow.
   All five refusals stay, the README lists them as policy, and the page size is an input.
 - D3, the public names: Done, [#3642](https://github.com/nifeos/nife/pull/3642).
 - The crate name: Done, [#3595](https://github.com/nifeos/nife/pull/3595). Ruled 2026-11-14 UTC.
-- Review package: Open. `notes/crate-reviews/` has no `static-elf.md`; it is the first step before
-  the move, and it carries the name draft.
+- Review package: Done. [`notes/crate-reviews/static-elf.md`](../../notes/crate-reviews/static-elf.md)
+  lists the identity, the dependents, the checks and every public name, all provisional.
 - Review clearance and name ratification: Open. Under Open decisions.
 
 ## Open decisions
@@ -133,9 +134,9 @@ the crate's own is provisional: `Elf`, `Segment::virtual_address`, `PageBytes`,
 `Elf::parse_for_machine`, the three machine constants, `NATIVE_MACHINE` and the rest. A name is
 cheap to change while only this tree spells it, and a one-way door once a release does.
 
-Recommendation: A, once the review package exists.
+Recommendation: A.
 
-- A. Clear the review once a lane writes its package: ratify the names as the package lists them,
+- A. Clear the review of the package: ratify the names as it lists them one at a time,
   and create `nifeos/static_elf` as a `publish = false` repository. The move, the stranger run and
   the first weekly mutation run follow.
 - B. Create the repository but leave the names provisional until the release review. The move
@@ -212,6 +213,12 @@ Each decision's background, options and prior art are in
   package name, with no `package =` rename and no `doc(alias)` of the old spelling. The repository,
   when the crate leaves, is `nifeos/static_elf`. The type `Elf` and every other public name keep
   their spelling, and the notes about the file format keep theirs.
+- `static_elf` stays this project's own code, with no switch to the `elf` or `object` crates.
+  Ruled 2026-11-19 (UTC), option A, on the measurements in
+  [`notes/crate-reviews/static-elf-vs-dependencies.md`](../../notes/crate-reviews/static-elf-vs-dependencies.md).
+  The ruling is open to revisit on either of two triggers: `elf` publishes a release with the
+  fixes and accepts our harnesses, or `object` offers a build that needs no allocator. Either would
+  come back as a new ruling under rule 6.
 - The crate keeps `static_elf`, not `static_elf64`. Ruled 2026-11-19 (UTC): no 32-bit target exists,
   and the crate refuses ELFCLASS32 the way it refuses any other unsupported file. A future 32-bit
   crate would take the name `static_elf32`.
@@ -242,8 +249,8 @@ The checks are in [the appendix](1088-elf-outside-review/done-when.md).
 ## Index row
 
 An outside reading of `static_elf` (then named `elf`) before it leaves. The crate leaves on the
-shared ground: the kernel links it and must follow it out. Of 22 findings and steps, 14 are done.
-D1 has a ruling the crate does not yet follow, since `NATIVE_MACHINE` stays public. Six are open:
-the move's fuzz target and scaffold, the stranger run, the four mutation timeouts, the LLVM padding
-check and the review package. One decision is open: the review's clearance, which creates
+shared ground: the kernel links it and must follow it out. Of 22 findings and steps, 15 are done.
+D1 has a ruling the crate does not yet follow, since `NATIVE_MACHINE` stays public. Five are open:
+the move's fuzz target and scaffold, the stranger run, the four mutation timeouts and the LLVM
+padding check. One decision is open: the review's clearance, which creates
 `nifeos/static_elf` and ratifies its names.

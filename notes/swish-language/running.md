@@ -4,7 +4,7 @@
 
 [`components/src/swish/running.rs`](../../components/src/swish/running.rs) turns a planned line into
 messages on the spawn endpoint. This page carries the design its doc comments link to. The wire
-itself is `spawnproto`'s, in `crates/grant_plan`.
+itself is `spawn_protocol`'s, in `crates/grant_plan`.
 
 ## The words grant
 
@@ -67,7 +67,7 @@ segment larger than one page is refused for the same fail-closed reason.
 `dir_grant` builds the two `START` triples for a program like `rm`: the caretaker's, then the
 program's. The caretaker is told the directory and the `filesystem_contract::dir` rights to ask for.
 The program is told the operand and the options that were typed. Nothing between the shell and the
-process decodes either triple, so `spawnproto` carries them without linking the filesystem contract.
+process decodes either triple, so `spawn_protocol` carries them without linking the filesystem contract.
 The order is the wire's. Backwards, it would start `rm` with a directory's name and a caretaker with
 a file's.
 

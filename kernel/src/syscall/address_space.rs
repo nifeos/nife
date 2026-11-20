@@ -99,7 +99,7 @@ fn address_space_layout_into(
                         if !frame.rights.allows(Rights::READ) {
                             return Err(Error::NotPermitted);
                         }
-                        page_tables::Flags::user_rodata()
+                        page_tables::Flags::user_read_only_data()
                     }
                 };
                 (phys, count.get(), flags)
@@ -111,8 +111,8 @@ fn address_space_layout_into(
         let Some(last_va) = run_end_virtual_address(va, count) else {
             return Err(Error::BadPointer);
         };
-        if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va)
-            || !page_tables::is_user_page_va::<crate::arch::mmu::Format>(last_va)
+        if !page_tables::is_user_page_virtual_address::<crate::arch::mmu::Format>(va)
+            || !page_tables::is_user_page_virtual_address::<crate::arch::mmu::Format>(last_va)
         {
             return Err(Error::BadPointer);
         }
@@ -167,7 +167,7 @@ fn address_space_layout_into(
 /// order `MAP_INTO` takes them, so the two are ordered whole on one `va`.
 #[inline(never)]
 fn address_space_unmap(name: u64, va: u64) -> Result<i64, Error> {
-    if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va) {
+    if !page_tables::is_user_page_virtual_address::<crate::arch::mmu::Format>(va) {
         return Err(Error::BadPointer);
     }
     crate::user::with_user_address_space(name, |space| {

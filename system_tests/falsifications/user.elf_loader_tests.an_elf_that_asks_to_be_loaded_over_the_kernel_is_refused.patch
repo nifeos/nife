@@ -26,17 +26,17 @@ claim is stated in, with nothing upstream. A load that succeeds returns `Ok`, `e
 Replayed on all three ISAs. The hunk is portable code, so one patch serves every leg. On 2026-10-03 (UTC), `cargo xtask test --arch riscv64 --test an_elf_that_asks_to_be_loaded_over_the_kernel_is_refused` and the same with `--arch x86_64` both came back red at `system_tests/src/user/tests.rs:415`, the assertion this record predicts, which is where aarch64 was already red.
 
 diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
-index 57461d545..2996e48db 100644
+index a7b5ebb10..876e9dbd9 100644
 --- a/crates/page_tables/src/mapper.rs
 +++ b/crates/page_tables/src/mapper.rs
-@@ -99,10 +99,6 @@ where
-     pub fn map(&mut self, va: u64, pa: u64, flags: Flags) -> Result<(), MapError> {
+@@ -191,10 +191,6 @@ where
+     ) -> Result<(), MapError> {
          // The hardware selects the table set from the top bits before it touches an index, so
          // mapping a high address into the low tables would build a mapping the CPU never consults.
--        if !F::is_in_half(self.half, va) {
+-        if !F::is_in_half(self.half, virtual_address) {
 -            return Err(MapError::WrongHalf);
 -        }
 -
-         if !va.is_multiple_of(PAGE_SIZE) || !pa.is_multiple_of(PAGE_SIZE) {
+         if !virtual_address.is_multiple_of(PAGE_SIZE) || !physical_address.is_multiple_of(PAGE_SIZE)
+         {
              return Err(MapError::Misaligned);
-         }

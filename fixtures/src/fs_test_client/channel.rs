@@ -37,7 +37,7 @@ pub(crate) const WINDOW: MappedWindow =
 /// Copy `bytes` into the shared page (a name to open, or data to write).
 pub(crate) fn put_page(bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        WINDOW.write_u8(i as u64, b);
+        WINDOW.write::<u8>(i as u64, b);
     }
 }
 
@@ -45,14 +45,14 @@ pub(crate) fn put_page(bytes: &[u8]) {
 /// rename's source and destination names sit back to back.
 pub(crate) fn put_page_at(off: usize, bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        WINDOW.write_u8((off + i) as u64, b);
+        WINDOW.write::<u8>((off + i) as u64, b);
     }
 }
 
 /// Read `n` bytes out of the shared page (a completed read landed there).
 pub(crate) fn get_page(n: usize, out: &mut [u8]) {
     for (i, b) in out.iter_mut().take(n).enumerate() {
-        *b = WINDOW.read_u8(i as u64);
+        *b = WINDOW.read::<u8>(i as u64);
     }
 }
 

@@ -7,7 +7,7 @@ reachable from nothing, and teardown (which frees what the tables reach) never s
 most likely shape of a future "make a failed map leave no trace" change.
 
 Expected to fail: assertion (1), "table frame(s) handed out and unreachable from the root", first at
-`map_block(Size2MiB)` with allocation 1 failed on aarch64 (the table at level 1 is orphaned).
+`map_block(TwoMebibytes)` with allocation 1 failed on aarch64 (the table at level 1 is orphaned).
 
 `script/falsifications --sweep page_tables` replays it, weekly and per pull request, since milestone
 742 (every test is falsified as routine). By hand, the same thing is:
@@ -19,17 +19,19 @@ Expected to fail: assertion (1), "table frame(s) handed out and unreachable from
 Run on 2026-10-04 (UTC), patagonia: red as predicted, green again after the revert.
 
 diff --git a/crates/page_tables/src/mapper.rs b/crates/page_tables/src/mapper.rs
+index a7b5ebb10..14aa6105f 100644
 --- a/crates/page_tables/src/mapper.rs
 +++ b/crates/page_tables/src/mapper.rs
-@@ -255,13 +255,21 @@ where
+@@ -269,14 +269,22 @@ where
          let leaf_level = F::LEVELS - 1 - size.levels_above_bottom();
  
-         let mut table_pa = self.root;
+         let mut table_physical_address = self.root;
 +        let mut first: Option<*mut u64> = None;
          for level in 0..leaf_level {
-             let i = F::index(va, level);
-             // SAFETY: `table_pa` is a page-aligned table, per the type's contract.
-             let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
+             let i = F::index(virtual_address, level);
+             // SAFETY: `table_physical_address` is a page-aligned table, per the type's contract.
+             let entry =
+                 unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
              if !F::is_present(*entry) {
 -                let new = self.fresh_table()?;
 +                let Ok(new) = self.fresh_table() else {

@@ -180,7 +180,7 @@ pub(super) fn spawn_progenitor_shaped(
             .map_physical(
                 INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
                 initial_ramdisk_start + i * FRAME_SIZE,
-                Flags::user_rodata(),
+                Flags::user_read_only_data(),
                 crate::revoke::PageMapSource::NoCapability,
             )
             .unwrap_or_else(|e| panic!("could not map the initial ramdisk into {name}: {e:?}"));

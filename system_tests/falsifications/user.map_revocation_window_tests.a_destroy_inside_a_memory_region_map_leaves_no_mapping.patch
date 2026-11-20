@@ -31,7 +31,7 @@ diff --git a/kernel/src/syscall/memory_region.rs b/kernel/src/syscall/memory_reg
 --- a/kernel/src/syscall/memory_region.rs
 +++ b/kernel/src/syscall/memory_region.rs
 @@ -74,8 +74,6 @@
-     if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va) {
+     if !page_tables::is_user_page_virtual_address::<crate::arch::mmu::Format>(va) {
          return Err(Error::BadPointer);
      }
 -    #[cfg(feature = "system_tests")]

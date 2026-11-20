@@ -96,7 +96,7 @@ where
         let result = if c.guarded {
             guarded_direct_map(m, c.lo, c.hi, c.flags)
         } else if c.flags.is_device() {
-            direct_map(m, c.lo, c.hi, c.flags, PageSize::Size4KiB)
+            direct_map(m, c.lo, c.hi, c.flags, PageSize::FourKibibytes)
         } else {
             direct_map(m, c.lo, c.hi, c.flags, largest_leaf())
         };
@@ -136,7 +136,7 @@ where
         ".rodata",
         rodata_start(),
         rodata_end(),
-        Flags::kernel_rodata(),
+        Flags::kernel_read_only_data(),
     )?;
     va(".data/.bss", data_start(), bss_end(), Flags::kernel_data())?;
 

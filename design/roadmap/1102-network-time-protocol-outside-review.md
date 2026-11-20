@@ -36,13 +36,15 @@ for the crate's own reasons.
   stranger runs the README before the first tag.
 - P0-3, the contract-crate gate: Open. The crate-root documentation opens "The NTPv4 wire format
   (RFC 5905)", and the template's kept-name form trips clippy's `doc_markdown` here.
-- P0-4, `PACKET_LEN`: Ruled (Decision 2, maintainer, provisional, 2026-11-14 UTC). Not built: the
-  constant is still `PACKET_LEN`.
-- P0-5, British spellings in names: Ruled (Decision 2). Not built: the low-bit randomizer,
-  the `Reject` variant for leap indicator 3 and one harness name keep the British form.
-- P0-6, acronyms at first use: Open. `IPv4`, `DOWN` and `MAXSTRAT` still fail the template's gate.
-- P0-7, the dependency on `clock_contract`: Ruled (Decision 1, maintainer, provisional,
-  2026-11-14 UTC). Not built: the crate still imports `NANOSECONDS_PER_SECOND` from it.
+- P0-4, `PACKET_LEN`: Done (Decision 2, maintainer, provisional, 2026-11-14 UTC). The constant is
+  `PACKET_BYTES`.
+- P0-5, British spellings in names: Done (Decision 2). The low-bit randomizer is gone, the `Reject`
+  variant for leap indicator 3 is `Unsynchronized` and the harness is
+  `parse_then_serialize_is_the_identity`.
+- P0-6, acronyms at first use: Done. The crate-root documentation expands each acronym where it
+  first appears.
+- P0-7, the dependency on `clock_contract`: Done (Decision 1, maintainer, provisional,
+  2026-11-14 UTC). The crate keeps a private `NANOSECONDS_PER_SECOND` and has no dependencies.
 - P1-8, shipped text that points back into nife: Open, the move's.
 - P1-9, safe Rust: Open. `#![forbid(unsafe_code)]` landed in
   [#3567](https://github.com/nifeos/nife/pull/3567); the new repository's fuzz opt-in and target
@@ -59,39 +61,39 @@ for the crate's own reasons.
 - P1-15, a proof that `accept` ever accepts: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-16, `Timestamp::fraction`: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-17, the low-entropy items: Ruled (Decision 3, maintainer, provisional, 2026-11-14 UTC). Not
-  built: `Query::new` and the low-bit randomizer are still public.
-- P2-18, `Short`'s public field: Ruled (Decision 2). Not built: `Short` is still
-  `pub struct Short(pub u32)`.
+- P2-17, the low-entropy items: Done (Decision 3, maintainer, provisional, 2026-11-14 UTC).
+  `Query::new` and the low-bit randomizer no longer exist; `Query::with_nonce` is the only constructor.
+- P2-18, `Short`'s public field: Done (Decision 2). `ShortFormat` keeps its field private, with
+  `from_bits` and `bits`.
 - P2-19, the `dest` parameter: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-20, drifted notes: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-21, the `Reject` order claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-22, `abs_ticks`: Ruled (Decision 2). Not built: `abs_ticks` is still public.
-- Decision 1, `clock_contract`: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: item 7.
-- Decision 2, the public names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: items
-  4, 5, 18 and 22, and the `UNIX_*` constants, `DEFAULT_POLL` and `Short` keep their names.
-- Decision 3, the low-entropy items: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built:
-  item 17.
+- P2-22, `abs_ticks`: Done (Decision 2). `abs_ticks` no longer exists.
+- Decision 1, `clock_contract`: Done (maintainer, provisional, 2026-11-14 UTC). Item 7 has landed.
+- Decision 2, the public names: Done (maintainer, provisional, 2026-11-14 UTC). Items 4, 5, 18 and
+  22 landed, with the `UNIX_*` constants, `DEFAULT_POLL_EXPONENT` and `ShortFormat` renamed.
+- Decision 3, the low-entropy items: Done (maintainer, provisional, 2026-11-14 UTC). Item 17 is
+  built.
 - Ratifying the renamed names: Open. It is an open decision below.
-- Review package: Open. No package exists in `notes/crate-reviews/`; a lane writes it after the
-  rename lane.
+- Review package: Done. `notes/crate-reviews/network-time-protocol.md` lists every public name with
+  its status and proposal.
 - Review clearance and the repository: Open. It is an open decision below.
 
 ## Open decisions
 
-### Ratify the names once the rename lane lands
+### Ratify the names now the rename lane has landed
 
 Background. A crate's public names are the interface every user compiles against. The move to
 its own repository strips the `Name:` blocks that mark a name provisional, so each name must read
 ratified first. Decision 2, a maintainer's provisional ruling, settles nine spellings: units and
 bounds spelled into the constants (`PACKET_BYTES`, `MINIMUM_UNIX_SECONDS`, an inclusive
 `MAXIMUM_UNIX_SECONDS`), American spellings, `ShortFormat`, and `abs_ticks` gone. Ratification is
-the architect's by the naming rule, and no lane has applied the renames yet.
+the architect's by the naming rule, and a lane has applied the renames; the names stay provisional.
 
 Recommendation: A. One lane applies Decision 2, then the architect ratifies the result in one pass,
 so the names the architect reads are the names that ship.
 
-- A. Ratify after the rename lane lands, against the renamed source.
+- A. Ratify against the renamed source, from the review package.
 - B. Ratify Decision 2's table now, before the renames.
 - C. Ratify with changes the architect names; the rename lane applies them.
 
@@ -108,14 +110,13 @@ Blocks: the move.
 
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package, and that clearance approves the repository. `network_time_protocol` is a
-pure RFC 5905 wire format with no nife vocabulary, so it meets the bar for leaving. No package
-exists yet.
+pure RFC 5905 wire format with no nife vocabulary, so it meets the bar for leaving. The package
+is `notes/crate-reviews/network-time-protocol.md`.
 
 Recommendation: A. A package written after the renames and Decision 3's removals shows the crate
 as it will ship.
 
-- A. A lane writes the package after the rename lane; the architect's clearance creates the
-  repository.
+- A. The architect clears the package, and that clearance creates the repository.
 - B. Clear on this outside review alone.
 - C. Keep the crate in nife.
 
@@ -268,7 +269,7 @@ Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door befor
 publish, which the architect may revisit. Removing a dependency on an own crate needs no
 dependency ruling. The crate drops `clock_contract`, its only `[dependencies]` entry, and defines a
 private `NANOSECONDS_PER_SECOND` in `src/lib.rs`, as `core::time` defines its own privately.
-Item 7 is the work.
+Item 7 has landed.
 
 ### Decision 2. The public names the template's gates refuse, and the ones a later rule reopens
 
@@ -278,19 +279,20 @@ publish, which the architect may revisit. The table in
 settled elsewhere. `MAXIMUM_UNIX_SECONDS` is inclusive. `abs_ticks` goes, since no caller outside the
 crate uses it. The low-bit randomizer leaves under Decision 3, so its row renames nothing; its
 test still takes the American spelling. No old spelling stays as an alias. Items 4, 5, 18 and 22
-are the work.
+landed.
 
 ### Decision 3. Do `Query::new` and the low-bit randomizer leave before the first publish?
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first
 publish, which the architect may revisit. Both leave: the stricter surface, since adding a
 constructor later is compatible and removing one is not. `Query::new` (`src/lib.rs` line 616) and
-the low-bit randomizer (line 226) have no caller outside the crate. Item 17 is the work.
+the low-bit randomizer (line 226) have no caller outside the crate. Item 17 has landed.
 
 ## Follow-on
 
-- **Outstanding.** Each finding that "Finding status" marks Open or Ruled, checked against
-  `crates/network_time_protocol` and its manifest.
+- **Outstanding.** Each finding that "Finding status" marks Open, checked against
+  `crates/network_time_protocol` and its manifest, and the names and the clearance, asked from
+  `notes/crate-reviews/network-time-protocol.md`.
 
 ## Done when
 
@@ -311,7 +313,6 @@ The checks are in [the appendix](1102-network-time-protocol-outside-review/done-
 - Coverage was not measured. The template's floor is 85 per cent per file. `verification.rs` builds
   only under `cfg(kani)` and should not count, and `lib.rs` is dense with tests, but the figure is
   not known.
-- The MSRV claim (`rust-version = "1.88"`) follows the sibling crates and was not built here.
 - Whether the move's provenance strip handles a `Name:` paragraph inside a `//!` crate-root block,
   rather than a `///` item block, was not checked against the tool.
 
@@ -324,5 +325,5 @@ dependency taken for one constant. Eight items land before the first tag. They a
 in shipped text, `forbid(unsafe_code)` and a fuzz opt-in, the optimization the exhaustive sweep
 needs, the mutation exemptions, an overflow in `Interval`'s accessors, two RFC checks, the caller's
 replay duty, and a liveness proof for `accept`. Seven items are for later. The maintainer ruled three decisions provisionally (the dependency,
-nine names, and whether the low-entropy constructor ships); ratifying the names and clearing a
-review package are open decisions.
+nine names, and whether the low-entropy constructor ships), and a lane built them and wrote the
+review package; ratifying the names and clearing the package are open decisions.

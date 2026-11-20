@@ -57,7 +57,7 @@ fn start(role: u64, arg: u64, clock: u64) -> ! {
     CLOCK_SLOT.store(clock, core::sync::atomic::Ordering::Relaxed);
     // Probed here and nowhere later: see [`HOLDS_RUN_UNVOUCHED`].
     HOLDS_RUN_UNVOUCHED.store(
-        user_mode_runtime::is_granted(spawnproto::RUN_UNVOUCHED_SLOT),
+        user_mode_runtime::is_granted(spawn_protocol::RUN_UNVOUCHED_SLOT),
         core::sync::atomic::Ordering::Relaxed,
     );
     HOLDS_CONFIG.store(
@@ -65,7 +65,7 @@ fn start(role: u64, arg: u64, clock: u64) -> ! {
         core::sync::atomic::Ordering::Relaxed,
     );
     HOLDS_MOUNTED_TREE.store(
-        user_mode_runtime::is_granted(spawnproto::MOUNTED_TREE_SLOT),
+        user_mode_runtime::is_granted(spawn_protocol::MOUNTED_TREE_SLOT),
         core::sync::atomic::Ordering::Relaxed,
     );
     // After the probes, which must see the table as its builder left it. The two witness roles
@@ -75,7 +75,7 @@ fn start(role: u64, arg: u64, clock: u64) -> ! {
     }
     // Probed here too: see [`HOLDS_MACHINE_PAGE`].
     HOLDS_MACHINE_PAGE.store(
-        user_mode_runtime::is_granted(spawnproto::MACHINE_PAGE_SLOT),
+        user_mode_runtime::is_granted(spawn_protocol::MACHINE_PAGE_SLOT),
         core::sync::atomic::Ordering::Relaxed,
     );
     match role {
@@ -120,12 +120,12 @@ pub(super) fn interactive(rights: u64) -> ! {
     // **The second mounted tree, when the progenitor placed one** (milestone 834 (ioping on nife and Linux)): the disk tree,
     // at `/disk`. It shares the first tree's page, so it needs nothing mapped of its own.
     if rights != 0 && HOLDS_MOUNTED_TREE.load(core::sync::atomic::Ordering::Relaxed) {
-        let mut mount = nav::Cwd::root();
-        mount.descend(spawnproto::MOUNTED_TREE_NAME);
+        let mut mount = grant_navigation::Cwd::root();
+        mount.descend(spawn_protocol::MOUNTED_TREE_NAME);
         nav.holds.mounted = grant_plan::MountedTree::mounted_at(mount);
         nav.second = Some(Tree {
-            slot: spawnproto::MOUNTED_TREE_SLOT,
-            rights: spawnproto::MOUNTED_TREE_RIGHTS,
+            slot: spawn_protocol::MOUNTED_TREE_SLOT,
+            rights: spawn_protocol::MOUNTED_TREE_RIGHTS,
         });
     }
     let mut line = [0u8; 128];

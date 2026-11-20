@@ -48,7 +48,7 @@ fn source() -> String {
          pub struct Note([u8; {len}]);\n\
          #[used]\n\
          #[unsafe(link_section = \".note.nife.manifest\")]\n\
-         static NIFE_MANIFEST_NOTE: Note = Note([{bytes}]);\n",
+         static MANIFEST_NOTE: Note = Note([{bytes}]);\n",
         len = note.0.len(),
         bytes = bytes.join(", "),
     )

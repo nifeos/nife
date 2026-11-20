@@ -60,8 +60,8 @@ pub(super) const CHILD_JOB_PAGE_FRAME_VA: u64 = address_space_layout::pair_page(
 
 /// Pages of untyped split off our own budget and handed the shell, which endows the programs it
 /// spawns (`run --mem N`) from it. A session budget, not a renewable one. The number is
-/// [`spawnproto::SHELL_BUDGET_PAGES`], which the shell reads too.
-pub(super) const SH_BUDGET_PAGES: u64 = spawnproto::SHELL_BUDGET_PAGES;
+/// [`spawn_protocol::SHELL_BUDGET_PAGES`], which the shell reads too.
+pub(super) const SH_BUDGET_PAGES: u64 = spawn_protocol::SHELL_BUDGET_PAGES;
 
 /// **What the progenitor keeps for itself after the boot servers are up**: the page tables
 /// reaching the loader's scratch window, which must never come out of a child's region, and the
@@ -119,16 +119,16 @@ pub const JOBS_BUDGET_PAGES: u64 = program_table::JOB_POOL_PAGES;
 /// - The image is held three times while a child is built (notes/system-initializer/budgets.md).
 /// - Reserved at boot, not borrowed, whether or not an image ever runs.
 pub const IMAGE_POOL_PAGES: u64 = program_table::image_region_pages(
-    spawnproto::IMAGE_MAXIMUM_PAGES,
+    spawn_protocol::IMAGE_MAXIMUM_PAGES,
     grant_contract::StartupContract::Std,
     JOB_REGION_PAGES,
-) + spawnproto::IMAGE_MAXIMUM_PAGES;
+) + spawn_protocol::IMAGE_MAXIMUM_PAGES;
 
 /// **Everything both pools can have built at once, and an image request's views, fit in half the
 /// loader's scratch window**: a job's pages stay mapped there until its region is destroyed. The
 /// other half is the boot servers', unmeasured; see notes/system-initializer/budgets.md.
 const _: () = assert!(
-    JOBS_BUDGET_PAGES + IMAGE_POOL_PAGES + spawnproto::IMAGE_MAXIMUM_PAGES
+    JOBS_BUDGET_PAGES + IMAGE_POOL_PAGES + spawn_protocol::IMAGE_MAXIMUM_PAGES
         <= process_builder::SCRATCH_WINDOW_PAGES / 2
 );
 

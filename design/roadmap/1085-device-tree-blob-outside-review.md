@@ -66,8 +66,7 @@ items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Rul
   UEFI, NUL, GIC, PL031, PLIC, PMIC and PMP. The move's gate pass clears these.
 - F-dtoolkit, the switch to `dtoolkit`: Open, waiting for an upstream release; the wait is ruled,
   under [Ruled decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
-- F-package, the review package: Open. None exists under `notes/crate-reviews/`; a lane writes it
-  now, as ruled under [Ruled decisions](#write-the-review-package-now-the-move-is-not-held-for-dtoolkit).
+- F-package, the review package: Done, [the package](../../notes/crate-reviews/device-tree-blob.md).
 - F-clearance, review clearance: Open. The architect decides it once the package exists.
 - BUGS-239: Open. Milestone 239 (radon's device tree does not describe the TRNG) gives the depth
   bound as a `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64. A lane corrects that milestone.

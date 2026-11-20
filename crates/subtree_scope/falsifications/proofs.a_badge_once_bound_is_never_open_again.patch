@@ -8,12 +8,12 @@ Expected to fail: the assertion that a badge once bound is never open again.
 diff --git a/crates/subtree_scope/src/lib.rs b/crates/subtree_scope/src/lib.rs
 --- a/crates/subtree_scope/src/lib.rs
 +++ b/crates/subtree_scope/src/lib.rs
-@@ -348,7 +348,7 @@
+@@ -362,7 +362,7 @@
              Binding::SyncOnly => None,
              _ => return Err(Refusal::Refused),
          };
 -        self.state[i] = Binding::Revoked;
-+        self.state[i] = Binding::Open;
++        self.state[i] = Binding::Unbound;
          Ok(held)
      }
  }

@@ -5,7 +5,7 @@ have 16 KiB and 64 KiB granules, so "how many bits is the offset" is a live ques
 ISA rather than a typo nobody would make; the rest of this crate is built on the 4 KiB granule
 and a 512-entry table, and mixing the two gives a walk whose indices are all one bit high.
 
-Expected to fail: `assert_eq!(reconstructed, va & 0x0000_ffff_ffff_ffff)`. The harness spells
+Expected to fail: `assert_eq!(reconstructed, virtual_address & 0x0000_ffff_ffff_ffff)`. The harness spells
 the four shifts out as literals (39, 30, 21, 12) rather than asking the implementation for
 them, which is what makes it able to catch this: a defect that moved the harness and the code
 together would prove nothing, and this one cannot.
@@ -21,9 +21,9 @@ index 476dfcac4..4b3509b1f 100644
 @@ -106,7 +106,7 @@ pub trait PageFormat {
      /// covers the highest translated bits; each lower level shifts down by 9. Derived from
      /// [`LEVELS`](Self::LEVELS) so it is right for both a 4- and a 3-level walk.
-     fn index(va: u64, level: usize) -> usize {
+     fn index(virtual_address: u64, level: usize) -> usize {
 -        let shift = 9 * (Self::LEVELS - 1 - level) as u32 + 12;
 +        let shift = 9 * (Self::LEVELS - 1 - level) as u32 + 13;
-         ((va >> shift) & 0x1ff) as usize
+         ((virtual_address >> shift) & 0x1ff) as usize
      }
  
