@@ -999,6 +999,8 @@ def selftest():
     src = '//! Doc.\n//!\n//! Name: ratified 2026-11-01 (UTC), the\n//!   reason.\n\npub fn f() {}\n'
     assert crate_release.strip_name_blocks(src, remove=True) == '//! Doc.\n\npub fn f() {}\n'
     assert crate_release.strip_name_blocks(src).count('\n') == src.count('\n')
+    root = '//! Doc.\n\n//! Name: ratified 2026-11-01 (UTC), the\n//! reason.\n\n#![no_std]\n'
+    assert crate_release.strip_name_blocks(root, remove=True) == '//! Doc.\n\n#![no_std]\n'
     record = '/// Falsification: replayable `crates/x/falsifications/a.h.patch`'
     assert re.sub(r'(?<![\w/.])crates/x/', '', record).endswith('`falsifications/a.h.patch`')
     assert re.sub(r'(?<![\w/.])crates/x/', '', '../crates/x/y') == '../crates/x/y'

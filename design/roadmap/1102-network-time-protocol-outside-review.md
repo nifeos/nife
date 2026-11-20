@@ -34,26 +34,33 @@ for the crate's own reasons.
   the workspace and points at nife's publish allowlist; the move inlines both.
 - P0-2, README, licenses, changelog and a stranger record: Open. The move writes them, and a
   stranger runs the README before the first tag.
-- P0-3, the contract-crate gate: Open. The crate-root documentation opens "The NTPv4 wire format
-  (RFC 5905)", and the template's kept-name form trips clippy's `doc_markdown` here.
+- P0-3, the contract-crate gate: Done. The crate-root documentation opens with the kept-name form
+  in code spans, ``(`network_time_protocol`, `RFC 5905`)``, which the template's `contract_names`
+  and clippy's `doc_markdown` both accept.
 - P0-4, `PACKET_LEN`: Done (Decision 2, maintainer, provisional, 2026-11-14 UTC). The constant is
   `PACKET_BYTES`.
 - P0-5, British spellings in names: Done (Decision 2). The low-bit randomizer is gone, the `Reject`
   variant for leap indicator 3 is `Unsynchronized` and the harness is
   `parse_then_serialize_is_the_identity`.
 - P0-6, acronyms at first use: Done. The crate-root documentation expands each acronym where it
-  first appears.
+  first appears, and the template's `prose_acronyms` reports none. Each RFC citation is a code span,
+  as `nifeos/domain_name_system` writes them, because that gate drops "for" as a small word and so
+  never reads "Request for Comments" as an expansion of RFC.
 - P0-7, the dependency on `clock_contract`: Done (Decision 1, maintainer, provisional,
   2026-11-14 UTC). The crate keeps a private `NANOSECONDS_PER_SECOND` and has no dependencies.
 - P1-8, shipped text that points back into nife: Open, the move's.
 - P1-9, safe Rust: Open. `#![forbid(unsafe_code)]` landed in
   [#3567](https://github.com/nifeos/nife/pull/3567); the new repository's fuzz opt-in and target
   remain.
-- P1-10, the exhaustive sweep and the workspace profile: Open, the new manifest's.
+- P1-10, the exhaustive sweep and the workspace profile: Open, the new manifest's. At
+  `opt-level = 2` line coverage of `src/lib.rs` is 97 per cent, over the template's floor of 85,
+  so the full sweep can stay in the default test.
 - P1-11, surviving mutants: Open, the new repository's exemptions file.
-- P1-12, the totality of `Interval`: Open. Both accessors saturate, with a test,
-  [#3567](https://github.com/nifeos/nife/pull/3567); no Kani harness over them exists. Narrowing
-  `from_ticks` to `i64` is a two-way door before the first publish; the maintainer rules it.
+- P1-12, the totality of `Interval`: Done. Both accessors saturate, and the Kani harness
+  `the_interval_conversions_are_total` proves them free of overflow and sign-preserving over every
+  `i128` tick count, with a falsification patch. Narrowing `from_ticks` to `i64` is a further
+  two-way door before the first publish, which the maintainer may rule; the done-when check does
+  not need it.
 - P1-13, two checks the RFC's reference implementation makes: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-14, the caller's replay duty: Open. The `Query::accept` documentation states it
@@ -74,12 +81,12 @@ for the crate's own reasons.
   22 landed, with the `UNIX_*` constants, `DEFAULT_POLL_EXPONENT` and `ShortFormat` renamed.
 - Decision 3, the low-entropy items: Done (maintainer, provisional, 2026-11-14 UTC). Item 17 is
   built.
-- Ratifying the renamed names: Open. It is an open decision below.
+- Ratifying the renamed names: Done (architect, 2026-11-20 UTC, A). `PORT` stays. The move lane rewrites the source `Name:` blocks.
 - Review package: Done. `notes/crate-reviews/network-time-protocol.md` lists every public name with
   its status and proposal.
-- Review clearance and the repository: Open. It is an open decision below.
+- Review clearance and the repository: Done (architect, 2026-11-20 UTC, A). The architect approves `nifeos/network_time_protocol`; no tag, no publish.
 
-## Open decisions
+## Decisions recorded
 
 ### Ratify the names now the rename lane has landed
 
@@ -90,8 +97,7 @@ bounds spelled into the constants (`PACKET_BYTES`, `MINIMUM_UNIX_SECONDS`, an in
 `MAXIMUM_UNIX_SECONDS`), American spellings, `ShortFormat`, and `abs_ticks` gone. Ratification is
 the architect's by the naming rule, and a lane has applied the renames; the names stay provisional.
 
-Recommendation: A. One lane applies Decision 2, then the architect ratifies the result in one pass,
-so the names the architect reads are the names that ship.
+Ruling 2026-11-20 UTC: A. `PORT` stays, not `UDP_PORT`.
 
 - A. Ratify against the renamed source, from the review package.
 - B. Ratify Decision 2's table now, before the renames.
@@ -113,8 +119,8 @@ clears its review package, and that clearance approves the repository. `network_
 pure RFC 5905 wire format with no nife vocabulary, so it meets the bar for leaving. The package
 is `notes/crate-reviews/network-time-protocol.md`.
 
-Recommendation: A. A package written after the renames and Decision 3's removals shows the crate
-as it will ship.
+Ruling 2026-11-20 UTC: A. The architect clears the package and approves `nifeos/network_time_protocol`.
+No tag, no publish.
 
 - A. The architect clears the package, and that clearance creates the repository.
 - B. Clear on this outside review alone.
@@ -259,7 +265,7 @@ The P1 items are in [the appendix](1102-network-time-protocol-outside-review/bef
 
 The maintainer ruled all three, provisionally, on 2026-11-14 (UTC), as two-way doors before the
 first publish; the architect may revisit them. Nothing here reopens the crate name, the era pivot,
-the 48-byte rule or the unauthenticated scope. Ratifying the names is under "Open decisions"
+the 48-byte rule or the unauthenticated scope. Ratifying the names is under "Decisions recorded"
 above. The case behind each ruling (background, recommendation, prior art and an example) is in
 [the appendix](1102-network-time-protocol-outside-review/decisions.md).
 
@@ -304,17 +310,9 @@ The checks are in [the appendix](1102-network-time-protocol-outside-review/done-
   patch fails at the assertion its header names. Kani reports most of the seven failures through a
   placeholder message rather than the assertion text. So the replay never matched the "expected to
   fail" line of five headers against the output.
-- Item 10's timing (a minute unoptimized) is the workspace manifest's figure; this review did not
-  rebuild without the override. Item 12's overflow comes from reasoning over the types. Nobody wrote
-  a test.
 - The prior-art table marks every claim about another implementation's era rule and nonce as
   unverified except `sntpc`'s, which its own documentation states. The crates.io figures are from
   the API at review time and change daily.
-- Coverage was not measured. The template's floor is 85 per cent per file. `verification.rs` builds
-  only under `cfg(kani)` and should not count, and `lib.rs` is dense with tests, but the figure is
-  not known.
-- Whether the move's provenance strip handles a `Name:` paragraph inside a `//!` crate-root block,
-  rather than a `///` item block, was not checked against the tool.
 
 ## Index row
 
@@ -326,4 +324,5 @@ in shipped text, `forbid(unsafe_code)` and a fuzz opt-in, the optimization the e
 needs, the mutation exemptions, an overflow in `Interval`'s accessors, two RFC checks, the caller's
 replay duty, and a liveness proof for `accept`. Seven items are for later. The maintainer ruled three decisions provisionally (the dependency,
 nine names, and whether the low-entropy constructor ships), and a lane built them and wrote the
-review package; ratifying the names and clearing the package are open decisions.
+review package. The crate-root opening form, the acronyms and a proof over `Interval`'s accessors
+have landed; the architect cleared the package on 2026-11-20 UTC.

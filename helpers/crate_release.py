@@ -217,6 +217,15 @@ def strip_name_blocks(text, remove=False):
             gone.add(i)
             i += 1
     if remove:
+        # A block set off by empty lines on both sides, as a crate root's `//!` paragraph is,
+        # would leave two empty lines in a row, which rustfmt refuses: one of them goes too.
+        for n in sorted(gone):
+            if n + 1 not in gone and n + 1 < len(lines) and not lines[n + 1].strip():
+                start = n
+                while start - 1 in gone:
+                    start -= 1
+                if start == 0 or not lines[start - 1].strip():
+                    gone.add(n + 1)
         return '\n'.join(line for n, line in enumerate(lines) if n not in gone)
     return '\n'.join('' if n in gone else line for n, line in enumerate(lines))
 
