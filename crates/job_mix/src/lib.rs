@@ -95,18 +95,20 @@ pub const KIND: &str = "job-mix-kind:";
 ///   reaper: threads reaped, time freeing their kernel stacks (no lock held), and time its last
 ///   critical section held `IPC_TABLES`;
 /// - `job-mix-lock: tasks=<n> site=current_capability calls=<c> contended=<k> wait_ticks=<w>`, the one
-///   lock the cheapest syscall takes: every call, and the ones that found it held.
+///   lock the cheapest system call takes: every call, and the ones that found it held.
 ///
-/// Printed only with `--features lock_wait` (notes/job-mix/null-syscall-under-load.md). Name
+/// Printed only with `--features lock_wait` (notes/job-mix/null-system-call-under-load.md). Name
 /// provisional.
 pub const LOCK: &str = "job-mix-lock:";
 
-/// A compute-bound arithmetic loop, [`COMPUTE_ITERS`] iterations. No syscall.
+/// A compute-bound arithmetic loop, [`COMPUTE_ITERS`] iterations. No system call.
 pub const COMPUTE: u8 = 0;
-/// A walk over [`TOUCH_WORDS`] words of the task's own memory, read and written. No syscall.
+/// A walk over [`TOUCH_WORDS`] words of the task's own memory, read and written. No system call.
 pub const TOUCH: u8 = 1;
-/// [`NULL_SYSCALL_CALLS`] trips through the cheapest syscall this ABI has.
-pub const NULL_SYSCALL: u8 = 2;
+/// [`NULL_SYSTEM_CALL_CALLS`] trips through the cheapest system call this ABI has.
+///
+/// Name: provisional. Spelled out from `NULL_SYSCALL`.
+pub const NULL_SYSTEM_CALL: u8 = 2;
 /// [`YIELD_CALLS`] voluntary yields, each a trip through the ready queue.
 pub const YIELD: u8 = 3;
 /// [`ROUND_TRIP_CALLS`] `CALL`/`REPLY` round trips against a shared server.
@@ -131,7 +133,7 @@ pub const JOB_KINDS: usize = 7;
 pub const KIND_NAMES: [&str; JOB_KINDS] = [
     "compute",
     "touch",
-    "null_syscall",
+    "null_system_call",
     "yield",
     "round_trip",
     "map",
@@ -146,7 +148,7 @@ pub const KIND_NAMES: [&str; JOB_KINDS] = [
 pub const MIX: [u8; 16] = [
     COMPUTE,
     TOUCH,
-    NULL_SYSCALL,
+    NULL_SYSTEM_CALL,
     YIELD,
     ROUND_TRIP,
     MAP,
@@ -154,7 +156,7 @@ pub const MIX: [u8; 16] = [
     ROUND_TRIP,
     COMPUTE,
     TOUCH,
-    NULL_SYSCALL,
+    NULL_SYSTEM_CALL,
     YIELD,
     ROUND_TRIP,
     MAP,
@@ -185,8 +187,10 @@ pub const COMPUTE_ITERS: u64 = 20_000;
 /// E1 records: a large-cache machine hides this whole effect.
 pub const TOUCH_WORDS: usize = 4_096;
 
-/// Syscalls in one [`NULL_SYSCALL`] job.
-pub const NULL_SYSCALL_CALLS: u64 = 64;
+/// System calls in one [`NULL_SYSTEM_CALL`] job.
+///
+/// Name: provisional. Spelled out from `NULL_SYSCALL_CALLS`.
+pub const NULL_SYSTEM_CALL_CALLS: u64 = 64;
 
 /// Yields in one [`YIELD`] job.
 pub const YIELD_CALLS: u64 = 64;
@@ -339,7 +343,7 @@ pub const GO_RUN: u64 = 0;
 /// costs the timed window nothing.
 pub const GO_BREAKDOWN: u64 = 1;
 
-/// The first word of a subrun report from a task that could not finish it: a job's syscall was
+/// The first word of a subrun report from a task that could not finish it: a job's system call was
 /// refused. The second word is the refusal (a negative `abi::Error` as `u64`) and the third is the
 /// task's index with the failing kind in bits 32 and up, so the supervisor can say which job on
 /// which task failed rather than stalling on a task that stopped.
@@ -519,11 +523,11 @@ mod tests {
                 YIELD,
                 ROUND_TRIP,
                 TOUCH,
-                NULL_SYSCALL,
+                NULL_SYSTEM_CALL,
                 SPAWN,
                 ROUND_TRIP,
                 TOUCH,
-                NULL_SYSCALL,
+                NULL_SYSTEM_CALL,
                 COMPUTE,
                 ROUND_TRIP,
                 ROUND_TRIP,

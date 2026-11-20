@@ -31,7 +31,7 @@ and nothing says where they go. `file_allocation_table`, the next crate to move,
 move they fuzz the crate at the commit nife pins, inside nife's merge queue.
 
 The premise needed one correction. The continuous fuzz host does not run these targets. It runs the
-in-guest syscall drivers against the kernel, and its filer files private advisories on nifeos/nife
+in-guest system call drivers against the kernel, and its filer files private advisories on nifeos/nife
 alone ([notes/fuzzing/continuous-host.md](../../notes/fuzzing/continuous-host.md)). A cargo-fuzz
 crash, in nife or in a crate repository, is a red hosted job with a public log. The template also
 has a fuzz job already, `weekly / fuzz`, which has run five minutes per target since the template's

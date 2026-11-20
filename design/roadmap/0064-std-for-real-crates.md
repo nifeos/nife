@@ -53,7 +53,7 @@ this page is complete without them.
   one address space today, which is what a `std` thread actually needs. Two real shapes a fix could
   take were costed alongside declining outright. One is a kernel-level shared VSpace, seL4's own
   answer and the lineage `objtype::ASPACE` already cites. The other is sibling processes kept
-  aliased by replicated frame mappings, whose apparent cheapness (no syscall touched) does not
+  aliased by replicated frame mappings, whose apparent cheapness (no system call touched) does not
   survive contact with what a growing heap needs from an allocator. calef decided 2026-08-22
   (§105): decline. No customer for real shared-memory threads exists yet; `thread::spawn` stays
   `Unsupported` permanently rather than pending, and milestone 149's Rayon-parallel NPB-Rust variants

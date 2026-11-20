@@ -136,7 +136,7 @@ Migrated: `disk_surveyor` (the block-shared page and the roster), the roster pro
 in its whole-screen mode (the surface and the application's output page).
 
 The stack is the floor. It is still a `Spawn::maps` entry and has to be: a program cannot map its
-own stack, because it needs a stack before it can make the syscall that would map one. Everything
+own stack, because it needs a stack before it can make the system call that would map one. Everything
 else a process touches can be a capability; that one page cannot.
 
 ### EXAMPLES
@@ -224,7 +224,7 @@ the space still links as a table, and its next owner would be writing that space
 page table is the one page whose contents are authority.
 
 `system_tests/src/user/page_table_region_tests.rs` drives it. Each round maps once with tables from
-a region `R`, destroys `R` through the real `DESTROY` syscall, and looks at the space three ways.
+a region `R`, destroys `R` through the real `DESTROY` system call, and looks at the space three ways.
 Does the first page still translate? Does the log still list it? Does a second map beside it, with
 tables from a second region `R2`, build fresh tables or descend into a page `R` gave back? The last
 names the use-after-free: a map that spends nothing from `R2` on tables wrote its leaf into a freed

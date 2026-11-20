@@ -97,7 +97,7 @@ reach them. That widens test code only.
    they stay, since `lib.rs` ends 460 lines under the ceiling.
 3. Every file name in the table. The module names are unchanged.
 
-No public crate API, wire format or syscall changes under any answer here.
+No public crate API, wire format or system call changes under any answer here.
 
 ## What moving the code breaks
 

@@ -19,7 +19,7 @@ last 90 days at the time of the review.
 
 Where this crate differs, the memory comes from the process's own untyped budget. It arrives through one kernel method, one page per call. The program sets a cap below that budget, so a leak exhausts the heap visibly before it eats the pages that children need. Growth is geometric with a floor and exact at the cap. `shortfall` sizes a grow so a cap of a power of two still holds an allocation of that size less talc's overhead.
 
-The policy is 290 lines around talc's core and has no seam of its own. The page source is a direct syscall. That is why it has no host test and why std and the host tool each carry a copy.
+The policy is 290 lines around talc's core and has no seam of its own. The page source is a direct system call. That is why it has no host test and why std and the host tool each carry a copy.
 
 What it costs: nothing ever returns to the budget. Talc's `truncate` goes unused, and the capability interface offers no per-page return. The spinlock is unfair, and every failure reads as "budget spent".
 

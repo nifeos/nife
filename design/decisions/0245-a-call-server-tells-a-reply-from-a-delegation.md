@@ -25,7 +25,7 @@ server was parked) and `ipc_recv_cap`'s collect of a parked caller. Every other 
 as before: `0` for a `SEND_CAP` delegation, a plain `SEND`, an interrupt signal and a §26 (the fault
 endpoint) death message, and `notification::BOUND` for a bound notification. A `CALL` whose Reply
 did not fit in a full table arrives with `x1 == NO_CAP` and `x4 == 0`, since there is nothing to
-name. `x4` is written only by the kernel, so no sender can forge the tag. No new syscall number and
+name. `x4` is written only by the kernel, so no sender can forge the tag. No new system call number and
 no new method: this is a value in a register `RECV_CAP` already returns, within §10 (the
 capability-based microkernel process model) and §12 (call/reply IPC).
 

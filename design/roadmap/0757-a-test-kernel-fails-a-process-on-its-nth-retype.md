@@ -112,7 +112,7 @@ Each replayed on aarch64; both go red.
 - **Recorded.** `MemoryRegion::RETYPE` and `RETYPE_OBJ` keep their pages when the capability
   table is full: the retype has happened and no capability names it, so a full table spends a page
   per call until the region is destroyed. Not reachable by this fault, which fails the retype and
-  not the grant. In `kernel/src/syscall.rs` beside `memory_region_retype`.
+  not the grant. In `kernel/src/system_call.rs` beside `memory_region_retype`.
 
 ## Index row
 

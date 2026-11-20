@@ -3,7 +3,7 @@
 //! `kernel/src/soak.rs` spawns and watches this. See notes/soak.md.
 //!
 //! **It stresses cross-core IPC rendezvous at the highest rate the machine will do them**, through
-//! the real syscall boundary, because that is where the one defect this risk has produced lived (a
+//! the real system call boundary, because that is where the one defect this risk has produced lived (a
 //! receiver made `Ready` with nothing delivered, in `sched::wake_load_aware`). A round trip
 //! (`CALL`, `RECEIVE_CAPABILITY`, `REPLY`, the caller waking) is two block/wake handshakes, each of which
 //! may place its peer on another core, and with two runnable threads per core the run queues empty

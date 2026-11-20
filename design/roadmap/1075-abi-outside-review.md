@@ -78,7 +78,7 @@ the package name. Moho names the capability binary interface, the boundary progr
 `nife` stays the name of the capability microkernel. The name was free on crates.io when ruled,
 where `abi` belongs to another author's crate (0.1.4). Prior art: Redox publishes its system call
 numbers as `redox_syscall`, and Hubris keeps a crate named `abi` that it never publishes. Example:
-the rename turns `abi::SYSCALL_INVOKE` in `kernel/src/syscall.rs` into `moho_abi::SYSCALL_INVOKE`.
+the rename turns `abi::SYSTEM_CALL_INVOKE` in `kernel/src/system_call.rs` into `moho_abi::SYSTEM_CALL_INVOKE`.
 
 ### B. `console::WRITE` stays reserved (ruled)
 
@@ -137,7 +137,7 @@ The checks are in [the appendix](1075-abi-outside-review/done-when.md).
 - Item 16, `RegisterShape::new`'s parameters: Open. Two-way until the first publish, so the
   maintainer rules it provisionally (`register_shift` and `access_width_bytes` with the binding's
   names as `doc(alias)`), and the review package carries the result.
-- Item 17, `CycleMeaning` is not a syscall contract: Open. Two-way until the first publish, so the
+- Item 17, `CycleMeaning` is not a system call contract: Open. Two-way until the first publish, so the
   maintainer rules where it lives provisionally, and the review package carries the result.
 - Item 18, doc nits: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Item 19, `Name:` blocks quote the decider: Done, [#3565](https://github.com/nifeos/nife/pull/3565).

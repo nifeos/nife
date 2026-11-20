@@ -63,7 +63,7 @@ premise that x86_64 supply is looser was a single afternoon and this is revisite
 The implementation's own run, dispatched on the branch before merge: `ci.yml` 36060856009 and
 `verify.yml` 36060858268, both `success`. Every moved job green on `ubuntu-24.04`; `prove the kernel
 on aarch64` green on `ubuntu-24.04-arm` in 0.8 minutes, proving `arch::aarch64::iommu::proofs`
-alongside the syscall harnesses; the aggregate printed "the kernel proved on aarch64 too". Both
+alongside the system call harnesses; the aggregate printed "the kernel proved on aarch64 too". Both
 shards proved on x86_64 in 15.6 and 16.3 minutes of wall time.
 
 ## The evidence, in brief

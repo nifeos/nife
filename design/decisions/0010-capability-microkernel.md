@@ -11,7 +11,7 @@ Settled at the §8 (DEFERRED to a hard decision point) decision point, before an
 
 **A process names a resource by holding an unforgeable token it was handed. There is no
 ambient authority, and there is no global namespace.** Drivers and services are userspace
-processes. IPC is the primary syscall.
+processes. IPC is the primary system call.
 
 ## What a capability is, so the word means something
 
@@ -93,9 +93,9 @@ since they were asked for:
 | **Microkernel (servers in userspace)** | **The entire cost. All of it.** |
 
 And even there, the shape surprises. One IPC is not slow: seL4's fastpath is a few hundred
-cycles, comparable to a Linux syscall (and *better* than one post-Spectre). Liedtke fixed that
+cycles, comparable to a Linux system call (and *better* than one post-Spectre). Liedtke fixed that
 in 1995, and it stayed fixed. The cost is that you need more crossings: a `read()` that was
-one syscall becomes six. And the real bite is not cycles but cache and TLB pollution, which
+one system call becomes six. And the real bite is not cycles but cache and TLB pollution, which
 UNSW have measured at several times the direct cost.
 
 The discipline that recovers most of it, which every serious microkernel converges on:
@@ -110,7 +110,7 @@ Ballpark: none on compute-bound work, low single-digit percent for general-purpo
 per-packet workloads.
 
 And the gap has closed from both directions. Spectre and Meltdown mitigations made Linux's
-syscall boundary genuinely expensive. `io_uring` exists precisely because of it, and its answer
+system call boundary genuinely expensive. `io_uring` exists precisely because of it, and its answer
 (a shared-memory ring, batch the operations, stop crossing the boundary per call) is the
 microkernel discipline under another name. DPDK and SPDK moved networking and storage drivers
 into userspace for the same reason. Those are microkernels. They just had to bolt the isolation
@@ -177,7 +177,7 @@ once IPC and servers already run, and a punishing one to attempt before. It is m
 
 | Rule | Why |
 |---|---|
-| **No ambient authority.** A process can only use what it was handed. | The whole decision. The moment one syscall takes a global name, Capsicum's fate is ours. |
+| **No ambient authority.** A process can only use what it was handed. | The whole decision. The moment one system call takes a global name, Capsicum's fate is ours. |
 | **No `fork`.** Spawn takes an explicit list of capabilities. | "Inherit everything" is the confused deputy with a default. And it is *less* code: no copy-on-write. |
 | **No global namespace in the kernel.** No paths, no uids. | A name you can *say* is authority you did not have to be *given*. Paths can come back as a **userspace** convenience over a directory capability, which is what `fdio` is. |
 | **IPC carries control; bulk data moves by mapping a frame capability.** | Copy twice and we are Mach. |

@@ -7,7 +7,7 @@ budget has no room for.
 
 - [`early-boot.md`](early-boot.md): steps 1 to 10, from the PVH boot path to a PIT line routed
   through the IO APIC.
-- [`ring-3.md`](ring-3.md): step 11 and item 3, the `syscall` pair, the `iretq` choice, the syscall
+- [`ring-3.md`](ring-3.md): step 11 and item 3, the `system_call` pair, the `iretq` choice, the system call
   ABI decision and the two `CR4` bits.
 - [`processes-and-userspace.md`](processes-and-userspace.md): steps 12 and 13 and item 4, the
   scheduler, real processes, userspace, the latent bugs and the 67 skips.

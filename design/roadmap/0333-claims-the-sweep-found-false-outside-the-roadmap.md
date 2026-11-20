@@ -38,7 +38,7 @@ This is the list, so that fixing the roadmap does not leave the tree quietly dis
 
 - `crates/capability_table`'s `ENUMERATE` rustdoc says only the rendezvous object consults the right
   and that the address space will "when `pmap` is built". `pmap` was built 2026-08-23 and
-  `kernel/src/syscall.rs`'s address-space list arm checks the right today. The same sentence sits in
+  `kernel/src/system_call.rs`'s address-space list arm checks the right today. The same sentence sits in
   a comment on that file's retype arm.
 - `notes/process-view.md` still records the display-name authority question as undecided, which
   milestone 126's block answered on 2026-08-26.

@@ -56,7 +56,7 @@ The second anchor exists because std compiles `sys/args/common.rs` only for a li
 platforms. Adding nife to that list lets the nife file reuse std's `Args` type, as Xous and Motor
 do. The alternative is a self-contained `Args`, as zkvm has in 94 lines.
 
-It costs nothing in the syscall surface: no new syscall number and no new method. It rides
+It costs nothing in the system call surface: no new system call number and no new method. It rides
 `PageFrame` and `MAP_INTO`, which slots 5 and 7 already use. There is a cheaper wire still: std's
 `_start` receives three entry registers and ignores all three
 (`patches/std-nife/overlay/std/src/sys/pal/nife/mod.rs`), so the block's address and length could
@@ -120,7 +120,7 @@ None of the 16 is a std program today.
 
 ## The three options, priced
 
-| | transport | per-program work | syscall surface | runs unmodified `rg` |
+| | transport | per-program work | system call surface | runs unmodified `rg` |
 |---|---|---|---|---|
 | A: argv | about 50 lines in `std` and a layout crate, plus about 10 in the spawner | none | nothing new | yes |
 | B: token-grained | the same | a table per program and release (`rg` 104 flags and a rule, `gix` 260 fields), plus a generic binder of `lexopt`'s size | nothing new | yes, while the table matches the release |

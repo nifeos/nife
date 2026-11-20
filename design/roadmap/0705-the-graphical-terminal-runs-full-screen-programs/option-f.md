@@ -116,7 +116,7 @@ Read in the tree:
   they move, and so do their five spawners: `start_display_terminal` in `system_initializer`'s
   `children.rs`, the kernel's `display_service.rs`, `compositor_service.rs` and `device_starters.rs`,
   and the firmware-screen test in `system_tests`' `display_tests.rs`.
-- Raw syscalls from a `std` program. `jig` already does it, through `user_mode_runtime`.
+- Raw system calls from a `std` program. `jig` already does it, through `user_mode_runtime`.
 - The renderer. `Vt::pixel`'s cell-to-pixel half becomes a function of a cell and the cursor, so
   both engines' cells draw through it. One probe finding: `alacritty_terminal` stores `\t` in the cell
   where a tab started, which the renderer draws as a blank.
@@ -157,7 +157,7 @@ No full-screen program ran. None exists on nife (Part 1), so the spike shows the
    vttest (17 of 24 screens against 22), DECAWM (procps `top` toggles it, per the census), tab
    stops, damage and replies, and that outweighs a permanent cut of two files. `termwiz` does not build and is not an
    engine.
-2. The tree's analogous cases. `jig` is a `std` program making raw syscalls. Milestone 784 (reuse
+2. The tree's analogous cases. `jig` is a `std` program making raw system_calls. Milestone 784 (reuse
    what the tree wrote) holds that needing `std` is not a reason to refuse a crate. RedoxFS is vendored because it needs a patch
    (§34 (RedoxFS is the primary filesystem, on three conditions)).
 3. Prior art read: both crates' source at the versions above. vttest, run against both: 22 of 24

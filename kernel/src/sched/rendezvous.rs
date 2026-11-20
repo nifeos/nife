@@ -18,7 +18,7 @@ pub(super) enum RendezvousFailure {
 
 /// Create an rendezvous **in `region`'s memory** (milestone 19a): one page retyped and pinned, the
 /// rendezvous at its start, a fresh generational name in the registry. The shared engine of the
-/// `RETYPE_OBJECT` syscall and the kernel's own [`create_rendezvous`]. Returns the name, or which
+/// `RETYPE_OBJECT` system call and the kernel's own [`create_rendezvous`]. Returns the name, or which
 /// limit refused it; a refusal spends nothing.
 ///
 /// Context: takes `IPC_TABLES`, and `MEMORY_REGION` beneath it.
@@ -62,7 +62,7 @@ pub(super) fn try_create_rendezvous_from(region: u64) -> Result<RendezvousId, Re
 }
 
 /// Create an rendezvous in `region`'s memory. `None` when the region is out of budget or the registry
-/// is full. The `RETYPE_OBJECT` syscall's engine; userspace gets one flat failure because a process
+/// is full. The `RETYPE_OBJECT` system call's engine; userspace gets one flat failure because a process
 /// cannot act on the difference (it holds one region and cannot enlarge the kernel's registry).
 pub fn create_rendezvous_from(region: u64) -> Option<RendezvousId> {
     try_create_rendezvous_from(region).ok()
@@ -174,7 +174,7 @@ static SENDS_BLOCKED: core::sync::atomic::AtomicU64 = core::sync::atomic::Atomic
 
 /// [`ipc_send`] through a badged endpoint capability: the receiver's `RECEIVE` sees `badge` in word 3
 /// (milestone 613 (a system log service), provisional; see [`wide`] for why a plain send carries
-/// it). The syscall layer passes the badge of the capability the sender invoked, so it is the
+/// it). The system call layer passes the badge of the capability the sender invoked, so it is the
 /// kernel's word and never the sender's. [`ipc_call_badged`] is the same split for `CALL`.
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
@@ -194,7 +194,7 @@ pub fn ipc_send_badged(ep: RendezvousId, msg: [u64; 3], badge: u64) {
 
         // A stale rendezvous (its region was revoked): mark this send aborted and do not block. The
         // kernel-side `ipc_send` wrapper never hits this (its endpoints are never revoked); the
-        // syscall layer reads the flag and returns an error.
+        // system call layer reads the flag and returns an error.
         let Some(rendezvous) = rendezvous_of(sched, ep) else {
             set_ipc_aborted(sched, current);
             return;
@@ -252,7 +252,7 @@ pub fn ipc_receive(ep: RendezvousId) -> [u64; 5] {
         let sched = guard.as_mut().expect("no scheduler");
         let current = current_thread_id();
 
-        // A stale rendezvous (revoked): mark aborted and return a placeholder; the syscall layer sees
+        // A stale rendezvous (revoked): mark aborted and return a placeholder; the system call layer sees
         // the flag and errors. (A thread revoked *while blocked* below is handled the same way: the
         // reaper sets the flag and wakes it, and it returns its stale mailbox for the layer to drop.)
         let Some(rendezvous) = rendezvous_of(sched, ep) else {
@@ -478,7 +478,7 @@ pub(crate) fn inter_process_communication_delegate_capability(
 }
 
 /// The body [`inter_process_communication_send_capability`] and [`inter_process_communication_delegate_capability`] share. `source` runs first, under the hold,
-/// and its error returns before the rendezvous is touched, which is the order the syscall layer
+/// and its error returns before the rendezvous is touched, which is the order the system call layer
 /// answered in when it read the source itself.
 pub(super) fn inter_process_communication_send_capability_from(
     ep: RendezvousId,
@@ -497,7 +497,7 @@ pub(super) fn inter_process_communication_send_capability_from(
 
         let Some(rendezvous) = rendezvous_of(sched, ep) else {
             set_ipc_aborted(sched, current);
-            return Ok(()); // stale rendezvous: aborted, syscall layer errors
+            return Ok(()); // stale rendezvous: aborted, system call layer errors
         };
         // As in ipc_send.
         match rendezvous.send(take_token(sched, current)) {
@@ -592,7 +592,7 @@ pub fn inter_process_communication_receive_capability(ep: RendezvousId) -> [u64;
 
         let Some(rendezvous) = rendezvous_of(sched, ep) else {
             set_ipc_aborted(sched, current);
-            return [0, 0, 0, 0, 0]; // stale rendezvous: aborted, syscall layer errors
+            return [0, 0, 0, 0, 0]; // stale rendezvous: aborted, system call layer errors
         };
         // One lookup for the binding test and the token, as in `ipc_receive`.
         let me = sched.threads.get_mut(current).expect("running thread");
@@ -741,7 +741,7 @@ pub fn ipc_call_badged(ep: RendezvousId, msg: [u64; 2], badge: u64) -> [u64; 3] 
         // difference is the caller *always* blocks awaiting the reply, whether or not it met a server.
         let Some(rendezvous) = rendezvous_of(sched, ep) else {
             set_ipc_aborted(sched, current);
-            return [0, 0, 0]; // stale rendezvous: aborted, syscall layer errors
+            return [0, 0, 0]; // stale rendezvous: aborted, system call layer errors
         };
         // As in ipc_send; a caller queued here is Blocked until its Reply arrives. A caller that
         // meets a server is blocked too, but on nothing, so its token goes home to its TCB, where

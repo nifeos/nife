@@ -69,7 +69,7 @@ fix does not depend on ever fully explaining QEMU's behavior. `kernel/src/arch/x
 BUGS section carries the corrected account, cross-referenced from the fault-register entry beside
 it.
 
-No syscall surface, no wire format, no new dependency: the fix is nine lines in one test.
+No system call surface, no wire format, no new dependency: the fix is nine lines in one test.
 
 ## The fault-record drop, as its own finding
 

@@ -66,7 +66,7 @@ from two cores at once.
 - The three tests, `script/test --test map_revocation_window`, pass on aarch64, riscv64 and
   x86_64 locally. CI runs the whole suite on all three.
 - `script/fastpath-footprint`: within band on all three ISAs; against the unfixed tree on aarch64,
-  `syscall_entry` moved from -1.2% to -1.5% of its baseline and the IPC paths did not move.
+  `system_call_entry` moved from -1.2% to -1.5% of its baseline and the IPC paths did not move.
 - `script/stack-frame-check` passes on aarch64 and riscv64, its default set. On x86_64 it fails on
   `kernel_main` and `iommu::owner_index`, both present before this lane and outside its diff.
 

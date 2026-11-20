@@ -102,7 +102,7 @@ pub(crate) fn delete_device_frame_capabilities_from_others(phys: u64) {
 /// # BUGS
 ///
 /// Matches by object equality, so a capability over a wider or narrower range of the same ports is
-/// left alone. No syscall can name a sub-range today (notes/capability-lifecycle.md, "BUGS").
+/// left alone. No system call can name a sub-range today (notes/capability-lifecycle.md, "BUGS").
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `delete_port_range_capabilities_from_others` under the capability ruling of 2026-10-06 (UTC).
@@ -112,7 +112,7 @@ pub fn delete_port_range_capabilities_from_others(base: u16, count: u16) {
 }
 
 /// Take a port range back from everyone, the invoker included: the whole-machine revoke the
-/// kernel's tests use. No syscall reaches it. `x86_64` only.
+/// kernel's tests use. No system call reaches it. `x86_64` only.
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
 /// `delete_port_range_capabilities` under the capability ruling of 2026-10-06 (UTC).
@@ -211,8 +211,8 @@ pub fn delete_current_capability(slot: u64) -> Result<(), crate::capability_obje
 /// running thread's own table lock, not `IPC_TABLES`.
 ///
 /// `#[inline(never)]` because `script/fastpath-footprint` counts it once as a root and
-/// `syscall::dispatch` flat (milestone 758 (the IPC fast paths shrink back inside their band));
-/// inlined, it lands on aarch64's `syscall_entry`.
+/// `system_call::dispatch` flat (milestone 758 (the IPC fast paths shrink back inside their band));
+/// inlined, it lands on aarch64's `system_call_entry`.
 #[inline(never)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-3. Spelled out from
@@ -358,7 +358,7 @@ impl Delegation {
     ) -> Result<crate::capability_object::Capability, abi::Error> {
         let src = table.get(self.slot).map_err(|_| abi::Error::NoSuchSlot)?;
         // The crate's rule, proved there: the holder may pass it on (`GRANT`) and the copy only
-        // narrows. Both refusals are one answer on the syscall surface.
+        // narrows. Both refusals are one answer on the system call surface.
         src.delegate(self.rights)
             .map_err(|_| abi::Error::NotPermitted)
     }

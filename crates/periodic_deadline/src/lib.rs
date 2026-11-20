@@ -5,7 +5,7 @@
 //!
 //! Pure integer arithmetic over `u64` counter readings, so it serves both the scheduler
 //! (`timetable`, in nanoseconds) and the kernel's software timer re-arm (aarch64 and riscv64, in
-//! counter ticks). No IO, no syscalls, no allocation. The function is Kani-proved (`src/proofs.rs`),
+//! counter ticks). No IO, no system calls, no allocation. The function is Kani-proved (`src/proofs.rs`),
 //! and the kernel calls the same function, so the proof binds the code that runs (§178 (where the
 //! timer re-arm seam goes), milestone 360 (`crates/timetable`'s proved `next_after` is not what the
 //! timer calls)). See notes/periodic-deadline-proofs.md.

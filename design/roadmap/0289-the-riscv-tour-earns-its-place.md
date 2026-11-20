@@ -45,7 +45,7 @@ AGENTS.md names while the customer path is vacant.
 The VisionFive 2 bring-up used the tour, with an initrd, and the builder step is what boot stages
 4 and 5 bracket. This settles the claim the maintainer told calef and then withdrew as unchecked.
 It was right. `notes/visionfive2.md`'s fifth stop resolves boots 7 through 9 with five independent
-identifications. Three are facts about `builder` specifically. Its exact syscall count
+identifications. Three are facts about `builder` specifically. Its exact system call count
 (14 of the boot's 20 ecalls, itemized). The retype kinds it issues (`ASPACE`, `FRAME`, `TCB`, **never
 `ENDPOINT`**), which is what pinned the endpoint-naming order. And it issues no receive of any
 kind, which is what made the parked receivers in the dump impossible to attribute to it. The

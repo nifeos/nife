@@ -16,10 +16,10 @@ use super::survey_tests::{
 };
 use crate::arch::exceptions::TrapFrame;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// A one-instruction runaway: branch (aarch64) or jump (riscv64) to self, forever. It never
-/// yields, never syscalls and never touches a rendezvous, so every tick that finds it on a core is
+/// yields, never system calls and never touches a rendezvous, so every tick that finds it on a core is
 /// a tick it earned.
 ///
 /// The same stub `force_kill_tests` uses, deliberately duplicated rather than shared: that file's

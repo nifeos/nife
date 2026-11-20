@@ -28,7 +28,7 @@ components confined by the kernel. A ported foreign component running confined b
 capability contract demonstrates exactly that: the kernel safely runs code we did not
 write. Userspace reuse feeds the thesis.
 
-Two guards, regardless of layer. No reuse may widen the syscall surface (that is a
+Two guards, regardless of layer. No reuse may widen the system call surface (that is a
 design fork, per CLAUDE.md), and no reuse may smuggle in POSIX assumptions (open-by-path,
 fork/exec, ambient authority). A component that cannot live behind explicit capabilities
 is not a candidate, however good its code.
@@ -36,7 +36,7 @@ is not a candidate, however good its code.
 ## Redox specifically
 
 The similarity is shallower than it looks. Redox is Unix-shaped: a scheme namespace
-("everything is a URL"), POSIX via relibc, a syscall ABI modeled on Linux's, a kernel with
+("everything is a URL"), POSIX via relibc, a system call ABI modeled on Linux's, a kernel with
 a heap. nife is seL4-shaped: capabilities, endpoint-only naming, explicit spawn
 endowment, a kernel that cannot allocate (milestone 14). Their kernel is not a donor, even
 of fragments. Their userspace is where the portable assets live:

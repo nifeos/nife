@@ -21,7 +21,7 @@ fires at 8), ABI constants 76 to 97 (+21, any change fires) and external package
 any change fires). Issue #2258 is the scheduled workflow saying so.
 
 The lens rotation in [the index](README.md) has taken the kernel, the assembly, the shared pages,
-counterparty input, newly minted authority, userspace confinement, trust boundaries and the syscall
+counterparty input, newly minted authority, userspace confinement, trust boundaries and the system call
 surface twice. Supply chain has been on the "not yet taken" list since the README was written. The
 external-packages trigger fired for the first time since 2026-09-29, and the judgment trigger below
 is a package manager taking the network, so the two point at the same place.

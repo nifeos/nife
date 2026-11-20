@@ -46,7 +46,7 @@ fn el1_runs_on_sp_el1() {
 
 /// A user program reaches EL0/U-mode and returns, twice.
 ///
-/// Two syscalls, because the second can happen only if the return from the first put the program
+/// Two system calls, because the second can happen only if the return from the first put the program
 /// back in user mode: one proves it left, two prove it came back.
 #[test_case]
 fn a_user_program_reaches_el0_and_returns_twice() {
@@ -61,7 +61,7 @@ fn a_user_program_reaches_el0_and_returns_twice() {
 
     assert!(
         wait_for(|| SVC_COUNT.load(Ordering::Relaxed) >= before + 2),
-        "saw {} syscalls from user mode, wanted 2",
+        "saw {} system calls from user mode, wanted 2",
         SVC_COUNT.load(Ordering::Relaxed) - before,
     );
 }
@@ -111,7 +111,7 @@ fn a_user_program_cannot_read_a_kernel_address() {
 
 /// DECISIONS §5's arbitrary binary, at user mode: a program that never yields is preempted.
 ///
-/// `interrupt_ignorer`'s whole `_start` is a loop, with no yield, syscall or call, so only a timer
+/// `interrupt_ignorer`'s whole `_start` is a loop, with no yield, system call or call, so only a timer
 /// interrupt between two of its instructions can take the CPU back.
 #[test_case]
 fn a_user_program_that_never_yields_is_preempted_anyway() {
@@ -143,7 +143,7 @@ fn a_user_program_that_never_yields_is_preempted_anyway() {
 /// thread-start fault: a user thread dispatched with `sepc` = 0)).
 ///
 /// Rust and assembly on each ISA must agree the frame is at `stack_top - size_of::<TrapFrame>()`.
-/// `interrupt_ignorer` never syscalls, so a PC in that frame got there by the timer preempting it
+/// `interrupt_ignorer` never system calls, so a PC in that frame got there by the timer preempting it
 /// in user mode; a frame built elsewhere (a live-`sp` placement 16 bytes under `trap.s`'s S-mode
 /// frame) never shows up, and the wait times out. The wait names the U-mode text range, not just
 /// "nonzero": on the exec path the thread is a kernel thread first, and the frames of

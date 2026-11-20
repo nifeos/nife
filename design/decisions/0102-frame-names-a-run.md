@@ -65,7 +65,7 @@ pub fn frame_cap(phys: u64, count: u64, rights: Rights) -> Cap {
 ```
 
 Existing callers pass `count: 1`. `grant_run` passes `count` and grants one capability instead of
-N, which is the whole point: 475 capabilities, 475 syscalls, and 475 mapping records collapse into
+N, which is the whole point: 475 capabilities, 475 system calls, and 475 mapping records collapse into
 one of each.
 
 ### `frame::MAP`
@@ -80,7 +80,7 @@ which capability's authority produced it, so revoking one capability no longer t
 different, overlapping capability made. See §132 for the full reasoning and the one imprecision it
 knowingly left (two capabilities sharing a base but not a length are still one record).
 
-The signature is additive: the `count` lives on the capability, not in the syscall arguments, so
+The signature is additive: the `count` lives on the capability, not in the system call arguments, so
 `MAP`'s argument shape doesn't change. A caller that holds a `Frame(phys, 475)` calls `MAP` once
 and gets 475 pages mapped contiguously.
 
@@ -93,7 +93,7 @@ same as today.
 ### What does NOT change
 
 - `frame::MAP`'s argument shape. `va`, `writable`, `untyped_slot` are the same. The `count` is
-  on the capability, not in the syscall.
+  on the capability, not in the system call.
 - The revocation table. It is per-page (`revoke::record_mapping(phys, root, va)`), not per-capability.
   A `REVOKE` on a run walks the same table N times, once per page in the run. No format change.
 - **`aspace::MAP_INTO`.** The spawner-side mapping path is unchanged. It takes a `Frame` capability
@@ -113,7 +113,7 @@ same as today.
 | `frame::MAP` dispatch | Loops over `count`, mapping each page and recording each mapping. |
 | `frame::REVOKE` dispatch | Loops over `count`, revoking each page. |
 | `grant_run` | Collapses to one `grant_at` call with one capability. |
-| ABI | **No new syscall, no new method, no new constant.** `frame::MAP` and `frame::REVOKE` keep their opcodes; the `count` rides on the capability. |
+| ABI | **No new system call, no new method, no new constant.** `frame::MAP` and `frame::REVOKE` keep their opcodes; the `count` rides on the capability. |
 | Kani proofs | The `capability` crate's invariant on `Object` carries through; the `Frame` variant's equality is `(phys, count)` rather than `phys`. |
 
 ## What this retires

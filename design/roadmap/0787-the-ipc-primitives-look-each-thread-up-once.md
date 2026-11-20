@@ -13,7 +13,7 @@ needs_person: no
 Raised by the lane for milestone 758 (the IPC fast paths shrink back inside their band) on
 2026-10-04 (UTC), from the same per-line attribution that chose its levers. It is the next lever
 by size. That lane left it alone on purpose. #1611 (plain `RECEIVE`), #1617 (64 capability
-slots) and #1614 (null_syscall under load) were all rewriting the bodies it would touch.
+slots) and #1614 (null_system_call under load) were all rewriting the bodies it would touch.
 
 ## What is owed
 

@@ -93,7 +93,7 @@ tree. No reference to a mutable static exists. The other half is ordering. A pla
 `static mut`, read by another core with no release and acquire between them, is a data race. The
 tree's fourth codebase rule says to assume weak memory ordering, and on aarch64 the race is real.
 
-This tree has had that race. `kernel/src/arch/x86_64/exceptions.rs` records that the `syscall`
+This tree has had that race. `kernel/src/arch/x86_64/exceptions.rs` records that the `system_call`
 stack slot started "as one flat `static mut` every CPU raced", until milestone 161 (the x86_64
 kernel port) made it per-CPU. `arch/x86_64/isa.rs` records the other conversion on file: its CPU
 record "stopped being a `static mut` with a zeroed initializer" and is now an

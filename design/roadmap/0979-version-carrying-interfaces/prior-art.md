@@ -70,7 +70,7 @@ calls the record vestigial.
 
 ## Linux
 
-- The syscall interface carries a published add-only promise. `Documentation/ABI/stable/syscalls`
+- The system call interface carries a published add-only promise. `Documentation/ABI/stable/system_calls`
   (https://github.com/torvalds/linux/blob/master/Documentation/ABI/stable/syscalls): the interface
   only grows, and nothing leaves it. This is the proposal's frozen-identifier rule as a published
   promise, with the documentation as the enforcement and new numbers as the only growth.

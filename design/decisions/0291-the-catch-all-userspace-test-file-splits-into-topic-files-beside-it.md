@@ -115,5 +115,5 @@ Each is left alone, because this change moves and does not edit.
 
 ## What it does not decide
 
-No public crate API, wire format or syscall changes. The suite is a test image. The module and file
+No public crate API, wire format or system call changes. The suite is a test image. The module and file
 names are provisional.

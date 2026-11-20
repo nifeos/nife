@@ -25,7 +25,7 @@ publish = false
 # (`package_archive`), how a name travels on that wire (`filesystem_contract::grant`), the plain
 # HTTP reader the progenitor used to run (`http_response`, which left the progenitor's graph in the
 # same change), where the package source answers (`socket_fixture`), the `std` layout's
-# pages (`std_runtime_contract`), and the syscalls a `std` program has no binding for
+# pages (`std_runtime_contract`), and the system calls a `std` program has no binding for
 # (`user_mode_runtime`, `abi`, `address_space_layout`).
 [dependencies]
 abi = { path = "../crates/abi" }

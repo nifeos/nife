@@ -36,7 +36,7 @@ returning data. **The address does not resolve.**
 
 This is what [mmu.md](mmu.md) was building toward.
 
-## Wall 3: The only door is a syscall
+## Wall 3: The only door is a system call
 
 A user program cannot `bl kernel_function`. That address is unmapped or privileged.
 
@@ -104,7 +104,7 @@ exist:
 
 | Wall | Needs | Milestone |
 |---|---|---|
-| The syscall door | exception vectors, `VBAR_EL1` | **2** |
+| The system call door | exception vectors, `VBAR_EL1` | **2** |
 | Address space isolation | the MMU and page tables | **4** |
 | Taking the CPU back from a program that won't yield | preemptive threads, timer interrupts | **5, 6** |
 
@@ -181,19 +181,19 @@ Almost none of 7a was new. The kernel lives in `TTBR1` at `0xffff_...`; userspac
 address ([higher-half.md](higher-half.md)). So:
 
 - The kernel is mapped in every address space, for free. Nobody copies anything.
-- A syscall does not switch page tables. Nothing to flush, nothing to remap.
+- A system call does not switch page tables. Nothing to flush, nothing to remap.
 - Installing a process is one `msr ttbr0_el1`.
 - `Flags::user_code()` and `Flags::user_data()` had been sitting in the `page_tables` crate, unused,
   since milestone 4.
 
-## And there is deliberately NO syscall
+## And there is deliberately NO system call
 
-The user program executes `svc #0` and asks for nothing. No syscall number, no argument
+The user program executes `svc #0` and asks for nothing. No system call number, no argument
 convention, no return value. The kernel counts it.
 
-That restraint is the point. §8 said "if we find ourselves hacking in a syscall without having
+That restraint is the point. §8 (process model / system call ABI) said "if we find ourselves hacking in a system call without having
 had that conversation, the plan has failed." We had the conversation, and the answer was
-[capabilities](capabilities.md). The syscall surface gets designed at 7d, in one piece, against
+[capabilities](capabilities.md). The system call surface gets designed at 7d, in one piece, against
 a capability table.
 
 ---

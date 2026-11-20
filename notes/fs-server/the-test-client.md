@@ -79,7 +79,7 @@ The property under test is whether a second holder of a frame can change the byt
 resolves for this client's call. Whether a race happens to fire is not the question. So the victim
 and the attacker use a two-message handshake: the victim stages its name, the attacker rewrites the
 page, and only then does the victim call. The server has no way to tell whose bytes it read. The
-victim mints its own badged endpoint, which exercises the mint syscall end to end, while the
+victim mints its own badged endpoint, which exercises the mint system call end to end, while the
 attacker gets a pre-badged one from the wiring, so the test covers both shapes.
 
 ## The throughput role

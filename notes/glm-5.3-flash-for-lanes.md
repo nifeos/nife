@@ -150,7 +150,7 @@ promotions. The conditions: run it through `helpers/open-lane.sh` or a harness w
 lock, and give it its own `RUSTUP_HOME`. A reviewer reads the diff before merge, as with any lane.
 The trailer is fixed to name Flash, so attribution stays true.
 
-Do not use either GLM model for kernel, syscall-surface or design-fork lanes yet. Flash ran out of
+Do not use either GLM model for kernel, system-call-surface or design-fork lanes yet. Flash ran out of
 time there; GLM-5.3 decided a fork it should have raised.
 
 To learn more, rerun task (c) on both models with a 120-minute bound, and run five more

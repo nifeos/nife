@@ -97,7 +97,7 @@ the file server's channel, which `boot_progenitor` also grants the progenitor.
 `crate::revoke::PageMapSource`'s own reason. Every kernel-wiring caller passes `NoCapability`
 truthfully. A `Spawn::maps` entry, a `DeviceRun`, the initial ramdisk and the timebase page are
 endowments the process holds no capability for, so a single-page revoke of the page finds the
-record. The `MAP_INTO` syscall is the caller that passes a capability, because it has one.
+record. The `MAP_INTO` system call is the caller that passes a capability, because it has one.
 `map_physical_held` maps under a `MappingHold` the caller already has, so a capability read under
 that hold and the mapping made from it are one critical section.
 
@@ -105,7 +105,7 @@ that hold and the mapping made from it are one critical section.
 
 ### The current-CPU page
 
-A thread reads its own core from a per-thread page rather than through a syscall (calef, 2026-09-21),
+A thread reads its own core from a per-thread page rather than through a system call (calef, 2026-09-21),
 because the consumer is a memory allocator asking on every allocation. `crates/current_cpu_contract`
 holds the layout and the ordering argument. The context switch publishes the core on the core doing
 the switch, which is the core the thread will run on.
@@ -147,7 +147,7 @@ hand a narrowed archive to one named program (`timetable_tests::spawn_timetable`
 spawn). `load`'s mapping reaches none of them, and each would fault the first time it read the
 clock. They all call `map_timebase_page`.
 
-`user_address_space_create` maps no timebase page. That syscall serves every purpose that wants a
+`user_address_space_create` maps no timebase page. That system call serves every purpose that wants a
 bare address-space object, most of which build nothing like an ELF process, and one test's
 hand-sized region has no table budget for it. The userspace loader
 (`supervision_contract::build_child_space`) writes the page itself from the rate the parent holds,

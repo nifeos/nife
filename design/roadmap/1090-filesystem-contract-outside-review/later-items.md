@@ -22,7 +22,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
 16. The errno vocabulary has three spellings.
     Finding: the doc of `xattr::ENOTSUP` (`src/xattr.rs` line 67) says `EOPNOTSUPP`. `blk::FLUSH`
     (`src/blk.rs` line 33) says `EOPNOTSUPP (95)`. `dir::explain` (`src/dir.rs` line 114, `:120`, `:123`,
-    `:124`) and `store::syscall_einval` (`src/xattr.rs` line 340) use bare literals for ENOENT, EEXIST,
+    `:124`) and `store::system_call_einval` (`src/xattr.rs` line 340) use bare literals for ENOENT, EEXIST,
     EBADF, EMFILE and EINVAL. `dir` and `grant` each define `EROFS` and `ENOTDIR`, and `EBADF`
     once more under `verb::file_grant`. `redox_syscall` spells 95 `EOPNOTSUPP`.
     Change: one `errno` module naming every number the contract answers, each with its sentence,

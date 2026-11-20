@@ -30,7 +30,7 @@ pub fn configure_thread_control_block(
 /// (riscv64) from user mode. `x86_64` lets every thread read the TSC, a stated exception to §19.
 ///
 /// Refuses a non-embryo with `WrongObject`, which keeps the grant a field of the spawn manifest
-/// rather than something a running program can ask for. One-way. No syscall method reaches it yet
+/// rather than something a running program can ask for. One-way. No system call method reaches it yet
 /// (`abi::thread_control_block` says why none is minted). `#[inline(never)]` keeps it out of the
 /// bytes `script/fastpath-footprint` bounds.
 #[inline(never)]

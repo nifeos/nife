@@ -33,7 +33,7 @@ small programs with specific functions"*, and, on the binary that had accumulate
 The cost is not aesthetic. A role is dispatched on a word the kernel puts in `x0`, so it is a value
 the kernel's wiring and the program agree on that nothing checks. Its name lives in a `const` two
 files apart rather than in the archive. The binary links everything every role needs, so a fixture
-spawned to prove one syscall drags in an ELF parser. And the program's name has to describe all of
+spawned to prove one system call drags in an ELF parser. And the program's name has to describe all of
 them at once, which it stops doing at about the third.
 
 Milestones 291 and 405 are the worked example. One fixture, `hello`, reached thirty-one roles one

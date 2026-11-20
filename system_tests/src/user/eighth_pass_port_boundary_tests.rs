@@ -175,7 +175,7 @@ fn a_non_holder_cannot_read_a_port_and_a_read_only_holder_may_not_write_it() {
 /// Two holders of the whole COM1 range park on their own wake endpoints, so the test picks the
 /// instant. The first wakes after its exact range is revoked and its `out` must fault; the second
 /// wakes after an unheld range is revoked and its `out` must still work. A sub-range revoke is no
-/// leg: the sweep matches exact `(base, count)` and no syscall can name a narrower range (near
+/// leg: the sweep matches exact `(base, count)` and no system call can name a narrower range (near
 /// miss 1 of notes/confinement-outsider-pass-8.md).
 ///
 /// Falsification: unfalsified. Written by the eighth outsider pass's reviewer, who booted it

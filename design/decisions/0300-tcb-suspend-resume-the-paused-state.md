@@ -80,7 +80,7 @@ who does not exist. The block's "one surface with the fault endpoint" phrasing i
 witnesses the state change, the authority is named, and the endpoint keeps the news that is
 actually news.
 
-This is a syscall-surface fork, decided rather than recommended: the surface verbs are the one
+This is a system-call-surface fork, decided rather than recommended: the surface verbs are the one
 irreversible part, and they are now named.
 
 ## Whether the premise is true

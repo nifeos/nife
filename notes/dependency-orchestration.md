@@ -14,7 +14,7 @@ The quiescence protocol already existed before this lane, in one instance: `brok
 `BOP_DOWN`/`BOP_UP` (notes/live-replacement.md's latency ladder). What did not exist was the graph.
 `queued()` sent `BOP_DOWN` unconditionally, because in the one system this tree runs there is exactly
 one component (`broker`) that ever needs it, so "always warn it" and "warn whoever the graph names"
-produced the same four syscalls and nothing distinguished the two. The manifest itself said nothing
+produced the same four system calls and nothing distinguished the two. The manifest itself said nothing
 about it: `capability_plan::Requirements` declared what a component *needs*, never that another
 component *supplies* it, so there was no dependency graph to compute an answer from even in
 principle.

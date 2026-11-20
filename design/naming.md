@@ -42,10 +42,10 @@ against three failure modes:
   `tx`, `phy`, `init`, `irq`, `fifo`, `min`, `max`, `os`, `config`, `spec`, `arg`, `mem`, `dir`,
   `prog`, `pos`, `opt` and `mtime`. The same holds for `va`, `pa`, `ipi`, `nmi`, `ist`, `msr`,
   `dtb`, `ipc`, `asid`, `gpt`, `nvme`, `pcie`, `dma`, `pr`, `initrd`, `proto`, `rgmii`, `mdio`,
-  `sdio` and `virtio`. The appendix gives each spelling and the cases that decide it. The words are the
+  `sdio`, `virtio` and `syscall`. The appendix gives each spelling and the cases that decide it. The words are the
   `[spelled_out]` list in `vendor/crate-workflows/helpers/naming_words.toml`, the template's, and
   `script/lint` fails when this paragraph and that list disagree.
-- These stay: `pci`, `elf`, `usb`, `syscall`, `cpu`, `xor`, `io`, `bios`, `id`, `efi`, `crc`,
+- These stay: `pci`, `elf`, `usb`, `cpu`, `xor`, `io`, `bios`, `id`, `efi`, `crc`,
   `tcp`, `udp`, `ipv4`, QEMU, `MAC`, `GMAC` and `SD`. Spell `identifier` only where ID is one letter of a compound specification
   acronym (`address_space_identifier`). `io` stays whole inside an expansion too: SDIO becomes `SD_IO`,
   `mdio` becomes `management_data_io` and `virtio` becomes `virtual_io`.

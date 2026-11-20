@@ -51,7 +51,7 @@ Fixed here, in the three sweeps that lacked it, by dropping the parked capabilit
 `delete_device_frame_caps_from_others`, and `x86_64`'s `delete_port_range_caps_impl`. Dropping rather
 than failing the send is the behavior `ipc_send_cap` already documents for the other way a hand-off
 comes up empty, a receiver whose table is full. The data word still arrives, and the receiver sees
-`NO_CAP`. No new error reaches userspace, so nothing about the syscall surface moves. The
+`NO_CAP`. No new error reaches userspace, so nothing about the system call surface moves. The
 falsification is recorded and replayed red.
 
 What it does not settle. Only the `PageFrame` sweep is driven by a test. The other two carry the same
@@ -75,7 +75,7 @@ anything holds a *capability* to the same page. Something does, in an ordinary b
 are wired by different modules, which is why nobody had put them side by side.
 `user::fs_service::spawn_fs_server` puts the file channel's shared pages into the FS server through
 `Spawn::maps`. `user::boot_progenitor` hands the progenitor `PageFrame(file_shared, 1)` with `GRANT`
-over the first of exactly those pages. `PageFrame::REVOKE` on that slot is a syscall the progenitor
+over the first of exactly those pages. `PageFrame::REVOKE` on that slot is a system call the progenitor
 may make. It deleted every capability naming the run and unmapped every mapping recorded under it.
 The FS server kept its writable mapping of a page the progenitor had just un-shared.
 
@@ -85,7 +85,7 @@ takes `revoke::PageMapSource` and records. `record_mapping` has required that an
 kernel that never had to answer, because it never recorded. Every kernel-wiring caller passes
 `NoCapability`, truthfully. So the page stands as its own object, and a single-page revoke of it
 finds the record. `user_address_space_map` was the one caller that remembered to record, and is now
-the one caller with nothing extra to remember. Nothing about the syscall surface moves.
+the one caller with nothing extra to remember. Nothing about the system call surface moves.
 `system_tests::user::spawn_mapping_revocation_tests::a_page_the_kernel_wired_is_unmapped_when_its_frame_is_revoked`
 is the falsification, replayed red on aarch64 with its vacuity guard and premise check green first.
 
@@ -120,7 +120,7 @@ One attack per line, because the misses are what make the hit worth believing.
 | 6 | Is `record_mapping`'s failure ignored anywhere, so that a mapping is unrecorded? | Held. Three call sites, all three check the return and unmap what they just mapped. The unrecorded mappings are the ones that never call it, which is the section above. |
 | 7 | Does a revocation reach the IOMMU's device domain? | **No, and it is a documented limit rather than a live defect.** `iommu::confine` has no inverse and its own doc says it runs once per device per boot. Only kernel drivers call it and the regions it maps are kernel-owned, so there is nothing a userspace revoke is failing to undo. It goes live the day a driver leaves the kernel and programs its own device, which is the question DECISIONS §86 (whether an NVMe driver can leave the kernel, and what
 capability would let it) answers. |
-| 8 | Can an ELF segment whose `p_vaddr + p_memsz` overflows be laid over the kernel? | **Held.** `map_segments` maps page by page through `AddressSpace::map_new`, whose `Mapper` is built `Half::Low`, so the refusal is per page rather than per segment and a run that walks out of the low half is refused where it walks out. This is the defect class milestone 142's review found in the two syscall map paths, which check the run's last page as well as its first. |
+| 8 | Can an ELF segment whose `p_vaddr + p_memsz` overflows be laid over the kernel? | **Held.** `map_segments` maps page by page through `AddressSpace::map_new`, whose `Mapper` is built `Half::Low`, so the refusal is per page rather than per segment and a run that walks out of the low half is refused where it walks out. This is the defect class milestone 142's review found in the two system call map paths, which check the run's last page as well as its first. |
 
 ## What this pass could not reach
 

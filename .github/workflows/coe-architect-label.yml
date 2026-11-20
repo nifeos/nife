@@ -13,7 +13,7 @@ name: coe architect label
 # required check, rather than as a script's restraint) built the enforcement half of this label as
 # a required check, but said plainly what it does not do: *"It enforces the label; it cannot apply
 # the label... The mechanisms that could close that are separate and harder... a check that reads
-# the diff and demands the label when the syscall surface or the dependency graph moved. The
+# the diff and demands the label when the system call surface or the dependency graph moved. The
 # second is the real answer."* This workflow is that answer's shape, scoped to one case: a COE.
 #
 # **A separate workflow, not a change to architect-hold.yml.** That workflow's own header is

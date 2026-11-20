@@ -100,7 +100,7 @@ All on the same commit (`1a145fcaa`), checks off against checks on, nothing else
 `script/fastpath-footprint`, run on patagonia, the stock gate against
 `CARGO_PROFILE_RELEASE_OVERFLOW_CHECKS=true`. Bytes of instructions an IPC round trip can touch:
 
-| ISA | `ipc_call_reply` off | on | growth | `syscall_entry` off | on | growth |
+| ISA | `ipc_call_reply` off | on | growth | `system_call_entry` off | on | growth |
 |---|---|---|---|---|---|---|
 | aarch64 | 7,044 | 7,332 | +4.1% | 1,612 | 1,724 | +6.9% |
 | riscv64 | 6,106 | 6,632 | +8.6% | 1,976 | 2,244 | +13.6% |
@@ -150,7 +150,7 @@ ticks per iteration from `script/bench --check` on each ISA. A positive cost is 
 
 | Benchmark | aarch64 | riscv64 | x86_64 |
 |---|---|---|---|
-| `null_syscall` | 0.0% | 0.0% | |
+| `null_system_call` | 0.0% | 0.0% | |
 | `yield_switch` | +0.4% | +1.1% | +0.4% |
 | `ctx_switch` | +0.3% | +1.0% | |
 | `ipc_rtt` | +0.3% | 0.0% | -2.6% |
@@ -167,7 +167,7 @@ ticks per iteration from `script/bench --check` on each ISA. A positive cost is 
 Blank cells are benchmarks that ISA does not run. **The IPC and switch paths cost under 1.1%.** The
 paths that do arithmetic on addresses and sizes (`map_*`, `spawn_*`) cost 2 to 6%, and CoreMark, a
 userspace integer workload, 5.5 to 7.2%. All of it is inside the bench's 10% tripwire, which is
-why the checks-off run passed. riscv64's ticks are coarse (`null_syscall` is 3), so a 0% there means
+why the checks-off run passed. riscv64's ticks are coarse (`null_system_call` is 3), so a 0% there means
 under one tick. Two rows went down with checks on (aarch64 `ipc_rtt_el0`, x86_64 `ipc_rtt`), which
 added instructions alone cannot explain; tick quantization and code layout can, and they set the
 noise floor of this table at about 3%. The checks-off branch turns checks off for the kernel and
@@ -179,7 +179,7 @@ removes checks it can prove redundant, so the release instruction cost is at mos
 ### Cycles on the release build (HVF, patagonia)
 
 `script/bench --release` under HVF, seven runs each interleaved, at `1a145fcaa`: no IPC, switch or
-syscall cost above run-to-run noise, CoreMark +2.5% with disjoint ranges, and `ipc_rtt_el0`'s median
+system call cost above run-to-run noise, CoreMark +2.5% with disjoint ranges, and `ipc_rtt_el0`'s median
 +5.5% with overlapping ranges. The fourteen-run repeat under "The ruling, and what landed" replaces
 this table; the per-run numbers are in git.
 
@@ -249,7 +249,7 @@ its site, in one of four kinds:
 `rendezvous_of`'s `phys_to_virt` keeps its check; the band did not need it. Bytes from
 `script/fastpath-footprint` on patagonia (checks off on `main`, checks on before the rewrite, after):
 
-| ISA | `ipc_call_reply` | `ipc_send_receive` | `syscall_entry` |
+| ISA | `ipc_call_reply` | `ipc_send_receive` | `system_call_entry` |
 |---|---|---|---|
 | aarch64 | 7,044 / 7,332 / 6,912 | 5,692 / 5,956 / 5,612 | 1,612 / 1,724 / 1,640 |
 | riscv64 | 6,106 / 6,632 / 6,094 | 4,988 / 5,470 / 5,002 | 1,976 / 2,244 / 2,008 |
@@ -270,7 +270,7 @@ median ns and range):
 
 | Benchmark | off | on | median change |
 |---|---|---|---|
-| `null_syscall` | 30 [29-32] | 30 [29-38] | 0 |
+| `null_system_call` | 30 [29-32] | 30 [29-38] | 0 |
 | `ipc_rtt` | 51 [49-146] | 50.5 [49-151] | noise |
 | `call_reply` | 71 [68-173] | 70 [68-201] | noise |
 | `ipc_rtt_el0` | 437.5 [403-583] | 441 [400-811] | +0.8%, noise |

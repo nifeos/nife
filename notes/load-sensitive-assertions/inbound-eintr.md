@@ -76,6 +76,6 @@ The rate after the fix is not measured. An `EINTR` is now retried silently, so t
 shows it. The evidence is the errno and the host tests, not a before-and-after count. A lost round
 after this change would be a different mechanism, and its errno will now be on the trace.
 
-The signal's source is unknown. If it is the sampler's child, any other blocking syscall in `xtask`
+The signal's source is unknown. If it is the sampler's child, any other blocking system call in `xtask`
 could see it. The ones in `std` that matter, such as `connect_timeout` and `write_all`, already
 retry `EINTR`.

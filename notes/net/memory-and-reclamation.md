@@ -75,7 +75,7 @@ which one it was" is exactly the kind of claim this file exists to keep honest.
 
 What a net test now does at the end: `net.release_or_fail("a net test's net_stack")`, which is
 `kill_thread` on the server and its clients, then `reclaim_region` on each region, retried. No new
-verb, no syscall change.
+verb, no system call change.
 
 The one thing that had to change in the kernel, and it is worth understanding here rather than
 only in `sched.rs`. `net_stack` blocks in `receive_capability(STACK)` forever. DECISIONS §16's armed kill

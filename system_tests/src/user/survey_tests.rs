@@ -6,7 +6,7 @@ use super::supervision_tests::{FAULT_STUB, REPORT_STUB, build_child_in};
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// The builder's whole budget: room for three instances plus slack, so a domain can hold more than
 /// one member and a second domain can exist beside it.

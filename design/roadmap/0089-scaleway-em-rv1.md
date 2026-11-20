@@ -139,7 +139,7 @@ is attention to transcripts, which is why the host and QEMU steps came first.
    reported out of stock on 2026-06-03. Runbook step 0 answers that before anything is spent.
 5. Cost: measured above in euros and estimated in hours. The hours are an estimate from radon's
    record, not a measurement.
-6. Reversibility: code, plus an hourly rental. No wire format, syscall or ratified name.
+6. Reversibility: code, plus an hourly rental. No wire format, system call or ratified name.
 7. Same cost for both: the window in step 2 is chosen over Linux's per-device `ioremap` because it
    is one table entry and one compare, not a virtual allocator. With equal effort the window still
    wins for a kernel that maps a handful of devices once at boot. If a machine ever puts devices in

@@ -1,6 +1,6 @@
 # toolchain: nightly-2026-10-20
 # date: 2026-10-20
-# why: Virtio::READ_REGISTER slot bound (security audit 2026-10-20 UTC): x86_64 only, re-floored because main already measured ipc_call_reply 6970 (+4.8%) at dd50a277b and ccbc96666, the drift of nightly-2026-10-04 -> nightly-2026-10-20 and the milestones since, which no earlier save recorded. This branch adds 16 B, all in sched::switch::finish_switch: LLVM selects a different instruction pair for the same interrupt-flag test and adds one alignment nop. No source on the path changed; every form of the bound tried (inline, a guard on the mmio arm) gives the same 6986. ipc_send_receive 5335 -> 5504 and syscall_entry 1669 -> 1699 are main's on the same two commits.
+# why: Virtio::READ_REGISTER slot bound (security audit 2026-10-20 UTC): x86_64 only, re-floored because main already measured ipc_call_reply 6970 (+4.8%) at dd50a277b and ccbc96666, the drift of nightly-2026-10-04 -> nightly-2026-10-20 and the milestones since, which no earlier save recorded. This branch adds 16 B, all in sched::switch::finish_switch: LLVM selects a different instruction pair for the same interrupt-flag test and adds one alignment nop. No source on the path changed; every form of the bound tried (inline, a guard on the mmio arm) gives the same 6986. ipc_send_receive 5335 -> 5504 and system_call_entry 1669 -> 1699 are main's on the same two commits.
 # bench/fastpath-x86_64.txt: an upper bound on the IPC fastpath's instruction footprint.
 # Written by script/fastpath-footprint --save. Updating this file is a statement that a
 # footprint change is intended and understood; do it in the commit that causes it.
@@ -9,8 +9,8 @@
 # `ipc_send_receive` and `ipc_call_reply` are the two IPC shapes, measured separately since
 # milestone 188 phase 1 because the system runs the second and this gate measured only the
 # first. `ipc_fastpath` is DERIVED, the worse of the two, kept under its old name because
-# the tree cites it; it is not checked separately. Both shapes and `syscall_entry` are.
+# the tree cites it; it is not checked separately. Both shapes and `system_call_entry` are.
 ipc_send_receive 5504
 ipc_call_reply 6986
 ipc_fastpath 6986
-syscall_entry 1699
+system_call_entry 1699

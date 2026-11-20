@@ -108,5 +108,5 @@ start bits are distinct low bits, names only `proto` and joins them.
 
 ## What it does not decide
 
-No public path, wire format, layout or syscall changes. Every new module and file name is
+No public path, wire format, layout or system call changes. Every new module and file name is
 provisional.

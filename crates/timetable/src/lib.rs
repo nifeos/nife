@@ -6,7 +6,7 @@
 //! program's manifest refuses it, or this scheduler holds nothing to back it, which is fixed at the
 //! spawn site and not in the entry (DECISIONS §43 (reading the clock is a page)). A document that
 //! does not parse is an [`Error`] with its line. `every` and `at-boot` entries run on the monotonic
-//! counter; a calendar line ([`recurrence`]) needs the wall clock. No IO and no syscalls, so it is
+//! counter; a calendar line ([`recurrence`]) needs the wall clock. No IO and no system calls, so it is
 //! all host-tested; the program is `components/src/timetable.rs`. See notes/scheduled-execution.md.
 
 //! # The document

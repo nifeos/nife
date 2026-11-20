@@ -53,7 +53,7 @@ fn chunk(out: RendezvousId, buf: &mut [u8; 16]) -> Option<usize> {
 ///
 /// The half of milestone 111 (a shell that can endow a child with entropy) that carries the claim:
 /// authority a program did not declare is not quietly available anyway. A process that draws a key
-/// and one that hardcodes it make the same syscalls, so only taking the capability away tells them
+/// and one that hardcodes it make the same system calls, so only taking the capability away tells them
 /// apart, and the assertions are about silence: no byte of the 36-character identifier reaches the
 /// sink, the stream is the one sentence, and the process ends normally. A `uuid` that fell back to
 /// a counter, a boot-time seed or a tick fails, the fallback

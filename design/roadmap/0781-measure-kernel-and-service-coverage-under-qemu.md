@@ -15,7 +15,7 @@ provisional. *(Title and slug are drafts.)*
 
 ## Why
 
-`script/coverage` measures host crates only. The kernel, the services and the syscall-wrapping
+`script/coverage` measures host crates only. The kernel, the services and the system-call-wrapping
 crates hold 1,159 Result-family error paths and 602 Option-family ones that no coverage run sees,
 about half of the tree's total ([`notes/untested-error-paths.md`](../../notes/untested-error-paths.md)).
 Every cleanup path the count found is among them.

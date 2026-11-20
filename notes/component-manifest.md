@@ -306,7 +306,7 @@ not that another component is what supplies it.
   behind each item of the crate
 - DECISIONS §41 (the endpoint is the broker, and a device is revoked by taking it back), §32 (a
   supervisor may collect a corpse without being able to build one)
-- DECISIONS §31 (the foreign-language seam: C holds no capabilities and makes no syscalls), §12
+- DECISIONS §31 (the foreign-language seam: C holds no capabilities and makes no system calls), §12
   (call/reply IPC: a one-shot reply capability), §16 (object revocation: reclaim the objects a
   process built)
 - notes/live-replacement.md for the swap itself, its two witnesses, and the latency ladder

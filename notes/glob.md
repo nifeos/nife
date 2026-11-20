@@ -1,7 +1,7 @@
 # The glob matcher
 
 `byte_glob` (the repository `nifeos/byte_glob`), milestone 47's navigation-and-naming lane. A pattern and a name go in, a `bool` comes
-out. No IO, no syscalls, no directory, no allocation, no capability, and no idea what a file is.
+out. No IO, no system calls, no directory, no allocation, no capability, and no idea what a file is.
 
 This note is the working reference: what the crate does, the four scope decisions it settled and why,
 the algorithm and the reason it cannot be made to hang, and where the proof stops and enumeration

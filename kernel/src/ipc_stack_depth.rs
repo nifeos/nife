@@ -3,7 +3,7 @@
 //! Immediately before one IPC operation the thread paints its own kernel stack up to [`MARGIN`]
 //! below its live `sp`; immediately after, it scans for the deepest word no longer paint. Kernel
 //! threads wrap each call in [`measured`] ([`kernel_thread_shapes`]); for EL0 threads
-//! [`after_syscall`] scans and repaints at the end of each syscall ([`el0_shapes`]). Each series
+//! [`after_system_call`] scans and repaints at the end of each system call ([`el0_shapes`]). Each series
 //! reports its median, which is the per-IPC figure, beside the interrupt-contaminated maximum.
 //! Built only under `any(test, feature = "ipc_stack_depth")`. See
 //! notes/stack-high-water/per-ipc-depth.md.
@@ -335,7 +335,7 @@ struct El0Slot {
     tid: AtomicU64,
     bottom: AtomicU64,
     top: AtomicU64,
-    /// The ceiling of the last paint, or 0 before the thread's first syscall, whose window is the
+    /// The ceiling of the last paint, or 0 before the thread's first system call, whose window is the
     /// spawn path into EL0 and so records nothing.
     ceiling: AtomicU64,
     /// One series per rendezvous method number (`abi::rendezvous::*` are 0 to 4, and a Reply
@@ -369,7 +369,7 @@ impl El0Slot {
 /// Two roles at a time: a client and a server.
 static EL0: [El0Slot; 2] = [const { El0Slot::new() }; 2];
 
-/// The only thing an unregistered syscall pays in a test build.
+/// The only thing an unregistered system call pays in a test build.
 static EL0_ARMED: AtomicBool = AtomicBool::new(false);
 
 /// Register the calling kernel thread as EL0 role `slot`, just before it enters user mode.
@@ -392,13 +392,13 @@ fn reset_el0() {
     }
 }
 
-/// Record how deep the syscall now ending went, then repaint for the next.
+/// Record how deep the system call now ending went, then repaint for the next.
 ///
-/// `nr` is the syscall number and `method` is `frame.arg(1)` as the syscall found it. Called by
-/// `syscall::dispatch` last. An unregistered thread pays one load. The window also holds any
+/// `nr` is the system call number and `method` is `frame.arg(1)` as the system call found it. Called by
+/// `system_call::dispatch` last. An unregistered thread pays one load. The window also holds any
 /// interrupt taken from EL0 since the last call, which is the tail the median discards.
 #[inline(never)]
-pub(crate) fn after_syscall(nr: u64, method: u64) {
+pub(crate) fn after_system_call(nr: u64, method: u64) {
     if !EL0_ARMED.load(Ordering::Relaxed) {
         return;
     }
@@ -414,7 +414,7 @@ pub(crate) fn after_syscall(nr: u64, method: u64) {
         s.top.load(Ordering::Relaxed),
     );
     let ceiling = s.ceiling.load(Ordering::Relaxed);
-    if ceiling != 0 && nr == abi::SYSCALL_INVOKE {
+    if ceiling != 0 && nr == abi::SYSTEM_CALL_INVOKE {
         let used = scan(bottom, top);
         // The trap frame is at the top, so the caller's own depth is zero by construction.
         s.series[(method & 7) as usize].record(used, top - ceiling, 0);

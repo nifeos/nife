@@ -306,7 +306,7 @@ pub mod store {
             return Err(E2BIG);
         }
         if kind > MAXIMUM_KIND {
-            return Err(syscall_einval());
+            return Err(system_call_einval());
         }
         let mut used = 0;
         let mut replaced = false;
@@ -350,7 +350,7 @@ pub mod store {
     /// `EINVAL`, spelled here so this module needs no dependency on the error crate. The kind
     /// field is the only thing that answers it: a code with bit 31 set cannot ride home in a
     /// reply word, and truncating it would hand back a type that was never written.
-    const fn syscall_einval() -> i32 {
+    const fn system_call_einval() -> i32 {
         22
     }
 

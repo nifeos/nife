@@ -1,6 +1,6 @@
 # The kernel test harness: watchdogs, the frame ledger, skips, filters and repeats
 
-*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.*
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-system-call-selftest.*
 
 `kernel/src/testing.rs` is the runner every `#[test_case]` in the kernel and in `system_tests` runs
 under. `cargo test` builds the kernel with `cfg(test)`, the runner in `.cargo/config.toml` boots it
@@ -130,7 +130,7 @@ backstop on the counter. `wait_on_every_core` gives two seconds of ticks on ever
 backstop, and the seeded fuzz drivers wait with it. On a dedicated x86_64 virtual machine under
 KVM, each of four guests running side by side stalled once for 1.45 s of the counter on
 2026-10-31 (UTC). Every stall ended without a fault, so two seconds of the counter alone is no
-margin. The `BUGS` of milestone 752 (a seeded syscall driver with a shadow model) has the false reds
+margin. The `BUGS` of milestone 752 (a seeded system call driver with a shadow model) has the false reds
 such stalls caused.
 
 After it prints a panic whose message holds `BUDGET_EXPIRED_MARKER`, the panic handler calls

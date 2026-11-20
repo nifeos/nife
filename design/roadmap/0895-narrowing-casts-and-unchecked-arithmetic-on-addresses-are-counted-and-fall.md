@@ -8,7 +8,7 @@ machine_requirements: none
 specific_machine: none
 needs_person: no
 ---
-# 895. Narrowing casts and unchecked arithmetic on syscall arguments and addresses are counted, and the count falls
+# 895. Narrowing casts and unchecked arithmetic on system call arguments and addresses are counted, and the count falls
 
 *(The title and slug are provisional.)*
 
@@ -29,7 +29,7 @@ calef ruled on three of this proposal's questions on 2026-10-09 (UTC).
   [§268 (the cast ratchet does not count a 64-bit integer cast to `usize`)](../decisions/0268-the-cast-ratchet-does-not-count-a-64-bit-integer-cast-to-usize.md),
   ratified by calef the same day, with a provisional number.
 - Open question 2: the scope is the 16 measured files. A file is added only when a concrete path
-  from a syscall argument into it is shown.
+  from a system call argument into it is shown.
 - Open question 4, and the thresholds: cast counts are frozen per file at today's value and may only
   go down. That is the mechanism. Zero stays the end goal for the three cast lints, with no date
   attached, so done criteria 3 and 4 below state it. `arithmetic_side_effects` is the exception:
@@ -49,7 +49,7 @@ Measured over non-test code, the note's scope:
   5,000; the gap is test code.
 - Clippy flags 844 `cast_possible_truncation` hits (271 kernel), 155 `cast_possible_wrap` (30),
   185 `cast_sign_loss` (3) and 3,218 `arithmetic_side_effects` (648).
-- `kernel/src/syscall.rs` has 7 truncation, 21 wrap, 2 sign-loss and 8 arithmetic hits.
+- `kernel/src/system_call.rs` has 7 truncation, 21 wrap, 2 sign-loss and 8 arithmetic hits.
 - The memory and page-table code has 36 truncation, 4 wrap and 167 arithmetic hits. That is
   `memory.rs`, `memory_region.rs`, `kmem.rs`, `revoke.rs`, `user.rs`, the three `arch/*/mmu.rs`,
   and the crates `paging`, `page_frames`, `memory_regions` and `address_space_layout`.
@@ -83,10 +83,10 @@ count by becoming `u32::try_from(x)?`, a checked or explicitly `wrapping_` opera
 
 ## Scope
 
-Ruled 2026-10-09 (UTC): `kernel/src/syscall.rs`, the memory and page-table files listed above, and
+Ruled 2026-10-09 (UTC): `kernel/src/system_call.rs`, the memory and page-table files listed above, and
 the four crates. That is 16 files with 213 hits after the filter drops 32: 167 arithmetic, 11 truncation,
 25 wrap and 2 sign-loss. The rest of the tree is not counted.
-Widening it is a reviewed edit to the scope list, and it needs a concrete path from a syscall
+Widening it is a reviewed edit to the scope list, and it needs a concrete path from a system call
 argument into the new file. The parsers' arithmetic belongs to the panic
 proposal, which shares the overflow boundary.
 
@@ -96,12 +96,12 @@ proposal, which shares the overflow boundary.
    selftest fixture that proves the filter drops exactly that class.
 2. The baseline freezes each of the 16 files at its count on 2026-10-09 (UTC), and a row may only go
    down.
-3. `syscall.rs` carries no truncation, wrap or sign-loss hit. Each of its 29 is fixed or carries an
+3. `system_call.rs` carries no truncation, wrap or sign-loss hit. Each of its 29 is fixed or carries an
    `#[expect(..., reason = "...")]` saying why the value is in range. Zero is the goal, with no date
    attached.
 4. The memory and page-table scope's truncation rows are at zero. Zero is the goal, with no date
    attached.
-5. A file joins the scope only with a shown path from a syscall argument into it, in the same
+5. A file joins the scope only with a shown path from a system call argument into it, in the same
    change that adds its row.
 6. The `Cargo.toml` paragraph that records `cast_possible_truncation` as deliberately absent is
    amended to say where the lint now runs and why.
@@ -112,7 +112,7 @@ proposal, which shares the overflow boundary.
    integer cast to `usize`). The question was whether a filtered ratchet is acceptable against
    §61's rule.
 2. Ruled 2026-10-09 (UTC): the 16 measured files, and a file is added only when a concrete path
-   from a syscall argument is shown. So `sched.rs` and `cap.rs` stay out until one is.
+   from a system call argument is shown. So `sched.rs` and `cap.rs` stay out until one is.
 3. Address newtypes in `paging`: worth a milestone of their own? It is the rung-one answer and the
    larger change.
 4. Ruled 2026-10-09 (UTC): a ceiling, frozen at today's value per file, that only falls. Zero is not
@@ -129,5 +129,5 @@ ranks third of the five, behind the panic proposal (which shares its overflow ha
 
 ## Index row
 
-Narrowing casts and unchecked arithmetic on syscall arguments and addresses are counted by clippy's
+Narrowing casts and unchecked arithmetic on system call arguments and addresses are counted by clippy's
 cast and arithmetic lints, held per file by the lint ratchet so the count only falls.

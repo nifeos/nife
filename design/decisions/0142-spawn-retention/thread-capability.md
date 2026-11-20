@@ -8,7 +8,7 @@ this file exists to verify or challenge it.
 
 ## The premise, checked rather than quoted
 
-`kernel/src/syscall.rs:305` says every `ThreadControlBlock` method "is process-spawn machinery",
+`kernel/src/system_call.rs:305` says every `ThreadControlBlock` method "is process-spawn machinery",
 which reads as a claim that the capability is inert once the thread runs. It is true, and it is
 enforced in the scheduler rather than in the dispatcher, which is a stronger place for it to live.
 Read at `49db708f`:
@@ -81,7 +81,7 @@ A supervisor here does not repair a broken thread, it builds a fresh one from th
 additively, so this is a deferral rather than an absence.
 
 The consequence for this decision. A faithful R2 pays off only alongside seL4's recovery model,
-which would mean adding `Suspend`, `Resume` and register access, new syscall surface with no customer.
+which would mean adding `Suspend`, `Resume` and register access, new system call surface with no customer.
 A partial R2, one lifetime verb on a construction capability, buys the state-dependence without the
 uniformity that justifies it. **R2 is therefore not "seL4's answer, available cheaply"; it is half of
 seL4's answer without the half that makes it coherent.**

@@ -44,7 +44,7 @@ had no front door here.
 ## The stub boundary, enumerated
 
 A proof with an unexamined stub is worse than no proof, because it reads as coverage. This is the
-exhaustive list of what a harness in `kernel/src` cannot see. The same list is in `syscall.rs`'s
+exhaustive list of what a harness in `kernel/src` cannot see. The same list is in `system_call.rs`'s
 `mod proofs`, where the next harness's author will meet it.
 
 1. Global assembly is skipped. Boot entry, vectors, context switch, three architectures. No harness reaches it, or could.
@@ -93,9 +93,9 @@ exhaustive list of what a harness in `kernel/src` cannot see. The same list is i
 
 ## What is proved today
 
-Two properties, both in `kernel/src/syscall.rs`, both about `run_end_virtual_address` and the map loops that
+Two properties, both in `kernel/src/system_call.rs`, both about `run_end_virtual_address` and the map loops that
 guard on it. Milestone 193 (put `kernel/src` within reach of the prover) predicted this code would never become a
-crate, rightly: syscall dispatch is
+crate, rightly: system call dispatch is
 a boundary, not a library.
 
 `run_end_virtual_address` computes the last virtual address a `count`-page run starting at `va` covers.
@@ -142,11 +142,11 @@ as more coverage than it is.
 
 | host | `arch/` subtree compiled | harnesses that run |
 |---|---|---|
-| aarch64 (dev Mac; `ubuntu-26.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 9: two in `syscall.rs`, three in each `iommu.rs`, one in `fp.rs` |
-| x86_64 (cordoba; the `ubuntu-26.04` runner) | `arch/x86_64/` | 5: the same two in `syscall.rs`, two in `interrupt_controller.rs`, one in `fp.rs` |
-| either, via script/verify-riscv64 | `arch/riscv64/`, natively | 8: two in `syscall.rs`, three in `iommu.rs`, three in `mmu.rs` |
+| aarch64 (dev Mac; `ubuntu-26.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 9: two in `system_call.rs`, three in each `iommu.rs`, one in `fp.rs` |
+| x86_64 (cordoba; the `ubuntu-26.04` runner) | `arch/x86_64/` | 5: the same two in `system_call.rs`, two in `interrupt_controller.rs`, one in `fp.rs` |
+| either, via script/verify-riscv64 | `arch/riscv64/`, natively | 8: two in `system_call.rs`, three in `iommu.rs`, three in `mmu.rs` |
 
-Twelve distinct harnesses on the first two hosts, since `syscall.rs`'s two run on both.
+Twelve distinct harnesses on the first two hosts, since `system_call.rs`'s two run on both.
 
 **riscv64 needed a target, not a host**: milestone 589 (Kani can prove riscv64 from the hosts we
 already have) patches Kani, since CBMC runs anywhere. See
@@ -211,8 +211,8 @@ historical defect and check that both harnesses go red:
 $ # in run_end_virtual_address, replace the checked arithmetic with milestone 142's bug:
 $ #   va.checked_add((count - 1).wrapping_mul(page_tables::PAGE_SIZE))
 $ cargo kani -p kernel -Z unstable-options --ignore-global-asm --output-format=terse
-Verification failed for - syscall::proofs::every_page_between_the_checked_ends_is_itself_a_user_page
-Verification failed for - syscall::proofs::the_run_end_is_exact_and_refuses_exactly_what_does_not_fit
+Verification failed for - system_call::proofs::every_page_between_the_checked_ends_is_itself_a_user_page
+Verification failed for - system_call::proofs::the_run_end_is_exact_and_refuses_exactly_what_does_not_fit
 Complete - 0 successfully verified harnesses, 2 failures, 2 total.
 ```
 

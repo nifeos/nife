@@ -4,7 +4,7 @@
 content, and calef names files.*
 
 `crates/ps` is the logic of `ps`, lifted out to run on the host; `components/src/ps.rs` is the
-syscall and the two output streams. [process-view.md](../process-view.md) has what the view is.
+system call and the two output streams. [process-view.md](../process-view.md) has what the view is.
 This page holds the reasons the crate's doc comments link.
 
 ## Three answers, kept apart
@@ -35,7 +35,7 @@ domain into the caller's buffer first, and the caller then emits `write_diagnost
 
 The walk stops at the first refusal and reports it, rather than skipping the entry and carrying on.
 A survey that silently dropped an entry it could not read would be the failure this program exists
-to avoid, one row smaller. The reader is a closure rather than a syscall, which makes the empty
+to avoid, one row smaller. The reader is a closure rather than a system call, which makes the empty
 domain, the refusal and a domain of a hundred threads all reachable from a host test.
 
 ## The buffer, and what it costs
@@ -60,7 +60,7 @@ frame down is smaller still.
 joined on the tid, rather than one walk carrying two facts, is the shape DECISIONS §204 (how
 userspace asks where a thread runs) chose when it made the record a selector. The cursor and the tid
 are the same whichever record is asked for, so only the third word moves. A program that wants one
-fact pays nothing for the existence of the others. The cost is one extra syscall per thread, which
+fact pays nothing for the existence of the others. The cost is one extra system call per thread, which
 §204 priced at about 45 microseconds per second for sixty-four threads at a one-second refresh.
 
 A domain can change between the two walks. A tid in the first walk and not the second is a thread

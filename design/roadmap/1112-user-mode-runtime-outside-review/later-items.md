@@ -26,7 +26,7 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
     Sixth, `virtio` is a product name the gate should     accept. The `r8` to
     `w64` family kept the migrated callers' vocabulary, as the note records.
     Evidence: `src/objects.rs` lines 22, 162, 194, 210 to 215, 241 to 246, 270. Also
-    `src/syscall.rs` lines 23, 55, 88, and `src/virtio.rs` lines 31, 46. Also `src/devices.rs`
+    `src/system_call.rs` lines 23, 55, 88, and `src/virtio.rs` lines 31, 46. Also `src/devices.rs`
     lines 58, 72, and `src/mapped_window.rs` lines 37, 66, 145. Also `src/socket_frame.rs` lines
     69 to 90, `src/clock.rs` lines 45, 57, 72, 82, 126, 137, and
     `src/inter_process_communication.rs`     line 69.
@@ -63,9 +63,9 @@ An appendix to [the milestone](../1112-user-mode-runtime-outside-review.md).
     Evidence: `src/socket_frame.rs` lines 5 to 7; `Cargo.toml` lines 31 to 35.
     Change: state the direction rule instead. Effort: XS. Door: two-way.
 
-17. No wrapper for `SYSCALL_EXIT_THREAD`.
+17. No wrapper for `SYSTEM_CALL_EXIT_THREAD`.
     Rule in force (2026-11-15 UTC, provisional): the crate has no `exit_thread() -> !`. It wraps
-    `SYSCALL_EXIT`, `SYSCALL_YIELD`, `SYSCALL_CAPABILITY_DELETE` and `SYSCALL_INVOKE`, and no
+    `SYSTEM_CALL_EXIT`, `SYSTEM_CALL_YIELD`, `SYSTEM_CALL_CAPABILITY_DELETE` and `SYSTEM_CALL_INVOKE`, and no
     `no_std` program in `components/` needs the fifth number; only the std overlay
     (`patches/std-nife/overlay/std/src/sys/pal/nife/rt.rs`) and `system_tests` invoke it, and each
     traps it directly. The crate says so in the docs of `exit`. A public API nobody has verified a

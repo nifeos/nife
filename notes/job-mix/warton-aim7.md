@@ -54,7 +54,7 @@ quotation here is altered.)
 
 Wombat is the paravirtualised ARM Linux, the same one the retrospective cites at Leslie, van
 Schaik and Heiser 2005. So the 20% is a delta between two microkernels measured through a hosted
-Linux's syscall path. Four things follow, and each one costs this instrument something different.
+Linux's system call path. Four things follow, and each one costs this instrument something different.
 
 1. The premise fails. `crates/job_mix` runs native tasks on nife's own primitives. Warton
 measured Linux processes whose every system call became an exception IPC to a user-level Linux

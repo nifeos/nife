@@ -26,7 +26,7 @@ calef, 2026-09-26 (UTC): *"A."* Recorded by the maintainer at 18:22Z the same da
   naming the whole run.
 - If the region cannot supply the count, the call refuses with `OutOfMemory` and moves nothing.
 
-This is a change to the syscall surface under §10 (process model: capability-based, microkernel),
+This is a change to the system call surface under §10 (process model: capability-based, microkernel),
 and it fits that model: it gives an existing method's unused argument a meaning, and adds no method.
 It builds on §102 (a Frame names a run of pages), which made a frame able to name a run and taught
 `MAP` and `MAP_INTO` to map one in a call. Until now only the kernel could mint a run. A region
@@ -45,5 +45,5 @@ construction.
 
 A page count on `component_plan::Handoff`, then the `line_editor` swap of §232, then
 `redoxfs_server`'s handoff. The implementing lane records the argument's semantics beside
-`memory_region_retype` in `kernel/src/syscall.rs` and proves it on every supported architecture,
+`memory_region_retype` in `kernel/src/system_call.rs` and proves it on every supported architecture,
 per §19 (architectural parity is a tenet).

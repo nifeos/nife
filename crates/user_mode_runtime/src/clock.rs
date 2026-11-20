@@ -11,7 +11,7 @@ use abi::cycle_counter::CycleMeaning;
 
 /// The virtual counter, `CNTVCT_EL0`: a monotonic tick count for self-timing. Readable at EL0 only
 /// because the kernel opened `CNTKCTL_EL1.EL0VCTEN` (see kernel `timer::initialize` and notes/abi.md); the
-/// read is a plain register move, no syscall. Pair with [`counter_hertz`] to turn tick deltas into seconds.
+/// read is a plain register move, no system call. Pair with [`counter_hertz`] to turn tick deltas into seconds.
 #[cfg(target_arch = "aarch64")]
 pub fn now() -> u64 {
     let t: u64;
@@ -67,7 +67,7 @@ pub fn counter_hertz_checked() -> Option<u64> {
 }
 
 /// The counter frequency in Hz (RISC-V), read from the **timebase page** the kernel maps read-only
-/// into every process at [`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`]: a plain load, no syscall.
+/// into every process at [`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`]: a plain load, no system call.
 ///
 /// RISC-V has no register that reports the timebase, so the kernel reads the device tree's
 /// `/cpus/timebase-frequency` (`kernel::arch::riscv64::timer::initialize_frequency`) and publishes it
@@ -129,7 +129,7 @@ pub fn now() -> u64 {
 
 /// The counter frequency in Hz (`x86_64`), read from the **timebase page** the kernel maps
 /// read-only into every process at [`counter_frequency_contract::PAGE_VIRTUAL_ADDRESS`]: a plain load, no
-/// syscall. x86 has no architected rate ring 3 can ask for, so the kernel reads `CPUID` leaf
+/// system call. x86 has no architected rate ring 3 can ask for, so the kernel reads `CPUID` leaf
 /// `0x15` or calibrates (`arch::x86_64::timer::initialize_frequency`), and a child's page carries its
 /// parent's rate. See notes/user-mode-runtime/time.md.
 ///
@@ -186,7 +186,7 @@ pub struct CycleReading {
 }
 
 /// **Read the CPU's cycle counter from user mode, paired with what it counts.** One instruction
-/// per architecture, no syscall (§139 (who may read the cycle counter, and by what authority)). On
+/// per architecture, no system call (§139 (who may read the cycle counter, and by what authority)). On
 /// aarch64 and riscv64 only a thread granted the counter may call it; an ungranted call traps and
 /// the thread is killed. See notes/user-mode-runtime/time.md.
 ///
@@ -268,7 +268,7 @@ fn read_cycle_counter() -> u64 {
 }
 
 /// **Which CPU this thread is running on**, or `None` if this process has no page to read it from
-/// or has somehow not been switched in yet. A plain load, no syscall: a thread observing itself
+/// or has somehow not been switched in yet. A plain load, no system call: a thread observing itself
 /// reads a page (§204 (how userspace asks where a thread runs)); `crates/current_cpu_contract`
 /// carries the layout and the ordering argument.
 ///

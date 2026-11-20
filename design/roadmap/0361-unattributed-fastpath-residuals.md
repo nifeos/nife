@@ -72,7 +72,7 @@ mechanism that has nobody remembering it. All **three** ISAs now carry an unattr
 three to its ceiling and it is moving the fastest, which makes it the one to bisect first rather
 than last. Nothing has fired, and nothing will until it has absorbed the remaining 3.1 points.
 
-`syscall_entry` is a separate story and it is the healthy half. All three sat exactly on their
+`system_call_entry` is a separate story and it is the healthy half. All three sat exactly on their
 baselines under that build (3304, 1870, 1637). The drift is entirely in the closure half, which is
 worth knowing before bisecting: whatever is accumulating is in the IPC and switch closure, not in
 the trap entry path.

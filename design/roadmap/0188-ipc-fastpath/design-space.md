@@ -24,12 +24,12 @@ and a phase-3 lane should price them rather than assume them.
   mis-classification the cold list already risks. (Phase 3 answered it: it cannot, and it left the
   closure. See [phases-1-to-3.md](phases-1-to-3.md).)
 - The error-return plumbing. `take_ipc_aborted()` is called after every rendezvous method in
-  `syscall::invoke` and is a second load and branch on a path that has already succeeded.
+  `system_call::invoke` and is a second load and branch on a path that has already succeeded.
 
 Not skippable, and this is the half that makes it a design milestone.
 
 - The capability lookup. `sched::current_cap(slot)` at 372 bytes is the bounds check that *is*
-  the security mechanism; `syscall::invoke`'s own doc comment says so. A fastpath that caches or
+  the security mechanism; `system_call::invoke`'s own doc comment says so. A fastpath that caches or
   elides it is not a fastpath, it is a hole.
 - The rights check. `SEND` needs `WRITE`, `RECEIVE` needs `READ`, `SEND_CAP` needs `GRANT` on the
   delegated capability and a subset check on the narrowing. `CALL` needs `WRITE`.
@@ -108,7 +108,7 @@ Per AGENTS.md's six questions, and refusals with reasons, because the refusals a
 ### A. Extract cold arms with `#[inline(never)]`
 
 Already built; measured. Milestone 156 (extract the rest and ratchet both ways) did this to `invoke`'s administrative arms and records its
-own before and after. On aarch64 `syscall_entry` went 4,168 to 3,480, and on riscv64 2,914 to
+own before and after. On aarch64 `system_call_entry` went 4,168 to 3,480, and on riscv64 2,914 to
 2,210: a 16.5% and a 24% cut. Further work since has taken those to 3,304 and 1,870, so the entry
 figure is down 20.7% and 35.8% from the pre-156 baseline in total. Over the same period
 `ipc_fastpath` went from 5,780 to 5,788, which is eight bytes. The cheap method has delivered its win
@@ -120,7 +120,7 @@ now lives. That is phase 3.
 Refused, and it is worth saying why loudly. It would not move this number by a byte.
 `script/fastpath-footprint` sums whole symbol sizes; reordering a match changes which instructions
 execute, not which symbol they live in. It is already effectively done: `SYS_INVOKE` is one of four
-syscall numbers, and `Object::Rendezvous` is the first arm of `invoke`'s object match.
+system call numbers, and `Object::Rendezvous` is the first arm of `invoke`'s object match.
 `SEND`/`RECEIVE`/`SEND_CAP`/`RECEIVE_CAP`/`CALL` are method numbers 0 through 4. A lane that reached
 for this would spend a day and report a flat number.
 

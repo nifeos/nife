@@ -12,7 +12,7 @@ timetable_tests	3613	4162	5006
 name_resolver_tests	3813	4157	2941
 nth_retype_tests	2905	4001	60
 live_swap_tests	2489	3596	2004
-syscall_fuzzer_tests	1528	2349	2365
+system_call_fuzzer_tests	1528	2349	2365
 running_space_tests	2196	2308	2267
 disk_tests	1097	1760	1830
 pinned_tls_tests	1195	1478	1564

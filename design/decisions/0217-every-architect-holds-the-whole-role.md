@@ -16,7 +16,7 @@ calef, 2026-09-25 (UTC), in the conversation that asked for [`ARCHITECTS.md`](..
 
 Every architect listed in `ARCHITECTS.md` holds the full authority of the role that
 [`AGENTS.md`](../../AGENTS.md) describes. Any one of them may rule on anything the role covers:
-a design fork, a name, the syscall surface, a dependency, a `PROPOSED` decision. No domain split, no
+a design fork, a name, the system call surface, a dependency, a `PROPOSED` decision. No domain split, no
 quorum and no senior architect. Adding an architect grants the whole role, and there is no partial
 form of it.
 

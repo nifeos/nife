@@ -56,7 +56,7 @@ its copy:
   today's leak of sessions nobody logged out of, and a fresh session is minted.
 - `NotPermitted`: either the session has pending work, or the client logged out and the copy is
   stale. The first draft of this note said the kernel tells those apart. It does not: the
-  `DESTROY` handler in `kernel/src/syscall.rs` maps every refusal from `sched::reclaim_region`,
+  `DESTROY` handler in `kernel/src/system_call.rs` maps every refusal from `sched::reclaim_region`,
   a dead name included, to `NotPermitted`. A one-page `SPLIT` separates them, since it succeeds
   on a live budget and fails on a dead name. The probe destroys that page at once, then reattaches:
   it hands back the same budget, with a freshly built caretaker for the directory. Regions are

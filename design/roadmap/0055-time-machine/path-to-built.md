@@ -134,7 +134,7 @@ hold here. `fs_server::rename` (fs_server/src/lib.rs) already resolves the desti
 loop runs one request to completion before it receives the next, so inside this server there is no
 concurrent observer at all."
 
-§42's racy case is a POSIX host filesystem reached through separate `link` and `unlink` syscalls,
+§42's racy case is a POSIX host filesystem reached through separate `link` and `unlink` system calls,
 with another writer free to run between them. This server is neither. A `replace: bool` read at that
 existing check point is a few lines, not a redesign. The wire has room already: `fs::rename_dst`'s
 second word packs a 16-bit handle and a 40-bit length into 64 bits, leaving bits 63:56 unclaimed for

@@ -172,7 +172,7 @@ pub const F_MARKER_WRITTEN: u64 = 1 << 3;
 /// covers, and `destroy_with_retry` says why the bound is a clock).
 pub const F_TEARDOWN_OK: u64 = 1 << 4;
 /// **Set when a `READDIR` through the directory capability failed *after* teardown.** Set only by
-/// [`LOGOUT`]; this is the proof that the capability, not merely the syscall, came down: a
+/// [`LOGOUT`]; this is the proof that the capability, not merely the system call, came down: a
 /// `DESTROY` that returned success but left the directory answering requests would pass every check
 /// up to this one and fail only this one.
 pub const F_DEAD_AFTER_TEARDOWN: u64 = 1 << 5;
@@ -710,7 +710,7 @@ fn read_marker(dir: u64) -> Option<u64> {
 /// **The fourth capability, `login_contract`'s own logout ticket: `MemoryRegion::DESTROY` reclaims the
 /// caretaker `dir` names.** Sets [`F_TEARDOWN_OK`] on success and, only then, re-checks `dir` with a
 /// `READDIR`: [`F_DEAD_AFTER_TEARDOWN`] if it now fails, which is the proof that the capability, not
-/// merely the syscall, came down.
+/// merely the system call, came down.
 fn teardown_directory(dir: u64, region: u64) -> u64 {
     let Some(mut flags) = destroy_with_retry(region).then_some(F_TEARDOWN_OK) else {
         return 0;

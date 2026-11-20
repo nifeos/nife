@@ -17,7 +17,7 @@ empty space answers rather than refusing, and an empty slot answers `NoSuchSlot`
 The listing reads the space's own revocation log rather than walking page tables.
 `kernel/src/revoke.rs` already keeps one entry per mapped page, per space, for reclamation (§13 (capability revocation and untyped reclamation)).
 So `LIST` costs nothing that log did not already pay for, and the answer cannot drift out of
-agreement with what a real revoke would find. `revoke::list_mapping` hands back a `va`. The syscall
+agreement with what a real revoke would find. `revoke::list_mapping` hands back a `va`. The system call
 handler turns it into a permission with `arch::mmu::translate_at(root, va)`, present on both
 architectures already and previously reachable only from revocation's own tests. `kind` reuses
 `abi::aspace::MAP_RO`/`MAP_RW`/`MAP_CODE`, the same three words `MAP_INTO`'s mode argument takes.

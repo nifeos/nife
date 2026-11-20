@@ -74,7 +74,7 @@ into a claim that rots. The gate is `cargo test --doc`, and what it measures can
 Five crates' doctests are run by nothing in CI, which is the one gap the pass could not close.
 `user_rt`, `swap_proto`, `virtio`, `supervision_proto` and `system_initializer` take unconditional
 `user_rt` dependencies, so the host test selection excludes them. Splitting each crate's pure half
-from its syscall half is what would fix it, and that is a lane of its own.
+from its system call half is what would fix it, and that is a lane of its own.
 
 An example that runs was preferred everywhere it was possible, because a fenced block that never
 compiles is a comment. `elf` forges a writable-and-executable segment and watches it be refused.
@@ -129,7 +129,7 @@ rather than an excuse:
 
 - 58 panic-handler traps, byte-identical `asm!("brk #0", options(nostack, nomem))` or its
   `ebreak` twin, in EL0 programs.
-- 73 `invoke` syscalls. `user_rt::invoke` is the only unsafe function in the EL0 runtime, and its
+- 73 `invoke` system_calls. `user_rt::invoke` is the only unsafe function in the EL0 runtime, and its
   contract is that there is no caller obligation: *"the kernel validates the capability and the
   method before acting; the caller is trusting the kernel, not the other way around."* An
   `unsafe { invoke(..) }` is unsafe because it is inline asm, not because a bad slot could break
@@ -163,7 +163,7 @@ first, then the comment, then the block.
   fixing every existing violation first. Recorded there as a considered exception rather than a
   quiet reversal.
 - **Milestone 345.** Split the pure
-  half from the syscall half in `user_rt`, `swap_proto`, `virtio`,
+  half from the system call half in `user_rt`, `swap_proto`, `virtio`,
   `supervision_proto` and `system_initializer`. Each takes an unconditional `user_rt` dependency, so
   the host test selection excludes it and nothing in CI ever runs its doctests. That is five crates
   whose examples can rot unnoticed inside the gate milestone 68 exists to be.

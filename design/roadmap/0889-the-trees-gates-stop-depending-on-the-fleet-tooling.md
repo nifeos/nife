@@ -135,7 +135,7 @@ Exit checks, as run on 2026-10-19 (UTC) against `42836328b` plus this block's co
 | `vendor-watch` | 39364813031 | Green. Upstream had moved, but the report was unchanged, so the job exited before `gh pr create`. The pull request path did not run. |
 | `verify-shard-refresh` | 39364815886 | Red at its last step. The branch `metrics/verify-shards` pushed on `github.token`, then `gh pr create` was refused: "GitHub Actions is not permitted to create or approve pull requests". |
 | `mutation` | 39364805264 | Red at its last step. All eight shards, the baseline report and the inflow check passed. The record job pushed `mutation/census` on `github.token`, then `gh pr create` was refused the same way. |
-| `falsifications` | 39364802502 | Red. The seeded syscall driver and the arm64 replay passed. The confined fuzzer failed on its own finding (BUGS). The replay job was cancelled at its two-hour limit (05:32 UTC), so the record job was skipped and never reached `gh pr create`. |
+| `falsifications` | 39364802502 | Red. The seeded system call driver and the arm64 replay passed. The confined fuzzer failed on its own finding (BUGS). The replay job was cancelled at its two-hour limit (05:32 UTC), so the record job was skipped and never reached `gh pr create`. |
 
 calef, 2026-10-20 14:30 (UTC), on the fallback: "a". With the App absent, a workflow that has
 something to record measures, writes and pushes, ends green, and puts the compare link in its run

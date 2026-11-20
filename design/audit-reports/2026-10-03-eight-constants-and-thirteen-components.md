@@ -68,7 +68,7 @@ window, and no commit records a first boot.
 
 ## What was read, and what came back clean
 
-**`USAGE` and its selectors** (`kernel/src/syscall.rs`, `memory_region_usage`;
+**`USAGE` and its selectors** (`kernel/src/system_call.rs`, `memory_region_usage`;
 `kernel/src/memory_region.rs`, `usage_record`; `crates/memory_regions/src/table.rs`, `spent`).
 Confused deputy: the selector arrives in `a0` and nothing is read from user memory. Slot misuse,
 the class of milestone 634 (a plain SEND received by RECEIVE_CAP never hands the receiver a
@@ -80,7 +80,7 @@ below 2^63 pages. Revocation: the name resolves generationally under the region 
 region answers `Gone`. Rights: `ENUMERATE` alone, the rule of §114 (`ENUMERATE` extends to the
 address-space object), and the agent's survey confirmed
 that `WRITE` is still what every spend, split and destroy asks for. Parity: the arm is shared
-`syscall.rs`, no `arch::` code, and `#[inline(never)]` keeps it out of the measured `syscall_entry`
+`system_call.rs`, no `arch::` code, and `#[inline(never)]` keeps it out of the measured `system_call_entry`
 footprint (the first run with it inline measured 5.6% on riscv64 and 8.8% on `x86_64`, over the
 bound). The one thing it costs is finding 6.
 
@@ -261,7 +261,7 @@ object in `x1` and no method lets one. A client with `GRANT` on any capability `
 `CALL` server, `x1` is a real slot, and `reply` runs method `0` on it: `SEND` on the client's own
 rendezvous parks the server forever, and every non-Reply delivery leaks a slot of 32. Severity:
 medium. A denial of service on `net_stack`, the compositor and the file service by any client. On
-the syscall surface, so calef's call: BUGS at `RECV_CAP`, proposal
+the system call surface, so calef's call: BUGS at `RECV_CAP`, proposal
 `0706-a-call-server-can-tell-a-reply-from-a-delegation.md`.
 
 ### 12. FIXED: a stale `outgoing_cap` survived a rendezvous teardown
@@ -326,7 +326,7 @@ proposal carries the options and their costs. This report does not edit `design/
 ## Method, so the negatives can be judged
 
 The delta was taken by `diff` between `2533877d2` and `1d33b27fa` with the same regular expression
-and the same manifests `script/audits` reads, then `git diff` of `crates/abi`, `kernel/src/syscall.rs`
+and the same manifests `script/audits` reads, then `git diff` of `crates/abi`, `kernel/src/system_call.rs`
 and `kernel/src/sched.rs` over the window was read whole. Two delegated surveys read the thirteen
 components for their manifests, grants and reach, with file and line for every claim; every claim
 that became a finding was re-read at its site by this lane first. The delegated reader's failure

@@ -9,7 +9,7 @@
 //! Refused `ipc` (§154 (the acronym test is whether the phrase is spoken) spells it out).
 
 use crate::objects::{self, retype_into_kernel_object};
-use crate::syscall::{invoke, invoke5, invoke6};
+use crate::system_call::{invoke, invoke5, invoke6};
 
 /// `SEND` three words on the endpoint capability in `slot`. Blocks until a receiver takes them.
 pub fn send(slot: u64, w0: u64, w1: u64, w2: u64) -> i64 {
@@ -290,7 +290,7 @@ pub fn notification_bind(slot: u64, thread_slot: u64) -> i64 {
 /// A timer does not block. Wait on the notification ([`notification_wait`]), or receive with it
 /// bound ([`receive_message`]), and the wait ends on the deadline or on anything else that signals it.
 pub fn timer_arm(timer_slot: u64, deadline: u64, notification_slot: u64, bits: u64) -> i64 {
-    // SAFETY: `svc`/`ecall`/`syscall`; the kernel validates both capabilities.
+    // SAFETY: `svc`/`ecall`/`system_call`; the kernel validates both capabilities.
     unsafe {
         invoke(
             timer_slot,
@@ -305,7 +305,7 @@ pub fn timer_arm(timer_slot: u64, deadline: u64, notification_slot: u64, bits: u
 /// `Timer::CANCEL`: `1` if a pending deadline was disarmed and will never fire, `0` if nothing was
 /// pending (so any signal has already been sent), or a negative [`abi::Error`].
 pub fn timer_cancel(timer_slot: u64) -> i64 {
-    // SAFETY: `svc`/`ecall`/`syscall`; the kernel validates the capability.
+    // SAFETY: `svc`/`ecall`/`system_call`; the kernel validates the capability.
     unsafe { invoke(timer_slot, abi::timer::CANCEL, 0, 0, 0) }
 }
 

@@ -11,7 +11,7 @@ reboot loop's hazard and escapes are [rebooting-soak.md](rebooting-soak.md).
 
 The workload is a user program, `fixtures/src/soaker.rs`, and the detection is in the kernel. The
 defect risk 5 produced (a receiver made `Ready` without a delivery) can be caused from userspace
-through the real syscall path, so a kernel-mode stress loop would test an artifact of the test. A
+through the real system call path, so a kernel-mode stress loop would test an artifact of the test. A
 user program cannot assert about kernel internals, so the assertions stay in the kernel with the
 trace counters.
 

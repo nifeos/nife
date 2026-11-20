@@ -83,7 +83,7 @@ cat > /tmp/pmccntr.c <<'EOF'
 #include <stdio.h>
 #include <string.h>
 #include <sys/mman.h>
-#include <sys/syscall.h>
+#include <sys/system_call.h>
 #include <unistd.h>
 
 #define READ(reg) ({ uint64_t v_; __asm__ volatile("isb; mrs %0, " #reg : "=r"(v_)); v_; })

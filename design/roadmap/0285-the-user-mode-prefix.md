@@ -41,7 +41,7 @@ say why it is the right one rather than the commonest one. The same grep answers
 three, which is what rule 5 exists to catch, and the plain phrase wins on reach rather than on
 frequency. The same defect was live one level down
 and is fixed here: the crate's first line described a three-architecture crate as "the tiny EL0
-runtime", and `.cargo/mutants.toml` and `script/coverage` each said "EL0 syscall runtime" about it.
+runtime", and `.cargo/mutants.toml` and `script/coverage` each said "EL0 system call runtime" about it.
 
 ## What the ruling closed, which is more than two names
 

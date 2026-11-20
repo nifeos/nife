@@ -58,7 +58,7 @@ rather than glossing over.** Mach's IPC table is *per-task*. `IpcTables` here is
 *whole-machine*, which is the exact property milestone 98's own text calls out ("the thread table
 and the endpoints... genuinely whole-machine"). The precedent supports the vocabulary, not a claim
 that this tree copied Mach's per-task design. A kernel table resolving names into the objects an
-IPC-capable syscall needs is a real, named thing in the field.
+IPC-capable system call needs is a real, named thing in the field.
 
 ## What this does not decide
 

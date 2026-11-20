@@ -47,7 +47,7 @@ job is saying what is known.
 
 A patch lives at `<package>/falsifications/<module.path>.<harness_fn_name>.patch`
 (`crates/capability_table/falsifications/verification.subset_is_reflexive.patch`,
-`kernel/falsifications/syscall.proofs.the_run_end_is_exact_and_refuses_exactly_what_does_not_fit.patch`).
+`kernel/falsifications/system_call.proofs.the_run_end_is_exact_and_refuses_exactly_what_does_not_fit.patch`).
 Backtick the path in the record: `script/lint`'s kani-shim pass compiles these `#[cfg(kani)]`
 modules with `-D warnings`, where `clippy::doc_markdown` rejects a bare dotted path in a `///`
 comment, and that pass is what found it. The reporter

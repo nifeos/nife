@@ -115,7 +115,7 @@ far under 3,000. The doc comment above `mod tests;` in `user.rs` moves to `test_
    and a fold mixes moved lines with edited ones.
 3. Every module name in the table.
 
-No public crate API, wire format or syscall changes under any answer. The suite is a test image.
+No public crate API, wire format or system call changes under any answer. The suite is a test image.
 
 ## What moving the code breaks
 
@@ -129,7 +129,7 @@ Found with `grep` at `396187b0b`.
   `user/network_tests.rs` must have its patch at `user.network_tests.<test_name>.patch`, and
   `--check` reports a mismatch. All seven are renamed, along with the `Falsification:` line above
   each test.
-- None of the seven diffs this file. Each patches the code under test: `kernel/src/syscall.rs`,
+- None of the seven diffs this file. Each patches the code under test: `kernel/src/system_call.rs`,
   `kernel/src/sched.rs`, the two `mmu.rs` files, `crates/page_tables`, `crates/elf` and
   `crates/domain_name_system`. Their hunks do not change, so no patch needs regenerating. Each must
   still be replayed red under its new name.

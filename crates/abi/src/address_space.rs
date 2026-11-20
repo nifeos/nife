@@ -48,7 +48,7 @@ pub const UNMAP: u64 = 2;
 /// `invoke(capability, WAIT, va, flags, expected)` -> `0` woken, `1` the word did not hold `expected`
 /// **Futex wait: park the calling
 /// thread on the word at `va` in its own space if it still holds `expected`**, checked and parked
-/// as one step against [`WAKE`]. Semantics follow the thread syscalls as built.
+/// as one step against [`WAKE`]. Semantics follow the thread system calls as built.
 ///
 /// - `flags` is [`super::futex::PRIVATE`] `|` [`super::futex::SIZE_U32`], or else `BadMethod`.
 /// - The capability must name the caller's own space (`WrongObject`) with `READ` (`NotPermitted`).

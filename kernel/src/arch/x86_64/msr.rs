@@ -48,7 +48,7 @@ pub unsafe fn read_msr(msr: u32) -> u64 {
 /// # Safety
 /// `msr` must be one this CPU implements, and `value` must be legal for it. An MSR write is one of
 /// the few instructions that can change what mode the machine is in (`IA32_EFER` alone controls
-/// long mode, `NXE` and `syscall`), so this is exactly as dangerous as what the caller names.
+/// long mode, `NXE` and `system_call`), so this is exactly as dangerous as what the caller names.
 pub unsafe fn write_msr(msr: u32, value: u64) {
     // SAFETY: the caller's contract.
     unsafe {

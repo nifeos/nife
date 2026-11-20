@@ -22,7 +22,7 @@ use abi::Error;
 use super::*;
 use crate::capability_object::Rights;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
 const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
@@ -48,7 +48,7 @@ const SPINNER: &[u32] = &[
     0xB400_00A1, // cbz  x1, loop
     0xD100_0420, // sub  x0, x1, #1
     0xD280_0061, // mov  x1, #3            (SET_THREAD_POINTER)
-    0xD280_0048, // mov  x8, #2            (SYSCALL_INVOKE)
+    0xD280_0048, // mov  x8, #2            (SYSTEM_CALL_INVOKE)
     0xD400_0001, // svc  #0
     0xD53B_D043, // loop: mrs x3, tpidr_el0
     0xF940_0064, // ldr  x4, [x3]
@@ -63,7 +63,7 @@ const SPINNER: &[u32] = &[
     0x0005_8A63, // beqz a1, loop
     0xFFF5_8513, // addi a0, a1, -1
     0x0030_0593, // li   a1, 3             (SET_THREAD_POINTER)
-    0x0020_0893, // li   a7, 2             (SYSCALL_INVOKE)
+    0x0020_0893, // li   a7, 2             (SYSTEM_CALL_INVOKE)
     0x0000_0073, // ecall
     0x0002_3283, // loop: ld t0, 0(tp)
     0x0009_3303, // ld   t1, 0(s2)
@@ -71,7 +71,7 @@ const SPINNER: &[u32] = &[
     0x0069_3023, // sd   t1, 0(s2)
     0xFF1F_F06F, // j    loop
 ];
-/// `mov r12, rdi; test rsi, rsi; jz loop; lea rdi, [rsi - 1]; mov esi, 3; mov eax, 2; syscall;
+/// `mov r12, rdi; test rsi, rsi; jz loop; lea rdi, [rsi - 1]; mov esi, 3; mov eax, 2; system call;
 /// loop: mov rax, fs:[0]; or [r12], rax; jmp loop`, then one `nop` to a word. Packed the way
 /// `user::x86_programs` packs its listings.
 #[cfg(target_arch = "x86_64")]

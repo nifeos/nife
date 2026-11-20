@@ -21,7 +21,7 @@ this tree turns a device off until that number exists. Nothing is built now.
 
 What the measurement decides is open on purpose. The kernel-reclaim shape is the candidate, not a
 commitment. The shape: a spawned job's enables are recorded where they are made, and the kernel
-undoes exactly those enables at subtree death, refcounted per shared line, with no new syscall
+undoes exactly those enables at subtree death, refcounted per shared line, with no new system call
 surface. If the cost of an ungated domain is real, that is the shape to build. The ruling says
 "then consider", and consider is what happens.
 
@@ -42,7 +42,7 @@ clock framework buys its way out with refcounting this tree does not have.
 
 [§86 (whether an NVMe driver can leave the kernel)](0086-el0-nvme-driver.md) is the tree's own
 precedent for the shape of the answer. Its words fit: "the irreversible part of this decision is
-not in 2a. It costs zero new syscall surface". The choice between the cheap answer and the
+not in 2a. It costs zero new system call surface". The choice between the cheap answer and the
 capability was "settled by measurement". Prior art, read rather than recalled. The shared-reset
 fact and the refcounting are recorded in `notes/jh7110-clock-and-reset.md`, from Linux's source.
 The note's `BUGS` section carries the limitation beside the feature: "nothing here can turn a
@@ -65,7 +65,7 @@ where the capability spends irrevocable surface on nobody.
 
 | | shape | what it costs |
 |---|---|---|
-| **A** | A driver may ask: a capability variant on the syscall surface for gating and asserting. | Not decided; waits for the measurement. New surface in the category §10 and §16 keep narrow, granted against a window that reaches devices the holder has no business resetting. |
+| **A** | A driver may ask: a capability variant on the system call surface for gating and asserting. | Not decided; waits for the measurement. New surface in the category §10 and §16 keep narrow, granted against a window that reaches devices the holder has no business resetting. |
 | **B** | The kernel reclaims at job death: a spawned job's enables are recorded where they are made, and the kernel undoes exactly that job's enables, refcounted per shared line, when its subtree dies. | The candidate, not a commitment. Bookkeeping in the kernel's controller path and a refcount, and no new surface at all; the driver never learns that power management happened. |
 | **C** | Measure before building: radon runs with the STG domain ungated and gated, and the number decides whether anything downstream of this question is worth a milestone. Chosen. | A bench session and a person at the board, and the honest possibility that the answer is "not yet worth it", which is a real answer. |
 
@@ -79,7 +79,7 @@ left them. The ruling answers the third: measure. The first two wait for the num
 ## How reversible it is
 
 The measurement is a bench run. The kernel-reclaim shape is bookkeeping on a path that already
-exists, removable without a trace. The capability is the syscall surface: the one irreversible
+exists, removable without a trace. The capability is the system call surface: the one irreversible
 thing in this question, and the part with no consumer. The ruling takes the options in
 reversibility order. The surface stays out of reach until a measured number and a real driver both
 ask for it.

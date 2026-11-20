@@ -4,7 +4,7 @@ Milestone 342 (the kernel and the `console` server drive one UART from two addre
 step, written 2026-10-03 (UTC) by lane `milestone/342-kernel-console-arbitration`. §242 (a system
 log), Question 3, left one thing to the building lane: *"Draining the ring is new authority at the
 kernel's boundary: a read method on a new object (Zircon's `zx_debuglog_read`), or a read-only frame
-plus a notification. Both are the syscall surface under §10 (process model: capability-based,
+plus a notification. Both are the system call surface under §10 (process model: capability-based,
 microkernel), and the building lane proposes which."* This is that proposal. The name of this note
 is provisional.
 
@@ -51,9 +51,9 @@ whether it is being drained, from the time of the last `READ`.
 - R with records returned in registers. `invoke` returns five words, so about 24 bytes of a record
   per call. A median kernel line (57 bytes, from §242's xenon measurement) plus its 32-byte header
   is four calls, and the longest is eleven.
-- R with a user buffer. One call per record, but it is the first syscall since milestone 8 (the
+- R with a user buffer. One call per record, but it is the first system call since milestone 8 (the
   console driver leaves the kernel) that writes into a pointer userspace chose.
-  `kernel/src/syscall.rs` states the property this would break: *"No pointer ever crosses this
+  `kernel/src/system_call.rs` states the property this would break: *"No pointer ever crosses this
   boundary ... the kernel follows no user pointer and there is no deputy to confuse."*
 - The kernel `SEND`s each record to the service's endpoint, the way a death message reaches a
   supervisor. Refused: `println!` cannot block, and a non-blocking kernel send would be a new IPC
@@ -87,7 +87,7 @@ at least one new method.
 - Linux `/dev/kmsg` (kernel.org ABI document, read 2026-10-03): *"Every read() ... receives one
   record"*, blocking unless `O_NONBLOCK`. An overwrite makes the next read return `-EPIPE`. No
   `mmap` is offered. That is R with a buffer and a blocking read.
-- seL4 has no kernel log to drain. Its debug output is a per-character syscall that verified builds
+- seL4 has no kernel log to drain. Its debug output is a per-character system call that verified builds
   compile out (§242's table).
 
 Both systems with a drained ring chose R. They chose it in kernels that already copy into user
@@ -104,7 +104,7 @@ instead is option C, which §175 refused in favor of B.
 
 ### 5. What each costs.
 
-Per-record figures come from the HVF bench rows in `notes/benchmarks.md` (null syscall 27 ns,
+Per-record figures come from the HVF bench rows in `notes/benchmarks.md` (null system call 27 ns,
 context switch about 29 ns, measured 2026-08-04). They are derived, not measured on this path.
 
 | | per record | per batch | kernel memory | progenitor slots | new surface |
@@ -149,5 +149,5 @@ service is alive. A panic still reaches the UART. An undrained ring falls back a
 `script/swish-check` is green on all three.
 
 If R is chosen instead, the open question is registers or a buffer. The buffer is the variant that
-needs `mmu::user_can_read`'s writing twin. That primitive was kept *"for the next syscall that does
+needs `mmu::user_can_read`'s writing twin. That primitive was kept *"for the next system call that does
 take a user pointer"*.

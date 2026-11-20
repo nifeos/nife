@@ -36,9 +36,9 @@ Each is a stranger's program or a benchmark the field already reads:
 ## What this decides, and what it leaves open
 
 It decides that threads exist, on aarch64, riscv64 and x86_64 together (§19 (architectural parity is
-a tenet)). It does not decide the syscall shape. Binding a space without consuming it changes what
+a tenet)). It does not decide the system call shape. Binding a space without consuming it changes what
 `Tcb::CONFIGURE` promises, and a wait/wake primitive is new surface, so each owes a ruling before
-code (§10 (process model: capability-based, microkernel) keeps the syscall surface narrow).
+code (§10 (process model: capability-based, microkernel) keeps the system call surface narrow).
 Milestone 812's block lists those forks with options and a recommendation for each.
 
 ## What it changes in other sections

@@ -7,7 +7,7 @@ license.workspace = true
 
 # Milestone 126's second view-stratum program, and only the filter: a survey and a selector in, a
 # list of tids out. It walks nothing itself, because `crates/ps` already walks a domain and a second
-# cursor loop would be a second thing to keep correct. No syscall, no IO, no allocation. See
+# cursor loop would be a second thing to keep correct. No system call, no IO, no allocation. See
 # notes/process-view.md.
 
 [dependencies]

@@ -108,7 +108,7 @@ Three Kani harnesses, each with a falsification patch under `falsifications/`.
 Sixteen host tests drive the policy through a fake `PageSource`. They cover the doubling from eight pages, the
 first heap fitting in one page, a second `initialize`, a grow of zero bytes, the refusals, zero-size
 and over-aligned layouts, and the accessors. The crate disables doctests, because every
-bare-metal path ends in a syscall.
+bare-metal path ends in a system call.
 
 The fuzz crate holds a libFuzzer target, committed seeds and a
 test that replays the seeds, which is the check that would catch the `talc` defect of upstream pull

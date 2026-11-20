@@ -12,7 +12,7 @@ sees the machine and your share) and §226 (`pidwait` takes tids). The rest is n
 (`design/roadmap/0126-who-else-is-running.md`) carries the status; this carries the reasoning.
 
 The stem `what-is-left` is a provisional name, minted with this file. Nothing here adds a kernel
-method or a syscall, and nothing here was built. Where an option would
+method or a system call, and nothing here was built. Where an option would
 need one, the option says so and stops.
 
 ## 1. `pwdx`: the premise the block carried was wrong
@@ -104,7 +104,7 @@ everything else here carries, or is it the second machine-wide ambient fact afte
 2. Machine-wide: a figure nobody holds a capability to. It needs a new kernel-to-userspace channel,
    and it is the first fact about memory a program could learn without holding any.
 
-This touches the syscall surface either way, so it gets options and no winner.
+This touches the system call surface either way, so it gets options and no winner.
 
 The two members the block missed each change shape under this fork:
 
@@ -133,7 +133,7 @@ recommendation is kept as it was written.
 over the same domain, and so holds the same three slots. By milestone 281's rule it is a mode of
 `pgrep` rather than a program. Whether that rule applies is calef's, as it was for `watch`.
 
-How it would wait, checked in `kernel/src/syscall.rs`:
+How it would wait, checked in `kernel/src/system_call.rs`:
 
 - Receiving the death message is `rendezvous::RECEIVE`, which needs `READ`. A viewer holds `ENUMERATE`
   only, and a receive would also take the message from the supervisor it was meant for. So that
@@ -168,7 +168,7 @@ Checked against the tree the same day by `milestone/126-free`:
   `RECEIVE` needs `READ` and steals the supervisor's message; `SURVEY` needs `ENUMERATE`, which is
   `pgrep`'s authority, and using it would undo the reason §226 made this a separate program.
 
-So `pidwait` needs a new kernel primitive, which is the syscall surface. Options only, no winner:
+So `pidwait` needs a new kernel primitive, which is the system call surface. Options only, no winner:
 
 | option | shape | cost and objection |
 |---|---|---|

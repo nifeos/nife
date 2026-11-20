@@ -99,8 +99,8 @@ headroom are left.
    `page_frame::MAP` maps the run, `page_frame::REVOKE` unmaps it. Measured surface: 4 sites match
    on `Object::PageFrame` and 21 construct one through `cap::page_frame_capability`. It is the option this
    tree's own reasoning points at. The run is already one range in physics, one range in the address
-   space and one range in the IOMMU domain. It collapses 469 capabilities, 469 syscalls and 469
-   mapping records into one of each. It is a change to the meaning of a syscall method, which is a
+   space and one range in the IOMMU domain. It collapses 469 capabilities, 469 system calls and 469
+   mapping records into one of each. It is a change to the meaning of a system call method, which is a
    boundary rather than a habit (`AGENTS.md`, DECISIONS §10 (process model) and §16 (object revocation)).
 2. Grow `CAPABILITY_TABLE_SLOTS`. One number in `kernel/src/capability_object.rs` and its twin in `crates/abi`,
    paid in TCB size. `Option<Cap<Object>>` is 24 bytes, so 512 slots is 12 KiB of capability table

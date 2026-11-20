@@ -75,7 +75,7 @@ logic of `iommu.rs`, and pure functions inside asm-bearing files, such as compos
 
 ## BUGS
 
-- Seven harnesses run here, all passing on 2026-09-25: the two portable `syscall.rs` ones,
+- Seven harnesses run here, all passing on 2026-09-25: the two portable `system_call.rs` ones,
   milestone 432 (the RISC-V IOMMU driver has no counterpart to the SMMU's proofs)'s two in
   `iommu.rs`, and three `satp` proofs in `mmu.rs` that stub their `csrr`/`csrw` wrappers. The
   `mmu.rs` three run nowhere else. The IOMMU pair also runs on the aarch64 host, under aarch64's

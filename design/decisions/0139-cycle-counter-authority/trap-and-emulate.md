@@ -1,4 +1,4 @@
-# §139 appendix: what trap-and-emulate actually costs, and it is worse than the syscall it was meant to beat
+# §139 appendix: what trap-and-emulate actually costs, and it is worse than the system call it was meant to beat
 
 Evidence for [§139 (who may read the cycle counter, and by what
 authority)](../0139-cycle-counter-authority.md), the measurement that took trap-and-emulate off the
@@ -10,7 +10,7 @@ quotes it because it is the industry's answer rather than because
 it is ours. A nife trap would not be a VM exit on hardware built to make VM exits cheap. It would be
 `#GP` to the IDT, a handler, a read of the faulting instruction out of user memory, a decode, an
 emulate, an `RIP` advance and an `iret`. calef asked for our number instead of Xen's, so a research
-lane measured it on 2026-09-02. It came back at 1,667 ns, which is four times the syscall this
+lane measured it on 2026-09-02. It came back at 1,667 ns, which is four times the system call this
 option existed to avoid.
 
 ## The machine and the method
@@ -35,7 +35,7 @@ set, so the vDSO's own `rdtsc` never faults into the same handler and never cont
 | native `rdtsc` | 10.0 ns | 9.3, 10.0, 30.4 | 34 | 1x |
 | `clock_gettime` via the vDSO | 24.3 ns | 22.4, 24.3, 24.9 | 82 | 2.4x |
 | `syscall(SYS_getpid)`, a bare ring transition | 370 ns | 370.3, 370.3, 373.3 | 1,258 | 37x |
-| `clock_gettime` forced through `syscall()` | 406 ns | 407.5, 405.9, 415.1 | 1,379 | 41x |
+| `clock_gettime` forced through `system_call()` | 406 ns | 407.5, 405.9, 415.1 | 1,379 | 41x |
 | a minor page fault, handled in-kernel, no signal | 1,219 ns | 1,227, 1,212, 1,219 | 4,143 | 122x |
 | **`rdtsc` trapped and emulated** | **1,667 ns** | 1,653.6, 1,667.5, 1,668.2 | **5,665** | **166x** |
 
@@ -46,18 +46,18 @@ first.
 
 ## Two reference points in the brief did not reproduce, and one of them cannot be right
 
-This lane was pointed at a native `rdtsc` of 0.25 ns and a `clock_gettime` syscall of
+This lane was pointed at a native `rdtsc` of 0.25 ns and a `clock_gettime` system call of
 596.9 ns, both measured on cordoba earlier in the same session. Neither reproduced, and the
 first is worth flagging rather than averaging away: 0.25 ns is under one core cycle at this
 machine's 3.4 GHz, and `rdtsc` on Haswell has a documented latency in the low tens of cycles. No
 single `rdtsc` can retire in a quarter of a nanosecond. The 10.0 ns measured here is 34 TSC cycles
 and is what a back-to-back `rdtsc` throughput loop should look like on this part. The 0.25 ns figure
 is most likely a loop the compiler hoisted or an amortization over something other than the reads.
-The syscall figure is the same order as the 406 ns measured here and the difference is plausibly
+The system call figure is the same order as the 406 ns measured here and the difference is plausibly
 load and frequency, so nothing turns on it.
 
 The ratios are the durable quantity and they do not depend on which absolute number is right.
-The trap costs 4.1x a `clock_gettime` syscall and 4.5x a bare ring transition, measured in
+The trap costs 4.1x a `clock_gettime` system call and 4.5x a bare ring transition, measured in
 the same program on the same core within the same second.
 
 ## What this is an upper bound on, and what it is a lower bound on
@@ -74,22 +74,22 @@ page, updates the page tables, shoots the TLB entry, `iret`. One ring round trip
 with these mitigations. It does considerably more work than an `rdtsc` emulate would, so it is not a
 substitute for measuring the real thing, and the method here cannot separate the entry and exit cost
 from the page work. What it does establish is that **a fault round trip on this machine is in the
-same neighborhood as a syscall and above it, not below it**, which is the architectural fact the
+same neighborhood as a system call and above it, not below it**, which is the architectural fact the
 option was implicitly betting against. `SYSCALL`/`SYSRET` is the path Intel built to be fast; an
 IDT-vectored exception returning through `iret`, a serializing instruction, is the path it did not.
 
-Put together, a nife trap-and-emulate would land somewhere between the 406 ns syscall and the
+Put together, a nife trap-and-emulate would land somewhere between the 406 ns system call and the
 1,667 ns measured here, and it would land there because it is a ring round trip plus extra work.
-It cannot be cheaper than a syscall on the same machine, because a syscall is a ring round trip and
-nothing more. Xen escapes this only because its comparison is against a guest syscall into a guest
+It cannot be cheaper than a system call on the same machine, because a system call is a ring round trip and
+nothing more. Xen escapes this only because its comparison is against a guest system call into a guest
 kernel that then does more work still, on parts with hardware-accelerated exits. Our comparison is
-against our own syscall, and that is a fight trap-and-emulate cannot win.
+against our own system call, and that is a fight trap-and-emulate cannot win.
 
 ## The two thresholds the brief named, answered
 
 The brief set them out in advance so the number could not be read after the fact. "Near 150 ns"
 would have meant the performance objection evaporates. "Near or above 1 microsecond" would have
-meant the option is worse than the syscall it was meant to beat. The measurement is 1,667 ns on
+meant the option is worse than the system call it was meant to beat. The measurement is 1,667 ns on
 the heaviest honest path and 1,219 ns for the lightest in-kernel analogue available. Both are above
 the microsecond. Trap-and-emulate fails on its own terms, and it fails on the one axis it was
 proposed to win on.
@@ -171,9 +171,9 @@ Trap-and-emulate is off the list on the evidence rather than on taste.
   1,667 ns includes building and tearing down a signal frame and two ring round trips where a nife
   `#GP` arm would have one. The minor-page-fault row at 1,219 ns is the closest in-kernel analogue
   available and it does more work than an `rdtsc` emulate. So the method brackets a nife trap
-  between the 406 ns syscall and the 1,667 ns measured, and does not pin it. Pinning it needs a nife
+  between the 406 ns system call and the 1,667 ns measured, and does not pin it. Pinning it needs a nife
   spike, which was not run.
-- **The native `rdtsc` and syscall reference points from earlier in the same session did not
+- **The native `rdtsc` and system call reference points from earlier in the same session did not
   reproduce**, and the 0.25 ns one is arithmetically impossible for a single `rdtsc` on a 3.4 GHz
   part. The figures in the measurement section are this lane's own and were taken in one program on
   one core. The earlier ones are left in the paragraphs that cite them rather than silently

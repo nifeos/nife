@@ -49,7 +49,7 @@ Every item below is unmeasured and from general knowledge.
 
 ## First step: a measurement, before any build work
 
-Inventory the syscalls and libc functions a headless Firefox build uses, and diff them against what
+Inventory the system calls and libc functions a headless Firefox build uses, and diff them against what
 nife's std PAL and libc layer provide.
 
 - The question it answers: how large the platform gap is, in counted functions.

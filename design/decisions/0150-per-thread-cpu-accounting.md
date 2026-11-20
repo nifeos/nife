@@ -12,7 +12,7 @@ window this section named, by §204 (how userspace asks where a thread runs), wh
 widened `SURVEY` return with a selector. Everything else here stands: tick-sampled, per-thread,
 scheduled on-CPU time is unchanged, and only how the figure reaches a reader moved.
 
-It crosses the syscall surface, so it is decided here rather than built on the way past. Ruled
+It crosses the system call surface, so it is decided here rather than built on the way past. Ruled
 option 2, scheduled on-CPU time.
 
 What it unblocks: `top`, which is milestone 282 (a thread's CPU time, and the `top` it makes
@@ -44,7 +44,7 @@ Two options were refused, and the reasons are the valuable half.
   continuously for five minutes read identically. Naming that "CPU accounting" would mislead a
   reader who knows Unix `top`, which is the fault milestone 115's naming rules exist to catch.
 - Sampling over `SURVEY` (poll repeatedly, estimate from how often a tid reads `RUNNING`). The
-  only option needing zero new kernel state and zero new syscall surface, and not accounting in any
+  only option needing zero new kernel state and zero new system call surface, and not accounting in any
   real sense: a thread running in the gaps between samples is invisible, and short bursts are
   systematically mis-counted depending on phase. Named because the tenet requires naming the
   zero-cost option even when it is not the recommendation. No mainstream `top` ships pure
@@ -67,8 +67,8 @@ argued, and the third is the one that is expensive to un-ship.
    abstraction §46 declines elsewhere.
 3. **A widened `SURVEY` return, not a second method.** `abi::rendezvous::SURVEY` returns three words
    (`next_cursor`, `tid`, `state`); a fourth carries the figure. This widens an existing method's
-   shape rather than adding a syscall number, mirroring how `pmap` added a method to a different
-   object type instead of a syscall (§114).
+   shape rather than adding a system call number, mirroring how `pmap` added a method to a different
+   object type instead of a system call (§114 (`pmap` gets its listing)).
 
 Sub-choice 3 is the irreversible one and is called out here so a reader meets it. It is a wire
 format the kernel and every future `SURVEY` reader agree on, which the *move fast on what can be

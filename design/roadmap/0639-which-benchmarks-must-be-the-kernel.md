@@ -32,7 +32,7 @@ question returns: does `bench` need to be a kernel build at all?
 ## Why the answer is "some of it", and why that needs measuring
 
 Some of what `bench` times is genuinely kernel-internal. A context switch measured from a
-userspace supervisor includes the syscalls that got in and out, which is precisely the cost the
+userspace supervisor includes the system calls that got in and out, which is precisely the cost the
 measurement is trying to exclude. Moving those would not relocate a measurement, it would replace it
 with a different one that has the same name, which is the most damaging thing a benchmark can do.
 

@@ -22,7 +22,7 @@ An appendix to [the milestone](../1079-byte-sink-contract-outside-review.md).
    version is in the served set. No such opcode exists in this crate or anywhere in the tree. Proposal 1000 (message contracts carry bind-time version checks), not started, reserves opcode 0 for it "where the protocol leaves it free", and this contract gives opcode 0 to `OPERATION_BYTES`. A sink is `SEND`-only by the contract's own first paragraph, so there is
    nothing a writer could `CALL`, and the one receiver that would answer is a pipe's ordinary
    reader. The check that does exist today is static: the program's `INTERFACES` note carries
-   (6, 1), and `interfaces_note` says the progenitor compares only the syscall ABI's entry at spawn
+   (6, 1), and `interfaces_note` says the progenitor compares only the system call ABI's entry at spawn
    and carries the others. An outside implementer who trusts the comment reserves opcode 0 for a
    version reply and collides with every bytes message.
    Evidence: `src/lib.rs` lines 19 to 27 (the comment) and 46 (opcode 0 taken);

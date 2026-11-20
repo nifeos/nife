@@ -6,9 +6,9 @@ the tables rather than changing them) and still tombstones the record, so it ans
 
 Expected to fail: the assertion that the page is gone from the tables after `UNMAP` returned 0.
 
-diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
---- a/kernel/src/syscall/address_space.rs
-+++ b/kernel/src/syscall/address_space.rs
+diff --git a/kernel/src/system_call/address_space.rs b/kernel/src/system_call/address_space.rs
+--- a/kernel/src/system_call/address_space.rs
++++ b/kernel/src/system_call/address_space.rs
 @@ -178,7 +178,7 @@
          let mut hold = crate::revoke::hold();
          // Both halves, neither short-circuiting the other: a page with no record is still a window,

@@ -51,7 +51,7 @@ The long tail is a handful of boot and plan functions:
 | `spawn_service` | `crates/system_initializer/src/lib.rs` | 545 |
 | `Prog::manifest` | `crates/grant_plan/src/lib.rs` | 488 |
 | `boot_progenitor` | `kernel/src/user.rs` | 404 |
-| `invoke` | `kernel/src/syscall.rs` | 222 |
+| `invoke` | `kernel/src/system_call.rs` | 222 |
 
 ## Complexity, measured and refused
 

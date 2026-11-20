@@ -79,7 +79,7 @@ These are not part of the ruling. The tree was checked for each on 2026-09-26.
   gives it. `rendezvous::RECV` needs `READ` and would take the death message from the supervisor.
   Polling `SURVEY` needs `ENUMERATE`, which is `pgrep`'s authority and would undo the reason D is a
   separate program. So the lane likely owes a narrower way to wait on a named tid, which is a
-  syscall-surface question and comes back here. A real sleep also waits on milestone 106 (a wait
+  system-call-surface question and comes back here. A real sleep also waits on milestone 106 (a wait
   that ends on either the interrupt or the deadline).
 - `pgrep` cannot take a pattern at the prompt until milestone 47 (navigation and naming) gives it an
   operand, so `pidwait $(pgrep foo)` cannot be typed end to end before then.

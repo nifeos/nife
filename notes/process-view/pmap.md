@@ -2,7 +2,7 @@
 
 Milestone 126 (the `procps` package: who else is running) cannot be BUILT while `pmap` from the
 prompt is undecided, and nobody had priced it. This page prices it. It gives options and no winner,
-because they touch the syscall surface and §142's retention rule; calef's ruling is at the end, and
+because they touch the system call surface and §142's retention rule; calef's ruling is at the end, and
 the decision now lives in milestone 602 (`pmap` from the prompt). Written 2026-09-26 (UTC) by the lane `proposal/126-pmap`, at base `484f3ebe2`.
 
 *Name: provisional, for the stem `pmap`.
@@ -30,8 +30,8 @@ Both are true. Three details change what they cost.
 
 `sched::configure_thread_control_block` calls `user::take_user_address_space`, which is
 `USER_SPACES.lock().remove(name)`. The space moves into `Thread::space`. `address_space_list` in
-`kernel/src/syscall.rs` resolves the capability's name through `user_address_space_root`, finds
-nothing, and answers `DONE` with no entries. The syscall arm then deletes the caller's slot.
+`kernel/src/system_call.rs` resolves the capability's name through `user_address_space_root`, finds
+nothing, and answers `DONE` with no entries. The system call arm then deletes the caller's slot.
 
 The same registry backs `address_space::MAP_INTO`. Today a `WRITE` copy of the capability that
 outlives `CONFIGURE` is inert for both methods. Keeping the name resolvable re-arms `MAP_INTO` on
@@ -153,7 +153,7 @@ checks `survey_includes` for the named tid and walks `Thread::space` directly. `
 
 The parts:
 
-- One method number on `abi::rendezvous` (7), a syscall arm the size of `SURVEY`'s (about 35 lines),
+- One method number on `abi::rendezvous` (7), a system call arm the size of `SURVEY`'s (about 35 lines),
   and a scheduler function. `survey_supervised` is 39 lines today.
 - No retention, no registry change, no slots. The registry premise stops mattering.
 - A `grant_plan` variant for `pmap` with `domain: true`, and milestone 47's operand.

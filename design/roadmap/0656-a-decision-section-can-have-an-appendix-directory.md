@@ -16,7 +16,7 @@ Raised by the `proposal/signed-builds` lane (#1325). It was writing
 overflow in an appendix directory named after the section.
 
 A change to one regular expression in `script/decisions` and to what it treats as a
-decision file. It touches no syscall surface, wire format or dependency.
+decision file. It touches no system call surface, wire format or dependency.
 
 ## The finding
 

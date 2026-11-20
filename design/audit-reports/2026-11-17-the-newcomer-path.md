@@ -47,7 +47,7 @@ compared with what the page that names it says.
   `echo hello`, `least_authority_demo 7`) each answered as the README says. `script/test` passed on all three
   architectures in 32 minutes of wall time. `script/catch-up` ran with its default window and
   with `--since 2026-09-01`.
-- Start here. `script/roadmap --ready` lists ready blocks; `script/apropos syscall` was run as
+- Start here. `script/roadmap --ready` lists ready blocks; `script/apropos system call` was run as
   `CONTRIBUTING.md` and the script's header suggest; `helpers/agents-index-check.py` passed, and
   both skill link directories hold all seven links.
 - `notes/adding-a-program.md`, every path and every test it names, each found by `git grep`.
@@ -74,13 +74,13 @@ the generated index on 2026-09-21. Severity high for the newcomer path: the tool
 and says nothing about it. Minted as [`script/catch-up` reads the milestone
 blocks](../roadmap/proposals/catch-up-reads-the-milestone-blocks.md).
 
-### 2. MINTED: `script/apropos syscall` no longer finds `crates/abi`
+### 2. MINTED: `script/apropos system call` no longer finds `crates/abi`
 
-The script's header, and `CONTRIBUTING.md`, give `script/apropos syscall` as the way to find
+The script's header, and `CONTRIBUTING.md`, give `script/apropos system call` as the way to find
 `crates/abi/src/lib.rs`, and the header says that finding it is why the tool exists. The search
 returns `16 of 520 pages`, a fixed cap (`RESULTS_MAXIMUM`), and `crates/abi` is not among them.
 The header's figures are stale too: it says 512 pages and five megabytes where the script reports
-`2040 pages, 16602078 bytes`, and "four syscall numbers" where `crates/abi` declares five calls.
+`2040 pages, 16602078 bytes`, and "four system call numbers" where `crates/abi` declares five calls.
 Severity medium. Minted as item 1 of [the newcomer path says what the tree
 does](../roadmap/proposals/the-newcomer-path-says-what-the-tree-does.md).
 

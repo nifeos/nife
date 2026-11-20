@@ -8,7 +8,7 @@ registry only afterwards to map and record. The sweep held at the seam deletes t
 scans a log the mapping is not yet in, and the mapping is recorded after it, alive.
 
 This was the live tree, not an invented break. The revocation-race lane recorded it reasoned at
-`syscall::page_frame_map` on 2026-10-04; this test drove it red on aarch64 under both
+`system_call::page_frame_map` on 2026-10-04; this test drove it red on aarch64 under both
 `PageFrame::REVOKE` and `MemoryRegion::DESTROY` before the fix existed.
 
 Expected to fail: `assert!(!REPORT.mapped.load(..), "a PageFrame::MAP held while a {sweep:?} ran kept its mapping ...")`, on the `Revoke` round.
@@ -18,12 +18,12 @@ Replayed red on riscv64 on 2026-10-04 (UTC) against the fixed tree, at
 **The assertions above the headline stay green under this patch**: the seam was reached, and the
 sweep reached the mapper's own table, so the red means the claim rather than the fixture.
 
-Nothing here is architecture-specific: the syscall layer, the sweeps and the seam are portable
+Nothing here is architecture-specific: the system call layer, the sweeps and the seam are portable
 code, so one patch serves every leg.
 
-diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
---- a/kernel/src/syscall/page_frame.rs
-+++ b/kernel/src/syscall/page_frame.rs
+diff --git a/kernel/src/system_call/page_frame.rs b/kernel/src/system_call/page_frame.rs
+--- a/kernel/src/system_call/page_frame.rs
++++ b/kernel/src/system_call/page_frame.rs
 @@ -24,12 +24,10 @@
      writable: u64,
      ut_slot: u64,

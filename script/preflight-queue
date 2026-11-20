@@ -474,7 +474,7 @@ ws_root = meta["workspace_root"]
 ws_ids = set(meta["workspace_members"])
 by_id = {p["id"]: p for p in meta["packages"]}
 deps = {n["id"]: {d["pkg"] for d in n.get("deps", [])} for n in meta["resolve"]["nodes"]}
-# `user_mode_runtime` and everything that reaches it cannot compile for the host (EL0 syscall `asm!`),
+# `user_mode_runtime` and everything that reaches it cannot compile for the host (EL0 system call `asm!`),
 # plus the packages that are not host code at all: `kernel`, `components`, `fixtures`, and
 # `system_tests`, which depends on `kernel` and so builds it for the Mac, where vectors.s fails with
 # `unknown directive`. script/lint's clippy passes exclude the same set. The same set `xtask test`

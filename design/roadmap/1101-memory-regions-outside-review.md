@@ -19,7 +19,7 @@ The review found no review package for this crate in `notes/crate-reviews/` and 
 package. So there is no settled baseline to leave closed, and the crate stays in the kernel base package
 until the trigger under "Held" below fires. What this review does not reopen: the crate's name (`Name:
 ratified`, `src/lib.rs`), the rename from `regions`, the kernel's `RETYPE` count rule for the
-syscall word, the `MIT OR Apache-2.0` license, and the pin of `generational_table` at its
+system call word, the `MIT OR Apache-2.0` license, and the pin of `generational_table` at its
 `v0.1.0-pre.1` tag. No later rule in [design/naming.md](../naming.md) contradicts the ratified
 crate name. Every quantity in the crate is a count of pages or of objects and names the thing, so
 the unit rule has nothing to say; `len`, `is_empty`, `get` and `with` take std's spellings.
@@ -87,7 +87,7 @@ for the crate's own reasons.
   `from_bits` in `kernel/src/memory_region.rs`.
 - Decision 3, zero pages: Done (maintainer, provisional, 2026-11-14 UTC),
   [#3825](https://github.com/nifeos/nife/pull/3825). `retype_pages` is gone, `retype_run(name, 0)`
-  is refused, and the kernel maps the syscall word's zero to one.
+  is refused, and the kernel maps the system call word's zero to one.
 - Decision 4, the child's share: Done (maintainer, provisional, 2026-11-14 UTC),
   [#3567](https://github.com/nifeos/nife/pull/3567). `CHILD_SHARE_OF_ROOT` stays private and its
   documentation states the limit.
@@ -208,8 +208,8 @@ item 9's naming pass.
 ### Decision 3: Whether "zero pages means one" is the crate's contract or the kernel's
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door while the crate stays
-with the kernel, which the architect may revisit. The syscall behaves as ruled; only the place of the
-rule moves. The crate refuses zero everywhere, as `split` does, and the kernel maps the syscall word's zero to
+with the kernel, which the architect may revisit. The system call behaves as ruled; only the place of the
+rule moves. The crate refuses zero everywhere, as `split` does, and the kernel maps the system call word's zero to
 one before it calls (`retype_run` in `kernel/src/memory_region.rs`). Under a stricter rule first, a
 crate that later accepts zero stays compatible.
 

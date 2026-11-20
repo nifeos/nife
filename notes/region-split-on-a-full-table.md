@@ -45,7 +45,7 @@ Every neighbor refuses without side effects:
 - `RegionTable::retype_object_page` pins nothing and counts nothing when it refuses, so a caller
   that got no page owes no unpin.
 - `memory_region::create` hands the pages back to the frame allocator when `insert_root` refuses.
-- `syscall::memory_region_split` destroys the child when its capability finds no free slot, and
+- `system_call::memory_region_split` destroys the child when its capability finds no free slot, and
   `split_refused_for_a_full_capability_table_orphans_no_child` tests it.
 
 ## Prior art
@@ -57,4 +57,4 @@ untyped as it was. That is option B's shape. This is from memory, not re-read fo
 ## Reversibility
 
 Cheap. `split` belongs to `crates/memory_regions` and the kernel's `memory_region::split` wrapper.
-No wire format, syscall number or name changed.
+No wire format, system call number or name changed.

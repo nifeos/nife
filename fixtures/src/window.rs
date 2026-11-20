@@ -277,7 +277,7 @@ fn start(role: u64, neighbour_va: u64, _arg2: u64) -> ! {
         // a raw `invoke` (milestone 139 round 7's own survey of the whole `invoke` cluster): this is
         // the one call site of its kind, deliberately probing the raw negative `abi::Error` a RECEIVE
         // against an empty slot returns, which `user_mode_runtime::receive`'s own contract discards (it assumes
-        // success and returns the three data words, not the syscall's own return code). A wrapper
+        // success and returns the three data words, not the system call's own return code). A wrapper
         // exposing the raw code would be a second `receive` for one caller, not a real reduction.
         let r = unsafe { invoke(INPUT, abi::rendezvous::RECEIVE, 0, 0, 0) };
         send(REPORT, status::WIN_REFUSED, r as u64, WHAT_INPUT);

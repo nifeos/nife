@@ -42,7 +42,7 @@ cost.
 
 `script/fastpath-footprint`, before and after, on the same machine within twenty minutes:
 
-| ISA | `ipc_fastpath` before | after | `syscall_entry` before | after | delta |
+| ISA | `ipc_fastpath` before | after | `system_call_entry` before | after | delta |
 |---|---|---|---|---|---|
 | aarch64 | 7,028 | 7,028 | 1,504 | 1,516 | +12 B (+0.8%) |
 | riscv64 | 5,936 | 5,936 | 1,828 | 1,986 | +158 B (+8.6%) |
@@ -51,13 +51,13 @@ cost.
 `ipc_fastpath` does not move at all on any architecture, which is the number that matters: an IPC
 round trip fetches exactly what it fetched before.
 
-`syscall_entry` moves because that half is measured *flat*. The decoder's own bytes are on every
-syscall, and its other arms are not on this path. So one more `Object` arm in `invoke` is one more
-decode step's worth of bytes for every syscall in the system, whether or not it is a timer.
+`system_call_entry` moves because that half is measured *flat*. The decoder's own bytes are on every
+system call, and its other arms are not on this path. So one more `Object` arm in `invoke` is one more
+decode step's worth of bytes for every system call in the system, whether or not it is a timer.
 
 The riscv64 figure is the one to argue about. 158 bytes is 8.6% of that ISA's entry set, and
 `script/fastpath-footprint`'s own `BUGS` names this exact mechanism as an open problem
-(`design/roadmap/0368-a-flat-entry-set-counts-bytes-no-syscall-fetches.md`). Three instances were
+(`design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md`). Three instances were
 closed with `#[inline(never)]` in two days on 2026-09-04. Both scaffold bodies here already carry
 it, so this is the cost *after* that mitigation rather than before it.
 

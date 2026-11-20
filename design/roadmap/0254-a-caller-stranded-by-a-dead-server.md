@@ -26,7 +26,7 @@ forever with no way out.
 ## Why this is separable from milestone 133, and why it goes first
 
 Milestone 133 is a genuine fork: *which held capability expresses the right to end a thread*, with
-four proposals conceding different things, and it touches the syscall surface under one of them. This
+four proposals conceding different things, and it touches the system call surface under one of them. This
 is proposal C's first piece and it is the only part of that milestone that **asks for no authority
 anybody does not already hold.** It rides on destroying a region or destroying an endpoint, both of
 which the kernel already witnesses, and changes only their *reach*.
@@ -78,7 +78,7 @@ For this half the authority question does not arise, so what remains is mechanic
 ## What was built
 
 One helper that frees a caller, `strand_reply_caller`, two finders that decide which callers, and
-four trigger sites. All of it is in `kernel/src/sched.rs`; no syscall number, no method, no right,
+four trigger sites. All of it is in `kernel/src/sched.rs`; no system call number, no method, no right,
 and no ABI change, which is exactly what the block's gate line claimed before it was struck as stale
 on the way to `BUILT`.
 
@@ -86,7 +86,7 @@ The helper does the two things in the order that makes them safe. First the swee
 `Object::Reply(caller)` in every capability table in the machine is deleted, and so is one riding in
 a thread's `outgoing_cap`, which is where a caller that met no server parks its own reply capability
 awaiting a `RECV_CAP` hand-off. Then the abort and the wake, which is `set_ipc_aborted` plus
-`wake`, the pair `reap_region_objects` already ran against every waiter it drained. The syscall layer
+`wake`, the pair `reap_region_objects` already ran against every waiter it drained. The system call layer
 needed nothing: `abi::rendezvous::CALL` already reads `take_ipc_aborted` and returns
 `abi::Error::Gone`, so the caller returns through a path that has existed since milestone 12.
 

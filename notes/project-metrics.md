@@ -33,7 +33,7 @@ line belongs there, not in a caption.
 
 ![Fatal risks by color](project-metrics/fatal-risks-colors.svg)
 
-- 2026W41: risk 4 went green on 2026-10-05 UTC (calef); milestones 761 and 766 cut the null syscall's growth to four tasks from 48 to 10 ticks.
+- 2026W41: risk 4 went green on 2026-10-05 UTC (calef); milestones 761 and 766 cut the null system call's growth to four tasks from 48 to 10 ticks.
 
 ## Names by what the tree records about them
 
@@ -242,12 +242,12 @@ save and reason: [the drift report](project-metrics/baseline-drift.md).
 
 ![Breaking changes to the interface](project-metrics/interface-stability.svg)
 
-The boundary a program outside the tree is written against, each week: syscall surface moves
+The boundary a program outside the tree is written against, each week: system call surface moves
 and wire-format value changes. [definitions](interface-stability.md),
 [per crate and package](project-metrics/interface-stability.md).
 
 <!-- interface-stability: script/metrics writes this -->
-interface, 2026W44 to 2026W47: 22 breaking changes (24 additions); 0 syscall numbers changed, 1 format bumps; 54% co-change, 47% across packages.
+interface, 2026W44 to 2026W47: 22 breaking changes (24 additions); 0 system call numbers changed, 1 format bumps; 54% co-change, 47% across packages.
 <!-- /interface-stability -->
 
 ## The crates 857 releases

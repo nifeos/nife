@@ -132,7 +132,7 @@ came twelfth, reached from the README's pointer. It read four targeted sections,
 file, reasoning that 66 KB is expensive. `notes/adding-a-program.md` came ninth, found by grep
 *after* it had reconstructed most of it from `xtask` and `grant_plan`, because it grepped the
 identifier before the concept. `crates/abi/src/lib.rs` came late, which it calls its own biggest
-mistake: *"Four syscall numbers. It is the whole design on one screen, and I read it far too
+mistake: *"Four system call numbers. It is the whole design on one screen, and I read it far too
 late."* It opened no file under `design/decisions/`, having read the signpost and stopped there.
 
 So B1 fails, in an interesting direction. There was no reading order, and the stranger built a good
@@ -171,5 +171,5 @@ still contaminated.
   and a stranger has to induce it from instances.
 - Know that the machine is shared with other lanes. That is the most load-bearing fact about any
   timing result, and it is stated nowhere a person running `script/test` will meet it.
-- Find `crates/abi/src/lib.rs`, four syscall numbers and the whole design on one screen, without
+- Find `crates/abi/src/lib.rs`, four system call numbers and the whole design on one screen, without
   luck.

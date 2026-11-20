@@ -10,18 +10,18 @@ needs_person: no
 ---
 # 792. Cross-core wake latency under HVF
 
-Raised 2026-10-05 (UTC) by `lane/null-syscall-hvf`. A measurement, not a fix. Title and slug are
+Raised 2026-10-05 (UTC) by `lane/null-system-call-hvf`. A measurement, not a fix. Title and slug are
 drafts.
 
 ## What was seen
 
-In [the HVF appendix](../../notes/job-mix/null-syscall-hvf-full-mix.md) the job mix's spawn job
+In [the HVF appendix](../../notes/job-mix/null-system-call-hvf-full-mix.md) the job mix's spawn job
 (two children, built, run and reclaimed one at a time) cost, per job, in 24 MHz ticks:
 
 | Other cores | spawn per job |
 |---|---|
 | idle (one task) | 59,000 (2.5 ms) |
-| busy in syscall-free user code (condition C, two and three tasks) | 108,000 to 167,000 (4.5 to 7 ms) |
+| busy in system-call-free user code (condition C, two and three tasks) | 108,000 to 167,000 (4.5 to 7 ms) |
 | busy in the full mix (four tasks) | 2,700 (0.11 ms) |
 
 Radon's one-task figure is 1,172 ticks of a 10 MHz clock, 117 us

@@ -7,7 +7,7 @@ LIST` passed its caller-supplied cursor straight into the revocation log's walk,
 only ever `page_phys | index` for a page in this space's own chain. A confined process naming any
 kernel-mapped page had it walked as a log page: a kernel data abort at best (what the fuzzer's
 random cursor produced, `FAR_EL1 0xffff1e1d3b968008`), and at worst the page's contents returned as
-mapping records, a kernel-memory read through a syscall register. The fix (the chain-membership
+mapping records, a kernel-memory read through a system call register. The fix (the chain-membership
 walk inside `revoke::list_mapping`'s one `SPACES` hold, refusing with `BadPointer` before anything
 follows the word) is what this patch removes.
 

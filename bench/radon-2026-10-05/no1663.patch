@@ -127,8 +127,8 @@ index b2c20b9ba..87bf2f3be 100644
 +    a2: u64,
 +) -> (u64, u64, u64, u64, u64, u64) {
      let (mut w0, mut w1, mut w2, mut w3, mut w4, mut w5): (u64, u64, u64, u64, u64, u64);
--    // SAFETY: see the function doc; `rax` selects the syscall (DECISIONS §10, §124 (the `x86_64`
--    // syscall ABI)), and the six argument registers carry the six-word ABI in both directions.
+-    // SAFETY: see the function doc; `rax` selects the system call (DECISIONS §10, §124 (the `x86_64`
+-    // system call ABI)), and the six argument registers carry the six-word ABI in both directions.
 +    // SAFETY: see the function doc; `rax` selects SYS_INVOKE (DECISIONS §10, §124), and the five
 +    // argument registers carry the five-word ABI in both directions.
      unsafe {

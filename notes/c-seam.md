@@ -47,18 +47,18 @@ whose safety came from the language.
 ```text
    kernel  <--- svc / ecall --->  c_shim (Rust)  <--- C ABI: (u8*, usize) --->  c_seam.c
                                   ^^^^^^^^^^^^
-                                  every capability and every syscall stops here
+                                  every capability and every system call stops here
 ```
 
 `fixtures/src/c_shim.rs` is the whole design, and what it does *not* do is the point:
 
-- The C makes no syscalls. Not because we asked nicely, but because a syscall needs a capability
+- The C makes no system calls. Not because we asked nicely, but because a system call needs a capability
   slot number and the C has never seen one. There is no `svc`, no `ecall`, and no inline asm anywhere
   in `c_seam.c`, and there could not usefully be: an `svc` with a made-up slot number gets
   `NoSuchSlot`.
 - The C holds no capabilities. It is handed a pointer and a length.
-- So the foreign component **cannot widen the kernel's syscall surface** (DECISIONS §4 rule 3). A
-  vendor who wanted one more syscall to make their component work would have to change the Rust shell,
+- So the foreign component **cannot widen the kernel's system call surface** (DECISIONS §4 (kernel shape: a microkernel) rule 3). A
+  vendor who wanted one more system call to make their component work would have to change the Rust shell,
   in this repository, in review.
 
 That makes the confinement claim precisely as narrow as it should be: **the C can corrupt memory
@@ -241,10 +241,10 @@ builds a process from it** (`RETYPE`, `RETYPE_OBJECT`, `SPLIT`). There is no nar
   is the wrong answer *here*, because it moves the requirement behind an IPC hop and the requirement is
   the interesting part. A spike should make its requirements visible.
 
-Nothing was invented to work around this: no new capability, no new method, no new syscall. The
+Nothing was invented to work around this: no new capability, no new method, no new system call. The
 concrete requirement, for whoever decides the fork, is one sentence: **a supervisor needs exactly
 `DESTROY` on one region it did not create.** Whether that is a rights bit split out of `WRITE` or a
-distinct `Untyped::REAP` changes the rights model and the syscall surface, which makes it a decision
+distinct `Untyped::REAP` changes the rights model and the system call surface, which makes it a decision
 rather than an implementation detail. DECISIONS §26's phase-B block already records it as one.
 
 ## The confiner since §32

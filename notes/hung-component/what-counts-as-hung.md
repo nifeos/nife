@@ -39,7 +39,7 @@ property under test."* A duration is that. A monotone count of work completed is
 Concretely, and it needs nothing that does not exist: a component publishes a monotone progress
 counter in a page its supervisor owns. §41 (the endpoint is the broker, and a device is revoked by taking it back) already has that page, in milestone 23 (a capability-routed component OS with live replacement)'s system. `hot_swap_contract::LOG_VA` is a frame
 the operator retyped from its own budget and mapped read/write into every instance, and every
-instance stamps it as it serves. Reading it costs the watcher zero syscalls and the component one
+instance stamps it as it serves. Reading it costs the watcher zero system calls and the component one
 store. A verdict is then: *work is owed (a request went in and no counter moved) and the counter has
 not moved across k observations.* No clock is consulted, and the number k is the supervisor's, set
 by somebody who knows the machine it is running on.

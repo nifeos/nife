@@ -150,7 +150,7 @@ Each is a published name at release and so one-way. Each predates the rules this
 | `pack`, `unpack`, `classify`, `severity`, `with_severity`, `kind`, `len`, `operation` | keep | `len` and `with` are std spellings; the rest are plain words |
 | `Sent`, `Sent::Ok`, `Sent::Gone`, `Sent::NoSink` | keep | plain words that carry the contract's one distinction |
 
-Prior art for `first_word`: the ABI note names the registers `w0..w4` and describes a syscall by its words. `filesystem_contract` and `line_editor` put their opcodes in the same bits and the tree calls
+Prior art for `first_word`: the ABI note names the registers `w0..w4` and describes a system call by its words. `filesystem_contract` and `line_editor` put their opcodes in the same bits and the tree calls
 that "the first word" in prose throughout.
 
 Example for `INLINE_MAXIMUM`: `MAXIMUM_NAME_BYTES` versus `MAXIMUM_NAME_LEN` in `design/naming.md`

@@ -52,7 +52,7 @@ something:
   a paragraph somebody has to have read. It names the role, not the person (calef, 2026-08-05):
   he holds it today and would like a second architect tomorrow, and a mechanism that spells one name
   has that name as its failure mode. Its description carries the reason a thing lands there at all:
-  outside standing merge authority, meaning the syscall surface, a new dependency, or a `DECISIONS`
+  outside standing merge authority, meaning the system call surface, a new dependency, or a `DECISIONS`
   section owed.
 - A `## What I need from you` comment naming the specific ask. Three properties make it worth
   writing, and they are what separate it from a link to a diff. It should be answerable without

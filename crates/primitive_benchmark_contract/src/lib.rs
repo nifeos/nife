@@ -1,7 +1,7 @@
 //! **What the bench boot and the shell agree on about the EL0 primitive programs**: how many
 //! iterations each one times, which prefix its result line carries, and the line's spelling.
 //!
-//! The programs `null_syscall`, `sink_producer` and `sink_consumer` run two ways. The bench boot
+//! The programs `null_system_call`, `sink_producer` and `sink_consumer` run two ways. The bench boot
 //! (`kernel/src/bench/el0.rs`) spawns them on the quiet, `-icount` kernel and gates their rows
 //! against `bench/baseline-*.txt`. A person types them at the production shell, and the same
 //! programs print the same row under a different prefix, which is never gated (milestone 961 (the kernel's special boots become commands typed at the production shell),
@@ -13,8 +13,8 @@
 //! ```
 //! use primitive_benchmark_contract::{format_row, Prefix};
 //! let mut out = [0u8; 96];
-//! let n = format_row(&mut out, Prefix::Production, "null_syscall", 1234, 20_000);
-//! assert_eq!(&out[..n], b"bench-production: null_syscall 1234 20000\n");
+//! let n = format_row(&mut out, Prefix::Production, "null_system_call", 1234, 20_000);
+//! assert_eq!(&out[..n], b"bench-production: null_system_call 1234 20000\n");
 //! ```
 //!
 //! # BUGS
@@ -28,11 +28,11 @@
 
 #![no_std]
 
-/// Iterations of the null-syscall loop: large enough that the two clock reads are noise, small
+/// Iterations of the null-system-call loop: large enough that the two clock reads are noise, small
 /// enough to bear under TCG, where each `svc` is a full emulated exception.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane/961-step-1-bench-commands.
-pub const NULL_SYSCALL_ITERATIONS: u64 = 20_000;
+pub const NULL_SYSTEM_CALL_ITERATIONS: u64 = 20_000;
 
 /// Sink messages in the timed part of the throughput loop, each carrying
 /// `byte_sink_contract::INLINE_MAXIMUM` bytes. 5 000 messages are 80 000 bytes, past the 64 KiB a
@@ -212,11 +212,11 @@ mod tests {
                 byte_sink_contract::Sent::Ok
             },
             Prefix::QuietBoot,
-            "null_syscall",
+            "null_system_call",
             9,
             20_000,
         );
-        assert_eq!(&bytes[..length], b"bench: null_syscall 9 20000\n");
+        assert_eq!(&bytes[..length], b"bench: null_system_call 9 20000\n");
         assert!(ended);
     }
 
@@ -240,11 +240,11 @@ mod tests {
                 byte_sink_contract::Sent::Ok
             },
             Prefix::QuietBoot,
-            "null_syscall",
+            "null_system_call",
             9,
             20_000,
         );
-        // "bench: null_syscall 9 20000\n" is 28 bytes: two bytes messages and the end of stream.
+        // "bench: null_system_call 9 20000\n" is 28 bytes: two bytes messages and the end of stream.
         assert_eq!((sent, empty), (3, 0));
     }
 

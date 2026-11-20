@@ -138,7 +138,7 @@ worth more standing next to its correction than quietly fixed.
 
 ## Scope note
 
-Instrumentation and measurement. No syscall surface, no wire format, no dependency. It builds
+Instrumentation and measurement. No system call surface, no wire format, no dependency. It builds
 benchmarks and produces numbers; it decides nothing by itself, which is the point.
 
 Sequencing: within tier A, E2, then E1, then E3, then E4. E2 first because it is nearly free and
@@ -179,7 +179,7 @@ measure this register carries and nobody ever needs is a cheap thing to have bee
   silicon. Expect M6 through M8 to need adjusting to what the TX1 and the U74 count, and treat the
   event names as intent rather than as a plan that will survive contact.
 - M9 could refute the fastpath as sketched, and that is a feature of listing it rather than a risk
-  of taking it. §95 reasons from `syscall::dispatch` being the largest symbol to it being the thing
+  of taking it. §95 reasons from `system_call::dispatch` being the largest symbol to it being the thing
   worth skipping. If per-phase attribution says dispatch is cheap and the trap entry dominates, the
   fastpath work should change shape. Better to find that with a counter than after building it.
 

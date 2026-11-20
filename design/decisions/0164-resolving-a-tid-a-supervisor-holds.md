@@ -59,7 +59,7 @@ kernel holds a name to return.
 | **B** | **Per-child fault endpoints.** | Already refused once by §26.5, and for a reason that has not changed: synchronous rendezvous means `RECV` blocks on one endpoint, so this costs a supervisor thread per child or a wait-any primitive that does not exist. |
 | **C** | **The builder reports the tid it created**, over a userspace protocol. | No kernel change at all. It makes the supervision relationship depend on a protocol between builder and supervisor rather than on anything the kernel guarantees, and a supervisor that trusts a builder's report is trusting a party it may be supervising. |
 
-Recommendation: none, deliberately. This is a syscall-surface question, which AGENTS.md puts in
+Recommendation: none, deliberately. This is a system-call-surface question, which AGENTS.md puts in
 the category that reaches calef as options rather than with a winner, because a recommendation on
 the surface is most of the way to a decision. What can be said without deciding it is that the
 argument between A and C is not about cost (C is free, A is a method) but about who is trusted,

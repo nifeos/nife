@@ -7,7 +7,7 @@ made 2026-07-24.
 
 Two shapes were on the table. **Composite spawn**: init names a budget and an image, and the
 kernel runs its one proven build recipe (B.4's `exec`) paid from init's untyped; two or three
-new syscalls, no half-built states, the ELF parser stays in the kernel. **Granular** (seL4's
+new system calls, no half-built states, the ELF parser stays in the kernel. **Granular** (seL4's
 shape): the kernel exports construction primitives and init parses ELFs and assembles processes
 itself; the parser leaves the trusted computing base, at the cost of the widest API this kernel
 has grown, designed today with one caller.

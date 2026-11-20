@@ -85,7 +85,7 @@ Apple core. Its `Call` plus `ReplyRecv` between two address spaces takes 96 ns a
 `ipc_rtt_el0` 442 ns, about 4.6 times (2026-10-21, eight boots each, nife at `f87c9b5c4`). Both are guests, both
 averaged over 10,000-pass loops against the generic timer rather than read per call through a PMU,
 and seL4 carries one patched line for the guest's 8-bit ASIDs. The operation still differs: seL4's
-two fastpath syscalls against `ipc_rtt_el0`'s four.
+two fastpath system calls against `ipc_rtt_el0`'s four.
 
 What that cannot give is a cycle count, and cycles are the unit the L4 literature publishes in.
 Measuring them directly turns the cross-OS figure from a derived one into a read one, and it is the

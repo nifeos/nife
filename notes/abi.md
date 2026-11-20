@@ -1,14 +1,14 @@
 # The native ABI
 
 *(Milestone 19e, "Decision 2". The contract a nife program runs against: how it starts, how
-it makes syscalls, and how it meets its capabilities. `crates/abi` is the machine-readable half;
+it makes system calls, and how it meets its capabilities. `crates/abi` is the machine-readable half;
 this note is the prose half. See DECISIONS §10 for why the model is capability-based, and §14 for
 why "native ABI" and not Linux-compat.)*
 
 The big fork was already settled at milestone 7 (§10): the process model is capability-based, not
 Unix. So this is not a decision about `fork` versus capabilities. It is the smaller, still-open
 question the 19f split forced into the open: now that we deliver and run distinct programs, what is
-the *contract* between a program and the system? Three parts: the syscall convention, the object
+the *contract* between a program and the system? Three parts: the system call convention, the object
 surface reached through it, and how a program meets its world at startup.
 
 The decision here is to write down and commit the convention we already run, rather than build a
@@ -19,33 +19,33 @@ a private layout. Our progenitor is that parent. A BootInfo mechanism earns its 
 start programs whose layout it cannot know in advance, which is milestone 23 (live component replacement), with competing
 vendors, not now. See "What is deliberately deferred".
 
-## 1. The syscall convention
+## 1. The system call convention
 
 One instruction, `svc #0`. The kernel reads the registers, does the work, and returns.
 
 | register | on entry | on return |
 |---|---|---|
-| `x8` | the syscall number | unchanged |
+| `x8` | the system call number | unchanged |
 | `x0` | first argument | the `i64` result |
-| `x1`–`x4` | further arguments | (see the specific syscall) |
+| `x1`–`x4` | further arguments | (see the specific system call) |
 
-Five syscall numbers <!--count:syscalls-->, and that is the whole width of the trap:
+Five system call numbers <!--count:system_calls-->, and that is the whole width of the trap:
 
 | `x8` | name | meaning |
 |---|---|---|
-| 0 | `SYSCALL_EXIT` | end the calling thread's process, every thread in it. Never returns. |
-| 1 | `SYSCALL_YIELD` | give up the CPU voluntarily. |
-| 2 | `SYSCALL_INVOKE` | invoke a capability. **This one carries the entire capability world** (see section 2 below). |
-| 3 | `SYSCALL_CAPABILITY_DELETE` | drop the capability in a capability table slot, so the slot can be reused. |
-| 4 | `SYSCALL_EXIT_THREAD` | end the calling thread alone, clearing and waking a joiner's word (§276 (the thread syscalls as built)). |
+| 0 | `SYSTEM_CALL_EXIT` | end the calling thread's process, every thread in it. Never returns. |
+| 1 | `SYSTEM_CALL_YIELD` | give up the CPU voluntarily. |
+| 2 | `SYSTEM_CALL_INVOKE` | invoke a capability. **This one carries the entire capability world** (see section 2 below). |
+| 3 | `SYSTEM_CALL_CAPABILITY_DELETE` | drop the capability in a capability table slot, so the slot can be reused. |
+| 4 | `SYSTEM_CALL_EXIT_THREAD` | end the calling thread alone, clearing and waking a joiner's word (§276 (the thread system calls as built)). |
 
-That narrowness is deliberate (DECISIONS rule 3: the syscall surface stays a boundary, not a habit).
-Everything a program can do to another object goes through the single `SYSCALL_INVOKE` door; adding a
+That narrowness is deliberate (DECISIONS rule 3: the system call surface stays a boundary, not a habit).
+Everything a program can do to another object goes through the single `SYSTEM_CALL_INVOKE` door; adding a
 capability *type* or a *method* does not widen the trap, it adds a row to a table the kernel already
 dispatches. `crates/user_mode_runtime` is the userspace side of this: `invoke`, and `send`/`receive`/`exit` built
 on it.
 
-## 2. The object surface, reached through `SYSCALL_INVOKE`
+## 2. The object surface, reached through `SYSTEM_CALL_INVOKE`
 
 `invoke(cap, method, a0, a1, a2)`: `cap` names a capability in the calling thread's capability table (a small
 integer, like a file descriptor), `method` selects an operation on the object that capability points
@@ -93,7 +93,7 @@ reserved case:
 - Historically `x0` was a *role selector* for the one multi-tool `hello` binary. After the 19f split
   every program is its own binary, so `x0` is a free argument again, not a dispatch key.
 
-A program never returns from `_start`. It runs until it calls `SYSCALL_EXIT` (a least_authority_demo, when its job is
+A program never returns from `_start`. It runs until it calls `SYSTEM_CALL_EXIT` (a least_authority_demo, when its job is
 done) or loops forever serving requests (a driver). Returning would fall off the end of the world;
 there is no runtime to catch it.
 
@@ -152,7 +152,7 @@ writing it down (here, and in each program's header comment) is what milestone 1
 
 A supervised thread's death is delivered to its supervisor as an ordinary endpoint message, so
 restart policy lives in userspace and the kernel never relaunches anything (DECISIONS §26). Two
-conventions make it work, and neither adds a syscall or a method: a spawn-slot convention and a
+conventions make it work, and neither adds a system call or a method: a spawn-slot convention and a
 message-format convention (both in `crates/abi`, module `fault`).
 
 The spawn-slot convention. A supervised child is spawned with its supervision endpoint in the
@@ -178,7 +178,7 @@ five-word message to its supervision endpoint, taken by a plain `RECEIVE`:
   w4  reserved 0 today; a fault-reply / resume protocol arrives here additively
 ```
 
-`RECEIVE` returns `w0` in the syscall's result register and `w1..w4` in the next four argument
+`RECEIVE` returns `w0` in the system call's result register and `w1..w4` in the next four argument
 registers (`x1..x4` on aarch64, `a1..a4` on riscv). On an ordinary message `w3` carries the badge of
 the sender's capability (milestone 613 (a system log service)), and `w4` is written only by the
 kernel, so a death is told apart by its first word. The tid is trustworthy because the kernel is the only sender on this path. A sixth word,
@@ -201,7 +201,7 @@ later without a format change: the corpse it would resume is still there.
 §10 says no ambient authority, and the object surface honors it: everything a program can *do* goes
 through a capability. There is exactly one deliberate exception, and it is a read, not a do: EL0
 can read the virtual counter (`CNTVCT_EL0`) and its frequency (`CNTFRQ_EL0`), via `user_mode_runtime::now`
-and `user_mode_runtime::counter_hertz`, no syscall. The kernel opens this in `timer::initialize`
+and `user_mode_runtime::counter_hertz`, no system call. The kernel opens this in `timer::initialize`
 (`CNTKCTL_EL1.EL0VCTEN`); without it the read traps.
 
 It is an exception made with eyes open. A monotonic counter grants no authority to *affect*
@@ -219,7 +219,7 @@ record of why.
 The cycle counter is roughly 160x finer than the coarse counter (0.25 ns against 41 ns), so it is
 not ambient on aarch64 or riscv64. DECISIONS 139 (who may read the cycle counter, and by what
 authority) decided it. The kernel closes it by default on every core, and a thread may be granted it
-only as an embryo; the context switch enforces the grant. There is deliberately no syscall method
+only as an embryo; the context switch enforces the grant. There is deliberately no system call method
 to set it yet, because a method number is irreversible and its successor is already foreseeable.
 On `x86_64` `rdtsc` stays ambient, a stated position rather than a gap, because closing it takes out
 `now()` itself. The grant is compiled only into test and measurement builds. None of this is timing

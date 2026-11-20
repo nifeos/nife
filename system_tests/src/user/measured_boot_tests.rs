@@ -62,7 +62,7 @@ fn a_tampered_boot_program_and_an_unmeasured_name_are_both_refused() {
 
 /// **The six components the progenitor builds the interactive system out of**, mirroring
 /// `system_initializer::boot`. Written out here rather than imported because the kernel cannot
-/// depend on that crate (it would drag `user_mode_runtime`'s EL0 syscall stubs into the kernel),
+/// depend on that crate (it would drag `user_mode_runtime`'s EL0 system call stubs into the kernel),
 /// which is the same seam `CHILD_STACK_PAGES` / `SHELL_EXTRA_STACK` already lives on. If a
 /// component is added there and not here, this test simply proves less; if one is added here and
 /// not packed, it fails.

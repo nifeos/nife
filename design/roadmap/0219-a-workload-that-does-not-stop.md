@@ -65,7 +65,7 @@ thing with different deadlines.
   same evidence. Both are named in `notes/soak.md` as what they are: neither was the right place to
   put a boot that never ends.
 - A user program, with the detection in the kernel. The defect is causable from userspace
-  through the real syscall path, so a kernel-mode stress loop would be testing an artifact of the
+  through the real system call path, so a kernel-mode stress loop would be testing an artifact of the
   test. A user program cannot assert about kernel internals, so the assertions stay where the
   trace counters are. The two meet over one shared page with one writer per word
   (`crates/soak_page`).
@@ -168,7 +168,7 @@ on its first run found two real warnings in code nothing had ever linted.
 ## Handoff
 
 Two proposed milestones, both of which this lane found and neither of which it should decide,
-because each is a scheduler-policy or syscall-surface question and those are an architect's:
+because each is a scheduler-policy or system-call-surface question and those are an architect's:
 
 - Proposed milestone: a workload can be made to cross cores, or it is admitted that none can.
   The options are thread affinity (pin a responder so its callers must reach it from elsewhere), a

@@ -191,7 +191,7 @@ could be a consistent served copy, and input delivery could stop being a blockin
 ([compositor/missing-primitive.md](compositor/missing-primitive.md)).
 
 Both forms are real design work with real consequences (a shared address space raises lifetime and
-revocation questions; a wait-any primitive widens the §4 (kernel shape) syscall surface), so neither
+revocation questions; a wait-any primitive widens the §4 (kernel shape) system call surface), so neither
 is something this milestone gets to decide. It is recorded in DECISIONS §33 (the compositor's
 authority is memory, not messages) as the fork it is.
 

@@ -179,10 +179,10 @@ this falls on the expensive side for two independent reasons:
   `crates/system_initializer` for riscv64, unified since milestone 96 (one init: the spawn service written twice)) would carry the new
   convention, and so would every program's manifest. §67 set the precedent for how cheaply this
   class of change lands
-  when it follows the existing shape (a bit, a manifest declaration, no new syscall). But it is
+  when it follows the existing shape (a bit, a manifest declaration, no new system call). But it is
   still a wire format, which the tenet lists explicitly as one of the few genuinely expensive categories.
 - **It changes what a spawned program's authority *implies* at this prompt**, which is exactly the
-  kind of thing DECISIONS §101 itself flags as syscall-adjacent: "what a spawned program holds at
+  kind of thing DECISIONS §101 itself flags as system-call-adjacent: "what a spawned program holds at
   this prompt is an architect's."
 
 **Who has already acted on it:** nobody, yet, in code. But three records already treat the
@@ -213,7 +213,7 @@ milestone 33's compositor) regardless of how this fork resolves.
 
 ## Recommendation, and question 6 checked against the code
 
-Take it. The fork looks like a syscall-adjacent, two-programs-must-agree wire decision on the
+Take it. The fork looks like a system-call-adjacent, two-programs-must-agree wire decision on the
 expensive side of *move fast on what can be undone*, and the code says it is not. `SINK_BIT`'s own
 contract (`crates/program_table/src/spawn_protocol.rs`) already makes the child's output
 slot opaque to the program: "the shell delegates an endpoint and the progenitor puts it where the result

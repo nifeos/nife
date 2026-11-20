@@ -144,7 +144,7 @@ five ways, and each was found by a different lane)'s and is not re-raised here.
 | 23 | Looked for a construction path left after the drop | kernel test on all three, recorded on aarch64 | held |
 | 24 | Same read as row 19, at the shell | kernel test on all three, recorded on aarch64 | held |
 | 25 | Not attacked: the compositor is a userspace server, the class the 2026-09-21 pass also could not reach and the human outsider behind milestone 198 is for | kernel test on all three, recorded on aarch64 | not attacked; owned by milestone 198 |
-| 26 | Not attacked: a real escape hangs the run, and the fix is a timed receive on the syscall surface | kernel test on all three | not attacked; stays unfalsifiable as written, owned by milestone 417 (a usurper that reports instead of hanging) |
+| 26 | Not attacked: a real escape hangs the run, and the fix is a timed receive on the system call surface | kernel test on all three | not attacked; stays unfalsifiable as written, owned by milestone 417 (a usurper that reports instead of hanging) |
 | 27 | Read the TSS I/O bitmap, IOPL and the single switch site | `x86_64` by subject | held; every gap fails closed |
 | 28 | Read the revoke sweep and the NMI broadcast to other cores | `x86_64` by subject | held |
 | 29 | Read `delete_current_cap`'s local bitmap clear | `x86_64` by subject | held |
@@ -173,7 +173,7 @@ five ways, and each was found by a different lane)'s and is not re-raised here.
   milestone 726 (an unknown badge fails closed in subtree_scope), `design/roadmap/0726-an-unknown-badge-fails-closed-in-subtree-scope.md`.
   A hardening candidate, not an escape.
 - **Rows 17 and 26 stay unfalsifiable as written**, for the reasons the notes already give. Row 17
-  needs a real device re-read. Row 26 needs a non-blocking or timed receive (the syscall surface, so
+  needs a real device re-read. Row 26 needs a non-blocking or timed receive (the system call surface, so
   a proposal, already noted against milestone 305 (the six kernel confinement rows get a
   falsification a machine can replay)). This pass confirms both and adds nothing new to
   them.

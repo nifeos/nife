@@ -57,7 +57,7 @@ pub fn bind_interrupt(intid: u32, ep: RendezvousId) {
 
 /// **Answer a sender that was parked on a rendezvous when it was bound to an interrupt.** A live
 /// sender is aborted with the refusal flag set ([`set_ipc_aborted`] drops a staged capability, and
-/// [`set_ipc_refused`] makes the syscall layer answer `NotPermitted`), then woken. A corpse is
+/// [`set_ipc_refused`] makes the system call layer answer `NotPermitted`), then woken. A corpse is
 /// waiting on nothing now; it is left dead, and its death message is dropped.
 ///
 /// Context: caller holds `IPC_TABLES`; `tid` has left the sender queue and holds its token.

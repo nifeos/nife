@@ -27,7 +27,7 @@ rest of the kernel calls through `crate::arch`:
 - `interrupts`: `enabled`/`disable`/`restore`/`enable`.
 - `timer`: `TIMER_INTID`, `TICK_HERTZ`, `init`, `tick`, `ticks`, `now`, `frequency`, `uptime_milliseconds`,
   `spin_for`, `interval`, `missed_ticks`.
-- `exceptions`: the `TrapFrame` type `syscall::dispatch` consumes, the fault stat statics, `init`.
+- `exceptions`: the `TrapFrame` type `system_call::dispatch` consumes, the fault stat statics, `init`.
 - `semihosting`: `EXIT_SUCCESS`/`EXIT_FAILURE`, `exit` (the test-harness exit).
 - Assembly symbols: `switch_to`, `thread_trampoline`, `user_entry_trampoline`, `secondary_boot`.
 
@@ -47,7 +47,7 @@ and every one is closed. The full account of each is in
    maintenance `asm!`, and hand-written aarch64 programs. Arch seams (`TrapFrame::for_user_entry`,
    `arch::sync_icache`, `arch::current_sp`, `arch::enter_user`) replaced them. `enter_user` must be
    `#[inline(always)]`, because the user-entry frame sits on the caller's own kernel stack.
-4. The syscall ABI read `frame.x[8]`; it now goes through `TrapFrame::{syscall_nr, arg, set_arg}`.
+4. The system call ABI read `frame.x[8]`; it now goes through `TrapFrame::{system_call_nr, arg, set_arg}`.
 5. Portable code named `drivers::gic`; it now names `arch::interrupt_controller`, with the GIC and the PLIC behind it.
 
 Where the user-entry frame goes was wrong on RISC-V for a year (milestone 71 (thread-start fault),
@@ -73,7 +73,7 @@ Finding these is the point; each gets pushed under `arch/`.
 - Per-CPU: the `tp` register (thread pointer), the direct analog of `TPIDR_EL1`.
 - Traps: a single `stvec` vector (vs aarch64's 16-slot `VBAR` table), with `scause` (cause),
   `stval` (faulting value), `sepc` (return PC). The `TrapFrame` holds the RISC-V GPRs. Interrupt vs
-  exception is the top bit of `scause`; the syscall path is the `ecall` cause.
+  exception is the top bit of `scause`; the system call path is the `ecall` cause.
 - Interrupts: masked via `sstatus.SIE` (vs `PSTATE.DAIF`); enabled per-source in `sie`, pending in
   `sip`. The external-interrupt controller is the PLIC; software/timer interrupts come from the
   CLINT (or the newer Sstc extension). Both sit under `drivers/`, like the GIC does today.

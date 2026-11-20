@@ -22,13 +22,13 @@ changes, and a thread's **placement**, the cpu it was put on when it started. Th
 already existed in the kernel and had no path to userspace, which is what kept the job-mix
 supervisor in the kernel.
 
-## The new semantics of the method, which is a syscall-surface change
+## The new semantics of the method, which is a system-call-surface change
 
 ```text
 invoke(cap, SURVEY, cursor, record, 0) -> (next_cursor, tid, word)
 ```
 
-- No new syscall number and no new method number. `SURVEY` is still method 6 on a rendezvous
+- No new system call number and no new method number. `SURVEY` is still method 6 on a rendezvous
   capability, and still takes `ENUMERATE` and pointedly not `READ`. What changed is that its second
   argument now means something.
 - x0 and x1 are the frame; only x2 belongs to the record. The cursor walk and the tid do not

@@ -18,7 +18,7 @@ use super::survey_tests::{
 };
 use crate::arch::exceptions::TrapFrame;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// **A record number this kernel does not answer**, which is what the refusal tests ask for.
 ///

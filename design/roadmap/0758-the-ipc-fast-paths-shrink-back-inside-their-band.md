@@ -44,7 +44,7 @@ on the lane's tip, against `main` at 6ac73e9f6, nightly-2026-10-04.
 | x86_64 | `ipc_send_receive` | 6,544 | 6,832 | 5,335 | -18.5% |
 | x86_64 | `ipc_call_reply` | 8,227 | 8,467 | 6,650 | -19.2% |
 
-`syscall_entry` is unchanged by this milestone on every ISA (1,640, 2,008 and 1,797); on aarch64
+`system_call_entry` is unchanged by this milestone on every ISA (1,640, 2,008 and 1,797); on aarch64
 and riscv64 it was already 1.7% and 1.6% over its baseline, inside the band. With #1611 and
 #1617 merged beside it the closures are 4,828 and 6,088 on aarch64, 4,160 and 5,172 on riscv64, and
 5,303 and 6,682 on x86_64, from 5,600, 6,940, 5,090, 6,260, 6,832 and 8,547 without it.
@@ -53,8 +53,8 @@ By lever, `ipc_send_receive` saved, aarch64 / riscv64 / x86_64:
 
 1. The lock-order panic moves out of line (`sync::lock_order_violation`, provisional name):
    196 / 258 / 320. The `assert!` built its `fmt::Arguments` at every inlined `lock()`. Shrinking
-   `lock()` let LLVM inline `current_cap` into `syscall::dispatch`, 804 bytes on aarch64's
-   `syscall_entry`, so `current_cap` is pinned `#[inline(never)]` in the same commit.
+   `lock()` let LLVM inline `current_cap` into `system_call::dispatch`, 804 bytes on aarch64's
+   `system_call_entry`, so `current_cap` is pinned `#[inline(never)]` in the same commit.
 2. `trace::record` moves out of line: 576 / 696 / 909. Each of an IPC round trip's events
    carried its own per-CPU read, `RINGS` bounds check and panic pad, sequence bump and store.
 3. x86_64 reads its per-CPU pointer with one `gs`-relative load instead of `rdmsr IA32_GS_BASE`:
@@ -64,11 +64,11 @@ By lever, `ipc_send_receive` saved, aarch64 / riscv64 / x86_64:
    assertion holds on every ISA: 32 on x86_64.
 
 The gate is symmetric (milestone 156 (extract the rest and ratchet both ways)), so a shrink past the band fails until it is saved. The
-closures are saved at their new sizes. `syscall_entry` is not: aarch64 and riscv64 keep their old
+closures are saved at their new sizes. `system_call_entry` is not: aarch64 and riscv64 keep their old
 floors by hand, because this milestone did not move them.
 
 No overflow check was removed, exempted or replaced; the checks #1600 put in release builds are all
-still there. No syscall semantics, ABI or wire format changed.
+still there. No system call semantics, ABI or wire format changed.
 
 ## Cycles
 
@@ -81,7 +81,7 @@ Both instruments, before (`main` 6ac73e9f6) and after, on patagonia.
   ticks land rather than at the code. x86_64 fell 2 to 3% on every switch and IPC row, which is
   lever 3: a debug `rdmsr` is a call through `read_msr`. All rows sit well inside the 10% tripwire.
 - `script/bench --release` on HVF, five runs each, median ns per iteration: `ipc_rtt` 50 / 50,
-  `call_reply` 69 / 70, `relay_rtt` 112 / 118, `broker_rtt` 141 / 139, `null_syscall` 30 / 30,
+  `call_reply` 69 / 70, `relay_rtt` 112 / 118, `broker_rtt` 141 / 139, `null_system_call` 30 / 30,
   `ctx_switch` 133 / 131, `ipc_rtt_el0` 442 / 423. A tie. The `relay_rtt` gap is run-to-run spread:
   levers 3 and 4 do not build into an aarch64 kernel, and runs of the lever-2 commit read 114 to 118.
 

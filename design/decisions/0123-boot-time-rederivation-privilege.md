@@ -25,10 +25,10 @@ authority. It can only rebuild it fresh, the way a login would, but with no live
 credentials at that moment. The roadmap doc says this should be "a privileged, boot-only operation,
 in the same shape as `root_supervisor` handing out its authority once at boot and never again, not a
 standing 'impersonate any user' capability left lying around afterward." It does not say what object
-holds that privilege, what it is granted, or what mechanism actually prevents it from being invoked a
+holds that privilege, what it is granted, or what mechanism prevents it from being invoked a
 second time. That is what this decision answers.
 
-This is worth being careful about because of what the operation actually is. It can stand up a
+This is worth being careful about because of what the operation is. It can stand up a
 durable session for any user named in the on-disk schedule store. That session is a bundle of
 authority equivalent to a live login. It does so without that user presenting a credential. If this
 capability persists anywhere reachable after boot finishes, it is a master key. The whole design has
@@ -52,7 +52,7 @@ unrepresentable." A capability that still exists, gated by a boolean, is one str
 missed check, or one future refactor away from being invoked outside its window. That window is the
 one the boolean was meant to enforce. Capability deletion has no equivalent failure mode. There is
 no code path that can re-invoke a capability that has been `cap_delete`d, because the slot is empty.
-The flag approach also adds new kernel-visible state (a boot-phase indicator something can read or,
+The flag approach adds new kernel-visible state (a boot-phase indicator something can read or,
 worse, race). `root_supervisor`'s shape needs zero of it. This is exactly the "make the wrong state
 unrepresentable vs. a gate that fails loudly" tradeoff AGENTS.md's ladder names, and the ladder's
 own ordering answers it.
@@ -170,14 +170,14 @@ secret.
 
 But the shape recommended here (a) needs zero new kernel primitives. `cap_delete`, `Untyped::SPLIT`,
 and ordinary capability derivation are all §16 (object revocation)'s existing mechanism. Nothing
-about re-deriving a session at boot requires a new syscall, a new object type, or a change to the
+about re-deriving a session at boot requires a new system call, a new object type, or a change to the
 capability model. That is a strong point in its favor independent of the scoping argument above. It
 is buildable today, on the mechanism this tree already has and has already proven correct (§16's
 amendments, and the Kani harness pinning `SPLIT`'s rights-inheritance invariant). It does not need a
-new primitive designed, proved, and added to the syscall surface first. Option (b) or (c), by
+new primitive designed, proved, and added to the system call surface first. Option (b) or (c), by
 contrast, would each need exactly that: (b) a new kind of kernel-checked runtime state, (c) a new
 capability method. Both are the expensive kind of decision under AGENTS.md's "move fast on what can
-be undone" tenet (the syscall surface is named there explicitly as a boundary, not a habit). So even
+be undone" tenet (the system call surface is named there explicitly as a boundary, not a habit). So even
 setting the scoping argument aside, (a) is the only option of the three that does not itself require
 a further, slower decision before it could be built.
 
@@ -238,7 +238,7 @@ at its mechanism, and this is one of them.
 None of these four change the recommendation. Option (a) remains the right base shape. Neither
 option (b) nor option (c) removes this residual-window risk, while both add real cost of their own
 that this file's existing analysis already prices. Those costs are (b) a new kind of kernel-checked
-runtime state and (c) a new capability method on the syscall surface. These four are refinements to
+runtime state and (c) a new capability method on the system call surface. These four are refinements to
 build into option (a) once someone picks it up. They are recorded now so the eventual builder
 inherits them rather than rediscovering them.
 

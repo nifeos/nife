@@ -28,7 +28,7 @@ per-CPU address in a thread.
 
 ### The kernel stack, recomputed on every return
 
-`TSS.RSP0` and the `syscall` path's stack are recomputed from the frame on every return to ring 3.
+`TSS.RSP0` and the `system_call` path's stack are recomputed from the frame on every return to ring 3.
 x86 has two doors from ring 3, and they find their stack differently. With a scheduler there is one
 kernel stack per thread, so the pair has to be re-pointed at every switch. The frame's own address is
 the answer: `rsp + 176` at the top of `isr_restore`.
@@ -103,13 +103,13 @@ match arm in `kernel/build.rs`, and all thirty modules came back with nothing el
 
 ### `crates/user_rt`: five transliterations and two decisions
 
-The five follow [DECISIONS §124 (ratify the x86_64 syscall ABI)](../../decisions/0124-x86-64-syscall-abi.md)
+The five follow [DECISIONS §124 (ratify the x86_64 system call ABI)](../../decisions/0124-x86-64-system-call-abi.md)
 mechanically. Three facts at those sites have no counterpart on either other architecture. Each is
 the instruction rather than a choice:
 
-- `syscall` clobbers `rcx` and `r11` unconditionally;
-- `r10` carries the fourth argument, because `syscall` has already taken `rcx`;
-- `syscall` pushes nothing.
+- `system_call` clobbers `rcx` and `r11` unconditionally;
+- `r10` carries the fourth argument, because `system_call` has already taken `rcx`;
+- `system_call` pushes nothing.
 
 `now()` and `cntfrq()` are the two that are not transliteration. The answer, ratified as
 [DECISIONS §127 (x86_64's `now()`/`cntfrq()`: PIT-calibrated `rdtsc`)](../../decisions/0127-x86-64-timer-rdtsc.md),

@@ -37,7 +37,7 @@ futex (`notes/futex.md`). It has no timeout yet, which a timed wait such as
 ## Done when
 
 hackbench's thread mode builds unmodified and runs on all three architectures. It is this block's
-one program. Not schbench, because the C library does not build `syscall()` and §265 (a C library
+one program. Not schbench, because the C library does not build `system_call()` and §265 (a C library
 started from relibc) stands as written (calef, 2026-10-12 UTC, on #2009: "c, and drop schbench").
 Milestone 830 (wakeup latency on nife and Linux, from each kernel's own scheduler trace) measures
 the tails by tracing instead.

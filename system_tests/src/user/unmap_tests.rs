@@ -1,6 +1,6 @@
 //! `unmap_tests`: `abi::address_space::UNMAP` (milestone 95 (an unmap primitive), DECISIONS §162
 //! (whether a holder can give up a mapping), option A), driven
-//! through the real syscall dispatcher against a real `Object::AddressSpace`, with what the space
+//! through the real system call dispatcher against a real `Object::AddressSpace`, with what the space
 //! maps read back from its page tables (`arch::mmu::translate_at`) and its mapping record
 //! (`AddressSpace::LIST`) rather than taken from the call's return value. `pmap_tests`' shape and
 //! its `tidy` discipline, one method over.
@@ -22,7 +22,7 @@ use abi::Error;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// The space's own budget: root, intermediate tables, mapping log. Nothing here maps more than two
 /// pages at once, so this is slack rather than a bound.

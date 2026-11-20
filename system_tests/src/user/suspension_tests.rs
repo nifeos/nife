@@ -1,9 +1,9 @@
-//! `suspension_tests`: `ThreadControlBlock::SUSPEND` and `RESUME` from the syscall boundary, on a
+//! `suspension_tests`: `ThreadControlBlock::SUSPEND` and `RESUME` from the system call boundary, on a
 //! user thread, on all three architectures (DECISIONS §300 (the paused state, a TCB verb, silent)).
 //!
 //! The kernel's own tests (`kernel/src/sched/suspension.rs`) prove the scheduler half on kernel
 //! threads. These prove what only a user thread can show: the methods are reached through
-//! `SYSCALL_INVOKE` on a TCB capability and gated on its `WRITE`, a thread stopped at EL0 or U-mode
+//! `SYSTEM_CALL_INVOKE` on a TCB capability and gated on its `WRITE`, a thread stopped at EL0 or U-mode
 //! comes back with its registers, and a stopped thread's region can still be destroyed, which is
 //! the shell's `kill -9` on a stopped job.
 //!
@@ -14,7 +14,7 @@ use abi::Error;
 use super::*;
 use crate::capability_object::{Capability, Object, Rights};
 use crate::sched::{self, delete_current_capability};
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
 const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;

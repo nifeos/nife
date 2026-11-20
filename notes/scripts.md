@@ -153,7 +153,7 @@ Full rows: the appendices above.
 
 The scripts do almost nothing themselves. `script/test` is `cargo xtask test`; `script/server`
 is `cargo xtask run`; `script/console` is `cargo xtask shell`. `cargo xtask` is still the
-engine, where the real build logic lives (it also exposes `gdb`, `objdump`, `image`, `std-aborts`).
+engine, where the real build logic lives (it exposes `gdb`, `objdump`, `image`, `std-aborts`).
 The scripts add a normalized interface on top, and `cargo xtask …` still works.
 
 ## `script/` and `helpers/`
@@ -228,7 +228,7 @@ display, compositor and network tests live. The kernel crate links no service or
 
 **A new service test is a userspace program**, unless it has to observe kernel internals (calef,
 2026-09-27). A test that does goes in `system_tests/src/user/`, and its doc comment says which
-internals it observes and why no syscall could show them. Existing tests that observe nothing
+internals it observes and why no system call could show them. Existing tests that observe nothing
 internal move to userspace over time; the backlog is in
 [system-tests-and-the-kernel-crate.md](system-tests-and-the-kernel-crate.md).
 

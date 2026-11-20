@@ -85,8 +85,8 @@ does correct.
 
 ### Three things this does not settle
 
-The syscall surface and IPC model were the untaken lens until the 2026-09-29 audit took it
-(`design/audit-reports/2026-09-29-syscall-surface-whole.md`: fixed 0, minted 0, accepted 3, no
+The system call surface and IPC model were the untaken lens until the 2026-09-29 audit took it
+(`design/audit-reports/2026-09-29-system-call-surface-whole.md`: fixed 0, minted 0, accepted 3, no
 confinement claim false; #1495). The
 adversarial half this entry has always called for is an outsider trying to escape, rather than us
 demonstrating that a planned escape fails. It is now partly built, and still gated behind
@@ -126,7 +126,7 @@ QEMU on aarch64 on 2026-10-03 before any fix, which is the category of evidence 
 and still us attacking our own system.
 
 The first is live on `main` as this is written. `redoxfs_server` reads a client's badge to pick its
-window and subtree scope, but the `SEND` syscall carries no badge: a client that `SEND`s on its
+window and subtree scope, but the `SEND` system call carries no badge: a client that `SEND`s on its
 per-window badged `FILE` capability instead of `CALL`ing arrives as badge 0, the unbound value,
 which `subtree_scope::Bindings::of(0)` reads as `Open`. So a bound client could act outside its own
 subtree and with another client's window, and without a reply. A `CALL` on a badged endpoint
@@ -257,7 +257,7 @@ capability, as opposed to the contract opcode pass 4 tried on the front door. Th
 The stack mints each socket's capability from a `WRITE | GRANT` copy of its own serve endpoint, with
 no `READ`. A copy that carried `READ` would let a socket holder dequeue the stack's own incoming
 queue, every other client's request, through a kernel receive. The kernel refuses a receive on a
-`READ`-less endpoint (`kernel/src/syscall.rs`), so the omission of `READ` confines it. The squatter
+`READ`-less endpoint (`kernel/src/system_call.rs`), so the omission of `READ` confines it. The squatter
 now runs both probes on its own socket and
 `net_confinement_tests::a_squatter_at_a_shared_stack_endpoint_cannot_capture_the_clients_traffic`
 asserts both refused, green on aarch64, with a replayable falsification (grant the mint `READ`)

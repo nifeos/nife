@@ -35,7 +35,7 @@ needs a person and a cable, and its result goes in the Results table of
   than assumed: with the kernel's `iommu::confine` skipped, QEMU's VT-d refused the NIC's first
   ring fetch and no lease came.
 - Milestone 261 (the NVMe driver leaves the kernel)'s shape, which DECISIONS §86 (whether an NVMe
-  driver can leave the kernel) authorized for NVMe, and no new syscall surface. The kernel
+  driver can leave the kernel) authorized for NVMe, and no new system call surface. The kernel
   (`kernel/src/e1000e.rs`) resets the NIC, reads its MAC address and programs the ring bases. The
   process is handed BAR0's two queue pages and an 18-page confined DMA region, and is denied page 0
   and page 5 (reset, the receive filter, the MAC address, the PHY). It polls; no interrupt is
@@ -70,7 +70,7 @@ The I219's PHY half; QEMU never takes the PCH path, so xenon is the test.
   so a PHY access without it does not compile. One falsifiable Kani harness; writing it found that
   FreeBSD truncates a page select above `0x7ff`, which this port refuses.
 - QEMU proves the MDIO read: the DHCP gate asserts the 82574L's PHY identifier, `0x01410cb0`.
-- The boot refusal's lift is one constant, `e1000e_service::PCH_PROVEN_ON_SILICON`, still `false`.
+- The boot refusal's lift is one constant, `e1000e_service::PCH_PROVEN_ON_SILICON`, `false`.
 
 ## Bench runbook: one boot on xenon (calef)
 
@@ -123,10 +123,10 @@ Two drivers in this tree are the analogues, and they differ in the way that matt
   None of that mediation exists for a non-virtio device.
 - The EL0 NVMe server (milestone 261, DECISIONS §86 option 2a) is the precedent for a real
   device. The kernel keeps the admin plane, the process holds a page of BAR0 and a confined DMA
-  window, and on xenon VT-d is the confinement. It added no syscall surface.
+  window, and on xenon VT-d is the confinement. It added no system call surface.
 
 So the I219 driver takes 261's shape, and one difference is worth checking before the design is
-drawn. NVMe's specification put a page boundary exactly where the authority boundary belongs
+drawn. NVMe's specification put a page boundary where the authority boundary belongs
 (controller registers below `0x1000`, doorbells above). For the `e1000e` family the ring base
 registers and the ring tail registers sit in the same 4 KiB page (recalled from the older 8254x
 datasheets, not read from the I219's). So the page split that let 261's server ring doorbells
@@ -188,7 +188,7 @@ No Rust crate covers the 82574L or any I219, and no crate on crates.io names `e1
 Adapting Redox's driver would not have been better than writing `crates/e1000e`, then or now. Its 364 lines map almost one for one onto this crate's 297 lines of register map and ring
 logic, which is the easy part. It would not have run under QEMU without adding `10d3`, and every
 line that allocates DMA, maps a BAR or waits on an interrupt is a Redox interface that 261's
-shape replaces with a kernel control plane and spawn-time mappings. Its data path also trusts the
+shape replaces with a kernel control plane and spawn-time mappings. Its data path trusts the
 device: it slices a receive buffer by the descriptor's length unchecked (a length above 16 KiB
 panics the driver), it enables promiscuous receive, and its reset, link and full-ring waits spin
 without a bound. Adapting it would have saved perhaps a day on the register table and bought those

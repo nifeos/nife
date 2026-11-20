@@ -68,7 +68,7 @@ set without the feature.
 1. A feature per size would have reproduced the defect. It was built that way first, as seven
    sibling Cargo features. A feature's *name* enters cargo's `-C metadata` hash, which renames every
    symbol and repartitions codegen units. Measured on the card build, that moved code linked
-   ahead of the sled by up to 11 KB and put `syscall::dispatch` anywhere across 240 of the 256
+   ahead of the sled by up to 11 KB and put `system_call::dispatch` anywhere across 240 of the 256
    L1i sets. Each image was an uncontrolled layout draw and the variable of interest was noise on
    top of it. Environment variables do not enter that hash. Editing the module's own source has the
    same effect for the same reason, which is why every image in an evening must come from one
@@ -178,7 +178,7 @@ The 2026-09-04 radon session. notes/footprint-perturbation.md's own BUGS carries
 
 ## Scope note
 
-An instrument, not a measure and not a decision. No syscall surface, no wire format, no dependency;
+An instrument, not a measure and not a decision. No system call surface, no wire format, no dependency;
 one Cargo feature that already existed now takes two build-time numbers. It produces no result by
 itself: the result is milestone 134's radon evening.
 

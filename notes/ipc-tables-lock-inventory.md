@@ -59,7 +59,7 @@ spread across `schedule`, `CALL`, `REPLY` and `current_capability`. `finish_swit
 `start_thread_control_block` (filed as cold) builds a stack, outside the lock, because freeing a
 thread's kernel stack is six TLB shootdowns that interrupt every core. The lesson for this table: a cold function that runs
 a cross-core operation under the global lock is hot for everyone else.
-[`job-mix/null-syscall-under-load.md`](job-mix/null-syscall-under-load.md) has the numbers.
+[`job-mix/null-system-call-under-load.md`](job-mix/null-system-call-under-load.md) has the numbers.
 
 ## What the tables hold, and the limits that size them
 

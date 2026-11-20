@@ -12,18 +12,18 @@ them. Take the median of a few runs rather than one reading.
 
 ## The primitive suite (milestone 25 (cross-OS performance comparison))
 
-### `null_syscall.rs`
+### `null_system_call.rs`
 
-It makes a raw `getpid` through the syscall gate. libc's `getpid` caches the pid, so it would turn
+It makes a raw `getpid` through the system call gate. libc's `getpid` caches the pid, so it would turn
 the call into a userspace read that never traps. The raw call is the real crossing into the kernel.
 
 ### `ipc_rtt.rs`
 
 Two processes are made with `fork`, so the round trip crosses an address-space boundary, as nife's
-does between two EL0 processes. One iteration is four syscalls and two context switches.
+does between two EL0 processes. One iteration is four system calls and two context switches.
 
 It calls libc's `read` and `write` directly, which is what a C program and lmbench use. The generic
-`syscall` gate was about 200 ns slower on the macOS host when the program was written (2026-07-25,
+`system_call` gate was about 200 ns slower on the macOS host when the program was written (2026-07-25,
 native), and would distort the count. `rustc` warns about a "suspicious runtime symbol" for those two declarations. The warning is
 benign: the declarations match libc exactly.
 
@@ -45,7 +45,7 @@ the mapping record and installs no page-table entry. Our `MAP_INTO` writes one e
 two share is the trap that installs an entry, so that is what is timed. The program maps a large
 anonymous region and writes one byte per page, and each first touch faults into the kernel.
 
-Two asymmetries remain. The trigger differs, a fault here and an explicit syscall in `MAP_INTO`. And
+Two asymmetries remain. The trigger differs, a fault here and an explicit system call in `MAP_INTO`. And
 the host allocates and zeroes a fresh page where `map_el0` aliases one existing frame, so the host
 figure carries a zeroing cost that ours does not. The warm-up run uses a separate region, because a
 page that has faulted once stays resident and a second touch would time a hit.

@@ -49,8 +49,8 @@ Every crate under `crates/` has at least one worked example, in one of two treat
 
 2. **`no_run`, with the reason stated in the prose** (`user_mode_runtime`, `virtio`, `system_initializer`,
    `process_builder`, `hot_swap_server`). These have nothing to assert: every entry point is a
-   syscall from EL0 or returns `!`. `svc` on a machine with no nife kernel under it is a fault, not
-   a syscall. The examples are type-checked against the real signatures and executed by the QEMU
+   system call from EL0 or returns `!`. `svc` on a machine with no nife kernel under it is a fault, not
+   a system call. The examples are type-checked against the real signatures and executed by the QEMU
    boot and `script/swish-check`.
 
 No crate under `crates/` has an executing doctest that the gate skips. `script/test`'s host pass
@@ -67,8 +67,8 @@ BUGS entry below.
   `cargo test --doc -p <crate>` on an aarch64 host, and nothing in CI checks them. On an x86_64
   host they do not even compile, which is a property of the packages and not of the examples. Every
   one is `no_run`, so it checks a call against a real signature rather than claiming anything about
-  a running system, and the QEMU boot and `script/swish-check` exercise the syscall loop it types
-  against. A crate leaves this list by splitting its pure half out from its syscall half
+  a running system, and the QEMU boot and `script/swish-check` exercise the system call loop it types
+  against. A crate leaves this list by splitting its pure half out from its system call half
   (§235 (The OS is built and updated from packages, and its source divides by purpose)
   P3).
 

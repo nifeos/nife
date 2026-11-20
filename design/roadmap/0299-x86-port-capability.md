@@ -44,7 +44,7 @@ Genode and L4Re.
 ## What to build
 
 1. A port-range capability, a new `Object` kind naming a `(base, count)` range of I/O ports.
-   This is syscall surface (DECISIONS §10, §16), the irreversible category, so it is designed against
+   This is system call surface (DECISIONS §10 (process model: capability-based, microkernel), §16 (object revocation)), the irreversible category, so it is designed against
    the one real consumer it has (the console driver) rather than in the abstract. Granularity is a
    port range because a 16550 is eight consecutive ports, and the semantics are the honest analogue
    of the mapping-based device capability the other two architectures already use.
@@ -69,7 +69,7 @@ Genode and L4Re.
 
 Before the capability is wired to real drivers, take the number §121's refinement asked for.
 The lazy write's real cost, a per-thread "holds any port capability" bit checked on switch-in with
-the bitmap written only when set, timed against a bare switch, the way `ipc_rtt` and `null_syscall`
+the bitmap written only when set, timed against a bare switch, the way `ipc_rtt` and `null_system_call`
 are measured. This is not a second run of `tss_iomap_switch` (which prices the naive always-write);
 it prices what this milestone actually ships. `script/bench --x86` is TCG-only on this host, so the
 number is statistical, not silicon cycles, and the block should say so.
@@ -86,7 +86,7 @@ architectures, no scope note.
 
 - **It does not touch the mapping-based capability for MMIO devices.** This adds a second device
   capability for the one class that has no page. PCI/PCIe devices are unchanged.
-- **It does not revive §121 option 3** (the I/O-port broker, a syscall per register access), refused
+- **It does not revive §121 option 3** (the I/O-port broker, a system call per register access), refused
   on its measured cost and not reopened.
 - **It does not require xenon.** The real-hardware confirmation on xenon's COM1 is a later bench
   step, not a gate on this build. QEMU enforces the same TSS mechanism.

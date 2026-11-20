@@ -36,7 +36,7 @@ change to run on this ISA. What was missing is everything around it:
   of `kernel_main` does. `cargo xtask bench --x86` builds and runs it; see `bench_x86()` in
   `xtask/src/bench.rs`.
 
-Every EL0-plane bench (`null_syscall_el0`, `ctx_switch_el0`, `ipc_rtt_el0`, `sink_throughput`,
+Every EL0-plane bench (`null_system_call_el0`, `ctx_switch_el0`, `ipc_rtt_el0`, `sink_throughput`,
 `map_el0`, `spawn_el0`) self-skips on this leg through its existing mechanism. `crate::user::program`
 finds nothing, because `crates/user_mode_runtime` has no `x86_64` arms yet, so no new gating was
 needed. `fs_read`, `fs_throughput` and `smp_throughput` self-skip as they do on a single-hart
@@ -121,7 +121,7 @@ It does not settle which option §121 picks. That is an architect's call per the
 question; this section changes only what he decides with.
 
 It does not build option 1 either. There is no port-range capability, no `MemoryRegion::SPLIT`-derived
-granting and no syscall surface change. `bench_write_io_bitmap` is deliberately not wired to the live
+granting and no system call surface change. `bench_write_io_bitmap` is deliberately not wired to the live
 TSS's `iomap_base`, so nothing here could pass for the real mechanism.
 
 *(Correction, 2026-09-15: §121 was since reversed to build option 1 as milestone 299 (the x86 port-range capability), with the lazy

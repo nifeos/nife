@@ -7,9 +7,9 @@ matches the record and unmaps `VA`, which is `b`'s.
 
 Expected to fail: the last assertion, which finds nothing mapped at `VA` where it wants `b`.
 
-diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
---- a/kernel/src/syscall/address_space.rs
-+++ b/kernel/src/syscall/address_space.rs
+diff --git a/kernel/src/system_call/address_space.rs b/kernel/src/system_call/address_space.rs
+--- a/kernel/src/system_call/address_space.rs
++++ b/kernel/src/system_call/address_space.rs
 @@ -179,7 +179,8 @@
          // Both halves, neither short-circuiting the other: a page with no record is still a window,
          // and a record with no page is still one a later revoke would act on.

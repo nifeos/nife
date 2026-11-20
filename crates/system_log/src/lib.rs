@@ -1,5 +1,5 @@
 //! **The system log, as logic** (§242 (a system log)): one service that programs append to and
-//! readers read from. This crate is all of it except the syscalls, which
+//! readers read from. This crate is all of it except the system calls, which
 //! `components/src/system_log.rs` wraps around [`Log`]. The service stamps each line from the
 //! writer's badge ([`registry`]), joins each writer's chunks into lines ([`assembler`]), renders
 //! them as JSONL ([`json`]) and keeps them in a 64 KiB ring read by cursor ([`ring`]). See

@@ -47,12 +47,12 @@ This page is complete on its own. The working behind it is in
 
 The starting figures came from `bench/fastpath-*.txt` at fc7b04e7, written by
 `script/fastpath-footprint`, which milestone 132 (the fast path's footprint) owns. On aarch64
-`ipc_fastpath` was 5,788 bytes and `syscall_entry` 3,304. The target, under 4 KiB of fastpath
+`ipc_fastpath` was 5,788 bytes and `system_call_entry` 3,304. The target, under 4 KiB of fastpath
 instructions and under 1 KiB of data per IPC, is stated in
 `notes/benchmarks/kernel-footprint-and-caches.md` ("The target"). Every architecture was over it on
 `ipc_fastpath` alone.
 
-The brief's premise had already moved. Milestone 132 named `syscall::dispatch` at 2,024 bytes as the
+The brief's premise had already moved. Milestone 132 named `system_call::dispatch` at 2,024 bytes as the
 largest single item. Milestone 156 (extract the rest and ratchet both ways) has since cut it to 1,160
 by moving rare arms into `#[inline(never)]` functions. That cheap option was built and measured
 before this block existed.
@@ -62,8 +62,8 @@ before this block existed.
    `call` against 12 programs using both `send` and `receive`. Re-rooted on the same binary, the
    CALL/reply closure was 7,516 bytes, 88% over target, against the gate's 5,788 (45% over). Icount
    saw only 2 to 3% of that 30% footprint difference.
-2. aarch64's entry figure counted a table a syscall never fetches. `exception_vectors` is 2,020 of
-   the 3,304 bytes, and a syscall from EL0 fetches one 128-byte entry of its sixteen. The honest
+2. aarch64's entry figure counted a table a system call never fetches. `exception_vectors` is 2,020 of
+   the 3,304 bytes, and a system call from EL0 fetches one 128-byte entry of its sixteen. The honest
    figure was about 1,412. A lane could have "won" 1,892 bytes without changing a fetched
    instruction, which made the gate gameable. `exception_restore` (92 bytes) was counted by neither
    figure.
@@ -105,9 +105,9 @@ measurement first (E) is the recommendation. A hand-written fastpath (F) is defe
 
 1. Phase 1, measure the shape the system runs. Built: the gate reports `ipc_send_receive` and
    `ipc_call_reply` (provisional names). `ipc_fastpath` survives as the worse of the two, recorded
-   rather than checked. notes/benchmarks.md now says three syscalls to seL4's two, not four.
+   rather than checked. notes/benchmarks.md now says three system calls to seL4's two, not four.
 2. Phase 2, make the entry figure honest. Built: aarch64 counts one vector slot plus
-   `exception_restore`, and `syscall_entry` went 3,304 to 1,508. Nothing got faster; the accounting
+   `exception_restore`, and `system_call_entry` went 3,304 to 1,508. Nothing got faster; the accounting
    was wrong.
 3. Phase 3, apply milestone 156's method to the closure. Built, and the method did not transfer:
    outlining four cold arms made the closure bigger, because the walk follows the new call. The gate
@@ -115,7 +115,7 @@ measurement first (E) is the recommendation. A hand-written fastpath (F) is defe
    closures for +0.17% to +0.24% retired instructions, and `kmem::recycle` left the closure.
 4. Phase 4, the hand-written fastpath. Refused 2026-10-24 (calef), milestone 951.
 
-| after phase 3 | `ipc_send_receive` | `ipc_call_reply` | `syscall_entry` | total |
+| after phase 3 | `ipc_send_receive` | `ipc_call_reply` | `system_call_entry` | total |
 |---|---|---|---|---|
 | aarch64 | 5,356 | 7,028 | 1,508 | 8,536 |
 | riscv64 | 4,632 | 5,936 | 1,828 | 7,764 |
@@ -155,8 +155,8 @@ so the layout control cannot show such a difference, and calef refused phase 4 (
 
 ## Open questions, and the one that is an architect's
 
-`ReplyRecv` fusion is a syscall-surface change and is explicitly not proposed here. seL4's round trip
-is two syscalls because it fuses reply-and-wait. Ours is three because a server issues `REPLY` and
+`ReplyRecv` fusion is a system-call-surface change and is explicitly not proposed here. seL4's round trip
+is two system calls because it fuses reply-and-wait. Ours is three because a server issues `REPLY` and
 then `RECEIVE_CAP` separately. Fusing them would be a new method on `Reply` or on `Rendezvous`, and
 DECISIONS §10 (process model: capability-based, microkernel) and §16 (object revocation) govern that surface. AGENTS.md puts anything two programs agree on in the
 irreversible category. It is named here so it is tracked and not so it is planned. Its cost is one
@@ -181,7 +181,7 @@ Left open, for a lane rather than for calef:
   established that this is the same portable Rust in a denser ISA rather than a different path. So
   there is no x86_64-specific work hiding here, and milestone 161 (the x86_64 kernel port) owns
   anything that turns out to be.
-- No change to the syscall surface. A fastpath changes how a call is serviced, not what calls
+- No change to the system call surface. A fastpath changes how a call is serviced, not what calls
   exist.
 - Nothing about the data half of Liedtke's pair. The under-1-KiB target has no instrument and
   this milestone does not build one.
@@ -191,12 +191,12 @@ Left open, for a lane rather than for calef:
 Phase 4 was refused unbuilt, so there is nothing of its own to carry a `BUGS` section. Three limitations
 of the gate are recorded where a reader meets them, in `script/fastpath-footprint` and milestone
 132. Phases 1 and 2 fixed all three: the root list measured a shape userspace does not run, the
-aarch64 entry figure counted sixteen vector entries where a syscall fetches one, and
+aarch64 entry figure counted sixteen vector entries where a system call fetches one, and
 `exception_restore` was counted by neither figure. What remains is in the Follow-on below.
 
 ## Scope note
 
-Phases 1 to 3 are tooling, a baseline re-record and a mechanical extraction: no syscall surface, no
+Phases 1 to 3 are tooling, a baseline re-record and a mechanical extraction: no system call surface, no
 dependency, no wire format, no `DECISIONS` section. Phase 4 is none of those things and would need
 its own scope note, its own `DECISIONS` section, and calef.
 
@@ -225,8 +225,8 @@ like every other name in the tree.
   reserves its region in the section 370 places. No E3 number is a footprint result, this block's
   included: E3 cannot separate footprint from layout, and calef retired its question for E5.
 - **Milestone 380.** DECISIONS §144's 16 KiB ceiling was stated over "the sum of `ipc_fastpath` and
-  `syscall_entry`", and this milestone changed both terms. The honest subject is now
-  `max(ipc_send_receive, ipc_call_reply) + syscall_entry`, which is what the gate prints as `total`,
+  `system_call_entry`", and this milestone changed both terms. The honest subject is now
+  `max(ipc_send_receive, ipc_call_reply) + system_call_entry`, which is what the gate prints as `total`,
   and the headroom §144 recorded was measured on the smaller shape (x86_64 is now 60% of the
   ceiling, not 51%). `design/decisions/` is not a lane's to amend, so it was written up as
   `design/roadmap/0380-the-ceiling-applies-to-a-number-that-moved.md` for whoever holds §144, and
@@ -236,24 +236,24 @@ like every other name in the tree.
   permanent verification cost. Checked against the tree: `kernel/src/sched.rs` has one path through
   `ipc_call`, `ipc_receive_cap` and `ipc_reply` and no second one. This refusal is milestone 951
   (design/roadmap/0951-a-hand-written-ipc-fastpath.md), which carries the condition that reopens it.
-- **Refused.** `ReplyRecv` fusion, which would take the round trip from three syscalls to two. It is
-  a syscall-surface change, DECISIONS §10 and §16 govern it, and the block already says it is named
+- **Refused.** `ReplyRecv` fusion, which would take the round trip from three system calls to two. It is
+  a system-call-surface change, DECISIONS §10 and §16 govern it, and the block already says it is named
   so it is tracked and not so it is planned. A lane must not take it.
   This refusal is milestone 467 (design/roadmap/0467-replyrecv-fusion.md), which carries it with the
   condition that would change it.
 
 ## Index row
 
-Minted from the lane that gated the footprint on x86_64 (#574), whose finding was that `syscall::dispatch` is the largest single item in every architecture's entry figure. Scoping it
+Minted from the lane that gated the footprint on x86_64 (#574), whose finding was that `system_call::dispatch` is the largest single item in every architecture's entry figure. Scoping it
 found the premise had moved. Milestone 156 (extract the rest and ratchet both ways) already cut `dispatch` from 2,024 to 1,160 bytes on
 aarch64. `script/fastpath-footprint`'s roots measure a SEND/RECEIVE shape that 25 of 69 userspace
 programs replace with `CALL`/reply (7,516 bytes against the gate's 5,788). And 1,892 of aarch64's
-3,304-byte entry figure is vector-table padding no syscall fetches. Recommends three cheap phases
+3,304-byte entry figure is vector-table padding no system call fetches. Recommends three cheap phases
 before any hand-written second path. (Measure the right shape, make the entry figure honest, apply
 milestone 156's extraction to the closure.) That cannot be justified until milestone 74's PMU
 on milestone 127's TX1 can observe the payoff. Gate: DECISION. PARTIAL 2026-09-04: phases 1 to
 3 built. Both premises held. The gate now reports `ipc_send_receive` and `ipc_call_reply` separately
-(the shape services run is 25 to 29% larger), and aarch64's `syscall_entry` counts one vector
+(the shape services run is 25 to 29% larger), and aarch64's `system_call_entry` counts one vector
 entry instead of sixteen (3,304 to 1,508, accounting, nothing got faster). Phase 3's finding:
 milestone 156's extraction does not transfer to a closure, and the gate now reads `#[cold]`
 from the source rather than a list inside itself; 6 to 10% off both closures for +0.2%

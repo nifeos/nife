@@ -75,7 +75,7 @@ for the unit, which is the whole of 447's cost argument.
   nothing on x86_64 mounts an encrypted RedoxFS volume, so there is no workload and a synthetic
   number would be a fact leaving the machine with nothing behind it. What 447 changed is that the
   number is obtainable rather than blocked.
-- **The seam of §31 (the foreign-language seam: C holds no capabilities and makes no syscalls)
+- **The seam of §31 (the foreign-language seam: C holds no capabilities and makes no system calls)
   widens.** A C component
   compiled by bare-metal clang currently cannot touch a vector register at all, and §31 says why:
   "the kernel never enables FP/SIMD for EL0, and the context switch" saves nothing, so such a
@@ -114,7 +114,7 @@ Nothing measures that, and nothing can until there is a hard-float userspace to 
 
 It does not recommend. The *fork reaches calef with its questions already answered* tenet asks for
 options and costs on an irreversible fork and explicitly **not** for a winner, because "a
-syscall-surface decision arriving with a recommendation is already most of the way made" and an ABI
+system-call-surface decision arriving with a recommendation is already most of the way made" and an ABI
 is the same shape of thing.
 
 ## Index row

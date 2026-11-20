@@ -3,7 +3,7 @@ Falsifies `system_tests::user::live_swap_tests::a_client_of_the_stable_rendezvou
 Architecture: aarch64
 
 The patch deletes the `READ` check on `Rendezvous::RECEIVE_CAPABILITY` in
-`syscall::rendezvous::rendezvous_receive_capability`, the gate this test exists for (the kernel-side
+`system_call::rendezvous::rendezvous_receive_capability`, the gate this test exists for (the kernel-side
 twin's record deletes `RECEIVE`'s; one test carries one patch). Until milestone 800 (a non-Anthropic
 model attacks the confinement claim) reshaped the fixture, this defect could not turn the test red:
 a let-open `RECEIVE_CAPABILITY` found an empty queue and blocked, and the run died at the 60-second
@@ -17,13 +17,13 @@ for the wrong reason)", with `left: 18446744072315532783` (the negated marker). 
 exactly that assertion on aarch64 on 2026-10-07 (UTC) by the milestone 800 lane, the pass's fourth.
 
 Re-cut on 2026-10-12 (UTC) by lane maintainer/long-function-paydown-invoke, when the rendezvous
-arms of `syscall::invoke` moved to `kernel/src/syscall/rendezvous.rs` for milestone 888 (a ratchet
+arms of `system_call::invoke` moved to `kernel/src/system_call/rendezvous.rs` for milestone 888 (a ratchet
 on function length); the defect is unchanged. Replayed red at the same assertion on aarch64 that
 day.
 
-diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
---- a/kernel/src/syscall/rendezvous.rs
-+++ b/kernel/src/syscall/rendezvous.rs
+diff --git a/kernel/src/system_call/rendezvous.rs b/kernel/src/system_call/rendezvous.rs
+--- a/kernel/src/system_call/rendezvous.rs
++++ b/kernel/src/system_call/rendezvous.rs
 @@ -134,9 +134,6 @@ pub(super) fn rendezvous_receive_capability(
      rights: Rights,
      ep: RendezvousId,

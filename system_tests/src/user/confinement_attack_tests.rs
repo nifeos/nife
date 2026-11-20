@@ -4,7 +4,7 @@
 //!
 //! The kernel half of claim 26, DECISIONS §41 (the endpoint is the broker)'s "a client of a
 //! rendezvous cannot become its server", and claim 2, §14 (the project's direction)'s "userspace
-//! cannot forge a right out of a syscall register", both driven through `syscall::invoke`. Each
+//! cannot forge a right out of a system call register", both driven through `system_call::invoke`. Each
 //! refused path returns promptly, so a regression is red at an assertion and not at the watchdog.
 //! The same test runs on each architecture (DECISIONS §19 (architectural parity is a tenet)). See
 //! notes/confinement-claims/the-rights-gate-tests.md.
@@ -18,7 +18,7 @@ use crate::capability_object::{
 use crate::sched::{self, current_capability, delete_current_capability};
 
 const RECEIVE_CAPABILITY: u64 = abi::rendezvous::RECEIVE_CAPABILITY;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it. Returns the
 /// dispatcher's `Result` and the frame, so a caller that cares about the delivered message words
@@ -123,7 +123,7 @@ fn a_write_only_rendezvous_holder_cannot_receive_reap_or_survey() {
     sched::reclaim_region(region).expect("the endpoint's region did not come back");
 }
 
-/// **A right cannot be forged out of a syscall register, and an ungranted slot names nothing**
+/// **A right cannot be forged out of a system call register, and an ungranted slot names nothing**
 /// (claim 2, §14).
 ///
 /// A `READ`-only holder's `SEND`, a `WRITE` method, answers `NotPermitted`; a receiver is parked

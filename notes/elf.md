@@ -311,9 +311,9 @@ constructors, no widening:
 | `PF_R \| PF_W` | `user_data()`: readable and writable, **UXN and PXN** |
 | `PF_W \| PF_X` | *refused* |
 
-## The program has no syscalls, and says so in the only two words it has
+## The program has no system calls, and says so in the only two words it has
 
-There is no ABI yet ([DECISIONS §10](../design/decisions/0010-capability-microkernel.md): the syscall surface gets designed at 7d,
+There is no ABI yet ([DECISIONS §10 (process model: capability-based, microkernel)](../design/decisions/0010-capability-microkernel.md): the system call surface gets designed at 7d,
 against a capability table). So the test binary cannot tell the kernel anything.
 
 Instead it checks its own image and speaks with:

@@ -114,7 +114,7 @@ Same tree, two builds differing only in setting `CR4.PGE` after the fine map is 
 | bench | iters | ticks, PGE off | ticks, PGE on |
 |---|---|---|---|
 | `yield_switch` | 2000 | 18,903,108 | 18,903,108 |
-| `null_syscall` | 20000 | 4,520,052 | 4,520,052 |
+| `null_system_call` | 20000 | 4,520,052 | 4,520,052 |
 | `ctx_switch` | 5000 | 48,943,033 | 48,943,033 |
 | `ipc_rtt_el0` | 5000 | 178,398,567 | 178,398,567 |
 | `map_el0` | 500 | 5,959,166 | 5,959,166 |

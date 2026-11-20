@@ -74,7 +74,7 @@ finer one should be made on its own evidence, and recorded, rather than inherite
    comparability), which is what makes gating cheap here and would not have been true for the wall
    clock.
 3. Kernel-mediated. EL0 asks the kernel to time an operation; the counter never opens. Strongest,
-   and it defeats the purpose, because the measurement then includes the syscall it is trying to
+   and it defeats the purpose, because the measurement then includes the system call it is trying to
    measure. Recorded so it is visibly rejected rather than overlooked.
 
 Option 2 costs a capability type, a grant in the spawn path, and a trap-and-check on the register

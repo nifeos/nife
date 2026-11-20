@@ -103,7 +103,7 @@ How the aperture reaches the driver: a spawn-time mapping, not a capability. Rul
 (nothing reaches into a kernel global; the geometry arrives in its argument registers and the pages
 are mapped before `_start`). A capability was not available: `DeviceFrame` names one page and a
 screen is a thousand, `PageFrame` names RAM the allocator owns and would free, and a `DeviceFrame`
-run would be new syscall surface, which is an architect's. The NVMe server of milestone 261 (the
+run would be new system call surface, which is an architect's. The NVMe server of milestone 261 (the
 NVMe driver leaves the kernel) and the TRNG of milestone 159 (a real hardware entropy source) made
 the same choice for the same reason. It has a least-authority upside: the driver holds no name
 for the screen, so it cannot map it twice, delegate it, or hand it on. Only the rows the surface

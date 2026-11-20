@@ -12,7 +12,7 @@ Milestone 50 finished the prompt's operators: `|`, `<`, `>` and now `>>`, on bot
 **`>>` needed no new machinery at all, and that is the interesting part.** §55 decided that the file
 behind a redirect is opened and written by *the shell itself*, because one page cannot serve two
 clients. Append inherits that decision whole: it is a flag on the open the shell already performs. No
-manifest field, no `spawnproto` bit, no init change, and nothing added to the syscall surface, which
+manifest field, no `spawnproto` bit, no init change, and nothing added to the system call surface, which
 is the test §55 was really making. An operator that fits in the existing model is evidence the
 model was drawn in the right place; one that had required a new capability would have said §55 was
 wrong.

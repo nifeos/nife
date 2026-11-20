@@ -83,7 +83,7 @@ numbers. Everything else was execution against gates.
 | Mutation-survivor triage, test writing against a stated property | Design forks, and anything `AGENTS.md` calls an architect's |
 | Record sweeps, glosses, index and citation repair | Naming, which is an architect's under milestone 115 (the names that were ratified) |
 | Parity ports where the shape is already set by another architecture | Merge conflict resolution and the merge queue |
-| Backlog work a script can verify: counts, censuses, triage to a ledger | Anything touching the syscall surface or a wire format |
+| Backlog work a script can verify: counts, censuses, triage to a ledger | Anything touching the system call surface or a wire format |
 | Benchmark harnesses and their plumbing | A first implementation whose shape nobody has chosen yet |
 
 Sonnet first, because it costs nothing new. It is available under the existing subscription, so

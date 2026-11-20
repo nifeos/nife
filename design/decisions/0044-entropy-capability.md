@@ -24,7 +24,7 @@ cannot map the page, and cannot ask the device for anything the service did not 
 
 This is the same attenuation-by-operation the roadmap names as a principle: the NTP client that may
 propose a time but not set it, the clock's read/set/propose ladder ([§43](0043-clock-authority.md)), and now
-obtain-but-not-reach. It also needed nothing new: no capability type, no syscall, no method
+obtain-but-not-reach. It also needed nothing new: no capability type, no system call, no method
 number. An `Endpoint` with WRITE is the whole grant, and `caps` already prints it.
 
 The blast radius is worth stating because it is the security claim: compromise the entropy service

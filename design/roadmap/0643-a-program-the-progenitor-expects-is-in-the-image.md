@@ -15,7 +15,7 @@ This was raised by the rename of `audit_sink` to `login_audit_receiver` (#1228).
 `design/naming.md` is the rule.
 
 Either option below is a host-side check or a transcript assertion. Neither touches
-the syscall surface, a wire format or a dependency.
+the system call surface, a wire format or a dependency.
 
 ## The finding
 

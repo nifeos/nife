@@ -1,5 +1,5 @@
 //! **`pgrep`: a domain names its members, and that is all naming buys you** (notes/process-view.md).
-//! This is the filter, lifted out so it runs on the host; `components/src/pgrep.rs` is the syscall
+//! This is the filter, lifted out so it runs on the host; `components/src/pgrep.rs` is the system call
 //! and the output. It takes a finished [`ps::Survey`] from [`ps::collect`] rather than walking,
 //! because two implementations of `SURVEY`'s resume protocol could disagree. It tells four answers
 //! apart (matched, none matched, an empty domain, a refusal), and its pattern matches a member's

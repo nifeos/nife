@@ -1,6 +1,6 @@
 //! **`top`: the same domain `ps` lists, ordered by what it is costing** (§150 (how does a thread's
 //! CPU time reach userspace?), notes/process-view.md). The program's logic, lifted out to run on
-//! the host; `components/src/top.rs` is the syscalls and the output streams. It ranks by CPU time
+//! the host; `components/src/top.rs` is the system calls and the output streams. It ranks by CPU time
 //! through `ps` ([`ps::Survey::rank_by_cpu_time`]) and adds the lines above the table,
 //! [`write_summary`] and [`write_machine_line`]. See notes/process-view/top.md.
 

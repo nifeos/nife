@@ -185,6 +185,12 @@ RENAME_PAIRS = (
     # even in a BUILT block (design/naming.md, performing a ratified rename, step 7); the name in
     # that block's account stays.
     ("fixtures/src/address_space_witness.rs", "fixtures/src/process_composition_witness.rs"),
+    # The system call spelling sweep (syscall is struck from the tree and spelled out). One word
+    # becomes two in thousands of prose lines, which both the word-count ceiling and the sentence
+    # limits read as growth though nobody wrote a new sentence. The longer forms are tried first.
+    ("Syscall", "System call"),
+    ("syscall", "system call"),
+    ("syscall", "system-call"),
     # The bare form last: every longer phrase above is tried first, so by the time this one
     # runs, an "an architect" left in the text is not part of one of them, whichever case
     # sentence position gave it.

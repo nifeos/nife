@@ -7,7 +7,7 @@ built: 2026-07-29
 
 In brief. Prove the FFI seam end to end with a *minimal* C component before committing to a large
 one. Bare-metal clang for both bare targets in the build. A Rust `user_rt` shell that holds every
-capability and does every syscall while the C code gets plain buffers over the C ABI (so the §4 (kernel shape)
+capability and does every system call while the C code gets plain buffers over the C ABI (so the §4 (kernel shape)
 surface does not widen). Only the handful of libc symbols the component actually needs, with
 `malloc` on the untyped-backed `GlobalAlloc` of milestone 27 (Rust `std` on the native ABI). The
 deliverable that matters is one test: a
@@ -32,8 +32,8 @@ the next foreign component:
    the toolchain, which means Apple's clang is rejected on purpose (no RISC-V backend) even
    though it would compile the aarch64 half. `script/bootstrap` grew `brew install llvm` / `apt-get
    install clang`, and the CI clippy job grew the same, since it clippies `user`.
-2. Linkage. `c_shim` (Rust) holds every capability and makes every syscall; the C gets `(u8*,
-   usize)` and returns a scalar. The syscall surface did not change, and could not have: the C
+2. Linkage. `c_shim` (Rust) holds every capability and makes every system call; the C gets `(u8*,
+   usize)` and returns a scalar. The system call surface did not change, and could not have: the C
    cannot name a capability slot.
 3. libc. The object demands five symbols; the linker demands two (`malloc`, `free`), because
    `compiler_builtins` already supplies `memcpy`/`memset`/`strlen` weakly for bare targets. **Do not
@@ -81,9 +81,9 @@ Deliverable, deliberately small.
 1. Toolchain in the build. Bare-metal clang cross-compiling for both targets, driven from the
    build the way the rest of userspace is; `script/setup` grows a dependency. The roadmap already
    accepts this cost for Zig at 29, so pay it once, here, where the component is throwaway.
-2. **The linkage shape, which must not widen the syscall surface.** A Rust `user_rt` outer shell
+2. **The linkage shape, which must not widen the system call surface.** A Rust `user_rt` outer shell
    holds every capability and performs every IPC; the C logic is linked in and called over the C ABI
-   with plain buffers and makes zero syscalls. This is the same sans-IO shape RedoxFS's `Disk`
+   with plain buffers and makes zero system calls. This is the same sans-IO shape RedoxFS's `Disk`
    trait already uses, just across a language boundary instead of a trait boundary.
 3. The libc question, answered by tier. Shim only the symbols the component actually needs
    (`memcpy`, `memset`, `strlen`, `malloc`/`free`), with `malloc` backed by milestone 27's

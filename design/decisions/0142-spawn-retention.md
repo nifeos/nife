@@ -107,7 +107,7 @@ may say, not to thirty call sites and an unwritten habit. So the two ship togeth
 - Together they close the compounding: one hang stops costing one region per caller in flight, and
   stops costing the one.
 
-Cost: zero capability-table slots, no new syscall, no ABI change, and nothing overturned. Not §32
+Cost: zero capability-table slots, no new system call, no ABI change, and nothing overturned. Not §32
 (a supervisor may collect a corpse)'s line at the corpse, not milestone 126 (the `procps` package)'s rule that a domain
 names its members and does not act on them, not §26.2's deferral of reattaching supervision. Both A
 and 254 need the reply-capability sweep, and it is the same sweep.
@@ -152,7 +152,7 @@ already chose for the supervision endpoint and for a different reason.
 **A new `Object` variant is cheap and is not the expensive part.** `Object` has nine variants and
 `const _: () = assert!(core::mem::size_of::<Object>() == 24)` holds; a variant carrying a `ThreadId`
 adds no size, since `Reply` and `ThreadControlBlock` already carry one. Sixteen `Object::` sites in
-`kernel/src/syscall.rs`, fifteen in `cap.rs`, thirteen in `sched.rs`. The cost of a new capability is
+`kernel/src/system_call.rs`, fifteen in `cap.rs`, thirteen in `sched.rs`. The cost of a new capability is
 the *slot* it occupies in the holder's table and the meaning it acquires, not the enum.
 
 ### R0. Nothing retained: the default declaration

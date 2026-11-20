@@ -45,7 +45,7 @@ predates region-owned teardown and now says so in a BUGS entry. 0254's scope bul
 block and note of milestone 133 (ending a permanently blocked thread) still said `Tcb`, which had
 stopped being true, and the bullet is gone (this lane swept them). `script/lint` refuses a
 of dying several checks in. One retired name sits outside a lane's reach and is reported, not
-edited: AGENTS.md's syscall-surface paragraph still says `Untyped::SPLIT`.
+edited: AGENTS.md's system-call-surface paragraph still says `Untyped::SPLIT`.
 
 ## Index row
 
@@ -62,6 +62,6 @@ kept by the status rule, not by a mechanism.
 - **Done.** The `tomllib` guard in `script/lint`, carried by this lane.
 - **Recorded.** `notes/teardown.md`: its BUGS entry says the AddressSpace description there
   predates region-owned teardown.
-- **Recorded.** `AGENTS.md`'s syscall-surface paragraph still says `Untyped::SPLIT` and `DESTROY`;
+- **Recorded.** `AGENTS.md`'s system-call-surface paragraph still says `Untyped::SPLIT` and `DESTROY`;
   a developer lane does not edit that file, so it goes to a maintainer follow-up, listed on pull
   request #2213.

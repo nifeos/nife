@@ -7,7 +7,7 @@ built: 2026-09-26
 
 Built 2026-09-26 (PR #1351). A notification object with the four methods of §101 (notification objects) and its
 TCB binding, on aarch64, riscv64 and `x86_64`, proved (four Kani harnesses, each falsified) and
-tested through the syscall boundary by a real program on all three. One part of §101 could not be
+tested through the system call boundary by a real program on all three. One part of §101 could not be
 built as written, because its premise was false: how a woken receiver tells a notification from a
 message. calef ruled on it the same day (option B, below). Minted 2026-08-22, from DECISIONS §101's
 own sequencing (step 2), which specified this milestone's shape and scope without a number.
@@ -33,7 +33,7 @@ Exactly §101's spec, no re-derivation needed:
 
 - A new `objtype::NOTIFICATION` (= 4), holding a data word and a wait queue, plus at most one
   bound TCB (`Option<ThreadId>`, set by `BIND`).
-- Four methods under the existing `SYS_INVOKE` surface (no new syscall number): `SIGNAL`
+- Four methods under the existing `SYS_INVOKE` surface (no new system call number): `SIGNAL`
   (async, non-rendezvous, never lost), `WAIT` (blocks until a signal arrives, returns the word),
   `POLL` (non-blocking `WAIT`), `BIND` (attach a notification to a TCB, at most one).
 - The binding mechanism: when a TCB with a bound notification is blocked in `RECV` on an
@@ -54,7 +54,7 @@ named in notes/supervision.md, notes/compositor.md, notes/dir-capability.md) and
 | the state machine: a word, a wait queue, `signal`/`wait`/`poll`, and the binding as one boolean | `crates/inter_process_communication/src/notification.rs` |
 | four Kani harnesses: every operation preserves "a non-zero word and a queued waiter never coexist", a signal loses no bit, a waiter is woken before the bound receiver, a wait never returns zero; each carries a replayable falsification patch, and `script/falsifications --sweep inter_process_communication` turned all ten of the crate's harnesses red | same file, `falsifications/notification.verification.*.patch` |
 | `objtype::NOTIFICATION = 4`, `abi::notification::{SIGNAL, WAIT, POLL, BIND, BOUND}` | `crates/abi/src/lib.rs` |
-| `Object::Notification`, the registry (`MAX_NOTIFICATIONS = 256`), `RETYPE_OBJ`'s arm | `kernel/src/cap.rs`, `kernel/src/sched.rs`, `kernel/src/syscall.rs` |
+| `Object::Notification`, the registry (`MAX_NOTIFICATIONS = 256`), `RETYPE_OBJ`'s arm | `kernel/src/cap.rs`, `kernel/src/sched.rs`, `kernel/src/system_call.rs` |
 | the binding: a signal reaches the bound thread parked in `RECV`, `RECV_CAP` or `Irq::WAIT`, unlinks it from that endpoint's queue and wakes it; a receive takes a word counted while the thread was elsewhere, on entry | `sched::signal_locked`, `bound_receiver`, `deliver_bound`, `take_bound_signal` |
 | one signal path for a thread and for the kernel: `signal_notification_from_interrupt` is the entry milestone 106's timer will call from the tick, placed load-aware as `irq_notify` is | `kernel/src/sched.rs` |
 | teardown: a region's notifications are swept (waiters aborted with `Gone`) before its threads are finished; a thread blocked in `WAIT` is unlinked by `finish_blocked_resident` | `reap_region_notifications` |
@@ -83,7 +83,7 @@ Code size on the IPC fastpath (`script/fastpath-footprint`, release build, again
 commit 256815e5 on the same nightly, not against the recorded baseline, which main had already
 drifted from by +2.0% to +3.9%):
 
-| ISA | `ipc_send_recv` | `ipc_call_reply` | `syscall_entry` |
+| ISA | `ipc_send_recv` | `ipc_call_reply` | `system_call_entry` |
 |---|---|---|---|
 | riscv64 | 4778 -> 4854 (+76 B, +1.6%) | 6082 -> 6186 (+104 B, +1.7%) | 1892 -> 1894 (+2 B) |
 | `x86_64` | 6464 -> 6512 (+48 B, +0.7%) | 8398 -> 8542 (+144 B, +1.7%) | 1701 -> 1701 |
@@ -91,7 +91,7 @@ drifted from by +2.0% to +3.9%):
 
 The aarch64 row is CI's measurement, and the local one disagreed. A local macOS run measured this
 commit at 4664, 6052 and 1988: LLVM appeared to stop inlining `IrqSafeMutex<IpcTables>::lock`, so
-every IPC function shrank while `syscall::dispatch` grew. The same commit built by CI's
+every IPC function shrank while `system_call::dispatch` grew. The same commit built by CI's
 `fastpath-footprint` job showed no such flip, and the baseline records CI's numbers. The cause of
 the local difference was not found; see BUGS. About 1.5% to 1.7% on the call/reply shape, on every
 ISA.
@@ -169,7 +169,7 @@ implies) is most of the difference.
   code is decoded as that error by every wrapper that checks the sign. Recorded at
   `abi::rendezvous::RECV`, where a reader meets it.
 - A local footprint measurement can disagree with CI's on aarch64. This lane's local macOS run of
-  `script/fastpath-footprint` showed an inlining flip (closures down 15%, `syscall_entry` up 32%)
+  `script/fastpath-footprint` showed an inlining flip (closures down 15%, `system_call_entry` up 32%)
   that CI's job on the same commit did not. The local target directory had also been shared with a
   second worktree for a base comparison, which is a plausible contaminant and was not ruled out.
   Take CI's number when the two disagree.
@@ -202,7 +202,7 @@ implies) is most of the difference.
 BUILT 2026-09-26. A notification object (DECISIONS §101): a data word and a wait queue, with
 `SIGNAL`, `WAIT`, `POLL` and `BIND` under the existing `SYS_INVOKE`. Its TCB binding wakes a thread
 blocked in `RECV`, `RECV_CAP` or `Irq::WAIT` on either a message or a signal. Proved in
-`inter_process_communication`, tested through the syscall boundary on all three ISAs. §101's
+`inter_process_communication`, tested through the system call boundary on all three ISAs. §101's
 receive encoding was forgeable; calef ruled the kernel-written `w4` tag on 2026-09-26. About 1.5% to 1.7%
 on the call/reply fastpath, on every ISA. Unblocks milestone 106's timer and the retrofits §101's
 table names (the shell, the compositor, the FS server, `net_stack`).

@@ -47,7 +47,7 @@ Measured 2026-10-26 (UTC) on this branch merged with `2a3cc0dbd`, against `2a3cc
 - `cargo tree -e normal -p kernel`: aarch64 none, riscv64 none, x86_64 `uuid` 1.28.0.
 - `script/test` passed on all three architectures, both images each.
 - `script/fastpath-footprint`: identical to the byte on all three. aarch64 `ipc_send_receive`
-  4916 B, `ipc_call_reply` 6316 B, `syscall_entry` 1684 B, `.text.hot` 11992 B, on both trees.
+  4916 B, `ipc_call_reply` 6316 B, `system_call_entry` 1684 B, `.text.hot` 11992 B, on both trees.
 - `script/bench --check` passed on all three. riscv64 and x86_64 compile no changed code. On
   aarch64 every row that crosses a register access fell 1 to 3 percent and `coremark` did not move:
 
@@ -55,7 +55,7 @@ Measured 2026-10-26 (UTC) on this branch merged with `2a3cc0dbd`, against `2a3cc
 |---|---|---|
 | `yield_switch` | 547 | 534 |
 | `ipc_rtt` | 1023 | 1005 |
-| `null_syscall` | 18 | 17 |
+| `null_system_call` | 18 | 17 |
 | `ctx_switch` | 592 | 576 |
 | `ipc_rtt_el0` | 2085 | 2039 |
 | `coremark` | 81660 | 81660 |

@@ -17,7 +17,7 @@ evidence. That is the same shape as a roadmap status that was wrong in both reco
 no record at all counts as unfalsified.
 
 The harness count is taken after blanking comments. A raw grep for `#[kani::proof]` finds 151:
-`kernel/src/syscall.rs` explains in prose what one is, and `vendor/` and a lint shim carry four
+`kernel/src/system_call.rs` explains in prose what one is, and `vendor/` and a lint shim carry four
 more.
 
 ## Rust in the tree

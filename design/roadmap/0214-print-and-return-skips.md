@@ -100,7 +100,7 @@ line instead of only in a lane's report.
 
 Nothing in the tree tracks a test count as a `<!--count:-->` claim, so nothing had to move. The
 counted-claims registry derives Kani harnesses, harness crates, loom harnesses, shell scripts,
-syscalls, rights bits and security audits, and no test total. Were one ever added, it would want
+system calls, rights bits and security audits, and no test total. Were one ever added, it would want
 `<!--count-at-least:-->`. This milestone is the second time in a week the number moved for a
 reason nobody was tracking.
 

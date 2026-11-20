@@ -24,7 +24,7 @@ The real surface:
 
 - an ABI module, `abi::untyped` -> `abi::memory_region`. This is the
   `MAP`/`RETYPE`/`RETYPE_OBJ`/`SPLIT`/`DESTROY` method-number namespace nearly every user program's
-  syscall wrappers dispatch through;
+  system call wrappers dispatch through;
 - a `rank::UNTYPED` -> `rank::MEMORY_REGION` lock-rank constant (`kernel/src/sync.rs`). No
   `objtype::UNTYPED` exists, since untyped/region capabilities are not themselves a retype target;
 - a kernel module file rename, `kernel/src/untyped.rs` -> `kernel/src/memory_region.rs`, and
@@ -32,10 +32,10 @@ The real surface:
 - `untyped_cap` -> `memory_region_cap`, `untyped_cap_rights` -> `memory_region_cap_rights`, and
   `untyped_root_cap` -> `memory_region_root_cap` (`kernel/src/cap.rs`);
 - `untyped_map`/`untyped_retype`/`untyped_retype_obj`/`untyped_split`/`untyped_destroy` -> their
-  `memory_region_*` equivalents. These are in `kernel/src/syscall.rs`'s dispatch. They are also
+  `memory_region_*` equivalents. These are in `kernel/src/system_call.rs`'s dispatch. They are also
   repeated local wrapper fns of the same names in `crates/system_initializer`,
   `crates/supervision_proto` (now `crates/supervision_contract`), and several `user/src/*.rs`
-  programs that each define their own tiny syscall wrapper;
+  programs that each define their own tiny system call wrapper;
 - `UntypedHeap` -> `MemoryRegionHeap`, and `untyped_slot`/`UNTYPED_SLOT`/`NET_UNTYPED_SLOT` -> their
   `memory_region`-spelled equivalents (`crates/user_rt/src/heap.rs`, `crates/user_rt/src/lib.rs`,
   `patches/std-nife`'s std overlay; `crates/user_rt` is now `crates/user_mode_runtime`);

@@ -41,7 +41,7 @@ linked.
 | **PC / SP / LR** | Program Counter / Stack Pointer / Link Register | `LR` is `x30`. [registers.md](registers.md), [stack.md](stack.md) |
 | **DAIF** | **D**ebug, **A**bort (SError), **I**RQ, **F**IQ | The four interrupt mask bits. `1` = masked, which is backwards from how you read a flag called `I`. |
 | **AAPCS64** | **Procedure Call Standard for the Arm Architecture**, 64-bit | The calling convention. `x0`–`x7` are arguments, `x0` is the return value, `x19`–`x28` are callee-saved. It is why `extern "C"` exists on `kernel_main`. |
-| **SVC** | **Supervisor Call** | The syscall instruction. Milestone 7. |
+| **SVC** | **Supervisor Call** | The system call instruction. Milestone 7 (user mode). |
 | **BRK** | Breakpoint | A deliberate trap. `ELR` points **at** it, not past it. |
 | **WFI / WFE** | **Wait For Interrupt** / **Wait For Event** | Idle the core. **Use `wfi`**: QEMU sleeps the host thread on it and merely spins on `wfe`. [qemu.md](qemu.md) |
 | **DSB / DMB / ISB** | **Data Synchronization / Data Memory / Instruction Synchronization Barrier** | Memory ordering. `ISB` is what makes a system-register write take effect for the *next* instruction. |

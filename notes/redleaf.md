@@ -140,7 +140,7 @@ on one machine, roughly 6.7x, not the absolute: the absolute should never be set
 figure. A RedLeaf crossing does not change address space or privilege level and does not schedule,
 so seL4's row is a different guarantee. On one core under HVF, nife's `ipc_rtt_el0` costs about
 4.6 times seL4's `Call` plus `ReplyRecv` ([arm-plan-under-hvf.md](arm-plan-under-hvf.md)), with
-four syscalls to seL4's two. No EL0 bench times nife's `CALL`/`REPLY` path, so the matched
+four system calls to seL4's two. No EL0 bench times nife's `CALL`/`REPLY` path, so the matched
 comparison is still unmeasured. Atmosphere's
 Table 3, from RedLeaf's own authors, puts a hardware-isolated Rust kernel's call/reply at 1,058
 cycles against seL4's 1,026. [`crossing-costs.md`](redleaf/crossing-costs.md) has both tables,
@@ -180,7 +180,7 @@ nife's version of this axis is `design/fatal-risks/README.md`'s risk 1, and it h
 `ripgrep` 14.1.1 from crates.io, forty transitive crates, zero patches, builds and runs on all three
 architectures (milestone 121 (`ripgrep` on nife: enumeration as a capability), and the three transcripts are byte
 for byte identical). DECISIONS §31 (the foreign-language seam) confines C that holds no capabilities and
-makes no syscalls, demonstrated by faulting it deliberately and restarting it. A language-isolated
+makes no system calls, demonstrated by faulting it deliberately and restarting it. A language-isolated
 system has no move available on either.
 
 The symmetric honesty: that door swings both ways. nife's isolation does not care what language a
@@ -215,7 +215,7 @@ identifiers an attacker could collide. Their four asks of the language had not l
 reading.
 
 And the group's next kernel took the other bet. Atmosphere (KISV '23, SOSP '25) is an L4-shaped Rust
-microkernel verified with Verus, using hardware isolation and a conventional syscall interface, at a
+microkernel verified with Verus, using hardware isolation and a conventional system call interface, at a
 3.32:1 proof-to-code ratio. That is the single most consequential fact in this note. The team that
 built the strongest language-isolated OS in the literature spent the following five years building a
 hardware-isolated, machine-verified Rust microkernel instead. Nothing in either Atmosphere paper says

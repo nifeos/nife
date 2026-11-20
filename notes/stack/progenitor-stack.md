@@ -22,7 +22,7 @@ it, once per new peak:
   progenitor stack: 32440 of 49152 bytes at peak, 16712 spare
 ```
 
-Every architecture speaks from the idle loop. `x86_64` spoke from the yield syscall, one yield in
+Every architecture speaks from the idle loop. `x86_64` spoke from the yield system call, one yield in
 256, until milestone 505 (an x86_64 input driver that never lets the core idle): its input driver
 polled and yielded, so the idle loop stopped running at the hand-over.
 

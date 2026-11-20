@@ -16,7 +16,7 @@ use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Object, memory_region_capability};
 use crate::memory_region::{Counted, ObjectKind};
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// A one-instruction loop, as `memory_grant_reclaim_tests` has it: the sibling's child.
 #[cfg(target_arch = "aarch64")]

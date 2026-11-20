@@ -189,7 +189,7 @@ fn a_send_capability_aborted_by_teardown_stages_nothing_for_a_later_plain_send()
     sched::spawn(move || {
         PARKED_ON_DOOMED.store(true, Ordering::SeqCst);
         sched::inter_process_communication_send_capability(doomed_ep, 1, delegated, 0);
-        // The teardown below wakes us aborted; a syscall would read and clear the flag here.
+        // The teardown below wakes us aborted; a system call would read and clear the flag here.
         let _ = sched::take_ipc_aborted();
         ABORTED.store(true, Ordering::SeqCst);
         sched::ipc_send(other_ep, [2, CHOSEN, 0]);

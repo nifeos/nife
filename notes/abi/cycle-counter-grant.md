@@ -19,9 +19,9 @@ an embryo and refuses any thread that is not one. So it belongs to the same crea
 at the switch, beside the address-space root, comparing before it writes. So a machine where nothing
 is granted never writes the register at all.
 
-## No syscall method, yet
+## No system call method, yet
 
-There is deliberately no syscall method to set it, and that is the part worth knowing. The kernel
+There is deliberately no system call method to set it, and that is the part worth knowing. The kernel
 half is complete; the surface is deferred. A method number is irreversible, and this one's successor
 is already foreseeable. The prior art for a per-thread property as a TCB method is
 `seL4_TCB_SetAffinity`, which MCS deleted and replaced with a field of `sched_control_cap`. And
@@ -47,7 +47,7 @@ rather than as a gap. `CR4.TSD` would close `rdtsc` to ring 3. And there is no c
 that architecture, the way `CNTVCT_EL0` and `rdtime` are fallbacks on the other two.
 `user_mode_runtime`'s `now()` there is `rdtsc`. So closing it takes out `Instant`, `thread::sleep`,
 the random seed, smoltcp's timestamps and the benchmark harness at once. DECISIONS 139 measured the
-alternatives (trap-and-emulate at 1,667 ns, 4.1x the syscall it would be beating) and closed them.
+alternatives (trap-and-emulate at 1,667 ns, 4.1x the system call it would be beating) and closed them.
 
 ## The grant is only built when something asks for it
 

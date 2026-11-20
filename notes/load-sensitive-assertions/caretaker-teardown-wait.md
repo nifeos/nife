@@ -85,7 +85,7 @@ fn destroy_with_retry(ut: u64) -> bool {
 What the refusal is waiting on is a timer tick. `sched::reap_region_objects` refuses while the
 caretaker is still live and arms the kill of §16 (object revocation) on it
 (`region_reap_verdict`'s `RefuseAndArm`). An armed kill lands at that thread's next preemption. So
-the wait is one tick period, 10 ms at 100 Hz, and a count of syscalls is not a way to buy one. The
+the wait is one tick period, 10 ms at 100 Hz, and a count of system calls is not a way to buy one. The
 direction is positive ("not yet"). By the first diagnostic it is honest load sensitivity, not a wait
 written against something wider than the property.
 
@@ -232,7 +232,7 @@ and none has a clock in it.
 | `components/src/timetable.rs`'s `collect` (`REAP_ATTEMPTS`) | **`user_mode_runtime::trap()`** |
 
 That is the reading order's fourth grep, and the first that leaves this repository's kernel: a
-bounded retry count in a user program, over a syscall that a timer tick has to clear. The scope
+bounded retry count in a user program, over a system call that a timer tick has to clear. The scope
 note's 39 sites were all kernel (`wait_for`, `free_frames`, `thread_count`, `used()`), so userspace
 was never swept at all. It was proposed as a milestone of its own in this lane's report rather than
 taken here. (Minted as milestone 185 (sweep userspace's bounded retry loops onto a clock); not

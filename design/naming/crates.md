@@ -32,7 +32,7 @@ standard terms is the acronym test's call:
 
 - A nife wire-contract crate ends in `_contract`: `filesystem_contract`, `socket_contract`,
   `supervision_contract`. An external standard keeps its own word (`network_time_protocol`), which
-  is why nife's suffix is not `_protocol`. `abi` is the syscall boundary and takes no suffix.
+  is why nife's suffix is not `_protocol`. `abi` is the system call boundary and takes no suffix.
   `script/lint` check 3 holds the spelling and names `network_time_protocol` as its one exception.
 - `compositor` and `line_editor` hold a protocol module and are logic crates, not contracts. A
   `_contract` name would promise a wire definition and deliver an algorithm.

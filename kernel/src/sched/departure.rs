@@ -10,12 +10,12 @@ pub fn yield_now() {
     schedule();
 }
 
-/// The current thread exited cleanly (`SYSCALL_EXIT`). Never returns.
+/// The current thread exited cleanly (`SYSTEM_CALL_EXIT`). Never returns.
 pub fn exit() -> ! {
     depart(abi::fault::EVENT_EXIT, 0, 0, true)
 }
 
-/// `SYSCALL_EXIT_THREAD`: end the calling thread, and its process only if no other
+/// `SYSTEM_CALL_EXIT_THREAD`: end the calling thread, and its process only if no other
 /// member runs. `word`, if not zero, is cleared and its futex waiters woken first: see
 /// `futex::clear_and_wake`. Never returns.
 pub fn exit_thread(word: u64) -> ! {

@@ -41,7 +41,7 @@ produce a component that faults a long way from the mistake.
 `PageKind::DeviceRegisters` is its own kind for §41's reason. Revocation is by physical page, so a
 device the supervisor is about to take back cannot be installed at build time. A plan sorts device
 pages last and `Plan::devices` hands them over separately, so the operator endows everything else
-early and maps the registers after the revoke. That keeps the down window four syscalls wide. The
+early and maps the registers after the revoke. That keeps the down window four system calls wide. The
 kernel maps device registers device-typed and read/write whatever mode is asked for. So the mode a
 device need carries is the conservative one rather than a claim. `plan` makes two passes over the
 mapping needs, so devices land at the end of one array. `maps_without_devices` is then a slice of

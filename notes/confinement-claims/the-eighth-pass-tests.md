@@ -19,7 +19,7 @@ and §19 (architectural parity is a tenet) is met by running the same test on ev
 The cited test, `revocation_in_flight_tests`, revokes a capability that already sits parked in the
 hand-off slot. Its `BUGS` section names two places as unmeasured, and this module attacks both.
 
-The first is the window between the syscall's start and the filing of the copy. `SEND_CAPABILITY` reaches
+The first is the window between the system call's start and the filing of the copy. `SEND_CAPABILITY` reaches
 the test kernel's seam, `delegation_pause::here`, after its rights gate and just before the locked
 section that reads the source, derives the copy and files it. A revocation sweep landing in that
 window must be seen: the delegation has to re-read the source under the hold and find it gone. A
@@ -127,7 +127,7 @@ Revocation precision is claim 28. Two holders of the whole COM1 range park on th
 endpoints, so the test picks the instant to revoke. One wakes after its exact range was revoked and
 must fault. The other wakes after an unheld range was revoked and must still write; a sweep that
 matched too widely would stop it. A sub-range revoke is not a leg. The sweep matches by exact
-`(base, count)`, and `PortRange::REVOKE` takes its range from the capability, so no syscall can name
+`(base, count)`, and `PortRange::REVOKE` takes its range from the capability, so no system call can name
 a narrower one. The frame sweep's overlap matching (`delete_page_frame_capabilities_overlapping`) is the
 deliberate contrast. This is near miss 1 of the pass: one design change away from an escape if a
 sub-range revoke ever becomes expressible.
@@ -164,8 +164,8 @@ the same error word for word. Every probe is non-blocking or aimed at a settled 
 Claim 4 says a consumed capability cannot be used again. Claim 5 says dropping one capability does
 not disturb the others. The host crate proves both on pure logic
 (`capability_table::a_deleted_capability_stays_deleted`, `delete_touches_only_its_slot`). This module
-drives the live kernel paths instead: `SYSCALL_CAPABILITY_DELETE`'s kernel half, `delete_current_capability`, followed
-by invokes through `syscall::invoke`. It tries three angles a host crate cannot reach. One is a
+drives the live kernel paths instead: `SYSTEM_CALL_CAPABILITY_DELETE`'s kernel half, `delete_current_capability`, followed
+by invokes through `system_call::invoke`. It tries three angles a host crate cannot reach. One is a
 stale slot number, held by a program that watched its capability be deleted. One is an out-of-range
 index forged in a register. One is a deleted slot whose number the table later hands out again. The
 control is a `READ` capability on the same object, granted after the deletion. It still receives a

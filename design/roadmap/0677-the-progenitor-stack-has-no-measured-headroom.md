@@ -40,7 +40,7 @@ Nothing measures this stack. `script/stack-depth-check` walks kernel thread stac
 *Names below are provisional.*
 
 **Measured.** A kernel gauge, `kernel/src/progenitor_stack.rs`, paints the progenitor's stack pages
-as `boot_progenitor` maps them and prints the high-water mark from the idle loop (the yield syscall
+as `boot_progenitor` maps them and prints the high-water mark from the idle loop (the yield system call
 on `x86_64`) each time it settles at a new peak. On `script/swish-check`, out of 32,768 bytes:
 
 | | aarch64 | riscv64 | x86_64 |

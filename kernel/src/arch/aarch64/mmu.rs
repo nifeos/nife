@@ -15,7 +15,7 @@ use super::instructions;
 use crate::{memory, println};
 
 /// This architecture's page-table format. Portable code that must name the format (the user-VA gate
-/// in syscall.rs, the user `Mapper` in user.rs) refers to it as `arch::mmu::Format`, so the choice
+/// in system call.rs, the user `Mapper` in user.rs) refers to it as `arch::mmu::Format`, so the choice
 /// of format lives in `arch/`, not in the portable kernel. See notes/riscv-port.md (leak #2).
 pub type Format = Aarch64;
 
@@ -606,7 +606,7 @@ pub fn deactivate_user() {
 }
 
 /// **Could EL0 read this address?** Asked of the silicon with `AT S1E0R`, not of the kernel's own
-/// permission model. Only the system tests call it: no syscall dereferences a user pointer. See
+/// permission model. Only the system tests call it: no system call dereferences a user pointer. See
 /// notes/mmu.md, "What `kernel/src/arch/aarch64/mmu.rs` holds to".
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn user_can_read(va: u64) -> bool {

@@ -81,7 +81,7 @@ be a lens on a system that no longer exists. The unit that matters here is **cha
 The recommendation, and it is a change to the block's proposal. Make the event triggers
 primary and the calendar a backstop:
 
-- Trigger on what 92 already lists: a new syscall method, a new component holding device or network
+- Trigger on what 92 already lists: a new system call method, a new component holding device or network
   authority, a new dependency class (§46), or first boot on a new machine class.
 - Add a count-based trigger, because it is as cheap to compute as a date and much better matched:
   N milestones built since the last audit, or N new components. The tripwire already reads a file; it

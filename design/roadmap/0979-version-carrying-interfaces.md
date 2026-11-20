@@ -19,7 +19,7 @@ because the compiler catches every consumer in the same tree, so churn prices no
 is what prices breaks; waiting for stability inverts the causality.
 
 calef ruled the shape on 2026-10-29 (UTC), in PR #2852's comment. The five questions below record
-what calef weighed and ruled; the ruling also added a compatibility obligation and a retirement
+what calef weighed and ruled; the ruling added a compatibility obligation and a retirement
 provision. The implementing work is milestone 956 (the linked interfaces carry checkable
 versions); [that block](0956-the-linked-interfaces-carry-checkable-versions.md) builds it. This
 proposal writes no code (§311 (a contract is code, not prose)), and every new name below is
@@ -51,7 +51,7 @@ lane re-measured on 2026-10-28:
   version 2 appends zones after it. A grep for `ABI_REVISION` over `crates/` returns nothing.
 
 Milestone 610 measures that churn weekly: 157 breaking changes to the contract crates over 2026W37
-to 2026W40, the first split's reading, and 10 boundary moves with 49 syscall additions over 2026W39
+to 2026W40, the first split's reading, and 10 boundary moves with 49 system call additions over 2026W39
 to 2026W42.
 
 ## Question 1: where the version constant lives, and what its scope is
@@ -69,8 +69,8 @@ file protocols; a per-crate constant would re-version file clients for a block-o
 first cut's four interfaces do not share one kind. The rule: an interface with a peer or a layout
 carries a version constant per wire format; a pure library is named by its crate version.
 
-- `abi` is the syscall surface. One constant at the crate root, provisionally `ABI_VERSION`; its
-  scope is the syscall, method and error numbers a program matches.
+- `abi` is the system call surface. One constant at the crate root, provisionally `ABI_VERSION`; its
+  scope is the system call, method and error numbers a program matches.
 - `address_space_layout` is layout constants the loader and the kernel compile in. One constant,
   provisionally `VERSION`; the scope is the bands and the pair-page arithmetic.
 - `byte_glob` is a library with no peer and no wire, so it carries no constant. Its version is its
@@ -103,7 +103,7 @@ prose to drift (§311). Placement follows the interface's kind:
   opcodes; the check belongs to the two endpoints.
 - A shared-page format: the reader checks the magic and the version word before trusting any
   other word. One side writes and one reads; the check is one-sided by nature.
-- The syscall ABI: the check happens at spawn, already ruled. §235 puts the ABI revision a program
+- The system call ABI: the check happens at spawn, already ruled. §235 puts the ABI revision a program
   built against into its manifest note, "so the progenitor can refuse one it no longer supports";
   the comparison pits the note's declared version against the kernel's `ABI_VERSION` constant.
 - A link-time library (`byte_glob`): no run-time check exists; the declaration of question 3 records the
@@ -173,8 +173,8 @@ the ABI, so no new revision mints.
 
 ## Question 5: the frozen-identifier rule, and what enforces it
 
-The rule: a syscall number is never renumbered or removed, and a format never changes in place;
-a change is a new version. AGENTS.md already makes a brand-new syscall number a design fork. The
+The rule: a system call number is never renumbered or removed, and a format never changes in place;
+a change is a new version. AGENTS.md already makes a brand-new system call number a design fork. The
 question is what catches a violation besides the weekly 610 series, which records a week late and
 refuses nothing.
 
@@ -184,7 +184,7 @@ where a pull request changing a `FORMAT_CONST` value must change its crate's ver
 and head.
 
 **Ruled (calef, 2026-10-29 UTC, PR #2852): (b) now; (c) waits for a consumer outside the tree.**
-The `abi` test spells every public number as an expected literal: six syscall constants today,
+The `abi` test spells every public number as an expected literal: six system call constants today,
 the object modules' method numbers, the `Error` codes. Updating it is the deliberate act a
 renumber should be; skipping it fails CI. The lint reads a pull request's changed lines and fails
 when a magic or version value moved without its constant.
@@ -211,7 +211,7 @@ The carve-outs, ruled the same day:
 
 - Shared pages stay single-version. One writer and one reader leaves no served set to hold; a
   page-format break rides the update path (§235's U4 coherent set), changing both sides together.
-- The syscall ABI never dual-serves: §235's spawn-time refusal is the hard edge.
+- The system call ABI never dual-serves: §235's spawn-time refusal is the hard edge.
 - Stateful services cannot swap across versions (§116 (live component state handoff is declined,
   for want of a customer) governs; §208 (installing is granting) names the revisit). Their version
   changes ride the update path, where clients re-bind at restart.
@@ -250,7 +250,7 @@ survey, the prior art and the costs.
 3. Prior art, read not recalled, one lesson per system: 9P refuses cleanly and names both
    versions. Fuchsia stamps its ABI revision into packages. seL4 breaks by coordinated semver
    release, no runtime check. Mach's MIG carries an interface-version byte that nothing compares.
-   Linux's syscall promise is add-only; ext4 splits compatible from incompatible sets at mount.
+   Linux's system call promise is add-only; ext4 splits compatible from incompatible sets at mount.
    glibc's loader binds the symbol version a binary names. MCP's 2026 revision declares the
    version per request. Citations, and what this lane did not verify, are in
    [the appendix](0979-version-carrying-interfaces/prior-art.md).

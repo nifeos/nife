@@ -24,7 +24,7 @@
 //!
 //! A new service test is a userspace program, unless it has to observe kernel internals. A test
 //! that does, and so belongs here, says in its doc comment which internals it observes and why no
-//! syscall could show them. Existing tests that observe nothing internal move to userspace over
+//! system call could show them. Existing tests that observe nothing internal move to userspace over
 //! time; notes/system-tests-and-the-kernel-crate.md keeps that backlog.
 
 //! # BUGS

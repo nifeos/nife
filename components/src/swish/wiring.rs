@@ -16,7 +16,7 @@ pub(super) const RESULT: u64 = 2; // RECEIVE a spawned program's answer
 pub(super) const BUDGET: u64 = 3; // our own untyped; SPLIT a grant off it for `--mem`
 
 /// The budget the progenitor granted us at boot, [`spawn_protocol::SHELL_BUDGET_PAGES`], which it reads
-/// too. We cannot query how much remains (there is no such syscall), so `caps` prints the initial
+/// too. We cannot query how much remains (there is no such system call), so `caps` prints the initial
 /// grant.
 pub(super) const SH_BUDGET_PAGES: u64 = spawn_protocol::SHELL_BUDGET_PAGES;
 

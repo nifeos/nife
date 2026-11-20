@@ -34,9 +34,9 @@ on a path every boot takes.
 Dated 2026-10-03 (§216, from #1495): later passes are not in the paragraph above. An in-house adversarial pass on
 2026-09-21 (PR #1059) found a revoked capability parked in `outgoing_cap` delivered afterwards, fixed in
 three sweeps. The audit of 2026-09-24 (new trust boundaries) fixed 5 and found no confinement claim false
-(`design/audit-reports/2026-09-24-new-trust-boundaries.md`). The audit of 2026-09-29 (the syscall surface
+(`design/audit-reports/2026-09-24-new-trust-boundaries.md`). The audit of 2026-09-29 (the system call surface
 as a whole) fixed 0, minted 0, accepted 3 and found no confinement claim false
-(`design/audit-reports/2026-09-29-syscall-surface-whole.md`). The audit of 2026-10-03 (eight constants
+(`design/audit-reports/2026-09-29-system-call-surface-whole.md`). The audit of 2026-10-03 (eight constants
 and thirteen components, with its follow-up) fixed 5, minted 4, accepted 6 and found no kernel
 confinement claim false; its three findings that bear here are listed below
 (`design/audit-reports/2026-10-03-eight-constants-and-thirteen-components.md`). PR #1494's RECEIVE-consumer audit then
@@ -59,14 +59,14 @@ runtime, is still exposed.
 Dated 2026-10-04 (§246 (a plain `RECEIVE` never takes a capability), PROVISIONAL number, PR #1611):
 a `SEND_CAP` or `CALL` that found a plain `RECEIVE` already parked installed its capability in the
 receiver's table, while the other order did not, so a confined program holding a `GRANT` capability
-could fill the table of a server draining its output (found by milestone 752 (a seeded syscall
+could fill the table of a server draining its output (found by milestone 752 (a seeded system call
 driver with a shadow model)). calef ruled option A; a plain `RECEIVE` now takes no capability on
 either order and a `CALL` reaching one is answered `Gone`. Two kernel tests with replayable
 falsifications, replayed red on aarch64.
 
 Dated 2026-10-04: nothing fuzzes what a confined process can reach. The six `cargo-fuzz` targets
 of §60 (fuzzing complements the proofs) read firmware, disk and network bytes, not IPC requests
-or syscalls. A proposal for both is
+or system_calls. A proposal for both is
 [`fuzz-the-surface-a-confined-process-can-reach`](../roadmap/0779-fuzz-the-surface-a-confined-process-can-reach.md).
 
 Dated 2026-10-05 (milestone 762 (a mapping cannot outlive its frame's revoke), PROVISIONAL number,

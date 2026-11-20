@@ -65,7 +65,7 @@ aarch64 has two page table base registers, not one:
 - `TTBR1_EL1` translates high addresses → the kernel
 
 The kernel lives permanently in the high half. On a context switch we swap only `TTBR0`;
-the kernel's mappings never move. So a syscall requires no address space change at all.
+the kernel's mappings never move. So a system call requires no address space change at all.
 x86_64 has one such register and achieves the same effect by convention. This is one of
 the places aarch64's clean-sheet design visibly pays off.
 
@@ -128,7 +128,7 @@ assumption.
 Asking the silicon whether EL0 could read an address: `AT S1E0R` translates an address as EL0
 would and reports a permission fault into `PAR_EL1`, so `user_can_read` never re-implements the
 permission model. `PAR_EL1` is one shared register, so interrupts are masked from the `at` to the
-`mrs`. No syscall in today's ABI dereferences a user pointer, so only the system tests call it, and
+`mrs`. No system call in today's ABI dereferences a user pointer, so only the system tests call it, and
 they assert the silicon refuses a kernel address and allows the process's own text
 ([capabilities.md](capabilities.md) has the confused deputy this answers).
 
@@ -151,7 +151,7 @@ considered had to be JH7110-class or better.
   new space to another thread. That thread then runs in a stranger's space. The read is now
   indivisible ([scheduler.md](scheduler.md), "The costs migration made real").
   - riscv64, cpu matrix run 38672377106 (2026-10-14 UTC), `rv64`. A credentialer service, spawned
-    through `user::run`, was killed after the `ecall` in `user_mode_runtime::syscall::trap6`, under
+    through `user::run`, was killed after the `ecall` in `user_mode_runtime::system_call::trap6`, under
     ASID 0, with no space in its record. It died starting up: the first `identity_provisioner` sat
     in its `CALL` on the provision endpoint, which had no receiver. Nothing else that clears or
     withholds a space applies to a kernel-spawned service, so this is that path.

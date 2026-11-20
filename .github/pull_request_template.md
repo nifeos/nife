@@ -35,7 +35,7 @@ or a `BUGS` entry written where a reader meets the feature. Say "none" if there 
 ## Needs an architect
 
 <!--
-Delete this section unless something here is an architect's call: a design fork, the syscall
+Delete this section unless something here is an architect's call: a design fork, the system call
 surface, a new dependency, a name, or anything two programs agree on. If it is, add the
 `needs-architect` label and say what the ask is, answerable without reading the diff, including what
 happens if the answer is no. -->

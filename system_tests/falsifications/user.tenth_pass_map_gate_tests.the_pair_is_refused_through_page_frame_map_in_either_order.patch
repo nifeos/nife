@@ -14,9 +14,9 @@ Expected to fail: the assertion that `PageFrame::MAP` answers `NotPermitted`, re
 Replayed on 2026-10-31 (UTC) on aarch64 with `cargo xtask test --arch aarch64 --test
 the_pair_is_refused_through_page_frame_map_in_either_order`: red at exactly that assertion.
 
-diff --git a/kernel/src/syscall/page_frame.rs b/kernel/src/syscall/page_frame.rs
---- a/kernel/src/syscall/page_frame.rs
-+++ b/kernel/src/syscall/page_frame.rs
+diff --git a/kernel/src/system_call/page_frame.rs b/kernel/src/system_call/page_frame.rs
+--- a/kernel/src/system_call/page_frame.rs
++++ b/kernel/src/system_call/page_frame.rs
 @@ -79,7 +79,7 @@
              page_phys,
              root,

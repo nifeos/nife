@@ -143,7 +143,7 @@ cannot see an uncommitted one.
 **So the routing rule is about the oracle, not about difficulty.** Work with a crisp gate goes to
 the open model: bisections (the gate's exit code *is* the answer), reference sweeps, renumbering,
 promotions, formatting, mechanical repairs. Work whose output is a judgment stays on Claude: design
-forks, anything touching the syscall surface or a wire format, prose a reader will later trust, and
+forks, anything touching the system call surface or a wire format, prose a reader will later trust, and
 adversarial passes. Yesterday's findings that mattered most, `size_of::<PerCpu>()` breaking a shift,
 a capability surviving a revocation sweep, a calibration wrong by 11x, all came from the second kind.
 

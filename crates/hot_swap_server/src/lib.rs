@@ -23,7 +23,7 @@
 //! }
 //! ```
 //!
-//! Every entry point here is a syscall loop from EL0 and returns `!`, so the example has nothing to
+//! Every entry point here is a system call loop from EL0 and returns `!`, so the example has nothing to
 //! assert. It runs under `cargo test --doc -p hot_swap_server` on an aarch64 host.
 //!
 //! Name: provisional, minted 2026-10-29 (UTC) by lane

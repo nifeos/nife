@@ -1,7 +1,7 @@
 # Can a userspace process hold a timer?
 
 *(Written 2026-09-05 for milestone 263, a spike. This note prices a design and does not build one:
-nothing here adds a syscall or an object, and the fork it informs is an architect's. Name
+nothing here adds a system call or an object, and the fork it informs is an architect's. Name
 provisional: `timer-capability.md` is a sibling of `timed-wait.md`
 rather than a second copy of it, and the two answer different halves of it.)*
 
@@ -66,7 +66,7 @@ a portable capability, so §19's *"a kernel capability ships on every supported 
 the same suite"* is not met by it: the suite runs on QEMU, and QEMU's aarch64 `virt` has nothing to
 drive. A userspace timer service would exist on argon, exist differently on radon, exist a third way
 on xenon, and not exist at all on the machine this tree gates against. That is three drivers and a
-hole, against one syscall method.
+hole, against one system call method.
 
 It is a good answer to a different question. If a *particular* workload on a *particular* board
 wants a private high-resolution timer, this is how it gets one, and it needs nothing built. It is not
@@ -83,9 +83,9 @@ was deleted. Three figures came out of it:
 
 - The object is free in bytes. `size_of::<Object>()` and `size_of::<Cap>()` do not change, so a
   `Timer` capability costs nothing per slot, per capability table or per TCB.
-- `ipc_fastpath` does not move on any architecture. `syscall_entry` grows by 12 bytes on aarch64,
+- `ipc_fastpath` does not move on any architecture. `system_call_entry` grows by 12 bytes on aarch64,
   158 on riscv64 and 96 on x86_64, because one more `Object` arm is one more decode step for every
-  syscall.
+  system call.
 - The kernel grows by under a quarter of a per cent: 738 bytes on aarch64, 2,266 on riscv64, 1,386
   on x86_64.
 
@@ -101,10 +101,10 @@ the symbol-level working are in [second-scaffold.md](timer-capability/second-sca
 
 - The holder dying with a timer armed costs 268 bytes of code on aarch64, 212 on riscv64 and 276 on
   x86_64, and zero data. It is not deferrable bookkeeping. Without it the timer interrupt reads and
-  writes a freed page on every core, a use-after-free with no syscall involved. The fix is the
+  writes a freed page on every core, a use-after-free with no system call involved. The fix is the
   sweep `sched::reap_region_objects` already runs for rendezvous, run against the timer table.
 - Serving a kernel thread costs 312, 282 and 400 bytes of code and zero data. A kernel thread cannot
-  issue a syscall, so it needs something smaller than the fourth shape: a deadline word on the TCB
+  issue a system call, so it needs something smaller than the fourth shape: a deadline word on the TCB
   and a walk that wakes it. Applied to `kernel/src/soak.rs`'s supervisor it builds clean; nothing
   was run.
 - The error bar is zero bytes: a rebuilt build came out byte-identical. `ipc_fastpath` did not move,
@@ -126,7 +126,7 @@ assumes about it:
    argument is that a notification should be *its own object with its own queue*, separate from the
    endpoint. If 151 builds that, `Timer::ARM`'s second argument names a `Notification` and not a
    `Rendezvous`, and the dispatch arm's capability check changes shape. The byte figures do not
-   move much; the syscall's meaning does.
+   move much; the system call's meaning does.
 2. That binding to a TCB is what makes the shape useful. Milestone 106's title is met only if a
    thread blocked in `RECEIVE` on an endpoint wakes on *either* a message or the deadline, and §101 says
    that is what TCB binding is for. Without 151 the fourth shape gives a thread a timer it can block
@@ -179,7 +179,7 @@ assumes about it:
   `CNTPS_*` exist at EL2 and EL3 and are not this kernel's to give.
 - The scaffold is gone. The variant, the `abi::timer` module, the retype arm, the dispatch bodies,
   the expiry table and the tick hook were built to obtain the numbers and deleted. Rebuilding them is
-  an hour; shipping them would have settled a syscall-surface fork by accident, which is what
+  an hour; shipping them would have settled a system-call-surface fork by accident, which is what
   milestone 106's lane refused to do and what §10 (process) and §16 (revocation) reserve to an
   architect.
 - **`Timer`, `Timer::ARM` and `Timer::CANCEL` are the milestone block's provisional coinages**, minted

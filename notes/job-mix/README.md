@@ -6,16 +6,16 @@ the parent's Results row points to it.
 
 - [`radon-2026-10-04.md`](radon-2026-10-04.md): five boots of the seven-job instrument on radon,
   read in step 6's order and judged against step 7.
-- [`null-syscall-under-load.md`](null-syscall-under-load.md): why that evening's `null_syscall`
+- [`null-system-call-under-load.md`](null-system-call-under-load.md): why that evening's `null_system_call`
   nearly doubled from one busy core to four (the reaper freed kernel stacks under `IPC_TABLES`),
   the fix, and the radon procedure that will size it.
 - [`lock-wait-instrument.md`](lock-wait-instrument.md): what `--features lock_wait` counts, what it
   costs and what it cannot see.
-- [`null-syscall-first-radon-run.md`](null-syscall-first-radon-run.md): what TCG could not say about
+- [`null-system-call-first-radon-run.md`](null-system-call-first-radon-run.md): what TCG could not say about
   that fix, and the procedure radon sized it by.
-- [`null-syscall-off-radon.md`](null-syscall-off-radon.md): the rest was the global lock on every
+- [`null-system-call-off-radon.md`](null-system-call-off-radon.md): the rest was the global lock on every
   capability lookup, measured under TCG and on four Apple cores under HVF (2026-10-05).
-- [`null-syscall-hvf-full-mix.md`](null-syscall-hvf-full-mix.md): the same, spawning included.
+- [`null-system-call-hvf-full-mix.md`](null-system-call-hvf-full-mix.md): the same, spawning included.
 - [`radon-2026-10-05.md`](radon-2026-10-05.md): milestones 761 and 766 on radon, and a bisect
   that found the single crossing moves about 8 ticks with code placement alone.
 - [`spawn-job-miscompiled-yield.md`](spawn-job-miscompiled-yield.md): why the full mix failed under HVF. A yield

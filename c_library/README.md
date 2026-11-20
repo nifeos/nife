@@ -56,7 +56,7 @@ is the strongest form of that: there is one client of the file contract, one of 
 one heap, and a C program reaches each through it. `open` is `std::fs::OpenOptions`, `pread` is a
 seek and a read on a `std::fs::File`, `clock_gettime(CLOCK_REALTIME)` is `SystemTime::now()`,
 `nanosleep` is `std::thread::sleep`, `malloc` is `std::alloc::alloc`. No C translation unit makes a
-syscall, and neither does this crate (§31 (the foreign-language seam) rule 1 as amended by §265).
+system call, and neither does this crate (§31 (the foreign-language seam) rule 1 as amended by §265).
 The cost is that `std` is linked into every C program; `speedtest1` is 1.4 to 2.4 MB per
 architecture, inside the 496 MiB an image may have.
 
@@ -252,7 +252,7 @@ checks each, built by `helpers/build-c-library-contract.sh` and run by `c_thread
 - **Pipes and socket pairs cannot leave the process**, a write with no reader answers `EPIPE`
   without `SIGPIPE`, and `poll` is woken by any pipe's change, not only the ones it watches
   (`src/platform/stream.rs`).
-- **No `syscall()`**, by §265 and calef's ruling on #2009 (2026-10-12 UTC), so a program that
+- **No `system_call()`**, by §265 and calef's ruling on #2009 (2026-10-12 UTC), so a program that
   calls the kernel by Linux number, as schbench does, does not build.
 - **No wall clock without a clock grant.** `time`, `gettimeofday` and `clock_gettime(CLOCK_REALTIME)`
   call `SystemTime::now()`, which stops a process holding no clock with a message naming the

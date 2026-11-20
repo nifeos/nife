@@ -59,7 +59,7 @@ the other.
 ### E4. Application displacement. The Liedtke measurement proper.
 
 Everything above measures the kernel. Liedtke's actual claim is about the cost the kernel imposes
-on the application after the syscall returns, which no kernel-side benchmark can see by
+on the application after the system call returns, which no kernel-side benchmark can see by
 construction, and which is the reason Mach's IPC looked acceptable in isolation.
 
 Shape: a userspace program with a known, tunable working set, measured with and without concurrent
@@ -115,7 +115,7 @@ argument from the code, and this is what would turn it into a number.
 ### M9. Per-phase cycle attribution across one IPC
 
 Trap entry, decode and dispatch, rendezvous, switch, trap exit. What it settles: where fastpath
-effort should go, which nothing currently knows. Milestone 132 found `syscall::dispatch` is the
+effort should go, which nothing currently knows. Milestone 132 found `system_call::dispatch` is the
 largest single symbol at 2,024 bytes, and §95 reasons from that to it being the obvious thing to
 skip. Large is not the same as costly, and this measure is the only thing that can tell the
 difference. It could easily refute the premise of the fastpath as currently sketched.

@@ -196,7 +196,7 @@ promptly.
 ### The counter cost 150 bytes of IPC fastpath, and the increment was not why
 
 `script/fastpath-footprint` was not on this lane's gate list and caught this after the fact: riscv64
-`ipc_send_receive` at 5.4% over a 5% bound, `syscall_entry` at 6.8%. Three plausible causes were all
+`ipc_send_receive` at 5.4% over a 5% bound, `system_call_entry` at 6.8%. Three plausible causes were all
 wrong.
 
 | what was changed | riscv64 `ipc_send_receive` |

@@ -1,6 +1,6 @@
 //! **A thread that binds a notification to itself and waits on a message or a signal at once**
 //! (milestone 151 (notification objects), DECISIONS §101 (notification objects)), driven through
-//! the real syscall boundary.
+//! the real system call boundary.
 //!
 //! Slots: 0 a memory region, 1 a `ThreadControlBlock` capability to *this* thread (minted by the
 //! kernel test: a running thread holds none to itself), 2 an endpoint to receive on, 3 a report. A

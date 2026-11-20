@@ -188,7 +188,7 @@ one buys is in [design/tenets/codebase-rules.md](design/tenets/codebase-rules.md
    registers, CPU-specific behaviour. If you're writing `asm!` outside `arch/`, that is the bug.
 2. A driver never reaches into a kernel global. It gets what it needs passed in (a base address,
    later a DMA allocator, later an interrupt registration).
-3. The syscall surface stays narrow and explicit. It is a boundary, not a habit.
+3. The system call surface stays narrow and explicit. It is a boundary, not a habit.
 4. Assume weak memory ordering. We're on ARM, which is the weak one, and that's a gift: don't
    squander it.
 5. Architectural parity is a gate, not an aspiration: DECISIONS §19 (architectural parity is a
@@ -215,13 +215,13 @@ Rules 2, 3 and 7 are what keep the microkernel option open. We are deliberately 
 trait-ifying every subsystem, because that builds the wrong abstraction before the requirements are
 known.
 
-## The syscall surface is a boundary, not a habit
+## The system call surface is a boundary, not a habit
 
 Milestone 7's process-model question is decided: capabilities, an `svc` + `x8` ABI with a narrow,
 explicit surface (DECISIONS §10, §16). New methods are fine within the established capability model
 (object revocation added `Untyped::SPLIT` and `DESTROY` this way); record each new method's
 semantics in `design/decisions/`, not just in code. A method that does not fit the model, or a
-brand-new syscall number, is a design fork, raise it before building it.
+brand-new system call number, is a design fork, raise it before building it.
 
 ## Testing
 

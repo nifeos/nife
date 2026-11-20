@@ -25,7 +25,7 @@ userspace, where policy belongs.
 
 Deferred, deliberately: `Tcb::SUSPEND`/`RESUME`. A suspend method would make "interrupt" mean
 pause-and-inspect (real job control, an eventual debugger) instead of notify-or-kill. It is
-deferred, not rejected: it widens the syscall surface for a consumer that does not exist yet, and
+deferred, not rejected: it widens the system call surface for a consumer that does not exist yet, and
 milestone 22's supervision work (fault endpoints) is the adjacent primitive it should be designed
 beside. Tracked in Open design ideas above; the trigger to revisit is written there.
 

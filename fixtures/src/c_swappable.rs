@@ -5,7 +5,7 @@
 //! Identical to [`rust_swappable`](../rust_swappable/index.html) in everything a client can
 //! observe: capability layout, wire protocol and serving loop (both compile `swap.rs`). Only the
 //! answer differs in origin: `cx_digest` in `fixtures/c/c_swappable.c`, linked into this binary
-//! alone. The C holds no capability and makes no syscall; its whole interface is
+//! alone. The C holds no capability and makes no system call; its whole interface is
 //! `(uint64_t) -> uint64_t`. A different implementation in another language is what makes "a client
 //! did not notice the swap" a claim about the contract. See notes/live-replacement.md.
 

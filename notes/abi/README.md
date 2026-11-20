@@ -1,6 +1,6 @@
 # The native ABI: the appendices to notes/abi.md
 
-[`notes/abi.md`](../abi.md) carries the syscall convention, the object surface, the entry contract,
+[`notes/abi.md`](../abi.md) carries the system call convention, the object surface, the entry contract,
 how a program meets its capabilities, the fault endpoint and the one ambient read. These files carry
 what its prose budget has no room for.
 

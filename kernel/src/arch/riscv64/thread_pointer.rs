@@ -13,7 +13,7 @@ use super::exceptions::TrapFrame;
 pub(crate) fn hand_over(_outgoing: &mut u64, _incoming: u64) {}
 
 /// **Change the calling thread's `tp` now**, for `SET_THREAD_POINTER` aimed at oneself: the
-/// syscall returns through `frame`, and `trap_return` restores `x4` from it for a U-mode return.
+/// system call returns through `frame`, and `trap_return` restores `x4` from it for a U-mode return.
 pub(crate) fn set_live(frame: &mut TrapFrame, value: u64) {
     frame.set_thread_pointer(value);
 }

@@ -168,7 +168,7 @@ epilogue="design/audit-reports/README.md says how, and which lens the last one l
 } >"$fix/log-900000000011.txt"
 
 {
-	frame '  survivor  system_tests::seeded_syscalls_agree_with_the_shadow_model'
+	frame '  survivor  system_tests::seeded_system_calls_agree_with_the_shadow_model'
 	frame '##[error]Process completed with exit code 1.'
 } >"$fix/log-900000000012.txt"
 

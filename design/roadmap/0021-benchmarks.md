@@ -14,7 +14,7 @@ requirement, stated by calef: identify performance issues, and identify the *int
 performance problems proximate to the changes that introduce them.
 
 Deliverable. In-kernel microbenchmarks over the paths a microkernel lives on (IPC round-trip,
-call/reply, context switch, spawn-to-reap, untyped map, null syscall), run under QEMU `-icount` so
+call/reply, context switch, spawn-to-reap, untyped map, null system call), run under QEMU `-icount` so
 virtual time is a deterministic function of instructions executed. A `script/bench` entry point
 separate from `script/test`, and a committed baseline that `script/bench --check`
 diffs against, failing loudly on regression. Updating the baseline is a deliberate act in the

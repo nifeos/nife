@@ -21,7 +21,7 @@ reserved fault slot). An image request that claims it sets `RUN_UNVOUCHED_BIT` a
 on that endpoint as its last message. The progenitor takes that word with a `RECEIVE` while serving
 the request. Only a holder can send there, so arriving is the proof.
 
-The kernel is untouched. There is no new syscall and no new method; the bit is on a userspace word
+The kernel is untouched. There is no new system call and no new method; the bit is on a userspace word
 and the proof is an ordinary `SEND`.
 
 Considered and refused:

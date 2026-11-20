@@ -339,9 +339,9 @@ soak_test = ["dep:soak_page"]
 job_mix = ["dep:job_mix"]
 # The job mix, plus a count of every kernel lock acquisition that found its lock held and how long it
 # waited, printed as `job-mix-lock:` lines after each sweep point (2026-10-04, for fatal risk 4's
-# `null_syscall` question). Its own feature so the plain job-mix image stays the kernel that ships:
+# `null_system_call` question). Its own feature so the plain job-mix image stays the kernel that ships:
 # this one adds a flag and a counter to every `invoke`. See kernel/src/lock_wait.rs and
-# notes/job-mix/null-syscall-under-load.md. Name provisional.
+# notes/job-mix/null-system-call-under-load.md. Name provisional.
 lock_wait = ["job_mix"]
 # **Fatal risk 6's bench boot** (milestone 261 (the NVMe driver leaves the kernel)): after the tour, print two preflight verdicts (does
 # the VT-d unit this kernel programs own the NVMe's requester id; does the namespace's LBA size give
@@ -510,7 +510,7 @@ fastpath_pad = []
 # shape, so the path cannot rot); this feature exists so the **release** kernel, which is what radon
 # boots and what E1 ran on, can be measured too, by a bench boot that prints the same lines. Off by
 # default and in every build that measures time or footprint: it adds a call at the end of
-# `syscall::dispatch`. See notes/stack-high-water.md. Name provisional.
+# `system_call::dispatch`. See notes/stack-high-water.md. Name provisional.
 ipc_stack_depth = ["dep:soak_page"]
 # The single-hart boot (milestone 134's E1/E3/E4 on radon): `smp::bring_up_secondaries` marks the
 # boot core online and starts nobody, so the kernel runs on one hart on a machine that seats four.

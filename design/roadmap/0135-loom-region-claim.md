@@ -79,7 +79,7 @@ Nothing here is new tooling; the work is which protocol gets the treatment.
 
 ## Scope note
 
-No syscall surface, no wire format, no new dependency (loom is already `cfg(loom)`-gated in four
+No system call surface, no wire format, no new dependency (loom is already `cfg(loom)`-gated in four
 crates and never enters the shipping graph). It moves logic between a kernel module and a crate that
 already exists, and adds harnesses to a script that already exists.
 

@@ -4,7 +4,7 @@
 //! until the machine stops unless something hands them back. A [`Holding`] remembers the threads
 //! and regions the kernel handed a service, and spends the existing verbs of DECISIONS §16 (object
 //! revocation) on them in the order that works: arm the kill, reclaim the regions, wait for the
-//! threads. It adds no syscall and no kernel object. See notes/frames.md and
+//! threads. It adds no system call and no kernel object. See notes/frames.md and
 //! notes/user-address-spaces.md.
 //!
 

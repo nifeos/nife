@@ -51,13 +51,13 @@ recommends ramdisks for writing and warns of known bugs, and it is pre-0.1.0.
 `ext4-view`, refused as read-only by design. It is a good reader and does not write, which is
 half of this requirement.
 
-LKL, refused on the syscall surface. `lkl_host_operations` requires `thread_create`,
+LKL, refused on the system call surface. `lkl_host_operations` requires `thread_create`,
 `thread_join`, `thread_exit`, `thread_self`, `thread_stack`, four TLS operations, semaphores and
 recursive mutexes, because LKL is a kernel linked into your address space with kthreads, workqueues
 and softirq contexts. nife cannot provide that: `ThreadControlBlock::CONFIGURE` consumes the
 address-space capability it binds, so no two thread control blocks share an address space, which
 §105 (`std::thread::spawn` stays declined, until a customer needs it) records. Building shared
-address spaces because a filesystem wants them would change the syscall surface sideways.
+address spaces because a filesystem wants them would change the system call surface sideways.
 
 Three further costs. The rest of the host-operations surface: `jmp_buf_set` and `longjmp` in
 assembly for three ISAs, a timer service with callbacks, and `ioremap` and `iomem_access` for a

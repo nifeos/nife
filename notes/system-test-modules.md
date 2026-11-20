@@ -43,7 +43,7 @@ sharing themselves; the kernel neither copies nor pre-arranges anything.
 
 ## Supervision, reaping and process views
 
-`reap_tests` drives every reap through `syscall::invoke`, never through `sched` directly. A direct
+`reap_tests` drives every reap through `system_call::invoke`, never through `sched` directly. A direct
 call would prove the helper rather than the boundary. The supervisor's table holds endpoint
 capabilities and nothing else, because that is what a supervisor's authority is. A test that only
 showed the corpse gone would pass a reap that quietly handed the pages to the reaper, which is why

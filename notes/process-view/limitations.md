@@ -87,7 +87,7 @@ one line.
   Why accepted rather than fixed here. The honest fix is a per-domain cursor and a domain-local
   thread name, and both change what a tid *is*: `endpoint::REAP` takes a tid, `abi::fault`'s death
   message carries one, and `ps` prints one. So it is a change to something two programs agree on,
-  which is the category that cannot be un-shipped by reverting a commit. And it reaches the syscall
+  which is the category that cannot be un-shipped by reverting a commit. And it reaches the system call
   surface: the `REAP` of §16 (object revocation) and the death message of §26 (the fault endpoint). That makes it a
   milestone rather than an audit lane's patch. A cheaper partial exists and is worth weighing against it: return an opaque
   cursor (the slot index XOR a per-endpoint value) and leave tids alone, which closes the
@@ -137,7 +137,7 @@ one line.
 
 - `pgrep` has no exit status to report with, so "nothing matched" is a sentence on the second
   stream rather than upstream's exit 1. A caller wanting to branch on the answer has to count lines.
-  `user_mode_runtime::exit` takes no code, and giving it one is a syscall-surface change.
+  `user_mode_runtime::exit` takes no code, and giving it one is a system-call-surface change.
 
 - `ps` lists itself, and in a pipeline it may or may not list its own reader. It is a member of
   the domain it was spawned into, which is truthful and is what Unix's `ps` does too. The pipeline
@@ -165,7 +165,7 @@ one line.
   into ranges, which would need an ordering guarantee this log does not make.
 
 - `pmap` cannot tell a device mapping from ordinary read/write memory. `kind` is derived from
-  `page_tables::Flags`, which carries no bit for "this is device memory" as far as the syscall handler
+  `page_tables::Flags`, which carries no bit for "this is device memory" as far as the system call handler
   can see, so a `DeviceFrame` mapping (always read/write, never executable) reads as `rw-`,
   indistinguishable from a heap page.
 

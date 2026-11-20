@@ -21,7 +21,7 @@ thing at once gets the primitive it is currently working around the absence of.
 calef, 2026-09-26 (recorded 16:54 UTC): *"151: confirm B."*
 
 The encoding in "The return-value distinction" is forgeable. `RECV` returns the sender's own first
-data word in `w0` (the `RECV` arm of `kernel/src/syscall.rs` returns `msg[0]`), so any sender can
+data word in `w0` (the `RECV` arm of `kernel/src/system_call.rs` returns `msg[0]`), so any sender can
 `SEND(2, word, 0)` and pass for a bound notification. That section stands as ruled; this replaces
 it.
 
@@ -74,7 +74,7 @@ arriving on the notification wakes a thread that is currently blocked in `RECV` 
 
 This is seL4's notification object (seL4 manual, chapter "Notifications"), adapted to this kernel's
 idioms: untyped-funded, generational, capability-governed, and riding on the existing `INVOKE`
-dispatch rather than adding a new syscall.
+dispatch rather than adding a new system call.
 
 ## Why this is the right long-term solution
 
@@ -188,8 +188,8 @@ the ABI.
 
 ### What this does NOT add
 
-- No new syscall. `SIGNAL`, `WAIT`, `POLL`, and `BIND` are methods under the existing
-  `SYS_INVOKE` dispatch, the same way `SEND`, `RECV`, `REAP`, and `SURVEY` are. §4's "the syscall
+- No new system call. `SIGNAL`, `WAIT`, `POLL`, and `BIND` are methods under the existing
+  `SYS_INVOKE` dispatch, the same way `SEND`, `RECV`, `REAP`, and `SURVEY` are. §4 (kernel shape: a microkernel)'s "the system call
   surface stays narrow" holds: `SYS_INVOKE` already exists, and this adds one new `objtype` and four
   new method constants under it.
 
@@ -252,7 +252,7 @@ waking it from whichever child's endpoint delivers first. That is now possible b
 | New kernel object | A `Notification` struct (word + queue + bound TCB), page-resident, in the object registry |
 | `RECV` dispatch | One new case: check whether the blocked TCB has a bound notification with a non-zero word, and if so, return it instead of blocking |
 | Kani proofs | The notification's invariant: "the word is zero iff no signal is pending and no waiter is queued" (same shape as the endpoint's "at most one queue non-empty") |
-| Syscall surface | **No new syscall.** All methods dispatch under the existing `SYS_INVOKE`. |
+| System call surface | **No new system call.** All methods dispatch under the existing `SYS_INVOKE`. |
 
 ## What this unlocks (by consumer)
 

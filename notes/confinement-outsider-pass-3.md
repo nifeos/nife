@@ -9,7 +9,7 @@ and look for the case that makes it so. An attack counted only when it booted.
 
 **Result: one booted escape, at the application boundary. The kernel's own confinement held.** The
 escape is fixed; see its section. The capability core held, as did the rights gate in
-`syscall::invoke`, the paging gates, the DMA shadow ring, the port bitmap and the filesystem subtree
+`system_call::invoke`, the paging gates, the DMA shadow ring, the port bitmap and the filesystem subtree
 scope. The escape is a confused deputy in the swap demonstrator. A client holding only `WRITE` on a
 server's endpoint made the server write a byte into a device register page. The client was never
 granted that page. The server's `OPERATION_PUT` handler wrote at a client-chosen offset with no
@@ -20,7 +20,7 @@ four near misses. Each is in a demonstrator, or in a test that stays green while
 ## What I added and booted
 
 `system_tests/src/user/confinement_attack_tests.rs` holds three tests driven through the real
-dispatcher (`syscall::invoke`). All three are green on aarch64, riscv64 and x86_64, with zero frames
+dispatcher (`system_call::invoke`). All three are green on aarch64, riscv64 and x86_64, with zero frames
 leaked.
 
 - `a_write_only_rendezvous_holder_cannot_receive_reap_or_survey` drives `RECEIVE`, `RECEIVE_CAP`,
@@ -126,7 +126,7 @@ the arm in `swap_protocol`, not a change.
 `memory_region_cap` hands a child a `WRITE`-only untyped, with no `GRANT`. `SPLIT` honors that:
 `Cap::mint_child` copies the parent's rights, so the child gets no `GRANT` either. That is claim 3 as
 stated, and `split_never_widens_rights` proves it. But `MemoryRegion::RETYPE` needs only `WRITE`. It
-returns the new `PageFrame` with `Rights::ALL`, `GRANT` included (`memory_region_retype` in `kernel/src/syscall/memory_region.rs`).
+returns the new `PageFrame` with `Rights::ALL`, `GRANT` included (`memory_region_retype` in `kernel/src/system_call/memory_region.rs`).
 So a holder of a spend-only budget can retype a page and `SEND_CAP` it onward.
 `a_grant_less_budget_mints_a_grant_bearing_frame` asserts exactly this at boot on all three ISAs. It
 is not an escape, because the frame comes from the holder's own budget. Whether a spend-only budget

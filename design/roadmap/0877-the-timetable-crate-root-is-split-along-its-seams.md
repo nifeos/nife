@@ -107,7 +107,7 @@ with, and a module of that name here would read as a second one.
    and public ones would give each item a second path. The reason holds at equal cost.
 4. Every module name in the third table.
 
-No wire format or syscall changes under any answer here.
+No wire format or system call changes under any answer here.
 
 ## What moving the code breaks
 

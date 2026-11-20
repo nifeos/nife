@@ -96,7 +96,7 @@ provisional. The questions stay here as they were asked.
    fields become `pub(crate)` and the whole kernel can reach them. As submodules they stay
    `pub(super)`. That reason holds at equal cost, so this is not a recommendation about effort.
 2. Whether capability deletion belongs in `sched` at all. `kernel/src/revoke.rs` is its largest
-   caller after `syscall.rs` and a candidate home. It stays in `sched` here because it walks every
+   caller after `system_call.rs` and a candidate home. It stays in `sched` here because it walks every
    thread's capability table under the scheduler's lock.
 3. Whether region reaping belongs with thread control blocks or alone.
 4. Every module name in the second table.
@@ -172,7 +172,7 @@ each whole, so no path outside `sched` changed and no test body changed. Private
 Measured against `ddd38f0b0`. `script/icount` reads identically on both ISAs and `script/bench
 --check` passes on all three. `script/fastpath-footprint` moves at most 12 bytes on aarch64 and
 x86_64. On riscv64, `riscv_trap_dispatch` now inlines `preempt_if_needed` (146 to 360 bytes), so
-`syscall_entry` grew 11% while the executed code stayed the same. That baseline was re-recorded with
+`system_call_entry` grew 11% while the executed code stayed the same. That baseline was re-recorded with
 the reason. The 18 falsification records that patched `sched.rs` were regenerated at the lines' new
 homes, and the sweep shows each one still turns its test red.
 
@@ -180,7 +180,7 @@ homes, and the sweep shows each one still turns its test red.
 
 - **Decision.** Every module name is provisional and is calef's to rule, per
   `design/decisions/0271-the-scheduler-file-splits-into-submodules-of-sched.md`.
-- **Done.** The riscv64 `syscall_entry` growth is recorded in `bench/fastpath-riscv64.txt`.
+- **Done.** The riscv64 `system_call_entry` growth is recorded in `bench/fastpath-riscv64.txt`.
 - **Refused.** Rewriting the `sched.rs:NNNN` citations in `notes/` here. They cite line numbers that
   were stale before this split, since the file had grown from 3,166 lines. §277 (cite a heading or a
   symbol, never a line number) now holds them in its code ratchet, and its sweep repoints them.

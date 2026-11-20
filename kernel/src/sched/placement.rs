@@ -54,7 +54,7 @@ pub const RESCHED_SGI: u32 = 0;
 ///
 /// Context: the reschedule-SGI handler, in interrupt context with interrupts masked, which
 /// `with_runq` needs. Takes only this core's inbox lock (§11 (SMP)).
-// Out of line: the reschedule IPI is not the syscall path, and inlined into `riscv_trap_body` it
+// Out of line: the reschedule IPI is not the system call path, and inlined into `riscv_trap_body` it
 // grew the entry by 500 bytes (script/fastpath-footprint).
 #[inline(never)]
 pub fn drain_inbox() {
@@ -144,7 +144,7 @@ pub(super) fn pick_spawn_target() -> usize {
 ///
 /// Context: interrupt context (the reschedule-SGI handler), interrupts masked; takes the
 /// requester's inbox lock.
-// Out of line: the reschedule IPI is not the syscall path, and inlined into `riscv_trap_body` it
+// Out of line: the reschedule IPI is not the system call path, and inlined into `riscv_trap_body` it
 // grew the entry by 500 bytes (script/fastpath-footprint).
 #[inline(never)]
 pub fn serve_steal_request() {

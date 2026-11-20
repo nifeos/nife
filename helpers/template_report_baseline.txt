@@ -37,9 +37,9 @@ capability_witness_contract prose_acronyms 2
 compositor abbreviations 25
 compositor prose_acronyms 5
 compositor readme_acronyms 1
-confined_syscall_fuzzer_contract abbreviations 4
-confined_syscall_fuzzer_contract prose_acronyms 2
-confined_syscall_fuzzer_contract readme_acronyms 1
+confined_system_call_fuzzer_contract abbreviations 4
+confined_system_call_fuzzer_contract prose_acronyms 2
+confined_system_call_fuzzer_contract readme_acronyms 1
 coremark abbreviations 13
 coremark prose_acronyms 4
 coremark readme_acronyms 1

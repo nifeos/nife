@@ -21,7 +21,7 @@ operation:
 
 ```
 t0 = read PMCCNTR
-do_the_thing()        // one syscall, one IPC, one page map
+do_the_thing()        // one system call, one IPC, one page map
 t1 = read PMCCNTR
 cost = t1 - t0        // cycles, resolvable to nearly a single cycle
 ```
@@ -106,7 +106,7 @@ asserts on has crossed both hops. The second test checks that this machine's rat
 `counter_frequency_contract`'s plausibility band, the half its host tests cannot reach.
 
 `cycle_counter_tests` checks the cycle-counter grant of milestone 229. The grant goes through a
-`#[cfg(test)]` back door because no syscall method sets it. A method number is irreversible, and
+`#[cfg(test)]` back door because no system call method sets it. A method number is irreversible, and
 milestone 147 (a profiler that holds exactly the counters it was granted) may subsume this one.
 `sched`'s own test `a_running_thread_cannot_be_granted_the_cycle_counter` covers the rule that only
 an embryo may be granted. The program reports the `CycleMeaning` that

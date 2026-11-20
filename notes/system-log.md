@@ -4,7 +4,7 @@
 
 §242 (a system log) rules what the system log is. This note carries the design of the two crates
 that build it: `crates/system_log`, the service's logic, and `crates/system_log_contract`, the wire
-contracts it shares with the spawner, its readers, the kernel and the console. The syscalls are in
+contracts it shares with the spawner, its readers, the kernel and the console. The system calls are in
 `components/src/system_log.rs`, which wraps `system_log::Log`.
 
 ## The service, in four steps

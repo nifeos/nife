@@ -10,8 +10,8 @@ notes/clock.md). The machine knows what time it is, on both ISAs, and `SystemTim
 build settled that this block left open, and one place it went somewhere the block did not predict:
 
 - The three authorities are three different objects, and only one is a message. Reading is a
-  read-only mapping of the clock page (two loads and an add, no syscall, no server); setting is
-  the same page mapped writable; proposing is the endpoint. Nothing new in the syscall surface.
+  read-only mapping of the clock page (two loads and an add, no system call, no server); setting is
+  the same page mapped writable; proposing is the endpoint. Nothing new in the system call surface.
   The block imagined all three as capabilities without saying what kind; a process has one blocking
   wait point, so two message-borne authorities would have needed two servers.
 - **Discovery is by `compatible`, not by node name**, because the aarch64 board calls the node
@@ -164,7 +164,7 @@ things the build settled or found:
   client rather than of the crate, and the test counts requests to prove it.
 - **It is a one-shot synchronizer, not a continuously polling service,** because the timed-wait fork
   below is unsettled. A
-  poll interval is a yield-spin; adding a sleep syscall to get a real one would settle that fork by
+  poll interval is a yield-spin; adding a sleep system call to get a real one would settle that fork by
   accident. Three attempts a couple of milliseconds apart, one proposal, exit.
 
 The test server is a second role of the same binary holding `READ` on the endpoint the client holds
@@ -175,14 +175,14 @@ real server to point a gate at.
 
 ## The fork this exposes, which is bigger than the milestone
 
-There is no timed wait anywhere in the kernel. The syscall surface is `EXIT`, `YIELD`, `INVOKE`,
+There is no timed wait anywhere in the kernel. The system call surface is `EXIT`, `YIELD`, `INVOKE`,
 `CAP_DELETE`, and `sched.rs` twice calls out its own "no-timeout limitation". So `thread::sleep` is a
 yield-spin, which is the *correct* implementation given what exists (it does not monopolize a core),
 but it keeps a thread runnable for the whole sleep and costs scheduler work proportional to duration.
 
 Three candidate shapes, and this is a design fork to settle before building:
 
-- A new `SYS_SLEEP` syscall. Simplest, ambient, and not capability-shaped, which is a strike.
+- A new `SYS_SLEEP` system call. Simplest, ambient, and not capability-shaped, which is a strike.
 - A timer object with a `WAIT` method. Capability-shaped and consistent with the model; the most
   machinery.
 - A deadline on `Endpoint::RECV`/`CALL`. One primitive that fixes sleep, the RECV no-timeout
@@ -205,7 +205,7 @@ NTP), noting estimates for unbuilt work are guesses on a history-calibrated scal
   says is tracked separately. There is no timed wait anywhere in the kernel, so `thread::sleep` is a
   yield-spin and `Endpoint::RECV` has the no-timeout limitation `sched.rs` complains about twice.
 - **Milestone 106.** The NTP client is a one-shot synchroniser rather than a polling service,
-  deliberately, because a poll interval is a yield-spin and adding a sleep syscall to get a real one
+  deliberately, because a poll interval is a yield-spin and adding a sleep system call to get a real one
   would settle the fork above by accident.
 - **Milestone 47.** `date` was reachable from a test and not from the prompt, because
   `grant_plan::Prog` knew only four programs. Folded into the milestone 47 grammar lane, which owns

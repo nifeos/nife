@@ -305,7 +305,7 @@ fn threads_round_robin() {
 /// **THE TEST**: a thread that never yields is preempted anyway.
 ///
 /// DECISIONS §5 (preemptive threads with real stacks): "Under cooperative scheduling, one bad user
-/// program hangs the machine permanently." The spinner is a tight loop with no yield, no syscall
+/// program hangs the machine permanently." The spinner is a tight loop with no yield, no system call
 /// and no call, nothing a cooperative scheduler could hook; only a timer interrupt can take its
 /// core back. If this passes, the kernel can host untrusted code. See notes/scheduler/switch.md.
 #[test_case]

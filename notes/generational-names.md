@@ -51,7 +51,7 @@ down.
 - Two tables with the same entry type share a name type. The tag separates tables only as far as
   their entry types differ, so a caller with two tables of the same `T` gives each a one-field
   wrapper as its entry type.
-- `to_bits` and `from_bits` cross a boundary that carries a plain word: a syscall register, an
+- `to_bits` and `from_bits` cross a boundary that carries a plain word: a system call register, an
   atomic, a field of a packed record. `from_bits` is total and infallible, because the table already
   refuses any name it never minted. `a_name_the_table_never_minted_resolves_to_nothing` quantifies
   over `from_bits` of every u64. The type keeps an honest caller from mixing tables up; it is not
@@ -88,7 +88,7 @@ audit may pass over it; §71 says what would promote it. See notes/untracked-wor
 - **The boot thread is tid 0 by construction**: a fresh table's first insert mints slot 0,
   generation 0, which packs to 0. That is a property, not a hardcoded key.
 - **`u64::MAX` can never be minted**: it is `EntryName::NEVER_MINTED`, above. The kernel's
-  `cpu::NO_TID` is that word, the "no thread" sentinel, and it is also the `UNNAMED` placeholder a
+  `cpu::NO_TID` is that word, the "no thread" sentinel, and it is the `UNNAMED` placeholder a
   `Thread` carries between construction and insertion.
 - Generations are 32-bit and saturate. A slot whose generation reaches `u32::MAX` retires: insert
   passes over it, so no name carries that generation and a removed name never comes back. The
@@ -119,7 +119,7 @@ How fast a loop can refill one slot, from the fastest create-and-destroy loops m
 |---|---|---|---|
 | threads, 1,024 | `spawn_reap`, HVF on Apple Silicon, release, one hart | ~1.3 us | ~93 minutes |
 | threads, 1,024 | `spawn_reap`, radon (JH7110, release kernel) | 19.8 us (79.3 ticks of the 4 MHz timer) | ~23.6 hours |
-| memory regions, 1,024 | `SPLIT` then `DESTROY` from EL0 | not measured; two traps cost at least 54 ns at the 27 ns null syscall | at least ~3.9 minutes |
+| memory regions, 1,024 | `SPLIT` then `DESTROY` from EL0 | not measured; two traps cost at least 54 ns at the 27 ns null system call | at least ~3.9 minutes |
 
 The table above times only the thread and region tables, and none of the others. The address-space
 registry (288) and the virtio table (12) sit behind `spawn_el0` (~4.4 us) and a driver's death.
@@ -244,7 +244,7 @@ would move when entries in the gap are removed. A slot index does not: if the en
 died, `k` is empty rather than somebody else's.
 
 `rendezvous::SURVEY` (milestone 126 (the `procps` package, now `process-tools`)) reports one
-supervised thread per syscall and hands the next slot back to userspace as a cursor. The set can
+supervised thread per system call and hands the next slot back to userspace as a cursor. The set can
 change between calls, so a resumed sweep is a sequence of snapshots rather than one. It never
 reports an entry twice and never resolves a cursor to the wrong thread, which is all a `readdir`
 shape ever promised.

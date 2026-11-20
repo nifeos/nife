@@ -9,13 +9,13 @@
 //! Name: provisional (milestone 168's lane, 2026-09-19); the module and the constant are both
 //! unratified. `child_stub` is what `os_primitives_benchmarker` already called it in prose.
 
-/// The child's whole program, hand-assembled: `SEND(slot 0, rendezvous::SEND, 1)` then `SYSCALL_EXIT`.
+/// The child's whole program, hand-assembled: `SEND(slot 0, rendezvous::SEND, 1)` then `SYSTEM_CALL_EXIT`.
 /// Its slot 0 is the `CHILD_DONE` endpoint the spawner inserts. Nine instructions: `SEND` the done
 /// word (1) on the slot-0 endpoint, then `EXIT`. Every child runs this identical code, which is why
 /// the spawner writes it into one shared frame and aliases that frame into each child. Hand-assembled
 /// machine code, arch-gated: aarch64 `movz`/`svc`, RISC-V `li`/`ecall`.
 ///
-/// aarch64: x0=slot 0, x1=`SEND`, x2=1, `x8=SYSCALL_INVOKE`, svc; then `x8=SYSCALL_EXIT`, svc.
+/// aarch64: x0=slot 0, x1=`SEND`, x2=1, `x8=SYSTEM_CALL_INVOKE`, svc; then `x8=SYSTEM_CALL_EXIT`, svc.
 #[cfg(target_arch = "aarch64")]
 pub const SEND_THEN_EXIT: [u32; 9] = [
     0xD280_0000,
@@ -23,30 +23,30 @@ pub const SEND_THEN_EXIT: [u32; 9] = [
     0xD280_0000 | (1u32 << 5) | 2,                       // movz x2, #1  (the done word)
     0xD280_0003,
     0xD280_0004,
-    0xD280_0000 | ((abi::SYSCALL_INVOKE as u32) << 5) | 8,
+    0xD280_0000 | ((abi::SYSTEM_CALL_INVOKE as u32) << 5) | 8,
     0xD400_0001,
-    0xD280_0008 | ((abi::SYSCALL_EXIT as u32) << 5), // movz x8, #SYSCALL_EXIT
+    0xD280_0008 | ((abi::SYSTEM_CALL_EXIT as u32) << 5), // movz x8, #SYSTEM_CALL_EXIT
     0xD400_0001,
 ];
 
-/// RISC-V: a0=slot 0, a1=`SEND`, a2=1, a3=a4=0, a7=`SYSCALL_INVOKE`, `ecall`; then a7=`SYSCALL_EXIT`,
+/// RISC-V: a0=slot 0, a1=`SEND`, a2=1, a3=a4=0, a7=`SYSTEM_CALL_INVOKE`, `ecall`; then a7=`SYSTEM_CALL_EXIT`,
 /// `ecall`.
 /// Each `li aN, imm` is `addi aN, x0, imm` = `(imm << 20) | (reg << 7) | 0x13`; `ecall` is 0x73.
 #[cfg(target_arch = "riscv64")]
 pub const SEND_THEN_EXIT: [u32; 9] = [
-    0x0000_0513,                                          // li a0, 0            (slot 0)
-    0x0000_0593 | ((abi::rendezvous::SEND as u32) << 20), // li a1, SEND         (method)
-    0x0010_0613,                                          // li a2, 1            (the done word)
-    0x0000_0693,                                          // li a3, 0
-    0x0000_0713,                                          // li a4, 0
-    0x0000_0893 | ((abi::SYSCALL_INVOKE as u32) << 20),   // li a7, SYSCALL_INVOKE
-    0x0000_0073,                                          // ecall               (SEND)
-    0x0000_0893 | ((abi::SYSCALL_EXIT as u32) << 20),     // li a7, SYSCALL_EXIT
-    0x0000_0073,                                          // ecall               (EXIT)
+    0x0000_0513,                                            // li a0, 0            (slot 0)
+    0x0000_0593 | ((abi::rendezvous::SEND as u32) << 20),   // li a1, SEND         (method)
+    0x0010_0613,                                            // li a2, 1            (the done word)
+    0x0000_0693,                                            // li a3, 0
+    0x0000_0713,                                            // li a4, 0
+    0x0000_0893 | ((abi::SYSTEM_CALL_INVOKE as u32) << 20), // li a7, SYSTEM_CALL_INVOKE
+    0x0000_0073,                                            // ecall               (SEND)
+    0x0000_0893 | ((abi::SYSTEM_CALL_EXIT as u32) << 20),   // li a7, SYSTEM_CALL_EXIT
+    0x0000_0073,                                            // ecall               (EXIT)
 ];
 
-/// `x86_64`: rdi=slot 0, rsi=`SEND`, rdx=1, r10=0, r8=0, rax=`SYSCALL_INVOKE`, syscall; then rax=`SYSCALL_EXIT`,
-/// rdi=0, syscall (DECISIONS §124).
+/// `x86_64`: rdi=slot 0, rsi=`SEND`, rdx=1, r10=0, r8=0, rax=`SYSTEM_CALL_INVOKE`, system call; then rax=`SYSTEM_CALL_EXIT`,
+/// rdi=0, system call (DECISIONS §124 (the x86_64 system call ABI)).
 ///
 /// Bytes rather than words, because x86 instructions are not a fixed width. Each immediate uses
 /// `mov r32, imm32`, which zeroes the upper half and keeps a small constant to five bytes; `r10`
@@ -54,8 +54,8 @@ pub const SEND_THEN_EXIT: [u32; 9] = [
 #[cfg(target_arch = "x86_64")]
 pub const SEND_THEN_EXIT: [u8; 46] = {
     const SEND_METHOD: u32 = abi::rendezvous::SEND as u32;
-    const INVOKE_NR: u32 = abi::SYSCALL_INVOKE as u32;
-    const EXIT_NR: u32 = abi::SYSCALL_EXIT as u32;
+    const INVOKE_NR: u32 = abi::SYSTEM_CALL_INVOKE as u32;
+    const EXIT_NR: u32 = abi::SYSTEM_CALL_EXIT as u32;
     /// The little-endian bytes of a 32-bit immediate, so each row below reads as one instruction
     /// rather than as four hand-computed constants.
     const fn imm(v: u32) -> [u8; 4] {
@@ -70,11 +70,11 @@ pub const SEND_THEN_EXIT: [u8; 46] = {
         0xBA, 0x01, 0x00, 0x00, 0x00, // mov edx, 1          (the done word)
         0x41, 0xBA, 0x00, 0x00, 0x00, 0x00, // mov r10d, 0
         0x41, 0xB8, 0x00, 0x00, 0x00, 0x00, // mov r8d, 0
-        0xB8, invoke[0], invoke[1], invoke[2], invoke[3], // mov eax, SYSCALL_INVOKE
-        0x0F, 0x05, // syscall             (SEND)
-        0xB8, exit[0], exit[1], exit[2], exit[3], // mov eax, SYSCALL_EXIT
+        0xB8, invoke[0], invoke[1], invoke[2], invoke[3], // mov eax, SYSTEM_CALL_INVOKE
+        0x0F, 0x05, // system call             (SEND)
+        0xB8, exit[0], exit[1], exit[2], exit[3], // mov eax, SYSTEM_CALL_EXIT
         0xBF, 0x00, 0x00, 0x00, 0x00, // mov edi, 0          (the exit status)
-        0x0F, 0x05, // syscall             (EXIT)
+        0x0F, 0x05, // system call             (EXIT)
     ]
 };
 

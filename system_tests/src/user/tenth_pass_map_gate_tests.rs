@@ -29,7 +29,7 @@ use crate::capability_object::{
     page_frame_run_len,
 };
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// `invoke` through the real dispatcher, the way a program's `svc`/`ecall` reaches it.
 fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error> {
@@ -346,7 +346,7 @@ fn wait_for(mut cond: impl FnMut() -> bool) -> bool {
     cond()
 }
 
-/// A syscall answer as one word for an atomic: 0 for success, else the error's negative value.
+/// A system call answer as one word for an atomic: 0 for success, else the error's negative value.
 fn encode(answer: Result<i64, Error>) -> u64 {
     match answer {
         Ok(_) => 0,

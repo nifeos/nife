@@ -347,7 +347,7 @@ fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
 ///
 /// # Examples
 ///
-/// A driver's `_start`. No syscall translates an address, so the DMA page's physical address
+/// A driver's `_start`. No system call translates an address, so the DMA page's physical address
 /// arrives as an argument.
 ///
 /// ```no_run

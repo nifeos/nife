@@ -166,5 +166,5 @@ architecture-specific code, so AGENTS.md rule 1 holds under it unchanged.
 
 ## What it does not decide
 
-Module names, which are calef's naming pass. No public path, wire format, syscall or lock changes,
+Module names, which are calef's naming pass. No public path, wire format, system call or lock changes,
 and no function changes behavior.

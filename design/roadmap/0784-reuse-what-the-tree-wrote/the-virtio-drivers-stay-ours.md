@@ -53,7 +53,7 @@ architecture's own counter, so compare a row only along its own line. The row de
 | x86_64 `keyboard_up` | 544,406 | 657,046 | +20.7% |
 | x86_64 `keyboard_event`, per press | 32,978 | 36,616 | +11.0% |
 
-A key press cost 11% more on every architecture with the same syscalls, the difference being the
+A key press cost 11% more on every architecture with the same system calls, the difference being the
 crate's free list, `Result` plumbing, bounds checks and ring atomics in an unoptimized build.
 Bring-up cost 21% to 56% more, part of it a bigger image to load; the split was not measured. Both
 columns ran the trial's own kernel and wiring; the shipping driver's figures are in the keyboard

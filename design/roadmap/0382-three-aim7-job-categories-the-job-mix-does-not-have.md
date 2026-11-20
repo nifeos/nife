@@ -23,7 +23,7 @@ It carried `Gate: NONE` for the design, with the *result* it improves still behi
 jobs themselves are ordinary userspace work and develop under QEMU.
 
 In brief. `crates/job_mix` keeps AIM7's four methodological properties and stands in for its
-categories with five jobs: a compute grind, a working-set walk, a null syscall, a yield burst and an
+categories with five jobs: a compute grind, a working-set walk, a null system call, a yield burst and an
 IPC round trip. **Three AIM7 categories have no representative**, each refused for a stated reason
 rather than overlooked:
 
@@ -38,7 +38,7 @@ rather than overlooked:
 DECISIONS §96's question is how much of this kernel's time goes into process-kernel overhead under
 multi-tasking load, and the cost lives in kernel stacks left behind by threads that block inside
 the kernel. Two of the three missing categories are exactly that: a filesystem call and a spawn
-both block deep in a kernel path, where a null syscall and a yield do not. So the missing categories
+both block deep in a kernel path, where a null system call and a yield do not. So the missing categories
 are not a fidelity nicety; they are plausibly where the effect is largest, and a flat result from the
 present mix is weaker evidence than a flat result from a mix that had them.
 
@@ -75,14 +75,14 @@ stake is how much weight a flat curve can carry.
 ## Index row
 
 `crates/job_mix` keeps AIM7's four methodological properties and stands in for its categories with
-five jobs: a compute grind, a working-set walk, a null syscall, a yield burst and an IPC round trip.
+five jobs: a compute grind, a working-set walk, a null system call, a yield burst and an IPC round trip.
 Three AIM7 categories have no representative, each refused for a stated reason rather than
 overlooked. A disk-file job would make the instrument's availability depend on the runner's storage.
 A process-creation job would measure the memory-region allocator rather than the scheduler at 32
 concurrent tasks. A page-mapping job needs a per-task address-space capability the spawn path
 does not hand out. Two of the three are exactly where DECISIONS §96 (process kernel or event
 kernel, and how to decide it)'s effect should be largest. A filesystem call and a spawn both block
-deep in a kernel path where a null syscall and a yield do not. So a flat curve from the present mix
+deep in a kernel path where a null system call and a yield do not. So a flat curve from the present mix
 is weaker evidence than a flat curve from a mix that had them. The map job is the cheapest and goes first; the spawn job wants `spawn_el0`'s reclaim
 done per task; the file job wants a second mix rather than an addition, so a run without a disk stays
 comparable.

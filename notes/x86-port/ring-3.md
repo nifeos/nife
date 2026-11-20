@@ -3,7 +3,7 @@
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 *An appendix to [`notes/x86-port.md`](../x86-port.md), which is the page to read. This file holds
-the address spaces, `swapgs`, the `syscall` pair, and the first ring-3 proof. It exists to verify or
+the address spaces, `swapgs`, the `system_call` pair, and the first ring-3 proof. It exists to verify or
 challenge the main page. A reader who only needs to build, boot or test the x86_64 port should not
 have to open it.*
 
@@ -59,7 +59,7 @@ precisely because the earlier bug cost an afternoon and presented as something e
 
 Two windows are delicate. On the way out, between the exit `swapgs` and the `iretq`, the CPU is in
 ring 0 holding the user's GS base, so an interrupt taken there would see CPL 0, decline to swap, and
-dereference the user's value. On the way in, `x86_syscall_entry` runs its `swapgs` and two
+dereference the user's value. On the way in, `x86_system_call_entry` runs its `swapgs` and two
 instructions on the user's `rsp` before it loads the kernel's. `RFLAGS.IF` is clear at every such
 site: an interrupt gate cleared it, `IA32_FMASK` clears it for `syscall`, and the two ring-3 entry
 points `cli` first. That closes both windows for everything except an NMI, a machine check, or a
@@ -74,7 +74,7 @@ its `iretq`.
 `trap.s`'s header and `kernel/src/arch/x86_64/ist.rs` have the details, including why an NMI never
 nests on its stack. NMIs are common here: every TLB shootdown sends one to every other online core.
 
-### `syscall` shares almost nothing with the IDT
+### `system_call` shares almost nothing with the IDT
 
 Four MSRs are its entire configuration and none has a useful default:
 
@@ -91,7 +91,7 @@ and the flags it clears are already in place. Three `const` assertions in `excep
 `SYSRET_SELECTOR_BASE` to the selectors in `segments.rs`, so changing one file without the other
 stops the build rather than landing a program on the kernel's data segment.
 
-The entry path is where the difference from a trap gate shows: `syscall` does not switch stacks
+The entry path is where the difference from a trap gate shows: `system_call` does not switch stacks
 and pushes nothing. `rsp` still names the user's stack and every register still holds a user value,
 so the first three instructions are `swapgs`, park the user's `rsp` in a static, and load the
 kernel's. `segments::set_kernel_stack` writes `TSS.RSP0` and that static together, so the two doors
@@ -102,8 +102,8 @@ The return is an `iretq`, not a `sysretq`, and that is a decision. `sysret` retu
 `rcx` holds without checking it is canonical, and a non-canonical `rcx` faults *in ring 0 on the
 user's stack*: the shape of CVE-2012-0217. Using it safely needs an explicit canonicality check plus
 an `iretq` fallback, which is Linux's "opportunistic sysret" dance. Sharing one restore path costs
-some tens of cycles per syscall and buys one `swapgs` rule with one place to get it wrong. It is in
-the handler's `BUGS` as worth revisiting with a benchmark, once there is a syscall-heavy
+some tens of cycles per system call and buys one `swapgs` rule with one place to get it wrong. It is in
+the handler's `BUGS` as worth revisiting with a benchmark, once there is a system-call-heavy
 workload here to measure.
 
 ### What it was proved with, and the honest size of the claim
@@ -114,8 +114,8 @@ is the shape both other ports shipped on their first day and then deleted, and r
 deleted it here for the same reason; the transcript below is what it printed while it existed.
 
 ```
-  ring 3      : a program ran at cpl 3 (cs 0x0023, ss 0x001b) and made 2 syscalls
-                the portable dispatcher answered BadSyscall (-6) to an unknown number
+  ring 3      : a program ran at cpl 3 (cs 0x0023, ss 0x001b) and made 2 system calls
+                the portable dispatcher answered BadSystemCall (-6) to an unknown number
                 reading the kernel's .text at 0xffffffff80109000 from ring 3: Permission(Read)
 ```
 
@@ -124,8 +124,8 @@ Three facts, and they get stronger down the list.
 `cs 0x0023` is the hardware's own answer to what ring this is, because CPL is literally
 `CS[1:0]`. A program that had somehow stayed in ring 0 would have reported `0x08`.
 
-`BadSyscall (-6)` came out of the *portable* `crate::syscall::dispatch`, through
-`TrapFrame::{syscall_nr, arg, set_arg}`, and reached the program in `rdi`. Asking for a refusal is
+`BadSystemCall (-6)` came out of the *portable* `crate::system_call::dispatch`, through
+`TrapFrame::{system_call_nr, arg, set_arg}`, and reached the program in `rdi`. Asking for a refusal is
 deliberate rather than lazy. An unimplemented number is the one thing that dispatcher can answer on a
 kernel with no scheduler, so it is the only round trip available through the real thing rather than a
 stand-in. Getting the answer back proves the entry, the ABI accessors and the return all work. It

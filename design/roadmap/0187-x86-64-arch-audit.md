@@ -108,7 +108,7 @@ The bounding facts to re-establish here, which is the first hour's work and not 
   "a path that enters the save/restore sequence with interrupts live", and what `IA32_FMASK` clears
   is exactly the question that archetype asks. Establish it before reading anything else.
 - `swapgs` is the x86_64 archetype of the class, and neither other ISA has one. Three
-  instructions, in `isr_common`, `isr_restore` and `x86_syscall_entry` in `trap.s`. The window is single-copy by construction: between the
+  instructions, in `isr_common`, `isr_restore` and `x86_system_call_entry` in `trap.s`. The window is single-copy by construction: between the
   exit `swapgs` and the `iretq` the CPU is in ring 0 holding the *user's* GS base, and the comment
   above `serve_shootdown_nmi` in `mmu/shootdown.rs` already documents that window. aarch64's per-CPU pointer is `TPIDR_EL1`, a
   system register no frame carries; riscv64's is `tp`, whose migration hazard the original audit

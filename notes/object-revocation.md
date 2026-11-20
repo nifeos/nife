@@ -150,7 +150,7 @@ Two things kept the hot path intact. First, `rendezvous_of` became fallible: a s
 `Rendezvous` capability (its rendezvous reclaimed out from under a holder) used to reach a name that always
 resolved, so a miss panicked; now it returns `None` and the caller aborts cleanly. Second, the abort
 is routed through a per-thread `ipc_aborted` flag rather than changing `ipc_receive`/`ipc_send`'s
-return types (66 callers). The IPC primitive sets the flag inside its existing lock and the syscall
+return types (66 callers). The IPC primitive sets the flag inside its existing lock and the system call
 layer reads-and-clears it, so no extra lock lands on the fast path and the IPC benchmark does not move.
 Kernel-side IPC callers never set the flag (their rendezvouses are never revoked), so they are untouched.
 
@@ -171,7 +171,7 @@ witness that memory came back rather than leaked:
 
 ## The surface, and what remains
 
-New EL0 methods on the `MemoryRegion` object (the syscall boundary stays the three calls; these are methods
+New EL0 methods on the `MemoryRegion` object (the system call boundary stays the three calls; these are methods
 under `invoke`): `SPLIT` (subdivide) and `DESTROY` (reclaim). See `crates/abi` for the contract and
 `design/decisions/` for the record.
 

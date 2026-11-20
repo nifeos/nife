@@ -21,7 +21,7 @@ files, not 17 across 9, because the type name was the smallest part of the surfa
 
 - a whole `abi::aspace` -> `abi::address_space` ABI module. This is
   `MAP_INTO`/`MAP_RO`/`MAP_RW`/`MAP_CODE`/`LIST`, the method-number namespace every user program and
-  `kernel/src/syscall.rs`'s dispatch use;
+  `kernel/src/system_call.rs`'s dispatch use;
 - `objtype::ASPACE` -> `objtype::ADDRESS_SPACE`;
 - the `Object::Aspace` capability variant -> `Object::AddressSpace`;
 - a family of lowercase kernel functions: `aspace_cap` -> `address_space_cap`, `user_aspace_create`

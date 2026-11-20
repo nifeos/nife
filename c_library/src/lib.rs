@@ -5,7 +5,7 @@
 //! relibc's code is seeded once into `vendor/relibc/` and owned by nife from then on; it reaches
 //! the operating system only through its `Pal` trait. nife's code is here: the platform layer
 //! (`platform/nife.rs`), `malloc` (`platform/allocator.rs`) and a C program's start (`start.rs`).
-//! No C translation unit and nothing here makes a syscall (§31 (the foreign-language seam) rule 1
+//! No C translation unit and nothing here makes a system call (§31 (the foreign-language seam) rule 1
 //! as amended by §265). The crate is `no_std` so the seeded files keep relibc's `core::` and
 //! `alloc::` paths, and links `std` for the platform layer. `c_library/README.md` is the guide.
 

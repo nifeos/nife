@@ -48,12 +48,12 @@ defaulted in `Pal` itself, plus `PalSignal` (12), `PalSocket` (15), `PalEpoll` (
 functions never learn which OS they are on.
 
 The split is good and it leaks. 149 `cfg(target_os)` lines sit outside `src/platform/`, across about
-40 files, and 15 files outside the platform layer name `redox_rt` or the Redox syscall crate
+40 files, and 15 files outside the platform layer name `redox_rt` or the Redox system call crate
 directly (`start.rs`, `ld_so/tcb.rs`, `pthread/mod.rs`, `header/signal/redox.rs` and others). A
 third platform has to add a branch at each.
 
 The two implementations' sizes are the measurement that matters most. Linux needs 1,252 lines,
-because Linux already is POSIX and the layer is a syscall table. Redox needs 6,682 plus redox-rt's
+because Linux already is POSIX and the layer is a system call table. Redox needs 6,682 plus redox-rt's
 7,485, about 14,000. Redox is a microkernel that is not POSIX, and relibc emulates the gap in
 userspace: fork by copying an address space through the process manager, signals delivered by a
 userspace trampoline, a current directory held as a file descriptor. **nife is further from POSIX
@@ -65,7 +65,7 @@ Each row is a place nife's constraints differ from Redox's, and which way it arg
 
 | Constraint | Redox | nife | relibc's shape | Argues for |
 |---|---|---|---|---|
-| Who makes syscalls | relibc, from Rust, via `redox_syscall` | the libc's Rust platform layer only, per §31 (the foreign-language seam) as amended by §265 | all OS calls already go through `Pal` in Rust | adapting: this is relibc's design and the reason calef chose it |
+| Who makes system calls | relibc, from Rust, via `redox_syscall` | the libc's Rust platform layer only, per §31 (the foreign-language seam) as amended by §265 | all OS calls already go through `Pal` in Rust | adapting: this is relibc's design and the reason calef chose it |
 | Path namespace | an ambient per-process namespace of schemes; absolute paths resolve through it (`platform/redox/path.rs`, 474 lines) | no ambient root; `/` is the one directory granted on slot 4, `..` above it refused (notes/std.md) | path logic is inside the Redox layer | adapting: a nife `openat` resolves under the grant, as `std::fs` already does |
 | File descriptors | kernel file descriptors to scheme handles | none in the kernel; a file is a server-side handle over an endpoint plus a shared page | `int` descriptors everywhere above `Pal` | adapting: the nife layer keeps a userspace table of `int` to (endpoint, handle, page) |
 | fork | emulated in userspace (`redox_rt::proc::fork_impl`) | declined permanently (the fork ruling, PR #1856) | `Pal::fork` is required, and `popen`, `system` and `forkpty` call `fork` from generic code | owning: the generic layer assumes fork, and those three have to be rewritten on `posix_spawn` |
@@ -103,7 +103,7 @@ anyway.
 **The valuable part is large, OS-neutral and finished.** About 38,000 lines of headers, of which
 most (`stdio`, `string`, `stdlib`, `ctype`, `time` formatting, `math` glue, `inttypes`, `locale`)
 call nothing but `Pal`. That is the part musl or newlib would also have given us, and relibc gives
-it in Rust, behind a trait, which is what lets the C make no syscalls.
+it in Rust, behind a trait, which is what lets the C make no system_calls.
 
 ## Recommendation: own it, with relibc's architecture, seeded from relibc's code
 

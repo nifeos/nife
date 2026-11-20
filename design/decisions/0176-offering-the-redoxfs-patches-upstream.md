@@ -19,7 +19,7 @@ Two questions, and the second is the one nobody has asked:
 ## Why this is calef's rather than a lane's
 
 A merge request is a fact that leaves the machine. AGENTS.md puts that in the irreversible
-column with names, dependencies and the syscall surface, and gives the reason: *"Nobody can
+column with names, dependencies and the system call surface, and gives the reason: *"Nobody can
 un-publish a decision."* [§79](0079-password-equivalent-material.md) is the worked precedent, where an
 hour of argument was worth spending because the decision *"cannot be unmade by deleting the code"*.
 

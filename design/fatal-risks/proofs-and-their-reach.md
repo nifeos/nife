@@ -103,7 +103,7 @@ assertion asked nothing, and nothing in this tree currently distinguishes those 
 ### And the amber moved the same day
 
 Milestone 193 (put `kernel/src` within reach of the prover) was minted from this finding and built
-hours later. Two properties proved over `kernel/src/syscall.rs`, with nothing moved into a crate
+hours later. Two properties proved over `kernel/src/system_call.rs`, with nothing moved into a crate
 first. Both were falsified before being believed, by re-introducing the real wrapping-multiply
 defect of milestone 142 (a text display good enough that people use it instead of a GUI) and
 watching them turn red. That is the counterfactual this study said the tree did not have, and it now

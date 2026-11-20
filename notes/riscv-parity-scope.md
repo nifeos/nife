@@ -1,7 +1,7 @@
 # Scoping RISC-V / aarch64 feature parity
 
 The RISC-V port proved the capability core on a second ISA: boot, MMU (Sv39), traps, the SBI
-timer, the scheduler, preemption, U-mode programs and syscalls, capability invocation, IPC,
+timer, the scheduler, preemption, U-mode programs and system calls, capability invocation, IPC,
 userspace-built processes, and device interrupts serviced by an unprivileged userspace driver. Rule
 #1 held: a new ISA was a new `arch/` directory, not a diff across the kernel.
 
@@ -130,7 +130,7 @@ to `arch::timer::now`/`frequency` (rdtime on riscv), the boot reaches `bench::ru
 bench`. `initial-ramdisk-riscv` packs `os_primitives_benchmarker` + `coremark`. Two fixes fell out
 of `spawn_el0` (the fast
 userspace spawn+reap loop): os_primitives_benchmarker's 9-instruction `CHILD_STUB` was aarch64
-machine code (added the riscv `li`/`ecall` version). And the `MAP_CODE` syscall never synced the
+machine code (added the riscv `li`/`ecall` version). And the `MAP_CODE` system call never synced the
 icache on the userspace
 map-executable path (a correctness fix for both arches, latent until a spawn loop stressed it).
 
@@ -159,7 +159,7 @@ flushed the gap out within minutes of being written.
 
 The fix mirrors aarch64's `user_fault`: a U-mode breakpoint or fault increments `USER_FAULTS`,
 prints the legible kill line, and `sched::exit()`s the thread from the trap handler (the same
-context the blocking-syscall path already schedules away from). The S-mode `ebreak` self-test
+context the blocking-system-call path already schedules away from). The S-mode `ebreak` self-test
 keeps its step-over. Proven by `a_faulting_user_thread_is_killed_and_the_kernel_survives` (spawn
 the blk binary at a bogus role: panic, `ebreak`, killed, reaped) and by the kill-mid-write pair.
 

@@ -28,7 +28,7 @@
 //! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s
 //! `CYCLE_COUNTER_CHILD` role. Refused keeping `_child`: nothing builds this program as a child. The
 //! kernel's own test starts it directly, because milestone 229 shipped the grant mechanism without a
-//! syscall method to set it and there is therefore no userspace route to a granted thread; `_child`
+//! system call method to set it and there is therefore no userspace route to a granted thread; `_child`
 //! named a relationship that does not exist.
 
 #![no_std]

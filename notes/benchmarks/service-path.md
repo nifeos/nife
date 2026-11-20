@@ -9,7 +9,7 @@ Name: ratified 2026-09-24 (calef); [the naming record](README.md) holds it.*
 
 The microkernel bet is that filesystems, network stacks and drivers belong in confined userspace
 processes, not the kernel. The skeptic's fair question is the price. A request that a monolith
-serves with one syscall now crosses into another process, maybe through a third. Two benches answer
+serves with one system call now crosses into another process, maybe through a third. Two benches answer
 it. The two servers this project runs sit on opposite sides of a measurement line, so they are
 measured differently.
 
@@ -130,9 +130,9 @@ exception (notes/exceptions.md). The fix is one instruction at the top of the re
 interrupts. It lands on every return from an exception, the hottest path either instrument measures.
 
 The movement is well under 1%, and both baselines were re-saved in the commit that caused it, per the
-milestone-21 discipline. aarch64 `null_syscall` went 457503 -> 458753 ticks over 20000 iterations
+milestone-21 discipline. aarch64 `null_system_call` went 457503 -> 458753 ticks over 20000 iterations
 (+0.3%), `ipc_rtt_el0` +0.2%, `ctx_switch` +0.1%. RISC-V shows the same order, mixed in sign
-(`null_syscall` +0.3%, `ipc_rtt` -2.2%). That is the build-to-build icount drift
+(`null_system_call` +0.3%, `ipc_rtt` -2.2%). That is the build-to-build icount drift
 [the icount drift appendix](icount-drift-and-provenance.md) documents, not anything the change did.
 
 This is not a regression traded for correctness. One masked-interrupt instruction per exception

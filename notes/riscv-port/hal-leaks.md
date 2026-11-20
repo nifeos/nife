@@ -153,7 +153,7 @@ The port is worth doing precisely because it finds where the abstraction leaked.
    it legible is still owed to `user_pc` no longer returning 0 here, which is the one thing this
    section can claim.
 
-A related, smaller ABI leak the traps step resolves: `syscall.rs` reads the syscall number from
+A related, smaller ABI leak the traps step resolves: `system_call.rs` reads the system call number from
 `frame.x[8]` and args from `frame.x[0..]`, the aarch64 `svc`+`x8` convention. RISC-V's `ecall` ABI
 puts the number in `a7` and args in `a0`..`a5`; the RISC-V `TrapFrame` compiles today but the index
 convention has to be reconciled when the trap dispatcher is real.

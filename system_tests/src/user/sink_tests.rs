@@ -333,7 +333,7 @@ fn a_program_cannot_tell_what_its_output_slot_holds() {
 /// (§16 (object revocation)) classifies `Gone` from a blocked `SEND`, as in `yes | head`. An empty
 /// slot classifies `NoSink` and the program keeps running, which is what makes `Gone` mean
 /// anything: a writer that ended on both would kill every program never given a console. A writer
-/// in a syscall on a dead capability needs no `SIGPIPE`. See notes/sink-protocol.md.
+/// in a system call on a dead capability needs no `SIGPIPE`. See notes/sink-protocol.md.
 #[test_case]
 fn a_destroyed_sink_ends_the_writer_and_an_absent_one_does_not() {
     let image = program("sink_transcript_writer")

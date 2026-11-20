@@ -52,7 +52,7 @@ tree.
    the observed `0x400000004`. Slot 6 held the worker child (gen 0), the second spinner (gen 1),
    then the byte receiver at gen 2, the observed `0x200000006`. The "init" row was the driver
    wearing init's reaped slot.
-5. The syscall count. The worker ELF has one loadable page (118 bytes, one `PT_LOAD`). So the whole
+5. The system call count. The worker ELF has one loadable page (118 bytes, one `PT_LOAD`). So the whole
    choreography is exactly 20 ecalls. Outlaw makes 3 (yield, yield, exit). The builder makes 14: 1
    aspace retype, 4 for its one page, 3 for the stack, 5 for the TCB and 1 exit. The worker makes
    2 (send, exit). The driver makes 1, the WAIT it parks in. A count *frozen at 20* is not a build

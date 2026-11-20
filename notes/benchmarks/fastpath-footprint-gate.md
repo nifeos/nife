@@ -30,10 +30,10 @@ the gate exists.
   [the wrong-shape correction](#the-gate-measured-the-wrong-shape-and-the-aarch64-entry-figure-counted-a-table-it-never-fetched).
 - `ipc_fastpath`: derived, the worse of those two, which is what one round trip costs. It keeps its
   old name because a dozen places in the tree cite it. It is not gated on its own; both shapes are.
-- `syscall_entry`: the trap vector plus the exception dispatcher plus `syscall::dispatch`, summed
-  flat with no closure. A syscall traverses one path through a decoder. Closing over `dispatch`
-  would pull in every object and method in the ABI and measure the syscall surface rather than this
-  path. Its own bytes are on every syscall, so they count; its other arms are not, so they do not.
+- `system_call_entry`: the trap vector plus the exception dispatcher plus `system_call::dispatch`, summed
+  flat with no closure. A system call traverses one path through a decoder. Closing over `dispatch`
+  would pull in every object and method in the ABI and measure the system call surface rather than this
+  path. Its own bytes are on every system call, so they count; its other arms are not, so they do not.
 
 The script gates it at 5% growth against `bench/fastpath-<arch>.txt`. That is tighter than the
 icount tripwire's 10% because these numbers are static: icount drifts when the compiler remakes
@@ -58,7 +58,7 @@ ceiling) decides and nothing yet enforces. riscv64, on `nightly-2026-09-20`:
     ipc_send_receive    4734 B   1.16x target  14.4% of L1i  over 8 symbols
     ipc_call_reply   6038 B   1.47x target  18.4% of L1i  over 10 symbols  <- the shape the system runs
     ipc_fastpath     6038 B   1.47x target  18.4% of L1i  the worse of the two shapes
-    syscall_entry    1914 B                  5.8% of L1i  over 5 symbols (flat, no closure)
+    system_call_entry    1914 B                  5.8% of L1i  over 5 symbols (flat, no closure)
     total            7952 B   1.94x target  24.3% of L1i  (7.77 KiB), an upper bound
     49% of the 16 KiB ceiling §144 (a delta and a ceiling) decides and does not yet enforce
     drift: ipc_send_receive +2.2% against baseline (4632), within the 5% band
@@ -80,7 +80,7 @@ The footprint baselines were deliberately not re-saved in the same change, for t
 
 The footprint baselines are eroding the way the icount ones did. They carry no record of the nightly
 behind their figures. On 2026-09-20's pin every figure on every ISA sits above its baseline, with
-riscv64's `syscall_entry` at +4.7% against a 5% band. One more compiler bump can fail this gate for
+riscv64's `system_call_entry` at +4.7% against a 5% band. One more compiler bump can fail this gate for
 a reason no commit is responsible for. `bench/baseline-*.txt` got the toolchain stamp and
 `script/lint`'s check on 2026-09-21. `bench/fastpath-*.txt` did not, because stamping it means
 re-saving it. The script's own `BUGS` records it.
@@ -99,7 +99,7 @@ gate, only by writing a claim in the code that a reviewer sees in a diff.
 | | aarch64 | riscv64 |
 |---|---|---|
 | `ipc_fastpath` (closure, 9 symbols each) | 5,780 | 5,074 |
-| `syscall_entry` (flat) | 4,168 | 2,692 |
+| `system_call_entry` (flat) | 4,168 | 2,692 |
 | **total, an upper bound** | **9,948 (9.71 KiB)** | **7,766 (7.58 KiB)** |
 
 *A dated reading, not the current numbers. Two architectures because that is what the gate measured
@@ -120,22 +120,22 @@ and would have been quiet about a doubling of the real path.
 
 The gate measured two of the three architectures for nine days. `script/stack-frame-check` carried
 the same silent omission until the architecture-list sweep of the same week found both. x86_64 was
-then gated at `ipc_fastpath` 6,639 and `syscall_entry` 1,637, total 8,276 (8.08 KiB), in
+then gated at `ipc_fastpath` 6,639 and `system_call_entry` 1,637, total 8,276 (8.08 KiB), in
 `bench/fastpath-x86_64.txt`. *(Milestone 188 (the IPC fastpath) re-baselined it: the current x86_64 baseline is
-`ipc_call_reply` 8,122 and `syscall_entry` 1,637, in the table below.)*
+`ipc_call_reply` 8,122 and `system_call_entry` 1,637, in the table below.)*
 
 `ipc_fastpath` is comparable across all three, and x86_64 is the largest. The closure is the same
 eight functions as aarch64's list above, minus `memcpy`, which LLVM inlines on x86_64 (the symbol
 exists in the image and nothing references it). So the +15% over aarch64 is the same portable Rust
 in a different ISA's encodings, not a different path.
 
-`syscall_entry` is not comparable, and a reader looking at three numbers will assume it is. On
-aarch64 and riscv64 a syscall is an exception. `svc` enters the same vector table as a page fault,
+`system_call_entry` is not comparable, and a reader looking at three numbers will assume it is. On
+aarch64 and riscv64 a system call is an exception. `svc` enters the same vector table as a page fault,
 and `ecall` the same `stvec` handler as a timer interrupt, so both entry figures carry the whole
 vector and cause decoder. On x86_64 a ring-3 `syscall` reads `IA32_LSTAR` and jumps, consulting no
-IDT entry at all. Its entry set is four symbols: `x86_syscall_entry`, `x86_syscall_handler`,
-`isr_restore` (the shared return path, the twin of riscv64's `trap_return`) and `syscall::dispatch`.
-Excluded, because no syscall fetches them: the 256 IDT stubs (2,412 bytes), `isr_common`, and
+IDT entry at all. Its entry set is four symbols: `x86_system_call_entry`, `x86_system_call_handler`,
+`isr_restore` (the shared return path, the twin of riscv64's `trap_return`) and `system_call::dispatch`.
+Excluded, because no system call fetches them: the 256 IDT stubs (2,412 bytes), `isr_common`, and
 `x86_trap_dispatch` / `x86_trap_body` (918 bytes). Those last two are the twins of the `riscv_trap_*`
 pair that riscv64's list does include. x86_64's entry figure being the smallest of the three is that
 architectural fact, not a leaner decoder. The per-symbol reasoning is in the script beside the
@@ -145,8 +145,8 @@ Nothing here is a cache result on x86_64 any more than on the other two; "What c
 yet" below applies to all three.
 
 We are over the target on every architecture, and milestone 188 moved every number above; the next
-section has the current figures. `syscall::dispatch` has not been the largest single item since
-milestone 156 (`syscall_entry`'s measured size is every method combined) took 864 bytes out of it.
+section has the current figures. `system_call::dispatch` has not been the largest single item since
+milestone 156 (`system_call_entry`'s measured size is every method combined) took 864 bytes out of it.
 
 ### The gate measured the wrong shape, and the aarch64 entry figure counted a table it never fetched
 
@@ -163,34 +163,34 @@ and `ipc_call` carry the one-shot Reply mint, the capability-table insert into t
 `WaitRole::Reply` parking DECISIONS §12 (call/Reply IPC) requires, and none of that is on a bare `SEND` or `RECEIVE`.
 The gate now reports and checks both shapes.
 
-The syscall count is corrected with it, which [the calibration appendix](calibration-against-sel4.md)
-used to get wrong. Our round trip is three syscalls to seL4's two (client `CALL`, server `RECEIVE_CAPABILITY`,
+The system call count is corrected with it, which [the calibration appendix](calibration-against-sel4.md)
+used to get wrong. Our round trip is three system calls to seL4's two (client `CALL`, server `RECEIVE_CAPABILITY`,
 server `REPLY`), not four to two. Four is `ipc_rtt_el0`'s count and no service issues it. The
-residual one is the `ReplyRecv` fusion this tree does not have, which is a syscall-surface question
+residual one is the `ReplyRecv` fusion this tree does not have, which is a system-call-surface question
 and calef's.
 
-#### Phase 2: aarch64's `syscall_entry` counted all sixteen exception vector entries
+#### Phase 2: aarch64's `system_call_entry` counted all sixteen exception vector entries
 
 `exception_vectors` is 2,020 bytes of sixteen self-contained 128-byte slots, because the hardware
 requires that layout. An `svc` from EL0 lands in exactly one of them (index 8) and fetches at most
 128 bytes. The other 1,892 are page faults, interrupts, kernel-mode traps and the AArch32 entries
 this
 kernel will never support. `exception_restore` (92 bytes), which runs on the return leg of every
-syscall and is the twin of riscv64's `trap_return`, was in neither figure and is now in this one.
+system call and is the twin of riscv64's `trap_return`, was in neither figure and is now in this one.
 The riscv64 port needs no equivalent fix (`stvec` is in direct mode, one handler, no table), and neither does
 x86_64 (no IDT entry at all). Nothing got faster: this is an accounting fix, and the old figure was
 gameable by 1,892 bytes without changing one fetched instruction.
 
 #### Phase 3: outlining alone made the number bigger
 
-Milestone 156's `#[inline(never)]` method works on `syscall_entry` because that half is flat. On a
+Milestone 156's `#[inline(never)]` method works on `system_call_entry` because that half is flat. On a
 closure it is a no-op: the walk follows the new call and counts the same bytes under a new name. The
 first attempt moved aarch64's `ipc_send_receive` from 5,888 to 6,220. What made it work was teaching
 the walk to read `#[cold]` out of the source (above). Four arms went out of line: `finish_switch`'s
 reap, `schedule`'s killed-thread conversion and its self-pop heal, and `set_ipc_aborted`, whose four
 call sites are all on these closures.
 
-| | `ipc_send_receive` | `ipc_call_reply` | `syscall_entry` | total |
+| | `ipc_send_receive` | `ipc_call_reply` | `system_call_entry` | total |
 |---|---|---|---|---|
 | aarch64, before 188 | 5,888 | (7,576) | 3,304 | 9,192 |
 | aarch64, after | **5,356** | **7,028** | **1,508** | **8,536 (8.34 KiB)** |

@@ -8,11 +8,11 @@ constant two programs must agree on, checked against what the prose says the sur
 
 `script/audits` fired on the strongest trigger the table has, and it is an event rather than a
 threshold: **ABI constants 43 -> 50, and any change fires** (§74, event triggers first). The lens
-follows the trigger. Documentation describing a syscall surface that grew seven constants yesterday
+follows the trigger. Documentation describing a system call surface that grew seven constants yesterday
 is the documentation most likely to be lying today.
 
 It is also the lens the rotation asked for. `design/audit-reports/README.md`'s "Running one" lists
-the lenses not yet taken as supply chain, userspace confinement, and **the syscall surface itself**,
+the lenses not yet taken as supply chain, userspace confinement, and **the system call surface itself**,
 and the previous sweep's "what was deliberately not examined" does not mention the ABI at all.
 
 **The seven, re-derived rather than taken on trust**, by diffing the `pub const NAME: u64` surface of
@@ -40,7 +40,7 @@ the trigger instead, and the scope was chosen by asking which files describe the
 | document | why it is in scope |
 |---|---|
 | `crates/abi/src/lib.rs` | the boundary artifact itself, and the thing the trigger counted |
-| `kernel/src/syscall.rs` | the kernel's half of the same boundary |
+| `kernel/src/system_call.rs` | the kernel's half of the same boundary |
 | `notes/capabilities.md` | the note that explains the surface to a newcomer |
 | `notes/capability-lifecycle.md` | the note that explains rights, which is what `ENUMERATE` changed |
 | `crates/capability_table/src/lib.rs` | where `Rights` is defined and where its argument is made |
@@ -51,9 +51,9 @@ instance.** It was, both times.
 
 ### What came back clean, which is a result
 
-- **`notes/abi.md` is correct and current.** It says "Four syscall numbers, and that is the whole
+- **`notes/abi.md` is correct and current.** It says "Four system call numbers, and that is the whole
   width of the trap" and its table lists `SYS_CAP_DELETE`. `notes/README.md` agrees, at "one `svc`
-  and four syscall numbers". **This is the opposite of the direction anyone expects**: the browsable
+  and four system call numbers". **This is the opposite of the direction anyone expects**: the browsable
   prose a newcomer reads was right, and the doc comment inside the boundary artifact was three weeks
   stale. A sweep that had audited only `notes/` would have found nothing and reported the ABI clean.
 - **`crates/capability_table`'s `Rights` is documented well and `ALL` was widened correctly.**
@@ -70,7 +70,7 @@ instance.** It was, both times.
 
 ### What was deliberately not examined
 
-- **Everything that is not the syscall boundary.** This is a narrow sweep by design. 269 documents
+- **Everything that is not the system call boundary.** This is a narrow sweep by design. 269 documents
   are in the worklist's scope; this read five files and two whole-tree classes.
 - **`design/decisions/` and `DECISIONS.md`.** Out of scope for a lane's edits. One finding there is
   handed off below.
@@ -85,7 +85,7 @@ instance.** It was, both times.
 
 ## Findings
 
-### 1. FIXED, and CONVERTED: the syscall surface is four calls, and five places said three
+### 1. FIXED, and CONVERTED: the system call surface is four calls, and five places said three
 
 `SYS_CAP_DELETE` landed **2026-07-24** with milestone 19d. The ABI crate's front-page heading has not
 changed since **2026-07-14**. So the boundary artifact understated its own width for 24 days, and the
@@ -94,31 +94,31 @@ claim had spread to five sites:
 | site | said |
 |---|---|
 | `crates/abi/src/lib.rs` (the module documentation's heading) | "# The surface is three calls, and that is deliberate", and a `text` block omitting `cap_delete` |
-| `crates/abi/src/lib.rs` (`Error::BadSyscall`) | "The syscall number is not one of the three" |
-| `kernel/src/syscall.rs` (the module documentation's first line) | "The syscall boundary. **Three calls.**", same omission in its block |
-| `kernel/src/arch/aarch64/exceptions.rs` (`exception_body`, the `svc` arm) | "It is three calls. See syscall.rs." |
+| `crates/abi/src/lib.rs` (`Error::BadSystemCall`) | "The system call number is not one of the three" |
+| `kernel/src/system_call.rs` (the module documentation's first line) | "The system call boundary. **Three calls.**", same omission in its block |
+| `kernel/src/arch/aarch64/exceptions.rs` (`exception_body`, the `svc` arm) | "It is three calls. See system_call.rs." |
 | `notes/capabilities.md` | "## The surface is three calls" |
 
-**`Error::BadSyscall`'s is the one that is not arguable.** The others can be read as a slogan about
+**`Error::BadSystemCall`'s is the one that is not arguable.** The others can be read as a slogan about
 shape; that one describes what the kernel does with a register value, and passing 3 is valid. An
 error-code description in the ABI crate misdescribing the ABI is the sharpest form this class takes.
 
 All five fixed. The rewrite keeps the argument rather than just incrementing the number, because the
 argument survives intact and is better for it: **three of the four calls are authority over
 yourself, and the fourth is everything else.** That is what the crate's own `SYS_CAP_DELETE` comment
-already said ("like `exit` and `yield` it is a bare syscall"), so the corrected header is more
+already said ("like `exit` and `yield` it is a bare system call"), so the corrected header is more
 coherent than the original, not merely more current.
 
 `notes/capabilities.md` was handled differently, because its claim sits inside a section titled
-"# Milestone 7d: the syscall surface". **Three was what 7d landed, and history is not rot** (the
+"# Milestone 7d: the system call surface". **Three was what 7d landed, and history is not rot** (the
 first sweep's finding 5). The heading was retitled to say so and a dated paragraph added for what the
 surface is today, so the number stays true as history and a reader cannot leave with a wrong
 present-tense belief.
 
 **Left as history, deliberately:** `crates/abi/src/lib.rs` (the `Name:` paragraph of its module
 documentation, written for milestone 7d (User mode: EL0, capabilities, the ELF loader, and IPC):
-"milestone 7d's first three syscalls", correct), `design/roadmap/0007-user-mode.md`'s `ec6f1b5`
-entry and `notes/README.md`'s "Rust" section, as it read then (both "**7d**: three syscalls",
+"milestone 7d's first three system calls", correct), `design/roadmap/0007-user-mode.md`'s `ec6f1b5`
+entry and `notes/README.md`'s "Rust" section, as it read then (both "**7d**: three system calls",
 correct as changelog entries).
 
 ### 2. FIXED: `abi::rights` had no documentation, and `objtype`'s claimed to be the rights bits
@@ -208,9 +208,9 @@ here so the next person does not have to re-derive that.
 
 ### 7. ACCEPTED: `design/decisions/0016-object-revocation.md` carries the stale count
 
-Its heading reads "Two new methods on the Untyped object (the surface stays three syscalls)". A lane
+Its heading reads "Two new methods on the Untyped object (the surface stays three system calls)". A lane
 does not edit `design/decisions/`, so this is handed to the integrator. It is also the mildest
-instance: a dated record of an argument, whose point (methods were added, not syscalls) is still
+instance: a dated record of an argument, whose point (methods were added, not system calls) is still
 exactly right, and whose parenthetical was true when written. Recorded rather than urgent.
 
 `notes/object-revocation.md`, under "The surface, and what remains", says the same thing in a note this lane could have edited, and it
@@ -245,7 +245,7 @@ What landed in `script/lint`'s `==> counted claims` block:
 
 - **The marker reads a cardinal spelled as a word**, up to `twenty` plus the round tens and
   `hundred`. No composition: `twenty-one` fails loudly rather than passing, and the note says why.
-- **Four new registry entries.** `syscalls` and `rights-bits` are the two ABI sets this sweep found
+- **Four new registry entries.** `system_calls` and `rights-bits` are the two ABI sets this sweep found
   stale prose about; `loom-harnesses` and `loom-crates` are the pair the note asked for by name.
 - **Markers now blank each other** before the number search, so a count name containing a numeral
   cannot donate it to the next claim on the same line. Nothing in the tree needed that yet.

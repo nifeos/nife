@@ -25,9 +25,9 @@ and the risk 7 record both cite "calef's ruling on #1494" as the fix for the sec
 that audit confirmed. In that escape a bound client's plain `SEND` arrived as badge `0`, which
 `subtree_scope` reads as root.
 
-So the semantics of a syscall method changed and every program is now written against the new
+So the semantics of a system call method changed and every program is now written against the new
 meaning. The only records are a PR comment, two roadmap blocks and a doc comment in
-`crates/abi`. CLAUDE.md's rule for the syscall surface is that each method's semantics are recorded
+`crates/abi`. CLAUDE.md's rule for the system call surface is that each method's semantics are recorded
 in `design/decisions/`, not just in code. §230 is where a reader of the badge contract looks.
 `grep -n '613\|plain SEND' design/decisions/0230-*.md design/decisions/0242-*.md` finds nothing.
 
@@ -38,8 +38,8 @@ on the calendar):
 
 - The badge is delivered on every receive, not only `CALL` and `SEND_CAP`: `RECV` and `RECV_CAP`
   both return it in `x3`, `0` when the capability was unbadged.
-- It is the kernel's word on every path. The syscall layer reads it from the capability in the
-  caller's table, never from a register the sender filled (`kernel/src/syscall.rs`, the `SEND`
+- It is the kernel's word on every path. The system call layer reads it from the capability in the
+  caller's table, never from a register the sender filled (`kernel/src/system_call.rs`, the `SEND`
   arm, `sched::ipc_send_badged`).
 - The reason: §242 (a system log) stamps every record from the writer's badge, and a byte-sink
   writer speaks a plain `SEND`. Without this the badge a spawner minted was dropped on the one path

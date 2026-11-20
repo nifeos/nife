@@ -9,7 +9,7 @@ use super::*;
 /// the progenitor hands out), "The method").
 ///
 /// Returns only when the firmware refused, with the refusal already printed; a successful reset
-/// does not come back. The caller is `syscall::invoke`'s arm for `Object::Reboot`, and the
+/// does not come back. The caller is `system_call::invoke`'s arm for `Object::Reboot`, and the
 /// authority check is the capability itself: §251 asks for no rights bit beyond holding it.
 pub(crate) fn restart() -> abi::Error {
     // Out of the ring first: once the reset starts, the drainer never runs again.

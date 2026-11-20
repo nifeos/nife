@@ -17,7 +17,7 @@ the caller's own region budget exhausted, the caller's own cspace full, or `MAX_
 system-wide concurrently-live region table) full. (`RETYPE_OBJECT` is method 2, its name spelled out
 by the ruling of 2026-11-11 (UTC).) The first two are facts about the caller. The third is a fact
 about everyone else on the machine, fixable by nothing the caller can do locally. Distinguishing
-them touches the syscall ABI's shared `Error` enum, so the milestone named it a fork rather than
+them touches the system call ABI's shared `Error` enum, so the milestone named it a fork rather than
 guessing.
 
 ## The decision

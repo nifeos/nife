@@ -53,13 +53,13 @@ STUB
 # prints a clean end line.
 cat > "$tree/helpers/qemu-runner-x86_64.sh" <<'STUB'
 #!/bin/sh
-range="${NIFE_SYSCALL_FUZZ_SEEDS:-${NIFE_CONFINED_FUZZ_SEEDS:-}}"
+range="${NIFE_SYSTEM_CALL_FUZZ_SEEDS:-${NIFE_CONFINED_FUZZ_SEEDS:-}}"
 if [ "${range%%:*}" -lt 10000000000 ]; then
     cat "$STUB_GUEST"
     exit "${STUB_GUEST_RC:-0}"
 fi
 sleep 1
-echo "syscall fuzzer: 5 seeds, 1 ms (stub)"
+echo "system call fuzzer: 5 seeds, 1 ms (stub)"
 echo "confined fuzzer: 5 seeds, 1 ms (stub)"
 STUB
 printf 'target/\n' > "$tree/.gitignore"
@@ -117,7 +117,7 @@ first0="$2"
 {
     echo "boot banner SECRETGUESTTEXT"
     echo "panicked at kernel/src/secret.rs:1:1: SECRETGUESTTEXT"
-    echo "replay: NIFE_SYSCALL_FUZZ_SEEDS=$((first0 + 41)):1"
+    echo "replay: NIFE_SYSTEM_CALL_FUZZ_SEEDS=$((first0 + 41)):1"
 } > "$work/guest-finding"
 STUB_GUEST="$work/guest-finding" STUB_GUEST_RC=1
 export STUB_GUEST STUB_GUEST_RC
@@ -138,7 +138,7 @@ row="$(cat "$fuzz/held/state/windows.tsv")"
 [ -z "$(ls -A "$fuzz/held/logs/replay")" ] || fail "a finding left a log outside the held directory"
 
 # 2. A clean replay.
-echo "syscall fuzzer: 500 seeds, 1000 ms (all clean)" > "$work/guest-clean"
+echo "system call fuzzer: 500 seeds, 1000 ms (all clean)" > "$work/guest-clean"
 STUB_GUEST="$work/guest-clean" STUB_GUEST_RC=0
 replay "$fuzz/clean" "$a" 0
 [ "$(cat "$work/out")" = "continuous-fuzz: replay of a red CI shard came back clean" ] || fail "a clean replay printed: $(cat "$work/out")"

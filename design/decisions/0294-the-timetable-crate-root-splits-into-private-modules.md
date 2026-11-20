@@ -101,4 +101,4 @@ length, which is this file's history: 1,619 lines on 2026-09-24 and 2,468 nine d
 
 ## What it does not decide
 
-No public path, wire format or syscall changes. No function body changes, and no test body.
+No public path, wire format or system call changes. No function body changes, and no test body.

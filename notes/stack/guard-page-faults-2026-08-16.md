@@ -86,7 +86,7 @@ riscv64, measured by `script/stack-depth-check` over the same test binary CI bui
 |---|---|---|
 | longest chain from `thread_entry` (a kernel thread's own work) | 9456 | 9168 |
 | trap frame the vector builds | 272 | 288 |
-| handler chain that can nest on kernel code (no syscall or user-fault arm) | 4064 | 3888 |
+| handler chain that can nest on kernel code (no system call or user-fault arm) | 4064 | 3888 |
 | **worst total on a 16384-byte stack** | **13792** | **13344** |
 | measured high water, milestone 84's watermark, 31 runs on this machine | 9536 to 10600 | 9344 |
 

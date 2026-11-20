@@ -47,7 +47,7 @@ Relayed one question at a time by the maintainer, each with its prior art and al
   second filesystem". A probe only the harness fills would be a test hook by another name, and it
   would fix a one-slot shape before the deferred mount-name rules shape the real one.
 - **Exit status** needs no ruling: under (d) the shell never exits, and the harness judges the
-  transcript and its `echo $?` lines. No status word, so no syscall surface change.
+  transcript and its `echo $?` lines. No status word, so no system call surface change.
 - **Removing `navscape` and `globscape`** is cleanup, not a ruling: their only readers are the
   witnesses and the three test files that move off them.
 - **Names** wait for calef's naming ratification pass, marked provisional until then.

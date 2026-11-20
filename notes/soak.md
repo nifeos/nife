@@ -18,7 +18,7 @@ One kernel feature (`--features soak_test`) replaces the halt at the end of the 
 user-mode workers and a supervisor that watches them forever.
 
 - The workload is a user program (`fixtures/src/soaker.rs`), so the pressure goes through the real
-  syscall boundary. Groups of one responder, three callers, one pure-compute grinder and one tick
+  system call boundary. Groups of one responder, three callers, one pure-compute grinder and one tick
   waiter, one group per online core.
 - The detection is in the kernel (`kernel/src/soak.rs`), because a user program cannot assert
   about kernel internals and a workload that could reach its own tripwire is not a tripwire.
@@ -88,7 +88,7 @@ calef approved option D of DECISIONS 138 for it on 2026-09-02. Under `--features
 signals one rendezvous per group, round-robin, and one tick waiter per group blocks on it through
 `Interrupt::WAIT`. A tick then runs the same chain a device interrupt runs, through
 `wake_load_aware` and
-the reschedule IPI. It adds no syscall and nothing in a production build, and it is
+the reschedule IPI. It adds no system call and nothing in a production build, and it is
 architecture-neutral, so radon is not left out.
 
 What crosses is the waiters, not the pairs. The callers and responders are as pinned as ever. This

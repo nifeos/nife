@@ -40,7 +40,7 @@ architect: see [ARCHITECTS.md](../../../ARCHITECTS.md).
   architect grants it. This role gates and merges; it does not write the code or resolve the
   conflicts itself, as the next section says.
 - Steward. Runs on an interval and holds a *lent* authority: it merges what has earned it: green on
-  every check, from a developer briefed this session, touching no syscall surface, no
+  every check, from a developer briefed this session, touching no system call surface, no
   `design/decisions/` section and no dependency addition. It cleans up behind finished work (delete
   the branch, prune the worktree), reports queue depth against the target, and
   raises what has stalled or gone unanswered. It does not brief developers, because briefing is

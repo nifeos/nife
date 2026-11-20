@@ -65,7 +65,7 @@ BUGS). Neither port has a flat-image step at all, so the CFI rides into QEMU's g
 everything else, harmlessly, in a VM with the usual hundreds of megabytes.
 
 `script/fastpath-footprint` is byte-identical before and after on every reported number
-(`ipc_send_recv` 6300, `ipc_call_reply` 8234, `ipc_fastpath` 8234, `syscall_entry` 1701): CFI lives
+(`ipc_send_recv` 6300, `ipc_call_reply` 8234, `ipc_fastpath` 8234, `system_call_entry` 1701): CFI lives
 in `.eh_frame`, a section distinct from `.text`, and the measurement confirms it moved nothing. That
 and the `__image_size`/flat-image evidence above are the proof. Annotating every hand-written
 assembly file in the tree, plus un-hiding the compiler's own CFI for every Rust function, changed
@@ -141,7 +141,7 @@ to stop.
 
 After, the same breakpoint, on a kernel thread resumed out of `sched::ipc_recv` by a timer
 preemption: the backtrace walks seven real Rust frames -- `switch_to -> schedule -> ipc_recv ->
-syscall::invoke -> syscall::dispatch -> exception_body -> exception_dispatch` -- GDB labels the trap
+system_call::invoke -> system_call::dispatch -> exception_body -> exception_dispatch` -- GDB labels the trap
 frame `<signal handler called>` (recognizing `.cfi_signal_frame`), and stops there with "frame did
 not save the PC". That stop is the honest limit the AArch64 section above describes, not a shortfall
 this milestone left in: the directive that would let GDB go one frame further exists in `vectors.s`

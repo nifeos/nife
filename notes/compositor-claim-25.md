@@ -62,7 +62,7 @@ lie reached a pixel outside the liar's own window. The host test
 with seven extents against every window in the scene. The claim's sentence held. What broke is
 availability, which [compositor.md](compositor.md) already says the rung does not defend. It also
 corrects a sentence there: "cannot be worse" was true of reads and false of the process surviving.
-The fix is saturating arithmetic in `crates/compositor`, with no wire-format or syscall change.
+The fix is saturating arithmetic in `crates/compositor`, with no wire-format or system call change.
 
 ## What part 3's patches reach
 

@@ -54,7 +54,7 @@ per-CPU only with `rseq` and "if RSEQ is unavailable ... reverts to" per-thread 
 2026-10-10); jemalloc's `percpu_arena` is the per-list-lock row above, an arena with its lock per
 CPU ([jemalloc manual, `opt.percpu_arena`](https://jemalloc.net/jemalloc.3.html)).
 
-Nothing here needs `rseq`, a new syscall or a new method. That was the argument; the measurement
+Nothing here needs `rseq`, a new system call or a new method. That was the argument; the measurement
 below tests it rather than trusting it.
 
 ## What ships
@@ -69,7 +69,7 @@ from recursing into the allocator.
 
 A thread's end spills its cache. `destroy_tls` runs the thread-local destructors, closes the
 cache (later frees go straight to the heap) and gives every cached block back under one lock. The
-block is freed last, by `free_own_block`, just before `SYSCALL_EXIT_THREAD`, because a detached thread
+block is freed last, by `free_own_block`, just before `SYSTEM_CALL_EXIT_THREAD`, because a detached thread
 still frees its packet after `destroy_tls`, and with a cache in the block that free would otherwise
 write into freed memory. A `const` assert keeps the block larger than any class, so its own free
 cannot land in the cache it holds. `std_threads_tests::the_std_heap_is_measured_under_four_threads`

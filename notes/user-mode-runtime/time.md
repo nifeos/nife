@@ -5,7 +5,7 @@ its frequency, the cycle counter and the current CPU.
 
 ## The counter
 
-`now` is a plain register read with no syscall on every architecture. Each target opens it to user
+`now` is a plain register read with no system call on every architecture. Each target opens it to user
 mode differently:
 
 | architecture | instruction | what opens it |
@@ -70,7 +70,7 @@ different times.
 On aarch64 and riscv64 the instruction traps unless the kernel opened `PMUSERENR_EL0` or
 `scounteren.CY` for the thread (milestone 229 (build the cycle-counter grant DECISIONS 139
 decided)), and an ungranted thread is killed. §139 (who may read the cycle counter, and by what
-authority) option 4 chose a grant that keeps the read a single instruction with no syscall.
+authority) option 4 chose a grant that keeps the read a single instruction with no system call.
 
 On `x86_64` the TSC is both the coarse and the fine counter. `CR4.TSD` is clear at reset and never
 written, so every ring-3 program holds a sub-nanosecond timing instrument it was never granted.

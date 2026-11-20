@@ -70,7 +70,7 @@ that runs correctly until it is preempted is the worst failure shape available.
 3. Decide what discovery looks like here, and this is the part that may hand a fork back. Linux
    answers through `hwprobe` and `/proc/cpuinfo`; nife has neither, and a capability system arguably
    should answer through something a program is *granted* rather than something it reads. That is a
-   syscall-surface question if it grows one, so the milestone should stop and write a proposal
+   system-call-surface question if it grows one, so the milestone should stop and write a proposal
    rather than invent an interface.
 4. Run the tour under `qemu-system-riscv64` configured for the profile and record the
    transcript, so the claim is a run rather than a reading.

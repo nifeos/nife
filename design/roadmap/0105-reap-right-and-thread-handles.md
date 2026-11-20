@@ -56,7 +56,7 @@ the builder set, with the death message. No `RESOLVE` method, so there is nothin
   ISAs. It is called from both routes a death reaches a supervisor: at the rendezvous
   (`deliver_death`), and when a supervisor collects a parked corpse (`collected_without_serving`). `Thread::mailbox` and
   `fault_msg` stay five words, so ordinary IPC stores nothing new.
-- **Userspace declares the register.** `user_mode_runtime`'s syscall primitive is now `invoke6`,
+- **Userspace declares the register.** `user_mode_runtime`'s system call primitive is now `invoke6`,
   with register 5 an output that goes in as zero, so a `RECEIVE` cannot clobber a value LLVM thought
   preserved and an unstamped message reads label `0`. `receive_message` returns the label in its `label` field.
 - **A supervisor with two children.** `spawner` stamps each child's supervision capability with a

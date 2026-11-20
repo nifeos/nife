@@ -16,7 +16,7 @@ Title and slug are drafts. `needs_person` is yes only because the acceptance swe
 radon.
 
 BUILT 2026-10-20 (UTC). Option 1 is built on all three ISAs and gated in CI, and the radon sweep
-read the one-task `null_syscall` flat at 121 ticks in all four images ("The 2026-10-20 sweep"
+read the one-task `null_system_call` flat at 121 ticks in all four images ("The 2026-10-20 sweep"
 below). The design, the before and after, and the `BUGS` are in
 [`notes/benchmarks/kernel-footprint-and-caches.md`](../../notes/benchmarks/kernel-footprint-and-caches.md),
 "The hot section".
@@ -26,7 +26,7 @@ below). The design, the before and after, and the `BUGS` are in
 [`notes/job-mix/radon-2026-10-05.md`](../../notes/job-mix/radon-2026-10-05.md#why-one-task-rose-from-99-to-110):
 `main` built four times with milestone 370 (a layout control)'s knob (`fastpath_pad`, `NIFE_FASTPATH_PAD=0`,
 `NIFE_FASTPATH_SHIFT` 0, 16, 32, 48), which moves the whole kernel text by N bytes and changes no
-code. The job mix's `null_syscall` at one task read 111, 118, 116 and 110 ticks of radon's 4 MHz
+code. The job mix's `null_system_call` at one task read 111, 118, 116 and 110 ticks of radon's 4 MHz
 timer. An 8-tick (7%) spread with no code change. A bisect had already put a 16-tick one-task
 step on a merge (#1659) that added no instruction to the kernel's trap path.
 
@@ -90,7 +90,7 @@ moves kernel text only and the userspace stub sits still in all four images.
   20,520 bytes of text shift apart and requires every hot symbol at the same address and size
   (aarch64 and riscv64).
   Each was broken on purpose and failed.
-- [x] On radon, the 2026-10-05 sweep repeated (shifts 0, 16, 32, 48) reads `null_syscall` at one task
+- [x] On radon, the 2026-10-05 sweep repeated (shifts 0, 16, 32, 48) reads `null_system_call` at one task
   flat within 2 ticks, where it read 110 to 118. Read 121, 121, 121 and 121 on 2026-10-20, a spread
   of 0 ticks ("The 2026-10-20 sweep" below).
 - [x] `script/fastpath-footprint` and `script/bench` within their floors on all three ISAs; the same
@@ -141,7 +141,7 @@ Power-cycle smart plug 2, wait for `job-mix: done`, end the capture, then:
 
 ```sh
 LC_ALL=C tr -cd '\11\12\15\40-\176' < bench/radon-$D/raw-boot$N-shift$S.log > bench/radon-$D/boot$N-shift$S.log
-LC_ALL=C grep -a -E 'job-mix: done|FAILED|REFUSED|tasks=1 kind=null_syscall' bench/radon-$D/boot$N-shift$S.log
+LC_ALL=C grep -a -E 'job-mix: done|FAILED|REFUSED|tasks=1 kind=null_system_call' bench/radon-$D/boot$N-shift$S.log
 grep -a 'nife-vf2.img' bench/radon-$D/boot$N-shift$S.netboot.log
 ```
 
@@ -152,7 +152,7 @@ announces another server address, `setenv nife_boot_server 192.168.8.138` then
 ### Reading it, written before any boot
 
 The number is `per_job` on the `tasks=1
-kind=null_syscall` line.
+kind=null_system_call` line.
 
 | Spread of the four | Reading | Next |
 |---|---|---|
@@ -203,4 +203,4 @@ together; nobody has. Both sweeps ran debug userspace under a release kernel (`s
 
 ## Index row
 
-A merge that added no instruction to the trap path moved radon's one-task `null_syscall` by 16 ticks, and four builds that only shifted kernel text spread by 7%. Pinning the hot trap path's placement stops a per-crossing number from moving with unrelated code.
+A merge that added no instruction to the trap path moved radon's one-task `null_system_call` by 16 ticks, and four builds that only shifted kernel text spread by 7%. Pinning the hot trap path's placement stops a per-crossing number from moving with unrelated code.

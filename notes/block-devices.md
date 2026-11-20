@@ -177,7 +177,7 @@ authority is legible: the `grant_at` calls are the whole of what a program can r
 
 So the negative control has two rungs. It cannot obtain a writable window at all, and the fault on
 the read-only one is the second line of defense. Only the stack is still wired at spawn, because a
-program needs a stack before it can make the syscall that would map one.
+program needs a stack before it can make the system call that would map one.
 
 Every role of one binary shares one slot layout, and a role that lacks a capability leaves its slot
 empty. A shorter grant list would renumber the slots above the gap, and that would be a different

@@ -23,8 +23,8 @@ applied to the console.
 
 Premise re-checked 2026-09-19 and still true. Row 26 of `notes/confinement-claims.md` still
 answers no in the falsified column, and `hot_swap_contract::try_receive_cap` still invokes `RECEIVE_CAP`
-directly, so the name still promises a try that the syscall does not offer.
-`fixtures/src/swap_boundary_witness.rs` still calls it at one site. Nothing in the syscall surface
+directly, so the name still promises a try that the system call does not offer.
+`fixtures/src/swap_boundary_witness.rs` still calls it at one site. Nothing in the system call surface
 has gained a non-blocking or timed receive.
 
 ## In brief
@@ -32,7 +32,7 @@ has gained a non-blocking or timed receive.
 Row 26 is *"a client of a rendezvous cannot become its server."* Its test,
 `kernel::user::live_swap_tests::a_client_of_the_stable_rendezvous_cannot_become_its_server`, hands an
 attacker exactly what the honest client holds and requires `NotPermitted` when it tries `RECEIVE_CAP`.
-The kernel enforces that in three lines of `kernel/src/syscall.rs`.
+The kernel enforces that in three lines of `kernel/src/system_call.rs`.
 
 Deleting those three lines, which is the complete break of the claim, does not fail that
 assertion. Measured 2026-09-16 on aarch64: the run came back as a 60-second watchdog reading "no
@@ -65,16 +65,16 @@ can report "the kernel let me receive" as a verdict rather than blocking on it.
 
 Options, costed as far as this lane could without building them:
 
-1. A non-blocking `RECEIVE_CAP`, or a flag on it. Smallest kernel change; a new syscall behavior
+1. A non-blocking `RECEIVE_CAP`, or a flag on it. Smallest kernel change; a new system call behavior
    every future program is written against, which is exactly the category AGENTS.md calls expensive.
 2. A timed receive. §106 (take)'s block already priced a timed wait and found the mechanism about thirty
    lines, with the authority question the whole problem. That work is adjacent.
-3. **Leave the syscall alone and give the attacker a watchdog thread**, so the *test* bounds the wait
+3. **Leave the system call alone and give the attacker a watchdog thread**, so the *test* bounds the wait
    rather than the kernel. No surface change and no benefit to anything but this test, which is the
    argument against it. The same gap will be hit by the next component that wants to ask a rendezvous
    a question it might not be allowed to ask.
 
-**Recommendation: none**, deliberately. AGENTS.md draws the line at the syscall surface, and a
+**Recommendation: none**, deliberately. AGENTS.md draws the line at the system call surface, and a
 recommendation there is most of the decision already made.
 
 ## What is blocked until it is answered
@@ -85,7 +85,7 @@ keeps one claim whose test has never been shown able to fail. Nothing else waits
 ## Index row
 
 Row 26 of `notes/confinement-claims.md` says a client of a rendezvous cannot become its server,
-and deleting the three lines of `kernel/src/syscall.rs` that enforce it does not fail the test that
+and deleting the three lines of `kernel/src/system_call.rs` that enforce it does not fail the test that
 states it. Measured 2026-09-16, the run came back as a 60-second watchdog reading "a lost-wakeup
 hang" with nothing about impersonation. The cause is structural: `RECEIVE_CAP` blocks, so an
 attacker the kernel fails to refuse never returns to report the escape. The attempt can return on

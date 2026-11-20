@@ -13,7 +13,7 @@ use abi::{Error, usage};
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// `invoke(capability, method, a0, _, _)` through the real dispatcher.
 fn call(slot: u64, method: u64, a0: u64) -> i64 {

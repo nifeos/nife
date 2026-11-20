@@ -6,11 +6,11 @@ The defect: an *extended* leaf is gated on the *standard* maximum.
 `extended_maximum_leaf` for the `0x8000_0000`-based one, and a part can answer every
 standard leaf while implementing no extended leaf at all. This patch reads
 `CPUID.80000001H:EDX` whenever the part answers standard leaf 1, which every
-part made since 1993 does, so NX and SYSCALL are believed on the strength of a
+part made since 1993 does, so NX and SYSTEM_CALL are believed on the strength of a
 maximum from the wrong space.
 
 What that costs is not a wrong boot line. NX is what page-table `W^X` is made of
-and SYSCALL is the whole ring-3 entry path, so milestone 524 (the three x86_64
+and SYSTEM_CALL is the whole ring-3 entry path, so milestone 524 (the three x86_64
 boot gates) refuses a part reporting neither. With this patch the refusal is
 computed from whatever `CPUID` returned for a leaf the part does not implement,
 which on x86 is some other leaf's data rather than zero. The defect is invisible

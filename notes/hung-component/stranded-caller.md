@@ -24,7 +24,7 @@ So a blocked caller ends in one of four ways: its endpoint is destroyed, its ser
 server dies, or its server's region is destroyed. A hung server that nobody destroys is none of them.
 
 And the operator cannot answer on the component's behalf. The one-shot `Reply` capability naming
-that caller is minted `WRITE` without `GRANT` (§12, and the syscall layer says why: "minted without
+that caller is minted `WRITE` without `GRANT` (§12 (Call/Reply IPC), and the system call layer says why: "minted without
 `GRANT`, so it could not have been delegated here in the first place"), it lives in the hung
 component's capability table, and it is consumed on use. It cannot be delegated to the supervisor,
 forged, or reached by revoking anything. What the operator can do is end the component, and the

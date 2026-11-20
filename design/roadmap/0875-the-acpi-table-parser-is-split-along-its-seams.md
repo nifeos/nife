@@ -121,7 +121,7 @@ change.
    little. The reason holds at equal cost.
 3. Every module name in the second table.
 
-No wire format, syscall or public path changes under any answer here.
+No wire format, system call or public path changes under any answer here.
 
 ## What moving the code breaks
 

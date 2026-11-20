@@ -18,7 +18,7 @@ commit that made it." Building the EL0 primitive suite disproved the attribution
 folds in the fix.
 
 icount is deterministic per binary (byte-identical runs, verified twice). It is not stable across
-different binaries. Adding the `null_syscall_el0` bench, which touches no other benchmark's code,
+different binaries. Adding the `null_system_call_el0` bench, which touches no other benchmark's code,
 moved `yield_switch` -7% and `ipc_rtt` +1.8% at the same time. Two controlled facts pin the
 mechanism:
 
@@ -207,7 +207,7 @@ thread, and the same commits that swung wildly at `-smp 4` go flat:
 | call_reply | 956,768 | 956,769 | 956,893 | 963,080 | +0.6% |
 | spawn_el0 | 1,574,632 | 1,609,770 | 1,750,084 | 1,754,438 | +11% |
 | ipc_rtt | 861,095 | 864,935 | 861,346 | 922,720 | +7.2% |
-| null_syscall | 427,706 | 457,705 | 457,705 | 457,705 | +7.0% |
+| null_system_call | 427,706 | 457,705 | 457,705 | 457,705 | +7.0% |
 
 `coremark` is invariant to five decimal places, the sanity check the smp=4 run failed. The `-42%` to
 `-90%` improvements and the `+41%` regression were entirely the smp=4 artifact. They attribute to no
@@ -235,7 +235,7 @@ small and mostly explained:
 | ipc_rtt | +7.2% | the IPC mailbox widened 3 words to 5 (milestone 22 (trusted init) §26 (the fault endpoint), the fault-message carrier); every `ipc_send`/`ipc_receive` now copies five words via `wide()` | real, small, expected; the step lands exactly at the M22 merge (cap-shell 861k to HEAD 923k) |
 | ipc_rtt_el0 | +5.2% | same mailbox widening, on the EL0 path | real, small |
 | spawn_el0 | +11% | the M31 SPLIT rights-inheritance change (child budget gets full delegable rights); spawn_el0 does a SPLIT + retype per iteration | real, small; the step lands at the cap-shell merge (1.61M to 1.75M) |
-| null_syscall | +7.0% | one-step at the blk-write/iommu merges, then flat; kernel layout/codegen drift in the syscall entry path, not a redesign | codegen drift, in the build-to-build drift documented above |
+| null_system_call | +7.0% | one-step at the blk-write/iommu merges, then flat; kernel layout/codegen drift in the system call entry path, not a redesign | codegen drift, in the build-to-build drift documented above |
 | spawn_reap, map_new, map_el0, call_reply, ctx_switch | +0.6% to +5% | whole-crate codegen churn across eight merges | codegen drift, expected and sub-tripwire |
 | coremark, yield_switch | ~0% | pure compute / tight kernel yield, no structural change | invariant, as they should be |
 

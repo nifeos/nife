@@ -36,7 +36,7 @@ const NO_SUCH_METHOD: u64 = 0xffff;
 static ARGS: OnceLock<Vec<&'static OsStr>> = OnceLock::new();
 
 fn read() -> Vec<&'static OsStr> {
-    // SAFETY: a plain syscall that cannot succeed; the kernel validates the slot. -1 is "the slot
+    // SAFETY: a plain system call that cannot succeed; the kernel validates the slot. -1 is "the slot
     // is empty", and anything else means a capability is there.
     if unsafe { rt::invoke(rt::ARGS_SLOT, NO_SUCH_METHOD, 0, 0, 0) } == -1 {
         return Vec::new();

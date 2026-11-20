@@ -41,10 +41,10 @@ userspace does not use):
 
 - The gate reports `ipc_send_recv` and `ipc_call_reply` separately and takes the worse of the two,
   since one round trip is one shape or the other.
-- aarch64's `syscall_entry` counts the one 128-byte exception-vector entry an `svc` fetches, not
+- aarch64's `system_call_entry` counts the one 128-byte exception-vector entry an `svc` fetches, not
   all sixteen (`ENTRY_SLICE`).
 
-So the ceiling's subject is `max(ipc_send_recv, ipc_call_reply) + syscall_entry`, which the script
+So the ceiling's subject is `max(ipc_send_recv, ipc_call_reply) + system_call_entry`, which the script
 prints as `total`.
 
 ## Why a delta alone is not enough
@@ -69,7 +69,7 @@ tree.
   them to. A delta against `main` would have made that a non-event, because both sides compile with
   the same toolchain.
 - 2026-09-04, milestone 220. Adding a dependency to the `kernel` crate flipped an inlining
-  decision the other way and `syscall::dispatch` (1,160 bytes) vanished from the symbol table. The
+  decision the other way and `system_call::dispatch` (1,160 bytes) vanished from the symbol table. The
   gate failed at 35.1% shrinking, and the script's own advice for a shrink ("just an explicit
   acknowledgment") would have re-recorded an under-measurement as the new truth.
 
@@ -117,7 +117,7 @@ Neither is redundant, and 2026-09-04 demonstrated both failure modes within one 
 - The measurement is an upper bound and a loose one. Whole symbol sizes, so a cold tail inside a
   hot function counts. The bytes an IPC actually touches are fewer and nobody knows by how much, so
   16 KiB is a ceiling on a pessimistic figure.
-- **`syscall_entry` is not comparable across ISAs.** x86_64's `syscall` goes through `IA32_LSTAR` and
+- **`system_call_entry` is not comparable across ISAs.** x86_64's `syscall` goes through `IA32_LSTAR` and
   never touches the IDT, so its entry figure legitimately excludes about 3,330 bytes the other two
   include. The ceiling is applied per architecture for that reason and must not be read as a ranking.
 - Nothing has observed the effect either half protects against. No cache is modeled by icount and

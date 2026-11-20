@@ -1,5 +1,5 @@
 //! **The benchmarks measured from EL0**, through the `os_primitives_benchmarker` program: a null
-//! syscall, a switch, IPC, pipe throughput, mapping and spawning.
+//! system call, a switch, IPC, pipe throughput, mapping and spawning.
 //!
 //! Name: provisional (lane `maintainer/last-three-over-2000`, 2026-10-12 UTC), for the module and
 //! the file.
@@ -47,7 +47,7 @@ fn spawn_os_primitives_benchmarker(role: u64, report: sched::RendezvousId) -> bo
     true
 }
 
-/// Null syscall latency, measured from EL0: the program self-times the cheapest `svc` and reports
+/// Null system call latency, measured from EL0: the program self-times the cheapest `svc` and reports
 /// `[ticks, iters]`. This is what lmbench measures. See
 /// `fixtures/src/os_primitives_benchmarker.rs`.
 /// What a shell-runnable bench program holds in slot 1, after its output in slot 0.
@@ -61,7 +61,7 @@ enum SlotOne {
     Budget(u64),
 }
 
-/// Spawn one of the programs a production shell also runs (`null_syscall`, `sink_producer`,
+/// Spawn one of the programs a production shell also runs (`null_system_call`, `sink_producer`,
 /// `sink_consumer`, `map_el0`), with the quiet-boot startup word so its row reads `bench: ...`.
 /// Slot 0 is its output (`WRITE`), the layout the shell builds. `None` when the initial ramdisk
 /// lacks the program.
@@ -103,7 +103,7 @@ fn spawn_shell_runnable_program(
 
 /// Print the sink-contract text a bench program writes on `report` until its end of stream.
 ///
-/// The program formats its own row (`bench: null_syscall <ticks> <iters>`); the kernel only
+/// The program formats its own row (`bench: null_system_call <ticks> <iters>`); the kernel only
 /// relays the bytes, so the row and the line a person gets at the shell cannot differ.
 fn relay_row(report: sched::RendezvousId) {
     loop {
@@ -120,12 +120,12 @@ fn relay_row(report: sched::RendezvousId) {
     }
 }
 
-pub(super) fn null_syscall_el0() {
+pub(super) fn null_system_call_el0() {
     let report = sched::create_rendezvous();
-    let window = TickWindow::open("null_syscall");
-    if spawn_shell_runnable_program("null_syscall", report, SlotOne::Empty).is_none() {
+    let window = TickWindow::open("null_system_call");
+    if spawn_shell_runnable_program("null_system_call", report, SlotOne::Empty).is_none() {
         window.close();
-        println!("bench: null_syscall skipped (no null_syscall in the initial ramdisk)");
+        println!("bench: null_system_call skipped (no null_system_call in the initial ramdisk)");
         return;
     }
     relay_row(report);

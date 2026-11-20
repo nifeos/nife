@@ -1231,47 +1231,47 @@ crates/compositor/src/lib.rs::union
 crates/compositor/src/lib.rs::window_pixel
 
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::ARGS
+crates/confined_system_call_fuzzer_contract/src/lib.rs::ARGS
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::CLIENT
+crates/confined_system_call_fuzzer_contract/src/lib.rs::CLIENT
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::ENDOWED
+crates/confined_system_call_fuzzer_contract/src/lib.rs::ENDOWED
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::GIFT
+crates/confined_system_call_fuzzer_contract/src/lib.rs::GIFT
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::GO
+crates/confined_system_call_fuzzer_contract/src/lib.rs::GO
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::GO_EXIT
+crates/confined_system_call_fuzzer_contract/src/lib.rs::GO_EXIT
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::GO_STEP
+crates/confined_system_call_fuzzer_contract/src/lib.rs::GO_STEP
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::NOTE
+crates/confined_system_call_fuzzer_contract/src/lib.rs::NOTE
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::NUMBER
+crates/confined_system_call_fuzzer_contract/src/lib.rs::NUMBER
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::PLAYGROUND_PAGES
+crates/confined_system_call_fuzzer_contract/src/lib.rs::PLAYGROUND_PAGES
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::PLAYGROUND_VA
+crates/confined_system_call_fuzzer_contract/src/lib.rs::PLAYGROUND_VA
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::REGION
+crates/confined_system_call_fuzzer_contract/src/lib.rs::REGION
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::REPORT_VA
+crates/confined_system_call_fuzzer_contract/src/lib.rs::REPORT_VA
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::RETURNS
+crates/confined_system_call_fuzzer_contract/src/lib.rs::RETURNS
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::ROLE_A
+crates/confined_system_call_fuzzer_contract/src/lib.rs::ROLE_A
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::ROLE_B
+crates/confined_system_call_fuzzer_contract/src/lib.rs::ROLE_B
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::ROLE_WITNESS
+crates/confined_system_call_fuzzer_contract/src/lib.rs::ROLE_WITNESS
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::SERVER
+crates/confined_system_call_fuzzer_contract/src/lib.rs::SERVER
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::SHARED
+crates/confined_system_call_fuzzer_contract/src/lib.rs::SHARED
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::STEPS
+crates/confined_system_call_fuzzer_contract/src/lib.rs::STEPS
 
-crates/confined_syscall_fuzzer_contract/src/lib.rs::WORDS
+crates/confined_system_call_fuzzer_contract/src/lib.rs::WORDS
 
 crates/coremark/src/lib.rs::PINNED_CRC_64
 
@@ -3938,10 +3938,6 @@ crates/job_mix/src/lib.rs::MIX
 
 crates/job_mix/src/lib.rs::MIX_LEN
 
-crates/job_mix/src/lib.rs::NULL_SYSCALL
-
-crates/job_mix/src/lib.rs::NULL_SYSCALL_CALLS
-
 crates/job_mix/src/lib.rs::POINT
 
 crates/job_mix/src/lib.rs::REPEATS
@@ -4668,8 +4664,6 @@ crates/machine_discovery/src/x86_64.rs::RDSEED
 crates/machine_discovery/src/x86_64.rs::REQUIRED
 
 crates/machine_discovery/src/x86_64.rs::Row
-
-crates/machine_discovery/src/x86_64.rs::SYSCALL
 
 crates/machine_discovery/src/x86_64.rs::TABLE
 
@@ -7179,7 +7173,7 @@ crates/user_mode_runtime/src/socket_frame.rs::payload_write
 
 crates/user_mode_runtime/src/socket_frame.rs::set_len
 
-crates/user_mode_runtime/src/syscall.rs::invoke
+crates/user_mode_runtime/src/system_call.rs::invoke
 
 crates/user_mode_runtime/src/virtual_io.rs
 
@@ -8605,11 +8599,11 @@ kernel/src/sync.rs::lock
 
 kernel/src/sync.rs::new
 
-kernel/src/syscall.rs
+kernel/src/system_call.rs
 
-kernel/src/syscall.rs::invoke
+kernel/src/system_call.rs::invoke
 
-kernel/src/syscall/proofs.rs
+kernel/src/system_call/proofs.rs
 
 
 kernel/src/testing.rs
@@ -10318,7 +10312,7 @@ system_tests/src/user/survey_record_tests.rs
 
 system_tests/src/user/survey_tests.rs
 
-system_tests/src/user/syscall_fuzzer_tests.rs
+system_tests/src/user/system_call_fuzzer_tests.rs
 
 system_tests/src/user/system_log_tests.rs
 

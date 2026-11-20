@@ -104,7 +104,7 @@ contents.
 undone, and it is worth more written down than the refactor would have been.
 
 `kernel_main` is 908 lines (`kernel_main` in `kernel/src/boot.rs`), of which 281 are comments.
-`syscall::invoke` is 581 (`invoke` in `kernel/src/syscall.rs`). The obvious seams in `kernel_main` are
+`system_call::invoke` is 581 (`invoke` in `kernel/src/system_call.rs`). The obvious seams in `kernel_main` are
 already marked by `cfg` blocks: a 515-line `#[cfg(target_arch = "riscv64")]` boot report, and a
 285-line `#[cfg(not(any(test, feature = "bench")))]` banner and init handoff. Both capture nothing
 from the enclosing scope but `dtb`, so extracting them is mechanically trivial, and the lane did
@@ -125,7 +125,7 @@ signatures for the extracted function (`-> !` and `-> ()`); the unit return was 
 either block breaks a different feature, so there is no version of this split that is free.
 
 So `kernel_main` is long because it is the single divergent boot path, and that is a design, not a
-defect. `syscall::invoke` was not touched: its length is one arm per object method, which is the
+defect. `system_call::invoke` was not touched: its length is one arm per object method, which is the
 shape of the thing it dispatches.
 
 What this costs, honestly: a reader still meets a 908-line function. The mitigation is that the
@@ -175,7 +175,7 @@ cannot make for itself.
 
 ## Scope note
 
-This milestone is boilerplate and tooling. It moves no syscall, adds no dependency, changes no wire
+This milestone is boilerplate and tooling. It moves no system call, adds no dependency, changes no wire
 format, and takes no `DECISIONS` section: the reasoning lives here and in `notes/`, per the rule
 about lanes and global resources. If the `user_rt` change turns out to want a `DECISIONS` entry
 (it overturns a recorded decision in a doc header, which is arguably enough), that is the

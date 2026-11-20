@@ -83,7 +83,7 @@ first="$(cd "$tree" && helpers/continuous-fuzz.sh --ci-range 0)"
 {
     echo "boot banner SECRETPANICTEXT"
     echo "panicked at kernel/src/secret.rs: SECRETPANICTEXT"
-    echo "replay: NIFE_SYSCALL_FUZZ_SEEDS=7785200123:1"
+    echo "replay: NIFE_SYSTEM_CALL_FUZZ_SEEDS=7785200123:1"
 } > "$work/guest-finding"
 STUB_GUEST="$work/guest-finding" STUB_GUEST_RC=1 run 0 /dev/null
 [ "$(cat "$work/rc")" = 1 ] || fail "a finding did not exit 1 (exit $(cat "$work/rc")): $(cat "$work/out")"
@@ -94,7 +94,7 @@ sed "s/$commit//g" "$work/out" | grep -qE '[0-9]{9,}' && fail "a finding printed
 [ -z "$(ls -A "$work/tmp")" ] || fail "the private directory outlived the shard"
 
 # A clean window.
-echo "syscall fuzzer: 500 seeds, 1000 ms (all clean)" > "$work/guest-clean"
+echo "system call fuzzer: 500 seeds, 1000 ms (all clean)" > "$work/guest-clean"
 STUB_GUEST="$work/guest-clean" run 0 /dev/null
 [ "$(cat "$work/rc")" = 0 ] || fail "a clean window did not exit 0: $(cat "$work/out")"
 grep -q "shard 0 (kernel-thread) clean" "$work/out" || fail "a clean window did not say so"

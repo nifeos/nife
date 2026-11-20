@@ -150,7 +150,7 @@ pub struct Handshake<W> {
     pub ipc_served: bool,
 
     /// The blocking IPC was aborted (revocation tore the endpoint down, or it was stale at the
-    /// call). Set by [`abort`](Self::abort); read and cleared by the syscall layer through
+    /// call). Set by [`abort`](Self::abort); read and cleared by the system call layer through
     /// [`take_aborted`](Self::take_aborted). The other half of the gate. Not cleared by `park`;
     /// see BUGS.
     pub ipc_aborted: bool,
@@ -224,7 +224,7 @@ impl<W> Handshake<W> {
 
     /// Abort the wait (the endpoint is stale or was revoked under the sleeper). Passes the
     /// gate like a delivery, because the woken thread does get something to return: the error the
-    /// syscall layer reads through [`take_aborted`](Self::take_aborted).
+    /// system call layer reads through [`take_aborted`](Self::take_aborted).
     pub fn abort(&mut self) {
         self.ipc_aborted = true;
     }
@@ -236,7 +236,7 @@ impl<W> Handshake<W> {
         self.ipc_served || self.ipc_aborted
     }
 
-    /// Read and clear the abort flag, exactly `core::mem::take`: the syscall layer calls this
+    /// Read and clear the abort flag, exactly `core::mem::take`: the system call layer calls this
     /// right after a blocking primitive returns, and `true` means "hand the caller an error, not
     /// the mailbox".
     pub fn take_aborted(&mut self) -> bool {

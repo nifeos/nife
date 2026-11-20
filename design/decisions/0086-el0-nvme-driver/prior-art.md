@@ -156,7 +156,7 @@ option 4 should be taken knowing that nobody is going to have measured it for us
 
 ## What this lane would decide, and what is left to calef
 
-Per AGENTS.md, a fork that touches the syscall surface gets options rather than a recommendation, so
+Per AGENTS.md, a fork that touches the system call surface gets options rather than a recommendation, so
 this is offered as a reading and not as an answer.
 
 **Two things this pass does settle, and they are not calef's to rule on**: the hold condition above

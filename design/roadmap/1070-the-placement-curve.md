@@ -70,7 +70,7 @@ The kernel-side form has two depths, and the curve names which one each point us
 
 1. A kernel thread, IPC kept. The component runs in the kernel's address space and still receives
    its requests through a rendezvous. A runtime crate offers the `user_mode_runtime` API
-   (`crates/user_mode_runtime/src/syscall.rs`, `invoke`), with each call entering the kernel's
+   (`crates/user_mode_runtime/src/system_call.rs`, `invoke`), with each call entering the kernel's
    capability dispatch as a function call and checking the table as before. This isolates the trap,
    the address-space switch and the cache and TLB effects. The name of that crate is the architect's;
    this proposal mints none.
@@ -135,7 +135,7 @@ of authority.
    file system rows `fs_read` and `fs_throughput` (`kernel/src/bench/filesystem.rs`) run only with
    `--real --smp`. The first experiment therefore needs its own single-hart row, which the memory
    disk makes possible.
-3. Code placement. Moving radon's kernel text by a few bytes moves the null syscall by up to 8 ticks
+3. Code placement. Moving radon's kernel text by a few bytes moves the null system call by up to 8 ticks
    (7%), per risk 4's entry. Compare placements across several builds, not one.
 4. Untuned components. A slow component hides boundary cost behind a large denominator. The NVMe
    server keeps one command in flight, and radon's board images carried debug userspace until
@@ -249,7 +249,7 @@ is a workshop-length paper, and its text and numbers go to the architect before 
 - An ambient-authority operating system. §10 forbids ambient authority on main, so the census
   models the ambient policy and builds none of it.
 - A whole monolithic nife. The curve places components one at a time and stops where its rule says.
-- Changes to the syscall surface, `design/decisions/` or the shipped image.
+- Changes to the system call surface, `design/decisions/` or the shipped image.
 - The list of what leaves the kernel, and the window seam: both belong to other lanes.
 - aarch64, until argon boots.
 

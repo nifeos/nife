@@ -54,7 +54,7 @@ Read on 2026-10-06 (UTC):
 | silicon | no aarch64 board has booted nife | radon hangs in OpenSBI (below) | xenon untested |
 
 All three are `arch::reboot(marker)`, compiled only under `--features reboot_soak_test`.
-`script/soak-test --reboot --arch <arch>` proves each by a second boot under QEMU. No syscall,
+`script/soak-test --reboot --arch <arch>` proves each by a second boot under QEMU. No system call,
 capability or program reaches them in a normal build.
 
 radon's reset does not work today. On 2026-09-04 its OpenSBI accepted SRST type 1 and then hung.
@@ -76,7 +76,7 @@ have nothing to lend: what they wrap is `reboot(2)`, option D below.
 ## The fork, ruled by §251
 
 Three questions, one recommendation each. Only the first is expensive to change, because it adds
-to the syscall surface (§10 (process model: capability-based, microkernel) and §16 (object
+to the system call surface (§10 (process model: capability-based, microkernel) and §16 (object
 revocation)) and every later program is written against it.
 
 ### Which object carries the authority
@@ -89,7 +89,7 @@ program cannot make them, so on two of three architectures the kernel must act o
 | A | A new kernel object with no payload, one method that calls `arch::reboot`. The kernel grants it to the progenitor at boot. The progenitor endows `reboot` through a manifest field, the way `entropy` is endowed. | recommended |
 | B | A method on an existing object | refused |
 | C | A user-mode driver holding device authority | refused |
-| D | A new syscall number | refused |
+| D | A new system call number | refused |
 | E | An op on a kernel-served endpoint, the shape milestone 391 (kernel introspection over an endpoint) asks about | refused for now |
 
 B fails because no existing object names the machine. The root `MemoryRegion` comes closest. Its
@@ -101,7 +101,7 @@ C works on x86_64 alone, where a `PortRange` on `0xCF9` is already a capability 
 have no device to grant, so C breaks §19 (architectural parity) by construction.
 
 D is ambient: any thread could reset the machine unless the kernel checked an identity, and the
-kernel has none. It is a brand-new syscall number besides, which CLAUDE.md says is a fork of its
+kernel has none. It is a brand-new system call number besides, which CLAUDE.md says is a fork of its
 own.
 
 E would be right if 391 had been decided. §149 (may the kernel answer on an endpoint) deliberately
@@ -113,7 +113,7 @@ does not have.
 A is the shape this tree already uses for an authority the kernel must exercise itself: `Irq` and
 `Timer` are kernel objects a holder invokes. It costs one `Object` variant, one `abi::objtype`
 number, one method, a `GRANTS` slot and a `grant_plan` field. `script/fastpath-footprint` measures
-the syscall decoder flat, so it prices the new dispatch arm. That arm is cold and should cost
+the system call decoder flat, so it prices the new dispatch arm. That arm is cold and should cost
 nearly nothing, but no number exists until it is built.
 
 Prior art, from memory and not re-read: Linux gates `reboot(2)` on
@@ -193,7 +193,7 @@ reset belongs to milestone 249's bench steps. If it fails there, that is a `BUGS
 Built 2026-10-06 (UTC). Every name below is provisional.
 
 - **The object.** `Object::Reboot` (`kernel/src/cap.rs`), payload-free, with one method,
-  `abi::reboot::REBOOT` (`kernel/src/reboot.rs`, dispatched by `syscall::reboot_invoke`). It
+  `abi::reboot::REBOOT` (`kernel/src/reboot.rs`, dispatched by `system_call::reboot_invoke`). It
   moves the console out of the kernel ring first (`console::enter_reset`, the panic's escape),
   because a line left for the drainer is never printed once the reset starts. It then runs the
   JH7110 reset preparation milestone 592 built
@@ -244,7 +244,7 @@ Built 2026-10-06 (UTC). Every name below is provisional.
   `swish-check` measured 26, 30 and 33 with it, as before it, and
   `kernel::cap::CAPABILITY_TABLE_PEAK_MEASURED` records 33 of 64.
 - **One file-server window for the life of a `reboot` job**, from the pool directory grants use.
-- **The dispatch arm.** `script/fastpath-footprint` on aarch64 reads `syscall_entry` at 1,733 B,
+- **The dispatch arm.** `script/fastpath-footprint` on aarch64 reads `system_call_entry` at 1,733 B,
   3.8% over its 1,669 B baseline and inside the 5% band, and `ipc_call_reply` 1.5% over. The
   baseline predates this branch, so how much of the 64 B is the new arm is not isolated.
 

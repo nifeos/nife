@@ -28,7 +28,7 @@ its absence today, hand-wiring per program what a package would install once:
   owns it"* and its per-package index shard, against no package that exists.
 - Milestone 47's conclusion is that installing a program is granting it into a namespace, which
   is a packaging statement with no packager.
-- `crates/system_initializer` spends a capability through a syscall per program, per architecture,
+- `crates/system_initializer` spends a capability through a system call per program, per architecture,
   and every new program edits it.
 - Milestone 150 (adding a program should not need eight hand-maintained lists) is the same complaint
   from the other end, and the count is the argument: eight lists, hand-maintained, per program.

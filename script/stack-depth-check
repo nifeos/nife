@@ -85,7 +85,7 @@
 #     (2026-10-03): `TRAP_FRAME` 176 is `size_of::<TrapFrame>()` (22 quadwords, asserted in
 #     x86_64/exceptions.rs and reserved by trap.s); `DISPATCH` and `BODY` are `x86_trap_dispatch`
 #     and `x86_trap_body`, which the built test images contain; and a user thread's trap takes the
-#     larger of that dispatcher and `x86_syscall_handler`, because `syscall` enters there and
+#     larger of that dispatcher and `x86_system_call_handler`, because `system_call` enters there and
 #     never touches the dispatcher. x86_64 frames get 8 bytes added for the return address `call`
 #     pushes, which `-Z emit-stack-sizes` leaves out (checked against `x86_trap_dispatch`: `subq
 #     $0x68, %rsp` and a recorded size of 104). The first run found no offender: the deepest
@@ -232,12 +232,12 @@ if ARCH not in TRAP_FRAME or ARCH not in DISPATCH or ARCH not in BODY:
 # x86_64's `call` pushes a return address that `-Z emit-stack-sizes` does not include in a frame
 # (aarch64 and riscv64 spill the link register inside the frame, so theirs is counted already).
 RETADDR = 8 if ARCH == "x86_64" else 0
-# x86_64 alone has a second way in from ring 3: `syscall` lands in `x86_syscall_entry`, which builds
-# the same TrapFrame and calls `x86_syscall_handler` straight into `syscall::dispatch`, never
+# x86_64 alone has a second way in from ring 3: `system_call` lands in `x86_system_call_entry`, which builds
+# the same TrapFrame and calls `x86_system_call_handler` straight into `system_call::dispatch`, never
 # touching `x86_trap_dispatch`. The other two ISAs' `svc` and `ecall` arrive through their one
-# dispatcher, so for them the DISPATCH row already covers the syscall arm. A user thread's trap is
+# dispatcher, so for them the DISPATCH row already covers the system call arm. A user thread's trap is
 # therefore the larger of the two roots on x86_64.
-ENTRY_EXTRA = {"x86_64": ["x86_syscall_handler"]}.get(ARCH, [])
+ENTRY_EXTRA = {"x86_64": ["x86_system_call_handler"]}.get(ARCH, [])
 ROOTS = ["thread_entry", "user_thread_entry", DISPATCH[ARCH], BODY[ARCH]] + ENTRY_EXTRA
 
 
@@ -399,15 +399,15 @@ if missing:
 results = {r: deepest(r) for r in ROOTS}
 tf = TRAP_FRAME[ARCH]
 
-# **The arms a trap taken from kernel code can never enter.** A syscall dispatch needs an `svc` /
+# **The arms a trap taken from kernel code can never enter.** A system call dispatch needs an `svc` /
 # `ecall` from EL0/U-mode, and `user_fault` needs a fault from there; neither can nest on a kernel
 # thread running its own closure, which is at EL1/S-mode by definition. Composing the dispatcher's
-# unrestricted longest path with a kernel thread's would charge a syscall's frames to an interrupt
+# unrestricted longest path with a kernel thread's would charge a system call's frames to an interrupt
 # and overstate the worst case by about 4.5 KB, which is the difference between this gate passing
 # and failing on a tree with 2.6 KB of real headroom. Pruning them is the difference between a
 # bound and a scare.
 LOWER_EL_ARMS = {n for n in frames
-                 if "syscall::dispatch" in pretty.get(n, n) or "::user_fault" in pretty.get(n, n)}
+                 if "system_call::dispatch" in pretty.get(n, n) or "::user_fault" in pretty.get(n, n)}
 
 # **And the handler body, which runs somewhere else entirely** (milestone 124). A trap from kernel
 # mode switches to this core's interrupt stack for everything above the trap frame, so charging the
@@ -423,14 +423,14 @@ nested, nested_path, _ = deepest(DISPATCH[ARCH], skip=LOWER_EL_ARMS | OFF_THREAD
 interrupted = results["thread_entry"][0] + tf + nested
 # A user thread's kernel stack is EMPTY while it runs at EL0 (`enter_userspace` leaves SP_EL1 at the
 # top and the trap rebuilds its frame there), so a trap on one is the frame plus the full handler,
-# syscall arm included, body and all: a trap from user mode does NOT switch stacks, because the
-# syscall it is probably taking may block and a per-core stack cannot hold a blocked thread's
+# system call arm included, body and all: a trap from user mode does NOT switch stacks, because the
+# system call it is probably taking may block and a per-core stack cannot hold a blocked thread's
 # frames. Traps do not nest on top of that: both ISAs keep interrupts masked for the whole handler.
 trapped = tf + max(results[r][0] for r in [DISPATCH[ARCH]] + ENTRY_EXTRA)
 worst = max(interrupted, trapped, results["thread_entry"][0])
 
 # **What the interrupt stack itself carries**, and the reason this gate now has two ceilings. Only
-# a kernel-mode trap runs over there, so the syscall and user-fault arms are pruned for the same
+# a kernel-mode trap runs over there, so the system call and user-fault arms are pruned for the same
 # reason they are pruned above, and the trap frame is NOT counted: it stays on the interrupted
 # stack, where the vector built it.
 on_interrupt, on_interrupt_path, _ = deepest(BODY[ARCH], skip=LOWER_EL_ARMS)

@@ -199,10 +199,10 @@ x86_64 got a compiler fence, and the reason is per-site rather than a default. E
 in those five programs asks for store-store (descriptor before available index; index before notify)
 or load-load (used index before the payload it gates). Both are orders TSO gives for the write-back
 memory a coherent DMA agent shares. The store-load case, the one TSO does not give, is unreachable,
-because every notify and register access in these drivers leaves the process through a serializing syscall.
+because every notify and register access in these drivers leaves the process through a serializing system call.
 `components/src/non_volatile_memory_express.rs` keeps `dmb sy` and a real `mfence` and did not join
 the shared function: its doorbell is a direct store to a device-typed page in this address space,
-with no syscall between the ring stores and it. Same hardware, different answer, which is what makes
+with no system call between the ring stores and it. Same hardware, different answer, which is what makes
 the compiler-fence argument falsifiable rather than convenient.
 
 Phase 3, partly. `script/bench`'s `EXAMPLES` now names all three architectures and their
@@ -218,7 +218,7 @@ way `script/toolchain-bump` does. The x86_64 rows were measured from the built t
 was estimated. `TRAP_FRAME` is 176, which is `size_of::<TrapFrame>()` and is asserted in
 `exceptions.rs`. `DISPATCH` is `x86_trap_dispatch` and `BODY` is `x86_trap_body`.
 
-x86_64 has a second ring-3 entry that the other two lack, `x86_syscall_handler`. A user thread's
+x86_64 has a second ring-3 entry that the other two lack, `x86_system_call_handler`. A user thread's
 trap therefore takes the larger of the two roots. Each `call` also pushes an 8-byte return address
 that `-Z emit-stack-sizes` omits, so the script adds it.
 

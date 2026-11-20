@@ -17,7 +17,7 @@ How `free` and `vmstat` learn about memory. `kernel/src/memory.rs` keeps the fig
 [`notes/process-view/remaining-procps-programs.md`](../../notes/process-view/remaining-procps-programs.md) asked whether
 "how much memory is free" carries region-scoped authority like everything else here, or becomes the
 second machine-wide ambient fact after monotonic time. It named two options and no winner, because
-both touch the syscall surface. calef ruled a third, which combines them.
+both touch the system call surface. calef ruled a third, which combines them.
 
 ## The decision
 
@@ -26,7 +26,7 @@ Shape 3, in two parts.
 1. A per-region method on `MemoryRegion`, gated by `Rights::ENUMERATE`. It reports how much of the
    region behind the capability is committed. This is option 1's method, and it answers "your
    share". It is a new method inside the capability model, as §114 (`ENUMERATE` extends to the
-   address-space object) was for `pmap`, not a new syscall number.
+   address-space object) was for `pmap`, not a new system call number.
 2. A read-only machine memory page carrying the machine-wide figures. It is held as a capability,
    never ambient. Owner policy grants it to every login by default, the way `UNVOUCHED_MANIFEST`
    grants the clock and configuration pages under §219 (how the shell names an installed program to

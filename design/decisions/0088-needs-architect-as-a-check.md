@@ -15,7 +15,7 @@ an admission policy and made the weakness of that policy the only thing left in 
 the integrator may renumber at merge.
 
 What. `needs-architect` means a pull request is outside standing merge authority: it touches the
-syscall surface, adds a dependency, or owes a `DECISIONS` section. Today the label is enforced by
+system call surface, adds a dependency, or owes a `DECISIONS` section. Today the label is enforced by
 *one script choosing not to arm it*. Nothing stops a merge by any other route, and nothing stops the
 work merging if the label was never applied.
 
@@ -46,8 +46,8 @@ absent. Then:
 **What it does not fix, stated plainly.** It enforces the label; it cannot apply the label. A pull
 request that *should* be held and never gets labeled is exactly as unheld as it is today. The
 mechanisms that could close that are separate and harder: a `CODEOWNERS` entry on
-`kernel/src/syscall.rs` and on `design/decisions/`, or a check that reads the diff and demands the
-label when the syscall surface or the dependency graph moved. The second is the real answer and
+`kernel/src/system_call.rs` and on `design/decisions/`, or a check that reads the diff and demands the
+label when the system call surface or the dependency graph moved. The second is the real answer and
 it is a bigger piece of work; this proposal is the cheap half that makes the expensive half optional
 rather than urgent.
 

@@ -42,7 +42,7 @@ Two instruments, because they answer different questions:
 The 814 became 459 lint hits in the kernel once tests left. Of the 418 `expect_used`, 251 are in
 the boot-time service builders (`kernel/src/user/*_service.rs`), 70 in `user.rs` and 41 in
 `sched.rs`. A random sample of 25 kernel panic sites read as boot construction or a stated
-invariant ("no scheduler", "unhandled x86_64 exception"); none was on a syscall argument path.
+invariant ("no scheduler", "unhandled x86_64 exception"); none was on a system call argument path.
 
 The 32 crates this census reads as parsing bytes from a less-trusted party carry 24 panic hits
 between them. Their exposure is indexing: 719 `indexing_slicing` hits.

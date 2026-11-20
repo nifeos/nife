@@ -5,7 +5,7 @@ decided: 2026-07-30
 ratified_by: calef
 ---
 
-# 31. The foreign-language seam: C holds no capabilities and makes no syscalls (milestone 36 (a foreign-language component, seam first))
+# 31. The foreign-language seam: C holds no capabilities and makes no system calls (milestone 36 (a foreign-language component, seam first))
 
 Built 2026-07-29, both ISAs, in QEMU. *(Section number claimed while two other lanes were open;
 if one of them also took 30, this is the entry to renumber. It depends on §4 rule 3, §15, §16, §22,
@@ -28,18 +28,18 @@ capabilities, the DMA validator, the IOMMU.
 ## The seam's rules, which are the decision
 
 *Amended 2026-10-08 (UTC) by §265 (a C library started from relibc, whose Rust platform layer holds
-the capabilities), on calef's ruling for a C library. Rule 1 now reads "the C makes no syscalls
+the capabilities), on calef's ruling for a C library. Rule 1 now reads "the C makes no system calls
 directly; the C library's platform layer, in Rust, holds the capabilities", and rule 3's tier three
 is no longer refused: milestone 478 (tier three: full POSIX behind the foreign-language seam) is
 superseded by milestones 835 to 838. §265 also corrects rule 1's reason: the C is confined by its
 process's capability table, not by what it can name. The text below is the July record.*
 
-1. **The C makes no syscalls and holds no capabilities.** A Rust `user_rt` shell
+1. **The C makes no system calls and holds no capabilities.** A Rust `user_rt` shell
    (`fixtures/src/c_shim.rs`) holds every capability and performs every IPC; the C is called over the C
    ABI and gets a pointer and a length. This is not a request the C is trusted to honor, it is a
-   property of what it can name: a syscall needs a capability slot, and the C never sees one. So a
-   foreign component **cannot widen the kernel's syscall surface** (§4 rule 3), and the confinement
-   claim is exactly as narrow as it should be: the C can corrupt memory inside a grant the shell
+   property of what it can name: a system call needs a capability slot, and the C never sees one. So a
+   foreign component **cannot widen the kernel's system call surface** (§4 (kernel shape) rule 3). The confinement
+   claim is as narrow as it should be: the C can corrupt memory inside a grant the shell
    already had, and nothing else.
 2. What crosses is scalars and buffers only. `(u8*, usize) -> u32`. No structs, no callbacks into
    Rust, no ownership transfer, no error type. The layout of the shared page is agreed by a comment in
@@ -112,8 +112,8 @@ construction authority, or proxies the reap through something that does.
   can no longer build. It is the wrong answer here, because it moves the requirement behind an IPC hop
   and the requirement is the interesting part. **The concrete requirement, for whoever decides the
   fork: a supervisor needs exactly `DESTROY` on one region it did not create.** Neither a rights bit
-  on `WRITE` nor an `Untyped::REAP` method was invented here; that is a rights-model and
-  syscall-surface decision, and §26's phase-B block already records it as one.
+  on `WRITE` nor an `Untyped::REAP` method was invented here. That is a rights-model and
+  system-call-surface decision, and §26 (the fault endpoint)'s phase-B block already records it as one.
 
 ## The honest caveats, including what a spike does not prove
 

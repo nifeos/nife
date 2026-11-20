@@ -10,7 +10,7 @@
 //!
 //! - The waker is the kernel test, not a second user thread: two threads cannot share a space
 //!   until the join is built (it waits on calef's ruling on pull request #1892), so the wake is
-//!   `sched::futex_wake` called directly, past the own-space check. The syscall layer's checks are
+//!   `sched::futex_wake` called directly, past the own-space check. The system call layer's checks are
 //!   proved below, by a caller refused at each; the end-to-end proof is the milestone's exit test,
 //!   four threads contending a `std::sync::Mutex`.
 
@@ -20,7 +20,7 @@ use abi::futex::{PRIVATE, SIZE_U32, SIZE_U64};
 use super::*;
 use crate::capability_object::Rights;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
 const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
@@ -42,7 +42,7 @@ pub(super) const WAITER: &[u32] = &[
     0xAA14_03E2, // mov  x2, x20
     0xAA15_03E3, // mov  x3, x21
     0xD280_0004, // mov  x4, #0            (expected)
-    0xD280_0048, // mov  x8, #2            (SYSCALL_INVOKE)
+    0xD280_0048, // mov  x8, #2            (SYSTEM_CALL_INVOKE)
     0xD400_0001, // svc  #0
     0x9100_0400, // add  x0, x0, #1
     0xF940_0A86, // ldr  x6, [x20, #16]
@@ -63,7 +63,7 @@ pub(super) const WAITER: &[u32] = &[
     0x0009_8613, // mv   a2, s3
     0x000A_0693, // mv   a3, s4
     0x0000_0713, // li   a4, 0             (expected)
-    0x0020_0893, // li   a7, 2             (SYSCALL_INVOKE)
+    0x0020_0893, // li   a7, 2             (SYSTEM_CALL_INVOKE)
     0x0000_0073, // ecall
     0x0015_0513, // addi a0, a0, 1
     0x0109_B303, // ld   t1, 16(s3)
@@ -75,10 +75,10 @@ pub(super) const WAITER: &[u32] = &[
     0xFC9F_F06F, // j    loop
 ];
 /// `mov r12, rdi; mov r13, rsi; mov r14, rdx; loop: mov rdi, r12; mov esi, 3; mov rdx, r13;
-/// mov r10, r14; xor r8d, r8d; mov eax, 2; syscall; lea rax, [rdi + 1]; or [r13 + 16], rax;
+/// mov r10, r14; xor r8d, r8d; mov eax, 2; system call; lea rax, [rdi + 1]; or [r13 + 16], rax;
 /// inc qword [r13 + 8]; jmp loop`, then a `nop` to a word. Packed the way `user::x86_programs`
 /// packs its listings. The result is read from `rdi`, where this ABI returns it (§124 (the
-/// `x86_64` syscall ABI)); `rax` still holds the syscall number.
+/// `x86_64` system call ABI)); `rax` still holds the system call number.
 #[cfg(target_arch = "x86_64")]
 pub(super) const WAITER: &[u32] = &[
     0x49FC_8949,

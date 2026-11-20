@@ -61,7 +61,7 @@ What remains open is which mechanism does carry it, and the candidates are not e
   rarely that a value handed over once may be the honest shape. That makes this a question about
   process startup rather than about a new method.
 
-Each is a syscall-surface or wire decision, which is the irreversible category. So a lane brings the
+Each is a system-call-surface or wire decision, which is the irreversible category. So a lane brings the
 costs and calef picks.
 
 ## BUGS
@@ -81,4 +81,4 @@ The kernel's online cpu set is a bitmask that is `{1, 2, 3}` on real silicon and
 QEMU, and userspace cannot see it at all. The placement record makes that absence load-bearing.
 The workaround a reader reaches for is exactly the range that `crates/cpu_set` exists to refuse.
 Not a survey record (a survey answers about a domain, this is about the machine), so which
-mechanism carries it is a syscall-surface fork for calef.
+mechanism carries it is a system-call-surface fork for calef.

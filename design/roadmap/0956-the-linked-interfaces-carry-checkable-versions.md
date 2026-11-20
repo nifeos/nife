@@ -51,7 +51,7 @@ Each step lands a provable piece. Every new name is provisional.
    the note through a macro (`interfaces_note::carry_interfaces!`) that reads the constants, so a declaration cannot drift from them. Proves: the encode, decode and one-encoding Kani property carry over from 597's gate,
    and no two crates share an id.
 
-3. The syscall ABI check runs at spawn. The progenitor reads the ABI entry of a program's
+3. The system call ABI check runs at spawn. The progenitor reads the ABI entry of a program's
    `INTERFACES` note and compares it with the kernel's `ABI_VERSION` (§235 (the OS is built and
    updated from packages, and its source divides by purpose)). It refuses a mismatch,
    naming both. A program with no `INTERFACES` note declares nothing and runs as it does today;

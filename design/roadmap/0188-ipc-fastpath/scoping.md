@@ -11,7 +11,7 @@ those phases re-measured is in [phases-1-to-3.md](phases-1-to-3.md).
 pull request #574, unmerged at the time of writing. Written by `script/fastpath-footprint`, which
 milestone 132 (the fast path's footprint) owns.
 
-| | `ipc_fastpath` | `syscall_entry` | total |
+| | `ipc_fastpath` | `system_call_entry` | total |
 |---|---|---|---|
 | aarch64 | 5,788 | 3,304 | 9,092 (8.88 KiB) |
 | riscv64 | 5,106 | 1,870 | 6,976 (6.81 KiB) |
@@ -27,19 +27,19 @@ counted. Read that section and the Liedtke argument above it before touching any
 form.
 
 Two of the figures this milestone was briefed with are stale, and the corrections matter.
-`riscv64`'s `syscall_entry` is 1,870 and not 1,866. And milestone 132's "the largest single item is
-`syscall::dispatch` at 2,024 bytes", which is where this milestone's whole premise came from, was
+`riscv64`'s `system_call_entry` is 1,870 and not 1,866. And milestone 132's "the largest single item is
+`system_call::dispatch` at 2,024 bytes", which is where this milestone's whole premise came from, was
 true on 2026-08-18 and is not true now. Measured in this lane's own worktree from a release aarch64
 kernel built at fc7b04e7:
 
 ```
 $ llvm-objdump -d --no-show-raw-insn target/aarch64-unknown-none-softfloat/release/kernel
    2020  exception_vectors
-   1160  kernel::syscall::dispatch
+   1160  kernel::system_call::dispatch
     124  exception_dispatch
 ```
 
-`dispatch` is 1,160 bytes, down 864 from 2,024, and aarch64's `syscall_entry` is down by exactly
+`dispatch` is 1,160 bytes, down 864 from 2,024, and aarch64's `system_call_entry` is down by exactly
 that same 864. Milestone 156 (extract the rest and ratchet both ways) did that, by moving the rare
 administrative arms out of `invoke` into `#[inline(never)]` functions. That is the cheap option this
 milestone was asked to price, and it has already been built once and measured.
@@ -97,12 +97,12 @@ more instruction footprint. A tripwire on retired instructions is structurally b
 which is precisely the hole milestone 132 was built to close, and it is currently pointed at the
 wrong shape.
 
-## Finding 2: aarch64's `syscall_entry` is dominated by a symbol that is 94% never fetched
+## Finding 2: aarch64's `system_call_entry` is dominated by a symbol that is 94% never fetched
 
 `exception_vectors` is 2,020 of aarch64's 3,304, and it is not code in the ordinary sense. It is the
 hardware's vector table: `kernel/src/arch/aarch64/vectors.s` builds it as sixteen `VECTOR_ENTRY`
 macros at `.balign 0x80`, with the comment *"The hardware requires 2048-byte alignment. 16 entries x
-128 bytes = 2048."* A syscall from EL0 traps to exactly one of those sixteen entries (index 8, lower
+128 bytes = 2048."* A system call from EL0 traps to exactly one of those sixteen entries (index 8, lower
 EL AArch64 synchronous) and fetches at most 128 bytes of the table. The other 1,892 are page faults,
 IRQs, kernel-mode traps and the AArch32 entries this kernel will never support.
 
@@ -110,8 +110,8 @@ So aarch64's honest entry footprint is about 1,412 bytes (one 128-byte vector en
 `exception_dispatch` at 124, plus `dispatch` at 1,160), not 3,304. Two consequences, and the second
 is why this is in the milestone rather than in a bug report:
 
-- The three architectures' `syscall_entry` figures are even less comparable than pull request #574
-  already recorded them to be. That note explains why x86_64's 1,637 is small (a `syscall`
+- The three architectures' `system_call_entry` figures are even less comparable than pull request #574
+  already recorded them to be. That note explains why x86_64's 1,637 is small (a `system_call`
   instruction reads `IA32_LSTAR` and consults no IDT entry, so its entry set is four symbols); it
   does not yet say that aarch64's 3,304 is large for the mirror-image reason.
 - A lane could "improve" aarch64's number by 1,892 bytes without changing one fetched
@@ -119,7 +119,7 @@ is why this is in the milestone rather than in a bug report:
   that would look like a 57% win. That is a gate that can be gamed, which is the one property
   AGENTS.md's ranking function says a measurement must not have.
 
-`exception_restore` (92 bytes) runs on the return leg of every syscall and is in neither figure. It
+`exception_restore` (92 bytes) runs on the return leg of every system call and is in neither figure. It
 is a small under-count in the other direction and should be added when the table is fixed.
 
 ## Finding 3: where the bytes are, per symbol
@@ -145,7 +145,7 @@ rather than guess at it.
 
 `schedule` + `finish_switch` + `wake` + `kmem::recycle` + `switch_to` is 2,872 bytes, 38% of the
 CALL/reply closure. It is the general scheduler being asked to re-pick a thread that the IPC already
-knows the identity of. That, and not `syscall::dispatch`, is the largest structurally skippable
-block on this path. `syscall::dispatch` at 1,160 is now about an eighth of an honestly counted round
+knows the identity of. That, and not `system_call::dispatch`, is the largest structurally skippable
+block on this path. `system_call::dispatch` at 1,160 is now about an eighth of an honestly counted round
 trip (7,516 of closure plus the ~1,412 of entry that is fetched). And 864 of its former bulk has
 already been removed by the cheap method.

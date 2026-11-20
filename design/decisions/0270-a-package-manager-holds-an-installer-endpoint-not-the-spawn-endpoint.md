@@ -60,7 +60,7 @@ progenitor serves install, remove and rollback and nothing else.
   rows, and rows from before the column, any manager may undo.
 - A holder that dies mid-request. Its reaped message, which arrives on the same endpoint, ends
   the wait for frames it will never send; the request is abandoned and nothing is written.
-- No new syscall and no new kernel method. A badge, a `WRITE`-only copy and an endpoint made
+- No new system call and no new kernel method. A badge, a `WRITE`-only copy and an endpoint made
   from a region are all §230 and §16 (object revocation) as built.
 
 `spawnproto`'s module documentation and `grant_plan::Manifest::installer` carry the same contract at
@@ -104,7 +104,7 @@ Milestone 911 added two methods to the endpoint, and a way to delegate it.
   ask, whose declaration milestone 910 (a package declares a service) owns. Until 910 builds the
   declaration, `jig` holds the endpoint alone, and the gate proves the delegation with `jig` as the
   holder.
-- No new syscall and no new kernel method: a badge on the same endpoint, two activation verbs on
+- No new system call and no new kernel method: a badge on the same endpoint, two activation verbs on
   the same wire, and a file beside the generations are all §230, §208 and §16 as built.
 
 ## What was refused

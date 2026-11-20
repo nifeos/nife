@@ -41,7 +41,7 @@ Each by a path dependency with `version = "0.1.0"`, except the litmus tool, whic
 | package | manifest | table |
 |---|---|---|
 | `kernel` | `kernel/Cargo.toml` | dependencies. `kernel/src/sync.rs` wraps `test_and_set_lock::SpinLock` in `InterruptSafeMutex`, and `kernel/src/user/fs_service/two_dirs.rs` holds one static |
-| `system_tests` | `system_tests/Cargo.toml` | dependencies. Six statics in `system_tests/src/user/`: `pipeline_tests.rs`, `pipeline_service.rs`, `confined_fuzzer_tests.rs`, `redirection_tests.rs` and two in `syscall_fuzzer_tests.rs` |
+| `system_tests` | `system_tests/Cargo.toml` | dependencies. Six statics in `system_tests/src/user/`: `pipeline_tests.rs`, `pipeline_service.rs`, `confined_fuzzer_tests.rs`, `redirection_tests.rs` and two in `system_call_fuzzer_tests.rs` |
 | `host_reordering_litmus` | `tools/host_reordering_litmus/Cargo.toml` | dependencies. It runs the real lock on a bare-metal guest beside its own copy, and `weaken-spin.sh` edits the crate's source in place |
 
 The tooling that names the crate: `script/interleaving-check` and `.github/workflows/ci.yml` (the

@@ -64,7 +64,7 @@ what this thing claims to do".
 
 **Linux's monolith is a versioning strategy, not only an architecture.** Everything ships together, so
 kernel-internal interfaces can churn freely; the stability promise is made at exactly one boundary,
-the syscall ABI, and "we do not break userspace" is enforceable because one tree owns both sides of
+the system call ABI, and "we do not break userspace" is enforceable because one tree owns both sides of
 every other interface.
 
 A microkernel distributes that problem. If `fs_proto` changes, every implementer and every consumer

@@ -5,7 +5,7 @@ name: architect hold
 
 # **Enforces the `needs-architect` label mechanically, so no one merges a PR they only think they
 # lack authority for.** The label documents that a PR sits outside standing merge authority (a
-# `design/decisions/` section, the syscall surface, or a new dependency, per its own GitHub description),
+# `design/decisions/` section, the system call surface, or a new dependency, per its own GitHub description),
 # but before this workflow existed, nothing checked it. On 2026-08-27 a maintainer session called
 # `gh pr merge --auto` on a `needs-architect` PR without realizing the label meant "not yours to
 # merge," and the queue happily ran it through: a documentation convention is not a gate, and this

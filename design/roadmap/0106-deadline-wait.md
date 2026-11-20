@@ -36,7 +36,7 @@ hold, and §147 ruled the same day.
 | the decision core: one deadline per timer, the cached earliest, the expiry walk | `crates/inter_process_communication/src/timer.rs` |
 | three Kani harnesses, each with a replayable falsification | the same file, `falsifications/timer.verification.*` |
 | the registry, `ARM`, `CANCEL`, the tick's one comparison, `expire_timers`, the region sweep | `kernel/src/sched.rs` |
-| `Object::Timer`, the syscall arm, `RETYPE_OBJ(TIMER)` | `kernel/src/cap.rs`, `kernel/src/syscall.rs` |
+| `Object::Timer`, the system call arm, `RETYPE_OBJ(TIMER)` | `kernel/src/cap.rs`, `kernel/src/system_call.rs` |
 | `timer_arm`, `timer_cancel`, `sleep_until`, `retype_sleeper` | `crates/user_mode_runtime/src/lib.rs` |
 | five kernel tests, all three ISAs | `kernel/src/user/timer_tests.rs` |
 
@@ -99,14 +99,14 @@ measured end to end at the low end of its range on emulated cores; a faster real
 `script/fastpath-footprint`, release build, against the baselines milestone 151 recorded from CI.
 riscv64 and `x86_64` are local runs and match CI's:
 
-| ISA | `ipc_call_reply` | `ipc_send_recv` | `syscall_entry` (flat) |
+| ISA | `ipc_call_reply` | `ipc_send_recv` | `system_call_entry` (flat) |
 |---|---|---|---|
 | riscv64 | 6186 -> 6200 B (+14) | 4854 -> 4862 B (+8) | 1894 -> 1912 B (+18) |
 | `x86_64` | 8542 -> 8598 B (+56) | 6512 -> 6560 B (+48) | 1701 -> 1733 B (+32) |
 | aarch64 | 7280 -> 7280 B (0) | 5572 -> 5572 B (0) | 1512 -> 1528 B (+16) |
 
 The closure grows by the `Timer` arm of `invoke`'s object match, which the IPC roots pass through;
-`timer_invoke` itself is out of line. §147's scaffold measured `syscall_entry` at +12, +158 and +96
+`timer_invoke` itself is out of line. §147's scaffold measured `system_call_entry` at +12, +158 and +96
 B. The aarch64 row is CI's (run 36276567183), because a local aarch64 build disagrees with CI's,
 as milestone 151 also found.
 

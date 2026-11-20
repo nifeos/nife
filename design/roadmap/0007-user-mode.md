@@ -7,10 +7,10 @@ built: 2026-07-14
 
 The one early milestone whose outcome is a decision as much as code: DECISIONS §10 (process model:
 capability-based, microkernel), capability-based and microkernel-shaped, recorded in `491f23d`
-(2026-07-14). That was the decision point §8 (process model / syscall ABI: deferred to a hard decision
+(2026-07-14). That was the decision point §8 (process model / system call ABI: deferred to a hard decision
 point) had deliberately parked. The original plan row called this "the actual OS boundary. Decision
 point," and the deferral held: the decision was made before any of milestone 7 was written, not
-hacked in mid-syscall.
+hacked in mid-system-call.
 
 The build then landed as lettered commits, same day:
 
@@ -20,7 +20,7 @@ The build then landed as lettered commits, same day:
 - `0c7793d` 7c: the ELF loader; the kernel runs a binary it has never seen, delivered by
   initrd the way Linux's initramfs is, parsed by a host-testable crate so forging a malicious
   binary for a test is eleven lines.
-- `ec6f1b5` 7d: three syscalls: `exit`, `yield`, `invoke`. No open, no read, no write, no
+- `ec6f1b5` 7d: three system_calls: `exit`, `yield`, `invoke`. No open, no read, no write, no
   fork; the same binary spawned with an empty capability table cannot print one byte.
 - `54596b6` 7e: IPC as synchronous rendezvous, three words in registers, memory never touched
   on the way.

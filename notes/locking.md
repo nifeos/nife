@@ -189,9 +189,9 @@ able to take while held and by what holds it.
 | 59 | `INBOX` | Placing a thread on a remote core happens under `IPC_TABLES`. A core locks at most one inbox at a time, the target's. |
 | 59 | `KMEM` | It carves and retypes from its region while held, and a kernel stack's `new` and `Drop` run from spawn and the reaper, under `IPC_TABLES`. |
 | 59 | `MAPPINGS` | Recording a mapping retypes a log page from the payer's region while held. Never held with `IPC_TABLES` in either order: the capability sweep and the unmap sweep run one after the other, and the reaper drops address spaces outside `IPC_TABLES` (`finish_switch`). |
-| 58 | `MEMORY_REGION` | Below the 59s, and below `IPC_TABLES` so a syscall with no thread-table business can take it alone. |
+| 58 | `MEMORY_REGION` | Below the 59s, and below `IPC_TABLES` so a system call with no thread-table business can take it alone. |
 | 57 | `CAPABILITY_TABLE` | One lock per thread, in its TCB page. The order is below. |
-| 56 | `VIRTIO` | Taken from a syscall with no other lock held. The rank records where that syscall sits, not a nesting need. |
+| 56 | `VIRTIO` | Taken from a system call with no other lock held. The rank records where that system call sits, not a nesting need. |
 | 55 | `STACK_VA` | A `KernelStack`'s `Drop` runs from the reaper, under `IPC_TABLES`. |
 | 54 | `IOMMU` | A leaf. The DMA domain's page-table frames are allocated before it is taken, so it is never held across an allocation. Below `VIRTIO` because a PCI device is confined from the bring-up path that registers its transport, though the two never nest. |
 | 45 | `KERNEL_MMU` | Below `IPC_TABLES` (a stack's `Drop` unmaps under the reaper) and `STACK_VA` (a stack's `new` maps pages), above the allocators (mapping allocates table frames). |
@@ -213,7 +213,7 @@ The capability table's order is what makes a capability lookup cheap:
 
 - The running thread's own lookups (`sched::current_capability`, `grant`, `grant_at`) take its table's
   lock alone, without `IPC_TABLES`. Taking the global lock there made 41% of lookups wait at four
-  busy cores on radon ([job-mix/null-syscall-under-load.md](job-mix/null-syscall-under-load.md)).
+  busy cores on radon ([job-mix/null-system-call-under-load.md](job-mix/null-system-call-under-load.md)).
 - Anything that touches another thread's table (an IPC delivering a capability, `CAPABILITY_INSERT`, the
   revocation sweeps) takes it under `IPC_TABLES`. That keeps a capability in transit, or a sweep
   across every table, atomic against every other cross-table operation.

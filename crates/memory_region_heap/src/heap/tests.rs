@@ -390,7 +390,7 @@ fn commit_all_maps_the_maximum_or_reports_the_shortfall() {
 }
 
 /// A heap already at its cap, with a cap of zero, or never wired has nothing to commit, so
-/// `commit_all` makes no syscall and succeeds; an unwired default heap refuses allocations
+/// `commit_all` makes no system call and succeeds; an unwired default heap refuses allocations
 /// without one.
 #[test]
 fn commit_all_with_nothing_left_succeeds() {
@@ -404,7 +404,7 @@ fn commit_all_with_nothing_left_succeeds() {
         Ok(()),
         "an unwired heap has a cap of zero"
     );
-    // SAFETY: a nonzero size. The unwired default source would trap on a syscall, so reaching
+    // SAFETY: a nonzero size. The unwired default source would trap on a system call, so reaching
     // the null return shows none was made.
     assert!(unsafe { heap.alloc(layout(8, 8)) }.is_null());
 }

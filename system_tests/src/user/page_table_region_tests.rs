@@ -16,7 +16,7 @@ use abi::Error;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::{Rights, page_frame_run_capability, page_frame_run_len};
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// Where each round maps: 128 GiB, which is in the low half on all three formats (Sv39's ends at
 /// 256 GiB) and far from anything a freshly built space holds, so the walk to it needs tables that
@@ -48,7 +48,7 @@ fn call(slot: u64, method: u64, a0: u64, a1: u64, a2: u64) -> Result<i64, Error>
     invoke(&mut frame, slot, method, a0, a1, a2)
 }
 
-/// A syscall answer as `x0` carries it: the value, or the error's negative code.
+/// A system call answer as `x0` carries it: the value, or the error's negative code.
 fn encode(answer: Result<i64, Error>) -> u64 {
     answer.unwrap_or_else(|e| e as i64) as u64
 }
@@ -114,7 +114,7 @@ impl Report {
 /// into it.**
 ///
 /// The mapper adopts a space of its own, maps at [`VA`] with tables from `R`, and destroys `R`
-/// itself through the syscall, so the destroy is a real holder's `DESTROY` and nothing else is
+/// itself through the system call, so the destroy is a real holder's `DESTROY` and nothing else is
 /// running in between. The premise assertions check that `R` really paid for tables and really
 /// went, so a green result cannot mean the round never put a table in `R`.
 ///

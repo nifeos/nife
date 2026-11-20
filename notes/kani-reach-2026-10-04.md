@@ -63,7 +63,7 @@ recorded `missed`.
 | inter_process_communication | 14 | 36 | 26 | 0 | 30 | 4 | 2 | 2 |
 | intrusive_fifo | 1 | 7 | 7 | 0 | 7 | 0 | 0 | 1 |
 | jh7110_entropy | 4 | 20 | 17 | 0 | 19 | 0 | 1 | 2 |
-| kernel (aarch64 and `syscall`) | 5 | 80 | 51 | 0 | no census | 0 | no census | 5 |
+| kernel (aarch64 and `system_call`) | 5 | 80 | 51 | 0 | no census | 0 | no census | 5 |
 | machine_discovery | 16 | 403 | 218 | 0 | 380 | 9 | 14 | 1066 |
 | manifest_note | 2 | 80 | 49 | 0 | 69 | 4 | 7 | 159 |
 | memory_regions | 4 | 20 | 20 | 0 | 17 | 0 | 0 | 0 |

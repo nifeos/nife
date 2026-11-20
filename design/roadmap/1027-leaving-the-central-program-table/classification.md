@@ -9,7 +9,7 @@ stand in for line numbers, which §277 (cite a heading or a symbol) forbids.
 
 The table has 28 rows, wire ids 0 to 27 with no hole, so `PROGRAM_COUNT` is 28 and equals the
 number of programs today. `Program::manifest` in `program/manifests.rs` has 27 match arms, not 28,
-because one arm covers two variants: `Program::NullSyscall | Program::SinkProducer` both answer
+because one arm covers two variants: `Program::NullSystemCall | Program::SinkProducer` both answer
 `bench_row_manifest()`. `Program::SinkConsumer` reuses `wc_manifest()`. So 26 manifest functions
 serve 28 rows. The two counts differ by that one shared arm and nothing else.
 
@@ -59,7 +59,7 @@ Four classes.
 | 21 | `reboot` | owner-granted | `init` | `reboot`, `sync`, second stream |
 | 22 | `jig` | owner-granted | `jig` | words; clock, entropy, network, installer, catalog, indexes, activation directory, console input; a verb table; the root resolver zone |
 | 23 | `job_sleeper` | fixture | `fixtures` | an argument, `--mem` 4 to 16 |
-| 24 | `null_syscall` | fixture | `fixtures` | `--mem` 10 to 16 |
+| 24 | `null_system_call` | fixture | `fixtures` | `--mem` 10 to 16 |
 | 25 | `sink_producer` | fixture | `fixtures` | `--mem` 10 to 16 |
 | 26 | `sink_consumer` | fixture | `fixtures` | input (the `wc` manifest) |
 | 27 | `map_el0` | fixture | `fixtures` | `--mem` |

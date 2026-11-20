@@ -5,7 +5,7 @@
 **Yes, and to sub-100-ppm. The rate is not the problem. The number the boot writes down is.**
 
 Measured 2026-09-21 on patagonia by the `tscdrift` lane, after milestone 524 (the three x86_64 boot
-gates: NX, SYSCALL, and the invariant TSC) established that QEMU's TCG refuses to advertise
+gates: NX, SYSTEM CALL, and the invariant TSC) established that QEMU's TCG refuses to advertise
 `CPUID.80000007H:EDX[8]` under any invocation. So no QEMU guest this project runs `x86_64` in
 promises that the time-stamp counter keeps a constant rate, and the boot warns rather than
 refuses there because the hypervisor bit is set. `kernel/src/arch/x86_64/timer.rs` measures that

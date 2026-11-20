@@ -186,7 +186,7 @@ segments included, so x86_64 is the fairer column. Building is not running: noth
 ### Why two fail
 
 - `errno`: `uucore`'s `fs` and `pipes` features turn on `rustix`, and `rustix` needs either `libc`
-  or Linux's raw syscalls. `libc` has no `nife` module (784's std section names that blocker).
+  or Linux's raw system calls. `libc` has no `nife` module (784's std section names that blocker).
   `wc` asks for `pipes` and `rm` for `fs`, so both stop there.
 - `console`: `uu_rm` takes `indicatif` for its progress bar, and `console` has a terminal only for
   Unix, Windows and wasm32.

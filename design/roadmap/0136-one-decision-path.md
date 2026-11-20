@@ -130,7 +130,7 @@ decision without taking it", which no general tool can know.
 
 ## Scope note
 
-No syscall surface, no wire format, no new dependency, and no `DECISIONS.md` section: nothing here
+No system call surface, no wire format, no new dependency, and no `DECISIONS.md` section: nothing here
 decides anything global. It adds one check to `script/lint`, two doctests, and this block. The
 kernel and the crate are byte-identical apart from the doc comment carrying the doctests.
 

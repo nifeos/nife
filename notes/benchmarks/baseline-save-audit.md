@@ -54,9 +54,9 @@ have tripped the gate.
 | 7 | 2026-07-26 | `7444e8bc` | 10 (+1 new) | ipc_rtt_el0 +38.32% | spawn_reap -78.52% | yield_switch -43.3%, call_reply -45.3%, spawn_reap -78.5%, ctx_switch -10.1%, ipc_rtt_el0 +38.3% |
 | 8 | 2026-07-26 | `df3f6486` | 9 | call_reply +133.11% | ipc_rtt -48.67% | ipc_rtt -48.7%, call_reply +133.1%, ipc_rtt_el0 -35.7%, spawn_el0 +28.6% |
 | 9 | 2026-07-26 | `a0d4584d` | 11 | spawn_reap +942.08% | call_reply -27.94% | ipc_rtt +137.0%, call_reply -27.9%, spawn_reap +942.1%, ctx_switch +94.6%, ipc_rtt_el0 +110.2%, spawn_el0 -21.1% |
-| 10 | 2026-07-28 | `60e75545` | 11 | null_syscall +7.06% | spawn_reap -90.06% | ipc_rtt -63.6%, call_reply -48.7%, spawn_reap -90.1%, ctx_switch -57.4%, ipc_rtt_el0 -52.7%, spawn_el0 -44.0% |
-| 11 | 2026-07-29 | `9890eb02` | 11 (+1 new) | spawn_el0 +8.54% | null_syscall -0.04% | no |
-| 12 | 2026-07-29 | `9368657c` | 8 | null_syscall +0.27% | - | no |
+| 10 | 2026-07-28 | `60e75545` | 11 | null_system_call +7.06% | spawn_reap -90.06% | ipc_rtt -63.6%, call_reply -48.7%, spawn_reap -90.1%, ctx_switch -57.4%, ipc_rtt_el0 -52.7%, spawn_el0 -44.0% |
+| 11 | 2026-07-29 | `9890eb02` | 11 (+1 new) | spawn_el0 +8.54% | null_system_call -0.04% | no |
+| 12 | 2026-07-29 | `9368657c` | 8 | null_system_call +0.27% | - | no |
 | 13 | 2026-07-30 | `1ce094a5` | 0 | - | - | no |
 | 14 | 2026-07-30 | `c2beba43` | 10 | relay_rtt +0.20% | ipc_rtt -1.44% | no |
 | 15 | 2026-07-30 | `20c3efc7` | 9 (+1 new) | ipc_rtt_el0 +0.32% | spawn_reap -2.31% | no |
@@ -65,7 +65,7 @@ have tripped the gate.
 | 18 | 2026-08-03 | `8c279536` | (+1 new: sink_throughput) | - | - | - |
 | 19 | 2026-08-14 | `fa271cf4` | 1 | - | spawn_reap -10.95% | spawn_reap -10.9% |
 | 20 | 2026-08-15 | `86422662` | 14 | spawn_reap +34.08% | map_new -0.05% | spawn_reap +34.1% |
-| 21 | 2026-08-16 | `d5c4da34` | 1 | - | null_syscall -11.71% | null_syscall -11.7% |
+| 21 | 2026-08-16 | `d5c4da34` | 1 | - | null_system_call -11.71% | null_system_call -11.7% |
 | 22 | 2026-08-27 | `1259dc07` | 14 | map_el0 +8.57% | spawn_reap -1.45% | no |
 | 23 | 2026-08-27 | `eed48f02` | 10 | spawn_el0 +0.19% | map_el0 -16.86% | map_el0 -16.9% |
 | 24 | 2026-08-27 | `b918337b` | 14 | map_el0 +20.99% | spawn_el0 -41.53% | map_el0 +21.0%, spawn_el0 -41.5% |
@@ -83,7 +83,7 @@ the header and `206b1342` renamed the file to carry its ISA.
 | 2 | 2026-08-04 | `7cebc3df` | 14 | map_el0 +2.10% | spawn_reap -0.08% | no |
 | 3 | 2026-08-14 | `0df3c7c9` | 1 | - | spawn_reap -12.87% | spawn_reap -12.9% |
 | 4 | 2026-08-15 | `86422662` | 12 | spawn_reap +31.07% | coremark -0.01% | spawn_reap +31.1% |
-| 5 | 2026-08-16 | `d5c4da34` | 1 | null_syscall +10.06% | - | null_syscall +10.1% |
+| 5 | 2026-08-16 | `d5c4da34` | 1 | null_system_call +10.06% | - | null_system_call +10.1% |
 | 6 | 2026-08-27 | `1259dc07` | 14 (+1 new) | map_el0 +9.78% | - | no |
 | 7 | 2026-08-27 | `eed48f02` | 11 | spawn_el0 +0.18% | map_el0 -16.38% | map_el0 -16.4% |
 | 8 | 2026-08-27 | `b918337b` | 13 | map_el0 +20.30% | spawn_el0 -42.16% | map_el0 +20.3%, spawn_el0 -42.2% |
@@ -118,7 +118,7 @@ anchor; `sub-10 up` counts how many of those were upward steps the tripwire woul
 | aarch64 | map_new | 242.48 | 246.00 | +1.45% | 5 | 3 | +1.50% |
 | aarch64 | coremark | 81705.47 | 81702.67 | -0.00% | 6 | 3 | +0.01% |
 | aarch64 | map_el0 | 838.61 | 777.35 | -7.30% | 6 | 3 | +20.99% |
-| aarch64 | null_syscall | 22.95 | 20.26 | -11.71% | 5 | 2 | +0.06% |
+| aarch64 | null_system_call | 22.95 | 20.26 | -11.71% | 5 | 2 | +0.06% |
 | aarch64 | spawn_el0 | 19077.13 | 12841.47 | -32.69% | 6 | 5 | +5.80% |
 | riscv64 | ctx_switch | 94.35 | 104.51 | **+10.78%** | 7 | 5 | +6.14% |
 | riscv64 | yield_switch | 89.55 | 97.95 | **+9.39%** | 7 | 6 | +6.61% |
@@ -129,7 +129,7 @@ anchor; `sub-10 up` counts how many of those were upward steps the tripwire woul
 | riscv64 | relay_rtt | 328.53 | 351.42 | +6.97% | 5 | 4 | +3.57% |
 | riscv64 | sink_throughput | 8.94 | 9.53 | +6.55% | 7 | 6 | +2.64% |
 | riscv64 | spawn_reap | 445.69 | 530.92 | +19.12% | 8 | 3 | +31.07% |
-| riscv64 | null_syscall | 3.28 | 3.61 | +10.06% | 6 | 3 | +10.06% |
+| riscv64 | null_system_call | 3.28 | 3.61 | +10.06% | 6 | 3 | +10.06% |
 | riscv64 | map_new | 36.92 | 37.44 | +1.40% | 3 | 1 | +1.48% |
 | riscv64 | coremark | 14275.47 | 14274.92 | -0.00% | 7 | 5 | +0.01% |
 | riscv64 | map_el0 | 132.02 | 124.62 | -5.61% | 5 | 2 | +20.30% |
@@ -165,7 +165,7 @@ one-directional staircase.
 | `1259dc07` 2026-08-27 | `map_el0` +8.6/+9.8%, `spawn_el0` +5.8/+6.5% | **intended cost, disclosed and later recovered.** CRITICAL 1's reclamation sweep. `b918337b` then took `spawn_el0` down 41% by bounding the walk by occupancy |
 | `85edb1ed` 2026-09-15 | switch family +6.5% | **mis-classified.** Milestone 300 (decompose the icount baseline drift) attributed it correctly to one commit and then classified it as intended feature cost. PR #886 shows ~91 to 93% of it is removable |
 | `44890a8a` 2026-09-15 (x86_64) | `yield_switch` +9.94%, IPC family +5.4 to +5.9% | **mis-attributed, and removable.** See below |
-| `d5c4da34` 2026-08-16 | `null_syscall` -11.7% / +10.1% | **deliberate re-record**, over the tripwire in both directions, its own commit |
+| `d5c4da34` 2026-08-16 | `null_system_call` -11.7% / +10.1% | **deliberate re-record**, over the tripwire in both directions, its own commit |
 
 Four of the six are honest: the cost was real, the commit named it, and the number moved for a stated
 reason. The two from 2026-09-15 are not, and they are the same regression on different

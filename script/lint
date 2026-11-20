@@ -55,7 +55,7 @@ cd "$(dirname "$0")/.."
 # Read by more than one section, so it is set here: each section runs in a shell of its own.
 lint_root="$(git rev-parse --show-toplevel)"
 
-# The host pass excludes every crate that cannot compile for the host: `user_mode_runtime` (the EL0 syscall
+# The host pass excludes every crate that cannot compile for the host: `user_mode_runtime` (the EL0 system call
 # runtime, inline `asm!` naming architecture registers) and everything that depends on it.
 #
 # **The old comment here said "on CI's x86_64 host those registers are unknown register errors", and
@@ -453,7 +453,7 @@ rustc --edition 2024 --crate-type lib --crate-name kani \
 # compilation.
 #
 # **`kernel` is excluded and now holds a `#[cfg(kani)]` module anyway** (milestone 193's harnesses in
-# `syscall.rs`), so this pass has a hole in it and this is where a reader meets it. Two things block
+# `system_call.rs`), so this pass has a hole in it and this is where a reader meets it. Two things block
 # closing it, and both are tooling rather than effort:
 #
 #  - `cargo clippy -- <args>` applies the trailing rustc arguments to **every workspace member in the
@@ -480,7 +480,7 @@ cargo clippy --workspace --exclude kernel --exclude system_tests $bare_excludes 
 
 # `user_mode_runtime` has a host test target (milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves), item 4), so its tests are linted on
 # the host, where libtest exists. The host-excluded set above keeps it out of the workspace passes
-# because its syscalls fault without a kernel; its tests never execute one. The bare-metal passes
+# because its system calls fault without a kernel; its tests never execute one. The bare-metal passes
 # below lint its library alone (`--lib`), since `--all-targets` would build the test harness for a
 # target that has no libtest.
 echo "==> clippy: user_mode_runtime tests (host)"
@@ -2504,22 +2504,22 @@ def _sh_scripts():
                if p.read_text(errors='replace').split('\n', 1)[0].strip() == '#!/bin/sh')
 
 
-def _abi_syscalls():
-    """`SYSCALL_*` u64 constants in crates/abi/src/lib.rs: the width of the syscall trap.
+def _abi_system_calls():
+    """`SYSTEM_CALL_*` u64 constants in crates/abi/src/lib.rs: the width of the system call trap.
 
-    Assumes the syscall numbers are the crate's only `SYSCALL_`-prefixed u64 constants, which they
+    Assumes the system call numbers are the crate's only `SYSTEM_CALL_`-prefixed u64 constants, which they
     are and which the naming makes self-enforcing: every other constant in the crate is a method, a
-    right, an object type or a sentinel, and none of those is spelled `SYSCALL_`. Optional leading
+    right, an object type or a sentinel, and none of those is spelled `SYSTEM_CALL_`. Optional leading
     whitespace so a future one nested in a module still counts; a nested one that was NOT counted
     would make this number quietly low, and a low count is no better than a high one when prose is
     copying it (the `_sh_scripts` entry records the same hazard).
 
     It is here because the 2026-08-17 documentation sweep found the ABI's own front page, the
-    kernel's syscall module, an `Error` variant's description and two notes all saying the surface
+    kernel's system call module, an `Error` variant's description and two notes all saying the surface
     was **three** calls. `SYS_CAP_DELETE` landed 2026-07-24 and moved none of them.
     """
     text = pathlib.Path('crates/abi/src/lib.rs').read_text(errors='replace')
-    return len(re.findall(r'^[ \t]*pub const SYSCALL_[A-Z_0-9]+: u64\b', text, re.M))
+    return len(re.findall(r'^[ \t]*pub const SYSTEM_CALL_[A-Z_0-9]+: u64\b', text, re.M))
 
 
 def _rights_bits():
@@ -2705,9 +2705,9 @@ REGISTRY = {
         'shellcheck gates',
         _sh_scripts,
     ),
-    'syscalls': (
-        'how many syscall numbers the ABI defines, which is the whole width of the trap',
-        _abi_syscalls,
+    'system_calls': (
+        'how many system call numbers the ABI defines, which is the whole width of the trap',
+        _abi_system_calls,
     ),
     'rights-bits': (
         'how many named single-bit rights a capability can carry (capability_table::Rights)',
@@ -3553,16 +3553,16 @@ python3 "$(dirname "$0")/../helpers/orphan_rust.py" --selftest
 python3 "$(dirname "$0")/../helpers/orphan_rust.py"
 
 # 15. **A userspace trap declares every register the kernel answers in** (2026-10-05,
-#     lane/hvf-spawn-destroy-gone; helpers/syscall_asm.py, name provisional). The kernel writes up to
-#     six argument registers on the way out of a syscall. `user_mode_runtime::yield_now` declared
+#     lane/hvf-spawn-destroy-gone; helpers/system_call_asm.py, name provisional). The kernel writes up to
+#     six argument registers on the way out of a system call. `user_mode_runtime::yield_now` declared
 #     none, and the job mix's spawn job was compiled to trap `DESTROY`'s arguments across a yield
 #     that zeroed `x0`: 19 of 20 HVF sweeps refused with `Gone`, the twentieth wedged
 #     (notes/job-mix/spawn-destroy-gone.md). A missing declaration is invisible in review, which is
 #     why this is a gate. The selftest runs first, for check 14's reason.
 echo "==> every userspace trap declares the registers the kernel writes"
 # lint-scope: code
-python3 "$(dirname "$0")/../helpers/syscall_asm.py" --selftest
-python3 "$(dirname "$0")/../helpers/syscall_asm.py"
+python3 "$(dirname "$0")/../helpers/system_call_asm.py" --selftest
+python3 "$(dirname "$0")/../helpers/system_call_asm.py"
 
 
 echo "==> markdown links and the notes index"
@@ -3806,6 +3806,15 @@ echo "==> unit symbols are spelled out (2026-10-27)"
 # fails a count over its ceiling or a branch that adds any net. Fixtures first.
 python3 helpers/vendored_name_gates.py unit --selftest
 python3 helpers/vendored_name_gates.py unit --check
+echo "==> system call is spelled out as system call (2026-11-20)"
+# lint-scope: code
+# lint-quick
+# design/naming.md: the tree spells `system_call` out. helpers/system_call_names.py counts Rust and Python
+# identifiers and tracked paths that carry `system_call` or `system_calls`, less the foreign uses its one
+# boundary list (KEPT) names, and fails a count over its ceiling or a branch that adds any net.
+# Fixtures first.
+python3 helpers/system_call_names.py --selftest
+python3 helpers/system_call_names.py --check
 echo "==> a component reads its window addresses from the startup page (ceiling only falls)"
 # lint-scope: code
 # lint-quick
@@ -3920,7 +3929,7 @@ echo "==> every workflow records the run it was watched failing in"
 python3 helpers/observed_failing.py --selftest >/dev/null
 python3 helpers/observed_failing.py
 # Milestone 610 (provisional): the interface stability series' classification (what is breaking,
-# what is an addition, what is a syscall or a format event, what counts as co-change), against
+# what is an addition, what is a system call or a format event, what counts as co-change), against
 # fixtures, with no git and no cargo. The weekly workflow is the only thing that runs the real
 # measurement, so a change to these rules is checked here, where it lands.
 python3 helpers/interface_stability.py --selftest >/dev/null
@@ -4195,7 +4204,7 @@ echo "shellcheck: $(ls script/* helpers/*.sh | wc -l | tr -d ' ') sh scripts, no
 # compiles fine and opts out of the tests and the proofs. Zero violations today; this is a ratchet,
 # the same shape as the shellcheck gate below.
 #
-# `user_mode_runtime` is deliberately NOT in the forbidden set even though it is EL0 syscall `asm!`: it lives
+# `user_mode_runtime` is deliberately NOT in the forbidden set even though it is EL0 system call `asm!`: it lives
 # in crates/ and is a legitimate dependency for other EL0 crates.
 echo "==> dependency direction"
 # lint-scope: code

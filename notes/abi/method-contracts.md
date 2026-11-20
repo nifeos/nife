@@ -1,19 +1,19 @@
 # The method contracts: why each `crates/abi` method reads as it does
 
-`crates/abi` states each syscall and method as a contract: its arguments, what it returns and what
+`crates/abi` states each system call and method as a contract: its arguments, what it returns and what
 it refuses. The rulings behind them are in `design/decisions/`, and each doc comment cites its
 section. This page carries the reasoning, the prior art and the standing measurements that the doc
 comments link to rather than repeat. [`notes/abi.md`](../abi.md) carries the convention itself.
 
 ## The five calls
 
-`exit`, `exit_thread`, `yield` and `capability_delete` are bare syscalls because a capability is authority
+`exit`, `exit_thread`, `yield` and `capability_delete` are bare system calls because a capability is authority
 over something else. Nobody needs a grant to stop running or to forget one of their own slots. Every
 other operation is a method on a capability reached through `invoke`, so a new operation is a new
-method number and a new syscall is a design fork.
+method number and a new system call is a design fork.
 
 `exit_thread(word)` is calef's ruling on pull request #1892, question 3, and §276 (the thread
-syscalls as built) records it. The cleared word is Linux's `CLONE_CHILD_CLEARTID`. The prior art for
+system calls as built) records it. The cleared word is Linux's `CLONE_CHILD_CLEARTID`. The prior art for
 a thread exit beside a process exit is Linux `exit` beside `exit_group`, Zircon `zx_thread_exit`
 beside `zx_process_exit`, and FreeBSD `thr_exit`, whose `state` word is this one.
 
