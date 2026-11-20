@@ -97,7 +97,7 @@ login_contract = { version = "0.1.0", path = "../login_contract" }
 entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
 # The socket contract (milestone 590 (the booted system starts its network stack)), for exactly one
 # word: the inbound authority this
-# crate hands the `net_stack` it builds (`NO_LISTEN_GRANT`). Pure logic, no dependencies of its own.
+# crate hands the `net_stack` it builds (`NO_PORT_GRANT`). Pure logic, no dependencies of its own.
 socket_contract = { version = "0.1.0", path = "../socket_contract" }
 # The name resolver's contract (milestone 892 (a std program at the prompt holds the network and a
 # resolver)): the start words this crate tells `domain_name_resolver`, and the grant and forget messages

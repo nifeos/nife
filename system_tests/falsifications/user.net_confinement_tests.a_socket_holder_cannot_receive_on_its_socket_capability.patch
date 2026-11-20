@@ -4,7 +4,7 @@ its receive-probe assertion (`armed[2]`), added by risk 7's fifth outsider pass 
 Architecture: aarch64, riscv64, x86_64
 
 The defect is the socket capability carrying `READ`. The stack mints each socket's capability from
-`socket_contract::stack_slots::MINT`, a copy of its own serve endpoint. The mint is `WRITE | GRANT`
+`socket_contract::stack_slots::MINTING_ENDPOINT_SLOT`, a copy of its own serve endpoint. The mint is `WRITE | GRANT`
 on purpose, with no `READ`, because a socket holder that could `RECEIVE` on its capability would
 dequeue the stack's own incoming queue, every other client's request to the stack. This hunk gives
 the mint `READ`, so the kernel's `RECEIVE` rights check (kernel/src/syscall.rs) passes and the
@@ -25,7 +25,7 @@ index 13fa284d3..748ccdd2a 100644
 @@ -245,7 +245,7 @@ fn spawn_server(image: &'static [u8], listen_grant: u64, found: crate::e1000e::F
          // server's own address space, `run_with_own_space` adds once the space exists.
          at(
-             socket_contract::stack_slots::MINT,
+             socket_contract::stack_slots::MINTING_ENDPOINT_SLOT,
 -            rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT)),
 +            rendezvous_capability(stack, Rights::WRITE.union(Rights::GRANT).union(Rights::READ)),
          );

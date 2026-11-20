@@ -1,38 +1,6 @@
+use test_node::{N, mint};
+
 use super::*;
-
-/// A minimal node: a link and nothing else, the way the proofs like it.
-struct N {
-    next: Option<NonNull<N>>,
-}
-
-impl N {
-    fn new() -> Self {
-        N { next: None }
-    }
-}
-
-// SAFETY: `next` and `set_next` read and write the same `next` field and nothing else, which is
-// the whole of the `Node` contract.
-unsafe impl Node for N {
-    fn next(&self) -> Option<NonNull<Self>> {
-        self.next
-    }
-    fn set_next(&mut self, next: Option<NonNull<Self>>) {
-        self.next = next;
-    }
-}
-
-/// Mint `n`'s token, from `&raw mut` on the harness local rather than from a reference
-/// (`Unqueued::new`'s provenance clause).
-///
-/// # Safety
-/// `n` is `&raw mut` on a harness local declared before the rendezvous, on no queue, minted only
-/// once, and not named again.
-unsafe fn mint(n: *mut N) -> Unqueued<N> {
-    // SAFETY: this function's own contract is `Unqueued::new`'s, and `&raw mut` on a local is
-    // never null.
-    unsafe { Unqueued::new(NonNull::new_unchecked(n)) }
-}
 
 /// Put `e` into an arbitrary valid state: at most one queue non-empty (modeled as one waiter), a
 /// symbolic pending count and a symbolic interrupt binding. A token that is not queued is dropped,

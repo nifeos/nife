@@ -32,6 +32,9 @@ mod verification;
 #[cfg(test)]
 mod tests;
 
+#[cfg(any(test, kani))]
+mod test_node;
+
 mod rendezvous;
 
 pub use rendezvous::{ReceiveVerdict, Rendezvous, RendezvousCounts, SendVerdict};

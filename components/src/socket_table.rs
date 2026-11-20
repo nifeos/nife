@@ -83,7 +83,7 @@ impl Table {
         Self {
             socks: [None; SOCKETS],
             mapped: [false; SOCKETS],
-            next_badge: SOCKET_BADGE | 1,
+            next_badge: SOCKET_BADGE_BIT | 1,
         }
     }
 
@@ -120,7 +120,7 @@ impl Table {
 
     /// **Answer `to` with `word` and the socket at `entry`'s capability**, minted here from the
     /// `WRITE | GRANT` copy of our own endpoint with the socket's badge. If either step fails the
-    /// socket is taken down again and the caller hears `REP_ERR`: a socket nobody holds a
+    /// socket is taken down again and the caller hears `REPLY_ERROR`: a socket nobody holds a
     /// capability for is one nobody could ever close.
     pub(crate) fn hand_over(
         &mut self,
@@ -134,7 +134,7 @@ impl Table {
         let minted = user_mode_runtime::badge(MINT, badge);
         if minted < 0 {
             self.drop_entry(sockets, entry);
-            reply(to, REP_ERR, 0);
+            reply(to, REPLY_ERROR, 0);
             return;
         }
         let minted = minted as u64;
@@ -145,7 +145,7 @@ impl Table {
             Ok(false) => self.drop_entry(sockets, entry),
             Err((to, _)) => {
                 self.drop_entry(sockets, entry);
-                reply(to, REP_ERR, 0);
+                reply(to, REPLY_ERROR, 0);
             }
         }
         // Ours goes either way: the client holds its copy now, or there is none to hold.
@@ -237,34 +237,34 @@ impl Table {
 pub(crate) fn open_udp(
     sockets: &mut SocketSet,
     table: &mut Table,
-    ports: &mut ephemeral::Ports,
+    ports: &mut ephemeral_port::Cursor,
 ) -> Result<(usize, u64), u64> {
-    let entry = table.free().ok_or(REP_ERR)?;
+    let entry = table.free().ok_or(REPLY_ERROR)?;
     let local_port = ports
         .next(instant().total_millis() as u64, |p| table.port_held(p))
-        .ok_or(REP_ERR)?;
+        .ok_or(REPLY_ERROR)?;
     let handle = sockets.add(udp_socket());
     let _ = sockets.get_mut::<udp::Socket>(handle).bind(local_port);
     table.install(entry, handle, Kind::Udp, local_port);
-    Ok((entry, REP_OK))
+    Ok((entry, REPLY_OK))
 }
 
 /// `OPERATION_OPEN_TCP`: an unconnected TCP socket with an ephemeral port, in a free entry.
 pub(crate) fn open_tcp(
     sockets: &mut SocketSet,
     table: &mut Table,
-    ports: &mut ephemeral::Ports,
+    ports: &mut ephemeral_port::Cursor,
 ) -> Result<(usize, u64), u64> {
-    let entry = table.free().ok_or(REP_ERR)?;
+    let entry = table.free().ok_or(REPLY_ERROR)?;
     let local_port = ports
         .next(instant().total_millis() as u64, |p| table.port_held(p))
-        .ok_or(REP_ERR)?;
+        .ok_or(REPLY_ERROR)?;
     let handle = sockets.add(tcp::Socket::new(
         tcp::SocketBuffer::new(vec![0u8; TCP_RECEIVE_BUF]),
         tcp::SocketBuffer::new(vec![0u8; SOCK_BUF]),
     ));
     table.install(entry, handle, Kind::Tcp, local_port);
-    Ok((entry, REP_OK))
+    Ok((entry, REPLY_OK))
 }
 
 pub(crate) fn udp_socket() -> udp::Socket<'static> {
@@ -277,10 +277,10 @@ pub(crate) fn udp_socket() -> udp::Socket<'static> {
 /// Read the destination (octets + little-endian port) from a shared frame's header.
 pub(crate) fn read_dst(window: MappedWindow) -> IpEndpoint {
     let ip = Ipv4Address::new(
-        window.read::<u8>(DESTINATION_ADDRESS_OFFSET_BYTES),
-        window.read::<u8>(DESTINATION_ADDRESS_OFFSET_BYTES + 1),
-        window.read::<u8>(DESTINATION_ADDRESS_OFFSET_BYTES + 2),
-        window.read::<u8>(DESTINATION_ADDRESS_OFFSET_BYTES + 3),
+        window.read::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES),
+        window.read::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + 1),
+        window.read::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + 2),
+        window.read::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + 3),
     );
     let port = window.read::<u16>(DESTINATION_PORT_OFFSET_BYTES);
     IpEndpoint::new(IpAddress::Ipv4(ip), port)

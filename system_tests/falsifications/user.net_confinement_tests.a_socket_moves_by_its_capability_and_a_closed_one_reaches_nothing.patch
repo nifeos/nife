@@ -2,7 +2,7 @@ Falsifies `system_tests::user::net_confinement_tests::a_socket_moves_by_its_capa
 
 Architecture: aarch64, riscv64, x86_64
 
-The defect is a `CLOSE` that does not unbind: `net_stack` answers it `REP_OK` and keeps the socket,
+The defect is a `CLOSE` that does not unbind: `net_stack` answers it `REPLY_OK` and keeps the socket,
 its badge and its page in its table. §255 (each socket is its own capability) says close unbinds the
 badge so a stale capability reaches nothing; with this patch every copy of a closed socket's
 capability goes on reaching the socket.
@@ -23,9 +23,9 @@ index 5e2b1b9d6..f459f11e2 100644
              ),
 -            OPERATION_CLOSE => {
 -                table.close(&mut iface, &mut dev, &mut sockets, entry);
--                REP_OK
+-                REPLY_OK
 -            }
-+            OPERATION_CLOSE => REP_OK,
++            OPERATION_CLOSE => REPLY_OK,
              OPERATION_ACCEPT => {
                  match tcp_accept(&mut iface, &mut dev, &mut sockets, &mut table, entry) {
                      Ok((connection, peer)) => {

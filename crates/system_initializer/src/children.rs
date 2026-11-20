@@ -156,7 +156,7 @@ const RECLAIM_ATTEMPTS: usize = 64;
 /// address `net_stack` reported, big-endian in the low 32 bits, and the lease's name server in
 /// `socket_contract::lease`'s encoding. The endowment is
 /// `kernel::user::virtio_service::wire_net_server`'s, slot for slot, with
-/// `socket_contract::NO_LISTEN_GRANT`. The caller deletes the trio; this deletes everything else it
+/// `socket_contract::NO_PORT_GRANT`. The caller deletes the trio; this deletes everything else it
 /// made but the endpoint. Failures trap: one means the boot's arithmetic is wrong.
 pub(super) fn build_net_stack(
     ut: u64,
@@ -202,12 +202,12 @@ pub(super) fn build_net_stack(
             // its own address space, so `CLOSE` can take a socket's page back.
             placed: &[
                 (
-                    socket_contract::stack_slots::MINT,
+                    socket_contract::stack_slots::MINTING_ENDPOINT_SLOT,
                     stack,
                     abi::rights::WRITE | abi::rights::GRANT,
                 ),
                 (
-                    socket_contract::stack_slots::OWN_SPACE,
+                    socket_contract::stack_slots::OWN_ADDRESS_SPACE_SLOT,
                     supervision_contract::CHILDS_OWN_SPACE,
                     abi::rights::WRITE,
                 ),
@@ -225,7 +225,7 @@ pub(super) fn build_net_stack(
         child,
         NET_STACK_ROLE_SERVER,
         direct_memory_access_phys,
-        socket_contract::NO_LISTEN_GRANT,
+        socket_contract::NO_PORT_GRANT,
     ));
     capability_delete(budget);
     // Its only message here, sent blocking: it serves nobody until this receive takes it.
@@ -247,7 +247,7 @@ pub(super) fn start_domain_name_resolver(
     entropy: Option<u64>,
 ) -> Option<u64> {
     let (stack, _, name_server) = network?;
-    let server = socket_contract::lease::word_ipv4(name_server)?;
+    let server = socket_contract::lease::word_to_ipv4(name_server)?;
     let program = measured(fs, table, "domain_name_resolver").elf?;
     Some(build_domain_name_resolver(
         ut, &program, stack, entropy?, server,
