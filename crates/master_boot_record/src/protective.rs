@@ -236,4 +236,44 @@ mod tests {
             "the saturated size covers any disk"
         );
     }
+
+    /// The protective record may sit in any of the four slots, and its start and size are read
+    /// from that slot.
+    #[test]
+    fn a_protective_record_in_a_later_slot_is_read_from_that_slot() {
+        let mut good = [0u8; 512];
+        write(&mut good, 100);
+        let mut s = [0u8; 512];
+        s[RECORDS + 16..RECORDS + 32].copy_from_slice(&good[RECORDS..RECORDS + 16]);
+        s[SIGNATURE..].copy_from_slice(&good[SIGNATURE..]);
+        assert_eq!(validate(&s, 100), Ok(()));
+        s[RECORDS + 16 + START_LOGICAL_BLOCK_ADDRESS] = 3;
+        assert_eq!(validate(&s, 100), Err(Problem::StartLogicalBlockAddress(3)));
+    }
+
+    #[test]
+    fn each_problem_says_what_it_is() {
+        extern crate std;
+        use std::string::ToString;
+        assert_eq!(
+            Problem::Signature.to_string(),
+            "the 0x55AA signature is missing"
+        );
+        assert_eq!(
+            Problem::NoProtectiveRecord.to_string(),
+            "no record has the protective type 0xEE"
+        );
+        assert_eq!(
+            Problem::ExtraRecord { index: 2 }.to_string(),
+            "record 2 is a second partition: a hybrid MBR"
+        );
+        assert_eq!(
+            Problem::StartLogicalBlockAddress(5).to_string(),
+            "the protective record starts at LBA 5, not 1"
+        );
+        assert_eq!(
+            Problem::SizeBlocks(7).to_string(),
+            "the protective record covers 7 blocks, not the disk"
+        );
+    }
 }

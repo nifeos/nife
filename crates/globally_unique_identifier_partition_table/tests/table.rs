@@ -390,6 +390,17 @@ fn a_stray_byte_after_the_header_is_refused_even_with_a_valid_crc() {
     assert_eq!(Header::decode(&block).err(), Some(Error::BlockTailNotZero));
 }
 
+/// Two equal stray bytes are refused as surely as one: the tail check joins the bytes it reads
+/// without letting a pair cancel.
+#[test]
+fn two_equal_stray_bytes_after_the_header_are_refused() {
+    let disk = build(&[]).unwrap();
+    let mut block: [u8; BLOCK] = disk.header().try_into().unwrap();
+    block[BLOCK - 2] = 0x5A;
+    block[BLOCK - 1] = 0x5A;
+    assert_eq!(Header::decode(&block).err(), Some(Error::BlockTailNotZero));
+}
+
 #[test]
 fn the_protective_mbr_round_trips_and_saturates() {
     let mut block = [0u8; BLOCK];
