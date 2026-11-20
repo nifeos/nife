@@ -15,7 +15,7 @@
 //! how many child regions, live in a region's whole subtree at once. [`RegionTable`] holds all of
 //! it and has the worked example.
 //!
-//! Name: ratified. It is the accounting of the kernel object `MemoryRegion`, and the bare word
+//! Name: ratified 2026-08-23 (calef). It is the accounting of the kernel object `MemoryRegion`, and the bare word
 //! "regions" also names a screen's damaged area in a graphics stack.
 
 #![cfg_attr(not(test), no_std)]
