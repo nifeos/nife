@@ -135,3 +135,22 @@ request.
 Decided by the maintainer on 2026-11-19 (UTC), provisional: a two-way door. A lane writes the
 review package now (item 1). The architect ratifies the provisional names from it and gives the go
 to create the repository once `intrusive_queue` has left. No tag and no publication.
+
+## D7. The timer's deadline type
+
+Background: `Timer::deadline` and `earliest` answered `u64`, with `NEVER` (`u64::MAX`) for nothing
+armed (item 13). The kernel needs that sentinel in one place, the atomic word that caches the
+earliest deadline, and a timer armed at exactly `u64::MAX` read the same as a disarmed one.
+
+Alternatives: keep the sentinel `u64` everywhere; answer `Option<u64>` and keep `NEVER` for the
+cache word alone.
+
+Prior art: the standard library spells "maybe a value" as `Option`, and `Instant::checked_add`
+answers one. Linux's tick code uses `KTIME_MAX` for "no next event", in a value that lives in one
+word. Nife keeps the sentinel only where the value is a word. Example: the kernel
+stores `earliest(timers).unwrap_or(NEVER)` in its cache.
+
+Decided by the maintainer on 2026-11-20 (UTC), provisional: a two-way door until the first
+publish. `Timer::deadline` and `earliest` answer `Option<u64>`, because the type then cannot
+represent the wrong state; `NEVER` stays as the kernel's cache word, and `lowered` and `is_due`
+keep their signatures.
