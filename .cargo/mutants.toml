@@ -218,7 +218,7 @@ exclude_re = [
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in keyboard_report$",
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in ports_report$",
     "^crates/driver_process_contract/src/extensible_host_controller_interface\\.rs:\\d+:\\d+: replace \\| with \\^ in failure_report$",
-    # grant_plan: the rights bits (five single bits), per THE_RIGHTS_BITS_SHARE_NO_BIT, beside
+    # grant_plan: the rights bits (five single bits), per RIGHTS_BITS_DO_NOT_OVERLAP, beside
     # WordGrant::rights, whose fn-local `1 << 0` constants are the shift survivor.
     "^crates/grant_contract/src/manifest\\.rs:\\d+:\\d+: replace \\| with \\^ in WordGrant::rights$",
     "^crates/grant_contract/src/manifest\\.rs:\\d+:\\d+: replace << with >> in WordGrant::rights$",

@@ -72,8 +72,8 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    leaves the class, subclass, protocol and alternate-setting bytes symbolic. It adds two symbolic
    7-byte endpoint descriptors. The solver then reaches the second interface at under 50 bytes
    without the 177-second cost growing past the budget (unverified; measure). A fifth harness, or an assertion
-   in the third, that every event's code is a modifier code or `evdev_code` of a usage present in
-   exactly one of the two reports, and that modifier events precede the rest. Each new harness
+   in the third, that every event is a modifier usage or a usage present in exactly one of
+   the two reports, and that modifier events precede the rest. Each new harness
    arrives with a falsification patch. One paragraph in the README and in `lib.rs` naming the three
    bounds and the two things outside them.
    Door: two-way. Effort: M.

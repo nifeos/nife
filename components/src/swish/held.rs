@@ -186,7 +186,7 @@ pub(super) fn collect(region: u64, label: u64) -> bool {
     unstash(label);
     capability_delete(region);
     if back {
-        let (w0, w1, w2) = spawnproto::release(label);
+        let (w0, w1, w2) = spawn_protocol::release(label);
         send(SPAWN, w0, w1, w2);
     }
     back

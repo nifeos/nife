@@ -84,7 +84,7 @@ command word (§219 (how the shell names an installed program to the spawner)).
 over plain HTTP (`http_response`). A fetched package must then be the one asked for, and the catalog
 must vouch for its digest (`package_archive::installable_as`), or nothing is sent.
 
-Then `spawnproto`'s activation request goes out on the installer endpoint, unchanged from the
+Then `spawn_protocol`'s activation request goes out on the installer endpoint, unchanged from the
 builtin's: three words, one `READ` frame per page, one answer. The frames are slices of the run
 (`abi::page_frame::SLICE`), so the buffer and the frames are the same memory. The progenitor copies
 each page before it hashes, checks its copy against its own catalog, places the program and writes

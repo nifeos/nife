@@ -77,7 +77,7 @@ pub enum Refusal {
     /// of what it matched is the worst outcome this mechanism has.
     TooManyNames,
     /// A name a pattern matched cannot travel in a grant (longer than
-    /// [`expand::MAXIMUM_NAME`](crate::expand::MAXIMUM_NAME)). Refused whole rather than dropped
+    /// [`expand::MAXIMUM_NAME_BYTES`](crate::expand::MAXIMUM_NAME_BYTES)). Refused whole rather than dropped
     /// from the set, for [`Refusal::TooManyNames`]'s reason.
     MatchNotNameable,
     /// A pattern somewhere other than a token's **last** component (`*/report.txt`). Selecting

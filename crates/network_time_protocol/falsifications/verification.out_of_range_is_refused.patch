@@ -1,9 +1,9 @@
 Falsifies `network_time_protocol::verification::out_of_range_is_refused`.
 
-The defect: `from_unix` compares `>` against the exclusive limit, so `UNIX_LIMIT` itself encodes, wrapping onto
+The defect: `from_unix` compares `>` against one past the inclusive maximum, so `MAXIMUM_UNIX_SECONDS + 1` itself encodes, wrapping onto
 the start of the era-0 window.
 
-Expected to fail: the harness's `assert_eq!(encoded.is_some(), secs < UNIX_LIMIT && ..)` at `secs == UNIX_LIMIT`.
+Expected to fail: the harness's `assert_eq!(encoded.is_some(), secs <= MAXIMUM_UNIX_SECONDS && ..)` at `secs == MAXIMUM_UNIX_SECONDS + 1`.
 
 diff --git a/crates/network_time_protocol/src/lib.rs b/crates/network_time_protocol/src/lib.rs
 index 209f6bae5..2c0746497 100644
@@ -11,6 +11,6 @@ index 209f6bae5..2c0746497 100644
 +++ b/crates/network_time_protocol/src/lib.rs
 @@ -302,3 +302,3 @@ impl Timestamp {
      pub const fn from_unix(seconds: u64, nanoseconds: u32) -> Option<Timestamp> {
--        if nanoseconds as u64 >= NANOSECONDS_PER_SECOND || seconds >= UNIX_LIMIT {
-+        if nanoseconds as u64 >= NANOSECONDS_PER_SECOND || seconds > UNIX_LIMIT {
+-        if nanoseconds as u64 >= NANOSECONDS_PER_SECOND || seconds > MAXIMUM_UNIX_SECONDS {
++        if nanoseconds as u64 >= NANOSECONDS_PER_SECOND || seconds > MAXIMUM_UNIX_SECONDS + 1 {
              return None;

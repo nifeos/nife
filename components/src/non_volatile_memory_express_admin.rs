@@ -89,11 +89,11 @@ struct Controller {
 
 impl Controller {
     fn reg32(&self, off: u64) -> u32 {
-        mapped(&REGISTERS).read_u32(off)
+        mapped(&REGISTERS).read::<u32>(off)
     }
 
     fn wr32(&self, off: u64, v: u32) {
-        mapped(&REGISTERS).write_u32(off, v);
+        mapped(&REGISTERS).write::<u32>(off, v);
     }
 
     /// The spec allows 64-bit registers to be accessed as aligned 32-bit halves (NVMe 1.4 §3.1),

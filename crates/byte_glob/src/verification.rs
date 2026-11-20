@@ -16,11 +16,11 @@ const P: usize = 3;
 const N: usize = 3;
 
 /// Either leading-dot rule, chosen symbolically.
-fn any_dot() -> Dot {
+fn any_dot() -> LeadingDot {
     if kani::any() {
-        Dot::Special
+        LeadingDot::Special
     } else {
-        Dot::Ordinary
+        LeadingDot::Ordinary
     }
 }
 
@@ -36,7 +36,7 @@ fn any_lengths() -> (usize, usize) {
 
 /// **Matching is total.**
 ///
-/// For every pattern and name of up to three arbitrary bytes, under both [`Dot`] settings: no
+/// For every pattern and name of up to three arbitrary bytes, under both [`LeadingDot`] settings: no
 /// panic, overflow or out-of-bounds index, and the loop terminates within the unwinding bound,
 /// which is the property that matters for an untrusted pattern.
 /// Falsification: replayable `crates/byte_glob/falsifications/verification.matching_is_total.patch`
@@ -92,7 +92,7 @@ fn no_magic_means_the_pattern_is_its_own_only_match() {
 /// **`*` matches every name, and `?` matches exactly the one-byte names.**
 ///
 /// The two base cases, over every name of up to three arbitrary bytes. Stated with
-/// [`Dot::Ordinary`] so they are claims about the matcher; the leading-dot policy is the next
+/// [`LeadingDot::Ordinary`] so they are claims about the matcher; the leading-dot policy is the next
 /// harness, separately, because it is a separate thing.
 /// Falsification: replayable `crates/byte_glob/falsifications/verification.star_matches_anything_and_question_matches_one_byte.patch`
 #[kani::proof]
@@ -103,17 +103,17 @@ fn star_matches_anything_and_question_matches_one_byte() {
     kani::assume(nlen <= N);
     let n = &name[..nlen];
 
-    assert!(matches_with(b"*", n, Dot::Ordinary));
-    assert!(matches_with(b"**", n, Dot::Ordinary));
-    assert_eq!(matches_with(b"?", n, Dot::Ordinary), nlen == 1);
-    assert_eq!(matches_with(b"??", n, Dot::Ordinary), nlen == 2);
+    assert!(matches_with(b"*", n, LeadingDot::Ordinary));
+    assert!(matches_with(b"**", n, LeadingDot::Ordinary));
+    assert_eq!(matches_with(b"?", n, LeadingDot::Ordinary), nlen == 1);
+    assert_eq!(matches_with(b"??", n, LeadingDot::Ordinary), nlen == 2);
     // `*` around anything still matches everything that thing matches.
-    assert_eq!(matches_with(b"*?*", n, Dot::Ordinary), nlen >= 1);
+    assert_eq!(matches_with(b"*?*", n, LeadingDot::Ordinary), nlen >= 1);
 }
 
 /// **The leading-dot rule is exactly "a wildcard cannot reach a dotfile".**
 ///
-/// Under [`Dot::Special`] a name beginning with `.` matches only a pattern beginning with a
+/// Under [`LeadingDot::Special`] a name beginning with `.` matches only a pattern beginning with a
 /// literal `.`, and any other name matches identically under both settings. The name is bounded
 /// at two bytes, enough for a predicate on its first byte; the pattern keeps three so `.*`,
 /// `\.x` and `[.]` are reachable. See notes/glob/proofs.md.
@@ -131,8 +131,8 @@ fn the_dot_rule_only_touches_names_that_start_with_a_dot() {
     let p = &pattern[..plen];
     let n = &name[..nlen];
 
-    let special = matches_with(p, n, Dot::Special);
-    let ordinary = matches_with(p, n, Dot::Ordinary);
+    let special = matches_with(p, n, LeadingDot::Special);
+    let ordinary = matches_with(p, n, LeadingDot::Ordinary);
 
     if n.first() == Some(&b'.') {
         // Special is never more permissive, and is permissive only for a pattern that says `.`.
@@ -164,11 +164,11 @@ fn a_negated_class_is_the_exact_complement_of_the_class() {
     let name = [c];
 
     assert_eq!(
-        matches_with(&plain, &name, Dot::Ordinary),
-        !matches_with(&negated, &name, Dot::Ordinary)
+        matches_with(&plain, &name, LeadingDot::Ordinary),
+        !matches_with(&negated, &name, LeadingDot::Ordinary)
     );
     // Not vacuous: the range spelling is inside the quantifier, so this is a claim about `[a-b]`
     // as well as about `[ab]`.
     kani::cover!(body[1] == b'-');
-    kani::cover!(matches_with(&plain, &name, Dot::Ordinary));
+    kani::cover!(matches_with(&plain, &name, LeadingDot::Ordinary));
 }

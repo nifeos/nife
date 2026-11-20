@@ -128,7 +128,7 @@ pub struct BootEndowment {
     /// [`config_page`](BootEndowment::config_page), so its slot never moves. [`boot`](crate::boot) hands it to
     /// the boot prompt's shell when [`GRANT_MACHINE_PAGE`](crate::GRANT_MACHINE_PAGE) says the owner allows it, and keeps no
     /// copy; the shell sends it back with the spawn request of a program that declares
-    /// [`grant_contract::Manifest::machine`] (`spawnproto::MACHINE_BIT`).
+    /// [`grant_contract::Manifest::machine`] (`spawn_protocol::MACHINE_BIT`).
     ///
     /// Name: provisional, milestone 126's `free` lane, 2026-09-26.
     pub machine_page: u64,
@@ -243,8 +243,8 @@ pub struct BootEndowment {
 }
 
 /// **The shell's second mounted tree**: a second file service the kernel granted, which the boot
-/// shell holds at `program_table::spawnproto::MOUNTED_TREE_SLOT` and sees at `/disk`
-/// (`program_table::spawnproto::MOUNTED_TREE_NAME`). Passed to [`boot`](crate::boot) beside
+/// shell holds at `program_table::spawn_protocol::MOUNTED_TREE_SLOT` and sees at `/disk`
+/// (`program_table::spawn_protocol::MOUNTED_TREE_NAME`). Passed to [`boot`](crate::boot) beside
 /// [`BootEndowment`] rather than folded into it, because it is the mounted tree's whole description
 /// and a boot without one passes `None`.
 ///

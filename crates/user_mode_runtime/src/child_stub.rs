@@ -1,5 +1,5 @@
 //! **The smallest whole program: `SEND` one word on slot 0, then exit**, hand-assembled per
-//! architecture, for a parent that builds a child from EL0 through the granular verbs and needs
+//! architecture, for a parent that builds a child from exception level 0 (EL0) through the granular verbs and needs
 //! the child to run something.
 //!
 //! A parent copies [`SEND_THEN_EXIT`] into a frame it maps writable in its own space, then aliases
@@ -15,7 +15,7 @@
 /// the spawner writes it into one shared frame and aliases that frame into each child. Hand-assembled
 /// machine code, arch-gated: aarch64 `movz`/`svc`, RISC-V `li`/`ecall`.
 ///
-/// aarch64: x0=slot 0, x1=SEND, x2=1, `x8=SYSCALL_INVOKE`, svc; then `x8=SYSCALL_EXIT`, svc.
+/// aarch64: x0=slot 0, x1=`SEND`, x2=1, `x8=SYSCALL_INVOKE`, svc; then `x8=SYSCALL_EXIT`, svc.
 #[cfg(target_arch = "aarch64")]
 pub const SEND_THEN_EXIT: [u32; 9] = [
     0xD280_0000,
@@ -45,12 +45,12 @@ pub const SEND_THEN_EXIT: [u32; 9] = [
     0x0000_0073,                                          // ecall               (EXIT)
 ];
 
-/// `x86_64`: rdi=slot 0, rsi=SEND, rdx=1, r10=0, r8=0, rax=`SYSCALL_INVOKE`, syscall; then rax=`SYSCALL_EXIT`,
+/// `x86_64`: rdi=slot 0, rsi=`SEND`, rdx=1, r10=0, r8=0, rax=`SYSCALL_INVOKE`, syscall; then rax=`SYSCALL_EXIT`,
 /// rdi=0, syscall (DECISIONS §124).
 ///
 /// Bytes rather than words, because x86 instructions are not a fixed width. Each immediate uses
 /// `mov r32, imm32`, which zeroes the upper half and keeps a small constant to five bytes; `r10`
-/// and `r8` need a REX prefix (`0x41`), so those rows are six. See notes/user-mode-runtime.md.
+/// and `r8` need a `REX` prefix (`0x41`), so those rows are six. See notes/user-mode-runtime.md.
 #[cfg(target_arch = "x86_64")]
 pub const SEND_THEN_EXIT: [u8; 46] = {
     const SEND_METHOD: u32 = abi::rendezvous::SEND as u32;

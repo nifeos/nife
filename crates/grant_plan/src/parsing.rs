@@ -8,7 +8,7 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::{
-    Command, MAXIMUM_SHORT_OPTIONS, MAXIMUM_VERB, Refusal, TouchOperands, parse_u64,
+    Command, MAXIMUM_SHORT_OPTIONS, MAXIMUM_VERB_BYTES, Refusal, TouchOperands, parse_u64,
     split_first_word, trim, verb_key, word,
 };
 
@@ -496,19 +496,19 @@ mod tests;
 
 /// **The line's verb**: its second word, quotes off, as the program will hear it as `argv[1]`
 /// (`each_word`'s reading, which `grant_plan::argv` assembles the page from), followed by a
-/// space and the third word when both fit in [`MAXIMUM_VERB`] bytes, which is the key a verb with
+/// space and the third word when both fit in [`MAXIMUM_VERB_BYTES`] bytes, which is the key a verb with
 /// an option has (`list -u`). `None` when there is no second word, when it is longer than
-/// [`MAXIMUM_VERB`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied
+/// [`MAXIMUM_VERB_BYTES`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied
 /// into `out`, because a quoted word's text is a temporary.
 ///
 /// Name: provisional.
-pub fn verb_of<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB]) -> Option<&'o [u8]> {
+pub fn verb_of<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
     let mut seen = 0usize;
-    let mut held = [[0u8; MAXIMUM_VERB]; 2];
+    let mut held = [[0u8; MAXIMUM_VERB_BYTES]; 2];
     let mut lens = [None; 2];
     let _ = each_word(line, &mut |w| {
         seen += 1;
-        if (2..=3).contains(&seen) && w.len() <= MAXIMUM_VERB {
+        if (2..=3).contains(&seen) && w.len() <= MAXIMUM_VERB_BYTES {
             held[seen - 2][..w.len()].copy_from_slice(w);
             lens[seen - 2] = Some(w.len());
         }

@@ -68,8 +68,8 @@ yields it, and drops one in a file that an open pull request carrying `architect
    or `#[cfg(test)]`, and a removed/added pair (in one file or across the diff) with the same
    constant or the same numbers and layout words do not fire: an identifier renamed in the
    sentence, a constant moved to another crate, `pub(crate)` widened to `pub`.
-4. **spawnproto**: a `pub const` changed in a file named `spawnproto.rs` (the wire layout
-   `crates/program_table/src/spawnproto.rs` documents; matched by filename rather than the one path in
+4. **spawnproto**: a `pub const` changed in a file named `spawn_protocol.rs` (the wire layout
+   `crates/program_table/src/spawn_protocol.rs` documents; matched by filename rather than the one path in
    the tree today, so a second one elsewhere is still caught). Same-value renames pair off as in
    rule 1.
 5. **decisions**: `CLAUDE.md` changed at all, or a `design/decisions/*.md` file (excluding
@@ -961,7 +961,7 @@ SPAWNPROTO_CONST_RE = re.compile(r'^\s*pub const \w+\s*:')
 
 
 def rule_spawnproto(fd, out, ctx):
-    if not fd['path'].endswith('spawnproto.rs'):
+    if not fd['path'].endswith('spawn_protocol.rs'):
         return
     if code_unchanged(fd, ctx.renames):
         return
@@ -1421,18 +1421,18 @@ diff --git a/crates/abi/src/lib.rs b/crates/abi/src/lib.rs
 """, 'abi-surface'),
 
     ("spawnproto: a rename with the same value stays quiet", """\
-diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
---- a/crates/grant_plan/src/spawnproto.rs
-+++ b/crates/grant_plan/src/spawnproto.rs
+diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
+--- a/crates/grant_plan/src/spawn_protocol.rs
++++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -pub const RUN_UNVOUCHED_SLOT: u64 = 22;
 +pub const RUN_UNVOUCHED_ENDPOINT_SLOT: u64 = 22;
 """, None),
 
     ("spawnproto: a new wire value with no removed partner fires", """\
-diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
---- a/crates/grant_plan/src/spawnproto.rs
-+++ b/crates/grant_plan/src/spawnproto.rs
+diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
+--- a/crates/grant_plan/src/spawn_protocol.rs
++++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,2 @@
  pub const SPAWN_DISPLAY: u64 = u64::MAX - 3;
 +pub const SPAWN_NO_DISPLAY: u64 = u64::MAX - 4;
@@ -1939,18 +1939,18 @@ diff --git a/crates/grant_plan/src/lib.rs b/crates/grant_plan/src/lib.rs
 @@ -1,1 +1,1 @@
 -pub const IMAGE_MAX_PAGES: u64 = 64;
 +pub const IMAGE_MAXIMUM_PAGES: u64 = 64;
-diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
---- a/crates/grant_plan/src/spawnproto.rs
-+++ b/crates/grant_plan/src/spawnproto.rs
+diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
+--- a/crates/grant_plan/src/spawn_protocol.rs
++++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAX_PAGES;
 +pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
 """, None),
 
     ("spawnproto: #2836's shape, a value that gains a term, fires", """\
-diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
---- a/crates/grant_plan/src/spawnproto.rs
-+++ b/crates/grant_plan/src/spawnproto.rs
+diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
+--- a/crates/grant_plan/src/spawn_protocol.rs
++++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
 +pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES + crate::JOB_POOL_PAGES;
@@ -1958,9 +1958,9 @@ diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnpr
 
     ("spawnproto: a value re-pointed to another existing constant fires (no declaration renamed)",
      """\
-diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
---- a/crates/grant_plan/src/spawnproto.rs
-+++ b/crates/grant_plan/src/spawnproto.rs
+diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
+--- a/crates/grant_plan/src/spawn_protocol.rs
++++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -pub const SHELL_BUDGET_PAGES: u64 = 128 + IMAGE_MAXIMUM_PAGES;
 +pub const SHELL_BUDGET_PAGES: u64 = 128 + JOB_POOL_PAGES;
@@ -1995,27 +1995,27 @@ diff --git a/kernel/src/syscall/object_methods.rs b/kernel/src/syscall/object_me
 """, 'syscall-error'),
 
     ("spawnproto: a changed slot constant fires", """\
-diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
---- a/crates/grant_plan/src/spawnproto.rs
-+++ b/crates/grant_plan/src/spawnproto.rs
+diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
+--- a/crates/grant_plan/src/spawn_protocol.rs
++++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -pub const RUN_UNVOUCHED_SLOT: u64 = 22;
 +pub const RUN_UNVOUCHED_SLOT: u64 = 23;
 """, 'spawnproto'),
 
     ("spawnproto: prose-only doc change in the same file stays quiet", """\
-diff --git a/crates/grant_plan/src/spawnproto.rs b/crates/grant_plan/src/spawnproto.rs
---- a/crates/grant_plan/src/spawnproto.rs
-+++ b/crates/grant_plan/src/spawnproto.rs
+diff --git a/crates/grant_plan/src/spawn_protocol.rs b/crates/grant_plan/src/spawn_protocol.rs
+--- a/crates/grant_plan/src/spawn_protocol.rs
++++ b/crates/grant_plan/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -//! old description
 +//! clearer description, no constant moved
 """, None),
 
     ("spawnproto: a const change in a same-named file elsewhere still fires", """\
-diff --git a/crates/other/src/spawnproto.rs b/crates/other/src/spawnproto.rs
---- a/crates/other/src/spawnproto.rs
-+++ b/crates/other/src/spawnproto.rs
+diff --git a/crates/other/src/spawn_protocol.rs b/crates/other/src/spawn_protocol.rs
+--- a/crates/other/src/spawn_protocol.rs
++++ b/crates/other/src/spawn_protocol.rs
 @@ -1,1 +1,1 @@
 -pub const SLOT: u64 = 1;
 +pub const SLOT: u64 = 2;
@@ -2257,7 +2257,7 @@ ASK_FIXTURES = [
     ("dependency: fuzz/Cargo.toml: brand_new 1.0", "taking `brand_new 1.0` as a dependency"),
     ("format-crate: crates/network_time_protocol/src/lib.rs: // the offset",
      "the bytes of `network_time_protocol`'s format"),
-    ("spawnproto: crates/grant_plan/src/spawnproto.rs: pub const SLOT: u64 = 2;", "spawn-protocol"),
+    ("spawnproto: crates/grant_plan/src/spawn_protocol.rs: pub const SLOT: u64 = 2;", "spawn-protocol"),
     ("decisions: design/decisions/0088-needs-architect-as-a-check.md: **What.**",
      "this edit to §88 (needs architect as a check)"),
     ("decisions: CLAUDE.md: (CLAUDE.md edited)", "this edit to CLAUDE.md"),

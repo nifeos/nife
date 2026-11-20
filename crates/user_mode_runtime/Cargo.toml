@@ -2,8 +2,13 @@
 name = "user_mode_runtime"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "The user-mode runtime for a capability microkernel: the one system call wrapper, the entry macro, the panic handler and typed windows over memory the kernel handed a process, on aarch64, riscv64 and x86_64"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "runtime", "syscall"]
+categories = ["no-std", "embedded", "os"]
+publish = false     # `false` until the release that publishes this crate; that release deletes the line
 
 # Host tests exercise the pure logic (bounds and alignment checks, the frame's accessors, the stubs'
 # encodings) on any architecture this crate has arms for. `script/lint` clippies the bare-metal
@@ -12,8 +17,26 @@ license.workspace = true
 [lib]
 bench = false
 
-[lints]
-workspace = true
+[package.metadata.docs.rs]
+targets = [
+    "x86_64-unknown-none",
+    "aarch64-unknown-none-softfloat",
+    "riscv64imac-unknown-none-elf",
+]
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker; the entry macro's `cfg(kani)` arms depend on it.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
