@@ -535,7 +535,7 @@ pub struct Manifest {
     /// prints that apart from an empty domain.
     pub domain: bool,
     /// **Endowed a read-only mapping of the inert-configuration page** (milestone 47's
-    /// environment-variable fork, DECISIONS §111; `crates/environment_contract`).
+    /// environment-variable fork, DECISIONS §111; the `environment_contract` package).
     ///
     /// [`clock`](Manifest::clock)'s family: a read-only mapping of the three inert values
     /// (`TZ`, `LANG`, `TERM`), with no object through which to change what a shell hands its

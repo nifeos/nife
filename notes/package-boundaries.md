@@ -1,4 +1,4 @@
-# Package boundaries: every crate and program in a package, every path with a home
+# Package boundaries: every crate and program in a packageevery path with a home
 
 *Milestone 611 (every program and crate belongs to a package, and every package has a home). The
 file name, the key names of both TOML files, every package name and every home below are

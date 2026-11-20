@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # 1089. `environment_contract`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only review of `crates/environment_contract` as a stranger to this tree would meet
+Raised by a read-only review of the `environment_contract` package as a stranger to this tree would meet
 it, before the crate leaves for a repository of its own at step 8 of milestone 1017 (the contract
 crates leave in this order). It changes nothing; it lists what the next lanes change.
 

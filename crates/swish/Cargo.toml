@@ -34,7 +34,7 @@ std_runtime_contract = { version = "0.1.0", path = "../std_runtime_contract" }
 # `ConfigurationPage`, so `caps` prints the inert-configuration values a child would read (milestone 47
 # (navigation and naming), DECISIONS §111 (inert configuration is a validated page)) from the
 # shell's own view of the same page. No dependencies of its own.
-environment_contract = { version = "0.1.0", path = "../environment_contract" }
+environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "7a9e3e6ecc786aa7bf6c283c68e552634e8622e3" }
 
 # `lookup_name` and `stem_parts`, so a bare word at the prompt resolves through the live activation
 # set exactly as the progenitor records it (DECISIONS §229 (how a bare name at the prompt reaches an

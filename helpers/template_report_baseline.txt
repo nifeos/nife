@@ -89,9 +89,6 @@ domain_name_system register_names 1
 driver_process_contract abbreviations 38
 driver_process_contract prose_acronyms 18
 driver_process_contract register_names 8
-environment_contract abbreviations 15
-environment_contract prose_acronyms 4
-environment_contract readme_acronyms 2
 filesystem_contract abbreviations 101
 filesystem_contract prose_acronyms 12
 filesystem_contract register_names 4

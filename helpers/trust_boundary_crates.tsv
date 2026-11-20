@@ -71,7 +71,7 @@ e1000e	shared	retired
 entropy_contract	shared	retired
 entropy_proto	shared	retired
 entropy_protocol	shared	retired
-environment_contract	shared	components,kernel,std
+environment_contract	shared	retired
 environment_proto	shared	retired
 environment_protocol	shared	retired
 extensible_host_controller_interface	shared	retired
