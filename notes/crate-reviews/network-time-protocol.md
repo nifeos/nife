@@ -4,9 +4,9 @@
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
-The architect reads this to ratify the crate's names and to clear it for its move to its own
-repository, as part of [milestone 1102 (`network_time_protocol`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1102-network-time-protocol-outside-review.md).
-It describes the crate as `main` plus this branch leaves it. It ratifies nothing and clears nothing.
+The architect ratified the crate's names and cleared it for its move to its own
+repository on 2026-11-20, as part of [milestone 1102 (`network_time_protocol`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1102-network-time-protocol-outside-review.md).
+It describes the crate as `main` plus this branch leaves it. The package is cleared and the repository `nifeos/network_time_protocol` is approved; there is no tag and no publish.
 
 ## In one paragraph
 
@@ -130,35 +130,35 @@ claim, and the one place where a solver was the wrong tool.
 
 ## Names
 
-Every public name with its status and a proposal. "Provisional" means the source carries a
-`Name: provisional.` block. No name reads ratified; the renamed ones stay provisional until the
-architect ratifies them in one pass. The move strips every `Name:` block, so each name must read
-ratified first.
+Every public name with its status. The architect ratified all of them on 2026-11-20, against the
+renamed source, and kept `PORT` (not `UDP_PORT`). Until the move lane rewrites the source `Name:`
+blocks from provisional to ratified, "provisional" in the status column means the source still
+carries a `Name: provisional.` block. The move strips every `Name:` block.
 
-| name | kind | status | proposal |
+| name | kind | status | ruling 2026-11-20 |
 |---|---|---|---|
-| `network_time_protocol` | crate | ratified 2026-10-18 | keep |
-| `PORT` | constant | no block | ratify: the registered port; a spelled-out `UDP_PORT` is a possible alternative |
-| `PACKET_BYTES` | constant | provisional, replaces `PACKET_LEN` (Decision 2) | ratify: the unit is in the name |
-| `VERSION` | constant | no block | ratify |
-| `UNIX_EPOCH_DELTA_SECONDS` | constant | provisional, replaces `UNIX_DELTA` | ratify |
-| `MINIMUM_UNIX_SECONDS` | constant | provisional, replaces `UNIX_MINIMUM`; the ratified name carried no unit | ratify |
-| `MAXIMUM_UNIX_SECONDS` | constant | provisional, replaces `UNIX_LIMIT`; inclusive | ratify |
-| `MAXIMUM_STRATUM` | constant | recorded (RFC 5905 `MAXSTRAT`) | ratify |
-| `MAXIMUM_ROOT_DISTANCE` | constant | recorded (RFC 5905 `MAXDISP`); now a `ShortFormat` built with `from_bits` | ratify |
-| `DEFAULT_POLL_EXPONENT` | constant | provisional, replaces `DEFAULT_POLL`; the poll is a base-2 exponent | ratify |
-| `mode`, `mode::*` | module, constants | no block | ratify: the RFC's mode names |
-| `leap`, `leap::NONE`, `INSERT`, `DELETE` | module, constants | no block | ratify |
-| `leap::UNSYNCHRONIZED` | constant | recorded (RFC 5905 leap indicator 3), American spelling, replaces `UNSYNCHRONISED` | ratify |
-| `Reject::Unsynchronized` | variant | replaces `Unsynchronised` | ratify |
+| `network_time_protocol` | crate | ratified 2026-10-18 | kept |
+| `PORT` | constant | no block | ratified: the registered port; a spelled-out `UDP_PORT` is a possible alternative |
+| `PACKET_BYTES` | constant | provisional, replaces `PACKET_LEN` (Decision 2) | ratified: the unit is in the name |
+| `VERSION` | constant | no block | ratified |
+| `UNIX_EPOCH_DELTA_SECONDS` | constant | provisional, replaces `UNIX_DELTA` | ratified |
+| `MINIMUM_UNIX_SECONDS` | constant | provisional, replaces `UNIX_MINIMUM`; the ratified name carried no unit | ratified |
+| `MAXIMUM_UNIX_SECONDS` | constant | provisional, replaces `UNIX_LIMIT`; inclusive | ratified |
+| `MAXIMUM_STRATUM` | constant | recorded (RFC 5905 `MAXSTRAT`) | ratified |
+| `MAXIMUM_ROOT_DISTANCE` | constant | recorded (RFC 5905 `MAXDISP`); now a `ShortFormat` built with `from_bits` | ratified |
+| `DEFAULT_POLL_EXPONENT` | constant | provisional, replaces `DEFAULT_POLL`; the poll is a base-2 exponent | ratified |
+| `mode`, `mode::*` | module, constants | no block | ratified: the RFC's mode names |
+| `leap`, `leap::NONE`, `INSERT`, `DELETE` | module, constants | no block | ratified |
+| `leap::UNSYNCHRONIZED` | constant | recorded (RFC 5905 leap indicator 3), American spelling, replaces `UNSYNCHRONISED` | ratified |
+| `Reject::Unsynchronized` | variant | replaces `Unsynchronised` | ratified |
 | `Reject` (other variants) | enum | no block | ratify as built |
-| `Timestamp` and its methods | type | no block, except `fraction` (provisional) | ratify; `fraction` as built |
-| `ShortFormat` | type | provisional, replaces `Short`; private field (Decision 2) | ratify: the RFC's term is "NTP short format" |
-| `ShortFormat::from_bits`, `bits` | methods | provisional, new; they match `Timestamp` and `Interval` | ratify |
-| `Interval` and its methods | type | no block | ratify; `abs_ticks` leaves |
-| `Packet` and its fields | type | no block | ratify |
-| `Sample` | type | no block | ratify |
-| `Query`, `Query::with_nonce`, `with_poll`, `nonce`, `sent`, `request`, `accept` | type, methods | no block | ratify; `Query::new` leaves |
+| `Timestamp` and its methods | type | no block, except `fraction` (provisional) | ratified; `fraction` as built |
+| `ShortFormat` | type | provisional, replaces `Short`; private field (Decision 2) | ratified: the RFC's term is "NTP short format" |
+| `ShortFormat::from_bits`, `bits` | methods | provisional, new; they match `Timestamp` and `Interval` | ratified |
+| `Interval` and its methods | type | no block | ratified; `abs_ticks` leaves |
+| `Packet` and its fields | type | no block | ratified |
+| `Sample` | type | no block | ratified |
+| `Query`, `Query::with_nonce`, `with_poll`, `nonce`, `sent`, `request`, `accept` | type, methods | no block | ratified; `Query::new` leaves |
 
 No alias carries an old spelling (the tree's rule before a first release). The `Packet` field
 `leap`, `version`, `mode`, `stratum`, `poll`, `precision`, `reference_id` and the `Timestamp`
@@ -180,17 +180,19 @@ specification; the RFC's reference implementation supplies two checks, and the c
 | P1-9: the fuzz opt-in and target (the crate is safe Rust, so the opt-in applies) | move lane |
 | P1-10 and P1-11: the exhaustive-sweep profile in the new manifest and the mutation exemptions file | move lane |
 | Convert the three path dependencies to `git` and `rev` with `version = "0.1.0"`; drop `crates/network_time_protocol` from the workspace; delete the baseline rows that name it | move lane |
-| Rewrite the provisional `Name:` blocks to ratified after the architect's pass | a later lane |
+| Rewrite the provisional `Name:` blocks in the source to ratified, before the move strips them | move lane |
 
 Narrowing `Interval::from_ticks` to `i64` is a two-way door the maintainer may rule before the
 first publish; the accessors are already proved total without it. The milestone's later items
 stay open.
 
-## Open questions
+## Closed questions
 
-1. Whether `PORT` should read `UDP_PORT`. Recommendation: keep `PORT`; the module is the NTP
-   crate and the RFC names it "port 123". The maintainer can decide it.
+1. `PORT` stays `PORT`, ruled 2026-11-20. The module is the NTP crate and the RFC names it
+   "port 123".
 
 ## Recommendation
 
-Ready for review.
+Cleared, ruled 2026-11-20. The names are ratified as the table lists them, and the repository
+`nifeos/network_time_protocol` is approved. There is no tag and no publish. The move lane carries
+the remaining work in the table above.
