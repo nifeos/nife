@@ -145,6 +145,6 @@ fn the_page_is_returned_when_the_space_is_dropped() {
         crate::memory::is_page_frame_used(frame),
         Some(false),
         "dropping an address space did not return its current-cpu frame at {:#x}",
-        frame.addr(),
+        frame.physical_address(),
     );
 }

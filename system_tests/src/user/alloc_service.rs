@@ -29,8 +29,8 @@ pub fn start(image: &'static [u8], endpoints: u64) -> RendezvousId {
         // Zeroed so the new process starts clean.
         let phys = crate::memory::alloc_zeroed()
             .expect("no frame for allocator_exerciser stack")
-            .addr();
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+            .physical_address();
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = phys;
     }
 

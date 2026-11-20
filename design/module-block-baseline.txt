@@ -5210,15 +5210,11 @@ crates/package_index/src/lib.rs::sources
 
 crates/package_index/src/lib.rs::target_path
 
-crates/page_frames/src/lib.rs::FRAME_SIZE
-
 crates/page_frames/src/lib.rs::PageFrame
 
 crates/page_frames/src/lib.rs::PageFrameAllocator
 
 crates/page_frames/src/lib.rs::Stats
-
-crates/page_frames/src/lib.rs::addr
 
 crates/page_frames/src/lib.rs::alloc
 
@@ -5229,10 +5225,6 @@ crates/page_frames/src/lib.rs::bitmap_bytes
 crates/page_frames/src/lib.rs::containing
 
 crates/page_frames/src/lib.rs::free
-
-crates/page_frames/src/lib.rs::free
-
-crates/page_frames/src/lib.rs::from_addr
 
 crates/page_frames/src/lib.rs::is_used
 

@@ -169,7 +169,7 @@ fn a_destroyed_region_takes_no_live_spaces_page_tables_with_it() {
                 .store(listed(root, VA), Ordering::SeqCst);
 
             let before = spent(r2);
-            let second = map(f2, r2_slot, VA + page_frames::FRAME_SIZE);
+            let second = map(f2, r2_slot, VA + page_frames::FRAME_BYTES);
             REPORT.second.store(encode(second), Ordering::SeqCst);
             REPORT
                 .tables_from_r2

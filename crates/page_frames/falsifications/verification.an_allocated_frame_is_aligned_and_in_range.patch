@@ -1,18 +1,18 @@
 Falsifies `page_frames::verification::an_allocated_frame_is_aligned_and_in_range`.
 
 The defect: the bitmap index is added to the base without being scaled to an address, dropping
-the `* FRAME_SIZE`. Index and address are both `u64`-shaped here and the expression type-checks
+the `* FRAME_BYTES`. Index and address are both `u64`-shaped here and the expression type-checks
 either way; at index zero the two agree, which is the case a first smoke test exercises.
 
-Expected to fail: the harness's `assert!(f.addr().is_multiple_of(FRAME_SIZE))`, for any index
+Expected to fail: the harness's `assert!(f.physical_address().is_multiple_of(FRAME_BYTES))`, for any index
 other than zero, where `alloc` returns an address inside the first frame of the region rather
 than the frame it reserved the bit for.
 
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -260,3 +260,3 @@
+@@ -268,3 +268,3 @@
          self.hint = i + 1;
--        Some(PageFrame(self.base + i as u64 * FRAME_SIZE))
+-        Some(PageFrame(self.base + i as u64 * FRAME_BYTES))
 +        Some(PageFrame(self.base + i as u64))
      }

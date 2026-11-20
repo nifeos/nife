@@ -123,7 +123,7 @@ impl AddressSpace {
         }
 
         let mut space = AddressSpace {
-            root: PageFrame::from_addr(root),
+            root: PageFrame::from_physical_address(root),
             asid,
             backing: Backing::Owned(region),
             current_cpu_page: None,
@@ -160,9 +160,9 @@ impl AddressSpace {
             core::num::NonZeroU64::new(u64::from(crate::smp::online_harts_mask().count_ones())),
             core::num::NonZeroU64::new(crate::arch::timer::TICK_HERTZ),
         );
-        let kernel_va = mmu::phys_to_virt(frame.addr());
+        let kernel_va = mmu::phys_to_virt(frame.physical_address());
         // SAFETY: `frame` is freshly allocated and owned by nobody else yet, the direct map is
-        // valid for it, and `PAGE_CONTENT_BYTES` (32) is far under `FRAME_SIZE`, so the copy stays inside
+        // valid for it, and `PAGE_CONTENT_BYTES` (32) is far under `FRAME_BYTES`, so the copy stays inside
         // the frame.
         unsafe {
             core::ptr::copy_nonoverlapping(bytes.as_ptr(), kernel_va as *mut u8, bytes.len());
@@ -174,7 +174,7 @@ impl AddressSpace {
         if self
             .map_physical(
                 current_cpu_contract::PAGE_VIRTUAL_ADDRESS,
-                frame.addr(),
+                frame.physical_address(),
                 Flags::user_read_only_data(),
                 crate::revoke::PageMapSource::NoCapability,
             )
@@ -236,7 +236,7 @@ impl AddressSpace {
         let page = unsafe {
             core::slice::from_raw_parts_mut(
                 mmu::phys_to_virt(frame) as *mut u8,
-                FRAME_SIZE as usize,
+                FRAME_BYTES as usize,
             )
         };
         Ok(page)
@@ -277,7 +277,7 @@ impl AddressSpace {
         flags: Flags,
         under: crate::revoke::PageMapSource,
     ) -> Result<(), MapError> {
-        let root = self.root.addr();
+        let root = self.root.physical_address();
         let recorded = hold.record_mapping(phys, root, va, flags, under)?;
         if let Err(e) = self.map_at(va, phys, flags) {
             hold.forget_recorded(root, recorded);
@@ -289,7 +289,7 @@ impl AddressSpace {
     /// Map `phys` at `va`. Intermediate tables come from this address space's own region, so
     /// they are covered by the one teardown call; the target page is whoever's it was.
     fn map_at(&mut self, va: u64, phys: u64, flags: Flags) -> Result<(), MapError> {
-        let root = self.root.addr();
+        let root = self.root.physical_address();
         let region = self.backing.region();
 
         // SAFETY: `root` is a zeroed L0 table. Half::Low, so the mapper refuses a high address:
@@ -311,12 +311,12 @@ impl AddressSpace {
     /// revocation) use. Not what goes in `TTBR0_EL1` any more; that is [`ttbr0`](Self::ttbr0),
     /// which carries the ASID too.
     pub fn root(&self) -> u64 {
-        self.root.addr()
+        self.root.physical_address()
     }
 
     /// The composed `TTBR0_EL1` value: root plus this space's ASID, ready to install.
     pub fn ttbr0(&self) -> u64 {
-        mmu::ttbr0_value(self.root.addr(), self.asid)
+        mmu::ttbr0_value(self.root.physical_address(), self.asid)
     }
 
     /// **Run `body` with this space installed as the current user half, then uninstall it**, so a
@@ -355,11 +355,11 @@ impl Drop for AddressSpace {
     fn drop(&mut self) {
         // Forget this space's revocation records before its tables are freed and reused: a stale
         // (root, va) would send a later revoke into someone else's tables.
-        crate::revoke::forget_root(self.root.addr());
+        crate::revoke::forget_root(self.root.physical_address());
 
         // Stop being the live space before the frames go back, or the walker reads freed memory.
         // Cached translations are the `flush_asid` below, which reaches the other cores.
-        if mmu::current_user_root() == self.root.addr() {
+        if mmu::current_user_root() == self.root.physical_address() {
             mmu::deactivate_user();
         }
 
@@ -380,7 +380,7 @@ impl Drop for AddressSpace {
         }
         for (k, &addr) in self.thread_pages.iter().enumerate() {
             if self.thread_pages_made & (1 << k) != 0 {
-                crate::memory::free(PageFrame::from_addr(addr));
+                crate::memory::free(PageFrame::from_physical_address(addr));
             }
         }
         self.thread_pages_made = 0;

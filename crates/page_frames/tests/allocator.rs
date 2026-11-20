@@ -1,13 +1,13 @@
 //! Host tests for the frame allocator. No emulator, no hardware, milliseconds.
 
-use page_frames::{FRAME_SIZE, PageFrame, PageFrameAllocator};
+use page_frames::{FRAME_BYTES, PageFrame, PageFrameAllocator};
 
 const BASE: u64 = 0x4000_0000;
 
 /// 64 frames = 256 KiB of pretend RAM, 8 bytes of bitmap.
 fn allocator(bitmap: &mut [u8]) -> PageFrameAllocator<'_> {
     let mut a = PageFrameAllocator::new(BASE, 64, bitmap);
-    a.mark_free(BASE, 64 * FRAME_SIZE);
+    a.mark_free(BASE, 64 * FRAME_BYTES);
     a
 }
 
@@ -18,8 +18,8 @@ fn everything_starts_used() {
 
     // Memory is guilty until proven innocent. If this ever defaults to free, the
     // allocator will happily hand out the MMIO hole where the UART lives.
-    assert_eq!(a.stats().used, 64);
-    assert_eq!(a.stats().free(), 0);
+    assert_eq!(a.stats().used_frames, 64);
+    assert_eq!(a.stats().free_frames(), 0);
 }
 
 #[test]
@@ -30,12 +30,12 @@ fn alloc_hands_out_distinct_frames() {
     let mut seen = Vec::new();
     while let Some(f) = a.alloc() {
         assert!(!seen.contains(&f), "handed out {f:?} twice");
-        assert_eq!(f.addr() % FRAME_SIZE, 0, "not frame-aligned");
+        assert_eq!(f.physical_address() % FRAME_BYTES, 0, "not frame-aligned");
         seen.push(f);
     }
 
     assert_eq!(seen.len(), 64);
-    assert_eq!(a.stats().free(), 0);
+    assert_eq!(a.stats().free_frames(), 0);
 }
 
 #[test]
@@ -44,10 +44,10 @@ fn free_returns_a_frame_to_the_pool() {
     let mut a = allocator(&mut bits);
 
     let f = a.alloc().unwrap();
-    assert_eq!(a.stats().used, 1);
+    assert_eq!(a.stats().used_frames, 1);
 
     a.free(f);
-    assert_eq!(a.stats().used, 0);
+    assert_eq!(a.stats().used_frames, 0);
 
     assert_eq!(a.alloc(), Some(f), "should reuse the frame we just freed");
 }
@@ -68,7 +68,7 @@ fn double_free_panics() {
 fn freeing_a_foreign_frame_panics() {
     let mut bits = [0u8; 8];
     let mut a = allocator(&mut bits);
-    a.free(PageFrame::from_addr(0xdead_0000));
+    a.free(PageFrame::from_physical_address(0xdead_0000));
 }
 
 // --- the one that actually matters ---
@@ -83,22 +83,25 @@ fn mark_used_claims_partially_covered_frames() {
     // This is the shape of our real kernel image, which ends at 0x40097010: not
     // frame-aligned. If mark_used rounds the end DOWN, frame 1 stays free, gets handed
     // out, and something writes over the tail of the kernel.
-    a.mark_used(BASE, FRAME_SIZE + 1);
+    a.mark_used(BASE, FRAME_BYTES + 1);
 
     assert_eq!(
-        a.stats().used,
+        a.stats().used_frames,
         2,
         "must claim BOTH frames, not just the full one"
     );
 
     // And prove it by exhausting the allocator: neither frame may come back.
+    // The loop is bounded by the frame count, so an allocator that never runs dry fails the
+    // assertions below and does not hang the run.
     let mut handed_out = Vec::new();
-    while let Some(f) = a.alloc() {
-        handed_out.push(f.addr());
+    for _ in 0..64 {
+        let Some(f) = a.alloc() else { break };
+        handed_out.push(f.physical_address());
     }
     assert!(!handed_out.contains(&BASE), "handed out frame 0");
     assert!(
-        !handed_out.contains(&(BASE + FRAME_SIZE)),
+        !handed_out.contains(&(BASE + FRAME_BYTES)),
         "handed out frame 1, which contains the last byte of the kernel"
     );
 }
@@ -109,9 +112,9 @@ fn mark_used_of_an_unaligned_start_claims_the_frame_it_starts_in() {
     let mut a = allocator(&mut bits);
 
     // Starts halfway through frame 2, ends halfway through frame 3.
-    a.mark_used(BASE + 2 * FRAME_SIZE + 100, FRAME_SIZE);
+    a.mark_used(BASE + 2 * FRAME_BYTES + 100, FRAME_BYTES);
 
-    assert_eq!(a.stats().used, 2, "must claim frames 2 and 3");
+    assert_eq!(a.stats().used_frames, 2, "must claim frames 2 and 3");
 }
 
 #[test]
@@ -119,14 +122,14 @@ fn mark_used_is_idempotent() {
     let mut bits = [0u8; 8];
     let mut a = allocator(&mut bits);
 
-    a.mark_used(BASE, 4 * FRAME_SIZE);
-    a.mark_used(BASE, 4 * FRAME_SIZE);
-    a.mark_used(BASE + FRAME_SIZE, FRAME_SIZE);
+    a.mark_used(BASE, 4 * FRAME_BYTES);
+    a.mark_used(BASE, 4 * FRAME_BYTES);
+    a.mark_used(BASE + FRAME_BYTES, FRAME_BYTES);
 
     // The kernel image, the DTB, and the bitmap can overlap. Reserving a frame twice
     // must not corrupt the used count, or the allocator's accounting drifts and the
     // "free memory" number in the banner becomes a lie.
-    assert_eq!(a.stats().used, 4);
+    assert_eq!(a.stats().used_frames, 4);
 }
 
 #[test]
@@ -136,10 +139,10 @@ fn regions_outside_our_range_are_ignored() {
 
     // The device tree can describe reserved regions in memory we don't manage (MMIO,
     // secure-world firmware). Clamping rather than panicking is the whole point.
-    a.mark_used(0, FRAME_SIZE); // below our base
-    a.mark_used(BASE + 1000 * FRAME_SIZE, FRAME_SIZE); // above our top
+    a.mark_used(0, FRAME_BYTES); // below our base
+    a.mark_used(BASE + 1000 * FRAME_BYTES, FRAME_BYTES); // above our top
 
-    assert_eq!(a.stats().used, 0);
+    assert_eq!(a.stats().used_frames, 0);
 }
 
 // --- mark_free rounds inward, the mirror of mark_used ---
@@ -152,7 +155,9 @@ fn all_used(bitmap: &mut [u8]) -> PageFrameAllocator<'_> {
 /// The frame indices `a` holds free, lowest first.
 fn free_frames(a: &PageFrameAllocator<'_>) -> Vec<u64> {
     (0..64)
-        .filter(|&i| a.is_used(PageFrame::from_addr(BASE + i * FRAME_SIZE)) == Some(false))
+        .filter(|&i| {
+            a.is_used(PageFrame::from_physical_address(BASE + i * FRAME_BYTES)) == Some(false)
+        })
         .collect()
 }
 
@@ -163,10 +168,10 @@ fn mark_free_of_an_unaligned_start_keeps_the_frame_it_starts_in() {
 
     // A usable region from 100 bytes into frame 2 to the end of frame 5. Frame 2's first 100
     // bytes were never said to be RAM, so frame 2 stays used.
-    a.mark_free(BASE + 2 * FRAME_SIZE + 100, 4 * FRAME_SIZE - 100);
+    a.mark_free(BASE + 2 * FRAME_BYTES + 100, 4 * FRAME_BYTES - 100);
 
     assert_eq!(free_frames(&a), [3, 4, 5]);
-    assert_eq!(a.stats().free(), 3);
+    assert_eq!(a.stats().free_frames(), 3);
 }
 
 #[test]
@@ -175,7 +180,7 @@ fn mark_free_of_an_unaligned_end_keeps_the_frame_it_ends_in() {
     let mut a = all_used(&mut bits);
 
     // Frames 2 to 4 whole, then the first byte of frame 5.
-    a.mark_free(BASE + 2 * FRAME_SIZE, 3 * FRAME_SIZE + 1);
+    a.mark_free(BASE + 2 * FRAME_BYTES, 3 * FRAME_BYTES + 1);
 
     assert_eq!(free_frames(&a), [2, 3, 4]);
 }
@@ -186,11 +191,11 @@ fn mark_free_of_a_region_smaller_than_a_frame_frees_nothing() {
     let mut a = all_used(&mut bits);
 
     // Inside one frame, touching neither of its edges.
-    a.mark_free(BASE + 7 * FRAME_SIZE + 16, FRAME_SIZE - 32);
+    a.mark_free(BASE + 7 * FRAME_BYTES + 16, FRAME_BYTES - 32);
     // Starting on a boundary, one byte short of a whole frame.
-    a.mark_free(BASE + 9 * FRAME_SIZE, FRAME_SIZE - 1);
+    a.mark_free(BASE + 9 * FRAME_BYTES, FRAME_BYTES - 1);
 
-    assert_eq!(a.stats().free(), 0);
+    assert_eq!(a.stats().free_frames(), 0);
     assert_eq!(a.alloc(), None);
 }
 
@@ -201,12 +206,12 @@ fn mark_free_of_a_region_straddling_one_boundary_frees_nothing() {
 
     // The second half of frame 3 and the first half of frame 4: a whole frame's worth of bytes,
     // and no whole frame.
-    a.mark_free(BASE + 3 * FRAME_SIZE + FRAME_SIZE / 2, FRAME_SIZE);
+    a.mark_free(BASE + 3 * FRAME_BYTES + FRAME_BYTES / 2, FRAME_BYTES);
 
-    assert_eq!(a.stats().free(), 0);
+    assert_eq!(a.stats().free_frames(), 0);
 
     // Twice as long, it covers exactly frame 4 and part of frames 3 and 5.
-    a.mark_free(BASE + 3 * FRAME_SIZE + FRAME_SIZE / 2, 2 * FRAME_SIZE);
+    a.mark_free(BASE + 3 * FRAME_BYTES + FRAME_BYTES / 2, 2 * FRAME_BYTES);
 
     assert_eq!(free_frames(&a), [4]);
 }
@@ -219,10 +224,10 @@ fn alloc_contiguous_returns_adjacent_frames() {
     let mut a = allocator(&mut bits);
 
     let first = a.alloc_contiguous(4).unwrap();
-    assert_eq!(a.stats().used, 4);
+    assert_eq!(a.stats().used_frames, 4);
 
     for i in 0..4u64 {
-        let f = PageFrame::from_addr(first.addr() + i * FRAME_SIZE);
+        let f = PageFrame::from_physical_address(first.physical_address() + i * FRAME_BYTES);
         assert_eq!(
             a.is_used(f),
             Some(true),
@@ -235,16 +240,16 @@ fn alloc_contiguous_returns_adjacent_frames() {
 fn alloc_contiguous_skips_a_fragmented_gap() {
     let mut bits = [0u8; 8];
     let mut a = PageFrameAllocator::new(BASE, 64, &mut bits);
-    a.mark_free(BASE, 64 * FRAME_SIZE);
+    a.mark_free(BASE, 64 * FRAME_BYTES);
 
     // Punch a hole so the first plausible run is too short: frames 0-2 free, 3 used,
     // then everything else free. A request for 4 must skip past the hole.
-    a.mark_used(BASE + 3 * FRAME_SIZE, FRAME_SIZE);
+    a.mark_used(BASE + 3 * FRAME_BYTES, FRAME_BYTES);
 
     let first = a.alloc_contiguous(4).unwrap();
     assert_eq!(
-        first.addr(),
-        BASE + 4 * FRAME_SIZE,
+        first.physical_address(),
+        BASE + 4 * FRAME_BYTES,
         "should start after the hole, not before it"
     );
 }
@@ -253,11 +258,11 @@ fn alloc_contiguous_skips_a_fragmented_gap() {
 fn alloc_contiguous_fails_when_no_run_is_long_enough() {
     let mut bits = [0u8; 8];
     let mut a = PageFrameAllocator::new(BASE, 64, &mut bits);
-    a.mark_free(BASE, 64 * FRAME_SIZE);
+    a.mark_free(BASE, 64 * FRAME_BYTES);
 
     // Reserve every other frame. Now the longest free run is 1.
     for i in (0..64).step_by(2) {
-        a.mark_used(BASE + i * FRAME_SIZE, FRAME_SIZE);
+        a.mark_used(BASE + i * FRAME_BYTES, FRAME_BYTES);
     }
 
     assert_eq!(a.alloc_contiguous(2), None);
@@ -270,7 +275,7 @@ fn alloc_contiguous_of_everything_works_exactly_once() {
     let mut a = allocator(&mut bits);
 
     assert!(a.alloc_contiguous(64).is_some());
-    assert_eq!(a.stats().free(), 0);
+    assert_eq!(a.stats().free_frames(), 0);
     assert_eq!(a.alloc_contiguous(1), None);
 }
 
@@ -281,15 +286,15 @@ fn bitmap_sizing() {
     assert_eq!(PageFrameAllocator::bitmap_bytes(8), 1);
     assert_eq!(PageFrameAllocator::bitmap_bytes(9), 2);
 
-    // 128 MiB of RAM (what QEMU virt gives us) is 32768 frames, so 4 KiB of bitmap.
+    // 128 MiB of RAM (a common size for a small virtual machine) is 32768 frames, so 4 KiB of bitmap.
     // One frame's worth of overhead to manage 128 MiB. That's the deal.
     assert_eq!(PageFrameAllocator::page_frames_in(0x800_0000), 32768);
     assert_eq!(PageFrameAllocator::bitmap_bytes(32768), 4096);
 }
 
-/// Milestone 85 survivors: `is_used` could return `Some(true)` unconditionally, `index_of` could
-/// refuse the base frame (`<` rotting to `<=`), and `frame_range` could turn a zero-size range
-/// into one frame (its guard's `||` rotting to `&&` makes `mark_used(addr, 0)` round the empty
+/// Boundaries the other tests missed: `is_used` could return `Some(true)` unconditionally, `index_of` could
+/// refuse the base frame (`<` rotting to `<=`), and `page_frame_range` could turn a zero-byte range
+/// into one frame (its guard's `||` rotting to `&&` makes `mark_used(physical_address, 0)` round the empty
 /// range up). The base frame and the empty range are the boundaries no other test touched.
 #[test]
 fn the_base_frame_and_the_empty_range_are_exact() {
@@ -297,14 +302,23 @@ fn the_base_frame_and_the_empty_range_are_exact() {
     let mut a = allocator(&mut bits);
 
     // The base frame is ours to answer for, free until allocated.
-    assert_eq!(a.is_used(PageFrame::from_addr(BASE)), Some(false));
+    assert_eq!(
+        a.is_used(PageFrame::from_physical_address(BASE)),
+        Some(false)
+    );
     // One byte below it is not ours at all: None, never a verdict.
-    assert_eq!(a.is_used(PageFrame::from_addr(BASE - FRAME_SIZE)), None);
+    assert_eq!(
+        a.is_used(PageFrame::from_physical_address(BASE - FRAME_BYTES)),
+        None
+    );
 
     // A zero-size range touches no frame, wherever it starts.
     a.mark_used(BASE + 100, 0);
     a.mark_used(BASE, 0);
-    assert_eq!(a.is_used(PageFrame::from_addr(BASE)), Some(false));
+    assert_eq!(
+        a.is_used(PageFrame::from_physical_address(BASE)),
+        Some(false)
+    );
 
     // And an allocated frame answers true, so Some(false) above is not a stuck constant.
     let f = a.alloc().unwrap();
@@ -323,22 +337,22 @@ fn the_base_frame_and_the_empty_range_are_exact() {
 fn a_frame_past_the_last_one_is_not_ours() {
     let mut bits = [0u8; 8];
     let mut a = PageFrameAllocator::new(BASE, 60, &mut bits);
-    a.mark_free(BASE, 60 * FRAME_SIZE);
+    a.mark_free(BASE, 60 * FRAME_BYTES);
 
     assert_eq!(
-        a.is_used(PageFrame::from_addr(BASE + 59 * FRAME_SIZE)),
+        a.is_used(PageFrame::from_physical_address(BASE + 59 * FRAME_BYTES)),
         Some(false)
     );
     assert_eq!(
-        a.is_used(PageFrame::from_addr(BASE + 60 * FRAME_SIZE)),
+        a.is_used(PageFrame::from_physical_address(BASE + 60 * FRAME_BYTES)),
         None
     );
 }
 
 /// **Free frames and the longest free run are different numbers, and it is the second that fails a
-/// boot.** Milestone 107 measured 137 frames free and no run of 128 at the allocation that failed;
-/// a total-free reading alone cannot tell "out of memory" from "out of contiguity", and reading it
-/// as the former sent three milestones looking in the wrong place. See notes/frames.md.
+/// boot.** A boot can hold 137 frames free and no run of 128; a total-free reading alone cannot
+/// tell "out of memory" from "out of contiguity", and reading it as the former sends a search to
+/// the wrong place.
 #[test]
 fn the_longest_free_run_is_not_the_free_count() {
     let mut bits = [0u8; 8];
@@ -346,11 +360,11 @@ fn the_longest_free_run_is_not_the_free_count() {
 
     // Whole and untouched: one run of everything.
     assert_eq!(a.largest_free_run(), 64);
-    assert_eq!(a.stats().free(), 64);
+    assert_eq!(a.stats().free_frames(), 64);
 
     // Punch a used frame into the middle. Free drops by one; the longest run halves.
-    a.mark_used(BASE + 32 * FRAME_SIZE, FRAME_SIZE);
-    assert_eq!(a.stats().free(), 63);
+    a.mark_used(BASE + 32 * FRAME_BYTES, FRAME_BYTES);
+    assert_eq!(a.stats().free_frames(), 63);
     assert_eq!(a.largest_free_run(), 32);
     assert!(
         a.alloc_contiguous(33).is_none(),
@@ -370,9 +384,9 @@ fn a_span_that_ends_mid_frame_is_covered_but_not_whole() {
     let cases = [
         (0, 0, 0),
         (1, 0, 1),
-        (FRAME_SIZE - 1, 0, 1),
-        (FRAME_SIZE, 1, 1),
-        (FRAME_SIZE + 1, 1, 2),
+        (FRAME_BYTES - 1, 0, 1),
+        (FRAME_BYTES, 1, 1),
+        (FRAME_BYTES + 1, 1, 2),
         (0x800_0000, 32768, 32768),
     ];
     for (span, whole, touched) in cases {
@@ -390,10 +404,10 @@ fn a_span_that_ends_mid_frame_is_covered_but_not_whole() {
 }
 
 #[test]
-fn an_unaligned_address_is_refused_without_a_panic() {
+fn an_unaligned_physical_address_is_refused_without_a_panic() {
     assert_eq!(
         PageFrame::try_aligned(BASE),
-        Some(PageFrame::from_addr(BASE))
+        Some(PageFrame::from_physical_address(BASE))
     );
     assert_eq!(PageFrame::try_aligned(BASE + 1), None);
     assert_eq!(PageFrame::try_aligned(u64::MAX), None);
@@ -402,7 +416,7 @@ fn an_unaligned_address_is_refused_without_a_panic() {
 #[test]
 fn a_frame_can_key_a_set() {
     let mut set = std::collections::HashSet::new();
-    set.insert(PageFrame::from_addr(BASE));
+    set.insert(PageFrame::from_physical_address(BASE));
     assert!(set.contains(&PageFrame::containing(BASE + 5)));
 }
 
@@ -413,11 +427,11 @@ fn a_contiguous_run_leaves_the_next_alloc_a_free_frame() {
     let first = a.alloc().unwrap();
     let run = a.alloc_contiguous(4).unwrap();
     let next = a.alloc().unwrap();
-    assert_eq!(first.addr(), BASE);
-    assert_eq!(run.addr(), BASE + FRAME_SIZE);
+    assert_eq!(first.physical_address(), BASE);
+    assert_eq!(run.physical_address(), BASE + FRAME_BYTES);
     assert_eq!(
-        next.addr(),
-        BASE + 5 * FRAME_SIZE,
+        next.physical_address(),
+        BASE + 5 * FRAME_BYTES,
         "the scan steps over the run"
     );
 }

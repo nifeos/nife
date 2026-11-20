@@ -169,7 +169,7 @@ elsewhere. aarch64's `user_can_read` asks the silicon (`AT S1E0R`) and has no ha
 x86_64 has no such predicate at all. The DMA attackers' descriptors reach `is_in_region`, rather than
 being turned away by an earlier check. `is_descriptor_allowed` tries `is_indirect` first. The direct
 attacker's descriptor is not indirect. The indirect attacker's *is*, and its own comment says so. The
-compositor test's vacuity guard, `neighbour_probe_phys(ATTACKER) == client[VICTIM] + FRAME_SIZE`,
+compositor test's vacuity guard, `neighbour_probe_phys(ATTACKER) == client[VICTIM] + FRAME_BYTES`,
 compares two different allocation records. It is a real fact about adjacency rather than a
 restatement. `reap_tests::assert_can_only_supervise` walks every slot and checks both directions.
 All of these fire as advertised.

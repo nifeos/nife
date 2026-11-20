@@ -154,7 +154,7 @@ fn an_image_past_the_old_ceiling_loads() {
     assert_eq!(entry, IMAGE_BASE);
 
     let last = space.while_installed(|| {
-        mmu::translate_user(IMAGE_BASE + BYTES - page_frames::FRAME_SIZE).is_some()
+        mmu::translate_user(IMAGE_BASE + BYTES - page_frames::FRAME_BYTES).is_some()
     });
     drop(space);
     assert!(last, "the image's last page is not mapped");

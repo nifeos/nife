@@ -23,5 +23,5 @@ diff --git a/system_tests/src/user/std_service.rs b/system_tests/src/user/std_se
 +        .expect("no frame for the std program's config page")
 +        .addr();
      // SAFETY: `config_phys` is that fresh frame, direct-mapped and owned by nobody else, and
-     // `config_bytes` is `PAGE_CONTENT_BYTES` long, far under `FRAME_SIZE`.
+     // `config_bytes` is `PAGE_CONTENT_BYTES` long, far under `FRAME_BYTES`.
      unsafe {

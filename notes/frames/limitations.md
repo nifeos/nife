@@ -41,7 +41,7 @@ it was made under. That names the capability *and every capability derived from 
 (`revoke::unmap_under_object`).
 
 `revoke::LogEntry` grew from 16 bytes to 24 and `LOG_ENTRIES` fell from 255 to 170. So a space
-pays about 1.5x the log pages it did. The existing `assert!(size_of::<LogPage>() == FRAME_SIZE)`
+pays about 1.5x the log pages it did. The existing `assert!(size_of::<LogPage>() == FRAME_BYTES)`
 holds that arithmetic to account, and it was checked by breaking it. Reclamation and the device
 take-back stay object-blind on purpose, because neither is asking a capability's question.
 
@@ -64,7 +64,7 @@ named in `LogEntry`'s own `BUGS`.
 ## Revocation still says nothing to a device
 
 §132 deliberately did not answer this half. A driver's IOMMU/DMA window is registered as a byte
-range (`virtio::register(.., dma, DMA_PAGE_FRAMES * FRAME_SIZE, ..)`) and is not derived from any
+range (`virtio::register(.., dma, DMA_PAGE_FRAMES * FRAME_BYTES, ..)`) and is not derived from any
 capability. So revoking a `PageFrame` narrows what the *CPU* may reach. It leaves device-initiated
 DMA into the same physical pages exactly as it was. Even a capability-perfect revocation of a
 surface leaves the device able to write those pages until the driver's virtio registration is

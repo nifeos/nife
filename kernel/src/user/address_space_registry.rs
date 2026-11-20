@@ -166,7 +166,7 @@ pub fn user_address_space_create(region: u64) -> Option<u64> {
     }
 
     let space = AddressSpace {
-        root: PageFrame::from_addr(root),
+        root: PageFrame::from_physical_address(root),
         asid,
         // Lent: the caller holds this region's `MemoryRegion` capability (`Backing`).
         backing: Backing::Lent(region),
@@ -220,7 +220,7 @@ pub fn user_address_space_map(
     // data writes is synced through its direct-map VA (caches are PIPT to the point of
     // unification), or the child fetches the frame's old contents.
     if flags.is_user_executable() {
-        sync_icache(mmu::phys_to_virt(phys), FRAME_SIZE as usize);
+        sync_icache(mmu::phys_to_virt(phys), FRAME_BYTES as usize);
     }
     Ok(())
 }
@@ -308,11 +308,11 @@ pub(crate) fn take_thread_page(name: u64) -> Option<(u8, u64, u64)> {
         mmu::phys_to_virt(space.thread_pages[k])
     } else {
         let frame = crate::memory::alloc_zeroed()?;
-        let kernel_va = mmu::phys_to_virt(frame.addr());
+        let kernel_va = mmu::phys_to_virt(frame.physical_address());
         if space
             .map_physical(
                 va,
-                frame.addr(),
+                frame.physical_address(),
                 Flags::user_read_only_data(),
                 crate::revoke::PageMapSource::NoCapability,
             )
@@ -321,7 +321,7 @@ pub(crate) fn take_thread_page(name: u64) -> Option<(u8, u64, u64)> {
             crate::memory::free(frame);
             return None;
         }
-        space.thread_pages[k] = frame.addr();
+        space.thread_pages[k] = frame.physical_address();
         space.thread_pages_made |= 1 << k;
         kernel_va
     };
@@ -399,7 +399,7 @@ pub(crate) fn reap_address_spaces_in_region(base: u64, end: u64) {
             let spaces = USER_SPACES.lock();
             crate::sched::with_holders(|binder| {
                 spaces.iter().find_map(|(name, entry)| {
-                    let root = entry.space.root.addr();
+                    let root = entry.space.root.physical_address();
                     let in_span = base <= root && root < end;
                     let goes = match entry.bound {
                         None => in_span,
@@ -446,7 +446,7 @@ mod tests {
     fn placeholder() -> Registered {
         Registered {
             space: AddressSpace {
-                root: PageFrame::from_addr(0),
+                root: PageFrame::from_physical_address(0),
                 asid: 0,
                 backing: Backing::Lent(PLACEHOLDER_REGION),
                 current_cpu_page: None,

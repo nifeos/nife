@@ -452,7 +452,7 @@ fn a_client_keeps_talking_while_the_server_underneath_it_is_replaced() {
         .next()
         .expect("no fault site was reported");
     assert_eq!(
-        site[1] & !(FRAME_SIZE - 1),
+        site[1] & !(FRAME_BYTES - 1),
         DEV_VA,
         "the outgoing instance faulted at {:#x}, which is not in the device page {DEV_VA:#x}: \
          it died of something other than the revoke, which would make the rest of this test \
