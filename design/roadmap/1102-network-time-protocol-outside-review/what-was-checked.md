@@ -30,10 +30,12 @@ Verified firsthand, on a fresh shallow clone of `nifeos/nife` at the head of `ma
   mutants tested, 166 caught, 5 missed, 14 unviable) and the triage of the five survivors in
   `notes/project-metrics/mutation-triage.csv`.
 
-Inferred from reading, not run: the overflow in item 12, the behavior of the unoptimized exhaustive
-sweep under the template's jobs (item 10), and whether the move's provenance strip reaches a `//!`
-block (item 8).
+Also run, against the source as it now stands: Kani over `Interval`'s accessors for every `i128`
+(item 12), the exhaustive sweep at `opt-level = 0` and `2` and `cargo llvm-cov` at `2` (item 10), and
+`script/crate-move --dry-run` with `rustfmt --check` over the staged crate root, which showed the
+provenance strip reaching the `//!` paragraph (item 8). Miri, the MSRV build and
+`script/crate-standalone` are in the review package.
 
-Not run: a mutation census (outside its window), coverage, Miri, the stranger test,
-`cargo-semver-checks` (no previous release), the MSRV build, `script/crate-standalone`, a fuzz
-campaign, and the template's workflows themselves (no repository exists yet).
+Not run: a mutation census (outside its window), the stranger test, `cargo-semver-checks` (no
+previous release), a fuzz campaign, and the template's workflows themselves (no repository exists
+yet).

@@ -15,8 +15,9 @@ An appendix to [the milestone](../1102-network-time-protocol-outside-review.md).
 - The crate has no dependency.
 - No shipped text names a nife note, script, milestone, pull request, service or person.
 - `#![forbid(unsafe_code)]` is present; the fuzz caller opts in with one target over `Query::accept`.
-- Eight Kani harnesses pass. Each has a falsification patch that `proofs / falsify` replays red. The
-  eighth states that `accept` takes a consistent exchange, with the RFC's offset and delay.
+- Nine Kani harnesses pass. Each has a falsification patch that `proofs / falsify` replays red. One
+  states that `accept` takes a consistent exchange, with the RFC's offset and delay, and one that
+  `Interval`'s accessors are total.
 - `Interval::nanoseconds` and `microseconds` are total over the public constructor, by a narrowed
   parameter or saturation, with a harness.
 - `Query::accept` refuses a root distance of 16 s and a reference timestamp after the transmit

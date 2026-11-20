@@ -15,8 +15,9 @@ fixed-point timestamp with its era pivot, the offset and delay arithmetic, and t
 that are the whole of plain NTP's spoofing resistance. It owns no socket, no clock and no policy.
 A `Query` carries a 64-bit nonce in the transmit field and `accept` refuses any reply whose origin
 field differs; the crate has no constructor that sends a guessable timestamp. It is `no_std`, has
-`#![forbid(unsafe_code)]` and has no dependency of any kind. Eight Kani harnesses, each with a
-falsification patch, prove the round trip, the era pivot, totality of decoding and the nonce check.
+`#![forbid(unsafe_code)]` and has no dependency of any kind. Nine Kani harnesses, each with a
+falsification patch, prove the round trip, the era pivot, totality of decoding and of the interval
+accessors, and the nonce check.
 Nothing in its source points back into nife except the manifest's header comment and the crate-root
 milestone and section citations, which the move rewrites.
 
@@ -111,7 +112,7 @@ What a stranger may find surprising:
 
 ## Proofs
 
-Eight Kani harnesses, each with a falsification patch under `falsifications/`:
+Nine Kani harnesses, each with a falsification patch under `falsifications/`:
 
 - The era pivot is exact over every Unix second in the window.
 - Nanoseconds survive the fixed point.
@@ -121,6 +122,8 @@ Eight Kani harnesses, each with a falsification patch under `falsifications/`:
 - An unmatched origin is always rejected.
 - `accept` is total, and a sample is coherent.
 - `accept` takes a consistent exchange.
+- `Interval`'s nanosecond and microsecond accessors never overflow over every `i128` tick count,
+  and keep the interval's sign.
 
 The standalone run's result is in the checks table. `notes/ntp/what-is-proved.md` states each
 claim, and the one place where a solver was the wrong tool.
@@ -173,15 +176,15 @@ specification; the RFC's reference implementation supplies two checks, and the c
 |---|---|
 | P0-1: inline `license`, `rust-version` and `[lints]` in the manifest; drop the nife publish-allowlist comment | move lane |
 | P0-2: write the README, both license texts, the changelog and a stranger record | move lane |
-| P0-3: the template's kept-name opening form `(network_time_protocol, RFC 5905)` trips clippy's `doc_markdown` on the crate-root documentation; the move lane picks the form both gates accept | move lane |
 | P1-8: remove the milestone, section and path citations from `src/`, the manifest and `notes/ntp.md` references | move lane |
 | P1-9: the fuzz opt-in and target (the crate is safe Rust, so the opt-in applies) | move lane |
 | P1-10 and P1-11: the exhaustive-sweep profile in the new manifest and the mutation exemptions file | move lane |
 | Convert the three path dependencies to `git` and `rev` with `version = "0.1.0"`; drop `crates/network_time_protocol` from the workspace; delete the baseline rows that name it | move lane |
 | Rewrite the provisional `Name:` blocks to ratified after the architect's pass | a later lane |
 
-P1-12 (narrowing `Interval::from_ticks` to `i64`) is a two-way door the maintainer rules, and the
-milestone's later items stay open.
+Narrowing `Interval::from_ticks` to `i64` is a two-way door the maintainer may rule before the
+first publish; the accessors are already proved total without it. The milestone's later items
+stay open.
 
 ## Open questions
 
