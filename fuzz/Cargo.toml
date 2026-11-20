@@ -62,7 +62,7 @@ libfuzzer-sys = "0.4"
 # The crates under test. Path dependencies with no version on purpose: they resolve to the bytes in
 # this repository, which git pins harder than semver would (see deny.toml's `allow-wildcard-paths`).
 nifefs = { path = "../crates/nifefs" }
-device_tree_blob = { path = "../crates/device_tree_blob" }
+device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_tree_blob", rev = "96ad52af96e38e38577f91a787f53b789dbdda4f" }
 # An interface of the `boot` package, which is what lets this crate link it (packages/boot.package.toml).
 device_tree_patch = { path = "../crates/device_tree_patch" }
 domain_name_system = { path = "../crates/domain_name_system" }
@@ -111,13 +111,6 @@ compositor = { path = "../crates/compositor" }
 debug = 1
 debug-assertions = true
 overflow-checks = true
-
-[[bin]]
-name = "device_tree_blob_walk"
-path = "fuzz_targets/device_tree_blob_walk.rs"
-test = false
-doc = false
-bench = false
 
 [[bin]]
 name = "device_tree_patch_initial_ramdisk"

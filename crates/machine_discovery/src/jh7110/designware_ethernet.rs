@@ -399,7 +399,10 @@ impl SystemController {
 /// calef has not ruled on it.
 pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> {
     for compatible in COMPATIBLES {
-        let mut regions = [Region { start: 0, size: 0 }; 1];
+        let mut regions = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 1];
         if tree.node_register_regions_compatible(compatible, &mut regions)? == 0 {
             continue;
         }
@@ -414,7 +417,7 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
         };
         return Discovered::from_node(
             regions[0].start,
-            regions[0].size,
+            regions[0].size_bytes,
             compatible,
             prop,
             physical_layer_device,
@@ -435,7 +438,10 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
 /// Name: recorded (milestone 53), which wrote it as
 /// `designware_ethernet::jh7110::discover_aon_syscon`. calef has not ruled on it.
 pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<SystemController, Error> {
-    let mut regions = [Region { start: 0, size: 0 }; 1];
+    let mut regions = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 1];
     if tree
         .node_register_regions_compatible(COMPATIBLE_ALWAYS_ON_SYSTEM_CONTROLLER, &mut regions)?
         == 1
@@ -443,7 +449,7 @@ pub fn discover_aon_syscon(tree: &DeviceTreeBlob<'_>) -> Result<SystemController
     {
         return Ok(SystemController {
             base_physical_address: regions[0].start,
-            size_bytes: regions[0].size,
+            size_bytes: regions[0].size_bytes,
             from_tree: true,
         });
     }

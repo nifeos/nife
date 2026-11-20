@@ -63,7 +63,7 @@ fuzz_target!(|data: &[u8]| {
             .unwrap_or_else(|e| panic!("the rewritten tree does not parse: {e:?}"));
         let expected = (end > start).then(|| Region {
             start,
-            size: end - start,
+            size_bytes: end - start,
         });
         assert_eq!(
             tree.initial_ramdisk(),

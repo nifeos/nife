@@ -13,7 +13,7 @@ milestone 165 (x86_64 PCI enumeration), milestone 195 (finish the UEFI boot path
 
 ## What the loader hands over, and what it does not
 
-`machine_discovery::x86_64` decodes `hvm_start_info`, host-tested, for the same reason `crates/device_tree_blob`
+`machine_discovery::x86_64` decodes `hvm_start_info`, host-tested, for the same reason the `device_tree_blob` package
 exists rather than a device-tree reader living in `arch/aarch64/`: a parser proved only inside a
 booting kernel has no proof that runs in milliseconds. The kernel side
 (`arch/x86_64/machine.rs`) does nothing but turn a physical address into bytes through the direct

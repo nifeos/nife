@@ -118,7 +118,7 @@ impl RootPort {
                 .and_then(|i| regions.get(i))
                 .map(|r| Window {
                     physical_address: r.start,
-                    size_bytes: r.size,
+                    size_bytes: r.size_bytes,
                 })
         };
         let (Some(bridge), Some(configuration)) = (named(b"apb"), named(b"cfg")) else {
@@ -166,7 +166,10 @@ pub fn discover(tree: &DeviceTreeBlob<'_>, number: PortNumber) -> Result<Option<
         PortNumber::Zero => 0,
         PortNumber::One => 1,
     }];
-    let mut regions = [Region { start: 0, size: 0 }; 2];
+    let mut regions = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     let found = tree.node_register_regions(name, &mut regions)?;
     if found == 0 {
         return Ok(None);
@@ -199,11 +202,11 @@ mod tests {
         let regions = vec![
             Region {
                 start: 0x9_c000_0000,
-                size: 0x100_0000,
+                size_bytes: 0x100_0000,
             },
             Region {
                 start: 0x2c00_0000,
-                size: 0x10_0000,
+                size_bytes: 0x10_0000,
             },
         ];
         let ranges = cells(&[
@@ -433,7 +436,7 @@ mod tests {
 
     #[test]
     fn qemu_s_tree_has_no_port() {
-        let blob = include_bytes!("../../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+        let blob = include_bytes!("../../tests/fixtures/qemu-riscv64-virt.dtb");
         let tree = DeviceTreeBlob::from_bytes(blob).unwrap();
         for number in [PortNumber::Zero, PortNumber::One] {
             assert_eq!(discover(&tree, number).unwrap(), None);

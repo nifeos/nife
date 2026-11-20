@@ -57,12 +57,12 @@ question that wants one.
 
 ## The five parts, each with the proposal that found it and what it claims
 
-1. The device-tree parser's four harnesses are unfalsified. `crates/device_tree_blob` carries `be32_is_total`,
+1. The device-tree parser's four harnesses are unfalsified. the `device_tree_blob` package carries `be32_is_total`,
    `be64_is_total`, `be32_reads_big_endian_when_in_bounds` and `align4_rounds_up_to_a_multiple_of_four`,
    and none has a record. Four patches against code that already exists. Found by milestone 319.
 
    Closed 2026-09-23. Still true when re-checked: all four carried `Falsification: unfalsified`.
-   Four patches now exist, one per harness (`crates/device_tree_blob/falsifications/`), each
+   Four patches now exist, one per harness (the `device_tree_blob` package's `falsifications/`), each
    falsified by hand before being recorded. `be32_is_total` and `be64_is_total` revert their
    `checked_add` to a bare add, reopening the near-`usize::MAX` overflow panic the hardening
    closed. `be32_reads_big_endian_when_in_bounds` swaps `from_be_bytes` for `from_le_bytes`.
@@ -190,7 +190,7 @@ tell a stale premise from a live one. It is rung three, written where the next p
 
 ## Follow-on
 
-- **Done.** Part 1. `crates/device_tree_blob`'s four harnesses each carry a `replayable` record,
+- **Done.** Part 1. the `device_tree_blob` package's four harnesses each carry a `replayable` record,
   falsified by hand before being written down. `script/falsifications --sweep device_tree_blob`:
   4 swept, 0 survivors, 0 stale.
 - **Done.** Part 2, in `system_tests/falsifications/` on branch `milestone/323-falsification-gaps`:

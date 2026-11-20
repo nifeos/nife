@@ -18,7 +18,7 @@ built to; what it found is at the bottom.
 RISC-V deliberately has no `CPUID`. `misa` exists but is coarse, is permitted to read as zero, and
 says nothing about post-2015 extensions. The architected answer is the device tree
 (`riscv,isa-extensions`, `mmu-type` for Sv39 versus Sv48) plus SBI for firmware-provided facilities.
-We already parse DTB (`crates/device_tree_blob`), so this is parsing plus somewhere to put the answer.
+We already parse DTB (the `device_tree_blob` package), so this is parsing plus somewhere to put the answer.
 
 ## The shape, and the trap
 

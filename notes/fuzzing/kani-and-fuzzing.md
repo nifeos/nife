@@ -12,7 +12,7 @@ being the whole story:
    slice offsets, is past what the solver can do. What is proved is `check_segment_bounds`, the leaf
    arithmetic, factored out so bounded model checking can reach it. The proved leaf and the unproved
    shell are exactly the split a fuzzer covers from the other side.
-2. `crates/device_tree_blob`. Four harnesses, all on `be32`/`be64`, the leaf readers. The seven
+2. the `device_tree_blob` package. Four harnesses, all on `be32`/`be64`, the leaf readers. The seven
    *walkers* above them are unbounded loops over a symbolic blob carrying a depth counter and two
    per-depth arrays. Both of the bugs found on 2026-08-02 were in that unproved region, and one of
    them was an out-of-bounds index into one of those arrays.

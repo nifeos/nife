@@ -16,7 +16,7 @@ use device_tree_blob::{DeviceTreeBlob, Region};
 use pci_configuration_space::{intx_interrupt_number, memory_window_32_bit};
 
 const QEMU_RISCV_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+    include_bytes!("../../machine_discovery/tests/fixtures/qemu-riscv64-virt.dtb");
 
 /// The discovery `memory::initialize` performs, over the riscv `virt` tree: the node found by its
 /// binding, the ECAM window from its `reg`, the BAR window from its `ranges`. The pinned values
@@ -27,7 +27,10 @@ const QEMU_RISCV_VIRT: &[u8] =
 #[test]
 fn discovery_finds_the_riscv_windows_the_constants_named() {
     let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
-    let mut regs = [Region { start: 0, size: 0 }; 2];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(
         dtb.node_register_regions_compatible(b"pci-host-ecam-generic", &mut regs)
             .unwrap(),
@@ -36,8 +39,8 @@ fn discovery_finds_the_riscv_windows_the_constants_named() {
     assert_eq!(
         regs[0],
         Region {
-            start: 0x3000_0000, // was PCI_ECAM_BASE in arch/riscv64/mmu.rs
-            size: 0x1000_0000,  // 256 buses x 1 MB; the kernel maps bus 0's megabyte
+            start: 0x3000_0000,      // was PCI_ECAM_BASE in arch/riscv64/mmu.rs
+            size_bytes: 0x1000_0000, // 256 buses x 1 MB; the kernel maps bus 0's megabyte
         }
     );
     let ranges = dtb
@@ -60,7 +63,10 @@ const JH7110: &[u8] = include_bytes!("fixtures/jh7110.dtb");
 #[test]
 fn the_jh7110_has_no_generic_ecam_bridge_and_discovery_says_none() {
     let dtb = DeviceTreeBlob::from_bytes(JH7110).unwrap();
-    let mut regs = [Region { start: 0, size: 0 }; 2];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(
         dtb.node_register_regions_compatible(b"pci-host-ecam-generic", &mut regs)
             .unwrap(),
@@ -113,7 +119,7 @@ fn the_intx_swizzle_matches_the_interrupt_map() {
 }
 
 const QEMU_AARCH64_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-aarch64-virt.dtb");
+    include_bytes!("../../machine_discovery/tests/fixtures/qemu-aarch64-virt.dtb");
 
 /// The aarch64 discovery, same claim as the riscv one, with the machine's own twist: the ECAM is
 /// the **highmem** window. The node is named `pcie@10000000` (the low MMIO base) but its `reg`
@@ -122,7 +128,10 @@ const QEMU_AARCH64_VIRT: &[u8] =
 #[test]
 fn discovery_finds_the_aarch64_windows_the_constants_named() {
     let dtb = DeviceTreeBlob::from_bytes(QEMU_AARCH64_VIRT).unwrap();
-    let mut regs = [Region { start: 0, size: 0 }; 2];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(
         dtb.node_register_regions_compatible(b"pci-host-ecam-generic", &mut regs)
             .unwrap(),
@@ -132,7 +141,7 @@ fn discovery_finds_the_aarch64_windows_the_constants_named() {
         regs[0],
         Region {
             start: 0x40_1000_0000, // was PCI_ECAM_BASE in arch/aarch64/mmu.rs
-            size: 0x1000_0000,
+            size_bytes: 0x1000_0000,
         }
     );
     let ranges = dtb

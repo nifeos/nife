@@ -4,23 +4,12 @@
 [`notes/fuzzing.md`](../fuzzing.md), whose table says in a line why each target earns its place. This
 file keeps the longer reasons each target's own doc comment points to.*
 
-## `device_tree_blob_walk`
-
-The walkers are where the parser's state lives: a depth counter, two 16-entry per-depth cell-count
-stacks, and a slot for the node being walked. Each is indexed by a number the blob controls. A
-walker is an unbounded loop over a symbolic blob, which is where bounded model checking stops, so the
-Kani harnesses deliberately stay with the leaf readers.
-
-A blob that parses is not a blob that is safe to walk, and the kernel calls every accessor on the
-same blob during boot. So the target calls them all. The count grows with the parser; the rule is
-that the target tracks the parser's public surface.
-
 ## `device_tree_patch_initial_ramdisk`
 
 On aarch64 and riscv64 UEFI the loader rewrites the firmware's device tree before the kernel sees
 it, adding `/chosen/linux,initrd-start` and `linux,initrd-end` for the archive it placed
 (`crates/device_tree_patch`). The rewriter walks the structure block with its own walker, not
-`device_tree_blob`'s, so the parser target above says nothing about it. A panic stops the machine
+`device_tree_blob`'s, and no target fuzzes that parser here, so nothing else covers it. A panic stops the machine
 before the kernel exists. A wrong `Ok` is quieter: the kernel boots and finds no archive.
 
 So the target checks the answer, not only the absence of a panic. Each input gets five ranges:
@@ -176,12 +165,11 @@ regenerates them, and `crates/machine_discovery/tests/fuzz_seed.rs` holds each t
 
 ## `machine_description_from_device_tree`
 
-`device_tree_blob_walk` shows the blob reader five fixed needles. The kernel and the loader read
-far more from the same blob. It reads the CPU list with its cell counts, the RISC-V ISA record and the
+The kernel and the loader read many things from a device tree blob. It reads the CPU list with its cell counts, the RISC-V ISA record and the
 PLIC context map, which follows `interrupts-extended` and phandles. It reads a node's interrupt
 identifier too. The JH7110 finders add the clock and reset blocks, the Ethernet controller, the
 storage slots and the entropy source. Each walks the tree with numbers the tree chose. The seeds are the `.dtb` fixtures of
-`device_tree_blob` and `machine_discovery`, which `script/fuzz` passes as read-only corpora.
+`machine_discovery`, which `script/fuzz` passes as read-only corpora.
 
 ## BUGS
 

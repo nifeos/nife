@@ -1582,18 +1582,6 @@ crates/current_cpu_contract/src/lib.rs::cpu
 
 
 
-crates/device_tree_blob/src/lib.rs::DeviceTreeBlob
-
-crates/device_tree_blob/src/lib.rs::Error
-
-crates/device_tree_blob/src/lib.rs::Region
-
-crates/device_tree_blob/src/lib.rs::end
-
-crates/device_tree_blob/src/lib.rs::from_bytes
-
-
-crates/device_tree_blob/src/lib.rs::memory_regions
 
 
 
@@ -1602,10 +1590,14 @@ crates/device_tree_blob/src/lib.rs::memory_regions
 
 
 
-crates/device_tree_blob/src/lib.rs::reserved_memory_regions
 
 
-crates/device_tree_blob/src/lib.rs::total_size
+
+
+
+
+
+
 
 crates/device_tree_patch/src/lib.rs::Error
 
@@ -7031,94 +7023,57 @@ crates/top/src/lib.rs::write_machine_line
 
 crates/top/src/lib.rs::write_summary
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 crates/uptime/src/lib.rs::Formatted
 
 crates/uptime/src/lib.rs::as_bytes
 
 crates/uptime/src/lib.rs::format
-
-crates/usb/src/boot_keyboard.rs
-
-crates/usb/src/boot_keyboard.rs::BootReport
-
-crates/usb/src/boot_keyboard.rs::ERROR_ROLL_OVER
-
-
-crates/usb/src/boot_keyboard.rs::RELEASED
-
-
-crates/usb/src/boot_keyboard.rs::changes
-
-crates/usb/src/boot_keyboard.rs::evdev_code
-
-crates/usb/src/boot_keyboard.rs::parse
-
-crates/usb/src/descriptor.rs
-
-crates/usb/src/descriptor.rs::BootKeyboard
-
-crates/usb/src/descriptor.rs::CLASS_HID
-
-crates/usb/src/descriptor.rs::CONFIGURATION
-
-
-crates/usb/src/descriptor.rs::ConfigurationHeader
-
-crates/usb/src/descriptor.rs::DEVICE
-
-
-crates/usb/src/descriptor.rs::DeviceDescriptor
-
-crates/usb/src/descriptor.rs::ENDPOINT
-
-
-crates/usb/src/descriptor.rs::INTERFACE
-
-
-crates/usb/src/descriptor.rs::PROTOCOL_KEYBOARD
-
-crates/usb/src/descriptor.rs::Refusal
-
-crates/usb/src/descriptor.rs::SUBCLASS_BOOT
-
-
-crates/usb/src/descriptor.rs::find_boot_keyboard
-
-crates/usb/src/descriptor.rs::parse
-
-crates/usb/src/descriptor.rs::parse
-
-crates/usb/src/request.rs
-
-crates/usb/src/request.rs::BOOT_PROTOCOL
-
-crates/usb/src/request.rs::CLASS
-
-crates/usb/src/request.rs::DEVICE_TO_HOST
-
-crates/usb/src/request.rs::GET_DESCRIPTOR
-
-crates/usb/src/request.rs::SET_CONFIGURATION
-
-crates/usb/src/request.rs::SET_IDLE
-
-crates/usb/src/request.rs::SET_PROTOCOL
-
-crates/usb/src/request.rs::SetupPacket
-
-crates/usb/src/request.rs::TO_INTERFACE
-
-crates/usb/src/request.rs::get_descriptor
-
-crates/usb/src/request.rs::is_device_to_host
-
-crates/usb/src/request.rs::set_boot_protocol
-
-crates/usb/src/request.rs::set_configuration
-
-crates/usb/src/request.rs::set_idle_forever
-
-crates/usb/src/request.rs::to_u64
 
 
 crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT

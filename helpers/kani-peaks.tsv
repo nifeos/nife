@@ -11,7 +11,6 @@ capability_manifest_note	crates/capability_manifest_note	7c62f31595d50906f1b35a8
 capability_plan	crates/capability_plan	2159c2c58dba89a325c1b34f686b41d859cc9edf	0.68.0	721
 components	components	16bdb1917af0e555c786117a28c93959f8737d43	0.68.0	1014
 credential_contract	crates/credential_contract	8a83c22893edcf2478852cc60b3bfa71cb189872	0.68.0	178
-device_tree_blob	crates/device_tree_blob	aa6c2d942687d68d74d298583f1e4f05ef1d1f17	0.68.0	548
 direct_memory_access_validator	crates/direct_memory_access_validator	2ba51ec920017bf3f81a669a7fd5a3b1733f2ca1	0.68.0	779
 domain_name_system	crates/domain_name_system	3396867ae4c51735e014752157aeac6799023bdd	0.68.0	1760
 driver_process_contract::designware_mobile_storage	crates/driver_process_contract	c4abd3c29f139896895874d82ce3a7c1d7647748	0.68.0	74
@@ -36,4 +35,3 @@ pci_configuration_space	crates/pci_configuration_space	0ec368d5b5b7357f0a9a21338
 periodic_deadline	crates/periodic_deadline	3847c01544341364e3e8bc6edd44f5c703dbb5dd	0.68.0	191
 subtree_scope	crates/subtree_scope	e4683040334bd8f920db2f51a2e4e9e6a4ada7f4	0.68.0	5943
 timetable	crates/timetable	d6fe2168f801fd1479e80ffdca95664b63fe0a83	0.68.0	410
-usb	crates/usb	42ec6bb986b778d318bc5af4c7c381ea45d6a5f9	0.68.0	1956

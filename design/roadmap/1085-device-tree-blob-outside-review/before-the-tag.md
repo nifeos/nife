@@ -6,7 +6,7 @@ An appendix to [the milestone](../1085-device-tree-blob-outside-review.md).
 
 ### P0-1. The manifest and the files do not stand alone
 
-`crates/device_tree_blob/Cargo.toml` lines 1 to 9.
+the `device_tree_blob` package's `Cargo.toml` lines 1 to 9.
 `standalone.py` reports: no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, `license.workspace =
 true` where the field must read `MIT OR Apache-2.0`, no `rust-version`, `publish = false`, and
 `lints.workspace = true`, which inherits a workspace that is not there. The template's `check /

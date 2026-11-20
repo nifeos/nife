@@ -83,7 +83,10 @@ pub enum Refusal<'a> {
 /// GICv3 is asked first. The order would only matter for a node stating both bindings, which no
 /// tree does, but the newer binding is the more specific claim and so is the one to believe.
 pub fn discover<'a>(dtb: &DeviceTreeBlob<'a>) -> Result<Option<Gic>, Refusal<'a>> {
-    let mut regs = [Region { start: 0, size: 0 }; 4];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
 
     for compat in GICV3_COMPATIBLE {
         let n = dtb

@@ -10,13 +10,13 @@
 #
 #   script/fuzz                                  every target, 60 seconds each
 #   script/fuzz --time 900                       every target, 15 minutes each
-#   script/fuzz device_tree_blob_walk            one target, 60 seconds
-#   script/fuzz --time 0 device_tree_blob_walk   one target, until it finds something or you stop it
+#   script/fuzz elf_parse                        one target, 60 seconds
+#   script/fuzz --time 0 elf_parse               one target, until it finds something or you stop it
 #   script/fuzz --list                           the targets and what each one is for
 #   script/fuzz --shard 2/3                      the second of three interleaved slices of the targets
 #
 # **Seeds are passed as read-only corpus directories, never copied.**
-# `crates/device_tree_blob/tests/fixtures` holds three real device trees dumped from the boards we
+# `crates/machine_discovery/tests/fixtures` holds real device trees dumped from the boards we
 # boot, and `crates/globally_unique_identifier_partition_table/tests/fixtures` holds two real disks
 # formatted by `sgdisk` and by Apple's Disk Utility. Those are already in the tree with their own
 # reason to exist, and duplicating their bytes under `fuzz/seeds/` would create a second copy that
@@ -40,7 +40,7 @@ cd "$(dirname "$0")/.."
 #
 # The service targets come after the parsers (proposal #1592 part a): each replays a session of
 # requests against a server built on the host and checks a confinement rule, not only "no panic".
-targets="device_tree_blob_walk device_tree_patch_initial_ramdisk elf_parse globally_unique_identifier_partition_table http_response_feed domain_name_system_reply nifefs_roundtrip package_archive_roundtrip package_index_text capability_manifest_note_decode redoxfs_server_session system_log_session compositor_session acpi_firmware_tables machine_description_from_device_tree video_terminal_feed line_editor_feed line_editor_handoff"
+targets="device_tree_patch_initial_ramdisk elf_parse globally_unique_identifier_partition_table http_response_feed domain_name_system_reply nifefs_roundtrip package_archive_roundtrip package_index_text capability_manifest_note_decode redoxfs_server_session system_log_session compositor_session acpi_firmware_tables machine_description_from_device_tree video_terminal_feed line_editor_feed line_editor_handoff"
 
 usage() {
     cat <<'EOF'
@@ -62,7 +62,6 @@ while [ $# -gt 0 ]; do
         --shard) shard="$2"; shift 2 ;;
         --shard=*) shard="${1#--shard=}"; shift ;;
         --list)
-            echo "device_tree_blob_walk  device tree, parsed at boot from firmware bytes"
             echo "device_tree_patch_initial_ramdisk  the loader's copy of the firmware's tree: refused, or the kernel reads back the archive it was given"
             echo "elf_parse            ELF64 headers, and the loader maps what it parses"
             echo "globally_unique_identifier_partition_table  GUID partition table, off a disk somebody else formatted"
@@ -155,12 +154,12 @@ for target in $targets; do
         set -- "$@" "fuzz/seeds/$target"
     fi
     case "$target" in
-        device_tree_blob_walk|device_tree_patch_initial_ramdisk)
-            set -- "$@" crates/device_tree_blob/tests/fixtures ;;
+        device_tree_patch_initial_ramdisk)
+            set -- "$@" crates/machine_discovery/tests/fixtures ;;
         globally_unique_identifier_partition_table)
             set -- "$@" crates/globally_unique_identifier_partition_table/tests/fixtures ;;
         machine_description_from_device_tree)
-            set -- "$@" crates/device_tree_blob/tests/fixtures crates/machine_discovery/tests/fixtures ;;
+            set -- "$@" crates/machine_discovery/tests/fixtures ;;
         domain_name_system_reply) set -- "$@" crates/domain_name_system/tests/fixtures ;;
         elf_parse) set -- "$@" crates/static_elf/tests/fixtures ;;
     esac
