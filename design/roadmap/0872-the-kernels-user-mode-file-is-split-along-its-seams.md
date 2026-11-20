@@ -184,7 +184,7 @@ now an index, so its file-length row is gone. Every name below is provisional.
 | `user/boot_demos.rs` | 377 | the `x86_64` and riscv64 demos, compiled only there |
 | `user/loader.rs` | 316 | `LoadError` through `program`, and `INITRD_VA` |
 | `user/console_device.rs` | 109 | the console UART's interrupt, page and port-range constants |
-| `user/terminal_print.rs`, `user/virtual_io_dma.rs`, `user/test_support.rs` | 46, 38, 34 | `term_print`; `write_dma_phys`; `wait_for` |
+| `user/terminal_print.rs`, `user/virtual_io_direct_memory_access.rs`, `user/test_support.rs` | 46, 38, 34 | `term_print`; `write_dma_phys`; `wait_for` |
 
 Each child takes `use super::*`, and the index re-exports each at the visibility its items had, so
 no `user::` path changed. A private item a sibling reaches became `pub(super)`, as §281 rules,

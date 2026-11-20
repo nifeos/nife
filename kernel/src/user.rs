@@ -48,8 +48,8 @@ use device_starters::*;
 mod self_test_hand_over;
 #[cfg(not(any(test, feature = "system_tests", feature = "bench")))]
 use self_test_hand_over::*;
-mod virtual_io_dma;
-pub(crate) use virtual_io_dma::*;
+mod virtual_io_direct_memory_access;
+pub(crate) use virtual_io_direct_memory_access::*;
 mod terminal_print;
 use terminal_print::*;
 #[cfg(any(test, feature = "system_tests"))]
