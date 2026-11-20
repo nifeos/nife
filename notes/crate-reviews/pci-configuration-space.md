@@ -3,8 +3,8 @@
 *Name: provisional. The `pci_configuration_space` package of [crate-reviews.md](../crate-reviews.md),
 in its own file because the packages together outgrow the page.*
 
-The architect reads this to clear the crate for its move to its own repository,
-`nifeos/pci_configuration_space`. Clearing it is what approves creating that repository
+The architect read this to clear the crate for its move to its own repository,
+`nifeos/pci_configuration_space`. Clearing it approved creating that repository
 ([milestone 1105 (`pci`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1105-pci-outside-review.md),
 option A of its open decision, taken provisionally by the maintainer). It describes the crate as `main`
 plus this branch leaves it.
@@ -176,6 +176,7 @@ specification section 4.1.4 for the vendor capabilities, and the device tree spe
 
 | item | owner |
 |---|---|
+| Wait for the virtio to `virtual_io` sweep (draft #3854) to land, because the crate has `VirtioCapability` and virtio constants. | the sweep lane |
 | Strip the provisional `Name:` blocks of the ratified names, as part of the move. | move lane |
 | Run `script/crate-move` for real: it stages the tree at the newest template, rewrites the `Name:` blocks, patch paths and record positions, and makes the repository's first commit. | move lane |
 | Convert the four path dependencies in nife (`kernel`, `driver_process_contract`, `jh7110_pci_express`, `machine_discovery`) to `git` and `rev` with `version = "0.1.0"` once the repository exists. | move lane |
@@ -185,9 +186,12 @@ specification section 4.1.4 for the vendor capabilities, and the device tree spe
 
 ## Open questions
 
-1. Whether `intx_interrupt_number` should take the bridge route now or after the bus server exists.
-   Recommendation: after; it is a recorded limitation and no consumer needs it.
+None. The one question, whether `intx_interrupt_number` takes the bridge route now or after the bus
+server exists, is answered (maintainer, 2026-11-20 UTC): after the bus server exists. Until then it
+stays a recorded limitation.
 
 ## Recommendation
 
-The names are ratified. Clearing the package is the architect's next act; it approves creating `nifeos/pci_configuration_space`.
+Cleared on 2026-11-20 (UTC). The architect approved creating `nifeos/pci_configuration_space` with
+`publish = false`, no tag and no publish. The move waits on the virtio to `virtual_io` sweep
+(draft #3854), because the crate carries `VirtioCapability` and the virtio constants.

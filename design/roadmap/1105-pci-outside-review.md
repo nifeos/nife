@@ -85,7 +85,10 @@ crate's own reasons.
   nothing to build).
 - Review package: Done, [#3807](https://github.com/nifeos/nife/pull/3807):
   [`pci-configuration-space.md`](../../notes/crate-reviews/pci-configuration-space.md) and its row.
-- Follow-on, creating `nifeos/pci_configuration_space`: Open, and an open decision below.
+- Review package clearance: Done (2026-11-20 UTC). The architect cleared the package and approved
+  `nifeos/pci_configuration_space` with `publish = false`, no tag and no publish.
+- Follow-on, creating `nifeos/pci_configuration_space`: Open. It waits on the virtio to `virtual_io`
+  sweep (draft #3854), because the crate has `VirtioCapability` and virtio constants.
 
 ## Open decisions
 
@@ -102,11 +105,11 @@ Every other crate that has moved or passed clearance had a review package under
 `notes/crate-reviews/`: a short record of the names, the identity and the gates, written for the
 clearance. This crate's package is
 [`pci-configuration-space.md`](../../notes/crate-reviews/pci-configuration-space.md). The maintainer
-took option A provisionally on 2026-11-19 (UTC), a two-way door the architect may revisit. Clearing
-the package approves the repository; nobody has cleared it yet. The architect ruled the names on
+took option A provisionally on 2026-11-19 (UTC), a two-way door the architect may revisit. The
+architect cleared the package on 2026-11-20 (UTC), which approves the repository. The architect ruled the names on
 2026-11-20 (UTC), the names decision taken as option B: the whole table ratified as built, with one change, the struct `Bdf`
 becomes `BusDeviceFunction` and the specification spellings ride as aliases. The move waits on the
-clearance and on the P2 move steps above.
+virtio to `virtual_io` sweep (draft #3854) and on the P2 move steps above.
 
 Recommendation: A, taken provisionally.
 
