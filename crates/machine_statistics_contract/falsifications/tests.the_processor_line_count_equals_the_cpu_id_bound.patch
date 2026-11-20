@@ -9,12 +9,13 @@ itself run. The page then has a line count its writer and readers could disagree
 Expected to fail: the test's `assert_eq!(PROCESSOR_LINES, current_cpu_contract::CPU_ID_BOUND)`.
 
 diff --git a/crates/machine_statistics_contract/src/lib.rs b/crates/machine_statistics_contract/src/lib.rs
+index d70573b6e..d0065acdf 100644
 --- a/crates/machine_statistics_contract/src/lib.rs
 +++ b/crates/machine_statistics_contract/src/lib.rs
-@@ -36,12 +36,7 @@
+@@ -52,12 +52,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
+ /// layout, because the bound moves only together with the version a reader checks.
  ///
- /// Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1099-statistics-identity-frozen,
- /// following design/naming.md (a name says what the thing is, and a count says what it counts).
+ /// Name: ratified 2026-11-19 (UTC). A name says what the thing is, and a count says what it counts.
 -pub const PROCESSOR_LINES: usize = 8;
 -
 -const _: () = assert!(
@@ -24,4 +25,4 @@ diff --git a/crates/machine_statistics_contract/src/lib.rs b/crates/machine_stat
 +pub const PROCESSOR_LINES: usize = 9;
  
  /// The page's first word: what tells a prepared page from a frame nobody has written.
- pub const MAGIC: [u8; 8] = *b"MACHSTA1";
+ ///

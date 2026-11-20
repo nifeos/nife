@@ -92,6 +92,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | ready for review |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | identity, scope, names |
+| [`machine_statistics_contract`](crate-reviews/machine-statistics-contract.md) | contract | ready for the architect's review |
 | [`user_mode_runtime`](crate-reviews/user-mode-runtime.md) | 3 | ready for review |
 | [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | ready for review |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |
