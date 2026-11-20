@@ -13,8 +13,8 @@
 use std::io::{ErrorKind, Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 
-use domain_name_resolution_fixture::CASES;
 use domain_name_resolution_contract::status;
+use domain_name_resolution_fixture::CASES;
 use socket_contract::fixture::ECHO_PEER_PORT;
 
 /// The first case whose expected reply has this status.
