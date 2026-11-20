@@ -147,9 +147,9 @@ impl Entry {
     /// The label as UTF-8, written into `out`, returning how many bytes were written.
     ///
     /// `Err(`[`Error::NameTooLong`]`)` if `out` is too small; 4 bytes per code unit
-    /// (`4 * NAME_UNITS` = 144) is always enough. An unpaired surrogate, which a hostile or corrupt entry
-    /// can carry, becomes the replacement character, `U+FFFD`: a malformed label is no reason to
-    /// hide a partition.
+    /// (`4 * NAME_UNITS` = 144) is always enough. An unpaired surrogate, which a hostile or
+    /// corrupt entry can carry, becomes the replacement character, `U+FFFD`: a malformed label is
+    /// no reason to hide a partition.
     pub fn name_utf8(&self, out: &mut [u8]) -> Result<usize, Error> {
         let units = self.name.iter().position(|&u| u == 0).unwrap_or(NAME_UNITS);
         let mut written = 0;
