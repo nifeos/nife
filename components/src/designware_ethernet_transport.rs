@@ -58,10 +58,10 @@ struct Plane;
 
 impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
-        mapped(&PLANE).read::<u64>(off)
+        mapped(&PLANE).read_volatile::<u64>(off)
     }
     fn write_u64(&mut self, off: u64, v: u64) {
-        mapped(&PLANE).write::<u64>(off, v);
+        mapped(&PLANE).write_volatile::<u64>(off, v);
     }
     fn read_bytes(&self, off: u64, out: &mut [u8]) {
         mapped(&PLANE).copy_to_slice(off, out);
@@ -76,7 +76,7 @@ struct Channel;
 
 impl Tails for Channel {
     fn set_receive_tail(&mut self, tail_pointer_low_bits: u32) {
-        mapped(&DMA).write::<u32>(
+        mapped(&DMA).write_volatile::<u32>(
             u64::from(
                 registers::CHANNEL_RECEIVE_DESCRIPTOR_TAIL_POINTER_REGISTER
                     - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES,
@@ -85,7 +85,7 @@ impl Tails for Channel {
         );
     }
     fn set_transmit_tail(&mut self, tail_pointer_low_bits: u32) {
-        mapped(&DMA).write::<u32>(
+        mapped(&DMA).write_volatile::<u32>(
             u64::from(
                 registers::CHANNEL_TRANSMIT_DESCRIPTOR_TAIL_POINTER_REGISTER
                     - registers::DIRECT_MEMORY_ACCESS_REGISTER_PAGE_OFFSET_BYTES,
@@ -143,7 +143,7 @@ impl DesignWareNic {
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
         let des3 = (mapped(&PLANE)
-            .read::<u64>(layout::receive_descriptor(self.plane.receive_cursor()) + 8)
+            .read_volatile::<u64>(layout::receive_descriptor(self.plane.receive_cursor()) + 8)
             >> 32) as u32;
         designware_ethernet::receive_verdict(des3, MAXIMUM_FRAME_BYTES)
             != designware_ethernet::ReceiveVerdict::NotYet

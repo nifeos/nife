@@ -183,7 +183,7 @@ pub mod supervisor {
     /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
     pub const STAND_IN_PAGES: u64 = 48;
     /// **How long the supervisor waits for `OPERATION_QUIESCE` to be answered before it treats
-    /// `line_editor` as hung**, in milliseconds of the counter `user_mode_runtime::now` reads. The
+    /// `line_editor` as hung**, in milliseconds of the counter `user_mode_runtime::counter_ticks` reads. The
     /// measurement behind it is beside the bounded quiesce in `components/src/terminal_supervisor.rs`.
     ///
     /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.

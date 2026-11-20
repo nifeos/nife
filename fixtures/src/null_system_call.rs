@@ -4,7 +4,7 @@
 //! It makes [`primitive_benchmark_contract::NULL_SYSTEM_CALL_ITERATIONS`] traps with an unrecognized
 //! system call number, which the kernel rejects at once (`Err(BadSystemCall)`: no scheduler, no object
 //! lookup), so the loop isolates trap, dispatch and return. It times the loop with
-//! `user_mode_runtime::now` and writes one row, `bench-production: null_system_call <ticks> <iters>`,
+//! `user_mode_runtime::counter_ticks` and writes one row, `bench-production: null_system_call <ticks> <iters>`,
 //! to its output. The bench boot spawns the same program with startup word
 //! [`primitive_benchmark_contract::QUIET_BOOT_STARTUP_WORD`] and reads the row as `bench: ...`, so
 //! the gated instrument and the typed one are one binary. The row reports ticks, not converted
@@ -42,7 +42,7 @@
 #![no_main]
 
 use primitive_benchmark_contract::{NULL_SYSTEM_CALL_ITERATIONS, Prefix, write_row};
-use user_mode_runtime::{exit, now, send};
+use user_mode_runtime::{counter_ticks, exit, send};
 
 /// Slot 0: where the row goes. An endpoint with `WRITE`, the sink contract's framing.
 const OUTPUT: u64 = 0;
@@ -50,11 +50,11 @@ const OUTPUT: u64 = 0;
 user_mode_runtime::program_entry!(start);
 
 fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
-    let start = now();
+    let start = counter_ticks();
     for _ in 0..NULL_SYSTEM_CALL_ITERATIONS {
         null_system_call();
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     write_row(
         |w0, w1, w2| byte_sink_contract::classify(send(OUTPUT, w0, w1, w2)),
         Prefix::from_startup_word(startup_word),

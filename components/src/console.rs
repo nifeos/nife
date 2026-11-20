@@ -50,7 +50,8 @@
 
 use terminal_contract as proto;
 use user_mode_runtime::{
-    Message, Received, call, counter_hertz, now, receive_message, send, timer_arm, timer_cancel,
+    Message, Received, call, counter_hertz, counter_ticks, receive_message, send, timer_arm,
+    timer_cancel,
 };
 
 /// The PL011's register block, declared with `tock_registers::register_map!`: every offset is
@@ -308,10 +309,10 @@ fn take_screen(shared: *const u8, len: u64, b: &mut ScreenBatch) {
         return;
     }
     if b.batching && !b.armed {
-        // Arm the window. The deadline is in counter ticks (the counter every `now()` caller
+        // Arm the window. The deadline is in counter ticks (the counter every `counter_ticks()` caller
         // reads); `counter_ticks_for` rounds up so the window is never short, and the saturating
         // add keeps a counter near `u64::MAX` from wrapping into a deadline already long past.
-        let deadline = now().saturating_add(abi::timer::counter_ticks_for(
+        let deadline = counter_ticks().saturating_add(abi::timer::counter_ticks_for(
             0,
             SCREEN_BATCH_NANOSECONDS,
             counter_hertz(),
@@ -408,7 +409,7 @@ fn uart_put(byte: u8) {
     while uart_read(shape, LSR) & LSR_THRE == 0 {
         polls = polls.saturating_add(1);
         if polls >= POLLS_BEFORE_CLOCK {
-            let t = now();
+            let t = counter_ticks();
             match deadline {
                 None => deadline = Some(t.saturating_add(counter_hertz())),
                 Some(d) if t > d => transmit_never_emptied(shape.offset(LSR)),

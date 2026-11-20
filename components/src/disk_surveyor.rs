@@ -204,7 +204,7 @@ fn holder() -> ! {
     // program's own `PageFrame::MAP` succeeded first, which is exactly the case
     // `user_mode_runtime::mapped_window::MappedWindow::new`'s own doc names (milestone 139 round 3).
     let roster = unsafe { MappedWindow::new(ROSTER_VA, filesystem_contract::PAGE_BYTES as u64) };
-    let word = roster.read::<u64>(0);
+    let word = roster.read_volatile::<u64>(0);
     send(REPORT, R_HOLDING, word, 0);
 
     // The kernel revokes the frame while we are parked here.
@@ -216,7 +216,7 @@ fn holder() -> ! {
     // not (and cannot) catch it: offset 0 is inside the 4 KiB window `roster` was told about, so
     // the check passes and the real hardware fault happens inside `read`, at the exact volatile
     // access the hand-written version used to make. Nothing about the fault mechanism changed.
-    let after = roster.read::<u64>(0);
+    let after = roster.read_volatile::<u64>(0);
     // Unreachable in a working kernel. If the read did land, say so, so a silent pass is
     // impossible: the test asserts on the fault, and this message is what it sees instead.
     send(REPORT, R_HOLDING, after, 1);
@@ -398,7 +398,7 @@ fn probe() -> ! {
     // second read, `MappedWindow`'s bounds check passes (offset 0 is inside the window) and the
     // kernel refuses the write itself, at the same volatile access the hand-written version made.
     let roster = unsafe { MappedWindow::new(ROSTER_VA, filesystem_contract::PAGE_BYTES as u64) };
-    roster.write(0u64, 0u64);
+    roster.write_volatile(0u64, 0u64);
     // Unreachable in a working kernel; if we get here the write was allowed and the test's
     // fault-count assertion is what says so.
     user_mode_runtime::exit()

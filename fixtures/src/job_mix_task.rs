@@ -40,7 +40,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use user_mode_runtime::{call, now, receive, receive_request, reply, send, yield_now};
+use user_mode_runtime::{call, counter_ticks, receive, receive_request, reply, send, yield_now};
 
 /// The working set the [`job_mix::TOUCH`] job walks: this task's own memory, sized in
 /// `crates/job_mix` against the smallest L1d this project targets.
@@ -129,12 +129,12 @@ fn zero(r: i64) -> Result<(), Refused> {
 /// map path (milestone 168's hazard: at 32 tasks this could be measuring the allocator).
 #[inline(never)]
 fn map_job() -> Result<u64, Refused> {
-    let t0 = now();
+    let t0 = counter_ticks();
     let region = slot(user_mode_runtime::split_memory_region(
         job_mix::SLOT_BUDGET,
         job_mix::MAP_REGION_PAGES,
     ))?;
-    let mut region_ticks = now() - t0;
+    let mut region_ticks = counter_ticks() - t0;
     let aspace = slot(user_mode_runtime::retype_into_kernel_object(
         region,
         abi::object_type::ADDRESS_SPACE,
@@ -150,9 +150,9 @@ fn map_job() -> Result<u64, Refused> {
         ))?;
         i += 1;
     }
-    let t1 = now();
+    let t1 = counter_ticks();
     zero(user_mode_runtime::destroy_memory_region(region))?;
-    region_ticks += now() - t1;
+    region_ticks += counter_ticks() - t1;
     // The objects are gone with their region; the slots that named them are not, and a fixed
     // table would fill over a subrun if they stayed.
     user_mode_runtime::capability_delete(frame);
@@ -172,12 +172,12 @@ fn spawn_job(code_frame: u64) -> Result<u64, Refused> {
     let mut region_ticks = 0;
     let mut n = 0;
     while n < job_mix::SPAWN_CALLS {
-        let t0 = now();
+        let t0 = counter_ticks();
         let child = slot(user_mode_runtime::split_memory_region(
             job_mix::SLOT_BUDGET,
             job_mix::CHILD_PAGES,
         ))?;
-        region_ticks += now() - t0;
+        region_ticks += counter_ticks() - t0;
         let aspace = slot(user_mode_runtime::retype_into_kernel_object(
             child,
             abi::object_type::ADDRESS_SPACE,
@@ -222,9 +222,9 @@ fn spawn_job(code_frame: u64) -> Result<u64, Refused> {
         // and the child is between its `SEND` and its exit for a moment after this returns.
         let _ = receive(job_mix::SLOT_CHILD_DONE);
         loop {
-            let t1 = now();
+            let t1 = counter_ticks();
             let r = user_mode_runtime::destroy_memory_region(child);
-            region_ticks += now() - t1;
+            region_ticks += counter_ticks() - t1;
             if r == 0 {
                 break;
             }
@@ -373,14 +373,14 @@ fn start(role: u64, index: u64, seed: u64) -> ! {
         kind_ticks = [0; job_mix::JOB_KINDS];
         region_ticks = [0; job_mix::JOB_KINDS];
 
-        let t0 = now();
+        let t0 = counter_ticks();
         let mut failed = None;
         let mut round = 0;
         'subrun: while round < job_mix::ROUNDS_PER_TASK {
             for &job in &order {
                 // Two counter reads per job, and neither is a system call on any architecture this
                 // tree targets, so the breakdown costs the subrun a few instructions a job.
-                let j0 = now();
+                let j0 = counter_ticks();
                 match run_job(job, acc, code) {
                     Ok((value, region)) => {
                         acc = value;
@@ -391,11 +391,11 @@ fn start(role: u64, index: u64, seed: u64) -> ! {
                         break 'subrun;
                     }
                 }
-                kind_ticks[job as usize] += now() - j0;
+                kind_ticks[job as usize] += counter_ticks() - j0;
             }
             round += 1;
         }
-        let ticks = now() - t0;
+        let ticks = counter_ticks() - t0;
 
         // `acc` is kept alive across the report rather than folded into it: the supervisor reads
         // `index` and would print a corrupted one, and a benchmark that mangles its own labels to

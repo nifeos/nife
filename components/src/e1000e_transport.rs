@@ -77,10 +77,10 @@ struct Plane;
 
 impl DirectMemoryAccessRegion for Plane {
     fn read_u64(&self, off: u64) -> u64 {
-        mapped(&PLANE).read::<u64>(off)
+        mapped(&PLANE).read_volatile::<u64>(off)
     }
     fn write_u64(&mut self, off: u64, v: u64) {
-        mapped(&PLANE).write::<u64>(off, v);
+        mapped(&PLANE).write_volatile::<u64>(off, v);
     }
     fn read_bytes(&self, off: u64, out: &mut [u8]) {
         mapped(&PLANE).copy_to_slice(off, out);
@@ -95,10 +95,10 @@ struct Queues;
 
 impl Tails for Queues {
     fn set_receive_tail(&mut self, v: u32) {
-        mapped(&RECEIVE_QUEUE).write::<u32>(TAIL_IN_PAGE, v);
+        mapped(&RECEIVE_QUEUE).write_volatile::<u32>(TAIL_IN_PAGE, v);
     }
     fn set_transmit_tail(&mut self, v: u32) {
-        mapped(&TRANSMIT_QUEUE).write::<u32>(TAIL_IN_PAGE, v);
+        mapped(&TRANSMIT_QUEUE).write_volatile::<u32>(TAIL_IN_PAGE, v);
     }
     fn barrier(&mut self) {
         doorbell_barrier();
@@ -153,8 +153,8 @@ impl GigabitNic {
 
     /// Whether a frame is waiting, without taking it, so the poll loop can skip a sleep.
     pub(crate) fn frame_waiting(&self) -> bool {
-        let word =
-            mapped(&PLANE).read::<u64>(layout::receive_descriptor(self.plane.receive_cursor()) + 8);
+        let word = mapped(&PLANE)
+            .read_volatile::<u64>(layout::receive_descriptor(self.plane.receive_cursor()) + 8);
         e1000e::receive_verdict(word, MAXIMUM_FRAME_BYTES) != e1000e::ReceiveVerdict::NotYet
     }
 }

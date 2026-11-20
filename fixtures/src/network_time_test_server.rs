@@ -175,7 +175,7 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
             }
             OPERATION_RECEIVE => {
                 SHARED_FRAME.payload_write(&pending[..pending_len]);
-                SHARED_FRAME.set_len(pending_len as u16);
+                SHARED_FRAME.set_header_length(pending_len as u16);
                 reply(to, pending_len as u64, 0);
             }
             OPERATION_CLOSE => {

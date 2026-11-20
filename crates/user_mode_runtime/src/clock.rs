@@ -3,7 +3,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
+//! Name: ratified 2026-11-20 (UTC); first provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
@@ -12,8 +12,12 @@ use abi::cycle_counter::CycleMeaning;
 /// The virtual counter, `CNTVCT_EL0`: a monotonic tick count for self-timing. Readable at EL0 only
 /// because the kernel opened `CNTKCTL_EL1.EL0VCTEN` (see kernel `timer::initialize` and notes/abi.md); the
 /// read is a plain register move, no system call. Pair with [`counter_hertz`] to turn tick deltas into seconds.
+///
+/// Name: ratified 2026-11-20 (UTC), replacing `now`, which stays as a `doc(alias)`: it returns
+/// ticks, not a time, and the name says ticks.
 #[cfg(target_arch = "aarch64")]
-pub fn now() -> u64 {
+#[doc(alias = "now")]
+pub fn counter_ticks() -> u64 {
     let t: u64;
     // SAFETY: reading a system register the kernel made EL0-readable. No side effects.
     unsafe {
@@ -25,8 +29,12 @@ pub fn now() -> u64 {
 /// The monotonic tick count (RISC-V): `rdtime`, which reads the `time` control and status register (CSR). Readable from U-mode
 /// only because the kernel sets `scounteren.TM` in its per-hart timer init. Pair with [`counter_hertz`]
 /// to get seconds.
+///
+/// Name: ratified 2026-11-20 (UTC), replacing `now`, which stays as a `doc(alias)`: it returns
+/// ticks, not a time, and the name says ticks.
 #[cfg(target_arch = "riscv64")]
-pub fn now() -> u64 {
+#[doc(alias = "now")]
+pub fn counter_ticks() -> u64 {
     let t: u64;
     // SAFETY: reading the time CSR the kernel made U-mode-readable. No side effects.
     unsafe {
@@ -35,7 +43,7 @@ pub fn now() -> u64 {
     t
 }
 
-/// The counter frequency in Hz, `CNTFRQ_EL0`: how many [`now`] ticks make a second. Constant for the
+/// The counter frequency in Hz, `CNTFRQ_EL0`: how many [`counter_ticks`] ticks make a second. Constant for the
 /// life of the machine (QEMU reports 62.5 megahertz under its Tiny Code Generator (TCG), and the host's counter frequency under hardware virtualization).
 ///
 /// # Panics
@@ -43,7 +51,7 @@ pub fn now() -> u64 {
 /// [`counter_hertz_checked`], which is this without the panic. The other two architectures read a page the
 /// kernel fills and report "unknown" the same way.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "aarch64")]
 pub fn counter_hertz() -> u64 {
     counter_hertz_checked().expect(
@@ -55,7 +63,7 @@ pub fn counter_hertz() -> u64 {
 /// reads zero, which firmware that never programmed it leaves behind, and a rate of zero would
 /// divide by zero in [`monotonic_nanoseconds`]).
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "aarch64")]
 pub fn counter_hertz_checked() -> Option<u64> {
     let f: u64;
@@ -77,7 +85,7 @@ pub fn counter_hertz_checked() -> Option<u64> {
 /// # Panics
 /// If the rate is unknown: see [`counter_hertz_checked`], which is this without the panic.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "riscv64")]
 pub fn counter_hertz() -> u64 {
     counter_hertz_checked().expect(
@@ -90,7 +98,7 @@ pub fn counter_hertz() -> u64 {
 /// for where the number comes from and [`counter_hertz_checked`]'s `x86_64` twin for why "unknown" is a
 /// state worth representing rather than papering over.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "riscv64")]
 pub fn counter_hertz_checked() -> Option<u64> {
     // SAFETY: every path that builds a riscv64 process maps a page (real, or zeroed when the rate
@@ -112,13 +120,17 @@ pub fn counter_hertz_checked() -> Option<u64> {
 /// one `out(reg)` would read only the low half. Not serialized: the reordering window is tens of
 /// cycles. See notes/user-mode-runtime/time.md.
 ///
+/// Name: ratified 2026-11-20 (UTC), replacing `now`, which stays as a `doc(alias)`: it returns
+/// ticks, not a time, and the name says ticks.
+///
 /// # BUGS
 /// - The time stamp counter (TSC) is ambient, so every ring-3 program holds a fine timing instrument it was never
 ///   granted (milestone 228 (the cycle counters are closed by assumption, and on two architectures
 ///   the assumption is a comment)); closing it needs a coarse monotonic page first (§43 (reading
 ///   the clock is a page)).
 #[cfg(target_arch = "x86_64")]
-pub fn now() -> u64 {
+#[doc(alias = "now")]
+pub fn counter_ticks() -> u64 {
     let (lo, hi): (u32, u32);
     // SAFETY: reading a counter ring 3 is permitted to read. No side effects, no memory touched.
     unsafe {
@@ -137,7 +149,7 @@ pub fn now() -> u64 {
 /// If the rate is unknown (a zeroed or unrecognized page), rather than guessing one: the panic
 /// traps (see [`trap`](crate::trap)) and the kernel kills the process. [`counter_hertz_checked`] does not panic.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "x86_64")]
 pub fn counter_hertz() -> u64 {
     counter_hertz_checked().expect(
@@ -151,7 +163,7 @@ pub fn counter_hertz() -> u64 {
 /// [`counter_frequency_contract::is_plausible`]'s band. See [`counter_hertz`] for where the number comes from and why the
 /// unchecked twin refuses rather than substituting a constant.
 ///
-/// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "x86_64")]
 pub fn counter_hertz_checked() -> Option<u64> {
     // SAFETY: every kernel-side space-building function this crate's own docs list maps a page
@@ -172,7 +184,7 @@ pub fn counter_hertz_checked() -> Option<u64> {
 /// count core cycles (over different privilege levels), and `x86_64` counts reference cycles at a
 /// constant rate. So the count never travels without its [`CycleMeaning`].
 ///
-/// Name: provisional, minted by the lane for milestone 353 (the aarch64 half of 74) on 2026-10-07
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted by the lane for milestone 353 (the aarch64 half of 74) on 2026-10-07
 /// (UTC), the noun for what
 /// [`cycle_reading`] returns.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -216,7 +228,7 @@ pub struct CycleReading {
 ///   (a program asks whether it may read the cycle counter)).
 /// - Under QEMU every count is emulator time, never a measurement of a core.
 ///
-/// Name: provisional, minted by milestone 353's lane on 2026-10-07 (UTC), Rust's getter shape.
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted by milestone 353's lane on 2026-10-07 (UTC), Rust's getter shape.
 /// Refused `cycles` (the kernel's `arch::pmu::cycles` means core cycles, and the TSC is not).
 /// Refused `read_cycle_counter` (a verb, and the fixture's private name).
 pub fn cycle_reading() -> CycleReading {
@@ -260,11 +272,11 @@ fn read_cycle_counter() -> u64 {
     value
 }
 
-/// The TSC. The same instruction [`now`] executes on this architecture, kept separate because
-/// the two answer different questions: `now` is the clock, this is the counter with its meaning.
+/// The TSC. The same instruction [`counter_ticks`] executes on this architecture, kept separate because
+/// the two answer different questions: `counter_ticks` is the clock, this is the counter with its meaning.
 #[cfg(target_arch = "x86_64")]
 fn read_cycle_counter() -> u64 {
-    now()
+    counter_ticks()
 }
 
 /// **Which CPU this thread is running on**, or `None` if this process has no page to read it from
@@ -309,20 +321,20 @@ fn own_current_cpu_page() -> current_cpu_contract::CurrentCpuPage {
 /// sleep reads this rather than assuming the kernel's rate
 /// (`current_cpu_contract::CurrentCpuPage::tick_hertz`).
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
 /// receive-rate lane.
 pub fn tick_hertz() -> Option<core::num::NonZeroU64> {
     own_current_cpu_page().tick_hertz()
 }
 
-/// **Monotonic nanoseconds since boot**, from [`now`] and [`counter_hertz`].
+/// **Monotonic nanoseconds since boot**, from [`counter_ticks`] and [`counter_hertz`].
 ///
 /// The conversion splits into whole seconds and a remainder, because `ticks * 1_000_000_000`
 /// overflows a `u64` about five minutes into a boot at 62.5 megahertz. No capability is needed: the
 /// counter is ambient, so any process can measure a duration. The wall clock is what needs one
 /// (notes/clock.md).
 pub fn monotonic_nanoseconds() -> u64 {
-    ticks_to_nanoseconds(now(), counter_hertz())
+    ticks_to_nanoseconds(counter_ticks(), counter_hertz())
 }
 
 /// `ticks` at `hertz` ticks per second, in nanoseconds, split into whole seconds and a remainder

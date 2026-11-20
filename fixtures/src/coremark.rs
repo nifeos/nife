@@ -3,7 +3,7 @@
 //! It runs the CoreMark-derived kernel in `crates/coremark` (a linked-list sort, a small-matrix
 //! multiply and a state machine) for a fixed iteration count, so the run's CRC is a fixed value
 //! (`coremark::PINNED_CRC_64`) that init and the kernel test check. It times itself with
-//! `user_mode_runtime::now` and SENDs `[crc, ticks, freq]` on slot 0, its one capability, so the
+//! `user_mode_runtime::counter_ticks` and SENDs `[crc, ticks, freq]` on slot 0, its one capability, so the
 //! receiver computes iterations per second without a second system call. Under HVF the ticks are real
 //! nanoseconds; under TCG they are icount fiction, and only the CRC means anything. The compute is
 //! a portable crate, so the identical code runs on macOS and Linux too (notes/benchmarks.md).
@@ -19,7 +19,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use user_mode_runtime::{counter_hertz, exit, now, send};
+use user_mode_runtime::{counter_hertz, counter_ticks, exit, send};
 
 /// The endpoint init grants us (slot 0): we SEND `[crc, ticks, freq]` here, then exit.
 const RESULT: u64 = 0;
@@ -27,9 +27,9 @@ const RESULT: u64 = 0;
 user_mode_runtime::program_entry!(start);
 
 fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
-    let start = now();
+    let start = counter_ticks();
     let crc = coremark::run(coremark::PINNED_ITERS);
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     send(RESULT, crc as u64, ticks, counter_hertz());
     exit();
 }

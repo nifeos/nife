@@ -254,7 +254,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
     }
     let mut text = [0u8; MAXIMUM_NAME_FIELD_BYTES];
     for (i, b) in text[..len].iter_mut().enumerate() {
-        *b = page.read::<u8>((NAME_OFFSET_BYTES + i) as u64);
+        *b = page.read_volatile::<u8>((NAME_OFFSET_BYTES + i) as u64);
     }
     let Some(name) = core::str::from_utf8(&text[..len])
         .ok()
@@ -277,7 +277,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
     let addresses = answer.ipv4_addresses();
     for (k, a) in addresses.iter().enumerate().take(MAXIMUM_IPV4_ADDRESSES) {
         for (j, &b) in a.iter().enumerate() {
-            page.write::<u8>((IPV4_ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
+            page.write_volatile::<u8>((IPV4_ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
         }
     }
     (
@@ -489,32 +489,32 @@ fn socket_page() -> Option<u64> {
 
 fn set_destination(server: &Server) {
     for (i, &b) in server.ip.iter().enumerate() {
-        SOCKET.write::<u8>(socket::DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET.write_volatile::<u8>(socket::DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    SOCKET.write::<u16>(socket::DESTINATION_PORT_OFFSET_BYTES, server.port);
+    SOCKET.write_volatile::<u16>(socket::DESTINATION_PORT_OFFSET_BYTES, server.port);
 }
 
 /// The source of the datagram a UDP `RECEIVE` just delivered.
 fn source() -> ([u8; 4], u16) {
     let mut ip = [0u8; 4];
     for (i, b) in ip.iter_mut().enumerate() {
-        *b = SOCKET.read::<u8>(socket::DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64);
+        *b = SOCKET.read_volatile::<u8>(socket::DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64);
     }
     (
         ip,
-        SOCKET.read::<u16>(socket::DESTINATION_PORT_OFFSET_BYTES),
+        SOCKET.read_volatile::<u16>(socket::DESTINATION_PORT_OFFSET_BYTES),
     )
 }
 
 fn write_payload(bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        SOCKET.write::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
+        SOCKET.write_volatile::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
 }
 
 fn read_payload(out: &mut [u8]) {
     for (i, b) in out.iter_mut().enumerate() {
-        *b = SOCKET.read::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64);
+        *b = SOCKET.read_volatile::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64);
     }
 }
 

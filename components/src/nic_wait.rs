@@ -18,7 +18,7 @@ static LAST_FRAME: AtomicU64 = AtomicU64::new(0);
 /// Note that a polled NIC just handed over a frame, which starts [`poll_without_interrupt`]'s
 /// tick of looking instead of sleeping.
 pub(super) fn frame_taken() {
-    LAST_FRAME.store(now(), Ordering::Relaxed);
+    LAST_FRAME.store(counter_ticks(), Ordering::Relaxed);
 }
 
 /// **Wait for the NIC to need attention again, without stalling smoltcp's timers or the caller's
@@ -64,7 +64,7 @@ pub(super) fn wait_for_nic(
         ((microseconds % 1_000_000) * 1000) as u32,
         counter_hertz(),
     );
-    if timer_arm(RETRANSMIT, now().saturating_add(ticks), WAKE, 1) == 0 {
+    if timer_arm(RETRANSMIT, counter_ticks().saturating_add(ticks), WAKE, 1) == 0 {
         interrupt_wait(INTERRUPT); // 1: a frame; BOUND: the deadline
         // Whichever ended the wait, leave nothing behind: disarm, and clear a fire that raced the
         // frame, so a stale deadline never ends the next `receive_capability(STACK)` as a bound delivery.
@@ -102,7 +102,7 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
         .poll_delay(instant(), sockets)
         .map(|d| d.total_micros());
     let microseconds = match polled_wait::next(
-        now(),
+        counter_ticks(),
         LAST_FRAME.load(Ordering::Relaxed),
         tick,
         due,
@@ -116,7 +116,7 @@ fn poll_without_interrupt(iface: &mut Interface, frame_waiting: bool, sockets: &
         polled_wait::Next::SleepMicroseconds(microseconds) => microseconds,
     };
     let ticks = abi::timer::counter_ticks_for(0, (microseconds * 1000) as u32, counter_hertz());
-    if sleep_until(RETRANSMIT, WAKE, now().saturating_add(ticks)) < 0 {
+    if sleep_until(RETRANSMIT, WAKE, counter_ticks().saturating_add(ticks)) < 0 {
         user_mode_runtime::yield_now();
     }
 }

@@ -48,7 +48,9 @@ use process_builder::{
 };
 use supervision_contract::{ChildEndowment, Retention};
 use timetable::contract as tt;
-use user_mode_runtime::{Message, capability_delete, exit, reap, receive_message, send, yield_now};
+use user_mode_runtime::{
+    Message, capability_delete, exit, reap_thread, receive_message, send, yield_now,
+};
 
 /// The readiness endpoint, `WRITE`.
 const READY: u64 = contract::READY_SLOT;
@@ -191,7 +193,7 @@ fn start(image_len: u64, _a1: u64, _a2: u64) -> ! {
 /// can run. `false` if this endpoint does not supervise it, which is how a forged death reads.
 fn reaped(e: u64, tid: u64) -> bool {
     for _ in 0..ATTEMPTS {
-        let r = reap(e, tid);
+        let r = reap_thread(e, tid);
         if r == 0 {
             return true;
         }

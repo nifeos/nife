@@ -565,7 +565,7 @@ pub fn memory_region_split(ut: u64, pages: u64) -> Result<u64, i64> {
 /// §16 object revocation: reclaim a region and every object retyped from it, by its **owner**. The
 /// stronger of the two reaps, because `WRITE` on a region is also what builds a process out of it,
 /// and the only one that can tear down a *live* thread (§16's amendment arms the kill). A supervisor
-/// collecting a dead child wants `user_mode_runtime::reap` instead (§32).
+/// collecting a dead child wants `user_mode_runtime::reap_thread` instead (§32).
 pub fn memory_region_destroy(ut: u64) -> bool {
     destroy_memory_region(ut) == 0
 }

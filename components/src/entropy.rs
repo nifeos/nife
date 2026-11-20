@@ -139,23 +139,23 @@ fn refuses_service(report: u64) -> bool {
 }
 
 fn r8(off: u64) -> u8 {
-    WINDOW.read::<u8>(off)
+    WINDOW.read_volatile::<u8>(off)
 }
 
 fn w8(off: u64, v: u8) {
-    WINDOW.write::<u8>(off, v);
+    WINDOW.write_volatile::<u8>(off, v);
 }
 
 fn r16(off: u64) -> u16 {
-    WINDOW.read::<u16>(off)
+    WINDOW.read_volatile::<u16>(off)
 }
 
 fn w16(off: u64, v: u16) {
-    WINDOW.write::<u16>(off, v);
+    WINDOW.write_volatile::<u16>(off, v);
 }
 
 fn r32(off: u64) -> u32 {
-    WINDOW.read::<u32>(off)
+    WINDOW.read_volatile::<u32>(off)
 }
 
 fn mr(off: u64) -> u32 {
@@ -181,10 +181,10 @@ fn die(code: u64) -> ! {
 fn write_desc(addr: u64, len: u32) {
     // Inside the DMA page, at the descriptor table the kernel programmed the queue with; all four
     // writes are bounds-checked by `WINDOW` rather than trusted by hand.
-    WINDOW.write(Q_DESC, addr);
-    WINDOW.write(Q_DESC + 8, len);
-    WINDOW.write::<u16>(Q_DESC + 12, VIRTQ_DESC_F_WRITE);
-    WINDOW.write::<u16>(Q_DESC + 14, 0);
+    WINDOW.write_volatile(Q_DESC, addr);
+    WINDOW.write_volatile(Q_DESC + 8, len);
+    WINDOW.write_volatile::<u16>(Q_DESC + 12, VIRTQ_DESC_F_WRITE);
+    WINDOW.write_volatile::<u16>(Q_DESC + 14, 0);
 }
 
 /// The service's running state: where the device's bytes are and how many of them are still ours

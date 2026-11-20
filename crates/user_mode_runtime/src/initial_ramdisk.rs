@@ -26,22 +26,25 @@
 /// address-space map's constant, which the kernel's own mapping uses too, so the two cannot differ.
 pub use address_space_layout::INITIAL_RAMDISK_VIRTUAL_ADDRESS;
 
-/// The initial ramdisk archive bytes this process was handed at spawn. `len` is the value `_start`
+/// The initial ramdisk archive bytes this process was handed at spawn. `length` is the value `_start`
 /// received in its second argument register (`x1`/`a1`/`rsi`), which the kernel set to the
 /// archive's real length.
 ///
 /// # Safety
-/// The kernel maps `len` bytes of the archive, read-only, at [`INITIAL_RAMDISK_VIRTUAL_ADDRESS`], before
+/// The kernel maps `length` bytes of the archive, read-only, at [`INITIAL_RAMDISK_VIRTUAL_ADDRESS`], before
 /// this process's `_start` runs, for the whole lifetime of the process; that reserved RAM outlives
 /// every process, which is what makes the `'static` lifetime honest. The caller must pass the
-/// `len` its own `_start` actually received: no type can check that (notes/unsafe-obligations.md).
+/// `length` its own `_start` actually received: no type can check that (notes/unsafe-obligations.md).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with its module. His words: "Yes". Refused `initrd_bytes` (round 6's provisional
 /// name).
-pub unsafe fn bytes(len: u64) -> &'static [u8] {
+pub unsafe fn bytes(length: u64) -> &'static [u8] {
     // SAFETY: forwarded from this function's own contract, verbatim.
     unsafe {
-        core::slice::from_raw_parts(INITIAL_RAMDISK_VIRTUAL_ADDRESS as *const u8, len as usize)
+        core::slice::from_raw_parts(
+            INITIAL_RAMDISK_VIRTUAL_ADDRESS as *const u8,
+            length as usize,
+        )
     }
 }

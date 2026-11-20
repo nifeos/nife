@@ -926,10 +926,10 @@ impl Durable {
             unsafe { &*((self.va + off as u64) as *const AtomicU64) }
         };
         let ceiling = user_mode_runtime::counter_hertz().saturating_mul(END_WAIT_SECONDS);
-        let started = user_mode_runtime::now();
+        let started = user_mode_runtime::counter_ticks();
         let mut asked = 0u64;
         while !self.exited() {
-            if user_mode_runtime::now().wrapping_sub(started) >= ceiling {
+            if user_mode_runtime::counter_ticks().wrapping_sub(started) >= ceiling {
                 return Err(self);
             }
             // Ask again whenever a client's own request has overtaken ours.
@@ -974,9 +974,9 @@ impl Durable {
             Ordering::Release,
         );
         let ceiling = user_mode_runtime::counter_hertz().saturating_mul(END_WAIT_SECONDS);
-        let started = user_mode_runtime::now();
+        let started = user_mode_runtime::counter_ticks();
         while word(registration::REPLY).load(Ordering::Acquire) != 1 {
-            if user_mode_runtime::now().wrapping_sub(started) >= ceiling {
+            if user_mode_runtime::counter_ticks().wrapping_sub(started) >= ceiling {
                 return false;
             }
             yield_now();

@@ -170,7 +170,7 @@ fn partition() -> ! {
     let mut guids = [Uuid::nil(); 4];
     for g in guids.iter_mut() {
         let mut bytes = [0u8; 16];
-        if user_mode_runtime::entropy::fill(ENTROPY, &mut bytes).is_none() {
+        if user_mode_runtime::entropy::fill_random_bytes(ENTROPY, &mut bytes).is_none() {
             send(REPORT, R_NO_ENTROPY, 0, 0);
             user_mode_runtime::exit()
         }

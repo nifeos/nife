@@ -109,19 +109,19 @@ fn transmit_buf(i: usize) -> u64 {
 // Bounds-checked against the page by `WINDOW` (milestone 139 (drive the unsafe count down))
 // instead of trusted by hand at every call site.
 fn r8(off: u64) -> u8 {
-    WINDOW.read::<u8>(off)
+    WINDOW.read_volatile::<u8>(off)
 }
 fn r16(off: u64) -> u16 {
-    WINDOW.read::<u16>(off)
+    WINDOW.read_volatile::<u16>(off)
 }
 fn r32(off: u64) -> u32 {
-    WINDOW.read::<u32>(off)
+    WINDOW.read_volatile::<u32>(off)
 }
 fn w8(off: u64, v: u8) {
-    WINDOW.write::<u8>(off, v);
+    WINDOW.write_volatile::<u8>(off, v);
 }
 fn w16(off: u64, v: u16) {
-    WINDOW.write::<u16>(off, v);
+    WINDOW.write_volatile::<u16>(off, v);
 }
 
 fn mr(off: u64) -> u32 {
@@ -133,10 +133,10 @@ fn mw(off: u64, v: u32) {
 
 fn write_desc(desc_base: u64, i: u64, addr: u64, len: u32, flags: u16, next: u16) {
     let b = desc_base + i * 16;
-    WINDOW.write(b, addr);
-    WINDOW.write(b + 8, len);
-    WINDOW.write(b + 12, flags);
-    WINDOW.write(b + 14, next);
+    WINDOW.write_volatile(b, addr);
+    WINDOW.write_volatile(b + 8, len);
+    WINDOW.write_volatile(b + 12, flags);
+    WINDOW.write_volatile(b + 14, next);
 }
 
 /// The virtio-net device, behind `net_stack`'s `Nic`. Holds the ring bookkeeping; the buffers

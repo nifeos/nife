@@ -6,7 +6,7 @@
 //! against `bench/baseline-*.txt`. A person types them at the production shell, and the same
 //! programs print the same row under a different prefix, which is never gated (milestone 961 (the kernel's special boots become commands typed at the production shell),
 //! decision D6). One definition of the loop counts keeps the two runs measuring the same thing
-//! (AGENTS.md rule 7). A row reports ticks of `user_mode_runtime::now`, never converted time.
+//! (AGENTS.md rule 7). A row reports ticks of `user_mode_runtime::counter_ticks`, never converted time.
 //!
 //! # EXAMPLES
 //!

@@ -31,7 +31,7 @@
 #![no_main]
 
 use program_table::spawn_protocol;
-use user_mode_runtime::{Message, reap, receive_message, send, yield_now};
+use user_mode_runtime::{Message, reap_thread, receive_message, send, yield_now};
 
 /// The supervision endpoint the progenitor endows every job with, held `READ`: the right to receive deaths
 /// here, which is the same right §32 makes the right to collect them.
@@ -120,7 +120,7 @@ fn report() {
 /// preemption, and spinning without giving up the core would be racing it on a single-core machine.
 fn collect(tid: u64) {
     for _ in 0..MAXIMUM_ATTEMPTS {
-        if reap(DEATHS, tid) == 0 {
+        if reap_thread(DEATHS, tid) == 0 {
             return;
         }
         yield_now();

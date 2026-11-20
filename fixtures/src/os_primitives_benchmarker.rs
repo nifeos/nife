@@ -2,7 +2,7 @@
 //!
 //! The kernel threads of `kernel/src/bench.rs` never pay the EL0->EL1 trap; lmbench measures from
 //! userspace, trap included, so this program self-times loops of real `svc` system calls at EL0.
-//! Spawned by the bench boot, it times each primitive with `user_mode_runtime::now` (the virtual
+//! Spawned by the bench boot, it times each primitive with `user_mode_runtime::counter_ticks` (the virtual
 //! counter, EL0-readable since milestone 19e (run a real workload)) and SENDs `[ticks, iters]` on
 //! slot 0, so the icount baseline gates it and `--real` gives its magnitude. Four primitives: context
 //! switch, IPC round trip and spawn, which reclaims each child's region
@@ -27,10 +27,10 @@
 #![no_main]
 
 use user_mode_runtime::{
-    address_space_layout_into, capability_delete, cycle_reading, destroy_memory_region, exit,
-    map_page_frame, now, receive, retype_into_kernel_object, retype_into_page_frame, send,
-    split_memory_region, thread_control_block_capability_insert, thread_control_block_configure,
-    thread_control_block_start, yield_now,
+    address_space_layout_into, capability_delete, counter_ticks, cycle_reading,
+    destroy_memory_region, exit, map_page_frame, receive, retype_into_kernel_object,
+    retype_into_page_frame, send, split_memory_region, thread_control_block_capability_insert,
+    thread_control_block_configure, thread_control_block_start, yield_now,
 };
 
 /// The endpoint the bench boot grants us (slot 0): we SEND `[ticks, iters, 0]` here per primitive.
@@ -108,11 +108,11 @@ fn ctx_switch_bench() -> ! {
     for _ in 0..64 {
         yield_now();
     }
-    let start = now();
+    let start = counter_ticks();
     for _ in 0..CTX_ITERS {
         yield_now();
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     send(REPORT, ticks, CTX_ITERS, 0);
     exit();
 }
@@ -143,14 +143,14 @@ fn ipc_client(reads_cycles: bool) -> ! {
         send(CLI_REQUEST, 1, 0, 0);
         receive(CLI_REPLY);
     }
-    let start = now();
+    let start = counter_ticks();
     let first = reads_cycles.then(cycle_reading);
     for _ in 0..IPC_ITERS {
         send(CLI_REQUEST, 1, 0, 0);
         receive(CLI_REPLY);
     }
     let last = reads_cycles.then(cycle_reading);
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     send(REPORT, ticks, IPC_ITERS, 0);
     if let (Some(first), Some(last)) = (first, last) {
         send(
@@ -212,11 +212,11 @@ fn spawn_bench() -> ! {
     for _ in 0..SPAWN_WARMUP {
         spawn_one(code_frame);
     }
-    let start = now();
+    let start = counter_ticks();
     for _ in 0..SPAWN_ITERS {
         spawn_one(code_frame);
     }
-    let ticks = now().wrapping_sub(start);
+    let ticks = counter_ticks().wrapping_sub(start);
     send(SP_REPORT, ticks, SPAWN_ITERS, 0);
     exit();
 }

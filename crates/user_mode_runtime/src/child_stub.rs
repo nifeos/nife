@@ -6,8 +6,8 @@
 //! that frame as `MAP_CODE` into each child; the kernel makes the I-cache coherent at that map. One
 //! copy, because two hand-assembled copies of three instruction sets would drift (AGENTS.md rule 7).
 //!
-//! Name: provisional (milestone 168's lane, 2026-09-19); the module and the constant are both
-//! unratified. `child_stub` is what `os_primitives_benchmarker` already called it in prose.
+//! Name: ratified 2026-11-20 (UTC), for the module and the constant, first minted by milestone
+//! 168's lane on 2026-09-19. `child_stub` is what `os_primitives_benchmarker` already called it in prose.
 
 /// The child's whole program, hand-assembled: `SEND(slot 0, rendezvous::SEND, 1)` then `SYSTEM_CALL_EXIT`.
 /// Its slot 0 is the `CHILD_DONE` endpoint the spawner inserts. Nine instructions: `SEND` the done

@@ -186,11 +186,11 @@ fn mw(off: u64, v: u32) {
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(DMA_VA, DMA_PAGE_FRAMES * 4096) };
 
 fn direct_memory_access_write<T: WindowInteger>(off: u64, val: T) {
-    WINDOW.write(off, val);
+    WINDOW.write_volatile(off, val);
 }
 
 fn direct_memory_access_read<T: WindowInteger>(off: u64) -> T {
-    WINDOW.read(off)
+    WINDOW.read_volatile(off)
 }
 
 /// Report a bring-up failure and stop. Distinct from every success word, so the kernel test prints

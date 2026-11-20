@@ -117,7 +117,7 @@ pub(super) fn close_ring3_pages_to_ring0_execution() {
 /// An open `PCE` is a second path to a cycle-rate counter (fixed counter 2 runs at the TSC rate)
 /// that the kernel never granted, and `boot.s` writes only `PAE` into `CR4`, so the bit is whatever
 /// firmware left. It is read first, and the boot console says so when firmware left it set.
-/// `CR4.TSD` stays open on purpose: `user_mode_runtime::now()` is `rdtsc`. Per core: `CR4` is
+/// `CR4.TSD` stays open on purpose: `user_mode_runtime::counter_ticks()` is `rdtsc`. Per core: `CR4` is
 /// per-CPU state. See notes/x86-port/cpu-state.md.
 pub(super) fn close_performance_counters_to_ring3() {
     /// `CR4.PCE`: "Performance-Monitoring Counter Enable". Set means `RDPMC` is legal at any

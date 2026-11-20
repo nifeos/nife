@@ -146,7 +146,7 @@ fn build(attempt: u64, label: u64) -> bool {
 /// the kernel had told us a thread was dead and then said otherwise, which is worth failing loudly
 /// over rather than silently leaking a corpse.
 fn reap(tid: u64) -> bool {
-    user_mode_runtime::reap(FAULT, tid) == 0
+    user_mode_runtime::reap_thread(FAULT, tid) == 0
 }
 
 user_mode_runtime::panic_handler!();

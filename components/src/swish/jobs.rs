@@ -161,10 +161,10 @@ fn start_supervised(program: Program, e: Endowment, foreground: bool) -> Option<
     // since `new` already takes a runtime base" is round 2's own framing for this cluster).
     let jf = unsafe { MappedWindow::new(va, PAGE) };
     // A freshly retyped frame is zeroed, but make the shared contract explicit.
-    jf.write(job_channel_page::INTERRUPT as u64, 0u64);
-    jf.write(job_channel_page::DONE as u64, 0u64);
-    jf.write(job_channel_page::STATUS as u64, 0u64);
-    jf.write(job_channel_page::HEARTBEAT as u64, 0u64);
+    jf.write_volatile(job_channel_page::INTERRUPT as u64, 0u64);
+    jf.write_volatile(job_channel_page::DONE as u64, 0u64);
+    jf.write_volatile(job_channel_page::STATUS as u64, 0u64);
+    jf.write_volatile(job_channel_page::HEARTBEAT as u64, 0u64);
 
     // Direct the progenitor: an interruptible request, then the job untyped, delegated with every
     // right (the progenitor builds from it, and since milestone 824 (a retype mints no right its
@@ -262,9 +262,9 @@ pub(super) fn watch(h: &Held) -> bool {
     let mut fed: u64 = 0;
     loop {
         // Finished on its own (cooperatively or naturally)?
-        if jf.read::<u64>(job_channel_page::DONE as u64) != 0 {
-            let status = jf.read::<u64>(job_channel_page::STATUS as u64);
-            let beats = jf.read::<u64>(job_channel_page::HEARTBEAT as u64);
+        if jf.read_volatile::<u64>(job_channel_page::DONE as u64) != 0 {
+            let status = jf.read_volatile::<u64>(job_channel_page::STATUS as u64);
+            let beats = jf.read_volatile::<u64>(job_channel_page::HEARTBEAT as u64);
             reclaim(job_ut);
             report_finished(status, beats);
             return false;
@@ -290,7 +290,7 @@ pub(super) fn watch(h: &Held) -> bool {
         }
         match action {
             Action::Cooperative => {
-                jf.write(job_channel_page::INTERRUPT as u64, 1u64);
+                jf.write_volatile(job_channel_page::INTERRUPT as u64, 1u64);
                 print(b"  ^C: asked the job to stop.\n");
             }
             Action::Forcible => {
@@ -376,7 +376,7 @@ fn watch_pause() {
         yield_now();
         return;
     }
-    let deadline = now() + counter_hertz() / 100;
+    let deadline = counter_ticks() + counter_hertz() / 100;
     if sleep_until(t, WATCH_NOTIFICATION.load(Relaxed), deadline) < 0 {
         yield_now();
     }
@@ -557,12 +557,12 @@ impl Held {
     /// How the job ended, or `None` while it runs.
     fn ended(&self) -> Option<Ending> {
         match self.watch {
-            Watch::Frame { jf, .. } => {
-                (jf.read::<u64>(job_channel_page::DONE as u64) != 0).then(|| Ending::Framed {
-                    status: jf.read::<u64>(job_channel_page::STATUS as u64),
-                    beats: jf.read::<u64>(job_channel_page::HEARTBEAT as u64),
-                })
-            }
+            Watch::Frame { jf, .. } => (jf.read_volatile::<u64>(job_channel_page::DONE as u64)
+                != 0)
+                .then(|| Ending::Framed {
+                    status: jf.read_volatile::<u64>(job_channel_page::STATUS as u64),
+                    beats: jf.read_volatile::<u64>(job_channel_page::HEARTBEAT as u64),
+                }),
             Watch::Exit { label } => held::has_died(label).map(|fault| Ending::Exited { fault }),
         }
     }
@@ -844,7 +844,7 @@ pub(super) fn kill_job(jobs: &mut Jobs, tail: &[u8]) {
             print(b"  kill: that job has no cooperative stop; kill -9 %N tears it down\n");
             return;
         };
-        jf.write(job_channel_page::INTERRUPT as u64, 1u64);
+        jf.write_volatile(job_channel_page::INTERRUPT as u64, 1u64);
         // A stopped job is resumed so it can see the request, which is bash's `kill` on a stopped
         // job: the signal, then `SIGCONT`. It runs on in the background.
         if h.stopped

@@ -2,7 +2,7 @@
 //! (milestone 961 (the kernel's special boots become commands typed at the production shell) step 1).
 //!
 //! It discards [`primitive_benchmark_contract::SINK_WARMUP_MESSAGES`] messages, times the next
-//! [`primitive_benchmark_contract::SINK_MESSAGES`] with `user_mode_runtime::now`, drains the stream
+//! [`primitive_benchmark_contract::SINK_MESSAGES`] with `user_mode_runtime::counter_ticks`, drains the stream
 //! to its end, and writes one row,
 //! `bench-production: sink_throughput <ticks> <bytes>`, to its output. It reports **bytes**, not
 //! iterations, because that is the number a Unix pipe can be compared against:
@@ -45,7 +45,7 @@
 #![no_main]
 
 use primitive_benchmark_contract::{Prefix, SINK_MESSAGES, SINK_WARMUP_MESSAGES, write_row};
-use user_mode_runtime::{exit, now, receive, send};
+use user_mode_runtime::{counter_ticks, exit, receive, send};
 
 /// Slot 0: where the row goes.
 const OUTPUT: u64 = 0;
@@ -69,11 +69,11 @@ fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
         };
         seen += 1;
         if seen == SINK_WARMUP_MESSAGES {
-            timed_start = now();
+            timed_start = counter_ticks();
         } else if seen > SINK_WARMUP_MESSAGES {
             bytes += n as u64;
             if seen == SINK_WARMUP_MESSAGES + SINK_MESSAGES {
-                ticks = now().wrapping_sub(timed_start);
+                ticks = counter_ticks().wrapping_sub(timed_start);
             }
         }
     }

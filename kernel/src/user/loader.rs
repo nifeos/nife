@@ -126,7 +126,7 @@ pub fn load(
         .map_err(LoadError::Unmappable)?;
     startup_page_contract::write(page, windows).map_err(LoadError::StartupPage)?;
 
-    // The timebase page: `user_mode_runtime::now()`'s rate where there is no `CNTFRQ_EL0` to read
+    // The timebase page: `user_mode_runtime::counter_ticks()`'s rate where there is no `CNTFRQ_EL0` to read
     // (`x86_64` measures it, `riscv64` reads it from the device tree). Mapped rather than carved,
     // so it spends none of `content`.
     #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]

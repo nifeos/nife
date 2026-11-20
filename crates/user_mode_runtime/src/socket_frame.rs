@@ -22,7 +22,7 @@
 //! // The length of a send rides in the CALL's argument word, never in the frame.
 //! ```
 
-//! Name: provisional (milestone 410's lane, 2026-10-16 UTC), module and type. `Frame` over
+//! Name: ratified 2026-11-20 (UTC); first provisional (milestone 410's lane, 2026-10-16 UTC), module and type. `Frame` over
 //! `SharedFrame`, which doubles a word `socket_contract`'s docs already put on "frame"; over
 //! `PageFrame`, which names the kernel object a frame is minted from rather than the layout read
 //! through it; and over holding a second `base: u64` field beside the window, which would
@@ -70,26 +70,26 @@ impl Frame {
     /// Write the destination header: the address and port the next `SENDTO` or `CONNECT` uses,
     /// and the fields a User Datagram Protocol (UDP) `RECEIVE` reply carries the sender's endpoint back in.
     ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
-    pub fn set_destination(&self, ip: [u8; 4], port: u16) {
-        for (i, &b) in ip.iter().enumerate() {
+    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    pub fn set_destination(&self, ipv4_address: [u8; 4], port: u16) {
+        for (i, &b) in ipv4_address.iter().enumerate() {
             self.window
-                .write::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
+                .write_volatile::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
         }
         self.window
-            .write::<u16>(DESTINATION_PORT_OFFSET_BYTES, port);
+            .write_volatile::<u16>(DESTINATION_PORT_OFFSET_BYTES, port);
     }
 
     /// The destination address, or the sender's after a UDP `RECEIVE` (the layout note on
     /// `DESTINATION_IPV4_ADDRESS_OFFSET_BYTES` in `socket_contract`).
     ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn destination_network_address(&self) -> [u8; 4] {
         let mut ip = [0u8; 4];
         for (i, b) in ip.iter_mut().enumerate() {
             *b = self
                 .window
-                .read::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64);
+                .read_volatile::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64);
         }
         ip
     }
@@ -97,29 +97,33 @@ impl Frame {
     /// The destination port, or the sender's after a UDP `RECEIVE` (the layout note on
     /// `DESTINATION_PORT_OFFSET_BYTES` in `socket_contract`).
     ///
-    /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn destination_port(&self) -> u16 {
-        self.window.read::<u16>(DESTINATION_PORT_OFFSET_BYTES)
+        self.window
+            .read_volatile::<u16>(DESTINATION_PORT_OFFSET_BYTES)
     }
 
-    /// Read the length field at `PAYLOAD_LENGTH_OFFSET_BYTES`: what the last `RECEIVE` wrote, or what [`set_len`](Self::set_len)
-    /// cleared it to, so a client can watch for the reply.
+    /// Read the length field at `PAYLOAD_LENGTH_OFFSET_BYTES`: what the last `RECEIVE` wrote, or what
+    /// [`set_header_length`](Self::set_header_length) cleared it to, so a client can watch for the
+    /// reply. A header field, not a collection's length, so it does not take the standard library's
+    /// `len`.
     ///
-    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes, for
-    /// std's `len`.
-    #[allow(
-        clippy::len_without_is_empty,
-        reason = "a header field, not a collection"
-    )]
-    pub fn len(&self) -> u16 {
-        self.window.read::<u16>(PAYLOAD_LENGTH_OFFSET_BYTES)
+    /// Name: ratified 2026-11-20 (UTC).
+    #[doc(alias = "len")]
+    pub fn header_length(&self) -> u16 {
+        self.window
+            .read_volatile::<u16>(PAYLOAD_LENGTH_OFFSET_BYTES)
     }
 
     /// Write the length field at `PAYLOAD_LENGTH_OFFSET_BYTES`. The stack never reads it: a `SEND*` takes its length
     /// from the `CALL` argument word, and only `RECEIVE` writes the field, so this is for a client
     /// that clears it before a `RECEIVE` to watch for the reply.
-    pub fn set_len(&self, len: u16) {
-        self.window.write::<u16>(PAYLOAD_LENGTH_OFFSET_BYTES, len);
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
+    #[doc(alias = "set_len")]
+    pub fn set_header_length(&self, length: u16) {
+        self.window
+            .write_volatile::<u16>(PAYLOAD_LENGTH_OFFSET_BYTES, length);
     }
 
     /// Write `bytes` at the start of the payload. An overlong slice panics at the window's
@@ -128,14 +132,14 @@ impl Frame {
         self.window.copy_from_slice(PAYLOAD_OFFSET_BYTES, bytes);
     }
 
-    /// Read up to `n` bytes of payload into `out`, returning how many were read. `n` is usually
+    /// Read up to `byte_limit` bytes of payload into `output`, returning how many were read. `byte_limit` is usually
     /// a reply word's length, and a peer's idea of a length is data, so the clamp against
-    /// `out.len()` is the bounds check's first line rather than the caller's job.
-    pub fn payload_read(&self, n: usize, out: &mut [u8]) -> usize {
-        let n = n.min(out.len()).min(MAXIMUM_PAYLOAD_BYTES);
+    /// `output.len()` is the bounds check's first line rather than the caller's job.
+    pub fn payload_read(&self, byte_limit: usize, output: &mut [u8]) -> usize {
+        let byte_limit = byte_limit.min(output.len()).min(MAXIMUM_PAYLOAD_BYTES);
         self.window
-            .copy_to_slice(PAYLOAD_OFFSET_BYTES, &mut out[..n]);
-        n
+            .copy_to_slice(PAYLOAD_OFFSET_BYTES, &mut output[..byte_limit]);
+        byte_limit
     }
 }
 
@@ -158,10 +162,10 @@ mod tests {
         let mut page = Page([0; 4096]);
         let f = frame(&mut page);
         f.set_destination([10, 0, 2, 2], 69);
-        f.set_len(512);
+        f.set_header_length(512);
         assert_eq!(f.destination_network_address(), [10, 0, 2, 2]);
         assert_eq!(f.destination_port(), 69);
-        assert_eq!(f.len(), 512);
+        assert_eq!(f.header_length(), 512);
     }
 
     #[test]

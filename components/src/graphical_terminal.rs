@@ -81,7 +81,7 @@ impl Echo {
             if self.used == 4096 {
                 self.flush();
             }
-            OUT_WINDOW.write::<u8>(self.used as u64, b);
+            OUT_WINDOW.write_volatile::<u8>(self.used as u64, b);
             self.used += 1;
         }
     }
@@ -117,7 +117,7 @@ fn discipline_arm() -> ! {
         // The prompt rides the READLINE request's own page: the discipline reads it from there
         // and paints it, which is what keeps the prompt and the echoing cursor in one place.
         for (i, &b) in PROMPT.iter().enumerate() {
-            OUT_WINDOW.write::<u8>(i as u64, b);
+            OUT_WINDOW.write_volatile::<u8>(i as u64, b);
         }
         let (len, flags) = call(
             KEYS,
@@ -132,7 +132,7 @@ fn discipline_arm() -> ! {
         let len = (len as usize).min(4096);
         let mut line = [0u8; 4096];
         for (i, b) in line.iter_mut().enumerate().take(len) {
-            *b = IN_WINDOW.read::<u8>(i as u64);
+            *b = IN_WINDOW.read_volatile::<u8>(i as u64);
         }
         if line[..len] == QUIT[..] {
             break;

@@ -22,8 +22,8 @@ use capability_plan::Provisions;
 use hot_swap_contract::log_checks as lc;
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
-    Message, address_space_layout_into, capability_delete, counter_hertz, map_page_frame, now,
-    receive, receive_message, revoke_page_frame, send, timer_arm, trap,
+    Message, address_space_layout_into, capability_delete, counter_hertz, counter_ticks,
+    map_page_frame, receive, receive_message, revoke_page_frame, send, timer_arm, trap,
 };
 
 /// What the kernel grants us, and nothing else.
@@ -320,7 +320,7 @@ fn attack_the_service(
     // so the run fails at the test's assertion rather than a watchdog. The bound can also fire
     // before the plant has sent (spawn order is not run order), and then the plant never exits and
     // the reap would hang, so with a refusal reported that case bails on its own stage.
-    if timer_arm(TIMER, now() + counter_hertz() / 2, WAKE, 1) < 0 {
+    if timer_arm(TIMER, counter_ticks() + counter_hertz() / 2, WAKE, 1) < 0 {
         bail(35);
     }
     match receive_message(w.svc) {
@@ -939,7 +939,7 @@ fn plan_queued(w: &Wiring, front: u64) -> QueuedPlans {
 // ===============================================================================================
 
 /// **How long the operator waits for `OPERATION_QUIESCE` to be answered before it treats the
-/// incumbent as hung**, in milliseconds of the counter `user_mode_runtime::now` reads.
+/// incumbent as hung**, in milliseconds of the counter `user_mode_runtime::counter_ticks` reads.
 ///
 /// About 38 times the slowest healthy answer measured on three ISAs on a loaded host, timed as
 /// [`quiesce_within`] times it; the deadline fires at the first 10 ms tick at or after it, so the
@@ -1109,7 +1109,7 @@ fn quiesce_within(
     bound: u64,
     stage: u64,
 ) -> Quiesce {
-    let started = now();
+    let started = counter_ticks();
     let region = launch_keeping_region(
         stand_in,
         elf,
@@ -1135,7 +1135,7 @@ fn quiesce_within(
             Quiesce::Answered
         }
         user_mode_runtime::Received::Notification(_) => Quiesce::Unanswered {
-            waited: now() - started,
+            waited: counter_ticks() - started,
             stand_in: region,
         },
         _ => bail(stage + 4),
@@ -1236,7 +1236,7 @@ fn ask_the_domain_to_be_collected(faultep: u64) -> (u64, u64) {
             break;
         }
         asked += 1;
-        if user_mode_runtime::reap(faultep, tid) == still_alive {
+        if user_mode_runtime::reap_thread(faultep, tid) == still_alive {
             refused += 1;
         }
         cursor = next;
@@ -1346,7 +1346,7 @@ fn collect_corpse(faultep: u64, collected: &mut u64) -> (u64, u64) {
     send(REPORT, hot_swap_contract::RPT_DEATH, tid, event);
     // We hold no capability to that region: we deleted it the moment the child was started, and the
     // authority for this is the supervision relationship, not the memory.
-    if user_mode_runtime::reap(faultep, tid) != 0 {
+    if user_mode_runtime::reap_thread(faultep, tid) != 0 {
         bail(27)
     }
     *collected += 1;

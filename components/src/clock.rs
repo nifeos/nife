@@ -33,7 +33,7 @@
 #![no_main]
 
 use clock_contract::{ClockPage, policy, propose, real_time_clock, state, status};
-use user_mode_runtime::{counter_hertz, now, receive_request, reply, send};
+use user_mode_runtime::{counter_hertz, counter_ticks, receive_request, reply, send};
 
 /// The propose endpoint (slot 0): the service receives proposals on it. Everything that arrives here
 /// is a request, never a command.
@@ -133,7 +133,7 @@ fn wall_now(page: &ClockPage) -> u64 {
 /// the resulting wall clock would jump backwards by six centuries at the wrap.
 fn monotonic_nanoseconds() -> u64 {
     let freq = counter_hertz();
-    let ticks = now();
+    let ticks = counter_ticks();
     let seconds = ticks / freq;
     let rem = ticks % freq;
     seconds * clock_contract::NANOSECONDS_PER_SECOND

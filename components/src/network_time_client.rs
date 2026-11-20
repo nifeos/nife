@@ -30,8 +30,8 @@ use network_time_protocol::{Query, Reject, Timestamp};
 use socket_contract::*;
 use user_mode_runtime::socket_frame::Frame;
 use user_mode_runtime::{
-    call, call_receiving, counter_hertz, exit, map_page_frame, now, retype_into_page_frame,
-    retype_sleeper, send, send_capability, sleep_until, yield_now,
+    call, call_receiving, counter_hertz, counter_ticks, exit, map_page_frame,
+    retype_into_page_frame, retype_sleeper, send, send_capability, sleep_until, yield_now,
 };
 
 // =================================================================================================
@@ -255,7 +255,7 @@ impl LocalClock {
 /// The clock service's copy of this arithmetic carries the same note.
 fn monotonic_nanoseconds() -> u64 {
     let freq = counter_hertz();
-    let ticks = now();
+    let ticks = counter_ticks();
     let seconds = ticks / freq;
     let rem = ticks % freq;
     seconds * clock_contract::NANOSECONDS_PER_SECOND
@@ -296,7 +296,7 @@ fn poll_gap() {
         if sleep_until(
             timer,
             NOTIFICATION.load(Relaxed),
-            now().saturating_add(ticks),
+            counter_ticks().saturating_add(ticks),
         ) >= 0
         {
             return;

@@ -89,11 +89,11 @@ struct Controller {
 
 impl Controller {
     fn reg32(&self, off: u64) -> u32 {
-        mapped(&REGISTERS).read::<u32>(off)
+        mapped(&REGISTERS).read_volatile::<u32>(off)
     }
 
     fn wr32(&self, off: u64, v: u32) {
-        mapped(&REGISTERS).write::<u32>(off, v);
+        mapped(&REGISTERS).write_volatile::<u32>(off, v);
     }
 
     /// The spec allows 64-bit registers to be accessed as aligned 32-bit halves (NVMe 1.4 §3.1),
@@ -138,7 +138,7 @@ impl Controller {
             .admin_sq
             .push()
             .expect("one command in flight per queue, so the admin ring cannot be full");
-        queues.write(
+        queues.write_volatile(
             ADMINISTRATION_SUBMISSION_QUEUE_PAGE * PAGE_BYTES + slot as u64 * 64,
             cmd.0,
         );
@@ -158,7 +158,7 @@ impl Controller {
             // payload reads that follow it (the identify parse).
             done = take_completion(
                 &self.admin_cq,
-                |i| queues.read::<u32>(cqe + 4 * i as u64),
+                |i| queues.read_volatile::<u32>(cqe + 4 * i as u64),
                 barrier,
             );
             if done.is_some() {

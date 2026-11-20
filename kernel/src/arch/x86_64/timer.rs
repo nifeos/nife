@@ -444,7 +444,7 @@ pub fn is_cycle_counter_grantable() -> bool {
 /// its aarch64 and riscv64 twins, so `sched` has one portable call.
 ///
 /// A stated exception to §19 (architectural parity is a tenet): `CR4.TSD` could close `rdtsc`, but
-/// `crates/user_mode_runtime`'s `now()` is `rdtsc` with no coarse clock to fall back on, so every
+/// `crates/user_mode_runtime`'s `counter_ticks()` is `rdtsc` with no coarse clock to fall back on, so every
 /// thread runs with the counter open, granted or not. See notes/x86-port/user-mode-runtime.md.
 ///
 /// Built only under `test` or `--features cycle_counter_grant` (milestone 237 (the cycle-counter

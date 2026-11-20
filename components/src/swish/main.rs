@@ -51,8 +51,8 @@ use swish::{Route, Say, Status, Untimed, sequence};
 use terminal_contract as proto;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{
-    Message, call, capability_delete, counter_hertz, destroy_memory_region, exit,
-    monotonic_nanoseconds, now, reap, receive, receive_capability, receive_message,
+    Message, call, capability_delete, counter_hertz, counter_ticks, destroy_memory_region, exit,
+    monotonic_nanoseconds, reap_thread, receive, receive_capability, receive_message,
     retype_into_kernel_object, retype_sleeper, send, sleep_until, split_memory_region,
     thread_control_block_resume, thread_control_block_suspend, yield_now,
 };

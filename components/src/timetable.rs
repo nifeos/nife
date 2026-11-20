@@ -32,7 +32,8 @@
 use program_table::spawn_protocol;
 use timetable::{Registry, contract, registration};
 use user_mode_runtime::{
-    Message, capability_delete, exit, monotonic_nanoseconds, reap, receive_message, send, yield_now,
+    Message, capability_delete, exit, monotonic_nanoseconds, reap_thread, receive_message, send,
+    yield_now,
 };
 
 /// The document. Compiled in; see `BUGS`.
@@ -910,7 +911,7 @@ fn wall_reading() -> Option<timetable::WallReading> {
 /// `_start` guarantees by draining everything else first and firing nothing else until this
 /// returns. That is what makes the correlation sound: the next death on [`DEATHS`] cannot be
 /// anyone else's, so `mem_slot` is destroyed unconditionally rather than guessed at from a refused
-/// reap. Once it is gone, the corpse's region has no live resident left and an ordinary [`reap`]
+/// reap. Once it is gone, the corpse's region has no live resident left and an ordinary [`reap_thread`]
 /// reclaims the rest, the same as [`collect`].
 fn collect_grant(exits: &mut u64, faults: &mut u64, mem_slot: u64) {
     let Message {
@@ -922,12 +923,12 @@ fn collect_grant(exits: &mut u64, faults: &mut u64, mem_slot: u64) {
         *faults += 1;
     }
     // The grant is a live resident of the corpse's own region (`regions::destroy_outcome` refuses
-    // a region with one), so it has to go before `reap` can succeed at all; nothing here needs to
-    // try `reap` first and fail to learn that, because this call is only ever made about the one
+    // a region with one), so it has to go before `reap_thread` can succeed at all; nothing here needs to
+    // try `reap_thread` first and fail to learn that, because this call is only ever made about the one
     // instance that was built with a nested grant.
     process_builder::memory_region_destroy(mem_slot);
     for _ in 0..REAP_ATTEMPTS {
-        if reap(DEATHS, tid) == 0 {
+        if reap_thread(DEATHS, tid) == 0 {
             return;
         }
         yield_now();
@@ -953,7 +954,7 @@ fn collect(exits: &mut u64, faults: &mut u64) {
         *faults += 1;
     }
     for _ in 0..REAP_ATTEMPTS {
-        if reap(DEATHS, tid) == 0 {
+        if reap_thread(DEATHS, tid) == 0 {
             return;
         }
         yield_now();

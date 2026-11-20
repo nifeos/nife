@@ -7,7 +7,7 @@
 //! items, because only a program that owns a `VirtualIo` capability needs them. See
 //! notes/user-mode-runtime.md.
 
-/// `READ_REGISTER` at `off` on the `VirtualIo` capability in `virtual_io_slot`. Reads are DMA-safe, so any
+/// `READ_REGISTER` at `offset` on the `VirtualIo` capability in `virtual_io_slot`. Reads are DMA-safe, so any
 /// aligned register in the device's own slot. Returns the register value, or a negative
 /// `abi::Error`.
 ///
@@ -15,27 +15,35 @@
 /// question 2), with [`write_register`], [`setup_queue`] and [`notify`]. His words: "Yes". Refused
 /// `virtio_read_reg` (round 7's provisional name; the module already says virtio, and reg is an
 /// abbreviation).
-pub fn read_register(virtual_io_slot: u64, off: u64) -> i64 {
+pub fn read_register(virtual_io_slot: u64, offset: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the VirtualIo capability before it reads the
     // register and refuses an offset outside the device's slot.
-    unsafe { super::invoke(virtual_io_slot, abi::virtual_io::READ_REGISTER, off, 0, 0) }
+    unsafe {
+        super::invoke(
+            virtual_io_slot,
+            abi::virtual_io::READ_REGISTER,
+            offset,
+            0,
+            0,
+        )
+    }
 }
 
-/// `WRITE_REGISTER` `value` at `off` on the `VirtualIo` capability in `virtual_io_slot`. `0` on success; a
+/// `WRITE_REGISTER` `value` at `offset` on the `VirtualIo` capability in `virtual_io_slot`. `0` on success; a
 /// negative `abi::Error` (`NotPermitted` for a queue-address or notify register, which only
 /// [`setup_queue`]/[`notify`] may touch).
 ///
 /// Name: ratified 2026-10-08 (calef, #1842, milestone 139 (drive the unsafe count down) round 9's
 /// question 2), with [`read_register`]. His words: "Yes". Refused `virtio_write_reg` (round 7's
 /// provisional name).
-pub fn write_register(virtual_io_slot: u64, off: u64, value: u64) -> i64 {
+pub fn write_register(virtual_io_slot: u64, offset: u64, value: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates the VirtualIo capability and refuses any register
     // this call is not DMA-safe to write.
     unsafe {
         super::invoke(
             virtual_io_slot,
             abi::virtual_io::WRITE_REGISTER,
-            off,
+            offset,
             value,
             0,
         )
@@ -84,7 +92,7 @@ pub fn notify(virtual_io_slot: u64, queue: u64) -> i64 {
 /// riscv64; on `x86_64` the device mapping is uncacheable and total store ordering (TSO) keeps the stores in order, so
 /// only a compiler fence is needed.
 ///
-/// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-transport.
+/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-transport.
 pub fn doorbell_barrier() {
     // SAFETY: a barrier has no operands and cannot be unsound; it only constrains ordering.
     #[cfg(target_arch = "aarch64")]
@@ -116,10 +124,7 @@ pub fn doorbell_barrier() {
 /// compiler fence to supply. A fourth architecture fails to build. See notes/user-mode-runtime.md
 /// and notes/architecture-list-sweep.md, finding 9.
 ///
-/// Name is **provisional**: calef's 2026-10-08 (UTC) ruling on #1842 dropped the `virtio_` prefix
-/// from [`read_register`] and its siblings, and whether this one follows is not yet ruled.
-///
-/// Name: provisional, the lane for milestone 186 (derive the architecture list), #1143, 2026-09-23
+/// Name: ratified 2026-11-20 (UTC); first provisional, the lane for milestone 186 (derive the architecture list), #1143, 2026-09-23
 /// (UTC); marker written 2026-10-12 (UTC). Milestone 139 (drive the unsafe count down) round 11
 /// recorded it as outside calef's 2026-10-08 (UTC) renames of this module's wrappers. No other
 /// name is recorded.
