@@ -43,7 +43,7 @@ fn run_rg_as_process(rights: u64, line: &str, out: &mut [u8]) -> Option<(usize, 
     {
         // SAFETY: a frame just retyped for this page alone, direct-mapped, which nothing else
         // holds until the program is given it read-only.
-        let page = unsafe { &mut *(mmu::phys_to_virt(args) as *mut [u8; FRAME_SIZE as usize]) };
+        let page = unsafe { &mut *(mmu::phys_to_virt(args) as *mut [u8; FRAME_BYTES as usize]) };
         page.fill(0);
         grant_plan::argv(line.as_bytes(), page).expect("the test's line is not an argv");
     }

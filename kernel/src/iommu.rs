@@ -157,7 +157,7 @@ const MAXIMUM_CONFINED_REGIONS: usize = 4 + machine_discovery::acpi::MAXIMUM_RES
 fn zeroed_page_frame() -> u64 {
     crate::memory::alloc_zeroed()
         .expect("no frame for an IOMMU DMA domain")
-        .addr()
+        .physical_address()
 }
 
 /// **Confine PCI device `rid` to exactly `regions`.** Builds a DMA domain in this architecture's
@@ -259,7 +259,7 @@ pub(crate) fn virtio_regions(
         },
         DirectMemoryAccessRegion {
             base: shadow_base,
-            size: page_frames::FRAME_SIZE,
+            size: page_frames::FRAME_BYTES,
             writable: false,
         },
     ]

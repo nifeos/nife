@@ -86,8 +86,8 @@ fn stack_pages() -> [Mapping; STACK_PAGES as usize] {
     for (k, m) in maps.iter_mut().enumerate() {
         let phys = crate::memory::alloc_zeroed()
             .expect("no frame for a network time program's stack")
-            .addr();
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+            .physical_address();
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = phys;
     }
     maps

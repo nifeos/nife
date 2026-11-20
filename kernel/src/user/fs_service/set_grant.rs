@@ -85,7 +85,7 @@ pub fn start_granted_set(
     let mut encoded = [0u8; filesystem_contract::nameset::MAXIMUM_BYTES];
     let n = filesystem_contract::nameset::encode(names, &mut encoded)
         .expect("this set does not fit one grant, so no command line could have named it");
-    // SAFETY: a fresh frame of FRAME_SIZE bytes reachable through the direct map, and `n` is at
+    // SAFETY: a fresh frame of FRAME_BYTES bytes reachable through the direct map, and `n` is at
     // most `nameset::MAXIMUM_BYTES`, which is far smaller.
     unsafe {
         core::ptr::copy_nonoverlapping(encoded.as_ptr(), mmu::phys_to_virt(set_phys) as *mut u8, n);
@@ -113,7 +113,7 @@ pub fn start_granted_set(
             flags: Flags::user_read_only_data(),
         };
         for (k, m) in maps[2..].iter_mut().enumerate() {
-            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
             m.phys = page_frame();
         }
         run(

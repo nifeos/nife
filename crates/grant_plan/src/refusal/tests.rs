@@ -145,8 +145,8 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         (
             Refusal::ArgumentsTooLong,
             "({} bytes",
-            program_argument_contract::CAPACITY,
-            "program_argument_contract::CAPACITY",
+            program_argument_contract::MAXIMUM_RECORDS_BYTES,
+            "program_argument_contract::MAXIMUM_RECORDS_BYTES",
         ),
     ];
     for &(refusal, shape, limit, name) in cases {
@@ -206,7 +206,7 @@ fn every_number_a_refusal_names_is_its_constants_value() {
     );
     says(
         Refusal::ArgumentsTooLong.message(),
-        program_argument_contract::CAPACITY,
+        program_argument_contract::MAXIMUM_RECORDS_BYTES,
     );
     says(
         crate::navigation::Refused::NotAName.message(),

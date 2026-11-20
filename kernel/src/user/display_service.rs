@@ -147,7 +147,7 @@ pub fn start(
 pub fn start_backing_escape(driver_image: &'static [u8]) -> Option<(RendezvousId, u64)> {
     let victim = crate::memory::alloc()
         .expect("no victim frame for the backing-escape test")
-        .addr();
+        .physical_address();
     let (report, _, _) = wire_driver(driver_image, ROLE_BACKING_ESCAPE, victim)?;
     Some((report, victim))
 }
@@ -192,10 +192,10 @@ pub(crate) fn wire_device() -> Option<GpuDevice> {
     // Contiguous, so the device's backing is one memory entry and the IOMMU domain one range.
     let dma = crate::memory::alloc_contiguous_zeroed(DMA_PAGE_FRAMES as usize)
         .expect("no contiguous DMA region for the GPU driver")
-        .addr();
+        .physical_address();
     // A progenitor-built driver has no other way to learn the region's physical base.
     super::write_dma_phys(dma);
-    let surface = dma + FRAME_SIZE; // page 1 onward: the frames the client also maps
+    let surface = dma + FRAME_BYTES; // page 1 onward: the frames the client also maps
 
     // Routed to an endpoint, so the driver's WAIT receives the interrupt as a message.
     let interrupt_ep = crate::sched::create_rendezvous();
@@ -207,7 +207,7 @@ pub(crate) fn wire_device() -> Option<GpuDevice> {
     let vid = crate::virtio::register(
         crate::virtio::Transport::pci(&d),
         dma,
-        DMA_PAGE_FRAMES * FRAME_SIZE,
+        DMA_PAGE_FRAMES * FRAME_BYTES,
         Some(d.rid), // the PCIe requester id the IOMMU keys its tables on
     )?;
     Some(GpuDevice {
@@ -376,7 +376,7 @@ fn spawn_terminal(
 ) -> SpawnedTerminal {
     let out = crate::memory::alloc_zeroed()
         .expect("no output-page frame for the display terminal")
-        .addr();
+        .physical_address();
 
     let term_report = endpoint();
     let term = endpoint();
@@ -442,7 +442,7 @@ struct SpawnedTerminal {
 const SCREEN_APERTURE_VA: u64 = address_space_layout::service_window(0x5800_0000);
 const _: () = assert!(address_space_layout::SERVICE_WINDOWS.holds(
     SCREEN_APERTURE_VA,
-    SCREEN_APERTURE_VA + MAXIMUM_APERTURE_PAGES * page_frames::FRAME_SIZE
+    SCREEN_APERTURE_VA + MAXIMUM_APERTURE_PAGES * page_frames::FRAME_BYTES
 ));
 
 /// The most aperture pages this wiring maps: 8 MiB, four 2 MiB page-table windows.
@@ -487,21 +487,21 @@ fn screen_terminal_aperture(
     )?;
     // The aperture need not start on a page: the run is mapped from the page that holds pixel
     // (0, 0), and the driver is told how far into it that pixel is.
-    let offset = screen.base % FRAME_SIZE;
-    let mut pages = (offset + aperture.span() as u64).div_ceil(FRAME_SIZE);
+    let offset = screen.base % FRAME_BYTES;
+    let mut pages = (offset + aperture.span() as u64).div_ceil(FRAME_BYTES);
     if pages > MAXIMUM_APERTURE_PAGES {
         // A screen too large to map whole (past 8 MiB, so a 2560x1440 or a 4K panel) gets the
         // shell over the rows that fit rather than no shell at all. Each surface row is `scale`
         // screen rows of `stride` bytes.
         let row_bytes = screen.stride as u64 * aperture.scale() as u64;
-        let fit = (MAXIMUM_APERTURE_PAGES * FRAME_SIZE - offset) / row_bytes;
+        let fit = (MAXIMUM_APERTURE_PAGES * FRAME_BYTES - offset) / row_bytes;
         aperture = screen_console::Aperture::new(
             screen,
             video_terminal::CELL_W,
             aperture.size().0,
             fit as u32,
         )?;
-        pages = (offset + aperture.span() as u64).div_ceil(FRAME_SIZE);
+        pages = (offset + aperture.span() as u64).div_ceil(FRAME_BYTES);
         crate::println!(
             "  screen    : too large to map whole; the terminal covers its top {} rows",
             aperture.size().1 * aperture.scale()
@@ -528,16 +528,16 @@ pub fn start_screen_terminal(
 ) -> Option<TerminalWiring> {
     let (aperture, pages) = screen_terminal_aperture(&screen)?;
     // Where pixel (0, 0) is in the first mapped page (see `screen_terminal_aperture`).
-    let offset = screen.base % FRAME_SIZE;
+    let offset = screen.base % FRAME_BYTES;
 
     // RAM at four bytes a pixel and no padding: the terminal paints it at a stride of four times
     // the width `INFO` answers. No ring page, because the driver copies it with the CPU.
     let (sw, sh) = aperture.size();
-    let surface_frames = (sw as u64 * sh as u64 * 4).div_ceil(FRAME_SIZE);
+    let surface_frames = (sw as u64 * sh as u64 * 4).div_ceil(FRAME_BYTES);
     let surface_run = NonZeroU64::new(surface_frames)?;
     let surface = crate::memory::alloc_contiguous_zeroed(surface_frames as usize)
         .expect("no contiguous surface for the framebuffer driver")
-        .addr();
+        .physical_address();
 
     // The endpoints come out of a region of their own: both programs park in `RECEIVE` for good,
     // and reclaiming that region is the only thing that wakes them to die (`user::holding`). One

@@ -445,10 +445,10 @@ fn a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver() {
     const OFFSET: u64 = 0x140;
     const POISON: u8 = 0xa5;
     let bytes = (OFFSET + STRIDE as u64 * HEIGHT as u64) as usize;
-    let frames = bytes.div_ceil(FRAME_SIZE as usize);
+    let frames = bytes.div_ceil(FRAME_BYTES as usize);
     let phys = crate::memory::alloc_contiguous_zeroed(frames)
         .expect("no frames for a pretend screen")
-        .addr();
+        .physical_address();
     let at = |offset: usize| (mmu::phys_to_virt(phys) + OFFSET) as usize + offset;
     for i in 0..bytes - OFFSET as usize {
         // SAFETY: inside the frames just allocated, which nothing else has a name for yet.
@@ -548,10 +548,12 @@ fn a_firmware_screen_shows_the_terminal_through_the_framebuffer_driver() {
     w.held
         .release_or_fail("the framebuffer driver and its terminal");
     for k in 0..w.surface_frames {
-        crate::memory::free(PageFrame::from_addr(w.surface + k * FRAME_SIZE));
+        crate::memory::free(PageFrame::from_physical_address(
+            w.surface + k * FRAME_BYTES,
+        ));
     }
-    crate::memory::free(PageFrame::from_addr(w.out));
+    crate::memory::free(PageFrame::from_physical_address(w.out));
     for k in 0..frames as u64 {
-        crate::memory::free(PageFrame::from_addr(phys + k * FRAME_SIZE));
+        crate::memory::free(PageFrame::from_physical_address(phys + k * FRAME_BYTES));
     }
 }

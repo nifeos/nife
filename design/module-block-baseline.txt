@@ -627,17 +627,11 @@ crates/boot_slot/src/lib.rs::select_excluding
 crates/boot_slot/src/lib.rs::unreadable
 
 
-crates/byte_glob/src/lib.rs::cost_bound
 
-crates/byte_glob/src/lib.rs::has_magic
 
-crates/byte_glob/src/lib.rs::literal
 
-crates/byte_glob/src/lib.rs::match_steps
 
-crates/byte_glob/src/lib.rs::matches
 
-crates/byte_glob/src/lib.rs::matches_with
 
 crates/byte_sink_contract/src/lib.rs::BAD
 
@@ -2954,7 +2948,6 @@ crates/globally_unique_identifier_partition_table/src/entry.rs::NAME
 
 crates/globally_unique_identifier_partition_table/src/entry.rs::NAME_UNITS
 
-crates/globally_unique_identifier_partition_table/src/entry.rs::SIZE
 
 crates/globally_unique_identifier_partition_table/src/entry.rs::UNUSED
 
@@ -2978,7 +2971,6 @@ crates/globally_unique_identifier_partition_table/src/error.rs::BackupMismatch
 
 crates/globally_unique_identifier_partition_table/src/error.rs::Error
 
-crates/globally_unique_identifier_partition_table/src/error.rs::MbrProblem
 
 crates/globally_unique_identifier_partition_table/src/guid.rs
 
@@ -2992,9 +2984,7 @@ crates/globally_unique_identifier_partition_table/src/guid.rs::LINUX_FILESYSTEM
 
 crates/globally_unique_identifier_partition_table/src/guid.rs::MICROSOFT_BASIC_DATA
 
-crates/globally_unique_identifier_partition_table/src/guid.rs::NIFE_BOOT
 
-crates/globally_unique_identifier_partition_table/src/guid.rs::NIFE_DATA
 
 crates/globally_unique_identifier_partition_table/src/guid.rs::UNUSED
 
@@ -3002,13 +2992,10 @@ crates/globally_unique_identifier_partition_table/src/guid.rs::name
 
 crates/globally_unique_identifier_partition_table/src/header.rs
 
-crates/globally_unique_identifier_partition_table/src/header.rs::ALTERNATE_LBA
 
-crates/globally_unique_identifier_partition_table/src/header.rs::FIRST_USABLE_LBA
 
 crates/globally_unique_identifier_partition_table/src/header.rs::Header
 
-crates/globally_unique_identifier_partition_table/src/header.rs::LAST_USABLE_LBA
 
 crates/globally_unique_identifier_partition_table/src/header.rs::RESERVED
 
@@ -3024,15 +3011,11 @@ crates/globally_unique_identifier_partition_table/src/lib.rs::DEFAULT_ENTRY_COUN
 
 crates/globally_unique_identifier_partition_table/src/lib.rs::ENTRY_ARRAY_BYTES
 
-crates/globally_unique_identifier_partition_table/src/lib.rs::PRIMARY_HEADER_LBA
 
 crates/globally_unique_identifier_partition_table/src/lib.rs::is_block_size_ok
 
-crates/globally_unique_identifier_partition_table/src/mbr.rs
 
-crates/globally_unique_identifier_partition_table/src/mbr.rs::validate
 
-crates/globally_unique_identifier_partition_table/src/mbr.rs::write
 
 crates/globally_unique_identifier_partition_table/src/span.rs
 
@@ -3042,19 +3025,14 @@ crates/globally_unique_identifier_partition_table/src/span.rs::buffer_bytes
 
 crates/globally_unique_identifier_partition_table/src/span.rs::covering
 
-crates/globally_unique_identifier_partition_table/src/table.rs::GloballyUniqueIdentifierPartitionTable
 
-crates/globally_unique_identifier_partition_table/src/table.rs::backup_entry_lba
 
-crates/globally_unique_identifier_partition_table/src/table.rs::backup_header_lba
 
 crates/globally_unique_identifier_partition_table/src/table.rs::block_count
 
-crates/globally_unique_identifier_partition_table/src/table.rs::block_size
 
 crates/globally_unique_identifier_partition_table/src/table.rs::check_backup
 
-crates/globally_unique_identifier_partition_table/src/table.rs::check_protective_mbr
 
 crates/globally_unique_identifier_partition_table/src/table.rs::create
 
@@ -3068,23 +3046,19 @@ crates/globally_unique_identifier_partition_table/src/table.rs::entry_array_bloc
 
 crates/globally_unique_identifier_partition_table/src/table.rs::entry_count
 
-crates/globally_unique_identifier_partition_table/src/table.rs::first_usable_lba
 
 crates/globally_unique_identifier_partition_table/src/table.rs::header
 
-crates/globally_unique_identifier_partition_table/src/table.rs::last_usable_lba
 
 crates/globally_unique_identifier_partition_table/src/table.rs::parse
 
 crates/globally_unique_identifier_partition_table/src/table.rs::partitions
 
-crates/globally_unique_identifier_partition_table/src/table.rs::primary_entry_lba
 
 crates/globally_unique_identifier_partition_table/src/table.rs::write_backup_header
 
 crates/globally_unique_identifier_partition_table/src/table.rs::write_primary_header
 
-crates/globally_unique_identifier_partition_table/src/table.rs::write_protective_mbr
 
 crates/globally_unique_identifier_partition_table/src/testing.rs
 
@@ -5235,15 +5209,11 @@ crates/package_index/src/lib.rs::sources
 
 crates/package_index/src/lib.rs::target_path
 
-crates/page_frames/src/lib.rs::FRAME_SIZE
-
 crates/page_frames/src/lib.rs::PageFrame
 
 crates/page_frames/src/lib.rs::PageFrameAllocator
 
 crates/page_frames/src/lib.rs::Stats
-
-crates/page_frames/src/lib.rs::addr
 
 crates/page_frames/src/lib.rs::alloc
 
@@ -5254,10 +5224,6 @@ crates/page_frames/src/lib.rs::bitmap_bytes
 crates/page_frames/src/lib.rs::containing
 
 crates/page_frames/src/lib.rs::free
-
-crates/page_frames/src/lib.rs::free
-
-crates/page_frames/src/lib.rs::from_addr
 
 crates/page_frames/src/lib.rs::is_used
 
@@ -5553,9 +5519,7 @@ crates/pmap/src/lib.rs::write_diagnostics
 
 crates/pmap/src/lib.rs::write_report
 
-crates/program_argument_contract/src/lib.rs::ArgPage
 
-crates/program_argument_contract/src/lib.rs::CAPACITY
 
 crates/program_argument_contract/src/lib.rs::EMPTY
 
@@ -5575,7 +5539,6 @@ crates/program_argument_contract/src/lib.rs::count
 
 crates/program_argument_contract/src/lib.rs::finish
 
-crates/program_argument_contract/src/lib.rs::from_va
 
 crates/program_argument_contract/src/lib.rs::is_empty
 

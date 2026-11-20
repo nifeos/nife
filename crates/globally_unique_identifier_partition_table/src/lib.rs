@@ -6,13 +6,18 @@
 //! the caller read and returns bytes to place, so its tests run on the host against real disks.
 //! [`header::Header::decode`]
 //! judges one block, [`entry::Entry::decode`] judges nothing,
-//! [`GloballyUniqueIdentifierPartitionTable::parse`] holds every geometry rule, `check_backup`
+//! [`PartitionTable::parse`] holds every geometry rule, `check_backup`
 //! compares the two copies, and every failure is an error. [`span`] says where to read.
 //!
 //! The reader enforces the header's reserved tail (a non-zero byte after the header refuses the
 //! table) and tolerates a non-zero tail on an entry and non-zero reserved attribute bits, though
 //! UEFI says those "must be zero" too: the header's tail protects the meaning of its CRC, and
 //! nothing this crate reads depends on the others.
+//!
+//! A GUID here is a [`uuid::Uuid`], re-exported as [`uuid`] so a caller needs no second dependency
+//! to name one. It is an opaque sixteen-byte identifier: the crate neither checks nor generates a
+//! version or a variant, and it adds only the on-disk byte order ([`guid::from_disk`] and
+//! [`guid::to_disk`]).
 
 //! Name: ratified 2026-09-18 (calef, `design/decisions/` §154 (the acronym test is whether the
 //! phrase is spoken)): "GUID partition table" and "globally unique identifier" are both spoken, so
@@ -41,8 +46,8 @@ use uuid::Uuid;
 
 /// The smallest logical block a GPT disk can have, and what almost every disk reports.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const MINIMUM_BLOCK_SIZE: usize = 512;
+/// Name: provisional.
+pub const MINIMUM_BLOCK_BYTES: usize = 512;
 
 /// The format's version: the generation of this crate's reading and writing of the two on-disk
 /// tables it implements, the GUID partition table and the MBR. The tables' own identities are the
@@ -56,35 +61,37 @@ pub const VERSION: u32 = 1;
 /// The largest logical block this crate handles. 4096 is what a native-4K drive reports, and the
 /// header still occupies exactly one block, so the only thing that changes is the LBA arithmetic.
 ///
-/// Name: ratified 2026-10-27 (#2797).
-pub const MAXIMUM_BLOCK_SIZE: usize = 4096;
+/// Name: provisional.
+pub const MAXIMUM_BLOCK_BYTES: usize = 4096;
 
 /// The primary header always lives at LBA 1, immediately after the protective MBR. Not a
 /// convention: the spec fixes it, because it is the one address a reader can know before it has
 /// read anything.
-pub const PRIMARY_HEADER_LBA: u64 = 1;
+///
+/// Name: provisional.
+pub const PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS: u64 = 1;
 
-/// Entries in a table written by [`GloballyUniqueIdentifierPartitionTable::create`] with a
+/// Entries in a table written by [`PartitionTable::create`] with a
 /// [`ENTRY_ARRAY_BYTES`]-sized buffer, and what every tool in the world writes.
 pub const DEFAULT_ENTRY_COUNT: u32 = 128;
 
-/// 16 KiB: `DEFAULT_ENTRY_COUNT * entry::SIZE`, and the minimum array size UEFI 2.10 section 5.3.3
+/// 16 KiB: `DEFAULT_ENTRY_COUNT * entry::ENTRY_BYTES`, and the minimum array size UEFI 2.10 section 5.3.3
 /// requires of a *conformant writer*.
 ///
-/// [`GloballyUniqueIdentifierPartitionTable::create`] will build a smaller array if handed a
-/// smaller buffer, and [`GloballyUniqueIdentifierPartitionTable::parse`] will read one, because
+/// [`PartitionTable::create`] will build a smaller array if handed a
+/// smaller buffer, and [`PartitionTable::parse`] will read one, because
 /// refusing a table we can read perfectly well would be the wrong kind of strict. Anything writing
 /// a real disk should pass a buffer of exactly this size.
-pub const ENTRY_ARRAY_BYTES: usize = DEFAULT_ENTRY_COUNT as usize * entry::SIZE;
+pub const ENTRY_ARRAY_BYTES: usize = DEFAULT_ENTRY_COUNT as usize * entry::ENTRY_BYTES;
 
 /// True if `len` is a logical block size this crate accepts: a power of two from
-/// [`MINIMUM_BLOCK_SIZE`] to [`MAXIMUM_BLOCK_SIZE`].
+/// [`MINIMUM_BLOCK_BYTES`] to [`MAXIMUM_BLOCK_BYTES`].
 ///
 /// Block size is never a parameter in this crate's API. A caller passes the block it read, and the
 /// slice's own length is the block size, which removes a whole class of "we told it 512 and handed
 /// it 4096" bug.
 pub const fn is_block_size_ok(len: usize) -> bool {
-    len >= MINIMUM_BLOCK_SIZE && len <= MAXIMUM_BLOCK_SIZE && len.is_power_of_two()
+    len >= MINIMUM_BLOCK_BYTES && len <= MAXIMUM_BLOCK_BYTES && len.is_power_of_two()
 }
 
 /// The protective MBR at LBA 0: one classic MBR record of type `0xEE` covering the whole disk, so
@@ -93,7 +100,10 @@ pub const fn is_block_size_ok(len: usize) -> bool {
 /// Only the two fields that do the protecting are checked (it starts at LBA 1 and covers the disk).
 /// The CHS fields are vestigial: `sgdisk` writes the real cylinder/head/sector of the last block,
 /// macOS writes `FE FF FF`, and both are correct because nothing reads them.
-pub mod mbr;
+///
+/// Name: provisional.
+#[doc(alias = "MBR")]
+pub mod master_boot_record;
 
 /// Sample tables, for this crate's own doc examples and for anything downstream that wants a GPT
 /// without a disk.
@@ -111,5 +121,5 @@ mod verification;
 mod error;
 mod table;
 
-pub use error::{BackupMismatch, Error, MbrProblem};
-pub use table::GloballyUniqueIdentifierPartitionTable;
+pub use error::{BackupMismatch, Error, MasterBootRecordProblem};
+pub use table::PartitionTable;

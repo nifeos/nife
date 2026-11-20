@@ -285,6 +285,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
+name = "nife_partition_types"
+version = "0.1.0"
+dependencies = [
+ "globally_unique_identifier_partition_table",
+ "uuid",
+]
+
+[[package]]
 name = "numtoa"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -396,6 +404,7 @@ dependencies = [
  "filesystem_contract",
  "globally_unique_identifier_partition_table",
  "libc",
+ "nife_partition_types",
  "redox_syscall",
  "redoxfs",
  "redoxfs_server",
@@ -411,6 +420,7 @@ dependencies = [
  "filesystem_contract",
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
+ "nife_partition_types",
  "redox_syscall",
  "redoxfs",
  "subtree_scope",

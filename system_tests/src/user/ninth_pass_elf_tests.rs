@@ -136,11 +136,11 @@ fn a_benign_first_segment_does_not_smuggle_a_segment_over_the_kernel() {
 /// green but did not break the code it guards to watch it go red.
 #[test_case]
 fn a_segment_whose_address_range_wraps_is_refused() {
-    let vaddr = u64::MAX - page_frames::FRAME_SIZE + 1; // the last page of the space
+    let vaddr = u64::MAX - page_frames::FRAME_BYTES + 1; // the last page of the space
     let image = forged_sized(
         vaddr,
         static_elf::READABLE | static_elf::EXECUTABLE,
-        4 * page_frames::FRAME_SIZE,
+        4 * page_frames::FRAME_BYTES,
     );
 
     // `AddressSpace` is not `Debug`; keep only the entry point so a success is printable.

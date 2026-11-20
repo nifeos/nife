@@ -10,7 +10,7 @@
 
 use memory_regions::{CeilingReached, PageUse, RegionName, RegionTable};
 pub use memory_regions::{Ceilings, Counted, ObjectKind};
-use page_frames::{FRAME_SIZE, PageFrame};
+use page_frames::{FRAME_BYTES, PageFrame};
 
 use crate::memory;
 use crate::sync::{InterruptSafeMutex, rank};
@@ -55,7 +55,7 @@ pub(crate) fn peak_region_count() -> usize {
 /// it stops resolving, and the slot is reused. An `Object::MemoryRegion` capability carries the
 /// generational `u64` name.
 ///
-/// **Page units inside, byte addresses outside.** The crate is `FRAME_SIZE`-agnostic on purpose, so
+/// **Page units inside, byte addresses outside.** The crate is `FRAME_BYTES`-agnostic on purpose, so
 /// every conversion happens here, at the boundary where the constant is already in scope.
 static REGIONS: InterruptSafeMutex<RegionTable<MAXIMUM_REGIONS>> =
     InterruptSafeMutex::new(rank::MEMORY_REGION, RegionTable::new());
@@ -79,12 +79,12 @@ pub fn create(pages: u64) -> Option<u64> {
 ///
 /// Name: provisional.
 pub fn create_with_ceilings(pages: u64, ceilings: Ceilings) -> Option<u64> {
-    let base = memory::alloc_contiguous(pages as usize)?.addr();
+    let base = memory::alloc_contiguous(pages as usize)?.physical_address();
 
     let name = {
         let mut table = REGIONS.lock();
         let name = table
-            .insert_root_with_ceilings(base / FRAME_SIZE, pages, ceilings)
+            .insert_root_with_ceilings(base / FRAME_BYTES, pages, ceilings)
             .map(RegionName::to_bits);
         note_peak(&table);
         name
@@ -94,7 +94,7 @@ pub fn create_with_ceilings(pages: u64, ceilings: Ceilings) -> Option<u64> {
         // other shortage. Slots are reused, but this refusal can come with fewer than
         // `MAXIMUM_REGIONS` live, so no caller may treat it as unreachable.
         for i in 0..pages {
-            memory::free(PageFrame::from_addr(base + i * FRAME_SIZE));
+            memory::free(PageFrame::from_physical_address(base + i * FRAME_BYTES));
         }
     }
     name
@@ -268,7 +268,7 @@ pub fn retype_run(region: u64, requested: u64) -> Option<(u64, u64)> {
     // Released at the semicolon: zeroing the whole run must not happen under the region lock.
     let count = requested.max(1);
     let page = REGIONS.lock().retype_run(typed(region), count)?;
-    let phys = page * FRAME_SIZE;
+    let phys = page * FRAME_BYTES;
 
     // SAFETY: the run is inside a region we carved from the allocator and own exclusively, and it
     // is contiguous because a region's watermark is; the direct map reaches all of it. Zero it
@@ -277,7 +277,7 @@ pub fn retype_run(region: u64, requested: u64) -> Option<(u64, u64)> {
         core::ptr::write_bytes(
             crate::arch::mmu::phys_to_virt(phys) as *mut u8,
             0,
-            (count * FRAME_SIZE) as usize,
+            (count * FRAME_BYTES) as usize,
         );
     }
     Some((phys, count))
@@ -312,14 +312,14 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
     if let Some(reached) = reached {
         log_ceiling_refusal(Counted::Object(kind), region, reached);
     }
-    let phys = page? * FRAME_SIZE;
+    let phys = page? * FRAME_BYTES;
 
     // SAFETY: as retype_page: exclusively ours, direct-mapped; zero before anyone reads it.
     unsafe {
         core::ptr::write_bytes(
             crate::arch::mmu::phys_to_virt(phys) as *mut u8,
             0,
-            FRAME_SIZE as usize,
+            FRAME_BYTES as usize,
         );
     }
     Some(phys)
@@ -365,7 +365,7 @@ pub fn region_bounds(region: u64) -> Option<(u64, u64)> {
     REGIONS
         .lock()
         .bounds(typed(region))
-        .map(|(base_page, pages)| (base_page * FRAME_SIZE, pages * FRAME_SIZE))
+        .map(|(base_page, pages)| (base_page * FRAME_BYTES, pages * FRAME_BYTES))
 }
 
 /// Clear a region's object pin, **after** its objects have been torn down. Object revocation
@@ -393,20 +393,20 @@ pub fn destroy(region: u64) {
     let Some(claim) = REGIONS.lock().claim_for_destroy(typed(region)) else {
         return; // refused (pinned, or has live children), or a racing caller already won
     };
-    let base = claim.base_page() * FRAME_SIZE;
+    let base = claim.base_page() * FRAME_BYTES;
     let pages = claim.pages();
 
     // Unmap any page still mapped anywhere before the pages leave this region, whether they go back
     // to the allocator (a root) or back to the parent's budget (a child); a returned page that a
     // peer still maps would be the §13 use-after-free either way.
-    crate::revoke::revoke_region(base, pages * FRAME_SIZE);
+    crate::revoke::revoke_region(base, pages * FRAME_BYTES);
 
     if claim.is_root() {
         // A root region: its pages came from the frame allocator, so they go back to it. The proved
         // `destroy_outcome` guarantees only roots reach this path, which is what makes double-free
         // impossible: a page reaches the allocator only through the one root that owns it.
         for i in 0..pages {
-            memory::free(PageFrame::from_addr(base + i * FRAME_SIZE));
+            memory::free(PageFrame::from_physical_address(base + i * FRAME_BYTES));
         }
     } else {
         // A child region: its pages return to the parent, never the allocator. The LIFO test and the

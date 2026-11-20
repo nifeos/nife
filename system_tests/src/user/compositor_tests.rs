@@ -202,7 +202,7 @@ fn a_client_holds_no_capability_for_its_neighbours_pixels_or_the_screen() {
     // degenerate into poking an empty hole and still "pass".
     assert_eq!(
         w.neighbour_probe_phys(ATTACKER),
-        w.client[VICTIM] + FRAME_SIZE,
+        w.client[VICTIM] + FRAME_BYTES,
         "the probe address is not the victim's first pixel frame: the allocation is not adjacent, \
          so this test would prove nothing about a neighbour",
     );
@@ -372,7 +372,7 @@ fn a_client_cannot_read_any_page_of_its_neighbours_it_can_name() {
     let own_frames = compositor::SCENE[ATTACKER].page_frames() as u64;
     assert_eq!(
         w.client[VICTIM],
-        w.client[ATTACKER] + (1 + own_frames) * FRAME_SIZE,
+        w.client[ATTACKER] + (1 + own_frames) * FRAME_BYTES,
         "the clients are not adjacent, so these probes would prove nothing about a neighbour",
     );
     let victim_frames = compositor::SCENE[VICTIM].page_frames() as u64;
@@ -380,7 +380,7 @@ fn a_client_cannot_read_any_page_of_its_neighbours_it_can_name() {
         victim_frames >= 2,
         "a one-frame victim has no first and last pixel page to tell apart"
     );
-    let past_own_surface = w.neighbour_probe_va(ATTACKER) - FRAME_SIZE;
+    let past_own_surface = w.neighbour_probe_va(ATTACKER) - FRAME_BYTES;
 
     // Every page the victim owns, its control page and each pixel frame, is probed in turn.
     for k in 0..=victim_frames {
@@ -390,7 +390,7 @@ fn a_client_cannot_read_any_page_of_its_neighbours_it_can_name() {
             _ if k == victim_frames => "last pixel page",
             _ => "middle pixel page",
         };
-        let va = past_own_surface + k * FRAME_SIZE;
+        let va = past_own_surface + k * FRAME_BYTES;
         let faults = USER_FAULTS.load(Ordering::Relaxed);
         w.spawn_client_probing(ATTACKER, ROLE_PROBE_NEIGHBOUR | ROLE_PROBE_READ, va);
         expect_painted(&w, ATTACKER);

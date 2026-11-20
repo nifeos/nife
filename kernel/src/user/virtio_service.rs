@@ -36,10 +36,10 @@ fn wire(
     // Zeroed so stale RAM cannot look like a valid descriptor to the device.
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame for the virtio driver")
-        .addr();
+        .physical_address();
     // First, so a refused device leaves nothing else behind.
-    let Some(vid) = crate::virtio::register(transport, dma, FRAME_SIZE, rid) else {
-        crate::memory::free(page_frames::PageFrame::from_addr(dma));
+    let Some(vid) = crate::virtio::register(transport, dma, FRAME_BYTES, rid) else {
+        crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
         return None;
     };
 
@@ -200,10 +200,10 @@ fn wire_net_server(
     // writes the real ones.
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame for the net server")
-        .addr();
+        .physical_address();
     // First, so a refused NIC leaves nothing else behind.
-    let Some(vid) = crate::virtio::register(transport, dma, FRAME_SIZE, rid) else {
-        crate::memory::free(page_frames::PageFrame::from_addr(dma));
+    let Some(vid) = crate::virtio::register(transport, dma, FRAME_BYTES, rid) else {
+        crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
         return None;
     };
 
@@ -245,7 +245,7 @@ fn wire_net_server(
         let phys =
             crate::memory_region::retype_page(stack_region).expect("no frame for the net stack");
         maps[k + 1] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
             phys,
             flags: Flags::user_data(),
         };
@@ -406,7 +406,7 @@ pub(super) fn spawn_stack_client(
         .expect("no untyped for the net client");
     // The blob's pages ride in the stack region: the same lifetime (they may not go while the
     // client exists) and one fewer region to account for.
-    let blob_pages = blob.map_or(0, |b| (b.len() as u64).div_ceil(FRAME_SIZE));
+    let blob_pages = blob.map_or(0, |b| (b.len() as u64).div_ceil(FRAME_BYTES));
     assert!(
         blob_pages <= NET_CLIENT_BLOB_PAGES,
         "a {}-byte blob is more than a stack client's {NET_CLIENT_BLOB_PAGES} blob pages",
@@ -426,12 +426,12 @@ pub(super) fn spawn_stack_client(
     {
         let phys = crate::memory_region::retype_page(cli_stack_region)
             .expect("no frame for the net client");
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = phys;
     }
     let mut n_maps = NET_CLIENT_STACK_PAGES as usize;
     if let Some(bytes) = blob {
-        for (k, chunk) in bytes.chunks(FRAME_SIZE as usize).enumerate() {
+        for (k, chunk) in bytes.chunks(FRAME_BYTES as usize).enumerate() {
             let phys = crate::memory_region::retype_page(cli_stack_region)
                 .expect("no frame for the net client's blob");
             // SAFETY: the page was just retyped (exclusively ours, zeroed, direct-mapped), and
@@ -444,7 +444,7 @@ pub(super) fn spawn_stack_client(
                 );
             }
             maps[n_maps] = Mapping {
-                va: NET_CLIENT_CATALOGUE_VA + k as u64 * FRAME_SIZE,
+                va: NET_CLIENT_CATALOGUE_VA + k as u64 * FRAME_BYTES,
                 phys,
                 flags: Flags::user_read_only_data(),
             };
@@ -546,7 +546,7 @@ fn spawn_std_net_client(
     for (k, m) in stackmaps.iter_mut().enumerate() {
         let phys = crate::memory_region::retype_page(std_stack_region)
             .expect("no frame for the std net stack");
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = phys;
     }
 
@@ -678,13 +678,15 @@ const ROLE_VIRTIO_ATTACK: u64 = 8;
 /// kernel image. Returns the endpoint on which it reports whether the kernel refused it.
 pub fn start_attacker(image: &'static [u8]) -> Option<RendezvousId> {
     let dev = crate::virtio::find_block_device()?;
-    let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+    let dma = crate::memory::alloc_zeroed()
+        .expect("no DMA frame")
+        .physical_address();
     let vid = crate::virtio::register(
         crate::virtio::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
         },
         dma,
-        FRAME_SIZE,
+        FRAME_BYTES,
         None,
     )?;
     let report = crate::sched::create_rendezvous();
@@ -726,13 +728,15 @@ const ROLE_VIRTIO_ATTACK_INDIRECT: u64 = 13;
 /// report endpoint.
 pub fn start_attacker_indirect(image: &'static [u8]) -> Option<RendezvousId> {
     let dev = crate::virtio::find_block_device()?;
-    let dma = crate::memory::alloc_zeroed().expect("no DMA frame").addr();
+    let dma = crate::memory::alloc_zeroed()
+        .expect("no DMA frame")
+        .physical_address();
     let vid = crate::virtio::register(
         crate::virtio::Transport::Mmio {
             mmio_phys: dev.mmio_phys,
         },
         dma,
-        FRAME_SIZE,
+        FRAME_BYTES,
         None,
     )?;
     let report = crate::sched::create_rendezvous();

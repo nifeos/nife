@@ -45,7 +45,7 @@ enum's two variants.
 | fn | `has_magic(pattern: &[u8]) -> bool` |
 | fn | `literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]>` |
 | fn | `match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> (bool, usize)` |
-| const fn | `cost_bound(pattern_bytes: usize, name_bytes: usize) -> usize` |
+| const fn | `step_bound(pattern_bytes: usize, name_bytes: usize) -> usize` |
 | enum | `LeadingDot { Special, Ordinary }`, deriving `Clone`, `Copy`, `PartialEq`, `Eq`, `Debug` |
 
 No type from another crate appears in a signature, and no nife type, capability or handoff does.
@@ -64,27 +64,27 @@ What a stranger may find surprising:
 
 ## Names
 
-The move strips every `Name:` block, so the architect's ratification here is the only record the
-names get. The reading of each against `design/naming.md`:
+The architect ratified the seven names on 2026-11-20 (UTC). The move strips every `Name:` block, so
+this table is the only record the names keep. The reading of each against `design/naming.md`:
 
 | name | kind | reading | status |
 |---|---|---|---|
-| `matches` | fn, `bool` | a third-person verb phrase, as the question rule asks | as built |
-| `matches_with` | fn, `bool` | the same, with `_with` for the policy argument, as std uses it | as built |
-| `has_magic` | fn, `bool` | `has_` before a thing held; "magic" is the word shell manuals and Python's `glob` use for an unquoted wildcard | as built |
-| `literal` | fn, `Option` | a noun for what comes back, the pattern's one literal name | as built |
-| `match_steps` | fn, `(bool, usize)` | the steps of a match | as built |
-| `cost_bound` | const fn | a bound on the cost; the parameters carry the unit `_bytes` | as built |
-| `LeadingDot` | enum | says which dot the policy is about; the maintainer ruled the spelling provisionally on 2026-11-14 (UTC), and the rename is built with no `doc(alias)` of the old spelling | renamed |
+| `matches` | fn, `bool` | a third-person verb phrase, as the question rule asks | ratified as built |
+| `matches_with` | fn, `bool` | the same, with `_with` for the policy argument, as std uses it | ratified as built |
+| `has_magic` | fn, `bool` | `has_` and `is_` are for a `bool` only; "magic" is the word shell manuals and Python's `glob` use for an unquoted wildcard | ratified as built |
+| `literal` | fn, `Option` | a noun for the `Option` value that comes back, the pattern's one literal name | ratified as built |
+| `match_steps` | fn, `(bool, usize)` | the steps of a match; the tuple return stays the maintainer's provisional call, a two-way door | ratified as built |
+| `step_bound` | const fn | a bound on the steps, beside `match_steps`, stating the unit; the parameters carry the unit `_bytes`; refused `cost_bound` | ratified |
+| `LeadingDot` | enum | says which dot the policy is about; the old spelling has no `doc(alias)` | ratified |
 
-`LeadingDot::Special` and `LeadingDot::Ordinary` keep their spelling: they are the two answers.
+`LeadingDot::Special` and `LeadingDot::Ordinary` are ratified with the enum: they are the two answers.
 Prior art names the same policy by position: `FNM_PERIOD` in fnmatch, `require_literal_leading_dot`
 in rust-lang/glob, `dotglob` in bash and `GLOB_PERIOD` in glibc's `glob(3)`. At a call site,
 `matches_with(b"*", b".config", LeadingDot::Ordinary)` reads without the documentation.
 
-`script/names byte_glob` lists the crate name as ratified, the enum with a provisional block that
-records the maintainer's ruling, and the six functions with no block. The module names `tests` and
-`verification` carry provisional blocks. `helpers/name_release.py --draft byte_glob` agrees.
+`script/names byte_glob` lists the crate name, the seven public names and their blocks as ratified.
+The module names `tests` and `verification` carry provisional blocks.
+`helpers/name_release.py --draft byte_glob` agrees.
 
 ## What was run
 
@@ -123,7 +123,7 @@ Not run, and so not claimed:
 
 Six Kani harnesses in `src/verification.rs`, each with a falsification patch that turns it red.
 They quantify over every byte value of patterns and names up to three bytes, not over length.
-Matching is total under both dot rules. The step count never exceeds `cost_bound`. A pattern with
+Matching is total under both dot rules. The step count never exceeds `step_bound`. A pattern with
 no magic matches exactly itself, and `*` and `?` keep their base meanings. The dot rule touches only
 names that start with a dot, and a negated class is the exact complement of its class. The
 length-independent claims are host tests: an exhaustive cross-check against a naive matcher, and a
@@ -157,7 +157,6 @@ packet). The manifest's `publish = false` comment cites the allowlist.
 
 | item | owner |
 |---|---|
-| Ratify the seven names and clear the review. | architect |
 | Replace the citations of this tree in `src/` with sentences, and point the README and `docs/proofs.md` at the crate's own text. The dry run's `standalone` and `citations` findings are these. | move lane |
 | Give the manifest a `repository` field and a `publish = false` comment in the crate's own words. | move lane |
 | Shorten the README under the template's prose caps and fix its two passives, which the dry run reports. | move lane |
@@ -168,11 +167,12 @@ packet). The manifest's `publish = false` comment cites the allowlist.
 
 ## Open questions
 
-1. Whether `match_steps` returns a named type (`Outcome`). Recommendation: keep the tuple for the
-   first tag and record it in the README's BUGS, as built. The maintainer can decide it.
+None. `match_steps` keeps its tuple return for the first tag, recorded in the README's BUGS; the
+maintainer ruled that provisionally, and it is a two-way door.
 
 ## Recommendation
 
-Ratify the seven names as built, with the `LeadingDot` spelling the maintainer ruled provisionally, and clear `byte_glob` for its repository once the prove shard is green. The crate is small, total, has no dependency and no `unsafe`, and carries the strongest proof set of its size in the tree. The move lane's list above is mechanical. Publishing stays held.
-
-Ready for review.
+Cleared. The architect ruled on 2026-11-20 (UTC) that the seven public names stand as built, with
+`cost_bound` renamed `step_bound`, and cleared `byte_glob` for `nifeos/byte_glob` with `publish =
+false`, no tag and no publish. The move lane starts once the prove shard is green and the
+`step_bound` rename has landed. Its list above is mechanical.

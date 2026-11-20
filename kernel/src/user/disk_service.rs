@@ -78,13 +78,13 @@ pub struct Wiring {
 /// comes last so that adding it moved no virtio entry. A device is listed whether or not a server
 /// has been wired for it.
 fn devices() -> (
-    [block_roster_contract::Device; block_roster_contract::capacity_of(FRAME_SIZE as usize)],
+    [block_roster_contract::Device; block_roster_contract::capacity_of(FRAME_BYTES as usize)],
     usize,
 ) {
     let mut out = [block_roster_contract::Device {
         ordinal: 0,
         transport: block_roster_contract::TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
-    }; block_roster_contract::capacity_of(FRAME_SIZE as usize)];
+    }; block_roster_contract::capacity_of(FRAME_BYTES as usize)];
     let mut n = 0;
 
     for i in 0..crate::virtio::count_block_devices() {
@@ -124,10 +124,10 @@ fn devices() -> (
 fn roster_page() -> (u64, usize) {
     let phys = crate::memory::alloc()
         .expect("no frame for the block-device roster")
-        .addr();
+        .physical_address();
     // SAFETY: a freshly allocated frame, reachable through the direct map, owned by nobody yet.
     let page = unsafe {
-        core::slice::from_raw_parts_mut(mmu::phys_to_virt(phys) as *mut u8, FRAME_SIZE as usize)
+        core::slice::from_raw_parts_mut(mmu::phys_to_virt(phys) as *mut u8, FRAME_BYTES as usize)
     };
     page.fill(0);
     let (devs, n) = devices();
@@ -156,10 +156,10 @@ pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<
             flags: Flags::user_data(),
         }; SURVEY_EXTRA_STACK];
         for (k, m) in stack.iter_mut().enumerate() {
-            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
             m.phys = crate::memory::alloc()
                 .expect("no frame for the surveyor's stack")
-                .addr();
+                .physical_address();
         }
         crate::sched::grant_at(
             SURVEY_SLOT_REPORT,
@@ -426,10 +426,10 @@ pub fn start_partitioner(
             flags: Flags::user_data(),
         }; PARTITION_EXTRA_STACK];
         for (k, m) in stack.iter_mut().enumerate() {
-            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
             m.phys = crate::memory::alloc()
                 .expect("no frame for the partitioner's stack")
-                .addr();
+                .physical_address();
         }
         crate::sched::grant_at(
             PARTITION_SLOT_REPORT,
@@ -501,7 +501,7 @@ pub fn start_maker(
     for f in stack.iter_mut() {
         *f = crate::memory::alloc()
             .expect("no frame for the mkfs stack")
-            .addr();
+            .physical_address();
     }
 
     crate::sched::spawn(move || {
@@ -512,7 +512,7 @@ pub fn start_maker(
         }; MAKER_STACK_PAGES as usize];
         for (i, &phys) in stack.iter().enumerate() {
             maps[i] = Mapping {
-                va: USER_STACK_VA - (i as u64 + 1) * FRAME_SIZE,
+                va: USER_STACK_VA - (i as u64 + 1) * FRAME_BYTES,
                 phys,
                 flags: Flags::user_data(),
             };
@@ -567,7 +567,7 @@ impl Wiring {
         unsafe {
             core::slice::from_raw_parts(
                 mmu::phys_to_virt(self.roster_phys) as *const u8,
-                FRAME_SIZE as usize,
+                FRAME_BYTES as usize,
             )
         }
     }

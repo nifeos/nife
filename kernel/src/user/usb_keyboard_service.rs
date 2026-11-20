@@ -74,7 +74,7 @@ pub(crate) fn start(
     for frame in &mut stack {
         *frame = crate::memory::alloc_zeroed()
             .expect("no frame for the USB keyboard driver's stack")
-            .addr();
+            .physical_address();
     }
     crate::sched::spawn(move || {
         let mut maps = [Mapping {
@@ -96,8 +96,8 @@ pub(crate) fn start(
         for page in 0..MAXIMUM_REGISTER_PAGES {
             if registers & (1 << page) != 0 {
                 maps[n] = Mapping {
-                    va: REGS_VA + page * FRAME_SIZE,
-                    phys: bar0 + page * FRAME_SIZE,
+                    va: REGS_VA + page * FRAME_BYTES,
+                    phys: bar0 + page * FRAME_BYTES,
                     flags: Flags::user_device(),
                 };
                 n += 1;
@@ -105,7 +105,7 @@ pub(crate) fn start(
         }
         for (k, &frame) in stack.iter().enumerate() {
             maps[n] = Mapping {
-                va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+                va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
                 phys: frame,
                 flags: Flags::user_data(),
             };

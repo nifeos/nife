@@ -16,7 +16,7 @@ pub enum Error {
     Signature,
     /// A revision other than [`header::REVISION`](crate::header::REVISION). Refused rather than guessed at.
     Revision(u32),
-    /// `HeaderSize` outside `92 ..= block_size`.
+    /// `HeaderSize` outside `92 ..= block_bytes`.
     HeaderSize(u32),
     /// The reserved `u32` at offset 20 is not zero.
     ReservedNotZero,
@@ -41,7 +41,7 @@ pub enum Error {
         /// The bytes the caller supplied.
         have: usize,
     },
-    /// [`GloballyUniqueIdentifierPartitionTable::create`](crate::GloballyUniqueIdentifierPartitionTable::create) was handed an entry-array buffer that is
+    /// [`PartitionTable::create`](crate::PartitionTable::create) was handed an entry-array buffer that is
     /// not a whole number of 128-byte entries, or is empty. The buffer's size *is*
     /// `NumberOfPartitionEntries`, so it cannot be a fractional entry.
     EntryArrayShape {
@@ -57,22 +57,22 @@ pub enum Error {
         /// The CRC computed over the array bytes.
         computed: u32,
     },
-    /// [`GloballyUniqueIdentifierPartitionTable::parse`](crate::GloballyUniqueIdentifierPartitionTable::parse) was given a header that says it lives
+    /// [`PartitionTable::parse`](crate::PartitionTable::parse) was given a header that says it lives
     /// somewhere other than LBA 1. A backup header goes to
-    /// [`GloballyUniqueIdentifierPartitionTable::check_backup`](crate::GloballyUniqueIdentifierPartitionTable::check_backup), which knows what to compare it
+    /// [`PartitionTable::check_backup`](crate::PartitionTable::check_backup), which knows what to compare it
     /// against.
     NotPrimary {
         /// The block the header says it lives at.
-        my_lba: u64,
+        my_logical_block_address: u64,
     },
-    /// [`GloballyUniqueIdentifierPartitionTable::parse_backup`](crate::GloballyUniqueIdentifierPartitionTable::parse_backup)
+    /// [`PartitionTable::parse_backup`](crate::PartitionTable::parse_backup)
     /// was given a header that says it lives somewhere other than the last block of the disk.
     NotBackup {
         /// The block the header says it lives at.
         claimed_block: u64,
     },
     /// The disk the header describes is not the size of the device.
-    /// See [`GloballyUniqueIdentifierPartitionTable::check_disk_size`](crate::GloballyUniqueIdentifierPartitionTable::check_disk_size).
+    /// See [`PartitionTable::check_disk_size`](crate::PartitionTable::check_disk_size).
     DiskSize {
         /// The blocks the header says the disk has.
         header: u64,
@@ -90,7 +90,7 @@ pub enum Error {
     /// `FirstUsableLBA`, or `LastUsableLBA` runs into the backup array or header. A partition
     /// placed in that space would be overwritten by the next table update.
     TableOverlapsUsable,
-    /// A used entry with `last_lba < first_lba`, which is not a partition.
+    /// A used entry with `last_logical_block_address < first_logical_block_address`, which is not a partition.
     PartitionRange {
         /// The entry's zero-based index in the array.
         index: usize,
@@ -111,9 +111,12 @@ pub enum Error {
     },
     /// The backup header disagrees with the primary about something they must agree on.
     Backup(BackupMismatch),
-    /// The protective MBR at LBA 0 is wrong. See [`MbrProblem`].
-    Mbr(MbrProblem),
-    /// [`GloballyUniqueIdentifierPartitionTable::create`](crate::GloballyUniqueIdentifierPartitionTable::create) was asked to build a table on a disk with
+    /// The protective MBR at LBA 0 is wrong. See [`MasterBootRecordProblem`].
+    ///
+    /// Name: provisional.
+    #[doc(alias = "MBR")]
+    MasterBootRecord(MasterBootRecordProblem),
+    /// [`PartitionTable::create`](crate::PartitionTable::create) was asked to build a table on a disk with
     /// no room for the tables themselves.
     DiskTooSmall {
         /// The blocks the disk has.
@@ -143,15 +146,27 @@ pub enum Error {
 #[non_exhaustive]
 pub enum BackupMismatch {
     /// The backup does not think it lives where the primary says it does.
-    MyLba,
+    ///
+    /// Name: provisional.
+    #[doc(alias = "MyLBA")]
+    MyLogicalBlockAddress,
     /// The backup does not point back at the primary.
-    AlternateLba,
+    ///
+    /// Name: provisional.
+    #[doc(alias = "AlternateLBA")]
+    AlternateLogicalBlockAddress,
     /// Different disk GUIDs: these are two different disks' tables.
     DiskGuid,
     /// `FirstUsableLBA` differs.
-    FirstUsableLba,
+    ///
+    /// Name: provisional.
+    #[doc(alias = "FirstUsableLBA")]
+    FirstUsableLogicalBlockAddress,
     /// `LastUsableLBA` differs.
-    LastUsableLba,
+    ///
+    /// Name: provisional.
+    #[doc(alias = "LastUsableLBA")]
+    LastUsableLogicalBlockAddress,
     /// `NumberOfPartitionEntries` differs.
     EntryCount,
     /// `SizeOfPartitionEntry` differs.
@@ -159,29 +174,41 @@ pub enum BackupMismatch {
     /// The two copies of the entry array are not the same array.
     EntryArrayCrc,
     /// The backup's array is not immediately below the backup header, where it must be.
-    EntryArrayLba,
+    ///
+    /// Name: provisional.
+    #[doc(alias = "PartitionEntryLBA")]
+    EntryArrayLogicalBlockAddress,
 }
 
 /// What is wrong with the protective MBR.
+///
+/// Name: provisional.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 #[non_exhaustive]
-pub enum MbrProblem {
+#[doc(alias = "MBR")]
+pub enum MasterBootRecordProblem {
     /// The `0x55AA` at offset 510 is missing. Not an MBR at all.
     Signature,
     /// No partition record of type `0xEE`. A disk with a real MBR partition table and no GPT.
     NoProtectiveRecord,
     /// A second non-empty record beside the protective one: a **hybrid MBR**, where the same disk
     /// is described twice and the two descriptions can disagree. Refused deliberately; see
-    /// [`mbr::validate`](crate::mbr::validate).
+    /// [`master_boot_record::validate`](crate::master_boot_record::validate).
     ExtraRecord {
         /// The zero-based index of the extra record among the four.
         index: usize,
     },
     /// The protective record does not start at LBA 1, so it does not cover the GPT it protects.
-    StartLba(u32),
+    ///
+    /// Name: provisional.
+    #[doc(alias = "StartingLBA")]
+    StartLogicalBlockAddress(u32),
     /// The protective record's size does not cover the disk. Its whole job is to make a
     /// GPT-unaware tool see a full disk.
-    SizeLba(u32),
+    ///
+    /// Name: provisional.
+    #[doc(alias = "SizeInLBA")]
+    SizeBlocks(u32),
 }
 
 impl core::fmt::Display for Error {
@@ -217,8 +244,13 @@ impl core::fmt::Display for Error {
                     "entry array CRC {stored:#010x}, computed {computed:#010x}"
                 )
             }
-            Error::NotPrimary { my_lba } => {
-                write!(f, "header says it lives at LBA {my_lba}, not 1")
+            Error::NotPrimary {
+                my_logical_block_address,
+            } => {
+                write!(
+                    f,
+                    "header says it lives at LBA {my_logical_block_address}, not 1"
+                )
             }
             Error::NotBackup { claimed_block } => {
                 write!(
@@ -242,7 +274,7 @@ impl core::fmt::Display for Error {
             }
             Error::PartitionsOverlap { a, b } => write!(f, "partitions {a} and {b} overlap"),
             Error::Backup(m) => write!(f, "the backup header disagrees about {m}"),
-            Error::Mbr(p) => write!(f, "the protective MBR is wrong: {p}"),
+            Error::MasterBootRecord(p) => write!(f, "the protective MBR is wrong: {p}"),
             Error::DiskTooSmall { blocks, need } => {
                 write!(f, "{blocks} blocks is too small for a GPT, {need} needed")
             }
@@ -259,31 +291,33 @@ impl core::error::Error for Error {}
 impl core::fmt::Display for BackupMismatch {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.write_str(match self {
-            BackupMismatch::MyLba => "its MyLBA field",
-            BackupMismatch::AlternateLba => "its AlternateLBA field",
+            BackupMismatch::MyLogicalBlockAddress => "its MyLBA field",
+            BackupMismatch::AlternateLogicalBlockAddress => "its AlternateLBA field",
             BackupMismatch::DiskGuid => "the disk GUID",
-            BackupMismatch::FirstUsableLba => "FirstUsableLBA",
-            BackupMismatch::LastUsableLba => "LastUsableLBA",
+            BackupMismatch::FirstUsableLogicalBlockAddress => "FirstUsableLBA",
+            BackupMismatch::LastUsableLogicalBlockAddress => "LastUsableLBA",
             BackupMismatch::EntryCount => "NumberOfPartitionEntries",
             BackupMismatch::EntrySize => "SizeOfPartitionEntry",
             BackupMismatch::EntryArrayCrc => "the entry array's CRC",
-            BackupMismatch::EntryArrayLba => "where its entry array lives",
+            BackupMismatch::EntryArrayLogicalBlockAddress => "where its entry array lives",
         })
     }
 }
 
-impl core::fmt::Display for MbrProblem {
+impl core::fmt::Display for MasterBootRecordProblem {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
-            MbrProblem::Signature => f.write_str("the 0x55AA signature is missing"),
-            MbrProblem::NoProtectiveRecord => f.write_str("no record has the protective type 0xEE"),
-            MbrProblem::ExtraRecord { index } => {
+            MasterBootRecordProblem::Signature => f.write_str("the 0x55AA signature is missing"),
+            MasterBootRecordProblem::NoProtectiveRecord => {
+                f.write_str("no record has the protective type 0xEE")
+            }
+            MasterBootRecordProblem::ExtraRecord { index } => {
                 write!(f, "record {index} is a second partition: a hybrid MBR")
             }
-            MbrProblem::StartLba(n) => {
+            MasterBootRecordProblem::StartLogicalBlockAddress(n) => {
                 write!(f, "the protective record starts at LBA {n}, not 1")
             }
-            MbrProblem::SizeLba(n) => {
+            MasterBootRecordProblem::SizeBlocks(n) => {
                 write!(f, "the protective record covers {n} blocks, not the disk")
             }
         }
@@ -322,7 +356,9 @@ mod tests {
                 stored: 1,
                 computed: 2,
             },
-            Error::NotPrimary { my_lba: 9 },
+            Error::NotPrimary {
+                my_logical_block_address: 9,
+            },
             Error::NotBackup { claimed_block: 9 },
             Error::DiskSize {
                 header: 8,
@@ -334,7 +370,7 @@ mod tests {
             Error::PartitionOutsideUsable { index: 1 },
             Error::PartitionsOverlap { a: 0, b: 1 },
             Error::Backup(BackupMismatch::DiskGuid),
-            Error::Mbr(MbrProblem::Signature),
+            Error::MasterBootRecord(MasterBootRecordProblem::Signature),
             Error::DiskTooSmall {
                 blocks: 1,
                 need: 68,

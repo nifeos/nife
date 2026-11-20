@@ -75,7 +75,7 @@ fn a_spawned_least_authority_demo_computes_and_reports() {
 /// it runs out of its own budget and stops, cleanly, with the kernel untouched.
 #[test_case]
 fn a_process_spends_memory_region_and_the_kernel_never_allocates() {
-    let used = || crate::memory::stats().expect("no allocator").used;
+    let used = || crate::memory::stats().expect("no allocator").used_frames;
 
     const PAGES: u64 = 24;
     let (region, report, demo) =

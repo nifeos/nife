@@ -147,7 +147,7 @@ fn map_blob(space: &mut AddressSpace, base: u64, bytes: &[u8]) {
         let page = space
             .map_new(base + off as u64, Flags::user_read_only_data())
             .expect("could not map a login blob");
-        let n = core::cmp::min(FRAME_SIZE as usize, bytes.len() - off);
+        let n = core::cmp::min(FRAME_BYTES as usize, bytes.len() - off);
         page[..n].copy_from_slice(&bytes[off..off + n]);
         off += n;
     }
@@ -288,14 +288,14 @@ fn build_login_space(elf: &Elf<'_>, blobs: &LoginBlobs, verify_page_frame: u64) 
         .segments()
         .map(|seg| {
             let (s, e) = seg.page_range(FRAME_PAGE_BYTES);
-            (e - s) / FRAME_SIZE
+            (e - s) / FRAME_BYTES
         })
         .sum::<u64>()
         + 1 // CRED_VA
-        + caretaker.len().div_ceil(FRAME_SIZE as usize) as u64
-        + measurements.len().div_ceil(FRAME_SIZE as usize) as u64
-        + keeper.len().div_ceil(FRAME_SIZE as usize) as u64
-        + timetable.len().div_ceil(FRAME_SIZE as usize) as u64
+        + caretaker.len().div_ceil(FRAME_BYTES as usize) as u64
+        + measurements.len().div_ceil(FRAME_BYTES as usize) as u64
+        + keeper.len().div_ceil(FRAME_BYTES as usize) as u64
+        + timetable.len().div_ceil(FRAME_BYTES as usize) as u64
         + LOGIN_STACK_PAGES
         // The tables: two more than when one schedule archive sat at one address, since the two
         // images each reach a table of their own.
@@ -304,7 +304,7 @@ fn build_login_space(elf: &Elf<'_>, blobs: &LoginBlobs, verify_page_frame: u64) 
     map_segments(&mut space, elf).expect("could not lay out login");
     for k in 0..LOGIN_STACK_PAGES {
         space
-            .map_new(USER_STACK_VA - k * FRAME_SIZE, Flags::user_data())
+            .map_new(USER_STACK_VA - k * FRAME_BYTES, Flags::user_data())
             .expect("could not map login's stack");
     }
     #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]

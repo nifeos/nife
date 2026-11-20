@@ -346,7 +346,7 @@ fn the_worst_case_over_the_proof_domain_is_what_the_unwind_bounds_are_set_from()
 ///
 /// `a*a*a*...*b` against a long run of `a` with no `b` makes a recursive matcher try every
 /// split of the run between the stars. With ten stars and 100,000 bytes this one walks the name
-/// a few times, and its measured step count is under the [`cost_bound`] computed before the
+/// a few times, and its measured step count is under the [`step_bound`] computed before the
 /// match.
 #[test]
 fn the_pathological_pattern_stays_inside_its_bound() {
@@ -359,9 +359,9 @@ fn the_pathological_pattern_stays_inside_its_bound() {
     let (hit, steps) = match_steps(pattern, &name[..], LeadingDot::Ordinary);
     assert!(!hit);
     assert!(
-        steps <= cost_bound(pattern.len(), NAME_LEN),
+        steps <= step_bound(pattern.len(), NAME_LEN),
         "{steps} steps exceeded the bound {}",
-        cost_bound(pattern.len(), NAME_LEN)
+        step_bound(pattern.len(), NAME_LEN)
     );
 
     // The measured cost is linear-ish in practice, far under the quadratic bound. Asserted
@@ -384,7 +384,7 @@ fn a_star_followed_by_a_long_tail_stays_polynomial() {
 
     let (hit, steps) = match_steps(&pattern[..], &name[..], LeadingDot::Ordinary);
     assert!(!hit);
-    assert!(steps <= cost_bound(pattern.len(), NAME_LEN));
+    assert!(steps <= step_bound(pattern.len(), NAME_LEN));
 }
 
 /// Every unterminated bracket in a long pattern rescans to the end, which is the one place the
@@ -395,15 +395,15 @@ fn a_pattern_full_of_open_brackets_stays_inside_its_bound() {
     let name = [b'['; 400];
     let (hit, steps) = match_steps(&pattern[..], &name[..], LeadingDot::Ordinary);
     assert!(hit);
-    assert!(steps <= cost_bound(pattern.len(), name.len()));
+    assert!(steps <= step_bound(pattern.len(), name.len()));
 }
 
 /// The cost bound saturates instead of wrapping. A wrapped bound would be a small number, and
 /// every `steps <= bound` assertion in this file would then be checking nothing.
 #[test]
-fn the_cost_bound_saturates() {
-    assert_eq!(cost_bound(usize::MAX, usize::MAX), usize::MAX);
-    assert_eq!(cost_bound(0, 0), 6); // the empty pattern against the empty name
+fn the_step_bound_saturates() {
+    assert_eq!(step_bound(usize::MAX, usize::MAX), usize::MAX);
+    assert_eq!(step_bound(0, 0), 6); // the empty pattern against the empty name
 }
 
 /// The step count is a real measure of work, not a constant. Without this the bound assertions
@@ -422,7 +422,7 @@ fn the_step_count_grows_with_the_work() {
 
 /// **Each syntactic extra costs exactly what it scans**: a negation marker one step, an escape
 /// one step, a range's tail its two bytes, a trailing star one step. Kani proves only that the
-/// count stays under [`cost_bound`], which a counter stuck at zero satisfies; these say what it
+/// count stays under [`step_bound`], which a counter stuck at zero satisfies; these say what it
 /// counts, as differences between near-identical matches.
 ///
 /// The range is asserted twice. At the head of a one-member class `scanned` is 2 and the tail

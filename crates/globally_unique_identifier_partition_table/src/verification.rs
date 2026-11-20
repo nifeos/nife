@@ -55,12 +55,12 @@ fn a_single_byte_change_always_changes_the_crc() {
 /// Not "on a well-formed entry": there is no such qualifier, because [`Entry::decode`] judges
 /// nothing. That is what makes the property provable over every input at all, and it is why
 /// every rule about whether an entry makes sense lives in
-/// [`GloballyUniqueIdentifierPartitionTable`] instead.
+/// [`PartitionTable`] instead.
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.an_entry_survives_the_round_trip.patch`
 #[kani::proof]
 #[kani::unwind(129)]
 fn an_entry_survives_the_round_trip() {
-    let bytes: [u8; entry::SIZE] = kani::any();
+    let bytes: [u8; entry::ENTRY_BYTES] = kani::any();
     assert_eq!(Entry::decode(&bytes).encode(), bytes);
 }
 
@@ -87,17 +87,17 @@ fn a_guid_survives_the_on_disk_layout() {
 #[kani::unwind(513)]
 fn a_headers_fields_survive_the_round_trip() {
     let header = Header {
-        my_lba: kani::any(),
-        alternate_lba: kani::any(),
-        first_usable_lba: kani::any(),
-        last_usable_lba: kani::any(),
+        my_logical_block_address: kani::any(),
+        alternate_logical_block_address: kani::any(),
+        first_usable_logical_block_address: kani::any(),
+        last_usable_logical_block_address: kani::any(),
         disk_guid: Uuid::from_bytes(kani::any()),
-        entry_array_lba: kani::any(),
+        entry_array_logical_block_address: kani::any(),
         entry_count: kani::any(),
-        entry_size: kani::any(),
+        entry_bytes: kani::any(),
         entry_array_crc: kani::any(),
     };
-    let mut block = [0u8; MINIMUM_BLOCK_SIZE];
+    let mut block = [0u8; MINIMUM_BLOCK_BYTES];
     header.encode_fields(&mut block);
     assert_eq!(Header::decode_fields(&block), header);
 }
@@ -114,8 +114,8 @@ fn a_headers_fields_survive_the_round_trip() {
 #[kani::proof]
 #[kani::unwind(513)]
 fn the_header_fields_partition_the_block() {
-    let block: [u8; MINIMUM_BLOCK_SIZE] = kani::any();
-    let mut round_tripped = [0u8; MINIMUM_BLOCK_SIZE];
+    let block: [u8; MINIMUM_BLOCK_BYTES] = kani::any();
+    let mut round_tripped = [0u8; MINIMUM_BLOCK_BYTES];
     Header::decode_fields(&block).encode_fields(&mut round_tripped);
     assert_eq!(round_tripped[24..92], block[24..92]);
 }
@@ -123,7 +123,7 @@ fn the_header_fields_partition_the_block() {
 /// **Two partitions that share a block are always caught**, for every pair of ranges.
 ///
 /// Pure integer comparison, so this one is complete rather than bounded, and it is the property
-/// most easily got wrong by hand: `last_lba` is inclusive, so ranges that merely touch do
+/// most easily got wrong by hand: `last_logical_block_address` is inclusive, so ranges that merely touch do
 /// overlap. Stated as the *definition* (the intersection is non-empty) rather than as the
 /// implementation, so the proof is not the code compared with itself.
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.overlap_is_exactly_sharing_a_block.patch`
@@ -135,10 +135,22 @@ fn overlap_is_exactly_sharing_a_block() {
         kani::any(),
         kani::any(),
     );
-    let b = Entry::new(types::NIFE_DATA, Uuid::nil(), kani::any(), kani::any());
-    kani::assume(a.first_lba <= a.last_lba && b.first_lba <= b.last_lba);
+    let b = Entry::new(
+        types::LINUX_FILESYSTEM,
+        Uuid::nil(),
+        kani::any(),
+        kani::any(),
+    );
+    kani::assume(
+        a.first_logical_block_address <= a.last_logical_block_address
+            && b.first_logical_block_address <= b.last_logical_block_address,
+    );
 
-    let shared = a.first_lba.max(b.first_lba) <= a.last_lba.min(b.last_lba);
+    let shared = a
+        .first_logical_block_address
+        .max(b.first_logical_block_address)
+        <= a.last_logical_block_address
+            .min(b.last_logical_block_address);
     assert_eq!(a.overlaps(&b), shared);
     assert_eq!(a.overlaps(&b), b.overlaps(&a), "overlap is symmetric");
 
@@ -151,25 +163,25 @@ fn overlap_is_exactly_sharing_a_block() {
 /// **The writer never lays out a table its own reader would reject**, for every disk size and
 /// every partition placement.
 ///
-/// Every geometry rule [`GloballyUniqueIdentifierPartitionTable::parse`] enforces, asserted on
-/// whatever [`GloballyUniqueIdentifierPartitionTable::create`] produces when it succeeds. Stated
+/// Every geometry rule [`PartitionTable::parse`] enforces, asserted on
+/// whatever [`PartitionTable::create`] produces when it succeeds. Stated
 /// over the geometry, since a byte-level harness carries four symbolic CRC chains and does not
 /// finish; `tests/real_disks.rs` proves the bytes for `sgdisk`'s disk size, and this every other.
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.create_never_lays_out_a_table_parse_would_reject.patch`
 #[kani::proof]
 fn create_never_lays_out_a_table_parse_would_reject() {
     let part = Entry::new(
-        types::NIFE_DATA,
+        types::LINUX_FILESYSTEM,
         Uuid::from_bytes([7; 16]),
         kani::any(),
         kani::any(),
     );
     let blocks: u64 = kani::any();
 
-    let mut array = [0u8; entry::SIZE];
-    let Ok(table) = GloballyUniqueIdentifierPartitionTable::create(
+    let mut array = [0u8; entry::ENTRY_BYTES];
+    let Ok(table) = PartitionTable::create(
         Uuid::from_bytes([3; 16]),
-        MINIMUM_BLOCK_SIZE,
+        MINIMUM_BLOCK_BYTES,
         blocks,
         &[part],
         &mut array,
@@ -180,23 +192,29 @@ fn create_never_lays_out_a_table_parse_would_reject() {
     let h = table.header();
     let span = table.entry_array_blocks();
     assert_eq!(table.block_count(), blocks);
-    assert_eq!(h.my_lba, PRIMARY_HEADER_LBA);
+    assert_eq!(
+        h.my_logical_block_address,
+        PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS
+    );
 
-    // The four inequalities GloballyUniqueIdentifierPartitionTable::parse checks, in the same
+    // The four inequalities PartitionTable::parse checks, in the same
     // order.
-    assert!(h.first_usable_lba <= h.last_usable_lba);
-    assert!(h.entry_array_lba > PRIMARY_HEADER_LBA);
-    assert!(h.entry_array_lba + span <= h.first_usable_lba);
-    assert!(h.last_usable_lba + span < h.alternate_lba);
+    assert!(h.first_usable_logical_block_address <= h.last_usable_logical_block_address);
+    assert!(h.entry_array_logical_block_address > PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS);
+    assert!(h.entry_array_logical_block_address + span <= h.first_usable_logical_block_address);
+    assert!(h.last_usable_logical_block_address + span < h.alternate_logical_block_address);
 
     // And the partition it was given is inside the usable range it chose, or create refused.
-    assert!(part.first_lba >= h.first_usable_lba);
-    assert!(part.last_lba <= h.last_usable_lba);
-    assert!(part.first_lba <= part.last_lba);
+    assert!(part.first_logical_block_address >= h.first_usable_logical_block_address);
+    assert!(part.last_logical_block_address <= h.last_usable_logical_block_address);
+    assert!(part.first_logical_block_address <= part.last_logical_block_address);
 
     // The backup table lands exactly below the backup header, which is what check_backup
-    // compares the backup's own entry_array_lba against.
-    assert_eq!(table.backup_entry_lba() + span, table.backup_header_lba());
+    // compares the backup's own entry_array_logical_block_address against.
+    assert_eq!(
+        table.backup_entry_logical_block_address() + span,
+        table.backup_header_logical_block_address()
+    );
 }
 
 /// **`blocks` never panics and counts exactly**, for every pair of bounds.
@@ -213,8 +231,8 @@ fn an_entries_block_count_never_panics_and_is_exact() {
         kani::any(),
         kani::any(),
     );
-    let wide = u128::from(entry.last_lba)
-        .checked_sub(u128::from(entry.first_lba))
+    let wide = u128::from(entry.last_logical_block_address)
+        .checked_sub(u128::from(entry.first_logical_block_address))
         .map(|span| span + 1)
         .and_then(|count| u64::try_from(count).ok());
     assert_eq!(entry.blocks(), wide);

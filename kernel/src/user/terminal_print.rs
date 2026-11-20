@@ -13,7 +13,7 @@ use super::*;
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the milestone-29 tests are the callers
 pub(super) fn term_print(out: u64, ep: crate::sched::RendezvousId, text: &[u8]) {
     assert!(
-        text.len() <= FRAME_SIZE as usize,
+        text.len() <= FRAME_BYTES as usize,
         "an OPERATION_WRITE past its output page",
     );
     let base = mmu::phys_to_virt(out);

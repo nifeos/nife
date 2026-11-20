@@ -196,7 +196,7 @@ Both tests are good, both kill once moved, and moving them takes eleven of the t
 **`script/lint` now fails on a `#[test]` inside a `#[cfg(kani)]` module.** There are 22 such
 modules in the tree, and this failure mode reports a coverage it does not have.
 
-The step count is the DoS-bound contract. Kani proves only that it stays under `cost_bound`, which a
+The step count is the DoS-bound contract. Kani proves only that it stays under `step_bound`, which a
 counter stuck at zero also satisfies. So each class feature now costs exactly its own scan. And
 `[A-\]]` matches at its endpoint and resumes after the escape. A class ending in a bare escape is
 unterminated rather than a read past the end.
