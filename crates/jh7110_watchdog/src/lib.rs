@@ -287,13 +287,16 @@ pub fn discover(
     tree: &device_tree_blob::DeviceTreeBlob<'_>,
 ) -> Result<Option<Discovered>, device_tree_blob::Error> {
     for compatible in [COMPATIBLE_MAINLINE, COMPATIBLE_VENDOR] {
-        let mut reg = [device_tree_blob::Region { start: 0, size: 0 }; 1];
+        let mut reg = [device_tree_blob::Region {
+            start: 0,
+            size_bytes: 0,
+        }; 1];
         if tree.node_register_regions_compatible(compatible, &mut reg)? == 0 {
             continue;
         }
         return Ok(Some(Discovered {
             base: reg[0].start,
-            size: reg[0].size,
+            size: reg[0].size_bytes,
             compatible,
             clocks_and_resets: DevicePlan::from_specifiers(
                 tree.node_property_compatible(compatible, b"clocks")?,

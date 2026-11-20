@@ -9,8 +9,7 @@ use machine_discovery::jh7110::entropy::discover;
 
 const JH7110_TRNG_PRESENT: &[u8] = include_bytes!("fixtures/jh7110-trng-present.dtb");
 const JH7110_TRNG_VENDOR_UBOOT: &[u8] = include_bytes!("fixtures/jh7110-trng-vendor-uboot.dtb");
-const QEMU_RISCV64_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+const QEMU_RISCV64_VIRT: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt.dtb");
 
 fn tree(bytes: &[u8]) -> device_tree_blob::DeviceTreeBlob<'_> {
     device_tree_blob::DeviceTreeBlob::from_bytes(bytes).expect("fixture parses")
@@ -52,8 +51,8 @@ fn discover_finds_the_device_under_the_vendor_uboots_own_spelling() {
 
 /// **The negative case provable without hardware.** QEMU's riscv64 `virt` machine has no TRNG
 /// node, so `discover` must say so rather than match some unrelated node's `reg`. The fixture is
-/// the same `qemu-riscv64-virt.dtb` that `crates/device_tree_blob/tests/qemu_riscv64_virt.rs`
-/// verifies, so this is a claim about the tree this project runs.
+/// the same `qemu-riscv64-virt.dtb` that the `device_tree_blob` package's
+/// `tests/qemu_riscv64_virt.rs` verifies, so this is a claim about the tree this project runs.
 #[test]
 fn discover_finds_nothing_on_qemus_virt_board() {
     assert_eq!(

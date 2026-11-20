@@ -9,7 +9,7 @@ use super::*;
 const RADON: &[u8] = include_bytes!("../tests/fixtures/jh7110-watchdog-radon.dtb");
 const MAINLINE: &[u8] = include_bytes!("../tests/fixtures/jh7110-watchdog-mainline.dtb");
 const QEMU_RISCV64_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+    include_bytes!("../../machine_discovery/tests/fixtures/qemu-riscv64-virt.dtb");
 
 /// The binding radon's firmware uses is not mainline's, and its clocks and resets come from two
 /// different provider nodes. Missing either would leave the watchdog unfound or gated.

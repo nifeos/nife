@@ -424,6 +424,7 @@ source = "git+https://github.com/nifeos/designware_mobile_storage?rev=85c4e1b58b
 [[package]]
 name = "device_tree_blob"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/device_tree_blob?rev=96ad52af96e38e38577f91a787f53b789dbdda4f#96ad52af96e38e38577f91a787f53b789dbdda4f"
 
 [[package]]
 name = "device_tree_patch"
@@ -1161,6 +1162,9 @@ version = "0.1.0"
 [[package]]
 name = "pci_configuration_space"
 version = "0.1.0"
+dependencies = [
+ "device_tree_blob",
+]
 
 [[package]]
 name = "periodic_deadline"

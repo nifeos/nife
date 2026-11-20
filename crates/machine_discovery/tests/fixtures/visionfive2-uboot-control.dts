@@ -10,7 +10,7 @@
  *
  *   - the node's `compatible` is "riscv,plic0" ONLY. Neither "sifive,plic-1.0.0" nor
  *     "starfive,jh7110-plic" appears at all. QEMU virt's PLIC lists "sifive,plic-1.0.0" first
- *     (crates/device_tree_blob/tests/fixtures/qemu-riscv64-virt.dts), so a reader that only tries that string
+ *     (fixtures/qemu-riscv64-virt.dts, beside this file), so a reader that only tries that string
  *     works on QEMU and finds nothing here: `PlicContexts::from_device_tree` returned an empty
  *     map against the real tree (ctx.len() == 0), which is what sent someone to the bench with a
  *     serial cable in the first place.

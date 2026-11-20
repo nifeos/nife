@@ -213,12 +213,15 @@ pub fn discover(tree: &DeviceTreeBlob<'_>, index: u8) -> Result<Option<Slot>, Er
         return Ok(None);
     };
     for name in names {
-        let mut regions = [Region { start: 0, size: 0 }; 1];
+        let mut regions = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 1];
         if tree.node_register_regions(name, &mut regions)? == 0 {
             continue;
         }
         let prop = |p: &[u8]| tree.node_property(name, p);
-        if let Some(slot) = Slot::from_node(index, regions[0].start, regions[0].size, prop)? {
+        if let Some(slot) = Slot::from_node(index, regions[0].start, regions[0].size_bytes, prop)? {
             return Ok(Some(slot));
         }
     }

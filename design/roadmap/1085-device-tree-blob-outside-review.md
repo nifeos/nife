@@ -9,7 +9,7 @@ needs_person: yes
 ---
 # 1085. `device_tree_blob`: what an outside maintainer would fix before it leaves
 
-Raised by a read-only review of `crates/device_tree_blob` as a stranger to this tree would meet
+Raised by a read-only review of `device_tree_blob` as a stranger to this tree would meet
 it, on the assumption that the crate leaves for its own repository under the shared template
 (milestone 857 (crates released on their own), item 4). It changes nothing; it lists what the
 lanes that move the crate change, and what the kernel should take from the list whether or not the
@@ -33,9 +33,9 @@ The ids are the review's own; P0 and P1 are in [the
 appendix](1085-device-tree-blob-outside-review/before-the-tag.md), P2 in [the later
 items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Ruled decisions](#ruled-decisions).
 
-- P0-1, the manifest and files do not stand alone: Open. The manifest still inherits the workspace's
-  license and lints and reads `publish = false`; the README and both license files are missing. The
-  move writes them, and the item lapses if nife takes `dtoolkit` first.
+- P0-1, the manifest and files do not stand alone: Done, [#3833](https://github.com/nifeos/nife/pull/3833).
+  The manifest carries its license, lints and `rust-version` and reads `publish = false`, and the
+  crate has a README, both license files and a `Name:` block on every name the architect ratified.
 - P0-2, the documentation cites nife: Done, [#3612](https://github.com/nifeos/nife/pull/3612). Only
   `Name:` blocks cite it, and the move strips them.
 - P0-3, 29 refused names: Done, [#3612](https://github.com/nifeos/nife/pull/3612). The spelled-out
@@ -48,26 +48,29 @@ items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Rul
   [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-4, the walk is not confined to the structure block: Done,
   [#3559](https://github.com/nifeos/nife/pull/3559).
-- P1-5, the fuzz target does not move with the crate: Open. The target is still in nife's `fuzz/`;
-  the move stages it in the new repository with `public-crash-inputs: false`.
+- P1-5, the fuzz target does not move with the crate: Done, [#3833](https://github.com/nifeos/nife/pull/3833).
+  The target lives in the new repository, and weekly fuzzing stays off there because the crate has
+  `unsafe`.
 - P2-1 to P2-8, the error's shape, cells above two, `memory_regions` and a disabled node, the token
   loop, the proofs, the reservation overflow, `from_pointer`'s read and `from_bytes`'s trim: Done,
   [#3612](https://github.com/nifeos/nife/pull/3612).
-- P2-9, one example, and it does not run: Open. [#3612](https://github.com/nifeos/nife/pull/3612)
-  added the running doctests; the README's `## EXAMPLES` waits for P0-1.
+- P2-9, one example, and it does not run: Done, [#3612](https://github.com/nifeos/nife/pull/3612) and
+  [#3833](https://github.com/nifeos/nife/pull/3833). The doctests run, and the README's `## EXAMPLES`
+  shows the same code.
 - P2-10 to P2-13, the depth counters, `MAXIMUM_DEPTH`, a trailing partial `reg` pair and private
   names: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - D1 to D6 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
-- F-size, `Region::size` is a length with no unit: Open. `register_names` refuses it at `src/lib.rs`
-  line 26. It is two-way while unreleased, and the maintainer rules the rename provisionally; the
-  new name joins the set for ratification. The same check refuses four test names in
-  `tests/hostile.rs`, among them `SIZE_DT_STRUCT_AT` and `address_cells`, and `prose_acronyms` flags
-  UEFI, NUL, GIC, PL031, PLIC, PMIC and PMP. The move's gate pass clears these.
+- F-size, `Region::size` is a length with no unit: Done, [#3833](https://github.com/nifeos/nife/pull/3833).
+  The field is `size_bytes`, `SIZE_DT_STRUCT_AT` is `STRUCTURE_BLOCK_SIZE_OFFSET_BYTES`, and the gate pass
+  clears the other refused names and the acronyms.
 - F-dtoolkit, the switch to `dtoolkit`: Open, waiting for an upstream release; the wait is ruled,
   under [Ruled decisions](#take-dtoolkit-once-a-release-carries-the-fixes).
 - F-package, the review package: Done, [the package](../../notes/crate-reviews/device-tree-blob.md).
 - F-clearance, review clearance: Done, ruled 2026-11-20 UTC under [Ruled decisions](#clear-the-device_tree_blob-package-for-the-move).
+- F-move, the repository: Done, [#3833](https://github.com/nifeos/nife/pull/3833). The repository is
+  `nifeos/device_tree_blob`, with `publish = false`, no tag and no publication, and nife pins the
+  commit of its `main`.
 - BUGS-239: Open. Milestone 239 (radon's device tree does not describe the TRNG) gives the depth
   bound as a `MAX_DEPTH` of 16; it is `MAXIMUM_DEPTH`, 64. A lane corrects that milestone.
 
@@ -234,8 +237,7 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 
 ## Follow-on
 
-- **Outstanding.** The open lines under [Finding status](#finding-status): P0-1, P1-5, the README
-  half of P2-9, F-size, F-package, F-clearance and BUGS-239.
+- **Outstanding.** The open lines under [Finding status](#finding-status): F-dtoolkit and BUGS-239.
 
 ## BUGS
 
@@ -247,8 +249,6 @@ The checks are in [the appendix](1085-device-tree-blob-outside-review/done-when.
 - The review ran the template's helpers from a checkout of the template, not from a crate
   repository with its own ceilings. A repository created from the scaffold starts at a ceiling of
   zero, which is what the counts above assume.
-- If the ruling to take `dtoolkit` lands before this crate moves, P0-1, P1-5 and the README half
-  of P2-9 lapse.
 - `abbreviations.py` reports `formatter`, `core::fmt`'s word.
 
 ## Index row

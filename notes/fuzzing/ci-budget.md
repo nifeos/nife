@@ -16,7 +16,7 @@ Why sixty seconds. Measured rather than felt. Ten minutes on each target, on the
 | **total** | **317,296,022** | |
 
 The targets were named `gpt_table` and `dtb_walk` when this table was measured; they have been
-`globally_unique_identifier_partition_table` and `device_tree_blob_walk` since calef's 2026-09-19
+`globally_unique_identifier_partition_table` and `device_tree_blob_walk` (since moved with its crate) since calef's 2026-09-19
 ruling that a fuzz target follows the crate it fuzzes. The rows keep the names the run printed.
 
 The spread is the shape of each parser rather than noise: `elf_parse` rejects most inputs in its first
@@ -46,7 +46,7 @@ way with a fifteen-minute budget, it found the panic after 13,124,546 executions
 minutes, which is the same order as the original discovery.
 
 So the sixty-second job is a sweep, not a guarantee, and a bug of this depth is outside it. **What
-actually keeps these two bugs from coming back is `crates/device_tree_blob/tests/hostile.rs`**,
+actually keeps these two bugs from coming back is the `device_tree_blob` package's `tests/hostile.rs`**,
 which runs in milliseconds on every `script/test` on both ISAs. That is the division of labor: the
 fuzzer finds things once, and a host test holds them forever. A CI fuzz job that had to catch every
 regression it ever found would need a budget nobody would pay.

@@ -2679,10 +2679,6 @@ REGISTRY = {
         'how many Kani proof harnesses crates/page_frames carries',
         lambda: _harness_hits().get('page_frames', 0),
     ),
-    'device-tree-blob-harnesses': (
-        'how many Kani proof harnesses crates/device_tree_blob carries',
-        lambda: _harness_hits().get('device_tree_blob', 0),
-    ),
     'inter-process-communication-harnesses': (
         'how many Kani proof harnesses crates/inter_process_communication carries',
         lambda: _harness_hits().get('inter_process_communication', 0),

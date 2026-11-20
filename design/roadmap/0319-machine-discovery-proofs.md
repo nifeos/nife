@@ -130,7 +130,7 @@ Risk 2's retrospective is specific about how this goes wrong, so the refusals ar
 implied.
 
 - `interrupt_id`, `cpu_list` and `plic`'s real logic needs a symbolic `Dtb`, which is the wall
-  `crates/device_tree_blob` already records for its own structure-block token loop and `crates/elf` records for the
+  the `device_tree_blob` package already records for its own structure-block token loop and `crates/elf` records for the
   loader. Their leaf decoders (`be32_word`, `hwid_from_reg`, `cells_to_u64`, `is_okay`) are written
   with `get`, `>=` guards and `checked_mul` already, so a totality harness over any of them is
   `capability_table::subset_is_reflexive`'s cousin: true of every plausible implementation, and evidence of
@@ -220,7 +220,7 @@ second half of the work rather than an afterthought.
 ## Names
 
 Every harness name here is **provisional**, along with the four `verification` module names. calef
-names things. The module name follows `crates/device_tree_blob`'s and `crates/capability_table`'s existing spelling so
+names things. The module name follows the `device_tree_blob` package's and `crates/capability_table`'s existing spelling so
 the `<module.path>.<harness>.patch` convention in DECISIONS §134 needs no special case.
 
 ## Follow-on
@@ -242,7 +242,7 @@ in a tracked form:
    which it was. `cargo mutants --list` will not find it, because the mutation is in the type rather
    than in the expression. A `git grep` for specification fields documented as "one less than" is
    cheap and is not this lane's.
-- **Milestone 323.**. `crates/device_tree_blob`'s four harnesses are all `unfalsified`. They are the sibling this lane was argued
+- **Milestone 323.** Milestone 323 (the falsification record is incomplete in five ways) found the four harnesses of the `device_tree_blob` package all `unfalsified`. They are the sibling this lane was argued
    from, and the argument cuts both ways: a harness with no falsification record is counted as
    `unfalsified` and says so. Four patches is an afternoon.
 

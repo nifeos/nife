@@ -2,7 +2,7 @@
 //!
 //! The crate decides what each byte means, host-tested; this file turns the physical address the
 //! loader put in `ebx` into bytes through the direct map, as `console.rs` and `memory.rs` do with
-//! `crates/device_tree_blob`. `memory::initialize` reaches it through `arch::x86_64::discovery`,
+//! the `device_tree_blob` package. `memory::initialize` reaches it through `arch::x86_64::discovery`,
 //! which owns the order: the handoff, ACPI, the device windows, PCI, then [`bring_up_memory`].
 //!
 //! The CMOS RTC crosses no seam: it is two fixed I/O ports, not a page, so `memory::RTC_REGION`
@@ -748,7 +748,10 @@ const LOW_MEGABYTE: u64 = 0x0010_0000;
 /// than [`MAXIMUM_RAM_REGIONS`] gets the first that many, and saying how many were taken is what
 /// makes that visible rather than silent.
 pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
-    let mut ram = [device_tree_blob::Region { start: 0, size: 0 }; MAXIMUM_RAM_REGIONS];
+    let mut ram = [device_tree_blob::Region {
+        start: 0,
+        size_bytes: 0,
+    }; MAXIMUM_RAM_REGIONS];
     let mut count = 0;
 
     for i in 0..info.memmap_entries as usize {
@@ -771,7 +774,7 @@ pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
         }
         ram[count] = device_tree_blob::Region {
             start,
-            size: end - start,
+            size_bytes: end - start,
         };
         count += 1;
     }
@@ -779,16 +782,19 @@ pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
     // Each reservation is fatal to miss: the image includes the boot page tables the CPU walks
     // (`.boot_scratch` lies inside its bounds), and the ramdisk sits in RAM the loader left
     // unreserved. The array is sliced to its count, since a zero `Region` would also be taken.
-    let mut forbidden = [device_tree_blob::Region { start: 0, size: 0 }; 3];
+    let mut forbidden = [device_tree_blob::Region {
+        start: 0,
+        size_bytes: 0,
+    }; 3];
     forbidden[0] = device_tree_blob::Region {
         start: crate::memory::image_start(),
-        size: crate::memory::image_end() - crate::memory::image_start(),
+        size_bytes: crate::memory::image_end() - crate::memory::image_start(),
     };
     let mut forbidden_count = 1;
     if let Some(m) = initial_ramdisk(info) {
         forbidden[forbidden_count] = device_tree_blob::Region {
             start: m.addr,
-            size: m.size,
+            size_bytes: m.size,
         };
         forbidden_count += 1;
         crate::memory::record_initial_ramdisk(m.addr, m.size);
@@ -798,7 +804,7 @@ pub(crate) fn bring_up_memory(info: &BootInfo) -> usize {
     if let Some(m) = boot_file(info) {
         forbidden[forbidden_count] = device_tree_blob::Region {
             start: m.addr,
-            size: m.size,
+            size_bytes: m.size,
         };
         forbidden_count += 1;
         crate::memory::record_boot_file(m.addr, m.size);

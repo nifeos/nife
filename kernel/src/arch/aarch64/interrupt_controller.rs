@@ -221,7 +221,7 @@ pub fn initialize() {
             // SAFETY: the tree named a GICv3 here, its distributor confirmed it, and the
             // distributor
             // and the whole redistributor region are mapped device memory that nothing else drives.
-            unsafe { gicv3::initialize(gicd, second_virt, second.size) };
+            unsafe { gicv3::initialize(gicd, second_virt, second.size_bytes) };
             initialize_this_cpu();
         }
     }

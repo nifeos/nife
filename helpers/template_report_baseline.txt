@@ -56,9 +56,6 @@ credentialer readme_acronyms 2
 credentialer register_names 4
 current_cpu_contract abbreviations 2
 designware_inter_integrated_circuit abbreviations 2
-device_tree_blob abbreviations 8
-device_tree_blob prose_acronyms 7
-device_tree_blob register_names 1
 device_tree_patch abbreviations 72
 device_tree_patch prose_acronyms 4
 device_tree_patch register_names 4

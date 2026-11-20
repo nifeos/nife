@@ -15,8 +15,7 @@ const VENDOR: &[u8] = include_bytes!("fixtures/jh7110-gmac-vendor.dtb");
 const MAINLINE: &[u8] = include_bytes!("fixtures/jh7110-gmac-mainline.dtb");
 const ONE_DELAY: &[u8] = include_bytes!("fixtures/jh7110-gmac-one-delay.dtb");
 const VENDOR_ADDRESSED: &[u8] = include_bytes!("fixtures/jh7110-gmac-vendor-addressed.dtb");
-const QEMU_RISCV64_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+const QEMU_RISCV64_VIRT: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt.dtb");
 
 fn tree(bytes: &[u8]) -> device_tree_blob::DeviceTreeBlob<'_> {
     device_tree_blob::DeviceTreeBlob::from_bytes(bytes).expect("fixture parses")

@@ -41,7 +41,10 @@ fn the_th1520_plic_is_found_and_its_s_contexts_are_2h_plus_1() {
 #[test]
 fn the_th1520_plic_register_block_is_found_40_bits_up() {
     let dt = tree(TH1520);
-    let mut plic = [Region { start: 0, size: 0 }; 1];
+    let mut plic = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 1];
     let found = COMPATIBLES
         .iter()
         .any(|c| matches!(dt.node_register_regions_compatible(c, &mut plic), Ok(n) if n >= 1));
@@ -50,7 +53,7 @@ fn the_th1520_plic_register_block_is_found_40_bits_up() {
         "no compatible in the shared list names the TH1520's PLIC"
     );
     assert_eq!(plic[0].start, 0xff_d800_0000);
-    assert_eq!(plic[0].size, 0x0100_0000);
+    assert_eq!(plic[0].size_bytes, 0x0100_0000);
 
     const SV39_HIGH_HALF: u64 = 1 << 38;
     assert!(

@@ -25,7 +25,7 @@ warning and too loose for a plan.
 QEMU `virt` states `method = "hvc"`, so for a while it looked as though the other branch could only
 be exercised by hand-writing a tree. It cannot, quite. `-machine virt,virtualization=on` puts
 something at EL2 and QEMU's own PSCI moves to EL3, so the same board, one option different, states
-`smc`. That dump is `crates/device_tree_blob/tests/fixtures/qemu-aarch64-virt-smc.dtb`. The host
+`smc`. That dump is `crates/machine_discovery/tests/fixtures/qemu-aarch64-virt-smc.dtb`. The host
 test that compares the two is the whole finding in one assertion: the conduit is not a property of
 aarch64, of QEMU, or of the `virt` board.
 
