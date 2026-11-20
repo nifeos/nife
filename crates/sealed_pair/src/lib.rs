@@ -14,8 +14,6 @@
 //! - `nifefs::write_image` does not refuse duplicate names, and an entry whose name is not UTF-8 is
 //!   skipped: the first duplicate is hashed twice and the second never, and neither can be read by
 //!   the kernel, so the verdict is right and the dead bytes go unreported.
-//! - In the stick path the haystack contains the archive, so an archive entry that embedded another
-//!   entry's raw digest would make a pair read as vouched with no digest in the kernel. No entry does.
 //! - It asks whether a digest is present, not whether the kernel checks it; notes/sealed-pair.md.
 //!
 //! Name: provisional: the thing (a sealed pair), not the act. Refused `card_check` (three of the
@@ -484,14 +482,11 @@ fn inspect_table(fs: &nifefs::Fs<'_>) -> TableSeal {
             continue;
         }
         let bytes = fs.read(name).unwrap_or_default();
-        let have = measured_boot::sha256(bytes);
-        match listed.iter().find(|(n, _)| *n == name) {
-            None => disagreements.push(TableDisagreement::Unlisted(name.to_string())),
-            Some((_, want)) if *want != have => {
-                disagreements.push(TableDisagreement::Changed(name.to_string()));
-            }
-            Some(_) => {}
-        }
+        disagreements.extend(entry_disagreement(
+            &listed,
+            name,
+            measured_boot::sha256(bytes),
+        ));
     }
     for (name, _) in &listed {
         if fs.read(name).is_none() {
@@ -507,21 +502,46 @@ fn inspect_table(fs: &nifefs::Fs<'_>) -> TableSeal {
     TableSeal::Checked { disagreements }
 }
 
+/// Does the table describe this archive entry? `have` is the digest of the entry's bytes. `None`
+/// when the table lists the entry with `have`; `Unlisted` when it does not list the entry;
+/// `Changed` when it lists a different digest.
+fn entry_disagreement(
+    listed: &[(&str, Digest)],
+    name: &str,
+    have: Digest,
+) -> Option<TableDisagreement> {
+    match listed.iter().find(|(n, _)| *n == name) {
+        None => Some(TableDisagreement::Unlisted(name.to_string())),
+        Some((_, want)) if *want != have => Some(TableDisagreement::Changed(name.to_string())),
+        Some(_) => None,
+    }
+}
+
 /// **Find the archive inside a single boot file** (the UEFI stick's one file per
-/// architecture, milestone 441 (the program that makes the stick)).
+/// architecture, milestone 441 (the program that makes the stick)), and return where it lies.
 ///
 /// The stick carries no separate archive: `uefi_loader` embeds both halves, so a reader that wants
 /// to judge the pair has to find the archive by its magic. Every occurrence is tried, because the
 /// kernel is embedded in the same file and carries `nifefs::MAGIC` as a constant of its own; the
 /// first one that parses and holds a `progenitor` is the archive.
-pub fn embedded_archive(blob: &[u8]) -> Option<&[u8]> {
+///
+/// The result is the archive's span in `blob`: from its magic to the end of its last entry. A
+/// reader that searches the rest of the file for the trust root's digests must search only the
+/// bytes outside the span, since an archive entry that embedded another entry's raw digest would
+/// otherwise vouch for it.
+pub fn embedded_archive(blob: &[u8]) -> Option<std::ops::Range<usize>> {
     blob.windows(nifefs::MAGIC.len())
         .enumerate()
         .filter(|(_, w)| *w == nifefs::MAGIC)
-        .map(|(at, _)| &blob[at..])
-        .find(|candidate| {
-            nifefs::Fs::parse(candidate)
-                .is_ok_and(|fs| fs.read(measured_boot::PROGENITOR).is_some())
+        .find_map(|(at, _)| {
+            let candidate = &blob[at..];
+            let parsed = nifefs::Fs::parse(candidate).ok()?;
+            parsed.read(measured_boot::PROGENITOR)?;
+            let end = parsed
+                .entries()
+                .map(|e| e.start_block as usize * nifefs::BLOCK + e.len as usize)
+                .fold(nifefs::DIR_BLOCKS * nifefs::BLOCK, usize::max);
+            Some(at..at + end)
         })
 }
 
@@ -650,6 +670,37 @@ mod verification {
             at += 1;
         }
         assert_eq!(contains(&haystack, &needle), there);
+    }
+
+    /// **A table line vouches for an entry exactly when its digest is the entry's own.** The table
+    /// comparison reports `Changed` for an entry the table lists with a digest that is not the
+    /// entry's digest, and nothing for one it lists with that digest. The reference answer compares
+    /// the two digests one byte at a time, so the proof does not restate the array comparison
+    /// under proof. The entry's digest is an input here (hashing is `measured_boot`'s, proved
+    /// there); both digests are any 32 bytes.
+    ///
+    /// Falsification: replayable `crates/sealed_pair/falsifications/verification.a_table_line_vouches_for_an_entry_exactly_when_the_digests_are_equal.patch`
+    #[kani::proof]
+    #[kani::unwind(35)]
+    fn a_table_line_vouches_for_an_entry_exactly_when_the_digests_are_equal() {
+        let want: Digest = kani::any();
+        let have: Digest = kani::any();
+        let listed = [("progenitor", want)];
+        let mut same = true;
+        let mut i = 0;
+        while i < 32 {
+            same &= want[i] == have[i];
+            i += 1;
+        }
+        let found = entry_disagreement(&listed, "progenitor", have);
+        if same {
+            assert_eq!(found, None);
+        } else {
+            assert_eq!(
+                found,
+                Some(TableDisagreement::Changed("progenitor".to_string()))
+            );
+        }
     }
 }
 
@@ -951,8 +1002,22 @@ mod tests {
         blob.extend_from_slice(&kernel);
         blob.extend_from_slice(&archive);
 
-        let found = embedded_archive(&blob).expect("the archive is in there");
-        let seal = inspect(&blob, found).expect("readable");
+        let span = embedded_archive(&blob).expect("the archive is in there");
+        // The span ends at the last entry's last byte; the packed image may pad past it.
+        assert!(archive.starts_with(&blob[span.clone()]));
+        assert!(span.len() > nifefs::DIR_BLOCKS * nifefs::BLOCK);
+        // The span reaches exactly the end of the furthest entry, so a change to how an entry's
+        // end is computed (start block times block size plus length) moves it.
+        let parsed = nifefs::Fs::parse(&archive).expect("an archive");
+        let furthest = parsed
+            .entries()
+            .map(|e| e.start_block as usize * nifefs::BLOCK + e.len as usize)
+            .max()
+            .expect("the archive has entries");
+        assert!(furthest > nifefs::DIR_BLOCKS * nifefs::BLOCK);
+        assert_eq!(span.len(), furthest);
+        assert_eq!(span.start, blob.len() - archive.len());
+        let seal = inspect(&blob, &blob[span]).expect("readable");
         assert!(seal.is_sealed(), "{seal:?}");
     }
 }
