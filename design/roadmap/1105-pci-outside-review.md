@@ -140,7 +140,7 @@ crate cannot leave.**
 Where: `crates/pci_configuration_space/Cargo.toml` lines 12 to 15; `crates/pci_configuration_space/tests/qemu_virt_dtb.rs` lines 17 to 18, 52 and 147 to 148.
 Why: the rule a crate leaves under is that every crate it links has left or leaves with it, and no
 file in it names a nife path. `device_tree_blob` has no move plan the review could find
-(unverified), and the two `include_bytes!` reach into `crates/device_tree_blob/tests/fixtures/` and
+(unverified), and the two `include_bytes!` reach into `crates/machine_discovery/tests/fixtures/` and
 `crates/machine_discovery/tests/fixtures/`. The five tests are also kernel witnesses, not crate
 tests: they pin `PCI_ECAM_BASE`, `PCI_BAR_BASE` and `PCI_INTERRUPT_NUMBER_BASE` (32 and 35) from
 `kernel/src/arch/*/mmu.rs`, and the reads `memory::initialize` performs, none of which a stranger

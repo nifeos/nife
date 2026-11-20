@@ -39,7 +39,7 @@ So the two tools divide on one line:
 | Verdict on success | a proof | "not yet" |
 
 The place where they meet is the bound. In this tree the proved leaf and the unproved shell of
-`crates/static_elf`, the proved leaf readers and unproved walkers of `crates/device_tree_blob`, and
+`crates/static_elf`, the proved leaf readers and unproved walkers of the `device_tree_blob` package, and
 `crates/nifefs`'s writer and reader agreeing (a property nobody had written down) are the three
 worked examples, in [fuzzing/kani-and-fuzzing.md](fuzzing/kani-and-fuzzing.md).
 
@@ -124,7 +124,7 @@ second, so a minute buys at least a million inputs per target from a corpus alre
 magic-number check. But the sweep is shallow. With both `device_tree_blob` fixes reverted, sixty
 seconds from the committed seeds found nothing, and fifteen minutes found the overflow after 13.1
 million executions. What keeps those bugs from coming back is
-`crates/device_tree_blob/tests/hostile.rs`, which runs on every `script/test`: the fuzzer finds
+the `device_tree_blob` package's `tests/hostile.rs`, which runs on every `script/test`: the fuzzer finds
 things once, and a host test holds them forever. The measurements are in
 [fuzzing/ci-budget.md](fuzzing/ci-budget.md).
 
@@ -147,7 +147,7 @@ Three kinds of input, and they are kept apart because they have different reason
 Seeds are committed, and they are read-only. A fuzzer starting from `[]` spends its first
 minutes rediscovering that a device tree begins `d0 0d fe ed`, and with a sixty-second budget never
 gets past the magic check. Where the tree already holds real inputs, such as the three device trees
-in `crates/device_tree_blob/tests/fixtures/`, `script/fuzz` passes that directory to libFuzzer as an
+in `crates/machine_discovery/tests/fixtures/`, `script/fuzz` passes that directory to libFuzzer as an
 extra corpus; a copy under `fuzz/` would drift from it. [fuzz/seeds/README.md](../fuzz/seeds/README.md)
 lists each target's seeds.
 
@@ -174,7 +174,7 @@ It is machine-generated, machine-specific, and unbounded.
 **Crash artifacts are not committed either**, and that is the discipline rather than an omission.
 When a target finds a crash, the input becomes a host test in the crate that owns the bug, where
 it runs in milliseconds on every `script/test` forever and where a reader meets it next to the code.
-`crates/device_tree_blob/tests/hostile.rs` and `nifefs`'s `a_name_with_a_nul_in_it_is_refused` are
+the `device_tree_blob` package's `tests/hostile.rs` and `nifefs`'s `a_name_with_a_nul_in_it_is_refused` are
 the two written this way. A hand-built 200-byte blob with a docstring explaining what it attacks is
 worth more than a 7,642-byte artifact named after its SHA-1.
 
@@ -265,7 +265,7 @@ sixty seconds. Nothing here is a proof, and nothing here should be quoted as one
 notes/verification.md and they say what they cover.
 
 **The CI job would not re-find either `device_tree_blob` bug.** Measured, not assumed, under "The
-CI job, and its budget" above. The regression guard is `crates/device_tree_blob/tests/hostile.rs`.
+CI job, and its budget" above. The regression guard is the `device_tree_blob` package's `tests/hostile.rs`.
 
 Only panics and hangs are caught, plus whatever a target asserts. A parser that returns the
 *wrong answer* without panicking is invisible to `device_tree_blob_walk`, `elf_parse` and

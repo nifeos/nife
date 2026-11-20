@@ -183,7 +183,7 @@ designware_mobile_storage = { version = "0.1.0-pre.2", git = "https://github.com
 # Sector 0 of a card: the MBR's partition entries and the scratch range before the first partition
 # (`kernel/src/storage_bench_steps.rs`). It left `designware_mobile_storage` for a crate of its own.
 master_boot_record = { version = "0.1.0", path = "../crates/master_boot_record" }
-device_tree_blob = { version = "0.1.0", path = "../crates/device_tree_blob" }
+device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_tree_blob", rev = "833cb330854a51d684e210b5706ac7f7e12aa1ac" }
 pci_configuration_space = { version = "0.1.0", path = "../crates/pci_configuration_space" }
 # The `e1000e` NIC family's register map, descriptors and ring logic (milestone 494 (a driver for the
 # network card a PC actually has)): the kernel resets the device and programs the rings' bases from

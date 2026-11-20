@@ -97,11 +97,11 @@ state lives one level down in `clock_proto` for anything that wants to check fir
 `arm,pl031` at `0x9010000` (one 32-bit register, seconds) on aarch64 `virt`;
 `google,goldfish-rtc` at `0x101000` (two 32-bit registers, nanoseconds, low first because it
 latches high) on riscv64 `virt`. Both are in the one portable `clock` binary on both ISAs, both take
-a base address and know nothing else (rule 2), and both are found through `crates/device_tree_blob`.
+a base address and know nothing else (rule 2), and both are found through the `device_tree_blob` package.
 
 **Discovery is by `compatible`, not by node name**, and this is where that shortcut finally ran out:
 the aarch64 board calls the node `pl031@9010000` and the RISC-V board calls its RTC `rtc@101000`, so
-no name prefix finds both. `DeviceTreeBlob::node_reg_compatible` (in `crates/device_tree_blob` since 2026-09-19) is new for this, and `node_reg`'s own comment
+no name prefix finds both. `DeviceTreeBlob::node_reg_compatible` (in the `device_tree_blob` package since 2026-09-19) is new for this, and `node_reg`'s own comment
 had predicted needing it. The kernel passes the *binding* to the service at spawn, so the driver
 picks its register layout from what the machine said rather than from `target_arch`. That matters
 concretely rather than theoretically: the VisionFive 2 is riscv64 and has neither device, so an

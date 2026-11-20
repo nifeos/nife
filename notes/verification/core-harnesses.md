@@ -113,9 +113,9 @@ through `new`, which fills the bitmap all-used; the `mark_free` harness starts f
 state by hand. The scan loops are bounded by pinning `total = 8`, so
 `unwind(9)` suffices.
 
-## `crates/device_tree_blob`
+## The `device_tree_blob` package
 
-Nine in `crates/device_tree_blob/src/lib.rs` <!--count:device-tree-blob-harnesses-->, the device-tree parser's readers. The
+Nine in the `device_tree_blob` package's `src/lib.rs`, the device-tree parser's readers. The
 leaf harnesses cover every input; above them, the `from_bytes` and token-step harnesses cover blobs
 of a bounded size, and the tests and the fuzz target carry the whole walk.
 

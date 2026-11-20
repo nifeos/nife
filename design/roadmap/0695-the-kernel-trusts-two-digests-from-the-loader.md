@@ -17,7 +17,7 @@ root leaves the kernel binary). §235 (the OS is built and updated from packages
 2026-09-27 (UTC), T4 with T2. This block is the boot-path half; 697 is the build half and holds the
 measurements.
 
-Reuse: `crates/measured_boot`'s digest text, `crates/device_tree_blob`'s `/chosen` walk,
+Reuse: `crates/measured_boot`'s digest text, the `device_tree_blob` package's `/chosen` walk,
 `crates/device_tree_patch`'s rewrite, `uefi_loader`'s command-line writer and build script, and the
 three QEMU runners. One new crate, `crates/base_digest_contract`, written because the page it
 defines is new boot ABI that the kernel and the progenitor must share (§311 (a contract is code,

@@ -199,7 +199,7 @@ ids already reveal.
   how a badge's approval is resolved (`with_approval`), including who may delegate `--within`.
 - `xtask/src/base_image.rs` beyond its approval and manifest paths, and basalt itself.
 - `crates/initial_ramdisk_writer`, a host tool whose output the loader already parses, and
-  `crates/device_tree_blob`, the reader the patcher checks its output with.
+  the `device_tree_blob` package, the reader the patcher checks its output with.
 - `components/src/swapper.rs` beyond its diff, and why the base image carries `swapper` when its
   servers are fixtures.
 - `system_initializer`'s spawn loop, which chooses the ELF that reaches the process builder, and the

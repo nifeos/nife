@@ -11,8 +11,7 @@
 use device_tree_blob::{DeviceTreeBlob, Region};
 use machine_discovery::gic::{self, Gic, Mismatch, Refusal};
 
-const QEMU_GICV2: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-aarch64-virt-smp4.dtb");
+const QEMU_GICV2: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-smp4.dtb");
 const QEMU_GICV3: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-gicv3.dtb");
 const QEMU_GICV3_HVF: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-gicv3-hvf.dtb");
 const QEMU_RISCV: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt-smp4.dtb");

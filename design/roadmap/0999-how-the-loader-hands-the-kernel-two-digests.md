@@ -17,7 +17,7 @@ Two questions came to an architect before any of that code could finish. This fi
 order, one at a time. Both were decided on 2026-11-01 (UTC).
 
 Reuse: `crates/measured_boot`'s digest text (`sha256:<hex>`, the grammar of the measurement table),
-`crates/device_tree_blob`'s `/chosen` reader, `uefi_loader`'s device-tree patch and command-line
+the `device_tree_blob` package's `/chosen` reader, `uefi_loader`'s device-tree patch and command-line
 writer, and `boot_slot`'s header. No new dependency.
 
 ## What is measured, and what it says

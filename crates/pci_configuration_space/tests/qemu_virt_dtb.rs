@@ -14,7 +14,7 @@ use device_tree_blob::{DeviceTreeBlob, Region};
 use pci_configuration_space::{intx_interrupt_number, mem32_window};
 
 const QEMU_RISCV_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+    include_bytes!("../../machine_discovery/tests/fixtures/qemu-riscv64-virt.dtb");
 
 /// The discovery `memory::initialize` performs, over the riscv `virt` tree: the node found by its
 /// binding, the ECAM window from its `reg`, the BAR window from its `ranges`. The pinned values
@@ -117,7 +117,7 @@ fn the_intx_swizzle_matches_the_interrupt_map() {
 }
 
 const QEMU_AARCH64_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-aarch64-virt.dtb");
+    include_bytes!("../../machine_discovery/tests/fixtures/qemu-aarch64-virt.dtb");
 
 /// The aarch64 discovery, same claim as the riscv one, with the machine's own twist: the ECAM is
 /// the **highmem** window. The node is named `pcie@10000000` (the low MMIO base) but its `reg`

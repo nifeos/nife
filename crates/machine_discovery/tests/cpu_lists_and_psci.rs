@@ -13,15 +13,12 @@ use machine_discovery::aarch64::{Conduit, PSCI_CPU_ON_64, Psci};
 use machine_discovery::cpu_list::{CpuList, EnableMethod, MAXIMUM_CPU_NODES};
 
 /// The machine `script/test` boots on aarch64, at the `-smp 4` the runner passes.
-const QEMU_VIRT_SMP4: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-aarch64-virt-smp4.dtb");
+const QEMU_VIRT_SMP4: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-smp4.dtb");
 /// The same board with `virtualization=on`, which moves the conduit to `smc`.
-const QEMU_VIRT_SMC: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-aarch64-virt-smc.dtb");
+const QEMU_VIRT_SMC: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-smc.dtb");
 /// The RISC-V machine, borrowed rather than copied so a regenerated tree cannot leave two crates
 /// testing different bytes.
-const QEMU_RISCV: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+const QEMU_RISCV: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt.dtb");
 const CLUSTERED: &[u8] = include_bytes!("fixtures/clustered-cpus.dtb");
 const NO_PSCI: &[u8] = include_bytes!("fixtures/no-psci.dtb");
 /// Eighteen cores, a `/cpus` whose `#address-cells` is two bytes rather than four, one `reg` of

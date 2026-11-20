@@ -23,7 +23,7 @@ bench = false
 # this file; the payload prints whichever commit it was built against.
 jh7110_entropy = { version = "0.2.0", git = "https://github.com/nifeos/jh7110_entropy", rev = "ee0bde8feb9f78a67da011c928f9a2a697f3bbc1" }
 jh7110_clock_and_reset = { path = "../../crates/jh7110_clock_and_reset" }
-device_tree_blob = { path = "../../crates/device_tree_blob" }
+device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_tree_blob", rev = "833cb330854a51d684e210b5706ac7f7e12aa1ac" }
 
 [features]
 # Replaces the register window with a software model of the block, so the whole run, the log and

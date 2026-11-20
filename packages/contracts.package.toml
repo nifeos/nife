@@ -62,7 +62,6 @@ interfaces = [
     # storage bench links it; it left `designware_mobile_storage`).
     "master_boot_record",
     "documentation",
-    "device_tree_blob",
     "machine_discovery",
     "boot_ladder",
     "test_times",

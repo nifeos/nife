@@ -2,7 +2,7 @@
 //!
 //! The crate decides what each byte means, host-tested; this file turns the physical address the
 //! loader put in `ebx` into bytes through the direct map, as `console.rs` and `memory.rs` do with
-//! `crates/device_tree_blob`. `memory::initialize` reaches it through `arch::x86_64::discovery`,
+//! the `device_tree_blob` package. `memory::initialize` reaches it through `arch::x86_64::discovery`,
 //! which owns the order: the handoff, ACPI, the device windows, PCI, then [`bring_up_memory`].
 //!
 //! The CMOS RTC crosses no seam: it is two fixed I/O ports, not a page, so `memory::RTC_REGION`

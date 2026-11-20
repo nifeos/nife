@@ -436,7 +436,7 @@ mod tests {
 
     #[test]
     fn qemu_s_tree_has_no_port() {
-        let blob = include_bytes!("../../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+        let blob = include_bytes!("../../tests/fixtures/qemu-riscv64-virt.dtb");
         let tree = DeviceTreeBlob::from_bytes(blob).unwrap();
         for number in [PortNumber::Zero, PortNumber::One] {
             assert_eq!(discover(&tree, number).unwrap(), None);

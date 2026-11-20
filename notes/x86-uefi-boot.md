@@ -48,7 +48,7 @@ The pieces:
 
 - `uefi_loader/src/lib.rs` and its three modules are the pure half: the firmware table layouts
   (`efi`), the `hvm_start_info` writer (`handoff`), and the physical-address ELF reading (`image`).
-  All of it compiles for the host and is tested there, for the reason `crates/device_tree_blob` and
+  All of it compiles for the host and is tested there, for the reason the `device_tree_blob` package and
   `machine_discovery` exist rather than living inside `arch/`: a structure layout proved only by
   booting is proved by nothing that runs in milliseconds.
 - `uefi_loader/src/main.rs` is the half that cannot be: it calls firmware and it changes CPU

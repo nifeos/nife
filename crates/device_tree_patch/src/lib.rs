@@ -9,7 +9,7 @@
 //! loader places the archive itself and is expected to say so. This is the Linux EFI stub's job
 //! (`drivers/firmware/efi/libstub/fdt.c`, recalled, not read) in its smallest form. The format is
 //! the Devicetree Specification v0.4, chapter 5, and every test decodes the output with
-//! `crates/device_tree_blob`, the crate the kernel decodes with, so the two cannot drift apart.
+//! `device_tree_blob`, the package the kernel decodes with, so the two cannot drift apart.
 
 //! # BUGS
 //!
@@ -563,12 +563,12 @@ mod tests {
     use super::*;
 
     const PLAIN: &[u8] =
-        include_bytes!("../../device_tree_blob/tests/fixtures/qemu-aarch64-virt.dtb");
+        include_bytes!("../../machine_discovery/tests/fixtures/qemu-aarch64-virt.dtb");
     const WITH_INITIAL_RAMDISK: &[u8] = include_bytes!(
-        "../../device_tree_blob/tests/fixtures/qemu-aarch64-virt-initial-ramdisk.dtb"
+        "../../machine_discovery/tests/fixtures/qemu-aarch64-virt-initial-ramdisk.dtb"
     );
     const RISCV: &[u8] =
-        include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+        include_bytes!("../../machine_discovery/tests/fixtures/qemu-riscv64-virt.dtb");
 
     fn rewrite(src: &[u8], start: u64, end: u64) -> Vec<u8> {
         let mut out = vec![0; output_len(src).unwrap()];

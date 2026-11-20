@@ -21,10 +21,9 @@ const CLKGEN_VENDOR: &[u8] = include_bytes!("fixtures/jh7110-clkgen-vendor.dtb")
 const CLKGEN_VENDOR_UNNAMED: &[u8] = include_bytes!("fixtures/jh7110-clkgen-vendor-unnamed.dtb");
 const CLKGEN_VENDOR_MISMATCHED: &[u8] =
     include_bytes!("fixtures/jh7110-clkgen-vendor-mismatched-names.dtb");
-/// The blob `crates/device_tree_blob`'s own tests boot-verify against, so a change to QEMU's
+/// The blob the `device_tree_blob` package's own tests boot-verify against, so a change to QEMU's
 /// `virt` board is caught here rather than surfacing as a mystery at the bench.
-const QEMU_RISCV64_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+const QEMU_RISCV64_VIRT: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt.dtb");
 
 const PMIC_BUS_RADON: &[u8] = include_bytes!("fixtures/jh7110-pmic-bus-radon.dtb");
 const PMIC_BUS_MAINLINE: &[u8] = include_bytes!("fixtures/jh7110-pmic-bus-mainline.dtb");
