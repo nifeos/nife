@@ -11,7 +11,7 @@ needs_person: yes
 
 Raised by a read-only review of `crates/interfaces_note` as a stranger to this tree would meet it,
 on a fresh clone at the head of `main`. It changes nothing; it lists what the move lane changes
-before `script/crate-move` can finish, and what the architect must rule first.
+before `script/crate-move` can finish, and what the architect ruled first.
 
 The crate has no review package in `notes/crate-reviews/`. The settled baseline is therefore the
 block of [milestone 956 (the linked interfaces carry checkable versions)](0956-the-linked-interfaces-carry-checkable-versions.md),
@@ -58,20 +58,21 @@ milestone reaches delivery.
 - Decision 1, the owner string: Done, [#3575](https://github.com/nifeos/nife/pull/3575).
 - Decision 2, ratifying the twenty public names: Ruled 2026-11-19 UTC. The four renames are built
   ([#3823](https://github.com/nifeos/nife/pull/3823)), and the `Name:` blocks stay provisional
-  until the architect ratifies them.
+  until the move lane records the ratification.
 - Decision 3, the crate name: Done, ruled 2026-11-14 UTC with nothing to build; the crate's `Name:`
   block records it ([#3589](https://github.com/nifeos/nife/pull/3589)).
 - BUGS, the static that `carry_interfaces!` emits: Done, [#3823](https://github.com/nifeos/nife/pull/3823).
   It is `CARRIED_INTERFACES_NOTE`, provisional.
 - Decision 4, review clearance and the repository: Ruled 2026-11-19 UTC (maintainer, provisional).
-  The go to create the repository follows the renames.
-- Follow-on, the repository: Open. The review package is
-  [notes/crate-reviews/interfaces-note.md](../../notes/crate-reviews/interfaces-note.md); the go to
-  create `nifeos/interfaces_note` (no tag, no publish) follows the architect's reading of it.
+  Superseded by decision 5.
+- Decision 5, the repository: Ruled 2026-11-20 UTC. The architect cleared the review package,
+  [notes/crate-reviews/interfaces-note.md](../../notes/crate-reviews/interfaces-note.md). The go to
+  create `nifeos/interfaces_note` is given, with `publish = false`, no tag and no publish. The move
+  lane runs the stranger test, the template's workflows and the first weekly mutation run there.
 
 ## Open decisions
 
-None. The go to create the repository follows the architect's reading of the review package.
+None.
 
 ## Goal
 
@@ -186,9 +187,12 @@ The rules in force, with their background and prior art, are in
   when the renames land.
 - Decision 3, the crate name: ruled 2026-11-14 (UTC). The crate and repository take
   `interfaces_note`.
-- Decision 4, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC). Clear once
-  the four renames land; the architect then gives the go to create `nifeos/interfaces_note`, with
-  no tag and no publish.
+- Decision 4, review clearance: the maintainer's provisional ruling of 2026-11-19 (UTC), superseded
+  by decision 5.
+- Decision 5, the repository: ruled 2026-11-20 (UTC), option A. The architect cleared the review
+  package. The go to create `nifeos/interfaces_note` is given, with `publish = false`, no tag and no
+  publish. The twenty public names stay as decision 2 ratified them. The move lane runs the
+  stranger test, the template's workflows and the first weekly mutation run in the new repository.
 
 ## Prior art
 
@@ -197,8 +201,7 @@ The comparison with nearby work is in [the appendix](1096-interfaces-note-outsid
 ## Follow-on
 
 - **Outstanding.** Every finding marked Open under "Finding status", each checked against
-  the crate's sources on main. The go to create the repository follows the architect's reading of
-  the review package.
+  the crate's sources on main. The move creates the repository.
 
 ## Done when
 
@@ -222,4 +225,5 @@ An outside review of `interfaces_note` before its move. Ten findings are done. T
 keeps its bytes behind a marker, and calef ratified the crate name. The architect ratified the twenty public
 names with four renames, and this lane built the renames. The move's own work remains:
 the manifest, README, citations, prose, fuzz opt-in and mutation exemptions. The review package
-exists, and the maintainer asks for the go to create the repository once the architect reads it.
+exists, and the architect cleared it on 2026-11-20 (UTC): the repository may be created with
+`publish = false`, no tag and no publish.

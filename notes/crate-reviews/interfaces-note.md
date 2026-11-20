@@ -48,7 +48,7 @@ Twenty public names. The architect ratified all twenty with four renames (milest
 | `Declared` | `DeclaredInterface` |
 
 Every changed name carries a provisional `Name:` block, and the sixteen names that keep their
-spelling keep their blocks. Ratifying them stays the architect's step. The static that
+spelling keep their blocks. The twenty names stay as ratified (milestone 1096, decision 2). The static that
 `carry_interfaces!` emits is now `CARRIED_INTERFACES_NOTE`, provisional (milestone 1096, BUGS), so
 that the identifier no longer spells the system's name.
 
@@ -69,6 +69,8 @@ None.
 
 ## Open questions
 
-None. The go to create `nifeos/interfaces_note`, with no tag and no publish, is the architect's.
+None.
 
-This package clears nothing. Ready for review.
+Cleared by the architect on 2026-11-20 (UTC). The go to create `nifeos/interfaces_note` is given,
+with `publish = false`, no tag and no publish. The move lane runs the stranger test, the template's
+workflows and the first weekly mutation run in the new repository.
