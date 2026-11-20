@@ -139,9 +139,7 @@ No nife type appears in a signature. What a stranger may find surprising:
 ## Names
 
 The architect ratified the crate name on 2026-08-01 and every item in the table below, as built, on
-2026-11-20 UTC. Each item's `Name:` block reads ratified; the move strips the blocks. The three
-crate names (`socket_contract` is ratified; `network_stack` and `socket_fixture` are provisional)
-and the `Cursor` and `Next` types' own spelling follow the table. A release review reopens a name ratified before a later rule. `MAXIMUM_PAYLOAD_BYTES` replaced a
+2026-11-20 UTC. Each item's `Name:` block reads ratified; the move strips the blocks. `socket_contract` is a ratified crate name; `network_stack` and `socket_fixture` stay provisional. A release review reopens a name ratified before a later rule. `MAXIMUM_PAYLOAD_BYTES` replaced a
 name ratified before the rule that a limit opens `MAXIMUM_` and ends with its unit.
 
 | item before | built | rule |
@@ -172,7 +170,7 @@ name ratified before the rule that a limit opens `MAXIMUM_` and ends with its un
 | `fixture`'s items | moved to `socket_fixture`; `IN_MSG`, `OUT_MSG`, `ECHO_PEER_IP`, `PACKAGE_PEER_IP` became `INBOUND_MESSAGE`, `OUTBOUND_MESSAGE`, `ECHO_PEER_ADDRESS`, `PACKAGE_PEER_ADDRESS` | **Not in the table.** The new crate's report gates refuse `msg` and `ip` as abbreviations and a new crate starts at zero findings, so the four stems were spelled out; the rest keep their names |
 
 Names that would follow a rename elsewhere: `domain_name_resolution_contract` carries `NAME_OFFSET_BYTES`
-and `ADDRESSES_OFFSET_BYTES` in the same style, and no other crate defines `REP_OK` or `REP_ERR`; only notes and design files mention them.
+and `ADDRESSES_OFFSET_BYTES` in the same style. No other crate defines `REP_OK` or `REP_ERR`; only notes and design files mention them.
 
 ## What still blocks the move
 
