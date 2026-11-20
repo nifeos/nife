@@ -100,7 +100,7 @@ network access. Then run every harness:
 cargo kani
 ```
 
-KANI_TIMING
+Measured on an x86_64 Linux machine with Kani 0.68.0, the run of all nine harnesses took 9 minutes of wall time and peaked at 7.5 GiB of resident memory. The token-step harness takes 426 seconds of that, and the other eight take 92 seconds together.
 
 A passing run prints warnings that mean nothing, among them `use of an unstable feature` for
 `register_tool`, `Found the following unsupported constructs`, and lines about unreachable code.
