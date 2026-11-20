@@ -20,7 +20,7 @@ const _: () = assert!(usize::BITS >= 64, "page_frames needs a 64-bit usize");
 /// 4 KiB. The unit the memory management unit (MMU) translates in, so it is the unit we
 /// allocate in.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1103-renames-package.
+/// Name: ratified 2026-11-20 (UTC).
 pub const FRAME_BYTES: u64 = 4096;
 
 /// A physical address, guaranteed frame-aligned.
@@ -53,7 +53,7 @@ impl PageFrame {
     /// # Panics
     /// If `physical_address` is not frame-aligned.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1103-renames-package.
+    /// Name: ratified 2026-11-20 (UTC).
     #[must_use]
     pub const fn from_physical_address(physical_address: u64) -> Self {
         assert!(
@@ -66,7 +66,7 @@ impl PageFrame {
     /// The frame at `physical_address`, or `None` when it is not frame-aligned: the fallible form
     /// of [`from_physical_address`](Self::from_physical_address), for a caller that holds an address it has not checked.
     ///
-    /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane.
+    /// Name: ratified 2026-11-20 (UTC).
     #[must_use]
     pub const fn try_aligned(physical_address: u64) -> Option<Self> {
         if physical_address.is_multiple_of(FRAME_BYTES) {
@@ -84,7 +84,7 @@ impl PageFrame {
 
     /// The physical address of this frame's first byte.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1103-renames-package.
+    /// Name: ratified 2026-11-20 (UTC).
     #[must_use]
     pub const fn physical_address(self) -> u64 {
         self.0
@@ -103,7 +103,7 @@ pub struct Stats {
 impl Stats {
     /// Frames currently available: `frames - used_frames`.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1103-renames-package.
+    /// Name: ratified 2026-11-20 (UTC).
     #[must_use]
     pub fn free_frames(&self) -> usize {
         self.frames - self.used_frames
@@ -174,7 +174,7 @@ impl<'a> PageFrameAllocator<'a> {
     /// How many frames `span_bytes` touch, rounding a partial frame at the end up: the count a
     /// bitmap must track to reach the end of the span.
     ///
-    /// Name: provisional, minted 2026-11-14 (UTC) by the outside-review fixes lane.
+    /// Name: ratified 2026-11-20 (UTC).
     #[must_use]
     pub const fn page_frames_covering(span_bytes: u64) -> usize {
         span_bytes.div_ceil(FRAME_BYTES) as usize
