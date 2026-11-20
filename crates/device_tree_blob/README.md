@@ -63,7 +63,7 @@ A few behaviors a stranger may not expect:
 - A tree nested deeper than `MAXIMUM_DEPTH` (64) is `Error::TooDeep`, and a `reg` under more than
   `MAXIMUM_CELLS` (4) cells is `Error::BadValue`.
 
-## What is proven
+## What the proofs cover
 
 Kani harnesses in `src/lib.rs` prove the leaf readers and the token step:
 
@@ -93,7 +93,7 @@ cargo build --lib --target riscv64imac-unknown-none-elf
 ### Running the proofs
 
 Install Kani first: run `cargo install --locked kani-verifier --version 0.68.0`, then `cargo kani
-setup`. Setup downloads a model checker and the Rust toolchain Kani is pinned to, so it needs
+setup`. Setup downloads a model checker and the Rust toolchain Kani pins, so it needs
 network access. Then run every harness:
 
 ```sh
@@ -145,8 +145,8 @@ feeds arbitrary bytes through every lookup.
 
 - `from_pointer` reads eight bytes through a raw pointer before it validates anything. That is the
   crate's one `unsafe` function, and the caller must hand it a pointer to a blob.
-- No 32-bit target has been built. The cursor arithmetic is checked and proved for a 32-bit `usize`,
-  but nobody has run it there.
+- Nobody has built a 32-bit target. Kani proves the cursor arithmetic for a 32-bit `usize`, but
+  nobody has run it there.
 - The walkers are not proved.
 
 ## Minimum Rust version
