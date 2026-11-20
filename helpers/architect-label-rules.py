@@ -1329,7 +1329,7 @@ def evaluate(diff_text, known=None):
 
 # What the fixtures' pretend base tree already depends on (one manifest, one lock).
 KNOWN_BASE = KnownDeps(
-    manifests=['[dependencies]\nredox_system_call = { version = "0.9.0", default-features = false }\n'
+    manifests=['[dependencies]\nredox_syscall = { version = "0.9.0", default-features = false }\n'
                'getrandom = "0.4"\n'],
     locks=['[[package]]\nname = "libc"\nversion = "0.2.150"\n'])
 
@@ -2253,7 +2253,7 @@ diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
 
 # (report line, a phrase its question must contain): one per rule, plus the unexamined case.
 ASK_FIXTURES = [
-    ("abi-surface: crates/abi/src/lib.rs: pub const NOTIFICATION: u64 = 8;", "system_call number"),
+    ("abi-surface: crates/abi/src/lib.rs: pub const NOTIFICATION: u64 = 8;", "system call number"),
     ("dependency: fuzz/Cargo.toml: brand_new 1.0", "taking `brand_new 1.0` as a dependency"),
     ("format-crate: crates/network_time_protocol/src/lib.rs: // the offset",
      "the bytes of `network_time_protocol`'s format"),
