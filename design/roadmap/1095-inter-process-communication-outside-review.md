@@ -39,8 +39,8 @@ milestone reaches delivery.
 - P0-2, the one dependency has not left and appears in no plan: Ruled (maintainer, provisional,
   2026-11-19 UTC, D3). Not built: `intrusive_queue` leaves first, under
   milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release).
-- P0-3, the crate does not stand alone: Open. The move strips the ten `Name:` lines and the
-  citations, and gives the manifest its own `license`, `lints` and `rust-version` in place of
+- P0-3, the crate does not stand alone: Open. The move strips every `Name:` block (22 lines
+  under `src/` and one in a patch header) and the citations, and gives the manifest its own `license`, `lints` and `rust-version` in place of
   `license.workspace` and the allowlist comment.
 - P1-4, a public type named `Send`: Done (ruled, maintainer, provisional, 2026-11-14 UTC,
   [#3589](https://github.com/nifeos/nife/pull/3589)). The five operation enums are `SendVerdict`,
@@ -68,12 +68,14 @@ milestone reaches delivery.
   2026-11-19 UTC, D5): `FutexTable<T, const BUCKETS: usize>`, `len()` with `is_empty()` and
   `Key::address_space`, each with a provisional `Name:` block. The iterator lands in
   `intrusive_queue` and is the maintainer's.
-- P2-13, `Timer::deadline` answers with a sentinel: Open. `deadline()` returns `u64`
-  (`src/timer.rs` line 112); `Option<u64>` is two-way until the publish, and the maintainer rules
-  it.
+- P2-13, `Timer::deadline` answers with a sentinel: Done, provisionally. `Timer::deadline` and
+  `earliest` answer `Option<u64>`, and `NEVER` is only the kernel's cache word. The signature is
+  one-way at the publish, so the architect confirms it from the package.
 - P2-14, the pending count's saturation has no host test: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-15, five copies of the test node: Open. One shared node, after the move.
+- P2-15, five copies of the test node: Done. `src/test_node.rs` holds the one node, its two token
+  helpers and the two obligations stated once. The futex tests keep their own node, which carries
+  the key it waits on.
 - P2-16a, documentation details: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-16b, tuples from `debug_counts`: Done. `Rendezvous::debug_counts` returns `RendezvousCounts`
   and `Notification::debug_counts` returns `NotificationCounts`, both provisional.
@@ -86,8 +88,10 @@ milestone reaches delivery.
 
 ## Open decisions
 
-None. The four that were open carry the maintainer's provisional ruling of 2026-11-19 (UTC),
-option A each, and are in the rules in force below.
+One. P2-13 is built provisionally: `Timer::deadline` and `earliest` answer `Option<u64>`. Whether
+that signature is the one to publish is the architect's, and the review package asks it. The four
+decisions that were open carry the maintainer's provisional ruling of 2026-11-19 (UTC), option A
+each, and are in the rules in force below.
 
 ## Goal
 
