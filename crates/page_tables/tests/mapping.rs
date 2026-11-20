@@ -10,14 +10,15 @@
 use std::cell::{Cell, RefCell};
 
 use page_tables::{
-    Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageFormat, PageTable, TlbFlush, WalkEnd,
+    Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageFormat, PageTable,
+    TranslationLookasideBufferFlush, WalkEnd,
 };
 
 /// **Discharge `flush` without invalidating**, and the one place this file argues
-/// [`TlbFlush::assume_no_stale_entry`]'s contract. Every table here lives on the host heap and is
+/// [`TranslationLookasideBufferFlush::assume_no_stale_entry`]'s contract. Every table here lives on the host heap and is
 /// never installed in a TTBR, `satp` or CR3, so no hardware has walked it and no TLB can hold an
 /// entry for it.
-fn never_installed(flush: TlbFlush) {
+fn never_installed(flush: TranslationLookasideBufferFlush) {
     // SAFETY: see this function's doc; a host test's tables are never walked by hardware.
     unsafe { flush.assume_no_stale_entry() }
 }
@@ -450,7 +451,7 @@ fn unmapping_nothing_is_an_error_not_a_silent_success() {
 /// to do essentially anything.
 ///
 /// `AlreadyMapped` is what forces the legal sequence. You CANNOT overwrite; you must unmap
-/// (which hands you a `TlbFlush` you cannot ignore) and then map. The API cannot be used
+/// (which hands you a `TranslationLookasideBufferFlush` you cannot ignore) and then map. The API cannot be used
 /// incorrectly, rather than merely documenting the rule and hoping.
 #[test]
 fn changing_a_mapping_is_forced_through_break_before_make() {
