@@ -37,10 +37,10 @@ mkdir -p "$tmp/bin" "$tmp/slots"
 cat >"$tmp/bin/cargo" <<'STUB'
 #!/bin/sh
 # Stub: `cargo kani --version` succeeds; any other call is recorded. For stage 3, `cargo metadata`
-# places byte_glob in a scratch directory and `cargo kani list` writes three harnesses there.
+# places capability_table in a scratch directory and `cargo kani list` writes three harnesses there.
 [ "$1" = kani ] && [ "$2" = "--version" ] && { echo "cargo-kani $(cat .kani-version)"; exit 0; }
 if [ "$1" = metadata ]; then
-	printf '{"packages": [{"name": "byte_glob", "manifest_path": "%s/row/Cargo.toml"}, {"name": "domain_name_resolution_contract", "manifest_path": "%s/row/Cargo.toml"}]}\n' "$VERIFY_STUB_DIR" "$VERIFY_STUB_DIR"
+	printf '{"packages": [{"name": "capability_table", "manifest_path": "%s/row/Cargo.toml"}, {"name": "domain_name_resolution_contract", "manifest_path": "%s/row/Cargo.toml"}]}\n' "$VERIFY_STUB_DIR" "$VERIFY_STUB_DIR"
 	exit 0
 fi
 if [ "$1 $2" = "kani list" ]; then
@@ -115,19 +115,19 @@ echo "script/verify: extra arguments reach cargo kani, and a stubbed run takes n
 mkdir -p "$tmp/row"
 apart() {
 	VERIFY_STUB_LOG="$tmp/log" VERIFY_STUB_DIR="$tmp" NIFE_KANI_POOL=off NIFE_KANI_APART="$1" \
-		script/verify --only byte_glob >"$tmp/apart.out" 2>&1
+		script/verify --only capability_table >"$tmp/apart.out" 2>&1
 }
 : >"$tmp/log"
-apart "$(printf 'byte_glob\tverification::b')" || { sed 's/^/  /' "$tmp/apart.out" >&2; fail "a row held apart failed"; }
-grep -q '^kani -p byte_glob --harness verification::a --harness verification::c --exact ' "$tmp/log" ||
+apart "$(printf 'capability_table\tverification::b')" || { sed 's/^/  /' "$tmp/apart.out" >&2; fail "a row held apart failed"; }
+grep -q '^kani -p capability_table --harness verification::a --harness verification::c --exact ' "$tmp/log" ||
 	{ sed 's/^/  /' "$tmp/log" >&2; fail "the first pass was not every other harness, --exact"; }
-grep -q '^kani -p byte_glob --harness verification::b --exact ' "$tmp/log" ||
+grep -q '^kani -p capability_table --harness verification::b --exact ' "$tmp/log" ||
 	{ sed 's/^/  /' "$tmp/log" >&2; fail "the held-apart harness did not prove alone"; }
 [ ! -e "$tmp/row/kani-list.json" ] || fail "the listing was left in the crate directory"
 : >"$tmp/log"
-if apart "$(printf 'byte_glob\tverification::gone')"; then fail "a stale held-apart name passed"; fi
+if apart "$(printf 'capability_table\tverification::gone')"; then fail "a stale held-apart name passed"; fi
 grep -q 'no longer has: verification::gone' "$tmp/apart.out" || fail "a stale held-apart name failed without naming it"
-grep -q '^kani -p byte_glob --harness' "$tmp/log" && fail "a stale held-apart name still ran a proof"
+grep -q '^kani -p capability_table --harness' "$tmp/log" && fail "a stale held-apart name still ran a proof"
 [ ! -e "$tmp/row/kani-list.json" ] || fail "a failed listing was left in the crate directory"
 : >"$tmp/log"
 VERIFY_STUB_LOG="$tmp/log" VERIFY_STUB_DIR="$tmp" NIFE_KANI_POOL=off \

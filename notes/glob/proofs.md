@@ -88,7 +88,7 @@ pass.
 
 ## What each harness's shape costs
 
-These are the measurements behind the shape of the harnesses in `crates/byte_glob/src/lib.rs`, which
+These are the measurements behind the shape of the harnesses in `src/lib.rs` of the repository `nifeos/byte_glob`, which
 link here.
 
 - Totality and the cost bound are separate harnesses. `step_bound` is three saturating 64-bit
