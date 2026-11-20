@@ -74,8 +74,10 @@ crate's own reasons.
 - Decision 1, the sized accessors: Done, [#3815](https://github.com/nifeos/nife/pull/3815)
   (maintainer, recommendation B, provisional, 2026-11-19 UTC). the maintainer removed `read_u8` to `write_u64`
   and every call site uses `read::<T>` and `write::<T>`; a two-way door until the first tag.
-- Decision 1, ratifying the names: Open. calef's, under "Open decisions", asked from the review
-  package.
+- Decision 1, ratifying the names: Done, ruled 2026-11-20 UTC. The names stand as built with the short
+  forms spelled out (`header_length`, `fill_random_bytes`, `read_volatile`, `write_volatile`,
+  `reap_thread`, `counter_ticks`, and spelled-out parameters), the old spellings kept as `doc(alias)`,
+  and every `Name:` block in the crate ratified.
 - Decision 2, `link.ld` on the link search path: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional,
   2026-11-14 UTC). A two-way door until `disk-tools` leaves (milestone 1017 step 4), so not calef's
   until then.
@@ -83,8 +85,8 @@ crate's own reasons.
   2026-11-14 UTC).
 - Review package: Done, [#3815](https://github.com/nifeos/nife/pull/3815): the package is
   `notes/crate-reviews/user-mode-runtime.md`, with its index row.
-- Clearing the review package, which approves the repository and the move: Open. calef's, under
-  "Open decisions". The move also waits on milestone 1017 step 3.
+- Clearing the review package, which approves the repository and the move: Open. calef's. The names
+  are ratified; the clearance is separate. The move also waits on milestone 1017 step 3.
 
 ## Open decisions
 
@@ -93,12 +95,15 @@ crate's own reasons.
 Background. This crate is what every nife program links: the system call wrapper, the entry macro, the
 panic handler and typed windows over memory the kernel hands a process. It leaves nife for its own
 repository, and a crate leaves with ratified names. The maintainer ruled the renames on 2026-11-14
-(UTC), provisionally, and #3611 built them; each renamed name carries a provisional `Name:` block.
+(UTC), provisionally, and #3611 built them; each renamed name carried a provisional `Name:` block until the ruling below.
 The maintainer ruled on 2026-11-19 UTC, provisionally, to remove the sized window accessors
 `read_u8` to `write_u64`, and #3815 built it, so a window has one spelling, `read::<T>` and
-`write::<T>`. After the first tag a name is a published surface. The package
+`write::<T>`, which the 2026-11-20 UTC ruling spelled `read_volatile::<T>` and `write_volatile::<T>`. After the first tag a name is a published surface. The package
 (`notes/crate-reviews/user-mode-runtime.md`) lists every public name with its status and a
 proposal.
+
+Ruled 2026-11-20 UTC: A, with the short forms spelled out as the status list above names. The text
+below is the question as asked.
 
 Recommendation: A. Ratify the names as built, one table at a time from the package; the table
 stands each name as written and flags one optional question (`now`, which returns ticks).
