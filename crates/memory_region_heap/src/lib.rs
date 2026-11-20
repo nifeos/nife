@@ -1,7 +1,7 @@
-//! The memory-region-backed heap, a [`GlobalAlloc`] paid from the process's own memory region
-//! on a capability microkernel. A memory region is the budget of pages a process was handed; the
-//! kernel's own word for its capability is "untyped". Pages are mapped out
-//! of it one at a time and given to the allocator, so the region is what pays for the heap, the
+//! The memory-region-backed heap, a [`GlobalAlloc`](core::alloc::GlobalAlloc) paid from the
+//! process's own memory region on a capability microkernel. A memory region is the budget of pages
+//! a process was handed; the kernel's own word for its capability is "untyped". Pages are mapped
+//! out of it one at a time and given to the allocator, so the region is what pays for the heap, the
 //! heap lives at one virtual range the program picks, and nothing else supplies memory.
 //!
 //! A program declares it:
