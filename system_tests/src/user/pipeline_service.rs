@@ -242,7 +242,7 @@ fn shell_mappings(
     maps[1] = Mapping {
         va: LINE_VA,
         phys: line_phys,
-        flags: Flags::user_rodata(),
+        flags: Flags::user_read_only_data(),
     };
     for (k, m) in maps[2..2 + SHELL_EXTRA_STACK].iter_mut().enumerate() {
         m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
@@ -263,13 +263,13 @@ fn shell_mappings(
         n += 1;
     }
     if let Some(phys) = clock {
-        // **`user_rodata`, and that is the read rung of DECISIONS §43 rather than tidiness**: a
+        // **`user_read_only_data`, and that is the read rung of DECISIONS §43 (reading the clock is a page) rather than tidiness**: a
         // shell that could write this page could set the wall clock, and the whole argument for
         // it holding one at all is that reading is not that.
         maps[n] = Mapping {
             va: SH_CLOCK_VA,
             phys,
-            flags: Flags::user_rodata(),
+            flags: Flags::user_read_only_data(),
         };
         n += 1;
     }

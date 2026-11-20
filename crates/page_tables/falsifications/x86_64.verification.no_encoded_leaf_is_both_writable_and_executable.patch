@@ -1,6 +1,6 @@
 Falsifies `page_tables::x86_64::no_encoded_leaf_is_both_writable_and_executable`.
 
-The defect: `Ia32e::attrs` stops setting `XD` on a writable page, on the reasoning
+The defect: `Ia32e::attributes` stops setting `XD` on a writable page, on the reasoning
 that a data page is not code and nothing will jump into it. That reasoning is
 exactly the one W^X exists to refuse, and the encoding is where it has to be
 refused rather than argued: the portable `Flags` constructors already keep write

@@ -10,21 +10,28 @@ pub const PAGE_SIZE: u64 = 4096;
 /// The sizes are the same on all three CPU formats because they all use 4 KiB granules and 9-bit
 /// indices: each level up multiplies the span by 512. The names are the byte counts rather than
 /// "huge"/"giant"/"super", because those words mean different sizes in different kernels and the
-/// number does not. Name provisional (milestone 161); the `x86_64` crate spells the same three
-/// sizes the same way, which is the prior art.
+/// number does not, and each name spells its unit out. A reader who knows the `x86_64` crate's
+/// `Size4KiB`, `Size2MiB` and `Size1GiB` finds these by searching for that spelling. Name provisional.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum PageSize {
     /// A 4 KiB page, at the bottom level.
-    Size4KiB,
+    #[doc(alias = "Size4KiB")]
+    FourKibibytes,
     /// A 2 MiB block, one level up.
-    Size2MiB,
+    #[doc(alias = "Size2MiB")]
+    TwoMebibytes,
     /// A 1 GiB block, two levels up.
-    Size1GiB,
+    #[doc(alias = "Size1GiB")]
+    OneGibibyte,
 }
 
 impl PageSize {
     /// Every size, smallest first.
-    pub const ALL: [PageSize; 3] = [PageSize::Size4KiB, PageSize::Size2MiB, PageSize::Size1GiB];
+    pub const ALL: [PageSize; 3] = [
+        PageSize::FourKibibytes,
+        PageSize::TwoMebibytes,
+        PageSize::OneGibibyte,
+    ];
 
     /// How many bytes one leaf of this size maps.
     pub const fn bytes(self) -> u64 {
@@ -34,13 +41,13 @@ impl PageSize {
     /// How many levels above the bottom a leaf of this size sits: 0, 1 or 2.
     pub const fn levels_above_bottom(self) -> usize {
         match self {
-            PageSize::Size4KiB => 0,
-            PageSize::Size2MiB => 1,
-            PageSize::Size1GiB => 2,
+            PageSize::FourKibibytes => 0,
+            PageSize::TwoMebibytes => 1,
+            PageSize::OneGibibyte => 2,
         }
     }
 
-    /// **The leaf size for the next step of mapping `remaining` bytes from `va` to `pa`**: the
+    /// **The leaf size for the next step of mapping `remaining` bytes from `virtual_address` to `physical_address`**: the
     /// largest no bigger than `largest` with both addresses aligned and the leaf inside the rest.
     ///
     /// Kept out of [`Mapper::map_span`](crate::Mapper::map_span) so Kani proves it for every
@@ -48,22 +55,46 @@ impl PageSize {
     /// alias of the kernel image (`a_chosen_leaf_is_aligned_and_inside_the_span`,
     /// `the_chosen_leaf_is_the_largest_that_fits`).
     ///
-    /// Answers [`PageSize::Size4KiB`] when nothing larger fits, including when `remaining` is less
+    /// Answers [`PageSize::FourKibibytes`] when nothing larger fits, including when `remaining` is less
     /// than a page; the caller is the one that knows a span must be page-aligned and whole.
-    pub const fn largest_fitting(va: u64, pa: u64, remaining: u64, largest: PageSize) -> PageSize {
+    pub const fn largest_fitting(
+        virtual_address: u64,
+        physical_address: u64,
+        remaining: u64,
+        largest: PageSize,
+    ) -> PageSize {
         // Written out rather than looped over `ALL`, so the proof below is over straight-line
         // arithmetic. Every size is a power of two, so alignment is a mask test, not a division.
-        const fn fits(va: u64, pa: u64, remaining: u64, size: PageSize) -> bool {
+        const fn fits(
+            virtual_address: u64,
+            physical_address: u64,
+            remaining: u64,
+            size: PageSize,
+        ) -> bool {
             let bytes = size.bytes();
-            (va | pa) & (bytes - 1) == 0 && remaining >= bytes
+            (virtual_address | physical_address) & (bytes - 1) == 0 && remaining >= bytes
         }
         let allowed = largest.levels_above_bottom();
-        if allowed >= 2 && fits(va, pa, remaining, PageSize::Size1GiB) {
-            PageSize::Size1GiB
-        } else if allowed >= 1 && fits(va, pa, remaining, PageSize::Size2MiB) {
-            PageSize::Size2MiB
+        if allowed >= 2
+            && fits(
+                virtual_address,
+                physical_address,
+                remaining,
+                PageSize::OneGibibyte,
+            )
+        {
+            PageSize::OneGibibyte
+        } else if allowed >= 1
+            && fits(
+                virtual_address,
+                physical_address,
+                remaining,
+                PageSize::TwoMebibytes,
+            )
+        {
+            PageSize::TwoMebibytes
         } else {
-            PageSize::Size4KiB
+            PageSize::FourKibibytes
         }
     }
 }

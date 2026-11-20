@@ -163,7 +163,7 @@ whole suite, so most rows are `read`; the falsification records each row cites w
 | 7 | A stranger's refusal discloses nothing | held | read | `reap_decision` ignores liveness for strangers |
 | 8 | A view shows exactly own children | held | read | `survey_includes` is `fault_ep == ep` |
 | 9 | View and reap are one domain | held | read | one decision function |
-| 10 | User VAs low half and aligned, every ISA | held | read | `is_user_page_va` unchanged |
+| 10 | User VAs low half and aligned, every ISA | held | read | `is_user_page_virtual_address` unchanged |
 | 11 | No page writable and executable | held | read | encoder constructors unchanged |
 | 12 | No reserved bit in an IOMMU entry | held | read | VT-d literal guard; AMD-Vi's closed by 767 |
 | 13 | A device cannot touch outside its region | held | read | `is_in_region` checked adds; unchanged |

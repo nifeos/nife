@@ -71,13 +71,13 @@ the maintainer's; it is reported rather than edited here.
 
 ## The clock page
 
-Mapped `user_rodata` into the progenitor, the shell and any child whose manifest declares
+Mapped `user_read_only_data` into the progenitor, the shell and any child whose manifest declares
 one. A holder can read the wall clock and cannot set it, which is the point, and read-only is what
 makes it a fact about the mapping instead of about the code.
 
 ## The nameset grant frame
 
-Mapped `user_rodata` into the caretaker and copied into a local at
+Mapped `user_read_only_data` into the caretaker and copied into a local at
 `_start` "so nothing that happens to that page afterwards can widen the namespace." That is this
 audit's lens, stated in the tree, and it is the model the file page should follow.
 

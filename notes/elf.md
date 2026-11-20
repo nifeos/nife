@@ -301,13 +301,13 @@ An ELF's `.rodata` segment is `PF_R` alone. The tempting shortcut is to map ever
 non-executable segment as `user_data()`, which is writable, quietly granting the program
 authority its own file never asked for.
 
-`page_tables::Flags` grew a `user_rodata()` for exactly this. Three segment shapes, three
+`page_tables::Flags` grew a `user_read_only_data()` for exactly this. Three segment shapes, three
 constructors, no widening:
 
 | ELF says | We map |
 |---|---|
 | `PF_R \| PF_X` | `user_code()`: readable and executable at EL0, **PXN** so the kernel can never execute it |
-| `PF_R` | `user_rodata()`: readable at EL0 and *nothing else* |
+| `PF_R` | `user_read_only_data()`: readable at EL0 and *nothing else* |
 | `PF_R \| PF_W` | `user_data()`: readable and writable, **UXN and PXN** |
 | `PF_W \| PF_X` | *refused* |
 

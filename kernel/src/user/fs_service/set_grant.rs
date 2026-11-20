@@ -110,7 +110,7 @@ pub fn start_granted_set(
         maps[1] = Mapping {
             va: SET_VA_CARETAKER,
             phys: set_phys,
-            flags: Flags::user_rodata(),
+            flags: Flags::user_read_only_data(),
         };
         for (k, m) in maps[2..].iter_mut().enumerate() {
             m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;

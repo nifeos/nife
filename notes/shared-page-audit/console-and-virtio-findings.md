@@ -21,7 +21,7 @@ for i in 0..len {
 ```
 
 `len` is the first register word with no clamp. The shared mapping is exactly one frame
-(`kernel/src/user/console_service.rs`, one `alloc()`, mapped `Flags::user_rodata()`).
+(`kernel/src/user/console_service.rs`, one `alloc()`, mapped `Flags::user_read_only_data()`).
 
 (b) What can land in it. Nothing needs to: this is not a race. Any holder of `WRITE` on the
 request endpoint sends `len = u64::MAX`.
