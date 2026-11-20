@@ -24,7 +24,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
     give the heap a `try_lock` the handler can use to print without allocating.
     Door: two-way. Effort: XS to read, S to change.
 
-12. Growth is monotonic and the README should say so. PARTIAL (the crate docs say the heap never shrinks; the README sentence belongs to the move lane).
+12. Growth is monotonic and the README should say so. DONE (the crate docs and the README say the heap never shrinks; the README's BUGS section names the missing unmap call).
     Finding: talc's `truncate` is never called, and the memory-region interface has no per-page
     return (`MAP`, `RETYPE`, `RETYPE_OBJECT`, `SPLIT`, `DESTROY`, `USAGE`), so a heap that peaked
     holds its peak until the region's owner destroys it. glibc trims. `dlmalloc` and `rlsf` release
