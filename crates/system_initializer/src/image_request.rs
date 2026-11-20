@@ -21,7 +21,7 @@ pub(super) const ACTIVATION_FS_VA: u64 = address_space_layout::pair_page(0x0f40_
 /// below [`IMAGE_STAGING_VA`].
 pub(super) const MOUNTED_TREE_POOL_VA: u64 = address_space_layout::pair_page(0x0f50_0000);
 
-/// **Where the progenitor keeps its own copy of an image**, [`spawnproto::IMAGE_MAXIMUM_PAGES`]
+/// **Where the progenitor keeps its own copy of an image**, [`spawn_protocol::IMAGE_MAXIMUM_PAGES`]
 /// pages at most. A fixed window, because every page mapped here comes from a staging region this
 /// process destroys once the child is built, and the destroy revokes the mapping (DECISIONS §13
 /// (capability revocation and untyped reclamation)), so the next request finds it empty. The page
@@ -31,13 +31,13 @@ const IMAGE_STAGING_VA: u64 = address_space_layout::pair_page(0x0f80_0000);
 // The largest image's copy stays inside the pair band, clear of the loader's scratch window at its
 // top.
 const _: () = assert!(
-    IMAGE_STAGING_VA + spawnproto::IMAGE_MAXIMUM_PAGES * spawnproto::IMAGE_PAGE
+    IMAGE_STAGING_VA + spawn_protocol::IMAGE_MAXIMUM_PAGES * spawn_protocol::IMAGE_PAGE
         <= address_space_layout::PAIR_PAGES.end
 );
 
 /// **Take the argv's frame off the spawn endpoint and map it where this process can read it**
 /// (DECISIONS §170 (how a foreign program is told what to do),
-/// `spawnproto::PROGRAM_ARGUMENTS_BIT`). Returns the address, or `None` if the caller sent no frame
+/// `spawn_protocol::PROGRAM_ARGUMENTS_BIT`). Returns the address, or `None` if the caller sent no frame
 /// or it would not map. The capability goes at once, as an image frame's does ([`take_frames`],
 /// [`stage_frames`]): the mapping outlives it, and the slot is what is scarce.
 ///
@@ -75,12 +75,13 @@ pub(super) fn copy_args(
         core::ptr::copy_nonoverlapping(
             theirs as *const u8,
             ours as *mut u8,
-            spawnproto::IMAGE_PAGE as usize,
+            spawn_protocol::IMAGE_PAGE as usize,
         );
     }
     // SAFETY: `ours` is mapped read/write, one page, and was just written.
-    let copied =
-        unsafe { core::slice::from_raw_parts(ours as *const u8, spawnproto::IMAGE_PAGE as usize) };
+    let copied = unsafe {
+        core::slice::from_raw_parts(ours as *const u8, spawn_protocol::IMAGE_PAGE as usize)
+    };
     let same_verb = agrees(copied);
     // Written, and the child's from here: give our window onto it up (milestone 95, §249). Without
     // a capability to our own space this does nothing, and the region's reap takes it back as before.
@@ -93,7 +94,7 @@ pub(super) fn copy_args(
 }
 
 /// **The spawn endpoint, as the spawn loop reads it**: shell requests, `job_undertaker`'s reaps
-/// ([`spawnproto::UNDERTAKER_BADGE`]) and installer holders ([`spawnproto::installer_badge`]).
+/// ([`spawn_protocol::UNDERTAKER_BADGE`]) and installer holders ([`spawn_protocol::installer_badge`]).
 /// Every receive takes reaps out of the way and keeps another sender's first message, and a short
 /// pool waits for owed reaps ([`SpawnEndpoint::split`]). See notes/system-initializer/children.md.
 ///
@@ -380,13 +381,13 @@ impl SpawnEndpoint {
                 *r = None;
             }
         }
-        if spawnproto::installer_label(self.serving) == Some(label) {
+        if spawn_protocol::installer_label(self.serving) == Some(label) {
             self.abandoned = true;
         }
     }
 
     /// The first message of the next request, and the badge it came with: `0` for the shell,
-    /// [`spawnproto::installer_badge`] for an installer holder. Every later receive in the request
+    /// [`spawn_protocol::installer_badge`] for an installer holder. Every later receive in the request
     /// takes only that sender's messages.
     pub(super) fn request(&mut self) -> (u64, u64, u64, u64) {
         // Kept in arrival order from the front ([`stash`](SpawnEndpoint::stash) fills the first
@@ -400,7 +401,7 @@ impl SpawnEndpoint {
                 let Message {
                     w0, w1, w2, badge, ..
                 } = receive_message(self.ep).into_message();
-                if badge == spawnproto::UNDERTAKER_BADGE {
+                if badge == spawn_protocol::UNDERTAKER_BADGE {
                     self.reaped(w0);
                     continue;
                 }
@@ -426,7 +427,7 @@ impl SpawnEndpoint {
             let Message {
                 w0, w1, w2, badge, ..
             } = receive_message(self.ep).into_message();
-            if badge == spawnproto::UNDERTAKER_BADGE {
+            if badge == spawn_protocol::UNDERTAKER_BADGE {
                 self.reaped(w0);
                 continue;
             }
@@ -440,7 +441,7 @@ impl SpawnEndpoint {
 
     /// The served sender's next delegation, `(w0, slot, w1)` as `RECEIVE_CAPABILITY` returns them, with
     /// every reaped message before it taken out of the way. A reaped message read here carries its
-    /// label in `x0` and no capability (`spawnproto::UNDERTAKER_BADGE` has the layout). Another
+    /// label in `x0` and no capability (`spawn_protocol::UNDERTAKER_BADGE` has the layout). Another
     /// sender's first message is a plain `SEND` and is kept, as [`receive`](SpawnEndpoint::receive)
     /// keeps it. No capability once the request is abandoned.
     pub(super) fn receive_capability(&mut self) -> (u64, u64, u64) {
@@ -455,7 +456,7 @@ impl SpawnEndpoint {
                 badge,
                 ..
             } = receive_capability_message(self.ep).into_message();
-            if badge == spawnproto::UNDERTAKER_BADGE {
+            if badge == spawn_protocol::UNDERTAKER_BADGE {
                 if slot != abi::rendezvous::NO_CAPABILITY {
                     capability_delete(slot);
                 }
@@ -491,7 +492,7 @@ impl SpawnEndpoint {
         let Message {
             w0, w1, w2, badge, ..
         } = receive_message(self.ep).into_message();
-        if badge == spawnproto::UNDERTAKER_BADGE {
+        if badge == spawn_protocol::UNDERTAKER_BADGE {
             self.reaped(w0);
             true
         } else {
@@ -543,8 +544,8 @@ pub(super) struct Frames {
 /// `process_builder::SCRATCH_WINDOW`, one entry per page of the largest image. The progenitor
 /// has one thread, so `Relaxed` is all the ordering there is. An index, not an address, to keep
 /// this `.bss` at two bytes an entry: the kernel suite's frame ledger counts every progenitor.
-static FRAME_VIEWS: [AtomicU16; spawnproto::IMAGE_MAXIMUM_PAGES as usize] =
-    [const { AtomicU16::new(0) }; spawnproto::IMAGE_MAXIMUM_PAGES as usize];
+static FRAME_VIEWS: [AtomicU16; spawn_protocol::IMAGE_MAXIMUM_PAGES as usize] =
+    [const { AtomicU16::new(0) }; spawn_protocol::IMAGE_MAXIMUM_PAGES as usize];
 
 // Every page of the scratch window has an index that fits.
 const _: () = assert!(process_builder::SCRATCH_WINDOW_PAGES <= u16::MAX as u64 + 1);
@@ -562,11 +563,11 @@ fn scratch_page(i: u16) -> u64 {
 /// wait for a reap, which is sound only once the request has been read to its end. The views stay
 /// valid until the caller reclaims its frames, after its answer.
 pub(super) fn take_frames(spawn: &mut SpawnEndpoint, len: u64, own_ut: u64) -> Frames {
-    let pages = spawnproto::image_pages(len);
+    let pages = spawn_protocol::image_pages(len);
     let mut f = Frames {
         pages,
         views: 0,
-        ok: pages > 0 && pages <= spawnproto::IMAGE_MAXIMUM_PAGES,
+        ok: pages > 0 && pages <= spawn_protocol::IMAGE_MAXIMUM_PAGES,
     };
     for _ in 0..pages {
         let Some(frame) = opt_capability(spawn.receive_capability().1) else {
@@ -614,7 +615,7 @@ pub(super) fn stage_frames(
     for i in 0..f.views {
         let theirs = scratch_page(FRAME_VIEWS[i as usize].load(Relaxed));
         if let (Some(st), true) = (staging, ok) {
-            let ours = IMAGE_STAGING_VA + i * spawnproto::IMAGE_PAGE;
+            let ours = IMAGE_STAGING_VA + i * spawn_protocol::IMAGE_PAGE;
             ok = match retype_page_frame(st) {
                 Ok(page) => {
                     let mapped = map_page_frame(page, ours, true, own_ut);
@@ -624,7 +625,8 @@ pub(super) fn stage_frames(
                 Err(()) => false,
             };
             if ok {
-                let n = (len - i * spawnproto::IMAGE_PAGE).min(spawnproto::IMAGE_PAGE) as usize;
+                let n =
+                    (len - i * spawn_protocol::IMAGE_PAGE).min(spawn_protocol::IMAGE_PAGE) as usize;
                 // SAFETY: `theirs` was mapped read-only by `take_frames` and is still mapped (the
                 // caller reclaims its frames only after its answer), `ours` read/write just above,
                 // one page each, and `n` is at most a page. Different windows, so no overlap.
@@ -793,7 +795,7 @@ pub(super) fn endowed_image(
 
 #[cfg(test)]
 mod tests {
-    use interfaces_note::{Declared, InterfacesNote, interfaces_len, interfaces_note_len};
+    use interfaces_note::{DeclaredInterface, InterfacesNote, descriptor_bytes, note_bytes};
 
     use super::serves_declared_abi;
     extern crate std;
@@ -838,11 +840,11 @@ mod tests {
 
     /// The note a program built against `version` of the ABI carries.
     fn declaring(version: u32) -> Vec<u8> {
-        let list = [Declared {
+        let list = [DeclaredInterface {
             id: abi::INTERFACE_ID,
             version,
         }];
-        InterfacesNote::<{ interfaces_note_len(1) }>::of::<{ interfaces_len(1) }>(&list)
+        InterfacesNote::<{ note_bytes(1) }>::of::<{ descriptor_bytes(1) }>(&list)
             .0
             .to_vec()
     }

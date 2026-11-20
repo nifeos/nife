@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-19
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -26,19 +27,19 @@ Reuse: the template and its scaffold, loom, Kani, cargo-mutants, cargo-llvm-cov.
 
 ## Finding status
 
-- 1, template naming and prose gates: Open. The renames landed in
+- 1, template naming and prose gates: Done. The renames landed in
   [#3640](https://github.com/nifeos/nife/pull/3640) and
-  [#3727](https://github.com/nifeos/nife/pull/3727). Now `spelled_out`, `unit_symbols`,
-  `register_names` and `british_spelling` refuse nothing. Four things remain for the move.
-  `prose_acronyms` still flags RTC, POSIX, TLS, UART, ISA and LOW; the README has no badge row;
-  `cmos`, `pl031` and `unix` are not in `.github/accepted-words`; and `question_shape` refuses the
-  private `try_claim`, which the review did not see. The maintainer rules a new private name for
-  `try_claim` provisionally.
+  [#3727](https://github.com/nifeos/nife/pull/3727); the acronyms, the badge row and the private
+  `take_claim` in [#3784](https://github.com/nifeos/nife/pull/3784); `cmos`, `pl` and `unix` in
+  `.github/accepted-words` in
+  [nifeos/clock_contract#1](https://github.com/nifeos/clock_contract/pull/1).
 - 2, clippy `doc_markdown` outside nife: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
-- 3, mutation exemptions and loom in the tests job: Open. The move's first `mutation` run writes
-  `.github/mutants-exempts`, and the tests job runs loom under `--cfg loom`.
-- 4, the manifest outside nife: Open. The `publish` comment names no nife file
-  ([#3640](https://github.com/nifeos/nife/pull/3640)); `Cargo.toml` gains `repository` at the move.
+- 3, mutation exemptions and loom in the tests job: Done. The first `mutation` run on `main` named
+  the survivors, exempted with reasons in
+  [nifeos/clock_contract#4](https://github.com/nifeos/clock_contract/pull/4); the template's
+  `proofs / loom` job runs loom under `--cfg loom`.
+- 4, the manifest outside nife: Done. The `publish` comment names no nife file
+  ([#3640](https://github.com/nifeos/nife/pull/3640)), and `Cargo.toml` carries `repository`.
 - 5, a reader never waits on a writer: Done, [#3576](https://github.com/nifeos/nife/pull/3576).
 - 6, `initialize` on every start: Done, [#3559](https://github.com/nifeos/nife/pull/3559), carried
   onto the two-copy layout by [#3576](https://github.com/nifeos/nife/pull/3576).
@@ -64,8 +65,13 @@ Reuse: the template and its scaffold, loom, Kani, cargo-mutants, cargo-llvm-cov.
 - Review package: Done. [The package](../../notes/crate-reviews/clock-contract.md) names the
   ratified spellings.
 - Review clearance: Done (ruled 2026-11-19 UTC, option A), as
-  [Decision 4](#decision-4-the-review-is-cleared-and-the-crate-moves) records. The move is next.
-- Stranger test: Open. The move lane runs it and records it in the new repository.
+  [Decision 4](#decision-4-the-review-is-cleared-and-the-crate-moves) records.
+- The move: Done. The crate lives at `nifeos/clock_contract`, with `publish = false` and no tag,
+  and nife pins it by commit.
+- Stranger test: Done. The record is `docs/stranger-test.md` in the new repository
+  ([nifeos/clock_contract#2](https://github.com/nifeos/clock_contract/pull/2)), and
+  [nifeos/clock_contract#3](https://github.com/nifeos/clock_contract/pull/3) closed its README
+  findings.
 
 ## Goal
 
@@ -225,9 +231,8 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 3 and 4, the rewrite of the provisional `Name:` blocks, the move and
-  the stranger test, each as [Finding status](#finding-status) gives it. Checked
-  against the crate's code and the template's naming helpers.
+- **Recorded.** A pre-release tag for `nifeos/clock_contract` is a separate question, not asked
+  yet.
 
 ## BUGS
 

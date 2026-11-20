@@ -38,7 +38,7 @@ pub mod sv39;
 pub mod x86_64;
 
 pub use aarch64::Aarch64;
-pub use domain::{DmaRegion, build_identity_domain};
+pub use domain::{DirectMemoryAccessRegion, build_identity_domain};
 pub use sv39::{Sv39, Sv39Mae};
 pub use x86_64::{AmdVi, Ia32e, Vtd};
 
@@ -76,7 +76,7 @@ mod tlb_flush;
 pub use flags::Flags;
 use flags::*;
 pub use mapper::{MapError, Mapper, Walk, WalkEnd, WalkStep};
-pub use page_format::{Half, PageFormat, is_user_page_va};
+pub use page_format::{Half, PageFormat, is_user_page_virtual_address};
 pub use page_size::{PAGE_SIZE, PageSize};
 pub use page_table::{ENTRIES, PageTable};
 pub use tlb_flush::TlbFlush;

@@ -80,7 +80,7 @@ diagnostic endpoint.
 
 The two delegations, sink and source, are the whole difference between a piped stage and an ordinary
 spawn. The progenitor receives an endpoint and puts it where the result endpoint would have gone,
-which is why `>` and `|` are one mechanism. The rules for the rest of `spawnproto::Wiring`:
+which is why `>` and `|` are one mechanism. The rules for the rest of `spawn_protocol::Wiring`:
 
 - The shell grants a stage a directory only for words (milestone 205 (how a foreign program is told
   what to do)). `rm` is the one program with `DirectoryGrantDeclaration::Required`. It writes a byte

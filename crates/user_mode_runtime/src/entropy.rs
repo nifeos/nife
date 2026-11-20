@@ -11,7 +11,7 @@
 //!
 //! - **A short answer is a refusal, not a retry.** The service answers fewer bytes than asked only
 //!   when its device is dry, and these callers would rather write nothing than wait on it. The std
-//!   PAL accepts a partial count and loops; the two policies differ on purpose and are recorded at
+//!   platform abstraction layer (PAL) accepts a partial count and loops; the two policies differ on purpose and are recorded at
 //!   both ends.
 
 /// Fill `out` with random bytes from the entropy service whose endpoint is in `slot`, or `None` if
