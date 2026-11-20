@@ -57,7 +57,7 @@ for the crate's own reasons.
   so the full sweep can stay in the default test.
 - P1-11, surviving mutants: Open, the new repository's exemptions file.
 - P1-12, the totality of `Interval`: Done. Both accessors saturate, and the Kani harness
-  `the_interval_accessors_are_total` proves them free of overflow and sign-preserving over every
+  `the_interval_conversions_are_total` proves them free of overflow and sign-preserving over every
   `i128` tick count, with a falsification patch. Narrowing `from_ticks` to `i64` is a further
   two-way door before the first publish, which the maintainer may rule; the done-when check does
   not need it.

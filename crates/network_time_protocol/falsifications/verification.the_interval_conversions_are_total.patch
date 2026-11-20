@@ -1,4 +1,4 @@
-Falsifies `network_time_protocol::verification::the_interval_accessors_are_total`.
+Falsifies `network_time_protocol::verification::the_interval_conversions_are_total`.
 
 The defect: `Interval::nanoseconds` multiplies with `wrapping_mul` instead of `saturating_mul`, so a
 tick count above about 1.7 x 10^29 wraps past `i128::MAX` and a huge positive interval reads back

@@ -191,9 +191,9 @@ fn a_consistent_exchange_is_accepted() {
 /// overflow, and neither turns a positive interval negative or a negative one positive. The
 /// multiplication saturates before the division, so an interval no exchange can produce reads as
 /// a huge one of the same sign rather than wrapping onto the other.
-/// Falsification: replayable `crates/network_time_protocol/falsifications/verification.the_interval_accessors_are_total.patch`
+/// Falsification: replayable `crates/network_time_protocol/falsifications/verification.the_interval_conversions_are_total.patch`
 #[kani::proof]
-fn the_interval_accessors_are_total() {
+fn the_interval_conversions_are_total() {
     let ticks: i128 = kani::any();
     let interval = Interval::from_ticks(ticks);
     let nanoseconds = interval.nanoseconds();
