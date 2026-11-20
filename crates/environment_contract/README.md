@@ -74,7 +74,7 @@ falsification patch in `falsifications/` turns it red.
 |---|---|---|
 | `verification::field_bytes_never_panics_for_any_length_byte` | a length byte past its field reads as absent and never panics | `verification.field_bytes_never_panics_for_any_length_byte.patch` |
 
-The round trip and domain membership are covered by unit tests and doctests, not by proof.
+Unit tests and doctests cover the round trip and domain membership, not a proof.
 
 ## Building and testing
 
@@ -89,7 +89,7 @@ cargo build --lib --target riscv64imac-unknown-none-elf
 ### Running the proof
 
 Install Kani first: run `cargo install --locked kani-verifier --version 0.68.0`, then `cargo kani
-setup`. Setup downloads a model checker and the Rust toolchain Kani is pinned to, so it needs
+setup`. Setup downloads a model checker and the Rust toolchain that Kani pins, so it needs
 network access. Then run the harness:
 
 ```sh
@@ -132,8 +132,8 @@ Weekly fuzzing is off for this crate, because the reader has `unsafe` code in on
 ## BUGS
 
 - The only reader is `unsafe`. A safe reader over borrowed bytes is not built yet.
-- The lists are curated and short. `KNOWN_LOCALES` spells the codeset `UTF-8`, as glibc's `LANG`
-  does, while `locale -a` prints `utf8`. Whether `setlocale` treats the two alike is unverified.
+- The lists are short on purpose. `KNOWN_LOCALES` spells the codeset `UTF-8`, as glibc's `LANG`
+  does, while `locale -a` prints `utf8`. Nobody has verified whether `setlocale` treats the two alike.
 
 ## Minimum Rust version
 

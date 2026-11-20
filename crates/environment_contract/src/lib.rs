@@ -3,20 +3,20 @@
 //! whoever reads it (a standard library's start-up code). A value must
 //! parse as a member of a known-safe [`domain`] to reach the page, enforced by [`PageBuilder`]'s
 //! setters, because once a value is bytes on a page nothing can tell a password from a timezone.
-//! The page is assembled before it is mapped read-only, so it needs no seqlock, and [`MAGIC`] is
+//! The writer assembles the page before the reader maps it read-only, so it needs no seqlock, and [`MAGIC`] is
 //! checked first, so a zeroed or foreign frame answers `None`.
 
 //! # BUGS
 //!
-//! - The domains are curated and short, not the IANA, glibc or terminfo lists, which would be a
+//! - The domains are short, not the IANA, glibc or terminfo lists, which would be a
 //!   dependency decision. They grow on demand.
 //!   `KNOWN_LOCALES` spells the codeset `UTF-8`, as glibc's `LANG` does, while `locale -a` prints
-//!   `utf8`; whether `setlocale` normalizes the two is unverified.
+//!   `utf8`; nobody has verified whether `setlocale` normalizes the two.
 //! - Every domain member fits its field's maximum by construction, and a `const` assertion fails the
 //!   build when a list grows past it, so the page assembler never truncates a value.
 //! - The reader answers only a member of its key's domain, so a page some other writer produced
 //!   cannot hand a program a value outside the closed set. A zone, locale or terminal type missing
-//!   from the lists is added by a pull request that names the real IANA, glibc or terminfo entry.
+//!   from the lists enters through a pull request that names the real IANA, glibc or terminfo entry.
 //!   Compiling the full tables in is a dependency decision and stays refused.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `env_proto` to spell out the contraction;
@@ -24,7 +24,7 @@
 
 #![cfg_attr(not(test), no_std)]
 
-/// The curated, validated domains each declared key is checked against.
+/// The curated, validated domains that each declared key must belong to.
 ///
 /// See the crate's own `BUGS` section for what "curated" means here: every value listed is real
 /// and checkable, and the lists are short by design rather than by neglect.
@@ -199,7 +199,7 @@ pub enum Refused {
 ///
 /// # Examples
 ///
-/// Assembling is validate-then-write; a value outside the domain is refused before it reaches the page:
+/// Assembling is validate-then-write; the builder refuses a value outside the domain before it reaches the page:
 ///
 /// ```
 /// use environment_contract::{ConfigurationPage, PageBuilder, Refused};
@@ -216,7 +216,7 @@ pub enum Refused {
 /// assert_eq!(read.locale(), Some("en_US.UTF-8"));
 /// assert_eq!(read.terminal_type(), Some("xterm-256color"));
 ///
-/// // A value outside the domain is refused when the page is built, not carried through
+/// // The builder refuses a value outside the domain when it builds the page, not carried through
 /// // disguised as configuration.
 /// assert_eq!(
 ///     PageBuilder::new().time_zone("definitely-not-a-timezone"),
@@ -440,7 +440,7 @@ impl ConfigurationPage {
     ///
     /// `virtual_address` must be a mapped, byte-aligned buffer of at least [`PAGE_CONTENT_BYTES`] bytes (either an
     /// assembled page, or a zeroed frame, which reads as "no configuration"), and it must stay
-    /// mapped and unwritten by this process for as long as this value is used. A page mapped
+    /// mapped and unwritten by this process for as long as the caller uses this value. A page mapped
     /// read-only satisfies the last condition by construction.
     pub const unsafe fn new(virtual_address: u64) -> Self {
         ConfigurationPage {
@@ -461,7 +461,7 @@ impl ConfigurationPage {
         self.bytes()[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8] == MAGIC
     }
 
-    /// `TZ`, or `None` if this process holds no config page, the page is unrecognized, `TZ` was
+    /// `TZ`, or `None` if this process holds no config page, the page fails the magic check, `TZ` was
     /// never declared onto it, or the bytes are not a member of [`domain::KNOWN_TIME_ZONES`]. A
     /// reader never sees a value outside that set, whoever wrote the page.
     ///
@@ -540,7 +540,7 @@ mod tests {
     use super::*;
 
     /// `buffer` read as a mapped [`ConfigurationPage`] for the length of `f`, and the one place these tests
-    /// argue `ConfigurationPage::new`'s contract. The page is lent to `f` by reference; a test that copied it
+    /// argue `ConfigurationPage::new`'s contract. `f` borrows the page by reference; a test that copied it
     /// out would break the argument, and none does.
     fn with_page<R>(
         buffer: &[u8; PAGE_CONTENT_BYTES],
@@ -578,9 +578,9 @@ mod tests {
         }
     }
 
-    /// The domains are real (not synthesized) and this is what makes them worth being closed:
+    /// The domains are real (not synthesized) and this is what makes them worth closing:
     /// every UTC-adjacent name a reader would type is one of the recognized ones, and one that
-    /// looks plausible but is not (a made-up city, a common typo) is refused.
+    /// looks plausible but is not (a made-up city, a common typo) fails.
     #[test]
     fn domain_checks_accept_real_values_and_refuse_invented_ones() {
         assert!(domain::is_known_time_zone("UTC"));
@@ -614,7 +614,7 @@ mod tests {
     }
 
     /// The full round trip: build with all three keys, read every one back through a page built
-    /// from a raw pointer the way a real mapped frame would be named.
+    /// from a raw pointer the way a real mapped frame would name it.
     #[test]
     fn a_fully_declared_page_round_trips() {
         let bytes = PageBuilder::new()
@@ -861,7 +861,7 @@ mod tests {
 
     /// The layout constants are self-consistent (no overlap, no gap that would misalign a field
     /// against what `write_field`/`read_field` compute), pinned so a mutant swapping an offset
-    /// is caught here rather than by a torn read on real hardware. Asserting on constants is
+    /// fails a test here rather than costing a torn read on real hardware. Asserting on constants is
     /// this test's entire purpose, so the lint that flags a constant assertion as pointless is
     /// switched off on purpose here.
     #[test]
