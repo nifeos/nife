@@ -74,7 +74,7 @@ this table is the only record the names keep. The reading of each against `desig
 | `has_magic` | fn, `bool` | `has_` and `is_` are for a `bool` only; "magic" is the word shell manuals and Python's `glob` use for an unquoted wildcard | ratified as built |
 | `literal` | fn, `Option` | a noun for the `Option` value that comes back, the pattern's one literal name | ratified as built |
 | `match_steps` | fn, `(bool, usize)` | the steps of a match; the tuple return stays the maintainer's provisional call, a two-way door | ratified as built |
-| `step_bound` | const fn | a bound on the steps, beside `match_steps`, stating the unit; the parameters carry the unit `_bytes`; refused `cost_bound` | ratified, renamed from `cost_bound` |
+| `step_bound` | const fn | a bound on the steps, beside `match_steps`, stating the unit; the parameters carry the unit `_bytes`; refused `cost_bound` | ratified |
 | `LeadingDot` | enum | says which dot the policy is about; the old spelling has no `doc(alias)` | ratified |
 
 `LeadingDot::Special` and `LeadingDot::Ordinary` are ratified with the enum: they are the two answers.

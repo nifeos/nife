@@ -76,8 +76,8 @@ release steps.
   A.
 - R1, the review package: Done, [#3790](https://github.com/nifeos/nife/pull/3790), at
   [notes/crate-reviews/byte-glob.md](../../notes/crate-reviews/byte-glob.md).
-- R2, ratify the seven names and clear `nifeos/byte_glob`: Done (2026-11-20 UTC). The package is
-  cleared and the names are ratified.
+- R2, ratify the seven names and clear `nifeos/byte_glob`: Done (2026-11-20 UTC). The architect cleared
+  the package and ratified the names.
 
 ## Open decisions
 
@@ -177,14 +177,14 @@ the two answers. The three call sites in the tree change with it
 (`pgrep/src/lib.rs` lines 94 to 102, two mentions, and the doc tests).
 
 Ruled 2026-11-20 (UTC): `matches`, `matches_with`, `has_magic`, `literal`, `match_steps` and
-`LeadingDot` (variants `Special` and `Ordinary`) are ratified as built, and `cost_bound` is renamed
+`LeadingDot` (variants `Special` and `Ordinary`) stand as built, and `cost_bound` becomes
 `step_bound`, with no alias for either old spelling. `has_` and `is_` are for a `bool` only, and
 `literal` is a noun for an `Option` value. `step_bound` sits beside `match_steps` and states the
 unit. The tuple return of `match_steps` stays the maintainer's provisional call, a two-way door.
 
 ### Decision 3. Ratify the seven names and create `nifeos/byte_glob`
 
-Ruled 2026-11-20 (UTC), option A: the review package is cleared. The repository
+Ruled 2026-11-20 (UTC), option A: the architect cleared the review package. The repository
 `nifeos/byte_glob` has the go, with `publish = false`, no tag and no publish. The move
 (milestone 1017, step 5) starts once the prove shard is green and the `step_bound` rename has
 landed. The package is [notes/crate-reviews/byte-glob.md](../../notes/crate-reviews/byte-glob.md).
