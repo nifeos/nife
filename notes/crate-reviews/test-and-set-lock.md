@@ -6,8 +6,8 @@ page.*
 
 The architect reads this to clear the crate for its move to its own repository, as part of
 [milestone 1109 (what an outside maintainer would fix before it leaves)](../../design/roadmap/1109-spin-lock-outside-review.md).
-It describes the crate as `main` leaves it. The architect cleared it on 2026-11-20 (UTC): the
-repository `nifeos/test_and_set_lock` is approved with `publish = false`, no tag and no publish.
+It describes the crate as `main` leaves it. The architect cleared it on 2026-11-20 (UTC) and approved the
+repository `nifeos/test_and_set_lock` with `publish = false`, no tag and no publish.
 
 ## In one paragraph
 
@@ -141,9 +141,9 @@ spellings, and no name carries a unit or an abbreviation.
 
 Nothing blocks the repository. One condition holds the first tag, not the repository: before the
 crate's first tag, `tools/host_reordering_litmus` (or an equivalent) must run on real Arm and RISC-V
-hardware, not QEMU TCG, and its result is recorded in this package. Loom checks C11 only, so the
+hardware, not QEMU TCG, and this package records its result. Loom checks C11 only, so the
 hardware run is the one check of the lock's ordering against the machines that run it. A bench run
-is hardware work and never blocks a merge.
+never blocks a merge.
 
 ## Open questions
 
@@ -151,5 +151,5 @@ None.
 
 ## Recommendation
 
-Cleared on 2026-11-20 (UTC). The go creates `nifeos/test_and_set_lock` with `publish = false`, no
+The architect cleared the crate on 2026-11-20 (UTC). The go creates `nifeos/test_and_set_lock` with `publish = false`, no
 tag and no publish. The first tag waits for the hardware litmus run above.
