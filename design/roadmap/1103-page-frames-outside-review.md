@@ -46,7 +46,7 @@ The repository's `check` and `proofs` runs are green on the first push for the c
 - P1-7, the acronyms gate: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-8, the names the release review meets: Done, [#3805](https://github.com/nifeos/nife/pull/3805).
   Decisions 1 and 2 and the two-way renames are built across the crate, `kernel/` and
-  `system_tests/`, with no alias of an old spelling. Every renamed name is ratified (2026-11-20 UTC).
+  `system_tests/`, with no alias of an old spelling. Ratified 2026-11-20 (UTC): every renamed name.
 - P1-9, `page_frames_in` truncates: Done, [#3567](https://github.com/nifeos/nife/pull/3567), with
   `page_frames_covering`.
 - P1-10, the falsification patches drift: Done, [#3521](https://github.com/nifeos/nife/pull/3521)
@@ -72,10 +72,10 @@ The repository's `check` and `proofs` runs are green on the first push for the c
   and the test `an_unaligned_address_is_refused_without_a_panic` (`register_names`): Done,
   [#3805](https://github.com/nifeos/nife/pull/3805), as `is_index_used` and
   `an_unaligned_physical_address_is_refused_without_a_panic`.
-- Ratifying the public names: Ruled (2026-11-20 UTC). Every public name is ratified as built,
+- Ratifying the public names: Ruled 2026-11-20 (UTC): ratify every public name as built,
   including `alloc`, std's spelling and meaning.
-- Clearing a review package: Ruled (2026-11-20 UTC). The package is cleared and the repository
-  `nifeos/page_frames` is approved as `publish = false`, with no tag and no publish. The package is
+- Clearing a review package: Ruled 2026-11-20 (UTC): clear the package and approve the repository
+  `nifeos/page_frames` as `publish = false`, with no tag and no publish. The package is
   [notes/crate-reviews/page-frames.md](../../notes/crate-reviews/page-frames.md).
 
 ## Rulings
@@ -87,8 +87,8 @@ ratified.
 
 ### Clear the review package and approve the repository
 
-Ruled 2026-11-20 (UTC): A. The package is cleared and the clearance creates the repository
-`nifeos/page_frames`, approved as `publish = false`, with no tag and no publish. The move lane
+Ruled 2026-11-20 (UTC): A. Clear the package. The clearance creates the repository
+`nifeos/page_frames` as `publish = false`, with no tag and no publish. The move lane
 follows.
 
 ## What was checked, and how
@@ -178,7 +178,7 @@ The P1 items are in [the appendix](1103-page-frames-outside-review/before-the-ta
 
 Two decisions, each with a recommendation first. Both are two-way while nobody outside the tree uses
 the crate, so the maintainer rules them provisionally, and has ruled Decision 2 below. The names in items 8, 9 and
-14 are ratified under "Rulings".
+14 carry the ratification under "Rulings".
 
 ### Decision 1: Whether `FRAME_SIZE` becomes `FRAME_BYTES` before the first release
 
@@ -240,7 +240,7 @@ The checks are in [the appendix](1103-page-frames-outside-review/done-when.md).
 ## Follow-on
 
 - **Outstanding.** Each finding that "Finding status" marks Open, checked against
-  `crates/page_frames` and its manifest. Items 1, 2, 12 and 17 are the move lane's; the review package is cleared.
+  `crates/page_frames` and its manifest. Items 1, 2, 12 and 17 are the move lane's; the review package has its clearance.
 
 ## BUGS
 

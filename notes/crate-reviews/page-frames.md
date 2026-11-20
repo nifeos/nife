@@ -72,7 +72,7 @@ write. The architect weighs these; this package does not.
 | `script/crate-move --dry-run` | stages; four findings, all for the move lane. There is no README. The manifest inherits from the workspace, so `cargo generate-lockfile` fails in the copy. The licenses are absent. The scaffolded README exceeds the prose caps until it is written |
 | `script/names page_frames` and `python3 helpers/name_release.py --draft page_frames` | the crate name ratified; 21 names, all ratified |
 | the template's naming checks (`question_shape`, `contract_names`, `spelled_out`, `unit_symbols`, `register_names`, `british_spelling`) | each judges 120 names and refuses none |
-| `abbreviations` (report only) | finds one component, `allocator`, eight times, which its word list does not hold; the word is accepted (open question 2) |
+| `abbreviations` (report only) | finds one component, `allocator`, eight times, which its word list does not hold; open question 2 accepts the word |
 
 Not run, and so not claimed: a mutation census, which runs only between 08:00 and 13:00 UTC; the
 baseline row (101 caught, 3 missed, 1 timeout, 12 unviable) predates the renames, which change no
@@ -108,7 +108,7 @@ it names and fails its harness.
 
 ## Names
 
-Every public name is ratified (2026-11-20 UTC), as built. The rename lane applied the two rulings
+Ratified 2026-11-20 (UTC): every public name, as built. The rename lane applied the two rulings
 of 2026-11-19 UTC and 2026-11-14 UTC and the two-way renames of item 8, with no alias of an old
 spelling. `alloc` is std's spelling, with std's meaning.
 
@@ -160,12 +160,12 @@ no text.
 
 1. Whether the crate leaves at all, given that only the kernel and `system_tests` use it: it leaves,
    so the proofs and the falsification patches run in a repository whose gates a stranger can read.
-   The repository `nifeos/page_frames` is approved as `publish = false`, with no tag and no publish.
-2. Whether the abbreviations helper's word list gains `allocator`: it does. The helper is vendored
-   from `nifeos/crate-workflows`, so the word and the helper's selftest land there and the pin
+   Approved: repository `nifeos/page_frames` as `publish = false`, with no tag and no publish.
+2. Whether the abbreviations helper's word list gains `allocator`: it does. The helper comes
+   from `nifeos/crate-workflows` (a vendored copy), so the word and the helper's selftest land there and the pin
    moves to that commit.
 
 ## Recommendation
 
-Cleared (2026-11-20 UTC). The repository is approved as `publish = false`; no tag and no publish.
+Cleared 2026-11-20 (UTC). Repository `nifeos/page_frames` as `publish = false`; no tag and no publish.
 The move lane follows.
