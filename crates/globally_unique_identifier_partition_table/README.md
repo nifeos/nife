@@ -62,14 +62,18 @@ for (index, partition) in table.partitions() {
 
 ## What is proven
 
-Nine Kani harnesses, in `src/verification.rs`, each with a falsification patch in
+Fourteen Kani harnesses, in `src/verification.rs`, each with a falsification patch in
 `falsifications/` named `<module>.<harness>.patch`:
 
 - `crc32_matches_its_bitwise_definition` and `a_single_byte_change_always_changes_the_crc`
 - `an_entry_survives_the_round_trip` and `a_guid_survives_the_on_disk_layout`
 - `a_headers_fields_survive_the_round_trip` and `the_header_fields_partition_the_block`
 - `overlap_is_exactly_sharing_a_block` and `an_entries_block_count_never_panics_and_is_exact`
-- `create_never_lays_out_a_table_parse_would_reject`
+- `create_never_lays_out_a_table_parse_would_reject` and
+  `a_backup_header_restores_the_table_it_was_written_from`
+- `the_header_checks_before_the_crc_are_total` and
+  `the_header_crc_in_pieces_is_the_crc_of_the_whole`, the two stages of `Header::decode`
+- `a_span_always_contains_what_was_asked_for` and `a_name_always_decodes_into_its_documented_buffer`
 
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
 kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
