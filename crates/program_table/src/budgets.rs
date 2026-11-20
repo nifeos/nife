@@ -4,7 +4,7 @@
 //!
 //! Name: provisional.
 
-use crate::{Manifest, StartupContract, spawnproto};
+use crate::{Manifest, StartupContract, spawn_protocol};
 
 /// **The region the progenitor builds a `std` program in, and then hands it as its heap**, in pages
 /// (milestone 595 (provisional)). The shell prints it in `caps` and the progenitor spends it, so it
@@ -20,7 +20,7 @@ use crate::{Manifest, StartupContract, spawnproto};
 pub const STD_REGION_PAGES: u64 = 256 + 128;
 
 /// **The region a named `std` program is built in**, in pages: [`STD_REGION_PAGES`], plus one
-/// package's worth ([`spawnproto::IMAGE_MAXIMUM_PAGES`]) for a program that declares
+/// package's worth ([`spawn_protocol::IMAGE_MAXIMUM_PAGES`]) for a program that declares
 /// [`Manifest::installer`] (milestone 809 (the package client becomes a program)).
 ///
 /// A package manager reads a whole package into one run of its own pages before it sends it a page
@@ -32,7 +32,7 @@ pub const STD_REGION_PAGES: u64 = 256 + 128;
 pub const fn named_std_region_pages(m: &Manifest) -> u64 {
     STD_REGION_PAGES
         + if m.installer {
-            spawnproto::IMAGE_MAXIMUM_PAGES
+            spawn_protocol::IMAGE_MAXIMUM_PAGES
         } else {
             0
         }

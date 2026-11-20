@@ -263,7 +263,7 @@ fn spawn_timetable_with(
         crate::sched::thread_control_block_insert_capability(
             tid,
             rendezvous_capability(stand_in, Rights::WRITE),
-            Some(program_table::spawnproto::RUN_UNVOUCHED_SLOT),
+            Some(program_table::spawn_protocol::RUN_UNVOUCHED_SLOT),
         )
         .expect("insert the run-unvouched stand-in");
     }

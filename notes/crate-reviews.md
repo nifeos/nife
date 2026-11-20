@@ -72,6 +72,8 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`universal_serial_bus`](crate-reviews/universal-serial-bus.md) (`usb` in this tree) | 3 | cleared to move (2026-11-19 UTC, no tag, no publish); the move waits for items 1, 2, 4 and 10 of milestone 1111 (what an outside maintainer would fix before its first release) |
 | [`generational_table`](crate-reviews/generational-table.md) | 4 | cleared to move; repository exists |
 | [`non_volatile_memory_express`](crate-reviews/non-volatile-memory-express.md) | 5 | cleared to move; repository exists |
+| [`grant_plan`](crate-reviews/grant-plan.md) | 5 | ready for review |
+| [`grant_contract`](crate-reviews/grant-contract.md) | contract | ready for review |
 | [`domain_name_system`](crate-reviews/domain-name-system.md) | 5 | ready for review |
 | [`static_elf`](crate-reviews/static-elf.md) | kernel | ready for review |
 | [`e1000e`](crate-reviews/e1000e.md) | 6 | cleared to move; repository exists |

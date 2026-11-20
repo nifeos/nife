@@ -1,7 +1,7 @@
 //! Tests of the shell's own endowment, its `bind` rows and the census of held slots.
 
 use grant_plan::MountedTree;
-use grant_plan::nav::Cwd;
+use grant_plan::navigation::Cwd;
 
 use super::*;
 use crate::test_support::shown;
@@ -15,7 +15,7 @@ fn a_bound_name_prints_its_own_namespace_row() {
     let mut target = Cwd::root();
     target.descend(b"logs");
     target.descend(b"2026");
-    let mut binds = nav::Bindings::none();
+    let mut binds = navigation::Bindings::none();
     binds.add(b"recent", target).unwrap();
     let holdings = Holdings {
         directory: true,
@@ -37,7 +37,7 @@ fn a_bound_name_prints_its_own_namespace_row() {
                 directory: true,
                 mounted: None,
                 cwd: Cwd::root(),
-                binds: nav::Bindings::none(),
+                binds: navigation::Bindings::none(),
             },
             None,
             None,
@@ -57,7 +57,7 @@ fn holding_a_directory_changes_exactly_one_line_of_the_endowment() {
                 directory: true,
                 mounted: None,
                 cwd: Cwd::root(),
-                binds: nav::Bindings::none(),
+                binds: navigation::Bindings::none(),
             },
             None,
             None,
@@ -94,7 +94,7 @@ fn a_second_grant_prints_its_row_and_where_it_is_mounted() {
         directory: true,
         mounted: MountedTree::mounted_at(at(&[b"media", b"usb"])),
         cwd: Cwd::root(),
-        binds: nav::Bindings::none(),
+        binds: navigation::Bindings::none(),
     };
     let s = shown(|o| write_holdings(128, holdings, None, None, o));
     assert!(s.contains("cap 4  endpoint  directory"), "{s}");
@@ -127,7 +127,7 @@ fn a_mounted_tree_prints_as_paths_in_the_one_tree() {
         directory: true,
         mounted: MountedTree::mounted_at(at(&[b"media", b"usb"])),
         cwd: at(&[b"media", b"usb", b"logs"]),
-        binds: nav::Bindings::none(),
+        binds: navigation::Bindings::none(),
     };
     assert_eq!(shown(|o| write_pwd(&holdings, o)), "  /media/usb/logs\n");
 

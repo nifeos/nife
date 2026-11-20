@@ -1,6 +1,6 @@
 use filesystem_contract::{directory, rm as rr};
 use filesystem_fixture::tree;
-use grant_plan::rmopt;
+use grant_plan::rm_options;
 
 use super::*;
 use crate::sched;
@@ -111,7 +111,7 @@ fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
     );
 
     // The narrow grant: it may take names out of `rmtree` and may not walk into anything.
-    let blind = run_rm(directory::REMOVE, tree::RM_DOOMED, rmopt::RECURSIVE)
+    let blind = run_rm(directory::REMOVE, tree::RM_DOOMED, rm_options::RECURSIVE)
         .expect("the service was wired by the first run");
     assert_eq!(
         blind.status,
@@ -127,7 +127,7 @@ fn rm_r_takes_the_subtree_it_was_granted_and_a_narrower_grant_cannot_begin() {
     let done = run_rm(
         directory::REMOVE_TREE,
         tree::RM_DOOMED,
-        rmopt::RECURSIVE | rmopt::VERBOSE,
+        rm_options::RECURSIVE | rm_options::VERBOSE,
     )
     .expect("the service was wired by the first run");
     assert_eq!(done.status, rr::OK, "the removal reported a failure");
@@ -159,7 +159,7 @@ fn rm_f_ignores_a_name_that_is_not_there_and_success_says_nothing() {
     assert_eq!(loud.status, rr::status(2), "a missing name is ENOENT");
     assert!(loud.printed > 0, "and it says so");
 
-    let quiet = run_rm(directory::REMOVE_TREE, tree::RM_MISSING, rmopt::FORCE)
+    let quiet = run_rm(directory::REMOVE_TREE, tree::RM_MISSING, rm_options::FORCE)
         .expect("the service was wired by the first run");
     assert_eq!(
         quiet.status,
