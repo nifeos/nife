@@ -1,6 +1,6 @@
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 use pci_configuration_space::{
-    Bdf, CLASS_NON_VOLATILE_MEMORY_EXPRESS, Function, HEADER_TYPE_BRIDGE, walk,
+    BusDeviceFunction, CLASS_NON_VOLATILE_MEMORY_EXPRESS, Function, HEADER_TYPE_BRIDGE, walk,
 };
 
 use crate::simulation::{Event, Simulated};
@@ -10,7 +10,9 @@ fn walk_all(simulated: &Simulated) -> Vec<Function> {
     let mut found = Vec::new();
     walk(
         2,
-        &mut |bdf: Bdf, offset| simulated.configuration_read(bdf.ecam_offset() + offset),
+        &mut |bus_device_function: BusDeviceFunction, offset| {
+            simulated.configuration_read(bus_device_function.ecam_offset() + offset)
+        },
         &mut |function| found.push(function),
     );
     found
@@ -19,15 +21,15 @@ fn walk_all(simulated: &Simulated) -> Vec<Function> {
 fn configure(simulated: &mut Simulated, memory: Window) -> root_port::Configured {
     let shared = std::cell::RefCell::new(simulated);
     root_port::configure(
-        &mut |bdf: Bdf, offset| {
+        &mut |bus_device_function: BusDeviceFunction, offset| {
             shared
                 .borrow()
-                .configuration_read(bdf.ecam_offset() + offset)
+                .configuration_read(bus_device_function.ecam_offset() + offset)
         },
-        &mut |bdf: Bdf, offset, value| {
+        &mut |bus_device_function: BusDeviceFunction, offset, value| {
             shared
                 .borrow_mut()
-                .configuration_write(bdf.ecam_offset() + offset, value);
+                .configuration_write(bus_device_function.ecam_offset() + offset, value);
         },
         memory,
     )
@@ -241,15 +243,15 @@ fn the_non_volatile_memory_express_controller_is_hidden_until_the_root_port_forw
 
     let after = walk_all(&simulated);
     assert_eq!(after.len(), 2);
-    assert_eq!(after[0].bdf, root_port::LOCATION);
+    assert_eq!(after[0].bus_device_function, root_port::LOCATION);
     let bridge = after[0].bridge.unwrap();
     assert_eq!(
         (bridge.primary, bridge.secondary, bridge.subordinate),
         (0, 1, 1)
     );
     assert_eq!(
-        after[1].bdf,
-        Bdf {
+        after[1].bus_device_function,
+        BusDeviceFunction {
             bus: 1,
             device: 0,
             function: 0
@@ -264,7 +266,7 @@ fn the_non_volatile_memory_express_bar_sizes_through_the_configured_port() {
     let port = PortNumber::One.mainline();
     bring_up(&mut simulated, &port).unwrap();
     configure(&mut simulated, port.memory_32_bit);
-    let bar0 = Bdf {
+    let bar0 = BusDeviceFunction {
         bus: 1,
         device: 0,
         function: 0,
@@ -419,7 +421,7 @@ fn a_window_may_end_exactly_at_four_gibibytes() {
 fn configure_keeps_the_command_bits_and_writes_no_status_bit() {
     use pci_configuration_space::{BUS_NUMBERS_REGISTER, COMMAND_REGISTER};
     let mut writes = Vec::new();
-    let mut read = |_: Bdf, offset: u64| match offset {
+    let mut read = |_: BusDeviceFunction, offset: u64| match offset {
         0 => 0x0000_1556,
         // Header type 1 in bits 23:16 of the word at 0x0c.
         0x0c => 0x0001_0000,

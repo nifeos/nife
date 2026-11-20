@@ -17,7 +17,7 @@ diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuratio
 @@ -636,7 +636,7 @@
          return;
      }
-     let mut at = (read32(bdf, CAPABILITIES_POINTER_REGISTER) & 0xfc) as u64;
+     let mut at = (read32(bus_device_function, CAPABILITIES_POINTER_REGISTER) & 0xfc) as u64;
 -    for _ in 0..CAPABILITY_HOPS {
 +    for _ in 0..CAPABILITY_HOPS + 1 {
          if at == 0 {
