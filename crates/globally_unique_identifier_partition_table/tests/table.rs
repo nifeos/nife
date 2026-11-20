@@ -115,8 +115,8 @@ fn a_4k_native_disk_works_and_the_geometry_moves() {
 }
 
 /// The mistake this catches is the one everybody makes with inclusive ranges: two partitions where
-/// one ends on the block the next starts on. `last_logical_block_address` is the last block *in* the partition, so
-/// that is an overlap, and two filesystems would fight over one sector forever.
+/// one ends on the block the next starts on. `last_logical_block_address` is the last block *in*
+/// the partition, so that is an overlap, and two filesystems would fight over one sector forever.
 #[test]
 fn partitions_that_share_one_block_overlap() {
     let a = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 4096);
@@ -188,10 +188,11 @@ fn a_partition_outside_the_usable_range_is_refused() {
     assert!(build(&[exact]).is_ok());
 }
 
-/// `last_logical_block_address` is inclusive, so a partition whose two bounds are the same block is one block long
-/// rather than empty, and legal. Every other partition in this suite and in `real_disks.rs` spans
-/// thousands of blocks, so the range check had only ever been met from far away: the equal case was
-/// never judged, and a `<=` there refuses a legal disk with nothing failing.
+/// `last_logical_block_address` is inclusive, so a partition whose two bounds are the same block is
+/// one block long rather than empty, and legal. Every other partition in this suite and in
+/// `real_disks.rs` spans thousands of blocks, so the range check had only ever been met from far
+/// away: the equal case was never judged, and a `<=` there refuses a legal disk with nothing
+/// failing.
 #[test]
 fn a_partition_of_exactly_one_block_is_legal() {
     let one = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 2048);
@@ -255,9 +256,9 @@ fn the_entry_array_buffer_sets_the_entry_count() {
 /// and every one of them must be rejected.
 ///
 /// The small-table twin of `real_disks.rs`'s sweeps: a four-entry array is 512 bytes, so the
-/// complete cross product is 130 MB of CRC rather than 68 GB. The symbolic form is the Kani harness
-/// `a_single_byte_change_always_changes_the_crc`. Skipped under Miri, where the parses would
-/// dominate the workspace run; every other test here walks the clean paths.
+/// complete cross product is 130 million bytes of CRC rather than 68 billion. The symbolic form is
+/// the Kani harness `a_single_byte_change_always_changes_the_crc`. Skipped under Miri, where the
+/// parses would dominate the workspace run; every other test here walks the clean paths.
 #[test]
 #[cfg_attr(
     miri,
@@ -308,10 +309,10 @@ fn every_single_byte_corruption_of_a_small_table_is_caught() {
     assert_eq!(cases, (BLOCK + 4 * entry::ENTRY_BYTES) as u32 * 255);
 }
 
-/// Handing the backup header to `PartitionTable::parse` is refused rather
-/// than half-accepted. It is a valid header with a correct CRC describing the same disk, so nothing
-/// but the `my_logical_block_address` check tells it apart. Getting this wrong means a recovery tool that reads the
-/// last block and believes it has the primary.
+/// Handing the backup header to `PartitionTable::parse` is refused rather than half-accepted. It is
+/// a valid header with a correct CRC describing the same disk, so nothing but the
+/// `my_logical_block_address` check tells it apart. Getting this wrong means a recovery tool that
+/// reads the last block and believes it has the primary.
 #[test]
 fn the_backup_header_is_not_a_primary() {
     let disk = build(&[Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 4096)]).unwrap();
@@ -377,9 +378,9 @@ fn a_header_that_is_not_a_header_says_so() {
 /// relaxing, so it gets a test that says out loud what it costs: a header whose CRC is perfectly
 /// good is still refused if there is one stray byte after it in the block.
 ///
-/// Both committed fixtures, from two unrelated tools, zero the tail, and UEFI 2.10 section 5.3.2 requires
-/// it. If a real disk ever trips this, the fix is to relax the check and record the disk that did
-/// it, not to weaken the CRC.
+/// Both committed fixtures, from two unrelated tools, zero the tail, and UEFI 2.10 section 5.3.2
+/// requires it. If a real disk ever trips this, the fix is to relax the check and record the disk
+/// that did it, not to weaken the CRC.
 #[test]
 fn a_stray_byte_after_the_header_is_refused_even_with_a_valid_crc() {
     let disk = build(&[]).unwrap();
@@ -570,7 +571,7 @@ fn reforge(block: &mut [u8]) {
     block[16..20].copy_from_slice(&crc.to_le_bytes());
 }
 
-/// Parse a tight, empty table whose header has been patched and re-CRCed.
+/// Parse a tight, empty table whose header has been patched and its CRC recomputed.
 fn parse_patched(patch: impl FnOnce(&mut [u8])) -> Result<(), Error> {
     let disk = build(&[]).unwrap();
     let mut block: [u8; BLOCK] = disk.header().try_into().unwrap();
@@ -682,9 +683,9 @@ fn the_entry_array_shape_guards_are_exact() {
     assert_eq!(table.partitions().count(), 1);
 }
 
-/// `check_protective_master_boot_record` is a thin wrapper over `master_boot_record::validate`, and every other call in the
-/// suite hands it a good block, so a body replaced with `Ok(())` passed (a mutation
-/// survivor). One bad block through the wrapper is what pins the plumbing.
+/// `check_protective_master_boot_record` is a thin wrapper over `master_boot_record::validate`, and
+/// every other call in the suite hands it a good block, so a body replaced with `Ok(())` passed (a
+/// mutation survivor). One bad block through the wrapper is what pins the plumbing.
 #[test]
 fn a_wrong_mbr_is_refused_through_the_wrapper_too() {
     let disk = build(&[]).unwrap();
