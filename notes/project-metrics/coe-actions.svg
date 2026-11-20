@@ -57,8 +57,7 @@
 <path class="seg s1" d="M567.5,310.7 V101.9 Q567.5,97.9 571.5,97.9 H593.3 Q597.3,97.9 597.3,101.9 V310.7 Z"><title>2026W46, closed: 32</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W46</text>
 <text class="fg val" x="582.4" y="92.9" font-size="10" text-anchor="middle">34</text>
-<rect class="seg s0" x="612.6" y="310.7" width="29.8" height="13.3"><title>2026W47, open: 2</title></rect>
-<path class="seg s1" d="M612.6,310.7 V101.9 Q612.6,97.9 616.6,97.9 H638.3 Q642.3,97.9 642.3,101.9 V310.7 Z"><title>2026W47, closed: 32</title></path>
+<path class="seg s1" d="M612.6,324.0 V101.9 Q612.6,97.9 616.6,97.9 H638.3 Q642.3,97.9 642.3,101.9 V324.0 Z"><title>2026W47, closed: 34</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W47</text>
 <text class="fg val" x="627.5" y="92.9" font-size="10" text-anchor="middle">34</text>
 <rect class="s1" x="672" y="64" width="11" height="11" rx="2"/>

@@ -792,7 +792,7 @@ pub mod version {
 /// **The boot test's names, in one place for the programs that must agree on them**:
 /// `package_fetch_exerciser` asks, `system_tests/src/user/package_index_tests.rs` grants and judges.
 /// The hosts that answer, `helpers/name-server-peer` and `helpers/tls-peer`, spell these again in
-/// Python on purpose, as `domain_name_resolution_contract::fixture` explains.
+/// Python on purpose, as `domain_name_resolution_fixture` explains.
 pub mod fixture {
     /// The image's first index address, standing in for `basalt.nifeos.org`. The name server
     /// refuses it, so the client must move to [`BACKUP_HOST`] (Q2's backup address).

@@ -471,6 +471,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "domain_name_resolution_fixture"
+version = "0.1.0"
+dependencies = [
+ "domain_name_resolution_contract",
+ "domain_name_system",
+]
+
+[[package]]
 name = "domain_name_system"
 version = "0.1.0"
 
@@ -562,6 +570,7 @@ dependencies = [
  "credential_contract",
  "current_cpu_contract",
  "domain_name_resolution_contract",
+ "domain_name_resolution_fixture",
  "entropy_contract",
  "filesystem_contract",
  "filesystem_fixture",
@@ -1617,6 +1626,7 @@ dependencies = [
  "credential_contract",
  "current_cpu_contract",
  "domain_name_resolution_contract",
+ "domain_name_resolution_fixture",
  "domain_name_system",
  "e1000e",
  "entropy_contract",

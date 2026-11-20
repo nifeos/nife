@@ -15,11 +15,11 @@
 //! `accept`, proved on the host in `crates/domain_name_system`; a UDP name server a test owned
 //! would have to bind a host port (notes/name-resolution.md, "Why DNS over TCP in the test").
 
-use domain_name_resolution_contract::fixture::{self, CASES};
 use domain_name_resolution_contract::{
     MAXIMUM_GRANTS, Outcome, Refusal, control_answer, endowment, forget_message, grant_messages,
     status,
 };
+use domain_name_resolution_fixture::{self as fixture, CASES};
 
 use super::*;
 use crate::capability_object::{

@@ -92,6 +92,7 @@ members = [
     "crates/subtree_scope",
     "crates/intrusive_queue",
     "crates/line_editor",
+    "crates/domain_name_resolution_fixture",
     "crates/line_editor_component",
     "crates/terminal_contract",
     "crates/loaded_image_check",
@@ -149,6 +150,7 @@ exclude = [
     "fuzz",
     "crates/memory_region_heap/fuzz",
     "crates/master_boot_record/fuzz",
+    "crates/domain_name_resolution_contract/fuzz",
 ]
 
 # Shared package metadata. Each member opts in with `license.workspace = true`, so the

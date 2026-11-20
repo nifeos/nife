@@ -101,11 +101,11 @@
 <path class="seg c10" d="M567.5,199.7 V107.7 Q567.5,103.7 571.5,103.7 H593.3 Q597.3,103.7 597.3,107.7 V199.7 Z"><title>2026W46, unattributed: 180.5</title></path>
 <text class="mut" x="582.4" y="342" font-size="10" text-anchor="middle">2026W46</text>
 <text class="fg val" x="582.4" y="98.7" font-size="10" text-anchor="middle">414.1</text>
-<rect class="seg c2" x="612.6" y="303.4" width="29.8" height="20.6"><title>2026W47, Opus 5.5: 38.7</title></rect>
-<rect class="seg c4" x="612.6" y="291.3" width="29.8" height="12.1"><title>2026W47, Sonnet 5.5: 22.7</title></rect>
-<path class="seg c10" d="M612.6,291.3 V285.5 Q612.6,281.5 616.6,281.5 H638.3 Q642.3,281.5 642.3,285.5 V291.3 Z"><title>2026W47, unattributed: 18.4</title></path>
+<rect class="seg c2" x="612.6" y="296.2" width="29.8" height="27.8"><title>2026W47, Opus 5.5: 52.3</title></rect>
+<rect class="seg c4" x="612.6" y="263.4" width="29.8" height="32.8"><title>2026W47, Sonnet 5.5: 61.7</title></rect>
+<path class="seg c10" d="M612.6,263.4 V255.5 Q612.6,251.5 616.6,251.5 H638.3 Q642.3,251.5 642.3,255.5 V263.4 Z"><title>2026W47, unattributed: 22.3</title></path>
 <text class="mut" x="627.5" y="342" font-size="10" text-anchor="middle">2026W47</text>
-<text class="fg val" x="627.5" y="276.5" font-size="10" text-anchor="middle">79.9</text>
+<text class="fg val" x="627.5" y="246.5" font-size="10" text-anchor="middle">136.2</text>
 <rect class="c10" x="672" y="64" width="11" height="11" rx="2"/>
 <text class="fg" y="74" font-size="11"><tspan x="689" dy="0">unattributed</tspan></text>
 <rect class="c9" x="672" y="83" width="11" height="11" rx="2"/>
