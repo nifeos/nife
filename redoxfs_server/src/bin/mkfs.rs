@@ -44,7 +44,7 @@ extern crate alloc;
 use filesystem_contract::{block, req};
 use filesystem_fixture::blank;
 use globally_unique_identifier_partition_table::PartitionTable;
-use globally_unique_identifier_partition_table::guid::types;
+use nife_partition_NIFE_DATA;
 use redoxfs::{BLOCK_SIZE, Disk, FileSystem};
 use redoxfs_server::{NameCopy, Server};
 use syscall::error::{EIO, Error, Result};
@@ -291,7 +291,7 @@ fn data_partition() -> Option<(u64, u64)> {
     )
     .ok()?;
     for (_, part) in table.partitions() {
-        if part.type_guid != types::NIFE_DATA {
+        if part.type_guid != NIFE_DATA {
             continue;
         }
         let start = part.first_logical_block_address * LBA;
