@@ -4,7 +4,7 @@ An appendix to [the milestone](../1105-pci-outside-review.md).
 
 ## P2
 
-#### `virtio_capabilities` ignores `cap_len`
+#### `virtual_io_capabilities` ignores `cap_len`
 Where: `crates/pci_configuration_space/src/lib.rs` lines 485 to 499.
 Why: a notify capability whose `cap_len` is 16 has no multiplier, and the walk reads one from the
 next entry's header. The virtio specification fixes 16 and 20 as the minimum lengths. A function
@@ -25,11 +25,11 @@ Fix: state the precondition in the doc comment (bus 0, or a bridge path already 
 BUGS entry for `kernel/src/pci.rs`.
 Effort: S. Door: two-way.
 
-#### `Bdf` admits a device above 31 or a function above 7, and the ECAM proof assumes it does not
+#### `BusDeviceFunction` admits a device above 31 or a function above 7, and the ECAM proof assumes it does not
 Where: `crates/pci_configuration_space/src/lib.rs` lines 22 to 41, `:806` (`kani::assume`).
 Why: `ecam_offset` for `dev: 32` lands on the next bus's first device, and the mutation triage
 records two equivalent mutants there because no test can pin behavior nobody wants. The fields are
-public and the kernel builds `Bdf` values by hand.
+public and the kernel builds `BusDeviceFunction` values by hand.
 Fix: mask in `ecam_offset` and `requester_id` (`dev & 31`, `func & 7`) so the proof needs no
 assumption, or a checked constructor that returns `None`; both let the two mutants die.
 Effort: S. Door: two-way.

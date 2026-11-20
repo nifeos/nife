@@ -44,9 +44,9 @@ const SPIN_BOUND: u32 = 50_000_000;
 /// before the payload it gates.** The controller is another observer of this memory, and on a
 /// weakly-ordered CPU nothing else stops a doorbell write hoisting above the command it announces.
 ///
-/// Stronger than [`user_mode_runtime::virtio::virtio_ring_barrier`] on purpose: those drivers
+/// Stronger than [`user_mode_runtime::virtual_io::virtual_io_ring_barrier`] on purpose: those drivers
 /// notify through a syscall instruction, so `x86_64` needs only a compiler fence and aarch64 only
-/// `dmb ish`. This doorbell is a direct store to a device-typed page with no syscall between the
+/// `dmb ish`. This doorbell is a direct store to a device-typed page with no system call between the
 /// ring stores and it, so it keeps `dmb sy` and a real `mfence`. Sharing the two would be an
 /// ordering change, not deduplication.
 fn barrier() {

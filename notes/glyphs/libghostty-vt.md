@@ -26,7 +26,7 @@ UTF-8 and grapheme clustering, the DEC modes, mouse reporting, and a conformance
 1. A Zig toolchain in the build, for one component, pinned. Milestone 36 already accepted a `clang` in
    the build for C, and priced that. Zig is a second one, and it is the cost that does not go away.
 2. The seam is proved, but the shape is not free. The C seam of §31 holds *no capabilities and makes
-   no syscalls*: the Rust shim holds everything and passes buffers. A VT engine fits that shape almost
+   no system calls*: the Rust shim holds everything and passes buffers. A VT engine fits that shape almost
    perfectly (bytes in, grid out, no IO), the same sans-IO property `crates/video_terminal` has. So the
    port is a shim that feeds bytes and reads cells, not a rewrite of `display_terminal`.
 3. The grid readback is the actual work. Our engine gives `pixel(x, y)` as a pure function, which is

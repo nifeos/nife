@@ -1,7 +1,7 @@
 //! `filesystem_tests`: the storage path from a userspace driver up: the virtio disk, `std::fs`
 //! through a granted directory, the redoxfs server, and per-file grants under attack.
 //!
-//! A test with a RISC-V twin in `riscv_virtio_tests` is gated to aarch64 here rather than run
+//! A test with a RISC-V twin in `riscv_virtual_io_tests` is gated to aarch64 here rather than run
 //! twice. The twin drives the same property through the same `block_driver` and `net_stack`
 //! binaries, so the two legs differ only by ISA, and a second copy would double the suite's
 //! slowest tests to prove nothing new.
@@ -33,17 +33,19 @@ use crate::sched;
 /// `ROUTED_INTERRUPTS` must rise, so the interrupt path (9a) carried the completion, and the
 /// scheduler
 /// idles rather than declaring a deadlock while the driver waits with nothing else to run.
-// RISC-V twin: `riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`; gated to aarch64, see the module doc.
+// RISC-V twin: `riscv_virtual_io_tests::a_userspace_driver_reads_a_file_from_a_virtual_io_disk`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
+/// Falsification: unfalsified. Nobody has yet broken the code it guards to watch this test go
+/// red.
 #[test_case]
-fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
+fn a_userspace_driver_reads_a_file_from_a_virtual_io_disk() {
     use crate::arch::exceptions::ROUTED_INTERRUPTS;
 
     // Sampled before the device is wired, not after. The pcie test further down this file
     // carries the argument for why that ordering, and not a longer wait, is the whole fix.
     let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);
 
-    let Some(report) = virtio_service::start(blk_image()) else {
+    let Some(report) = virtual_io_service::start(blk_image()) else {
         // No disk attached to this run. Nothing to test; do not fail.
         crate::testing::skip!("no virtio disk attached");
     };
@@ -73,7 +75,7 @@ fn a_userspace_driver_reads_a_file_from_a_virtio_disk() {
 /// contract, std's PAL and stdout. Unlike the hand-written client's test, it shows the mapping to
 /// a granted directory holds inside std, refusing `..`, an absolute path and a nested path.
 /// Without slot 4 the same binary gets `Unsupported` (the offline std test).
-// RISC-V twin: `riscv_virtio_tests::std_fs_reads_a_file_through_a_granted_directory_capability`.
+// RISC-V twin: `riscv_virtual_io_tests::std_fs_reads_a_file_through_a_granted_directory_capability`.
 // It also runs on `x86_64` (milestone 303 (x86_64's FS service has a server and no disk it can
 // find)), where it is the only test that writes `scratch`:
 // `xtask::redoxfs_check_after_run` reopens that image after the last leg, and without this write
@@ -108,7 +110,7 @@ fn std_fs_reads_a_file_through_a_granted_directory_capability() {
 /// granted directory capability and round-trips a pattern through `scratch`. It names nothing but
 /// its directory rendezvous, so success is the capability contract holding: designation is
 /// authorization, the handle is a server-minted token, and an engine we did not write runs confined.
-// RISC-V twin: `riscv_virtio_tests::the_redoxfs_server_serves_redoxfs_over_a_capability_contract`; gated to aarch64, see the module doc.
+// RISC-V twin: `riscv_virtual_io_tests::the_redoxfs_server_serves_redoxfs_over_a_capability_contract`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_redoxfs_server_serves_redoxfs_over_a_capability_contract() {
@@ -154,7 +156,7 @@ fn the_redoxfs_server_serves_redoxfs_over_a_capability_contract() {
 /// `scratch`, a real file one entry away that the caretaker could open. A caretaker refusing
 /// everything would pass alone, which is why the writable twin below exists and why the verdict is
 /// a bitmap rather than a boolean.
-// RISC-V twin: `riscv_virtio_tests::a_read_only_per_file_grant_survives_an_attacker`; gated to aarch64, see the module doc.
+// RISC-V twin: `riscv_virtual_io_tests::a_read_only_per_file_grant_survives_an_attacker`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_read_only_per_file_grant_survives_an_attacker() {
@@ -210,7 +212,7 @@ fn a_read_only_per_file_grant_reads_its_files_attributes_and_writes_none() {
 /// capability writes and still reaches only its one file. Because the same requests through the
 /// same code succeed here, the read-only test's refusals are a narrowed capability, not a
 /// caretaker that refuses everything.
-// RISC-V twin: `riscv_virtio_tests::a_writable_per_file_grant_writes_that_file_and_still_only_that_file`; gated to aarch64, see the module doc.
+// RISC-V twin: `riscv_virtual_io_tests::a_writable_per_file_grant_writes_that_file_and_still_only_that_file`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_writable_per_file_grant_writes_that_file_and_still_only_that_file() {
@@ -305,7 +307,7 @@ fn describe_escape(v: u64) -> &'static str {
 /// this proves it once through the whole stack, with a real virtio write torn in half, a real
 /// FS-server process killed inside its own transaction, and a real second process recovering the
 /// disk it left behind. See `std_tests::assert_a_kill_mid_transaction_recovers`.
-// RISC-V twin: `riscv_virtio_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent`; gated to aarch64, see the module doc.
+// RISC-V twin: `riscv_virtual_io_tests::a_kill_mid_transaction_leaves_the_filesystem_consistent`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_kill_mid_transaction_leaves_the_filesystem_consistent() {
@@ -329,7 +331,7 @@ fn a_kill_mid_transaction_leaves_the_filesystem_consistent() {
 /// prints the number and fails if less than a quarter of the grant is left. An overflow kills the
 /// server mid-request and leaves its client blocked, which only the per-test wall-clock ceiling
 /// notices. See notes/fs-server.md and notes/fs-server/stack-sizing.md.
-// RISC-V twin: `riscv_virtio_tests::the_redoxfs_servers_stack_still_has_headroom`; gated to aarch64, see the module doc.
+// RISC-V twin: `riscv_virtual_io_tests::the_redoxfs_servers_stack_still_has_headroom`; gated to aarch64, see the module doc.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn the_redoxfs_servers_stack_still_has_headroom() {

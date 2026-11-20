@@ -83,7 +83,7 @@ shape one subsystem over. `crates/block_roster`'s header states the general form
 | **C** | **Both**, a narrowed endpoint kind beside the general one. | The general shape survives, so nothing is unbuilt and nothing is un-shipped; two shapes exist forever and a reader has to learn which one a given endpoint is. This tree refuses that kind of doubling elsewhere. |
 
 The record offered no recommendation. This is a contract two programs agree on, which AGENTS.md
-puts in the irreversible column beside names and the syscall surface, so it offered the premise
+puts in the irreversible column beside names and the system call surface, so it offered the premise
 check below instead.
 
 ## Is the premise true?

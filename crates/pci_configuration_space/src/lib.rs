@@ -1,11 +1,11 @@
 //! PCI configuration space: the decode logic, and none of the memory-mapped input and output. It
 //! addresses a function in the enhanced configuration access mechanism (ECAM) window, walks a
 //! machine's buses for functions, sizes a function's base address registers, and decodes its
-//! capability lists, all over read and write closures on `(Bdf, offset)`. A host operating system
+//! capability lists, all over read and write closures on `(BusDeviceFunction, offset)`. A host operating system
 //! passes volatile accessors into the mapped ECAM window and a test passes an array, which is why
 //! the crate tests on a host in milliseconds.
 //!
-//! A function is addressed by **Bdf** (bus, device, function) and has 4 KiB of configuration space
+//! A function is addressed by bus, device and function number and has 4 KiB of configuration space
 //! at `(bus << 20) | (device << 15) | (function << 12)` in the flat ECAM window (PCI Express Base
 //! Specification, "Enhanced Configuration Access Mechanism"). Its first 64 bytes are the standard
 //! header (PCI Local Bus Specification 3.0, section 6.1): the ids, the command and status
@@ -32,19 +32,21 @@
 #![cfg_attr(not(test), no_std)]
 #![forbid(unsafe_code)]
 
-/// A function's address: bus, device and function number (**Bdf**).
+/// A function's address: bus, device and function number.
 ///
 /// The ECAM window and the PCI Express requester id both pack these three fields as
 /// `bus:8 | device:5 | function:3`. A device number wider than five bits or a function number wider
-/// than three is masked to its field by [`Bdf::ecam_offset`] and [`Bdf::requester_id`], so it can
+/// than three is masked to its field by [`BusDeviceFunction::ecam_offset`] and [`BusDeviceFunction::requester_id`], so it can
 /// never name another bus's or another device's page.
 ///
 /// Name: provisional. The fields were `dev` and `func`; `pci_types::PciAddress` and
-/// `virtio-drivers`' `DeviceFunction` both spell them `device` and `function`. `Bdf` reads as a
-/// word aloud and stays.
+/// `virtio-drivers`' `DeviceFunction` both spell them `device` and `function`. The specification
+/// spellings ride as aliases.
+#[doc(alias = "Bdf")]
+#[doc(alias = "BDF")]
 #[doc(alias = "bus device function")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Bdf {
+pub struct BusDeviceFunction {
     /// The bus number, 0 to 255.
     pub bus: u8,
     /// The device number on the bus; only the low five bits address a device.
@@ -53,7 +55,7 @@ pub struct Bdf {
     pub function: u8,
 }
 
-impl Bdf {
+impl BusDeviceFunction {
     /// The function's byte offset inside the ECAM window: 4 KiB per function, laid out
     /// `bus:8 | device:5 | function:3 | offset:12`. This shift-and-or is the ECAM layout.
     ///
@@ -91,7 +93,7 @@ pub const VENDOR_ID_REGISTER: u64 = 0x00;
 /// Name: provisional. Was `COMMAND`; a register offset ends in `_REGISTER`.
 pub const COMMAND_REGISTER: u64 = 0x04;
 /// Byte offset of the Class Code and Revision ID dword (section 6.2.4): the 24-bit class code over
-/// the 8-bit revision id. `read32(bdf, CLASS_REVISION_REGISTER) >> 8` is the class code.
+/// the 8-bit revision id. `read32(bus_device_function, CLASS_REVISION_REGISTER) >> 8` is the class code.
 ///
 /// Name: provisional. Was `CLASS_REVISION`; a register offset ends in `_REGISTER`.
 pub const CLASS_REVISION_REGISTER: u64 = 0x08;
@@ -169,54 +171,69 @@ pub const COMMAND_BUS_MASTER_ENABLE: u16 = 1 << 2;
 const STATUS_CAPABILITIES_LIST: u16 = 1 << 4;
 
 /// virtio's PCI vendor id (Red Hat, 0x1af4), from virtio 1.2, section 4.1.2.
-pub const VIRTIO_VENDOR: u16 = 0x1af4;
+///
+/// Name: provisional. Spelled out from `VIRTIO_VENDOR`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_VENDOR: u16 = 0x1af4;
 /// The modern virtio block device id: 0x1040 plus device type 2 (virtio 1.2, section 4.1.2.1).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_BLK_MODERN`, which also matches
-/// [`VIRTIO_TYPE_BLOCK`].
-pub const VIRTIO_BLOCK_MODERN: u16 = 0x1042;
+/// [`VIRTUAL_IO_TYPE_BLOCK`].
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_BLOCK_MODERN: u16 = 0x1042;
 /// The transitional (legacy-capable) virtio block device id (virtio 1.2, section 4.1.2.1). The
 /// crate does not decode legacy functions, but it recognizes the id so a caller can say "found a
 /// disk, but it is transitional" instead of "no disk".
 ///
 /// Name: provisional. Spelled out from `VIRTIO_BLK_TRANSITIONAL`.
-pub const VIRTIO_BLOCK_TRANSITIONAL: u16 = 0x1001;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_BLOCK_TRANSITIONAL: u16 = 0x1001;
 
 /// The modern virtio network device id: 0x1040 plus device type 1 (virtio 1.2, section 4.1.2.1).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_NET_MODERN`.
-pub const VIRTIO_NETWORK_MODERN: u16 = 0x1041;
-/// The transitional virtio network device id, the legacy twin of [`VIRTIO_NETWORK_MODERN`]. A
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_NETWORK_MODERN: u16 = 0x1041;
+/// The transitional virtio network device id, the legacy twin of [`VIRTUAL_IO_NETWORK_MODERN`]. A
 /// caller that drives modern functions only still reports a transitional one as such rather than
 /// as absent.
 ///
 /// Name: provisional. Spelled out from `VIRTIO_NET_TRANSITIONAL`.
-pub const VIRTIO_NETWORK_TRANSITIONAL: u16 = 0x1000;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_NETWORK_TRANSITIONAL: u16 = 0x1000;
 
 /// The modern virtio GPU device id: 0x1040 plus device type 16 (virtio 1.2, section 4.1.2.1). There
 /// is **no transitional twin**: the legacy id space (0x1000 to 0x103f) was allocated before
 /// virtio-gpu existed, so a GPU is modern or nothing and a caller passes `None` for the legacy id
 /// rather than inventing one. QEMU's `virtio-gpu-pci` presents exactly this id.
-pub const VIRTIO_GPU_MODERN: u16 = 0x1050;
+///
+/// Name: provisional. Spelled out from `VIRTIO_GPU_MODERN`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_GPU_MODERN: u16 = 0x1050;
 
 /// The modern virtio input device id: 0x1040 plus device type 18 (virtio 1.2, section 4.1.2.1).
-/// **No transitional twin**, for the reason [`VIRTIO_GPU_MODERN`] has none. QEMU's
+/// **No transitional twin**, for the reason [`VIRTUAL_IO_GPU_MODERN`] has none. QEMU's
 /// `virtio-keyboard-pci` presents exactly this id, and so does `virtio-tablet-pci`: **the id names
 /// the device class, not the keyboard**, so a machine with both must read the function's
 /// configuration to tell them apart.
-pub const VIRTIO_INPUT_MODERN: u16 = 0x1052;
+///
+/// Name: provisional. Spelled out from `VIRTIO_INPUT_MODERN`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_INPUT_MODERN: u16 = 0x1052;
 
 /// The modern virtio entropy device id: 0x1040 plus device type 4 (virtio 1.2, section 4.1.2.1).
-/// Unlike the GPU and the input device this one **does** have a legacy id, [`VIRTIO_ENTROPY_TRANSITIONAL`]:
+/// Unlike the GPU and the input device this one **does** have a legacy id, [`VIRTUAL_IO_ENTROPY_TRANSITIONAL`]:
 /// device type 4 is early enough to have been allocated a slot in the 0x1000 to 0x103f space.
 ///
 /// Name: provisional. Spelled out from `VIRTIO_RNG_MODERN`; the virtio specification calls device
-/// type 4 the entropy device, as [`VIRTIO_TYPE_ENTROPY`] does.
-pub const VIRTIO_ENTROPY_MODERN: u16 = 0x1044;
-/// The transitional virtio entropy device id, the legacy twin of [`VIRTIO_ENTROPY_MODERN`].
+/// type 4 the entropy device, as [`VIRTUAL_IO_TYPE_ENTROPY`] does.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_ENTROPY_MODERN: u16 = 0x1044;
+/// The transitional virtio entropy device id, the legacy twin of [`VIRTUAL_IO_ENTROPY_MODERN`].
 ///
 /// Name: provisional. Spelled out from `VIRTIO_RNG_TRANSITIONAL`.
-pub const VIRTIO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
 
 /// The virtio **device type** numbers (virtio 1.2, section 5), as the virtio-mmio `DeviceID`
 /// register reports them and as the PCI ids above encode them (`0x1040 + type`). A host that wraps
@@ -226,15 +243,28 @@ pub const VIRTIO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
 /// Network device.
 ///
 /// Name: provisional. Spelled out from `VIRTIO_TYPE_NET`.
-pub const VIRTIO_TYPE_NETWORK: u32 = 1;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_NETWORK: u32 = 1;
 /// The virtio block device type (virtio 1.2, section 5.2).
-pub const VIRTIO_TYPE_BLOCK: u32 = 2;
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_BLOCK`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_BLOCK: u32 = 2;
 /// The virtio entropy device type (virtio 1.2, section 5.4).
-pub const VIRTIO_TYPE_ENTROPY: u32 = 4;
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_ENTROPY`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_ENTROPY: u32 = 4;
 /// The virtio GPU device type (virtio 1.2, section 5.7).
-pub const VIRTIO_TYPE_GPU: u32 = 16;
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_GPU`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_GPU: u32 = 16;
 /// The virtio input device type (virtio 1.2, section 5.8).
-pub const VIRTIO_TYPE_INPUT: u32 = 18;
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_INPUT`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_TYPE_INPUT: u32 = 18;
 
 /// **The buses a type-1 header says lie behind it.** Firmware's own enumeration wrote these; a
 /// caller that does not read them enumerates bus 0 and calls the rest of the machine absent (PCI-to-PCI
@@ -259,8 +289,11 @@ pub struct BridgeBuses {
 
 /// Decode the three bus numbers of a type-1 header. Total for any device response: it is three
 /// byte fields of one dword and there is no arithmetic to overflow.
-pub fn bridge_buses(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> BridgeBuses {
-    let word = read32(bdf, BUS_NUMBERS_REGISTER);
+pub fn bridge_buses(
+    bus_device_function: BusDeviceFunction,
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
+) -> BridgeBuses {
+    let word = read32(bus_device_function, BUS_NUMBERS_REGISTER);
     BridgeBuses {
         primary: (word & 0xff) as u8,
         secondary: ((word >> 8) & 0xff) as u8,
@@ -275,7 +308,7 @@ pub fn bridge_buses(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Bridge
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Function {
     /// Where the function lives.
-    pub bdf: Bdf,
+    pub bus_device_function: BusDeviceFunction,
     /// The Vendor ID half of the first header dword (PCI Local Bus Specification 3.0, section 6.2.1).
     pub vendor: u16,
     /// The Device ID half of the first header dword.
@@ -361,7 +394,11 @@ impl BusQueue {
 /// at most once**, a cycle terminates, and nothing recurses or allocates (the queue is a 256-byte
 /// array). Walking the bridges, rather than assuming bus 0 is the whole machine, is what finds a
 /// device behind a PCI Express root port.
-pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn FnMut(Function)) {
+pub fn walk(
+    ceiling: u16,
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
+    f: &mut dyn FnMut(Function),
+) {
     let ceiling = ceiling.min(256);
     if ceiling == 0 {
         return;
@@ -370,35 +407,35 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
 
     while let Some(bus) = buses.next_bus() {
         for device in 0..32 {
-            let bdf0 = Bdf {
+            let bus_device_function_zero = BusDeviceFunction {
                 bus,
                 device,
                 function: 0,
             };
-            if read32(bdf0, VENDOR_ID_REGISTER) & 0xffff == 0xffff {
+            if read32(bus_device_function_zero, VENDOR_ID_REGISTER) & 0xffff == 0xffff {
                 continue; // empty slot: one config read, which is the whole point of this guard
             }
-            let type0 = (read32(bdf0, HEADER_TYPE_REGISTER & !3)
+            let type0 = (read32(bus_device_function_zero, HEADER_TYPE_REGISTER & !3)
                 >> ((HEADER_TYPE_REGISTER & 3) * 8))
                 & 0xff;
             let multifunction = type0 & 0x80 != 0;
             let functions = if multifunction { 8 } else { 1 };
             for function in 0..functions {
-                let bdf = Bdf {
+                let bus_device_function = BusDeviceFunction {
                     bus,
                     device,
                     function,
                 };
-                let id = read32(bdf, VENDOR_ID_REGISTER);
+                let id = read32(bus_device_function, VENDOR_ID_REGISTER);
                 if id & 0xffff == 0xffff {
                     continue;
                 }
-                let raw = (read32(bdf, HEADER_TYPE_REGISTER & !3)
+                let raw = (read32(bus_device_function, HEADER_TYPE_REGISTER & !3)
                     >> ((HEADER_TYPE_REGISTER & 3) * 8))
                     & 0xff;
                 let header_type = (raw & 0x7f) as u8;
                 let bridge = (header_type == HEADER_TYPE_BRIDGE).then(|| {
-                    let behind = bridge_buses(bdf, read32);
+                    let behind = bridge_buses(bus_device_function, read32);
                     // Bus 0 is the root complex and is already the walk's starting point, so a
                     // bridge reporting secondary 0 is one firmware never configured rather than a
                     // second route to the top of the tree. Descending on it would be harmless
@@ -409,10 +446,10 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
                     behind
                 });
                 f(Function {
-                    bdf,
+                    bus_device_function,
                     vendor: (id & 0xffff) as u16,
                     device: (id >> 16) as u16,
-                    class: read32(bdf, CLASS_REVISION_REGISTER) >> 8,
+                    class: read32(bus_device_function, CLASS_REVISION_REGISTER) >> 8,
                     header_type,
                     multifunction,
                     bridge,
@@ -422,7 +459,7 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
     }
 }
 
-/// Every function the machine has, as (bdf, vendor, device): [`walk`] with the topology detail
+/// Every function the machine has, as (`BusDeviceFunction`, vendor, device): [`walk`] with the topology detail
 /// dropped, which is all most callers want. `ceiling` is the exclusive bus bound the caller can
 /// read; see [`walk`] for what happens at it.
 ///
@@ -431,13 +468,13 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
 /// Enumerating a bus with no bus: a test's closure over an array stands in for the ECAM window.
 ///
 /// ```
-/// use pci_configuration_space::{Bdf, VENDOR_ID_REGISTER, VIRTIO_VENDOR, enumerate};
+/// use pci_configuration_space::{BusDeviceFunction, VENDOR_ID_REGISTER, VIRTUAL_IO_VENDOR, enumerate};
 ///
 /// // A config space with exactly one function: modern virtio-blk at 00:01.0. Everything else reads
 /// // 0xffff, which is the bus's way of saying nobody is home.
-/// let mut read32 = |bdf: Bdf, off: u64| -> u32 {
-///     if bdf == (Bdf { bus: 0, device: 1, function: 0 }) && off == VENDOR_ID_REGISTER {
-///         (0x1042 << 16) | VIRTIO_VENDOR as u32 // device 0x1042 in the high half
+/// let mut read32 = |bus_device_function: BusDeviceFunction, off: u64| -> u32 {
+///     if bus_device_function == (BusDeviceFunction { bus: 0, device: 1, function: 0 }) && off == VENDOR_ID_REGISTER {
+///         (0x1042 << 16) | VIRTUAL_IO_VENDOR as u32 // device 0x1042 in the high half
 ///     } else if off == VENDOR_ID_REGISTER {
 ///         0xffff_ffff
 ///     } else {
@@ -446,27 +483,31 @@ pub fn walk(ceiling: u16, read32: &mut dyn FnMut(Bdf, u64) -> u32, f: &mut dyn F
 /// };
 ///
 /// let mut found = Vec::new();
-/// enumerate(1, &mut read32, &mut |bdf, vendor, device| {
-///     found.push((bdf, vendor, device));
+/// enumerate(1, &mut read32, &mut |bus_device_function, vendor, device| {
+///     found.push((bus_device_function, vendor, device));
 /// });
 ///
 /// assert_eq!(found.len(), 1);
-/// let (bdf, vendor, device) = found[0];
-/// assert_eq!((vendor, device), (VIRTIO_VENDOR, 0x1042));
+/// let (bus_device_function, vendor, device) = found[0];
+/// assert_eq!((vendor, device), (VIRTUAL_IO_VENDOR, 0x1042));
 ///
 /// // ECAM addressing: 4 KiB per function, `bus:8 | device:5 | function:3 | offset:12`.
-/// assert_eq!(bdf.ecam_offset(), 1 << 15);
+/// assert_eq!(bus_device_function.ecam_offset(), 1 << 15);
 ///
 /// // And the requester id, which is the key an IOMMU looks the function up by.
-/// assert_eq!(bdf.requester_id(), 0b0000_0000_0000_1000);
+/// assert_eq!(bus_device_function.requester_id(), 0b0000_0000_0000_1000);
 /// ```
 pub fn enumerate(
     ceiling: u16,
-    read32: &mut dyn FnMut(Bdf, u64) -> u32,
-    f: &mut dyn FnMut(Bdf, u16, u16),
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
+    f: &mut dyn FnMut(BusDeviceFunction, u16, u16),
 ) {
     walk(ceiling, read32, &mut |function| {
-        f(function.bdf, function.vendor, function.device);
+        f(
+            function.bus_device_function,
+            function.vendor,
+            function.device,
+        );
     });
 }
 
@@ -546,14 +587,15 @@ fn size_from_mask(mask: u64, decode_bits: u64) -> Result<u64, BarRefusal> {
 /// the command register enables it), which is why a caller sizes BARs before it enables the
 /// function.
 pub fn read_bars(
-    bdf: Bdf,
-    read32: &mut dyn FnMut(Bdf, u64) -> u32,
-    write32: &mut dyn FnMut(Bdf, u64, u32),
+    bus_device_function: BusDeviceFunction,
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
+    write32: &mut dyn FnMut(BusDeviceFunction, u64, u32),
     refused: &mut dyn FnMut(usize, BarRefusal),
 ) -> [Option<Bar>; 6] {
     let mut out = [None; 6];
-    let header_type =
-        (read32(bdf, HEADER_TYPE_REGISTER & !3) >> ((HEADER_TYPE_REGISTER & 3) * 8)) as u8 & 0x7f;
+    let header_type = (read32(bus_device_function, HEADER_TYPE_REGISTER & !3)
+        >> ((HEADER_TYPE_REGISTER & 3) * 8)) as u8
+        & 0x7f;
     let slots = match header_type {
         0 => 6,
         HEADER_TYPE_BRIDGE => 2,
@@ -567,7 +609,7 @@ pub fn read_bars(
             continue;
         }
         let off = BAR0_REGISTER + i as u64 * 4;
-        let original = read32(bdf, off);
+        let original = read32(bus_device_function, off);
         if original & 1 != 0 {
             // An I/O-space BAR. x86 legacy; the crate decodes memory BARs only.
             continue;
@@ -579,16 +621,16 @@ pub fn read_bars(
             continue;
         }
 
-        write32(bdf, off, u32::MAX);
-        let mask_lo = read32(bdf, off);
-        write32(bdf, off, original);
+        write32(bus_device_function, off, u32::MAX);
+        let mask_lo = read32(bus_device_function, off);
+        write32(bus_device_function, off, original);
 
         let (base, mask, decode_bits) = if is_64_bit {
             let off_hi = off + 4;
-            let original_high = read32(bdf, off_hi);
-            write32(bdf, off_hi, u32::MAX);
-            let mask_hi = read32(bdf, off_hi);
-            write32(bdf, off_hi, original_high);
+            let original_high = read32(bus_device_function, off_hi);
+            write32(bus_device_function, off_hi, u32::MAX);
+            let mask_hi = read32(bus_device_function, off_hi);
+            write32(bus_device_function, off_hi, original_high);
             (
                 ((original_high as u64) << 32) | (original as u64 & BAR_DECODE_BITS_32),
                 (((mask_hi as u64) << 32) | mask_lo as u64) & BAR_DECODE_BITS_64,
@@ -634,10 +676,11 @@ const CAPABILITY_HOPS: usize = 64;
 
 /// What [`capabilities`] hands each entry: its offset, its first dword and `read32` for the rest.
 /// Returns `true` to stop the walk.
-type CapabilityVisitor<'a> = dyn FnMut(u64, u32, &mut dyn FnMut(Bdf, u64) -> u32) -> bool + 'a;
+type CapabilityVisitor<'a> =
+    dyn FnMut(u64, u32, &mut dyn FnMut(BusDeviceFunction, u64) -> u32) -> bool + 'a;
 
 /// **The one walk of a function's capability list** (PCI Local Bus Specification 3.0, section 6.7),
-/// which [`virtio_capabilities`], [`msi_capability`] and [`msix_capability`] share so a single bound
+/// which [`virtual_io_capabilities`], [`msi_capability`] and [`msix_capability`] share so a single bound
 /// and a single proof cover all three.
 ///
 /// Status bit 4 says a list exists, the pointer at [`CAPABILITIES_POINTER_REGISTER`] gives the first
@@ -646,20 +689,20 @@ type CapabilityVisitor<'a> = dyn FnMut(u64, u32, &mut dyn FnMut(Bdf, u64) -> u32
 /// `read32` for the rest of the entry; it returns `true` to stop. At most [`CAPABILITY_HOPS`]
 /// entries are visited, so a cycle ends the walk.
 fn capabilities(
-    bdf: Bdf,
-    read32: &mut dyn FnMut(Bdf, u64) -> u32,
+    bus_device_function: BusDeviceFunction,
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
     visit: &mut CapabilityVisitor<'_>,
 ) {
-    let status = (read32(bdf, COMMAND_REGISTER) >> 16) as u16;
+    let status = (read32(bus_device_function, COMMAND_REGISTER) >> 16) as u16;
     if status & STATUS_CAPABILITIES_LIST == 0 {
         return;
     }
-    let mut at = (read32(bdf, CAPABILITIES_POINTER_REGISTER) & 0xfc) as u64;
+    let mut at = (read32(bus_device_function, CAPABILITIES_POINTER_REGISTER) & 0xfc) as u64;
     for _ in 0..CAPABILITY_HOPS {
         if at == 0 {
             return;
         }
-        let head = read32(bdf, at);
+        let head = read32(bus_device_function, at);
         if visit(at, head, read32) {
             return;
         }
@@ -674,22 +717,26 @@ const CAPABILITY_ID_VENDOR: u8 = 0x09;
 /// section 4.1.4).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_CAP_COMMON`.
-pub const VIRTIO_CAPABILITY_COMMON: u8 = 1;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_CAPABILITY_COMMON: u8 = 1;
 /// The `cfg_type` for the notification structure: the doorbells (virtio 1.2, section 4.1.4.4).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_CAP_NOTIFY`.
-pub const VIRTIO_CAPABILITY_NOTIFY: u8 = 2;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_CAPABILITY_NOTIFY: u8 = 2;
 /// The `cfg_type` for the interrupt status structure (virtio 1.2, section 4.1.4.5): one byte whose
 /// read acknowledges a legacy interrupt.
 ///
 /// Name: provisional. Spelled out from `VIRTIO_CAP_ISR`, with the specification's abbreviation as
 /// the alias.
 #[doc(alias = "ISR")]
-pub const VIRTIO_CAPABILITY_INTERRUPT_STATUS: u8 = 3;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_CAPABILITY_INTERRUPT_STATUS: u8 = 3;
 /// The `cfg_type` for the device-specific configuration structure (virtio 1.2, section 4.1.4.6).
 ///
 /// Name: provisional. Spelled out from `VIRTIO_CAP_DEVICE`.
-pub const VIRTIO_CAPABILITY_DEVICE: u8 = 4;
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_CAPABILITY_DEVICE: u8 = 4;
 
 /// A virtio vendor capability, decoded (virtio 1.2, section 4.1.4, `struct virtio_pci_cap`): which
 /// register block it names, and where that block lives as (BAR index, offset into the BAR,
@@ -700,8 +747,9 @@ pub const VIRTIO_CAPABILITY_DEVICE: u8 = 4;
 /// `notify_offset_multiplier` spell out the specification's `cfg_type` and `notify_off_multiplier`,
 /// which stay as aliases because they are the specification's own field names.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VirtioCapability {
-    /// Which structure this capability describes: one of the `VIRTIO_CAPABILITY_` constants, or a
+#[doc(alias = "virtio")]
+pub struct VirtualIoCapability {
+    /// Which structure this capability describes: one of the `VIRTUAL_IO_CAPABILITY_` constants, or a
     /// value a later specification adds.
     #[doc(alias = "cfg_type")]
     pub configuration_type: u8,
@@ -727,16 +775,17 @@ pub struct VirtioCapability {
 /// entry, so it is skipped.
 ///
 /// Name: provisional. Spelled out from `virtio_caps`.
-pub fn virtio_capabilities(
-    bdf: Bdf,
-    read32: &mut dyn FnMut(Bdf, u64) -> u32,
-    f: &mut dyn FnMut(VirtioCapability),
+#[doc(alias = "virtio")]
+pub fn virtual_io_capabilities(
+    bus_device_function: BusDeviceFunction,
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
+    f: &mut dyn FnMut(VirtualIoCapability),
 ) {
-    capabilities(bdf, read32, &mut |at, head, read32| {
+    capabilities(bus_device_function, read32, &mut |at, head, read32| {
         let capability_id = (head & 0xff) as u8;
         let capability_length = (head >> 16) & 0xff;
         let configuration_type = ((head >> 24) & 0xff) as u8;
-        let least_length = if configuration_type == VIRTIO_CAPABILITY_NOTIFY {
+        let least_length = if configuration_type == VIRTUAL_IO_CAPABILITY_NOTIFY {
             20
         } else {
             16
@@ -744,13 +793,13 @@ pub fn virtio_capabilities(
         if capability_id == CAPABILITY_ID_VENDOR && capability_length >= least_length {
             // struct virtio_pci_cap: u8 id, next, cap_len, cfg_type; u8 bar; 3 pad; u32 offset,
             // length; the notify capability carries one extra u32 after that.
-            f(VirtioCapability {
+            f(VirtualIoCapability {
                 configuration_type,
-                bar: (read32(bdf, at + 4) & 0xff) as u8,
-                offset: read32(bdf, at + 8),
-                length_bytes: read32(bdf, at + 12),
-                notify_offset_multiplier: if configuration_type == VIRTIO_CAPABILITY_NOTIFY {
-                    read32(bdf, at + 16)
+                bar: (read32(bus_device_function, at + 4) & 0xff) as u8,
+                offset: read32(bus_device_function, at + 8),
+                length_bytes: read32(bus_device_function, at + 12),
+                notify_offset_multiplier: if configuration_type == VIRTUAL_IO_CAPABILITY_NOTIFY {
+                    read32(bus_device_function, at + 16)
                 } else {
                     0
                 },
@@ -854,14 +903,17 @@ impl MsiCapability {
     }
 }
 
-/// Find the **MSI capability** of `bdf`, or `None`. The same bounded walk as [`msix_capability`]
-/// and [`virtio_capabilities`]: at most 64 entries, so a cycle in the list ends the walk, and an
+/// Find the **MSI capability** of `bus_device_function`, or `None`. The same bounded walk as [`msix_capability`]
+/// and [`virtual_io_capabilities`]: at most 64 entries, so a cycle in the list ends the walk, and an
 /// offset that is a multiple of four, since the list's pointers drop their low two bits.
 ///
 /// Name: provisional. Spelled out from `msi_cap`.
-pub fn msi_capability(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<MsiCapability> {
+pub fn msi_capability(
+    bus_device_function: BusDeviceFunction,
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
+) -> Option<MsiCapability> {
     let mut found = None;
-    capabilities(bdf, read32, &mut |at, head, _| {
+    capabilities(bus_device_function, read32, &mut |at, head, _| {
         if (head & 0xff) as u8 == CAPABILITY_ID_MSI {
             let control = (head >> 16) as u16;
             found = Some(MsiCapability {
@@ -903,7 +955,10 @@ pub const MSIX_ENTRY_MASKED: u32 = 1;
 /// The virtio-pci "no vector" value for `config_msix_vector` and `queue_msix_vector` (virtio 1.2,
 /// section 4.1.4.3). Written to a queue's vector field it means "raise no MSI-X for this queue",
 /// which is also what a device reset leaves there.
-pub const VIRTIO_MSIX_NO_VECTOR: u16 = 0xffff;
+///
+/// Name: provisional. Spelled out from `VIRTIO_MSIX_NO_VECTOR`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_MSIX_NO_VECTOR: u16 = 0xffff;
 
 /// **Where a function should write to raise an interrupt, and what to write there.** One MSI-X
 /// table entry's payload (PCI Local Bus Specification 3.0, section 6.8.2.7), as the interrupt
@@ -926,23 +981,23 @@ pub struct MsiTarget {
     pub data: u32,
 }
 
-/// Find the **MSI-X capability** of `bdf`, or `None` if the function has none.
+/// Find the **MSI-X capability** of `bus_device_function`, or `None` if the function has none.
 ///
-/// Same walk as [`virtio_capabilities`], and bounded the same way (64 hops), for the same reason: the
+/// Same walk as [`virtual_io_capabilities`], and bounded the same way (64 hops), for the same reason: the
 /// list is a function-supplied linked list, so a broken or hostile function must terminate the walk
 /// rather than hang the caller that is enumerating it.
 ///
 /// Name: provisional. Spelled out from `msix_cap`.
 pub fn msix_capability(
-    bdf: Bdf,
-    read32: &mut dyn FnMut(Bdf, u64) -> u32,
+    bus_device_function: BusDeviceFunction,
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
 ) -> Option<MsixCapability> {
     let mut found = None;
-    capabilities(bdf, read32, &mut |at, head, read32| {
+    capabilities(bus_device_function, read32, &mut |at, head, read32| {
         if (head & 0xff) as u8 == CAPABILITY_ID_MSIX {
             let control = (head >> 16) as u16;
-            let table = read32(bdf, at + 4);
-            let pending = read32(bdf, at + 8);
+            let table = read32(bus_device_function, at + 4);
+            let pending = read32(bus_device_function, at + 8);
             found = Some(MsixCapability {
                 capability_offset: at,
                 // Bits 10:0 hold the count MINUS ONE, so a one-entry table reads as zero and the
@@ -1066,13 +1121,13 @@ mod verification {
     /// Falsification: replayable `crates/pci_configuration_space/falsifications/verification.ecam_offset_stays_inside_the_window.patch`
     #[kani::proof]
     fn ecam_offset_stays_inside_the_window() {
-        let bdf = Bdf {
+        let bus_device_function = BusDeviceFunction {
             bus: kani::any(),
             device: kani::any(),
             function: kani::any(),
         };
         // No assumption on `device` and `function`: the offset masks them to their fields.
-        assert!(bdf.ecam_offset() + 0xfff < 0x1000_0000);
+        assert!(bus_device_function.ecam_offset() + 0xfff < 0x1000_0000);
     }
 
     /// **`intx_interrupt_number` is total and lands on one of the four lines.** For any base,
@@ -1100,13 +1155,13 @@ mod verification {
     #[kani::proof]
     #[kani::unwind(8)]
     fn read_bars_is_total_for_any_device() {
-        let bdf = Bdf {
+        let bus_device_function = BusDeviceFunction {
             bus: kani::any(),
             device: kani::any(),
             function: kani::any(),
         };
         let bars = read_bars(
-            bdf,
+            bus_device_function,
             &mut |_, _| kani::any(),
             &mut |_, _, _| {},
             &mut |_, _| {},
@@ -1159,13 +1214,15 @@ mod verification {
     #[kani::proof]
     #[kani::unwind(66)]
     fn the_capability_walk_terminates_on_any_device() {
-        let bdf = Bdf {
+        let bus_device_function = BusDeviceFunction {
             bus: kani::any(),
             device: kani::any(),
             function: kani::any(),
         };
         let mut calls = 0u32;
-        virtio_capabilities(bdf, &mut |_, _| kani::any(), &mut |_| calls += 1);
+        virtual_io_capabilities(bus_device_function, &mut |_, _| kani::any(), &mut |_| {
+            calls += 1;
+        });
         assert!(calls <= 64);
     }
 
@@ -1178,12 +1235,12 @@ mod verification {
     #[kani::proof]
     #[kani::unwind(66)]
     fn the_msix_walk_terminates_and_bounds_its_table_size() {
-        let bdf = Bdf {
+        let bus_device_function = BusDeviceFunction {
             bus: kani::any(),
             device: kani::any(),
             function: kani::any(),
         };
-        if let Some(capability) = msix_capability(bdf, &mut |_, _| kani::any()) {
+        if let Some(capability) = msix_capability(bus_device_function, &mut |_, _| kani::any()) {
             assert!(capability.table_entries >= 1 && capability.table_entries <= 2048);
             assert!(capability.table_bar < 8);
             assert!(capability.table_offset % 8 == 0);
@@ -1198,7 +1255,7 @@ mod verification {
     #[kani::proof]
     #[kani::unwind(66)]
     fn the_message_signaled_interrupt_walk_terminates_on_any_device() {
-        let location = Bdf {
+        let location = BusDeviceFunction {
             bus: kani::any(),
             device: kani::any(),
             function: kani::any(),

@@ -4,7 +4,7 @@
  * This is the whole of what `c_swappable` does differently from `rust_swappable`: one function,
    computing one
  * digest, in a language with no bounds checks and no borrow checker. It holds no capability and
- * makes no syscall, because it has never seen one -- the Rust shell around it holds every
+ * makes no system call, because it has never seen one -- the Rust shell around it holds every
  * capability and does every `svc`/`ecall` (DECISIONS §31, notes/c-seam.md).
  *
  * It exists to make the milestone's claim as strong as it goes: the replacement server that a

@@ -52,7 +52,7 @@ rendezvous and the one-shot reply), then the MMU isolation invariants. Pure-logi
 behind `#[cfg(kani)]` and never touch an ordinary build. (Milestone 18 (verify the capability core,
 then spread inward) delivered all three steps. The rendezvous state machine is extracted and proved
 and the scheduler runs it. The one-shot Reply's mechanism is proved in `capability` and `ipc`. The
-MMU isolation invariants, including the user-VA gate the syscalls now call, are proved in `paging`.
+MMU isolation invariants, including the user-VA gate the system calls now call, are proved in `paging`.
 See notes/verification.md for what each proof says and what stays on tests.)
 
 ## What this resolves and what it changes

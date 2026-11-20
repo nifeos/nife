@@ -115,7 +115,7 @@ The options it was chosen from:
   moves mapping and its failure paths into every component.
 - C. A fourth entry word pointing at a table the spawner places anywhere. It changes the
   process-entry contract on all three architectures, and a userspace spawner cannot pass it without
-  a change to the spawn method's arguments, which is the syscall surface.
+  a change to the spawn method's arguments, which is the system call surface.
 - D. Keep fixed addresses, and make every pair code. Each of the 38 prose pairs becomes one
   constant in a contract crate that both sides link, with a compile-time check that one process's
   windows are disjoint. It fixes the second cost above and not the first.
@@ -125,7 +125,7 @@ Why A over each:
 - Over B: A changes no component's authority and adds no capability, and a component reads a table
   where B has it map, check and unwind. B is the more capability-native shape; it lost on the
   authority it adds, not on its work.
-- Over C: A touches neither the entry contract nor the syscall surface.
+- Over C: A touches neither the entry contract nor the system call surface.
 - Over D: D leaves the collision, which is the half of the problem the request names first.
 - At equal cost: A still wins over B and C. It wins over D because D does not solve the problem; D
   is less work, and that is the only argument for it.

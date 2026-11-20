@@ -33,7 +33,7 @@
 
 use terminal_contract as proto;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
-use user_mode_runtime::virtio::virtio_ring_barrier;
+use user_mode_runtime::virtual_io::virtual_io_ring_barrier;
 use user_mode_runtime::{call, interrupt_acknowledge, interrupt_wait, send};
 
 /// Capability slots, by convention with `kernel/src/user/keyboard_service.rs`. Slot 0, the report
@@ -42,8 +42,8 @@ const REPORT: u64 = 0;
 /// Slot 1, an `Interrupt`: the device's event interrupt.
 #[doc(alias = "irq")]
 const INTERRUPT: u64 = 1;
-/// Slot 2, a `Virtio`: the confined transport, and the only way this driver can reach the device.
-const VIRTIO: u64 = 2;
+/// Slot 2, a `VirtualIo`: the confined transport, and the only way this driver can reach the device.
+const VIRTUAL_IO: u64 = 2;
 /// Slot 3, held `WRITE`: the compositor's doorbell in [`MODE_RING`], `line_editor`'s served
 /// endpoint in [`MODE_DIRECT`], chosen by `arg0` as `display_terminal`'s `PRESENT` slot is.
 const OUT: u64 = 3;
@@ -88,7 +88,7 @@ const VIRTQ_DESC_F_WRITE: u16 = 2;
 
 /// The virtio device type this driver will talk to. Checked, not assumed: the PCI transport
 /// synthesizes the device id, and a driver that looks cannot program another device's queues.
-const VIRTIO_ID_INPUT: u32 = 18;
+const VIRTUAL_IO_ID_INPUT: u32 = 18;
 
 /// The event queue. virtio-input has a second (status) queue for LEDs, which this driver never sets
 /// up, so it stays inside the two-queue confinement ceiling DECISIONS §23 records.
@@ -136,11 +136,11 @@ fn w16(off: u64, v: u16) {
 }
 
 fn mr(off: u64) -> u32 {
-    user_mode_runtime::virtio::read_register(VIRTIO, off) as u32
+    user_mode_runtime::virtual_io::read_register(VIRTUAL_IO, off) as u32
 }
 
 fn mw(off: u64, v: u32) {
-    user_mode_runtime::virtio::write_register(VIRTIO, off, v as u64);
+    user_mode_runtime::virtual_io::write_register(VIRTUAL_IO, off, v as u64);
 }
 
 fn write_desc(i: u64, addr: u64, len: u32, flags: u16) {
@@ -209,13 +209,14 @@ fn start(mode: u64, _arg1: u64, _arg2: u64) -> ! {
     // Where the page is, read out of the page (milestone 600 (provisional)): the progenitor holds
     // the page as a capability and knows no physical address, so whoever built this process wrote
     // the base into its tail
-    // (`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past
+    // (`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`, past
     // `EVENT_BASE`'s eight records).
     // SAFETY: the page is mapped read/write at `DMA_VA` before `_start` runs (the spawner's `maps`),
     // and the offset is inside it.
     let direct_memory_access_phys = unsafe {
         core::ptr::read_volatile(
-            (DMA_VA + abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET)
+            (DMA_VA
+                + abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET)
                 as *const u64,
         )
     };
@@ -261,7 +262,7 @@ fn bring_up_device() {
     }
     // Check what we are talking to: a keyboard driver that skipped this would happily program a
     // disk's queues.
-    if mr(DEVICE_ID) != VIRTIO_ID_INPUT {
+    if mr(DEVICE_ID) != VIRTUAL_IO_ID_INPUT {
         die(E_DEVICE_ID);
     }
 
@@ -287,7 +288,7 @@ fn bring_up_device() {
 
     // The kernel programs the queue's ring addresses; this driver never writes a queue address
     // register, which is the §18 seam and the reason the shadow ring can be trusted.
-    if user_mode_runtime::virtio::setup_queue(VIRTIO, QSIZE as u64, EVENT_Q) != 0 {
+    if user_mode_runtime::virtual_io::setup_queue(VIRTUAL_IO, QSIZE as u64, EVENT_Q) != 0 {
         die(E_QUEUE);
     }
     mw(
@@ -314,12 +315,12 @@ fn post_event_buffers(direct_memory_access_phys: u64) -> u16 {
         w16(EQ_AVAIL + 4 + slot * 2, i as u16);
         avail = avail.wrapping_add(1);
     }
-    virtio_ring_barrier();
+    virtual_io_ring_barrier();
     w16(EQ_AVAIL + 2, avail);
-    virtio_ring_barrier();
+    virtual_io_ring_barrier();
     // The kernel validates the newly published descriptors and copies them into the shadow ring
     // the device actually reads.
-    user_mode_runtime::virtio::notify(VIRTIO, EVENT_Q);
+    user_mode_runtime::virtual_io::notify(VIRTUAL_IO, EVENT_Q);
     avail
 }
 
@@ -398,11 +399,11 @@ impl Events {
     fn repost(&mut self, id: usize) {
         let aslot = (self.avail % QSIZE) as u64;
         w16(EQ_AVAIL + 4 + aslot * 2, id as u16);
-        virtio_ring_barrier();
+        virtual_io_ring_barrier();
         self.avail = self.avail.wrapping_add(1);
         w16(EQ_AVAIL + 2, self.avail);
-        virtio_ring_barrier();
-        user_mode_runtime::virtio::notify(VIRTIO, EVENT_Q);
+        virtual_io_ring_barrier();
+        user_mode_runtime::virtual_io::notify(VIRTUAL_IO, EVENT_Q);
     }
 
     /// After a drain: send the direct batch, or publish the ring and ring the compositor's

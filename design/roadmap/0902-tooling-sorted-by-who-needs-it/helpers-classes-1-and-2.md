@@ -79,7 +79,7 @@ column counts the times the file names calef.
 | `helpers/roadmap_migrate.py` | 2 | shared reader for roadmap, names, Rust source | `h/roadmap_block.py`, `s/roadmap` | `s/citations`, `s/roadmap`, `h/prose_ratchet.py`, `h/roadmap_block.py`, +1 | 412 | 3 |
 | `helpers/roadmap_proposals.py` | 2 | shared reader for roadmap, names, Rust source | `h/roadmap_migrate.py`, `s/roadmap` | `s/metrics`, `s/names`, `s/roadmap`, `h/name_provenance.py`, +1 | 185 | 3 |
 | `helpers/rust_source.py` | 2 | shared reader for roadmap, names, Rust source | `h/function_length.py`, `h/name_provenance.py`, `h/roadmap_proposals.py`, `s/falsifications`, +3 | `s/falsifications`, `s/lint`, `s/metrics`, `s/verify` | 673 | 3 |
-| `helpers/syscall_asm.py` | 2 | codebase-rule check run by lint | `s/lint` | `s/lint`, `s/names` | 162 | 1 |
+| `helpers/system_call_asm.py` | 2 | codebase-rule check run by lint | `s/lint` | `s/lint`, `s/names` | 162 | 1 |
 | `helpers/workflow_swallows.py` | 2 | codebase-rule check run by lint | `s/lint` | `s/lint`, `s/names` | 432 |  |
 | `helpers/commit-msg-selftest.sh` | 2/3 | Co-Authored-By trailer on an agent commit; 887 keeps it | `hook:commit-msg`, `s/lint` | `s/setup`, `hook:commit-msg` | 75 | 2 |
 | `helpers/empty-diff-check.sh` | 2/3 | a merge that changes nothing; 887 keeps it for crate repos | `empty-diff.yml`, `h/empty-diff-selftest.sh`, `s/lint` | `s/lint`, `h/empty-diff-selftest.sh`, `empty-diff.yml` | 64 | 1 |

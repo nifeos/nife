@@ -20,7 +20,7 @@ Verified firsthand, on a fresh shallow clone at the head of `main`:
   and `new` carry no `Name:` block.
 - The vendored `talc` source for every call the crate makes (`claim`, `extend`, `reserved`,
   `try_allocate`, `deallocate`, `try_realloc_in_place`, `min_first_heap_size`, `CHUNK_UNIT`,
-  `required_chunk_size`). The kernel's `MAP` handler (`kernel/src/syscall/memory_region.rs`). Every
+  `required_chunk_size`). The kernel's `MAP` handler (`kernel/src/system_call/memory_region.rs`). Every
   caller in the tree and the std overlay's copy of the policy. The QEMU test
   `a_process_runs_alloc_collections_on_its_own_memory_region`.
 - Upstream `SFBdragon/talc` pull request 57 through the GitHub API, and download figures for the

@@ -5,7 +5,7 @@
 //! The in-kernel userspace suite runs on riscv64 as well as aarch64 (milestone 19 (run a real
 //! workload)'s user-test port). What stays gated, and why, is written at each test, because a
 //! blanket module comment outlives its reason: a property with no RISC-V analogue
-//! (`el1_runs_on_sp_el1`), or one whose RISC-V twin in `riscv_virtio_tests` would be duplicated
+//! (`el1_runs_on_sp_el1`), or one whose RISC-V twin in `riscv_virtual_io_tests` would be duplicated
 //! rather than gained. See notes/riscv-parity-scope.md.
 //!
 //! Name: provisional, minted 2026-10-12 (UTC) by the lane for milestone 873 (the catch-all
@@ -31,8 +31,8 @@ pub(super) fn loader_subject_image() -> &'static [u8] {
 /// program on every architecture.
 ///
 /// aarch64 and `x86_64`: the riscv64 leg drives these same properties through
-/// `riscv_virtio_tests`, which has its own `blk_image` naming the same program, and `x86_64` runs
-/// the two PCIe tests in this module (it has no `riscv_virtio_tests`).
+/// `riscv_virtual_io_tests`, which has its own `blk_image` naming the same program, and `x86_64` runs
+/// the two PCIe tests in this module (it has no `riscv_virtual_io_tests`).
 #[cfg(any(target_arch = "aarch64", target_arch = "x86_64"))]
 pub(super) fn blk_image() -> &'static [u8] {
     program("block_driver").expect("no block_driver program in the initial ramdisk")

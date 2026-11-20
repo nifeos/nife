@@ -64,7 +64,7 @@ crate's own reasons.
   three capability walks are one shared walk with one bound. A Kani harness of `walk` on a two-bus
   machine ran over twelve CPU-minutes without a result and is not kept; the scan loops stay bounded
   by literals and the bus queue, the part a device controls, stays proved.
-- P2, `virtio_capabilities` ignores `cap_len`: Done,
+- P2, `virtual_io_capabilities` ignores `cap_len`: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2, `intx_interrupt_number` precondition: Open. The doc comment states no bus-0 precondition,
   `intx_pin_through_bridge` does not exist, and `kernel/src/pci.rs` has no BUGS entry for it.
@@ -85,7 +85,10 @@ crate's own reasons.
   nothing to build).
 - Review package: Done, [#3807](https://github.com/nifeos/nife/pull/3807):
   [`pci-configuration-space.md`](../../notes/crate-reviews/pci-configuration-space.md) and its row.
-- Follow-on, creating `nifeos/pci_configuration_space`: Open, and an open decision below.
+- Review package clearance: Done (2026-11-20 UTC). The architect cleared the package and approved
+  `nifeos/pci_configuration_space` with `publish = false`, no tag and no publish.
+- Follow-on, creating `nifeos/pci_configuration_space`: Open. It waits on the virtio to `virtual_io`
+  sweep (draft #3854), because the crate has `VirtioCapability` and virtio constants.
 
 ## Open decisions
 
@@ -102,9 +105,11 @@ Every other crate that has moved or passed clearance had a review package under
 `notes/crate-reviews/`: a short record of the names, the identity and the gates, written for the
 clearance. This crate's package is
 [`pci-configuration-space.md`](../../notes/crate-reviews/pci-configuration-space.md). The maintainer
-took option A provisionally on 2026-11-19 (UTC), a two-way door the architect may revisit. Clearing
-the package approves the repository; nobody has cleared it yet. The move also waits on the architect
-ratifying the package's table of names and on the P2 move steps above.
+took option A provisionally on 2026-11-19 (UTC), a two-way door the architect may revisit. The
+architect cleared the package on 2026-11-20 (UTC), which approves the repository. The architect ruled the names on
+2026-11-20 (UTC), the names decision taken as option B: the whole table ratified as built, with one change, the struct `Bdf`
+becomes `BusDeviceFunction` and the specification spellings ride as aliases. The move waits on the
+virtio to `virtual_io` sweep (draft #3854) and on the P2 move steps above.
 
 Recommendation: A, taken provisionally.
 
@@ -230,7 +235,7 @@ The checks are in [the appendix](1105-pci-outside-review/done-when.md).
 - **Outstanding.** Every finding marked Open under "Finding status" above (the `intx_interrupt_number`
   precondition, the fuzz targets and the mutation survivors), each with what remains, checked
   against the crate's manifest, `src/lib.rs`, `tests/` and `falsifications/`.
-- **Outstanding.** The architect ratifies the names in the review package, then clears it, which
+- **Outstanding.** The architect clears the review package, whose names are ratified, which
   approves the repository: the decision under "Open decisions" above.
 
 ## BUGS

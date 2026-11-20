@@ -99,7 +99,7 @@ This milestone deliberately did not act on that finding. `system_initializer` at
 milestone of its own, not a line in a workflow repair.
 
 It became milestone 244, and the answer was not the expected one. The lane measured the crate's 196
-mutants by function before moving anything. 33 sit in pure logic and 157 in the syscall sequence,
+mutants by function before moving anything. 33 sit in pure logic and 157 in the system call sequence,
 about sixty lines of a 2,632-line file, so nothing was lifted and the block records why. What did
 change the tree is the exclusion above and the gate behind it. See
 `design/roadmap/0244-the-largest-crate-in-the-tree-is-proved-by-nothing.md`. Its most reusable line

@@ -26,7 +26,7 @@ build. Everything milestone 121 (`ripgrep` on nife) still owes is behind that ha
 §170 has the ruling in full. In short:
 
 1. An argv of plain bytes in one page, carrying no authority. The transport was priced at about 50
-   lines and no new syscall in notes/foreign-program-arguments.md (#1314), which also holds the
+   lines and no new system call in notes/foreign-program-arguments.md (#1314), which also holds the
    layout this milestone proposes.
 2. A word that resolves to an existing file is granted that file as the program's manifest
    declares: read-only, read-write, or the file's directory. The manifest travels in the ELF (§197

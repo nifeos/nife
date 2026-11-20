@@ -1,9 +1,9 @@
 //! RISC-V traps: the `stvec` vector, the saved [`TrapFrame`], and the dispatch into the portable
-//! syscall and fault handlers.
+//! system call and fault handlers.
 //!
 //! trap.s is the single trap entry. It fills a [`TrapFrame`] and calls [`riscv_trap_dispatch`],
-//! which fans out on `scause`. The portable syscall dispatcher reads `ecall`'s `a7` and `a0`..`a5`
-//! through `TrapFrame::{syscall_nr, arg, set_arg}`.
+//! which fans out on `scause`. The portable system call dispatcher reads `ecall`'s `a7` and `a0`..`a5`
+//! through `TrapFrame::{system_call_nr, arg, set_arg}`.
 //!
 //! See notes/riscv-port/traps.md.
 
@@ -14,7 +14,7 @@ use crate::arch::{UserFault, UserFaultAccess};
 /// The registers saved on a trap: the general registers, then the trap CSRs. `#[repr(C)]` because
 /// trap.s fills it field for field.
 ///
-/// `x` is `pub` because the portable syscall dispatcher indexes it; the rest is arch-internal.
+/// `x` is `pub` because the portable system call dispatcher indexes it; the rest is arch-internal.
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
 pub struct TrapFrame {
@@ -36,18 +36,18 @@ pub struct TrapFrame {
 const _: () = assert!(size_of::<TrapFrame>() == 288);
 
 impl TrapFrame {
-    /// The syscall number the caller passed, in `a7` (`x17`), so the portable dispatcher names no
+    /// The system call number the caller passed, in `a7` (`x17`), so the portable dispatcher names no
     /// register (DECISIONS §17 (the second architecture: RISC-V)).
-    pub(crate) fn syscall_nr(&self) -> u64 {
+    pub(crate) fn system_call_nr(&self) -> u64 {
         self.x[17] // a7
     }
 
-    /// Syscall argument register `i` (RISC-V: `a0`..`a5`, i.e. `x10`..`x15`).
+    /// System call argument register `i` (RISC-V: `a0`..`a5`, i.e. `x10`..`x15`).
     pub fn arg(&self, i: usize) -> u64 {
         self.x[10 + i]
     }
 
-    /// Set syscall argument/return register `i`. The return value and IPC message words ride in
+    /// Set system call argument/return register `i`. The return value and IPC message words ride in
     /// `a0`..`a2` (`x10`..`x12`).
     pub fn set_arg(&mut self, i: usize, v: u64) {
         self.x[10 + i] = v;
@@ -155,12 +155,12 @@ pub(crate) fn user_pc(stack_top: u64) -> u64 {
 }
 
 /// Write `v` to argument register `i` of the user frame at `stack_top`, which the return to U-mode
-/// restores: a result word the syscall path does not write, like the death label (§148 (a
+/// restores: a result word the system call path does not write, like the death label (§148 (a
 /// supervisor resolves by asking the kernel)).
 ///
 /// # Safety
 /// `stack_top` must be the top of the kernel stack of a **user** thread that is inside a trap
-/// from user mode (blocked in a syscall, or the caller's own), and nothing else may be writing that
+/// from user mode (blocked in a system call, or the caller's own), and nothing else may be writing that
 /// frame. A pure kernel thread has no frame there: those bytes are its own stack.
 ///
 /// Name: provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC). Named for `TrapFrame::set_arg`, which it applies to a
@@ -182,7 +182,7 @@ pub static ROUTED_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 pub(crate) static SPURIOUS_INTERRUPTS: AtomicUsize = AtomicUsize::new(0);
 
 /// System calls served, in test builds only, for `system_tests/src/user/el0_boundary_tests.rs`:
-/// every syscall on every core writes this one line (notes/job-mix/null-syscall-under-load.md).
+/// every system call on every core writes this one line (notes/job-mix/null-system-call-under-load.md).
 #[cfg(any(test, feature = "system_tests"))]
 pub static SVC_COUNT: AtomicUsize = AtomicUsize::new(0);
 
@@ -221,7 +221,7 @@ pub(crate) fn enable_software_interrupts() {
     // Takes effect under sstatus.SIE.
     super::instructions::set_sie(SSIE);
 }
-/// `scause` exception code for `ecall` taken from U-mode: the syscall.
+/// `scause` exception code for `ecall` taken from U-mode: the system call.
 const CAUSE_ECALL_U: u64 = 8;
 /// `scause` exception code for a breakpoint (`ebreak`).
 const CAUSE_BREAKPOINT: u64 = 3;
@@ -331,7 +331,7 @@ unsafe extern "C" {
     unsafe(link_section = ".text.hot.riscv_trap_dispatch")
 )]
 extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
-    // A U-mode trap stays on its thread's kernel stack: the syscall may block, which an interrupt
+    // A U-mode trap stays on its thread's kernel stack: the system call may block, which an interrupt
     // stack may not.
     let from_user = frame.sstatus & SPP == 0;
     let top = crate::interrupt_stack::top_for_trap(from_user);
@@ -352,7 +352,7 @@ extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
 }
 
 /// The trap handler proper, run on the interrupt stack when there is one. Fans out on `scause`:
-/// syscall, first FP use, S-mode breakpoint, interrupt or fault.
+/// system call, first FP use, S-mode breakpoint, interrupt or fault.
 ///
 /// Returns whether the caller owes a deferred `schedule()`: true for an interrupt, else false.
 ///
@@ -416,11 +416,11 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
     match code {
         CAUSE_ECALL_U => {
             // `sepc` points at the 4-byte `ecall`; step over it. Wrapping keeps the overflow check
-            // off the syscall path: `sepc` is a user address, far below `2^64 - 4`.
+            // off the system call path: `sepc` is a user address, far below `2^64 - 4`.
             frame.sepc = frame.sepc.wrapping_add(4);
             #[cfg(any(test, feature = "system_tests"))]
             SVC_COUNT.fetch_add(1, Ordering::Relaxed);
-            crate::syscall::dispatch(frame);
+            crate::system_call::dispatch(frame);
         }
         // An illegal instruction under `FS == Off` may be a first FP use. Open the unit and retry
         // without decoding: a genuinely illegal one traps again with `FS` on. Set the frame's FS,

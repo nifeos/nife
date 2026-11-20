@@ -1828,10 +1828,10 @@ def interface_line(rows):
     gap = '; %d crates unread' % unmeasured if unmeasured else ''
     # Short on purpose: the page is a deck with a 3,000-word budget and 7 words of headroom when
     # this panel arrived. Every column is in the CSV and the appendix.
-    return ('interface, %s to %s: %d breaking changes (%d additions); %d syscall numbers changed, '
+    return ('interface, %s to %s: %d breaking changes (%d additions); %d system call numbers changed, '
             '%d format bumps%s%s.'
             % (recent[0], recent[-1], total('interface_breaking'), total('interface_additions'),
-               total('interface_syscall_changed'), total('interface_format_bumps'), share, gap))
+               total('interface_system_call_changed'), total('interface_format_bumps'), share, gap))
 
 
 def write_interface_line(rows):
@@ -2921,7 +2921,7 @@ CHARTS = [
     # Milestone 610 (provisional). Breaking changes only: a week's additions run to hundreds and
     # would flatten the bars that matter, so they are on the generated line and in the CSV.
     ('interface-stability.svg', 'Breaking changes to the interface',
-     'the boundary a program outside the tree is written against: syscall surface moves and '
+     'the boundary a program outside the tree is written against: system call surface moves and '
      'wire-format value changes, rustdoc JSON, week against week',
      [('breaking changes', 'interface_breaking')], 1.0, None, 'interface_breaking'),
     # Last, by calef's rule (2026-10-06 UTC): a measure at its goal state sits below the ones still

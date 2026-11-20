@@ -13,7 +13,7 @@ needs_person: no
 *Title and slug are drafts.*
 Raised by #1323 (a doctest that spun forever under a mutant). The title is provisional.
 
-The change is inside `xtask`, touches no syscall surface and needs no dependency.
+The change is inside `xtask`, touches no system call surface and needs no dependency.
 
 ## What happened
 

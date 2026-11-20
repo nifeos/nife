@@ -301,7 +301,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "confined_syscall_fuzzer_contract"
+name = "confined_system_call_fuzzer_contract"
 version = "0.1.0"
 dependencies = [
  "abi",
@@ -480,7 +480,8 @@ dependencies = [
 
 [[package]]
 name = "domain_name_system"
-version = "0.1.0"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/domain_name_system?rev=c656cdd9206149dd147d6550c339f1cc520aadd0#c656cdd9206149dd147d6550c339f1cc520aadd0"
 
 [[package]]
 name = "driver_process_contract"
@@ -565,7 +566,7 @@ dependencies = [
  "capability_witness_contract",
  "clock_contract",
  "compositor",
- "confined_syscall_fuzzer_contract",
+ "confined_system_call_fuzzer_contract",
  "coremark",
  "credential_contract",
  "current_cpu_contract",
@@ -1620,7 +1621,7 @@ dependencies = [
  "capability_witness_contract",
  "clock_contract",
  "compositor",
- "confined_syscall_fuzzer_contract",
+ "confined_system_call_fuzzer_contract",
  "coremark",
  "counter_frequency_contract",
  "credential_contract",

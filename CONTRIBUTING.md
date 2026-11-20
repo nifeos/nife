@@ -49,7 +49,7 @@ prints the path of each page that says the word:
 
 ```sh
 script/apropos socket      # notes/net.md, the socket decisions, and the program that serves them
-script/apropos syscall     # the syscall decisions, and crates/abi/src/lib.rs, which holds the numbers
+script/apropos system call     # the system call decisions, and crates/abi/src/lib.rs, which holds the numbers
 ```
 
 It is one word at a time and whole words only; `script/apropos`'s own header says what else it
@@ -113,7 +113,7 @@ about:
 
 | | |
 |---|---|
-| **The syscall surface** | A boundary, not a habit. A new method inside the existing capability model is fine and gets its semantics recorded in `design/decisions/`; a new syscall number is a design fork. |
+| **The system call surface** | A boundary, not a habit. A new method inside the existing capability model is fine and gets its semantics recorded in `design/decisions/`; a new system call number is a design fork. |
 | **A new dependency** | Taking one is a decision (DECISIONS §46 (thin primitives or whole subsystems)); a dependency on one of our own `nifeos` crates needs no ruling when its git `rev` is a full commit on that repository's main. The tree is thin architectural primitives or whole subsystems nobody would write, with nothing in between. |
 | **Names** | Crates, programs, modules, public functions and directories are named by an architect. Ship provisional, say so. |
 | **Anything two programs agree on** | A wire format, an opcode number, a packed word. The code is a morning's work; the un-shipping is not. |

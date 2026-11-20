@@ -8,7 +8,7 @@ use super::*;
 /// **Write the shell's whole endowment**: the introspection that makes "reading one literal tells
 /// you a process's authority" real, pointed at the shell itself.
 ///
-/// `budget_pages` is what the progenitor granted at boot rather than what is left, because there is no syscall
+/// `budget_pages` is what the progenitor granted at boot rather than what is left, because there is no system call
 /// that reports the remainder. The caller passes its own constant and the row says "(initial)".
 ///
 /// `clock` is the slot holding this shell's read-only clock page, or `None` for a wiring that

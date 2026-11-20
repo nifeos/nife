@@ -34,7 +34,7 @@ are not two features. They are two spellings of *put a different capability in s
 whole of this lane is the grammar that lets a person choose it and the wiring that carries the
 choice from the prompt to the child.
 
-The kernel did not change. No new object, no new syscall, no `dup2`, no pipe buffer.
+The kernel did not change. No new object, no new system call, no `dup2`, no pipe buffer.
 
 ## The one-line summary of the mechanism
 

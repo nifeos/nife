@@ -59,7 +59,7 @@ where a doc comment belongs to the item below it.
 | 2964 to 3001 | 38 | `boot_usb_keyboard` |
 | 3002 to 3866 | 865 | 25 `mod` declarations with their docs (333 lines), interleaved with `term_print`, `wait_for` and the device starters |
 
-The device starters (3220 to 3687, 468 lines) are `boot_clock_page`, `VirtioBootGrant`,
+The device starters (3220 to 3687, 468 lines) are `boot_clock_page`, `VirtualIoBootGrant`,
 `write_dma_phys`, the virtio, e1000e and DesignWare network starters, `boot_config_page` and
 `boot_screen_terminal`. `boot_progenitor` calls each one.
 
@@ -120,7 +120,7 @@ ships provisional. The questions stay here as they were asked.
    every file under `arch/`, so they would leave its check. These reasons hold at equal cost.
 4. Every module name in the table.
 
-No public crate API, wire format or syscall changes under any answer here.
+No public crate API, wire format or system call changes under any answer here.
 
 ## What moving the code breaks
 
@@ -146,7 +146,7 @@ Found with `grep` at `396187b0b`. A lane has to carry each one.
   keep true.
 - 95 tracked files name the path, 63 of them Markdown. `xtask/src/swish_check.rs`'s progenitor-stack failure
   tells a reader to raise `INIT_STACK_PAGES` in this file.
-- `script/fastpath-footprint` keys on `kernel5sched` and `kernel7syscall` symbols, and its cold
+- `script/fastpath-footprint` keys on `kernel5sched` and `kernel7system_call` symbols, and its cold
   list names `12AddressSpace` by type, so no regex follows this file's module path.
   `script/stack-frame-check` names `kernel::user::disk_service::*`, which does not move.
   `script/icount` names no symbol here. `helpers/cap_abbreviation.py` has no row for this path.
@@ -180,11 +180,11 @@ now an index, so its file-length row is gone. Every name below is provisional.
 | `user/progenitor_boot.rs` | 735 | `PROGENITOR_ENTRY`, `PROGENITOR_ROLE`, `INIT_STACK_PAGES`, `boot_progenitor` |
 | `user/entry.rs` | 532 | `Mapping`, `Spawn`, the test roles, `spawn_hello`, the `run` family, `enter_frame` |
 | `user/address_space.rs` | 509 | `AddressSpace`, `Backing`, the overhead constants, `ASIDS`, `Drop` |
-| `user/device_starters.rs` | 488 | the eleven starters and `VirtioBootGrant` |
+| `user/device_starters.rs` | 488 | the eleven starters and `VirtualIoBootGrant` |
 | `user/boot_demos.rs` | 377 | the `x86_64` and riscv64 demos, compiled only there |
 | `user/loader.rs` | 316 | `LoadError` through `program`, and `INITRD_VA` |
 | `user/console_device.rs` | 109 | the console UART's interrupt, page and port-range constants |
-| `user/terminal_print.rs`, `user/virtio_dma.rs`, `user/test_support.rs` | 46, 38, 34 | `term_print`; `write_dma_phys`; `wait_for` |
+| `user/terminal_print.rs`, `user/virtual_io_direct_memory_access.rs`, `user/test_support.rs` | 46, 38, 34 | `term_print`; `write_dma_phys`; `wait_for` |
 
 Each child takes `use super::*`, and the index re-exports each at the visibility its items had, so
 no `user::` path changed. A private item a sibling reaches became `pub(super)`, as §281 rules,
@@ -196,7 +196,7 @@ AMD-Vi and OVMF legs), with the same counts milestone 840 recorded. They ran on 
 kernel, system-test, crate or xtask code between it and `97650277b`. `script/icount` reads
 identically, and `script/bench --check` and `script/stack-frame-check` pass on all three. On
 riscv64, `riscv_trap_dispatch` stopped inlining `preempt_if_needed`, undoing what 840 recorded, so
-`syscall_entry` fell 2,136 to 1,918 bytes and `bench/fastpath-riscv64.txt` was re-recorded with
+`system_call_entry` fell 2,136 to 1,918 bytes and `bench/fastpath-riscv64.txt` was re-recorded with
 the reason. The one falsification record that patched this file was regenerated at its hunk's new
 home and replayed red at its headline assertion on aarch64.
 
@@ -204,7 +204,7 @@ home and replayed red at its headline assertion on aarch64.
 
 - **Decision.** Every module name is provisional and is calef's to rule, per
   `design/decisions/0281-the-kernels-user-mode-file-splits-into-child-modules-of-user.md`.
-- **Done.** The riscv64 `syscall_entry` change is recorded in `bench/fastpath-riscv64.txt`.
+- **Done.** The riscv64 `system_call_entry` change is recorded in `bench/fastpath-riscv64.txt`.
 - **Recorded.** The `user.rs:NNNN` citations in other milestones' blocks go to a maintainer follow-up,
   listed on pull request #1959.
 

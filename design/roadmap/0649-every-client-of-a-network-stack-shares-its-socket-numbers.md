@@ -80,7 +80,7 @@ Built on aarch64, riscv64 and x86_64 (PR #1817).
   `CALL` and files a `GRANT`-checked copy of one capability in the caller's table, whose `CALL`
   returns its slot in `x2`. Every `CALL` now returns `x2`, `NO_CAP` after a plain `REPLY`.
   `a_reply_carries_a_capability_the_caller_can_use` proves it at EL0, with a replayable
-  falsification; the seeded syscall driver's shadow model checks `x2` after every `REPLY`.
+  falsification; the seeded system call driver's shadow model checks `x2` after every `REPLY`.
 - The contract and the stack. `socket_protocol` loses `req`, `req_sid` and `MAX_SOCKETS`, and
   gains `SOCKET_BADGE` and `stack_slots`. `net_stack` keys sixteen sockets by badge, mints each from a
   `WRITE | GRANT` copy of its own endpoint (slot 7), and unmaps a closed socket's page through its

@@ -58,7 +58,7 @@ depends on each ISA's page-walk and lock costs.
   record count, and the worst case stays under one scheduler tick.
 - Option (c): map-time scanning fails those bounds but a once-per-start scan keeps `spawn_reap`
   within them. It also adds a refusal to the thread-start method, which an architect rules on as
-  a syscall-surface change.
+  a system-call-surface change.
 
 ## The bounds
 

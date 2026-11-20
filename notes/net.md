@@ -87,7 +87,7 @@ it. `socket_contract::listen_grant(lo, hi)` packs an inclusive range into the on
 
 ```rust
 // A stack whose client may listen on 7778 and nothing else.
-let report = virtio_service::start_net_stack(
+let report = virtual_io_service::start_net_stack(
     image,
     NET_TEST_TCP_ACCEPT,                                    // which exchange the client drives
     false,                                                  // mmio, not PCIe
@@ -95,7 +95,7 @@ let report = virtio_service::start_net_stack(
 )?;
 
 // A stack that serves nobody inbound, which is every other net test in the tree.
-let report = virtio_service::start_net_stack(image, NET_TEST_TCP_ECHO, false,
+let report = virtual_io_service::start_net_stack(image, NET_TEST_TCP_ECHO, false,
                                              socket_contract::NO_LISTEN_GRANT)?;
 ```
 

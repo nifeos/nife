@@ -63,7 +63,7 @@ keyboard.
 
 ## What was built, 2026-10-04
 
-No new syscall, no new capability object, no new method. The driver is a kernel-spawned EL0
+No new system call, no new capability object, no new method. The driver is a kernel-spawned EL0
 process in exactly `non_volatile_memory_express_service`'s shape: spawn-time mappings it holds no
 name for, three capabilities, three spawn words. One new boot grant: the progenitor's slot 27, the
 driver's attach endpoint, taken the way every other conditional boot grant is (explicit slot, probed

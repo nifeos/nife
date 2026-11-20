@@ -13,7 +13,7 @@ carried the online-set sweep and the new cross-hart `fence.i`. It hung in a shap
 previous stops produced, stable across five thread dumps over ten seconds. `init`, the only user
 thread, was `Blocked` with its saved user pc at 0x00400188, a plain store loop in the builder's
 memset. The boot thread was `Running`, `on_cpu`, as core 2's current the whole time. Two endpoints
-each held one parked receiver, with no senders and no pending signals. The syscall count was frozen
+each held one parked receiver, with no senders and no pending signals. The system call count was frozen
 at 20.
 
 ## What the dump could honestly claim
@@ -32,8 +32,8 @@ artifact. The dump now says this about itself (the `pc*` marker and the honesty 
 And it is evidence of a state no legal transition sequence produces. The audit walked every write
 of `State::Blocked` in the tree. There are five sites, all under SCHED, all applied to the executing
 core's own current thread. A user thread reaches any of them only through its own `ecall`. The
-syscall path advances the frame's `sepc` past the `ecall`. So a legitimately blocked user thread's
-dumped pc is its syscall site, never a memset store. A timer preemption leaves `Ready`, and nothing
+system call path advances the frame's `sepc` past the `ecall`. So a legitimately blocked user thread's
+dumped pc is its system call site, never a memset store. A timer preemption leaves `Ready`, and nothing
 blocks a `Ready` thread in absentia.
 
 The wake-before-switch-out family was read against this state, and it holds. A preempted thread's
@@ -127,7 +127,7 @@ The census says that plainly. Every `wake()` caller in the tree delivers somethi
 rendezvous sites stage a mailbox. `irq_notify` counts a signal. `deliver_death` stages a death
 message. `ipc_reply` stages a reply. The revocation drain flags an abort.
 
-On the wedged boot none of them was reachable. The syscall counter was frozen, so no user thread
+On the wedged boot none of them was reachable. The system call counter was frozen, so no user thread
 was sending. The boot tour parks in this demo *before* the UART-driver step. So no IRQ was routed
 to any endpoint and no reply capability had ever been minted. And nothing was being revoked. The
 ring proved the transition happened without any legal path having produced it.

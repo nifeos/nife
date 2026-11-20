@@ -8,14 +8,14 @@
 use core::ffi::c_void;
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use page_tables::aarch64::mair;
+use page_tables::aarch64::memory_attribute_indirection;
 use page_tables::{Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
 
 use super::instructions;
 use crate::{memory, println};
 
 /// This architecture's page-table format. Portable code that must name the format (the user-VA gate
-/// in syscall.rs, the user `Mapper` in user.rs) refers to it as `arch::mmu::Format`, so the choice
+/// in system call.rs, the user `Mapper` in user.rs) refers to it as `arch::mmu::Format`, so the choice
 /// of format lives in `arch/`, not in the portable kernel. See notes/riscv-port.md (leak #2).
 pub type Format = Aarch64;
 
@@ -272,11 +272,11 @@ where
     }
 
     // 7. The virtio-mmio window, mapped only to enumerate it; a driver gets its own slot. See
-    // kernel/src/virtio.rs.
+    // kernel/src/virtual_io.rs.
     direct_map(
         m,
-        VIRTIO_MMIO_BASE,
-        VIRTIO_MMIO_BASE + VIRTIO_MMIO_SIZE,
+        VIRTUAL_IO_MMIO_BASE,
+        VIRTUAL_IO_MMIO_BASE + VIRTUAL_IO_MMIO_SIZE,
         Flags::device(),
     )?;
 
@@ -302,20 +302,23 @@ where
 
 /// The virtio-mmio device window on QEMU `virt`: 32 slots of 0x200 bytes at 0x0a000000, with
 /// interrupts SPI 16..47 (INTID 48..79). Fixed by the machine, like [`UART_BASE`].
-pub const VIRTIO_MMIO_BASE: u64 = 0x0a00_0000;
-pub(crate) const VIRTIO_MMIO_SIZE: u64 = 32 * 0x200;
-/// SPI 16 becomes INTID 48 (SPIs start at 32). Slot `i` uses INTID `VIRTIO_INTERRUPT_NUMBER_BASE +
+///
+/// Name: provisional. Spelled out from `VIRTIO_MMIO_BASE`.
+#[doc(alias = "virtio")]
+pub const VIRTUAL_IO_MMIO_BASE: u64 = 0x0a00_0000;
+pub(crate) const VIRTUAL_IO_MMIO_SIZE: u64 = 32 * 0x200;
+/// SPI 16 becomes INTID 48 (SPIs start at 32). Slot `i` uses INTID `VIRTUAL_IO_INTERRUPT_NUMBER_BASE +
 /// i`.
 #[doc(alias = "irq")]
-pub(crate) const VIRTIO_INTERRUPT_NUMBER_BASE: u32 = 48;
+pub(crate) const VIRTUAL_IO_INTERRUPT_NUMBER_BASE: u32 = 48;
 /// aarch64's `virt` lays out 32 virtio-mmio slots 0x200 apart (RISC-V's are 8, 0x1000 apart). The
-/// probe (`virtio::find_block_device`) walks them.
-pub(crate) const VIRTIO_SLOT_STRIDE: u64 = 0x200;
-pub(crate) const VIRTIO_SLOTS: u64 = 32;
+/// probe (`virtual_io::find_block_device`) walks them.
+pub(crate) const VIRTUAL_IO_SLOT_STRIDE: u64 = 0x200;
+pub(crate) const VIRTUAL_IO_SLOTS: u64 = 32;
 /// How many slots the probe walks. All of them: aarch64 `virt` is the only machine this
 /// architecture maps the window on. A function because riscv64's answer depends on the device tree.
-pub(crate) const fn virtio_slots() -> u64 {
-    VIRTIO_SLOTS
+pub(crate) const fn virtual_io_slots() -> u64 {
+    VIRTUAL_IO_SLOTS
 }
 
 /// How many ECAM buses the kernel maps: bus 0, 1 MB. The window comes from the device tree's
@@ -459,7 +462,7 @@ unsafe fn install(root: u64) {
     // 4 KiB, 48-bit tables `root` heads, and this function's contract is that `root` maps what the
     // next fetch needs.
     unsafe {
-        instructions::write_mair(mair::VALUE);
+        instructions::write_mair(memory_attribute_indirection::VALUE);
         instructions::write_tcr(tcr);
         instructions::write_ttbr1(root & TTBR_BADDR);
     }
@@ -603,7 +606,7 @@ pub fn deactivate_user() {
 }
 
 /// **Could EL0 read this address?** Asked of the silicon with `AT S1E0R`, not of the kernel's own
-/// permission model. Only the system tests call it: no syscall dereferences a user pointer. See
+/// permission model. Only the system tests call it: no system call dereferences a user pointer. See
 /// notes/mmu.md, "What `kernel/src/arch/aarch64/mmu.rs` holds to".
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
 pub fn user_can_read(va: u64) -> bool {
@@ -879,7 +882,7 @@ pub(crate) fn map_page(va: u64, pa: u64, flags: Flags) -> Result<(), MapError> {
 ///
 /// Returns the physical frame, which is the caller's to free: the mapper never owned it.
 ///
-/// The `TlbFlush` obligation is discharged here, properly, with a real `tlbi`. It cannot be
+/// The `TranslationLookasideBufferFlush` obligation is discharged here, properly, with a real `tlbi`. It cannot be
 /// forgotten: dropping one un-discharged panics.
 pub(crate) fn unmap_page(va: u64) -> Result<u64, MapError> {
     let _guard = KERNEL_MMU.lock(); // exclusive: see map_page
@@ -890,7 +893,7 @@ pub(crate) fn unmap_page(va: u64) -> Result<u64, MapError> {
 
 /// Invalidate the TLB entry for one virtual address.
 ///
-/// Discharges a `page_tables::TlbFlush`: `tlbi vaae1is` (by VA, all ASIDs, EL1, inner shareable) on
+/// Discharges a `page_tables::TranslationLookasideBufferFlush`: `tlbi vaae1is` (by VA, all ASIDs, EL1, inner shareable) on
 /// the page number. TLB maintenance is not synchronous, hence the `dsb ish` and `isb` after.
 pub(crate) fn flush_tlb(va: u64) {
     // SAFETY: TLB maintenance is always sound. Getting it wrong means a stale translation, not

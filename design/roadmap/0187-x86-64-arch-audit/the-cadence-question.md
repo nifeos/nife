@@ -22,7 +22,7 @@ Worse: the counted triggers are measurably blind to an ISA. `script/audits` has 
 `[[bin]]` targets), ABI constants, and external packages. At commit `797a20ac`, which added fourteen
 files under `kernel/src/arch/x86_64/` in a 2,241-line commit, every one of the four was unchanged:
 built 97 to 97, components 122 to 122, ABI constants 51 to 51, external packages 108 to 108. An
-architecture adds no crate, no program, no syscall constant, and no dependency, so the only counter
+architecture adds no crate, no program, no system call constant, and no dependency, so the only counter
 it can ever move is `milestones built`, by one, when milestone 161 (the x86_64 kernel port)'s row flipped from PARTIAL
 (2026-09-19). Against a security cadence that fires at 15, an entire instruction set is worth one
 fifteenth of a trigger. The script's own BUGS predicts this in general terms ("a change that lands

@@ -46,7 +46,7 @@ fixtures in `script/lint`.
 What it read at `7b1bab550`: 15 rows sit more than 5% above their anchor. The largest is
 `spawn_reap`, +24.79% on aarch64 and +20.91% on riscv64, most of it one +31 to +34% step on
 2026-08-16 that tripped the gate and was re-saved on purpose (the thread-stack overflow fix).
-riscv64 `null_syscall` is +11.29% and `ctx_switch` +8.81%; x86_64's largest is `spawn_reap`,
+riscv64 `null_system_call` is +11.29% and `ctx_switch` +8.81%; x86_64's largest is `spawn_reap`,
 +8.09%. No restamp has run yet, so every restamp term is zero.
 
 ## In brief

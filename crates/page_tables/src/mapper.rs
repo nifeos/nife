@@ -15,7 +15,7 @@ pub enum MapError {
     /// Something is already mapped here.
     ///
     /// **Load-bearing, not defensive.** Refusing to overwrite is what forces break-before-make: to
-    /// change a mapping you must `unmap` (which hands you a [`TlbFlush`]) and then `map`. Silently
+    /// change a mapping you must `unmap` (which hands you a [`TranslationLookasideBufferFlush`]) and then `map`. Silently
     /// overwriting would go valid → valid (which the hardware may reject) *and* leak the old frame.
     AlreadyMapped,
     /// This address belongs to the *other* half, or is non-canonical. Mapping a kernel address into
@@ -362,7 +362,7 @@ where
     /// frame allocator and must give back. Only the leaf is cleared: break-before-make remaps the
     /// same address at once, so the tables stay. Teardown does not use this (notes/teardown.md).
     ///
-    /// Returns a [`TlbFlush`] you cannot ignore.
+    /// Returns a [`TranslationLookasideBufferFlush`] you cannot ignore.
     ///
     /// # Examples
     ///
@@ -394,7 +394,10 @@ where
     /// #     unsafe { drop(Box::from_raw(p)) };
     /// # }
     /// ```
-    pub fn unmap(&mut self, virtual_address: u64) -> Result<(u64, TlbFlush), MapError> {
+    pub fn unmap(
+        &mut self,
+        virtual_address: u64,
+    ) -> Result<(u64, TranslationLookasideBufferFlush), MapError> {
         if !F::is_in_half(self.half, virtual_address) {
             return Err(MapError::WrongHalf);
         }
@@ -431,7 +434,10 @@ where
         // Break: the entry becomes invalid *before* anything else happens.
         *entry = 0;
 
-        Ok((physical_address, TlbFlush { virtual_address }))
+        Ok((
+            physical_address,
+            TranslationLookasideBufferFlush { virtual_address },
+        ))
     }
 
     /// **Cut the intermediate table at physical `table` out of the walk that reaches `virtual_address`**, and
@@ -442,13 +448,13 @@ where
     ///
     /// The kernel cuts a table whose page is about to be handed back (`revoke::revoke_region`): one
     /// store makes the page unreachable, where clearing its leaves would leave it linked. The
-    /// [`TlbFlush`]'s [`address`](TlbFlush::address) is `base`, and it must be discharged by an
+    /// [`TranslationLookasideBufferFlush`]'s [`address`](TranslationLookasideBufferFlush::address) is `base`, and it must be discharged by an
     /// invalidation that reaches non-leaf entries for the whole span (a by-ASID flush does).
     pub fn unlink_table(
         &mut self,
         virtual_address: u64,
         table: u64,
-    ) -> Option<(u64, u64, TlbFlush)> {
+    ) -> Option<(u64, u64, TranslationLookasideBufferFlush)> {
         if !F::is_in_half(self.half, virtual_address) {
             return None;
         }
@@ -470,7 +476,7 @@ where
                 return Some((
                     base,
                     span,
-                    TlbFlush {
+                    TranslationLookasideBufferFlush {
                         virtual_address: base,
                     },
                 ));

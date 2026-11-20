@@ -66,7 +66,7 @@ The TH1520 is not.
    provisional). The address was written three times and now lives once, in
    `arch/riscv64/machine.rs`.
 4. Built: the virtio-mmio window is mapped only when the tree names a `virtio,mmio` node, and the
-   probe asks `arch::mmu::virtio_slots()`. On the TH1520 that address is DRAM; on radon it is
+   probe asks `arch::mmu::virtual_io_slots()`. On the TH1520 that address is DRAM; on radon it is
    UART0, which the probe had been reading as virtio slots.
 5. Built: XTheadMae. `page_tables::Sv39Mae` (name provisional) is Sv39 plus Linux's memory types and is
    `arch::mmu::Format` under `board_th1520`; the boot table carries the same bits.
@@ -139,7 +139,7 @@ is attention to transcripts, which is why the host and QEMU steps came first.
    reported out of stock on 2026-06-03. Runbook step 0 answers that before anything is spent.
 5. Cost: measured above in euros and estimated in hours. The hours are an estimate from radon's
    record, not a measurement.
-6. Reversibility: code, plus an hourly rental. No wire format, syscall or ratified name.
+6. Reversibility: code, plus an hourly rental. No wire format, system call or ratified name.
 7. Same cost for both: the window in step 2 is chosen over Linux's per-device `ioremap` because it
    is one table entry and one compare, not a virtual allocator. With equal effort the window still
    wins for a kernel that maps a handful of devices once at boot. If a machine ever puts devices in

@@ -27,7 +27,7 @@ genuinely distinct in-tree senses, and all had to be told apart before touching 
   own stack-overflow postmortem section all use "frame" for this unrelated concept. They were left
   alone.
 - A raw network frame (Ethernet/ARP/mDNS), also not anticipated by §113. `crates/virtio::send_frame`
-  (a virtio-net transmit), `components/src/virtio_net_transport.rs`'s `VnetRxToken { frame: Vec<u8>
+  (a virtio-net transmit), `components/src/virtual_io_net_transport.rs`'s `VnetRxToken { frame: Vec<u8>
   }`, and `xtask/src/main.rs`'s `arp_request_frame`/`mdns_query_frame` packet builders. None
   renamed.
 - Arbitrary example text, unrelated to any of the above. `crates/manual/src/index.rs`'s search-index

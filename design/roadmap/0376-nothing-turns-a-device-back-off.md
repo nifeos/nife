@@ -49,7 +49,7 @@ The three questions it has to answer, and they are the interesting part:
    that granting it would *widen* a driver's authority rather than confine it (the STG window
    covers USB, both PCIe root ports and the DMA engine). A teardown that a driver can *ask* for is
    a different question from a controller a driver can *hold*, and the first may well be
-   answerable without new syscall surface: the kernel already knows when a spawned service dies.
+   answerable without new system call surface: the kernel already knows when a spawned service dies.
 2. What is the unit of reclamation? Per-device, if something refcounts shared lines. Per-job,
    if it hangs off §40's subtree death, which is where §92's caretaker-lifetime question landed
    for an analogous reason. The second is more elegant and needs the refcount anyway.
@@ -78,7 +78,7 @@ refused to just add the inverse, for a reason in the hardware: the JH7110's TRNG
 as shared, the same line resets the PL080 DMA engine, so "turn my device off" is "reset a block my
 neighbor is using". The refcounting Linux gets from its clock framework does not exist here.
 Three questions make it calef's. Who may gate a clock, since a teardown a driver can ask for is a
-different question from a controller a driver can hold and the first may need no new syscall
+different question from a controller a driver can hold and the first may need no new system call
 surface. What the unit of reclamation is, per-device with a refcount or per-job off §40's subtree
 death. And whether it is worth anything before somebody measures what an ungated STG domain costs
 radon, because a milestone justified by tidiness rather than a number is the tenet about

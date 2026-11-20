@@ -95,7 +95,7 @@ you must hand it a capability to that file. And you cannot hand it one you do no
 
 The bug is not defended against. It is not constructible.
 
-That is the same move as [`TlbFlush`'s `Drop`](page-tables.md) and the [lock
+That is the same move as [`TranslationLookasideBufferFlush`'s `Drop`](page-tables.md) and the [lock
 ranking](deadlock.md): make the bad state *unrepresentable* rather than checking for it at
 runtime and hoping.
 
@@ -131,7 +131,7 @@ Which is the same table as [DECISIONS §5](../design/decisions/0005-preemptive-t
 this the same way. When one direction is cheap and the other is a rewrite, take the one that
 keeps the option open.
 
-## The kernel has almost no syscalls
+## The kernel has almost no system calls
 
 ```
 Send   Recv   Call   Reply   NBSend   NBRecv   Signal   Wait   Yield
@@ -171,12 +171,12 @@ in a process, at EL0. If it deadlocks, it deadlocks by itself, and we restart it
 
 ## Is it slow?
 
-One IPC is not slow. seL4's fastpath is a few hundred cycles: comparable to a Linux syscall,
-and *better* than one now that Spectre mitigations made Linux's syscall boundary expensive. Mach
+One IPC is not slow. seL4's fastpath is a few hundred cycles: comparable to a Linux system call,
+and *better* than one now that Spectre mitigations made Linux's system call boundary expensive. Mach
 was slow in the 90s and it poisoned the word "microkernel" for twenty years, but Liedtke showed in
 1995 that this was an implementation failure, not a law, and it has stayed fixed.
 
-The cost is that you need more crossings. A `read()` that was one syscall becomes six. And the
+The cost is that you need more crossings. A `read()` that was one system call becomes six. And the
 real bite is not the cycles, it is the cache and TLB pollution of landing in a different working
 set. You can make the switch cost 200 cycles. You cannot make the other process's data be in L1.
 
@@ -187,7 +187,7 @@ The discipline that recovers most of it, which every serious microkernel arrives
 Put the bytes *in* the message and you copy twice, and you are Mach, and you are slow. Put a frame
 capability in the message and the receiver maps it. Zero copies.
 
-And the honest 2026 note: `io_uring` exists because Linux's syscall boundary got expensive, and its
+And the honest 2026 note: `io_uring` exists because Linux's system call boundary got expensive, and its
 answer (a shared-memory ring, batched, stop crossing per operation) is this discipline under
 another name. DPDK and SPDK moved the network and storage drivers into userspace for the same
 reason. Those are microkernels. They had to bolt the isolation on afterwards with an IOMMU,
@@ -224,12 +224,12 @@ tree, untyped memory.*
 The decision, §10 (process model: capability-based, microkernel), became code in two steps. Each has its own record in
 [`capabilities/`](capabilities/README.md), and what each found is below.
 
-## Milestone 7d: the syscall surface, and refusing to be a deputy
+## Milestone 7d: the system call surface, and refusing to be a deputy
 
 Milestone 7d (user mode: EL0, capabilities, the ELF loader, and IPC) shipped three calls: `exit`, `yield` and `invoke(cap, method, a0, a1, a2)`, which is everything
 else. There is no `open`, `read`, `write` or `fork`. One call has been added since:
 `SYS_CAPABILITY_DELETE` (2026-07-24, milestone 19d (run a real workload)), because forgetting something in your own table needs
-no capability. The surface is five calls today <!--count:syscalls-->, and
+no capability. The surface is five calls today <!--count:system_calls-->, and
 [`notes/abi.md`](abi.md) is the current contract.
 
 - The ABI is a crate, `crates/abi`, that the kernel and every user program depend on. If it
@@ -240,12 +240,12 @@ no capability. The surface is five calls today <!--count:syscalls-->, and
 - A new process holds nothing. `CapabilityTable::empty()` is the decision, and the demo shows the
   same binary printing with a console capability and unable to print one byte without it.
 - The console `write` takes a user pointer, so the kernel could be a confused deputy and print its
-  own memory. `syscall::user_slice` refuses by asking the hardware (`AT S1E0R`) whether EL0 could
+  own memory. `system_call::user_slice` refuses by asking the hardware (`AT S1E0R`) whether EL0 could
   have read each page itself. A TOCTOU window is recorded in that function for when demand paging
   or shared address spaces arrive.
 
 The whole record, with the demo output and why the console was still kernel-served at 7d, is in
-[`capabilities/syscall-surface.md`](capabilities/syscall-surface.md).
+[`capabilities/system-call-surface.md`](capabilities/system-call-surface.md).
 
 ## Milestone 7e: IPC, and the scheduler learning to wait
 

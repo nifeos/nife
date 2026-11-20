@@ -182,7 +182,7 @@ const NET_MEMORY_REGION_SLOT: u64 = std_runtime_contract::NET_MEMORY_REGION_SLOT
 
 /// One page per socket's shared frame, plus that frame's page table and mapping, for the six
 /// sockets the std PAL holds at once (its `SOCKETS`), with room to spare. The same 16 the kernel's own
-/// net clients are given (`virtio_service::NET_CLIENT_BUDGET_PAGES`).
+/// net clients are given (`virtual_io_service::NET_CLIENT_BUDGET_PAGES`).
 pub const NETWORK_FRAME_PAGES: u64 = 16;
 
 /// What [`start_networked`] hands back: [`StdRun`], plus the frame budget to reclaim beside the heap.
@@ -195,7 +195,7 @@ pub struct NetworkedRun {
 /// configuration page and entropy, and also `stack` at slot 2 and a frame budget at slot 3.
 ///
 /// Milestone 501 (a TLS client that speaks to one pinned peer) is the first program that needs all
-/// of them at once. `virtio_service::start_net_std` grants the network and none of the rest, because
+/// of them at once. `virtual_io_service::start_net_std` grants the network and none of the rest, because
 /// `std_exerciser`'s echo needs neither time nor randomness; a TLS client needs both, randomness for
 /// its key share and the time for a certificate's validity. Before this function no test could
 /// start such a program, and no prompt can yet either (`grant_plan` refuses a std image that declares

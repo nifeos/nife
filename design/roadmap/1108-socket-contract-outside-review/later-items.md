@@ -37,7 +37,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    is the way an address reads.
    Door: two-way before the release; the types become one-way after. Effort: S.
 
-9. Names where this review reads a later rule differently from the package. LEFT: names, two-way before the first tag, so the maintainer rules them provisionally; `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC).
+9. Names where this review reads a later rule differently from the package. DONE: the architect ratified the names as built (2026-11-20 UTC); `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC).
    Finding: the package proposes keeping `Ports::next` and `polled_wait::next`. The rule that a
    method takes std's spelling asks for std's meaning too; `Iterator::next` takes no argument and
    returns `Option`, while `Ports::next(milliseconds, held)` takes two and returns a `u16`, and
@@ -55,7 +55,7 @@ An appendix to [the milestone](../1108-socket-contract-outside-review.md).
    name"), so the rule has a record rather than passing by silence.
    Door: two-way. Effort: S, in the package's rename lane.
 
-10. Inline "name provisional" prose survives the move. LEFT: the prose goes with the `Name:` blocks at the move.
+10. Inline "name provisional" prose survives the move. DONE: the crate's doc comments no longer say "provisional" in a sentence, and every `Name:` block reads ratified; the move strips the blocks.
     Finding: the move strips `Name:` blocks. The crate also carries the words inside ordinary
     sentences: "Names provisional." (line 65), "Name provisional." (lines 74, 84), "Names
     provisional." (line 440), "The module's name is provisional." (lines 213, 292), and

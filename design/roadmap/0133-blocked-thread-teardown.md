@@ -12,7 +12,7 @@ declined to open.
 The fork was answered before the work: calef chose proposal A on 2026-09-03, *`DESTROY`
 finishes what it starts*. Until then this block carried `Gate: DECISION`, because no lane could pick
 one of four proposals whose difference is which held capability expresses the right to end a
-thread. The authority is the region capability, unchanged; nothing is added to the syscall
+thread. The authority is the region capability, unchanged; nothing is added to the system call
 surface, no new right, and no new error is visible to userspace. The paragraphs below are kept as
 they were written, because the argument they record is what the decision was made against; what has
 changed is only that it is no longer open.
@@ -68,7 +68,7 @@ caller). `handshake.wait_on` names the endpoint. `set_ipc_aborted` plus `wake` i
 abort-and-resume pair. `Endpoint::remove_sender` already exists for surgical unlinking and its
 receiver twin is the same twelve lines. And `reap_region_objects` already reaches into an endpoint
 *outside* the region being destroyed, with its reasoning written down. So the kernel could end any
-blocked thread today in about thirty lines with no new syscall. **What has never been decided is who
+blocked thread today in about thirty lines with no new system call. **What has never been decided is who
 may ask, and that is the milestone.**
 
 The prior art says nobody else blocks forever. seL4 folds cancellation into `seL4_TCB_Suspend`
@@ -104,7 +104,7 @@ never woken and never runs another instruction. `crates/inter_process_communicat
 The authority is unchanged, which is why proposal A was the one that could ship without
 deciding anything else: the untyped holder could already end every `Ready` and `Running` resident,
 and could already leave every `Blocked` one killed-and-refused. It could not only *finish*. Nothing
-was added to the syscall surface, no right was added, and no new error is visible to userspace.
+was added to the system call surface, no right was added, and no new error is visible to userspace.
 
 Both queues are asked, rather than the recorded `WaitRole`. The research described the role as
 deciding which queue holds the thread, and it does not: `ipc_call`'s `Send::Blocked` arm records a
@@ -163,10 +163,10 @@ case is the miss rather than the hit, because the kernel asks both queues on eve
   test was sampling its baseline after the driver had already been spawned, and `ROUTED_IRQS` meant
   something different on `x86_64` than on the other two architectures; both are fixed, and
   notes/load-sensitive-assertions.md carries the account.
-- **Milestone 368.** `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-syscall-fetches.md`.
-  `script/fastpath-footprint`'s `syscall_entry` set is flat and so cannot exclude anything, and this
+- **Milestone 368.** `design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md` (milestone 368 (its entry set is flat)).
+  `script/fastpath-footprint`'s `system_call_entry` set is flat and so cannot exclude anything, and this
   lane's change to region teardown made LLVM fold `timer::tick` into `riscv_trap_body`, putting 226
-  bytes (12.1%, against a 5% bound) onto a number that measures the syscall path. Closed here with
+  bytes (12.1%, against a 5% bound) onto a number that measures the system call path. Closed here with
   `#[inline(never)]` on `tick`, which restores the baseline exactly and is the pattern this tree
   already uses twice; the gate's own limitation is what wants a lane.
 - **Refused.** Proposal B, a terminate verb on a `ThreadControlBlock` capability. It would widen a
@@ -182,7 +182,7 @@ case is the miss rather than the hit, because the kernel asks both queues on eve
   was proposed to bound rather than competing with it.
 - **Recorded.** In `sched::reclaim_region`'s BUGS: an `Ok` is now destructive in one more way. A
   resident that was `Blocked` is ended by the call that succeeded, without returning from its
-  syscall and without running a destructor, and a waiter it sat beside on somebody else's
+  system call and without running a destructor, and a waiter it sat beside on somebody else's
   rendezvous simply stops being there. The rendezvous's owner observes a peer that never arrived,
   which it cannot tell from a client that never called. That is Zircon's RFC-0007 objection to
   thread killing, and it lands; what makes it bearable here is that a `Blocked` thread holds no
@@ -197,4 +197,4 @@ unattended backup target survives a function of spare budget. **calef chose prop
 2026-09-03**, *`DESTROY` finishes what it starts*. Such a resident is unlinked from whatever queue
 holds it, every outstanding `Reply` capability naming it is swept out of every capability table,
 and it is written to `Finished` without ever being woken. The authority is the untyped capability,
-unchanged, and nothing is added to the syscall surface
+unchanged, and nothing is added to the system call surface

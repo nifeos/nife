@@ -71,7 +71,7 @@ Row 1 is a two-sided drift band and row 9 is a floor.
 | the largest kernel stack frame | `script/stack-frame-check` | any frame over the 4,096-byte guard page |
 | the deepest reachable kernel-thread chain | `script/stack-depth-check` | a chain over the 24,576-byte stack |
 | kernel stack high-water, at runtime | `script/test`, `report_high_water` | boot 61,440, secondary 16,384, thread 18,432 |
-| eleven counted claims (harnesses, syscalls, rights bits, ...) | `script/lint` | a marked number disagreeing with the tree |
+| eleven counted claims (harnesses, system calls, rights bits, ...) | `script/lint` | a marked number disagreeing with the tree |
 | unsafe density outside `kernel/src/arch/` | `script/lint` | over the `count-at-most` ceiling in `notes/unsafe-obligations.md`: 88 blocks per 10,000 code lines on 2026-09-24 (corrected from 94) |
 | `unsafe impl Send`/`Sync` claims | `script/lint` | over the ceiling in the same file: 23 on 2026-09-24 (corrected from 17) |
 | per-file line coverage | `script/coverage` | any file under the 80% floor |
@@ -180,7 +180,7 @@ time.
 | coverage, and the lowest-covered file | the workspace aggregate, and the per-file minimum the floor acts on | [proofs and coverage](register-of-measures/code-proofs-and-coverage.md) |
 | ratchet debt | comment blocks and in-body comments, line-number citations | [ratchet debt](register-of-measures/ratchet-debt.md) |
 | unexplained benchmark drift | per architecture, the largest icount drift on `main` no record explains, and rows past 5%; a report, not a gate | [the drift report](project-metrics/baseline-drift.md), generated |
-| interface stability | public items of the contract and std ABI crates removed or changed, and added; syscall renumbers and renames, format bumps and amendments, co-change | [how stable the interface is](interface-stability.md) |
+| interface stability | public items of the contract and std ABI crates removed or changed, and added; system call renumbers and renames, format bumps and amendments, co-change | [how stable the interface is](interface-stability.md) |
 | homes | packages by where their home stands and whether they have left; tracked files by the same | [package boundaries](package-boundaries.md) |
 
 ## EXAMPLES

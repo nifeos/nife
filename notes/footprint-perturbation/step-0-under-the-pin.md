@@ -24,7 +24,7 @@ to 3 pages on across the eight). It moves no instruction the IPC rows execute. T
 one hot-path layout, so the pad ladder and the layout range would measure the same thing. No board
 time went to boots, because step 0 is the check that invalidates the whole block.
 
-Milestone 796's own sweep ran the same evening (recorded on #2469): one-task `null_syscall`
+Milestone 796's own sweep ran the same evening (recorded on #2469): one-task `null_system_call`
 `per_job` 121 at shifts 0, 16, 32 and 48, a spread of 0. Those shifts move everything except the
 hot block, so the flat line says code outside the pinned block no longer moves that number. It does
 not say the block's own position is irrelevant. Unpinned, on 2026-10-05, placement alone moved the

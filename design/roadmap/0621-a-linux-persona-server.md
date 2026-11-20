@@ -13,7 +13,7 @@ needs_person: no
 From calef's question on 2026-09-29, "could nife run podman?". The binary cannot, and this file
 records the thing worth building instead, in two rungs.
 
-The big rung: a userspace server that implements the Linux syscall surface by translation onto
+The big rung: a userspace server that implements the Linux system call surface by translation onto
 nife capabilities, one instance per guest, itself spawned and confined like any other program.
 The guest's binaries run against the persona; the persona holds the guest's capabilities, pages
 and devices; the kernel never learns that Linux exists. The shape is gVisor's Sentry and WSL1's
@@ -66,7 +66,7 @@ Name provisional.
 
 ## Index row
 
-A confined userspace server that implements the Linux syscall surface by translation onto nife
+A confined userspace server that implements the Linux system call surface by translation onto nife
 capabilities, one instance per guest, so the kernel never learns that Linux exists. A first rung
 imports an OCI image's payload as an ordinary nife package, which makes the distribution half of
 the container story native without promising the compatibility half. This answers the question

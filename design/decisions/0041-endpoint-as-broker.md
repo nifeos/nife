@@ -64,7 +64,7 @@ keep"), and it is one level of that tree and only one: the invoker is the root b
 every other holder is a derivative. Revoking one *named* holder while sparing another still wants
 the real derivation tree, and still is not built.
 
-Surface cost. No new syscall, no new method number, no new object type, no new error: it is an
+Surface cost. No new system call, no new method number, no new object type, no new error: it is an
 existing method answering on a second object type. Recorded here rather than only in code, per the
 project's rule.
 
@@ -81,10 +81,10 @@ would take the replacement's copy too, and nothing could hand one back.
 What moves is the endowment, not the build. The replacement is laid out, endowed with everything
 except the device, and left unconfigured (a thread that was never started is in nobody's queue, so
 it cannot race the incumbent for requests). The registers are mapped into it on the far side of the
-revoke. The down window is then four syscalls wide: revoke, map, configure, start.
+revoke. The down window is then four system calls wide: revoke, map, configure, start.
 
 Building it *is* what showed that the build has to stay first, for a second reason the design did
-not anticipate. Process construction is a few hundred syscalls. When the build was moved after the
+not anticipate. Process construction is a few hundred system_calls. When the build was moved after the
 swap trigger, the client got through its entire conversation on RISC-V before the operator was
 ready. So the correct order is the roadmap's order for a reason the roadmap did not give.
 

@@ -26,7 +26,7 @@ widen a grant: `rm -r logs` hands over the subtree that `rm logs` does not. A ba
 spawns it, and a bare token in a file position designates the file. Whether it is read or written
 lives in the manifest.
 
-The crate performs no IO and makes no syscalls, so all of this is tested on the host (DECISIONS §7
+The crate performs no IO and makes no system calls, so all of this is tested on the host (DECISIONS §7
 (testing: QEMU harness + host-testable crates)). A program that needs something the command did not
 grant fails legibly ("you hold no such capability"), not with a Unix-flavored `EPERM`. `spawn_protocol`
 is the word layout of the shell-to-progenitor spawn protocol. It is a userspace protocol (DECISIONS

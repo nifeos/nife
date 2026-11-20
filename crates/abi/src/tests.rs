@@ -59,7 +59,7 @@ fn every_error_round_trips_through_from_ret() {
         Error::NotPermitted,
         Error::BadPointer,
         Error::BadMethod,
-        Error::BadSyscall,
+        Error::BadSystemCall,
         Error::OutOfMemory,
         Error::DeviceRefused,
         Error::StillAlive,
@@ -88,7 +88,7 @@ fn non_errors_decode_to_none() {
 
 /// The rights words are an ABI, not an implementation detail: the kernel tests them with `&`
 /// and userspace builds masks with `|`, so each must be a distinct single bit, and the exact
-/// values are load-bearing on both sides of the syscall boundary. A mutation run
+/// values are load-bearing on both sides of the system call boundary. A mutation run
 /// showed nothing pinned them (`1 << 1` could become `1 >> 1`, which is zero, and WRITE would
 /// silently mean nothing). A test that enumerates is a claim about a set, so a new right joins
 /// this list in the change that defines it.
@@ -187,7 +187,7 @@ macro_rules! pinned {
     };
 }
 
-/// **Every public number the syscall surface spells is pinned as a literal**. A program built against one generation of
+/// **Every public number the system call surface spells is pinned as a literal**. A program built against one generation of
 /// this crate carries these numbers in its binary, so a renumber is a break that bumps
 /// [`ABI_VERSION`](crate::ABI_VERSION). Changing a line below is the deliberate act a renumber
 /// should be: skipping it fails CI, and changing it without bumping the version is what
@@ -200,14 +200,14 @@ macro_rules! pinned {
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
 #[test]
-fn the_syscall_numbers_and_the_first_object_modules_are_pinned() {
+fn the_system_call_numbers_and_the_first_object_modules_are_pinned() {
     assert_eq!(crate::ABI_VERSION, 1);
     pinned! {
-        crate::SYSCALL_EXIT => 0,
-        crate::SYSCALL_YIELD => 1,
-        crate::SYSCALL_INVOKE => 2,
-        crate::SYSCALL_CAPABILITY_DELETE => 3,
-        crate::SYSCALL_EXIT_THREAD => 4,
+        crate::SYSTEM_CALL_EXIT => 0,
+        crate::SYSTEM_CALL_YIELD => 1,
+        crate::SYSTEM_CALL_INVOKE => 2,
+        crate::SYSTEM_CALL_CAPABILITY_DELETE => 3,
+        crate::SYSTEM_CALL_EXIT_THREAD => 4,
         crate::CAPABILITY_TABLE_SLOTS => 64,
         crate::INTERFACE_ID => 1,
         crate::address_space::MAP_INTO => 0,
@@ -311,16 +311,16 @@ fn the_last_object_modules_are_pinned() {
         crate::usage::ADDRESS_SPACES => 4,
         crate::usage::THREADS => 5,
         crate::usage::CHILDREN => 6,
-        crate::virtio::READ_REGISTER => 0,
-        crate::virtio::WRITE_REGISTER => 1,
-        crate::virtio::SETUP_QUEUE => 2,
-        crate::virtio::NOTIFY => 3,
-        crate::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET => 4088,
+        crate::virtual_io::READ_REGISTER => 0,
+        crate::virtual_io::WRITE_REGISTER => 1,
+        crate::virtual_io::SETUP_QUEUE => 2,
+        crate::virtual_io::NOTIFY => 3,
+        crate::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET => 4088,
     }
 }
 
 /// **Every error code is pinned to its number**, and the decode agrees. A program matches these
-/// negative values after every syscall, so a renumber is an ABI break.
+/// negative values after every system call, so a renumber is an ABI break.
 #[test]
 fn every_error_is_pinned_to_its_number() {
     let all = [
@@ -329,7 +329,7 @@ fn every_error_is_pinned_to_its_number() {
         (Error::NotPermitted, -3),
         (Error::BadPointer, -4),
         (Error::BadMethod, -5),
-        (Error::BadSyscall, -6),
+        (Error::BadSystemCall, -6),
         (Error::OutOfMemory, -7),
         (Error::DeviceRefused, -8),
         (Error::StillAlive, -9),
@@ -383,7 +383,7 @@ fn every_public_number_is_pinned() {
         "timer",
         "uart",
         "usage",
-        "virtio",
+        "virtual_io",
     ];
     let source_directory = concat!(env!("CARGO_MANIFEST_DIR"), "/src/");
     let read = |file: &str| {
@@ -482,7 +482,7 @@ fn every_error_prints_a_distinct_sentence() {
         Error::NotPermitted,
         Error::BadPointer,
         Error::BadMethod,
-        Error::BadSyscall,
+        Error::BadSystemCall,
         Error::OutOfMemory,
         Error::DeviceRefused,
         Error::StillAlive,

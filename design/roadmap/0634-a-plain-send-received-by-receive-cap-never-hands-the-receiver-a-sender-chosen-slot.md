@@ -16,7 +16,7 @@ uses to receive a `CALL`'s reply slot hands a plain `SEND`'s sender a free choic
 found it, for calef's ruling that a plain `SEND` carries its capability's badge (milestone 613 (a
 system log service: the in-memory half), PR #1494). Two escapes were confirmed under QEMU before any fix. This is
 within the established capability model: a semantics fix to one delivery path, no new method and no
-new syscall number.
+new system call number.
 
 ## Why: what each arrival order left in the registers
 
@@ -74,7 +74,7 @@ and kills networking for every client.
 ### Escape 2: a bound client is seen as root (redoxfs_server-shaped), a separate defect
 
 `redoxfs_server` reads the badge in `x3` to pick a client's window and subtree scope. On `main`, the
-`SEND` syscall carries no badge: it calls `sched::ipc_send(ep, [a0,a1,a2])` with no badge argument
+`SEND` system call carries no badge: it calls `sched::ipc_send(ep, [a0,a1,a2])` with no badge argument
 and `wide` fills word 3 with 0. So a client that `SEND`s on its per-window badged `FILE` capability
 instead of `CALL`ing arrives as badge 0, and `subtree_scope::Bindings::of(0)` returns
 `Binding::Unbound` unconditionally (`Bindings::binding` in `crates/subtree_scope/src/lib.rs`). The server then admits any

@@ -13,7 +13,7 @@ pub(super) fn must<T>(r: Result<T, ()>) -> T {
     }
 }
 
-/// Fault unless the syscall succeeded.
+/// Fault unless the system call succeeded.
 pub(super) fn must_ok(ok: bool) {
     if !ok {
         fail();

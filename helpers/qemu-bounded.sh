@@ -79,7 +79,7 @@
 # live wrapper's pid is not reused.
 #
 # **The poll costs a `sleep` and a `kill -0` per second**, so a very long bound spends a few
-# hundred syscalls. That is not measurable next to an emulator.
+# hundred system_calls. That is not measurable next to an emulator.
 #
 # **The lock diagnostic only inspects arguments that look like disk images** (`*.img`,
 # `*.qcow2`, `*.raw`, and any `file=` field of a comma-separated option), and only reports

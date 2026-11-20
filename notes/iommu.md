@@ -81,7 +81,7 @@ can extend the context this directory already holds.
 ## The requester id is the key
 
 A PCIe function stamps a 16-bit requester id (`bus:8 | dev:5 | fn:3`) on every memory transaction
-it issues (`pci::Bdf::requester_id`). Both `virt` boards publish an identity `iommu-map` in the
+it issues (`pci::BusDeviceFunction::requester_id`). Both `virt` boards publish an identity `iommu-map` in the
 device tree, so that id is exactly what the IOMMU looks a device up by (SMMU StreamID, RISC-V
 `device_id`). It is threaded from `pci::find_block_device` through `virtio::register`, which gained an
 `Option<u32>` argument: `Some(rid)` for a PCI device, `None` for virtio-mmio (no IOMMU fronts the
@@ -125,7 +125,7 @@ the runners already fail loudly on for a missing disk: a plausible-looking succe
 configuration gap.
 
 So the confinement is not trusted, it is proven. `the_iommu_faults_a_dma_that_escapes_the_domain`
-(kernel/src/virtio.rs, runs on both ISAs) confines the real PCIe disk, then points its available ring
+(kernel/src/virtual_io.rs, runs on both ISAs) confines the real PCIe disk, then points its available ring
 at a frame the domain does not map and kicks it. The device's first act on the kick is to read the
 available ring, at an out-of-domain IOVA, so the IOMMU faults and records it; the test drains the
 fault queue and asserts a fault at that exact frame. If translation were absent (a missing

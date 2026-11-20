@@ -18,7 +18,7 @@ in `system_tests/src/user/`, three name nothing in the kernel but the test harne
 shell and read what it printed, which a userspace test program can do through the spawner and a
 byte sink.
 
-Everything else in that directory observes kernel state no syscall exposes, which is the case the
+Everything else in that directory observes kernel state no system call exposes, which is the case the
 second rule allows to stay. The table is in notes/system-tests-and-the-kernel-crate.md.
 
 What this needs first is a userspace harness that reports into the same transcript (`running`,

@@ -1,0 +1,65 @@
+Falsifies `system_tests::user::riscv_virtual_io_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`.
+
+Architecture: riscv64
+
+The defect is `user_can_read` no longer reading the `U` bit, and on this ISA that is the
+property rather than a proxy for it. The test's own doc comment says so: aarch64 has
+`AT S1E0R` and RISC-V has no such instruction, so `mmu::user_can_read` walks the installed
+tables in software and reads `U`, "and that software answer is the thing under test". This
+patch makes it answer "yes, if it is mapped at all", which is the confused deputy the test is
+named after.
+
+**This patch did not turn the test red the first time it was run, and that is the most
+important line in this file.** Measured 2026-09-16, `script/falsifications --sweep kernel`:
+SURVIVOR. The reason was not a weak defect. `user_can_read` walked through
+`translate_user`, and `translate_at` builds its `Mapper` with `Half::Low`, always, so a
+high-half address comes back `None` before any leaf is read. The assertion this test is named
+for could not fail: it answered "no, U-mode cannot read the kernel" by refusing to look, and
+had done since milestone 41.
+
+**The tree had already written down the cause and nothing connected it.**
+`is_mapped_in_current_space`, forty lines away, exists for precisely this and says why in its
+own doc comment: *"a user thread reaching for the kernel's memory names a high-half address ...
+`translate_user` alone would say 'not mapped' for it and turn the most interesting case into
+the wrong answer."* `user_can_read` went on calling `translate_user`.
+
+Milestone 305 fixed that (`translate_in_either_half`) and this patch is against the fixed
+function, so the record below is of a test that now means what it says.
+
+Expected to fail: `assert!(!mmu::user_can_read(kernel_va), "the page tables say U-mode could
+read the kernel's own memory")`.
+
+**Why the defect is here and not in the mapping.** The aarch64 siblings of this record map the
+kernel's own memory user-readable, one flag at one call site, and the test then watches the
+hardware refuse. **That defect cannot be booted on RISC-V at all.** `crates/page_tables`'s Sv39
+encoder turns `CAP_USER` into the `U` bit, and S-mode access to a `U` page raises a page fault
+unless `sstatus.SUM` is set, which this kernel sets only inside a test helper. So a kernel that
+marked its own `.rodata` user-readable would not be a kernel userspace can read; it would be a
+kernel that cannot read itself, dead before the first test. RISC-V's one-root design is what
+the test calls its single line of defence, and it is also what makes that defect
+unrepresentable.
+
+**The rubber-stamp guards stay green, which is what makes this a real falsification rather
+than a broken function.** The test also requires `user_can_read(IMAGE_BASE)` (the process's own
+text, mapped and `U`) and `!user_can_read(STACK.start)` (its own half, unmapped). Under this
+patch the first is still true because the page is mapped, and the second is still false
+because nothing is there. A checker that simply said yes to everything would fail the second,
+and the red would be about the checker rather than about the kernel.
+
+**`user_can_write` is left reading `U` on purpose.** The line below the one that fires,
+`assert!(!mmu::user_can_write(kernel_va))`, stays green, so this record covers the read half
+of row 21 on this ISA and not the write half.
+
+diff --git a/kernel/src/arch/riscv64/mmu.rs b/kernel/src/arch/riscv64/mmu.rs
+index 5d35dec63..40aa1724e 100644
+--- a/kernel/src/arch/riscv64/mmu.rs
++++ b/kernel/src/arch/riscv64/mmu.rs
+@@ -726,7 +726,7 @@ fn translate_in_either_half(va: u64) -> Option<(u64, Flags)> {
+ /// (`the_page_tables_say_u_mode_cannot_read_the_kernels_memory`).
+ #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
+ pub fn user_can_read(va: u64) -> bool {
+-    translate_in_either_half(va).is_some_and(|(_, f)| f.is_user_accessible())
++    translate_in_either_half(va).is_some()
+ }
+ 
+ /// Whether U-mode may write `va`: user-accessible and writable. Same disposition, same test.

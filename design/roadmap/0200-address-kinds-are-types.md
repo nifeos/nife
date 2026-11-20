@@ -16,7 +16,7 @@ Nothing needs deciding. The names are ratified below and the sequencing constrai
 practical rather than a fork.
 
 **In brief.** Physical and virtual addresses are bare `u64` everywhere in this tree: `paging`,
-`memory_regions`, `kernel/src/arch/*/mmu.rs`, `kernel/src/user.rs`, `syscall.rs`. Nothing stops one
+`memory_regions`, `kernel/src/arch/*/mmu.rs`, `kernel/src/user.rs`, `system_call.rs`. Nothing stops one
 being passed where the other is meant, and the mistake compiles, runs, and passes tests wherever the
 two happen to be equal.
 
@@ -73,7 +73,7 @@ Refusals, kept because they are the half a future proposer needs:
 
 ## Where the types stop, and this is the design work
 
-Syscall arguments are `u64` by ABI, so the wrappers cannot cross the syscall boundary. That edge
+System call arguments are `u64` by ABI, so the wrappers cannot cross the system call boundary. That edge
 has to be designed rather than discovered: the conversion belongs at the entry point, once, where a
 reader can see the untyped word becoming a typed address and check the claim being made about it.
 Everything above that line should be typed; nothing below it can be.
@@ -86,11 +86,11 @@ of implied.
 ## Sequencing, which is the only real constraint
 
 The blast radius is `paging`, `memory_regions`, three `arch/*/mmu.rs`, `kernel/src/user.rs` and
-`syscall.rs`, and `kernel/src/user/tests.rs` is the merge hotspot AGENTS.md already names. Do this
+`system_call.rs`, and `kernel/src/user/tests.rs` is the merge hotspot AGENTS.md already names. Do this
 when `kernel/src` is quiet, not while lanes are open in it.
 
 Kani was checked first, and it is clear. Milestone 193 (put `kernel/src` within reach of the
-prover) landed harnesses proving run arithmetic over `syscall.rs` in `u64`, so a newtype that
+prover) landed harnesses proving run arithmetic over `system_call.rs` in `u64`, so a newtype that
 confused CBMC would cost this milestone those proofs. Measured 2026-08-31 rather than assumed: a
 probe crate stated milestone 193's own `run_end_virtual_address` property twice, once on bare `u64` and once
 through a `repr(transparent)` `VirtualCpuAddress`, both in `u128` so neither harness could repeat its
@@ -123,7 +123,7 @@ Two things the probe settles for whoever builds this:
 ## Index row
 
 "What is wrong with the tree-wide refactor" has no answer on merit. Physical and virtual addresses
-are bare `u64` across `paging`, `memory_regions`, three `arch/*/mmu.rs`, `user.rs` and `syscall.rs`.
+are bare `u64` across `paging`, `memory_regions`, three `arch/*/mmu.rs`, `user.rs` and `system_call.rs`.
 The confusion is recorded rather than hypothetical: `notes/higher-half.md` has a test
 dereferencing a physical address that the identity map made work by accident, and names the
 consequence as a security hole once userspace exists. Names ratified: `VirtualCpuAddress`,

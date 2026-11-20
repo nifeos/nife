@@ -160,7 +160,7 @@ lightly: rows 1 and 3, the host rows, row 32 and row 34.
 ## The near misses
 
 1. A port-range revoke matches by object equality. Revoking `(0x3F8, 2)` leaves a holder of
-   `(0x3F8, 8)` able to write 0x3F8. No syscall can name a narrower range than the caller's own
+   `(0x3F8, 8)` able to write 0x3F8. No system call can name a narrower range than the caller's own
    capability, so it is unreachable. It is now a `BUGS` entry at
    `sched::delete_port_range_caps_from_others`.
 2. Deleting one of two identical port capabilities drops the grant. It fails closed. It is the

@@ -98,9 +98,9 @@ pub(super) fn dump_tick_samples(c: usize) {
 
 /// Record that this core wants a switch, and run the tick's other accounting; does not switch.
 ///
-/// `#[inline(never)]`: riscv64's timer interrupt and syscalls share `riscv_trap_body`, which
+/// `#[inline(never)]`: riscv64's timer interrupt and system calls share `riscv_trap_body`, which
 /// `script/fastpath-footprint` counts flat, so inlined bytes here would be charged to every
-/// syscall (notes/benchmarks/fastpath-footprint-gate.md).
+/// system call (notes/benchmarks/fastpath-footprint-gate.md).
 ///
 /// Context: interrupt context, from the timer interrupt. Takes `IPC_TABLES` only when a timer is
 /// due.
@@ -172,7 +172,7 @@ pub(crate) fn count_preemption() {
 ///
 /// `#[inline(never)]` for [`on_tick`]'s reason: inlined into aarch64's `exception_dispatch` on
 /// 2026-10-20 (UTC), after milestone 890 (riscv64 and `x86_64` join the shared boot path), it took
-/// that symbol from 0x98 to 0x11c bytes and `syscall_entry` from 1,696 to 1,828 B, 7.8% over a 5%
+/// that symbol from 0x98 to 0x11c bytes and `system_call_entry` from 1,696 to 1,828 B, 7.8% over a 5%
 /// band (notes/benchmarks/fastpath-footprint-gate.md).
 #[inline(never)]
 pub fn preempt_if_needed() {

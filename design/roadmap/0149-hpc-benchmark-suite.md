@@ -106,7 +106,7 @@ filesystem stack and no vectorized math library predicts that, and milestone 138
 gap) shows real remaining overhead in its own numbers. **The claim is narrower and more useful: the same recognized, cited
 benchmark suite runs on both, and the comparison is legible to a reader who has never heard of nife
 before landing on this number.** That is a different kind of evidence than 21/25's existing primitive
-benchmarks (syscall, IPC, context switch) provide. It is evidence an HPC audience specifically
+benchmarks (system call, IPC, context switch) provide. It is evidence an HPC audience specifically
 reaches for first, per every source this note's own research turned up (HPCC, NPB, and STREAM are
 the three suites cited across every HPC benchmarking survey found).
 

@@ -18,7 +18,7 @@ shim under the Unix one.** This is Hermit's shape (std on a non-POSIX unikernel 
 at no cost to defer". A std program draws its heap from an untyped budget at slot 0, SENDs stdout to
 an endpoint at slot 1, and reads `Instant`/`SystemTime` from the virtual counter. It gets honest
 `Unsupported` from `thread::spawn`, `fs`, and `net` until the servers that back them exist
-(milestones 30 and 32). No new syscall and no new capability method. The PAL is a client of the ABI
+(milestones 30 and 32). No new system call and no new capability method. The PAL is a client of the ABI
 as it already stands, the same surface `allocator_exerciser` proved. `panic!` prints and faults
 (panic=abort; unwinding is never linked), which is this ABI's honest `abort()`.
 
@@ -61,7 +61,7 @@ byte for byte on both ISAs (the §19 parity gate).
 Amendment (phase two, 2026-07-28): `std::net` binds to the socket contract. `std::net::TcpStream`
 and outbound `std::net::UdpSocket` now work, backed by net_stack over the §25 (socket identity)
 socket contract. The `net honestly unsupported` line of phase one is retired. The PAL
-(`sys/net/connection/nife.rs`) is a pure client of the frozen contract, no new syscall and no new
+(`sys/net/connection/nife.rs`) is a pure client of the frozen contract, no new system call and no new
 capability method. It holds a `Stack` endpoint (slot 2) and a frame untyped (slot 3), mints a shared
 frame per socket, and drives net_stack with `socket_proto` `CALL`s. The wire constants are generated
 verbatim from `crates/socket_proto/src/lib.rs` into the patched std, the same anti-drift discipline
@@ -84,7 +84,7 @@ Amendment (phase two, 2026-07-29): `std::fs` binds to the FS-service contract, a
 "under the directory I hold". `std::fs::File` now works, backed by the §27 (the filesystem service)
 FS service. The `fs honestly unsupported` line of phase one is retired for a program that was
 granted a directory. The PAL (`sys/fs/nife.rs`) is again a pure client of a frozen contract, no new
-syscall and no new capability method. `crates/fs_proto` is generated verbatim into the patched std.
+system call and no new capability method. `crates/fs_proto` is generated verbatim into the patched std.
 
 The design question, and the answer. `File::open` takes a path and this system has no global
 namespace, so the binding had to decide what a path *means*. Per §27, open-by-path exists only

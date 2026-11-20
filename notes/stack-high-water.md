@@ -158,7 +158,7 @@ decided by which calls run, and moving a stack's base changes no call. The table
 The FS server's *user* stack has its own watermark already (`the_redoxfs_servers_stack_still_has_headroom`,
 
 The FS server's *user* stack has its own watermark already (`the_redoxfs_servers_stack_still_has_headroom`,
-in `system_tests/src/user/filesystem_tests.rs` and its RISC-V twin in `riscv_virtio_tests.rs`); this instrument is the
+in `system_tests/src/user/filesystem_tests.rs` and its RISC-V twin in `riscv_virtual_io_tests.rs`); this instrument is the
 kernel-stack complement.
 
 ## The gate

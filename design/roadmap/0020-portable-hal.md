@@ -45,7 +45,7 @@ trampoline. It de-risks the HAL split cheaply and stays in the verification ecos
 ISA spec, seL4's verified RISC-V port).
 
 Why x86_64 second. The hard proof: the HAL must survive a genuinely different model (CISC, strong
-TSO memory, GDT/TSS, ACPI + PCI, port I/O, the `syscall` + swapgs trampoline, INIT-SIPI-SIPI SMP). If
+TSO memory, GDT/TSS, ACPI + PCI, port I/O, the `system_call` + swapgs trampoline, INIT-SIPI-SIPI SMP). If
 the abstraction survives x86, it is real rather than an accident of two similar RISC ISAs. It is also
 the reach: x86_64 is what most machines are. The file-by-file map is worked out (see the chat where
 this milestone was proposed).
@@ -54,7 +54,7 @@ Scope and the honest cost. In scope: the HAL, and enough of each ISA to boot, co
 process, and run the test suite. Out of scope and still parked: hardware breadth (every driver on
 every board). It buys no proof coverage, the proofs live in the machine-independent crates, which
 already do not care about the ISA, and it enlarges the unverified TCB (one hand-written
-boot/MMU/trap/syscall layer per arch, the least-verifiable code). That is why it sits late, after the
+boot/MMU/trap/system_call layer per arch, the least-verifiable code). That is why it sits late, after the
 core is verified (18, 14) and a workload runs (19). Not a new architecture: real-hardware aarch64
 (Raspberry Pi) is the cheapest portability proof of all, same ISA on real silicon, and it lives in
 milestone 16, not here.
@@ -76,7 +76,7 @@ precedent.
 - **Refused.** Hardware breadth stays parked. Every driver on every board buys no proof coverage,
   because the proofs live in the machine-independent crates that already do not care about the ISA.
   Each new architecture enlarges the unverified TCB by one hand-written boot, MMU, trap and
-  syscall layer.
+  system call layer.
 
 ## Index row
 

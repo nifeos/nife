@@ -27,7 +27,7 @@ binds endpoints its caller supplies. Nothing refused a program granted `WRITE` o
 | the mark: `Rendezvous::bind_to_interrupt`, one-way, in the padding after `pending` | `crates/inter_process_communication` |
 | the refusal: `send` answers `Send::Refused` and touches nothing, tested before a receiver is popped | the same |
 | `bind_irq` marks the endpoint before it publishes the route, so the soak's caller-supplied endpoints are covered too | `kernel/src/sched.rs` |
-| `SEND`, `SEND_CAP` and `CALL` return `NotPermitted` without blocking; a §26 (the fault endpoint) death message sent there is dropped, since `EVENT_FAULT` is also `1` | `sched.rs`, `syscall.rs` |
+| `SEND`, `SEND_CAP` and `CALL` return `NotPermitted` without blocking; a §26 (the fault endpoint) death message sent there is dropped, since `EVENT_FAULT` is also `1` | `sched.rs`, `system_call.rs` |
 | `NotPermitted`'s doc names the case | `crates/abi` |
 
 The refusal is a variant of `send`'s result rather than a check at each caller. Every path that
@@ -35,13 +35,13 @@ deposits into a rendezvous has to match it or the kernel does not compile, so a 
 method cannot forget the rule. That is the top rung of the ladder, where a per-method check
 would have been the second.
 
-The error is the tree's existing `NotPermitted`, not a new one. The syscall layer reads the reason
+The error is the tree's existing `NotPermitted`, not a new one. The system call layer reads the reason
 only after `take_ipc_aborted` has already said `true` (`aborted_send_error`, `#[cold]`), so a send
 that went through pays nothing at that layer.
 
 Provisional names, all calef's to rule on: `Rendezvous::bind_to_interrupt`,
 `is_bound_to_interrupt`, `Send::Refused`, `sched::take_ipc_refused`, `set_ipc_refused`,
-`syscall::aborted_send_error`, the `Thread::ipc_refused` field, and the test module
+`system_call::aborted_send_error`, the `Thread::ipc_refused` field, and the test module
 `user::irq_send_refusal_tests`.
 
 ## Proof
@@ -63,7 +63,7 @@ Provisional names, all calef's to rule on: `Rendezvous::bind_to_interrupt`,
 The check is one load and one branch on `send`'s common path. `script/fastpath-footprint`, measured
 on patagonia with the same nightly, the base tree against this one:
 
-| ISA | `ipc_send_recv` | `ipc_call_reply` | `syscall_entry` |
+| ISA | `ipc_send_recv` | `ipc_call_reply` | `system_call_entry` |
 |---|---|---|---|
 | aarch64 | 5500 to 5544 (+44) | 7172 to 7236 (+64) | 1508 to 1516 (+8) |
 | riscv64 | 4778 to 4820 (+42) | 6082 to 6102 (+20) | 1892 to 1910 (+18) |
@@ -86,7 +86,7 @@ Every move is under half a percent and they go both ways, so the check is below 
 instrument resolves. riscv64 `ipc_rtt` is the row milestone 598 (a nightly bump restamps the
 floors it proves it did not move) records as bimodal, and its -0.45% is that, not a speed-up.
 
-The footprint deltas leave `ipc_send_recv` on riscv64 at +4.1% and `syscall_entry` on `x86_64` at
+The footprint deltas leave `ipc_send_recv` on riscv64 at +4.1% and `system_call_entry` on `x86_64` at
 +4.9% against the saved baselines, inside the 5% band but close to it. Milestone 151 measured its own
 growth on the same closures, so whichever of the two lands second may cross the band. That is a
 baseline to re-record at merge with both numbers in hand, not a regression in either.
@@ -98,7 +98,7 @@ baseline to re-record at merge with both numbers in hand, not a regression in ei
   interrupt today except the riscv64 tests, which share the UART's source.
 - A kernel thread that calls `sched::ipc_send` on an interrupt's endpoint returns at once with its
   abort flag set, as it does for a stale endpoint. No kernel caller does this. The flag is the
-  syscall layer's to read, so a kernel caller would not learn why.
+  system call layer's to read, so a kernel caller would not learn why.
 - The test's route to interrupt 250 outlives it, like milestone 151's route to 251. Reclaiming the
   region makes the name stale, and `irq_notify` drops a signal to a stale name.
 

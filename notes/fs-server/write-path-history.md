@@ -100,7 +100,7 @@ They prove the PLIC claim / route / mask / notify / complete path, and the pendi
 closes the lost-wakeup window, both directly and with no device driver in the way. Each was proved
 capable of failing. Dropping `irq_notify` from `riscv_trap_dispatch`'s external-interrupt arm turns
 the first red. Dropping the `pending` increment from `Endpoint::signal` turns the second red while
-leaving the first green. Above them, the whole riscv `riscv_virtio_tests` module runs a real
+leaving the first green. Above them, the whole riscv `riscv_virtual_io_tests` module runs a real
 userspace driver whose completions are interrupts, on both the mmio and PCIe transports.
 
 So there is no open kernel-side interrupt-delivery defect to inherit. Milestone 53 (the board's own

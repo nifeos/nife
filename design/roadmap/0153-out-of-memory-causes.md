@@ -28,7 +28,7 @@ failures look like.
 by its own documentation: *"`OutOfMemory` when the budget or region table is exhausted or the
 cspace is full"* (`crates/abi/src/lib.rs`, the `SPLIT` doc comment). `RETYPE_OBJECT` collapses a
 different pair the same way: *"when the untyped is exhausted, the object registry is full, or the
-cspace is."* At the syscall layer (`memory_region_split` in `kernel/src/syscall/memory_region.rs`), the kernel-side `Option` from
+cspace is."* At the system call layer (`memory_region_split` in `kernel/src/system_call/memory_region.rs`), the kernel-side `Option` from
 `untyped::split()` becomes `.ok_or(Error::OutOfMemory)?` with no cause attached; the caller sees one
 error code, full stop.
 
@@ -105,7 +105,7 @@ the customer exists.
 **Declined for now (DECISIONS §119, 2026-08-23), for want of a customer.** Three shapes were on the
 table. New cause-specific `Error` variants (the most direct fix, but a permanent ABI-surface
 addition). A separate diagnostic-only query (keeps the hot-path return narrow, costs a second
-syscall a caller must know to make). Or leaving it collapsed and documented where a reader meets it
+system call a caller must know to make). Or leaving it collapsed and documented where a reader meets it
 (the `BUGS` entry in `kernel/src/untyped.rs`, unchanged by this decision). §119 (declined for want
 of a customer) records non-binding
 guidance for whichever of these gets picked up later, favoring the first shape on two precedents

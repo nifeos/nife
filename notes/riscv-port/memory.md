@@ -93,7 +93,7 @@ before the switch.
 Every device window beyond the UART is mapped only when the device tree names the device. That
 refusal to overwrite is why ([notes/visionfive2.md](../visionfive2.md)). QEMU's BAR window at
 `0x4000_0000` is the JH7110's DRAM base, and its virtio window at `0x1000_1000` is TH1520 DRAM and a
-JH7110 UART. Mapping either from QEMU's constants ends the boot at the overwrite. `virtio_slots`
+JH7110 UART. Mapping either from QEMU's constants ends the boot at the overwrite. `virtual_io_slots`
 reads whether the virtio window was mapped, so the probe never reads one that is not. The
 `sifive_test` finisher is QEMU's alone and is not mapped under the `board` feature.
 
@@ -155,7 +155,7 @@ a lock whose holder may be the thread that just died. aarch64's twin needs no lo
 
 RISC-V forbids S-mode loads and stores through `U` pages unless `sstatus.SUM` is set; aarch64
 permits EL1 to read EL0 pages because this kernel does not enable `PAN`. A test that reads through
-a user address to observe the TLB therefore needs `SUM` here. It is built only in tests. No syscall
+a user address to observe the TLB therefore needs `SUM` here. It is built only in tests. No system call
 dereferences a user pointer, so a shipping kernel that strays into the low half faults.
 
 ## What the tests can and cannot see

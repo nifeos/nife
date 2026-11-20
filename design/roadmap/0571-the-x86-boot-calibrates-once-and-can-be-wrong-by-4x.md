@@ -12,7 +12,7 @@ calibration the host fought is visible rather than silently confident.
 526 for a riscv64 ACPI host, and this proposal had meanwhile been promoted to 571 on main. 524 onward was contested between in-flight
 branches.)*
 
-Inside `kernel/src/arch/x86_64/timer.rs`. No syscall surface, no wire format, no dependency.
+Inside `kernel/src/arch/x86_64/timer.rs`. No system call surface, no wire format, no dependency.
 
 **x86_64 only by nature, and not a parity gap.** Under §19 (architectural parity is a tenet; the
 targets are aarch64, riscv64, and x86_64): aarch64 reads `CNTFRQ_EL0` and riscv64 reads the
@@ -22,7 +22,7 @@ against. `timer.rs`'s header has said so since the port landed.
 
 ## The defect, which another lane found while looking for something else
 
-Milestone 524 (the three x86_64 boot gates: NX, SYSCALL, and the invariant TSC) had just argued
+Milestone 524 (the three x86_64 boot gates: NX, SYSTEM CALL, and the invariant TSC) had just argued
 that a non-invariant TSC "cannot be caught by measuring harder". The `tscdrift` lane then went to
 check whether TCG's TSC drifts at all. It built an RTC-referenced probe and found that it does not.
 The counter ticks at exactly 1000.000 MHz, constant to within 42 ppm whatever the host is doing.

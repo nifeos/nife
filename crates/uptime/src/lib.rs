@@ -2,7 +2,7 @@
 //! design/roadmap/0126-who-else-is-running.md).
 //!
 //! The program's whole logic, lifted out so it runs on the host; `components/src/uptime.rs` is the
-//! syscall and nothing else. It reads `user_mode_runtime::monotonic_nanoseconds`, the ambient counter
+//! system call and nothing else. It reads `user_mode_runtime::monotonic_nanoseconds`, the ambient counter
 //! `date` reads too, which `kernel/src/arch/*/timer.rs`'s `init` grants every EL0 program as a
 //! deliberate exception to DECISIONS §10 (process model: capability-based, microkernel)'s
 //! no-ambient-authority rule: a monotonic counter observes time and affects nothing. So `uptime`

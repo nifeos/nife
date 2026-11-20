@@ -11,7 +11,7 @@ provisional until the merge queue lands it.)*
 
 ## What was built, and it met the bar as stated
 
-Two properties, over code that lives in `kernel/src/syscall.rs` today, proved by harnesses
+Two properties, over code that lives in `kernel/src/system_call.rs` today, proved by harnesses
 `script/verify` runs. Nothing was moved into a crate first, which was the bar precisely so this
 milestone could not be satisfied by doing the other option under this name.
 
@@ -114,7 +114,7 @@ been doing incrementally. Milestone 191's own worklist has an instance: lifting 
 bookkeeping into a crate answers two recorded leaks.
 
 **These are not exclusive and the honest answer is probably both**, with the split decided by where
-a property naturally lives. A scheduling policy wants to be a crate. `syscall.rs`'s dispatch does
+a property naturally lives. A scheduling policy wants to be a crate. `system_call.rs`'s dispatch does
 not, and never will be one.
 
 ## The proof that this milestone worked

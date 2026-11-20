@@ -281,7 +281,7 @@ maps it `MAP_CODE` at `0xfffffffff000`. Under (a) both succeed and claim 11, as 
 (a) leaves 969 as questions 1 and 2 size it. Claim 11's falsification is the witness and its patch,
 and the row gains its stated limit. (b) roughly doubles 969, adds a published-number change to
 `spawn_reap`, and keeps the claim's wording. (c) is between them, and it touches the thread-start path,
-a syscall-surface change an architect rules on separately.
+a system-call-surface change an architect rules on separately.
 
 ## The order to ask them
 

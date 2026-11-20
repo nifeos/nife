@@ -52,7 +52,7 @@ port-range capability; option 2, legacy devices stay in the kernel; option 3, an
 
 **x86's legacy port-I/O devices, the console included, stay kernel-resident. This is not an interim
 stance to be revisited on a schedule; it is a permanent architectural boundary.** Only memory-mapped
-devices get a userspace driver on x86 -- which is everything on the machine that actually matters to
+devices get a userspace driver on x86 -- which is everything on the machine that matters to
 this project's own ranking function. Milestone 87's real target (a Dell OptiPlex 7050 Micro with the
 Dell C4PDJ serial module, already on calef's desk) almost certainly exposes its serial port through
 the traditional Super I/O / COM1 legacy interface rather than a memory-mapped UART. True MMIO UARTs
@@ -88,7 +88,7 @@ the wrong implementation.
 
 **This was not a lane's call, and still is not retroactively**: option 1 would have added an object
 type to the capability surface and option 2 permanently declares a parity gap. Both are calef's
-under the tenets: the syscall surface is a boundary, and a parity gap needs a recorded plan rather
+under the tenets: the system call surface is a boundary, and a parity gap needs a recorded plan rather
 than a silence. That recorded plan is exactly what this decision now is.
 
 ### Amended 2026-08-24: option 2 now, but not argued blind against the alternatives
@@ -99,7 +99,7 @@ comes back. It can, and neither half needs the feature it is pricing.
 
 **Option 3's cost is already on record, just never cited here.** The dominant cost of an I/O-port
 broker is one IPC round trip per register access. This kernel's own IPC round trip is measured: ~337
-ns (release, HVF, aarch64), against a null syscall at ~27 ns, both from `notes/benchmarks.md`'s
+ns (release, HVF, aarch64), against a null system call at ~27 ns, both from `notes/benchmarks.md`'s
 cross-OS table. Neither number is x86-specific, and citing it here is not a claim that it transfers
 unchanged to different silicon; it is the order-of-magnitude confirmation this file's own "obviously
 wrong for a UART" already asserted without a number. A raw `in`/`out` instruction is single-digit
@@ -118,7 +118,7 @@ Whether it does is this decision's own next input, not something to guess now.
 
 **So the plan, not just the recommendation:** option 2 stands. Once x86 has two threads actually
 switching, a small follow-on benchmark (unscoped as its own milestone; whoever picks it up mints the
-number) measures the TSS-bitmap-write cost the same way `ipc_rtt` and `null_syscall` already measure
+number) measures the TSS-bitmap-write cost the same way `ipc_rtt` and `null_system_call` already measure
 theirs. That turns the next 1-vs-3 call into one made on both sides' numbers, not one side's.
 
 ### Measured 2026-08-24: the write costs more, not less, than the prose above guessed
@@ -145,7 +145,7 @@ The debug row is the reassuring one and the release row is the honest one, and t
 on "how bad is this." A debug build's baseline switch carries so much fixed cost (unelided checks,
 unoptimized bookkeeping) that the write is a modest ~25% addition to a slow number. Strip that in
 release and the baseline switch itself gets ~10x faster while the write's own cost barely moves,
-both being close to plain memory bandwidth. On the switch path option 1 would actually run on, the
+both being close to plain memory bandwidth. On the switch path option 1 would run on, the
 write does not add a quarter of the cost; it is most of the cost. That is a stronger statement than
 this file's own prose made before there was a number to check it against: "the dominant cost"
 undersold it. Correcting the record rather than the prose that was already qualified: nothing above
@@ -158,7 +158,7 @@ measured rather than assumed, is exactly as unattractive as the prose already ar
 so. What changes is that the next 1-vs-3 call is now made on both sides' numbers: option 3's ~337 ns
 per IPC round trip (already on record above) against option 1's ~1.5-2.7 us per switch for the write
 alone. That figure is before the capability type, the revocation shootdown, or anything else option
-1 would also cost. Whether that gap is worth paying for a userspace `x86_64` console is still
+1 would cost. Whether that gap is worth paying for a userspace `x86_64` console is still
 calef's call, per this file's own closing question.
 
 ### Refined 2026-08-25: the number prices the naive write, not the write option 1 would actually ship
@@ -234,7 +234,7 @@ where realistically one process (the console driver) ever holds one, that is nea
 overwhelming majority of switches. Milestone 299's own first measurement is the lazy write's real
 cost, taken the way this file already specified, not a second run of `tss_iomap_switch`.
 
-What this does not reopen. Option 3 (the I/O-port broker, a syscall per register access) stays
+What this does not reopen. Option 3 (the I/O-port broker, a system call per register access) stays
 refused on its measured ~337 ns-per-round-trip cost against single-digit-cycle `in`/`out`; nothing
 here revisits it. And the mapping-based capability for MMIO devices is unchanged: this adds a second
 kind of device capability for the one class that has no page, it does not replace the first.

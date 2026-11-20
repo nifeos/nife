@@ -1,6 +1,6 @@
 //! **Credentials: an identity, and a secret you can check but never read back**
 //! (notes/credentials.md). The pure logic behind the credential service: how a secret becomes a
-//! record, how a presented secret is checked against one, and how a record is encoded. No syscalls
+//! record, how a presented secret is checked against one, and how a record is encoded. No system calls
 //! and no allocation. The wire contract is `credential_contract`; the service is
 //! `components/src/credentialer.rs`. A [`Record`] is an identity, a random 16-byte salt, three
 //! cost parameters and a 32-byte **Argon2id** tag (RFC 9106): nothing to decrypt and no read path,

@@ -73,7 +73,7 @@ pub struct Wiring {
 /// Every block device the kernel can see, in roster order, and how many there are.
 ///
 /// mmio first in slot order, then virtio-blk on PCIe, then NVMe controllers. Each `ordinal` is the
-/// number the matching finder counts by (`virtio::find_block_device_n`, the walk
+/// number the matching finder counts by (`virtual_io::find_block_device_n`, the walk
 /// `pci::find_nvme_device` takes), so a listing and a wiring agree on which disk is which. NVMe
 /// comes last so that adding it moved no virtio entry. A device is listed whether or not a server
 /// has been wired for it.
@@ -87,7 +87,7 @@ fn devices() -> (
     }; block_roster_contract::capacity_of(FRAME_BYTES as usize)];
     let mut n = 0;
 
-    for i in 0..crate::virtio::count_block_devices() {
+    for i in 0..crate::virtual_io::count_block_devices() {
         if n == out.len() {
             break;
         }
@@ -140,7 +140,7 @@ fn roster_page() -> (u64, usize) {
 /// `None` when the machine has no fourth mmio block device, which is every boot the runner did not
 /// build the GPT image for. That is a fact about the machine and not a failure: the caller skips.
 pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<Wiring> {
-    let dev = crate::virtio::find_block_device_n(GPT_DISK)?;
+    let dev = crate::virtual_io::find_block_device_n(GPT_DISK)?;
     let (blk_ep, ready, blk_shared) = fs_service::spawn_block_server(blk_image, dev)?;
     let (roster_phys, devices) = roster_page();
     let report = crate::sched::create_rendezvous();
@@ -148,7 +148,7 @@ pub fn start(blk_image: &'static [u8], surveyor_image: &'static [u8]) -> Option<
         crate::memory_region::create(MAP_BUDGET_PAGES).expect("no map budget for the surveyor");
 
     crate::sched::spawn(move || {
-        // The stack is wired at spawn: a process needs one before it can make the syscall that
+        // The stack is wired at spawn: a process needs one before it can make the system call that
         // would map it.
         let mut stack = [Mapping {
             va: 0,
@@ -389,7 +389,7 @@ pub fn blank_disk(blk_image: &'static [u8]) -> Option<BlankDisk> {
             blk_ready: None,
         });
     }
-    let dev = crate::virtio::find_block_device_n(BLANK_DISK)?;
+    let dev = crate::virtual_io::find_block_device_n(BLANK_DISK)?;
     let (blk_ep, ready, blk_shared) = fs_service::spawn_block_server(blk_image, dev)?;
     BLANK_BLK_EP.store(blk_ep, Ordering::Relaxed);
     BLANK_SHARED.store(blk_shared, Ordering::Relaxed);

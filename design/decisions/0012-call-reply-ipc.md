@@ -9,7 +9,7 @@ ratified_by: calef
 
 Decided and built 2026-07-22 (milestone 12). The design was worked out ahead of time in
 notes/ipc-naming.md and parked in "Open design ideas" against two triggers. This is where it lands,
-because it widens the §4 syscall boundary and so is owed a numbered decision.
+because it widens the §4 (kernel shape: a microkernel) system call boundary and so is owed a numbered decision.
 
 ## The gap it closes
 
@@ -21,7 +21,7 @@ a double reply, or a stale reply landing on a client that has moved on.
 
 ## The surface, and why it is this small
 
-One new endpoint method and one new object. The syscall count stays at three (exit/yield/invoke).
+One new endpoint method and one new object. The system call count stays at three (exit/yield/invoke).
 
 - `CALL` (endpoint method): send two words and block until replied. At the rendezvous the kernel
   mints a one-shot `Reply` capability naming *this* caller and delivers it to the server through the
@@ -44,7 +44,7 @@ the reply handle. That is fine under §10's rule that IPC carries control and bu
    unrepresentable.
 
 Three tests hold the line: `a_call_gets_a_reply` (round trip, one endpoint), `a_reply_reaches_the_
-caller_that_called` (two callers outstanding, each gets its own reply), and, through the real syscall
+caller_that_called` (two callers outstanding, each gets its own reply), and, through the real system call
 path at EL0, `a_process_calls_a_server_and_the_reply_is_one_shot` (which also checks that the second
 reply is refused).
 

@@ -61,7 +61,7 @@ on the same date: only the tree reads the word, and reversing it costs one pull 
 option A, the composer records the digests and every loader copies them.
 
 A third question follows and stays separate. Once the kernel can update apart from the base, the
-syscall surface becomes a versioned ABI that installed programs rely on.
+system call surface becomes a versioned ABI that installed programs rely on.
 
 ## The consumer, and the condition the code waits on
 

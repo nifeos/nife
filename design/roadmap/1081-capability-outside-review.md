@@ -19,7 +19,7 @@ inherit. Whether a package is in flight on a branch is unverified. The review tr
 whatever a ruling in the tree already covers. That is the crate name as ratified against `caps`
 and `cap_space` (reopened below for one reason only, item D1, ruled `capability_table`), `CapabilityTable` as the exported
 type and `MAXIMUM_SLOTS` as ratified. It also covers the five right bits and their positions (the
-syscall wire format, pinned by `abi::rights` and asserted equal in
+system call wire format, pinned by `abi::rights` and asserted equal in
 `kernel/src/capability_object.rs`), the set-means-free word, the 64-slot ceiling and the
 publishing hold. Where a later rule contradicts an earlier
 ruling, the item says so.
@@ -45,7 +45,7 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 - P1-3, the proved `derive` is not the delegation the kernel runs: Open. `Capability::delegate`
   holds the rule once, the kernel's `Delegation::derive` calls it, and a harness proves it
   ([#3656](https://github.com/nifeos/nife/pull/3656)). Left: the two `REVOKE` arms in
-  `kernel/src/syscall.rs` still test `GRANT` inline under no harness; the shape of a syscall-layer
+  `kernel/src/system_call.rs` still test `GRANT` inline under no harness; the shape of a system-call-layer
   harness is two-way, and the maintainer rules it provisionally.
 - P1-4, a slot truncates on a 32-bit target: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565).

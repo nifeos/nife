@@ -1,8 +1,8 @@
 //! The Rust shell around a C component (milestone 36 (a foreign-language component, seam first),
-//! DECISIONS §31 (the foreign-language seam)): it holds every capability, makes every syscall, and
+//! DECISIONS §31 (the foreign-language seam)): it holds every capability, makes every system call, and
 //! hands the C nothing but a pointer and a length.
 //!
-//! The C has never seen a capability slot, so it cannot widen the kernel's syscall surface (rule 3,
+//! The C has never seen a capability slot, so it cannot widen the kernel's system call surface (rule 3,
 //! DECISIONS §4 (kernel shape)), and it can corrupt memory inside its grant and nothing else. Its
 //! `malloc` is the [`MemoryRegionHeap`] of milestone 27 (Rust `std` on the native ABI) on slot 1,
 //! the region this instance was built in, so a C leak exhausts only this instance and the

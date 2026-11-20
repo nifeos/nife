@@ -43,7 +43,7 @@ have made it silently search for `line`, which is worse than no answer.
 
 Milestone 117 (the stranger test) is three stranger runs. They have measured what a newcomer
 cannot reach by following this tree: `notes/net.md`, `notes/capabilities.md`, any
-`design/decisions/` file, and `crates/abi/src/lib.rs`, which is four syscall numbers and the whole design on one screen. None of them is hidden; nothing a
+`design/decisions/` file, and `crates/abi/src/lib.rs`, which is four system call numbers and the whole design on one screen. None of them is hidden; nothing a
 person would type led to them. This milestone already owned the machinery, pointed at the six pages
 a guest can hold. So it is now also pointed at the 512 pages a checkout holds. It uses the same
 `manual::index::build` and `manual::index::search`, one shard per part of the tree, and a result
@@ -119,7 +119,7 @@ store." That price was accurate. A page record grew a `tokens` field (four of th
 `PAGE_REC` already held spare, no format growth), and `index::VERSION` moved to 2.
 `manual::index::Ranked::offer` now ranks by `count / tokens` (fixed-point, one division) rather than
 raw `count`. `Found::count` still reports the raw occurrence count in the printed answer; only the
-merge order changed. It is pure crate logic with no spawn-protocol or syscall-surface change, unlike
+merge order changed. It is pure crate logic with no spawn-protocol or system-call-surface change, unlike
 the two items above it. See notes/manual.md's `BUGS` and "Where this goes next" for detail, and
 `crates/manual`'s own test, `ranking_divides_by_page_length`. It is a quality improvement inside
 phase 2.

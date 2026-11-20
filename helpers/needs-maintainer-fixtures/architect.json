@@ -546,7 +546,7 @@
        ]
       },
       "architectSurface": [
-       "syscall-error: kernel/src/syscall.rs: return Err(Error::BadPointer);"
+       "system-call-error: kernel/src/system_call.rs: return Err(Error::BadPointer);"
       ]
      },
      {

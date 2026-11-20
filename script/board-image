@@ -58,7 +58,7 @@
 # initial-ramdisk-riscv` packs
 #   target/<target>/debug/ because nothing on this path sets xtask's release flag, so every board
 #   payload, and every job-mix and soak number taken from one, runs debug programs under a release
-#   kernel. On radon (2026-10-05) the syscall stub alone was 3 to 8 ticks of a 110-tick null-syscall
+#   kernel. On radon (2026-10-05) the system call stub alone was 3 to 8 ticks of a 110-tick null-system-call
 #   job (notes/job-mix/radon-2026-10-05.md). Fixing it moves every radon baseline at once, so it is
 #   a proposal with a re-baseline, not a flag flip:
 #   design/roadmap/0797-release-userspace-in-board-images.md.

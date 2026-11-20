@@ -42,14 +42,14 @@ disposition column is what this milestone did.
 |---|---|---|---|---|
 | 0 | `SELF_CHECK` | `tests::a_real_elf_from_the_initrd_runs_at_el0_and_verifies_itself`, bare | A real ELF loaded: `.rodata` readable, `.data` copied, `.bss` zeroed, stack deep enough | split: `image_self_checker` |
 | 2 | `PRINTING` | `tests::a_user_client_moves_data_through_shared_memory` | §10's split: bytes through shared memory, length through IPC, kernel never in the data path | split: `console_test_client` |
-| 3 | `VIRTIO_BLK` | `virtio_service::start`, the tour, `tests` | A userspace driver reads a file off a virtio disk over DMA | **deleted**: `block_driver` |
+| 3 | `VIRTUAL_IO_BLK` | `virtual_io_service::start`, the tour, `tests` | A userspace driver reads a file off a virtio disk over DMA | **deleted**: `block_driver` |
 | 7 | `UNTYPED_DEMO` | `memory_region_service::start`, the tour | A process maps pages until its own region is spent and the kernel allocates nothing | split: `memory_region_depleter` |
-| 8 | `VIRTIO_ATTACK` | `virtio_service::start_attacker` | The kernel refuses a DMA descriptor aimed outside the driver's region | **deleted**: `block_driver` |
+| 8 | `VIRTUAL_IO_ATTACK` | `virtual_io_service::start_attacker` | The kernel refuses a DMA descriptor aimed outside the driver's region | **deleted**: `block_driver` |
 | 9 | `GRANTER` | `delegation_service::wire` | A process hands a capability on, narrowed | split: `delegation_granter` |
 | 10 | `RECEIVER` | `delegation_service::wire` | The delegated capability works, and cannot be re-delegated without `GRANT` | split: `delegation_receiver` |
 | 11 | `PAGE_FRAME_PRODUCER` | `page_frame_service::wire` | Two processes compose shared memory themselves, out of a capability | split: `page_frame_producer` |
 | 12 | `PAGE_FRAME_CONSUMER` | `page_frame_service::wire` | The shared page is genuinely shared, and `READ` alone cannot map it writable | split: `page_frame_consumer` |
-| 13 | `VIRTIO_ATTACK_INDIRECT` | `virtio_service::start_attacker_indirect` | The indirect-descriptor escape is refused too | **deleted**: `block_driver` |
+| 13 | `VIRTUAL_IO_ATTACK_INDIRECT` | `virtual_io_service::start_attacker_indirect` | The indirect-descriptor escape is refused too | **deleted**: `block_driver` |
 | 14 | `CALL_SERVER` | `call_service::wire` | A reply capability is one-shot: a second reply is refused | split: `call_server` |
 | 15 | `CALL_CLIENT` | `call_service::wire` | A process calls a server it was never individually wired to | split: `call_client` |
 | 16 | `REVOKE_DEMO` | `revoke_service::wire` | `REVOKE` deletes every capability to a frame, the revoker's own included | split: `frame_revoker` |
@@ -65,10 +65,10 @@ disposition column is what this milestone did.
 | 26 | `IRQ_CHILD` | built by role 25 | The interrupt arrives through the delegated capability | **kept as a role** |
 | 28 | `INIT_LEAST_AUTHORITY_DEMO` | `spawn_progenitor`, role 28 | `START` carries data, not just identity: the argument reaches a fresh EL0 thread intact | **kept as a role** |
 | 29 | `INIT_COREMARK` | `spawn_progenitor`, role 29 | A real compute workload runs correctly against the native ABI | **kept as a role** |
-| 30 | `VIRTIO_BLK_WRITE` | `virtio_service::start_writer` | The write path: write, read back, re-check the filesystem around it | **deleted**: `block_driver` |
-| 31 | `VIRTIO_BLK_WRITE_ABANDON` | `virtio_service::start_write_abandoner` | A driver killed mid-write leaves the device and transport sane | **deleted**: `block_driver` |
-| 32 | `VIRTIO_BLK_SERVER` | `fs_service::blk_server_image` and every filesystem test | Blocks served over IPC to the FS server | **deleted**: `block_driver` |
-| 40 | `VIRTIO_NET` | `virtio_service::start_net` | A DHCP round trip over virtio-net | **deleted**: `block_driver` |
+| 30 | `VIRTUAL_IO_BLK_WRITE` | `virtual_io_service::start_writer` | The write path: write, read back, re-check the filesystem around it | **deleted**: `block_driver` |
+| 31 | `VIRTUAL_IO_BLK_WRITE_ABANDON` | `virtual_io_service::start_write_abandoner` | A driver killed mid-write leaves the device and transport sane | **deleted**: `block_driver` |
+| 32 | `VIRTUAL_IO_BLK_SERVER` | `fs_service::blk_server_image` and every filesystem test | Blocks served over IPC to the FS server | **deleted**: `block_driver` |
+| 40 | `VIRTUAL_IO_NET` | `virtual_io_service::start_net` | A DHCP round trip over virtio-net | **deleted**: `block_driver` |
 | 42 | `CYCLE_COUNTER_CHILD` | `tests`, directly, both granted and not | A granted thread reads the counter; an ungranted one is killed for it | split: `cycle_counter_reader` |
 | `_` | the catch-all | nothing | nothing | **deleted**: it is a trap now |
 
@@ -101,7 +101,7 @@ Three of them stopped carrying a word that had become false. `EP_MAKER` and `EP_
 abbreviation needing a decoder over an object this tree calls `RENDEZVOUS` everywhere else, and
 `user` already means two other things here. `CYCLE_COUNTER_CHILD` was never anybody's child: the
 kernel's own test starts it directly, because milestone 229 shipped the grant mechanism without a
-syscall method to set it.
+system call method to set it.
 
 Every split program ignores `x0`. A one-job program has no role selector, so the role numbers
 simply stop existing for these fourteen rather than being renumbered. `hello`'s remaining nine keep
@@ -123,7 +123,7 @@ it). `CYCLE_COUNTER_WORD` (the reader and the kernel test, likewise duplicated).
 
 `loaded_image_check` holds the self-check and its `.rodata`/`.data`/`.bss` markers, which two
 fixtures need. It takes its `fail` as a `fn() -> !` parameter rather than calling `user_rt`, and
-that is worth a sentence. A crate that reaches `user_rt` reaches EL0 syscall `asm!` and compiles for
+that is worth a sentence. A crate that reaches `user_rt` reaches EL0 system call `asm!` and compiles for
 aarch64 or riscv64 only, which `script/lint` catches and which would have put this crate in four
 separate host-pass exclusion lists to buy one function call. As a parameter it costs the two callers
 one argument, stays host-buildable, and carries two host tests.

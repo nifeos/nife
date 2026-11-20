@@ -1,6 +1,6 @@
 //! The protective master boot record (MBR) that a GUID partition table disk carries at block 0.
 //!
-//! Name: provisional. Spelled out, with the alias `MBR` for the specification's spelling.
+//! Name: ratified 2026-11-20 (#3864). Spelled out, with the alias `MBR` for the specification's spelling.
 
 /// The operating system type byte that makes a record protective, `0xEE`.
 #[doc(alias = "OSType")]
@@ -21,7 +21,7 @@ use crate::{Error, is_block_size_ok};
 ///
 /// [`Error::BlockSize`] when `block` is not a block this crate accepts.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 pub fn write(block: &mut [u8], block_count: u64) -> Result<(), Error> {
     let sector = first_sector(block)?;
     ::master_boot_record::protective::write(sector, block_count);
@@ -39,7 +39,7 @@ pub fn write(block: &mut [u8], block_count: u64) -> Result<(), Error> {
 /// [`Error::BlockSize`] when `block` is not a block this crate accepts, and
 /// [`Error::MasterBootRecord`] with the first problem the record has.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 pub fn validate(block: &[u8], block_count: u64) -> Result<(), Error> {
     if !is_block_size_ok(block.len()) {
         return Err(Error::BlockSize(block.len()));

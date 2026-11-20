@@ -37,7 +37,7 @@ arrived after DMA confinement on purpose.
 
 ## What the kernel does
 
-Three pieces, no new syscall, no new capability, no key material.
+Three pieces, no new system call, no new capability, no key material.
 
 1. The build measures. `xtask` packs the initrd archive, parses the packed image back with
    `nifefs`, hashes the boot-program entries, and writes `target/init-measure-<arch>.txt`:

@@ -36,7 +36,7 @@ A contract has a wire half and an IPC half, and they are independent.
 
 The protocol is a userspace protocol, not kernel ABI. The kernel routes these words the way
 it routes any IPC (§10, §12); it never reads an opcode. Adding an opcode is a change to this note
-and to `terminal_contract`, not a change to the syscall surface.
+and to `terminal_contract`, not a change to the system call surface.
 
 ## The IPC protocol
 

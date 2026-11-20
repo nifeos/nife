@@ -307,7 +307,7 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
     // is a second I/O on purpose (`PartitionTable::check_backup` is
     // separate for exactly this reason), and it is the check that says whether anything has
     // happened to this disk since it was written.
-    let backup_lba = table.backup_entry_logical_block_address();
+    let backup_lba = table.backup_entry_array_logical_block_address();
     let backup_blocks = block_count.saturating_sub(backup_lba);
     let tail_buf = backup();
     if backup_blocks > 1

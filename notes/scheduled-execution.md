@@ -192,7 +192,7 @@ where CBMC stops finishing.
 ## The primitive that was missing, and what it still costs
 
 When this was written (2026-08-18 UTC) there was no timed wait anywhere in this kernel. No sleep, no
-timeout, no deadline: the syscall surface was `EXIT`, `YIELD`, `INVOKE` and `CAP_DELETE`, and a
+timeout, no deadline: the system call surface was `EXIT`, `YIELD`, `INVOKE` and `CAP_DELETE`, and a
 process had exactly one blocking wait point. So a program whose entire purpose is to act at a time
 could only yield and re-read the counter, and a running timetable costs a core's worth of yields.
 

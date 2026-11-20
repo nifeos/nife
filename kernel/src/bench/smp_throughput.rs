@@ -91,7 +91,7 @@ const TC_WORK: u64 = 300_000;
 
 static TC_SINK: AtomicU64 = AtomicU64::new(0);
 
-/// A non-elidable integer grind with no syscalls, so it isolates placement from cross-core wakes.
+/// A non-elidable integer grind with no system calls, so it isolates placement from cross-core wakes.
 /// Returns a value the caller sinks, so the optimizer cannot delete the loop.
 #[inline(never)]
 fn busy(iters: u64) -> u64 {

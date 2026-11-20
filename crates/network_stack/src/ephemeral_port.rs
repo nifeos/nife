@@ -4,7 +4,7 @@
 //! ports an earlier one used, which a peer may still hold in `TIME_WAIT`. Here so its claim is
 //! a host test; only the network stack uses it.
 //!
-//! Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
+//! Name: ratified 2026-11-20 (UTC).
 
 //! # BUGS
 //!
@@ -15,21 +15,21 @@
 
 /// The lowest port of the private ephemeral range.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const LOWEST_PORT: u16 = 49152;
 /// The highest.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const HIGHEST_PORT: u16 = 65535;
 /// How many ports the range holds.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const PORT_COUNT: u64 = (HIGHEST_PORT - LOWEST_PORT) as u64 + 1;
 /// How far the clock moves the cursor each second. 256 makes one tick about 4 ms, so a stack
 /// started a few milliseconds after another's last open already starts past it, and keeps the
 /// wrap at 64 s, above the 60 s `TIME_WAIT` of Linux and the BSDs.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const PORTS_PER_SECOND: u64 = 256;
 
 // The wrap stays at or above the 60 s `TIME_WAIT` the BUGS section names, checked at compile
@@ -39,7 +39,7 @@ const _: () = assert!(PORT_COUNT * 1000 / PORTS_PER_SECOND >= 60_000);
 /// The cursor. It counts positions without wrapping; a position's port is its remainder in the
 /// range. A new one has handed out nothing, so its first allocation starts at the clock.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub struct Cursor {
     next: u64,
 }
@@ -47,7 +47,7 @@ pub struct Cursor {
 impl Cursor {
     /// A cursor that has handed out nothing.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn new() -> Self {
         Self { next: 0 }
     }
@@ -58,7 +58,7 @@ impl Cursor {
     /// ports, so in practice the first or second candidate is free. The cursor moves past
     /// every port it tried, so a caller that gets `None` has used the whole range.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn next(&mut self, milliseconds: u64, held: impl Fn(u16) -> bool) -> Option<u16> {
         self.next_within(milliseconds, held, PORT_COUNT)
     }

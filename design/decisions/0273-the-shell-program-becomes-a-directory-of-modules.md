@@ -124,5 +124,5 @@ milestone 884 (the shell logic crate is split along its seams) now covers it.
 
 ## What it does not decide
 
-No public crate API, wire format or syscall changes. The role numbers `system_tests` passes at spawn
+No public crate API, wire format or system call changes. The role numbers `system_tests` passes at spawn
 do not move.

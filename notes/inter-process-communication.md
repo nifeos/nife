@@ -145,7 +145,7 @@ can fire in one tick.
 ## The futex queues
 
 A futex is a key, an address space and a virtual address, not an object. That keeps `std`'s
-`Mutex::new` `const` and free of syscalls. The module is `B` buckets of intrusive FIFOs, a key
+`Mutex::new` `const` and free of system_calls. The module is `B` buckets of intrusive FIFOs, a key
 hashed to a bucket, and oldest waiter first within a key. Keys can collide in a bucket, so every
 lookup asks the caller each waiter's key, which is the kernel's own record. The kernel side is in
 [futex.md](futex.md).

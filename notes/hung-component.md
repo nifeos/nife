@@ -184,7 +184,7 @@ Not built: a watchdog program. Detection exists only inside a swap, where the su
 quiesce is the question; a watch over a running component wants the progress bound of question 2
 and the `liveness_watch` shape of question 1, an architect's name.
 
-Not built: any kernel-surface change. No new syscall, method or rights bit, and no change to
+Not built: any kernel-surface change. No new system call, method or rights bit, and no change to
 `SURVEY` or `REAP`. The obvious extension is a decision: see `BUGS`.
 
 ## EXAMPLES

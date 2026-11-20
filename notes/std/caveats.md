@@ -86,13 +86,13 @@ The records this file cites by number:
 - `std::process::id()` is `0` and the rest of `std::process` refuses (milestone 64,
   `sys/process/nife.rs`). This was the third `panic!` of the same sweep: `getpid` in the shared
   fallback is `panic!("no pids on this platform")`. There is no process identifier here to report,
-  the syscall surface issues none, and `u32` cannot say "there is none", so `0` is the answer,
+  the system call surface issues none, and `u32` cannot say "there is none", so `0` is the answer,
   chosen because no Unix assigns it to a user process. Every reachable call site in the fifty
   measured dependency closures is a *fork* check (`gix-tempfile` compares an owning pid so cleanup
   runs only in the creating process). nife has no `fork`, so a constant is what makes those
   comparisons right rather than merely quiet. A scheme that wanted cross-process uniqueness from a
   pid would be broken here with nothing reporting it, and a real per-process identity is a
-  syscall-surface decision rather than a PAL one.
+  system-call-surface decision rather than a PAL one.
 - `std::process::exit` is a real exit, and the code it carries is dropped on the floor
   (milestone 64). It was the fourth `panic!`-shaped finding of the same sweep and the worst of them:
   `sys/exit.rs`'s `_ =>` arm is `crate::intrinsics::abort()`, so a nife program calling
@@ -104,13 +104,13 @@ The records this file cites by number:
   Nothing had noticed because the two ways a Rust program ends took different exits and only one was
   wired. `_start` calls the PAL's `rt::exit` on `main`'s return value directly, and
   `std::process::exit` is the *only* caller of `sys::exit::exit` in the whole of std. Both now reach
-  the same `SYSCALL_EXIT`.
+  the same `SYSTEM_CALL_EXIT`.
 
   The code is still discarded, and that is the kernel's, not the PAL's. `sched::exit()` is
   `depart(abi::fault::EVENT_EXIT, 0, 0)`: the §26 message carries the event and the tid, and the
   two remaining words are a pc and a fault address that a clean exit has nothing to put in. So a
   supervisor can tell exit from crash and cannot tell `exit(0)` from `exit(1)`. §301 (exit status and output) decided the
-  wire: `SYSCALL_EXIT`'s first word is the status, and the kernel forwards it in the `EVENT_EXIT`
+  wire: `SYSTEM_CALL_EXIT`'s first word is the status, and the kernel forwards it in the `EVENT_EXIT`
   message's third word, which a clean exit leaves zero today. Milestone 172 (a capability-native subprocess primitive) builds it. Until it lands, a nife program
   that wants to report *why* it stopped says so on an endpoint it holds, the way every other
   result travels here.

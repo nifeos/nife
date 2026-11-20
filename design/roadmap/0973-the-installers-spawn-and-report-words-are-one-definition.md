@@ -22,7 +22,7 @@ kernel-test pair, or one crate for all of them?) decides where the shared defini
 proposal sketches the contents and leaves the crate to that ruling. It can be promoted as a row of
 407, or folded into it.
 
-Reuse: the shape `hot_swap_contract` and `confined_syscall_fuzzer_contract` already use, roles and
+Reuse: the shape `hot_swap_contract` and `confined_system_call_fuzzer_contract` already use, roles and
 verdicts in a crate that the kernel and the program both depend on.
 
 ## The failure

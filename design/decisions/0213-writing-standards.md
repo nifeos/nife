@@ -159,7 +159,7 @@ colon, with more text after it in the same paragraph. It matches 5,720 spans in 
 
 Of 80 sampled matches, 24 were labels a heading fixes. 23 were repeated tags like *Recorded.* and
 *Outstanding.*, which lose their bold instead. 12 were parsed fields, 15 were claims (*That is a
-syscall.*, *The seam is the payoff.*) and 5 were definition terms. Under a third of the hits are
+system call.*, *The seam is the payoff.*) and 5 were definition terms. Under a third of the hits are
 what this rule converts. It also misses long labels: 5 of 40 sampled non-matches were labels over
 five words, such as *Why this is the selling point, and safe.* Telling a claim from a label is a
 question about verbs, and a regular expression cannot ask it.

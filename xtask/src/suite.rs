@@ -439,7 +439,7 @@ fn host_pass(hvf: bool, filtered: bool) -> bool {
 /// `helpers/host-excluded-crates.sh` rather than listed. Panics when the helper cannot run or fails.
 ///
 /// Every member that reaches `crates/user_mode_runtime` cannot compile for the host (`svc` and
-/// `ecall` there are EL0 syscalls), and the whole set must go: `--exclude` removes a package from
+/// `ecall` there are EL0 system calls), and the whole set must go: `--exclude` removes a package from
 /// the test selection, not from the dependency graph. One derivation serves script/lint's two
 /// clippy passes, script/coverage, script/mutation and this file's host and Miri passes.
 /// script/lint's "the host pass excludes exactly the bare-metal crates" gate fails if this file
@@ -491,9 +491,9 @@ fn host_tests() -> bool {
         return false;
     }
 
-    // `user_mode_runtime` is in the excluded set (its syscalls fault without a kernel) and has a
+    // `user_mode_runtime` is in the excluded set (its system calls fault without a kernel) and has a
     // host test target all the same: its tests cover the pure logic (bounds checks, the frame
-    // layout, the tick conversion, the linker script's base) and never execute a syscall.
+    // layout, the tick conversion, the linker script's base) and never execute a system call.
     if !cargo(&["test", "-p", "user_mode_runtime"]) {
         return false;
     }
@@ -965,7 +965,7 @@ fn x86_64_on_amd_vi() -> bool {
 /// capability FS server) phase 2): reopen the images with the host tool and confirm the FS server's
 /// writes persisted and the filesystems still parse. The images are the last leg's: x86_64 in a
 /// full run, riscv64 when `--arch x86_64` was not asked for, aarch64 when it was the only leg. No
-/// crash test runs on x86_64 (the twins in `filesystem_tests` and `riscv_virtio_tests` are cfg-gated
+/// crash test runs on x86_64 (the twins in `filesystem_tests` and `riscv_virtual_io_tests` are cfg-gated
 /// to their ISAs), so after an x86_64 leg the crash check is skipped: a check whose subject did not
 /// happen is worse than no check. See notes/xtask-test.md.
 fn images_after_the_run(legs: ArchLegs, filtered: bool) -> bool {

@@ -79,7 +79,7 @@ takes `transcript` to under 1,000. The checks on the script table itself, such a
 1. Whether the script table gets its own module. The recommendation is yes, for the reason above.
 2. Every module name in the table.
 
-No public crate API, wire format or syscall changes under any answer here. `xtask` is a binary and
+No public crate API, wire format or system call changes under any answer here. `xtask` is a binary and
 `swish_check` is `pub(crate)`.
 
 ## What moving the code breaks

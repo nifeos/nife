@@ -40,8 +40,8 @@ not appear in a signature, and the crate needed a public opaque marker. A method
 one-way once published.
 
 Recommendation: typed names before the first release. `pub struct RegionName(EntryName<Region>)`
-with `to_bits` and `from_bits` for the syscall register, or a public zero-sized `RegionTag` and
-`pub type RegionName = EntryName<RegionTag>`. The kernel converts once at its syscall boundary, as
+with `to_bits` and `from_bits` for the system call register, or a public zero-sized `RegionTag` and
+`pub type RegionName = EntryName<RegionTag>`. The kernel converts once at its system call boundary, as
 it already converts bytes to pages there. The `u64` form is the convenient one for the kernel's
 current code and nothing else.
 
@@ -55,13 +55,13 @@ sits. With a typed name it does not.
 ## Decision 3: Whether "zero pages means one" is the crate's contract or the kernel's
 
 Background. The kernel's `RETYPE` count rule says a word of zero asks for one page, because the
-syscall ignored the argument before the count existed. That ruling stands and this decision does not
+system call ignored the argument before the count existed. That ruling stands and this decision does not
 reopen it. A crate that carries it makes `retype_run(name, 0)` hand out a page while `split(parent, 0)`
 refuses. A stranger reading `retype_run(name, 0)`
 expects nothing to happen, and a published function's behavior on zero is one-way.
 
-Recommendation: the crate refuses zero everywhere, as `split` does, and the kernel maps the syscall
-word's zero to one before it calls, in the kernel's own `retype_run`. The kernel's syscall behaves as
+Recommendation: the crate refuses zero everywhere, as `split` does, and the kernel maps the system call
+word's zero to one before it calls, in the kernel's own `retype_run`. The kernel's system call behaves as
 ruled.
 
 Prior art. seL4's `seL4_Untyped_Retype` refuses a zero object count with an invalid-argument error.

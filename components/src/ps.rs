@@ -1,6 +1,6 @@
 //! **`ps`: who else is running, and who is allowed to ask** (notes/process-view.md). Walk one
 //! supervision domain with `abi::rendezvous::SURVEY`, say what it found on one stream and what went
-//! wrong on the other. The listing is `crates/ps`, host-tested; this is the syscall and two sinks.
+//! wrong on the other. The listing is `crates/ps`, host-tested; this is the system call and two sinks.
 //!
 //! **It cannot enumerate the machine.** A Unix `ps` reads an ambient `/proc`. This holds a
 //! supervision endpoint and sees exactly the threads whose deaths arrive on it: no pid space to

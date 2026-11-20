@@ -16,23 +16,23 @@ An appendix to [the milestone](../1104-paging-outside-review.md).
    `standalone.py` to zero. Effort M. Two-way.
 
 5. Public names the spelled-out rule refuses. The template's `spelled_out.py`, at a ceiling of
-0, refuses 84 definitions. Public among them: `is_user_page_va` (`src/page_format.rs` line 43) and `PageFormat::entry_pa` (`src/page_format.rs` line 66). The `va` and `pa` parameters of every `PageFormat` method and every `Mapper` method (`src/mapper.rs` lines 138 to 451). `PageSize::largest_fitting` (`src/page_size.rs` line 53), `DmaRegion` (`src/domain.rs` line 12) and `pat::MSR` (`src/x86_64.rs` line 23). `AMD_VI_PR` (`src/x86_64.rs` line 331, refused as `pr`; it is "present"). The rule (`design/naming.md`,
+0, refuses 84 definitions. Public among them: `is_user_page_va` (`src/page_format.rs` line 43) and `PageFormat::entry_pa` (`src/page_format.rs` line 66). The `va` and `pa` parameters of every `PageFormat` method and every `Mapper` method (`src/mapper.rs` lines 138 to 451). `PageSize::largest_fitting` (`src/page_size.rs` line 53), `DmaRegion` (`src/domain.rs` line 12) and `page_attribute_table::MSR` (`src/x86_64.rs` line 23). `AMD_VI_PR` (`src/x86_64.rs` line 331, refused as `pr`; it is "present"). The rule (`design/naming.md`,
 "Acronyms and abbreviations") lists `va`, `pa`, `dma` and `msr` by name, and says an integer
 constant is never kept. The helper does not catch these, but the same rule applies by judgment. `phys_to_ptr` and `alloc_page_frame` as parameters (`src/mapper.rs` lines 66 to 67, `src/domain.rs` lines 81 to 82). `attrs` (`src/aarch64.rs` line 111, `src/sv39.rs` line 55, `src/x86_64.rs` line 107). `kernel_rodata` and `user_rodata` (`src/flags.rs` line 84, `src/flags.rs` line 125), where "read-only data" is the spoken phrase. Fix: one
 rename lane: `virtual_address` and `physical_address` throughout, `is_user_page_virtual_address`,
-`entry_physical_address`, `DirectMemoryAccessRegion`, `pat::MODEL_SPECIFIC_REGISTER` with
+`entry_physical_address`, `DirectMemoryAccessRegion`, `page_attribute_table::MODEL_SPECIFIC_REGISTER` with
 `#[doc(alias = "IA32_PAT")]`, `AMD_VI_PRESENT`, `physical_to_pointer`, `allocate_page_frame`,
 `attributes`, `kernel_read_only_data` and `user_read_only_data`. Every new name provisional. The
 kernel's call sites move with them. Effort M. Two-way before the first release. The maintainer rules
 them provisionally, and the release review rechecks them.
 
 6. Kept specification names carry no alias. `Aarch64`, `Sv39`, `Sv39Mae`, `Ia32e`, `Vtd`, `AmdVi`,
-   `TlbFlush`, the modules `mair` and `pat`, and the register-bit constants (`AF`, `SH_INNER`,
+   `TranslationLookasideBufferFlush`, the modules `mair` and `pat`, and the register-bit constants (`AF`, `SH_INNER`,
    `PXN`, `UXN`, `NG`, `PPN_SHIFT`, `PWT`, `PCD`, `XD`, `DTE_TV`) keep their source's spelling. The
    rule allows this for a term a reader searches for. The condition is that the doc comment opens
    with the full name and source and the item carries `#[doc(alias = "<plain-English name>")]`. The
    crate has zero `doc(alias)` attributes. `Ia32e` (`src/x86_64.rs` line 99) and `Sv39Mae`
-   (`src/sv39.rs` line 150) state their source. The rest do not. `TlbFlush` is the one judgment call: the
+   (`src/sv39.rs` line 150) state their source. The rest do not. `TranslationLookasideBufferFlush` is the one judgment call: the
    rule keeps an acronym only where nobody says the expansion as a phrase, and "translation
    lookaside buffer" is rarely spoken, so the recommendation is to keep it with an alias. Fix: one
    pass adding the opening line and the alias to each kept name. Effort S. Two-way.
@@ -67,7 +67,7 @@ and test. The harness docs then say "every constructor" truthfully. Effort S. Tw
    inflow of 18, 8 killed and 10 equivalent (`notes/mutation-testing/baseline-ledger.md` line 22,
    `notes/mutation-testing/inflow-2026-10-12-triage.md` line 31; the inflow columns were not re-derived).
    The file lists 644 mutants today. Fix: port each exemption with its reason into the template's
-   format and run one full `mutation.yml` inside the window. Expect the `pat::VALUE` constant-level
+   format and run one full `mutation.yml` inside the window. Expect the `page_attribute_table::VALUE` constant-level
    `|` (`src/x86_64.rs` line 34) to survive, as nife's note at `mutants.toml` lines 385 to 387 says it does, and
    exempt it with that reason. Effort S to M. Two-way.
 

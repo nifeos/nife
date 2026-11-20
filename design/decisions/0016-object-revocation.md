@@ -39,7 +39,7 @@ held. Thread exit does the live-state teardown; the owner's destroy does the mem
 never take `SCHED` (it is reachable from `AddressSpace::Drop` under the reaper's `SCHED`), so the
 `SCHED`-taking object reap is a separate caller-driven step and `destroy` stays `SCHED`-free.
 
-## Two new methods on the Untyped object (the surface stays three syscalls)
+## Two new methods on the Untyped object (the surface stays three system calls)
 
 - `SPLIT` carves a child untyped off a parent's budget (seL4's untyped-retype-into-untyped), so a
   spawner gives each child its own reclaimable region. A parent with live children cannot be destroyed
@@ -99,11 +99,11 @@ Rights then narrow monotonically from the root down: root (`GRANT`) -> init's `S
 `CAP_INSERT` into the spawned child (narrowed to `WRITE`, spend-only). `untyped_cap` (`WRITE` only)
 stays the constructor for a spend-only leaf budget; nothing manufactures authority at any step.
 
-A kernel test pins the invariant at the mint site (`syscall.rs`,
+A kernel test pins the invariant at the mint site (`system_call.rs`,
 `split_inherits_the_parent_capabilitys_rights_never_widening`): a `GRANT`-less untyped splits into a
 `GRANT`-less child that cannot be delegated, while the delegable root splits into delegable children.
 This is a bug fix to this section's intent (untyped is delegable in seL4, the model we borrow
-guarantees from), recorded here rather than as a new section. See `kernel/src/syscall.rs`'s `SPLIT`
+guarantees from), recorded here rather than as a new section. See `kernel/src/system_call.rs`'s `SPLIT`
 handler, `cap::untyped_root_cap`, and notes/grant-expression.md.
 
 ## Amendment (milestone 28): DESTROY force-kills a live resident thread, it no longer only refuses
@@ -192,7 +192,7 @@ have kept running whatever the answer.
 
 Refused: refusing without killing, because a borrower that never finishes would pin R forever, the
 shape the amendment for milestone 28 (a solid terminal: the line discipline as a component) removed. Refused: making `CONFIGURE` reject a space rooted outside
-the TCB's region, because it adds a refusal to the syscall surface and forbids a split a loader may
+the TCB's region, because it adds a refusal to the system call surface and forbids a split a loader may
 want. Refused: both together, because once the kill exists the `CONFIGURE` refusal buys no safety.
 
 No ABI change: no new method, number or refusal. Not yet built; milestone 765 (a destroyed region cannot
@@ -232,6 +232,6 @@ name that carries a generation), Zircon kernel object ids that are never reused 
 an id space that only grows), seL4 revocation (needs the derivation tree), and VFIO
 resetting a device on release (the source of the reset step).
 
-No new syscall, method or number: a program that held a released device's capability now gets the
+No new system call, method or number: a program that held a released device's capability now gets the
 stale refusal it already gets elsewhere. Milestone 647 builds it, and settles how
 `entropy_service::ensure`'s one-service-per-device rule meets a released and reused slot.

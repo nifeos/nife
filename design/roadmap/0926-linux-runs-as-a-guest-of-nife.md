@@ -111,9 +111,9 @@ The VMM replies with register writes and a resume.
 The kernel handles `wfi` (block the thread until a virtual interrupt is pending) and the virtual
 timer, because sending those to userspace costs an IPC round trip per guest tick.
 
-### The syscall surface
+### The system call surface
 
-No new syscall number. Everything is `SYSCALL_INVOKE` on the two new objects. The method list is
+No new system call number. Everything is `SYSTEM_CALL_INVOKE` on the two new objects. The method list is
 provisional: `GuestAddressSpace::MAP` and `UNMAP`; `VirtualCpu::BIND`, `READ_REGISTERS`,
 `WRITE_REGISTERS` and `INJECT`. The exit message layout is a wire format. Two new object types are
 the deliberate growth `kernel/src/cap.rs` says each `Object` variant is, so they need a section in
@@ -263,7 +263,7 @@ The persona is cheaper per guest and keeps a program inside nife's capability mo
 the system calls somebody writes, and 621 refuses the subsystems podman needs (namespaces, cgroups,
 overlayfs). A virtual machine runs all of Linux, podman included, at the price of a whole guest
 kernel and its memory. The two do not compete for mechanism: 621 needs no EL2, and this needs no
-syscall translation. They answer different customers. One wants a Linux binary to run on nife; the
+system call translation. They answer different customers. One wants a Linux binary to run on nife; the
 other wants a Linux machine next to nife's own programs.
 
 ## Rulings

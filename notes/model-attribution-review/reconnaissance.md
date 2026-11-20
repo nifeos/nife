@@ -90,13 +90,13 @@ code and 31,414 are in the 72 commits that touch `kernel/`. 22,407 of the lines 
 ### 5. It sat squarely on the irreversible list, and that is the review worth doing
 
 *Move fast on what can be undone* names the expensive categories: anything two programs agree on,
-names, dependencies, the syscall surface, and facts that left the machine. The Sonnet window is
+names, dependencies, the system call surface, and facts that left the machine. The Sonnet window is
 unusually concentrated in exactly those.
 
 | Category | Sonnet commits | Detail |
 |---|---|---|
-| `crates/abi` (the syscall surface) | 7 | all of them renames, 649 diff lines across this row and the next two |
-| `kernel/src/syscall.rs` | 6 | |
+| `crates/abi` (the system call surface) | 7 | all of them renames, 649 diff lines across this row and the next two |
+| `kernel/src/system_call.rs` | 6 | |
 | `crates/*_proto` (wire crates) | 23 | 14 files across 10 protocol crates |
 | Cargo manifests | 14 | 17 manifests, plus 12 commits touching a `Cargo.lock` |
 | Roadmap and decision records | 90 | 47 files |

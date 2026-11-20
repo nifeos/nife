@@ -3,10 +3,10 @@ name = "abi"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
-description = "The syscall ABI: the five syscall numbers, every capability method number, the error codes and the right bits that a program and a kernel agree on"
+description = "The system call ABI: the five system call numbers, every capability method number, the error codes and the right bits that a program and a kernel agree on"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-keywords = ["no-std", "abi", "syscall", "capabilities"]
+keywords = ["no-std", "abi", "system-call", "capabilities"]
 categories = ["no-std", "embedded", "os"]
 publish = false     # `false` until the release that publishes; that release deletes the line
 

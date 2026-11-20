@@ -47,11 +47,11 @@ The fastpath is byte-identical to `main` on all three architectures, measured af
 | x86_64 | 6,256 / 8,190 / 1,701 |
 
 These are the same figures `script/fastpath-footprint` reports for `main` alone. On the pre-merge
-tree, the block check the walk now makes cost aarch64's `syscall_entry` four bytes (1,504 to 1,508).
+tree, the block check the walk now makes cost aarch64's `system_call_entry` four bytes (1,504 to 1,508).
 That was measured by neutralizing the check and remeasuring. Merging `main` moved the inlining, and
 it is gone.
 
-The gate's riscv64 and x86_64 `syscall_entry` figures sit above `bench/fastpath-*.txt`, and did so
+The gate's riscv64 and x86_64 `system_call_entry` figures sit above `bench/fastpath-*.txt`, and did so
 before this lane. That drift is `main`'s, and is left for whoever re-saves those baselines.
 
 ## 2. `CR4.PGE` and `CR4.PCIDE`

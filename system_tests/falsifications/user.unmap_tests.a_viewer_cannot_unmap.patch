@@ -5,9 +5,9 @@ for `pmap` can take pages out of the space it was only allowed to look at.
 
 Expected to fail: the `NotPermitted` assertion, which gets `Ok(0)`.
 
-diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
---- a/kernel/src/syscall/address_space.rs
-+++ b/kernel/src/syscall/address_space.rs
+diff --git a/kernel/src/system_call/address_space.rs b/kernel/src/system_call/address_space.rs
+--- a/kernel/src/system_call/address_space.rs
++++ b/kernel/src/system_call/address_space.rs
 @@ -28,12 +28,7 @@
              address_space_list(frame, name, a0)
          }

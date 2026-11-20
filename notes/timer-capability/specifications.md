@@ -129,6 +129,6 @@ row is "the architecture has a spare, and this project has not looked at its own
 specification for a different purpose, and its findings apply. The architectural floor is 100 ns
 per tick, the common part runs at 14.31818 MHz, and a *read* costs several microseconds, which is
 why Linux deleted the vDSO mapping. None of that prices arming one, which is a write and a one-shot
-interrupt rather than a polled read. So §139's conclusion (the HPET loses to a syscall as a
+interrupt rather than a polled read. So §139's conclusion (the HPET loses to a system call as a
 *clock*) does not carry over to using it as a *timer*. That distinction is worth keeping straight,
 because the two uses share a device and nothing else.

@@ -55,7 +55,7 @@ separate work. This proposal is the terminal half; the programs arrive through w
 
 `vttest` cannot run on nife today. It is a C program over `termios`, `ioctl(TIOCGWINSZ)`, `select`
 and signals, and the tree has no libc and no `termios`. The C seam is freestanding and makes no
-syscalls (§31 (the foreign-language seam: C holds no capabilities and makes no syscalls)). So
+system calls (§31 (the foreign-language seam: C holds no capabilities and makes no system calls)). So
 `vttest` runs in the host harness: its output into the engine, a screen dump at each "Push
 <RETURN>" pause, graded against goldens recorded once from a reference terminal and reviewed by a
 person. Menu 6 has nothing to grade without the reply path in Part 3.
@@ -103,7 +103,7 @@ Answers to questions 2 and 4 of the seven are the same for A to E, so they are h
 - *Is the premise true?* Partly. The gap is real and measured, but it needs a program to hit it, and
   none ships (Part 1). The framing "no `std`, no allocator" is this program's inherited choice, not
   a constraint. `display_terminal` is `no_std` and keeps its grid in `.data`. A `std` process on nife
-  has a heap and threads (`notes/std.md`), and `jig` is a `std` program that makes raw syscalls. What
+  has a heap and threads (`notes/std.md`), and `jig` is a `std` program that makes raw system_calls. What
   is still `no_std` is the kernel's witness, which predicts the scanout with `video_terminal`.
   Separately, libghostty-vt is freestanding but not allocation-free (its `allocator.h`).
 

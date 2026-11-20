@@ -57,7 +57,7 @@ does.
   address space is built and `req_frame` has been dropped, not before. `script/swish-check` reads 23
   of 24 at peak on aarch64 and riscv64, unchanged. The x86_64 leg passes too, and its gauge reads
   the hand-over mark rather than the peak, as that leg's own line says.
-- The test is `kernel::syscall::tests::a_slice_maps_only_its_window`: a slice of one page maps that
+- The test is `kernel::system_call::tests::a_slice_maps_only_its_window`: a slice of one page maps that
   page and neither neighbor, and the refusals refuse.
 
 ## BUGS

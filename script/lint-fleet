@@ -210,7 +210,7 @@ python3 "$(dirname "$0")/../helpers/agents-index-check.py"
 
 # §88 (`needs-architect` as a required check, rather than as a script's restraint)'s diff-reading
 # half (.github/workflows/architect-label.yml, the general case of
-# coe-architect-label.yml): whether a pull request's diff moved the syscall surface, the dependency
+# coe-architect-label.yml): whether a pull request's diff moved the system call surface, the dependency
 # graph, a format crate's wire layout, the spawn protocol, or CLAUDE.md/design/decisions/. The rule
 # engine is pure text-in-text-out (helpers/architect-label-rules.py), so its selftest is fixtures
 # only, no git and no subprocess, and costs nothing here.

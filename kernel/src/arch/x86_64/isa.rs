@@ -1,6 +1,6 @@
 //! **What CPU is this, and can it run us**, `x86_64`: the `cpuid` instructions, the record and
 //! the refusal; the decoding is host-tested in [`machine_discovery::x86_64`]. Three features are
-//! gated (milestone 524 (the three `x86_64` boot gates)): NX in `boot.s`, and `syscall` and the
+//! gated (milestone 524 (the three `x86_64` boot gates)): NX in `boot.s`, and `system_call` and the
 //! invariant TSC in [`initialize`], where a hypervisor turns the TSC's refusal into a warning. See
 //! notes/x86-port/cpu-state.md.
 //!
@@ -271,7 +271,7 @@ mod tests {
             f.contains(machine_discovery::x86_64::NX),
             "boot.s already refused without it; this is the line that says so"
         );
-        assert!(f.contains(machine_discovery::x86_64::SYSCALL));
+        assert!(f.contains(machine_discovery::x86_64::SYSTEM_CALL));
     }
 
     /// **The third is the one that does not refuse**, and this test records which way round that

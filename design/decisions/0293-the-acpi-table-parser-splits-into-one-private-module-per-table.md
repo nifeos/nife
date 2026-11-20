@@ -117,5 +117,5 @@ on 2026-10-12: rust-osdev's `acpi` crate (`7bf9e4210d`) has `src/rsdp.rs` and `s
 
 ## What it does not decide
 
-No public path, wire format or syscall changes. No function body changes; the module headers, the
+No public path, wire format or system call changes. No function body changes; the module headers, the
 `//! Name:` blocks and the doc paths that cross a new module boundary are the only new prose.

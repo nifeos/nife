@@ -38,7 +38,7 @@ fn the_wire_ids_already_shipped_never_move() {
         ("reboot", 21),
         ("jig", 22),
         ("job_sleeper", 23),
-        ("null_syscall", 24),
+        ("null_system_call", 24),
         ("sink_producer", 25),
         ("sink_consumer", 26),
         ("map_el0", 27),

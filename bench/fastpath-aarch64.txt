@@ -1,6 +1,6 @@
 # toolchain: nightly-2026-10-19
 # date: 2026-10-20
-# why: IrqSafeGuard::drop is #[inline(always)] on every architecture (2026-10-20 UTC, milestone 890 (riscv64 and x86_64 join the shared boot path)'s x86_64 slice): CI's aarch64 build outlined it outside .text.hot and the pin refused it. Saved with the inline in place, on nightly-2026-10-19 where the old floor was 2026-10-04's: ipc_send_receive 4840 -> 4916, ipc_call_reply 6016 -> 6316, syscall_entry 1612 -> 1696. syscall_entry alone crossed the 5% band; how much of each move is the inlined drop and how much is the newer toolchain was not separated.
+# why: IrqSafeGuard::drop is #[inline(always)] on every architecture (2026-10-20 UTC, milestone 890 (riscv64 and x86_64 join the shared boot path)'s x86_64 slice): CI's aarch64 build outlined it outside .text.hot and the pin refused it. Saved with the inline in place, on nightly-2026-10-19 where the old floor was 2026-10-04's: ipc_send_receive 4840 -> 4916, ipc_call_reply 6016 -> 6316, system_call_entry 1612 -> 1696. system_call_entry alone crossed the 5% band; how much of each move is the inlined drop and how much is the newer toolchain was not separated.
 # bench/fastpath-aarch64.txt: an upper bound on the IPC fastpath's instruction footprint.
 # Written by script/fastpath-footprint --save. Updating this file is a statement that a
 # footprint change is intended and understood; do it in the commit that causes it.
@@ -9,8 +9,8 @@
 # `ipc_send_receive` and `ipc_call_reply` are the two IPC shapes, measured separately since
 # milestone 188 phase 1 because the system runs the second and this gate measured only the
 # first. `ipc_fastpath` is DERIVED, the worse of the two, kept under its old name because
-# the tree cites it; it is not checked separately. Both shapes and `syscall_entry` are.
+# the tree cites it; it is not checked separately. Both shapes and `system_call_entry` are.
 ipc_send_receive 4916
 ipc_call_reply 6316
 ipc_fastpath 6316
-syscall_entry 1696
+system_call_entry 1696

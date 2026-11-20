@@ -35,7 +35,7 @@ needs a person and a cable, and its result goes in the Results table of
   than assumed: with the kernel's `iommu::confine` skipped, QEMU's VT-d refused the NIC's first
   ring fetch and no lease came.
 - Milestone 261 (the NVMe driver leaves the kernel)'s shape, which DECISIONS §86 (whether an NVMe
-  driver can leave the kernel) authorized for NVMe, and no new syscall surface. The kernel
+  driver can leave the kernel) authorized for NVMe, and no new system call surface. The kernel
   (`kernel/src/e1000e.rs`) resets the NIC, reads its MAC address and programs the ring bases. The
   process is handed BAR0's two queue pages and an 18-page confined DMA region, and is denied page 0
   and page 5 (reset, the receive filter, the MAC address, the PHY). It polls; no interrupt is
@@ -70,7 +70,7 @@ The I219's PHY half; QEMU never takes the PCH path, so xenon is the test.
   so a PHY access without it does not compile. One falsifiable Kani harness; writing it found that
   FreeBSD truncates a page select above `0x7ff`, which this port refuses.
 - QEMU proves the MDIO read: the DHCP gate asserts the 82574L's PHY identifier, `0x01410cb0`.
-- The boot refusal's lift is one constant, `e1000e_service::PCH_PROVEN_ON_SILICON`, still `false`.
+- The boot refusal's lift is one constant, `e1000e_service::PCH_PROVEN_ON_SILICON`, `false`.
 
 ## Bench runbook: one boot on xenon (calef)
 
@@ -117,16 +117,16 @@ controller, so it is a follow-on to 242 rather than to this.
 
 Two drivers in this tree are the analogues, and they differ in the way that matters:
 
-- virtio-net (milestone 30) runs inside `net_stack`: `components/src/virtio_net_transport.rs` is a
+- virtio-net (milestone 30) runs inside `net_stack`: `components/src/virtual_io_net_transport.rs` is a
   `#[path]` module of that binary presenting smoltcp's `phy::Device`, and the kernel owns the
-  device's registers and mediates it through a `Virtio` capability with the shadow-ring validator.
+  device's registers and mediates it through a `VirtualIo` capability with the shadow-ring validator.
   None of that mediation exists for a non-virtio device.
 - The EL0 NVMe server (milestone 261, DECISIONS §86 option 2a) is the precedent for a real
   device. The kernel keeps the admin plane, the process holds a page of BAR0 and a confined DMA
-  window, and on xenon VT-d is the confinement. It added no syscall surface.
+  window, and on xenon VT-d is the confinement. It added no system call surface.
 
 So the I219 driver takes 261's shape, and one difference is worth checking before the design is
-drawn. NVMe's specification put a page boundary exactly where the authority boundary belongs
+drawn. NVMe's specification put a page boundary where the authority boundary belongs
 (controller registers below `0x1000`, doorbells above). For the `e1000e` family the ring base
 registers and the ring tail registers sit in the same 4 KiB page (recalled from the older 8254x
 datasheets, not read from the I219's). So the page split that let 261's server ring doorbells
@@ -136,7 +136,7 @@ milestone 261's own load-bearing unknown (whether xenon's DMAR scope covers the 
 a second device. Read the datasheet first.
 
 Where the driver runs is a second, smaller question: a second `phy::Device` inside `net_stack`
-beside `virtio_net_transport`, as virtio-net does today, or its own process with frames crossing an
+beside `virtual_io_net_transport`, as virtio-net does today, or its own process with frames crossing an
 endpoint. Recommendation: inside `net_stack` first, matching the tree; a separate process is a
 frame protocol two programs agree on, which is the expensive category and wants its own reason.
 The §92 test: at equal cost the separate process would be preferred for confinement (a NIC parser
@@ -148,13 +148,13 @@ recorded as such.
 - Milestone 87's estimate: *"A minimal driver is 1,500-3,000 lines against Intel's public
   datasheet; the plumbing around it (PCI decode, DMA confinement, the userspace net server) already
   exists."* An estimate written at purchase time, not a measurement.
-- The measured neighbours: `virtio_net_transport.rs` is 390 lines (virtio, with the kernel doing
+- The measured neighbours: `virtual_io_net_transport.rs` is 390 lines (virtio, with the kernel doing
   the register work); `components/src/non_volatile_memory_express.rs` is 417 lines and
   `crates/non_volatile_memory_express` 1,086, host-tested with Kani harnesses, which is the split
   this driver should copy.
 - Interrupts: x86 does not yet route a device line to a userspace waiter (milestone 299 (the x86 port-range capability)'s scope
   note), and 261's server polls. The first NIC driver polls too.
-- The MTU: `virtio_net_transport.rs` fixes `MTU = 576` because its whole DMA region is one page. A
+- The MTU: `virtual_io_net_transport.rs` fixes `MTU = 576` because its whole DMA region is one page. A
   10 MB package at 576 bytes a frame is slow for no good reason; this driver gets a multi-page
   region the way 261's server got sixteen pages of transfer buffer, and full 1,500-byte frames.
 
@@ -188,7 +188,7 @@ No Rust crate covers the 82574L or any I219, and no crate on crates.io names `e1
 Adapting Redox's driver would not have been better than writing `crates/e1000e`, then or now. Its 364 lines map almost one for one onto this crate's 297 lines of register map and ring
 logic, which is the easy part. It would not have run under QEMU without adding `10d3`, and every
 line that allocates DMA, maps a BAR or waits on an interrupt is a Redox interface that 261's
-shape replaces with a kernel control plane and spawn-time mappings. Its data path also trusts the
+shape replaces with a kernel control plane and spawn-time mappings. Its data path trusts the
 device: it slices a receive buffer by the descriptor's length unchecked (a length above 16 KiB
 panics the driver), it enables promiscuous receive, and its reset, link and full-ring waits spin
 without a bound. Adapting it would have saved perhaps a day on the register table and bought those

@@ -105,7 +105,7 @@ Every name here is provisional.
    transitive version this crate's `BUGS` describes is built.
 3. The file name `proofs.rs`.
 
-No public crate API, wire format or syscall changes under any answer here.
+No public crate API, wire format or system call changes under any answer here.
 
 ## What moving the code breaks
 

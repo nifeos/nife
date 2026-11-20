@@ -4,16 +4,16 @@ An appendix to [the milestone](../1113-virtio-outside-review.md).
 
 ## P1
 
-3. The ring layout is a copy of the proved layout, and nothing checks the copy. NOT DONE (a BUGS entry at the constants records the copy; the move to `abi::virtio` adds public constants to `crates/abi`, so it is a pull request of its own). `QSIZE`
+3. The ring layout is a copy of the proved layout, and nothing checks the copy. NOT DONE (a BUGS entry at the constants records the copy; the move to `abi::virtual_io` adds public constants to `crates/abi`, so it is a pull request of its own). `QSIZE`
 (`:72`), `OFF_DESC`, `OFF_AVAIL`, `OFF_USED` (`:99-101`) and the net driver's `0x200` stride
 (`:564-569`) restate `direct_memory_access_validator::{LAYOUT_QSIZE, DESC_OFF, AVAIL_OFF,
 USED_OFF, RING_BLOCK}` as literals. The kernel aliases those constants, so the layout it runs
-matches the layout Kani proves (`kernel/src/virtio.rs` lines 422 to 442). The driver does not alias them.
+matches the layout Kani proves (`kernel/src/virtual_io.rs` lines 422 to 442). The driver does not alias them.
 A change to the proved layout would leave the driver reading the wrong offsets, and nothing would
-fail until a QEMU test did. `components/src/virtio_net_transport.rs` lines 28 to 31 records the same copy as
+fail until a QEMU test did. `components/src/virtual_io_net_transport.rs` lines 28 to 31 records the same copy as
 a bug, and this crate records nothing. `notes/net/the-driver-and-dhcp.md` lines 130 to 137 says §46 (thin primitives or whole subsystems; we write everything in between) priced
 the dependency edge and the tree did not take it. The validator has no dependencies of its own
-(`crates/direct_memory_access_validator/Cargo.toml`). The fix: the constants move to `abi::virtio`,
+(`crates/direct_memory_access_validator/Cargo.toml`). The fix: the constants move to `abi::virtual_io`,
 as Decision 2 decides, provisionally, and this crate imports them. Effort: S. Two-way: the layout
 values do not change, only where their names live.
 
@@ -112,8 +112,8 @@ There is no README. Shipped text cites 17 paths into this tree, 9 milestones, 3 
 architect by name (`script/crate-standalone`), and a reader outside the tree can follow none of
 them. The report codes (`0xE4` through `0xEA`, `0xE200 | status`, `0xDEAD_0000_0000_0000 | code`)
 form a protocol with the kernel test, and no document tabulates them. The `run` example
-(`:192-197`) imports `exit` and never uses it. `kernel/src/virtio.rs` line 419 and
-`kernel/src/user/virtio_service.rs` line 9 say the layout and `DMA_VA` must match `user/src/virtio.rs`,
+(`:192-197`) imports `exit` and never uses it. `kernel/src/virtual_io.rs` line 419 and
+`kernel/src/user/virtual_io_service.rs` line 9 say the layout and `DMA_VA` must match `user/src/virtio.rs`,
 a file that no longer exists. The docs-versus-reality audit report in `design/audit-reports/`
 recorded the rename to `crates/virtio`, and the two kernel comments slipped through. The fix: a
 crate doc that says what the crate is (one program's roles, or the library of Decision 1). Add a

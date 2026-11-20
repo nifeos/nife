@@ -122,7 +122,7 @@ Option (b), the manifest, concretely:
   `READDIR`, ever. The re-deriver never asks the FS server what exists. It asks only for the one
   document it already knows the name of, and then for each name that document contains.
 - *Cost, measured against option (a)*: this is one bounded read regardless of how many identities a
-  deployment has ever provisioned. Option (a) is either a refused syscall (this tree's own rule) or,
+  deployment has ever provisioned. Option (a) is either a refused system call (this tree's own rule) or,
   even if it were not refused, a directory listing followed by a probe read per candidate. The new
   code is a parser and a renderer for an eight-line document. It mirrors `timetable::parse`'s own
   size and shape (`crates/schedule_store`, ~40 lines of parsing logic, host-tested).

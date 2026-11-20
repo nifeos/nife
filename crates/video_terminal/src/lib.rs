@@ -1,5 +1,5 @@
 //! **The VT state engine: the grid a display terminal keeps.** Bytes in, a character grid out, plus
-//! the rectangle that changed. Sans-IO like `line_editor`: no endpoint, no syscall, no framebuffer;
+//! the rectangle that changed. Sans-IO like `line_editor`: no endpoint, no system call, no framebuffer;
 //! `components/src/display_terminal.rs` feeds it and paints what it says, and the kernel-side test
 //! and `cargo xtask` run it to predict and grade the same picture.
 //!

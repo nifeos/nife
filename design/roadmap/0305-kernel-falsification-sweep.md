@@ -74,7 +74,7 @@ into the wrong answer."* `user_can_read` went on calling `translate_user`.
 
 Fixed here (`translate_in_either_half`, `kernel/src/arch/riscv64/mmu.rs`), measured both ways on
 riscv64: green with the fix, and red under the patch in `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` in
-`system_tests/src/user/riscv_virtio_tests.rs` with the test's
+`system_tests/src/user/riscv_virtual_io_tests.rs` with the test's
 own sentence, *"the page tables say U-mode could read the kernel's own memory."*
 
 Two things follow and both are larger than this row. A green confinement test is consistent with
@@ -110,7 +110,7 @@ the vacuity guard: with the caretaker serving the filesystem root, the shell cou
 its own files, so *"every refusal it reported proves nothing"*. Nothing crossed. It proves the test
 is wired to the real root handle; it does not demonstrate a crossing.
 
-### Row 26 cannot be falsified as written, and the reason is the syscall rather than the test
+### Row 26 cannot be falsified as written, and the reason is the system call rather than the test
 
 `a_client_of_the_stable_rendezvous_cannot_become_its_server` got the honest defect: delete the
 kernel's `Rights::READ` check on `RECV_CAP`, so a client really can receive on the stable
@@ -228,7 +228,7 @@ keeps comparing two derivations of one fact; that check fired on the first run h
   the kernel fails to refuse reports an escape instead of taking the honest server's message and
   hanging the run. Row 26 of `notes/confinement-claims.md` is `unfalsified` for exactly this reason,
   measured here as a 60-second lost-wakeup watchdog. It needs a non-blocking or timed `RECV_CAP`,
-  which is the syscall surface and therefore calef's.
+  which is the system call surface and therefore calef's.
 - **Recorded.** In `script/falsifications`' own `BUGS`: a kernel record costs about a minute rather
   than a second, so `--sweep` is no longer a thirty-second command. `--affected-since`, the per-PR
   half, covers only the Kani records. A kernel record is swept on the one architecture its patch
@@ -242,7 +242,7 @@ keeps comparing two derivations of one fact; that check fired on the first run h
 - **Done.** `user_can_read` and `user_can_write` on riscv64, which answered by refusing to look at a
   high-half address, so `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` could not fail.
   Fixed by `translate_in_either_half`; checked both ways on riscv64 (green with the fix, red in
-  `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` in `system_tests/src/user/riscv_virtio_tests.rs` under the patch).
+  `the_page_tables_say_u_mode_cannot_read_the_kernels_memory` in `system_tests/src/user/riscv_virtual_io_tests.rs` under the patch).
 - **Recorded.** In this block's own `BUGS`, because there is nowhere nearer a reader:
   `design/fatal-risks/README.md` risk 7 says "Six kernel confinement rows still have no mechanism at all",
   which is now false. A lane may not edit `design/` outside its own block and nothing gates that

@@ -64,11 +64,11 @@ scratch page is free again once its child is reaped. Only the cursor did not kno
   half the window, leaving the other half for the boot servers' permanent pages. Milestone 595 will
   grow the pool for `rg`, and a pool grown past that fails the build rather than a spawn.
 
-No syscall surface, no new method, no capability slot: the progenitor's table stays at 23 of 24.
+No system call surface, no new method, no capability slot: the progenitor's table stays at 23 of 24.
 
 Would we still choose this if the alternatives cost the same? Yes. The alternatives were the two
 the proposal named, an unmap after each build and a fixed per-build window. Both need §162's unmap,
-which is a permanent addition to the syscall surface and calef's call. The window needs nothing new
+which is a permanent addition to the system call surface and calef's call. The window needs nothing new
 and uses a guarantee the kernel already makes and already tests. What it does not do is remove the
 builder's mappings of a *live* child, which is §162's question and stays open.
 
@@ -128,5 +128,5 @@ and the revocation is portable kernel code (DECISIONS §19 (architectural parity
 The tree's one userspace loader maps every page it builds into the builder's own space and cannot
 unmap, so its cursor only climbed, and the progenitor would have stopped spawning after about
 seventy-five `ripgrep`-sized programs. The cursor now wraps inside a fixed 64 MiB window and lets
-the kernel say which pages a reaped child gave back, with no new syscall surface; a guest test
+the kernel say which pages a reaped child gave back, with no new system call surface; a guest test
 builds past the old limit on all three architectures.

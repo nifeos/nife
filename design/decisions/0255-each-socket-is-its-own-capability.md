@@ -11,7 +11,7 @@ ratified_by: calef
 
 Two rulings, both calef's, both 2026-10-07 (UTC). The first is the shape: each socket is its own
 capability. Building it found that a reply could not carry a capability, which was a fork on the
-syscall surface. The second ruling took option A, a new Reply method that carries one. This section
+system call surface. The second ruling took option A, a new Reply method that carries one. This section
 records both, the method's semantics (§10 (process model: capability-based, microkernel) requires
 them written here), and the `socket_protocol` contract that two programs now agree on.
 
@@ -67,7 +67,7 @@ is provisional. The runtime pair is `reply_capability` and `call_receiving`.
   `CALL` arm. The CI footprint and icount gates price it on every ISA.
 - Proof. `a_reply_carries_a_capability_the_caller_can_use` in `system_tests`, on aarch64,
   riscv64 and x86_64: the carried capability works in the caller's hands, both refusals leave the
-  Reply usable, and a plain `REPLY`'s `x2` is `NO_CAP`. The seeded syscall driver's shadow model
+  Reply usable, and a plain `REPLY`'s `x2` is `NO_CAP`. The seeded system call driver's shadow model
   now checks `x2` after every `REPLY`.
 
 ## The `socket_protocol` contract

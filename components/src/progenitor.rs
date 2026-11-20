@@ -44,9 +44,9 @@ const GRANTS: BootEndowment = BootEndowment {
     // no virtio-rng device leaves them empty, and `system_initializer::boot`'s own probe is what
     // tells it apart from a granted one. Fixed past the filesystem pair's own max reach (slot 6),
     // not slot 5, because the inert-configuration page (slot 4) shifted that pair down by one.
-    virtio_rng: 7,
-    virtio_rng_interrupt: 8,
-    virtio_rng_dma: 9,
+    virtual_io_rng: 7,
+    virtual_io_rng_interrupt: 8,
+    virtual_io_rng_dma: 9,
     // A terminal on the firmware's screen (milestone 198 (a package manager)'s rung 1b), past the virtio-rng trio's
     // floor (slot 9) for that trio's reason: a boot whose console has no screen leaves both empty.
     // (They were the kernel-built virtio-gpu stack's slots until milestone 600 (provisional).)
@@ -58,9 +58,9 @@ const GRANTS: BootEndowment = BootEndowment {
     // The network card (milestone 590 (the booted system starts its network stack)), past the
     // slot 12 floor for the same reason again: a boot with no virtio-net device leaves all three
     // empty, and `system_initializer::boot` probes for it.
-    virtio_net: 13,
-    virtio_net_interrupt: 14,
-    virtio_net_dma: 15,
+    virtual_io_net: 13,
+    virtual_io_net_interrupt: 14,
+    virtual_io_net_dma: 15,
     // An entropy service the kernel built on the CPU's seed instruction (milestone 595
     // (provisional)), granted only on a boot with no virtio-rng, so a boot has one of slot 7's trio
     // or this, never both. Past the network card's floor (slot 15) for the reason every group above

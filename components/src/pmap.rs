@@ -3,7 +3,7 @@
 //!
 //! Walk one address space with `abi::address_space::LIST`, then say what it found on one stream
 //! and what went wrong on the other, `ps`'s shape one object type over. The listing is
-//! `crates/pmap`, host-tested; what lives here is the syscall and the two sinks. `MAP_INTO` needs
+//! `crates/pmap`, host-tested; what lives here is the system call and the two sinks. `MAP_INTO` needs
 //! `WRITE` on the address-space capability, the authority to shape it; `LIST` needs `ENUMERATE`,
 //! the authority to look. A `pmap` granted `ENUMERATE` alone can list every mapping and cannot add,
 //! remove or change one, and that is the whole demonstration.

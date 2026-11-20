@@ -9,7 +9,7 @@ ratified_by: calef
 
 *Section number PROVISIONAL: the maintainer mints it at merge. Written 2026-10-04 (UTC) by the lane
 on PR #1611. The finding, the seven questions and the first cost estimate are in the block of
-[milestone 752 (a seeded syscall driver with a shadow model)](../roadmap/0752-a-seeded-syscall-driver-with-a-shadow-model.md),
+[milestone 752 (a seeded system call driver with a shadow model)](../roadmap/0752-a-seeded-system-call-driver-with-a-shadow-model.md),
 section "A real finding".*
 
 calef, 2026-10-04 (UTC), ruling option A of that section.
@@ -26,7 +26,7 @@ The outcome no longer depends on arrival order.
   returns `Gone`. The one-shot Reply lives in the receiver's capability table (§12 (call/reply
   IPC)), and a plain `RECEIVE` names no slot to fill, so nobody could ever answer it.
 
-`RECEIVE_CAP` is unchanged. There is no new method, syscall number or error. This narrows what an
+`RECEIVE_CAP` is unchanged. There is no new method, system call number or error. This narrows what an
 existing method returns, within §10 (the capability-based microkernel process model).
 
 ## How the kernel knows
@@ -95,7 +95,7 @@ All are inside the 5% band. The block's throwaway measurement of the receiver-fi
 - `system_tests::user::receive_cap_attack_tests::a_send_cap_to_a_plain_receive_installs_nothing_whichever_side_parks_first`.
 - `..::a_call_to_a_plain_receive_is_answered_gone_whichever_side_parks_first`.
 - Each has a replayable falsification, replayed red on aarch64.
-- The seeded driver's model (`syscall_fuzzer_tests`, `Model::plain_receive`).
+- The seeded driver's model (`system_call_fuzzer_tests`, `Model::plain_receive`).
 
 ## What is still open
 

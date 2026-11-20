@@ -17,7 +17,7 @@ These come from `design/decisions/`. They are cheap to follow and expensive to r
    later a DMA allocator, later an interrupt registration). See `drivers/pl011.rs`: it takes a base
    address and knows nothing else.
 
-3. The syscall surface stays narrow and explicit. It is a boundary, not a habit.
+3. The system call surface stays narrow and explicit. It is a boundary, not a habit.
 
 5. Architectural parity is a gate, not an aspiration: DECISIONS §19 (architectural parity is a
    tenet). The targets are aarch64, riscv64, and x86_64, all three of which now boot on real

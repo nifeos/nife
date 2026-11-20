@@ -22,7 +22,7 @@ correction.
 performs the move. The handler's own doc comment states why no lock is needed at all: "the serve
 loop runs one request to completion before it receives the next, so inside this server there is no
 concurrent observer at all." §42's racy-emulation case is a POSIX host filesystem reached through
-separate `link` and `unlink` syscalls, with another writer free to run between them. That case is a
+separate `link` and `unlink` system calls, with another writer free to run between them. That case is a
 fact about a different kind of backend. It does not describe this one. A `replace: bool` check costs
 one branch before `tx.rename_node`. That code already resolves the destination on every call to
 decide `EISDIR`/`ENOTDIR`.

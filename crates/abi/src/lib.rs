@@ -1,7 +1,7 @@
-//! The syscall boundary, as one crate the kernel and every user program depend on, so a change
+//! The system call boundary, as one crate the kernel and every user program depend on, so a change
 //! to the application binary interface (ABI) fails to compile on both sides at once.
 //!
-//! The surface is five calls <!--count:syscalls-->. `exit`, `exit_thread`, `yield` and
+//! The surface is five calls <!--count:system_calls-->. `exit`, `exit_thread`, `yield` and
 //! `capability_delete` act on the caller itself, and `invoke(capability, method, a0, a1, a2)` acts on everything
 //! else. The trap moves six words in each direction, and the table below names the register that
 //! holds each one. On `invoke`, word 0 is the slot, word 1 the method and words 2 to 4 the
@@ -10,7 +10,7 @@
 //!
 //! | word | aarch64 | riscv64 | `x86_64` |
 //! |------|---------|---------|----------|
-//! | syscall number | `x8` | `a7` | `rax` |
+//! | system call number | `x8` | `a7` | `rax` |
 //! | 0 | `x0` | `a0` | `rdi` |
 //! | 1 | `x1` | `a1` | `rsi` |
 //! | 2 | `x2` | `a2` | `rdx` |
@@ -32,9 +32,9 @@
 #[doc = include_str!("../README.md")]
 struct ReadmeExample;
 
-/// The syscall ABI's version: the generation of the syscall numbers, the method numbers and the
+/// The system call ABI's version: the generation of the system call numbers, the method numbers and the
 /// error codes a program was built against, all one surface. One constant for the whole surface,
-/// module-scoped constants refused (the scope is the syscall surface a program matches). The check is at spawn, not at run time: the
+/// module-scoped constants refused (the scope is the system call surface a program matches). The check is at spawn, not at run time: the
 /// progenitor compares the manifest note's declared version against this and refuses a mismatch
 /// naming both; the ABI never
 /// dual-serves.
@@ -49,7 +49,7 @@ struct ReadmeExample;
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const ABI_VERSION: u32 = 1;
 
-/// This interface's identity in a program's `INTERFACES` note: 1, naming the syscall surface. The number
+/// This interface's identity in a program's `INTERFACES` note: 1, naming the system call surface. The number
 /// is the crate's to keep across a rename and no other interface ever reuses it; the ids of every
 /// interface crate must differ. A program declares the pair of this id and [`ABI_VERSION`].
 ///
@@ -61,50 +61,50 @@ pub const INTERFACE_ID: u64 = 1;
 /// `exit(code)`: end the calling thread's process and every thread in it. Needs no capability,
 /// because it acts on the caller itself.
 ///
-/// Name: ratified 2026-11-11 (UTC). `SYS` abbreviated "syscall", a word design/naming.md keeps;
+/// Name: ratified 2026-11-11 (UTC). `SYS` abbreviated the word, which design/naming.md now spells out;
 /// the number stays 0. Refused `SYS_EXIT`.
-pub const SYSCALL_EXIT: u64 = 0;
+pub const SYSTEM_CALL_EXIT: u64 = 0;
 /// `yield()`: give up the CPU without blocking. Needs no capability, as `exit` needs none.
 ///
-/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 1. Refused `SYS_YIELD`.
-pub const SYSCALL_YIELD: u64 = 1;
-/// `invoke(capability, method, a0, a1, a2)`: the one syscall that acts on anything but the caller.
+/// Name: ratified 2026-11-11 (UTC), with [`SYSTEM_CALL_EXIT`]; the number stays 1. Refused `SYS_YIELD`.
+pub const SYSTEM_CALL_YIELD: u64 = 1;
+/// `invoke(capability, method, a0, a1, a2)`: the one system call that acts on anything but the caller.
 ///
 /// # Examples
 /// ```
-/// use abi::{SYSCALL_EXIT, SYSCALL_INVOKE, SYSCALL_YIELD, rendezvous};
+/// use abi::{SYSTEM_CALL_EXIT, SYSTEM_CALL_INVOKE, SYSTEM_CALL_YIELD, rendezvous};
 ///
-/// assert_eq!([SYSCALL_EXIT, SYSCALL_YIELD, SYSCALL_INVOKE], [0, 1, 2]);
+/// assert_eq!([SYSTEM_CALL_EXIT, SYSTEM_CALL_YIELD, SYSTEM_CALL_INVOKE], [0, 1, 2]);
 ///
-/// // Sending on a rendezvous is a method number, not a syscall number. Adding an operation to the
-/// // system is a new method here; adding a *syscall* is a design fork.
+/// // Sending on a rendezvous is a method number, not a system call number. Adding an operation to the
+/// // system is a new method here; adding a *system call* is a design fork.
 /// assert_eq!(rendezvous::SEND, 0);
 /// ```
 ///
-/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 2. Refused
+/// Name: ratified 2026-11-11 (UTC), with [`SYSTEM_CALL_EXIT`]; the number stays 2. Refused
 /// `SYS_INVOKE`.
-pub const SYSCALL_INVOKE: u64 = 2;
+pub const SYSTEM_CALL_INVOKE: u64 = 2;
 
 /// `capability_delete(slot)`: drop a capability from the caller's own capability table, freeing the slot.
 /// Deleting an empty slot is a harmless no-op. A loader that
 /// retypes many frames through a finite table recycles slots with it, and it needs no capability
 /// because the table is the caller's own.
 ///
-/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 3. Refused
+/// Name: ratified 2026-11-11 (UTC), with [`SYSTEM_CALL_EXIT`]; the number stays 3. Refused
 /// `SYS_CAPABILITY_DELETE` and `SYS_CAP_DELETE`.
-pub const SYSCALL_CAPABILITY_DELETE: u64 = 3;
+pub const SYSTEM_CALL_CAPABILITY_DELETE: u64 = 3;
 
 /// `exit_thread(word)`: **end the calling thread, and only it**; when it is the last running
-/// thread of its process the process ends too, as [`SYSCALL_EXIT`] would end it. Needs no capability.
+/// thread of its process the process ends too, as [`SYSTEM_CALL_EXIT`] would end it. Needs no capability.
 ///
 /// `word`, if not zero, names a 32-bit word in the caller's own space: once the thread has left
 /// user mode for good the kernel stores zero there and wakes every futex waiter on it, so a joiner
 /// may free the thread's stack. An unmapped or misaligned word is skipped, never a reason not to
 /// exit. *(Number provisional.)*
 ///
-/// Name: ratified 2026-11-11 (UTC), with [`SYSCALL_EXIT`]; the number stays 4. Refused
+/// Name: ratified 2026-11-11 (UTC), with [`SYSTEM_CALL_EXIT`]; the number stays 4. Refused
 /// `SYS_EXIT_THREAD`.
-pub const SYSCALL_EXIT_THREAD: u64 = 4;
+pub const SYSTEM_CALL_EXIT_THREAD: u64 = 4;
 
 /// An index into the calling thread's capability table. **Not a pointer, not a handle you can
 /// guess.** The kernel looks in *your* table, and if the slot is empty you get `NoSuchSlot`.
@@ -187,7 +187,7 @@ pub mod notification;
 /// [`memory_region::RETYPE_OBJECT`] with [`object_type::TIMER`]. It has no wait of its own: when its
 /// deadline passes it signals a [`notification`].
 ///
-/// Deadlines are absolute, in the counter ticks a program reads without a syscall, and fire at the
+/// Deadlines are absolute, in the counter ticks a program reads without a system call, and fire at the
 /// first scheduler tick (10 ms) at or after them, never before. Rights: `WRITE` on the timer to
 /// [`ARM`](timer::ARM) or [`CANCEL`](timer::CANCEL), and `WRITE` on the notification `ARM` names.
 /// The surface has no slack argument.
@@ -237,13 +237,13 @@ pub mod rights;
 /// supervision rendezvous its spawner designated, and the thread's corpse persists (dead until the
 /// supervisor reaps it with revocation). Restart policy lives in userspace; the kernel never
 /// relaunches anything. This module holds two conventions: a message-format convention and a
-/// spawn-slot convention. No new syscall and no new method.
+/// spawn-slot convention. No new system call and no new method.
 pub mod fault;
 
 /// **What a granted user-mode cycle-counter read counts**, per architecture.
 ///
 /// The kernel chooses what `PMCCFILTR_EL0` filters and which counter a grant opens, so this is a
-/// promise at the boundary rather than a property of the instruction; no syscall carries it.
+/// promise at the boundary rather than a property of the instruction; no system call carries it.
 /// A runtime wrapper returns one beside the count and the kernel's test checks the variant per
 /// architecture. The three are **not the same quantity**: compare
 /// [`cycle_counter::CycleMeaning`]s before comparing cycle figures across architectures.
@@ -252,10 +252,11 @@ pub mod cycle_counter;
 /// Methods on an `Interrupt` capability. **How a userspace driver owns an interrupt.**
 pub mod interrupt;
 
-/// Methods on a `Virtio` capability. **How a driver operates a device it cannot point out of its
+/// Methods on a `VirtualIo` capability. **How a driver operates a device it cannot point out of its
 /// own DMA region.** The kernel owns the queue addresses and the notify; the driver builds
 /// requests in its DMA region and submits through here.
-pub mod virtio;
+#[doc(alias = "virtio")]
+pub mod virtual_io;
 
 /// Methods on a `MemoryRegion` capability. **How a process spends its own memory.**
 pub mod memory_region;
@@ -278,7 +279,7 @@ pub mod page_frame;
 ///
 /// A `PortRange` capability is not invoked to *use* the ports: the holder executes `in`/`out`
 /// directly, and the kernel enforces the grant through the TSS I/O permission bitmap at context
-/// switch, with no syscall on the data path. The one method is administrative, mirroring
+/// switch, with no system call on the data path. The one method is administrative, mirroring
 /// [`page_frame::REVOKE`]'s take-back meaning on a `DeviceFrame`.
 pub mod port_range;
 
@@ -339,8 +340,8 @@ pub enum Error {
     /// No such method on that object.
     BadMethod = -5,
 
-    /// The syscall number is not one of the five <!--count:syscalls-->.
-    BadSyscall = -6,
+    /// The system call number is not one of the five <!--count:system_calls-->.
+    BadSystemCall = -6,
 
     /// **The untyped region is exhausted.** The process ran out of the memory it was handed. The
     /// kernel is untouched: this is a budget, not a failure of the machine.
@@ -387,7 +388,7 @@ pub enum Error {
 
 // Index exception (2026-10-12): the decode of the error above, kept beside it for the same reason.
 impl Error {
-    /// Decode a negative syscall return into its `Error`, or `None` for a result or unknown value.
+    /// Decode a negative system call return into its `Error`, or `None` for a result or unknown value.
     /// # Examples
     /// ```
     /// use abi::Error;
@@ -411,7 +412,7 @@ impl Error {
             -3 => Error::NotPermitted,
             -4 => Error::BadPointer,
             -5 => Error::BadMethod,
-            -6 => Error::BadSyscall,
+            -6 => Error::BadSystemCall,
             -7 => Error::OutOfMemory,
             -8 => Error::DeviceRefused,
             -9 => Error::StillAlive,
@@ -438,7 +439,7 @@ impl core::fmt::Display for Error {
             }
             Error::BadPointer => "the pointer is not memory the caller could touch itself",
             Error::BadMethod => "no such method on that object",
-            Error::BadSyscall => "no such syscall",
+            Error::BadSystemCall => "no such system call",
             Error::OutOfMemory => "the untyped region is exhausted",
             Error::DeviceRefused => "a device operation was refused",
             Error::StillAlive => "the thread is still running",

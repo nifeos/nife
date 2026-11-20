@@ -37,7 +37,7 @@ All of it on radon (riscv64 VisionFive 2, JH7110). The device is the true random
 
 | What | Result | Source |
 |---|---|---|
-| Confined | grant is two endpoints and one `0x1000` page; no interrupt, no DMA page, no `Virtio` capability | `design/roadmap/0159-jh7110-trng-driver.md`; read adversarially, "Nothing to find", `design/audit-reports/2026-09-17-userspace-confinement.md`, "The population, found by reading grants rather than names" |
+| Confined | grant is two endpoints and one `0x1000` page; no interrupt, no DMA page, no `VirtualIo` capability | `design/roadmap/0159-jh7110-trng-driver.md`; read adversarially, "Nothing to find", `design/audit-reports/2026-09-17-userspace-confinement.md`, "The population, found by reading grants rather than names" |
 | Drives the device | draws differ between draws and boots, 2026-09-03/04 | transcripts named in the appendix live under `target/board/`, which is not in git |
 | Rate, 2026-09-16 | 988,416, 992,248 and 992,248 bytes/s; bring-up 522, 516 and 522 us | `bench/radon-2026-09-16/jobmix-boot3.log:721`, `jobmix-boot5.log:736`, `jobmix-boot4.log:814` |
 | Rate, 2026-09-25 | 973,384 bytes/s over 8 round trips, bring-up 580 us | `bench/radon-2026-09-25/soak-8h.log:208` (the 8 h 09 m soak boot) |
@@ -126,13 +126,13 @@ Three kinds of work, all by this project, on QEMU and the host unless stated.
 
 | Date (UTC) | What | Result | Source |
 |---|---|---|---|
-| 2026-08-31 | enumerate claims, falsify each test (milestone 202 (every confinement test is a ritual until somebody breaks the confinement)) | 26 rows, 25 Kani harnesses with a replayable falsification (up from 6), §31 (the foreign-language seam: C holds no capabilities and makes no syscalls)'s headline assertion never runs | `notes/confinement-claims.md`, PR #614 |
+| 2026-08-31 | enumerate claims, falsify each test (milestone 202 (every confinement test is a ritual until somebody breaks the confinement)) | 26 rows, 25 Kani harnesses with a replayable falsification (up from 6), §31 (the foreign-language seam: C holds no capabilities and makes no system calls)'s headline assertion never runs | `notes/confinement-claims.md`, PR #614 |
 | 2026-09-16 | kernel half (305, 307) | one test could not fail since milestone 41 (dead code: triage the suppressions, and un-blindfold the gate); nine unreachable assertions across the rows | PRs #899 and 307's section |
 | 2026-09-17 | audit, userspace lens (313) | fixed 3, minted 3, accepted 1; §12 (call/reply IPC: a one-shot reply capability) false on x86_64 (port grant kept after `CAP_DELETE`); SMEP sentence false | `design/audit-reports/2026-09-17-userspace-confinement.md` |
 | 2026-09-21 | adversarial pass | a revoked capability parked in `outgoing_capability` was delivered afterwards; fixed in three sweeps; eight attacks held | PR #1059, `notes/confinement-claims.md` |
 | 2026-09-23 | `PortRange::REVOKE` other-core window closed (315) | 12 of 12 two-core suites against 3 of 12 failing before | README appendix, PR #1144 |
 | 2026-09-24 | audit, new trust boundaries | fixed 5 (incl. SVE/SME/V state neither saved nor disabled, a window no tested machine can open), no confinement claim false | `design/audit-reports/2026-09-24-new-trust-boundaries.md`, "Is any confinement claim in this tree false as stated?" |
-| 2026-09-29 | audit, syscall surface as a whole | fixed 0, minted 0, accepted 3, no confinement claim false | `design/audit-reports/2026-09-29-syscall-surface-whole.md`, "Is any confinement claim false as stated?" |
+| 2026-09-29 | audit, system call surface as a whole | fixed 0, minted 0, accepted 3, no confinement claim false | `design/audit-reports/2026-09-29-system-call-surface-whole.md`, "Is any confinement claim false as stated?" |
 
 Current replay evidence, from `script/falsifications` at this branch's base: 155 of 212 Kani
 harnesses replayable (all packages, not only confinement ones); 16 of 17 kernel tests carry a
@@ -202,7 +202,7 @@ for. If the architect wants GREEN to be reachable, the standard for it has to be
 3. "The adversarial half remains" in the running order is half stale. The in-house adversarial
    pass ran on 2026-09-21 (#1059). The outsider half remains. Owners listed (202, 305, 313) omit 315
    and the unnumbered 2026-09-21 lane.
-4. The appendix's "syscall surface and IPC model are the remaining untaken lens" is stale. The
+4. The appendix's "system call surface and IPC model are the remaining untaken lens" is stale. The
    2026-09-29 audit took it (fixed 0, minted 0, accepted 3, no confinement claim false).
 5. Frontmatter `updated: 2026-08-31` in `the-confinement-claims.md` is stale.
 

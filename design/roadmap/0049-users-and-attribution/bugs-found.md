@@ -55,7 +55,7 @@ rather than faulted.
 `login`'s delegation of the file service's shared page asked for `READ | WRITE`.
 `crates/system_initializer::boot` cannot hold that: the kernel's own grant to init is
 `WRITE | GRANT` only. A writable mapping never needed it anyway.
-`kernel::syscall::page_frame_map`'s own comment says a read/write mapping checks only `WRITE`.
+`kernel::system_call::page_frame_map`'s own comment says a read/write mapping checks only `WRITE`.
 `components/src/login.rs`'s comment on that delegation has the full account.
 
 ### The build order and a full capability table

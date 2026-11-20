@@ -65,7 +65,7 @@ of a red check meets it.
 
 One tree, one kernel binary, one `script/test --arch aarch64`, two emulators on PATH in turn:
 
-| Emulator | `a_keystroke_from_a_virtio_keyboard_becomes_a_terminal_byte` | the three `scanout` checks |
+| Emulator | `a_keystroke_from_a_virtual_io_keyboard_becomes_a_terminal_byte` | the three `scanout` checks |
 |---|---|---|
 | apt's 8.2.2 | **FAILS**: `sendkey` never reaches the device | **pass**, pixel for pixel |
 | the pinned 11.0.2 | **passes** | **FAIL**: *"no screendump was ever taken (did QEMU get a monitor?)"* |

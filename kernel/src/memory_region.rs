@@ -254,7 +254,7 @@ pub fn retype_page(region: u64) -> Option<u64> {
 
 /// **Retype a run of pages out of the region** (`MemoryRegion::RETYPE`'s count), zeroed, returning
 /// the first page's physical address and the run's length. The run is `requested` pages, or one
-/// when `requested` is `0`: the syscall word's zero means one page, and the table refuses a run of
+/// when `requested` is `0`: the system call word's zero means one page, and the table refuses a run of
 /// no pages, so the mapping is made here. `None`, with the region's watermark unmoved, when it does
 /// not fit: the proved arithmetic in `memory_regions::retype_new_watermark` decides, and this only
 /// does the I/O.

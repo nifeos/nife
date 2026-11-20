@@ -209,7 +209,7 @@ fn goldfish_unix_nanoseconds(base: u64) -> u64 {
 #[cfg(target_arch = "x86_64")]
 mod cmos {
     use clock_contract::real_time_clock::{DATA_PORT, INDEX_PORT};
-    use user_mode_runtime::{inb, outb};
+    use user_mode_runtime::{port_read_byte, port_write_byte};
 
     const REGISTER_SECONDS: u8 = 0x00;
     const REGISTER_MINUTES: u8 = 0x02;
@@ -232,8 +232,8 @@ mod cmos {
 
     /// Read one CMOS register: name it at the index port, then read the data port.
     fn read(register: u8) -> u8 {
-        outb(INDEX_PORT, register);
-        inb(DATA_PORT)
+        port_write_byte(INDEX_PORT, register);
+        port_read_byte(DATA_PORT)
     }
 
     fn is_update_in_progress() -> bool {

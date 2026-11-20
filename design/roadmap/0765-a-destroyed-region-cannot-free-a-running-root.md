@@ -28,7 +28,7 @@ path, and 95's lane is in flight (#1678); building this beside it would be two l
 
 - `reap_region_objects`' finish and refuse phases treat a live thread whose bound space's root lies
   in the destroyed span as a resident: this pass refuses, the thread is marked killed, and the
-  retry reclaims the region, root included. No new method, number or refusal on the syscall
+  retry reclaims the region, root included. No new method, number or refusal on the system call
   surface.
 - A kernel test builds the shape (space rooted in region R, bound to a TCB from a second region),
   destroys R, and proves the thread never runs again on R's root and R's pages come back. It passes
@@ -119,7 +119,7 @@ that never finishes would pin R forever.
 **C. `CONFIGURE` refuses a space whose root is not in the TCB's region.** Rung one of the ladder:
 the shape that cannot be reaped stops being constructible, and the TCB-based reap already covers
 the space. Every binding in the tree today passes. It adds a refusal to `CONFIGURE`, which is a new
-answer on the syscall surface, and it forbids a split some future loader might want (a supervisor
+answer on the system call surface, and it forbids a split some future loader might want (a supervisor
 holding the TCB budget, a child holding its own space).
 
 ## The seven questions

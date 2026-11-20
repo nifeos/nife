@@ -155,7 +155,7 @@ fn start_supervised(program: Program, e: Endowment, foreground: bool) -> Option<
         return None;
     }
     // SAFETY: `map_page_frame` just mapped one page read/write at `va`, above, and it stays mapped for
-    // the rest of this job's life (no unmap syscall exists), so the window's `new` asserts that
+    // the rest of this job's life (no unmap system call exists), so the window's `new` asserts that
     // once here instead of at every jf_load/jf_store call site the way the two free functions
     // used to (milestone 139 round 3; "actually a *better* MappedWindow fit than the static case,
     // since `new` already takes a runtime base" is round 2's own framing for this cluster).

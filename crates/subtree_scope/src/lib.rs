@@ -45,7 +45,7 @@ pub enum Refusal {
     MountCrossing,
     /// A verb that wants a file was pointed at a directory. `EISDIR`.
     ///
-    /// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+    /// Name: ratified 2026-11-20 (UTC).
     IsADirectory,
     /// A handle this badge did not mint, or a badge that has been revoked. `EBADF`.
     NotYours,
@@ -78,7 +78,7 @@ impl Refusal {
 
 /// What a server found under a name. The only facts about a node this crate needs.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum NodeKind {
     /// A directory: the only thing a walk steps through.
@@ -117,11 +117,12 @@ pub fn check_path(path: &[u8]) -> Result<(), Refusal> {
 /// Each step is exactly the hop-by-hop `OPENDIR` a client could have sent: it needs `DESCEND` on
 /// its parent ([`Refusal::NotFound`] without it), it must be a directory (a file is
 /// [`Refusal::NotADirectory`], a symbolic link [`Refusal::Symlink`], a mount point
-/// [`Refusal::MountCrossing`]), and it carries `parent & (DESCEND | hop)`, refused as
-/// [`Refusal::Narrowed`] if that is less than it asked for. `DESCEND` is added here rather than
-/// left to the caller, so no server can build a walk whose steps cannot be walked on from.
-/// Bits of `hop` outside the contract's rights are dropped by the comparison, so they neither widen
-/// nor refuse a step. `lookup` is the server's and the only thing here that touches the
+/// [`Refusal::MountCrossing`]), and it carries `parent & (DESCEND | requested_rights)`, refused as
+/// [`Refusal::Narrowed`] if that is less than it asked for. `requested_rights` is a `u64` of rights
+/// bits added to `DESCEND` at every step, so no server can build a walk whose steps cannot be
+/// walked on from.
+/// Bits of `requested_rights` outside the contract's rights are dropped by the comparison, so they
+/// neither widen nor refuse a step. `lookup` is the server's and the only thing here that touches the
 /// filesystem: it finds a name in a directory and says what it is, and its own errors pass through.
 ///
 /// # Examples
@@ -154,7 +155,7 @@ pub fn walk<N: Copy, E: From<Refusal>>(
     start: N,
     rights: Rights,
     path: &[u8],
-    hop: u64,
+    requested_rights: u64,
     mut lookup: impl FnMut(N, &[u8]) -> Result<(N, NodeKind), E>,
 ) -> Result<(N, Rights, &[u8]), E> {
     check_path(path).map_err(E::from)?;
@@ -169,7 +170,7 @@ pub fn walk<N: Copy, E: From<Refusal>>(
         }
         let (child, kind) = lookup(node, step)?;
         check_landing(kind, true).map_err(E::from)?;
-        let asked = directory::DESCEND | hop;
+        let asked = directory::DESCEND | requested_rights;
         let granted = rights.attenuate(asked);
         if granted != Rights::root(asked) {
             return Err(Refusal::Narrowed.into());
@@ -183,7 +184,7 @@ pub fn walk<N: Copy, E: From<Refusal>>(
 /// (`want_directory`), a file when it does not, and never a symbolic link or a mount point. The last
 /// step of every verb goes through here, as every step of [`walk`] does.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
+/// Name: ratified 2026-11-20 (UTC).
 pub fn check_landing(kind: NodeKind, want_directory: bool) -> Result<(), Refusal> {
     match (kind, want_directory) {
         (NodeKind::Symlink, _) => Err(Refusal::Symlink),
@@ -200,7 +201,7 @@ pub enum Binding {
     /// Never bound. The badge carries the endpoint's whole authority, as every badge did before
     /// ruling D; caretakers hold such badges, and the unbadged value 0 is always this.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
+    /// Name: ratified 2026-11-20 (UTC).
     Unbound,
     /// Scoped to the directory handle `root`: its `ROOT` means that directory, and it reaches the
     /// handles it minted and nothing else.
@@ -319,7 +320,7 @@ impl<const B: usize> Bindings<B> {
     /// What `badge` is. Badge 0 is always [`Binding::Unbound`]; a nonzero badge at or past `B` is
     /// always [`Binding::Revoked`].
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn binding(&self, badge: u64) -> Binding {
         match Self::index(badge) {
             Some(0) => Binding::Unbound,
@@ -381,7 +382,7 @@ impl<const B: usize> Bindings<B> {
 
 /// Path length, in bytes, the harnesses prove over.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
+/// Name: ratified 2026-11-20 (UTC).
 pub const PROOF_PATH_BYTES: usize = 5;
 /// Badges in the binding table the harnesses prove over.
 pub const PROOF_BADGES: usize = 3;
@@ -433,9 +434,9 @@ mod proofs {
         let mut buf = [0u8; PROOF_PATH_BYTES];
         let path = any_path(&mut buf);
         let start = Rights::root(kani::any());
-        let hop: u64 = kani::any();
+        let requested_rights: u64 = kani::any();
         let mut saw_other = false;
-        let result = walk::<u8, Refusal>(0u8, start, path, hop, |n, _| {
+        let result = walk::<u8, Refusal>(0u8, start, path, requested_rights, |n, _| {
             let kind: u8 = kani::any();
             kani::assume(kind < 4);
             let kind = [
@@ -566,9 +567,10 @@ mod tests {
 
     /// A verb that wants a file, pointed at a directory, answers `EISDIR` itself: no server maps
     /// the arm.
-    /// A hop word with bits outside the rights the contract defines is read as the rights it has.
+    /// A `requested_rights` word with bits outside the rights the contract defines is read as the
+    /// rights it has.
     #[test]
-    fn undefined_bits_of_the_hop_word_change_nothing() {
+    fn undefined_bits_of_requested_rights_change_nothing() {
         let all = Rights::root(directory::ALL);
         let plain = down(0, all, b"a/b/x", directory::READ).unwrap();
         let noisy = down(0, all, b"a/b/x", directory::READ | 1 << 40).unwrap();
@@ -748,15 +750,15 @@ mod tests {
         start: u8,
         rights: Rights,
         path: &[u8],
-        hop: u64,
+        requested_rights: u64,
     ) -> Result<(u8, Rights, &[u8]), Refusal> {
-        walk(start, rights, path, hop, tree)
+        walk(start, rights, path, requested_rights, tree)
     }
 
-    /// A hop that already names `DESCEND` is still a hop that carries it: the walk adds `DESCEND`
+    /// `requested_rights` that already name `DESCEND` still carry it: the walk adds `DESCEND`
     /// to what it asks for, it does not toggle it, so the next step can be walked from.
     #[test]
-    fn a_hop_that_names_descend_itself_still_carries_it() {
+    fn requested_rights_that_name_descend_itself_still_carry_it() {
         let all = Rights::root(directory::ALL);
         let (n, r, last) = down(0, all, b"a/b/x", directory::DESCEND | directory::READ).unwrap();
         assert_eq!((n, last), (2, &b"x"[..]));

@@ -81,9 +81,9 @@ Thread 4 hit Breakpoint 1, 0xffff0000400d9450 in switch_to ()
 #0  0xffff0000400d9450 in switch_to ()
 #1  0xffff000040090970 in kernel::sched::schedule () at kernel/src/sched.rs:2145
 #2  0xffff00004008fd70 in kernel::sched::ipc_receive (ep=2) at kernel/src/sched.rs:2704
-#3  0xffff0000400bfdac in kernel::syscall::irq_wait (intid=79) at kernel/src/syscall.rs:1103
-#4  0xffff0000400bf7fc in kernel::syscall::invoke (frame=..., slot=1, method=0, ...) at kernel/src/syscall.rs:452
-#5  0xffff0000400bfcf0 in kernel::syscall::dispatch (frame=...) at kernel/src/syscall.rs:91
+#3  0xffff0000400bfdac in kernel::system_call::irq_wait (intid=79) at kernel/src/system_call.rs:1103
+#4  0xffff0000400bf7fc in kernel::system_call::invoke (frame=..., slot=1, method=0, ...) at kernel/src/system_call.rs:452
+#5  0xffff0000400bfcf0 in kernel::system_call::dispatch (frame=...) at kernel/src/system_call.rs:91
 #6  0xffff0000400b15bc in kernel::arch::aarch64::exceptions::exception_body (frame=..., index=8) at kernel/src/arch/aarch64/exceptions.rs:432
 #7  0xffff0000400b16f0 in kernel::arch::aarch64::exceptions::exception_dispatch (frame=..., index=8) at kernel/src/arch/aarch64/exceptions.rs:341
 #8  <signal handler called>

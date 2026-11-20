@@ -40,7 +40,7 @@ empty run queue returns in microseconds. Fifty of them can elapse before the awa
 scheduled at all. The error runs both ways: a loaded host burns yields while another vCPU is
 descheduled, and a native host under Hypervisor.framework burns them in nanoseconds
 ([notes/hvf-leg.md](hvf-leg.md)). The same holds in a user program. A retry loop over a refusal that
-a timer tick has to clear cannot buy the tick with syscalls
+a timer tick has to clear cannot buy the tick with system calls
 ([the caretaker teardown wait](load-sensitive-assertions/caretaker-teardown-wait.md)).
 
 ### 3. Does the window include instructions outside the property?
@@ -145,7 +145,7 @@ remains) or fixed. A fixed site can still carry a residual in BUGS below.
 | five sites found on the physical core, milestone 81 (an HVF leg) | `sched.rs` (3), `user/reap_tests.rs`, `user/supervision_tests.rs` | fixed | yield counts became waits on the property (08-04) | [notes/hvf-leg.md](hvf-leg.md) |
 | `reclaim_frees_an_embryo_tcbs_region` | `sched.rs` | fixed | `is_thread_present(tid)` in place of a global headcount (08-16) | [miss taxonomy](load-sensitive-assertions/miss-taxonomy-and-clockless-loops.md) |
 | `a_migrated_kernel_thread_keeps_its_hart_pointer` | `smp.rs` | fixed | the drain budget is 200 delivered ticks through `testing::TickBudget` (08-18) | [migration drain](load-sensitive-assertions/migration-drain-tick-budget.md) |
-| `a_userspace_driver_reads_a_file_over_the_pcie_transport`, and three siblings | `user/tests.rs`, `user/riscv_virtio_tests.rs` | fixed | the baseline moved before `start_pci`; x86_64's `ROUTED_INTERRUPTS` stopped counting timer ticks (09-04) | [PCIe interrupt counter](load-sensitive-assertions/x86-pci-express-interrupt-counter.md) |
+| `a_userspace_driver_reads_a_file_over_the_pcie_transport`, and three siblings | `user/tests.rs`, `user/riscv_virtual_io_tests.rs` | fixed | the baseline moved before `start_pci`; x86_64's `ROUTED_INTERRUPTS` stopped counting timer ticks (09-04) | [PCIe interrupt counter](load-sensitive-assertions/x86-pci-express-interrupt-counter.md) |
 | `run_swap`, "returned 277 of 224 pages" | `user/live_swap_tests.rs` | fixed | the region's absence after reclaim is the measurement (09-22, #1101) | [unowned reds](load-sensitive-assertions/unowned-reds.md) |
 | `the_page_is_returned_when_the_space_is_dropped` | `user/current_cpu_tests.rs` | fixed | asks the frame's own allocator bit (09-23) | [unowned reds](load-sensitive-assertions/unowned-reds.md) |
 | 35 assertions bracketing `free_page_frames()` | `sched.rs`, `user/force_kill_tests.rs`, `user/tests.rs`, `user/cpu_time_tests.rs` | fixed | `testing::RegionRun` asks the region's own frames (09-23) | [free-page-frames sweep](load-sensitive-assertions/free-page-frames-sweep.md) |
@@ -164,7 +164,7 @@ cover everything the rounds found by reading:
 1. a global count taken as a baseline: `thread_count()`, `free_page_frames()`, `memory::stats()`;
 2. a loop with no clock in it;
 3. a frame count standing in for a mechanism;
-4. a bounded retry count in a user program, over a syscall that a timer tick has to clear.
+4. a bounded retry count in a user program, over a system call that a timer tick has to clear.
 
 The 2026-09-23 sweep closed the first grep for `free_page_frames()` only. On 2026-09-24,
 `memory::stats()` still had 22 matches in `kernel/src` and `thread_count()` had 36, and neither has

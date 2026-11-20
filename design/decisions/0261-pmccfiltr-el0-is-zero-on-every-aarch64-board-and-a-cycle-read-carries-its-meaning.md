@@ -37,9 +37,9 @@ architecture:
 | x86_64 | the TSC | constant-rate reference cycles, not core cycles |
 
 `rdpmc` and `CR4.PCE` are not reopened on x86_64. A program knows whether it may read from its own
-manifest's grant, so step 1 changes no syscall surface.
+manifest's grant, so step 1 changes no system call surface.
 
-Deferred: step 2 (a kernel-provided "may I read" page or method, a later syscall-surface fork) and
+Deferred: step 2 (a kernel-provided "may I read" page or method, a later system-call-surface fork) and
 the riscv64 flag for a kernel probe handed `hpmcounter3`, which a process cannot learn without that
 page or call. Both are proposed in
 [milestone 856 (a program asks whether it may read the cycle counter)](../roadmap/0856-a-program-asks-whether-it-may-read-the-cycle-counter.md)

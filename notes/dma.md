@@ -57,7 +57,7 @@ to the driver:
 Everything else stays in the userspace driver: feature negotiation, the block request format,
 sectors, reading results. The kernel owns the virtio transport (the descriptor and available
 ring layout, enough to validate DMA) and knows nothing about block devices. The driver reaches
-the device only through a `Virtio` capability; the device registers are no longer mapped into it.
+the device only through a `VirtualIo` capability; the device registers are no longer mapped into it.
 
 This is a software stand-in for an IOMMU. It is less general (it understands the transport) but it
 closes the hole: the device can only ever DMA within the driver's own region, so a hostile driver
@@ -116,10 +116,10 @@ attacker-tested but not proved. notes/verification.md has the harness table and,
 bounds with their justifications. The short version: the queue size the proof fixes is the system's
 own `QSIZE`, not a proof convenience. The loop bounds are set one above what the code can need so
 Kani's unwinding assertion turns them into a termination proof. The crate also now *owns* the ring
-layout constants that `kernel/src/virtio.rs` aliases, because a proof about a copy of the layout
+layout constants that `kernel/src/virtual_io.rs` aliases, because a proof about a copy of the layout
 proves nothing about the layout that runs. The rest of this section describes what that logic does.
 
-`kernel/src/virtio.rs::validate_and_shadow` is the security-critical code. On `NOTIFY` it walks the
+`kernel/src/virtual_io.rs::validate_and_shadow` is the security-critical code. On `NOTIFY` it walks the
 available ring from the last-validated index to the current one, and for each new head follows the
 descriptor chain, checking that every `addr..addr+len` (with overflow rejected) lies within
 `[direct_memory_access_base, direct_memory_access_base + direct_memory_access_size)`. Each validated
@@ -141,9 +141,9 @@ Three tests, and one of them is the attack:
   region and checks a good chain passes, a descriptor pointing at kernel memory is refused, one
   running past the end is refused, and a cycle terminates.
 - `the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region`: **end to end**: a
-  malicious driver at EL0 holds a real `Virtio` capability, points a descriptor at the kernel
+  malicious driver at EL0 holds a real `VirtualIo` capability, points a descriptor at the kernel
   image, and submits. The kernel refuses; the driver reports it.
-- `a_userspace_driver_reads_a_file_from_a_virtio_disk`: the legit path still reads a file off the
+- `a_userspace_driver_reads_a_file_from_a_virtual_io_disk`: the legit path still reads a file off the
   disk through the validated transport.
 - `the_validator_refuses_an_indirect_descriptor` and `the_kernel_refuses_an_indirect_descriptor_escape`
   the indirect-descriptor bypass below, refused as a unit and end to end.
@@ -190,7 +190,7 @@ what the device writes back, and it cannot: the used ring is inside the driver's
 region, so a device writing it is a device doing its job.
 
 Milestone 43's audit (notes/shared-page-audit.md, finding 6) found two drivers reading that as a
-guarantee it never was. `components/src/virtio_net_transport.rs` and
+guarantee it never was. `components/src/virtual_io_net_transport.rs` and
 `components/src/keyboard_driver.rs` took the 32-bit buffer index out of the used ring and used it
 unchecked. `receive_buf(id) = 0x400 + id * 0x2C0` leaves the one-page DMA region at `id = 4` and
 lands on the driver's own heap around 1.5 million. So a device that lies once makes the network

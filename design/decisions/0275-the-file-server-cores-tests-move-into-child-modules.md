@@ -97,4 +97,4 @@ out because this change moves and does not edit.
 
 ## What it does not decide
 
-No public crate API, wire format or syscall changes. The module and file names are provisional.
+No public crate API, wire format or system call changes. The module and file names are provisional.

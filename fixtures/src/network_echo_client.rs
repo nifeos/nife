@@ -118,7 +118,7 @@ fn converse(socket: u64, frame: u64) -> Result<usize, &'static [u8]> {
         return Err(b"handing the stack the shared page");
     }
     for (i, &b) in ECHO_PEER_ADDRESS.iter().enumerate() {
-        WINDOW.write::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
+        WINDOW.write::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
     WINDOW.write::<u16>(DESTINATION_PORT_OFFSET_BYTES, ECHO_PEER_PORT);
     if call(socket, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {

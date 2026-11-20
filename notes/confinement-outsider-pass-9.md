@@ -161,7 +161,7 @@ The pass's booted rows live in eight modules under `system_tests/src/user/`, eac
 adds to the suite. They share one shape.
 
 Most reduce a hostile program to the kernel operations it would issue, driven through the real
-dispatcher (`syscall::invoke`) the way a program's `svc` or `ecall` reaches it. The ELF tests call
+dispatcher (`system_call::invoke`) the way a program's `svc` or `ecall` reaches it. The ELF tests call
 the loader `exec` uses, and the EL0, port and supervision tests boot real ring-3 children. No thread
 parks without a peer that later arrives: the revocation tests' sender and the port tests' children
 park by design and are always met, and `SLICE`, `BADGE`, `REAP` and `SURVEY` do not park. So a

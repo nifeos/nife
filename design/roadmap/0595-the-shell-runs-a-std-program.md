@@ -101,7 +101,7 @@ The proposal's open question, decided as reversible, for three reasons not about
 reads the readiness report before the progenitor starts, and grants the request endpoint at slot 16,
 `BootEndowment::entropy_ep` (provisional). This is the file service's shape (`fs_ep`, slot 5). The
 three `START` words are spent, and a bit in a page would be a second format for one fact. No new
-syscall, method or object type. The progenitor probes slot 16 before its first retype, because
+system call, method or object type. The progenitor probes slot 16 before its first retype, because
 after that a first-free object could sit there.
 
 ### A machine without the instruction refuses loudly
@@ -239,7 +239,7 @@ byte-for-byte comparison first proposed.
   program that `SPLIT`s it pins it, and `job_undertaker` can then never reclaim it: one region
   lost from the pool until reboot. nife's `std` never splits (its allocator only `MAP`s), so this
   takes a program written to do it. Closing it needs a right that allows `MAP` and not `SPLIT`,
-  which is a syscall-surface question.
+  which is a system-call-surface question.
 - The directory half of the layout is built and unproven at the prompt. No `std` manifest
   declares a directory. §170 ruled the designation half on 2026-09-26, and the manifest that would
   declare it travels in an ELF note (§197 (a package is one archive file), M2), which is unbuilt.

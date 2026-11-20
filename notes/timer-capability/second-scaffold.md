@@ -22,7 +22,7 @@ the category wrong: this is not bookkeeping that can be deferred to a later mile
 It is a use-after-free, and it is one the timer interrupt performs. The expiry walk resolves a
 registry entry to a page (`phys_to_virt(phys)`) and both reads and writes it (the disarm). A timer
 page freed by `MemoryRegion::DESTROY` and handed to somebody else is therefore read and written by
-`on_tick`. That happens on every core, for the life of the machine, with no syscall involved and
+`on_tick`. That happens on every core, for the life of the machine, with no system call involved and
 nothing to correlate it to the process that died. It is the same class of defect `revoke.rs`'s
 header opens with: *"wiring up any reclamation before revocation exists turns those 'harmless'
 dangling mappings into a use-after-free"*. And it lands on the one path that runs when nothing else
@@ -76,7 +76,7 @@ which is the first item on §101's own list of kernel needs.
 
 A userspace timer service cannot serve it, and neither can `Timer::ARM`. The reason is the same one
 for both, and it is not about architecture: a kernel thread runs at EL1 (S-mode, ring 0) and cannot
-issue a syscall at all. `syscall::invoke` is reached from the trap path and takes a
+issue a system call at all. `system_call::invoke` is reached from the trap path and takes a
 `&mut TrapFrame`; a kernel thread never traps. It is not for want of a cspace, which is the thing a
 reader expects to be missing and is not. `Thread::spawn_into` gives every kernel thread a
 `CapabilityTable::new()`, empty, commented *"it can name nothing until it is handed something."*
@@ -84,7 +84,7 @@ The authority is available and the door is not.
 
 So what a kernel thread needs is smaller than the fourth shape, not larger, because inside the
 kernel authority is not the question being asked. No object, no capability, no notification, no
-syscall: a deadline word on the TCB and a walk that wakes it.
+system_call: a deadline word on the TCB and a walk that wakes it.
 
 Measured the same way, as the delta of one build against the build above it:
 
@@ -136,7 +136,7 @@ B1 runs produced byte-identical figures on all three ISAs. Nothing here is withi
 anything, because there is no noise.
 
 `ipc_fastpath` does not move, reproducing the 2026-09-05 measurement exactly: 7,028 / 5,936 / 8,122
-before and after, on `script/fastpath-footprint`. `syscall_entry` moves by +12 B on aarch64 (+0.8%)
+before and after, on `script/fastpath-footprint`. `system_call_entry` moves by +12 B on aarch64 (+0.8%)
 and +96 B on x86_64 (+5.9%). Both are identical to the figures recorded on 2026-09-05, a
 reproduction across a week of unrelated commits and a differently-shaped scaffold. riscv64 came out
 at +68 B (+3.7%) here against +158 B then. The page-resident shape is the cheaper one on that ISA,

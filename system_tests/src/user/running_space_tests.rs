@@ -27,7 +27,7 @@ use abi::fault::{EVENT_FAULT, FAULT_RENDEZVOUS_SLOT};
 use super::*;
 use crate::capability_object::Rights;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// Where a hand-built program's code and stack go: the map's image base and top stack page, as
 /// `supervision_tests` gives for its own.
@@ -38,7 +38,7 @@ const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 
 /// **A thread that reads a page in a loop**, and counts in it so the kernel can see it running:
 /// load the word at `VA` (its first argument), add one, store it back, branch to the load. It never
-/// syscalls and never yields, so only a fault or a kill ends it.
+/// system calls and never yields, so only a fault or a kill ends it.
 #[cfg(target_arch = "aarch64")]
 const READER_STUB: &[u32] = &[
     0xF940_0001, // ldr x1, [x0]

@@ -40,7 +40,7 @@ clock_protocol	shared	retired
 component_plan	shared	retired
 compositor	shared	components,fixtures,kernel
 confined_fuzz_protocol	userspace	retired
-confined_syscall_fuzzer_contract	userspace	fixtures
+confined_system_call_fuzzer_contract	userspace	fixtures
 coremark	shared	fixtures,kernel
 counter_frequency_contract	shared	retired
 counter_frequency_protocol	shared	retired
@@ -65,7 +65,7 @@ dma_validator	kernel	retired
 documentation	userspace	components,mdr
 domain_name_resolution_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 domain_name_resolution_fixture	userspace	fixtures,std_exerciser
-domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+domain_name_system	shared	retired
 driver_process_contract	shared	components,kernel
 dtb	shared	retired
 e1000e	shared	retired

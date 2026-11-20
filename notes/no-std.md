@@ -8,14 +8,14 @@
 | **`alloc`** | a heap | `Vec`, `String`, `Box`, `BTreeMap` |
 | **`std`** | **an operating system** | `File`, `TcpStream`, `thread::spawn`, `Instant::now`, `println!` |
 
-Everything in `std` is ultimately implemented by making a syscall into Linux, macOS,
+Everything in `std` is ultimately implemented by making a system call into Linux, macOS,
 or Windows.
 
 ## Why the kernel can't use `std`
 
 Because there is nobody to call.
 
-`File::open("foo.txt")` compiles down to "execute a syscall instruction and let the
+`File::open("foo.txt")` compiles down to "execute a system call instruction and let the
 operating system handle it." In our kernel, we are the operating system. There is
 nothing beneath us to answer. The call would go into the void.
 

@@ -87,7 +87,7 @@ set. That bit is set because this kernel never programs the fault-event register
 (`iommu::take_fault`). Read as "the virtio device's INTx is masked", which is how it looks beside a
 PCI bug, it is evidence for a diagnosis it has nothing to do with.
 
-And the confinement is proved rather than argued. `kernel::virtio::tests::the_iommu_faults_a_dma_that_escapes_the_domain`
+And the confinement is proved rather than argued. `kernel::virtual_io::tests::the_iommu_faults_a_dma_that_escapes_the_domain`
 now runs on x86_64 for the first time (it early-returned before, for want of a PCI disk to confine)
 and passes: it points a confined device at a frame outside its domain, and VT-d faults on exactly
 that frame. The same pair of QEMU lines is what that test's success looks like from outside. Two
@@ -154,7 +154,7 @@ arriving on a machine whose firmware turns it on.
   distributes device interrupts on this architecture yet.
 - One MSI-X vector per function, entry 0. Every driver here waits on a single queue's
   completion; a multi-queue driver would want more, and would want a per-queue table index rather
-  than the one `PciVirtioDevice::msix_vector` carries.
+  than the one `PciVirtualIoDevice::msix_vector` carries.
 - **Proved on QEMU, not on silicon.** What only xenon can confirm is in `notes/x86-port/acpi-and-pci.md`: the
   OptiPlex's firmware leaves interrupt remapping off. A real function's MSI-X table is
   reachable once *firmware* rather than this kernel has placed its BARs. A machine with
@@ -178,7 +178,7 @@ arriving on a machine whose firmware turns it on.
   addressed to the boot core. Nothing distributes device interrupts on this architecture.
 - **Recorded.** `design/roadmap/0215-x86-64-pci-interrupt-routing.md`'s own `BUGS`: one MSI-X vector
   per function, entry 0. A multi-queue driver would want more, and a per-queue table index rather
-  than the single one `PciVirtioDevice::msix_vector` carries.
+  than the single one `PciVirtualIoDevice::msix_vector` carries.
 - **Recorded.** `notes/x86-port/acpi-and-pci.md` holds what only xenon can confirm: the OptiPlex's firmware
   leaves interrupt remapping off. A real function's MSI-X table is reachable once firmware
   rather than this kernel has placed its BARs. A machine with more than one local APIC

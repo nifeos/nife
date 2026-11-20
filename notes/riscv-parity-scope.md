@@ -1,7 +1,7 @@
 # Scoping RISC-V / aarch64 feature parity
 
 The RISC-V port proved the capability core on a second ISA: boot, MMU (Sv39), traps, the SBI
-timer, the scheduler, preemption, U-mode programs and syscalls, capability invocation, IPC,
+timer, the scheduler, preemption, U-mode programs and system calls, capability invocation, IPC,
 userspace-built processes, and device interrupts serviced by an unprivileged userspace driver. Rule
 #1 held: a new ISA was a new `arch/` directory, not a diff across the kernel.
 
@@ -69,7 +69,7 @@ property". Four assertions were broken on purpose
 and went red on both ISAs. What stays aarch64-only, and why, is written at each test. The full
 record is in [riscv-parity-scope/user-tests-port.md](riscv-parity-scope/user-tests-port.md).
 
-### Open gap: `tests` and `riscv_virtio_tests` overlap by 24 tests
+### Open gap: `tests` and `riscv_virtual_io_tests` overlap by 24 tests
 
 The 24 are gated to aarch64 only because the twin exists. The overlap was measured: nine bodies are
 byte-identical and no behavior diverges
@@ -100,7 +100,7 @@ PCIe transport keeps its own justification (notes/pcie-transport-scope.md: the d
 real hardware) but is not a parity-C prerequisite.
 
 Over mmio: the `blk` dedicated binary (the shared
-`virtio` module behind the 19f skeleton), `virtio_service` wiring unchanged, and the three disk
+`virtio` module behind the 19f skeleton), `virtual_io_service` wiring unchanged, and the three disk
 tests (read, DMA-escape attacker, indirect attacker) green on riscv. The PLIC is programmed for
 the boot hart's own context, not a hardcoded context 1, because `sie.SEIE` is set on whatever hart
 OpenSBI elects.
@@ -130,7 +130,7 @@ to `arch::timer::now`/`frequency` (rdtime on riscv), the boot reaches `bench::ru
 bench`. `initial-ramdisk-riscv` packs `os_primitives_benchmarker` + `coremark`. Two fixes fell out
 of `spawn_el0` (the fast
 userspace spawn+reap loop): os_primitives_benchmarker's 9-instruction `CHILD_STUB` was aarch64
-machine code (added the riscv `li`/`ecall` version). And the `MAP_CODE` syscall never synced the
+machine code (added the riscv `li`/`ecall` version). And the `MAP_CODE` system call never synced the
 icache on the userspace
 map-executable path (a correctness fix for both arches, latent until a spawn loop stressed it).
 
@@ -159,7 +159,7 @@ flushed the gap out within minutes of being written.
 
 The fix mirrors aarch64's `user_fault`: a U-mode breakpoint or fault increments `USER_FAULTS`,
 prints the legible kill line, and `sched::exit()`s the thread from the trap handler (the same
-context the blocking-syscall path already schedules away from). The S-mode `ebreak` self-test
+context the blocking-system-call path already schedules away from). The S-mode `ebreak` self-test
 keeps its step-over. Proven by `a_faulting_user_thread_is_killed_and_the_kernel_survives` (spawn
 the blk binary at a bogus role: panic, `ebreak`, killed, reaped) and by the kill-mid-write pair.
 
@@ -181,7 +181,7 @@ interrupt. A twin would share that one source between the builder's UART capabil
 delegated one. It would then prove delivery through whichever route was bound last, not through the
 delegated capability, which is the whole claim. On RISC-V the property (an interrupt arriving as a
 message through a delegated Interrupt cap) is proved by
-`riscv_virtio_tests::a_userspace_driver_reads_a_file_from_a_virtio_disk`, which asserts that
+`riscv_virtual_io_tests::a_userspace_driver_reads_a_file_from_a_virtual_io_disk`, which asserts that
 `ROUTED_INTERRUPTS` rises while a userspace driver waits on its own Interrupt cap, and by
 `sched::tests::an_interrupt_becomes_a_message`.
 

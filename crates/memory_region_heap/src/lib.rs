@@ -13,7 +13,7 @@
 //! ```
 //! **How it grows.** The heap maps nothing until the first allocation. A grow maps as many pages
 //! again as the heap holds, at least 8 (32 KiB) and never past the cap, so a burst of small
-//! allocations costs a logarithmic number of syscall batches. [`MemoryRegionHeap::commit_all`] maps
+//! allocations costs a logarithmic number of system call batches. [`MemoryRegionHeap::commit_all`] maps
 //! the whole cap at once.
 //!
 //! **When it refuses.** An allocation returns null at the cap, when the region has no page left
@@ -34,7 +34,7 @@
 //! fix, which matters only for a free gap within one chunk of the top of the address space, and a
 //! 64-bit user process never maps one.
 //!
-//! [`MemoryRegionHeap`] takes any [`PageSource`], and the syscall ([`MemoryRegionPages`]) is the
+//! [`MemoryRegionHeap`] takes any [`PageSource`], and the system call ([`MemoryRegionPages`]) is the
 //! default, so the growth policy runs on a host.
 //!
 //! Name: ratified 2026-11-14 (UTC) (block 1100 decision A), for the type it holds.

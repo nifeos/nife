@@ -63,7 +63,7 @@ socket's badge. That copy is `WRITE | GRANT`, with no `READ`, on purpose. A copy
 `OPERATION_RECEIVE` (a contract opcode `CALL`) on the front door; it did not try a kernel plain
 `RECEIVE` on a real minted socket capability. This pass does.
 
-The kernel refuses a receive on a `READ`-less endpoint (`kernel/src/syscall.rs`, the `RECEIVE` and
+The kernel refuses a receive on a `READ`-less endpoint (`kernel/src/system_call.rs`, the `RECEIVE` and
 `RECEIVE_CAP` arms both check `cap.rights.allows(Rights::READ)` and return `NotPermitted`), so both
 probes return a negative error at once rather than blocking. `socket_squatter` (net_stack's role 8)
 now opens a socket of its own and runs both probes on it before closing it, reporting the result in

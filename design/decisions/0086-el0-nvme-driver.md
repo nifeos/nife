@@ -12,7 +12,7 @@ means an IOMMU, and on a machine without an IOMMU nife trusts the driver. Option
 decision" at the end of this section states it whole. The storage lane of milestone 53 (the
 board's own peripherals: network and storage on real silicon) raised it on pull request #193. It
 built the NVMe driver kernel-resident and stopped here, because the alternative looked like new
-syscall surface, a boundary a lane does not cross (§10 (process model: capability-based,
+system call surface, a boundary a lane does not cross (§10 (process model: capability-based,
 microkernel), §16 (object revocation)).
 
 ## What is being decided
@@ -26,7 +26,7 @@ NVMe has no such point to stand on. The controller fetches 64-byte commands dire
 driver-written memory, and the DMA targets (the PRP fields) ride inside those commands. Nothing
 kernel-side sees a command on its way past, so the `Virtio` capability's design does not transfer;
 a confined EL0 NVMe driver needs a different contract. The question: does the NVMe driver stay in
-the kernel, or does the syscall surface grow whatever lets it leave?
+the kernel, or does the system call surface grow whatever lets it leave?
 
 ## The options
 
@@ -131,7 +131,7 @@ boundary in the hardware. NVMe puts the controller and admin registers at offset
 `1000h + ((2y) * (4 << CAP.DSTRD))` and CQyHDBL at `1000h + ((2y + 1) * (4 << CAP.DSTRD))`
 (revision 1.4c, sections 3.1.25 and 3.1.26). So "the kernel keeps the admin plane and EL0 gets the
 data path" is expressible by mapping one page of BAR0 and not the other, with the `DeviceFrame`
-capability this tree already has and **no new syscall surface at all.** That splits option 2 in two:
+capability this tree already has and **no new system call surface at all.** That splits option 2 in two:
 
 - 2a, map the doorbell page. Zero new surface. The catch is real and must be stated where a reader
   meets it. With `CAP.DSTRD` = 0, which section 8.6 calls "the expected doorbell stride value" for
@@ -166,7 +166,7 @@ needs and what supplies it today.
 
 Adding a capability, measured against the precedent. `Object::Virtio` is one enum variant
 (`kernel/src/cap.rs:124`), **six sites** across `kernel/src`, and **four method constants** in
-`crates/abi`. It added **no new syscall number**: it dispatches through the existing `invoke`, which
+`crates/abi`. It added **no new system call number**: it dispatches through the existing `invoke`, which
 is the pattern §16 (object revocation) established when it grew `Untyped`. One constraint to respect
 if a variant is added: `kernel/src/cap.rs` asserts `size_of::<Object>() == 24` at compile time, so
 the new variant must carry no more than `Virtio(usize)` does.
@@ -195,7 +195,7 @@ one level of recursion the day a PRP list appears, which today it cannot, and wh
 
 What option 4 costs at run time is the honest open question and it is measurable rather than
 arguable. Today's driver completes one command before submitting the next (notes/non-volatile-memory-express.md's `BUGS`),
-so the per-command copy is invisible against a QEMU round trip. At real queue depth it is a syscall
+so the per-command copy is invisible against a QEMU round trip. At real queue depth it is a system call
 per batch plus 64 bytes copied per command, and `script/bench` is what would say whether that
 matters. Nobody should assert it either way from this section.
 
@@ -227,7 +227,7 @@ I/O queue pair. It then grants the doorbell page and the I/O queue pages to the 
 driver.
 The kernel confines the controller's requester id to its DMA region before the admin process
 receives BAR0, and knows nothing else about NVMe. It is option 3 with the admin and data planes in
-two processes, and it needs no new syscall surface: BAR0 is a `DeviceFrame` and the DMA run a
+two processes, and it needs no new system call surface: BAR0 is a `DeviceFrame` and the DMA run a
 `PageFrame` (§102 (a Frame names a run of pages)).
 
 ### Confinement means an IOMMU
@@ -265,7 +265,7 @@ a confined NVMe driver, and prices it then.
 |---|---|---|
 | what confines it | the IOMMU | kernel validation at the doorbell |
 | hardware needed | an IOMMU: xenon yes, radon no | none |
-| new syscall surface | **zero** | one capability variant, no new syscall number |
+| new system call surface | **zero** | one capability variant, no new system call number |
 | kernel on the hot path | no, EL0 writes the doorbell | yes, a trap per ring plus two range checks and a 64-byte copy per command |
 | reachable by Kani | no, it is a hardware claim | yes, `crates/direct_memory_access_validator` has harnesses |
 | prior art | mainstream: seL4, Genode, VFIO, SPDK | novel |

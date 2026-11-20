@@ -2,8 +2,8 @@
 //! notes/scheduler.md ("Placement").
 //!
 //! The other end of a thread's life (`exit`, `exit_thread`, `fault` and the departure they share)
-//! is in `sched.rs`, because `syscall::dispatch` reaches it and `script/fastpath-footprint`
-//! measures it as part of `syscall_entry`.
+//! is in `sched.rs`, because `system_call::dispatch` reaches it and `script/fastpath-footprint`
+//! measures it as part of `system_call_entry`.
 //!
 //! Name: provisional (lane maintainer/near-ceiling-splits, 2026-10-12 UTC), for the module and the
 //! file.

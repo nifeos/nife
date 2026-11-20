@@ -25,7 +25,7 @@ library written in Rust; C, musl; D, picolibc or newlib. calef, 2026-10-08 (UTC)
 > constraints than they do.
 
 A loses to the benchmark ruling directly. C and D are C libraries whose system-call layer is C, so
-the C would make the syscalls, which is the thing §31 exists to prevent. Giving them a Rust layer
+the C would make the system calls, which is the thing §31 exists to prevent. Giving them a Rust layer
 underneath means writing relibc's `Pal` seam again for a codebase not designed around one. relibc is
 the only one of the four built on that seam already.
 
@@ -62,9 +62,9 @@ concrete):
 
 ## §31 rule 1, amended
 
-§31 rule 1 read: *"The C makes no syscalls and holds no capabilities."* It now reads:
+§31 rule 1 read: *"The C makes no system calls and holds no capabilities."* It now reads:
 
-> **The C makes no syscalls directly; the C library's platform layer, in Rust, holds the
+> **The C makes no system calls directly; the C library's platform layer, in Rust, holds the
 > capabilities.**
 
 The C calls `open`. The library's Rust platform layer turns that into a `filesystem_protocol`
@@ -75,7 +75,7 @@ cannot disagree about a wire format.
 
 ### Why confinement still holds, and a correction to how §31 said it
 
-§31 justified rule 1 as *"a property of what it can name: a syscall needs a capability slot, and the
+§31 justified rule 1 as *"a property of what it can name: a system call needs a capability slot, and the
 C never sees one."* That overstated it, and the record is corrected here on purpose. A slot is a
 small integer, and the C shares an address space with the Rust code that holds the slots: a memory
 corruption bug in the C can overwrite the shim's state or reach its `svc` instruction. That was true
@@ -92,8 +92,8 @@ always carrying it: **grant a C program only what it needs**, by its program man
 
 What rule 1 still buys, and why it is kept rather than dropped:
 
-- The syscall surface does not widen. The library speaks existing capability protocols; no
-  syscall number or method is added for C. This is §4 (kernel shape) rule 2, the syscall surface
+- The system call surface does not widen. The library speaks existing capability protocols; no
+  system call number or method is added for C. This is §4 (kernel shape) rule 2, the system call surface
   stays narrow, and §10 (process model: capability-based, microkernel). §31 cites this as rule 3,
   which is its number in CLAUDE.md's list rather than in §4. A C program is a client of the same
   servers as a Rust one.

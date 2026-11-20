@@ -43,13 +43,13 @@ the tree's at that commit.
 - `:215` allocates that region with `crate::memory::alloc_contiguous_zeroed`.
 - `:218` and `:219` call `crate::iommu::is_active` and `crate::iommu::confine` directly.
 
-`kernel/src/virtio.rs` (1,756 lines):
+`kernel/src/virtual_io.rs` (1,756 lines):
 
-- `:16` imports `VIRTIO_MMIO_BASE` from `arch::mmu`; `:52`, `:78` and `:192` add slot offsets to it,
-  and `:62`, `:100` and `:186` read the slot count from `mmu::virtio_slots()`.
+- `:16` imports `VIRTUAL_IO_MMIO_BASE` from `arch::mmu`; `:52`, `:78` and `:192` add slot offsets to it,
+  and `:62`, `:100` and `:186` read the slot count from `mmu::virtual_io_slots()`.
 - `:175` calls `crate::pci::find_block_device_n`.
 - `:735` allocates the shadow ring with `crate::memory::alloc_zeroed`.
-- `:743` to `:750` call `crate::iommu::is_active`, `virtio_regions` and `confine` inside
+- `:743` to `:750` call `crate::iommu::is_active`, `virtual_io_regions` and `confine` inside
   `register`, which has nine callers under `kernel/src/user/` and in `user.rs`.
 - `:707` keeps `static DEVICES`. See the correction below on why this one stays.
 
@@ -64,7 +64,7 @@ Leaving those two out would apply the rule to half the identical code, so they a
 
 ## Two corrections to the premise
 
-`virtio.rs` is not a driver, by its own header: it is bus enumeration plus the transport that
+`virtual_io.rs` is not a driver, by its own header: it is bus enumeration plus the transport that
 mediates a userspace driver's `Object::Virtio` capability. Its `static DEVICES` is the table those
 capabilities index. That is kernel object state of the same kind as the scheduler's IPC tables, not
 a driver's private global. This milestone leaves it where it is. The enumeration half and
@@ -102,9 +102,9 @@ separate argument.
 ## Done when
 
 1. Outside `#[cfg(test)]` code, this prints nothing:
-   `grep -n -E 'crate::(pci|memory|iommu)::' kernel/src/e1000e.rs kernel/src/virtio.rs
+   `grep -n -E 'crate::(pci|memory|iommu)::' kernel/src/e1000e.rs kernel/src/virtual_io.rs
    kernel/src/non_volatile_memory_express.rs kernel/src/extensible_host_controller_interface.rs`.
-2. `kernel/src/e1000e.rs` has no `static`, and `virtio.rs` imports nothing from `arch::mmu` but
+2. `kernel/src/e1000e.rs` has no `static`, and `virtual_io.rs` imports nothing from `arch::mmu` but
    `phys_to_virt`.
 3. The existing gates pass on aarch64, riscv64 and x86_64 with no test changed. That means the
    e1000e gates in `notes/e1000e.md`, the NVMe and xHCI gates, and `virtio`'s two IOMMU tests
@@ -117,7 +117,7 @@ separate argument.
 
 ## What the seam buys
 
-Today `region_for` in `e1000e.rs` and `register` in `virtio.rs` panic on an exhausted allocator with `.expect`. With the
+Today `region_for` in `e1000e.rs` and `register` in `virtual_io.rs` panic on an exhausted allocator with `.expect`. With the
 allocator a parameter, a kernel test can hand in one that fails, the way milestone 774 does for page
 tables. Turning those panics into refusals is the obvious next step. It changes behavior, so it is
 not part of this refactor.
@@ -125,7 +125,7 @@ not part of this refactor.
 ## Index row
 
 The driver crates already take their hardware through traits. The kernel files that wire them
-(`e1000e.rs`, `virtio.rs`, the NVMe and xHCI bring-ups) do not: they find their own device on the
+(`e1000e.rs`, `virtual_io.rs`, the NVMe and xHCI bring-ups) do not: they find their own device on the
 PCI bus, allocate DMA from `crate::memory` and confine it through `crate::iommu`, against codebase
 rule 2. This passes the device record, a DMA allocator and an IOMMU handle in from the service that
 wires each one. It leaves `virtio`'s capability table in place, because that is kernel object state,

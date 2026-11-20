@@ -82,14 +82,14 @@ impl Rights {
         .union(Rights::ENUMERATE)
         .union(Rights::BIND);
 
-    /// The raw bit pattern, for carrying rights across a boundary as an integer (a syscall
+    /// The raw bit pattern, for carrying rights across a boundary as an integer (a system call
     /// register). [`from_bits`](Self::from_bits) is the inverse.
     pub const fn bits(self) -> u32 {
         self.0
     }
 
     /// Rebuild rights from a raw bit pattern, keeping only defined bits: the inverse of
-    /// [`bits`](Self::bits), for rights that crossed a boundary in a syscall register. Undefined
+    /// [`bits`](Self::bits), for rights that crossed a boundary in a system call register. Undefined
     /// bits are dropped, so a caller cannot conjure a right that does not exist.
     pub const fn from_bits(bits: u32) -> Rights {
         Rights(bits & Rights::ALL.0)
@@ -604,7 +604,7 @@ mod verification {
         assert!(a.is_subset_of(c));
     }
 
-    /// **Userspace cannot forge a right.** `from_bits` takes an attacker-controlled syscall register
+    /// **Userspace cannot forge a right.** `from_bits` takes an attacker-controlled system call register
     /// (any u32) and the result holds only defined rights, for every possible input.
     /// Falsification: replayable `crates/capability_table/falsifications/verification.from_bits_cannot_forge_a_right.patch`
     #[kani::proof]

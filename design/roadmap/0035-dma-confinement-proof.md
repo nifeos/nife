@@ -5,11 +5,11 @@ built: 2026-07-29
 ---
 # 35. Prove the DMA-confinement boundary (extends 18)
 
-In brief. Extract the shadow-ring validator (`validate_and_shadow`) out of `kernel/src/virtio.rs` into a host-testable logic crate and machine-check it: no validated descriptor chain, in either direction and including indirect descriptors and multi-queue, can reference memory outside the driver's granted DMA region. Add the `Untyped::SPLIT` "never widens rights" harness (the one fresh-mint site the caps proof doesn't reach) and confirm the IOMMU domain builder's *maps-exactly-the-grant* property is proved, not just tested.
+In brief. Extract the shadow-ring validator (`validate_and_shadow`) out of `kernel/src/virtual_io.rs` into a host-testable logic crate and machine-check it: no validated descriptor chain, in either direction and including indirect descriptors and multi-queue, can reference memory outside the driver's granted DMA region. Add the `Untyped::SPLIT` "never widens rights" harness (the one fresh-mint site the caps proof doesn't reach) and confirm the IOMMU domain builder's *maps-exactly-the-grant* property is proved, not just tested.
 
 Why it matters. closes the one isolation boundary we test instead of prove. Every other confinement seam (caps, MMU, IPC, generational names) is Kani-proved for all inputs; DMA is attacker-tested only. It is also the boundary that makes "don't trust the driver" true, so the proof belongs here, not on the confined component. Load-bearing for 16a: the VisionFive 2 has no IOMMU, so on first silicon this validator is the *sole* DMA confinement, not defense in depth
 
-The gap, stated precisely. `validate_and_shadow` (`kernel/src/virtio.rs`) is the shadow-ring
+The gap, stated precisely. `validate_and_shadow` (`kernel/src/virtual_io.rs`) is the shadow-ring
 logic that stops a malicious userspace driver from pointing a device's DMA at memory it was not
 granted. It is the boundary that makes "the kernel confines the driver, so you need not trust the
 driver" *true*. Every other isolation boundary in the system is Kani-proved for all inputs; this

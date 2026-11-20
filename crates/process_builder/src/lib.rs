@@ -1,6 +1,6 @@
 #![no_std]
-// `Result<_, ()>` is deliberate: every failure here is a syscall that already returned its own
-// error through the ABI, so the unit means "the syscall said no". Per-crate because it is one
+// `Result<_, ()>` is deliberate: every failure here is a system call that already returned its own
+// error through the ABI, so the unit means "the system call said no". Per-crate because it is one
 // decision about one calling convention. §38 (a suppression is scoped to an item and carries a
 // reason)'s rule that a dead-code suppression is an item attribute, never an inner one (milestone
 // 41 (dead code: triage the suppressions)), does not reach a style lint about an error type.
@@ -110,7 +110,7 @@ pub fn map_scratch(frame: u64, writable: bool, own_ut: u64) -> Result<u64, ()> {
         } else {
             va + PAGE
         };
-        // SAFETY: `invoke` is the syscall; the kernel validates the capability, the rights and the
+        // SAFETY: `invoke` is the system call; the kernel validates the capability, the rights and the
         // address, and maps nothing on any refusal.
         let r = unsafe { invoke(frame, abi::page_frame::MAP, va, u64::from(writable), own_ut) };
         if r == 0 {
@@ -165,7 +165,7 @@ pub fn give_up_own_page(va: u64) -> bool {
     if own == NO_OWN_SPACE {
         return false;
     }
-    // SAFETY: `invoke` is the syscall; the kernel validates the capability, the right and the
+    // SAFETY: `invoke` is the system call; the kernel validates the capability, the right and the
     // address, and changes nothing on a refusal. The caller is done with every byte at `va`.
     unsafe { invoke(own, abi::address_space::UNMAP, va, 0, 0) == 0 }
 }
@@ -451,7 +451,7 @@ fn configure_child_as_process(
     if rights != abi::rights::BIND {
         return Err(());
     }
-    // SAFETY: `invoke` is the syscall; the kernel validates the region, the object_type and the
+    // SAFETY: `invoke` is the system call; the kernel validates the region, the object_type and the
     // address space before it builds anything. Raw because a process takes the space as its second
     // argument, which `retype_into_kernel_object` does not pass.
     let process = unsafe {

@@ -65,7 +65,7 @@ riscv64 and x86_64). No closure went over its band and the budget was not touche
 |---|---|---|---|
 | `ipc_send_receive` | 5,612 to 5,612 | 5,002 to 5,118 | 6,832 to 6,832 |
 | `ipc_call_reply` | 6,912 to 6,904 | 6,094 to 6,218 | 8,467 to 8,467 |
-| `syscall_entry` | 1,640 to 1,640 | 2,008 to 2,008 | 1,797 to 1,797 |
+| `system_call_entry` | 1,640 to 1,640 | 2,008 to 2,008 | 1,797 to 1,797 |
 
 x86_64 `ipc_send_receive` stays at +4.4% of its 5% band. riscv64 `ipc_send_receive` went from
 +2.0% to +4.4% against its baseline, still inside, and is now the second one to watch.
@@ -80,7 +80,7 @@ Kernel stack temporaries.
   `write_kernel_thread` 2,896 (aarch64), 2,896 (riscv64), 2,856 (x86_64) and the gate passes.
 - The system suite's boot stack went from under its 61,440-byte gate to 59,736 and 60,024 of 65,504
   on aarch64 and riscv64 and 64,912 on x86_64, which tripped the gate and was 592 bytes from the
-  guard. The cause was the syscall fuzzer's model (`ACTORS` times `SLOTS` capabilities) living in
+  guard. The cause was the system call fuzzer's model (`ACTORS` times `SLOTS` capabilities) living in
   `run_seed`'s frame, plus 2 KiB tables copied by value through its answer path. It is now a static
   with an in-place reset and the tables are read where they sit. After: 54,104 (aarch64), 55,160
   (x86_64) and 49,296 (riscv64) of 65,504 at the end of each suite run.

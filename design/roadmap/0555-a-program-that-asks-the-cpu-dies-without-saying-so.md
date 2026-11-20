@@ -65,7 +65,7 @@ reversible half. It needs no decision: the failure path already exists and only 
 C. Enable the state. Set `CR4.OSXSAVE` and `XCR0`, save and restore the wider area, and the
 hazard disappears along with every force-soft flag. This is the irreversible half and it is
 calef's, for three reasons. It is a claim about what a program may assume about its machine, which
-is the syscall surface's neighborhood. It costs what milestone 447 measured for the narrow state
+is the system call surface's neighborhood. It costs what milestone 447 measured for the narrow state
 and more, on a switch path whose numbers are held to an icount tripwire. And `kernel/src/arch/x86_64/fp.rs`'s
 own `BUGS` section already records that the day this kernel sets `XCR0`, that file needs an `xsave`
 path, with nothing enforcing it.

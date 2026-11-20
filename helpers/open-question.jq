@@ -4,7 +4,7 @@
 # lane/architect-queue, 2026-10-06 (UTC). calef: "I need a reliable work queue just like your
 # agents." His queue is the `needs-architect` label, and that day it failed both ways: #1783 kept the
 # label after he had ruled ("But the label says that the PR needs my attention"), and #1745 changed
-# the syscall surface without it. The invariant this file makes checkable: an item carries
+# the system call surface without it. The invariant this file makes checkable: an item carries
 # `needs-architect` if and only if it has an open question. Two readers splice it in front of their
 # own program, the way helpers/queue-eligible.jq is spliced (jq cannot compose `-f` with an inline
 # program): helpers/needs-maintainer.jq's three architect causes, and script/architect-queue.

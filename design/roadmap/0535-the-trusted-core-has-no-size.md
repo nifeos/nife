@@ -15,7 +15,7 @@ Tock-founding-paper reading (`notes/redleaf.md`, `notes/trusted-base.md`). *(Num
 provisional until the merge queue lands it.)*
 
 One note, one `script/metrics` column, and a cross-reference. No hardware, no
-decision, no syscall surface. One sentence inside it is an architect's: any published claim about how
+decision, no system call surface. One sentence inside it is an architect's: any published claim about how
 small this kernel's trusted base is, relative to anyone else's, is a fact that leaves the machine.
 Produce the number and the method; leave the comparison for ratification.
 

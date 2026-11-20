@@ -14,7 +14,7 @@ budget has no room for. All of it was read or run on 2026-09-20.
 - [`atmospheres-trusted-base.md`](atmospheres-trusted-base.md): SOSP '25's list of trusted assembly
   and Rust, and the rest of its trusted base.
 - [`proof-effort.md`](proof-effort.md): the proof-effort figures and tables, seL4's cost,
-  Atmosphere's syscall figures second-hand, and the extrapolation to this kernel.
+  Atmosphere's system call figures second-hand, and the extrapolation to this kernel.
 - [`examples.md`](examples.md): the parent's EXAMPLES, each command and its output whole.
 
 *Name: provisional. The directory follows the siting default of §212 (a prose budget), `notes/X/`

@@ -157,13 +157,13 @@ went wrong.
 | Feature | Checked | Why there |
 |---|---|---|
 | NX | `boot.s`, before `EFER.NXE` is written | that write is itself the hazard: setting a reserved `EFER` bit on a part without NX is `#GP` with no IDT, which QEMU shows as a silent reset |
-| `syscall` | `isa::initialize`, just before `arch::initialize` programs the four MSRs | the console is up, so the refusal can be read |
+| `system_call` | `isa::initialize`, just before `arch::initialize` programs the four MSRs | the console is up, so the refusal can be read |
 | invariant TSC | `isa::initialize`, before `timer::initialize_frequency` measures a rate | the same, and under a hypervisor it warns rather than refuses |
 
 `isa::initialize` re-checks NX because the assembly gate can only halt, and this one can say what is
 wrong.
 
-The invariant TSC is a different kind of check. NX and `syscall` announce their own absence the
+The invariant TSC is a different kind of check. NX and `system_call` announce their own absence the
 moment the kernel uses them. The invariant TSC does not. `timer::initialize_frequency` measures the
 TSC's rate once, against the PIT. On a part without `CPUID.80000007H:EDX[8]` the rate moves with the
 core's frequency and idle state, so there is no single rate for that measurement to find. The
@@ -215,7 +215,7 @@ reader, and it goes once Kani's rustc is past 2026-02.
 Milestone 915 (NMI, double fault and machine check run on their own stacks) gives each of those
 three vectors (2, 8 and 18) a stack per core, named by the TSS's Interrupt Stack Table. None of the three can trust the `rsp` it interrupted. An
 NMI ignores `cli`, arrives on every TLB shootdown, and can land in the two instructions
-`x86_syscall_entry` runs on the user's `rsp`. A double fault usually means the CPU could not push to
+`x86_system_call_entry` runs on the user's `rsp`. A double fault usually means the CPU could not push to
 a stack. A machine check promises nothing. A gate with a nonzero IST field makes the CPU load
 `rsp` from `TSS.ist[n - 1]` before it pushes anything, from either ring.
 

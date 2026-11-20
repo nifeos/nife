@@ -120,4 +120,4 @@ Built on the recommendation while the question waited, and kept as built after c
 - Harness paths stay `proofs::<harness>`, so the five patch names and their rows in
   `notes/project-metrics/falsification-times.tsv` do not change.
 
-No public crate API, wire format or syscall changes under either answer.
+No public crate API, wire format or system call changes under either answer.

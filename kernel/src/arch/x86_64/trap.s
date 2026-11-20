@@ -219,12 +219,12 @@ isr_\num:
 # register, so no special pseudo-register or GDB cooperation is needed the way AArch64's ELR_mode
 # would need (see vectors.s's CFI note for that comparison, and notes/cfi-unwind.md for what this
 # bought in practice).
-# From here to x86_syscall_entry's end is the pinned hot section: milestone 796 (pin the hot
+# From here to x86_system_call_entry's end is the pinned hot section: milestone 796 (pin the hot
 # trap path's placement).
-# See notes/benchmarks/kernel-footprint-and-caches.md, "The hot section". A `syscall` runs only
-# isr_restore and x86_syscall_entry. isr_common rides along because it falls through into
+# See notes/benchmarks/kernel-footprint-and-caches.md, "The hot section". A `system_call` runs only
+# isr_restore and x86_system_call_entry. isr_common rides along because it falls through into
 # isr_restore, and splitting them would add a `jmp` to every IDT trap.
-.section ".text.hot.x86_syscall_entry", "ax"
+.section ".text.hot.x86_system_call_entry", "ax"
 .type isr_common, @function
 isr_common:
     .cfi_startproc
@@ -254,7 +254,7 @@ isr_common:
     call x86_trap_dispatch
 
     # Restore a TrapFrame at rsp and return from the trap. Shared by the IDT path above, by the
-    # `syscall` path below, and by the first-entry-to-ring-3 path after that, which is what keeps
+    # `system_call` path below, and by the first-entry-to-ring-3 path after that, which is what keeps
     # "how a frame becomes running registers" a single piece of code with a single swapgs rule. The
     # RISC-V twin of this label is `trap_return`.
 isr_restore:
@@ -273,7 +273,7 @@ isr_restore:
     # `trap_return`.
     #
     # Two writes, because x86 has two doors and they find their stack differently: a trap reads
-    # `TSS.rsp0` and `syscall` reads nothing at all. This store pair IS the whole mechanism since
+    # `TSS.rsp0` and `system_call` reads nothing at all. This store pair IS the whole mechanism since
     # the Rust-side setter pair was deleted (2026-09-30): it runs on every return to ring 3, the
     # boot thread's first one included, so nothing else ever needs to write either slot.
     #
@@ -283,14 +283,14 @@ isr_restore:
     # BOTH TARGETS ARE THIS CORE'S OWN, reached through `gs` (milestone 161's SMP item): `gs` names
     # this core's `PerCpu` block throughout this window (the guard above only swaps it back to the
     # interrupted ring's value further down, at label 2), so a `gs`-relative store can only ever
-    # land on the running core's own slot. `SYSCALL_KERNEL_RSP_OFF` is a direct value (the syscall
+    # land on the running core's own slot. `SYSTEM_CALL_KERNEL_RSP_OFF` is a direct value (the system call
     # path's own scratch, inside `PerCpu`); `TSS_RSP0_PTR_OFF` is a POINTER `segments::initialize` wrote
     # once, to this core's own `TSS[cpu::id()].rsp0`, because the TSS array itself is not reachable
     # through `gs` the way `PerCpu` is.
     test byte ptr [rsp + 18*8], 3   # cs, whose low two bits are the ring we are returning to
     jz 3f
     lea rax, [rsp + 176]            # this thread's kernel-stack top
-    mov gs:[{SYSCALL_KERNEL_RSP_OFF}], rax
+    mov gs:[{SYSTEM_CALL_KERNEL_RSP_OFF}], rax
     mov rcx, gs:[{TSS_RSP0_PTR_OFF}]
     mov [rcx], rax
 3:
@@ -312,7 +312,7 @@ isr_restore:
 # ---------------------------------------------------------------------------------------------
 # The `syscall` entry (milestone 161, roadmap item 3). `IA32_LSTAR` points here.
 #
-# THIS IS NOT AN IDT VECTOR AND THE DIFFERENCES ALL MATTER. `syscall` is a two-cycle jump, not an
+# THIS IS NOT AN IDT VECTOR AND THE DIFFERENCES ALL MATTER. `system_call` is a two-cycle jump, not an
 # interrupt: it does not consult the IDT, does not read `TSS.RSP0`, and therefore **does not switch
 # stacks** -- `rsp` still names the user's. It also does not push anything. What it does is save
 # `rip` into `rcx` and `RFLAGS` into `r11` (which is why the ABI's fourth argument rides in `r10`;
@@ -326,7 +326,7 @@ isr_restore:
 #
 # THE KERNEL STACK COMES FROM THIS CORE'S `PerCpu` BLOCK, reached through `gs` (milestone 161's SMP
 # item; `gs` has just been swapped to the kernel's, so it names THIS core's own block, no other
-# core's). The store pair below keeps this slot (`SYSCALL_KERNEL_RSP_OFF`) and `TSS.RSP0` in step
+# core's). The store pair below keeps this slot (`SYSTEM_CALL_KERNEL_RSP_OFF`) and `TSS.RSP0` in step
 # on every return to ring 3, so the two mechanisms cannot name different stacks.
 # ---------------------------------------------------------------------------------------------
 # CFI: builds the same shape isr_common does, by hand instead of by hardware, so the same
@@ -336,26 +336,26 @@ isr_restore:
 # (`mov rsp, gs:[...]`) rather than trying to describe the two-instruction window beforehand, where
 # rsp names the user's stack and nothing has been saved anywhere yet; see dispatch_on_interrupt_stack
 # below for the same kind of narrow, deliberately-undescribed window.
-.global x86_syscall_entry
-.type x86_syscall_entry, @function
-x86_syscall_entry:
+.global x86_system_call_entry
+.type x86_system_call_entry, @function
+x86_system_call_entry:
     .cfi_startproc
     swapgs
-    mov gs:[{SYSCALL_USER_RSP_OFF}], rsp
-    mov rsp, gs:[{SYSCALL_KERNEL_RSP_OFF}]
+    mov gs:[{SYSTEM_CALL_USER_RSP_OFF}], rsp
+    mov rsp, gs:[{SYSTEM_CALL_KERNEL_RSP_OFF}]
     .cfi_signal_frame
 
     # Build the same 22-quadword TrapFrame the IDT stubs build, so `isr_restore` above serves this
-    # path unchanged and `crate::syscall::dispatch` reads one layout. The five words at the top are
-    # the ones a real trap's hardware would have pushed, reconstructed from where `syscall` put
+    # path unchanged and `crate::system_call::dispatch` reads one layout. The five words at the top are
+    # the ones a real trap's hardware would have pushed, reconstructed from where `system_call` put
     # them.
     push {USER_DATA}                 # ss
-    push gs:[{SYSCALL_USER_RSP_OFF}]        # rsp, as it was in ring 3 (this core's own scratch slot)
+    push gs:[{SYSTEM_CALL_USER_RSP_OFF}]        # rsp, as it was in ring 3 (this core's own scratch slot)
     push r11                                # rflags, as `syscall` saved them
     push {USER_CODE}                 # cs, whose low two bits make the exit `swapgs` fire
     push rcx                                # rip: the instruction after the `syscall`
     push 0                                  # error code: there is none
-    push {SYSCALL_VECTOR}                     # not an IDT vector; see exceptions.rs
+    push {SYSTEM_CALL_VECTOR}                     # not an IDT vector; see exceptions.rs
 
     # The CFA baseline is declared HERE, after the seven words above, not at function entry: it is
     # the same "CFA = the point where the GP-register pushes begin" convention isr_common uses, so
@@ -415,10 +415,10 @@ x86_syscall_entry:
 
     cld
     mov rdi, rsp
-    call x86_syscall_handler
+    call x86_system_call_handler
     jmp isr_restore
     .cfi_endproc
-.size x86_syscall_entry, . - x86_syscall_entry
+.size x86_system_call_entry, . - x86_system_call_entry
 .section ".text", "ax"
 
 # RUN THE HANDLER ON THIS CPU'S INTERRUPT STACK (milestone 124, brought to this architecture by

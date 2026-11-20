@@ -1735,7 +1735,7 @@ mod tests {
         let Some(forger_rid) = crate::pci::find_block_device_n(1).map(|d| d.rid) else {
             crate::testing::skip!("two PCI disks are needed, one to grant and one to forge");
         };
-        crate::virtio::quiesce_block_devices_except(forger_rid);
+        crate::virtual_io::quiesce_block_devices_except(forger_rid);
         let (Some(granted), Some(forger)) = (
             crate::pci::find_block_device_n(0),
             crate::pci::find_block_device_n(1),
@@ -1743,18 +1743,18 @@ mod tests {
             crate::testing::skip!("two PCI disks are needed, one to grant and one to forge");
         };
         assert_ne!(granted.rid, forger.rid);
-        let granted_entry =
-            crate::pci::msix_table_entry(granted.bdf).expect("the first disk has MSI-X");
-        let forger_entry =
-            crate::pci::msix_table_entry(forger.bdf).expect("the second disk has MSI-X");
+        let granted_entry = crate::pci::msix_table_entry(granted.bus_device_function)
+            .expect("the first disk has MSI-X");
+        let forger_entry = crate::pci::msix_table_entry(forger.bus_device_function)
+            .expect("the second disk has MSI-X");
         let (granted_address, granted_data) = read_message(granted_entry);
         let (own_address, own_data) = read_message(forger_entry);
 
         let dma = crate::memory::alloc_zeroed()
             .expect("no DMA frame")
             .physical_address();
-        let id = crate::virtio::register(
-            crate::virtio::Transport::pci(&forger),
+        let id = crate::virtual_io::register(
+            crate::virtual_io::Transport::pci(&forger),
             dma,
             page_frames::FRAME_BYTES,
             Some(forger.rid),
@@ -1769,7 +1769,7 @@ mod tests {
         );
 
         assert!(
-            crate::virtio::provoke_completion(id),
+            crate::virtual_io::provoke_completion(id),
             "the second disk did not complete"
         );
         assert!(
@@ -1781,7 +1781,7 @@ mod tests {
 
         write_message(forger_entry, granted_address, granted_data);
         assert!(
-            crate::virtio::provoke_completion(id),
+            crate::virtual_io::provoke_completion(id),
             "the second disk did not complete"
         );
         assert!(
@@ -1804,7 +1804,7 @@ mod tests {
             granted.intid,
         );
         assert!(
-            crate::virtio::provoke_completion(id),
+            crate::virtual_io::provoke_completion(id),
             "the second disk did not complete"
         );
         let landed = pending(granted.intid);
@@ -1828,7 +1828,7 @@ mod tests {
         write_message(forger_entry, own_address, own_data);
         while take_fault().is_some() {}
         super::super::interrupts::restore(was);
-        crate::virtio::unregister(id);
+        crate::virtual_io::unregister(id);
         crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
     }
 

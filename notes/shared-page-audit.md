@@ -60,7 +60,7 @@ against one.
 | the C seam | `fixtures/src/c_shim.rs` (C) | `fixtures/src/c_confiner.rs` | `crates/c_seam`, `fixtures/c/c_seam.c` |
 | the input ring | the compositor | the keyboard driver | `crates/compositor` (`proto::ring`) |
 | sockets | `components/src/net_stack.rs` | a client, `std::net`, `network_time_client` | `crates/socket_contract` |
-| the virtio DMA regions | four userspace drivers | the **device** | `components/src/virtio_net_transport.rs`, `kbd.rs`, `entropy.rs`, `display.rs` |
+| the virtio DMA regions | four userspace drivers | the **device** | `components/src/virtual_io_net_transport.rs`, `kbd.rs`, `entropy.rs`, `display.rs` |
 
 The last row is not a process pair and is in the table on purpose. A DMA region is a page one party
 writes and another reads. The other party is a device rather than a program, and the question this
@@ -138,7 +138,7 @@ below has the table of all seven and their dispositions.
   mapped read-write into every client a boot wires, and `fs_nameset_caretaker` checked a name and
   forwarded it without re-staging it. They are one bug seen from two sides. Finding 1 became
   reachable on 2026-09-27, when the prompt began building a nameset caretaker on that frame.
-- [Findings 3 and 6](shared-page-audit/console-and-virtio-findings.md): the console server took an
+- [Findings 3 and 6](shared-page-audit/console-and-virtual-io-findings.md): the console server took an
   unbounded byte count from its client, and two virtio drivers trusted the buffer index the device
   writes into the used ring. Both are fixed; the second fails closed.
 - [Findings 4, 5 and 7](shared-page-audit/compositor-findings.md): unchecked arithmetic in the

@@ -124,7 +124,7 @@ that refuse.
   unimplemented. Round-tripped in `std_exerciser`, because a splitter that agrees with nothing is
   worth less than no splitter.
 - `process::id` (`sys/process/nife.rs`) answers `0`. There is no process identifier on this
-  system to report, the four-call syscall surface issues none, and `u32` cannot say so; `0` is the
+  system to report, the four-call system call surface issues none, and `u32` cannot say so; `0` is the
   one number no Unix assigns to a user process. The call sites make that the right answer rather
   than the least wrong one. Every reachable use in these fifty closures is a *fork* check
   (`gix-tempfile`'s `forksafe.rs` and its registry compare an owning pid so cleanup runs only in the

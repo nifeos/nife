@@ -20,12 +20,12 @@ pub fn initialize() {
     // SAFETY: called once per CPU during boot, with a valid stack, before interrupts are unmasked.
     unsafe { segments::initialize() };
     exceptions::initialize();
-    // Per-CPU like the GDT and IDT, and before anything can `syscall`: until this runs, a
+    // Per-CPU like the GDT and IDT, and before anything can `system_call`: until this runs, a
     // `syscall` jumps to whatever `IA32_LSTAR` holds, which on a cold machine is zero.
     //
     // SAFETY: `segments::initialize` above installed the GDT these selectors index, and nothing has
     // entered ring 3 (nothing can: this is the boot CPU's own bring-up).
-    unsafe { exceptions::initialize_syscall() };
+    unsafe { exceptions::initialize_system_call() };
 
     close_performance_counters_to_ring3();
     close_ring3_pages_to_ring0_execution();
@@ -55,19 +55,20 @@ pub(super) fn give_write_combining_a_page_attribute_entry() {
     // SAFETY: CPUID advertised the MSR, so neither access can `#GP`, and every entry in the value
     // is a defined memory type. The one entry it changes is selected by no mapping on this core
     // (see above), so no cached line or TLB entry has the old type to disagree with.
-    let found = unsafe { read_msr(page_tables::x86_64::pat::MODEL_SPECIFIC_REGISTER) };
-    if found != page_tables::x86_64::pat::VALUE {
+    let found =
+        unsafe { read_msr(page_tables::x86_64::page_attribute_table::MODEL_SPECIFIC_REGISTER) };
+    if found != page_tables::x86_64::page_attribute_table::VALUE {
         // SAFETY: as the read's.
         unsafe {
             write_msr(
-                page_tables::x86_64::pat::MODEL_SPECIFIC_REGISTER,
-                page_tables::x86_64::pat::VALUE,
+                page_tables::x86_64::page_attribute_table::MODEL_SPECIFIC_REGISTER,
+                page_tables::x86_64::page_attribute_table::VALUE,
             );
         }
     }
     crate::println!(
         "  pat         : {:#018x} on core {} (was {found:#018x}); entry 1 is write-combining",
-        page_tables::x86_64::pat::VALUE,
+        page_tables::x86_64::page_attribute_table::VALUE,
         crate::cpu::id()
     );
 }

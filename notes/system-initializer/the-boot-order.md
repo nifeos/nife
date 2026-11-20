@@ -140,12 +140,12 @@ not at all, and the spawn service keeps them only when the table vouches for `gp
 firmware screen's terminal pair and the gpu's grants never coexist, because the kernel wires one or
 the other.
 
-`start_virtio_entropy` probes the virtio-rng trio by reading its transport, and `start_network`
+`start_virtual_io_entropy` probes the virtio-rng trio by reading its transport, and `start_network`
 probes the virtio-net trio with `is_granted`. Both rest on `invoke` answering `NoSuchSlot` on an
 ungranted slot, since there is no `START` word left to say whether a trio was granted. The kernel
 grants each trio whole or not at all. No method translates a virtual address, so the DMA page
 carries its own physical base at
-`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. The progenitor reads
+`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. The progenitor reads
 it through a mapping of its own, which it gives up before the driver holds the page.
 
 The entropy service answers `READY` only after it has fetched a first bufferful from the device, so
@@ -154,7 +154,7 @@ the life of the boot: `credentialer` gets a view of it, and the spawn service en
 child whose manifest declares entropy. The progenitor is the only process that can hand a program a
 random source, as it is the only one that can hand it a clock.
 
-`net_stack` gets exactly what `kernel::user::virtio_service::wire_net_server` gives it, slot for
+`net_stack` gets exactly what `kernel::user::virtual_io_service::wire_net_server` gives it, slot for
 slot, because that is the endowment every network test proves. Its listen grant is
 `NO_LISTEN_GRANT`: nothing at this prompt has asked to listen, and a listen grant is a policy
 someone has to choose. The boot blocks until DHCP answers, because the lease is the stack's first
@@ -239,7 +239,7 @@ take it from the shell too.
   (UTC) says no console is the owner's without one. Nothing here builds that yet; milestone 806
   carries it.
 - A boot whose archive has no vouched `entropy` never releases the virtio-rng trio: `start_entropy`
-  reaches the deletes only through `start_virtio_entropy`. Its three slots stay held under every
+  reaches the deletes only through `start_virtual_io_entropy`. Its three slots stay held under every
   later peak.
 - `start_network`, `start_system_log` and `start_keystroke_sources` probe kernel grants with
   `is_granted` after the boot has retyped objects. Today the empty endowment slots below each probed

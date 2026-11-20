@@ -141,4 +141,4 @@ If the answer to 1 is "public modules", the lane writes that up as its own propo
 ## What it does not decide
 
 The wire ids in the table move unchanged, rows in the same order;
-`the_wire_ids_already_shipped_never_move` says so. No public path, wire format or syscall changes.
+`the_wire_ids_already_shipped_never_move` says so. No public path, wire format or system call changes.

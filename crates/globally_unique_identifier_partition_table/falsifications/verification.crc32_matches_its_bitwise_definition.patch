@@ -10,7 +10,7 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/crc.rs b/crat
 index c1e8f547e..1984e87ed 100644
 --- a/crates/globally_unique_identifier_partition_table/src/crc.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/crc.rs
-@@ -21,3 +21,3 @@ const TABLE: [u32; 256] = {
+@@ -22,3 +22,3 @@ const TABLE: [u32; 256] = {
          let mut bit = 0;
 -        while bit < 8 {
 +        while bit < 7 {

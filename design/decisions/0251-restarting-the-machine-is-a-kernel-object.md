@@ -28,7 +28,7 @@ and the four errors under "A refusal returns its reason".
    module, `abi::reboot`, and no `abi::object_type` number (below; the ruling of 2026-11-11 (UTC)
    spelled out the module's name). This is a new method within the capability model of
    §10 (process model: capability-based, microkernel) and §16 (object revocation). It adds no
-   syscall number.
+   system call number.
 2. The kernel creates exactly one at boot and grants it to the progenitor. The progenitor endows it
    to a job whose manifest declares the `reboot` field and whose bytes something vouches for: the
    image's measured archive for the image's own programs, or an owner's `grant` line for installed
@@ -102,7 +102,7 @@ server answers `SYNC` on that badge with the block server's flush count and refu
 with `EPERM`, before it reads a handle. The badge names no directory and reaches no file. `BIND`'s
 caller rule holds (only an unbound badge may bind), and `UNBIND` revokes it like any grant. It is a
 server message on an existing endpoint, inside the badge model of §230 (badged endpoint
-capabilities), and adds no syscall and no kernel method.
+capabilities), and adds no system call and no kernel method.
 
 - A job that holds `Manifest::sync` (clause 2) gets the capability this way. The spawn service takes
   a client window, as for a directory grant, binds its badge sync-only, places the badged endpoint
@@ -126,7 +126,7 @@ Alternatives considered:
   manager to own shutdown order, so it is neither `reboot`'s job nor the progenitor's. Milestone
   853 owns it.
 - E, the kernel calls registered pre-reset endpoints: puts shutdown policy in the kernel, against
-  the narrow syscall surface.
+  the narrow system call surface.
 - F, a crash-consistent filesystem, so no sync is needed: still loses recent writes, and RedoxFS
   makes no such promise today.
 
@@ -160,7 +160,7 @@ Prior art, recalled, not re-read:
 - seL4's `seL4_ObjectType` lists only retypable objects; `IRQControl`, `ASIDControl` and the
   domain capability are internal capability tags only. That is A.
 - Zircon's `zx_obj_type_t` lists every kind, kernel-minted resources included, because
-  `zx_object_get_info` reports a handle's type, and creation is a syscall per kind. That is D.
+  `zx_object_get_info` reports a handle's type, and creation is a system call per kind. That is D.
 
 ## A refusal returns its reason
 
@@ -192,7 +192,7 @@ in-memory half) lives in memory only.
 |---|---|
 | B. A method on an existing object | No existing object names the machine, and a "may reset" bit on the root `MemoryRegion` would make every memory grant a question about power. |
 | C. A user-mode driver holding device authority | PSCI and SBI calls cannot be made from user mode, so it works on x86_64 alone and breaks §19 (architectural parity). |
-| D. A new syscall number | Ambient authority with no identity for the kernel to check, and a new number is its own fork. |
+| D. A new system call number | Ambient authority with no identity for the kernel to check, and a new number is its own fork. |
 | E. An op on milestone 391 (kernel introspection over an endpoint)'s endpoint | §149 (may the kernel answer on an endpoint) left that open, and it would put a harmless read and a destructive act behind one capability. |
 | Power-off in the same milestone, or a `--off` flag | One program, one thing (2026-09-26), and on radon a powered-off board needs a person at smart plug 2. |
 | The object bound to the program named `reboot` | Nife would then name every program that may restart the machine, and an owner could not install a replacement from a source they opted into (§195 (a reviewed recipe vouches for a package)). Refused 2026-11-02 (UTC) in favor of the owner's grant in clause 2. |

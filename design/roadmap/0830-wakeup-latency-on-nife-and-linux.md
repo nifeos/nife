@@ -22,7 +22,7 @@ unmodified on both.
 
 Not a port of `schbench`, because schbench is Linux-only: it calls `syscall(SYS_futex)`
 and `syscall(SYS_gettid)` directly, and §265 (a C library started from relibc, whose Rust platform
-layer holds the capabilities) does not build `syscall()`. Of the options put to calef, he chose (c):
+layer holds the capabilities) does not build `system_call()`. Of the options put to calef, he chose (c):
 measure the quantity the way the field does across operating systems, from each kernel's own
 scheduler trace. calef, 2026-10-12 (UTC):
 
@@ -92,7 +92,7 @@ which is this block's first piece of work:
 2. Behind its own feature, neither the soak's nor `bench`'s, so `script/bench`'s baselines never
    carry it, and the tracer-on and tracer-off runs are two builds of one commit.
 3. Read out over the serial console at the end of a run, as the soak already reports. A method that
-   reads the histogram from a running system would touch the syscall surface, which is calef's
+   reads the histogram from a running system would touch the system call surface, which is calef's
    call; it is not needed for a first number.
 4. The counter must agree across cores, since a wake and its switch often happen on different ones.
    aarch64's `CNTVCT_EL0` is one system counter. riscv64's `time` CSR and x86_64's TSC (invariant
@@ -132,7 +132,7 @@ number.
 ## What it waits on
 
 Milestone 827 for the load, and #2009 for hackbench's thread mode on nife. The trace events are this
-block's own work. It no longer waits on threads in C or on `syscall()`.
+block's own work. It no longer waits on threads in C or on `system_call()`.
 
 ## Index row
 

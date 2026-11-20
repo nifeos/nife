@@ -21,7 +21,7 @@ Two mechanisms, because there are two different questions.
    which record the caller wants, and returns that record's words. A new fact is a new selector
    value, not a new register.
 2. A thread observing itself is a per-thread page, on the shape Linux's `rseq` uses: the kernel
-   writes the current CPU into a small per-thread structure the thread reads with no syscall.
+   writes the current CPU into a small per-thread structure the thread reads with no system call.
 
 ## What this overturns, and why that is on purpose
 
@@ -63,7 +63,7 @@ this project's own rather than general:
   page keeps answering after the capability is revoked, unless revocation also walks mappings. Two
   lanes spent 2026-09-21 on exactly that class (a capability parked in a hand-off slot surviving a
   sweep, and `map_physical` never recording its mapping). Creating a second authority that outlives
-  its capability, to save a syscall, is the wrong direction for the claim this kernel is a
+  its capability, to save a system call, is the wrong direction for the claim this kernel is a
   demonstration of.
 - The side channel goes from polled to continuous. §150 weighed a polled aggregate leak and
   accepted it; a tick-updated page is a different magnitude and would need re-arguing.
@@ -76,7 +76,7 @@ this project's own rather than general:
   writer and reader under the weak ordering rule 4 tells us to assume.
 
 And the speed it buys is below the noise floor of its consumer. An IPC round trip measures
-~705 ns (debug-build QEMU numbers, so an upper bound), and a `SURVEY` is one syscall, cheaper
+~705 ns (debug-build QEMU numbers, so an upper bound), and a `SURVEY` is one system call, cheaper
 than a round trip. Sixty-four threads at a 1 Hz refresh is about 45 microseconds per second,
 roughly 0.005% of a core.
 
@@ -84,7 +84,7 @@ roughly 0.005% of a core.
 
 The high-frequency consumer is real, and identifying it is what separated the two mechanisms: a
 memory allocator keeping a per-CPU cache reads *its own* CPU on every allocation. That is
-`rseq`'s reason for existing. Linux made it a memory read rather than a syscall because the
+`rseq`'s reason for existing. Linux made it a memory read rather than a system call because the
 vDSO path is x86-specific and impossible to implement on AArch64. The memory approach measured
 20x faster on x86 and 35x on ARM.
 

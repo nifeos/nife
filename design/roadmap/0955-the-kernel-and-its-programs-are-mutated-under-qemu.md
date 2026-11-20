@@ -40,7 +40,7 @@ the corpus", and this is what retires that summary.
 The host census covers 20,974, so the unmutated half of the tree is about as large as the mutated
 half. In the kernel, `arch/` holds 3,879 (x86_64 2,066, riscv64 988, aarch64 825). The kernel side
 of the programs' wiring in `user/` holds 1,476. The confinement core holds about 1,800: `sched/`,
-`syscall/`, `revoke`, `cap`, `memory_region` and their neighbors. Tests, benches and self-tests are
+`system_call/`, `revoke`, `cap`, `memory_region` and their neighbors. Tests, benches and self-tests are
 the kernel section of `.cargo/mutants.toml`: 1,281 mutants excluded, which leaves the kernel's
 corpus at 9,157 of the 10,438 listed on 2026-10-28 (UTC).
 
@@ -78,7 +78,7 @@ elegant answer for pure logic. It cannot reach the glue, the arch code or the wi
 each move is a restructuring rather than a measurement.
 
 **D. Kani harnesses as the test.** Milestone 741 (does a standing proof notice a regression) ran
-this: the kernel's five aarch64 and `syscall` harnesses reach 80 mutants and kill 51. That measures
+this: the kernel's five aarch64 and `system_call` harnesses reach 80 mutants and kill 51. That measures
 the proofs, not the tests, and covers under 1% of the kernel. Milestone 776 (a weekly check that
 every proof can still fail) owns its weekly form.
 
@@ -125,7 +125,7 @@ already keys on, and execution stays with the driver that already knows how to b
    aarch64 holds about 10 mutants at the measured 81 seconds each. A larger diff takes more shards,
    never a longer job. One lane.
 4. The rolling census, one workflow with a slice list, two jobs a night and the schedule below. The
-   slices go in order of what a wrong line costs: `syscall/`, `revoke`, `cap`, `memory_region`,
+   slices go in order of what a wrong line costs: `system_call/`, `revoke`, `cap`, `memory_region`,
    `sched/`, then `arch/` per architecture, then `user/`, then `components` against the system
    tests. One lane.
 5. Triage, one lane per slice as each lands, under the companion proposals' rules for accepted and

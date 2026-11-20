@@ -15,7 +15,7 @@ from-scratch JH7110 driver would. The reason to expect so: x86's PCIe discovery 
 and architecturally identical between QEMU's `q35` and real x86 hardware (unlike RISC-V's QEMU-only
 fake ECAM device).
 
-It needed no syscall surface, new dependency or decision section of its own. What it unblocks (real
+It needed no system call surface, new dependency or decision section of its own. What it unblocks (real
 NVMe-behind-IOMMU on x86) is gated on VT-d, item 6 of milestone 161, which is built.
 
 ## The gap, as `notes/x86-port.md` already named it

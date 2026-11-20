@@ -108,7 +108,7 @@ So the protocol needs to tell two failures apart:
 
 Both arrived as `abi::Error::NoSuchSlot`. A destroyed endpoint leaves the holder's capability in
 place (endpoints are named generationally, `nifeos/generational_table`), and the failure surfaces
-when `sched::take_ipc_aborted` is set; `syscall.rs` mapped that to `NoSuchSlot`, the same value an
+when `sched::take_ipc_aborted` is set; `system_call.rs` mapped that to `NoSuchSlot`, the same value an
 empty slot returns. The only available behavior was therefore the wrong one for a pipeline, and no
 amount of userspace protocol design could have recovered the distinction, because the fact lives in
 the kernel.
@@ -188,7 +188,7 @@ expressible.
 ## Benchmarks
 
 The lane added no hop to `println!`'s path, and the icount benchmarks say so: `ipc_rtt_el0`,
-`relay_rtt`, `call_reply` and `null_syscall` all moved by less than 1%, in both directions, on
+`relay_rtt`, `call_reply` and `null_system_call` all moved by less than 1%, in both directions, on
 aarch64 and riscv64. That is build noise, so the baseline file was deliberately not updated. No
 benchmark prices `println!` itself, so a regression inside the PAL's chunking loop would not show.
 The table and both caveats are in [sink-protocol/benchmarks.md](sink-protocol/benchmarks.md).

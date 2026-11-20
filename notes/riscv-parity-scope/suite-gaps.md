@@ -28,9 +28,9 @@ boot-time probe rather than on the specification. The aarch64 witness now runs o
 `an_asid_flush_reaches_the_other_cores` proves the broadcast half on both. The benchmark did not
 improve, and cannot on an emulator that models no TLB-miss cost. See notes/riscv-tlb-shootdown.md.
 
-## Open gap: `tests` and `riscv_virtio_tests` overlap by 24 tests
+## Open gap: `tests` and `riscv_virtual_io_tests` overlap by 24 tests
 
-`riscv_virtio_tests` was written when `tests` was unreachable from RISC-V, so it re-derives the disk,
+`riscv_virtual_io_tests` was written when `tests` was unreachable from RISC-V, so it re-derives the disk,
 FS and network properties with its own copies of `wait_for`, the net selectors, and the transcript
 plumbing. Now that `tests` runs on both, 24 of its tests are gated to aarch64 solely because the twin
 exists.
@@ -44,7 +44,7 @@ of `hello`, and RISC-V passes `blk_image()`, the dedicated binary. The remaining
 comment and in an assertion message. There is no behavioral divergence anywhere in the 24.
 
 So the merge is smaller than it looked. Pick `blk` on both ISAs; a dedicated binary is the better
-choice regardless, and hello would keep its role for nothing. Delete `riscv_virtio_tests`' 24 copies
+choice regardless, and hello would keep its role for nothing. Delete `riscv_virtual_io_tests`' 24 copies
 along with its duplicate `wait_for`, net selectors and image helpers. And keep its two genuinely
 RISC-V-only tests (`a_faulting_user_thread_is_killed_and_the_kernel_survives` and
 `the_page_tables_say_u_mode_cannot_read_the_kernels_memory`, the software-walk twin of the `AT S1E0R`
@@ -107,7 +107,7 @@ Two of the four were one-shot roles with nothing left to do and now `exit()`. Th
 and that is the obstacle:
 
 - `a_user_program_that_never_yields_is_preempted_anyway` runs `interrupt_ignorer`, whose entire point is that
-  it never yields, never syscalls, and never returns. A thread that exits would not test anything.
+  it never yields, never system calls, and never returns. A thread that exits would not test anything.
 - `a_process_spends_untyped_and_the_kernel_never_allocates` reads the kernel's free-frame count the
   instant its child reports. If the child exited there, the number read would be the teardown's
   rather than the measurement's, so the child spins to hold the state still.
@@ -127,8 +127,8 @@ armed kill, the tier §24's `^C` escalation stands on). What is missing is only 
 one thread instead of a region.
 
 1. `sched::kill_thread(tid: ThreadId)`, test-support, roughly ten lines: take `SCHED`, resolve `tid`, set
-   `killed = true`. No new syscall and no change to the user-visible surface (rule 3 is about the
-   syscall boundary; this is an in-kernel function for in-kernel tests).
+   `killed = true`. No new system call and no change to the user-visible surface (rule 3 is about the
+   system call boundary; this is an in-kernel function for in-kernel tests).
 2. The two tests above kill their subject after asserting, and wait for `is_thread_present` to go
    false.
 3. `no_leaked_threads` then moves to run last, and polices the module for the first time.

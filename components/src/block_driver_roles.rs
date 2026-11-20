@@ -14,7 +14,7 @@
 //!
 //! The one-shot roles report to the kernel's test on slot 0; the table beside `report_code` lists
 //! the codes. On a mediated grant the kernel hands the process the DMA page, an `Interrupt`
-//! capability (slot 1) and a `Virtio` transport capability (slot 2); the device registers are not
+//! capability (slot 1) and a `VirtualIo` transport capability (slot 2); the device registers are not
 //! mapped, so every access goes through the kernel, which confines the device to the DMA page. On a
 //! direct grant the driver drives a virtio-pci function itself and the IOMMU (Input-Output Memory
 //! Management Unit) confines the device; [`direct`] answers the same register vocabulary, so every
@@ -25,7 +25,7 @@
 //! without one is pure and host-tested here: the accessors' window check, the descriptor chain,
 //! the completion wait's bound, the configuration read's generation bracket, the directory lookup,
 //! the DHCP frames and the Internet Protocol header checksum. The ring layout's proof is in
-//! `direct_memory_access_validator`. See notes/virtio.md ("The driver crate") and notes/dma.md.
+//! `direct_memory_access_validator`. See notes/virtual-io.md ("The driver crate") and notes/dma.md.
 //!
 //! Reuse: write, under §46 (thin primitives or whole subsystems). Ruled by calef on 2026-10-24
 //! (UTC), option D, on milestone 784 (reuse what the tree wrote)'s items (c1) to (c4).
@@ -39,14 +39,14 @@
 //! from what the six copies of the virtio-mmio handshake share.
 
 use filesystem_contract::block;
-use user_mode_runtime::virtio::{read_register, virtio_ring_barrier, write_register};
+use user_mode_runtime::virtual_io::{read_register, virtual_io_ring_barrier, write_register};
 use user_mode_runtime::{
     exit, interrupt_acknowledge, interrupt_wait, receive_request, reply, send,
 };
 
-// The kernel maps the DMA page at this fixed VA (must match kernel/src/user/virtio_service.rs).
-// The device REGISTERS are NOT mapped: we drive the device through a `Virtio` capability (slot 2),
-// so we cannot point it outside this DMA region. See kernel/src/virtio.rs.
+// The kernel maps the DMA page at this fixed VA (must match kernel/src/user/virtual_io_service.rs).
+// The device REGISTERS are NOT mapped: we drive the device through a `VirtualIo` capability (slot 2),
+// so we cannot point it outside this DMA region. See kernel/src/virtual_io.rs.
 const DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS: u64 =
     address_space_layout::pair_page(0x0000_0000_0090_0000);
 
@@ -54,7 +54,7 @@ const DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS: u64 =
 const REPORT: u64 = 0; // SEND: report the result back to the kernel
 #[doc(alias = "irq")]
 const INTERRUPT: u64 = 1; // WAIT/ACKNOWLEDGE the device interrupt
-const VIRTIO: u64 = 2; // the device transport: read/write registers, set up the queue, submit
+const VIRTUAL_IO: u64 = 2; // the device transport: read/write registers, set up the queue, submit
 
 // --- virtio-mmio v2 register offsets (bytes from the slot base) ---
 const MAGIC: u64 = 0x000;
@@ -70,7 +70,7 @@ const STATUS: u64 = 0x070;
 /// consistent when it reads the same value before and after. Name: provisional.
 ///
 /// BUGS: the kernel's mediated Peripheral Component Interconnect (PCI) transport answers 0 for
-/// this offset (`kernel/src/virtio.rs`), so on that grant the bracket in [`capacity_sectors`]
+/// this offset (`kernel/src/virtual_io.rs`), so on that grant the bracket in [`capacity_sectors`]
 /// always holds and checks nothing. The mmio transport and the direct grant ([`direct`]) read the
 /// device's real generation.
 #[doc(alias = "ConfigGeneration")]
@@ -91,7 +91,7 @@ const F_VERSION_1_HI: u32 = 1; // bit 32 lives in the high 32-bit word
 
 // Feature bit 33: VIRTIO_F_ACCESS_PLATFORM. A device behind an IOMMU offers it and refuses to run
 // unless it is negotiated; acked only when offered, since acking an unoffered feature fails
-// negotiation. The DMA domain is an identity map, so it changes no address (notes/virtio.md).
+// negotiation. The DMA domain is an identity map, so it changes no address (notes/virtual-io.md).
 const F_ACCESS_PLATFORM_HI: u32 = 1 << 1; // bit 33 lives in the high 32-bit word
 
 // The virtqueue we build. Small: one request in flight is all a demo needs.
@@ -108,18 +108,18 @@ const VIRTQ_DESC_F_INDIRECT: u16 = 4; // points at a table of further descriptor
 const F_INDIRECT_DESC_LO: u32 = 1 << 28;
 
 // blk request types.
-const VIRTIO_BLK_T_IN: u32 = 0; // read: the device WRITES the data buffer
-const VIRTIO_BLK_T_OUT: u32 = 1; // write: the device READS the data buffer
+const VIRTUAL_IO_BLK_T_IN: u32 = 0; // read: the device WRITES the data buffer
+const VIRTUAL_IO_BLK_T_OUT: u32 = 1; // write: the device READS the data buffer
 // Flush: no data buffer at all, just the header and the status byte. Legal only once
 // `VIRTIO_BLK_F_FLUSH` is negotiated, which is why the block server probes for it rather than
 // assuming it (virtio 1.2 section 5.2.6; see `initialize_with_features` and `block_flush`).
-const VIRTIO_BLK_T_FLUSH: u32 = 4;
+const VIRTUAL_IO_BLK_T_FLUSH: u32 = 4;
 
 // Feature bit 9 (low word): VIRTIO_BLK_F_FLUSH, "the device supports a cache flush command". The
 // durability claim rests on it, so it is read from the device, never assumed. The kernel's
 // `sanitize_driver_features` must leave it alone;
-// `feature_negotiation_leaves_the_blk_flush_bit_alone` in `kernel/src/virtio.rs` holds that. See
-// notes/virtio.md ("Feature negotiation").
+// `feature_negotiation_leaves_the_blk_flush_bit_alone` in `kernel/src/virtual_io.rs` holds that. See
+// notes/virtual-io.md ("Feature negotiation").
 const F_FLUSH_LO: u32 = 1 << 9;
 
 // --- our DMA layout, offsets within the one DMA page ---
@@ -127,7 +127,7 @@ const F_FLUSH_LO: u32 = 1 << 9;
 // layout the kernel builds and `direct_memory_access_validator` proves (`LAYOUT_QSIZE`,
 // `DESC_OFF`, `AVAIL_OFF`, `USED_OFF`, `RING_BLOCK`) as literals, and nothing checks the copy: a
 // change to the proved layout would leave this driver on the wrong offsets until a QEMU test
-// failed. The fix is to move the constants to `abi::virtio`, where this crate, the kernel and the
+// failed. The fix is to move the constants to `abi::virtual_io`, where this crate, the kernel and the
 // validator all name them, as Decision 2 of milestone 1113 (what an outside maintainer would fix
 // before it leaves this tree) decides.
 const DESCRIPTOR_TABLE_OFFSET_BYTES: u64 = 0x000; // 16 * QUEUE_ENTRIES = 128 bytes
@@ -145,7 +145,7 @@ fn read_device_register(off: u64) -> u32 {
     if direct::is_direct() {
         return direct::read(off);
     }
-    read_register(VIRTIO, off) as u32
+    read_register(VIRTUAL_IO, off) as u32
 }
 /// Write a DMA-*safe* device register (status, features, interrupt-ack): through the kernel on a
 /// mediated grant, which owns the queue-address and notify registers, or directly on a direct one.
@@ -153,7 +153,7 @@ fn write_device_register(off: u64, v: u32) {
     if direct::is_direct() {
         return direct::write(off, v);
     }
-    write_register(VIRTIO, off, v as u64);
+    write_register(VIRTUAL_IO, off, v as u64);
 }
 
 /// Set up `queue` with `entries` entries at the fixed layout's offsets in the DMA region: the
@@ -163,7 +163,7 @@ fn setup_queue(slot: u64, entries: u64, queue: u64) -> i64 {
     if direct::is_direct() {
         return direct::setup_queue(entries, queue);
     }
-    user_mode_runtime::virtio::setup_queue(slot, entries, queue)
+    user_mode_runtime::virtual_io::setup_queue(slot, entries, queue)
 }
 
 /// Ring `queue`: through the kernel on a mediated grant, which validates every new descriptor
@@ -174,7 +174,7 @@ fn notify(slot: u64, queue: u64) -> i64 {
     if direct::is_direct() {
         return direct::notify(queue);
     }
-    user_mode_runtime::virtio::notify(slot, queue)
+    user_mode_runtime::virtual_io::notify(slot, queue)
 }
 
 /// The DMA region's virtual base: the fixed page a mediated grant maps, or the window a direct
@@ -291,7 +291,7 @@ fn initialize() {
 /// kernel is what strips it.
 ///
 /// `want_flush` asks for `VIRTIO_BLK_F_FLUSH` only if the device offered it. Returns whether that
-/// bit was negotiated. See notes/virtio.md ("Feature negotiation").
+/// bit was negotiated. See notes/virtual-io.md ("Feature negotiation").
 fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     // The driver checks the magic and not `Version`: the kernel offers only modern (version 2)
     // devices on either bus, so a `Version` check here would test what the kernel already tested.
@@ -328,7 +328,7 @@ fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
     assert!(read_device_register(STATUS) & DEVICE_STATUS_FEATURES_OK != 0);
 
     // The layout constants (DESCRIPTOR_TABLE_OFFSET_BYTES/AVAIL/USED) are the contract the kernel uses.
-    assert!(setup_queue(VIRTIO, QUEUE_ENTRIES as u64, 0) == 0);
+    assert!(setup_queue(VIRTUAL_IO, QUEUE_ENTRIES as u64, 0) == 0);
 
     write_device_register(
         STATUS,
@@ -347,7 +347,7 @@ fn initialize_with_features(driver_features_lo: u32, want_flush: bool) -> bool {
 ///
 /// # Examples
 ///
-/// A driver's `_start`. No syscall translates an address, so the DMA page's physical address
+/// A driver's `_start`. No system call translates an address, so the DMA page's physical address
 /// arrives as an argument.
 ///
 /// ```no_run
@@ -379,7 +379,7 @@ pub fn run(direct_memory_access_phys: u64) -> ! {
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtio.md).
+    // (notes/virtual-io.md).
     exit();
 }
 
@@ -438,7 +438,7 @@ pub fn run_write(direct_memory_access_phys: u64) -> ! {
     send(REPORT, u64::from_le_bytes(head), 0, 0);
 
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtio.md).
+    // (notes/virtual-io.md).
     exit();
 }
 
@@ -457,7 +457,7 @@ pub fn run_write_abandon(direct_memory_access_phys: u64) -> ! {
     for i in 0..BLOCK {
         direct_memory_access_write::<u8>(DATA_OFFSET_BYTES + i as u64, 0xAB);
     }
-    let _used_before = submit_block(direct_memory_access_phys, scratch, VIRTIO_BLK_T_OUT);
+    let _used_before = submit_block(direct_memory_access_phys, scratch, VIRTUAL_IO_BLK_T_OUT);
 
     send(REPORT, 1, 0, 0); // submitted; the kernel validated it and rang the device
     panic!(); // and now we are gone, mid-operation
@@ -488,7 +488,7 @@ pub fn run_attack(_direct_memory_access_phys: u64) -> ! {
     send(REPORT, refused as u64, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtio.md).
+    // (notes/virtual-io.md).
     exit();
 }
 
@@ -526,7 +526,7 @@ pub fn run_attack_indirect(direct_memory_access_phys: u64) -> ! {
     send(REPORT, refused as u64, 0, 0); // 1 = refused (good), 0 = it went through (bad)
 
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtio.md).
+    // (notes/virtual-io.md).
     exit();
 }
 
@@ -653,10 +653,10 @@ fn submit(queue: &Queue, chain: &[Descriptor]) -> Option<u16> {
         queue.available_ring + 4 + (idx as u64 % QUEUE_ENTRIES as u64) * 2,
         0,
     ); // ring[idx] = head 0
-    virtio_ring_barrier(); // the descriptors and ring entry must be visible before we bump idx
+    virtual_io_ring_barrier(); // the descriptors and ring entry must be visible before we bump idx
     direct_memory_access_write::<u16>(queue.available_ring + 2, idx.wrapping_add(1));
-    virtio_ring_barrier(); // idx must be visible before we notify
-    (notify(VIRTIO, queue.number) >= 0).then_some(used_before)
+    virtual_io_ring_barrier(); // idx must be visible before we notify
+    (notify(VIRTUAL_IO, queue.number) >= 0).then_some(used_before)
 }
 
 /// **Submit one block request**: the 16-byte header the device reads (type, reserved, sector), the
@@ -690,7 +690,7 @@ fn submit_block_request(
                 physical_address: direct_memory_access_phys + offset,
                 length_bytes,
                 // read: the device fills the buffer; write: the device consumes it
-                flags: if req_type == VIRTIO_BLK_T_IN {
+                flags: if req_type == VIRTUAL_IO_BLK_T_IN {
                     VIRTQ_DESC_F_WRITE
                 } else {
                     0
@@ -725,7 +725,7 @@ const COMPLETION_WAKEUPS: u32 = 64;
 /// the loop can be tested without a device.
 ///
 /// The completion is the used ring advancing, not the wakeup: the line is shared, and a wakeup can
-/// be spurious, coalesced, or a dead driver's pending completion. See notes/virtio.md ("A
+/// be spurious, coalesced, or a dead driver's pending completion. See notes/virtual-io.md ("A
 /// completion is the used ring advancing") and notes/dma.md.
 fn used_ring_moved(
     bound: Option<u32>,
@@ -761,7 +761,7 @@ fn complete(queue: &Queue, used_before: u16, bound: Option<u32>) -> bool {
         let istatus = read_device_register(INTERRUPT_STATUS);
         write_device_register(INTERRUPT_ACK, istatus);
         interrupt_acknowledge(INTERRUPT);
-        virtio_ring_barrier();
+        virtual_io_ring_barrier();
         direct_memory_access_read::<u16>(queue.used_ring + 2)
     })
 }
@@ -786,14 +786,14 @@ fn complete_block(used_before: u16) {
 
 /// Read one block from `sector` into the DMA data buffer, start to finish.
 fn read_block(direct_memory_access_phys: u64, sector: u64) {
-    let used_before = submit_block(direct_memory_access_phys, sector, VIRTIO_BLK_T_IN);
+    let used_before = submit_block(direct_memory_access_phys, sector, VIRTUAL_IO_BLK_T_IN);
     complete_block(used_before);
 }
 
 /// Write the DMA data buffer to `sector`, start to finish (milestone 32 (a real filesystem:
 /// RedoxFS behind a capability FS server) phase 1): the read's chain, data direction flipped.
 fn write_block(direct_memory_access_phys: u64, sector: u64) {
-    let used_before = submit_block(direct_memory_access_phys, sector, VIRTIO_BLK_T_OUT);
+    let used_before = submit_block(direct_memory_access_phys, sector, VIRTUAL_IO_BLK_T_OUT);
     complete_block(used_before);
 }
 
@@ -818,7 +818,7 @@ fn write_block(direct_memory_access_phys: u64, sector: u64) {
 fn report_code(code: u64) -> ! {
     send(REPORT, 0xDEAD_0000_0000_0000 | code, 0, 0);
     // Exit rather than spin: leaked spinners starve later tests past the watchdog
-    // (notes/virtio.md).
+    // (notes/virtual-io.md).
     exit();
 }
 
@@ -827,8 +827,8 @@ fn report_code(code: u64) -> ! {
 // stack as a confined component)).
 //
 // Receive is queue 0 (the device writes a frame) and transmit is queue 1 (it reads one), both
-// through the one `Virtio` capability. `run_net` proves both with a DHCP exchange against slirp.
-// See notes/virtio.md ("The roles").
+// through the one `VirtualIo` capability. `run_net` proves both with a DHCP exchange against slirp.
+// See notes/virtual-io.md ("The roles").
 // =================================================================================================
 
 /// The two virtqueues, matching the kernel's contract (receive = 0, transmit = 1).
@@ -841,7 +841,7 @@ const NET_HDR_LEN: u64 = 12;
 
 // Our DMA-page layout for the net driver. The queue rings follow the kernel's per-queue stride
 // (RING_BLOCK = 0x200, with desc/avail/used at +0x000/+0x080/+0x100 inside each queue's block, see
-// kernel/src/virtio.rs), and the packet buffers live above both queues' blocks. Everything fits in
+// kernel/src/virtual_io.rs), and the packet buffers live above both queues' blocks. Everything fits in
 // the one 4 KiB DMA page the spawn service hands us.
 const NET_RECEIVE_DESC: u64 = 0x000;
 const NET_RECEIVE_AVAIL: u64 = 0x080;
@@ -909,8 +909,8 @@ fn initialize_net() {
 
     // Both queues, through the kernel: it programs each queue's ring addresses to that queue's block
     // in our DMA region, so we never choose them.
-    assert!(setup_queue(VIRTIO, QUEUE_ENTRIES as u64, NET_RECEIVE_Q) == 0);
-    assert!(setup_queue(VIRTIO, QUEUE_ENTRIES as u64, NET_TRANSMIT_Q) == 0);
+    assert!(setup_queue(VIRTUAL_IO, QUEUE_ENTRIES as u64, NET_RECEIVE_Q) == 0);
+    assert!(setup_queue(VIRTUAL_IO, QUEUE_ENTRIES as u64, NET_TRANSMIT_Q) == 0);
 
     write_device_register(
         STATUS,
@@ -1200,7 +1200,7 @@ pub fn run_net(direct_memory_access_phys: u64) -> ! {
 // ---------------------------------------------------------------------------------------------
 // The block server (milestone 32 phase 2): init the device once, then answer the FS server's
 // read/write/size/flush requests forever. The FS server never touches the DMA region, and the
-// device confinement is unchanged. See notes/virtio.md ("The block server") and notes/fs-server.md.
+// device confinement is unchanged. See notes/virtual-io.md ("The block server") and notes/fs-server.md.
 // ---------------------------------------------------------------------------------------------
 
 /// The block server's request endpoint (slot 0): the FS server CALLs here; this role `RECEIVE_CAPABILITY`s the
@@ -1214,7 +1214,7 @@ const BLK_REQ: u64 = 0;
 /// The block server's DMA region is `1 + block::TRANSFER_BLOCKS` contiguous pages
 /// (`kernel/src/user/fs_service.rs`): page 0 holds the rings, request header and status, and pages
 /// `1..=block::TRANSFER_BLOCKS` are the data buffer, which is the region shared with the FS server.
-/// `BLOCK_SERVER_DATA_OFFSET_BYTES` is that page-1 offset. See notes/virtio.md ("The block server").
+/// `BLOCK_SERVER_DATA_OFFSET_BYTES` is that page-1 offset. See notes/virtual-io.md ("The block server").
 const BLOCK_SERVER_DATA_OFFSET_BYTES: u64 = 0x1000;
 
 /// The block server's readiness endpoint (slot 3): SEND once after the device is up, so the test
@@ -1313,7 +1313,7 @@ fn transfer_first_sector(block: u64, count: u64, capacity_sectors: u64) -> Optio
 /// ring, with [`complete`]. `true` if the device completed with `VIRTIO_BLK_S_OK`. It does not
 /// panic on another status: the long-lived block server's death would block every filesystem
 /// client, so the verdict goes back to the one that asked. A WAIT per read fits the test watchdog,
-/// since whole-block requests keep the mount's read count in the low hundreds. See notes/virtio.md
+/// since whole-block requests keep the mount's read count in the low hundreds. See notes/virtual-io.md
 /// ("A completion is the used ring advancing").
 ///
 /// The wait has no bound, unlike a test role's. Giving up would leave the request on the ring with
@@ -1333,8 +1333,12 @@ fn complete_block_server_request(used_before: u16) -> bool {
 /// since a device round trip costs far more than the transfer. The caller has checked the range
 /// with [`transfer_first_sector`]. `true` if the device reported success.
 fn block_read(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
-    let used_before =
-        submit_block_server_transfer(direct_memory_access_phys, sector, VIRTIO_BLK_T_IN, count);
+    let used_before = submit_block_server_transfer(
+        direct_memory_access_phys,
+        sector,
+        VIRTUAL_IO_BLK_T_IN,
+        count,
+    );
     complete_block_server_request(used_before)
 }
 
@@ -1342,8 +1346,12 @@ fn block_read(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
 /// this request) in a single virtio request. The one direction flag differs from the read; the
 /// addresses are identical. `true` if the device reported success.
 fn block_write(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool {
-    let used_before =
-        submit_block_server_transfer(direct_memory_access_phys, sector, VIRTIO_BLK_T_OUT, count);
+    let used_before = submit_block_server_transfer(
+        direct_memory_access_phys,
+        sector,
+        VIRTUAL_IO_BLK_T_OUT,
+        count,
+    );
     complete_block_server_request(used_before)
 }
 
@@ -1352,7 +1360,7 @@ fn block_write(direct_memory_access_phys: u64, sector: u64, count: u64) -> bool 
 ///
 /// A status of 0 says the device finished its flush; it cannot prove the hardware beneath is
 /// honest. A bad status such as `VIRTIO_BLK_S_UNSUPP` (2) is `false`, as for a transfer. See
-/// notes/virtio.md ("The block server").
+/// notes/virtual-io.md ("The block server").
 fn block_flush(direct_memory_access_phys: u64) -> bool {
     let used_before = submit_flush(direct_memory_access_phys);
     complete_block_server_request(used_before)
@@ -1365,7 +1373,7 @@ fn block_flush(direct_memory_access_phys: u64) -> bool {
 /// previous request is left in the header.
 fn submit_flush(direct_memory_access_phys: u64) -> u16 {
     // As `submit_block_request`: the kernel validates every descriptor against the region.
-    submit_block_request(direct_memory_access_phys, VIRTIO_BLK_T_FLUSH, 0, None)
+    submit_block_request(direct_memory_access_phys, VIRTUAL_IO_BLK_T_FLUSH, 0, None)
         .expect("the kernel refused the block server's flush, a server bug")
 }
 
@@ -1574,10 +1582,10 @@ mod verification {
 /// enters this module.
 ///
 /// The rest of the crate speaks virtio-mmio's register vocabulary, the one the kernel's
-/// `Virtio` capability answers. On a direct grant `read`, `write`, `setup_queue` and
+/// `VirtualIo` capability answers. On a direct grant `read`, `write`, `setup_queue` and
 /// `notify` answer the same vocabulary from the common configuration, the ISR (Interrupt
 /// Status Register) byte and the doorbells, as the kernel's own `Transport::Pci` does for a
-/// mediated function (`kernel/src/virtio.rs`), so every driver role runs unchanged on either
+/// mediated function (`kernel/src/virtual_io.rs`), so every driver role runs unchanged on either
 /// grant. The rings sit at the offsets the mediated grant uses, in the driver's own region, and
 /// the device reads them there. See
 /// design/roadmap/1062-the-device-control-planes-leave-the-kernel.md, "Step 7".
@@ -1817,7 +1825,7 @@ pub mod direct {
             return -1;
         }
         // The ring writes before the doorbell, to the device and not only to other CPUs.
-        user_mode_runtime::virtio::doorbell_barrier();
+        user_mode_runtime::virtual_io::doorbell_barrier();
         // SAFETY: `setup_queue` resolved the doorbell inside the notify structure, which `take`
         // checked lies in the device-typed window.
         unsafe { core::ptr::write_volatile(doorbell as *mut u16, queue as u16) };

@@ -182,7 +182,7 @@ sections with the expensive part between them:
 2. With no lock held, free the stack, then the address space. The stack is six page unmaps, each
    with its TLB obligation. On riscv64 that is an SBI remote fence that interrupts every other hart
    and waits. On x86_64 it is an NMI shootdown round. Under `IPC_TABLES`, every other core would
-   wait behind it ([notes/job-mix/null-syscall-under-load.md](../job-mix/null-syscall-under-load.md)).
+   wait behind it ([notes/job-mix/null-system-call-under-load.md](../job-mix/null-system-call-under-load.md)).
    No code path can drop the address space under the lock. Its teardown is `memory_region::destroy`,
    whose §13 (capability revocation) sweep takes `IPC_TABLES` itself. The space leaves the
    address-space registry here, by the name in the thread's copy. The region sweep may have taken it
@@ -200,7 +200,7 @@ succeeds may reuse the memory at once. Nothing else removes a `Finished` thread 
 ## The floating-point trap takes the lock
 
 `mark_current_fp_live` takes `IPC_TABLES` inside a trap handler, which is ordinary here. Every
-syscall does it from the same place, for the same reason. The trap came from a running thread, so its
+system call does it from the same place, for the same reason. The trap came from a running thread, so its
 core cannot already hold the lock. Kernel code executing an FP instruction under the lock would break
 that. The kernel's target is `softfloat` and it executes none.
 
@@ -208,7 +208,7 @@ that. The kernel's target is `softfloat` and it executes none.
 
 - The preemption test (`a_thread_that_never_yields_is_preempted_anyway`) executes DECISIONS §5
   (preemptive threads with real stacks). Under any cooperative runtime, a tight loop with no yield,
-  no syscall and no call keeps its CPU. Only a timer interrupt between two of its instructions can
+  no system call and no call keeps its CPU. Only a timer interrupt between two of its instructions can
   take it back. The test pins both threads to its core, since a spinner on another idle core would
   never need preempting. The spinner reaching a CPU is a precondition, so the test waits for it
   before the polite thread exists. Sampled afterwards, `STOP` could beat its first turn. That failed

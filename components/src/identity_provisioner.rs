@@ -69,7 +69,7 @@ pub const RPT_SUBTREE_FAILED: u64 = 3;
 /// reached at all. This is the accepted partial-failure state; see this program's module docs.
 pub const RPT_CRED_FAILED: u64 = 4;
 
-/// `EEXIST`: the standard value (matching `redoxfs`/`syscall`'s own, which `redoxfs_server` returns and
+/// `EEXIST`: the standard value (matching `redoxfs`/`system_call`'s own, which `redoxfs_server` returns and
 /// nothing in `filesystem_contract` re-exports under a name). The one `MKDIR` failure this process does not
 /// treat as a refusal.
 const EEXIST: i32 = 17;

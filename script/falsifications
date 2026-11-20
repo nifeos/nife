@@ -280,7 +280,7 @@
 #   and never happened. Found still repeating it here 2026-09-23.)
 # - **A file's module path is derived from the Cargo target it belongs to, and one shape defeats
 #   that.** `components/src` holds 49 `[[bin]]` roots and two single-consumer `#[path]` modules that rule 7
-#   permits (`virtio_net_transport.rs`, `socket_test_client.rs`). A root contributes no module segment and a
+#   permits (`virtual_io_net_transport.rs`, `socket_test_client.rs`). A root contributes no module segment and a
 #   `#[path]` module contributes whatever the including file calls it, which need not be its
 #   filename. Neither carries a harness today; one that arrived in a `#[path]` module would get a
 #   patch path naming the file rather than the module, and `--check` would report it as a path that
@@ -1589,7 +1589,7 @@ def table(hs, pkgs, kts=()):
     print("%d of %d harnesses (%.0f%%) carry evidence a machine can replay." % (evidence, total, 100.0 * evidence / total if total else 0))
     # The denominator, beside the number (milestone 641, provisional). Code no harness covers is not
     # in it, so this ratio says how much of what is proved carries evidence, never how much of the
-    # code is proved: milestone 524 (the three x86_64 boot gates: NX, SYSCALL, and the invariant
+    # code is proved: milestone 524 (the three x86_64 boot gates: NX, SYSTEM_CALL, and the invariant
     # TSC) added 338 unharnessed lines to one crate and it did not move.
     print("The denominator is harnesses, not code: code no harness covers is outside it (notes/denominators.md).")
     # Records that exist, that a person performed, and that no sweep can replay, printed rather

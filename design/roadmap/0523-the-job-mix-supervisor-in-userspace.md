@@ -11,13 +11,13 @@ needs_person: no
 
 `script/board-image --job-mix --tftp` reported `NOT SEALED` on every attempt on radon, which is what
 raised this. The move is investigated end to end and **none of it is built**, because every route to
-it runs through a decision that is an architect's. What is below is the investigation, the one
-premise in the brief that is false, the five things a shell-spawned program would have to be allowed
+it runs through an architect's decision. What is below is the investigation, the one
+false premise in the brief, the five things a shell-spawned program would have to be allowed
 to do, and what each would cost. `--features job_mix` is how the number is taken.
 
 
 Five of them, and they are not one question wearing five hats. Two are the
-syscall surface (a thread's placement, a `START` return value), one is the spawn manifest, one is
+system call surface (a thread's placement, a `START` return value), one is the spawn manifest, one is
 the rights the progenitor puts on a memory grant. One is an ABI fact about what a process may know
 about its machine. Any single one left unanswered leaves an
 instrument that either cannot be built or produces a number its own page says is not quotable.
@@ -42,7 +42,7 @@ already self-times with it today.
 
 The cycle counter is the *other* counter: `PMCCNTR_EL0` and the `cycle` CSR, which milestone 228 (the cycle counters are closed by assumption, and on two architectures the assumption is a comment)
 deliberately closed and which only `fixtures/src/cycle_counter_reader.rs` reads. Nothing in this
-instrument wants it. So there is no syscall to invent here and `abi::thread_control_block`'s
+instrument wants it. So there is no system call to invent here and `abi::thread_control_block`'s
 deliberate absence of a grant method stays undisturbed.
 
 **A tick is a tick across the move**, on aarch64 and x86_64. The one architecture where it is not is
@@ -104,7 +104,7 @@ supervisor needs a wire protocol for the shell to ask it to run, *anything two p
 `crates/system_initializer`'s `spawn_service` builds every job with
 `supervision_contract::build_child` (`:2470-2496`), and `build_child_space` maps ELF segments, stack
 pages, an x86_64 timebase placeholder and `endow.maps` -- nothing else. The `maps` a normal job may
-receive are chosen at `:2451-2462` and are exactly three: a filesystem client page, the clock page,
+receive are chosen at `:2451-2462` and are three: a filesystem client page, the clock page,
 or the config page, with the comment *"One extra mapping at most, today"*. `INITIAL_RAMDISK_VIRTUAL_ADDRESS` reaches only
 the kernel-spawned progenitor (mapped in `user/entry.rs` and `user/progenitor_boot.rs`), and `a1` carries the manifest's
 integer argument rather than `initial_ramdisk_len`.
@@ -147,34 +147,34 @@ draw, and `notes/job-mix.md` step 3 tells the operator to read them before readi
 
 There is no userspace path to that fact, and it is not a gap in one place:
 
-- No syscall. `crates/abi` mentions a CPU only in prose.
-- `abi::rendezvous::SURVEY` returns exactly `(next_cursor, tid, state)`
-  (`kernel/src/syscall/rendezvous.rs::rendezvous_survey`), and `state` is one of `READY`, `RUNNING`, `BLOCKED`, `DEAD`.
+- No system call. `crates/abi` mentions a CPU only in prose.
+- `abi::rendezvous::SURVEY` returns `(next_cursor, tid, state)`
+  (`kernel/src/system_call/rendezvous.rs::rendezvous_survey`), and `state` is one of `READY`, `RUNNING`, `BLOCKED`, `DEAD`.
   `RUNNING` means *on a CPU right now*; it does not say which.
 - `crates/ps` has no CPU column, by construction (`crates/ps/src/lib.rs::write_report`).
 - `crates/cpu_set` is kernel-internal mask arithmetic and exports nothing to EL0.
 - No mapped page carries it: the only pages a job can be endowed are the clock and config pages.
-- `abi::thread_control_block::START` returns `Ok(0)` (`kernel/src/syscall/thread_control_block.rs::START`). Returning
+- `abi::thread_control_block::START` returns `Ok(0)` (`kernel/src/system_call/thread_control_block.rs::START`). Returning
   the placed core instead would be `spawn_reporting_placement` exactly, available to any builder,
-  and it is one line of kernel -- and it changes a syscall's return contract, which existing
+  and it is one line of kernel -- and it changes a system call's return contract, which existing
   callers test for equality with zero (`fixtures/src/os_primitives_benchmarker.rs`).
 
 Three options, and all three are an architect's:
 
 - A. `START` returns the placed CPU instead of zero. Smallest change, gives a builder exactly
   what the kernel supervisor gets, ships on all three architectures for free because placement is
-  `sched`'s and not `arch`'s. Costs: a syscall return contract that today means only "ok", and every
+  `sched`'s and not `arch`'s. Costs: a system call return contract that today means only "ok", and every
   caller that compares it to zero.
 - B. A fourth word from `SURVEY`. Fits an existing method and a supervision endpoint is already
   the thing that names a domain's threads. `crates/program_table/src/program/catalog.rs::Program` already reserves
   the idea of a fourth `SURVEY` word for scheduled CPU *time* (milestone 282 (a thread's CPU time, and the `top` it makes possible), DECISIONS §150 (how does a thread's CPU time reach userspace?)).
   This would want to be decided alongside that rather than ahead of it.
 - C. An EL0-readable core id, written by the context switch into a register the way milestone
-  229 (a thread reading the CPU's cycle counter from user mode) writes its grant. No syscall number
+  229 (a thread reading the CPU's cycle counter from user mode) writes its grant. No system call number
   at all, and the same mechanism shape this tree already chose once. It is nonetheless an ABI
   fact: a register a program may read and rely on, on three architectures, forever.
 
-Doing none of them is also an option and it should be stated as one. The supervisor could print
+Doing none of them is an option and it should be stated as one. The supervisor could print
 the per-task subrun ticks it already collects and let an uneven spread stand in for the census. That
 is strictly weaker: it says the arrangement was uneven without naming a core, `lottery.rs` cannot
 judge a draw from it, and `notes/job-mix.md`'s step 3 would have to be rewritten to ask for less.

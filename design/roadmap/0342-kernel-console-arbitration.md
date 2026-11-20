@@ -54,14 +54,14 @@ service: the in-memory half), which drains the ring and forwards whole lines to 
 was built on 2026-10-02 (pull request #1494), and this milestone is claimed by lane
 `milestone/342-kernel-console-arbitration` (draft pull request #1498) from 2026-10-03 (UTC).
 
-## The drain is a syscall-surface fork, proposed 2026-10-03
+## The drain is a system-call-surface fork, proposed 2026-10-03
 
 §242 (a system log) left how the service reads the kernel's ring to the building lane: a read
 method on a new object, or a read-only frame plus a notification. Both change the surface §10 (the
 capability-based microkernel process model) governs, so the lane proposes and stops.
 [`notes/kernel-ring-drain.md`](../../notes/kernel-ring-drain.md) answers the seven questions and
 recommends the frame, which needs no new object type and no new method, keeps the property that no
-user pointer crosses the syscall boundary, and matches the machine statistics page's shape. Nothing
+user pointer crosses the system call boundary, and matches the machine statistics page's shape. Nothing
 past the proposal is built until it is ruled.
 
 **In brief.** Once the `console` server owns the console, two address spaces are writing to the same

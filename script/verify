@@ -516,7 +516,6 @@ jh7110_clock_and_reset	100	the clock offsets, reset lines and status decoders ar
 jh7110_pci_express	2	the PCI Express outbound window encoder round-trips its size, and the root port forwards exactly bus 1 and exactly its memory window
 direct_memory_access_validator	126	the DMA-confinement validator, no descriptor escapes the grant
 network_time_protocol	18	the 1900-epoch era pivot, and no hostile packet moves the clock
-domain_name_system	130	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
 globally_unique_identifier_partition_table	68	the partition table's CRC-32, its round trips, and partitions that overlap
 master_boot_record	6	the MBR parse reads each entry from its own bytes, and the scratch range never touches a partition or sector 0
 filesystem_contract	4	a directory capability's child never exceeds its parent, at any depth
@@ -531,7 +530,7 @@ driver_process_contract::e1000e	2	the e1000e spawn handoff round-trips, and acce
 driver_process_contract::extensible_host_controller_interface	18	the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
 driver_process_contract::non_volatile_memory_express	1	the NVMe spawn handoff round-trips, and keeps its doorbells in the one mapped page
 driver_process_contract::virtual_io	326	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
-kernel	7	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
+kernel	7	the run arithmetic in the kernel's own system call dispatch, and the SMMU entries that say which frames a device may reach
 components	156	the EL0 components: a bounded append that a configuration page this system did not write feeds, and the block driver's pure logic (the library's block_driver_roles): the directory lookup is total and matches whole names, the IP checksum, and the bounded waits
 machine_discovery	398	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
 TABLE
@@ -748,7 +747,7 @@ for c in $crates; do
         # this can catch a binary missing from within one.
         #
         # It selects on the FILE name, and `components/src` holds two files that are not binaries
-        # (`virtio_net_transport.rs` and `socket_test_client.rs`, `net_stack`'s single-consumer
+        # (`virtual_io_net_transport.rs` and `socket_test_client.rs`, `net_stack`'s single-consumer
         # `#[path]` modules, which rule 7 permits). A harness in one of those would produce a
         # `--bin` cargo does not know, and cargo says so and stops; the failure is loud, which
         # is the direction that is safe to leave alone.

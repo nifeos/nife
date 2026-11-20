@@ -33,7 +33,7 @@ An appendix to [the milestone](../1075-abi-outside-review.md).
 5. The virtio contract documents an error that does not exist.
    Finding: `src/virtio.rs` line 19 says `SETUP_QUEUE` answers `BadQueue`/`WrongObject`. `Error` has no
    `BadQueue`; the kernel maps every transport refusal but a DMA escape to `WrongObject`
-   (`kernel/src/syscall/object_methods.rs` line 234). A reader who matches on `BadQueue` finds nothing to
+   (`kernel/src/system_call/object_methods.rs` line 234). A reader who matches on `BadQueue` finds nothing to
    match.
    Fix: "`WrongObject` when `queue` is out of range, the block does not fit the region, or the
    queue was never set up".

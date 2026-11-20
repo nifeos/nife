@@ -22,9 +22,9 @@ design, because the OS is not in the loop.
 
 ### OS primitives are where an OS shows itself
 
-Syscall entry, context switch, IPC round trip, page map, page fault, thread spawn: these are the OS,
+System call entry, context switch, IPC round trip, page map, page fault, thread spawn: these are the OS,
 and they distinguish Linux from macOS from us. The same source cannot measure them across three OSs,
-because "the same syscall" does not exist on all three. You invoke each OS's own primitive: `getpid`
+because "the same system call" does not exist on all three. You invoke each OS's own primitive: `getpid`
 on Linux, a Mach/BSD call on macOS, our `svc` null-invoke. So the OS-revealing benchmark is a
 matched harness per OS: one metric definition, three native implementations. That is what lmbench
 is, and how the L4/seL4 papers compare to Linux. Our microbenchmarks are the nife side of it.
@@ -51,13 +51,13 @@ The kernel-side microbenchmarks run in kernel context. The bench threads are ker
 `sched::yield_now` and `sched::ipc_send/receive` directly, so they measure each operation's
 kernel-internal path length. That is right for regression gating: a code-path change moves the count
 next to its commit. It is not what lmbench measures. lmbench runs a userspace program making real
-syscalls, so its numbers include the EL0→EL1 trap and return that a kernel-side benchmark skips.
+system calls, so its numbers include the EL0→EL1 trap and return that a kernel-side benchmark skips.
 
 So the cross-OS primitive numbers come from EL0, from a userspace program that self-times a
-loop of real `svc` syscalls. That is why milestone 19e (run a real workload) opened EL0 access to the virtual counter
+loop of real `svc` system calls. That is why milestone 19e (run a real workload) opened EL0 access to the virtual counter
 (`CNTKCTL_EL1.EL0VCTEN`; `user_mode_runtime::now`/`cntfrq`; [notes/abi.md](../abi.md)). CoreMark is
 the first program to use it, reporting `[crc, ticks, freq]`. The EL0 primitive benchmarks (null
-syscall, context switch, IPC round trip, page map, all measured the lmbench way) build on the same
+system call, context switch, IPC round trip, page map, all measured the lmbench way) build on the same
 `user_mode_runtime::now`. The kernel-side suite stays, for gating; the EL0 suite is additive, for
 cross-OS honesty. The two differ by roughly the trap cost, itself a number worth having.
 
@@ -68,12 +68,12 @@ the bench boot, self-times each primitive from EL0 and reports it as a normal be
 
 | primitive | HVF ns/iter | what one iteration is |
 |---|---|---|
-| `null_syscall` | ~42 | one `svc` that the kernel rejects immediately: trap + dispatch + return |
+| `null_system_call` | ~42 | one `svc` that the kernel rejects immediately: trap + dispatch + return |
 | `ctx_switch` | ~692 | one `SYS_YIELD` to a peer *process* and back: two switches, address space included |
 | `ipc_rtt_el0` | ~2272 | a `SEND` to a server process and a `RECEIVE` of its reply: two rendezvous, four `svc`s |
 | `map_el0` | ~909 | `invoke(aspace, MAP_INTO, va, frame, RO)`: trap + cap resolve + walk + PTE + record |
 
-Two sanity checks pass. A context switch is ~16x a null syscall: two traps, the scheduler, two
+Two sanity checks pass. A context switch is ~16x a null system_call: two traps, the scheduler, two
 register save/restores and a TTBR0/ASID change, against one bare trap. And the round trip matches its
 parts: two context switches (2 × 692) plus four traps (4 × 42) plus dispatch ≈ 2272.
 
@@ -83,14 +83,14 @@ The EL0 round trip has a kernel-side twin, the milestone-21 `ipc_rtt`: ~951 ns i
 EL0↔EL1 crossings. The ~1.3 µs gap is the trap cost of the four `svc`s a real round trip pays, which
 is why the EL0 numbers are what compare to lmbench. Every figure in this subsection is a debug build.
 The cross-OS comparison and the L4 calibration both want release builds on all sides. These line up
-against lmbench's `lat_syscall` / `lat_ctx` / `lat_pipe` and `sel4bench`.
+against lmbench's `lat_system_call` / `lat_ctx` / `lat_pipe` and `sel4bench`.
 
 ### Map: the primitive where the answer is a tie
 
 Map (lmbench's `lat_mmap`) behaves differently from the other three. It taught three things.
 
 First, it consumes resources per call. Every `MAP_INTO` writes a page-table entry and a revocation
-record, paid from the target space's untyped region, so unlike a null syscall it cannot loop
+record, paid from the target space's untyped region, so unlike a null system call it cannot loop
 forever. The loop runs 500 maps at most, one L3 table's worth; the kernel-side twin `map_new` maps
 64. There is no unmap in the surface yet, so each map needs a fresh VA.
 
@@ -130,7 +130,7 @@ zeroing-bound. The tie stands.*
 
 `bench/host/` holds the host side of each metric:
 
-- `null_syscall.rs`: a raw `getpid` through the syscall gate, not libc's cached `getpid`, which
+- `null_system_call.rs`: a raw `getpid` through the system call gate, not libc's cached `getpid`, which
   never traps.
 - `ipc_rtt.rs`: a pipe round trip between two forked processes, lmbench's `lat_pipe`.
 - `ctx_switch.rs`: the derived context switch.
@@ -148,7 +148,7 @@ userspace and implies `--real`:
 
 | metric | nife **release** (HVF) | Linux (static musl, HVF) | macOS/XNU (native) |
 |---|---|---|---|
-| null syscall | **~27 ns** | ~139 ns | ~76 ns |
+| null system call | **~27 ns** | ~139 ns | ~76 ns |
 | context switch (per switch, derived) | **~28 ns** | ~415 ns | ~818 ns |
 | IPC round trip | **~337 ns** | ~1723 ns | ~2620 ns |
 | map a fresh page (provision + map) | ~552 ns (`map_new` + trap) | ~534 ns | ~556 ns |
@@ -160,7 +160,7 @@ The dates in the heading were recovered from `git log` on 2026-09-24 (commits `a
 [notes/register-of-measures.md](../register-of-measures.md) flagged.
 
 nife wins four and ties one. Same M-series core, same HVF tier as Linux, both optimized. It is ~5x
-faster than Linux at the null syscall (27 vs 139) and ~5x at the IPC round trip (337 vs 1723). It
+faster than Linux at the null system call (27 vs 139) and ~5x at the IPC round trip (337 vs 1723). It
 beats native macOS at both, and it builds a process faster than either. An IPC round trip in the low
 hundreds of nanoseconds, next to the reference OS on the same silicon, is seL4-class. **"seL4-class"
 is a claim about magnitude and nothing more.** Its worth against seL4's published cycles, and the
@@ -202,17 +202,17 @@ No OS lets you time a bare switch, so it is derived. On the host, `bench/host/ct
 measures a two-process pipe round trip (two switches plus two pipe passes). It subtracts a self-pipe
 pass, a `write`+`read` with no switch. One switch is then `round_trip/2 - self_pipe`. nife's
 `ctx_switch` bench is a yield round trip (two switches plus two `SYS_YIELD`s); subtracting the trap
-(`~2 x null_syscall`) leaves ~28 ns per switch. The subtraction is approximate and the mechanisms
+(`~2 x null_system_call`) leaves ~28 ns per switch. The subtraction is approximate and the mechanisms
 differ (our lightweight yield against a pipe pass). So read the ~15x gap to Linux as directional,
 not exact. It points the same way as the other two: three metrics, three methods, all favoring the
 minimal kernel.
 
 ### Debug told the opposite story at IPC
 
-Debug nife: null syscall ~42 ns, ctx switch ~692 ns, IPC ~2272 ns. So `-O0` was a ~1.5x tax on the
-bare syscall, which still won, but a ~6.7x tax on IPC, which lost to Linux at 1723 ns. The heavier a
+Debug nife: null system call ~42 ns, ctx switch ~692 ns, IPC ~2272 ns. So `-O0` was a ~1.5x tax on the
+bare system call, which still won, but a ~6.7x tax on IPC, which lost to Linux at 1723 ns. The heavier a
 path, the more the optimizer matters. The IPC path, two context switches plus four traps plus the
-rendezvous, is heavy. The null-syscall win survived the debug handicap; the debug handicap hid the
+rendezvous, is heavy. The null-system-call win survived the debug handicap; the debug handicap hid the
 IPC win. Measuring both builds is why we can say which.
 
 ### Caveats that remain
@@ -226,7 +226,7 @@ say how close to the state of the art these numbers are, is the remaining compar
 
 ## Three of the EL0 rows run at the production shell
 
-`null_syscall`, `sink_producer | sink_consumer` (the `sink_throughput` row) and `map_el0 --mem 10`
+`null_system_call`, `sink_producer | sink_consumer` (the `sink_throughput` row) and `map_el0 --mem 10`
 are programs of their own, so a person types them at the prompt of the kernel that ships. Each
 prints one row of ticks, never converted time, under `bench-production:`. The bench boot spawns the
 same programs and its rows read `bench:`. `primitive_benchmark_contract` holds the loop counts and

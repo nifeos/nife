@@ -72,7 +72,7 @@ pub(crate) fn thread_control_block_delegate_capability(
 }
 
 /// The body both share. `source` runs first, so its answer comes before the embryo's, the order the
-/// syscall layer answered in when it read the source itself. Its table lock is released before the
+/// system call layer answered in when it read the source itself. Its table lock is released before the
 /// embryo's is taken: two tables are never held at once (`sync::rank::CAPABILITY_TABLE`).
 pub(super) fn thread_control_block_insert_from(
     tid: ThreadId,
@@ -138,7 +138,7 @@ pub fn supervise_current_thread(ep: RendezvousId, label: u64) {
 /// thread gets its kernel stack and entry context and is placed by the power of two choices.
 pub fn start_thread_control_block(tid: ThreadId, args: [u64; 3]) -> Result<(), abi::Error> {
     // Built before `IPC_TABLES` is taken: it maps pages and allocates frames, which other cores'
-    // IPC would wait behind (notes/job-mix/null-syscall-under-load.md). Declared before the guard,
+    // IPC would wait behind (notes/job-mix/null-system-call-under-load.md). Declared before the guard,
     // so a refusal releases the lock first; a missing stack is still reported after the checks.
     let stack = crate::thread::KernelStack::new();
     let mut guard = IPC_TABLES.lock();

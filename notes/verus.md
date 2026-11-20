@@ -144,7 +144,7 @@ verified in 0.83 seconds on this Mac.
 
 This is the finding that answers the brief's question. SOSP '25's own trusted computing base lists
 172 lines of assembly and about 3,000 lines of trusted Rust: the IOMMU, interrupt setup, the APIC,
-the IDT, the GDT and TSS, and the syscall entry. Read against this tree's `arch/x86_64/`, it is the
+the IDT, the GDT and TSS, and the system call entry. Read against this tree's `arch/x86_64/`, it is the
 same file list, and in Atmosphere it is trusted, not verified. The rest of its trusted base is the
 Verus frontend, Z3, the Rust toolchain and `core`, and about 700 lines of unverified axioms.
 [`atmospheres-trusted-base.md`](verus/atmospheres-trusted-base.md) quotes the list.
@@ -249,7 +249,7 @@ axiom (`seam.rs`, the worked example above) passing green.
   above say it is more likely to be low than high. Treat it as an order of magnitude that says "not
   this project at this size", which is all it can support.
 - **Verus was run on scratch files, never on a nife crate.** Not one line of this tree was put
-  through it. Whether `crates/capability_table` or `kernel/src/syscall.rs` would even parse under Verus's
+  through it. Whether `crates/capability_table` or `kernel/src/system_call.rs` would even parse under Verus's
   Rust subset is unknown: the subset's boundaries (traits, generics, closures, `dyn`, lifetime
   shapes) were not tested here at all, and this tree leans hard on all of them.
 - **The build story after verification is quoted, not observed.** KISV '23 describes two passes (*"The

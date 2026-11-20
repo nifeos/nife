@@ -27,7 +27,7 @@ What that means concretely, so no lane has to infer it:
 | `dma` | yes, "direct memory access" | `direct_memory_access` (already ruled 2026-09-05) |
 | `xor` | no. It is the everyday word for exclusive or | **stays**, an earned abbreviation in `kernel-write-xor-execute-check` (calef, 2026-10-18 UTC) |
 | `usb` | no. People say "USB", and the expansion adds nothing a newcomer can use | **stays** (calef, 2026-10-17, ruling `usb_keyboard_driver`) |
-| `syscall` | no. It is the everyday word for "system call", and the tree uses it everywhere | **stays**, kept tree-wide as an abbreviation (calef, 2026-10-18: "Yes") |
+| `system_call` | no. It is the everyday word for "system call", and the tree uses it everywhere | **stays**, kept tree-wide as an abbreviation (calef, 2026-10-18: "Yes") |
 | `cpu` | no. It is the scheduling unit's word | **stays**, by the rule already in design/naming.md (2026-10-03); not a new ruling |
 | `errno` | not ours. It is C's own identifier | **stays**, recorded as a foreign identifier (calef, 2026-10-18) |
 | `config` | yes, "configuration" | **expands** tree-wide, a foreign name keeps its owner's spelling (PCI's `CONFIG_ADDRESS` and `CONFIG_DATA`). calef, 2026-10-18 (UTC): "Yes: config is not earned. Spell it out tree-wide; foreign names like PCI's CONFIG_ADDRESS keep their spelling." |

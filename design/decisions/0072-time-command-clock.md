@@ -34,7 +34,7 @@ pretending to lead it.
 What. Milestone 86 shipped `time` reading the shell's clock capability, as its block specified.
 The lane then argued in a BUGS entry that a duration does not need a clock at all. Wall clock is
 `offset + counter`, and the offset cancels across a command. The counter is ambient
-(`user_rt::monotonic_nanos`, two register reads, no syscall), so `end - start` reduces to a counter
+(`user_rt::monotonic_nanos`, two register reads, no system call), so `end - start` reduces to a counter
 difference any process could take.
 
 The trade. A counter-only `time` needs no capability, cannot be refused, and is *immune* to a

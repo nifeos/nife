@@ -9,7 +9,7 @@ holds the detail of options A and B, all of option C, and how option D was read,
 What the surface grows by, exactly. In the manifest form: one field on the spawn contract, plus
 its validation, plus whatever names the authority. In the invocation form it would be one method on
 the thread control block capability (`crates/abi`'s `thread_control_block` module) and one arm in
-`kernel/src/syscall.rs`. Either way the thing that is irreversible is not the code. It is that every
+`kernel/src/system_call.rs`. Either way the thing that is irreversible is not the code. It is that every
 future program is written against it and every future scheduler must honor it.
 
 The capability question it opens, and this is the part with no default answer. Is pinning an
@@ -63,14 +63,14 @@ way.
 
 ## C. A userspace-drivable interrupt source
 
-What it is, as the milestone framed it. A syscall a program calls that causes an interrupt, so
+What it is, as the milestone framed it. A system call a program calls that causes an interrupt, so
 the workload itself drives `irq_notify` at rate.
 
 Verified fact that reshapes this option: the userspace half already exists. `abi::irq::WAIT` is a
 method on an `Irq` capability, `crates/user_rt`'s `irq_wait` calls it, and `kernel/src/soak.rs`
 already hands workers capabilities at spawn. A program can already block on an interrupt route
 with no new surface at all. What is missing is only the raise, and the raise does not have to be
-a syscall, because the kernel is already the thing that raises interrupts.
+a system call, because the kernel is already the thing that raises interrupts.
 
 So the option as stated ("userspace can cause interrupts") is asking for the more expensive half of
 a thing that is already half built, and it is dominated by:
@@ -88,7 +88,7 @@ interrupt context, and the reason (`IPC_TABLES` is an `IrqSafeMutex`, §9) holds
 exactly as it does for the device arm.
 
 The spike, and its numbers. Written, run, and thrown away on 2026-09-01. 53 lines added across
-three files, no syscall change, no architecture-specific code, no change to any production path:
+three files, no system call change, no architecture-specific code, no change to any production path:
 a routed rendezvous plus a tick hook in `kernel/src/soak.rs`, three lines in `kernel/src/sched.rs`,
 and one role in `fixtures/src/soaker.rs` that loops on `irq_wait`. Same command, same host, same day as
 the baseline above:

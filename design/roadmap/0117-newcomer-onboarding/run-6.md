@@ -37,7 +37,7 @@ account of it, written 2026-09-19.*
    on the host. The fourth was `script/stranger-test` debriefing a refused session.
 2. `script/apropos` placed, in `README.md` directly after the start-here order and in
    `CONTRIBUTING.md` beside its pointer to that order. Each carries an invocation checked against
-   the tree (`syscall` reaches `crates/abi/src/lib.rs`, `socket` reaches `notes/net.md`). Placing
+   the tree (`system_call` reaches `crates/abi/src/lib.rs`, `socket` reaches `notes/net.md`). Placing
    it found that it exited 1 on every search, because six filenames had grown past the guest
    record's 72-byte path; it now fails only when a result it printed is truncated. Its `BUGS` also
    said ranking was occurrence count, and it is density.

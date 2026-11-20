@@ -44,7 +44,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
    sentence in `Bindings`' doc. No behavior changes on any 64-bit target.
    Door: two-way. Effort: XS.
 
-7. Names the naming rules refuse, or that read wrong to a stranger. DONE (the eight spellings below, provisional, in the tree and in `redoxfs_server`; `is_name`'s parameter is `component`; `hop` keeps its name).
+7. Names the naming rules refuse, or that read wrong to a stranger. DONE (the spellings below and `walk`'s `requested_rights`, ratified, in the tree and in `redoxfs_server`; `is_name`'s parameter is `component`).
    Finding, each with the rule: `PROOF_PATH` is a length in bytes and carries no unit
    (`design/naming.md`, Units: a length carries its unit; `PROOF_BADGES` and `PROOF_OPERATIONS`
    are counts of things and stand). The binding `dirs` (line 115) and the parameter `want_dir`
@@ -55,9 +55,8 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
    `Bindings::of` has no standard-library precedent (`get` would promise an `Option`).
    Evidence: `crates/subtree_scope/src/lib.rs` lines 83, 115, 139, 70, 156, 139, 235, 306.
    Change, recommended spellings: `PROOF_PATH_BYTES`; `directories`; `want_directory`;
-   `component`; `NodeKind`; `Binding::Unbound`; `check_landing`; `Bindings::binding`. The `hop`
-   parameter of `walk` could take the server's word, `requested`, since the doc already explains
-   it as the rights each step asks for. One pull request, after the maintainer rules the two-way
+   `component`; `NodeKind`; `Binding::Unbound`; `check_landing`; `Bindings::binding`. `walk`'s
+   parameter is `requested_rights`, a `u64` of rights bits added to `DESCEND` at every step. One pull request, after the maintainer rules the two-way
    names provisional.
    Door: two-way before the tag; every public one is one-way after it. Effort: S.
 

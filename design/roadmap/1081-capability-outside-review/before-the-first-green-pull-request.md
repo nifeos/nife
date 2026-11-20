@@ -10,14 +10,14 @@ An appendix to [the milestone](../1081-capability-outside-review.md).
    theorem), has no caller in the kernel. Neither do `put` and `get_with`. Delegation runs in
    `kernel/src/sched/capabilities.rs` (`Delegation::derive`, lines 366 to 383), which rereads the
    source, requires `GRANT`, requires the subset, and builds the copy by hand; the two `REVOKE`
-   arms in `kernel/src/syscall.rs` (lines 198 and 212) check `GRANT` the same way. None of those
-   three sites is under a Kani harness (`kernel/src/syscall/proofs.rs` has none for them). Inside the crate, the docs describe `Rights::GRANT` as the right to pass a capability on, and nothing in
+   arms in `kernel/src/system_call.rs` (lines 198 and 212) check `GRANT` the same way. None of those
+   three sites is under a Kani harness (`kernel/src/system_call/proofs.rs` has none for them). Inside the crate, the docs describe `Rights::GRANT` as the right to pass a capability on, and nothing in
    the crate consults it: an outside user who calls `derive` gets a copy of a `GRANT`-less
    capability. Within nife this widens nothing, because the kernel never calls `derive`; it means
    the proof and the code it describes have drifted apart, and the crate's own API contradicts its
    own documentation of `GRANT`.
    Evidence: `src/lib.rs` lines 62 to 64, 453 to 472, 717 to 758; `kernel/src/sched/capabilities.rs`
-   lines 340 to 400; `kernel/src/syscall.rs` lines 196 to 214; `grep -rn '\.derive(' kernel/src`.
+   lines 340 to 400; `kernel/src/system_call.rs` lines 196 to 214; `grep -rn '\.derive(' kernel/src`.
    Change: put the rule in the crate once, as a method on `Capability<O>`: `delegate(&self,
    rights: Rights) -> Result<Capability<O>, Error>`, refusing without `GRANT`
    and refusing a widening, with a new error variant for the first refusal (`GrantRequired`).

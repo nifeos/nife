@@ -172,7 +172,7 @@ pub fn with_capability_table<R>(
 
 /// The root of `tid`'s address space, `None` for a kernel thread or a name that does not resolve
 /// (test support, milestone 779 (fuzz the surface a confined process can reach), provisional
-/// name). No syscall hands out a root; the confined fuzzer's page oracle walks mappings from it.
+/// name). No system call hands out a root; the confined fuzzer's page oracle walks mappings from it.
 #[cfg(feature = "system_tests")]
 pub fn thread_space_root(tid: ThreadId) -> Option<u64> {
     let guard = IPC_TABLES.lock();

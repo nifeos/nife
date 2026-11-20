@@ -1,7 +1,7 @@
 Falsifies `capability_table::from_bits_cannot_forge_a_right`.
 
 The defect: the mask dropped from `Rights::from_bits`, `Rights(bits)` instead of
-`Rights(bits & Rights::ALL.0)`. `from_bits` takes an attacker-controlled syscall
+`Rights(bits & Rights::ALL.0)`. `from_bits` takes an attacker-controlled system call
 register, so this is the exact shape of a real hole: userspace hands the kernel a u32 and
 the kernel believes all 32 bits of it.
 
@@ -13,7 +13,7 @@ index d65bed7d..f33c0989 100644
 --- a/crates/capability_table/src/lib.rs
 +++ b/crates/capability_table/src/lib.rs
 @@ -93,7 +93,7 @@ impl Rights {
-     /// [`bits`](Self::bits), for rights that crossed a boundary in a syscall register. Undefined
+     /// [`bits`](Self::bits), for rights that crossed a boundary in a system call register. Undefined
      /// bits are dropped, so a caller cannot conjure a right that does not exist.
      pub const fn from_bits(bits: u32) -> Rights {
 -        Rights(bits & Rights::ALL.0)

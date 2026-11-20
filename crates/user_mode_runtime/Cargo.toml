@@ -6,7 +6,7 @@ rust-version = "1.88"
 description = "The user-mode runtime for a capability microkernel: the one system call wrapper, the entry macro, the panic handler and typed windows over memory the kernel handed a process, on aarch64, riscv64 and x86_64"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-keywords = ["no-std", "runtime", "syscall"]
+keywords = ["no-std", "runtime", "system-call"]
 categories = ["no-std", "embedded", "os"]
 publish = false     # `false` until the release that publishes this crate; that release deletes the line
 

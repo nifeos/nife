@@ -47,7 +47,7 @@ sets). Then E1 on a `board,bench,single_hart` card, interleaved against an uncol
 
 What it costs. One feature, one constant, one line where a thread's initial `sp` is computed,
 and a color's worth of each stack (up to about 4 KiB of a 24 KiB stack, which `script/stack-depth-check`
-must still pass). No syscall surface, no dependency, no default-build change.
+must still pass). No system call surface, no dependency, no default-build change.
 
 **What it does not do.** It is not a proposal to color stacks by default. That is a decision to make
 after the reading, with the reading.

@@ -78,8 +78,12 @@ BUGS:
   that builds an identifier from a string is not read.
 - `respell` still writes `nanos` as `ns` and `millis` as `ms`, which the rule refuses; it only
   recognizes a rename inside `helpers/moved_rows.py`, and a lane that sweeps those units fixes it.
-- The template has no `proto` row, so design/naming.md's prose names a word the list does not hold
-  (`PROSE_ONLY_WORDS`).
+- The template has no `proto` or `virtio` row, so design/naming.md's prose names words the list
+  does not hold (`PROSE_ONLY_WORDS`).
+- The template's `naming_words.toml` still lists `syscall` as an accepted word, and this tree
+  strikes it. The vendored file stays byte-identical to its source, so the fix is upstream: drop
+  the row in crate-workflows, then bump the vendored copy and remove the `syscall` entry of
+  `PROSE_ONLY_WORDS`.
 """
 
 import os
@@ -157,14 +161,12 @@ CAP_KEPT = {
     'kernel/src/arch/x86_64/timer.rs': ({'CALIBRATION_WINDOW_CAP'}, _CEILING),
     'redoxfs_server/src/bin/second_mount.rs': ({'cap', 'heap_cap', 'HIT_CAP', 'cap_mebibytes'}, _CEILING),
     'crates/swish/src/say/tests.rs': ({'the_heap_cap_is_named_in_kibibytes'}, _CEILING),
-    'crates/domain_name_system/tests/replies.rs':
-        ({'addresses_past_the_cap_are_dropped_and_the_rest_kept'}, _CEILING),
     'crates/video_terminal/src/vt/tests.rs': ({'scrolls_report_movement_and_cap_at_the_screen'}, _CEILING),
     'xtask/src/board.rs': ({'cap_given'}, _CEILING),
-    # The grant-argument test fills the page to its `CAPACITY`, and the syscall fuzzer's sweep stops
+    # The grant-argument test fills the page to its `CAPACITY`, and the system call fuzzer's sweep stops
     # at a guest-time deadline.
     'crates/grant_plan/src/parsing/tests.rs': ({'cap'}, _CEILING),
-    'system_tests/src/user/syscall_fuzzer_tests.rs': ({'cap'}, _CEILING),
+    'system_tests/src/user/system_call_fuzzer_tests.rs': ({'cap'}, _CEILING),
     # `PRINT_CAP` bounds a diagnostic's lines; the test's `caps` is the verb "limits". Two files since
     # milestone 840 (the scheduler file is split along its seams) moved each out of `sched.rs`.
     'kernel/src/sched/canary.rs': ({'PRINT_CAP'}, _CEILING),
@@ -675,7 +677,11 @@ def unit_main(argv):
 NAMING = 'design/naming.md'
 # Words the prose spells out that the template's list does not hold. An entry is a gap in the
 # template, to be closed there; the check fails when the list gains the word, so this empties.
-PROSE_ONLY_WORDS = {'proto': 'the template has no `proto` row'}
+PROSE_ONLY_WORDS = {
+    'proto': 'the template has no `proto` row',
+    'virtio': 'the template has no `virtio` row; helpers/name_checks.py refuses it in this tree',
+    'syscall': 'the template lists `syscall` as accepted; helpers/system_call_names.py checks it here',
+}
 _BACKTICKED = re.compile(r'`([A-Za-z_]+)`')
 
 
@@ -761,7 +767,7 @@ def words_selftest():
     words = {'spelled_out': {'op': 'operation', 'ops': 'operations', 'sdio': 'x', 'cap': 'capability'},
              'units': {'ns': 'nanoseconds', 'kib': 'kibibytes', 'mbps': 'megabits_per_second'}}
     good = ('## Acronyms and abbreviations\n\n'
-            '- Every name this tree authors spells these out: `op`, `cap` and `proto`.\n'
+            '- Every name this tree authors spells these out: `op`, `cap`, `syscall`, `proto` and `virtio`.\n'
             '  It continues here.\n'
             '- These stay: `pci`. `SDIO` is not accepted.\n\n'
             '## Units\n\n'
@@ -789,7 +795,7 @@ def words_selftest():
            good.replace('`op`, ', ''), '`op` is in the template word list')
     expect('a prose word the list lacks',
            good.replace('`op`,', '`op`, `zzz`,'), '`zzz` is spelled out')
-    expect('an exception that went stale', good.replace(' and `proto`', ''),
+    expect('an exception that went stale', good.replace(', `proto` and', ' and'),
            'PROSE_ONLY_WORDS lists `proto`')
     expect('a unit that stays', good.replace('are symbols too', 'are allowed, `kib` stays'),
            'says `kib` stays')

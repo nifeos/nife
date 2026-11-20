@@ -18,12 +18,12 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
    including the real device-tree pointer OpenSBI passed in `a1`. That one line exercises the whole
    chain: S-mode entry, stack, `.bss`, `tp`, `interrupts::disable` (the console lock uses it), the
    UART, and the DTB handoff. Then a clean `wfi` halt. The milestone-1 moment on a second ISA. A fifth
-   leak surfaced and was deferred, not fixed. Portable code (`sched`, `smp`, `syscall`, `user`) named
+   leak surfaced and was deferred, not fixed. Portable code (`sched`, `smp`, `system_call`, `user`) named
    `drivers::gic` directly, an interrupt-controller coupling that the traps step resolves with a PLIC
    abstraction. Until then the GIC driver stays un-gated (it compiles on riscv and is dead).
 3. Traps: done. `stvec` + the `TrapFrame` + trap.s (save 36 registers, dispatch on `scause`,
-   restore, `sret`). The syscall-ABI leak is resolved: `syscall.rs` reads the number and args through
-   `TrapFrame::{syscall_nr, arg, set_arg}`, so `ecall`'s a7/a0..a5 map without portable code naming a
+   restore, `sret`). The system-call-ABI leak is resolved: `system_call.rs` reads the number and args through
+   `TrapFrame::{system_call_nr, arg, set_arg}`, so `ecall`'s a7/a0..a5 map without portable code naming a
    register. Proven by a boot self-test: an `ebreak` is caught, `sepc` stepped past it, and `sret`
    returns. First cut is S-mode traps on the current stack; the `sscratch` stack switch for U-mode
    traps arrives with the user path.
@@ -43,8 +43,8 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
 6. The capability core runs: done, and a user program runs at U-mode. The scheduler and context
    switch run on RISC-V ("2 of 2 kernel threads ran"). The user-mapping surface and the single-`satp`
    model work (a process `satp` is installed, the kernel survives via `share_kernel_half`, a user page
-   maps and translates); and a hand-written RISC-V program runs at U-mode and makes syscalls:
-   "a program ran at U-mode and made 3 syscalls (yield/yield/exit via ecall)". That exercises the
+   maps and translates); and a hand-written RISC-V program runs at U-mode and makes system_calls:
+   "a program ran at U-mode and made 3 system calls (yield/yield/exit via ecall)". That exercises the
    whole path: `enter_user`'s `sret`, the `sscratch` U-mode trap entry, `ecall` dispatch through the
    ABI accessors, and the return to U-mode, twice, then `exit`.
 
@@ -77,7 +77,7 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
    `riscv_trap_dispatch` records the tick (`sched::on_tick`) and defers the switch to the trap tail,
    the same four lines as aarch64's `handle_irq`: `if take_need_resched() && is_running() {
    count_preemption(); schedule(); }`. Two threads whose entire body is a tight loop (no yield, no
-   syscall, not even a call) both make progress: ~680k and ~666k iterations in 0.2s, 18 preemptions.
+   system call, not even a call) both make progress: ~680k and ~666k iterations in 0.2s, 18 preemptions.
    Under any cooperative scheduler the first would own the CPU forever. This is the RISC-V half of
    DECISIONS §5 (preemptive threads with real stacks). It works for a U-mode thread and an S-mode kernel thread alike, because `trap.s`
    saved a full frame for whichever the timer interrupted, and `schedule()` returns through
@@ -91,7 +91,7 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
    worker is granted WRITE on one endpoint (slot 0), started with an input in `a1`, squares it, and
    SENDs the answer home: "loaded a 13568-byte riscv ELF, ran worker(7) at U-mode, it sent 49". Three
    small pieces made this work, each closing an aarch64 assumption. `user_mode_runtime` (the userspace
-   syscall runtime) grew a RISC-V ABI (`ecall`+`a7` beside `svc`+`x8`). The `elf` crate accepts the
+   system call runtime) grew a RISC-V ABI (`ecall`+`a7` beside `svc`+`x8`). The `elf` crate accepts the
    running kernel's machine (`EXPECTED_MACHINE`, cfg-selected, symmetric: each kernel refuses the
    other's ELF). And `worker.rs` arch-gated its one trap instruction (`ebreak` vs `brk`). The loader itself
    (`load`, `map_segments`) was already arch-neutral and needed no change. This is the first RISC-V
@@ -106,7 +106,7 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
    segment into retyped frames and map them, retype a TCB, endow it, configure, start. It hands the
    child a WRITE view of the report endpoint, and starts it with an input. The child squares it and
    SENDs `81` straight home; the kernel never parsed or mapped the worker. This exercised the *full*
-   userspace capability syscall surface on RISC-V for the first time (untyped RETYPE/RETYPE_OBJ,
+   userspace capability system call surface on RISC-V for the first time (untyped RETYPE/RETYPE_OBJ,
    aspace MAP_INTO, frame MAP, tcb CAPABILITY_INSERT/CONFIGURE/START), all across the `ecall` ABI. `builder`
    is fully portable; it builds for aarch64, though aarch64's init is the PL011-wired role of
    `hello`. Build the archive with `cargo xtask initrd-riscv`.

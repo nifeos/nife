@@ -21,7 +21,7 @@ question wearing two milestone numbers.
 
 A security policy for a demonstrator is mostly a scope argument. `SECURITY.md` draws it at
 confinement. In scope: capability forgery or widening, MMU escape, DMA escape, IPC confusion, a
-syscall argument that panics or corrupts the kernel, TOCTOU across the shared pages every service
+system call argument that panics or corrupts the kernel, TOCTOU across the shared pages every service
 contract uses. The scope also covers the foreign-language and vendored seams (§27 (the filesystem
 service), §31 (the foreign-language seam)). Out of scope: that a demonstrator under QEMU is not a
 production system, and that a hardening feature on the roadmap (design/roadmap/README.md) is

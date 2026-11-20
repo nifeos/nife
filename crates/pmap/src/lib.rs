@@ -1,6 +1,6 @@
 //! **`pmap`: what a process's mappings are when there is no `/proc/pid/maps`**
 //! (notes/process-view.md). The program's logic, lifted out to run on the host;
-//! `components/src/pmap.rs` is the syscall and the two output streams. It is handed a function that
+//! `components/src/pmap.rs` is the system call and the two output streams. It is handed a function that
 //! reads one mapping through `abi::address_space::LIST`, which needs `ENUMERATE` where `MAP_INTO`
 //! needs `WRITE` (§114 (`pmap` gets its listing)), so it cannot widen the space or learn that
 //! another exists. [`collect`] takes the whole listing before anything prints, and the answers are

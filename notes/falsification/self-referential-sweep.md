@@ -11,7 +11,7 @@ was written as a description of one harness. Milestone 202 then found the same s
 every harness in the tree was asked the question.
 
 146 harnesses swept. That is the 141 `script/falsifications` walks in `crates/`, plus the
-two in `kernel/src/syscall.rs`, the two in `components/src/printenv.rs` and the one in
+two in `kernel/src/system_call.rs`, the two in `components/src/printenv.rs` and the one in
 `vendor/redoxfs/src/node.rs`, which the walk does not reach (milestone 212 is fixing that).
 
 11 were blind, and blind is a measurement here rather than a reading. For each one there is a patch

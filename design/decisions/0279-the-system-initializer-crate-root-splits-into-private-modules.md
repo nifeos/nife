@@ -219,6 +219,6 @@ the third alternative. The cost that alternative names is paid: 51 constants bec
 
 ## What it does not decide
 
-No public path, wire format, syscall or behavior changes under any answer. No function body
+No public path, wire format, system call or behavior changes under any answer. No function body
 changes. The decomposition of `boot` is its own milestone, filed as 843's follow-on with measured
 step boundaries.

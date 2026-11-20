@@ -30,7 +30,7 @@ compile time. Queue 0's layout is byte-identical to the old single-queue layout,
 needs no change. Its data buffers already begin at 0x200 (= queue 1's block), free because a disk
 has no queue 1.
 
-The surface stays narrow (§4 rule 3, the syscall-boundary discipline). No new syscall and no
+The surface stays narrow (§4 (kernel shape: a microkernel) rule 3, the system-call-boundary discipline). No new system call and no
 new object. The `Virtio` capability's existing `SETUP_QUEUE` and `NOTIFY` methods each grew a queue
 argument (`SETUP_QUEUE(num, queue)`, `NOTIFY(queue)`). That is the established way this project
 adds capability semantics (object revocation grew `Untyped` the same way). The disk passes queue 0

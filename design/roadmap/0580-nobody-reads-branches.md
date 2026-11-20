@@ -13,7 +13,7 @@ this paragraph, the removal of its `**Gate: NONE.**` line and the two sections a
 Its long sentences are split to meet §213 (writing standards). The argument is its author's and promotion is not the moment to improve it. On 2026-10-12 (UTC) two
 of its sections moved to appendices under §212 (a prose budget), with long sentences split and the
 argument unchanged. The page's bold was dropped to meet §213 (writing standards). The gate line
-goes because a BUILT block may not carry one. What it said (nothing here touches the syscall
+goes because a BUILT block may not carry one. What it said (nothing here touches the system call
 surface, adds a dependency, or needs hardware) was true and is now moot. The mechanism landed in
 `helpers/lane-claim-check.sh` the same day it was proposed, in commit `448928d93`. As filed: decided
 the same day; see "What calef decided" below. It was kept in the proposals directory rather than

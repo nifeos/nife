@@ -13,7 +13,7 @@ needs_person: no
 Raised 2026-08-04 from milestone 22's closing lane, which named it as the
 largest residual left standing after the interactive boot gave away its authority.
 
-An unmap method is a syscall-surface addition, which the block calls a design fork for calef before
+An unmap method is a system-call-surface addition, which the block calls a design fork for calef before
 it is a task. Does unmap belong on the address space or on the frame? What does it do to a mapping
 another holder also has? Does restructuring the loader to map one
 page at a time avoid the new method entirely? **It is
@@ -37,23 +37,23 @@ rather than shrinking a budget to make the number look better. That is the right
 the work here.
 
 What this milestone is. A way for a holder to give up a mapping it made. It is an unmap method on
-the address-space object, symmetric with the map that created the window. That is a syscall surface
+the address-space object, symmetric with the map that created the window. That is a system call surface
 addition, so it is a design fork for calef before it is a task. (CLAUDE.md: a new method is fine
-within the model, but its semantics are recorded in `design/decisions/`, and a brand-new syscall
+within the model, but its semantics are recorded in `design/decisions/`, and a brand-new system call
 number is a fork.) The fork has three questions to answer. Is unmap a method on the address space or
 on the frame capability? What does it do to a mapping some other holder also has? (§13 already
 decides revoke's answer, and this must not contradict it.) Is unmapping enough, or does the scratch
 window want a narrower shape: mapping one page at a time and releasing it before the next? That
 needs no new method at all if the loader is restructured instead.
 
-That last possibility is why this is not obviously a syscall. The cheapest fix may be a loader that
+That last possibility is why this is not obviously a system call. The cheapest fix may be a loader that
 never holds more than one page. The measurement that decides it is how much slower a
 one-page-at-a-time loader boots.
 
 ## Built, 2026-10-05 (UTC)
 
 `AddressSpace::UNMAP(va)` is built on all three architectures (`abi::address_space::UNMAP`,
-`kernel/src/syscall.rs`'s `address_space_unmap`), proven by `system_tests/src/user/unmap_tests.rs`
+`kernel/src/system_call.rs`'s `address_space_unmap`), proven by `system_tests/src/user/unmap_tests.rs`
 with a replayable falsification for each of its four tests. The two semantics §162 left owed are
 built provisionally and argued in `notes/unmap.md`: a `va` with nothing mapped answers
 `BadPointer`, and no capability is consumed. They are asked of calef on pull request #1678.
@@ -62,7 +62,7 @@ built provisionally and argued in `notes/unmap.md`: a `va` with nothing mapped a
 reason was a finding, not a gap in the build.
 No capability names a running address space: `CONFIGURE` retires the name, and the kernel grants
 none at boot. The progenitor's scratch window is in its own running space, so it has nothing to
-invoke `UNMAP` on. That is a fork on the syscall surface, written up as a proposal (below) and not
+invoke `UNMAP` on. That is a fork on the system call surface, written up as a proposal (below) and not
 built.
 
 ## Built, the second half, 2026-10-05 (UTC): the windows are closed

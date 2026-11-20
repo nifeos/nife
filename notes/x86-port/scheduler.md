@@ -35,7 +35,7 @@ with the deferral one frame out.
 ### `TSS.RSP0` is recomputed from the frame on every return to ring 3
 
 x86 has two doors into the kernel from ring 3 and they find their stack differently: a trap reads
-`TSS.RSP0`, and `syscall` reads nothing at all and has to be told separately. With one user program
+`TSS.RSP0`, and `system_call` reads nothing at all and has to be told separately. With one user program
 there was one kernel stack and `ring3_self_test` set both by hand. With a scheduler there is one per
 thread, and the pair has to be re-pointed every time the thread that would come through them changes.
 

@@ -11,7 +11,7 @@ the byte layout is in the crate's module documentation. This page states what th
 ## What it is for
 
 A program links shared crates that define formats another, separately released part
-reads at run time: the syscall numbers (`abi`), the clock page (`clock_contract`), the sink framing
+reads at run time: the system call numbers (`abi`), the clock page (`clock_contract`), the sink framing
 (`byte_sink_contract`) and so on. Once a package leaves this repository, a program and the system
 that runs it may come from different commits. The note is how a program says, inside its own
 bytes, which version of each such format it expects, so the other side can check.
@@ -57,7 +57,7 @@ takes the next unused number by adding a row there, and a number is never reused
 ## What a version bump means
 
 A format change is a new version under the same id, never a new id. Every interface is at version 1
-today. The check at load compares by equality: the syscall ABI is never served in two versions at
+today. The check at load compares by equality: the system call ABI is never served in two versions at
 once, so a system serving `ABI_VERSION` 2 refuses a program that declares 1, and a system
 serving 1 refuses one that declares 2. For every other interface, a bump today changes the
 recorded bytes and nothing refuses on it; a check at bind time for message contracts is a separate

@@ -81,7 +81,7 @@ observation 77 starts from, arrived at independently.
 Left alone by milestone 73, deliberately: the decision below has not been made, and the name
 depends on it.
 
-`kernel/src/user/riscv_virtio_tests.rs` has no `virtio_tests.rs` twin; the shared virtio tests live
+`kernel/src/user/riscv_virtual_io_tests.rs` has no `virtio_tests.rs` twin; the shared virtio tests live
 inside `tests.rs`. So this is a RISC-V-only test module rather than half of a pair, and the question
 is whether the name should say "riscv-only test" or whether the aarch64 cases should be broken out to
 match. Decide before renaming, because the answer changes the name.
@@ -121,7 +121,7 @@ suffixed and all four were respelled (`link-riscv.ld`, `baseline-riscv.txt`, `qe
 `qemu-riscv-virt.*`).
 
 **It does not reach a file with no twin.** `notes/riscv-port.md`, `notes/riscv-parity-scope.md`,
-`notes/riscv-arch-tests.md` and `kernel/src/user/riscv_virtio_tests.rs` all name an ISA and none of
+`notes/riscv-arch-tests.md` and `kernel/src/user/riscv_virtual_io_tests.rs` all name an ISA and none of
 them is half of a pair, so none was touched. That is the same rule as the `user/link.ld` paragraph
 below, in its other direction: suffix a file that has a named twin, not every file that mentions an
 architecture.
@@ -184,7 +184,7 @@ stem, not just the path.
   and a type per page-table configuration, with 174 call sites behind it. The finding worth carrying
   is here too, that ARM has no short format name the way `Sv39` is one.
 - **Recorded.** `notes/riscv-parity-scope.md` holds the question this block left open,
-  `system_tests/src/user/riscv_virtio_tests.rs` having no `virtio_tests.rs` twin. Its "Open gap" section
+  `system_tests/src/user/riscv_virtual_io_tests.rs` having no `virtio_tests.rs` twin. Its "Open gap" section
   measured the overlap at 24 tests, found no behavioral divergence in any of them, and names the
   merge that would settle whether the file is a RISC-V-only module or half of a pair. The name waits
   on that, because the answer changes the name.
@@ -198,5 +198,5 @@ stem, not just the path.
 Five files carried a riscv name while their aarch64 twin carried none, so the unnamed one read as
 "the general case" and was not. Both sides now carry the ISA, and a sixth file the entry had
 missed (`qemu-virt-initrd.dtb`) came with them. `user/link.ld` is genuinely shared and was NOT
-renamed, nor was `riscv_virtio_tests.rs`, which has no twin. `crates/page_tables` moved OUT to
+renamed, nor was `riscv_virtual_io_tests.rs`, which has no twin. `crates/page_tables` moved OUT to
 milestone 77

@@ -44,7 +44,7 @@ a supervisor holds) flows clean exits down the same endpoint. Every ordinary job
 second message behind its answer, and every job would leave init's supervision domain, which is what
 `ps` and `pgrep` read.
 
-Nothing here touches the syscall surface. No new syscall, no new method, no new argument: one
+Nothing here touches the system call surface. No new system call, no new method, no new argument: one
 userspace constant, one capability in an endowment, and four call sites.
 
 Proven the way the defect was found, on both architectures. `components/src/least_authority_demo.rs` was patched to
@@ -71,7 +71,7 @@ legs.
   reading there. `job_undertaker`'s own `BUGS` carries the mechanism, and the collect happens before
   the report so a parked report can never cost the reclamation the prompt's memory depends on.
   Closing it needs a non-blocking send or a receive that waits on two endpoints, both of which are
-  the syscall surface (DECISIONS §10 (process model: capability-based, microkernel) and §16 (object revocation: reclaim the objects a
+  the system call surface (DECISIONS §10 (process model: capability-based, microkernel) and §16 (object revocation: reclaim the objects a
   process built)) and therefore calef's.
 - **There is no regression gate, and that is a real gap.** Proving this needs a command that faults
   on purpose, which is a new program and therefore a name calef decides, and milestone 233's

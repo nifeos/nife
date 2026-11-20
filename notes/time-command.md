@@ -170,7 +170,7 @@ Named here rather than in a tracker, next to the feature.
 
 - A duration does not actually need a clock capability, and this command requires one anyway.
   Wall clock is `offset + counter` (notes/clock.md), the offset is constant across a command, and the
-  counter is **ambient**: `user_mode_runtime::monotonic_nanoseconds` is two register reads and no syscall, available
+  counter is **ambient**: `user_mode_runtime::monotonic_nanoseconds` is two register reads and no system call, available
   to every process in the system. So `end - start` reduces to a difference of counter readings, and
   a `time` built on the counter alone would need no capability, could not be refused, and would be
   *immune* to the stepped-clock hazard above rather than merely honest about it.

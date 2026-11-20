@@ -1,0 +1,29 @@
+Falsifies `kernel::virtual_io::tests::a_device_write_to_the_read_only_shadow_is_refused`.
+
+Architecture: x86_64
+Environment: NIFE_IOMMU=amd
+
+The defect: `virtual_io_regions` grants the shadow page writable again, which is what every domain
+carried before provisional milestone 767 (AMD-Vi hardening before the first AMD boot). The device
+can then rewrite the descriptor table and available ring the kernel validated, and the test's
+used ring, pointed into that page, takes the device's writes.
+
+Expected to fail: the test's `assert_eq!(flags, 0xffff, ...)`. QEMU's virtio-blk sets and then
+clears `VRING_USED_F_NO_NOTIFY` when kicked, so the canary reads `0xfffe`. The record is the AMD-Vi
+machine's because that is this milestone's unit, but the claim is portable and so is the patch:
+measured on patagonia 2026-10-05 (UTC), QEMU 11.1.1, it fails the same way with
+`NIFE_IOMMU=amd`, on the default VT-d machine and on aarch64's SMMUv3.
+
+diff --git a/kernel/src/iommu.rs b/kernel/src/iommu.rs
+index 5830c861d..d767beef7 100644
+--- a/kernel/src/iommu.rs
++++ b/kernel/src/iommu.rs
+@@ -241,7 +241,7 @@ pub fn virtual_io_regions(
+         DirectMemoryAccessRegion {
+             base: shadow_base,
+             size: page_frames::FRAME_BYTES,
+-            writable: false,
++            writable: true,
+         },
+     ]
+ }

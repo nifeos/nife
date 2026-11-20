@@ -3,7 +3,7 @@
 //!
 //! It `mmap`s a large anonymous region and writes one byte per page. Each first touch faults and
 //! the kernel installs the PTE, the user-kernel-user round trip nearest our `MAP_INTO`; per page is
-//! the touch loop's time over the page count. The trigger differs (a fault, not a syscall) and the
+//! the touch loop's time over the page count. The trigger differs (a fault, not a system call) and the
 //! host also allocates and zeroes each page; notes/benchmarks/host-programs.md has both asymmetries.
 //!
 //! Build and run natively (no Cargo, so it does not fight the aarch64 workspace target):

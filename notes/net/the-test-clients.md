@@ -99,7 +99,7 @@ Step 4's kernel probes cover a capture by IPC rather than by a page. The capabil
 for a socket is a copy of its own serve endpoint carrying the socket's badge
 (`socket_contract::stack_slots::MINT`), and the mint is `WRITE | GRANT` with no `READ`. With `READ`, a
 receive on it would dequeue every other client's request to the stack. The kernel refuses a receive
-on a `READ`-less endpoint at once (`RECEIVE` and `RECEIVE_CAPABILITY` in `kernel/src/syscall.rs`). A
+on a `READ`-less endpoint at once (`RECEIVE` and `RECEIVE_CAPABILITY` in `kernel/src/system_call.rs`). A
 permissive kernel would block there instead, which the test reads as the squatter never arming.
 [confinement-outsider-pass-5.md](../confinement-outsider-pass-5.md) records the pass that asked.
 

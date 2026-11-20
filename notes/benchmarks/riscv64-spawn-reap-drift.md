@@ -45,7 +45,7 @@ saw; "cost" is tick-free. The table omits merges that move neither by more than 
 | #1360, milestone 126 (the `procps` package) | +1,075 | +576 | the 24-to-32 slot table and the switch counter ([#1486](drift-since-the-2026-09-26-floors.md)) |
 | #1489, milestone 629 (the context-switch statistic stops costing the switch path) | -373 | -86 | the counter made cheap |
 | #1620, the IPC fastpaths shrunk | +374 | +86 | |
-| #1614, fatal risk 4's `null_syscall` contention | +380 | +645 | the reaper frees a thread's stack outside `IPC_TABLES` and takes it again to remove the thread |
+| #1614, fatal risk 4's `null_system_call` contention | +380 | +645 | the reaper frees a thread's stack outside `IPC_TABLES` and takes it again to remove the thread |
 | #1617, milestones 754 and 761 | +873 | +916 | below |
 | #1743 | -133 | -134 | |
 | #1852, the run queue's ownership token, milestone 139 (drive the unsafe count down) | +123 | +124 | |
@@ -90,7 +90,7 @@ Two changes, at `main` `43a2d16e1`, percent of the row:
 
 With the tick, riscv64 `spawn_reap` reads the tick again: the copy alone takes it to 36,176
 (-4.05%, the window loses its tick), and the inlining on top reads 36,494 (+0.88%, the tick
-returns) while it costs -0.75%. `null_syscall` does not move. aarch64 with the tick reads `ipc_rtt` +2.07%, its bimodal mode
+returns) while it costs -0.75%. `null_system_call` does not move. aarch64 with the tick reads `ipc_rtt` +2.07%, its bimodal mode
 switching ([drift-since-the-2026-10-10-floor](drift-since-the-2026-10-10-floor.md)); tick-free it is
 -0.50%.
 

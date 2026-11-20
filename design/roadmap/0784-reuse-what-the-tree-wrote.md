@@ -77,7 +77,7 @@ Not kernel, not proved, not protocol: the candidates. Surprise: the kernel lists
 |---|---|---|---|---|---|---|---|
 | `http_response` head parser | 294 (about 70 non-test in the parser) | network | base | `httparse` 1.10.1 | MIT/Apache, `no_std`, no deps | 762M, 2025-03 | none |
 | `video_terminal` escape parser | 2,523 crate | every program's output | base | `vte` 0.15.0 | MIT/Apache, `no_std` (`arrayvec`, `memchr`) | 80M, 2025-02 | none |
-| `virtio` + `gpu_driver` + `keyboard_driver` + `virtio_net_transport` | 715 + 303 + 215 + 251 | device | base | `virtio-drivers` 0.13.0 | MIT, `no_std` | 387k, 2026-03 | none |
+| `virtio` + `gpu_driver` + `keyboard_driver` + `virtual_io_net_transport` | 715 + 303 + 215 + 251 | device | base | `virtio-drivers` 0.13.0 | MIT, `no_std` | 387k, 2026-03 | none |
 | `user_mode_heap` | 272 | every allocation | base | `talc` 5.1.1 | MIT, `no_std` | 2.1M, 2026-09 | none (`linked_list_allocator` has RUSTSEC-2022-0063) |
 | `uefi_loader/src/efi.rs` | 307 | firmware | base | `r-efi` 7.1.0 | MIT/Apache/LGPL, take MIT; `no_std`, no deps | 382M, 2026-08 | none |
 | `stick_maker` `plist.rs` | 335 | host OS output | conveyed host program | `plist` 1.10.1 | MIT, std | 74M, 2026-09 | none |
@@ -206,7 +206,7 @@ on the customer path.
 - (c1) REFUSED: input, `keyboard_driver`. Reuse: write; see below.
 - (c2) REFUSED: GPU, `gpu_driver`. Reuse: write; see below.
 - (c3) REFUSED: block, the `virtio` crate. Reuse: write; see below.
-- (c4) REFUSED: net, the `virtio` crate and `virtio_net_transport`. Reuse: write; see below.
+- (c4) REFUSED: net, the `virtio` crate and `virtual_io_net_transport`. Reuse: write; see below.
 - (d) BUILT: `talc` replaces `user_mode_heap`, in `memory_region_heap` and std.
   Evidence: [an appendix](0784-reuse-what-the-tree-wrote/measured-for-the-rulings.md).
 - (e) BUILT: `uefi_loader` binds UEFI through `r-efi`.

@@ -18,7 +18,7 @@ Raised by milestone 608 (kernel tests give back their rendezvous points), from t
 rendezvous ledger at `sched::PEAK_RENDEZVOUS`, built by milestone 601 (the region table prints its
 peak, and a refused split's leak is recorded). The title is provisional.
 
-Test and service wiring; no syscall surface, no dependency.
+Test and service wiring; no system call surface, no dependency.
 
 ## What was measured
 

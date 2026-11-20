@@ -50,7 +50,7 @@ arrived the same afternoon. The eightfold spread, and the literature that
 long run does not.
 
 Without the census those boots produce a distribution nobody can attribute. With it, every log
-explains itself, and the question of whether thread affinity is worth its syscall surface becomes
+explains itself, and the question of whether thread affinity is worth its system call surface becomes
 answerable from data rather than from argument.
 
 ## What this is not
@@ -97,7 +97,7 @@ in notes/soak.md.
 - **Milestone 225.** The measurement this instrument was built for. The census makes placement
   readable; it does not make two boots into a series, and only a run of boots on radon can say
   whether the eightfold spread follows the arrangement. Four runs on an emulator settle nothing, and
-  whether thread affinity is worth its syscall surface is the question that series would answer or
+  whether thread affinity is worth its system call surface is the question that series would answer or
   refuse.
 - **Recorded.** In `design/roadmap/0240-a-soak-should-say-where-its-threads-landed.md`: the census is
   `last_cpu`, so it reports where a thread last ran rather than where it is queued to run next, and

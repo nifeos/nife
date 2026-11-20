@@ -82,7 +82,7 @@ Four consequences, each deliberate:
    applied consistently: the name means something only to the holder of the capability it came
    through, and it is not a global handle. If some other operation later needs to name a child, it
    is a fresh decision and should reach for the same shape first.
-4. It is a new method, not a new syscall number, and not a new capability type. Per the
+4. It is a new method, not a new system call number, and not a new capability type. Per the
    project rule that keeps the surface a boundary rather than a habit, it is recorded here with its
    semantics before it is built.
 

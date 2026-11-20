@@ -293,7 +293,7 @@ trap_return:
     .cfi_endproc
 .size trap_entry, . - trap_entry
 
-# Off the hot section: nothing below runs on a syscall.
+# Off the hot section: nothing below runs on a system_call.
 .section ".text", "ax"
 
 # RUN THE HANDLER ON THIS HART'S INTERRUPT STACK (milestone 124).

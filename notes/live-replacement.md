@@ -68,7 +68,7 @@ endpoint; it gets `NotPermitted`.
              and stops receiving; requests from here on park on the sender queue.
   3 REVOKED  DeviceFrame::REVOKE the device capability. Gone from every holder but the operator.
   4 STARTED  map the registers into the replacement, CONFIGURE, START. It drains the parked
-             requests. The down window ends: four syscalls wide.
+             requests. The down window ends: four system calls wide.
   5 REAPED   the incumbent is told to read one device register, faults, and its death arrives on the
              supervision endpoint; Rendezvous::REAP collects the corpse and returns its region.
 ```
@@ -79,7 +79,7 @@ a revoke that ran after the replacement had been endowed with the device would t
 replacement's copy too. Since the kernel mints a `DeviceFrame` once at boot, nothing could hand one
 back. What moves
 to the far side of the revoke is the endowment, not the build. And the build has to stay first
-for a second reason found by running it. Process construction is a few hundred syscalls, and when
+for a second reason found by running it. Process construction is a few hundred system calls, and when
 the build was moved after the swap trigger the client finished its entire conversation on RISC-V
 before
 the operator was ready.
@@ -137,8 +137,8 @@ requests. `NotPermitted`.
 
 And the replacement is written in C (`fixtures/c/c_swappable.c`, over the seam DECISIONS §31 built).
 That is the strongest form of the claim available: what held across the swap is the *contract*, not
-a recompile of the same source. The C holds no capability and makes no syscall, because the Rust
-shell around it holds every capability and makes every syscall; its entire interface to the system
+a recompile of the same source. The C holds no capability and makes no system call, because the Rust
+shell around it holds every capability and makes every system call; its entire interface to the system
 is `(uint64_t) -> uint64_t`.
 
 ## The latency ladder

@@ -128,5 +128,5 @@ keyword is in the thirteen.
 
 ## What it does not decide
 
-No public crate API, wire format or syscall changes under either answer. Every module and file name
+No public crate API, wire format or system call changes under either answer. Every module and file name
 is provisional.

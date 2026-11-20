@@ -230,7 +230,7 @@ fn run_swap(role: u64) -> ([[u64; 5]; MAXIMUM_REPORTS], usize) {
     // The system reclaims itself, asserted (notes/live-replacement.md, "The system reclaims itself,
     // and the test asserts it"): §16 refuses a region with children carved out of it, so the
     // reclaim succeeds only if every collected instance (§32) came home. `sched::reclaim_region`,
-    // the `DESTROY` syscall's entry point, because the budget is pinned by the objects retyped from
+    // the `DESTROY` system call's entry point, because the budget is pinned by the objects retyped from
     // it.
     let (_, region_size) =
         crate::memory_region::usage(budget).expect("the operator's budget should exist");

@@ -46,7 +46,7 @@ Three families fall out:
    thread or an endpoint pays for it out of its own budget. This is the heart of the milestone.
 2. Fixed machine tables (per-CPU queues, virtio devices, untyped regions). Small, bounded by
    the machine rather than by user behavior. These become static fixed-capacity structures; no
-   syscall needed, nobody pays but the image.
+   system call needed, nobody pays but the image.
 3. The revocation database. The awkward one: it grows with every user mapping, it is global,
    and no fixed bound is honest. It has to be charged to the processes that create mappings.
 
@@ -57,7 +57,7 @@ object *type* (TCB, endpoint, CNode, page table, frame) and the kernel lays the 
 inside the untyped region. The kernel's "allocation" is a watermark bump in memory the caller
 already owned. Our `untyped::retype_page` is already exactly this for one type (a user frame).
 The milestone widens it: `RETYPE` gains an object-type argument, and the kernel object the
-syscall creates lives in the page it just carved.
+system call creates lives in the page it just carved.
 
 What we deliberately do not copy: seL4's CNode trees, object-size arguments, and the full CDT.
 Our objects are page-granular (a 4 KiB page holds one kernel object or many of one kind; we decide
@@ -68,7 +68,7 @@ retype bookkeeping is complexity the demonstrator does not need yet.
 
 Each phase compiles, boots, and passes the full suite before the next begins.
 
-**Phase A: every kernel structure gets a fixed shape (no syscall changes).**
+**Phase A: every kernel structure gets a fixed shape (no system call changes).**
 Replace the unbounded collections with allocation-free structures: the thread table stops being
 a `BTreeMap` of `Box`es, the IPC wait queues stop being `VecDeque`s, the per-CPU queues get
 fixed capacity, the small global tables become static arrays. The heap is still linked after
@@ -78,7 +78,7 @@ valuable: the hot paths become O(1) and heap-free even before retype lands.
 
 **Phase B: kernel objects stop touching the heap (decided 2026-07-23, after the conversation).**
 The original sketch here widened `RETYPE` with object types. The conversation found the sketch
-premature: no syscall lets a process create a thread or an endpoint today, so a user-facing retype
+premature: no system call lets a process create a thread or an endpoint today, so a user-facing retype
 would be API with no caller. A user-created TCB is inert without a thread-control
 surface (configure, start, cap installation) whose requirements only the milestone 19 init task
 can supply. **Decided: the surface stays narrow; the API is designed against init's real

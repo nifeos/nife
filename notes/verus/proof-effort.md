@@ -4,7 +4,7 @@
 
 An appendix to [`notes/verus.md`](../verus.md). It holds the proof-effort figures from both
 Atmosphere papers, their comparison table and its inconsistency, the OOPSLA examples, seL4's cost,
-Atmosphere's syscall figures second-hand, and the extrapolation to this kernel.
+Atmosphere's system call figures second-hand, and the extrapolation to this kernel.
 
 All figures are quoted, with the paper each came from. The two papers disagree, because the second
 revises the first.

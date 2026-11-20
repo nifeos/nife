@@ -31,7 +31,7 @@
 //! `socket_frame`, so `socket_contract::` stays the one place a reader looks for the wire.
 
 use socket_contract::{
-    DESTINATION_IP_ADDRESS_OFFSET_BYTES, DESTINATION_PORT_OFFSET_BYTES, MAXIMUM_PAYLOAD_BYTES,
+    DESTINATION_IPV4_ADDRESS_OFFSET_BYTES, DESTINATION_PORT_OFFSET_BYTES, MAXIMUM_PAYLOAD_BYTES,
     PAYLOAD_LENGTH_OFFSET_BYTES, PAYLOAD_OFFSET_BYTES,
 };
 
@@ -74,14 +74,14 @@ impl Frame {
     pub fn set_destination(&self, ip: [u8; 4], port: u16) {
         for (i, &b) in ip.iter().enumerate() {
             self.window
-                .write::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
+                .write::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
         }
         self.window
             .write::<u16>(DESTINATION_PORT_OFFSET_BYTES, port);
     }
 
     /// The destination address, or the sender's after a UDP `RECEIVE` (the layout note on
-    /// `DESTINATION_IP_ADDRESS_OFFSET_BYTES` in `socket_contract`).
+    /// `DESTINATION_IPV4_ADDRESS_OFFSET_BYTES` in `socket_contract`).
     ///
     /// Name: provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn destination_network_address(&self) -> [u8; 4] {
@@ -89,7 +89,7 @@ impl Frame {
         for (i, b) in ip.iter_mut().enumerate() {
             *b = self
                 .window
-                .read::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64);
+                .read::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64);
         }
         ip
     }

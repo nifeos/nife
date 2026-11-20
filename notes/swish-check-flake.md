@@ -51,7 +51,7 @@ Two lane hazards found while setting up, for the next lane:
   and stand green now, including both phenomenon runs. Rerun-green is where flakes hide: run-level
   counts undercount them by construction.
 - The 84 swish-named failures concentrate: 49 on 2026-09-26, 25 on 2026-09-27 (an incident block;
-  sampled logs show kernel test panics, `kernel/src/sched.rs`, `kernel/src/virtio.rs`, not
+  sampled logs show kernel test panics, `kernel/src/sched.rs`, `kernel/src/virtual_io.rs`, not
   flakes), 5 on 2026-09-29, 3 on 2026-09-25, 2 on 2026-09-28.
 - Signatures in the 15 sampled logs: 7 real breakage (kernel test panics or in-flux code,
   including one `kernel/src/user/fs_service.rs` panic) and 4 one-cluster package-source truncation ("the

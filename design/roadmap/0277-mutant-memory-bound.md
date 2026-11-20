@@ -15,7 +15,7 @@ of it.)*
 This was ungated, and it stayed ungated. Three shapes were priced in milestone 238's block and
 choosing between them was engineering rather than a decision owed to calef, all three being a
 wrapper around an existing command and all three reversible. Nothing found while building it moved
-that: the one name minted is provisional like any lane's, and no syscall surface, dependency or wire
+that: the one name minted is provisional like any lane's, and no system call surface, dependency or wire
 format was touched.
 
 In brief. `script/mutation` gives each mutant a per-mutant timeout of 28 to 51 seconds. That

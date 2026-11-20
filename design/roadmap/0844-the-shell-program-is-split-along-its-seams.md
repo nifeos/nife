@@ -97,7 +97,7 @@ that rule exists to stop.
    lines needs the same answer.
 3. Every module name in the table.
 
-No public crate API, wire format or syscall changes under any answer here. The role numbers
+No public crate API, wire format or system call changes under any answer here. The role numbers
 `system_tests` passes at spawn do not move.
 
 ## What moving the code breaks

@@ -51,7 +51,7 @@ fn a_range_read_out_of_the_memory_map_never_wraps_to_look_empty() {
 /// **A feature is never reported from a leaf the part does not answer.** A `CPUID` read above
 /// the maximum answers with another leaf's data, so only the maximum tells "clear" from "absent",
 /// and [`Isa::decode`] states that four times against two maxima. Milestone 524 (the three
-/// `x86_64` boot gates) refuses the boot on NX and SYSCALL, which every machine here reports, so a
+/// `x86_64` boot gates) refuses the boot on NX and `SYSCALL`, which every machine here reports, so a
 /// wrong gate would be silent; gating an extended leaf on the standard maximum is one character.
 /// Falsification: replayable `crates/machine_discovery/falsifications/x86_64.verification.a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer.patch`
 #[kani::proof]
@@ -71,7 +71,7 @@ fn a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer() {
 
     if w.extended_maximum_leaf < 0x8000_0001 {
         assert!(!isa.features.contains(NX));
-        assert!(!isa.features.contains(SYSCALL));
+        assert!(!isa.features.contains(SYSTEM_CALL));
         // The two required rows both live in that leaf, so a part which does not answer it can
         // never clear the gate. This is the claim the boot depends on, rather than a restatement
         // of the branch above it.
@@ -101,10 +101,10 @@ fn a_feature_is_never_reported_from_a_leaf_the_part_does_not_answer() {
     assert_eq!(
         isa.missing_requirements().any(),
         !(isa.features.contains(NX)
-            && isa.features.contains(SYSCALL)
+            && isa.features.contains(SYSTEM_CALL)
             && (isa.under_hypervisor || isa.features.contains(INVARIANT_TSC)))
     );
-    assert!(!isa.unpromised().contains(NX) && !isa.unpromised().contains(SYSCALL));
+    assert!(!isa.unpromised().contains(NX) && !isa.unpromised().contains(SYSTEM_CALL));
     // A row the part does not report is refused or warned, never both, and warned only under a
     // hypervisor.
     assert!(

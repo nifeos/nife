@@ -63,7 +63,9 @@ copied-file list (`xtask/src/farm/copied.rs`). No new tool.
   stands; the pins wait on the same steps of milestone 1017.
 - A fork of `talc` if upstream stays silent: Open, and conditional. It is an open decision below.
 - Review package: Done, [memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md).
-  The repository: Open. The go is an open decision below.
+  The review clearance: Done (ruled 2026-11-20 UTC, option A;
+  the architect approved `nifeos/memory_region_heap` with `publish = false`, no tag, no publish). The move stays
+  Open.
 
 ## Open decisions
 
@@ -113,13 +115,19 @@ links the patched source.
 
 Blocks: nothing until the vendor-watch report passes in silence; after that, the first publish.
 
-### Clear the review package and approve the repository
+### Clear the review package and approve the repository (ruled)
+
+Ruled 2026-11-20 (UTC), option A: the architect clears the package, and the clearance creates the
+repository, `nifeos/memory_region_heap`, with `publish = false`. No tag and no publish. The move waits for `abi`,
+`address_space_layout` and `user_mode_runtime` to get repositories. It leaves on its own clearance, as
+one repository with `subtree_scope` or as a repository of its own, decided at the move (ruled
+2026-11-20 UTC), and before `redoxfs`, which keeps its own track.
 
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package; that clearance approves the repository. A package lists every public
 item with its signature, and `script/crate-review-packet` writes it. The package for this crate is
 [memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md), written under the
-recommendation below; clearance stays open. The
+recommendation below. The
 components, the fixtures and the RedoxFS server all depend on it, so it serves several consumers and
 meets the bar for leaving.
 
@@ -221,7 +229,7 @@ dependency). Everything else is two-way and the maintainer decides it.
    Change: rename the binding to `virtual_address` now (XS). For `commit_all`, Decision A carries
    the recommendation. For the tests, item 8 is the real fix. Until it lands, the move lane either
    exempts `src/lib.rs` in `.github/coverage-exemptions` with the stated reason ("every path ends in
-   a syscall; tested under QEMU") or lands item 8 first.
+   a system call; tested under QEMU") or lands item 8 first.
    Door: `va` is two-way. `commit_all` is one-way (a public name). Effort: XS, plus item 8.
 
 ### P2: later
@@ -274,7 +282,7 @@ The evidence, background, prior art and the options not taken are in
 
 ## Follow-on
 
-- **Outstanding.** The move. The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
+- **Outstanding.** The move, which leaves on this crate's own clearance, with `subtree_scope` or alone, and before `redoxfs`. The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
   give `abi`, `address_space_layout` and `user_mode_runtime` repositories. The move drops the fuzz
   workspace's `[patch.crates-io]` line for the vendored talc, and the template's `coverage` job
   then measures the host tests for the first time.
@@ -291,7 +299,7 @@ state is under "Finding status" above.
 - The fuzz target drives a copy of the policy, so a change to the crate's policy that the copy
   misses goes unchecked there.
 - The page cost of a refused `MAP` at an already-mapped address comes from the kernel's own comment
-  (`kernel/src/syscall/memory_region.rs` line 72), not from a run.
+  (`kernel/src/system_call/memory_region.rs` line 72), not from a run.
 - The minimum first-heap figure (1,575 bytes) comes from a hand computation over `DefaultBinning`'s
   bit field (`[usize; 3]`, `BIN_COUNT = 191`) and talc's `min_first_heap_size`;
   `the_first_heap_fits_in_one_page` pins it.

@@ -27,7 +27,7 @@ forwards whole lines to the console. It becomes the one thing writing kernel out
 
 Out of scope: persisting any of this to RedoxFS. That has its own proposal,
 [`design/roadmap/0687-a-system-log-on-redoxfs.md`](0687-a-system-log-on-redoxfs.md). Also
-out of scope: the kernel-side ring and its drain syscall. Those are milestone 342 (the kernel and
+out of scope: the kernel-side ring and its drain system call. Those are milestone 342 (the kernel and
 the `console` server drive one UART from two address spaces).
 
 ## What was built, 2026-10-02 (UTC)
@@ -45,7 +45,7 @@ crate and the program) and `system_log_protocol` (the wire contracts).
 - The kernel: **a plain `SEND` now carries its capability's badge to `RECV` in `x3`.** §230
   (badged endpoint capabilities) delivered a badge on `CALL` and `SEND_CAP` only. A byte-sink
   writer `SEND`s, so the badge §242 stamps from never reached the service. This changes the
-  syscall surface: `RECV`'s `x3` for an ordinary message was always 0 and is now the badge (0
+  system call surface: `RECV`'s `x3` for an ordinary message was always 0 and is now the badge (0
   when unbadged). It needs a line in §230 from the integrator.
 
 Three choices were made here rather than ruled, and each one is reversible until a second program

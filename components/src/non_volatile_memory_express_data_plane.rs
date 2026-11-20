@@ -12,9 +12,9 @@
 //! space; and the two grants, held without `GRANT`, mapped where the spawn's second and third
 //! arguments say: the data-plane run (the two I/O rings and one window of [`TRANSFER_BLOCKS`]
 //! pages per client) and BAR0's doorbell page. Denied, each by decision: BAR0's register page (`CC`, `CSTS`, the
-//! admin ring registers), which NVMe 1.4 puts on its own page so this split costs no syscall; the
+//! admin ring registers), which NVMe 1.4 puts on its own page so this split costs no system call; the
 //! admin pages of the run; every admin command, so where the rings live is the admin process's
-//! statement; an `Interrupt`; a `Virtio`; and everything else.
+//! statement; an `Interrupt`; a `VirtualIo`; and everything else.
 
 //! # BUGS
 //!

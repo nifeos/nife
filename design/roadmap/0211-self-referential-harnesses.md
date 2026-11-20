@@ -114,7 +114,7 @@ implementation back at itself.
   milestone rewrote without a finding are recorded as exactly that rather than as clean.
 - Five harnesses outside `crates/` were read by hand and are outside the machinery.
   `script/falsifications` walks `crates/` only (milestone 212 fixes that), so the two in
-  `kernel/src/syscall.rs`, the two in `components/src/printenv.rs` and the one in
+  `kernel/src/system_call.rs`, the two in `components/src/printenv.rs` and the one in
   `vendor/redoxfs/src/node.rs` were swept as prose and could not be swept as patches. All five are
   fine; the kernel pair are in fact the tree's model of the good shape, stating run arithmetic in
   `u128`.
@@ -122,7 +122,7 @@ implementation back at itself.
 ## Follow-on
 
 - **Milestone 212.** `script/falsifications` walks `crates/` only, so five harnesses (two in
-  `kernel/src/syscall.rs`, two in `components/src/printenv.rs`, one in `vendor/redoxfs/src/node.rs`) were
+  `kernel/src/system_call.rs`, two in `components/src/printenv.rs`, one in `vendor/redoxfs/src/node.rs`) were
   swept as prose and could not be swept as replayable patches. 212 landed first and widened the
   denominator under this lane.
 - **Refused.** A lint for this defect. No check distinguishes "asserts through the function under

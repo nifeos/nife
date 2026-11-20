@@ -88,8 +88,8 @@ conditions above. Re-derived from the tree and the workflow logs at `9f62334f5`:
 - Milestone 779 reads BUILT, and it holds three fuzzers. Part (a) is three host `cargo-fuzz`
   targets over service request handlers (milestone 751 (fuzz the services' request handlers):
   `redoxfs_server_session`, `system_log_session`, `compositor_session`). Part (b) is two in-guest
-  drivers: the kernel-thread driver of milestone 752 (a seeded syscall driver with a shadow model)
-  and the user-mode driver of milestone 779 itself (`fixtures/src/confined_syscall_fuzzer.rs`,
+  drivers: the kernel-thread driver of milestone 752 (a seeded system call driver with a shadow model)
+  and the user-mode driver of milestone 779 itself (`fixtures/src/confined_system_call_fuzzer.rs`,
   judged by `confined_fuzzer_tests`).
 - No budget exists. The suite runs 34 fixed seeds of the user-mode driver on every merge. The
   weekly `falsifications.yml` sweep runs each driver for 60 s of guest time on one hosted aarch64

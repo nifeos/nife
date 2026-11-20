@@ -197,7 +197,7 @@ marked `U`, and this kernel never sets it. EL1 reading an EL0 page is simply all
 never set `PSTATE.PAN`. So the two ISAs disagree about the default, and a test that reads through a
 user VA (the only way to observe a TLB from software) needs a permission on one and nothing on the
 other. `mmu::permit_kernel_access_to_user_pages` is that permission, `#[cfg(test)]` on both, because
-no syscall in this ABI dereferences a user pointer and leaving `SUM` clear in a shipping build means
+no system call in this ABI dereferences a user pointer and leaving `SUM` clear in a shipping build means
 a kernel bug that strays into the low half faults instead of succeeding quietly.
 
 **aarch64's `flush_asid` was missing its leading `dsb ishst`.** A `tlbi` that publishes a page-table

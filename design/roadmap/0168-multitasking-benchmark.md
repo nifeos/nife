@@ -127,7 +127,7 @@ The 20% figure's provenance, and why Warton's own claim is weaker, is in `notes/
 
 ## Why it matters, beyond §96
 
-Milestone 25's cross-OS comparison has the same hole, and this milestone closes it too rather than duplicating it. Checked directly: milestone 25 is explicitly a set of EL0-measured *primitive* benchmarks (single syscall, single context switch, single IPC round trip, single map, single spawn) compared against lmbench and `sel4bench`. Every one of them is a micro-benchmark in the same sense §96 means the word. Milestone 25's own remaining piece (`sel4bench`) is single-operation PMU timing, not a multi-tasking workload. So neither milestone currently has an instrument that could show what a real multi-tasking difference looks like, and building one here serves both.
+Milestone 25's cross-OS comparison has the same hole, and this milestone closes it too rather than duplicating it. Checked directly: milestone 25 is explicitly a set of EL0-measured *primitive* benchmarks (single system call, single context switch, single IPC round trip, single map, single spawn) compared against lmbench and `sel4bench`. Every one of them is a micro-benchmark in the same sense §96 means the word. Milestone 25's own remaining piece (`sel4bench`) is single-operation PMU timing, not a multi-tasking workload. So neither milestone currently has an instrument that could show what a real multi-tasking difference looks like, and building one here serves both.
 
 ## What this does not decide
 
@@ -154,7 +154,7 @@ differed from the others' and it read within 0.6% of the median everywhere.
 Not apples-to-apples with the 2026-09-16 table: a different statistic and two heavier jobs. Not a
 comparison with Warton: one arm, one machine, no disk job, 32 tasks at most. At 32 tasks the
 `round_trip` job holds 80% of task time, waiting on two shared servers, so the plateau is partly
-the instrument's own. And `null_syscall` nearly doubles from one task to four while `compute`
+the instrument's own. And `null_system_call` nearly doubles from one task to four while `compute`
 grows 6%: a per-crossing cost that rises with busy cores, unexplained, and recorded in
 `notes/job-mix.md`'s `BUGS`.
 
@@ -164,7 +164,7 @@ The 2026-10-04 numbers above are the second silicon reading. The first, five rad
 2026-09-16 with the old instrument (best of three repeats, five-job mix), established the curve's
 shape and showed that `tasks=4` was not a number under that statistic. The current instrument takes
 every point as the median of 21 repeats with the ends beside it, and its mix includes page-mapping
-and process-creation jobs with no new syscall, method or object type. §191 (whether the job mix
+and process-creation jobs with no new system call, method or object type. §191 (whether the job mix
 reports the spread rather than the best) records the line format, ratified by calef on 2026-09-26.
 
 - [radon-2026-09-16.md](0168-multitasking-benchmark/radon-2026-09-16.md): the five boots' table,
@@ -187,7 +187,7 @@ reports the spread rather than the best) records the line format, ratified by ca
   which the old sweep did not do. It is identical for every repeat.
 - The HVF cross-check had no machine until milestone 227 (a GICv3 driver) was built on 2026-09-19,
   and the full mix has completed under HVF only since #1663 (2026-10-05). The runs since then took
-  `null_syscall` at one to four tasks; none is recorded as the cross-check of this curve's shape.
+  `null_system_call` at one to four tasks; none is recorded as the cross-check of this curve's shape.
 
 ## Follow-on
 

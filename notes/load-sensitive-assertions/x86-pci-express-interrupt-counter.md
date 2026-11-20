@@ -26,7 +26,7 @@ the answer rather than raced for it, which is unusual for a family that usually 
 
 Three links, none of them timing-dependent:
 
-1. `Interrupt::WAIT` is not a poll. `syscall::interrupt_wait` is `sched::interrupt_route(intid)`
+1. `Interrupt::WAIT` is not a poll. `system_call::interrupt_wait` is `sched::interrupt_route(intid)`
    followed by
    `sched::ipc_receive(ep)`. It returns only when that endpoint is signaled or has a counted pending
    signal, and both come from `sched::interrupt_notify`.
@@ -45,7 +45,7 @@ not come back with the right bytes and a still counter. The only remaining way t
 delta is a baseline sampled after the increments, and the test sampled it in exactly the wrong place:
 
 ```rust
-let Some(report) = virtio_service::start_pci(init_image()) else { ... };
+let Some(report) = virtual_io_service::start_pci(init_image()) else { ... };
 
 let interrupts_before = ROUTED_INTERRUPTS.load(Ordering::Relaxed);   // <- after the driver is
 spawned
@@ -145,7 +145,7 @@ routed test interrupt. They are real on all three architectures now, without the
 
 Both halves are ordering arguments rather than margins, which is what this register keeps asking for.
 
-- The baseline moves to before `virtio_service::start_pci`. Until it runs there is no queue, no route
+- The baseline moves to before `virtual_io_service::start_pci`. Until it runs there is no queue, no route
   and no driver, so nothing this device does can be counted before that line. No wait was added,
   because there is nothing to wait for. The increment is upstream of the wakeup, which is upstream of
   the report.
@@ -163,7 +163,7 @@ itself is broken: a driver completing without an interrupt, the confinement-adja
 waking up for.
 
 The same one-line move went into the three sibling tests with the identical shape. They are
-`a_userspace_driver_reads_a_file_from_a_virtio_disk` here and its riscv64 twin, and the riscv64 pcie
+`a_userspace_driver_reads_a_file_from_a_virtual_io_disk` here and its riscv64 twin, and the riscv64 pcie
 twin. None was ever observed to flake, and all had the same window.
 
 ### BUGS
@@ -173,7 +173,7 @@ interrupt became some driver's message in this window, not that this device's co
 ordering argument above makes it sound for this test. It would stop being sound if a second driver
 were running concurrently in the same window. Saying exactly the narrow thing wants a per-intid
 delivery count. That cannot simply live in `sched::interrupt_route`, because
-`syscall::interrupt_wait` and
+`system_call::interrupt_wait` and
 `soak.rs` both call it outside the handler, so counting there would count lookups rather than
 deliveries. So it wants the three arch handlers to route through one portable call. That is a
 refactor rather than a patch, and it is not done here.

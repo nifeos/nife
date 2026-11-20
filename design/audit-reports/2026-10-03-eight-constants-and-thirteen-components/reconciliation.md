@@ -15,7 +15,7 @@ places `g.gpu` and `g.keyboard` with `WRITE | GRANT`, `g.gpu_irq` and `g.keyboar
 `delegate_display`: "We keep our own copies ... so the session can be run again once it ends."
 
 Can the shell map those frames? Yes. `map_page_frame` in `swish.rs` passes the `tables` region
-the shell holds, and the kernel's `MAP_RW` check (`kernel/src/syscall.rs`, `page_frame_map`)
+the shell holds, and the kernel's `MAP_RW` check (`kernel/src/system_call.rs`, `page_frame_map`)
 asks for `WRITE` on the frame, which the shell has on all three pages. Can two parties wait on
 one interrupt? Yes. `irq_notify` (`kernel/src/sched.rs`) wakes the one waiter `rendezvous.signal()`
 returns; a `RECV` needs `READ`, which the shell has on both interrupt rendezvous. Milestone 603
@@ -28,7 +28,7 @@ and the report should have named. Home: finding 10, a BUGS entry in `swish.rs`, 
 
 ## (b) Confirmed: a real capability passes the `NO_CAP` guard
 
-`kernel/src/syscall.rs`, the `SEND_CAP` arm: `WRITE` on the endpoint, `GRANT` on the source, and
+`kernel/src/system_call.rs`, the `SEND_CAP` arm: `WRITE` on the endpoint, `GRANT` on the source, and
 the narrowed rights a subset of the source's. Any client of a server holds the first; a rendezvous
 retyped from the client's own budget gives it the second. `ipc_recv_cap` installs the capability
 and returns its slot in `x1`. `user_mode_runtime::reply` is `invoke(slot, abi::reply::REPLY, ..)`

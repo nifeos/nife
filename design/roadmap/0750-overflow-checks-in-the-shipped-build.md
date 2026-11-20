@@ -29,7 +29,7 @@ numbers.
 1. `overflow-checks = true` in every release profile that builds shipped or tested code: the root
    workspace, `std_exerciser`, `redoxfs_server` and `cryptography_exerciser` (each with its `std`),
    the ripgrep helper by environment, and the two probe scripts' generated manifests.
-2. The IPC and syscall fast paths on all three ISAs written so that each operation's overflow
+2. The IPC and system call fast paths on all three ISAs written so that each operation's overflow
    behavior is explicit and justified at its site; `script/fastpath-footprint` passes with its
    baselines unchanged.
 3. `SUITE_PAGE_FRAME_BUDGET` re-derived from a CI run with checks on: 26,705.
@@ -48,5 +48,5 @@ No overflow panicked anywhere.
 
 ## Index row
 
-Overflow checks on in every release profile, with the IPC and syscall fast paths written explicitly
+Overflow checks on in every release profile, with the IPC and system call fast paths written explicitly
 so the footprint gate still passes; budget re-derived, benches re-measured, no overflow found.

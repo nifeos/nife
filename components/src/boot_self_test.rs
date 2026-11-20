@@ -66,7 +66,7 @@ const UNMAPPED_ADDRESS: u64 =
 /// `fixtures/src/kernel_test_subject.rs`'s `READ_KERNEL`.
 const READ_ADDRESS_ROLE: u64 = 1;
 /// `block_driver`'s honest role, which reads `motd` and reports its first eight bytes:
-/// `components/src/block_driver.rs`'s `VIRTIO_BLK`.
+/// `components/src/block_driver.rs`'s `VIRTUAL_IO_BLK`.
 const BLOCK_DRIVER_READ_ROLE: u64 = 3;
 /// What `motd` starts with on the archive the runners attach as a disk.
 const MOTD_HEAD: &[u8; 8] = b"nife: re";
@@ -726,7 +726,7 @@ fn block_device(
         );
         return;
     }
-    let offset = abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
+    let offset = abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET;
     // SAFETY: just mapped read-only, one page; the offset is its last word, which the kernel wrote.
     let physical = unsafe { core::ptr::read_volatile((DISK_DMA_PEEK_VA + offset) as *const u64) };
     // `block_driver`'s slots: 0 its report, 1 the interrupt, 2 the transport.

@@ -164,7 +164,7 @@ source is armed.
   capability's `ACKNOWLEDGE`.
 
 The virtio starters therefore hand back an interrupt that is routed but not enabled
-(`VirtioBootGrant::intid`), and the caller enables it beside the UART's.
+(`VirtualIoBootGrant::intid`), and the caller enables it beside the UART's.
 
 ## The installed boot's confirmation
 

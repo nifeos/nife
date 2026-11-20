@@ -39,7 +39,7 @@ merge queue recorded:
 
 `228e8024a` reads its floor to the tick and `52d21046e` within 16 ticks of `call_reply`'s.
 `8c221d5be` and `7ea93b038` read the merge queue's 2026W43 and W44 rows exactly on their own
-pinned nightlies, and window A's held nightly moves only `null_syscall` (+0.30%, the restamp term
+pinned nightlies, and window A's held nightly moves only `null_system_call` (+0.30%, the restamp term
 the 2026-11-02 floor already carries). So the compiler term in each window is zero to within a
 tick.
 
@@ -115,7 +115,7 @@ this note are left out (#1360's switch rows, #2565's `spawn_reap` and `yield_swi
 | B: #1493, milestone 632 (graphics launched from the prompt) | +0.10 | | | | | |
 | B: #1517, a region reclaims its out-of-order holes | | | | | | +1.64 |
 | B: #1620, milestone 758 | +0.25 | +0.23 | +0.16 | +0.22 | +0.16 | +0.18 |
-| B: #1614, fatal risk 4 (`null_syscall` under load) | | | -0.53 | -0.32 | -0.19 | +0.32 |
+| B: #1614, fatal risk 4 (`null_system_call` under load) | | | -0.53 | -0.32 | -0.19 | +0.32 |
 | B: #1617, milestones 754 and 761 | +4.15 | +2.35 | +3.15 | -1.77 | (save) | (save) |
 | D: #1892, milestone 812 (threads in one address space) | +0.37 | +0.37 | +0.62 | +0.27 | +0.50 | +4.09 |
 | D: #2025, `schedule` split | +0.22 | +0.24 | +0.46 | +0.15 | | |
@@ -128,7 +128,7 @@ this note are left out (#1360's switch rows, #2565's `spawn_reap` and `yield_swi
 | A: #2965, milestone 969 | | | | | +2.89 | +1.15 |
 
 "(save)" marks a row the 2026-10-08 save already explains whole. #1614 also takes 7.99% off
-`null_syscall`, its own purpose. #1892 adds 1.20% to it.
+`null_system_call`, its own purpose. #1892 adds 1.20% to it.
 
 #1351's profile: the thread's wait state becomes a `Wait` enum that also holds a notification
 wait (`try_wake` +11%), and the IPC path takes `IpcTables` more often (+4.3% in its `lock`).

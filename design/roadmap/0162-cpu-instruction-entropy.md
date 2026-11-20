@@ -25,7 +25,7 @@ See "What was built" below for why the title says `RDSEED`/`RNDRRS` rather than 
 ## Why this is not "the JH7110 driver on two more architectures"
 
 The JH7110's TRNG is a discrete, memory-mapped SoC peripheral: reaching it needs a capability
-(rule 2: a base address, nothing else) the same way virtio-rng needs a `Virtio` capability. RDRAND and
+(rule 2: a base address, nothing else) the same way virtio-rng needs a `VirtualIo` capability. RDRAND and
 RNDR are neither. Both are unprivileged CPU instructions, executable directly at any privilege
 level with no MMIO, no capability, no device discovery. That is a materially different shape of work,
 smaller than either the JH7110 driver or the original virtio-rng backend.
@@ -100,7 +100,7 @@ now decodes `ID_AA64ISAR0_EL1.RNDR` (host-tested: a real part without `FEAT_RNG`
 `kernel/src/arch/aarch64/isa.rs` reads it at boot. `kernel/src/user/entropy_service.rs` gained a third
 `Bus` variant, `Instruction` (not really a bus; named alongside `Mmio`/`Pci` anyway because everything
 the type already does, picking which source to wire, applies equally). It spawns `entropy` in a new
-mode that needs no `Virtio` capability, no DMA page, no `Irq`: two capability slots instead of four.
+mode that needs no `VirtualIo` capability, no DMA page, no `Irq`: two capability slots instead of four.
 `components/src/entropy.rs` gained the `RNDRRS` backend itself (`MRS` on `S3_3_C2_C4_1`, checking
 `PSTATE.NZCV` for the architected success/failure signal, the same idiom Linux's own
 `arch/arm64/include/asm/archrandom.h` uses) and a real serve loop for it.

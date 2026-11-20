@@ -50,7 +50,7 @@ aarch64 (ticks; components per the grid above):
 | ipc_rtt | 1026533 | +1 | **+25393** | 0 | 1051927 | +2.5% |
 | spawn_reap | 205713 | 0 | +5908 | 0 | 211621 | +2.9% |
 | sink_throughput | 4413308 | +286 | +89039 | +287 | 4502920 | +2.0% |
-| null_syscall | 405003 | 0 | +225 | 0 | 405228 | +0.06% |
+| null_system_call | 405003 | 0 | +225 | 0 | 405228 | +0.06% |
 | coremark | 20917371 | 0 | +417 | -1904 | 20915884 | -0.01% |
 | map_new | 15743 | 0 | 0 | +1 | 15744 | +0.01% |
 | map_el0 | 388673 | 0 | +2 | -1 | 388674 | +0.00% |
@@ -69,7 +69,7 @@ riscv64:
 | ipc_rtt_el0 | 1821100 | +2230 | **+55867** | -808 | 1878389 | +3.1% |
 | spawn_reap | 32975 | 0 | +1004 | 0 | 33979 | +3.0% |
 | sink_throughput | 747166 | 0 | +15176 | 0 | 762342 | +2.0% |
-| null_syscall | 72229 | 0 | +1 | 0 | 72230 | +0.00% |
+| null_system_call | 72229 | 0 | +1 | 0 | 72230 | +0.00% |
 | coremark | 3654773 | 0 | -394 | +1 | 3654380 | -0.01% |
 | map_new | 2396 | 0 | 0 | 0 | 2396 | 0 |
 | map_el0 | 62308 | +1 | 0 | -1 | 62308 | 0 |
@@ -194,4 +194,4 @@ Leaving that floor in place would bake the removable regression into the x86 tri
 `bench/baseline-x86_64.txt` is re-saved against the recovered numbers alongside the other two. The
 IPC benchmarks moved in proportion to their switch counts (`relay_rtt` 35208246 -> 34051949,
 `broker_rtt` 36208747 -> 35054295). The no-switch primitives (`map_new`, `map_el0`,
-`null_syscall`) stayed byte-identical, the same signature as the other two ISAs.
+`null_system_call`) stayed byte-identical, the same signature as the other two ISAs.

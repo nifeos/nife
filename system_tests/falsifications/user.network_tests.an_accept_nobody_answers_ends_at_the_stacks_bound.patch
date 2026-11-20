@@ -1,6 +1,6 @@
 Falsifies `system_tests::user::network_tests::an_accept_nobody_answers_ends_at_the_stacks_bound`.
 
-Architecture: aarch64 (the hunk is portable userspace code in `net_stack`; the riscv64 twin, `riscv_virtio_tests`, falls to the same patch, and x86_64 has no such test)
+Architecture: aarch64 (the hunk is portable userspace code in `net_stack`; the riscv64 twin, `riscv_virtual_io_tests`, falls to the same patch, and x86_64 has no such test)
 
 The defect is `service_until` handing `wait_for_nic` no deadline, which is the tree before
 2026-10-13 (UTC): with no smoltcp timer pending, a virtio wait blocks on the interrupt alone, so a

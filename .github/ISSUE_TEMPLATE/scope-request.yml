@@ -45,7 +45,7 @@ body:
     attributes:
       label: What you think it costs, and what it would touch
       description: >-
-        Optional, and a guess is fine. Anything touching the syscall surface, a wire format, a new
+        Optional, and a guess is fine. Anything touching the system call surface, a wire format, a new
         dependency, or a name is expensive to unship and is an architect's call rather than a lane's.
     validations:
       required: false

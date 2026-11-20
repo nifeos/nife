@@ -6,7 +6,7 @@
 //! driver, the block server, the net driver, the write path, and the two attackers the
 //! DMA-confinement tests spawn (a descriptor aimed at kernel memory, and the indirect-descriptor
 //! escape). The attackers share this binary on purpose: they differ from the honest driver by one
-//! descriptor, so the attack is a fair test. See notes/virtio.md and notes/dma/shadow-ring.md.
+//! descriptor, so the attack is a fair test. See notes/virtual-io.md and notes/dma/shadow-ring.md.
 //!
 //! Name: ratified 2026-08-27 (calef). Renamed from `blk` to `block_driver`, matching the
 //! `<device>_driver` shape given to `gpu_driver` and `keyboard_driver` in the same pass. Not
@@ -28,16 +28,16 @@
 use components::block_driver_roles as roles;
 pub use user_mode_runtime::{invoke, send};
 
-/// Role numbers, matching `kernel/src/user/virtio_service.rs`. This binary is the only thing that
+/// Role numbers, matching `kernel/src/user/virtual_io_service.rs`. This binary is the only thing that
 /// dispatches on them since milestone 291.
-const VIRTIO_BLK: u64 = 3;
-const VIRTIO_ATTACK: u64 = 8;
-const VIRTIO_ATTACK_INDIRECT: u64 = 13;
-const VIRTIO_BLK_WRITE: u64 = 30;
-const VIRTIO_BLK_WRITE_ABANDON: u64 = 31;
-const VIRTIO_NET: u64 = 40;
+const VIRTUAL_IO_BLK: u64 = 3;
+const VIRTUAL_IO_ATTACK: u64 = 8;
+const VIRTUAL_IO_ATTACK_INDIRECT: u64 = 13;
+const VIRTUAL_IO_BLK_WRITE: u64 = 30;
+const VIRTUAL_IO_BLK_WRITE_ABANDON: u64 = 31;
+const VIRTUAL_IO_NET: u64 = 40;
 /// The block server (milestone 32 phase 2): serves blocks over blk IPC to the FS server.
-const VIRTIO_BLK_SERVER: u64 = 32;
+const VIRTUAL_IO_BLK_SERVER: u64 = 32;
 
 user_mode_runtime::program_entry!(start);
 
@@ -49,13 +49,13 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         None => (arg0, arg1),
     };
     match role {
-        VIRTIO_BLK => roles::run(direct_memory_access_phys),
-        VIRTIO_ATTACK => roles::run_attack(direct_memory_access_phys),
-        VIRTIO_ATTACK_INDIRECT => roles::run_attack_indirect(direct_memory_access_phys),
-        VIRTIO_BLK_WRITE => roles::run_write(direct_memory_access_phys),
-        VIRTIO_BLK_WRITE_ABANDON => roles::run_write_abandon(direct_memory_access_phys),
-        VIRTIO_NET => roles::run_net(direct_memory_access_phys),
-        VIRTIO_BLK_SERVER => roles::run_block_server(direct_memory_access_phys),
+        VIRTUAL_IO_BLK => roles::run(direct_memory_access_phys),
+        VIRTUAL_IO_ATTACK => roles::run_attack(direct_memory_access_phys),
+        VIRTUAL_IO_ATTACK_INDIRECT => roles::run_attack_indirect(direct_memory_access_phys),
+        VIRTUAL_IO_BLK_WRITE => roles::run_write(direct_memory_access_phys),
+        VIRTUAL_IO_BLK_WRITE_ABANDON => roles::run_write_abandon(direct_memory_access_phys),
+        VIRTUAL_IO_NET => roles::run_net(direct_memory_access_phys),
+        VIRTUAL_IO_BLK_SERVER => roles::run_block_server(direct_memory_access_phys),
         _ => panic!(),
     }
 }

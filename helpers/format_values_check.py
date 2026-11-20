@@ -14,7 +14,7 @@ changed lines (the merge base against the tree) and fails in two cases:
    changed in that crate. A magic is a format's identity, and a format never changes in place, so
    a new magic is a new version.
 2. A public number in `crates/abi` changed or was removed (a `pub const` of any module, or an
-   `Error` discriminant), and `ABI_VERSION` did not change. The syscall surface is one version;
+   `Error` discriminant), and `ABI_VERSION` did not change. The system call surface is one version;
    adding a number is an addition and owes nothing.
 
 A rename is not a move (the maintainer's ruling of 2026-11-08 UTC): the number a reader of the
@@ -106,6 +106,12 @@ def values(text, path):
     return found
 
 
+def one_spelling(doc):
+    """The system call spelling is one word read two ways: `syscall` and `system call` (or
+    `system_call`) mean the same in a doc comment, so respelling it is not a new meaning."""
+    return re.sub(r'(?i)system[ _]call|syscall', 'syscall', doc)
+
+
 def renames(before, after, renamed_names=None):
     """{removed key: added key} for the one-to-one renames: same kind, value and meaning.
 
@@ -121,7 +127,7 @@ def renames(before, after, renamed_names=None):
         groups = {}
         for key in keys:
             value, (kind, doc) = side[key]
-            groups.setdefault((key[0], (value, (kind, spell(doc)))), []).append(key)
+            groups.setdefault((key[0], (value, (kind, one_spelling(spell(doc))))), []).append(key)
         return groups
     removed = by_signature(set(before) - set(after), before, respell)
     added = by_signature(set(after) - set(before), after, lambda doc: doc)
@@ -133,7 +139,7 @@ def all_renames(sides):
     """{path: {removed key: added key}} over every judged file, to a fixed point.
 
     A rename found in one pass lets the next read a sibling's doc comment that names it, so the
-    syscalls renamed together, whose docs name each other, pair; a doc that names a constant no
+    system calls renamed together, whose docs name each other, pair; a doc that names a constant no
     rename in the change accounts for still does not."""
     names = {}
     while True:
@@ -260,16 +266,16 @@ def selftest():
     fails('a multi-line value is read whole',
           {'crates/x/src/lib.rs': ('pub const MAGIC: u64 =\n    1;\n', 'pub const MAGIC: u64 =\n    2;\n')}, True)
 
-    abi = 'pub const ABI_VERSION: u32 = 1;\npub const SYSCALL_EXIT: u64 = 0;\n'
-    fails('a renumbered syscall without the version fails',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYSCALL_EXIT: u64 = 9;\n')}, True)
-    fails('a renumbered syscall with the version passes',
-          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYSCALL_EXIT: u64 = 9;\n')}, False)
+    abi = 'pub const ABI_VERSION: u32 = 1;\npub const SYSTEM_CALL_EXIT: u64 = 0;\n'
+    fails('a renumbered system call without the version fails',
+          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\npub const SYSTEM_CALL_EXIT: u64 = 9;\n')}, True)
+    fails('a renumbered system call with the version passes',
+          {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 2;\npub const SYSTEM_CALL_EXIT: u64 = 9;\n')}, False)
     fails('a number in a module of abi without the version fails',
           {'crates/abi/src/timer.rs': ('pub const ARM: u64 = 0;\n', 'pub const ARM: u64 = 1;\n'),
            'crates/abi/src/lib.rs': (abi, abi)}, True)
-    fails('an added syscall is an addition',
-          {'crates/abi/src/lib.rs': (abi, abi + 'pub const SYSCALL_NEW: u64 = 5;\n')}, False)
+    fails('an added system call is an addition',
+          {'crates/abi/src/lib.rs': (abi, abi + 'pub const SYSTEM_CALL_NEW: u64 = 5;\n')}, False)
     fails('a removed number fails',
           {'crates/abi/src/lib.rs': (abi, 'pub const ABI_VERSION: u32 = 1;\n')}, True)
     fails('a renumbered error without the version fails',
@@ -281,7 +287,7 @@ def selftest():
     word = ('pub const ABI_VERSION: u32 = 1;\n/// The word\'s offset.\n///\n/// Name: provisional.\n'
             '#[doc(alias = "w")]\npub const {}: u64 = 4096 - 8;\n')
     fails('a renamed constant with its value, type and doc passes',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW'))}, False)
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW'))}, False)
     named = ('pub const ABI_VERSION: u32 = 1;\n/// `invoke(c, {0}, _)` makes one object.\n{1}'
              'pub const {0}: u64 = 2;\n')
     fails('a renamed constant whose doc names it, gaining a Name: block, passes',
@@ -292,6 +298,14 @@ def selftest():
           {'crates/abi/src/memory_region.rs': (named.format('OLD', ''),
                                                named.format('NEW', '').replace('makes one', 'OTHER makes one'))},
           True)
+    spelled = ('pub const ABI_VERSION: u32 = 1;\n/// The {} number is not one of the five.\n'
+               'pub const {}: u64 = 6;\n')
+    fails('a renamed constant whose doc respells the system call passes',
+          {'crates/abi/src/lib.rs': (spelled.format('syscall', 'BAD_SYSCALL'),
+                                     spelled.format('system call', 'BAD_SYSTEM_CALL'))}, False)
+    fails('a renamed constant whose doc changes more than the spelling still fails',
+          {'crates/abi/src/lib.rs': (spelled.format('syscall', 'BAD_SYSCALL'),
+                                     spelled.format('system call', 'BAD_SYSTEM_CALL').replace('five', 'six'))}, True)
     siblings = ('pub const ABI_VERSION: u32 = 1;\n/// End the process.\npub const {0}EXIT: u64 = 0;\n'
                 '/// End the thread; the last one ends the process, as [`{0}EXIT`] would.\n'
                 'pub const {0}EXIT_THREAD: u64 = 4;\n')
@@ -302,13 +316,13 @@ def selftest():
                                      siblings.format('NEW_').replace('[`NEW_EXIT`]', '[`OTHER`]'))},
           True)
     fails('a renamed constant whose value changed fails',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW').replace('- 8', '- 16'))}, True)
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW').replace('- 8', '- 16'))}, True)
     fails('a renamed constant whose type changed fails',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'), word.format('NEW').replace('u64', 'usize'))}, True)
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), word.format('NEW').replace('u64', 'usize'))}, True)
     fails('a deleted constant fails',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'), 'pub const ABI_VERSION: u32 = 1;\n')}, True)
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'), 'pub const ABI_VERSION: u32 = 1;\n')}, True)
     fails('a value reused under a new name for a different meaning fails',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'),
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'),
                                         word.format('NEW').replace("word's offset", 'ring length'))}, True)
     fails('a value moved onto a name that already held another fails',
           {'crates/abi/src/lib.rs': ('pub const A: u64 = 5;\npub const B: u64 = 6;\n',
@@ -328,7 +342,7 @@ def selftest():
     fails('a renamed magic with its value passes',
           {'crates/x/src/lib.rs': (magic_old, magic_old.replace('MAGIC', 'FORMAT_MAGIC'))}, False)
     fails('a rename with a version bump still passes',
-          {'crates/abi/src/virtio.rs': (word.format('OLD'),
+          {'crates/abi/src/virtual_io.rs': (word.format('OLD'),
                                         word.format('NEW').replace('VERSION: u32 = 1', 'VERSION: u32 = 2'))},
           False)
 

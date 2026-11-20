@@ -154,7 +154,7 @@ milestone 57 attribute store.
 
 | | |
 |---|---|
-| New code | **estimated 500 to 700 lines** plus tests: a stream-name parse in `path.rs` and the colon fix beside it, stream-aware CREATE with dispositions, READ/WRITE/CLOSE and `SET_INFO`'s end-of-file on a stream handle, `FileStreamInformation` enumeration, delete-on-close as a remove. The estimate's basis is ksmbd's equivalent at roughly 200 lines of C over an existing xattr syscall, times this tree's usual ratio of documented Rust with host tests to reference C. |
+| New code | **estimated 500 to 700 lines** plus tests: a stream-name parse in `path.rs` and the colon fix beside it, stream-aware CREATE with dispositions, READ/WRITE/CLOSE and `SET_INFO`'s end-of-file on a stream handle, `FileStreamInformation` enumeration, delete-on-close as a remove. The estimate's basis is ksmbd's equivalent at roughly 200 lines of C over an existing xattr system call, times this tree's usual ratio of documented Rust with host tests to reference C. |
 | `Share` methods added | **4 to 6**, in all three implementations. |
 | Wire surface added | one volume-attribute bit, one `QUERY_INFO` class widened, one path grammar. **No new `fs_proto` op**, which is the option's best property: ops 14-17 already do the work. |
 | Bytes at rest | one extra directory entry, one extra node, one 4096-byte block for the node's blob under `.extended-attributes`. **The same order as option 1**, which was not obvious before it was counted. |

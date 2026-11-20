@@ -33,12 +33,12 @@ generator". A client cannot program the queue, cannot map the page the device wr
 cannot ask the device for anything the service did not ask on its behalf.
 
 The service's whole authority is four things placed before it ran: the request endpoint (RECEIVE), an
-`Interrupt`, a `Virtio` transport, and a readiness endpoint. No initrd, no budget, no filesystem, no
+`Interrupt`, a `VirtualIo` transport, and a readiness endpoint. No initrd, no budget, no filesystem, no
 network. A compromised entropy service is a machine whose random numbers an attacker chooses, which
 is exactly as much damage as owning the entropy source should be worth, and it is the reason the
 device is not sitting inside every program.
 
-It needed nothing new in the kernel. No capability type, no syscall, no method number: an
+It needed nothing new in the kernel. No capability type, no system call, no method number: an
 `Rendezvous` with WRITE is the whole grant, and `caps` already prints it. That is the third time this
 pattern has paid (the framebuffer, the clock, now this), and it is worth noticing that a capability
 system's answer to "add a new privilege" keeps being "hand out a smaller object you already have".
@@ -197,7 +197,7 @@ it.
   tour spawns the driver when the machine's device tree describes the device. On every machine this
   repository boots it does not, so what CI exercises is the skip. Its authority is the
   smallest of any backend here: two rendezvous capabilities and one page of device memory, no DMA
-  page, no `Interrupt` capability, no `Virtio` capability. The buffer that hands bytes to clients
+  page, no `Interrupt` capability, no `VirtualIo` capability. The buffer that hands bytes to clients
   moved
   into the crate the same day (`jh7110_entropy::Pool`), so the one part of the driver that could serve
   a byte twice is host-tested rather than merely written. What is left in the program is the

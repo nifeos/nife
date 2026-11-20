@@ -96,7 +96,7 @@ crate into `components/` and `fixtures/` on 2026-09-13; the table below was not 
 
 | shape | blocks | what it is |
 |---|---|---|
-| `invoke(...)` | 114 | one raw capability invocation, the userspace syscall |
+| `invoke(...)` | 114 | one raw capability invocation, the userspace system call |
 | `read_volatile` / `write_volatile` | 102 | a byte or word through a granted shared page |
 | `from_raw_parts` / `from_raw_parts_mut` | 25 | the same page as a slice |
 | `core::arch::asm!` | 12 | entry stubs and the trap |

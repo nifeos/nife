@@ -33,7 +33,7 @@ No new tool.
 ## Goal
 
 A stranger who finds `user_mode_runtime` in its own repository can tell in one screen what it is
-for. It holds the one syscall wrapper, the entry macro, the panic handler and the typed windows over
+for. It holds the one system call wrapper, the entry macro, the panic handler and the typed windows over
 memory the kernel handed a process. It covers three architectures. The same stranger can build it for all three
 targets and run its host tests from the README alone. The stranger can also trust that every safe
 function is safe to call with any argument. A wrong argument panics or meets a refusal from the
@@ -68,7 +68,7 @@ crate's own reasons.
 - P2-14, two spellings of the empty-slot probe: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P2-15, ten receive functions in three shapes: Done, [#3611](https://github.com/nifeos/nife/pull/3611).
 - P2-16, a stale reason for `socket_frame` living here: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
-- P2-17, no wrapper for `SYSCALL_EXIT_THREAD`: Done, [#3629](https://github.com/nifeos/nife/pull/3629) (maintainer, provisional,
+- P2-17, no wrapper for `SYSTEM_CALL_EXIT_THREAD`: Done, [#3629](https://github.com/nifeos/nife/pull/3629) (maintainer, provisional,
   2026-11-15 UTC); the docs of `exit` say why none is needed.
 - Decision 1, the rename table: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional, 2026-11-14 UTC).
 - Decision 1, the sized accessors: Done, [#3815](https://github.com/nifeos/nife/pull/3815)
@@ -90,7 +90,7 @@ crate's own reasons.
 
 ### Ratify the names of `user_mode_runtime`
 
-Background. This crate is what every nife program links: the syscall wrapper, the entry macro, the
+Background. This crate is what every nife program links: the system call wrapper, the entry macro, the
 panic handler and typed windows over memory the kernel hands a process. It leaves nife for its own
 repository, and a crate leaves with ratified names. The maintainer ruled the renames on 2026-11-14
 (UTC), provisionally, and #3611 built them; each renamed name carries a provisional `Name:` block.

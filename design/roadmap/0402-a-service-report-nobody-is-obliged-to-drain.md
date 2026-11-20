@@ -20,7 +20,7 @@ later one, the announcement is still a blocking send, and dropping the `Wiring` 
 any of which can become the first caller when a filter changes what runs.
 *(Number provisional until the merge queue lands it.)*
 
-A lane can close this. It is kernel-side test wiring with no syscall surface, no wire
+A lane can close this. It is kernel-side test wiring with no system call surface, no wire
 format and no new name.
 
 ## The trap

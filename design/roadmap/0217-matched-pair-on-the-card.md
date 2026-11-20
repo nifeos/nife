@@ -10,7 +10,7 @@ Built.
 In brief. The VisionFive 2 boots, starts a user program at U-mode, and then halts:
 
 ```
-userspace  : a program ran at U-mode and made 0 syscalls (yield/yield/exit via ecall)
+userspace  : a program ran at U-mode and made 0 system calls (yield/yield/exit via ecall)
 
 MEASURED BOOT REFUSED: 'init' is not what this kernel image was built against
   expected sha256 d63054330191625f54db33110bdf3882d6f81bc5c97877f32f574c2e8cc798b1

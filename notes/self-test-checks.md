@@ -1,6 +1,6 @@
 # The boot self-test's checks: what each proves, and why it is built that way
 
-*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-syscall-selftest.*
+*Name: provisional, minted 2026-10-23 (UTC) by comments/929-kernel-system-call-selftest.*
 
 The second rung of the boot ladder runs in two halves: `kernel/src/self_test.rs` checks the
 kernel's own internals, and `components/src/boot_self_test.rs` runs the checks that need a user

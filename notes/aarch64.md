@@ -162,7 +162,7 @@ That's our Rust target triple, and every piece is meaningful:
 - **`aarch64`**: the ISA.
 - **`unknown`**: the vendor. Nobody in particular.
 - **`none`**: the operating system: there isn't one. This is what "bare metal" means,
-  spelled out in the target name. No syscalls, no libc, no `std`. It's why the kernel is
+  spelled out in the target name. No system calls, no libc, no `std`. It's why the kernel is
   `#![no_std]`.
 - **`softfloat`**: do not use the hardware floating-point / SIMD registers.
 

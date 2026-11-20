@@ -88,7 +88,7 @@ An appendix to [the milestone](../1103-page-frames-outside-review.md).
    `containing`, `alloc`, `alloc_contiguous`, `free`, `is_used`, `stats`, `largest_free_run`,
    `bitmap_bytes` and `mark_free` / `mark_used` pass every rule this review can apply.
    Evidence: `src/lib.rs` line 17, 48, 62, `69-74`, `78`, `135`, `185`, `201`, `390`, `409-419`.
-   `crates/page_tables/src/tlb_flush.rs` line 41. `design/naming/crates.md` line 65.
+   `crates/page_tables/src/translation_lookaside_buffer_flush.rs` line 41. `design/naming/crates.md` line 65.
    Change: done by one rename lane across the tree (about 60 `FRAME_SIZE` sites in `kernel/` and
    `system_tests/`). The names are `FRAME_BYTES`, `physical_address`, `from_physical_address`, the
    parameters `bytes` and `span_bytes`, the `Stats` fields `frames` and `used_frames`, and

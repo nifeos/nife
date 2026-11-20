@@ -43,7 +43,7 @@ pub fn is_current_space(space: u64) -> bool {
 /// `AddressSpace::WAIT`, the kernel half (§269 fork 2): park the calling thread on the 32-bit word
 /// at `va` in its own space `space`, unless the word no longer holds `expected`. `Ok(0)` after a
 /// wake, `Ok(1)` if the word differed, `BadPointer` if `va` is not mapped readable to user mode,
-/// `Gone` if the wait ended without a wake. The syscall layer has checked the flags, the alignment
+/// `Gone` if the wait ended without a wake. The system call layer has checked the flags, the alignment
 /// and that `space` is the caller's.
 ///
 /// Context: reads the word and parks under one hold of `IPC_TABLES`, which `WAKE` also takes, so a
@@ -128,7 +128,7 @@ pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
     n
 }
 
-/// `SYSCALL_EXIT_THREAD`'s word: store zero in the calling thread's 32-bit word at `va` and wake every
+/// `SYSTEM_CALL_EXIT_THREAD`'s word: store zero in the calling thread's 32-bit word at `va` and wake every
 /// futex waiter on it, so a joiner may free the thread's stack. Called before the thread departs,
 /// which runs on the kernel stack, so the user stack is not touched again. A word that is zero,
 /// misaligned, outside the user half or not mapped writable is skipped: nothing stops an exit.

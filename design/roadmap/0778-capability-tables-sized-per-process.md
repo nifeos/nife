@@ -12,7 +12,7 @@ needs_person: yes
 
 Raised 2026-10-04 (UTC) by milestone 753 (trace the progenitor's login block peak), alongside
 calef's choice of a 64-slot table. A proposal, not a ruling. Title and slug are drafts, and so is
-every name below; `needs_person` is yes because the answer touches the syscall surface.
+every name below; `needs_person` is yes because the answer touches the system call surface.
 
 ## The question
 
@@ -23,7 +23,7 @@ for that process, and grow when it needs to?
 ## What this tree does today
 
 A flat array of `CAPABILITY_TABLE_SLOTS` entries inside the thread's TCB page, 32 bytes a slot,
-indexed directly by the slot number a syscall names. `crates/capability_table`'s own doc calls it "an fd
+indexed directly by the slot number a system call names. `crates/capability_table`'s own doc calls it "an fd
 table with a type tag on each entry" and refuses seL4's tree "because it costs a great deal of
 explanation". Each raise so far (16, 17, 24, 32, and 64 in milestone 754 (the capability table grows
 to 64 slots)) was one number, paid in every thread's TCB.
@@ -48,7 +48,7 @@ Read from the seL4 Reference Manual, version 16.0.0, section 3 (fetched 2026-10-
 
 ## What it would cost here (§10)
 
-§10 (process model: capability-based, microkernel) keeps the syscall surface narrow and explicit.
+§10 (process model: capability-based, microkernel) keeps the system call surface narrow and explicit.
 A per-process table adds to it, at minimum:
 
 - a new object type for a table, retyped out of a region like any other object;
@@ -80,4 +80,4 @@ Not a change to how many slots any table has today. That is milestone 754 (the c
 
 ## Index row
 
-Every thread's capability table is one fixed size, paid in each TCB, and the size has been raised by one constant five times. The block asks whether a table should be sized per process and grow on demand, compares the tree's flat array with seL4's design, and leaves the answer open because it touches the syscall surface.
+Every thread's capability table is one fixed size, paid in each TCB, and the size has been raised by one constant five times. The block asks whether a table should be sized per process and grow on demand, compares the tree's flat array with seL4's design, and leaves the answer open because it touches the system call surface.

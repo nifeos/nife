@@ -22,7 +22,7 @@ This is the milestone that makes the second half true, and it is what a demonstr
 
 The sub-decision it carries. What counts as the first "real workload," and by which ABI. Native
 first keeps the kernel pure and the surface small. A Linux-compat personality (Starnix / gVisor /
-WSL1 shape, a userspace server translating syscalls) is how a demonstrator eventually reaches
+WSL1 shape, a userspace server translating system calls) is how a demonstrator eventually reaches
 existing software, and it is where the parked competitor ambition would begin. VM hosting (seL4's
 route) needs the EL2 work in design/driver-domains.md. Decide the first target before writing
 compat code, so it stays scoped.

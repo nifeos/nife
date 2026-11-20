@@ -146,7 +146,7 @@ s   F4 \: incremental name filtering          F7 ]: higher priority (root only)
        m: toggle merged command                  i: set IO priority
        Z: pause/resume process updates           l: list open files with lsof
        u: show processes of a single user        x: list file locks of process
-       H: hide/show user process threads         s: trace syscalls with strace
+       H: hide/show user process threads         s: trace system calls with strace
        K: hide/show kernel threads               w: wrap process command in mult
 @ checkpoint 6
 

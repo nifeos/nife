@@ -35,7 +35,7 @@ What is measured, and it is a lot.
 
 - Single crossings, against Linux and macOS on one core. `notes/benchmarks.md`'s release table puts
   nife and Linux on the same M-series core at the same HVF tier, with native macOS as the bare-metal
-  ceiling. Null syscall ~27 ns against Linux's ~139, IPC round trip ~337 ns against ~1,723, a
+  ceiling. Null system call ~27 ns against Linux's ~139, IPC round trip ~337 ns against ~1,723, a
   derived context switch ~28 ns against ~415, and spawn ~7.7 us against `fork`+`exit`'s ~19.7 us.
   Provisioning a page is a three-way tie near ~550 ns, which the note keeps out of the win column
   because zeroing 4 KiB is bandwidth-bound and identical on all three. Four wins and one tie, each
@@ -44,13 +44,13 @@ What is measured, and it is a lot.
   duplicates.
 - A committed floor per crossing, in counter ticks. `bench/baseline-aarch64.txt`: `ipc_rtt`
   1,032 ticks, `call_reply` 1,059, `relay_rtt` 2,058, `ctx_switch` 612, `spawn_reap` 3,383,
-  `null_syscall` 20.5. Deterministic and comparable across runs, gated at a coarse 10%.
+  `null_system_call` 20.5. Deterministic and comparable across runs, gated at a coarse 10%.
   One aarch64 bench tick is 16 guest instructions under `-icount shift=0` (`CNTFRQ` 62.5 MHz), so
   the floors in instructions are the numbers times 16
   ([notes/benchmarks/icount-tick-scales.md](../../notes/benchmarks/icount-tick-scales.md)).
 - A bounded footprint for the crossing itself, which is the mechanism by which a per-crossing cost
   would fail to amortize in the first place. `bench/fastpath-aarch64.txt`, written by
-  `script/fastpath-footprint`: `ipc_call_reply` 7,028 bytes plus `syscall_entry` 1,508. The first
+  `script/fastpath-footprint`: `ipc_call_reply` 7,028 bytes plus `system_call_entry` 1,508. The first
   three phases of milestone 188 (the IPC fastpath) took entry from 3,304 to 1,508 and
   `ipc_send_receive` from 5,888 to 5,356. That work also found that the cheap extraction method of
   milestone 156 (extract the rest and ratchet both ways) does not transfer to a closure walk, which

@@ -146,7 +146,7 @@ pub fn asid_of(cr3: u64) -> u16 {
 /// `PSTATE.PAN`. RISC-V forbids it unless `sstatus.SUM` is set, which is why this exists.
 ///
 /// # BUGS
-/// SMAP is off because nothing has measured its cost on the syscall path; with it on, a kernel bug
+/// SMAP is off because nothing has measured its cost on the system call path; with it on, a kernel bug
 /// that strays into the low half would fault rather than succeed quietly.
 #[cfg(any(test, feature = "system_tests"))]
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))] // the system tests call it; a unit-test boot on some ISAs does not

@@ -218,7 +218,7 @@ const PAGE_SHAPES: [Requirements; 4] = [
 
 /// **The device split is a partition, for every declaration.**
 ///
-/// This is the arithmetic §41's four-syscall down window rests on. The operator endows a
+/// This is the arithmetic §41's four-system-call down window rests on. The operator endows a
 /// replacement with [`Plan::maps_without_devices`] and installs [`Plan::devices`] after the
 /// revoke, so an entry falling in both would be mapped twice and one falling in neither would
 /// leave a component reading an unmapped page. Proved for every arrangement of kinds, including

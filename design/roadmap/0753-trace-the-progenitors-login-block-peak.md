@@ -94,7 +94,7 @@ B: it costs the same new program and protocol, saves less, and leaves the launch
 - The shell holds the grants again. That reverses milestone 715's narrowing.
 - Build the graphical stack at boot and park it. That reverses calef's 2026-09-30 ruling, recorded in
   milestone 632 (graphics on demand), that graphics is launched from the prompt.
-- The kernel grants devices on request. That is a new method on the syscall surface for a problem a
+- The kernel grants devices on request. That is a new method on the system call surface for a problem a
   userspace process can solve.
 
 ## The seven questions, for B against A

@@ -16,7 +16,7 @@ survey found Barrelfish had already built. So nothing here is waiting on anybody
 §102 (a Frame names a run of pages) rather than merely obey it. Two of the four framings a
 maintainer offered from memory turned out to be wrong, and finding that out is what separates a
 decision from a guess. The pricing in section 3 is also the closest thing this tree has to a cost
-model for the syscall surface, and §102 does not restate it.
+model for the system call surface, and §102 does not restate it.
 
 This section was salvaged from a lane the account's spend limit killed mid-run, with 214 lines
 uncommitted in its worktree. What follows is the lane's own text, unedited.
@@ -34,7 +34,7 @@ non-square shape under the ceiling gives five text rows or fewer, so no scanout 
 makes gohufont-14 a terminal.
 
 This section prices four options. It gives no recommendation, deliberately. Three of the four change
-what a syscall method means, which is the irreversible column of the *move fast on what can be
+what a system call method means, which is the irreversible column of the *move fast on what can be
 undone* tenet. A recommendation on that fork is most of the way to a decision.
 
 What is blocked until this is answered. Milestone 29's scanout, and therefore §100's font
@@ -65,7 +65,7 @@ The four options are set out in full in section 6 below with their measured pric
 |---|---|---|
 | **A. A `Frame` names a run** `(pa, pages)` | `Object::Frame`, `frame::MAP`, `frame::REVOKE`, the revocation database's key | Live. The most general answer and the one that most changes what a capability means. |
 | **B. Grow `CSPACE_SLOTS`** | one constant | **Dominated, and by arithmetic rather than taste.** See section 5. A TCB is written into one 4 KiB page and a slot is 24 bytes, so **at most 170 slots fit a page even if a `Thread` held nothing else**; 475 frames needs 480. This is not "a one-number change paid in TCB size", which is what `kernel/src/cap.rs` currently says. |
-| **C. `aspace::MAP_INTO` at spawn** | nothing in the model | Live, and the only option that changes no syscall meaning. Costs 475 map calls, and the client ends up holding **no capability for its own pixels**, which is what milestone 108 spent itself closing on this exact path. |
+| **C. `aspace::MAP_INTO` at spawn** | nothing in the model | Live, and the only option that changes no system call meaning. Costs 475 map calls, and the client ends up holding **no capability for its own pixels**, which is what milestone 108 (the drivers move onto frame capabilities) spent itself closing on this exact path. |
 | **D. A large `Frame`: one 2 MiB page** | `PageFormat` gains block descriptors; `Object::Frame` gains an order | Live, and cheaper than this lane expected. `800x608x4 = 1,945,600` fits one 2 MiB page with 37 pages to spare, and `SURFACE_VA` is already 2 MiB-aligned. |
 
 A and D are the same decision at different granularity, which is the useful way to see them. Both

@@ -37,7 +37,7 @@ The test must go red. If it still passes, the test was never checking what it cl
 ## The work
 
 1. Enumerate the claims. What does this system say a confined component cannot do? Reach memory
-   outside its grant; make a syscall without a capability; widen its own rights; DMA outside its
+   outside its grant; make a system call without a capability; widen its own rights; DMA outside its
    IOMMU domain; name another process's objects. The enumeration is the first deliverable and is
    worth review on its own, because a claim nobody wrote down is a claim nobody is testing.
 2. Record, per claim, the change that would break it: remove the check, widen the grant, drop the

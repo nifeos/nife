@@ -30,18 +30,18 @@ time. `CNTFRQ_EL0` is 62.5 MHz, so one counter tick is 16 instructions. riscv's
 
 | primitive | aarch64 | riscv64 |
 |---|---|---|
-| `null_syscall`, one `svc`/`ecall` in and out | 324 instructions | 361 |
+| `null_system_call`, one `svc`/`ecall` in and out | 324 instructions | 361 |
 | `ctx_switch`, one EL0 yield round trip | 9,368 instructions | 9,745 |
 
-A spinner alone on its hart pays near the `null_syscall` end: the run queue is empty, and
+A spinner alone on its hart pays near the `null_system_call` end: the run queue is empty, and
 `schedule` takes its no-switch exit. One sharing a hart pays the `ctx_switch` end. So one second of
-spinning is between 10^5 and a few times 10^6 syscalls, and 100% of a hart for the whole second.
-The tree has the real-hardware figures too: ~27 ns per `null_syscall` and ~112 ns per EL0 yield
+spinning is between 10^5 and a few times 10^6 system calls, and 100% of a hart for the whole second.
+The tree has the real-hardware figures too: ~27 ns per `null_system_call` and ~112 ns per EL0 yield
 round trip, release build on HVF (notes/benchmarks.md).
 
 ## The same second, waited on a deadline
 
-One blocking syscall, one switch out, 100 ticks at 30 instructions, one wake, one switch back.
+One blocking system call, one switch out, 100 ticks at 30 instructions, one wake, one switch back.
 That is about 12,400 instructions, and the hart is in `wfi` for the rest.
 
 The ratio is at least 10^5 to 1, and it grows with core clock rather than shrinking. A core-second

@@ -19,9 +19,9 @@ capability; no new object or method.
 
 ## The failure
 
-A plain `REPLY` copies the `Reply(tid)` capability out of the slot (`kernel/src/syscall.rs`,
+A plain `REPLY` copies the `Reply(tid)` capability out of the slot (`kernel/src/system_call.rs`,
 `invoke`), delivers through `sched::ipc_reply`, and only then deletes the slot. `REPLY_CAPABILITY`
-has the same order in `kernel/src/syscall/object_methods.rs`. `ipc_reply` checks that the caller is
+has the same order in `kernel/src/system_call/object_methods.rs`. `ipc_reply` checks that the caller is
 parked waiting for a reply, not that it is parked waiting for *this* reply
 (`kernel/src/sched/rendezvous.rs`).
 
@@ -43,7 +43,7 @@ by any other route.
 
 A kernel test with two threads of one process holding one Reply slot: the second `REPLY` is
 `NoSuchSlot`, and a client parked on a second call receives that call's answer only. The fast path
-is on this route, so the change records `syscall_entry`'s measured footprint before and after.
+is on this route, so the change records `system_call_entry`'s measured footprint before and after.
 
 ## Index row
 

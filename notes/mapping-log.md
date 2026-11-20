@@ -137,7 +137,7 @@ has no record, and no capability names it, so nothing can map it twice.
 
 The sweeps unmap, TLB broadcast included, with the registry held. There is no heap to lift the
 victims out to first, and the accounting is acceptable. Revocation is rare. The lock is contended
-only by mapping syscalls, and a `MappingHold` spans one, which can afford to wait. A `tlbi`
+only by mapping system calls, and a `MappingHold` spans one, which can afford to wait. A `tlbi`
 completes in hardware regardless of who spins.
 
 `AddressSpace::UNMAP` tombstones a record by address alone, because it names a window and the
@@ -151,7 +151,7 @@ removes that tombstoning.
 
 `abi::address_space::LIST` answers from the log rather than from the page tables, the way `ps`
 reads `/proc`. The kernel already keeps the record, so the answer costs nothing more and agrees with
-what a revoke would find. The log records no permissions, so the syscall layer reads each address's
+what a revoke would find. The log records no permissions, so the system call layer reads each address's
 flags with `arch::mmu::translate_at`.
 
 A cursor is a log page's physical address OR'd with an index into it. Pages are only ever prepended
@@ -183,7 +183,7 @@ page inside it would hold more authority than one page grants; §132 refused tha
 Revocation owes a device nothing. `PageFrame::REVOKE` is a CPU-side operation. The gpu driver
 registers its DMA window with `virtio::register`, that window is derived from no capability, and
 revoking a capability does not narrow it. So the device can write those pages until the driver's
-virtio registration is torn down. Coupling `PageFrame` and `Virtio` is an architect's call, left
+virtio registration is torn down. Coupling `PageFrame` and `VirtualIo` is an architect's call, left
 open by §132.
 
 `revoke_page_frame` is the one-page case. It deletes only an exact `PageFrame(phys, 1)`, so a run

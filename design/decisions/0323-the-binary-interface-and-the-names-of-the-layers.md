@@ -80,7 +80,7 @@ A program here targets three things. The compiler builds it for `target_os = "ni
 `std` port, and it calls the kernel through the numbers in `crates/abi`. At spawn, the kernel
 compares the program's `ABI_VERSION` with its own and refuses a mismatch.
 
-Some bytes in every image also spell the project's name. Every program's capability manifest has
+Some bytes in every image spell the project's name. Every program's capability manifest has
 the ELF note owner `b"nife"` (`crates/capability_manifest_note`, ratified 2026-09-26). The boot
 slot header reads `NIFESLOT` and the boot stack magic `NIFESTK1`. Packages travel as `.nifepkg`
 files. §45 (a nife partition is `EC5CC08B-D749-4434-AC38-A274C50385BA`, and that never changes)
@@ -95,9 +95,9 @@ The binary interface is the platform a developer targets. A program cannot tell 
 kernels runs it, just as it cannot tell which build of Zircon runs it.
 
 The cost: kernels that serve one binary interface move together. The capability monokernel serves
-the same syscall numbers, object methods, error codes and right bits as the microkernel. A new
+the same system call numbers, object methods, error codes and right bits as the microkernel. A new
 number goes into both kernels or neither, and one version gate binds them. A kernel that wants a
-private syscall takes a binary interface of its own. The kernels stay free in everything a program
+private system call takes a binary interface of its own. The kernels stay free in everything a program
 cannot observe: where a service runs, how the scheduler works, what the proofs cover.
 
 The gain: one `target_os`, one published ABI crate and one `std` port per binary interface. A

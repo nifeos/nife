@@ -80,11 +80,11 @@ options rather than an answer.
 |---|---|---|
 | A | `AddressSpace::UNMAP(va)`, symmetric with the `MAP_INTO` that created the window. | A new method on an existing object, which AGENTS.md allows within the model provided its semantics are recorded here. Says what it means: *this* space gives up *this* window, and no other holder is touched. Needs a rule for unmapping a va that was never mapped, and a decision on whether the frame capability survives. |
 | B | `Frame::UNMAP`, the holder naming the frame rather than the address. | Reads as a second revoke and invites confusion with §41's take-back, which already dispatches on the object kind. A frame mapped at two addresses in one space has no unambiguous answer. |
-| C | No new method: a one-page loader. The builder maps a page, writes it, releases it before the next, so the window is never wider than one page and closes when construction ends. | No syscall surface at all, which is the strongest thing that can be said about an option here. It does not remove the window, it bounds it: the last page stays mapped unless something gives it up, so C is likely A plus a loader change rather than an alternative to it. Its price is boot time, and it is measurable. |
+| C | No new method: a one-page loader. The builder maps a page, writes it, releases it before the next, so the window is never wider than one page and closes when construction ends. | No system call surface at all, which is the strongest thing that can be said about an option here. It does not remove the window, it bounds it: the last page stays mapped unless something gives it up, so C is likely A plus a loader change rather than an alternative to it. Its price is boot time, and it is measurable. |
 
 Recommendation as raised (2026-09-19, superseded by the ruling above): measure C first, then A. Not
 because C is less work (it is a restructure of the loader against a one-line method, so it is more).
-It is because the measurement decides whether the syscall surface has to grow at all, and this
+It is because the measurement decides whether the system call surface has to grow at all, and this
 project's rule is that the surface stays small and every method is deliberate. If a one-page loader
 costs nothing observable at boot, the question becomes whether A is still worth a permanent boundary
 change for the residual last page; if it costs real time, A is the answer and the measurement said
@@ -97,7 +97,7 @@ measuring rather than dismissing.
 ## Would we still choose this if both options cost the same
 
 Yes, and this is worth saying because the recommendation looks like the cheap one. If a loader
-restructure and a new syscall were the same amount of work, the ordering would be unchanged. The
+restructure and a new system call were the same amount of work, the ordering would be unchanged. The
 surface is a boundary every future program is written against, and taking the measurement first is
 what makes the addition deliberate rather than reflexive. The effort argument would run the other
 way, since C is the larger change.

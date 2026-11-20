@@ -1,7 +1,7 @@
 /// `invoke(capability, CONFIGURE, entry, user_sp, address_space_slot)` -> the thread's current-CPU page
 /// address, never negative (zero if none could be given). Bind the space in `address_space_slot`
 /// and set the EL0 entry and user stack of an embryo TCB. Needs `WRITE` on both capabilities.
-/// Semantics follow the thread syscalls as built.
+/// Semantics follow the thread system calls as built.
 ///
 /// - **The capability is consumed; the space's name is not**. A space that already has a holder is refused with `WrongObject`.
 /// - **A process capability with [`rights::BIND`](super::rights::BIND)** instead joins that process,

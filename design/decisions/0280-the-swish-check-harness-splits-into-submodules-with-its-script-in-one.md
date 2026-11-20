@@ -144,6 +144,6 @@ that out.
 
 ## What it does not decide
 
-No public crate API, wire format or syscall changes. `xtask` is a binary and `swish_check` is
+No public crate API, wire format or system call changes. `xtask` is a binary and `swish_check` is
 `pub(crate)`. Every module name ships marked `Name: provisional`, deferred to calef's
 name-ratification pass.

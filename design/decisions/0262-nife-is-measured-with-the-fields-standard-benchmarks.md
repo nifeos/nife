@@ -76,7 +76,7 @@ proposal chose the benchmark for it.
 ## What this does not decide
 
 The C library. Every benchmark above is POSIX C. §31 (the foreign-language seam) lets C make no
-syscalls, and milestone 478 (tier three: full POSIX behind the foreign-language seam) is refused. Its
+system calls, and milestone 478 (tier three: full POSIX behind the foreign-language seam) is refused. Its
 condition for revisiting is "a component somebody needs that cannot be adapted to the narrower
 tiers". Point 2 forbids adapting the program, so this ruling may be that component. That is calef's
 call, not this section's, and each of the nine milestones carries `decision_dependencies:

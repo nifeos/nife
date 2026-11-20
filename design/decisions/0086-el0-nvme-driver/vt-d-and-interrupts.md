@@ -33,7 +33,7 @@ Both are the kind of gap only a real, non-virtio DMA device on a real PVH boot c
 also bite a real UEFI x86 machine (milestone 87), which is why neither fix is
 architecture-conditional. They check against what is actually true (which window is mapped, which
 bytes the kernel has claimed) rather than against which architecture is running. Neither changed the
-driver's shape, the syscall surface, or the confinement contract itself.
+driver's shape, the system call surface, or the confinement contract itself.
 
 With this data point in, the two data points §86 was waiting on are the JH7110 board and the
 VT-d/NVMe exercise; the second is now done. This section still does not decide option 1 versus
@@ -120,10 +120,10 @@ it does, this belongs there.
 ## Reversibility, and who has acted
 
 - Option 1 commits nothing. Fully reversible.
-- Option 2a adds no syscall surface at all, so the only durable commitment is what an
+- Option 2a adds no system call surface at all, so the only durable commitment is what an
   `nvme_server`'s spawn contract says, and this tree changes spawn contracts routinely.
 - Options 2b and 4 add an `Object` variant and its methods. The precedent says these grow
-  compatibly: §23 added a queue argument to `SETUP_QUEUE` and `NOTIFY` without a new syscall and
+  compatibly: §23 (multi-queue DMA confinement) added a queue argument to `SETUP_QUEUE` and `NOTIFY` without a new system call and
   without changing the disk's ABI.
 - The genuinely expensive thing is the one this section already named, and it is not the
   capability. It is the wire shape `block_roster` grows for an NVMe transport kind, because that is

@@ -184,7 +184,7 @@ common path looks like the obvious first move, and it is already done. `take_bou
 `kernel/src/sched.rs` is `#[cold]` and `#[inline(never)]`, and DECISIONS §101 (notification objects)
 priced what remains on the path at one load and one branch.
 
-The candidate the tree itself names is `syscall::dispatch`, the general decoder that seL4's fastpath
+The candidate the tree itself names is `system_call::dispatch`, the general decoder that seL4's fastpath
 exists to skip. [`kernel-footprint-and-caches.md`](../benchmarks/kernel-footprint-and-caches.md)
 calls it the first place to look. Skipping it is milestone 188 phase 4, which is an architect's
 call.

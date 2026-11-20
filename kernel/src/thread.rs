@@ -327,7 +327,7 @@ pub struct Thread {
     /// thread, which stays in the table, `Finished`, meanwhile. Region teardown reads it as "a core
     /// is still standing on this stack" and refuses `DESTROY` until the reaper is done, because an
     /// owner that sees `DESTROY` succeed may spend the memory at once
-    /// (notes/job-mix/null-syscall-under-load.md).
+    /// (notes/job-mix/null-system-call-under-load.md).
     pub being_reaped: bool,
 
     /// The low half of memory, as far as this thread is concerned; `None` for a kernel thread. The
@@ -390,8 +390,8 @@ pub struct Thread {
     /// **Why the last aborted send was aborted, when the reason was a refusal** (milestone 603
     /// (provisional), DECISIONS §101 (notification objects) ruling B). Set beside `handshake.abort()` when a `SEND`,
     /// `SEND_CAPABILITY` or `CALL` named a rendezvous that carries an interrupt, and read-and-cleared by
-    /// the syscall layer only after `take_ipc_aborted` has already said `true`. So an IPC that was
-    /// not aborted never reads it, which is what keeps the refusal off the fastpath: the syscall
+    /// the system call layer only after `take_ipc_aborted` has already said `true`. So an IPC that was
+    /// not aborted never reads it, which is what keeps the refusal off the fastpath: the system call
     /// layer's common case is the one branch it already had.
     pub ipc_refused: bool,
 
@@ -420,7 +420,7 @@ pub struct Thread {
 
     /// May this thread read the CPU's cycle counter from user mode. Set once, on an embryo, by
     /// `sched::grant_cycle_counter`, so a program cannot acquire a timing instrument it was not
-    /// created with; no syscall method sets it, so it is `false` on every thread. `sched::schedule`
+    /// created with; no system call method sets it, so it is `false` on every thread. `sched::schedule`
     /// hands it to `arch::timer::set_cycle_counter_grant`, which writes only on a change. Built
     /// only under `test` or `cycle_counter_grant`, whose cost `kernel/Cargo.toml`'s feature block
     /// records. Field name provisional.

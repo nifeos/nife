@@ -241,12 +241,12 @@ index 58a19b74f..557a3be70 100644
 +}
 +
  pub fn current() -> ThreadId {
-diff --git a/kernel/src/syscall.rs b/kernel/src/syscall.rs
+diff --git a/kernel/src/system_call.rs b/kernel/src/system_call.rs
 index d06b02d38..c90446c5c 100644
---- a/kernel/src/syscall.rs
-+++ b/kernel/src/syscall.rs
+--- a/kernel/src/system_call.rs
++++ b/kernel/src/system_call.rs
 @@ -68,2 +68,4 @@ pub fn dispatch(frame: &mut TrapFrame) {
-     let nr = frame.syscall_nr();
+     let nr = frame.system_call_nr();
 +    #[cfg(target_arch = "aarch64")]
 +    crate::cap_trace::note_pc(frame.elr, frame.x[30], frame.x[29], frame.sp_el0);
      // Milestone 134's per-IPC stack-depth instrument keys each sample by method, and the method

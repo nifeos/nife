@@ -51,7 +51,7 @@ Every diagnostic path in the tree, found by grep on base `140adf859` (the comman
 | kernel gauges after handoff | 2: `capability slots:` (`kernel/src/cap.rs:358`) and `progenitor stack:` (`kernel/src/progenitor_stack.rs:118`) | the same UART, interleaved with userspace at byte granularity | `script/swish-check`, which needs both lines and filters one of them out first |
 | kernel fault report | 3 lines, ~150 bytes, per faulting user thread, all three architectures | the same UART | `script/swish-check` (`KERNEL_FAULT_TOKENS`) |
 | semihosting | 58 hits, all exit-with-status | QEMU's exit code | the test harness; no semihosted writes exist |
-| userspace output | no debug-put syscall; four syscalls total (`crates/abi/src/lib.rs:119`) | a byte sink (`crates/byte_sink_contract`, 16 bytes per `SEND`) to whatever slot 1 holds | a terminal, a pipe, a file, or nothing |
+| userspace output | no debug-put system call; four system calls total (`crates/abi/src/lib.rs:119`) | a byte sink (`crates/byte_sink_contract`, 16 bytes per `SEND`) to whatever slot 1 holds | a terminal, a pipe, a file, or nothing |
 | declared second streams, §67 (a program's second stream is a declaration) | 5 programs declare `BytesAndDiagnostics`, of 21 manifests | a second sink the shell plans for them | the terminal, or `2>` |
 | manifest `reports` flag | byte 28 of the manifest note | nothing: no spawn code reads it, only test asserts | nobody |
 | timetable child report | one word per scheduled child (`components/src/timetable.rs:376`) | the timetable's `CHILD_REPORT` endpoint | the kernel harness in tests; Fork 6 C removes it for durable jobs |
@@ -150,7 +150,7 @@ wearing a buffer, and which this service is the reason to build.**
   (the fallback is per line, not per ring-full) is still counted.
 
 Draining the ring is new authority at the kernel's boundary: a read method on a new object
-(Zircon's `zx_debuglog_read`), or a read-only frame plus a notification. Both are the syscall
+(Zircon's `zx_debuglog_read`), or a read-only frame plus a notification. Both are the system call
 surface under §10 (the capability-based microkernel process model), and the building lane proposes
 which. The other §175 options lost for reasons
 #1419 already priced: A (a second port) is absent or unconfirmed on all three boards; D is today;
@@ -227,5 +227,5 @@ In [`seven-questions.md`](0242-a-system-log/seven-questions.md).
 
 Milestone 342 (the kernel and the `console` server drive one UART), through the §175 ruling above;
 a durable job's output under Fork 6 C; a real `login_audit_receiver`; and, once the service exists,
-milestone 480's revisit. Building the service, the kernel ring and drain syscall, and the format
+milestone 480's revisit. Building the service, the kernel ring and drain system call, and the format
 conversion are open work for a building lane; the RedoxFS half is proposed separately (Question 5).

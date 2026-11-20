@@ -5,7 +5,7 @@
 //! would add up to a tick to every round trip. Here so its claim is a host test; only
 //! the network stack uses it.
 //!
-//! Name: provisional, minted 2026-11-19 (UTC) by lane 1108-renames-scope.
+//! Name: ratified 2026-11-20 (UTC).
 
 //! # BUGS
 //!
@@ -14,7 +14,7 @@
 
 /// What a polled NIC's wait does next.
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by milestone 53's receive-rate lane.
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Next {
     /// Yield, then look at the ring again: a frame came within the last tick, so another is
@@ -30,7 +30,7 @@ pub enum Next {
 /// polling for its own timers, if ever; `poll_microseconds` is the longest a polled NIC goes
 /// unlooked-at.
 ///
-/// Name: provisional, minted 2026-10-21 (UTC) by milestone 53's receive-rate lane.
+/// Name: ratified 2026-11-20 (UTC).
 pub const fn next(
     now_ticks: u64,
     last_frame_ticks: u64,

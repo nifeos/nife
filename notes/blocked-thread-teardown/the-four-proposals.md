@@ -25,7 +25,7 @@ reclaims the region. `RegionReap` grows a fourth verdict; `region_reap_verdict` 
 lifted, testable function precisely so a rule like this can be stated and proved without staging a
 race.
 
-Authority: the region capability. No new right, no new method, no new syscall number, no ABI
+Authority: the region capability. No new right, no new method, no new system call number, no ABI
 change. The holder of the `Untyped` has already said this region is going away.
 
 What it costs. Roughly thirty lines plus `remove_receiver`. One reply-cap sweep per victim, O(128
@@ -34,7 +34,7 @@ documentation outside the kernel changes.
 
 What it breaks.
 
-- A `Blocked` thread dies without running another instruction. It never returns from its syscall,
+- A `Blocked` thread dies without running another instruction. It never returns from its system call,
   never sees `Gone`, never runs a destructor. This is seL4's `ThreadState_Inactive` and Zircon's
   entire objection to thread killing, and the objection lands: locks it holds stay held, and whatever
   it was in the middle of stays in the middle. The mitigating fact particular to this kernel is that
@@ -125,7 +125,7 @@ argues at length. See design/roadmap/0254-a-caller-stranded-by-a-dead-server.md.
 
 What it costs. Piece 1 is small and is arguably a bug fix rather than a feature. A caller stranded
 by a *dead* server is stranded today. QNX has not permitted that since the 1990s, and nothing in
-this tree records it as intended. Piece 2 is a syscall-surface change and a timer, and is 106's.
+this tree records it as intended. Piece 2 is a system-call-surface change and a timer, and is 106's.
 
 What it breaks. Piece 1 makes `Gone` reachable at reply parks, which is exactly the path that
 opens the stale-reply-capability hazard, so it cannot ship without the reply-cap sweep. Piece 2

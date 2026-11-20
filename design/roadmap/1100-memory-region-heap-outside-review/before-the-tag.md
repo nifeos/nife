@@ -14,7 +14,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    the kernel refuses with `BadPointer` after spending a page of the budget (the kernel's own
    comment; unverified by a run). No caller in the tree calls it twice. The API lets a stranger.
    Evidence: `src/lib.rs` lines 100 to 107 and 188 to 193. `vendor/talc/src/base/mod.rs`, `extend`.
-   `kernel/src/syscall/memory_region.rs` lines 71 to 76.
+   `kernel/src/system_call/memory_region.rs` lines 71 to 76.
    Change: make the second call inert and visible: return `bool` or `Result<(), AlreadyWired>` and
    refuse when `heap_end.is_some()` or `committed > 0`, and say "once" in the doc comment. The
    alternative, an `unsafe fn` with the contract in `# Safety`, moves the burden to every caller for
@@ -45,7 +45,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    region before the refusal (the kernel's comment; unverified by a run). A program whose heap band
    collides with another mapping therefore loses one page per failed allocation, with no way to see
    why, and a program with a misaligned `base` fails every allocation with no diagnosis.
-   Evidence: `src/lib.rs` lines 166 to 178. `kernel/src/syscall/memory_region.rs` lines 71 to 110.
+   Evidence: `src/lib.rs` lines 166 to 178. `kernel/src/system_call/memory_region.rs` lines 71 to 110.
    `crates/abi/src/lib.rs` line 327.
    Change: keep the kernel's last error in `Inner` and stop growing for good on anything but
    `OutOfMemory` (one page lost, not one per allocation). Expose it through one accessor the README
@@ -68,7 +68,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    `design/roadmap/0955-the-kernel-and-its-programs-are-mutated-under-qemu.md` line 37.
    Change: a page-source seam, as `dlmalloc`'s `Allocator`, `rlsf`'s `FlexSource` and talc's own
    `Source` have one. It is `trait PageSource { fn map_page(&mut self, virtual_address: u64) ->
-   Result<(), Error>; }` and `MemoryRegionHeap<S: PageSource = MemoryRegionPages>`, with the syscall
+   Result<(), Error>; }` and `MemoryRegionHeap<S: PageSource = MemoryRegionPages>`, with the system call
    in the default. Then add host tests (doubling from 8 pages, the cap, exactness at a power-of-two
    cap, `realloc` in place and by copy, zero-size layouts, item 5's second call, item 6's reached
    cap, item 7's refused address). Add Kani harnesses on the arithmetic that talc cannot be in

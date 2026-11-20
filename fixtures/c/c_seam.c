@@ -8,7 +8,7 @@
  *
  * THE RULES THIS FILE LIVES UNDER, and they are enforced by what is absent here:
  *
- *   - It makes NO syscalls. There is no `svc`, no `ecall`, no inline asm, and no
+ *   - It makes NO system_calls. There is no `svc`, no `ecall`, no inline asm, and no
  *     declaration of anything that would trap. Everything it can do to the outside
  *     world it does through the pointer it was handed.
  *   - It holds NO capabilities. A capability is a slot number in a cspace, and this
@@ -17,7 +17,7 @@
  *
  * That is what makes the confinement claim tight: the worst this file can do is
  * corrupt memory inside a grant the Rust shell already had, and it cannot widen the
- * kernel's syscall surface by so much as one method, because it cannot reach it.
+ * kernel's system call surface by so much as one method, because it cannot reach it.
  *
  * The five libc symbols below are this component's whole libc. Two of them are defined
  * in Rust in c_shim.rs, and the other three the Rust bare-metal runtime already supplies;

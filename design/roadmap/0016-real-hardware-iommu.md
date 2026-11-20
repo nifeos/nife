@@ -59,7 +59,7 @@ fail loudly on. The two IOMMUs are structural siblings, and the deep symmetry is
 translates with its own CPU's page-table format (VMSAv8-64; Sv39). So the format-generic `paging`
 crate, the seam that was HAL leak #2, builds IOMMU domains with the same proved code
 that builds process address spaces. Shape: one portable DMA-domain seam, and two arch IOMMU drivers
-under `arch/` (device table, command queue, fault queue each). The `Virtio` capability is unchanged
+under `arch/` (device table, command queue, fault queue each). The `VirtualIo` capability is unchanged
 above, with the disk and attacker suites running behind the IOMMU on both ISAs, and the
 shadow ring demoted to defense in depth everywhere. Silicon carries 16b's riscv code over when a
 board ships the ratified spec. That is the emulate-then-carry pattern the kernel was built

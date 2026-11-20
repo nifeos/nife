@@ -10,7 +10,7 @@ reliability). Lane `lane/hvf-spawn-destroy-gone` took it on 2026-10-05 (UTC).
 
 **It was not a multicore defect in the kernel.** `user_mode_runtime::yield_now` and `capability_delete`
 told the compiler that no register changes across their trap, the kernel writes `x0` on the way
-out of every syscall, and an optimized loop in the spawn job kept `DESTROY`'s arguments in `x0..x4`
+out of every system call, and an optimized loop in the spawn job kept `DESTROY`'s arguments in `x0..x4`
 across a yield.
 
 ## What each experiment asked
@@ -54,7 +54,7 @@ setup above the yield (release `job_mix_task`, `f7dec0e65`):
 60000ee4:  svc  #0             // invoke(slot 0, method 4)
 ```
 
-`kernel/src/syscall.rs` `dispatch` ends every syscall with `frame.set_arg(0, result)`, and a yield's
+`kernel/src/system_call.rs` `dispatch` ends every system call with `frame.set_arg(0, result)`, and a yield's
 result is 0. So the retry invoked slot 0, `job_mix::SLOT_REPORT`, with method 4, which on an
 endpoint is `CALL`. The supervisor (`kernel/src/job_mix.rs` `subrun`) waits on that endpoint in a
 plain `RECEIVE`, and since §246 (a plain `RECEIVE` never takes a capability) a `CALL` that meets a
@@ -78,7 +78,7 @@ it. `x86_64`'s build was not inspected.
 
 The claim that TCG hides it was true of riscv64 only. On aarch64 TCG, with the fix reverted by
 the falsification patch below, `script/job-mix --release --smp 4` went quiet at `tasks=1` in 3 runs
-of 3, and completed 3 of 3 with the fix. That is the wedge `null-syscall-under-load.md`'s BUGS
+of 3, and completed 3 of 3 with the fix. That is the wedge `null-system-call-under-load.md`'s BUGS
 recorded on 2026-10-04 as a multicore hang wanting a bisect.
 
 ## Before and after
@@ -105,17 +105,17 @@ A passing sweep takes about 16 s on this host.
   `yield_now` with no output, `invoke` and `call` with `x1..x4` input-only). It gets the same single
   trap. No std program is known to have been miscompiled, which is luck rather than a property.
   `thread::sleep`'s yield loop was exposed.
-- A gate, `script/lint` check 15 (`helpers/syscall_asm.py`, provisional name): every
-  `svc`/`ecall`/`syscall` in an `asm!` block outside `kernel/` must declare all six words
+- A gate, `script/lint` check 15 (`helpers/system_call_asm.py`, provisional name): every
+  `svc`/`ecall`/`system_call` in an `asm!` block outside `kernel/` must declare all six words
   (and `rcx`, `r11` on `x86_64`). Against base `f7dec0e65` it names 22 blocks in three files.
-  `os_primitives_benchmarker`'s `null_syscall` gained four `lateout`s to pass it. That function is
+  `os_primitives_benchmarker`'s `null_system_call` gained four `lateout`s to pass it. That function is
   `#[inline(never)]` and the registers are caller-saved, so its measured body stays
   `mov w8, #0xffff; svc #0; ret`.
 - Falsification, replayable: [`spawn-destroy-gone.falsification.patch`](spawn-destroy-gone.falsification.patch)
   restores the old `yield_now`. With it applied the gate fails on three blocks and the HVF sweep
   fails as in the table.
 
-No kernel change, and nothing about `DESTROY`'s semantics or the syscall surface: §10 (process
+No kernel change, and nothing about `DESTROY`'s semantics or the system call surface: §10 (process
 model: capability-based, microkernel) and §16 (object revocation) are untouched.
 
 ## What this says about fatal risk 5

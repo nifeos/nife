@@ -35,8 +35,8 @@ at spawn and nothing rebalances.
 
 ## What this is not, and the distinction is the whole design
 
-**This is not thread affinity, and conflating the two would buy a syscall this project has not
-decided it wants.** A syscall surface is one of the expensive, irreversible categories (DECISIONS
+**This is not thread affinity, and conflating the two would buy a system call this project has not
+decided it wants.** A system call surface is one of the expensive, irreversible categories (DECISIONS
 §10 (process
 model: capability-based, microkernel), §16 (object revocation), and AGENTS.md's *move fast on what
 can be undone*). Every future program is written against

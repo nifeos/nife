@@ -26,9 +26,9 @@ calef ruled on three of this proposal's questions on 2026-10-09 (UTC).
 
 - Open question 1, the untrusted-input scope: all 32 crates the note lists. Device drivers count as
   untrusted, so a device is a less-trusted party here, IOMMU or not.
-- Open question 2, what is syscall-reachable in the kernel: the same 16 files as
+- Open question 2, what is system-call-reachable in the kernel: the same 16 files as
   [the cast proposal](0895-narrowing-casts-and-unchecked-arithmetic-on-addresses-are-counted-and-fall.md)'s scope. A file is added only when a concrete
-  path from a syscall argument into it is shown.
+  path from a system call argument into it is shown.
 - The thresholds: panic counts are frozen per file at today's value and may only go down. That is
   the mechanism. Zero stays the end goal, with no date attached, so done criteria 3 and 4 below
   state it.
@@ -36,7 +36,7 @@ calef ruled on three of this proposal's questions on 2026-10-09 (UTC).
 ## The problem
 
 A kernel panic halts the machine (`kernel/src/panic.rs` ends in `arch::halt`). So a panic that a
-confined process can reach with a syscall argument is a denial of service against every other
+confined process can reach with a system call argument is a denial of service against every other
 process. The same holds one level up for a server that panics on a client's bytes. Milestone 779
 (fuzz the surface a confined process can reach) found one: `AddressSpace::LIST` followed a
 caller's cursor and took a kernel data abort. Nothing counts this class today.
@@ -48,7 +48,7 @@ Measured over non-test code (the note's scope: no `#[cfg(test)]` items, no `test
   `unimplemented` and 0 `todo`. The request's grep said 814 and 77; the gap is test code.
 - 251 of the 418 `expect_used` are in the boot-time service builders,
   `kernel/src/user/*_service.rs`. A sample of 25 kernel sites read as boot construction or a stated
-  invariant, and none sat on a syscall argument path. Most of the kernel's count is a panic that is the right answer.
+  invariant, and none sat on a system call argument path. Most of the kernel's count is a panic that is the right answer.
 - The kernel has 282 `indexing_slicing` hits.
 - The 32 crates the note reads as parsing less-trusted bytes carry 24 panic hits between them, and
   719 `indexing_slicing` hits. Indexing is where their exposure is.
@@ -115,7 +115,7 @@ baseline records. Converting them is not this milestone's work.
    selftest first.
 2. The baseline freezes every file in scope at its count on 2026-10-09 (UTC), and a row may only
    go down.
-3. The kernel's syscall entry and every path a syscall argument reaches carry no panic hit. Those
+3. The kernel's system call entry and every path a system call argument reaches carry no panic hit. Those
    are the 16 files open question 2's ruling names. Zero is the goal, with no date attached.
 4. The network and peer-process crates carry no panic hit and no `indexing_slicing` hit. Zero is the
    goal, with no date attached.
@@ -129,8 +129,8 @@ baseline records. Converting them is not this milestone's work.
    was which crates count as parsing untrusted input, given that the note's 32 include
    device-supplied bytes (an NVMe completion, an ACPI table).
 2. Ruled 2026-10-09 (UTC): the cast proposal's 16 files, extended only when a concrete path from a
-   syscall argument is shown. The question was what counts as syscall-reachable in the kernel: a
-   file list is cheap and goes stale, and a module boundary (`syscall.rs` and what it calls) is
+   system call argument is shown. The question was what counts as system-call-reachable in the kernel: a
+   file list is cheap and goes stale, and a module boundary (`system_call.rs` and what it calls) is
    cleaner and needs a split first.
 3. Is a boot-time `expect` acceptable in the end state? The recommendation is yes, at a ceiling the
    baseline records, since a misconfigured image failing at boot is the right failure.
@@ -148,5 +148,5 @@ Kani proves panic-freedom only where a harness reaches. It ranks first of the fi
 
 ## Index row
 
-Panics in the kernel's syscall-reachable files and in the crates that parse untrusted bytes are
+Panics in the kernel's system-call-reachable files and in the crates that parse untrusted bytes are
 counted by clippy's panic lints, held per file by the lint ratchet so the count only falls.

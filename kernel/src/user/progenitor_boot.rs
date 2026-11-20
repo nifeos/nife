@@ -97,15 +97,15 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
         crate::sched::create_thread_control_block(thread_control_block_region).expect("no tcb");
     grant_boot_slots(tid, build_region, uart_interrupt_number);
     let (fs_rights, fs_pool) = grant_file_service(tid);
-    let virtio_rng = grant_entropy_source(tid);
+    let virtual_io_rng = grant_entropy_source(tid);
     let (gpu, keyboard) = wire_graphics();
     grant_machine_slots(tid, aspace_name);
     grant_kernel_log(tid);
     grant_usb_keyboard(tid);
     grant_screen_terminal(tid, gpu.is_none());
     grant_graphics(tid, gpu.as_ref(), keyboard.as_ref());
-    let virtio_net = grant_virtio_net(tid);
-    grant_kernel_network_stack(tid, virtio_net.is_none());
+    let virtual_io_net = grant_virtual_io_net(tid);
+    grant_kernel_network_stack(tid, virtual_io_net.is_none());
     // Say that this boot worked, if a chooser started it (milestone 198 (a package manager)'s rung
     // 2b). Here and no earlier: the filesystem server above has mounted the installed disk and
     // reported ready, the latest criterion this system can evaluate without a person.
@@ -126,7 +126,7 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
         .expect("start");
 
     // riscv64 arms only once the driver is running, because the boot-hart lottery forbids arming
-    // earlier (`notes/harts-and-pes.md`, [`VirtioBootGrant::intid`]): the UART's PLIC source, the
+    // earlier (`notes/harts-and-pes.md`, [`VirtualIoBootGrant::intid`]): the UART's PLIC source, the
     // virtio-rng device's and the NIC's, all pinned to the boot hart, then external interrupts.
     #[cfg(target_arch = "riscv64")]
     {
@@ -134,13 +134,13 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
             uart_interrupt_number,
             crate::arch::interrupt_controller::boot_s_context(),
         );
-        if let Some(g) = &virtio_rng {
+        if let Some(g) = &virtual_io_rng {
             crate::drivers::plic::enable(
                 g.intid,
                 crate::arch::interrupt_controller::boot_s_context(),
             );
         }
-        if let Some(g) = &virtio_net {
+        if let Some(g) = &virtual_io_net {
             crate::drivers::plic::enable(
                 g.intid,
                 crate::arch::interrupt_controller::boot_s_context(),
@@ -149,7 +149,7 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
         crate::arch::exceptions::enable_external();
     }
     #[cfg(not(target_arch = "riscv64"))]
-    let _ = (&virtio_rng, &virtio_net);
+    let _ = (&virtual_io_rng, &virtual_io_net);
     Ok(tid)
 }
 
@@ -320,13 +320,13 @@ fn grant_file_service(tid: crate::thread::ThreadId) -> (u64, Option<u64>) {
 /// The trio carries `GRANT` so the progenitor can delegate it to the entropy service it builds; its
 /// probe of an ungranted slot (`NoSuchSlot`) is how it tells an absent device. The slots are
 /// explicit rather than first-free, because the file-service pair before them is conditional. See
-/// [`boot_virtio_rng_device`], [`boot_instruction_entropy`] and notes/progenitor-boot.md.
-fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant> {
-    let virtio_rng = boot_virtio_rng_device();
-    if let Some(g) = &virtio_rng {
+/// [`boot_virtual_io_rng_device`], [`boot_instruction_entropy`] and notes/progenitor-boot.md.
+fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtualIoBootGrant> {
+    let virtual_io_rng = boot_virtual_io_rng_device();
+    if let Some(g) = &virtual_io_rng {
         let s7 = crate::sched::thread_control_block_insert_capability(
             tid,
-            crate::capability_object::virtio_capability_rights(
+            crate::capability_object::virtual_io_capability_rights(
                 g.vid,
                 Rights::WRITE.union(Rights::GRANT),
             ),
@@ -358,7 +358,7 @@ fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant>
         #[cfg(target_arch = "aarch64")]
         crate::arch::interrupt_controller::enable(g.intid);
     }
-    if virtio_rng.is_none()
+    if virtual_io_rng.is_none()
         && let Some(request) = boot_instruction_entropy()
     {
         let s16 = crate::sched::thread_control_block_insert_capability(
@@ -369,7 +369,7 @@ fn grant_entropy_source(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant>
         .expect("insert the instruction entropy service");
         assert_eq!(s16, 16);
     }
-    virtio_rng
+    virtual_io_rng
 }
 
 /// Wire the virtio-gpu and virtio keyboard when present, and say what this boot has.
@@ -638,7 +638,7 @@ fn grant_graphics(
             "the gpu's surface run",
         );
         insert(
-            crate::capability_object::virtio_capability_rights(
+            crate::capability_object::virtual_io_capability_rights(
                 g.vid,
                 Rights::WRITE.union(Rights::GRANT),
             ),
@@ -665,7 +665,7 @@ fn grant_graphics(
     }
     if let Some(k) = keyboard {
         insert(
-            crate::capability_object::virtio_capability_rights(
+            crate::capability_object::virtual_io_capability_rights(
                 k.vid,
                 Rights::WRITE.union(Rights::GRANT),
             ),
@@ -696,13 +696,13 @@ fn grant_graphics(
 ///
 /// The virtio-rng trio's shape: explicit slots, and `GRANT` on all three because the progenitor
 /// delegates them into the `net_stack` it builds and deletes its own copies. Empty on every real
-/// board and on any run with `NIFE_NET` unset. See [`boot_virtio_net_device`].
-fn grant_virtio_net(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant> {
-    let virtio_net = boot_virtio_net_device();
-    if let Some(g) = &virtio_net {
+/// board and on any run with `NIFE_NET` unset. See [`boot_virtual_io_net_device`].
+fn grant_virtual_io_net(tid: crate::thread::ThreadId) -> Option<VirtualIoBootGrant> {
+    let virtual_io_net = boot_virtual_io_net_device();
+    if let Some(g) = &virtual_io_net {
         let s13 = crate::sched::thread_control_block_insert_capability(
             tid,
-            crate::capability_object::virtio_capability_rights(
+            crate::capability_object::virtual_io_capability_rights(
                 g.vid,
                 Rights::WRITE.union(Rights::GRANT),
             ),
@@ -734,7 +734,7 @@ fn grant_virtio_net(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant> {
         #[cfg(target_arch = "aarch64")]
         crate::arch::interrupt_controller::enable(g.intid);
     }
-    virtio_net
+    virtual_io_net
 }
 
 /// Slots 29 and 30: a network stack the kernel built itself, when there is no virtio-net NIC.
@@ -744,8 +744,8 @@ fn grant_virtio_net(tid: crate::thread::ThreadId) -> Option<VirtioBootGrant> {
 /// `Stack` endpoint carries every right, as the progenitor's own retype of it does on the virtio
 /// path, and the lease endpoint `READ`: the progenitor receives the lease itself, so both paths
 /// reach the prompt the same way. Never both. See [`boot_e1000e_network`].
-fn grant_kernel_network_stack(tid: crate::thread::ThreadId, no_virtio_net: bool) {
-    let kernel_stack = if no_virtio_net {
+fn grant_kernel_network_stack(tid: crate::thread::ThreadId, no_virtual_io_net: bool) {
+    let kernel_stack = if no_virtual_io_net {
         let e1000e = boot_e1000e_network().map(|w| (w.stack, w.report));
         #[cfg(target_arch = "riscv64")]
         let e1000e = e1000e.or_else(boot_designware_network);

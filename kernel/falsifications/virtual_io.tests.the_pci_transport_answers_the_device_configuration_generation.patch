@@ -1,0 +1,25 @@
+Falsifies `kernel::virtual_io::tests::the_pci_transport_answers_the_device_configuration_generation`.
+
+Architecture: aarch64
+
+The defect: the PCI transport answers a constant 0 for the configuration generation, which is
+what it did before this test existed. A driver's generation-bracketed capacity read then sees the
+generation hold across a resize and returns halves from two configurations.
+
+Expected to fail: the test's `assert_eq!`, on generation 0x5a, which reads back 0.
+
+diff --git a/kernel/src/virtual_io.rs b/kernel/src/virtual_io.rs
+index eaf4f1b9e..8da0319e7 100644
+--- a/kernel/src/virtual_io.rs
++++ b/kernel/src/virtual_io.rs
+@@ -363,9 +363,7 @@ impl Transport {
+                 REG_STATUS => pread::<u8>(common + PCI_DEVICE_STATUS) as u32,
+                 // The device's own generation, so a driver's bracketed configuration read checks
+                 // the same thing on both buses. Read before the region it brackets.
+-                REG_CONFIGURATION_GENERATION => {
+-                    pread::<u8>(common + PCI_CONFIGURATION_GENERATION) as u32
+-                }
++                REG_CONFIGURATION_GENERATION => 0,
+                 REG_QUEUE_NUM_MAX => {
+                     pwrite::<u16>(common + PCI_QUEUE_SEL, 0);
+                     pread::<u16>(common + PCI_QUEUE_SIZE) as u32

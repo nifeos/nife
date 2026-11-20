@@ -27,7 +27,7 @@ pub enum Half {
 ///
 /// True exactly when `virtual_address` is page-aligned and in the low half for format `F`, so an admitted
 /// request walks only the process's own tables (the halves are proved disjoint per format). The
-/// syscall layer runs it before a page is retyped for a user `MAP` request.
+/// system call layer runs it before a page is retyped for a user `MAP` request.
 ///
 /// Name: provisional, minted 2026-11-19 (UTC) by lane/1104-renames-package.
 ///

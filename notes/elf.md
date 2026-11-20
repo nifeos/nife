@@ -205,7 +205,7 @@ discovered that bits 63:48 are not translated ([higher-half.md](higher-half.md))
 way to say which table a mapping belongs to. It has been sitting there for three milestones,
 waiting for this file.
 
-This is the same move as `TlbFlush`'s `Drop` and the lock ranking: make the bad state
+This is the same move as `TranslationLookasideBufferFlush`'s `Drop` and the lock ranking: make the bad state
 unrepresentable rather than checking for it.
 
 ## `memsz > filesz` is `.bss`, and forgetting it is the classic loader bug
@@ -311,9 +311,9 @@ constructors, no widening:
 | `PF_R \| PF_W` | `user_data()`: readable and writable, **UXN and PXN** |
 | `PF_W \| PF_X` | *refused* |
 
-## The program has no syscalls, and says so in the only two words it has
+## The program has no system calls, and says so in the only two words it has
 
-There is no ABI yet ([DECISIONS §10](../design/decisions/0010-capability-microkernel.md): the syscall surface gets designed at 7d,
+There is no ABI yet ([DECISIONS §10 (process model: capability-based, microkernel)](../design/decisions/0010-capability-microkernel.md): the system call surface gets designed at 7d,
 against a capability table). So the test binary cannot tell the kernel anything.
 
 Instead it checks its own image and speaks with:

@@ -48,7 +48,7 @@ An outside reviewer should start here.
   surface that did not exist when it ran, and re-running a lens is what the rotation exists to
   prevent. It is handed off below.
 - **The RISC-V path.** Every mechanism examined here is architecture-neutral Rust in
-  `kernel/src/sched.rs`, `kernel/src/syscall.rs` and `crates/`, and the kernel test landed in this
+  `kernel/src/sched.rs`, `kernel/src/system_call.rs` and `crates/`, and the kernel test landed in this
   lane runs on both instruction sets. No `arch/` code was read.
 - **Multi-core races on the new method.** `survey_supervised` takes `SCHED` and gives it back between
   entries, which is a documented snapshot bargain rather than a race, and the audit accepted that
@@ -64,14 +64,14 @@ An outside reviewer should start here.
 ### 1. Did widening `Rights::ALL` widen anything unintended? No, and it got stricter.
 
 There are exactly **two** callers of `Rights::from_bits` in the kernel, and both are in
-`kernel/src/syscall.rs`: `endpoint::SEND_CAP` (line 164) and `tcb::CAP_INSERT` (line 386). Both have
+`kernel/src/system_call.rs`: `endpoint::SEND_CAP` (line 164) and `tcb::CAP_INSERT` (line 386). Both have
 the same three-step shape, and the order is what matters:
 
 1. the source capability must hold `GRANT`, or `NotPermitted`;
 2. `Rights::from_bits(a1 as u32)`, which masks against `ALL`;
 3. `narrowed.is_subset_of(src.rights)`, or `NotPermitted`.
 
-Step 3 is what makes step 2's widening safe, and the widening actually **narrows what the syscall
+Step 3 is what makes step 2's widening safe, and the widening actually **narrows what the system call
 accepts**. Before, a caller passing bit 3 got `Rights::NONE` back from `from_bits`, and
 `NONE.is_subset_of(anything)` is vacuously true, so the delegation *succeeded* and conferred nothing.
 Now bit 3 survives the mask and the subset check refuses it unless the source really holds
@@ -261,7 +261,7 @@ worth less. But the effort is in the argument and a reader should see it.
 
 ### 2. FIXED: nothing checked that the kernel's rights and the ABI's rights agree
 
-`abi::rights` is what userspace **names** a right with: it travels in a syscall register at 79 call
+`abi::rights` is what userspace **names** a right with: it travels in a system call register at 79 call
 sites outside `crates/abi` as this report lands, from `system_initializer`'s grant tables through
 every `SEND_CAP` and `CAP_INSERT` in `user/src/`. `capability_table::Rights` is what the kernel **means** by
 one. Both crates are
@@ -272,7 +272,7 @@ This is not a hypothetical. It is the failure milestone 126 walked into on its w
 `ENUMERATE`, `RETYPE_OBJ`'s hand-listed `READ|WRITE|GRANT` silently stopped meaning "full rights",
 and the symptom surfaced three steps away as `OutOfMemory` at a prompt. The lane fixed its own
 instance by making `Rights::ALL` the invariant inside the kernel. The same class of drift across the
-syscall boundary was left unguarded.
+system call boundary was left unguarded.
 
 Fixed at the **top rung**, as compile-time assertions in `kernel/src/cap.rs`, beside the
 `CSPACE_SLOTS` assertion that is there for exactly the same reason and made the idiom obvious. Four
@@ -283,7 +283,7 @@ things are now unrepresentable:
   missing from `ALL` is a right userspace can name that `from_bits` masks to zero, so a delegation
   asking for it succeeds and confers nothing. A bit in `ALL` with no ABI name is a right the kernel
   honors that no manifest can ask for;
-- the union fits in `u32`. `abi::rights` is `u64` and `Rights` is `u32`, and the syscall path narrows
+- the union fits in `u32`. `abi::rights` is `u64` and `Rights` is `u32`, and the system call path narrows
   with `a1 as u32`, so a right defined at bit 32 or above would be truncated to nothing on the way in
   and the delegation would appear to succeed. Nothing about the ABI's type stopped somebody writing
   `1 << 32`; now something does.
@@ -343,7 +343,7 @@ mechanism might reorder `start_tcb` to delete the slot later.
 
 Accepted rather than fixed because the fix is a choice, not a correction: requiring `WRITE` would
 refuse every current caller, and requiring `READ` would encode the accident. Which right a
-supervision placement should demand is a syscall-surface question and is the architect's. Recorded in
+supervision placement should demand is a system-call-surface question and is the architect's. Recorded in
 a new `BUGS` section in notes/supervision.md, which had none.
 
 ### 5. ACCEPTED: `STATFS` is a channel between subtrees, not only a leak into one

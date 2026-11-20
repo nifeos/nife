@@ -27,7 +27,7 @@ components took device authority in the window (`non_volatile_memory_express`,
 milestone 578 (an ACPI discovery path for aarch64) is QEMU's `virt` with a different firmware table.
 
 The prior lenses were the whole kernel, the assembly, the shared pages, counterparty input, minted
-authority, and userspace confinement. The index names the syscall surface and supply chain as
+authority, and userspace confinement. The index names the system call surface and supply chain as
 untaken. Neither is where the week's 62,000 changed lines went. Measured against the last audit's
 commit, `.github/`, `scripts/` and `script/` changed 23,700 lines, `crates/` 22,100 (fifteen new
 crates, ten of them parsers or producers of a byte format), and `kernel/` 13,700. So the lens
@@ -45,7 +45,7 @@ subject and was not read here; see below.
 - The cryptography graph's code. `script/supply-chain` runs cargo-deny on every workspace
   and the ignore for RUSTSEC-2023-0071 carries its reason. Reading `ring` or `rsa` is the supply
   chain lens, still untaken, and it wants a lane with the time to do it properly.
-- The syscall surface as a whole. Only the four new ABI constants and the revoke paths were
+- The system call surface as a whole. Only the four new ABI constants and the revoke paths were
   read. Still the third untaken lens.
 - The Stop hook's configuration. `helpers/handoff-check.py` landed on `main` (#1202) while this
   report was being rebased, so it was read. It takes a transcript path from the harness's own event
@@ -54,7 +54,7 @@ subject and was not read here; see below.
   settings that wire it are not tracked, so what runs it on a given machine was not seen.
 - `machine_discovery`, `board_console`, `stick_maker`, `user_mode_runtime`. Large new crates,
   not on a boundary a stranger's bytes cross: ACPI tables come from firmware, the stick maker runs
-  on the host over its own output, the runtime is the syscall stubs.
+  on the host over its own output, the runtime is the system call stubs.
 - The DMA validator, the IOMMU builder, the C seam, RedoxFS, the compositor, the network
   stack. Each has its own record and none moved in the window.
 - Timing channels beyond the two recorded below. Nothing was measured.
@@ -114,7 +114,7 @@ finding 4. The in-flight `MAP` race §13 (capability revocation and untyped recl
 
 `SURVEY` takes `ENUMERATE`, not `READ`; refuses an unknown record before the walk; takes any
 cursor safely; passes no pointer; zeroes its outputs on `DONE`; and can only see the domain the
-capability names, which is Kani-proved. `PLACEMENT` is read-only, and no syscall pins a thread.
+capability names, which is Kani-proved. `PLACEMENT` is read-only, and no system call pins a thread.
 What a viewer learns about threads it cannot name is findings 9 and 10.
 
 ## Findings
@@ -241,7 +241,7 @@ capability and paging proofs replay in CI on this pull request.
 
 - The supply chain lens, now that 64 packages of cryptography are in the graph under one
   ruling. `deny.toml` and `script/supply-chain` are the gate; nobody has read the code.
-- The syscall surface itself, the third untaken lens, three audits running.
+- The system call surface itself, the third untaken lens, three audits running.
 - Finding 11's fix, if calef wants the in-flight `MAP` window closed: the port path's shape,
   `IPC_TABLES` held across the sweep, priced against the IPC fastpath.
 - The Stop hook's other half, if one is written. Today's script is a regex over the assistant's

@@ -81,7 +81,7 @@ right by coincidence.
 On the board, spawn placement's modulo-count produced index 0. It placed `init` into parked slot
 0's inbox, which nothing drains, ever. It took three boots to pin. The placement is randomized, so
 roughly one placement in three landed dead, and the symptoms disagreed with each other. One boot
-showed outlaw's 3-then-0 syscall counts; the next two showed `init` hanging outright. The
+showed outlaw's 3-then-0 system call counts; the next two showed `init` hanging outright. The
 thread-dump diagnostic added for it (commit `3833422`, watching the threads while the demo waits)
 showed the shape in one line: a parked core's inbox holding a runnable thread.
 

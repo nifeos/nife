@@ -16,7 +16,7 @@ Model: milestone 833 (the same storage benchmark on nife and Linux, by porting r
 `coremark`, the compute control in `notes/benchmarks.md` that must never move.
 
 **In brief.** Port STREAM (one C file) for the Copy, Scale, Add and Triad bandwidth numbers. If nife
-and Linux disagree on a memory-bound loop that makes no syscalls, the cause is in page mappings,
+and Linux disagree on a memory-bound loop that makes no system calls, the cause is in page mappings,
 page size or cache attributes, and nothing a scheduler or IPC change can explain.
 
 ## What it measures
@@ -78,5 +78,5 @@ on packaging.").
 
 ## Index row
 
-STREAM, the memory-bandwidth control: if nife and Linux differ on a loop with no syscalls, the cause
+STREAM, the memory-bandwidth control: if nife and Linux differ on a loop with no system calls, the cause
 is mappings or cache attributes. Needs only a C library for the single-threaded run.

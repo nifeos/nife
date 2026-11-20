@@ -10,7 +10,7 @@ Built in `543d390` (2026-07-13), the first commit to carry a milestone title.
 Before it, a bad memory access killed the machine in silence. After it, a fault prints the
 exception class, the faulting address, the instruction that did it, and the whole register file,
 then stops. The commit records the reason to do it carefully: on aarch64 a fault, an interrupt,
-and a syscall are the same mechanism, so this is also the plumbing for milestone 5 (the timer)
+and a system call are the same mechanism, so this is also the plumbing for milestone 5 (the timer)
 and milestone 7 (`svc`), and those became "mostly a matter of adding arms to a match."
 
 The test the commit singles out is `registers_survive_an_exception`: the TrapFrame layout is a
@@ -34,4 +34,4 @@ a flat arm64 Image and getting the device tree.
 
 ## Index row
 
-faults, interrupts, and syscalls are one mechanism; this is the plumbing for all three
+faults, interrupts, and system calls are one mechanism; this is the plumbing for all three

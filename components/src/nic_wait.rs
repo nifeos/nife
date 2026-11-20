@@ -43,7 +43,7 @@ pub(super) fn wait_for_nic(
         Nic::DesignWare(nic) => {
             return poll_without_interrupt(iface, nic.frame_waiting(), sockets);
         }
-        Nic::Virtio(_) => {}
+        Nic::VirtualIo(_) => {}
     }
     let at = instant();
     let left = deadline_milliseconds

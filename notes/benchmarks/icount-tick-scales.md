@@ -75,7 +75,7 @@ the kernel paths.** Rows from this lane's own boots (same evening, one tree) giv
 The residual, attributed as far as measurement goes. x86_64 runs 4 to 7 percent more instructions on
 the switch and IPC rows. One measured component is the port-grant install: the x86_64 switch installs
 the incoming thread's port grant on every switch-in (`install_port_grant`, `kernel/src/sched.rs`;
-§152 (the port-range capability: object and method semantics on the syscall surface) is the
+§152 (the port-range capability: object and method semantics on the system call surface) is the
 mechanism). `tss_iomap_lazy_nop` prices that call at ~130 debug-build instructions. Two
 switch-ins per `yield_switch` iteration is ~260 instructions of the 655 gap; the port-grant field
 read under the lock and the arch's own switch code account for the rest at this build's debug cost.

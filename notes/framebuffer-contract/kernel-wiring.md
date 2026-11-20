@@ -9,7 +9,7 @@ the firmware-screen terminal, and why each one holds what it holds.
 ## One run, one capability
 
 The driver's DMA region is one contiguous, zeroed allocation: a page of rings and control buffers,
-then the surface. It is registered with `crate::virtio` as one region and granted as one
+then the surface. It is registered with `crate::virtual_io` as one region and granted as one
 `PageFrame` capability, because a frame capability names a run of pages (§102 (a Frame names a run
 of pages)). At 1120x624 the surface is 683 pages. That many one-page capabilities would not fit a
 sixteen-slot capability table.
@@ -19,7 +19,7 @@ device's backing to be a single memory entry and for the IOMMU domain to cover i
 Zeroing means no stale descriptor or pixel ever reaches the device or the client.
 
 The region records its own physical base in the tail of its first page, at
-`abi::virtio::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. A driver the
+`abi::virtual_io::DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`. A driver the
 progenitor builds has no other way to learn it, since the progenitor holds the run as a capability
 and knows no address either. The kernel's own test wiring passes `arg1: 0` for the same reason, so
 the harness and the boot hand the driver one world.
@@ -80,7 +80,7 @@ address-space budget. A larger screen, such as 2560x1440, gets the terminal over
 
 The surface is RAM shared by the driver and the terminal, contiguous like the virtio path's but
 without the ring page, since the driver copies it with the CPU. The endpoints come out of a memory
-region of their own, the shape `virtio_service::wire_net_server` uses. Both programs park in
+region of their own, the shape `virtual_io_service::wire_net_server` uses. Both programs park in
 `RECEIVE` for good, and reclaiming the region their endpoints live in is the only thing that wakes
 them to die. The boot never tears this down. The suite does, because a service a test leaves
 standing holds frames and region slots a later test needs (`user::holding`).

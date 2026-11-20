@@ -47,7 +47,7 @@ milestone number, the date the proposal was filed, and the slug it kept.
 365  2026-09-03  xtask-in-modules
 366  2026-09-04  a-block-site-that-writes-blocked-by-hand
 367  2026-09-04  a-boot-banner-that-names-the-build
-368  2026-09-04  a-flat-entry-set-counts-bytes-no-syscall-fetches
+368  2026-09-04  a-flat-entry-set-counts-bytes-no-system-call-fetches
 369  2026-09-04  a-gate-that-can-read-a-machine-with-no-serial-port
 370  2026-09-04  a-layout-control-for-the-perturbation-experiments
 371  2026-09-04  a-reply-capability-that-names-a-call

@@ -105,7 +105,7 @@ their rows as what the kernel image reaches, not as their coverage.
 ## BUGS
 
 - This is the unit-test image. The whole-system image (`system_tests/`) boots the services and
-  exercises the syscall surface, and it would raise every number above. The milestone lists it first.
+  exercises the system call surface, and it would raise every number above. The milestone lists it first.
 - The instrumented image is slower. Tests that time themselves or measure stack depth saw different
   numbers (the IPC stack-depth floors rose by about 130 bytes) and still passed, but a future
   margin could fail here and not in the plain image. The report says what the tests reach, not

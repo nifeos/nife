@@ -1,0 +1,26 @@
+Falsifies `system_tests::user::riscv_virtual_io_tests::an_accept_nobody_answers_ends_at_the_stacks_bound`.
+
+Architecture: riscv64 (the hunk is portable userspace code in `net_stack`; the aarch64 twin, `network_tests`, falls to the same patch, and x86_64 has no such test)
+
+The defect is `service_until` handing `wait_for_nic` no deadline, which is the tree before
+2026-10-13 (UTC): with no smoltcp timer pending, a virtio wait blocks on the interrupt alone, so a
+listener nobody connects to never sees its 15 s bound.
+
+Expected to fail: no assertion; the test's `ipc_receive` never returns and the kernel watchdog
+fires, "WATCHDOG: no progress for ~60 s. Every core idle, every thread blocked". Confirmed red on
+2026-10-13 (UTC) on both riscv64 and aarch64 with `cargo xtask test --arch <arch> --test
+an_accept_nobody_answers_ends_at_the_stacks_bound`; green with the fix in 15.08 s and 15.06 s.
+
+diff --git a/components/src/socket_operations.rs b/components/src/socket_operations.rs
+index f3df0472c..4fec0757f 100644
+--- a/components/src/socket_operations.rs
++++ b/components/src/socket_operations.rs
+@@ -27,7 +27,7 @@ pub(crate) fn service_until(
+             iface.poll(instant(), dev, sockets);
+             return cond(sockets);
+         }
+-        wait_for_nic(iface, dev, sockets, Some(deadline));
++        wait_for_nic(iface, dev, sockets, None);
+     }
+ }
+ 

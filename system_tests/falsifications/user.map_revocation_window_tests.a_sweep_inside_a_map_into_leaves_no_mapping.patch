@@ -20,9 +20,9 @@ sweep reached the builder's own table.
 
 Nothing here is architecture-specific, so one patch serves every leg.
 
-diff --git a/kernel/src/syscall/address_space.rs b/kernel/src/syscall/address_space.rs
---- a/kernel/src/syscall/address_space.rs
-+++ b/kernel/src/syscall/address_space.rs
+diff --git a/kernel/src/system_call/address_space.rs b/kernel/src/system_call/address_space.rs
+--- a/kernel/src/system_call/address_space.rs
++++ b/kernel/src/system_call/address_space.rs
 @@ -66,11 +66,11 @@
      let va = a0;
      // The frame is read under the hold that maps and records it, so no sweep falls between the

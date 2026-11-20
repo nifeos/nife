@@ -43,7 +43,7 @@ sharing themselves; the kernel neither copies nor pre-arranges anything.
 
 ## Supervision, reaping and process views
 
-`reap_tests` drives every reap through `syscall::invoke`, never through `sched` directly. A direct
+`reap_tests` drives every reap through `system_call::invoke`, never through `sched` directly. A direct
 call would prove the helper rather than the boundary. The supervisor's table holds endpoint
 capabilities and nothing else, because that is what a supervisor's authority is. A test that only
 showed the corpse gone would pass a reap that quietly handed the pages to the reaper, which is why
@@ -139,6 +139,6 @@ hackbench's own default, 10 groups of 40, is 400.
 ## Transports and devices
 
 `block_driver_tests`' PCIe test proves the transport on two interrupt controllers, the GIC and the
-local APIC, where `riscv_virtio_tests` proves it on the PLIC board. On `x86_64` it is the whole of
+local APIC, where `riscv_virtual_io_tests` proves it on the PLIC board. On `x86_64` it is the whole of
 milestone 215 (a PCI function's interrupt reaches nothing on `x86_64`)'s claim, not one more
 transport.

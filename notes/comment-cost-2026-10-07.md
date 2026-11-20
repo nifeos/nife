@@ -201,7 +201,7 @@ AGENTS.md's own rule.
 **Keep 24 (80%), cut 4 (13%), move 2 (7%).**
 
 - Keep: `uefi_loader/src/arch/aarch64/mod.rs::ALLOCATION_CEILING`, why it is `0x7fff_ffff` (the
-  boot map's 1 GiB block). `components/src/virtio_net_transport.rs::transmit_frame`, why a
+  boot map's 1 GiB block). `components/src/virtual_io_net_transport.rs::transmit_frame`, why a
   bounded wait guards the transmit ring. `crates/coremark/src/lib.rs::iteration`, why no
   iteration can be hoisted.
 - Cut: `crates/serial_console/src/watch.rs::Session::progress`, "How far the boot got, and what it

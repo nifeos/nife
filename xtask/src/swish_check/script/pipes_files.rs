@@ -131,7 +131,11 @@ pub(super) const LINES: &[Line] = &[
     // process, so none needs more than the stream the shell grants every program (and, for
     // `map_el0`, a ten-page budget it builds its own target from). Each prints
     // one row under the production prefix, which the gate reads and never compares to a baseline.
-    line(1, "null_syscall", &["bench-production: null_syscall"]),
+    line(
+        1,
+        "null_system_call",
+        &["bench-production: null_system_call"],
+    ),
     // A real pipe between two processes in lockstep, and the consumer times it.
     line(
         2,

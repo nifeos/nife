@@ -212,7 +212,7 @@ fn fr8(va: u64) -> u8 {
 fn set_dst(id: u64, ip: Ipv4Addr, port: u16) {
     let base = page_frame_va(id);
     for (i, b) in ip.octets().iter().enumerate() {
-        fw8(base + DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, *b);
+        fw8(base + DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, *b);
     }
     // Port, little-endian, matching the frame header (netproto).
     fw8(base + DESTINATION_PORT_OFFSET_BYTES, port as u8);
@@ -239,10 +239,10 @@ fn err_ipv6() -> io::Error {
     io::Error::UNSUPPORTED_PLATFORM
 }
 
-/// A CALL whose first reply word, read as `i64`, is negative failed at the syscall layer: an empty
+/// A CALL whose first reply word, read as `i64`, is negative failed at the system call layer: an empty
 /// `Stack` slot (this program was not given the network) or wrong rights. The honest answer is
 /// `Unsupported`, the same as a program with no net grants at all.
-fn is_syscall_err(r0: u64) -> bool {
+fn is_system_call_err(r0: u64) -> bool {
     (r0 as i64) < 0
 }
 
@@ -262,7 +262,7 @@ fn ensure_page(id: u64) -> io::Result<u64> {
     let va = page_frame_va(id);
     // Mint a fresh frame from the net untyped. A negative result means no untyped in slot 3, i.e.
     // this program was not endowed with the network: honestly Unsupported.
-    // SAFETY: plain syscall; the kernel validates the slot and the budget.
+    // SAFETY: plain system call; the kernel validates the slot and the budget.
     let frame = unsafe { rt::invoke(NET_MEMORY_REGION, abi::memory_region::RETYPE, 0, 0, 0) };
     if frame < 0 {
         return Err(io::Error::UNSUPPORTED_PLATFORM);
@@ -270,7 +270,7 @@ fn ensure_page(id: u64) -> io::Result<u64> {
     let frame = frame as u64;
 
     // Map it writable at this socket's VA; its page table comes from the same untyped.
-    // SAFETY: plain syscall; the frame was just minted and is ours to map.
+    // SAFETY: plain system call; the frame was just minted and is ours to map.
     if unsafe { rt::invoke(frame, abi::page_frame::MAP, va, 1, NET_MEMORY_REGION) } < 0 {
         return Err(io::const_error!(io::ErrorKind::Other, "mapping the socket frame failed"));
     }
@@ -287,7 +287,7 @@ fn take_socket(id: u64, socket: u64, carries_bytes: bool) -> io::Result<()> {
         return Ok(());
     }
     let page = ensure_page(id).and_then(|frame| {
-        // SAFETY: plain syscall; the frame carries its budget's GRANT (slot 3's, milestone 824 (a
+        // SAFETY: plain system call; the frame carries its budget's GRANT (slot 3's, milestone 824 (a
         // retype mints no right its budget lacks)), narrowed here.
         let sent = unsafe {
             rt::invoke(
@@ -314,7 +314,7 @@ fn open(is_tcp: bool) -> io::Result<u64> {
     })?;
     let operation = if is_tcp { OPERATION_OPEN_TCP } else { OPERATION_OPEN_UDP };
     let (r0, _, socket) = rt::call_receiving(STACK, operation, 0);
-    if is_syscall_err(r0) {
+    if is_system_call_err(r0) {
         free_id(id);
         return Err(io::Error::UNSUPPORTED_PLATFORM);
     }
@@ -368,7 +368,7 @@ impl TcpStream {
         let id = open(true)?;
         set_dst(id, ip, port);
         let (r0, _) = rt::call(socket_of(id), OPERATION_CONNECT, 0);
-        if is_syscall_err(r0) {
+        if is_system_call_err(r0) {
             abandon(id);
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
@@ -434,7 +434,7 @@ impl TcpStream {
         }
 
         let (r0, _) = rt::call(socket_of(self.id), OPERATION_RECEIVE, 0);
-        if is_syscall_err(r0) {
+        if is_system_call_err(r0) {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
         if r0 == REPLY_ERROR {
@@ -492,7 +492,7 @@ impl TcpStream {
         let chunk = buf.len().min(MAXIMUM_PAYLOAD_BYTES);
         write_payload(self.id, &buf[..chunk]);
         let (r0, _) = rt::call(socket_of(self.id), OPERATION_SEND, chunk as u64);
-        if is_syscall_err(r0) {
+        if is_system_call_err(r0) {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
         if r0 == REPLY_ERROR {
@@ -640,7 +640,7 @@ impl TcpListener {
             io::const_error!(io::ErrorKind::Other, "too many open sockets (contract limit)")
         })?;
         let (r0, _, socket) = rt::call_receiving(STACK, OPERATION_LISTEN, port as u64);
-        if is_syscall_err(r0) {
+        if is_system_call_err(r0) {
             free_id(id);
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
@@ -701,7 +701,7 @@ impl TcpListener {
             io::const_error!(io::ErrorKind::Other, "too many open sockets (contract limit)")
         })?;
         let (r0, peer_word_reply, socket) = rt::call_receiving(socket_of(self.id), OPERATION_ACCEPT, 0);
-        if is_syscall_err(r0) {
+        if is_system_call_err(r0) {
             free_id(conn);
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
@@ -855,7 +855,7 @@ impl UdpSocket {
             g.slots()[self.id as usize].last_dst = Some((ip, port));
         }
         let (r0, _) = rt::call(socket_of(self.id), OPERATION_SEND_TO, buf.len() as u64);
-        if is_syscall_err(r0) {
+        if is_system_call_err(r0) {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
         if r0 != REPLY_OK {
@@ -879,7 +879,7 @@ impl UdpSocket {
 
     pub fn recv(&self, buf: &mut [u8]) -> io::Result<usize> {
         let (r0, _) = rt::call(socket_of(self.id), OPERATION_RECEIVE, 0);
-        if is_syscall_err(r0) {
+        if is_system_call_err(r0) {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
         if r0 == REPLY_ERROR {
@@ -1072,7 +1072,7 @@ fn resolver_lock() -> ResolverGuard {
 
 /// Whether `slot` holds a capability: an empty one answers -1 to a method nothing defines.
 fn granted(slot: u64) -> bool {
-    // SAFETY: a plain syscall that cannot succeed; -1 is "the slot is empty".
+    // SAFETY: a plain system call that cannot succeed; -1 is "the slot is empty".
     unsafe { rt::invoke(slot, NO_SUCH_METHOD, 0, 0, 0) != -1 }
 }
 
@@ -1081,13 +1081,13 @@ fn granted(slot: u64) -> bool {
 fn ensure_resolver_page(_held: &ResolverGuard, i: usize) -> io::Result<()> {
     let mut frame = RESOLVER_FRAME.load(Ordering::Relaxed);
     if frame == 0 {
-        // SAFETY: plain syscall; the kernel validates the slot and the budget.
+        // SAFETY: plain system call; the kernel validates the slot and the budget.
         let minted = unsafe { rt::invoke(NET_MEMORY_REGION, abi::memory_region::RETYPE, 0, 0, 0) };
         if minted < 0 {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
         frame = minted as u64;
-        // SAFETY: plain syscall; the frame was just minted and is ours to map.
+        // SAFETY: plain system call; the frame was just minted and is ours to map.
         if unsafe { rt::invoke(frame, abi::page_frame::MAP, rt::RESOLVER_PAGE, 1, NET_MEMORY_REGION) } < 0 {
             return Err(io::const_error!(io::ErrorKind::Other, "mapping the resolver page failed"));
         }
@@ -1097,7 +1097,7 @@ fn ensure_resolver_page(_held: &ResolverGuard, i: usize) -> io::Result<()> {
     if RESOLVER_ATTACHED.load(Ordering::Relaxed) & bit != 0 {
         return Ok(());
     }
-    // SAFETY: plain syscall; the frame carries its budget's GRANT (slot 3's, milestone 824 (a
+    // SAFETY: plain system call; the frame carries its budget's GRANT (slot 3's, milestone 824 (a
     // retype mints no right its budget lacks)), narrowed here.
     let sent = unsafe {
         rt::invoke(

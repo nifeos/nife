@@ -47,7 +47,7 @@ The lockstep is not the bottleneck. The sixteen-byte message is.
 
 Read the two host rows together. At the same granularity Unix is 3.3x faster than us, which is a
 real gap and is the cost of a capability rendezvous against a tuned kernel pipe. The 870x is
-somewhere else entirely. Unix's win is that a program writes 64 KiB per syscall, while the
+somewhere else entirely. Unix's win is that a program writes 64 KiB per system call, while the
 register-only sink contract caps ours at sixteen bytes per message.
 
 That cap is not an oversight and it is not a thing buffering fixes. `notes/sink-protocol.md` records

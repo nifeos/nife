@@ -193,11 +193,11 @@ kernel::sync::tests::nested_locks_restore_correctly	0	0	0
 kernel::sync::tests::releasing_an_inner_lock_restores_the_outer_rank	0	0	0
 kernel::sync::tests::taking_a_lock_records_its_rank	0	0	0
 kernel::sync::tests::the_hierarchy_permits_only_strictly_decreasing_ranks	0	0	0
-kernel::syscall::tests::a_partly_mapped_run_is_rolled_all_the_way_back	3	3	4
-kernel::syscall::tests::a_slice_maps_only_its_window	2	3	4
-kernel::syscall::tests::retype_mints_a_run_and_a_refused_run_moves_nothing	0	1	1
-kernel::syscall::tests::split_inherits_the_parent_capabilitys_rights_never_widening	1	1	3
-kernel::syscall::tests::split_refused_for_a_full_capability_table_orphans_no_child	1	1	2
+kernel::system_call::tests::a_partly_mapped_run_is_rolled_all_the_way_back	3	3	4
+kernel::system_call::tests::a_slice_maps_only_its_window	2	3	4
+kernel::system_call::tests::retype_mints_a_run_and_a_refused_run_moves_nothing	0	1	1
+kernel::system_call::tests::split_inherits_the_parent_capabilitys_rights_never_widening	1	1	3
+kernel::system_call::tests::split_refused_for_a_full_capability_table_orphans_no_child	1	1	2
 kernel::tests::bss_was_zeroed	0	0	0
 kernel::tests::device_tree_has_the_right_magic	0	0	0
 kernel::tests::device_tree_pointer_was_provided	0	0	0
@@ -620,7 +620,7 @@ system_tests::user::survey_tests::a_filter_names_members_and_tells_its_four_answ
 system_tests::user::survey_tests::a_resumed_walk_reports_every_member_exactly_once	35	55	50
 system_tests::user::survey_tests::a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list	24	38	34
 system_tests::user::survey_tests::the_survey_cursor_counts_threads_the_viewer_cannot_name	35	55	50
-system_tests::user::syscall_fuzzer_tests::seeded_syscalls_agree_with_the_shadow_model	1528	2349	2365
+system_tests::user::system_call_fuzzer_tests::seeded_system_calls_agree_with_the_shadow_model	1528	2349	2365
 system_tests::user::system_log_tests::a_held_line_waits_for_its_drainer_and_a_stalled_drainer_falls_back_counted	613	621	617
 system_tests::user::system_log_tests::a_panic_prints_the_held_lines_first_and_holds_nothing_after	1	1	1
 system_tests::user::system_log_tests::a_plain_send_arrives_with_its_capabilitys_badge_on_receive_and_receive_capability	35	55	47

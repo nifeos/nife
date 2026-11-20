@@ -19,7 +19,7 @@ record that edits away the argument it was decided against is worth less than th
 changed is the last section: see [How it was decided, and what shipped](#how-it-was-decided-and-what-shipped).
 
 Nothing was blocked by this. What was blocked is the first `Rights::GRANT` on a run capability:
-`PageFrame::REVOKE` requires `GRANT` (`kernel/src/syscall.rs`), no run capability in the tree
+`PageFrame::REVOKE` requires `GRANT` (`kernel/src/system_call.rs`), no run capability in the tree
 carries it, and so no path below was reachable. That is the whole reason this was a written decision
 rather than a fix: the fix was unreachable and the wrong one is expensive.
 
@@ -126,7 +126,7 @@ it. A narrowed derivative has the same object, so matching on the object matches
 without §13 (capability revocation and untyped reclamation)'s derivation tree.
 
 Consequence: it does not close the device half (question 3), and it is a change to what
-`REVOKE` means, which is the syscall surface.
+`REVOKE` means, which is the system call surface.
 
 ### D. Forbid overlapping runs at mint time
 
@@ -152,13 +152,13 @@ would couple two objects (`PageFrame` and `Virtio`) that are deliberately indepe
 ## Recommendation (as written, before the decision)
 
 A now, C when it becomes reachable, and the reachability is the trigger. This is a
-syscall-surface question, so per AGENTS.md it arrives with options rather than a made decision; the
+system-call-surface question, so per AGENTS.md it arrives with options rather than a made decision; the
 lean is stated as a lean.
 
 A is right today because every option costs something and no option buys anything: nothing can
 invoke `REVOKE` on a run. B is cheap and wrong (it contradicts §102 and hands a one-page holder
 authority over a 312-page capability). C is the honest answer and costs a log-format change plus a
-syscall-semantics decision, which is a lot to spend on an unreachable path.
+system-call-semantics decision, which is a lot to spend on an unreachable path.
 
 The promotion trigger, in §71's shape: the moment any `page_frame_run_cap` mint site gains
 `Rights::GRANT`, this decision must be answered before that change lands. That is one grep
@@ -176,7 +176,7 @@ design that wants a run to be delegable or revocable by its holder. That is now 
 **calef asked "why not C now?" and the deferral did not survive the question** (2026-08-27). The
 recommendation above is a worked instance of the failure AGENTS.md names in *elegance and
 performance beat implementation convenience*: a case made in the vocabulary of architecture
-("unreachable path", "syscall-semantics decision") whose load-bearing clause was that A was less
+("unreachable path", "system-call-semantics decision") whose load-bearing clause was that A was less
 work. Applied to itself, the tenet's one question, *would I still choose this if both options were
 the same amount of work*, answers no. C wins outright on the merits. The cost that made deferring
 look prudent turned out to be small and bounded.

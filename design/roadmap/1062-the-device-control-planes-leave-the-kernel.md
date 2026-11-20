@@ -77,8 +77,8 @@ Ruled 2026-11-10 (UTC). The starter that spawns a virtio driver grants its devic
 ways, and the grant decides how the driver reaches the device. The kernel has no mode flag, no
 build feature and no boot parameter for it, and the choice can differ per device.
 
-- Mediated. The driver holds the `Virtio` capability, as every virtio driver does today.
-  `kernel/src/virtio.rs` keeps the device's registers, places the descriptor table and available
+- Mediated. The driver holds the `VirtualIo` capability, as every virtio driver does today.
+  `kernel/src/virtual_io.rs` keeps the device's registers, places the descriptor table and available
   ring in a kernel-private shadow page, validates each new descriptor on `NOTIFY` with
   `crates/direct_memory_access_validator`, and only then rings the device. This path does not change.
 - Direct. The driver holds its device's register pages as plain device frames, listed on its
@@ -89,11 +89,11 @@ build feature and no boot parameter for it, and the choice can differ per device
   confinement.
 
 The direct grant applies to virtio-pci devices only while the runners keep virtio-mmio. On
-aarch64's `virt` the virtio-mmio slots sit 0x200 apart (`VIRTIO_SLOT_STRIDE`), so one 4 KiB page
+aarch64's `virt` the virtio-mmio slots sit 0x200 apart (`VIRTUAL_IO_SLOT_STRIDE`), so one 4 KiB page
 holds eight devices' registers, and no IOMMU fronts virtio-mmio on any machine nife runs on.
 
-A new `Virtio` method that switches a device to direct, or a new object kind for a direct
-transport, would each add to the syscall surface what a grant of frames already says, so the
+A new `VirtualIo` method that switches a device to direct, or a new object kind for a direct
+transport, would each add to the system call surface what a grant of frames already says, so the
 design uses neither.
 
 ### What the starter carves out
@@ -106,7 +106,7 @@ things, in this order.
    queue exists. It maps no shadow page, because none exists.
 2. It maps, device-typed, the pages that hold the four virtio-pci structures the capability list
    names (common configuration, notify, ISR and device configuration, virtio 1.2 section 4.1.4),
-   and nothing else of the BARs. A page that also holds the function's MSI-X table or pending-bit
+   and nothing else of the BARs. A page that holds the function's MSI-X table or pending-bit
    array is never mapped, as `PciXhciDevice::withheld` keeps them from the xHCI driver, and a
    function whose structures share a page with either gets the mediated grant. The structures lie
    in the function's own BARs, so no mapped page holds another device's registers.
@@ -139,7 +139,7 @@ One condition holds the argument up. A virtio device may treat a driver that dec
 `VIRTIO_F_ACCESS_PLATFORM` as one whose addresses are physical and untranslated (virtio 1.2
 section 6). The runners attach every virtio-pci function with `iommu_platform=on` (§20). There
 QEMU sends the function's DMA through the IOMMU, and it refuses `FEATURES_OK` to a driver that
-declines the bit (`reset_to_features_ok` in `kernel/src/virtio.rs` records it). So a direct grant
+declines the bit (`reset_to_features_ok` in `kernel/src/virtual_io.rs` records it). So a direct grant
 counts as confined only when the function offers `ACCESS_PLATFORM` and the active IOMMU owns its
 requester id (`iommu::Scope::is_confining`). Without both, nothing confines a direct driver, and
 nife trusts it as it trusts an NVMe driver on a machine without an IOMMU.
@@ -161,7 +161,7 @@ limit a mediated one meets, and milestone 1065 (MSI replaces the interrupt lines
 riscv64) lifts it for both. Until that lands, a direct driver's test reads its used ring before it blocks, as the
 entropy driver does.
 
-### What stays in `kernel/src/virtio.rs`
+### What stays in `kernel/src/virtual_io.rs`
 
 All of it, for the mediated grant: both transports, `register`, `setup_queue`, `notify`, the
 validator adapter, the shadow page, the reset in `unregister`, `release_owned_by` and the test
@@ -217,7 +217,7 @@ table in BAR1. The starter reads the capability list instead. It lists the pages
 The driver writes 0 to `device_status`, accepts `VERSION_1` and `ACCESS_PLATFORM`, selects queue
 0, writes ring addresses inside its region, enables the queue and sets `DRIVER_OK`. To submit a
 read it publishes the descriptor and stores the queue number at `queue_notify_off * 4` in the
-notify page: one store, no syscall. A descriptor aimed at kernel memory faults at the IOMMU, where
+notify page: one store, no system call. A descriptor aimed at kernel memory faults at the IOMMU, where
 the mediated grant refuses it at `NOTIFY` with `DmaEscape`.
 
 ### Tests, proofs and starters
@@ -238,13 +238,13 @@ the mediated grant refuses it at `NOTIFY` with `DmaEscape`.
 
 ### The surface
 
-No syscall, object kind or method changes: `DeviceFrame`, `Interrupt` and the startup page already
+No system call, object kind or method changes: `DeviceFrame`, `Interrupt` and the startup page already
 exist. What is new is the `driver_process_contract::virtio` module (its window kinds and handoff,
 provisional) and a virtio-pci transport in userspace that drives the mapped pages.
 
 ### Cost and effort
 
-Not measured yet. A mediated `NOTIFY` costs a syscall, the validation and a copy of the new
+Not measured yet. A mediated `NOTIFY` costs a system call, the validation and a copy of the new
 descriptors. A direct one costs an uncached store from EL0. The last pull request measures both on
 a PCI disk with `script/bench`. The work is medium, and the line counts are guesses: about 120 for
 the starter's carve-out, 80 for the contract, 200 for the userspace transport and 200 of tests.

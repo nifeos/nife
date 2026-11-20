@@ -146,7 +146,7 @@ design/decisions/0120-boot-entropy-stopgap-declined.md	10
 design/decisions/0121-port-io-capability/rule-and-options.md	2
 design/decisions/0122-durable-schedule-store-format.md	10
 design/decisions/0123-boot-time-rederivation-privilege.md	27
-design/decisions/0124-x86-64-syscall-abi.md	5
+design/decisions/0124-x86-64-system-call-abi.md	5
 design/decisions/0125-durable-schedule-manifest.md	16
 design/decisions/0126-two-directory-cwd.md	5
 design/decisions/0127-x86-64-timer-rdtsc.md	5
@@ -315,7 +315,7 @@ design/decisions/0272-the-grant-plan-crate-root-splits-into-private-modules.md	7
 design/decisions/0273-the-shell-program-becomes-a-directory-of-modules.md	8
 design/decisions/0274-the-filesystem-protocol-crate-root-splits-into-its-module-files.md	5
 design/decisions/0275-the-file-server-cores-tests-move-into-child-modules.md	3
-design/decisions/0276-the-thread-syscalls-as-built.md	38
+design/decisions/0276-the-thread-system-calls-as-built.md	38
 design/decisions/0277-cite-a-heading-or-a-symbol-never-a-line-number.md	9
 design/decisions/0278-an-acpi-machine-reaches-the-aarch64-kernel-as-a-device-tree.md	15
 design/decisions/0279-the-system-initializer-crate-root-splits-into-private-modules.md	17
@@ -562,7 +562,7 @@ design/roadmap/0152-durable-delegation.md	33
 design/roadmap/0153-out-of-memory-causes.md	12
 design/roadmap/0154-multi-directory-namespace.md	15
 design/roadmap/0155-user-provisioning.md	21
-design/roadmap/0156-syscall-entry-diet.md	9
+design/roadmap/0156-system-call-entry-diet.md	9
 design/roadmap/0157-uboot-framebuffer-handoff.md	4
 design/roadmap/0158-kernel-object-rename-build.md	13
 design/roadmap/0158-kernel-object-rename-build/README.md	1
@@ -822,7 +822,7 @@ design/roadmap/0364-x86-64-test-fixtures.md	4
 design/roadmap/0365-xtask-in-modules.md	13
 design/roadmap/0366-a-block-site-that-writes-blocked-by-hand.md	9
 design/roadmap/0367-a-boot-banner-that-names-the-build.md	3
-design/roadmap/0368-a-flat-entry-set-counts-bytes-no-syscall-fetches.md	9
+design/roadmap/0368-a-flat-entry-set-counts-bytes-no-system-call-fetches.md	9
 design/roadmap/0369-a-gate-that-can-read-a-machine-with-no-serial-port.md	6
 design/roadmap/0370-a-layout-control-for-the-perturbation-experiments.md	10
 design/roadmap/0371-a-reply-capability-that-names-a-call.md	15
@@ -1184,7 +1184,7 @@ design/roadmap/0747-a-page-table-allocator-that-fails-on-its-nth-call.md	6
 design/roadmap/0748-the-noteless-launch-that-prints-nothing.md	6
 design/roadmap/0749-a-new-confinement-test-carries-a-falsification-record.md	4
 design/roadmap/0751-fuzz-the-services-request-handlers.md	5
-design/roadmap/0752-a-seeded-syscall-driver-with-a-shadow-model.md	10
+design/roadmap/0752-a-seeded-system-call-driver-with-a-shadow-model.md	10
 design/roadmap/0753-trace-the-progenitors-login-block-peak.md	13
 design/roadmap/0754-the-capability-table-grows-to-64-slots.md	8
 design/roadmap/0755-basalt-v0-pins-nife-and-runs-its-gate.md	4
@@ -1518,7 +1518,7 @@ notes/c-seam/the-toolchain.md	10
 notes/calendar.md	15
 notes/capabilities.md	10
 notes/capabilities/ipc-endpoints.md	2
-notes/capabilities/syscall-surface.md	10
+notes/capabilities/system-call-surface.md	10
 notes/capabilities/table.md	12
 notes/capability-lifecycle.md	19
 notes/capability-manifest-note.md	11
@@ -1711,7 +1711,7 @@ notes/fuzzing/elf-seeds.md	1
 notes/fuzzing/kani-and-fuzzing.md	3
 notes/fuzzing/not-fuzzed.md	3
 notes/fuzzing/targets.md	4
-notes/fuzzing/the-syscall-driver.md	9
+notes/fuzzing/the-system-call-driver.md	9
 notes/fuzzing/three-bugs.md	8
 notes/generational-names.md	10
 notes/glm-5.3-flash-for-lanes.md	18
@@ -1796,10 +1796,10 @@ notes/job-mix/instrument-change-2026-09-19.md	4
 notes/job-mix/instrument.md	9
 notes/job-mix/limitations.md	7
 notes/job-mix/lock-wait-instrument.md	8
-notes/job-mix/null-syscall-first-radon-run.md	1
-notes/job-mix/null-syscall-hvf-full-mix.md	8
-notes/job-mix/null-syscall-off-radon.md	5
-notes/job-mix/null-syscall-under-load.md	12
+notes/job-mix/null-system-call-first-radon-run.md	1
+notes/job-mix/null-system-call-hvf-full-mix.md	8
+notes/job-mix/null-system-call-off-radon.md	5
+notes/job-mix/null-system-call-under-load.md	12
 notes/job-mix/radon-2026-10-04.md	10
 notes/job-mix/radon-2026-10-05.md	6
 notes/job-mix/spawn-job-miscompiled-yield.md	8
@@ -2115,7 +2115,7 @@ notes/session-identity.md	9
 notes/shared-page-audit.md	17
 notes/shared-page-audit/candidates-cleared.md	10
 notes/shared-page-audit/compositor-findings.md	7
-notes/shared-page-audit/console-and-virtio-findings.md	9
+notes/shared-page-audit/console-and-virtual-io-findings.md	9
 notes/shared-page-audit/filesystem-findings.md	10
 notes/shell-line-editing.md	17
 notes/shell-navigation.md	24
@@ -2194,7 +2194,7 @@ notes/swish-language.md	25
 notes/swish-language/running.md	26
 notes/swish-language/the-guest-test.md	7
 notes/swish-language/witness.md	10
-notes/syscall-boundary.md	17
+notes/system-call-boundary.md	17
 notes/system-initializer.md	9
 notes/system-initializer/budgets.md	12
 notes/system-initializer/children.md	14
@@ -2277,7 +2277,7 @@ notes/verus/what-verus-is.md	12
 notes/video-terminal.md	22
 notes/video-terminal/handoff-and-component.md	8
 notes/video-terminal/palette-keymap-and-script.md	6
-notes/virtio.md	13
+notes/virtual-io.md	13
 notes/virtualization.md	5
 notes/visionfive2.md	14
 notes/visionfive2/README.md	1

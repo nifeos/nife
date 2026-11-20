@@ -73,7 +73,7 @@ The file service tells clients apart by badge and scopes each to its binding
 
 Two edits and a test. The test is a kernel system test on the discipline: a badged holder's
 `OP_BYTES` is refused and its `OP_READRAW` served, red before the `match` arm and green after. No
-syscall surface, no wire format, no dependency.
+system call surface, no wire format, no dependency.
 
 ## What is blocked until it lands
 

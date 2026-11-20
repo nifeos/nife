@@ -31,7 +31,7 @@ landed wording.
 - `swish`, `grant_plan`, `system_initializer`, the `*_protocol` crates, `system_log`, the
   `process-tools` programs: Reuse: write. The ABI or a capability (rule 3); nothing upstream reads nife's ABI.
 - `redoxfs_server`, `tools/redoxfs_host`: Reuse: adapted. The adapter around vendored RedoxFS (§34).
-- `virtio`, `gpu_driver`, `keyboard_driver` and `virtio_net_transport`: Reuse: write. calef ruled
+- `virtio`, `gpu_driver`, `keyboard_driver` and `virtual_io_net_transport`: Reuse: write. calef ruled
   option D on 2026-10-24 (UTC), items (c1) to (c4). `virtio-drivers` assumes a driver lays out its
   own virtqueues; nife's kernel builds every ring itself, eight entries at fixed offsets,
   Kani-proved, so no driver can aim device DMA ([the ruling](the-virtio-drivers-stay-ours.md)).

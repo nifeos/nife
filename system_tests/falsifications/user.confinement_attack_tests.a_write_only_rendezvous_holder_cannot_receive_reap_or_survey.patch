@@ -3,7 +3,7 @@ Falsifies `system_tests::user::confinement_attack_tests::a_write_only_rendezvous
 Architecture: aarch64
 
 The patch deletes the `READ` check on `Rendezvous::RECEIVE` in
-`syscall::rendezvous::rendezvous_receive`, so a holder of `WRITE` alone receives from the endpoint
+`system_call::rendezvous::rendezvous_receive`, so a holder of `WRITE` alone receives from the endpoint
 it was only meant to send to: a client becomes its server, the break claim 26 names. A sender is
 already parked, so the broken gate returns its message rather than blocking.
 
@@ -12,13 +12,13 @@ Expected to fail: `assert_eq!` "a WRITE-only holder was let RECEIVE: a client be
 confinement claim) lane: red at exactly that assertion on aarch64.
 
 Re-cut on 2026-10-12 (UTC) by lane maintainer/long-function-paydown-invoke, when the rendezvous
-arms of `syscall::invoke` moved to `kernel/src/syscall/rendezvous.rs` for milestone 888 (a ratchet
+arms of `system_call::invoke` moved to `kernel/src/system_call/rendezvous.rs` for milestone 888 (a ratchet
 on function length); the defect is unchanged. Replayed red at the same assertion on aarch64 that
 day.
 
-diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
---- a/kernel/src/syscall/rendezvous.rs
-+++ b/kernel/src/syscall/rendezvous.rs
+diff --git a/kernel/src/system_call/rendezvous.rs b/kernel/src/system_call/rendezvous.rs
+--- a/kernel/src/system_call/rendezvous.rs
++++ b/kernel/src/system_call/rendezvous.rs
 @@ -72,9 +72,6 @@ pub(super) fn rendezvous_receive(
      rights: Rights,
      ep: RendezvousId,

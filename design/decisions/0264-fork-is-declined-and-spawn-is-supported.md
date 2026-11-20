@@ -32,7 +32,7 @@ that one request. Milestone 172 is where they are built; this section does not m
 milestone for them.
 
 The shim has nowhere to live yet. There is no C library: §31 (the foreign-language seam: C holds
-no capabilities and makes no syscalls) gives C two symbols, `malloc` and `free`, and full POSIX,
+no capabilities and makes no system calls) gives C two symbols, `malloc` and `free`, and full POSIX,
 milestone 478 (tier three: full POSIX behind the foreign-language seam), is refused. So a ported C
 program that spawns depends on a decision not yet made, which the maintainer is taking to calef.
 This section records the dependency and does not resolve it.

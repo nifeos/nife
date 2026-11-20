@@ -15,7 +15,7 @@ Built, running, and gated: the boot path, the console, the GDT/TSS, the IDT and 
 page-table format, the boot-handoff parser. The ACPI tables (the RSDP scan, the root-table walk with
 checksums, the MADT and the MCFG), the local APIC and a calibrated periodic timer. The frame
 allocator, the fine-grained W^X kernel page tables, the IO APIC and a routed device line. User
-address spaces, the `syscall` pair and ring 3, the scheduler, preemption, kernel threads and real
+address spaces, the `system_call` pair and ring 3, the scheduler, preemption, kernel threads and real
 ring-3 processes. The kernel's own test suite and a `script/test` leg, the address
 arithmetic, interrupt masking, the context switch, and the test exit. A boot under QEMU's `q35`
 prints a tour and takes real hardware interrupts from the CPU's own timer *and* from a device. It
@@ -113,10 +113,10 @@ milestone 161 (the x86_64 kernel port), one file each. None of them is needed to
 | [boot.md](x86-port/boot.md) | Why the kernel boots by PVH and not Multiboot, the real-firmware path through `uefi_loader`, and the 32-bit trampoline into long mode. |
 | [acpi-and-pci.md](x86-port/acpi-and-pci.md) | The PVH memory map, the ACPI tables as q35 reports them, the discovery seam milestone 20 (a portable HAL) promised, and why a PCI function's interrupt is MSI-X rather than the legacy pin. |
 | [interrupts-and-the-fine-map.md](x86-port/interrupts-and-the-fine-map.md) | The PIT-calibrated clock, the IO APIC and its legacy-interrupt trap, the W^X kernel page tables, and the direct map in blocks. |
-| [traps.md](x86-port/traps.md) | The IDT and its 256 stubs, the syscall ABI and why it returns by `iretq`, the vector bands, MSI, the GDT and TSS, and port grants in the TSS bitmap. |
-| [ring-3.md](x86-port/ring-3.md) | Address spaces, `swapgs`, the `syscall` pair, and the hand-assembled probe that first ran at CPL 3. |
+| [traps.md](x86-port/traps.md) | The IDT and its 256 stubs, the system call ABI and why it returns by `iretq`, the vector bands, MSI, the GDT and TSS, and port grants in the TSS bitmap. |
+| [ring-3.md](x86-port/ring-3.md) | Address spaces, `swapgs`, the `system_call` pair, and the hand-assembled probe that first ran at CPL 3. |
 | [scheduler.md](x86-port/scheduler.md) | The trap-path split, `TSS.RSP0`, the self-IPI, and four places portable code was wrong for a third architecture. |
-| [user-mode-runtime.md](x86-port/user-mode-runtime.md) | The ring-3 syscall stubs, why `rdtsc` is ambient here, the `CR4.PCE` door that was closed, and `cntfrq()`. |
+| [user-mode-runtime.md](x86-port/user-mode-runtime.md) | The ring-3 system call stubs, why `rdtsc` is ambient here, the `CR4.PCE` door that was closed, and `cntfrq()`. |
 | [userspace.md](x86-port/userspace.md) | How the archive arrives as a PVH module, the suite's skips by cause, and four latent bugs userspace found. |
 | [what-does-not-fit.md](x86-port/what-does-not-fit.md) | The four places the `arch/` seam did not stretch, the segment-base bug, the SMP counting bug, and where TSO pays out. |
 | [the-port-range-tests.md](x86-port/the-port-range-tests.md) | Why each `PortRange` test runs a ring-3 `out`, checks the core it ran on, exits rather than reports, and narrows the rights. |

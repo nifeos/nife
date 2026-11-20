@@ -19,7 +19,7 @@ whether anything closes the set of callers.
 | `arch/riscv64/mmu.rs` `write_satp` | `unsafe fn` | aarch64's `set_ttbr0` already was, so the same register write was a contract on one ISA and an ordinary call on the other |
 | `arch/{aarch64,riscv64}/mmu.rs` `switch_user_root` | `unsafe fn` | `pub`, called cross-module from `sched.rs`, and no type can carry the obligation (below) |
 | `stack.rs` `paint`, and its sibling `high_water` | `unsafe fn` | `pub` in the crate, so any kernel code could have written the pattern over an arbitrary range |
-| `virtio.rs` `pread` / `pwrite` | stayed safe fns | private to one module, so the compiler closes the caller set at twenty sites in one `impl` block |
+| `virtual_io.rs` `pread` / `pwrite` | stayed safe fns | private to one module, so the compiler closes the caller set at twenty sites in one `impl` block |
 
 ## What makes an obligation binding, which is the whole distinction
 
@@ -83,7 +83,7 @@ Two counts in the parent's survey are also wrong, from the same cause on the oth
 
 Taking `pread`'s comment seriously found a path that made it false. It claimed every address
 reaching it was inside a device-mapped BAR. `Transport::Pci`'s `notify_addr[q]` is zero until
-`setup_queue` resolves it, and the `NOTIFY` syscall checked only that the queue number was under
+`setup_queue` resolves it, and the `NOTIFY` system call checked only that the queue number was under
 `MAXIMUM_QUEUES`. So a userspace driver holding a virtio capability could ring a queue it had never
 set up, and the kernel wrote a `u16` through `phys_to_virt(0)`: a kernel store, inside no BAR, at a
 moment the driver chose. `virtio::notify` now refuses that queue via `Transport::is_doorbell_ready`,
@@ -91,11 +91,11 @@ and a unit test builds the two transport values by hand so it runs on both ISAs 
 configurations that have no PCI function at all.
 
 The mmio transport was never exposed, because it has one fixed notify register and nothing per-queue
-to resolve. That is why the defect was invisible from the syscall and only appeared in the PCI arm.
+to resolve. That is why the defect was invisible from the system call and only appeared in the PCI arm.
 
 ## The worst SAFETY comment in the tree, and it passed every gate
 
-`components/src/virtio_net_transport.rs`'s `w16` carried this, over a `write_volatile` into the DMA
+`components/src/virtual_io_net_transport.rs`'s `w16` carried this, over a `write_volatile` into the DMA
 page:
 
 ```
@@ -163,7 +163,7 @@ reads rather than in a report:
 
 | Site | The comment's claim |
 |---|---|
-| `components/src/virtio_net_transport.rs` `r8` `r16` `r32` `w8` `w16` `write_desc` | "callers pass offsets inside it" (the DMA frame) |
+| `components/src/virtual_io_net_transport.rs` `r8` `r16` `r32` `w8` `w16` `write_desc` | "callers pass offsets inside it" (the DMA frame) |
 | `fill_page` in `fixtures/src/fs_test_client/extended_attributes.rs` | "the caller keeps within it" |
 | `get` in `components/src/fs_file_caretaker.rs` | "callers clamp `out` to the page" |
 | `get_at` in `components/src/fs_nameset_caretaker.rs` | "every caller clamps `out` and `off` to the page" |

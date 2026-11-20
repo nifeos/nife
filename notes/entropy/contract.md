@@ -35,7 +35,7 @@ caught by it. `design/decisions/0137-trng-health-tests.md` rules continuous heal
 
 `fill_with` refuses a short answer: any reply that is not a count, or that delivers fewer bytes than
 were asked for, ends the fill with `None`. The `CALL` is a parameter so the crate stays a contract
-that makes no syscall; `user_mode_runtime::entropy::fill` passes a real one, and the refusals are
+that makes no system call; `user_mode_runtime::entropy::fill` passes a real one, and the refusals are
 tested on the host against fakes.
 
 The std PAL (`patches/std-nife/overlay/std/src/sys/random/nife.rs`) does not use it. It accepts a

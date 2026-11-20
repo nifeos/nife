@@ -3,7 +3,7 @@
 # from cargo's own dependency graph rather than listed by hand.
 #
 # A crate that reaches `crates/user_mode_runtime` cannot compile for the host: `svc` and `ecall`
-# there are EL0 syscalls, and with no nife kernel under them they fault. `cargo tree -i` answers
+# there are EL0 system calls, and with no nife kernel under them they fault. `cargo tree -i` answers
 # exactly that question of the graph itself, so the answer moves when a dependency moves and
 # cannot lag behind one. This file is the tree's single derivation of that set (roadmap 393). Its
 # consumers run it instead of carrying the list: script/lint's two clippy passes, `cargo xtask
@@ -38,7 +38,7 @@ tree=$(cargo tree -i user_mode_runtime --prefix none)
 case "${1:-names}" in
 names)
     # The first line of an inverted tree is its root, `user_mode_runtime` itself, and the set
-    # keeps it: no syscall may run on the host, so the crate stays out of the workspace passes. Its
+    # keeps it: no system call may run on the host, so the crate stays out of the workspace passes. Its
     # own tests run in a pass of their own (xtask's host tests and script/lint's host clippy name it).
     printf '%s\n' "$tree" | awk '{print $1}' | sort -u
     ;;

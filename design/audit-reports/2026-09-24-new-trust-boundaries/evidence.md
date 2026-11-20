@@ -40,15 +40,15 @@ merge-group step was read, not exercised.
 
 | Claim | Evidence |
 |---|---|
-| `SURVEY` needs `ENUMERATE`, refuses unknown records before the walk, takes any cursor, passes no pointer, zeroes outputs on `DONE` | the `SURVEY` arm in `syscall.rs` (`rendezvous_survey` in `kernel/src/syscall/rendezvous.rs` now); `survey_supervised` in `sched.rs` (the record check before the lock, the lock, the zeroing on `DONE`); `iter_from` in `generational_table/src/lib.rs`; `is_known` in `abi/src/lib.rs` |
+| `SURVEY` needs `ENUMERATE`, refuses unknown records before the walk, takes any cursor, passes no pointer, zeroes outputs on `DONE` | the `SURVEY` arm in `system_call.rs` (`rendezvous_survey` in `kernel/src/system_call/rendezvous.rs` now); `survey_supervised` in `sched.rs` (the record check before the lock, the lock, the zeroing on `DONE`); `iter_from` in `generational_table/src/lib.rs`; `is_known` in `abi/src/lib.rs` |
 | Domain membership is exact and proved | `survey_includes` in `capability/src/lib.rs` and its falsification patch |
 | `CPU_TICKS` is zeroed on slot fill | `insert_at_in_place`, `insert_at` and `clear_cpu_ticks` in `sched.rs` |
 | Nothing pins a thread from userspace | writers of `Thread::placement` are `spawn_on` (in `sched.rs`) and `start_thread_control_block` (in `sched.rs` too), both from `pick_spawn_target()` |
-| `PLACEMENT` leaks a run-queue comparison | `pick_spawn_target` in `sched.rs`; the denial in the `SURVEY` arm of `syscall.rs` |
+| `PLACEMENT` leaks a run-queue comparison | `pick_spawn_target` in `sched.rs`; the denial in the `SURVEY` arm of `system_call.rs` |
 | Port revoke is synchronous on `x86_64` | `delete_port_range_caps_impl` in `sched.rs` under `IPC_TABLES`; `revoke_port_grant_everywhere` in `segments.rs`; `broadcast` in `mmu.rs`, an NMI broadcast with ack spin; handler `serve_shootdown_nmi` |
 | The take-back reset the invoker's own core | `delete_port_range_caps_impl` in `sched.rs` spares the keeper's table; `revoke_port_grant_everywhere` in `segments.rs` reset locally regardless; `revoke_installed_port_grant_on` resets when the installed grant matches |
 | Page revoke flushes synchronously on all three | aarch64 `flush_tlb` in `mmu.rs` (`tlbi vaae1is; dsb ish`); riscv64 `flush_tlb` in `mmu.rs` + `sbi_remote_sfence_vma` in `mod.rs`, now `remote_fence.rs` (SBI remote fence, honest `BUGS` in its documentation); x86_64 `flush_tlb` in `mmu.rs` |
-| The in-flight `MAP` race §13 (capability revocation and untyped reclamation) deferred is open and recorded | `page_frame_map` in `syscall.rs` (PTE before log); `revoke_page_frame` in `revoke.rs` |
+| The in-flight `MAP` race §13 (capability revocation and untyped reclamation) deferred is open and recorded | `page_frame_map` in `system_call.rs` (PTE before log); `revoke_page_frame` in `revoke.rs` |
 | FP is eager, scrubbed, never enable-driven | `move_the_register_file` in `fp.rs` (four cases) and the module documentation's "has this thread ever wanted FP" paragraph; `fp_state_of` in `thread.rs`; per-core disable in `init` and `adopt_secondary_idle` in `sched.rs`; `INITIAL` on both inserts, `insert_at_in_place` and `insert_at` in `sched.rs`; first use `enable_for_current` in `fp.rs` |
 | The trap arm cannot be preempted between enable and mark-live | x86 interrupt gates (`interrupt_gate` and `init` in `exceptions.rs`); riscv64 patches the frame's `FS` (`riscv_trap_body` in `exceptions.rs`) |
 | The kernel emits no FP | targets `aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf`, `x86_64-unknown-none` with `-sse,+soft-float` (`TARGET`, `RISCV_TARGET` and `X86_TARGET` in `xtask/src/main.rs`) |

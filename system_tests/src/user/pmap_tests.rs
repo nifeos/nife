@@ -7,7 +7,7 @@ use abi::Error;
 use crate::arch::exceptions::TrapFrame;
 use crate::capability_object::Rights;
 use crate::sched;
-use crate::syscall::invoke;
+use crate::system_call::invoke;
 
 /// The space's own budget: the root, its intermediate tables, and the mapping-record log. Nothing
 /// here maps more than three pages, so this is generous slack rather than a tight bound.
@@ -241,7 +241,7 @@ fn an_empty_slot_holds_no_capability_at_all() {
 ///
 /// The space is ended here the way its thread's reaper ends it since §249 (a running address space
 /// stays nameable): `take_user_address_space` takes it out of the registry, and it drops. A
-/// capability minted before that still decodes to the same `name`; the syscall handler's
+/// capability minted before that still decodes to the same `name`; the system call handler's
 /// `user_address_space_root` lookup is what actually notices the space is gone, and the documented
 /// answer is `DONE`, symmetric to `sched::survey_supervised`'s "before the scheduler exists there
 /// is no domain to report."

@@ -55,7 +55,7 @@ spelled the way riscv64 and x86_64 spell them):
 |---|---:|---|---|---:|
 | `spawn_reap` | -2.88 | | `call_reply`, `broker_rtt` | -1.94 |
 | `ctx_switch` | -2.76 | | `ipc_rtt`, `relay_rtt` | -1.77 |
-| `null_syscall` | -2.41 | | `sink_throughput` | -1.76 |
+| `null_system_call` | -2.41 | | `sink_throughput` | -1.76 |
 | `yield_switch` | -2.35 | | `spawn_el0` | -1.38 |
 | `ipc_rtt_el0` | -2.20 | | `map_el0` | -0.81 |
 
@@ -131,7 +131,7 @@ Every row, 2026W45, before and after these lines:
 | `spawn_el0` | -1.44 | +0.47 | | `yield_switch` | -3.49 | -0.33 |
 | `map_el0` | -0.79 | +0.19 | | `relay_rtt` | -3.21 | -0.34 |
 | `ipc_rtt_el0` | -4.46 | +0.15 | | `call_reply` | -3.45 | -0.42 |
-| `null_syscall` | -2.53 | -0.03 | | `broker_rtt` | -3.50 | -0.45 |
+| `null_system_call` | -2.53 | -0.03 | | `broker_rtt` | -3.50 | -0.45 |
 | `map_new` | -0.76 | -0.13 | | `sink_throughput` | -0.44 | -0.23 |
 | `spawn_reap` | -4.45 | -0.15 | | `coremark` | 0.00 | 0.00 |
 

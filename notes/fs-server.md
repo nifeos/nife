@@ -60,7 +60,7 @@ data.
 ## The error boundary, mapped exactly once
 
 RedoxFS speaks its own error type everywhere (`syscall::error::Error`, redox_syscall's errno). The
-sans-IO core (`redoxfs_server::Server`) and the `Disk` impl both return `syscall::error::Result`,
+sans-IO core (`redoxfs_server::Server`) and the `Disk` impl both return `system_call::error::Result`,
 unmapped. The translation to the wire happens in one place, the FS server's serve loop
 (`redoxfs_server.rs::serve`), via `filesystem_contract::reply_err`, which is just the negated errno. The client
 inverts it with `filesystem_contract::reply_errno`. Keeping the core in RedoxFS's vocabulary is what makes the

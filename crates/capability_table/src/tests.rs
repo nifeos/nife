@@ -403,7 +403,7 @@ fn insert_at_or_above_respects_its_floor() {
     );
 }
 
-/// The rights bits are the syscall wire format: delegation names them in a register, and
+/// The rights bits are the system call wire format: delegation names them in a register, and
 /// `from_bits` turns the register back into authority, masking off undefined bits. The exact values
 /// are pinned because mutants (`1 << 1` as
 /// `1 >> 1`, `from_bits` using `|` instead of a mask) survived when nothing pinned them. The `ALL`

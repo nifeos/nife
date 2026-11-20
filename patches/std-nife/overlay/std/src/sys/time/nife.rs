@@ -4,7 +4,7 @@
 //! # `Instant` is the counter, and nothing may perturb it
 //!
 //! Exactly what the hardware gives: monotonic ticks since boot, converted with the counter
-//! frequency, read with one instruction and no syscall (the one ambient readable the ABI grants,
+//! frequency, read with one instruction and no system call (the one ambient readable the ABI grants,
 //! notes/abi.md). Nothing in this file, and nothing in the clock service, ever touches it.
 
 //! # `SystemTime` is the counter plus a granted offset (milestone 51, DECISIONS §43)
@@ -66,7 +66,7 @@ fn is_granted() -> bool {
         1 => true,
         2 => false,
         _ => {
-            // SAFETY: a plain syscall that cannot succeed; the kernel validates the slot.
+            // SAFETY: a plain system call that cannot succeed; the kernel validates the slot.
             let r = unsafe { rt::invoke(rt::CLOCK_SLOT, NO_SUCH_METHOD, 0, 0, 0) };
             let ok = r != -1; // anything but "the slot is empty" means a capability is there
             GRANTED.store(if ok { 1 } else { 2 }, Ordering::Relaxed);

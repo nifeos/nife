@@ -26,7 +26,7 @@ program measures what everyone else's published number measures.
 
 | lmbench | measures | maps to nife? |
 |---|---|---|
-| `lat_syscall null` | a trap that does nothing | yes: `null_syscall` already exists |
+| `lat_system_call null` | a trap that does nothing | yes: `null_system_call` already exists |
 | `lat_ctx` | context switch over pipes | partly: needs pipes or a pipe layer; today derived by subtraction |
 | `lat_pipe` | byte round trip over a pipe | a question, below |
 | `lat_proc fork+exit` | process creation | no: nife has `spawn`, no `fork`; record it |

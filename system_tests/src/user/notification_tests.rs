@@ -2,7 +2,7 @@
 //! every architecture.
 //!
 //! Each proves something the crate's Kani harnesses cannot, because it is about the kernel half:
-//! the registry, the wake, the TCB binding reaching into another object's wait queue, the syscall
+//! the registry, the wake, the TCB binding reaching into another object's wait queue, the system call
 //! layer's rights and registers, and teardown. The state machine itself (no bit lost, a waiter
 //! before the bound receiver, the invariant) is proved in
 //! `crates/inter_process_communication/src/notification.rs` and not re-tested here.
@@ -33,10 +33,10 @@ fn reclaim(r: u64) {
     );
 }
 
-/// Invoke through the real syscall layer, from this kernel thread's own capability table.
+/// Invoke through the real system call layer, from this kernel thread's own capability table.
 fn invoke(slot: u64, method: u64, a0: u64) -> (Result<i64, Error>, TrapFrame) {
     let mut frame = TrapFrame::for_user_entry(0, 0, [0, 0, 0]);
-    let r = crate::syscall::invoke(&mut frame, slot, method, a0, 0, 0);
+    let r = crate::system_call::invoke(&mut frame, slot, method, a0, 0, 0);
     (r, frame)
 }
 
@@ -313,8 +313,8 @@ fn bind_is_once_per_side_and_a_destroyed_binding_frees_the_thread() {
     reclaim(second_region);
 }
 
-/// **The rights are §101's, enforced at the syscall layer**: `WRITE` signals and binds, `READ`
-/// waits and polls, and neither does the other's job. Driven through `syscall::invoke` so the
+/// **The rights are §101's, enforced at the system call layer**: `WRITE` signals and binds, `READ`
+/// waits and polls, and neither does the other's job. Driven through `system_call::invoke` so the
 /// boundary is what is proved, not the helper behind it. `RETYPE_OBJECT` mints the object, and the
 /// creator's capability carries every right its budget holds (milestone 824 (a retype mints no
 /// right its budget lacks)); the budget here is the root's, `Rights::ALL`.
@@ -382,7 +382,7 @@ fn the_rights_are_101s_and_retype_object_mints_a_full_rights_notification() {
     reclaim(r);
 }
 
-/// **A kernel-originated signal wakes a driver blocked in `Interrupt::WAIT`, through the syscall
+/// **A kernel-originated signal wakes a driver blocked in `Interrupt::WAIT`, through the system call
 /// layer's registers.** This is the case of milestone 106 (a wait that ends on either the interrupt or the deadline), per §147 (a timer a userspace service cannot hold): `net_stack` blocks on its interrupt,
 /// and a timer expiry must be able to end that wait. The signal comes through
 /// [`sched::signal_notification_from_interrupt`], the entry 106's tick will call; it is invoked from
@@ -443,7 +443,7 @@ fn a_kernel_signal_ends_an_interrupt_wait_with_the_word_in_x1_and_the_tag_in_x4(
 }
 
 /// **A program binds a notification to itself and is woken out of `RECEIVE` by it**, through the
-/// real syscall boundary and the real user-mode wrapper, on every architecture. The fixture
+/// real system call boundary and the real user-mode wrapper, on every architecture. The fixture
 /// (`fixtures/src/notification_binder.rs`) checks from inside what it can: accumulation, poll,
 /// wait-without-blocking, a zero signal, bind-once, `WrongObject`, and a counted signal ending its
 /// next receive. It then hands this test a signal-only view of its notification and blocks, and

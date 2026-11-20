@@ -58,7 +58,7 @@ things you may do to a thread before it runs are exactly the creation-time manif
 part 2 asked for, and there is no later. One-way: an embryo starts closed and nothing but this
 opens it.
 
-And there is deliberately no syscall method to call it, which is the one thing about this
+And there is deliberately no system call method to call it, which is the one thing about this
 milestone a reader will otherwise assume somebody forgot.
 
 The lane built one (`abi::thread_control_block::GRANT_CYCLE_COUNTER`, method 3) and calef removed
@@ -119,13 +119,13 @@ already is. A trait would have added a vocabulary without removing a difference.
 
 `script/fastpath-footprint`, this branch against `8a418981` built in a separate worktree:
 
-| ISA | `ipc_fastpath` | `syscall_entry` |
+| ISA | `ipc_fastpath` | `system_call_entry` |
 |---|---|---|
 | aarch64 | 5852 -> 5988 (+136 bytes, +2.3%) | 3304 -> 3304 (**unchanged**) |
 | riscv64 | 5132 -> 5148 (+16 bytes, +0.3%) | 1870 -> 1870 (**unchanged**) |
 | `x86_64` | 6687 -> 6687 (**unchanged**) | 1637 -> 1637 (**unchanged**) |
 
-The gate is green on all three. `syscall_entry` is byte-identical everywhere, which is what
+The gate is green on all three. `system_call_entry` is byte-identical everywhere, which is what
 minting no method means measured rather than asserted, and `x86_64` is byte-identical on both,
 which is the no-op compiling to nothing rather than a coincidence. That is the closest thing to
 "an ungranted kernel is unchanged" that is actually true: on the other two the switch mechanism has
@@ -134,8 +134,8 @@ return.
 
 The gate fired once, on the ABI that was then removed, and the number is worth keeping because
 it is an argument. Written as an ordinary arm inside `invoke`, the method put 224 bytes on
-riscv64's `syscall_entry`, 12% against the 5% bound, because `invoke` inlines into the dispatcher
-every syscall fetches. Extracting it `#[inline(never)]` the way milestone 156 extracted the other
+riscv64's `system_call_entry`, 12% against the 5% bound, because `invoke` inlines into the dispatcher
+every system call fetches. Extracting it `#[inline(never)]` the way milestone 156 (`system_call_entry`'s measured size) extracted the other
 spawn-path bodies brought it to +1.5%; removing the method brought it to zero. A method on this
 object is not free even when nothing calls it, which is one more thing to weigh when somebody
 mints the real surface.
@@ -180,7 +180,7 @@ not an error. That skip is DECISIONS 139 part 3 showing up in a test rather than
   Answered above, with the reason: two implementations behind one call site, because the registers
   disagree about whether they can be read back and about whether anything else lives in the word.
 
-- No userspace can use this. There is no syscall method, by decision (above), so the only
+- No userspace can use this. There is no system call method, by decision (above), so the only
   caller of the grant in a shipped kernel is nothing at all, and `sched::grant_cycle_counter`
   carries a `not(test)` dead-code allow to say so out loud. A reader who wants the counter opens
   the question of what the surface should be, which is milestone 74's or 147's to answer.
@@ -203,7 +203,7 @@ not an error. That skip is DECISIONS 139 part 3 showing up in a test rather than
 - **Milestone 127.** Verifying the granted and ungranted states on real silicon. QEMU's
   `PMUSERENR_EL0` is almost certainly zero either way, so a green run says little, and this block
   puts the bench item beside 127's existing `PMCCNTR_EL0` one.
-- **Milestone 74.** The userspace surface, and the first consumer. There is deliberately no syscall
+- **Milestone 74.** The userspace surface, and the first consumer. There is deliberately no system call
   method, so in a shipped kernel nothing calls the grant at all. 74 is the first real consumer and
   also owns a portable userspace read, which is why the raw `mrs`/`csrr` here lives in the one test
   program that needs it rather than in `crates/user_rt`. Milestone 147's cross-thread,
@@ -222,7 +222,7 @@ not an error. That skip is DECISIONS 139 part 3 showing up in a test rather than
 
 ## Index row
 
-the kernel half is complete and the syscall method is deliberately not minted: a grant on the TCB,
+the kernel half is complete and the system call method is deliberately not minted: a grant on the TCB,
 written at the context switch beside the address-space root, aarch64 `PMUSERENR_EL0.CR` cached,
 riscv64 `scounteren.CY` read back so `TM` survives. `x86_64` is a no-op that leaves its fastpath
 byte-identical

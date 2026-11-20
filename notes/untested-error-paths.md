@@ -119,7 +119,7 @@ injector does and a coverage report cannot.
 ## The blind spot
 
 `script/coverage` measures the host crates only. The kernel, the services and the crates that wrap
-syscalls run under QEMU, where host instrumentation does not reach. The run excludes them, and
+system calls run under QEMU, where host instrumentation does not reach. The run excludes them, and
 `notes/scripts.md` says so. Counted, unmeasured:
 
 | code | Result paths | Option paths |
@@ -135,8 +135,8 @@ syscalls run under QEMU, where host instrumentation does not reach. The run excl
 The 75 cleanup paths are all here: 27 in `system_initializer`, 17 in `login`, 10 in `swish`, 13 in
 the kernel, 8 in other services. They are the rollbacks risk 7 depends on. One is
 `MEMORY_REGION_SPLIT`'s destroy-on-full-table (`memory_region_split` in
-`kernel/src/syscall/memory_region.rs`). Another is `PAGE_FRAME_MAP`'s all-or-nothing
-`unmap_run_prefix` (`page_frame_map` in `kernel/src/syscall/page_frame.rs`). The rest include
+`kernel/src/system_call/memory_region.rs`). Another is `PAGE_FRAME_MAP`'s all-or-nothing
+`unmap_run_prefix` (`page_frame_map` in `kernel/src/system_call/page_frame.rs`). The rest include
 `login`'s `connect` and `mint`, whose own comments admit slot leaks. A grep for a test naming
 `unmap_run_prefix` finds none, which is evidence and not a measurement.
 
@@ -215,7 +215,7 @@ holds, with their values before the sweep. A cleanup path that forgets a `capabi
 split child behind crashes nothing, so the kept slot or pages are the only evidence. This note's
 count found 17 such paths in `login` that no test reached.
 
-It is a kernel test because no syscall shows another process's capability table or which retype the
+It is a kernel test because no system call shows another process's capability table or which retype the
 kernel is on (`notes/scripts.md`, a new service test is a userspace program unless it cannot be).
 
 It shares `login_tests`' one `login` rather than building its own. A `login` cannot be torn down: it

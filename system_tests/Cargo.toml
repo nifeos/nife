@@ -69,7 +69,7 @@ counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.co
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 credential_contract = { version = "0.1.0", path = "../crates/credential_contract" }
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }
-confined_syscall_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_syscall_fuzzer_contract" }
+confined_system_call_fuzzer_contract = { version = "0.1.0", path = "../crates/confined_system_call_fuzzer_contract" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 entropy_contract = { version = "0.1.0", git = "https://github.com/nifeos/entropy_contract", rev = "7e800fdcebe9128eaa577421ad1c23b2c08d3754" }
 environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "b4925221c6d33163c6217aa2b118ba29f0be5379" }
@@ -113,7 +113,7 @@ domain_name_resolution_fixture = { version = "0.1.0", path = "../crates/domain_n
 # The package index's test names (milestone 801 (packages over the internet)): the zone the test
 # grants and the program asks inside, one definition for both.
 package_index = { version = "0.1.0", path = "../crates/package_index" }
-domain_name_system = { version = "0.1.0", path = "../crates/domain_name_system" }
+domain_name_system = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/domain_name_system", rev = "c656cdd9206149dd147d6550c339f1cc520aadd0" }
 test_and_set_lock = { version = "0.1.0", path = "../crates/test_and_set_lock" }
 std_runtime_contract = { version = "0.1.0", path = "../crates/std_runtime_contract" }
 video_terminal = { version = "0.1.0", path = "../crates/video_terminal" }

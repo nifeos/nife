@@ -32,7 +32,7 @@ beside `unmap`.
 ## What was built
 
 - The premise, driven. `system_tests::user::page_table_region_tests` maps at 128 GiB with tables
-  from region R, destroys R through the `DESTROY` syscall, and looks three ways. Before the fix, on
+  from region R, destroys R through the `DESTROY` system call, and looks three ways. Before the fix, on
   aarch64, a `PageFrame::MAP` page still translated through R's freed table. A `MemoryRegion::MAP`
   leaf is R's own and was always unmapped, but a second map beside it built no tables and wrote its
   leaf into the freed one.

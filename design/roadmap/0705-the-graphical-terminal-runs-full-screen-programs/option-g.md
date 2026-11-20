@@ -67,7 +67,7 @@ short. No upstream fuzzing was found.
    §31 built the seam for a foreign engine.
 3. Prior art read: the 0.3.3 source and header. That Vim and Neovim embed libvterm appears in the
    CVE's description for Vim; Neovim is *from memory*.
-4. Is the premise true? Yes. It is sans-IO: bytes in, cells, damage and replies out, no syscalls.
+4. Is the premise true? Yes. It is sans-IO: bytes in, cells, damage and replies out, no system_calls.
 5. Cost: the measurements above, and the same `std` port and slot moves as F. No crate is added.
 6. Reversible as code. Taking it is §46 (thin primitives or whole subsystems)'s expensive category,
    as a vendored C tree.

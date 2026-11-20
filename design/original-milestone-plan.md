@@ -19,7 +19,7 @@ boots" and "an operating system" is milestone 7.
 
 Milestone 8 (the console driver leaves the kernel) is the one that proves §10 (process model) was real. When it lands, the kernel no longer knows
 what a UART is. If we cannot take the console out, we did not build a microkernel; we built a
-monolithic kernel with an unusual syscall table.
+monolithic kernel with an unusual system call table.
 
 Milestone 11 is complete *to its intent*, not to seL4's. The kernel still allocates its own
 page tables, TCBs, and endpoints from the heap; §10 chose that deliberately (Zircon's model).

@@ -97,7 +97,7 @@ One `tests.rs` would be 3,046 lines and over the ceiling itself, hence the four.
    recommendation is yes, for the reasons above. They hold at equal cost.
 2. Every file name in the table.
 
-No public crate API, wire format or syscall changes under any answer here.
+No public crate API, wire format or system call changes under any answer here.
 
 ## What moving the code breaks
 

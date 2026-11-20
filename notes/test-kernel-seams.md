@@ -19,11 +19,11 @@ IPC round trip.
 
 ## Holding a delegation open
 
-A delegation is a syscall that files a copy of a capability its caller holds: `SEND_CAPABILITY`,
+A delegation is a system call that files a copy of a capability its caller holds: `SEND_CAPABILITY`,
 `ThreadControlBlock::CAPABILITY_INSERT` and `PageFrame::SLICE`. Each decodes its arguments, finds the
 source capability and files a narrowed copy. A revocation sweep on another core must either see the
 copy and delete it, or find the source gone before the copy is made. The seam lets a test ask what
-happens when the sweep lands after the syscall has started and before the copy is filed. The same
+happens when the sweep lands after the system call has started and before the copy is filed. The same
 seam sits in `PageFrame::MAP`, `AddressSpace::MAP_INTO` and `MemoryRegion::MAP`: a mapping is a use
 rather than a delegation, but the question is the same, and one seam is one thing to keep in step.
 
@@ -32,7 +32,7 @@ reports itself parked and yields until the test calls `release`. Nothing is held
 no guard and no interrupt mask, so the test can run a whole revocation sweep while the delegation
 waits. That is the interleaving two cores can produce by timing, made certain.
 
-Where the seam sits decides what a green result means. In each syscall the read of the source and
+Where the seam sits decides what a green result means. In each system call the read of the source and
 the filing of the copy are one critical section serialized against every sweep, and the seam sits
 just before it. So the case it forces is a sweep landing anywhere before the delegation's own lock
 is held. `disarm` exists because a `parked` flag left `true` by the previous test was once read as
@@ -51,7 +51,7 @@ One retype is one call into the three functions of `memory_region` that take pag
 `split`, `retype_run` (which `retype_page` is) and `retype_object_page`. So `MemoryRegion::SPLIT`,
 `RETYPE` and `RETYPE_OBJECT` each count once, and a `MAP`, `PageFrame::MAP` or
 `AddressSpace::MAP_INTO` counts once per page table it builds. That last kind is why the hook is
-here rather than at the syscall: a mapping that fails after building one table runs the kernel's
+here rather than at the system_call: a mapping that fails after building one table runs the kernel's
 own unwind, not only the program's. The check comes before the region lock, so a refusal leaves the
 region untouched, exactly as an exhausted one is left.
 

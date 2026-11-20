@@ -71,7 +71,7 @@ has the reading behind each point:
 - Reaching outside the region is settled precedent: `reap_region_objects` already unlinks a corpse
   from its supervisor's endpoint, which lives in another region.
 
-So: the kernel could end any blocked thread today, in about thirty lines, with no new syscall.
+So: the kernel could end any blocked thread today, in about thirty lines, with no new system call.
 Every proposal below differs in who may ask and in what the victim and its peers observe, not in
 whether it can be done.
 
@@ -155,7 +155,7 @@ userspace nothing, while one a program must survive costs every `CALL` site.
 | System | Verb | Authority | What the victim sees | Does it reach a reply-parked caller? |
 |---|---|---|---|---|
 | seL4 | `seL4_TCB_Suspend` (cancel is a side effect) | a TCB capability | nothing: `ThreadState_Inactive` | yes, via the reply object's `replyTCB` back-link |
-| Mach | `thread_abort` / `thread_abort_safely` | task/thread port | an interrupted-syscall return code | yes (message primitives) |
+| Mach | `thread_abort` / `thread_abort_safely` | task/thread port | an interrupted-system-call return code | yes (message primitives) |
 | L4Re | `ex_regs` with `..._CANCEL` (cancel is a flag) | a thread capability | `L4_IPC_SECANCELED` / `RECANCELED` | yes; also avoided by IPC timeouts |
 | Zircon | `zx_task_kill`, refused for threads | `ZX_RIGHT_DESTROY` on a process/job handle | `ZX_ERR_PEER_CLOSED` / `ZX_ERR_CANCELED` from the channel | yes, by closing the channel, not by touching the thread |
 | QNX | server death, implicitly | none: it is automatic | `ESRCH` from `MsgSend` | yes, and this is its headline behavior |
@@ -172,7 +172,7 @@ together. The first column is still open, because nothing here can end a blocked
 
 [`mapping-and-authority.md`](blocked-thread-teardown/mapping-and-authority.md) has the full
 analysis. Every proposal keeps the static proof from milestone 124 (a thread is born where it
-lives), since each enters from a syscall on the destroyer's own stack. Every one that wakes a reply-parked caller must sweep its outstanding
+lives), since each enters from a system call on the destroyer's own stack. Every one that wakes a reply-parked caller must sweep its outstanding
 `Reply(tid)` capabilities. And `killed` should end up with one meaning, not one that depends on the
 victim's state.
 
@@ -209,7 +209,7 @@ authority, cost, what it breaks and how it fails.
 
 | | A: completed reclaim | B: `ThreadControlBlock` terminate | C: caller's side | D: accept and bound |
 |---|---|---|---|---|
-| **New syscall / method** | none | one method on `ThreadControlBlock` | none (piece 1) | none |
+| **New system call / method** | none | one method on `ThreadControlBlock` | none (piece 1) | none |
 | **New right** | none | none | none | none |
 | **New error visible to userspace** | none | none | `Gone` at a new place | none |
 | **Authority** | the region cap, unchanged | a `ThreadControlBlock` cap, widened | unchanged | unchanged |

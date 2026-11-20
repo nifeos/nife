@@ -82,7 +82,7 @@ cat > "$bin/qemu-system-x86_64" <<'STUB'
 #!/bin/sh
 case " $* " in *" -S "*) exit 0 ;; esac
 sleep 1
-echo "syscall fuzzer: 5 seeds, 1 ms (stub)"
+echo "system call fuzzer: 5 seeds, 1 ms (stub)"
 echo "confined fuzzer: 5 seeds, 1 ms (stub)"
 exit 3
 STUB

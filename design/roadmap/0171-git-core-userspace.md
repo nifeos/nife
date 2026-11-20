@@ -37,7 +37,7 @@ by design (hooks, external merge drivers). Also anything that needs the network 
 ## What it needs
 
 - The same [DECISIONS §31](../decisions/0031-foreign-language-seam.md) treatment as `kilo`: git's C
-  source rewritten against nife's Rust-mediated shim rather than making syscalls directly, scoped to
+  source rewritten against nife's Rust-mediated shim rather than making system calls directly, scoped to
   the no-subprocess plumbing above.
 - Capability-scoped file I/O in place of git's usual global-path assumptions, the same translation
   every C port on nife needs (`files.c`-shaped work, matching how milestone 169's own scoping section

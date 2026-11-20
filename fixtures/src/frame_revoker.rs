@@ -6,7 +6,7 @@
 //! included. It reports 1 if the revoke succeeded and the slot is now empty. It never touches the
 //! address again, because reading the unmapped page would fault before it could report and turn a
 //! pass into a hang. `kernel/src/revoke.rs` proves the multi-address-space unmapping and safe
-//! reclamation; this adds the syscall path from EL0.
+//! reclamation; this adds the system call path from EL0.
 //!
 //! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). This was `hello`'s `REVOKE_DEMO`
 //! role. Refused `revoke_demo`: "demo" says why it was written rather than what it does, and

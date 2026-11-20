@@ -23,8 +23,8 @@ The page is complete without them; they hold the per-step working.
 
 - [early-boot.md](0161-x86-64-kernel-port/early-boot.md): steps 1 to 10, boot path to IO APIC, with
   what each verified.
-- [ring-3.md](0161-x86-64-kernel-port/ring-3.md): step 11 and item 3, the `syscall` pair, the
-  `iretq` choice, the syscall ABI decision and the two `CR4` bits.
+- [ring-3.md](0161-x86-64-kernel-port/ring-3.md): step 11 and item 3, the `system_call` pair, the
+  `iretq` choice, the system call ABI decision and the two `CR4` bits.
 - [processes-and-userspace.md](0161-x86-64-kernel-port/processes-and-userspace.md): steps 12 and 13
   and item 4, the scheduler, real processes, `user_rt`, the archive, the bugs found and the 67
   skips.
@@ -44,7 +44,7 @@ plus RISC-V alone, and nothing tracked the x86_64 half. This milestone is that t
 
 x86_64 is the hard proof that the HAL abstraction is real rather than an accident of two similar
 RISC ISAs. It is CISC with strong TSO ordering, GDT/TSS, ACPI and PCI instead of a device tree, port
-I/O, the `syscall` + `swapgs` trampoline, and INIT-SIPI-SIPI instead of PSCI/SBI. Code proven
+I/O, the `system_call` + `swapgs` trampoline, and INIT-SIPI-SIPI instead of PSCI/SBI. Code proven
 correct on a weak machine is correct on TSO, which is rule #4's weak-first bet paying out. Also the
 reach: x86_64 is what most machines are.
 
@@ -90,7 +90,7 @@ Early boot ([early-boot.md](0161-x86-64-kernel-port/early-boot.md)):
 
 Ring 3 ([ring-3.md](0161-x86-64-kernel-port/ring-3.md)):
 
-11. User address spaces, the CPL-guarded `swapgs` pair, the `syscall` entry, and an `iretq` return
+11. User address spaces, the CPL-guarded `swapgs` pair, the `system_call` entry, and an `iretq` return
     chosen over `sysretq` (the CVE-2012-0217 shape). A hand-assembled probe ran at CPL 3, reached
     the portable dispatcher, and was refused reading the kernel's `.text`. Two latent user-thread
     bugs were fixed on the way.
@@ -126,8 +126,8 @@ The items were numbered in the order they had to be done, and other files cite t
 2. The IO APIC. BUILT 2026-08-24 (step 10). MSI went to
    [milestone 215 (a PCI function's interrupt reaches nothing on x86_64)](0215-x86-64-pci-interrupt-routing.md);
    INTx routing was refused and is recorded as milestone 459 (legacy INTx interrupt routing on x86_64).
-3. Ring 3. BUILT 2026-08-24 (step 11). The syscall ABI went up as
-   [DECISIONS §124 (ratify the x86_64 syscall ABI)](../decisions/0124-x86-64-syscall-abi.md), ratified
+3. Ring 3. BUILT 2026-08-24 (step 11). The system call ABI went up as
+   [DECISIONS §124 (ratify the x86_64 system call ABI)](../decisions/0124-x86-64-system-call-abi.md), ratified
    by calef 2026-08-24. `CR4.PGE` and `CR4.PCIDE` stay off, now as a measured choice.
 4. The scheduler, real processes and the suite. BUILT 2026-08-24 (steps 12 and 13). Its two new
    findings were the `fs_server`/`aes` toolchain failure, split to

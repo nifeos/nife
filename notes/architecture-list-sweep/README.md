@@ -7,7 +7,7 @@ has no room for.
 
 - [`silent-gaps.md`](silent-gaps.md): the eleven silent gaps as the sweep found them on 2026-08-27,
   with the evidence for each, the severity notes and the two gaps another lane held.
-- [`virtio-ring-barrier.md`](virtio-ring-barrier.md): finding 9's five copies, and why x86_64's
+- [`virtual-io-ring-barrier.md`](virtual-io-ring-barrier.md): finding 9's five copies, and why x86_64's
   barrier is a compiler fence.
 - [`not-findings.md`](not-findings.md): the recorded gaps, the legitimately single-architecture
   things, the lists that stayed complete, and one hazard that is not a finding today.

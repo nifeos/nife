@@ -101,7 +101,7 @@ Two sites in this population were outcome swallows, and both are fixed:
 
 - `architect-label.yml` read the rules helper through `|| true`. The helper's exit for "nothing
   fired" was 1, which is also Python's exit for an uncaught exception. A crash, or a missing merge
-  base, set `add=false` on the job that routes syscall, dependency and decision changes to an
+  base, set `add=false` on the job that routes system call, dependency and decision changes to an
   architect. The helper now crashes with 3, and an unexamined diff is labeled with a report
   saying so.
 - `ci.yml`'s nine documentation-only predicates read zero changed files as documentation only and
@@ -118,7 +118,7 @@ conclusion, so none is a suppressor.
 | job | what it says it examined | zero |
 |---|---|---|
 | `falsifications.yml` sweep | `N swept, ...` | exits 4, from this milestone |
-| `falsifications.yml` syscall driver | `N seeds` | `xtask` fails a filter that selects no test |
+| `falsifications.yml` system call driver | `N seeds` | `xtask` fails a filter that selects no test |
 | `audit-cadence.yml` | `N on record, K kinds` | an empty cadence table fails, from this milestone |
 | `stranger-cadence.yml` | `Last run: N` | no run heading fails |
 | `mutation.yml` | `n of 8 shards` | a partial census is not diffed and says so |
@@ -134,7 +134,7 @@ number is quoted. The block asked for the survey, not a better denominator, and 
 | falsification ratio | `script/falsifications`, the harnesses chart | Kani harnesses in workspace packages | code no harness covers; kernel-test, swish-check and host-test records, printed apart |
 | unsafe density | the unsafe chart, `script/lint`'s ceiling | non-blank code lines outside `kernel/src/arch/` | `arch/` itself, by design; `xtask/`, `helpers/`, `tools/`, `fuzz/`, `bench/host/`, `patches/`, `vendor/` |
 | unsafe by trust boundary | the trust chart | code lines per class | `shared`, `boot_chain` and `unclassified` carry no density |
-| coverage | the coverage chart | lines in host-buildable workspace crates | every crate `script/coverage` excludes: `kernel`, `system_tests`, `components`, `fixtures`, `xtask` and four syscall wrappers |
+| coverage | the coverage chart | lines in host-buildable workspace crates | every crate `script/coverage` excludes: `kernel`, `system_tests`, `components`, `fixtures`, `xtask` and four system call wrappers |
 | lowest-covered file | the floor chart | files the floor acts on | files `script/coverage` exempts |
 | merge queue ejections | the merge queue chart | queue entries, each re-entry counted | pull requests merged without the queue; days before 2026-09-14 |
 | cache-read share, context per turn | the cost charts | tokens in session records on one laptop | the z.ai work of 2026-09-29 to 10-01; any session not recorded there |
@@ -143,7 +143,7 @@ number is quoted. The block asked for the survey, not a better denominator, and 
 | interface co-change | the interface line | commits touching a contract crate | crates whose rustdoc did not build, which the line names |
 
 The falsification ratio is the one the block named. Milestone 524 (the three x86_64 boot gates: NX,
-SYSCALL, and the invariant TSC) added 338 lines to `crates/machine_discovery/src/x86_64.rs` with no
+SYSTEM CALL, and the invariant TSC) added 338 lines to `crates/machine_discovery/src/x86_64.rs` with no
 harness, and the ratio did not move. `script/falsifications` now prints its denominator on the line
 after the ratio. The interface line was already doing this: it names its unread crates.
 

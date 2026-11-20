@@ -1,7 +1,7 @@
 //! **A parsed and checked GUID partition table**: the header and entry array a caller supplies,
 //! checked against each other and against the backup before anything is trusted.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-20 (#3864).
 
 use super::*;
 
@@ -10,7 +10,7 @@ use super::*;
 /// Borrows the entry array rather than copying it: 16 KiB is too much to move around a kernel, and
 /// the caller already has the bytes.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 #[derive(Clone, Copy)]
 pub struct PartitionTable<'a> {
     header: Header,
@@ -98,7 +98,7 @@ impl<'a> PartitionTable<'a> {
     /// normalization assumes the primary array sits at block 2, which every tool writes and the
     /// specification does not require.
     ///
-    /// Name: provisional, minted 2026-11-14 (UTC) by lane lane/outside-review-1089-1100.
+    /// Name: ratified 2026-11-20 (#3864).
     pub fn parse_backup(
         backup_block: &[u8],
         backup_entries: &'a [u8],
@@ -169,7 +169,7 @@ impl<'a> PartitionTable<'a> {
             .checked_add(1)
             .ok_or(Error::TableOverlapsUsable)?;
         // `>=`, not `>`: `block_count - backup_reserved` IS the backup array's first block (what
-        // `backup_entry_logical_block_address` computes), so equality puts a usable block inside the backup array.
+        // `backup_entry_array_logical_block_address` computes), so equality puts a usable block inside the backup array.
         if header.entry_array_logical_block_address <= PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS
             || primary_end > header.first_usable_logical_block_address
             || block_count < backup_reserved
@@ -217,7 +217,7 @@ impl<'a> PartitionTable<'a> {
     /// table.write_protective_master_boot_record(&mut block)?; // to LBA 0
     /// table.write_primary_header(&mut block)?; // to LBA 1
     /// table.write_backup_header(&mut block)?;  // to table.backup_header_logical_block_address()
-    /// let bytes = table.entry_array();          // to LBA 2 and to table.backup_entry_logical_block_address()
+    /// let bytes = table.entry_array();          // to LBA 2 and to table.backup_entry_array_logical_block_address()
     /// # Ok::<(), globally_unique_identifier_partition_table::Error>(())
     /// ```
     pub fn create(
@@ -295,7 +295,7 @@ impl<'a> PartitionTable<'a> {
     /// Check the backup copy against this one.
     ///
     /// `backup_block` is the last block of the disk; `backup_entries` is read from
-    /// [`PartitionTable::backup_entry_logical_block_address`]. Every field the two headers
+    /// [`PartitionTable::backup_entry_array_logical_block_address`]. Every field the two headers
     /// must share is compared, and the two arrays are compared by CRC.
     ///
     /// This is stricter than UEFI 2.10 section 5.3.1, which lets the backup array sit anywhere after
@@ -331,12 +331,14 @@ impl<'a> PartitionTable<'a> {
             return mismatch(BackupMismatch::EntryCount);
         }
         if backup.entry_bytes != self.header.entry_bytes {
-            return mismatch(BackupMismatch::EntrySize);
+            return mismatch(BackupMismatch::EntryBytes);
         }
         if backup.entry_array_crc != self.header.entry_array_crc {
             return mismatch(BackupMismatch::EntryArrayCrc);
         }
-        if backup.entry_array_logical_block_address != self.backup_entry_logical_block_address() {
+        if backup.entry_array_logical_block_address
+            != self.backup_entry_array_logical_block_address()
+        {
             return mismatch(BackupMismatch::EntryArrayLogicalBlockAddress);
         }
 
@@ -353,7 +355,7 @@ impl<'a> PartitionTable<'a> {
     /// perform, and not a table to accept. [`PartitionTable::parse`] cannot
     /// make this check because it never sees the device.
     ///
-    /// Name: provisional, minted 2026-11-14 (UTC) by lane lane/outside-review-1089-1100.
+    /// Name: ratified 2026-11-20 (#3864).
     pub fn check_disk_size(&self, device_blocks: u64) -> Result<(), Error> {
         if self.block_count() == device_blocks {
             Ok(())
@@ -377,7 +379,7 @@ impl<'a> PartitionTable<'a> {
 
     /// The logical block size, taken from the length of the header block.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     pub fn block_bytes(&self) -> usize {
         self.block_bytes
     }
@@ -389,36 +391,36 @@ impl<'a> PartitionTable<'a> {
 
     /// First block a partition may occupy.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     pub fn first_usable_logical_block_address(&self) -> u64 {
         self.header.first_usable_logical_block_address
     }
 
     /// Last block a partition may occupy, inclusive.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     pub fn last_usable_logical_block_address(&self) -> u64 {
         self.header.last_usable_logical_block_address
     }
 
     /// Where the backup header goes: the last block of the disk.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     pub fn backup_header_logical_block_address(&self) -> u64 {
         self.header.alternate_logical_block_address
     }
 
     /// Where the primary entry array goes.
     ///
-    /// Name: provisional.
-    pub fn primary_entry_logical_block_address(&self) -> u64 {
+    /// Name: ratified 2026-11-20 (#3864).
+    pub fn primary_entry_array_logical_block_address(&self) -> u64 {
         self.header.entry_array_logical_block_address
     }
 
     /// Where the backup entry array goes: immediately below the backup header.
     ///
-    /// Name: provisional.
-    pub fn backup_entry_logical_block_address(&self) -> u64 {
+    /// Name: ratified 2026-11-20 (#3864).
+    pub fn backup_entry_array_logical_block_address(&self) -> u64 {
         self.header.alternate_logical_block_address - self.entry_array_blocks()
     }
 
@@ -434,15 +436,18 @@ impl<'a> PartitionTable<'a> {
     }
 
     /// The entry array bytes, exactly `entry_count * entry_bytes` of them: what to write at
-    /// [`PartitionTable::primary_entry_logical_block_address`] and again at
-    /// [`PartitionTable::backup_entry_logical_block_address`]. Both copies are the same
+    /// [`PartitionTable::primary_entry_array_logical_block_address`] and again at
+    /// [`PartitionTable::backup_entry_array_logical_block_address`]. Both copies are the same
     /// bytes, which is why there is one accessor.
     pub fn entry_array(&self) -> &'a [u8] {
         self.entries
     }
 
     /// Entry `index`, used or not. `None` past the end of the array.
-    pub fn entry(&self, index: usize) -> Option<Entry> {
+    ///
+    /// Name: ratified 2026-11-20 (#3864). `get` is the standard library's word for a checked lookup
+    /// by index.
+    pub fn get(&self, index: usize) -> Option<Entry> {
         let start = index.checked_mul(self.header.entry_bytes as usize)?;
         let end = start.checked_add(entry::ENTRY_BYTES)?;
         let bytes: &[u8; entry::ENTRY_BYTES] = self.entries.get(start..end)?.try_into().ok()?;
@@ -456,7 +461,7 @@ impl<'a> PartitionTable<'a> {
     /// hole, an unused entry 1 between used entries 0 and 2, and the numbering survives it.
     pub fn partitions(&self) -> impl Iterator<Item = (usize, Entry)> + '_ {
         (0..self.header.entry_count as usize)
-            .filter_map(|i| self.entry(i).map(|e| (i, e)))
+            .filter_map(|i| self.get(i).map(|e| (i, e)))
             .filter(|(_, e)| e.is_used())
     }
 
@@ -467,7 +472,7 @@ impl<'a> PartitionTable<'a> {
     /// caller that has only read LBA 1 and the array should not be forced to read another. See
     /// [`crate::master_boot_record`] for what "protective" means and why a hybrid MBR is refused.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "MBR")]
     pub fn check_protective_master_boot_record(&self, block: &[u8]) -> Result<(), Error> {
         master_boot_record::validate(block, self.block_count())
@@ -475,7 +480,7 @@ impl<'a> PartitionTable<'a> {
 
     /// Write the protective MBR for this disk into `block` (destined for LBA 0).
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "MBR")]
     pub fn write_protective_master_boot_record(&self, block: &mut [u8]) -> Result<(), Error> {
         master_boot_record::write(block, self.block_count())
@@ -504,7 +509,7 @@ impl<'a> PartitionTable<'a> {
         Header {
             my_logical_block_address: self.header.alternate_logical_block_address,
             alternate_logical_block_address: self.header.my_logical_block_address,
-            entry_array_logical_block_address: self.backup_entry_logical_block_address(),
+            entry_array_logical_block_address: self.backup_entry_array_logical_block_address(),
             ..self.header
         }
     }
@@ -532,7 +537,7 @@ pub(crate) fn check_entry_array<'a>(
     supplied: &'a [u8],
 ) -> Result<&'a [u8], Error> {
     if header.entry_bytes < entry::ENTRY_BYTES_U32 || !header.entry_bytes.is_multiple_of(8) {
-        return Err(Error::EntrySize(header.entry_bytes));
+        return Err(Error::EntryBytes(header.entry_bytes));
     }
     if header.entry_count == 0 {
         return Err(Error::EntryCount(header.entry_count));
@@ -597,7 +602,10 @@ pub(crate) fn check_partitions(
         }
         for j in (i + 1)..count {
             if e.overlaps(&at(j)) {
-                return Err(Error::PartitionsOverlap { a: i, b: j });
+                return Err(Error::PartitionsOverlap {
+                    first: i,
+                    second: j,
+                });
             }
         }
     }

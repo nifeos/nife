@@ -49,9 +49,9 @@ sub-questions did not both resolve cleanly.
 
 | Lines | Opens with | Verdict | Why |
 |---|---|---|---|
-| 693-747 | **The rules that hold the codebase together**, seven numbered rules | carry | Architectural constraints (arch code location, driver isolation, syscall surface, memory ordering, dependencies, the `#[path]` rule) that must already be known before a line of code is written in the wrong place; there is no "check architecture rules" task separate from writing code itself. |
+| 693-747 | **The rules that hold the codebase together**, seven numbered rules | carry | Architectural constraints (arch code location, driver isolation, system call surface, memory ordering, dependencies, the `#[path]` rule) that must already be known before a line of code is written in the wrong place; there is no "check architecture rules" task separate from writing code itself. |
 | 748-772 | **calef names the crates, the programs, and the shared modules** | carry | Naming is on the file's own list of irreversible categories (the reversibility tenet, "move fast on what can be undone"); must fire the instant something new is created, which is constant and unscheduled. |
-| 774-782 | *Milestone 7's process-model question is decided*, milestone 7 (user mode: EL0, capabilities, the ELF loader, and IPC) | carry | Short; defines what counts as a design fork on the syscall surface, needed the moment new syscall work is touched. |
+| 774-782 | *Milestone 7's process-model question is decided*, milestone 7 (user mode: EL0, capabilities, the ELF loader, and IPC) | carry | Short; defines what counts as a design fork on the system call surface, needed the moment new system call work is touched. |
 
 ### Testing, commits, dates, comments, style (783-878)
 

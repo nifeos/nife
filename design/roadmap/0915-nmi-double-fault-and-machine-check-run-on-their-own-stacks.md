@@ -32,7 +32,7 @@ stack they interrupted.
   per-CPU pointer; `isr_paranoid` reads `IA32_GS_BASE`, writes that pointer if the two differ, and
   writes the value it found back before `iretq`. That is correct from ring 3, from ring 0, and in
   the two windows where `CS` says ring 0 while the GS base is the user's (around the `swapgs` at
-  `syscall` entry, and before `iretq` on the way out).
+  `system_call` entry, and before `iretq` on the way out).
 - An NMI never nests on its stack, by rule rather than by machinery: the NMI handler takes no
   exception that returns, so only its own `iretq` unblocks NMIs. `x86_paranoid_dispatch` checks
   the rule on every NMI and panics if the interrupted `rsp` is on an NMI stack. `ist.rs`'s header

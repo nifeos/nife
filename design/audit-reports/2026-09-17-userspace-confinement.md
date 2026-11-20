@@ -33,7 +33,7 @@ a VisionFive 2, since 2026-08-14 with real peripherals since 2026-09-04; xenon, 
 under its own UEFI, since 2026-09-05).
 
 `design/audit-reports/README.md` names three lenses not yet taken: supply chain, userspace
-confinement, the syscall surface. Confinement was chosen because the window produced direct evidence
+confinement, the system call surface. Confinement was chosen because the window produced direct evidence
 that this tree's confinement claims had been asserted without being testable: milestone 305 found a
 kernel test that had answered "U-mode cannot read the kernel" by refusing to look since milestone
 41, and milestone 307 found six more rows whose quotable assertion cannot run. So the question here
@@ -45,9 +45,9 @@ finding below with a fix was confirmed.
 
 An outside reviewer should start here.
 
-- **The syscall surface as a whole, and the IPC model.** `SEND_CAP`, `CAP_INSERT`, `derive`, the
+- **The system call surface as a whole, and the IPC model.** `SEND_CAP`, `CAP_INSERT`, `derive`, the
   rendezvous fast path and the reply capability were read only where a device or port object passes
-  through them. The 2026-07-15 and 2026-08-17 audits own the rights model; the syscall surface is
+  through them. The 2026-07-15 and 2026-08-17 audits own the rights model; the system call surface is
   the third untaken lens and should be its own audit.
 - **The DMA validator and the IOMMU domain builder.** Rows 12 to 17 of the confinement table are
   Kani-proved, milestone 307 read every assertion in them, and their falsification records replay on
@@ -289,7 +289,7 @@ The confinement table's row 21 now says so beside the "on every ISA" paragraph. 
 Finding 3's fix is a control-register bit with a boot line for evidence. The test that would make it
 a claim rather than a setting needs the kernel to survive its own page fault, which is also what
 turning SMAP on would need for its own test. Both belong to one lane, and the SMAP half owes the
-syscall-path measurement the existing `BUGS` entry asks for. Proposed in
+system-call-path measurement the existing `BUGS` entry asks for. Proposed in
 `design/roadmap/0424-a-ring-0-that-provably-cannot-execute-ring-3-pages.md`.
 
 ### 7. MINTED, outside the lens: the `x86_64` boot-stack gate fires on a filtered run and not on the suite
@@ -331,7 +331,7 @@ with finding 4's one-tick window recorded as the exception.
 4. For each ISA-specific protection the confinement table relies on, asked whether the control bit
    the claim depends on is set: `PXN` on aarch64 (encoder), `U`-fetch refusal on riscv64 (hardware,
    unconditional), `SMEP` on `x86_64` (**not set**, finding 3), `PAN`/`SMAP`/`SUM` (off and
-   recorded), `IOPL` (0, and `FMASK` clears it on every `syscall`), the TSS bitmap's deny-all base.
+   recorded), `IOPL` (0, and `FMASK` clears it on every `system_call`), the TSS bitmap's deny-all base.
 5. For the boards, followed firmware-owned memory from the memory map or device tree into the
    frame allocator, and the device windows into the address spaces that hold them.
 6. Broke each new or reshaped confinement test on purpose and replayed it, which is how findings 1
@@ -350,7 +350,7 @@ question with a finite answer per ISA; nothing here asked it of the DMA path or 
 - **The stack gate that fires only on a filtered run** (finding 7's proposal).
 - **DECISIONS §152 (the port-range capability)'s BUGS and `design/fatal-risks/README.md` risk 7 are the maintainer's to update** from
   this report: the single-core premise, and the sentence that one claim was false and fixed.
-- **The syscall surface** is the remaining untaken lens, and this audit deliberately read none of it
+- **The system call surface** is the remaining untaken lens, and this audit deliberately read none of it
   beyond the four arms that carry a device object.
 
 ## Process notes on the mechanism itself

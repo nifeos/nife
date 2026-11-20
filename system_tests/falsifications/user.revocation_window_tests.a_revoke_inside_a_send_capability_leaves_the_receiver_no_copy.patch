@@ -3,7 +3,7 @@ Falsifies `system_tests::user::revocation_window_tests::a_revoke_inside_a_send_c
 Architecture: aarch64, riscv64, x86_64
 
 The defect is the tree as it stood until 2026-10-04 (UTC): the patch puts `SEND_CAPABILITY` back to
-reading its source with `sched::current_cap` in the syscall layer and handing the copy to
+reading its source with `sched::current_cap` in the system call layer and handing the copy to
 `sched::ipc_send_cap`, which files it under a second hold of `IPC_TABLES`. A `PageFrame::REVOKE`
 that runs between the two deletes the source and every other copy it can see, and the copy is then
 parked in `outgoing_cap` after the sweep has passed, so the receiver collects it.
@@ -19,17 +19,17 @@ the claim rather than the fixture: the vacuity guard says the thread really was 
 delegation, and the premise check says the sweep really did reach that thread's own table.
 
 The patch leaves the aborted-send path (§101 (notification objects) ruling B) in its context
-untouched. Nothing here is architecture-specific: the syscall layer, the sweeps and the seam are portable
+untouched. Nothing here is architecture-specific: the system call layer, the sweeps and the seam are portable
 code, so one patch serves every leg.
 
 Re-cut on 2026-10-12 (UTC) by lane maintainer/long-function-paydown-invoke, when the rendezvous
-arms of `syscall::invoke` moved to `kernel/src/syscall/rendezvous.rs` for milestone 888 (a ratchet
+arms of `system_call::invoke` moved to `kernel/src/system_call/rendezvous.rs` for milestone 888 (a ratchet
 on function length); the defect is unchanged. Replayed red at the same assertion on aarch64 that
 day.
 
-diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
---- a/kernel/src/syscall/rendezvous.rs
-+++ b/kernel/src/syscall/rendezvous.rs
+diff --git a/kernel/src/system_call/rendezvous.rs b/kernel/src/system_call/rendezvous.rs
+--- a/kernel/src/system_call/rendezvous.rs
++++ b/kernel/src/system_call/rendezvous.rs
 @@ -74,17 +74,25 @@
      }
      // The source is read, checked and copied inside `sched`, under the hold that files the

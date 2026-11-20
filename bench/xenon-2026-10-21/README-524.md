@@ -1,6 +1,6 @@
 # xenon, 2026-10-21 (UTC): milestone 524's invariant-TSC bit on silicon
 
-The boot that milestone 524 (the three x86_64 boot gates: NX, SYSCALL, and the invariant TSC)
+The boot that milestone 524 (the three x86_64 boot gates: NX, SYSTEM CALL, and the invariant TSC)
 waited for: a real x86_64 part reporting `CPUID.80000007H:EDX[8]`. `main` at `5ee9b4afb`, built
 with `cargo xtask uefi-image`, booted from a stick at about 23:03 UTC. xenon is an Intel Core
 i5-7500T.

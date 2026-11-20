@@ -206,8 +206,8 @@ fn the_initial_ramdisk_holds_a_native_executable() {
 
 /// A separately compiled binary from the initial ramdisk runs at user mode and checks its image.
 ///
-/// hello's `SELF_CHECK` role (one source, built for this machine) answers with a syscall if every
-/// expectation holds, a trap if not, and no data crosses the boundary. A syscall and no fault means
+/// hello's `SELF_CHECK` role (one source, built for this machine) answers with a system call if every
+/// expectation holds, a trap if not, and no data crosses the boundary. A system call and no fault means
 /// `.text` ran, `.rodata` read, `.data` was copied, `.bss` was zeroed (the file lacks those bytes)
 /// and the stack recursed eight frames, entered with the alignment its ABI promises.
 ///
@@ -225,7 +225,7 @@ fn a_real_elf_from_the_initial_ramdisk_runs_at_el0_and_verifies_itself() {
 
     assert!(
         wait_for(|| SVC_COUNT.load(Ordering::Relaxed) > svc),
-        "the program never reached its syscall",
+        "the program never reached its system call",
     );
     assert_eq!(
         USER_FAULTS.load(Ordering::Relaxed),

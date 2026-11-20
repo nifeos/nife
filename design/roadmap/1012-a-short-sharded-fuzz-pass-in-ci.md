@@ -32,7 +32,7 @@ The maintainer decided these on 2026-11-01 (UTC), provisional; reversing each co
 ## Why
 
 A pull request gets the 60-second cargo-fuzz targets over the parsers. Nothing in CI sweeps the two
-in-guest drivers (milestone 752 (a seeded syscall driver with a shadow model) and milestone 779 (fuzz
+in-guest drivers (milestone 752 (a seeded system call driver with a shadow model) and milestone 779 (fuzz
 the surface a confined process can reach)). The host finds a regression within hours; a change that
 breaks a driver invariant merges and waits for the host.
 

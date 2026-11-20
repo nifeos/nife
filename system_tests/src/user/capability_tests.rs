@@ -131,7 +131,7 @@ fn map_physical_maps_a_shared_frame_and_a_device_page() {
     // A real device's MMIO on this machine, whichever machine it is: the virtio-mmio bus base.
     // It was the PL011's `0x0900_0000`, which is an aarch64 `virt` fact; the point of the test
     // is that a device-typed mapping lands where it was asked to, and either address serves it.
-    let device_phys = mmu::VIRTIO_MMIO_BASE;
+    let device_phys = mmu::VIRTUAL_IO_MMIO_BASE;
 
     let mut space = AddressSpace::new(2).expect("no address space");
     let frame = crate::memory::alloc().expect("no frame").physical_address();
@@ -244,7 +244,7 @@ fn a_capability_can_be_delegated_over_ipc_and_grant_gates_re_delegation() {
 /// **Milestone 12: a process calls a server it was never wired to, and the reply cap is
 /// one-shot.** The client `CALL`s across the boundary; the server `RECEIVE_CAPABILITY`s the request plus a
 /// kernel-minted reply capability naming the caller, answers through it (the round trip through
-/// the real syscall path), then tries to answer a second time and reports that the kernel
+/// the real system call path), then tries to answer a second time and reports that the kernel
 /// refused. This is what a pre-wired reply rendezvous cannot guarantee.
 #[test_case]
 fn a_process_calls_a_server_and_the_reply_is_one_shot() {
@@ -329,7 +329,7 @@ fn a_reply_carries_a_capability_the_caller_can_use() {
 /// **Milestone 13: a process revokes a frame across the boundary.** It retypes a page, maps it,
 /// then `REVOKE`s it; the kernel unmaps the page and deletes every capability to it, the
 /// process's own included, so a second operation on that slot finds nothing there. This exercises
-/// the REVOKE syscall path (rights, unmap, cap deletion). The multi-address-space unmapping and
+/// the REVOKE system call path (rights, unmap, cap deletion). The multi-address-space unmapping and
 /// the safe reclamation are proven directly in kernel/src/revoke.rs.
 #[test_case]
 fn a_process_revokes_a_frame_and_loses_the_capability() {

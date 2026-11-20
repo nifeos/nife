@@ -11,7 +11,7 @@ needs_person: no
 
 Premise re-checked 2026-09-19: the build is still owed. DECISIONS §144 (the fastpath footprint gate
 gets a delta and a ceiling) ruled both shapes, with the ceiling at 16 KiB on
-`max(ipc_send_receive, ipc_call_reply) + syscall_entry`. Nothing has been built against it.
+`max(ipc_send_receive, ipc_call_reply) + system_call_entry`. Nothing has been built against it.
 `script/fastpath-footprint` still compares against `bench/fastpath-aarch64.txt`,
 `bench/fastpath-riscv64.txt` and `bench/fastpath-x86_64.txt` at a 5% tolerance, with no delta against
 `main` and no absolute ceiling. The two designs share little code, because the delta half replaces
@@ -57,9 +57,9 @@ machinery, and whether the extra check earns its keep is part of the same decisi
 ## One data point from 2026-09-04, which cuts against `main` alone
 
 PR #716 is the daily toolchain bump: one line of `rust-toolchain.toml`, no kernel source. It failed
-the `syscall_entry` check at 10.4% on riscv64 because the newer compiler inlined a device-interrupt
+the `system_call_entry` check at 10.4% on riscv64 because the newer compiler inlined a device-interrupt
 helper into the trap handler (the full account is in the
-`a-flat-entry-set-counts-bytes-no-syscall-fetches` proposal, which milestone 433 numbers 368).
+`a-flat-entry-set-counts-bytes-no-system-call-fetches` proposal, which milestone 433 (drain the proposal pile to zero) numbers 368).
 
 **A delta-against-`main` gate would have failed this too, and for a worse reason.** `main` would
 have been built under the *old* pin, so the comparison would have attributed the entire 194 bytes to

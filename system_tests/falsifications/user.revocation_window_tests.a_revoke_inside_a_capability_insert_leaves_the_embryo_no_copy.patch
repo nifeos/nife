@@ -17,12 +17,12 @@ day against the fixed tree at `revocation_window_tests.rs:230`, the assertion pr
 the claim rather than the fixture: the vacuity guard says the thread really was held inside its
 delegation, and the premise check says the sweep really did reach that thread's own table.
 
-Nothing here is architecture-specific: the syscall layer, the sweeps and the seam are portable
+Nothing here is architecture-specific: the system call layer, the sweeps and the seam are portable
 code, so one patch serves every leg.
 
-diff --git a/kernel/src/syscall/thread_control_block.rs b/kernel/src/syscall/thread_control_block.rs
---- a/kernel/src/syscall/thread_control_block.rs
-+++ b/kernel/src/syscall/thread_control_block.rs
+diff --git a/kernel/src/system_call/thread_control_block.rs b/kernel/src/system_call/thread_control_block.rs
+--- a/kernel/src/system_call/thread_control_block.rs
++++ b/kernel/src/system_call/thread_control_block.rs
 @@ -136,13 +136,21 @@
  ) -> Result<i64, Error> {
      let target = (target != 0).then(|| target - 1);

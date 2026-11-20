@@ -151,4 +151,4 @@ correctable, and verdicts are the architect's)).
 
 The first C library that runs somebody else's C program unmodified on nife: relibc's OS-neutral
 code, seeded once, over a Rust platform layer that holds the process's file, clock and memory
-capabilities, so the C itself makes no syscalls.
+capabilities, so the C itself makes no system_calls.

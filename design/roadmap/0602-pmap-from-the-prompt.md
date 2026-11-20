@@ -47,7 +47,7 @@ The note has the premises, the costs, the prior art and the refused options. Thi
 A keeps a narrowed view of each job's space in the progenitor. B adds a `Rendezvous` method over the
 supervision domain, the way `ps` reads it. C gives a per-member page count on `SURVEY` and composes
 with any of the others. D records that `pmap` does not reach the prompt. §142 (what a spawner retains
-over a child after `START`) and the syscall surface are both touched, so the note gives options and
+over a child after `START`) and the system call surface are both touched, so the note gives options and
 no winner.
 
 ## What a lane can do before the ruling

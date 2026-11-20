@@ -81,7 +81,7 @@ costs.
 
 | row | cycles | time |
 |---|---|---|
-| `null_syscall` | 322 | 0.32 us |
+| `null_system_call` | 322 | 0.32 us |
 | `yield_switch` | 571 | 0.57 us |
 | `ipc_rtt` | 1,046 | 1.05 us |
 | `call_reply` | 1,256 | 1.26 us |

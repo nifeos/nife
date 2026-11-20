@@ -1,6 +1,6 @@
 #![no_std]
 // `Result<_, ()>` throughout the build path, for `supervision_contract`'s reason: every failure here is
-// a syscall that already returned its own error through the ABI, and a second, richer error would be
+// a system call that already returned its own error through the ABI, and a second, richer error would be
 // inventing detail the kernel did not provide. See that crate's head comment.
 #![allow(clippy::result_unit_err)]
 //! **The interactive system, built once**: everything the progenitor does, from the table of slot

@@ -23,7 +23,7 @@ pub const REVISION: u32 = 0x0001_0000;
 /// may declare more, up to its block (the spec reserves room to grow); [`Header::decode`] accepts
 /// that, covers the extra bytes with the CRC and otherwise ignores them.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 pub(crate) const HEADER_BYTES: u32 = 92;
 
 /// Field offsets within the header, in the order UEFI 2.10 Table 5.5 lists them. Written out
@@ -36,11 +36,11 @@ mod at {
     pub(crate) const HEADER_CRC: usize = 16;
     pub const RESERVED: usize = 20;
     pub(crate) const MY_LOGICAL_BLOCK_ADDRESS: usize = 24;
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     pub const ALTERNATE_LOGICAL_BLOCK_ADDRESS: usize = 32;
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     pub const FIRST_USABLE_LOGICAL_BLOCK_ADDRESS: usize = 40;
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     pub const LAST_USABLE_LOGICAL_BLOCK_ADDRESS: usize = 48;
     pub(crate) const DISK_GUID: usize = 56;
     pub(crate) const ENTRY_ARRAY_LOGICAL_BLOCK_ADDRESS: usize = 72;
@@ -62,40 +62,43 @@ pub struct Header {
     /// [`crate::PartitionTable`], which is what makes a header that was
     /// copied to the wrong place detectable.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "MyLBA")]
     pub my_logical_block_address: u64,
     /// Where the *other* copy of this header lives.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "AlternateLBA")]
     pub alternate_logical_block_address: u64,
     /// The first block a partition may occupy. Everything below it is table.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "FirstUsableLBA")]
     pub first_usable_logical_block_address: u64,
     /// The last block a partition may occupy, inclusive. Everything above it is backup table.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "LastUsableLBA")]
     pub last_usable_logical_block_address: u64,
     /// Names the disk, not any partition on it.
+    #[doc(alias = "DiskGUID")]
     pub disk_guid: Uuid,
     /// Where this header's copy of the partition entry array starts.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "PartitionEntryLBA")]
     pub entry_array_logical_block_address: u64,
     /// How many entries the array has room for, used or not. 128 in practice, always.
+    #[doc(alias = "NumberOfPartitionEntries")]
     pub entry_count: u32,
     /// Bytes per entry. 128 in practice; the spec allows any multiple of 8 that is at least 128, so
     /// that entries can grow.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "SizeOfPartitionEntry")]
     pub entry_bytes: u32,
     /// CRC-32 over `entry_count * entry_bytes` bytes of the entry array.
+    #[doc(alias = "PartitionEntryArrayCRC32")]
     pub entry_array_crc: u32,
 }
 
@@ -130,7 +133,7 @@ impl Header {
     /// polynomial over symbolic bytes. The size returned is in `92 ..= block.len()`. See
     /// `verification::the_header_checks_before_the_crc_are_total`.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     pub(crate) fn decode_checks(block: &[u8]) -> Result<usize, Error> {
         if !is_block_size_ok(block.len()) {
             return Err(Error::BlockSize(block.len()));

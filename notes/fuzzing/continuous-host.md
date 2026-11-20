@@ -9,7 +9,7 @@ the repository supplies to it.
 ## What runs
 
 `helpers/continuous-fuzz.sh` runs four guests at once, two of each driver: the kernel-thread driver
-(milestone 752 (a seeded syscall driver with a shadow model)) and the confined user-mode driver
+(milestone 752 (a seeded system call driver with a shadow model)) and the confined user-mode driver
 (milestone 779 (fuzz the surface a confined process can reach)). The false-red measurements in
 [`rates-on-x86-64-under-kvm.md`](rates-on-x86-64-under-kvm.md) support four. Raise
 `NIFE_FUZZ_GUESTS` only after a measurement at the new size comes back clean.
@@ -17,7 +17,7 @@ the repository supplies to it.
 Each guest slot owns a git worktree and a `target/` directory, so two windows never share a build
 directory. A window builds the x86_64 archive and the system test image once, baking the seed
 range in at build time, then starts one QEMU process through the PVH runner with `-accel kvm` and sweeps
-in that guest. It does not call `cargo xtask test`, which clears `NIFE_ACCEL` and also boots the
+in that guest. It does not call `cargo xtask test`, which clears `NIFE_ACCEL` and boots the
 OVMF legs under TCG. The driver stops itself after 60 seconds of guest time, so each window costs a
 rebuild, a boot and one minute of seeds. The BUGS list below records that limit.
 

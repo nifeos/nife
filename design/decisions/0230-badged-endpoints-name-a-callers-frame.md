@@ -38,7 +38,7 @@ Option A is badged endpoint capabilities, seL4's answer:
   a pool of K (badged endpoint, frame) pairs, hands one to each caretaker chain and takes it back at
   reap. `filesystem_protocol`'s layout and opcodes do not change.
 
-This is a change to the syscall surface under §10 (process model: capability-based, microkernel),
+This is a change to the system call surface under §10 (process model: capability-based, microkernel),
 and it fits that model. The badge is a property of a capability, minted by a holder with the right
 to derive one, and nothing about IPC gains a side effect. Each new method's semantics are recorded
 here or in the section the implementing lane owes, per §10's rule, before the method ships.
@@ -102,8 +102,8 @@ this section had not (finding 1 of
 - **The badge is delivered on every receive**, not only to `RECV_CAP` for a `CALL` or a
   `SEND_CAP`. `RECV` and `RECV_CAP` both return it in `x3` for an ordinary message, `0` when the
   capability the sender invoked was unbadged. Before this, `x3` was always `0` for a plain `SEND`.
-- **It is the kernel's word on every path.** The syscall layer reads the badge from the capability
-  in the caller's table (`kernel/src/syscall.rs`, the `SEND` arm, into `sched::ipc_send_badged`),
+- **It is the kernel's word on every path.** The system call layer reads the badge from the capability
+  in the caller's table (`kernel/src/system_call.rs`, the `SEND` arm, into `sched::ipc_send_badged`),
   never from a register the sender filled.
 - **Why.** §242 (a system log) stamps every record from the writer's badge, and a byte-sink writer
   speaks a plain `SEND`. Without this, the badge a spawner minted was dropped on the one path it

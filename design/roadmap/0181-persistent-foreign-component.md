@@ -40,7 +40,7 @@ process called three times. The C ABI itself (rule 2) was never the limiting fac
 What a persistent, interactive foreign component needs, concretely:
 
 1. A shim loop, not a shim call. `_start` currently: map the grant, call the C function once,
-   report the result, exit. The extension: map the grant once, then loop. Perform whatever syscall
+   report the result, exit. The extension: map the grant once, then loop. Perform whatever system call
    the interactive behavior needs (for a terminal program, `OPERATION_READRAW`/`OPERATION_READLINE` per iteration,
    see milestone 169). Call into the C function with that iteration's input, and act on its return value
    (write output, or a return code meaning "the program asked to exit"). Tear down the
@@ -58,7 +58,7 @@ What a persistent, interactive foreign component needs, concretely:
    language calls it). A line-oriented program needs only the `OPERATION_READLINE` contract that already
    exists.
 
-None of this is believed to require a new syscall, a new capability type, or a change to rule 2's
+None of this is believed to require a new system call, a new capability type, or a change to rule 2's
 ABI. It is real work, sized like a milestone rather than a patch, but it is engineering rather than
 an open design fork, which is why the gate is NONE rather than DECISION.
 
@@ -94,7 +94,7 @@ choice between the Rust `kilo` already built and a real C port, informed by both
 The actual, general answer to "can nife run open source software it did not write," which is
 broader than any one editor. Any real, long-running, interactively-driven C program with a modest
 dependency surface (tier one or two of milestone 36 (a foreign-language component, seam first)'s roadmap, DECISIONS §31 rule 3) becomes
-portable in the "adapt the syscall layer, keep the program's own logic" sense §31 was built for.
+portable in the "adapt the system call layer, keep the program's own logic" sense §31 was built for.
 Not only in the "rewrite it" sense §84 already answers well. Also unblocks a real C port of `kilo.c`
 through the seam, if calef wants that as this milestone's own capstone once `dc` proves the
 mechanism.

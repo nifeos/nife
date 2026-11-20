@@ -2,7 +2,7 @@ Falsifies `system_tests::user::confinement_attack_tests::a_read_only_holder_cann
 
 Architecture: aarch64
 
-The patch deletes the `WRITE` check on `Rendezvous::SEND` in `syscall::rendezvous::rendezvous_send`,
+The patch deletes the `WRITE` check on `Rendezvous::SEND` in `system_call::rendezvous::rendezvous_send`,
 so a holder of `READ` alone sends: the right the capability lacks is taken from the method number
 instead, which is claim 2's "userspace cannot forge a right" at the dispatcher, on the IPC fastpath
 of §10 (the capability-based microkernel process model). A receiver is already parked, so the broken
@@ -13,13 +13,13 @@ argument register". Replayed on 2026-10-06 (UTC) by the milestone 633 (an outsid
 confinement claim) lane: red at exactly that assertion on aarch64.
 
 Re-cut on 2026-10-12 (UTC) by lane maintainer/long-function-paydown-invoke, when the rendezvous
-arms of `syscall::invoke` moved to `kernel/src/syscall/rendezvous.rs` for milestone 888 (a ratchet
+arms of `system_call::invoke` moved to `kernel/src/system_call/rendezvous.rs` for milestone 888 (a ratchet
 on function length); the defect is unchanged. Replayed red at the same assertion on aarch64 that
 day.
 
-diff --git a/kernel/src/syscall/rendezvous.rs b/kernel/src/syscall/rendezvous.rs
---- a/kernel/src/syscall/rendezvous.rs
-+++ b/kernel/src/syscall/rendezvous.rs
+diff --git a/kernel/src/system_call/rendezvous.rs b/kernel/src/system_call/rendezvous.rs
+--- a/kernel/src/system_call/rendezvous.rs
++++ b/kernel/src/system_call/rendezvous.rs
 @@ -22,9 +22,6 @@
      badge: u64,
      words: [u64; 3],

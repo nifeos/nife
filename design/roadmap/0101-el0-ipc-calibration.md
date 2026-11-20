@@ -75,7 +75,7 @@ guests of the same HVF machine (2026-10-21, eight boots each, nife at `f87c9b5c4
 not apples to apples: both kernels pay stage-2 switches seL4's published figures do not. Both are
 loop averages against the generic timer, not sel4bench's per-call PMU reads, because the guest's PMU
 is synthesized. seL4 carries one patched line for the guest's 8-bit ASIDs, and takes two fastpath
-syscalls where `ipc_rtt_el0` takes four. The table above is an earlier build: the same
+system calls where `ipc_rtt_el0` takes four. The table above is an earlier build: the same
 bench read 395 to 444 ns on 2026-10-21, a rise nothing has explained.
 
 Against seL4's published pair, 413 cycles for the call and 426 for the reply, one-way each, ~839
@@ -89,7 +89,7 @@ times heavier" read as sober: wrong plane (kernel-side, no trap), wrong build (d
 release), and wrong convention (our round trip against their one-way figure). Two inflate the ratio
 and one deflates it, so the number landed somewhere plausible by cancellation. notes/benchmarks.md
 carries all of it, with the four caveats that matter more than the ratio does: 2015 silicon against
-2023, their fastpath on and ours nonexistent, their two syscalls against our four, and an assumed
+2023, their fastpath on and ours nonexistent, their two system calls against our four, and an assumed
 clock. None of that makes this a win, and the note says so in a section headed that way.
 
 ## The prediction of record, left standing

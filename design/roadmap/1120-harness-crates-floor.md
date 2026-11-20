@@ -28,7 +28,7 @@ answered the same hotspot on `kani-harnesses`. No code changes.
 
 ## Follow-on
 
-- **None.** We measured the other equality markers, and none races. `syscalls`, `rights-bits` and
+- **None.** We measured the other equality markers, and none races. `system_calls`, `rights-bits` and
   `security-audits` move by decision. Each per-crate harness count moves only with an edit beside
   that crate's own line, and git refuses two such edits before the queue sees them. `loom-harnesses`
   and `loom-crates` changed four times in the month to 2026-11-15 and ejected no attempt. They keep

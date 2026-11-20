@@ -9,7 +9,7 @@ ratified_by: calef
 
 Raised 2026-10-09 (UTC) by a maintainer session, which took calef through
 [milestone 812 (`std::thread::spawn` runs real threads in one address space)](../roadmap/0812-threads-in-one-address-space.md)'s
-seven forks one at a time. Four of them (1, 2, 3 and 6) are syscall surface under §10 (the
+seven forks one at a time. Four of them (1, 2, 3 and 6) are system call surface under §10 (the
 capability-based microkernel process model), so 812 owes this section before any code. *(Section
 number provisional until the merge queue lands it.)*
 
@@ -76,7 +76,7 @@ carries over unchanged, but where the right lives is calef's, and 812's lane bri
 before the code that adds the right.
 
 *Answered 2026-10-10 (UTC) on #1892: the right lives on a process capability. §276 (the thread
-syscalls as built) records the ruling and the surface.*
+system calls as built) records the ruling and the surface.*
 
 ## What this changes in milestone 812
 

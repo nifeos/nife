@@ -81,8 +81,8 @@ jh7110_entropy,verification::ready_requires_rand_rdy_and_carries_the_words_untou
 kernel,arch::aarch64::fp::proofs::every_cpacr_edit_changes_exactly_the_field_it_names,17,18,18,26
 kernel,arch::aarch64::iommu::proofs::no_stream_can_reach_another_streams_tables,4,4,4,4
 kernel,arch::aarch64::iommu::proofs::the_smmu_is_handed_exactly_the_tables_the_kernel_built,26,47,26,47
-kernel,syscall::proofs::every_page_between_the_checked_ends_is_itself_a_user_page,1,3,1,3
-kernel,syscall::proofs::the_run_end_is_exact_and_refuses_exactly_what_does_not_fit,3,3,3,3
+kernel,system_call::proofs::every_page_between_the_checked_ends_is_itself_a_user_page,1,3,1,3
+kernel,system_call::proofs::the_run_end_is_exact_and_refuses_exactly_what_does_not_fit,3,3,3,3
 machine_discovery,acpi::verification::a_table_header_this_parser_accepts_always_has_a_body_length,6,23,6,44
 machine_discovery,acpi::verification::an_ecam_windows_size_is_total_and_counts_one_mebibyte_per_bus,11,30,11,39
 machine_discovery,acpi::verification::an_rsdp_is_accepted_only_when_its_bytes_sum_to_zero,8,49,10,66

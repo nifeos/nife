@@ -65,7 +65,7 @@ endow, and tell a person reading `caps <program>` that the authority exists at a
 (`grant_contract::DOMAIN_SLOT`, `ENTROPY_SLOT`), narrowed to `ENUMERATE` and `WRITE` respectively.
 
 `entropy` is the one worth pausing on, because randomness is the authority whose use leaves no trace:
-a process that draws a key and a process that hardcodes one make the same syscalls and produce
+a process that draws a key and a process that hardcodes one make the same system calls and produce
 output of the same shape. The declaration is the only thing that tells them apart, which is why
 ambient entropy would be ambient authority (DECISIONS §44, notes/entropy.md).
 

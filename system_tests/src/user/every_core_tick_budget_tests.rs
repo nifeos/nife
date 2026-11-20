@@ -179,7 +179,7 @@ fn a_budget_expiry_message_is_followed_by_a_thread_dump() {
         },
     );
     capture_console(
-        || dump_threads_for_budget_expired("syscall fuzzer: seed 0x1 step 2: a mismatch"),
+        || dump_threads_for_budget_expired("system call fuzzer: seed 0x1 step 2: a mismatch"),
         |text| {
             assert!(
                 text.is_empty(),

@@ -11,7 +11,7 @@ and `ESR` decode. The portable side is [notes/exceptions.md](../exceptions.md).
 ## One entry, and a frame trap.s fills
 
 RISC-V has a single trap entry, `stvec`, not aarch64's 16-slot table. Interrupt versus exception is
-the top bit of `scause`, and the syscall is the `ecall` cause. `stvec`'s low two bits are its MODE
+the top bit of `scause`, and the system call is the `ecall` cause. `stvec`'s low two bits are its MODE
 field: 0 sends every trap to one handler, 1 sends interrupts to `base + 4*cause`. A 2-byte-aligned
 entry would select vectored mode without a word of warning, so trap.s aligns `trap_entry` to 4 and a
 test asserts both the base and the mode. aarch64's twin test checks `VBAR_EL1`'s 2,048-byte
@@ -25,8 +25,8 @@ dump. A wrong offset in trap.s's save and restore scrambles a register while sti
 right address. It corrupts a caller's state and blames innocent code thousands of instructions
 later, which `registers_survive_a_trap` exists to catch.
 
-The portable syscall dispatcher names no register. It reads `a7` and `a0`..`a5` through
-`TrapFrame::{syscall_nr, arg, set_arg}`, where aarch64 maps `x8` and `x0`..`x5` (DECISIONS §17 (the
+The portable system call dispatcher names no register. It reads `a7` and `a0`..`a5` through
+`TrapFrame::{system_call_nr, arg, set_arg}`, where aarch64 maps `x8` and `x0`..`x5` (DECISIONS §17 (the
 second architecture: RISC-V)). `sepc` points at the `ecall`, which the hardware does not step past,
 so the handler adds 4.
 
@@ -60,10 +60,10 @@ panic that names the thread.
 ## Dispatch
 
 `riscv_trap_dispatch` is the outer half and stays on the interrupted stack. A U-mode trap runs on
-its thread's kernel stack, because the syscall may block and an interrupt stack may not. A kernel
+its thread's kernel stack, because the system call may block and an interrupt stack may not. A kernel
 trap with an interrupt stack available moves there through `dispatch_on_interrupt_stack`. The
 common case calls `riscv_trap_body` directly; on aarch64, routing every `ecall` through the
-trampoline cost 8.6 instructions per `null_syscall`. Preemption happens after the body returns,
+trampoline cost 8.6 instructions per `null_system_call`. Preemption happens after the body returns,
 on the interrupted thread's stack, because `schedule()` may run only on a stack that thread owns
 (`kernel/src/interrupt_stack.rs`). The switch returns through `trap_return` to exactly the
 interrupted instruction (DECISIONS §5 (execution model: preemptive threads)).
@@ -140,8 +140,8 @@ translation" as a permission fault. aarch64's answer is a measurement and RISC-V
 A user page fault's kill report prints the live `satp` and the leaf at `stval`, and in
 `system_tests` builds whether the root is the thread's own (`sched::thread_space_root` exists only
 there). It is cold and out of line because `script/fastpath-footprint` counts the trap dispatcher
-in `syscall_entry`. A new function in `sched` is not neutral either: one added for this report
-moved the codegen-unit split and grew riscv64's `syscall_entry` from 2,010 to 2,604 bytes.
+in `system_call_entry`. A new function in `sched` is not neutral either: one added for this report
+moved the codegen-unit split and grew riscv64's `system_call_entry` from 2,010 to 2,604 bytes.
 
 An exception from S-mode is a kernel bug and panics. It first says whether `stval` is a guard page,
 using the interrupted `sp` from `x[2]`, since the live `sp` may be this hart's interrupt stack.

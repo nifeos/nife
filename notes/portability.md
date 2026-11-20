@@ -15,7 +15,7 @@ What's surprising is how short the per-architecture list is:
 4. **Page table format**: the bits in a PTE are completely different on x86 and ARM.
 5. Atomics and memory barriers.
 6. **Cache maintenance**: ARM often needs explicit flushes; x86 is coherent for free.
-7. **Syscall entry**: `syscall` on x86_64, `svc` on aarch64.
+7. **System call entry**: `system_call` on x86_64, `svc` on aarch64.
 8. **Device discovery**: ACPI vs. Device Tree.
 9. Timers.
 
@@ -287,7 +287,7 @@ do not abstract the two machines into a common denominator:
   keeps flushing on every switch when the field is absent (address-space-identifiers.md). That is per-processor
   adaptation of exactly the kind Liedtke argued for, and the portable-looking alternative (always
   flush) would have cost aarch64 the win.
-- `TTBR0`/`TTBR1`. On aarch64 the kernel lives in `TTBR1` and never moves, so a syscall needs no
+- `TTBR0`/`TTBR1`. On aarch64 the kernel lives in `TTBR1` and never moves, so a system call needs no
   address-space switch at all (higher-half.md). RISC-V has one `satp` and no such split.
 
 ### Where we are not, and it is the one exception seL4 kept

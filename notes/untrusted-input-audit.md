@@ -128,7 +128,7 @@ a firmware bug or a hostile controller reaches it with a single malformed comple
 surfaces as a kernel crash that reads like a kernel bug rather than a device one.
 
 This is the exact reciprocal of shared-page-audit.md's finding 6, one layer down. That finding read
-`components/src/virtio_net_transport.rs` and `kbd.rs` trusting a `u32` the device wrote into a used ring, and its
+`components/src/virtual_io_net_transport.rs` and `kbd.rs` trusting a `u32` the device wrote into a used ring, and its
 disposition was to **fail closed**: consume the bad completion and drop it, costing one buffer per
 lie. The NVMe driver, newer and in the kernel, made the opposite choice for the same class of value,
 and the pattern shared-page-audit.md named for finding 6 applies verbatim: a guarantee assumed
