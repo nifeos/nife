@@ -1516,7 +1516,7 @@ mod proofs {
         let a: u16 = kani::any();
         let b: u16 = kani::any();
         let message = remappable_message(a);
-        let address = message.address;
+        let address = message.message_address;
         assert!(
             address >> 20 == 0xfee,
             "inside the interrupt address window, high half zero"
@@ -1533,7 +1533,7 @@ mod proofs {
         assert!(decoded == a, "the address names the handle granted");
         if a != b {
             assert!(
-                remappable_message(b).address != address,
+                remappable_message(b).message_address != address,
                 "two entries, two messages"
             );
         }
