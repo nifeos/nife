@@ -19,9 +19,9 @@ from the bytes a caller read, checks the backup copy against it, builds a new ta
 protective MBR and both headers. It is `no_std`, with no allocation, no `unsafe` and no I/O. The one
 dependency is `uuid`, with default features off. Eight Kani harnesses prove the CRC, the GUID byte
 order, the entry and header layouts, the overlap rule and that `create` never builds a table
-`parse` would refuse. The tests run against tables that `sgdisk` and macOS's `diskutil` wrote. What
-blocks the move is the crate's own vocabulary: two type GUIDs that belong to nife, and 82 names
-without a ratified block.
+`parse` would refuse. The tests run against tables that `sgdisk` and macOS's `diskutil` wrote. The
+architect cleared the crate for its move on 2026-11-20 (UTC) with no tag and no publication, and
+every `Name:` block in it reads ratified.
 
 ## Identity
 
@@ -33,8 +33,8 @@ without a ratified block.
 | license | `MIT OR Apache-2.0`, both texts at the crate root; nothing adapted |
 | `publish` | `false` |
 | dependency | `uuid = { version = "1.28.0", default-features = false }`, no transitive dependency |
-| size | 2,159 lines of `src` in 11 files, 1,231 lines of tests, 4 fixture files of 16.5 to 17 KiB |
-| identity values | no `INTERFACE_ID` and no magic of its own; `VERSION` 1, with a provisional name. See [Identity values](#identity-values) |
+| size | about 2,200 lines of `src` in 11 files, 1,231 lines of tests, 4 fixture files of 16.5 to 17 KiB |
+| identity values | no `INTERFACE_ID` and no magic of its own; `VERSION` 1, with a ratified name. See [Identity values](#identity-values) |
 | consumers in nife | `components`, `boot_slot`, `redoxfs_server`, `tools/redoxfs_host`, `uefi_loader`, `xtask` and the `fuzz` workspace, all by path |
 
 ## What was run
@@ -43,11 +43,11 @@ Each check ran in this lane's worktree, on this branch.
 
 | check | result |
 |---|---|
-| `script/crate-standalone globally_unique_identifier_partition_table` | one failure, `names`: 82 names not ratified. The build on 1.89 for the host and the three bare-metal targets passes; Kani proves 8 of 8; each of the 8 falsification patches makes its harness fail |
+| `script/crate-standalone globally_unique_identifier_partition_table` | the `names` check failed on the 82 names that had no ratified block, which the ratification below clears. The build on 1.89 for the host and the three bare-metal targets passes; Kani proves 8 of 8; each of the 8 falsification patches makes its harness fail |
 | `patch -p1 --dry-run -F0` for each patch | all 8 apply with no offset and no fuzz. On `main` all 8 applied only at an offset of 16 to 31 lines; this branch cuts them again, and no defect changes |
 | `script/crate-move --dry-run` | the copy builds and tests on 1.89 for every target, and all 8 regenerated patches apply exactly. Three findings: two in the template's scaffold, and 18 lines naming nife, 5 of them the scaffold's and 13 the crate's "nife data" and "nife boot slot" strings (decision 1) |
 | `cargo test --release` | 58 tests and 4 doctests pass, the README's included; one exhaustive sweep is `#[ignore]` at 163 seconds and did not run |
-| `script/names` and `python3 helpers/name_release.py --draft` | 6 names ratified with the crate, 1 recorded, 3 provisional and 77 with no block |
+| `python3 helpers/name_release.py --draft` | 50 names ratified, 1 recorded (`REVISION`), none provisional, and 52 with no block (modules and items with no `Name:` paragraph, which the standalone check does not refuse) |
 | the template's checks (`vendor/crate-workflows/helpers/`, `--manifest Cargo.toml` over `src/*.rs`) | `unit_symbols`, `question_shape`, `british_spelling`: 432 names, 0 refused. `spelled_out`: 1, a test function. `register_names`: 10, five of them public. `abbreviations` (report only): 72 components, chiefly `lba`, `mbr` and `guid` |
 | `helpers/lint_externalized_crates.py` | 21 hits, under its ceiling, which this branch lowers from 23 |
 | `script/crate-review-packet` | the facts behind the tables here |
@@ -59,9 +59,9 @@ Not run, and so not claimed: the stranger test, mutation (the baseline row recor
 
 | kind | items |
 |---|---|
-| table | `PartitionTable`: `parse`, `create`, `check_backup`, `check_protective_master_boot_record`, `write_protective_master_boot_record`, `write_primary_header`, `write_backup_header`, and 14 readers (`header`, `disk_guid`, `block_bytes`, `block_count`, `first_usable_logical_block_address`, `last_usable_logical_block_address`, `backup_header_logical_block_address`, `primary_entry_logical_block_address`, `backup_entry_logical_block_address`, `entry_array_blocks`, `entry_count`, `entry_array`, `entry`, `partitions`) |
+| table | `PartitionTable`: `parse`, `create`, `check_backup`, `check_protective_master_boot_record`, `write_protective_master_boot_record`, `write_primary_header`, `write_backup_header`, and 14 readers (`header`, `disk_guid`, `block_bytes`, `block_count`, `first_usable_logical_block_address`, `last_usable_logical_block_address`, `backup_header_logical_block_address`, `primary_entry_array_logical_block_address`, `backup_entry_array_logical_block_address`, `entry_array_blocks`, `entry_count`, `entry_array`, `get`, `partitions`) |
 | header | `header::Header` with nine public fields, `decode`, `encode_into`, `SIGNATURE`, `REVISION` |
-| entry | `entry::Entry` with six public fields, `UNUSED`, `new`, `with_name`, `is_used`, `blocks`, `name_utf8`, `decode`, `encode`, `overlaps`; `ENTRY_BYTES`, `NAME_UNITS` and three `ATTR_` bits |
+| entry | `entry::Entry` with six public fields, `UNUSED`, `new`, `with_name`, `is_used`, `blocks`, `name_utf8`, `decode`, `encode`, `overlaps`; `ENTRY_BYTES`, `NAME_UNITS` and three `ATTRIBUTE_` bits |
 | GUIDs | `guid::from_disk`, `guid::to_disk`, the `Uuid` re-export, and `guid::types` with six constants and `name` (nife's two type GUIDs are in `nife_partition_types`) |
 | master boot record | `master_boot_record::write`, `master_boot_record::validate`, `PROTECTIVE_OPERATING_SYSTEM_TYPE` |
 | reads | `span::Span { first_block, blocks, offset }`, `covering`, `buffer_bytes` |
@@ -76,7 +76,7 @@ What a stranger may find surprising:
 
 - `types::NIFE_DATA` and `types::NIFE_BOOT` are nife's own partition types, and `types::name`
   answers "nife data" and "nife boot slot" for them. Decision 1 below asks where they live.
-- `Error`'s `Display` prints `BackupMismatch` and `MbrProblem` with `{:?}`, so a person reads
+- `Error`'s `Display` prints `BackupMismatch` and `MasterBootRecordProblem` with `{:?}`, so a person reads
   "the backup header disagrees about MyLba". Neither has a `Display` of its own.
 - `Error` implements `Display` but not `core::error::Error`, and no enum is `#[non_exhaustive]`.
 - `#![allow(missing_docs)]` covers 23 undocumented items: 18 fields of `Error` variants, four
@@ -106,40 +106,34 @@ The CRC harnesses stop at 8 bytes, and the tests cover the real lengths.
 
 ## Names
 
-Ratified before the rename: `from_disk` and `to_disk` (#1795), `PROTECTIVE_OPERATING_SYSTEM_TYPE`
-(#2797) and the crate. `MINIMUM_BLOCK_BYTES` and `MAXIMUM_BLOCK_BYTES` replace two names #2797
-ratified, so the release review reopens them. `REVISION` is recorded, the specification's field.
-The ratification is one pull request with the table `name_release.py --draft` prints.
+The architect ratified the crate's names on 2026-11-20 (UTC), the whole table as built and the seven
+names that were only proposed. Every `Name:` block in the crate reads ratified, and the ratification
+is one pull request carrying the table `helpers/name_release.py --draft` prints. `MINIMUM_BLOCK_BYTES`
+and `MAXIMUM_BLOCK_BYTES` replace two names #2797 ratified, so they are the ones a release review
+reopens. `REVISION` is recorded, the specification's field. The crate has no alias for an earlier
+nife spelling, since nothing has been released.
 
-The crate carries decisions 1, 2 and 5 of
-[milestone 1093 (what an outside maintainer would fix before 0.1.0)](../../design/roadmap/1093-globally-unique-identifier-partition-table-outside-review.md)
-as provisional names, each with a `Name:` block. The architect ratifies nothing here, and does it
-later, one name at a time. The rows below say what stands, and what is still only proposed.
-
-| # | items | state |
+| # | items | name |
 |---|---|---|
-| 1 | `types::NIFE_DATA`, `types::NIFE_BOOT` | moved to the crate `nife_partition_types` (provisional name), values unchanged; `types::name` stays here and knows only the well-known types, and `nife_partition_types::name` adds nife's two |
-| 2 | every `lba` component: the five `Header` fields, `Entry::first_lba` and `last_lba`, `PRIMARY_HEADER_LBA`, the table readers, `BackupMismatch::MyLba` to `EntryArrayLba`, `MbrProblem::StartLba` and `SizeLba` | built, spelled `logical_block_address`, each specification spelling a `#[doc(alias)]` |
-| 3 | `mbr`, `MbrProblem`, `Error::Mbr`, `check_protective_mbr`, `write_protective_mbr` | built as `master_boot_record`, `MasterBootRecordProblem`, `Error::MasterBootRecord`, `check_protective_master_boot_record`, `write_protective_master_boot_record`, with alias `MBR` |
-| 4 | `MINIMUM_BLOCK_SIZE`, `MAXIMUM_BLOCK_SIZE` | built as `MINIMUM_BLOCK_BYTES`, `MAXIMUM_BLOCK_BYTES` |
-| 5 | `entry::SIZE`, `SIZE_U32`, `HEADER_SIZE`, `at::HEADER_SIZE`, `at::ENTRY_SIZE` | built as `ENTRY_BYTES`, `ENTRY_BYTES_U32`, `HEADER_BYTES`, `at::HEADER_BYTES`, `at::ENTRY_BYTES` |
-| 6 | `Header::entry_size` | built as `entry_bytes`, alias `SizeOfPartitionEntry`; `BackupMismatch::EntrySize` and `Error::EntrySize` are not reached by the rulings and keep their names, proposed `EntryBytes` |
-| 7 | `GloballyUniqueIdentifierPartitionTable`, `block_size`, `create`'s parameter `block_size` | built as `PartitionTable` (no alias), `block_bytes` |
-| 8 | `ATTR_REQUIRED`, `ATTR_NO_BLOCK_IO`, `ATTR_LEGACY_BIOS_BOOTABLE` | not ruled; proposed `ATTRIBUTE_REQUIRED_PARTITION`, `ATTRIBUTE_NO_BLOCK_IO_PROTOCOL`, `ATTRIBUTE_LEGACY_BIOS_BOOTABLE`, each aliased to UEFI's attribute name |
-| 9 | the two entry-array readers | spelled `primary_entry_logical_block_address` and `backup_entry_logical_block_address`; proposed `primary_entry_array_logical_block_address` and `backup_entry_array_logical_block_address`, since the header field is `entry_array_logical_block_address` |
-| 10 | `PartitionTable::entry(index)` | not ruled; proposed `get` |
-| 11 | `Span::covering`'s and `buffer_bytes`'s parameter `transfer` | not ruled; proposed `transfer_bytes` |
-| 12 | `Error::PartitionsOverlap { a, b }` | not ruled; proposed `first`, `second` |
-| 13 | `Header` and `Entry` fields that mirror UEFI's | the `LBA` aliases exist; `DiskGUID`, `NumberOfPartitionEntries`, `PartitionEntryArrayCRC32`, `PartitionTypeGUID`, `UniquePartitionGUID` stay proposed |
-| 14 | `APPLE_HFS_PLUS`, `APPLE_APFS` | no rename; aliases `Mac OS Extended` and `Apple File System` stay proposed |
-| 15 | the private test | built as `the_three_reads_a_partition_table_reader_makes` |
-| 16 | `VERSION` | provisional; see [Identity values](#identity-values) |
+| 1 | `types::NIFE_DATA`, `types::NIFE_BOOT` | moved to the crate `nife_partition_types`, values unchanged; `types::name` here knows only the well-known types |
+| 2 | every `lba` component: the five `Header` fields, `Entry::first_logical_block_address` and `last_logical_block_address`, `PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS`, the table readers, `BackupMismatch::EntryArrayLogicalBlockAddress` | spelled `logical_block_address`, each specification spelling a `#[doc(alias)]` |
+| 3 | `master_boot_record`, `MasterBootRecordProblem`, `Error::MasterBootRecord`, `check_protective_master_boot_record`, `write_protective_master_boot_record` | alias `MBR` |
+| 4 | `MINIMUM_BLOCK_BYTES`, `MAXIMUM_BLOCK_BYTES` | unit in the name |
+| 5 | `ENTRY_BYTES`, `ENTRY_BYTES_U32`, `HEADER_BYTES`, `at::HEADER_BYTES`, `at::ENTRY_BYTES` | unit in the name |
+| 6 | `Header::entry_bytes`, `Error::EntryBytes`, `BackupMismatch::EntryBytes` | alias `SizeOfPartitionEntry` on the field |
+| 7 | `PartitionTable`, `block_bytes`, `create`'s parameter `block_bytes` | no alias |
+| 8 | `ATTRIBUTE_REQUIRED_PARTITION`, `ATTRIBUTE_NO_BLOCK_IO_PROTOCOL`, `ATTRIBUTE_LEGACY_BIOS_BOOTABLE` | aliases `Required Partition`, `No Block IO Protocol`, `Legacy BIOS Bootable`, UEFI 2.10 section 5.3's attribute names, checked against the specification |
+| 9 | `primary_entry_array_logical_block_address`, `backup_entry_array_logical_block_address` | the header field is `entry_array_logical_block_address` |
+| 10 | `PartitionTable::get(index)` | the standard library's word for a checked lookup |
+| 11 | the parameter `transfer_bytes` of `Span::covering` and `buffer_bytes` | unit in the name |
+| 12 | `Error::PartitionsOverlap { first, second }` | the lower index first |
+| 13 | `Header` and `Entry` fields that mirror UEFI's | aliases `MyLBA`, `AlternateLBA`, `FirstUsableLBA`, `LastUsableLBA`, `PartitionEntryLBA`, `StartingLBA`, `EndingLBA`, `SizeOfPartitionEntry`, `DiskGUID`, `NumberOfPartitionEntries`, `PartitionEntryArrayCRC32`, `PartitionTypeGUID`, `UniquePartitionGUID`, each checked against Tables 5.5 and 5.6 |
+| 14 | `APPLE_HFS_PLUS`, `APPLE_APFS` | no rename; aliases `Mac OS Extended` and `Apple File System` |
+| 15 | the private test | `the_three_reads_a_partition_table_reader_makes` |
+| 16 | `VERSION` | see [Identity values](#identity-values) |
 
-The crate's documentation already quotes most of row 13's spellings. `MyLBA`,
-`PartitionEntryArrayCRC32` and row 8's attribute names come from memory of UEFI 2.10 section 5.3.
-The lane that adds them checks each against the specification first. Rows 4 to 12 are
-two-way doors: nothing outside nife has acted on the crate. Row 13 and row 14 add aliases and break
-nothing.
+The aliases in rows 8 and 13 were read against UEFI 2.10 section 5.3 on 2026-11-20 (UTC). Row 14's
+two aliases are Apple's product names, which the specification does not carry.
 
 ## Identity values
 
@@ -201,27 +195,33 @@ For the move lane:
 | `script/crate-move`'s nife check skips a word joined by an underscore, so it passes `NIFE_DATA` that the externalized-crates lint catches | the runbook's `BUGS`; the constants have left the crate |
 | convert the seven path dependencies; move the fuzz target; read the 37 listed files | move lane |
 
+## What still blocks
+
+Nothing blocks the move to `nifeos/globally_unique_identifier_partition_table`, which waits only for
+the move lane. The first tag has one condition: a bounded totality harness for `parse` (a 512-byte
+block and a one-entry array) must exist by then, or this package records why it cannot finish. Today
+the fuzz target is the only machine check on `parse`. The eight Kani harnesses do not cover it.
+
 ## Open questions
 
-1. Whether `parse` should get a totality harness bounded small enough to finish (a 512-byte block,
-   a one-entry array). Recommendation: try it in the crate repository, since `parse` is the
-   hostile-input surface and the fuzz target is its only machine check today. The maintainer can
-   decide it.
+1. Whether `parse` can get a totality harness bounded small enough to finish (a 512-byte block, a
+   one-entry array). The ruling of 2026-11-20 (UTC) makes it a condition of the crate's first tag,
+   not of the repository: the harness exists before the tag, or this package records why it cannot
+   finish. Until then the fuzz target is the only machine check on `parse`; the eight Kani harnesses
+   do not reach it.
 2. Whether `VERSION` should stay, since nothing reads it and 956 classes the crate as no format.
    Recommendation: keep it, since a released package can then state which reader it carries, and
    removing it later costs one minor version. The maintainer can decide it.
 
 ## Decisions for the architect
 
-The milestone's decisions 1 to 5 are ruled, and the crate carries them as provisional names. What remains is the
-architect's:
-
-1. Ratify the provisional names, one at a time, and rule the names no decision reaches (rows 6, 8
-   to 14 above).
-2. Clear the move to `nifeos/globally_unique_identifier_partition_table` after the ratification,
-   with no tag and no publication.
+None open. The architect ratified the names and cleared the repository
+`nifeos/globally_unique_identifier_partition_table` on 2026-11-20 (UTC), as `publish = false`, with
+no tag and no publication.
 
 ## Recommendation
 
-Not cleared. The crate builds, proves and passes its patches on its own, points nowhere into nife,
-and carries no nife type GUID. Its names are provisional until ratified.
+Cleared for the move on 2026-11-20 (UTC), with no tag and no publication. The crate builds, proves
+and passes its patches on its own, points nowhere into nife, carries no nife type GUID, and every
+name in it is ratified. The condition on the first tag is the bounded `parse` totality harness, or a
+recorded reason it cannot finish, as stated under "What still blocks".
