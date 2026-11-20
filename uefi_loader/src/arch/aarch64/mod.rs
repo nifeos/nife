@@ -364,7 +364,10 @@ struct Madt {
 fn read_madt(body: &[u8]) -> Madt {
     let mut distributor = 0u64;
     let mut version = 0u8;
-    let mut redistributors = Region { start: 0, size_bytes: 0 };
+    let mut redistributors = Region {
+        start: 0,
+        size_bytes: 0,
+    };
     let mut cpu_interface = 0u64;
     let mut per_cpu_redistributor = 0u64;
     let mut cpus = [device_tree_from_acpi::Cpu::default(); device_tree_from_acpi::MAXIMUM_CPUS];
