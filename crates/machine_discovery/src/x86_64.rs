@@ -369,7 +369,7 @@ pub const TABLE: [Row; 4] = [
         why: "the hardware bit W^X is made of; without it the page tables' no-execute is a comment",
     },
     Row {
-        name: "system call",
+        name: "system_call",
         bit: SYSTEM_CALL,
         gate: Gate::Refuse,
         cite: "CPUID.80000001H:EDX[11]",

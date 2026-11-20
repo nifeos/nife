@@ -91,7 +91,7 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
     // system call ABI)), and the six argument registers carry the six-word ABI in both directions.
     unsafe {
         core::arch::asm!(
-            "system call",
+            "syscall",
             in("rax") number,
             inlateout("rdi") a[0] => w0,
             inlateout("rsi") a[1] => w1,

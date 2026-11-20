@@ -79,7 +79,7 @@ unsafe fn trap6(nr: u64, a: [u64; 6]) -> [u64; 6] {
     #[cfg(target_arch = "x86_64")]
     unsafe {
         core::arch::asm!(
-            "system call",
+            "syscall",
             in("rax") nr,
             inlateout("rdi") w[0],
             inlateout("rsi") w[1],

@@ -110,7 +110,7 @@ fn null_system_call() {
     // the same reason every other `system_call` site declares them (crates/user_mode_runtime).
     unsafe {
         core::arch::asm!(
-            "system call",
+            "syscall",
             in("rax") 0xFFFFu64,
             lateout("rdi") _,
             lateout("rsi") _, // the other five ABI words, for the aarch64 arm's reason

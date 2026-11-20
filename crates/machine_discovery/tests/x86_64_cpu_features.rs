@@ -39,7 +39,7 @@ fn qemu_max() -> CpuidWords {
 
 /// xenon, an Intel Core i5-7500T: milestone 87 (the x86_64 bare-metal machine), as its boot line
 /// printed it on 2026-10-21 (`cpuid leaves 0..0x16 and 0x80000000..0x80000008`, `features : nx
-/// system call invariant-tsc rdseed`). Only the words the decoder reads are filled in, and the
+/// syscall invariant-tsc rdseed`). Only the words the decoder reads are filled in, and the
 /// hypervisor bit is clear because nothing sits between this part and the kernel.
 fn xenon() -> CpuidWords {
     CpuidWords {
