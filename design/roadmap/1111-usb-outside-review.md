@@ -48,15 +48,15 @@ US one gives. The template's gates are green for the crate's own reasons.
 
 ## Finding status
 
-- P0-1, manifest that cannot stand alone: Open. The move lane writes the literal license and lint
-  table, `rust-version`, description, keywords, categories, readme and a publish comment.
-- P0-2, package name `universal_serial_bus` and its alias: Open. The move lane renames the
-  package, adds `#[doc(alias = "usb")]`, drops the `Name:` block at `src/lib.rs` line 42 and gives
-  the driver a `package =` dependency.
+- P0-1, manifest that cannot stand alone: Done. The manifest carries the literal license and lint
+  table, `rust-version`, description, keywords, categories and readme, with `publish = false`.
+- P0-2, package name `universal_serial_bus` and its alias: Done. The package has the name, each
+  public module carries `#[doc(alias = "usb")]` (rustdoc refuses it at the crate root), and the
+  driver names it with a `package =` dependency.
 - P0-3, 30 names the template gates refuse: Done,
   [#3614](https://github.com/nifeos/nife/pull/3614).
-- P1-4, README, license files, changelog, scaffold files and stranger test: Open. The crate holds
-  only `Cargo.toml`, `src/` and `falsifications/`.
+- P1-4, README, license files, changelog, scaffold files and stranger test: Done in the repository
+  `nifeos/universal_serial_bus`.
 - P1-5, review package and index row: Done,
   [#3614](https://github.com/nifeos/nife/pull/3614)
   ([the package](../../notes/crate-reviews/universal-serial-bus.md)).
@@ -68,7 +68,8 @@ US one gives. The template's gates are green for the crate's own reasons.
   [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-9, duplicated usage releases twice: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
-- P1-10, no fuzz target: Open. The move lane writes two, `find_boot_keyboard` and `changes`.
+- P1-10, no fuzz target: Done. The repository holds two, one for `find_boot_keyboard` and one for
+  `changes`, and its weekly fuzz is on because the crate has no `unsafe` code.
 - P2-11, `control_max_packet` looser than the specification: Done,
   [#3614](https://github.com/nifeos/nife/pull/3614).
 - P2-12, reserved bits of `bEndpointAddress` pass through: Done,
@@ -90,11 +91,13 @@ US one gives. The template's gates are green for the crate's own reasons.
   UTC). [#3614](https://github.com/nifeos/nife/pull/3614) built `Speed`;
   [#3814](https://github.com/nifeos/nife/pull/3814) made `DeviceDescriptor::parse` answer
   `Result<DeviceDescriptor, Refusal>`.
-- Prose acronyms, the 13 findings the review package lists: Open. The move lane expands each at
-  first use.
+- Prose acronyms, the 13 findings the review package lists: Done. Each is expanded at its first use.
 - Clearing the review package: Done (2026-11-19 UTC, option A). The architect cleared the review,
   which approves the public repository `nifeos/universal_serial_bus` with `publish = false`, no tag
-  and no publish. The move waits for nife to merge Decisions 2 and 3.
+  and no publish.
+
+- The move: Done. The repository `nifeos/universal_serial_bus` exists, and nife depends on it by git
+  revision.
 
 ## Open decisions
 

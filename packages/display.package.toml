@@ -13,7 +13,6 @@ interfaces = [
     "compositor",
     "video_terminal",
     "glyph_atlas",
-    "universal_serial_bus",
 ]
 crates = ["glyph_atlas_generator"]
 # The fonts the terminal's atlas is drawn from (milestone 142 (a text display good enough that

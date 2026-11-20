@@ -77,7 +77,6 @@ domain_name_resolution_contract = { path = "../crates/domain_name_resolution_con
 package_index = { path = "../crates/package_index" }
 video_terminal = { path = "../crates/video_terminal" }
 line_editor = { path = "../crates/line_editor" }
-universal_serial_bus = { path = "../crates/universal_serial_bus" }
 
 # **The firmware-byte readers** (`acpi_firmware_tables` and `machine_description_from_device_tree`).
 machine_discovery = { path = "../crates/machine_discovery" }
@@ -235,20 +234,6 @@ bench = false
 [[bin]]
 name = "line_editor_handoff"
 path = "fuzz_targets/line_editor_handoff.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "universal_serial_bus_configuration"
-path = "fuzz_targets/universal_serial_bus_configuration.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
-name = "universal_serial_bus_boot_report_changes"
-path = "fuzz_targets/universal_serial_bus_boot_report_changes.rs"
 test = false
 doc = false
 bench = false

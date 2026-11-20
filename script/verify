@@ -516,7 +516,6 @@ pci_configuration_space	36	config-space decode on hostile-device input
 socket_contract	423	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent, and the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
 jh7110_clock_and_reset	98	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
 jh7110_pci_express	2	the PCI Express outbound window encoder round-trips its size, and the root port forwards exactly bus 1 and exactly its memory window
-universal_serial_bus	120	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
 direct_memory_access_validator	124	the DMA-confinement validator, no descriptor escapes the grant
 network_time_protocol	17	the 1900-epoch era pivot, and no hostile packet moves the clock
 domain_name_system	154	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer

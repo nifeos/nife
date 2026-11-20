@@ -285,7 +285,6 @@ timetable register_names 3
 timetable_store abbreviations 14
 timetable_store prose_acronyms 1
 top abbreviations 5
-universal_serial_bus abbreviations 2
 uptime abbreviations 4
 uptime prose_acronyms 2
 uptime readme_acronyms 2

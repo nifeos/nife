@@ -13,7 +13,7 @@ USB keyboard ──► xHCI controller ──DMA, confined by the IOMMU──►
 ```
 
 The driver diffs each eight-byte boot report against the last and turns the difference into Linux
-evdev key codes with `crates/universal_serial_bus`'s `boot_keyboard`. That module's documentation gives the table's
+evdev key codes with `nifeos/universal_serial_bus`'s `boot_keyboard`. That module's documentation gives the table's
 sources and nife's own choices. The driver feeds those through `video_terminal::keymap`,
 the same layout table the virtio keyboard uses. The bytes go to the line discipline's endpoint in
 the framing `input` (the UART) already uses, so the shell cannot tell the two apart and both work at
@@ -27,7 +27,7 @@ once.
 | Take it from the PC firmware (USB Legacy Support), draw the register window, confine its DMA | `kernel/src/extensible_host_controller_interface.rs` | EL1 |
 | What the driver is handed and refused | `kernel/src/user/usb_keyboard_service.rs` | the `Spawn` literal |
 | Reset, rings, enumeration, the keyboard | `components/src/usb_keyboard_driver.rs` | EL0 |
-| Descriptors, setup packets, boot reports | `crates/universal_serial_bus` | host-tested, Kani |
+| Descriptors, setup packets, boot reports | `nifeos/universal_serial_bus` | host-tested, Kani |
 | Register window, handoff, TRBs, rings, contexts, `PORTSC` | `nifeos/extensible_host_controller_interface` | host-tested, Kani |
 | Where the line discipline's endpoint comes from | `crates/system_initializer`, step 3b | the progenitor |
 
@@ -40,7 +40,7 @@ slot 27 and sends `WRITE` on the terminal endpoint through it once the line disc
 The driver halts and resets the controller, lays out the slot array, command ring and event ring in
 its region, and sets it running. Then it takes each connected root port in turn. It resets the port,
 enables a slot, addresses the device, and reads its device and configuration descriptors.
-`crates/universal_serial_bus` walks those, because they are what the device chose to send. A boot keyboard is then
+`nifeos/universal_serial_bus` walks those, because they are what the device chose to send. A boot keyboard is then
 configured, asked for the boot protocol, and given reads queued on its interrupt endpoint.
 
 Next the driver sends its report to the kernel, takes the terminal endpoint, and serves. Each report
@@ -194,7 +194,7 @@ started without it would fault on its first access.
 
 ## Untrusted descriptors
 
-`crates/universal_serial_bus` is the part of the driver that reads untrusted input. Every descriptor and every
+`nifeos/universal_serial_bus` is the part of the driver that reads untrusted input. Every descriptor and every
 report is whatever the device chose to send, and a device is whatever a stranger plugged in. So its
 parsers are total: they bound every walk, check every length before reading through it, and answer
 a `Refusal` that names what was wrong rather than panicking or guessing. Its Kani harnesses prove
@@ -205,7 +205,7 @@ that for every input up to a bound, not only for the inputs a test happened to t
 - Root ports only: a keyboard behind a hub is not found, and neither is a keyboard with a hub
   built into it. `nifeos/extensible_host_controller_interface`'s BUGS.
 - One controller, one keyboard. The first xHCI on the bus, the first boot keyboard on it.
-- No key repeat, no Caps Lock, no LEDs. `crates/universal_serial_bus`'s BUGS.
+- No key repeat, no Caps Lock, no LEDs. `nifeos/universal_serial_bus`'s BUGS.
 - No IOMMU, no USB keyboard. radon has none; a machine whose VT-d tables give the controller to
   a unit this kernel did not bring up gets the refusal line. This is the design, and it is a cost.
 - A device refused after boot is refused silently: the report endpoint carries one message.

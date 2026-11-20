@@ -1868,6 +1868,7 @@ checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 [[package]]
 name = "universal_serial_bus"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/universal_serial_bus?rev=0fbceff0ce9577cf8beb0b82b0f34360a86a5216#0fbceff0ce9577cf8beb0b82b0f34360a86a5216"
 
 [[package]]
 name = "uptime"

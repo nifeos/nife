@@ -38,4 +38,3 @@ pci_configuration_space	crates/pci_configuration_space	0ec368d5b5b7357f0a9a21338
 periodic_deadline	crates/periodic_deadline	3847c01544341364e3e8bc6edd44f5c703dbb5dd	0.68.0	191
 subtree_scope	crates/subtree_scope	e4683040334bd8f920db2f51a2e4e9e6a4ada7f4	0.68.0	5943
 timetable	crates/timetable	d6fe2168f801fd1479e80ffdca95664b63fe0a83	0.68.0	410
-universal_serial_bus	crates/universal_serial_bus	42ec6bb986b778d318bc5af4c7c381ea45d6a5f9	0.68.0	1956
