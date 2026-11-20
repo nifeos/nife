@@ -421,7 +421,7 @@ impl Disk {
         if built.write_primary_header(header_block).is_err() {
             return false;
         }
-        let backup_entry_logical_block_address = built.backup_entry_logical_block_address();
+        let backup_entry_array_logical_block_address = built.backup_entry_array_logical_block_address();
         let backup_header_logical_block_address = built.backup_header_logical_block_address();
 
         let backup_header = &mut scratch.block.0;
@@ -435,9 +435,9 @@ impl Disk {
         // writes so that a table whose array landed and whose header did not fails its own CRC
         // rather than pointing at an array that is not the one it describes.
         self.write(
-            built.primary_entry_logical_block_address(),
+            built.primary_entry_array_logical_block_address(),
             built.entry_array(),
-        ) && self.write(backup_entry_logical_block_address, built.entry_array())
+        ) && self.write(backup_entry_array_logical_block_address, built.entry_array())
             && self.write(backup_header_logical_block_address, backup_header)
             && self.write(gpt::PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, header_block)
             && self.flush()

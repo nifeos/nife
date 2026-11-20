@@ -162,8 +162,8 @@ fn build_device(device: &Path, payload: &[u8], data: (u64, u64), device_blocks: 
     file.write_all_at(&block, table.backup_header_logical_block_address() * LBA)
         .unwrap();
     for lba in [
-        table.primary_entry_logical_block_address(),
-        table.backup_entry_logical_block_address(),
+        table.primary_entry_array_logical_block_address(),
+        table.backup_entry_array_logical_block_address(),
     ] {
         file.write_all_at(table.entry_array(), lba * LBA).unwrap();
     }

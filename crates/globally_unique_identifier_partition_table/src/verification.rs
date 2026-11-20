@@ -212,7 +212,7 @@ fn create_never_lays_out_a_table_parse_would_reject() {
     // The backup table lands exactly below the backup header, which is what check_backup
     // compares the backup's own entry_array_logical_block_address against.
     assert_eq!(
-        table.backup_entry_logical_block_address() + span,
+        table.backup_entry_array_logical_block_address() + span,
         table.backup_header_logical_block_address()
     );
 }
@@ -340,17 +340,17 @@ fn the_header_crc_in_pieces_is_the_crc_of_the_whole() {
 /// Falsification: replayable `crates/globally_unique_identifier_partition_table/falsifications/verification.a_span_always_contains_what_was_asked_for.patch`
 #[kani::proof]
 fn a_span_always_contains_what_was_asked_for() {
-    for transfer in [1, 3, 512, 4096] {
-        a_span_contains_what_was_asked_for_at(transfer);
+    for transfer_bytes in [1, 3, 512, 4096] {
+        a_span_contains_what_was_asked_for_at(transfer_bytes);
     }
 }
 
-fn a_span_contains_what_was_asked_for_at(transfer: u64) {
+fn a_span_contains_what_was_asked_for_at(transfer_bytes: u64) {
     let byte_offset: u64 = kani::any();
     let len: u64 = kani::any();
     let wanted_end = u128::from(byte_offset) + u128::from(len);
-    let t = u128::from(transfer);
-    match span::Span::covering(byte_offset, len, transfer) {
+    let t = u128::from(transfer_bytes);
+    match span::Span::covering(byte_offset, len, transfer_bytes) {
         Some(s) => {
             let start = u128::from(s.first_block) * t;
             let end = start + u128::from(s.blocks) * t;

@@ -128,12 +128,12 @@ pub(super) fn write(arch: &str, boot_file: &Path) -> Result<PathBuf, String> {
     put(&mut out, PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, &block)?;
     put(
         &mut out,
-        table.primary_entry_logical_block_address(),
+        table.primary_entry_array_logical_block_address(),
         table.entry_array(),
     )?;
     put(
         &mut out,
-        table.backup_entry_logical_block_address(),
+        table.backup_entry_array_logical_block_address(),
         table.entry_array(),
     )?;
     block.fill(0);

@@ -1,6 +1,6 @@
 //! **Why a table was refused**, and how each refusal reads.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-20 (#3864).
 
 /// Everything this crate refuses, and why.
 ///
@@ -30,7 +30,7 @@ pub enum Error {
         computed: u32,
     },
     /// `SizeOfPartitionEntry` is under 128 or is not a multiple of 8.
-    EntrySize(u32),
+    EntryBytes(u32),
     /// `NumberOfPartitionEntries` is zero, or so large that the array cannot be addressed.
     EntryCount(u32),
     /// The caller supplied fewer entry-array bytes than the header says the array has. Not a
@@ -105,15 +105,15 @@ pub enum Error {
     /// index first.
     PartitionsOverlap {
         /// The lower entry index.
-        a: usize,
+        first: usize,
         /// The higher entry index.
-        b: usize,
+        second: usize,
     },
     /// The backup header disagrees with the primary about something they must agree on.
     Backup(BackupMismatch),
     /// The protective MBR at LBA 0 is wrong. See [`MasterBootRecordProblem`].
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "MBR")]
     MasterBootRecord(MasterBootRecordProblem),
     /// [`PartitionTable::create`](crate::PartitionTable::create) was asked to build a table on a disk with
@@ -147,35 +147,35 @@ pub enum Error {
 pub enum BackupMismatch {
     /// The backup does not think it lives where the primary says it does.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "MyLBA")]
     MyLogicalBlockAddress,
     /// The backup does not point back at the primary.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "AlternateLBA")]
     AlternateLogicalBlockAddress,
     /// Different disk GUIDs: these are two different disks' tables.
     DiskGuid,
     /// `FirstUsableLBA` differs.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "FirstUsableLBA")]
     FirstUsableLogicalBlockAddress,
     /// `LastUsableLBA` differs.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "LastUsableLBA")]
     LastUsableLogicalBlockAddress,
     /// `NumberOfPartitionEntries` differs.
     EntryCount,
     /// `SizeOfPartitionEntry` differs.
-    EntrySize,
+    EntryBytes,
     /// The two copies of the entry array are not the same array.
     EntryArrayCrc,
     /// The backup's array is not immediately below the backup header, where it must be.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "PartitionEntryLBA")]
     EntryArrayLogicalBlockAddress,
 }
@@ -204,7 +204,7 @@ impl core::fmt::Display for Error {
             Error::HeaderCrc { stored, computed } => {
                 write!(f, "header CRC {stored:#010x}, computed {computed:#010x}")
             }
-            Error::EntrySize(n) => write!(f, "entry size {n} is under 128 or not a multiple of 8"),
+            Error::EntryBytes(n) => write!(f, "entry size {n} is under 128 or not a multiple of 8"),
             Error::EntryCount(n) => write!(f, "entry count {n} is unusable"),
             Error::EntryArrayLen { need, have } => {
                 write!(f, "entry array needs {need} bytes, {have} supplied")
@@ -246,7 +246,9 @@ impl core::fmt::Display for Error {
             Error::PartitionOutsideUsable { index } => {
                 write!(f, "partition {index} is outside the usable range")
             }
-            Error::PartitionsOverlap { a, b } => write!(f, "partitions {a} and {b} overlap"),
+            Error::PartitionsOverlap { first, second } => {
+                write!(f, "partitions {first} and {second} overlap")
+            }
             Error::Backup(m) => write!(f, "the backup header disagrees about {m}"),
             Error::MasterBootRecord(p) => write!(f, "the protective MBR is wrong: {p}"),
             Error::DiskTooSmall { blocks, need } => {
@@ -271,7 +273,7 @@ impl core::fmt::Display for BackupMismatch {
             BackupMismatch::FirstUsableLogicalBlockAddress => "FirstUsableLBA",
             BackupMismatch::LastUsableLogicalBlockAddress => "LastUsableLBA",
             BackupMismatch::EntryCount => "NumberOfPartitionEntries",
-            BackupMismatch::EntrySize => "SizeOfPartitionEntry",
+            BackupMismatch::EntryBytes => "SizeOfPartitionEntry",
             BackupMismatch::EntryArrayCrc => "the entry array's CRC",
             BackupMismatch::EntryArrayLogicalBlockAddress => "where its entry array lives",
         })
@@ -302,7 +304,7 @@ mod tests {
                 stored: 1,
                 computed: 2,
             },
-            Error::EntrySize(7),
+            Error::EntryBytes(7),
             Error::EntryCount(0),
             Error::EntryArrayLen { need: 2, have: 1 },
             Error::EntryArrayShape { have: 3 },
@@ -322,7 +324,10 @@ mod tests {
             Error::TableOverlapsUsable,
             Error::PartitionRange { index: 1 },
             Error::PartitionOutsideUsable { index: 1 },
-            Error::PartitionsOverlap { a: 0, b: 1 },
+            Error::PartitionsOverlap {
+                first: 0,
+                second: 1,
+            },
             Error::Backup(BackupMismatch::DiskGuid),
             Error::MasterBootRecord(MasterBootRecordProblem::Signature),
             Error::DiskTooSmall {

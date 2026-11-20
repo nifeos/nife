@@ -45,7 +45,7 @@ use uuid::Uuid;
 
 /// The smallest logical block a GPT disk can have, and what almost every disk reports.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 pub const MINIMUM_BLOCK_BYTES: usize = 512;
 
 /// The format's version: the generation of this crate's reading and writing of the two on-disk
@@ -54,20 +54,20 @@ pub const MINIMUM_BLOCK_BYTES: usize = 512;
 /// this constant is a declaration, so assembly can check what a package was built against. Nothing
 /// checks it at run time.
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-20 (#3864).
 pub const VERSION: u32 = 1;
 
 /// The largest logical block this crate handles. 4096 is what a native-4K drive reports, and the
 /// header still occupies exactly one block, so the only thing that changes is the LBA arithmetic.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 pub const MAXIMUM_BLOCK_BYTES: usize = 4096;
 
 /// The primary header always lives at LBA 1, immediately after the protective MBR. Not a
 /// convention: the spec fixes it, because it is the one address a reader can know before it has
 /// read anything.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 pub const PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS: u64 = 1;
 
 /// Entries in a table written by [`PartitionTable::create`] with a
@@ -98,7 +98,7 @@ pub const fn is_block_size_ok(len: usize) -> bool {
 /// The record and its check are [`::master_boot_record::protective`]'s; this module fits them to a
 /// block of any accepted size.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 #[doc(alias = "MBR")]
 pub mod master_boot_record;
 

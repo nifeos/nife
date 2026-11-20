@@ -10,7 +10,7 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/entry.rs b/cr
 index 9aff667e7..9a15a97ad 100644
 --- a/crates/globally_unique_identifier_partition_table/src/entry.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/entry.rs
-@@ -156,7 +156,7 @@ impl Entry {
+@@ -161,7 +161,7 @@ impl Entry {
          for ch in char::decode_utf16(self.name[..units].iter().copied()) {
              let ch = ch.unwrap_or(char::REPLACEMENT_CHARACTER);
              let len = ch.len_utf8();

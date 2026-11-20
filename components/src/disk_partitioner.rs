@@ -220,8 +220,8 @@ fn partition() -> ! {
     let steps: [(u64, Option<&[u8]>); 5] = [
         (0, None),                                    // the protective MBR
         (PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, None), // the primary header
-        (table.primary_entry_logical_block_address(), Some(entries)),
-        (table.backup_entry_logical_block_address(), Some(entries)),
+        (table.primary_entry_array_logical_block_address(), Some(entries)),
+        (table.backup_entry_array_logical_block_address(), Some(entries)),
         (table.backup_header_logical_block_address(), None), // the backup header, on the last block
     ];
     for (n, (lba, bytes)) in steps.iter().enumerate() {
@@ -290,7 +290,7 @@ fn verify() -> ! {
 
     // The backup, read as its own I/O at the far end of the disk, which is what says whether the
     // two copies this program wrote actually agree on the platter.
-    let backup_lba = table.backup_entry_logical_block_address();
+    let backup_lba = table.backup_entry_array_logical_block_address();
     let backup_blocks = block_count.saturating_sub(backup_lba);
     let tail = backup();
     if backup_blocks > 1
