@@ -199,7 +199,7 @@ otherwise.
    reaches. The sibling `environment_contract` tests its reader through `ConfigPage::new(page.as_ptr()
    as u64)` in a documentation test. Here nothing exercises the raw-pointer path, so Miri in the
    weekly job would have nothing to check.
-   Evidence: line 195; `crates/environment_contract/src/lib.rs` lines 199 and 324.
+   Evidence: line 195; the `environment_contract` package's `src/lib.rs` lines 199 and 324.
    Change: one test that builds a page and reads it back through
    `from_virtual_address(page.as_ptr() as u64)`, asserting the same argv the slice parser gives;
    a second that reads a zeroed frame the same way and gets `EMPTY`.

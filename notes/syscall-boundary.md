@@ -131,7 +131,7 @@ one rollback.
   multiply checked as well as the add. An unchecked multiply wraps for a `count` near a multiple of
   2^52, gives a `last_va` a few pages above `va`, and admits a run spanning the address space.
 - The pages between need no check, because the user half is a contiguous prefix of the address
-  space. On aarch64 `is_user_page_va` is `va & 0xfff == 0 && va >> 48 == 0`, so an aligned address
+  space. On aarch64 `is_user_page_virtual_address` is `va & 0xfff == 0 && va >> 48 == 0`, so an aligned address
   between two user addresses is itself one. A widening of `Half::Low` would break this silently.
 - All or nothing. A failure partway unmaps and forgets what the call had mapped, so a caller
   told `OutOfMemory` or `BadPointer` never has to ask how much landed. A half-mapped shared surface

@@ -1,21 +1,21 @@
 Falsifies `page_tables::aarch64::the_user_va_gate_admits_only_the_aligned_low_half`.
 
-The defect: `is_user_page_va` drops the page-alignment conjunct and keeps only the
+The defect: `is_user_page_virtual_address` drops the page-alignment conjunct and keeps only the
 half test. Every honest caller passes an aligned address, so nothing in the system
 behaves differently, and what the gate stops accepting is the hostile case: a user
 program naming a virtual address a few bytes inside a page. A mapping request at
-`va` and one at `va + 8` then both resolve to the same leaf, so a second map can
+`virtual_address` and one at `virtual_address + 8` then both resolve to the same leaf, so a second map can
 silently replace the first, and the arithmetic the walk does on an unaligned VA
 was never meant to see one.
 
-Expected to fail: `assert_eq!(is_user_page_va::<Aarch64>(va), va & 0xfff == 0 && va
+Expected to fail: `assert_eq!(is_user_page_virtual_address::<Aarch64>(virtual_address), virtual_address & 0xfff == 0 && virtual_address
 >> 48 == 0)`, on any low-half address that is not page-aligned. The second
-assertion in the harness, `assert!(is_in_half(Half::Low, va) && !is_in_half(Half::High,
-va))`, still holds under this defect, because the half test is exactly what was
+assertion in the harness, `assert!(is_in_half(Half::Low, virtual_address) && !is_in_half(Half::High,
+virtual_address))`, still holds under this defect, because the half test is exactly what was
 kept.
 
 **The gate is shared and the proof is not**, which is the point of recording this
-three times. `is_user_page_va` is one generic function in `lib.rs`; DECISIONS §19
+three times. `is_user_page_virtual_address` is one generic function in `lib.rs`; DECISIONS §19 (architectural parity)
 makes each ISA state the property itself, so this one defect is caught three
 times over. The `sv39` and `x86_64` records break the same function in two other
 ways, so the three patches are not copies of each other.
@@ -26,9 +26,9 @@ diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page
 @@ -40,7 +40,7 @@
  /// assert_eq!(PAGE_SIZE, 4096);
  /// ```
- pub fn is_user_page_va<F: PageFormat>(va: u64) -> bool {
--    F::is_in_half(Half::Low, va) && va.is_multiple_of(PAGE_SIZE)
-+    F::is_in_half(Half::Low, va)
+ pub fn is_user_page_virtual_address<F: PageFormat>(virtual_address: u64) -> bool {
+-    F::is_in_half(Half::Low, virtual_address) && virtual_address.is_multiple_of(PAGE_SIZE)
++    F::is_in_half(Half::Low, virtual_address)
  }
  
  /// **The seam between the shared walk and a hardware page-table format.**

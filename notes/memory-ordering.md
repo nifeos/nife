@@ -34,12 +34,12 @@ the number from `script/lint` and not from here.
 
 63 sites is a small number for an SMP kernel on two weakly ordered ISAs, and the reason is
 DECISIONS §9 (locking). Almost everything shared is behind a ranked interrupt-safe lock, and
-`InterruptSafeMutex` wraps `spin_lock::SpinLock`, which locks with `compare_exchange(false, true,
+`InterruptSafeMutex` wraps `test_and_set_lock::SpinLock`, which locks with `compare_exchange(false, true,
 Acquire, Relaxed)` and unlocks with `store(false, Release)`. So the overwhelming majority of this
-kernel's happens-before edges are supplied by one acquire/release pair in `crates/spin_lock`, which
+kernel's happens-before edges are supplied by one acquire/release pair in `crates/test_and_set_lock`, which
 no call site names and no grep over the kernel's call sites can find. Loom checks that pair, with
 two and three contending threads ([kernel-dependency-unsafe.md](kernel-dependency-unsafe.md),
-"spin_lock, the in-tree lock").
+"test_and_set_lock, the in-tree lock").
 
 That fact runs through every adjudication below, so it is worth stating as a rule:
 
@@ -244,7 +244,7 @@ If there is no matching fence, say what the edge is and name it:
   C11-model argument about happens-before, and so is loom's. `notes/interleaving.md` (milestone 80)
   says the same thing three times and it is worth repeating a fourth: a failure either tool reports
   is real, a clean result is not a proof about the silicon.
-- **The rendezvous argument rests on `crates/spin_lock`, and loom's proof of it is a C11 proof.**
+- **The rendezvous argument rests on `crates/test_and_set_lock`, and loom's proof of it is a C11 proof.**
   A change that weakens the lock's Acquire compare-exchange or Release store fails
   `script/interleaving-check`; a lock that keeps both orderings and is still wrong for aarch64 or
   riscv64 silicon fails nothing, as for every loom model in the tree.

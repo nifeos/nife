@@ -8,7 +8,7 @@ different files with no shared constant between them: `index` masks a literal `0
 `PageTable` is `[u64; ENTRIES]`. Shrink one and the walk writes off the end of a table with
 nothing else in the crate objecting.
 
-Expected to fail: `assert!(Ia32e::index(va, level) < crate::ENTRIES)`, for any `va` whose
+Expected to fail: `assert!(Ia32e::index(virtual_address, level) < crate::ENTRIES)`, for any `virtual_address` whose
 selected field is 256 or more. A wrong `ENTRIES` also gives `PageTable` the wrong size, but
 nothing in the crate asserts that size, which is the point.
 

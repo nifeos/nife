@@ -1,7 +1,7 @@
 Falsifies the `redoxfs_server_session` fuzz target's admission rule.
 
 The defect: the fail-open arm milestone 726 (an unknown badge fails closed in subtree_scope)
-removed, restored. `Bindings::of` folds a nonzero badge at or past the table onto badge 0 again, so
+removed, restored. `Bindings::binding` folds a nonzero badge at or past the table onto badge 0 again, so
 a badge the file server has no window for carries the whole endpoint's authority.
 
 Expected to fail: "badge 8 (Revoked) succeeded at op ..." (or badge 18446744073709551615), the
@@ -19,13 +19,12 @@ Measured 2026-10-04 (UTC) on an M-series Mac, from an empty corpus: see notes/fu
 diff --git a/crates/subtree_scope/src/lib.rs b/crates/subtree_scope/src/lib.rs
 --- a/crates/subtree_scope/src/lib.rs
 +++ b/crates/subtree_scope/src/lib.rs
-@@ -246,9 +246,6 @@ impl<const B: usize> Bindings<B> {
-     /// What `badge` is. Badge 0 is always [`Binding::Open`]; a nonzero badge at or past `B` is
-     /// always [`Binding::Revoked`].
-     pub fn of(&self, badge: u64) -> Binding {
--        if badge != 0 && badge >= B as u64 {
--            return Binding::Revoked;
--        }
+@@ -316,7 +316,7 @@
          match Self::index(badge) {
-             0 => Binding::Open,
-             i => self.state[i],
+             Some(0) => Binding::Unbound,
+             Some(i) => self.state[i],
+-            None => Binding::Revoked,
++            None => Binding::Unbound,
+         }
+     }
+ 

@@ -11,15 +11,14 @@ not enough and the bit pattern is asserted as a literal.
 Expected to fail: `assert_eq!(block & 0b11, 0b01, "not a block descriptor")`.
 
 diff --git a/crates/page_tables/src/aarch64.rs b/crates/page_tables/src/aarch64.rs
-index 497feba6..9a543b50 100644
+index 63f476ed4..3593917b4 100644
 --- a/crates/page_tables/src/aarch64.rs
 +++ b/crates/page_tables/src/aarch64.rs
-@@ -173,7 +173,7 @@ impl PageFormat for Aarch64 {
-         match size {
-             PageSize::Size4KiB => Some(Self::leaf_entry(pa, flags)),
-             PageSize::Size2MiB | PageSize::Size1GiB => {
--                Some((pa & ADDR_MASK & !(size.bytes() - 1)) | Self::attrs(flags) | VALID)
-+                Some((pa & ADDR_MASK & !(size.bytes() - 1)) | Self::attrs(flags) | TABLE_OR_PAGE | VALID)
-             }
+@@ -201,6 +201,7 @@ impl PageFormat for Aarch64 {
+             PageSize::TwoMebibytes | PageSize::OneGibibyte => Some(
+                 (physical_address & ADDR_MASK & !(size.bytes() - 1))
+                     | Self::attributes(flags)
++                    | TABLE_OR_PAGE
+                     | VALID,
+             ),
          }
-     }

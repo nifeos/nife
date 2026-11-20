@@ -8,18 +8,18 @@ failure a completeness property exists to catch: a direct map in 2 MiB leaves wh
 the machine offered 1 GiB ones.
 
 Expected to fail: `assert!(literal_bytes(size) >= want, ...)` with `candidate` and
-`largest` both `Size1GiB` and a 1 GiB-aligned span of at least 1 GiB.
+`largest` both `OneGibibyte` and a 1 GiB-aligned span of at least 1 GiB.
 
 diff --git a/crates/page_tables/src/page_size.rs b/crates/page_tables/src/page_size.rs
-index b0b98588b..9f14dd746 100644
+index cf9e4a78a..5dcf805da 100644
 --- a/crates/page_tables/src/page_size.rs
 +++ b/crates/page_tables/src/page_size.rs
-@@ -62,7 +62,7 @@ impl PageSize {
-             (va | pa) & (bytes - 1) == 0 && remaining >= bytes
+@@ -75,7 +75,7 @@ impl PageSize {
+             (virtual_address | physical_address) & (bytes - 1) == 0 && remaining >= bytes
          }
          let allowed = largest.levels_above_bottom();
--        if allowed >= 2 && fits(va, pa, remaining, PageSize::Size1GiB) {
-+        if allowed >= 3 && fits(va, pa, remaining, PageSize::Size1GiB) {
-             PageSize::Size1GiB
-         } else if allowed >= 1 && fits(va, pa, remaining, PageSize::Size2MiB) {
-             PageSize::Size2MiB
+-        if allowed >= 2
++        if allowed >= 3
+             && fits(
+                 virtual_address,
+                 physical_address,
