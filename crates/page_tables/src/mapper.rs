@@ -71,7 +71,7 @@ impl core::error::Error for MapError {}
 ///
 /// # Safety contract
 ///
-/// The mapper dereferences physical addresses through `phys_to_ptr`. That is sound while the MMU is
+/// The mapper dereferences physical addresses through `physical_to_pointer`. That is sound while the MMU is
 /// off, so an address is a physical one (how the first table is built), or while physical memory
 /// is identity- or direct-mapped by a known transform (how tables are edited afterwards). The host
 /// tests pass the identity, since a host allocation's address serves as a physical one.
@@ -83,8 +83,8 @@ where
 {
     root: u64,
     half: Half,
-    alloc_page_frame: A,
-    phys_to_ptr: P,
+    allocate_page_frame: A,
+    physical_to_pointer: P,
     _fmt: PhantomData<F>,
 }
 
@@ -95,21 +95,26 @@ where
     F: PageFormat,
 {
     /// # Safety
-    /// `root` must be a zeroed, page-aligned frame, and `phys_to_ptr` must satisfy the contract in
+    /// `root` must be a zeroed, page-aligned frame, and `physical_to_pointer` must satisfy the contract in
     /// the type's docs.
     ///
-    /// Every frame `alloc_page_frame` returns must also be page-aligned, owned exclusively by this
+    /// Every frame `allocate_page_frame` returns must also be page-aligned, owned exclusively by this
     /// mapper from the moment it is returned (no live leaf maps it, and nothing else holds a
-    /// reference into it), and reachable through `phys_to_ptr`. The safe methods zero each such
+    /// reference into it), and reachable through `physical_to_pointer`. The safe methods zero each such
     /// frame through that pointer, so a frame that breaks any of these makes safe code reach
     /// undefined behavior. A misaligned frame is refused with [`MapError::Misaligned`] before it is
     /// touched; the rest the mapper cannot check.
-    pub unsafe fn new(root: u64, half: Half, alloc_page_frame: A, phys_to_ptr: P) -> Self {
+    pub unsafe fn new(
+        root: u64,
+        half: Half,
+        allocate_page_frame: A,
+        physical_to_pointer: P,
+    ) -> Self {
         Self {
             root,
             half,
-            alloc_page_frame,
-            phys_to_ptr,
+            allocate_page_frame,
+            physical_to_pointer,
             _fmt: PhantomData,
         }
     }
@@ -118,14 +123,14 @@ where
     /// the walk reads whatever garbage was in RAM and follows it. A misaligned frame is refused
     /// before it is written through.
     fn fresh_table(&mut self) -> Result<u64, MapError> {
-        let new = (self.alloc_page_frame)().ok_or(MapError::OutOfPageFrames)?;
+        let new = (self.allocate_page_frame)().ok_or(MapError::OutOfPageFrames)?;
         if !new.is_multiple_of(PAGE_SIZE) {
             return Err(MapError::Misaligned);
         }
         // SAFETY: a fresh, page-aligned frame the allocator gave up exclusively, reachable through
-        // `phys_to_ptr`, per `new`'s contract.
+        // `physical_to_pointer`, per `new`'s contract.
         unsafe {
-            (*(self.phys_to_ptr)(new)).entries = [0; ENTRIES];
+            (*(self.physical_to_pointer)(new)).entries = [0; ENTRIES];
         }
         Ok(new)
     }
@@ -157,15 +162,15 @@ where
     /// #     p as u64
     /// # };
     /// # let root = fresh();
-    /// # let to_ptr = (|pa: u64| pa as *mut PageTable) as fn(u64) -> *mut PageTable;
+    /// # let to_ptr = (|physical_address: u64| physical_address as *mut PageTable) as fn(u64) -> *mut PageTable;
     /// # // SAFETY: `root` is a fresh, zeroed, 4 KiB-aligned table, and these "physical" addresses ARE
     /// # // host addresses, so the identity cast is the transform.
     /// # let mut m: Mapper<_, fn(u64) -> *mut PageTable, Aarch64> =
     /// #     unsafe { Mapper::new(root, Half::Low, || Some(fresh()), to_ptr) };
     /// // A user text page. There is no writable-and-executable constructor to pass here at all.
     /// m.map(0x40_0000, 0x4000_0000, Flags::user_code()).unwrap();
-    /// let (pa, flags) = m.translate(0x40_0000).unwrap();
-    /// assert!(pa == 0x4000_0000 && flags.is_user_executable() && !flags.is_writable());
+    /// let (physical_address, flags) = m.translate(0x40_0000).unwrap();
+    /// assert!(physical_address == 0x4000_0000 && flags.is_user_executable() && !flags.is_writable());
     ///
     /// // Overwriting a live mapping would go valid to valid and leak the old frame: refused.
     /// assert_eq!(m.map(0x40_0000, 0x5000_0000, Flags::user_data()), Err(MapError::AlreadyMapped));
@@ -178,25 +183,32 @@ where
     /// #     unsafe { drop(Box::from_raw(p)) };
     /// # }
     /// ```
-    pub fn map(&mut self, va: u64, pa: u64, flags: Flags) -> Result<(), MapError> {
+    pub fn map(
+        &mut self,
+        virtual_address: u64,
+        physical_address: u64,
+        flags: Flags,
+    ) -> Result<(), MapError> {
         // The hardware selects the table set from the top bits before it touches an index, so
         // mapping a high address into the low tables would build a mapping the CPU never consults.
-        if !F::is_in_half(self.half, va) {
+        if !F::is_in_half(self.half, virtual_address) {
             return Err(MapError::WrongHalf);
         }
 
-        if !va.is_multiple_of(PAGE_SIZE) || !pa.is_multiple_of(PAGE_SIZE) {
+        if !virtual_address.is_multiple_of(PAGE_SIZE) || !physical_address.is_multiple_of(PAGE_SIZE)
+        {
             return Err(MapError::Misaligned);
         }
 
-        let mut table_pa = self.root;
+        let mut table_physical_address = self.root;
 
         // Descend through every level but the last, creating intermediate tables as we go.
         for level in 0..F::LEVELS - 1 {
-            let i = F::index(va, level);
+            let i = F::index(virtual_address, level);
 
-            // SAFETY: `table_pa` is a page-aligned table, per the type's contract.
-            let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
+            // SAFETY: `table_physical_address` is a page-aligned table, per the type's contract.
+            let entry =
+                unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
 
             if !F::is_present(*entry) {
                 let new = self.fresh_table()?;
@@ -208,19 +220,20 @@ where
                 return Err(MapError::AlreadyMapped);
             }
 
-            table_pa = F::entry_pa(*entry);
+            table_physical_address = F::entry_physical_address(*entry);
         }
 
         // The leaf.
-        let i = F::index(va, F::LEVELS - 1);
+        let i = F::index(virtual_address, F::LEVELS - 1);
         // SAFETY: as above.
-        let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
+        let entry =
+            unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
 
         if F::is_present(*entry) {
             return Err(MapError::AlreadyMapped);
         }
 
-        *entry = F::leaf_entry(pa, flags);
+        *entry = F::leaf_entry(physical_address, flags);
 
         Ok(())
     }
@@ -228,49 +241,52 @@ where
     /// **Map one leaf of `size`**: a 4 KiB page (exactly [`map`](Self::map)), or a 2 MiB or 1 GiB
     /// block written one or two levels up, with the tables above it created as needed.
     ///
-    /// Refuses a misaligned `va` or `pa` (both must be multiples of `size`), a size the format
+    /// Refuses a misaligned `virtual_address` or `physical_address` (both must be multiples of `size`), a size the format
     /// cannot encode ([`MapError::UnsupportedSize`]), and anything already present at or above the
     /// block's slot, **including an empty table**: taking over a table slot would orphan the table
     /// frame, and the mapper does not own frames to free them.
     pub fn map_block(
         &mut self,
-        va: u64,
-        pa: u64,
+        virtual_address: u64,
+        physical_address: u64,
         size: PageSize,
         flags: Flags,
     ) -> Result<(), MapError> {
-        if size == PageSize::Size4KiB {
-            return self.map(va, pa, flags);
+        if size == PageSize::FourKibibytes {
+            return self.map(virtual_address, physical_address, flags);
         }
-        if !F::is_in_half(self.half, va) {
+        if !F::is_in_half(self.half, virtual_address) {
             return Err(MapError::WrongHalf);
         }
         let bytes = size.bytes();
-        if !va.is_multiple_of(bytes) || !pa.is_multiple_of(bytes) {
+        if !virtual_address.is_multiple_of(bytes) || !physical_address.is_multiple_of(bytes) {
             return Err(MapError::Misaligned);
         }
-        let leaf = F::block_entry(pa, flags, size).ok_or(MapError::UnsupportedSize)?;
+        let leaf =
+            F::block_entry(physical_address, flags, size).ok_or(MapError::UnsupportedSize)?;
         // Every CPU format here has at least three levels, so a 1 GiB block (two up) always has a
         // level to sit at; a format with fewer would have declined above.
         let leaf_level = F::LEVELS - 1 - size.levels_above_bottom();
 
-        let mut table_pa = self.root;
+        let mut table_physical_address = self.root;
         for level in 0..leaf_level {
-            let i = F::index(va, level);
-            // SAFETY: `table_pa` is a page-aligned table, per the type's contract.
-            let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
+            let i = F::index(virtual_address, level);
+            // SAFETY: `table_physical_address` is a page-aligned table, per the type's contract.
+            let entry =
+                unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
             if !F::is_present(*entry) {
                 let new = self.fresh_table()?;
                 *entry = F::table_entry(new, level);
             } else if F::is_block(*entry) {
                 return Err(MapError::AlreadyMapped);
             }
-            table_pa = F::entry_pa(*entry);
+            table_physical_address = F::entry_physical_address(*entry);
         }
 
-        let i = F::index(va, leaf_level);
+        let i = F::index(virtual_address, leaf_level);
         // SAFETY: as above.
-        let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
+        let entry =
+            unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
         if F::is_present(*entry) {
             return Err(MapError::AlreadyMapped);
         }
@@ -278,18 +294,18 @@ where
         Ok(())
     }
 
-    /// **Map `len` bytes from `va` to `pa` in the largest leaves that fit**, none larger than
+    /// **Map `len` bytes from `virtual_address` to `physical_address` in the largest leaves that fit**, none larger than
     /// `largest`: the direct map's shape, a 4 KiB head, blocks through the middle, a 4 KiB tail.
     ///
     /// A block is used only where it lies inside the span and both addresses are aligned to it
     /// ([`PageSize::largest_fitting`], where that is proved), so this maps exactly the pages
     /// [`map_range`](Self::map_range) would. `largest` is the caller's, because only it knows what
-    /// the machine supports (x86 has 1 GiB leaves only where `CPUID` says so). `va`, `pa` and `len`
+    /// the machine supports (x86 has 1 GiB leaves only where `CPUID` says so). `virtual_address`, `physical_address` and `len`
     /// must be page-aligned. Not atomic: on an error, what was mapped before it stays mapped.
     pub fn map_span(
         &mut self,
-        va: u64,
-        pa: u64,
+        virtual_address: u64,
+        physical_address: u64,
         len: u64,
         flags: Flags,
         largest: PageSize,
@@ -299,13 +315,19 @@ where
         }
         // A span that runs past the top of the address space has no end: refuse it whole, before
         // anything is mapped, so no address below wraps.
-        if va.checked_add(len).is_none() || pa.checked_add(len).is_none() {
+        if virtual_address.checked_add(len).is_none() || physical_address.checked_add(len).is_none()
+        {
             return Err(MapError::BadRegion);
         }
         let mut done = 0;
         while done < len {
-            let size = PageSize::largest_fitting(va + done, pa + done, len - done, largest);
-            self.map_block(va + done, pa + done, size, flags)?;
+            let size = PageSize::largest_fitting(
+                virtual_address + done,
+                physical_address + done,
+                len - done,
+                largest,
+            );
+            self.map_block(virtual_address + done, physical_address + done, size, flags)?;
             done += size.bytes();
         }
         Ok(())
@@ -315,17 +337,23 @@ where
     /// refused whole with [`MapError::BadRegion`], before anything is mapped.
     pub fn map_range(
         &mut self,
-        va: u64,
-        pa: u64,
+        virtual_address: u64,
+        physical_address: u64,
         count: u64,
         flags: Flags,
     ) -> Result<(), MapError> {
         let span = count.checked_mul(PAGE_SIZE).ok_or(MapError::BadRegion)?;
-        if va.checked_add(span).is_none() || pa.checked_add(span).is_none() {
+        if virtual_address.checked_add(span).is_none()
+            || physical_address.checked_add(span).is_none()
+        {
             return Err(MapError::BadRegion);
         }
         for i in 0..count {
-            self.map(va + i * PAGE_SIZE, pa + i * PAGE_SIZE, flags)?;
+            self.map(
+                virtual_address + i * PAGE_SIZE,
+                physical_address + i * PAGE_SIZE,
+                flags,
+            )?;
         }
         Ok(())
     }
@@ -348,7 +376,7 @@ where
     /// #     p as u64
     /// # };
     /// # let root = fresh();
-    /// # let to_ptr = (|pa: u64| pa as *mut PageTable) as fn(u64) -> *mut PageTable;
+    /// # let to_ptr = (|physical_address: u64| physical_address as *mut PageTable) as fn(u64) -> *mut PageTable;
     /// # // SAFETY: `root` is a fresh, zeroed, 4 KiB-aligned table, and these "physical" addresses ARE
     /// # // host addresses, so the identity cast is the transform.
     /// # let mut m: Mapper<_, fn(u64) -> *mut PageTable, Aarch64> =
@@ -356,7 +384,7 @@ where
     /// # m.map(0x40_0000, 0x4000_0000, Flags::user_code()).unwrap();
     /// let (freed, flush) = m.unmap(0x40_0000).unwrap();
     /// assert_eq!(freed, 0x4000_0000);
-    /// flush.flush(|va| assert_eq!(va, 0x40_0000)); // the kernel's `tlbi vaae1is` goes here
+    /// flush.flush(|virtual_address| assert_eq!(virtual_address, 0x40_0000)); // the kernel's `tlbi vaae1is` goes here
     /// assert!(m.translate(0x40_0000).is_none());
     /// m.map(0x40_0000, 0x5000_0000, Flags::user_data()).unwrap(); // free again
     /// # let _ = MapError::AlreadyMapped;
@@ -366,48 +394,49 @@ where
     /// #     unsafe { drop(Box::from_raw(p)) };
     /// # }
     /// ```
-    pub fn unmap(&mut self, va: u64) -> Result<(u64, TlbFlush), MapError> {
-        if !F::is_in_half(self.half, va) {
+    pub fn unmap(&mut self, virtual_address: u64) -> Result<(u64, TlbFlush), MapError> {
+        if !F::is_in_half(self.half, virtual_address) {
             return Err(MapError::WrongHalf);
         }
-        if !va.is_multiple_of(PAGE_SIZE) {
+        if !virtual_address.is_multiple_of(PAGE_SIZE) {
             return Err(MapError::Misaligned);
         }
 
-        let mut table_pa = self.root;
+        let mut table_physical_address = self.root;
 
         for level in 0..F::LEVELS - 1 {
-            let i = F::index(va, level);
+            let i = F::index(virtual_address, level);
             // SAFETY: per the type's contract.
-            let entry = unsafe { (*(self.phys_to_ptr)(table_pa)).entries[i] };
+            let entry = unsafe { (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
             if !F::is_present(entry) {
                 return Err(MapError::NotMapped);
             }
             if F::is_block(entry) {
                 return Err(MapError::InsideBlock);
             }
-            table_pa = F::entry_pa(entry);
+            table_physical_address = F::entry_physical_address(entry);
         }
 
-        let i = F::index(va, F::LEVELS - 1);
+        let i = F::index(virtual_address, F::LEVELS - 1);
         // SAFETY: per the type's contract.
-        let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
+        let entry =
+            unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
 
         if !F::is_present(*entry) {
             return Err(MapError::NotMapped);
         }
 
-        let pa = F::entry_pa(*entry);
+        let physical_address = F::entry_physical_address(*entry);
 
         // Break: the entry becomes invalid *before* anything else happens.
         *entry = 0;
 
-        Ok((pa, TlbFlush { va }))
+        Ok((physical_address, TlbFlush { virtual_address }))
     }
 
-    /// **Cut the intermediate table at physical `table` out of the walk that reaches `va`**, and
+    /// **Cut the intermediate table at physical `table` out of the walk that reaches `virtual_address`**, and
     /// return `(base, span)`, the aligned range it translated, which now translates to nothing.
-    /// `None` when the walk to `va` never passes through `table`, which a caller cutting tables
+    /// `None` when the walk to `virtual_address` never passes through `table`, which a caller cutting tables
     /// top-down meets for every table below the first. Nothing is freed, and the root is never a
     /// candidate, since no entry points at it. Name provisional.
     ///
@@ -415,27 +444,38 @@ where
     /// store makes the page unreachable, where clearing its leaves would leave it linked. The
     /// [`TlbFlush`]'s [`address`](TlbFlush::address) is `base`, and it must be discharged by an
     /// invalidation that reaches non-leaf entries for the whole span (a by-ASID flush does).
-    pub fn unlink_table(&mut self, va: u64, table: u64) -> Option<(u64, u64, TlbFlush)> {
-        if !F::is_in_half(self.half, va) {
+    pub fn unlink_table(
+        &mut self,
+        virtual_address: u64,
+        table: u64,
+    ) -> Option<(u64, u64, TlbFlush)> {
+        if !F::is_in_half(self.half, virtual_address) {
             return None;
         }
-        let mut table_pa = self.root;
+        let mut table_physical_address = self.root;
         for level in 0..F::LEVELS - 1 {
-            let i = F::index(va, level);
-            // SAFETY: `table_pa` is a page-aligned table, per the type's contract.
-            let entry = unsafe { &mut (*(self.phys_to_ptr)(table_pa)).entries[i] };
+            let i = F::index(virtual_address, level);
+            // SAFETY: `table_physical_address` is a page-aligned table, per the type's contract.
+            let entry =
+                unsafe { &mut (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
             if !F::is_present(*entry) || F::is_block(*entry) {
                 return None;
             }
-            if F::entry_pa(*entry) == table {
+            if F::entry_physical_address(*entry) == table {
                 // The table one level down translates the span one entry at `level` covers.
                 let span = PAGE_SIZE << (9 * (F::LEVELS - 1 - level));
-                let base = va & !(span - 1);
+                let base = virtual_address & !(span - 1);
                 // Break: no walk can reach `table` from here after this store.
                 *entry = 0;
-                return Some((base, span, TlbFlush { va: base }));
+                return Some((
+                    base,
+                    span,
+                    TlbFlush {
+                        virtual_address: base,
+                    },
+                ));
             }
-            table_pa = F::entry_pa(*entry);
+            table_physical_address = F::entry_physical_address(*entry);
         }
         None
     }
@@ -443,17 +483,17 @@ where
     /// Walk the tables and report what a virtual address actually maps to. This is what the hardware
     /// does on every access, in silicon, and it is worth having in software: it is the only way to
     /// *check* that the tables say what you think they say.
-    pub fn translate(&self, va: u64) -> Option<(u64, Flags)> {
-        if !F::is_in_half(self.half, va) {
+    pub fn translate(&self, virtual_address: u64) -> Option<(u64, Flags)> {
+        if !F::is_in_half(self.half, virtual_address) {
             return None;
         }
 
-        let mut table_pa = self.root;
+        let mut table_physical_address = self.root;
 
         for level in 0..F::LEVELS - 1 {
-            let i = F::index(va, level);
+            let i = F::index(virtual_address, level);
             // SAFETY: per the type's contract.
-            let entry = unsafe { (*(self.phys_to_ptr)(table_pa)).entries[i] };
+            let entry = unsafe { (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
 
             if !F::is_present(entry) {
                 return None;
@@ -462,22 +502,25 @@ where
                 // The walk ends early: this entry maps the whole span it covers. The span is
                 // what the remaining index bits and the page offset address, together.
                 let span = PAGE_SIZE << (9 * (F::LEVELS - 1 - level));
-                let base = F::entry_pa(entry) & !(span - 1);
-                return Some((base + (va & (span - 1)), F::leaf_flags(entry)));
+                let base = F::entry_physical_address(entry) & !(span - 1);
+                return Some((base + (virtual_address & (span - 1)), F::leaf_flags(entry)));
             }
-            table_pa = F::entry_pa(entry);
+            table_physical_address = F::entry_physical_address(entry);
         }
 
-        let i = F::index(va, F::LEVELS - 1);
+        let i = F::index(virtual_address, F::LEVELS - 1);
         // SAFETY: per the type's contract.
-        let entry = unsafe { (*(self.phys_to_ptr)(table_pa)).entries[i] };
+        let entry = unsafe { (*(self.physical_to_pointer)(table_physical_address)).entries[i] };
 
         if !F::is_present(entry) {
             return None;
         }
 
-        let offset = va % PAGE_SIZE;
-        Some((F::entry_pa(entry) + offset, F::leaf_flags(entry)))
+        let offset = virtual_address % PAGE_SIZE;
+        Some((
+            F::entry_physical_address(entry) + offset,
+            F::leaf_flags(entry),
+        ))
     }
 
     /// **[`translate`](Self::translate), keeping every entry it read**: for a report about a walk
@@ -487,18 +530,18 @@ where
     ///
     /// `readable` is asked about every table before it is read, the root included, and a table it
     /// refuses ends the walk as [`WalkEnd::Unreadable`]. A failed walk is by definition one whose
-    /// tables may hold garbage, and following a garbage address through `phys_to_ptr` from a fault
+    /// tables may hold garbage, and following a garbage address through `physical_to_pointer` from a fault
     /// handler would fault the kernel; the caller says which frames are safe to read.
     ///
     /// Name: provisional (lane `maintainer/pipeline-fetch-fault`, 2026-10-14 UTC).
-    pub fn walk(&self, va: u64, readable: impl Fn(u64) -> bool) -> Walk {
+    pub fn walk(&self, virtual_address: u64, readable: impl Fn(u64) -> bool) -> Walk {
         const { assert!(F::LEVELS <= MAXIMUM_WALK) };
         let mut walk = Walk {
             steps: [WalkStep::default(); MAXIMUM_WALK],
             len: 0,
             end: WalkEnd::OtherHalf,
         };
-        if !F::is_in_half(self.half, va) {
+        if !F::is_in_half(self.half, virtual_address) {
             return walk;
         }
         let mut table = self.root;
@@ -507,9 +550,9 @@ where
                 walk.end = WalkEnd::Unreadable(table);
                 return walk;
             }
-            let index = F::index(va, level);
+            let index = F::index(virtual_address, level);
             // SAFETY: per the type's contract, for a table `readable` admitted.
-            let entry = unsafe { (*(self.phys_to_ptr)(table)).entries[index] };
+            let entry = unsafe { (*(self.physical_to_pointer)(table)).entries[index] };
             walk.steps[walk.len] = WalkStep {
                 table,
                 index,
@@ -523,7 +566,7 @@ where
             } else if F::is_block(entry) {
                 WalkEnd::Block
             } else {
-                table = F::entry_pa(entry);
+                table = F::entry_physical_address(entry);
                 continue;
             };
             return walk;

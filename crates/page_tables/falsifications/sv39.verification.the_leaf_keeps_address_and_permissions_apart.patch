@@ -1,16 +1,16 @@
 Falsifies `page_tables::sv39::verification::the_leaf_keeps_address_and_permissions_apart`.
 
 The defect: `PPN_SHIFT` moved from 10 to 12, so `leaf_entry` writes the physical page
-number two bits above where Sv39 puts it and `entry_pa` reads it back from the same wrong
+number two bits above where Sv39 puts it and `entry_physical_address` reads it back from the same wrong
 place. Every leaf the kernel installs then names a physical page four times too high, and
 two of the PTE's permission bits are overwritten by address bits. This is one constant,
 which is what makes it the plausible version of the defect.
 
-Expected to fail: `assert_eq!(((leaf >> 10) & ((1 << 44) - 1)) << 12, pa)`, on any
+Expected to fail: `assert_eq!(((leaf >> 10) & ((1 << 44) - 1)) << 12, physical_address)`, on any
 non-zero physical address.
 
 **Measured blind before milestone 211.** The harness used to assert
-`Sv39::entry_pa(Sv39::leaf_entry(pa, flags)) == pa`, which is an encoder round-tripped
+`Sv39::entry_physical_address(Sv39::leaf_entry(physical_address, flags)) == physical_address`, which is an encoder round-tripped
 through its own decoder: the two move together and the round trip holds for every
 consistently wrong pair. Confirmed by applying this diff against the old phrasing and
 watching it stay green. The rewrite states the bit positions the RISC-V privileged

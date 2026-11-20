@@ -7,7 +7,7 @@
 //! - **Bytes, not characters.** The match is `fnmatch(3)` in the C locale, so `?` is one byte.
 //! - **One name, not a path.** `/` is an ordinary byte. `matches(b"*.txt", b"dir/notes.txt")` is
 //!   `true`: a `*` crosses separators, and a caller that matches a path splits it first.
-//! - **A leading `.` needs a literal `.`** by default ([`Dot::Special`]). `.` and `..` are ordinary
+//! - **A leading `.` needs a literal `.`** by default ([`LeadingDot::Special`]). `.` and `..` are ordinary
 //!   names to the matcher, so `.*` matches both; the layer that enumerates a directory decides
 //!   whether to offer them.
 //!
@@ -38,8 +38,12 @@
 ///
 /// This is `fnmatch(3)`'s `FNM_PERIOD` as a two-valued type rather than a flag bit, because there
 /// are exactly two answers and the compiler should be able to say which one a call site chose.
+///
+/// Name: provisional, ruled provisionally by the maintainer on 2026-11-14 (UTC) (block 1092
+/// decision 2); the architect may revisit it before the first tag. The spelling says which dot the
+/// policy is about, as `FNM_PERIOD` and `require_literal_leading_dot` do.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Dot {
+pub enum LeadingDot {
     /// A name starting with `.` matches only a pattern starting with a **literal** `.` (which `\.`
     /// counts as, and `[.]` does not). What [`matches()`] uses, and what a shell user expects: `*`
     /// does not list `.config`.
@@ -49,7 +53,7 @@ pub enum Dot {
     Ordinary,
 }
 
-/// **Does `pattern` match `name`?** A leading `.` in the name is special; see [`Dot`].
+/// **Does `pattern` match `name`?** A leading `.` in the name is special; see [`LeadingDot`].
 ///
 /// `name` is one name, not a path: `/` is an ordinary byte, so `*` matches across it.
 ///
@@ -58,7 +62,7 @@ pub enum Dot {
 /// # Examples
 ///
 /// ```
-/// use byte_glob::{matches, matches_with, has_magic, literal, Dot};
+/// use byte_glob::{matches, matches_with, has_magic, literal, LeadingDot};
 ///
 /// assert!(matches(b"*.txt", b"notes.txt"));
 /// assert!(!matches(b"*.txt", b"notes.md"));
@@ -69,7 +73,7 @@ pub enum Dot {
 ///
 /// // One name, not a path: `/` is an ordinary byte.
 /// assert!(matches(b"*.txt", b"dir/notes.txt"));
-/// assert!(matches_with(b"*", b".hidden", Dot::Ordinary));
+/// assert!(matches_with(b"*", b".hidden", LeadingDot::Ordinary));
 ///
 /// // Classes, ranges, negation.
 /// assert!(matches(b"[abc]at", b"cat"));
@@ -88,7 +92,7 @@ pub enum Dot {
 /// assert_eq!(literal(b"*.txt", &mut buf), None); // it has magic; expand it instead
 /// ```
 pub fn matches(pattern: &[u8], name: &[u8]) -> bool {
-    match_steps(pattern, name, Dot::Special).0
+    match_steps(pattern, name, LeadingDot::Special).0
 }
 
 /// [`matches()`], with the leading-dot rule under the caller's control.
@@ -96,13 +100,13 @@ pub fn matches(pattern: &[u8], name: &[u8]) -> bool {
 /// # Examples
 ///
 /// ```
-/// use byte_glob::{matches, matches_with, Dot};
+/// use byte_glob::{matches, matches_with, LeadingDot};
 ///
 /// assert!(!matches(b"*", b".config"));                       // `*` does not list dotfiles
 /// assert!(matches(b".*", b".config"));                       // an explicit dot does
-/// assert!(matches_with(b"*", b".config", Dot::Ordinary));    // ... unless you ask otherwise
+/// assert!(matches_with(b"*", b".config", LeadingDot::Ordinary));    // ... unless you ask otherwise
 /// ```
-pub fn matches_with(pattern: &[u8], name: &[u8], dot: Dot) -> bool {
+pub fn matches_with(pattern: &[u8], name: &[u8], dot: LeadingDot) -> bool {
     match_steps(pattern, name, dot).0
 }
 
@@ -152,12 +156,15 @@ pub fn literal<'a>(pattern: &[u8], out: &'a mut [u8]) -> Option<&'a [u8]> {
 /// promise about the count is that it is at most [`cost_bound`] of the two lengths; its exact value
 /// is not promised across versions. It exists so the claim "this cannot blow up" is an
 /// inequality something checks rather than a paragraph, by way of [`cost_bound`].
-pub fn match_steps(pattern: &[u8], name: &[u8], dot: Dot) -> (bool, usize) {
+pub fn match_steps(pattern: &[u8], name: &[u8], dot: LeadingDot) -> (bool, usize) {
     let mut steps = 0usize;
 
     // The leading-dot rule, applied once and up front. It is a property of the two strings' first
     // bytes, so putting it in the loop would only mean asking it repeatedly.
-    if dot == Dot::Special && name.first() == Some(&b'.') && !opens_with_a_literal_dot(pattern) {
+    if dot == LeadingDot::Special
+        && name.first() == Some(&b'.')
+        && !opens_with_a_literal_dot(pattern)
+    {
         return (false, steps);
     }
 

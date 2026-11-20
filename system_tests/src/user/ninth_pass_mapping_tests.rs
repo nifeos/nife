@@ -8,7 +8,7 @@
 //! maps into a live space; the one budget is deleted and its region reclaimed.
 //!
 //! Name: provisional (lane/pass-9-tests, 2026-10-14 UTC). Cross-ISA: `invoke`, the map gate and the
-//! flag constructors are portable kernel code, and `is_user_page_va` is instantiated at the running
+//! flag constructors are portable kernel code, and `is_user_page_virtual_address` is instantiated at the running
 //! architecture's `Format`, so the body runs on each ISA (DECISIONS §19 (architectural parity is a
 //! tenet)).
 
@@ -50,15 +50,15 @@ fn a_confined_map_cannot_escape_the_aligned_low_half() {
     // demonstrably the gate and not some unrelated error, and so the test is not vacuous: the gate
     // admits the valid address.
     assert!(
-        !page_tables::is_user_page_va::<Format>(KERNEL_HALF_PAGE),
+        !page_tables::is_user_page_virtual_address::<Format>(KERNEL_HALF_PAGE),
         "the VA gate admitted a kernel-half address",
     );
     assert!(
-        !page_tables::is_user_page_va::<Format>(UNALIGNED_LOW),
+        !page_tables::is_user_page_virtual_address::<Format>(UNALIGNED_LOW),
         "the VA gate admitted an unaligned address",
     );
     assert!(
-        page_tables::is_user_page_va::<Format>(VALID_LOW_PAGE),
+        page_tables::is_user_page_virtual_address::<Format>(VALID_LOW_PAGE),
         "the VA gate rejected a valid low-half aligned address, so a refusal below proves nothing",
     );
 
@@ -99,7 +99,10 @@ fn a_confined_map_cannot_escape_the_aligned_low_half() {
 fn no_mapping_flag_is_both_writable_and_user_executable() {
     for (flags, name) in [
         (page_tables::Flags::user_data(), "user_data"),
-        (page_tables::Flags::user_rodata(), "user_rodata"),
+        (
+            page_tables::Flags::user_read_only_data(),
+            "user_read_only_data",
+        ),
         (page_tables::Flags::user_code(), "user_code"),
         (page_tables::Flags::user_device(), "user_device"),
     ] {

@@ -34,7 +34,7 @@ capability_table	kernel	kernel
 capability_witness_contract	userspace	fixtures
 capability_witness_protocol	userspace	retired
 caps	kernel	retired
-clock_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
+clock_contract	shared	retired
 clock_proto	shared	retired
 clock_protocol	shared	retired
 component_plan	shared	retired
@@ -71,7 +71,7 @@ e1000e	shared	retired
 entropy_contract	shared	retired
 entropy_proto	shared	retired
 entropy_protocol	shared	retired
-environment_contract	shared	components,kernel,std
+environment_contract	shared	retired
 environment_proto	shared	retired
 environment_protocol	shared	retired
 extensible_host_controller_interface	shared	retired
@@ -173,7 +173,6 @@ soak_page	shared	fixtures,kernel
 socket_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 socket_proto	shared	retired
 socket_protocol	shared	retired
-spin_lock	kernel	kernel
 startup_page_contract	shared	components,fixtures,kernel
 static_elf	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
 std_runtime_contract	shared	components,fixtures,jig,kernel,std
@@ -193,6 +192,7 @@ system_log_contract	shared	components,kernel
 system_log_protocol	shared	retired
 system_manifest	host	-
 terminal_contract	shared	components,fixtures,kernel
+test_and_set_lock	kernel	kernel
 test_times	kernel	kernel
 thread_wake_handshake	kernel	kernel
 timebase_proto	shared	retired

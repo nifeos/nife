@@ -1136,7 +1136,7 @@ M267EOF
 # **This checks the bookkeeping, not the ordering, and the difference is the whole design.** Pairing
 # two fences is a dataflow problem across functions, across binaries and sometimes across address
 # spaces; in this tree the other half is frequently not a fence at all but a blocking IPC rendezvous
-# whose happens-before edge lives inside the kernel's lock (`crates/spin_lock`). Nothing an AST can
+# whose happens-before edge lives inside the kernel's lock (`crates/test_and_set_lock`). Nothing an AST can
 # see. So this takes the posture of milestone 112 (the SAFETY comments that bind nobody) instead: a
 # narrow check that is true beats a broad one that is aspirational. What it buys is the forcing function, because an author made to write down
 # where the partner lives has to go and look for it, and that is exactly the step neither 43's nor

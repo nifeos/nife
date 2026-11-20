@@ -9,9 +9,11 @@ mechanism or one record each, at a length the main page's prose budget cannot ho
 - [what-the-merge-queue-took-over.md](what-the-merge-queue-took-over.md): what the queue took over, the drain's four earlier
   shapes, and the prevention half.
 - [actions-migration.md](actions-migration.md): the move to Actions, the premise test, the
-  `launchd` retirement, and what was lost.
+  `launchd` retirement, and what the move gave up.
 - [at-risk-check.md](at-risk-check.md): the at-risk watch in full.
 - [main-push-and-check-timeout.md](main-push-and-check-timeout.md): A′ and the 240-minute timeout.
+- [queue-sizing.md](queue-sizing.md): the build window, the grouping and the owned-runner switch, with
+  what moves each and the measurement behind them.
 - [what-the-queue-bought.md](what-the-queue-bought.md): what the queue bought, measured.
 - [merge-methods-and-holds.md](merge-methods-and-holds.md): no squash at the repository, and
   `Blocked-by:`.
@@ -21,6 +23,6 @@ mechanism or one record each, at a length the main page's prose budget cannot ho
 
 *Name: provisional. The directory follows the
 `notes/<stem>/` appendix convention §212 (a prose budget) set, so its name is the main page's stem;
-the file name `prose-only.md` matches the classifier it documents and changes if that is renamed.*
+the file name `prose-only.md` matches the classifier it documents and changes if the classifier changes its name.*
 
-Each stem here is named for its content, and calef names files.
+Each stem here says what its content is, and calef names files.

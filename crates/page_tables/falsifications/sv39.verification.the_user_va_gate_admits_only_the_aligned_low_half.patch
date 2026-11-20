@@ -1,6 +1,6 @@
 Falsifies `page_tables::sv39::the_user_va_gate_admits_only_the_aligned_low_half`.
 
-The defect: `is_user_page_va` asks whether the address is *not in the kernel half*
+The defect: `is_user_page_virtual_address` asks whether the address is *not in the kernel half*
 instead of whether it is in the user half. Those read as the same question and are
 not, because the two halves are not exhaustive: on Sv39 an address is canonical
 only if bits 63:38 are all copies of bit 38, and a VA in neither half is a hole.
@@ -8,13 +8,13 @@ With this, a user program may name a non-canonical address and the walk indexes 
 bits that mean nothing, which is a translation the hardware and the kernel disagree
 about.
 
-Expected to fail: `assert_eq!(is_user_page_va::<Sv39>(va), va & 0xfff == 0 && va >>
+Expected to fail: `assert_eq!(is_user_page_virtual_address::<Sv39>(virtual_address), virtual_address & 0xfff == 0 && virtual_address >>
 38 == 0)`, on any aligned non-canonical address. The second assertion,
-`assert!(Sv39::is_in_half(Half::Low, va) && !Sv39::is_in_half(Half::High, va))`, fails
+`assert!(Sv39::is_in_half(Half::Low, virtual_address) && !Sv39::is_in_half(Half::High, virtual_address))`, fails
 with it for the same address, and that is worth having: it is the one that says
 "in the user half" out loud rather than by arithmetic.
 
-**The gate is shared and the proof is not.** `is_user_page_va` is one generic
+**The gate is shared and the proof is not.** `is_user_page_virtual_address` is one generic
 function in `lib.rs`, and DECISIONS §19 has each ISA state the property itself, so
 this one function has three independent proofs over it. The `aarch64` and `x86_64`
 records break it in two other ways; the three patches are not copies.
@@ -25,9 +25,9 @@ diff --git a/crates/page_tables/src/page_format.rs b/crates/page_tables/src/page
 @@ -40,7 +40,7 @@
  /// assert_eq!(PAGE_SIZE, 4096);
  /// ```
- pub fn is_user_page_va<F: PageFormat>(va: u64) -> bool {
--    F::is_in_half(Half::Low, va) && va.is_multiple_of(PAGE_SIZE)
-+    !F::is_in_half(Half::High, va) && va.is_multiple_of(PAGE_SIZE)
+ pub fn is_user_page_virtual_address<F: PageFormat>(virtual_address: u64) -> bool {
+-    F::is_in_half(Half::Low, virtual_address) && virtual_address.is_multiple_of(PAGE_SIZE)
++    !F::is_in_half(Half::High, virtual_address) && virtual_address.is_multiple_of(PAGE_SIZE)
  }
  
  /// **The seam between the shared walk and a hardware page-table format.**

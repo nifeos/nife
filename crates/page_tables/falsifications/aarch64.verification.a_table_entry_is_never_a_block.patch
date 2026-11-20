@@ -8,7 +8,7 @@ maps a 1 GiB or 2 MiB block whose physical address is the address of a PAGE TABL
 gets the kernel's page tables mapped as ordinary memory. That is the whole isolation gone, and
 it is silent: the mapping works.
 
-Expected to fail: `assert!(!Aarch64::is_block(Aarch64::table_entry(pa)))`, for every `pa`,
+Expected to fail: `assert!(!Aarch64::is_block(Aarch64::table_entry(physical_address)))`, for every `physical_address`,
 because `is_block` on this format is exactly `entry & TABLE_OR_PAGE == 0`.
 
 Note that the same bit at L3 means PAGE, which is why this one bit carries two names in the
@@ -21,8 +21,8 @@ diff --git a/crates/page_tables/src/aarch64.rs b/crates/page_tables/src/aarch64.
          // A table descriptor: address plus valid/table bits, no attributes. Permissions on an
          // intermediate table would be an additional restriction on everything beneath it; we want
          // the leaf to be the single source of truth.
--        (pa & ADDR_MASK) | TABLE_OR_PAGE | VALID
-+        (pa & ADDR_MASK) | VALID
+-        (physical_address & ADDR_MASK) | TABLE_OR_PAGE | VALID
++        (physical_address & ADDR_MASK) | VALID
      }
  
-     fn leaf_entry(pa: u64, flags: Flags) -> u64 {
+     fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {

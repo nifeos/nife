@@ -18,7 +18,7 @@ instead.
 diff --git a/crates/page_tables/src/domain.rs b/crates/page_tables/src/domain.rs
 --- a/crates/page_tables/src/domain.rs
 +++ b/crates/page_tables/src/domain.rs
-@@ -71,9 +71,6 @@ pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
+@@ -71,9 +71,6 @@ pub fn grant_pages(r: DirectMemoryAccessRegion) -> Result<u64, MapError> {
      if !r.base.is_multiple_of(PAGE_SIZE) {
          return Err(MapError::Misaligned);
      }

@@ -42,10 +42,13 @@ reasons.
   name `crates/page_tables/`, and the four host-test patches have no replay.
 - P1-4, documentation for a stranger: Open. The comments still cite sections, milestones and nife
   paths.
-- P1-5, the spelled-out renames: Open. `is_user_page_va`, `entry_pa`, `DmaRegion` and the `va` and
-  `pa` parameters remain; a two-way door before the first release, so the maintainer rules the names
-  provisionally and the ratification below takes the result.
-- P1-6, `doc(alias)` on kept specification names: Open. The crate has none.
+- P1-5, the spelled-out renames: Done in the tree, provisional. `is_user_page_virtual_address`,
+  `entry_physical_address`, `DirectMemoryAccessRegion` and the `virtual_address` and
+  `physical_address` parameters replace the old spellings in the crate and every caller. A two-way
+  door before the first release, so the maintainer ruled the names provisionally (2026-11-19 UTC)
+  and the ratification below takes the result.
+- P1-6, `doc(alias)` on kept specification names: Done in the tree. The kept names carry aliases
+  for the specification spelling.
 - P1-7, `Mapper::new`'s safety contract and `Misaligned`: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-8, `Flags::ALL` over every constructor: Done,
@@ -60,7 +63,9 @@ reasons.
 - P2-12b, `WritableAndExecutable` out of `MapError`: Open. A change to a public enum, two-way before
   the first publish and the maintainer's.
 - P2-13, the `walk` assertion: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-14, the leaf-size spelling: Open, below.
+- P2-14, the leaf-size spelling: Done in the tree, provisional. `PageSize::FourKibibytes`,
+  `TwoMebibytes` and `OneGibibyte` carry `#[doc(alias = "Size4KiB")]` and siblings. The maintainer
+  ruled option A provisionally on 2026-11-19 (UTC); the ratification below takes it.
 - P2-15a, `Display` and `core::error::Error` for `MapError`: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15b, the README's list of missing operations: Open, with item 11.
@@ -68,16 +73,22 @@ reasons.
 - P2-17, the test pool shape: Open. `tests/mapping.rs` still frees its tables by `TableGuard`.
 - P2-18, the Sv39 device bit and the T-Head source: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-19, Miri's pointer casts: Open. No `expose_provenance` in the crate and no README note.
+- P2-19, Miri's pointer casts: Open. `with_exposed_provenance` still draws Miri's
+  integer-to-pointer warnings, so the crate has no `expose_provenance` change. The warnings stay
+  documented in `notes/undefined-behavior.md`, and the README note belongs to the move.
 - Decision 1, the published name: Done, ruled 2026-11-14 (UTC) and built in
   [#3594](https://github.com/nifeos/nife/pull/3594).
-- Decision 2, the spelling of the leaf sizes: Open, below, one decision with item 14.
-- Ratifying the public names: Open, below.
-- Clearing a review package: Open, below. No package exists yet.
+- Decision 2, the spelling of the leaf sizes: ruled provisionally, option A, 2026-11-19 (UTC) by the
+  maintainer; the ratification below takes it with the other names.
+- Ratifying the public names: Open, below. The package asks it in one pass.
+- Clearing a review package: Open, below. The package is `notes/crate-reviews/page-tables.md`.
 
 ## Open decisions
 
 ### The spelling of the leaf sizes
+
+Ruled provisionally 2026-11-19 (UTC), option A, by the maintainer under the standing units rule; the
+names stand as built until the architect ratifies them below. The reasoning follows.
 
 Background. `PageSize` names the three sizes a single page table entry can map: 4 KiB, 2 MiB and
 1 GiB. Its variants are `Size4KiB`, `Size2MiB` and `Size1GiB`, copied from the `x86_64` crate,
@@ -113,6 +124,9 @@ Blocks: the first publish. The rename lane of item 5 can take it.
 
 ### Ratify the public names once the rename lane lands
 
+The renames have landed provisionally; the package lists every public name with its status and
+proposal for this one pass.
+
 Background. `page_tables` builds and walks page tables for six formats: aarch64, Sv39, the T-Head
 Sv39 variant, x86-64, Intel VT-d and AMD-Vi. Its public names are what every user compiles against,
 and the move strips the `Name:` blocks that mark a name provisional, so each must read ratified
@@ -142,8 +156,8 @@ Blocks: the first publish.
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package, and that clearance approves the repository. `page_tables` serves
 every kernel that maps memory on these six formats, so it meets the bar for leaving. The
-architect ruled its published name on 2026-11-14 (UTC). No package exists in
-`notes/crate-reviews/` yet, and items 1, 3, 4, 9 and 11 are the move's work.
+architect ruled its published name on 2026-11-14 (UTC). The package is
+`notes/crate-reviews/page-tables.md`, and items 1, 3, 4, 9 and 11 are the move's work.
 
 Recommendation: A. A package written after the rename lane shows the crate as it will ship.
 
@@ -217,7 +231,7 @@ The P2 items are in [the appendix](1104-paging-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-Only one-way doors. Decision 1 has its ruling; the leaf-size spelling is under "Open decisions".
+Only one-way doors. Decision 1 has its ruling; the open ones are under "Open decisions".
 
 ### Decision 1. The crate's published name
 
@@ -274,7 +288,7 @@ The checks are in [the appendix](1104-paging-outside-review/done-when.md).
 ## Follow-on
 
 - **Outstanding.** Each finding that "Finding status" marks Open, checked against
-  `crates/page_tables` and its manifest.
+  `crates/page_tables` and its manifest. Items 1, 3, 4, 9 and 11 are the move lane's work.
 
 ## Index row
 
@@ -284,5 +298,6 @@ falsification records that point into nife. It finds eight P1 items: documentati
 insider, 84 spelled-out-rule findings, kept names with no alias, and an incomplete `unsafe` contract
 on `Mapper::new`. The rest are proofs that miss constructors, mutation exemptions in
 the wrong file, overflowing range arithmetic, and no README. It finds eight P2 items. The architect
-ruled the crate's published name on 2026-11-14 (`page_tables`); the spelling of the leaf sizes stays
-open.
+ruled the crate's published name on 2026-11-14 (`page_tables`); the maintainer ruled the
+spelling of the leaf sizes and the item 5 and 6 renames provisionally on 2026-11-19, and the
+architect's ratification and the review's clearance stay open.

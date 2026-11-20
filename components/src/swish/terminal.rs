@@ -35,7 +35,7 @@ pub(super) fn print(s: &[u8]) {
 /// Copy `n` bytes into the outgoing shared page.
 pub(super) fn stage(s: &[u8], n: usize) {
     for (i, &b) in s[..n].iter().enumerate() {
-        OUT_WINDOW.write_u8(i as u64, b);
+        OUT_WINDOW.write::<u8>(i as u64, b);
     }
 }
 

@@ -106,7 +106,7 @@ pub fn write_image_capabilities(
         (Some(_), _) => {}
         (None, true) => {
             out(b"    runs on this session's capability to run unvouched bytes (slot ");
-            write_num(spawnproto::RUN_UNVOUCHED_SLOT, out);
+            write_num(spawn_protocol::RUN_UNVOUCHED_SLOT, out);
             out(b")\n");
             if declared.is_some() {
                 out(b"    and its note grants nothing: bytes nobody vouched for are not asked\n");
@@ -238,7 +238,7 @@ pub fn write_capabilities(
             Ok((program, e)) => {
                 // Narrowed by the line's verb, as the progenitor narrows it reading the same word
                 // off the argv (milestone 809 (the package client becomes a program), option V2).
-                let mut verb = [0u8; grant_contract::MAXIMUM_VERB];
+                let mut verb = [0u8; grant_contract::MAXIMUM_VERB_BYTES];
                 let verb = grant_plan::verb_of(stage, &mut verb);
                 let m = grant_contract::narrow_by_verb(&e.manifest, program.verbs(), verb);
                 out(b"  ");
@@ -386,7 +386,7 @@ fn write_file_and_directory_rows(
             out,
         );
         out(b"endpoint  dir      ");
-        let mut buf = [0u8; nav::RENDER_MAXIMUM];
+        let mut buf = [0u8; navigation::MAXIMUM_RENDERED_PATH_BYTES];
         let n = holdings.place(g.which, &g.directory).render(&mut buf);
         out(&buf[..n]);
         if let grant_contract::ProgramArgumentDeclaration::Words(w) = m.program_argument {

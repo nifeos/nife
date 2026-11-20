@@ -33,7 +33,7 @@ fn a_cooperative_signal_times_out_into_a_forcible_teardown() {
     let mut e = Escalation::new();
     assert_eq!(e.on_interrupt(), Action::Cooperative);
     // Ticks short of the window do nothing.
-    for _ in 0..COOP_GRACE_TICKS - 1 {
+    for _ in 0..COOPERATIVE_GRACE_POLLS - 1 {
         assert_eq!(e.on_tick(), Action::None);
     }
     // The last tick of the window escalates.
@@ -45,7 +45,7 @@ fn a_cooperative_signal_times_out_into_a_forcible_teardown() {
 fn ticks_before_any_interrupt_do_nothing() {
     // No ^C yet: the grace window is not armed, so watching a well-behaved job never escalates.
     let mut e = Escalation::new();
-    for _ in 0..COOP_GRACE_TICKS * 2 {
+    for _ in 0..COOPERATIVE_GRACE_POLLS * 2 {
         assert_eq!(e.on_tick(), Action::None);
     }
     assert!(!e.is_spent());

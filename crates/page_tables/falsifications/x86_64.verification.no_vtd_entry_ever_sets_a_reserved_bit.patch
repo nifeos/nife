@@ -16,12 +16,12 @@ Measured on patagonia 2026-09-16: FAILED, 1 of 68 checks.
 **This defect replaced an earlier one, and the replacement is the whole of
 milestone 307's finding here.** The patch recorded until 2026-09-16 set the
 Accessed bit in `Vtd::leaf_entry` (`let mut bits = VTD_R | A`), copying
-`Ia32e::attrs` two hundred lines up; bit 8 is defined in an IA-32e entry and
+`Ia32e::attributes` two hundred lines up; bit 8 is defined in an IA-32e entry and
 reserved in a VT-d one. That defect is real and the harness did catch it, but it
 is a defect in the *flag* half, and the flag half was the only half the harness
 could see. Every assertion, and the `kani::assume` above them, was spelled
 through `VTD_ADDR_MASK`, `VTD_R` and `VTD_W`, which are the three constants the
-encoder builds the entry out of, so `(pa & M) | bits` sets no bit outside
+encoder builds the entry out of, so `(physical_address & M) | bits` sets no bit outside
 `M | VTD_R | VTD_W` for every value of M, and the assume admitted exactly the
 addresses M allowed. The address half of row 12's claim was a tautology.
 

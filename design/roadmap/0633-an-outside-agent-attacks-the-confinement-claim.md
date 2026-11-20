@@ -163,7 +163,7 @@ five ways, and each was found by a different lane)'s and is not re-raised here.
 ### Observations that are not escapes
 
 - **`subtree_scope::Bindings::of` fails open for a nonzero badge at or past `B`**: it returns
-  `Binding::Open` (full caretaker authority) rather than refusing. It is not reachable by a confined
+  `Binding::Unbound` (full caretaker authority) rather than refusing. It is not reachable by a confined
   client. The kernel's `BADGE` method refuses an already-badged source, so a client given a badged
   endpoint cannot mint a badge of its own choosing, and the fail-open then depends only on the
   spawner's badge allocation staying inside `B`. It is tied to the §230 (badged endpoint

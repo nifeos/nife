@@ -23,7 +23,9 @@ pub enum Action {
 /// timeout. This is the "shell-side timeout" DECISIONS §24 left to the shell: a job that ignores the
 /// cooperative signal is still torn down without needing a second keystroke. In ticks (the shell's
 /// own watch loop iterations), not wall time, so it is deterministic and testable without a clock.
-pub const COOP_GRACE_TICKS: u32 = 200;
+///
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built; it counts watch-loop polls, not time.
+pub const COOPERATIVE_GRACE_POLLS: u32 = 200;
 
 /// The two-tier escalation policy, as a small state machine the shell drives while a foreground job
 /// runs. It holds where `^C` routing lives (DECISIONS §24: in the shell, userspace, because job
@@ -63,7 +65,7 @@ impl Escalation {
         self.interrupts += 1;
         if self.interrupts == 1 {
             self.coop_sent = true;
-            self.grace_left = COOP_GRACE_TICKS;
+            self.grace_left = COOPERATIVE_GRACE_POLLS;
             Action::Cooperative
         } else {
             self.done = true;

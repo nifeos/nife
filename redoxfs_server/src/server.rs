@@ -104,7 +104,7 @@ impl<D: Disk> Server<D> {
         let (ptr, kind) = self.lookup(parent, name)?;
         // A file, and never a directory (`EISDIR`), a symbolic link or a mount point:
         // `subtree_scope` owns that rule.
-        subtree_scope::landing(kind, false).map_err(refused)?;
+        subtree_scope::check_landing(kind, false).map_err(refused)?;
         // Registered open in the engine's usage table, so an unlink leaves this handle a live node
         // ([`Server::unlink`]). Done directly rather than by `Transaction::on_open_node`, whose
         // transaction clones the allocator; see notes/fs-server/the-core.md.
@@ -708,7 +708,7 @@ impl<D: Disk> Server<D> {
             _ => None,
         };
         subtree_scope::admit(
-            self.bindings.of(badge),
+            self.bindings.binding(badge),
             badge,
             subtree_scope::Handle(requested),
             owner,
@@ -720,7 +720,7 @@ impl<D: Disk> Server<D> {
     /// Whether some badge's grant is rooted at `handle` (see [`Server::close`]).
     fn is_grant_root(&self, handle: u32) -> bool {
         (1..filesystem_contract::fs::CLIENT_WINDOWS as u64).any(|b| {
-            self.bindings.of(b)
+            self.bindings.binding(b)
                 == subtree_scope::Binding::Bound {
                     root: handle as u64,
                 }
@@ -729,14 +729,14 @@ impl<D: Disk> Server<D> {
 
     /// Whether `badge` is bound or revoked, rather than carrying the endpoint's whole authority.
     pub fn scoped(&self, badge: u64) -> bool {
-        self.bindings.of(badge) != subtree_scope::Binding::Open
+        self.bindings.binding(badge) != subtree_scope::Binding::Unbound
     }
 
     /// Record that `badge` minted `handle`, if `badge` is bound. Called for every handle a verb
     /// hands back, so a bound badge can name what it opened and nothing any other client opened.
     pub fn claim(&mut self, handle: u32, badge: u64) {
         if matches!(
-            self.bindings.of(badge),
+            self.bindings.binding(badge),
             subtree_scope::Binding::Bound { .. }
         ) && let Some(owner) = self.owners.get_mut(handle as usize)
         {
@@ -769,7 +769,7 @@ impl<D: Disk> Server<D> {
     /// Name: ratified 2026-10-06 (calef, #1783: "Approve sync for the file-server
     /// request and its capability, and flush for the device cache only.").
     pub fn is_sync_only(&self, badge: u64) -> bool {
-        self.bindings.of(badge) == subtree_scope::Binding::SyncOnly
+        self.bindings.binding(badge) == subtree_scope::Binding::SyncOnly
     }
 
     /// **`UNBIND`: take `badge`'s grant back.** Closes every handle the badge minted and the grant's
@@ -868,7 +868,7 @@ impl<D: Disk> Server<D> {
 
     /// `name` in the directory `parent`, and what it is: from the memo when it can answer, from
     /// RedoxFS otherwise, and remembered.
-    fn lookup(&mut self, parent: TreePtr<Node>, name: &str) -> Result<(TreePtr<Node>, Kind)> {
+    fn lookup(&mut self, parent: TreePtr<Node>, name: &str) -> Result<(TreePtr<Node>, NodeKind)> {
         match self.memo.lookup(parent, name) {
             Some(Some(found)) => Ok(found),
             Some(None) => Err(Error::new(ENOENT)),
@@ -893,7 +893,7 @@ impl<D: Disk> Server<D> {
             return Err(Error::new(syscall::error::ENOENT));
         }
         let (ptr, kind) = self.lookup(parent, name)?;
-        subtree_scope::landing(kind, true).map_err(refused)?;
+        subtree_scope::check_landing(kind, true).map_err(refused)?;
         Ok((ptr, rights))
     }
 

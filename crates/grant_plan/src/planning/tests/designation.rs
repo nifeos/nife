@@ -263,22 +263,38 @@ fn a_grant_under_a_mount_point_is_in_the_mounted_tree() {
     let g = wc_source(b"wc /media/usb/secret", mounted()).unwrap();
     assert_eq!(
         (g.which, g.directory, g.name.as_bytes()),
-        (nav::Which::B, nav::Cwd::root(), &b"secret"[..])
+        (
+            navigation::Which::B,
+            navigation::Cwd::root(),
+            &b"secret"[..]
+        )
     );
     let g = wc_source(b"wc /media/x", mounted()).unwrap();
-    assert_eq!((g.which, g.directory), (nav::Which::A, at(&[b"media"])));
+    assert_eq!(
+        (g.which, g.directory),
+        (navigation::Which::A, at(&[b"media"]))
+    );
 
     // A relative name from inside the mount stays there, and `..` out of it leaves it.
     let mut holds = mounted();
     holds.cwd = at(&[b"media", b"usb", b"deep"]);
     let g = wc_source(b"wc x", holds).unwrap();
-    assert_eq!((g.which, g.directory), (nav::Which::B, at(&[b"deep"])));
+    assert_eq!(
+        (g.which, g.directory),
+        (navigation::Which::B, at(&[b"deep"]))
+    );
     let g = wc_source(b"wc ../../x", holds).unwrap();
-    assert_eq!((g.which, g.directory), (nav::Which::A, at(&[b"media"])));
+    assert_eq!(
+        (g.which, g.directory),
+        (navigation::Which::A, at(&[b"media"]))
+    );
 
     // The redirection planner is the same resolver.
     let g = redirect_target(b"/media/usb/out", mounted(), true).unwrap();
-    assert_eq!((g.which, g.directory), (nav::Which::B, nav::Cwd::root()));
+    assert_eq!(
+        (g.which, g.directory),
+        (navigation::Which::B, navigation::Cwd::root())
+    );
 }
 
 /// **A bound name designates what it is bound to**, which it did not before milestone 154
@@ -291,29 +307,32 @@ fn a_bound_name_designates_what_it_is_bound_to() {
     let g = wc_source(b"wc /recent/x", holds).unwrap();
     assert_eq!(
         (g.which, g.directory),
-        (nav::Which::A, at(&[b"logs", b"2026"]))
+        (navigation::Which::A, at(&[b"logs", b"2026"]))
     );
     let g = wc_source(b"wc /recent/../y", holds).unwrap();
-    assert_eq!((g.which, g.directory), (nav::Which::A, at(&[b"logs"])));
+    assert_eq!(
+        (g.which, g.directory),
+        (navigation::Which::A, at(&[b"logs"]))
+    );
 }
 
 /// [`Holdings::anchor`] hands back exactly the steps that are left, which is what the shell
 /// opens handles for: a bound name is consumed, nothing else is.
 #[test]
 fn anchor_consumes_a_bound_name_and_nothing_else() {
-    let mut base = nav::Cwd::root();
-    let p = nav::path(b"/media/usb/y").unwrap();
+    let mut base = navigation::Cwd::root();
+    let p = navigation::path(b"/media/usb/y").unwrap();
     let rest = mounted().anchor(true, p.steps(), &mut base);
-    assert_eq!((base, rest.len()), (nav::Cwd::root(), 3));
+    assert_eq!((base, rest.len()), (navigation::Cwd::root(), 3));
 
     let mut holds = WITH_DIRECTORY;
     holds.bind(b"here", at(&[b"x"])).unwrap();
-    let p = nav::path(b"/here/y").unwrap();
+    let p = navigation::path(b"/here/y").unwrap();
     let rest = holds.anchor(true, p.steps(), &mut base);
     assert_eq!((base, rest.len()), (at(&[b"x"]), 1));
 
     holds.cwd = at(&[b"deep"]);
-    let p = nav::path(b"x").unwrap();
+    let p = navigation::path(b"x").unwrap();
     let rest = holds.anchor(false, p.steps(), &mut base);
     assert_eq!((base, rest.len()), (at(&[b"deep"]), 1));
 }
@@ -409,8 +428,8 @@ fn an_argument_and_an_input_stream_compose_by_the_same_fixed_order() {
     assert_eq!(
         e.source,
         Source::File(FileGrant {
-            which: nav::Which::A,
-            directory: nav::Cwd::root(),
+            which: navigation::Which::A,
+            directory: navigation::Cwd::root(),
             name: Name::new(b"report.txt").unwrap(),
             writable: false,
         }),
@@ -471,13 +490,17 @@ fn a_name_that_cannot_travel_as_a_grant_is_refused_at_the_prompt() {
     // directory this shell could have reached by walking, and if it cannot walk there the
     // server says so at run time exactly as it would for `cd`.
     let mut deep = WITH_DIRECTORY;
-    assert!(deep.cwd.apply(nav::path(b"logs").unwrap().steps()).is_ok());
+    assert!(
+        deep.cwd
+            .apply(navigation::path(b"logs").unwrap().steps())
+            .is_ok()
+    );
     let Command::Run(r) = parse(b"wc /etc/passwd") else {
         panic!()
     };
     let g = plan_against(&r, READS_A_FILE, deep).unwrap().file.unwrap();
     assert_eq!(g.name.as_bytes(), b"passwd");
-    let mut buf = [0u8; nav::RENDER_MAXIMUM];
+    let mut buf = [0u8; navigation::MAXIMUM_RENDERED_PATH_BYTES];
     let n = g.directory.render(&mut buf);
     assert_eq!(&buf[..n], b"/etc");
 
@@ -498,7 +521,12 @@ fn a_name_that_cannot_travel_as_a_grant_is_refused_at_the_prompt() {
 #[test]
 fn a_name_is_resolved_against_the_shells_position_at_grant_time() {
     let mut holds = WITH_DIRECTORY;
-    assert!(holds.cwd.apply(nav::path(b"logs").unwrap().steps()).is_ok());
+    assert!(
+        holds
+            .cwd
+            .apply(navigation::path(b"logs").unwrap().steps())
+            .is_ok()
+    );
 
     let Command::Run(r) = parse(b"wc report.txt") else {
         panic!()
@@ -706,5 +734,8 @@ fn a_designation_under_a_mount_point_is_in_the_mounted_tree() {
     )
     .unwrap();
     let g = e.directory.expect("n1 was designated");
-    assert_eq!((g.which, g.directory), (nav::Which::B, at(&[b"nvme0"])));
+    assert_eq!(
+        (g.which, g.directory),
+        (navigation::Which::B, at(&[b"nvme0"]))
+    );
 }

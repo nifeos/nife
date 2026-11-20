@@ -31,7 +31,7 @@ proof is not evidence about a proof.
 | `direct_memory_access_validator::an_accepted_descriptor_is_confined` | `Desc::is_indirect`, which `check_descriptor` guards on | the indirect flag tested against the wrong bit, so an indirect table reaches the device |
 | `jh7110_entropy::ready_requires_rand_rdy_and_carries_the_words_untouched` | `assemble`, which `interpret` calls | entropy laid out big-endian |
 | `network_time_protocol::accepting_is_total_and_a_sample_is_coherent` | `Interval::is_negative`, which `accept` guards on | the predicate never true, so a negative delay is accepted |
-| `page_tables::sv39::the_leaf_keeps_address_and_permissions_apart` | `entry_pa`, the decoder for the encoder under test | `PPN_SHIFT` moved, so both agree on the wrong bits |
+| `page_tables::sv39::the_leaf_keeps_address_and_permissions_apart` | `entry_physical_address`, the decoder for the encoder under test | `PPN_SHIFT` moved, so both agree on the wrong bits |
 | `page_tables::aarch64::the_leaf_keeps_address_and_permissions_apart` | the same round trip | the descriptor-type field dropped, so every leaf faults |
 | `page_tables::x86_64::the_leaf_keeps_address_and_permissions_apart` | the same round trip | the present bit dropped |
 
@@ -64,7 +64,7 @@ sounds like a win and is worth being suspicious of.
 
 Three of the eleven, the `paging` leaf trio, were flagged by an artifact. The extractor
 takes a function body by counting braces over a bounded window, so it sometimes swallows a
-neighboring function, and that is why `entry_pa` appeared to call `leaf_entry`. It does not.
+neighboring function, and that is why `entry_physical_address` appeared to call `leaf_entry`. It does not.
 An encoder and its own decoder never call each other, so a *correct* call-graph test would have
 missed all three, and the round trip between an encoder and its decoder is the same failure in
 different clothes. The narrowing is therefore weaker than its hit rate suggests.
