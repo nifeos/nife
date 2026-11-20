@@ -85,9 +85,9 @@ the crate's own reasons.
 
 The crate decides two things for a file server: whether a path stays beneath one directory, and
 which handles one client may use. Its one consumer is `redoxfs_server`. Milestone 1017's step 9
-moves it, after the ten contract crates it links, on its own clearance: `subtree_scope` and
-`memory_region_heap` leave as one repository of two or two repositories, decided at the move, and
-`redoxfs` keeps its own track (ruled 2026-11-20 UTC). Creating a public repository is an outward step,
+moves it, after the ten contract crates it links, on its own clearance. `subtree_scope` and
+`memory_region_heap` leave as one repository or two, decided at the move. `redoxfs` keeps its own
+track (ruled 2026-11-20 UTC). Creating a public repository is an outward step,
 and the standing rule is that clearing a crate's review package approves it. This crate has no
 package under `notes/crate-reviews/` yet, so there is nothing to clear.
 
