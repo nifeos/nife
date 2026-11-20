@@ -36,7 +36,7 @@ standard terms is the acronym test's call:
   `script/lint` check 3 holds the spelling and names `network_time_protocol` as its one exception.
 - `compositor` and `line_editor` hold a protocol module and are logic crates, not contracts. A
   `_contract` name would promise a wire definition and deliver an algorithm.
-- A network card transport is `<device family>_transport`: `virtio_net_transport`,
+- A network card transport is `<device family>_transport`: `virtual_io_net_transport`,
   `e1000e_transport`. Qualify the family only when its name covers more than one kind of device
   (`designware_ethernet_transport`, since DesignWare also names USB, MMC, I2C and PCIe blocks). No
   vendor prefix, because vendors rebrand while family names stay; the vendor goes in the crate and
@@ -89,7 +89,7 @@ gap, not a design.
 - Wire contracts: the `_contract` crates, `network_time_protocol` and `abi`.
 - Format and hardware parsers: `elf`, `device_tree_blob`, `pci`,
   `globally_unique_identifier_partition_table`, `nifefs`.
-- Userspace libraries: `user_mode_runtime`, `grant_plan`, `virtio`, `video_terminal`,
+- Userspace libraries: `user_mode_runtime`, `grant_plan`, `video_terminal`,
   `line_editor`, `bitmap_font`, `byte_glob`, `calendar`, `credentialer`, `compositor`, `coremark`,
   `c_seam`.
 
