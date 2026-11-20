@@ -60,7 +60,7 @@ unset LINT_NO_CARGO
 # counts on a small pool; this file tests the shards, so the pool is off here.
 NIFE_KANI_POOL=off
 export NIFE_KANI_POOL
-# script/verify's KANI_APART table would split byte_glob's row into a listing call and two proofs;
+# script/verify's KANI_APART table would split capability_table's row into a listing call and two proofs;
 # this file counts calls of its own, so the table is off here (helpers/verify-stub-selftest.sh tests it).
 NIFE_KANI_APART=
 export NIFE_KANI_APART
@@ -126,7 +126,7 @@ done
 # --- 4. Exit aggregation ---------------------------------------------------------------------
 out="$tmp/fail.out"
 : >"$log"
-NIFE_SELFTEST_FAIL_CRATE=byte_glob
+NIFE_SELFTEST_FAIL_CRATE=capability_table
 export NIFE_SELFTEST_FAIL_CRATE
 # The same fixture as the four-child run above. Without it the memory guard reads the real machine,
 # and a host small enough to refuse the run forks no child at all, which is a refusal this

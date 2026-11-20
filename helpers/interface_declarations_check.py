@@ -70,6 +70,8 @@ NOT_A_FORMAT = {
     'nife_partition_types': 'two partition type identifiers and their names; no peer reads them but the disk',
     'globally_unique_identifier_partition_table':
         'UEFI\'s on-disk table, whose revision the header carries; nife does not own the format',
+    'master_boot_record':
+        'the IBM PC\'s sector 0, a format nife does not own; read and written only through the disk',
 }
 
 PATH = r'[a-z_][a-z0-9_]*(?:::[a-z_][a-z0-9_]*)*'

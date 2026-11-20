@@ -180,36 +180,10 @@ pub enum BackupMismatch {
     EntryArrayLogicalBlockAddress,
 }
 
-/// What is wrong with the protective MBR.
-///
-/// Name: provisional.
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-#[non_exhaustive]
+/// What is wrong with the protective MBR: [`::master_boot_record::protective::Problem`], under the
+/// name this crate's [`Error::MasterBootRecord`] carries.
 #[doc(alias = "MBR")]
-pub enum MasterBootRecordProblem {
-    /// The `0x55AA` at offset 510 is missing. Not an MBR at all.
-    Signature,
-    /// No partition record of type `0xEE`. A disk with a real MBR partition table and no GPT.
-    NoProtectiveRecord,
-    /// A second non-empty record beside the protective one: a **hybrid MBR**, where the same disk
-    /// is described twice and the two descriptions can disagree. Refused deliberately; see
-    /// [`master_boot_record::validate`](crate::master_boot_record::validate).
-    ExtraRecord {
-        /// The zero-based index of the extra record among the four.
-        index: usize,
-    },
-    /// The protective record does not start at LBA 1, so it does not cover the GPT it protects.
-    ///
-    /// Name: provisional.
-    #[doc(alias = "StartingLBA")]
-    StartLogicalBlockAddress(u32),
-    /// The protective record's size does not cover the disk. Its whole job is to make a
-    /// GPT-unaware tool see a full disk.
-    ///
-    /// Name: provisional.
-    #[doc(alias = "SizeInLBA")]
-    SizeBlocks(u32),
-}
+pub use ::master_boot_record::protective::Problem as MasterBootRecordProblem;
 
 impl core::fmt::Display for Error {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -301,26 +275,6 @@ impl core::fmt::Display for BackupMismatch {
             BackupMismatch::EntryArrayCrc => "the entry array's CRC",
             BackupMismatch::EntryArrayLogicalBlockAddress => "where its entry array lives",
         })
-    }
-}
-
-impl core::fmt::Display for MasterBootRecordProblem {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        match self {
-            MasterBootRecordProblem::Signature => f.write_str("the 0x55AA signature is missing"),
-            MasterBootRecordProblem::NoProtectiveRecord => {
-                f.write_str("no record has the protective type 0xEE")
-            }
-            MasterBootRecordProblem::ExtraRecord { index } => {
-                write!(f, "record {index} is a second partition: a hybrid MBR")
-            }
-            MasterBootRecordProblem::StartLogicalBlockAddress(n) => {
-                write!(f, "the protective record starts at LBA {n}, not 1")
-            }
-            MasterBootRecordProblem::SizeBlocks(n) => {
-                write!(f, "the protective record covers {n} blocks, not the disk")
-            }
-        }
     }
 }
 

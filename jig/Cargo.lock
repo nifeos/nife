@@ -92,6 +92,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
 
 [[package]]
 name = "capability_manifest_note"
@@ -173,7 +174,8 @@ checksum = "a6ef517f0926dd24a1582492c791b6a4818a4d94e789a334894aa15b0d12f55c"
 
 [[package]]
 name = "counter_frequency_contract"
-version = "0.1.0"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
 
 [[package]]
 name = "cpubits"
@@ -577,7 +579,7 @@ dependencies = [
  "package_index",
  "pinned_tls_client",
  "program_table",
- "socket_contract",
+ "socket_fixture",
  "static_elf",
  "std_runtime_contract",
  "user_mode_runtime",
@@ -1052,6 +1054,10 @@ checksum = "d0d5d4b1981b8bbbb7aed204cae5726d683d5d6ac7e74ec54122ea28f315e7c8"
 
 [[package]]
 name = "socket_contract"
+version = "0.1.0"
+
+[[package]]
+name = "socket_fixture"
 version = "0.1.0"
 
 [[package]]

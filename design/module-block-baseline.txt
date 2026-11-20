@@ -1762,25 +1762,15 @@ crates/domain_name_resolution_contract/src/endowment.rs::server
 
 crates/domain_name_resolution_contract/src/endowment.rs::server_octets
 
-crates/domain_name_resolution_contract/src/fixture.rs
 
-crates/domain_name_resolution_contract/src/fixture.rs::CASES
 
-crates/domain_name_resolution_contract/src/fixture.rs::Case
 
-crates/domain_name_resolution_contract/src/fixture.rs::ECHO_FAILED
 
-crates/domain_name_resolution_contract/src/fixture.rs::ECHO_NO_ADDRESS
 
-crates/domain_name_resolution_contract/src/fixture.rs::ECHO_OK
 
-crates/domain_name_resolution_contract/src/fixture.rs::ECHO_SKIPPED
 
-crates/domain_name_resolution_contract/src/fixture.rs::SERVER
 
-crates/domain_name_resolution_contract/src/fixture.rs::WITH_NETWORK
 
-crates/domain_name_resolution_contract/src/fixture.rs::ZONE
 
 crates/domain_name_resolution_contract/src/grants.rs::Control
 
@@ -4910,7 +4900,6 @@ crates/memory_regions/src/watermark.rs::coalesced_watermark
 
 crates/memory_regions/src/watermark.rs::retype_new_watermark
 
-crates/memory_regions/src/watermark.rs::retype_pages
 
 crates/memory_regions/src/watermark.rs::split_new_watermark
 
@@ -5994,31 +5983,18 @@ crates/socket_contract/src/lib.rs::CONNECT_ESTABLISHED
 
 crates/socket_contract/src/lib.rs::CONNECT_REFUSED
 
-crates/socket_contract/src/lib.rs::DENIED_PORT
 
-crates/socket_contract/src/lib.rs::ECHO_PEER_IP
 
-crates/socket_contract/src/lib.rs::ECHO_PEER_PORT
 
-crates/socket_contract/src/lib.rs::HI
 
-crates/socket_contract/src/lib.rs::IN_MSG
 
-crates/socket_contract/src/lib.rs::LISTEN_DENIED
 
-crates/socket_contract/src/lib.rs::LISTEN_GRANTED
 
-crates/socket_contract/src/lib.rs::LISTEN_IN_USE
 
-crates/socket_contract/src/lib.rs::LISTEN_PORT
 
-crates/socket_contract/src/lib.rs::LO
 
-crates/socket_contract/src/lib.rs::MINT
 
-crates/socket_contract/src/lib.rs::NO_LISTEN_GRANT
 
-crates/socket_contract/src/lib.rs::NO_NAMESERVER
 
 crates/socket_contract/src/lib.rs::OPERATION_ACCEPT
 
@@ -6039,49 +6015,30 @@ crates/socket_contract/src/lib.rs::OPERATION_RECEIVE
 
 crates/socket_contract/src/lib.rs::OPERATION_SEND
 
-crates/socket_contract/src/lib.rs::OPERATION_SENDTO
 
-crates/socket_contract/src/lib.rs::OUT_MSG
 
-crates/socket_contract/src/lib.rs::OWN_SPACE
 
-crates/socket_contract/src/lib.rs::PACKAGE_PEER_HOST
 
-crates/socket_contract/src/lib.rs::PACKAGE_PEER_IP
 
-crates/socket_contract/src/lib.rs::PACKAGE_PEER_PORT
 
-crates/socket_contract/src/lib.rs::PER_SECOND
 
-crates/socket_contract/src/lib.rs::Ports
 
-crates/socket_contract/src/lib.rs::REP_ERR
 
-crates/socket_contract/src/lib.rs::REP_OK
 
-crates/socket_contract/src/lib.rs::ROUNDS
 
-crates/socket_contract/src/lib.rs::SOCKET_BADGE
 
-crates/socket_contract/src/lib.rs::SPAN
 
-crates/socket_contract/src/lib.rs::grant_allows
 
-crates/socket_contract/src/lib.rs::ipv4_word
 
 crates/socket_contract/src/lib.rs::listen_grant
 
 crates/socket_contract/src/lib.rs::names_a_socket
 
-crates/socket_contract/src/lib.rs::new
 
-crates/socket_contract/src/lib.rs::next
 
 crates/socket_contract/src/lib.rs::udp_bind_grant
 
-crates/socket_contract/src/lib.rs::udp_grant_allows
 
-crates/socket_contract/src/lib.rs::word_ipv4
 
 crates/static_elf/src/error.rs::Error
 

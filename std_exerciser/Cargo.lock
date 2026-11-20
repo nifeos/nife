@@ -22,6 +22,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
 
 [[package]]
 name = "capability_manifest_note"
@@ -57,7 +58,8 @@ dependencies = [
 
 [[package]]
 name = "counter_frequency_contract"
-version = "0.1.0"
+version = "0.1.0-pre.1"
+source = "git+https://github.com/nifeos/counter_frequency_contract?rev=7e7bc1bf9b9e25608a650af1fff36b9dc15585bd#7e7bc1bf9b9e25608a650af1fff36b9dc15585bd"
 
 [[package]]
 name = "crossbeam-deque"
@@ -95,6 +97,14 @@ dependencies = [
 name = "domain_name_resolution_contract"
 version = "0.1.0"
 dependencies = [
+ "domain_name_system",
+]
+
+[[package]]
+name = "domain_name_resolution_fixture"
+version = "0.1.0"
+dependencies = [
+ "domain_name_resolution_contract",
  "domain_name_system",
 ]
 
@@ -332,17 +342,22 @@ name = "socket_contract"
 version = "0.1.0"
 
 [[package]]
+name = "socket_fixture"
+version = "0.1.0"
+
+[[package]]
 name = "std_exerciser"
 version = "0.1.0"
 dependencies = [
  "capability_manifest_note",
  "domain_name_resolution_contract",
+ "domain_name_resolution_fixture",
  "filesystem_contract",
  "filesystem_fixture",
  "grant_contract",
  "program_table",
  "rayon",
- "socket_contract",
+ "socket_fixture",
  "user_mode_runtime",
  "walk_pricing",
 ]

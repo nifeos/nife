@@ -46,6 +46,10 @@ pub(crate) fn read_head(file: &File, path: &Path) -> Result<Vec<u8>, String> {
 /// this project has written, and then at 4096, which is what a native-4K drive reports. A wrong
 /// guess fails on the signature rather than reading a plausible wrong table, because at the wrong
 /// offset there is no `EFI PART`.
+///
+/// # BUGS
+/// - The table is not checked against the device's size (`check_disk_size`), so a table cloned
+///   whole from a disk of another size is listed as this device's.
 pub(crate) fn parse_table<'a>(
     head: &'a [u8],
     path: &Path,

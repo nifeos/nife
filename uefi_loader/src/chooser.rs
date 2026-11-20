@@ -24,7 +24,9 @@
 //! - The logical block size is assumed to be 512; other disks are skipped.
 //! - A power cut during step 3's four block writes can leave the copies disagreeing. Untested.
 //! - The writes go primary-first, so for a moment neither copy parses (`ROLE_CONFIRM`'s do not).
-//! - Nothing reads the backup table when the primary fails to parse.
+//! - Nothing reads the backup table when the primary fails to parse, and the header's disk size is
+//!   never compared with the device's (`check_disk_size`), so a table cloned whole from a disk of
+//!   another size parses.
 //! - An image started from a slot has no boot file, so it cannot install onto a second disk, and
 //!   [`booted_from_nvme`] assumes NVMe without looking.
 //! - x86_64 only: milestone 568 (the boot file has nowhere to go on a device-tree machine).

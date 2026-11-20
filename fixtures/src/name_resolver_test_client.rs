@@ -1,7 +1,7 @@
 //! **A client of the name resolver, and nothing more** (milestone 384 (in a capability system the
 //! resolver is a grant)).
 //!
-//! It asks the resolver about every name in `domain_name_resolution_contract::fixture::CASES`, in
+//! It asks the resolver about every name in `domain_name_resolution_fixture::CASES`, in
 //! order, and reports each reply; the kernel's test judges them
 //! (`system_tests/src/user/name_resolver_tests.rs`). Then, given a network, it connects to the
 //! address the first name resolved to and checks an echo comes back. It has the shape milestone 801
@@ -15,7 +15,7 @@
 //! | 0 | its report endpoint | `WRITE` |
 //! | 1 | the resolver's endpoint, badged by the spawner | `WRITE` |
 //! | 2 | an untyped budget: its resolver page and its socket page | |
-//! | 3 | `net_stack`'s `Stack` endpoint, when `arg0` is `fixture::WITH_NETWORK` | `WRITE` |
+//! | 3 | `net_stack`'s `Stack` endpoint, when `arg0` is `domain_name_resolution_fixture::WITH_NETWORK` | `WRITE` |
 
 //! # What it reports
 //!
@@ -31,12 +31,12 @@
 #![no_main]
 
 use abi::rights;
-use domain_name_resolution_contract::fixture::{
-    CASES, ECHO_FAILED, ECHO_NO_ADDRESS, ECHO_OK, ECHO_SKIPPED, WITH_NETWORK,
-};
 use domain_name_resolution_contract::{
     IPV4_ADDRESSES_OFFSET_BYTES, NAME_OFFSET_BYTES, OPERATION_ATTACH_SHARED_PAGE,
     OPERATION_RESOLVE, Outcome, endowment, request, status,
+};
+use domain_name_resolution_fixture::{
+    CASES, ECHO_FAILED, ECHO_OK, ECHO_SKIPPED, ECHO_UNRESOLVED, WITH_NETWORK,
 };
 use socket_contract as socket;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
@@ -78,7 +78,7 @@ fn start(mode: u64, _a1: u64, _a2: u64) -> ! {
     }
     let echo = match (mode == WITH_NETWORK, first) {
         (false, _) => ECHO_SKIPPED,
-        (true, None) => ECHO_NO_ADDRESS,
+        (true, None) => ECHO_UNRESOLVED,
         (true, Some(address)) => echo_at(endowment::server_octets(address)),
     };
     send(REPORT, CASES.len() as u64, echo, 0);
@@ -112,7 +112,7 @@ fn echo_at(address: [u8; 4]) -> u64 {
     // A socket of our own (§255 (each socket is its own capability)): the resolver shares this
     // stack, and before milestone 649 (every client of a network stack shares its socket numbers)
     // the two had to agree by convention on which socket number each used.
-    let (socket::REP_OK, _, Some(socket)) = call_receiving(STACK, socket::OPERATION_OPEN_TCP, 0)
+    let (socket::REPLY_OK, _, Some(socket)) = call_receiving(STACK, socket::OPERATION_OPEN_TCP, 0)
     else {
         return ECHO_FAILED;
     };
@@ -128,11 +128,11 @@ fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
         return ECHO_FAILED;
     }
     for (i, &b) in address.iter().enumerate() {
-        SOCKET_PAGE.write::<u8>(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET_PAGE.write::<u8>(socket::DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
     SOCKET_PAGE.write::<u16>(
         socket::DESTINATION_PORT_OFFSET_BYTES,
-        socket::fixture::ECHO_PEER_PORT,
+        socket_fixture::ECHO_PEER_PORT,
     );
     if call(socket, socket::OPERATION_CONNECT, 0).0 != socket::CONNECT_ESTABLISHED {
         return ECHO_FAILED;

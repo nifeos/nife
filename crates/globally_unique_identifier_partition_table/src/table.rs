@@ -128,13 +128,11 @@ impl<'a> PartitionTable<'a> {
         {
             return Err(Error::TableOverlapsUsable);
         }
-        let header = Header {
-            my_logical_block_address: PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS,
-            alternate_logical_block_address: last,
-            entry_array_logical_block_address: PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS + 1,
-            ..backup
-        };
-        Self::checked(header, backup_entries, block_bytes)
+        Self::checked(
+            primary_from_backup(backup, last),
+            backup_entries,
+            block_bytes,
+        )
     }
 
     /// The geometry and partition rules every table meets, whichever copy it was read from.
@@ -495,13 +493,32 @@ impl<'a> PartitionTable<'a> {
     /// is identical, which is what [`PartitionTable::check_backup`] relies
     /// on.
     pub fn write_backup_header(&self, block: &mut [u8]) -> Result<(), Error> {
+        self.backup_header().encode_into(block)
+    }
+
+    /// The header [`PartitionTable::write_backup_header`] encodes. Split out so that
+    /// `verification::a_backup_header_restores_the_table_it_was_written_from` proves the field
+    /// mapping on symbolic disk sizes without a CRC, which `encode_into` adds and the header round
+    /// trip proves separately.
+    pub(crate) fn backup_header(&self) -> Header {
         Header {
             my_logical_block_address: self.header.alternate_logical_block_address,
             alternate_logical_block_address: self.header.my_logical_block_address,
             entry_array_logical_block_address: self.backup_entry_logical_block_address(),
             ..self.header
         }
-        .encode_into(block)
+    }
+}
+
+/// The primary header a backup header at `last` describes, in the orientation
+/// [`PartitionTable::parse_backup`] documents: `MyLBA` 1, `AlternateLBA` the last block, the array at
+/// block 2.
+pub(crate) fn primary_from_backup(backup: Header, last: u64) -> Header {
+    Header {
+        my_logical_block_address: PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS,
+        alternate_logical_block_address: last,
+        entry_array_logical_block_address: PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS + 1,
+        ..backup
     }
 }
 

@@ -1,0 +1,21 @@
+Falsifies `memory_regions::proofs::a_retyped_run_is_the_pages_asked_for_and_zero_is_refused`.
+
+The defect: a run of no pages passes through as a success. The watermark does not move, so the
+caller is told a run was carved and is given a page number that the next retype hands out again.
+
+Expected to fail: the harness's `assert!(count > 0, "a run of no pages must be refused")`, at
+`count == 0` with room left, which the defect accepts.
+
+diff --git a/crates/memory_regions/src/watermark.rs b/crates/memory_regions/src/watermark.rs
+--- a/crates/memory_regions/src/watermark.rs
++++ b/crates/memory_regions/src/watermark.rs
+@@ -51,6 +51,9 @@ pub fn split_new_watermark(parent_pages: u64, parent_watermark: u64, want: u64)
+ /// assert_eq!(retype_new_watermark(8, 4, 5), None, "a run past the budget is refused");
+ /// ```
+ pub fn retype_new_watermark(pages: u64, watermark: u64, count: u64) -> Option<u64> {
++    if count == 0 && watermark < pages {
++        return Some(watermark);
++    }
+     split_new_watermark(pages, watermark, count)
+ }
+ 

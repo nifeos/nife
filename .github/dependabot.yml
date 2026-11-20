@@ -86,6 +86,7 @@ updates:
     directories:
       - "/c_library"
       - "/crates/master_boot_record/fuzz"
+      - "/crates/domain_name_resolution_contract/fuzz"
       - "/crates/memory_region_heap/fuzz"
       - "/cryptography_exerciser"
       - "/cryptography_provider"

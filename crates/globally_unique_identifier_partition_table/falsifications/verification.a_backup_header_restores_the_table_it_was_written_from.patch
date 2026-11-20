@@ -1,0 +1,20 @@
+Falsifies `globally_unique_identifier_partition_table::verification::a_backup_header_restores_the_table_it_was_written_from`.
+
+The defect: the backup header is written with the primary header's entry array location, so it points
+at the array near the start of the disk instead of the copy just below itself. A disk whose primary
+header is lost would be restored from a backup that names the wrong array.
+
+Expected to fail: the harness's assertion that the backup's array lies after the last usable block,
+on any disk large enough to hold the table: the array named is the primary's, at block 2.
+diff --git a/crates/globally_unique_identifier_partition_table/src/table.rs b/crates/globally_unique_identifier_partition_table/src/table.rs
+index 0e923df03..05ff5f500 100644
+--- a/crates/globally_unique_identifier_partition_table/src/table.rs
++++ b/crates/globally_unique_identifier_partition_table/src/table.rs
+@@ -504,7 +504,6 @@ impl<'a> PartitionTable<'a> {
+         Header {
+             my_logical_block_address: self.header.alternate_logical_block_address,
+             alternate_logical_block_address: self.header.my_logical_block_address,
+-            entry_array_logical_block_address: self.backup_entry_logical_block_address(),
+             ..self.header
+         }
+     }

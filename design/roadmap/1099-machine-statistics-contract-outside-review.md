@@ -47,9 +47,10 @@ No new tool.
 - P1-10, `online_cpus` type and the word core: Done, [#3566](https://github.com/nifeos/nife/pull/3566)
   and [#3801](https://github.com/nifeos/nife/pull/3801). `online_cpus` stays `usize`, and the prose says "cpu".
 - P1-11, documentation defects: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-12, dry run against the standalone check: Open. `helpers/crate_move.py` runs
-  `cargo generate-lockfile` before it inlines the inherited manifest keys, so the dry run stops
-  before it can report the path dependencies.
+- P2-12, dry run against the standalone check: Done, [#3839](https://github.com/nifeos/nife/pull/3839).
+  The dry run reports the manifest findings with the standalone check's own function, inlines the
+  inherited keys before it builds, and reports the scaffold's citations and `nife` lines after the
+  crate's own, under their own step names.
 - P2-13, end-to-end test note: Done, [#3801](https://github.com/nifeos/nife/pull/3801). The README says the test lives with the kernel.
 - P2-14, unconditional `no_std`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-15, `Snapshot` size: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -172,8 +173,8 @@ The P1 items are in [the appendix](1099-machine-statistics-contract-outside-revi
 
 ## Follow-on
 
-- **Outstanding.** Each finding that "Finding status" marks Open or Ruled, checked against the
-  crate's source and manifest.
+- **Outstanding.** The clearance of the review package, an open decision above; then the move,
+  after `address_space_layout` and `current_cpu_contract` leave.
 
 ## Decisions for the architect
 
@@ -235,15 +236,10 @@ The checks are in [the appendix](1099-machine-statistics-contract-outside-review
   is not linted, so this does not block here; it is `address_space_layout`'s finding, for that
   crate's review. The same build prints a future-incompatibility notice for `address_space_layout`,
   which the review did not chase.
-- The dry run never reported the two path dependencies because its build stopped earlier (item
-  12). The move lane reads `script/crate-standalone` as well as the dry run.
 - Items 5 and 14 came from reading, not from a build for a narrow target or with the
   unconditional attribute.
 - The mutation census was not re-run; the carried row reads 33 mutants, none missed. Item 4's
   saturating fold adds mutants the next census will judge.
-- The template's scaffold still mentions nife in six lines (`.githooks/commit-msg`, `deny.toml`,
-  `docs/stranger-test.md`, `rustfmt.toml`, `CONTRIBUTING.md` and the pull request template); the
-  dry run reports them against every crate, and they are the template's to fix.
 - The review did not run nife's QEMU system tests; the review read the kernel's writer and did not exercise it.
 
 ## Index row

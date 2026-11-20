@@ -1,0 +1,21 @@
+Falsifies `globally_unique_identifier_partition_table::verification::a_name_always_decodes_into_its_documented_buffer`.
+
+The defect: the label is measured against half the buffer, as if two bytes of UTF-8 sufficed for
+each UTF-16 code unit. A label of 36 three-byte characters (any CJK name) needs 108 bytes and is
+refused from the documented 144-byte buffer.
+
+Expected to fail: the harness's `assert!(written.is_ok())`, on any name whose UTF-8 form passes 72
+bytes.
+diff --git a/crates/globally_unique_identifier_partition_table/src/entry.rs b/crates/globally_unique_identifier_partition_table/src/entry.rs
+index 9aff667e7..9a15a97ad 100644
+--- a/crates/globally_unique_identifier_partition_table/src/entry.rs
++++ b/crates/globally_unique_identifier_partition_table/src/entry.rs
+@@ -156,7 +156,7 @@ impl Entry {
+         for ch in char::decode_utf16(self.name[..units].iter().copied()) {
+             let ch = ch.unwrap_or(char::REPLACEMENT_CHARACTER);
+             let len = ch.len_utf8();
+-            if written + len > out.len() {
++            if written + len > out.len() / 2 {
+                 return Err(Error::NameTooLong);
+             }
+             ch.encode_utf8(&mut out[written..]);

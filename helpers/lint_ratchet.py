@@ -121,6 +121,9 @@ CONFIGURATIONS = {
     'crates/master_boot_record/fuzz/clippy': ('--manifest-path',
                                               'crates/master_boot_record/fuzz/Cargo.toml',
                                               '--all-targets'),
+    'crates/domain_name_resolution_contract/fuzz/clippy': ('--manifest-path',
+                                                           'crates/domain_name_resolution_contract/fuzz/Cargo.toml',
+                                                           '--all-targets'),
 }
 # Files whose change cannot alter what clippy reports (the freshness rule's exception): prose,
 # records, workflows, and the scripts and Python helpers that never reach rustc. A `.rs` file under
@@ -682,7 +685,7 @@ def saved_cases():
         case('--check on such a directory exits non-zero and prints the files',
              status == 1 and 'host.json' in printed.getvalue())
         case('every required configuration is checked, not only those present',
-             len(CONFIGURATIONS) == 12)
+             len(CONFIGURATIONS) == 13)
     case('newest_input names a file of the tree', newest_input()[1] != '')
     return cases
 

@@ -39,9 +39,9 @@ filesystem_fixture = { path = "../crates/filesystem_fixture" }
 # The socket contract's shared fixture (milestone 64's inbound half): the port the runners forward
 # a host port to, the port no test grants, and the two strings the gate trades. Same reasoning as
 # `filesystem_contract` above and rule 7's: a port number two binaries agree on is a crate. The demo touches
-# only `socket_contract::fixture` and never the wire constants, because speaking the wire is
+# only `socket_fixture` and never the wire constants, because speaking the wire is
 # `std::net`'s job now, which is this milestone's whole point.
-socket_contract = { path = "../crates/socket_contract" }
+socket_fixture = { path = "../crates/socket_fixture" }
 
 # Milestone 121 (`ripgrep` on nife: enumeration as a capability)'s walk pricing: plain `std::fs` code that runs unchanged on a host, so the walk
 # priced through a granted directory here is the same function a host comparison prices. It
@@ -58,9 +58,10 @@ capability_manifest_note = { path = "../crates/capability_manifest_note" }
 
 # `std_resolve`'s names (milestone 801 (packages over the internet)): the resolver test's cases, so
 # this program and the native client of milestone 384 (in a capability system the resolver is a
-# grant) are judged against one zone. `no_std`, and its one
-# dependency, `domain_name_system`, is too.
+# grant) are judged against one zone, and the reply statuses they carry. Both are `no_std`, and so
+# is their one other dependency, `domain_name_system`.
 domain_name_resolution_contract = { path = "../crates/domain_name_resolution_contract" }
+domain_name_resolution_fixture = { path = "../crates/domain_name_resolution_fixture" }
 
 # `std_rayon`'s parallel sum (milestone 812 (`std::thread::spawn` runs real threads in one address
 # space)'s exit test). Unmodified, from crates.io, and a dependency of this package only: calef

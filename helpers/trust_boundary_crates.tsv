@@ -19,7 +19,7 @@ bitmap_font	shared	components,kernel,uefi_loader
 block_roster_contract	shared	retired
 boot_ladder	shared	components,fixtures,kernel
 boot_slot	shared	components,kernel,uefi_loader
-byte_glob	shared	components,fixtures,jig,kernel,std_exerciser
+byte_glob	shared	retired
 byte_sink_contract	shared	components,fixtures,kernel,std
 byte_sink_proto	shared	retired
 byte_sink_protocol	shared	retired
@@ -42,7 +42,7 @@ compositor	shared	components,fixtures,kernel
 confined_fuzz_protocol	userspace	retired
 confined_syscall_fuzzer_contract	userspace	fixtures
 coremark	shared	fixtures,kernel
-counter_frequency_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
+counter_frequency_contract	shared	retired
 counter_frequency_protocol	shared	retired
 cpu_set	kernel	kernel
 cred	userspace	retired
@@ -64,6 +64,7 @@ disk_tree	userspace	components
 dma_validator	kernel	retired
 documentation	userspace	components,mdr
 domain_name_resolution_contract	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
+domain_name_resolution_fixture	userspace	fixtures,std_exerciser
 domain_name_system	shared	components,fixtures,jig,kernel,redoxfs_server,std_exerciser
 driver_process_contract	shared	components,kernel
 dtb	shared	retired
@@ -129,7 +130,7 @@ machine_statistics_contract	shared	components,fixtures,kernel
 machine_statistics_protocol	shared	retired
 manifest_note	userspace	retired
 manual	userspace	retired
-master_boot_record	kernel	kernel
+master_boot_record	shared	components,kernel,redoxfs_server,uefi_loader
 mdns_config	userspace	retired
 mdns_proto	userspace	retired
 measured_boot	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader
@@ -137,6 +138,7 @@ memory_corruption_canary_gate	kernel	kernel
 memory_region_heap	userspace	components,fixtures,redoxfs_server
 memory_regions	kernel	kernel
 name_resolution_protocol	userspace	retired
+network_stack	userspace	components
 network_time_protocol	userspace	components,fixtures
 nife_partition_types	userspace	components,redoxfs_server,uefi_loader
 nifefs	shared	components,fixtures,kernel
@@ -172,6 +174,7 @@ slots	kernel	retired
 smb_proto	userspace	retired
 soak_page	shared	fixtures,kernel
 socket_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
+socket_fixture	userspace	components,fixtures,jig,std_exerciser
 socket_proto	shared	retired
 socket_protocol	shared	retired
 startup_page_contract	shared	components,fixtures,kernel

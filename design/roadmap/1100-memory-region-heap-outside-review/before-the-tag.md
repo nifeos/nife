@@ -53,7 +53,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    `base.is_multiple_of(PAGE_BYTES)` and refuses otherwise (item 5's return type carries it).
    Door: two-way until the tag. Effort: S.
 
-8. The growth policy has no host test, no proof, and exists three times. PARTIAL (the seam, 16 host tests and three Kani harnesses with falsification patches are done; std's overlay and `second_mount` still hold their copies, for want of a host-buildable path).
+8. The growth policy has no host test, no proof, and exists three times. DONE (the seam, 16 host tests and three Kani harnesses with falsification patches; std generates `heap_growth.rs` from `src/growth.rs`, and `second_mount` runs on the crate).
    Finding: `[lib] test = false`. The only test is the QEMU exerciser, which reports one integer
    (committed bytes) and asserts it is positive, page-aligned and under the cap. There is no Kani
    harness. The std overlay restates the policy line for line
@@ -80,7 +80,7 @@ An appendix to [the milestone](../1100-memory-region-heap-outside-review.md).
    something.
    Door: two-way until the tag. The generic parameter is public API after it. Effort: M.
 
-9. The documentation does not survive a reader who has not read nife. PARTIAL (the crate docs gloss "untyped", state the minimum cap, pin 1,575 bytes in `the_first_heap_fits_in_one_page`, and name the spinlock; the README belongs to the move lane).
+9. The documentation does not survive a reader who has not read nife. DONE (the crate docs gloss "untyped", state the minimum cap, pin 1,575 bytes in `the_first_heap_fits_in_one_page`, and name the spinlock; the README's host example compiles as a doctest).
    Finding: the crate says "untyped" (lines 1, 42, 94 and the module docs) and "memory region" (the
    crate name, the slot's name, the `abi` module) for one thing, and defines neither. The only
    example carries `ignore` and never compiles. Nothing states the minimum useful cap. talc's first
