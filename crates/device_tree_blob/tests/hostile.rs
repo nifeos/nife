@@ -149,10 +149,13 @@ fn nested(depth: usize) -> Vec<u8> {
 /// cell widths.
 #[test]
 fn a_node_at_the_deepest_depth_is_found_and_one_deeper_is_refused() {
-    let mut out = [Region { start: 0, size: 0 }; 4];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
     let intc = Region {
         start: 0x800_0000,
-        size: 0x1_0000,
+        size_bytes: 0x1_0000,
     };
 
     for depth in [3, 16, 17, 40, MAXIMUM_DEPTH] {
@@ -219,7 +222,10 @@ fn a_memory_region_that_wraps_the_address_space_is_refused() {
     let blob = b.finish();
 
     let tree = DeviceTreeBlob::from_bytes(&blob).unwrap();
-    let mut out = [Region { start: 0, size: 0 }; 4];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
     assert_eq!(
         tree.memory_regions(&mut out),
         Err(Error::RegionOverflow),
@@ -236,7 +242,7 @@ fn region_end_saturates_rather_than_wrapping() {
     assert_eq!(
         Region {
             start: u64::MAX,
-            size: 1
+            size_bytes: 1
         }
         .end(),
         u64::MAX
@@ -244,7 +250,7 @@ fn region_end_saturates_rather_than_wrapping() {
     assert_eq!(
         Region {
             start: u64::MAX,
-            size: u64::MAX
+            size_bytes: u64::MAX
         }
         .end(),
         u64::MAX
@@ -253,7 +259,7 @@ fn region_end_saturates_rather_than_wrapping() {
     assert_eq!(
         Region {
             start: 0x4000_0000,
-            size: 0x800_0000
+            size_bytes: 0x800_0000
         }
         .end(),
         0x4800_0000
@@ -353,10 +359,13 @@ fn reservations_are_read_entry_by_entry() {
     let blob = b.finish_with_reservations(&[(0, 0x1000), (0x8000_0000, 0x2000)]);
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 4];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
     assert_eq!(dt.memory_reservations(&mut out), Ok(2));
-    assert_eq!((out[0].start, out[0].size), (0, 0x1000));
-    assert_eq!((out[1].start, out[1].size), (0x8000_0000, 0x2000));
+    assert_eq!((out[0].start, out[0].size_bytes), (0, 0x1000));
+    assert_eq!((out[1].start, out[1].size_bytes), (0x8000_0000, 0x2000));
 
     // An entry that wraps the address space is refused, as a `reg` pair of that shape is, and one
     // that ends exactly at the top is not.
@@ -398,10 +407,19 @@ fn memory_with_one_address_cell() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 4];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
     assert_eq!(dt.memory_regions(&mut out), Ok(2));
-    assert_eq!((out[0].start, out[0].size), (0x4000_0000, 0x0100_0000));
-    assert_eq!((out[1].start, out[1].size), (0x9000_0000, 0x0010_0000));
+    assert_eq!(
+        (out[0].start, out[0].size_bytes),
+        (0x4000_0000, 0x0100_0000)
+    );
+    assert_eq!(
+        (out[1].start, out[1].size_bytes),
+        (0x9000_0000, 0x0010_0000)
+    );
 }
 
 /// Cell widths flow DOWN the tree and a node's own declaration applies to its CHILDREN, not to
@@ -431,10 +449,13 @@ fn cell_widths_are_inherited_and_a_reg_uses_its_parents() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 4];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
     assert_eq!(dt.node_register_regions(b"dev@", &mut out), Ok(2));
-    assert_eq!((out[0].start, out[0].size), (0x1000_0000, 0x100));
-    assert_eq!((out[1].start, out[1].size), (0x2000_0000, 0x200));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x1000_0000, 0x100));
+    assert_eq!((out[1].start, out[1].size_bytes), (0x2000_0000, 0x200));
 }
 
 /// Only a name match may set the target: with `||` in the match condition, the first depth-2 node
@@ -455,9 +476,12 @@ fn a_prefix_finds_its_node_not_the_first_node() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.node_register_regions(b"uart@", &mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), (0x900_0000, 0x1000));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x900_0000, 0x1000));
 }
 
 /// A matched node stays matched across its children: the `END_NODE` bookkeeping compares depths
@@ -479,9 +503,12 @@ fn a_matched_node_survives_its_children_closing() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.node_register_regions(b"m@", &mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), (0xAB00, 0x40));
+    assert_eq!((out[0].start, out[0].size_bytes), (0xAB00, 0x40));
 }
 
 /// The deepest depth has a slot of its own: a bus at `MAXIMUM_DEPTH - 1` declares one-cell
@@ -508,9 +535,12 @@ fn a_declaration_at_the_deepest_depth_has_its_own_slot() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 1];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 1];
     assert_eq!(dt.node_register_regions(b"m@", &mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), (0xAB00, 0x40));
+    assert_eq!((out[0].start, out[0].size_bytes), (0xAB00, 0x40));
 }
 
 /// The compatible walker's own copies of the same rules: the root cannot be a device (its match
@@ -537,7 +567,10 @@ fn compatible_respects_the_root_and_the_cell_widths() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(
         dt.node_register_regions_compatible(b"root,thing", &mut out),
         Ok(0),
@@ -547,7 +580,7 @@ fn compatible_respects_the_root_and_the_cell_widths() {
         dt.node_register_regions_compatible(b"google,goldfish-rtc", &mut out),
         Ok(1)
     );
-    assert_eq!((out[0].start, out[0].size), (0x0010_1000, 0x1000));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x0010_1000, 0x1000));
 }
 
 /// Property lookup is by name, not position, and the walk has to stride over values whose
@@ -626,7 +659,7 @@ fn initial_ramdisk_reads_widths_and_refuses_the_empty_and_the_misnamed() {
         .initial_ramdisk()
         .unwrap()
         .expect("a real initial ramdisk range");
-    assert_eq!((r.start, r.size), (0x4800_0000, 0x8000));
+    assert_eq!((r.start, r.size_bytes), (0x4800_0000, 0x8000));
 
     let blob = build(b"chosen", 0x4800_0000, 0x4800_0000);
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
@@ -766,7 +799,10 @@ fn a_roots_reg_is_never_a_named_devices() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.node_register_regions(b"absent@", &mut out), Ok(0));
 }
 
@@ -795,12 +831,15 @@ fn compatible_inherits_cell_widths_through_a_silent_bus() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(
         dt.node_register_regions_compatible(b"example,testdev", &mut out),
         Ok(1)
     );
-    assert_eq!((out[0].start, out[0].size), (0x2000, 0x1_0000_2000));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x2000, 0x1_0000_2000));
 }
 
 /// A `reg` before any node has no parent to decode against, and the `depth >= 2` guard on the
@@ -816,7 +855,10 @@ fn a_reg_before_the_root_is_walked_past() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(
         dt.node_register_regions_compatible(b"absent", &mut out),
         Ok(0)
@@ -871,9 +913,12 @@ fn reserved_memory_defaults_to_the_roots_cell_widths() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 4];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), (0x8000_0000, 0x4_0000));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x8000_0000, 0x4_0000));
 }
 
 /// And `/reserved-memory` may override those widths for its own children, which the fixture
@@ -899,9 +944,12 @@ fn reserved_memory_honors_its_own_declared_widths() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 4];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), (0x1000, 0x2000));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x1000, 0x2000));
 
     // Only the root's and `/reserved-memory`'s own declarations count: a sibling bus that declares
     // two and two before it leaves the root's one and one in force for the children.
@@ -922,7 +970,7 @@ fn reserved_memory_honors_its_own_declared_widths() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), (0x1000, 0x2000));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x1000, 0x2000));
 }
 
 /// `/chosen` stops meaning chosen when it closes, and only then: a later sibling's
@@ -947,7 +995,7 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
         .initial_ramdisk()
         .unwrap()
         .expect("the real range from /chosen");
-    assert_eq!((r.start, r.size), (0x4800_0000, 0x2_0000));
+    assert_eq!((r.start, r.size_bytes), (0x4800_0000, 0x2_0000));
 
     let mut b = Blob::new();
     b.begin_node(b"");
@@ -964,7 +1012,7 @@ fn initial_ramdisk_properties_after_chosen_closes_do_not_count() {
         .initial_ramdisk()
         .unwrap()
         .expect("the properties after the child still belong to /chosen");
-    assert_eq!((r.start, r.size), (0x4800_0000, 0x2_0000));
+    assert_eq!((r.start, r.size_bytes), (0x4800_0000, 0x2_0000));
 }
 
 /// **Each walker's per-depth stack reaches the deepest depth.** The walkers beside `node_register_regions`
@@ -1033,7 +1081,10 @@ fn every_walker_answers_at_the_deepest_depth_and_refuses_one_deeper() {
 /// that went negative.
 #[test]
 fn a_tree_whose_nesting_does_not_balance_is_refused() {
-    let mut out = [Region { start: 0, size: 0 }; 1];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 1];
 
     let mut b = Blob::new();
     b.end_node().end_node().end_node();
@@ -1291,17 +1342,20 @@ fn a_cells_declaration_that_is_not_one_cell_is_ignored() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     let dev = (0x1000, 0x10);
     assert_eq!(dt.node_register_regions(b"dev", &mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), dev);
+    assert_eq!((out[0].start, out[0].size_bytes), dev);
     assert_eq!(
         dt.node_register_regions_compatible(b"example,dev", &mut out),
         Ok(1)
     );
-    assert_eq!((out[0].start, out[0].size), dev);
+    assert_eq!((out[0].start, out[0].size_bytes), dev);
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), (0x2000, 0x20));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x2000, 0x20));
 }
 
 /// An empty needle names no device. A `compatible` value ends in a NUL, so splitting it on NUL
@@ -1325,7 +1379,10 @@ fn an_empty_compatible_needle_matches_nothing() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.node_register_regions_compatible(b"", &mut out), Ok(0));
     assert_eq!(dt.node_property_compatible(b"", b"reg"), Ok(None));
     assert_eq!(dt.parent_property_compatible(b"", b"#size-cells"), Ok(None));
@@ -1388,11 +1445,14 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
         for at_root in [true, false] {
             let blob = tree(bad, at_root);
             let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
-            let mut out = [Region { start: 0, size: 0 }; 2];
+            let mut out = [Region {
+                start: 0,
+                size_bytes: 0,
+            }; 2];
             let case = (core::str::from_utf8(bad).unwrap(), at_root);
             assert_eq!(dt.memory_regions(&mut out), Ok(1), "{case:?}");
             assert_eq!(
-                (out[0].start, out[0].size),
+                (out[0].start, out[0].size_bytes),
                 (0x4000_0000, 0x1000),
                 "{case:?}"
             );
@@ -1401,15 +1461,27 @@ fn every_walker_ignores_a_cells_declaration_that_is_not_one_cell() {
                 Ok(1),
                 "{case:?}"
             );
-            assert_eq!((out[0].start, out[0].size), (0x1000, 0x10), "{case:?}");
+            assert_eq!(
+                (out[0].start, out[0].size_bytes),
+                (0x1000, 0x10),
+                "{case:?}"
+            );
             assert_eq!(
                 dt.node_register_regions_compatible(b"example,dev", &mut out),
                 Ok(1),
                 "{case:?}"
             );
-            assert_eq!((out[0].start, out[0].size), (0x1000, 0x10), "{case:?}");
+            assert_eq!(
+                (out[0].start, out[0].size_bytes),
+                (0x1000, 0x10),
+                "{case:?}"
+            );
             assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1), "{case:?}");
-            assert_eq!((out[0].start, out[0].size), (0x2000, 0x20), "{case:?}");
+            assert_eq!(
+                (out[0].start, out[0].size_bytes),
+                (0x2000, 0x20),
+                "{case:?}"
+            );
         }
     }
 }
@@ -1431,13 +1503,16 @@ fn node_reg_stops_at_the_first_matching_node_even_without_a_reg() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.node_property(b"uart@", b"reg"), Ok(None));
     assert_eq!(dt.node_register_regions(b"uart@", &mut out), Ok(0));
 
     // The control: asked for the second node by its own name, it answers.
     assert_eq!(dt.node_register_regions(b"uart@2", &mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), (0x2000, 0x100));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x2000, 0x100));
 }
 
 /// Only the root's `reserved-memory` child is the reservation list. One nested deeper (here under
@@ -1462,7 +1537,10 @@ fn a_reserved_memory_node_below_the_root_is_not_the_reservation_list() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-    let mut out = [Region { start: 0, size: 0 }; 4];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(0));
 
     // The control: the same node at the root is read, with the root's widths.
@@ -1479,7 +1557,7 @@ fn a_reserved_memory_node_below_the_root_is_not_the_reservation_list() {
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
     assert_eq!(dt.reserved_memory_regions(&mut out), Ok(1));
-    assert_eq!((out[0].start, out[0].size), (0x8000_0000, 0x4_0000));
+    assert_eq!((out[0].start, out[0].size_bytes), (0x8000_0000, 0x4_0000));
 }
 
 /// A property whose length, a `u32` from the blob, runs far past the blob is refused as truncated by
@@ -1501,7 +1579,10 @@ fn a_property_length_past_the_blob_is_truncated_in_every_lookup() {
         let blob = b.finish();
         let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
 
-        let mut out = [Region { start: 0, size: 0 }; 2];
+        let mut out = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 2];
         assert_eq!(
             dt.memory_regions(&mut out),
             Err(Error::Truncated),
@@ -1537,7 +1618,10 @@ fn a_structure_block_without_its_end_token_is_truncated_not_read_into_the_string
     b.end_node();
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.memory_regions(&mut out), Ok(1), "the control");
 
     // The structure block ends where the strings block starts, four bytes after the last token.
@@ -1575,7 +1659,10 @@ fn the_declared_structure_size_bounds_the_walk() {
     // Two bytes short of the first token: no walker may read it.
     let short = patched(&blob, SIZE_DT_STRUCT_AT, 2);
     let dt = DeviceTreeBlob::from_bytes(&short).unwrap();
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.memory_regions(&mut out), Err(Error::Truncated));
 }
 
@@ -1586,7 +1673,10 @@ fn a_blob_older_than_version_17_ends_its_structure_at_the_strings() {
     let blob = minimal_tree();
     let old = patched(&patched(&blob, VERSION_AT, 16), SIZE_DT_STRUCT_AT, 0);
     let dt = DeviceTreeBlob::from_bytes(&old).unwrap();
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.memory_regions(&mut out), Ok(0));
 }
 
@@ -1619,13 +1709,16 @@ fn a_structure_block_that_ends_the_blob_is_inside_it() {
     );
 
     let dt = DeviceTreeBlob::from_bytes(&reordered).unwrap();
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.memory_regions(&mut out), Ok(1));
     assert_eq!(
         out[0],
         Region {
             start: 0x4000_0000,
-            size: 0x1000
+            size_bytes: 0x1000
         }
     );
 }
@@ -1678,7 +1771,10 @@ fn a_property_value_is_bounded_by_the_structure_block_exactly() {
     let value = reg64(0x4000_0000, 0x1000);
     assert_eq!(value.len(), VALUE_BYTES as usize);
     assert_eq!(dt.node_property(b"memory", b"reg"), Ok(Some(&value[..])));
-    let mut out = [Region { start: 0, size: 0 }; 2];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(dt.memory_regions(&mut out), Err(Error::Truncated));
 }
 
@@ -1710,7 +1806,10 @@ fn a_value_of_the_wrong_shape_is_a_bad_value() {
     b.end_node();
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
-    let mut out = [Region { start: 0, size: 0 }; 1];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 1];
     assert_eq!(dt.memory_regions(&mut out), Err(Error::BadValue));
 
     // A node name that runs to the end of the structure block. The strings block must not be
@@ -1799,7 +1898,10 @@ fn a_reg_that_does_not_fit_a_region_is_a_bad_value() {
         lookups
             .iter()
             .map(|lookup| {
-                let mut out = [Region { start: 0, size: 0 }; 4];
+                let mut out = [Region {
+                    start: 0,
+                    size_bytes: 0,
+                }; 4];
                 lookup(&mut out).map(|n| out[..n].to_vec())
             })
             .collect()
@@ -1809,7 +1911,7 @@ fn a_reg_that_does_not_fit_a_region_is_a_bad_value() {
     // is 64 bits.
     let fits = Region {
         start: 0x2_0000_0003,
-        size: 4,
+        size_bytes: 4,
     };
     for blob in [
         tree(3, 1, &[0, 2, 3, 4]),
@@ -1882,7 +1984,10 @@ fn memory_is_a_named_or_typed_root_child_the_firmware_has_not_disabled() {
     b.end_node();
     let blob = b.finish();
     let dt = DeviceTreeBlob::from_bytes(&blob).unwrap();
-    let mut out = [Region { start: 0, size: 0 }; 8];
+    let mut out = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 8];
     let n = dt.memory_regions(&mut out).unwrap();
     let starts: Vec<u64> = out[..n].iter().map(|region| region.start).collect();
     assert_eq!(starts, [0x2000, 0x3000, 0x7000]);

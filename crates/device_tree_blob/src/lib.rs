@@ -23,19 +23,19 @@ pub struct Region {
     /// The physical address of the first byte.
     pub start: u64,
     /// Length in bytes.
-    pub size: u64,
+    pub size_bytes: u64,
 }
 
 impl Region {
     /// One past the last byte, **saturating**.
     ///
     /// Saturating because the type is `pub` with `pub` fields, so anyone can build one whose
-    /// `start + size` wraps, and a caller placing an allocator over every RAM region may call this
+    /// `start + size_bytes` wraps, and a caller placing an allocator over every RAM region may call this
     /// before it can report a failure; a plain add would panic there under overflow checks
     /// (regression in `tests/hostile.rs`). A saturated end is still wrong, so the parser refuses a
     /// wrapping region with [`Error::RegionOverflow`]; this is the backstop, not the check.
     pub fn end(&self) -> u64 {
-        self.start.saturating_add(self.size)
+        self.start.saturating_add(self.size_bytes)
     }
 }
 
@@ -342,7 +342,10 @@ impl<'a> DeviceTreeBlob<'a> {
                 return Err(Error::RegionOverflow);
             }
 
-            *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region { start, size };
+            *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region {
+                start,
+                size_bytes: size,
+            };
             n += 1;
         }
     }
@@ -370,9 +373,9 @@ impl<'a> DeviceTreeBlob<'a> {
     ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
     /// ));
     /// let tree = DeviceTreeBlob::from_bytes(blob)?;
-    /// let mut ram = [Region { start: 0, size: 0 }; 4];
+    /// let mut ram = [Region { start: 0, size_bytes: 0 }; 4];
     /// let banks = tree.memory_regions(&mut ram)?;
-    /// assert_eq!(&ram[..banks], [Region { start: 0x8000_0000, size: 0x800_0000 }]);
+    /// assert_eq!(&ram[..banks], [Region { start: 0x8000_0000, size_bytes: 0x800_0000 }]);
     /// # Ok::<(), device_tree_blob::Error>(())
     /// ```
     pub fn memory_regions(&self, out: &mut [Region]) -> Result<usize, Error> {
@@ -522,9 +525,9 @@ impl<'a> DeviceTreeBlob<'a> {
     ///     "/tests/fixtures/qemu-riscv64-virt.dtb"
     /// ));
     /// let tree = DeviceTreeBlob::from_bytes(blob)?;
-    /// let mut rtc = [Region { start: 0, size: 0 }; 1];
+    /// let mut rtc = [Region { start: 0, size_bytes: 0 }; 1];
     /// let found = tree.node_register_regions_compatible(b"google,goldfish-rtc", &mut rtc)?;
-    /// assert_eq!(&rtc[..found], [Region { start: 0x10_1000, size: 0x1000 }]);
+    /// assert_eq!(&rtc[..found], [Region { start: 0x10_1000, size_bytes: 0x1000 }]);
     /// # Ok::<(), device_tree_blob::Error>(())
     /// ```
     ///
@@ -987,7 +990,7 @@ impl<'a> DeviceTreeBlob<'a> {
             // "no".
             (Some(start), Some(end)) if end > start => Some(Region {
                 start,
-                size: end - start,
+                size_bytes: end - start,
             }),
             _ => None,
         })
@@ -1234,7 +1237,10 @@ fn decode_regions(
             return Err(Error::RegionOverflow);
         }
 
-        *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region { start, size };
+        *out.get_mut(n).ok_or(Error::TooManyRegions)? = Region {
+            start,
+            size_bytes: size,
+        };
         n += 1;
     }
 
@@ -1425,7 +1431,10 @@ mod verification {
         let bytes: [u8; 24] = kani::any();
         let length: usize = kani::any();
         kani::assume(length <= bytes.len());
-        let mut out = [Region { start: 0, size: 0 }; 2];
+        let mut out = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 2];
         if let Ok(found) = decode_regions(&bytes[..length], kani::any(), kani::any(), &mut out) {
             assert!(found <= out.len());
         }

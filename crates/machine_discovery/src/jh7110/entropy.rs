@@ -24,7 +24,10 @@ use jh7110_entropy::{COMPATIBLES, Discovered};
 /// alone is left. calef has not ruled on it.
 pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> {
     for compatible in COMPATIBLES {
-        let mut regions = [Region { start: 0, size: 0 }; 1];
+        let mut regions = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 1];
         if tree.node_register_regions_compatible(compatible, &mut regions)? == 0 {
             continue;
         }
@@ -34,7 +37,7 @@ pub fn discover(tree: &DeviceTreeBlob<'_>) -> Result<Option<Discovered>, Error> 
         let status = tree.node_property_compatible(compatible, b"status")?;
         return Ok(Some(Discovered {
             registers_physical_address: regions[0].start,
-            registers_bytes: regions[0].size,
+            registers_bytes: regions[0].size_bytes,
             interrupt_line: interrupt,
             compatible,
             status_okay: jh7110_entropy::is_status_okay(status),

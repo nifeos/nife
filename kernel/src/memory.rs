@@ -60,14 +60,20 @@ fn initialize_from_device_tree() {
     let dtb_phys = crate::DTB.load(core::sync::atomic::Ordering::Relaxed) as u64;
     let dtb = crate::device_tree().expect("device tree is unreadable");
 
-    let mut ram = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
+    let mut ram = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; MAXIMUM_REGIONS];
     let ram_count = dtb
         .memory_regions(&mut ram)
         .expect("cannot read the memory map");
     let ram = &ram[..ram_count];
     assert!(!ram.is_empty(), "the device tree describes no RAM at all");
 
-    let mut reserved = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
+    let mut reserved = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; MAXIMUM_REGIONS];
     let reserved_count = dtb
         .memory_reservations(&mut reserved)
         .expect("cannot read the memory reservations");
@@ -79,11 +85,14 @@ fn initialize_from_device_tree() {
     // Everything already spoken for, which must never be allocated: the image, the tree and the
     // initial ramdisk (3; nobody else protects the ramdisk), then the legacy reservation block and
     // /reserved-memory (up to MAXIMUM_REGIONS each).
-    let mut forbidden = [Region { start: 0, size: 0 }; 2 * MAXIMUM_REGIONS + 3];
+    let mut forbidden = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2 * MAXIMUM_REGIONS + 3];
     let mut n = 0;
 
     let mut claim = |r: Region| {
-        if r.size > 0 {
+        if r.size_bytes > 0 {
             forbidden[n] = r;
             n += 1;
         }
@@ -91,17 +100,20 @@ fn initialize_from_device_tree() {
 
     claim(Region {
         start: image_start(),
-        size: image_end() - image_start(),
+        size_bytes: image_end() - image_start(),
     });
     claim(Region {
         start: dtb_phys,
-        size: dtb.total_size() as u64,
+        size_bytes: dtb.total_size() as u64,
     });
     // The loader's two digests, from `/chosen/bootargs`, read while the tree is the boot map's.
     crate::trust::record_loader_digests(dtb.boot_arguments().expect("cannot read /chosen"));
     if let Some(image) = dtb.initial_ramdisk().expect("cannot read /chosen") {
         INITIAL_RAMDISK_START.store(image.start as usize, core::sync::atomic::Ordering::Relaxed);
-        INITIAL_RAMDISK_SIZE.store(image.size as usize, core::sync::atomic::Ordering::Relaxed);
+        INITIAL_RAMDISK_SIZE.store(
+            image.size_bytes as usize,
+            core::sync::atomic::Ordering::Relaxed,
+        );
         claim(image);
     }
     for r in reserved {
@@ -110,7 +122,10 @@ fn initialize_from_device_tree() {
     // The /reserved-memory node's children, distinct from the legacy reservation block above. This
     // is where RISC-V firmware (OpenSBI) reserves its own region below the kernel; without it the
     // allocator would hand out OpenSBI's PMP-protected memory and the first write would fault.
-    let mut resv_mem = [Region { start: 0, size: 0 }; MAXIMUM_REGIONS];
+    let mut resv_mem = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; MAXIMUM_REGIONS];
     let resv_mem_count = dtb
         .reserved_memory_regions(&mut resv_mem)
         .expect("cannot read /reserved-memory");
@@ -148,7 +163,10 @@ fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // `plic@c000000`, the JH7110's `interrupt-controller@c000000`); the `plic@` prefix is only a
     // fallback for a compatible we do not know. One register block.
     {
-        let mut plic = [Region { start: 0, size: 0 }; 1];
+        let mut plic = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 1];
         // One compatible list, shared with the context map, so the two lookups cannot disagree
         // about what a PLIC is (`machine_discovery::plic::COMPATIBLES` names each string's machine).
         let found = machine_discovery::plic::COMPATIBLES
@@ -156,7 +174,7 @@ fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
             .any(|compat| matches!(dtb.node_register_regions_compatible(compat, &mut plic), Ok(n) if n >= 1))
             || matches!(dtb.node_register_regions(b"plic@", &mut plic), Ok(n) if n >= 1);
         if found {
-            *PLIC_REGION.lock() = Some((plic[0].start, plic[0].size));
+            *PLIC_REGION.lock() = Some((plic[0].start, plic[0].size_bytes));
         }
     }
 }
@@ -181,18 +199,24 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // `iommu=smmuv3`. Absent, the kernel runs exactly as before; present, iommu::initialize drives
     // it.
     {
-        let mut smmu = [Region { start: 0, size: 0 }; 1];
+        let mut smmu = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 1];
         if let Ok(n) = dtb.node_register_regions(b"smmuv3@", &mut smmu)
             && n >= 1
         {
-            *SMMU_REGION.lock() = Some((smmu[0].start, smmu[0].size));
+            *SMMU_REGION.lock() = Some((smmu[0].start, smmu[0].size_bytes));
         }
     }
 
     // The RTC, by `compatible`: no node-name prefix finds both `virt` boards' (`pl031@9010000`,
     // `rtc@101000`). None means the clock service says it does not know the time.
     {
-        let mut rtc = [Region { start: 0, size: 0 }; 1];
+        let mut rtc = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 1];
         for (compat, kind) in [
             (&b"arm,pl031"[..], clock_contract::real_time_clock::PL031),
             (
@@ -203,7 +227,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
             if let Ok(n) = dtb.node_register_regions_compatible(compat, &mut rtc)
                 && n >= 1
             {
-                *RTC_REGION.lock() = Some((rtc[0].start, rtc[0].size, kind));
+                *RTC_REGION.lock() = Some((rtc[0].start, rtc[0].size_bytes, kind));
                 break;
             }
         }
@@ -222,14 +246,17 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // non-prefetchable `ranges` entry the BAR window (`pci_configuration_space::mem32_window`). It must come from the
     // tree: QEMU's BAR window is DRAM on the JH7110, which has no such node.
     {
-        let mut ecam = [Region { start: 0, size: 0 }; 1];
+        let mut ecam = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 1];
         if let Ok(n) = dtb.node_register_regions_compatible(b"pci-host-ecam-generic", &mut ecam)
             && n >= 1
             && let Ok(Some(ranges)) =
                 dtb.node_property_compatible(b"pci-host-ecam-generic", b"ranges")
             && let Some(mem32) = ::pci_configuration_space::mem32_window(ranges)
         {
-            *PCI_REGIONS.lock() = Some(((ecam[0].start, ecam[0].size), mem32));
+            *PCI_REGIONS.lock() = Some(((ecam[0].start, ecam[0].size_bytes), mem32));
         }
     }
 }
@@ -382,7 +409,7 @@ pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
     {
         let mut map = RAM.lock();
         for (i, r) in ram.iter().enumerate() {
-            map.regions[i] = (r.start, r.size);
+            map.regions[i] = (r.start, r.size_bytes);
         }
         map.count = ram.len();
     }
@@ -428,13 +455,13 @@ pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
 
     // Now prove innocence, region by region.
     for r in ram {
-        allocator.mark_free(r.start, r.size);
+        allocator.mark_free(r.start, r.size_bytes);
     }
 
     // And immediately take back everything that is already spoken for. Order matters:
     // free first, then reserve, because reserving is what has to win.
     for r in forbidden {
-        allocator.mark_used(r.start, r.size);
+        allocator.mark_used(r.start, r.size_bytes);
     }
     allocator.mark_used(bitmap_start, bitmap_bytes as u64);
 
@@ -453,8 +480,8 @@ fn place_bitmap(need: u64, ram: &[Region], forbidden: &[Region]) -> u64 {
 
         'scan: while candidate + need <= region.end() {
             for f in forbidden {
-                if overlaps(candidate, need, f.start, f.size) {
-                    candidate = align_up(f.start + f.size, FRAME_SIZE);
+                if overlaps(candidate, need, f.start, f.size_bytes) {
+                    candidate = align_up(f.start + f.size_bytes, FRAME_SIZE);
                     continue 'scan;
                 }
             }

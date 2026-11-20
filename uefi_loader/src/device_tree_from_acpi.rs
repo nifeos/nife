@@ -398,9 +398,9 @@ fn write_intc(o: &mut Out<'_>, machine: &Machine) -> Result<(), Error> {
     o.prop_cells(b"phandle", &[INTC_PHANDLE])?;
     let mut reg = [0u32; 8];
     reg[..2].copy_from_slice(&cells64(distributor.start));
-    reg[2..4].copy_from_slice(&cells64(distributor.size));
+    reg[2..4].copy_from_slice(&cells64(distributor.size_bytes));
     reg[4..6].copy_from_slice(&cells64(second.start));
-    reg[6..8].copy_from_slice(&cells64(second.size));
+    reg[6..8].copy_from_slice(&cells64(second.size_bytes));
     o.prop_cells(b"reg", &reg)?;
     o.end_node()
 }

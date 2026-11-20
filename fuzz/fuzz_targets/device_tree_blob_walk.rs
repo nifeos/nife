@@ -21,7 +21,7 @@ fuzz_target!(|data: &[u8]| {
     // Small on purpose. A caller in the kernel passes a fixed array off its own stack, so the
     // interesting paths are the ones where the output runs out and the parser has to say
     // `TooManyRegions` instead of writing past the end.
-    let mut out = [Region { start: 0, size: 0 }; 8];
+    let mut out = [Region { start: 0, size_bytes: 0 }; 8];
 
     let _ = dtb.total_size();
     let _ = dtb.memory_reservations(&mut out);

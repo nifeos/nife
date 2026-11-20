@@ -524,7 +524,10 @@ where
     // 8. The virtio-mmio window, only where the device tree names the bus: elsewhere that address
     //    may be RAM already mapped in step 1 (notes/visionfive2.md).
     let named = crate::device_tree().is_ok_and(|dt| {
-        let mut slot = [device_tree_blob::Region { start: 0, size: 0 }; 1];
+        let mut slot = [device_tree_blob::Region {
+            start: 0,
+            size_bytes: 0,
+        }; 1];
         matches!(dt.node_register_regions_compatible(b"virtio,mmio", &mut slot), Ok(n) if n >= 1)
     });
     if named {

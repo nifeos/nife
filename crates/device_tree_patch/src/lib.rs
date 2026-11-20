@@ -356,7 +356,7 @@ fn rewrite(
     // back as no archive, so that is what an empty range has to report.
     let expected = (end > start).then(|| Region {
         start,
-        size: end - start,
+        size_bytes: end - start,
     });
     let tree = DeviceTreeBlob::from_bytes(&o.buf[..total]).map_err(|_| Error::Malformed)?;
     let read_back = tree.initial_ramdisk().map_err(|_| Error::Malformed)?;
@@ -583,8 +583,14 @@ mod tests {
             DeviceTreeBlob::from_bytes(a).unwrap(),
             DeviceTreeBlob::from_bytes(b).unwrap(),
         );
-        let mut ra = [Region { start: 0, size: 0 }; 8];
-        let mut rb = [Region { start: 0, size: 0 }; 8];
+        let mut ra = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 8];
+        let mut rb = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 8];
         let na = a.memory_regions(&mut ra).unwrap();
         let nb = b.memory_regions(&mut rb).unwrap();
         assert_eq!(ra[..na], rb[..nb], "the RAM the kernel sees");
@@ -610,7 +616,7 @@ mod tests {
                 tree.initial_ramdisk().unwrap(),
                 Some(Region {
                     start: 0x4800_0000,
-                    size: 0x49_0000
+                    size_bytes: 0x49_0000
                 })
             );
             same_machine(src, &out);
@@ -634,7 +640,7 @@ mod tests {
             tree.initial_ramdisk().unwrap(),
             Some(Region {
                 start: 0x9000_0000,
-                size: 0x1000
+                size_bytes: 0x1000
             })
         );
         let count = out
@@ -678,7 +684,7 @@ mod tests {
             tree.initial_ramdisk().unwrap(),
             Some(Region {
                 start: 0x1000,
-                size: 0x1000
+                size_bytes: 0x1000
             })
         );
     }
@@ -851,7 +857,7 @@ mod tests {
                     tree.initial_ramdisk().unwrap(),
                     Some(Region {
                         start: 0x4800_0000,
-                        size: 0x49_0000
+                        size_bytes: 0x49_0000
                     })
                 );
                 same_machine(src, &out);
@@ -934,7 +940,10 @@ mod tests {
             src[from..from + 48],
             "two entries and the zero one"
         );
-        let mut regions = [Region { start: 0, size: 0 }; 4];
+        let mut regions = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; 4];
         let n = DeviceTreeBlob::from_bytes(&out)
             .unwrap()
             .memory_reservations(&mut regions)
@@ -944,11 +953,11 @@ mod tests {
             [
                 Region {
                     start: 0x8000_0000,
-                    size: 0x1000
+                    size_bytes: 0x1000
                 },
                 Region {
                     start: 0x9000_0000,
-                    size: 0x2_0000
+                    size_bytes: 0x2_0000
                 }
             ]
         );
@@ -1048,7 +1057,7 @@ mod tests {
             tree.initial_ramdisk().unwrap(),
             Some(Region {
                 start: 0x1000,
-                size: 0x1000
+                size_bytes: 0x1000
             })
         );
     }
@@ -1075,7 +1084,7 @@ mod tests {
             tree_out.initial_ramdisk().unwrap(),
             Some(Region {
                 start: 0x1000,
-                size: 0x1000
+                size_bytes: 0x1000
             })
         );
         assert_eq!(chosen_nodes(&out), 2, "/soc/chosen and the new /chosen");
@@ -1261,7 +1270,7 @@ mod tests {
             region(&patched(&src).unwrap()),
             Some(Region {
                 start: 0x1000,
-                size: 0x2000
+                size_bytes: 0x2000
             })
         );
         let mut out = vec![0; output_len(&src).unwrap()];
@@ -1272,7 +1281,7 @@ mod tests {
             region(&out[..n]),
             Some(Region {
                 start: 5,
-                size: u64::MAX - 5
+                size_bytes: u64::MAX - 5
             })
         );
     }

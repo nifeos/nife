@@ -19,7 +19,10 @@ fn parses_the_header() {
 #[test]
 fn finds_the_ram() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
-    let mut regions = [Region { start: 0, size: 0 }; 8];
+    let mut regions = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 8];
     let n = tree.memory_regions(&mut regions).unwrap();
 
     assert_eq!(n, 1, "virt has one memory node");
@@ -29,7 +32,7 @@ fn finds_the_ram() {
         regions[0],
         Region {
             start: 0x4000_0000,
-            size: 0x800_0000, // 128 MiB, QEMU's default
+            size_bytes: 0x800_0000, // 128 MiB, QEMU's default
         }
     );
 }
@@ -37,7 +40,10 @@ fn finds_the_ram() {
 #[test]
 fn qemu_virt_reserves_nothing() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
-    let mut regions = [Region { start: 0, size: 0 }; 8];
+    let mut regions = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 8];
 
     // QEMU's virt leaves the reservation block empty; real firmware often does not.
     assert_eq!(tree.memory_reservations(&mut regions).unwrap(), 0);
@@ -96,7 +102,7 @@ fn finds_the_initial_ramdisk() {
     assert_eq!(initial_ramdisk.start, 0x4400_0000);
     assert_eq!(initial_ramdisk.end(), 0x4403_0d40);
     assert_eq!(
-        initial_ramdisk.size, 200_000,
+        initial_ramdisk.size_bytes, 200_000,
         "the fixture was made from a 200 KB file"
     );
 }
@@ -114,7 +120,10 @@ fn an_initial_ramdisk_does_not_disturb_the_memory_map() {
     // Regression guard: the /chosen walk and the /memory walk are separate passes over
     // the same token stream. A bug in one must not corrupt the other.
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT_INITIAL_RAMDISK).unwrap();
-    let mut regions = [Region { start: 0, size: 0 }; 8];
+    let mut regions = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 8];
     assert_eq!(tree.memory_regions(&mut regions).unwrap(), 1);
     assert_eq!(regions[0].start, 0x4000_0000);
 }
@@ -124,7 +133,10 @@ fn an_initial_ramdisk_does_not_disturb_the_memory_map() {
 #[test]
 fn finds_the_interrupt_controller() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
-    let mut regs = [Region { start: 0, size: 0 }; 4];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
 
     let n = tree.node_register_regions(b"intc@", &mut regs).unwrap();
 
@@ -138,14 +150,14 @@ fn finds_the_interrupt_controller() {
         regs[0],
         Region {
             start: 0x0800_0000,
-            size: 0x1_0000
+            size_bytes: 0x1_0000
         }
     ); // GICD, distributor
     assert_eq!(
         regs[1],
         Region {
             start: 0x0801_0000,
-            size: 0x1_0000
+            size_bytes: 0x1_0000
         }
     ); // GICC, CPU interface
 }
@@ -156,7 +168,10 @@ fn finds_the_uart_the_console_hardcodes() {
     // exists to debug it). But now we can *check* the hardcode against what the machine says,
     // which is the cross-check that catches the day it changes.
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
-    let mut regs = [Region { start: 0, size: 0 }; 2];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
 
     assert_eq!(tree.node_register_regions(b"pl011@", &mut regs).unwrap(), 1);
     assert_eq!(regs[0].start, 0x0900_0000);
@@ -165,7 +180,10 @@ fn finds_the_uart_the_console_hardcodes() {
 #[test]
 fn a_missing_node_is_zero_regions_not_an_error() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
-    let mut regs = [Region { start: 0, size: 0 }; 2];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(
         tree.node_register_regions(b"nonesuch@", &mut regs).unwrap(),
         0
@@ -182,8 +200,14 @@ fn from_ptr_agrees_with_from_bytes() {
         unsafe { DeviceTreeBlob::from_pointer(QEMU_VIRT.as_ptr()) }.expect("should parse");
     assert_eq!(via_ptr.total_size(), QEMU_VIRT.len());
 
-    let mut a = [Region { start: 0, size: 0 }; 4];
-    let mut b = [Region { start: 0, size: 0 }; 4];
+    let mut a = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
+    let mut b = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 4];
     DeviceTreeBlob::from_bytes(QEMU_VIRT)
         .unwrap()
         .memory_regions(&mut a)
@@ -198,7 +222,10 @@ fn no_reserved_memory_node_is_zero_regions() {
     // adds one; see qemu_riscv64_virt.rs). Walking the whole tree and finding none must be
     // zero regions, not an error: this is the answer the aarch64 boot gets every time.
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
-    let mut regs = [Region { start: 0, size: 0 }; 2];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(tree.reserved_memory_regions(&mut regs).unwrap(), 0);
 }
 
@@ -214,7 +241,10 @@ fn no_reserved_memory_node_is_zero_regions() {
 #[test]
 fn finds_the_rtc_by_compatible() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
-    let mut regs = [Region { start: 0, size: 0 }; 2];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
 
     assert_eq!(
         tree.node_register_regions_compatible(b"arm,pl031", &mut regs)
@@ -225,7 +255,7 @@ fn finds_the_rtc_by_compatible() {
         regs[0],
         Region {
             start: 0x0901_0000,
-            size: 0x1000,
+            size_bytes: 0x1000,
         }
     );
 }
@@ -235,7 +265,10 @@ fn finds_the_rtc_by_compatible() {
 #[test]
 fn the_goldfish_rtc_is_absent_on_aarch64() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_VIRT).unwrap();
-    let mut regs = [Region { start: 0, size: 0 }; 2];
+    let mut regs = [Region {
+        start: 0,
+        size_bytes: 0,
+    }; 2];
     assert_eq!(
         tree.node_register_regions_compatible(b"google,goldfish-rtc", &mut regs)
             .unwrap(),

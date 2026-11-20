@@ -23,7 +23,7 @@ fn tree(bytes: &[u8]) -> DeviceTreeBlob<'_> {
 
 const GICD: Region = Region {
     start: 0x0800_0000,
-    size: 0x1_0000,
+    size_bytes: 0x1_0000,
 };
 
 /// **The default runner's machine is a GICv2**, and the second block is a CPU interface.
@@ -36,7 +36,7 @@ fn qemu_gic_version_2_is_a_gicv2_with_a_cpu_interface() {
             distributor: GICD,
             cpu_interface: Region {
                 start: 0x0801_0000,
-                size: 0x1_0000
+                size_bytes: 0x1_0000
             },
         })
     );
@@ -54,7 +54,7 @@ fn qemu_gic_version_3_is_a_gicv3_with_redistributors() {
             distributor: GICD,
             redistributors: Region {
                 start: 0x080a_0000,
-                size: 0xf6_0000
+                size_bytes: 0xf6_0000
             },
         })
     );
@@ -101,7 +101,7 @@ fn a_gicv2_claim_over_a_redistributor_is_refused() {
         distributor: GICD,
         cpu_interface: Region {
             start: 0x080a_0000,
-            size: 0xf6_0000,
+            size_bytes: 0xf6_0000,
         },
     };
     assert_eq!(
@@ -204,7 +204,7 @@ fn the_accessors_name_each_block_by_its_role() {
         v2.second_region(),
         Region {
             start: 0x0801_0000,
-            size: 0x1_0000
+            size_bytes: 0x1_0000
         }
     );
     let v3 = gic::discover(&tree(QEMU_GICV3)).unwrap().unwrap();
@@ -214,7 +214,7 @@ fn the_accessors_name_each_block_by_its_role() {
         v3.second_region(),
         Region {
             start: 0x080a_0000,
-            size: 0xf6_0000
+            size_bytes: 0xf6_0000
         }
     );
 }

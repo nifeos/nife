@@ -262,8 +262,13 @@ where
     // frames say which core owns each.
     if let Some(found) = memory::gic_regions() {
         let (gicd, second) = (found.distributor(), found.second_region());
-        direct_map(m, gicd.start, gicd.start + gicd.size, Flags::device())?;
-        direct_map(m, second.start, second.start + second.size, Flags::device())?;
+        direct_map(m, gicd.start, gicd.start + gicd.size_bytes, Flags::device())?;
+        direct_map(
+            m,
+            second.start,
+            second.start + second.size_bytes,
+            Flags::device(),
+        )?;
     }
 
     // 7. The virtio-mmio window, mapped only to enumerate it; a driver gets its own slot. See
