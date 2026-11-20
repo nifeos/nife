@@ -5341,13 +5341,13 @@ crates/page_tables/src/sv39.rs::Sv39
 
 crates/page_tables/src/sv39.rs::memory_type_of
 
-crates/page_tables/src/tlb_flush.rs::TlbFlush
+crates/page_tables/src/translation_lookaside_buffer_flush.rs::TranslationLookasideBufferFlush
 
-crates/page_tables/src/tlb_flush.rs::address
+crates/page_tables/src/translation_lookaside_buffer_flush.rs::address
 
-crates/page_tables/src/tlb_flush.rs::assume_no_stale_entry
+crates/page_tables/src/translation_lookaside_buffer_flush.rs::assume_no_stale_entry
 
-crates/page_tables/src/tlb_flush.rs::flush
+crates/page_tables/src/translation_lookaside_buffer_flush.rs::flush
 
 crates/page_tables/src/verification.rs
 

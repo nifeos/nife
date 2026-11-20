@@ -55,19 +55,19 @@ pub(super) fn give_write_combining_a_page_attribute_entry() {
     // SAFETY: CPUID advertised the MSR, so neither access can `#GP`, and every entry in the value
     // is a defined memory type. The one entry it changes is selected by no mapping on this core
     // (see above), so no cached line or TLB entry has the old type to disagree with.
-    let found = unsafe { read_msr(page_tables::x86_64::pat::MODEL_SPECIFIC_REGISTER) };
-    if found != page_tables::x86_64::pat::VALUE {
+    let found = unsafe { read_msr(page_tables::x86_64::page_attribute_table::MODEL_SPECIFIC_REGISTER) };
+    if found != page_tables::x86_64::page_attribute_table::VALUE {
         // SAFETY: as the read's.
         unsafe {
             write_msr(
-                page_tables::x86_64::pat::MODEL_SPECIFIC_REGISTER,
-                page_tables::x86_64::pat::VALUE,
+                page_tables::x86_64::page_attribute_table::MODEL_SPECIFIC_REGISTER,
+                page_tables::x86_64::page_attribute_table::VALUE,
             );
         }
     }
     crate::println!(
         "  pat         : {:#018x} on core {} (was {found:#018x}); entry 1 is write-combining",
-        page_tables::x86_64::pat::VALUE,
+        page_tables::x86_64::page_attribute_table::VALUE,
         crate::cpu::id()
     );
 }

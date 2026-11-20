@@ -1003,7 +1003,7 @@ pub(crate) fn unmap_page(va: u64) -> Result<u64, MapError> {
 }
 
 /// Invalidate `va`'s translation, for every ASID, on every online hart. Discharges a
-/// `page_tables::TlbFlush`.
+/// `page_tables::TranslationLookasideBufferFlush`.
 ///
 /// `sfence.vma` orders the preceding page-table write and completes locally, so no barrier is
 /// needed. Other harts get an SBI RFENCE once they are online.

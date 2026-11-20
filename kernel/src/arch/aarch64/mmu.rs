@@ -8,7 +8,7 @@
 use core::ffi::c_void;
 use core::sync::atomic::{AtomicU64, Ordering};
 
-use page_tables::aarch64::mair;
+use page_tables::aarch64::memory_attribute_indirection;
 use page_tables::{Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageSize, PageTable};
 
 use super::instructions;
@@ -459,7 +459,7 @@ unsafe fn install(root: u64) {
     // 4 KiB, 48-bit tables `root` heads, and this function's contract is that `root` maps what the
     // next fetch needs.
     unsafe {
-        instructions::write_mair(mair::VALUE);
+        instructions::write_mair(memory_attribute_indirection::VALUE);
         instructions::write_tcr(tcr);
         instructions::write_ttbr1(root & TTBR_BADDR);
     }
@@ -879,7 +879,7 @@ pub(crate) fn map_page(va: u64, pa: u64, flags: Flags) -> Result<(), MapError> {
 ///
 /// Returns the physical frame, which is the caller's to free: the mapper never owned it.
 ///
-/// The `TlbFlush` obligation is discharged here, properly, with a real `tlbi`. It cannot be
+/// The `TranslationLookasideBufferFlush` obligation is discharged here, properly, with a real `tlbi`. It cannot be
 /// forgotten: dropping one un-discharged panics.
 pub(crate) fn unmap_page(va: u64) -> Result<u64, MapError> {
     let _guard = KERNEL_MMU.lock(); // exclusive: see map_page
@@ -890,7 +890,7 @@ pub(crate) fn unmap_page(va: u64) -> Result<u64, MapError> {
 
 /// Invalidate the TLB entry for one virtual address.
 ///
-/// Discharges a `page_tables::TlbFlush`: `tlbi vaae1is` (by VA, all ASIDs, EL1, inner shareable) on
+/// Discharges a `page_tables::TranslationLookasideBufferFlush`: `tlbi vaae1is` (by VA, all ASIDs, EL1, inner shareable) on
 /// the page number. TLB maintenance is not synchronous, hence the `dsb ish` and `isb` after.
 pub(crate) fn flush_tlb(va: u64) {
     // SAFETY: TLB maintenance is always sound. Getting it wrong means a stale translation, not

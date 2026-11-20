@@ -1,8 +1,9 @@
-//! **Proof that a page table changed and the TLB may now be lying.**
+//! **Translation lookaside buffer flush: proof that a page table changed and the TLB may now be lying.**
 //!
 //! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
 
-/// **Proof that a page table changed and the translation lookaside buffer (TLB) may now be lying.**
+/// **Translation lookaside buffer flush: proof that a page table changed and the translation
+/// lookaside buffer (TLB) may now be lying.**
 ///
 /// A changed mapping that is not invalidated leaves the CPU using the old translation, and memory
 /// reads back as the previous owner's data. `unmap` returns this; it is `#[must_use]`, and only
@@ -14,12 +15,13 @@
               translation and memory reads back as the previous owner's data"]
 #[derive(Debug, PartialEq, Eq)]
 #[doc(alias = "TLB")]
+#[doc(alias = "TlbFlush")]
 #[doc(alias = "translation lookaside buffer")]
-pub struct TlbFlush {
+pub struct TranslationLookasideBufferFlush {
     pub(crate) virtual_address: u64,
 }
 
-impl TlbFlush {
+impl TranslationLookasideBufferFlush {
     /// Discharge the obligation by actually invalidating. The crate emits no instructions, so the
     /// caller supplies the architecture's invalidate (aarch64 `tlbi vaae1is`, RISC-V `sfence.vma`, x86 `invlpg`).
     pub fn flush(self, invalidate: impl FnOnce(u64)) {
@@ -51,7 +53,7 @@ impl TlbFlush {
 /// enforceable is to make *not* consuming it fail loudly. A panic is the right failure: the
 /// alternative is a stale TLB entry, memory that reads back as its previous owner's data, in a
 /// kernel whose page tables are provably correct in memory.
-impl Drop for TlbFlush {
+impl Drop for TranslationLookasideBufferFlush {
     fn drop(&mut self) {
         panic!(
             "page table changed at {:#x} but the TLB was never invalidated: \

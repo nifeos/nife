@@ -88,11 +88,14 @@ pub const THE_DESCRIPTOR_FIELDS_SHARE_NO_BIT: () = {
     );
 };
 
-/// Which `MAIR_EL1` slot describes what. Set up in the kernel; the numbers must agree. Kept public
-/// because the kernel's `mmu::initialize` programs `MAIR_EL1` from these and a test cross-checks the UART.
+/// **Memory attribute indirection**: which `MAIR_EL1` (memory attribute indirection register) slot
+/// describes what. Set up in the kernel; the numbers must agree. Kept public because the kernel's
+/// `mmu::initialize` programs `MAIR_EL1` from these and a test cross-checks the UART.
 #[doc(alias = "MAIR_EL1")]
+#[doc(alias = "MAIR")]
+#[doc(alias = "mair")]
 #[doc(alias = "memory attribute indirection register")]
-pub mod mair {
+pub mod memory_attribute_indirection {
     /// Slot 0: device memory, nGnRnE (no gathering, reordering, or early write ack): the strictest
     /// ordering, which MMIO needs. Mapping the UART as normal memory would let the CPU cache and
     /// reorder register writes, which is catastrophic.
@@ -118,9 +121,9 @@ impl Aarch64 {
             bits |= SH_INNER; // shareability is meaningless (and ignored) for device memory
         }
         bits |= attr_index(if flags.is_device() {
-            mair::DEVICE
+            memory_attribute_indirection::DEVICE
         } else {
-            mair::NORMAL
+            memory_attribute_indirection::NORMAL
         });
         // Access permission from (user?, writable?).
         bits |= match (flags.is_user_accessible(), flags.is_writable()) {
@@ -183,7 +186,7 @@ impl PageFormat for Aarch64 {
         if entry & NG == 0 {
             access |= ACCESS_GLOBAL;
         }
-        if (entry >> 2) & 0b111 == mair::DEVICE {
+        if (entry >> 2) & 0b111 == memory_attribute_indirection::DEVICE {
             access |= ACCESS_DEVICE;
         }
         Flags::from_access(access)
@@ -241,7 +244,7 @@ mod tests {
         let leaf = Aarch64::leaf_entry(0x0900_0000, Flags::device());
         assert_eq!(
             (leaf >> 2) & 0b111,
-            mair::DEVICE,
+            memory_attribute_indirection::DEVICE,
             "MMIO is not device-typed"
         );
     }
@@ -251,8 +254,8 @@ mod tests {
     /// the UART gets mapped cacheable and the machine behaves like it is haunted.
     #[test]
     fn mair_value_matches_the_slots() {
-        assert_eq!((mair::VALUE >> (8 * mair::DEVICE)) & 0xff, 0x00);
-        assert_eq!((mair::VALUE >> (8 * mair::NORMAL)) & 0xff, 0xff);
+        assert_eq!((memory_attribute_indirection::VALUE >> (8 * memory_attribute_indirection::DEVICE)) & 0xff, 0x00);
+        assert_eq!((memory_attribute_indirection::VALUE >> (8 * memory_attribute_indirection::NORMAL)) & 0xff, 0xff);
     }
 
     /// **Both low bits, on both kinds of descriptor.** `is_present` reads bit 0 alone, so a

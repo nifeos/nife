@@ -5,7 +5,7 @@ milestone_dependencies: none
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1104. `paging`: what an outside maintainer would fix before the move
 
@@ -149,6 +149,8 @@ Prior art. `x86_64` spells its addresses `VirtAddr` and `PhysAddr`, and `aarch64
 for every parameter as well as every type. Concrete example: `PageFormat::entry_pa(entry)` reads
 `PageFormat::entry_physical_address(entry)`.
 
+Ruled: the public names are ratified as built, with the renames `TranslationLookasideBufferFlush`, `aarch64::memory_attribute_indirection` and `x86_64::page_attribute_table`, the alias `DMA`, and `MapError::WritableAndExecutable` kept. The spelled-out forms keep each old spelling as a `doc(alias)`.
+
 Blocks: the first publish.
 
 ### Clear the review package and approve the repository
@@ -172,6 +174,8 @@ Prior art. `aarch64-paging` and `page_table_multiarch` each live in their own re
 publish on their own cadence. nife differs in reviewing a whole crate once, before its first
 publish. Concrete example: the architect cleared `generational_table` on 2026-11-08 (UTC), and its
 repository, `nifeos/generational_table`, dates from that day.
+
+Ruled: A on 2026-11-20 (UTC). The review is cleared and `nifeos/page_tables` is approved with `publish = false`, no tag and no publish. The move lane takes items 1, 3, 4, 9 and 11.
 
 Blocks: the move.
 
