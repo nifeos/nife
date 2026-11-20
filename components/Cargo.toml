@@ -729,7 +729,7 @@ program_table = { version = "0.1.0", path = "../crates/program_table" }
 # carries one with `capability_manifest_note::carry!`.
 capability_manifest_note = { version = "0.1.0", path = "../crates/capability_manifest_note" }
 # The `INTERFACES` note each program carries with `interfaces_note::carry_interfaces!`.
-interfaces_note = { version = "0.1.0", path = "../crates/interfaces_note" }
+interfaces_note = { version = "0.1.0", git = "https://github.com/nifeos/interfaces_note", rev = "8a634ffc08af031b2b8b6a3912b986cfbd6ff055" }
 # The system log service's logic and its wire contracts (milestone 613, provisional names).
 system_log = { version = "0.1.0", path = "../crates/system_log" }
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }

@@ -23,7 +23,6 @@ machine_statistics_contract
 program_argument_contract
 socket_contract
 user_mode_runtime
-interfaces_note
 subtree_scope
 memory_region_heap
 line_editor

@@ -100,7 +100,6 @@ members = [
     "crates/domain_name_resolution_contract",
     "crates/measured_boot",
     "crates/capability_manifest_note",
-    "crates/interfaces_note",
     "crates/network_time_protocol",
     "crates/disk_tree",
     "crates/driver_process_contract",
