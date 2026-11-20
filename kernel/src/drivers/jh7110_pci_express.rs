@@ -183,8 +183,8 @@ impl<'a> Controller<'a> {
 
     fn configuration_word(&self, bdf: Bdf, offset: u64) -> Option<*mut u32> {
         let at = bdf.ecam_offset() + (offset & !3);
-        (bdf.dev < 32
-            && bdf.func < 8
+        (bdf.device < 32
+            && bdf.function < 8
             && offset < FUNCTION_BYTES
             && at < self.windows.configuration.bytes)
             .then(|| (self.windows.configuration.virtual_address + at as usize) as *mut u32)

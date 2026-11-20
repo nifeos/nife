@@ -1,5 +1,7 @@
 //! Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
-use pci_configuration_space::{Bdf, CLASS_NVME, Function, HEADER_TYPE_BRIDGE, walk};
+use pci_configuration_space::{
+    Bdf, CLASS_NON_VOLATILE_MEMORY_EXPRESS, Function, HEADER_TYPE_BRIDGE, walk,
+};
 
 use crate::simulation::{Event, Simulated};
 use crate::{Block, Failure, LINK_POLLS, PortNumber, Window, bridge, bring_up, glue, root_port};
@@ -249,11 +251,11 @@ fn the_non_volatile_memory_express_controller_is_hidden_until_the_root_port_forw
         after[1].bdf,
         Bdf {
             bus: 1,
-            dev: 0,
-            func: 0
+            device: 0,
+            function: 0
         }
     );
-    assert_eq!(after[1].class, CLASS_NVME);
+    assert_eq!(after[1].class, CLASS_NON_VOLATILE_MEMORY_EXPRESS);
 }
 
 #[test]
@@ -264,8 +266,8 @@ fn the_non_volatile_memory_express_bar_sizes_through_the_configured_port() {
     configure(&mut simulated, port.memory_32_bit);
     let bar0 = Bdf {
         bus: 1,
-        dev: 0,
-        func: 0,
+        device: 0,
+        function: 0,
     }
     .ecam_offset()
         + 0x10;
@@ -415,15 +417,15 @@ fn a_window_may_end_exactly_at_four_gibibytes() {
 
 #[test]
 fn configure_keeps_the_command_bits_and_writes_no_status_bit() {
-    use pci_configuration_space::{BUS_NUMBERS, COMMAND};
+    use pci_configuration_space::{BUS_NUMBERS_REGISTER, COMMAND_REGISTER};
     let mut writes = Vec::new();
     let mut read = |_: Bdf, offset: u64| match offset {
         0 => 0x0000_1556,
         // Header type 1 in bits 23:16 of the word at 0x0c.
         0x0c => 0x0001_0000,
         // A status bit set in the high half, which a write of one would clear.
-        o if o == COMMAND => 0x0010_0004,
-        o if o == BUS_NUMBERS => 0,
+        o if o == COMMAND_REGISTER => 0x0010_0004,
+        o if o == BUS_NUMBERS_REGISTER => 0,
         _ => 0,
     };
     let configured = root_port::configure(
@@ -438,7 +440,7 @@ fn configure_keeps_the_command_bits_and_writes_no_status_bit() {
         configured,
         root_port::Configured::Forwarding { .. }
     ));
-    assert_eq!(writes.last(), Some(&(COMMAND, 0x0000_0006)));
+    assert_eq!(writes.last(), Some(&(COMMAND_REGISTER, 0x0000_0006)));
 }
 
 #[test]

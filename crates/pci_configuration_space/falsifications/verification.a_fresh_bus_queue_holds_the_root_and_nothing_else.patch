@@ -13,7 +13,11 @@ state, so preserving it proves nothing.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -282,3 +282,2 @@ impl BusQueue {
+@@ -311,7 +311,6 @@
+             head: 0,
+             tail: 1,
          };
 -        q.seen[0] = 1;
          q
+     }
+ 

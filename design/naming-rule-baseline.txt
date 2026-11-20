@@ -120,9 +120,7 @@ crates/page_tables/src/mapper.rs::walk question-shape
 
 
 
-crates/pci_configuration_space/src/lib.rs::CLASS_NVME spelled-out
 
-crates/pci_configuration_space/src/lib.rs::mem32_window spelled-out
 
 crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
 
