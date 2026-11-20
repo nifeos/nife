@@ -4910,7 +4910,6 @@ crates/memory_regions/src/watermark.rs::coalesced_watermark
 
 crates/memory_regions/src/watermark.rs::retype_new_watermark
 
-crates/memory_regions/src/watermark.rs::retype_pages
 
 crates/memory_regions/src/watermark.rs::split_new_watermark
 

@@ -8,14 +8,14 @@ Expected to fail: the harness's `assert!(run.unmoved_since(before), "a refusal m
 on a split refused at the region ceiling.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
-index 9d726ec87..09500a4fd 100644
+index dfe4470fa..0b4b415d2 100644
 --- a/crates/memory_regions/src/table.rs
 +++ b/crates/memory_regions/src/table.rs
-@@ -421,6 +421,11 @@ impl<const N: usize> RegionTable<N> {
+@@ -450,6 +450,11 @@ impl<const N: usize> RegionTable<N> {
          let new_watermark = split_new_watermark(r.pages, r.watermark, pages)?;
          let base_page = r.base_page + r.watermark;
          let ceilings = Ceilings::for_child_of(r);
-+        if let Some(r) = self.table.get_mut(entry(parent)) {
++        if let Some(r) = self.table.get_mut(parent) {
 +            r.watermark = new_watermark;
 +            r.children += 1;
 +            r.spent.children += pages;
@@ -23,15 +23,15 @@ index 9d726ec87..09500a4fd 100644
          if !self.can_charge(parent, Counted::Region) {
              return None;
          }
-@@ -439,11 +444,6 @@ impl<const N: usize> RegionTable<N> {
+@@ -469,11 +474,6 @@ impl<const N: usize> RegionTable<N> {
          // The insert filled a free slot and left every live one alone, so the parent still
          // resolves and the ceiling check above still holds.
          self.count_one_more(parent, Counted::Region);
--        if let Some(r) = self.table.get_mut(entry(parent)) {
+-        if let Some(r) = self.table.get_mut(parent) {
 -            r.watermark = new_watermark;
 -            r.children += 1;
 -            r.spent.children += pages;
 -        }
-         Some(child.to_bits())
+         Some(child)
      }
  

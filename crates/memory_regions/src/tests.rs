@@ -34,30 +34,23 @@ fn destroy_decides_by_ownership() {
 }
 
 #[test]
-fn a_retype_count_of_zero_means_one_page() {
-    // (requested, pages)
-    for (requested, pages) in [(0, 1), (1, 1), (2, 2), (u64::MAX, u64::MAX)] {
-        assert_eq!(retype_pages(requested), pages, "requested {requested}");
-    }
-}
-
-#[test]
 fn a_retype_fits_only_inside_the_budget() {
-    // (pages, watermark, requested, new watermark)
+    // (pages, watermark, count, new watermark)
     let cases = [
-        (8, 0, 0, Some(1)),
+        (8, 0, 1, Some(1)),
         (8, 0, 8, Some(8)),
-        (8, 7, 0, Some(8)),
-        (8, 8, 0, None),
+        (8, 7, 1, Some(8)),
+        (8, 8, 1, None),
+        (8, 0, 0, None),
         (8, 4, 5, None),
         (8, u64::MAX, 1, None),
-        (0, 0, 0, None),
+        (0, 0, 1, None),
     ];
-    for (pages, watermark, requested, expected) in cases {
+    for (pages, watermark, count, expected) in cases {
         assert_eq!(
-            retype_new_watermark(pages, watermark, requested),
+            retype_new_watermark(pages, watermark, count),
             expected,
-            "pages {pages}, watermark {watermark}, requested {requested}"
+            "pages {pages}, watermark {watermark}, count {count}"
         );
     }
 }
@@ -82,8 +75,8 @@ fn the_watermark_falls_only_when_quiescent_and_never_rises() {
 }
 
 /// **No short sequence of the table's own calls makes a retype overlap a live child's run, or a
-/// child leave its parent's spent part.** Every sequence of up to five calls (a retype of zero, one
-/// or two pages, a split of one or two pages, or a claim and return of a region) on a root of six
+/// child leave its parent's spent part.** Every sequence of up to five calls (a retype of one, two
+/// or three pages, a split of one or two pages, or a claim and return of a region) on a root of six
 /// pages, over the first four regions made, is replayed from an empty table, and after each call
 /// every live region keeps `retyped_to <= watermark <= pages`, every live child lies inside its
 /// parent's spent part, and its parent's retyped pages end at or below the child's start or above
@@ -98,7 +91,7 @@ fn no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages()
         let mut table = RegionTable::<4>::new();
         let root = table.insert_root(0x100, 6).unwrap();
         // (name, parent index, retyped_to) of each region made, in order.
-        let mut made: Vec<(u64, Option<usize>, u64)> = vec![(root, None, 0)];
+        let mut made: Vec<(RegionName, Option<usize>, u64)> = vec![(root, None, 0)];
         let mut rest = code;
         for _ in 0..DEPTH {
             let call = rest % CALLS;
@@ -109,7 +102,7 @@ fn no_short_call_sequence_overlaps_a_childs_run_with_its_parents_retyped_pages()
                     continue;
                 };
                 if kind < 3 {
-                    if table.retype_run(name, u64::from(kind)).is_some() {
+                    if table.retype_run(name, u64::from(kind) + 1).is_some() {
                         made[region].2 = table.usage(name).unwrap().0;
                     }
                 } else if let Some(child) = table.split(name, u64::from(kind - 2)) {

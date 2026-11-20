@@ -12,7 +12,7 @@ license.workspace = true
 
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
-byte_glob = { version = "0.1.0", path = "../byte_glob" }
+byte_glob = { version = "0.1.0", git = "https://github.com/nifeos/byte_glob", rev = "f5dae9092130be6d66f176d2e1942a4c36686818" }
 ps = { version = "0.1.0", path = "../ps" }
 
 [lints]
