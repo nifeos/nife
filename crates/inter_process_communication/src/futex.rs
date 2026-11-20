@@ -268,7 +268,9 @@ mod tests {
         let mut threads = [a, a, a].map(|key| T { next: None, key });
         let pointers = element_pointers(&raw mut threads);
         let mut f = OneBucket::new();
+        assert!(f.is_empty(), "a new table has no waiter");
         park_all(&mut f, &pointers);
+        assert!(!f.is_empty(), "a table with parked waiters is not empty");
         assert!(f.remove(a, pointers[1]).is_some_and(|t| t == pointers[1]));
         assert!(
             f.remove(a, pointers[1]).is_none(),
