@@ -1,19 +1,17 @@
 //! **The `INTERFACES` note**: the interface versions a program was built against.
 //!
-//! A package declares what it links by carrying one note in `.note.nife.manifest`, the section and
-//! `PT_NOTE` that `capability_manifest_note` uses for its own types. The progenitor reads it at
-//! spawn and refuses a program whose note does not decode, or declares a syscall application binary interface (ABI) version
-//! (`abi::INTERFACE_ID`) it does not serve (milestone 956 (the linked interfaces carry checkable
-//! versions) step 3). The other interfaces a note lists are carried and not compared at spawn. The
-//! note has a type of its own, `4`, on the pattern of `SUBTREE_GRANTS` and `VERBS`, and not a
-//! descriptor version.
+//! A package declares what it links by carrying one note in its manifest note section, the section
+//! and `PT_NOTE` that a family of manifest notes shares. The host that spawns the program reads it
+//! and refuses a program whose note does not decode, or declares a version of an interface that the
+//! host serves at another version. The other interfaces a note lists are carried and not compared
+//! at spawn. The note has a type of its own, `4`, and not a descriptor version.
 //!
 //! The descriptor, version 1, little-endian: a version word, a count word, then `count` records of
-//! an interface id (`u64`, each crate's `INTERFACE_ID`, strictly ascending) and that interface's
-//! version (`u32`). One list has one encoding.
+//! an interface id (`u64`, each interface crate's `INTERFACE_ID`, strictly ascending) and that
+//! interface's version (`u32`). One list has one encoding.
 //!
-//! The note's header (owner `nife`, then the type and the descriptor) is the one every nife
-//! manifest note has; `capability_manifest_note`'s tests hold the two crates to the same header.
+//! The note's header (the owner string, then the type and the descriptor) is the one every note in
+//! that section has. The owner string names the operating system that reads the note.
 //!
 //! # What a stranger needs to place and read the note
 //!
@@ -31,21 +29,19 @@
 //!
 //! BUGS: a program names its interfaces by hand in [`carry_interfaces!`], although each version
 //! comes from the crate's constant. Deriving the list from the dependency graph at package build
-//! waits for the first package that leaves the tree.
+//! waits for a package that links its interfaces as separate crates.
 //!
 //! BUGS: a program with no `INTERFACES` note declares nothing and is spawned unchecked. The note is
 //! a compatibility check and not an authority check, so leaving it out costs a hostile package
 //! nothing it could have gained.
 //!
-//! Name: ratified 2026-11-14 (UTC) for the crate and repository name `interfaces_note`. Moved here
-//! from `capability_manifest_note` on 2026-11-01 (UTC) so that `disk-tools` need not link
-//! `grant_plan`; the items keep the names they had there. The crates.io name is asked again with the
-//! naming-layers decision.
+//! Name: ratified 2026-11-14 (UTC) for the crate and repository name `interfaces_note`. The
+//! crates.io name is asked again with the naming-layers decision.
 
 #![no_std]
 
-/// The note's owner string, without its NUL terminator: the same `nife` that `capability_manifest_note::OWNER`
-/// holds. Duplicated so that this crate depends on nothing; a test in that crate holds the two equal.
+/// The note's owner string, without its NUL terminator. The sibling manifest-note crate holds the
+/// same bytes; this crate repeats them so that it depends on nothing.
 const OWNER: &[u8] = b"nife"; // wire literal
 
 /// `OWNER` with its NUL terminator, padded to the note's 4-byte alignment.
@@ -56,7 +52,7 @@ const HEADER_BYTES: usize = 12;
 
 /// Why a descriptor was refused.
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane milestone/956-the-interfaces-note-leaves-the-manifest-note-crate.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Error {
     /// Fewer than four bytes, so not even a version.
@@ -82,37 +78,36 @@ const fn put4(out: &mut [u8], at: usize, v: [u8; 4]) {
 
 /// The note type that carries the interfaces a program was built against: `4`.
 ///
-/// Name: provisional; the number and the placement are calef's ruling of 2026-10-31 (UTC).
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 pub const INTERFACES: u32 = 4;
 
 /// **This interface's number**: `21`. It is this interface's for good: no other interface takes
-/// it, and a format change is a new version ([`INTERFACES_VERSION`]), never a new number. Milestone
-/// 956 (the linked interfaces carry checkable versions) holds the table of numbers, and
-/// `script/lint` holds the tree to it. A program declares the pair of this id and
+/// it, and a format change is a new version ([`INTERFACES_VERSION`]), never a new number. The
+/// system that reads the note holds the table of numbers. A program declares the pair of this id and
 /// [`INTERFACES_VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane milestone/956-the-interfaces-note-leaves-the-manifest-note-crate.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 pub const INTERFACE_ID: u64 = 21;
 
 /// The version of the [`INTERFACES`] descriptor this crate writes and reads.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 pub const INTERFACES_VERSION: u32 = 1;
 
 /// The most interfaces one note may declare: 64, far past the handful a program links, and a bound
 /// on what a malformed count can make a reader walk.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 pub const MAXIMUM_INTERFACES: usize = 64;
 
 /// One record: the interface id, then its version, little-endian.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 pub const INTERFACE_RECORD_BYTES: usize = 12;
 
 /// One declared interface: the id its crate owns and the version the program was built against.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct DeclaredInterface {
     /// The crate's `INTERFACE_ID`.
@@ -123,7 +118,7 @@ pub struct DeclaredInterface {
 
 /// An [`INTERFACES`] descriptor's length for `count` records.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 pub const fn descriptor_bytes(count: usize) -> usize {
     8 + count * INTERFACE_RECORD_BYTES
 }
@@ -144,7 +139,7 @@ pub const fn descriptor_bytes(count: usize) -> usize {
 /// assert_eq!(decode_interfaces(&bytes).unwrap().len(), 2);
 /// ```
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 pub const fn encode_interfaces<const LEN: usize>(list: &[DeclaredInterface]) -> [u8; LEN] {
     assert!(
         list.len() <= MAXIMUM_INTERFACES,
@@ -177,7 +172,7 @@ pub const fn encode_interfaces<const LEN: usize>(list: &[DeclaredInterface]) -> 
 
 /// **A decoded interface list**: a view of the descriptor [`decode_interfaces`] checked whole.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Interfaces<'a> {
     records: &'a [u8],
@@ -186,14 +181,14 @@ pub struct Interfaces<'a> {
 impl<'a> Interfaces<'a> {
     /// How many interfaces.
     ///
-    /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+    /// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
     pub fn len(&self) -> usize {
         self.records.len() / INTERFACE_RECORD_BYTES
     }
 
     /// Whether the list is empty, which a descriptor may say.
     ///
-    /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+    /// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
     pub fn is_empty(&self) -> bool {
         self.records.is_empty()
     }
@@ -202,7 +197,7 @@ impl<'a> Interfaces<'a> {
     /// iterator decodes each record from the descriptor's bytes as it goes, so none is stored to
     /// borrow.
     ///
-    /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+    /// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
     pub fn iter(&self) -> impl Iterator<Item = DeclaredInterface> + use<'a> {
         let records = self.records;
         (0..records.len() / INTERFACE_RECORD_BYTES).map(move |i| {
@@ -221,7 +216,7 @@ impl<'a> Interfaces<'a> {
     /// assert_eq!(list.version_of(5), None);
     /// ```
     ///
-    /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+    /// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
     pub fn version_of(&self, id: u64) -> Option<u32> {
         self.iter().find(|d| d.id == id).map(|d| d.version)
     }
@@ -247,7 +242,7 @@ fn record(r: &[u8]) -> DeclaredInterface {
 /// assert!(decode_interfaces(&[1, 0, 0, 0, 0, 0, 0, 0]).unwrap().is_empty());
 /// ```
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 pub fn decode_interfaces(d: &[u8]) -> Result<Interfaces<'_>, Error> {
     let version = d.get(..4).ok_or(Error::NoVersion)?;
     if u32::from_le_bytes([version[0], version[1], version[2], version[3]]) != INTERFACES_VERSION {
@@ -274,10 +269,10 @@ pub fn decode_interfaces(d: &[u8]) -> Result<Interfaces<'_>, Error> {
 }
 
 /// **A program was built against a version of an interface that its host does not serve**, with
-/// both sides: what the program declared and what the host serves. What the progenitor refuses a
-/// spawn with (milestone 956 step 3), so the refusal names both.
+/// both sides: what the program declared and what the host serves. The host refuses a spawn with
+/// it, so the refusal names both.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Refusal {
     /// The interface's `INTERFACE_ID`.
@@ -304,7 +299,7 @@ impl Interfaces<'_> {
     /// assert!(list.check_served(5, 1).is_ok(), "no entry, nothing to refuse");
     /// ```
     ///
-    /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+    /// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
     pub fn check_served(&self, interface: u64, served: u32) -> Result<(), Refusal> {
         match self.version_of(interface) {
             Some(declared) if declared != served => Err(Refusal {
@@ -320,7 +315,7 @@ impl Interfaces<'_> {
 /// How long a whole [`INTERFACES`] note is for `count` records: header, owner and descriptor. Every
 /// part is a multiple of four, so there is no trailing pad.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 pub const fn note_bytes(count: usize) -> usize {
     HEADER_BYTES + NAME_FIELD_BYTES + descriptor_bytes(count)
 }
@@ -328,14 +323,14 @@ pub const fn note_bytes(count: usize) -> usize {
 /// **A whole [`INTERFACES`] note**, what [`carry_interfaces!`] places. `N` is
 /// [`note_bytes`] of the list.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 #[repr(C, align(4))]
 pub struct InterfacesNote<const N: usize>(pub [u8; N]);
 
 impl<const N: usize> InterfacesNote<N> {
     /// The note declaring `list`.
     ///
-    /// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
+    /// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
     pub const fn of<const LEN: usize>(list: &[DeclaredInterface]) -> Self {
         assert!(
             N == note_bytes(list.len()),
@@ -362,7 +357,7 @@ impl<const N: usize> InterfacesNote<N> {
 
 /// **Declare the interface versions this program was built against.** One line at module scope in
 /// the program's root. It takes a `&[DeclaredInterface]` in ascending id order, each version read from the
-/// interface crate's constant, and places one [`InterfacesNote`] in `.note.nife.manifest`, the
+/// interface crate's constant, and places one [`InterfacesNote`] in the manifest note section, the
 /// section and `PT_NOTE` a manifest uses:
 ///
 /// ```
@@ -374,8 +369,7 @@ impl<const N: usize> InterfacesNote<N> {
 /// An unsorted list is a compile error. The static it declares is named `CARRIED_INTERFACES_NOTE`,
 /// so a program carries one list.
 ///
-/// Name: provisional, minted 2026-10-31 (UTC) by lane milestone/956-checkable-interface-versions.
-/// The static's name `CARRIED_INTERFACES_NOTE` is provisional too.
+/// Name: ratified 2026-11-19 (UTC) with the review package's rulings, as built.
 #[macro_export]
 macro_rules! carry_interfaces {
     ($list:expr) => {
@@ -392,8 +386,7 @@ mod interface_verification {
     use super::*;
 
     /// **Whatever `decode_interfaces` accepts, `encode_interfaces` spells back byte for byte**,
-    /// for a list of two. This is the one-encoding claim of the manifest note's own harness,
-    /// carried to this note.
+    /// for a list of two. This is the one-encoding claim: one list has one encoding.
     ///
     /// Falsification: replayable `crates/interfaces_note/falsifications/interface_verification.a_decoded_interface_list_encodes_back_to_its_bytes.patch`
     #[kani::proof]
@@ -569,7 +562,7 @@ mod interface_tests {
         ]);
     }
 
-    /// **A whole note has the header, the owner, the type and the descriptor** that `crates/static_elf`
+    /// **A whole note has the header, the owner, the type and the descriptor** that a loader
     /// finds, and nothing after.
     #[test]
     fn a_whole_note_carries_its_header_and_descriptor() {
@@ -585,7 +578,7 @@ mod interface_tests {
         assert_eq!(decode_interfaces(&b[20..]).unwrap().version_of(4), Some(7));
     }
 
-    /// **The spawn-time check** (milestone 956 step 3): a program that declares the version the
+    /// **The spawn-time check**: a program that declares the version the
     /// host serves is accepted, one that declares another is refused with both numbers, and one
     /// that says nothing about the interface is accepted. Either side of the served version
     /// refuses, so an older program is not read as compatible with a newer host.

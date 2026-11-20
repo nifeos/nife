@@ -2,15 +2,32 @@
 name = "interfaces_note"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "The ELF note that declares which interface versions a program was built against: an encoder, a bounded decoder and a served-version check"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nifeos/interfaces_note"
+readme = "README.md"
+keywords = ["no-std", "elf", "note", "versioning"]
+categories = ["no-std", "no-std::no-alloc", "os", "encoding"]
+documentation = "https://docs.rs/interfaces_note"
+publish = false     # set to true only in the release that publishes
 
-# The ELF note that declares which interface versions a program was built against (milestone 956
-# (the linked interfaces carry checkable versions) step 2). A leaf on purpose: a package that
-# declares what it links must not link the shell's planner (`grant_plan`) or the manifest note's
-# encoder to do it, so this crate depends on nothing.
+# The note that declares which interface versions a program was built against. A leaf on purpose:
+# a package that declares what it links must not link a planner or another note's encoder to do
+# it, so this crate depends on nothing.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
