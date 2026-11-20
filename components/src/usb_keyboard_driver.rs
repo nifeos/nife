@@ -176,23 +176,23 @@ fn past(deadline: u64) -> bool {
 
 fn zero_page(page: u64) {
     for off in (0..PAGE_BYTES).step_by(8) {
-        mapped(&DMA).write_u64(page * PAGE_BYTES + off, 0);
+        mapped(&DMA).write::<u64>(page * PAGE_BYTES + off, 0);
     }
 }
 
 impl Host {
     fn reg(&self, off: u64) -> u32 {
-        mapped(&REGS).read_u32(off)
+        mapped(&REGS).read::<u32>(off)
     }
 
     fn set_reg(&self, off: u64, v: u32) {
-        mapped(&REGS).write_u32(off, v);
+        mapped(&REGS).write::<u32>(off, v);
     }
 
     /// A 64-bit register as two aligned dwords, low first, which xHCI 1.2 section 5.1 allows.
     fn set_reg64(&self, off: u64, v: u64) {
-        mapped(&REGS).write_u32(off, v as u32);
-        mapped(&REGS).write_u32(off + 4, (v >> 32) as u32);
+        mapped(&REGS).write::<u32>(off, v as u32);
+        mapped(&REGS).write::<u32>(off + 4, (v >> 32) as u32);
     }
 
     fn op(&self, off: u64) -> u64 {
@@ -211,21 +211,21 @@ impl Host {
     /// Write one TRB, the cycle dword last.
     fn write_trb(page: u64, index: u16, t: TransferRequestBlock) {
         let at = page * PAGE_BYTES + u64::from(index) * 16;
-        mapped(&DMA).write_u32(at, t.0[0]);
-        mapped(&DMA).write_u32(at + 4, t.0[1]);
-        mapped(&DMA).write_u32(at + 8, t.0[2]);
+        mapped(&DMA).write::<u32>(at, t.0[0]);
+        mapped(&DMA).write::<u32>(at + 4, t.0[1]);
+        mapped(&DMA).write::<u32>(at + 8, t.0[2]);
         barrier();
-        mapped(&DMA).write_u32(at + 12, t.0[3]);
+        mapped(&DMA).write::<u32>(at + 12, t.0[3]);
     }
 
     fn read_trb(page: u64, index: u16) -> TransferRequestBlock {
         let at = page * PAGE_BYTES + u64::from(index) * 16;
-        let d3 = mapped(&DMA).read_u32(at + 12);
+        let d3 = mapped(&DMA).read::<u32>(at + 12);
         barrier();
         TransferRequestBlock([
-            mapped(&DMA).read_u32(at),
-            mapped(&DMA).read_u32(at + 4),
-            mapped(&DMA).read_u32(at + 8),
+            mapped(&DMA).read::<u32>(at),
+            mapped(&DMA).read::<u32>(at + 4),
+            mapped(&DMA).read::<u32>(at + 8),
             d3,
         ])
     }
@@ -368,7 +368,7 @@ impl Host {
         let at = direct_memory_access::INPUT_CONTEXT * PAGE_BYTES
             + context::input_offset(index, self.capabilities.context_bytes);
         for (i, w) in words.iter().enumerate() {
-            mapped(&DMA).write_u32(at + 4 * i as u64, *w);
+            mapped(&DMA).write::<u32>(at + 4 * i as u64, *w);
         }
     }
 
@@ -431,7 +431,7 @@ impl Host {
             self.phys(direct_memory_access::INTERRUPT_RING),
             direct_memory_access::RING_ENTRIES,
         );
-        mapped(&DMA).write_u64(
+        mapped(&DMA).write::<u64>(
             direct_memory_access::DEVICE_CONTEXT_ARRAY * PAGE_BYTES + 8 * u64::from(slot),
             self.phys(direct_memory_access::DEVICE_CONTEXT),
         );
@@ -464,7 +464,7 @@ impl Host {
         if n < 8 {
             return Err((BringUpStep::BadDeviceDescriptor, n as u32));
         }
-        let b0 = control_buffer().read_u8(7);
+        let b0 = control_buffer().read::<u8>(7);
         let Some(packet) =
             bus_speed(speed).and_then(|bus| descriptor::control_maximum_packet_bytes(b0, bus))
         else {
@@ -603,12 +603,12 @@ impl Host {
     /// found it, took it from the firmware and confined it.
     fn bring_up(h: Handoff) -> Result<Host, Fail> {
         let capabilities = Capabilities::decode(
-            mapped(&REGS).read_u32(registers::CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER),
-            mapped(&REGS).read_u32(registers::STRUCTURAL_PARAMETERS_1_REGISTER),
-            mapped(&REGS).read_u32(registers::STRUCTURAL_PARAMETERS_2_REGISTER),
-            mapped(&REGS).read_u32(registers::CAPABILITY_PARAMETERS_1_REGISTER),
-            mapped(&REGS).read_u32(registers::DOORBELL_OFFSET_REGISTER),
-            mapped(&REGS).read_u32(registers::RUNTIME_REGISTER_SPACE_OFFSET_REGISTER),
+            mapped(&REGS).read::<u32>(registers::CAPABILITY_REGISTERS_LENGTH_BYTES_REGISTER),
+            mapped(&REGS).read::<u32>(registers::STRUCTURAL_PARAMETERS_1_REGISTER),
+            mapped(&REGS).read::<u32>(registers::STRUCTURAL_PARAMETERS_2_REGISTER),
+            mapped(&REGS).read::<u32>(registers::CAPABILITY_PARAMETERS_1_REGISTER),
+            mapped(&REGS).read::<u32>(registers::DOORBELL_OFFSET_REGISTER),
+            mapped(&REGS).read::<u32>(registers::RUNTIME_REGISTER_SPACE_OFFSET_REGISTER),
         );
         let phys = |page: u64| h.data_plane_physical_address + page * PAGE_BYTES;
         let host = Host {
@@ -698,7 +698,7 @@ impl Host {
         // The slot array, its entry 0 the scratchpad array when the controller wants one.
         if self.capabilities.scratchpads > 0 {
             for i in 0..u64::from(self.capabilities.scratchpads) {
-                mapped(&DMA).write_u64(
+                mapped(&DMA).write::<u64>(
                     direct_memory_access::SCRATCHPAD_ARRAY * PAGE_BYTES + 8 * i,
                     phys(
                         driver_process_contract::extensible_host_controller_interface::WORK_PAGES
@@ -706,7 +706,7 @@ impl Host {
                     ),
                 );
             }
-            mapped(&DMA).write_u64(
+            mapped(&DMA).write::<u64>(
                 direct_memory_access::DEVICE_CONTEXT_ARRAY * PAGE_BYTES,
                 phys(direct_memory_access::SCRATCHPAD_ARRAY),
             );
@@ -724,7 +724,7 @@ impl Host {
         // The event ring: its one segment table entry, then interrupter 0, base last.
         let entry = self.events.segment_table_entry();
         for (i, w) in entry.iter().enumerate() {
-            mapped(&DMA).write_u32(
+            mapped(&DMA).write::<u32>(
                 direct_memory_access::EVENT_SEGMENT_TABLE * PAGE_BYTES + 4 * i as u64,
                 *w,
             );
@@ -938,7 +938,7 @@ impl Host {
         let got = REPORT_BYTES.saturating_sub(residual as usize);
         for (i, b) in bytes.iter_mut().enumerate().take(got) {
             *b = mapped(&DMA)
-                .read_u8(direct_memory_access::REPORT_BUFFERS * PAGE_BYTES + offset + i as u64);
+                .read::<u8>(direct_memory_access::REPORT_BUFFERS * PAGE_BYTES + offset + i as u64);
         }
         if let Some(now) = BootReport::parse(&bytes[..got]) {
             let mut typed = Typed::new(out);

@@ -50,7 +50,7 @@ approval_file = { path = "../crates/approval_file" }
 measured_boot = { path = "../crates/measured_boot" }
 socket_contract = { path = "../crates/socket_contract" }
 std_runtime_contract = { path = "../crates/std_runtime_contract" }
-user_mode_runtime = { path = "../crates/user_mode_runtime" }
+user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
 # **The index over HTTPS** (milestone 801 (packages over the internet)): the index's reader and the
 # image's sources (`package_index`, in-tree and `no_std`), the pinned TLS client §196 (nife carries
 # TLS) ruled, and the `getrandom` hooks over the entropy service. The same graph
