@@ -187,7 +187,7 @@ storage slots and the entropy source. Each walks the tree with numbers the tree 
 
 A USB device is whatever a stranger plugged in, and every descriptor and report it sends is a byte
 string it chose. The configuration target hands one string to the device descriptor parser, the
-configuration header parser and the walk to a boot keyboard, and holds the answer to the one
+configuration header parser and the walk to a boot keyboard. It holds the answer to the one
 property the walk exists for: an endpoint it names is an interrupt IN endpoint whose packet size
 fits a boot report. The crate's Kani harnesses prove the walk total up to 25 bytes in any shape and
 41 bytes in one fixed shape, so a longer composite configuration, with lengths and types that

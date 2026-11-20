@@ -7183,12 +7183,6 @@ crates/top/src/lib.rs::write_machine_line
 
 crates/top/src/lib.rs::write_summary
 
-crates/uptime/src/lib.rs::Formatted
-
-crates/uptime/src/lib.rs::as_bytes
-
-crates/uptime/src/lib.rs::format
-
 crates/universal_serial_bus/src/boot_keyboard.rs
 
 crates/universal_serial_bus/src/boot_keyboard.rs::BootReport
@@ -7273,6 +7267,13 @@ crates/universal_serial_bus/src/request.rs::set_idle_forever
 crates/universal_serial_bus/src/request.rs::to_u64
 
 crates/universal_serial_bus/src/verification.rs
+
+crates/uptime/src/lib.rs::Formatted
+
+crates/uptime/src/lib.rs::as_bytes
+
+crates/uptime/src/lib.rs::format
+
 
 crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 

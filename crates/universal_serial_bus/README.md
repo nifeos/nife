@@ -103,8 +103,8 @@ cargo kani setup
 
 CI uses version 0.68.0, and another version may verify differently.
 
-Then `cargo kani`, from the crate's directory, runs all five harnesses. KANI_TIMING
-CI runs plain `cargo kani`, with no extra flags. To run one harness, give its full path and
+Then `cargo kani`, from the crate's directory, runs all five harnesses. On a desktop that takes about 7 minutes and peaks near
+2.2 gigabytes of memory. To run one harness, give its full path and
 `--exact`:
 
 ```sh
