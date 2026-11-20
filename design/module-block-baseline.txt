@@ -386,9 +386,7 @@ crates/abi/src/survey.rs::STATE
 
 crates/abi/src/survey.rs::is_known
 
-crates/abi/src/survey/tests.rs
 
-crates/abi/src/tests.rs
 
 crates/abi/src/thread_control_block.rs
 
@@ -530,7 +528,6 @@ crates/bitmap_font/src/render.rs::glyph
 
 crates/bitmap_font/src/render.rs::is_ink
 
-crates/bitmap_font/src/tests.rs
 
 
 
@@ -1037,7 +1034,6 @@ crates/capability_table/src/lib.rs::union
 
 crates/capability_table/src/lib.rs::used
 
-crates/capability_table/src/tests.rs
 
 crates/capability_witness_contract/src/lib.rs::CHILD_ANSWERED
 
@@ -1234,7 +1230,6 @@ crates/compositor/src/lib.rs::union
 
 crates/compositor/src/lib.rs::window_pixel
 
-crates/compositor/src/tests.rs
 
 crates/confined_syscall_fuzzer_contract/src/lib.rs::ARGS
 
@@ -1652,7 +1647,6 @@ crates/direct_memory_access_validator/src/lib.rs::queue_block
 
 crates/direct_memory_access_validator/src/lib.rs::validate_and_shadow
 
-crates/direct_memory_access_validator/src/verification.rs
 
 crates/documentation/src/index.rs
 
@@ -1736,7 +1730,6 @@ crates/documentation/src/index.rs::tokens
 
 crates/documentation/src/index.rs::tokens
 
-crates/documentation/src/index/tests.rs
 
 crates/documentation/src/lib.rs::Sink
 
@@ -1792,7 +1785,6 @@ crates/domain_name_resolution_contract/src/messages.rs::grant_messages
 
 crates/domain_name_resolution_contract/src/messages.rs::reject_code
 
-crates/domain_name_resolution_contract/src/tests.rs
 
 crates/domain_name_resolution_contract/src/wire.rs
 
@@ -2112,7 +2104,6 @@ crates/filesystem_contract/src/block.rs::req
 
 crates/filesystem_contract/src/block.rs::req_blocks
 
-crates/filesystem_contract/src/block/tests.rs
 
 crates/filesystem_contract/src/directory.rs
 
@@ -2158,7 +2149,6 @@ crates/filesystem_contract/src/directory.rs::explain
 
 crates/filesystem_contract/src/directory.rs::root
 
-crates/filesystem_contract/src/directory/tests.rs
 
 crates/filesystem_contract/src/directory_entry.rs
 
@@ -2171,7 +2161,6 @@ crates/filesystem_contract/src/directory_entry.rs::iter
 
 crates/filesystem_contract/src/directory_entry.rs::record_len
 
-crates/filesystem_contract/src/directory_entry/tests.rs
 
 crates/filesystem_contract/src/extended_attribute.rs
 
@@ -2221,7 +2210,6 @@ crates/filesystem_contract/src/extended_attribute.rs::reply_value_len
 
 crates/filesystem_contract/src/extended_attribute.rs::set
 
-crates/filesystem_contract/src/extended_attribute/tests.rs
 
 crates/filesystem_contract/src/fs.rs
 
@@ -2293,7 +2281,6 @@ crates/filesystem_contract/src/fs.rs::req_handle
 
 crates/filesystem_contract/src/fs.rs::req_len
 
-crates/filesystem_contract/src/fs/tests.rs
 
 crates/filesystem_contract/src/grant.rs
 
@@ -2318,7 +2305,6 @@ crates/filesystem_contract/src/grant.rs::pack_name
 
 crates/filesystem_contract/src/grant.rs::unpack_name
 
-crates/filesystem_contract/src/grant/tests.rs
 
 crates/filesystem_contract/src/lib.rs::OPERATION_SHIFT
 
@@ -2340,7 +2326,6 @@ crates/filesystem_contract/src/nameset.rs::encode
 
 crates/filesystem_contract/src/nameset.rs::iter
 
-crates/filesystem_contract/src/nameset/tests.rs
 
 crates/filesystem_contract/src/reply.rs::reply_err
 
@@ -2363,10 +2348,8 @@ crates/filesystem_contract/src/statfs.rs::free_bytes
 crates/filesystem_contract/src/statfs.rs::total_bytes
 
 
-crates/filesystem_contract/src/statfs/tests.rs
 
 
-crates/filesystem_contract/src/tests.rs
 
 crates/filesystem_contract/src/verb.rs
 
@@ -2399,7 +2382,6 @@ crates/filesystem_contract/src/verb.rs::takes_name
 
 
 
-crates/filesystem_contract/src/verb/tests.rs
 
 crates/filesystem_fixture/src/lib.rs::A
 
@@ -2860,7 +2842,6 @@ crates/filesystem_fixture/src/lib.rs::sized_byte
 
 crates/filesystem_fixture/src/lib.rs::wide_name
 
-crates/filesystem_fixture/src/tests.rs
 
 crates/firmware_configuration/src/lib.rs::COMMAND_LEN
 
@@ -3054,7 +3035,6 @@ crates/globally_unique_identifier_partition_table/src/testing.rs
 
 crates/globally_unique_identifier_partition_table/src/testing.rs::sample_disk
 
-crates/globally_unique_identifier_partition_table/src/verification.rs
 
 crates/grant_contract/src/manifest.rs::DIAGNOSTICS_SLOT
 
@@ -3082,7 +3062,6 @@ crates/grant_contract/src/manifest.rs::rights
 
 crates/grant_contract/src/manifest.rs::try_new
 
-crates/grant_contract/src/manifest/tests.rs
 
 crates/grant_contract/src/verbs.rs::ALL
 
@@ -3156,7 +3135,6 @@ crates/grant_plan/src/command.rs::resolve_path
 
 crates/grant_plan/src/command.rs::resolve_steps
 
-crates/grant_plan/src/command/tests.rs
 
 crates/grant_plan/src/escalation.rs::Action
 
@@ -3171,7 +3149,6 @@ crates/grant_plan/src/escalation.rs::on_interrupt
 
 crates/grant_plan/src/escalation.rs::on_tick
 
-crates/grant_plan/src/escalation/tests.rs
 
 crates/grant_plan/src/expand.rs
 
@@ -3462,7 +3439,6 @@ crates/grant_plan/src/parsing.rs::vouch_verb
 
 crates/grant_plan/src/parsing.rs::vouched_name
 
-crates/grant_plan/src/parsing/tests.rs
 
 crates/grant_plan/src/planning.rs::Streams
 
@@ -3476,7 +3452,6 @@ crates/grant_plan/src/planning.rs::plan_against_with
 
 crates/grant_plan/src/planning.rs::redirect_target
 
-crates/grant_plan/src/planning/tests.rs
 
 crates/grant_plan/src/planning/tests/designation.rs
 
@@ -3496,7 +3471,6 @@ crates/grant_plan/src/refusal.rs::Refusal
 
 crates/grant_plan/src/refusal.rs::message
 
-crates/grant_plan/src/refusal/tests.rs
 
 
 
@@ -3526,7 +3500,6 @@ crates/grant_plan/src/refusal/tests.rs
 
 
 
-crates/grant_plan/src/tests.rs
 
 
 
@@ -3897,7 +3870,6 @@ crates/inter_process_communication/src/rendezvous.rs::send
 
 crates/inter_process_communication/src/rendezvous.rs::signal
 
-crates/inter_process_communication/src/tests.rs
 
 crates/inter_process_communication/src/timer.rs
 
@@ -3926,7 +3898,6 @@ crates/inter_process_communication/src/timer.rs::new
 
 crates/inter_process_communication/src/timer.rs::next_due
 
-crates/inter_process_communication/src/verification.rs
 
 
 
@@ -4075,7 +4046,6 @@ crates/line_editor/src/handoff.rs::u32
 
 crates/line_editor/src/handoff.rs::u32
 
-crates/line_editor/src/handoff/tests.rs
 
 crates/line_editor/src/line_disc.rs::Event
 
@@ -4101,13 +4071,11 @@ crates/line_editor/src/line_disc.rs::resume_line
 
 crates/line_editor/src/line_disc.rs::start_line
 
-crates/line_editor/src/line_disc/tests.rs
 
 crates/line_editor/src/output.rs::Sink
 
 crates/line_editor/src/output.rs::expand_output
 
-crates/line_editor/src/output/tests.rs
 
 crates/line_editor/src/raw_queue.rs::RawQueue
 
@@ -4119,7 +4087,6 @@ crates/line_editor/src/raw_queue.rs::pop8
 
 crates/line_editor/src/raw_queue.rs::push
 
-crates/line_editor/src/raw_queue/tests.rs
 
 
 crates/line_editor_component/src/lib.rs::BUDGET
@@ -4748,7 +4715,6 @@ crates/machine_discovery/src/x86_64.rs::union
 
 crates/machine_discovery/src/x86_64.rs::unpromised
 
-crates/machine_discovery/src/x86_64/verification.rs
 
 
 
@@ -4894,7 +4860,6 @@ crates/memory_regions/src/table.rs::unpin
 
 crates/memory_regions/src/table.rs::usage
 
-crates/memory_regions/src/tests.rs
 
 crates/memory_regions/src/watermark.rs::coalesced_watermark
 
@@ -4991,7 +4956,6 @@ crates/network_time_protocol/src/lib.rs::with_nonce
 
 crates/network_time_protocol/src/lib.rs::with_poll
 
-crates/network_time_protocol/src/verification.rs
 
 crates/nifefs/src/lib.rs::BLOCK
 
@@ -5357,7 +5321,6 @@ crates/page_tables/src/tlb_flush.rs::assume_no_stale_entry
 
 crates/page_tables/src/tlb_flush.rs::flush
 
-crates/page_tables/src/verification.rs
 
 crates/page_tables/src/x86_64.rs
 
@@ -5443,7 +5406,6 @@ crates/pci_configuration_space/src/lib.rs::requester_id
 
 crates/pci_configuration_space/src/lib.rs::walk
 
-crates/pci_configuration_space/src/tests.rs
 
 crates/pgrep/src/lib.rs::BLOCKED
 
@@ -5554,7 +5516,6 @@ crates/program_table/src/image.rs::image_manifest
 
 crates/program_table/src/image.rs::image_request_fits
 
-crates/program_table/src/image/tests.rs
 
 
 
@@ -5614,7 +5575,6 @@ crates/program_table/src/program/manifests.rs::manifest
 
 crates/program_table/src/program/manifests.rs::verbs
 
-crates/program_table/src/program/tests.rs
 
 
 
@@ -5769,7 +5729,6 @@ crates/screen_console/src/lib.rs::to_words
 
 crates/screen_console/src/lib.rs::write
 
-crates/screen_console/src/tests.rs
 
 crates/sealed_pair/src/lib.rs::BOOT_PROGRAMS
 
@@ -5925,7 +5884,6 @@ crates/serial_console/src/progress.rs::tail
 
 crates/serial_console/src/progress.rs::userspace_ran
 
-crates/serial_console/src/progress/tests.rs
 
 crates/serial_console/src/screen.rs
 
@@ -6085,9 +6043,7 @@ crates/static_elf/src/segment.rs::is_writable
 
 crates/static_elf/src/segment.rs::page_range
 
-crates/static_elf/src/tests.rs
 
-crates/static_elf/src/verification.rs
 
 crates/std_runtime_contract/src/lib.rs::ARGS_PAGE
 
@@ -6341,7 +6297,6 @@ crates/swish/src/apropos.rs::write_apropos
 
 crates/swish/src/apropos.rs::write_found
 
-crates/swish/src/apropos/tests.rs
 
 crates/swish/src/bare.rs::Bare
 
@@ -6371,7 +6326,6 @@ crates/swish/src/batching.rs::write_batch
 
 crates/swish/src/batching.rs::write_sweep
 
-crates/swish/src/batching/tests.rs
 
 crates/swish/src/complete.rs::Answer
 
@@ -6405,13 +6359,11 @@ crates/swish/src/endowment.rs::write_census
 
 crates/swish/src/endowment.rs::write_holdings
 
-crates/swish/src/endowment/tests.rs
 
 crates/swish/src/jig_versions.rs::entry
 
 crates/swish/src/number.rs::write_num
 
-crates/swish/src/number/tests.rs
 
 crates/swish/src/preview.rs::Vouched
 
@@ -6421,19 +6373,16 @@ crates/swish/src/preview.rs::write_image_capabilities
 
 crates/swish/src/preview.rs::write_preview
 
-crates/swish/src/preview/tests.rs
 
 crates/swish/src/routing.rs::Route
 
 crates/swish/src/routing.rs::route
 
-crates/swish/src/routing/tests.rs
 
 crates/swish/src/say.rs::Say
 
 crates/swish/src/say.rs::write_say
 
-crates/swish/src/say/tests.rs
 
 crates/swish/src/sentences.rs::FAULTED_SENTENCE
 
@@ -6459,7 +6408,6 @@ crates/swish/src/sentences.rs::write_refusal
 
 crates/swish/src/sentences.rs::write_vouch
 
-crates/swish/src/sentences/tests.rs
 
 crates/swish/src/sequence.rs
 
@@ -6491,7 +6439,6 @@ crates/swish/src/status.rs::from_code
 
 crates/swish/src/status.rs::is_ok
 
-crates/swish/src/status/tests.rs
 
 crates/swish/src/timing.rs::Untimed
 
@@ -6501,7 +6448,6 @@ crates/swish/src/timing.rs::write_timing
 
 crates/swish/src/timing.rs::write_untimed
 
-crates/swish/src/timing/tests.rs
 
 crates/swish/src/words.rs::Piece
 
@@ -6517,7 +6463,6 @@ crates/swish/src/words.rs::pieces
 
 crates/swish/src/words.rs::write_set
 
-crates/swish/src/words/tests.rs
 
 crates/system_initializer/src/activation.rs
 
@@ -6611,7 +6556,6 @@ crates/system_log/src/ring.rs::new
 
 crates/system_log/src/ring.rs::read
 
-crates/system_log/src/tests.rs
 
 crates/system_log_contract/src/lib.rs::ALERT
 
@@ -6806,7 +6750,6 @@ crates/terminal_contract/src/lib.rs::operation
 
 crates/terminal_contract/src/lib.rs::req
 
-crates/terminal_contract/src/tests.rs
 
 crates/test_times/src/lib.rs::DEFAULT_BUDGET_SECONDS
 
@@ -7177,7 +7120,6 @@ crates/usb/src/request.rs::set_idle_forever
 
 crates/usb/src/request.rs::to_u64
 
-crates/usb/src/verification.rs
 
 crates/user_mode_runtime/src/child_stub.rs::SEND_THEN_EXIT
 
@@ -7327,7 +7269,6 @@ crates/video_terminal/src/cell.rs::is_invisible
 
 crates/video_terminal/src/cell.rs::new
 
-crates/video_terminal/src/cell/tests.rs
 
 crates/video_terminal/src/damage.rs::CellRect
 
@@ -7341,7 +7282,6 @@ crates/video_terminal/src/damage.rs::to_pixels
 
 crates/video_terminal/src/damage.rs::union
 
-crates/video_terminal/src/damage/tests.rs
 
 crates/video_terminal/src/geometry.rs::SCROLLBACK_CELLS
 
@@ -7371,7 +7311,6 @@ crates/video_terminal/src/palette.rs::DEFAULT_FG
 
 crates/video_terminal/src/palette.rs::PALETTE
 
-crates/video_terminal/src/palette/tests.rs
 
 crates/video_terminal/src/script.rs
 
@@ -7457,7 +7396,6 @@ crates/video_terminal/src/vt.rs::view_offset
 
 crates/video_terminal/src/vt.rs::width
 
-crates/video_terminal/src/vt/tests.rs
 
 
 
@@ -8000,7 +7938,6 @@ kernel/src/arch/riscv64/mmu.rs::virt_to_phys
 
 kernel/src/arch/riscv64/mmu/proofs.rs
 
-kernel/src/arch/riscv64/mmu/tests.rs
 
 kernel/src/arch/riscv64/mod.rs
 
@@ -8665,7 +8602,6 @@ kernel/src/sched/switch.rs::mark_current_fp_live
 
 kernel/src/sched/switch.rs::schedule
 
-kernel/src/sched/tests.rs
 
 kernel/src/sched/thread_control_block.rs::Binder
 
@@ -8751,7 +8687,6 @@ kernel/src/syscall.rs::invoke
 
 kernel/src/syscall/proofs.rs
 
-kernel/src/syscall/tests.rs
 
 kernel/src/testing.rs
 
@@ -8777,7 +8712,6 @@ kernel/src/testing.rs::run_was_filtered
 
 kernel/src/testing.rs::runner
 
-kernel/src/tests.rs
 
 kernel/src/thread.rs
 
@@ -9431,7 +9365,6 @@ kernel/src/user/x86_programs.rs::report
 
 kernel/src/virtio.rs
 
-kernel/src/virtio/tests.rs
 
 notes/a-frame-per-filesystem-client-channel.md
 
@@ -10070,7 +10003,6 @@ redoxfs_server/src/block.rs::inner
 
 redoxfs_server/src/block.rs::new
 
-redoxfs_server/src/block/tests.rs
 
 redoxfs_server/src/crash.rs
 
@@ -10204,7 +10136,6 @@ redoxfs_server/src/server.rs::unlink
 
 redoxfs_server/src/server.rs::write
 
-redoxfs_server/src/tests.rs
 
 redoxfs_server/src/tests/directory_capability.rs
 
@@ -10684,7 +10615,6 @@ xtask/src/disk_throughput.rs
 
 xtask/src/farm.rs
 
-xtask/src/farm/tests.rs
 
 xtask/src/farm/tests.rs::GET
 
@@ -10730,15 +10660,10 @@ xtask/src/swish_check.rs
 
 xtask/src/swish_check/gauge.rs
 
-xtask/src/swish_check/gauge/tests.rs
 
-xtask/src/swish_check/launch/tests.rs
 
-xtask/src/swish_check/script/tests.rs
 
-xtask/src/swish_check/transcript/tests.rs
 
-xtask/src/swish_check/verdict/tests.rs
 
 xtask/src/uefi.rs
 

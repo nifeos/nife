@@ -129,6 +129,7 @@ Every public name of the crate and its state. The architect ratifies; the state 
 | `MAXIMUM_VERBS` | 2026-10-27 |
 | `asks_service` | 2026-11-19, as built (a function that answers yes or no takes a third-person verb phrase) |
 | `BARE_VERSION` | 2026-11-19, as built (the layout with nothing added) |
+| `verification`, `tests` | 2026-11-20, the standing ruling for these two module names |
 
 ### Provisional
 
@@ -141,7 +142,6 @@ Every public name of the crate and its state. The architect ratifies; the state 
 | `ZONED_VERSION`, `SERVICED_VERSION`, `MAXIMUM_ZONES` | the later descriptor versions and the zone count limit |
 | `Zones`, `ZonesIter`, `Verbs`, `VerbsIter` | the views and their iterators, named as std names an iterator beside its collection |
 | `ZonedNote`, `ServicedNote`, `encode_zoned`, `encode_serviced`, `zones`, `has_root`, `check_serviced` | the zone and service half of the manifest note |
-| `verification`, `tests` | the modules |
 
 ### No `Name:` block yet
 
