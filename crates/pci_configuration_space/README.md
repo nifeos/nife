@@ -9,7 +9,7 @@ PCI and PCI Express configuration-space decoding, with none of the memory-mapped
 The crate addresses a function in the enhanced configuration access mechanism (ECAM) window, walks
 a machine's buses for functions (following PCI-to-PCI bridges), sizes a function's base address
 registers, and decodes its capability lists: MSI, MSI-X and the virtio PCI vendor capabilities. It
-reads and writes through closures on `(Bdf, offset)`, so a kernel passes volatile accessors into
+reads and writes through closures on `(BusDeviceFunction, offset)`, so a kernel passes volatile accessors into
 the mapped window and a test passes an array. `no_std`, no dependencies, `forbid(unsafe_code)`.
 
 A device is untrusted input. Every function here is total: a device that answers every read with
@@ -20,12 +20,12 @@ each bus at most once, so a bridge that names its own bus or a loop terminates.
 ## EXAMPLES
 
 ```rust
-use pci_configuration_space::{Bdf, VENDOR_ID_REGISTER, VIRTIO_VENDOR, enumerate};
+use pci_configuration_space::{BusDeviceFunction, VENDOR_ID_REGISTER, VIRTIO_VENDOR, enumerate};
 
 // A configuration space with exactly one function: a modern virtio block device at 00:01.0.
 // Every other slot reads 0xffff, the bus's way of saying nobody is home.
-let mut read32 = |bdf: Bdf, offset: u64| -> u32 {
-    if bdf == (Bdf { bus: 0, device: 1, function: 0 }) && offset == VENDOR_ID_REGISTER {
+let mut read32 = |bus_device_function: BusDeviceFunction, offset: u64| -> u32 {
+    if bus_device_function == (BusDeviceFunction { bus: 0, device: 1, function: 0 }) && offset == VENDOR_ID_REGISTER {
         (0x1042 << 16) | VIRTIO_VENDOR as u32
     } else if offset == VENDOR_ID_REGISTER {
         0xffff_ffff
@@ -35,7 +35,7 @@ let mut read32 = |bdf: Bdf, offset: u64| -> u32 {
 };
 
 let mut found = Vec::new();
-enumerate(1, &mut read32, &mut |bdf, vendor, device| found.push((bdf, vendor, device)));
+enumerate(1, &mut read32, &mut |bus_device_function, vendor, device| found.push((bus_device_function, vendor, device)));
 assert_eq!(found.len(), 1);
 assert_eq!(found[0].0.ecam_offset(), 1 << 15);
 ```
@@ -54,7 +54,7 @@ CPU-minutes without finishing and was not kept.
 
 ## What it decodes
 
-- `Bdf`: bus, device and function, with `ecam_offset` (4 KiB per function, `bus:8 | device:5 |
+- `BusDeviceFunction`: bus, device and function, with `ecam_offset` (4 KiB per function, `bus:8 | device:5 |
   function:3 | offset:12`) and `requester_id` (the 16-bit identifier a function stamps on its
   memory transactions, which an input and output memory management unit keys a device by). A
   device or function number wider than its field is masked, so it never names another page.

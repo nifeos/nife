@@ -86,7 +86,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`counter_frequency_contract`](crate-reviews/counter-frequency-contract.md) | contract | ready for the architect's review |
 | [`entropy_contract`](crate-reviews/entropy-contract.md) | contract | cleared to move |
 | [`clock_contract`](crate-reviews/clock-contract.md) | contract | overlay names for the architect |
-| [`pci_configuration_space`](crate-reviews/pci-configuration-space.md) | 9 | ready for review; the move waits for the names |
+| [`pci_configuration_space`](crate-reviews/pci-configuration-space.md) | 9 | names ratified 2026-11-20; clearance next |
 | [`page_tables`](crate-reviews/page-tables.md) | milestone 1104 (`paging`: what an outside maintainer would fix before the move) | names for the architect, then clearance |
 | [`subtree_scope`](crate-reviews/subtree-scope.md) | step 9 | eight provisional names for the architect; the move waits on P0-3's pin |
 | [`network_time_protocol`](crate-reviews/network-time-protocol.md) | 1102 | cleared 2026-11-20; names ratified; move lane next |
