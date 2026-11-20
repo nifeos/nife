@@ -23,7 +23,8 @@ open questions: a totality harness for `parse`, and whether `VERSION` stays. Whe
 so and adds only what the package did not see.
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold, Kani, cargo-mutants, cargo-fuzz, the
-crate's own `testing::sample_disk` and its two real fixtures. No new tool and no new dependency.
+crate's own `testing::sample_disk` and its two real fixtures. No new tool. The one new dependency
+is this tree's own `master_boot_record`, which holds the protective-MBR code.
 
 ## Finding status
 
@@ -34,12 +35,12 @@ milestone reaches delivery.
   rewrites the comment on `Cargo.toml` line 11.
 - P1-2, `Entry::blocks` panics on a hand-built entry: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-3, no way in through the backup table: Open. `parse_backup` and its host tests are in
+- P1-3, no way in through the backup table: Done. `parse_backup` and its host tests are in
   [#3566](https://github.com/nifeos/nife/pull/3566); the Kani round trip through
-  `write_backup_header` is not written.
-- P1-4, nothing compares the header with the device: Open. `check_disk_size` is in
-  [#3566](https://github.com/nifeos/nife/pull/3566); no nife caller calls it, and no caller has a
-  `BUGS` line saying so.
+  `write_backup_header`, with its patch, is in [#3837](https://github.com/nifeos/nife/pull/3837).
+- P1-4, nothing compares the header with the device: Done for this crate. `check_disk_size` is in
+  [#3566](https://github.com/nifeos/nife/pull/3566). No nife caller calls it, and each caller's
+  `BUGS` section says so ([#3837](https://github.com/nifeos/nife/pull/3837)); wiring the check in is each program's own change.
 - P1-5, `parse` cannot tell where the array came from: Open. The cheap form (documentation and the
   README example) is in [#3566](https://github.com/nifeos/nife/pull/3566); the firm form, a
   `parse` that takes the block it read the array from, is two-way before the tag and the
@@ -52,18 +53,20 @@ milestone reaches delivery.
   and 5 rule, as provisional names in [#3821](https://github.com/nifeos/nife/pull/3821). The names
   the decisions do not reach (`ATTR_*`, `Error::EntrySize`, `BackupMismatch::EntrySize`, the
   `transfer` parameters, `PartitionsOverlap { a, b }`, `entry`) stay in the package's name table.
-- P1-10, the prose gate refuses nineteen acronyms: Open. The move lane runs the template's
-  `prose_acronyms` gate and expands each at first use.
+- P1-10, the prose gate refuses nineteen acronyms: Done, [#3837](https://github.com/nifeos/nife/pull/3837). Each is expanded at first use or
+  reworded. The gate still refuses `GPT` and `RFC` beside their expansions, a false positive of
+  the template's (see `BUGS`).
 - P1-11, the mutation verdict needs the recorded equivalents: Open. The move lane carries the six
   equivalents into `.github/mutants-exempts` after the first full run in the new repository.
 - P1-12, the README is not the template's: Open. The badge row, the measured Kani figures and a
   stranger run need the new repository.
 - P2-13, `check_backup` is stricter than the specification: Done (documented, strictness kept),
   [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-14, the proofs stop short of the hostile-input surface: Open. The `blocks` harness is in
-  [#3566](https://github.com/nifeos/nife/pull/3566); the harnesses for `mbr::validate`,
-  `Span::covering`, `name_utf8` and the two-stage `Header::decode` are not written, and the fuzz
-  target is in nife's `fuzz/fuzz_targets/`.
+- P2-14, the proofs stop short of the hostile-input surface: Open for the fuzz target only, which
+  is in nife's `fuzz/fuzz_targets/` and moves with the crate. The `blocks` harness is in
+  [#3566](https://github.com/nifeos/nife/pull/3566). The harnesses for the protective MBR check,
+  `Span::covering`, `name_utf8` and the two stages of `Header::decode`, each with its patch, are in
+  [#3837](https://github.com/nifeos/nife/pull/3837); the protective MBR harness lives in `master_boot_record`.
 - P2-15, `Debug` prints the entry array: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-16, two casts narrow on a 32-bit host: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -96,9 +99,9 @@ milestone reaches delivery.
 - Package questions, a totality harness for `parse` and whether `VERSION` stays: Open. Both are
   two-way and the maintainer rules them provisionally; `VERSION` is at `src/lib.rs` line 54.
 - Follow-on, the protective-MBR code moves to `master_boot_record`: Ruled (maintainer, provisional,
-  2026-11-19 UTC). Not built: it waits for the staged `master_boot_record` crate
-  ([#3731](https://github.com/nifeos/nife/pull/3731)), after which `src/mbr.rs`'s write and
-  validate code moves there and this crate depends on it.
+  2026-11-19 UTC). Built, [#3837](https://github.com/nifeos/nife/pull/3837): the record's write and check are `master_boot_record::protective`
+  (provisional names), and this crate depends on it. `master_boot_record::write`, `validate` and
+  `MasterBootRecordProblem` stay this crate's entry points, fitted to any accepted block size.
 
 ## Open decisions
 
@@ -266,13 +269,16 @@ The checks are in [the appendix](1093-globally-unique-identifier-partition-table
 - Item 3's normalization of the backup to the primary's orientation assumes the primary array sits
   at block 2, which every tool writes and the specification does not require. The restored header
   says so, and a caller that knows better can edit the `Header` before writing.
-- The template's `prose_acronyms` false positive on `U+FFFD` is the template's to fix; until it
-  lands, the crate rewords the one comment.
+- The template's `prose_acronyms` gate refuses `GPT` and `RFC` at first use even beside their
+  expansions, and `U+FFFD` outside code. The fix is the template's;
+  until it lands, the crate keeps the expansions and writes the code point as code.
 
 ## Follow-on
 
-- **Outstanding.** The rename lane carries decisions 2 to 5, and the review clearance follows it. Every finding marked Open or Ruled under "Finding status", each checked against
-  the crate's sources on main.
+- **Outstanding.** The architect's review clearance and name ratification, then the move lane:
+  P0-1, P1-11, P1-12 and the fuzz target of P2-14, which need the new repository. The maintainer
+  rules P1-5's firm form and the two package questions provisionally. The template fixes its
+  `prose_acronyms` false positives.
 
 ## Index row
 

@@ -21,7 +21,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way. Effort: XS.
 
 3. The crate cannot open a disk whose primary table has damage, and the specification requires it to.
-   DONE (`the_backup_alone_restores_the_primary_byte_for_byte`, `parse_backup_refuses_a_primary_a_wrong_size_and_a_damaged_array`, `parse_backup_returns_the_table_write_backup_header_described`). LEFT: the Kani round trip, which carries four symbolic CRC chains; the host test covers both block sizes and four disk sizes.
+   DONE (`the_backup_alone_restores_the_primary_byte_for_byte`, `parse_backup_refuses_a_primary_a_wrong_size_and_a_damaged_array`, `parse_backup_returns_the_table_write_backup_header_described`; harness `a_backup_header_restores_the_table_it_was_written_from` with its patch: the backup header's field mapping on every disk size `create` accepts, the bytes between being the header round trip's).
    Finding: `parse` refuses a header whose `my_lba` is not 1 (`Error::NotPrimary`), and
    `check_backup` needs a parsed primary. So when the primary header or its array is corrupt, which
    is the case the backup exists for, the crate offers no way to read the backup, learn the
@@ -47,7 +47,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    Door: two-way (additive). Effort: M.
 
 4. Nothing compares the header's idea of the disk with the device.
-   PARTIAL. DONE: `check_disk_size` (`a_table_cloned_onto_another_size_of_disk_is_refused_by_the_size_check`), the `parse` documentation and the README contract. LEFT: the `BUGS` line in each nife caller, which is component code for the lane that wires the check in.
+   DONE: `check_disk_size` (`a_table_cloned_onto_another_size_of_disk_is_refused_by_the_size_check`), the `parse` documentation, the README contract and a `BUGS` line in each nife caller. Wiring the check in is each program's own change.
    Finding: `parse` takes the disk's size from `alternate_lba + 1` and checks every other field
    against that. A table cloned onto a smaller or larger disk, or a disk grown under its table,
    parses clean. `check_protective_mbr` then checks the MBR against the header's figure, not the
@@ -145,7 +145,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    package's lane.
 
 10. The template's prose gate is red on nineteen acronyms.
-   LEFT. The `prose_acronyms` gate is the template's and this tree does not carry it; the move lane runs it and applies the expansions.
+   DONE. Each acronym is expanded at first use or reworded. The gate still refuses `GPT` and `RFC` beside their expansions, the template's false positive.
     Finding: `check / standalone` wants every acronym expanded at its first use, at a ceiling of 0.
     `prose_acronyms` reports these. In the README (lines 3 and 24): UEFI, GPT and RFC. In the crate
     root (`lib.rs` line 1, `lib.rs` line 4): GPT and UEFI. In `crc.rs` line 3: IEEE and PNG. In `entry.rs` line 22,

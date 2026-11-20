@@ -33,6 +33,8 @@
 //! - It refuses a partition not 4096-aligned at both ends rather than rounding in: blocks
 //!   straddling its first byte would be readable only through the offset disk that made them.
 //! - No progress, no resume, and no confirmation: it formats one partition of one disk.
+//! - The partition table is not checked against the disk's size (`check_disk_size`), so the
+//!   partition it formats is where the header says, on a disk the header may not describe.
 //! - Unencrypted (milestone 57 (partitioning and formatting a real drive)): encryption needs a
 //!   salt and two keys, and the `no_std` path refuses a password rather than skip it silently.
 

@@ -111,6 +111,27 @@ impl Header {
     /// the CRC field taken as zero. A size over 92 is accepted, as the spec asks of a reader that
     /// does not know a later revision.
     pub fn decode(block: &[u8]) -> Result<Header, Error> {
+        let header_size = Header::decode_checks(block)?;
+
+        let stored = le32(block, at::HEADER_CRC);
+        let computed = header_crc(&block[..header_size]);
+        if stored != computed {
+            return Err(Error::HeaderCrc { stored, computed });
+        }
+
+        Ok(Header::decode_fields(block))
+    }
+
+    /// The checks [`Header::decode`] makes before the CRC, returning the declared header size.
+    ///
+    /// Split out from `decode` for the same reason as [`Header::decode_fields`]: these checks are
+    /// proved total on any symbolic block, and the CRC that follows them is proved separately (its
+    /// piece-wise form equals the whole), because one harness through both would reason about a
+    /// polynomial over symbolic bytes. The size returned is in `92 ..= block.len()`. See
+    /// `verification::the_header_checks_before_the_crc_are_total`.
+    ///
+    /// Name: provisional.
+    pub(crate) fn decode_checks(block: &[u8]) -> Result<usize, Error> {
         if !is_block_size_ok(block.len()) {
             return Err(Error::BlockSize(block.len()));
         }
@@ -128,17 +149,18 @@ impl Header {
         if le32(block, at::RESERVED) != 0 {
             return Err(Error::ReservedNotZero);
         }
-        if block[header_size as usize..].iter().any(|&b| b != 0) {
+        // Every byte is folded in, with the size as a mask rather than a slice start or an early
+        // exit, so the model checker sees one branch-free loop of fixed length
+        // (`the_header_checks_before_the_crc_are_total`).
+        let tail = header_size as usize;
+        let past_header = block
+            .iter()
+            .enumerate()
+            .fold(0u8, |seen, (i, &b)| seen | if i >= tail { b } else { 0 });
+        if past_header != 0 {
             return Err(Error::BlockTailNotZero);
         }
-
-        let stored = le32(block, at::HEADER_CRC);
-        let computed = header_crc(&block[..header_size as usize]);
-        if stored != computed {
-            return Err(Error::HeaderCrc { stored, computed });
-        }
-
-        Ok(Header::decode_fields(block))
+        Ok(header_size as usize)
     }
 
     /// The field half of [`Header::decode`]: read the nine fields out of a block, judging nothing.

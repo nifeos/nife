@@ -264,6 +264,7 @@ dependencies = [
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
+ "master_boot_record",
  "uuid",
 ]
 
@@ -355,6 +356,10 @@ name = "lz4_flex"
 version = "0.11.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13591d77a9b6d941f7e6fcade7f9dfd9e801308752bde50c0a9bb5852778c22c"
+
+[[package]]
+name = "master_boot_record"
+version = "0.1.0"
 
 [[package]]
 name = "matchers"

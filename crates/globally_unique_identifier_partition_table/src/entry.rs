@@ -21,16 +21,16 @@ pub const ENTRY_BYTES: usize = 128;
 pub const NAME_UNITS: usize = 36;
 
 /// Attribute bit 0: the platform must not alter this partition. Firmware sets it on partitions it
-/// needs (an OEM recovery partition, for instance), and a partition editor is expected to refuse to
-/// touch one.
+/// needs (an original equipment manufacturer (OEM) recovery partition, for instance), and a
+/// partition editor is expected to refuse to touch one.
 pub const ATTR_REQUIRED: u64 = 1 << 0;
 
-/// Attribute bit 1: no block-IO protocol. UEFI firmware will not expose this partition as a
-/// filesystem.
+/// Attribute bit 1: no block input/output (IO) protocol. UEFI firmware will not expose this
+/// partition as a filesystem.
 pub const ATTR_NO_BLOCK_IO: u64 = 1 << 1;
 
-/// Attribute bit 2: legacy BIOS bootable. What `sgdisk -A n:set:2` sets, and what a BIOS-emulating
-/// bootloader looks for in place of the MBR active flag.
+/// Attribute bit 2: legacy Basic Input/Output System (BIOS) bootable. What `sgdisk -A n:set:2`
+/// sets, and what a BIOS-emulating bootloader looks for in place of the MBR active flag.
 pub const ATTR_LEGACY_BIOS_BOOTABLE: u64 = 1 << 2;
 
 mod at {
@@ -60,7 +60,8 @@ pub struct Entry {
     #[doc(alias = "StartingLBA")]
     pub first_logical_block_address: u64,
     /// Last block of the partition, **inclusive**. A one-block partition has
-    /// `first_logical_block_address == last_logical_block_address`, and the off-by-one here is the classic way to lose a sector.
+    /// `first_logical_block_address == last_logical_block_address`, and the off-by-one here is the
+    /// classic way to lose a sector.
     ///
     /// Name: provisional.
     #[doc(alias = "EndingLBA")]
@@ -84,7 +85,8 @@ impl Entry {
         name: [0; NAME_UNITS],
     };
 
-    /// A used entry covering `first_logical_block_address ..= last_logical_block_address`, with no attributes and no name.
+    /// A used entry covering `first_logical_block_address ..= last_logical_block_address`, with no
+    /// attributes and no name.
     ///
     /// Both GUIDs are the caller's: this crate has no randomness, and a GUID that is not random is
     /// not unique. A caller gets one from an entropy source.
@@ -125,11 +127,12 @@ impl Entry {
         !self.type_guid.is_nil()
     }
 
-    /// How many blocks the partition covers. `last_logical_block_address` is inclusive, hence the `+ 1`.
+    /// How many blocks the partition covers. `last_logical_block_address` is inclusive, hence the
+    /// `+ 1`.
     ///
-    /// `None` when `last_logical_block_address < first_logical_block_address`, which is a malformed entry rather than an empty
-    /// partition, and also when the count does not fit in a `u64` (the range `0 ..= u64::MAX`).
-    /// [`crate::PartitionTable`] rejects both, so a partition obtained
+    /// `None` when `last_logical_block_address < first_logical_block_address`, which is a malformed
+    /// entry rather than an empty partition, and also when the count does not fit in a `u64` (the
+    /// range `0 ..= u64::MAX`). [`crate::PartitionTable`] rejects both, so a partition obtained
     /// from a parsed table always has a size.
     pub const fn blocks(&self) -> Option<u64> {
         match self
@@ -145,7 +148,8 @@ impl Entry {
     ///
     /// `Err(`[`Error::NameTooLong`]`)` if `out` is too small; 4 bytes per code unit
     /// (`4 * NAME_UNITS` = 144) is always enough. An unpaired surrogate, which a hostile or
-    /// corrupt entry can carry, becomes U+FFFD: a malformed label is no reason to hide a partition.
+    /// corrupt entry can carry, becomes the replacement character, `U+FFFD`: a malformed label is
+    /// no reason to hide a partition.
     pub fn name_utf8(&self, out: &mut [u8]) -> Result<usize, Error> {
         let units = self.name.iter().position(|&u| u == 0).unwrap_or(NAME_UNITS);
         let mut written = 0;
@@ -205,8 +209,8 @@ impl Entry {
     /// True when this entry and `other` claim a block in common. Both must be used; an unused entry
     /// overlaps nothing, whatever its LBA fields say.
     ///
-    /// `last_logical_block_address` is inclusive, so two partitions where one ends on the block the next begins on
-    /// **do** overlap.
+    /// `last_logical_block_address` is inclusive, so two partitions where one ends on the block the
+    /// next begins on **do** overlap.
     pub const fn overlaps(&self, other: &Entry) -> bool {
         self.is_used()
             && other.is_used()

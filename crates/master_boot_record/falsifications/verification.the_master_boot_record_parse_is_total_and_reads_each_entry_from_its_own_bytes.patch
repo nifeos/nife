@@ -6,11 +6,11 @@ ends where it does not.
 
 Expected to fail: the harness's assertion that `entry.sectors` equals the little-endian word at
 offset 12 of its entry, on any sector 0 whose start and length words differ.
-diff --git a/crates/master_boot_record/src/lib.rs b/crates/master_boot_record/src/lib.rs
-index d99309ed7..274feffc9 100644
---- a/crates/master_boot_record/src/lib.rs
-+++ b/crates/master_boot_record/src/lib.rs
-@@ -111,7 +111,7 @@ impl MasterBootRecord {
+diff --git a/crates/master_boot_record/src/record.rs b/crates/master_boot_record/src/record.rs
+index 25833f86c..3262dc934 100644
+--- a/crates/master_boot_record/src/record.rs
++++ b/crates/master_boot_record/src/record.rs
+@@ -95,7 +95,7 @@ impl MasterBootRecord {
              *e = PartitionEntry {
                  kind: sector[at + 4],
                  start: le(8),
