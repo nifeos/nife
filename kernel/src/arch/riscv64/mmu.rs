@@ -177,6 +177,8 @@ const fn boot_table() -> BootTable {
 static BOOT_PAGE_TABLE: BootTable = boot_table();
 
 /// The physical base of the virtio-mmio transport window on QEMU's `virt` machine.
+///
+/// Name: provisional. Spelled out from `VIRTIO_MMIO_BASE`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_MMIO_BASE: u64 = 0x1000_1000;
 /// The size of the virtio-mmio window (8 slots of 0x1000).

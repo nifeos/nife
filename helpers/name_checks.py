@@ -463,6 +463,7 @@ def _selftest_virtio():
     for text in ("pub struct VirtioMmioDevice;", "const VIRTIO_SLOTS: u64 = 8;",
                  "fn boot_virtio_net_device() {}", "let virtio = 1;", "mod virtio;"):
         got = virtio_problems(paths, dict(clean, **{"a/lib.rs": text}), boundary)
+        # line-citation: exception. Reason: the expected failure text, a fixture file and line.
         assert len(got) == 1 and got[0].startswith("a/lib.rs:1:"), (text, got)
     got = virtio_problems(paths, dict(clean, **{"a/uses.rs": "use other::{FOREIGN_VIRTIO, OUR_VIRTIO};"}),
                           boundary)

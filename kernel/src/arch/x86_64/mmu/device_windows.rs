@@ -19,20 +19,28 @@
 /// which is what makes `virtual_io::find_block_device` find nothing rather than probe an address that
 /// answers with bus noise. The PCIe transport (DECISIONS §18) is the one that carries here, which is
 /// the arrangement that transport was built for.
+///
+/// Name: provisional. Spelled out from `VIRTIO_MMIO_BASE`.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_MMIO_BASE: u64 = 0;
 /// Bytes between consecutive virtio-mmio transports. Meaningless with no bus; see
 /// [`VIRTUAL_IO_MMIO_BASE`].
+///
+/// Name: provisional. Spelled out from `VIRTIO_SLOT_STRIDE`.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_SLOT_STRIDE: u64 = 0x1000;
 /// **Zero virtio-mmio slots**, which is the fact, not a placeholder. See [`VIRTUAL_IO_MMIO_BASE`].
+///
+/// Name: provisional. Spelled out from `VIRTIO_SLOTS`.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_SLOTS: u64 = 0;
 /// How many slots the probe walks: none, see [`VIRTUAL_IO_SLOTS`]. A function because riscv64's answer
 /// depends on the device tree.
+///
+/// Name: provisional. Spelled out from `virtio_slots`.
 #[doc(alias = "virtio")]
 pub const fn virtual_io_slots() -> u64 {
     VIRTUAL_IO_SLOTS

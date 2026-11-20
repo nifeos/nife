@@ -302,6 +302,8 @@ where
 
 /// The virtio-mmio device window on QEMU `virt`: 32 slots of 0x200 bytes at 0x0a000000, with
 /// interrupts SPI 16..47 (INTID 48..79). Fixed by the machine, like [`UART_BASE`].
+///
+/// Name: provisional. Spelled out from `VIRTIO_MMIO_BASE`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_MMIO_BASE: u64 = 0x0a00_0000;
 pub(crate) const VIRTUAL_IO_MMIO_SIZE: u64 = 32 * 0x200;

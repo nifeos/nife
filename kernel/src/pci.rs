@@ -401,7 +401,7 @@ pub(crate) struct PciVirtualIoDevice {
     /// `virtual_io::setup_queue`, and a device reset clears it.
     pub msix_vector: u16,
     /// The PCIe requester id (`bus:8 | dev:5 | fn:3`), the id the IOMMU keys its per-device tables
-    /// on (milestone 16b). Carried through to `virtual_io::register` so the device is confined to its
+    /// on (milestone 16b (real hardware and IOMMU-backed driver isolation)). Carried through to `virtual_io::register` so the device is confined to its
     /// DMA region in hardware.
     pub rid: u32,
     /// The virtio device type (2 = block, 1 = net, 16 = gpu), recovered from the PCI device id

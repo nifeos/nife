@@ -169,6 +169,8 @@ pub const COMMAND_BUS_MASTER_ENABLE: u16 = 1 << 2;
 const STATUS_CAPABILITIES_LIST: u16 = 1 << 4;
 
 /// virtio's PCI vendor id (Red Hat, 0x1af4), from virtio 1.2, section 4.1.2.
+///
+/// Name: provisional. Spelled out from `VIRTIO_VENDOR`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_VENDOR: u16 = 0x1af4;
 /// The modern virtio block device id: 0x1040 plus device type 2 (virtio 1.2, section 4.1.2.1).
@@ -202,6 +204,8 @@ pub const VIRTUAL_IO_NETWORK_TRANSITIONAL: u16 = 0x1000;
 /// is **no transitional twin**: the legacy id space (0x1000 to 0x103f) was allocated before
 /// virtio-gpu existed, so a GPU is modern or nothing and a caller passes `None` for the legacy id
 /// rather than inventing one. QEMU's `virtio-gpu-pci` presents exactly this id.
+///
+/// Name: provisional. Spelled out from `VIRTIO_GPU_MODERN`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_GPU_MODERN: u16 = 0x1050;
 
@@ -210,6 +214,8 @@ pub const VIRTUAL_IO_GPU_MODERN: u16 = 0x1050;
 /// `virtio-keyboard-pci` presents exactly this id, and so does `virtio-tablet-pci`: **the id names
 /// the device class, not the keyboard**, so a machine with both must read the function's
 /// configuration to tell them apart.
+///
+/// Name: provisional. Spelled out from `VIRTIO_INPUT_MODERN`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_INPUT_MODERN: u16 = 0x1052;
 
@@ -238,15 +244,23 @@ pub const VIRTUAL_IO_ENTROPY_TRANSITIONAL: u16 = 0x1005;
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_NETWORK: u32 = 1;
 /// The virtio block device type (virtio 1.2, section 5.2).
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_BLOCK`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_BLOCK: u32 = 2;
 /// The virtio entropy device type (virtio 1.2, section 5.4).
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_ENTROPY`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_ENTROPY: u32 = 4;
 /// The virtio GPU device type (virtio 1.2, section 5.7).
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_GPU`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_GPU: u32 = 16;
 /// The virtio input device type (virtio 1.2, section 5.8).
+///
+/// Name: provisional. Spelled out from `VIRTIO_TYPE_INPUT`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_TYPE_INPUT: u32 = 18;
 
@@ -923,6 +937,8 @@ pub const MSIX_ENTRY_MASKED: u32 = 1;
 /// The virtio-pci "no vector" value for `config_msix_vector` and `queue_msix_vector` (virtio 1.2,
 /// section 4.1.4.3). Written to a queue's vector field it means "raise no MSI-X for this queue",
 /// which is also what a device reset leaves there.
+///
+/// Name: provisional. Spelled out from `VIRTIO_MSIX_NO_VECTOR`.
 #[doc(alias = "virtio")]
 pub const VIRTUAL_IO_MSIX_NO_VECTOR: u16 = 0xffff;
 

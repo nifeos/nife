@@ -408,7 +408,8 @@ const GRAPHICAL_MAP_BUDGET_PAGES: u64 = 24;
 const KBD_DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
 
 /// `keyboard_driver.rs`'s own `MODE_DIRECT`: a fixed `CALL` to the terminal endpoint instead of a
-/// compositor's ring and doorbell (milestone 177). [`RNG_MODE_VIRTUAL_IO`]'s reasoning.
+/// compositor's ring and doorbell (milestone 177 (wire the graphical terminal stack into the real
+/// interactive boot)). [`RNG_MODE_VIRTUAL_IO`]'s reasoning.
 const KBD_MODE_DIRECT: u64 = 1;
 
 /// Where a `graphical_terminal` session's program writes its screen text and reads its lines.
