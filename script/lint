@@ -4257,7 +4257,7 @@ python3 helpers/packages.py --check
 # `double free of frame 0x82a3e000` in one of 45 loaded riscv64 runs.
 #
 # **What actually stops the kernel writing that again is that `crates/memory_regions` does not export the
-# pieces.** `Region` and its fields are private, so from outside the crate there is no way to learn
+# pieces.** `Region`'s fields are private (the type is public only as the name's marker), so from outside the crate there is no way to learn
 # that a region is reclaimable and still leave its name resolving. The loom harness that
 # reconstructs the pre-#316 shape (`the_pre_fix_protocol_double_frees_and_this_model_finds_it`) has
 # to sit *inside* the module to do it, and says so. So the kernel cannot regrow the gap on its own;
@@ -4294,6 +4294,11 @@ KERNEL = "kernel/src/memory_region.rs"
 # because the narrowness of this list is the safety property rather than a side effect of it.
 PINNED = {
     ("-", "NO_PARENT", "const"),
+    # The region name's type: `EntryName<Region>`, so a name of another table does not type-check
+    # here. `Region` is its opaque marker, a type with no fields and no methods: it names nothing a
+    # caller can act on.
+    ("-", "Region", "struct"),
+    ("-", "RegionName", "type"),
     ("-", "DestroyClaim", "struct"),
     ("-", "RegionTable", "struct"),
     # The claim's own getters. `&self` on a claim is harmless: holding one already means the table

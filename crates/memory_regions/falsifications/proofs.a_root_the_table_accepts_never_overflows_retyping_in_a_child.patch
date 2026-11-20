@@ -1,0 +1,21 @@
+Falsifies `memory_regions::proofs::a_root_the_table_accepts_never_overflows_retyping_in_a_child`.
+
+The defect: a root whose page range runs past the top of the page numbers is accepted. Every end
+the table computes below it (a child's end, a bounds report, a spent figure) can then overflow.
+
+Expected to fail: an overflow check inside a call on the root the harness builds at the top of the
+page numbers, or the harness's own "a root that fits was refused" assertion is never reached.
+
+diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
+index dfe4470fa..6339a4f6e 100644
+--- a/crates/memory_regions/src/table.rs
++++ b/crates/memory_regions/src/table.rs
+@@ -417,7 +417,7 @@ impl<const N: usize> RegionTable<N> {
+         pages: u64,
+         ceilings: Ceilings,
+     ) -> Option<RegionName> {
+-        if pages == 0 || base_page.checked_add(pages).is_none() {
++        if pages == 0 {
+             return None;
+         }
+         self.table.insert_with_name(|_| Region {

@@ -8,15 +8,15 @@ region that does not exist.
 Expected to fail: the harness's `assert!(run.unmoved_since(before), "a refusal moved something")`.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
-index 9d726ec87..3c7f64966 100644
+index dfe4470fa..698112fc1 100644
 --- a/crates/memory_regions/src/table.rs
 +++ b/crates/memory_regions/src/table.rs
-@@ -424,6 +424,12 @@ impl<const N: usize> RegionTable<N> {
+@@ -453,6 +453,12 @@ impl<const N: usize> RegionTable<N> {
          if !self.can_charge(parent, Counted::Region) {
              return None;
          }
 +        self.count_one_more(parent, Counted::Region);
-+        if let Some(r) = self.table.get_mut(entry(parent)) {
++        if let Some(r) = self.table.get_mut(parent) {
 +            r.watermark = new_watermark;
 +            r.children += 1;
 +            r.spent.children += pages;
@@ -24,18 +24,18 @@ index 9d726ec87..3c7f64966 100644
          let child = self.table.insert_with_name(|_| Region {
              base_page,
              pages,
-@@ -436,14 +442,6 @@ impl<const N: usize> RegionTable<N> {
+@@ -466,14 +472,6 @@ impl<const N: usize> RegionTable<N> {
              ceilings,
              live: Ceilings::ZERO,
          })?;
 -        // The insert filled a free slot and left every live one alone, so the parent still
 -        // resolves and the ceiling check above still holds.
 -        self.count_one_more(parent, Counted::Region);
--        if let Some(r) = self.table.get_mut(entry(parent)) {
+-        if let Some(r) = self.table.get_mut(parent) {
 -            r.watermark = new_watermark;
 -            r.children += 1;
 -            r.spent.children += pages;
 -        }
-         Some(child.to_bits())
+         Some(child)
      }
  

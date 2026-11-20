@@ -22,6 +22,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
 
 [[package]]
 name = "capability_manifest_note"

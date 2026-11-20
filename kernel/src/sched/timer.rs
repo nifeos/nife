@@ -150,7 +150,10 @@ pub(super) fn expire_timers() {
                 &(*(crate::arch::mmu::phys_to_virt(entry.address()) as *const TimerPage)).state
             }
         }));
-        EARLIEST_DEADLINE.store(cached, Ordering::Relaxed);
+        EARLIEST_DEADLINE.store(
+            cached.unwrap_or(inter_process_communication::timer::NEVER),
+            Ordering::Relaxed,
+        );
     }
     for cpu in 0..cpu::MAXIMUM_CPUS {
         if poke & (1 << cpu) != 0 {
