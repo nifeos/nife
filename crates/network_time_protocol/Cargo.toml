@@ -16,4 +16,4 @@ license.workspace = true
 workspace = true
 
 [dependencies]
-clock_contract = { version = "0.1.0", path = "../clock_contract" }
+clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
