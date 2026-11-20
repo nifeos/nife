@@ -54,11 +54,11 @@ pub(crate) const THE_ACCESS_BITS_SHARE_NO_BIT: () = {
 ///
 /// for f in [
 ///     Flags::kernel_code(),
-///     Flags::kernel_rodata(),
+///     Flags::kernel_read_only_data(),
 ///     Flags::kernel_data(),
 ///     Flags::device(),
 ///     Flags::user_code(),
-///     Flags::user_rodata(),
+///     Flags::user_read_only_data(),
 ///     Flags::user_data(),
 ///     Flags::user_device(),
 /// ] {
@@ -81,12 +81,12 @@ impl Flags {
     /// Name: provisional (lane milestone/1101-1113-outside-review-fixes, 2026-11-14 UTC).
     pub const ALL: [Flags; 11] = [
         Flags::kernel_code(),
-        Flags::kernel_rodata(),
+        Flags::kernel_read_only_data(),
         Flags::kernel_data(),
         Flags::device(),
         Flags::write_combining(),
         Flags::user_code(),
-        Flags::user_rodata(),
+        Flags::user_read_only_data(),
         Flags::user_data(),
         Flags::user_device(),
         Flags::user_device_read_only(),
@@ -99,7 +99,9 @@ impl Flags {
     }
 
     /// Kernel constants: readable by the kernel, never writable, never executable by anyone.
-    pub const fn kernel_rodata() -> Self {
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/1104-renames-package.
+    pub const fn kernel_read_only_data() -> Self {
         Flags(ACCESS_GLOBAL)
     }
 
@@ -140,7 +142,9 @@ impl Flags {
     /// An ELF's `.rodata` segment is `PF_R` alone. Without this, the loader's only non-executable
     /// choice is [`user_data`](Self::user_data), which is **writable**, so we would silently grant
     /// the program more authority than its own file asked for.
-    pub const fn user_rodata() -> Self {
+    ///
+    /// Name: provisional, minted 2026-11-19 (UTC) by lane/1104-renames-package.
+    pub const fn user_read_only_data() -> Self {
         Flags(ACCESS_USER)
     }
 

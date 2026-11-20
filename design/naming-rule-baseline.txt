@@ -84,7 +84,6 @@ crates/hot_swap_contract/src/lib.rs::LOG_VA spelled-out
 
 crates/hot_swap_contract/src/lib.rs::STATE_VA spelled-out
 
-crates/inter_process_communication/src/rendezvous.rs::one_queue_invariant question-shape
 
 crates/jh7110_watchdog/src/lib.rs::max_reset_after_seconds spelled-out
 
@@ -116,17 +115,12 @@ crates/nifefs/src/lib.rs::DIR_BLOCKS spelled-out
 
 crates/nifefs/src/lib.rs::name_eq question-shape
 
-crates/page_tables/src/domain.rs::DmaRegion spelled-out
 
 crates/page_tables/src/mapper.rs::walk question-shape
 
-crates/page_tables/src/page_format.rs::is_user_page_va spelled-out
 
-crates/page_tables/src/x86_64.rs::MSR spelled-out
 
-crates/pci_configuration_space/src/lib.rs::CLASS_NVME spelled-out
 
-crates/pci_configuration_space/src/lib.rs::mem32_window spelled-out
 
 crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
 

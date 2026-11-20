@@ -7,10 +7,10 @@ exist in the literature: Intel numbers its tables PML4, PDPT, PD, PT from the ro
 shift arithmetic is most naturally written counting up from the page. The walk in `Mapper`
 descends from 0, so this defect makes it descend through the tables in reverse.
 
-Expected to fail: `assert_eq!(reconstructed, va & 0x0000_ffff_ffff_ffff)`. The harness
-reassembles the address with the four literal shifts 39, 30, 21, 12 against `index(va, 0..3)`,
+Expected to fail: `assert_eq!(reconstructed, virtual_address & 0x0000_ffff_ffff_ffff)`. The harness
+reassembles the address with the four literal shifts 39, 30, 21, 12 against `index(virtual_address, 0..3)`,
 so a reversed numbering swaps the outer pair with the inner pair and the reconstruction differs
-from `va` for any address whose top and bottom index fields are not equal.
+from `virtual_address` for any address whose top and bottom index fields are not equal.
 
 **The index math is shared and the proof is not.** The `aarch64` and `sv39` records break the
 same default method in `lib.rs` two other ways.
@@ -22,9 +22,9 @@ index 476dfcac4..132afbda9 100644
 @@ -106,7 +106,7 @@ pub trait PageFormat {
      /// covers the highest translated bits; each lower level shifts down by 9. Derived from
      /// [`LEVELS`](Self::LEVELS) so it is right for both a 4- and a 3-level walk.
-     fn index(va: u64, level: usize) -> usize {
+     fn index(virtual_address: u64, level: usize) -> usize {
 -        let shift = 9 * (Self::LEVELS - 1 - level) as u32 + 12;
 +        let shift = 9 * level as u32 + 12;
-         ((va >> shift) & 0x1ff) as usize
+         ((virtual_address >> shift) & 0x1ff) as usize
      }
  

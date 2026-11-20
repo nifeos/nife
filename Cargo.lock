@@ -496,6 +496,7 @@ source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa5
 [[package]]
 name = "environment_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/environment_contract?rev=b4925221c6d33163c6217aa2b118ba29f0be5379#b4925221c6d33163c6217aa2b118ba29f0be5379"
 
 [[package]]
 name = "equivalent"
@@ -1131,9 +1132,6 @@ version = "0.1.0"
 [[package]]
 name = "pci_configuration_space"
 version = "0.1.0"
-dependencies = [
- "device_tree_blob",
-]
 
 [[package]]
 name = "periodic_deadline"

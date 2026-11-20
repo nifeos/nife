@@ -11,16 +11,16 @@ regime this harness quantifies over and nothing a fixture supplies.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -478,11 +478,7 @@ pub fn read_bars(
+@@ -590,11 +590,7 @@
          // An unimplemented BAR is hardwired to zero and reads back zero, type bits included.
          // That is an empty slot, not a malformed one.
-         if !(orig == 0 && mask_lo == 0) {
+         if !(original == 0 && mask_lo == 0) {
 -            match size_from_mask(mask, decode_bits).and_then(|size| {
 -                base.checked_add(size)
 -                    .map(|_| size)
 -                    .ok_or(BarRefusal::EndOverflows)
 -            }) {
 +            match size_from_mask(mask, decode_bits) {
-                 Ok(size) => *slot = Some(Bar { base, size, is_64 }),
-                 Err(reason) => refused(i, reason),
-             }
+                 Ok(size) => {
+                     *slot = Some(Bar {
+                         base_physical_address: base,

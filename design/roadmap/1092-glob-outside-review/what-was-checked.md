@@ -39,7 +39,7 @@ pinned toolchain, every run under a 12 GiB memory cap:
 
 Read and reasoned about, not run: the correctness of `match_steps`, `decode` and `class_at` on every
 corner the tests name and on the ones they do not (the escaped range endpoint, a class ending in a
-bare escape, `[]-a]`, `[a\-c]`). Also the soundness of the bound in `cost_bound` and the step
+bare escape, `[]-a]`, `[a\-c]`). Also the soundness of the bound in `step_bound` and the step
 accounting.
 The reviewer found no defect in the matcher.
 

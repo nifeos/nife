@@ -152,14 +152,14 @@ mod tests {
     /// difference between a sentence and a debug dump.
     #[test]
     fn the_machine_line_is_what_became_of_tload() {
-        use machine_statistics_contract::{Snapshot, WORDS, build_header, word};
-        let mut w = [0u64; WORDS];
-        w[..word::LINE].copy_from_slice(&build_header(4096, 100));
+        use machine_statistics_contract::{PAGE_WORDS, Snapshot, build_header, word};
+        let mut w = [0u64; PAGE_WORDS];
+        w[..word::LINE_WORDS].copy_from_slice(&build_header(4096, 100));
         for (cpu, busy, idle, r) in [(1, 30, 70, 2), (3, 10, 90, 1)] {
-            w[word::cpu(cpu) + word::ONLINE] = 1;
-            w[word::cpu(cpu) + word::BUSY_TICKS] = busy;
-            w[word::cpu(cpu) + word::IDLE_TICKS] = idle;
-            w[word::cpu(cpu) + word::RUNNABLE] = r;
+            w[word::cpu(cpu) + word::line::ONLINE] = 1;
+            w[word::cpu(cpu) + word::line::BUSY_TICKS] = busy;
+            w[word::cpu(cpu) + word::line::IDLE_TICKS] = idle;
+            w[word::cpu(cpu) + word::line::RUNNABLE] = r;
         }
         let m = Snapshot::from_words(&w).unwrap();
         let mut v = Vec::new();

@@ -299,7 +299,7 @@ fn map_the_archive(space: &mut AddressSpace, archive: &[u8], archive_pages: u64)
         let page = space
             .map_new(
                 INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
-                Flags::user_rodata(),
+                Flags::user_read_only_data(),
             )
             .expect("could not map the narrowed archive");
         let from = (i * FRAME_SIZE) as usize;
@@ -320,7 +320,7 @@ fn map_a_clock_page(space: &mut AddressSpace) -> u64 {
         .map_physical(
             timetable::contract::CLOCK_VA,
             phys,
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             crate::revoke::PageMapSource::Capability(phys),
         )
         .expect("could not map the clock page");

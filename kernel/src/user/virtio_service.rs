@@ -6,7 +6,7 @@ use crate::capability_object::{
 use crate::sched::RendezvousId;
 use crate::user::holding::Holding;
 
-/// Where the driver expects its DMA page. Must match `DMA_VA` in `components/src/block_driver_roles.rs`. The
+/// Where the driver expects its DMA page. Must match `DIRECT_MEMORY_ACCESS_BASE_VIRTUAL_ADDRESS` in `components/src/block_driver_roles.rs`. The
 /// driver holds no device registers: it drives the device through a `Virtio` capability, so it
 /// cannot point the device outside this DMA region.
 const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_0000);
@@ -446,7 +446,7 @@ pub(super) fn spawn_stack_client(
             maps[n_maps] = Mapping {
                 va: NET_CLIENT_CATALOGUE_VA + k as u64 * FRAME_SIZE,
                 phys,
-                flags: Flags::user_rodata(),
+                flags: Flags::user_read_only_data(),
             };
             n_maps += 1;
         }
