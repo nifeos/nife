@@ -40,14 +40,14 @@ release steps.
 - P0-3, the integration test links staying crates: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566). The test is in `crates/grant_plan/tests/`, and
   the manifest has no dev-dependency.
-- P0-4, the shipped text cites the tree: Open. Eighteen citation lines remain in `src/`; the README
-  takes on `notes/glob.md`, `docs/proofs.md` takes on the proofs note, and the move strips the rest.
-- P0-5, the manifest is not standalone: Open. Every field is present, but the `publish = false`
-  comment cites this tree's allowlist and there is no `repository` field.
+- P0-4, the shipped text cites the tree: Done. The citations became sentences, the README takes on
+  the scope note and `docs/proofs.md` takes on the proofs note.
+- P0-5, the manifest is not standalone: Done. The `publish = false` comment says the crate waits
+  for its first release, and `repository` names `nifeos/byte_glob`.
 - P0-6, no README: Done, [#3566](https://github.com/nifeos/nife/pull/3566), with both license texts.
 - P1-1, `naive` fails the question gate: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-2, falsification patch paths: Open. The six patches diff `a/crates/byte_glob/src/lib.rs` and
-  the six records name tree paths; the move rewrites them, regenerates the hunks and replays each.
+- P1-2, falsification patch paths: Done. The six patches diff `a/src/lib.rs` and the move replayed
+  each against the crate at its own root.
 - P1-3, mutation testing would reach the inline proof module: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566). The repository's `.cargo/mutants.toml` comes
   with the move.
@@ -217,6 +217,9 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 ## Follow-on
 
+- **Recorded.** The crate lives at `nifeos/byte_glob` with `publish = false` and no tag, and nife
+  pins it by commit. The stranger test is a separate lane's. The module names `tests` and
+  `verification` ship provisional.
 - **Outstanding.** Every finding that Finding status above marks Open, each with what remains. A lane checked each finding line
   against the crate and its pull requests on main.
 
@@ -224,8 +227,7 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 An outside reading of `byte_glob` before it leaves. The crate name is `byte_glob` (Decision 1), the
 README, the manifest fields and the split proof module are in, and the test that linked two staying
-crates lives in `grant_plan`. `Dot` is `LeadingDot` and `cost_bound` is `step_bound` (Decision 2), and the review package is
-cleared with the seven names ratified (Decision 3). Before the move: the shipped text loses its
-citations of this tree and the manifest names its repository. The move rewrites the falsification
-paths; four P2 items follow. The matcher itself checks out. Publishing
+crates lives in `grant_plan`. `Dot` is `LeadingDot` and `cost_bound` is `step_bound` (Decision 2), and the architect cleared the review package and
+ratified the seven names (Decision 3). The move is done: the crate lives at
+`nifeos/byte_glob`, and nife pins it by commit. Four P2 items follow. The matcher itself checks out. Publishing
 stays held.

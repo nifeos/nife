@@ -1,0 +1,25 @@
+[package]
+name = "network_stack"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "The network stack's host-testable logic: the ephemeral-port cursor and the polled-wait policy, kept apart from the programs that use them so a host test can check each claim"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "sockets"]
+categories = ["no-std", "embedded", "network-programming"]
+publish = false     # this crate stays in nife and is never published
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"

@@ -130,7 +130,7 @@ would try to reconcile three against four.
 | Boot roster | `kernel/src/smp.rs` | `ROSTER`, `DESCRIBED`, `ONLINE`, `ONLINE_MASK`: relaxed arrays under a release flag, acquire flag then relaxed arrays. Textbook array publication, single-shot at boot |
 | Interrupt routing table | `kernel/src/sched/interrupt_route.rs` `INTERRUPT_ROUTES` | Release store, acquire load, same array. Paired |
 | One-shot service wiring | `fs_service`, `entropy_service`, `disk_service`, `credential_service` | **Four instances of one correct idiom**: relaxed fields, then a release flag; readers acquire the flag, then read the fields relaxed |
-| Spin locks | `crates/user_mode_runtime`, `patches/std-nife` (3), `redoxfs_server/src/bin/second_mount.rs` | Acquire CAS, release store. **The one shape that cannot be one-sided**, because the lock is both halves |
+| Spin locks | `crates/user_mode_runtime`, `crates/memory_region_heap`, `patches/std-nife` (3) | Acquire CAS, release store. **The one shape that cannot be one-sided**, because the lock is both halves |
 | Benchmark start barrier | `kernel/src/bench.rs` `TP_GO` | Release store, acquire spin. Paired. The `SeqCst` reset is over-strong and has no reader yet, so it orders nothing and costs nothing |
 | Secret wipe | `crates/credential_contract` | `compiler_fence`, no cross-core meaning, no partner wanted |
 

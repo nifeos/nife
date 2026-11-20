@@ -1,12 +1,13 @@
 //! The System allocator for nife: the untyped-backed heap, inside std.
 //!
 //! The algorithm is `talc`'s core, generated into `talc/` next door by `cargo xtask std-src` from
-//! the version `Cargo.lock` pins (milestone 784 (reuse what the tree wrote), item d). This file
-//! restates `memory_region_heap::MemoryRegionHeap`'s policy, because std cannot depend on the
-//! out-of-tree crate: a spinlock, lazy wiring to the untyped in slot 0, and grow-on-demand by
-//! `memory_region::MAP` at the top of the committed range. std has no "init the heap" moment, so
-//! the first allocation finds committed == 0 and grows. A program whose slot 0 is not an untyped
-//! gets a failed allocation, which std turns into the OOM abort.
+//! the version `Cargo.lock` pins (milestone 784 (reuse what the tree wrote), item d). The growth
+//! arithmetic is `memory_region_heap`'s own, generated into `heap_growth.rs` next door, and
+//! `heap.rs` wires it the way `memory_region_heap::MemoryRegionHeap` does: a spinlock, lazy wiring
+//! to the untyped in slot 0, and grow-on-demand by `memory_region::MAP` at the top of the committed
+//! range. std has no "init the heap" moment, so the first allocation finds committed == 0 and
+//! grows. A program whose slot 0 is not an untyped gets a failed allocation, which std turns into
+//! the OOM abort.
 
 //! # A cache per thread in front of the lock
 //!
@@ -34,6 +35,7 @@ mod talc;
 use allocation_cache::{Cache, Class, class, class_layout, heap_layout};
 
 mod heap;
+mod heap_growth;
 mod thread_cache;
 mod entry;
 

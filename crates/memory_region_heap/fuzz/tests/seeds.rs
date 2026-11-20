@@ -1,5 +1,5 @@
 //! Replay every committed seed through the target's body, so `cargo test` (and `cargo miri test`)
-//! checks the seeds without libFuzzer. See notes/talc-fuzzing.md.
+//! checks the seeds without libFuzzer.
 
 use std::path::Path;
 

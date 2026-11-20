@@ -1,7 +1,7 @@
 //! **A region's watermark**: carving pages off a parent, retyping a run of them, and reclaiming
 //! the holes a returned child leaves.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: provisional.
 
 /// The result of carving `want` pages off a parent whose budget is `parent_pages` and whose spent
 /// watermark is `parent_watermark`. `Some(new_watermark)` on success (the caller carves the run
@@ -33,25 +33,28 @@ pub fn split_new_watermark(parent_pages: u64, parent_watermark: u64, want: u64) 
     Some(new)
 }
 
-/// **How many pages a `RETYPE` asks for, from the word the caller passed.** `0` means one, which is
-/// what every caller passed before the count existed (the first argument was ignored), so the
-/// ruling that added a count (calef, 2026-09-26) changed nothing for them. Anything else is the
-/// count itself.
-pub const fn retype_pages(requested: u64) -> u64 {
-    if requested == 0 { 1 } else { requested }
-}
-
-/// **The watermark after retyping a run of `requested` pages**, or `None` when it does not fit.
+/// **The watermark after retyping a run of `count` pages**, or `None` when it does not fit.
 ///
-/// The same arithmetic a split is, over [`retype_pages`]: a run is carved off the region's own
-/// budget exactly as a child is carved off a parent's, and it has to be fresh, contiguous, and
-/// within budget for the same reason. What differs is only that `0` means one here rather than
-/// being refused, because a retype of zero pages has always meant "the one page".
-pub fn retype_new_watermark(pages: u64, watermark: u64, requested: u64) -> Option<u64> {
-    split_new_watermark(pages, watermark, retype_pages(requested))
+/// The same arithmetic a split is: a run is carved off the region's own budget exactly as a child
+/// is carved off a parent's, and it has to be fresh, contiguous and within budget for the same
+/// reason. A count of zero is refused, as a split refuses it: a run of no pages hands out nothing,
+/// so a caller that wants "the one page" says one.
+///
+/// # Examples
+///
+/// ```
+/// use memory_regions::retype_new_watermark;
+///
+/// assert_eq!(retype_new_watermark(8, 0, 1), Some(1));
+/// assert_eq!(retype_new_watermark(8, 4, 4), Some(8));
+/// assert_eq!(retype_new_watermark(8, 4, 0), None, "a run of no pages is refused");
+/// assert_eq!(retype_new_watermark(8, 4, 5), None, "a run past the budget is refused");
+/// ```
+pub fn retype_new_watermark(pages: u64, watermark: u64, count: u64) -> Option<u64> {
+    split_new_watermark(pages, watermark, count)
 }
 
-/// **The parent's watermark after a child's return, holes reclaimed** (2026-10-03, UTC; name
+/// **The parent's watermark after a child's return, holes reclaimed** (name
 /// provisional). `watermark` is the parent's after the last-in-first-out un-bump, `retyped_to` how far its own
 /// retypes reached, `live_to` where its highest live child ends (`0` for none), and `quiescent`
 /// whether every child the parent counts is live, so none is claimed and still being revoked.

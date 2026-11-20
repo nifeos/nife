@@ -1,21 +1,22 @@
-//! A host copy of `memory_region_heap`'s policy around talc, with the page-mapping syscall replaced
-//! by a [`PageSource`] over a host arena.
+//! A host copy of `memory_region_heap`'s policy around talc, over a [`PageSource`] that maps pages
+//! from a host arena.
 //!
-//! The crate itself cannot run on a host yet: `MemoryRegionHeap::grow` traps straight to the kernel
-//! through `user_mode_runtime::invoke`, and on an `x86_64` host that instruction is the host's own
-//! `syscall` with nife's method number in `rax`. Milestone 1100 (`memory_region_heap`: what an
-//! outside maintainer would fix before it leaves) item 8 adds the page-source seam. Until it lands,
-//! this module restates `grow`, `shortfall`, `nonempty` and the three `GlobalAlloc` methods line for
-//! line, so the fuzz target drives talc the way a nife program does. When the seam lands, the target
-//! drives `MemoryRegionHeap` itself and this module goes.
+//! The target checks talc's own accounting (its counters, the heap end and the free bytes at the
+//! top) after every step, and `MemoryRegionHeap` keeps its talc private. So this module restates
+//! `grow`, `shortfall`, `nonempty` and the three `GlobalAlloc` methods line for line rather than
+//! driving the crate's type, and a change to the crate's policy has to be made here too.
 //!
 //! Name: provisional, minted 2026-11-14 (UTC) by lane talc-fuzz-and-miri, after the policy it copies.
 //!
-//! Every difference from `crates/memory_region_heap/src/lib.rs` is listed here, so a reader can check
-//! the copy against the original:
+//! Every difference from the crate's `src/heap.rs` and `src/growth.rs` is listed here, so a reader
+//! can check the copy against the original:
 //!
 //! - No spinlock. The fuzz target is single-threaded and holds `&mut Heap`.
-//! - The `MAP` call is [`PageSource::map`], with the same "nonzero is a refusal" reading.
+//! - The `MAP` call is [`PageSource::map`], with the same "nonzero is a refusal" reading. The copy
+//!   has no `stopped` flag and reads every refusal as a spent budget, so a refusal for another
+//!   reason, which stops the crate's heap for good, is not modeled.
+//! - No `last_refusal`, no `WiringRefusal`: `initialize` ignores a second call and a bad range
+//!   rather than reporting them, and `commit_all` reports only whether every page was mapped.
 //! - talc is built with its `counters` and `error-scanning-std` features, which add bookkeeping and
 //!   a consistency scan before each operation and change no decision it makes.
 
@@ -129,7 +130,7 @@ unsafe extern "C" {
 }
 
 /// Mark `[address, address + size)` unmapped for AddressSanitizer, so a touch of a page the heap has
-/// not mapped is reported where nife would take a fault. A no-op in a build without it.
+/// not mapped is reported where a kernel would take a fault. A no-op in a build without it.
 fn poison(address: *mut u8, size: usize) {
     #[cfg(sanitize = "address")]
     // SAFETY: the range is inside the arena the caller owns; poisoning changes only the shadow.
@@ -243,8 +244,8 @@ impl Heap {
         let start = self.base + self.committed;
         let mut got: u64 = 0;
         while got < want_pages {
-            let va = start + got * PAGE;
-            if source.map(self.memory_region_slot, va) != 0 {
+            let virtual_address = start + got * PAGE;
+            if source.map(self.memory_region_slot, virtual_address) != 0 {
                 break;
             }
             got += 1;

@@ -8,15 +8,15 @@ Expected to fail: the harness's `assert!(run.unmoved_since(before), "a refusal m
 on a carve refused at a ceiling from an unpinned region.
 
 diff --git a/crates/memory_regions/src/table.rs b/crates/memory_regions/src/table.rs
-index 0db357527..bd7bac251 100644
+index dfe4470fa..af7effa92 100644
 --- a/crates/memory_regions/src/table.rs
 +++ b/crates/memory_regions/src/table.rs
-@@ -627,11 +627,12 @@ impl<const N: usize> RegionTable<N> {
+@@ -654,11 +654,12 @@ impl<const N: usize> RegionTable<N> {
      /// `kind` is recorded for [`spent`](Self::spent) and counted against every subtree the region
      /// is in.
-     pub fn retype_object_page(&mut self, name: u64, kind: ObjectKind) -> Option<u64> {
--        let r = self.table.get(entry(name))?;
-+        let r = self.table.get_mut(entry(name))?;
+     pub fn retype_object_page(&mut self, name: RegionName, kind: ObjectKind) -> Option<u64> {
+-        let r = self.table.get(name)?;
++        let r = self.table.get_mut(name)?;
          if r.watermark >= r.pages {
              return None;
          }

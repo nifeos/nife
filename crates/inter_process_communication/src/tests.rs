@@ -1,8 +1,7 @@
 //! The crate's host tests.
 //!
 //! Every node in these tests is minted once, through [`token`], on an [`Owned`] node declared
-//! before its `Rendezvous`; Rust drops locals in reverse declaration order, so the rendezvous goes
-//! first and a node parked on a queue when a test ends was valid for all of its time there.
+//! before its `Rendezvous`, which meets the two obligations [`test_node`] states.
 
 use super::*;
 
@@ -19,57 +18,7 @@ fn counts(
     }
 }
 
-struct N {
-    next: Option<NonNull<N>>,
-}
-
-// SAFETY: `next` and `set_next` read and write the same `next` field and nothing else, which is the whole of the `Node` contract.
-unsafe impl Node for N {
-    fn next(&self) -> Option<NonNull<Self>> {
-        self.next
-    }
-    fn set_next(&mut self, next: Option<NonNull<Self>>) {
-        self.next = next;
-    }
-}
-
-/// A test's node, owned through the pointer `Box::into_raw` returned. Every access, the
-/// token's and the test's, derives from that one pointer (`Unqueued::new`'s provenance
-/// clause), and dropping it frees the node.
-struct Owned(NonNull<N>);
-
-impl Drop for Owned {
-    fn drop(&mut self) {
-        // SAFETY: the pointer came from `Box::into_raw` in `node`, and is freed only here.
-        drop(unsafe { Box::from_raw(self.0.as_ptr()) });
-    }
-}
-
-impl core::ops::Deref for Owned {
-    type Target = N;
-    fn deref(&self) -> &N {
-        // SAFETY: live until `drop`; the reference is the test's, taken between queue
-        // operations.
-        unsafe { self.0.as_ref() }
-    }
-}
-
-impl core::ops::DerefMut for Owned {
-    fn deref_mut(&mut self) -> &mut N {
-        // SAFETY: as `deref`.
-        unsafe { self.0.as_mut() }
-    }
-}
-
-fn node() -> Owned {
-    Owned(NonNull::new(Box::into_raw(Box::new(N { next: None }))).unwrap())
-}
-
-fn token(n: &mut Owned) -> Unqueued<N> {
-    // SAFETY: a live boxed node declared before its rendezvous, on no queue, minted once per
-    // test (see the module note), from the pointer every other access derives from.
-    unsafe { Unqueued::new(n.0) }
-}
+use test_node::{N, Owned, node, token};
 
 /// **Two verdicts are equal when they decided the same thing about the same nodes**, and a
 /// verdict about other nodes, or of another kind, is not. Every node here has one token, so a

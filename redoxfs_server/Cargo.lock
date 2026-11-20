@@ -534,7 +534,6 @@ dependencies = [
  "redox_syscall",
  "redoxfs",
  "subtree_scope",
- "talc",
  "user_mode_runtime",
 ]
 

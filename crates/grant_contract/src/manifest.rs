@@ -561,7 +561,7 @@ pub struct Manifest {
     /// right to `CALL` the socket contract, and the declaration is the whole of who may reach the
     /// network from this prompt. It reaches no other program's sockets, each being its own
     /// capability (§255 (each socket is its own capability)), and the stack holds
-    /// `socket_contract::NO_LISTEN_GRANT`, so a declaring program can connect out and cannot listen.
+    /// `socket_contract::NO_PORT_GRANT`, so a declaring program can connect out and cannot listen.
     ///
     /// **Provisional field name.**
     pub network: bool,

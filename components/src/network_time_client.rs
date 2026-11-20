@@ -126,7 +126,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
 
     // Our one socket, a capability the stack hands back (§255 (each socket is its own
     // capability)), and then our page attached to it.
-    let (REP_OK, _, Some(socket)) = call_receiving(STACK, OPERATION_OPEN_UDP, 0) else {
+    let (REPLY_OK, _, Some(socket)) = call_receiving(STACK, OPERATION_OPEN_UDP, 0) else {
         done(RPT_NET_ERROR, 2, 0);
     };
     attach_page_frame(socket);
@@ -155,16 +155,16 @@ fn client(server_ip: u64, server_port: u64) -> ! {
         sent += 1;
         if call(
             socket,
-            OPERATION_SENDTO,
+            OPERATION_SEND_TO,
             network_time_protocol::PACKET_BYTES as u64,
         )
-        .0 != REP_OK
+        .0 != REPLY_OK
         {
             done(RPT_NET_ERROR, 3, sent as u64);
         }
 
         let (n, _) = call(socket, OPERATION_RECEIVE, 0);
-        if n == REP_ERR || n == 0 {
+        if n == REPLY_ERROR || n == 0 {
             poll_gap();
             continue;
         }

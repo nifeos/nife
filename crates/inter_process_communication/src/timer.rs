@@ -33,7 +33,8 @@
 //!     fired.push(t);
 //! }
 //! assert_eq!(fired, vec![(7, 0b10)]);
-//! cached = earliest([&a, &b].into_iter());
+//! assert_eq!(earliest([&a, &b].into_iter()), Some(150));
+//! cached = earliest([&a, &b].into_iter()).unwrap_or(NEVER);
 //! assert_eq!(cached, 150);
 //!
 //! // Re-arming replaces the old deadline: the old one can never fire.
@@ -44,8 +45,9 @@
 //! assert!(!a.cancel());
 //! ```
 
-/// "No deadline": the cached earliest when nothing is armed. A timer armed at exactly this value is
-/// pending forever (until canceled), which is the same thing said the other way round.
+/// "No deadline" in the cache word: the value a kernel stores for the cached earliest when nothing is
+/// armed, so the cache fits one atomic word. [`Timer::deadline`] and [`earliest`] answer `None`
+/// instead, so a timer armed at exactly this value still reads as armed.
 pub const NEVER: u64 = u64::MAX;
 
 /// What [`Timer::arm`] decided.
@@ -112,9 +114,9 @@ impl<T: Copy> Timer<T> {
         }
     }
 
-    /// The pending deadline, or [`NEVER`].
-    pub fn deadline(&self) -> u64 {
-        self.armed.map_or(NEVER, |(d, _)| d)
+    /// The pending deadline, or `None` when nothing is armed.
+    pub fn deadline(&self) -> Option<u64> {
+        self.armed.map(|(d, _)| d)
     }
 
     /// Whether a deadline is pending.
@@ -149,10 +151,11 @@ pub fn next_due<'a, T: Copy + 'a>(
     None
 }
 
-/// **The cache, recomputed exactly**: the earliest pending deadline, or [`NEVER`]. Run after a
-/// walk, which is the only time the cache is raised.
-pub fn earliest<'a, T: Copy + 'a>(timers: impl Iterator<Item = &'a Timer<T>>) -> u64 {
-    timers.fold(NEVER, |e, t| e.min(t.deadline()))
+/// **The cache, recomputed exactly**: the earliest pending deadline, or `None` when nothing is
+/// armed, which a kernel stores as [`NEVER`]. Run after a walk, which is the only time the cache is
+/// raised.
+pub fn earliest<'a, T: Copy + 'a>(timers: impl Iterator<Item = &'a Timer<T>>) -> Option<u64> {
+    timers.filter_map(Timer::deadline).min()
 }
 
 /// Machine-checked proofs of the timer arithmetic, over three timers: enough for "the first due
@@ -177,7 +180,7 @@ mod verification {
     }
 
     fn cache_is_sound(ts: &T3, cached: u64) -> bool {
-        ts.iter().all(|t| !t.is_armed() || cached <= t.deadline())
+        ts.iter().all(|t| t.deadline().is_none_or(|d| cached <= d))
     }
 
     /// **The cache is never later than an armed deadline**, across every operation the kernel
@@ -206,7 +209,7 @@ mod verification {
             _ => {
                 if is_due(cached, now) {
                     while next_due(ts.iter_mut(), now).is_some() {}
-                    cached = earliest(ts.iter());
+                    cached = earliest(ts.iter()).unwrap_or(NEVER);
                 }
             }
         }
@@ -223,7 +226,7 @@ mod verification {
         let mut ts = any_timers();
         let before = ts;
         let now: u64 = kani::any();
-        let cached = earliest(ts.iter());
+        let cached = earliest(ts.iter()).unwrap_or(NEVER);
         let mut fired = [false; 3];
         let mut steps = 0;
         while let Some(target) = next_due(ts.iter_mut(), now) {
@@ -234,12 +237,12 @@ mod verification {
             assert!(steps <= 3);
         }
         for k in 0..3 {
-            let due = before[k].is_armed() && before[k].deadline() <= now;
+            let due = before[k].deadline().is_some_and(|d| d <= now);
             assert_eq!(fired[k], due);
             if !due {
                 assert_eq!(ts[k].deadline(), before[k].deadline());
             }
-            assert!(!(ts[k].is_armed() && ts[k].deadline() <= now));
+            assert!(!ts[k].deadline().is_some_and(|d| d <= now));
         }
         if !is_due(cached, now) {
             assert!(!fired.iter().any(|&f| f));
@@ -289,7 +292,7 @@ mod tests {
         let mut t: Timer<u8> = Timer::new();
         assert_eq!(t.arm(100, 9, 100), ArmVerdict::DueNow(9));
         assert!(!t.is_armed());
-        assert_eq!(t.deadline(), NEVER);
+        assert_eq!(t.deadline(), None);
     }
 
     #[test]
@@ -304,7 +307,7 @@ mod tests {
         assert_eq!(cached, 50, "a cancel does not raise the cache");
         assert!(is_due(cached, 60));
         assert_eq!(next_due([&mut a].into_iter(), 60), None);
-        cached = earliest([&a].into_iter());
+        cached = earliest([&a].into_iter()).unwrap_or(NEVER);
         assert_eq!(cached, 80);
         assert!(!is_due(cached, 60));
     }
@@ -320,7 +323,7 @@ mod tests {
             fired.push(t);
         }
         assert_eq!(fired, vec![0, 2]);
-        assert_eq!(earliest(ts.iter()), 30);
+        assert_eq!(earliest(ts.iter()), Some(30));
     }
 
     /// The pending-ness accessor follows the slot: armed after a future arm, not after a cancel or
@@ -336,5 +339,18 @@ mod tests {
         t.arm(200, 2, 0);
         assert!(t.cancel());
         assert!(!t.is_armed());
+    }
+
+    /// A timer armed at the cache word's "no deadline" value still reads as armed, and a set of
+    /// timers with nothing armed has no earliest deadline at all.
+    #[test]
+    fn a_deadline_at_the_last_tick_is_distinct_from_none() {
+        let mut t: Timer<u8> = Timer::new();
+        assert_eq!(earliest([&t].into_iter()), None);
+        assert_eq!(t.arm(NEVER, 1, 0), ArmVerdict::Pending);
+        assert_eq!(t.deadline(), Some(NEVER));
+        assert_eq!(earliest([&t].into_iter()), Some(NEVER));
+        assert!(t.cancel());
+        assert_eq!(t.deadline(), None);
     }
 }
