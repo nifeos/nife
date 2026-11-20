@@ -254,8 +254,16 @@ mod tests {
     /// the UART gets mapped cacheable and the machine behaves like it is haunted.
     #[test]
     fn mair_value_matches_the_slots() {
-        assert_eq!((memory_attribute_indirection::VALUE >> (8 * memory_attribute_indirection::DEVICE)) & 0xff, 0x00);
-        assert_eq!((memory_attribute_indirection::VALUE >> (8 * memory_attribute_indirection::NORMAL)) & 0xff, 0xff);
+        assert_eq!(
+            (memory_attribute_indirection::VALUE >> (8 * memory_attribute_indirection::DEVICE))
+                & 0xff,
+            0x00
+        );
+        assert_eq!(
+            (memory_attribute_indirection::VALUE >> (8 * memory_attribute_indirection::NORMAL))
+                & 0xff,
+            0xff
+        );
     }
 
     /// **Both low bits, on both kinds of descriptor.** `is_present` reads bit 0 alone, so a

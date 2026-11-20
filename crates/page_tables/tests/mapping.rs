@@ -10,7 +10,8 @@
 use std::cell::{Cell, RefCell};
 
 use page_tables::{
-    Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageFormat, PageTable, TranslationLookasideBufferFlush, WalkEnd,
+    Aarch64, Flags, Half, MapError, Mapper, PAGE_SIZE, PageFormat, PageTable,
+    TranslationLookasideBufferFlush, WalkEnd,
 };
 
 /// **Discharge `flush` without invalidating**, and the one place this file argues

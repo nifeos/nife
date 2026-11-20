@@ -394,7 +394,10 @@ where
     /// #     unsafe { drop(Box::from_raw(p)) };
     /// # }
     /// ```
-    pub fn unmap(&mut self, virtual_address: u64) -> Result<(u64, TranslationLookasideBufferFlush), MapError> {
+    pub fn unmap(
+        &mut self,
+        virtual_address: u64,
+    ) -> Result<(u64, TranslationLookasideBufferFlush), MapError> {
         if !F::is_in_half(self.half, virtual_address) {
             return Err(MapError::WrongHalf);
         }
@@ -431,7 +434,10 @@ where
         // Break: the entry becomes invalid *before* anything else happens.
         *entry = 0;
 
-        Ok((physical_address, TranslationLookasideBufferFlush { virtual_address }))
+        Ok((
+            physical_address,
+            TranslationLookasideBufferFlush { virtual_address },
+        ))
     }
 
     /// **Cut the intermediate table at physical `table` out of the walk that reaches `virtual_address`**, and
