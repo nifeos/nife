@@ -158,8 +158,8 @@ impl Uart {
 
     fn put(&self, byte: u8) {
         for _ in 0..POLLS_PER_BYTE {
-            if user_mode_runtime::inb(Self::LSR) & Self::LSR_THRE != 0 {
-                user_mode_runtime::outb(Self::THR, byte);
+            if user_mode_runtime::port_read_byte(Self::LSR) & Self::LSR_THRE != 0 {
+                user_mode_runtime::port_write_byte(Self::THR, byte);
                 return;
             }
             core::hint::spin_loop();

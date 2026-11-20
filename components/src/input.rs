@@ -204,7 +204,7 @@ mod uart {
 /// enable to set and nothing to clear, since reading RBR clears the condition.
 #[cfg(target_arch = "x86_64")]
 mod uart {
-    use user_mode_runtime::{inb, outb};
+    use user_mode_runtime::{port_read_byte, port_write_byte};
     const RBR: u16 = 0x3F8; // receive buffer (COM1 base)
     const IER: u16 = 0x3F9; // interrupt enable (base + 1)
     const MCR: u16 = 0x3FC; // modem control (base + 4)
@@ -216,13 +216,13 @@ mod uart {
     /// Name: ratified 2026-09-24 (calef, #1255 review). Refused `rx_pending` and `is_rx_pending`
     /// (`rx` is a decoder for "receive").
     pub fn is_byte_waiting() -> bool {
-        inb(LSR) & LSR_DR != 0
+        port_read_byte(LSR) & LSR_DR != 0
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md; `read_byte` reads the byte `is_byte_waiting`
     /// reports.
     pub fn read_byte() -> u8 {
-        inb(RBR) // reading clears the receive condition, as on the NS16550
+        port_read_byte(RBR) // reading clears the receive condition, as on the NS16550
     }
     /// Name: provisional. Spelled out under the `rx` and `tx` ruling of 2026-10-26 (UTC), in
     /// design/naming/acronyms-and-abbreviations.md; `arm_receive_interrupt` is the word the NS16550
@@ -234,8 +234,8 @@ mod uart {
     /// raises nothing. QEMU's 16550 does not model the gate; a real COM1 (xenon's) does. Set by
     /// read-modify-write, so the console's `DTR`/`RTS` survive.
     pub fn arm_receive_interrupt() {
-        outb(MCR, inb(MCR) | MCR_OUT2);
-        outb(IER, IER_ERBFI);
+        port_write_byte(MCR, port_read_byte(MCR) | MCR_OUT2);
+        port_write_byte(IER, IER_ERBFI);
     }
     pub(crate) fn clear_interrupt() {
         // The 16550 clears the receive interrupt when the byte is read (read_byte, in drain).
