@@ -1,4 +1,4 @@
-abi abbreviations 21
+abi abbreviations 20
 abi prose_acronyms 26
 abi register_names 9
 address_space_identifier abbreviations 9
@@ -83,7 +83,7 @@ firmware_configuration prose_acronyms 4
 firmware_configuration readme_acronyms 2
 firmware_configuration register_names 9
 free abbreviations 5
-globally_unique_identifier_partition_table abbreviations 32
+globally_unique_identifier_partition_table abbreviations 29
 globally_unique_identifier_partition_table prose_acronyms 3
 glyph_atlas abbreviations 16
 glyph_atlas prose_acronyms 1
@@ -142,7 +142,7 @@ loaded_image_check prose_acronyms 2
 login_contract abbreviations 20
 login_contract prose_acronyms 4
 machine_discovery abbreviations 456
-machine_discovery prose_acronyms 130
+machine_discovery prose_acronyms 129
 machine_discovery readme_acronyms 4
 machine_discovery register_names 48
 machine_statistics_contract abbreviations 4
@@ -171,7 +171,7 @@ package_index register_names 13
 page_tables abbreviations 136
 page_tables prose_acronyms 56
 page_tables register_names 22
-pci_configuration_space abbreviations 84
+pci_configuration_space abbreviations 61
 pci_configuration_space prose_acronyms 24
 pci_configuration_space readme_acronyms 2
 pci_configuration_space register_names 6
@@ -208,7 +208,6 @@ slabtop abbreviations 1
 slabtop register_names 1
 soak_page abbreviations 4
 soak_page prose_acronyms 1
-socket_contract abbreviations 1
 socket_contract register_names 1
 static_elf abbreviations 98
 static_elf prose_acronyms 6
@@ -228,7 +227,7 @@ supervision_contract prose_acronyms 2
 swish abbreviations 63
 swish prose_acronyms 4
 swish register_names 3
-system_initializer abbreviations 554
+system_initializer abbreviations 546
 system_initializer prose_acronyms 28
 system_initializer readme_acronyms 5
 system_initializer register_names 7
@@ -261,7 +260,7 @@ uptime abbreviations 4
 uptime prose_acronyms 2
 uptime readme_acronyms 2
 uptime register_names 2
-user_mode_runtime abbreviations 17
+user_mode_runtime abbreviations 8
 user_mode_runtime register_names 2
 video_terminal abbreviations 189
 video_terminal prose_acronyms 17

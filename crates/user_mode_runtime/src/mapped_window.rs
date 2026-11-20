@@ -270,7 +270,7 @@ impl MappedWindow {
 /// `mfence` on x86_64. Stronger than [`crate::virtual_io::virtual_io_ring_barrier`], whose drivers notify
 /// through a system call, and not to be merged with it. See notes/user-mode-runtime.md.
 ///
-/// Name: ratified 2026-11-20 (UTC); first minted by the lane for milestone 494 (a driver for the network card a PC actually has) on 2026-10-04.
+/// Name: ratified 2026-11-20 (UTC); first minted by the lane for milestone 494 (a driver for the network card a personal computer actually has) on 2026-10-04.
 pub fn doorbell_barrier() {
     // No `nomem`. The Rust reference (Inline assembly, Options) defines it as a block that "does not
     // read or write to any memory accessible outside of the `asm!` block", which lets the compiler
