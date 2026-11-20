@@ -45,9 +45,9 @@ for the crate's own reasons.
   license line, `rust-version` and inline lints are the move's work. Decision 1 holds the move
   until its trigger fires, so those wait.
 - P1-3, a root at the top of the page-number space: Done. The refusal landed in
-  [#3534](https://github.com/nifeos/nife/pull/3534), and the Kani harness
-  `a_root_the_table_accepts_never_overflows` drives one operation from any accepted root, with its
-  falsification patch, in [#3825](https://github.com/nifeos/nife/pull/3825).
+  [#3534](https://github.com/nifeos/nife/pull/3534), and the Kani harnesses
+  `a_root_the_table_accepts_never_overflows_*` (four, one per operation, split to fit the shard's
+  memory) drive one operation from any accepted root, each with its falsification patch, in [#3825](https://github.com/nifeos/nife/pull/3825).
 - P1-4, a second release of one object: Done, [#3532](https://github.com/nifeos/nife/pull/3532).
 - P1-5, the loom harnesses at the move: Held with the move. The template's `proofs` workflow runs a crate's loom
   models when its manifest depends on loom, from

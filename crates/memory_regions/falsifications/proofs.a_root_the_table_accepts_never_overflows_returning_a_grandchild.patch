@@ -1,4 +1,4 @@
-Falsifies `memory_regions::proofs::a_root_the_table_accepts_never_overflows`.
+Falsifies `memory_regions::proofs::a_root_the_table_accepts_never_overflows_returning_a_grandchild`.
 
 The defect: a root whose page range runs past the top of the page numbers is accepted. Every end
 the table computes below it (a child's end, a bounds report, a spent figure) can then overflow.
