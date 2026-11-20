@@ -764,7 +764,7 @@ def words_selftest():
     words = {'spelled_out': {'op': 'operation', 'ops': 'operations', 'sdio': 'x', 'cap': 'capability'},
              'units': {'ns': 'nanoseconds', 'kib': 'kibibytes', 'mbps': 'megabits_per_second'}}
     good = ('## Acronyms and abbreviations\n\n'
-            '- Every name this tree authors spells these out: `op`, `cap` and `proto`.\n'
+            '- Every name this tree authors spells these out: `op`, `cap`, `syscall` and `proto`.\n'
             '  It continues here.\n'
             '- These stay: `pci`. `SDIO` is not accepted.\n\n'
             '## Units\n\n'
