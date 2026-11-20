@@ -1,13 +1,12 @@
 //! **The globally unique identifier (GUID) partition table**, the GPT (GUID Partition Table):
 //! reading one, writing one, and refusing a bad one.
 //!
-//! The disk format of UEFI 2.10 section 5.3, not the language models, for partitioning
-//! and formatting a real drive. No I/O, no allocation, no `unsafe`: it takes bytes
-//! the caller read and returns bytes to place, so its tests run on the host against real disks.
-//! [`header::Header::decode`]
-//! judges one block, [`entry::Entry::decode`] judges nothing,
-//! [`PartitionTable::parse`] holds every geometry rule, `check_backup`
-//! compares the two copies, and every failure is an error. [`span`] says where to read.
+//! The disk format of the Unified Extensible Firmware Interface (UEFI) 2.10 section 5.3, not the
+//! language models, for partitioning and formatting a real drive. No I/O, no allocation, no
+//! `unsafe`: it takes bytes the caller read and returns bytes to place, so its tests run on the
+//! host against real disks. [`header::Header::decode`] judges one block, [`entry::Entry::decode`]
+//! judges nothing, [`PartitionTable::parse`] holds every geometry rule, `check_backup` compares the
+//! two copies, and every failure is an error. [`span`] says where to read.
 //!
 //! The reader enforces the header's reserved tail (a non-zero byte after the header refuses the
 //! table) and tolerates a non-zero tail on an entry and non-zero reserved attribute bits, though
@@ -50,10 +49,10 @@ use uuid::Uuid;
 pub const MINIMUM_BLOCK_BYTES: usize = 512;
 
 /// The format's version: the generation of this crate's reading and writing of the two on-disk
-/// tables it implements, the GUID partition table and the MBR. The tables' own identities are the
-/// specifications' (`header::REVISION`, the `EFI PART` and `0x55AA` signatures); this constant is
-/// a declaration, so assembly can check what a package was built against. Nothing checks it at run
-/// time.
+/// tables it implements, the GUID partition table and the master boot record (MBR). The tables' own
+/// identities are the specifications' (`header::REVISION`, the `EFI PART` and `0x55AA` signatures);
+/// this constant is a declaration, so assembly can check what a package was built against. Nothing
+/// checks it at run time.
 ///
 /// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
 pub const VERSION: u32 = 1;
@@ -75,8 +74,8 @@ pub const PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS: u64 = 1;
 /// [`ENTRY_ARRAY_BYTES`]-sized buffer, and what every tool in the world writes.
 pub const DEFAULT_ENTRY_COUNT: u32 = 128;
 
-/// 16 KiB: `DEFAULT_ENTRY_COUNT * entry::ENTRY_BYTES`, and the minimum array size UEFI 2.10 section 5.3.3
-/// requires of a *conformant writer*.
+/// 16 KiB: `DEFAULT_ENTRY_COUNT * entry::ENTRY_BYTES`, and the minimum array size UEFI 2.10 section
+/// 5.3.3 requires of a *conformant writer*.
 ///
 /// [`PartitionTable::create`] will build a smaller array if handed a
 /// smaller buffer, and [`PartitionTable::parse`] will read one, because
@@ -95,11 +94,9 @@ pub const fn is_block_size_ok(len: usize) -> bool {
 }
 
 /// The protective MBR at LBA 0: one classic MBR record of type `0xEE` covering the whole disk, so
-/// a tool that predates GPT sees a disk entirely spoken for and does not offer to initialise it.
-///
-/// Only the two fields that do the protecting are checked (it starts at LBA 1 and covers the disk).
-/// The CHS fields are vestigial: `sgdisk` writes the real cylinder/head/sector of the last block,
-/// macOS writes `FE FF FF`, and both are correct because nothing reads them.
+/// a tool that predates GPT sees a disk entirely spoken for and does not offer to initialize it.
+/// The record and its check are [`::master_boot_record::protective`]'s; this module fits them to a
+/// block of any accepted size.
 ///
 /// Name: provisional.
 #[doc(alias = "MBR")]

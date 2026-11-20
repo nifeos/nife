@@ -56,6 +56,7 @@
 //! - It proves nothing about a real firmware, the same caveat `install-boot` carries.
 //! - The power cut is at the handoff, not during the table write (`uefi_loader/src/chooser.rs`).
 //! - It takes several minutes under TCG, so it is not in `script/test`'s default legs.
+//! - The tables it reads are not checked against the image's size (`check_disk_size`).
 
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::Path;

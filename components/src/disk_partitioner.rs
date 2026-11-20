@@ -14,6 +14,7 @@
 //! - The logical block size is assumed to be 512. One hard-coded layout, with no `mkpart` options.
 //! - Not crash-atomic: a kill can leave the copies disagreeing, which `check_backup` reports.
 //! - New GUIDs are not checked against an existing table, which is replaced wholesale.
+//! - The existing table it reads is not checked against the disk's size (`check_disk_size`).
 //!
 //! Name: ratified 2026-09-13 (calef), the destructive half of `disk_surveyor`: survey and
 //! partition. Refused `parted` (it borrows the authority model this contrasts with), `gpt_writer`

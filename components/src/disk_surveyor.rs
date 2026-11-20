@@ -27,6 +27,8 @@
 //!   `filesystem_contract::block`, not a change here.
 //! - **It does not write.** Writing the table is `components/src/disk_partitioner.rs`.
 //! - **No hot plug.** The roster is written once at wiring time and never again.
+//! - **The table is not checked against the disk's size.** `check_disk_size` is never called, so a
+//!   table cloned whole from a disk of another size is reported as this disk's.
 //!
 //! Name: ratified 2026-08-03 (calef, milestone 57 (partitioning and formatting a real drive)). A
 //! surveyor maps land they do not own, which is this program's endowment: a read-only roster of

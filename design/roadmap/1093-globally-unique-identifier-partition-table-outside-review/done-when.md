@@ -15,7 +15,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
 - `#![forbid(unsafe_code)]` is in the crate root, and the repository's `fuzz.yml` carries the opt-in
   with the moved target.
 - `#![allow(missing_docs)]` is gone and `cargo doc` with warnings denied is clean.
-- `Error` implements `core::error::Error`; `BackupMismatch` and `MbrProblem` implement `Display`;
+- `Error` implements `core::error::Error`; `BackupMismatch` and `MasterBootRecordProblem` implement `Display`;
   the three enums carry `#[non_exhaustive]` or a recorded reason not to.
 - `.github/mutants-exempts` carries the six recorded equivalents and `mutation / mutation` has one
   green full run on `main`.

@@ -42,7 +42,7 @@ compositor	shared	components,fixtures,kernel
 confined_fuzz_protocol	userspace	retired
 confined_syscall_fuzzer_contract	userspace	fixtures
 coremark	shared	fixtures,kernel
-counter_frequency_contract	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
+counter_frequency_contract	shared	retired
 counter_frequency_protocol	shared	retired
 cpu_set	kernel	kernel
 cred	userspace	retired
@@ -129,7 +129,7 @@ machine_statistics_contract	shared	components,fixtures,kernel
 machine_statistics_protocol	shared	retired
 manifest_note	userspace	retired
 manual	userspace	retired
-master_boot_record	kernel	kernel
+master_boot_record	shared	components,kernel,redoxfs_server,uefi_loader
 mdns_config	userspace	retired
 mdns_proto	userspace	retired
 measured_boot	shared	components,fixtures,jig,kernel,pinned_tls_client,pinned_tls_exerciser,uefi_loader

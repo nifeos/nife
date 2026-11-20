@@ -34,3 +34,5 @@ doc_markdown = "warn"
 # (mixed-endian, `guid::from_disk`/`to_disk`); the type and its text form are RFC 9562's, taken
 # from `uuid` with default features off.
 uuid = { version = "1.28.0", default-features = false }
+# The protective MBR at block 0: its record, its write and its check.
+master_boot_record = { version = "0.1.0", path = "../master_boot_record" }

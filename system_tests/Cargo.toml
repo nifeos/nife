@@ -65,7 +65,7 @@ system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract
 capability_witness_contract = { version = "0.1.0", path = "../crates/capability_witness_contract" }
 clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 compositor = { version = "0.1.0", path = "../crates/compositor" }
-counter_frequency_contract = { version = "0.1.0", path = "../crates/counter_frequency_contract" }
+counter_frequency_contract = { version = "0.1.0-pre.1", git = "https://github.com/nifeos/counter_frequency_contract", rev = "7e7bc1bf9b9e25608a650af1fff36b9dc15585bd" }
 startup_page_contract = { version = "0.1.0", path = "../crates/startup_page_contract" }
 credential_contract = { version = "0.1.0", path = "../crates/credential_contract" }
 current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contract" }

@@ -18,6 +18,7 @@
 //! - The slots cost 128 MiB, and nothing writes slot 1 yet (`cargo xtask rollback-boot` does).
 //! - Disks under about 700 MiB are refused, untested.
 //! - A block-for-block clone keeps its source's disk and partition GUIDs; nothing re-draws them.
+//! - The tables it reads back are not checked against the disk's size (`check_disk_size`).
 //!
 //! Name: ratified 2026-10-06 (calef), replacing `installer`. Refused `basalt_installer`.
 
