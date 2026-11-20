@@ -88,12 +88,12 @@ fn start(mode: u64, _a1: u64, _a2: u64) -> ! {
 /// One resolve: the reply word and the first address, packed.
 fn resolve(name: &[u8]) -> (u64, u64) {
     for (i, &b) in name.iter().enumerate() {
-        RESOLVER_PAGE.write_u8((NAME_OFFSET_BYTES + i) as u64, b);
+        RESOLVER_PAGE.write::<u8>((NAME_OFFSET_BYTES + i) as u64, b);
     }
     let (word, _ttl) = call(RESOLVER, request(OPERATION_RESOLVE), name.len() as u64);
     let mut a = [0u8; 4];
     for (j, b) in a.iter_mut().enumerate() {
-        *b = RESOLVER_PAGE.read_u8((IPV4_ADDRESSES_OFFSET_BYTES + j) as u64);
+        *b = RESOLVER_PAGE.read::<u8>((IPV4_ADDRESSES_OFFSET_BYTES + j) as u64);
     }
     (word, endowment::server(a))
 }
@@ -128,9 +128,9 @@ fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
         return ECHO_FAILED;
     }
     for (i, &b) in address.iter().enumerate() {
-        SOCKET_PAGE.write_u8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET_PAGE.write::<u8>(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    SOCKET_PAGE.write_u16(
+    SOCKET_PAGE.write::<u16>(
         socket::DESTINATION_PORT_OFFSET_BYTES,
         socket::fixture::ECHO_PEER_PORT,
     );
@@ -138,14 +138,14 @@ fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
         return ECHO_FAILED;
     }
     for (i, &b) in MSG.iter().enumerate() {
-        SOCKET_PAGE.write_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
+        SOCKET_PAGE.write::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
     if call(socket, socket::OPERATION_SEND, MSG.len() as u64).0 == MSG.len() as u64
         && call(socket, socket::OPERATION_RECEIVE, 0).0 == MSG.len() as u64
         && MSG
             .iter()
             .enumerate()
-            .all(|(i, &b)| SOCKET_PAGE.read_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64) == b)
+            .all(|(i, &b)| SOCKET_PAGE.read::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64) == b)
     {
         ECHO_OK
     } else {

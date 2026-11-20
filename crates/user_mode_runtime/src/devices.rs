@@ -22,7 +22,7 @@ pub fn interrupt_wait(interrupt_slot: u64) -> i64 {
     unsafe { invoke(interrupt_slot, abi::interrupt::WAIT, 0, 0, 0) }
 }
 
-/// `ACKNOWLEDGE` the `Interrupt` capability in `interrupt_slot`: re-enable the interrupt at the GIC once
+/// `ACKNOWLEDGE` the `Interrupt` capability in `interrupt_slot`: re-enable the interrupt at the generic interrupt controller (GIC) once
 /// the device has
 /// been quieted. Until this is called, the interrupt stays masked and cannot storm.
 ///
@@ -49,11 +49,11 @@ pub fn reboot(slot: u64) -> i64 {
 
 /// **Write one byte to an x86 I/O port** (milestone 299). Not a syscall: `out` is an instruction,
 /// and a ring-3 program may execute it exactly when it holds a `PortRange` capability naming `port`,
-/// which the kernel enforces through the TSS I/O permission bitmap (§121 (what a device capability
+/// which the kernel enforces through the task state segment (TSS) I/O permission bitmap (§121 (what a device capability
 /// is when the device has no page: x86 port I/O)). A port it does not hold raises a general
 /// protection fault, which its supervisor sees as a fault message; no page table catches a wrong
 /// guess. Here rather than in each driver because an instruction belongs with the code that knows
-/// the ISA.
+/// the instruction set architecture (ISA).
 #[cfg(target_arch = "x86_64")]
 pub fn outb(port: u16, value: u8) {
     // SAFETY: `out` has no memory effect and no flag effect; `nostack` holds. The caller promises it
@@ -66,7 +66,7 @@ pub fn outb(port: u16, value: u8) {
 
 /// **Read one byte from an x86 I/O port** (milestone 299). The `in` twin of [`outb`]; the same
 /// capability rule and the same fault on a port the caller does not hold. A read is not automatically
-/// harmless: several legacy devices (the 16550's receive register at COM1's base) have read side
+/// harmless: several legacy devices (the 16550's receive register at `COM1`'s base) have read side
 /// effects, which is exactly why a driver, not the kernel, decides when to issue one.
 #[cfg(target_arch = "x86_64")]
 pub fn inb(port: u16) -> u8 {

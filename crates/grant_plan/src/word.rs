@@ -11,7 +11,7 @@
 //! # BUGS
 //!
 //! - **No backslash escape while tokens are slices.** `my\ notes.txt` names a file whose name
-//!   contains a backslash, and `nav::component_fits` refuses that byte, so the line is refused.
+//!   contains a backslash, and `navigation::component_fits` refuses that byte, so the line is refused.
 //! - **Adjacent pieces are not joined.** `a"b"` and `'it''s'` are refused where POSIX joins them.
 //! - **`"$?"` prints `$?`**, because both forms are literal; variables will have to split them.
 

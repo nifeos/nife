@@ -42,7 +42,7 @@ exactly the loss `2>` exists to prevent on Unix.
 The thing a person usually reaches for `2>` to save is the shell's own refusals, and those never
 enter a redirection here. `wc < nosuch.txt` is `Say::Failed` printed by the prompt;
 `least_authority_demo 9 > out.txt` is `Refusal::NotAByteStream` printed by the prompt; a spawn that
-fails is `spawnproto::SPAWN_FAILED` printed by the prompt. All of it goes to the terminal, always,
+fails is `spawn_protocol::SPAWN_FAILED` printed by the prompt. All of it goes to the terminal, always,
 because the shell is a different process from the thing the line redirects and its output was never
 in the substituted slot.
 
@@ -63,7 +63,7 @@ mechanism for "this program has a second thing to say" is therefore a declaratio
 
 ### The two shapes it could take, and what each costs
 
-A second endpoint in a second slot. The direct translation. It costs a `spawnproto` bit (there are
+A second endpoint in a second slot. The direct translation. It costs a `spawn_protocol` bit (there are
 29 free in that word), a delegation position, a progenitor branch, a slot in every child, a manifest
 declaration, and an edit to every program that has anything to say. It also doubles §51's claim: a
 writer holding two endpoints must be able to tell them apart, which it does by slot number rather
@@ -80,7 +80,7 @@ one first.
 An opcode on the one endpoint. `byte_sink_contract` puts the operation in the top byte of the
 request word, so `OPERATION_BYTES = 0` and `OPERATION_EOF = 1` leave 254 spellings free. A third, "these bytes are
 a diagnostic", would carry the distinction on the wire the writer already holds: no second
-capability, no second slot, no spawnproto change, no progenitor change, and §51 intact word for
+capability, no second slot, no spawn_protocol change, no progenitor change, and §51 intact word for
 word. The reader then decides, so `2> name` would name where the shell sends the diag messages it is
 already receiving, and `date > out.txt` would print its complaint to the terminal and write nothing
 to the file.

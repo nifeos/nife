@@ -126,10 +126,10 @@ fn a_decoded_verb_table_finds_each_verb() {
         for i in [
             0,
             1,
-            grant_contract::MAXIMUM_VERB,
-            grant_contract::MAXIMUM_VERB + 1,
-            grant_contract::MAXIMUM_VERB + 2,
-            grant_contract::MAXIMUM_VERB + 3,
+            grant_contract::MAXIMUM_VERB_BYTES,
+            grant_contract::MAXIMUM_VERB_BYTES + 1,
+            grant_contract::MAXIMUM_VERB_BYTES + 2,
+            grant_contract::MAXIMUM_VERB_BYTES + 3,
         ] {
             d[at + i] = kani::any();
         }

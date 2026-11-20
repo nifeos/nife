@@ -497,7 +497,7 @@ fn probe_bind(
             // `/<dirname>`, the real parent's own path: built once, so the check below compares
             // against the *real* tree rather than the alias, which a position has no memory of
             // having been reached through.
-            let mut want = [0u8; nav::RENDER_MAXIMUM];
+            let mut want = [0u8; grant_navigation::MAXIMUM_RENDERED_PATH_BYTES];
             want[0] = b'/';
             want[1..1 + dirname.1].copy_from_slice(name_of(dirname));
             let want = &want[..1 + dirname.1];
@@ -542,7 +542,7 @@ pub(super) fn two_trees(spec: u64) -> ! {
     const B: u64 = 1;
     const REPORT: u64 = 2;
     let rights = filesystem_contract::grant::specification_rights(spec);
-    let mount = nav::path(tt::MOUNT.as_bytes())
+    let mount = grant_navigation::path(tt::MOUNT.as_bytes())
         .ok()
         .and_then(|p| grant_plan::Holdings::default().resolve_path(&p).ok())
         .and_then(grant_plan::MountedTree::mounted_at);
@@ -663,7 +663,7 @@ fn two_tree_grants(nav: &mut Nav) -> u64 {
     let mut v = 0u64;
 
     if let Ok(g) = grant_plan::redirect_target(b"/second/secret", holdings(nav), false)
-        && g.which == nav::Which::B
+        && g.which == grant_navigation::Which::B
         && let Ok(f) = open_source(nav, g)
     {
         let want = tree::SECRET_BODY;
@@ -694,7 +694,7 @@ fn two_tree_rm(nav: &mut Nav) -> u64 {
         && let Ok((_, e)) =
             program_table::plan(&rspec, holdings(nav), grant_plan::expand::Expansion::none())
         && let Some(g) = e.directory
-        && g.which == nav::Which::B
+        && g.which == grant_navigation::Which::B
         && dir_grant(&g, e.short_options).is_err()
     {
         return tt::RM_IN_MOUNT_REFUSED;
@@ -835,7 +835,7 @@ fn run_line(nav: &mut Nav, cmd: &[u8]) -> Option<Say> {
 
 /// Whether `pwd` would print exactly this.
 fn pwd_is(nav: &Nav, want: &[u8]) -> bool {
-    let mut buf = [0u8; nav::RENDER_MAXIMUM];
+    let mut buf = [0u8; grant_navigation::MAXIMUM_RENDERED_PATH_BYTES];
     let n = nav.holds.cwd.render(&mut buf);
     &buf[..n] == want
 }

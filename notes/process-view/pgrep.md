@@ -75,7 +75,7 @@ spelled with the same four words `ps` prints in its `STATE` column. `pgrep dead`
 `crates/byte_glob` does the matching, unchanged and unextended. It was the right tool rather than the
 nearest one. It is on the verification path already, it has a `cost_bound` nothing can blow past,
 and four short words is exactly the shape it is good at. There are two deliberate departures from
-its defaults, both recorded at the call site. The first is `Dot::Ordinary`, because a state name
+its defaults, both recorded at the call site. The first is `LeadingDot::Ordinary`, because a state name
 never begins with a dot and the leading-dot rule is a filename-listing convention. The second is
 glob rather than upstream's extended regular expression. No regex engine exists in this tree, and
 taking a dependency to match one of four words is what DECISIONS §46 (thin primitives or whole subsystems) declines.
@@ -101,7 +101,7 @@ cannot recover from. So `Selector::from_pattern` goes through `Selector::of` and
 ## The limitation that shaped it, which is a property of the boundary
 
 Nothing in this system delivers bytes from a command line to a program. `Endowment::program_argument` is one
-`u64`, and `spawnproto` carries three words. Every string-shaped designation a person types (a file,
+`u64`, and `spawn_protocol` carries three words. Every string-shaped designation a person types (a file,
 a directory) arrives at the child as a capability. That is what `rm logs/old` and `doc
 notes/glob.md` both are, and it is why `rm` learns nothing about the name it removes.
 

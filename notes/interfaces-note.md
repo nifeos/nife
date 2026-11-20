@@ -74,7 +74,7 @@ served version refuses, and a list with no entry for id 1 passes. The progenitor
 
 A refusal makes `endowed_image` return `None`. The spawn loop
 (`crates/system_initializer/src/spawn_loop.rs`) answers the request with
-`spawnproto::SPAWN_REFUSED_BY_MANIFEST` (`u64::MAX - 3`), and the shell prints `refused: the
+`spawn_protocol::SPAWN_REFUSED_BY_MANIFEST` (`u64::MAX - 3`), and the shell prints `refused: the
 progenitor read those bytes' own manifest, and it does not allow this line`. The `Refusal` value
 that names both versions stops inside the progenitor: the reply carries a status word and no text.
 

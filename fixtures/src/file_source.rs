@@ -28,7 +28,7 @@
 //!   frame, each with its own copy of the address and its own byte accessors.
 //!
 //! Name: ratified 2026-10-17 (calef, convention-rulings Rule 2). `source` is this tree's own word
-//! for the reading end of the sink contract (`program_table::spawnproto::Wiring` carries `sink` and
+//! for the reading end of the sink contract (`program_table::spawn_protocol::Wiring` carries `sink` and
 //! `source`), so `file_sink` and `file_source` are one pair; see
 //! design/roadmap/0292-the-sink-contract-ends-are-three-programs.md and notes/sink-protocol.md.
 //! Refused `sink_verifier` (names the test it serves; it verifies nothing). Refused `file_reader`
@@ -67,13 +67,13 @@ const WINDOW: MappedWindow = unsafe { MappedWindow::new(PAGE_VA, PAGE as u64) };
 /// Copy `bytes` into the shared page.
 fn put(bytes: &[u8]) {
     for (i, &b) in bytes.iter().take(PAGE).enumerate() {
-        WINDOW.write_u8(i as u64, b);
+        WINDOW.write::<u8>(i as u64, b);
     }
 }
 
 /// Read one byte out of the shared page.
 fn get(i: usize) -> u8 {
-    WINDOW.read_u8(i as u64)
+    WINDOW.read::<u8>(i as u64)
 }
 
 /// One request to the FS server. Negative replies are the caller's to interpret.
