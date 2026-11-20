@@ -62,7 +62,7 @@ items](1085-device-tree-blob-outside-review/later-items.md), D1 to D6 under [Rul
 - P2-14, `cfg_attr(not(test), no_std)`: Done, [#3612](https://github.com/nifeos/nife/pull/3612).
 - D1 to D6 and the pointer handle name: Ruled 2026-11-19, under [Ruled decisions](#ruled-decisions).
 - F-size, `Region::size` is a length with no unit: Done, [#3833](https://github.com/nifeos/nife/pull/3833).
-  The field is `size_bytes`, `SIZE_DT_STRUCT_AT` is `STRUCTURE_BLOCK_SIZE_AT`, and the gate pass
+  The field is `size_bytes`, `SIZE_DT_STRUCT_AT` is `STRUCTURE_BLOCK_SIZE_OFFSET_BYTES`, and the gate pass
   clears the other refused names and the acronyms.
 - F-dtoolkit, the switch to `dtoolkit`: Open, waiting for an upstream release; the wait is ruled,
   under [Ruled decisions](#take-dtoolkit-once-a-release-carries-the-fixes).

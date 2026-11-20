@@ -9,7 +9,7 @@ license.workspace = true
 # The device tree is the RISC-V source of truth for what the machine is, because RISC-V has no
 # CPUID, so the riscv64 half of this crate reads it. The aarch64 half needs nothing: its facts come
 # from architected ID registers, which the kernel reads and hands here as raw words.
-device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_tree_blob", rev = "833cb330854a51d684e210b5706ac7f7e12aa1ac" }
+device_tree_blob = { version = "0.1.0", git = "https://github.com/nifeos/device_tree_blob", rev = "96ad52af96e38e38577f91a787f53b789dbdda4f" }
 # The JH7110 device crates take plain values and read no tree; `jh7110` finds each block for them
 # and fills in their types, so it names them. `designware_mobile_storage` has no type here: its
 # slot is this crate's own `jh7110::designware_mobile_storage::Slot`, plain values.

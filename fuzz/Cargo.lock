@@ -162,7 +162,7 @@ source = "git+https://github.com/nifeos/designware_ethernet?rev=0e8f92bf67e58016
 [[package]]
 name = "device_tree_blob"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/device_tree_blob?rev=833cb330854a51d684e210b5706ac7f7e12aa1ac#833cb330854a51d684e210b5706ac7f7e12aa1ac"
+source = "git+https://github.com/nifeos/device_tree_blob?rev=96ad52af96e38e38577f91a787f53b789dbdda4f#96ad52af96e38e38577f91a787f53b789dbdda4f"
 
 [[package]]
 name = "device_tree_patch"
