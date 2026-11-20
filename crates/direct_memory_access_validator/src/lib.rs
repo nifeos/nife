@@ -290,7 +290,7 @@ fn shadow_one_head(
 // its own compile-time asserts as well, so drift is a compile error in two places.
 // ---------------------------------------------------------------------------------------------
 
-/// The negotiated queue size the kernel drives (`QSIZE` in kernel/src/virtual_io.rs).
+/// The negotiated queue size the kernel drives (`QSIZE` in `kernel/src/virtual_io.rs`).
 pub const LAYOUT_QSIZE: u16 = 8;
 /// Offsets of a queue's three rings, relative to its ring block.
 pub const DESC_OFF: u64 = 0x000;

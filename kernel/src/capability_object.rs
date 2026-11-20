@@ -94,7 +94,7 @@ pub enum Object {
     /// DMA-critical powers (programming the queue's ring addresses and ringing the device) and
     /// validates that every descriptor stays within the driver's own DMA region before the device
     /// sees it. The holder drives the device (status, features, submit) through this, but cannot
-    /// point it outside its region. See kernel/src/virtual_io.rs.
+    /// point it outside its region. See `kernel/src/virtual_io.rs`.
     #[doc(alias = "virtio")]
     VirtualIo(u64),
 
