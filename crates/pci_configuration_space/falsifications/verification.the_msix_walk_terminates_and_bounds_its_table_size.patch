@@ -13,8 +13,12 @@ entries against hardware that has at most 2048.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -627,3 +627,3 @@ pub fn msix_cap(bdf: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> Option<Msi
+@@ -928,7 +928,7 @@
+                 // maximum 2048-entry table reads as 0x7ff. Reading it as the count itself gives a
+                 // table one short of the truth on every function, and zero entries on a function that
                  // has one, which is the shape of failure that looks like "no MSI-X here".
--                table_size: (control & 0x7ff) + 1,
-+                table_size: (control & 0xfff) + 1,
+-                table_entries: (control & 0x7ff) + 1,
++                table_entries: (control & 0xfff) + 1,
                  table_bar: (table & 0x7) as u8,
+                 table_offset: table & !0x7,
+                 pending_bit_array_bar: (pending & 0x7) as u8,

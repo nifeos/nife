@@ -368,7 +368,7 @@ pub fn alloc_msi_vector(requester_id: u32) -> Option<(u32, pci_configuration_spa
     let target = match super::iommu::remap_message(requester_id, vector as u8, destination) {
         Ok(Some(remapped)) => remapped,
         Ok(None) => pci_configuration_space::MsiTarget {
-            address: LOCAL_APIC_MSI_BASE | ((destination as u64) << 12),
+            message_address: LOCAL_APIC_MSI_BASE | ((destination as u64) << 12),
             data: vector,
         },
         Err(why) => {
