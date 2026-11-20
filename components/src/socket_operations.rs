@@ -104,7 +104,7 @@ pub(crate) fn sock_receive(
                 // answer whoever asked, as TFTP's transfer ids do.
                 let IpAddress::Ipv4(src) = meta.endpoint.addr;
                 for (i, &b) in src.octets().iter().enumerate() {
-                    window.write::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
+                    window.write::<u8>(DESTINATION_IPV4_ADDRESS_OFFSET_BYTES + i as u64, b);
                 }
                 window.write::<u16>(DESTINATION_PORT_OFFSET_BYTES, meta.endpoint.port);
                 n

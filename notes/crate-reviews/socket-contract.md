@@ -66,7 +66,7 @@ baseline) and the template's workflows, which run in the repository.
 
 The lane `1108-renames-scope` moved three modules out and applied the names table below. Draft
 pull request [#3811](https://github.com/nifeos/nife/pull/3811) carries it. The maintainer ruled the
-moves and the renames provisionally and as two-way doors on 2026-11-19 UTC; nothing is ratified.
+moves and the renames provisionally and as two-way doors on 2026-11-19 UTC; the architect ratified the names table as built on 2026-11-20 UTC.
 
 | check | result |
 |---|---|
@@ -96,7 +96,7 @@ moves and the renames provisionally and as two-way doors on 2026-11-19 UTC; noth
 | badges | `SOCKET_BADGE_BIT` (bit 63), `names_a_socket(badge)` |
 | replies | `REPLY_OK`, `REPLY_ERROR` (bit 32), `CONNECT_ESTABLISHED`, `CONNECT_REFUSED`, `PORT_CLAIM_GRANTED`, `PORT_CLAIM_DENIED`, `PORT_CLAIM_IN_USE` |
 | port grants | `NO_PORT_GRANT`, `listen_grant(start, end)`, `listen_grant_allows(grant, port)`, `udp_bind_grant(start, end)`, `udp_bind_grant_allows(grant, port)` |
-| shared page | `DESTINATION_IP_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `PAYLOAD_LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES`, `MAXIMUM_PAYLOAD_BYTES` |
+| shared page | `DESTINATION_IPV4_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `PAYLOAD_LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES`, `MAXIMUM_PAYLOAD_BYTES` |
 | `stack_slots` | `MINTING_ENDPOINT_SLOT` (7), `OWN_ADDRESS_SPACE_SLOT` (8) |
 | `lease` | `NO_NAME_SERVER`, `ipv4_to_word(octets)`, `word_to_ipv4(word)` |
 
@@ -111,7 +111,7 @@ Three modules left the crate. `ephemeral_port` and `polled_wait` are in `network
 `fixture` is now the crate `socket_fixture` (`crates/socket_fixture`, `publish = false`, a
 development dependency on `socket_contract`): `LISTEN_PORT`, `DENIED_PORT`, `INBOUND_MESSAGE`,
 `OUTBOUND_MESSAGE`, `ROUNDS`, `ECHO_PEER_ADDRESS`, `ECHO_PEER_PORT`, `PACKAGE_PEER_ADDRESS`,
-`PACKAGE_PEER_PORT`, `PACKAGE_PEER_HOST`. All three crate names and their items are provisional.
+`PACKAGE_PEER_PORT`, `PACKAGE_PEER_HOST`. The three crate names are provisional; the architect ratified the items (2026-11-20 UTC).
 
 No nife type appears in a signature. What a stranger may find surprising:
 
@@ -132,22 +132,15 @@ No nife type appears in a signature. What a stranger may find surprising:
   accessor state it, and a documentation test on `OPERATION_SEND` sends with the length in the
   argument. 
 - `ACCEPT`'s second reply word carries the peer: the IPv4 address in bits 47 to 16 and the port in
-  bits 15 to 0, packed by `peer_word` and read by `word_peer` (names provisional), the architect's
-  ruling of 2026-11-11 UTC. The frame's `dst` fields are not used for it, and the word stays the
+  bits 15 to 0, packed by `peer_word` and read by `word_peer`. The architect ruled so on 2026-11-11 UTC and
+  ratified both names on 2026-11-20 UTC. The frame's `dst` fields are not used for it, and the word stays the
   IPv4 answer; another family would need a second route.
 
 ## Names
 
-The architect ratified the crate name, and `DATA_MAXIMUM` (now `MAXIMUM_PAYLOAD_BYTES`, provisional) before the rule that a limit opens
-`MAXIMUM_` and ends with its unit; a release review reopens that one. `VERSION`, `INTERFACE_ID` and
-`polled_wait::Next` are provisional, and the 52 other items, the five modules and both `Next`
-variants have no block. A doc comment saying "name provisional" is not a block, and the move does
-not strip it.
-
-The lane `1108-renames-scope` built the table below on the maintainer's provisional ruling of
-2026-11-19 UTC. Every name in the "built" column is provisional and nothing here is ratified; the
-crate has not left, so each is a two-way door. Where the build differs from the proposal, the row
-says so.
+The architect ratified the crate name on 2026-08-01 and every item in the table below, as built, on
+2026-11-20 UTC. Each item's `Name:` block reads ratified; the move strips the blocks. `socket_contract` is a ratified crate name; `network_stack` and `socket_fixture` stay provisional. A release review reopens a name ratified before a later rule. `MAXIMUM_PAYLOAD_BYTES` replaced a
+name ratified before the rule that a limit opens `MAXIMUM_` and ends with its unit.
 
 | item before | built | rule |
 |---|---|---|
@@ -163,7 +156,7 @@ says so.
 | `NO_LISTEN_GRANT` | `NO_PORT_GRANT` | the empty word for both halves |
 | `listen_grant`, `udp_bind_grant` | keep; parameters `lo`, `hi` become `start`, `end` | the standard library's words for an inclusive range |
 | `grant_allows`, `udp_grant_allows` | `listen_grant_allows`, `udp_bind_grant_allows` | each names the grant its packer makes |
-| `DESTINATION_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES` | `DESTINATION_IP_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `PAYLOAD_LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES` | **Differs from the proposal.** The proposal dropped `_BYTES`; the family-wide `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) governs, so the lane kept it and renamed only the stems. `ip` before `_ADDRESS` as proposed |
+| `DESTINATION_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES` | `DESTINATION_IPV4_ADDRESS_OFFSET_BYTES`, `DESTINATION_PORT_OFFSET_BYTES`, `PAYLOAD_LENGTH_OFFSET_BYTES`, `PAYLOAD_OFFSET_BYTES` | **Differs from the proposal.** The proposal dropped `_BYTES`; the family-wide `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) governs, so the lane kept it and renamed only the stems. The address stem is `IPV4_ADDRESS`, since `ip` abbreviates and the field holds an IPv4 address (ruled 2026-11-20 UTC) |
 | `DATA_MAXIMUM` | `MAXIMUM_PAYLOAD_BYTES` | a limit opens `MAXIMUM_` and ends with its unit |
 | `stack_slots::MINT`, `OWN_SPACE` | `MINTING_ENDPOINT_SLOT`, `OWN_ADDRESS_SPACE_SLOT` | `mint` is a verb and `space` half a term; `_SLOT` as in `ACTIVATION_SLOT` |
 | `lease::NO_NAMESERVER` | `NO_NAME_SERVER` | two words |
@@ -177,13 +170,12 @@ says so.
 | `fixture`'s items | moved to `socket_fixture`; `IN_MSG`, `OUT_MSG`, `ECHO_PEER_IP`, `PACKAGE_PEER_IP` became `INBOUND_MESSAGE`, `OUTBOUND_MESSAGE`, `ECHO_PEER_ADDRESS`, `PACKAGE_PEER_ADDRESS` | **Not in the table.** The new crate's report gates refuse `msg` and `ip` as abbreviations and a new crate starts at zero findings, so the four stems were spelled out; the rest keep their names |
 
 Names that would follow a rename elsewhere: `domain_name_resolution_contract` carries `NAME_OFFSET_BYTES`
-and `ADDRESSES_OFFSET_BYTES` in the same style, and several contracts use `REP_OK` and `REP_ERR`, which this lane did not touch: it renamed them in this crate only.
+and `ADDRESSES_OFFSET_BYTES` in the same style. No other crate defines `REP_OK` or `REP_ERR`; only notes and design files mention them.
 
 ## What still blocks the move
 
 | item | owner |
 |---|---|
-| Ratify every name, built provisionally above. | architect |
 | Add `tcp` and `udp` to the template's accepted words (another repository; not done here). | maintainer |
 | The `std` farm must read the pinned checkout's source; until then the move breaks the platform layer's build. | maintainer |
 | Convert the eight path dependencies to `git` and `rev` with `version = "0.1.0"`, and read every file the dry run lists. | move lane |
@@ -191,13 +183,13 @@ and `ADDRESSES_OFFSET_BYTES` in the same style, and several contracts use `REP_O
 
 ## Recommendation
 
-Not ready to clear. The crate builds, proves and stands alone, and its scope is now settled
-provisionally: `fixture`, `ephemeral_port` and `polled_wait` live in crates that stay in nife. It
-still waits on the ratification of its names and on the clearance itself.
+Not ready to clear. The crate builds, proves and stands alone, its names carry the architect's ratification, and its scope has a
+provisional answer: `fixture`, `ephemeral_port` and `polled_wait` live in crates that stay in nife. It still
+waits on the clearance itself.
 
 ## Decisions for the architect
 
-1. Ratify the names above, built provisionally.
+1. Ratify the names above. Answered: ratified as built (2026-11-20 UTC).
 2. Clear the move, with no tag and no publication.
 
 The scope decisions (where `fixture`, `ephemeral_port` and `polled_wait` live) are built on the

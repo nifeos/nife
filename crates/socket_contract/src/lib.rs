@@ -40,7 +40,7 @@ struct ReadmeExample;
 /// operation carries it yet, so a client and a stack built from different versions are not told
 /// apart at bind (see BUGS).
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-20 (UTC).
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 19, naming the socket protocol and
@@ -48,7 +48,7 @@ pub const VERSION: u32 = 1;
 /// format change is a new version, never a new number. The project that links these crates keeps the table of numbers and holds it to that rule. A
 /// program declares the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-20 (UTC).
 pub const INTERFACE_ID: u64 = 19;
 
 /// `SEND_CAPABILITY` on a socket's capability: delegate that socket's shared frame. Not a `CALL`:
@@ -68,13 +68,13 @@ pub const OPERATION_OPEN_TCP: u64 = 3;
 /// the frame header and the payload at [`PAYLOAD_OFFSET_BYTES`]. The frame's [`PAYLOAD_LENGTH_OFFSET_BYTES`] is not read. Replies
 /// [`REPLY_OK`], or [`REPLY_ERROR`].
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 #[doc(alias = "sendto")]
 pub const OPERATION_SEND_TO: u64 = 4;
 /// `CALL(socket, OPERATION_RECEIVE, 0)`: block until a datagram or segment arrives, and write it to
 /// the frame. The argument word is ignored: pass 0. Replies the payload length in bytes, which is
 /// also written at [`PAYLOAD_LENGTH_OFFSET_BYTES`]; 0 means the stream has closed, and [`REPLY_ERROR`] a failure. A UDP
-/// reply also writes the sender's address and port at [`DESTINATION_IP_ADDRESS_OFFSET_BYTES`] and [`DESTINATION_PORT_OFFSET_BYTES`].
+/// reply also writes the sender's address and port at [`DESTINATION_IPV4_ADDRESS_OFFSET_BYTES`] and [`DESTINATION_PORT_OFFSET_BYTES`].
 pub const OPERATION_RECEIVE: u64 = 5;
 /// `CALL(tcp socket, OPERATION_CONNECT, 0)`: connect to the destination in the frame header. The
 /// argument word is ignored: pass 0. Replies [`CONNECT_ESTABLISHED`] or [`CONNECT_REFUSED`], or
@@ -109,8 +109,7 @@ pub const OPERATION_SEND: u64 = 7;
 /// word is ignored: pass 0. Replies [`REPLY_OK`].
 pub const OPERATION_CLOSE: u64 = 8;
 /// `CALL(front door, OPERATION_LISTEN, port)`: start listening on `port`. Replies one of the
-/// [`PORT_CLAIM_GRANTED`] outcomes, and a granted one carries the listener's capability. Names
-/// provisional.
+/// [`PORT_CLAIM_GRANTED`] outcomes, and a granted one carries the listener's capability.
 pub const OPERATION_LISTEN: u64 = 9;
 /// `CALL(listener, OPERATION_ACCEPT, 0)`: block until a connection arrives on this listener, then
 /// answer [`REPLY_OK`] carrying the connection's capability, or [`REPLY_ERROR`]. The listener keeps
@@ -131,13 +130,13 @@ pub const OPERATION_ACCEPT: u64 = 10;
 /// `CALL(front door, OPERATION_BIND_UDP, port)`: create a UDP socket bound to the fixed
 /// `port`, subject to the stack's [`udp_bind_grant`]. Replies the [`PORT_CLAIM_GRANTED`] vocabulary,
 /// which is the port-claim vocabulary rather than a TCP one, and a granted one carries the socket's
-/// capability. Name provisional.
+/// capability.
 pub const OPERATION_BIND_UDP: u64 = 11;
 
 /// A connection's peer as the second reply word of `OPERATION_ACCEPT`: the IPv4 address in bits 47
 /// to 16, big-endian as an address is written, and the port in bits 15 to 0.
 ///
-/// Name: provisional, minted 2026-11-11 (UTC) by lane/accept-reply-carries-the-peer.
+/// Name: ratified 2026-11-20 (UTC).
 pub const fn peer_word(octets: [u8; 4], port: u16) -> u64 {
     (u32::from_be_bytes(octets) as u64) << 16 | port as u64
 }
@@ -145,7 +144,7 @@ pub const fn peer_word(octets: [u8; 4], port: u16) -> u64 {
 /// The peer a [`peer_word`] names, or `None` for the word 0 that a reply without a peer carries
 /// and for a word with any of the bits 63 to 48 set, which no stack here produces.
 ///
-/// Name: provisional, minted 2026-11-11 (UTC) by lane/accept-reply-carries-the-peer.
+/// Name: ratified 2026-11-20 (UTC).
 pub const fn word_peer(word: u64) -> Option<([u8; 4], u16)> {
     if word == 0 || word >> 48 != 0 {
         return None;
@@ -153,16 +152,16 @@ pub const fn word_peer(word: u64) -> Option<([u8; 4], u16)> {
     Some((((word >> 16) as u32).to_be_bytes(), word as u16))
 }
 
-/// The badge bit that marks a socket's capability (name provisional). The stack mints every
+/// The badge bit that marks a socket's capability. The stack mints every
 /// socket's badge with this bit set, so a request whose badge has it names a socket and any other
 /// badge is a front door. A closed socket's badge stays
 /// in the socket range and leaves the stack's table, so it reaches nothing at all.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const SOCKET_BADGE_BIT: u64 = 1 << 63;
 
 /// Does a request that arrived with `badge` name a socket? `false` means it came through a front
-/// door. Name provisional.
+/// door.
 ///
 /// # Examples
 ///
@@ -186,7 +185,7 @@ pub const fn names_a_socket(badge: u64) -> bool {
 /// `RECEIVE`, 0 is the end of the stream, and from `SEND`, a count below the length sent means send
 /// the rest.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const REPLY_OK: u64 = 0;
 /// `OPERATION_CONNECT` succeeded.
 pub const CONNECT_ESTABLISHED: u64 = 0;
@@ -195,7 +194,7 @@ pub const CONNECT_REFUSED: u64 = 1;
 /// A failure sentinel (a capability that names no live socket, a bad operation, or a server-side
 /// timeout). Bit 32 set, so it is never mistaken for a length or a connect outcome.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const REPLY_ERROR: u64 = 1 << 32;
 
 // `LISTEN`'s outcomes, its own small vocabulary because "never granted this port" and "somebody
@@ -203,22 +202,22 @@ pub const REPLY_ERROR: u64 = 1 << 32;
 
 /// The port claim was granted; the reply carries the new capability.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const PORT_CLAIM_GRANTED: u64 = 0;
 /// The port is outside this stack's [`listen_grant`]. The capability refusal: no retry, no
 /// other port in range will help unless the caller was granted it.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const PORT_CLAIM_DENIED: u64 = 1;
 /// The port is inside the grant but another socket already listens there. Exclusivity is the whole
 /// reason a port is a grantable thing; this is what enforcing it looks like from the client side.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const PORT_CLAIM_IN_USE: u64 = 2;
 
 /// No inbound authority at all, and the default a net server is spawned with.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const NO_PORT_GRANT: u64 = 0;
 
 /// Pack an inclusive listen-port range into the one word a net server is spawned with. `start == 0` is
@@ -246,7 +245,7 @@ pub const fn listen_grant(start: u16, end: u16) -> u64 {
 /// place both the server and its tests read, so a server-side widening cannot pass a test that
 /// keeps its own copy of the range.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const fn listen_grant_allows(grant: u64, port: u16) -> bool {
     let lo = (grant & 0xffff) as u16;
     let hi = ((grant >> 16) & 0xffff) as u16;
@@ -296,7 +295,7 @@ pub const fn udp_bind_grant(start: u16, end: u16) -> u64 {
 /// for the word's UDP half; the two halves are independent authorities, so granting a TCP listen
 /// range grants no UDP port and the reverse.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+/// Name: ratified 2026-11-20 (UTC).
 pub const fn udp_bind_grant_allows(grant: u64, port: u16) -> bool {
     let lo = ((grant >> 32) & 0xffff) as u16;
     let hi = ((grant >> 48) & 0xffff) as u16;
@@ -305,18 +304,18 @@ pub const fn udp_bind_grant_allows(grant: u64, port: u16) -> bool {
 
 /// Where a network stack finds the two capabilities that per-socket capabilities added to its
 /// spawn, which its spawners and the stack itself must agree on, so they are here rather than
-/// spelled per program. Names provisional.
+/// spelled per program.
 pub mod stack_slots {
     /// The stack's own endpoint again, `WRITE | GRANT`: what each socket's capability is minted
     /// from with `BADGE`, which keeps the source's rights. Not the `READ` copy the stack serves on,
     /// because a socket minted from that could take other clients' requests.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+    /// Name: ratified 2026-11-20 (UTC).
     pub const MINTING_ENDPOINT_SLOT: u64 = 7;
     /// The stack's own address space, `WRITE`: so `CLOSE` can `UNMAP` a socket's page before its
     /// table entry takes another client's.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+    /// Name: ratified 2026-11-20 (UTC).
     pub const OWN_ADDRESS_SPACE_SLOT: u64 = 8;
 }
 
@@ -331,7 +330,7 @@ pub mod stack_slots {
 /// ```
 ///
 /// Name: ratified 2026-11-14 (UTC) (#3571).
-pub const DESTINATION_IP_ADDRESS_OFFSET_BYTES: u64 = 0x000;
+pub const DESTINATION_IPV4_ADDRESS_OFFSET_BYTES: u64 = 0x000;
 /// The destination port, right after the destination Internet Protocol (IP) address.
 ///
 /// Name: ratified 2026-11-14 (UTC) (#3571).
@@ -353,7 +352,7 @@ pub const PAYLOAD_OFFSET_BYTES: u64 = 0x008;
 /// The shared frame's size in bytes: one 4 KiB page. [`MAXIMUM_PAYLOAD_BYTES`] derives from it, and a client
 /// runtime that maps the frame can import it.
 ///
-/// Name: provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC).
 pub const FRAME_BYTES: usize = 4096;
 
 /// The largest payload the frame carries (a 4 KiB frame minus the header).
@@ -361,8 +360,7 @@ pub const FRAME_BYTES: usize = 4096;
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_PAYLOAD_BYTES: usize = FRAME_BYTES - PAYLOAD_OFFSET_BYTES as usize;
 
-/// The lease report the network stack sends its spawner once the Dynamic Host Configuration Protocol (DHCP) completes, provisional, as is the
-/// name. Word 0 is the leased Internet Protocol version 4
+/// The lease report the network stack sends its spawner once the Dynamic Host Configuration Protocol (DHCP) completes. Word 0 is the leased Internet Protocol version 4
 /// (IPv4) address, big-endian in the low 32 bits; word 1 the first Domain Name System (DNS) server the lease named, for the
 /// resolver's spawner (the name resolver is its own confined program), the same encoding or
 /// [`lease::NO_NAME_SERVER`]; word 2 is zero and reserved.
@@ -378,12 +376,12 @@ pub mod lease {
     /// Word 1 when the lease named no DNS server. 0.0.0.0 is never a nameserver, so it cannot
     /// collide with one.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+    /// Name: ratified 2026-11-20 (UTC).
     pub const NO_NAME_SERVER: u64 = 0;
 
     /// An IPv4 address as a report word: big-endian in the low 32 bits.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn ipv4_to_word(octets: [u8; 4]) -> u64 {
         u32::from_be_bytes(octets) as u64
     }
@@ -391,7 +389,7 @@ pub mod lease {
     /// A report word back to an address, or `None` for [`NO_NAME_SERVER`] or a word with any of the
     /// high 32 bits set, which no encoder here produces.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by 1108-renames-scope.
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn word_to_ipv4(word: u64) -> Option<[u8; 4]> {
         if word == NO_NAME_SERVER || word > u32::MAX as u64 {
             return None;
@@ -488,7 +486,7 @@ mod tests {
     #[test]
     fn the_frame_header_fields_do_not_overlap() {
         let mut offs: [u64; 3] = [
-            DESTINATION_IP_ADDRESS_OFFSET_BYTES,
+            DESTINATION_IPV4_ADDRESS_OFFSET_BYTES,
             DESTINATION_PORT_OFFSET_BYTES,
             PAYLOAD_LENGTH_OFFSET_BYTES,
         ];
