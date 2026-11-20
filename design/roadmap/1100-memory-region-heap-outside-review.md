@@ -64,7 +64,7 @@ copied-file list (`xtask/src/farm/copied.rs`). No new tool.
 - A fork of `talc` if upstream stays silent: Open, and conditional. It is an open decision below.
 - Review package: Done, [memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md).
   The review clearance: Done (ruled 2026-11-20 UTC, option A;
-  `nifeos/memory_region_heap` approved with `publish = false`, no tag, no publish). The move stays
+  the architect approved `nifeos/memory_region_heap` with `publish = false`, no tag, no publish). The move stays
   Open.
 
 ## Open decisions
@@ -117,8 +117,8 @@ Blocks: nothing until the vendor-watch report passes in silence; after that, the
 
 ### Clear the review package and approve the repository (ruled)
 
-Ruled 2026-11-20 (UTC), option A: the package is cleared and the clearance creates the repository,
-`nifeos/memory_region_heap`, with `publish = false`. No tag and no publish. The move waits for `abi`,
+Ruled 2026-11-20 (UTC), option A: the architect clears the package, and the clearance creates the
+repository, `nifeos/memory_region_heap`, with `publish = false`. No tag and no publish. The move waits for `abi`,
 `address_space_layout` and `user_mode_runtime` to get repositories and leaves with `subtree_scope`
 and before `redoxfs`.
 
