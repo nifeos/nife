@@ -43,8 +43,8 @@ declare it as the global allocator. The standard library's allocator overlay,
 and the shortfall reckoning) instead of calling the crate, and so does
 `redoxfs_server/src/bin/second_mount.rs`. Item 8 of the milestone keeps that open: one copy of the
 policy is still to come. `packages/runtime.package.toml` lists the crate, and
-`crates/externalization-list.txt` names it for step 9. The crate leaves with `subtree_scope` and
-before `redoxfs`, which shares its `talc`.
+`crates/externalization-list.txt` names it for step 9. The crate leaves on its own clearance, with `subtree_scope` or alone, and
+before `redoxfs`, which shares its `talc` and keeps its own track.
 
 Four things point back into nife from the crate. The three path dependencies become `git` and
 `rev` pins once `abi`, `address_space_layout` and `user_mode_runtime` have repositories, which
@@ -156,7 +156,7 @@ crate bumps and the sentence goes. The fork question exists only once the monthl
 
 ## What still blocks the move
 
-The move is step 9 of milestone 1017, after the contract crates it links and with `subtree_scope`.
+The move is step 9 of milestone 1017, after the contract crates it links, on this crate's own clearance, with `subtree_scope` or alone.
 
 | item | owner |
 |---|---|
@@ -172,4 +172,4 @@ The move is step 9 of milestone 1017, after the contract crates it links and wit
 None for the maintainer. The package is cleared (2026-11-20 UTC, no tag, no publish), and the
 clearance approves the repository, `nifeos/memory_region_heap`, with `publish = false`. The move, in
 step 9 of milestone 1017, waits for `abi`, `address_space_layout` and `user_mode_runtime` to get
-repositories, and it leaves with `subtree_scope` and before `redoxfs`.
+repositories. It leaves with `subtree_scope` or alone, decided at the move, and before `redoxfs`.
