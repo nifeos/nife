@@ -28,7 +28,7 @@ copied-file list (`xtask/src/farm/copied.rs`). No new tool.
   The names later items added are ratified (ruled 2026-11-19 UTC).
 - P0-2, `talc` and the path dependencies: Ruled (Decision B, option A, 2026-11-14 UTC). The README
   half is Done, [#3840](https://github.com/nifeos/nife/pull/3840): its BUGS section states what
-  crates.io's 5.1.1 lacks. The pins are blocked on milestone 1017 steps 2 and 3: `abi`,
+  crates.io's 5.1.1 lacks. The pins wait on milestone 1017 steps 2 and 3: `abi`,
   `address_space_layout` and `user_mode_runtime` have no repositories yet, so the manifest keeps
   their path dependencies, and `script/crate-move --dry-run` fails only on them.
 - P0-3, manifest, README and license files: Done, [#3840](https://github.com/nifeos/nife/pull/3840).
@@ -59,8 +59,8 @@ copied-file list (`xtask/src/farm/copied.rs`). No new tool.
 - P2-14, the `Sync` argument: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
 - Decision A, the seven names and `commit_all`: Done (option A, 2026-11-14 UTC),
   [#3597](https://github.com/nifeos/nife/pull/3597).
-- Decision B, which `talc` outside nife: Ruled (option A, 2026-11-14 UTC). Built as far as item 2
-  is; the pins wait on the same steps of milestone 1017.
+- Decision B, which `talc` outside nife: Ruled (option A, 2026-11-14 UTC). It stands where item 2
+  stands; the pins wait on the same steps of milestone 1017.
 - A fork of `talc` if upstream stays silent: Open, and conditional. It is an open decision below.
 - Review package: Done, [memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md).
   The repository: Open. The go is an open decision below.
@@ -274,7 +274,7 @@ The evidence, background, prior art and the options not taken are in
 
 ## Follow-on
 
-- **The move.** The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
+- **Outstanding.** The move. The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
   give `abi`, `address_space_layout` and `user_mode_runtime` repositories. The move drops the fuzz
   workspace's `[patch.crates-io]` line for the vendored talc, and the template's `coverage` job
   then measures the host tests for the first time.
