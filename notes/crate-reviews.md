@@ -75,6 +75,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`grant_plan`](crate-reviews/grant-plan.md) | 5 | ready for review |
 | [`grant_contract`](crate-reviews/grant-contract.md) | contract | ready for review |
 | [`domain_name_system`](crate-reviews/domain-name-system.md) | 5 | ready for review |
+| [`interfaces_note`](crate-reviews/interfaces-note.md) | 3 | ready for review |
 | [`static_elf`](crate-reviews/static-elf.md) | kernel | ready for review |
 | [`e1000e`](crate-reviews/e1000e.md) | 6 | cleared to move; repository exists |
 | [`designware_ethernet`](crate-reviews/designware-ethernet.md) | 7 | cleared to move; repository exists |
