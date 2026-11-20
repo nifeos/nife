@@ -110,8 +110,8 @@ The architect ratified the crate's names on 2026-11-20 (UTC), the whole table as
 names that were only proposed. Every `Name:` block in the crate reads ratified, and the ratification
 is one pull request carrying the table `helpers/name_release.py --draft` prints. `MINIMUM_BLOCK_BYTES`
 and `MAXIMUM_BLOCK_BYTES` replace two names #2797 ratified, so they are the ones a release review
-reopens. `REVISION` is recorded, the specification's field. The crate has no alias for an earlier
-nife spelling, since nothing has been released.
+reopens. `REVISION` records the specification's field. The crate has no alias for an earlier
+nife spelling, since nothing has shipped.
 
 | # | items | name |
 |---|---|---|
@@ -132,7 +132,7 @@ nife spelling, since nothing has been released.
 | 15 | the private test | `the_three_reads_a_partition_table_reader_makes` |
 | 16 | `VERSION` | see [Identity values](#identity-values) |
 
-The aliases in rows 8 and 13 were read against UEFI 2.10 section 5.3 on 2026-11-20 (UTC). Row 14's
+The lane checked the aliases in rows 8 and 13 against UEFI 2.10 section 5.3 on 2026-11-20 (UTC). Row 14's
 two aliases are Apple's product names, which the specification does not carry.
 
 ## Identity values
@@ -222,6 +222,6 @@ no tag and no publication.
 ## Recommendation
 
 Cleared for the move on 2026-11-20 (UTC), with no tag and no publication. The crate builds, proves
-and passes its patches on its own, points nowhere into nife, carries no nife type GUID, and every
-name in it is ratified. The condition on the first tag is the bounded `parse` totality harness, or a
+and passes its patches on its own, points nowhere into nife, carries no nife type GUID, and the
+architect ratified every name in it. The condition on the first tag is the bounded `parse` totality harness, or a
 recorded reason it cannot finish, as stated under "What still blocks".

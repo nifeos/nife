@@ -84,7 +84,7 @@ milestone reaches delivery.
   ([#3821](https://github.com/nifeos/nife/pull/3821)), with no alias; ratified 2026-11-20 UTC with
   the name table.
 - Decision 2, the size constants take their unit: Ruled (maintainer, provisional, 2026-11-19 UTC).
-  Built ([#3821](https://github.com/nifeos/nife/pull/3821)); the names are ratified 2026-11-20 UTC.
+  Built ([#3821](https://github.com/nifeos/nife/pull/3821)); the architect ratified the names 2026-11-20 UTC.
 - Decision 3, `uuid` stays in the public API: Ruled (architect, 2026-11-19 UTC). The crate documentation
   carries the item ([#3821](https://github.com/nifeos/nife/pull/3821)); the dependency was already
   `1.28.0` with default features off.
@@ -96,10 +96,10 @@ milestone reaches delivery.
   ratified names ([#3821](https://github.com/nifeos/nife/pull/3821)); the spelling-out reaches
   every `lba` component and the `mbr` module, with the specification's spellings as
   `#[doc(alias)]`.
-- Decision 6, review clearance and repository go: Ruled (architect, 2026-11-20 UTC). The names are
-  ratified and the repository is cleared as `publish = false`, with no tag and no publication.
+- Decision 6, review clearance and repository go: Ruled (architect, 2026-11-20 UTC). The architect
+  ratified the names and cleared the repository as `publish = false`, with no tag and no publication.
 - Package question, a totality harness for `parse`: Ruled (architect, 2026-11-20 UTC). The condition
-  is on the first tag and not on the repository: before the tag, a bounded harness (a 512-byte block
+  is on the first tag and not on the repository. Before the tag, a bounded harness (a 512-byte block
   and a one-entry array) exists, or the package records why it cannot finish. Today the fuzz target
   is the only machine check on `parse`; the eight Kani harnesses do not cover it.
 - Package question, whether `VERSION` stays: Open, two-way; the maintainer rules it provisionally.
@@ -110,7 +110,7 @@ milestone reaches delivery.
 
 ## Open decisions
 
-None. The names are ratified and the repository is cleared; the move waits only for the move lane.
+None. The architect ratified the names and cleared the repository; the move waits only for the move lane.
 
 ## Goal
 
@@ -251,9 +251,9 @@ Nife applies the acronym test, which most systems do not. Example: `backup_heade
 
 ### Decision 6: review clearance and the repository
 
-Rule (architect, 2026-11-20 UTC). The review is cleared and the names are ratified, from
-[the review package](../../notes/crate-reviews/globally-unique-identifier-partition-table.md). The
-repository `nifeos/globally_unique_identifier_partition_table` is cleared as `publish = false`,
+Rule (architect, 2026-11-20 UTC). The architect cleared the review and ratified the names, from
+[the review package](../../notes/crate-reviews/globally-unique-identifier-partition-table.md), and
+cleared the repository `nifeos/globally_unique_identifier_partition_table` as `publish = false`,
 with no tag and no publication. The first tag waits on a bounded `parse` totality harness, or a
 recorded reason it cannot finish.
 
