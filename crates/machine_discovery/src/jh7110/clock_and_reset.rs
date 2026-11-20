@@ -65,7 +65,10 @@ fn discover_window(
     window: &RegisterWindow,
 ) -> Result<WindowLocation, Error> {
     for spelling in &window.spellings {
-        let mut regions = [Region { start: 0, size: 0 }; MAXIMUM_REGISTER_ENTRIES];
+        let mut regions = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; MAXIMUM_REGISTER_ENTRIES];
         let n = tree.node_register_regions_compatible(spelling.compatible, &mut regions)?;
         if n == 0 {
             continue;
@@ -76,7 +79,7 @@ fn discover_window(
         };
         let mut pairs = [(0, 0); MAXIMUM_REGISTER_ENTRIES];
         for (pair, region) in pairs.iter_mut().zip(&regions[..n]) {
-            *pair = (region.start, region.size);
+            *pair = (region.start, region.size_bytes);
         }
         if let Some(found) = WindowLocation::from_regions(spelling, &pairs[..n], names) {
             return Ok(found);

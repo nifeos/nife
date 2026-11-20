@@ -285,8 +285,8 @@ dependencies = [
  "timetable_store",
  "tock-registers",
  "top",
+ "universal_serial_bus",
  "uptime",
- "usb",
  "user_mode_runtime",
  "uuid",
  "video_terminal",
@@ -424,6 +424,7 @@ source = "git+https://github.com/nifeos/designware_mobile_storage?rev=85c4e1b58b
 [[package]]
 name = "device_tree_blob"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/device_tree_blob?rev=96ad52af96e38e38577f91a787f53b789dbdda4f#96ad52af96e38e38577f91a787f53b789dbdda4f"
 
 [[package]]
 name = "device_tree_patch"
@@ -1162,6 +1163,9 @@ version = "0.1.0"
 [[package]]
 name = "pci_configuration_space"
 version = "0.1.0"
+dependencies = [
+ "device_tree_blob",
+]
 
 [[package]]
 name = "periodic_deadline"
@@ -1904,15 +1908,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6e4313cd5fcd3dad5cafa179702e2b244f760991f45397d14d4ebf38247da75"
 
 [[package]]
+name = "universal_serial_bus"
+version = "0.1.0"
+source = "git+https://github.com/nifeos/universal_serial_bus?rev=0fbceff0ce9577cf8beb0b82b0f34360a86a5216#0fbceff0ce9577cf8beb0b82b0f34360a86a5216"
+
+[[package]]
 name = "uptime"
 version = "0.1.0"
 dependencies = [
  "clock_contract",
 ]
-
-[[package]]
-name = "usb"
-version = "0.1.0"
 
 [[package]]
 name = "user_mode_runtime"

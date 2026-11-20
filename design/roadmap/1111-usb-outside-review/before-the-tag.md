@@ -11,7 +11,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    `CONTRIBUTING.md`, `CODEOWNERS`, `_typos.toml`, `deny.toml`, `rustfmt.toml` and
    `docs/stranger-test.md`. The crate-level documentation is good and can seed the README, but a
    crates.io reader never sees `lib.rs`.
-   Evidence: `ls crates/usb`; `crate-workflows/scaffold/README-crate.md`.
+   Evidence: `ls crates/universal_serial_bus`; `crate-workflows/scaffold/README-crate.md`.
    Change: fill in the scaffold. The README's first line says "host side" and "boot keyboard" so
    the `usb-device` and `usbd-hid` crowd leave at once. "What is proven" states the three bounds
    (25 configuration bytes, 20 events, 20 header bytes) and names what lies outside them (item 7).
@@ -45,7 +45,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    them    from the two sources the module names before it adds any row. The documentation says the table
    covers 0x04 through 0x63 by design, so this is a scope choice and not a bug, but a stranger with
    a German keyboard will file it as one.
-   Evidence: `crates/usb/src/boot_keyboard.rs` lines 93 to 96 and 121 to 222.
+   Evidence: `crates/universal_serial_bus/src/boot_keyboard.rs` lines 93 to 96 and 121 to 222.
    Change: extend `TABLE` through at least 0x8b. Take each row from the Usage Tables and the
    header exactly as the existing rows came, with a row comment per entry. Leave a usage with no
    `KEY_*` match as a hole the comment names. The table becomes `[Option<u16>; N]` or keeps `u16`
@@ -64,8 +64,8 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    report harness proves the bound of 20 events and nothing about their order or their
    correspondence to the two reports. The crate documentation says the harnesses "prove that for
    every input up to a bound" without naming the bounds.
-   Evidence: `crates/usb/src/verification.rs` lines 14 to 30 and 44 to 54; `crates/usb/src/lib.rs`
-   line 7; `crates/usb/src/descriptor.rs` lines 200 to 206 and 263 to 266.
+   Evidence: `crates/universal_serial_bus/src/verification.rs` lines 14 to 30 and 44 to 54; `crates/universal_serial_bus/src/lib.rs`
+   line 7; `crates/universal_serial_bus/src/descriptor.rs` lines 200 to 206 and 263 to 266.
    Change: a unit test for the `without_endpoint` path (the scratch configuration: a boot
    interface with zero endpoints, then a non-boot HID interface with one). A fourth harness shaped
    rather than fully symbolic. It fixes a 9-byte header and two 9-byte interface descriptors, and
@@ -88,7 +88,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    interface 1's endpoint. Only a malformed device reaches this, and the module's stated policy is
    to refuse rather than trust; a short header is already `NotThatDescriptor`. Linux skips such a
    descriptor with a notice and does not reassign it; OpenBSD was not checked for this case.
-   Evidence: `crates/usb/src/descriptor.rs` lines 222, 232 and 254 to 256; the test
+   Evidence: `crates/universal_serial_bus/src/descriptor.rs` lines 222, 232 and 254 to 256; the test
    `a_short_descriptor_is_skipped_and_two_bytes_is_enough` (lines 477 to 491) pins the current
    behavior.
    Change: answer `Malformed { at }` for a type-4 or type-5 descriptor shorter than its layout.
@@ -100,7 +100,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
    (`!after.keys[..i].contains(&usage)`); releases do not.
    Scratch test: `before = [0x04, 0x04, 0, 0, 0, 0]`, `after = RELEASED` emits `(30, false)` twice.
    A consumer that counts held keys goes negative; the bound of 20 still holds.
-   Evidence: `crates/usb/src/boot_keyboard.rs` lines 252 to 259 against 260 to 269.
+   Evidence: `crates/universal_serial_bus/src/boot_keyboard.rs` lines 252 to 259 against 260 to 269.
    Change: the same `before.keys[..i]` guard on the release loop, and a test beside
    `a_duplicated_usage_presses_once` named `a_duplicated_usage_releases_once`.
    Door: two-way. Effort: XS.
@@ -109,7 +109,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
     Finding: the template's `fuzz.yml` and weekly fuzz run exist for crates with no `unsafe`; this
     crate has none and no `fuzz/` directory. Kani covers 25 bytes; a fuzzer covers a real
     composite keyboard's 59 bytes and more.
-    Evidence: `ls crates/usb`; `crate-workflows/scaffold/caller-workflows/fuzz.yml`.
+    Evidence: `ls crates/universal_serial_bus`; `crate-workflows/scaffold/caller-workflows/fuzz.yml`.
     Change: two targets, `find_boot_keyboard` over arbitrary bytes and `changes` over two parsed
     reports asserting the same three properties the harnesses assert plus the count bound; the
     composite and mouse-first configurations from the tests as the seed corpus.

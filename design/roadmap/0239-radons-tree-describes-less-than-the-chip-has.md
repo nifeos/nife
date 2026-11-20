@@ -141,7 +141,7 @@ there was no bench session. Two commands and one boot settle all of it.
 | `hw entropy : FAILED: ... (tree says starfive,trng, status disabled): ... bring-up diagnostic 0x0000000000000000 ...` | The node was found and the register window read as nothing. The expected outcome if the firmware never ungated the block's clocks or deasserted its reset, which is exactly what `status = "disabled"` predicts. **This routes to milestone 220**, not back here |
 | `hw entropy : FAILED: ... bring-up diagnostic 0x<nonzero> ...` | The device answered and the driver's sequence is wrong. Milestone 159's own table decodes the word |
 | `hw entropy : skipped (... neither starfive,jh7110-trng nor the vendor U-Boot's starfive,trng ...)` | **The node really is absent from the running firmware's tree**, whatever its source says, and this block's three original shapes of fix come back. Capture the tree (`fdt print` to a file, or the raw dump route notes/visionfive2.md's PLIC fixture used) before deciding anything |
-| `fdt print` finds the node but the boot still skips | A discovery bug, not a tree question. The fixture test says the decode works on this shape, so suspect the `/soc` wrapper's cells or a node deeper than `crates/device_tree_blob`'s `MAX_DEPTH` of 16 |
+| `fdt print` finds the node but the boot still skips | A discovery bug, not a tree question. The fixture test says the decode works on this shape, so suspect the `/soc` wrapper's cells or a node deeper than the `device_tree_blob` package's `MAX_DEPTH` of 16 |
 
 ## Follow-on
 

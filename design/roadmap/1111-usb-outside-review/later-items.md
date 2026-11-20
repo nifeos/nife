@@ -10,7 +10,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
     speed alone. The function takes a boolean, so it cannot know. The function accepts a low-speed
     keyboard that declares     64, and the controller hears a packet size the device cannot carry. Linux's
     handling of this case was not checked (unverified).
-    Evidence: `crates/usb/src/descriptor.rs` lines 103 to 117.
+    Evidence: `crates/universal_serial_bus/src/descriptor.rs` lines 103 to 117.
     Change: take the four-way `Speed` instead of a boolean, as Decision 3 decides, provisionally.
     Door: two-way before the first release. Effort: S.
 
@@ -19,7 +19,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
     `0xf1`. The specification reserves bits 6:4 and says they reset to zero. The xHCI crate's
     `endpoint_index` masks them, so nothing breaks today, but the published value should be the
     number and the direction and nothing else.
-    Evidence: `crates/usb/src/descriptor.rs` lines 234 and 246.
+    Evidence: `crates/universal_serial_bus/src/descriptor.rs` lines 234 and 246.
     Change: `endpoint: address & 0x8f`, and one sentence in the field's documentation.
     Door: two-way. Effort: XS.
 
@@ -32,8 +32,8 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
     the right place for them, but the README (item 4) should carry the same two facts. `get_descriptor`'s
     parameter `index` is the descriptor index in `wValue` while the struct field `index` is
     `wIndex`; one sentence would prevent the misread.
-    Evidence: `crates/usb/src/descriptor.rs` lines 165 to 173 and 208; `crates/usb/src/boot_keyboard.rs`
-    lines 70 to 73; `crates/usb/src/request.rs` lines 43 to 46.
+    Evidence: `crates/universal_serial_bus/src/descriptor.rs` lines 165 to 173 and 208; `crates/universal_serial_bus/src/boot_keyboard.rs`
+    lines 70 to 73; `crates/universal_serial_bus/src/request.rs` lines 43 to 46.
     Change: four sentences.
     Door: two-way. Effort: XS.
 
@@ -42,7 +42,7 @@ An appendix to [the milestone](../1111-usb-outside-review.md).
     and `evdev`. The first five are test locals and the maintainer's; `keycaps` is a word in this
     domain; `evdev` is Linux's own name for its input event interface and stays, with the plain
     name in the function's documentation.
-    Evidence: `crates/usb/src/descriptor.rs` lines 275 and 415; `crates/usb/src/boot_keyboard.rs`
+    Evidence: `crates/universal_serial_bus/src/descriptor.rs` lines 275 and 415; `crates/universal_serial_bus/src/boot_keyboard.rs`
     lines 121, 286, 294, 380 and 389.
     Change: `QEMU_USB_KEYBOARD`, `device`, `difference`, `shift_a_b`, `a_b`; the rest stay.
     Door: two-way. Effort: XS.

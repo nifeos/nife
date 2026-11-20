@@ -85,7 +85,7 @@ Three facts in those files, and the one this lane found that the proposal did no
 
 | where | what |
 |---|---|
-| `crates/device_tree_blob` | `parent_prop_compatible`: a property of the *parent* of the first node matching a `compatible`, because the PMIC is the node with a binding and the bus's `clocks`/`resets` are one level up. Name provisional. |
+| the `device_tree_blob` package | `parent_prop_compatible`: a property of the *parent* of the first node matching a `compatible`, because the PMIC is the node with a binding and the bus's `clocks`/`resets` are one level up. Name provisional. |
 | `crates/jh7110_clock_and_reset` | The SYS domain (`SYS`, `SYS_BASE`, `discover_sys`), I2C5's ids, the constant fallback `PMIC_BUS_BRING_UP`, and `pmic_bus`, which reads the plan out of the tree. Names provisional. |
 | `kernel/src/memory.rs`, `kernel/src/arch/riscv64/mmu.rs` | The SYS window and the plan are recorded and mapped only under milestone 220 (this kernel drives no clock or reset controller, and the first real device will need one)'s JH7110 guard, so every other machine gets neither. |
 | `kernel/src/soak.rs` | `prepare_the_reset_route`, called just before `arch::reboot`, walks the plan through the existing `drivers::jh7110_clock_and_reset::bring_up` and prints every word it read. |

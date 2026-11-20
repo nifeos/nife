@@ -498,7 +498,6 @@ allocation_cache	3	the size-class arithmetic: a request lands in a class that ho
 byte_sink_contract	10	the byte-sink framing: any prefix round-trips, the decoder is total, an end of stream decodes from exactly one message, severity reads back clamped, classify tells the three outcomes apart
 domain_name_resolution_contract	494	the grant table: any short run of control messages never panics, and a badge is in force only once a message said Granted, in a window that never moves
 program_argument_contract	74	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states
-device_tree_blob	202	the device-tree parser's leaf readers
 inter_process_communication	14	the rendezvous state machine
 intrusive_queue	10	the scheduler's queue structure
 address_space_identifier	1	the TLB tag allocator
@@ -515,7 +514,6 @@ socket_contract	1	the listen and UDP bind grants admit exactly their ranges, the
 network_stack	240	the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
 jh7110_clock_and_reset	100	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
 jh7110_pci_express	2	the PCI Express outbound window encoder round-trips its size, and the root port forwards exactly bus 1 and exactly its memory window
-usb	112	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
 direct_memory_access_validator	126	the DMA-confinement validator, no descriptor escapes the grant
 network_time_protocol	18	the 1900-epoch era pivot, and no hostile packet moves the clock
 globally_unique_identifier_partition_table	68	the partition table's CRC-32, its round trips, and partitions that overlap

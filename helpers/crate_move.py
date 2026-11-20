@@ -479,7 +479,7 @@ def fuzz_manifest_text(crate, edition, libfuzzer, targets):
 def stage_fuzz(root, crate, into, report):
     """Stage the crate's fuzz targets in the cargo-fuzz layout under `into`/fuzz.
 
-    Returns (target names, whether the fuzz caller may pass `public-crash-inputs: true`). The ruling that weekly
+    Returns (target names, whether the weekly caller may pass `fuzz: true`). The ruling that weekly
     fuzzing is opt-in applies: only a crate with no `unsafe` code is switched on.
     """
     targets, mixed = crate_targets(root, crate)
@@ -520,17 +520,22 @@ def stage_fuzz(root, crate, into, report):
         report('note', 'fuzz opt-in', f'weekly fuzz stays off: unsafe code in {", ".join(unsafe[:3])}'
                                       + (' and more' if len(unsafe) > 3 else ''))
         return names, False
-    report('ok', 'fuzz opt-in', 'no unsafe code in the crate, so the fuzz caller passes public-crash-inputs: true')
+    report('ok', 'fuzz opt-in', 'no unsafe code in the crate, so the fuzz caller sets public-crash-inputs: true')
     return names, True
 
 
 def turn_on_weekly_fuzz(into, report):
-    path = os.path.join(into, '.github', 'workflows', 'fuzz.yml')
-    text = open(path).read() if os.path.exists(path) else ''
-    if 'public-crash-inputs: false' not in text:
-        report('FAIL', 'fuzz opt-in', 'the staged fuzz caller has no `public-crash-inputs: false` line to turn on')
-        return
-    open(path, 'w').write(text.replace('public-crash-inputs: false', 'public-crash-inputs: true', 1))
+    """Switch on the opt-in the staged callers carry: `public-crash-inputs` in the fuzz caller, or
+    `fuzz` in the weekly caller of a template release that still had it there."""
+    workflows = os.path.join(into, '.github', 'workflows')
+    for name, off in (('fuzz.yml', 'public-crash-inputs: false'), ('weekly.yml', 'fuzz: false')):
+        path = os.path.join(workflows, name)
+        text = open(path).read() if os.path.exists(path) else ''
+        if off in text:
+            open(path, 'w').write(text.replace(off, off.replace('false', 'true'), 1))
+            return
+    report('FAIL', 'fuzz opt-in', 'the staged callers have no `public-crash-inputs: false` or '
+                                  '`fuzz: false` line to turn on')
 
 
 def fuzz_dry_run(into, names, work, report):
@@ -979,13 +984,19 @@ def fuzz_selftest():
         open(doc, 'w').write('# T\n\n## `a`\n\nA.\n\n## `b`\n\nB.\n\n## `a/s.bin`\n\nS.\n')
         assert readme_sections(doc, ['`a`', '`a/']) == ['## `a`\n\nA.\n', '## `a/s.bin`\n\nS.\n']
         os.makedirs(os.path.join(tmp, '.github', 'workflows'))
-        weekly = os.path.join(tmp, '.github', 'workflows', 'fuzz.yml')
+        weekly = os.path.join(tmp, '.github', 'workflows', 'weekly.yml')
         failures = []
         turn_on_weekly_fuzz(tmp, lambda *a: failures.append(a))
         assert failures and failures[0][0] == 'FAIL', failures
-        open(weekly, 'w').write('with:\n  public-crash-inputs: false\n')
+        open(weekly, 'w').write('with:\n  fuzz: false\n')
         turn_on_weekly_fuzz(tmp, lambda *a: failures.append(a))
-        assert open(weekly).read() == 'with:\n  public-crash-inputs: true\n'
+        assert open(weekly).read() == 'with:\n  fuzz: true\n'
+        failures.clear()
+        os.remove(weekly)
+        caller = os.path.join(tmp, '.github', 'workflows', 'fuzz.yml')
+        open(caller, 'w').write('with:\n  public-crash-inputs: false\n')
+        turn_on_weekly_fuzz(tmp, lambda *a: failures.append(a))
+        assert not failures and open(caller).read() == 'with:\n  public-crash-inputs: true\n'
     crash = ('INFO: Seed: 1\nERROR: libFuzzer: deadly signal\nSUMMARY: libFuzzer: deadly signal\n'
              'artifact_prefix=./; Test unit written to ./crash-1\nBase64: AAAA\n')
     assert [line for line in crash.splitlines() if FUZZ_SAFE_LINE.match(line)] == \

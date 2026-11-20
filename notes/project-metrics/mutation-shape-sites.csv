@@ -239,13 +239,13 @@ terminal_contract,,replace << with >>,crates/terminal_contract/src/lib.rs,243,li
 timetable,request,replace | with ^,crates/timetable/src/registration.rs,89,site,(seq << 8) | (operation & 0xff)
 timetable,verdict,replace | with ^,crates/timetable/src/registration.rs,123,site,"Admission::Unbacked(u) => KIND_UNBACKED | (unbacked_code(*u) << 2),"
 timetable,verdict,replace | with ^,crates/timetable/src/registration.rs,125,site,if kept { base | KEPT_PHASE } else { base }
-usb,SetupPacket::get_descriptor,replace | with ^,crates/usb/src/request.rs,52,site,"value: (kind as u16) << 8 | index as u16,"
-usb,SetupPacket::set_boot_protocol,replace | with ^,crates/usb/src/request.rs,74,const,32 | 1 are pairwise disjoint
-usb,SetupPacket::set_idle_forever,replace | with ^,crates/usb/src/request.rs,87,const,32 | 1 are pairwise disjoint
-usb,SetupPacket::to_u64,replace | with ^,crates/usb/src/request.rs,104,site,| (self.request as u64) << 8
-usb,SetupPacket::to_u64,replace | with ^,crates/usb/src/request.rs,105,site,| (self.value as u64) << 16
-usb,SetupPacket::to_u64,replace | with ^,crates/usb/src/request.rs,106,site,| (self.index as u64) << 32
-usb,SetupPacket::to_u64,replace | with ^,crates/usb/src/request.rs,107,site,| (self.length as u64) << 48
+universal_serial_bus,SetupPacket::get_descriptor,replace | with ^,crates/universal_serial_bus/src/request.rs,52,site,"value: (kind as u16) << 8 | index as u16,"
+universal_serial_bus,SetupPacket::set_boot_protocol,replace | with ^,crates/universal_serial_bus/src/request.rs,74,const,32 | 1 are pairwise disjoint
+universal_serial_bus,SetupPacket::set_idle_forever,replace | with ^,crates/universal_serial_bus/src/request.rs,87,const,32 | 1 are pairwise disjoint
+universal_serial_bus,SetupPacket::to_u64,replace | with ^,crates/universal_serial_bus/src/request.rs,104,site,| (self.request as u64) << 8
+universal_serial_bus,SetupPacket::to_u64,replace | with ^,crates/universal_serial_bus/src/request.rs,105,site,| (self.value as u64) << 16
+universal_serial_bus,SetupPacket::to_u64,replace | with ^,crates/universal_serial_bus/src/request.rs,106,site,| (self.index as u64) << 32
+universal_serial_bus,SetupPacket::to_u64,replace | with ^,crates/universal_serial_bus/src/request.rs,107,site,| (self.length as u64) << 48
 video_terminal,Colour::resolve,replace | with ^,crates/video_terminal/src/cell.rs,44,site,"Colour::Rgb(r, g, b) => (r as u32) << 16 | (g as u32) << 8 | b as u32,"
 video_terminal,Colour::resolve,replace | with ^,crates/video_terminal/src/cell.rs,44,site,"Colour::Rgb(r, g, b) => (r as u32) << 16 | (g as u32) << 8 | b as u32,"
 video_terminal,Colour::resolve,replace | with ^,crates/video_terminal/src/cell.rs,48,site,cube_level(n / 36) << 16 | cube_level(n / 6 % 6) << 8 | cube_level(n % 6)

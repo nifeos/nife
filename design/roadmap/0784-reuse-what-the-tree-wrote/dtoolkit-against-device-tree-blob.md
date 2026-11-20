@@ -87,7 +87,7 @@ Two of our own bugs showed up first, and this branch fixes both:
   `many-harts`'s two-byte declaration became 65,536 cells. Now the parser ignores a malformed
   declaration and the inherited width stands, as Linux does.
 
-Each has a host test in `crates/device_tree_blob/tests/hostile.rs` that fails without its fix.
+Each has a host test in the `device_tree_blob` package's `tests/hostile.rs` that fails without its fix.
 
 The kernel's boot queries, per boot's worth, best of 7 rounds of 200 (`dtoolkit-probe.sh bench`):
 

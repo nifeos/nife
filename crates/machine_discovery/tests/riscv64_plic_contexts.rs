@@ -16,8 +16,7 @@ const JH7110: &[u8] = include_bytes!("fixtures/jh7110.dtb");
 /// story and notes/visionfive2.md's BUGS section.
 const VISIONFIVE2_UBOOT: &[u8] = include_bytes!("fixtures/visionfive2-uboot-control.dtb");
 /// The suite's own machine, single-hart, shared with the `device_tree_blob` crate's fixtures.
-const QEMU_VIRT: &[u8] =
-    include_bytes!("../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb");
+const QEMU_VIRT: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt.dtb");
 /// The same machine at `-smp 4`, which is what `script/test` boots; dumped with
 /// `qemu-system-riscv64 -machine virt,dumpdtb=... -smp 4`.
 const QEMU_VIRT_SMP4: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt-smp4.dtb");
@@ -73,8 +72,7 @@ fn qemu_virt_contexts_match_the_old_formula() {
 /// back to its formula and the machine boots as before.
 #[test]
 fn a_machine_without_a_plic_is_an_empty_map() {
-    const AARCH64: &[u8] =
-        include_bytes!("../../device_tree_blob/tests/fixtures/qemu-aarch64-virt-smp4.dtb");
+    const AARCH64: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-smp4.dtb");
     let ctx = PlicContexts::from_device_tree(&tree(AARCH64)).expect("no PLIC is not an error");
     assert!(ctx.is_empty());
     assert_eq!(ctx.s_context(0), None);

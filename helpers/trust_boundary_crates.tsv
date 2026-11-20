@@ -57,7 +57,7 @@ current_cpu_protocol	shared	retired
 designware_ethernet	shared	retired
 designware_inter_integrated_circuit	shared	components,kernel
 designware_mobile_storage	shared	retired
-device_tree_blob	shared	components,kernel,uefi_loader
+device_tree_blob	shared	retired
 device_tree_patch	boot_chain	uefi_loader
 direct_memory_access_validator	kernel	kernel
 disk_tree	userspace	components
@@ -203,9 +203,9 @@ timebase_proto	shared	retired
 timetable	userspace	components,fixtures
 timetable_store	userspace	components,fixtures
 top	userspace	components
+universal_serial_bus	userspace	retired
 universally_unique_identifier	shared	retired
 uptime	userspace	components
-usb	userspace	components
 usb_keyboard_report	shared	retired
 user_heap	userspace	retired
 user_mode_heap	userspace	retired

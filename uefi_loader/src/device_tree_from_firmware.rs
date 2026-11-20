@@ -49,7 +49,7 @@ mod tests {
     use super::*;
 
     const QEMU: &[u8] =
-        include_bytes!("../../crates/device_tree_blob/tests/fixtures/qemu-aarch64-virt.dtb");
+        include_bytes!("../../crates/machine_discovery/tests/fixtures/qemu-aarch64-virt.dtb");
 
     #[test]
     fn a_good_tree_comes_back_at_the_length_it_states() {

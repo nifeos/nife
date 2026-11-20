@@ -364,7 +364,10 @@ struct Madt {
 fn read_madt(body: &[u8]) -> Madt {
     let mut distributor = 0u64;
     let mut version = 0u8;
-    let mut redistributors = Region { start: 0, size: 0 };
+    let mut redistributors = Region {
+        start: 0,
+        size_bytes: 0,
+    };
     let mut cpu_interface = 0u64;
     let mut per_cpu_redistributor = 0u64;
     let mut cpus = [device_tree_from_acpi::Cpu::default(); device_tree_from_acpi::MAXIMUM_CPUS];
@@ -383,7 +386,7 @@ fn read_madt(body: &[u8]) -> Madt {
             acpi::MadtEntry::GenericRedistributor { address, length } => {
                 redistributors = Region {
                     start: address,
-                    size: u64::from(length),
+                    size_bytes: u64::from(length),
                 };
             }
             acpi::MadtEntry::GenericInterruptController {
@@ -447,21 +450,21 @@ fn gic_from_madt(madt: &Madt) -> Result<Gic, &'static str> {
     // entries used: a redistributor (per-core or as a range) exists only on a GICv3, and a
     // memory-mapped CPU interface only on a GICv2. A machine that states neither is one this loader
     // will not guess about.
-    let v3 = version >= 3 || redistributors.size != 0 || per_cpu_redistributor != 0;
+    let v3 = version >= 3 || redistributors.size_bytes != 0 || per_cpu_redistributor != 0;
     let v2 = version == 2 || (version == 0 && cpu_interface != 0);
     let distributor = Region {
         start: madt.distributor,
-        size: device_tree_from_acpi::GICD_LEN,
+        size_bytes: device_tree_from_acpi::GICD_LEN,
     };
     let gic = if v3 {
-        if redistributors.size == 0 {
+        if redistributors.size_bytes == 0 {
             // The per-core spelling: each GICC entry carries its own frame and the MADT states no
             // range. Two 64 KiB frames per core is the GICv3 architecture's own layout, and the
             // frames are contiguous from the first, which is what `GICR_TYPER`'s Last bit then
             // confirms when the kernel walks them.
             redistributors = Region {
                 start: per_cpu_redistributor,
-                size: 0x2_0000 * madt.cpu_count.max(1) as u64,
+                size_bytes: 0x2_0000 * madt.cpu_count.max(1) as u64,
             };
         }
         Gic::V3 {
@@ -473,7 +476,7 @@ fn gic_from_madt(madt: &Madt) -> Result<Gic, &'static str> {
             distributor,
             cpu_interface: Region {
                 start: cpu_interface,
-                size: device_tree_from_acpi::GICC_LEN,
+                size_bytes: device_tree_from_acpi::GICC_LEN,
             },
         }
     } else {

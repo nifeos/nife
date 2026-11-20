@@ -10,7 +10,7 @@
 
 //! # Tested by the reader, not by inspection
 //!
-//! Every test below decodes what this writes with `crates/device_tree_blob` and the
+//! Every test below decodes what this writes with the `device_tree_blob` package and the
 //! `machine_discovery` decoders the **kernel** uses (`gic::discover`, `cpu_list::CpuList`,
 //! `aarch64::Psci`, `interrupt_id::of_node`, `DeviceTreeBlob::memory_regions`), so the writer and
 //! the readers cannot drift apart without a host test failing in milliseconds.
@@ -398,9 +398,9 @@ fn write_intc(o: &mut Out<'_>, machine: &Machine) -> Result<(), Error> {
     o.prop_cells(b"phandle", &[INTC_PHANDLE])?;
     let mut reg = [0u32; 8];
     reg[..2].copy_from_slice(&cells64(distributor.start));
-    reg[2..4].copy_from_slice(&cells64(distributor.size));
+    reg[2..4].copy_from_slice(&cells64(distributor.size_bytes));
     reg[4..6].copy_from_slice(&cells64(second.start));
-    reg[6..8].copy_from_slice(&cells64(second.size));
+    reg[6..8].copy_from_slice(&cells64(second.size_bytes));
     o.prop_cells(b"reg", &reg)?;
     o.end_node()
 }
@@ -498,11 +498,11 @@ mod tests {
             gic: Gic::V3 {
                 distributor: Region {
                     start: 0x0800_0000,
-                    size: GICD_LEN,
+                    size_bytes: GICD_LEN,
                 },
                 redistributors: Region {
                     start: 0x080a_0000,
-                    size: 0x00f6_0000,
+                    size_bytes: 0x00f6_0000,
                 },
             },
             cpus,
@@ -551,13 +551,16 @@ mod tests {
         );
 
         // `memory::initialize`, second call: RAM.
-        let mut regions = [Region { start: 0, size: 0 }; MAXIMUM_RAM];
+        let mut regions = [Region {
+            start: 0,
+            size_bytes: 0,
+        }; MAXIMUM_RAM];
         let n = dt
             .memory_regions(&mut regions)
             .expect("the memory nodes parse");
         assert_eq!(n, 1);
         assert_eq!(
-            (regions[0].start, regions[0].size),
+            (regions[0].start, regions[0].size_bytes),
             (0x4000_0000, 0x1000_0000)
         );
 
@@ -637,11 +640,11 @@ mod tests {
         machine.gic = Gic::V2 {
             distributor: Region {
                 start: 0x0800_0000,
-                size: GICD_LEN,
+                size_bytes: GICD_LEN,
             },
             cpu_interface: Region {
                 start: 0x0801_0000,
-                size: GICC_LEN,
+                size_bytes: GICC_LEN,
             },
         };
         let (len, out) = built(&machine);
@@ -719,7 +722,7 @@ mod tests {
             .expect("/chosen parses")
             .expect("the archive is named");
         assert_eq!(initial_ramdisk.start, 0x4ac6_0000);
-        assert_eq!(initial_ramdisk.size, 0x4b70_0000 - 0x4ac6_0000);
+        assert_eq!(initial_ramdisk.size_bytes, 0x4b70_0000 - 0x4ac6_0000);
         // And the machine survived the rewrite, which is the half a `/chosen` test usually forgets.
         assert!(gic::discover(&dt).expect("the GIC node parses").is_some());
     }

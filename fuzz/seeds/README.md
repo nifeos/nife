@@ -11,10 +11,9 @@ tree**, committed for their own reasons and tested by their own tests:
 
 | Target | Seeds from | What they are |
 |---|---|---|
-| `device_tree_blob_walk` | `crates/device_tree_blob/tests/fixtures/` | three real device trees, dumped from the boards we boot |
 | `globally_unique_identifier_partition_table` | `crates/globally_unique_identifier_partition_table/tests/fixtures/` | two real disks, formatted by `sgdisk` and by Apple's Disk Utility |
-| `device_tree_patch_initial_ramdisk` | `crates/device_tree_blob/tests/fixtures/`, and here | the same three device trees; and `no_root_node.dtb`, the input that found a tree accepted with no root node, which `crates/device_tree_patch/tests/fuzz_seed.rs` holds refused |
-| `machine_description_from_device_tree` | `crates/device_tree_blob/tests/fixtures/`, `crates/machine_discovery/tests/fixtures/` | the real and hand-built device trees the CPU, ISA, PLIC, interrupt and JH7110 tests read |
+| `device_tree_patch_initial_ramdisk` | `crates/machine_discovery/tests/fixtures/`, and here | the same three device trees; and `no_root_node.dtb`, the input that found a tree accepted with no root node, which `crates/device_tree_patch/tests/fuzz_seed.rs` holds refused |
+| `machine_description_from_device_tree` | `crates/machine_discovery/tests/fixtures/` | the real and hand-built device trees the CPU, ISA, PLIC, interrupt and JH7110 tests read |
 | `acpi_firmware_tables` | here | eight table bodies, each behind a selector byte: four IVRS, a GTDT, an SPCR, and two FADT readings. `make-acpi-tables.py` beside the directory rebuilds them, and `crates/machine_discovery/tests/fuzz_seed.rs` holds each to decoding |
 | `elf_parse` | `crates/static_elf/tests/fixtures/` | the three files below, because nothing else in the tree is a small ELF; `crates/static_elf/tests/fuzz_seed.rs` holds each to parsing on its own machine |
 | `http_response_feed` | here | two responses, a `200` with a body and a bare `404`; the first byte of each is the read size the target splits at |
@@ -112,6 +111,6 @@ PY
 
 **Crash artifacts.** When a target finds a crash, the input becomes a host test in the crate that
 owns the bug, where it runs in milliseconds forever and where a reader meets it next to the code.
-`crates/device_tree_blob/tests/hostile.rs` is the worked example. A hand-built blob with a docstring saying what
+the `device_tree_blob` package's `tests/hostile.rs` is the worked example. A hand-built blob with a docstring saying what
 it attacks is worth more than a 7,642-byte file named after its SHA-1.
 

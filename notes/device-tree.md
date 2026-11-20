@@ -97,7 +97,7 @@ first two lines of it.
 
 **One gotcha:** QEMU pads its dump to a full megabyte and *says so in the header*, so the raw
 dump is a 1 MB file describing 7 KB of tree. Round-trip it through `dtc -I dtb -O dtb` to
-compact it. That's how the test fixture in `crates/device_tree_blob/tests/fixtures/` was made.
+compact it. That's how the test fixture in `crates/machine_discovery/tests/fixtures/` was made.
 
 ## What we read, and what we ignore
 
@@ -120,7 +120,7 @@ The UART's *address* is still hardcoded, and that is correct, for a nice chicken
 reason: the parser is the thing most likely to have a bug, and `println!` is how you would debug
 it. So the console has to come up *before* the device tree is parsed, which means the console
 cannot depend on it. What it can do is be checked against the tree afterwards, which
-`crates/device_tree_blob/tests/qemu_aarch64_virt.rs` does. Everything else about the UART now does
+the `device_tree_blob` package's `tests/qemu_aarch64_virt.rs` does. Everything else about the UART now does
 come from the tree, per the row above. That is the register shape adopted before the first
 `println!`, and the interrupt line. Its QEMU constant armed an unrelated PLIC source on the JH7110
 until boot 13 proved it (notes/visionfive2.md, BUGS). The constant survives only as the documented
@@ -232,7 +232,7 @@ failure, so every limitation here is a limitation on the boot path specifically.
   because the header check requires `off_dt_strings < totalsize`. `dtc` never writes such a blob, but the spec
   allows it.
 
-`crates/device_tree_blob/tests/hostile.rs` holds the regressions for the first two and for the
+the `device_tree_blob` package's `tests/hostile.rs` holds the regressions for the first two and for the
 one-cell rule, hand-built rather than fuzzer-minimized, so a reader meets the attack next to the
 code. [`dtoolkit` against `device_tree_blob`](../design/roadmap/0784-reuse-what-the-tree-wrote/dtoolkit-against-device-tree-blob.md)
 measured the cell-width, short-`reg`, placement and strings-block entries.

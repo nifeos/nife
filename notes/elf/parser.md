@@ -106,7 +106,7 @@ seed stopped parsing, the fuzzer would start from an empty corpus and have to re
 constants and a program-header table before reaching an interesting branch, while still reporting
 "no crashes". `crates/static_elf/tests/fuzz_seed.rs` makes that loud for a millisecond. The other fuzz
 targets seed from fixtures that already have tests of their own
-(`crates/device_tree_blob/tests/qemu_aarch64_virt.rs`,
+(the `device_tree_blob` package's `tests/qemu_aarch64_virt.rs`,
 `crates/globally_unique_identifier_partition_table/tests/real_disks.rs`).
 
 There is one seed per machine nife runs, in `crates/static_elf/tests/fixtures/`, which `script/fuzz` passes to the target as a corpus. They differ at exactly one

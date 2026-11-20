@@ -52,10 +52,8 @@ fn mainline_names_the_jh7110_binding_and_the_interrupts() {
 fn a_tree_without_the_controller_or_a_third_slot_finds_nothing() {
     let tree = DeviceTreeBlob::from_bytes(MAINLINE).unwrap();
     assert_eq!(discover(&tree, 2).unwrap(), None);
-    let qemu = DeviceTreeBlob::from_bytes(include_bytes!(
-        "../../device_tree_blob/tests/fixtures/qemu-riscv64-virt.dtb"
-    ))
-    .unwrap();
+    let qemu =
+        DeviceTreeBlob::from_bytes(include_bytes!("fixtures/qemu-riscv64-virt.dtb")).unwrap();
     assert_eq!(discover(&qemu, 0).unwrap(), None);
     assert_eq!(discover(&qemu, 1).unwrap(), None);
 }

@@ -39,7 +39,7 @@ So the two tools divide on one line:
 | Verdict on success | a proof | "not yet" |
 
 The place where they meet is the bound. In this tree the proved leaf and the unproved shell of
-`crates/static_elf`, the proved leaf readers and unproved walkers of `crates/device_tree_blob`, and
+`crates/static_elf`, the proved leaf readers and unproved walkers of `device_tree_blob`, and
 `crates/nifefs`'s writer and reader agreeing (a property nobody had written down) are the three
 worked examples, in [fuzzing/kani-and-fuzzing.md](fuzzing/kani-and-fuzzing.md).
 
@@ -59,7 +59,6 @@ implies coverage the project does not have.
 
 | Target | Input comes from | Why it earns a target |
 |---|---|---|
-| `device_tree_blob_walk` | firmware (QEMU, OpenSBI, a board's ROM) | parsed before anything else exists, on both ISAs, from a pointer in a register; a panic here is a kernel that cannot boot and cannot say why. Kani reaches the leaf readers and not the walkers. |
 | `device_tree_patch_initial_ramdisk` | UEFI firmware's device tree | the loader's own walker; a wrong `Ok` boots a kernel without its archive. |
 | `elf_parse` | any binary a user asks to run | the only parser that loads what it parses: its output becomes page-table entries. The whole-parse totality proof is recorded as intractable. |
 | `globally_unique_identifier_partition_table` | a disk somebody else formatted | decides which LBA range is a filesystem. Heavily checked already, which is the point: the gap is *combinations* of hostile fields, which neither the proofs nor the single-byte mutation tests can build. |
@@ -124,7 +123,7 @@ second, so a minute buys at least a million inputs per target from a corpus alre
 magic-number check. But the sweep is shallow. With both `device_tree_blob` fixes reverted, sixty
 seconds from the committed seeds found nothing, and fifteen minutes found the overflow after 13.1
 million executions. What keeps those bugs from coming back is
-`crates/device_tree_blob/tests/hostile.rs`, which runs on every `script/test`: the fuzzer finds
+`device_tree_blob`'s `tests/hostile.rs`, which runs on every `script/test`: the fuzzer finds
 things once, and a host test holds them forever. The measurements are in
 [fuzzing/ci-budget.md](fuzzing/ci-budget.md).
 
@@ -147,7 +146,7 @@ Three kinds of input, and they are kept apart because they have different reason
 Seeds are committed, and they are read-only. A fuzzer starting from `[]` spends its first
 minutes rediscovering that a device tree begins `d0 0d fe ed`, and with a sixty-second budget never
 gets past the magic check. Where the tree already holds real inputs, such as the three device trees
-in `crates/device_tree_blob/tests/fixtures/`, `script/fuzz` passes that directory to libFuzzer as an
+in `crates/machine_discovery/tests/fixtures/`, `script/fuzz` passes that directory to libFuzzer as an
 extra corpus; a copy under `fuzz/` would drift from it. [fuzz/seeds/README.md](../fuzz/seeds/README.md)
 lists each target's seeds.
 
@@ -174,7 +173,7 @@ It is machine-generated, machine-specific, and unbounded.
 **Crash artifacts are not committed either**, and that is the discipline rather than an omission.
 When a target finds a crash, the input becomes a host test in the crate that owns the bug, where
 it runs in milliseconds on every `script/test` forever and where a reader meets it next to the code.
-`crates/device_tree_blob/tests/hostile.rs` and `nifefs`'s `a_name_with_a_nul_in_it_is_refused` are
+`device_tree_blob`'s `tests/hostile.rs` and `nifefs`'s `a_name_with_a_nul_in_it_is_refused` are
 the two written this way. A hand-built 200-byte blob with a docstring explaining what it attacks is
 worth more than a 7,642-byte artifact named after its SHA-1.
 
@@ -195,15 +194,15 @@ script/fuzz --list
 Hunt properly, on a machine you are not using:
 
 ```sh
-script/fuzz --time 3600 device_tree_blob_walk   # one hour on one target
-script/fuzz --time 0 elf_parse                 # until it finds something, or you press ^C
+script/fuzz --time 3600 elf_parse   # one hour on one target
+script/fuzz --time 0 nifefs_roundtrip          # until it finds something, or you press ^C
 ```
 
 Reproduce a crash. libFuzzer writes the failing input to `fuzz/artifacts/<target>/` and prints
 the command. Re-running the target with a *file* argument replays that one input instead of fuzzing:
 
 ```sh
-cargo fuzz run device_tree_blob_walk fuzz/artifacts/device_tree_blob_walk/crash-b93bbc15...
+cargo fuzz run elf_parse fuzz/artifacts/elf_parse/crash-b93bbc15...
 ```
 
 See what the input actually was, which matters for a structured target like
@@ -222,7 +221,7 @@ cargo fuzz fmt nifefs_roundtrip fuzz/artifacts/nifefs_roundtrip/crash-0ad4fab2..
 Shrink it before writing the test:
 
 ```sh
-cargo fuzz tmin device_tree_blob_walk fuzz/artifacts/device_tree_blob_walk/crash-b93bbc15...
+cargo fuzz tmin elf_parse fuzz/artifacts/elf_parse/crash-b93bbc15...
 ```
 
 Then throw the artifact away and write the test, for the reason under "Corpus discipline". Delete `fuzz/artifacts/<target>/` when you are done.
@@ -230,7 +229,7 @@ Then throw the artifact away and write the test, for the reason under "Corpus di
 Prune a corpus that has grown (fuzzing eats disk; a long run's corpus is not small):
 
 ```sh
-cargo fuzz cmin device_tree_blob_walk   # keep the smallest input per edge
+cargo fuzz cmin elf_parse   # keep the smallest input per edge
 rm -rf fuzz/corpus fuzz/artifacts
 ```
 
@@ -258,27 +257,21 @@ to do. Reaching that panic needs a device tree seventeen levels deep whose *only
 the bottom, and the seed corpus is real device trees, which are three deep. A mutational fuzzer
 explores outward from what it has; deep recursive structure is what it is worst at synthesizing. A
 grammar-based generator (`arbitrary`-derived structure that emits well-formed trees) would reach it,
-and is the obvious next step for `device_tree_blob_walk`.
+and is the obvious next step for a device tree target.
 
 **A green fuzz run means "not yet", never "correct".** Sixty seconds of no crashes is evidence about
 sixty seconds. Nothing here is a proof, and nothing here should be quoted as one; the proofs are in
 notes/verification.md and they say what they cover.
 
 **The CI job would not re-find either `device_tree_blob` bug.** Measured, not assumed, under "The
-CI job, and its budget" above. The regression guard is `crates/device_tree_blob/tests/hostile.rs`.
+CI job, and its budget" above. The regression guard is `device_tree_blob`'s `tests/hostile.rs`.
 
 Only panics and hangs are caught, plus whatever a target asserts. A parser that returns the
-*wrong answer* without panicking is invisible to `device_tree_blob_walk`, `elf_parse` and
-`globally_unique_identifier_partition_table`, because those three assert nothing beyond "it
+*wrong answer* without panicking is invisible to `elf_parse` and
+`globally_unique_identifier_partition_table`, because those two assert nothing beyond "it
 returned". `nifefs_roundtrip` is the one target with a real property, and it is the one that found a
 silent-corruption bug. That asymmetry is a hint about where the next targets should go, not a fact
 about fuzzing.
-
-The needles in `device_tree_blob_walk` are a fixed list. The kernel's real lookups (`intc`,
-`plic`, `pl031`, `virtio_mmio`) plus the empty prefix. A `pub fn` that panics for some *other*
-prefix would not be found. Letting the fuzzer choose the needle would mean structuring the input,
-which would stop the committed `.dtb` fixtures from working as seeds; that trade is worth revisiting
-with a grammar.
 
 `node_property` matches at any depth and `node_register_regions` now stops at 16. The two lookups disagree about
 how deep a device tree can be, which is a behavioral wart rather than a bug: `node_property` keeps no

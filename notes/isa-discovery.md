@@ -119,7 +119,7 @@ a smaller monitor core, described as separate `cpu@` nodes with different `riscv
 kernel that reads the first node and then schedules a thread onto any hart has read the wrong node
 some of the time.
 
-So `dtb` grew [`node_properties`](../crates/device_tree_blob/src/lib.rs), which answers for every matching node rather
+So `dtb` grew `node_properties` (in the `device_tree_blob` package), which answers for every matching node rather
 than the first, and the record carries two sets:
 
 - **`common`**, the intersection over every hart that describes itself. This is what "an instruction
