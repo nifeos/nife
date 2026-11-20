@@ -1064,9 +1064,6 @@ dependencies = [
 [[package]]
 name = "network_time_protocol"
 version = "0.1.0"
-dependencies = [
- "clock_contract",
-]
 
 [[package]]
 name = "nifefs"
