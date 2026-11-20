@@ -762,6 +762,7 @@ dependencies = [
 [[package]]
 name = "interfaces_note"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/interfaces_note?rev=bfa27187a87e0cc1916efb06238b2dd2ece004eb#bfa27187a87e0cc1916efb06238b2dd2ece004eb"
 
 [[package]]
 name = "intrusive_queue"
