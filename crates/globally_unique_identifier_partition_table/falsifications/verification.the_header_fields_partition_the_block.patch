@@ -9,7 +9,7 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/header.rs b/c
 index 2495db796..34992b227 100644
 --- a/crates/globally_unique_identifier_partition_table/src/header.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/header.rs
-@@ -139,3 +139,3 @@ impl Header {
+@@ -187,3 +187,3 @@ impl Header {
              entry_count: le32(block, at::ENTRY_COUNT),
 -            entry_bytes: le32(block, at::ENTRY_BYTES),
 +            entry_bytes: le32(block, at::ENTRY_COUNT),

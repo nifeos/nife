@@ -9,7 +9,7 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/crc.rs b/crat
 index c1e8f547e..ca320dfda 100644
 --- a/crates/globally_unique_identifier_partition_table/src/crc.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/crc.rs
-@@ -56,3 +56,3 @@ fn update(mut crc: u32, bytes: &[u8]) -> u32 {
+@@ -57,3 +57,3 @@ fn update(mut crc: u32, bytes: &[u8]) -> u32 {
      for &b in bytes {
 -        crc = TABLE[((crc ^ b as u32) & 0xff) as usize] ^ (crc >> 8);
 +        crc = TABLE[((crc ^ (b & 0x7f) as u32) & 0xff) as usize] ^ (crc >> 8);

@@ -139,7 +139,7 @@ An appendix to [the milestone](../1093-globally-unique-identifier-partition-tabl
    `entry::ENTRY_BYTES_U32` beside the package's `ENTRY_BYTES`; `at::HEADER_BYTES` and
    `at::ENTRY_BYTES` so the offset constants follow the fields they locate; and `mbr::SIZE_BLOCKS`
    with `#[doc(alias = "SizeInLBA")]` (the unit is blocks; under the package's decision 2 the `_LBA`
-   names change together). All are provisional, for the architect's ratification with the package's
+   names change together). All are ratified 2026-11-20 UTC with the package's
    table.
    Door: names are the architect's; the private four are two-way. Effort: XS on top of the
    package's lane.

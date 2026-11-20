@@ -139,7 +139,7 @@ impl Volume<'_> {
                         path.display()
                     )
                 })?;
-                match table.entry(index as usize) {
+                match table.get(index as usize) {
                     Some(e) if e.is_used() => e,
                     Some(_) => {
                         return Err(format!(

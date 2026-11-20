@@ -305,11 +305,11 @@ fn write_table_back(file: &mut std::fs::File, table: &PartitionTable) -> bool {
     };
     if !put(gpt::PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, &block)
         || !put(
-            table.primary_entry_logical_block_address(),
+            table.primary_entry_array_logical_block_address(),
             table.entry_array(),
         )
         || !put(
-            table.backup_entry_logical_block_address(),
+            table.backup_entry_array_logical_block_address(),
             table.entry_array(),
         )
     {

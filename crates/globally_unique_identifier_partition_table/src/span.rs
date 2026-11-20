@@ -34,23 +34,23 @@ pub struct Span {
 }
 
 impl Span {
-    /// The blocks covering `len` bytes at `byte_offset`, when the device moves `transfer` bytes at
+    /// The blocks covering `len` bytes at `byte_offset`, when the device moves `transfer_bytes` bytes at
     /// a time.
     ///
-    /// `None` for a `transfer` of zero, a `len` of zero, or any arithmetic that would leave a
+    /// `None` for a `transfer_bytes` of zero, a `len` of zero, or any arithmetic that would leave a
     /// `u64`. Refusing rather than saturating keeps a caller from believing a shorter read than it
     /// asked for.
-    pub const fn covering(byte_offset: u64, len: u64, transfer: u64) -> Option<Span> {
-        if transfer == 0 || len == 0 {
+    pub const fn covering(byte_offset: u64, len: u64, transfer_bytes: u64) -> Option<Span> {
+        if transfer_bytes == 0 || len == 0 {
             return None;
         }
-        let first_block = byte_offset / transfer;
-        let offset = byte_offset % transfer;
+        let first_block = byte_offset / transfer_bytes;
+        let offset = byte_offset % transfer_bytes;
         // The last byte wanted, relative to the start of `first_block`.
         let Some(last) = offset.checked_add(len - 1) else {
             return None;
         };
-        let blocks = last / transfer + 1;
+        let blocks = last / transfer_bytes + 1;
         // The read must still name a block: `first_block + blocks` is the one past the end.
         if first_block.checked_add(blocks).is_none() {
             return None;
@@ -66,10 +66,10 @@ impl Span {
         })
     }
 
-    /// How many bytes the buffer must hold: `blocks * transfer`. `None` on overflow, and on a
+    /// How many bytes the buffer must hold: `blocks * transfer_bytes`. `None` on overflow, and on a
     /// 32-bit host when the answer does not fit a `usize`.
-    pub const fn buffer_bytes(&self, transfer: u64) -> Option<usize> {
-        match self.blocks.checked_mul(transfer) {
+    pub const fn buffer_bytes(&self, transfer_bytes: u64) -> Option<usize> {
+        match self.blocks.checked_mul(transfer_bytes) {
             Some(n) if n <= usize::MAX as u64 => Some(n as usize),
             _ => None,
         }
@@ -132,18 +132,18 @@ mod tests {
     /// ends at or after it, and `offset` lands on the first wanted byte.
     #[test]
     fn a_span_always_contains_what_was_asked_for() {
-        for transfer in [512u64, 1024, 4096] {
+        for transfer_bytes in [512u64, 1024, 4096] {
             for byte_offset in [0u64, 1, 511, 512, 4095, 4096, 4097, 1 << 20, (1 << 20) + 7] {
                 for len in [1u64, 2, 511, 512, 513, 4096, 16384, 16896] {
-                    let s = Span::covering(byte_offset, len, transfer).unwrap();
-                    let start = s.first_block * transfer;
-                    let end = start + s.blocks * transfer;
+                    let s = Span::covering(byte_offset, len, transfer_bytes).unwrap();
+                    let start = s.first_block * transfer_bytes;
+                    let end = start + s.blocks * transfer_bytes;
                     assert!(start <= byte_offset, "{s:?} starts after the range");
                     assert!(end >= byte_offset + len, "{s:?} ends before the range");
                     assert_eq!(start + s.offset as u64, byte_offset, "{s:?} mislocates it");
                     // And it is not wasteful: dropping the last block would lose bytes.
                     assert!(
-                        end - transfer < byte_offset + len,
+                        end - transfer_bytes < byte_offset + len,
                         "{s:?} reads a spare block"
                     );
                 }

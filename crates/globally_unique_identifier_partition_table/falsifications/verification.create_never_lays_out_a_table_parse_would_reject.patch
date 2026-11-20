@@ -10,7 +10,7 @@ diff --git a/crates/globally_unique_identifier_partition_table/src/table.rs b/cr
 index c7f02ba6d..94f23433e 100644
 --- a/crates/globally_unique_identifier_partition_table/src/table.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/table.rs
-@@ -177,7 +177,7 @@ impl<'a> PartitionTable<'a> {
+@@ -263,7 +263,7 @@ impl<'a> PartitionTable<'a> {
                  need,
              });
          }

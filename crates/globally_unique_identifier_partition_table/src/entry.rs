@@ -14,7 +14,7 @@ use crate::guid::{self, Uuid};
 /// decoding its first 128 bytes and ignoring the rest, which is what a reader that does not know a
 /// later revision can honestly do.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 pub const ENTRY_BYTES: usize = 128;
 
 /// UTF-16 code units in the partition name field. 72 bytes.
@@ -23,15 +23,27 @@ pub const NAME_UNITS: usize = 36;
 /// Attribute bit 0: the platform must not alter this partition. Firmware sets it on partitions it
 /// needs (an original equipment manufacturer (OEM) recovery partition, for instance), and a
 /// partition editor is expected to refuse to touch one.
-pub const ATTR_REQUIRED: u64 = 1 << 0;
+///
+/// Name: ratified 2026-11-20 (#3864). Spelled out from UEFI 2.10 section 5.3's attribute name,
+/// kept as the alias.
+#[doc(alias = "Required Partition")]
+pub const ATTRIBUTE_REQUIRED_PARTITION: u64 = 1 << 0;
 
 /// Attribute bit 1: no block input/output (IO) protocol. UEFI firmware will not expose this
 /// partition as a filesystem.
-pub const ATTR_NO_BLOCK_IO: u64 = 1 << 1;
+///
+/// Name: ratified 2026-11-20 (#3864). Spelled out from UEFI 2.10 section 5.3's attribute name,
+/// kept as the alias.
+#[doc(alias = "No Block IO Protocol")]
+pub const ATTRIBUTE_NO_BLOCK_IO_PROTOCOL: u64 = 1 << 1;
 
 /// Attribute bit 2: legacy Basic Input/Output System (BIOS) bootable. What `sgdisk -A n:set:2`
 /// sets, and what a BIOS-emulating bootloader looks for in place of the MBR active flag.
-pub const ATTR_LEGACY_BIOS_BOOTABLE: u64 = 1 << 2;
+///
+/// Name: ratified 2026-11-20 (#3864). Spelled out from UEFI 2.10 section 5.3's attribute name,
+/// kept as the alias.
+#[doc(alias = "Legacy BIOS Bootable")]
+pub const ATTRIBUTE_LEGACY_BIOS_BOOTABLE: u64 = 1 << 2;
 
 mod at {
     pub(crate) const TYPE_GUID: usize = 0;
@@ -51,22 +63,24 @@ mod at {
 pub struct Entry {
     /// What the partition is for. All zeros means the entry is unused; see
     /// [`crate::guid::types`] for the ones this crate names.
+    #[doc(alias = "PartitionTypeGUID")]
     pub type_guid: Uuid,
     /// Names this partition, uniquely, forever. Generated once when the partition is created.
+    #[doc(alias = "UniquePartitionGUID")]
     pub unique_guid: Uuid,
     /// First block of the partition.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "StartingLBA")]
     pub first_logical_block_address: u64,
     /// Last block of the partition, **inclusive**. A one-block partition has
     /// `first_logical_block_address == last_logical_block_address`, and the off-by-one here is the
     /// classic way to lose a sector.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (#3864).
     #[doc(alias = "EndingLBA")]
     pub last_logical_block_address: u64,
-    /// The attribute bits. See `ATTR_*`; bits 48 to 63 are reserved for the partition type's own
+    /// The attribute bits. See `ATTRIBUTE_*`; bits 48 to 63 are reserved for the partition type's own
     /// use and mean whatever that type says they mean.
     pub attributes: u64,
     /// The label, as UTF-16 code units, null-padded. Use [`Entry::name_utf8`] to read it and
@@ -225,5 +239,5 @@ fn le64(bytes: &[u8], at: usize) -> u64 {
 
 /// [`ENTRY_BYTES`] as the `u32` the header field wants, so the cast appears once.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (#3864).
 pub(crate) const ENTRY_BYTES_U32: u32 = ENTRY_BYTES as u32;
