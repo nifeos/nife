@@ -46,9 +46,8 @@ pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 11, naming the name resolver
 /// protocol and its zone limits. The number is this interface's for good: no other interface takes
-/// it, and a format change is a new version, never a new number. Milestone 956 (the linked
-/// interfaces carry checkable versions) holds the table of numbers, and `script/lint` holds the
-/// tree to it. A program declares the pair of this id and [`VERSION`].
+/// it, and a format change is a new version, never a new number. A program declares the pair of
+/// this id and [`VERSION`].
 ///
 /// Name: ratified 2026-11-01 (#3059). The name every contract crate uses for its interface
 /// identity. The value is frozen at 11, ruled 2026-11-14 (UTC).
