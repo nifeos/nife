@@ -119,8 +119,9 @@ Blocks: nothing until the vendor-watch report passes in silence; after that, the
 
 Ruled 2026-11-20 (UTC), option A: the architect clears the package, and the clearance creates the
 repository, `nifeos/memory_region_heap`, with `publish = false`. No tag and no publish. The move waits for `abi`,
-`address_space_layout` and `user_mode_runtime` to get repositories and leaves with `subtree_scope`
-and before `redoxfs`.
+`address_space_layout` and `user_mode_runtime` to get repositories. It leaves on its own clearance, as
+one repository with `subtree_scope` or as a repository of its own, decided at the move (ruled
+2026-11-20 UTC), and before `redoxfs`, which keeps its own track.
 
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package; that clearance approves the repository. A package lists every public
@@ -281,7 +282,7 @@ The evidence, background, prior art and the options not taken are in
 
 ## Follow-on
 
-- **Outstanding.** The move, which leaves with `subtree_scope` and before `redoxfs`. The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
+- **Outstanding.** The move, which leaves on this crate's own clearance, with `subtree_scope` or alone, and before `redoxfs`. The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
   give `abi`, `address_space_layout` and `user_mode_runtime` repositories. The move drops the fuzz
   workspace's `[patch.crates-io]` line for the vendored talc, and the template's `coverage` job
   then measures the host tests for the first time.

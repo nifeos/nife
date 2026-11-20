@@ -177,8 +177,8 @@ One decision, ruled; the move is under "Open decisions" above.
 The crate keeps `subtree_scope` (maintainer, provisional, 2026-11-14 UTC). It is a noun phrase,
 spelled out, and it says what the crate is: the scope of a subtree grant. `use
 subtree_scope::{walk, admit}` reads as what the two calls do. The door is two-way. The crate's one
-consumer is `redoxfs_server`, and step 9 of milestone 1017 places it in one repository with
-`memory_region_heap` and `redoxfs`, so its name is a workspace crate's name and not a repository's.
+consumer is `redoxfs_server`, and step 9 of milestone 1017 places it in its own repository,
+`nifeos/subtree_scope`.
 The publishing hold keeps it off crates.io. If the crate is ever published on
 its merits, its crates.io name comes to the architect then, and ratifying it stays the architect's.
 
