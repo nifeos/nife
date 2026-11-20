@@ -43,8 +43,8 @@ appendix](1086-domain-name-resolution-contract-outside-review/before-the-tag.md)
   ceiling is 1.
 - 2, `fixture` is nife's boot-test data: Done, [#3838](https://github.com/nifeos/nife/pull/3838). The cases live in
   `crates/domain_name_resolution_fixture`, which stays in nife and is never published, the shape the
-  maintainer's provisional ruling of 2026-11-19 (UTC) gave `socket_fixture`. Its crate name and
-  `ECHO_UNRESOLVED` (for `ECHO_NO_ADDRESS`, which `register_names` refuses) are ratified (decision 7).
+  maintainer's provisional ruling of 2026-11-19 (UTC) gave `socket_fixture`. Decision 7 ratified its
+  crate name and `ECHO_UNRESOLVED` (for `ECHO_NO_ADDRESS`, which `register_names` refuses).
 - 3, the manifest does not stand alone: Open. [#3641](https://github.com/nifeos/nife/pull/3641)
   wrote the manifest and [#3838](https://github.com/nifeos/nife/pull/3838) added the two license files. The pinned `git` dependency on
   `domain_name_system` waits until that crate has left, at step 5 of milestone 1017.
@@ -249,12 +249,13 @@ on 2026-11-20 (UTC).
    check reports nothing.
 
 7. The fixture's names and the repository go. Ruled 2026-11-20 (UTC). The crate that holds the
-   boot-test fixture is `domain_name_resolution_fixture`, ratified, and the code for a client whose
-   first name did not resolve is `ECHO_UNRESOLVED`, with no alias. The review package is cleared:
-   the go creates `nifeos/domain_name_resolution_contract` with `publish = false`, no tag and no
-   publish, and the move waits for the `domain_name_system` tag. Door: one-way once the repository
-   exists. Prior art: `device_tree_blob` and `interfaces_note` cleared the same way. Example: the
-   test client reports `ECHO_UNRESOLVED` (3) when `packages.nife.test` does not resolve.
+   boot-test fixture keeps the ratified name `domain_name_resolution_fixture`, and the code for a
+   client whose first name did not resolve is `ECHO_UNRESOLVED`, with no alias. The architect
+   cleared the review package: the go creates `nifeos/domain_name_resolution_contract` with `publish
+   = false`, no tag and no publish, and the move waits for the `domain_name_system` tag. Door:
+   one-way once the repository exists. Prior art: `device_tree_blob` and `interfaces_note` cleared
+   the same way. Example: the test client reports `ECHO_UNRESOLVED` (3) when `packages.nife.test`
+   does not resolve.
 
 ## Done when
 
