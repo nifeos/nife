@@ -20,6 +20,7 @@ clock_contract 54 3 7 5
 component_plan 102 2 10 40
 compositor 211 15 0 12
 coremark 106 2 1 0
+counter_frequency_contract 16 0 0 7
 cpu_set 19 0 0 1
 credential_contract 74 2 0 20
 credentialer 131 0 1 16
