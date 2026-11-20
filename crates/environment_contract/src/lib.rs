@@ -1,15 +1,15 @@
-//! **The inert-configuration contract** (§111 (inert configuration is a read-only page)): the
-//! read-only page that carries `TZ`, `LANG` and `TERM` into a process, defined once for whoever
-//! assembles it (init, or a kernel test harness) and whoever reads it (the `std` PAL). A value must
+//! **The inert-configuration contract**: the read-only page that carries `TZ`, `LANG` and `TERM`
+//! into a process, defined once for whoever assembles it (a process starter or a test harness) and
+//! whoever reads it (a standard library's start-up code). A value must
 //! parse as a member of a known-safe [`domain`] to reach the page, enforced by [`PageBuilder`]'s
 //! setters, because once a value is bytes on a page nothing can tell a password from a timezone.
 //! The page is assembled before it is mapped read-only, so it needs no seqlock, and [`MAGIC`] is
-//! checked first, so a zeroed or foreign frame answers `None`. See notes/env-config.md.
+//! checked first, so a zeroed or foreign frame answers `None`.
 
 //! # BUGS
 //!
 //! - The domains are curated and short, not the IANA, glibc or terminfo lists, which would be a
-//!   dependency decision (§46 (thin primitives or whole subsystems)). They grow on demand.
+//!   dependency decision. They grow on demand.
 //!   `KNOWN_LOCALES` spells the codeset `UTF-8`, as glibc's `LANG` does, while `locale -a` prints
 //!   `utf8`; whether `setlocale` normalizes the two is unverified.
 //! - Every domain member fits its field's maximum by construction, and a `const` assertion fails the
@@ -17,7 +17,7 @@
 //! - The reader answers only a member of its key's domain, so a page some other writer produced
 //!   cannot hand a program a value outside the closed set. A zone, locale or terminal type missing
 //!   from the lists is added by a pull request that names the real IANA, glibc or terminfo entry.
-//!   Compiling the full tables in is a dependency decision (§46) and stays refused.
+//!   Compiling the full tables in is a dependency decision and stays refused.
 //!
 //! Name: ratified 2026-08-23 (calef), renamed from `env_proto` to spell out the contraction;
 //! `_contract` per calef's 2026-10-18 ruling.
@@ -118,7 +118,7 @@ pub mod domain {
 
 /// The page's first eight bytes, so a reader can tell an assembled config page from a zeroed
 /// frame or from somebody else's page. ASCII, ends unpadded at 8 bytes so the ASCII reads
-/// straight in a hex dump the way `clock_contract::MAGIC` does.
+/// straight in a hex dump.
 ///
 /// Name: ratified 2026-11-14 (UTC), block 1089.
 pub const MAGIC: [u8; 8] = *b"ENVCONF1";
@@ -172,18 +172,18 @@ const TERMINAL_TYPE_LENGTH_OFFSET_BYTES: usize = LOCALE_OFFSET_BYTES + MAXIMUM_L
 const TERMINAL_TYPE_OFFSET_BYTES: usize = TERMINAL_TYPE_LENGTH_OFFSET_BYTES + 1;
 
 /// The whole page's size in bytes: magic, then one length-prefixed field per declared key, 8 + 1 +
-/// 40 + 1 + 24 + 1 + 32 = 107 bytes. Well under one frame (4096 bytes), which is the unit both the kernel and the `std` PAL map this
-/// as.
+/// 40 + 1 + 24 + 1 + 32 = 107 bytes. Well under one frame (4096 bytes), the unit a reader maps it as.
 ///
 /// Name: ratified 2026-11-19 (calef). Spelled out under the page family rule and the spelled-out rule; refused the abbreviated `tz`, `lang`, `term` and `valid` spellings.
 pub const PAGE_CONTENT_BYTES: usize = TERMINAL_TYPE_OFFSET_BYTES + MAXIMUM_TERMINAL_TYPE_BYTES;
 
 /// Why [`PageBuilder`] refused a value: it does not parse as a member of its key's [`domain`].
 ///
-/// Not an errno space, the same way `clock_contract::status` is not one: this is a build-time
-/// refusal, not a runtime failure a process observes. Whoever assembles a page (init, or a test
-/// harness standing in for it) handles this the way a manifest mismatch is handled elsewhere in
-/// this tree, as a refusal at the point of assembly rather than a value silently dropped.
+/// Not an errno space: this is a build-time
+/// refusal, not a runtime failure a process observes. Whoever assembles a page handles this as a refusal at the
+/// point of assembly rather than a value silently dropped.
+///
+/// Name: ratified 2026-11-19 (calef), as built.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Refused {
     /// The `TZ` value is not in [`domain::KNOWN_TIME_ZONES`].
@@ -225,6 +225,8 @@ pub enum Refused {
 ///     Err(Refused::UnknownTimeZone),
 /// );
 /// ```
+///
+/// Name: ratified 2026-11-19 (calef), as built.
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub struct PageBuilder<'a> {
     tz: Option<&'a str>,
@@ -234,6 +236,8 @@ pub struct PageBuilder<'a> {
 
 impl<'a> PageBuilder<'a> {
     /// A builder with every key undeclared.
+    ///
+    /// Name: ratified 2026-11-19 (calef), as built.
     pub const fn new() -> Self {
         PageBuilder {
             tz: None,
@@ -283,6 +287,8 @@ impl<'a> PageBuilder<'a> {
 
     /// Write the declared keys into a fresh page buffer. Bytes for a key never declared stay
     /// zero, which is what [`ConfigurationPage`] reads as absent.
+    ///
+    /// Name: ratified 2026-11-19 (calef), as built.
     pub fn build(&self) -> [u8; PAGE_CONTENT_BYTES] {
         let mut page = [0u8; PAGE_CONTENT_BYTES];
         page[MAGIC_OFFSET_BYTES..MAGIC_OFFSET_BYTES + 8].copy_from_slice(&MAGIC);
@@ -430,14 +436,14 @@ unsafe impl Sync for ConfigurationPage {}
 impl ConfigurationPage {
     /// Name the config page mapped at `virtual_address`.
     ///
+    /// Name: ratified 2026-11-19 (calef), as built.
+    ///
     /// # Safety
     ///
     /// `virtual_address` must be a mapped, byte-aligned buffer of at least [`PAGE_CONTENT_BYTES`] bytes (either an
     /// assembled page, or a zeroed frame, which reads as "no configuration"), and it must stay
-    /// mapped and unwritten by this process for as long as this value is used. The page is
-    /// read-only by construction on the kernel side (the same `PageFrame` `READ`-only shape the
-    /// clock page uses), so a caller with a correctly typed capability cannot violate this by
-    /// accident.
+    /// mapped and unwritten by this process for as long as this value is used. A page mapped
+    /// read-only satisfies the last condition by construction.
     pub const unsafe fn new(virtual_address: u64) -> Self {
         ConfigurationPage {
             base: virtual_address as *const u8,
@@ -643,8 +649,7 @@ mod tests {
 
     /// A page nobody has ever built into (a zeroed frame, the state a fresh page starts in
     /// before `init` maps something over it) reads as "no configuration" for every key, never
-    /// as a fabricated default. This is DECISIONS §42's rule applied to configuration instead of
-    /// to the clock.
+    /// as a fabricated default.
     #[test]
     fn a_zeroed_frame_carries_no_configuration() {
         let zeroed = [0u8; PAGE_CONTENT_BYTES];
@@ -859,9 +864,8 @@ mod tests {
     /// The layout constants are self-consistent (no overlap, no gap that would misalign a field
     /// against what `write_field`/`read_field` compute), pinned so a mutant swapping an offset
     /// is caught here rather than by a torn read on real hardware. Asserting on constants is
-    /// this test's entire purpose (the same shape `clock_contract`'s
-    /// `the_sanity_window_is_where_it_says` test pins its own layout constants with), so the
-    /// lint that flags a constant assertion as pointless is switched off on purpose here.
+    /// this test's entire purpose, so the lint that flags a constant assertion as pointless is
+    /// switched off on purpose here.
     #[test]
     #[allow(clippy::assertions_on_constants)]
     fn the_layout_offsets_do_not_overlap() {

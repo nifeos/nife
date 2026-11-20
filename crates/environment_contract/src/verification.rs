@@ -1,6 +1,6 @@
 //! **Machine-checked proofs (Kani) of the inert-configuration page's reader**: `read_field` never
 //! panics, whatever the length byte says, and reports absence for a length past its field. Behind
-//! `#[cfg(kani)]`, so only `cargo kani` (script/verify) compiles them. See notes/verification.md.
+//! `#[cfg(kani)]`, so only `cargo kani`  compiles them.
 //!
 //! Name: ratified 2026-11-19 (calef), after the module every other crate's harnesses live in.
 

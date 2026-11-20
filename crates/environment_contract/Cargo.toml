@@ -2,18 +2,33 @@
 name = "environment_contract"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.88"
+description = "The read-only page that carries a process's time zone, locale and terminal type, with a closed list of values each may take"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nifeos/environment_contract"
+readme = "README.md"
+keywords = ["no-std", "environment", "configuration"]
+categories = ["no-std", "no-std::no-alloc", "os"]
+documentation = "https://docs.rs/environment_contract"
+publish = false     # set to true only in the release that publishes
 
-# The inert-configuration contract (milestone 47's environment-variable fork, DECISIONS §111): the
-# layout of the read-only page that carries TZ/LANG/TERM, and the closed, validated domains each
-# declared key is checked against before it is allowed onto the page at all. Pure logic, host-tested,
-# no_std, dependency-free, so whoever assembles the page (init, or a kernel test harness standing in
-# for it today) and whoever reads it (the std PAL, eventually a no_std program) share ONE definition
-# and cannot drift. The same split `clock_contract` makes for the wall clock and `filesystem_contract` for
-# the filesystem contract.
+# The inert-configuration contract: the layout of the read-only page that carries TZ, LANG and TERM,
+# and the closed, validated list of values each declared key is checked against before it is allowed
+# onto the page at all. Pure logic, host-tested, no_std, dependency-free, so whoever assembles the
+# page and whoever reads it share ONE definition and cannot drift.
 
-[lints]
-workspace = true
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harness.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
