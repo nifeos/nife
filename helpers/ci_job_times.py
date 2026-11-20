@@ -3,6 +3,7 @@
 
     python3 helpers/ci_job_times.py update [--since YYYY-MM-DD]   # the daily record
     python3 helpers/ci_job_times.py update --repo <owner/name>     # the same record for one crate repository
+    python3 helpers/ci_job_times.py waits [--since YYYY-MM-DD]     # the runner-wait record alone
     python3 helpers/ci_job_times.py fold [--today YYYY-MM-DD]      # fold the files' old weeks, no API
     python3 helpers/ci_job_times.py sync [--dry-run]               # open, update or close issues
     python3 helpers/ci_job_times.py --selftest
@@ -174,6 +175,14 @@ RECORDED = [".github/workflows/ci.yml", ".github/workflows/verify.yml"]
 BUILDS_CSV = "notes/project-metrics/ci-builds.csv"
 BUILD_COLUMNS = ["date", "build", "kind", "workflow", "job", "start_seconds", "end_seconds", "seconds",
                  "builds", "p90_seconds"]
+# The wait for a runner, one row per day (`wait_row`): how many hosted jobs started, the median
+# seconds between a job's creation and its start, and how many waited over `WAIT_LONG_SECONDS`.
+# Milestone 1042 (the merge queue is sized to the runner pool) reads it: the build window rises to 8
+# only after a measured day shows the median under a minute. `script/metrics` charts it as
+# `ci-job-waits.svg`. File name provisional.
+WAITS_CSV = "notes/project-metrics/ci-job-wait-days.csv"
+WAIT_COLUMNS = ["date", "jobs", "median_wait_seconds", "over_5_minutes"]
+WAIT_LONG_SECONDS = 300
 # Weeks of per-job rows kept (this one and the twelve before it); older weeks fold to one row per
 # week and job (the docstring's fold section). Ruled 2026-11-01 (UTC).
 FOLD_AFTER_WEEKS = 13
@@ -503,6 +512,46 @@ def fold_builds(rows, today):
 # ---------------------------------------------------------------------------------------------
 # Builds: one merge group's runs of every RECORDED workflow, as one timeline.
 
+def hosted(job):
+    """True for a job that ran on a GitHub-hosted runner: its labels do not say `self-hosted`."""
+    return "self-hosted" not in (job.get("labels") or [])
+
+
+def job_wait(job):
+    """Seconds a hosted job waited for a runner, or None for a job that did not run (skipped or
+    cancelled jobs carry equal timestamps and say nothing about the pool) or ran elsewhere."""
+    if not hosted(job) or job.get("conclusion") not in ("success", "failure"):
+        return None
+    if not job.get("created_at") or not job.get("started_at"):
+        return None
+    return max(0.0, (_ts(job["started_at"]) - _ts(job["created_at"])).total_seconds())
+
+
+def wait_row(date, runs):
+    """The day's row for `WAITS_CSV` from `runs`, {workflow: [(run, jobs)]}, or None for a day on
+    which no hosted job ran. The median is over every hosted job of every recorded run that day."""
+    waits = [w for pairs in runs.values() for _r, jobs in pairs for w in map(job_wait, jobs) if w is not None]
+    if not waits:
+        return None
+    return {"date": date, "jobs": len(waits), "median_wait_seconds": "%.0f" % statistics.median(waits),
+            "over_5_minutes": sum(w > WAIT_LONG_SECONDS for w in waits)}
+
+
+def merge_wait_days(existing, date, row):
+    """`existing` rows with `date`'s replaced by `row`, or dropped when `row` is None, so a
+    rewritten day with no hosted job leaves nothing stale."""
+    return sorted([r for r in existing if r["date"] != date] + ([row] if row else []),
+                  key=lambda r: r["date"])
+
+
+def waits_to_csv(rows):
+    out = io.StringIO()
+    writer = csv.DictWriter(out, fieldnames=WAIT_COLUMNS, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    return out.getvalue()
+
+
 def build_jobs(runs, patterns):
     """{(workflow, key): (start, end, seconds)} over one merge group's runs, `runs` being
     {workflow: jobs} and `patterns` {workflow: display patterns}. A matrix job is one entry: its
@@ -811,6 +860,32 @@ def update(argv):
                 f.write(builds_to_csv(fold_builds(merge_build_days(existing, {day.isoformat()}, builds), today)))
             print("ci_job_times: %s: %d green build(s)" % (day, sum(r["kind"] == "build" for r in builds)),
                   file=sys.stderr)
+        if BUILDS_CSV:
+            write_wait_day(day.isoformat(), runs)
+        day += datetime.timedelta(days=1)
+    return 0
+
+
+def write_wait_day(date, runs):
+    existing = from_csv(open(WAITS_CSV).read()) if os.path.exists(WAITS_CSV) else []
+    with open(WAITS_CSV, "w") as f:
+        f.write(waits_to_csv(merge_wait_days(existing, date, wait_row(date, runs))))
+
+
+def waits(argv):
+    """Write `WAITS_CSV` alone, for the days from `--since` (default two days) to today. `update`
+    writes it too; this is for a backfill that must not rewrite the other records."""
+    today = datetime.datetime.now(datetime.timezone.utc).date()
+    day = datetime.date.fromisoformat(
+        arg_value(argv, "--since", (today - datetime.timedelta(days=DEFAULT_WINDOW_DAYS)).isoformat()))
+    while day <= today:
+        runs = {}
+        for workflow in RECORDED:
+            listed = merge_group_runs(workflow, created=day.isoformat())
+            with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+                runs[os.path.basename(workflow)] = list(zip(listed, pool.map(lambda r: jobs_of(r["id"]), listed)))
+        write_wait_day(day.isoformat(), runs)
+        print("ci_job_times: waits %s: %d run(s)" % (day, sum(len(v) for v in runs.values())), file=sys.stderr)
         day += datetime.timedelta(days=1)
     return 0
 
@@ -1203,6 +1278,24 @@ def selftest():
     expect("a re-read day outside the fold still replaces its own rows",
            merge_build_days(fb, {"2026-10-30"}, []) == [r for r in fb if r["date"] != "2026-10-30"], True)
 
+    t0 = "2026-11-19T10:00:00Z"
+    fast = {"created_at": t0, "started_at": "2026-11-19T10:00:30Z", "conclusion": "success",
+            "labels": ["ubuntu-26.04"]}
+    slow = dict(fast, started_at="2026-11-19T10:07:00Z", conclusion="failure")
+    skipped = dict(fast, conclusion="skipped")
+    owned = dict(fast, labels=["self-hosted", "nife-owned"], started_at="2026-11-19T10:20:00Z")
+    expect("a hosted job's wait is created to started", job_wait(fast), 30.0)
+    expect("a skipped job says nothing about the pool", job_wait(skipped), None)
+    expect("an owned job is not a hosted wait", job_wait(owned), None)
+    row = wait_row("2026-11-19", {"ci.yml": [({}, [fast, slow, skipped, owned])]})
+    expect("a day counts hosted jobs, their median and the long waits", row,
+           {"date": "2026-11-19", "jobs": 2, "median_wait_seconds": "225", "over_5_minutes": 1})
+    expect("a day with no hosted job has no row", wait_row("2026-11-19", {"ci.yml": [({}, [skipped])]}), None)
+    expect("a re-read day replaces its own row",
+           merge_wait_days([{"date": "2026-11-18"}, {"date": "2026-11-19"}], "2026-11-19", row)[1], row)
+    expect("a re-read day with no row drops the stale one",
+           merge_wait_days([{"date": "2026-11-19"}], "2026-11-19", None), [])
+
     print("ci_job_times selftest: %s" % ("ok" if ok else "FAILED"))
     return 0 if ok else 1
 
@@ -1213,6 +1306,8 @@ def main(argv):
     cmd = argv[1] if len(argv) > 1 else ""
     if cmd == "update":
         return update(argv[2:])
+    if cmd == "waits":
+        return waits(argv[2:])
     if cmd == "fold":
         return fold(argv[2:])
     if cmd == "sync":
