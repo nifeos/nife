@@ -16,6 +16,10 @@ use crate::host::capture;
 /// would be the one to doubt. The partition is named by type GUID, not slot number, as the guest's
 /// `mkfs` finds it: the type is what the partition is, and the slot is this table's current order.
 /// See notes/host-recovery/devices-and-partitions.md.
+///
+/// # BUGS
+/// - The table is not checked against the image's size (`check_disk_size`); the protective MBR's
+///   size field is the only check of the disk's size here.
 pub(crate) fn blank_check_after_run() -> bool {
     use filesystem_fixture::blank;
     use globally_unique_identifier_partition_table::PartitionTable;
