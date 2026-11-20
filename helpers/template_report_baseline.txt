@@ -129,7 +129,6 @@ inter_process_communication abbreviations 53
 inter_process_communication prose_acronyms 4
 inter_process_communication readme_acronyms 1
 inter_process_communication register_names 2
-interfaces_note prose_acronyms 2
 intrusive_queue abbreviations 6
 intrusive_queue prose_acronyms 1
 intrusive_queue readme_acronyms 1
