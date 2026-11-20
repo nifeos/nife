@@ -4,7 +4,7 @@ The defect: a sender with nobody to meet joins the receiver queue. The two queue
 their pushes differ by one identifier, and `send` and `receive` are written as mirror images of
 each other a few lines apart, which is where this kind of slip lives.
 
-Expected to fail: the harness's `assert!(e.one_queue_invariant())`, on a rendezvous that already
+Expected to fail: the harness's `assert!(e.one_queue_invariant_holds())`, on a rendezvous that already
 holds a queued sender, where the blocked sender lands on the other queue and both are then
 non-empty. Every other proof in this module rests on that invariant, and a later receive would
 rendezvous a sender with a sender.
@@ -15,10 +15,10 @@ index 845029a65..38a5f02bd 100644
 +++ b/crates/inter_process_communication/src/rendezvous.rs
 @@ -268,7 +268,7 @@ impl<T: Node> Rendezvous<T> {
          } else if let Some(receiver) = self.receivers.pop_front() {
-             Send::Rendezvous(receiver, me)
+             SendVerdict::Rendezvous(receiver, me)
          } else {
 -            self.senders.push_back(me);
 +            self.receivers.push_back(me);
-             Send::Blocked
+             SendVerdict::Blocked
          }
      }

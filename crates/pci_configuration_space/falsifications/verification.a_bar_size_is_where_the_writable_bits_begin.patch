@@ -11,7 +11,7 @@ set one.
 diff --git a/crates/pci_configuration_space/src/lib.rs b/crates/pci_configuration_space/src/lib.rs
 --- a/crates/pci_configuration_space/src/lib.rs
 +++ b/crates/pci_configuration_space/src/lib.rs
-@@ -403,9 +403,6 @@ fn size_from_mask(mask: u64, decode_bits: u64) -> Result<u64, BarRefusal> {
+@@ -513,9 +513,6 @@
          return Err(BarRefusal::NoWritableBits);
      }
      let size = 1 << mask.trailing_zeros();

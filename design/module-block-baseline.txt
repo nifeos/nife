@@ -107,7 +107,6 @@ components/src/block_driver_roles.rs::run_attack
 
 components/src/block_driver_roles.rs::run_attack_indirect
 
-components/src/block_driver_roles.rs::run_blk_server
 
 components/src/block_driver_roles.rs::run_net
 
@@ -628,17 +627,11 @@ crates/boot_slot/src/lib.rs::select_excluding
 crates/boot_slot/src/lib.rs::unreadable
 
 
-crates/byte_glob/src/lib.rs::cost_bound
 
-crates/byte_glob/src/lib.rs::has_magic
 
-crates/byte_glob/src/lib.rs::literal
 
-crates/byte_glob/src/lib.rs::match_steps
 
-crates/byte_glob/src/lib.rs::matches
 
-crates/byte_glob/src/lib.rs::matches_with
 
 crates/byte_sink_contract/src/lib.rs::BAD
 
@@ -3878,7 +3871,6 @@ crates/http_response/src/lib.rs::status
 
 crates/http_response/src/lib.rs::with_room
 
-crates/inter_process_communication/src/futex.rs::Futexes
 
 crates/inter_process_communication/src/futex.rs::Key
 
@@ -3886,7 +3878,6 @@ crates/inter_process_communication/src/futex.rs::new
 
 crates/inter_process_communication/src/futex.rs::park
 
-crates/inter_process_communication/src/futex.rs::queued
 
 crates/inter_process_communication/src/futex.rs::remove
 
@@ -3896,11 +3887,8 @@ crates/inter_process_communication/src/futex.rs::waiters
 
 crates/inter_process_communication/src/notification.rs::Notification
 
-crates/inter_process_communication/src/notification.rs::Signal
 
-crates/inter_process_communication/src/notification.rs::Wait
 
-crates/inter_process_communication/src/notification.rs::debug_counts
 
 crates/inter_process_communication/src/notification.rs::drain_waiters
 
@@ -3918,13 +3906,10 @@ crates/inter_process_communication/src/notification.rs::wait
 
 crates/inter_process_communication/src/notification.rs::word
 
-crates/inter_process_communication/src/rendezvous.rs::Receive
 
 crates/inter_process_communication/src/rendezvous.rs::Rendezvous
 
-crates/inter_process_communication/src/rendezvous.rs::Send
 
-crates/inter_process_communication/src/rendezvous.rs::debug_counts
 
 crates/inter_process_communication/src/rendezvous.rs::drain_waiters
 
@@ -3946,7 +3931,6 @@ crates/inter_process_communication/src/tests.rs
 
 crates/inter_process_communication/src/timer.rs
 
-crates/inter_process_communication/src/timer.rs::Arm
 
 crates/inter_process_communication/src/timer.rs::NEVER
 
@@ -5431,33 +5415,20 @@ crates/page_tables/src/x86_64.rs::blocked_device_table_entry
 
 crates/page_tables/src/x86_64.rs::device_table_entry
 
-crates/pci_configuration_space/src/lib.rs::BAR0
 
-crates/pci_configuration_space/src/lib.rs::BUS_NUMBERS
 
-crates/pci_configuration_space/src/lib.rs::Bar
 
-crates/pci_configuration_space/src/lib.rs::Bdf
 
-crates/pci_configuration_space/src/lib.rs::CLASS_NVME
 
-crates/pci_configuration_space/src/lib.rs::CLASS_REVISION
 
-crates/pci_configuration_space/src/lib.rs::CLASS_XHCI
 
-crates/pci_configuration_space/src/lib.rs::CMD_BUS_MASTER
 
-crates/pci_configuration_space/src/lib.rs::CMD_MEMORY_SPACE
 
-crates/pci_configuration_space/src/lib.rs::COMMAND
 
-crates/pci_configuration_space/src/lib.rs::HEADER_TYPE
 
 crates/pci_configuration_space/src/lib.rs::HEADER_TYPE_BRIDGE
 
-crates/pci_configuration_space/src/lib.rs::INTERRUPT_PIN
 
-crates/pci_configuration_space/src/lib.rs::MESSAGE_CONTROL
 
 crates/pci_configuration_space/src/lib.rs::MSIX_ENABLE
 
@@ -5471,11 +5442,8 @@ crates/pci_configuration_space/src/lib.rs::MSI_64_BIT
 
 crates/pci_configuration_space/src/lib.rs::MSI_ENABLE
 
-crates/pci_configuration_space/src/lib.rs::VENDOR_ID
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_MODERN
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_BLK_TRANSITIONAL
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_GPU_MODERN
 
@@ -5483,13 +5451,9 @@ crates/pci_configuration_space/src/lib.rs::VIRTIO_INPUT_MODERN
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_MSIX_NO_VECTOR
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_MODERN
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_NET_TRANSITIONAL
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_MODERN
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_RNG_TRANSITIONAL
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_BLOCK
 
@@ -5499,11 +5463,9 @@ crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_GPU
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_INPUT
 
-crates/pci_configuration_space/src/lib.rs::VIRTIO_TYPE_NET
 
 crates/pci_configuration_space/src/lib.rs::VIRTIO_VENDOR
 
-crates/pci_configuration_space/src/lib.rs::address_low
 
 crates/pci_configuration_space/src/lib.rs::bridge_buses
 
@@ -5513,7 +5475,6 @@ crates/pci_configuration_space/src/lib.rs::ecam_offset
 
 crates/pci_configuration_space/src/lib.rs::enumerate
 
-crates/pci_configuration_space/src/lib.rs::mem32_window
 
 crates/pci_configuration_space/src/lib.rs::read_bars
 

@@ -3,7 +3,7 @@ Falsifies `inter_process_communication::notification::verification::a_waiter_is_
 The defect: rule 2 before rule 1, so a signal goes to the bound receiver while a thread waits on
 the notification itself. Both deliveries are "a wake", which is why the order is easy to swap.
 
-Expected to fail: the `Signal::ToBound(_) => assert!(!had_waiter && bound)` arm, with a waiter
+Expected to fail: the `SignalVerdict::ToBound(_) => assert!(!had_waiter && bound)` arm, with a waiter
 seeded and `bound` true.
 
 diff --git a/crates/inter_process_communication/src/notification.rs b/crates/inter_process_communication/src/notification.rs
@@ -12,19 +12,19 @@ index c20bff922..9f0234c1a 100644
 +++ b/crates/inter_process_communication/src/notification.rs
 @@ -177,14 +177,12 @@ impl<T: Node> Notification<T> {
          if bits == 0 {
-             return Signal::Empty;
+             return SignalVerdict::Empty;
          }
 -        if let Some(waiter) = self.waiters.pop_front() {
 -            // The invariant says the word is zero while anyone waits, so these bits are the whole
 -            // of what is pending. `| self.word` would be a no-op, and writing it would hide that.
--            Signal::Woke(waiter, bits)
+-            SignalVerdict::Woke(waiter, bits)
 -        } else if bound_receiving {
 +        if bound_receiving {
              let word = self.word | bits;
              self.word = 0;
-             Signal::ToBound(word)
+             SignalVerdict::ToBound(word)
 +        } else if let Some(waiter) = self.waiters.pop_front() {
-+            Signal::Woke(waiter, bits)
++            SignalVerdict::Woke(waiter, bits)
          } else {
              self.word |= bits;
-             Signal::Counted
+             SignalVerdict::Counted

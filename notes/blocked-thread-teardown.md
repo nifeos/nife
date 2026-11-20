@@ -14,7 +14,7 @@ it is what the decision was made against.
 What changed against the text. The mechanism landed in `sched::finish_blocked_resident` and
 `RegionReap::FinishInPlace`. `Endpoint` is spelled `Rendezvous` in this tree, and `remove_receiver`
 is now written. And the claim below that `WaitRole` says which queue holds a thread is wrong, which
-the implementation found and this note did not. `ipc_call`'s `Send::Blocked` arm records a caller as
+the implementation found and this note did not. `ipc_call`'s `SendVerdict::Blocked` arm records a caller as
 `WaitRole::Reply` while queueing it as a sender. So role and queue disagree on every call that meets
 no server, and the shipped code asks both queues rather than believing the role.
 

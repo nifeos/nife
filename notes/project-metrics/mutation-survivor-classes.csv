@@ -186,7 +186,7 @@ page_tables,Flags::user_device_read_only,replace | with ^,1,or_xor,equivalent,al
 pci_configuration_space,,replace << with >>,1,shift,equivalent,unclassified,noise,
 pci_configuration_space,Bdf::ecam_offset,replace | with ^,2,or_xor,equivalent,unclassified,noise_unargued,
 pci_configuration_space,Bdf::requester_id,replace | with ^,2,or_xor,equivalent,unclassified,noise,
-pci_configuration_space,mem32_window,replace | with ^,3,or_xor,equivalent,unclassified,noise,
+pci_configuration_space,mem32_window,replace | with ^,3,or_xor,none,,unrowed_noise_candidate,
 pci_configuration_space,read_bars,replace | with ^,2,or_xor,equivalent,unclassified,noise,
 pgrep,,replace | with ^,3,or_xor,equivalent,unclassified,noise,
 program_argument_contract,ArgPage<'a>::check,replace < with <=,1,comparison,equivalent,unclassified,algebraic,

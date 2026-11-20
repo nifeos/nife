@@ -16,10 +16,10 @@ index 845029a65..649e6d195 100644
 +++ b/crates/inter_process_communication/src/rendezvous.rs
 @@ -281,7 +281,7 @@ impl<T: Node> Rendezvous<T> {
              self.pending -= 1;
-             Receive::Signal(me)
+             ReceiveVerdict::Signal(me)
          } else if let Some(sender) = self.senders.pop_front() {
--            Receive::FromSender(sender, me)
-+            Receive::FromSender(me, sender)
+-            ReceiveVerdict::FromSender(sender, me)
++            ReceiveVerdict::FromSender(me, sender)
          } else {
              self.receivers.push_back(me);
-             Receive::Blocked
+             ReceiveVerdict::Blocked
