@@ -22,7 +22,7 @@
 //! // The length of a send rides in the CALL's argument word, never in the frame.
 //! ```
 
-//! Name: ratified 2026-11-20 (UTC); first provisional (milestone 410's lane, 2026-10-16 UTC), module and type. `Frame` over
+//! Name: ratified 2026-11-20 (UTC); first minted (milestone 410's lane, 2026-10-16 UTC), module and type. `Frame` over
 //! `SharedFrame`, which doubles a word `socket_contract`'s docs already put on "frame"; over
 //! `PageFrame`, which names the kernel object a frame is minted from rather than the layout read
 //! through it; and over holding a second `base: u64` field beside the window, which would
@@ -70,7 +70,7 @@ impl Frame {
     /// Write the destination header: the address and port the next `SENDTO` or `CONNECT` uses,
     /// and the fields a User Datagram Protocol (UDP) `RECEIVE` reply carries the sender's endpoint back in.
     ///
-    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn set_destination(&self, ipv4_address: [u8; 4], port: u16) {
         for (i, &b) in ipv4_address.iter().enumerate() {
             self.window
@@ -83,7 +83,7 @@ impl Frame {
     /// The destination address, or the sender's after a UDP `RECEIVE` (the layout note on
     /// `DESTINATION_IPV4_ADDRESS_OFFSET_BYTES` in `socket_contract`).
     ///
-    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn destination_network_address(&self) -> [u8; 4] {
         let mut ip = [0u8; 4];
         for (i, b) in ip.iter_mut().enumerate() {
@@ -97,7 +97,7 @@ impl Frame {
     /// The destination port, or the sender's after a UDP `RECEIVE` (the layout note on
     /// `DESTINATION_PORT_OFFSET_BYTES` in `socket_contract`).
     ///
-    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn destination_port(&self) -> u16 {
         self.window
             .read_volatile::<u16>(DESTINATION_PORT_OFFSET_BYTES)

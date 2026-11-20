@@ -3,7 +3,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: ratified 2026-11-20 (UTC); first provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
+//! Name: ratified 2026-11-20 (UTC); first minted, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
@@ -51,7 +51,7 @@ pub fn counter_ticks() -> u64 {
 /// [`counter_hertz_checked`], which is this without the panic. The other two architectures read a page the
 /// kernel fills and report "unknown" the same way.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "aarch64")]
 pub fn counter_hertz() -> u64 {
     counter_hertz_checked().expect(
@@ -63,7 +63,7 @@ pub fn counter_hertz() -> u64 {
 /// reads zero, which firmware that never programmed it leaves behind, and a rate of zero would
 /// divide by zero in [`monotonic_nanoseconds`]).
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "aarch64")]
 pub fn counter_hertz_checked() -> Option<u64> {
     let f: u64;
@@ -85,7 +85,7 @@ pub fn counter_hertz_checked() -> Option<u64> {
 /// # Panics
 /// If the rate is unknown: see [`counter_hertz_checked`], which is this without the panic.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "riscv64")]
 pub fn counter_hertz() -> u64 {
     counter_hertz_checked().expect(
@@ -98,7 +98,7 @@ pub fn counter_hertz() -> u64 {
 /// for where the number comes from and [`counter_hertz_checked`]'s `x86_64` twin for why "unknown" is a
 /// state worth representing rather than papering over.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "riscv64")]
 pub fn counter_hertz_checked() -> Option<u64> {
     // SAFETY: every path that builds a riscv64 process maps a page (real, or zeroed when the rate
@@ -149,7 +149,7 @@ pub fn counter_ticks() -> u64 {
 /// If the rate is unknown (a zeroed or unrecognized page), rather than guessing one: the panic
 /// traps (see [`trap`](crate::trap)) and the kernel kills the process. [`counter_hertz_checked`] does not panic.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "x86_64")]
 pub fn counter_hertz() -> u64 {
     counter_hertz_checked().expect(
@@ -163,7 +163,7 @@ pub fn counter_hertz() -> u64 {
 /// [`counter_frequency_contract::is_plausible`]'s band. See [`counter_hertz`] for where the number comes from and why the
 /// unchecked twin refuses rather than substituting a constant.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[cfg(target_arch = "x86_64")]
 pub fn counter_hertz_checked() -> Option<u64> {
     // SAFETY: every kernel-side space-building function this crate's own docs list maps a page
@@ -184,7 +184,7 @@ pub fn counter_hertz_checked() -> Option<u64> {
 /// count core cycles (over different privilege levels), and `x86_64` counts reference cycles at a
 /// constant rate. So the count never travels without its [`CycleMeaning`].
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted by the lane for milestone 353 (the aarch64 half of 74) on 2026-10-07
+/// Name: ratified 2026-11-20 (UTC); first minted, minted by the lane for milestone 353 (the aarch64 half of 74) on 2026-10-07
 /// (UTC), the noun for what
 /// [`cycle_reading`] returns.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -228,7 +228,7 @@ pub struct CycleReading {
 ///   (a program asks whether it may read the cycle counter)).
 /// - Under QEMU every count is emulator time, never a measurement of a core.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted by milestone 353's lane on 2026-10-07 (UTC), Rust's getter shape.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted by milestone 353's lane on 2026-10-07 (UTC), Rust's getter shape.
 /// Refused `cycles` (the kernel's `arch::pmu::cycles` means core cycles, and the TSC is not).
 /// Refused `read_cycle_counter` (a verb, and the fixture's private name).
 pub fn cycle_reading() -> CycleReading {
@@ -321,7 +321,7 @@ fn own_current_cpu_page() -> current_cpu_contract::CurrentCpuPage {
 /// sleep reads this rather than assuming the kernel's rate
 /// (`current_cpu_contract::CurrentCpuPage::tick_hertz`).
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-21 (UTC) by milestone 53 (the board's own peripherals)'s
 /// receive-rate lane.
 pub fn tick_hertz() -> Option<core::num::NonZeroU64> {
     own_current_cpu_page().tick_hertz()

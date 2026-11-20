@@ -4,7 +4,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-10-18 (UTC) by maintainer/names-comply-free-crates, for the
+//! Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-18 (UTC) by maintainer/names-comply-free-crates, for the
 //! module and the file. Named for the calls it holds, one module per seam of the old crate root.
 //! Refused `ipc` (§154 (the acronym test is whether the phrase is spoken) spells it out).
 
@@ -71,7 +71,7 @@ pub fn survey_record(slot: u64, cursor: u64, record: u64) -> (i64, u64, u64) {
 /// capability does not carry `ENUMERATE`, so the holder may map into the space but not list it.
 /// **That is a refusal and not an empty listing**, and a caller must print it as one.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn virtual_address_space_list(slot: u64, cursor: u64) -> (i64, u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; LIST reads no more than the three words used.
     let (r0, w1, w2, ..) = unsafe { invoke5(slot, abi::address_space::LIST, cursor, 0, 0) };
@@ -118,7 +118,7 @@ pub fn receive(slot: u64) -> (u64, u64, u64) {
 /// instead: `capability_slot` here is whatever the sender chose, a Reply only if the sender `CALL`ed, and
 /// [`reply`] takes the typed [`Reply`] only `receive_request` returns (milestone 706).
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `receive_cap` under the capability ruling of 2026-10-06 (UTC).
 pub fn receive_capability(slot: u64) -> (u64, u64, u64) {
     // SAFETY: forwarded from `invoke5`'s contract; RECEIVE_CAPABILITY reads no more than the three words used.
@@ -126,7 +126,7 @@ pub fn receive_capability(slot: u64) -> (u64, u64, u64) {
     (w0, w1, w2)
 }
 
-/// **Mint a badged copy of the endpoint capability in `slot`** (milestone 599):
+/// **Mint a badged copy of the endpoint capability in `slot`** (milestone 599 (a frame per filesystem client channel)):
 /// `abi::rendezvous::BADGE`. Returns the slot the badged copy landed in, or a negative error
 /// (`NotPermitted` without `GRANT`, or for a zero badge or an already-badged source). The new slot
 /// holds a copy of the endpoint with `badge` stamped on it. The kernel delivers
@@ -156,7 +156,7 @@ pub fn badge(slot: u64, badge: u64) -> i64 {
 /// A death message from a supervision endpoint (`abi::fault`) is the same words read another way:
 /// `w0` is the event, `w1` the thread id, `w2` the program counter and `badge` the faulting address.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 #[derive(Debug, PartialEq, Eq)]
 pub struct Message {
     /// `x0`: the sender's first word, or a death message's event.
@@ -193,7 +193,7 @@ impl Received {
     /// # Panics
     /// If the receive was ended by a notification: the caller bound one and should match instead.
     ///
-    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
     pub fn into_message(self) -> Message {
         match self {
             Received::Message(message) => message,
@@ -215,7 +215,7 @@ impl Received {
 /// `abi::notification::BOUND` and notes/notification-objects.md. A caller with no bound notification
 /// takes the message with [`Received::into_message`].
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn receive_message(slot: u64) -> Received {
     // SAFETY: forwarded from `invoke6`'s contract; RECEIVE returns up to six words.
     let (w0, w1, w2, badge, w4, label) =
@@ -239,7 +239,7 @@ pub fn receive_message(slot: u64) -> Received {
 /// landed (or [`abi::rendezvous::NO_CAPABILITY`]), and `delivered` types it by the kernel's `x4`,
 /// as [`receive_request`] does for a `CALL` server.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub fn receive_capability_message(slot: u64) -> Received {
     // SAFETY: forwarded from `invoke6`'s contract; RECEIVE_CAPABILITY returns up to six words.
     let (w0, w1, w2, badge, w4, label) =

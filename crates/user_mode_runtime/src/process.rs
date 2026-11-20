@@ -3,7 +3,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: ratified 2026-11-20 (UTC); first provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
+//! Name: ratified 2026-11-20 (UTC); first minted, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
@@ -96,7 +96,7 @@ pub fn trap() -> ! {
 /// require(frame < 4096);
 /// ```
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted by milestone 408 (one home for `fn check(ok: bool)`) on
+/// Name: ratified 2026-11-20 (UTC); first minted, minted by milestone 408 (one home for `fn check(ok: bool)`) on
 /// 2026-10-15 (UTC). The kernel spends `require` on a mismatch that must not be recovered from
 /// (`trust::require`, which halts), so the same idea one privilege level down wears the same
 /// word. Refused `check`, what every copy was called, because

@@ -35,13 +35,13 @@
 /// The page size every migrated caller was already assuming (each one's own comment said "one
 /// page" or "single-page direct memory access (DMA) region"; none of them checked it).
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-15 (UTC) by lane/1112-outside-review-fixes.
 pub const PAGE_BYTES: u64 = 4096;
 
 mod sealed {
     /// The seal: only this crate names it, so only this crate implements `WindowInteger`.
     ///
-    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes.
     pub trait Sealed {}
     impl Sealed for u8 {}
     impl Sealed for u16 {}
@@ -54,7 +54,7 @@ mod sealed {
 /// device or peer wrote cannot produce an invalid one. Sealed: only the unsigned integers up to
 /// 64 bits and arrays of them implement it, and nothing outside this crate can.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes; `Word`
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-14 (UTC) by milestone/1101-1113-outside-review-fixes; `Word`
 /// and `Integer` were considered.
 pub trait WindowInteger: sealed::Sealed + Copy {}
 impl WindowInteger for u8 {}
@@ -90,7 +90,7 @@ impl MappedWindow {
 
     /// **The `length` bytes at `offset`**, a window inside this one. Panics if they would run past it.
     ///
-    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-10 (UTC) by lane/drivers-read-the-startup-page.
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-10 (UTC) by lane/drivers-read-the-startup-page.
     pub fn window(&self, offset: u64, length: u64) -> MappedWindow {
         self.check(offset, length);
         Self {
@@ -159,7 +159,7 @@ impl MappedWindow {
     /// volatile writes; a peer writing the same bytes meanwhile makes the result a mix of both. See
     /// notes/user-mode-runtime.md.
     ///
-    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-10-20 (UTC) by lane/2451-cpu-matrix-rv64-budget, for
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-20 (UTC) by lane/2451-cpu-matrix-rv64-budget, for
     /// [`slice::copy_within`], whose argument order it keeps.
     pub fn copy_within(&self, source: u64, destination: u64, bytes: u64) {
         self.check(source, bytes);
@@ -185,7 +185,7 @@ impl MappedWindow {
     /// the result a mix of old and new bytes; the caller's protocol rules that out. See
     /// notes/user-mode-runtime.md.
     ///
-    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-10-25 (UTC) by lane milestone/53-radon-receive-drain, for
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-25 (UTC) by lane milestone/53-radon-receive-drain, for
     /// [`slice::copy_from_slice`] seen from the slice's side.
     pub fn copy_to_slice(&self, offset: u64, output: &mut [u8]) {
         self.check(offset, output.len() as u64);
@@ -210,7 +210,7 @@ impl MappedWindow {
     /// **Copy `source` to offset `offset`**, with one bounds check for the whole range. Not volatile,
     /// fenced against the compiler on each side, as [`copy_to_slice`](Self::copy_to_slice).
     ///
-    /// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-10-25 (UTC) by lane milestone/53-radon-receive-drain, for
+    /// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-25 (UTC) by lane milestone/53-radon-receive-drain, for
     /// [`slice::copy_from_slice`].
     pub fn copy_from_slice(&self, offset: u64, source: &[u8]) {
         self.check(offset, source.len() as u64);
@@ -270,7 +270,7 @@ impl MappedWindow {
 /// `mfence` on x86_64. Stronger than [`crate::virtual_io::virtual_io_ring_barrier`], whose drivers notify
 /// through a system call, and not to be merged with it. See notes/user-mode-runtime.md.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional (milestone 494's lane, 2026-10-04).
+/// Name: ratified 2026-11-20 (UTC); first minted by the lane for milestone 494 (a driver for the network card a PC actually has) on 2026-10-04.
 pub fn doorbell_barrier() {
     // No `nomem`. The Rust reference (Inline assembly, Options) defines it as a block that "does not
     // read or write to any memory accessible outside of the `asm!` block", which lets the compiler

@@ -3,7 +3,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: ratified 2026-11-20 (UTC); first provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
+//! Name: ratified 2026-11-20 (UTC); first minted, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
@@ -17,7 +17,7 @@
 /// `svc`/`ecall` traps to the kernel. The kernel validates the capability and the method before
 /// acting; that is its whole job. The caller is trusting the kernel, not the other way around.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every system call
+/// Name: ratified 2026-11-20 (UTC); first minted, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every system call
 /// shares. It began as milestone 105 (the two forks)'s `invoke6`, which is now a wrapper over it.
 #[cfg(target_arch = "aarch64")]
 pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
@@ -49,7 +49,7 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
 /// `ecall` traps to the kernel, which validates the capability and method before acting. Same
 /// contract as the aarch64 twin: the caller trusts the kernel, not the other way around.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every system call
+/// Name: ratified 2026-11-20 (UTC); first minted, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every system call
 /// shares. It began as milestone 105 (the two forks)'s `invoke6`, which is now a wrapper over it.
 #[cfg(target_arch = "riscv64")]
 pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
@@ -82,7 +82,7 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
 /// `system_call` traps to the kernel, which validates the capability and method before acting. Same
 /// contract as the aarch64 twin: the caller trusts the kernel, not the other way around.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every system call
+/// Name: ratified 2026-11-20 (UTC); first minted, `lane/hvf-spawn-destroy-gone`, 2026-10-05 (UTC): the trap every system call
 /// shares. It began as milestone 105 (the two forks)'s `invoke6`, which is now a wrapper over it.
 #[cfg(target_arch = "x86_64")]
 pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64, u64) {
@@ -117,7 +117,7 @@ pub(crate) unsafe fn trap6(number: u64, a: [u64; 6]) -> (u64, u64, u64, u64, u64
 /// `trap6`'s: the kernel validates the capability and the method before acting. A caller that
 /// passes `SYSTEM_CALL_EXIT` does not come back.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, milestone 779's lane, 2026-10-06 (UTC).
+/// Name: ratified 2026-11-20 (UTC); first minted, milestone 779's lane, 2026-10-06 (UTC).
 pub unsafe fn raw_system_call(number: u64, words: [u64; 6]) -> [u64; 6] {
     // SAFETY: forwarded from this function's own contract.
     let (w0, w1, w2, w3, w4, w5) = unsafe { trap6(number, words) };
@@ -131,7 +131,7 @@ pub unsafe fn raw_system_call(number: u64, words: [u64; 6]) -> [u64; 6] {
 /// # Safety
 /// [`trap6`]'s: the kernel validates the capability and the method before acting.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC).
+/// Name: ratified 2026-11-20 (UTC); first minted, milestone 105 (the two forks)'s lane, 2026-10-05 (UTC).
 #[inline(always)]
 pub(crate) unsafe fn invoke6(
     capability: u64,

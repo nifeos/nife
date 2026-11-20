@@ -92,7 +92,7 @@ pub fn notify(virtual_io_slot: u64, queue: u64) -> i64 {
 /// riscv64; on `x86_64` the device mapping is uncacheable and total store ordering (TSO) keeps the stores in order, so
 /// only a compiler fence is needed.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-transport.
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-transport.
 pub fn doorbell_barrier() {
     // SAFETY: a barrier has no operands and cannot be unsound; it only constrains ordering.
     #[cfg(target_arch = "aarch64")]
@@ -124,7 +124,7 @@ pub fn doorbell_barrier() {
 /// compiler fence to supply. A fourth architecture fails to build. See notes/user-mode-runtime.md
 /// and notes/architecture-list-sweep.md, finding 9.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, the lane for milestone 186 (derive the architecture list), #1143, 2026-09-23
+/// Name: ratified 2026-11-20 (UTC); first minted, the lane for milestone 186 (derive the architecture list), #1143, 2026-09-23
 /// (UTC); marker written 2026-10-12 (UTC). Milestone 139 (drive the unsafe count down) round 11
 /// recorded it as outside calef's 2026-10-08 (UTC) renames of this module's wrappers. No other
 /// name is recorded.

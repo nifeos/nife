@@ -3,7 +3,7 @@
 //!
 //! The crate root re-exports every public item, so each keeps its crate-root path.
 //!
-//! Name: ratified 2026-11-20 (UTC); first provisional, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
+//! Name: ratified 2026-11-20 (UTC); first minted, lane maintainer/files-over-1500 (#2017), 2026-10-12 (UTC), for the module and
 //! the file. Named for the calls it holds, one module per seam of the old crate root; the pull
 //! request records no other name considered.
 
@@ -82,7 +82,7 @@ pub fn retype_into_page_frame(memory_region_slot: u64) -> i64 {
 /// it to that ("every RETYPE outside the run wrapper passes 0"), so a caller cannot ask for a run
 /// by accident through a raw `invoke`.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional (the lane for milestone 23 (a capability-routed component OS with live
+/// Name: ratified 2026-11-20 (UTC); first minted (the lane for milestone 23 (a capability-routed component OS with live
 /// replacement), 2026-09-26).
 pub fn retype_page_frame_run(memory_region_slot: u64, pages: u64) -> i64 {
     // SAFETY: as `retype_into_page_frame`; the kernel checks the count against the remaining budget.
@@ -319,7 +319,7 @@ pub fn thread_control_block_start(
 /// keeping its registers (DECISIONS §300 (the paused state, a TCB verb, silent)). Silent: nobody is told. When this returns 0 the thread
 /// is off every core. `0` on success; a negative `abi::Error`.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
+/// Name: ratified 2026-11-20 (UTC); first minted (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
 pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
     // SAFETY: `svc`/`ecall`. The kernel validates `WRITE`; nothing in this address space changes.
     unsafe {
@@ -336,7 +336,7 @@ pub fn thread_control_block_suspend(thread_control_block_slot: u64) -> i64 {
 /// `RESUME`: let the thread whose TCB is in `thread_control_block_slot` run on from where it was suspended
 /// (DECISIONS §300). `0` on success, also when it was not suspended; a negative `abi::Error`.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
+/// Name: ratified 2026-11-20 (UTC); first minted (lane/48-tcb-suspend-resume, 2026-10-18 UTC).
 pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
     // SAFETY: as `thread_control_block_suspend`.
     unsafe {
@@ -355,7 +355,7 @@ pub fn thread_control_block_resume(thread_control_block_slot: u64) -> i64 {
 /// soon as it is done with it, so its fixed capability table does not fill. Through `trap6` for
 /// [`yield_now`](crate::yield_now)'s reason: the kernel answers in the register `slot` went in on.
 ///
-/// Name: ratified 2026-11-20 (UTC); first provisional, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
+/// Name: ratified 2026-11-20 (UTC); first minted, minted 2026-10-27 (UTC) by lane capability-sweep-6. Spelled out from
 /// `cap_delete` under the capability ruling of 2026-10-06 (UTC).
 pub fn capability_delete(slot: u64) {
     // SAFETY: SYSTEM_CALL_CAPABILITY_DELETE frees a slot in the caller's own capability table, nothing to clean up.
