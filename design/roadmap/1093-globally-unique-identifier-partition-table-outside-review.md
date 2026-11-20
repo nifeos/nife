@@ -269,8 +269,8 @@ The checks are in [the appendix](1093-globally-unique-identifier-partition-table
 - Item 3's normalization of the backup to the primary's orientation assumes the primary array sits
   at block 2, which every tool writes and the specification does not require. The restored header
   says so, and a caller that knows better can edit the `Header` before writing.
-- The template's `prose_acronyms` gate refuses three spellings no wording passes: `GPT` and `RFC`
-  at first use even beside their expansions, and `U+FFFD` outside code. The fix is the template's;
+- The template's `prose_acronyms` gate refuses `GPT` and `RFC` at first use even beside their
+  expansions, and `U+FFFD` outside code. The fix is the template's;
   until it lands, the crate keeps the expansions and writes the code point as code.
 
 ## Follow-on

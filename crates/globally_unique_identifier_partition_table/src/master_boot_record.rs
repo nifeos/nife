@@ -3,8 +3,6 @@
 //! Name: provisional. Spelled out, with the alias `MBR` for the specification's spelling.
 
 /// The operating system type byte that makes a record protective, `0xEE`.
-///
-/// Name: ratified 2026-10-27 (#2797).
 #[doc(alias = "OSType")]
 pub use ::master_boot_record::protective::PROTECTIVE_OPERATING_SYSTEM_TYPE;
 

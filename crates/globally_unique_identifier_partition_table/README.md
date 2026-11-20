@@ -28,7 +28,7 @@ protective master boot record (MBR).
   is provable over all of them. An entry is unused when its type GUID is all zero, and only then.
 - A GUID is mixed-endian on disk: the first three groups are little-endian integers and the last two
   are bytes in the order written. `guid::from_disk` and `guid::to_disk` are the only functions that
-  see on-disk bytes, so a `Uuid` here is always in the order of Request for Comments (RFC) 9562.
+  see on-disk bytes, so a `Uuid` here is always in the order of Request for Comments 9562.
 - `last_logical_block_address` is inclusive. A one-block partition has `first_logical_block_address == last_logical_block_address`.
 - `entry_count * entry_bytes` from a hostile header is computed without overflow and returns an
   error, never a shortened CRC.

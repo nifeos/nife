@@ -182,8 +182,6 @@ pub enum BackupMismatch {
 
 /// What is wrong with the protective MBR: [`::master_boot_record::protective::Problem`], under the
 /// name this crate's [`Error::MasterBootRecord`] carries.
-///
-/// Name: provisional.
 #[doc(alias = "MBR")]
 pub use ::master_boot_record::protective::Problem as MasterBootRecordProblem;
 
