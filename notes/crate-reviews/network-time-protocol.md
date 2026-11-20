@@ -72,16 +72,16 @@ All on the branch tip, on the lane's Linux host.
 | MSRV 1.88: a copy of the crate outside the tree, manifest inlined | 27 unit tests and 2 doctests pass |
 | `cargo miri test -p network_time_protocol` | passes, doctests included |
 | `cargo build --manifest-path fuzz/Cargo.toml` (nife's fuzz workspace) | builds |
-| `script/crate-move --dry-run --into <dir>` | stages at template `v8`; the Name blocks strip, 8 patches regenerate for `-p1` and apply with no offset and no fuzz. Seven findings, all the move lane's (below) |
+| `script/crate-move --dry-run --into <dir>` | stages at template `v8`; the Name blocks strip, the stripped crate root passes `rustfmt --check`, 9 patches regenerate for `-p1` and apply with no offset and no fuzz. Seven findings, all the move lane's (below) |
 | `script/lint --quick` | all sections pass |
+| `script/verify --only network_time_protocol` (Kani 0.68.0) | all nine harnesses verify, in 26 s of proving |
+| the new harness's falsification patch, applied alone | both sign assertions of `the_interval_accessors_are_total` fail |
+| `cargo llvm-cov -p network_time_protocol` at the workspace's `opt-level = 2` | 485 of 495 lines of `src/lib.rs`, 97 per cent, over the template floor of 85 |
 | `script/crate-standalone --no-kani network_time_protocol` | ten failures, each an item below: 54 names not yet ratified (the first is `PACKET_BYTES`), the manifest's inherited `license` and `lints` and its missing `rust-version`, no README and no license texts, and nife citations in the manifest and `src/lib.rs`. The build passes on stable for the host and the three bare-metal targets |
 | `script/falsifications` patch replay of `verification.accepting_is_total_and_a_sample_is_coherent.patch` | applies with `patch -p3 --dry-run -F0` from the crate directory; the harness-and-patch pairing section of `script/lint` passes |
 
-Not run, and so not claimed: the Kani proofs and the falsification replays as a local run. The
-host's heavy-job slots held `script/crate-standalone` in the queue for over an hour. The verify
-workflow runs them on this pull request, which changes harnesses. Also not run: the stranger test, the template's workflows, the first weekly mutation
-run, coverage (the template floor is 85 per cent per file) and `cargo-semver-checks` (a first
-release has no baseline). Mutation last ran in the 2026-10 census; the baseline row records 5 missed of 166 caught,
+Not run, and so not claimed: the stranger test, the template's workflows, the first weekly
+mutation run and `cargo-semver-checks` (a first release has no baseline). Mutation last ran in the 2026-10 census; the baseline row records 5 missed of 166 caught,
 and the renames change no behavior.
 
 ## Public API
