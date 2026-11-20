@@ -51,7 +51,7 @@ exclusion between cores. Loom can, but only over atomics it substitutes, and `sp
 
 #2734 built option 1.
 
-- `crates/spin_lock` is a test-and-set spinlock with the protocol `spin` used:
+- `crates/test_and_set_lock` is a test-and-set spinlock with the protocol `spin` used:
   a weak Acquire compare-exchange in `lock`, a strong one in `try_lock`, a Relaxed load while
   waiting, and a Release store in the guard's drop. Under `cfg(loom)` the flag and the data cell
   are loom's.
@@ -60,7 +60,7 @@ exclusion between cores. Loom can, but only over atomics it substitutes, and `sp
   holder, and the falsification. The falsification runs the crate's own unlock with `Relaxed` and
   passes only when loom reports the race. [notes/interleaving/what-was-modeled.md](../../notes/interleaving/what-was-modeled.md)
   records why the three-taker model stops at one preemption.
-- `IrqSafeMutex` wraps `spin_lock::SpinLock`. `cargo tree -e normal -p kernel` shows no `spin` on
+- `IrqSafeMutex` wraps `test_and_set_lock::SpinLock`. `cargo tree -e normal -p kernel` shows no `spin` on
   aarch64, riscv64 or x86_64, with or without `--all-features`, and `spin` has left `Cargo.lock`.
 - [notes/kernel-dependency-unsafe.md](../../notes/kernel-dependency-unsafe.md) lists the crate's
   `unsafe` sites and what checks each.
@@ -84,12 +84,12 @@ keeps every row within the 10% tripwire, and the LOCK test in
 - **Recorded.** The C11 limit of a loom proof lives in `notes/memory-ordering.md`, BUGS.
 - **Recorded.** `force_unlock`'s place outside the models lives in
   `notes/kernel-dependency-unsafe.md`.
-- **Done.** Ruled 2026-10-26 (UTC): the crate's name, `SpinLock`, `SpinLockGuard`, both `new`,
-  `lock`, `try_lock` and `force_unlock` stand as ratified; the `Name:` blocks in
-  `crates/spin_lock/src/lib.rs` record it.
+- **Done.** Ruled 2026-10-26 (UTC): the type's name, `SpinLock`, `SpinLockGuard`, both `new`,
+  `lock`, `try_lock` and `force_unlock` stand as ratified; the `Name:` block in
+  `crates/test_and_set_lock/src/lib.rs` records it. Milestone 1109 (what an outside maintainer would fix before it leaves) names the crate itself.
 
 ## Index row
 
-The kernel's lock is `crates/spin_lock`, an in-tree test-and-set lock whose exclusion and
+The kernel's lock is `crates/test_and_set_lock`, an in-tree test-and-set lock whose exclusion and
 happens-before edge loom checks with two and three threads and a Relaxed-release falsification, and
 the kernel no longer links `spin`.

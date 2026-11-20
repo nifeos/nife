@@ -95,3 +95,4 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | blocked by its two nife type GUIDs and its unratified names |
 | [`byte_glob`](crate-reviews/byte-glob.md) | contract | names and clearance for the architect |
+| [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | ready for review |

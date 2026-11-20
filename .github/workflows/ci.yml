@@ -170,9 +170,9 @@ concurrency:
 # aarch64 is the one place CI catches" a missing Acquire/Release. **For the host tests that sentence
 # was false, and it was measured rather than argued**: across the host crates exactly two test
 # helpers outside loom spawn a real thread (`bounded` in `memory_corruption_canary_gate` and in
-# `spin_lock`, each checking liveness through a channel, not ordering), and the protocols that do
+# `test_and_set_lock`, each checking liveness through a channel, not ordering), and the protocols that do
 # depend on ordering (`work_steal_slot`, `thread_wake_handshake`, `memory_regions`,
-# `memory_corruption_canary_gate`, `spin_lock`) are checked by loom, which models C11 on any host
+# `memory_corruption_canary_gate`, `test_and_set_lock`) are checked by loom, which models C11 on any host
 # and runs as the `interleavings` job below. A host
 # test that races no threads cannot observe a reordering on any host.
 #

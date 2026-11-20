@@ -1,4 +1,4 @@
-# spin_lock
+# test_and_set_lock
 
 A test-and-set spinlock for `no_std` code: one flag, taken with an Acquire compare-exchange and
 released with a Release store, and a guard that hands out the data while it holds the flag. The
@@ -20,7 +20,7 @@ standard library's `get_mut`, `into_inner`, `Default`, `From<T>` and `Debug` beh
 ## EXAMPLES
 
 ```rust
-use spin_lock::SpinLock;
+use test_and_set_lock::SpinLock;
 
 static HITS: SpinLock<u32> = SpinLock::new(0);
 
@@ -75,8 +75,6 @@ models fail and the should-panic model still passes.
   execution in which two waiters yield to each other while the holder never runs; that is loom's
   limit on spin-wait loops, not a fault in the lock.
 - The acquire-side falsification above is not a gate; only the release side is checked on every run.
-- Another crate holds the crates.io name `spin-lock`, which crates.io treats as the same name, so
-  this crate cannot be published under its own name.
 
 ## Minimum Rust version
 
