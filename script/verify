@@ -429,7 +429,7 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # is extreme: **two crates are half the job**, and a split by crate count would put one shard on a
 # coffee break while the other did everything.
 #
-# Seconds refreshed: 2026-11-18 (UTC), the median of 20 CI runs, 44190918907 to 44232147592, by helpers/verify_times.py refresh
+# Seconds refreshed: 2026-11-19 (UTC), the median of 20 CI runs, 44483976616 to 44628143160, by helpers/verify_times.py refresh
 #
 #                         the table until now     2026-10-07 (x86_64, 40-run median)
 #     glob                       15.0 min                11.8 min
@@ -487,58 +487,57 @@ set -- -j "${VERIFY_JOBS:-4}" --output-format=terse "$@"
 # changed. `script/lint`'s `sh -n` check (added the same day) catches a regression here; this comment
 # is why a future editor should not just delete that check to add one back.
 CRATES="$(cat <<'TABLE'
-capability_table	12	the capability model
-page_tables	4	the address arithmetic, and the page set for an IOMMU domain
-memory_regions	490	the untyped-region accounting, no double-free
-static_elf	105	the loader's front half, and the note walk, panic-free on hostile input
-boot_ladder	139	the verdict reader: a count never overflows and a name list holds only plain names
-page_frames	16	the physical frame allocator
+capability_table	11	the capability model
+page_tables	5	the address arithmetic, and the page set for an IOMMU domain
+memory_regions	504	the untyped-region accounting, no double-free
+static_elf	104	the loader's front half, and the note walk, panic-free on hostile input
+boot_ladder	136	the verdict reader: a count never overflows and a name list holds only plain names
+page_frames	15	the physical frame allocator
 address_space_layout	3	the user address-space map: every address in exactly one band, and each band function accepts exactly its band
 allocation_cache	3	the size-class arithmetic: a request lands in a class that holds it, and the heap layout is never empty or smaller
 byte_sink_contract	9	the byte-sink framing: any prefix round-trips, the decoder is total, an end of stream decodes from exactly one message, severity reads back clamped, classify tells the three outcomes apart
-domain_name_resolution_contract	450	the grant table: any short run of control messages never panics, and a badge is in force only once a message said Granted, in a window that never moves
-program_argument_contract	63	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states
-device_tree_blob	186	the device-tree parser's leaf readers
-inter_process_communication	11	the rendezvous state machine
+domain_name_resolution_contract	485	the grant table: any short run of control messages never panics, and a badge is in force only once a message said Granted, in a window that never moves
+program_argument_contract	72	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states
+device_tree_blob	188	the device-tree parser's leaf readers
+inter_process_communication	14	the rendezvous state machine
 intrusive_queue	8	the scheduler's queue structure
 address_space_identifier	1	the TLB tag allocator
-line_editor	96	the line editor's escape parser and range delete keep the cursor inside the line
-machine_statistics_contract	54	the statistics page reader admits exactly the pages it names, every accessor is total over an admitted page, and a built header reads back empty
+line_editor	88	the line editor's escape parser and range delete keep the cursor inside the line
+machine_statistics_contract	56	the statistics page reader admits exactly the pages it names, every accessor is total over an admitted page, and a built header reads back empty
 nifefs	2	the initial ramdisk parser the kernel runs on boot input
 memory_region_heap	2	the heap's growth arithmetic: a grow never commits past the cap, a grow at the cap is a refusal, and the bytes it asks for never overflow
-capability_manifest_note	298	a manifest note has one encoding, and decoding hostile bytes never panics
-interfaces_note	32	the INTERFACES note has one encoding, and decoding hostile bytes never panics
+capability_manifest_note	330	a manifest note has one encoding, and decoding hostile bytes never panics
+interfaces_note	36	the INTERFACES note has one encoding, and decoding hostile bytes never panics
 package_archive	5	a package file is refused or read entirely inside itself, on bytes the solver chose
-measured_boot	55	a digest text form reads back as itself, and nothing but a labeled sha256 parses
+measured_boot	50	a digest text form reads back as itself, and nothing but a labeled sha256 parses
 sealed_pair	44	a digest is found in a kernel image exactly when it is there, at any offset, and a table line vouches for an entry exactly when its digest is the entry's own
-pci_configuration_space	36	config-space decode on hostile-device input
-socket_contract	4	the listen and UDP bind grants admit exactly their ranges, the two halves of a composed grant are independent, and a peer word round-trips
-network_stack	623	the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
-jh7110_clock_and_reset	98	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
-jh7110_pci_express	2	the PCI Express outbound window encoder round-trips its size, and the root port forwards exactly bus 1 and exactly its memory window
-usb	120	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
-direct_memory_access_validator	124	the DMA-confinement validator, no descriptor escapes the grant
-network_time_protocol	17	the 1900-epoch era pivot, and no hostile packet moves the clock
-domain_name_system	154	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
-globally_unique_identifier_partition_table	56	the partition table's CRC-32, its round trips, and partitions that overlap
-byte_glob	559	matching is total, and a hostile pattern cannot be made to blow up
-master_boot_record	8	the MBR parse reads each entry from its own bytes, and the scratch range never touches a partition or sector 0
-filesystem_contract	3	a directory capability's child never exceeds its parent, at any depth
-subtree_scope	234	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
+pci_configuration_space	42	config-space decode on hostile-device input
+socket_contract	230	the listen and UDP bind grants admit exactly their ranges, and the two halves of a composed grant are independent, and the ephemeral cursor never moves back, hands out no held port and clears every earlier stack
+jh7110_clock_and_reset	114	the clock offsets, reset lines and status decoders are total, and no plan releases a reset before its clocks run
+jh7110_pci_express	1	the PCI Express outbound window encoder round-trips its size, and the root port forwards exactly bus 1 and exactly its memory window
+usb	118	a USB configuration walk is total on hostile device bytes, and a boot report diff is bounded
+direct_memory_access_validator	122	the DMA-confinement validator, no descriptor escapes the grant
+network_time_protocol	18	the 1900-epoch era pivot, and no hostile packet moves the clock
+domain_name_system	130	the name decoder ends on every pointer loop, and a TCP reply never writes past its buffer
+globally_unique_identifier_partition_table	57	the partition table's CRC-32, its round trips, and partitions that overlap
+byte_glob	594	matching is total, and a hostile pattern cannot be made to blow up
+master_boot_record	5	the MBR parse reads each entry from its own bytes, and the scratch range never touches a partition or sector 0
+filesystem_contract	4	a directory capability's child never exceeds its parent, at any depth
+subtree_scope	215	a subtree grant reaches only its own root and what it minted, never goes up, never follows a link, never crosses a mount
 counter_frequency_contract	2	the counter frequency page: a frame reads as unknown exactly when its magic differs, and a built page reads back its rate
 current_cpu_contract	2	the current-CPU page: a reader answers only what the page holds, and a built page reads back its words
-credential_contract	2	no request word reads outside the page; nothing but MATCH authenticates
-capability_plan	10	no wiring grants a right its declaration did not ask for
-periodic_deadline	4	the next deadline on a beat: strictly forward, minimal, and a stall costs one fire
-timetable	36	the scheduler's calendar arithmetic: a time of day, a month day and a range
+credential_contract	1	no request word reads outside the page; nothing but MATCH authenticates
+capability_plan	11	no wiring grants a right its declaration did not ask for
+periodic_deadline	5	the next deadline on a beat: strictly forward, minimal, and a stall costs one fire
+timetable	39	the scheduler's calendar arithmetic: a time of day, a month day and a range
 driver_process_contract::designware_mobile_storage	1	no block the SD card server translates leaves the window the kernel chose
 driver_process_contract::e1000e	2	the e1000e spawn handoff round-trips, and accepts only a page-aligned base and a unicast MAC
-driver_process_contract::extensible_host_controller_interface	19	the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
+driver_process_contract::extensible_host_controller_interface	20	the xHCI driver is never mapped its MSI-X page, and its spawn handoff round-trips
 driver_process_contract::non_volatile_memory_express	1	the NVMe spawn handoff round-trips, and keeps its doorbells in the one mapped page
 driver_process_contract::virtual_io	345	a direct virtio window maps no MSI-X page and nothing past its BAR, and its spawn hand-off round-trips
-kernel	7	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
-components	148	the EL0 components: a bounded append that a configuration page this system did not write feeds, and the block driver's pure logic (the library's block_driver_roles): the directory lookup is total and matches whole names, the IP checksum, and the bounded waits
-machine_discovery	392	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
+kernel	9	the run arithmetic in the kernel's own syscall dispatch, and the SMMU entries that say which frames a device may reach
+components	156	the EL0 components: a bounded append that a configuration page this system did not write feeds, and the block driver's pure logic (the library's block_driver_roles): the directory lookup is total and matches whole names, the IP checksum, and the bounded waits
+machine_discovery	346	the firmware tables and boot handoffs: ACPI, PVH, the screen token, the RISC-V ISA string
 TABLE
 )"
 

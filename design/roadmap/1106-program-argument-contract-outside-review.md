@@ -36,20 +36,20 @@ section number, a milestone or a person in another repository.
 
 ## Finding status
 
-- P0-1, the manifest does not stand alone: Open. `Cargo.toml` still inherits `license` and
-  `lints`, lacks `rust-version`, `description`, `repository` and `readme`, and keeps its comments.
-- P0-2, the repository files: Open. The scaffold's files, the README and a stranger
-  run remain.
-- P0-3, text that reaches into nife: Open. The crate root still cites sections, milestones and
-  paths and names the architect; the move strips the `Name:` blocks.
-- P0-4, seven names the spelled-out gate refuses: Ruled (maintainer, provisional, 2026-11-14 UTC;
-  see "Three public names" below). Not built: `ArgPage`, `from_va(va)` and the `arg` and `args`
-  bindings keep their old spellings in the crate, the `std` overlay and its generator.
-- P1-5, `CAPACITY` carries no unit: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built:
-  `CAPACITY` still stands in the crate and in `grant_plan`'s parsing and refusal code.
-- P1-6, no proof: Open. Two of the three harnesses and their patches landed in
-  [#3567](https://github.com/nifeos/nife/pull/3567); the round-trip harness waits on P2-12's
-  builder shape and a memory measurement.
+- P0-1, the manifest does not stand alone: Done in nife. The move adds `repository`.
+- P0-2, the repository files: Partly done. The README and both license texts are in the crate. The
+  move lane owns the scaffold's other files and the stranger run.
+- P0-3, text that reaches into nife: Done in nife. The crate's text has no section, milestone or
+  path, and no architect's name or quotation. The move strips the `Name:` blocks.
+- P0-4, seven names the spelled-out gate refuses: Done (maintainer, provisional, 2026-11-14 UTC;
+  see "Three public names" below). The crate and the `std` overlay carry the new names, and the
+  generator copies the crate verbatim. The overlay's `args()` is the standard library's own name
+  and stays.
+- P1-5, `CAPACITY` carries no unit: Done (maintainer, provisional, 2026-11-14 UTC). `grant_plan`
+  uses `MAXIMUM_RECORDS_BYTES`.
+- P1-6, no proof: Partly done. Two of the three harnesses and their patches landed in
+  [#3567](https://github.com/nifeos/nife/pull/3567). The round-trip harness over the exact-page
+  builder ran Kani's solver past 11 GiB and failed, so it did not land; the tests cover the round trip.
 - P1-7, the `unsafe` reader has no test: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P1-8, the mutation exemption and the coverage figure: Open. Both belong to the move.
 - P1-9, the all-or-nothing claim: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
@@ -57,18 +57,18 @@ section number, a milestone or a person in another repository.
   alternative the review allowed; the maintainer rules provisionally whether that closes it.
 - P2-11, `EMPTY` unused and its literal duplicated: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
-- P2-12, the builder takes a fixed array: Open. `PageBuilder::new` still takes
-  `&mut [u8; PAGE_BYTES]`; a builder over any slice remains.
-- P2-13, the layout arithmetic copied in `grant_plan`: Open. `record_bytes`,
-  `remaining_bytes` and the pedantic API items remain; `grant_plan` still sums by hand.
+- P2-12, the builder takes a fixed array: Done (maintainer, provisional, 2026-11-19 UTC).
+  `PageBuilder::new` takes `&mut [u8]` and refuses any length but `PAGE_BYTES` with `WrongPageLength`
+  (a provisional name).
+- P2-13, the layout arithmetic copied in `grant_plan`: Done. `record_bytes` and
+  `PageBuilder::remaining_bytes` are provisional names, and `grant_plan` sums with `record_bytes`.
 - P2-14, the data bounds the record walk: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-15, the one-file constraint: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - Ruling, the layout leaves as built with `VERSION` 1 and `INTERFACE_ID` 18: Done,
   [#3579](https://github.com/nifeos/nife/pull/3579) (ruled 2026-11-14 UTC; nothing to build).
 - Ruling, a numbered magic replaces `nifeargv`: Ruled (2026-11-14 UTC), condition met (below).
   Not built: `MAGIC` still reads `b"nifeargv"`.
-- Ruling, three public names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: the same
-  renames as P0-4 and P1-5.
+- Ruling, three public names: Done (maintainer, provisional, 2026-11-14 UTC), with P0-4 and P1-5.
 - Ruling, the repository: Ruled (2026-11-14 UTC). Not built: a lane creates
   `nifeos/program_argument_contract`, runs the move check and a dry run, and tags
   `v0.1.0-pre.1` with no publish, after the renames and milestone 994.
@@ -262,7 +262,7 @@ provisional until an architect ratifies them.
   contract family it is the number of bytes the page content occupies, header included (see
   `crates/base_digest_contract/src/lib.rs`), and the capacity here is the space for records alone.
 
-The code keeps the old names until a lane renames them.
+The crate, the `std` overlay and `grant_plan` use the new names.
 
 ### The repository
 
@@ -277,10 +277,10 @@ It takes the tag `v0.1.0-pre.1` after the move check and a release dry run, with
   2026-11-19 UTC): 1115 (the gate builds basalt's delivered programs from the candidate tree) in
   every merge group, and 994 (the cross-repository pair is tested where the pin is) in basalt. The
   numbered magic lands in one nife pull request, a lane of its own.
+- **Done.** The three renames, P0-1, P0-3, P2-12 and P2-13, and part of P0-2.
 - **Outstanding.** Every finding marked Open or Ruled under "Finding status" above, each with what
   remains, checked against `crates/program_argument_contract` and `crates/grant_plan`.
-- **Outstanding.** The three renames of the rulings and the numbered magic, then the repository
-  and its `v0.1.0-pre.1` tag.
+- **Outstanding.** The numbered magic, then the repository and its `v0.1.0-pre.1` tag.
 
 ## Done when
 
@@ -288,9 +288,8 @@ The checks are in [the appendix](1106-program-argument-contract-outside-review/d
 
 ## BUGS
 
-- The round-trip harness here failed for memory, not for a property. Whether item 12's builder
-  shape makes it fit is a guess, not a measurement; a lane measures it before promising the third
-  harness in the README.
+- The round-trip harness fails for memory, not for a property: with item 12's exact-page builder
+  it ran past 11 GiB.
 - Nobody measured the coverage floor. The two unreached public lines have names; the percentage
   does not.
 - The mutation figures are the weekly census's, read from the metrics files. This review ran no

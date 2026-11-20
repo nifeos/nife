@@ -122,9 +122,7 @@ crates/page_tables/src/mapper.rs::walk question-shape
 
 
 
-crates/program_argument_contract/src/lib.rs::ArgPage spelled-out
 
-crates/program_argument_contract/src/lib.rs::from_va spelled-out
 
 
 crates/screen_console/src/lib.rs::copy question-shape
