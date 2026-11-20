@@ -15,7 +15,7 @@ reading `result_ep` while that program runs.
 On the spawn endpoint, an edit to the installed-programs table is asked first, because under that
 bit no other bit of word 2 means anything. Only the owner's console sends it (`vouch`).
 
-Everything else is a spawn, in one of three shapes (`program_table::spawnproto`):
+Everything else is a spawn, in one of three shapes (`program_table::spawn_protocol`):
 
 - A normal job. `Service::spawn_job` builds the child in a region it splits off the job pool, with
   a supervision endpoint in its fault slot.

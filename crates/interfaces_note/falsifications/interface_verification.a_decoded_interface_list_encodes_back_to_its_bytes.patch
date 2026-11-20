@@ -17,8 +17,8 @@ index 70afb0cb6..6aca6a410 100644
 +++ b/crates/interfaces_note/src/lib.rs
 @@ -219,7 +219,7 @@ pub fn decode_interfaces(d: &[u8]) -> Result<Interfaces<'_>, Error> {
      for i in 0..count {
-         let at = 8 + i * INTERFACE_RECORD;
-         let id = record(&d[at..at + INTERFACE_RECORD]).id;
+         let at = 8 + i * INTERFACE_RECORD_BYTES;
+         let id = record(&d[at..at + INTERFACE_RECORD_BYTES]).id;
 -        if previous.is_some_and(|p| p >= id) {
 +        if previous.is_some_and(|p| p > id) {
              return Err(Error::BadField(at));

@@ -13,7 +13,7 @@ fn every_say_but_nothing_is_one_line() {
         Say::NoDirectory,
         Say::NeedsAName,
         Say::Cannot(Refusal::NoMatch),
-        Say::CannotBind(nav::BindRefused::TooMany),
+        Say::CannotBind(navigation::BindRefused::TooMany),
     ] {
         let line = shown(|o| write_say(s, o));
         assert!(line.ends_with('\n'), "{s:?} does not end its line");
@@ -32,11 +32,11 @@ fn a_filesystem_refusal_keeps_the_filesystems_own_words() {
     );
 }
 
-/// [`Say::CannotBind`] renders [`nav::BindRefused`]'s own message, the same shape
+/// [`Say::CannotBind`] renders [`navigation::BindRefused`]'s own message, the same shape
 /// [`Say::Cannot`] and [`Say::Refused`] already use for their own refusal types.
 #[test]
 fn cannot_bind_renders_the_bind_refusals_own_message() {
-    let s = shown(|o| write_say(Say::CannotBind(nav::BindRefused::AlreadyBound), o));
+    let s = shown(|o| write_say(Say::CannotBind(navigation::BindRefused::AlreadyBound), o));
     assert_eq!(s, "  that name is already bound; unbind it first\n");
 }
 

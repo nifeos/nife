@@ -111,7 +111,7 @@ An address it was never granted has no mapping, so the IOMMU faults. Both `virt`
 in the low half, at `0x4000_0000` on aarch64 and `0x8000_0000` on riscv.
 
 A single-stage RISC-V IOMMU translation (`iosatp`, no process context) faults on a leaf whose U bit
-is clear. So a domain leaf is `Flags::user_data`, or `Flags::user_rodata` for a region the device
+is clear. So a domain leaf is `Flags::user_data`, or `Flags::user_read_only_data` for a region the device
 may only read. Each region says which, so the virtio shadow page and a firmware region the IVRS
 marks read-only are not writable.
 
@@ -121,7 +121,7 @@ page anyway, but deciding it here makes the refusal provable. A `base + size` th
 other, since a region with no end has no "inside". That closes a proof obligation rather than a
 reachable bug. A wrapped address needs a size within a page of 2^64, and the frame allocator runs
 dry after a few thousand pages. What the check buys is a confinement property that holds for every
-`DmaRegion` value, so no new caller has to re-derive it.
+`DirectMemoryAccessRegion` value, so no new caller has to re-derive it.
 
 Soundness rests on `grant_pages` flooring the page count, not on `grant_page`'s whole-page test.
 Weakening that test to `off >= r.size` leaves the soundness harness green, and rounding the count

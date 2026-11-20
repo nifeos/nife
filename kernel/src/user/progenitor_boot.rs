@@ -214,7 +214,7 @@ fn progenitor_address_space(
             .map_physical(
                 INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
                 ramdisk_start + i * FRAME_SIZE,
-                Flags::user_rodata(),
+                Flags::user_read_only_data(),
                 crate::revoke::PageMapSource::NoCapability,
             )
             .map_err(LoadError::Unmappable)?;

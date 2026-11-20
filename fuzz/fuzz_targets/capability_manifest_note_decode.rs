@@ -39,7 +39,7 @@ use capability_manifest_note::{
     VERB_RECORD_BYTES, VERBS_VERSION, ZONED_VERSION, asks_service, decode, decode_subtree_grants,
     decode_verbs, encode, zones,
 };
-use grant_contract::{IndexStoreDeclaration, MAXIMUM_VERB, ManifestAuthorities};
+use grant_contract::{IndexStoreDeclaration, MAXIMUM_VERB_BYTES, ManifestAuthorities};
 use libfuzzer_sys::{fuzz_mutator, fuzz_target};
 
 fuzz_target!(|data: &[u8]| {
@@ -125,13 +125,14 @@ fn verbs(d: &[u8]) {
     let mut previous: Option<&[u8]> = None;
     let mut seen = 0;
     for (verb, grants) in table.iter() {
-        assert!(!verb.is_empty() && verb.len() <= MAXIMUM_VERB && !verb.contains(&0));
+        assert!(!verb.is_empty() && verb.len() <= MAXIMUM_VERB_BYTES && !verb.contains(&0));
         assert!(previous.is_none_or(|p| p < verb), "verbs ascend, each once");
         previous = Some(verb);
         assert_eq!(table.grants_for(verb), Some(grants));
         let mut record = [0u8; VERB_RECORD_BYTES];
         record[..verb.len()].copy_from_slice(verb);
-        record[MAXIMUM_VERB..MAXIMUM_VERB + 2].copy_from_slice(&grants.bits().to_le_bytes());
+        record[MAXIMUM_VERB_BYTES..MAXIMUM_VERB_BYTES + 2]
+            .copy_from_slice(&grants.bits().to_le_bytes());
         again.extend_from_slice(&record);
         seen += 1;
     }
@@ -236,7 +237,7 @@ fn build_verbs(random: &mut Random) -> Vec<u8> {
         let mut record = [0u8; VERB_RECORD_BYTES];
         record[..verb.len()].copy_from_slice(verb);
         let bits = (random.next() as u16) & ManifestAuthorities::ALL.bits();
-        record[MAXIMUM_VERB..MAXIMUM_VERB + 2].copy_from_slice(&bits.to_le_bytes());
+        record[MAXIMUM_VERB_BYTES..MAXIMUM_VERB_BYTES + 2].copy_from_slice(&bits.to_le_bytes());
         out.extend_from_slice(&record);
     }
     out

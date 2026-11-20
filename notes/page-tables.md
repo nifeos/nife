@@ -129,7 +129,7 @@ one is a build failure rather than a security hole.
 | Constructor | EL1 | EL0 |
 |---|---|---|
 | `kernel_code()` | read + execute | nothing |
-| `kernel_rodata()` | read | nothing |
+| `kernel_read_only_data()` | read | nothing |
 | `kernel_data()` | read + write | nothing |
 | `device()` | read + write, device-typed | nothing |
 | `user_code()` | read (**PXN**: no execute) | read + execute |

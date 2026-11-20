@@ -567,11 +567,10 @@ fn a_serviced_descriptor_walks_its_zones_to_its_last_byte() {
 /// owner, name size, and descriptor offset as a manifest note.
 #[test]
 fn the_interfaces_note_shares_the_manifest_notes_header() {
-    let list = [interfaces_note::Declared { id: 1, version: 1 }];
-    let interfaces =
-        interfaces_note::InterfacesNote::<{ interfaces_note::interfaces_note_len(1) }>::of::<
-            { interfaces_note::interfaces_len(1) },
-        >(&list);
+    let list = [interfaces_note::DeclaredInterface { id: 1, version: 1 }];
+    let interfaces = interfaces_note::InterfacesNote::<{ interfaces_note::note_bytes(1) }>::of::<
+        { interfaces_note::descriptor_bytes(1) },
+    >(&list);
     let manifest = SubtreeGrantsNote::of(Scope::SubtreeScope);
     let header = HEADER_BYTES + NAME_FIELD_BYTES;
     assert_eq!(&interfaces.0[..4], &manifest.0[..4], "namesz");
@@ -586,7 +585,7 @@ fn the_interfaces_note_shares_the_manifest_notes_header() {
     );
     assert_eq!(
         interfaces.0.len() - header,
-        interfaces_note::interfaces_len(1)
+        interfaces_note::descriptor_bytes(1)
     );
 }
 

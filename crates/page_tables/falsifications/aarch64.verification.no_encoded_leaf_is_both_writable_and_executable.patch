@@ -1,6 +1,6 @@
 Falsifies `page_tables::aarch64::verification::no_encoded_leaf_is_both_writable_and_executable`.
 
-The defect: `Aarch64::attrs` stops setting `PXN` on a writable page, on the reasoning that a data
+The defect: `Aarch64::attributes` stops setting `PXN` on a writable page, on the reasoning that a data
 page is not code and the kernel will never branch into it. That is the reasoning W^X exists to
 refuse. The portable `Flags` constructors already keep write and execute apart, so a writable page
 reaching the encoder is a page whose descriptor must carry `PXN`, or a kernel buffer overflow in

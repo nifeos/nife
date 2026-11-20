@@ -161,21 +161,21 @@ fn start_supervised(program: Program, e: Endowment, foreground: bool) -> Option<
     // since `new` already takes a runtime base" is round 2's own framing for this cluster).
     let jf = unsafe { MappedWindow::new(va, PAGE) };
     // A freshly retyped frame is zeroed, but make the shared contract explicit.
-    jf.write(job_page_frame::INTERRUPT as u64, 0u64);
-    jf.write(job_page_frame::DONE as u64, 0u64);
-    jf.write(job_page_frame::STATUS as u64, 0u64);
-    jf.write(job_page_frame::HEARTBEAT as u64, 0u64);
+    jf.write(job_channel_page::INTERRUPT as u64, 0u64);
+    jf.write(job_channel_page::DONE as u64, 0u64);
+    jf.write(job_channel_page::STATUS as u64, 0u64);
+    jf.write(job_channel_page::HEARTBEAT as u64, 0u64);
 
     // Direct the progenitor: an interruptible request, then the job untyped, delegated with every
     // right (the progenitor builds from it, and since milestone 824 (a retype mints no right its
     // budget lacks) what it builds carries the budget's rights), and the job frame, WRITE|GRANT (the
     // progenitor maps it). We keep our own copies: the untyped to tear the job down, the frame to
     // signal it and read it.
-    let (w0, w1, w2) = spawnproto::request(
+    let (w0, w1, w2) = spawn_protocol::request(
         program.id(),
         e.program_argument,
         e.memory_grant_pages,
-        spawnproto::Wiring {
+        spawn_protocol::Wiring {
             interruptible: true,
             sink: false,
             source: false,
@@ -223,7 +223,7 @@ fn start_supervised(program: Program, e: Endowment, foreground: bool) -> Option<
 
     // The progenitor acks once the child is running: that is the shell's go-ahead to start watching.
     let answer = receive(RESULT).0;
-    if answer != spawnproto::SPAWN_OK {
+    if answer != spawn_protocol::SPAWN_OK {
         failed();
         print(swish::spawn_failure_sentence(answer));
         give_back(job_fr, job_ut);
@@ -262,9 +262,9 @@ pub(super) fn watch(h: &Held) -> bool {
     let mut fed: u64 = 0;
     loop {
         // Finished on its own (cooperatively or naturally)?
-        if jf.read::<u64>(job_page_frame::DONE as u64) != 0 {
-            let status = jf.read::<u64>(job_page_frame::STATUS as u64);
-            let beats = jf.read::<u64>(job_page_frame::HEARTBEAT as u64);
+        if jf.read::<u64>(job_channel_page::DONE as u64) != 0 {
+            let status = jf.read::<u64>(job_channel_page::STATUS as u64);
+            let beats = jf.read::<u64>(job_channel_page::HEARTBEAT as u64);
             reclaim(job_ut);
             report_finished(status, beats);
             return false;
@@ -290,7 +290,7 @@ pub(super) fn watch(h: &Held) -> bool {
         }
         match action {
             Action::Cooperative => {
-                jf.write(job_page_frame::INTERRUPT as u64, 1u64);
+                jf.write(job_channel_page::INTERRUPT as u64, 1u64);
                 print(b"  ^C: asked the job to stop.\n");
             }
             Action::Forcible => {
@@ -360,7 +360,7 @@ static WATCH_NOTIFICATION: core::sync::atomic::AtomicU64 = core::sync::atomic::A
 /// 100 wakes a second, each a page read and a `CALL` for the `^C` count. A watch that wakes only
 /// when the job ends or `^C` arrives needs both to signal a notification this shell waits on, which
 /// is milestone 103 (`^C` stops spinning: the shell's interrupt watch, blocking).
-/// `grant_plan::COOP_GRACE_TICKS` counts loop iterations, so its 200 are two seconds of wall time.
+/// `grant_plan::COOPERATIVE_GRACE_POLLS` counts loop iterations, so its 200 are two seconds of wall time.
 fn watch_pause() {
     use core::sync::atomic::Ordering::Relaxed;
     let mut t = WATCH_TIMER.load(Relaxed);
@@ -384,7 +384,7 @@ fn watch_pause() {
 
 /// Report a job that stopped on its own.
 fn report_finished(status: u64, beats: u64) {
-    if status == job_page_frame::STATUS_INTERRUPTED {
+    if status == job_channel_page::STATUS_INTERRUPTED {
         // Interrupted is a job that did not finish what it was asked to do, so `&&` must not carry
         // on past it. It is [`failed`] rather than [`refused`] because it ran: the shell agreed to
         // it, spawned it, and a person stopped it.
@@ -558,9 +558,9 @@ impl Held {
     fn ended(&self) -> Option<Ending> {
         match self.watch {
             Watch::Frame { jf, .. } => {
-                (jf.read::<u64>(job_page_frame::DONE as u64) != 0).then(|| Ending::Framed {
-                    status: jf.read::<u64>(job_page_frame::STATUS as u64),
-                    beats: jf.read::<u64>(job_page_frame::HEARTBEAT as u64),
+                (jf.read::<u64>(job_channel_page::DONE as u64) != 0).then(|| Ending::Framed {
+                    status: jf.read::<u64>(job_channel_page::STATUS as u64),
+                    beats: jf.read::<u64>(job_channel_page::HEARTBEAT as u64),
                 })
             }
             Watch::Exit { label } => held::has_died(label).map(|fault| Ending::Exited { fault }),
@@ -844,7 +844,7 @@ pub(super) fn kill_job(jobs: &mut Jobs, tail: &[u8]) {
             print(b"  kill: that job has no cooperative stop; kill -9 %N tears it down\n");
             return;
         };
-        jf.write(job_page_frame::INTERRUPT as u64, 1u64);
+        jf.write(job_channel_page::INTERRUPT as u64, 1u64);
         // A stopped job is resumed so it can see the request, which is bash's `kill` on a stopped
         // job: the signal, then `SIGCONT`. It runs on in the background.
         if h.stopped

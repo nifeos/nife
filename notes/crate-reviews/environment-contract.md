@@ -4,13 +4,12 @@
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
-The architect reads this to ratify the crate's names and to clear its review. Clearing is the go to
+The architect reads this to clear the crate's review; its names are ratified. Clearing is the go to
 create `nifeos/environment_contract` as a `publish = false` repository, as part of step 8 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 The outside review's findings are in
 [milestone 1089 (`environment_contract`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1089-environment-contract-outside-review.md).
-This package describes the crate as `main` plus this branch leaves it. It changes no crate source
-and renames nothing: every ruling below is a proposal for the architect.
+This package describes the crate as `main` plus this branch leaves it. It renames nothing.
 
 ## In one paragraph
 
@@ -119,35 +118,31 @@ zeroed frame, and one length past each cap.
 
 ## Names
 
-Proposals for the architect. This lane renames nothing. The tree rules that decide each row are
+Every public name is ratified as built, ruled 2026-11-19 (UTC). The tree rules that decide each row are
 [design/naming.md](../../design/naming.md): spell out words and units, a spec term of art spelled
 out with `#[doc(alias = "<spec term>")]`, the page family's constants in
 [design/naming/crates.md](../../design/naming/crates.md), a question answers with `is_`, restrictive
-first, and `id` accepted. The milestone calls the provisional set eleven names. The list below has
-ten groups and twelve spellings, so the proposal covers every spelling, and the architect's
-ratification can name them all.
+first, and `id` accepted. The ruling covers every spelling below, twelve in ten groups.
 
-| name | kind | block now | proposal and reason |
+| name | kind | block | ruling and reason |
 |---|---|---|---|
-| `PAGE_CONTENT_BYTES` | constant | provisional | Ratify. It is the page family's name for the content length (`design/naming/crates.md`), it spells its unit, and the crate has no real page size to confuse it with |
-| `ConfigurationPage` | type | provisional | Ratify. It spells `Config`, matches the writer `PageBuilder` and the sibling reader types `ClockPage`, `CurrentCpuPage` and `CounterFrequencyPage`, which name their subject and then `Page`; the crate name carries `environment` |
-| `ConfigurationPage::new`'s `virtual_address` | parameter | provisional | Ratify. It is the page family's spelling of an address parameter, and `PAGE_VIRTUAL_ADDRESS` is absent here because the caller picks the address |
-| `PageBuilder::time_zone`, `ConfigurationPage::time_zone` | methods | provisional | Ratify, with `#[doc(alias = "TZ")]`, which both carry. `TZ` is POSIX's variable name, so the alias is the spec term; the old spelling `tz` takes no alias |
-| `PageBuilder::locale`, `ConfigurationPage::locale` | methods | provisional | Ratify, with `#[doc(alias = "LANG")]`. `locale` is the standard word and `LANG` the variable |
-| `PageBuilder::terminal_type`, `ConfigurationPage::terminal_type` | methods | provisional | Ratify, with `#[doc(alias = "TERM")]`. `terminal_type` spells `term`; `TERM` is the variable |
-| `domain::is_known_time_zone`, `is_known_locale`, `is_known_terminal_type` | functions | provisional | Ratify. They answer yes or no with `is_` (`design/naming/functions-that-answer-yes-or-no.md`), and `known` names the claim about the list, which matches `KNOWN_TIME_ZONES` and its siblings. `valid` would claim more |
-| `Refused::UnknownTimeZone`, `UnknownLocale`, `UnknownTerminalType` | variants | no block | Ratify. They spell their words and say what was wrong with the value, `unknown` against the list, in step with `is_known_*`. They carry no alias, because a variable name does not name an error |
-| `PageBuilder`, `PageBuilder::new`, `build`, `Refused`, the module `domain` | items | no block | Ratify as built. `design/naming/crates.md` puts `PageBuilder::build` outside the page family rule, and each passes the template's spelled-out and unit checks. `Refused` is also the name `program_argument_contract` and `base_digest_contract` give their refusal enums |
-| `MAGIC`, `VERSION`, `INTERFACE_ID` | constants | ratified 2026-11-14 | Stand |
+| `PAGE_CONTENT_BYTES` | constant | ratified 2026-11-19 | Ratified. It is the page family's name for the content length (`design/naming/crates.md`), it spells its unit, and the crate has no real page size to confuse it with |
+| `ConfigurationPage` | type | ratified 2026-11-19 | Ratified. It spells `Config`, matches the writer `PageBuilder` and the sibling reader types `ClockPage`, `CurrentCpuPage` and `CounterFrequencyPage`, which name their subject and then `Page`; the crate name carries `environment` |
+| `ConfigurationPage::new`'s `virtual_address` | parameter | ratified 2026-11-19 | Ratified. It is the page family's spelling of an address parameter, and `PAGE_VIRTUAL_ADDRESS` is absent here because the caller picks the address |
+| `PageBuilder::time_zone`, `ConfigurationPage::time_zone` | methods | ratified 2026-11-19 | Ratified, with `#[doc(alias = "TZ")]`, which both carry. `TZ` is POSIX's variable name, so the alias is the spec term; the old spelling `tz` takes no alias |
+| `PageBuilder::locale`, `ConfigurationPage::locale` | methods | ratified 2026-11-19 | Ratified, with `#[doc(alias = "LANG")]`. `locale` is the standard word and `LANG` the variable |
+| `PageBuilder::terminal_type`, `ConfigurationPage::terminal_type` | methods | ratified 2026-11-19 | Ratified, with `#[doc(alias = "TERM")]`. `terminal_type` spells `term`; `TERM` is the variable |
+| `domain::is_known_time_zone`, `is_known_locale`, `is_known_terminal_type` | functions | ratified 2026-11-19 | Ratified. They answer yes or no with `is_` (`design/naming/functions-that-answer-yes-or-no.md`), and `known` names the claim about the list, which matches `KNOWN_TIME_ZONES` and its siblings. `valid` would claim more |
+| `Refused::UnknownTimeZone`, `UnknownLocale`, `UnknownTerminalType` | variants | no block | Ratified 2026-11-19. They spell their words and say what was wrong with the value, `unknown` against the list, in step with `is_known_*`. They carry no alias, because a variable name does not name an error |
+| `PageBuilder`, `PageBuilder::new`, `build`, `Refused`, the module `domain` | items | no block | Ratified as built 2026-11-19. `design/naming/crates.md` puts `PageBuilder::build` outside the page family rule, and each passes the template's spelled-out and unit checks. `Refused` is also the name `program_argument_contract` and `base_digest_contract` give their refusal enums |
+| `MAGIC`, `VERSION`, `INTERFACE_ID` | constants | ratified 2026-11-14 | Stands |
 | `KNOWN_TIME_ZONES`, `KNOWN_LOCALES`, `KNOWN_TERMINAL_TYPES`, `MAXIMUM_*_BYTES` | constants | ratified 2026-10-27 | Stand; each carries its alias and spells its unit |
-| the module `verification` | module | provisional | Ratify. It is the name every crate's harnesses use |
+| the module `verification` | module | ratified 2026-11-19 | Ratified. It is the name every crate's harnesses use |
 
 The private names (`tz`, `lang` and `term` as the builder's fields, and the offset constants) pass
-the template's checks and are the move lane's to touch. The `Name:` blocks of the ratified rows need
-no edit. The ten provisional names (six accessor blocks and three function blocks among them) and
-the four items with no block are the ones this ratification settles. The move strips the `Name:` blocks (`crate-move` reports them removed from 2 files), so a
-lane need not rewrite them first; if the architect wants them rewritten in nife before the move, that
-is a short lane.
+the template's checks and are the move lane's to touch. The `Name:` blocks of the ratified names
+read ratified in the crate's source. The four items with no block carry none. The move strips the
+`Name:` blocks (`crate-move` reports them removed from 2 files).
 
 A rename would sweep these files:
 
@@ -178,10 +173,10 @@ are the move lane's work.
 
 ## Open questions
 
-None. The names are the architect's, and the proposals above carry the reasons.
+None.
 
 ## Recommendation
 
-Ready for review. Ratify the names as proposed and clear the review, which is the go to create
-`nifeos/environment_contract` as a `publish = false` repository. The crate is a leaf with no
+Ready for the review clearance, which is the architect's and is the go to create
+`nifeos/environment_contract` as a `publish = false` repository. The names are ratified. The crate is a leaf with no
 reference back into nife and a frozen identity.

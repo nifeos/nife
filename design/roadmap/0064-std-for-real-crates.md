@@ -122,7 +122,7 @@ build them, and report what breaks.
 - **Recorded.** The exit event still carries no exit code, so a supervisor can tell exit from crash
   and cannot tell `exit(0)` from `exit(1)`. The reasoning lives in `notes/std.md`.
 - **Done.** `env` is seeded now: `design/decisions/0111-inert-config-is-a-validated-page.md` and
-  `crates/environment_contract` define a validated read-only page, and the environment shim under
+  the `environment_contract` package define a validated read-only page, and the environment shim under
   `patches/std-nife/overlay/std/src/sys/env/nife.rs` fills `TZ`, `LANG` and `TERM` from it before
   `main` runs.
 - **Milestone 154.** Tier-two `File::open`, anything that joins or traverses, still waits on a

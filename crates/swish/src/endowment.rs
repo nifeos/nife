@@ -39,9 +39,9 @@ pub fn write_holdings(
             // 2026-09-26), and this table is the one place that says it.
             out(b"    cap 4  endpoint  directory  the files it can narrow into per-file grants\n");
             out(b"    cap ");
-            write_num(program_table::spawnproto::MOUNTED_TREE_SLOT, out);
+            write_num(program_table::spawn_protocol::MOUNTED_TREE_SLOT, out);
             out(b" endpoint  directory  a second tree, mounted at ");
-            let mut buf = [0u8; nav::RENDER_MAXIMUM];
+            let mut buf = [0u8; navigation::MAXIMUM_RENDERED_PATH_BYTES];
             let n = sd.mount().render(&mut buf);
             out(&buf[..n]);
             out(b"\n");
@@ -108,12 +108,12 @@ pub fn write_census(below: u64, held: &dyn Fn(u64) -> bool, out: &mut dyn FnMut(
 
 /// One row of `bind`'s own namespace section: the name it was filed under, and the path it
 /// resolves to.
-fn write_bind_row(entry: &nav::BindEntry, out: &mut dyn FnMut(&[u8])) {
+fn write_bind_row(entry: &navigation::BindEntry, out: &mut dyn FnMut(&[u8])) {
     out(b"      bind ");
     out(entry.name());
     out(b" -> ");
-    let mut buf = [0u8; nav::RENDER_MAXIMUM];
-    let n = entry.pos().render(&mut buf);
+    let mut buf = [0u8; navigation::MAXIMUM_RENDERED_PATH_BYTES];
+    let n = entry.position().render(&mut buf);
     out(&buf[..n]);
     out(b"\n");
 }
