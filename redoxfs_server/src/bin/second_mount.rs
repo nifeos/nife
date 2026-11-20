@@ -1,8 +1,7 @@
 //! The second-mount repro, on the host (fix/redoxfs-second-mount).
 //!
-//! Runs the real engine under the same allocator the FS server uses (`talc`, the algorithm behind
-//! `memory_region_heap::MemoryRegionHeap`), grown incrementally and capped as `redoxfs_server.rs`
-//! caps it, and mounts a used image again and again in one process: create the fixture, mount and
+//! Runs the real engine under the allocator the FS server uses, `memory_region_heap::MemoryRegionHeap`
+//! itself, over a host page source, grown incrementally and capped as `redoxfs_server.rs` caps it, and mounts a used image again and again in one process: create the fixture, mount and
 //! write, drop the mount without unmounting, then mount again and write. The image lives in a
 //! `static`, off the heap, as a disk reached over blk IPC is. A write that fails at the device's
 //! 8 MiB cap and succeeds at 64 is heap exhaustion; notes/fs-server/write-path-history.md records
@@ -16,168 +15,129 @@
 //! ```
 
 use std::alloc::{GlobalAlloc, Layout, System};
-use std::cell::UnsafeCell;
-use std::sync::Mutex;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Mutex, Once};
 
+use memory_region_heap::{MemoryRegionHeap, PageSource, Refusal};
 use redoxfs::{FileSystem, Node, TreePtr};
 use redoxfs_server::{BLOCK, BlockDisk, BlockIo, Server};
-use talc::base::Talc;
-use talc::base::binning::DefaultBinning;
-use talc::source::Manual;
 
-/// The pool the capped allocator draws from. Large enough to serve any cap we dial in; the *cap*,
-/// not the pool, is what limits the heap. Asked of the host's own allocator on the first growth and
+/// The pool the capped heap draws from. Large enough to serve any cap we dial in; the *cap*, not
+/// the pool, is what limits the heap. Asked of the host's own allocator on the first allocation and
 /// never returned, so it costs nothing in the binary and only touched pages cost memory.
 const POOL_SIZE: usize = 512 * 1024 * 1024;
 
 const PAGE: usize = 4096;
-/// The FS server's growth floor (`memory_region_heap::MINIMUM_GROW_PAGES`).
-const MINIMUM_GROW_PAGES: usize = 8;
 
 /// The heap cap in bytes, from `NIFE_HEAP_MIB`, defaulting to the FS server's 8 MiB
-/// (`redoxfs_server.rs::HEAP_MAXIMUM`, which `FS_BUDGET_PAGES` in kernel/src/user.rs matches).
+/// (`redoxfs_server.rs::HEAP_MAXIMUM`, which `FS_BUDGET_PAGES` in kernel/src/user.rs matches), and
+/// never past the pool.
 fn heap_cap() -> usize {
     std::env::var("NIFE_HEAP_MIB")
         .ok()
         .and_then(|s| s.parse::<usize>().ok())
         .unwrap_or(8)
-        * 1024
-        * 1024
+        .saturating_mul(1024 * 1024)
+        .min(POOL_SIZE)
 }
 
-/// High-water mark of bytes the allocator has committed, so the run can report how close it came to
-/// the cap. This is the number that decides the hypothesis.
-static COMMITTED: AtomicUsize = AtomicUsize::new(0);
-/// Set when an allocation fails because the cap refused to grow: the signature of exhaustion.
+/// Set when an allocation fails once the heap is wired: the cap refused to grow, the signature of
+/// exhaustion.
 static HIT_CAP: AtomicBool = AtomicBool::new(false);
 
-struct Inner {
-    heap: Talc<Manual, DefaultBinning>,
-    heap_end: Option<std::ptr::NonNull<u8>>,
-    base: usize,
-    committed: usize,
-    cap: usize,
-}
+/// The host's page source: every page of the pool is already mapped and writable, because
+/// [`System`] handed over the whole pool before the heap was wired.
+struct PoolPages;
 
-impl Inner {
-    /// Grow by at least `need` bytes, geometrically, bounded by the cap. A faithful copy of
-    /// `memory_region_heap::MemoryRegionHeap::grow`, so exhaustion happens here for the same reasons.
-    fn grow(&mut self, need: usize) -> bool {
-        if self.base == 0 {
-            // Page-aligned, as the device's heap band is. `System`, not this binary's global
-            // allocator: this IS the global allocator, growing.
-            let Ok(layout) = Layout::from_size_align(POOL_SIZE, PAGE) else {
-                return false;
-            };
-            // SAFETY: `layout` has a nonzero size. The block is never freed, so the regions
-            // donated from it below stay valid for the life of the process.
-            let raw = unsafe { System.alloc(layout) };
-            if raw.is_null() {
-                return false;
-            }
-            self.base = raw as usize;
-            self.cap = heap_cap();
-        }
-        let need_pages = need.div_ceil(PAGE);
-        let want_pages = need_pages
-            .max(self.committed / PAGE)
-            .max(MINIMUM_GROW_PAGES)
-            .min((self.cap - self.committed) / PAGE);
-        if want_pages < need_pages {
-            HIT_CAP.store(true, Ordering::Relaxed);
-            return false; // the cap is closer than the request; growing cannot help
-        }
-        let start = self.base + self.committed;
-        self.committed += want_pages * PAGE;
-        COMMITTED.store(self.committed, Ordering::Relaxed);
-        let run = std::ptr::with_exposed_provenance_mut::<u8>(start);
-        // SAFETY: this slice of the pool is donated once, never freed, and continues the heap
-        // `heap_end` ends, or is the first run, at least `MINIMUM_GROW_PAGES`, ample for talc's
-        // bins.
-        self.heap_end = unsafe {
-            match self.heap_end {
-                Some(end) => Some(self.heap.extend(end, run.wrapping_add(want_pages * PAGE))),
-                None => self.heap.claim(run, want_pages * PAGE),
-            }
-        };
-        true
+impl PageSource for PoolPages {
+    fn map_page(&mut self, _virtual_address: u64) -> Result<(), Refusal> {
+        Ok(())
     }
 }
 
+/// The FS server's heap over the pool, wired on the first allocation.
+///
+/// Wiring reads `NIFE_HEAP_MIB`, and reading the environment allocates, so the allocations made
+/// while `wiring` runs go to [`System`] instead (`during_wiring`), and a block is given back to
+/// whichever of the two its address says it came from.
 struct CappedHeap {
-    locked: AtomicBool,
-    inner: UnsafeCell<Inner>,
+    heap: MemoryRegionHeap<PoolPages>,
+    wiring: Once,
+    during_wiring: AtomicBool,
+    pool: AtomicUsize,
 }
-// SAFETY: every access to `inner` is behind the `locked` spinlock.
-unsafe impl Sync for CappedHeap {}
 
 impl CappedHeap {
-    const fn new() -> Self {
-        CappedHeap {
-            locked: AtomicBool::new(false),
-            inner: UnsafeCell::new(Inner {
-                heap: Talc::new(Manual),
-                heap_end: None,
-                base: 0,
-                committed: 0,
-                cap: 0,
-            }),
-        }
+    /// Read the cap, ask [`System`] for the pool, page-aligned as the device's heap band is, and
+    /// wire the heap to it. `System`, not this binary's global allocator: this IS the global
+    /// allocator. A refused pool leaves the heap unwired, so every allocation fails.
+    fn wire(&self) {
+        self.wiring.call_once(|| {
+            self.during_wiring.store(true, Ordering::Relaxed);
+            let cap = heap_cap();
+            self.during_wiring.store(false, Ordering::Relaxed);
+            let Ok(layout) = Layout::from_size_align(POOL_SIZE, PAGE) else {
+                return;
+            };
+            // SAFETY: `layout` has a nonzero size. The block is never freed, so the heap's pages
+            // stay valid for the life of the process.
+            let raw = unsafe { System.alloc(layout) };
+            if raw.is_null() {
+                return;
+            }
+            let base = raw.expose_provenance();
+            self.pool.store(base, Ordering::Relaxed);
+            let _ = self.heap.initialize_source(base as u64, cap as u64);
+        });
     }
-    fn lock(&self) {
-        while self
-            .locked
-            .compare_exchange_weak(false, true, Ordering::Acquire, Ordering::Relaxed)
-            .is_err()
-        {
-            std::hint::spin_loop();
-        }
+
+    /// Whether `ptr` lies in the pool, and so came from the heap rather than from [`System`].
+    fn in_pool(&self, ptr: *mut u8) -> bool {
+        let base = self.pool.load(Ordering::Relaxed);
+        base != 0 && (base..base + POOL_SIZE).contains(&ptr.addr())
     }
-    fn unlock(&self) {
-        self.locked.store(false, Ordering::Release);
+
+    /// The bytes the heap has committed, which only grows, so it is also the high-water mark.
+    fn committed(&self) -> usize {
+        self.heap.committed_bytes() as usize
     }
 }
 
-// SAFETY: forwards the GlobalAlloc contract to talc under the lock, with the layout made nonempty
-// the same way at both ends; the pool never moves.
+// SAFETY: forwards the GlobalAlloc contract to `MemoryRegionHeap`, whose pool never moves, or to
+// `System` for what wiring itself allocates; `dealloc` returns each block to the allocator whose
+// range holds it.
 unsafe impl GlobalAlloc for CappedHeap {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
-        self.lock();
-        // SAFETY: exclusive under the lock.
-        let inner = unsafe { &mut *self.inner.get() };
-        let p = loop {
-            // SAFETY: `nonempty` never is.
-            if let Some(p) = unsafe { inner.heap.try_allocate(nonempty(layout)) } {
-                break p.as_ptr();
-            }
-            // As `MemoryRegionHeap::alloc` sizes it.
-            let need = layout.size() + layout.align() + 2 * talc::base::CHUNK_UNIT;
-            if !inner.grow(need) {
-                break std::ptr::null_mut(); // OOM: std's handler aborts, as on device
-            }
-        };
-        self.unlock();
+        if self.during_wiring.load(Ordering::Relaxed) {
+            // SAFETY: forwarded GlobalAlloc contract.
+            return unsafe { System.alloc(layout) };
+        }
+        self.wire();
+        // SAFETY: forwarded GlobalAlloc contract.
+        let p = unsafe { self.heap.alloc(layout) };
+        if p.is_null() && self.heap.is_initialized() {
+            HIT_CAP.store(true, Ordering::Relaxed); // OOM: std's handler aborts, as on device
+        }
         p
     }
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
-        if ptr.is_null() {
-            return;
+        if self.in_pool(ptr) {
+            // SAFETY: forwarded GlobalAlloc contract; `ptr` came from the heap's `alloc`.
+            unsafe { self.heap.dealloc(ptr, layout) };
+        } else {
+            // SAFETY: forwarded GlobalAlloc contract; `ptr` came from `System` during wiring.
+            unsafe { System.dealloc(ptr, layout) };
         }
-        self.lock();
-        // SAFETY: exclusive under the lock; forwarded GlobalAlloc contract.
-        unsafe { (*self.inner.get()).heap.deallocate(ptr, nonempty(layout)) };
-        self.unlock();
     }
 }
 
-/// `layout` with at least one byte, as `memory_region_heap` gives it to talc.
-fn nonempty(layout: Layout) -> Layout {
-    Layout::from_size_align(layout.size().max(1), layout.align()).unwrap_or(layout)
-}
-
 #[global_allocator]
-static HEAP: CappedHeap = CappedHeap::new();
+static HEAP: CappedHeap = CappedHeap {
+    heap: MemoryRegionHeap::with_source(PoolPages),
+    wiring: Once::new(),
+    during_wiring: AtomicBool::new(false),
+    pool: AtomicUsize::new(0),
+};
 
 /// The image, in a `static` and therefore OFF the heap under test, because on device the image is on
 /// a disk and never sits in the FS server's heap.
@@ -293,7 +253,7 @@ fn main() {
         match mount_and_write(pass) {
             Ok(()) => mark(&format!(
                 "mount {pass}: write OK (heap {} KiB)",
-                COMMITTED.load(Ordering::Relaxed) / 1024
+                HEAP.committed() / 1024
             )),
             Err(e) => {
                 mark(&format!("mount {pass}: FAILED errno {}", e.errno));
@@ -307,7 +267,7 @@ fn main() {
 
 /// Report the heap high-water mark and whether the cap ever refused a growth, then exit.
 fn report_and_exit(code: i32) -> ! {
-    let hwm = COMMITTED.load(Ordering::Relaxed);
+    let hwm = HEAP.committed();
     mark(&format!(
         "heap high-water {} KiB of {} KiB cap; cap refused a growth: {}",
         hwm / 1024,
