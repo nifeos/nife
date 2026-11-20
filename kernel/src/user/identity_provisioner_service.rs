@@ -42,11 +42,14 @@ pub fn provision(
 
     let req_phys = crate::memory::alloc()
         .expect("no frame for the provisioning request")
-        .addr();
+        .physical_address();
     // SAFETY: a fresh frame, direct-mapped, owned by nobody else until the mapping below hands it
     // to the spawned process. Written before that mapping exists, so there is no concurrent access.
     let req_slice = unsafe {
-        core::slice::from_raw_parts_mut(mmu::phys_to_virt(req_phys) as *mut u8, FRAME_SIZE as usize)
+        core::slice::from_raw_parts_mut(
+            mmu::phys_to_virt(req_phys) as *mut u8,
+            FRAME_BYTES as usize,
+        )
     };
     req_slice.fill(0);
     credential_contract::place(req_slice, identity, secret, credential_contract::provision::PUT).expect(

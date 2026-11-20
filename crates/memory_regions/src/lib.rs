@@ -3,7 +3,7 @@
 //! kernel runs. [`split_new_watermark`] carves a child off a parent's budget. [`destroy_outcome`]
 //! decides whether a region refuses, frees its run to the allocator (a root) or returns it to its
 //! parent (a child, never to the allocator), which is what rules out a double free. Everything is
-//! in page units, so the crate is `FRAME_SIZE`- and address-agnostic; the kernel does the byte
+//! in page units, so the crate is `FRAME_BYTES`- and address-agnostic; the kernel does the byte
 //! arithmetic and the I/O. See notes/memory-regions.md, "The `memory_regions` crate".
 //!
 //! The model, in one screen. A **region** is a run of pages with a **watermark**: carves (a

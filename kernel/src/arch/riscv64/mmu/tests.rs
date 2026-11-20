@@ -99,16 +99,16 @@ fn the_direct_map_reaches_physical_memory() {
     use crate::arch::mmu::{phys_to_virt, virt_to_phys};
 
     let frame = crate::memory::alloc().expect("out of memory");
-    let va = phys_to_virt(frame.addr());
+    let va = phys_to_virt(frame.physical_address());
 
     assert_eq!(
         virt_to_phys(va),
-        frame.addr(),
+        frame.physical_address(),
         "the transform is not reversible"
     );
 
     let (pa, flags) = crate::arch::mmu::translate(va).expect("frame is NOT in the direct map");
-    assert_eq!(pa, frame.addr());
+    assert_eq!(pa, frame.physical_address());
     assert!(flags.is_writable());
 
     // SAFETY: the allocator just gave us this frame exclusively.
@@ -211,10 +211,10 @@ fn an_allocated_frame_is_reachable_through_the_mmu() {
     use crate::arch::mmu;
 
     let frame = crate::memory::alloc().expect("out of memory");
-    let va = mmu::phys_to_virt(frame.addr());
+    let va = mmu::phys_to_virt(frame.physical_address());
     let (pa, flags) = mmu::translate(va).expect("allocated frame is NOT MAPPED");
 
-    assert_eq!(pa, frame.addr());
+    assert_eq!(pa, frame.physical_address());
     assert!(flags.is_writable());
     assert!(!flags.is_kernel_executable(), "RAM is executable");
 
@@ -246,11 +246,11 @@ fn unmap_invalidates_the_tlb() {
 
     // SAFETY: two frames the allocator just gave us exclusively, reached via the direct map.
     unsafe {
-        core::ptr::write_volatile(phys_to_virt(a.addr()) as *mut u64, PATTERN_A);
-        core::ptr::write_volatile(phys_to_virt(b.addr()) as *mut u64, PATTERN_B);
+        core::ptr::write_volatile(phys_to_virt(a.physical_address()) as *mut u64, PATTERN_A);
+        core::ptr::write_volatile(phys_to_virt(b.physical_address()) as *mut u64, PATTERN_B);
     }
 
-    mmu::map_page(test_va, a.addr(), Flags::kernel_data()).expect("map A");
+    mmu::map_page(test_va, a.physical_address(), Flags::kernel_data()).expect("map A");
 
     // SAFETY: just mapped, writable.
     let seen = unsafe { core::ptr::read_volatile(test_va as *const u64) };
@@ -258,9 +258,13 @@ fn unmap_invalidates_the_tlb() {
     // That read pulls the translation into the TLB.
 
     let returned = mmu::unmap_page(test_va).expect("unmap");
-    assert_eq!(returned, a.addr(), "unmap returned the wrong frame");
+    assert_eq!(
+        returned,
+        a.physical_address(),
+        "unmap returned the wrong frame"
+    );
 
-    mmu::map_page(test_va, b.addr(), Flags::kernel_data()).expect("map B");
+    mmu::map_page(test_va, b.physical_address(), Flags::kernel_data()).expect("map B");
 
     // SAFETY: mapped again, to a different frame.
     let seen = unsafe { core::ptr::read_volatile(test_va as *const u64) };
@@ -287,10 +291,10 @@ fn the_kernel_mapper_refuses_to_overwrite() {
     let va = mmu::phys_to_virt(a_physical_address_outside_every_ram_region());
     let f = crate::memory::alloc().unwrap();
 
-    mmu::map_page(va, f.addr(), Flags::kernel_data()).unwrap();
+    mmu::map_page(va, f.physical_address(), Flags::kernel_data()).unwrap();
 
     assert_eq!(
-        mmu::map_page(va, f.addr(), Flags::kernel_data()),
+        mmu::map_page(va, f.physical_address(), Flags::kernel_data()),
         Err(MapError::AlreadyMapped)
     );
 

@@ -13,7 +13,7 @@ pub(super) const DMA_VA: u64 = address_space_layout::pair_page(0x0000_0000_0090_
 pub(super) const BLK_PAGE_FS: u64 = 0x5000_0000; // FS server's block region (redoxfs_server.rs BLK_PAGE)
 // FS server's file region (redoxfs_server.rs FILE_PAGE): BLK_PAGES pages above BLK_PAGE_FS, so the
 // block channel cannot walk into it.
-pub(super) const FILE_PAGE_FS: u64 = BLK_PAGE_FS + (BLK_PAGES as u64) * FRAME_SIZE;
+pub(super) const FILE_PAGE_FS: u64 = BLK_PAGE_FS + (BLK_PAGES as u64) * FRAME_BYTES;
 pub(super) const FILE_VA_CLIENT: u64 = 0x0000_0000_0060_0000; // client's file page (fs_test_client/channel.rs FILE_VA)
 
 /// A std program's half of the same agreement (notes/abi.md section 4, notes/std.md): the slot the PAL
@@ -29,7 +29,7 @@ pub(super) const FS_PAGE_STD: u64 = std_runtime_contract::FS_PAGE;
 pub(super) fn page_frame() -> u64 {
     crate::memory::alloc_zeroed()
         .expect("no frame for the fs service")
-        .addr()
+        .physical_address()
 }
 
 /// How many pages the file channel spans, straight from the contract, so this wiring cannot
@@ -45,7 +45,7 @@ pub(super) const BLK_PAGES: usize = filesystem_contract::block::TRANSFER_BLOCKS;
 pub(super) fn file_pool() -> u64 {
     crate::memory::alloc_contiguous_zeroed(CLIENT_WINDOWS * FILE_PAGES)
         .expect("no contiguous run for the fs service's client windows")
-        .addr()
+        .physical_address()
 }
 
 /// The pool's length in pages: what the progenitor's run capability over it names.
@@ -57,7 +57,7 @@ pub const FILE_POOL_PAGES: u64 = (CLIENT_WINDOWS * FILE_PAGES) as u64;
 pub(super) fn file_channel() -> u64 {
     crate::memory::alloc_contiguous_zeroed(FILE_PAGES)
         .expect("no contiguous run for the fs service's file channel")
-        .addr()
+        .physical_address()
 }
 
 /// Write the file channel's mappings into `maps`, `va` upward against `phys` upward, and answer how
@@ -75,8 +75,8 @@ pub(in crate::user) fn map_channel(
 ) -> usize {
     for (i, m) in maps.iter_mut().take(pages).enumerate() {
         *m = Mapping {
-            va: va + i as u64 * FRAME_SIZE,
-            phys: phys + i as u64 * FRAME_SIZE,
+            va: va + i as u64 * FRAME_BYTES,
+            phys: phys + i as u64 * FRAME_BYTES,
             flags: Flags::user_data(),
         };
     }

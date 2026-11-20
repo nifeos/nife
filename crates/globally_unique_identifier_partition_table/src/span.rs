@@ -83,7 +83,7 @@ mod tests {
     /// The three reads a GPT reader makes on a typical test disk: a 64 MiB disk, 512-byte logical
     /// blocks, fetched in 4096-byte filesystem blocks.
     #[test]
-    fn the_three_reads_a_gpt_reader_makes() {
+    fn the_three_reads_a_partition_table_reader_makes() {
         const T: u64 = 4096;
         const BLOCKS: u64 = 131_072; // 64 MiB of 512-byte blocks
 

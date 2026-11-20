@@ -87,9 +87,9 @@ pub fn start(image: &'static [u8], entropy: RendezvousId) -> Wiring {
         // Zeroed, so no one else's bytes sit where key material will go.
         let phys = crate::memory::alloc_zeroed()
             .expect("no frame for the credential service's stack")
-            .addr();
+            .physical_address();
         maps[k + 2] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
             phys,
             flags: Flags::user_data(),
         };
@@ -188,7 +188,7 @@ fn spawn_cli(
 fn page_frame() -> u64 {
     crate::memory::alloc_zeroed()
         .expect("no frame for a credential page")
-        .addr()
+        .physical_address()
 }
 
 /// Unpack the `k`th reply code from a `credentialer_test_client` report's second word. One byte per code; see

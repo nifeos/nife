@@ -7,7 +7,7 @@ table could hold, so the edit reads as correct to anyone porting from the old sh
 64 and above the offset runs past the leaf's single frame, and the STE and CD are written into
 whatever the allocator handed out next.
 
-Expected to fail: `assert!(pa.offset + STE_BYTES <= page_frames::FRAME_SIZE, "every entry the
+Expected to fail: `assert!(pa.offset + STE_BYTES <= page_frames::FRAME_BYTES, "every entry the
 bound admits lies inside its leaf's single frame")`. Confirmed red on 2026-11-11 (UTC), on an
 x86_64 host, against this file's pure functions and harness compiled on their own.
 

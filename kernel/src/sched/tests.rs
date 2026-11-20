@@ -451,7 +451,7 @@ fn a_finished_thread_is_reaped_and_its_memory_returned() {
     // leaves the table, so reading `used` the instant the Tids are gone races the first
     // batch's own frees. Two agreeing samples a yield apart mean nothing is in flight, and
     // `wait_for`'s deadline keeps a genuinely unstable allocator a failure rather than a spin.
-    let used = || crate::memory::stats().unwrap().used;
+    let used = || crate::memory::stats().unwrap().used_frames;
     let mut last = used();
     assert!(
         wait_for(|| {
@@ -711,7 +711,7 @@ fn kernel_stacks_do_not_touch_the_frame_allocator_in_steady_state() {
         settle(super::spawn(|| {}).expect("warmup spawn"));
     }
 
-    let free_before = crate::memory::stats().unwrap().free();
+    let free_before = crate::memory::stats().unwrap().free_frames();
     for _ in 0..6 {
         settle(super::spawn(|| {}).expect("spawn failed"));
     }
@@ -720,7 +720,7 @@ fn kernel_stacks_do_not_touch_the_frame_allocator_in_steady_state() {
     // teardown can only free frames. The message prints the count the wait decided on.
     let mut seen = free_before;
     let recovered = wait_for(|| {
-        seen = crate::memory::stats().unwrap().free();
+        seen = crate::memory::stats().unwrap().free_frames();
         seen >= free_before
     });
     assert!(

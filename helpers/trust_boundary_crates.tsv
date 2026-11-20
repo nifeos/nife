@@ -139,6 +139,7 @@ memory_regions	kernel	kernel
 name_resolution_protocol	userspace	retired
 network_stack	userspace	components
 network_time_protocol	userspace	components,fixtures
+nife_partition_types	userspace	components,redoxfs_server,uefi_loader
 nifefs	shared	components,fixtures,kernel
 non_volatile_memory_express	shared	retired
 non_volatile_memory_express_contract	shared	retired

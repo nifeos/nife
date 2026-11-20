@@ -4,7 +4,7 @@
 
 use core::sync::atomic::{AtomicU32, AtomicU64, Ordering};
 
-use page_frames::FRAME_SIZE;
+use page_frames::FRAME_BYTES;
 use page_tables::Flags;
 
 use crate::arch::mmu;
@@ -29,7 +29,7 @@ const STACK_AREA: u64 = mmu::THREAD_STACK_AREA;
 /// (`FREE_STACK_ADDRESS_SPACE` hands back the slot base, never an interior address), which is what lets a
 /// fault handler turn an address back into "slot N, this far into its guard page". See
 /// [`crate::stack::guard_page_at`].
-pub(crate) const STACK_SLOT_SPAN: u64 = (STACK_PAGES as u64 + 1) * FRAME_SIZE;
+pub(crate) const STACK_SLOT_SPAN: u64 = (STACK_PAGES as u64 + 1) * FRAME_BYTES;
 
 static NEXT_STACK_VA: AtomicU64 = AtomicU64::new(STACK_AREA);
 
@@ -127,8 +127,8 @@ impl KernelStack {
             .unwrap_or_else(|| NEXT_STACK_VA.fetch_add(span, Ordering::Relaxed));
 
         let guard = base;
-        let bottom = base + FRAME_SIZE;
-        let top = bottom + STACK_PAGES as u64 * FRAME_SIZE;
+        let bottom = base + FRAME_BYTES;
+        let top = bottom + STACK_PAGES as u64 * FRAME_BYTES;
 
         let mut pages = [0u64; STACK_PAGES];
         for (i, slot) in pages.iter_mut().enumerate() {
@@ -137,7 +137,7 @@ impl KernelStack {
             let Some(phys) = crate::kmem::page() else {
                 return None; // `pages` so far are recorded; Drop recycles what we did map
             };
-            let va = bottom + i as u64 * FRAME_SIZE;
+            let va = bottom + i as u64 * FRAME_BYTES;
 
             if mmu::map_page(va, phys, Flags::kernel_data()).is_err() {
                 crate::kmem::recycle(phys); // never mapped: straight back to the budget
@@ -197,7 +197,7 @@ impl Drop for KernelStack {
             if phys == 0 {
                 continue; // a page a failed build never mapped
             }
-            let va = self.bottom + i as u64 * FRAME_SIZE;
+            let va = self.bottom + i as u64 * FRAME_BYTES;
 
             // `unmap_page` must invalidate the translation: this address goes to a different
             // thread's stack next, and a stale entry would expose the dead thread's saved registers

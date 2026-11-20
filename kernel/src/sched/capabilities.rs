@@ -38,7 +38,7 @@ pub(crate) fn delete_page_frame_capabilities_overlapping(base: u64, size: u64) {
     let end = base.saturating_add(size);
     delete_page_frame_capabilities_where(|object| match object {
         crate::capability_object::Object::PageFrame(phys, count) => {
-            let run_end = phys.saturating_add(count.get().saturating_mul(page_frames::FRAME_SIZE));
+            let run_end = phys.saturating_add(count.get().saturating_mul(page_frames::FRAME_BYTES));
             *phys < end && base < run_end
         }
         _ => false,

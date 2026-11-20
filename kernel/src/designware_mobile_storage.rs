@@ -73,7 +73,7 @@ impl Region {
     pub(crate) fn allocate(pages: usize) -> Option<Region> {
         let frame = crate::memory::alloc_contiguous_zeroed(pages)?;
         Some(Region {
-            phys: frame.addr(),
+            phys: frame.physical_address(),
             bytes: u32::try_from(pages * 4096).ok()?,
         })
     }

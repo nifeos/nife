@@ -101,7 +101,7 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
     // Zeroed so no client and no test ever reads a stale pixel.
     let run_base = crate::memory::alloc_contiguous_zeroed(total as usize)
         .expect("no contiguous run for the compositor's client surfaces")
-        .addr();
+        .physical_address();
 
     let mut client = [0u64; compositor::MAXIMUM_WINDOWS];
     let mut client_report = [0; compositor::MAXIMUM_WINDOWS];
@@ -109,7 +109,7 @@ pub fn start(n: usize, focusable: usize, display: RendezvousId, screen: u64) -> 
     let mut at = run_base;
     for i in 0..n {
         client[i] = at;
-        at += per_client[i] * FRAME_SIZE;
+        at += per_client[i] * FRAME_BYTES;
         client_report[i] = crate::sched::create_rendezvous();
     }
     for ep in input.iter_mut().take(focusable) {
@@ -200,8 +200,8 @@ fn compositor_maps(
     for i in 0..n {
         for k in 0..per_client[i] {
             maps[m] = Mapping {
-                va: CLIENT_BASE + i as u64 * CLIENT_STRIDE + k * FRAME_SIZE,
-                phys: client[i] + k * FRAME_SIZE,
+                va: CLIENT_BASE + i as u64 * CLIENT_STRIDE + k * FRAME_BYTES,
+                phys: client[i] + k * FRAME_BYTES,
                 flags: Flags::user_data(),
             };
             m += 1;
@@ -241,8 +241,8 @@ impl Wiring {
         m += 1;
         for k in 0..frames {
             maps[m] = Mapping {
-                va: SURFACE_VA + k * FRAME_SIZE,
-                phys: self.client[i] + (1 + k) * FRAME_SIZE,
+                va: SURFACE_VA + k * FRAME_BYTES,
+                phys: self.client[i] + (1 + k) * FRAME_BYTES,
                 flags: Flags::user_data(),
             };
             m += 1;
@@ -310,19 +310,19 @@ impl Wiring {
     /// would be: two pages past the end of `i`'s surface, after the neighbour's control page. The
     /// attacker is handed it so the test can assert on the exact faulting address.
     pub fn neighbour_probe_va(&self, i: usize) -> u64 {
-        SURFACE_VA + (SCENE[i].page_frames() as u64 + 1) * FRAME_SIZE
+        SURFACE_VA + (SCENE[i].page_frames() as u64 + 1) * FRAME_BYTES
     }
 
     /// The physical frame the probe address would reach if it were mapped. The test asserts this is
     /// the neighbour's first pixel frame, which is what makes the attack a real one.
     pub fn neighbour_probe_phys(&self, i: usize) -> u64 {
-        self.client[i] + (SCENE[i].page_frames() as u64 + 2) * FRAME_SIZE
+        self.client[i] + (SCENE[i].page_frames() as u64 + 2) * FRAME_BYTES
     }
 
     /// Client `i`'s surface, digested by the kernel through the direct map: a witness that
     /// belongs to nobody in userspace.
     pub fn client_surface_digest(&self, i: usize) -> u64 {
-        let base = mmu::phys_to_virt(self.client[i] + FRAME_SIZE);
+        let base = mmu::phys_to_virt(self.client[i] + FRAME_BYTES);
         compositor::surface_checksum(SCENE[i].w, SCENE[i].h, |k| {
             // SAFETY: inside the frames this kernel allocated for client `i`'s surface, reached
             // through the direct map.
@@ -429,7 +429,7 @@ impl Wiring {
 
         let out = crate::memory::alloc_zeroed()
             .expect("no output-page frame for a display terminal")
-            .addr();
+            .physical_address();
 
         let frames = SCENE[i].page_frames() as u64;
         let mut maps = [Mapping {
@@ -452,8 +452,8 @@ impl Wiring {
         m += 1;
         for k in 0..frames {
             maps[m] = Mapping {
-                va: T_SURFACE_VA + k * FRAME_SIZE,
-                phys: self.client[i] + (1 + k) * FRAME_SIZE,
+                va: T_SURFACE_VA + k * FRAME_BYTES,
+                phys: self.client[i] + (1 + k) * FRAME_BYTES,
                 flags: Flags::user_data(),
             };
             m += 1;
@@ -539,5 +539,5 @@ const COMP_INPUT_BASE: u64 = 5;
 fn zeroed_page_frame() -> u64 {
     crate::memory::alloc_zeroed()
         .expect("no frame for the compositor's shared pages")
-        .addr()
+        .physical_address()
 }

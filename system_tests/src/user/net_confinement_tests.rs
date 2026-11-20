@@ -101,7 +101,7 @@ fn spawn_client(
     }; STACK_PAGES as usize];
     for (k, m) in maps.iter_mut().enumerate() {
         m.phys = crate::memory_region::retype_page(stack_region).expect("no frame for the client");
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
     }
     let mut grants = [endpoint(report, Rights::WRITE); 6];
     if let Some(stack) = stack {

@@ -46,9 +46,10 @@ pub const fn to_disk(id: Uuid) -> [u8; 16] {
 /// Partition **type** GUIDs, and a name for each.
 ///
 /// Not an attempt at the full registry, which runs to several hundred entries and is a data problem
-/// rather than a kernel problem. These are the ones that answer a question this OS actually asks:
-/// which partition do I boot from, which one holds a Linux filesystem, which one is ours, and (for
-/// the recovery story) what are the two things a Mac will have put on a disk.
+/// rather than a kernel problem. These are the well-known types that answer the questions a
+/// partitioning tool asks: which partition holds the firmware's boot volume, which one holds a Linux
+/// filesystem, and what are the two things a Mac will have put on a disk. A system's own private
+/// types belong to that system and are not listed here.
 ///
 /// Every value here was read back out of `sgdisk` on the machine rather than typed from memory, and
 /// four of them are pinned by the committed fixtures.
@@ -136,35 +137,6 @@ pub mod types {
         &[0xAA, 0x11, 0x00, 0x30, 0x65, 0x43, 0xEC, 0xAC],
     );
 
-    /// **A nife data partition**, holding a RedoxFS volume.
-    ///
-    /// A random version-4 GUID, generated once on 2026-07-30 and fixed forever. It has to be random:
-    /// a type GUID's whole job is to not collide with anybody else's, and there is no registry to
-    /// ask. **Never change this value.** A disk written by one release and read by another has only
-    /// this number to agree on, and the recovery story ("the board is dead, can I get my
-    /// data") depends on a `sgdisk -p` five years from now still showing it.
-    pub const NIFE_DATA: Uuid = Uuid::from_fields(
-        0xEC5C_C08B,
-        0xD749,
-        0x4434,
-        &[0xAC, 0x38, 0xA2, 0x74, 0xC5, 0x03, 0x85, 0xBA],
-    );
-
-    /// **A nife boot slot**, holding one copy of the image the firmware's chooser starts
-    /// (one slot of an A/B install).
-    ///
-    /// A random version-4 GUID generated on 2026-09-21 and fixed. **Never change this value**, for [`NIFE_DATA`]'s reason. UEFI 2.11
-    /// 5.3.3 reserves attribute bits 48 to 63 for "GUID specific use": *"Only the owner of the
-    /// `PartitionTypeGUID` is allowed to modify these bits"*. They carry a boot slot's
-    /// priority, tries and confirmed flag, and are ours because this GUID is, which is why a boot
-    /// slot is a partition and not a file.
-    pub const NIFE_BOOT: Uuid = Uuid::from_fields(
-        0x1163_1EE3,
-        0xE18F,
-        0x4AFC,
-        &[0x9D, 0x7F, 0x17, 0x15, 0x72, 0x63, 0x56, 0x29],
-    );
-
     /// A short name for a type GUID, or `None` for one this crate does not recognise.
     ///
     /// Deliberately returns `None` rather than a placeholder: a partition tool should print the raw
@@ -181,8 +153,6 @@ pub mod types {
             LINUX_LUKS => "Linux LUKS",
             APPLE_HFS_PLUS => "Apple HFS+",
             APPLE_APFS => "Apple APFS",
-            NIFE_DATA => "nife data",
-            NIFE_BOOT => "nife boot slot",
             _ => return None,
         })
     }
@@ -219,8 +189,6 @@ mod tests {
             (types::LINUX_LUKS, "Linux LUKS"),
             (types::APPLE_HFS_PLUS, "Apple HFS+"),
             (types::APPLE_APFS, "Apple APFS"),
-            (types::NIFE_DATA, "nife data"),
-            (types::NIFE_BOOT, "nife boot slot"),
         ];
         for (guid, name) in known {
             assert_eq!(types::name(guid), Some(name));
@@ -249,22 +217,6 @@ mod tests {
                 .hyphenated()
                 .encode_upper(&mut Uuid::encode_buffer()),
             "C12A7328-F81F-11D2-BA4B-00A0C93EC93B"
-        );
-    }
-
-    #[test]
-    fn printing_a_type_constant_gives_its_registered_string() {
-        assert_eq!(
-            &*types::NIFE_DATA
-                .hyphenated()
-                .encode_upper(&mut Uuid::encode_buffer()),
-            "EC5CC08B-D749-4434-AC38-A274C50385BA"
-        );
-        assert_eq!(
-            &*types::NIFE_BOOT
-                .hyphenated()
-                .encode_upper(&mut Uuid::encode_buffer()),
-            "11631EE3-E18F-4AFC-9D7F-171572635629"
         );
     }
 
@@ -314,8 +266,6 @@ mod tests {
             types::LINUX_LUKS,
             types::APPLE_HFS_PLUS,
             types::APPLE_APFS,
-            types::NIFE_DATA,
-            types::NIFE_BOOT,
         ];
         for (i, a) in all.iter().enumerate() {
             assert!(types::name(*a).is_some(), "{a} has no name");

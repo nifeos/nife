@@ -129,7 +129,7 @@ pub(super) fn print_machine_description(boot_info_pointer: usize) {
         crate::console::HEADS.machine(),
         arch::NAME,
         smp::online_count(),
-        memory::stats().map_or(0, |s| (s.total as u64 * page_frames::FRAME_SIZE)
+        memory::stats().map_or(0, |s| (s.frames as u64 * page_frames::FRAME_BYTES)
             / (1024 * 1024)),
         arch::timer::TICK_HERTZ,
     );

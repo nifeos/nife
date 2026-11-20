@@ -123,8 +123,13 @@ fn build_port_holder(
     )
     .expect("insert fault ep");
 
-    sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_SIZE, aspace)
-        .expect("configure");
+    sched::configure_thread_control_block(
+        tid,
+        CODE_VA,
+        STACK_VA + page_frames::FRAME_BYTES,
+        aspace,
+    )
+    .expect("configure");
     sched::start_thread_control_block(tid, [0; 3]).expect("start");
     (tid, region)
 }

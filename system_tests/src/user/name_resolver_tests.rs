@@ -99,7 +99,7 @@ fn stack_pages(pages: u64, held: &mut Holding) -> [Mapping; STACK_PAGES_MAXIMUM]
     }; STACK_PAGES_MAXIMUM];
     for (k, m) in maps.iter_mut().take(pages as usize).enumerate() {
         m.phys = crate::memory_region::retype_page(region).expect("no stack page");
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
     }
     held.add_region_after_death(region);
     maps

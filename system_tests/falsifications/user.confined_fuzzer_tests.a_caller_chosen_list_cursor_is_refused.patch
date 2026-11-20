@@ -45,7 +45,7 @@ diff --git a/kernel/src/revoke.rs b/kernel/src/revoke.rs
 @@ -602,19 +610,12 @@
      };
  
-     const PAGE_MASK: u64 = !(page_frames::FRAME_SIZE - 1);
+     const PAGE_MASK: u64 = !(page_frames::FRAME_BYTES - 1);
 -    let mut chain = space.log.pages_mut().peekable();
 -    let mut index = 0usize;
 -    if cursor != 0 {

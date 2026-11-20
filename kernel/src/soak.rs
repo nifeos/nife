@@ -85,7 +85,7 @@ pub fn run() -> ! {
         println!("soak-test: FAILED: no frame for the shared progress page");
         arch::halt(arch::HaltReason::measurement_boot());
     };
-    let shared = frame.addr();
+    let shared = frame.physical_address();
 
     // One tick rendezvous per group: a shared one starves all but one waiter on a loaded host.
     let mut tick_endpoints = [0u64; MAXIMUM_GROUPS];

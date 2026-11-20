@@ -50,7 +50,7 @@ const DATA_PLANE_VA: u64 = address_space_layout::pair_page(0x0000_0000_0098_0000
 const DOORBELL_PAGE_VA: u64 = address_space_layout::pair_page(0x0000_0000_009c_0000);
 
 const _: () =
-    assert!(DATA_PLANE_VA + DATA_PLANE_PAGES * page_frames::FRAME_SIZE <= DOORBELL_PAGE_VA);
+    assert!(DATA_PLANE_VA + DATA_PLANE_PAGES * page_frames::FRAME_BYTES <= DOORBELL_PAGE_VA);
 
 /// Stack pages the admin process gets beyond the one every loaded program gets. Its bring-up is
 /// a call chain carrying 64-byte commands and the IDENTIFY bytes by value, and in a debug build
@@ -177,8 +177,8 @@ fn admin_maps(
     // never sees.
     for (page, m) in maps.iter_mut().take(REGISTER_PAGES as usize).enumerate() {
         *m = Mapping {
-            va: REGISTERS_VA + page as u64 * page_frames::FRAME_SIZE,
-            phys: bar0 + page as u64 * page_frames::FRAME_SIZE,
+            va: REGISTERS_VA + page as u64 * page_frames::FRAME_BYTES,
+            phys: bar0 + page as u64 * page_frames::FRAME_BYTES,
             flags: Flags::user_device(),
         };
     }
@@ -190,7 +190,7 @@ fn admin_maps(
     );
     for (k, &frame) in stack.iter().enumerate() {
         maps[(REGISTER_PAGES + ADMINISTRATION_PAGES) as usize + k] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * page_frames::FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * page_frames::FRAME_BYTES,
             phys: frame,
             flags: Flags::user_data(),
         };
@@ -210,11 +210,11 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
     let control = crate::sched::create_rendezvous();
     let (bar0, dma) = (found.bar0, found.dma);
     let doorbell_page = device_frame_capability(
-        bar0 + page_frames::FRAME_SIZE,
+        bar0 + page_frames::FRAME_BYTES,
         Rights::WRITE.union(Rights::GRANT),
     );
     let data_plane = page_frame_run_capability(
-        dma + ADMINISTRATION_PAGES * page_frames::FRAME_SIZE,
+        dma + ADMINISTRATION_PAGES * page_frames::FRAME_BYTES,
         NonZeroU64::new(DATA_PLANE_PAGES).expect("the data plane has pages"),
         Rights::READ.union(Rights::WRITE).union(Rights::GRANT),
     );
@@ -222,7 +222,7 @@ fn start_admin(image: &'static [u8], found: &Found) -> Result<Admin, Absent> {
     for frame in &mut stack {
         *frame = crate::memory::alloc_zeroed()
             .expect("no frame for the NVMe admin process's stack")
-            .addr();
+            .physical_address();
     }
     let thread = crate::sched::spawn(move || {
         let maps = admin_maps(bar0, dma, &stack);
@@ -319,7 +319,7 @@ fn spawn_data_plane(
 
 /// The physical base of window 0's transfer buffer in the run at `dma`.
 fn transfer_phys_of(dma: u64) -> u64 {
-    dma + (ADMINISTRATION_PAGES + contract::FIRST_TRANSFER_PAGE) * page_frames::FRAME_SIZE
+    dma + (ADMINISTRATION_PAGES + contract::FIRST_TRANSFER_PAGE) * page_frames::FRAME_BYTES
 }
 
 /// Find and confine the controller, start its admin process, then the data plane it grants to.
@@ -401,7 +401,7 @@ impl DmaEscape {
     /// Refused `canary_intact` (an adjective alone reads as a getter).
     pub fn is_canary_intact(&self) -> bool {
         let p = crate::arch::mmu::phys_to_virt(self.victim) as *const u8;
-        (0..page_frames::FRAME_SIZE as usize).all(|i| {
+        (0..page_frames::FRAME_BYTES as usize).all(|i| {
             // SAFETY: `victim` is a frame this wiring allocated and frees only in `release_completed`, which
             // consumes `self`, so it is still ours here. The direct map covers all of RAM, and `i`
             // stays inside the one frame. CPU reads bypass the IOMMU, which is the point: only the
@@ -441,9 +441,9 @@ impl DmaEscape {
         }
         crate::non_volatile_memory_express::free_retired_run(self.dma);
         for &frame in &self.admin.stack {
-            crate::memory::free(page_frames::PageFrame::from_addr(frame));
+            crate::memory::free(page_frames::PageFrame::from_physical_address(frame));
         }
-        crate::memory::free(page_frames::PageFrame::from_addr(self.victim));
+        crate::memory::free(page_frames::PageFrame::from_physical_address(self.victim));
         crate::sched::reclaim_region(self.ep_region).is_ok()
     }
 }
@@ -462,13 +462,13 @@ pub fn start_dma_escape(image: &'static [u8]) -> Option<DmaEscape> {
     // The victim, outside any run find_and_confine will confine the controller to. Planted with
     // the canary before the controller is enabled, so a landed escape is the only thing that could
     // change it.
-    let victim = crate::memory::alloc()?.addr();
+    let victim = crate::memory::alloc()?.physical_address();
     // SAFETY: a freshly allocated frame, reached through the direct map; nothing else names it yet.
     unsafe {
         core::ptr::write_bytes(
             crate::arch::mmu::phys_to_virt(victim) as *mut u8,
             CANARY_BYTE,
-            page_frames::FRAME_SIZE as usize,
+            page_frames::FRAME_BYTES as usize,
         );
     }
 
@@ -529,7 +529,7 @@ impl Wiring {
             ::driver_process_contract::non_volatile_memory_express::client_window(window).is_some(),
             "no NVMe client was given window {window}",
         );
-        self.transfer_phys + window * contract::TRANSFER_PAGES * page_frames::FRAME_SIZE
+        self.transfer_phys + window * contract::TRANSFER_PAGES * page_frames::FRAME_BYTES
     }
 
     /// The request endpoint as client window `window` is granted it: `WRITE`, badged with the
