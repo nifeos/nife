@@ -58,51 +58,51 @@ static HAS_DIAG: AtomicBool = AtomicBool::new(false);
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: abi::INTERFACE_ID,
         version: abi::ABI_VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,
         version: address_space_layout::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: byte_sink_contract::INTERFACE_ID,
         version: byte_sink_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: clock_contract::INTERFACE_ID,
         version: clock_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: counter_frequency_contract::INTERFACE_ID,
         version: counter_frequency_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: current_cpu_contract::INTERFACE_ID,
         version: current_cpu_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: entropy_contract::INTERFACE_ID,
         version: entropy_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: grant_contract::INTERFACE_ID,
         version: grant_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: program_argument_contract::INTERFACE_ID,
         version: program_argument_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: socket_contract::INTERFACE_ID,
         version: socket_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: user_mode_runtime::INTERFACE_ID,
         version: user_mode_runtime::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: interfaces_note::INTERFACE_ID,
         version: interfaces_note::INTERFACES_VERSION
     },
@@ -122,7 +122,7 @@ fn rows() -> &'static mut [ps::Row] {
 
 user_mode_runtime::program_entry!(start);
 
-/// `a1` is the state mask, in `program_table::spawnproto`'s integer-argument position: the progenitor starts every
+/// `a1` is the state mask, in `program_table::spawn_protocol`'s integer-argument position: the progenitor starts every
 /// child `start_child(child, 0, arg, 0)`, so the endowment's `arg` is the second register and the first
 /// is always zero. Zero means every state (`pgrep::Selector::from_wire`), which is what a shell that
 /// cannot spell a selector sends and is why an unfiltered `pgrep` prints the whole domain rather than

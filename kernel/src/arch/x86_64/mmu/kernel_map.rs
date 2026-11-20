@@ -40,9 +40,9 @@ pub(crate) fn print_summary() {
             "                  : {} KiB of page tables (ram in {} blocks), no identity map, guard pages are holes",
             TABLE_FRAMES.load(Ordering::Relaxed) * PAGE_SIZE / 1024,
             match largest_leaf() {
-                PageSize::Size1GiB => "1 GiB",
-                PageSize::Size2MiB => "2 MiB",
-                PageSize::Size4KiB => "4 KiB",
+                PageSize::OneGibibyte => "1 GiB",
+                PageSize::TwoMebibytes => "2 MiB",
+                PageSize::FourKibibytes => "4 KiB",
             },
         );
     }
@@ -74,9 +74,9 @@ pub(super) fn largest_leaf() -> PageSize {
     if super::isa::cpuid(0x8000_0000).eax >= 0x8000_0001
         && super::isa::cpuid(0x8000_0001).edx & PAGE_ONE_GIBIBYTE != 0
     {
-        PageSize::Size1GiB
+        PageSize::OneGibibyte
     } else {
-        PageSize::Size2MiB
+        PageSize::TwoMebibytes
     }
 }
 

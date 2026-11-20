@@ -30,7 +30,7 @@ fn spawn_printenv(endpoints: u64, page: Option<u64>) -> RendezvousId {
                 maps: &[Mapping {
                     va: CONFIG_VA,
                     phys,
-                    flags: Flags::user_rodata(),
+                    flags: Flags::user_read_only_data(),
                 }],
                 windows: &[],
             },

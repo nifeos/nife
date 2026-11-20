@@ -313,7 +313,7 @@ pub(crate) fn take_thread_page(name: u64) -> Option<(u8, u64, u64)> {
             .map_physical(
                 va,
                 frame.physical_address(),
-                Flags::user_rodata(),
+                Flags::user_read_only_data(),
                 crate::revoke::PageMapSource::NoCapability,
             )
             .is_err()

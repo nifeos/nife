@@ -4,7 +4,7 @@
 
 use super::*;
 
-/// **The user-va gate is exact at every format's own split, from both sides.**
+/// **The user-virtual_address gate is exact at every format's own split, from both sides.**
 ///
 /// The cited test checks one aligned low address, one unaligned one and one kernel-half address
 /// per format. This sweeps the boundary itself: the last page of the low half is admitted, the
@@ -16,25 +16,28 @@ use super::*;
 fn the_user_va_gate_is_exact_at_each_formats_own_split() {
     fn edges<F: PageFormat>() {
         let split = 1u64 << F::SPLIT_SHIFT;
-        assert!(is_user_page_va::<F>(0), "the null page is low and aligned");
-        assert!(is_user_page_va::<F>(PAGE_SIZE));
-        assert!(!is_user_page_va::<F>(1));
         assert!(
-            is_user_page_va::<F>(split - PAGE_SIZE),
+            is_user_page_virtual_address::<F>(0),
+            "the null page is low and aligned"
+        );
+        assert!(is_user_page_virtual_address::<F>(PAGE_SIZE));
+        assert!(!is_user_page_virtual_address::<F>(1));
+        assert!(
+            is_user_page_virtual_address::<F>(split - PAGE_SIZE),
             "the last page of the low half must be admitted",
         );
         assert!(
-            !is_user_page_va::<F>(split - 1),
+            !is_user_page_virtual_address::<F>(split - 1),
             "unaligned at the top of the low half"
         );
         assert!(
-            !is_user_page_va::<F>(split),
+            !is_user_page_virtual_address::<F>(split),
             "the first page of the high half is page-aligned: only the half test refuses it",
         );
-        assert!(!is_user_page_va::<F>(split | PAGE_SIZE));
-        assert!(!is_user_page_va::<F>(u64::MAX));
+        assert!(!is_user_page_virtual_address::<F>(split | PAGE_SIZE));
+        assert!(!is_user_page_virtual_address::<F>(u64::MAX));
         assert!(
-            !is_user_page_va::<F>(0x7fff_ffff_ffff_f000),
+            !is_user_page_virtual_address::<F>(0x7fff_ffff_ffff_f000),
             "a high-ish address with bit 63 clear is not in the low half",
         );
     }
@@ -55,12 +58,12 @@ fn no_leaf_of_any_format_is_both_writable_and_executable() {
     fn sweep<F: PageFormat>() {
         for flags in [
             Flags::kernel_code(),
-            Flags::kernel_rodata(),
+            Flags::kernel_read_only_data(),
             Flags::kernel_data(),
             Flags::device(),
             Flags::write_combining(),
             Flags::user_code(),
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             Flags::user_data(),
             Flags::user_device(),
             Flags::user_write_combining(),

@@ -73,7 +73,7 @@ macro_rules! programs {
                 }
             }
 
-            /// The stable wire id the shell sends and the progenitor decodes ([`spawnproto`](crate::spawnproto)).
+            /// The stable wire id the shell sends and the progenitor decodes ([`spawn_protocol`](crate::spawn_protocol)).
             pub fn id(self) -> u64 {
                 match self {
                     $(Program::$variant => $id,)*
@@ -156,7 +156,7 @@ pub(super) const fn same_bytes(a: &[u8], b: &[u8]) -> bool {
 
 programs! {
     /// A program the shell can spawn. The set is small and closed in phase 1; each variant carries a
-    /// static [`Manifest`](crate::Manifest) and a stable wire id for [`spawnproto`](crate::spawnproto).
+    /// static [`Manifest`](crate::Manifest) and a stable wire id for [`spawn_protocol`](crate::spawn_protocol).
     ///
     /// This is deliberately an enum and not a string lookup at the grant boundary: the shell resolves
     /// a typed program once, and everything downstream (the manifest check, the wire id the progenitor decodes)
@@ -349,7 +349,7 @@ programs! {
         /// (provisional), `components/src/graphical_terminal.rs`; calef's 2026-09-30 ruling that graphics is
         /// launched from the swish prompt rather than built at boot).
         ///
-        /// The shell asks (`spawnproto::Wiring::graphics`, which carries no capability) and the
+        /// The shell asks (`spawn_protocol::Wiring::graphics`, which carries no capability) and the
         /// progenitor builds `gpu_driver`, `display_terminal`, the line discipline and, with a
         /// keyboard, `keyboard_driver`, then starts this program wired to them; with none, keystrokes
         /// come over the UART. It declares nothing a line designates, so every operator on it is

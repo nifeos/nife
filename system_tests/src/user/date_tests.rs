@@ -44,7 +44,7 @@ fn spawn_date(
                 maps: &[Mapping {
                     va: CLOCK_VA,
                     phys,
-                    flags: Flags::user_rodata(),
+                    flags: Flags::user_read_only_data(),
                 }],
                 windows: &[],
             },

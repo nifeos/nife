@@ -278,7 +278,7 @@ impl Unit {
             // SAFETY: `table` is a kernel-owned page-table frame of 512 entries; read only.
             let e = unsafe { core::ptr::read_volatile((phys_to_virt(table) as *const u64).add(i)) };
             if Vtd::is_present(e) && !Vtd::is_block(e) {
-                self.publish_domain(Vtd::entry_pa(e), level - 1);
+                self.publish_domain(Vtd::entry_physical_address(e), level - 1);
             }
         }
     }
@@ -907,7 +907,7 @@ fn owner_index(rid: u32) -> Option<usize> {
 /// DMAs into. Name: provisional (milestone 594).
 pub(crate) fn for_each_reserved_region(
     rid: u32,
-    each: &mut dyn FnMut(page_tables::domain::DmaRegion),
+    each: &mut dyn FnMut(page_tables::domain::DirectMemoryAccessRegion),
 ) {
     if super::amd_vi::is_active() {
         return super::amd_vi::for_each_reserved_region(rid, each);
@@ -923,7 +923,7 @@ pub(crate) fn for_each_reserved_region(
         func,
         &mut crate::pci::bridge_bus_range,
         &mut |r| {
-            each(page_tables::domain::DmaRegion {
+            each(page_tables::domain::DirectMemoryAccessRegion {
                 base: r.base,
                 size: r.size(),
                 // An RMRR carries no permission bits: it is memory firmware both reads and writes
@@ -1157,7 +1157,7 @@ pub fn is_active() -> bool {
 /// return its root: [`page_tables::x86_64::AmdVi`] when an AMD-Vi unit is up, [`Vtd`] otherwise. The two
 /// share the CPU's four-level, 4 KiB-leaf shape and nothing else that matters: `Vtd`'s and
 /// `AmdVi`'s own docs say why neither encoding, nor `Ia32e`'s, would work in the other's place.
-pub(crate) fn build_domain(regions: &[page_tables::domain::DmaRegion]) -> u64 {
+pub(crate) fn build_domain(regions: &[page_tables::domain::DirectMemoryAccessRegion]) -> u64 {
     if super::amd_vi::is_active() {
         crate::iommu::build_identity::<page_tables::x86_64::AmdVi>(regions)
     } else {

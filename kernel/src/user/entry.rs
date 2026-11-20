@@ -181,7 +181,7 @@ pub fn spawn_elf_child_builder(
                 .map_physical(
                     INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_BYTES,
                     initial_ramdisk_start + i * FRAME_BYTES,
-                    Flags::user_rodata(),
+                    Flags::user_read_only_data(),
                     crate::revoke::PageMapSource::NoCapability,
                 )
                 .expect("could not map the initial ramdisk into the builder");

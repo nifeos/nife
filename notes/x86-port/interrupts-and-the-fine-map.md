@@ -177,7 +177,7 @@ What the new map says, in the order `map_everything` builds it:
 | All of RAM, minus the kernel image's own frames | `DIRECT_MAP_BASE + pa` | `kernel_data` (RW, never X) |
 | The first megabyte, and reserved entries below the top of RAM | `DIRECT_MAP_BASE + pa` | `kernel_data` |
 | `.text` | `KERNEL_VA_BASE + pa` | `kernel_code` (X, never W) |
-| `.rodata` | `KERNEL_VA_BASE + pa` | `kernel_rodata` (neither) |
+| `.rodata` | `KERNEL_VA_BASE + pa` | `kernel_read_only_data` (neither) |
 | `.data` + `.bss`, the boot stack, the per-CPU secondary and interrupt stacks | `KERNEL_VA_BASE + pa` | `kernel_data` |
 | Every guard page | -- | not mapped, and `verify` asserts it |
 | The local APIC (from the MADT), the IO APIC, bus 0 of the PCIe ECAM window | `DIRECT_MAP_BASE + pa` | `device` (uncacheable) |

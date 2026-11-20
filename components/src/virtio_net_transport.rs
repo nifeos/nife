@@ -109,19 +109,19 @@ fn transmit_buf(i: usize) -> u64 {
 // Bounds-checked against the page by `WINDOW` (milestone 139 (drive the unsafe count down))
 // instead of trusted by hand at every call site.
 fn r8(off: u64) -> u8 {
-    WINDOW.read_u8(off)
+    WINDOW.read::<u8>(off)
 }
 fn r16(off: u64) -> u16 {
-    WINDOW.read_u16(off)
+    WINDOW.read::<u16>(off)
 }
 fn r32(off: u64) -> u32 {
-    WINDOW.read_u32(off)
+    WINDOW.read::<u32>(off)
 }
 fn w8(off: u64, v: u8) {
-    WINDOW.write_u8(off, v);
+    WINDOW.write::<u8>(off, v);
 }
 fn w16(off: u64, v: u16) {
-    WINDOW.write_u16(off, v);
+    WINDOW.write::<u16>(off, v);
 }
 
 fn mr(off: u64) -> u32 {

@@ -323,7 +323,7 @@ pub(crate) fn print_summary() {
 /// root. The SMMUv3's stage 1 translates with VMSAv8-64, the CPU's own format. One function per
 /// architecture rather than a type alias since lane `amd-vi`, because `x86_64` has two IOMMUs that
 /// walk two formats and only a running machine says which.
-pub(crate) fn build_domain(regions: &[page_tables::domain::DmaRegion]) -> u64 {
+pub(crate) fn build_domain(regions: &[page_tables::domain::DirectMemoryAccessRegion]) -> u64 {
     crate::iommu::build_identity::<page_tables::Aarch64>(regions)
 }
 
@@ -349,7 +349,7 @@ pub(crate) fn scope_of(_rid: u32) -> crate::iommu::Scope {
 /// [`crate::iommu::confine`] can map them into every domain. The SMMUv3 counterpart is an IORT RMR node or a device tree `reserved-memory` region with `iommu-addresses`; this tree reads neither, and no machine it boots publishes one.
 pub(crate) fn for_each_reserved_region(
     _rid: u32,
-    _each: &mut dyn FnMut(page_tables::domain::DmaRegion),
+    _each: &mut dyn FnMut(page_tables::domain::DirectMemoryAccessRegion),
 ) {
 }
 

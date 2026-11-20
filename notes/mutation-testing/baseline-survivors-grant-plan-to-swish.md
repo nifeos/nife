@@ -62,7 +62,7 @@ Seventeen real, and not one of them a bug, which is the result to want from page
 Eleven are accessors and predicates nothing inside the crate reads back:
 
 - `Flags::bits` and `PageFormat::half_base`.
-- `is_user_page_va`. Its `&&` to `||` mutant shorts the user-VA gate into an or-gate that admits
+- `is_user_page_virtual_address`. Its `&&` to `||` mutant shorts the user-VA gate into an or-gate that admits
   an aligned *kernel* address to a user `MAP`.
 - `Mapper::root`, whose value the kernel writes into TTBR0/satp. A constant there installs the
   wrong table in silicon while every walk test still passes.

@@ -6,8 +6,8 @@ above the top level nine bits of the VA are simply dropped. The stride and the f
 the same number for a reason (a 4 KiB table of 8-byte entries holds exactly 2^9 of them), and
 writing them as two independent constants is what lets them disagree.
 
-Expected to fail: `assert_eq!(reconstructed, va & 0x0000_007f_ffff_ffff)`, which rebuilds the
-address from the three indices at the literal shifts 30, 21 and 12. Any `va` with bit 21 set
+Expected to fail: `assert_eq!(reconstructed, virtual_address & 0x0000_007f_ffff_ffff)`, which rebuilds the
+address from the three indices at the literal shifts 30, 21 and 12. Any `virtual_address` with bit 21 set
 suffices: under the defect that bit belongs to no field.
 
 **The index math is shared and the proof is not.** The `aarch64` record widens the offset and
@@ -20,9 +20,9 @@ index 476dfcac4..8637f50f7 100644
 @@ -106,7 +106,7 @@ pub trait PageFormat {
      /// covers the highest translated bits; each lower level shifts down by 9. Derived from
      /// [`LEVELS`](Self::LEVELS) so it is right for both a 4- and a 3-level walk.
-     fn index(va: u64, level: usize) -> usize {
+     fn index(virtual_address: u64, level: usize) -> usize {
 -        let shift = 9 * (Self::LEVELS - 1 - level) as u32 + 12;
 +        let shift = 10 * (Self::LEVELS - 1 - level) as u32 + 12;
-         ((va >> shift) & 0x1ff) as usize
+         ((virtual_address >> shift) & 0x1ff) as usize
      }
  

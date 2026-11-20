@@ -9,8 +9,8 @@ nothing else in the crate reads it back.
 Expected to fail: `assert_eq!(leaf & 0b11, 0b11)`, on every input.
 
 **Measured blind before milestone 211.** The harness asserted only
-`entry_pa(leaf) == pa` and `leaf_flags(leaf) == flags`, and neither accessor reads the
-descriptor-type field: `entry_pa` masks the address bits and `leaf_flags` reads AP, UXN,
+`entry_physical_address(leaf) == physical_address` and `leaf_flags(leaf) == flags`, and neither accessor reads the
+descriptor-type field: `entry_physical_address` masks the address bits and `leaf_flags` reads AP, UXN,
 PXN, nG and the attribute index. So the descriptor could stop being a page descriptor at
 all with both round trips intact. Confirmed by applying this diff against the old phrasing
 and watching it stay green.
@@ -25,10 +25,10 @@ index b6d7a0a8..e6ba17d1 100644
 +++ b/crates/page_tables/src/aarch64.rs
 @@ -137,7 +137,7 @@ impl PageFormat for Aarch64 {
  
-     fn leaf_entry(pa: u64, flags: Flags) -> u64 {
+     fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {
          // At L3, `0b11` means PAGE, not TABLE. Same bits, different meaning by level.
--        (pa & ADDR_MASK) | Self::attrs(flags) | TABLE_OR_PAGE | VALID
-+        (pa & ADDR_MASK) | Self::attrs(flags) | VALID
+-        (physical_address & ADDR_MASK) | Self::attributes(flags) | TABLE_OR_PAGE | VALID
++        (physical_address & ADDR_MASK) | Self::attributes(flags) | VALID
      }
  
      fn leaf_flags(entry: u64) -> Flags {

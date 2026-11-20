@@ -285,7 +285,7 @@ pub(super) const ABORTS_ACCEPTED: &[(&str, &str, &str)] = &[
         "sys/pal/nife/clockproto.rs",
         "panic!(",
         "the clock contract's own host-side test assertions, generated verbatim from \
-         crates/clock_contract and unreachable in a target build",
+         the clock_contract crate and unreachable in a target build",
     ),
     (
         "sys/pal/nife/addressmap.rs",

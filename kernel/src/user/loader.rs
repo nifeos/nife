@@ -121,7 +121,7 @@ pub fn load(
     let page = space
         .map_new(
             startup_page_contract::PAGE_VIRTUAL_ADDRESS,
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
         )
         .map_err(LoadError::Unmappable)?;
     startup_page_contract::write(page, windows).map_err(LoadError::StartupPage)?;
@@ -135,7 +135,7 @@ pub fn load(
             .map_physical(
                 counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
                 phys,
-                Flags::user_rodata(),
+                Flags::user_read_only_data(),
                 crate::revoke::PageMapSource::NoCapability,
             )
             .map_err(LoadError::Unmappable)?;
@@ -202,7 +202,7 @@ pub fn map_timebase_page(space: &mut AddressSpace) -> Result<(), MapError> {
         space.map_physical(
             counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
             phys,
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             crate::revoke::PageMapSource::NoCapability,
         )?;
     }
@@ -210,7 +210,7 @@ pub fn map_timebase_page(space: &mut AddressSpace) -> Result<(), MapError> {
 }
 
 /// Lay an ELF's loadable segments into `space`, honouring their permissions exactly; the
-/// progenitor's userspace loader mirrors it. A read-only segment gets `user_rodata`, not
+/// progenitor's userspace loader mirrors it. A read-only segment gets `user_read_only_data`, not
 /// `user_data`, and `.bss` is free because `map_new` zeroes every page.
 pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError> {
     // Enforced here as well as in [`load`], which checks before it sizes a region so a huge image
@@ -222,7 +222,7 @@ pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError
         } else if seg.is_writable() {
             Flags::user_data()
         } else {
-            Flags::user_rodata()
+            Flags::user_read_only_data()
         };
 
         let (start, end) = seg.page_range(FRAME_PAGE_BYTES);

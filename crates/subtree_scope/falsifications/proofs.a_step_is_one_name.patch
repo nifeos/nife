@@ -5,15 +5,13 @@ The defect: `is_name` forgets `..`. A path could then go up out of the grant.
 Expected to fail: the assertion inside the lookup that no step is `..`.
 
 diff --git a/crates/subtree_scope/src/lib.rs b/crates/subtree_scope/src/lib.rs
-index b9e68bac5..ddc97391b 100644
 --- a/crates/subtree_scope/src/lib.rs
 +++ b/crates/subtree_scope/src/lib.rs
-@@ -103,7 +103,7 @@ pub enum Kind {
- /// **Whether `c` is one name**: non-empty, not `.` or `..`, and free of `/` and NUL. The only
- /// way down a tree is a name, so this is what keeps a path from going up or sideways.
- pub fn is_name(c: &[u8]) -> bool {
--    !c.is_empty() && c != b"." && c != b".." && !c.contains(&b'/') && !c.contains(&0)
-+    !c.is_empty() && c != b"." && !c.contains(&b'/') && !c.contains(&0)
+@@ -94,7 +94,6 @@
+ pub fn is_name(component: &[u8]) -> bool {
+     !component.is_empty()
+         && component != b"."
+-        && component != b".."
+         && !component.contains(&b'/')
+         && !component.contains(&0)
  }
- 
- /// **Every component of `path` is a name**, checked before any is resolved, so a malformed path is

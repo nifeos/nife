@@ -41,7 +41,7 @@ cannot see; the detail sections say which is which.
 | 7 | Learn a stranger's liveness from a refusal | Held | `reap_decision` returns `NotSupervised` for a non-supervised tid regardless of `dead`. |
 | 8 | Show a supervisor a thread that is not its child | Held | `survey_includes` is `fault_ep == ep`. A builder may point its own child's `fault_ep` at a victim's rendezvous, but exposes only its own thread and gains nothing. |
 | 9 | Make view and reap disagree in scope | Held | Both use `fault_ep == ep`; one decision function. |
-| 10 | Admit a high-half or unaligned user VA | Held | `is_user_page_va` is `top == 0 && is_multiple_of(4096)`; `SPLIT_SHIFT` 48/38/47; no boundary off-by-one. |
+| 10 | Admit a high-half or unaligned user VA | Held | `is_user_page_virtual_address` is `top == 0 && is_multiple_of(4096)`; `SPLIT_SHIFT` 48/38/47; no boundary off-by-one. |
 | 11 | Encode a page writable and executable | Held, near miss | ELF refuses W+X; `map_segments` maps exec as `user_code`. W^X lives only in the `Flags` constructors, not the encoders, and the W+X test skips `write_combining`. Not reachable from userspace today. |
 | 12 | Set a reserved bit in an IOMMU entry | Held (VT-d); gap (AMD-Vi) | `VTD_PERMITTED_BITS` proved over every u64. AMD-Vi's DTE has no literal guard and no Kani harness (see its section). |
 | 13 | Point a device outside its region | Held | `is_in_region` uses checked adds and `end <= limit`. |

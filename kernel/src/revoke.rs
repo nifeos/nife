@@ -853,7 +853,7 @@ mod tests {
         b.map_physical(
             va_b,
             run[2],
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             PageMapSource::Capability(run[0]),
         )
         .expect("map B");
@@ -1067,7 +1067,7 @@ mod tests {
         b.map_physical(
             va_b,
             shared,
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             PageMapSource::NoCapability,
         )
         .expect("map B");
@@ -1144,7 +1144,7 @@ mod tests {
                 .map_physical(
                     va,
                     shared,
-                    Flags::user_rodata(),
+                    Flags::user_read_only_data(),
                     PageMapSource::NoCapability,
                 )
                 .is_err()

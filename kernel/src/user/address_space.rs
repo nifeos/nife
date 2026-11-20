@@ -175,7 +175,7 @@ impl AddressSpace {
             .map_physical(
                 current_cpu_contract::PAGE_VIRTUAL_ADDRESS,
                 frame.physical_address(),
-                Flags::user_rodata(),
+                Flags::user_read_only_data(),
                 crate::revoke::PageMapSource::NoCapability,
             )
             .is_err()

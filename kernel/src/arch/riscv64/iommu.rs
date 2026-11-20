@@ -336,7 +336,7 @@ pub(crate) fn print_summary() {
 
 /// Build a DMA domain over exactly `regions` in Sv39, the format `iosatp` walks, and return its
 /// root.
-pub(crate) fn build_domain(regions: &[page_tables::domain::DmaRegion]) -> u64 {
+pub(crate) fn build_domain(regions: &[page_tables::domain::DirectMemoryAccessRegion]) -> u64 {
     crate::iommu::build_identity::<page_tables::Sv39>(regions)
 }
 
@@ -361,7 +361,7 @@ pub(crate) fn scope_of(_rid: u32) -> crate::iommu::Scope {
 /// none.
 pub(crate) fn for_each_reserved_region(
     _rid: u32,
-    _each: &mut dyn FnMut(page_tables::domain::DmaRegion),
+    _each: &mut dyn FnMut(page_tables::domain::DirectMemoryAccessRegion),
 ) {
 }
 

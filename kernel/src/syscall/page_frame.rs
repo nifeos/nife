@@ -40,8 +40,8 @@ pub(super) fn page_frame_map(
     let Some(last_va) = run_end_virtual_address(va, count) else {
         return Err(Error::BadPointer);
     };
-    if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va)
-        || !page_tables::is_user_page_va::<crate::arch::mmu::Format>(last_va)
+    if !page_tables::is_user_page_virtual_address::<crate::arch::mmu::Format>(va)
+        || !page_tables::is_user_page_virtual_address::<crate::arch::mmu::Format>(last_va)
     {
         return Err(Error::BadPointer);
     }
@@ -55,7 +55,7 @@ pub(super) fn page_frame_map(
         if !frame.rights.allows(Rights::READ) {
             return Err(Error::NotPermitted);
         }
-        page_tables::Flags::user_rodata()
+        page_tables::Flags::user_read_only_data()
     };
     // Under the hold only for the refusal order: a region destroyed after this read refuses to
     // retype, because it is generational (§16 (object revocation)).

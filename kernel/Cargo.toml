@@ -66,12 +66,12 @@ program_table = { version = "0.1.0", path = "../crates/program_table" }
 # `compatible` and names the binding with these constants, and its clock tests read the shared page
 # through the same publish protocol the service writes with, so no party has its own copy of the
 # layout.
-clock_contract = { version = "0.1.0", path = "../crates/clock_contract" }
+clock_contract = { version = "0.1.0", git = "https://github.com/nifeos/clock_contract", rev = "802ad77c24721a0572e42339f4cc6ffee16a1166" }
 # The inert-configuration contract (milestone 47's environment-variable fork, DECISIONS §111). The
 # kernel-side std program wiring assembles the page (`PageBuilder`) and maps it read-only into a
 # std program the same way it does the clock page, so no party has its own copy of the layout or
 # the validated domains.
-environment_contract = { version = "0.1.0", path = "../crates/environment_contract" }
+environment_contract = { version = "0.1.0", git = "https://github.com/nifeos/environment_contract", rev = "b4925221c6d33163c6217aa2b118ba29f0be5379" }
 # The base digest page (milestone 695 (the kernel trusts two digests from the loader), part 1): the
 # kernel writes the loader's `nife.base` digest into it and grants it to the progenitor read-only,
 # and the progenitor reads it through the same crate, so the layout has one definition.
@@ -232,7 +232,7 @@ generational_table = { version = "0.1.0-pre.3", git = "https://github.com/nifeos
 # the
 # tree so loom can check them, the fourth retrofit of work_steal_slot's move. Its `unsafe` and what
 # checks it: notes/kernel-dependency-unsafe.md. See notes/interleaving.md.
-spin_lock = { version = "0.1.0", path = "../crates/spin_lock" }
+test_and_set_lock = { version = "0.1.0", path = "../crates/test_and_set_lock" }
 # The work-steal handshake (milestone 80): the one lock-free cross-core protocol in the scheduler,
 # lifted out of `cpu.rs` so a model checker can reach it. The kernel calls the checked type rather
 # than keeping a second copy of the compare-exchange, the same move `memory_regions`,

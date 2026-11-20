@@ -60,7 +60,7 @@ pub(crate) fn start(fs_window_zero: u64) -> Option<DiskTree> {
             *m = Mapping {
                 va: BLK_PAGE + i as u64 * page_frames::FRAME_BYTES,
                 phys: staged + i as u64 * page_frames::FRAME_BYTES,
-                flags: Flags::user_rodata(),
+                flags: Flags::user_read_only_data(),
             };
         }
         super::fs_service::map_channel(&mut maps[BLK_PAGES..], FILE_PAGE, pool, POOL_PAGES);

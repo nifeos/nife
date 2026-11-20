@@ -21,7 +21,7 @@ diff --git a/crates/page_tables/src/domain.rs b/crates/page_tables/src/domain.rs
 @@ -58,7 +58,7 @@
  /// the enumeration is total for any region and index. Soundness rests on [`grant_pages`] flooring
  /// the count, and the whole-page test below is defense in depth (notes/paging.md).
- pub fn grant_page(r: DmaRegion, i: u64) -> Option<u64> {
+ pub fn grant_page(r: DirectMemoryAccessRegion, i: u64) -> Option<u64> {
 -    let off = i.checked_mul(PAGE_SIZE)?;
 +    let off = i * PAGE_SIZE;
      // The whole page must fit: a trailing partial page is not one of the grant's pages.

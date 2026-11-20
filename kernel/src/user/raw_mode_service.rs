@@ -103,7 +103,7 @@ fn start_with(replaceable: bool) -> (Wiring, Holding) {
                     Mapping {
                         va: APP_OUT_VA,
                         phys: app_out_phys,
-                        flags: Flags::user_rodata(),
+                        flags: Flags::user_read_only_data(),
                     },
                     Mapping {
                         va: APP_IN_VA,

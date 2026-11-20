@@ -6,35 +6,42 @@ use super::*;
 /// `false`, one unaligned low address keeps it from `true`.
 #[test]
 fn the_user_va_gate_admits_only_aligned_low_half_addresses() {
-    assert!(is_user_page_va::<Aarch64>(0x1000));
-    assert!(is_user_page_va::<Sv39>(0x1000));
-    assert!(!is_user_page_va::<Aarch64>(0x1001));
-    assert!(!is_user_page_va::<Sv39>(0x1001));
+    assert!(is_user_page_virtual_address::<Aarch64>(0x1000));
+    assert!(is_user_page_virtual_address::<Sv39>(0x1000));
+    assert!(!is_user_page_virtual_address::<Aarch64>(0x1001));
+    assert!(!is_user_page_virtual_address::<Sv39>(0x1001));
     // Page-aligned, but in the kernel half: all-ones above each format's split bit.
-    assert!(!is_user_page_va::<Aarch64>(0xffff_0000_0000_1000));
-    assert!(!is_user_page_va::<Sv39>(0xffff_ffc0_0000_1000));
+    assert!(!is_user_page_virtual_address::<Aarch64>(
+        0xffff_0000_0000_1000
+    ));
+    assert!(!is_user_page_virtual_address::<Sv39>(0xffff_ffc0_0000_1000));
 }
 
-/// **A leaf size fits only when `va` and `pa` are both aligned to it.** Each alone is not
+/// **A leaf size fits only when `virtual_address` and `physical_address` are both aligned to it.** Each alone is not
 /// enough, and the case that shows it is two addresses whose misaligned bits differ: their
 /// intersection is aligned when neither is. The Kani harnesses prove this for every input;
 /// this is the one `cargo test` (and so the mutation run) can see.
 #[test]
 fn a_leaf_fits_only_when_both_addresses_are_aligned_to_it() {
     let two = 2 << 20;
-    let (va, pa) = (two + 0x1000, two + 0x2000);
+    let (virtual_address, physical_address) = (two + 0x1000, two + 0x2000);
     assert_eq!(
-        va & pa & (two - 1),
+        virtual_address & physical_address & (two - 1),
         0,
         "the fixture: aligned together, not apart"
     );
     assert_eq!(
-        PageSize::largest_fitting(va, pa, 4 * two, PageSize::Size1GiB),
-        PageSize::Size4KiB
+        PageSize::largest_fitting(
+            virtual_address,
+            physical_address,
+            4 * two,
+            PageSize::OneGibibyte
+        ),
+        PageSize::FourKibibytes
     );
     assert_eq!(
-        PageSize::largest_fitting(two, two, 4 * two, PageSize::Size1GiB),
-        PageSize::Size2MiB
+        PageSize::largest_fitting(two, two, 4 * two, PageSize::OneGibibyte),
+        PageSize::TwoMebibytes
     );
 }
 

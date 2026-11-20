@@ -8,7 +8,7 @@ fn a_grant_name_limit_matches_the_filesystem_contract() {
     // filesystem contract to check a command line), so the constant is duplicated. That is only
     // safe if a change to one without the other fails here, on the host, in milliseconds.
     assert_eq!(
-        MAXIMUM_FILE_NAME,
+        MAXIMUM_FILE_NAME_BYTES,
         filesystem_contract::grant::MAXIMUM_NAME_BYTES
     );
     assert_eq!(
@@ -16,8 +16,8 @@ fn a_grant_name_limit_matches_the_filesystem_contract() {
         filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES
     );
     assert!(file_name_fits(b"least_authority_demo"));
-    assert!(file_name_fits(&[b'n'; MAXIMUM_FILE_NAME]));
-    assert!(!file_name_fits(&[b'n'; MAXIMUM_FILE_NAME + 1]));
+    assert!(file_name_fits(&[b'n'; MAXIMUM_FILE_NAME_BYTES]));
+    assert!(!file_name_fits(&[b'n'; MAXIMUM_FILE_NAME_BYTES + 1]));
     assert!(!file_name_fits(b""));
 }
 
@@ -40,5 +40,5 @@ fn the_planning_types_have_the_sizes_the_stack_budget_assumes() {
     assert_eq!(size_of::<Endowment>(), 2424);
     assert_eq!(size_of::<Holdings>(), 1008);
     assert_eq!(size_of::<expand::NameSet>(), 544);
-    assert_eq!(size_of::<nav::Cwd>(), 144);
+    assert_eq!(size_of::<navigation::Cwd>(), 144);
 }

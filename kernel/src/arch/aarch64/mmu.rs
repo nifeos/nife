@@ -228,7 +228,12 @@ where
 
     // 2. The kernel image, section by section, at its LINKED virtual addresses. This is W^X.
     map_range(m, text_start(), text_end(), Flags::kernel_code())?;
-    map_range(m, rodata_start(), rodata_end(), Flags::kernel_rodata())?;
+    map_range(
+        m,
+        rodata_start(),
+        rodata_end(),
+        Flags::kernel_read_only_data(),
+    )?;
     map_range(m, data_start(), bss_end(), Flags::kernel_data())?;
 
     // 3. THE GUARD PAGE IS NOT MAPPED. That is its entire job.
@@ -364,9 +369,9 @@ where
     }
     let len = (pa_end - pa_start).next_multiple_of(PAGE_SIZE);
     let largest = if flags.is_device() {
-        PageSize::Size4KiB
+        PageSize::FourKibibytes
     } else {
-        PageSize::Size1GiB
+        PageSize::OneGibibyte
     };
     m.map_span(phys_to_virt(pa_start), pa_start, len, flags, largest)
 }

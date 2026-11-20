@@ -9,10 +9,13 @@ use crate::*;
 #[test]
 fn a_one_grant_holdings_resolves_exactly_as_before() {
     assert_eq!(WITH_DIRECTORY.resolve(b"logs"), Ok(at(&[b"logs"])));
-    assert_eq!(WITH_DIRECTORY.resolve(b".."), Err(nav::Refused::AtYourRoot));
+    assert_eq!(
+        WITH_DIRECTORY.resolve(b".."),
+        Err(navigation::Refused::AtYourRoot)
+    );
     assert_eq!(
         WITH_DIRECTORY.locate(&at(&[b"logs"])),
-        (nav::Which::A, at(&[b"logs"]))
+        (navigation::Which::A, at(&[b"logs"]))
     );
 }
 
@@ -23,32 +26,35 @@ fn a_one_grant_holdings_resolves_exactly_as_before() {
 fn a_mounted_tree_is_a_path_in_the_one_tree() {
     let holds = mounted();
     let usb = holds.resolve(b"/media/usb/photos").unwrap();
-    assert_eq!(holds.locate(&usb), (nav::Which::B, at(&[b"photos"])));
+    assert_eq!(holds.locate(&usb), (navigation::Which::B, at(&[b"photos"])));
     assert_eq!(
         holds.locate(&at(&[b"media", b"usb"])),
-        (nav::Which::B, nav::Cwd::root())
+        (navigation::Which::B, navigation::Cwd::root())
     );
     // Beside the mount point and above it: the first tree.
     assert_eq!(
         holds.locate(&at(&[b"media"])),
-        (nav::Which::A, at(&[b"media"]))
+        (navigation::Which::A, at(&[b"media"]))
     );
     assert_eq!(
         holds.locate(&at(&[b"media", b"usbx"])),
-        (nav::Which::A, at(&[b"media", b"usbx"])),
+        (navigation::Which::A, at(&[b"media", b"usbx"])),
     );
     // `..` from the mount point, and from inside it, climbs the one tree.
     let mut standing = mounted();
     standing.cwd = at(&[b"media", b"usb"]);
     let up = standing.resolve(b"..").unwrap();
-    assert_eq!(standing.locate(&up), (nav::Which::A, at(&[b"media"])));
+    assert_eq!(
+        standing.locate(&up),
+        (navigation::Which::A, at(&[b"media"]))
+    );
     assert_eq!(
         standing.resolve(b"../../..").map(|_| ()),
-        Err(nav::Refused::AtYourRoot)
+        Err(navigation::Refused::AtYourRoot)
     );
     // `place` is `locate` reversed.
-    assert_eq!(holds.place(nav::Which::B, &at(&[b"photos"])), usb);
-    assert!(MountedTree::mounted_at(nav::Cwd::root()).is_none());
+    assert_eq!(holds.place(navigation::Which::B, &at(&[b"photos"])), usb);
+    assert!(MountedTree::mounted_at(navigation::Cwd::root()).is_none());
 }
 
 // ---- `bind` (milestone 47 (navigation and naming): "blocked on a second grant") ----
@@ -79,14 +85,17 @@ fn a_one_grant_holdings_binds_a_name_and_resolves_through_it() {
 fn a_bind_reaches_into_a_mount_and_cannot_hide_one() {
     let mut holds = mounted();
     assert_eq!(
-        holds.bind(b"media", nav::Cwd::root()),
-        Err(nav::BindRefused::ReservedLabel),
+        holds.bind(b"media", navigation::Cwd::root()),
+        Err(navigation::BindRefused::ReservedLabel),
     );
     holds
         .bind(b"photos", at(&[b"media", b"usb", b"photos"]))
         .unwrap();
     let p = holds.resolve(b"/photos/2026").unwrap();
-    assert_eq!(holds.locate(&p), (nav::Which::B, at(&[b"photos", b"2026"])));
+    assert_eq!(
+        holds.locate(&p),
+        (navigation::Which::B, at(&[b"photos", b"2026"]))
+    );
 }
 
 /// **`bind`'s own refusals surface through `Holdings`**.
@@ -96,10 +105,10 @@ fn holdings_bind_surfaces_the_bind_tables_own_refusals() {
         directory: true,
         ..Holdings::default()
     };
-    holds.bind(b"x", nav::Cwd::root()).unwrap();
+    holds.bind(b"x", navigation::Cwd::root()).unwrap();
     assert_eq!(
-        holds.bind(b"x", nav::Cwd::root()),
-        Err(nav::BindRefused::AlreadyBound),
+        holds.bind(b"x", navigation::Cwd::root()),
+        Err(navigation::BindRefused::AlreadyBound),
     );
 }
 
@@ -107,9 +116,9 @@ fn holdings_bind_surfaces_the_bind_tables_own_refusals() {
 
 #[test]
 fn a_second_tree_remembers_where_it_is_mounted() {
-    let mut at = nav::Cwd::root();
+    let mut at = navigation::Cwd::root();
     assert!(at.descend(b"second"));
     let second = MountedTree::mounted_at(at).expect("not the root");
     assert_eq!(second.mount(), at);
-    assert!(MountedTree::mounted_at(nav::Cwd::root()).is_none());
+    assert!(MountedTree::mounted_at(navigation::Cwd::root()).is_none());
 }
