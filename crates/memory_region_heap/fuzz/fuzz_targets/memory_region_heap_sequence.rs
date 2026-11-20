@@ -1,5 +1,4 @@
-//! A sequence of heap operations, driven the way a nife program's heap drives talc. See
-//! notes/talc-fuzzing.md.
+//! A sequence of heap operations, driven the way `memory_region_heap` drives talc.
 
 #![no_main]
 
