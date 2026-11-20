@@ -16,9 +16,13 @@ use crate::host::capture;
 /// would be the one to doubt. The partition is named by type GUID, not slot number, as the guest's
 /// `mkfs` finds it: the type is what the partition is, and the slot is this table's current order.
 /// See notes/host-recovery/devices-and-partitions.md.
+///
+/// # BUGS
+/// - The table is not checked against the image's size (`check_disk_size`); the protective MBR's
+///   size field is the only check of the disk's size here.
 pub(crate) fn blank_check_after_run() -> bool {
     use filesystem_fixture::blank;
-    use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable;
+    use globally_unique_identifier_partition_table::PartitionTable;
 
     let path = blank_disk_path();
     let Ok(img) = std::fs::read(&path) else {
@@ -33,16 +37,14 @@ pub(crate) fn blank_check_after_run() -> bool {
 
     // The table the guest wrote, judged by the parser the guest did not run: this process's own
     // copy, on the host, against the bytes on disk.
-    if let Err(e) =
-        globally_unique_identifier_partition_table::mbr::validate(&img[..lba], blank::DISK_BLOCKS)
-    {
+    if let Err(e) = globally_unique_identifier_partition_table::master_boot_record::validate(
+        &img[..lba],
+        blank::DISK_BLOCKS,
+    ) {
         eprintln!("BLANK IMAGE CHECK FAILED: the protective MBR the guest wrote is bad: {e:?}");
         return false;
     }
-    let table = match GloballyUniqueIdentifierPartitionTable::parse(
-        &img[lba..2 * lba],
-        &img[2 * lba..34 * lba],
-    ) {
+    let table = match PartitionTable::parse(&img[lba..2 * lba], &img[2 * lba..34 * lba]) {
         Ok(t) => t,
         Err(e) => {
             eprintln!(
@@ -77,19 +79,17 @@ pub(crate) fn blank_check_after_run() -> bool {
             }
         }
     }
-    if !parts.iter().any(|(_, p)| {
-        p.type_guid == globally_unique_identifier_partition_table::guid::types::NIFE_DATA
-    }) {
+    if !parts
+        .iter()
+        .any(|(_, p)| p.type_guid == nife_partition_types::NIFE_DATA)
+    {
         eprintln!("BLANK IMAGE CHECK FAILED: no nife data partition on the guest's disk");
         return false;
     }
 
     // The filesystem inside it, opened by the pinned engine on the host, at the offset the tool
     // works out from the same table this function just checked.
-    let data_type = format!(
-        "{:X}",
-        globally_unique_identifier_partition_table::guid::types::NIFE_DATA
-    );
+    let data_type = format!("{:X}", nife_partition_types::NIFE_DATA);
     let out = capture(
         "cargo",
         &[

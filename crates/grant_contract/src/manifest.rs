@@ -120,7 +120,7 @@ pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShortOptions {
     letters: [u8; MAXIMUM_DECLARED_SHORT_OPTIONS],
-    len: u8,
+    length_bytes: u8,
 }
 
 impl ShortOptions {
@@ -148,7 +148,7 @@ impl ShortOptions {
         }
         Some(Self {
             letters: out,
-            len: letters.len() as u8,
+            length_bytes: letters.len() as u8,
         })
     }
 
@@ -163,7 +163,7 @@ impl ShortOptions {
 
     /// The letters, in bit order.
     pub const fn letters(&self) -> &[u8] {
-        self.letters.split_at(self.len as usize).0
+        self.letters.split_at(self.length_bytes as usize).0
     }
 }
 
@@ -264,7 +264,7 @@ pub const INDEX_SOURCES_SLOT: u64 = 18;
 /// **Where a program that declares [`Manifest::machine`] finds the machine statistics page's
 /// capability** (milestone 126 (the `procps` package), DECISIONS §225 (`free` sees the machine and
 /// your share)). Eleven, one past [`NETWORK_SLOT`], for that constant's reasons. The page itself is
-/// mapped at `machine_statistics_contract::PAGE_VA`; the capability is here so `caps` has a slot to
+/// mapped at `machine_statistics_contract::PAGE_VIRTUAL_ADDRESS`; the capability is here so `caps` has a slot to
 /// print and so the grant is visible in the table.
 ///
 /// Name: ratified 2026-09-27 (calef, #1360's table).
@@ -359,8 +359,9 @@ pub enum WordGrant {
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 // This module is private, so nothing outside can reach the constant; the mutation exclusion in
 // .cargo/mutants.toml is its reader, and helpers/mutation_exclusion_check.py fails if it is gone.
+/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built.
 #[allow(dead_code)]
-pub const THE_RIGHTS_BITS_SHARE_NO_BIT: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
+pub const RIGHTS_BITS_DO_NOT_OVERLAP: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
 
 impl WordGrant {
     /// The rights a caretaker asks the file service for, as `filesystem_contract::directory`'s bits. Spelled
@@ -535,7 +536,7 @@ pub struct Manifest {
     /// prints that apart from an empty domain.
     pub domain: bool,
     /// **Endowed a read-only mapping of the inert-configuration page** (milestone 47's
-    /// environment-variable fork, DECISIONS §111; `crates/environment_contract`).
+    /// environment-variable fork, DECISIONS §111; the `environment_contract` package).
     ///
     /// [`clock`](Manifest::clock)'s family: a read-only mapping of the three inert values
     /// (`TZ`, `LANG`, `TERM`), with no object through which to change what a shell hands its
@@ -560,17 +561,17 @@ pub struct Manifest {
     /// right to `CALL` the socket contract, and the declaration is the whole of who may reach the
     /// network from this prompt. It reaches no other program's sockets, each being its own
     /// capability (§255 (each socket is its own capability)), and the stack holds
-    /// `socket_contract::NO_LISTEN_GRANT`, so a declaring program can connect out and cannot listen.
+    /// `socket_contract::NO_PORT_GRANT`, so a declaring program can connect out and cannot listen.
     ///
     /// **Provisional field name.**
     pub network: bool,
     /// **Endowed the machine statistics page** (milestone 126, DECISIONS §225 part 2;
-    /// `crates/machine_statistics_contract`): a read-only mapping at that crate's `PAGE_VA`, and
+    /// `crates/machine_statistics_contract`): a read-only mapping at that crate's `PAGE_VIRTUAL_ADDRESS`, and
     /// the frame's capability at [`MACHINE_SLOT`] carrying `READ`.
     ///
     /// [`clock`](Manifest::clock)'s family. §225 grants it to every login by default, withholdable
     /// by the owner (`system_initializer::GRANT_MACHINE_PAGE`): the shell holds it at
-    /// `spawnproto::MACHINE_PAGE_SLOT` and sends it with the request, so a withheld session's
+    /// `spawn_protocol::MACHINE_PAGE_SLOT` and sends it with the request, so a withheld session's
     /// programs say they cannot see the machine.
     ///
     /// **Provisional field name.**

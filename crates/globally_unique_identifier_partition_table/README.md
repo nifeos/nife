@@ -1,57 +1,60 @@
 # globally_unique_identifier_partition_table
 
-The globally unique identifier (GUID) partition table of UEFI 2.10, section 5.3, the GPT (GUID
+The globally unique identifier (GUID) partition table of the Unified Extensible Firmware
+Interface (UEFI) 2.10, section 5.3, the GPT (GUID
 Partition Table): reading one, writing one, and refusing a bad one. The three letters "GPT" are the
 UEFI disk format and have nothing to do with language models. `no_std`, no allocation, no `unsafe`,
 no I/O of any kind. Every function takes bytes the caller already read and returns bytes the caller
-is about to place, so the tests run on the host against disks that real tools made. The only
-dependency is `uuid` (default features off).
+is about to place, so the tests run on the host against disks that real tools made. Its
+dependencies are `uuid` (default features off) and `master_boot_record`, which writes and checks the
+protective master boot record (MBR).
 
 ## The contract
 
-- `GloballyUniqueIdentifierPartitionTable::parse(header_block, entry_array)` judges the table against
+- `PartitionTable::parse(header_block, entry_array)` judges the table against
   the disk: the header (`Header::decode`: signature, revision, size, both reserved regions, its own
   cyclic redundancy check (CRC)), the array CRC, the usable range, partitions off the end and
   partitions that overlap.
   `parse` takes the disk's size from the header and never sees the device, so a caller runs three more
   checks after it: `check_disk_size` against the device, `check_backup` against the last block, and
-  `check_protective_mbr` against block 0. `check_backup` compares the backup copy field by field.
+  `check_protective_master_boot_record` against block 0. `check_backup` compares the backup copy field by field.
   `parse_backup` opens a disk whose primary is damaged from its last block alone, and returns a
   table normalized to the primary's orientation, so `write_primary_header` and `entry_array`
   restore the primary. `create` builds a table, and
-  `write_protective_mbr`, `write_primary_header` and `write_backup_header` lay it out. `mbr::validate`
-  refuses a hybrid master boot record (MBR) on purpose (one disk described twice by tools that will
+  `write_protective_master_boot_record`, `write_primary_header` and `write_backup_header` lay it out. `master_boot_record::validate`
+  refuses a hybrid MBR on purpose (one disk described twice by tools that will
   not agree for long).
 - `Entry::decode` judges nothing: every one of 2^1024 bit patterns is an entry, so the round trip
   is provable over all of them. An entry is unused when its type GUID is all zero, and only then.
 - A GUID is mixed-endian on disk: the first three groups are little-endian integers and the last two
   are bytes in the order written. `guid::from_disk` and `guid::to_disk` are the only functions that
-  see on-disk bytes, so a `Uuid` here is always in the order of RFC (Request for Comments) 9562.
-- `last_lba` is inclusive. A one-block partition has `first_lba == last_lba`.
-- `entry_count * entry_size` from a hostile header is computed without overflow and returns an
+  see on-disk bytes, so a `Uuid` here is always in the order of Request for Comments 9562.
+- `last_logical_block_address` is inclusive. A one-block partition has `first_logical_block_address == last_logical_block_address`.
+- `entry_count * entry_bytes` from a hostile header is computed without overflow and returns an
   error, never a shortened CRC.
 - `span::Span::covering` turns a byte range into whole transfers, and `VERSION` (1) declares the
   generation of this crate's reading and writing, so that assembly can check what a package was
   built against. Nothing checks it at run time.
-- `guid::types` names the well-known type GUIDs, and holds two this project owns, `NIFE_DATA` (a
-  RedoxFS data partition) and `NIFE_BOOT` (a boot slot). Those two are fixed forever.
+- `guid::types` names the well-known type GUIDs. A system's own private types belong to that system
+  and are not listed; `guid::types::name` answers `None` for one it does not know, so a tool prints
+  the raw GUID.
 - What the two real fixtures taught: macOS writes no GPT partition names (72 zero bytes where the
   name goes), so nothing built on this crate may key off the name; identify a partition by type GUID
   or unique GUID. The two tools write different cylinder-head-sector (CHS) bytes in the protective
-  MBR and both are right, so `mbr::validate` checks only the fields that protect (start at logical
+  MBR and both are right, so `master_boot_record::validate` checks only the fields that protect (start at logical
   block address (LBA) 1, cover the disk).
 
 ## EXAMPLES
 
 ```rust
-use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable;
+use globally_unique_identifier_partition_table::PartitionTable;
 use globally_unique_identifier_partition_table::testing::sample_disk;
 
 // A 64 MiB disk with 512-byte blocks and one partition; only its first 34 blocks are real.
 let disk = sample_disk();
-// The array is not always at block 2: decode the header first and read `entry_array_lba`. Here
+// The array is not always at block 2: decode the header first and read `entry_array_logical_block_address`. Here
 // the sample disk puts it at block 2.
-let table = GloballyUniqueIdentifierPartitionTable::parse(&disk[512..1024], &disk[1024..1024 + 16384])?;
+let table = PartitionTable::parse(&disk[512..1024], &disk[1024..1024 + 16384])?;
 for (index, partition) in table.partitions() {
     println!("{}: {} blocks", index + 1, partition.blocks().unwrap());
 }
@@ -60,14 +63,18 @@ for (index, partition) in table.partitions() {
 
 ## What is proven
 
-Nine Kani harnesses, in `src/verification.rs`, each with a falsification patch in
+Fourteen Kani harnesses, in `src/verification.rs`, each with a falsification patch in
 `falsifications/` named `<module>.<harness>.patch`:
 
 - `crc32_matches_its_bitwise_definition` and `a_single_byte_change_always_changes_the_crc`
 - `an_entry_survives_the_round_trip` and `a_guid_survives_the_on_disk_layout`
 - `a_headers_fields_survive_the_round_trip` and `the_header_fields_partition_the_block`
 - `overlap_is_exactly_sharing_a_block` and `an_entries_block_count_never_panics_and_is_exact`
-- `create_never_lays_out_a_table_parse_would_reject`
+- `create_never_lays_out_a_table_parse_would_reject` and
+  `a_backup_header_restores_the_table_it_was_written_from`
+- `the_header_checks_before_the_crc_are_total` and
+  `the_header_crc_in_pieces_is_the_crc_of_the_whole`, the two stages of `Header::decode`
+- `a_span_always_contains_what_was_asked_for` and `a_name_always_decodes_into_its_documented_buffer`
 
 The proofs need Kani, which `rustup` does not install. Run `cargo install --locked
 kani-verifier --version 0.68.0`, then `cargo kani setup`. The setup step downloads a model
@@ -84,9 +91,9 @@ from the crate root makes its harness fail at its own assertion.
   LBA 0     protective MBR   one fake record of type 0xEE covering the whole disk
   LBA 1     primary header   92 bytes: signature, geometry, two CRC-32s, the disk GUID
   LBA 2..   entry array      128 entries x 128 bytes = 16 KiB
-  ...       the partitions, between first_usable_lba and last_usable_lba
+  ...       the partitions, between first_usable_logical_block_address and last_usable_logical_block_address
   LBA n-33  backup array     the same 16 KiB again
-  LBA n-1   backup header    the same header, my_lba and alternate_lba swapped
+  LBA n-1   backup header    the same header, my_logical_block_address and alternate_logical_block_address swapped
 ```
 
 Four CRC-32s (a header CRC and an array CRC, each stored twice) make a GPT a format that can tell

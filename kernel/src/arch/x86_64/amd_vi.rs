@@ -345,7 +345,7 @@ impl Unit {
 fn zeroed_frames(count: usize, what: &str) -> u64 {
     crate::memory::alloc_contiguous_zeroed(count)
         .unwrap_or_else(|| panic!("no {count} frame(s) for the AMD-Vi {what}"))
-        .addr()
+        .physical_address()
 }
 
 /// **What a unit's exclusion registers held when this kernel cleared them**: the raw Exclusion Base
@@ -449,8 +449,8 @@ fn set_up(ivrs: &IvrsUnits, i: usize) -> Result<Unit, &'static str> {
     // The device table covers every id the IVRS gives this unit, rounded up to a whole page; the
     // hardware target-aborts any id past its end (section 2.2.2).
     let ids = ivrs.last_device_id(i) as u64 + 1;
-    let pages = (ids * DTE_BYTES).div_ceil(page_frames::FRAME_SIZE);
-    let entries = (pages * page_frames::FRAME_SIZE / DTE_BYTES) as u32;
+    let pages = (ids * DTE_BYTES).div_ceil(page_frames::FRAME_BYTES);
+    let entries = (pages * page_frames::FRAME_BYTES / DTE_BYTES) as u32;
     let device_table = zeroed_frames(pages as usize, "device table");
     let empty_root = zeroed_frames(1, "blocked domain root");
     for id in 0..entries {
@@ -723,13 +723,13 @@ pub(crate) fn quarantine(rid: u32) {
 /// **Every IVMD the firmware declared for `rid`**, as regions its domain must also map.
 pub(crate) fn for_each_reserved_region(
     rid: u32,
-    each: &mut dyn FnMut(page_tables::domain::DmaRegion),
+    each: &mut dyn FnMut(page_tables::domain::DirectMemoryAccessRegion),
 ) {
     let Some(ivrs) = *IVRS.lock() else {
         return;
     };
     ivrs.unity_for(rid as u16, &mut |r| {
-        each(page_tables::domain::DmaRegion {
+        each(page_tables::domain::DirectMemoryAccessRegion {
             base: r.base,
             size: r.size,
             writable: r.device_may_write(),

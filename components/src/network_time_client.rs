@@ -126,7 +126,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
 
     // Our one socket, a capability the stack hands back (§255 (each socket is its own
     // capability)), and then our page attached to it.
-    let (REP_OK, _, Some(socket)) = call_receiving(STACK, OPERATION_OPEN_UDP, 0) else {
+    let (REPLY_OK, _, Some(socket)) = call_receiving(STACK, OPERATION_OPEN_UDP, 0) else {
         done(RPT_NET_ERROR, 2, 0);
     };
     attach_page_frame(socket);
@@ -155,16 +155,16 @@ fn client(server_ip: u64, server_port: u64) -> ! {
         sent += 1;
         if call(
             socket,
-            OPERATION_SENDTO,
-            network_time_protocol::PACKET_LEN as u64,
+            OPERATION_SEND_TO,
+            network_time_protocol::PACKET_BYTES as u64,
         )
-        .0 != REP_OK
+        .0 != REPLY_OK
         {
             done(RPT_NET_ERROR, 3, sent as u64);
         }
 
         let (n, _) = call(socket, OPERATION_RECEIVE, 0);
-        if n == REP_ERR || n == 0 {
+        if n == REPLY_ERROR || n == 0 {
             poll_gap();
             continue;
         }
@@ -174,7 +174,7 @@ fn client(server_ip: u64, server_port: u64) -> ! {
         let Some(t4) = stamp(local.now()) else {
             done(RPT_BAD_LOCAL_TIME, local.now(), 0);
         };
-        let mut wire = [0u8; network_time_protocol::PACKET_LEN];
+        let mut wire = [0u8; network_time_protocol::PACKET_BYTES];
         let n = SHARED_FRAME.payload_read(n as usize, &mut wire);
 
         match query.accept(&wire[..n], t4) {
@@ -318,7 +318,7 @@ fn reject_code(r: Reject) -> u64 {
         Reject::Mode(_) => 3,
         Reject::KissOfDeath(_) => 4,
         Reject::Stratum(_) => 5,
-        Reject::Unsynchronised => 6,
+        Reject::Unsynchronized => 6,
         Reject::OriginMismatch => 7,
         Reject::TransmitZero => 8,
         Reject::ServerOrderReversed => 9,
@@ -347,7 +347,7 @@ fn attach_page_frame(socket: u64) {
         socket,
         frame,
         rights::READ | rights::WRITE,
-        OPERATION_ATTACH_PAGE_FRAME,
+        OPERATION_ATTACH_SHARED_PAGE,
     ) < 0
     {
         done(RPT_NET_ERROR, 1, 0);

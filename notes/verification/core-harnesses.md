@@ -29,7 +29,7 @@ quantified over table states, not sampled.
 
 ## `crates/memory_regions`
 
-Thirteen in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
+Seventeen in `crates/memory_regions/src/proofs.rs` <!--count:memory-regions-harnesses-->, the
 untyped-region accounting behind object revocation
 (DECISIONS §16 (object revocation)). Two when this was written, and in `src/lib.rs`, where they no
 longer live; the table names those two and the eight that count objects under subtree ceilings (notes/memory-regions.md, "Subtree ceilings"). The scary property there is no double-free:
@@ -70,12 +70,12 @@ inward).
 | `the_offset_does_not_change_the_walk` | changing only the page offset leaves all four indices fixed: a whole 4 KiB page shares one leaf (page granularity) |
 | `distinct_pages_take_distinct_paths` | two page-aligned addresses with the same four indices are the same page (the arithmetic core of isolation) |
 | `the_two_halves_are_disjoint` | no address is in both `TTBR0` (low) and `TTBR1` (high) |
-| `the_user_va_gate_admits_only_the_aligned_low_half` | `is_user_page_va` equals the bit test the syscall layer used to hand-roll, and admits no address in the kernel's half |
+| `the_user_va_gate_admits_only_the_aligned_low_half` | `is_user_page_virtual_address` equals the bit test the syscall layer used to hand-roll, and admits no address in the kernel's half |
 | `the_leaf_descriptor_keeps_address_and_permissions_apart` | the L3 descriptor `map` writes decomposes back into exactly the address and exactly the flags, for every representable physical page and every `Flags` constructor: no permission bit can redirect the address, no address bit can grant a permission |
 | `the_low_half_mapper_rejects_the_high_half_untouched` | for every address outside the low half (every kernel address included), `map`/`unmap`/`translate` on a `TTBR0` mapper reject before touching any memory (the harness gives the mapper a null root and a panicking frame source, so a touch is a proof failure) |
 
 The user-VA gate is a Phase-2-style extraction in miniature. `untyped::MAP` and `frame::MAP` both
-hand-rolled `va & 0xfff != 0 || (va >> 48) != 0`. Both now call `page_tables::is_user_page_va`, so the
+hand-rolled `va & 0xfff != 0 || (va >> 48) != 0`. Both now call `page_tables::is_user_page_virtual_address`, so the
 gate the kernel runs is the gate that is proved.
 
 The descriptor harness leans on one assumption worth recording. `pa` is taken as representable
@@ -101,7 +101,7 @@ Nine in `crates/page_frames/src/lib.rs` <!--count:page-frames-harnesses-->, the 
 | Harness | Property |
 |---|---|
 | `two_allocations_are_distinct` | over any bitmap, two back-to-back `alloc`s never return the same frame (the property isolation rests on: one physical page is never handed to two owners) |
-| `an_allocated_frame_is_aligned_and_in_range` | an allocated frame is frame-aligned and within `[base, base + total*FRAME_SIZE)` |
+| `an_allocated_frame_is_aligned_and_in_range` | an allocated frame is frame-aligned and within `[base, base + total*FRAME_BYTES)` |
 | `index_of_inverts_frame_addressing` | frame address and bitmap index are inverses, so naming is unambiguous |
 | `containing_rounds_down_within_a_frame` | `PageFrame::containing` returns an aligned frame that holds the address |
 | `bitmap_bytes_covers_every_frame` | the bitmap is always sized to hold one bit per frame (no out-of-bounds in `get`/`set`) |

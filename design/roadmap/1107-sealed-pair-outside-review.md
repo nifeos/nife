@@ -53,18 +53,19 @@ build and test from.
 - P2-11, duplicate and non-UTF-8 entries unreported: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580), by the item's own alternative: the crate's
   `BUGS` states the three facts.
-- P2-12, the stick-path haystack contains the archive: Open. `BUGS` states the condition;
-  `embedded_archive` does not return its span and no test covers an archive carrying a raw digest.
+- P2-12, the stick-path haystack contains the archive: Done. `embedded_archive` returns the
+  archive's span, `card_check` zeroes that span before it judges the rest of the boot file, and a
+  test carries the `progenitor` digest in an archive entry. The `BUGS` line is gone.
 - P2-13, the cost of the `contains` window scan: Done,
   [#3610](https://github.com/nifeos/nife/pull/3610) (about 1.6 ms per MiB).
-- P2-14, no proof: Open. The `contains` harness and its patch are in place; the second harness,
-  for the table comparison, remains.
+- P2-14, no proof: Done. The `contains` harness and the table-comparison harness each carry a
+  falsification patch and share one `script/verify` row.
 - P2-15, `hex_string` and `measured_entries` public with one reader: Open. Both stay public until
   the move decides; a two-way door the maintainer rules then.
 - P2-16, the stale list in `notes/boot-stick.md`: Done,
   [#3580](https://github.com/nifeos/nife/pull/3580).
-- Decision A, when it leaves: Ruled (2026-11-16 UTC). Not built: neither the `sealed_pair` row of
-  `notes/releasable-crates-2026-10-07/inventory.md` nor milestone 1017's order records it.
+- Decision A, when it leaves: Ruled (2026-11-16 UTC). Recorded in the `sealed_pair` row of
+  `notes/releasable-crates-2026-10-07/inventory.md` and in milestone 1017's order.
 - Decision B, two public names: Done, [#3610](https://github.com/nifeos/nife/pull/3610)
   (maintainer, provisional, 2026-11-14 UTC).
 
@@ -181,11 +182,12 @@ What is left of this review is under "Finding status" above.
 
 - **Milestone 1017.** The contract crates leave in its order; items 1, 4 and 15 follow the order
   Decision A rules.
-- **Recorded.** Items 11 and 12 are in `crates/sealed_pair/src/lib.rs`'s `BUGS`.
-- **Done.** Items 6, 9 and 13: `AUTHORITY_NOTICE` and `build` are the provisional names of
-  Decision B, and a measurement shows `contains` is fast enough.
-- **Outstanding.** Item 14's second harness, item 12's span or test, and recording Decision A in
-  the inventory row and in milestone 1017, checked against `crates/sealed_pair` and both files.
+- **Recorded.** Item 11 is in `crates/sealed_pair/src/lib.rs`'s `BUGS`.
+- **Done.** Items 6, 9, 12, 13 and 14: `AUTHORITY_NOTICE` and `build` are the provisional names of
+  Decision B, `embedded_archive` returns the archive's span, a measurement shows `contains` is
+  fast enough, and both harnesses prove. Decision A is in the inventory row and in milestone
+  1017's order.
+- **Outstanding.** Nothing in this crate; items 1, 4 and 15 wait for the move.
 
 ## Index row
 

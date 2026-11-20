@@ -128,7 +128,7 @@ pub struct Wiring {
     pub term_ep: RendezvousId,
     /// The stand-in run-unvouched endpoint (§219 gate D2), `READ`: the progenitor's
     /// role, played by the harness. `login` holds it `WRITE | GRANT` at
-    /// `program_table::spawnproto::RUN_UNVOUCHED_SLOT`, as the real boot places it, and a test
+    /// `program_table::spawn_protocol::RUN_UNVOUCHED_SLOT`, as the real boot places it, and a test
     /// `ipc_receive`s here to confirm the copy a session was handed names this object.
     pub run_unvouched: RendezvousId,
     /// `login`'s own thread: what `retype_fault::arm` names, and whose capability table a sweep
@@ -145,9 +145,9 @@ fn map_blob(space: &mut AddressSpace, base: u64, bytes: &[u8]) {
     let mut off = 0usize;
     while off < bytes.len() {
         let page = space
-            .map_new(base + off as u64, Flags::user_rodata())
+            .map_new(base + off as u64, Flags::user_read_only_data())
             .expect("could not map a login blob");
-        let n = core::cmp::min(FRAME_SIZE as usize, bytes.len() - off);
+        let n = core::cmp::min(FRAME_BYTES as usize, bytes.len() - off);
         page[..n].copy_from_slice(&bytes[off..off + n]);
         off += n;
     }
@@ -288,14 +288,14 @@ fn build_login_space(elf: &Elf<'_>, blobs: &LoginBlobs, verify_page_frame: u64) 
         .segments()
         .map(|seg| {
             let (s, e) = seg.page_range(FRAME_PAGE_BYTES);
-            (e - s) / FRAME_SIZE
+            (e - s) / FRAME_BYTES
         })
         .sum::<u64>()
         + 1 // CRED_VA
-        + caretaker.len().div_ceil(FRAME_SIZE as usize) as u64
-        + measurements.len().div_ceil(FRAME_SIZE as usize) as u64
-        + keeper.len().div_ceil(FRAME_SIZE as usize) as u64
-        + timetable.len().div_ceil(FRAME_SIZE as usize) as u64
+        + caretaker.len().div_ceil(FRAME_BYTES as usize) as u64
+        + measurements.len().div_ceil(FRAME_BYTES as usize) as u64
+        + keeper.len().div_ceil(FRAME_BYTES as usize) as u64
+        + timetable.len().div_ceil(FRAME_BYTES as usize) as u64
         + LOGIN_STACK_PAGES
         // The tables: two more than when one schedule archive sat at one address, since the two
         // images each reach a table of their own.
@@ -304,7 +304,7 @@ fn build_login_space(elf: &Elf<'_>, blobs: &LoginBlobs, verify_page_frame: u64) 
     map_segments(&mut space, elf).expect("could not lay out login");
     for k in 0..LOGIN_STACK_PAGES {
         space
-            .map_new(USER_STACK_VA - k * FRAME_SIZE, Flags::user_data())
+            .map_new(USER_STACK_VA - k * FRAME_BYTES, Flags::user_data())
             .expect("could not map login's stack");
     }
     #[cfg(any(target_arch = "x86_64", target_arch = "riscv64"))]
@@ -409,10 +409,10 @@ fn grant_named_slots(tid: crate::thread::ThreadId) -> RendezvousId {
     let landed = sched::thread_control_block_insert_capability(
         tid,
         rendezvous_capability(run_unvouched, Rights::WRITE.union(Rights::GRANT)),
-        Some(program_table::spawnproto::RUN_UNVOUCHED_SLOT),
+        Some(program_table::spawn_protocol::RUN_UNVOUCHED_SLOT),
     )
     .expect("insert run_unvouched");
-    assert_eq!(landed, program_table::spawnproto::RUN_UNVOUCHED_SLOT);
+    assert_eq!(landed, program_table::spawn_protocol::RUN_UNVOUCHED_SLOT);
     let window = super::fs_service::durable_window().expect("the file service is wired");
     let landed = sched::thread_control_block_insert_capability(
         tid,

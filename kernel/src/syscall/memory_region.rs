@@ -71,7 +71,7 @@ pub(super) fn memory_region_invoke(
 pub(super) fn memory_region_map(region: u64, va: u64) -> Result<i64, Error> {
     // Before the retype, or each refused address spends a page of the caller's region. An
     // already-mapped `va` still costs one page.
-    if !page_tables::is_user_page_va::<crate::arch::mmu::Format>(va) {
+    if !page_tables::is_user_page_virtual_address::<crate::arch::mmu::Format>(va) {
         return Err(Error::BadPointer);
     }
     #[cfg(feature = "system_tests")]
@@ -128,7 +128,7 @@ pub(super) fn memory_region_retype(
 ) -> Result<i64, Error> {
     let (phys, count) =
         crate::memory_region::retype_run(region, requested).ok_or(Error::OutOfMemory)?;
-    // The run is non-empty by construction (`retype_pages` never returns zero).
+    // The run is non-empty by construction (`memory_region::retype_run` maps a zero count to one).
     let count = core::num::NonZeroU64::new(count).ok_or(Error::OutOfMemory)?;
     // `mint_child`, the inheriting mint `split_never_widens_rights` proves.
     let slot = sched::grant(capability.mint_child(Object::PageFrame(phys, count)))

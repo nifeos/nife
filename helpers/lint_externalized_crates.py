@@ -45,7 +45,7 @@ import sys
 PENDING = "a text or value hit in the crate on the day the lint was added; reword or remove it, then delete the entry"
 WAIVERS = {
     "byte_sink_contract": (1, PENDING),
-    "capability_manifest_note": (5, PENDING),
+    "capability_manifest_note": (2, PENDING),
     "counter_frequency_contract": (1, PENDING),
     "current_cpu_contract": (3, PENDING),
     "domain_name_resolution_contract": (54, PENDING),
@@ -58,7 +58,6 @@ WAIVERS = {
     "program_argument_contract": (2, PENDING),
     "socket_contract": (2, PENDING),
     "user_mode_runtime": (5, PENDING),
-    "interfaces_note": (6, PENDING),
     "subtree_scope": (1, PENDING),
 }
 

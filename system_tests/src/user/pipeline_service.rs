@@ -18,7 +18,7 @@ const LINE_VA: u64 = address_space_layout::pair_page(0x0000_0000_00b0_0000);
 /// Each pipeline and each job splits a region off this and gives it back, so one number covers a
 /// script of several lines. A scripted shell is never reclaimed, so every page here is a frame the
 /// suite keeps, which is why this is still the 128 the boot once granted and not the boot's
-/// `spawnproto::SHELL_BUDGET_PAGES`.
+/// `spawn_protocol::SHELL_BUDGET_PAGES`.
 const SH_BUDGET_PAGES: u64 = 128;
 
 /// Pages of stack below the one `run` maps: a shell needs more than a hand-sized program for
@@ -43,7 +43,8 @@ pub struct Wiring {
 /// Eight kilobytes because scripts share shells rather than wire more: every scripted shell is a
 /// live process whose frames are never reclaimed, and one more put `time_tests` over the frame
 /// pool intermittently. Kernel `.bss` costs no frames.
-static TRANSCRIPT: spin_lock::SpinLock<[u8; 8192]> = spin_lock::SpinLock::new([0; 8192]);
+static TRANSCRIPT: test_and_set_lock::SpinLock<[u8; 8192]> =
+    test_and_set_lock::SpinLock::new([0; 8192]);
 static WRITTEN: AtomicUsize = AtomicUsize::new(0);
 
 /// Set while a scripted shell's [`transcript`] is being collected; [`watch_for_a_killed_stage`]
@@ -164,7 +165,7 @@ fn start_with(
             return None;
         }
     }
-    .addr();
+    .physical_address();
     let line_phys = match crate::memory::alloc_zeroed() {
         Some(f) => f,
         None => {
@@ -172,7 +173,7 @@ fn start_with(
             return None;
         }
     }
-    .addr();
+    .physical_address();
     WRITTEN.store(0, Ordering::SeqCst);
     SCRIPT_RUNNING.store(true, Ordering::Release);
     if crate::sched::spawn(watch_for_a_killed_stage).is_none() {
@@ -241,13 +242,13 @@ fn shell_mappings(
     maps[1] = Mapping {
         va: LINE_VA,
         phys: line_phys,
-        flags: Flags::user_rodata(),
+        flags: Flags::user_read_only_data(),
     };
     for (k, m) in maps[2..2 + SHELL_EXTRA_STACK].iter_mut().enumerate() {
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = crate::memory::alloc()
             .expect("no frame for the shell's stack")
-            .addr();
+            .physical_address();
         m.flags = Flags::user_data();
     }
     // The optional pages last, so a shell wired without either maps exactly what it did before
@@ -262,13 +263,13 @@ fn shell_mappings(
         n += 1;
     }
     if let Some(phys) = clock {
-        // **`user_rodata`, and that is the read rung of DECISIONS §43 rather than tidiness**: a
+        // **`user_read_only_data`, and that is the read rung of DECISIONS §43 (reading the clock is a page) rather than tidiness**: a
         // shell that could write this page could set the wall clock, and the whole argument for
         // it holding one at all is that reading is not that.
         maps[n] = Mapping {
             va: SH_CLOCK_VA,
             phys,
-            flags: Flags::user_rodata(),
+            flags: Flags::user_read_only_data(),
         };
         n += 1;
     }
@@ -435,12 +436,12 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         let (w0, w1, w2) = (m[0], m[1], m[2]);
         // The shell says a job it held is gone (milestone 933). The stub kept no window for it and
         // answers nothing, as the real progenitor does.
-        if program_table::spawnproto::released_label(w0, w2).is_some() {
+        if program_table::spawn_protocol::released_label(w0, w2).is_some() {
             continue;
         }
-        let prog = program_table::Program::from_id(program_table::spawnproto::prog_id(w0));
-        let arg = program_table::spawnproto::program_argument(w1);
-        let wiring = program_table::spawnproto::wiring(w2);
+        let prog = program_table::Program::from_id(program_table::spawn_protocol::program_id(w0));
+        let arg = program_table::spawn_protocol::program_argument(w1);
+        let wiring = program_table::spawn_protocol::wiring(w2);
 
         // In the protocol's order. A capability received but never expected, or expected and
         // never sent, deadlocks both sides, which is why the order is the contract.
@@ -475,7 +476,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
         // A `--mem` grant is received and dropped: no stage of the pipeline script asks for
         // one, and receiving it anyway is what keeps the two sides in lockstep if one ever
         // does. `user/src/system_initializer.rs` is where a budget actually reaches a child.
-        if program_table::spawnproto::memory_grant_pages(w2) > 0 {
+        if program_table::spawn_protocol::memory_grant_pages(w2) > 0 {
             let m = crate::sched::inter_process_communication_receive_capability(spawn_ep);
             let _ = crate::sched::delete_current_capability(m[1]);
         }
@@ -538,16 +539,16 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
                 result,
                 [
                     if started {
-                        program_table::spawnproto::SPAWN_OK
+                        program_table::spawn_protocol::SPAWN_OK
                     } else {
-                        program_table::spawnproto::SPAWN_FAILED
+                        program_table::spawn_protocol::SPAWN_FAILED
                     },
                     0,
                     0,
                 ],
             );
         } else if !started {
-            crate::sched::ipc_send(result, [program_table::spawnproto::SPAWN_FAILED, 0, 0]);
+            crate::sched::ipc_send(result, [program_table::spawn_protocol::SPAWN_FAILED, 0, 0]);
         }
     }
 }
@@ -560,7 +561,7 @@ fn take_held(spawn_ep: RendezvousId, prog: Option<program_table::Program>) -> Op
     let region = crate::sched::inter_process_communication_receive_capability(spawn_ep);
     let _ = crate::sched::delete_current_capability(region[1]);
     let exit = take_rendezvous(spawn_ep);
-    if prog.is_some_and(program_table::spawnproto::held_shares) {
+    if prog.is_some_and(program_table::spawn_protocol::held_shares) {
         let share = crate::sched::inter_process_communication_receive_capability(spawn_ep);
         let _ = crate::sched::delete_current_capability(share[1]);
     }
@@ -572,7 +573,7 @@ fn take_held(spawn_ep: RendezvousId, prog: Option<program_table::Program>) -> Op
 fn answer_held(result: RendezvousId, label: Option<u64>) {
     match label {
         Some(label) => {
-            crate::sched::ipc_send(result, [program_table::spawnproto::SPAWN_OK, label, 0]);
+            crate::sched::ipc_send(result, [program_table::spawn_protocol::SPAWN_OK, label, 0]);
             crate::sched::inter_process_communication_send_capability(
                 result,
                 0,
@@ -580,7 +581,7 @@ fn answer_held(result: RendezvousId, label: Option<u64>) {
                 0,
             );
         }
-        None => crate::sched::ipc_send(result, [program_table::spawnproto::SPAWN_FAILED, 0, 0]),
+        None => crate::sched::ipc_send(result, [program_table::spawn_protocol::SPAWN_FAILED, 0, 0]),
     }
 }
 

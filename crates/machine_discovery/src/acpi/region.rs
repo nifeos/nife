@@ -8,7 +8,7 @@
 //! readers below ([`DirectMapRegion::table`], [`DirectMapRegion::find_rsdp`]) are built on it and
 //! sit here, beside the proof, rather than in the kernel, so a hostile table is a host test.
 //!
-//! The device-tree precedent is `DeviceTreeBlob::from_ptr` and `from_bytes`: one unsafe constructor
+//! The device-tree precedent is `DeviceTreeBlob::from_pointer` and `from_bytes`: one unsafe constructor
 //! over a raw pointer ([`DirectMapRegion::from_ptr`]) and one safe constructor over a slice
 //! ([`DirectMapRegion::from_bytes`]) that every host test and every proof uses.
 //!

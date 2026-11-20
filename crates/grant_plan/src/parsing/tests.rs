@@ -331,11 +331,11 @@ fn jig_is_a_program_and_package_is_not_a_builtin() {
 /// **The verb is the second word, with the third beside it when both fit** ([`verb_of`]): `None`
 /// for a bare program name, the second word alone when no third follows or the third would not
 /// fit, both joined by one space when they fit, and `None` when the second word is longer than
-/// [`MAXIMUM_VERB`] or, quoted, holds a space itself.
+/// [`MAXIMUM_VERB_BYTES`] or, quoted, holds a space itself.
 #[test]
 fn the_verb_is_the_second_word_and_the_third_when_both_fit() {
     let verb = |line: &[u8]| {
-        let mut out = [0u8; MAXIMUM_VERB];
+        let mut out = [0u8; MAXIMUM_VERB_BYTES];
         verb_of(line, &mut out).map(<[u8]>::to_vec)
     };
     assert_eq!(verb(b"jig"), None);
@@ -450,7 +450,7 @@ fn time_runs_the_command_you_would_have_typed() {
 fn assert_words(line: &[u8], want: &[&[u8]]) {
     let mut page = [0u8; program_argument_contract::PAGE_BYTES];
     assert_eq!(argv(line, &mut page), Ok(want.len() as u32));
-    let got = program_argument_contract::ArgPage::parse(&page);
+    let got = program_argument_contract::ArgumentPage::parse(&page);
     assert_eq!(got.len(), want.len());
     assert!(got.iter().eq(want.iter().copied()));
 }
@@ -489,11 +489,11 @@ fn argv_refuses_an_unquoted_pattern_and_passes_a_quoted_one() {
 /// left reading as no arguments rather than as the words that fitted.
 #[test]
 fn argv_refuses_a_line_past_one_page_and_leaves_no_argv() {
-    let mut line = [b'x'; program_argument_contract::CAPACITY + 3];
+    let mut line = [b'x'; program_argument_contract::MAXIMUM_RECORDS_BYTES + 3];
     line[..3].copy_from_slice(b"rg ");
     let mut page = [0u8; program_argument_contract::PAGE_BYTES];
     assert_eq!(argv(&line, &mut page), Err(Refusal::ArgumentsTooLong));
-    assert!(program_argument_contract::ArgPage::parse(&page).is_empty());
+    assert!(program_argument_contract::ArgumentPage::parse(&page).is_empty());
 }
 
 // ---- survivor triage of the 2026-10-03 census ---------------------------------------------
@@ -513,7 +513,7 @@ fn a_quoted_word_is_known_by_its_position_and_the_last_slot_is_readable() {
 /// prefix, so the line that fills the page exactly is taken and one byte more is not.
 #[test]
 fn a_line_that_exactly_fills_the_argument_page_is_taken() {
-    let cap = program_argument_contract::CAPACITY;
+    let cap = program_argument_contract::MAXIMUM_RECORDS_BYTES;
     let word = |n: usize| {
         let mut line = [b'a'; 8192];
         line[..n].fill(b'a');

@@ -16,7 +16,7 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
    Change: compare before rounding (`if size > LARGEST { return None }`), which is also one fewer
    operation on the allocator's fast path, or use `checked_next_multiple_of`. Add the edge tests
    the standalone copy ran. The index problem is a type problem, and the fix is the `Class`
-   newtype that Decision 3 decides, provisionally: `class` returns `Option<Class>` and every method
+   newtype that Decision 3 decides: `class` returns `Option<Class>` and every method
    that takes a class takes `Class`.
    Door: two-way before the first tag. Effort: S.
 
@@ -47,7 +47,7 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
    template's `unit_symbols` gate passes all five because none carries a symbol; the rule is one
    that a reader applies. The methods `put` and `drain` do not take std's spelling and meaning
    where std has one: `put` is glibc's word for what std and `heapless` call `push`, with the same `Result<(), T>` shape on a full container. std's `drain` returns an iterator where this one takes a closure. `take` matches std's meaning.
-   Change: as Decision 2 decides, provisionally: `GRID_BYTES`, `MAXIMUM_CLASS_BYTES`,
+   Change: as Decision 2 decides: `GRID_BYTES`, `MAXIMUM_CLASS_BYTES`,
    `BLOCKS_PER_CLASS`, `BATCH_BLOCKS`, `MAXIMUM_CACHED_BYTES`, `push` for `put`, `pop` for `take`,
    and `give_back_all` for `drain` unless it comes to return an iterator. The lane renames in one
    pass before the move, and the consumer's three `use` sites follow.

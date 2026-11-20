@@ -9,7 +9,7 @@
 //! §7). What's left here is the part that can only happen on the real machine: the **bootstrap**.
 
 use device_tree_blob::Region;
-use page_frames::{FRAME_SIZE, PageFrame, PageFrameAllocator, Stats};
+use page_frames::{FRAME_BYTES, PageFrame, PageFrameAllocator, Stats};
 
 use crate::arch::mmu::{phys_to_virt, virt_to_phys};
 use crate::println;
@@ -153,8 +153,8 @@ fn record_interrupt_controllers(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         // about what a PLIC is (`machine_discovery::plic::COMPATIBLES` names each string's machine).
         let found = machine_discovery::plic::COMPATIBLES
             .iter()
-            .any(|compat| matches!(dtb.node_reg_compatible(compat, &mut plic), Ok(n) if n >= 1))
-            || matches!(dtb.node_reg(b"plic@", &mut plic), Ok(n) if n >= 1);
+            .any(|compat| matches!(dtb.node_register_regions_compatible(compat, &mut plic), Ok(n) if n >= 1))
+            || matches!(dtb.node_register_regions(b"plic@", &mut plic), Ok(n) if n >= 1);
         if found {
             *PLIC_REGION.lock() = Some((plic[0].start, plic[0].size));
         }
@@ -182,7 +182,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     // it.
     {
         let mut smmu = [Region { start: 0, size: 0 }; 1];
-        if let Ok(n) = dtb.node_reg(b"smmuv3@", &mut smmu)
+        if let Ok(n) = dtb.node_register_regions(b"smmuv3@", &mut smmu)
             && n >= 1
         {
             *SMMU_REGION.lock() = Some((smmu[0].start, smmu[0].size));
@@ -200,7 +200,7 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
                 clock_contract::real_time_clock::GOLDFISH,
             ),
         ] {
-            if let Ok(n) = dtb.node_reg_compatible(compat, &mut rtc)
+            if let Ok(n) = dtb.node_register_regions_compatible(compat, &mut rtc)
                 && n >= 1
             {
                 *RTC_REGION.lock() = Some((rtc[0].start, rtc[0].size, kind));
@@ -219,15 +219,15 @@ fn record_devices(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
     }
 
     // The PCIe host bridge, by the generic-ECAM binding: `reg` is the config window and the 32-bit
-    // non-prefetchable `ranges` entry the BAR window (`pci_configuration_space::mem32_window`). It must come from the
+    // non-prefetchable `ranges` entry the BAR window (`pci_configuration_space::memory_window_32_bit`). It must come from the
     // tree: QEMU's BAR window is DRAM on the JH7110, which has no such node.
     {
         let mut ecam = [Region { start: 0, size: 0 }; 1];
-        if let Ok(n) = dtb.node_reg_compatible(b"pci-host-ecam-generic", &mut ecam)
+        if let Ok(n) = dtb.node_register_regions_compatible(b"pci-host-ecam-generic", &mut ecam)
             && n >= 1
             && let Ok(Some(ranges)) =
                 dtb.node_property_compatible(b"pci-host-ecam-generic", b"ranges")
-            && let Some(mem32) = ::pci_configuration_space::mem32_window(ranges)
+            && let Some(mem32) = ::pci_configuration_space::memory_window_32_bit(ranges)
         {
             *PCI_REGIONS.lock() = Some(((ecam[0].start, ecam[0].size), mem32));
         }
@@ -280,8 +280,44 @@ fn record_jh7110(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
         ) {
             *JH7110_PMIC_BUS.lock() = Some((sys, bus));
         }
+        record_jh7110_pci_express(dtb);
     }
     record_jh7110_ethernet(dtb);
+}
+
+/// **Record the JH7110's M.2 root port and the SYS clock-and-reset window its clocks live in**
+/// (milestone 163 (the JH7110's PCIe root complex)). Port 1 only: on a VisionFive 2 it is the M.2
+/// slot, and [`pci_regions`] holds one host.
+///
+/// Two guards. The caller has already established a JH7110 (the STG window is recorded), and the
+/// port's own node must name it with `status = "okay"`: its discovery has no constant fallback, so
+/// QEMU's `virt` and a tree without the node record nothing. Its own frame for
+/// [`record_jh7110`]'s reason.
+#[inline(never)]
+#[cfg(not(target_arch = "x86_64"))] // the device-tree front end
+fn record_jh7110_pci_express(dtb: &device_tree_blob::DeviceTreeBlob<'_>) {
+    let why = match machine_discovery::jh7110::pci_express::discover(
+        dtb,
+        jh7110_pci_express::PortNumber::One,
+    ) {
+        Err(_) => "the tree could not be read for it",
+        Ok(None) => {
+            "the tree names no port-1 `starfive,jh7110-pcie` node with `reg-names` `apb` and \
+             `cfg` and a 32-bit memory range"
+        }
+        Ok(Some(found)) if !found.status_okay => "its node's `status` is not `okay`",
+        Ok(Some(found)) => match machine_discovery::jh7110::clock_and_reset::discover_sys(dtb) {
+            Ok(sys) => {
+                *JH7110_PCI_EXPRESS.lock() = Ok(Jh7110PciExpress {
+                    port: found.port,
+                    sys,
+                });
+                return;
+            }
+            Err(_) => "the SYS clock and reset window was not found",
+        },
+    };
+    *JH7110_PCI_EXPRESS.lock() = Err(why);
 }
 
 /// **Record the JH7110's first Ethernet port and the three windows its bring-up writes**
@@ -413,12 +449,12 @@ pub(crate) fn bring_up_page_frames(ram: &[Region], forbidden: &[Region]) {
 /// a 200 KiB initial ramdisk one page at a time would be silly.
 fn place_bitmap(need: u64, ram: &[Region], forbidden: &[Region]) -> u64 {
     for region in ram {
-        let mut candidate = align_up(region.start, FRAME_SIZE);
+        let mut candidate = align_up(region.start, FRAME_BYTES);
 
         'scan: while candidate + need <= region.end() {
             for f in forbidden {
                 if overlaps(candidate, need, f.start, f.size) {
-                    candidate = align_up(f.start + f.size, FRAME_SIZE);
+                    candidate = align_up(f.start + f.size, FRAME_BYTES);
                     continue 'scan;
                 }
             }
@@ -450,7 +486,7 @@ static LARGEST_REFUSED: AtomicUsize = AtomicUsize::new(0);
 /// allocator still held, so the reading is the one this allocation produced.
 fn note_allocation(allocator: &PageFrameAllocator<'static>, count: usize, granted: bool) {
     publish_counts(allocator);
-    let free = allocator.stats().free();
+    let free = allocator.stats().free_frames();
     if free < FREE_LOW_WATER.load(core::sync::atomic::Ordering::Relaxed) {
         FREE_LOW_WATER.store(free, core::sync::atomic::Ordering::Relaxed);
     }
@@ -495,7 +531,7 @@ pub(crate) fn alloc_contiguous(count: usize) -> Option<PageFrame> {
 /// The argument that writing over a fresh frame is sound is made once, in `zero_frames`, rather
 /// than at every caller (DECISIONS §94 (what may live in a userspace library, and what must be
 /// per-binary)). Callers who want the bytes left alone call [`alloc`].
-/// Zeroing is a `FRAME_SIZE` memory touch, done after the allocator lock is released.
+/// Zeroing is a `FRAME_BYTES` memory touch, done after the allocator lock is released.
 pub fn alloc_zeroed() -> Option<PageFrame> {
     let frame = alloc()?;
     zero_frames(frame, 1);
@@ -522,9 +558,9 @@ fn zero_frames(frame: PageFrame, count: usize) {
     // map, which covers all of RAM, so the destination is writable for the whole run.
     unsafe {
         core::ptr::write_bytes(
-            phys_to_virt(frame.addr()) as *mut u8,
+            phys_to_virt(frame.physical_address()) as *mut u8,
             0,
-            count * FRAME_SIZE as usize,
+            count * FRAME_BYTES as usize,
         );
     }
 }
@@ -534,7 +570,7 @@ fn zero_frames(frame: PageFrame, count: usize) {
 /// under the same lock, so the page never shows a count the allocator never had.
 fn publish_counts(allocator: &PageFrameAllocator<'_>) {
     let s = allocator.stats();
-    crate::machine_statistics::frames(s.total, s.free());
+    crate::machine_statistics::frames(s.frames, s.free_frames());
 }
 
 pub fn free(frame: PageFrame) {
@@ -555,7 +591,10 @@ pub fn stats() -> Option<Stats> {
 /// bring this exactly back to where it stood before the region was created.
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))] // the reclamation tests in sched.rs and user/tests.rs
 pub fn free_page_frames() -> usize {
-    ALLOCATOR.lock().as_ref().map_or(0, |a| a.stats().free())
+    ALLOCATOR
+        .lock()
+        .as_ref()
+        .map_or(0, |a| a.stats().free_frames())
 }
 
 /// **Is the frame at `pa` allocated right now?** `None` when the allocator does not manage that
@@ -570,7 +609,7 @@ pub fn frame_is_allocated(pa: u64) -> Option<bool> {
     ALLOCATOR
         .lock()
         .as_ref()?
-        .is_used(PageFrame::from_addr(pa & !(FRAME_SIZE - 1)))
+        .is_used(PageFrame::from_physical_address(pa & !(FRAME_BYTES - 1)))
 }
 
 /// **The longest run of free frames**, in frames: what `alloc_contiguous` could still satisfy.
@@ -677,14 +716,15 @@ pub(crate) fn jh7110_ethernet() -> Option<Jh7110Ethernet> {
 
 /// **The SYS clock-and-reset window, if anything on this machine needs it**: the PMIC bus's
 /// (milestone 592 (radon's cold reboot dies in OpenSBI's PMIC write)), the Ethernet port's
-/// (milestone 53) or the watchdog's (milestone 593). All come from the same `discover_sys`, so
+/// (milestone 53), the PCI Express port's (milestone 163) or the watchdog's (milestone 593). All come from the same `discover_sys`, so
 /// they are the same window, and `mmu::initialize` maps it once through this rather than once per
 /// user.
 #[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
 pub(crate) fn jh7110_sys_window() -> Option<jh7110_clock_and_reset::WindowLocation> {
     let sys = jh7110_pmic_bus()
         .map(|(sys, _)| sys)
-        .or_else(|| jh7110_ethernet().map(|e| e.sys));
+        .or_else(|| jh7110_ethernet().map(|e| e.sys))
+        .or_else(|| jh7110_pci_express().map(|p| p.sys));
     #[cfg(all(target_arch = "riscv64", soak_watchdog))]
     let sys = sys.or_else(|| jh7110_watchdog().map(|(_, sys)| sys));
     sys
@@ -715,11 +755,41 @@ pub(crate) struct Jh7110Ethernet {
     pub syscon: machine_discovery::jh7110::designware_ethernet::SystemController,
 }
 
+/// What [`jh7110_pci_express()`] answers: the root port as the tree describes it, and the SYS
+/// clock-and-reset window that holds the bus clock its bring-up ungates first.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct Jh7110PciExpress {
+    /// The port's windows and its `PERST#` pin.
+    pub port: jh7110_pci_express::Port,
+    /// The SYS clock-and-reset window: `NOC_BUS_STG_AXI` and its reset.
+    pub sys: jh7110_clock_and_reset::WindowLocation,
+}
+
+/// **The JH7110's M.2 root port and the windows its bring-up writes** (milestone 163), or `None`
+/// on every machine whose tree names no such port with `status = "okay"`, which is every machine
+/// CI boots. RISC-V's `mmu::initialize` maps the page of each window the bring-up touches, and
+/// `drivers::jh7110_pci_express` brings the port up; only then does [`pci_regions`] name it.
+#[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))] // no JH7110 anywhere but a JH7110
+pub(crate) fn jh7110_pci_express() -> Option<Jh7110PciExpress> {
+    JH7110_PCI_EXPRESS.lock().ok()
+}
+
+/// **Why a JH7110's tree gave no root port to bring up**, for the boot log; `None` when it gave
+/// one, or when the machine is not a JH7110 (the clock and reset generator was not found).
+#[cfg_attr(not(target_arch = "riscv64"), allow(dead_code))]
+pub(crate) fn jh7110_pci_express_absent() -> Option<&'static str> {
+    match *JH7110_PCI_EXPRESS.lock() {
+        Err(why) if !why.is_empty() => Some(why),
+        _ => None,
+    }
+}
+
 /// The PCIe host bridge's windows, from the device tree: `(ecam, mem32)`, each `(start, size)`,
 /// all **physical**. ECAM is the config window the bridge's `reg` names; `mem32` is the 32-bit
 /// non-prefetchable memory window BARs are placed in. `None` before `initialize`, and on a machine
-/// whose tree describes no `pci-host-ecam-generic` bridge, which is the JH7110's honest state:
-/// its own PCIe controller is a different device, undriven until its own milestone. Absence
+/// whose tree describes no `pci-host-ecam-generic` bridge. The JH7110 describes none: its
+/// controller answers configuration reads only after a bring-up, so `drivers::jh7110_pci_express`
+/// records its windows through [`record_pci_regions`] once the root port forwards. Absence
 /// degrades the way an absent virtio device does: `mmu::map_everything` maps no window and every
 /// probe in kernel/src/pci.rs reports nobody home without touching MMIO.
 pub(crate) fn pci_regions() -> Option<((u64, u64), (u64, u64))> {
@@ -732,9 +802,10 @@ pub(crate) fn pci_regions() -> Option<((u64, u64), (u64, u64))> {
 /// interpreter, which this kernel does not have), so `main.rs` supplies both from what it already
 /// knows and fills the same static every consumer already reads. See notes/x86-port/acpi-and-pci.md.
 ///
-/// Its only caller is `x86_64`'s boot tour; the other two architectures fill the same static from
-/// their device tree inside `initialize` instead.
-#[cfg_attr(not(target_arch = "x86_64"), allow(dead_code))]
+/// Two callers: `x86_64`'s boot tour, and on riscv64 the JH7110 root port's bring-up once the port
+/// forwards, since that controller's windows decode nothing before it. aarch64 fills the same
+/// static from its device tree inside `initialize` instead.
+#[cfg_attr(target_arch = "aarch64", allow(dead_code))]
 pub(crate) fn record_pci_regions(ecam: (u64, u64), mem32: (u64, u64)) {
     *PCI_REGIONS.lock() = Some((ecam, mem32));
 }
@@ -1073,10 +1144,16 @@ static JH7110_WATCHDOG: InterruptSafeMutex<
 static JH7110_ETHERNET: InterruptSafeMutex<Option<Jh7110Ethernet>> =
     InterruptSafeMutex::new(rank::RAM, None);
 
+/// The JH7110's M.2 root port and its SYS window (milestone 163), or why a JH7110's tree gave none.
+/// The empty reason until `initialize`, and on every machine that is not a JH7110.
+static JH7110_PCI_EXPRESS: InterruptSafeMutex<Result<Jh7110PciExpress, &'static str>> =
+    InterruptSafeMutex::new(rank::RAM, Err(""));
+
 /// The generic-ECAM PCIe host bridge's windows: (ecam, mem32), each (base, size). Physical.
 type PciWindows = ((u64, u64), (u64, u64));
 
-/// `None` until `initialize`, and on a machine whose device tree has no such node (the JH7110).
+/// `None` until `initialize`, and on a machine whose device tree has no such node (the JH7110,
+/// until its root port is brought up).
 static PCI_REGIONS: InterruptSafeMutex<Option<PciWindows>> =
     InterruptSafeMutex::new(rank::RAM, None);
 
@@ -1145,14 +1222,14 @@ pub(crate) fn print_summary() {
         return;
     };
 
-    let mebibytes = |frames: usize| (frames as u64 * FRAME_SIZE) / (1024 * 1024);
-    let kibibytes = |frames: usize| (frames as u64 * FRAME_SIZE) / 1024;
+    let mebibytes = |frames: usize| (frames as u64 * FRAME_BYTES) / (1024 * 1024);
+    let kibibytes = |frames: usize| (frames as u64 * FRAME_BYTES) / 1024;
 
     println!(
         "  memory           : {} MiB total, {} MiB free ({} KiB in use)",
-        mebibytes(s.total),
-        mebibytes(s.free()),
-        kibibytes(s.used),
+        mebibytes(s.frames),
+        mebibytes(s.free_frames()),
+        kibibytes(s.used_frames),
     );
 }
 
@@ -1206,7 +1283,7 @@ mod tests {
     /// endianness reads back as.
     #[test_case]
     fn memory_map_came_from_the_device_tree() {
-        use page_frames::FRAME_SIZE;
+        use page_frames::FRAME_BYTES;
 
         let s = crate::memory::stats().expect("allocator not initialized");
 
@@ -1215,7 +1292,7 @@ mod tests {
         // wrong). 16 MiB is well below every machine this kernel has run on (QEMU's 256 MiB
         // runner default, the VisionFive 2's 4 GiB tree) and well above what a cell-width or
         // endianness bug would produce.
-        let total_bytes = s.total as u64 * FRAME_SIZE;
+        let total_bytes = s.frames as u64 * FRAME_BYTES;
         assert!(
             total_bytes >= 16 * 1024 * 1024,
             "unexpectedly small RAM size: {total_bytes} bytes; likely a misparsed reg property"
@@ -1224,8 +1301,8 @@ mod tests {
         // Some memory must already be spoken for: at minimum the kernel image, the
         // bitmap, and the device tree. A zero here means we reserved nothing, which
         // means we are about to hand out our own code.
-        assert!(s.used > 0, "nothing is reserved?");
-        assert!(s.free() > 0, "no free memory at all?");
+        assert!(s.used_frames > 0, "nothing is reserved?");
+        assert!(s.free_frames() > 0, "no free memory at all?");
     }
 
     /// **The one that matters.** Every frame the kernel image touches must be reserved.
@@ -1235,18 +1312,18 @@ mod tests {
     /// covers every frame of the image and allocates nothing. See notes/physical-memory.md.
     #[test_case]
     fn every_frame_of_the_kernel_image_is_reserved() {
-        use page_frames::{FRAME_SIZE, PageFrame};
+        use page_frames::{FRAME_BYTES, PageFrame};
 
         let (start, end) = crate::memory::image_bounds();
-        let mut addr = start - start % FRAME_SIZE; // round DOWN to the containing frame
+        let mut addr = start - start % FRAME_BYTES; // round DOWN to the containing frame
 
         while addr < end {
             assert_eq!(
-                crate::memory::is_page_frame_used(PageFrame::from_addr(addr)),
+                crate::memory::is_page_frame_used(PageFrame::from_physical_address(addr)),
                 Some(true),
                 "frame {addr:#x} overlaps the kernel image but is marked FREE"
             );
-            addr += FRAME_SIZE;
+            addr += FRAME_BYTES;
         }
     }
 
@@ -1265,9 +1342,9 @@ mod tests {
                 break;
             };
             assert!(
-                !crate::memory::is_in_kernel_image(frame.addr()),
+                !crate::memory::is_in_kernel_image(frame.physical_address()),
                 "allocator handed out {:#x}, which is inside the kernel image",
-                frame.addr()
+                frame.physical_address()
             );
             *slot = Some(frame);
         }
@@ -1288,12 +1365,12 @@ mod tests {
     /// the cheapest way to find out we've been handing out an MMIO hole.
     #[test_case]
     fn an_allocated_frame_is_real_memory() {
-        use page_frames::FRAME_SIZE;
+        use page_frames::FRAME_BYTES;
 
         let frame = crate::memory::alloc().expect("out of memory");
         // The allocator speaks physical; we must name it virtually to touch it.
-        let ptr = crate::arch::mmu::phys_to_virt(frame.addr()) as *mut u64;
-        let words = (FRAME_SIZE / 8) as usize;
+        let ptr = crate::arch::mmu::phys_to_virt(frame.physical_address()) as *mut u64;
+        let words = (FRAME_BYTES / 8) as usize;
 
         // SAFETY: the allocator just gave us this frame, so we own it exclusively. The
         // MMU is off, so the physical address is directly usable.
@@ -1306,7 +1383,7 @@ mod tests {
                     core::ptr::read_volatile(ptr.add(i)),
                     0xcafe_f00d_0000_0000 | i as u64,
                     "frame {:#x} word {i} did not hold what we wrote",
-                    frame.addr()
+                    frame.physical_address()
                 );
             }
         }
@@ -1347,20 +1424,20 @@ mod tests {
     /// counted as a pass.
     #[test_case]
     fn initial_ramdisk_is_reserved_if_present() {
-        use page_frames::{FRAME_SIZE, PageFrame};
+        use page_frames::{FRAME_BYTES, PageFrame};
 
         let Some((start, size)) = crate::memory::initial_ramdisk_region() else {
             crate::testing::skip!("no initial ramdisk region on this boot (no -initrd passed)");
         };
 
-        let mut addr = start - start % FRAME_SIZE;
+        let mut addr = start - start % FRAME_BYTES;
         while addr < start + size {
             assert_eq!(
-                crate::memory::is_page_frame_used(PageFrame::from_addr(addr)),
+                crate::memory::is_page_frame_used(PageFrame::from_physical_address(addr)),
                 Some(true),
                 "frame {addr:#x} is part of the initial ramdisk but is marked FREE"
             );
-            addr += FRAME_SIZE;
+            addr += FRAME_BYTES;
         }
     }
 
@@ -1372,12 +1449,15 @@ mod tests {
         let a = crate::memory::alloc().unwrap();
         let b = crate::memory::alloc_contiguous(8).unwrap();
 
-        assert_eq!(crate::memory::stats().unwrap().used, before.used + 9);
+        assert_eq!(
+            crate::memory::stats().unwrap().used_frames,
+            before.used_frames + 9
+        );
 
         crate::memory::free(a);
         for i in 0..8u64 {
-            crate::memory::free(page_frames::PageFrame::from_addr(
-                b.addr() + i * page_frames::FRAME_SIZE,
+            crate::memory::free(page_frames::PageFrame::from_physical_address(
+                b.physical_address() + i * page_frames::FRAME_BYTES,
             ));
         }
 

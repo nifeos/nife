@@ -142,7 +142,7 @@ fn start_waiter(region: u64) -> (u64, u64, u64) {
         Some(0),
     )
     .expect("give the waiter its own space");
-    sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_SIZE, name)
+    sched::configure_thread_control_block(tid, CODE_VA, STACK_VA + page_frames::FRAME_BYTES, name)
         .expect("configure");
     sched::start_thread_control_block(tid, [0, VA, PRIVATE | SIZE_U32]).expect("start");
     assert!(

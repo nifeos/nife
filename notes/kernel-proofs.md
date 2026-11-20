@@ -106,7 +106,7 @@ a boundary, not a library.
   harness does not echo the implementation's expression.
 - **`every_page_between_the_checked_ends_is_itself_a_user_page`.** Both mapping paths check `va` and
   the run's last address and then walk `va + k * PAGE_SIZE` for `k` in `0..count` with nothing
-  re-checking the pages between. Given the two endpoints pass `is_user_page_va`, every page in the
+  re-checking the pages between. Given the two endpoints pass `is_user_page_virtual_address`, every page in the
   run does too, and no page is computed past the checked end. `k` is symbolic rather than iterated,
   so this covers every page of every run with no unwind bound.
 

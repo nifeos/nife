@@ -18,7 +18,7 @@ partial-page test instead, which is the same disagreement reached from the other
 diff --git a/crates/page_tables/src/domain.rs b/crates/page_tables/src/domain.rs
 --- a/crates/page_tables/src/domain.rs
 +++ b/crates/page_tables/src/domain.rs
-@@ -74,7 +74,7 @@ pub fn grant_pages(r: DmaRegion) -> Result<u64, MapError> {
+@@ -74,7 +74,7 @@ pub fn grant_pages(r: DirectMemoryAccessRegion) -> Result<u64, MapError> {
      if r.base.checked_add(r.size).is_none() {
          return Err(MapError::BadRegion);
      }

@@ -13,8 +13,8 @@ Raised by a read-only review of `crates/user_mode_runtime` at the head of `main`
 maintainer meeting it for the first time would read it. It changes nothing; it lists what the next
 lanes change.
 
-The crate has no review package in `notes/crate-reviews/`, so there is no settled baseline to
-inherit. The review treats as settled only what a ruling elsewhere already fixes. That is the crate name,
+The review began before the crate had a package in `notes/crate-reviews/`, so it had no settled baseline to
+inherit. It treated as settled only what a ruling elsewhere already fixes. That is the crate name,
 `VERSION` and `INTERFACE_ID` (the names every contract crate carries), `INTERFACE_ID = 20` for the
 entry registers and link layout, and the ratified function names the `Name:` blocks record. It is also the
 order of extraction in milestone 1017 (the contract crates leave in this order). That order places this
@@ -45,10 +45,11 @@ crate's own reasons.
 - P0-1, `MappedWindow::read<T>` and `write<T>` take any type at any offset: Done, [#3580](https://github.com/nifeos/nife/pull/3580). They
   take the sealed `WindowInteger`, and a misaligned address panics.
 - P0-2, two barriers declared `nomem`: Done, [#3527](https://github.com/nifeos/nife/pull/3527).
-- P0-3, the manifest and the files the standalone check refuses: Open. The crate still inherits
-  its license and lints, and lacks `rust-version`, description, repository, keywords, categories,
-  a README for three targets, license files, a publish comment and a version on `jig`'s
-  dependency.
+- P0-3, the manifest and the files the standalone check refuses: Done,
+  [#3815](https://github.com/nifeos/nife/pull/3815) (maintainer, provisional, 2026-11-19 UTC). The
+  manifest writes `license`, `lints`, `rust-version`, a description, keywords, categories, `readme`
+  and a publish comment as literals; the crate has a README for three targets and both license
+  files; `jig`'s dependency carries a version. The `repository` key waits for the move.
 - P0-4, no test target: Done, [#3611](https://github.com/nifeos/nife/pull/3611). Two doctests stay `ignore` with a stated reason
   (`src/process.rs` lines 124 and 170).
 - P0-5, build scripts reach `link.ld` by a relative path: Done, [#3611](https://github.com/nifeos/nife/pull/3611).
@@ -57,7 +58,9 @@ crate's own reasons.
 - P1-8, text that speaks to a reader inside nife: Open. Nine source files cite a section, about 64
   lines cite a milestone, and 29 mention `notes/`. `notes/user-mode-runtime.md` and its directory
   move into the crate's `docs/`, and the externalized-crates ceiling falls to zero.
-- P1-9, twenty-four acronyms not expanded at first use: Open, with `SEND` in backticks.
+- P1-9, twenty-four acronyms not expanded at first use: Done,
+  [#3815](https://github.com/nifeos/nife/pull/3815) (maintainer, provisional, 2026-11-19 UTC). The
+  `prose_acronyms` and `readme_acronyms` rows left the template baseline.
 - P1-10, `Frame::payload_read` trusts a reply length: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
 - P1-11, `INITIAL_RAMDISK_VIRTUAL_ADDRESS` is a literal: Done, [#3611](https://github.com/nifeos/nife/pull/3611).
 - P2-12, an unused dependency on aarch64: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
@@ -68,36 +71,40 @@ crate's own reasons.
 - P2-17, no wrapper for `SYSCALL_EXIT_THREAD`: Done, [#3629](https://github.com/nifeos/nife/pull/3629) (maintainer, provisional,
   2026-11-15 UTC); the docs of `exit` say why none is needed.
 - Decision 1, the rename table: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional, 2026-11-14 UTC).
-- Decision 1, ratifying the names and the sized accessors: Open. calef's, under "Open decisions".
+- Decision 1, the sized accessors: Done, [#3815](https://github.com/nifeos/nife/pull/3815)
+  (maintainer, recommendation B, provisional, 2026-11-19 UTC). the maintainer removed `read_u8` to `write_u64`
+  and every call site uses `read::<T>` and `write::<T>`; a two-way door until the first tag.
+- Decision 1, ratifying the names: Open. calef's, under "Open decisions", asked from the review
+  package.
 - Decision 2, `link.ld` on the link search path: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional,
   2026-11-14 UTC). A two-way door until `disk-tools` leaves (milestone 1017 step 4), so not calef's
   until then.
 - Decision 3, one `Message` and one `Received`: Done, [#3611](https://github.com/nifeos/nife/pull/3611) (maintainer, provisional,
   2026-11-14 UTC).
-- Review package: Open. `notes/crate-reviews/` has no package for this crate and no index row.
+- Review package: Done, [#3815](https://github.com/nifeos/nife/pull/3815): the package is
+  `notes/crate-reviews/user-mode-runtime.md`, with its index row.
 - Clearing the review package, which approves the repository and the move: Open. calef's, under
   "Open decisions". The move also waits on milestone 1017 step 3.
 
 ## Open decisions
 
-### Ratify the names of `user_mode_runtime`, and keep or remove the sized accessors
+### Ratify the names of `user_mode_runtime`
 
 Background. This crate is what every nife program links: the syscall wrapper, the entry macro, the
 panic handler and typed windows over memory the kernel hands a process. It leaves nife for its own
 repository, and a crate leaves with ratified names. The maintainer ruled the renames on 2026-11-14
 (UTC), provisionally, and #3611 built them; each renamed name carries a provisional `Name:` block.
-One row stays open: the sized window accessors `read_u8` to `write_u64` (`src/mapped_window.rs`)
-sit beside the generic `read::<T>`, which takes the same sealed integer types. After the first tag
-a name, or an accessor, is a published surface.
+The maintainer ruled on 2026-11-19 UTC, provisionally, to remove the sized window accessors
+`read_u8` to `write_u64`, and #3815 built it, so a window has one spelling, `read::<T>` and
+`write::<T>`. After the first tag a name is a published surface. The package
+(`notes/crate-reviews/user-mode-runtime.md`) lists every public name with its status and a
+proposal.
 
-Recommendation: B. Ratify the names as built, and remove the sized accessors in favor of
-`read::<T>`. One way to read a window is the stricter surface; adding the sized forms back later is
-compatible, and removing them after the tag is not. The change touches about 147 call sites, which
-is effort, not a reason either way.
+Recommendation: A. Ratify the names as built, one table at a time from the package; the table
+stands each name as written and flags one optional question (`now`, which returns ticks).
 
-- A. Ratify the names as built and keep both forms.
-- B. Ratify the names and remove `read_u8` to `write_u64`, so `read::<T>` and `write::<T>` stay.
-- C. Hold ratification until the review package exists, and rule there.
+- A. Ratify the names as built.
+- B. Ratify them except the rows the architect names, which keep their provisional blocks.
 
 Door: one-way at the first tag. Before it every name is two-way; after it, a rename or a removal is
 a breaking release for every program that links the crate.
@@ -107,18 +114,18 @@ same (`bus_space_read_1` to `_8`), because C has no generic. `tock-registers` an
 crate take one generic over an integer trait (`UIntLike`, from memory), as `WindowInteger` does
 here. nife differs from Linux and OpenBSD in having the generic already, so the sized forms are a second
 spelling of the same call. Concrete example: `window.read_u32(0x70)` and `window.read::<u32>(0x70)`
-read the same register today; under B only the second compiles.
+read the same register before the ruling; now only the second compiles.
 
 What it blocks: the move, and with it the tag.
 
-### Clear the review package once it is written
+### Clear the review package
 
 Background. A crate leaves nife only after calef clears its review package, and clearing approves
-its repository (the rule of 2026-11-01 UTC). This crate has no package yet, and a lane writes it
-next. Every nife program and `disk-tools` depend on this crate, so it leaves at step 3 of milestone
+its repository (the rule of 2026-11-01 UTC). The package exists
+(`notes/crate-reviews/user-mode-runtime.md`). Every nife program and `disk-tools` depend on this crate, so it leaves at step 3 of milestone
 1017, after the contract crates it links.
 
-Recommendation: A, clear the package once it and P0-3 land; milestone 1017 step 3 times the move.
+Recommendation: A, clear the package, now that it and P0-3 have landed; milestone 1017 step 3 times the move.
 
 - A. Clear when the package and the manifest work land.
 - B. Clear only after P1-8 and P1-9 land as well, so the repository opens with no nife-facing text.
@@ -194,7 +201,7 @@ Recommendation, one row per name, the stricter spelling first:
 | `cntfrq`, `cntfrq_checked` | `counter_hertz`, `counter_hertz_checked` | a rate ends in `_hertz` (`tick_hertz` is the in-crate precedent); the ARM mnemonic names nothing on riscv64 or `x86_64` |
 | `MappedWindow::sub` | `MappedWindow::window` | `sub` is the standard library's subtraction |
 | `list` | `address_space_list` | a generic word; its twin is `survey`, which names its object |
-| `r8` ... `w64` | keep, or `read_u8` ... `write_u64` | the architect's call; Linux spells `readb`/`writeq`, OpenBSD `bus_space_read_1`; `read<T>`/`write<T>` already exist as the long form |
+| `r8` ... `w64` | removed; `read::<T>` and `write::<T>` stay | the maintainer's ruling of 2026-11-19 UTC; Linux spells `readb`/`writeq`, OpenBSD `bus_space_read_1`; `read<T>`/`write<T>` already exist as the long form |
 | `virtio` | accepted word | a product name, like `pci` |
 
 Prior art: `rustix` spells every parameter out. Its one exception, `fd`, is a name the kernel owns.
@@ -206,10 +213,9 @@ Prior art: `rustix` spells every parameter out. Its one exception, `fd`, is a na
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door, which the architect may
 revisit. These are names in an unreleased crate, and a crate
 tag is a pre-release. The table above is the rule as written, with `counter_hertz` matching the
-ratified `counter_frequency_contract` method `hertz`. The open row takes the spelled-out form:
-`r8` to `w64` (`src/mapped_window.rs` lines 146 to 193, 147 call sites) become `read_u8` to
-`write_u64`. Removing them in favor of the existing `read::<T>` (line 123) is the stricter option,
-and it stays open for the architect (see "Open decisions"). The renamed items are at
+ratified `counter_frequency_contract` method `hertz`. The sized accessors `r8` to `w64`
+were renamed `read_u8` to `write_u64` and then, by the maintainer's ruling of 2026-11-19 UTC
+(provisional), removed in favor of `read::<T>` and `write::<T>`. The renamed items are at
 `src/clock.rs` lines 48, 82 and 142 and `src/mapped_window.rs` lines 39, 94 and 203. Item 13 is
 the work. Ratifying the names stays the architect's.
 The abbreviation gate reads a bare `address` as ambiguous, so three rows land qualified:

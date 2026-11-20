@@ -7,7 +7,7 @@
 //! the device emits faults. Each driver's `initialize` denies every unattached device, so the
 //! window between Bus-Master Enable and `confine` is closed by the hardware. See notes/iommu.md.
 
-use page_tables::domain::{DmaRegion, build_identity_domain};
+use page_tables::domain::{DirectMemoryAccessRegion, build_identity_domain};
 
 // The fault-reporting surface. Only the confinement tests drain it, without naming `Fault`, so
 // both re-exports may be locally unused.
@@ -157,7 +157,7 @@ const MAXIMUM_CONFINED_REGIONS: usize = 4 + machine_discovery::acpi::MAXIMUM_RES
 fn zeroed_page_frame() -> u64 {
     crate::memory::alloc_zeroed()
         .expect("no frame for an IOMMU DMA domain")
-        .addr()
+        .physical_address()
 }
 
 /// **Confine PCI device `rid` to exactly `regions`.** Builds a DMA domain in this architecture's
@@ -173,12 +173,12 @@ fn zeroed_page_frame() -> u64 {
 /// Returns the driver's [`AttachError`] when it cannot hold `rid`, after printing it; the device
 /// stays blocked. The domain built for a refused device is not freed.
 #[must_use = "a refused device is blocked, and its driver must not start"]
-pub(crate) fn confine(rid: u32, regions: &[DmaRegion]) -> Result<(), AttachError> {
+pub(crate) fn confine(rid: u32, regions: &[DirectMemoryAccessRegion]) -> Result<(), AttachError> {
     // The grant plus the firmware's reserved regions for this device: VT-d 4.1 section 3.16 wants
     // an RMRR identity-mapped in its device's domain, or the firmware's own DMA faults. One that
     // overlaps the grant is skipped, since mapping a page twice fails the build. See
     // notes/iommu.md, "Reserved regions".
-    let mut all = [DmaRegion {
+    let mut all = [DirectMemoryAccessRegion {
         base: 0,
         size: 0,
         writable: false,
@@ -215,7 +215,9 @@ pub(crate) fn confine(rid: u32, regions: &[DmaRegion]) -> Result<(), AttachError
 /// **Build an identity domain over exactly `regions` in format `F`, and return its root.** The
 /// architecture's `build_domain` names `F`; this is the part that is the same everywhere: the
 /// frame allocator and the pointer projection the kernel's own `Mapper` uses.
-pub(crate) fn build_identity<F: page_tables::PageFormat>(regions: &[DmaRegion]) -> u64 {
+pub(crate) fn build_identity<F: page_tables::PageFormat>(
+    regions: &[DirectMemoryAccessRegion],
+) -> u64 {
     let root = zeroed_page_frame();
     // SAFETY: `root` is a freshly zeroed, page-aligned frame; `zeroed_page_frame` returns the same for
     // every intermediate table; `phys_to_virt` yields a pointer the Mapper contract accepts. Nobody
@@ -248,16 +250,16 @@ pub(crate) fn virtio_regions(
     direct_memory_access_base: u64,
     direct_memory_access_size: u64,
     shadow_base: u64,
-) -> [DmaRegion; 2] {
+) -> [DirectMemoryAccessRegion; 2] {
     [
-        DmaRegion {
+        DirectMemoryAccessRegion {
             base: direct_memory_access_base,
             size: direct_memory_access_size,
             writable: true,
         },
-        DmaRegion {
+        DirectMemoryAccessRegion {
             base: shadow_base,
-            size: page_frames::FRAME_SIZE,
+            size: page_frames::FRAME_BYTES,
             writable: false,
         },
     ]

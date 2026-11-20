@@ -114,8 +114,8 @@ const STREAM_TABLE_FORMAT_TWO_LEVEL: u32 = 0b01 << 16;
 // Each table is one frame: the level-one table, a leaf of STEs and a leaf of CDs. A larger split or
 // width that no longer fits stops the build here, not at a write past a frame.
 const _: () =
-    assert!(LEVEL_ONE_DESCRIPTORS as u64 * LEVEL_ONE_DESCRIPTOR_BYTES <= page_frames::FRAME_SIZE);
-const _: () = assert!(STREAMS_PER_LEAF as u64 * STE_BYTES <= page_frames::FRAME_SIZE);
+    assert!(LEVEL_ONE_DESCRIPTORS as u64 * LEVEL_ONE_DESCRIPTOR_BYTES <= page_frames::FRAME_BYTES);
+const _: () = assert!(STREAMS_PER_LEAF as u64 * STE_BYTES <= page_frames::FRAME_BYTES);
 
 // Commands (opcode in byte 0 of word 0).
 const CMD_CFGI_STE: u32 = 0x03;
@@ -188,13 +188,13 @@ fn w64(base: u64, off: u64, v: u64) {
 fn zeroed_page_frame(what: &str) -> u64 {
     let pa = crate::memory::alloc()
         .unwrap_or_else(|| panic!("no frame for the SMMU {what}"))
-        .addr();
+        .physical_address();
     // SAFETY: a fresh frame, reachable through the direct map, owned by this module from here on.
     unsafe {
         core::ptr::write_bytes(
             phys_to_virt(pa) as *mut u8,
             0,
-            page_frames::FRAME_SIZE as usize,
+            page_frames::FRAME_BYTES as usize,
         );
     }
     pa
@@ -323,7 +323,7 @@ pub(crate) fn print_summary() {
 /// root. The SMMUv3's stage 1 translates with VMSAv8-64, the CPU's own format. One function per
 /// architecture rather than a type alias since lane `amd-vi`, because `x86_64` has two IOMMUs that
 /// walk two formats and only a running machine says which.
-pub(crate) fn build_domain(regions: &[page_tables::domain::DmaRegion]) -> u64 {
+pub(crate) fn build_domain(regions: &[page_tables::domain::DirectMemoryAccessRegion]) -> u64 {
     crate::iommu::build_identity::<page_tables::Aarch64>(regions)
 }
 
@@ -349,7 +349,7 @@ pub(crate) fn scope_of(_rid: u32) -> crate::iommu::Scope {
 /// [`crate::iommu::confine`] can map them into every domain. The SMMUv3 counterpart is an IORT RMR node or a device tree `reserved-memory` region with `iommu-addresses`; this tree reads neither, and no machine it boots publishes one.
 pub(crate) fn for_each_reserved_region(
     _rid: u32,
-    _each: &mut dyn FnMut(page_tables::domain::DmaRegion),
+    _each: &mut dyn FnMut(page_tables::domain::DirectMemoryAccessRegion),
 ) {
 }
 
@@ -494,14 +494,16 @@ fn leaf_at(s: &mut Smmu, index: usize) -> Option<(Leaf, bool)> {
         };
         return Some((leaf, false));
     }
-    let stream_table_entries = crate::memory::alloc_zeroed()?.addr();
+    let stream_table_entries = crate::memory::alloc_zeroed()?.physical_address();
     let Some(context_descriptors) = crate::memory::alloc_zeroed() else {
-        crate::memory::free(page_frames::PageFrame::from_addr(stream_table_entries));
+        crate::memory::free(page_frames::PageFrame::from_physical_address(
+            stream_table_entries,
+        ));
         return None;
     };
     let leaf = Leaf {
         stream_table_entries,
-        context_descriptors: context_descriptors.addr(),
+        context_descriptors: context_descriptors.physical_address(),
     };
     // The leaf's 64 STEs are zero, so invalid: publish them before the descriptor that makes the
     // SMMU walk them.
@@ -627,7 +629,7 @@ mod proofs {
         let asid: u16 = kani::any();
 
         // `ttb` is the root of a domain built by `page_tables::domain`, so a page frame.
-        kani::assume(ttb % page_frames::FRAME_SIZE == 0);
+        kani::assume(ttb % page_frames::FRAME_BYTES == 0);
         kani::assume(ttb < 1 << PA_BITS);
         // `ctxptr` is a leaf's CD frame plus `stream_position`'s offset: a page frame plus a 64-byte
         // stride.
@@ -697,7 +699,7 @@ mod proofs {
             "every admitted stream's leaf has a descriptor in the level-one frame"
         );
         assert!(
-            pa.offset + STE_BYTES <= page_frames::FRAME_SIZE,
+            pa.offset + STE_BYTES <= page_frames::FRAME_BYTES,
             "every entry the bound admits lies inside its leaf's single frame"
         );
         assert!(
@@ -721,7 +723,7 @@ mod proofs {
         let leaf: u64 = kani::any();
         let stream_id_bits: u32 = kani::any();
         // A leaf is a page frame in RAM.
-        kani::assume(leaf % page_frames::FRAME_SIZE == 0);
+        kani::assume(leaf % page_frames::FRAME_BYTES == 0);
         kani::assume(leaf < 1 << PA_BITS);
         kani::assume((STREAM_TABLE_SPLIT..=STREAM_ID_BITS_MAXIMUM).contains(&stream_id_bits));
 

@@ -88,27 +88,27 @@ pub fn find_and_confine() -> Result<Found, Absent> {
     // all-zero entries.
     let dma = crate::memory::alloc_contiguous_zeroed(DIRECT_MEMORY_ACCESS_PAGES as usize)
         .expect("no DMA region for the NVMe driver")
-        .addr();
+        .physical_address();
     if crate::iommu::is_active() {
         // The device's own DMA run, and in a shipped boot nothing else: the controller faults on
         // any address outside it.
-        let own = page_tables::domain::DmaRegion {
+        let own = page_tables::domain::DirectMemoryAccessRegion {
             base: dma,
-            size: DIRECT_MEMORY_ACCESS_PAGES * page_frames::FRAME_SIZE,
+            size: DIRECT_MEMORY_ACCESS_PAGES * page_frames::FRAME_BYTES,
             writable: true,
         };
         // The falsification's widening point; `None` unless the patch set [`ESCAPE_TARGET`].
         #[cfg(feature = "system_tests")]
         let extra = {
             let escape = ESCAPE_TARGET.load(core::sync::atomic::Ordering::Relaxed);
-            (escape != 0).then_some(page_tables::domain::DmaRegion {
+            (escape != 0).then_some(page_tables::domain::DirectMemoryAccessRegion {
                 base: escape,
-                size: page_frames::FRAME_SIZE,
+                size: page_frames::FRAME_BYTES,
                 writable: true,
             })
         };
         #[cfg(not(feature = "system_tests"))]
-        let extra: Option<page_tables::domain::DmaRegion> = None;
+        let extra: Option<page_tables::domain::DirectMemoryAccessRegion> = None;
         let confined = match extra {
             Some(x) => crate::iommu::confine(dev.rid, &[own, x]),
             None => crate::iommu::confine(dev.rid, &[own]),
@@ -143,8 +143,8 @@ pub fn free_retired_run(dma: u64) {
 /// Hand the [`DIRECT_MEMORY_ACCESS_PAGES`]-page run at `dma` back, page by page.
 fn free_run(dma: u64) {
     for page in 0..DIRECT_MEMORY_ACCESS_PAGES {
-        crate::memory::free(page_frames::PageFrame::from_addr(
-            dma + page * page_frames::FRAME_SIZE,
+        crate::memory::free(page_frames::PageFrame::from_physical_address(
+            dma + page * page_frames::FRAME_BYTES,
         ));
     }
 }

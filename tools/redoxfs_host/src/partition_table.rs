@@ -10,7 +10,7 @@ use super::*;
 /// the whole 16 KiB entry array on a 4Kn drive and covers them eight times over on a 512-byte one.
 /// One read, then both candidate block sizes are tried against the same bytes.
 pub(crate) const TABLE_BYTES: usize =
-    34 * globally_unique_identifier_partition_table::MAXIMUM_BLOCK_SIZE;
+    34 * globally_unique_identifier_partition_table::MAXIMUM_BLOCK_BYTES;
 
 /// Read the front of a device: enough for the protective MBR, the primary header and the entry
 /// array at either candidate block size. A short file is not an error here, because the parse below
@@ -46,14 +46,18 @@ pub(crate) fn read_head(file: &File, path: &Path) -> Result<Vec<u8>, String> {
 /// this project has written, and then at 4096, which is what a native-4K drive reports. A wrong
 /// guess fails on the signature rather than reading a plausible wrong table, because at the wrong
 /// offset there is no `EFI PART`.
+///
+/// # BUGS
+/// - The table is not checked against the device's size (`check_disk_size`), so a table cloned
+///   whole from a disk of another size is listed as this device's.
 pub(crate) fn parse_table<'a>(
     head: &'a [u8],
     path: &Path,
-) -> Result<(GloballyUniqueIdentifierPartitionTable<'a>, usize), String> {
+) -> Result<(PartitionTable<'a>, usize), String> {
     let mut first: Option<(usize, globally_unique_identifier_partition_table::Error)> = None;
     for block_size in [
-        globally_unique_identifier_partition_table::MINIMUM_BLOCK_SIZE,
-        globally_unique_identifier_partition_table::MAXIMUM_BLOCK_SIZE,
+        globally_unique_identifier_partition_table::MINIMUM_BLOCK_BYTES,
+        globally_unique_identifier_partition_table::MAXIMUM_BLOCK_BYTES,
     ] {
         let Some(header_block) = head.get(block_size..2 * block_size) else {
             continue;
@@ -69,9 +73,10 @@ pub(crate) fn parse_table<'a>(
                 continue;
             }
         };
-        let array_at = (header.entry_array_lba as usize).saturating_mul(block_size);
+        let array_at =
+            (header.entry_array_logical_block_address as usize).saturating_mul(block_size);
         let array = head.get(array_at..).unwrap_or(&[]);
-        match GloballyUniqueIdentifierPartitionTable::parse(header_block, array) {
+        match PartitionTable::parse(header_block, array) {
             Ok(table) => return Ok((table, block_size)),
             Err(e) => {
                 first.get_or_insert((block_size, e));
@@ -156,11 +161,9 @@ pub fn partitions(device: &Path) -> Result<TableInfo, String> {
         out.push(PartitionInfo {
             number: index + 1,
             type_guid: entry.type_guid,
-            type_name: globally_unique_identifier_partition_table::guid::types::name(
-                entry.type_guid,
-            ),
-            first_lba: entry.first_lba,
-            last_lba: entry.last_lba,
+            type_name: nife_partition_types::name(entry.type_guid),
+            first_lba: entry.first_logical_block_address,
+            last_lba: entry.last_logical_block_address,
             bytes: entry.blocks().unwrap_or(0) * block_size as u64,
             name: String::from_utf8_lossy(&label[..written]).into_owned(),
         });

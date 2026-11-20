@@ -68,9 +68,8 @@ The P1 items are in [the appendix](1078-boot-ladder-outside-review/before-the-ta
 ## Decisions for the architect
 
 Each states the background first, then the recommendation, prior art and a concrete example.
-The architect ruled the heads and the printed check names, below. The ten public names wait for
-the architect's ratification, and the review clearance that is the go for the repository waits
-too; both are under [Open decisions](#open-decisions).
+The architect ruled the heads, the printed check names and the public names, below. The review
+clearance that is the go for the repository waits; it is under [Open decisions](#open-decisions).
 
 ### The heads are fixed shapes after the caller's system name
 
@@ -86,8 +85,8 @@ The ruling ratifies the nine shapes as printed. They are `<system> on `, `<syste
 `<system> self-test: `, `<system> self-test subject: thread `,
 `<system>: the capability core runs on `, `<system> capability shell`,
 `<system> screen: held for the host; `, and inside the verdict `FAILED: ` and `absent: `. The shell
-banner keeps its text and takes no period. The names of the accessors and types are
-provisional, under [Open decisions](#open-decisions).
+banner keeps its text and takes no period. The names of the accessors and constants are
+ratified in the last ruling below.
 
 Prior art (recalled, not read in this review, unless stated): seL4's `sel4test` ends a green run with one fixed sentence that its CI harness matches. Zephyr's `twister` console harness matches `PROJECT EXECUTION SUCCESSFUL` or `FAILED`. Linux's KTAP (`Documentation/dev-tools/ktap.rst`)
 freezes `KTAP version 1` as the head of every report. In each, the first release of the reader freezes the sentence. Where nife differs: the heads live in a crate both sides link rather than
@@ -115,14 +114,32 @@ needs a decoder. Zephyr names them dotted (`kernel.common`). Where nife differs:
 Example: `nife self-test: 12 of 15 passed, 3 absent: block_device clock true_random_number_generator`,
 and radon's profile forbids `entropy`, `true_random_number_generator` and `clock` absent.
 
+### The public names of the heads and the check lists stand as built
+
+Ruled 2026-11-19 (UTC), option A. Every name stands as built. The accessors on `Heads` are `banner`,
+`machine`, `self_test`, `self_test_subject`, `core_runs`, `shell_banner` and `screen_held`. The
+constants are `SELF_TEST_FAILED`, `SELF_TEST_ABSENT`, `SELF_TEST_CHECKS` and
+`EARLIER_SELF_TEST_CHECK_COUNTS`. The printed bytes stay as ruled 2026-11-14 (UTC), so the shell
+banner keeps its text and takes no period. The names in `verdict`, `kernel_half` and
+`self_test_program` are outside this ruling and go to the crate's release name review.
+
+Prior art: systemd's readiness protocol names its messages for what they say (`READY=1`,
+`STATUS=`), and its reader and writer share `sd_notify`'s definition. U-Boot's `bootstage` names
+each stage for its event (`BOOTSTAGE_ID_START_UBOOT_F`) in one header its tools include. Both are
+recalled, not read in this review. Where nife differs: a name here is a Rust item a reader
+imports, so a misnomer is in their code too.
+
+Example: a reader written against the released crate calls `Heads::new("nife").shell_banner()` and
+knows without the `BUGS` entry that it is not waiting for a `$ `.
+
 ## Prior art
 
 The comparison with nearby work is in [the appendix](1078-boot-ladder-outside-review/prior-art.md).
 
 ## What needs the architect
 
-The ratification of the public names and the review clearance, under
-[Open decisions](#open-decisions). The architect has ruled on the heads and the check names.
+The review clearance, under [Open decisions](#open-decisions). The architect has ruled on the heads,
+the check names and the public names.
 Nothing else here is one-way: the manifest, the README, the tests, the `Verdict` type and the
 nife-side gate are the maintainer's.
 
@@ -154,9 +171,8 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
   ([#3655](https://github.com/nifeos/nife/pull/3655)); the `script/lint` section that refuses a head
   literal outside `crates/boot_ladder`, tests and fixtures is not written, and as a new lint section
   it is a reviewed interface.
-- P1-8, the ten public names: Done as provisional renames,
-  [#3589](https://github.com/nifeos/nife/pull/3589),
-  [#3655](https://github.com/nifeos/nife/pull/3655). Their ratification is under Open decisions.
+- P1-8, the ten public names: Done, [#3589](https://github.com/nifeos/nife/pull/3589),
+  [#3655](https://github.com/nifeos/nife/pull/3655). Ratified as built (ruled 2026-11-19 UTC).
 - P1-8b, the `self_test_program` names: Open. About twenty provisional names, with one change
   proposed (`DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS` to
   `DIRECT_MEMORY_ACCESS_OBSERVER_VIRTUAL_ADDRESS`) and not applied; a two-way door the maintainer
@@ -177,9 +193,8 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
   a reader takes the architecture from the machine line.
 - Decision, heads after the caller's system name: Done (ruled 2026-11-14 UTC, option A),
   [#3586](https://github.com/nifeos/nife/pull/3586).
-- Decision, the ten public names: Open. Built as the maintainer's provisional ruling of 2026-11-14
-  (UTC), [#3589](https://github.com/nifeos/nife/pull/3589); the ratification is under Open
-  decisions.
+- Decision, the ten public names: Done (ruled 2026-11-19 UTC, option A), built in
+  [#3589](https://github.com/nifeos/nife/pull/3589).
 - Decision, printed check names spelled out: Done (ruled 2026-11-14 UTC),
   [#3586](https://github.com/nifeos/nife/pull/3586).
 - The move: Open. No review package exists under `notes/crate-reviews/`, and nifeos/boot_ladder does
@@ -187,44 +202,7 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
 
 ## Open decisions
 
-### Ratify the public names of the heads and the check lists
-
-Background: `boot_ladder` holds the fixed beginnings ("heads") of the lines a kernel, its
-self-test and its shell print while booting, such as `nife self-test: ` and
-`nife capability shell`. It also holds the list of self-test check names. The program that prints a line
-and every program that reads one (a console reader on a bench, a CI transcript check) use the same
-crate, so they cannot disagree. A third-party console reader would import these names.
-
-The names in question are the accessors on `Heads` (`banner`, `machine`, `self_test`,
-`self_test_subject`, `core_runs`, `shell_banner`, `screen_held`) and the constants
-`SELF_TEST_FAILED`, `SELF_TEST_ABSENT`, `SELF_TEST_CHECKS` and `EARLIER_SELF_TEST_CHECK_COUNTS`.
-The maintainer decided them on 2026-11-14 (UTC), provisionally, and the tree builds them. Three are
-renames. The shell's banner line was `PROMPT`, though the real prompt is `$ `. The line that says
-the capability core runs was `TOUR`, after an internal stage a stranger never meets. The list of
-older check counts was `SELF_TEST_CHECKS_EARLIER`, though it holds counts. The printed bytes
-are not part of this decision; the architect ruled them on 2026-11-14 (UTC).
-
-Recommendation: A.
-
-- A. Ratify every name as built.
-- B. Ratify the rest and give the core line another name. Refused so far: `handover`, since
-  milestone 972 spends that meaning on the progenitor's line, and `kernel_up`, since the banner
-  already says the kernel is up.
-- C. Move the shell banner's period into the head so every head ends on a boundary, and ratify the
-  names. This changes printed bytes that stored logs hold, so it is the heads ruling reopened.
-
-Door: two-way today, one-way at the first publish, when a third-party reader writes the names.
-
-Prior art: systemd's readiness protocol names its messages for what they say (`READY=1`,
-`STATUS=`), and its reader and writer share `sd_notify`'s definition. U-Boot's `bootstage` names
-each stage for its event (`BOOTSTAGE_ID_START_UBOOT_F`) in one header its tools include. Both are
-recalled, not read in this review. Where nife differs: a name here is a Rust item a reader
-imports, so a misnomer is in their code too. Example: a reader written against the released crate
-calls `Heads::new("nife").shell_banner()` and knows without the `BUGS` entry that it is not waiting
-for a `$ `.
-
-What it blocks: the first publish. The names in `verdict`, `kernel_half` and `self_test_program`
-are outside this decision and go to the crate's release name review.
+One question is open, below. The publishing hold stands.
 
 ### Clear the review, which creates nifeos/boot_ladder
 
@@ -252,8 +230,8 @@ What it blocks: the move, and so the first tag and the first publish.
 
 ## Follow-on
 
-- **Outstanding.** The Open lines under [Finding status](#finding-status) and the items under
-  [Open decisions](#open-decisions).
+- **Outstanding.** The Open lines under [Finding status](#finding-status) and the review clearance
+  under [Open decisions](#open-decisions).
 
 ## BUGS
 
@@ -271,4 +249,4 @@ What it blocks: the move, and so the first tag and the first publish.
 
 ## Index row
 
-An outside review of `boot_ladder` before it leaves found three manifest and file items that block the move. It found six to land before the first tag. They are a shared `Verdict` type so the printer and its three readers agree by construction, `const` invariants on the check list, real tests, eight hand-spelled literals in `xtask`, ten names to ratify, and a false boundary claim. It found four items for later. Two rulings hold. The heads are fixed shapes after a system name the caller supplies, ratified as printed. Two check names become `block_device` and `true_random_number_generator`, and the other thirteen stand as printed. The maintainer applied the three renames among the ten public names, provisionally, and the crate carries the shared verdict reader, tests, a proof and its README.
+An outside review of `boot_ladder` before it leaves found three manifest and file items that block the move. It found six to land before the first tag. They are a shared `Verdict` type so the printer and its three readers agree by construction, `const` invariants on the check list, real tests, eight hand-spelled literals in `xtask`, ten names that are now ratified, and a false boundary claim. It found four items for later. Three rulings hold. The heads are fixed shapes after a system name the caller supplies, ratified as printed. Two check names become `block_device` and `true_random_number_generator`, and the other thirteen stand as printed. The ten public names, three of them renames, stand as built. The crate carries the shared verdict reader, tests, a proof and its README.

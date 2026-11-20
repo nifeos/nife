@@ -1,14 +1,11 @@
 //! The table's Kani-only constructors and observers, for the subtree-ceiling harnesses in
 //! `proofs.rs`. A child of `table` so they reach its private fields, and a file of its own so
 //! the host mutation census leaves them out: no build but Kani's compiles them, and their checker
-//! is `script/verify`. See `.cargo/mutants.toml`.
+//! is the Kani run.
 //!
-//! Name: provisional, minted 2026-11-11 (UTC) by lane/region-subtree-ceilings; `verification` is
-//! the tree's name for a Kani module.
+//! Name: provisional; `verification` is the name for a Kani-only module.
 
-use generational_table::EntryName;
-
-use super::{COUNTED_KINDS, Ceilings, ObjectKind, Region, RegionTable, Spent, entry};
+use super::{COUNTED_KINDS, Ceilings, ObjectKind, Region, RegionName, RegionTable, Spent};
 
 /// What the subtree-ceiling harnesses in `proofs.rs` compare before and after a refusal.
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -26,8 +23,8 @@ pub(crate) struct RegionSnapshot {
 
 impl<const N: usize> RegionTable<N> {
     /// Every field a charge, a split or a carve could move, for a live name.
-    pub(crate) fn snapshot(&self, name: u64) -> Option<RegionSnapshot> {
-        self.table.get(entry(name)).map(|r| RegionSnapshot {
+    pub(crate) fn snapshot(&self, name: RegionName) -> Option<RegionSnapshot> {
+        self.table.get(name).map(|r| RegionSnapshot {
             base_page: r.base_page,
             pages: r.pages,
             retyped_to: r.retyped_to,
@@ -46,27 +43,25 @@ impl<const N: usize> RegionTable<N> {
     /// `held` objects of each kind retyped straight from it.
     pub(crate) fn insert_in_any_state(
         &mut self,
-        parent: u64,
+        parent: RegionName,
         (base_page, pages, watermark, retyped_to): (u64, u64, u64, u64),
         pinned: bool,
         children: u32,
         (ceilings, live, held): (Ceilings, Ceilings, [u32; ObjectKind::COUNT]),
-    ) -> Option<u64> {
-        self.table
-            .insert_with_name(|_| Region {
-                base_page,
-                pages,
-                watermark,
-                retyped_to,
-                pinned,
-                parent,
-                children,
-                spent: Spent::default(),
-                ceilings,
-                live,
-                held,
-            })
-            .map(EntryName::to_bits)
+    ) -> Option<RegionName> {
+        self.table.insert_with_name(|_| Region {
+            base_page,
+            pages,
+            watermark,
+            retyped_to,
+            pinned,
+            parent,
+            children,
+            spent: Spent::default(),
+            ceilings,
+            live,
+            held,
+        })
     }
 }
 

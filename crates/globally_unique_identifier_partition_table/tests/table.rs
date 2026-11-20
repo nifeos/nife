@@ -7,8 +7,8 @@
 
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
-    DEFAULT_ENTRY_COUNT, ENTRY_ARRAY_BYTES, Entry, Error, GloballyUniqueIdentifierPartitionTable,
-    Header, MbrProblem, entry, is_block_size_ok, mbr, testing,
+    DEFAULT_ENTRY_COUNT, ENTRY_ARRAY_BYTES, Entry, Error, Header, MasterBootRecordProblem,
+    PartitionTable, entry, is_block_size_ok, master_boot_record, testing,
 };
 use uuid::Uuid;
 
@@ -21,8 +21,8 @@ const PART: Uuid = Uuid::from_fields(0xFEDC_BA98, 0x7654, 0x4321, &[9, 8, 7, 6, 
 /// line and then check any part of it. The three block buffers are the largest block GPT allows;
 /// [`build_on`] hands out a prefix of the size under test.
 struct Disk {
-    block_size: usize,
-    mbr_buf: [u8; 4096],
+    block_bytes: usize,
+    master_boot_record_buffer: [u8; 4096],
     header_buf: [u8; 4096],
     backup_buf: [u8; 4096],
     array: [u8; ENTRY_ARRAY_BYTES],
@@ -30,13 +30,13 @@ struct Disk {
 
 impl Disk {
     fn mbr(&self) -> &[u8] {
-        &self.mbr_buf[..self.block_size]
+        &self.master_boot_record_buffer[..self.block_bytes]
     }
     fn header(&self) -> &[u8] {
-        &self.header_buf[..self.block_size]
+        &self.header_buf[..self.block_bytes]
     }
     fn backup(&self) -> &[u8] {
-        &self.backup_buf[..self.block_size]
+        &self.backup_buf[..self.block_bytes]
     }
 }
 
@@ -44,24 +44,19 @@ fn build(partitions: &[Entry]) -> Result<Disk, Error> {
     build_on(BLOCK, BLOCKS, partitions)
 }
 
-fn build_on(block_size: usize, blocks: u64, partitions: &[Entry]) -> Result<Disk, Error> {
+fn build_on(block_bytes: usize, blocks: u64, partitions: &[Entry]) -> Result<Disk, Error> {
     let mut disk = Disk {
-        block_size,
-        mbr_buf: [0; 4096],
+        block_bytes,
+        master_boot_record_buffer: [0; 4096],
         header_buf: [0; 4096],
         backup_buf: [0; 4096],
         array: [0; ENTRY_ARRAY_BYTES],
     };
-    let table = GloballyUniqueIdentifierPartitionTable::create(
-        DISK,
-        block_size,
-        blocks,
-        partitions,
-        &mut disk.array,
-    )?;
-    table.write_protective_mbr(&mut disk.mbr_buf[..block_size])?;
-    table.write_primary_header(&mut disk.header_buf[..block_size])?;
-    table.write_backup_header(&mut disk.backup_buf[..block_size])?;
+    let table = PartitionTable::create(DISK, block_bytes, blocks, partitions, &mut disk.array)?;
+    table
+        .write_protective_master_boot_record(&mut disk.master_boot_record_buffer[..block_bytes])?;
+    table.write_primary_header(&mut disk.header_buf[..block_bytes])?;
+    table.write_backup_header(&mut disk.backup_buf[..block_bytes])?;
     Ok(disk)
 }
 
@@ -70,22 +65,24 @@ fn build_on(block_size: usize, blocks: u64, partitions: &[Entry]) -> Result<Disk
 /// validator.
 #[test]
 fn a_table_we_build_is_a_table_we_parse() {
-    let part = Entry::new(types::NIFE_DATA, PART, 2048, 100_000)
-        .with_name("nife data")
+    let part = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 100_000)
+        .with_name("data")
         .unwrap();
     let disk = build(&[part]).unwrap();
 
-    let table = GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
+    let table = PartitionTable::parse(disk.header(), &disk.array).unwrap();
     table.check_backup(disk.backup(), &disk.array).unwrap();
-    table.check_protective_mbr(disk.mbr()).unwrap();
+    table
+        .check_protective_master_boot_record(disk.mbr())
+        .unwrap();
 
     assert_eq!(table.disk_guid(), DISK);
     assert_eq!(table.block_count(), BLOCKS);
     assert_eq!(table.entry_count(), DEFAULT_ENTRY_COUNT);
-    assert_eq!(table.first_usable_lba(), 34);
-    assert_eq!(table.last_usable_lba(), BLOCKS - 34);
-    assert_eq!(table.backup_header_lba(), BLOCKS - 1);
-    assert_eq!(table.backup_entry_lba(), BLOCKS - 33);
+    assert_eq!(table.first_usable_logical_block_address(), 34);
+    assert_eq!(table.last_usable_logical_block_address(), BLOCKS - 34);
+    assert_eq!(table.backup_header_logical_block_address(), BLOCKS - 1);
+    assert_eq!(table.backup_entry_logical_block_address(), BLOCKS - 33);
 
     let found: Vec<_> = table.partitions().collect();
     assert_eq!(found, vec![(0usize, part)]);
@@ -102,34 +99,34 @@ fn a_table_we_build_is_a_table_we_parse() {
 fn a_4k_native_disk_works_and_the_geometry_moves() {
     let part = Entry::new(types::LINUX_FILESYSTEM, PART, 256, 4000);
     let disk = build_on(4096, 8192, &[part]).unwrap();
-    let table = GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
+    let table = PartitionTable::parse(disk.header(), &disk.array).unwrap();
 
-    assert_eq!(table.block_size(), 4096);
+    assert_eq!(table.block_bytes(), 4096);
     assert_eq!(table.entry_array_blocks(), 4, "16 KiB in 4 KiB blocks");
     assert_eq!(
-        table.first_usable_lba(),
+        table.first_usable_logical_block_address(),
         6,
         "MBR, header, four array blocks"
     );
-    assert_eq!(table.last_usable_lba(), 8192 - 6);
-    assert_eq!(table.backup_entry_lba(), 8192 - 5);
+    assert_eq!(table.last_usable_logical_block_address(), 8192 - 6);
+    assert_eq!(table.backup_entry_logical_block_address(), 8192 - 5);
     table.check_backup(disk.backup(), &disk.array).unwrap();
     assert_eq!(table.partitions().count(), 1);
 }
 
 /// The mistake this catches is the one everybody makes with inclusive ranges: two partitions where
-/// one ends on the block the next starts on. `last_lba` is the last block *in* the partition, so
-/// that is an overlap, and two filesystems would fight over one sector forever.
+/// one ends on the block the next starts on. `last_logical_block_address` is the last block *in*
+/// the partition, so that is an overlap, and two filesystems would fight over one sector forever.
 #[test]
 fn partitions_that_share_one_block_overlap() {
     let a = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 4096);
-    let touching = Entry::new(types::NIFE_DATA, PART, 4096, 8192);
+    let touching = Entry::new(types::LINUX_FILESYSTEM, PART, 4096, 8192);
     assert_eq!(
         build(&[a, touching]).err(),
         Some(Error::PartitionsOverlap { a: 0, b: 1 })
     );
 
-    let adjacent = Entry::new(types::NIFE_DATA, PART, 4097, 8192);
+    let adjacent = Entry::new(types::LINUX_FILESYSTEM, PART, 4097, 8192);
     assert!(build(&[a, adjacent]).is_ok(), "abutting is not overlapping");
 
     // Order does not matter: the pair is caught whichever way round it is given.
@@ -153,9 +150,9 @@ fn an_unused_entry_is_not_a_partition_however_it_looks() {
     ghost.type_guid = Uuid::nil();
     assert!(!ghost.is_used());
 
-    let real = Entry::new(types::NIFE_DATA, PART, 2048, 4096);
+    let real = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 4096);
     let disk = build(&[ghost, real]).expect("the ghost does not collide");
-    let table = GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
+    let table = PartitionTable::parse(disk.header(), &disk.array).unwrap();
     assert_eq!(table.partitions().count(), 1);
     assert_eq!(
         table.partitions().next().unwrap().0,
@@ -166,43 +163,48 @@ fn an_unused_entry_is_not_a_partition_however_it_looks() {
 
 #[test]
 fn a_partition_outside_the_usable_range_is_refused() {
-    // Below first_usable_lba, which is 34: that is where the table itself lives.
-    let low = Entry::new(types::NIFE_DATA, PART, 33, 4096);
+    // Below first_usable_logical_block_address, which is 34: that is where the table itself lives.
+    let low = Entry::new(types::LINUX_FILESYSTEM, PART, 33, 4096);
     assert_eq!(
         build(&[low]).err(),
         Some(Error::PartitionOutsideUsable { index: 0 })
     );
 
-    // Past last_usable_lba, the check that catches a table cloned onto a smaller disk.
-    let high = Entry::new(types::NIFE_DATA, PART, 2048, BLOCKS - 33);
+    // Past last_usable_logical_block_address, the check that catches a table cloned onto a smaller disk.
+    let high = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, BLOCKS - 33);
     assert_eq!(
         build(&[high]).err(),
         Some(Error::PartitionOutsideUsable { index: 0 })
     );
 
-    let backwards = Entry::new(types::NIFE_DATA, PART, 4096, 2048);
+    let backwards = Entry::new(types::LINUX_FILESYSTEM, PART, 4096, 2048);
     assert_eq!(
         build(&[backwards]).err(),
         Some(Error::PartitionRange { index: 0 })
     );
 
     // The boundaries themselves are allowed, which is the other half of the claim.
-    let exact = Entry::new(types::NIFE_DATA, PART, 34, BLOCKS - 34);
+    let exact = Entry::new(types::LINUX_FILESYSTEM, PART, 34, BLOCKS - 34);
     assert!(build(&[exact]).is_ok());
 }
 
-/// `last_lba` is inclusive, so a partition whose two bounds are the same block is one block long
-/// rather than empty, and legal. Every other partition in this suite and in `real_disks.rs` spans
-/// thousands of blocks, so the range check had only ever been met from far away: the equal case was
-/// never judged, and a `<=` there refuses a legal disk with nothing failing.
+/// `last_logical_block_address` is inclusive, so a partition whose two bounds are the same block is
+/// one block long rather than empty, and legal. Every other partition in this suite and in
+/// `real_disks.rs` spans thousands of blocks, so the range check had only ever been met from far
+/// away: the equal case was never judged, and a `<=` there refuses a legal disk with nothing
+/// failing.
 #[test]
 fn a_partition_of_exactly_one_block_is_legal() {
-    let one = Entry::new(types::NIFE_DATA, PART, 2048, 2048);
-    let disk = build(&[one]).expect("first_lba == last_lba is one block, not none");
+    let one = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 2048);
+    let disk = build(&[one])
+        .expect("first_logical_block_address == last_logical_block_address is one block, not none");
 
-    let table = GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
+    let table = PartitionTable::parse(disk.header(), &disk.array).unwrap();
     let (_, e) = table.partitions().next().unwrap();
-    assert_eq!((e.first_lba, e.last_lba), (2048, 2048));
+    assert_eq!(
+        (e.first_logical_block_address, e.last_logical_block_address),
+        (2048, 2048)
+    );
 }
 
 /// The smallest disk that can hold a 128-entry table is 68 blocks: MBR, header, 32 array blocks,
@@ -212,37 +214,39 @@ fn a_partition_of_exactly_one_block_is_legal() {
 fn a_disk_too_small_for_its_own_table_is_refused() {
     let mut array = [0u8; ENTRY_ARRAY_BYTES];
     assert_eq!(
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, 67, &[], &mut array).err(),
+        PartitionTable::create(DISK, BLOCK, 67, &[], &mut array).err(),
         Some(Error::DiskTooSmall {
             blocks: 67,
             need: 68
         })
     );
-    let table =
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, 68, &[], &mut array).unwrap();
-    assert_eq!(table.first_usable_lba(), 34);
-    assert_eq!(table.last_usable_lba(), 34, "exactly one usable block");
+    let table = PartitionTable::create(DISK, BLOCK, 68, &[], &mut array).unwrap();
+    assert_eq!(table.first_usable_logical_block_address(), 34);
+    assert_eq!(
+        table.last_usable_logical_block_address(),
+        34,
+        "exactly one usable block"
+    );
 }
 
 #[test]
 fn the_entry_array_buffer_sets_the_entry_count() {
-    let mut small = [0u8; 4 * entry::SIZE];
-    let table =
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, 1024, &[], &mut small).unwrap();
+    let mut small = [0u8; 4 * entry::ENTRY_BYTES];
+    let table = PartitionTable::create(DISK, BLOCK, 1024, &[], &mut small).unwrap();
     assert_eq!(table.entry_count(), 4);
     assert_eq!(table.entry_array_blocks(), 1, "512 bytes is one block");
-    assert_eq!(table.first_usable_lba(), 3);
+    assert_eq!(table.first_usable_logical_block_address(), 3);
 
     let mut ragged = [0u8; 100];
     assert_eq!(
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, 1024, &[], &mut ragged).err(),
+        PartitionTable::create(DISK, BLOCK, 1024, &[], &mut ragged).err(),
         Some(Error::EntryArrayShape { have: 100 })
     );
 
-    let mut four = [0u8; 4 * entry::SIZE];
-    let five = [Entry::new(types::NIFE_DATA, PART, 10, 20); 5];
+    let mut four = [0u8; 4 * entry::ENTRY_BYTES];
+    let five = [Entry::new(types::LINUX_FILESYSTEM, PART, 10, 20); 5];
     assert_eq!(
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, 1024, &five, &mut four).err(),
+        PartitionTable::create(DISK, BLOCK, 1024, &five, &mut four).err(),
         Some(Error::TooManyPartitions { given: 5, room: 4 })
     );
 }
@@ -252,25 +256,23 @@ fn the_entry_array_buffer_sets_the_entry_count() {
 /// and every one of them must be rejected.
 ///
 /// The small-table twin of `real_disks.rs`'s sweeps: a four-entry array is 512 bytes, so the
-/// complete cross product is 130 MB of CRC rather than 68 GB. The symbolic form is the Kani harness
-/// `a_single_byte_change_always_changes_the_crc`. Skipped under Miri, where the parses would
-/// dominate the workspace run; every other test here walks the clean paths.
+/// complete cross product is 130 million bytes of CRC rather than 68 billion. The symbolic form is
+/// the Kani harness `a_single_byte_change_always_changes_the_crc`. Skipped under Miri, where the
+/// parses would dominate the workspace run; every other test here walks the clean paths.
 #[test]
 #[cfg_attr(
     miri,
     ignore = "261,120 parses; the clean-path tests cover these paths"
 )]
 fn every_single_byte_corruption_of_a_small_table_is_caught() {
-    let mut array = [0u8; 4 * entry::SIZE];
+    let mut array = [0u8; 4 * entry::ENTRY_BYTES];
     let mut header = [0u8; BLOCK];
-    let part = Entry::new(types::NIFE_DATA, PART, 8, 900)
+    let part = Entry::new(types::LINUX_FILESYSTEM, PART, 8, 900)
         .with_name("small")
         .unwrap();
-    let table =
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, 1024, &[part], &mut array)
-            .unwrap();
+    let table = PartitionTable::create(DISK, BLOCK, 1024, &[part], &mut array).unwrap();
     table.write_primary_header(&mut header).unwrap();
-    GloballyUniqueIdentifierPartitionTable::parse(&header, &array).expect("the clean table parses");
+    PartitionTable::parse(&header, &array).expect("the clean table parses");
 
     let mut cases = 0u32;
     let mut corrupt_header = [0u8; BLOCK];
@@ -282,7 +284,7 @@ fn every_single_byte_corruption_of_a_small_table_is_caught() {
             corrupt_header.copy_from_slice(&header);
             corrupt_header[position] = value;
             assert!(
-                GloballyUniqueIdentifierPartitionTable::parse(&corrupt_header, &array).is_err(),
+                PartitionTable::parse(&corrupt_header, &array).is_err(),
                 "header byte {position} -> {value:#04x}"
             );
             cases += 1;
@@ -297,26 +299,28 @@ fn every_single_byte_corruption_of_a_small_table_is_caught() {
             }
             corrupt_array[position] = value;
             assert!(
-                GloballyUniqueIdentifierPartitionTable::parse(&header, &corrupt_array).is_err(),
+                PartitionTable::parse(&header, &corrupt_array).is_err(),
                 "array byte {position} -> {value:#04x}"
             );
             cases += 1;
         }
         corrupt_array[position] = array[position];
     }
-    assert_eq!(cases, (BLOCK + 4 * entry::SIZE) as u32 * 255);
+    assert_eq!(cases, (BLOCK + 4 * entry::ENTRY_BYTES) as u32 * 255);
 }
 
-/// Handing the backup header to `GloballyUniqueIdentifierPartitionTable::parse` is refused rather
-/// than half-accepted. It is a valid header with a correct CRC describing the same disk, so nothing
-/// but the `my_lba` check tells it apart. Getting this wrong means a recovery tool that reads the
-/// last block and believes it has the primary.
+/// Handing the backup header to `PartitionTable::parse` is refused rather than half-accepted. It is
+/// a valid header with a correct CRC describing the same disk, so nothing but the
+/// `my_logical_block_address` check tells it apart. Getting this wrong means a recovery tool that
+/// reads the last block and believes it has the primary.
 #[test]
 fn the_backup_header_is_not_a_primary() {
-    let disk = build(&[Entry::new(types::NIFE_DATA, PART, 2048, 4096)]).unwrap();
+    let disk = build(&[Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 4096)]).unwrap();
     assert_eq!(
-        GloballyUniqueIdentifierPartitionTable::parse(disk.backup(), &disk.array).err(),
-        Some(Error::NotPrimary { my_lba: BLOCKS - 1 })
+        PartitionTable::parse(disk.backup(), &disk.array).err(),
+        Some(Error::NotPrimary {
+            my_logical_block_address: BLOCKS - 1
+        })
     );
     // It is still a valid header on its own terms, which is why the check has to be explicit.
     assert!(Header::decode(disk.backup()).is_ok());
@@ -324,13 +328,9 @@ fn the_backup_header_is_not_a_primary() {
 
 #[test]
 fn a_short_entry_array_is_a_caller_error_not_a_corrupt_disk() {
-    let disk = build(&[Entry::new(types::NIFE_DATA, PART, 2048, 4096)]).unwrap();
+    let disk = build(&[Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 4096)]).unwrap();
     assert_eq!(
-        GloballyUniqueIdentifierPartitionTable::parse(
-            disk.header(),
-            &disk.array[..ENTRY_ARRAY_BYTES - 1]
-        )
-        .err(),
+        PartitionTable::parse(disk.header(), &disk.array[..ENTRY_ARRAY_BYTES - 1]).err(),
         Some(Error::EntryArrayLen {
             need: ENTRY_ARRAY_BYTES,
             have: ENTRY_ARRAY_BYTES - 1
@@ -339,7 +339,7 @@ fn a_short_entry_array_is_a_caller_error_not_a_corrupt_disk() {
     // Extra bytes are fine: a caller reading whole blocks usually has some.
     let mut padded = [0u8; ENTRY_ARRAY_BYTES + 512];
     padded[..ENTRY_ARRAY_BYTES].copy_from_slice(&disk.array);
-    assert!(GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &padded).is_ok());
+    assert!(PartitionTable::parse(disk.header(), &padded).is_ok());
 }
 
 #[test]
@@ -378,9 +378,9 @@ fn a_header_that_is_not_a_header_says_so() {
 /// relaxing, so it gets a test that says out loud what it costs: a header whose CRC is perfectly
 /// good is still refused if there is one stray byte after it in the block.
 ///
-/// Both committed fixtures, from two unrelated tools, zero the tail, and UEFI 2.10 section 5.3.2 requires
-/// it. If a real disk ever trips this, the fix is to relax the check and record the disk that did
-/// it, not to weaken the CRC.
+/// Both committed fixtures, from two unrelated tools, zero the tail, and UEFI 2.10 section 5.3.2
+/// requires it. If a real disk ever trips this, the fix is to relax the check and record the disk
+/// that did it, not to weaken the CRC.
 #[test]
 fn a_stray_byte_after_the_header_is_refused_even_with_a_valid_crc() {
     let disk = build(&[]).unwrap();
@@ -390,50 +390,92 @@ fn a_stray_byte_after_the_header_is_refused_even_with_a_valid_crc() {
     assert_eq!(Header::decode(&block).err(), Some(Error::BlockTailNotZero));
 }
 
+/// Two equal stray bytes are refused as surely as one: the tail check joins the bytes it reads
+/// without letting a pair cancel.
+#[test]
+fn two_equal_stray_bytes_after_the_header_are_refused() {
+    let disk = build(&[]).unwrap();
+    let mut block: [u8; BLOCK] = disk.header().try_into().unwrap();
+    block[BLOCK - 2] = 0x5A;
+    block[BLOCK - 1] = 0x5A;
+    assert_eq!(Header::decode(&block).err(), Some(Error::BlockTailNotZero));
+}
+
+/// A 4096-byte block keeps the record in its first 512 bytes and zeroes the rest, and a block size
+/// the crate does not accept is refused by both calls.
+#[test]
+fn the_protective_mbr_fits_any_accepted_block_and_refuses_the_rest() {
+    let mut big = [0xA5u8; 4096];
+    master_boot_record::write(&mut big, BLOCKS).unwrap();
+    master_boot_record::validate(&big, BLOCKS).unwrap();
+    assert_eq!(big[510..512], [0x55, 0xAA]);
+    assert!(big[512..].iter().all(|&b| b == 0));
+
+    let mut odd = [0u8; 1000];
+    assert_eq!(
+        master_boot_record::write(&mut odd, BLOCKS),
+        Err(Error::BlockSize(1000))
+    );
+    assert_eq!(
+        master_boot_record::validate(&odd, BLOCKS),
+        Err(Error::BlockSize(1000))
+    );
+}
+
 #[test]
 fn the_protective_mbr_round_trips_and_saturates() {
     let mut block = [0u8; BLOCK];
-    mbr::write(&mut block, BLOCKS).unwrap();
-    mbr::validate(&block, BLOCKS).unwrap();
+    master_boot_record::write(&mut block, BLOCKS).unwrap();
+    master_boot_record::validate(&block, BLOCKS).unwrap();
     assert_eq!(block[510..], [0x55, 0xAA]);
-    assert_eq!(block[450], mbr::PROTECTIVE_OPERATING_SYSTEM_TYPE);
+    assert_eq!(
+        block[450],
+        master_boot_record::PROTECTIVE_OPERATING_SYSTEM_TYPE
+    );
 
     // A disk bigger than 32 bits of blocks: the size field saturates, and validation accepts the
     // saturated value on ANY disk, because at that point the field has stopped carrying
     // information and the alternative is refusing every disk over 2 TiB.
     let huge = 1u64 << 40;
-    mbr::write(&mut block, huge).unwrap();
+    master_boot_record::write(&mut block, huge).unwrap();
     assert_eq!(&block[458..462], &u32::MAX.to_le_bytes());
-    mbr::validate(&block, huge).unwrap();
-    mbr::validate(&block, BLOCKS).expect("0xFFFFFFFF is accepted everywhere, by construction");
+    master_boot_record::validate(&block, huge).unwrap();
+    master_boot_record::validate(&block, BLOCKS)
+        .expect("0xFFFFFFFF is accepted everywhere, by construction");
 
     // An exact size against a different disk is wrong, though, which is what catches an MBR copied
     // from one disk to another.
-    mbr::write(&mut block, BLOCKS).unwrap();
+    master_boot_record::write(&mut block, BLOCKS).unwrap();
     assert_eq!(
-        mbr::validate(&block, BLOCKS / 2).err(),
-        Some(Error::Mbr(MbrProblem::SizeLba(BLOCKS as u32 - 1)))
+        master_boot_record::validate(&block, BLOCKS / 2).err(),
+        Some(Error::MasterBootRecord(
+            MasterBootRecordProblem::SizeBlocks(BLOCKS as u32 - 1)
+        ))
     );
 
-    mbr::write(&mut block, BLOCKS).unwrap();
+    master_boot_record::write(&mut block, BLOCKS).unwrap();
     block[510] = 0;
     assert_eq!(
-        mbr::validate(&block, BLOCKS).err(),
-        Some(Error::Mbr(MbrProblem::Signature))
+        master_boot_record::validate(&block, BLOCKS).err(),
+        Some(Error::MasterBootRecord(MasterBootRecordProblem::Signature))
     );
 
-    mbr::write(&mut block, BLOCKS).unwrap();
+    master_boot_record::write(&mut block, BLOCKS).unwrap();
     block[450] = 0x83;
     assert_eq!(
-        mbr::validate(&block, BLOCKS).err(),
-        Some(Error::Mbr(MbrProblem::NoProtectiveRecord))
+        master_boot_record::validate(&block, BLOCKS).err(),
+        Some(Error::MasterBootRecord(
+            MasterBootRecordProblem::NoProtectiveRecord
+        ))
     );
 
-    mbr::write(&mut block, BLOCKS).unwrap();
+    master_boot_record::write(&mut block, BLOCKS).unwrap();
     block[454..458].copy_from_slice(&2u32.to_le_bytes());
     assert_eq!(
-        mbr::validate(&block, BLOCKS).err(),
-        Some(Error::Mbr(MbrProblem::StartLba(2)))
+        master_boot_record::validate(&block, BLOCKS).err(),
+        Some(Error::MasterBootRecord(
+            MasterBootRecordProblem::StartLogicalBlockAddress(2)
+        ))
     );
 }
 
@@ -446,11 +488,11 @@ fn names_survive_utf16_and_hostile_bytes_do_not_break_reading() {
     let mut buf = [0u8; 4 * entry::NAME_UNITS];
     for text in [
         "",
-        "nife data",
+        "data",
         "übergrößenträger",
         "36 chars of ordinary label text here",
     ] {
-        let e = Entry::new(types::NIFE_DATA, PART, 10, 20)
+        let e = Entry::new(types::LINUX_FILESYSTEM, PART, 10, 20)
             .with_name(text)
             .unwrap_or_else(|_| panic!("{text:?} should fit"));
         let n = e.name_utf8(&mut buf).unwrap();
@@ -461,7 +503,7 @@ fn names_survive_utf16_and_hostile_bytes_do_not_break_reading() {
     }
 
     // 36 code units fit and 37 do not; an emoji is a surrogate pair, so two units.
-    let base = Entry::new(types::NIFE_DATA, PART, 10, 20);
+    let base = Entry::new(types::LINUX_FILESYSTEM, PART, 10, 20);
     assert!(base.with_name(&"a".repeat(36)).is_ok());
     assert_eq!(
         base.with_name(&"a".repeat(37)).err(),
@@ -480,7 +522,7 @@ fn names_survive_utf16_and_hostile_bytes_do_not_break_reading() {
     assert_eq!(core::str::from_utf8(&buf[..n]).unwrap(), "\u{FFFD}x");
 
     // An output buffer that cannot hold the name is an error rather than a truncation.
-    let named = base.with_name("nife data").unwrap();
+    let named = base.with_name("data volume").unwrap();
     assert_eq!(
         named.name_utf8(&mut [0u8; 4]).err(),
         Some(Error::NameTooLong)
@@ -492,28 +534,35 @@ fn an_entry_is_exactly_its_bytes() {
     let e = Entry {
         type_guid: types::LINUX_FILESYSTEM,
         unique_guid: PART,
-        first_lba: 0x0102_0304_0506_0708,
-        last_lba: 0x1112_1314_1516_1718,
+        first_logical_block_address: 0x0102_0304_0506_0708,
+        last_logical_block_address: 0x1112_1314_1516_1718,
         attributes: entry::ATTR_REQUIRED | entry::ATTR_LEGACY_BIOS_BOOTABLE,
         name: [0; entry::NAME_UNITS],
     };
     let bytes = e.encode();
     assert_eq!(bytes.len(), 128);
-    assert_eq!(&bytes[32..40], &e.first_lba.to_le_bytes());
-    assert_eq!(&bytes[40..48], &e.last_lba.to_le_bytes());
+    assert_eq!(&bytes[32..40], &e.first_logical_block_address.to_le_bytes());
+    assert_eq!(&bytes[40..48], &e.last_logical_block_address.to_le_bytes());
     assert_eq!(bytes[48], 0b101);
     assert_eq!(Entry::decode(&bytes), e);
     assert_eq!(Entry::decode(&[0u8; 128]), Entry::UNUSED);
-    assert_eq!(e.blocks(), Some(e.last_lba - e.first_lba + 1));
+    assert_eq!(
+        e.blocks(),
+        Some(e.last_logical_block_address - e.first_logical_block_address + 1)
+    );
 
-    let backwards = Entry::new(types::NIFE_DATA, PART, 20, 10);
+    let backwards = Entry::new(types::LINUX_FILESYSTEM, PART, 20, 10);
     assert_eq!(
         backwards.blocks(),
         None,
         "not an empty partition, a broken one"
     );
-    let one = Entry::new(types::NIFE_DATA, PART, 20, 20);
-    assert_eq!(one.blocks(), Some(1), "last_lba is inclusive");
+    let one = Entry::new(types::LINUX_FILESYSTEM, PART, 20, 20);
+    assert_eq!(
+        one.blocks(),
+        Some(1),
+        "last_logical_block_address is inclusive"
+    );
 }
 
 #[test]
@@ -530,9 +579,10 @@ fn block_sizes_are_powers_of_two_between_512_and_4096() {
 #[test]
 fn the_documentation_sample_is_a_valid_disk() {
     let disk = testing::sample_disk();
-    let table =
-        GloballyUniqueIdentifierPartitionTable::parse(&disk[512..1024], &disk[1024..]).unwrap();
-    table.check_protective_mbr(&disk[..512]).unwrap();
+    let table = PartitionTable::parse(&disk[512..1024], &disk[1024..]).unwrap();
+    table
+        .check_protective_master_boot_record(&disk[..512])
+        .unwrap();
     assert_eq!(table.partitions().count(), 1);
 }
 
@@ -543,7 +593,7 @@ fn the_documentation_sample_is_a_valid_disk() {
 // `build` makes is TIGHT (array against usable range, usable range against backup array), so the
 // comparisons below were never exercised one side at a time. These tests forge headers with a
 // VALID CRC and one layout lie each. One of the survivors was not a missing test but a missing `=`:
-// `parse` accepted last_usable_lba equal to the backup array's first block.
+// `parse` accepted last_usable_logical_block_address equal to the backup array's first block.
 
 /// Recompute the header CRC after a patch, so the forgery reaches the layout checks.
 fn reforge(block: &mut [u8]) {
@@ -553,13 +603,13 @@ fn reforge(block: &mut [u8]) {
     block[16..20].copy_from_slice(&crc.to_le_bytes());
 }
 
-/// Parse a tight, empty table whose header has been patched and re-CRCed.
+/// Parse a tight, empty table whose header has been patched and its CRC recomputed.
 fn parse_patched(patch: impl FnOnce(&mut [u8])) -> Result<(), Error> {
     let disk = build(&[]).unwrap();
     let mut block: [u8; BLOCK] = disk.header().try_into().unwrap();
     patch(&mut block);
     reforge(&mut block);
-    GloballyUniqueIdentifierPartitionTable::parse(&block, &disk.array).map(|_| ())
+    PartitionTable::parse(&block, &disk.array).map(|_| ())
 }
 
 fn set_u64(block: &mut [u8], offset: usize, value: u64) {
@@ -567,9 +617,9 @@ fn set_u64(block: &mut [u8], offset: usize, value: u64) {
 }
 
 // UEFI 2.10 section 5.3.2 header field offsets.
-const ALTERNATE_LBA: usize = 32;
-const FIRST_USABLE_LBA: usize = 40;
-const LAST_USABLE_LBA: usize = 48;
+const ALTERNATE_LOGICAL_BLOCK_ADDRESS: usize = 32;
+const FIRST_USABLE_LOGICAL_BLOCK_ADDRESS: usize = 40;
+const LAST_USABLE_LOGICAL_BLOCK_ADDRESS: usize = 48;
 
 /// The tight table `build` makes, in numbers the tests below patch around: array at LBA 2..=33,
 /// usable at 34..=131038, backup array at 131039..=131070, backup header at 131071.
@@ -580,12 +630,12 @@ const BACKUP_ARRAY_FIRST: u64 = BLOCKS - 33;
 fn a_one_block_usable_range_is_a_range_and_a_backwards_one_is_not() {
     // first == last is one usable block, which is legal.
     assert_eq!(
-        parse_patched(|b| set_u64(b, LAST_USABLE_LBA, PRIMARY_END)).err(),
+        parse_patched(|b| set_u64(b, LAST_USABLE_LOGICAL_BLOCK_ADDRESS, PRIMARY_END)).err(),
         None
     );
     // first > last is no range at all.
     assert_eq!(
-        parse_patched(|b| set_u64(b, LAST_USABLE_LBA, PRIMARY_END - 1)).err(),
+        parse_patched(|b| set_u64(b, LAST_USABLE_LOGICAL_BLOCK_ADDRESS, PRIMARY_END - 1)).err(),
         Some(Error::UsableRange {
             first: PRIMARY_END,
             last: PRIMARY_END - 1
@@ -598,24 +648,24 @@ fn the_usable_range_may_start_after_the_table_but_not_inside_it() {
     // Slack between the primary table and the usable range is legal; every table `build` makes is
     // tight, so without this a `>` here could rot into `<` unnoticed.
     assert_eq!(
-        parse_patched(|b| set_u64(b, FIRST_USABLE_LBA, 2048)).err(),
+        parse_patched(|b| set_u64(b, FIRST_USABLE_LOGICAL_BLOCK_ADDRESS, 2048)).err(),
         None
     );
     // A usable range that starts on the entry array's last block is an overlap.
     assert_eq!(
-        parse_patched(|b| set_u64(b, FIRST_USABLE_LBA, PRIMARY_END - 1)).err(),
+        parse_patched(|b| set_u64(b, FIRST_USABLE_LOGICAL_BLOCK_ADDRESS, PRIMARY_END - 1)).err(),
         Some(Error::TableOverlapsUsable)
     );
 }
 
 #[test]
 fn a_disk_with_no_room_for_the_backup_is_refused() {
-    // alternate_lba says the disk is 11 blocks; the backup array alone needs 33.
+    // alternate_logical_block_address says the disk is 11 blocks; the backup array alone needs 33.
     assert_eq!(
         parse_patched(|b| {
-            set_u64(b, ALTERNATE_LBA, 10);
-            set_u64(b, FIRST_USABLE_LBA, PRIMARY_END);
-            set_u64(b, LAST_USABLE_LBA, PRIMARY_END);
+            set_u64(b, ALTERNATE_LOGICAL_BLOCK_ADDRESS, 10);
+            set_u64(b, FIRST_USABLE_LOGICAL_BLOCK_ADDRESS, PRIMARY_END);
+            set_u64(b, LAST_USABLE_LOGICAL_BLOCK_ADDRESS, PRIMARY_END);
         })
         .err(),
         Some(Error::TableOverlapsUsable)
@@ -629,17 +679,19 @@ fn a_disk_with_no_room_for_the_backup_is_refused() {
 fn the_usable_range_stops_before_the_backup_array() {
     // The tight maximum, one below the backup array, is legal (this is what `create` emits).
     assert_eq!(
-        parse_patched(|b| set_u64(b, LAST_USABLE_LBA, BACKUP_ARRAY_FIRST - 1)).err(),
+        parse_patched(|b| set_u64(b, LAST_USABLE_LOGICAL_BLOCK_ADDRESS, BACKUP_ARRAY_FIRST - 1))
+            .err(),
         None
     );
     // Equal to the backup array's first block: refused.
     assert_eq!(
-        parse_patched(|b| set_u64(b, LAST_USABLE_LBA, BACKUP_ARRAY_FIRST)).err(),
+        parse_patched(|b| set_u64(b, LAST_USABLE_LOGICAL_BLOCK_ADDRESS, BACKUP_ARRAY_FIRST)).err(),
         Some(Error::TableOverlapsUsable)
     );
     // Past it, likewise.
     assert_eq!(
-        parse_patched(|b| set_u64(b, LAST_USABLE_LBA, BACKUP_ARRAY_FIRST + 1)).err(),
+        parse_patched(|b| set_u64(b, LAST_USABLE_LOGICAL_BLOCK_ADDRESS, BACKUP_ARRAY_FIRST + 1))
+            .err(),
         Some(Error::TableOverlapsUsable)
     );
 }
@@ -648,33 +700,30 @@ fn the_usable_range_stops_before_the_backup_array() {
 fn the_entry_array_shape_guards_are_exact() {
     // Empty is not a shape: there is no entry count to derive.
     assert_eq!(
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, BLOCKS, &[], &mut []).err(),
+        PartitionTable::create(DISK, BLOCK, BLOCKS, &[], &mut []).err(),
         Some(Error::EntryArrayShape { have: 0 })
     );
     // Longer than an entry but not a whole number of them.
     assert_eq!(
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, BLOCKS, &[], &mut [0u8; 200])
-            .err(),
+        PartitionTable::create(DISK, BLOCK, BLOCKS, &[], &mut [0u8; 200]).err(),
         Some(Error::EntryArrayShape { have: 200 })
     );
     // Exactly one entry is the smallest legal array, and it holds exactly one partition.
-    let one = Entry::new(types::NIFE_DATA, PART, 2048, 4096);
-    let mut array = [0u8; entry::SIZE];
-    let table =
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, BLOCKS, &[one], &mut array)
-            .unwrap();
+    let one = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 4096);
+    let mut array = [0u8; entry::ENTRY_BYTES];
+    let table = PartitionTable::create(DISK, BLOCK, BLOCKS, &[one], &mut array).unwrap();
     assert_eq!(table.partitions().count(), 1);
 }
 
-/// `check_protective_mbr` is a thin wrapper over `mbr::validate`, and every other call in the
-/// suite hands it a good block, so a body replaced with `Ok(())` passed (a mutation
-/// survivor). One bad block through the wrapper is what pins the plumbing.
+/// `check_protective_master_boot_record` is a thin wrapper over `master_boot_record::validate`, and
+/// every other call in the suite hands it a good block, so a body replaced with `Ok(())` passed (a
+/// mutation survivor). One bad block through the wrapper is what pins the plumbing.
 #[test]
 fn a_wrong_mbr_is_refused_through_the_wrapper_too() {
     let disk = build(&[]).unwrap();
-    let table = GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
+    let table = PartitionTable::parse(disk.header(), &disk.array).unwrap();
     let zeros = [0u8; BLOCK];
-    assert!(table.check_protective_mbr(&zeros).is_err());
+    assert!(table.check_protective_master_boot_record(&zeros).is_err());
 }
 
 // The second mutation pass reached the modules the first never got to (entry, guid, header, the
@@ -721,11 +770,17 @@ fn a_header_the_size_of_its_block_is_legal() {
 #[test]
 fn a_partition_on_the_first_usable_block_is_inside_the_range() {
     let mut array = [0u8; ENTRY_ARRAY_BYTES];
-    let part = Entry::new(types::NIFE_DATA, PART, 34, 4096);
-    let table =
-        GloballyUniqueIdentifierPartitionTable::create(DISK, BLOCK, BLOCKS, &[part], &mut array)
-            .unwrap();
-    assert_eq!(table.partitions().next().unwrap().1.first_lba, 34);
+    let part = Entry::new(types::LINUX_FILESYSTEM, PART, 34, 4096);
+    let table = PartitionTable::create(DISK, BLOCK, BLOCKS, &[part], &mut array).unwrap();
+    assert_eq!(
+        table
+            .partitions()
+            .next()
+            .unwrap()
+            .1
+            .first_logical_block_address,
+        34
+    );
 }
 
 /// The protective record may sit in any of the four MBR slots. Every tool we imaged puts it in
@@ -734,7 +789,7 @@ fn a_partition_on_the_first_usable_block_is_inside_the_range() {
 #[test]
 fn a_protective_record_in_a_later_slot_is_still_protective() {
     let disk = build(&[]).unwrap();
-    let table = GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
+    let table = PartitionTable::parse(disk.header(), &disk.array).unwrap();
     let mut block = [0u8; BLOCK];
     block[..disk.mbr().len()].copy_from_slice(disk.mbr());
     // Move record 0 to record 2 (16 bytes each, table at offset 446), zeroing slot 0.
@@ -742,7 +797,7 @@ fn a_protective_record_in_a_later_slot_is_still_protective() {
     let record: [u8; 16] = block[a..a + 16].try_into().unwrap();
     block[a..a + 16].fill(0);
     block[b..b + 16].copy_from_slice(&record);
-    table.check_protective_mbr(&block).unwrap();
+    table.check_protective_master_boot_record(&block).unwrap();
 }
 
 /// Refusals speak: one formatted error, exact, so a Display replaced with `Ok(())` cannot pass.
@@ -773,7 +828,7 @@ fn the_attribute_bits_are_the_disk_format() {
 /// the whole name path looked healthy.
 #[test]
 fn a_name_beyond_ascii_round_trips() {
-    let named = Entry::new(types::NIFE_DATA, PART, 2048, 4096)
+    let named = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 4096)
         .with_name("π¥")
         .unwrap();
     let back = Entry::decode(&named.encode());
@@ -786,7 +841,7 @@ fn a_name_beyond_ascii_round_trips() {
 /// under is `NameTooLong`, never a panic.
 #[test]
 fn an_exact_fit_name_buffer_is_enough() {
-    let e = Entry::new(types::NIFE_DATA, PART, 2048, 4096)
+    let e = Entry::new(types::LINUX_FILESYSTEM, PART, 2048, 4096)
         .with_name("abc")
         .unwrap();
     let mut exact = [0u8; 3];
@@ -810,13 +865,16 @@ fn a_guid_shows_itself_and_unused_has_a_name() {
 /// the entry is legal, so asking for its size must answer `None` and not overflow.
 #[test]
 fn an_entry_whose_block_count_overflows_has_no_size() {
-    let all = Entry::new(types::NIFE_DATA, PART, 0, u64::MAX);
+    let all = Entry::new(types::LINUX_FILESYSTEM, PART, 0, u64::MAX);
     assert_eq!(all.blocks(), None);
     assert_eq!(
-        Entry::new(types::NIFE_DATA, PART, 1, u64::MAX).blocks(),
+        Entry::new(types::LINUX_FILESYSTEM, PART, 1, u64::MAX).blocks(),
         Some(u64::MAX)
     );
-    assert_eq!(Entry::new(types::NIFE_DATA, PART, 5, 4).blocks(), None);
+    assert_eq!(
+        Entry::new(types::LINUX_FILESYSTEM, PART, 5, 4).blocks(),
+        None
+    );
 }
 
 /// **The backup a writer lays down parses back to the table that wrote it**, on every disk size
@@ -824,19 +882,17 @@ fn an_entry_whose_block_count_overflows_has_no_size() {
 /// symbolic CRC chains).
 #[test]
 fn parse_backup_returns_the_table_write_backup_header_described() {
-    for block_size in [512usize, 4096] {
+    for block_bytes in [512usize, 4096] {
         for blocks in [200u64, 4096, 131_072, 1 << 24] {
-            let disk = build_on(block_size, blocks, &[]).unwrap();
-            let table =
-                GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
-            let again = GloballyUniqueIdentifierPartitionTable::parse_backup(
-                disk.backup(),
-                table.entry_array(),
-                blocks,
-            )
-            .unwrap_or_else(|e| panic!("{block_size} byte blocks, {blocks} blocks: {e}"));
+            let disk = build_on(block_bytes, blocks, &[]).unwrap();
+            let table = PartitionTable::parse(disk.header(), &disk.array).unwrap();
+            let again = PartitionTable::parse_backup(disk.backup(), table.entry_array(), blocks)
+                .unwrap_or_else(|e| panic!("{block_bytes} byte blocks, {blocks} blocks: {e}"));
             assert_eq!(again.header(), table.header());
-            assert_eq!(again.backup_entry_lba(), table.backup_entry_lba());
+            assert_eq!(
+                again.backup_entry_logical_block_address(),
+                table.backup_entry_logical_block_address()
+            );
         }
     }
 }
@@ -849,28 +905,33 @@ fn parse_backup_returns_the_table_write_backup_header_described() {
 fn parse_backup_bounds_the_backup_array_on_both_sides() {
     let blocks = 4096u64;
     let disk = build_on(BLOCK, blocks, &[]).unwrap();
-    let table = GloballyUniqueIdentifierPartitionTable::parse(disk.header(), &disk.array).unwrap();
+    let table = PartitionTable::parse(disk.header(), &disk.array).unwrap();
     let canonical = Header::decode(disk.backup()).unwrap();
-    assert_eq!(canonical.entry_array_lba, table.backup_entry_lba());
+    assert_eq!(
+        canonical.entry_array_logical_block_address,
+        table.backup_entry_logical_block_address()
+    );
 
-    let with_array_at = |lba: u64, last_usable_lba: u64| {
+    let with_array_at = |lba: u64, last_usable_logical_block_address: u64| {
         let mut block = [0u8; BLOCK];
         Header {
-            entry_array_lba: lba,
-            last_usable_lba,
+            entry_array_logical_block_address: lba,
+            last_usable_logical_block_address,
             ..canonical
         }
         .encode_into(&mut block)
         .unwrap();
         block
     };
-    let parse = |lba: u64, last_usable_lba: u64| {
-        let block = with_array_at(lba, last_usable_lba);
-        GloballyUniqueIdentifierPartitionTable::parse_backup(&block, &disk.array, blocks)
-            .map(|_| ())
+    let parse = |lba: u64, last_usable_logical_block_address: u64| {
+        let block = with_array_at(lba, last_usable_logical_block_address);
+        PartitionTable::parse_backup(&block, &disk.array, blocks).map(|_| ())
     };
 
-    let (array, usable) = (canonical.entry_array_lba, canonical.last_usable_lba);
+    let (array, usable) = (
+        canonical.entry_array_logical_block_address,
+        canonical.last_usable_logical_block_address,
+    );
     assert_eq!(parse(array, usable), Ok(()));
     // One block of slack between the last usable block and the array, and the array ends a block
     // before the backup header.

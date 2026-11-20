@@ -11,7 +11,7 @@
 // private or not; a glob across crates sees only `pub` items, so the suite's half repeats them.
 pub use kernel::system_test_access::user::*;
 #[allow(unused_imports)]
-use page_frames::{FRAME_SIZE, PageFrame};
+use page_frames::{FRAME_BYTES, PageFrame};
 #[allow(unused_imports)]
 use page_tables::{Flags, Half, MapError, Mapper};
 #[allow(unused_imports)]
@@ -29,7 +29,7 @@ use crate::memory;
 /// The frame size as the page size `static_elf` rounds segments to, as the kernel's loader uses it.
 ///
 /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
-const FRAME_PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(FRAME_SIZE).unwrap();
+const FRAME_PAGE_BYTES: static_elf::PageBytes = static_elf::PageBytes::new(FRAME_BYTES).unwrap();
 
 /// **Whether the x86_64 runner was told to attach a device** (milestone 420 (x86_64 has one fixture
 /// of five and no NIC, GPU, keyboard or RNG)), baked in by `build.rs` because the guest cannot read
@@ -803,7 +803,7 @@ mod shell_navigation_tests;
 /// One module for both ISAs, for [`dir_capability_tests`]'s reason (DECISIONS §19). The **real
 /// `rm` binary** (`components/src/rm.rs`) runs behind a real `fs_subtree_caretaker`, started as the
 /// shell would: the name in a grant's two argument words and the options in the spec word, in
-/// `grant_plan::rmopt`'s bit order. The claim is that **the walk stops exactly where the
+/// `grant_plan::rm_options`'s bit order. The claim is that **the walk stops exactly where the
 /// capabilities stop**: the same command line against the same tree does the whole job through one
 /// grant and cannot begin through a narrower one, and no branch in the program decides which.
 #[cfg(all(test, initial_ramdisk))]
@@ -852,7 +852,7 @@ mod riscv_virtio_tests;
 /// instead of a keyboard, with the interactive endowment (a terminal, a spawn channel, a result
 /// channel and a budget), and the kernel plays the other ends. The test serves
 /// `terminal_contract::OPERATION_WRITE` and collects every byte the shell prints, so assertions
-/// are against what a person would see. A second thread serves `program_table::spawnproto` as the
+/// are against what a person would see. A second thread serves `program_table::spawn_protocol` as the
 /// progenitor does, building each stage with the delegated sink and source: the same protocol, not
 /// the same code (notes/pipes.md's BUGS).
 #[cfg(test)]
@@ -1227,7 +1227,7 @@ mod ninth_pass_supervision_tests;
 /// **The map gate admits only the aligned low half, and no mapping flag is W+X** (a ninth outsider
 /// pass at the confinement claim, claims 10 and 11). A confined budget holder's `MemoryRegion::MAP`
 /// is refused `BadPointer` for a kernel-half and an unaligned address, tied to the proved
-/// `is_user_page_va` gate, and every `Flags` a mapping path installs is writable or user-executable,
+/// `is_user_page_virtual_address` gate, and every `Flags` a mapping path installs is writable or user-executable,
 /// never both. One layer up from `crates/page_tables`'s per-format proofs.
 ///
 /// Cross-ISA: the gate is instantiated at the running architecture's `Format` (DECISIONS §19).

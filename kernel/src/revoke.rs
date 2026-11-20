@@ -154,7 +154,7 @@ mod chain {
         pub(super) entries: [LogEntry; LOG_ENTRIES],
     }
 
-    const _: () = assert!(size_of::<LogPage>() == page_frames::FRAME_SIZE as usize);
+    const _: () = assert!(size_of::<LogPage>() == page_frames::FRAME_BYTES as usize);
 
     impl LogPage {
         /// Every slot this page has ever written, tombstones included. A slice rather than an
@@ -411,7 +411,7 @@ impl MappingHold {
         // The enum stops a caller swapping the two arguments; this catches a wrongly computed base,
         // which would scope the record to a family it does not belong to.
         debug_assert!(
-            object <= phys && (phys - object).is_multiple_of(page_frames::FRAME_SIZE),
+            object <= phys && (phys - object).is_multiple_of(page_frames::FRAME_BYTES),
             "a mapping of {phys:#x} recorded under an object at {object:#x}: not a page of that run",
         );
         if self.would_make_writable_executable_pair(root, phys, flags) {
@@ -603,7 +603,7 @@ pub fn list_mapping(root: u64, cursor: u64) -> Listing {
         return Listing::Done;
     };
 
-    const PAGE_MASK: u64 = !(page_frames::FRAME_SIZE - 1);
+    const PAGE_MASK: u64 = !(page_frames::FRAME_BYTES - 1);
     let mut chain = space.log.pages_mut().peekable();
     let mut index = 0usize;
     if cursor != 0 {
@@ -710,7 +710,7 @@ pub fn revoke_page_frame(phys: u64) {
 pub(crate) fn revoke_page_frame_run(phys: u64, count: u64) {
     crate::sched::delete_page_frame_capabilities(phys, count);
     for k in 0..count {
-        unmap_under_object(phys + k * page_frames::FRAME_SIZE, phys);
+        unmap_under_object(phys + k * page_frames::FRAME_BYTES, phys);
     }
 }
 
@@ -821,7 +821,7 @@ mod tests {
         for k in 1..N {
             assert_eq!(
                 pages[k],
-                pages[k - 1] + page_frames::FRAME_SIZE,
+                pages[k - 1] + page_frames::FRAME_BYTES,
                 "a region stopped retyping contiguously at page {k}; a PageFrame run has no \
                  meaning without that",
             );
@@ -841,7 +841,7 @@ mod tests {
 
         let (va_a, va_b) = (0x40_0000u64, 0x80_0000u64);
         for (k, phys) in run[..2].iter().enumerate() {
-            let va = va_a + k as u64 * page_frames::FRAME_SIZE;
+            let va = va_a + k as u64 * page_frames::FRAME_BYTES;
             a.map_physical(
                 va,
                 *phys,
@@ -853,7 +853,7 @@ mod tests {
         b.map_physical(
             va_b,
             run[2],
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             PageMapSource::Capability(run[0]),
         )
         .expect("map B");
@@ -869,7 +869,7 @@ mod tests {
 
         for k in 0..2u64 {
             assert!(
-                mmu::translate_at(a.root(), va_a + k * page_frames::FRAME_SIZE).is_none(),
+                mmu::translate_at(a.root(), va_a + k * page_frames::FRAME_BYTES).is_none(),
                 "page {k} of the run survived the revoke in A",
             );
         }
@@ -1054,7 +1054,7 @@ mod tests {
     fn revoke_unmaps_a_shared_page_from_every_address_space() {
         let mut a = AddressSpace::new(2).expect("no space A");
         let mut b = AddressSpace::new(2).expect("no space B");
-        let shared = crate::memory::alloc().expect("no frame").addr();
+        let shared = crate::memory::alloc().expect("no frame").physical_address();
         let (va_a, va_b) = (0x40_0000u64, 0x80_0000u64);
 
         a.map_physical(
@@ -1067,7 +1067,7 @@ mod tests {
         b.map_physical(
             va_b,
             shared,
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             PageMapSource::NoCapability,
         )
         .expect("map B");
@@ -1092,7 +1092,7 @@ mod tests {
             "B still maps the revoked page"
         );
 
-        crate::memory::free(page_frames::PageFrame::from_addr(shared));
+        crate::memory::free(page_frames::PageFrame::from_physical_address(shared));
     }
 
     /// Destroying a region unmaps its pages, then reclaims them: the mapping is gone and the
@@ -1111,9 +1111,9 @@ mod tests {
             "the page was not mapped"
         );
 
-        let free_before = crate::memory::stats().unwrap().free();
+        let free_before = crate::memory::stats().unwrap().free_frames();
         crate::memory_region::destroy(region);
-        let free_after = crate::memory::stats().unwrap().free();
+        let free_after = crate::memory::stats().unwrap().free_frames();
 
         assert!(
             mmu::translate_at(space.root(), va).is_none(),
@@ -1132,19 +1132,19 @@ mod tests {
     #[test_case]
     fn an_exhausted_budget_refuses_the_record_not_the_safety() {
         let mut space = AddressSpace::new(0).expect("no space");
-        let shared = crate::memory::alloc().expect("no frame").addr();
+        let shared = crate::memory::alloc().expect("no frame").physical_address();
 
         // A 0-content space has about 15 spendable pages, and 4096 mappings need 25 log pages at
         // `LOG_ENTRIES` (170) a page, plus about 8 table pages, so the budget runs out mid-loop. An
         // exhausted region refuses a table page or a log page, and the `Err` does not say which.
         let mut refused = false;
         for i in 0..4096u64 {
-            let va = 0x40_0000 + i * page_frames::FRAME_SIZE;
+            let va = 0x40_0000 + i * page_frames::FRAME_BYTES;
             if space
                 .map_physical(
                     va,
                     shared,
-                    Flags::user_rodata(),
+                    Flags::user_read_only_data(),
                     PageMapSource::NoCapability,
                 )
                 .is_err()
@@ -1159,6 +1159,6 @@ mod tests {
             crate::memory_region::usage(0).map(|(_, p)| p).unwrap_or(0),
         );
 
-        crate::memory::free(page_frames::PageFrame::from_addr(shared));
+        crate::memory::free(page_frames::PageFrame::from_physical_address(shared));
     }
 }

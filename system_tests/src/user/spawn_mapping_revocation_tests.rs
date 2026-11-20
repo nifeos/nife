@@ -46,7 +46,9 @@ fn a_page_the_kernel_wired_is_unmapped_when_its_frame_is_revoked() {
     // `Spawn::maps` frame comes from too (`fs_service::page_frame`, `credential_service::page_frame`
     // and the stack-page loops all call `memory::alloc_zeroed`). It also keeps the revoke below a
     // pure capability question: `PageFrame::REVOKE` reclaims nothing, so nobody's budget moves.
-    let shared = crate::memory::alloc().expect("no frame to share").addr();
+    let shared = crate::memory::alloc()
+        .expect("no frame to share")
+        .physical_address();
 
     // The recorded half: a user-built address space, mapped through the `MAP_INTO` engine. Thirty-two
     // pages is the root, its tables, and its log page, with room to spare.
@@ -104,5 +106,5 @@ fn a_page_the_kernel_wired_is_unmapped_when_its_frame_is_revoked() {
     drop(take_user_address_space(recorded));
     drop(wired);
     crate::memory_region::destroy(region);
-    crate::memory::free(page_frames::PageFrame::from_addr(shared));
+    crate::memory::free(page_frames::PageFrame::from_physical_address(shared));
 }

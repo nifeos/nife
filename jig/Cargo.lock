@@ -92,6 +92,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
 
 [[package]]
 name = "capability_manifest_note"
@@ -154,6 +155,7 @@ dependencies = [
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
 dependencies = [
  "loom",
 ]
@@ -576,7 +578,7 @@ dependencies = [
  "package_index",
  "pinned_tls_client",
  "program_table",
- "socket_contract",
+ "socket_fixture",
  "static_elf",
  "std_runtime_contract",
  "user_mode_runtime",
@@ -1051,6 +1053,10 @@ checksum = "d0d5d4b1981b8bbbb7aed204cae5726d683d5d6ac7e74ec54122ea28f315e7c8"
 
 [[package]]
 name = "socket_contract"
+version = "0.1.0"
+
+[[package]]
+name = "socket_fixture"
 version = "0.1.0"
 
 [[package]]

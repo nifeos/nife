@@ -72,7 +72,7 @@ pub fn boot_progenitor(archive: &'static [u8]) -> Result<crate::thread::ThreadId
     );
 
     let (ramdisk_start, ramdisk_len) = memory::initial_ramdisk_region().expect("no archive");
-    let ramdisk_pages = ramdisk_len.div_ceil(FRAME_SIZE);
+    let ramdisk_pages = ramdisk_len.div_ceil(FRAME_BYTES);
     let elf = measured_progenitor(archive)?;
 
     let aspace_name = progenitor_address_space(&elf, ramdisk_start, ramdisk_pages)?;
@@ -187,7 +187,7 @@ fn progenitor_address_space(
         .segments()
         .map(|seg| {
             let (s, e) = seg.page_range(FRAME_PAGE_BYTES);
-            (e - s) / FRAME_SIZE
+            (e - s) / FRAME_BYTES
         })
         .sum::<u64>()
         + 1
@@ -200,7 +200,7 @@ fn progenitor_address_space(
     map_segments(&mut space, elf)?;
     for k in 0..PROGENITOR_STACK_PAGES {
         let page = space
-            .map_new(USER_STACK_VA - k * FRAME_SIZE, Flags::user_data())
+            .map_new(USER_STACK_VA - k * FRAME_BYTES, Flags::user_data())
             .map_err(LoadError::Unmappable)?;
         // Painted so the kernel can say how deep this stack has ever been: see
         // `crate::progenitor_stack`, and `script/swish-check`, which fails on too little headroom.
@@ -212,9 +212,9 @@ fn progenitor_address_space(
     for i in 0..ramdisk_pages {
         space
             .map_physical(
-                INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
-                ramdisk_start + i * FRAME_SIZE,
-                Flags::user_rodata(),
+                INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_BYTES,
+                ramdisk_start + i * FRAME_BYTES,
+                Flags::user_read_only_data(),
                 crate::revoke::PageMapSource::NoCapability,
             )
             .map_err(LoadError::Unmappable)?;
@@ -486,9 +486,9 @@ fn grant_base_digest(tid: crate::thread::ThreadId) {
     // Zeroed, so a previous occupant's bytes are not visible past `PAGE_CONTENT_BYTES`.
     let phys = crate::memory::alloc_zeroed()
         .expect("no frame for the base digest page")
-        .addr();
+        .physical_address();
     // SAFETY: `phys` names that frame, direct-mapped and owned by nobody else yet, and `bytes` is
-    // `PAGE_CONTENT_BYTES` (40) long, far under `FRAME_SIZE`, so the copy stays inside the frame.
+    // `PAGE_CONTENT_BYTES` (40) long, far under `FRAME_BYTES`, so the copy stays inside the frame.
     unsafe {
         core::ptr::copy_nonoverlapping(
             bytes.as_ptr(),

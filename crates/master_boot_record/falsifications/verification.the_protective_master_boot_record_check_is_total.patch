@@ -1,0 +1,20 @@
+Falsifies `master_boot_record::verification::the_protective_master_boot_record_check_is_total`.
+
+The defect: the check for a second partition beside the protective record looks at records 0 to 2
+only, so a hybrid MBR whose extra partition is in record 3 is accepted as protective.
+
+Expected to fail: the harness's `assert!(other == protective || record(other)[4] == 0 || word(other, 12) == 0)`,
+on a sector whose record 3 has a nonzero type and size beside a protective record 0.
+diff --git a/crates/master_boot_record/src/protective.rs b/crates/master_boot_record/src/protective.rs
+index 0f131ce3c..0a38a463c 100644
+--- a/crates/master_boot_record/src/protective.rs
++++ b/crates/master_boot_record/src/protective.rs
+@@ -158,7 +158,7 @@ pub fn validate(sector: &[u8; 512], block_count: u64) -> Result<(), Problem> {
+     // no blocks is noise and not a second description of the disk.
+     let size_of = |j: usize| word(RECORDS + j * 16 + SIZE_BLOCKS);
+     if let Some(extra) =
+-        (0..4).find(|&j| j != i && operating_system_type(j) != 0x00 && size_of(j) != 0)
++        (0..3).find(|&j| j != i && operating_system_type(j) != 0x00 && size_of(j) != 0)
+     {
+         return Err(Problem::ExtraRecord { index: extra });
+     }

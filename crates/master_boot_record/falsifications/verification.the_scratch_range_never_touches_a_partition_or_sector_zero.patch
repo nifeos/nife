@@ -6,11 +6,11 @@ the write test would overwrite it with a pattern before restoring it.
 
 Expected to fail: the harness's `assert!(!e.contains(sector))`, on any table with a used entry
 starting at 2 or above and `k == count - 1`.
-diff --git a/crates/master_boot_record/src/lib.rs b/crates/master_boot_record/src/lib.rs
-index d99309ed7..7546d99bf 100644
---- a/crates/master_boot_record/src/lib.rs
-+++ b/crates/master_boot_record/src/lib.rs
-@@ -165,7 +165,7 @@ impl MasterBootRecord {
+diff --git a/crates/master_boot_record/src/record.rs b/crates/master_boot_record/src/record.rs
+index 25833f86c..993ba4be1 100644
+--- a/crates/master_boot_record/src/record.rs
++++ b/crates/master_boot_record/src/record.rs
+@@ -149,7 +149,7 @@ impl MasterBootRecord {
              return None;
          }
          let count = if want < gap { want } else { gap };

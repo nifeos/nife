@@ -87,7 +87,7 @@ Every crate is MIT OR Apache-2.0 through `license.workspace`, and every library 
 | ps | C | 479 | 0 | 0 | abi |  |
 | schedule_store | C | 212 | 0 | 0 | none |  |
 | screen_console | C | 1316 | 0 | 0 | bitmap_font, machine_discovery |  |
-| sealed_pair | C | 437 | 0 | 0 | measured_boot, nifefs |  |
+| sealed_pair | C | 437 | 2 | 2 | measured_boot, nifefs | leaves after `nifefs` and `measured_boot` have repositories, with or after `uefi_loader`; no repository now; expected shared across kernels, else a module of its one user |
 | slabtop | C | 157 | 0 | 0 | address_space_layout |  |
 | soak_page | C | 84 | 0 | 0 | address_space_layout |  |
 | socket_protocol | C | 285 | 0 | 0 | none |  |

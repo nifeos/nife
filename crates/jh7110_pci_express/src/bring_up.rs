@@ -34,7 +34,7 @@ pub trait Registers {
     /// Wait at least `milliseconds`.
     fn wait_milliseconds(&mut self, milliseconds: u32);
     /// Turn on the port's clocks and release its resets (see
-    /// `jh7110_clock_and_reset::pci_express_bring_up`), answering whether every reset released.
+    /// `jh7110_clock_and_reset::PCI_EXPRESS_SYSTEM_BRING_UP` then `PCI_EXPRESS_SYSTEM_TOP_GROUP_BRING_UP`), answering whether every reset released.
     fn enable_clocks_and_resets(&mut self, port: PortNumber) -> bool;
 }
 

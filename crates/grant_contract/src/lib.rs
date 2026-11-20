@@ -50,6 +50,6 @@ pub use manifest::{
     StartupContract, WordGrant,
 };
 pub use verbs::{
-    MAXIMUM_VERB, ManifestAuthorities, VerbGrant, delegated_within, narrow_by_verb, verb_key,
+    MAXIMUM_VERB_BYTES, ManifestAuthorities, VerbGrant, delegated_within, narrow_by_verb, verb_key,
     verb_of_page,
 };

@@ -6,7 +6,7 @@
 that a third-party crate must clear before the kernel links it. Its condition 4 asks for the crate's
 `unsafe`: where each hand-written block sits, what checks it upstream or here, and whether a claim in
 nife rests on it. The one crate the kernel links today, `uuid` on x86_64, predates the bar. This
-note is its listing. It also lists the `unsafe` of the kernel's in-tree lock, `crates/spin_lock`,
+note is its listing. It also lists the `unsafe` of the kernel's in-tree lock, `crates/test_and_set_lock`,
 because the largest claim the kernel makes about ordering rests on it.
 
 No register crate is in the kernel. aarch64's system registers are one `asm!` accessor each in
@@ -34,7 +34,7 @@ them, and which claims rest on them.
 
 `--all-features` gives the same set. `uuid` arrives on x86_64 through `boot_slot` and
 `globally_unique_identifier_partition_table`, and pulls no procedural macro or build script into
-the kernel. The kernel's lock is `crates/spin_lock`, listed below.
+the kernel. The kernel's lock is `crates/test_and_set_lock`, listed below.
 
 ## How a site is counted
 
@@ -61,16 +61,16 @@ from the table. The census in
 tool at 1.24.0, the version `redoxfs_server` pins, which predates the ten `NonNilUuid` constructor
 blocks counted here.
 
-## spin_lock, the in-tree lock
+## test_and_set_lock, the in-tree lock
 
-`InterruptSafeMutex` in `kernel/src/sync.rs` wraps `spin_lock::SpinLock`, and a handful of statics
+`InterruptSafeMutex` in `kernel/src/sync.rs` wraps `test_and_set_lock::SpinLock`, and a handful of statics
 in
 `kernel/src/user/fs_service/two_dirs.rs` and `system_tests/` use it directly. It is not a registry
 crate, so the table and the helper do not list it; its sites are here because the claim below rests
 on them. The kernel calls `new`, `lock`, `try_lock` and `force_unlock`, and uses the guard's
 `Deref`, `DerefMut` and `Drop`.
 
-The `unsafe` in `crates/spin_lock/src/lib.rs`, all compiled into the kernel and all reached:
+The `unsafe` in `crates/test_and_set_lock/src/lib.rs`, all compiled into the kernel and all reached:
 
 | Site | What it relies on | What checks it |
 |---|---|---|
@@ -151,7 +151,7 @@ The claim that rests on it: None. The partition table crate's Kani harness
 
 | Claim | The `unsafe` it rests on | What proves it | Where the gap is tracked |
 |---|---|---|---|
-| A kernel lock gives exclusion and a happens-before edge | `spin_lock`: the guard's `deref` and `deref_mut`, and the lock's `Sync` impl | loom, two and three threads, with a falsification | nothing to track |
+| A kernel lock gives exclusion and a happens-before edge | `test_and_set_lock`: the guard's `deref` and `deref_mut`, and the lock's `Sync` impl | loom, two and three threads, with a falsification | nothing to track |
 | A partition GUID survives the on-disk layout | none | Kani, over safe code | nothing to track |
 
 ## Keeping it current

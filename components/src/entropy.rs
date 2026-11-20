@@ -139,23 +139,23 @@ fn refuses_service(report: u64) -> bool {
 }
 
 fn r8(off: u64) -> u8 {
-    WINDOW.read_u8(off)
+    WINDOW.read::<u8>(off)
 }
 
 fn w8(off: u64, v: u8) {
-    WINDOW.write_u8(off, v);
+    WINDOW.write::<u8>(off, v);
 }
 
 fn r16(off: u64) -> u16 {
-    WINDOW.read_u16(off)
+    WINDOW.read::<u16>(off)
 }
 
 fn w16(off: u64, v: u16) {
-    WINDOW.write_u16(off, v);
+    WINDOW.write::<u16>(off, v);
 }
 
 fn r32(off: u64) -> u32 {
-    WINDOW.read_u32(off)
+    WINDOW.read::<u32>(off)
 }
 
 fn mr(off: u64) -> u32 {

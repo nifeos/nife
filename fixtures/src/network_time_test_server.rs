@@ -42,7 +42,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use network_time_protocol::{Packet, Short, Timestamp, leap, mode};
+use network_time_protocol::{Packet, ShortFormat, Timestamp, leap, mode};
 // The socket contract, verbatim from the file `net_stack` compiles, so this server and the client
 // cannot drift from the real server's idea of the wire format. The TCP half is dead here and is
 // allowed rather than trimmed: the value of compiling the *same file* net_stack does is that the
@@ -101,7 +101,7 @@ const SERVER_TURNAROUND_NANOSECONDS: u64 = 1_000;
 /// `socket_contract`'s.
 const PAGE_FRAME_VA: u64 = address_space_layout::pair_page(0x0000_0000_00A0_0000);
 
-// SAFETY: the `OPERATION_ATTACH_PAGE_FRAME` arm below maps one page read/write at PAGE_FRAME_VA, and it is
+// SAFETY: the `OPERATION_ATTACH_SHARED_PAGE` arm below maps one page read/write at PAGE_FRAME_VA, and it is
 // the first request the client makes, before any access through `SHARED_FRAME` (milestone 139 (drive the unsafe count down)).
 static SHARED_FRAME: Frame = unsafe { Frame::new(PAGE_FRAME_VA) };
 
@@ -115,7 +115,7 @@ fn start(variant: u64, claimed_nanoseconds: u64, _arg2: u64) -> ! {
 /// Serve the socket contract on [`STACK`], answering each request with an NTP reply built from
 /// `variant` at `claimed_nanoseconds`. See the module docs for what this does and does not prove.
 fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
-    let mut pending = [0u8; network_time_protocol::PACKET_LEN];
+    let mut pending = [0u8; network_time_protocol::PACKET_BYTES];
     let mut pending_len = 0usize;
     let mut reported = false;
 
@@ -127,7 +127,7 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
         let to = match req.delivered {
             // A SEND_CAPABILITY: the client's shared frame, which we map for ourselves and then drop the
             // capability for, because the mapping outlives it. No reply; nobody is waiting.
-            Delivered::Delegation(frame) if w0 == OPERATION_ATTACH_PAGE_FRAME => {
+            Delivered::Delegation(frame) if w0 == OPERATION_ATTACH_SHARED_PAGE => {
                 map_page_frame(frame, PAGE_FRAME_VA, true, MEMORY_REGION);
                 capability_delete(frame);
                 continue;
@@ -140,26 +140,26 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
         match w0 {
             OPERATION_OPEN_UDP | OPERATION_OPEN_TCP => {
                 // The opened socket's capability, as `net_stack` hands one over.
-                let socket = badge(MINT, SOCKET_BADGE | 1);
+                let socket = badge(MINT, SOCKET_BADGE_BIT | 1);
                 if socket < 0 {
-                    reply(to, REP_ERR, 0);
+                    reply(to, REPLY_ERROR, 0);
                     continue;
                 }
-                if let Err((to, _)) = reply_capability(to, REP_OK, 0, socket as u64) {
-                    reply(to, REP_ERR, 0);
+                if let Err((to, _)) = reply_capability(to, REPLY_OK, 0, socket as u64) {
+                    reply(to, REPLY_ERROR, 0);
                 }
                 capability_delete(socket as u64);
             }
-            OPERATION_SENDTO => {
+            OPERATION_SEND_TO => {
                 // The length the client declared, which is how the real server learns it too.
-                let mut wire = [0u8; network_time_protocol::PACKET_LEN];
+                let mut wire = [0u8; network_time_protocol::PACKET_BYTES];
                 let n = SHARED_FRAME.payload_read(
-                    (w1 as usize).min(network_time_protocol::PACKET_LEN),
+                    (w1 as usize).min(network_time_protocol::PACKET_BYTES),
                     &mut wire,
                 );
                 let request = Packet::parse(&wire[..n]).unwrap_or_default();
                 pending_len = build_reply(&request, variant, claimed_nanoseconds, &mut pending);
-                reply(to, REP_OK, 0);
+                reply(to, REPLY_OK, 0);
                 if !reported {
                     reported = true;
                     let destination_port = SHARED_FRAME.destination_port() as u64;
@@ -179,10 +179,10 @@ fn server(variant: u64, claimed_nanoseconds: u64) -> ! {
                 reply(to, pending_len as u64, 0);
             }
             OPERATION_CLOSE => {
-                reply(to, REP_OK, 0);
+                reply(to, REPLY_OK, 0);
             }
             _ => {
-                reply(to, REP_ERR, 0);
+                reply(to, REPLY_ERROR, 0);
             }
         }
     }
@@ -200,8 +200,8 @@ fn build_reply(request: &Packet, variant: u64, claimed_nanoseconds: u64, out: &m
         stratum: 2,
         poll: request.poll,
         precision: -20,
-        root_delay: Short(0x0000_1000),      // ~62 ms
-        root_dispersion: Short(0x0000_2000), // ~125 ms
+        root_delay: ShortFormat::from_bits(0x0000_1000), // ~62 ms
+        root_dispersion: ShortFormat::from_bits(0x0000_2000), // ~125 ms
         reference_id: *b"TEST",
         reference: t2,
         // A server echoes the client's transmit field into origin and interprets it no further.
@@ -227,8 +227,8 @@ fn build_reply(request: &Packet, variant: u64, claimed_nanoseconds: u64, out: &m
         _ => {}
     }
 
-    out[..network_time_protocol::PACKET_LEN].copy_from_slice(&p.to_bytes());
-    network_time_protocol::PACKET_LEN
+    out[..network_time_protocol::PACKET_BYTES].copy_from_slice(&p.to_bytes());
+    network_time_protocol::PACKET_BYTES
 }
 
 /// Unix nanoseconds to an NTP timestamp. `None` outside the crate's representable window. The

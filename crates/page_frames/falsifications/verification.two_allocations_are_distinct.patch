@@ -5,7 +5,7 @@ The defect: the bit is written with the wrong polarity, `self.set(i, false)` in 
 nothing in the type system distinguishes the two calls; the freeing path a few lines away passes
 `false` correctly.
 
-Expected to fail: the harness's `assert_ne!(fa.addr(), fb.addr())`. The hint makes the second
+Expected to fail: the harness's `assert_ne!(first.physical_address(), second.physical_address())`. The hint makes the second
 scan start past the frame just handed out, so the two allocations still differ whenever another
 frame is free; the counterexample is a bitmap where the frame allocated is the only free one and
 the wrapped scan hands it straight back. That is the double-allocation address-space isolation
@@ -14,7 +14,7 @@ rests on.
 diff --git a/crates/page_frames/src/lib.rs b/crates/page_frames/src/lib.rs
 --- a/crates/page_frames/src/lib.rs
 +++ b/crates/page_frames/src/lib.rs
-@@ -257,3 +257,3 @@
+@@ -265,3 +265,3 @@
  
 -        self.set(i, true);
 +        self.set(i, false);

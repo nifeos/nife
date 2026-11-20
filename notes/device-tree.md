@@ -134,7 +134,7 @@ The blob comes from firmware, and firmware is the trust boundary here, so these 
 robustness rather than confinement. Each one costs a comparison and turns a crash on the boot path
 into an `Error`.
 
-- `MAXIMUM_TOTALSIZE_BYTES` is 2 MiB. `DeviceTreeBlob::from_ptr` must trust the header's `totalsize`
+- `MAXIMUM_TOTAL_SIZE_BYTES` is 2 MiB. `DeviceTreeBlob::from_pointer` must trust the header's `totalsize`
   before anything else is checked, and the magic says only that the pointer is at a blob. A
   `totalsize` of `0xffff_ffff` would otherwise become a 4 GiB slice that the walkers read past the
   end of RAM. The figure is Linux's `MAX_FDT_SIZE` for the same slot. The largest blob this tree has
@@ -163,18 +163,18 @@ into an `Error`.
 
 ## Finding a node
 
-`node_reg` matches a node-name prefix. It found the interrupt controller on both QEMU boards:
+`node_register_regions` matches a node-name prefix. It found the interrupt controller on both QEMU boards:
 `intc@8000000` on aarch64 `virt`, a direct child of the root, and `plic@c000000` on riscv64
 `virt`, nested under `/soc`. It decodes with the parent's cell counts even though QEMU writes 2
 and 2 at both levels, because relying on that breaks the first board that differs. A name is only
 a convention; a real driver matches `compatible`, such as `"arm,cortex-a15-gic"` or
 `"riscv,plic0"`, and the Pi port will need that.
 
-`node_reg_compatible` is that lookup, first needed for the RTC of milestone 51 (wall-clock time).
+`node_register_regions_compatible` is that lookup, first needed for the RTC of milestone 51 (wall-clock time).
 The RTC is `pl031@9010000` on aarch64 `virt` and `rtc@101000` on riscv64, so a prefix that finds one
 finds nothing on the other, while `arm,pl031` and `google,goldfish-rtc` name what a driver can
 drive. `compatible` lists the most specific entry first, and a match on any entry counts.
-`node_property_compatible`, `parent_property_compatible` and `phandle_property` follow the same pattern: the
+`node_property_compatible`, `parent_property_compatible` and `pointer_handle_property` follow the same pattern: the
 deciding property may come after the wanted one in a node, so each open node's candidate is
 remembered and the answer is taken when a matching node closes.
 
@@ -200,9 +200,9 @@ failure, so every limitation here is a limitation on the boot path specifically.
   region. `kernel/src/memory.rs` decides where RAM is from these, and "the firmware's memory map
   is impossible" is something a boot path should be told. `Region::end()` saturates as a backstop,
   because the type is `pub` with `pub` fields.
-- **`node_reg` matches a node-name prefix rather than `compatible`, and answers for the first match
+- **`node_register_regions` matches a node-name prefix rather than `compatible`, and answers for the first match
   only** (zero regions when it has no `reg`, as `node_property` answers `None`). That is a deliberate
-  simplification for two boards, documented at the function. `node_reg_compatible` is the correct
+  simplification for two boards, documented at the function. `node_register_regions_compatible` is the correct
   one and is what milestone 51's RTC lookup uses.
 - **Cell widths come from the nearest ancestor that declares them, not from the spec's default.**
   The Devicetree Specification says a node without `#address-cells` gives its children 2 and 1.

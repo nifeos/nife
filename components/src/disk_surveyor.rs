@@ -27,6 +27,8 @@
 //!   `filesystem_contract::block`, not a change here.
 //! - **It does not write.** Writing the table is `components/src/disk_partitioner.rs`.
 //! - **No hot plug.** The roster is written once at wiring time and never again.
+//! - **The table is not checked against the disk's size.** `check_disk_size` is never called, so a
+//!   table cloned whole from a disk of another size is reported as this disk's.
 //!
 //! Name: ratified 2026-08-03 (calef, milestone 57 (partitioning and formatting a real drive)). A
 //! surveyor maps land they do not own, which is this program's endowment: a read-only roster of
@@ -44,10 +46,9 @@ use block_roster_contract::{
     TRANSPORT_VIRTIO_PCI,
 };
 use filesystem_contract::{block, req};
+use globally_unique_identifier_partition_table::PartitionTable;
 use globally_unique_identifier_partition_table::entry::NAME_UNITS;
-use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::span::Span;
-use globally_unique_identifier_partition_table::{GloballyUniqueIdentifierPartitionTable, mbr};
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, send};
 
@@ -132,47 +133,47 @@ pub const R_HOLDING: u64 = 0x_48_4F_4C_44_47;
 // checkable versions)): the progenitor refuses these bytes when their ABI entry is not the version
 // it serves, and `helpers/interface_declarations_check.py` holds the list to the link graph.
 interfaces_note::carry_interfaces!(&[
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: abi::INTERFACE_ID,
         version: abi::ABI_VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: address_space_layout::INTERFACE_ID,
         version: address_space_layout::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: block_roster_contract::INTERFACE_ID,
         version: block_roster_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: clock_contract::INTERFACE_ID,
         version: clock_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: counter_frequency_contract::INTERFACE_ID,
         version: counter_frequency_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: current_cpu_contract::INTERFACE_ID,
         version: current_cpu_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: entropy_contract::INTERFACE_ID,
         version: entropy_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: filesystem_contract::block::INTERFACE_ID,
         version: filesystem_contract::block::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: socket_contract::INTERFACE_ID,
         version: socket_contract::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: user_mode_runtime::INTERFACE_ID,
         version: user_mode_runtime::VERSION
     },
-    interfaces_note::Declared {
+    interfaces_note::DeclaredInterface {
         id: interfaces_note::INTERFACE_ID,
         version: interfaces_note::INTERFACES_VERSION
     },
@@ -286,10 +287,15 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
     // Reborrowed immutably from here on, so this and the backup buffer can be live at once.
     let primary: &[u8] = head_buf;
 
-    if mbr::validate(&primary[..LBA as usize], block_count).is_ok() {
+    if globally_unique_identifier_partition_table::master_boot_record::validate(
+        &primary[..LBA as usize],
+        block_count,
+    )
+    .is_ok()
+    {
         flags |= F_MBR;
     }
-    let Ok(table) = GloballyUniqueIdentifierPartitionTable::parse(
+    let Ok(table) = PartitionTable::parse(
         &primary[LBA as usize..2 * LBA as usize],
         &primary[2 * LBA as usize..],
     ) else {
@@ -298,10 +304,10 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
     flags |= F_PRIMARY;
 
     // The backup: the entry array plus the header, ending on the last block of the disk. Reading it
-    // is a second I/O on purpose (`GloballyUniqueIdentifierPartitionTable::check_backup` is
+    // is a second I/O on purpose (`PartitionTable::check_backup` is
     // separate for exactly this reason), and it is the check that says whether anything has
     // happened to this disk since it was written.
-    let backup_lba = table.backup_entry_lba();
+    let backup_lba = table.backup_entry_logical_block_address();
     let backup_blocks = block_count.saturating_sub(backup_lba);
     let tail_buf = backup();
     if backup_blocks > 1
@@ -328,9 +334,9 @@ fn read_table(block_count: u64, partitions: &mut u64, nife_first_lba: &mut u64) 
     let mut named = 0;
     for (_, part) in table.partitions() {
         *partitions += 1;
-        if part.type_guid == types::NIFE_DATA {
+        if part.type_guid == nife_partition_types::NIFE_DATA {
             flags |= F_NIFE;
-            *nife_first_lba = part.first_lba;
+            *nife_first_lba = part.first_logical_block_address;
         }
         let mut label = [0u8; 4 * NAME_UNITS];
         if part.name_utf8(&mut label).is_ok() {

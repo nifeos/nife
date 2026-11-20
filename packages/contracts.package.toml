@@ -12,7 +12,6 @@ interfaces = [
     "byte_sink_contract",
     "primitive_benchmark_contract",
     "capability_witness_contract",
-    "clock_contract",
     "confined_syscall_fuzzer_contract",
     "counter_frequency_contract",
     "startup_page_contract",
@@ -22,7 +21,6 @@ interfaces = [
     "credential_contract",
     "current_cpu_contract",
     "machine_statistics_contract",
-    "environment_contract",
     "filesystem_contract",
     # The C programs' test-image directory and command lines, which xtask and system_tests
     # agree on (milestone 835 (a C library, stage 1: files, clock and memory)).
@@ -49,6 +47,7 @@ interfaces = [
     # The archive writer: the host composer and the device updater pack the same bytes (milestone 976 (an OS update through a slot), part 4).
     "initial_ramdisk_writer",
     "globally_unique_identifier_partition_table",
+    "nife_partition_types",
     # `file_allocation_table` lives in the repository `nifeos/file_allocation_table` and is not
     # listed here; the system installer and xtask link it by revision.
     "grant_plan",
@@ -58,8 +57,6 @@ interfaces = [
     "program_table",
     "capability_plan",
     "capability_manifest_note",
-    "interfaces_note",
-    "byte_glob",
     # Sector 0 of a disk: the MBR entries and the scratch range before the first partition (the
     # storage bench links it; it left `designware_mobile_storage`).
     "master_boot_record",

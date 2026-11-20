@@ -19,9 +19,9 @@ index 5830c861d..d767beef7 100644
 --- a/kernel/src/iommu.rs
 +++ b/kernel/src/iommu.rs
 @@ -241,7 +241,7 @@ pub fn virtio_regions(
-         DmaRegion {
+         DirectMemoryAccessRegion {
              base: shadow_base,
-             size: page_frames::FRAME_SIZE,
+             size: page_frames::FRAME_BYTES,
 -            writable: false,
 +            writable: true,
          },

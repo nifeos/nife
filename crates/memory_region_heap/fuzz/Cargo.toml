@@ -1,5 +1,4 @@
-# The fuzz workspace for `memory_region_heap`: talc driven the way a nife program's heap drives it.
-# See notes/talc-fuzzing.md.
+# The fuzz workspace for `memory_region_heap`: talc driven the way the crate's heap drives it.
 #
 # Its own workspace, the shape of the top-level `fuzz/` (see its Cargo.toml for why cargo-fuzz). It
 # lives in the crate's directory so it leaves with the crate, and the root Cargo.toml excludes it.
@@ -19,11 +18,14 @@ cargo-fuzz = true
 
 [dependencies]
 libfuzzer-sys = "0.4"
-# The same talc a nife program links, plus two features that add checks and change no decision:
+# The same talc the crate links, plus two features that add checks and change no decision:
 # `counters` for the accounting the target compares, `error-scanning-std` for talc's own
 # consistency scan before every operation.
 talc = { version = "5.1.1", default-features = false, features = ["counters", "error-scanning-std"] }
 
+# The consuming tree's vendored talc, which carries upstream pull request 57, so the Miri replay of
+# the seeds checks the fixed code. A repository of the crate's own has no such copy: it drops this
+# table and fuzzes crates.io's 5.1.1, as the crate itself builds it.
 [patch.crates-io]
 talc = { path = "../../../vendor/talc" }
 

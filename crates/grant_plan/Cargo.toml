@@ -17,7 +17,7 @@ workspace = true
 # The `version` is required, not decoration: cargo-deny treats a path dep with no version as a
 # wildcard, and `allow-wildcard-paths` deliberately does not exempt a crate that other crates depend
 # on. `grant_plan` is depended on by `user` and `kernel`, so it is exactly that case.
-byte_glob = { version = "0.1.0", path = "../byte_glob" }
+byte_glob = { version = "0.1.0", git = "https://github.com/nifeos/byte_glob", rev = "f5dae9092130be6d66f176d2e1942a4c36686818" }
 
 # The declarations a line is planned against: the manifest types, the slot numbers and the narrowing
 # by verb. A program reads them without linking this parser.

@@ -119,6 +119,7 @@ dependencies = [
 [[package]]
 name = "byte_glob"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/byte_glob?rev=f5dae9092130be6d66f176d2e1942a4c36686818#f5dae9092130be6d66f176d2e1942a4c36686818"
 
 [[package]]
 name = "byte_sink_contract"
@@ -193,6 +194,7 @@ checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
 dependencies = [
  "loom",
 ]
@@ -255,7 +257,9 @@ dependencies = [
  "machine_statistics_contract",
  "measured_boot",
  "memory_region_heap",
+ "network_stack",
  "network_time_protocol",
+ "nife_partition_types",
  "nifefs",
  "non_volatile_memory_express",
  "pgrep",
@@ -268,6 +272,7 @@ dependencies = [
  "slabtop",
  "smoltcp",
  "socket_contract",
+ "socket_fixture",
  "startup_page_contract",
  "static_elf",
  "supervision_contract",
@@ -495,6 +500,7 @@ source = "git+https://github.com/nifeos/entropy_contract?rev=7e800fdcebe9128eaa5
 [[package]]
 name = "environment_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/environment_contract?rev=b4925221c6d33163c6217aa2b118ba29f0be5379#b4925221c6d33163c6217aa2b118ba29f0be5379"
 
 [[package]]
 name = "equivalent"
@@ -573,6 +579,7 @@ dependencies = [
  "program_table",
  "soak_page",
  "socket_contract",
+ "socket_fixture",
  "startup_page_contract",
  "static_elf",
  "supervision_contract",
@@ -622,6 +629,7 @@ dependencies = [
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
+ "master_boot_record",
  "uuid",
 ]
 
@@ -758,6 +766,7 @@ dependencies = [
 [[package]]
 name = "interfaces_note"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/interfaces_note?rev=bfa27187a87e0cc1916efb06238b2dd2ece004eb#bfa27187a87e0cc1916efb06238b2dd2ece004eb"
 
 [[package]]
 name = "intrusive_queue"
@@ -877,6 +886,7 @@ dependencies = [
  "jh7110_clock_and_reset",
  "jh7110_clock_and_reset_contract",
  "jh7110_entropy",
+ "jh7110_pci_express",
  "jh7110_watchdog",
  "job_mix",
  "login_contract",
@@ -897,12 +907,12 @@ dependencies = [
  "screen_console",
  "soak_page",
  "socket_contract",
- "spin_lock",
  "startup_page_contract",
  "static_elf",
  "std_runtime_contract",
  "system_log_contract",
  "terminal_contract",
+ "test_and_set_lock",
  "test_times",
  "thread_wake_handshake",
  "video_terminal",
@@ -980,6 +990,8 @@ dependencies = [
  "device_tree_blob",
  "jh7110_clock_and_reset",
  "jh7110_entropy",
+ "jh7110_pci_express",
+ "pci_configuration_space",
 ]
 
 [[package]]
@@ -1058,10 +1070,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "network_stack"
+version = "0.1.0"
+
+[[package]]
 name = "network_time_protocol"
 version = "0.1.0"
+
+[[package]]
+name = "nife_partition_types"
+version = "0.1.0"
 dependencies = [
- "clock_contract",
+ "globally_unique_identifier_partition_table",
+ "uuid",
 ]
 
 [[package]]
@@ -1130,9 +1151,6 @@ version = "0.1.0"
 [[package]]
 name = "pci_configuration_space"
 version = "0.1.0"
-dependencies = [
- "device_tree_blob",
-]
 
 [[package]]
 name = "periodic_deadline"
@@ -1423,10 +1441,10 @@ name = "socket_contract"
 version = "0.1.0"
 
 [[package]]
-name = "spin_lock"
+name = "socket_fixture"
 version = "0.1.0"
 dependencies = [
- "loom",
+ "socket_contract",
 ]
 
 [[package]]
@@ -1621,12 +1639,13 @@ dependencies = [
  "program_table",
  "ps",
  "socket_contract",
- "spin_lock",
+ "socket_fixture",
  "startup_page_contract",
  "static_elf",
  "std_runtime_contract",
  "system_log_contract",
  "terminal_contract",
+ "test_and_set_lock",
  "timetable",
  "timetable_store",
  "video_terminal",
@@ -1643,6 +1662,13 @@ dependencies = [
 [[package]]
 name = "terminal_contract"
 version = "0.1.0"
+
+[[package]]
+name = "test_and_set_lock"
+version = "0.1.0"
+dependencies = [
+ "loom",
+]
 
 [[package]]
 name = "test_times"
@@ -1843,6 +1869,7 @@ dependencies = [
  "globally_unique_identifier_partition_table",
  "machine_discovery",
  "measured_boot",
+ "nife_partition_types",
  "nifefs",
  "r-efi",
  "screen_console",
@@ -2002,6 +2029,7 @@ dependencies = [
  "initial_ramdisk_writer",
  "installed_programs",
  "measured_boot",
+ "nife_partition_types",
  "nifefs",
  "object",
  "package_archive",

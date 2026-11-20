@@ -13,8 +13,7 @@ An appendix to [the milestone](../1077-allocation-cache-outside-review.md).
 - A test reads an all-zero `Cache` as empty, and `Cache`'s documentation says so.
 - `Cache`'s documentation states the owner's three obligations, and `put`, `spill` and `drain`
   point to it.
-- The architect ruled Decision 1 (the crate moves with the `runtime` package), and the maintainer decided Decisions 2 and 3 provisionally. `script/names allocation_cache` prints every name ratified before the move. The renames land in one pull request with the consumer's `use`
-  sites.
+- The architect ruled Decision 1 (the crate moves with the `runtime` package), and the architect ruled Decision 2, which ratifies every name as built. `script/names allocation_cache` prints every name ratified before the move.
 - Three Kani harnesses with falsification patches verify, and `proofs / falsify` replays each patch red. Alternatively, the block records that the proofs wait, and the move lane has seen the `proofs` workflow
   green on an empty harness set (item 11).
 - `const _: () = assert!(align_of::<Free>() <= GRID_BYTES)` sits beside the size assertion.

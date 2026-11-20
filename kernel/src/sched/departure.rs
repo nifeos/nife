@@ -103,7 +103,7 @@ pub(super) fn deliver_death(
     // The corpse's token: if it joins the sender queue it stays there until the supervisor
     // drains it; otherwise it comes home to the TCB, where the reap drops it.
     match rendezvous.send(take_token(sched, corpse)) {
-        inter_process_communication::Send::Rendezvous(receiver, me) => {
+        inter_process_communication::SendVerdict::Rendezvous(receiver, me) => {
             hold_token(me);
             let receiver = hold_token(receiver);
             let r = sched.threads.get_mut(receiver).unwrap();
@@ -113,7 +113,7 @@ pub(super) fn deliver_death(
             trace::record(trace::Event::Served, receiver, 8);
             wake(sched, receiver);
         }
-        inter_process_communication::Send::Blocked => {
+        inter_process_communication::SendVerdict::Blocked => {
             // Recorded so a dump shows where the death message waits.
             if let Some(t) = sched.threads.get_mut(corpse) {
                 t.handshake.wait_on = Some(Wait::Rendezvous(ep, WaitRole::Sender));
@@ -122,7 +122,7 @@ pub(super) fn deliver_death(
         // Interrupt-bound (§101 (notification objects) ruling B): dropped, because `EVENT_FAULT` is
         // 1 and a driver would read it as its interrupt. Needs a `Rendezvous` capability no program
         // is granted.
-        inter_process_communication::Send::Refused(me) => {
+        inter_process_communication::SendVerdict::Refused(me) => {
             hold_token(me);
         }
     }

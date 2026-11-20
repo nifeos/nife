@@ -30,7 +30,7 @@ memory map, which the kernel's boot path calls on every RAM region. The fuzzer f
 ten minutes, from a mutated copy of the committed QEMU device tree. `nifefs::write_image` accepted
 a name containing a NUL, wrote it, and could never read it back. That is the same silent-collision
 family as the truncation bug fixed on 2026-08-01. A round-trip property found that one, in under a minute,
-and no totality proof could have, because nothing panicked. And `dtb::node_reg` indexed past its
+and no totality proof could have, because nothing panicked. And `dtb::node_register_regions` indexed past its
 16-entry cell stack on a tree nested 17 deep. **Reading the code found that one, and ten minutes of
 fuzzing did not rediscover it**, because deep recursive structure is what a mutational fuzzer is
 worst at synthesizing. All three are fixed and pinned by host tests that run in milliseconds.
@@ -67,7 +67,7 @@ bounds", a fuzzer answers "does anything crash outside them", and the project cu
   tree's actual trust boundary, because everything on that list parses bytes this system wrote
   itself. A found bug becomes a permanent regression test, not a permanent fuzzing job.
 - **Recorded.** `notes/fuzzing.md` holds what the fuzzing leg cannot do, including the one that
-  contradicts the assumption. Ten minutes did not rediscover the `dtb::node_reg` bug, because a
+  contradicts the assumption. Ten minutes did not rediscover the `dtb::node_register_regions` bug, because a
   mutational fuzzer is worst at deep recursive structure. A grammar-based generator is the named
   next step for `dtb_walk`. The same file records that three of the four targets assert nothing
   beyond "it returned", so a parser that answers wrongly without panicking is invisible.

@@ -1,6 +1,6 @@
 # What glob deliberately does not match
 
-*Name: provisional. The design argument behind `crates/byte_glob`'s module doc, kept here because §267
+*Name: provisional. The design argument behind `byte_glob` (the repository `nifeos/byte_glob`)'s module doc, kept here because §267
 (a comment states the constraint as it is now) puts the argument in a note and the constraint in
 the doc.*
 
@@ -15,7 +15,7 @@ is the real one.
 - It needs a path separator, and the matcher still has no business owning one. Milestone 47
   (navigation and naming) settled the syntax on 2026-08-18, Plan 9's way. A path is resolved in
   the client, `/` is the root of the holder's own namespace, and the FS server still sees one
-  component per request. The resolution lives in `grant_plan::nav` and in the `std` PAL, both of
+  component per request. The resolution lives in `grant_plan::navigation` and in the `std` PAL, both of
   which walk components against capabilities. A matcher that also split paths would be a second,
   unauthorized resolver.
 - `**` is not a matching feature. It is a traversal feature. `*` says "consider these bytes";

@@ -33,7 +33,7 @@ pub(super) fn spawn_std(
         let phys = page_frame();
         // SAFETY: a frame just allocated and zeroed, reached through the direct map, which nothing
         // else holds until the program below is given it read-only.
-        let page = unsafe { &mut *(mmu::phys_to_virt(phys) as *mut [u8; FRAME_SIZE as usize]) };
+        let page = unsafe { &mut *(mmu::phys_to_virt(phys) as *mut [u8; FRAME_BYTES as usize]) };
         grant_plan::argv(line, page).expect("the harness's own command line is not an argv");
         phys
     });
@@ -56,7 +56,7 @@ pub(super) fn spawn_std(
         .enumerate()
         .zip(stack.iter_mut())
     {
-        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+        m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
         m.phys = page_frame();
         *phys = m.phys;
     }
@@ -65,7 +65,7 @@ pub(super) fn spawn_std(
         maps[maps_used] = Mapping {
             va: std_runtime_contract::ARGS_PAGE,
             phys,
-            flags: Flags::user_rodata(),
+            flags: Flags::user_read_only_data(),
         };
         maps_used += 1;
     }
@@ -74,7 +74,7 @@ pub(super) fn spawn_std(
         maps[maps_used] = Mapping {
             va: std_runtime_contract::CLOCK_PAGE,
             phys,
-            flags: Flags::user_rodata(),
+            flags: Flags::user_read_only_data(),
         };
         maps_used += 1;
     }

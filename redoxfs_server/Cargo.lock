@@ -119,6 +119,7 @@ dependencies = [
 [[package]]
 name = "clock_contract"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/clock_contract?rev=802ad77c24721a0572e42339f4cc6ffee16a1166#802ad77c24721a0572e42339f4cc6ffee16a1166"
 dependencies = [
  "loom",
 ]
@@ -263,6 +264,7 @@ dependencies = [
 name = "globally_unique_identifier_partition_table"
 version = "0.1.0"
 dependencies = [
+ "master_boot_record",
  "uuid",
 ]
 
@@ -356,6 +358,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13591d77a9b6d941f7e6fcade7f9dfd9e801308752bde50c0a9bb5852778c22c"
 
 [[package]]
+name = "master_boot_record"
+version = "0.1.0"
+
+[[package]]
 name = "matchers"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -378,6 +384,14 @@ dependencies = [
  "address_space_layout",
  "talc",
  "user_mode_runtime",
+]
+
+[[package]]
+name = "nife_partition_types"
+version = "0.1.0"
+dependencies = [
+ "globally_unique_identifier_partition_table",
+ "uuid",
 ]
 
 [[package]]
@@ -516,10 +530,10 @@ dependencies = [
  "filesystem_fixture",
  "globally_unique_identifier_partition_table",
  "memory_region_heap",
+ "nife_partition_types",
  "redox_syscall",
  "redoxfs",
  "subtree_scope",
- "talc",
  "user_mode_runtime",
 ]
 

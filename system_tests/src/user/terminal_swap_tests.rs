@@ -46,7 +46,7 @@ static mut ELF_MAPS: [Mapping; MAXIMUM_WINDOWS] = [const {
     Mapping {
         va: 0,
         phys: 0,
-        flags: Flags::user_rodata(),
+        flags: Flags::user_read_only_data(),
     }
 }; MAXIMUM_WINDOWS];
 
@@ -371,10 +371,10 @@ fn copy_the_images_into_frames(
         (own_image, s::OWN_IMAGE_ADDRESS, "terminal_supervisor"),
     ] {
         assert!(
-            image.len().div_ceil(FRAME_SIZE as usize) <= MAXIMUM_ELF_PAGES,
+            image.len().div_ceil(FRAME_BYTES as usize) <= MAXIMUM_ELF_PAGES,
             "{what}'s stripped image outgrew the test's mapping"
         );
-        for (i, chunk) in image.chunks(FRAME_SIZE as usize).enumerate() {
+        for (i, chunk) in image.chunks(FRAME_BYTES as usize).enumerate() {
             let phys = alloc();
             // SAFETY: a frame just allocated for this copy and not yet mapped anywhere else.
             unsafe {
@@ -385,9 +385,9 @@ fn copy_the_images_into_frames(
                 );
             }
             maps[windows] = Mapping {
-                va: va + i as u64 * FRAME_SIZE,
+                va: va + i as u64 * FRAME_BYTES,
                 phys,
-                flags: Flags::user_rodata(),
+                flags: Flags::user_read_only_data(),
             };
             windows += 1;
         }
@@ -395,7 +395,7 @@ fn copy_the_images_into_frames(
 
     for k in 0..EXTRA_STACK_PAGES {
         maps[windows] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
             phys: alloc(),
             flags: Flags::user_data(),
         };

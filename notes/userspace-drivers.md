@@ -81,7 +81,7 @@ the process does not own it: it is shared, or it is a device). Two uses, both ne
   device-typed (no caching, no reordering of register writes), EL0 read/write, never executable.
   This one mapping is what a userspace driver *is*.
 - The shared buffer, into both client and server, one `user_data()` (RW) and one
-  `user_rodata()` (RO).
+  `user_read_only_data()` (RO).
 
 `Flags::user_device()` is the new page-permission, and it is the smallest possible statement of
 "a driver, at EL0." Everything else was already there.

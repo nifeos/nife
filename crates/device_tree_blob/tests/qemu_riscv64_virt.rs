@@ -31,13 +31,13 @@ fn finds_the_ram() {
 
 /// The PLIC sits under `/soc`, not at the top level, and its `reg` must be decoded with the
 /// cell counts `/soc` declares (2/2), not the PLIC's own `#address-cells = <0>` (which applies
-/// to the PLIC's *children*). This is the exact confusion `node_reg`'s per-depth stack exists to
+/// to the PLIC's *children*). This is the exact confusion `node_register_regions`'s per-depth stack exists to
 /// prevent; get it wrong and the decoded address is garbage, silently.
 #[test]
 fn finds_the_plic_nested_under_soc() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let mut regions = [Region { start: 0, size: 0 }; 4];
-    let n = tree.node_reg(b"plic@", &mut regions).unwrap();
+    let n = tree.node_register_regions(b"plic@", &mut regions).unwrap();
 
     assert_eq!(n, 1, "the PLIC has one register block (the GIC has two)");
     assert_eq!(
@@ -148,7 +148,7 @@ fn finds_the_rtc_by_compatible() {
     let mut regs = [Region { start: 0, size: 0 }; 2];
 
     assert_eq!(
-        tree.node_reg_compatible(b"google,goldfish-rtc", &mut regs)
+        tree.node_register_regions_compatible(b"google,goldfish-rtc", &mut regs)
             .unwrap(),
         1
     );
@@ -168,7 +168,8 @@ fn the_pl031_is_absent_on_riscv() {
     let tree = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
     let mut regs = [Region { start: 0, size: 0 }; 2];
     assert_eq!(
-        tree.node_reg_compatible(b"arm,pl031", &mut regs).unwrap(),
+        tree.node_register_regions_compatible(b"arm,pl031", &mut regs)
+            .unwrap(),
         0
     );
 }
@@ -246,7 +247,7 @@ fn follows_the_serial_interrupt_parent_to_the_plic() {
     let phandle = u32::from_be_bytes(parent[..4].try_into().unwrap());
 
     let cells = tree
-        .phandle_property(phandle, b"#interrupt-cells")
+        .pointer_handle_property(phandle, b"#interrupt-cells")
         .unwrap()
         .expect("the PLIC declares its interrupt cells");
     assert_eq!(
@@ -258,12 +259,13 @@ fn follows_the_serial_interrupt_parent_to_the_plic() {
     // A phandle no node carries, and a property the matched node does not have: both are `None`,
     // not errors, same posture as node_property_compatible.
     assert_eq!(
-        tree.phandle_property(0xdead_beef, b"#interrupt-cells")
+        tree.pointer_handle_property(0xdead_beef, b"#interrupt-cells")
             .unwrap(),
         None
     );
     assert_eq!(
-        tree.phandle_property(phandle, b"no-such-prop").unwrap(),
+        tree.pointer_handle_property(phandle, b"no-such-prop")
+            .unwrap(),
         None
     );
 }

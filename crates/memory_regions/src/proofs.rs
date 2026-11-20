@@ -39,22 +39,23 @@ fn split_stays_within_budget_and_progresses() {
     }
 }
 
-/// **A retyped run is exactly the pages asked for, all fresh, all within budget, and `0` is
-/// one.** The `RETYPE` count's whole contract, over every watermark and every requested word.
-/// A refusal is exactly "does not fit": the table does not move, which its own host test shows.
-/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_retyped_run_is_the_pages_asked_for_and_zero_is_one.patch`
+/// **A retyped run is exactly the pages asked for, all fresh, all within budget, and a run of no
+/// pages is refused.** The retype count's whole contract, over every watermark and every count.
+/// A refusal is exactly "empty or does not fit": the table does not move, which its own host test
+/// shows.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_retyped_run_is_the_pages_asked_for_and_zero_is_refused.patch`
 #[kani::proof]
-fn a_retyped_run_is_the_pages_asked_for_and_zero_is_one() {
+fn a_retyped_run_is_the_pages_asked_for_and_zero_is_refused() {
     let pages: u64 = kani::any();
     let watermark: u64 = kani::any();
-    let requested: u64 = kani::any();
+    let count: u64 = kani::any();
     kani::assume(watermark <= pages);
-    let want = if requested == 0 { 1 } else { requested };
 
-    match retype_new_watermark(pages, watermark, requested) {
+    match retype_new_watermark(pages, watermark, count) {
         Some(new) => {
+            assert!(count > 0, "a run of no pages must be refused");
             assert!(
-                new == watermark + want,
+                new == watermark + count,
                 "the watermark advances by exactly the run"
             );
             assert!(new <= pages, "the run stays within the region's budget");
@@ -65,7 +66,7 @@ fn a_retyped_run_is_the_pages_asked_for_and_zero_is_one() {
         }
         None => {
             assert!(
-                watermark.checked_add(want).is_none() || watermark + want > pages,
+                count == 0 || watermark.checked_add(count).is_none() || watermark + count > pages,
                 "a run that fits must not be refused"
             );
         }
@@ -217,7 +218,7 @@ struct Counts {
 /// released, and how many regions it split that are still live.
 struct Run {
     table: RegionTable<4>,
-    names: [Option<u64>; REGIONS],
+    names: [Option<RegionName>; REGIONS],
     root_ceilings: Ceilings,
     own: [[u32; 8]; REGIONS],
 }
@@ -355,7 +356,7 @@ impl Run {
         counts
     }
 
-    fn name(&self, r: usize) -> u64 {
+    fn name(&self, r: usize) -> RegionName {
         self.names[r].expect("a region of the tree")
     }
 
@@ -372,7 +373,7 @@ impl Run {
     /// [`fill_table`](Self::fill_table) makes a split here refused for a full table. The child is
     /// live and counted, a region nobody drives. Returns its name, or `None` when the table
     /// refused.
-    fn split(&mut self, r: usize) -> Option<u64> {
+    fn split(&mut self, r: usize) -> Option<RegionName> {
         let child = self.table.split(self.name(r), 1);
         if child.is_some() {
             self.own[r][REGION_COUNT] += 1;
@@ -609,6 +610,124 @@ fn a_release_of_nothing_held_moves_nothing() {
     );
 }
 
+/// A page count that is any of the 256 a byte holds. The two harnesses that split and return below
+/// a root draw every page number from a byte, and the model checker keeps the 56 high bits of each
+/// as the constant zero they are, which is what holds those proofs inside the shard's memory.
+fn any_small_page_count() -> u64 {
+    u64::from(kani::any::<u8>())
+}
+
+/// A root over any page range, as the four "never overflows" harnesses below build it, in a table of two slots (a root and one child). A root of
+/// no pages or one whose end does not fit is refused, and for exactly that reason; otherwise the
+/// root is returned, and it is checked to fit. `small` draws the root's first page from the top 256 page numbers, where an
+/// end can overflow, and its size from a byte, for the harnesses that go on to split it.
+fn any_root_or_refused_for_its_range(
+    table: &mut RegionTable<2>,
+    small: bool,
+) -> Option<RegionName> {
+    let (base_page, pages): (u64, u64) = if small {
+        (u64::MAX - any_small_page_count(), any_small_page_count())
+    } else {
+        (kani::any(), kani::any())
+    };
+    let Some(root) = table.insert_root(base_page, pages) else {
+        assert!(
+            pages == 0 || base_page.checked_add(pages).is_none(),
+            "a root that fits was refused"
+        );
+        return None;
+    };
+    assert!(
+        pages != 0 && base_page.checked_add(pages).is_some(),
+        "a root that does not fit was accepted"
+    );
+    kani::cover!(
+        base_page > u64::MAX - 4,
+        "a root at the top of the page numbers"
+    );
+    Some(root)
+}
+
+/// The reports a caller reads off a root, which compute ends and spent figures from its range.
+fn read_every_report_of(table: &RegionTable<2>, root: RegionName) {
+    let _ = table.usage(root);
+    let _ = table.bounds(root);
+    let _ = table.spent(root, PageUse::Frames);
+    let _ = table.spent(root, PageUse::Children);
+}
+
+/// **No call on a root the table accepts panics, whatever its page range (retype a run)**: a root
+/// at the top of the page-number space and any retype count run with the model checker's overflow
+/// checks as the assertion. A root of no pages or one whose end does not fit is refused, and for
+/// exactly that reason. Every region below a root lies inside it, so with those two refused no page
+/// number or end the table computes overflows. The four `a_root_the_table_accepts_never_overflows_*`
+/// harnesses split one proof by the operation driven, because one harness with all of them runs
+/// past the shard's memory. Returning a grandchild is not one of them: that proof is
+/// [`a_return_keeps_every_run_inside_its_parents_spent_part`]'s, which runs a root, a child and a
+/// grandchild from any state with the same overflow checks.
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_root_the_table_accepts_never_overflows_retyping_a_run.patch`
+#[kani::proof]
+#[kani::unwind(5)]
+fn a_root_the_table_accepts_never_overflows_retyping_a_run() {
+    let mut table = RegionTable::<2>::new();
+    let Some(root) = any_root_or_refused_for_its_range(&mut table, false) else {
+        return;
+    };
+    let _ = table.retype_run(root, kani::any());
+    read_every_report_of(&table, root);
+}
+
+/// **No call on a root the table accepts panics, whatever its page range (retype an object
+/// page)**: see [`a_root_the_table_accepts_never_overflows_retyping_a_run`].
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_root_the_table_accepts_never_overflows_retyping_an_object_page.patch`
+#[kani::proof]
+#[kani::unwind(5)]
+fn a_root_the_table_accepts_never_overflows_retyping_an_object_page() {
+    let mut table = RegionTable::<2>::new();
+    let Some(root) = any_root_or_refused_for_its_range(&mut table, false) else {
+        return;
+    };
+    let _ = table.retype_object_page(root, any_object_kind());
+    read_every_report_of(&table, root);
+}
+
+/// **No call on a root the table accepts panics, whatever its page range (retype in a child)**: a
+/// root within 256 pages of the top, any split size, a retype in the child and an unpin. See
+/// [`a_root_the_table_accepts_never_overflows_retyping_a_run`].
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_root_the_table_accepts_never_overflows_retyping_in_a_child.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_root_the_table_accepts_never_overflows_retyping_in_a_child() {
+    let mut table = RegionTable::<2>::new();
+    let Some(root) = any_root_or_refused_for_its_range(&mut table, true) else {
+        return;
+    };
+    if let Some(child) = table.split(root, any_small_page_count()) {
+        let _ = table.retype_run(child, any_small_page_count());
+        table.unpin(child);
+    }
+    read_every_report_of(&table, root);
+}
+
+/// **No call on a root the table accepts panics, whatever its page range (return a child)**: a root
+/// within 256 pages of the top, any split size, and the claim and return of the child. See
+/// [`a_root_the_table_accepts_never_overflows_retyping_a_run`].
+/// Falsification: replayable `crates/memory_regions/falsifications/proofs.a_root_the_table_accepts_never_overflows_returning_a_child.patch`
+#[kani::proof]
+#[kani::unwind(9)]
+fn a_root_the_table_accepts_never_overflows_returning_a_child() {
+    let mut table = RegionTable::<2>::new();
+    let Some(root) = any_root_or_refused_for_its_range(&mut table, true) else {
+        return;
+    };
+    if let Some(child) = table.split(root, any_small_page_count())
+        && let Some(claim) = table.claim_for_destroy(child)
+    {
+        table.return_to_parent(&claim);
+    }
+    read_every_report_of(&table, root);
+}
+
 /// **A return keeps every region's run where the table's discipline puts it**: from any state of
 /// a root, a child and a grandchild, claiming the grandchild and giving its pages back leaves every
 /// live region with `retyped_to <= watermark <= pages`, and the child's run inside the part of the
@@ -632,7 +751,7 @@ fn a_return_keeps_every_run_inside_its_parents_spent_part() {
     // Each region sits inside its parent's spent part, retyped pages end by its watermark, and
     // the two parents hold at least the one child they have.
     let mut table = RegionTable::<4>::new();
-    let mut names = [0u64; 3];
+    let mut names = [NO_PARENT; 3];
     let mut parent = NO_PARENT;
     let (mut spent_from, mut spent_to) = (0u64, u64::MAX);
     for (r, name) in names.iter_mut().enumerate() {

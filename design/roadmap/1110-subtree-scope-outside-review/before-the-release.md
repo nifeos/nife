@@ -44,7 +44,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
    sentence in `Bindings`' doc. No behavior changes on any 64-bit target.
    Door: two-way. Effort: XS.
 
-7. Names the naming rules refuse, or that read wrong to a stranger. LEFT: names, two-way before the first tag, so the maintainer rules them provisionally.
+7. Names the naming rules refuse, or that read wrong to a stranger. DONE (the eight spellings below, provisional, in the tree and in `redoxfs_server`; `is_name`'s parameter is `component`; `hop` keeps its name).
    Finding, each with the rule: `PROOF_PATH` is a length in bytes and carries no unit
    (`design/naming.md`, Units: a length carries its unit; `PROOF_BADGES` and `PROOF_OPERATIONS`
    are counts of things and stand). The binding `dirs` (line 115) and the parameter `want_dir`
@@ -72,7 +72,7 @@ An appendix to [the milestone](../1110-subtree-scope-outside-review.md).
    carries the first.
    Door: two-way. Effort: S.
 
-9. What the walk proofs leave out, and what they cost. LEFT: needs a Kani run at about 6 GiB; a lane of its own.
+9. What the walk proofs leave out, and what they cost. MEASURED, NOT ADDED: the completeness harness costs more than a prove shard has room for (see Finding status).
    Finding: the two walk harnesses state that every step is a name and that a successful walk went
    through directories only and never widened. Neither states that `walk` asks `lookup` for every
    component but the last, in order; a `walk` that skipped a component, or stopped early and

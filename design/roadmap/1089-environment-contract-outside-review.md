@@ -38,17 +38,16 @@ and the release steps.
   [#3566](https://github.com/nifeos/nife/pull/3566). Each accessor answers only a member of its
   key's domain.
 - Item 3 (P1), the family and rule names: Done, [#3726](https://github.com/nifeos/nife/pull/3726).
-  `PAGE_CONTENT_BYTES`, `ConfigurationPage` and `virtual_address`, provisional until the review.
+  `PAGE_CONTENT_BYTES`, `ConfigurationPage` and `virtual_address`, ratified 2026-11-19 UTC.
 - Item 4 (P1), the abbreviated accessors: Done, [#3726](https://github.com/nifeos/nife/pull/3726).
   `time_zone`, `locale`, `terminal_type`, `is_known_*` and `Unknown*`, each accessor with its POSIX
-  alias, provisional until the review.
+  alias, ratified 2026-11-19 UTC.
 - Item 5 (P1), no Kani proof: Open. Kani proves `field_bytes_never_panics_for_any_length_byte`, with
   a falsification patch; the round-trip and domain-member harnesses each ran past 25 minutes under
   Kani and return only with the text scan bounded or the shape split, each with its patch.
-- Item 6 (P1), the crate does not stand alone: Open. The manifest still inherits `license` and
-  `lints` and has no `rust-version`, there is no README or license file, and `src/lib.rs` cites
-  §111, §46 (thin primitives, whole subsystems) and `notes/env-config.md`. All of it is the move's
-  work, with a README that says fuzzing stays off because the crate has `unsafe`.
+- Item 6 (P1), the crate does not stand alone: Done, [#3827](https://github.com/nifeos/nife/pull/3827).
+  The manifest carries its license, lints and `rust-version`, the crate has a README that says
+  fuzzing stays off because it has `unsafe`, and both license files, and no text cites this tree.
 - Item 7 (P1), the identity is provisional and unpinned: Done,
   [#3585](https://github.com/nifeos/nife/pull/3585). `the_frozen_identity_and_widths_are_pinned`
   asserts the literals and that `MAGIC[7]` is `b'0' + VERSION`, as a test assertion rather than the
@@ -68,44 +67,18 @@ and the release steps.
 - Decision, the identity: Done, [#3585](https://github.com/nifeos/nife/pull/3585). Ruled
   2026-11-14 UTC.
 - Decision, the accessor names: Done, [#3726](https://github.com/nifeos/nife/pull/3726). Maintainer
-  ruling, provisional, 2026-11-14 UTC.
-- Review package: Open. `notes/crate-reviews/` has no `environment-contract.md`; it comes before
-  the move and carries the name draft.
-- Review clearance and name ratification: Open. Under Open decisions.
+  ruling 2026-11-14 UTC, ratified 2026-11-19 UTC.
+- Review package: Done, [the package](../../notes/crate-reviews/environment-contract.md). It lists
+  every public name with a proposal, the checks run, the move's work, the dependents and what a
+  rename would sweep.
+- Name ratification: Done. The architect ratified every public name in the review package's Names
+  table as built on 2026-11-19 UTC.
+- Review clearance: Open. The architect clears the review from the package, which is the go to
+  create the repository.
 
 ## Open decisions
 
-### Clear the review of `environment_contract` and create its repository
-
-Background. `environment_contract` is the agreement between the program that writes a process's
-inert configuration page (time zone, locale, terminal type) and every reader of that page, the
-standard library's start-up code first among them. It leaves for a repository of its own at step 8
-of milestone 1017. A crate leaves once its review package lists every public name and decision and
-the architect clears that review; the clearance is also the go to create the repository. The
-identity (13, 1, `ENVCONF1`, 107 bytes) has its ruling. The eleven public names the lanes minted
-(`PAGE_CONTENT_BYTES`, `ConfigurationPage`, `virtual_address`, `time_zone`, `locale`,
-`terminal_type`, the three `is_known_*` functions and the `Unknown*` variants) are provisional.
-They are free to change while only this tree spells them and bind every reader once a release
-does.
-
-Recommendation: A, once the review package exists.
-
-- A. Clear the review once a lane writes its package: ratify the eleven names as built, and create
-  the repository as `publish = false`. The move follows, with item 6's files.
-- B. Create the repository and leave the names provisional until the release review, which reopens
-  older names anyway.
-- C. Hold the crate in this repository until a program outside it reads the page.
-
-Door: one-way. The repository is an outward step, and a ratified name binds the standard library
-overlay and every program that reads the page.
-
-Prior art: `block_roster_contract` and `entropy_contract` each froze an identity and had a review
-package cleared before the organization made its repository, with no publish. POSIX fixed `TZ`,
-`LANG` and `TERM` once and has never renamed them, which is why the aliases carry those spellings.
-Concrete example: ratifying `ConfigurationPage::time_zone` fixes the call in the overlay's
-`sys/env/nife.rs`, and a later rename is a coordinated change across two repositories.
-
-Blocks: the move.
+None.
 
 ## Goal
 
@@ -142,7 +115,8 @@ The P2 items are in [the appendix](1089-environment-contract-outside-review/late
 ## Decisions for the architect
 
 Each states the background, the recommendation first, the prior art and one concrete example. The
-maintainer rules the accessor names, provisionally.
+maintainer rules the accessor names, provisionally, and the architect ratifies them from the review
+package.
 
 ### Freeze the identity: `INTERFACE_ID` 13, `VERSION` 1, `MAGIC` `ENVCONF1`, and the 107-byte layout
 
@@ -175,6 +149,48 @@ Example. A basalt image whose kernel writes `ENVCONF2` while a published `printe
 and the interface check at spawn refuses the pair before that. The freeze is what makes that
 refusal mean something to a reader outside this tree.
 
+### Clear the review of `environment_contract` and create its repository
+
+Ruled 2026-11-19 (UTC): option A. A lane writes the review package, which carries the ratification
+of the provisional names. The architect ratifies the eleven names from it and clears the review,
+asked once the package exists; that clearance is the go to create `nifeos/environment_contract` as
+a `publish = false` repository.
+
+Ruled 2026-11-19 (UTC), option A on the names: the architect ratified every public name in the
+package's Names table as built.
+
+In force. The review package is `notes/crate-reviews/environment-contract.md`. It lists every
+public name with its ruling. The architect ratified these names:
+
+- `PAGE_CONTENT_BYTES`, `ConfigurationPage` and `virtual_address`.
+- `time_zone`, `locale` and `terminal_type` on `PageBuilder` and `ConfigurationPage`, with the
+  aliases `TZ`, `LANG` and `TERM` and no alias of the old spellings.
+- `domain::is_known_time_zone`, `is_known_locale` and `is_known_terminal_type`.
+- `Refused::UnknownTimeZone`, `UnknownLocale` and `UnknownTerminalType`.
+- `PageBuilder`, `new`, `build`, `Refused`, the module `domain` and the module `verification`.
+
+The architect cleared the review on 2026-11-19 UTC. The repository is `nifeos/environment_contract`,
+with `publish = false`, no tag and no publication, and nife pins the commit of its `main`.
+
+Background. `environment_contract` is the agreement between the program that writes a process's
+inert configuration page (time zone, locale, terminal type) and every reader of that page, the
+standard library's start-up code first among them. It leaves for a repository of its own at step 8
+of milestone 1017. A crate leaves once its review package lists every public name and decision and
+the architect clears that review. The identity (13, 1, `ENVCONF1`, 107 bytes) has its ruling. The
+public names the lanes minted (`PAGE_CONTENT_BYTES`, `ConfigurationPage`, `virtual_address`,
+`time_zone`, `locale`, `terminal_type`, the three `is_known_*` functions and the `Unknown*`
+variants) now bind the standard library overlay and, once a release exists, every reader of the
+page.
+
+Door: one-way. The repository is an outward step, and a ratified name binds the standard library
+overlay and every program that reads the page.
+
+Prior art: `block_roster_contract` and `entropy_contract` each froze an identity and had a review
+package cleared before the organization made its repository, with no publish. POSIX fixed `TZ`,
+`LANG` and `TERM` once and has never renamed them, which is why the aliases carry those spellings.
+Concrete example: ratifying `ConfigurationPage::time_zone` fixes the call in the overlay's
+`sys/env/nife.rs`, and a later rename is a coordinated change across two repositories.
+
 ### The accessor names: `tz`, `lang`, `term` or `time_zone`, `locale`, `terminal_type`
 
 Background. The ratified constants spell the words out (`KNOWN_TIME_ZONES`, `MAXIMUM_LOCALE_BYTES`, `KNOWN_TERMINAL_TYPES`). The functions that read and write the same three
@@ -201,8 +217,8 @@ Example. `PageBuilder::new().time_zone("UTC")?.locale("C")?.terminal_type("dumb"
 today's `.tz("UTC")?.lang("C")?.term("dumb")?`; a refusal reads `Refused::UnknownTimeZone` in a
 log a stranger has to understand.
 
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The recommendation holds: `time_zone`, `locale` and
+The maintainer decided on 2026-11-14 (UTC) and the architect ratified on 2026-11-19 (UTC). The
+recommendation holds: `time_zone`, `locale` and
 `terminal_type` on both types, `is_known_time_zone` and its siblings, and
 `Refused::UnknownTimeZone` and its siblings. Each accessor carries `#[doc(alias = "TZ")]`, `"LANG"`
 or `"TERM"`, since POSIX's variable names are the source's terms, and no alias of the old
@@ -233,8 +249,9 @@ The checks are in [the appendix](1089-environment-contract-outside-review/done-w
 
 ## Index row
 
-An outside review of `environment_contract` before it leaves. Of 16 findings and steps, ten are
+An outside review of `environment_contract` before it leaves. Of 16 findings and steps, eleven are
 done: the reader panic, reader-side validation, the family and accessor names, the identity freeze
 and the compile-time cap check among them. Five are open: two wider Kani harnesses, the standalone
-files, a safe reader, the README's growth-path row and the review package. One decision is open:
-the review's clearance, which creates the repository and ratifies eleven provisional names.
+files, a safe reader, the README's growth-path row and the architect's clearance of the review,
+which creates the repository. The architect ratified the names, the review package exists, and no
+decision is open.

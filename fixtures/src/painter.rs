@@ -70,11 +70,11 @@ const E_SURFACE: u64 = 0x05;
 const SURFACE: MappedWindow = unsafe { MappedWindow::new(SURFACE_VA, gfx::SURFACE_BYTES as u64) };
 
 fn px_write(i: usize, v: u32) {
-    SURFACE.write_u32((i * 4) as u64, v);
+    SURFACE.write::<u32>((i * 4) as u64, v);
 }
 
 fn px_read(i: usize) -> u32 {
-    SURFACE.read_u32((i * 4) as u64)
+    SURFACE.read::<u32>((i * 4) as u64)
 }
 
 fn die(code: u64) -> ! {

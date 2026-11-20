@@ -55,7 +55,7 @@ fn start(arg0: u64, arg1: u64, arg2: u64) -> ! {
         VIRTIO_BLK_WRITE => roles::run_write(direct_memory_access_phys),
         VIRTIO_BLK_WRITE_ABANDON => roles::run_write_abandon(direct_memory_access_phys),
         VIRTIO_NET => roles::run_net(direct_memory_access_phys),
-        VIRTIO_BLK_SERVER => roles::run_blk_server(direct_memory_access_phys),
+        VIRTIO_BLK_SERVER => roles::run_block_server(direct_memory_access_phys),
         _ => panic!(),
     }
 }

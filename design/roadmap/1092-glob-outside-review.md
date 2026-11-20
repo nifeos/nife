@@ -34,20 +34,20 @@ release steps.
 
 - P0-1, another crate holds the name on crates.io: Done,
   [#3578](https://github.com/nifeos/nife/pull/3578).
-- P0-2, seven public names unratified: Ruled (Decision 2, maintainer, provisional, 2026-11-14 UTC).
-  Not built: `pub enum Dot` (`src/lib.rs` line 42) is not yet `LeadingDot`, in the crate, `pgrep`,
-  `grant_plan` and the doctests; ratification is under Open decisions.
+- P0-2, seven public names unratified: Done, [#3790](https://github.com/nifeos/nife/pull/3790)
+  (Decision 2). `Dot` is `LeadingDot` in the crate, its tests and harnesses, `pgrep`, `grant_plan`,
+  the notes and the falsification patches, with no alias. Ratifying the seven names is Decision 3.
 - P0-3, the integration test links staying crates: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566). The test is in `crates/grant_plan/tests/`, and
   the manifest has no dev-dependency.
-- P0-4, the shipped text cites the tree: Open. Eighteen citation lines remain in `src/`; the README
-  takes on `notes/glob.md`, `docs/proofs.md` takes on the proofs note, and the move strips the rest.
-- P0-5, the manifest is not standalone: Open. Every field is present, but the `publish = false`
-  comment cites this tree's allowlist and there is no `repository` field.
+- P0-4, the shipped text cites the tree: Done. The citations became sentences, the README takes on
+  the scope note and `docs/proofs.md` takes on the proofs note.
+- P0-5, the manifest is not standalone: Done. The `publish = false` comment says the crate waits
+  for its first release, and `repository` names `nifeos/byte_glob`.
 - P0-6, no README: Done, [#3566](https://github.com/nifeos/nife/pull/3566), with both license texts.
 - P1-1, `naive` fails the question gate: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P1-2, falsification patch paths: Open. The six patches diff `a/crates/byte_glob/src/lib.rs` and
-  the six records name tree paths; the move rewrites them, regenerates the hunks and replays each.
+- P1-2, falsification patch paths: Done. The six patches diff `a/src/lib.rs` and the move replayed
+  each against the crate at its own root.
 - P1-3, mutation testing would reach the inline proof module: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566). The repository's `.cargo/mutants.toml` comes
   with the move.
@@ -70,45 +70,18 @@ release steps.
 - P2-8, no benchmark: Open. A `benches/` with the three adversarial shapes and one ordinary
   pattern.
 - Decision 1, the registry name: Done, [#3578](https://github.com/nifeos/nife/pull/3578).
-- Decision 2, the seven names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: P0-2's
-  rename.
-- R1, the review package: Open. `notes/crate-reviews/` has no package for this crate; it follows
-  P0-2's rename.
-- R2, ratify the seven names and clear `nifeos/byte_glob`: Open. Under Open decisions.
+- Decision 2, the seven names: Ruled (2026-11-20 UTC); `Dot` is `LeadingDot` and `cost_bound` is
+  `step_bound`, both built.
+- Decision 3, ratify the seven names and create `nifeos/byte_glob`: Ruled (2026-11-20 UTC), option
+  A.
+- R1, the review package: Done, [#3790](https://github.com/nifeos/nife/pull/3790), at
+  [notes/crate-reviews/byte-glob.md](../../notes/crate-reviews/byte-glob.md).
+- R2, ratify the seven names and clear `nifeos/byte_glob`: Done (2026-11-20 UTC). The architect cleared
+  the package and ratified the names.
 
 ## Open decisions
 
-### Ratify `byte_glob`'s seven names and create `nifeos/byte_glob`
-
-Background. `byte_glob` is the tree's glob matcher: it answers whether a pattern such as `*.txt`
-matches one file name, over bytes, with a proved cost bound. The shell's expansion and `pgrep` call
-it, and milestone 1017 moves it to its own repository at step 5. The move strips every `Name:`
-block, so its seven public names (`matches`, `matches_with`, `has_magic`, `literal`,
-`match_steps`, `cost_bound` and the dot-rule enum) leave the tree as whatever they are on that day,
-ratified or not. A repository in the organization exists only once the architect clears its
-review, and the clearance is the go to create it. The maintainer ruled the names provisionally on
-2026-11-14 UTC: six as they are, and `Dot` becomes `LeadingDot` with no alias.
-
-Recommendation: A.
-
-- A. Clear the review once P0-2's rename and R1's package have landed: ratify the seven names with
-  `LeadingDot`, and create `nifeos/byte_glob`. No tag and no publish follow from it.
-- B. Clear now on the names as built, `Dot` included, and drop the rename. The enum's name then
-  does not say which dot the policy is about.
-- C. Hold the clearance until 1017 reaches step 5, and ratify then. Waiting loses nothing except
-  that the package goes stale against the code.
-
-Door: one-way. Once the repository exists and a consumer pins it, a name change is a breaking
-change across repositories, and the repository's name is a public fact.
-
-Prior art: fnmatch spells the policy `FNM_PERIOD`, rust-lang/glob `require_literal_leading_dot`,
-bash `dotglob` and glibc's `glob(3)` `GLOB_PERIOD`; each names the position, as `LeadingDot` does.
-This tree cleared `generational_table` and `block_roster_contract` the same way, a review package
-first and the repository after, with no tag and no publish. A concrete example: with A,
-`byte_glob::matches_with(b"*", b".config", LeadingDot::Ordinary)` is `true` and reads without the
-doc, where `Dot::Ordinary` leaves the reader asking which dot.
-
-Blocks: the move.
+None.
 
 ## Goal
 
@@ -144,9 +117,7 @@ The P2 items are in [the appendix](1092-glob-outside-review/later-items.md).
 
 ## Decisions for the architect
 
-Decision 1 carries the architect's ruling and Decision 2 the maintainer's provisional one. Ratifying
-the names and clearing the repository are under Open decisions. The baseline (scope, the default dot
-rule, the algorithm) stays closed.
+Decisions 1 to 3 carry the architect's rulings. The baseline (scope, the default dot rule, the algorithm) stays closed.
 
 ### Decision 1. The registry name of the crate (P0-1)
 
@@ -190,12 +161,12 @@ reviewer's reading of each against `design/naming.md`:
 
 | name | kind | reading | recommendation |
 |---|---|---|---|
-| `matches(pattern, name)` | fn, bool | a third-person verb phrase, as the question rule asks | ratify |
-| `matches_with(pattern, name, dot)` | fn, bool | the same, `_with` for the policy argument, as std's `_with` | ratify |
-| `has_magic(pattern)` | fn, bool | `has_` before a thing held; "magic" is the word Python's `glob` module and every shell manual use for an unquoted wildcard | ratify |
-| `literal(pattern, out)` | fn, Option | a noun for the thing returned, the pattern's one literal name | ratify |
-| `match_steps(pattern, name, dot)` | fn, (bool, usize) | the steps of a match; P2-3 may give it a named return later | ratify |
-| `cost_bound(pattern_len, name_len)` | const fn | a bound on the cost; the parameters are P1-7 | ratify |
+| `matches(pattern, name)` | fn, bool | a third-person verb phrase, as the question rule asks | ratified |
+| `matches_with(pattern, name, dot)` | fn, bool | the same, `_with` for the policy argument, as std's `_with` | ratified |
+| `has_magic(pattern)` | fn, bool | `has_` before a thing held; "magic" is the word Python's `glob` module and every shell manual use for an unquoted wildcard | ratified |
+| `literal(pattern, out)` | fn, Option | a noun for the thing returned, the pattern's one literal name | ratified |
+| `match_steps(pattern, name, dot)` | fn, (bool, usize) | the steps of a match; P2-3 may give it a named return later | ratified |
+| `cost_bound(pattern_len, name_len)` | const fn | a bound on the steps; the parameters are P1-7 | `step_bound` |
 | `Dot { Special, Ordinary }` | enum | "dot" alone does not say which dot; the policy is about the first byte | `LeadingDot` |
 
 `LeadingDot::Special` and `LeadingDot::Ordinary` read at a call site without the doc:
@@ -205,10 +176,29 @@ reviewer's reading of each against `design/naming.md`:
 the two answers. The three call sites in the tree change with it
 (`pgrep/src/lib.rs` lines 94 to 102, two mentions, and the doc tests).
 
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The six keep their spelling, and `Dot` becomes `LeadingDot` with
-its variants unchanged and no alias. Ratifying them is the architect's, under Open decisions. P0-2
-is the work.
+Ruled 2026-11-20 (UTC): `matches`, `matches_with`, `has_magic`, `literal`, `match_steps` and
+`LeadingDot` (variants `Special` and `Ordinary`) stand as built, and `cost_bound` becomes
+`step_bound`, with no alias for either old spelling. `has_` and `is_` are for a `bool` only, and
+`literal` is a noun for an `Option` value. `step_bound` sits beside `match_steps` and states the
+unit. The tuple return of `match_steps` stays the maintainer's provisional call, a two-way door.
+
+### Decision 3. Ratify the seven names and create `nifeos/byte_glob`
+
+Ruled 2026-11-20 (UTC), option A: the architect cleared the review package. The repository
+`nifeos/byte_glob` has the go, with `publish = false`, no tag and no publish. The move
+(milestone 1017, step 5) starts once the prove shard is green and the `step_bound` rename has
+landed. The package is [notes/crate-reviews/byte-glob.md](../../notes/crate-reviews/byte-glob.md).
+
+Background. The move strips every `Name:` block, so the names leave the tree as whatever they are
+on that day. A repository exists in the organization only once the architect clears its review. The
+alternatives were clearing before the rename and holding until step 5.
+
+Prior art: fnmatch spells the policy `FNM_PERIOD`, rust-lang/glob `require_literal_leading_dot`,
+bash `dotglob` and glibc's `glob(3)` `GLOB_PERIOD`; each names the position, as `LeadingDot` does.
+This tree cleared `generational_table` and `block_roster_contract` the same way, a review package
+first and the repository after. A concrete example:
+`byte_glob::matches_with(b"*", b".config", LeadingDot::Ordinary)` is `true` and reads without the
+doc, where `Dot::Ordinary` leaves the reader asking which dot.
 
 ## Prior art
 
@@ -227,16 +217,17 @@ The checks are in [the appendix](1092-glob-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Every finding that Finding status above marks Open or Ruled, each with what
-  remains, and each open decision under Open decisions. A lane checked each finding line against
-  the crate and its pull requests on main.
+- **Recorded.** The crate lives at `nifeos/byte_glob` with `publish = false` and no tag, and nife
+  pins it by commit. The stranger test is a separate lane's. The module names `tests` and
+  `verification` ship provisional.
+- **Outstanding.** Every finding that Finding status above marks Open, each with what remains. A lane checked each finding line
+  against the crate and its pull requests on main.
 
 ## Index row
 
 An outside reading of `byte_glob` before it leaves. The crate name is `byte_glob` (Decision 1), the
 README, the manifest fields and the split proof module are in, and the test that linked two staying
-crates lives in `grant_plan`. Before the move: `Dot` becomes `LeadingDot` (Decision 2), the shipped
-text loses its citations of this tree, the manifest names its repository, the review package is
-written, and the architect ratifies the seven names and clears `nifeos/byte_glob`. The falsification
-paths are rewritten at the move; four P2 items follow. The matcher itself checks out. Publishing
+crates lives in `grant_plan`. `Dot` is `LeadingDot` and `cost_bound` is `step_bound` (Decision 2), and the architect cleared the review package and
+ratified the seven names (Decision 3). The move is done: the crate lives at
+`nifeos/byte_glob`, and nife pins it by commit. Four P2 items follow. The matcher itself checks out. Publishing
 stays held.

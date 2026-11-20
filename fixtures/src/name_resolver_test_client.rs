@@ -35,8 +35,8 @@ use domain_name_resolution_contract::fixture::{
     CASES, ECHO_FAILED, ECHO_NO_ADDRESS, ECHO_OK, ECHO_SKIPPED, WITH_NETWORK,
 };
 use domain_name_resolution_contract::{
-    IPV4_ADDRESSES_OFFSET_BYTES, NAME_OFFSET_BYTES, OPERATION_ATTACH_PAGE_FRAME, OPERATION_RESOLVE,
-    Outcome, endowment, request, status,
+    IPV4_ADDRESSES_OFFSET_BYTES, NAME_OFFSET_BYTES, OPERATION_ATTACH_SHARED_PAGE,
+    OPERATION_RESOLVE, Outcome, endowment, request, status,
 };
 use socket_contract as socket;
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
@@ -64,7 +64,7 @@ user_mode_runtime::program_entry!(start);
 fn start(mode: u64, _a1: u64, _a2: u64) -> ! {
     // A page the resolver refuses (no grant for this badge) is deleted on its side; this client
     // cannot tell, and does not need to: every resolve then answers DENIED, which is the claim.
-    if !attach(RESOLVER, RESOLVER_VA, request(OPERATION_ATTACH_PAGE_FRAME)) {
+    if !attach(RESOLVER, RESOLVER_VA, request(OPERATION_ATTACH_SHARED_PAGE)) {
         send(REPORT, u64::MAX, 0, 0);
         exit();
     }
@@ -88,12 +88,12 @@ fn start(mode: u64, _a1: u64, _a2: u64) -> ! {
 /// One resolve: the reply word and the first address, packed.
 fn resolve(name: &[u8]) -> (u64, u64) {
     for (i, &b) in name.iter().enumerate() {
-        RESOLVER_PAGE.write_u8((NAME_OFFSET_BYTES + i) as u64, b);
+        RESOLVER_PAGE.write::<u8>((NAME_OFFSET_BYTES + i) as u64, b);
     }
     let (word, _ttl) = call(RESOLVER, request(OPERATION_RESOLVE), name.len() as u64);
     let mut a = [0u8; 4];
     for (j, b) in a.iter_mut().enumerate() {
-        *b = RESOLVER_PAGE.read_u8((IPV4_ADDRESSES_OFFSET_BYTES + j) as u64);
+        *b = RESOLVER_PAGE.read::<u8>((IPV4_ADDRESSES_OFFSET_BYTES + j) as u64);
     }
     (word, endowment::server(a))
 }
@@ -112,7 +112,7 @@ fn echo_at(address: [u8; 4]) -> u64 {
     // A socket of our own (§255 (each socket is its own capability)): the resolver shares this
     // stack, and before milestone 649 (every client of a network stack shares its socket numbers)
     // the two had to agree by convention on which socket number each used.
-    let (socket::REP_OK, _, Some(socket)) = call_receiving(STACK, socket::OPERATION_OPEN_TCP, 0)
+    let (socket::REPLY_OK, _, Some(socket)) = call_receiving(STACK, socket::OPERATION_OPEN_TCP, 0)
     else {
         return ECHO_FAILED;
     };
@@ -124,28 +124,28 @@ fn echo_at(address: [u8; 4]) -> u64 {
 
 fn echo_on(socket: u64, address: [u8; 4]) -> u64 {
     const MSG: &[u8] = b"nife-by-name";
-    if !attach(socket, SOCKET_VA, socket::OPERATION_ATTACH_PAGE_FRAME) {
+    if !attach(socket, SOCKET_VA, socket::OPERATION_ATTACH_SHARED_PAGE) {
         return ECHO_FAILED;
     }
     for (i, &b) in address.iter().enumerate() {
-        SOCKET_PAGE.write_u8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET_PAGE.write::<u8>(socket::DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    SOCKET_PAGE.write_u16(
+    SOCKET_PAGE.write::<u16>(
         socket::DESTINATION_PORT_OFFSET_BYTES,
-        socket::fixture::ECHO_PEER_PORT,
+        socket_fixture::ECHO_PEER_PORT,
     );
     if call(socket, socket::OPERATION_CONNECT, 0).0 != socket::CONNECT_ESTABLISHED {
         return ECHO_FAILED;
     }
     for (i, &b) in MSG.iter().enumerate() {
-        SOCKET_PAGE.write_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
+        SOCKET_PAGE.write::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
     if call(socket, socket::OPERATION_SEND, MSG.len() as u64).0 == MSG.len() as u64
         && call(socket, socket::OPERATION_RECEIVE, 0).0 == MSG.len() as u64
         && MSG
             .iter()
             .enumerate()
-            .all(|(i, &b)| SOCKET_PAGE.read_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64) == b)
+            .all(|(i, &b)| SOCKET_PAGE.read::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64) == b)
     {
         ECHO_OK
     } else {

@@ -57,7 +57,7 @@ Change: rewrite the two opening paragraphs; keep the syntax table. Two-way, with
 
 #### P1-7. The names of the two length parameters do not carry their unit
 
-`cost_bound(pattern_len: usize, name_len: usize)` (`src/lib.rs` line 236). The naming page says a length
+`step_bound(pattern_len: usize, name_len: usize)` (`src/lib.rs` line 236). The naming page says a length
 carries its unit (`MAXIMUM_NAME_BYTES`, never `MAXIMUM_NAME_LEN`) and that the rules apply to
 parameters; the rules accept `len` only as the standard library's method spelling, which is why
 `spelled_out` passes it. Change: `pattern_bytes` and `name_bytes`. A parameter name is not part of the

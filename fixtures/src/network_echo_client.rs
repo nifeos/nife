@@ -1,7 +1,7 @@
 //! **Reach the network from a booted system's prompt** (milestone 590 (the booted system starts its
 //! network stack)).
 //!
-//! Opens a TCP connection to the QEMU runners' echo peer (`socket_contract::fixture::ECHO_PEER_IP`,
+//! Opens a TCP connection to the QEMU runners' echo peer (`socket_fixture::ECHO_PEER_ADDRESS`,
 //! port `ECHO_PEER_PORT`), sends [`MSG`], and prints what comes back. The real progenitor spawns it
 //! through the real spawn service, holding exactly what its manifest
 //! (`program_table::Program::NetworkEchoClient`) declares, against the `net_stack` built at boot, so a
@@ -33,8 +33,8 @@
 #![no_main]
 
 use abi::rights;
-use socket_contract::fixture::{ECHO_PEER_IP, ECHO_PEER_PORT};
 use socket_contract::*;
+use socket_fixture::{ECHO_PEER_ADDRESS, ECHO_PEER_PORT};
 use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 use user_mode_runtime::{
     call, call_receiving, capability_delete, exit, is_granted, map_page_frame,
@@ -74,7 +74,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
             let mut got = [0u8; 64];
             let n = n.min(got.len());
             for (i, b) in got[..n].iter_mut().enumerate() {
-                *b = WINDOW.read_u8(PAYLOAD_OFFSET_BYTES + i as u64);
+                *b = WINDOW.read::<u8>(PAYLOAD_OFFSET_BYTES + i as u64);
             }
             let mut addr = [0u8; 24];
             let a = render_peer(&mut addr);
@@ -95,7 +95,7 @@ fn exchange() -> Result<usize, &'static [u8]> {
     if !map_page_frame(frame, PAGE_FRAME_VA, true, MEMORY_REGION) {
         return Err(b"mapping the shared page");
     }
-    let (REP_OK, _, Some(socket)) = call_receiving(STACK, OPERATION_OPEN_TCP, 0) else {
+    let (REPLY_OK, _, Some(socket)) = call_receiving(STACK, OPERATION_OPEN_TCP, 0) else {
         return Err(b"opening a socket");
     };
     let result = converse(socket, frame);
@@ -112,26 +112,26 @@ fn converse(socket: u64, frame: u64) -> Result<usize, &'static [u8]> {
         socket,
         frame,
         rights::READ | rights::WRITE,
-        OPERATION_ATTACH_PAGE_FRAME,
+        OPERATION_ATTACH_SHARED_PAGE,
     ) < 0
     {
         return Err(b"handing the stack the shared page");
     }
-    for (i, &b) in ECHO_PEER_IP.iter().enumerate() {
-        WINDOW.write_u8(DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+    for (i, &b) in ECHO_PEER_ADDRESS.iter().enumerate() {
+        WINDOW.write::<u8>(DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    WINDOW.write_u16(DESTINATION_PORT_OFFSET_BYTES, ECHO_PEER_PORT);
+    WINDOW.write::<u16>(DESTINATION_PORT_OFFSET_BYTES, ECHO_PEER_PORT);
     if call(socket, OPERATION_CONNECT, 0).0 != CONNECT_ESTABLISHED {
         return Err(b"connecting");
     }
     for (i, &b) in MSG.iter().enumerate() {
-        WINDOW.write_u8(PAYLOAD_OFFSET_BYTES + i as u64, b);
+        WINDOW.write::<u8>(PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
     if call(socket, OPERATION_SEND, MSG.len() as u64).0 != MSG.len() as u64 {
         return Err(b"sending");
     }
     let (n, _) = call(socket, OPERATION_RECEIVE, 0);
-    if n == REP_ERR || n == 0 {
+    if n == REPLY_ERROR || n == 0 {
         return Err(b"receiving");
     }
     Ok(n as usize)
@@ -141,7 +141,7 @@ fn converse(socket: u64, frame: u64) -> Result<usize, &'static [u8]> {
 /// address that was dialled.
 fn render_peer(out: &mut [u8; 24]) -> usize {
     let mut n = 0;
-    for (i, &octet) in ECHO_PEER_IP.iter().enumerate() {
+    for (i, &octet) in ECHO_PEER_ADDRESS.iter().enumerate() {
         if i > 0 {
             out[n] = b'.';
             n += 1;

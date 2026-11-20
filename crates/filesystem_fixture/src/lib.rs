@@ -760,7 +760,7 @@ pub mod dirscape {
 /// about its two grants beyond which capability table slot each landed in (slot 0 is always the first,
 /// slot 1 the second); it
 /// tries to name a file in each subtree, tries to cross from one to the other both by request
-/// and by `grant_plan::nav::TwoRoots`'s own client-side resolution, and reports what it found.
+/// and by `grant_plan::navigation::TwoRoots`'s own client-side resolution, and reports what it found.
 pub mod twodir {
     /// It opened the file inside the **first** grant, through the first grant's own endpoint.
     /// The control for that half: without it, every refusal below is equally consistent with a
@@ -776,7 +776,7 @@ pub mod twodir {
     /// **It opened the first grant's file through the second grant's endpoint.** Never allowed,
     /// the same claim from the other side.
     pub const REACHED_A_VIA_B: u64 = 1 << 3;
-    /// **`grant_plan::nav::TwoRoots::resolve` did not refuse a path that ascends out of one
+    /// **`grant_plan::navigation::TwoRoots::resolve` did not refuse a path that ascends out of one
     /// grant and into the other** (for example `/a/../b`). Never allowed:
     /// this is the negative control that only a union of two grants can state, proven as pure
     /// client-side logic before any request reaches a caretaker.

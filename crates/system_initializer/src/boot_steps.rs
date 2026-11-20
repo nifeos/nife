@@ -84,7 +84,7 @@ pub(super) struct LoginPrograms {
 pub(super) struct Spawnable {
     pub(super) progs: [Option<static_elf::Elf<'static>>; program_table::PROGRAM_COUNT],
     /// Which programs this initial ramdisk has no entry for, so a spawn of one is answered
-    /// [`program_table::spawnproto::SPAWN_NOT_IN_IMAGE`] rather than as a build failure.
+    /// [`program_table::spawn_protocol::SPAWN_NOT_IN_IMAGE`] rather than as a build failure.
     pub(super) absent: [bool; program_table::PROGRAM_COUNT],
     pub(super) refused: [&'static str; program_table::PROGRAM_COUNT],
     pub(super) refused_n: usize,
@@ -929,7 +929,7 @@ pub(super) fn build_shell(
 
 /// Hand the shell the machine statistics page (`READ | GRANT`, when [`GRANT_MACHINE_PAGE`]
 /// allows), keeping no copy, and the second mounted tree's endpoint (`WRITE`, at
-/// [`spawnproto::MOUNTED_TREE_SLOT`]). Runs before the login block, because a page held across it
+/// [`spawn_protocol::MOUNTED_TREE_SLOT`]). Runs before the login block, because a page held across it
 /// would raise the table's highest peak. The display devices stay with the spawn service; the shell
 /// gets none.
 #[inline(never)]
@@ -943,7 +943,7 @@ pub(super) fn finish_shell_endowment(
             shell_tcb,
             g.machine_page,
             abi::rights::READ | abi::rights::GRANT,
-            spawnproto::MACHINE_PAGE_SLOT,
+            spawn_protocol::MACHINE_PAGE_SLOT,
         ));
     }
     capability_delete(g.machine_page);
@@ -954,7 +954,7 @@ pub(super) fn finish_shell_endowment(
             shell_tcb,
             t.ep,
             abi::rights::WRITE,
-            spawnproto::MOUNTED_TREE_SLOT,
+            spawn_protocol::MOUNTED_TREE_SLOT,
         ));
     }
 }
@@ -1360,7 +1360,7 @@ fn place_login_capabilities(w: &Wiring, login_tcb: u64, run_unvouched: &mut Opti
         login_tcb,
         d2,
         abi::rights::WRITE | abi::rights::GRANT,
-        spawnproto::RUN_UNVOUCHED_SLOT,
+        spawn_protocol::RUN_UNVOUCHED_SLOT,
     ));
     // The durable sessions' own window, apart from window 0; [`Windows`] never hands it to a job.
     let durable_page = must(window_page(g.fs_page, login_contract::DURABLE_WINDOW).ok_or(()));
@@ -1396,7 +1396,7 @@ pub(super) fn give_away_budget(w: &Wiring, shell_tcb: u64, run_unvouched: Option
         shell_tcb,
         run_unvouched,
         abi::rights::WRITE,
-        spawnproto::RUN_UNVOUCHED_SLOT,
+        spawn_protocol::RUN_UNVOUCHED_SLOT,
     ));
 
     // The job pool apart from our own budget, so its watermark moves for jobs only: the LIFO

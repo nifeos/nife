@@ -56,7 +56,7 @@ An appendix to [the milestone](../1101-memory-regions-outside-review.md).
     two-way. Effort: M.
 
 15. Three pure functions and two observers have no direct host test.
-    Finding: `coalesced_watermark`, `retype_new_watermark` and `retype_pages` have tests only
+    Finding: `coalesced_watermark` and `retype_new_watermark` have tests only
     through the table. `ceiling_reached` is never asked about a dead name or with `levels_up == 0`.
     `Ceilings::with` and `get` live in one doctest. The census records none of their mutants as
     missed, so this is legibility rather than a hole.

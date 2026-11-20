@@ -17,9 +17,10 @@ by the lane for milestone 779 at seed 0, step 0: "fuzzer 0 holds Rendezvous(3, 0
 outside every grant".
 
 diff --git a/kernel/src/memory_region.rs b/kernel/src/memory_region.rs
+index b8bbe1cc2..6482c0444 100644
 --- a/kernel/src/memory_region.rs
 +++ b/kernel/src/memory_region.rs
-@@ -283,21 +283,12 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
+@@ -298,21 +298,12 @@ pub fn retype_object_page(region: u64, kind: ObjectKind) -> Option<u64> {
      if crate::retype_fault::fails_now() {
          return None;
      }
@@ -27,23 +28,23 @@ diff --git a/kernel/src/memory_region.rs b/kernel/src/memory_region.rs
 -    // the zeroing and the refusal line are not.
 -    let (page, reached) = {
 -        let mut table = REGIONS.lock();
--        let page = table.retype_object_page(region, kind);
+-        let page = table.retype_object_page(typed(region), kind);
 -        let reached = page
 -            .is_none()
--            .then(|| table.ceiling_reached(region, Counted::Object(kind)))
+-            .then(|| table.ceiling_reached(typed(region), Counted::Object(kind)))
 -            .flatten();
 -        (page, reached)
 -    };
 -    if let Some(reached) = reached {
 -        log_ceiling_refusal(Counted::Object(kind), region, reached);
 -    }
--    let phys = page? * FRAME_SIZE;
+-    let phys = page? * FRAME_BYTES;
 +    // FALSIFICATION (milestone 779's confined fuzzer): the page comes from the machine's free
 +    // list, not from the caller's region, so a confined process that retypes an object reaches a
 +    // page it was never granted. The conductor's capability oracle must say so.
 +    let _ = (region, kind);
-+    let page = memory::alloc_contiguous(1)?.addr() / FRAME_SIZE;
-+    let phys = page * FRAME_SIZE;
++    let page = memory::alloc_contiguous(1)?.addr() / FRAME_BYTES;
++    let phys = page * FRAME_BYTES;
  
      // SAFETY: as retype_page: exclusively ours, direct-mapped; zero before anyone reads it.
      unsafe {

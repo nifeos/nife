@@ -30,7 +30,7 @@ fn spawn_printenv(endpoints: u64, page: Option<u64>) -> RendezvousId {
                 maps: &[Mapping {
                     va: CONFIG_VA,
                     phys,
-                    flags: Flags::user_rodata(),
+                    flags: Flags::user_read_only_data(),
                 }],
                 windows: &[],
             },
@@ -90,7 +90,7 @@ fn finish(out: RendezvousId, endpoints: u64) {
 fn blank_page() -> u64 {
     crate::memory::alloc_zeroed()
         .expect("no frame for a blank config page")
-        .addr()
+        .physical_address()
 }
 
 /// Assemble a page with `builder`, into a fresh frame, and return its physical address.
@@ -102,9 +102,9 @@ fn assembled_page(
     let bytes = builder(environment_contract::PageBuilder::new()).build();
     let phys = crate::memory::alloc_zeroed()
         .expect("no frame for a config page")
-        .addr();
+        .physical_address();
     // SAFETY: `phys` is that fresh frame, named through the direct map and owned by nobody else,
-    // and `bytes` is a `PageBuilder`'s output, far under `FRAME_SIZE`.
+    // and `bytes` is a `PageBuilder`'s output, far under `FRAME_BYTES`.
     unsafe {
         core::ptr::copy_nonoverlapping(
             bytes.as_ptr(),

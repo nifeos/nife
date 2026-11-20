@@ -1,0 +1,21 @@
+Falsifies `globally_unique_identifier_partition_table::verification::the_header_checks_before_the_crc_are_total`.
+
+The defect: the header size is checked against its lower bound only, so a header that declares
+itself larger than its block is accepted, and the CRC step that follows slices past the block's
+end and panics on hostile input.
+
+Expected to fail: the harness's `assert!(size <= block.len())`, on any header that passes the other
+checks and declares a size above 512.
+diff --git a/crates/globally_unique_identifier_partition_table/src/header.rs b/crates/globally_unique_identifier_partition_table/src/header.rs
+index 52fd00bd2..b674a2ff2 100644
+--- a/crates/globally_unique_identifier_partition_table/src/header.rs
++++ b/crates/globally_unique_identifier_partition_table/src/header.rs
+@@ -143,7 +143,7 @@ impl Header {
+             return Err(Error::Revision(revision));
+         }
+         let header_size = le32(block, at::HEADER_BYTES);
+-        if header_size < HEADER_BYTES || header_size as usize > block.len() {
++        if header_size < HEADER_BYTES {
+             return Err(Error::HeaderSize(header_size));
+         }
+         if le32(block, at::RESERVED) != 0 {

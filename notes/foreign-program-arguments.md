@@ -42,7 +42,7 @@ and belongs to the ruling.
 
 | piece | size | shape it copies |
 |---|---|---|
-| the layout codec (build and parse) | 39 lines of code, 4 host tests passing | `crates/environment_contract` |
+| the layout codec (build and parse) | 39 lines of code, 4 host tests passing | the `environment_contract` package |
 | `sys/args/nife.rs` in the `std` overlay | 11 lines of code | std's own `sys/args/xous.rs`, 19 lines |
 | `xtask std-src` dispatch | 2 anchors, 1 generated-module job | the `sys/env/mod.rs` arm in `xtask/src/farm.rs` |
 | the spawner's half | one read-only mapping and one `grant_at` | slot 7, the config page, in `system_tests/src/user/std_service.rs` |

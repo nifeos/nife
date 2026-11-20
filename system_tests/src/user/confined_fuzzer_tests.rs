@@ -160,38 +160,39 @@ struct Conductor {
     relay: u64,
 }
 
-static CONDUCTOR: spin_lock::SpinLock<Conductor> = spin_lock::SpinLock::new(Conductor {
-    world: World {
-        conductor_region: 0,
-        own: [0; 2],
-        server: 0,
-        go: [0; FUZZERS],
-        gifts: [0; 2],
-        reports: [0; FUZZERS],
-        minted: [0; 16],
-        minted_n: 0,
-        children: [0; 32],
-        children_n: 0,
-        ledger: Ledger {
-            parked: [None; 8],
-            spent: [None; 8],
+static CONDUCTOR: test_and_set_lock::SpinLock<Conductor> =
+    test_and_set_lock::SpinLock::new(Conductor {
+        world: World {
+            conductor_region: 0,
+            own: [0; 2],
+            server: 0,
+            go: [0; FUZZERS],
+            gifts: [0; 2],
+            reports: [0; FUZZERS],
+            minted: [0; 16],
+            minted_n: 0,
+            children: [0; 32],
+            children_n: 0,
+            ledger: Ledger {
+                parked: [None; 8],
+                spent: [None; 8],
+            },
         },
-    },
-    fuzzers: [const {
-        Fuzzer {
-            tid: 0,
-            steps: 0,
-            table: [None; SLOTS],
-            baseline: [0; 24],
-            baseline_n: 0,
-        }
-    }; FUZZERS],
-    pending: None,
-    awaits_reply: [false; FUZZERS],
-    seed: 0,
-    step: 0,
-    relay: 3,
-});
+        fuzzers: [const {
+            Fuzzer {
+                tid: 0,
+                steps: 0,
+                table: [None; SLOTS],
+                baseline: [0; 24],
+                baseline_n: 0,
+            }
+        }; FUZZERS],
+        pending: None,
+        awaits_reply: [false; FUZZERS],
+        seed: 0,
+        step: 0,
+        relay: 3,
+    });
 
 /// The module's one failure voice: seed, step, and the replay line, 752's `mismatch!`.
 macro_rules! escape {
@@ -320,7 +321,7 @@ impl Conductor {
             // A fuzzer that drew `AddressSpace::WAIT` on its own space with the one admitted form
             // and a matching word (milestone 812 (`std::thread::spawn` runs real threads in one
             // address space)) is parked on a futex, which a wake of its key releases.
-            Wait::Futex(k) => sched::futex_wake(k.space, k.address, 1) == 1,
+            Wait::Futex(k) => sched::futex_wake(k.address_space, k.virtual_address, 1) == 1,
             // Only a TCB's holder can suspend a thread (DECISIONS §300 (the paused state, a TCB
             // verb, silent)), and no fuzzer is given or can make one, so a fuzzer parked here
             // reached authority it was never granted.

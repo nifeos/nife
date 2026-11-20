@@ -76,7 +76,7 @@ pub fn timer_arm(
     notification: NotificationId,
     bits: u64,
 ) -> Result<(), abi::Error> {
-    use inter_process_communication::timer::{Arm, lowered};
+    use inter_process_communication::timer::{ArmVerdict, lowered};
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
     // Refuse a dead notification at arm time rather than letting the expiry discover it: the
@@ -85,14 +85,14 @@ pub fn timer_arm(
     let page = timer_of(sched, id).ok_or(abi::Error::Gone)?;
     let now = crate::arch::timer::now();
     match page.state.arm(deadline, (notification, bits), now) {
-        Arm::Pending => {
+        ArmVerdict::Pending => {
             let cached = EARLIEST_DEADLINE.load(Ordering::Relaxed);
             EARLIEST_DEADLINE.store(lowered(cached, deadline), Ordering::Relaxed);
             Ok(())
         }
         // A local wake never returns a core to poke; the notification was checked above, so a
         // `Gone` here is impossible under this same hold.
-        Arm::DueNow((n, b)) => signal_locked(sched, n, b, WakePlacement::Local).map(|_| ()),
+        ArmVerdict::DueNow((n, b)) => signal_locked(sched, n, b, WakePlacement::Local).map(|_| ()),
     }
 }
 
@@ -150,7 +150,10 @@ pub(super) fn expire_timers() {
                 &(*(crate::arch::mmu::phys_to_virt(entry.address()) as *const TimerPage)).state
             }
         }));
-        EARLIEST_DEADLINE.store(cached, Ordering::Relaxed);
+        EARLIEST_DEADLINE.store(
+            cached.unwrap_or(inter_process_communication::timer::NEVER),
+            Ordering::Relaxed,
+        );
     }
     for cpu in 0..cpu::MAXIMUM_CPUS {
         if poke & (1 << cpu) != 0 {

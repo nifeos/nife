@@ -9,7 +9,7 @@ whole records beyond `total`.
 diff --git a/crates/program_argument_contract/src/lib.rs b/crates/program_argument_contract/src/lib.rs
 --- a/crates/program_argument_contract/src/lib.rs
 +++ b/crates/program_argument_contract/src/lib.rs
-@@ -186,7 +186,7 @@
+@@ -236,7 +236,7 @@
          if total > room {
              return None;
          }

@@ -1,5 +1,6 @@
 ---
-status: PARTIAL
+status: BUILT
+built: 2026-11-19
 raised: 2026-11-11
 milestone_dependencies: 1017
 decision_dependencies: none
@@ -26,19 +27,19 @@ Reuse: the template and its scaffold, loom, Kani, cargo-mutants, cargo-llvm-cov.
 
 ## Finding status
 
-- 1, template naming and prose gates: Open. The renames landed in
+- 1, template naming and prose gates: Done. The renames landed in
   [#3640](https://github.com/nifeos/nife/pull/3640) and
-  [#3727](https://github.com/nifeos/nife/pull/3727). Now `spelled_out`, `unit_symbols`,
-  `register_names` and `british_spelling` refuse nothing. Four things remain for the move.
-  `prose_acronyms` still flags RTC, POSIX, TLS, UART, ISA and LOW; the README has no badge row;
-  `cmos`, `pl031` and `unix` are not in `.github/accepted-words`; and `question_shape` refuses the
-  private `try_claim`, which the review did not see. The maintainer rules a new private name for
-  `try_claim` provisionally.
+  [#3727](https://github.com/nifeos/nife/pull/3727); the acronyms, the badge row and the private
+  `take_claim` in [#3784](https://github.com/nifeos/nife/pull/3784); `cmos`, `pl` and `unix` in
+  `.github/accepted-words` in
+  [nifeos/clock_contract#1](https://github.com/nifeos/clock_contract/pull/1).
 - 2, clippy `doc_markdown` outside nife: Done, [#3640](https://github.com/nifeos/nife/pull/3640).
-- 3, mutation exemptions and loom in the tests job: Open. The move's first `mutation` run writes
-  `.github/mutants-exempts`, and the tests job runs loom under `--cfg loom`.
-- 4, the manifest outside nife: Open. The `publish` comment names no nife file
-  ([#3640](https://github.com/nifeos/nife/pull/3640)); `Cargo.toml` gains `repository` at the move.
+- 3, mutation exemptions and loom in the tests job: Done. The first `mutation` run on `main` named
+  the survivors, exempted with reasons in
+  [nifeos/clock_contract#4](https://github.com/nifeos/clock_contract/pull/4); the template's
+  `proofs / loom` job runs loom under `--cfg loom`.
+- 4, the manifest outside nife: Done. The `publish` comment names no nife file
+  ([#3640](https://github.com/nifeos/nife/pull/3640)), and `Cargo.toml` carries `repository`.
 - 5, a reader never waits on a writer: Done, [#3576](https://github.com/nifeos/nife/pull/3576).
 - 6, `initialize` on every start: Done, [#3559](https://github.com/nifeos/nife/pull/3559), carried
   onto the two-copy layout by [#3576](https://github.com/nifeos/nife/pull/3576).
@@ -58,73 +59,19 @@ Reuse: the template and its scaffold, loom, Kani, cargo-mutants, cargo-llvm-cov.
 - Decision 1, two copies and a publish count: Done,
   [#3576](https://github.com/nifeos/nife/pull/3576).
 - Decision 2, identity 8, 1, `CLOCKv01`: Done, [#3576](https://github.com/nifeos/nife/pull/3576).
-- Decision 3, the public names: Open. Built ([#3640](https://github.com/nifeos/nife/pull/3640),
-  [#3727](https://github.com/nifeos/nife/pull/3727)); ratifying them is [an open
-  decision](#ratify-the-public-names).
-- Review package: Open. [The package](../../notes/crate-reviews/clock-contract.md) still names the
-  old spellings and closes by saying it is not ready for review; a lane brings it up to the landed
-  renames.
-- Review clearance: Open. It is [an open decision](#clear-the-review-for-the-move).
-- Stranger test: Open. The move lane runs it and records it in the new repository.
-
-## Open decisions
-
-### Ratify the public names
-
-Background. A public name is what every program that links `clock_contract` writes in its source, so
-once the crate ships on crates.io a rename breaks each of them. The review found names that the
-rules now in force refuse, such as `NS_PER_SECOND` (the rules spell units out) and `va` (the rules
-allow no abbreviation outside the stay list). The tree now carries the renames:
-`NANOSECONDS_PER_SECOND`, `virtual_address`, `propose::request`, `word`, `state::SYNCHRONIZED`,
-`REAL_TIME_CLOCK` and `real_time_clock` with `#[doc(alias = "RTC")]`, `Reading::offset_nanoseconds`;
-`NANOS_PER_SEC` and `wall_nanos` are gone and the std overlay reads the crate's names. `CMOS`,
-`PL031`, `GOLDFISH` and `WORDS` keep their spellings. No alias carries an old spelling. Eight `Name:
-provisional` blocks remain, and a provisional name cannot ship in the first publish.
-
-Recommendation: A. Every name passes the template's naming helpers, and each rename follows a rule
-already ruled (units spelled out, no alias for an old nife spelling, spec terms kept as aliases).
-
-- A. Ratify every public name as built.
-- B. Ratify as built except the names calef lists, which return to a rename lane.
-- C. Hold ratification until the crate's release review, after the move.
-
-Door: one-way. A name becomes permanent at the first publish, and every caller outside the tree
-writes it.
-
-Prior art. Linux names the same constant `NSEC_PER_SEC` (`include/vdso/time64.h`), and Rust's
-standard library spells the unit out in method names (`Duration::as_nanos`,
-`Duration::subsec_nanos`) while keeping the short form. nife differs by spelling the unit in full in
-every constant. Concrete example: the overlay's `monotonic_nanos` computes `d.as_secs() *
-clockproto::NANOSECONDS_PER_SECOND + d.subsec_nanos() as u64`, and the std method keeps its own
-spelling.
-
-Blocks: the first publish, and the review package's readiness.
-
-### Clear the review for the move
-
-Background. A crate leaves nife for its own repository in the `nifeos` organization only after calef
-clears its review package. That clearance is also the go to create the repository. The package for
-`clock_contract` exists but still says it is not ready, because it waits on the names. Once a lane
-brings it up to the landed renames, a stranger can read the crate whole. The page layout and
-identity have frozen (Decisions 1 and 2), and the hostile-input and documentation fixes have landed.
-What remains (items 1, 3 and 4, the stranger test) is work done during the move itself.
-
-Recommendation: A, once the package is up to date.
-
-- A. Clear the package and approve the repository once the package names the landed renames.
-- B. Clear it only after calef ratifies the names, so one review covers the package and the names.
-- C. Keep the crate in nife until its consumers outside nife exist.
-
-Door: one-way. Others see and clone a public repository once it exists, and nobody can withdraw its
-history.
-
-Prior art. Servo moved crates it shared with others, such as `url` and `html5ever`, into
-repositories of their own, each with its own CI and owners (from memory, not re-read). nife differs
-by writing a review package that a stranger can read and having one person clear it before the
-repository exists. Concrete example: `file_allocation_table` and `e1000e` moved under the same
-sequence after their clearances.
-
-Blocks: the move, and with it the tag and the first publish.
+- Decision 3, the public names: Done (ruled 2026-11-19 UTC, option A). Built
+  ([#3640](https://github.com/nifeos/nife/pull/3640),
+  [#3727](https://github.com/nifeos/nife/pull/3727)) and ratified as built.
+- Review package: Done. [The package](../../notes/crate-reviews/clock-contract.md) names the
+  ratified spellings.
+- Review clearance: Done (ruled 2026-11-19 UTC, option A), as
+  [Decision 4](#decision-4-the-review-is-cleared-and-the-crate-moves) records.
+- The move: Done. The crate lives at `nifeos/clock_contract`, with `publish = false` and no tag,
+  and nife pins it by commit.
+- Stranger test: Done. The record is `docs/stranger-test.md` in the new repository
+  ([nifeos/clock_contract#2](https://github.com/nifeos/clock_contract/pull/2)), and
+  [nifeos/clock_contract#3](https://github.com/nifeos/clock_contract/pull/3) closed its README
+  findings.
 
 ## Goal
 
@@ -169,7 +116,7 @@ dependency); everything else is two-way and the maintainer decides it.
    scaffold's badge row. The `abbreviations` step is report only but lists 16 components
    (`cmos`, `pl`, `unix`, `rtc`, `seq`, `st`, `req` among them); `cmos`, `pl031` and `unix` belong
    in `.github/accepted-words` with their reasons, and the rest go with the renames.
-   Door: two-way before the first tag; ratifying the renames is an open decision. Effort: S.
+   Door: two-way before the first tag; Decision 3 ratifies the renames. Effort: S.
 
 2. `check / clippy` refuses the crate outside nife.
    Finding: `cargo clippy --all-targets -- -D warnings` fails on `doc_markdown` at `src/lib.rs` line 537
@@ -194,9 +141,7 @@ The P1 items are in [the appendix](1083-clock-contract-outside-review/before-the
 
 ## Decisions
 
-Decisions 1 and 2 are one-way doors and have their rulings, which are the rules in force. Decision
-3, the public names, has landed in code and waits on ratification under
-[Open decisions](#ratify-the-public-names).
+Decisions 1 to 4 have rulings, and those rulings are the rules in force.
 
 ### Decision 1. A reader of the page never waits on a writer
 
@@ -240,15 +185,54 @@ pin the values and the words as literals.
 Concrete example. A program built against `CLOCKv01` meets a page stamped `CLOCKv02`: `read` returns
 `UNKNOWN`, the program says it does not know the time, and the program does not claim it is 1970.
 
+### Decision 3. The public names stand as built
+
+Ruled 2026-11-19 (UTC), option A: every public name of `clock_contract` stands as built.
+`NANOSECONDS_PER_SECOND`, `virtual_address`, `propose::request`, `word`, `state::SYNCHRONIZED`,
+`REAL_TIME_CLOCK` and `real_time_clock` with `#[doc(alias = "RTC")]`, and
+`Reading::offset_nanoseconds` are final. `CMOS`, `PL031`, `GOLDFISH` and `WORDS` keep their
+spellings. No alias carries an old spelling, and the std overlay reads the crate's names.
+
+A public name is what every program that links `clock_contract` writes in its source, so once the
+crate ships on crates.io a rename breaks each of them. Every name passes the template's naming
+helpers, and each follows a rule in force: units spelled out, no alias for an old nife spelling,
+spec terms kept as aliases.
+
+Prior art. Linux names the same constant `NSEC_PER_SEC` (`include/vdso/time64.h`), and Rust's
+standard library spells the unit out in method names (`Duration::as_nanos`,
+`Duration::subsec_nanos`) while keeping the short form. nife differs by spelling the unit in full in
+every constant. Concrete example: the overlay's `monotonic_nanos` computes `d.as_secs() *
+clockproto::NANOSECONDS_PER_SECOND + d.subsec_nanos() as u64`, and the std method keeps its own
+spelling.
+
+### Decision 4. The review is cleared and the crate moves
+
+Ruled 2026-11-19 (UTC), option A: the review of `clock_contract` clears on the condition that
+[the review package](../../notes/crate-reviews/clock-contract.md) names the landed renames and no
+longer says it waits on the names. The package does. The clearance approves creating
+`nifeos/clock_contract` and moving the crate there. It approves no tag and no publish; each is a
+separate question.
+
+A crate leaves nife for its own repository in the `nifeos` organization only once its review
+package clears, and the clearance is the go to create the repository. Decisions 1 and 2 froze the
+page layout and identity, Decision 3 ratified the names, and the hostile-input
+and documentation fixes have landed. Items 1, 3 and 4 and the stranger test are work the move
+itself does.
+
+Prior art. Servo moved crates it shared with others, such as `url` and `html5ever`, into
+repositories of their own, each with its own CI and owners (from memory, not re-read). nife differs
+by writing a review package that a stranger can read and having one person clear it before the
+repository exists. Concrete example: `file_allocation_table` and `e1000e` moved under the same
+sequence after their clearances.
+
 ## Done when
 
 The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md).
 
 ## Follow-on
 
-- **Outstanding.** Items 1, 3 and 4, Decision 3's ratification, the review package, the review
-  clearance and the stranger test, each as [Finding status](#finding-status) gives it. Checked
-  against the crate's code and the template's naming helpers.
+- **Recorded.** A pre-release tag for `nifeos/clock_contract` is a separate question, not asked
+  yet.
 
 ## BUGS
 
@@ -268,4 +252,4 @@ The checks are in [the appendix](1083-clock-contract-outside-review/done-when.md
 
 ## Index row
 
-An outside review of `clock_contract` before it leaves. Two required checks are red on the first commit (the template's naming and prose gates, and clippy without nife's `clippy.toml`). Seven items land before the move finishes, and six wait for later. The page's layout and identity are settled: two copies so a reader never waits on a writer, frozen as interface 8, version 1, magic `CLOCKv01`. The public names wait on a ruling.
+An outside review of `clock_contract` before it leaves. Two required checks are red on the first commit (the template's naming and prose gates, and clippy without nife's `clippy.toml`). Seven items land before the move finishes, and six wait for later. The page's layout and identity are fixed: two copies so a reader never waits on a writer, frozen as interface 8, version 1, magic `CLOCKv01`. The public names stand as built, and the review clears the crate for the move to `nifeos/clock_contract`, with no tag and no publish.

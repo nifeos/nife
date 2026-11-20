@@ -40,9 +40,9 @@ pub(crate) fn print_summary() {
             "                  : {} KiB of page tables (ram in {} blocks), no identity map, guard pages are holes",
             TABLE_FRAMES.load(Ordering::Relaxed) * PAGE_SIZE / 1024,
             match largest_leaf() {
-                PageSize::Size1GiB => "1 GiB",
-                PageSize::Size2MiB => "2 MiB",
-                PageSize::Size4KiB => "4 KiB",
+                PageSize::OneGibibyte => "1 GiB",
+                PageSize::TwoMebibytes => "2 MiB",
+                PageSize::FourKibibytes => "4 KiB",
             },
         );
     }
@@ -74,9 +74,9 @@ pub(super) fn largest_leaf() -> PageSize {
     if super::isa::cpuid(0x8000_0000).eax >= 0x8000_0001
         && super::isa::cpuid(0x8000_0001).edx & PAGE_ONE_GIBIBYTE != 0
     {
-        PageSize::Size1GiB
+        PageSize::OneGibibyte
     } else {
-        PageSize::Size2MiB
+        PageSize::TwoMebibytes
     }
 }
 
@@ -99,7 +99,7 @@ pub fn initialize() {
     let free_before = memory::free_page_frames();
     let root = memory::alloc()
         .expect("no frame for the root page table")
-        .addr();
+        .physical_address();
     // SAFETY: a fresh frame from the allocator, reachable through the boot tables' direct map. Zero
     // it before the hardware could ever walk it.
     unsafe {
@@ -113,7 +113,7 @@ pub fn initialize() {
         Mapper::<_, _, Ia32e>::new(
             root,
             Half::High,
-            || memory::alloc().map(|f| f.addr()),
+            || memory::alloc().map(|f| f.physical_address()),
             phys_to_ptr,
         )
     };
@@ -176,7 +176,7 @@ fn kernel_mapper() -> Mapper<impl FnMut() -> Option<u64>, fn(u64) -> *mut PageTa
         Mapper::new(
             root,
             Half::High,
-            || memory::alloc().map(|f| f.addr()),
+            || memory::alloc().map(|f| f.physical_address()),
             phys_to_ptr,
         )
     }

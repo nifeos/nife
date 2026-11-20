@@ -15,70 +15,66 @@ recording lane's to assign.
 
 The review took its baseline from `notes/heap.md` ("The `memory_region_heap` crate's contract"),
 from milestone 1017 (the contract crates leave in this order), step 9 and its appendix on where
-`talc` goes, and from the vendoring record in `vendor/README.md` and `vendor/talc.pin`. It raises none of the decisions those settle. Those are the algorithm (`talc` 5.1.1's core, `Manual` source), the geometric growth with a floor of eight pages and the one contiguous heap. They also include the untyped slot as part of the program's capability contract, and the step at which the crate leaves. **There is no package
-for this crate in `notes/crate-reviews/`**, so no name ruling exists to reopen; every name below is
-provisional or unmarked.
+`talc` goes, and from the vendoring record in `vendor/README.md` and `vendor/talc.pin`. It raises none of the decisions those settle. Those are the algorithm (`talc` 5.1.1's core, `Manual` source), the geometric growth with a floor of eight pages and the one contiguous heap. They also include the untyped slot as part of the program's capability contract, and the step at which the crate leaves. The review package is
+[`notes/crate-reviews/memory-region-heap.md`](../../notes/crate-reviews/memory-region-heap.md).
 
 Reuse: the template `nifeos/crate-workflows` and its scaffold, `script/crate-standalone`,
-`script/crate-review-packet`, `helpers/name_release.py`, cargo-mutants, Kani, and the policy copies
-in `patches/std-nife` and `redoxfs_server/src/bin/second_mount.rs`. No new tool.
+`script/crate-review-packet`, `helpers/name_release.py`, cargo-mutants, Kani, and the std farm's
+copied-file list (`xtask/src/farm/copied.rs`). No new tool.
 
 ## Finding status
 
 - P0-1, names and the missing `Name:` blocks: Done, [#3597](https://github.com/nifeos/nife/pull/3597).
-  The names later items added read provisional; ratifying them is an open decision below.
-- P0-2, `talc` and the path dependencies: Ruled (Decision B, option A, 2026-11-14 UTC). Not built:
-  the manifest keeps path dependencies on `abi`, `address_space_layout` and `user_mode_runtime`,
-  and no README states what the unpatched `talc` lacks.
-- P0-3, manifest, README and license files: Open. The manifest still inherits `license` and
-  `[lints]` from the workspace, and no README or license file exists.
-- P0-4, the `va` binding and `commit_all`: Done, [#3597](https://github.com/nifeos/nife/pull/3597).
-  The coverage half is Open: the template's `coverage` job first measures the host tests after the
+  The names later items added are ratified (ruled 2026-11-19 UTC).
+- P0-2, `talc` and the path dependencies: Ruled (Decision B, option A, 2026-11-14 UTC). The README
+  half is Done, [#3840](https://github.com/nifeos/nife/pull/3840): its BUGS section states what
+  crates.io's 5.1.1 lacks. The pins wait on milestone 1017 steps 2 and 3: `abi`,
+  `address_space_layout` and `user_mode_runtime` have no repositories yet, so the manifest keeps
+  their path dependencies, and `script/crate-move --dry-run` fails only on them.
+- P0-3, manifest, README and license files: Done, [#3840](https://github.com/nifeos/nife/pull/3840).
+  The manifest states its license, `rust-version`, description, keywords, categories and lints,
+  both license files sit beside it, the README's host example runs as a doctest, and the crate's
+  documentation cites nothing outside it.
+- P0-4, the `va` binding and `commit_all`: Done, [#3597](https://github.com/nifeos/nife/pull/3597),
+  and the fuzz workspace's binding in [#3840](https://github.com/nifeos/nife/pull/3840). The
+  coverage half is Open: the template's `coverage` job first measures the host tests after the
   move.
 - P1-5, a second `initialize`: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-6, a grow of zero bytes: Done, [#3559](https://github.com/nifeos/nife/pull/3559).
 - P1-7, kernel refusals read as budget spent: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
-- P1-8, page-source seam, host tests, proofs and one copy of the policy: Open. The seam, host tests
-  and three harnesses landed in [#3609](https://github.com/nifeos/nife/pull/3609); std's overlay
-  `heap.rs` still copies `MINIMUM_GROW_PAGES = 8`, and `second_mount.rs` keeps its own grow.
-- P1-9, documentation and the minimum cap: Open. The crate documentation landed in
-  [#3609](https://github.com/nifeos/nife/pull/3609); the README part waits for the move.
+- P1-8, page-source seam, host tests, proofs and one copy of the policy: Done. The seam, host tests
+  and three harnesses landed in [#3609](https://github.com/nifeos/nife/pull/3609). In
+  [#3840](https://github.com/nifeos/nife/pull/3840) the growth arithmetic lives in the core-only
+  `src/growth.rs`, which `cargo xtask std-src` copies into std as `heap_growth.rs`, and
+  `second_mount` runs on `MemoryRegionHeap` over a host page source. The fuzz target keeps a copy,
+  because it reads talc's counters, and its README says so.
+- P1-9, documentation and the minimum cap: Done. The crate documentation landed in
+  [#3609](https://github.com/nifeos/nife/pull/3609), the README in
+  [#3840](https://github.com/nifeos/nife/pull/3840).
 - P2-10, `PAGE_BYTES`: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
 - P2-11, a panic inside the allocator: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
-- P2-12, growth is monotonic: Open. The crate documentation says so; the README sentence waits for
-  the move.
+- P2-12, growth is monotonic: Done. The crate documentation and the README say so, and the README's
+  BUGS section carries the line, [#3840](https://github.com/nifeos/nife/pull/3840).
 - P2-13, accessors for the cap and the base: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
 - P2-14, the `Sync` argument: Done, [#3609](https://github.com/nifeos/nife/pull/3609).
 - Decision A, the seven names and `commit_all`: Done (option A, 2026-11-14 UTC),
   [#3597](https://github.com/nifeos/nife/pull/3597).
-- Decision B, which `talc` outside nife: Ruled (option A, 2026-11-14 UTC). Not built: the same
-  work as item 2.
+- Decision B, which `talc` outside nife: Ruled (option A, 2026-11-14 UTC). It stands where item 2
+  stands; the pins wait on the same steps of milestone 1017.
 - A fork of `talc` if upstream stays silent: Open, and conditional. It is an open decision below.
-- Review package and repository: Open. No package exists in `notes/crate-reviews/`; the go is an
-  open decision below.
+- Review package: Done, [memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md).
+  The repository: Open. The go is an open decision below.
 
 ## Open decisions
 
-### Ratify the names the later items added
+### Ratify the names the later items added (ruled 2026-11-19 UTC)
 
-Background. The move to the crate's own repository strips every `Name:` block, so each public
-name must read `ratified` first. Decision A ratified the seven original names. The fixes for items
-5 to 13 then added more, and `helpers/name_release.py --draft memory_region_heap` lists them as
-provisional: `Short`, `PageSource`, `MemoryRegionPages`, `Refusal`, `WiringRefusal`,
-`base_virtual_address`, `maximum_bytes`, `initialize_source`, `with_source`, `is_budget_spent`,
-`is_initialized`, `last_refusal` and `map_page`. The unpublished fuzz crate adds the modules
-`src`, `policy` and `sequence` and the function `run`.
-
-Recommendation: A. The names follow the rules in force (spelled-out words, `is_` for a question,
-std's shapes), and `PageSource` follows prior art in `dlmalloc` and `rlsf`.
-
-- A. Ratify the thirteen crate names as they stand; leave the fuzz crate's names provisional, since
-  that crate never publishes.
-- B. Ratify with named changes, applied by one rename lane before the move.
-- C. Hold until a review package lists every public item with its signature.
-
-Door: one-way at the first publish, since a published name is a breaking change to rename. Before
-that it is two-way, but ratification is the architect's by the naming rule.
+The rule in force, option A. The thirteen names the fixes for items 5 to 13 added stand as built:
+`Short`, `PageSource`, `MemoryRegionPages`, `Refusal`, `WiringRefusal`, `base_virtual_address`,
+`maximum_bytes`, `initialize_source`, `with_source`, `is_budget_spent`, `is_initialized`,
+`last_refusal` and `map_page`. Each public item's `Name:` block reads ratified. The unpublished
+fuzz crate's names (the modules `src`, `policy` and `sequence` and the function `run`) stay
+provisional, since that crate never publishes.
 
 Prior art. `dlmalloc` names its page seam `Allocator`, and `rlsf` names it `FlexSource`; both
 crates settled the name before 1.0. `Vec::try_reserve` returns a named error type, which is the
@@ -86,8 +82,6 @@ shape `Short` and `Refusal` follow. nife differs in ratifying every public item,
 ones a README shows. Concrete example: a consumer writes
 `MemoryRegionHeap::with_source(source)` and matches `Refusal` from `last_refusal()`; those
 spellings are what it compiles against.
-
-Blocks: the move.
 
 ### Fork `talc` if upstream stays silent
 
@@ -123,12 +117,14 @@ Blocks: nothing until the vendor-watch report passes in silence; after that, the
 
 Background. A crate leaves this tree for its own `nifeos` repository only when the architect
 clears its review package; that clearance approves the repository. A package lists every public
-item with its signature, and `script/crate-review-packet` writes it. This crate has none. The
+item with its signature, and `script/crate-review-packet` writes it. The package for this crate is
+[memory-region-heap.md](../../notes/crate-reviews/memory-region-heap.md), written under the
+recommendation below; clearance stays open. The
 components, the fixtures and the RedoxFS server all depend on it, so it serves several consumers and
 meets the bar for leaving.
 
-Recommendation: A. A package written after the architect settles the names above shows the
-architect the crate as it will ship.
+Recommendation: A. A package written after the names are ratified shows the architect the crate
+as it will ship.
 
 - A. A lane writes the package; the architect's clearance creates the repository.
 - B. Clear on this outside review alone, without a package.
@@ -278,8 +274,10 @@ The evidence, background, prior art and the options not taken are in
 
 ## Follow-on
 
-- **Outstanding.** Each finding that "Finding status" marks Open or Ruled, checked against the
-  crate's source and manifest.
+- **Outstanding.** The move. The path dependencies become `git` and `rev` pins once milestone 1017 steps 2 and 3
+  give `abi`, `address_space_layout` and `user_mode_runtime` repositories. The move drops the fuzz
+  workspace's `[patch.crates-io]` line for the vendored talc, and the template's `coverage` job
+  then measures the host tests for the first time.
 
 ## Done when
 
@@ -288,8 +286,10 @@ state is under "Finding status" above.
 
 ## BUGS
 
-- The `coverage` job's behavior on a library with `test = false` comes from reading
-  `helpers/coverage-floor.sh`, not from a run; item 4 names both outcomes.
+- The template's `coverage` job has not run on the crate; its 85 percent floor is unmeasured
+  against the 16 host tests and the README doctest.
+- The fuzz target drives a copy of the policy, so a change to the crate's policy that the copy
+  misses goes unchecked there.
 - The page cost of a refused `MAP` at an already-mapped address comes from the kernel's own comment
   (`kernel/src/syscall/memory_region.rs` line 72), not from a run.
 - The minimum first-heap figure (1,575 bytes) comes from a hand computation over `DefaultBinning`'s
@@ -304,7 +304,7 @@ state is under "Finding status" above.
 
 ## Index row
 
-An outside review of `memory_region_heap` before it leaves. The code fixes have landed: a page-source seam, host tests,
-three Kani harnesses, a refused second wiring and a readable refusal. What remains blocks on the
-move: path dependencies that become pins, a README and licenses, and the policy copies in std and
-`second_mount`. Ratifying the later names and clearing a review package are open decisions.
+An outside review of `memory_region_heap` before it leaves. Every code and documentation fix has
+landed: a page-source seam, host tests, three Kani harnesses, one copy of the growth arithmetic that
+std generates from, a README and both licenses. What remains is the move: path dependencies that
+become pins once their crates leave, and clearing the review package.

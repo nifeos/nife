@@ -8,7 +8,7 @@ Verified firsthand, on a fresh shallow clone at the head of `main`, with the pin
   and 10 tests) and one documentation test pass. `cargo clippy --all-targets` and `cargo doc` with
   warnings denied are clean.
 - A probe crate outside the tree, depending on the crate by path, drove hand-built blobs through
-  `node_reg`, `node_prop`, `reserved_memory_regions`, `memory_regions`, `initial_ramdisk` and
+  `node_register_regions`, `node_prop`, `reserved_memory_regions`, `memory_regions`, `initial_ramdisk` and
   `boot_arguments`. Its results are the evidence cited at P1-1, P1-2, P1-4, P2-2, P2-3 and P2-10.
 - The review ran the template's helpers over the crate as `check / standalone` and the naming gates
   would run them. `standalone.py` found twelve problems, listed at P0-1 and P0-2. `spelled_out.py`

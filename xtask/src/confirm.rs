@@ -36,9 +36,10 @@
 //!   (`install_service::confirm` names it a foot gun); a pass shows it held, not that it is enforced.
 //! - OVMF is one, generous firmware. x86_64 only, as the chooser is. Several minutes under TCG,
 //!   so it is not in `script/test`'s default legs.
+//! - The table it reads is not checked against the image's size (`check_disk_size`).
 
 use boot_slot::State;
-use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable as Table;
+use globally_unique_identifier_partition_table::PartitionTable;
 
 use crate::install;
 use crate::rollback::{
@@ -210,7 +211,7 @@ fn the_disk_agrees(gate: &str, disk: &std::path::Path) -> bool {
     if !read_table(disk, &mut head) {
         return false;
     }
-    let Ok(table) = Table::parse(
+    let Ok(table) = PartitionTable::parse(
         &head[LBA as usize..2 * LBA as usize],
         &head[2 * LBA as usize..],
     ) else {

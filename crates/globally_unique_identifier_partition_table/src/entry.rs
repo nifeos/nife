@@ -2,7 +2,7 @@
 //!
 //! [`Entry::decode`] is total: every one of the 2^1024 bit patterns is an `Entry`, and
 //! [`Entry::encode`] gives the bytes back. Whether an entry makes sense on a disk is judged in
-//! [`crate::GloballyUniqueIdentifierPartitionTable`], where the geometry is known. The name is 36
+//! [`crate::PartitionTable`], where the geometry is known. The name is 36
 //! UTF-16LE code units, null-padded, a label for humans that nothing depends on: macOS leaves it
 //! zero (the Apple fixture pins that), so find a partition by type or unique GUID.
 
@@ -13,29 +13,31 @@ use crate::guid::{self, Uuid};
 /// multiple of 8 that is at least 128) so entries can grow; this crate reads a larger entry by
 /// decoding its first 128 bytes and ignoring the rest, which is what a reader that does not know a
 /// later revision can honestly do.
-pub const SIZE: usize = 128;
+///
+/// Name: provisional.
+pub const ENTRY_BYTES: usize = 128;
 
 /// UTF-16 code units in the partition name field. 72 bytes.
 pub const NAME_UNITS: usize = 36;
 
 /// Attribute bit 0: the platform must not alter this partition. Firmware sets it on partitions it
-/// needs (an OEM recovery partition, for instance), and a partition editor is expected to refuse to
-/// touch one.
+/// needs (an original equipment manufacturer (OEM) recovery partition, for instance), and a
+/// partition editor is expected to refuse to touch one.
 pub const ATTR_REQUIRED: u64 = 1 << 0;
 
-/// Attribute bit 1: no block-IO protocol. UEFI firmware will not expose this partition as a
-/// filesystem.
+/// Attribute bit 1: no block input/output (IO) protocol. UEFI firmware will not expose this
+/// partition as a filesystem.
 pub const ATTR_NO_BLOCK_IO: u64 = 1 << 1;
 
-/// Attribute bit 2: legacy BIOS bootable. What `sgdisk -A n:set:2` sets, and what a BIOS-emulating
-/// bootloader looks for in place of the MBR active flag.
+/// Attribute bit 2: legacy Basic Input/Output System (BIOS) bootable. What `sgdisk -A n:set:2`
+/// sets, and what a BIOS-emulating bootloader looks for in place of the MBR active flag.
 pub const ATTR_LEGACY_BIOS_BOOTABLE: u64 = 1 << 2;
 
 mod at {
     pub(crate) const TYPE_GUID: usize = 0;
     pub(crate) const UNIQUE_GUID: usize = 16;
-    pub(crate) const FIRST_LBA: usize = 32;
-    pub(crate) const LAST_LBA: usize = 40;
+    pub(crate) const FIRST_LOGICAL_BLOCK_ADDRESS: usize = 32;
+    pub(crate) const LAST_LOGICAL_BLOCK_ADDRESS: usize = 40;
     pub(crate) const ATTRIBUTES: usize = 48;
     pub const NAME: usize = 56;
 }
@@ -43,7 +45,7 @@ mod at {
 /// One partition entry, decoded.
 ///
 /// Also the type used to *describe* a partition to
-/// [`crate::GloballyUniqueIdentifierPartitionTable::create`]: what you want written and what you
+/// [`crate::PartitionTable::create`]: what you want written and what you
 /// read back are the same thing, so there is no second "spec" struct to keep in sync.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Entry {
@@ -53,10 +55,17 @@ pub struct Entry {
     /// Names this partition, uniquely, forever. Generated once when the partition is created.
     pub unique_guid: Uuid,
     /// First block of the partition.
-    pub first_lba: u64,
+    ///
+    /// Name: provisional.
+    #[doc(alias = "StartingLBA")]
+    pub first_logical_block_address: u64,
     /// Last block of the partition, **inclusive**. A one-block partition has
-    /// `first_lba == last_lba`, and the off-by-one here is the classic way to lose a sector.
-    pub last_lba: u64,
+    /// `first_logical_block_address == last_logical_block_address`, and the off-by-one here is the
+    /// classic way to lose a sector.
+    ///
+    /// Name: provisional.
+    #[doc(alias = "EndingLBA")]
+    pub last_logical_block_address: u64,
     /// The attribute bits. See `ATTR_*`; bits 48 to 63 are reserved for the partition type's own
     /// use and mean whatever that type says they mean.
     pub attributes: u64,
@@ -70,22 +79,28 @@ impl Entry {
     pub const UNUSED: Entry = Entry {
         type_guid: Uuid::nil(),
         unique_guid: Uuid::nil(),
-        first_lba: 0,
-        last_lba: 0,
+        first_logical_block_address: 0,
+        last_logical_block_address: 0,
         attributes: 0,
         name: [0; NAME_UNITS],
     };
 
-    /// A used entry covering `first_lba ..= last_lba`, with no attributes and no name.
+    /// A used entry covering `first_logical_block_address ..= last_logical_block_address`, with no
+    /// attributes and no name.
     ///
     /// Both GUIDs are the caller's: this crate has no randomness, and a GUID that is not random is
     /// not unique. A caller gets one from an entropy source.
-    pub const fn new(type_guid: Uuid, unique_guid: Uuid, first_lba: u64, last_lba: u64) -> Entry {
+    pub const fn new(
+        type_guid: Uuid,
+        unique_guid: Uuid,
+        first_logical_block_address: u64,
+        last_logical_block_address: u64,
+    ) -> Entry {
         Entry {
             type_guid,
             unique_guid,
-            first_lba,
-            last_lba,
+            first_logical_block_address,
+            last_logical_block_address,
             attributes: 0,
             name: [0; NAME_UNITS],
         }
@@ -112,14 +127,18 @@ impl Entry {
         !self.type_guid.is_nil()
     }
 
-    /// How many blocks the partition covers. `last_lba` is inclusive, hence the `+ 1`.
+    /// How many blocks the partition covers. `last_logical_block_address` is inclusive, hence the
+    /// `+ 1`.
     ///
-    /// `None` when `last_lba < first_lba`, which is a malformed entry rather than an empty
-    /// partition, and also when the count does not fit in a `u64` (the range `0 ..= u64::MAX`).
-    /// [`crate::GloballyUniqueIdentifierPartitionTable`] rejects both, so a partition obtained
+    /// `None` when `last_logical_block_address < first_logical_block_address`, which is a malformed
+    /// entry rather than an empty partition, and also when the count does not fit in a `u64` (the
+    /// range `0 ..= u64::MAX`). [`crate::PartitionTable`] rejects both, so a partition obtained
     /// from a parsed table always has a size.
     pub const fn blocks(&self) -> Option<u64> {
-        match self.last_lba.checked_sub(self.first_lba) {
+        match self
+            .last_logical_block_address
+            .checked_sub(self.first_logical_block_address)
+        {
             Some(span) => span.checked_add(1),
             None => None,
         }
@@ -129,7 +148,8 @@ impl Entry {
     ///
     /// `Err(`[`Error::NameTooLong`]`)` if `out` is too small; 4 bytes per code unit
     /// (`4 * NAME_UNITS` = 144) is always enough. An unpaired surrogate, which a hostile or
-    /// corrupt entry can carry, becomes U+FFFD: a malformed label is no reason to hide a partition.
+    /// corrupt entry can carry, becomes the replacement character, `U+FFFD`: a malformed label is
+    /// no reason to hide a partition.
     pub fn name_utf8(&self, out: &mut [u8]) -> Result<usize, Error> {
         let units = self.name.iter().position(|&u| u == 0).unwrap_or(NAME_UNITS);
         let mut written = 0;
@@ -146,7 +166,7 @@ impl Entry {
     }
 
     /// Decode 128 bytes. Total: there is no bit pattern this rejects, and none it loses.
-    pub fn decode(bytes: &[u8; SIZE]) -> Entry {
+    pub fn decode(bytes: &[u8; ENTRY_BYTES]) -> Entry {
         let mut name = [0u16; NAME_UNITS];
         for (i, unit) in name.iter_mut().enumerate() {
             let o = at::NAME + i * 2;
@@ -161,21 +181,23 @@ impl Entry {
                     .try_into()
                     .unwrap(),
             ),
-            first_lba: le64(bytes, at::FIRST_LBA),
-            last_lba: le64(bytes, at::LAST_LBA),
+            first_logical_block_address: le64(bytes, at::FIRST_LOGICAL_BLOCK_ADDRESS),
+            last_logical_block_address: le64(bytes, at::LAST_LOGICAL_BLOCK_ADDRESS),
             attributes: le64(bytes, at::ATTRIBUTES),
             name,
         }
     }
 
     /// The 128 bytes this entry is on disk. Inverse of [`Entry::decode`], proved.
-    pub fn encode(&self) -> [u8; SIZE] {
-        let mut bytes = [0u8; SIZE];
+    pub fn encode(&self) -> [u8; ENTRY_BYTES] {
+        let mut bytes = [0u8; ENTRY_BYTES];
         bytes[at::TYPE_GUID..at::TYPE_GUID + 16].copy_from_slice(&guid::to_disk(self.type_guid));
         bytes[at::UNIQUE_GUID..at::UNIQUE_GUID + 16]
             .copy_from_slice(&guid::to_disk(self.unique_guid));
-        bytes[at::FIRST_LBA..at::FIRST_LBA + 8].copy_from_slice(&self.first_lba.to_le_bytes());
-        bytes[at::LAST_LBA..at::LAST_LBA + 8].copy_from_slice(&self.last_lba.to_le_bytes());
+        bytes[at::FIRST_LOGICAL_BLOCK_ADDRESS..at::FIRST_LOGICAL_BLOCK_ADDRESS + 8]
+            .copy_from_slice(&self.first_logical_block_address.to_le_bytes());
+        bytes[at::LAST_LOGICAL_BLOCK_ADDRESS..at::LAST_LOGICAL_BLOCK_ADDRESS + 8]
+            .copy_from_slice(&self.last_logical_block_address.to_le_bytes());
         bytes[at::ATTRIBUTES..at::ATTRIBUTES + 8].copy_from_slice(&self.attributes.to_le_bytes());
         for (i, unit) in self.name.iter().enumerate() {
             let o = at::NAME + i * 2;
@@ -187,13 +209,13 @@ impl Entry {
     /// True when this entry and `other` claim a block in common. Both must be used; an unused entry
     /// overlaps nothing, whatever its LBA fields say.
     ///
-    /// `last_lba` is inclusive, so two partitions where one ends on the block the next begins on
-    /// **do** overlap.
+    /// `last_logical_block_address` is inclusive, so two partitions where one ends on the block the
+    /// next begins on **do** overlap.
     pub const fn overlaps(&self, other: &Entry) -> bool {
         self.is_used()
             && other.is_used()
-            && self.first_lba <= other.last_lba
-            && other.first_lba <= self.last_lba
+            && self.first_logical_block_address <= other.last_logical_block_address
+            && other.first_logical_block_address <= self.last_logical_block_address
     }
 }
 
@@ -201,5 +223,7 @@ fn le64(bytes: &[u8], at: usize) -> u64 {
     u64::from_le_bytes(bytes[at..at + 8].try_into().unwrap())
 }
 
-/// [`SIZE`] as the `u32` the header field wants, so the cast appears once.
-pub(crate) const SIZE_U32: u32 = SIZE as u32;
+/// [`ENTRY_BYTES`] as the `u32` the header field wants, so the cast appears once.
+///
+/// Name: provisional.
+pub(crate) const ENTRY_BYTES_U32: u32 = ENTRY_BYTES as u32;

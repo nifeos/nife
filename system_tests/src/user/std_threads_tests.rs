@@ -148,7 +148,7 @@ fn map_the_stack_and_setup_pages(space: &mut AddressSpace, setup: &Setup) -> u64
         let frame = crate::memory_region::retype_page(stack_region).expect("no stack frame");
         map(
             space,
-            USER_STACK_VA - k * FRAME_SIZE,
+            USER_STACK_VA - k * FRAME_BYTES,
             frame,
             Flags::user_data(),
         );
@@ -157,7 +157,7 @@ fn map_the_stack_and_setup_pages(space: &mut AddressSpace, setup: &Setup) -> u64
         let flags = if writable {
             Flags::user_data()
         } else {
-            Flags::user_rodata()
+            Flags::user_read_only_data()
         };
         map(space, va, phys, flags);
     }

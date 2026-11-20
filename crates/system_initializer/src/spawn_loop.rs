@@ -29,7 +29,7 @@ pub(super) fn place_at(tcb: u64, capability: u64, rights: u64, slot: u64) -> boo
 
 // The slot the run-unvouched capability is placed in sits just under the kernel's reserved fault
 // slot; `grant_plan` states the number without depending on `abi`, so the relation is held here.
-const _: () = assert!(spawnproto::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
+const _: () = assert!(spawn_protocol::RUN_UNVOUCHED_SLOT == abi::fault::FAULT_RENDEZVOUS_SLOT - 1);
 
 /// Turn a `receive_capability` slot into `Some(slot)`, or `None` if the message carried no capability.
 pub(super) fn opt_capability(slot: u64) -> Option<u64> {
@@ -77,7 +77,7 @@ pub(super) struct Channels {
     /// **The second mounted tree's service and its client-window pool** (milestone 834 (ioping on nife and Linux)), or `None`
     /// on a boot without one. [`fs`](Channels::fs)'s shape and reason: a directory grant the shell
     /// names through `/disk` is built from this, badged per job
-    /// (`program_table::spawnproto::in_mounted_tree`).
+    /// (`program_table::spawn_protocol::in_mounted_tree`).
     pub(super) disk: Option<Fs>,
     /// **A client view of the entropy service** (milestone 111 (endow a child with entropy)),
     /// endowed `WRITE`, the right to `CALL`, to a child whose manifest declares
@@ -122,8 +122,8 @@ pub(super) struct Channels {
     /// when the archive carried none or the table refused it.
     pub(super) index_sources: &'static str,
     /// **READ on the run-unvouched endpoint** (DECISIONS §219 gate D2): the only receive right on
-    /// it. The boot shell and `login` hold `WRITE` at `spawnproto::RUN_UNVOUCHED_SLOT`, and `login`
-    /// passes `WRITE` to each session it builds. A request that sets `spawnproto::Wiring::
+    /// it. The boot shell and `login` hold `WRITE` at `spawn_protocol::RUN_UNVOUCHED_SLOT`, and `login`
+    /// passes `WRITE` to each session it builds. A request that sets `spawn_protocol::Wiring::
     /// run_unvouched` is followed by one `SEND` on it, which this process takes with a `RECEIVE`;
     /// arriving is the proof, because nothing but a holder can send here.
     ///
@@ -220,7 +220,7 @@ struct Request {
     badge: u64,
     arg: u64,
     mem_pages: u64,
-    wiring: spawnproto::Wiring,
+    wiring: spawn_protocol::Wiring,
     interruptible: bool,
     prog: Option<Program>,
     grant: Option<GrantWords>,
@@ -248,7 +248,7 @@ struct Delegated {
     /// own; `None` when the request did not promise them or they did not arrive.
     held: Option<(u64, u64)>,
     /// The shell's budget narrowed to `ENUMERATE`, for a held job whose program declares a share
-    /// view (`spawnproto::held_shares`), in place of the progenitor's pool.
+    /// view (`spawn_protocol::held_shares`), in place of the progenitor's pool.
     share: Option<u64>,
     sink: Option<u64>,
     source: Option<u64>,
@@ -296,7 +296,7 @@ struct Resolved {
     /// The digest of an image the live generation vouched for, which its zone grants are keyed on
     /// (milestone 892).
     image_digest: Option<measured_boot::Digest>,
-    verb: [u8; grant_contract::MAXIMUM_VERB],
+    verb: [u8; grant_contract::MAXIMUM_VERB_BYTES],
     verb_len: Option<usize>,
     /// **The approval a delegated line asked to act within** (milestone 911 (scripted installs
     /// grant only what the owner's approval file allows)), as the line's `--within <name>` said.
@@ -440,10 +440,10 @@ impl Service<'_> {
         // An installer endpoint's request (§270 (a package manager holds an installer endpoint, not
         // the spawn endpoint)): nothing past this first message is read, and the answer goes to the
         // holder's own reply endpoint, because the shell is reading `result_ep` meanwhile.
-        if let Some(label) = spawnproto::installer_label(badge) {
+        if let Some(label) = spawn_protocol::installer_label(badge) {
             serve_installer(
                 label,
-                spawnproto::installer_approval(badge),
+                spawn_protocol::installer_approval(badge),
                 (w0, w1, w2),
                 &mut self.spawn,
                 (own_ut, images_ut, fs, self.c.catalogue),
@@ -454,13 +454,13 @@ impl Service<'_> {
         // The shell says a job it held is gone (milestone 933): its window, resolver grants and
         // installer reply are free from now on, as `job_undertaker`'s message makes them. Nothing
         // is answered, and nothing else is read.
-        if let Some(label) = spawnproto::released_label(w0, w2) {
+        if let Some(label) = spawn_protocol::released_label(w0, w2) {
             self.spawn.reaped(label);
             return;
         }
         // An edit to the installed-programs table, not a spawn: asked first, because under this bit
         // no other bit of word 2 means anything.
-        if let Some(verb) = spawnproto::activation(w1, w2) {
+        if let Some(verb) = spawn_protocol::activation(w1, w2) {
             let answer = activate(
                 verb,
                 w0,
@@ -480,7 +480,7 @@ impl Service<'_> {
                 None,
             );
             // Only a vouch arrives here, and a vouch's answer names no member and no holder.
-            let (r0, r1, r2) = spawnproto::activation_reply(answer.status, answer.live, 0);
+            let (r0, r1, r2) = spawn_protocol::activation_reply(answer.status, answer.live, 0);
             send(result_ep, r0, r1, r2);
             return;
         }
@@ -527,7 +527,7 @@ impl Service<'_> {
             {
                 reclaim(region);
             }
-            send(self.c.result_ep, spawnproto::SPAWN_FAILED, 0, 0);
+            send(self.c.result_ep, spawn_protocol::SPAWN_FAILED, 0, 0);
         } else {
             self.spawn_job(req, &job, elf, image_region, staging);
         }
@@ -542,16 +542,16 @@ impl Service<'_> {
             ..
         } = self.c;
         let spawn = &mut self.spawn;
-        let arg = spawnproto::program_argument(w1);
-        let mem_pages = spawnproto::memory_grant_pages(w2);
-        let wiring = spawnproto::wiring(w2);
+        let arg = spawn_protocol::program_argument(w1);
+        let mem_pages = spawn_protocol::memory_grant_pages(w2);
+        let wiring = spawn_protocol::wiring(w2);
         let interruptible = wiring.interruptible;
         // **Under `IMAGE_BIT` word 0 is a length, not a program** (DECISIONS §219 option D), so no
         // row of `progs` is consulted: the program is whatever the bytes are.
         let prog = if wiring.image {
             None
         } else {
-            Program::from_id(spawnproto::prog_id(w0))
+            Program::from_id(spawn_protocol::program_id(w0))
         };
 
         // The directory grant's two data messages come before any capability, and are drained here
@@ -566,7 +566,7 @@ impl Service<'_> {
         // Any shape but a plain line is drained and refused.
         let frames = wiring
             .image
-            .then(|| take_frames(spawn, spawnproto::image_len(w0), own_ut));
+            .then(|| take_frames(spawn, spawn_protocol::image_len(w0), own_ut));
 
         // The argv's frame, then the name set's (milestone 205 (how a foreign program is told what
         // to do)): taken whenever announced, whatever the program, so both sides stay in lockstep.
@@ -632,7 +632,7 @@ impl Service<'_> {
             spawn.split(
                 images_ut,
                 program_table::image_region_pages(
-                    spawnproto::image_pages(spawnproto::image_len(w0)),
+                    spawn_protocol::image_pages(spawn_protocol::image_len(w0)),
                     if wiring.program_arguments {
                         grant_contract::StartupContract::Std
                     } else {
@@ -648,7 +648,7 @@ impl Service<'_> {
             stage_frames(
                 spawn,
                 f,
-                spawnproto::image_len(w0),
+                spawn_protocol::image_len(w0),
                 own_ut,
                 images_ut,
                 image_region.is_some(),
@@ -682,9 +682,9 @@ impl Service<'_> {
             || wiring.keyboard
             || req.delegated.arrived().next().is_some();
         let answer = if malformed {
-            spawnproto::SPAWN_FAILED
+            spawn_protocol::SPAWN_FAILED
         } else if !graphical_terminal_capabilities.held {
-            spawnproto::SPAWN_NO_DISPLAY
+            spawn_protocol::SPAWN_NO_DISPLAY
         } else {
             let built = match (
                 self.progs[Program::GraphicalTerminal.id() as usize].as_ref(),
@@ -711,7 +711,7 @@ impl Service<'_> {
             // A session that came up answers for itself; only a failure is ours to say.
             match built {
                 Ok(()) => return,
-                Err(()) => spawnproto::SPAWN_FAILED,
+                Err(()) => spawn_protocol::SPAWN_FAILED,
             }
         };
         send(result_ep, answer, 0, 0);
@@ -739,7 +739,7 @@ impl Service<'_> {
         let mut image_manifest = None;
         let mut image_digest = None;
         let image_elf = staging.and_then(|_| {
-            let bytes = staged_image(spawnproto::image_len(w0));
+            let bytes = staged_image(spawn_protocol::image_len(w0));
             let (vouch, digest) = vouched(bytes, fs, own_ut, &mut self.fs_mapped);
             unvouched = vouch == program_table::Vouch::Unvouched;
             image_digest = (!unvouched).then_some(digest);
@@ -762,14 +762,17 @@ impl Service<'_> {
         });
         // The verb is read from the shell's page before the region is split, which an installer
         // holder's manifest sizes, and checked again against the child's copy ([`copy_args`]).
-        let mut verb = [0u8; grant_contract::MAXIMUM_VERB];
+        let mut verb = [0u8; grant_contract::MAXIMUM_VERB_BYTES];
         let verb_len = args_seen.and_then(|theirs| {
             // SAFETY: `receive_args` mapped the shell's frame read-only at `theirs`, one page, and
             // it stays mapped until the shell reclaims its frame after this request's answer.
             let page = unsafe {
-                core::slice::from_raw_parts(theirs as *const u8, spawnproto::IMAGE_PAGE as usize)
+                core::slice::from_raw_parts(
+                    theirs as *const u8,
+                    spawn_protocol::IMAGE_PAGE as usize,
+                )
             };
-            let mut read = [0u8; grant_contract::MAXIMUM_VERB];
+            let mut read = [0u8; grant_contract::MAXIMUM_VERB_BYTES];
             let w = grant_contract::verb_of_page(page, &mut read)?;
             verb[..w.len()].copy_from_slice(w);
             Some(w.len())
@@ -784,7 +787,10 @@ impl Service<'_> {
             // SAFETY: `receive_args` mapped the shell's frame read-only at `theirs`, one page,
             // and it stays mapped until the shell reclaims its frame after this request's answer.
             let page = unsafe {
-                core::slice::from_raw_parts(theirs as *const u8, spawnproto::IMAGE_PAGE as usize)
+                core::slice::from_raw_parts(
+                    theirs as *const u8,
+                    spawn_protocol::IMAGE_PAGE as usize,
+                )
             };
             grant_contract::delegated_within(page, &mut within)
         });
@@ -795,13 +801,13 @@ impl Service<'_> {
             prog.map(|p| grant_contract::narrow_by_verb(&p.manifest(), p.verbs(), verb))
         };
         let failure = if unvouched && !presented {
-            spawnproto::SPAWN_UNVOUCHED
+            spawn_protocol::SPAWN_UNVOUCHED
         } else if !wiring.image && prog.is_some_and(|p| self.absent[p.id() as usize]) {
-            spawnproto::SPAWN_NOT_IN_IMAGE
+            spawn_protocol::SPAWN_NOT_IN_IMAGE
         } else if refused_by_manifest {
-            spawnproto::SPAWN_REFUSED_BY_MANIFEST
+            spawn_protocol::SPAWN_REFUSED_BY_MANIFEST
         } else {
-            spawnproto::SPAWN_FAILED
+            spawn_protocol::SPAWN_FAILED
         };
         Resolved {
             manifest,
@@ -849,9 +855,9 @@ impl Service<'_> {
                 send(
                     result_ep,
                     if ok {
-                        spawnproto::SPAWN_OK
+                        spawn_protocol::SPAWN_OK
                     } else {
-                        spawnproto::SPAWN_FAILED
+                        spawn_protocol::SPAWN_FAILED
                     },
                     0,
                     0,
@@ -865,11 +871,11 @@ impl Service<'_> {
                     forget_thread_control_block(tcb);
                 }
             }
-            None if failure == spawnproto::SPAWN_NOT_IN_IMAGE => {
+            None if failure == spawn_protocol::SPAWN_NOT_IN_IMAGE => {
                 send(result_ep, failure, 0, 0);
             }
             None => {
-                send(result_ep, spawnproto::SPAWN_FAILED, 0, 0);
+                send(result_ep, spawn_protocol::SPAWN_FAILED, 0, 0);
             }
         }
     }
@@ -1087,7 +1093,7 @@ impl Service<'_> {
         let own_ut = self.c.own_ut;
         let page = match (std_layout, region, seen) {
             (true, Some(r), Some(theirs)) => copy_args(own_ut, r, theirs, |copy| {
-                grant_contract::verb_of_page(copy, &mut [0u8; grant_contract::MAXIMUM_VERB])
+                grant_contract::verb_of_page(copy, &mut [0u8; grant_contract::MAXIMUM_VERB_BYTES])
                     == job.verb()
             }),
             _ => None,
@@ -1538,7 +1544,7 @@ impl Service<'_> {
         }
         if let (true, Some(page)) = (wants.machine, req.delegated.machine_page) {
             map_buf[map_n] = (
-                machine_statistics_contract::PAGE_VA,
+                machine_statistics_contract::PAGE_VIRTUAL_ADDRESS,
                 page,
                 abi::address_space::MAP_READ_ONLY,
             );
@@ -1714,7 +1720,7 @@ impl Service<'_> {
             // One answer, the label with it, then the job's `ThreadControlBlock` as the one message
             // after a good one, which the shell takes first (§309), so this `SEND` cannot strand.
             let (w0, w1, w2) = if ok {
-                spawnproto::held_answer(label)
+                spawn_protocol::held_answer(label)
             } else {
                 (failure, 0, 0)
             };
@@ -1727,7 +1733,11 @@ impl Service<'_> {
         } else if req.wiring.sink || req.wiring.screen {
             send(
                 result_ep,
-                if ok { spawnproto::SPAWN_OK } else { failure },
+                if ok {
+                    spawn_protocol::SPAWN_OK
+                } else {
+                    failure
+                },
                 0,
                 0,
             );
@@ -1747,7 +1757,7 @@ impl Service<'_> {
 /// the machine page), each only if it was promised, so both sides stay in lockstep.
 fn receive_delegated(
     spawn: &mut SpawnEndpoint,
-    wiring: spawnproto::Wiring,
+    wiring: spawn_protocol::Wiring,
     (mem_pages, prog): (u64, Option<Program>),
 ) -> Delegated {
     let interruptible = wiring.interruptible;
@@ -1777,7 +1787,7 @@ fn receive_delegated(
     } else {
         None
     };
-    let share = if wiring.held && prog.is_some_and(spawnproto::held_shares) {
+    let share = if wiring.held && prog.is_some_and(spawn_protocol::held_shares) {
         opt_capability(spawn.receive_capability().1)
     } else {
         None
@@ -1829,7 +1839,7 @@ fn receive_delegated(
 
 /// Start a normal job's built child with its argument registers: zero for a `std` program, whose
 /// words are on its argument page (§170 (how a foreign program is told what to do)), the grant's
-/// own words behind a directory grant (`spawnproto::GRANT_WORDS`, forwarded unread), and the line's
+/// own words behind a directory grant (`spawn_protocol::GRANT_WORDS`, forwarded unread), and the line's
 /// integer otherwise.
 fn start_job(built: Option<supervision_contract::Child>, req: &Request, std_layout: bool) -> bool {
     match built {

@@ -209,7 +209,7 @@ fn spawn_timetable_with(
     // place that decision can be made.
     let archive = narrowed_archive(programs);
     let archive_len = archive.len() as u64;
-    let archive_pages = archive_len.div_ceil(FRAME_SIZE);
+    let archive_pages = archive_len.div_ceil(FRAME_BYTES);
     let bytes = program("timetable").expect("no timetable program in the initial ramdisk");
     let elf = Elf::parse(bytes).expect("timetable is not loadable");
 
@@ -263,7 +263,7 @@ fn spawn_timetable_with(
         crate::sched::thread_control_block_insert_capability(
             tid,
             rendezvous_capability(stand_in, Rights::WRITE),
-            Some(program_table::spawnproto::RUN_UNVOUCHED_SLOT),
+            Some(program_table::spawn_protocol::RUN_UNVOUCHED_SLOT),
         )
         .expect("insert the run-unvouched stand-in");
     }
@@ -298,12 +298,12 @@ fn map_the_archive(space: &mut AddressSpace, archive: &[u8], archive_pages: u64)
     for i in 0..archive_pages {
         let page = space
             .map_new(
-                INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_SIZE,
-                Flags::user_rodata(),
+                INITIAL_RAMDISK_VIRTUAL_ADDRESS + i * FRAME_BYTES,
+                Flags::user_read_only_data(),
             )
             .expect("could not map the narrowed archive");
-        let from = (i * FRAME_SIZE) as usize;
-        let to = (from + FRAME_SIZE as usize).min(archive.len());
+        let from = (i * FRAME_BYTES) as usize;
+        let to = (from + FRAME_BYTES as usize).min(archive.len());
         page[..to - from].copy_from_slice(&archive[from..to]);
     }
 }
@@ -313,14 +313,14 @@ fn map_the_archive(space: &mut AddressSpace, archive: &[u8], archive_pages: u64)
 fn map_a_clock_page(space: &mut AddressSpace) -> u64 {
     let phys = crate::memory::alloc_zeroed()
         .expect("no frame for a clock page")
-        .addr();
+        .physical_address();
     // SAFETY: a frame this test just allocated, named through the direct map.
     unsafe { clock_contract::ClockPage::new(mmu::phys_to_virt(phys)) }.initialize();
     space
         .map_physical(
             timetable::contract::CLOCK_VA,
             phys,
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             crate::revoke::PageMapSource::Capability(phys),
         )
         .expect("could not map the clock page");

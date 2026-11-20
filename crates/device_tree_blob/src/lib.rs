@@ -71,8 +71,8 @@ pub enum Error {
     BadStructure,
     /// The structure block nests deeper than [`MAXIMUM_DEPTH`].
     TooDeep,
-    /// The header's `totalsize` is larger than [`MAXIMUM_TOTALSIZE_BYTES`], so
-    /// [`from_ptr`](DeviceTreeBlob::from_ptr) refused to build a slice of that length over
+    /// The header's `totalsize` is larger than [`MAXIMUM_TOTAL_SIZE_BYTES`], so
+    /// [`from_pointer`](DeviceTreeBlob::from_pointer) refused to build a slice of that length over
     /// memory nobody has checked. Carries the size claimed.
     TooLarge(usize),
     /// A `reg` pair whose `start + size` does not fit in 64 bits, so the region names memory that
@@ -120,18 +120,21 @@ const FDT_END: u32 = 0x9;
 const MAGIC: u32 = 0xd00d_feed;
 const HEADER_BYTES: usize = 40;
 
-/// The largest `totalsize` [`DeviceTreeBlob::from_ptr`] will believe, 2 MiB.
+/// The largest `totalsize` [`DeviceTreeBlob::from_pointer`] will believe, 2 MiB.
 ///
-/// `from_ptr` trusts the header's length before anything is validated, and the magic says only
+/// `from_pointer` trusts the header's length before anything is validated, and the magic says only
 /// that the pointer is at a blob. Without this ceiling a `totalsize` of `0xffff_ffff` becomes a
 /// 4 GiB slice read past the end of RAM, a fault on the boot path before any handler can say why.
 /// 2 MiB is Linux's `MAX_FDT_SIZE` (`SZ_2M` in `arch/arm64/include/asm/boot.h`); QEMU's `virt`
 /// blobs are under 64 KiB.
 ///
-/// Name: provisional. Ratified as `MAXIMUM_TOTALSIZE` on 2026-10-27 (#2797); `_BYTES` added at the
-/// crate's own name review, since a size carries its unit.
+/// Name: ratified 2026-11-19. Refused `MAXIMUM_TOTALSIZE`, which ran the words together and had no
+/// unit; `totalsize` stays the header field's spelling in backticks, and the `total_size()` method
+/// shares the word split (milestone 1085 (what an outside maintainer would fix before it leaves)
+/// D4).
 #[doc(alias = "MAX_FDT_SIZE")]
-pub const MAXIMUM_TOTALSIZE_BYTES: usize = 2 * 1024 * 1024;
+#[doc(alias = "totalsize")]
+pub const MAXIMUM_TOTAL_SIZE_BYTES: usize = 2 * 1024 * 1024;
 
 /// The most cells a `#address-cells` or `#size-cells` declaration may give a `reg` value, as
 /// libfdt's `FDT_MAX_NCELLS`. A `reg` read under a larger count is [`Error::BadValue`].
@@ -189,14 +192,19 @@ impl<'a> DeviceTreeBlob<'a> {
     ///
     /// Reads the first 8 bytes alone, the magic and `totalsize`, and builds a slice over the
     /// whole blob only once the magic matches and the size is at most
-    /// [`MAXIMUM_TOTALSIZE_BYTES`]. Every read is byte-wise, so `pointer` needs no alignment.
+    /// [`MAXIMUM_TOTAL_SIZE_BYTES`]. Every read is byte-wise, so `pointer` needs no alignment.
     ///
     /// # Safety
     ///
     /// `pointer` must point at a device tree blob that stays valid for `'a`. The 8 bytes are read
     /// before anything is validated, which is the one leap of faith: a wrong pointer almost
     /// certainly fails the magic check that follows.
-    pub unsafe fn from_ptr(pointer: *const u8) -> Result<Self, Error> {
+    ///
+    /// Name: ratified 2026-11-19. Spelled out from `ptr`, the standard library's spelling, with
+    /// `#[doc(alias = "from_ptr")]` as a search aid (milestone 1085 (what an outside maintainer
+    /// would fix before it leaves) D6).
+    #[doc(alias = "from_ptr")]
+    pub unsafe fn from_pointer(pointer: *const u8) -> Result<Self, Error> {
         // Read just enough to learn how long the thing claims to be.
         // SAFETY: the caller's contract is that `pointer` points at a blob valid for `'a`. This reads only the magic and the size, the deliberate leap of faith the magic check on the next line exists to catch.
         let header = unsafe { core::slice::from_raw_parts(pointer, 8) };
@@ -205,24 +213,24 @@ impl<'a> DeviceTreeBlob<'a> {
             return Err(Error::BadMagic(magic));
         }
         let total = be32(header, 4)? as usize;
-        if total > MAXIMUM_TOTALSIZE_BYTES {
+        if total > MAXIMUM_TOTAL_SIZE_BYTES {
             return Err(Error::TooLarge(total));
         }
 
         // SAFETY: the magic checked out, so `pointer` really is a blob, and `total` is the length it
-        // declares for itself, now bounded by `MAXIMUM_TOTALSIZE_BYTES`; the caller's contract covers the
+        // declares for itself, now bounded by `MAXIMUM_TOTAL_SIZE_BYTES`; the caller's contract covers the
         // whole of it for `'a`.
         let bytes = unsafe { core::slice::from_raw_parts(pointer, total) };
         Self::from_bytes(bytes)
     }
 
     /// Parse a blob already in hand as a safe slice, rather than through an unchecked pointer.
-    /// This is what [`from_ptr`](Self::from_ptr) delegates to once it has trusted the header
+    /// This is what [`from_pointer`](Self::from_pointer) delegates to once it has trusted the header
     /// enough to build one, and it is the entry point every host test uses directly.
     ///
     /// A `bytes` longer than the header's `totalsize` is accepted and trimmed to it, so a blob
-    /// read into a larger buffer parses as itself. [`MAXIMUM_TOTALSIZE_BYTES`] bounds
-    /// [`from_ptr`](Self::from_ptr) only: a slice in hand is already as long as it is. The header's
+    /// read into a larger buffer parses as itself. [`MAXIMUM_TOTAL_SIZE_BYTES`] bounds
+    /// [`from_pointer`](Self::from_pointer) only: a slice in hand is already as long as it is. The header's
     /// `version` decides where the structure block ends (`size_dt_struct` from version 17, the
     /// strings block before it), and a `last_compatible_version` above 17 is refused. `size_dt_strings`
     /// and `boot_cpuid_phys` are not read; a name in the strings block is bounded by the blob's end.
@@ -315,8 +323,8 @@ impl<'a> DeviceTreeBlob<'a> {
     /// `reg` pair of the same shape is. The specification places the block on an 8-byte boundary,
     /// and that is not checked: every read here is byte-wise, so a misplaced block reads the same.
     ///
-    /// Name: provisional. Refused `reserved_regions`, with no alias for it (milestone 1085 (what an
-    /// outside maintainer would fix before it leaves) D5).
+    /// Name: ratified 2026-11-19. Refused `reserved_regions`, with no alias for it (milestone 1085
+    /// (what an outside maintainer would fix before it leaves) D5).
     pub fn memory_reservations(&self, out: &mut [Region]) -> Result<usize, Error> {
         let mut at = self.reservations_offset;
         let mut n = 0;
@@ -426,17 +434,22 @@ impl<'a> DeviceTreeBlob<'a> {
         Ok(found)
     }
 
-    /// The register regions (`reg`, the specification's name for the property) of the first node
-    /// whose name starts with `prefix`, searched at any depth.
+    /// The register regions (`reg`, the Devicetree Specification's abbreviation for the
+    /// property) of the first node whose name starts with `prefix`, searched at any depth.
     ///
     /// Decodes with the `#address-cells`/`#size-cells` of the node's **parent**, carried down a
     /// per-depth stack, so a device nested under `/soc` reads as well as one under the root. A GIC
     /// decodes to two regions, distributor first, as its binding orders them. Matching a name prefix
-    /// rather than `compatible` is a simplification; [`node_reg_compatible`](Self::node_reg_compatible)
+    /// rather than `compatible` is a simplification; [`node_register_regions_compatible`](Self::node_register_regions_compatible)
     /// is the correct lookup. The first match is the answer: one with no `reg` yields zero regions, and
     /// a later match's `reg` is never read in its place.
-    #[doc(alias = "register regions")]
-    pub fn node_reg(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
+    ///
+    /// Name: ratified 2026-11-19. Spelled out from the specification's `reg` ("register regions"),
+    /// with `#[doc(alias = "reg")]` as a search aid for the specification's term; refused
+    /// `node_reg`, with no alias for it (milestone 1085 (what an outside maintainer would fix before it
+    /// leaves) D3).
+    #[doc(alias = "reg")]
+    pub fn node_register_regions(&self, prefix: &[u8], out: &mut [Region]) -> Result<usize, Error> {
         // The cell counts declared by the node open at each depth, applying to its children. Depth
         // 0 is the slot above the root; the root is depth 1. The specification's defaults are 2
         // and 1.
@@ -460,7 +473,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     if target_at == Some(depth) {
                         // The whole node has been walked. Had it a `reg`, the property arm would
                         // have answered, so it has none. The first match is the answer, as for
-                        // `node_property` and `node_reg_compatible`: zero regions, and a later
+                        // `node_property` and `node_register_regions_compatible`: zero regions, and a later
                         // node's `reg` is not a substitute.
                         return Ok(0);
                     }
@@ -487,8 +500,8 @@ impl<'a> DeviceTreeBlob<'a> {
         Ok(0)
     }
 
-    /// The register regions (`reg`, the specification's name for the property) of the first node
-    /// whose `compatible` property lists the entry `compatible`, searched at any depth.
+    /// The register regions (`reg`, the Devicetree Specification's abbreviation for the
+    /// property) of the first node whose `compatible` property lists the entry `compatible`, searched at any depth.
     ///
     /// A match on **any** NUL-separated entry counts, as the binding intends: a node that says
     /// `"starfive,jh7110-rtc\0arm,pl031"` claims the PL031 register layout. The empty piece after the
@@ -510,12 +523,17 @@ impl<'a> DeviceTreeBlob<'a> {
     /// ));
     /// let tree = DeviceTreeBlob::from_bytes(blob)?;
     /// let mut rtc = [Region { start: 0, size: 0 }; 1];
-    /// let found = tree.node_reg_compatible(b"google,goldfish-rtc", &mut rtc)?;
+    /// let found = tree.node_register_regions_compatible(b"google,goldfish-rtc", &mut rtc)?;
     /// assert_eq!(&rtc[..found], [Region { start: 0x10_1000, size: 0x1000 }]);
     /// # Ok::<(), device_tree_blob::Error>(())
     /// ```
-    #[doc(alias = "register regions")]
-    pub fn node_reg_compatible(
+    ///
+    /// Name: ratified 2026-11-19. Spelled out from the specification's `reg` ("register regions"),
+    /// with `#[doc(alias = "reg")]` as a search aid for the specification's term; refused
+    /// `node_reg_compatible`, with no alias for it (milestone 1085 (what an outside maintainer would fix before it
+    /// leaves) D3).
+    #[doc(alias = "reg")]
+    pub fn node_register_regions_compatible(
         &self,
         compatible: &[u8],
         out: &mut [Region],
@@ -577,11 +595,11 @@ impl<'a> DeviceTreeBlob<'a> {
     /// entry `compatible`, searched at any depth. `Ok(None)` when no such node exists, or the node has no
     /// such property.
     ///
-    /// The property twin of [`node_reg_compatible`](Self::node_reg_compatible), deciding when the
+    /// The property twin of [`node_register_regions_compatible`](Self::node_register_regions_compatible), deciding when the
     /// matched node closes for the same reason. It exists because labels differ between machines:
     /// the PLIC is `plic@c000000` on QEMU `virt` and `interrupt-controller@c000000` on the JH7110.
     ///
-    /// Name: provisional. Refused `node_prop_compatible`, with no alias for it (milestone 1085
+    /// Name: ratified 2026-11-19. Refused `node_prop_compatible`, with no alias for it (milestone 1085
     /// (what an outside maintainer would fix before it leaves) D1).
     pub fn node_property_compatible(
         &self,
@@ -600,7 +618,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// the bus. The parent's slot is filled when the child closes, because a node's properties
     /// precede its first subnode.
     ///
-    /// Name: provisional, 2026-09-25. Refused `parent_prop_compatible`, the abbreviation, with no
+    /// Name: ratified 2026-11-19. Refused `parent_prop_compatible`, the abbreviation, with no
     /// alias for it; `property` is spelled out across the crate's lookups.
     pub fn parent_property_compatible(
         &self,
@@ -661,7 +679,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// its entry width depends on three different nodes' cell counts). The caller gets the bytes
     /// (big-endian cells, as the specification lays them out) and owns the interpretation.
     ///
-    /// Name: provisional. Refused `node_prop`, with no alias for it (milestone 1085 (what an
+    /// Name: ratified 2026-11-19. Refused `node_prop`, with no alias for it (milestone 1085 (what an
     /// outside maintainer would fix before it leaves) D1).
     pub fn node_property(&self, prefix: &[u8], name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
         let mut target_at: Option<usize> = None;
@@ -702,7 +720,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// value wins, per the spec. A node's properties precede its children, so one walk suffices:
     /// the answer is taken at the target's `END_NODE`.
     ///
-    /// Name: provisional. Refused `node_prop_inherited`, with no alias for it (milestone 1085 (what
+    /// Name: ratified 2026-11-19. Refused `node_prop_inherited`, with no alias for it (milestone 1085 (what
     /// an outside maintainer would fix before it leaves) D1).
     pub fn node_property_inherited(
         &self,
@@ -744,19 +762,27 @@ impl<'a> DeviceTreeBlob<'a> {
         Ok(None)
     }
 
-    /// The raw bytes of property `name` on the node whose phandle (`phandle`, the specification's
-    /// name for a node's numeric handle, which other nodes use to refer to it) is `phandle`.
-    /// `Ok(None)` when no node carries that phandle, or the node has no such property.
+    /// The raw bytes of property `name` on the node whose pointer handle (`phandle`, the
+    /// Devicetree Specification's name for a node's numeric handle, which other nodes use to refer
+    /// to it) is `pointer_handle`. `Ok(None)` when no node carries that pointer handle, or the node
+    /// has no such property.
     ///
     /// How a property that refers to another node is followed, such as `interrupt-parent` to the
     /// controller's `#interrupt-cells`. Both `phandle` and the legacy `linux,phandle` are honored,
     /// because old dtc wrote the latter. As in [`node_property_compatible`](Self::node_property_compatible),
     /// the answer is taken when the matching node closes.
     ///
-    /// Name: provisional. Refused `phandle_prop`, with no alias for it (milestone 1085 (what an
-    /// outside maintainer would fix before it leaves) D1).
-    pub fn phandle_property(&self, phandle: u32, name: &[u8]) -> Result<Option<&'a [u8]>, Error> {
-        // Per open node: `name`'s value, and whether its phandle matched.
+    /// Name: ratified 2026-11-19. Spelled out from the specification's `phandle` ("pointer
+    /// handle"), with `#[doc(alias = "phandle")]` as a search aid for the specification's term;
+    /// refused `phandle_prop`, with no alias for it (milestone 1085 (what an outside maintainer
+    /// would fix before it leaves) D1).
+    #[doc(alias = "phandle")]
+    pub fn pointer_handle_property(
+        &self,
+        pointer_handle: u32,
+        name: &[u8],
+    ) -> Result<Option<&'a [u8]>, Error> {
+        // Per open node: `name`'s value, and whether its pointer handle matched.
         let mut found = [None::<&'a [u8]>; DEPTH_SLOTS];
         let mut matched = [false; DEPTH_SLOTS];
         let mut tokens = self.tokens();
@@ -768,7 +794,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     matched[depth] = false;
                 }
                 Token::EndNode => {
-                    // Depth 1 is the root, which no phandle names in practice.
+                    // Depth 1 is the root, which no pointer handle names in practice.
                     if depth >= 2 && matched[depth] {
                         return Ok(found[depth]);
                     }
@@ -782,7 +808,7 @@ impl<'a> DeviceTreeBlob<'a> {
                     }
                     if (property_name == b"phandle" || property_name == b"linux,phandle")
                         && value.len() == 4
-                        && be32(value, 0)? == phandle
+                        && be32(value, 0)? == pointer_handle
                     {
                         matched[depth] = true;
                     }
@@ -800,7 +826,7 @@ impl<'a> DeviceTreeBlob<'a> {
     /// **nodes**, which may exceed `out.len()`; the excess is counted and not written, so a caller
     /// can tell it under-provisioned.
     ///
-    /// Name: provisional. Refused `node_props`, with no alias for it (milestone 1085 (what an
+    /// Name: ratified 2026-11-19. Refused `node_props`, with no alias for it (milestone 1085 (what an
     /// outside maintainer would fix before it leaves) D1).
     ///
     /// # Examples
@@ -1282,8 +1308,8 @@ mod tests {
 /// The device tree is untrusted boot input. The leaves are proved for every input: the big-endian
 /// readers every field goes through, the padding helper, `cells` and `decode_regions`. `align4` is
 /// proved for every `usize`, and overflows only within 3 of `usize::MAX`, where no caller reaches:
-/// every length it is given comes from a blob, which is at most `MAXIMUM_TOTALSIZE_BYTES` through
-/// `from_ptr` and at most `u32::MAX` bytes of header-declared length otherwise. Above the leaves,
+/// every length it is given comes from a blob, which is at most `MAXIMUM_TOTAL_SIZE_BYTES` through
+/// `from_pointer` and at most `u32::MAX` bytes of header-declared length otherwise. Above the leaves,
 /// `from_bytes` and one step of the token walk are proved total over blobs of a bounded size,
 /// which is as far as bounded model checking reaches over a structure of real size; the fuzz target
 /// `device_tree_blob_walk` covers the whole walk from the other side.

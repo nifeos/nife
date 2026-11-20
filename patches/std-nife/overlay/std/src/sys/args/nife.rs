@@ -21,7 +21,7 @@
 //!   (`design/roadmap/0672-the-argument-page-layout.md`). Both are generated from one crate,
 //!   so a change there moves the loader and this reader together.
 
-use crate::sys::pal::nife::argproto::ArgPage;
+use crate::sys::pal::nife::argproto::ArgumentPage;
 use crate::sys::pal::nife::rt;
 use crate::ffi::{OsStr, OsString};
 use crate::num::NonZero;
@@ -44,10 +44,10 @@ fn read() -> Vec<&'static OsStr> {
     // SAFETY: the loader maps the argument page read-only at `rt::ARGS_PAGE` alongside the
     // capability the probe just found in `rt::ARGS_SLOT`, and nothing unmaps or writes it for the
     // life of the process.
-    let page = unsafe { ArgPage::from_va(rt::ARGS_PAGE) };
+    let page = unsafe { ArgumentPage::from_virtual_address(rt::ARGS_PAGE) };
     page.iter()
         // SAFETY: `OsStr` on nife is bytes, so every byte string is a valid encoding of one.
-        .map(|a| unsafe { OsStr::from_encoded_bytes_unchecked(a) })
+        .map(|argument| unsafe { OsStr::from_encoded_bytes_unchecked(argument) })
         .collect()
 }
 

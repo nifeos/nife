@@ -17,7 +17,7 @@ Verified firsthand, on a fresh shallow clone of `nifeos/nife` at the head of `ma
 - `helpers/lint_externalized_crates.py --count`: 3 consumer-name hits, at the crate's ceiling.
 - `helpers/template_report_gates.py --list current_cpu_contract`: 6 abbreviation findings (every
   one the component `va`), 1 prose acronym and 1 README acronym (`TCB` unexpanded at `src/lib.rs` line 17).
-- Every caller: `kernel` (the writer, `publish` at two sites and `build_page_allowing` at two) and `user_mode_runtime` (the reader). `machine_statistics_contract` re-exports `CPU_ID_BOUND` and sizes its own page by it. In `components`, fourteen programs declare `INTERFACE_ID` and `VERSION`. The rest are `fixtures`, `system_tests` and `xtask`'s farm, which copies `src/lib.rs` textually
+- Every caller: `kernel` (the writer, `publish` at two sites and `build_page_allowing` at two) and `user_mode_runtime` (the reader). `machine_statistics_contract` re-exports `CPU_ID_BOUND` and sizes its own page by it. In `components`, fifteen programs declare `INTERFACE_ID` and `VERSION`. The rest are `fixtures`, `system_tests` and `xtask`'s farm, which copies `src/lib.rs` textually
   into the standard library's platform layer.
 - A three-test Miri experiment on the reader's shape (`&AtomicU64` formed over read-only bytes):
   Miri accepts it over a `static` and refuses it over an immutable local binding (Stacked Borrows

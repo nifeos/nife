@@ -82,7 +82,7 @@ pub(crate) type Why = &'static str;
 pub fn attach() -> Result<(Framebuffer, u32, u32), Why> {
     let dtb = crate::device_tree().map_err(|_| "no device tree to find a fw_cfg in")?;
     let mut node = [device_tree_blob::Region { start: 0, size: 0 }; 1];
-    let found = matches!(dtb.node_reg_compatible(b"qemu,fw-cfg-mmio", &mut node), Ok(n) if n >= 1);
+    let found = matches!(dtb.node_register_regions_compatible(b"qemu,fw-cfg-mmio", &mut node), Ok(n) if n >= 1);
     if !found {
         return Err("no qemu,fw-cfg-mmio node: this machine has no ramfb to ask for");
     }

@@ -100,9 +100,9 @@ pub(super) fn grant_self_test(tid: crate::thread::ThreadId) {
     // Zeroed, so a previous occupant's bytes are not visible past the words written.
     let phys = crate::memory::alloc_zeroed()
         .expect("no frame for the self-test page")
-        .addr();
+        .physical_address();
     // SAFETY: `phys` names that frame, direct-mapped and owned by nobody else yet, and the words
-    // are 120 bytes, far under `FRAME_SIZE`, so the copy stays inside the frame.
+    // are 120 bytes, far under `FRAME_BYTES`, so the copy stays inside the frame.
     unsafe {
         core::ptr::copy_nonoverlapping(
             words.as_ptr(),
@@ -177,10 +177,10 @@ fn wire_disk_zero(half: &mut KernelHalf) -> Option<VirtioBootGrant> {
     // Zeroed first, so no stale descriptor is visible to the device or the driver's first read.
     let dma = crate::memory::alloc_zeroed()
         .expect("no DMA frame for disk 0")
-        .addr();
+        .physical_address();
     // Registered first, so a device the IOMMU refuses leaves nothing else behind.
-    let Some(vid) = crate::virtio::register(transport, dma, FRAME_SIZE, rid) else {
-        crate::memory::free(page_frames::PageFrame::from_addr(dma));
+    let Some(vid) = crate::virtio::register(transport, dma, FRAME_BYTES, rid) else {
+        crate::memory::free(page_frames::PageFrame::from_physical_address(dma));
         return None;
     };
     write_dma_phys(dma);

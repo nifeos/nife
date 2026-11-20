@@ -1,19 +1,18 @@
 Falsifies `subtree_scope::proofs::a_walk_never_widens_follows_or_crosses`.
 
-The defect: `landing` lets a walk step through a symbolic link.
+The defect: `check_landing` lets a walk step through a symbolic link.
 
 Expected to fail: the assertion that a successful walk went through nothing but directories.
 
 diff --git a/crates/subtree_scope/src/lib.rs b/crates/subtree_scope/src/lib.rs
-index f5ee46265..8e6a38153 100644
 --- a/crates/subtree_scope/src/lib.rs
 +++ b/crates/subtree_scope/src/lib.rs
-@@ -160,7 +160,7 @@ pub fn walk<N: Copy, E: From<Refusal>>(
- /// step of every verb goes through here, as every step of [`walk`] does.
- pub fn landing(kind: Kind, want_dir: bool) -> Result<(), Refusal> {
-     match (kind, want_dir) {
--        (Kind::Symlink, _) => Err(Refusal::Symlink),
-+        (Kind::Symlink, _) => Ok(()),
-         (Kind::MountPoint, _) => Err(Refusal::MountCrossing),
-         (Kind::Directory, true) | (Kind::File, false) => Ok(()),
-         (Kind::File, true) => Err(Refusal::NotADirectory),
+@@ -186,7 +186,7 @@
+ /// Name: provisional, minted 2026-11-19 (UTC) by 1110-renames-package.
+ pub fn check_landing(kind: NodeKind, want_directory: bool) -> Result<(), Refusal> {
+     match (kind, want_directory) {
+-        (NodeKind::Symlink, _) => Err(Refusal::Symlink),
++        (NodeKind::Symlink, _) => Ok(()),
+         (NodeKind::MountPoint, _) => Err(Refusal::MountCrossing),
+         (NodeKind::Directory, true) | (NodeKind::File, false) => Ok(()),
+         (NodeKind::File, true) => Err(Refusal::NotADirectory),

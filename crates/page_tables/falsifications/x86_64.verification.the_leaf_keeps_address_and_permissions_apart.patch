@@ -8,7 +8,7 @@ a page nobody can reach.
 Expected to fail: `assert_eq!(leaf & 1, 1)`, on every input.
 
 **Measured blind before milestone 211.** The harness asserted only
-`entry_pa(leaf) == pa` and `leaf_flags(leaf) == flags`. `entry_pa` masks the address bits;
+`entry_physical_address(leaf) == physical_address` and `leaf_flags(leaf) == flags`. `entry_physical_address` masks the address bits;
 `leaf_flags` reads RW, US, XD, the software kernel-exec bit and G. Neither reads bit 0, so
 the present bit could go missing with both round trips intact. Confirmed by applying this
 diff against the old phrasing and watching it stay green.
@@ -24,9 +24,9 @@ index fc3c0dd4..d87a4e96 100644
 @@ -131,7 +131,7 @@ impl PageFormat for Ia32e {
      }
  
-     fn leaf_entry(pa: u64, flags: Flags) -> u64 {
--        (pa & ADDR_MASK) | P | Self::attrs(flags)
-+        (pa & ADDR_MASK) | Self::attrs(flags)
+     fn leaf_entry(physical_address: u64, flags: Flags) -> u64 {
+-        (physical_address & ADDR_MASK) | P | Self::attributes(flags)
++        (physical_address & ADDR_MASK) | Self::attributes(flags)
      }
  
      fn leaf_flags(entry: u64) -> Flags {

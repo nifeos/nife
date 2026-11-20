@@ -30,6 +30,6 @@ An appendix to [the milestone](../1086-domain-name-resolution-contract-outside-r
     (`components/src/domain_name_resolver.rs` line 133). The size of `Grants` is about 4,160 bytes
     by hand (eight entries of a 256-byte `Name`, a 254-byte text buffer and the small fields),
     computed, not measured. Change: derive `Debug` (printing the dotted zone, as `Name` does). A
-    `Window` newtype or a doc sentence that the index is the window. Drop the dead branch. Have
-    `port_and_transport_fields` refuse a third transport or the resolver refuse it at start. A size
+    `Window` newtype or a doc sentence that the index is the window. Drop the dead branch. The
+    resolver refuses a third transport at start (decision 4). A size
     test that states the figure. Door: two-way. Effort: S.

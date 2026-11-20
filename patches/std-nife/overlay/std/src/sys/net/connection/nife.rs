@@ -4,7 +4,7 @@
 //! A program given the network holds a `Stack` endpoint and an untyped budget (`pal/nife/rt.rs`).
 //! Opening a socket is a `CALL` on that endpoint, answered with **the socket's own capability**
 //! (§255 (each socket is its own capability)). The PAL hands it a shared `PageFrame` minted from
-//! the untyped (`SEND_CAPABILITY`, `OPERATION_ATTACH_PAGE_FRAME`), and every later operation is one
+//! the untyped (`SEND_CAPABILITY`, `OPERATION_ATTACH_SHARED_PAGE`), and every later operation is one
 //! blocking `CALL` on the socket with the payload in the frame; bytes never cross a message. Socket
 //! ids are local registry indices, and each open socket costs one of the process's 64 slots. See
 //! notes/std/net.md.
@@ -12,9 +12,9 @@
 //! ## `TcpListener` is a held authority
 //!
 //! `bind` is `OPERATION_LISTEN` and `accept` is `OPERATION_ACCEPT`. `net_stack` is spawned with a
-//! **listen grant** (`netproto::listen_grant`, default `NO_LISTEN_GRANT`), an inclusive port range,
-//! and refuses `LISTEN` outside it: `LISTEN_DENIED` is `PermissionDenied` (ask whoever spawned you
-//! for the port; do not retry), and `LISTEN_IN_USE` is `AddrInUse` (pick another port). A listener
+//! **listen grant** (`netproto::listen_grant`, default `NO_PORT_GRANT`), an inclusive port range,
+//! and refuses `LISTEN` outside it: `PORT_CLAIM_DENIED` is `PermissionDenied` (ask whoever spawned you
+//! for the port; do not retry), and `PORT_CLAIM_IN_USE` is `AddrInUse` (pick another port). A listener
 //! holds no frame; `accept` gets the connection as a second capability under a second id
 //! (notes/net/the-inbound-half.md). The listener re-arms inside `ACCEPT`, so connections are served
 //! one after another, and a second peer arriving while this program is busy gets a RST.
@@ -90,7 +90,7 @@ struct Slot {
     // the segment net_stack delivered). Served before the next `RECEIVE`, so a stream never drops bytes.
     res_off: usize,
     res_len: usize,
-    res: [u8; DATA_MAXIMUM],
+    res: [u8; MAXIMUM_PAYLOAD_BYTES],
     // UDP: the connected peer (set by `connect`) and the most recent send destination, used as the
     // reported source of `recv_from` since the contract's RECEIVE does not carry the datagram source.
     peer: Option<(Ipv4Addr, u16)>,
@@ -105,7 +105,7 @@ impl Slot {
             socket: NO_FRAME,
             res_off: 0,
             res_len: 0,
-            res: [0; DATA_MAXIMUM],
+            res: [0; MAXIMUM_PAYLOAD_BYTES],
             peer: None,
             last_dst: None,
         }
@@ -212,7 +212,7 @@ fn fr8(va: u64) -> u8 {
 fn set_dst(id: u64, ip: Ipv4Addr, port: u16) {
     let base = page_frame_va(id);
     for (i, b) in ip.octets().iter().enumerate() {
-        fw8(base + DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, *b);
+        fw8(base + DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, *b);
     }
     // Port, little-endian, matching the frame header (netproto).
     fw8(base + DESTINATION_PORT_OFFSET_BYTES, port as u8);
@@ -279,7 +279,7 @@ fn ensure_page(id: u64) -> io::Result<u64> {
 }
 
 /// File `socket` as id `id`'s open socket and, if it carries bytes, hand it a copy of the id's page
-/// (`SEND_CAPABILITY`, `OPERATION_ATTACH_PAGE_FRAME`), narrowed to read/write. On failure the socket is
+/// (`SEND_CAPABILITY`, `OPERATION_ATTACH_SHARED_PAGE`), narrowed to read/write. On failure the socket is
 /// closed and the id released.
 fn take_socket(id: u64, socket: u64, carries_bytes: bool) -> io::Result<()> {
     lock().slots()[id as usize].socket = socket;
@@ -295,7 +295,7 @@ fn take_socket(id: u64, socket: u64, carries_bytes: bool) -> io::Result<()> {
                 abi::rendezvous::SEND_CAPABILITY,
                 frame,
                 abi::rights::READ | abi::rights::WRITE,
-                OPERATION_ATTACH_PAGE_FRAME,
+                OPERATION_ATTACH_SHARED_PAGE,
             )
         };
         if sent < 0 { Err(io::Error::UNSUPPORTED_PLATFORM) } else { Ok(()) }
@@ -318,7 +318,7 @@ fn open(is_tcp: bool) -> io::Result<u64> {
         free_id(id);
         return Err(io::Error::UNSUPPORTED_PLATFORM);
     }
-    let Some(socket) = socket.filter(|_| r0 == REP_OK) else {
+    let Some(socket) = socket.filter(|_| r0 == REPLY_OK) else {
         free_id(id);
         return Err(io::const_error!(io::ErrorKind::Other, "the net server refused the open"));
     };
@@ -437,13 +437,13 @@ impl TcpStream {
         if is_syscall_err(r0) {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
-        if r0 == REP_ERR {
+        if r0 == REPLY_ERROR {
             return Err(io::const_error!(
                 io::ErrorKind::TimedOut,
                 "the net server timed out waiting for data"
             ));
         }
-        let total = (r0 as usize).min(DATA_MAXIMUM);
+        let total = (r0 as usize).min(MAXIMUM_PAYLOAD_BYTES);
         if total == 0 {
             return Ok(0); // peer closed: end of stream
         }
@@ -489,13 +489,13 @@ impl TcpStream {
         if buf.is_empty() {
             return Ok(0);
         }
-        let chunk = buf.len().min(DATA_MAXIMUM);
+        let chunk = buf.len().min(MAXIMUM_PAYLOAD_BYTES);
         write_payload(self.id, &buf[..chunk]);
         let (r0, _) = rt::call(socket_of(self.id), OPERATION_SEND, chunk as u64);
         if is_syscall_err(r0) {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
-        if r0 == REP_ERR {
+        if r0 == REPLY_ERROR {
             return Err(io::const_error!(io::ErrorKind::Other, "the net server rejected the send"));
         }
         Ok((r0 as usize).min(chunk))
@@ -645,11 +645,11 @@ impl TcpListener {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
         match (r0, socket) {
-            (LISTEN_GRANTED, Some(socket)) => {
+            (PORT_CLAIM_GRANTED, Some(socket)) => {
                 take_socket(id, socket, false)?;
                 Ok(TcpListener { id, port })
             }
-            (LISTEN_DENIED, _) => {
+            (PORT_CLAIM_DENIED, _) => {
                 free_id(id);
                 // The capability answer. Not `AddrInUse` and not a retry: this stack was never
                 // granted this port, and no other port will help unless it was granted too.
@@ -658,7 +658,7 @@ impl TcpListener {
                     "this program's net server was not granted that listening port"
                 ))
             }
-            (LISTEN_IN_USE, _) => {
+            (PORT_CLAIM_IN_USE, _) => {
                 free_id(id);
                 Err(io::const_error!(
                     io::ErrorKind::AddrInUse,
@@ -705,7 +705,7 @@ impl TcpListener {
             free_id(conn);
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
-        let Some(socket) = socket.filter(|_| r0 == REP_OK) else {
+        let Some(socket) = socket.filter(|_| r0 == REPLY_OK) else {
             free_id(conn);
             // Nobody connected inside the server's bounded wait, or the handshake was aborted. The
             // listener is still armed either way, so this is a retryable "try again", not a fault.
@@ -842,7 +842,7 @@ impl UdpSocket {
 
     pub fn send_to(&self, buf: &[u8], addr: &SocketAddr) -> io::Result<usize> {
         let (ip, port) = v4(addr)?;
-        if buf.len() > DATA_MAXIMUM {
+        if buf.len() > MAXIMUM_PAYLOAD_BYTES {
             return Err(io::const_error!(
                 io::ErrorKind::InvalidInput,
                 "datagram larger than the shared frame"
@@ -854,11 +854,11 @@ impl UdpSocket {
             let mut g = lock();
             g.slots()[self.id as usize].last_dst = Some((ip, port));
         }
-        let (r0, _) = rt::call(socket_of(self.id), OPERATION_SENDTO, buf.len() as u64);
+        let (r0, _) = rt::call(socket_of(self.id), OPERATION_SEND_TO, buf.len() as u64);
         if is_syscall_err(r0) {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
-        if r0 != REP_OK {
+        if r0 != REPLY_OK {
             return Err(io::const_error!(io::ErrorKind::Other, "the net server rejected the send"));
         }
         Ok(buf.len())
@@ -882,13 +882,13 @@ impl UdpSocket {
         if is_syscall_err(r0) {
             return Err(io::Error::UNSUPPORTED_PLATFORM);
         }
-        if r0 == REP_ERR {
+        if r0 == REPLY_ERROR {
             return Err(io::const_error!(
                 io::ErrorKind::TimedOut,
                 "the net server timed out waiting for a datagram"
             ));
         }
-        let total = (r0 as usize).min(DATA_MAXIMUM);
+        let total = (r0 as usize).min(MAXIMUM_PAYLOAD_BYTES);
         // A datagram is message-oriented: a short buffer truncates it, standard UDP semantics.
         let n = total.min(buf.len());
         read_payload(self.id, 0, &mut buf[..n]);
@@ -1105,7 +1105,7 @@ fn ensure_resolver_page(_held: &ResolverGuard, i: usize) -> io::Result<()> {
             abi::rendezvous::SEND_CAPABILITY,
             frame,
             abi::rights::READ | abi::rights::WRITE,
-            resolve::request(resolve::OPERATION_ATTACH_PAGE_FRAME),
+            resolve::request(resolve::OPERATION_ATTACH_SHARED_PAGE),
         )
     };
     if sent < 0 {
@@ -1200,6 +1200,10 @@ pub fn lookup_host(host: &str, port: u16) -> io::Result<LookupHost> {
                 resolve::network_step::CONNECT => io::const_error!(
                     io::ErrorKind::NetworkUnreachable,
                     "the resolver's connection to its name server was not established"
+                ),
+                resolve::network_step::UNKNOWN_TRANSPORT => io::const_error!(
+                    io::ErrorKind::NetworkUnreachable,
+                    "the resolver was started with a transport it does not know"
                 ),
                 _ => io::const_error!(
                     io::ErrorKind::NetworkUnreachable,

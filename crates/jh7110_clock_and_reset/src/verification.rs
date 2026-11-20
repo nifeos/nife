@@ -139,13 +139,13 @@ fn a_reset_line_is_one_bit_of_one_of_the_domains_own_words() {
 }
 
 /// **Every fixed plan ungates its clocks before it releases a reset**: the TRNG's, both halves
-/// of the Ethernet controller's, the PMIC bus's and both SD/MMC slots' plans, and the v1.3B
+/// of the Ethernet controller's, the PMIC bus's, both SD/MMC slots' and the PCI Express ports' plans, and the v1.3B
 /// transmit parent walked before the Ethernet controller's always-on half, hold only ids inside
 /// their own domain, put every clock step ahead of every reset release, and choose a clock's
 /// parent before enabling that clock.
 /// Falsification: replayable `crates/jh7110_clock_and_reset/falsifications/verification.every_fixed_plan_ungates_its_clocks_before_releasing_a_reset.patch`
 #[kani::proof]
-#[kani::unwind(8)]
+#[kani::unwind(10)]
 fn every_fixed_plan_ungates_its_clocks_before_releasing_a_reset() {
     assert!(ungates_before_releasing(
         ENTROPY_BRING_UP,
@@ -162,6 +162,18 @@ fn every_fixed_plan_ungates_its_clocks_before_releasing_a_reset() {
     ));
     assert!(ungates_before_releasing(SD_IO_BRING_UP[0], &SYSTEM));
     assert!(ungates_before_releasing(SD_IO_BRING_UP[1], &SYSTEM));
+    assert!(ungates_before_releasing(
+        PCI_EXPRESS_SYSTEM_BRING_UP,
+        &SYSTEM
+    ));
+    assert!(ungates_before_releasing(
+        PCI_EXPRESS_SYSTEM_TOP_GROUP_BRING_UP[0],
+        &SYSTEM_TOP_GROUP
+    ));
+    assert!(ungates_before_releasing(
+        PCI_EXPRESS_SYSTEM_TOP_GROUP_BRING_UP[1],
+        &SYSTEM_TOP_GROUP
+    ));
     assert!(ungates_before_releasing(
         &with_parent_first(
             GMAC0_TRANSMIT_PARENT_REDUCED_MEDIA_INDEPENDENT_INTERFACE_RECEIVE_TRANSMIT

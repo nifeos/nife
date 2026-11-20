@@ -33,6 +33,8 @@
 //! - It refuses a partition not 4096-aligned at both ends rather than rounding in: blocks
 //!   straddling its first byte would be readable only through the offset disk that made them.
 //! - No progress, no resume, and no confirmation: it formats one partition of one disk.
+//! - The partition table is not checked against the disk's size (`check_disk_size`), so the
+//!   partition it formats is where the header says, on a disk the header may not describe.
 //! - Unencrypted (milestone 57 (partitioning and formatting a real drive)): encryption needs a
 //!   salt and two keys, and the `no_std` path refuses a password rather than skip it silently.
 
@@ -43,8 +45,8 @@ extern crate alloc;
 
 use filesystem_contract::{block, req};
 use filesystem_fixture::blank;
-use globally_unique_identifier_partition_table::GloballyUniqueIdentifierPartitionTable;
-use globally_unique_identifier_partition_table::guid::types;
+use globally_unique_identifier_partition_table::PartitionTable;
+use nife_partition_types::NIFE_DATA;
 use redoxfs::{BLOCK_SIZE, Disk, FileSystem};
 use redoxfs_server::{NameCopy, Server};
 use syscall::error::{EIO, Error, Result};
@@ -285,16 +287,16 @@ fn data_partition() -> Option<(u64, u64)> {
         }
     }
 
-    let table = GloballyUniqueIdentifierPartitionTable::parse(
+    let table = PartitionTable::parse(
         &head[LBA as usize..2 * LBA as usize],
         &head[2 * LBA as usize..],
     )
     .ok()?;
     for (_, part) in table.partitions() {
-        if part.type_guid != types::NIFE_DATA {
+        if part.type_guid != NIFE_DATA {
             continue;
         }
-        let start = part.first_lba * LBA;
+        let start = part.first_logical_block_address * LBA;
         let len = part.blocks()? * LBA;
         // Both ends on a filesystem block, or refuse. See BUGS: a filesystem whose blocks straddle
         // the partition's first byte is readable only through the offset disk that wrote it.

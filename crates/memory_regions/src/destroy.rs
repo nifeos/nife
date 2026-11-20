@@ -1,6 +1,6 @@
 //! **What destroying a region does.**
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: provisional.
 
 /// What [`destroy`](destroy_outcome) decides for a region.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

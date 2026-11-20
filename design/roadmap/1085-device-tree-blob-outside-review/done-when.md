@@ -8,7 +8,7 @@ An appendix to [the milestone](../1085-device-tree-blob-outside-review.md).
   remains.
 - `spelled_out.py`, `british_spelling.py`, `unit_symbols.py` and `question_shape.py` report zero
   findings over `src/` and `tests/`.
-- `node_reg` on a tree whose first prefix match carries no `reg` returns `Ok(0)`, with a hostile
+- `node_register_regions` on a tree whose first prefix match carries no `reg` returns `Ok(0)`, with a hostile
   test. `node_prop` on the same tree still returns `Ok(None)`.
 - `reserved_memory_regions` on a tree with `/soc/reserved-memory` returns `Ok(0)`, with a hostile
   test; the two existing reserved-memory tests still pass.

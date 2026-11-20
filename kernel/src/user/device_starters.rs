@@ -65,7 +65,7 @@ pub(super) fn boot_clock_page() -> u64 {
         // No `clock` program packed: a zeroed page, the honest unknown clock.
         None => crate::memory::alloc_zeroed()
             .expect("no frame for the clock page")
-            .addr(),
+            .physical_address(),
     }
 }
 
@@ -234,7 +234,7 @@ pub(super) fn boot_designware_network()
         return None;
     }
     let image = program("net_stack")?;
-    match designware_ethernet_service::start_net_server(image, socket_contract::NO_LISTEN_GRANT) {
+    match designware_ethernet_service::start_net_server(image, socket_contract::NO_PORT_GRANT) {
         Ok(w) => {
             crate::println!(
                 "  network     : the JH7110's Ethernet port, link up; its control process brought it \
@@ -266,7 +266,7 @@ fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioB
     // driver's own first read.
     let dma = crate::memory::alloc_contiguous_zeroed(1)
         .expect("no DMA frame for a boot virtio device")
-        .addr();
+        .physical_address();
     // Its physical base goes in the page's tail
     // ([`DIRECT_MEMORY_ACCESS_REGION_BASE_PHYSICAL_ADDRESS_WORD_OFFSET`]).
     write_dma_phys(dma);
@@ -277,7 +277,7 @@ fn boot_virtio_mmio_device(d: crate::virtio::VirtioMmioDevice) -> Option<VirtioB
             mmio_phys: d.mmio_phys,
         },
         dma,
-        FRAME_SIZE,
+        FRAME_BYTES,
         None,
     )?;
     Some(VirtioBootGrant {
@@ -309,9 +309,9 @@ pub(super) fn boot_config_page() -> u64 {
     // Zeroed, so a previous occupant's bytes are not visible through the tail past `PAGE_CONTENT_BYTES`.
     let phys = crate::memory::alloc_zeroed()
         .expect("no frame for the config page")
-        .addr();
+        .physical_address();
     // SAFETY: `phys` names that frame, direct-mapped and owned by nobody else yet, and `bytes` is
-    // `PAGE_CONTENT_BYTES` long, far under `FRAME_SIZE`, so the copy does not run past the frame.
+    // `PAGE_CONTENT_BYTES` long, far under `FRAME_BYTES`, so the copy does not run past the frame.
     unsafe {
         core::ptr::copy_nonoverlapping(
             bytes.as_ptr(),

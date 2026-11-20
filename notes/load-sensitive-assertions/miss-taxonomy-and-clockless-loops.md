@@ -176,5 +176,5 @@ left" section, unchanged. (Built 2026-08-17: see [the icount claims](the-icount-
 The other 34 sites in the scope note were not audited, again. This round adds a sharper reading
 order than "check them against the same question". The three sites here were all found by grepping
 the allowed files for a global count taken as a baseline (`thread_count()`, `free_frames()`,
-`stats().free()`) and for a loop with no clock in it. Those two greps are cheap, and between them
+`stats().free_frames()`) and for a loop with no clock in it. Those two greps are cheap, and between them
 they caught every site this round changed.

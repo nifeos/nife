@@ -53,7 +53,7 @@ fn a_tls_client_speaks_to_its_pinned_peer_and_refuses_every_other() {
 
     let w = wired_or_skip!(e1000e_service::start_net_server(
         net_stack,
-        socket_contract::NO_LISTEN_GRANT
+        socket_contract::NO_PORT_GRANT
     ));
     // The lease first, so `net_stack` is in its serve loop before the program's first connect.
     let lease = crate::sched::ipc_receive(w.report)[0] as u32;

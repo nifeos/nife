@@ -121,7 +121,7 @@ fn wr32(va: u64, v: u32) {
 }
 
 fn out_byte(i: usize) -> u8 {
-    // SAFETY: `i` is below FRAME_SIZE, inside the application's output page.
+    // SAFETY: `i` is below FRAME_BYTES, inside the application's output page.
     unsafe { core::ptr::read_volatile((OUT_VA + i as u64) as *const u8) }
 }
 
@@ -152,7 +152,7 @@ fn paint(
             // The rectangle is either the engine's damage or the whole surface this process asked
             // the geometry of, and `Vt::pixel` is defined outside its own grid (it is the default
             // background), which is what makes the second case safe as well as correct.
-            surface.write_u32(off, t.pixel(x, y));
+            surface.write::<u32>(off, t.pixel(x, y));
         }
     }
     (x0, y0, w, h)

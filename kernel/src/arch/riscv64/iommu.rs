@@ -61,7 +61,7 @@ const ROOT_ENTRIES: u32 = 512;
 const NON_LEAF_ENTRY_VALID: u64 = 1 << 0;
 
 // The root frame is one frame of eight-byte entries.
-const _: () = assert!(ROOT_ENTRIES as u64 * 8 == page_frames::FRAME_SIZE);
+const _: () = assert!(ROOT_ENTRIES as u64 * 8 == page_frames::FRAME_BYTES);
 
 // cqcsr/fqcsr: enable at 0, active ("on") at 16, busy at 17; error bits 8..11 for diagnostics.
 const QUEUE_EN: u32 = 1 << 0;
@@ -144,13 +144,13 @@ fn w64(base: u64, off: u64, v: u64) {
 fn zeroed_page_frame(what: &str) -> u64 {
     let pa = crate::memory::alloc()
         .unwrap_or_else(|| panic!("no frame for the IOMMU {what}"))
-        .addr();
+        .physical_address();
     // SAFETY: a fresh frame, reachable through the direct map, owned by this module from here on.
     unsafe {
         core::ptr::write_bytes(
             phys_to_virt(pa) as *mut u8,
             0,
-            page_frames::FRAME_SIZE as usize,
+            page_frames::FRAME_BYTES as usize,
         );
     }
     pa
@@ -178,7 +178,7 @@ struct DirectoryPosition {
 ///
 /// Name: provisional.
 const fn directory_limit(dc_bytes: u64) -> u64 {
-    ROOT_ENTRIES as u64 * (page_frames::FRAME_SIZE / dc_bytes)
+    ROOT_ENTRIES as u64 * (page_frames::FRAME_BYTES / dc_bytes)
 }
 
 /// **Where device `rid`'s context sits** in the two-level directory of `dc_bytes`-long contexts,
@@ -186,7 +186,7 @@ const fn directory_limit(dc_bytes: u64) -> u64 {
 /// function of its own, and a refusal is a value and never a panic: a requester id comes from the
 /// bus. `no_device_can_reach_another_devices_context` proves it.
 ///
-/// The split is the spec's: a leaf frame holds `FRAME_SIZE / dc_bytes` contexts, so `DDI[0]` is 6
+/// The split is the spec's: a leaf frame holds `FRAME_BYTES / dc_bytes` contexts, so `DDI[0]` is 6
 /// bits extended or 7 base, and `DDI[1]` is the next 9.
 ///
 /// Name: provisional.
@@ -194,7 +194,7 @@ fn directory_position(rid: u32, dc_bytes: u64) -> Option<DirectoryPosition> {
     if rid as u64 >= directory_limit(dc_bytes) {
         return None;
     }
-    let per_leaf = page_frames::FRAME_SIZE / dc_bytes;
+    let per_leaf = page_frames::FRAME_BYTES / dc_bytes;
     Some(DirectoryPosition {
         leaf: (rid as u64 / per_leaf) as usize,
         offset: (rid as u64 % per_leaf) * dc_bytes,
@@ -336,7 +336,7 @@ pub(crate) fn print_summary() {
 
 /// Build a DMA domain over exactly `regions` in Sv39, the format `iosatp` walks, and return its
 /// root.
-pub(crate) fn build_domain(regions: &[page_tables::domain::DmaRegion]) -> u64 {
+pub(crate) fn build_domain(regions: &[page_tables::domain::DirectMemoryAccessRegion]) -> u64 {
     crate::iommu::build_identity::<page_tables::Sv39>(regions)
 }
 
@@ -361,7 +361,7 @@ pub(crate) fn scope_of(_rid: u32) -> crate::iommu::Scope {
 /// none.
 pub(crate) fn for_each_reserved_region(
     _rid: u32,
-    _each: &mut dyn FnMut(page_tables::domain::DmaRegion),
+    _each: &mut dyn FnMut(page_tables::domain::DirectMemoryAccessRegion),
 ) {
 }
 
@@ -404,7 +404,7 @@ fn leaf_at(s: &mut Iommu, index: usize) -> Option<u64> {
     if existing & NON_LEAF_ENTRY_VALID != 0 {
         return Some(non_leaf_entry_leaf(existing));
     }
-    let leaf = crate::memory::alloc_zeroed()?.addr();
+    let leaf = crate::memory::alloc_zeroed()?.physical_address();
     // The leaf's contexts are zero, so invalid: publish them before the entry that makes the IOMMU
     // walk them.
     crate::arch::direct_memory_access_write_barrier();
@@ -524,7 +524,7 @@ mod proofs {
         );
 
         // From `page_tables::domain`: a page frame in RAM.
-        kani::assume(root % page_frames::FRAME_SIZE == 0);
+        kani::assume(root % page_frames::FRAME_BYTES == 0);
         kani::assume(root < 1 << PA_BITS);
 
         // On the whole address, so the harness does not repeat the implementation's `>> 12`.
@@ -605,7 +605,7 @@ mod proofs {
             "every admitted device's leaf has an entry in the root frame"
         );
         assert!(
-            pa.offset + dc_bytes <= page_frames::FRAME_SIZE,
+            pa.offset + dc_bytes <= page_frames::FRAME_BYTES,
             "every context the bound admits lies inside its leaf's single frame"
         );
         assert!(
@@ -631,7 +631,7 @@ mod proofs {
     fn the_root_entry_names_exactly_the_leaf() {
         let leaf: u64 = kani::any();
         // A leaf is a page frame in RAM.
-        kani::assume(leaf % page_frames::FRAME_SIZE == 0);
+        kani::assume(leaf % page_frames::FRAME_BYTES == 0);
         kani::assume(leaf < 1 << PA_BITS);
 
         let entry = non_leaf_entry(leaf);

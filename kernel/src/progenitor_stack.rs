@@ -13,7 +13,7 @@ use core::sync::atomic::{AtomicU64, Ordering};
 
 use crate::user::PROGENITOR_STACK_PAGES;
 
-const PAGE: u64 = page_frames::FRAME_SIZE;
+const PAGE: u64 = page_frames::FRAME_BYTES;
 
 /// The whole stack, in bytes: what the gauge's numbers are out of.
 pub(crate) const STACK_BYTES: u64 = PROGENITOR_STACK_PAGES * PAGE;

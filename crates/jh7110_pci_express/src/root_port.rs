@@ -10,7 +10,8 @@
 //! calef has not named it.
 
 use pci_configuration_space::{
-    BUS_NUMBERS, Bdf, CMD_BUS_MASTER, CMD_MEMORY_SPACE, COMMAND, HEADER_TYPE, HEADER_TYPE_BRIDGE,
+    BUS_NUMBERS_REGISTER, Bdf, COMMAND_BUS_MASTER_ENABLE, COMMAND_MEMORY_SPACE_ENABLE,
+    COMMAND_REGISTER, HEADER_TYPE_BRIDGE, HEADER_TYPE_REGISTER,
 };
 
 use crate::Window;
@@ -20,8 +21,8 @@ use crate::Window;
 /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/163-jh7110-pcie-root-complex.
 pub const LOCATION: Bdf = Bdf {
     bus: 0,
-    dev: 0,
-    func: 0,
+    device: 0,
+    function: 0,
 };
 
 /// The bus [`configure`] puts behind the root port.
@@ -125,26 +126,26 @@ pub fn configure(
     if read32(LOCATION, 0) & 0xffff == 0xffff {
         return Configured::Absent;
     }
-    let header_type = ((read32(LOCATION, HEADER_TYPE & !3) >> 16) & 0x7f) as u8;
+    let header_type = ((read32(LOCATION, HEADER_TYPE_REGISTER & !3) >> 16) & 0x7f) as u8;
     if header_type != HEADER_TYPE_BRIDGE {
         return Configured::NotABridge { header_type };
     }
     let Some(memory_word) = memory_base_and_limit(memory) else {
         return Configured::WindowUnusable;
     };
-    let before = read32(LOCATION, BUS_NUMBERS);
-    write32(LOCATION, BUS_NUMBERS, bus_numbers(before));
+    let before = read32(LOCATION, BUS_NUMBERS_REGISTER);
+    write32(LOCATION, BUS_NUMBERS_REGISTER, bus_numbers(before));
     write32(LOCATION, MEMORY_BASE_AND_LIMIT, memory_word);
     write32(LOCATION, INPUT_OUTPUT_BASE_AND_LIMIT, INPUT_OUTPUT_CLOSED);
     write32(LOCATION, PREFETCH_BASE_AND_LIMIT, PREFETCH_CLOSED);
-    let command = read32(LOCATION, COMMAND) & 0xffff;
+    let command = read32(LOCATION, COMMAND_REGISTER) & 0xffff;
     write32(
         LOCATION,
-        COMMAND,
-        command | u32::from(CMD_MEMORY_SPACE | CMD_BUS_MASTER),
+        COMMAND_REGISTER,
+        command | u32::from(COMMAND_MEMORY_SPACE_ENABLE | COMMAND_BUS_MASTER_ENABLE),
     );
     Configured::Forwarding {
-        bus_numbers: read32(LOCATION, BUS_NUMBERS),
+        bus_numbers: read32(LOCATION, BUS_NUMBERS_REGISTER),
         memory_base_and_limit: read32(LOCATION, MEMORY_BASE_AND_LIMIT),
     }
 }

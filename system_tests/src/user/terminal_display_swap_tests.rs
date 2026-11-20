@@ -45,7 +45,7 @@ static mut ELF_MAPS: [Mapping; MAXIMUM_WINDOWS] = [const {
     Mapping {
         va: 0,
         phys: 0,
-        flags: Flags::user_rodata(),
+        flags: Flags::user_read_only_data(),
     }
 }; MAXIMUM_WINDOWS];
 
@@ -217,7 +217,7 @@ impl Rig {
                 .expect("no supervisor budget");
         let image_pages: usize = [editor_image, supervisor_image, display_image]
             .iter()
-            .map(|i| i.len().div_ceil(FRAME_SIZE as usize))
+            .map(|i| i.len().div_ceil(FRAME_BYTES as usize))
             .sum();
         let frames = crate::memory_region::create((image_pages + EXTRA_STACK_PAGES + 3) as u64)
             .expect("no frame region");
@@ -433,11 +433,11 @@ fn copy_the_images_into_frames(images: [(&[u8], u64); 3], alloc: impl Fn() -> u6
     let mut windows = 0;
     for (image, va) in images {
         assert!(
-            image.len().div_ceil(FRAME_SIZE as usize) <= MAXIMUM_ELF_PAGES,
+            image.len().div_ceil(FRAME_BYTES as usize) <= MAXIMUM_ELF_PAGES,
             "an image of {} bytes outgrew the test's mapping",
             image.len()
         );
-        for (i, chunk) in image.chunks(FRAME_SIZE as usize).enumerate() {
+        for (i, chunk) in image.chunks(FRAME_BYTES as usize).enumerate() {
             let phys = alloc();
             // SAFETY: a frame just allocated for this copy and not yet mapped anywhere else.
             unsafe {
@@ -448,16 +448,16 @@ fn copy_the_images_into_frames(images: [(&[u8], u64); 3], alloc: impl Fn() -> u6
                 );
             }
             maps[windows] = Mapping {
-                va: va + i as u64 * FRAME_SIZE,
+                va: va + i as u64 * FRAME_BYTES,
                 phys,
-                flags: Flags::user_rodata(),
+                flags: Flags::user_read_only_data(),
             };
             windows += 1;
         }
     }
     for k in 0..EXTRA_STACK_PAGES {
         maps[windows] = Mapping {
-            va: USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE,
+            va: USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES,
             phys: alloc(),
             flags: Flags::user_data(),
         };

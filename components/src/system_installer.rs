@@ -18,6 +18,7 @@
 //! - The slots cost 128 MiB, and nothing writes slot 1 yet (`cargo xtask rollback-boot` does).
 //! - Disks under about 700 MiB are refused, untested.
 //! - A block-for-block clone keeps its source's disk and partition GUIDs; nothing re-draws them.
+//! - The tables it reads back are not checked against the disk's size (`check_disk_size`).
 //!
 //! Name: ratified 2026-10-06 (calef), replacing `installer`. Refused `basalt_installer`.
 
@@ -34,7 +35,7 @@ use filesystem_contract::{block, req};
 use globally_unique_identifier_partition_table::entry::Entry;
 use globally_unique_identifier_partition_table::guid::types;
 use globally_unique_identifier_partition_table::{
-    ENTRY_ARRAY_BYTES, GloballyUniqueIdentifierPartitionTable, PRIMARY_HEADER_LBA,
+    ENTRY_ARRAY_BYTES, PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, PartitionTable,
 };
 use user_mode_runtime::{call, send};
 use uuid::Uuid;
@@ -212,7 +213,7 @@ fn survey() -> ! {
         user_mode_runtime::exit()
     }
     let head: &[u8] = primary();
-    let Ok(table) = GloballyUniqueIdentifierPartitionTable::parse(
+    let Ok(table) = PartitionTable::parse(
         &head[LBA as usize..2 * LBA as usize],
         &head[2 * LBA as usize..],
     ) else {
@@ -220,8 +221,8 @@ fn survey() -> ! {
         user_mode_runtime::exit()
     };
     for (_, part) in table.partitions() {
-        if part.type_guid == types::NIFE_DATA {
-            send(REPORT, R_ALREADY, part.first_lba, 0);
+        if part.type_guid == nife_partition_types::NIFE_DATA {
+            send(REPORT, R_ALREADY, part.first_logical_block_address, 0);
             user_mode_runtime::exit()
         }
     }
@@ -292,7 +293,7 @@ fn confirm(slot: u64) -> ! {
     let disk_guid;
     {
         let head: &[u8] = primary();
-        let Ok(table) = GloballyUniqueIdentifierPartitionTable::parse(
+        let Ok(table) = PartitionTable::parse(
             &head[LBA as usize..2 * LBA as usize],
             &head[2 * LBA as usize..],
         ) else {
@@ -309,7 +310,7 @@ fn confirm(slot: u64) -> ! {
                 send(REPORT, R_NO_SLOT, slots, 0);
                 user_mode_runtime::exit()
             }
-            if part.type_guid == types::NIFE_BOOT {
+            if part.type_guid == nife_partition_types::NIFE_BOOT {
                 if slots == slot {
                     at = used;
                 }
@@ -335,13 +336,9 @@ fn confirm(slot: u64) -> ! {
     parts[at].attributes = state.confirmed().into_attributes(parts[at].attributes);
 
     let array = array();
-    let Ok(table) = GloballyUniqueIdentifierPartitionTable::create(
-        disk_guid,
-        LBA as usize,
-        block_count,
-        &parts[..used],
-        array,
-    ) else {
+    let Ok(table) =
+        PartitionTable::create(disk_guid, LBA as usize, block_count, &parts[..used], array)
+    else {
         send(REPORT, R_DISK_FAILED, 4, 0);
         user_mode_runtime::exit()
     };
@@ -353,23 +350,25 @@ fn confirm(slot: u64) -> ! {
     // half-written primary fails its own CRC rather than pointing at an array it does not
     // describe. The protective MBR is not rewritten: the attribute bits are the only thing
     // changing and the MBR does not describe them.
-    if !write_at(table.backup_entry_lba(), entry_array) {
+    if !write_at(table.backup_entry_logical_block_address(), entry_array) {
         send(REPORT, R_DISK_FAILED, 5, 0);
         user_mode_runtime::exit()
     }
     block.fill(0);
     if table.write_backup_header(&mut block).is_err()
-        || !write_at(table.backup_header_lba(), &block)
+        || !write_at(table.backup_header_logical_block_address(), &block)
     {
         send(REPORT, R_DISK_FAILED, 6, 0);
         user_mode_runtime::exit()
     }
-    if !write_at(table.primary_entry_lba(), entry_array) {
+    if !write_at(table.primary_entry_logical_block_address(), entry_array) {
         send(REPORT, R_DISK_FAILED, 7, 0);
         user_mode_runtime::exit()
     }
     block.fill(0);
-    if table.write_primary_header(&mut block).is_err() || !write_at(PRIMARY_HEADER_LBA, &block) {
+    if table.write_primary_header(&mut block).is_err()
+        || !write_at(PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, &block)
+    {
         send(REPORT, R_DISK_FAILED, 8, 0);
         user_mode_runtime::exit()
     }
@@ -528,7 +527,7 @@ fn write_table(
 ) -> Result<(), u64> {
     let mut entries = [(types::UNUSED, 0u64, 0u64, "", 0u64); 2 + SLOTS];
     entries[0] = (
-        types::NIFE_DATA,
+        nife_partition_types::NIFE_DATA,
         layout.data_first,
         layout.data_last,
         NAMES[0],
@@ -543,7 +542,7 @@ fn write_table(
             State::EMPTY
         };
         entries[1 + i] = (
-            types::NIFE_BOOT,
+            nife_partition_types::NIFE_BOOT,
             layout.slot_first[i],
             layout.slot_last[i],
             NAMES[1 + i],
@@ -567,14 +566,8 @@ fn write_table(
     }
 
     let array = array();
-    let table = GloballyUniqueIdentifierPartitionTable::create(
-        guids[0],
-        LBA as usize,
-        block_count,
-        &parts,
-        array,
-    )
-    .map_err(|_| 12u64)?;
+    let table = PartitionTable::create(guids[0], LBA as usize, block_count, &parts, array)
+        .map_err(|_| 12u64)?;
 
     // One logical block of scratch. Built and written one at a time: the protective MBR, the two
     // headers and the entry array are each at a known LBA.
@@ -582,10 +575,16 @@ fn write_table(
     let entry_array: &[u8] = table.entry_array();
     let steps: [(u64, Option<&[u8]>); 5] = [
         (0, None),
-        (PRIMARY_HEADER_LBA, None),
-        (table.primary_entry_lba(), Some(entry_array)),
-        (table.backup_entry_lba(), Some(entry_array)),
-        (table.backup_header_lba(), None),
+        (PRIMARY_HEADER_LOGICAL_BLOCK_ADDRESS, None),
+        (
+            table.primary_entry_logical_block_address(),
+            Some(entry_array),
+        ),
+        (
+            table.backup_entry_logical_block_address(),
+            Some(entry_array),
+        ),
+        (table.backup_header_logical_block_address(), None),
     ];
     for (n, (lba, bytes)) in steps.iter().enumerate() {
         let data: &[u8] = match bytes {
@@ -593,7 +592,7 @@ fn write_table(
             None => {
                 block.fill(0);
                 let built = match n {
-                    0 => table.write_protective_mbr(&mut block),
+                    0 => table.write_protective_master_boot_record(&mut block),
                     1 => table.write_primary_header(&mut block),
                     _ => table.write_backup_header(&mut block),
                 };
@@ -723,17 +722,17 @@ fn copy_boot_file(first_block: u64, boot_file_len: u64, step: u64) -> Result<(),
     Ok(())
 }
 
-/// Lay `data` over the disk starting at logical block `first_lba`, **preserving everything else in
+/// Lay `data` over the disk starting at logical block `first_logical_block_address`, **preserving everything else in
 /// the transfer blocks it touches**: each is read, patched in the shared page, and written back.
 ///
 /// The partition table is the one thing here written this way, and it has to be: the primary table
 /// is 34 logical blocks and the transfer unit is eight of them, so the tail of the last transfer
 /// block is the first three kilobytes of the partition the table is only supposed to be
 /// *describing*.
-fn write_at(first_lba: u64, data: &[u8]) -> bool {
+fn write_at(first_logical_block_address: u64, data: &[u8]) -> bool {
     let mut done = 0usize;
     while done < data.len() {
-        let byte_at = first_lba * LBA + done as u64;
+        let byte_at = first_logical_block_address * LBA + done as u64;
         let block = byte_at / TRANSFER;
         let offset = (byte_at % TRANSFER) as usize;
         let n = core::cmp::min(block::BLOCK_BYTES - offset, data.len() - done);

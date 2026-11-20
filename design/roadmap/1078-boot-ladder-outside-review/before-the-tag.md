@@ -67,11 +67,11 @@ An appendix to [the milestone](../1078-boot-ladder-outside-review.md).
    two under the crate's `BUGS` entry, which then goes.
    Door: two-way. Effort: S. This item lands in nife, not in the crate.
 
-8. Ten public names await ratification, and three of them say the wrong thing.
+8. Ten public names, three of which said the wrong thing, are ratified as built.
    Finding: `PROMPT` (`src/lib.rs` line 132) names the shell's banner line, and the crate's `BUGS` (lines 14 to 15) admits it. `SELF_TEST_CHECKS_EARLIER` (line 115) holds counts, not checks. `TOUR` (line 123) names the line `nife: the capability core runs on <arch>.` by an internal
    word a stranger has no way to read. The other seven say what they hold.
    Why it matters: a published name is one-way, and a name is the claim a reader meets first.
-   Change: as the second decision decides, provisionally: `PROMPT` to `SHELL_BANNER`,
+   Change: as the ruling of 2026-11-19 (UTC) decided: `PROMPT` to `SHELL_BANNER`,
    `SELF_TEST_CHECKS_EARLIER` to `EARLIER_SELF_TEST_CHECK_COUNTS`, `TOUR` to `CORE_RUNS`, the
    other eight kept. One rename lane applies it, and `serial_console`'s `Stage::Prompt` and
    `Stage::Tour` follow the renamed constants. The same lane gives the provisional names of the

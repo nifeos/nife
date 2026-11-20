@@ -44,7 +44,7 @@ fn spawn_date(
                 maps: &[Mapping {
                     va: CLOCK_VA,
                     phys,
-                    flags: Flags::user_rodata(),
+                    flags: Flags::user_read_only_data(),
                 }],
                 windows: &[],
             },
@@ -241,7 +241,7 @@ fn an_unknown_clock_is_said_plainly_rather_than_printed_as_1970() {
     // out and what `clock_contract`'s `a_zeroed_page_reads_as_unknown` pins as UNKNOWN.
     let blank = crate::memory::alloc_zeroed()
         .expect("no frame for a blank clock page")
-        .addr();
+        .physical_address();
 
     let (out, region) = spawn_date(Some(blank), FMT_HUMAN, 0, PROVENANCE);
     let n = line(out, &mut buf);

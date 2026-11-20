@@ -8,7 +8,7 @@ use super::*;
 /// The last pair [`start_granted_two_dirs`] built: both grants as asked for, both narrowed
 /// endpoints, and the shared file-channel frame. See the reuse note there.
 #[allow(clippy::type_complexity)]
-static TWO_DIRS: spin_lock::SpinLock<
+static TWO_DIRS: test_and_set_lock::SpinLock<
     Option<(
         (&'static str, u64),
         (&'static str, u64),
@@ -16,7 +16,7 @@ static TWO_DIRS: spin_lock::SpinLock<
         RendezvousId,
         u64,
     )>,
-> = spin_lock::SpinLock::new(None);
+> = test_and_set_lock::SpinLock::new(None);
 
 /// Two directory grants for one confined program: slot 0 is always [`TwoDirGrant::a`] and slot 1
 /// always [`TwoDirGrant::b`], which is the whole of what tells them apart.
@@ -88,7 +88,7 @@ pub fn start_granted_two_dirs(
         }; FILE_PAGES + CLIENT_EXTRA_STACK];
         let n = map_channel(&mut maps, FILE_VA_CLIENT, file_shared, FILE_PAGES);
         for (k, m) in maps[n..n + stack_pages].iter_mut().enumerate() {
-            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_SIZE;
+            m.va = USER_STACK_VA - (k as u64 + 1) * FRAME_BYTES;
             m.phys = page_frame();
         }
         run(

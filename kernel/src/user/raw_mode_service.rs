@@ -64,13 +64,13 @@ fn start_with(replaceable: bool) -> (Wiring, Holding) {
 
     let console_phys = crate::memory::alloc_zeroed()
         .expect("no frame for the fake console's shared page")
-        .addr();
+        .physical_address();
     let app_out_phys = crate::memory::alloc_zeroed()
         .expect("no frame for line_editor's app-output page")
-        .addr();
+        .physical_address();
     let app_in_phys = crate::memory::alloc_zeroed()
         .expect("no frame for line_editor's app-input page")
-        .addr();
+        .physical_address();
 
     let console_tid = sched::spawn(move || {
         loop {
@@ -103,7 +103,7 @@ fn start_with(replaceable: bool) -> (Wiring, Holding) {
                     Mapping {
                         va: APP_OUT_VA,
                         phys: app_out_phys,
-                        flags: Flags::user_rodata(),
+                        flags: Flags::user_read_only_data(),
                     },
                     Mapping {
                         va: APP_IN_VA,

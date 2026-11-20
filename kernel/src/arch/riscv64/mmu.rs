@@ -278,7 +278,7 @@ pub fn initialize() {
     refuse_unnameable_ram();
     let root = memory::alloc()
         .expect("no frame for the root page table")
-        .addr();
+        .physical_address();
     // SAFETY: a fresh frame; zero it before the hardware can ever walk it.
     unsafe {
         (*phys_to_ptr(root)).entries = [0; page_tables::ENTRIES];
@@ -290,7 +290,7 @@ pub fn initialize() {
         Mapper::<_, _, Format>::new(
             root,
             Half::High,
-            || memory::alloc().map(|f| f.addr()),
+            || memory::alloc().map(|f| f.physical_address()),
             phys_to_ptr,
         )
     };
@@ -405,6 +405,22 @@ pub(crate) fn initialize_secondary() {
     unsafe { install(root) };
 }
 
+/// Step 2 of [`map_everything`]: the kernel image, section by section, at its linked VAs. W^X.
+fn map_kernel_image<A, P>(m: &mut Mapper<A, P, Format>) -> Result<(), MapError>
+where
+    A: FnMut() -> Option<u64>,
+    P: Fn(u64) -> *mut PageTable,
+{
+    map_range(m, text_start(), text_end(), Flags::kernel_code())?;
+    map_range(
+        m,
+        rodata_start(),
+        rodata_end(),
+        Flags::kernel_read_only_data(),
+    )?;
+    map_range(m, data_start(), bss_end(), Flags::kernel_data())
+}
+
 /// Build every mapping the kernel needs in `m`: the direct map of RAM, the W^X kernel sections, the
 /// stacks, and the devices the device tree names. See notes/riscv-port/memory.md.
 fn map_everything<A, P>(m: &mut Mapper<A, P, Format>) -> Result<(), MapError>
@@ -422,10 +438,7 @@ where
         direct_map(m, image_hi.max(start), end, Flags::kernel_data())?;
     }
 
-    // 2. The kernel image, section by section, at its linked VAs. W^X.
-    map_range(m, text_start(), text_end(), Flags::kernel_code())?;
-    map_range(m, rodata_start(), rodata_end(), Flags::kernel_rodata())?;
-    map_range(m, data_start(), bss_end(), Flags::kernel_data())?;
+    map_kernel_image(m)?;
 
     // 3. The guard page stays unmapped. 4. The stack.
     map_range(m, stack_bottom(), stack_top(), Flags::kernel_data())?;
@@ -455,7 +468,8 @@ where
         direct_map_device_window(m, crg.base_physical_address, crg.size_bytes)?;
     }
 
-    // 6c. The JH7110's SYS clock and reset generator: I2C5 for the PMIC reset, and gmac0's clocks.
+    // 6c. The JH7110's SYS clock and reset generator: I2C5 for the PMIC reset, gmac0's clocks, and
+    //     the PCI Express port's bus clock.
     if let Some(sys) = memory::jh7110_sys_window() {
         direct_map_device_window(m, sys.base_physical_address, sys.size_bytes)?;
     }
@@ -497,6 +511,12 @@ where
         direct_map(m, w.base, w.base + used, Flags::device())?;
     }
 
+    // 6f. The JH7110's M.2 root port: the page of each register window its bring-up touches, the
+    //     two buses of its `cfg` window, and the slice of its 32-bit memory range BARs go in. Its
+    //     clocks live in the STG and SYS windows 6b and 6c already map. `pci_regions` stays `None`
+    //     until the port forwards, so step 9 maps nothing for it.
+    map_jh7110_pci_express(m)?;
+
     // 7. QEMU's `sifive_test` finisher, which `arch::semihosting::exit` writes. Boards have none.
     #[cfg(not(feature = "board"))]
     direct_map(m, 0x10_0000, 0x10_1000, Flags::device())?;
@@ -505,7 +525,7 @@ where
     //    may be RAM already mapped in step 1 (notes/visionfive2.md).
     let named = crate::device_tree().is_ok_and(|dt| {
         let mut slot = [device_tree_blob::Region { start: 0, size: 0 }; 1];
-        matches!(dt.node_reg_compatible(b"virtio,mmio", &mut slot), Ok(n) if n >= 1)
+        matches!(dt.node_register_regions_compatible(b"virtio,mmio", &mut slot), Ok(n) if n >= 1)
     });
     if named {
         direct_map(
@@ -563,6 +583,22 @@ where
     m.map_range(va_start, virt_to_phys(va_start), pages, flags)
 }
 
+/// `map_everything`'s step 6f: the JH7110 M.2 root port's windows, when the tree names the port.
+fn map_jh7110_pci_express<A, P>(m: &mut Mapper<A, P, Format>) -> Result<(), MapError>
+where
+    A: FnMut() -> Option<u64>,
+    P: Fn(u64) -> *mut PageTable,
+{
+    let Some(p) = memory::jh7110_pci_express() else {
+        return Ok(());
+    };
+    for (start, size) in crate::drivers::jh7110_pci_express::regions(&p.port) {
+        direct_map_device_window(m, start, size)?;
+    }
+    let bar = p.port.memory_32_bit;
+    direct_map_device_window(m, bar.physical_address, PCI_BAR_MAPPED.min(bar.size_bytes))
+}
+
 /// A device window given as its physical base and size, mapped as [`direct_map`] maps a device.
 fn direct_map_device_window<A, P>(
     m: &mut Mapper<A, P, Format>,
@@ -600,9 +636,9 @@ where
     );
     let len = (pa_end - pa_start).next_multiple_of(PAGE_SIZE);
     let largest = if flags.is_device() {
-        PageSize::Size4KiB
+        PageSize::FourKibibytes
     } else {
-        PageSize::Size1GiB
+        PageSize::OneGibibyte
     };
     m.map_span(phys_to_virt(pa_start), pa_start, len, flags, largest)
 }
@@ -938,7 +974,7 @@ fn kernel_mapper() -> Mapper<impl FnMut() -> Option<u64>, fn(u64) -> *mut PageTa
         Mapper::new(
             root,
             Half::High,
-            || memory::alloc().map(|f| f.addr()),
+            || memory::alloc().map(|f| f.physical_address()),
             phys_to_ptr,
         )
     }

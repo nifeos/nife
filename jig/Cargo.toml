@@ -21,10 +21,10 @@ publish = false
 
 # **Only the public contracts** (milestone 809's "other package managers can emerge": a second
 # manager on these crates can do what `jig` can). The request wire and the manifest
-# (`grant_plan`'s `spawnproto`), the package format and the catalog's lookup rule
+# (`grant_plan`'s `spawn_protocol`), the package format and the catalog's lookup rule
 # (`package_archive`), how a name travels on that wire (`filesystem_contract::grant`), the plain
 # HTTP reader the progenitor used to run (`http_response`, which left the progenitor's graph in the
-# same change), where the package source answers (`socket_contract::fixture`), the `std` layout's
+# same change), where the package source answers (`socket_fixture`), the `std` layout's
 # pages (`std_runtime_contract`), and the syscalls a `std` program has no binding for
 # (`user_mode_runtime`, `abi`, `address_space_layout`).
 [dependencies]
@@ -48,9 +48,9 @@ approval_file = { path = "../crates/approval_file" }
 # The digest's text form, for the `approved` line's `sha256:` (milestone 911): the same spelling
 # every record and the answered lines use.
 measured_boot = { path = "../crates/measured_boot" }
-socket_contract = { path = "../crates/socket_contract" }
+socket_fixture = { path = "../crates/socket_fixture" }
 std_runtime_contract = { path = "../crates/std_runtime_contract" }
-user_mode_runtime = { path = "../crates/user_mode_runtime" }
+user_mode_runtime = { version = "0.1.0", path = "../crates/user_mode_runtime" }
 # **The index over HTTPS** (milestone 801 (packages over the internet)): the index's reader and the
 # image's sources (`package_index`, in-tree and `no_std`), the pinned TLS client §196 (nife carries
 # TLS) ruled, and the `getrandom` hooks over the entropy service. The same graph

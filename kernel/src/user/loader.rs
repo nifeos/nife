@@ -99,7 +99,7 @@ pub fn load(
         .segments()
         .map(|seg| {
             let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
-            (end - start) / FRAME_SIZE
+            (end - start) / FRAME_BYTES
         })
         .sum::<u64>()
         + 1
@@ -121,7 +121,7 @@ pub fn load(
     let page = space
         .map_new(
             startup_page_contract::PAGE_VIRTUAL_ADDRESS,
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
         )
         .map_err(LoadError::Unmappable)?;
     startup_page_contract::write(page, windows).map_err(LoadError::StartupPage)?;
@@ -135,7 +135,7 @@ pub fn load(
             .map_physical(
                 counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
                 phys,
-                Flags::user_rodata(),
+                Flags::user_read_only_data(),
                 crate::revoke::PageMapSource::NoCapability,
             )
             .map_err(LoadError::Unmappable)?;
@@ -168,19 +168,19 @@ fn timebase_page_phys() -> Option<u64> {
 
     // `alloc_zeroed`: only the first bytes are written, and the whole frame is mapped into every
     // process on this architecture.
-    let phys = crate::memory::alloc_zeroed()?.addr();
+    let phys = crate::memory::alloc_zeroed()?.physical_address();
     let dst = mmu::phys_to_virt(phys) as *mut u8;
     match crate::arch::timer::frequency_checked() {
         Some(hertz) => {
             let bytes = counter_frequency_contract::build_page(hertz);
             // SAFETY: `dst` names a freshly allocated frame, reachable through the direct map and
             // owned by nobody else yet; `bytes` is `PAGE_CONTENT_BYTES` (16) bytes, far under the frame's
-            // `FRAME_SIZE`, so the copy does not run past it.
+            // `FRAME_BYTES`, so the copy does not run past it.
             unsafe { core::ptr::copy_nonoverlapping(bytes.as_ptr(), dst, bytes.len()) };
         }
         // Not yet measured: the frame stays zero, which reads as unknown.
         // SAFETY: as the `Some` arm above: `dst` names a freshly allocated, exclusively owned
-        // frame, and `PAGE_CONTENT_BYTES` is far under `FRAME_SIZE`.
+        // frame, and `PAGE_CONTENT_BYTES` is far under `FRAME_BYTES`.
         None => unsafe {
             core::ptr::write_bytes(dst, 0, counter_frequency_contract::PAGE_CONTENT_BYTES);
         },
@@ -202,7 +202,7 @@ pub fn map_timebase_page(space: &mut AddressSpace) -> Result<(), MapError> {
         space.map_physical(
             counter_frequency_contract::PAGE_VIRTUAL_ADDRESS,
             phys,
-            Flags::user_rodata(),
+            Flags::user_read_only_data(),
             crate::revoke::PageMapSource::NoCapability,
         )?;
     }
@@ -210,7 +210,7 @@ pub fn map_timebase_page(space: &mut AddressSpace) -> Result<(), MapError> {
 }
 
 /// Lay an ELF's loadable segments into `space`, honouring their permissions exactly; the
-/// progenitor's userspace loader mirrors it. A read-only segment gets `user_rodata`, not
+/// progenitor's userspace loader mirrors it. A read-only segment gets `user_read_only_data`, not
 /// `user_data`, and `.bss` is free because `map_new` zeroes every page.
 pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError> {
     // Enforced here as well as in [`load`], which checks before it sizes a region so a huge image
@@ -222,7 +222,7 @@ pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError
         } else if seg.is_writable() {
             Flags::user_data()
         } else {
-            Flags::user_rodata()
+            Flags::user_read_only_data()
         };
 
         let (start, end) = seg.page_range(FRAME_PAGE_BYTES);
@@ -235,7 +235,7 @@ pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError
             let file_lo = seg.virtual_address;
             let file_hi = seg.virtual_address + seg.data.len() as u64;
             let lo = va.max(file_lo);
-            let hi = (va + FRAME_SIZE).min(file_hi);
+            let hi = (va + FRAME_BYTES).min(file_hi);
             if lo < hi {
                 let dst = (lo - va) as usize;
                 let src = (lo - file_lo) as usize;
@@ -244,9 +244,9 @@ pub fn map_segments(space: &mut AddressSpace, elf: &Elf) -> Result<(), LoadError
             }
 
             if seg.is_executable() {
-                sync_icache(page.as_ptr() as u64, FRAME_SIZE as usize);
+                sync_icache(page.as_ptr() as u64, FRAME_BYTES as usize);
             }
-            va += FRAME_SIZE;
+            va += FRAME_BYTES;
         }
     }
     Ok(())

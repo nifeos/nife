@@ -5,7 +5,7 @@ milestone_dependencies: 1017, 1034
 decision_dependencies: 16, 113
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1101. `memory_regions`: what an outside maintainer would fix before 0.1.0
 
@@ -16,8 +16,8 @@ and in the new repository after it.
 
 The review found no review package for this crate in `notes/crate-reviews/` and no row for it in
 `notes/crate-reviews.md`; `notes/package-boundaries.md` places the crate in the `kernel` base
-package. So there is no settled baseline to leave closed, and the first open decision below
-asks whether the crate leaves at all. What this review does not reopen: the crate's name (`Name:
+package. So there is no settled baseline to leave closed, and the crate stays in the kernel base package
+until the trigger under "Held" below fires. What this review does not reopen: the crate's name (`Name:
 ratified`, `src/lib.rs`), the rename from `regions`, the kernel's `RETYPE` count rule for the
 syscall word, the `MIT OR Apache-2.0` license, and the pin of `generational_table` at its
 `v0.1.0-pre.1` tag. No later rule in [design/naming.md](../naming.md) contradicts the ratified
@@ -40,27 +40,29 @@ for the crate's own reasons.
 ## Finding status
 
 - P0-1, a split refused for a full table: Done, [#3525](https://github.com/nifeos/nife/pull/3525).
-- P0-2, the crate cannot stand alone: Open. The README, both license files, an explicit license
-  line, `rust-version`, inline lints and self-contained doc comments are the move's work. Decision
-  1 says whether a move happens.
-- P1-3, a root at the top of the page-number space: Open. The refusal landed in
-  [#3534](https://github.com/nifeos/nife/pull/3534); no Kani harness yet drives any one operation
-  from any accepted root.
+- P0-2, the crate cannot stand alone: Held with the move. The doc comments and the manifest
+  comments name no nife path, pull request or section. The README, both license files, an explicit
+  license line, `rust-version` and inline lints are the move's work. Decision 1 holds the move
+  until its trigger fires, so those wait.
+- P1-3, a root at the top of the page-number space: Done. The refusal landed in
+  [#3534](https://github.com/nifeos/nife/pull/3534), and the Kani harnesses
+  `a_root_the_table_accepts_never_overflows_*` (four, one per operation, split to fit the shard's
+  memory) drive one operation from any accepted root, each with its falsification patch, in [#3825](https://github.com/nifeos/nife/pull/3825).
 - P1-4, a second release of one object: Done, [#3532](https://github.com/nifeos/nife/pull/3532).
-- P1-5, the loom harnesses at the move: Open. The template's `proofs` workflow runs a crate's loom
+- P1-5, the loom harnesses at the move: Held with the move. The template's `proofs` workflow runs a crate's loom
   models when its manifest depends on loom, from
   [v8](https://github.com/nifeos/crate-workflows/pull/65); the README's split of what loom checks
   and what Kani proves waits for the move.
 - P1-6, gates of the template: Open. (b) and (c) landed in
   [#3567](https://github.com/nifeos/nife/pull/3567), and (d) in
   [#3521](https://github.com/nifeos/nife/pull/3521). (a) is open: the template's address rule still
-  refuses `ObjectKind::AddressSpace`. (e) is open: the move pins the template at `v8`.
+  refuses `ObjectKind::AddressSpace`. (e) waits for the move, which pins the template at `v8`.
 - P1-7, documentation the code contradicts: Done,
   [#3567](https://github.com/nifeos/nife/pull/3567).
-- P1-8, manifest metadata and the dependency line: Open. The manifest has `description`,
+- P1-8, manifest metadata and the dependency line: Held with the move. The manifest has `description`,
   `keywords` and `categories`; `documentation`, `readme`, `repository` and `rust-version` wait
   for the move, and the `git` dependency waits for `generational_table` to publish.
-- P1-9, public names for the naming pass: Open. It is an open decision below.
+- P1-9, public names for the naming pass: Held. The held name ratification below waits on the move.
 - P2-10, a root ceiling under sixteen: Done, [#3567](https://github.com/nifeos/nife/pull/3567).
 - P2-11, the cost of `spent` and of the return: Open. The doc comments state the cost
   ([#3567](https://github.com/nifeos/nife/pull/3567)); a per-parent page count in place of the
@@ -75,52 +77,34 @@ for the crate's own reasons.
 - P2-16, a dropped claim: Open. The type's documentation says a dropped claim leaks;
   `return_to_parent` still takes `&DestroyClaim`, and `DestroyClaim` has no `Drop`. The signature
   is a two-way door until the first publish, and the maintainer rules it.
-- Decision 1, whether the crate leaves nife: Open. It is an open decision below.
-- Decision 2, typed region names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: every
-  public method still takes and returns `u64`, and `entry()` remains.
-- Decision 3, zero pages: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built:
-  `retype_pages` is still in `src/watermark.rs`, and `retype_run(name, 0)` still retypes a page.
+- Decision 1, whether the crate leaves nife: Ruled (2026-11-19 UTC), option A: the move waits
+  until the crate has a second consumer or its object kinds are the caller's to define, whichever
+  comes first. The crate stays in the kernel base package. Items 2, 5, 6(e) and 8 wait for
+  the move; the in-nife items stay actionable.
+- Decision 2, typed region names: Done (maintainer, provisional, 2026-11-14 UTC),
+  [#3825](https://github.com/nifeos/nife/pull/3825). `RegionName` is `EntryName<Region>`, `Region`
+  is the public opaque marker, and `entry()` is gone. The kernel converts with `to_bits` and
+  `from_bits` in `kernel/src/memory_region.rs`.
+- Decision 3, zero pages: Done (maintainer, provisional, 2026-11-14 UTC),
+  [#3825](https://github.com/nifeos/nife/pull/3825). `retype_pages` is gone, `retype_run(name, 0)`
+  is refused, and the kernel maps the syscall word's zero to one.
 - Decision 4, the child's share: Done (maintainer, provisional, 2026-11-14 UTC),
   [#3567](https://github.com/nifeos/nife/pull/3567). `CHILD_SHARE_OF_ROOT` stays private and its
   documentation states the limit.
 
-## Open decisions
+## Held decision
 
-### Whether `memory_regions` leaves nife, and in what shape
+The crate stays in the kernel base package (`notes/package-boundaries.md`). The move to a
+repository of its own waits until the crate has a second consumer, or until its object kinds are
+the caller's to define, whichever comes first. The kernel is the one consumer today, and
+`ObjectKind` lists seven nife kernel object kinds, so publishing now would put
+`ObjectKind::Rendezvous` in an interface nobody else can use as it stands. Ruled 2026-11-19 (UTC),
+option A of the question whether `memory_regions` leaves nife; the options and their prior art are
+in [the appendix](1101-memory-regions-outside-review/decisions.md). Creating a repository and
+publishing are outward steps, so the trigger is the one-way door, and a lane that sees it fire
+brings the move back as a decision.
 
-Background. `memory_regions` is the kernel's bookkeeping for untyped memory: each region has a page
-budget, a watermark that only moves down when nothing is live above it, per-kind object ceilings
-and a claim that lets exactly one caller destroy a region. Its one consumer is the kernel, which
-reaches it by path. Its vocabulary is the kernel's: `ObjectKind` lists seven nife kernel object
-kinds and the table counts nothing else. The standing rule lets a crate leave only when it is
-publishable or used by more than one repository. No review package exists for it, and
-`notes/package-boundaries.md` places it in the `kernel` base package.
-
-Recommendation: A. Every fix that helps the kernel has landed in nife already, so holding costs
-nothing today. Publishing now would put `ObjectKind::Rendezvous` on crates.io in a crate nobody
-else can use as it stands.
-
-- A. Hold the move until the crate has a second consumer or its object kinds are the caller's to
-  define, whichever comes first.
-- B. Leave now with `Counted` generic over the caller's kind set (a `Kinds` trait the kernel
-  implements with its seven), so the published interface names no nife kernel object; a review
-  package and clearance follow.
-- C. Leave now as it stands, with nife's seven kinds in the published interface.
-
-Door: one-way for B and C. Creating a repository and publishing are outward steps, and the
-crate's shape on arrival is what a second consumer builds on. A changes nothing outside the tree.
-
-Prior art. seL4 fixes its object types in the kernel and ships them to user space as constants in
-`libsel4`, not as a library another kernel reuses. Linux's `page_counter` is a generic
-hierarchical counter that lives inside one tree. `slotmap` and `generational_table` are generic over
-the value they hold (all recalled, not re-read). nife differs in counting kernel objects against a
-budget tree in a library at all. Concrete example: a hypervisor accounting guest pages would call
-`retype_object_page(name, ObjectKind::Rendezvous)` for a thing that is not a rendezvous, or fork
-the crate; under B it calls `retype_object_page(name, MyKind::Vcpu)`.
-
-Blocks: the move, and with it items 2, 5, 6(e) and 8.
-
-### Ratify the crate's public names
+### Ratify the crate's public names (held)
 
 Background. Every public name but the crate's own is provisional. A move strips the `Name:`
 blocks that say so, so the architect ratifies the names first. `helpers/name_release.py --draft
@@ -137,7 +121,7 @@ two small structs turn a swapped pair into a compile error.
   `CountedKind`, and `Usage { watermark, pages }` and `Span { base_page, pages }`; ratify the rest
   as they stand.
 - B. Ratify with other spellings the architect names, applied by one rename lane.
-- C. Defer the pass until Decision 1 says the crate leaves.
+- C. Defer the pass until the crate leaves.
 
 Door: one-way at the first publish, when each public name becomes a breaking change to rename.
 Before that it is two-way, but ratification is the architect's by the naming rule.
@@ -148,6 +132,7 @@ public item before it leaves, not only the documented ones. Concrete example: to
 `let (base, pages) = table.usage(name)` compiles and reads the watermark as a base page; with
 `Span` and `Usage` it does not.
 
+Held: this question is not asked until the trigger above fires, and the move waits on it.
 Blocks: the move, and the first publish.
 
 ## What was checked, and how
@@ -167,28 +152,8 @@ numbers are in `crates/memory_regions/` at `75bb255a`.
 
 ### P0: blocks any publish
 
-1. A split refused for a full table still bumps the parent, which nothing can ever reclaim.
-   Finding: `split` checks the budget, charges the `Region` ceiling, advances the parent's watermark
-   and raises its child count, and only then asks the table for a slot. When the table is full the
-   child is never made and the ceiling charge goes back, but the watermark and the count stay
-   raised. No name exists that could ever bring the count to zero. So `claim_for_destroy` refuses
-   the parent for the rest of the boot, and every refusal leaves the table fuller. The crate's own
-   `# BUGS` and doctest record it, and `notes/region-split-on-a-full-table.md` proposes the fix and
-   records that both reasons for the rule (two lock holds, headroom) lapsed when `split` became one
-   borrow. The proposal has waited since its author filed it. Every neighbor refuses without side
-   effects (`retype_object_page`, `retype_run`, the kernel's `create`), and the crate's own
-   harnesses prove "a refused split moves nothing" for every refusal but this one.
-   Evidence: `src/table.rs` lines 440 to 474 (the order), `425-439` (the reproduction), `769-771` (the
-   coalescing consequence). `notes/region-split-on-a-full-table.md` option B.
-   Change: reorder so every refusable step comes before any irreversible one: resolve the parent,
-   compute the new watermark, charge the ceiling, insert the child (on `None`, release the charge
-   and return), then bump the parent under the same borrow. The doctest becomes a regression test
-   ("a split refused for a full table leaves the parent as it was, and the parent is reclaimable
-   once its real child returns"), `a_refused_split_moves_nothing` gains a cover for the full-table
-   refusal (a `Run` whose table has no free slot), and the `# BUGS` entries in `split`,
-   `return_to_parent`, `notes/memory-regions.md` and `kernel/src/memory_region.rs` go. The kernel's
-   `SPLIT` still answers `OutOfMemory`.
-   Door: two-way. Effort: S.
+1. A split refused for a full table leaves the parent as it was. Done,
+   [#3525](https://github.com/nifeos/nife/pull/3525). Door: two-way.
 
 2. The crate cannot stand alone, and the template's `check / standalone` is red on the first push.
    Finding: no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, `license.workspace = true`,
@@ -227,7 +192,7 @@ The P1 items are in [the appendix](1101-memory-regions-outside-review/before-the
 ## Decisions for the architect
 
 The maintainer ruled Decisions 2, 3 and 4, provisionally, as two-way doors while the crate
-stays with the kernel; the architect may revisit them. Decision 1 is under "Open decisions" above.
+stays with the kernel; the architect may revisit them. Decision 1 is the held decision above.
 The case behind each ruling (background, recommendation, prior art and an example) is in
 [the appendix](1101-memory-regions-outside-review/decisions.md).
 
@@ -235,19 +200,18 @@ The case behind each ruling (background, recommendation, prior art and an exampl
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door while the crate stays
 with the kernel, which the architect may revisit. Region names cross the crate's boundary as a typed
-name. A public marker type lets `EntryName<...>` appear in the signatures, as the generational
-table's entry names are a type and not a bare `u64`. The kernel converts once at its syscall
-boundary, and `entry()` goes. The names of the marker and the alias are provisional and go through
+name. A public marker type, `Region`, lets `EntryName<Region>` appear in the signatures as
+`RegionName`, as the generational table's entry names are a type and not a bare `u64`. The kernel
+converts once at its boundary. The names of the marker and the alias are provisional and go through
 item 9's naming pass.
 
 ### Decision 3: Whether "zero pages means one" is the crate's contract or the kernel's
 
 Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door while the crate stays
 with the kernel, which the architect may revisit. The syscall behaves as ruled; only the place of the
-rule moves. The crate refuses zero everywhere, as `split` does (`src/table.rs` line 433).
-`retype_pages` (`src/watermark.rs` line 40) leaves the crate, and the kernel maps the syscall
-word's zero to one before it calls (`kernel/src/memory_region.rs` line 262). Under a stricter rule
-first, a crate that later accepts zero stays compatible.
+rule moves. The crate refuses zero everywhere, as `split` does, and the kernel maps the syscall word's zero to
+one before it calls (`retype_run` in `kernel/src/memory_region.rs`). Under a stricter rule first, a
+crate that later accepts zero stays compatible.
 
 ### Decision 4: Whether a child's share of its root's ceilings is the crate's constant
 
@@ -261,7 +225,8 @@ precondition of that offer.
 ## Follow-on
 
 - **Outstanding.** Each finding that "Finding status" marks Open or Ruled, checked against
-  `crates/memory_regions` and its manifest.
+  `crates/memory_regions` and its manifest. Findings it marks Held wait for the trigger under
+  "Held decision".
 
 ## Done when
 
@@ -293,5 +258,6 @@ An outside review of `memory_regions` before any move. Two items block a publish
 for a full table that leaves a phantom child, and a crate that cannot stand alone. Seven land before
 a first release. Among them are a panic on a root at the top of the page-number space, a double
 release that loosens a ceiling for good, six loom harnesses with no runner after the move, and gates
-the template refuses. Seven follow later. Of four decisions, the maintainer ruled three provisionally; whether the
-crate leaves at all and the names of its interface are open decisions.
+the template refuses. Seven follow later. Of four decisions, the maintainer ruled three provisionally, and whether the
+crate leaves is ruled: it stays with the kernel until a second consumer or caller-defined kinds
+exist. The move waits, and the ratification of the interface's names waits with it.

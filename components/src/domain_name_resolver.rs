@@ -21,7 +21,7 @@
 //!
 //! Name: ratified 2026-10-17 (calef, a program-naming session), replacing `name_resolver`: he
 //! proposed "`domain_name_resolver`" and confirmed it over `domain_name_system_resolver`. Refused
-//! `name_resolver` ("name" is ambiguous: `bare::resolve` resolves program names, `grant_plan::nav`
+//! `name_resolver` ("name" is ambiguous: `bare::resolve` resolves program names, `grant_plan::navigation`
 //! paths), `domain_name_system_resolver`, `dns_resolver` (§154 (the acronym test)), `resolver`.
 
 #![no_std]
@@ -66,7 +66,7 @@ const _: u64 =
     address_space_layout::pair_page(CLIENT_VA + (protocol::MAXIMUM_GRANTS as u64 - 1) * PAGE_BYTES);
 
 // SAFETY: `socket_page` maps one page read/write at SOCKET_VA before any accessor runs, and every
-// accessor is reached only after it succeeded (`socket_ready`).
+// accessor is reached only after it succeeded (`refusal` is `None`).
 const SOCKET: MappedWindow = unsafe { MappedWindow::new(SOCKET_VA, PAGE_BYTES) };
 
 /// How many UDP queries one resolve sends before it gives up, a fresh id each. Three, the number
@@ -91,7 +91,7 @@ struct State {
     attached: [Option<u64>; protocol::MAXIMUM_GRANTS],
     request: [u8; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES],
     reply: [u8; TCP_REPLY_MAXIMUM],
-    chunk: [u8; socket::DATA_MAXIMUM],
+    chunk: [u8; socket::MAXIMUM_PAYLOAD_BYTES],
 }
 
 static mut STATE: State = State {
@@ -99,7 +99,7 @@ static mut STATE: State = State {
     attached: [None; protocol::MAXIMUM_GRANTS],
     request: [0; 2 + domain_name_system::MAXIMUM_UDP_MESSAGE_BYTES],
     reply: [0; TCP_REPLY_MAXIMUM],
-    chunk: [0; socket::DATA_MAXIMUM],
+    chunk: [0; socket::MAXIMUM_PAYLOAD_BYTES],
 };
 
 /// Where and how to ask, from the start words.
@@ -134,14 +134,21 @@ fn start(server: u64, port_and_transport: u64, _unused: u64) -> ! {
         frame: socket_page(),
     };
     // A failure here is answered on every request rather than by exiting: a resolver that vanished
-    // would leave its clients blocked in `CALL` with nothing to say why.
-    let socket_ready = server.frame.is_some();
+    // would leave its clients blocked in `CALL` with nothing to say why. A transport word the
+    // contract does not define is refused the same way, and takes precedence over a missing page.
+    let refusal = if !endowment::is_known_transport(transport) {
+        Some(network_step::UNKNOWN_TRANSPORT)
+    } else if server.frame.is_none() {
+        Some(network_step::NO_SOCKET_PAGE)
+    } else {
+        None
+    };
     loop {
-        serve(state, &server, socket_ready);
+        serve(state, &server, refusal);
     }
 }
 
-fn serve(state: &mut State, server: &Server, socket_ready: bool) {
+fn serve(state: &mut State, server: &Server, refusal: Option<u8>) {
     let r = receive_request(SERVICE);
     if r.badge == 0 {
         // The spawner's unbadged capability, and nothing else, can say this. A control `CALL` is
@@ -160,7 +167,7 @@ fn serve(state: &mut State, server: &Server, socket_ready: bool) {
     // aliasing it onto one that does.
     let badge = u32::try_from(r.badge).unwrap_or(0);
     match protocol::operation(r.w0) {
-        protocol::OPERATION_ATTACH_PAGE_FRAME => match r.delivered {
+        protocol::OPERATION_ATTACH_SHARED_PAGE => match r.delivered {
             Delivered::Delegation(frame) => attach_client(state, badge, frame),
             other => {
                 if let Some(to) = other.into_reply() {
@@ -172,10 +179,9 @@ fn serve(state: &mut State, server: &Server, socket_ready: bool) {
             let Some(to) = r.delivered.into_reply() else {
                 return;
             };
-            let (outcome, ttl) = if socket_ready {
-                resolve(state, server, badge, r.w1)
-            } else {
-                (network(network_step::NO_SOCKET_PAGE), 0)
+            let (outcome, ttl) = match refusal {
+                None => resolve(state, server, badge, r.w1),
+                Some(step) => (network(step), 0),
             };
             let _ = reply(to, outcome.word(), ttl);
         }
@@ -248,7 +254,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
     }
     let mut text = [0u8; MAXIMUM_NAME_FIELD_BYTES];
     for (i, b) in text[..len].iter_mut().enumerate() {
-        *b = page.read_u8((NAME_OFFSET_BYTES + i) as u64);
+        *b = page.read::<u8>((NAME_OFFSET_BYTES + i) as u64);
     }
     let Some(name) = core::str::from_utf8(&text[..len])
         .ok()
@@ -271,7 +277,7 @@ fn resolve(state: &mut State, server: &Server, badge: u32, len: u64) -> (Outcome
     let addresses = answer.ipv4_addresses();
     for (k, a) in addresses.iter().enumerate().take(MAXIMUM_IPV4_ADDRESSES) {
         for (j, &b) in a.iter().enumerate() {
-            page.write_u8((IPV4_ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
+            page.write::<u8>((IPV4_ADDRESSES_OFFSET_BYTES + 4 * k + j) as u64, b);
         }
     }
     (
@@ -356,14 +362,14 @@ fn open(server: &Server, operation: u64) -> Result<u64, Fail> {
     let frame = server
         .frame
         .ok_or(Fail::Status(network(network_step::NO_SOCKET_PAGE)))?;
-    let (socket::REP_OK, _, Some(socket)) = call_receiving(STACK, operation, 0) else {
+    let (socket::REPLY_OK, _, Some(socket)) = call_receiving(STACK, operation, 0) else {
         return Err(Fail::Status(network(network_step::OPEN)));
     };
     if send_capability(
         socket,
         frame,
         rights::READ | rights::WRITE,
-        socket::OPERATION_ATTACH_PAGE_FRAME,
+        socket::OPERATION_ATTACH_SHARED_PAGE,
     ) < 0
     {
         close(socket);
@@ -392,12 +398,13 @@ fn exchange_udp(
     for _ in 0..ATTEMPTS {
         set_destination(server);
         write_payload(&state.request[..n]);
-        if call(socket, socket::OPERATION_SENDTO, n as u64).0 != socket::REP_OK {
+        if call(socket, socket::OPERATION_SEND_TO, n as u64).0 != socket::REPLY_OK {
             return Err(Fail::Status(network(network_step::SEND)));
         }
         for _ in 0..DATAGRAMS_PER_ATTEMPT {
             let (got, _) = call(socket, socket::OPERATION_RECEIVE, 0);
-            if got == socket::REP_ERR || got == 0 || got > socket::DATA_MAXIMUM as u64 {
+            if got == socket::REPLY_ERROR || got == 0 || got > socket::MAXIMUM_PAYLOAD_BYTES as u64
+            {
                 break; // nothing came: the next attempt
             }
             // A UDP RECEIVE reply carries the datagram's source in the destination fields
@@ -454,7 +461,7 @@ fn exchange_tcp(
     let mut framed = TcpReply::new(&mut state.reply);
     loop {
         let (got, _) = call(socket, socket::OPERATION_RECEIVE, 0);
-        if got == 0 || got > socket::DATA_MAXIMUM as u64 {
+        if got == 0 || got > socket::MAXIMUM_PAYLOAD_BYTES as u64 {
             // The server closed, or the stack gave up, before the reply was whole.
             return Err(Fail::Status(Outcome::of(status::NO_ANSWER)));
         }
@@ -482,29 +489,32 @@ fn socket_page() -> Option<u64> {
 
 fn set_destination(server: &Server) {
     for (i, &b) in server.ip.iter().enumerate() {
-        SOCKET.write_u8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64, b);
+        SOCKET.write::<u8>(socket::DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64, b);
     }
-    SOCKET.write_u16(socket::DESTINATION_PORT_OFFSET_BYTES, server.port);
+    SOCKET.write::<u16>(socket::DESTINATION_PORT_OFFSET_BYTES, server.port);
 }
 
 /// The source of the datagram a UDP `RECEIVE` just delivered.
 fn source() -> ([u8; 4], u16) {
     let mut ip = [0u8; 4];
     for (i, b) in ip.iter_mut().enumerate() {
-        *b = SOCKET.read_u8(socket::DESTINATION_ADDRESS_OFFSET_BYTES + i as u64);
+        *b = SOCKET.read::<u8>(socket::DESTINATION_IP_ADDRESS_OFFSET_BYTES + i as u64);
     }
-    (ip, SOCKET.read_u16(socket::DESTINATION_PORT_OFFSET_BYTES))
+    (
+        ip,
+        SOCKET.read::<u16>(socket::DESTINATION_PORT_OFFSET_BYTES),
+    )
 }
 
 fn write_payload(bytes: &[u8]) {
     for (i, &b) in bytes.iter().enumerate() {
-        SOCKET.write_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
+        SOCKET.write::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64, b);
     }
 }
 
 fn read_payload(out: &mut [u8]) {
     for (i, b) in out.iter_mut().enumerate() {
-        *b = SOCKET.read_u8(socket::PAYLOAD_OFFSET_BYTES + i as u64);
+        *b = SOCKET.read::<u8>(socket::PAYLOAD_OFFSET_BYTES + i as u64);
     }
 }
 

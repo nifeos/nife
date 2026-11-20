@@ -6,7 +6,7 @@
 //! go on a fixed free-stack and are reused page for page: a budget with reuse, not an allocator.
 //! See notes/kernel-budget.md.
 
-use page_frames::FRAME_SIZE;
+use page_frames::FRAME_BYTES;
 
 use crate::sync::{InterruptSafeMutex, rank};
 
@@ -59,7 +59,7 @@ pub fn page() -> Option<u64> {
                 core::ptr::write_bytes(
                     crate::arch::mmu::phys_to_virt(phys) as *mut u8,
                     0,
-                    FRAME_SIZE as usize,
+                    FRAME_BYTES as usize,
                 );
             }
             return Some(phys);

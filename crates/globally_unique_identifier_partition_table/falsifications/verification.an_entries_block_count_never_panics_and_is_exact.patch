@@ -5,21 +5,24 @@ so the range `0 ..= u64::MAX` overflows: a panic with overflow checks on, a coun
 them off.
 
 Expected to fail: the arithmetic overflow check in `blocks`, reached through the harness's `blocks` call.
-
 diff --git a/crates/globally_unique_identifier_partition_table/src/entry.rs b/crates/globally_unique_identifier_partition_table/src/entry.rs
+index 9aff667e7..7ecfabc74 100644
 --- a/crates/globally_unique_identifier_partition_table/src/entry.rs
 +++ b/crates/globally_unique_identifier_partition_table/src/entry.rs
-@@ -119,9 +119,10 @@ impl Entry {
-     /// [`crate::GloballyUniqueIdentifierPartitionTable`] rejects both, so a partition obtained
+@@ -135,12 +135,10 @@ impl Entry {
+     /// range `0 ..= u64::MAX`). [`crate::PartitionTable`] rejects both, so a partition obtained
      /// from a parsed table always has a size.
      pub const fn blocks(&self) -> Option<u64> {
--        match self.last_lba.checked_sub(self.first_lba) {
+-        match self
+-            .last_logical_block_address
+-            .checked_sub(self.first_logical_block_address)
+-        {
 -            Some(span) => span.checked_add(1),
 -            None => None,
-+        if self.last_lba < self.first_lba {
++        if self.last_logical_block_address < self.first_logical_block_address {
 +            None
 +        } else {
-+            Some(self.last_lba - self.first_lba + 1)
++            Some(self.last_logical_block_address - self.first_logical_block_address + 1)
          }
      }
  
