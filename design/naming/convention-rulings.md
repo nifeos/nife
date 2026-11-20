@@ -82,12 +82,11 @@ exception is never silent.
 Applies: standing-modules
 Ratified: 2026-11-20 (UTC)
 
-What it covers. A module file named `tests` (host unit tests) whose `mod` declaration sits under a
+What it covers. A module file named `tests` (host unit tests) whose `mod` line sits under a
 `#[cfg(...)]` attribute naming `test`, and a module file named `verification` (Kani proof harnesses)
-whose declaration sits under a `#[cfg(...)]` attribute naming `kani`, in any crate, present and
-future. The file is `tests.rs`, `tests/mod.rs` and the same for `verification`, under a `src/`
-directory. The two names are ratified with or without a `Name:` block, so a review package never
-asks about them and a crate carries no block for them.
+whose `mod` line sits under one naming `kani`. This holds in any crate, present and future.
+The file is `tests.rs` or `tests/mod.rs` (likewise `verification`) under a `src/` directory. Both
+names count as ratified, with or without a `Name:` block, so a review package never asks about them.
 
-What it pulls aside. A module of either name without the gating attribute on its declaration, and a
-`pub` item inside one of these modules, which keeps its own status.
+What it pulls aside. A module of either name whose `mod` line lacks the gating attribute. Also a
+`pub` item inside one of them, which keeps its own status.
