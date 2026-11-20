@@ -5398,26 +5398,10 @@ crates/pci_configuration_space/src/lib.rs::MSI_ENABLE
 
 
 
-crates/pci_configuration_space/src/lib.rs::VIRTUAL_IO_GPU_MODERN
-
-crates/pci_configuration_space/src/lib.rs::VIRTUAL_IO_INPUT_MODERN
-
-crates/pci_configuration_space/src/lib.rs::VIRTUAL_IO_MSIX_NO_VECTOR
 
 
 
 
-
-crates/pci_configuration_space/src/lib.rs::VIRTUAL_IO_TYPE_BLOCK
-
-crates/pci_configuration_space/src/lib.rs::VIRTUAL_IO_TYPE_ENTROPY
-
-crates/pci_configuration_space/src/lib.rs::VIRTUAL_IO_TYPE_GPU
-
-crates/pci_configuration_space/src/lib.rs::VIRTUAL_IO_TYPE_INPUT
-
-
-crates/pci_configuration_space/src/lib.rs::VIRTUAL_IO_VENDOR
 
 
 crates/pci_configuration_space/src/lib.rs::bridge_buses
@@ -7747,8 +7731,6 @@ kernel/src/arch/aarch64/mmu.rs::Format
 
 kernel/src/arch/aarch64/mmu.rs::KERNEL_VA_BASE
 
-kernel/src/arch/aarch64/mmu.rs::VIRTUAL_IO_MMIO_BASE
-
 kernel/src/arch/aarch64/mmu.rs::activate_user
 
 kernel/src/arch/aarch64/mmu.rs::asid_of
@@ -7921,8 +7903,6 @@ kernel/src/arch/riscv64/mmu.rs
 kernel/src/arch/riscv64/mmu.rs::Format
 
 kernel/src/arch/riscv64/mmu.rs::KERNEL_VA_BASE
-
-kernel/src/arch/riscv64/mmu.rs::VIRTUAL_IO_MMIO_BASE
 
 kernel/src/arch/riscv64/mmu.rs::activate_user
 
@@ -8098,14 +8078,6 @@ kernel/src/arch/x86_64/mmu.rs
 kernel/src/arch/x86_64/mmu.rs::Format
 
 kernel/src/arch/x86_64/mmu/device_windows.rs::PCI_BAR_MAPPED
-
-kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTUAL_IO_MMIO_BASE
-
-kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTUAL_IO_SLOTS
-
-kernel/src/arch/x86_64/mmu/device_windows.rs::VIRTUAL_IO_SLOT_STRIDE
-
-kernel/src/arch/x86_64/mmu/device_windows.rs::virtual_io_slots
 
 kernel/src/arch/x86_64/mmu/kernel_map.rs::translate
 
@@ -9899,8 +9871,6 @@ notes/userspace.md
 notes/verification.md
 
 notes/verus.md
-
-notes/virtual-io.md
 
 notes/virtualization.md
 

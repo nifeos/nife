@@ -9,8 +9,7 @@ syscall surface (7d), IPC (7e), the userspace-driver pattern (8), and interrupt-
 ## What virtio is, briefly
 
 virtio is a standard for paravirtualized devices: the "hardware" is cooperating software (QEMU,
-or a hypervisor) speaking an interface built for the guest/host boundary, not a chip. A virtio device is driven
-through three things:
+or a hypervisor), not a chip. A virtio device is driven through three things:
 
 - **MMIO registers** for setup and notification (feature negotiation, queue addresses, "go").
 - A virtqueue in shared memory: a descriptor table and two rings, through which the driver
