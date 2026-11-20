@@ -16,29 +16,29 @@
 
 use core::sync::atomic::{AtomicPtr, AtomicU64, Ordering};
 
-use machine_statistics_contract::{WORDS, build_header, word};
+use machine_statistics_contract::{PAGE_WORDS, build_header, word};
 
 use crate::cpu;
 
 /// Where writes go until the page exists. Aligned like the page, so a word is never torn.
 #[repr(C, align(64))]
-struct Sink([AtomicU64; WORDS]);
+struct Sink([AtomicU64; PAGE_WORDS]);
 
-static SINK: Sink = Sink([const { AtomicU64::new(0) }; WORDS]);
+static SINK: Sink = Sink([const { AtomicU64::new(0) }; PAGE_WORDS]);
 
 /// The page's first word, as the kernel reaches it: the sink until [`publish`], then the frame's
 /// direct-map address.
 static PAGE: AtomicPtr<AtomicU64> =
-    AtomicPtr::new(&SINK.0 as *const [AtomicU64; WORDS] as *mut AtomicU64);
+    AtomicPtr::new(&SINK.0 as *const [AtomicU64; PAGE_WORDS] as *mut AtomicU64);
 
 /// The frame's physical address once published, for the one capability minted to it.
 static PHYS: AtomicU64 = AtomicU64::new(0);
 
 #[inline(always)]
 fn at(index: usize) -> &'static AtomicU64 {
-    debug_assert!(index < WORDS);
+    debug_assert!(index < PAGE_WORDS);
     // SAFETY: `PAGE` names either `SINK` or a frame `publish` allocated and never frees, both at
-    // least `WORDS` words long, and `index < WORDS` at every call site (each is a protocol
+    // least `PAGE_WORDS` words long, and `index < PAGE_WORDS` at every call site (each is a protocol
     // constant, and `cpu::id()` is under `CPU_ID_BOUND`, which `word::cpu` is sized by).
     unsafe { &*PAGE.load(Ordering::Relaxed).add(index) }
 }
@@ -78,29 +78,29 @@ pub fn page_phys() -> u64 {
 /// The allocator's counts, stored by whoever just changed them, under the allocator's lock.
 #[inline]
 pub(crate) fn frames(total: usize, free: usize) {
-    at(word::TOTAL_FRAMES).store(total as u64, Ordering::Relaxed);
-    at(word::FREE_FRAMES).store(free as u64, Ordering::Relaxed);
+    at(word::header::TOTAL_FRAMES).store(total as u64, Ordering::Relaxed);
+    at(word::header::FREE_FRAMES).store(free as u64, Ordering::Relaxed);
 }
 
 /// This core took an interrupt other than its tick (the tick counts itself in [`tick`]). Out of
 /// line because its callers sit in the exception dispatchers `script/fastpath-footprint` measures.
 #[inline(never)]
 pub fn interrupt() {
-    mine(word::INTERRUPTS).fetch_add(1, Ordering::Relaxed);
+    mine(word::line::INTERRUPTS).fetch_add(1, Ordering::Relaxed);
 }
 
 /// This core took a tick with `idle` running or not, `runnable` threads waiting, and `switches`
 /// context switches since boot (`cpu::PerCpu::switches`, which this publishes).
 #[inline]
 pub(crate) fn tick(switches: u64, idle: bool, runnable: u64) {
-    mine(word::ONLINE).store(1, Ordering::Relaxed);
-    mine(word::CONTEXT_SWITCHES).store(switches, Ordering::Relaxed);
+    mine(word::line::ONLINE).store(1, Ordering::Relaxed);
+    mine(word::line::CONTEXT_SWITCHES).store(switches, Ordering::Relaxed);
     let spent = if idle {
-        word::IDLE_TICKS
+        word::line::IDLE_TICKS
     } else {
-        word::BUSY_TICKS
+        word::line::BUSY_TICKS
     };
     mine(spent).fetch_add(1, Ordering::Relaxed);
-    mine(word::INTERRUPTS).fetch_add(1, Ordering::Relaxed);
-    mine(word::RUNNABLE).store(runnable, Ordering::Relaxed);
+    mine(word::line::INTERRUPTS).fetch_add(1, Ordering::Relaxed);
+    mine(word::line::RUNNABLE).store(runnable, Ordering::Relaxed);
 }
