@@ -47,13 +47,16 @@ pub fn reboot(slot: u64) -> i64 {
     unsafe { invoke(slot, abi::reboot::REBOOT, 0, 0, 0) }
 }
 
-/// **Write one byte to an x86 I/O port** (milestone 299). Not a syscall: `out` is an instruction,
+/// **Write one byte to an x86 I/O port** (milestone 299 (the x86 port-range capability)). Not a syscall: `out` is an instruction,
 /// and a ring-3 program may execute it exactly when it holds a `PortRange` capability naming `port`,
 /// which the kernel enforces through the task state segment (TSS) I/O permission bitmap (§121 (what a device capability
 /// is when the device has no page: x86 port I/O)). A port it does not hold raises a general
 /// protection fault, which its supervisor sees as a fault message; no page table catches a wrong
 /// guess. Here rather than in each driver because an instruction belongs with the code that knows
 /// the instruction set architecture (ISA).
+///
+/// Name: ratified 2026-11-20 (calef, #3853), replacing `outb`: the spelled-out name says what the
+/// call does, and `outb` stays as a `doc(alias)`.
 #[cfg(target_arch = "x86_64")]
 #[doc(alias = "outb")]
 pub fn port_write_byte(port: u16, value: u8) {
@@ -65,10 +68,13 @@ pub fn port_write_byte(port: u16, value: u8) {
     }
 }
 
-/// **Read one byte from an x86 I/O port** (milestone 299). The `in` twin of [`port_write_byte`]; the same
+/// **Read one byte from an x86 I/O port** (milestone 299 (the x86 port-range capability)). The `in` twin of [`port_write_byte`]; the same
 /// capability rule and the same fault on a port the caller does not hold. A read is not automatically
 /// harmless: several legacy devices (the 16550's receive register at `COM1`'s base) have read side
 /// effects, which is exactly why a driver, not the kernel, decides when to issue one.
+///
+/// Name: ratified 2026-11-20 (calef, #3853), replacing `inb`: the spelled-out name says what the
+/// call does, and `inb` stays as a `doc(alias)`.
 #[cfg(target_arch = "x86_64")]
 #[doc(alias = "inb")]
 pub fn port_read_byte(port: u16) -> u8 {

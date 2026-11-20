@@ -7156,9 +7156,7 @@ crates/user_mode_runtime/src/clock.rs::now
 
 crates/user_mode_runtime/src/clock.rs::now
 
-crates/user_mode_runtime/src/devices.rs::inb
 
-crates/user_mode_runtime/src/devices.rs::outb
 
 crates/user_mode_runtime/src/entropy.rs
 
