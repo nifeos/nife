@@ -34,6 +34,10 @@
 #    carries the stripped file's line numbers. The patch keeps its prose header and takes `a/`
 #    paths from the crate's root. An edit that lands inside a `Name:` block, or that does not apply
 #    here, is a finding.
+# 4b. Reports what the manifest still takes from nife, with `script/crate-standalone`'s step 1 (a
+#    path dependency that leaves the crate, an inherited key, no `rust-version`), then inlines the
+#    inherited keys from the workspace root in the staged copy, so the build reports the next
+#    blocker instead of stopping at the inherited `license`.
 # 5. Unless `--no-build`: writes `Cargo.lock`, runs the host tests and builds each target at the
 #    manifest's `rust-version`.
 # 5b. Applies every staged patch with `patch -p1 --dry-run -F0` and `git apply --check -p1`, and
@@ -55,7 +59,8 @@
 #    what a push would carry. Nothing is committed.
 # 7. Runs the template's cheap checks from the pinned revision (standalone, prose, ratchets,
 #    naming, orphan modules, links, falsification records) plus two it lacks: citations of this
-#    tree, and the word `nife` anywhere in the staged files.
+#    tree, and the word `nife` anywhere in the staged files. Those two report the crate's own files
+#    first and the scaffold's under `(template scaffold)`, so the scaffold's lines never come first.
 # 8. Prints the nife-side follow-up: each consumer manifest's replacement line, every other
 #    tracked file outside `design/` and `notes/` that names the crate, and the removals the fuzz
 #    targets' move makes in `fuzz/`, `script/fuzz` and `notes/fuzzing/targets.md`.
