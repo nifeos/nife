@@ -15,8 +15,8 @@
 //! whole as every name does.
 
 use pci_configuration_space::{
-    Bdf, VIRTIO_CAPABILITY_COMMON, VIRTIO_CAPABILITY_DEVICE, VIRTIO_CAPABILITY_INTERRUPT_STATUS,
-    VIRTIO_CAPABILITY_NOTIFY,
+    BusDeviceFunction, VIRTIO_CAPABILITY_COMMON, VIRTIO_CAPABILITY_DEVICE,
+    VIRTIO_CAPABILITY_INTERRUPT_STATUS, VIRTIO_CAPABILITY_NOTIFY,
 };
 use startup_page_contract::WindowKind;
 
@@ -100,8 +100,8 @@ pub struct Structures {
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-contract.
 pub fn structures(
-    function: Bdf,
-    read32: &mut dyn FnMut(Bdf, u64) -> u32,
+    function: BusDeviceFunction,
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
 ) -> Option<(Structures, u32)> {
     let (mut common, mut notify, mut interrupt_status, mut device) = (None, None, None, None);
     let mut multiplier = 0;
@@ -140,7 +140,10 @@ pub fn structures(
 /// table could enable it and aim it. A function without MSI-X withholds nothing, two empty ranges.
 ///
 /// Name: provisional, minted 2026-11-11 (UTC) by lane/1062-virtio-direct-contract.
-pub fn withheld(function: Bdf, read32: &mut dyn FnMut(Bdf, u64) -> u32) -> [Withheld; 2] {
+pub fn withheld(
+    function: BusDeviceFunction,
+    read32: &mut dyn FnMut(BusDeviceFunction, u64) -> u32,
+) -> [Withheld; 2] {
     let none = Withheld {
         bar: 0,
         start: 0,
@@ -695,7 +698,10 @@ mod tests {
     /// QEMU's capability list for a modern `virtio-blk-pci`, in the fake configuration space
     /// `crates/pci_configuration_space/src/tests.rs` builds: the four vendor capabilities, then MSI-X with its table at
     /// `table_offset` in `table_bar` and its pending bits at 0x800 of BAR 1.
-    fn configuration_space(table_bar: u32, table_offset: u32) -> impl FnMut(Bdf, u64) -> u32 {
+    fn configuration_space(
+        table_bar: u32,
+        table_offset: u32,
+    ) -> impl FnMut(BusDeviceFunction, u64) -> u32 {
         let vendor =
             |next: u32, kind: u32, length: u32| 0x09 | next << 8 | length << 16 | kind << 24;
         let space: std::collections::HashMap<u64, u32> = [
@@ -730,7 +736,8 @@ mod tests {
 
     /// [`configuration_space`] with a second capability of every virtio type after the MSI-X one,
     /// each naming BAR 5 and a notify multiplier of 8, as a device that lists a structure twice.
-    fn configuration_space_listing_each_structure_twice() -> impl FnMut(Bdf, u64) -> u32 {
+    fn configuration_space_listing_each_structure_twice()
+    -> impl FnMut(BusDeviceFunction, u64) -> u32 {
         let vendor =
             |next: u32, kind: u32, length: u32| 0x09 | next << 8 | length << 16 | kind << 24;
         let mut first = configuration_space(1, 0);
@@ -836,7 +843,7 @@ mod tests {
         );
     }
 
-    const FUNCTION: Bdf = Bdf {
+    const FUNCTION: BusDeviceFunction = BusDeviceFunction {
         bus: 0,
         device: 3,
         function: 0,
@@ -875,7 +882,7 @@ mod tests {
     #[test]
     fn a_list_without_an_interrupt_table_withholds_nothing_and_one_without_interrupt_status_names_no_structures()
      {
-        let mut read = |_: Bdf, offset: u64| match offset {
+        let mut read = |_: BusDeviceFunction, offset: u64| match offset {
             0x04 => 0x0010 << 16,
             0x34 => 0x40,
             0x40 => 0x09 | 16 << 16 | 1 << 24,

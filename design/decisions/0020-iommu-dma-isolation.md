@@ -39,7 +39,7 @@ until `confine` writes its entry. `attach` points a device at a domain and inval
 `take_fault` drains the fault queue.
 
 The requester id is the key. A PCIe function stamps `bus:8 | dev:5 | fn:3` on every transaction
-(`Bdf::requester_id`). Both boards publish an identity `iommu-map` in the device tree, so that id is
+(`BusDeviceFunction::requester_id`). Both boards publish an identity `iommu-map` in the device tree, so that id is
 exactly what the IOMMU looks a device up by. It is threaded from `pci::find_block_device` through
 `virtio::register`. That is a new `Option<u32>` argument: `Some` for a PCI device, `None` for
 virtio-mmio, which no IOMMU fronts on either board. `confine` runs at register time, before the
