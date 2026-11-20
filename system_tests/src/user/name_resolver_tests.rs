@@ -12,7 +12,7 @@
 //! # What a pass is not
 //!
 //! A claim about the UDP path. The resolver's UDP exchange is the same `Query` bytes and the same
-//! `accept`, proved on the host in `crates/domain_name_system`; a UDP name server a test owned
+//! `accept`, proved on the host in the `domain_name_system` crate (`nifeos/domain_name_system`); a UDP name server a test owned
 //! would have to bind a host port (notes/name-resolution.md, "Why DNS over TCP in the test").
 
 use domain_name_resolution_contract::{

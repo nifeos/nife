@@ -157,8 +157,6 @@ CAP_KEPT = {
     'kernel/src/arch/x86_64/timer.rs': ({'CALIBRATION_WINDOW_CAP'}, _CEILING),
     'redoxfs_server/src/bin/second_mount.rs': ({'cap', 'heap_cap', 'HIT_CAP', 'cap_mebibytes'}, _CEILING),
     'crates/swish/src/say/tests.rs': ({'the_heap_cap_is_named_in_kibibytes'}, _CEILING),
-    'crates/domain_name_system/tests/replies.rs':
-        ({'addresses_past_the_cap_are_dropped_and_the_rest_kept'}, _CEILING),
     'crates/video_terminal/src/vt/tests.rs': ({'scrolls_report_movement_and_cap_at_the_screen'}, _CEILING),
     'xtask/src/board.rs': ({'cap_given'}, _CEILING),
     # The grant-argument test fills the page to its `CAPACITY`, and the syscall fuzzer's sweep stops

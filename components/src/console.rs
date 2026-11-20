@@ -471,17 +471,17 @@ fn transmit_never_emptied(lsr_offset: u64) -> ! {
 ///
 /// The kernel configured the device at boot (baud divisor, 8N1), so this only transmits: spin until
 /// the Transmit Holding Register is empty, then write the byte. Same shape as the NS16550 arm above,
-/// with `outb`/`inb` in place of the volatile MMIO because the registers are ports.
+/// with `port_write_byte`/`port_read_byte` in place of the volatile MMIO because the registers are ports.
 #[cfg(target_arch = "x86_64")]
 fn uart_put(byte: u8) {
-    use user_mode_runtime::{inb, outb};
+    use user_mode_runtime::{port_read_byte, port_write_byte};
     const THR: u16 = 0x3F8; // transmit holding register (COM1 base)
     const LSR: u16 = 0x3FD; // line status register (base + 5)
     const LSR_THRE: u8 = 1 << 5; // transmit holding register empty
-    while inb(LSR) & LSR_THRE == 0 {
+    while port_read_byte(LSR) & LSR_THRE == 0 {
         core::hint::spin_loop();
     }
-    outb(THR, byte);
+    port_write_byte(THR, byte);
 }
 
 user_mode_runtime::panic_handler!();
