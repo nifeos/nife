@@ -3,7 +3,7 @@
 *Name: provisional. The `device_tree_blob` package of [crate-reviews.md](../crate-reviews.md), in its
 own file because the packages together outgrow the page.*
 
-The architect reads this to ratify the crate's names and to give the go to create
+The architect cleared this package on 2026-11-20 (UTC): the go to create
 `nifeos/device_tree_blob`, as item 4 of
 [milestone 857 (crates released on their own)](../../design/roadmap/0857-crates-released-on-their-own.md).
 It describes the crate as `main` leaves it. The findings behind it are in
@@ -226,7 +226,6 @@ The comparison is
 
 | item | owner |
 |---|---|
-| The architect ratifies the names above and gives the go to create `nifeos/device_tree_blob`. | architect |
 | Rewrite the three provisional blocks and write the missing ones. | a later lane |
 | P0-1, P1-5, the `Region::size` rename and the gate pass. | move lane |
 | Convert the dependents' path dependencies and the tree's references. | move lane |
@@ -240,4 +239,4 @@ The comparison is
 
 ## Recommendation
 
-Ready for review.
+Cleared to move (2026-11-20 UTC, no tag, no publish). The move does not wait for the `dtoolkit` switch.

@@ -4,7 +4,7 @@
 [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow the
 page.*
 
-The architect reads this to clear the crate for its move to its own repository. The kernel cannot
+The architect read this to clear the crate for its move to its own repository. The kernel cannot
 leave nife until every crate it links has left, so this crate is on the critical path of
 [milestone 1039 (the kernel leaves nife)](../../design/roadmap/1039-the-kernel-leaves-nife.md).
 The review that raised the work is
@@ -158,10 +158,12 @@ findings:
 
 ## Open questions
 
-The review's clearance, which is the architect's: clear the review, ratify the names one at a time
-and create `nifeos/static_elf` as a `publish = false` repository. Milestone 1088's open decisions
-section holds the options.
+The architect ratifies the public names later, one at a time. Until then every name in the table
+above stays provisional.
 
 ## Recommendation
 
-Ready for review.
+Cleared on 2026-11-20 (UTC): the review approves the repository `nifeos/static_elf` as a
+`publish = false` repository, with no tag and no publish. The clearance does not ratify the names;
+they stay provisional. The move lane runs the stranger test, the template's workflows and the first
+weekly mutation run in the new repository.

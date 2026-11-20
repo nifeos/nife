@@ -61,23 +61,23 @@ pub fn write_diagnostics(granted: bool, machine: Option<&Snapshot>, out: &mut dy
 
 #[cfg(test)]
 mod tests {
-    use machine_statistics_contract::{WORDS, build_header, word};
+    use machine_statistics_contract::{PAGE_WORDS, build_header, word};
 
     use super::*;
 
     fn page() -> Snapshot {
-        let mut w = [0u64; WORDS];
-        w[..word::LINE].copy_from_slice(&build_header(4096, 100));
-        w[word::TOTAL_FRAMES] = 32768;
-        w[word::FREE_FRAMES] = 27648;
+        let mut w = [0u64; PAGE_WORDS];
+        w[..word::LINE_WORDS].copy_from_slice(&build_header(4096, 100));
+        w[word::header::TOTAL_FRAMES] = 32768;
+        w[word::header::FREE_FRAMES] = 27648;
         for (cpu, busy, idle, intr, cs, r) in [(0, 10, 90, 520, 150, 1), (2, 14, 86, 520, 200, 0)] {
             let at = word::cpu(cpu);
-            w[at + word::ONLINE] = 1;
-            w[at + word::BUSY_TICKS] = busy;
-            w[at + word::IDLE_TICKS] = idle;
-            w[at + word::INTERRUPTS] = intr;
-            w[at + word::CONTEXT_SWITCHES] = cs;
-            w[at + word::RUNNABLE] = r;
+            w[at + word::line::ONLINE] = 1;
+            w[at + word::line::BUSY_TICKS] = busy;
+            w[at + word::line::IDLE_TICKS] = idle;
+            w[at + word::line::INTERRUPTS] = intr;
+            w[at + word::line::CONTEXT_SWITCHES] = cs;
+            w[at + word::line::RUNNABLE] = r;
         }
         Snapshot::from_words(&w).unwrap()
     }
