@@ -5,24 +5,24 @@ the program picks, maps nothing until the first allocation, and then grows one p
 a page source, under a cap. The allocator inside is [`talc`](https://crates.io/crates/talc) 5.1.1.
 
 The default page source is the `MAP` call on a capability microkernel's memory region: the budget
-of pages a process was handed (the kernel's own word for that capability is "untyped"). The region
+of pages the process holds (the kernel's own word for that capability is "untyped"). The region
 pays for every page, so nothing else supplies memory. Any type that implements `PageSource` can
 stand in for it, which is how the growth policy runs on a host. The crate is `no_std`.
 
-**How it grows.** A grow maps as many pages again as the heap already holds, at least 8 (32 KiB)
+A grow maps as many pages again as the heap already holds, at least 8 (32 KiB)
 and never past the cap, so a burst of small allocations costs a logarithmic number of page-mapping
 batches. `commit_all` maps the whole cap at once.
 
-**When it refuses.** An allocation returns null at the cap, when the region has no page left (the
+An allocation returns null at the cap, when the region has no page left (the
 kernel's `OutOfMemory`), or after the region refused for any other reason. The first two leave the
 heap serving what it holds. The third stops growth for good, because a retry would meet the same
 refusal and might spend a page each time. `last_refusal` reports which answer the region gave.
 
-**The smallest useful cap is one page** (4,096 bytes), and `initialize` refuses less. `talc`'s first
+The smallest useful cap is one page (4,096 bytes), and `initialize` refuses less. `talc`'s first
 heap takes 1,575 bytes of bookkeeping on a 64-bit target, so one page serves about 2,500 bytes of
 allocations.
 
-**The heap never shrinks.** It never calls `talc`'s `truncate`, and the memory-region interface has
+The heap never shrinks. It never calls `talc`'s `truncate`, and the memory-region interface has
 no call that returns one page, so a heap holds its peak until the region's owner destroys it.
 
 ## EXAMPLES
@@ -102,7 +102,7 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 
 Install Kani first: `cargo install --locked kani-verifier --version 0.68.0`, then `cargo kani setup`,
 which downloads a model checker and needs network access. `cargo kani` then takes about 10 seconds
-and peaks near 280 MB. One harness:
+and peaks near 280 megabytes of memory. One harness:
 
 ```sh
 cargo kani --harness verification::a_grow_at_the_maximum_is_a_refusal --exact
@@ -129,12 +129,15 @@ would retry.
   other allocating thread spinning until it runs again.
 - A `PageSource` must not allocate from the heap it feeds, and no signal-like upcall may allocate
   from the heap, since either would wait on a lock its own thread holds.
-- crates.io's `talc` 5.1.1 lacks upstream's fix SFBdragon/talc#57: two fit checks compared
-  addresses where they meant sizes. It matters only for a free gap within one chunk of the top of
-  the address space, which a 64-bit user process never maps. A consuming workspace can build a
-  patched copy through `[patch.crates-io]` until a release carries the fix.
-- The growth arithmetic restates `talc`'s chunk rounding. Were `talc` to round otherwise, a short
-  grow would be followed by another, which doubles, until the cap refuses.
+- crates.io's `talc` 5.1.1 lacks upstream
+  [pull request 57](https://github.com/SFBdragon/talc/pull/57), which fixes two fit checks that
+  compared addresses where they meant sizes. It matters only for a free gap within one chunk of the
+  top of the address space, which a 64-bit user process never maps. A consuming workspace can build
+  a patched copy through `[patch.crates-io]` until a release carries the fix.
+- The heap never returns a page. The memory-region interface has no call that unmaps one, so the
+  day it gains one, the heap can call `talc`'s `truncate` and hand the top back.
+- The growth arithmetic restates `talc`'s chunk rounding. Were `talc` to round otherwise, each short
+  grow would lead to another, larger one, until the cap refuses.
 
 ## Minimum Rust version
 
