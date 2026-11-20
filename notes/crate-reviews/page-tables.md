@@ -17,7 +17,7 @@ VT-d and AMD-Vi. One `Mapper` builds, edits and walks a table tree in any of the
 pointer, so the crate runs under a kernel, a hypervisor or a host test. It maps a page, a block of
 2 MiB or 1 GiB, a span and a range, and it unmaps, translates and walks. It refuses a mapping that
 is writable and executable at once, a virtual address in the wrong half and a range that overflows.
-A removed mapping returns a `TlbFlush` token the caller must honor. The crate is `no_std`, has no
+A removed mapping returns a `TranslationLookasideBufferFlush` token the caller must honor. The crate is `no_std`, has no
 dependency and has `unsafe` in one place of consequence: a raw pointer to a table frame.
 Thirty-eight Kani harnesses prove the encodings, and 42 falsification patches prove the harnesses
 can fail. Nothing in it points back into nife. The renames below are provisional; this package asks
@@ -84,10 +84,10 @@ Not run, and so not claimed:
 | sizes | `PAGE_SIZE`, `ENTRIES`, `PageSize::{FourKibibytes, TwoMebibytes, OneGibibyte}`, `PageSize::{ALL, bytes, levels_above_bottom, largest_fitting}` |
 | flags | `Flags` with eleven constructors, `Flags::ALL` and the predicates |
 | table | `PageTable::new`, the public `entries` field |
-| flush | `TlbFlush::{flush, assume_no_stale_entry, address}` |
+| flush | `TranslationLookasideBufferFlush::{flush, assume_no_stale_entry, address}` |
 | gate | `is_user_page_virtual_address` |
 | domain | `DirectMemoryAccessRegion`, `grant_pages`, `grant_page`, `build_identity_domain` |
-| format modules | `aarch64::mair`, `x86_64::pat`, the `AmdVi` device table entries, `Sv39Mae::memory_type_of` |
+| format modules | `aarch64::memory_attribute_indirection`, `x86_64::page_attribute_table`, the `AmdVi` device table entries, `Sv39Mae::memory_type_of` |
 
 No nife type, capability or handoff appears in a public signature; the packet's foreign-types table
 is empty. The packet is `script/crate-review-packet page_tables`.
@@ -104,43 +104,43 @@ repository until someone adds one.
 
 ## Names
 
-Every name below is provisional, ruled by the maintainer on 2026-11-19 (UTC) under the standing units
-rule, a two-way door before the first publish. The architect ratifies from here. The "proposal" column
-is what this package recommends.
+Every name below is ratified (2026-11-20 UTC). The `Name:` blocks in the crate still read provisional
+for these items; the move strips them.
 
-| item | kind | status | proposal |
+| item | kind | status | note |
 |---|---|---|---|
-| `page_tables` | crate | ratified 2026-11-14 | stands |
-| `PageSize::FourKibibytes`, `TwoMebibytes`, `OneGibibyte` | variants | provisional; were `Size4KiB`, `Size2MiB`, `Size1GiB`; each carries a `doc(alias)` of the old spelling | ratify; the alias keeps the `x86_64` crate's spelling findable |
-| `is_user_page_virtual_address` | function | provisional; was `is_user_page_va` | ratify |
-| `PageFormat::entry_physical_address` | trait method | provisional; was `entry_pa` | ratify |
-| `virtual_address`, `physical_address` | parameters of `Mapper`, `PageFormat`, `PageSize::largest_fitting` and `TlbFlush` | provisional; were `va`, `pa` | ratify |
-| `physical_to_pointer`, `allocate_page_frame` | `Mapper::new` parameters | provisional; were `phys_to_ptr`, `alloc_page_frame` | ratify |
-| `DirectMemoryAccessRegion` | struct | provisional; was `DmaRegion` | ratify; alias `DMA` is a candidate the architect may add |
-| `Flags::kernel_read_only_data`, `user_read_only_data` | constructors | provisional; were `kernel_rodata`, `user_rodata` | ratify |
-| `x86_64::pat::MODEL_SPECIFIC_REGISTER` | constant | provisional; was `MSR`; alias `MSR` and `IA32_PAT` | ratify |
-| `Flags::ALL` | constant | provisional | ratify |
-| `Aarch64`, `Sv39`, `Sv39Mae`, `Ia32e`, `Vtd`, `AmdVi` | types | kept specification names, each with `doc(alias)` for the vendor spelling | ratify as kept names |
-| `mair`, `pat` | modules | kept names, with aliases of the full register names | ratify as kept names |
-| `TlbFlush` | struct | kept; the doc opens with the spelled-out term and the alias `translation lookaside buffer` | ratify as a kept term of art |
-| `Mapper`, `Half`, `MapError` and its variants, `Walk`, `WalkEnd`, `WalkStep`, `PageTable`, `PAGE_SIZE`, `ENTRIES` | | provisional, unchanged | ratify as built |
-| `Mapper::unlink_table`, `walk`, `makes_writable_executable_pair`, `is_write_combining`, `write_combining`, `user_device_read_only` | | provisional, unchanged; `script/names` lists them as crossing into the kernel and `system_tests` | ratify as built |
-| `MapError::WritableAndExecutable` | variant | provisional, unchanged; item 12b proposes moving it to the kernel | decide with item 12b below |
+| `page_tables` | crate | ratified | |
+| `PageSize::FourKibibytes`, `TwoMebibytes`, `OneGibibyte` | variants | ratified | each carries a `doc(alias)` of the `x86_64` crate's spelling (`Size4KiB`, `Size2MiB`, `Size1GiB`) |
+| `is_user_page_virtual_address` | function | ratified | |
+| `PageFormat::entry_physical_address` | trait method | ratified | |
+| `virtual_address`, `physical_address` | parameters of `Mapper`, `PageFormat`, `PageSize::largest_fitting` and `TranslationLookasideBufferFlush` | ratified | |
+| `physical_to_pointer`, `allocate_page_frame` | `Mapper::new` parameters | ratified | |
+| `DirectMemoryAccessRegion` | struct | ratified | alias `DMA` |
+| `Flags::kernel_read_only_data`, `user_read_only_data` | constructors | ratified | |
+| `x86_64::page_attribute_table::MODEL_SPECIFIC_REGISTER` | constant | ratified | aliases `MSR` and `IA32_PAT` |
+| `Flags::ALL` | constant | ratified | |
+| `Aarch64`, `Sv39`, `Sv39Mae`, `Ia32e`, `Vtd`, `AmdVi` | types | ratified as specification and product names | each with `doc(alias)` for the vendor spelling |
+| `aarch64::memory_attribute_indirection` | module | ratified | aliases `MAIR_EL1`, `MAIR`, `mair` and `memory attribute indirection register` |
+| `x86_64::page_attribute_table` | module | ratified | aliases `PAT`, `pat` and `page attribute table` |
+| `TranslationLookasideBufferFlush` | struct | ratified | the doc opens with the full name; aliases `TLB`, `TlbFlush` and `translation lookaside buffer` |
+| `Mapper`, `Half`, `MapError` and its variants, `Walk`, `WalkEnd`, `WalkStep`, `PageTable`, `PAGE_SIZE`, `ENTRIES` | | ratified as built | |
+| `Mapper::unlink_table`, `walk`, `makes_writable_executable_pair`, `is_write_combining`, `write_combining`, `user_device_read_only` | | ratified as built | `script/names` lists them as crossing into the kernel and `system_tests` |
+| `MapError::WritableAndExecutable` | variant | ratified | stays in `MapError` |
 
 No alias carries an old nife spelling except the variants' `x86_64` spellings, which are foreign terms
-of art. `Name:` blocks in the crate still read provisional for these items; the move strips them, so
-a lane rewrites each to ratified once the architect rules.
+of art, and `TlbFlush`, `mair` and `pat`, which are the abbreviations of the terms the new names
+spell out.
 
 ## Findings of the review: where each stands
 
 | item | state |
 |---|---|
 | P0-2, the crate name | done; the crate is `page_tables` |
-| P1-5, the renames | done in the tree, provisional |
+| P1-5, the renames | done in the tree, ratified |
 | P1-6, `doc(alias)` | done in the tree |
-| P2-14, the leaf-size spelling | done in the tree, provisional |
+| P2-14, the leaf-size spelling | done in the tree, ratified |
 | P0-1, P0-3, P1-4, P1-9, P1-11 (items 1, 3, 4, 9, 11) | move lane |
-| P2-12b, `WritableAndExecutable` in `MapError` | open; a change to a public enum, left for a ruling |
+| P2-12b, `WritableAndExecutable` in `MapError` | closed; it stays in `MapError` |
 | P2-17, the test pool shape | open; not converted here |
 | P2-19, Miri's integer-to-pointer casts | open; `with_exposed_provenance` still draws the warnings, so the crate keeps `physical_to_pointer`'s contract and the warnings stay recorded in `notes/undefined-behavior.md` |
 | the rest of P1 and P2 | done in #3567 and #3594 |
@@ -150,16 +150,16 @@ a lane rewrites each to ratified once the architect rules.
 | item | owner |
 |---|---|
 | Items 1, 3, 4, 9 and 11 of the milestone: a standalone manifest with `rust-version`, replayable records, documentation for a stranger, the mutation exemptions and a README. | move lane |
-| Rewrite the provisional `Name:` blocks to ratified once the architect rules. | a later lane |
+| Rewrite the `Name:` blocks: the move strips them. | move lane |
 | `Cargo.toml` of `kernel` and `system_tests`: convert the path dependency to a `git` pin after the repository exists. | move lane |
 | A replay step for the four host-test patches. | move lane |
 
 ## Open questions
 
-1. Whether `MapError::WritableAndExecutable` leaves the crate (item 12b). Recommendation: it stays
-   until the first release is near; the maintainer decides it, a two-way door.
-2. Whether to add the alias `DMA` to `DirectMemoryAccessRegion`. Recommendation: yes.
+1. Whether `MapError::WritableAndExecutable` leaves the crate (item 12b). It stays.
+2. Whether to add the alias `DMA` to `DirectMemoryAccessRegion`. Yes; it carries the alias.
 
 ## Recommendation
 
-Ready for review.
+Cleared (2026-11-20 UTC). The repository `nifeos/page_tables` is approved with `publish = false`, no tag
+and no publish. The move follows in its own lane.

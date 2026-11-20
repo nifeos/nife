@@ -14,12 +14,14 @@ use crate::{
     ACCESS_WRITE_COMBINE, Flags, PageFormat, PageSize,
 };
 
-/// **What the eight PAT entries mean**, as `arch::x86_64::initialize` programs `IA32_PAT` on every core.
-/// The same role as aarch64's `mair` module: the encoder below selects an entry by its `PWT`,
+/// **Page attribute table**: what the eight PAT entries mean, as `arch::x86_64::initialize` programs `IA32_PAT` on every core.
+/// The same role as aarch64's `memory_attribute_indirection` module: the encoder below selects an entry by its `PWT`,
 /// `PCD` and `PAT` bits, and the value here is what that entry then means, so the two are one
 /// definition.
 #[doc(alias = "page attribute table")]
-pub mod pat {
+#[doc(alias = "PAT")]
+#[doc(alias = "pat")]
+pub mod page_attribute_table {
     /// The model-specific register `IA32_PAT`, number 0x277.
     ///
     /// Name: provisional, minted 2026-11-19 (UTC) by lane/1104-renames-package.
@@ -125,14 +127,14 @@ impl Ia32e {
             bits |= G;
         }
         if flags.is_write_combining() {
-            // `PWT` alone: PAT entry 1, which [`pat::VALUE`] makes write-combining. A PAT type of
+            // `PWT` alone: PAT entry 1, which [`page_attribute_table::VALUE`] makes write-combining. A PAT type of
             // WC wins over any MTRR, so this is WC whatever the firmware's MTRRs say about the
             // range. `SW_DEVICE` as for any device page, and the missing `PCD` is what the decoder
             // reads back as the combining.
             bits |= PWT | SW_DEVICE;
         } else if flags.is_device() {
             // Uncacheable, write-through: `PCD | PWT` selects PAT entry 3, strong uncacheable,
-            // which [`pat::VALUE`] leaves as it was at reset. A device register that gets cached
+            // which [`page_attribute_table::VALUE`] leaves as it was at reset. A device register that gets cached
             // reads back a value the device never produced.
             bits |= PCD | PWT | SW_DEVICE;
         }
@@ -686,11 +688,11 @@ mod tests {
         let entry = (leaf & PWT != 0) as u64 | ((leaf & PCD != 0) as u64) << 1;
         assert_eq!(entry, 1, "PWT alone");
         let memory_type = |table: u64, entry: u64| (table >> (entry * 8)) & 0xff;
-        assert_eq!(memory_type(pat::VALUE, 1), 0x01, "WC");
+        assert_eq!(memory_type(page_attribute_table::VALUE, 1), 0x01, "WC");
         for unchanged in [0, 2, 3, 4, 5, 6, 7] {
             assert_eq!(
-                memory_type(pat::VALUE, unchanged),
-                memory_type(pat::RESET, unchanged),
+                memory_type(page_attribute_table::VALUE, unchanged),
+                memory_type(page_attribute_table::RESET, unchanged),
                 "entry {unchanged}"
             );
         }

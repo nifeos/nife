@@ -19,7 +19,7 @@ kernel objects a capability names. None of those is a library another kernel can
 
 Where this crate differs: one walk over six formats, two of them IOMMU formats (`Vtd`, `AmdVi`),
 chosen by a type parameter. No instructions emitted, so the host tests build real tables in host
-memory and the same code runs under Kani. A caller cannot safely ignore `TlbFlush` (dropping it
+memory and the same code runs under Kani. A caller cannot safely ignore `TranslationLookasideBufferFlush` (dropping it
 panics; only `flush` or the `unsafe` `assume_no_stale_entry` discharge it), where `x86_64` lets a
 caller `ignore()` it. A present leaf is never overwritten (`AlreadyMapped` forces
 break-before-make). W^X is a property of the `Flags` constructors, with no writable-and-executable
@@ -29,6 +29,6 @@ table, the 4 KiB granule only, and the smaller method surface in the last column
 
 The concrete example: with `x86_64`, `unsafe { mapper.map_to(page, frame, flags, &mut alloc) }?
 .ignore()` compiles and leaves a stale translation if the page was live. Here the same shape is
-`mapper.unmap(va)?` followed by `mapper.map(...)`, and the `TlbFlush` that the `unmap` returned
+`mapper.unmap(va)?` followed by `mapper.map(...)`, and the `TranslationLookasideBufferFlush` that the `unmap` returned
 panics the moment the program drops it undischarged, which `tests/mapping.rs` pins
 (`dropping_the_tlb_obligation_is_fatal`).

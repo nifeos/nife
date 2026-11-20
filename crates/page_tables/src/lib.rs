@@ -71,7 +71,7 @@ mod mapper;
 mod page_format;
 mod page_size;
 mod page_table;
-mod tlb_flush;
+mod translation_lookaside_buffer_flush;
 
 pub use flags::Flags;
 use flags::*;
@@ -79,4 +79,4 @@ pub use mapper::{MapError, Mapper, Walk, WalkEnd, WalkStep};
 pub use page_format::{Half, PageFormat, is_user_page_virtual_address};
 pub use page_size::{PAGE_SIZE, PageSize};
 pub use page_table::{ENTRIES, PageTable};
-pub use tlb_flush::TlbFlush;
+pub use translation_lookaside_buffer_flush::TranslationLookasideBufferFlush;

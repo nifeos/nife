@@ -205,7 +205,7 @@ discovered that bits 63:48 are not translated ([higher-half.md](higher-half.md))
 way to say which table a mapping belongs to. It has been sitting there for three milestones,
 waiting for this file.
 
-This is the same move as `TlbFlush`'s `Drop` and the lock ranking: make the bad state
+This is the same move as `TranslationLookasideBufferFlush`'s `Drop` and the lock ranking: make the bad state
 unrepresentable rather than checking for it.
 
 ## `memsz > filesz` is `.bss`, and forgetting it is the classic loader bug
