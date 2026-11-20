@@ -100,9 +100,9 @@ cargo build --lib --target x86_64-unknown-none   # also aarch64-unknown-none-sof
 
 ### Running the proofs
 
-Install Kani first: `cargo install --locked kani-verifier --version 0.68.0`, then `cargo kani setup`,
-which downloads a model checker and needs network access. `cargo kani` then takes about 10 seconds
-and peaks near 280 megabytes of memory. One harness:
+The proofs need Kani 0.68.0 and its `cargo kani setup` step, which downloads a model checker and
+needs network access. `cargo kani` then takes about 10 seconds and peaks near 280 megabytes of
+memory. One harness:
 
 ```sh
 cargo kani --harness verification::a_grow_at_the_maximum_is_a_refusal --exact
