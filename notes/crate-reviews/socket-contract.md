@@ -4,7 +4,7 @@
 of [crate-reviews.md](../crate-reviews.md), in its own file because the packages together outgrow
 the page.*
 
-The architect reads this to clear the crate for its move to its own repository, as part of step 2
+The architect read this to clear the crate for its move to its own repository, as part of step 2
 of [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 It describes the crate as `main` plus this lane's pull request leaves it.
 
@@ -39,7 +39,7 @@ file by path to build the standard library's platform layer.
 | kind | where |
 |---|---|
 | path dependency | `components`, `kernel`, `fixtures`, `crates/system_initializer`, `crates/user_mode_runtime`, `jig`, `std_exerciser`; `system_tests` as a development dependency. `jig` and `std_exerciser` carry no `version` key |
-| source copied into `std` | `cargo xtask std-src` writes `src/lib.rs` verbatim into the patched `std` as `netproto.rs` and stamps it, from the directory `cargo metadata` gives for the package (`xtask/src/farm/copied.rs`), so the move changes nothing there |
+| source copied into `std` | `cargo xtask std-src` writes `src/lib.rs` verbatim into the patched `std` as `netproto.rs` and stamps it, from the directory `cargo metadata` gives for the package (`xtask/src/farm/copied.rs`); the move lane proves the farm builds from the pinned checkout |
 | prose and tables | `helpers/trust_boundary_crates.tsv`, `helpers/interface_stability.py`, `helpers/lint_externalized_crates.py`, `helpers/template_report_baseline.txt`, `packages/contracts.package.toml`, `crates/externalization-list.txt`, the doc comments of `domain_name_resolution_contract` |
 | users of the moved `fixture` | now `socket_fixture` (see below): `components/src/socket_test_client.rs`, `fixtures`, `jig`, `std_exerciser`, `system_tests` (network and riscv virtio tests); `xtask/src/inbound.rs` spells the same values for the host side |
 | users of the moved `ephemeral_port` and `polled_wait` | the network stack alone, which now reads them from `network_stack`: `components/src/socket_server.rs`, `components/src/socket_table.rs`, `components/src/nic_wait.rs` |
@@ -176,21 +176,21 @@ and `ADDRESSES_OFFSET_BYTES` in the same style. No other crate defines `REP_OK` 
 
 | item | owner |
 |---|---|
-| Add `tcp` and `udp` to the template's accepted words (another repository; not done here). | maintainer |
-| The `std` farm must read the pinned checkout's source; until then the move breaks the platform layer's build. | maintainer |
+| The `std` farm (`xtask/src/farm/copied.rs`) must build the platform layer from the pinned checkout's source; the move breaks that build until it does. The move lane proves this first, before any other step. | move lane |
 | Convert the eight path dependencies to `git` and `rev` with `version = "0.1.0"`, and read every file the dry run lists. | move lane |
 | Run the stranger test and the template's workflows in the new repository. | move lane |
 
 ## Recommendation
 
-Not ready to clear. The crate builds, proves and stands alone, its names carry the architect's ratification, and its scope has a
-provisional answer: `fixture`, `ephemeral_port` and `polled_wait` live in crates that stay in nife. It still
-waits on the clearance itself.
+Cleared on 2026-11-21 (UTC), as the architect's option A. The architect approved creating
+`nifeos/socket_contract` with `publish = false`, no tag and no publish. The template already
+accepts `tcp` and `udp`. The move lane's first step is to prove that the `std` farm builds the
+platform layer from the pinned checkout.
 
 ## Decisions for the architect
 
 1. Ratify the names above. Answered: ratified as built (2026-11-20 UTC).
-2. Clear the move, with no tag and no publication.
+2. Clear the move, with no tag and no publication. Answered: cleared, option A (2026-11-21 UTC).
 
 The scope decisions (where `fixture`, `ephemeral_port` and `polled_wait` live) are built on the
-maintainer's provisional ruling of 2026-11-19 UTC, so they no longer wait for the architect.
+maintainer's provisional ruling of 2026-11-19 UTC, so they do not wait for the architect.
