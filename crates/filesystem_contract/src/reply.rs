@@ -28,7 +28,7 @@ pub const MAXIMUM_ERRNO: i32 = 4095;
 pub const EPROTO: i32 = 71;
 
 /// Turn a redox/POSIX errno into a reply's first word: the negated number, so the client can invert
-/// it. This is the ONE place the error convention is defined; the FS server calls it at its boundary.
+/// it. This is the one place the error convention is defined; the filesystem server calls it at its boundary.
 ///
 /// # Panics
 ///

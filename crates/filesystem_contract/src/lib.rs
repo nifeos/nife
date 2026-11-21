@@ -30,7 +30,7 @@ struct ReadmeExample;
 pub const PAGE_BYTES: usize = 4096;
 
 /// Where a request packs its opcode: bits 63:56 of the first `CALL` word, the same position
-/// the other message contracts of the nife kernel use, so the contracts read alike.
+/// the other message contracts of the same system use, so the contracts read alike.
 pub const OPERATION_SHIFT: u32 = 56;
 
 /// Build a request's first word from just an opcode (the block protocol's shape: the operand, a
@@ -53,14 +53,14 @@ pub const fn operation(w0: u64) -> u64 {
 pub mod reply;
 pub use reply::{EPROTO, MAXIMUM_ERRNO, reply_err, reply_errno};
 
-/// **The block-IPC protocol** (FS server to block server): read blocks, write blocks, ask the
-/// size, flush, shaped like the RedoxFS `Disk` trait the FS server implements over it. The unit is
+/// **The block-IPC protocol** (filesystem server to block server): read blocks, write blocks, ask the
+/// size, flush, shaped like the RedoxFS `Disk` trait the filesystem server implements over it. The unit is
 /// one filesystem block ([`PAGE_BYTES`] bytes), and [`block::READ`] and [`block::WRITE`] carry up to
 /// [`block::TRANSFER_BLOCKS`] of them. The block server moves a request as one descriptor over the
 /// 512-byte virtio sectors the device transfers.
 pub mod block;
 
-/// **The file-service protocol** (client to FS server). The endpoint a client holds is the
+/// **The file-service protocol** (client to filesystem server). The endpoint a client holds is the
 /// directory capability, bound in the server to one directory node, and every name is resolved
 /// relative to a handle under it: no global namespace, no absolute path. A handle is a small
 /// integer the server mints and validates against this session's table, so forging one is
@@ -107,9 +107,9 @@ pub mod directory_entry;
 /// # BUGS
 ///
 /// - Free space is a forecast, not a reservation; see [`fs::STATFS`]'s BUGS.
-/// - There is no inode count: SMB's volume classes carry none, so nothing above has asked.
+/// - There is no inode count: Server Message Block (SMB) volume classes carry none, so nothing above has asked.
 ///
-/// The module is named for the POSIX call `statfs(2)`.
+/// The module is named for the Portable Operating System Interface (POSIX) call `statfs(2)`.
 #[doc(alias = "volume_statistics")]
 pub mod statfs;
 
@@ -119,7 +119,7 @@ pub mod statfs;
 /// granted name once at startup, and serves the same [`fs`] protocol on its own endpoint:
 /// [`fs::OPEN`] answers only the granted name (any other is `ENOENT`), [`fs::CREATE`] is
 /// `ENOTDIR`, and [`fs::WRITE`] and [`fs::TRUNCATE`] are [`grant::EROFS`] without
-/// [`grant::WRITE`]. The confined program holds nothing that names the FS server, so it cannot
+/// [`grant::WRITE`]. The confined program holds nothing that names the filesystem server, so it cannot
 /// route around the narrowing.
 pub mod grant;
 
@@ -133,7 +133,7 @@ pub mod grant;
 /// from the set, so the type is what the directory said when the grant was planned.
 pub mod nameset;
 
-/// **Extended attributes: the limits, the encodings, and the store the FS server keeps them in**,
+/// **Extended attributes: the limits, the encodings, and the store the filesystem server keeps them in**,
 /// a layer above RedoxFS rather than a change to its format. Every path to the disk goes through
 /// [`fs`], so the layer is as authoritative as the filesystem. There is no attribute right:
 /// [`fs::GETXATTR`] and [`fs::LISTXATTR`] need [`directory::READ`], [`fs::SETXATTR`] and
@@ -145,7 +145,7 @@ pub mod nameset;
 #[doc(alias = "xattr")]
 pub mod extended_attribute;
 
-/// The FS server's readiness sentinel: sent once, after it has opened the RedoxFS image over blk
+/// The filesystem server's readiness sentinel: sent once, after it has opened the RedoxFS image over blk
 /// IPC and before it serves clients. A test waiting for it tells a hang in `open` (the blk path)
 /// from a hang in the serve path, and catches a booted-but-empty run. It is a word shipping
 /// programs send each other, so it lives here rather than in a test fixture, as every other

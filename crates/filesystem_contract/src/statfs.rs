@@ -20,11 +20,9 @@ pub fn encode(
     Some(RECORD_BYTES)
 }
 
-/// Read a record from the start of `buf` (the `r0` bytes a [`fs::STATFS`] reply filled), as
+/// Read a record from the start of `buf` (the `r0` bytes a `fs::STATFS` reply filled), as
 /// `(block_size, total_blocks, free_blocks)`. `None` if the reply is shorter than this version
 /// of the record, which is what a truncated reply looks like and must not be read as zeroes.
-///
-/// [`fs::STATFS`]: super::fs::STATFS
 pub fn decode(buf: &[u8]) -> Option<(u64, u64, u64)> {
     if buf.len() < RECORD_BYTES {
         return None;

@@ -379,7 +379,7 @@ fn an_attribute_record_lays_out_exactly_as_published() {
 
 /// **An exactly-sized buffer is enough, and a short one refuses rather than crashes.** `set`'s
 /// doc sizes the caller's buffer at `blob.len() + record_len(...)`, so "exactly enough" has to
-/// mean enough; and the FS server hands `set` a buffer it sized itself, so a one-byte error
+/// mean enough; and the filesystem server hands `set` a buffer it sized itself, so a one-byte error
 /// there must come back [`extended_attribute::ENOSPC`] instead of tearing down the serve loop on a slice
 /// bound.
 #[test]

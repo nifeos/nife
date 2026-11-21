@@ -51,7 +51,7 @@ pub const RAW: u32 = 0;
 /// The POSIX error number, spelled as `errno.h` spells it.
 #[doc(alias = "no data available")]
 pub const ENODATA: i32 = 61;
-/// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME_BYTES`], or holds a NUL byte. A fact about the
+/// `ERANGE`: the name is empty, longer than [`MAXIMUM_NAME_BYTES`], or holds a zero byte. A fact about the
 /// name, not about the capability.
 ///
 /// The POSIX error number, spelled as `errno.h` spells it.
@@ -88,7 +88,7 @@ pub const ENOTSUP: i32 = 95;
 /// `redoxfs_host extract` and upstream's FUSE (filesystem in userspace) mount carry it out with the files, a decision and not
 /// a leak.
 ///
-/// **BUGS.** No file anywhere on a nife filesystem can be called `.extended-attributes`, at any rights.
+/// **BUGS.** No file anywhere on a filesystem of this stack can be called `.extended-attributes`, at any rights.
 ///
 /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const STORE_DIRECTORY: &str = ".extended-attributes";
@@ -133,13 +133,13 @@ pub const fn reply_value_len(r0: i64) -> usize {
 }
 
 /// Whether `name` is a name this store can hold: non-empty, at most [`MAXIMUM_NAME_BYTES`] bytes, and
-/// free of NUL.
+/// free of zero bytes.
 ///
 /// **Bytes, not UTF-8, and no namespace prefix is required.** Linux insists on
 /// `user.`/`security.`/`trusted.` because those namespaces mean different privilege; there is no
-/// privilege here to mean, so requiring the prefix would be inventing a policy to enforce. NUL is
+/// privilege here to mean, so requiring the prefix would be inventing a policy to enforce. A zero byte is
 /// the one byte refused, because every client that will ever write one of these names (Samba, and
-/// anything speaking the POSIX API) hands it over as a C string, and a name with a NUL in it
+/// anything speaking the POSIX API) hands it over as a C string, and a name with a zero byte in it
 /// would come back shorter than it went out.
 pub const fn is_valid_name(name: &[u8]) -> bool {
     if name.is_empty() || name.len() > MAXIMUM_NAME_BYTES {
@@ -220,7 +220,7 @@ pub mod list {
 ///
 /// One node's attributes are one blob of records, each a [`store::RECORD_HEADER_BYTES`]-byte header (a
 /// name length, a `u32` kind, a `u16` value length, little-endian), then the name, then the value.
-/// The FS server keeps one blob per node in a file named for the node's `TreePtr` id
+/// The filesystem server keeps one blob per node in a file named for the node's `TreePtr` id
 /// ([`store::file_name`]) inside [`STORE_DIRECTORY`], so attributes follow a file across a rename. The
 /// format is public so its rules are host-tested and a recovery tool can read it.
 pub mod store {

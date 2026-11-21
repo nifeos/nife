@@ -1,0 +1,4 @@
+# `doc_markdown` demands backticks around anything that looks like an identifier. `RedoxFS` is the
+# name of a project, and backticks would render it as code, which says "an identifier you could
+# type". `".."` extends clippy's defaults and does not replace them.
+doc-valid-idents = ["..", "RedoxFS"]
