@@ -35,7 +35,7 @@ bitmap_font = { version = "0.1.0", path = "../bitmap_font" }
 # gate has to have; milestone 268's finding 3 is what the second copy actually costs. Ours, in this
 # workspace, `no_std`, no dependencies of its own, no `unsafe`: §46's concern is external code and
 # this is none.
-boot_ladder = { version = "0.1.0", git = "https://github.com/nifeos/boot_ladder", rev = "196bf4e8201e027a025c938aa87da9778310c9c7" }
+boot_ladder = { version = "0.1.0", git = "https://github.com/nifeos/boot_ladder", rev = "ed235428c6551ddcf673bdb140b972535238fe3b" }
 # **The third dependency, and the same argument as the first two** (milestone 324 part 2). The
 # recogniser now reads the job-mix sweep's console markers, and they were three private `const`s in
 # `kernel/src/job_mix.rs` plus four string literals in `xtask`. A fourth copy here would be a gate
