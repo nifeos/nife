@@ -59,10 +59,10 @@ panic that names the thread.
 
 ## Dispatch
 
-`riscv_trap_dispatch` is the outer half and stays on the interrupted stack. A U-mode trap runs on
+`riscv64_trap_dispatch` is the outer half and stays on the interrupted stack. A U-mode trap runs on
 its thread's kernel stack, because the system call may block and an interrupt stack may not. A kernel
 trap with an interrupt stack available moves there through `dispatch_on_interrupt_stack`. The
-common case calls `riscv_trap_body` directly; on aarch64, routing every `ecall` through the
+common case calls `riscv64_trap_body` directly; on aarch64, routing every `ecall` through the
 trampoline cost 8.6 instructions per `null_system_call`. Preemption happens after the body returns,
 on the interrupted thread's stack, because `schedule()` may run only on a stack that thread owns
 (`kernel/src/interrupt_stack.rs`). The switch returns through `trap_return` to exactly the

@@ -42,7 +42,7 @@ use thread_control_block::thread_control_block_invoke;
 // path, `kernel11system_call8dispatch` in the mangled name, and counts it flat as `system_call_entry`.
 /// Decode and run one system call, and write its result to the first argument register.
 ///
-/// Called from the `svc` arm of `exception_body` (`ecall` on riscv64, in `riscv_trap_body`). A
+/// Called from the `svc` arm of `exception_body` (`ecall` on riscv64, in `riscv64_trap_body`). A
 /// system call stays on the thread's own stack, not the interrupt stack, because it can block.
 ///
 /// `#[inline(never)]` keeps this a symbol `script/fastpath-footprint` can name and sum flat as

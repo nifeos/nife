@@ -12,7 +12,7 @@ instrument measuring a cost: a correctness fix with a price to pay, or a win it 
 This is the first time it caught a defect. It did so on a benchmark nobody was looking at, in a
 change whose entire test suite was green.
 
-Four pull requests from the VisionFive 2 lane family failed `script/bench --riscv --check` on the
+Four pull requests from the VisionFive 2 lane family failed `script/bench --riscv64 --check` on the
 same benchmark by the same amount, and a fifth from the same stack did not:
 
 | tree | riscv64 `map_new` | note |

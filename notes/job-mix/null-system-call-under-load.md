@@ -266,7 +266,7 @@ itself ... half explained and half open") with:
 - ~~**aarch64's job mix wedges under TCG on `main`.**~~ Closed 2026-10-05: a miscompiled yield,
   not a multicore hang ([`spawn-job-miscompiled-yield.md`](spawn-job-miscompiled-yield.md)).
 - **`script/fastpath-footprint` leaves `exception_body` out of aarch64's `system_call_entry`**, though
-  every aarch64 system call runs it (riscv64's list has `riscv_trap_body`). Moving the counter from that
+  every aarch64 system call runs it (riscv64's list has `riscv64_trap_body`). Moving the counter from that
   symbol into `system_call::dispatch` once read as 44 bytes of growth when it was 20.
 
 ## Proposed work

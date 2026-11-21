@@ -130,7 +130,7 @@ three questions was drafted (scratchpad) if calef chooses to engage.
   origin; in-flight worktree commits are not, so push branches before any restart.
 - Merge discipline: merge per proven piece, run the gates yourself before pushing main
   (`script/test` both ISAs, `script/verify` if a proof-crate changed, `script/lint`,
-  `script/fmt --check`, `script/bench --check` [+ `--riscv --check`], and `script/coverage`).
+  `script/fmt --check`, `script/bench --check` [+ `--riscv64 --check`], and `script/coverage`).
   Coverage is easy to forget and is a CI gate: it went red and stayed red for fourteen runs
   on 2026-07-31 because this list omitted it and "green" was being reported off the others.
   Kani/`verify` is the slow gate;

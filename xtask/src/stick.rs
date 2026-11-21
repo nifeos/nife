@@ -21,8 +21,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use super::{RISCV_TARGET, TARGET, cargo_profiled, profile_dir, user};
-use crate::archive::{has_initial_ramdisk_riscv, initial_ramdisk_path, riscv_initial_ramdisk_path};
+use super::{RISCV64_TARGET, TARGET, cargo_profiled, profile_dir, user};
+use crate::archive::{has_initial_ramdisk_riscv64, initial_ramdisk_path, riscv64_initial_ramdisk_path};
 use crate::host::workspace_root;
 use crate::portable_executable;
 use crate::uefi::uefi_image;
@@ -135,13 +135,13 @@ fn payload_aarch64() -> bool {
 /// stick is for the bench as well as for QEMU; the feature changes only how a test run exits,
 /// which a tour never does. `stick-boot` proves it boots under QEMU's EDK2.
 fn payload_riscv64() -> bool {
-    if !has_initial_ramdisk_riscv()
+    if !has_initial_ramdisk_riscv64()
         || !cargo_profiled(&[
             "build",
             "-p",
             "kernel",
             "--target",
-            RISCV_TARGET,
+            RISCV64_TARGET,
             "--features",
             "board",
         ])
@@ -149,7 +149,7 @@ fn payload_riscv64() -> bool {
         return false;
     }
     let kernel = workspace_root()
-        .join(format!("target/{RISCV_TARGET}/{}/kernel", profile_dir()))
+        .join(format!("target/{RISCV64_TARGET}/{}/kernel", profile_dir()))
         .display()
         .to_string();
     // A separate target directory, so these flags never touch the kernel's riscv64 artifacts.
@@ -163,9 +163,9 @@ fn payload_riscv64() -> bool {
                      -C link-arg=-znotext -C link-arg=-zseparate-loadable-segments \
                      -C link-arg=--image-base=0x1000 -C link-arg=--entry=efi_main";
     if !build_loader(
-        RISCV_TARGET,
+        RISCV64_TARGET,
         &kernel,
-        &riscv_initial_ramdisk_path(),
+        &riscv64_initial_ramdisk_path(),
         &[
             ("RUSTFLAGS", rustflags),
             ("--target-dir", &target_dir.display().to_string()),
@@ -173,7 +173,7 @@ fn payload_riscv64() -> bool {
     ) {
         return false;
     }
-    let elf_path = target_dir.join(format!("{RISCV_TARGET}/{}/uefi_loader", profile_dir()));
+    let elf_path = target_dir.join(format!("{RISCV64_TARGET}/{}/uefi_loader", profile_dir()));
     let elf = match std::fs::read(&elf_path) {
         Ok(bytes) => bytes,
         Err(e) => {

@@ -11,10 +11,10 @@
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::archive::{has_initial_ramdisk_riscv, initial_ramdisk_path, riscv_initial_ramdisk_path};
+use crate::archive::{has_initial_ramdisk_riscv64, initial_ramdisk_path, riscv64_initial_ramdisk_path};
 use crate::host::{cargo, workspace_root};
 use crate::scanout::screendump;
-use crate::{RISCV_TARGET, TARGET, profile_dir};
+use crate::{RISCV64_TARGET, TARGET, profile_dir};
 
 /// How long the watcher polls before giving up. Generous, because this is a TCG boot of a debug
 /// kernel and the riscv64 leg is the slower of the two. The watch ends the moment the screen
@@ -121,7 +121,7 @@ pub(crate) fn screen_boot(arch: &str) -> bool {
 fn build_screen_leg(arch: &str) -> Option<(&'static str, String, String)> {
     let (target, runner) = match arch {
         "aarch64" => (TARGET, "helpers/qemu-runner-aarch64.sh"),
-        "riscv64" => (RISCV_TARGET, "helpers/qemu-runner-riscv64.sh"),
+        "riscv64" => (RISCV64_TARGET, "helpers/qemu-runner-riscv64.sh"),
         other => {
             eprintln!(
                 "screen-boot: no ramfb leg for {other}; x86_64's screen is `cargo xtask uefi-boot`"
@@ -132,7 +132,7 @@ fn build_screen_leg(arch: &str) -> Option<(&'static str, String, String)> {
     let prepared = if arch == "aarch64" {
         crate::user()
     } else {
-        has_initial_ramdisk_riscv()
+        has_initial_ramdisk_riscv64()
     };
     if !prepared || !cargo(&["build", "-p", "kernel", "--target", target]) {
         return None;
@@ -144,7 +144,7 @@ fn build_screen_leg(arch: &str) -> Option<(&'static str, String, String)> {
     // kernel prints `MEASURED BOOT REFUSED`, or QEMU stops at `could not load ramdisk` where no
     // aarch64 archive was built.
     let archive = if arch == "riscv64" {
-        riscv_initial_ramdisk_path()
+        riscv64_initial_ramdisk_path()
     } else {
         initial_ramdisk_path()
     };

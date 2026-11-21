@@ -46,7 +46,7 @@ tick.
 Each point is one run:
 
 ```
-RUSTUP_TOOLCHAIN=nightly-2026-10-22 helpers/qemu-bounded.sh 1500 cargo xtask bench --riscv
+RUSTUP_TOOLCHAIN=nightly-2026-10-22 helpers/qemu-bounded.sh 1500 cargo xtask bench --riscv64
 ```
 
 in a detached worktree at the commit. Commits before milestone 939 (the icount bench runs without

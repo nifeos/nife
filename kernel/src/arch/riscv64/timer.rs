@@ -200,7 +200,7 @@ pub(crate) fn set_cycle_counter_grant(granted: bool) {
 /// Handle a timer interrupt: count the tick and arm the next deadline, which also clears the
 /// pending interrupt. Called from the trap dispatcher on `scause` = timer.
 ///
-/// `#[inline(never)]` keeps these bytes out of `riscv_trap_body`, which `script/fastpath-footprint`
+/// `#[inline(never)]` keeps these bytes out of `riscv64_trap_body`, which `script/fastpath-footprint`
 /// counts as system call entry. See notes/riscv-port/timer.md.
 ///
 /// Context: interrupt context.

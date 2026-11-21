@@ -14,7 +14,7 @@ use machine_discovery::gic::{self, Gic, Mismatch, Refusal};
 const QEMU_GICV2: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-smp4.dtb");
 const QEMU_GICV3: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-gicv3.dtb");
 const QEMU_GICV3_HVF: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-gicv3-hvf.dtb");
-const QEMU_RISCV: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt-smp4.dtb");
+const QEMU_RISCV64: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt-smp4.dtb");
 
 fn tree(bytes: &[u8]) -> DeviceTreeBlob<'_> {
     DeviceTreeBlob::from_bytes(bytes).expect("fixture is a valid device tree")
@@ -73,7 +73,7 @@ fn qemu_hvf_gic_version_3_matches_tcg() {
 /// A tree with no GIC and no `intc@` node is an honest `None`, not a refusal: RISC-V's `virt` tree.
 #[test]
 fn a_machine_without_a_gic_says_so() {
-    assert_eq!(gic::discover(&tree(QEMU_RISCV)).unwrap(), None);
+    assert_eq!(gic::discover(&tree(QEMU_RISCV64)).unwrap(), None);
 }
 
 // --- the cross-check: what the silicon says ---

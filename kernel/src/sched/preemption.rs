@@ -98,7 +98,7 @@ pub(super) fn dump_tick_samples(c: usize) {
 
 /// Record that this core wants a switch, and run the tick's other accounting; does not switch.
 ///
-/// `#[inline(never)]`: riscv64's timer interrupt and system calls share `riscv_trap_body`, which
+/// `#[inline(never)]`: riscv64's timer interrupt and system calls share `riscv64_trap_body`, which
 /// `script/fastpath-footprint` counts flat, so inlined bytes here would be charged to every
 /// system call (notes/benchmarks/fastpath-footprint-gate.md).
 ///

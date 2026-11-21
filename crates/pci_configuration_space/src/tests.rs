@@ -868,7 +868,7 @@ fn the_intx_swizzle_rotates_by_device() {
 /// numbers 35 to 38 (base 35).
 #[test]
 fn the_intx_swizzle_matches_the_routing_tables_of_the_virt_machines() {
-    const RISCV_INPUTS: [[u32; 4]; 4] = [
+    const RISCV64_INPUTS: [[u32; 4]; 4] = [
         [32, 33, 34, 35],
         [33, 34, 35, 32],
         [34, 35, 32, 33],
@@ -881,7 +881,7 @@ fn the_intx_swizzle_matches_the_routing_tables_of_the_virt_machines() {
             let (row, column) = (device as usize, pin as usize - 1);
             assert_eq!(
                 intx_interrupt_number(32, device, pin),
-                RISCV_INPUTS[row][column]
+                RISCV64_INPUTS[row][column]
             );
             assert_eq!(
                 intx_interrupt_number(35, device, pin),

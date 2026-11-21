@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::host::{cargo, flag_value};
 use crate::suite::ArchLegs;
-use crate::{RISCV_TARGET, RUNNER, TARGET};
+use crate::{RISCV64_TARGET, RUNNER, TARGET};
 
 /// **The instruction-count instrument** (milestone 78), on both ISAs or the one `--arch` names,
 /// because parity is a gate (§19). Returns whether every leg's claims held.
@@ -34,7 +34,7 @@ pub(crate) fn icount() -> bool {
     if legs.aarch64() && !icount_leg("aarch64", RUNNER, TARGET) {
         return false;
     }
-    if legs.riscv64() && !icount_leg("riscv64", "helpers/qemu-runner-riscv64.sh", RISCV_TARGET) {
+    if legs.riscv64() && !icount_leg("riscv64", "helpers/qemu-runner-riscv64.sh", RISCV64_TARGET) {
         return false;
     }
     true

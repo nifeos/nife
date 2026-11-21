@@ -55,7 +55,7 @@ Every floor named above is one it could not carry. Re-record it HERE, in the
 branch that raises the pin, so the delta is seen by the person causing it:
 
     script/bench --save --why "nightly-<date>: <what the new compiler moved>"
-    script/bench --riscv --save --why "..."
+    script/bench --riscv64 --save --why "..."
     script/bench --x86 --save --why "..."
 
 --why is not optional: a floor records the reason it holds its value, beside the
