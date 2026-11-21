@@ -13,8 +13,8 @@ Raised by a read-only review of `crates/address_space_layout` at nife commit `13
 stranger meeting the crate in a repository of its own would. It changes nothing; it lists what the
 move lane and the lanes after it change.
 
-The crate has no review package in `notes/crate-reviews/`, so this block has no settled baseline
-to inherit. It treats as settled only what a ruling elsewhere already fixed. That is the interface identity
+The crate's review package, `notes/crate-reviews/address-space-layout.md`, holds the settled
+baseline. This block treats as settled only what a ruling elsewhere already fixed. That is the interface identity
 (`INTERFACE_ID` 2 and `VERSION` 1, from milestone 956 (the linked interfaces carry checkable
 versions)), the ratified `MAXIMUM_STACK_PAGES` and the band numbers themselves (§171 (where a
 program image starts), option D). It also includes the placement of this crate at step 3 of
@@ -207,9 +207,9 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
 Background. Before a crate leaves this tree, calef reads its code and its review package and
 clears it; the clearing is also the approval to create its repository. This crate fixes where every
 program's image, stack, heap and service windows sit in its address space, and the kernel, the
-program builder and the runtime all read it. It has no review package yet. A lane writes one that
-lists every public name with its state, including the provisional names of items 7, 9, 15 and 17.
-This decision is the clearing of that package once it exists.
+program builder and the runtime all read it. Its review package lists every public name with its
+state, including the provisional names of items 7, 9, 15 and 17. This decision is the clearing of
+that package.
 
 Recommendation: A.
 
@@ -234,8 +234,11 @@ Blocks: the move, and through it the tag and the first publish.
 - **Done.** The crate's own name, `address_space_layout`. Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16,
   and the README of item 5, are done in this tree: the crate has `window` (provisional) and a
   manifest that stands alone.
-- **Outstanding.** Item 7 and items 15 and 17, each a provisional public name for the review
-  package; the move's items 2, 5 (the rest of the scaffold), 11 and 13, with item 18 left to 1017.
+- **Done.** The review package, [notes/crate-reviews/address-space-layout.md](../../notes/crate-reviews/address-space-layout.md),
+  lists every public name with its state.
+- **Outstanding.** The architect's ruling on the provisional names of items 7, 9, 15 and 17, and
+  the clearance of the package. Items 7, 15 and 17 are not built. The move still owes items 2, 5
+  (the rest of the scaffold), 11 and 13; item 18 is left to 1017.
 
 ## BUGS
 
