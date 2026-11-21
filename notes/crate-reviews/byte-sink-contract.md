@@ -54,7 +54,7 @@ All commands ran in this lane's worktree, at `main` with this lane's edits to do
 
 | check | result |
 |---|---|
-| `script/crate-standalone --no-kani byte_sink_contract` | eight failures, all move-time items: `names` (22 names not ratified, the first `VERSION`), manifest inherits `license`, manifest inherits `lints`, no `rust-version`, no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, and one path into the nife tree (`src/verification.rs` line 3, a falsification patch path in a comment). The build for the host and the three bare-metal targets passes. Kani was not run in this lane; the six harnesses and their six falsification patches are in the tree and unchanged in number |
+| `script/crate-standalone --no-kani byte_sink_contract` | eight failures, all move-time items. They are `names` (22 names not ratified, the first `VERSION`), a manifest that inherits `license`, a manifest that inherits `lints`, no `rust-version`, no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, and one path into the nife tree. That path is a falsification patch path in a comment (`src/verification.rs` line 3). The build for the host and the three bare-metal targets passes. Kani was not run in this lane; the six harnesses and their six falsification patches are in the tree and unchanged in number |
 | `cargo test -p byte_sink_contract -p byte_sink_fixture` | 11 unit tests and 3 doctests in the contract crate and 1 unit test in the fixture crate pass |
 | `cargo clippy -p byte_sink_contract -p byte_sink_fixture --all-targets -- -D warnings` | no warning |
 | `cargo doc -p byte_sink_contract --no-deps` with warnings denied | no warning |
