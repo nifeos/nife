@@ -109,6 +109,7 @@ source = "git+https://github.com/nifeos/block_roster_contract?rev=2bd3da34888fc1
 [[package]]
 name = "boot_ladder"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/boot_ladder?rev=196bf4e8201e027a025c938aa87da9778310c9c7#196bf4e8201e027a025c938aa87da9778310c9c7"
 
 [[package]]
 name = "boot_slot"
@@ -796,6 +797,7 @@ source = "git+https://github.com/nifeos/interfaces_note?rev=bfa27187a87e0cc1916e
 [[package]]
 name = "intrusive_queue"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/intrusive_queue?rev=08c31f2d1397edc91f8046d068eaaf4f116b580b#08c31f2d1397edc91f8046d068eaaf4f116b580b"
 
 [[package]]
 name = "jh7110_clock_and_reset"

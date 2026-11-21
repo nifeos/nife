@@ -63,7 +63,7 @@ An appendix to [the milestone](../1078-boot-ladder-outside-review.md).
    that reads like a hang.
    Change: in nife, replace the literals with the constant (the trailing period is the shell's
    tail, not the head), and add a `script/lint` grep that the head strings appear outside
-   `crates/boot_ladder` only in `tests.rs` files and fixtures. That gate is nife's and moves rung
+   `boot_ladder` only in `tests.rs` files and fixtures. That gate is nife's and moves rung
    two under the crate's `BUGS` entry, which then goes.
    Door: two-way. Effort: S. This item lands in nife, not in the crate.
 

@@ -2,8 +2,9 @@
 //! deadline per timer, the cached earliest deadline the tick compares against, and the expiry walk.
 //!
 //! The cached earliest is never later than any armed deadline; it may be earlier, which costs one
-//! walk that fires nothing. See `notes/inter-process-communication.md` ("The timer"). The module
-//! name is provisional.
+//! walk that fires nothing. See `notes/inter-process-communication.md` ("The timer").
+//!
+//! Name: ratified 2026-11-21 (UTC).
 
 //! # Examples
 //!
@@ -48,13 +49,15 @@
 /// "No deadline" in the cache word: the value a kernel stores for the cached earliest when nothing is
 /// armed, so the cache fits one atomic word. [`Timer::deadline`] and [`earliest`] answer `None`
 /// instead, so a timer armed at exactly this value still reads as armed.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub const NEVER: u64 = u64::MAX;
 
 /// What [`Timer::arm`] decided.
 ///
-/// Name: provisional. The `Verdict` suffix gives all five operation enums one shape, and is the
-/// word this crate's prose already uses for what an operation decided. Considered: `ArmOutcome` and
-/// keeping the bare name.
+/// Name: ratified 2026-11-21 (UTC), with its variants. The `Verdict` suffix gives all five operation enums one
+/// shape, and is the word this crate's prose already uses for what an operation decided. Refused:
+/// `ArmOutcome` and keeping the bare name.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ArmVerdict<T> {
     /// The deadline is in the future: armed, and the caller lowers the cache with [`lowered`].
@@ -66,6 +69,8 @@ pub enum ArmVerdict<T> {
 
 /// **One timer**: at most one pending deadline, and what to signal when it passes. `T` is the
 /// kernel's (notification name, bits) pair; this module never looks inside it.
+///
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Debug, Clone, Copy)]
 pub struct Timer<T: Copy> {
     armed: Option<(u64, T)>,
@@ -79,12 +84,16 @@ impl<T: Copy> Default for Timer<T> {
 
 impl<T: Copy> Timer<T> {
     /// A timer with nothing armed.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub const fn new() -> Self {
         Timer { armed: None }
     }
 
     /// Arm for `deadline`, replacing whatever was pending; a replaced deadline can never fire.
     /// Returns [`ArmVerdict::DueNow`] without arming when `deadline` is at or before `now`.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn arm(&mut self, deadline: u64, target: T, now: u64) -> ArmVerdict<T> {
         if deadline <= now {
             self.armed = None;
@@ -98,12 +107,16 @@ impl<T: Copy> Timer<T> {
     /// **Disarm.** `true` if a deadline was pending and now never will fire; `false` if nothing
     /// was armed (never armed, already fired, or already canceled). A caller that gets `false`
     /// back knows the signal, if any, has already been sent.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn cancel(&mut self) -> bool {
         self.armed.take().is_some()
     }
 
     /// **Fire if due**: `Some(target)` and disarmed when the deadline is at or before `now`,
     /// otherwise `None` and untouched. Fires at most once per arm.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn expire(&mut self, now: u64) -> Option<T> {
         match self.armed {
             Some((deadline, target)) if deadline <= now => {
@@ -115,11 +128,15 @@ impl<T: Copy> Timer<T> {
     }
 
     /// The pending deadline, or `None` when nothing is armed.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn deadline(&self) -> Option<u64> {
         self.armed.map(|(d, _)| d)
     }
 
     /// Whether a deadline is pending.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn is_armed(&self) -> bool {
         self.armed.is_some()
     }
@@ -127,11 +144,15 @@ impl<T: Copy> Timer<T> {
 
 /// **The cache after arming `deadline`**: never raised, only lowered. Called under the same lock
 /// as the arm, so the cache and the timers never disagree for anyone who holds it.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub fn lowered(cached: u64, deadline: u64) -> u64 {
     cached.min(deadline)
 }
 
 /// **Whether the tick must walk.** The one comparison per idle tick `notes/timed-wait.md` priced.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub fn is_due(cached: u64, now: u64) -> bool {
     now >= cached
 }
@@ -139,6 +160,8 @@ pub fn is_due(cached: u64, now: u64) -> bool {
 /// One step of the expiry walk: fire the first due timer and return its target, or `None` when
 /// none is due. The kernel calls it in a loop and signals each target between calls, so no buffer
 /// bounds how many fire in one tick.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub fn next_due<'a, T: Copy + 'a>(
     timers: impl Iterator<Item = &'a mut Timer<T>>,
     now: u64,
@@ -154,6 +177,8 @@ pub fn next_due<'a, T: Copy + 'a>(
 /// **The cache, recomputed exactly**: the earliest pending deadline, or `None` when nothing is
 /// armed, which a kernel stores as [`NEVER`]. Run after a walk, which is the only time the cache is
 /// raised.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub fn earliest<'a, T: Copy + 'a>(timers: impl Iterator<Item = &'a Timer<T>>) -> Option<u64> {
     timers.filter_map(Timer::deadline).min()
 }

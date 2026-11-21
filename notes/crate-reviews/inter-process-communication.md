@@ -68,21 +68,27 @@ harness. The proofs are inductive steps over one waiter per queue.
 
 ## Names
 
-The crate name is the one ratified name. `script/crate-standalone` counts 60 unratified names.
-The ones this package asks the architect to ratify, all provisional with a `Name:` block:
+The architect ratified every public name on 2026-11-21 (UTC), with two renames. `Notification::poll`
+is now `try_wait`, a non-blocking `wait`, which is the shape the Rust standard library gives its
+`try_` calls. `AddressWaitTable::waiters` is now `waiter_count`, a count of the waiters under one
+key, which the bare plural noun did not say. No alias of an old nife spelling exists. The move
+strips the `Name:` blocks.
 
-| name | ruling | what was considered |
+| name | status | what was refused |
 |---|---|---|
-| `SendVerdict`, `ReceiveVerdict`, `SignalVerdict`, `WaitVerdict`, `ArmVerdict` | D1 (2026-11-14) | `Sent` and `Received`; `SendOutcome`; keeping the bare names, which makes `Send` shadow `core::marker::Send` |
-| `Rendezvous::one_queue_invariant_holds` | D4 (2026-11-19) | `is_one_queue`; the question shape would read as a question about the queues |
-| `Key::virtual_address` | D4 | the bare `address`, which the register gate refuses |
-| `AddressWaitTable<T, const BUCKETS: usize>` | D5 | keeping the plural noun, which named a collection of objects when an address wait is a key |
-| `AddressWaitTable::len`, `AddressWaitTable::is_empty` | D5 | `queued`; `is_empty` is what clippy asks of a public `len` |
-| `Key::address_space` | D5 | `Key::space` |
-| `RendezvousCounts`, `NotificationCounts` | P2-16b | keeping the tuples |
+| `inter_process_communication` | ratified 2026-09-18 | `ipc` |
+| `SendVerdict`, `ReceiveVerdict`, `SignalVerdict`, `WaitVerdict`, `ArmVerdict` and their variants | ratified 2026-11-21 (UTC) | `Sent` and `Received`; `SendOutcome`; the bare names, which make `Send` shadow `core::marker::Send` |
+| `Rendezvous::one_queue_invariant_holds`, `Notification::invariant_holds` | ratified 2026-11-21 (UTC) | `is_one_queue`; the question shape would read as a question about the queues |
+| `Key`, `Key::virtual_address`, `Key::address_space` | ratified 2026-11-21 (UTC) | the bare `address`, which the register gate refuses; `Key::space` |
+| `AddressWaitTable<T, const BUCKETS: usize>` with `new`, `park`, `take`, `remove`, `len`, `is_empty`, `waiter_count` | ratified 2026-11-21 (UTC) | the plural noun, which named a collection of objects when an address wait is a key; `queued`; `waiters` |
+| `RendezvousCounts`, `NotificationCounts` | ratified 2026-11-21 (UTC) | keeping the tuples |
+| `Rendezvous` with `new`, `send`, `receive`, `signal`, `bind_to_interrupt`, `is_bound_to_interrupt`, `is_idle`, `debug_counts`, `remove_sender`, `remove_receiver`, `drain_waiters` | ratified 2026-11-21 (UTC) | |
+| `Notification` with `new`, `signal`, `wait`, `try_wait`, `is_idle`, `word`, `debug_counts`, `remove_waiter`, `drain_waiters` | ratified 2026-11-21 (UTC) | `poll` |
+| `Timer` with `new`, `arm`, `cancel`, `expire`, `deadline`, `is_armed`; `NEVER`, `lowered`, `is_due`, `next_due`, `earliest` | ratified 2026-11-21 (UTC) | |
+| the modules `address_wait`, `notification`, `timer` | ratified 2026-11-21 (UTC) | |
+| `Refused` (a variant of `SendVerdict`) | ratified 2026-11-21 (UTC) | |
 
-The remaining names (the crate's modules, `Rendezvous`, `Notification`, `Timer`, `Key`, every method
-and `NEVER`) carry an older provisional block or none, and the move writes none.
+The one private test module, `test_node`, keeps its provisional block.
 
 ## Naming rules
 
@@ -110,7 +116,6 @@ The manifest inherits `license` from the workspace. The crate adapts no source, 
 | `intrusive_queue` leaves first, then this crate pins its revision | milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release) |
 | The move: own manifest (`license`, `lints`, `rust-version`, description, repository), both license files, README and `docs/design.md` in place of the links to `notes/inter-process-communication.md`, citations and `Name:` lines stripped | the move lane |
 | A full mutation run in the new repository, with the three survivors triaged (P1-9) | the move lane |
-| Ratify the provisional names above, then the go to create the repository | calef |
 | The externalization list names the pair, `intrusive_queue` first | milestone 1017 (the contract crates leave in this order) |
 
 ## Proposed items
@@ -126,7 +131,7 @@ None beyond the milestone's open items (P0-3, P1-6, P1-7, P1-9, P2-11).
 
 ## Result of `script/crate-standalone`
 
-A run with `--no-kani` fails exactly the checks the move resolves: 60 unratified names, the path
+A run with `--no-kani` fails exactly the checks the move resolves: one unratified name (the private test module), the path
 dependency, the workspace `license` and `lints`, no `rust-version`, no README, no license files.
 The citations fail too (12 section, 12 path and 9 milestone lines, in patch headers and rustdoc). The build is
 skipped because the dependency is outside the copy. Host tests, clippy with warnings denied, the
@@ -134,4 +139,4 @@ bare-metal builds and Kani run green in nife.
 
 ## Recommendation
 
-Ready for review.
+Cleared on 2026-11-21 (UTC), with the names ratified as above. The move waits for `intrusive_queue`.

@@ -94,7 +94,7 @@ block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nif
 # The kernel prints them and `serial_console` matches them, so AGENTS.md rule 7 makes them a crate
 # rather than two copies of a literal. That is not hypothetical here: the one marker that existed
 # before this crate WAS two copies of a literal, one inside a single architecture's arm.
-boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
+boot_ladder = { version = "0.1.0", git = "https://github.com/nifeos/boot_ladder", rev = "196bf4e8201e027a025c938aa87da9778310c9c7" }
 # The page the kernel hands the self-test program for its half of the boot self-test.
 self_test_contract = { version = "0.1.0", path = "../crates/self_test_contract" }
 # The per-test time record's grammar (milestone 807 (the kernel suite reports what each test cost), §254 (a gate prints what each item cost), Fork 1): the test runner prints it and
@@ -198,7 +198,7 @@ e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", re
 extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
-intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }
+intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "08c31f2d1397edc91f8046d068eaaf4f116b580b" }
 inter_process_communication = { version = "0.1.0", path = "../crates/inter_process_communication" }
 # What machine is this (milestone 60). The kernel reads the device tree and the ID registers; every
 # decoding of what it finds lives in the crate, host-tested against a real device tree and against

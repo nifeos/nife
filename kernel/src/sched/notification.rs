@@ -279,7 +279,7 @@ pub fn notification_poll(id: NotificationId) -> Result<u64, abi::Error> {
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
     let page = notification_of(sched, id).ok_or(abi::Error::Gone)?;
-    Ok(page.state.poll())
+    Ok(page.state.try_wait())
 }
 
 /// `Notification::BIND`: bind notification `id` to thread `tid`, once each (§101).
@@ -313,7 +313,7 @@ pub fn notification_bind(id: NotificationId, tid: ThreadId) -> Result<(), abi::E
     if page.state.word() != 0
         && let Some((tid, ep)) = bound_receiver(sched, page)
     {
-        let word = page.state.poll();
+        let word = page.state.try_wait();
         deliver_bound(sched, tid, ep, word);
         wake(sched, tid);
     }
@@ -332,7 +332,7 @@ pub fn notification_bind(id: NotificationId, tid: ThreadId) -> Result<(), abi::E
 #[inline(never)]
 pub(super) fn take_bound_signal(sched: &mut IpcTables, tid: ThreadId) -> Option<u64> {
     let id = sched.threads.get(tid)?.bound_notification?;
-    match notification_of(sched, id)?.state.poll() {
+    match notification_of(sched, id)?.state.try_wait() {
         0 => None,
         word => Some(word),
     }

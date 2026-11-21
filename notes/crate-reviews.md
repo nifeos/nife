@@ -90,7 +90,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`page_tables`](crate-reviews/page-tables.md) | milestone 1104 (`paging`: what an outside maintainer would fix before the move) | cleared to move (2026-11-20 UTC, repository `nifeos/page_tables` approved, `publish = false`, no tag, no publish); names ratified; the move follows this lane |
 | [`subtree_scope`](crate-reviews/subtree-scope.md) | step 9 | cleared to move (2026-11-20 UTC, `publish = false`, no tag, no publish); names ratified; the move waits on P0-3's pin |
 | [`network_time_protocol`](crate-reviews/network-time-protocol.md) | 1102 | cleared 2026-11-20; names ratified; move lane next |
-| [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | cleared to move (2026-11-20 UTC, no tag, no publish) |
+| [`intrusive_queue`](crate-reviews/intrusive-queue.md) | 10 | cleared to move (2026-11-20 UTC, no tag, no publish); repository `nifeos/intrusive_queue` exists |
 | [`current_cpu_contract`](crate-reviews/current-cpu-contract.md) | contract | cleared to move |
 | [`domain_name_resolution_contract`](crate-reviews/domain-name-resolution-contract.md) | 6 | ready for review |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | cleared to move (2026-11-21 UTC, repository `nifeos/socket_contract` approved, `publish = false`, no tag, no publish); the move lane first proves the `std` farm builds from the pinned checkout |
@@ -100,7 +100,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for `abi`, `address_space_layout` and `user_mode_runtime` to get repositories |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |
 | [`page_frames`](crate-reviews/page-frames.md) | kernel | cleared to move (2026-11-20 UTC, names ratified, `publish = false`, no tag, no publish) |
-| [`inter_process_communication`](crate-reviews/inter-process-communication.md) | - | ready for review; the move waits for `intrusive_queue` (milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release)) |
+| [`inter_process_communication`](crate-reviews/inter-process-communication.md) | - | cleared to move (2026-11-21 UTC, no tag, no publish), names ratified; the move waits for `intrusive_queue` (milestone 1097 (`intrusive_queue`: what an outside maintainer would fix before its first release)) |
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | cleared to move (2026-11-20 UTC, no tag, no publish); a bounded `parse` totality harness, or a recorded reason it cannot finish, is due before its first tag |
 | [`byte_glob`](crate-reviews/byte-glob.md) | contract | cleared and moved (2026-11-20 UTC, no tag, no publish); nife pins `nifeos/byte_glob` by commit |
 | [`device_tree_blob`](crate-reviews/device-tree-blob.md) | 4 | cleared to move (2026-11-20 UTC, no tag, no publish) |

@@ -14,7 +14,7 @@ A rendezvous owns two wait queues, senders and receivers, and a count of pending
 decides what a send, a receive or a signal does with them. The scheduler calls it for that
 decision rather than writing the same branch at each of its call sites.
 
-The queues are intrusive (`crates/intrusive_queue`). In the kernel a queue entry is the TCB,
+The queues are intrusive (`nifeos/intrusive_queue`). In the kernel a queue entry is the TCB,
 threaded through the same link the run queues use. A blocked thread therefore waits on exactly one
 rendezvous, because it has one link, and queueing never allocates.
 

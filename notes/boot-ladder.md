@@ -14,7 +14,7 @@ nife capability shell. naming a resource in a command IS granting it. <- userspa
 $
 ```
 
-The heads of those four lines live in one crate, `crates/boot_ladder`, because three binaries agree
+The heads of those four lines live in one crate, `boot_ladder`, because three binaries agree
 on them (the kernel, `swish`, and `serial_console`) and AGENTS.md rule 7 says that makes them a
 crate. The crate fixes each head's shape and takes the system's name from its caller, so it names
 no system. nife builds one `boot_ladder::Heads` from `nife` in each program that prints or reads a
@@ -193,7 +193,7 @@ $ cargo xtask board-console --replay target/boot-check-riscv64.log --until selft
   `self_test::Counter`, which reports a counter that read one value a million times running, and
   `timer` spins rather than sleeping. What remains is a check whose *operation* never returns, which
   needs a watchdog `kernel/src/self_test.rs` does not own and says so.
-- The prompt rung is the shell's banner, not the `$ `. `crates/boot_ladder`'s own BUGS has the
+- The prompt rung is the shell's banner, not the `$ `. `boot_ladder`'s own BUGS has the
   reason. So `script/boot-check` proves `swish` started and printed, not that a prompt was offered
   or that anything could be typed at it. `script/swish-check` makes that stronger claim by typing.
 - The injected leg is not in CI. `--inject` rebuilds three kernels for one boolean, and what it
