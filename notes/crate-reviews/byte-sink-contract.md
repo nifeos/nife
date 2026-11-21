@@ -18,8 +18,8 @@ pipe are substitutable in one capability slot. A sink is a `Rendezvous` with `WR
 first word, the bytes in the other two) and gets no reply. `SEND`'s return carries one fact: whether
 the sink is absent (`NoSink`, so write into the void) or destroyed (`Gone`, so the writer must
 end). The crate is `no_std`, has no dependency and no `unsafe`, and six Kani harnesses prove the
-decoder and the helpers. One module, `fixture`, is this tree's test scaffolding and still ships in
-the public API.
+decoder and the helpers. The test scaffolding is the separate in-tree crate `byte_sink_fixture`, which
+is never published, so the public API holds the wire and nothing else.
 
 ## Identity
 
@@ -32,7 +32,7 @@ the public API.
 | license | inherited from the nife workspace; no license file in the crate (the move writes both) |
 | `publish` | `false`; milestone 1017 keeps moved contract crates unpublished until their own release milestone |
 | dependencies | none, of any kind |
-| size | `src/lib.rs` 548 lines (library, unit tests and `fixture`) and `src/verification.rs` 84 lines |
+| size | `src/lib.rs` 504 lines (library and unit tests) and `src/verification.rs` 84 lines |
 | files | 9 tracked, six of them falsification patches |
 | mutation baseline | not measured by this lane; the census rows of milestone 1079's appendix (79 tested, 73 caught, 4 unviable, 2 missed, 0 timed out) predate the later changes and are not re-counted here |
 
@@ -40,32 +40,31 @@ the public API.
 
 | kind | where |
 |---|---|
-| path dependency with a `version` key | `components`, `crates/primitive_benchmark_contract`, `crates/system_initializer`, `crates/system_log`, `fixtures`, `kernel`; `system_tests` as a development dependency; `fuzz` with a path and no `version` key |
+| path dependency with a `version` key | `components`, `crates/primitive_benchmark_contract`, `crates/system_initializer`, `crates/system_log`, `fixtures`, `kernel`; `system_tests` as a development dependency; `fuzz` with a path and no `version` key; the in-tree crate `byte_sink_fixture` |
 | source copied into `std` | `cargo xtask std-src` copies `src/lib.rs` into the patched standard library as `sys/pal/nife/sinkproto.rs` (`xtask/src/farm/copied.rs`), so `println!` and every sink share one definition. The move must keep that source reachable (see What still blocks the move) |
 | prose and tables | `crates/externalization-list.txt`, `packages/contracts.package.toml`, `helpers/trust_boundary_crates.tsv`, `helpers/interface_stability.py`, the comments in `uefi_loader/Cargo.toml`, `system_tests/Cargo.toml` and `crates/std_runtime_contract/Cargo.toml` |
-| users of `fixture` | `fixtures/src/sink_transcript_writer.rs`, `file_sink.rs`, `file_source.rs`, and the kernel-side `system_tests/src/user/sink_tests.rs` |
+| users of `byte_sink_fixture` | `fixtures/src/sink_transcript_writer.rs`, `file_sink.rs`, `file_source.rs`, and the kernel-side `system_tests/src/user/sink_tests.rs` and `system_log_tests.rs`; `fixtures` and `system_tests` depend on it in their manifests |
 
 Milestone 1017's table still lists a development dependency on `abi` for this crate. The crate has
 no dependency now (P1-4 landed), so the row no longer matches the tree; this package leaves it alone.
 
 ## What was run
 
-All commands ran in this lane's worktree, at `main` with this lane's one added file.
+All commands ran in this lane's worktree, at `main` with this lane's edits to documents only.
 
 | check | result |
 |---|---|
-| `script/crate-standalone byte_sink_contract` | eight failures, all expected before a move: `names` (27 names not ratified, the first `VERSION`), manifest inherits `license`, manifest inherits `lints`, no `rust-version`, no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, and one path into the nife tree (`src/verification.rs` line 3, a falsification patch path in a comment). Build for the host and the three bare-metal targets passes; Kani: 6 of 6 harnesses verify; all six falsification patches turn their harness red |
-| `cargo test -p byte_sink_contract` | 12 unit tests and 3 doctests pass |
-| `cargo clippy -p byte_sink_contract --all-targets -- -D warnings` | no warning |
+| `script/crate-standalone --no-kani byte_sink_contract` | eight failures, all move-time items: `names` (22 names not ratified, the first `VERSION`), manifest inherits `license`, manifest inherits `lints`, no `rust-version`, no README, no `LICENSE-MIT`, no `LICENSE-APACHE`, and one path into the nife tree (`src/verification.rs` line 3, a falsification patch path in a comment). The build for the host and the three bare-metal targets passes. Kani was not run in this lane; the six harnesses and their six falsification patches are in the tree and unchanged in number |
+| `cargo test -p byte_sink_contract -p byte_sink_fixture` | 11 unit tests and 3 doctests in the contract crate and 1 unit test in the fixture crate pass |
+| `cargo clippy -p byte_sink_contract -p byte_sink_fixture --all-targets -- -D warnings` | no warning |
 | `cargo doc -p byte_sink_contract --no-deps` with warnings denied | no warning |
-| the template's naming checks (`spelled_out`, `unit_symbols`, `register_names`, `british_spelling`, `service_model`, `contract_names`, `question_shape`, run from a checkout of `nifeos/crate-workflows` over `src/lib.rs` and `src/verification.rs`) | 122 names judged, 0 refused by each |
-| the template's `abbreviations` (report only) | 8 components are not words: `eof` (in `OPERATION_EOF`, `eof`, `Eof` and a test name), `req`, `msg` (in `Msg`), `ret`, and `src` (a local in a test). The unit rule is not mechanical: nothing refuses `INLINE_MAXIMUM`, which lacks its unit |
-| `script/names byte_sink_contract` | the crate name and `verification` ratified; `INLINE_MAXIMUM` ratified (before the units rule); `VERSION` and `INTERFACE_ID` provisional; every other item has no block |
-| `python3 helpers/lint_externalized_crates.py --count` | one hit for this crate: the test payload `b"nife"` (`src/lib.rs` line 394), which is not a wire literal |
-| `script/crate-review-packet byte_sink_contract` | facts above; no foreign type in any public signature, no `unsafe` site |
+| `script/names byte_sink_contract` and `byte_sink_fixture` | the crate name and `verification` ratified; `VERSION`, `INTERFACE_ID`, `MAXIMUM_INLINE_BYTES`, `first_word` and `Message` provisional; every other item has no block; `byte_sink_fixture` provisional |
+| `python3 helpers/lint_externalized_crates.py --count` | one hit for this crate: the test payload `b"nife"` (`src/lib.rs` line 360), which is not a wire literal |
 | `script/lint` | see the pull request's checks |
 
-Not run, and so not claimed: the stranger test, since there is no README to follow. Also not run:
+Not run, and so not claimed: the stranger test, since there is no README to follow, and the template's
+naming checks and `abbreviations` report, which need a checkout of `nifeos/crate-workflows` (the
+renames of P1-9 apply what that report listed, and the test local `src` remains). Also not run:
 `cargo-mutants`, whose census belongs to its own window, and Miri. A first release has no baseline
 for `cargo-semver-checks`, and no repository exists for the template's workflows. The lane ran
 neither `cargo package`, the QEMU-side `sink_tests` nor a build for a 16-bit target.
@@ -76,13 +75,15 @@ neither `cargo package`, the QEMU-side `sink_tests` nor a build for a 16-bit tar
 |---|---|
 | identity | `VERSION`, `INTERFACE_ID` |
 | opcodes | `OPERATION_BYTES` (0), `OPERATION_EOF` (1), `OPERATION_SHIFT` (56) |
-| first-word fields | `SEVERITY_SHIFT` (32), `KIND_SHIFT` (40), `KIND_TEXT` (0), `INLINE_MAXIMUM` (16) |
-| first-word functions | `req(operation, len)`, `operation(w0)`, `len(w0)`, `eof()`, `severity(w0)`, `with_severity(w0, level)`, `kind(w0)` |
-| codec | `pack(bytes)` returning `(w0, w1, w2, taken)`, `unpack(w0, w1, w2, out)` returning `Msg::{Bytes(n), Eof, Malformed}` |
-| send outcome | `GONE` (-11), `Sent::{Ok, Gone, NoSink}`, `classify(ret)` |
-| `fixture` (item 3) | `TRANSCRIPT`, `SINK_NAME` (`"sinkout"`), `READY`, `DONE`, `BAD`, `code(sent)` |
+| first-word fields | `SEVERITY_SHIFT` (32), `KIND_SHIFT` (40), `KIND_TEXT` (0), `MAXIMUM_INLINE_BYTES` (16) |
+| first-word functions | `first_word(operation, len)`, `operation(w0)`, `len(w0)`, `eof()`, `severity(w0)`, `with_severity(w0, level)`, `kind(w0)` |
+| codec | `pack(bytes)` returning `(w0, w1, w2, taken)`, `unpack(w0, w1, w2, out)` returning `Message::{Bytes(n), Eof, Malformed}` |
+| send outcome | `GONE` (-11), `Sent::{Ok, Gone, NoSink}`, `classify(returned)` |
+| `byte_sink_fixture` (a separate in-tree crate, never published) | `TRANSCRIPT`, `SINK_NAME` (`"sinkout"`), `READY`, `DONE`, `BAD`, `code(sent)` |
 
-No nife type appears in a signature. What a stranger may find surprising:
+No nife type appears in a signature, and the fixture crate is not part of this surface.
+
+What a stranger may find surprising:
 
 - A zero-count bytes message is legal and a sink treats it as nothing, as `write(2)` does for a
   zero-byte write (P1-10, done).
@@ -93,18 +94,17 @@ No nife type appears in a signature. What a stranger may find surprising:
 - `with_severity` and `severity` act on any first word, including an end of stream; no consumer reads severity
   on anything but a bytes message (P2-15, done).
 
-## What landed, and what did not
+## What landed
 
-Verified on `main` by reading the source, not by trusting the roadmap block. The three items the
-milestone says the clearance waits for:
+The three items the milestone says the clearance waits for, verified by reading the source:
 
-| item | on `main` | evidence |
+| item | state | evidence |
 |---|---|---|
-| P1-3, `fixture` out of the published crate | **not landed** | `pub mod fixture` is still in `crates/byte_sink_contract/src/lib.rs` (line 325), exporting six items documented against nife files; no `byte_sink_fixture` crate exists under `crates/` |
-| P1-8, end-of-stream words reserved | **mostly landed, one sentence left** | `unpack` returns `Eof` only for `(eof(), 0, 0)`, with a doctest and a Kani harness (`an_end_of_stream_decodes_exactly_from_its_one_message`); `rm`'s verdict has its own endpoint (`filesystem_contract::rm::VERDICT_SLOT`, slot 2). The crate root's "What it does not carry" (line 34) still says a sink ignores the two words, which contradicts the decoder |
-| P1-9, names a later rule reopens | **not landed** | `INLINE_MAXIMUM`, `req`, `Msg` and `ret` keep their old names; `MAXIMUM_INLINE_BYTES`, `first_word`, `Message` and `returned` do not exist |
+| P1-3, `fixture` out of the published crate | landed ([#3873](https://github.com/nifeos/nife/pull/3873)) | no `fixture` module in `crates/byte_sink_contract/src/lib.rs`; `crates/byte_sink_fixture` holds the six items, has `publish = false`, and depends on the contract crate; the five consumers use it |
+| P1-8, end-of-stream words reserved | landed | `unpack` returns `Eof` only for `(eof(), 0, 0)`, with a doctest and a Kani harness (`an_end_of_stream_decodes_exactly_from_its_one_message`); the crate root's "What it does not carry" and `OPERATION_EOF` say the words are reserved and refused; `rm`'s verdict has its own endpoint (`filesystem_contract::rm::VERDICT_SLOT`, slot 2) |
+| P1-9, names a later rule reopens | landed | `MAXIMUM_INLINE_BYTES`, `first_word`, `Message` and the `classify` parameter `returned` replace the old names, with no alias |
 
-The other P1 and P2 items, by the same reading:
+The other P1 and P2 items:
 
 | item | state |
 |---|---|
@@ -113,10 +113,10 @@ The other P1 and P2 items, by the same reading:
 | P1-4, `abi` dev-dependency | done; the crate has no dependency |
 | P1-5, proofs | done, six harnesses each with a patch that fails it |
 | P1-6, `kind` refused | done |
-| P1-7, British spellings | done; `british_spelling` refuses none |
+| P1-7, British spellings | done |
 | P1-10, zero-count rule | done |
 | P2-11, narrow `usize` | done; `unpack` compares the count as `u64` |
-| P2-12, `req` typed parameters | open; `req` still takes `u64` for both |
+| P2-12, `first_word` typed parameters | open; it still takes `u64` for both |
 | P2-13, a words struct for `pack` | open; `pack` still returns a bare four-tuple |
 | P2-14, mutant exemptions | open; they go into the new repository's `.github/mutants-exempts` |
 | P2-15, severity on any first word | done |
@@ -124,64 +124,60 @@ The other P1 and P2 items, by the same reading:
 ## Names
 
 The architect ratified the crate name, and `verification` is a standing ratified module name.
-Everything else below is the maintainer's provisional ruling on decision D (2026-11-14 UTC, a
-two-way door) or has no review yet. This lane ratifies nothing; the architect ratifies, changes or
-refuses each row. Nothing below is built: milestone 1079's P1-9 is the work.
+Everything else below is built and provisional: the maintainer's provisional ruling on decision D
+(2026-11-14 UTC, a two-way door), the names minted by #3873, or no review yet. This lane ratifies
+nothing; the architect ratifies, changes or refuses each row.
 
-| item now | proposed | status | rule or reason |
-|---|---|---|---|
-| `INLINE_MAXIMUM` | `MAXIMUM_INLINE_BYTES` | ratified before the units rule; the proposal reopens it | a limit opens `MAXIMUM_` and ends with its unit |
-| `req` | `first_word` | proposed | a `SEND` has no request and no reply; the function packs the first of three words |
-| `Msg` | `Message` | proposed | spelled out |
-| `ret` (parameter of `classify`) | `returned` | proposed | the naming rules cover parameters; `return` is a keyword |
-| `VERSION`, `INTERFACE_ID` | keep | provisional `Name:` blocks; the architect ratified these two names for `block_roster_contract` | the identity pair every contract carries |
-| `w0`, `w1`, `w2` | keep | proposed | the ABI's own words for the message registers |
-| `OPERATION_EOF`, `eof`, `Msg::Eof` | keep, with "end of stream" opening the documentation | proposed | std's spelling (`UnexpectedEof`) and the term every reader searches for; the abbreviations report lists `eof` |
-| `pack`, `unpack`, `classify`, `severity`, `with_severity`, `kind`, `len`, `operation` | keep | proposed | `len` and `with` are std spellings; the rest are plain words |
-| `OPERATION_BYTES`, `OPERATION_SHIFT`, `KIND_SHIFT`, `KIND_TEXT`, `SEVERITY_SHIFT`, `GONE`, `eof`, `Sent` and its variants | keep | no block, passes the checks | plain words; `GONE` is the kernel's `Gone` return restated |
-| `fixture` (module) | the crate `byte_sink_fixture` | provisional (decision B) | moves out as `filesystem_fixture` did for the filesystem contract |
+| item | status | rule or reason |
+|---|---|---|
+| `MAXIMUM_INLINE_BYTES` | provisional; it replaced `INLINE_MAXIMUM`, which was ratified before the units rule, so it needs re-ratification | a limit opens `MAXIMUM_` and ends with its unit |
+| `first_word` (was `req`) | provisional | a `SEND` has no request and no reply; the function packs the first of three words |
+| `Message` (was `Msg`) | provisional | spelled out |
+| `returned` (parameter of `classify`, was `ret`) | provisional | the naming rules cover parameters; `return` is a keyword |
+| `byte_sink_fixture` (crate; was the module `fixture`) | provisional (decision B) | follows `filesystem_fixture` and `socket_fixture`; never published |
+| `VERSION`, `INTERFACE_ID` | provisional `Name:` blocks; the architect ratified these two names for `block_roster_contract` | the identity pair every contract carries |
+| `w0`, `w1`, `w2` | kept, no block | the ABI's own words for the message registers |
+| `OPERATION_EOF`, `eof`, `Message::Eof` | kept, no block, with "end of stream" opening the documentation | std's spelling (`UnexpectedEof`) and the term every reader searches for |
+| `pack`, `unpack`, `classify`, `severity`, `with_severity`, `kind`, `len`, `operation` | kept, no block | `len` and `with` are std spellings; the rest are plain words |
+| `OPERATION_BYTES`, `OPERATION_SHIFT`, `KIND_SHIFT`, `KIND_TEXT`, `SEVERITY_SHIFT`, `GONE`, `Sent` and its variants | kept, no block | plain words; `GONE` is the kernel's `Gone` return restated |
 
-The old names take no alias (the maintainer's ruling with decision D). The renames touch the std
-copy, so the lane that applies them regenerates it.
+The old names take no alias (the maintainer's ruling with decision D). The std copy
+(`sys/pal/nife/sinkproto.rs`) is copied from `src/lib.rs` by `cargo xtask std-src`.
 
 ## What still blocks the move
 
+All of these belong to the move itself. No in-tree item blocks it.
+
 | item | owner |
 |---|---|
-| P1-3: move `fixture` to `byte_sink_fixture` and change its four consumers' `use`. | a lane, then this package updates |
-| P1-9: apply the four renames across every caller and regenerate the std copy. | a lane, then this package updates |
-| P1-8: correct the crate root's sentence that a sink ignores the end-of-stream words. | a lane |
 | P0-1: README in the template's section order, both licenses, literal `license`, `lints` and `rust-version`, the scaffold, the `Name:` strip, the `b"nife"` test payload, the path in `verification.rs` line 3. | move lane |
 | The `std` farm must read the pinned checkout's source; until then the move breaks the platform layer's build. | maintainer |
-| Convert the seven path dependencies (and `fuzz`'s) to `git` and `rev` with `version = "0.1.0"`, and read every file `script/crate-move --dry-run` lists. | move lane |
+| Convert the path dependencies (and `fuzz`'s, and `byte_sink_fixture`'s) to `git` and `rev` with `version = "0.1.0"`, and read every file `script/crate-move --dry-run` lists. | move lane |
 | The four mutant exemptions (P2-14). | move lane |
 | Run the stranger test and the template's workflows in the new repository. | move lane |
 
 ## Recommendation
 
-Not ready to clear. Two of the three conditions the milestone sets (P1-3 and P1-9) have not landed
-and the third (P1-8) has one sentence left that contradicts the decoder. Clearing now would make the
-architect's name review and the repository's first commit act on a crate whose public API still
-carries test scaffolding and four names the maintainer has ruled to change. The crate is otherwise
-in good order: no dependency, no `unsafe`, six proofs each with a falsifying patch, the naming checks
-pass, and the decoder enforces what the documentation says about the wire.
+Ready to clear. The three conditions the milestone sets (P1-3, P1-8 and P1-9) are built. The eight
+failures of `script/crate-standalone` are the ones a move writes: the manifest, the README, both
+licenses, the path in a comment and the name ratification. The crate has no dependency and no
+`unsafe`, its public API holds the wire and nothing else, six proofs each have a falsifying patch,
+and the decoder enforces what the documentation says about the wire.
 
-The package is complete as a reading aid. Once the three items land, the lane that lands the last
-one updates the What was run table and this recommendation, and the architect reads it then.
+The architect's name review acts on the Names table: five provisional names are built, and
+`MAXIMUM_INLINE_BYTES` replaces a name ratified before the units rule.
 
 ## Open questions
 
-- Should the architect ratify the two-way provisional rulings (decisions A, B and D) now, so the
-  lane that applies them builds against ratified names, or after the build? Ratifying first avoids
-  a second rename.
-- P2-12 (typed `req` parameters) and P2-13 (a words struct) change the public signatures before the
-  release. Nobody has built or ruled either. Both are two-way until the first release and one-way after it.
+- P2-12 (typed `first_word` parameters) and P2-13 (a words struct for `pack`) change the public
+  signatures before the release. Nobody has built or ruled either. Both are two-way until the first
+  release and one-way after it.
 
 ## Decisions for the architect
 
-1. Clear the move. Recommendation: not yet; wait for P1-3, P1-8 and P1-9 to land.
-2. Ratify the names table above when the build lands, or now. Provisional names stay provisional
-   until the architect rules.
+1. Clear the move. Recommendation: yes.
+2. Ratify the Names table, including `MAXIMUM_INLINE_BYTES` as the re-ratification of
+   `INLINE_MAXIMUM`. Provisional names stay provisional until the architect rules.
 3. Ratify the identity pair `INTERFACE_ID` 6 and `VERSION` 1 as frozen, as for the other contract
    crates.
 4. Decide P2-12 and P2-13 before the first release, or leave them for the maintainer's provisional
