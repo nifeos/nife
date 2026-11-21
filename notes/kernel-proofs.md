@@ -53,12 +53,10 @@ exhaustive list of what a harness in `kernel/src` cannot see. The same list is i
    harness ever calls into that code, Kani reports the unsupported construct instead of proving
    past it.
 
-   This was written as "all of `kernel/src/arch/`" and that was too strong (milestone 255,
-   2026-09-04). The boundary is `asm!` and MMIO, not the directory: 4,004 of `arch/`'s 16,225 lines
-   are in files containing no `asm!` at all, and `arch/aarch64/iommu.rs` is now proved in place. The
-   architecture layer is still overwhelmingly unverified, and the timer re-arm drift is still on the
-   far side of this line, but "unreachable by construction" was a claim about a directory and the
-   truth is a claim about two constructs.
+   The boundary is `asm!` and MMIO, not the directory `arch/` (milestone 255): 4,004 of `arch/`'s
+   16,225 lines are in files containing no `asm!` at all, and `arch/aarch64/iommu.rs` has its proofs
+   in place. The architecture layer is still mostly unverified, and the timer re-arm drift is on the
+   far side of this line.
 
    A stub can cross it, at a price: [kernel-proofs/stubbing-an-instruction.md](kernel-proofs/stubbing-an-instruction.md).
 3. **Two thirds of `kernel/src/arch/` is not compiled at all, and this is a `cfg` rather than a
@@ -137,8 +135,7 @@ The detail is in [kernel-proofs/x86-interrupt-controller-proofs.md](kernel-proof
 ### And four in `kernel/src/sched/region_reaping/verification.rs`
 
 `reap_decision` and `survey_includes` name no architecture, so their four harnesses run on every
-host. They are claims 6 to 9 of [the confinement claims](confinement-claims.md), which say what
-each proves, and each has a patch under `kernel/falsifications/`.
+host. They are claims 6 to 9 of [the confinement claims](confinement-claims.md).
 
 ## Which architecture the prover actually sees
 
