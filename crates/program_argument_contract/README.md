@@ -22,7 +22,7 @@ granted, never by what its arguments say, so nothing on the page is validated fo
   as the program's name.
 - The records have room for `MAXIMUM_RECORDS_BYTES` (4,080) bytes, each argument's `record_bytes`
   (its four-byte prefix and its bytes) included. A line that does not fit is refused whole with
-  `Refused::TooLong`, and nothing is truncated.
+  `PushRefused::TooLong`, and nothing is truncated.
 - A page that does not parse reads as no arguments: a wrong magic, a zeroed frame, a count that
   disagrees with the records, or a length that overruns the page. The reader never returns a partial
   argv, because a program that sees half its arguments would act on a line nobody typed.
