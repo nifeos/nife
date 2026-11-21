@@ -534,7 +534,7 @@ fn a_transfer_past_the_disks_capacity_is_refused_and_the_block_server_keeps_serv
         assert_eq!(word, filesystem_contract::READY);
     }
     let call = |operation, index| {
-        crate::sched::ipc_call(disk.blk_ep, [block::req(operation, 1), index])[0] as i64
+        crate::sched::ipc_call(disk.blk_ep, [block::request(operation, 1), index])[0] as i64
     };
     let size = call(block::SIZE, 0);
     assert!(size > 0, "the server answered {size} for the disk's size");

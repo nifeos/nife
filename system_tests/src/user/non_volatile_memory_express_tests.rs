@@ -202,7 +202,7 @@ fn a_client_stages_in_the_window_its_badge_names() {
         }
     };
     let call = |op, badge| {
-        crate::sched::ipc_call_badged(disk.request, [block::req(op, 1), BLOCK], badge)[0] as i64
+        crate::sched::ipc_call_badged(disk.request, [block::request(op, 1), BLOCK], badge)[0] as i64
     };
     let pattern = |i: usize| (i as u64 % 239) as u8 ^ 0x3c;
 

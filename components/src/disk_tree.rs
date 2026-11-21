@@ -74,7 +74,7 @@ fn start(_: u64, _: u64, _: u64) -> ! {
         let (r0, r1) = match tree.handle(req.w0, req.w1, page) {
             Answer::Reply(r0, r1) => (r0, r1),
             Answer::Read(read) => {
-                let got = call(BLK, block::req(block::READ, read.blocks), read.block).0 as i64;
+                let got = call(BLK, block::request(block::READ, read.blocks), read.block).0 as i64;
                 if got < 0 {
                     (reply_err(EIO), 0)
                 } else {

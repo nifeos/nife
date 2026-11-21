@@ -175,7 +175,7 @@ impl Dir {
         p.put_at(src.len(), dst.as_bytes());
         request(
             proto::req(proto::RENAME, src_at.0, src.len() as u64),
-            proto::rename_dst(dst_at.0, dst.len() as u64),
+            proto::rename_destination(dst_at.0, dst.len() as u64),
         )?;
         Ok(())
     }

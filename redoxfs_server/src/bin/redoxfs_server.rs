@@ -142,12 +142,12 @@ struct IpcDisk;
 
 impl IpcDisk {
     /// One blk `CALL` for `count` contiguous blocks starting at `block` (milestone 138 step 4):
-    /// opcode and count pack into the first word ([`filesystem_contract::block::req`]), the starting block index
+    /// opcode and count pack into the first word ([`filesystem_contract::block::request`]), the starting block index
     /// is the second. Returns the reply's first word as a signed result (negative is an error, per
     /// the wire convention). The bulk rides in [`BLK_PAGE`], `count * BLOCK` bytes of it.
     fn blk_n(operation_code: u64, block: u64, count: usize) -> i64 {
         // SAFETY: `call` traps to the kernel, which validates the endpoint in slot BLK.
-        let (r0, _) = call(BLK, block::req(operation_code, count), block);
+        let (r0, _) = call(BLK, block::request(operation_code, count), block);
         r0 as i64
     }
 

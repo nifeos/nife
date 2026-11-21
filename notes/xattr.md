@@ -226,13 +226,13 @@ The same thing on the wire, which is what `fixtures/src/fs_test_client/extended_
 // type code ride packed in the second word.
 put_page(name);
 put_page_at(name.len(), value);
-call(FILE, fs::req(fs::SETXATTR, handle, name.len() as u64),
+call(FILE, fs::request(fs::SETXATTR, handle, name.len() as u64),
      xattr::spec(kind, value.len() as u64));
 
 // GET: the name goes out on the page and the value comes back on it, so the reply carries the
 // kind and the length and the bytes are read out of the page afterwards.
 put_page(name);
-let (r0, _) = call(FILE, fs::req(fs::GETXATTR, handle, name.len() as u64), 0);
+let (r0, _) = call(FILE, fs::request(fs::GETXATTR, handle, name.len() as u64), 0);
 let (kind, len) = (xattr::reply_kind(r0 as i64), xattr::reply_value_len(r0 as i64));
 ```
 

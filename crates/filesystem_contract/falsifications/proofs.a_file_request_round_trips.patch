@@ -1,15 +1,15 @@
 Falsifies `filesystem_contract::proofs::a_file_request_round_trips`.
 
-The defect: `fs::req` shifts the handle one bit too far, so the handle bleeds out of its field.
+The defect: `fs::request` shifts the handle one bit too far, so the handle bleeds out of its field.
 
-Expected to fail: `assert!(fs::req_handle(w0) == handle)`, for any non-zero handle.
+Expected to fail: `assert!(fs::request_handle(w0) == handle)`, for any non-zero handle.
 
 diff --git a/crates/filesystem_contract/src/fs.rs b/crates/filesystem_contract/src/fs.rs
 --- a/crates/filesystem_contract/src/fs.rs
 +++ b/crates/filesystem_contract/src/fs.rs
 @@ -354,7 +354,7 @@
  /// ```
- pub const fn req(operation: u64, handle: u64, len: u64) -> u64 {
+ pub const fn request(operation: u64, handle: u64, len: u64) -> u64 {
      (operation << super::OPERATION_SHIFT)
 -        | ((handle & MAXIMUM_HANDLE) << 40)
 +        | ((handle & MAXIMUM_HANDLE) << 41)

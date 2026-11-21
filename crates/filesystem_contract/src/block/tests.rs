@@ -19,27 +19,27 @@ fn block_request_roundtrips() {
 #[test]
 fn blk_request_carries_a_block_count_and_defaults_to_one() {
     for blocks in [1usize, 2, block::TRANSFER_BLOCKS] {
-        let w0 = block::req(block::READ, blocks);
+        let w0 = block::request(block::READ, blocks);
         assert_eq!(operation(w0), block::READ);
-        assert_eq!(block::req_blocks(w0), blocks);
+        assert_eq!(block::request_block_count(w0), blocks);
     }
     // A single-block caller's word (the plain, one-argument `req`) decodes as one block.
-    assert_eq!(block::req_blocks(req(block::READ)), 1);
-    // `block::req(operation, 1)` and `req(operation)` are wire-identical, which is the compatibility property
+    assert_eq!(block::request_block_count(req(block::READ)), 1);
+    // `block::request(operation, 1)` and `req(operation)` are wire-identical, which is the compatibility property
     // stated: a caller that upgrades to naming one block explicitly changes nothing on the wire.
-    assert_eq!(block::req(block::READ, 1), req(block::READ));
+    assert_eq!(block::request(block::READ, 1), req(block::READ));
 }
 
 #[test]
 #[should_panic]
 fn blk_request_refuses_a_count_of_zero() {
-    block::req(block::READ, 0);
+    block::request(block::READ, 0);
 }
 
 #[test]
 #[should_panic]
 fn blk_request_refuses_a_count_past_the_transfer_limit() {
-    block::req(block::READ, block::TRANSFER_BLOCKS + 1);
+    block::request(block::READ, block::TRANSFER_BLOCKS + 1);
 }
 
 #[test]

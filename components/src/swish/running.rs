@@ -605,7 +605,12 @@ fn read_at(dir: u64, handle: u64, offset: u64, out: &mut [u8]) -> Option<()> {
     let mut done = 0usize;
     while done < out.len() {
         let want = (out.len() - done).min(PAGE as usize) as u64;
-        let n = call(dir, fs::req(fs::READ, handle, want), offset + done as u64).0 as i64;
+        let n = call(
+            dir,
+            fs::request(fs::READ, handle, want),
+            offset + done as u64,
+        )
+        .0 as i64;
         if n <= 0 {
             return None;
         }
@@ -654,7 +659,7 @@ pub(super) fn open_for_bytes(nav: &mut Nav, path: &[u8]) -> Option<(Tree, u64, u
         return None;
     }
     let handle = opened as u64;
-    let size = call(t.slot, fs::req(fs::FSTAT, handle, 0), 0).0 as i64;
+    let size = call(t.slot, fs::request(fs::FSTAT, handle, 0), 0).0 as i64;
     if size <= 0 || spawn_protocol::image_pages(size as u64) > spawn_protocol::IMAGE_MAXIMUM_PAGES {
         nav.close_in(t, handle);
         refused();
@@ -703,7 +708,7 @@ fn send_frames(dir: u64, handle: u64, pages: u64, staging: u64) -> bool {
         if map_window_frame(frame, va) {
             // SAFETY: `va` was just mapped read/write, one page.
             let window = unsafe { MappedWindow::new(va, PAGE) };
-            let n = call(dir, fs::req(fs::READ, handle, PAGE), i * PAGE).0 as i64;
+            let n = call(dir, fs::request(fs::READ, handle, PAGE), i * PAGE).0 as i64;
             if n < 0 {
                 read_ok = false;
             } else {

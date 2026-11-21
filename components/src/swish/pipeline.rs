@@ -687,10 +687,10 @@ fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Resul
         if handle >= 0 {
             let r = match mode {
                 line::Mode::Truncate => {
-                    call(dir, fs::req(fs::TRUNCATE, handle as u64, 0), 0).0 as i64
+                    call(dir, fs::request(fs::TRUNCATE, handle as u64, 0), 0).0 as i64
                 }
                 line::Mode::Append => {
-                    let size = call(dir, fs::req(fs::FSTAT, handle as u64, 0), 0).0 as i64;
+                    let size = call(dir, fs::request(fs::FSTAT, handle as u64, 0), 0).0 as i64;
                     if size >= 0 {
                         off = size as u64;
                     }
@@ -767,7 +767,7 @@ impl FileOut {
         put_page(&self.buf[..self.n]);
         let r = call(
             self.dir,
-            fs::req(fs::WRITE, self.handle, self.n as u64),
+            fs::request(fs::WRITE, self.handle, self.n as u64),
             self.off,
         )
         .0 as i64;
@@ -806,7 +806,7 @@ impl ByteOut for FileOut {
 
     fn finish(&mut self) {
         self.flush();
-        call(self.dir, fs::req(fs::CLOSE, self.handle, 0), 0);
+        call(self.dir, fs::request(fs::CLOSE, self.handle, 0), 0);
     }
 }
 
@@ -826,7 +826,7 @@ impl FileIn {
         loop {
             let got = call(
                 self.dir,
-                fs::req(fs::READ, self.handle, FILE_CHUNK as u64),
+                fs::request(fs::READ, self.handle, FILE_CHUNK as u64),
                 off,
             )
             .0 as i64;
@@ -844,7 +844,7 @@ impl FileIn {
         // End of stream whatever happened, for `feed`'s reason: the reader is a process blocked in a
         // receive, and a read error is not a reason to leave it there.
         w.finish();
-        call(self.dir, fs::req(fs::CLOSE, self.handle, 0), 0);
+        call(self.dir, fs::request(fs::CLOSE, self.handle, 0), 0);
     }
 }
 

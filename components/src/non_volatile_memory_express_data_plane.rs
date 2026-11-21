@@ -348,7 +348,7 @@ fn serve(mut plane: Plane) -> ! {
         // today sends at most `TRANSFER_BLOCKS` because the field cannot encode more, and a
         // request is never trusted to stay inside the region it shares just because the packing
         // allows a larger number to be spelled.
-        let count = block::req_blocks(w0).min(TRANSFER_BLOCKS);
+        let count = block::request_block_count(w0).min(TRANSFER_BLOCKS);
         let Some(window) = client_window(req.badge) else {
             reply(reply_to, filesystem_contract::reply_err(22) as u64, 0); // EINVAL
             continue;

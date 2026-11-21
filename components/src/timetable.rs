@@ -530,12 +530,12 @@ mod store {
             return -1;
         }
         page()[..name.len()].copy_from_slice(name);
-        call(ep, fs::req(verb, at, name.len() as u64), w1).0 as i64
+        call(ep, fs::request(verb, at, name.len() as u64), w1).0 as i64
     }
 
     fn close(ep: u64, h: i64) {
         if h >= 0 {
-            call(ep, fs::req(fs::CLOSE, h as u64, 0), 0);
+            call(ep, fs::request(fs::CLOSE, h as u64, 0), 0);
         }
     }
 
@@ -548,7 +548,12 @@ mod store {
         loop {
             // One byte past a full buffer, so a file exactly its size is told from a larger one.
             let want = (out.len() - done).clamp(1, PAGE_BYTES);
-            let n = call(ep, fs::req(fs::READ, h as u64, want as u64), done as u64).0 as i64;
+            let n = call(
+                ep,
+                fs::request(fs::READ, h as u64, want as u64),
+                done as u64,
+            )
+            .0 as i64;
             if n < 0 {
                 return None;
             }

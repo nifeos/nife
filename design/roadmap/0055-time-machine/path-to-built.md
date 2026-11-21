@@ -136,7 +136,7 @@ concurrent observer at all."
 
 §42's racy case is a POSIX host filesystem reached through separate `link` and `unlink` system calls,
 with another writer free to run between them. This server is neither. A `replace: bool` read at that
-existing check point is a few lines, not a redesign. The wire has room already: `fs::rename_dst`'s
+existing check point is a few lines, not a redesign. The wire has room already: `fs::rename_destination`'s
 second word packs a 16-bit handle and a 40-bit length into 64 bits, leaving bits 63:56 unclaimed for
 a flag. So the change costs no growth in an already-shipped word.
 

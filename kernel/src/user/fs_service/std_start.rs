@@ -190,7 +190,7 @@ impl BoundStd {
         let unbound = crate::sched::ipc_call(
             self.file_ep,
             [
-                filesystem_contract::fs::req(filesystem_contract::fs::UNBIND, 0, 0),
+                filesystem_contract::fs::request(filesystem_contract::fs::UNBIND, 0, 0),
                 self.window,
             ],
         )[0] == 0;
@@ -280,14 +280,17 @@ pub fn bind_subtree(
     }
     let opened = crate::sched::ipc_call(
         file_ep,
-        [fs::req(fs::OPENDIR, fs::ROOT, name.len() as u64), rights],
+        [
+            fs::request(fs::OPENDIR, fs::ROOT, name.len() as u64),
+            rights,
+        ],
     )[0] as i64;
     assert!(
         opened >= 0,
         "the FS server would not open {name:?} to bind: {opened}"
     );
-    let bound =
-        crate::sched::ipc_call(file_ep, [fs::req(fs::BIND, opened as u64, 0), window])[0] as i64;
+    let bound = crate::sched::ipc_call(file_ep, [fs::request(fs::BIND, opened as u64, 0), window])
+        [0] as i64;
     assert_eq!(bound, 0, "the FS server refused to bind {name:?}");
     Some(BoundGrant {
         file_ep,

@@ -185,7 +185,7 @@ fn serve(mut host: HostController<Page>, card: Card, h: Handoff) -> ! {
             continue;
         };
         // Clamped, as every block server here clamps: the packing could spell more.
-        let count = block::req_blocks(w0).min(block::TRANSFER_BLOCKS);
+        let count = block::request_block_count(w0).min(block::TRANSFER_BLOCKS);
         let r0 = match filesystem_contract::operation(w0) {
             block::READ => transfer_blocks(&mut host, &card, &h, block, count, false),
             block::WRITE => transfer_blocks(&mut host, &card, &h, block, count, true),

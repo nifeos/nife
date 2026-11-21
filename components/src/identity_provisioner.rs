@@ -140,7 +140,7 @@ fn mkdir_home(identity: &[u8]) -> Option<i32> {
     page[..n].copy_from_slice(&identity[..n]);
     let (r0, _) = call(
         FS_EP,
-        fs::req(fs::MKDIR, fs::ROOT, identity.len() as u64),
+        fs::request(fs::MKDIR, fs::ROOT, identity.len() as u64),
         filesystem_contract::directory::ALL,
     );
     match filesystem_contract::reply_errno(r0 as i64) {
@@ -148,7 +148,7 @@ fn mkdir_home(identity: &[u8]) -> Option<i32> {
         None => {
             // Best-effort: a failed close leaks a handle-table slot in the file service and
             // corrupts nothing a caller of this tool could observe.
-            let _ = call(FS_EP, fs::req(fs::CLOSE, r0, 0), 0);
+            let _ = call(FS_EP, fs::request(fs::CLOSE, r0, 0), 0);
             None
         }
     }

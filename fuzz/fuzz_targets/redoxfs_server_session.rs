@@ -292,7 +292,7 @@ impl Session {
             fs::RENAME => {
                 let src = self.name(u, 0)?;
                 let dst = self.name(u, src)?;
-                (src, fs::rename_dst(u.int_in_range(0..=11)?, dst as u64))
+                (src, fs::rename_destination(u.int_in_range(0..=11)?, dst as u64))
             }
             fs::GETXATTR | fs::REMOVEXATTR => (self.name(u, 0)?, 0),
             fs::SETXATTR => {
@@ -307,7 +307,7 @@ impl Session {
         let w1 = if u.ratio(1, 64)? { u.arbitrary()? } else { w1 };
         Ok((
             badge,
-            fs::req(code, handle, len as u64),
+            fs::request(code, handle, len as u64),
             sparse(code, len, w1),
         ))
     }
@@ -318,7 +318,7 @@ impl Session {
             .server
             .handle(badge, w0, w1, &mut self.window, &mut HostEdges);
         let code = filesystem_contract::operation(w0);
-        let raw = fs::req_handle(w0);
+        let raw = fs::request_handle(w0);
         let ok = r0 >= 0;
         let model = self.model(badge);
 
@@ -332,7 +332,7 @@ impl Session {
                     || code == fs::UNBIND
                     || (code == fs::CLOSE && raw == fs::ROOT)
                     || !mine(raw)
-                    || (code == fs::RENAME && !mine(fs::dst_handle(w1)))
+                    || (code == fs::RENAME && !mine(fs::destination_handle(w1)))
             }
         };
         assert!(
@@ -403,12 +403,12 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
         s.window[..path.len()].copy_from_slice(path);
         let h = s.send(
             0,
-            fs::req(fs::OPENDIR, fs::ROOT, path.len() as u64),
+            fs::request(fs::OPENDIR, fs::ROOT, path.len() as u64),
             directory::ALL,
         );
         assert!(h > 0, "the prologue's OPENDIR failed: {h}");
         assert_eq!(
-            s.send(0, fs::req(fs::BIND, h as u64, 0), badge),
+            s.send(0, fs::request(fs::BIND, h as u64, 0), badge),
             0,
             "the prologue's BIND failed"
         );

@@ -9,17 +9,17 @@ pub enum Operand {
     /// not tidiness: it means a client cannot smuggle a length into a verb that has none and
     /// have some later server give it a meaning.
     None,
-    /// A **directory name**, `req_len` bytes at the start of the shared page, resolved under the
+    /// A **directory name**, `request_length_bytes` bytes at the start of the shared page, resolved under the
     /// request's handle. This is the operand a name filter applies to, and the only one:
     /// `fs_nameset_caretaker` asks its question exactly when this is the shape.
     Name,
-    /// `req_len` bytes of **payload** that are not a directory name: file data
+    /// `request_length_bytes` bytes of **payload** that are not a directory name: file data
     /// ([`fs::READ`]/[`fs::WRITE`]), or an attribute name and value. Forwarded verbatim, and
     /// **never filtered**, because an attribute name is not a name in the namespace the
     /// capability narrows.
     Payload,
     /// Two directories and two names, [`fs::RENAME`] alone: the source is the request word's
-    /// handle and length, the destination rides in the second word ([`fs::rename_dst`]), and
+    /// handle and length, the destination rides in the second word ([`fs::rename_destination`]), and
     /// both names sit back to back in the page. The only shape a proxy must rewrite rather than
     /// forward, because both handles are the client's.
     Rename,

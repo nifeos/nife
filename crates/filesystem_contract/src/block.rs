@@ -16,11 +16,11 @@ pub const VERSION: u32 = 1;
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
 pub const INTERFACE_ID: u64 = 14;
 
-/// Read [`req_blocks`] filesystem blocks starting at `w1` from the disk into the shared
+/// Read [`request_block_count`] filesystem blocks starting at `w1` from the disk into the shared
 /// region. Reply `r0` = 0 on success, or [`super::reply_err`] on failure; the bytes land at the
 /// start of the shared region, block `w1` first.
 pub const READ: u64 = 1;
-/// Write [`req_blocks`] filesystem blocks, now in the shared region, to the disk starting at
+/// Write [`request_block_count`] filesystem blocks, now in the shared region, to the disk starting at
 /// `w1`. Reply `r0` = 0 on success, or [`super::reply_err`] on failure.
 pub const WRITE: u64 = 2;
 /// Ask the disk's size in bytes. `w1` ignored. Reply `r0` = the size (always non-negative here).
@@ -37,7 +37,7 @@ pub const SIZE: u64 = 3;
 pub const FLUSH: u64 = 4;
 
 /// One filesystem block, in bytes: the transfer unit [`SIZE`] and [`FLUSH`] see and the unit
-/// [`req_blocks`] counts in. Equal to `redoxfs::BLOCK_BYTES`; asserted against it in the block
+/// [`request_block_count`] counts in. Equal to `redoxfs::BLOCK_BYTES`; asserted against it in the block
 /// server so a future RedoxFS bump that changed the block size would fail to build rather than
 /// silently corrupt.
 ///
@@ -59,7 +59,7 @@ pub const SECTORS_PER_BLOCK: u64 = (BLOCK_BYTES as u64) / SECTOR_BYTES;
 /// per RedoxFS `Disk::read_at`/`write_at` call.
 ///
 /// The device DMAs straight into the region, so a larger request would overrun it. A caller that
-/// sends [`super::req`]`(operation)`, whose low bits are zero, gets one block ([`req_blocks`]), so
+/// sends [`super::req`]`(operation)`, whose low bits are zero, gets one block ([`request_block_count`]), so
 /// the single-block callers (`disk_surveyor`, `disk_partitioner`, `mkfs`) need no change.
 pub const TRANSFER_BLOCKS: usize = 16;
 
@@ -72,14 +72,14 @@ pub const MAXIMUM_TRANSFER_BYTES: usize = TRANSFER_BLOCKS * BLOCK_BYTES;
 /// Pack a blk request's first word: opcode (bits 63:56, [`super::OPERATION_SHIFT`]) and a block count
 /// (bits 7:0, stored as `blocks - 1` so the all-zero word a single-block caller sends decodes as
 /// one block). `blocks` must be in `1..=TRANSFER_BLOCKS`.
-pub const fn req(operation: u64, blocks: usize) -> u64 {
+pub const fn request(operation: u64, blocks: usize) -> u64 {
     assert!(blocks >= 1 && blocks <= TRANSFER_BLOCKS);
     (operation << super::OPERATION_SHIFT) | (blocks as u64 - 1)
 }
 
-/// The block count of a blk request word: [`req`]'s inverse. A word built by
+/// The block count of a blk request word: [`request`]'s inverse. A word built by
 /// [`super::req`]`(operation)`, as a single-block caller sends, decodes as 1.
-pub const fn req_blocks(w0: u64) -> usize {
+pub const fn request_block_count(w0: u64) -> usize {
     ((w0 & 0xff) + 1) as usize
 }
 
@@ -90,9 +90,9 @@ const _: () = {
     assert!(TRANSFER_BLOCKS >= 1);
     assert!(TRANSFER_BLOCKS <= 256); // the 8-bit count field's range
     assert!(MAXIMUM_TRANSFER_BYTES == TRANSFER_BLOCKS * BLOCK_BYTES);
-    // `req`'s all-zero-low-bits compatibility case: a caller that never heard of `req_blocks`
+    // `request`'s all-zero-low-bits compatibility case: a caller that never heard of `request_block_count`
     // sends `super::req(operation)`, whose low bits are 0, and that must still mean one block.
-    assert!(req_blocks(super::req(READ)) == 1);
+    assert!(request_block_count(super::req(READ)) == 1);
 };
 
 #[cfg(test)]

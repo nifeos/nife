@@ -86,7 +86,7 @@ fuzz, Miri or the QEMU filesystem tests.
 |---|---|
 | crate root | `PAGE_BYTES`, `OPERATION_SHIFT`, `req`, `operation`, `READY`, `DESCENT_REFUSED` |
 | `reply` | `MAXIMUM_ERRNO`, `EPROTO`, `reply_err`, `reply_errno` |
-| `block` (interface 14) | identity, four opcodes, the block and sector sizes and transfer limits, `req`, `req_blocks` |
+| `block` (interface 14) | identity, four opcodes, the block and sector sizes and transfer limits, `req`, `request_block_count` |
 | `fs` (interface 15) | identity, `ROOT`, 23 opcodes, the transfer and window limits, the request and rename-destination packers |
 | `directory` | ten rights, six errno constants, `explain`, `Rights` |
 | `verb` | `Verb`, `Operand`, `TABLE` (23 rows), `of`; `file_grant` |
@@ -101,7 +101,7 @@ What a stranger may find surprising:
 
 - Every name-taking verb refuses `.extended-attributes` with `EINVAL`, at every depth, and `READDIR`
   skips it (Decision A). A file of that name cannot exist on a volume this protocol serves.
-- `block::req_blocks` decodes the low byte plus one, so a word whose low byte is 255 reads as 256
+- `block::request_block_count` decodes the low byte plus one, so a word whose low byte is 255 reads as 256
   blocks, past `TRANSFER_BLOCKS` (item 14, open).
 - The packers mask an oversized field rather than refuse it (items 7 and 22, open).
 - `rm` and `CLIENT_WINDOWS` are one program's convention and a capacity choice, not protocol (item
@@ -193,12 +193,11 @@ Built and provisional, not in Decision B's table:
 | `DESCENT_REFUSED` | provisional | with `READY`, the line milestone 886 drew |
 
 The other 133 public items, with no block, are plain words or standard-library spellings (`encode`,
-`iter`, `get`, `of`). Two families the `abbreviations` report lists are not covered by Decision B: the request
-packers `req`, `req_handle`, `req_len`, `req_blocks` and the rename-destination pair `rename_dst`,
-`dst_handle`, `dst_len`. `byte_sink_contract` renamed its own `req` to `first_word` under P1-9 of
-milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves). The
-same rule would rename these, which a stranger meets in every call site; the package brings them as
-a question (Decisions for the architect, item 4) and proposes no spelling.
+`iter`, `get`, `of`). The request packers `fs::request`, `request_handle`, `request_length_bytes`,
+`block::request`, `request_block_count` and the rename-destination trio `rename_destination`,
+`destination_handle`, `destination_length_bytes` are spelled out, as `byte_sink_contract` spelled out
+its own packer (`first_word`, P1-9 of milestone 1079). The wire bytes are unchanged, and a test pins
+them. The spellings are provisional.
 
 The full table for the ratifying pull request is the output of
 `python3 helpers/name_release.py --draft filesystem_contract`.
@@ -243,10 +242,6 @@ and 22 change what a release build does with a bad field, so they turn one-way a
    B does not list. Provisional names stay provisional until the architect rules.
 3. Ratify the identity values `block::INTERFACE_ID` 14 and `fs::INTERFACE_ID` 15, each at `VERSION`
    1, as frozen, as for the other contract crates.
-4. Decide whether the request packers `req`, `req_handle`, `req_len`, `req_blocks` and the
-   rename-destination functions `rename_dst`, `dst_handle`, `dst_len` keep their spelling or take
-   spelled-out names before the first release. Recommendation: rename them, as
-   `byte_sink_contract` renamed its `req`, since the tightening is the one that cannot come later;
-   the spellings are a rename lane's proposal. Two-way until the first release.
+4. The request packers carry spelled-out names (built, provisional); ratify them with the rest.
 
 Nothing here asks for a tag or a publish.

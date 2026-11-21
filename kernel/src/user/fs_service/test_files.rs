@@ -43,7 +43,10 @@ fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
         None => fs::ROOT,
         Some(d) => {
             page[..d.len()].copy_from_slice(d);
-            let h = call([fs::req(fs::OPENDIR, fs::ROOT, d.len() as u64), rights::ALL]);
+            let h = call([
+                fs::request(fs::OPENDIR, fs::ROOT, d.len() as u64),
+                rights::ALL,
+            ]);
             assert!(
                 h >= 0,
                 "could not open the subtree {:?} ({h})",
@@ -55,7 +58,7 @@ fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
     let name = file.as_bytes();
     let named = |page: &mut [u8], verb: u64| {
         page[..name.len()].copy_from_slice(name);
-        call([fs::req(verb, at, name.len() as u64), 0])
+        call([fs::request(verb, at, name.len() as u64), 0])
     };
     if let Some(contents) = contents {
         let mut h = named(page, fs::OPEN);
@@ -65,20 +68,20 @@ fn set_file(dir: Option<&[u8]>, file: &str, contents: Option<&[u8]>) {
         assert!(h >= 0, "could not open or create {file} ({h})");
         let h = h as u64;
         assert_eq!(
-            call([fs::req(fs::TRUNCATE, h, 0), 0]),
+            call([fs::request(fs::TRUNCATE, h, 0), 0]),
             0,
             "could not truncate {file}"
         );
         page[..contents.len()].copy_from_slice(contents);
-        let wrote = call([fs::req(fs::WRITE, h, contents.len() as u64), 0]);
+        let wrote = call([fs::request(fs::WRITE, h, contents.len() as u64), 0]);
         assert_eq!(wrote, contents.len() as i64, "short write of {file}");
-        call([fs::req(fs::CLOSE, h, 0), 0]);
+        call([fs::request(fs::CLOSE, h, 0), 0]);
     } else {
         // `ENOENT` is the state asked for, so the answer is not checked.
         named(page, fs::UNLINK);
     }
     if at != fs::ROOT {
-        call([fs::req(fs::CLOSE, at, 0), 0]);
+        call([fs::request(fs::CLOSE, at, 0), 0]);
     }
 }
 
@@ -99,14 +102,16 @@ pub fn read_root_file(file: &str, out: &mut [u8]) -> Option<usize> {
         )
     };
     page[..file.len()].copy_from_slice(file.as_bytes());
-    let h = crate::sched::ipc_call(fs_ep, [fs::req(fs::OPEN, fs::ROOT, file.len() as u64), 0])[0]
-        as i64;
+    let h = crate::sched::ipc_call(
+        fs_ep,
+        [fs::request(fs::OPEN, fs::ROOT, file.len() as u64), 0],
+    )[0] as i64;
     if h < 0 {
         return None;
     }
     let want = out.len().min(filesystem_contract::PAGE_BYTES) as u64;
-    let n = crate::sched::ipc_call(fs_ep, [fs::req(fs::READ, h as u64, want), 0])[0] as i64;
-    crate::sched::ipc_call(fs_ep, [fs::req(fs::CLOSE, h as u64, 0), 0]);
+    let n = crate::sched::ipc_call(fs_ep, [fs::request(fs::READ, h as u64, want), 0])[0] as i64;
+    crate::sched::ipc_call(fs_ep, [fs::request(fs::CLOSE, h as u64, 0), 0]);
     let n = usize::try_from(n).ok()?.min(out.len());
     out[..n].copy_from_slice(&page[..n]);
     Some(n)

@@ -101,7 +101,7 @@ pub fn readdir(p: &Path) -> io::Result<ReadDir> {
     let mut buf = [0u8; PAGE];
     let mut cursor: u64 = 0;
     let result = loop {
-        // `req_len` is ignored by READDIR; the cursor rides in the second word.
+        // `request_length_bytes` is ignored by READDIR; the cursor rides in the second word.
         let filled = match request(proto::req(proto::READDIR, handle, 0), cursor) {
             Ok(n) => n as usize,
             Err(e) => break Err(e),
@@ -196,7 +196,7 @@ pub fn rename(old: &Path, new: &Path) -> io::Result<()> {
     page.put_at(src.len(), dst.as_bytes());
     request(
         proto::req(proto::RENAME, src_at.0, src.len() as u64),
-        proto::rename_dst(dst_at.0, dst.len() as u64),
+        proto::rename_destination(dst_at.0, dst.len() as u64),
     )?;
     Ok(())
 }

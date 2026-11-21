@@ -80,7 +80,7 @@ impl<D: Disk> Server<D> {
         // A bound badge's handles go through `subtree_scope` (milestone 606 (a directory walk costs
         // what it does on Linux), ruling D). `BIND`, `UNBIND` and `BIND_SYNC` name a handle of the
         // binder's own, and a bound badge may not close its grant's `ROOT`.
-        let raw = fs::req_handle(w0);
+        let raw = fs::request_handle(w0);
         let admitted = if code == fs::BIND || code == fs::UNBIND || code == fs::BIND_SYNC {
             Ok(raw as u32)
         } else if code == fs::CLOSE && raw == fs::ROOT && self.scoped(badge) {
@@ -96,8 +96,8 @@ impl<D: Disk> Server<D> {
         // chooses stays inside the one page every client maps, and only `READ` and `WRITE`, whose
         // length the client chooses, may use the whole channel. See
         // `filesystem_contract::fs::TRANSFER_PAGES`.
-        let len = fs::req_len(w0).min(BLOCK);
-        let bulk_len = fs::req_len(w0).min(fs::MAXIMUM_TRANSFER_BYTES);
+        let len = fs::request_length_bytes(w0).min(BLOCK);
+        let bulk_len = fs::request_length_bytes(w0).min(fs::MAXIMUM_TRANSFER_BYTES);
         let offset = w1;
         let request = Request {
             code,
@@ -278,17 +278,17 @@ impl<D: Disk> Server<D> {
         offset: u64,
         window: &[u8],
     ) -> Result<i64> {
-        let dst_len = fs::dst_len(offset);
-        if len + dst_len > BLOCK {
+        let destination_length_bytes = fs::destination_length_bytes(offset);
+        if len + destination_length_bytes > BLOCK {
             Err(Error::new(EINVAL))
         } else {
             // Each name copied off the window once, into a value the server owns, before either is
             // judged; `rename` checks the copies.
             let src = NameCopy::copy_in(&window[..len]);
-            let dst = NameCopy::copy_in(&window[len..len + dst_len]);
+            let dst = NameCopy::copy_in(&window[len..len + destination_length_bytes]);
             match (src, dst) {
                 (Ok(src), Ok(dst)) => self
-                    .admit(badge, fs::dst_handle(offset))
+                    .admit(badge, fs::destination_handle(offset))
                     .and_then(|to| self.rename(handle, &src, to, &dst))
                     .map(|()| 0),
                 _ => Err(Error::new(EINVAL)),

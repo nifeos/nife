@@ -88,14 +88,14 @@ user_mode_runtime::program_entry!(start);
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let name = fixture::SINK_NAME.as_bytes();
     put(name);
-    let handle = fs_call(fs::req(fs::OPEN, fs::ROOT, name.len() as u64), 0);
+    let handle = fs_call(fs::request(fs::OPEN, fs::ROOT, name.len() as u64), 0);
     if handle < 0 {
         send(REPORT, fixture::BAD, handle as u64, 0);
         exit();
     }
     let handle = handle as u64;
 
-    let size = fs_call(fs::req(fs::FSTAT, handle, 0), 0);
+    let size = fs_call(fs::request(fs::FSTAT, handle, 0), 0);
     if size < 0 {
         send(REPORT, fixture::BAD, size as u64, 1);
         exit();
@@ -105,7 +105,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let mut off = 0u64;
     while off < size {
         let want = (size - off).min(PAGE as u64);
-        let got = fs_call(fs::req(fs::READ, handle, want), off);
+        let got = fs_call(fs::request(fs::READ, handle, want), off);
         if got <= 0 {
             send(REPORT, fixture::BAD, got as u64, off);
             exit();
@@ -128,7 +128,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     }
 
     send(SINK, byte_sink_contract::end_of_stream(), 0, 0);
-    let _ = fs_call(fs::req(fs::CLOSE, handle, 0), 0);
+    let _ = fs_call(fs::request(fs::CLOSE, handle, 0), 0);
     send(REPORT, fixture::DONE, size, 0);
     exit();
 }

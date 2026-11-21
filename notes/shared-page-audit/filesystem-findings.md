@@ -91,7 +91,7 @@ if filtered && v.takes_name() && v.operand == verb::Operand::Name {
     }
 }
 ...
-let r = forward(fs::req(code, server_handle, n), second);  // the FS server reads the page AGAIN
+let r = forward(fs::request(code, server_handle, n), second);  // the FS server reads the page AGAIN
 ```
 
 The caretaker copies the name into a stack buffer, decides on the copy, and then forwards a request

@@ -53,7 +53,7 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
         v |= esc::OPENED_ITS_OWN;
         let (n, _) = call(
             FILE,
-            fs::req(fs::READ, own as u64, tree::INNER_BODY.len() as u64),
+            fs::request(fs::READ, own as u64, tree::INNER_BODY.len() as u64),
             0,
         );
         get_page(n as usize, &mut buf);
@@ -108,8 +108,8 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
     //     one check.
     let mut guess = 9u64;
     while guess < 16 {
-        if call(FILE, fs::req(fs::READ, guess, 8), 0).0 as i64 >= 0
-            || call(FILE, fs::req(fs::READDIR, guess, 0), 0).0 as i64 >= 0
+        if call(FILE, fs::request(fs::READ, guess, 8), 0).0 as i64 >= 0
+            || call(FILE, fs::request(fs::READDIR, guess, 0), 0).0 as i64 >= 0
         {
             v |= esc::FORGED_HANDLE;
         }
@@ -138,7 +138,7 @@ fn probe_its_own_attributes(own: i64) -> u64 {
     //
     //     The attribute is set on `inner` and then removed, so the post-run host check still
     //     sees the file it pins, byte for byte, with nothing attached.
-    let (l, _) = call(FILE, fs::req(fs::LISTXATTR, own as u64, 0), 0);
+    let (l, _) = call(FILE, fs::request(fs::LISTXATTR, own as u64, 0), 0);
     if (l as i64) < 0 {
         v |= esc::GRANTED_ACCESS_FAILED;
     } else {
@@ -149,14 +149,14 @@ fn probe_its_own_attributes(own: i64) -> u64 {
     put_page_at(fixture::attrs::NAME.len(), fixture::attrs::VALUE);
     let (s, _) = call(
         FILE,
-        fs::req(fs::SETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
+        fs::request(fs::SETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
         extended_attribute::specification(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
     );
     if (s as i64) >= 0 {
         put_page(fixture::attrs::NAME);
         let (g, _) = call(
             FILE,
-            fs::req(fs::GETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
+            fs::request(fs::GETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
             0,
         );
         get_page(extended_attribute::reply_value_len(g as i64), &mut buf);
@@ -172,7 +172,7 @@ fn probe_its_own_attributes(own: i64) -> u64 {
         put_page(fixture::attrs::NAME);
         let (rm, _) = call(
             FILE,
-            fs::req(
+            fs::request(
                 fs::REMOVEXATTR,
                 own as u64,
                 fixture::attrs::NAME.len() as u64,
@@ -192,7 +192,7 @@ fn probe_enumeration() -> u64 {
     let mut buf = [0u8; 256];
     // 5. Enumeration, and what it is allowed to contain. A listing is a rendering of authority, so
     //    a name from outside the grant appearing in one is an escape even though nothing was opened.
-    let (n, _) = call(FILE, fs::req(fs::READDIR, fs::ROOT, 0), 0);
+    let (n, _) = call(FILE, fs::request(fs::READDIR, fs::ROOT, 0), 0);
     if (n as i64) >= 0 {
         v |= esc::ENUMERATED;
         // Clamped to the local buffer: the page is sixteen times larger, and indexing past the
@@ -224,14 +224,14 @@ fn write_what_it_made(created: i64) -> u64 {
     put_page(tree::MADE_BODY);
     let (w, _) = call(
         FILE,
-        fs::req(fs::WRITE, created as u64, tree::MADE_BODY.len() as u64),
+        fs::request(fs::WRITE, created as u64, tree::MADE_BODY.len() as u64),
         0,
     );
     if (w as i64) >= 0 {
         v |= esc::WROTE;
         let (rb, _) = call(
             FILE,
-            fs::req(fs::READ, created as u64, tree::MADE_BODY.len() as u64),
+            fs::request(fs::READ, created as u64, tree::MADE_BODY.len() as u64),
             0,
         );
         get_page(tree::MADE_BODY.len(), &mut buf);
@@ -253,7 +253,7 @@ fn probe_widening(created: i64) -> u64 {
     //       capability opens, lists or creates, rights are not being carried on the handle at all.
     let nothing = dir_descend(fs::ROOT, tree::DEEPER, 0);
     if nothing >= 0 {
-        let listed = call(FILE, fs::req(fs::READDIR, nothing as u64, 0), 0).0 as i64;
+        let listed = call(FILE, fs::request(fs::READDIR, nothing as u64, 0), 0).0 as i64;
         if dir_open(nothing as u64, tree::LEAF) >= 0
             || dir_create(nothing as u64, "smuggled") >= 0
             || listed >= 0

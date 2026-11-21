@@ -148,12 +148,12 @@ impl Tree {
         let Some(v) = verb::of(code) else {
             return err(directory::EINVAL);
         };
-        let Some((node, rights)) = self.get(fs::req_handle(w0)) else {
+        let Some((node, rights)) = self.get(fs::request_handle(w0)) else {
             return err(EBADF);
         };
         // A copy, because a listing is written into the page the name arrived in.
         let mut name = [0u8; 256];
-        let n = fs::req_len(w0);
+        let n = fs::request_length_bytes(w0);
         if v.carries_len() && code != fs::READ && code != fs::WRITE {
             if n > name.len() || n > page.len() {
                 return err(directory::EINVAL);
@@ -169,9 +169,9 @@ impl Tree {
                 Node::Namespace => Answer::Reply(self.size as i64, 0),
                 _ => Answer::Reply(0, 0),
             },
-            fs::CLOSE if fs::req_handle(w0) == fs::ROOT => err(directory::EINVAL),
+            fs::CLOSE if fs::request_handle(w0) == fs::ROOT => err(directory::EINVAL),
             fs::CLOSE => {
-                self.handles[fs::req_handle(w0) as usize] = None;
+                self.handles[fs::request_handle(w0) as usize] = None;
                 Answer::Reply(0, 0)
             }
             fs::READDIR => list(node, rights, w1, page),

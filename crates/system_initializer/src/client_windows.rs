@@ -189,7 +189,7 @@ fn bind_window(
     }
     if call(
         fs.ep,
-        fs_operation::req(fs_operation::BIND, handle as u64, 0),
+        fs_operation::request(fs_operation::BIND, handle as u64, 0),
         w,
     )
     .0 != 0
@@ -291,7 +291,13 @@ pub(super) fn bind_sync_only(
     mapped: &mut bool,
 ) -> Option<u64> {
     FsCalls::map(Some(fs), own_ut, mapped)?;
-    if call(fs.ep, fs_operation::req(fs_operation::BIND_SYNC, 0, 0), w).0 != 0 {
+    if call(
+        fs.ep,
+        fs_operation::request(fs_operation::BIND_SYNC, 0, 0),
+        w,
+    )
+    .0 != 0
+    {
         return None;
     }
     windows.set_bound(w, true);
@@ -330,7 +336,7 @@ pub(super) fn job_channel(fs: Fs, w: u64, own_ut: u64, mapped: &mut bool) -> Opt
 pub(super) fn unbind(files: Option<u64>, windows: &mut Windows, w: u64) {
     if let Some(ep) = files
         && windows.is_bound(w)
-        && call(ep, fs_operation::req(fs_operation::UNBIND, 0, 0), w).0 == 0
+        && call(ep, fs_operation::request(fs_operation::UNBIND, 0, 0), w).0 == 0
     {
         windows.set_bound(w, false);
     }
@@ -368,7 +374,7 @@ impl FsCalls {
         let len = name.len().min(PAGE_BYTES);
         // SAFETY: the page is mapped read/write (`map`) and `len` is at most a page.
         unsafe { core::ptr::copy_nonoverlapping(name.as_ptr(), Self::page(), len) };
-        call(self.ep, fs_operation::req(verb, handle, len as u64), w1).0 as i64
+        call(self.ep, fs_operation::request(verb, handle, len as u64), w1).0 as i64
     }
 
     /// `fs::NARROW`: a second handle on the directory `handle` names, carrying `rights` (§173). No
@@ -376,7 +382,7 @@ impl FsCalls {
     pub(super) fn narrow(&self, handle: u64, rights: u64) -> i64 {
         call(
             self.ep,
-            fs_operation::req(fs_operation::NARROW, handle, 0),
+            fs_operation::request(fs_operation::NARROW, handle, 0),
             rights,
         )
         .0 as i64
@@ -385,7 +391,7 @@ impl FsCalls {
     pub(super) fn close(&self, handle: i64) {
         call(
             self.ep,
-            fs_operation::req(fs_operation::CLOSE, handle as u64, 0),
+            fs_operation::request(fs_operation::CLOSE, handle as u64, 0),
             0,
         );
     }
@@ -396,7 +402,7 @@ impl FsCalls {
         let want = out.len().min(PAGE_BYTES);
         let n = call(
             self.ep,
-            fs_operation::req(fs_operation::READ, handle, want as u64),
+            fs_operation::request(fs_operation::READ, handle, want as u64),
             0,
         )
         .0 as i64;
@@ -414,7 +420,7 @@ impl FsCalls {
     pub(super) fn replace(&self, handle: u64, bytes: &[u8]) -> bool {
         if call(
             self.ep,
-            fs_operation::req(fs_operation::TRUNCATE, handle, 0),
+            fs_operation::request(fs_operation::TRUNCATE, handle, 0),
             0,
         )
         .0 as i64
@@ -428,7 +434,7 @@ impl FsCalls {
             let at = (i * PAGE_BYTES) as u64;
             let n = call(
                 self.ep,
-                fs_operation::req(fs_operation::WRITE, handle, chunk.len() as u64),
+                fs_operation::request(fs_operation::WRITE, handle, chunk.len() as u64),
                 at,
             )
             .0 as i64;
@@ -604,8 +610,8 @@ impl FsCalls {
         }
         let renamed = call(
             self.ep,
-            fs_operation::req(fs_operation::RENAME, act, src.len() as u64),
-            fs_operation::rename_dst(act, dst.len() as u64),
+            fs_operation::request(fs_operation::RENAME, act, src.len() as u64),
+            fs_operation::rename_destination(act, dst.len() as u64),
         )
         .0 as i64;
         if renamed != 0 {
@@ -617,7 +623,7 @@ impl FsCalls {
         // live and only as durable as the device makes it; that is recorded, not refused.
         call(
             self.ep,
-            fs_operation::req(fs_operation::SYNC, fs_operation::ROOT, 0),
+            fs_operation::request(fs_operation::SYNC, fs_operation::ROOT, 0),
             0,
         );
         true

@@ -967,7 +967,7 @@ source	target	kind	discovery	blame_date	file_created	evidence
 177	182	context	later	2026-08-27	2026-08-25	an interactive shell, split off as [M-182](0182-x86-64-interactive-boot.md), still depends
 138	37	context	at-creation	2026-08-18	2026-08-18	M-37's and the workload has grown since, so the table there was wrong before this lane
 138	38	context	at-creation	2026-08-19	2026-08-18	**8.02x on a sequential write and 5.67x on a read**, measured on M-38's harness over six
-138	32	context	at-creation	2026-08-19	2026-08-18	word changed**: `fs::req` has carried a 40-bit length since M-32, so the packing was never
+138	32	context	at-creation	2026-08-19	2026-08-18	word changed**: `fs::request` has carried a 40-bit length since M-32, so the packing was never
 177	55	context	later	2026-09-03	2026-08-25	- **Done.** The sequencing question against M-55's storage and M-49's login is
 177	49	context	later	2026-09-03	2026-08-25	- **Done.** The sequencing question against M-55's storage and M-49's login is
 177	182	context	later	2026-09-03	2026-08-25	  `design/roadmap/0182-x86-64-interactive-boot.md`, which this block already names; the earlier

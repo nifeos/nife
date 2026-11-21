@@ -13,7 +13,7 @@ do" below, which also names the one contract question it turned up.
 ## The finding
 
 Descent is built. `fs_proto`'s `OPENDIR` (op 8) resolves one name under the directory handle in
-`req_handle`, requires `DESCEND` on the parent, and attenuates the child's rights so no descendant can
+`request_handle`, requires `DESCEND` on the parent, and attenuates the child's rights so no descendant can
 exceed its ancestor. `rm`, `swish`, `fs_subtree_caretaker`, `fs_nameset_caretaker` and the FS server
 all use it. §47's model is real and native programs walk with it.
 
@@ -30,7 +30,7 @@ there. `walkdir` and `ignore` build and cannot walk.
 
 A directory object in the PAL that **holds** an `OPENDIR` handle, with `OPEN`, `READDIR` and `MKDIR`
 issued against it rather than against `ROOT`. No contract change: every verb already takes a
-`req_handle`, and the PAL already knows how to obtain one.
+`request_handle`, and the PAL already knows how to obtain one.
 
 ## The design fork, which is the real content
 
