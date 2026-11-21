@@ -1,4 +1,4 @@
-Falsifies `address_space_layout::verification::pair_page_refuses_every_address_its_doc_forbids`.
+Falsifies `address_space_layout::verification::pair_page_refuses_every_virtual_address_its_doc_forbids`.
 
 The defect: `pair_page` rounds an unaligned address down instead of refusing it.
 

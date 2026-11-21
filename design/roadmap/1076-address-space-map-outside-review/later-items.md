@@ -6,7 +6,7 @@ An appendix to [the milestone](../1076-address-space-map-outside-review.md).
 
 13. The template's `register_names.py` misreads harness names.
     Finding: it refuses five verification functions whose names contain the word `address`
-    (`every_address_below_the_ceiling_lies_in_exactly_one_band` and four `..._refuses_every_address_its_doc_forbids`)
+    (`every_virtual_address_below_the_ceiling_lies_in_exactly_one_band` and four `..._refuses_every_virtual_address_its_doc_forbids`)
     as addresses that must be virtual or physical. A function is not a location in memory. This is
     the template's bug, and with the names as they are the crate's `check / standalone` job is red
     on the first run.

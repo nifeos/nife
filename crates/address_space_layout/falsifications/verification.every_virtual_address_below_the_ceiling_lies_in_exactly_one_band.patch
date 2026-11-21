@@ -1,4 +1,4 @@
-Falsifies `address_space_layout::verification::every_address_below_the_ceiling_lies_in_exactly_one_band`.
+Falsifies `address_space_layout::verification::every_virtual_address_below_the_ceiling_lies_in_exactly_one_band`.
 
 The defect: `SERVICE_WINDOWS` starts one page below the heap's end, so the two bands share a page.
 The `const` tiling assert in `lib.rs` would stop the build first, so the patch deletes it as well:

@@ -1,4 +1,4 @@
-Falsifies `address_space_layout::verification::the_bands_are_listed_in_address_order`.
+Falsifies `address_space_layout::verification::the_bands_are_listed_in_virtual_address_order`.
 
 The defect: `BANDS` lists `HEAP` before `RUNTIME_WINDOWS`. Every address still lies in exactly
 one band, so the membership harness stays green; only the order is wrong. The `const` tiling
