@@ -329,11 +329,18 @@ def parse_replay_log(text):
 GH_WAITS = (5, 10, 20, 40, 80)
 
 
+NETWORK_FAILURE = re.compile(r"timeout|timed out|connection (reset|refused)|unexpected EOF|TLS handshake",
+                             re.IGNORECASE)
+
+
 def transient(stderr):
-    """Whether a failed `gh` call is worth asking again: a 5xx answer, or no HTTP status at all
-    (a timeout or a reset connection). A 4xx is the request's own fault and is refused at once."""
+    """Whether a failed `gh` call is worth asking again: a 5xx answer, or a network failure with no
+    HTTP answer (a timeout, a reset connection). A 4xx is the request's own fault and a usage error
+    is the caller's, and both are refused at once."""
     status = re.search(r"\bHTTP (\d{3})\b", stderr)
-    return not status or status.group(1).startswith("5")
+    if status:
+        return status.group(1).startswith("5")
+    return bool(NETWORK_FAILURE.search(stderr))
 
 
 def gh_api(argv, run=subprocess.run, sleep=time.sleep):
@@ -841,6 +848,8 @@ def selftest():
         expect("a 502 on every try raises", "returned", "raised")
     except RuntimeError:
         expect("a 502 on every try is asked six times", len(calls), 6)
+    expect("a TLS timeout is transient", transient("net/http: TLS handshake timeout"), True)
+    expect("a usage error is not", transient("unknown flag: --allow-escape-sequences"), False)
 
     print("verify_times selftest: %s" % ("ok" if ok else "FAILED"))
     return 0 if ok else 1
