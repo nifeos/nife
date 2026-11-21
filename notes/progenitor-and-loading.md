@@ -138,14 +138,15 @@ which is the usual signature of a resource the whole suite shares. (That message
 budget for the progenitor` today; it is quoted here as it read on the day.)
 
 So `has_initial_ramdisk_aarch64` (`mkinitrd` before 2026-08-27) now strips each ELF
-(`llvm-objcopy --strip-debug`) before packing, and the archive is **4.3 MB**. Nothing lost
+(`llvm-objcopy --strip-debug --discard-locals`) before packing, and the archive is **4.3 MB**. Nothing lost
 anything. `crates/static_elf` parses program headers only and has no section-header code at all, so no
 loader on either side of the boundary could ever see a debug section. The kernel prints a raw `pc`
 on a fault, and symbolizing it is done offline against the unstripped binary still sitting in
 `target/`.
 
 Two deliberate choices. `--strip-debug` rather than `--strip-all`, so the symbol table survives for
-anything that later wants to read it out of the archive. And a missing `llvm-objcopy` is a hard
+anything that later wants to read it out of the archive, less its assembler-private `.L` labels
+(`--discard-locals`), which name nothing and which a toolchain can emit by the tens of thousands. And a missing `llvm-objcopy` is a hard
 failure rather than a quiet fallback to unstripped bytes. The measured-boot digest (phase B.1 of
 DECISIONS §26 (the fault endpoint)) is taken over exactly these bytes. A build that packed different
 bytes depending on which tools were installed would be a build whose trust root meant something
