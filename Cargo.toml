@@ -9,7 +9,6 @@ members = [
     "uefi_loader",
     "crates/abi",
     "crates/address_space_identifier",
-    "crates/address_space_layout",
     "crates/bitmap_font",
     "crates/glyph_atlas",
     "crates/serial_console",
