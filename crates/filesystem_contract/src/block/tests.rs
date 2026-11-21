@@ -2,18 +2,18 @@ use crate::*;
 
 #[test]
 fn block_request_roundtrips() {
-    let w0 = req(block::READ);
+    let w0 = request(block::READ);
     assert_eq!(operation(w0), block::READ);
     // The block index rides in the second word untouched, so any u64 survives.
     for block in [0u64, 1, 42, u64::MAX] {
-        let (rw0, rw1) = (req(block::WRITE), block);
+        let (rw0, rw1) = (request(block::WRITE), block);
         assert_eq!(operation(rw0), block::WRITE);
         assert_eq!(rw1, block);
     }
 }
 
 /// **The block count rides the request**: a caller that packs a block count survives the round trip, and a
-/// caller that never heard of one (every caller through step 3, via the plain [`req`]) still
+/// caller that never heard of one (every caller through step 3, via the plain [`request`]) still
 /// decodes as exactly one block, which is the whole of the compatibility claim
 /// `block::TRANSFER_BLOCKS`'s doc makes.
 #[test]
@@ -23,11 +23,11 @@ fn blk_request_carries_a_block_count_and_defaults_to_one() {
         assert_eq!(operation(w0), block::READ);
         assert_eq!(block::request_block_count(w0), blocks);
     }
-    // A single-block caller's word (the plain, one-argument `req`) decodes as one block.
-    assert_eq!(block::request_block_count(req(block::READ)), 1);
-    // `block::request(operation, 1)` and `req(operation)` are wire-identical, which is the compatibility property
+    // A single-block caller's word (the plain, one-argument `request`) decodes as one block.
+    assert_eq!(block::request_block_count(request(block::READ)), 1);
+    // `block::request(operation, 1)` and `request(operation)` are wire-identical, which is the compatibility property
     // stated: a caller that upgrades to naming one block explicitly changes nothing on the wire.
-    assert_eq!(block::request(block::READ, 1), req(block::READ));
+    assert_eq!(block::request(block::READ, 1), request(block::READ));
 }
 
 #[test]

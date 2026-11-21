@@ -59,7 +59,7 @@ pub const SECTORS_PER_BLOCK: u64 = (BLOCK_BYTES as u64) / SECTOR_BYTES;
 /// per RedoxFS `Disk::read_at`/`write_at` call.
 ///
 /// The device DMAs straight into the region, so a larger request would overrun it. A caller that
-/// sends [`super::req`]`(operation)`, whose low bits are zero, gets one block ([`request_block_count`]), so
+/// sends [`super::request`]`(operation)`, whose low bits are zero, gets one block ([`request_block_count`]), so
 /// the single-block callers (`disk_surveyor`, `disk_partitioner`, `mkfs`) need no change.
 pub const TRANSFER_BLOCKS: usize = 16;
 
@@ -80,7 +80,7 @@ pub const fn request(operation: u64, blocks: usize) -> u64 {
 }
 
 /// The block count of a blk request word: [`request`]'s inverse. A word built by
-/// [`super::req`]`(operation)`, as a single-block caller sends, decodes as 1.
+/// [`super::request`]`(operation)`, as a single-block caller sends, decodes as 1.
 ///
 /// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn request_block_count(w0: u64) -> usize {
@@ -95,8 +95,8 @@ const _: () = {
     assert!(TRANSFER_BLOCKS <= 256); // the 8-bit count field's range
     assert!(MAXIMUM_TRANSFER_BYTES == TRANSFER_BLOCKS * BLOCK_BYTES);
     // `request`'s all-zero-low-bits compatibility case: a caller that never heard of `request_block_count`
-    // sends `super::req(operation)`, whose low bits are 0, and that must still mean one block.
-    assert!(request_block_count(super::req(READ)) == 1);
+    // sends `super::request(operation)`, whose low bits are 0, and that must still mean one block.
+    assert!(request_block_count(super::request(READ)) == 1);
 };
 
 #[cfg(test)]
