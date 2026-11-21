@@ -17,9 +17,9 @@ ev_current="\x01"
 etype_exec="\x02\x00"
 etype_dyn="\x03\x00"
 
-# e_machine, little-endian u16: aarch64 is 183, riscv is 243. One build accepts one of them.
+# e_machine, little-endian u16: aarch64 is 183, riscv64 is 243. One build accepts one of them.
 machine_aarch64="\xb7\x00"
-machine_riscv="\xf3\x00"
+machine_riscv64="\xf3\x00"
 
 # p_type: PT_LOAD is the only one mapped; PT_NULL and PT_DYNAMIC are the common neighbours a real
 # file carries, and each is a skipped header the walk still has to step over.

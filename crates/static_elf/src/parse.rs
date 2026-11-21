@@ -95,7 +95,7 @@ impl<'a> Elf<'a> {
 
     /// [`parse`](Self::parse), for a file built for `machine` rather than for this build's own.
     ///
-    /// `machine` is an `e_machine` value, normally one of [`MACHINE_AARCH64`], [`MACHINE_RISCV`] and
+    /// `machine` is an `e_machine` value, normally one of [`MACHINE_AARCH64`], [`MACHINE_RISCV64`] and
     /// [`MACHINE_X86_64`]. A tool on one machine that checks a program for another (a packager
     /// validating every member of an aarch64 package on an `x86_64` build host) calls this. Every
     /// other check is the same as `parse`'s.

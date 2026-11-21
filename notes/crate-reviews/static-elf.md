@@ -85,7 +85,7 @@ Not run, and so not claimed:
 | a segment | `Segment` with fields `virtual_address`, `physical_address`, `memory_bytes`, `flags`, `data`; methods `is_readable`, `is_writable`, `is_executable`, `page_range` |
 | page size | `PageBytes::{new, get, FOUR_KIBIBYTES}`, which holds only a power of two |
 | flags | `READABLE`, `WRITABLE`, `EXECUTABLE` |
-| machines | `MACHINE_AARCH64`, `MACHINE_RISCV`, `MACHINE_X86_64`, `NATIVE_MACHINE` |
+| machines | `MACHINE_AARCH64`, `MACHINE_RISCV64`, `MACHINE_X86_64`, `NATIVE_MACHINE` |
 | errors | `Error` (seventeen variants, from `TooSmall` to `TooManyProgramHeaders`), `NoteError` (five variants); both implement `Display` and `core::error::Error` |
 | notes | `NoteSegments::from_head`, `NoteSegment` with fields `offset`, `bytes`, `alignment` and method `range`, `NoteSearch::{new, segment}` |
 
@@ -127,7 +127,7 @@ stay provisional. The ELF specification's spelling is a `#[doc(alias)]` on each 
 | `Segment::{is_readable, is_writable, is_executable, page_range}` | methods | spelled out |
 | `READABLE`, `WRITABLE`, `EXECUTABLE` | constants | aliases `PF_R`, `PF_W`, `PF_X`; ratified 2026-11-21 (UTC) |
 | `PageBytes`, `PageBytes::{new, get, FOUR_KIBIBYTES}` | type, constructor, accessor, constant | unit in the name; ratified 2026-11-21 (UTC) |
-| `MACHINE_AARCH64`, `MACHINE_RISCV`, `MACHINE_X86_64` | constants | aliases `EM_AARCH64`, `EM_RISCV`, `EM_X86_64`; provisional |
+| `MACHINE_AARCH64`, `MACHINE_RISCV64`, `MACHINE_X86_64` | constants | aliases `EM_AARCH64`, `EM_RISCV`, `EM_X86_64`; ratified 2026-11-21 (UTC) |
 | `NATIVE_MACHINE` | constant | the machine `Elf::parse` accepts in this build; ratified 2026-11-21 (UTC), stays public |
 | `Error` and its seventeen variants | enum | ratified 2026-11-21 (UTC); `MemorySmallerThanFile` replaces `SegmentTruncated` and `ProgramHeadersOutOfBounds` replaces `BadProgramHeaders`. Variants: `TooSmall`, `BadMagic`, `Not64Bit`, `NotLittleEndian`, `BadVersion`, `WrongMachine`, `NeedsRelocation`, `NotExecutable`, `ProgramHeadersOutOfBounds`, `SegmentOutOfBounds`, `MemorySmallerThanFile`, `WritableAndExecutable`, `SegmentUnreachable`, `SegmentsOverlap`, `EntryNotExecutable`, `AddressOverflow`, `TooManyProgramHeaders` |
 | `NoteError` and its five variants | enum | ratified 2026-11-21 (UTC): `NotReadable`, `SegmentOutOfBounds`, `BadAlignment`, `Truncated`, `Duplicate` |

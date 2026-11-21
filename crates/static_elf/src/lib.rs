@@ -37,7 +37,7 @@ mod segment;
 
 pub use error::Error;
 use machine::*;
-pub use machine::{MACHINE_AARCH64, MACHINE_RISCV, MACHINE_X86_64, NATIVE_MACHINE};
+pub use machine::{MACHINE_AARCH64, MACHINE_RISCV64, MACHINE_X86_64, NATIVE_MACHINE};
 pub use parse::Elf;
 use parse::*;
 use segment::*;
