@@ -194,6 +194,11 @@ pub fn invoke(
         Object::PageFrame(phys, count) => match method {
             // `MAP` checks its rights inside `page_frame_map`, because they depend on `a1`.
             abi::page_frame::MAP => page_frame_map(slot, a0, a1, a2),
+            // Both `REVOKE` arms test `GRANT` here rather than through `Capability::delegate`,
+            // because a revoke takes authority back and mints nothing. No harness covers the arm:
+            // `allows` is proved in `capability_table`, and proving the arm itself would mean
+            // stubbing the current thread, its table and the frame revoke, which the kernel
+            // proofs do not stub. Its shape is the one-line rights test of every arm around it.
             abi::page_frame::REVOKE => {
                 if !capability.rights.allows(Rights::GRANT) {
                     return Err(Error::NotPermitted);
