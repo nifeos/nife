@@ -449,7 +449,7 @@ fn resolve_installed(
     let mut manifests = [program_table::NO_NOTE_MANIFEST; timetable::MAXIMUM_ENTRIES];
     let mut images: Images = [const { None }; timetable::MAXIMUM_ENTRIES];
     for (i, entry) in doc.entries().iter().enumerate() {
-        let word = grant_plan::parse_run(entry.command).program;
+        let word = grant_plan::parse_invocation(entry.command).program;
         let (Ok(_), true) = (core::str::from_utf8(word), word.len() <= NAME_MAXIMUM) else {
             return Err(i);
         };

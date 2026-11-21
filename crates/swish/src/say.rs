@@ -12,7 +12,7 @@ pub enum Say {
     /// It worked and there is nothing to add.
     Nothing,
     /// The name could not be navigated, and nothing was sent.
-    Refused(Refused),
+    Refused(PathRefusal),
     /// The filesystem refused, with this errno. Rendered by `filesystem_contract::directory::explain`, which keeps
     /// the sentence next to the decision that chose the number.
     Failed(i32),
@@ -31,14 +31,14 @@ pub enum Say {
     /// is refused before there is a program to attribute it to, and [`echo`] can reach the same
     /// refusals with no program on the line at all.
     Cannot(Refusal),
-    /// **`bind` refused**, in [`navigation::BindRefused`]'s vocabulary: the name is already bound, the
+    /// **`bind` refused**, in [`navigation::BindRefusal`]'s vocabulary: the name is already bound, the
     /// table is full, or (a two-grant shell only, not reachable from any real boot yet) the name
     /// collides with one of this shell's own grant labels. Distinct from
     /// [`Refused`](Say::Refused): that is a fact about the *path* being navigated, this is a fact
     /// about the *name being filed*, and the two vocabularies stay separate for the same reason
-    /// [`navigation::Refused`] and [`navigation::BindRefused`] are separate types rather than one enum with two
+    /// [`navigation::PathRefusal`] and [`navigation::BindRefusal`] are separate types rather than one enum with two
     /// unrelated halves.
-    CannotBind(navigation::BindRefused),
+    CannotBind(navigation::BindRefusal),
     /// **The shell's heap could not hold what the line needed**, so nothing ran. The heap is capped
     /// at [`HEAP_MAXIMUM_BYTES`] and every allocation in the shell is fallible (calef's ruling,
     /// milestone 47 (navigation and naming)): the boot shell is the owner's console, and running

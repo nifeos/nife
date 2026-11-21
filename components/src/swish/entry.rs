@@ -120,7 +120,7 @@ pub(super) fn interactive(rights: u64) -> ! {
     // **The second mounted tree, when the progenitor placed one** (milestone 834 (ioping on nife and Linux)): the disk tree,
     // at `/disk`. It shares the first tree's page, so it needs nothing mapped of its own.
     if rights != 0 && HOLDS_MOUNTED_TREE.load(core::sync::atomic::Ordering::Relaxed) {
-        let mut mount = grant_navigation::Cwd::root();
+        let mut mount = grant_navigation::DirectoryPath::root();
         mount.descend(spawn_protocol::MOUNTED_TREE_NAME);
         nav.holds.mounted = grant_plan::MountedTree::mounted_at(mount);
         nav.second = Some(Tree {

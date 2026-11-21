@@ -3,8 +3,8 @@
 //! The pure half of the `cd`, `pwd` and `ls` builtins, which spawn nothing and confer no new
 //! authority: the shell rebinds a directory capability it already holds. A name resolves once, at
 //! the prompt, into a value ([`crate::FileGrant`]), so a child has no cwd to inherit. `/` is the
-//! root of *your* namespace ([`Path::is_from_root`]), `..` stops at it ([`Cwd::ascend`]), and `pwd`
-//! renders relative to it ([`Cwd::render`]), so every shell has its own root. [`TwoRoots`] and
+//! root of *your* namespace ([`Path::is_from_root`]), `..` stops at it ([`DirectoryPath::ascend`]), and `pwd`
+//! renders relative to it ([`DirectoryPath::render`]), so every shell has its own root. [`TwoRoots`] and
 //! [`Bindings`] compose a second root and named positions. See notes/shell-navigation.md and
 //! notes/grant-expression/grant-plan-crate.md ("Navigation").
 //!
@@ -14,42 +14,44 @@
 ///
 /// A bound rather than a policy: the shell keeps one directory capability per level so `..` can pop
 /// one, and it has no allocator, so the stack is an array. Eight is far past any tree a demonstrator
-/// walks by hand, and going deeper is [`Refused::TooDeep`] rather than a silently truncated path.
+/// walks by hand, and going deeper is [`PathRefusal::TooDeep`] rather than a silently truncated path.
 ///
 /// Name: ratified 2026-10-27 (#2797).
 pub const MAXIMUM_DEPTH: usize = 8;
 
 /// The longest single component a path may have, which is [`crate::MAXIMUM_FILE_NAME_BYTES`]: the last
 /// component of a path can be a file, and a file may be named that long. A component the shell
-/// descends through or stands in is held to [`MAXIMUM_DIRECTORY_NAME_BYTES`] as well ([`Cwd::descend`]).
+/// descends through or stands in is held to [`MAXIMUM_DIRECTORY_NAME_BYTES`] as well ([`DirectoryPath::descend`]).
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 
-/// **The longest directory name a [`Cwd`] or a bound name holds**, which is [`crate::MAXIMUM_WORDS_NAME_BYTES`]:
+/// **The longest directory name a [`DirectoryPath`] or a bound name holds**, which is [`crate::MAXIMUM_WORDS_NAME_BYTES`]:
 /// a directory grant names its directory in the caretaker's two `START` words, and a shell that
 /// could `cd` into a directory it cannot grant would be able to reach a place it cannot talk about.
-/// It is also what keeps a [`Cwd`] small, and the shell carries one by value in every
-/// [`crate::Holdings`] and several in an [`crate::Endowment`].
+/// It is also what keeps a [`DirectoryPath`] small, and the shell carries one by value in every
+/// [`crate::ShellHoldings`] and several in an [`crate::Endowment`].
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_DIRECTORY_NAME_BYTES: usize = crate::MAXIMUM_WORDS_NAME_BYTES;
 
 // A bound directory entry holds its name length as a `u8`.
 const _: () = assert!(MAXIMUM_NAME_BYTES <= u8::MAX as usize);
 const _: () = assert!(MAXIMUM_DIRECTORY_NAME_BYTES <= u8::MAX as usize);
 
-/// The bytes [`Cwd::render`] can need: a slash per level, plus each name, plus the leading slash a
+/// The bytes [`DirectoryPath::render`] can need: a slash per level, plus each name, plus the leading slash a
 /// root renders as on its own.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_RENDERED_PATH_BYTES: usize =
     1 + MAXIMUM_DEPTH * (1 + MAXIMUM_DIRECTORY_NAME_BYTES);
 
 /// Why a token cannot be navigated. Each is a fact about the *name*, never about a permission,
 /// which is the distinction the whole model rests on.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Refused {
+pub enum PathRefusal {
     /// A component that is not a name: empty, longer than [`MAXIMUM_NAME_BYTES`], or carrying a byte a
     /// name cannot carry.
     NotAName,
@@ -58,7 +60,7 @@ pub enum Refused {
     /// A directory to stand in, descend through or bind whose name is over
     /// [`MAXIMUM_DIRECTORY_NAME_BYTES`]. A name that long is a file's, not a place this shell can be.
     ///
-    /// Name: provisional (milestone 946).
+    /// Name: ratified 2026-11-20 (UTC).
     DirectoryNameTooLong,
     /// `..` at the root. The clamp, reported rather than silently ignored: at your root there is
     /// nothing above to name, and a shell that said nothing would leave a user believing they had
@@ -70,17 +72,17 @@ pub enum Refused {
     AtYourRoot,
 }
 
-impl Refused {
+impl PathRefusal {
     /// The line the shell prints. In the capability model's voice, like [`crate::Refusal::message`]:
     /// each says what *is*, never what was denied.
     pub fn message(self) -> &'static str {
         match self {
-            Refused::NotAName => "that is not a name: one component, at most 252 bytes",
-            Refused::TooDeep => "too deep: this shell tracks at most 8 levels below its root",
-            Refused::DirectoryNameTooLong => {
+            PathRefusal::NotAName => "that is not a name: one component, at most 252 bytes",
+            PathRefusal::TooDeep => "too deep: this shell tracks at most 8 levels below its root",
+            PathRefusal::DirectoryNameTooLong => {
                 "that directory's name is longer than this shell can stand in: at most 16 bytes"
             }
-            Refused::AtYourRoot => "you are at your root; there is nothing above it to name",
+            PathRefusal::AtYourRoot => "you are at your root; there is nothing above it to name",
         }
     }
 }
@@ -146,10 +148,10 @@ impl<'a> Path<'a> {
 /// Unix's behavior and there is no divergence to earn. A leading `/` sets [`Path::is_from_root`],
 /// which is the biggest fact about the token and the only one the steps themselves cannot carry:
 /// `/a` and `a` parse to the same single step and mean different places.
-pub fn path(token: &[u8]) -> Result<Path<'_>, Refused> {
+pub fn path(token: &[u8]) -> Result<Path<'_>, PathRefusal> {
     let from_root = token.first() == Some(&b'/');
     if token.is_empty() {
-        return Err(Refused::NotAName);
+        return Err(PathRefusal::NotAName);
     }
     let mut steps = [Step::Up; MAXIMUM_DEPTH];
     let mut n = 0;
@@ -158,13 +160,13 @@ pub fn path(token: &[u8]) -> Result<Path<'_>, Refused> {
             continue;
         }
         if n == MAXIMUM_DEPTH {
-            return Err(Refused::TooDeep);
+            return Err(PathRefusal::TooDeep);
         }
         steps[n] = if part == b".." {
             Step::Up
         } else {
-            if !component_fits(part) {
-                return Err(Refused::NotAName);
+            if !is_valid_component(part) {
+                return Err(PathRefusal::NotAName);
             }
             Step::Down(part)
         };
@@ -177,7 +179,7 @@ pub fn path(token: &[u8]) -> Result<Path<'_>, Refused> {
         // **`/` on its own is not that case**, which is why the two are told apart here. It names
         // your root, which is a place you can go and a place you can list, and it is the one thing
         // `pwd` prints that a user would otherwise be unable to type back.
-        return Err(Refused::NotAName);
+        return Err(PathRefusal::NotAName);
     }
     Ok(Path {
         steps,
@@ -189,7 +191,9 @@ pub fn path(token: &[u8]) -> Result<Path<'_>, Refused> {
 /// Whether one component can be a name at all. The same rule the FS server enforces at its own
 /// boundary (`check_component`), stated here so the shell refuses at the prompt rather than sending
 /// a request it knows will be `EINVAL`.
-pub fn component_fits(part: &[u8]) -> bool {
+///
+/// Name: ratified 2026-11-20 (UTC).
+pub fn is_valid_component(part: &[u8]) -> bool {
     !part.is_empty()
         && part.len() <= MAXIMUM_NAME_BYTES
         && part != b"."
@@ -200,12 +204,12 @@ pub fn component_fits(part: &[u8]) -> bool {
         && !part.contains(&0)
 }
 
-/// Whether one component can be a directory this shell stands in: [`component_fits`], and at most
+/// Whether one component can be a directory this shell stands in: [`is_valid_component`], and at most
 /// [`MAXIMUM_DIRECTORY_NAME_BYTES`] bytes.
 ///
-/// Name: provisional (milestone 946).
-pub fn directory_fits(part: &[u8]) -> bool {
-    component_fits(part) && part.len() <= MAXIMUM_DIRECTORY_NAME_BYTES
+/// Name: ratified 2026-11-20 (UTC).
+pub fn is_valid_directory_name(part: &[u8]) -> bool {
+    is_valid_component(part) && part.len() <= MAXIMUM_DIRECTORY_NAME_BYTES
 }
 
 /// **Where a shell is, relative to its own root**: the components it descended through, and nothing
@@ -214,8 +218,10 @@ pub fn directory_fits(part: &[u8]) -> bool {
 /// It is a value, not a handle, which is what makes [`crate::FileGrant`] able to carry one: a grant
 /// planned at the prompt records the directory it was resolved against, and a later `cd` cannot
 /// change what that grant means.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq)]
-pub struct Cwd {
+pub struct DirectoryPath {
     names: [[u8; MAXIMUM_DIRECTORY_NAME_BYTES]; MAXIMUM_DEPTH],
     lens: [u8; MAXIMUM_DEPTH],
     depth: usize,
@@ -224,7 +230,7 @@ pub struct Cwd {
 /// Written as the path it means. The derived form is 137 bytes of mostly zeroes, which turns any
 /// assertion failure that carries one (and [`crate::Endowment`] carries one) into something nobody
 /// will read.
-impl core::fmt::Debug for Cwd {
+impl core::fmt::Debug for DirectoryPath {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         if self.depth == 0 {
             return f.write_str("/");
@@ -240,17 +246,17 @@ impl core::fmt::Debug for Cwd {
     }
 }
 
-impl Default for Cwd {
+impl Default for DirectoryPath {
     fn default() -> Self {
-        Cwd::root()
+        DirectoryPath::root()
     }
 }
 
-impl Cwd {
+impl DirectoryPath {
     /// At the root of your namespace, which is where every shell starts and the only place a shell
     /// with no directory capability can be.
     pub const fn root() -> Self {
-        Cwd {
+        DirectoryPath {
             names: [[0; MAXIMUM_DIRECTORY_NAME_BYTES]; MAXIMUM_DEPTH],
             lens: [0; MAXIMUM_DEPTH],
             depth: 0,
@@ -271,7 +277,7 @@ impl Cwd {
     /// ([`MAXIMUM_DIRECTORY_NAME_BYTES`]), or the shell is already as deep as it tracks; the caller must
     /// not have sent the request in that case.
     pub fn descend(&mut self, name: &[u8]) -> bool {
-        if self.depth == MAXIMUM_DEPTH || !directory_fits(name) {
+        if self.depth == MAXIMUM_DEPTH || !is_valid_directory_name(name) {
             return false;
         }
         self.names[self.depth][..name.len()].copy_from_slice(name);
@@ -344,24 +350,24 @@ impl Cwd {
     /// was. `cd a/b` failing at `b` and leaving you in `a` is the shape of bug that makes the next
     /// command act somewhere the user did not think they were, and Unix's `chdir` does not do it
     /// either. The shell's `cd` unwinds the capabilities it opened for the same reason.
-    pub fn apply(&mut self, steps: &[Step<'_>]) -> Result<(), Refused> {
+    pub fn apply(&mut self, steps: &[Step<'_>]) -> Result<(), PathRefusal> {
         let mut next = *self;
         for step in steps {
             match step {
                 Step::Up => {
                     if !next.ascend() {
-                        return Err(Refused::AtYourRoot);
+                        return Err(PathRefusal::AtYourRoot);
                     }
                 }
                 Step::Down(name) => {
-                    if !component_fits(name) {
-                        return Err(Refused::NotAName);
+                    if !is_valid_component(name) {
+                        return Err(PathRefusal::NotAName);
                     }
-                    if !directory_fits(name) {
-                        return Err(Refused::DirectoryNameTooLong);
+                    if !is_valid_directory_name(name) {
+                        return Err(PathRefusal::DirectoryNameTooLong);
                     }
                     if !next.descend(name) {
-                        return Err(Refused::TooDeep);
+                        return Err(PathRefusal::TooDeep);
                     }
                 }
             }
@@ -370,14 +376,18 @@ impl Cwd {
         Ok(())
     }
 
-    /// **Where a token leaves you**, which is [`apply`](Cwd::apply) with the one thing a token
+    /// **Where a token leaves you**, which is [`apply`](DirectoryPath::apply) with the one thing a token
     /// carries that a step sequence does not: whether it started at your root.
     ///
     /// Every caller that resolves a *token* uses this rather than `apply`, which would silently
     /// resolve a `/` path from wherever the holder stands. It returns a new position rather than
     /// moving, because a grant is planned against where a token lands while the shell stays put.
-    pub fn resolve(&self, p: &Path<'_>) -> Result<Cwd, Refused> {
-        let mut next = if p.is_from_root() { Cwd::root() } else { *self };
+    pub fn resolve(&self, p: &Path<'_>) -> Result<DirectoryPath, PathRefusal> {
+        let mut next = if p.is_from_root() {
+            DirectoryPath::root()
+        } else {
+            *self
+        };
         next.apply(p.steps())?;
         Ok(next)
     }
@@ -388,104 +398,115 @@ impl Cwd {
 /// rather than ratified.
 ///
 /// A label selects one grant's root by exact match on an absolute path's first component, and
-/// nothing later re-selects. Past the label a path resolves as a single [`Cwd`] does, so `..` stops
+/// nothing later re-selects. Past the label a path resolves as a single [`DirectoryPath`] does, so `..` stops
 /// at that grant's own root and `/a/../b` is refused. It is not `bind`'s ordered union. See
 /// notes/grant-expression/grant-plan-crate.md ("Navigation").
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub struct TwoRoots<'a> {
     label_a: &'a [u8],
     label_b: &'a [u8],
 }
 
 /// Which of a [`TwoRoots`]' two grants an absolute path resolved into.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Which {
+pub enum GrantSide {
     /// The first grant, [`TwoRoots::new`]'s `label_a`.
-    A,
+    First,
     /// The second grant, [`TwoRoots::new`]'s `label_b`.
-    B,
+    Second,
 }
 
 impl<'a> TwoRoots<'a> {
     /// Compose two labeled roots. The labels need not be distinct at this layer (a caller that
-    /// built two identical labels gets `A` back for both, which is a wiring bug for the caller to
+    /// built two identical labels gets `First` back for both, which is a wiring bug for the caller to
     /// have caught before this point, not a runtime refusal a request has to pay for).
     pub const fn new(label_a: &'a [u8], label_b: &'a [u8]) -> Self {
         TwoRoots { label_a, label_b }
     }
 
     /// Resolve one absolute token against this namespace: which grant it names, and where inside
-    /// that grant's own root it lands, or [`Refused`] with the same reasons a single [`Cwd`]
+    /// that grant's own root it lands, or [`PathRefusal`] with the same reasons a single [`DirectoryPath`]
     /// refuses.
     ///
-    /// A relative token is [`Refused::NotAName`]: two roots give no reason to prefer either. So is a
+    /// A relative token is [`PathRefusal::NotAName`]: two roots give no reason to prefer either. So is a
     /// token whose first component names neither label, which covers `/` alone and a leading `..`.
-    pub fn resolve(&self, token: &[u8]) -> Result<(Which, Cwd), Refused> {
+    pub fn resolve(&self, token: &[u8]) -> Result<(GrantSide, DirectoryPath), PathRefusal> {
         let p = path(token)?;
         if !p.is_from_root() {
-            return Err(Refused::NotAName);
+            return Err(PathRefusal::NotAName);
         }
         self.resolve_absolute(&p)
     }
 
     /// [`TwoRoots::resolve`]'s absolute-path half, split out so [`TwoRoots::resolve_from`] can
     /// reach it without reparsing the token a second time.
-    fn resolve_absolute(&self, p: &Path<'_>) -> Result<(Which, Cwd), Refused> {
+    fn resolve_absolute(&self, p: &Path<'_>) -> Result<(GrantSide, DirectoryPath), PathRefusal> {
         self.try_resolve_absolute(p)
-            .unwrap_or(Err(Refused::NotAName))
+            .unwrap_or(Err(PathRefusal::NotAName))
     }
 
     /// [`TwoRoots::resolve_absolute`], with the "no label matched" case told apart from a real
     /// refusal: `None` when the token's first component is not `Down` at all (a bare `/` or a
-    /// leading `..`) or names neither label, `Some` once a label committed. `Holdings::anchor`
+    /// leading `..`) or names neither label, `Some` once a label committed. `ShellHoldings::steps_after_start`
     /// (`crate::lib`) makes the same split for a two-grant shell, and falls through to the bind
     /// table only when no label matched, never when a label matched and applying the rest failed.
-    fn try_resolve_absolute(&self, p: &Path<'_>) -> Option<Result<(Which, Cwd), Refused>> {
+    fn try_resolve_absolute(
+        &self,
+        p: &Path<'_>,
+    ) -> Option<Result<(GrantSide, DirectoryPath), PathRefusal>> {
         let (label, rest) = match p.steps().split_first() {
             Some((Step::Down(name), rest)) => (*name, rest),
             _ => return None,
         };
-        let which = if label == self.label_a {
-            Which::A
+        let side = if label == self.label_a {
+            GrantSide::First
         } else if label == self.label_b {
-            Which::B
+            GrantSide::Second
         } else {
             return None;
         };
-        let mut cwd = Cwd::root();
-        Some(cwd.apply(rest).map(|_| (which, cwd)))
+        let mut working_directory = DirectoryPath::root();
+        Some(
+            working_directory
+                .apply(rest)
+                .map(|_| (side, working_directory)),
+        )
     }
 
     /// **A two-grant shell's real, single, moving position** (DECISIONS §126,
     /// design/decisions/0126-two-directory-cwd.md), built on [`TwoRoots::resolve`] and
-    /// [`Cwd::resolve`] rather than reimplementing either.
+    /// [`DirectoryPath::resolve`] rather than reimplementing either.
     ///
-    /// A relative `token` resolves against `pos` in tree `which`, as for one grant; an absolute one
+    /// A relative `token` resolves against `pos` in tree `side`, as for one grant; an absolute one
     /// picks the tree by label, which is how a holder moves between trees (`cd /b/somewhere`). `..`
-    /// at either tree's own root is [`Refused::AtYourRoot`], [`Cwd::apply`]'s own clamp.
+    /// at either tree's own root is [`PathRefusal::AtYourRoot`], [`DirectoryPath::apply`]'s own clamp.
     pub fn resolve_from(
         &self,
-        which: Which,
-        pos: Cwd,
+        side: GrantSide,
+        pos: DirectoryPath,
         token: &[u8],
-    ) -> Result<(Which, Cwd), Refused> {
+    ) -> Result<(GrantSide, DirectoryPath), PathRefusal> {
         let p = path(token)?;
         if p.is_from_root() {
             self.resolve_absolute(&p)
         } else {
-            Ok((which, pos.resolve(&p)?))
+            Ok((side, pos.resolve(&p)?))
         }
     }
 
     /// [`TwoRoots::resolve_from`], applied: move `(which, pos)` by `token`. All-or-nothing, the
-    /// same rule [`Cwd::apply`] already has: a refused move leaves both untouched.
+    /// same rule [`DirectoryPath::apply`] already has: a refused move leaves both untouched.
     pub fn apply_from(
         &self,
-        which: &mut Which,
-        pos: &mut Cwd,
+        side: &mut GrantSide,
+        pos: &mut DirectoryPath,
         token: &[u8],
-    ) -> Result<(), Refused> {
-        let (w, p) = self.resolve_from(*which, *pos, token)?;
-        *which = w;
+    ) -> Result<(), PathRefusal> {
+        let (w, p) = self.resolve_from(*side, *pos, token)?;
+        *side = w;
         *pos = p;
         Ok(())
     }
@@ -501,7 +522,8 @@ pub const MAXIMUM_BINDS: usize = 4;
 pub struct BindEntry {
     name: [u8; MAXIMUM_DIRECTORY_NAME_BYTES],
     name_length_bytes: u8,
-    position: Cwd,
+    /// Name: ratified 2026-11-20 (UTC).
+    position: DirectoryPath,
 }
 
 impl BindEntry {
@@ -513,15 +535,17 @@ impl BindEntry {
     /// Where this entry points, **before** anything after the bound name in a token is applied.
     ///
     /// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built.
-    pub fn position(&self) -> Cwd {
+    pub fn position(&self) -> DirectoryPath {
         self.position
     }
 }
 
 /// Why [`Bindings::add`] refused. Each variant is a fact about the *table or the name*, the same
-/// discipline [`Refused`] states for a path: never a permission, always a shape or a slot.
+/// discipline [`PathRefusal`] states for a path: never a permission, always a shape or a slot.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum BindRefused {
+pub enum BindRefusal {
     /// The token is not a single nameable component: empty, too long, or carrying `/`.
     NotAName,
     /// This name is already bound. `bind` does not silently replace an entry, because a rebind a
@@ -536,22 +560,22 @@ pub enum BindRefused {
     ReservedLabel,
 }
 
-impl BindRefused {
-    /// The line the shell prints, in [`Refused::message`]'s voice: what *is*, never what was
+impl BindRefusal {
+    /// The line the shell prints, in [`PathRefusal::message`]'s voice: what *is*, never what was
     /// denied.
     pub fn message(self) -> &'static str {
         match self {
-            BindRefused::NotAName => "that is not a name: one component, at most 16 bytes",
-            BindRefused::AlreadyBound => "that name is already bound; unbind it first",
-            BindRefused::TooMany => "too many bound names: this shell tracks at most 4",
-            BindRefused::ReservedLabel => "that name leads to where a tree is mounted",
+            BindRefusal::NotAName => "that is not a name: one component, at most 16 bytes",
+            BindRefusal::AlreadyBound => "that name is already bound; unbind it first",
+            BindRefusal::TooMany => "too many bound names: this shell tracks at most 4",
+            BindRefusal::ReservedLabel => "that name leads to where a tree is mounted",
         }
     }
 }
 
 /// A shell's bound names, `bind`'s namespace: [`MAXIMUM_BINDS`] slots, no allocator, exactly
-/// [`Cwd`]'s own shape. A [`BindEntry`] is a value, a [`Cwd`] under a name, with no capability slot
-/// and no lifetime, and it resolves through [`Cwd::apply`], so a bound name reaches nothing a
+/// [`DirectoryPath`]'s own shape. A [`BindEntry`] is a value, a [`DirectoryPath`] under a name, with no capability slot
+/// and no lifetime, and it resolves through [`DirectoryPath::apply`], so a bound name reaches nothing a
 /// direct walk could not. One entry per name: a second bind of a name is refused, never shadowing.
 /// See notes/grant-expression/grant-plan-crate.md ("Navigation").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -566,7 +590,7 @@ impl Default for Bindings {
 }
 
 impl Bindings {
-    /// No names bound, `const` so a `Holdings` built at compile time (a host test's fixed
+    /// No names bound, `const` so a `ShellHoldings` built at compile time (a host test's fixed
     /// fixtures) can name one without reaching for a non-`const` `Default`.
     pub const fn none() -> Self {
         Bindings {
@@ -576,18 +600,18 @@ impl Bindings {
 
     /// Bind `name` to `pos`, a path in the one tree the shell presents. Refuses a name that cannot be a component, one already
     /// bound, or a full table; never overwrites.
-    pub fn add(&mut self, name: &[u8], pos: Cwd) -> Result<(), BindRefused> {
-        if !directory_fits(name) {
-            return Err(BindRefused::NotAName);
+    pub fn add(&mut self, name: &[u8], pos: DirectoryPath) -> Result<(), BindRefusal> {
+        if !is_valid_directory_name(name) {
+            return Err(BindRefusal::NotAName);
         }
         if self.lookup(name).is_some() {
-            return Err(BindRefused::AlreadyBound);
+            return Err(BindRefusal::AlreadyBound);
         }
         let slot = self
             .entries
             .iter_mut()
             .find(|e| e.is_none())
-            .ok_or(BindRefused::TooMany)?;
+            .ok_or(BindRefusal::TooMany)?;
         let mut packed = [0u8; MAXIMUM_DIRECTORY_NAME_BYTES];
         packed[..name.len()].copy_from_slice(name);
         *slot = Some(BindEntry {
@@ -615,7 +639,7 @@ impl Bindings {
     /// label, the same split `TwoRoots`'s own absolute-path resolver makes for a grant label; a real
     /// wire walk needs both separately (open the bind's own chain first, then continue), where
     /// [`Bindings::resolve_absolute`] needs only their sum.
-    pub fn split_absolute<'p>(&self, p: &'p Path<'p>) -> Option<(Cwd, &'p [Step<'p>])> {
+    pub fn split_absolute<'p>(&self, p: &'p Path<'p>) -> Option<(DirectoryPath, &'p [Step<'p>])> {
         let (label, rest) = match p.steps().split_first() {
             Some((Step::Down(name), rest)) => (*name, rest),
             _ => return None,
@@ -625,10 +649,10 @@ impl Bindings {
     }
 
     /// [`Bindings::split_absolute`], fully resolved: the bound position with the rest of the token
-    /// applied, or the [`Refused`] applying it produced (the same [`Refused::TooDeep`] /
-    /// [`Refused::AtYourRoot`] a direct [`Cwd::apply`] would give, since that is exactly what runs
+    /// applied, or the [`PathRefusal`] applying it produced (the same [`PathRefusal::TooDeep`] /
+    /// [`PathRefusal::AtYourRoot`] a direct [`DirectoryPath::apply`] would give, since that is exactly what runs
     /// underneath). `None` when the label matches no bound entry.
-    pub fn resolve_absolute(&self, p: &Path<'_>) -> Option<Result<Cwd, Refused>> {
+    pub fn resolve_absolute(&self, p: &Path<'_>) -> Option<Result<DirectoryPath, PathRefusal>> {
         let (base, rest) = self.split_absolute(p)?;
         let mut pos = base;
         Some(pos.apply(rest).map(|_| pos))
@@ -640,28 +664,28 @@ mod tests {
     use super::*;
 
     /// Two routes to one position compare equal, which the derived `PartialEq` only promises if
-    /// [`Cwd::ascend`] leaves no stale component behind (milestone 154 found that it did).
+    /// [`DirectoryPath::ascend`] leaves no stale component behind (milestone 154 found that it did).
     #[test]
     fn two_routes_to_one_position_are_equal() {
-        let mut direct = Cwd::root();
+        let mut direct = DirectoryPath::root();
         assert!(direct.descend(b"logs"));
-        let mut around = Cwd::root();
+        let mut around = DirectoryPath::root();
         assert!(around.descend(b"logs"));
         assert!(around.descend(b"longer-name"));
         assert!(around.ascend());
         assert_eq!(around, direct);
         assert!(around.ascend());
         assert!(around.descend(b"x"));
-        let mut x = Cwd::root();
+        let mut x = DirectoryPath::root();
         assert!(x.descend(b"x"));
         assert_eq!(around, x, "a shorter name over a longer one leaves no tail");
     }
 
     /// Assert what `pwd` would print. A helper rather than a returned `String` because this crate is
     /// `no_std` and has no allocator, in tests or out.
-    fn assert_pwd(cwd: &Cwd, want: &[u8]) {
+    fn assert_pwd(working_directory: &DirectoryPath, want: &[u8]) {
         let mut buf = [0u8; MAXIMUM_RENDERED_PATH_BYTES];
-        let n = cwd.render(&mut buf);
+        let n = working_directory.render(&mut buf);
         assert_eq!(
             core::str::from_utf8(&buf[..n]),
             core::str::from_utf8(want),
@@ -670,9 +694,9 @@ mod tests {
     }
 
     /// Walk a token from a starting position, the way `cd` does.
-    fn cd(cwd: &mut Cwd, token: &str) -> Result<(), Refused> {
+    fn cd(working_directory: &mut DirectoryPath, token: &str) -> Result<(), PathRefusal> {
         let p = path(token.as_bytes())?;
-        *cwd = cwd.resolve(&p)?;
+        *working_directory = working_directory.resolve(&p)?;
         Ok(())
     }
 
@@ -705,19 +729,19 @@ mod tests {
     #[test]
     fn each_refusal_is_its_own_exact_sentence() {
         assert_eq!(
-            Refused::NotAName.message(),
+            PathRefusal::NotAName.message(),
             "that is not a name: one component, at most 252 bytes",
         );
         assert_eq!(
-            Refused::DirectoryNameTooLong.message(),
+            PathRefusal::DirectoryNameTooLong.message(),
             "that directory's name is longer than this shell can stand in: at most 16 bytes",
         );
         assert_eq!(
-            Refused::TooDeep.message(),
+            PathRefusal::TooDeep.message(),
             "too deep: this shell tracks at most 8 levels below its root",
         );
         assert_eq!(
-            Refused::AtYourRoot.message(),
+            PathRefusal::AtYourRoot.message(),
             "you are at your root; there is nothing above it to name",
         );
     }
@@ -728,13 +752,17 @@ mod tests {
     /// root, and the deepest component) read without a formatter.
     #[test]
     fn a_position_debugs_as_the_path_it_means() {
-        let mut cwd = Cwd::root();
-        assert_debug(&cwd, "/");
-        assert_eq!(cwd.last(), None, "the root has no last component");
-        cd(&mut cwd, "a/b").unwrap();
-        assert_debug(&cwd, "/a/b");
-        assert!(!cwd.is_root());
-        assert_eq!(cwd.last(), Some(&b"b"[..]));
+        let mut working_directory = DirectoryPath::root();
+        assert_debug(&working_directory, "/");
+        assert_eq!(
+            working_directory.last(),
+            None,
+            "the root has no last component"
+        );
+        cd(&mut working_directory, "a/b").unwrap();
+        assert_debug(&working_directory, "/a/b");
+        assert!(!working_directory.is_root());
+        assert_eq!(working_directory.last(), Some(&b"b"[..]));
     }
 
     /// `MAXIMUM_RENDERED_PATH_BYTES` is the worst case exactly: the deepest position with the widest names fills
@@ -743,31 +771,31 @@ mod tests {
     /// happened to fit; a byte short would truncate a real prompt.
     #[test]
     fn render_maximum_is_the_worst_case_plus_the_roots_lone_slash() {
-        let mut cwd = Cwd::root();
+        let mut working_directory = DirectoryPath::root();
         for _ in 0..MAXIMUM_DEPTH {
-            assert!(cwd.descend(b"sixteen-bytes!!!"));
+            assert!(working_directory.descend(b"sixteen-bytes!!!"));
         }
         let mut buf = [0u8; MAXIMUM_RENDERED_PATH_BYTES];
-        let n = cwd.render(&mut buf);
+        let n = working_directory.render(&mut buf);
         assert_eq!(n, MAXIMUM_RENDERED_PATH_BYTES - 1);
         // And nothing was truncated to make that true: a wider buffer renders the same count.
         let mut wide = [0u8; 2 * MAXIMUM_RENDERED_PATH_BYTES];
-        assert_eq!(cwd.render(&mut wide), n);
+        assert_eq!(working_directory.render(&mut wide), n);
     }
 
     /// **`pwd` is relative to your root**, and the root renders as `/` because it is the root of the
     /// only namespace you have.
     #[test]
     fn pwd_is_relative_to_your_own_root() {
-        let mut cwd = Cwd::root();
-        assert_pwd(&cwd, b"/");
-        assert!(cwd.is_root());
+        let mut working_directory = DirectoryPath::root();
+        assert_pwd(&working_directory, b"/");
+        assert!(working_directory.is_root());
 
-        cd(&mut cwd, "logs").unwrap();
-        assert_pwd(&cwd, b"/logs");
-        cd(&mut cwd, "2026/july").unwrap();
-        assert_pwd(&cwd, b"/logs/2026/july");
-        assert_eq!(cwd.depth(), 3);
+        cd(&mut working_directory, "logs").unwrap();
+        assert_pwd(&working_directory, b"/logs");
+        cd(&mut working_directory, "2026/july").unwrap();
+        assert_pwd(&working_directory, b"/logs/2026/july");
+        assert_eq!(working_directory.depth(), 3);
     }
 
     /// **`..` stops at your root**, which is the divergence and the safety property in one line. It
@@ -775,32 +803,38 @@ mod tests {
     /// get wrong, and no request is sent for the FS server to have to refuse.
     #[test]
     fn dot_dot_clamps_at_your_root_and_never_climbs_out() {
-        let mut cwd = Cwd::root();
-        assert_eq!(cd(&mut cwd, ".."), Err(Refused::AtYourRoot));
-        assert_pwd(&cwd, b"/"); // "a refused `..` must not have moved anything"
+        let mut working_directory = DirectoryPath::root();
+        assert_eq!(
+            cd(&mut working_directory, ".."),
+            Err(PathRefusal::AtYourRoot)
+        );
+        assert_pwd(&working_directory, b"/"); // "a refused `..` must not have moved anything"
 
-        cd(&mut cwd, "a/b").unwrap();
-        cd(&mut cwd, "..").unwrap();
-        assert_pwd(&cwd, b"/a");
-        cd(&mut cwd, "..").unwrap();
-        assert_pwd(&cwd, b"/");
+        cd(&mut working_directory, "a/b").unwrap();
+        cd(&mut working_directory, "..").unwrap();
+        assert_pwd(&working_directory, b"/a");
+        cd(&mut working_directory, "..").unwrap();
+        assert_pwd(&working_directory, b"/");
 
         // No number of `..` in one token gets above it either, and the whole token is refused, so
         // the shell has not moved part of the way out.
-        let mut cwd = Cwd::root();
-        cd(&mut cwd, "a").unwrap();
-        assert_eq!(cd(&mut cwd, "../../.."), Err(Refused::AtYourRoot));
-        assert_pwd(&cwd, b"/a"); // "a refused path must move nothing at all"
+        let mut working_directory = DirectoryPath::root();
+        cd(&mut working_directory, "a").unwrap();
+        assert_eq!(
+            cd(&mut working_directory, "../../.."),
+            Err(PathRefusal::AtYourRoot)
+        );
+        assert_pwd(&working_directory, b"/a"); // "a refused path must move nothing at all"
     }
 
     /// `..` inside a path composes the way it does everywhere, as long as it stays inside.
     #[test]
     fn dot_dot_composes_inside_a_path() {
-        let mut cwd = Cwd::root();
-        cd(&mut cwd, "a/b/../c").unwrap();
-        assert_pwd(&cwd, b"/a/c");
-        cd(&mut cwd, "./d/.").unwrap();
-        assert_pwd(&cwd, b"/a/c/d");
+        let mut working_directory = DirectoryPath::root();
+        cd(&mut working_directory, "a/b/../c").unwrap();
+        assert_pwd(&working_directory, b"/a/c");
+        cd(&mut working_directory, "./d/.").unwrap();
+        assert_pwd(&working_directory, b"/a/c/d");
     }
 
     /// **`/` is the root of your own namespace**, which is Plan 9's answer: the syntax survives,
@@ -825,9 +859,9 @@ mod tests {
     /// the leading `/` buys and the one thing a step sequence cannot say on its own.
     #[test]
     fn an_absolute_path_does_not_depend_on_where_you_are() {
-        let mut deep = Cwd::root();
+        let mut deep = DirectoryPath::root();
         cd(&mut deep, "a/b/c").unwrap();
-        let mut shallow = Cwd::root();
+        let mut shallow = DirectoryPath::root();
 
         cd(&mut deep, "/logs/2026").unwrap();
         cd(&mut shallow, "/logs/2026").unwrap();
@@ -837,7 +871,7 @@ mod tests {
         // `pwd`'s output is a token you can type back: the round trip.
         let mut buf = [0u8; MAXIMUM_RENDERED_PATH_BYTES];
         let n = deep.render(&mut buf);
-        let mut elsewhere = Cwd::root();
+        let mut elsewhere = DirectoryPath::root();
         cd(&mut elsewhere, "somewhere/else").unwrap();
         let p = path(&buf[..n]).unwrap();
         assert_eq!(elsewhere.resolve(&p).unwrap(), deep);
@@ -848,13 +882,22 @@ mod tests {
     /// `/..` asks for the same nonexistent place that `..` at the root asks for.
     #[test]
     fn an_absolute_path_cannot_climb_above_your_root() {
-        let mut cwd = Cwd::root();
-        cd(&mut cwd, "a/b").unwrap();
-        assert_eq!(cd(&mut cwd, "/.."), Err(Refused::AtYourRoot));
-        assert_eq!(cd(&mut cwd, "/../../elsewhere"), Err(Refused::AtYourRoot));
-        assert_eq!(cd(&mut cwd, "/a/../../b"), Err(Refused::AtYourRoot));
+        let mut working_directory = DirectoryPath::root();
+        cd(&mut working_directory, "a/b").unwrap();
+        assert_eq!(
+            cd(&mut working_directory, "/.."),
+            Err(PathRefusal::AtYourRoot)
+        );
+        assert_eq!(
+            cd(&mut working_directory, "/../../elsewhere"),
+            Err(PathRefusal::AtYourRoot)
+        );
+        assert_eq!(
+            cd(&mut working_directory, "/a/../../b"),
+            Err(PathRefusal::AtYourRoot)
+        );
         // A refused absolute path moves nothing, the same all-or-nothing rule a relative one has.
-        assert_pwd(&cwd, b"/a/b");
+        assert_pwd(&working_directory, b"/a/b");
     }
 
     /// **What an absolute path reaches, a walk could already have reached**: `/a/b` from anywhere
@@ -864,11 +907,11 @@ mod tests {
     #[test]
     fn an_absolute_path_reaches_exactly_what_a_walk_from_the_root_reaches() {
         for token in ["/a/b", "/logs/2026/july", "/", "/a/b/../c"] {
-            let mut absolute = Cwd::root();
+            let mut absolute = DirectoryPath::root();
             cd(&mut absolute, "somewhere/deep").unwrap();
             cd(&mut absolute, token).unwrap();
 
-            let mut walked = Cwd::root();
+            let mut walked = DirectoryPath::root();
             for step in path(token.as_bytes()).unwrap().steps() {
                 match step {
                     Step::Down(name) => assert!(walked.descend(name)),
@@ -883,54 +926,54 @@ mod tests {
     /// cannot succeed is never sent.
     #[test]
     fn a_component_that_cannot_be_a_name_is_refused_before_anything_is_sent() {
-        assert_eq!(path(b""), Err(Refused::NotAName));
-        assert_eq!(path(b"."), Err(Refused::NotAName));
+        assert_eq!(path(b""), Err(PathRefusal::NotAName));
+        assert_eq!(path(b"."), Err(PathRefusal::NotAName));
         let mut long = [b'/'; MAXIMUM_NAME_BYTES + 3];
         long[1..MAXIMUM_NAME_BYTES + 2].fill(b'n');
         assert_eq!(
             path(&long[..MAXIMUM_NAME_BYTES + 2]),
-            Err(Refused::NotAName),
+            Err(PathRefusal::NotAName),
             "/ and one byte too many"
         );
         let mut under = [b'n'; MAXIMUM_NAME_BYTES + 3];
         under[..2].copy_from_slice(b"a/");
         assert_eq!(
             path(&under),
-            Err(Refused::NotAName),
+            Err(PathRefusal::NotAName),
             "a/ and one byte too many"
         );
         // A component as long as a file's name may be is a path, and only standing in it is not.
         assert!(path(b"a/least_authority_demo").is_ok());
-        let mut cwd = Cwd::root();
+        let mut working_directory = DirectoryPath::root();
         assert_eq!(
-            cd(&mut cwd, "seventeen-bytes!!"),
-            Err(Refused::DirectoryNameTooLong)
+            cd(&mut working_directory, "seventeen-bytes!!"),
+            Err(PathRefusal::DirectoryNameTooLong)
         );
         assert_eq!(
-            cd(&mut cwd, "seventeen-bytes!!/a"),
-            Err(Refused::DirectoryNameTooLong)
+            cd(&mut working_directory, "seventeen-bytes!!/a"),
+            Err(PathRefusal::DirectoryNameTooLong)
         );
         assert!(
-            cwd.is_root(),
+            working_directory.is_root(),
             "a refused descent leaves the shell where it was"
         );
-        assert_eq!(cd(&mut cwd, "sixteen-bytes!!!"), Ok(()));
-        assert_eq!(path(b"a/b\\c"), Err(Refused::NotAName));
-        assert_eq!(path(b"a:b"), Err(Refused::NotAName));
+        assert_eq!(cd(&mut working_directory, "sixteen-bytes!!!"), Ok(()));
+        assert_eq!(path(b"a/b\\c"), Err(PathRefusal::NotAName));
+        assert_eq!(path(b"a:b"), Err(PathRefusal::NotAName));
         // Nine components, one more than the shell tracks. Refused rather than truncated: a
         // truncated path names a different directory.
-        assert_eq!(path(b"a/a/a/a/a/a/a/a/a"), Err(Refused::TooDeep));
+        assert_eq!(path(b"a/a/a/a/a/a/a/a/a"), Err(PathRefusal::TooDeep));
     }
 
     /// A descent past the depth the shell tracks is refused, and refused **before** it moves.
     #[test]
     fn a_path_deeper_than_the_shell_tracks_is_refused_rather_than_truncated() {
-        let mut cwd = Cwd::root();
+        let mut working_directory = DirectoryPath::root();
         for _ in 0..MAXIMUM_DEPTH {
-            cd(&mut cwd, "d").unwrap();
+            cd(&mut working_directory, "d").unwrap();
         }
-        assert_eq!(cd(&mut cwd, "d"), Err(Refused::TooDeep));
-        assert_eq!(cwd.depth(), MAXIMUM_DEPTH);
+        assert_eq!(cd(&mut working_directory, "d"), Err(PathRefusal::TooDeep));
+        assert_eq!(working_directory.depth(), MAXIMUM_DEPTH);
     }
 
     /// The grant-time split: the directory to narrow, and the one name in it.
@@ -955,13 +998,13 @@ mod tests {
     /// never be the thing that takes the session down.
     #[test]
     fn rendering_into_a_short_buffer_truncates_rather_than_faulting() {
-        let mut cwd = Cwd::root();
-        cd(&mut cwd, "abc/def").unwrap();
+        let mut working_directory = DirectoryPath::root();
+        cd(&mut working_directory, "abc/def").unwrap();
         let mut small = [0u8; 5];
-        let n = cwd.render(&mut small);
+        let n = working_directory.render(&mut small);
         assert_eq!(&small[..n], b"/abc/");
         let mut none = [0u8; 0];
-        assert_eq!(cwd.render(&mut none), 0);
+        assert_eq!(working_directory.render(&mut none), 0);
     }
 
     /// **`/a/x` and `/b/y` both resolve, to the grant their own label names.** This is milestone
@@ -970,28 +1013,28 @@ mod tests {
     fn each_label_reaches_its_own_grant_and_only_its_own_grant() {
         let roots = TwoRoots::new(b"a", b"b");
 
-        let (which, cwd) = roots.resolve(b"/a/x").unwrap();
-        assert_eq!(which, Which::A);
-        assert_eq!(cwd.depth(), 1);
-        assert_eq!(cwd.component(0), b"x");
+        let (side, working_directory) = roots.resolve(b"/a/x").unwrap();
+        assert_eq!(side, GrantSide::First);
+        assert_eq!(working_directory.depth(), 1);
+        assert_eq!(working_directory.component(0), b"x");
 
-        let (which, cwd) = roots.resolve(b"/b/y").unwrap();
-        assert_eq!(which, Which::B);
-        assert_eq!(cwd.depth(), 1);
-        assert_eq!(cwd.component(0), b"y");
+        let (side, working_directory) = roots.resolve(b"/b/y").unwrap();
+        assert_eq!(side, GrantSide::Second);
+        assert_eq!(working_directory.depth(), 1);
+        assert_eq!(working_directory.component(0), b"y");
     }
 
     /// **`/a/../b` is refused**, the roadmap block's own negative control: "proving neither
     /// subtree can name the other's parent." It is refused for the same reason `..` at a single
-    /// grant's root is refused, `Refused::AtYourRoot`, because selecting `a` leaves nothing above
+    /// grant's root is refused, `PathRefusal::AtYourRoot`, because selecting `a` leaves nothing above
     /// `a`'s own root to pop, and `b` is never reached to be a question.
     #[test]
     fn dot_dot_cannot_cross_from_one_grant_into_the_other() {
         let roots = TwoRoots::new(b"a", b"b");
-        assert_eq!(roots.resolve(b"/a/../b"), Err(Refused::AtYourRoot));
+        assert_eq!(roots.resolve(b"/a/../b"), Err(PathRefusal::AtYourRoot));
         // Symmetric, and however many `..`s a token carries, the whole token is refused rather
-        // than moving partway, by `Cwd::apply`'s own all-or-nothing rule.
-        assert_eq!(roots.resolve(b"/b/../../a"), Err(Refused::AtYourRoot));
+        // than moving partway, by `DirectoryPath::apply`'s own all-or-nothing rule.
+        assert_eq!(roots.resolve(b"/b/../../a"), Err(PathRefusal::AtYourRoot));
     }
 
     /// A relative token has no root to pick a grant from, and there is no default grant to fall
@@ -999,7 +1042,7 @@ mod tests {
     #[test]
     fn a_relative_token_has_no_grant_to_resolve_against() {
         let roots = TwoRoots::new(b"a", b"b");
-        assert_eq!(roots.resolve(b"x"), Err(Refused::NotAName));
+        assert_eq!(roots.resolve(b"x"), Err(PathRefusal::NotAName));
     }
 
     /// A token whose first component names neither label is refused the same way, and so is the
@@ -1007,34 +1050,40 @@ mod tests {
     #[test]
     fn an_unknown_label_and_the_bare_root_are_both_refused() {
         let roots = TwoRoots::new(b"a", b"b");
-        assert_eq!(roots.resolve(b"/c/x"), Err(Refused::NotAName));
-        assert_eq!(roots.resolve(b"/"), Err(Refused::NotAName));
-        assert_eq!(roots.resolve(b"/.."), Err(Refused::NotAName));
+        assert_eq!(roots.resolve(b"/c/x"), Err(PathRefusal::NotAName));
+        assert_eq!(roots.resolve(b"/"), Err(PathRefusal::NotAName));
+        assert_eq!(roots.resolve(b"/.."), Err(PathRefusal::NotAName));
     }
 
-    /// `..` composes inside a grant exactly as it does for a single [`Cwd`], because it is the
-    /// same [`Cwd::apply`] running underneath: this is not a second implementation to keep in
+    /// `..` composes inside a grant exactly as it does for a single [`DirectoryPath`], because it is the
+    /// same [`DirectoryPath::apply`] running underneath: this is not a second implementation to keep in
     /// step with the first.
     #[test]
     fn dot_dot_composes_inside_one_grant_the_same_as_a_single_root_does() {
         let roots = TwoRoots::new(b"a", b"b");
-        let (which, cwd) = roots.resolve(b"/a/x/../y").unwrap();
-        assert_eq!(which, Which::A);
-        assert_eq!(cwd.depth(), 1);
-        assert_eq!(cwd.component(0), b"y");
+        let (side, working_directory) = roots.resolve(b"/a/x/../y").unwrap();
+        assert_eq!(side, GrantSide::First);
+        assert_eq!(working_directory.depth(), 1);
+        assert_eq!(working_directory.component(0), b"y");
     }
 
     // ---- DECISIONS §126: the real, single, moving `(which, pos)` cwd ----
 
-    /// **A bare relative name resolves against `pos` inside whichever tree `which` currently
-    /// names**, identical to a one-grant [`Cwd::resolve`], parameterized by which tree.
+    /// **A bare relative name resolves against `pos` inside whichever tree `side` currently
+    /// names**, identical to a one-grant [`DirectoryPath::resolve`], parameterized by which tree.
     #[test]
     fn a_relative_token_resolves_inside_the_current_tree() {
         let roots = TwoRoots::new(b"a", b"b");
-        let mut pos = Cwd::root();
+        let mut pos = DirectoryPath::root();
         pos.descend(b"here");
-        let (which, next) = roots.resolve_from(Which::B, pos, b"deeper").unwrap();
-        assert_eq!(which, Which::B, "a relative token never switches trees");
+        let (side, next) = roots
+            .resolve_from(GrantSide::Second, pos, b"deeper")
+            .unwrap();
+        assert_eq!(
+            side,
+            GrantSide::Second,
+            "a relative token never switches trees"
+        );
         assert_pwd(&next, b"/here/deeper");
     }
 
@@ -1043,28 +1092,30 @@ mod tests {
     #[test]
     fn an_absolute_token_moves_to_the_tree_it_names() {
         let roots = TwoRoots::new(b"a", b"b");
-        let pos = Cwd::root();
-        let (which, next) = roots.resolve_from(Which::A, pos, b"/b/elsewhere").unwrap();
-        assert_eq!(which, Which::B);
+        let pos = DirectoryPath::root();
+        let (side, next) = roots
+            .resolve_from(GrantSide::First, pos, b"/b/elsewhere")
+            .unwrap();
+        assert_eq!(side, GrantSide::Second);
         assert_pwd(&next, b"/elsewhere");
     }
 
-    /// **`..` at either tree's own root refuses**, the same [`Refused::AtYourRoot`] a one-grant
-    /// [`Cwd::apply`] already gives, applied per-tree: standing at `b`'s own root, `..` does not
+    /// **`..` at either tree's own root refuses**, the same [`PathRefusal::AtYourRoot`] a one-grant
+    /// [`DirectoryPath::apply`] already gives, applied per-tree: standing at `b`'s own root, `..` does not
     /// silently land in `a` or anywhere else.
     #[test]
     fn dot_dot_refuses_at_either_trees_own_root_rather_than_crossing() {
         let roots = TwoRoots::new(b"a", b"b");
         assert_eq!(
-            roots.resolve_from(Which::B, Cwd::root(), b".."),
-            Err(Refused::AtYourRoot),
+            roots.resolve_from(GrantSide::Second, DirectoryPath::root(), b".."),
+            Err(PathRefusal::AtYourRoot),
         );
         // One level down and back up composes normally, same as a single grant.
-        let mut which = Which::A;
-        let mut pos = Cwd::root();
-        roots.apply_from(&mut which, &mut pos, b"/a/sub").unwrap();
-        roots.apply_from(&mut which, &mut pos, b"..").unwrap();
-        assert_eq!(which, Which::A);
+        let mut side = GrantSide::First;
+        let mut pos = DirectoryPath::root();
+        roots.apply_from(&mut side, &mut pos, b"/a/sub").unwrap();
+        roots.apply_from(&mut side, &mut pos, b"..").unwrap();
+        assert_eq!(side, GrantSide::First);
         assert_pwd(&pos, b"/");
     }
 
@@ -1075,32 +1126,32 @@ mod tests {
     #[test]
     fn the_starting_position_is_grant_as_own_root() {
         let roots = TwoRoots::new(b"a", b"b");
-        let start = (Which::A, Cwd::root());
-        let (which, pos) = roots.resolve_from(start.0, start.1, b"x").unwrap();
-        assert_eq!(which, Which::A);
+        let start = (GrantSide::First, DirectoryPath::root());
+        let (side, pos) = roots.resolve_from(start.0, start.1, b"x").unwrap();
+        assert_eq!(side, GrantSide::First);
         assert_eq!(pos.component(0), b"x");
     }
 
-    /// [`TwoRoots::apply_from`] is all-or-nothing, [`Cwd::apply`]'s own rule composed rather than
-    /// reimplemented: a refused move leaves both `which` and `pos` exactly where they were.
+    /// [`TwoRoots::apply_from`] is all-or-nothing, [`DirectoryPath::apply`]'s own rule composed rather than
+    /// reimplemented: a refused move leaves both `side` and `pos` exactly where they were.
     #[test]
     fn apply_from_moves_nothing_on_a_refusal() {
         let roots = TwoRoots::new(b"a", b"b");
-        let mut which = Which::A;
-        let mut pos = Cwd::root();
+        let mut side = GrantSide::First;
+        let mut pos = DirectoryPath::root();
         pos.descend(b"sub");
         assert_eq!(
-            roots.apply_from(&mut which, &mut pos, b".."),
+            roots.apply_from(&mut side, &mut pos, b".."),
             Ok(()),
             "one legal ascent",
         );
-        assert_eq!(which, Which::A);
+        assert_eq!(side, GrantSide::First);
         assert_pwd(&pos, b"/");
         assert_eq!(
-            roots.apply_from(&mut which, &mut pos, b".."),
-            Err(Refused::AtYourRoot),
+            roots.apply_from(&mut side, &mut pos, b".."),
+            Err(PathRefusal::AtYourRoot),
         );
-        assert_eq!(which, Which::A, "a refusal moved nothing");
+        assert_eq!(side, GrantSide::First, "a refusal moved nothing");
         assert_pwd(&pos, b"/");
     }
 
@@ -1111,14 +1162,14 @@ mod tests {
     #[test]
     fn a_bound_name_resolves_to_the_position_it_was_given() {
         let mut binds = Bindings::default();
-        let mut target = Cwd::root();
+        let mut target = DirectoryPath::root();
         target.descend(b"logs");
         target.descend(b"2026");
         binds.add(b"recent", target).unwrap();
 
         let p = path(b"/recent").unwrap();
-        let cwd = binds.resolve_absolute(&p).unwrap().unwrap();
-        assert_eq!(cwd, target);
+        let working_directory = binds.resolve_absolute(&p).unwrap().unwrap();
+        assert_eq!(working_directory, target);
     }
 
     /// **The rest of the token composes past the bound name**, exactly as it would past a grant
@@ -1126,47 +1177,47 @@ mod tests {
     #[test]
     fn a_token_composes_past_a_bound_name() {
         let mut binds = Bindings::default();
-        let mut target = Cwd::root();
+        let mut target = DirectoryPath::root();
         target.descend(b"logs");
         binds.add(b"recent", target).unwrap();
 
         let p = path(b"/recent/report.txt").unwrap();
-        let cwd = binds.resolve_absolute(&p).unwrap().unwrap();
-        assert_pwd(&cwd, b"/logs/report.txt");
+        let working_directory = binds.resolve_absolute(&p).unwrap().unwrap();
+        assert_pwd(&working_directory, b"/logs/report.txt");
     }
 
     /// **`..` past a bound name does not stop at the bind**: it ascends into the tree the bind
     /// points at, exactly as a direct walk to that position would, because [`Bindings`] reuses
-    /// [`Cwd::apply`] rather than re-clamping at the alias. A bind can misdirect (name a different
+    /// [`DirectoryPath::apply`] rather than re-clamping at the alias. A bind can misdirect (name a different
     /// place than its own words suggest) but never grant more than the resolver could already
     /// reach by typing the real path.
     #[test]
     fn dot_dot_past_a_bound_name_climbs_the_real_tree_not_a_fabricated_root() {
         let mut binds = Bindings::default();
-        let mut target = Cwd::root();
+        let mut target = DirectoryPath::root();
         target.descend(b"a");
         target.descend(b"b");
         binds.add(b"recent", target).unwrap();
 
         // One `..` lands where a direct walk to `/a` would: the bind's own parent, not refused.
         let p = path(b"/recent/..").unwrap();
-        let cwd = binds.resolve_absolute(&p).unwrap().unwrap();
-        assert_pwd(&cwd, b"/a");
+        let working_directory = binds.resolve_absolute(&p).unwrap().unwrap();
+        assert_pwd(&working_directory, b"/a");
 
         // A second reaches the real root, and a third refuses there: the same wall a direct `/a/b`
         // would meet, not a wall invented at the alias.
         let p = path(b"/recent/../..").unwrap();
-        let cwd = binds.resolve_absolute(&p).unwrap().unwrap();
-        assert_pwd(&cwd, b"/");
+        let working_directory = binds.resolve_absolute(&p).unwrap().unwrap();
+        assert_pwd(&working_directory, b"/");
         let p = path(b"/recent/../../..").unwrap();
         assert_eq!(
             binds.resolve_absolute(&p).unwrap(),
-            Err(Refused::AtYourRoot)
+            Err(PathRefusal::AtYourRoot)
         );
     }
 
     /// A name that matches no bound entry is `None`, not a refusal: the caller (a one-grant
-    /// [`crate::Holdings`] or a [`TwoRoots`]) still gets to decide what "nothing bound here" means
+    /// [`crate::ShellHoldings`] or a [`TwoRoots`]) still gets to decide what "nothing bound here" means
     /// for it, which is exactly the split [`TwoRoots::try_resolve_absolute`] makes for a grant
     /// label.
     #[test]
@@ -1182,12 +1233,12 @@ mod tests {
     #[test]
     fn a_name_already_bound_refuses_a_second_bind() {
         let mut binds = Bindings::default();
-        let mut first = Cwd::root();
+        let mut first = DirectoryPath::root();
         first.descend(b"a");
         binds.add(b"x", first).unwrap();
-        let mut second = Cwd::root();
+        let mut second = DirectoryPath::root();
         second.descend(b"b");
-        assert_eq!(binds.add(b"x", second), Err(BindRefused::AlreadyBound),);
+        assert_eq!(binds.add(b"x", second), Err(BindRefusal::AlreadyBound),);
         // Still resolves to the first, untouched.
         let p = path(b"/x").unwrap();
         assert_eq!(binds.resolve_absolute(&p).unwrap().unwrap(), first);
@@ -1199,41 +1250,47 @@ mod tests {
         let mut binds = Bindings::default();
         for i in 0..MAXIMUM_BINDS {
             let name = [b'a' + i as u8];
-            binds.add(&name, Cwd::root()).unwrap();
+            binds.add(&name, DirectoryPath::root()).unwrap();
         }
         assert_eq!(
-            binds.add(b"one-too-many", Cwd::root()),
-            Err(BindRefused::TooMany),
+            binds.add(b"one-too-many", DirectoryPath::root()),
+            Err(BindRefusal::TooMany),
         );
     }
 
     /// A name that cannot be a component at all is refused before it ever reaches the table, the
-    /// same rule [`component_fits`] already enforces for every other name in this module.
+    /// same rule [`is_valid_component`] already enforces for every other name in this module.
     #[test]
     fn an_unnameable_bind_target_is_refused() {
         let mut binds = Bindings::default();
-        assert_eq!(binds.add(b"a/b", Cwd::root()), Err(BindRefused::NotAName),);
-        assert_eq!(binds.add(b"", Cwd::root()), Err(BindRefused::NotAName));
+        assert_eq!(
+            binds.add(b"a/b", DirectoryPath::root()),
+            Err(BindRefusal::NotAName),
+        );
+        assert_eq!(
+            binds.add(b"", DirectoryPath::root()),
+            Err(BindRefusal::NotAName)
+        );
     }
 
-    /// [`BindRefused::message`], pinned exactly, [`each_refusal_is_its_own_exact_sentence`]'s
+    /// [`BindRefusal::message`], pinned exactly, [`each_refusal_is_its_own_exact_sentence`]'s
     /// reason: each is a fixed half of a line the prompt prints.
     #[test]
     fn each_bind_refusal_is_its_own_exact_sentence() {
         assert_eq!(
-            BindRefused::NotAName.message(),
+            BindRefusal::NotAName.message(),
             "that is not a name: one component, at most 16 bytes",
         );
         assert_eq!(
-            BindRefused::AlreadyBound.message(),
+            BindRefusal::AlreadyBound.message(),
             "that name is already bound; unbind it first",
         );
         assert_eq!(
-            BindRefused::TooMany.message(),
+            BindRefusal::TooMany.message(),
             "too many bound names: this shell tracks at most 4",
         );
         assert_eq!(
-            BindRefused::ReservedLabel.message(),
+            BindRefusal::ReservedLabel.message(),
             "that name leads to where a tree is mounted",
         );
     }

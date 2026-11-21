@@ -9,7 +9,7 @@ Built 2026-08-04 (PR #111). Built as a shell prefix word rather than a program, 
 its own block and will close without it, and both glob notes end on the same sentence.
 
 The finding, with the number. A glob expansion grants at most eight names.
-`grant_plan::expand::MAX_NAMES` is 8 and `fs_proto::nameset::MAX_NAMES` matches it, pinned by a host
+`grant_plan::expansion::MAX_NAMES` is 8 and `fs_proto::nameset::MAX_NAMES` matches it, pinned by a host
 test. A directory with nine matching files cannot be globbed at all: the answer is
 `Refusal::TooManyNames` at the prompt, with nothing spawned. `notes/glob-grant.md`'s BUGS section
 states it first, `notes/glob.md` repeats it, and milestone 47's own block says "`xargs` is still not
