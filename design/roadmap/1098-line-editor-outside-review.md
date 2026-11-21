@@ -62,8 +62,9 @@ milestone reaches delivery.
 - Follow-on, `terminal_contract`'s interface identity: Ruled (decision 4, 2026-11-19 UTC). The
   architect mints the number when freezing the crate's identity.
 - Follow-on, `terminal_contract`'s published name: Ruled (decision 5, 2026-11-19 UTC).
-- Follow-on, the review package: Open. `notes/crate-reviews/` has none for these crates; one
-  package covering `line_editor` and `terminal_contract` is the next lane.
+- Follow-on, the review package: Done. `notes/crate-reviews/line-editor.md` and
+  `notes/crate-reviews/terminal-contract.md` hold it, one file per crate, and the clearance waits
+  for the architect.
 - Follow-on, the externalization list: Open. `crates/externalization-list.txt` names `line_editor`
   and not `terminal_contract`.
 - Follow-on, the releasable-crates disposition: Done,
@@ -302,5 +303,5 @@ The checks are in [the appendix](1098-line-editor-outside-review/done-when.md).
 An outside review of `line_editor` before it leaves. The cut has landed: `terminal_contract` and
 `line_editor_component` hold the contract, and the engine depends on nothing. Twelve findings have
 landed. The engine's renames and the move's own work remain. The limits' rename, the interface
-number for `terminal_contract` and one review package for both crates remain; the rulings cover the
-names and the clearance route.
+number for `terminal_contract` and the architect's clearance of the review package remain; the
+rulings cover the names and the clearance route.

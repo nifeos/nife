@@ -108,3 +108,5 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`boot_ladder`](crate-reviews/boot-ladder.md) | 1078 | ready for review |
 | [`capability_table`](crate-reviews/capability-table.md) | kernel | cleared to move (2026-11-21 UTC, no tag, no publish); milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) tracks the move |
 | [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | ready for review; milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) asks for the clearance |
+| [`line_editor`](crate-reviews/line-editor.md) | 1098 | ready for review; the move waits for the item 3 rename lane |
+| [`terminal_contract`](crate-reviews/terminal-contract.md) | contract | ready for review; the move waits for its interface number and the reserved-bit ruling |
