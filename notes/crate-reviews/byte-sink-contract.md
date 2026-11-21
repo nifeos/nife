@@ -32,7 +32,7 @@ is never published, so the public API holds the wire and nothing else.
 | license | inherited from the nife workspace; no license file in the crate (the move writes both) |
 | `publish` | `false`; milestone 1017 keeps moved contract crates unpublished until their own release milestone |
 | dependencies | none, of any kind |
-| size | `src/lib.rs` 504 lines (library and unit tests) and `src/verification.rs` 84 lines |
+| size | `src/lib.rs` 639 lines (library and unit tests) and `src/verification.rs` 97 lines |
 | files | 9 tracked, six of them falsification patches |
 | mutation baseline | not measured by this lane; the census rows of milestone 1079's appendix (79 tested, 73 caught, 4 unviable, 2 missed, 0 timed out) predate the later changes and are not re-counted here |
 
