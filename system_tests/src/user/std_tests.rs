@@ -320,14 +320,14 @@ pub(super) fn std_fs_expected(buf: &mut [u8; 768]) -> usize {
     // than in a byte comparison nobody can read.
     assert_eq!(
         filesystem_fixture::MOTD.len(),
-        70,
+        79,
         "the motd fixture changed; the expected transcript's lengths must change with it",
     );
     let mut n = 0;
     for part in [
         b"std fs on nife\n".as_slice(),
         filesystem_fixture::MOTD,
-        b"read_to_string 70\nmetadata len 70\n".as_slice(),
+        b"read_to_string 79\nmetadata len 79\n".as_slice(),
         // `/motd` and `motd` open the same file and `current_dir` names their root. The refusals
         // are `/../motd`, the level above the only root, and `sub/../other/secret`, a file this
         // process reaches as `other/secret` but not through an ascent.
