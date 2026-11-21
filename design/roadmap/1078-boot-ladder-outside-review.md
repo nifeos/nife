@@ -197,8 +197,9 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
   [#3589](https://github.com/nifeos/nife/pull/3589).
 - Decision, printed check names spelled out: Done (ruled 2026-11-14 UTC),
   [#3586](https://github.com/nifeos/nife/pull/3586).
-- The move: Open. No review package exists under `notes/crate-reviews/`, and nifeos/boot_ladder does
-  not exist; a package lane comes first, then the clearance under Open decisions.
+- The move: Open. The review package is
+  [notes/crate-reviews/boot-ladder.md](../../notes/crate-reviews/boot-ladder.md), and nifeos/boot_ladder
+  does not exist; the clearance under Open decisions comes next.
 
 ## Open decisions
 
@@ -207,13 +208,13 @@ One question is open, below. The publishing hold stands.
 ### Clear the review, which creates nifeos/boot_ladder
 
 Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
-architect reads; clearing it is the go to create the crate's repository and move the crate. No
-package exists for `boot_ladder` yet, so a package lane writes one first. The crate's in-tree work
+architect reads; clearing it is the go to create the crate's repository and move the crate.
+The package for `boot_ladder` is written. The crate's in-tree work
 lacks only P1-7's lint section and P2-12's growth; P0-1 and P0-2 come with the move itself.
 
 Recommendation: A.
 
-- A. A package lane writes the review package now, and the architect clears it when it arrives.
+- A. The architect clears the review package now.
 - B. Hold the package until milestone 972's names land, so the move carries them and the new
   repository does not take a release for each.
 
