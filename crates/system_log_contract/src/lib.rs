@@ -772,7 +772,7 @@ mod tests {
         ] {
             assert!(
                 operation > 1,
-                "opcode {operation:#x} collides with OPERATION_BYTES or OPERATION_EOF"
+                "opcode {operation:#x} collides with OPERATION_BYTES or OPERATION_END_OF_STREAM"
             );
         }
         let w = control::word(

@@ -53,13 +53,10 @@ exhaustive list of what a harness in `kernel/src` cannot see. The same list is i
    harness ever calls into that code, Kani reports the unsupported construct instead of proving
    past it.
 
-   This was written as "all of `kernel/src/arch/`" and that was too strong (milestone 255,
-   2026-09-04). The boundary is `asm!` and MMIO, not the directory: 4,004 of `arch/`'s 16,225 lines
-   are in files containing no `asm!` at all, and `arch/aarch64/iommu.rs` is now proved in place. The
-   architecture layer is still overwhelmingly unverified, and the timer re-arm drift is still on the
-   far side of this line, but "unreachable by construction" was a claim about a directory and the
-   truth is a claim about two constructs. (This paragraph named the VisionFive 2 undelivered wake
-   until 2026-09-24; BUGS below records why that reading is retracted.)
+   The boundary is `asm!` and MMIO, not the directory `arch/`: 4,004 of `arch/`'s
+   16,225 lines are in files containing no `asm!` at all, and `arch/aarch64/iommu.rs` has its proofs
+   in place. The architecture layer is still mostly unverified, and the timer re-arm drift is on the
+   far side of this line.
 
    A stub can cross it, at a price: [kernel-proofs/stubbing-an-instruction.md](kernel-proofs/stubbing-an-instruction.md).
 3. **Two thirds of `kernel/src/arch/` is not compiled at all, and this is a `cfg` rather than a
@@ -93,7 +90,7 @@ exhaustive list of what a harness in `kernel/src` cannot see. The same list is i
 
 ## What is proved today
 
-Two properties, both in `kernel/src/system_call.rs`, both about `run_end_virtual_address` and the map loops that
+Two properties in `kernel/src/system_call.rs` are about `run_end_virtual_address` and the map loops that
 guard on it. Milestone 193 (put `kernel/src` within reach of the prover) predicted this code would never become a
 crate, rightly: system call dispatch is
 a boundary, not a library.
@@ -135,6 +132,11 @@ NMI. It is not fixed here; see `interrupt_controller.rs`'s module `BUGS` and
 hand and are recorded `attested`, because the sweep cannot run an x86_64 harness on an aarch64 host.
 The detail is in [kernel-proofs/x86-interrupt-controller-proofs.md](kernel-proofs/x86-interrupt-controller-proofs.md).
 
+### And four in `kernel/src/sched/region_reaping/verification.rs`
+
+`reap_decision` and `survey_includes` name no architecture, so their four harnesses run on every
+host. They are claims 6 to 9 of [the confinement claims](confinement-claims.md).
+
 ## Which architecture the prover actually sees
 
 One, and it is the host's (milestone 304). This is stub-list item 3, as a table because it is most often read
@@ -142,11 +144,12 @@ as more coverage than it is.
 
 | host | `arch/` subtree compiled | harnesses that run |
 |---|---|---|
-| aarch64 (dev Mac; `ubuntu-26.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 9: two in `system_call.rs`, three in each `iommu.rs`, one in `fp.rs` |
-| x86_64 (cordoba; the `ubuntu-26.04` runner) | `arch/x86_64/` | 5: the same two in `system_call.rs`, two in `interrupt_controller.rs`, one in `fp.rs` |
-| either, via script/verify-riscv64 | `arch/riscv64/`, natively | 8: two in `system_call.rs`, three in `iommu.rs`, three in `mmu.rs` |
+| aarch64 (dev Mac; `ubuntu-26.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 13: two in `system_call.rs`, four in `region_reaping/verification.rs`, three in each `iommu.rs`, one in `fp.rs` |
+| x86_64 (cordoba; the `ubuntu-26.04` runner) | `arch/x86_64/` | 11: the same six, two in `interrupt_controller.rs`, two in `iommu.rs`, one in `fp.rs` |
+| either, via script/verify-riscv64 | `arch/riscv64/`, natively | 12: the same six, three in `iommu.rs`, three in `mmu.rs` |
 
-Twelve distinct harnesses on the first two hosts, since `system_call.rs`'s two run on both.
+Eighteen distinct harnesses on the first two hosts, since the six in `system_call.rs` and
+`region_reaping/verification.rs` run on both.
 
 **riscv64 needed a target, not a host**: milestone 589 (Kani can prove riscv64 from the hosts we
 already have) patches Kani, since CBMC runs anywhere. See

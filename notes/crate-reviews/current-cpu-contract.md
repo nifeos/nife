@@ -35,7 +35,7 @@ the readers and the builder, each with a falsification patch. Every public name 
 | size | one `src/lib.rs` of 622 lines, a README of 91 lines, two license texts and two falsification patches |
 | identity values | frozen: `MAGIC` (`CURRCPU1`), `VERSION` 1, `INTERFACE_ID` 10 and `PAGE_CONTENT_BYTES` 32. The layout is the magic at offset 0, then three little-endian `u64` words: the CPU at 8, the allowance at 16 and the tick at 24. A layout break ships as a new magic and version together. A host test pins the magic and the offsets as literals |
 | the bound | `CPU_ID_BOUND` 8 is part of the identity (Decision A of milestone 1084, ruled 2026-11-12 UTC): a change to it re-mints `MAGIC` and bumps `VERSION` in the same change |
-| address | `PAGE_VIRTUAL_ADDRESS` is `0x7fff_f000` on all three architectures, from `address_space_layout::CURRENT_CPU_PAGE`, the last of the 16 pages of `PROCESS_PAGES` |
+| address | `PAGE_VIRTUAL_ADDRESS` is `0x7fff_f000` on all three architectures, from `address_space_layout::CURRENT_CPU_PAGE_VIRTUAL_ADDRESS`, the last of the 16 pages of `PROCESS_PAGES` |
 
 ## Who in nife depends on it
 

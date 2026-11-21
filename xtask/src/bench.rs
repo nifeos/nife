@@ -5,12 +5,12 @@ use std::process::Command;
 use std::sync::atomic::Ordering;
 
 use crate::archive::{
-    has_initial_ramdisk_riscv, has_initial_ramdisk_x86, initial_ramdisk_path,
-    riscv_initial_ramdisk_path, x86_initial_ramdisk_path,
+    has_initial_ramdisk_riscv64, has_initial_ramdisk_x86, initial_ramdisk_path,
+    riscv64_initial_ramdisk_path, x86_initial_ramdisk_path,
 };
 use crate::disk::{disk_path, mkdisk, mkredoxfs, redoxfs_server_build};
 use crate::host::{flag_value, kernel_elf, run, workspace_root};
-use crate::{RELEASE, RISCV_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled, user};
+use crate::{RELEASE, RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, cargo_profiled, user};
 
 /// The microbenchmarks (milestone 21 (benchmarks with teeth); design/roadmap/0021-benchmarks.md),
 /// with two instruments:
@@ -101,8 +101,8 @@ pub(crate) fn bench() -> bool {
 fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
     // RISC-V has its own kernel target, runner and initial ramdisk, and no disk or HVF; the
     // instrument, parsing, table and gate are shared through `run_bench`.
-    if std::env::args().any(|a| a == "--riscv") {
-        return bench_riscv(check, save, features);
+    if std::env::args().any(|a| a == "--riscv64") {
+        return bench_riscv64(check, save, features);
     }
 
     // x86_64 gates under icount like the other two (milestone 161 (the x86_64 kernel port)); see
@@ -191,9 +191,9 @@ fn leg(real: bool, check: bool, save: bool, features: &str) -> bool {
 /// its ticks compare directly with aarch64's. No HVF (no RISC-V hypervisor on this host) and no
 /// disk (the bench boot runs no virtio); the riscv initial ramdisk carries
 /// `os_primitives_benchmarker` and `coremark`. Its baseline is `bench/baseline-riscv64.txt`.
-/// `cargo xtask bench --riscv [--check|--save]`.
-fn bench_riscv(check: bool, save: bool, features: &str) -> bool {
-    if !has_initial_ramdisk_riscv()
+/// `cargo xtask bench --riscv64 [--check|--save]`.
+fn bench_riscv64(check: bool, save: bool, features: &str) -> bool {
+    if !has_initial_ramdisk_riscv64()
         || !run(
             "cargo",
             &[
@@ -204,7 +204,7 @@ fn bench_riscv(check: bool, save: bool, features: &str) -> bool {
                 "--features",
                 features,
                 "--target",
-                RISCV_TARGET,
+                RISCV64_TARGET,
             ],
         )
     {
@@ -212,10 +212,10 @@ fn bench_riscv(check: bool, save: bool, features: &str) -> bool {
     }
 
     let mut cmd = Command::new("helpers/qemu-runner-riscv64.sh");
-    cmd.arg(format!("target/{RISCV_TARGET}/debug/kernel"));
+    cmd.arg(format!("target/{RISCV64_TARGET}/debug/kernel"));
     // icount pins `rdtime` to the instruction stream; sleep=off never waits on the wall clock.
     cmd.args(["-icount", "shift=0,sleep=off"]);
-    cmd.env("NIFE_INITIAL_RAMDISK", riscv_initial_ramdisk_path());
+    cmd.env("NIFE_INITIAL_RAMDISK", riscv64_initial_ramdisk_path());
     // `host::cargo` exports `NIFE_DISK` for every child, and the riscv64 runner treats one naming
     // a missing file as fatal. Removing it moves rows by at most 0.05%
     // (notes/benchmarks/drift-since-the-2026-09-26-floors.md). `boot_check.rs` does the same.
@@ -262,7 +262,7 @@ fn bench_x86(real: bool, check: bool, save: bool, features: &str) -> bool {
             "build",
             "-p",
             "kernel",
-            // As in `bench_riscv`. `fastpath_pad` does not build on x86_64
+            // As in `bench_riscv64`. `fastpath_pad` does not build on x86_64
             // (`script/fastpath-footprint`'s BUGS), so cargo refuses rather than mismeasures.
             "--features",
             features,

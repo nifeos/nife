@@ -8,8 +8,8 @@ Expected to fail: the harness's alignment assertion, on any odd base.
 diff --git a/crates/driver_process_contract/src/e1000e.rs b/crates/driver_process_contract/src/e1000e.rs
 --- a/crates/driver_process_contract/src/e1000e.rs
 +++ b/crates/driver_process_contract/src/e1000e.rs
-@@ -80,3 +80,3 @@ impl Handoff {
+@@ -113,3 +113,3 @@ impl Handoff {
      pub fn unpack(arg0: u64, arg1: u64) -> Option<Handoff> {
--        if arg0 & 0xffff != ROLE_TAG || arg1 == 0 || !arg1.is_multiple_of(PAGE) {
+-        if arg0 & 0xffff != ROLE_TAG || arg1 == 0 || !arg1.is_multiple_of(PAGE_BYTES) {
 +        if arg0 & 0xffff != ROLE_TAG || arg1 == 0 {
              return None;

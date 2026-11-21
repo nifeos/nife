@@ -1,5 +1,5 @@
 //! **The linker script and the address-space map agree**: `link.ld`, which this crate delivers to
-//! every program through `build.rs`, links at `address_space_layout::IMAGE_BASE`.
+//! every program through `build.rs`, links at `address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS`.
 //!
 //! Name: ratified 2026-11-20 (UTC). A test-only module, named for the file it checks.
 
@@ -29,7 +29,7 @@ fn the_user_linker_script_links_at_the_image_base() {
         .collect();
     assert_eq!(
         bases,
-        std::vec![address_space_layout::IMAGE_BASE],
-        "link.ld does not link at IMAGE_BASE"
+        std::vec![address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS],
+        "link.ld does not link at IMAGE_BASE_VIRTUAL_ADDRESS"
     );
 }

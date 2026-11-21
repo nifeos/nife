@@ -23,7 +23,7 @@ use crate::sched;
 /// driver could ring it directly. The kernel validates every descriptor on submit and refuses
 /// this one, so the device is never told to go and never touches the kernel. The driver
 /// reports `1` when it was refused.
-// RISC-V twin: `riscv_virtual_io_tests::the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region`. Gated here rather than run twice: that
+// RISC-V twin: `riscv64_virtual_io_tests::the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
 // to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment
@@ -48,7 +48,7 @@ fn the_kernel_refuses_a_dma_descriptor_that_escapes_the_drivers_region() {
 /// kernel. A validator that walked only the flat chain would pass the outer descriptor and let
 /// the device follow the table out. The kernel strips the feature and refuses the flag, so the
 /// device is never rung. The driver reports `1` when it was refused.
-// RISC-V twin: `riscv_virtual_io_tests::the_kernel_refuses_an_indirect_descriptor_escape`. Gated here rather than run twice: that
+// RISC-V twin: `riscv64_virtual_io_tests::the_kernel_refuses_an_indirect_descriptor_escape`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
 // to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment
@@ -75,7 +75,7 @@ fn the_kernel_refuses_an_indirect_descriptor_escape() {
 /// legacy INTx pin on `q35` goes through a PIRQ router only ACPI's `_PRT` describes (milestone 215
 /// (a PCI function's interrupt reaches nothing on `x86_64`)). The assertion is the same either way:
 /// a driver binds an intid and waits.
-// RISC-V twin: `riscv_virtual_io_tests::a_userspace_driver_reads_a_file_over_the_pcie_transport`, the
+// RISC-V twin: `riscv64_virtual_io_tests::a_userspace_driver_reads_a_file_over_the_pcie_transport`, the
 // same property through the same `block_driver` and `net_stack` binaries; a second copy here would
 // double the suite's slowest tests to prove nothing new. See this module's comment on the two
 // kinds of gate.
@@ -129,7 +129,7 @@ fn a_userspace_driver_reads_a_file_over_the_pcie_transport() {
 /// every byte in-process, re-checks the superblock and directory around it, and reports the
 /// read-back head. A matching report therefore certifies the round trip AND that the write
 /// landed only on its own block.
-// RISC-V twin: `riscv_virtual_io_tests::a_userspace_driver_writes_a_block_and_reads_it_back`. Gated here rather than run twice: that
+// RISC-V twin: `riscv64_virtual_io_tests::a_userspace_driver_writes_a_block_and_reads_it_back`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
 // to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment
@@ -151,7 +151,7 @@ fn a_userspace_driver_writes_a_block_and_reads_it_back() {
 /// The same write round trip over the PCIe transport (DECISIONS §18): the write verb must
 /// hold on both buses, exactly as the read path does, or the transport seam has a
 /// direction-shaped hole.
-// RISC-V twin: `riscv_virtual_io_tests::a_userspace_driver_writes_a_block_over_the_pcie_transport`. Gated here rather than run twice: that
+// RISC-V twin: `riscv64_virtual_io_tests::a_userspace_driver_writes_a_block_over_the_pcie_transport`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
 // to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment
@@ -180,7 +180,7 @@ fn a_userspace_driver_writes_a_block_over_the_pcie_transport() {
 /// Then the full writer runs against the SAME device, resets it, and must complete its own
 /// round trip, which proves the abandoned request wedged nothing: not the device, not the
 /// validator's per-registration state, not the disk.
-// RISC-V twin: `riscv_virtual_io_tests::a_driver_killed_mid_write_leaves_the_device_and_transport_sane`. Gated here rather than run twice: that
+// RISC-V twin: `riscv64_virtual_io_tests::a_driver_killed_mid_write_leaves_the_device_and_transport_sane`. Gated here rather than run twice: that
 // module drives the same property on the other instruction set, through the same `block_driver` and
 // `net_stack` binaries this leg now uses, and a second copy would double the suite's slowest tests
 // to prove nothing new; the two legs differ by ISA and by nothing else. See this module's comment

@@ -19,8 +19,8 @@ use crate::sched;
 /// and a real EL0 thread built from parts.
 #[test_case]
 fn a_process_can_build_start_and_run_a_child_thread() {
-    const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-    const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+    const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+    const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
     // The child's program: SEND(slot 0, rendezvous::SEND, REPORT_WORD) then EXIT, nine
     // instructions, with the child's first granted cap in slot 0: `supervision_tests`' pair
     // (aarch64 and RISC-V), so the tests below run on either machine.
@@ -112,8 +112,8 @@ fn a_process_can_build_start_and_run_a_child_thread() {
 /// notes/system-test-modules.md.
 #[test_case]
 fn reclaim_frees_a_started_then_exited_childs_regions() {
-    const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-    const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+    const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+    const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
     // SEND(slot 0, rendezvous::SEND, REPORT_WORD) then EXIT, the shared stub (see the test above).
     let code = super::supervision_tests::REPORT_STUB;
     let expect_word = super::supervision_tests::REPORT_WORD;
@@ -210,8 +210,8 @@ fn reclaim_frees_a_started_then_exited_childs_regions() {
 /// leak; the real magnitudes wait on the EL0 `lat_proc` benchmark.
 #[test_case]
 fn spawn_to_reap_repeats_without_leaking() {
-    const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-    const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+    const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+    const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
     let code = super::supervision_tests::REPORT_STUB;
     let expect_word = super::supervision_tests::REPORT_WORD;
 

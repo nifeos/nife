@@ -473,7 +473,7 @@ COLD = re.compile(
 #   isr_common           the stubs' shared save path, which `x86_system_call_entry` duplicates inline
 #                        rather than jumping to (it has a different frame to reconstruct).
 #   x86_trap_dispatch,   the Rust trap handlers. These ARE the twins of riscv64's
-#   x86_trap_body        `riscv_trap_dispatch` / `riscv_trap_body`, which riscv64's list includes,
+#   x86_trap_body        `riscv64_trap_dispatch` / `riscv64_trap_body`, which riscv64's list includes,
 #                        and that is exactly the asymmetry: on riscv64 the system call arrives through
 #                        them, on x86_64 it does not. Including them here for symmetry with the
 #                        other list would put 918 bytes on this number that no system call fetches.
@@ -509,7 +509,7 @@ ENTRY_SLICE = {"exception_vectors": 128}
 ENTRY = {
     "aarch64": [r"^exception_vectors$", r"^exception_dispatch$", r"^exception_restore$",
                 r"kernel11system_call8dispatch"],
-    "riscv64": [r"^trap_entry$", r"^trap_return$", r"^riscv_trap_dispatch$", r"^riscv_trap_body$",
+    "riscv64": [r"^trap_entry$", r"^trap_return$", r"^riscv64_trap_dispatch$", r"^riscv64_trap_body$",
                 r"kernel11system_call8dispatch"],
     "x86_64": [r"^x86_system_call_entry$", r"^x86_system_call_handler$", r"^isr_restore$",
                r"kernel11system_call8dispatch"],
@@ -725,7 +725,7 @@ if os.environ.get("LAYOUT"):
         lo, hi = start[s], start[s] + size[s]
         # Registers holding an `auipc`/`adrp` result. One stays in the set until an instruction
         # redefines it, because LLVM keeps such a base live and loads through it several times
-        # (`riscv_trap_body` does, through `s3`); "consumed on first use" missed exactly that.
+        # (`riscv64_trap_body` does, through `s3`); "consumed on first use" missed exactly that.
         pending = set()
         for addr, ins in text.get(s, []):
             ninsn += 1

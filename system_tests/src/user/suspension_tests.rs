@@ -16,8 +16,8 @@ use crate::capability_object::{Capability, Object, Rights};
 use crate::sched::{self, delete_current_capability};
 use crate::system_call::invoke;
 
-const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
 /// The spinner's data page: word 0 is its count, word 1 how many times it has been entered.
 const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 

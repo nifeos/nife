@@ -48,7 +48,8 @@ pub const HANDOFF_BYTES: usize =
 /// [`HANDOFF_BYTES`] in page frames: what a supervisor retypes for a `display_terminal`'s handoff.
 ///
 /// Name: provisional, minted 2026-10-19 (UTC) by the lane for milestone 23.
-pub const HANDOFF_PAGES: u64 = HANDOFF_BYTES.div_ceil(address_space_layout::PAGE as usize) as u64;
+pub const HANDOFF_PAGES: u64 =
+    HANDOFF_BYTES.div_ceil(address_space_layout::PAGE_BYTES as usize) as u64;
 
 /// Why a blob was not absorbed. The `Vt` is untouched by every one of them: the whole blob is
 /// checked before a cell is written.

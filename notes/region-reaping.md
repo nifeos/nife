@@ -142,7 +142,8 @@ never frees that region (`user::Backing`). That is a property of the space, not 
 `reap_supervised(ep, tid)` collects a corpse for the supervisor that holds its supervision
 rendezvous. Authorization is the relationship the kernel already tracks: the thread's recorded
 `fault_ep` (§26 implementation note 1) must be the invoked rendezvous, so the tid needs no badge or
-handle. `capability_table::reap_decision` is the rule, proved for every input in that crate. A stale or
+handle. `reap_decision` is the rule, proved for every input by the harnesses in
+`kernel/src/sched/region_reaping/verification.rs`. A stale or
 recycled tid resolves to nothing and reads as unsupervised.
 
 The reclaim is then `reclaim_region` on the region the TCB was retyped from, the name the owner

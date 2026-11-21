@@ -253,7 +253,7 @@ fn read_console_plain(
 /// runner script `exec`s it). A `cargo run` in between would leave the emulator alive when the kill
 /// lands on cargo, which is the leak CLAUDE.md's QEMU rule exists about.
 fn leg_runner(arch: &str, kvm: bool, uefi_timeout_seconds: u64) -> Command {
-    let riscv = arch == "riscv64";
+    let riscv64 = arch == "riscv64";
     if arch == "x86_64" {
         // OVMF, one core (the runner's default; the tour is where the second core is gated). The
         // runner bounds itself
@@ -268,7 +268,7 @@ fn leg_runner(arch: &str, kvm: bool, uefi_timeout_seconds: u64) -> Command {
         }
         c
     } else {
-        let target = if riscv { RISCV_TARGET } else { TARGET };
+        let target = if riscv64 { RISCV64_TARGET } else { TARGET };
         // **An NVMe disk, for the second mounted tree** (milestone 834 (ioping on nife and Linux)): the disk tree serves it
         // at `/disk`, and the after-reboot script times reads of it with `ioping`. Zeros, made
         // fresh for each boot. `x86_64` attaches none, because a blank NVMe disk there is offered
@@ -277,7 +277,7 @@ fn leg_runner(arch: &str, kvm: bool, uefi_timeout_seconds: u64) -> Command {
         if let Err(e) = std::fs::write(&nvme, std::vec![0u8; crate::disk::SWISH_CHECK_NVME_BYTES]) {
             eprintln!("swish-check: could not write {nvme}: {e}");
         }
-        let mut c = Command::new(if riscv {
+        let mut c = Command::new(if riscv64 {
             "helpers/qemu-runner-riscv64.sh"
         } else {
             RUNNER
@@ -286,8 +286,8 @@ fn leg_runner(arch: &str, kvm: bool, uefi_timeout_seconds: u64) -> Command {
         c.env("NIFE_NVME", &nvme);
         c.env(
             "NIFE_INITIAL_RAMDISK",
-            if riscv {
-                riscv_initial_ramdisk_path()
+            if riscv64 {
+                riscv64_initial_ramdisk_path()
             } else {
                 initial_ramdisk_path()
             },
@@ -667,9 +667,9 @@ impl OptionalPrograms {
 /// ELF off disk), then the RedoxFS image, because the runner attaches the disk only when the
 /// file is there and `<` and `>` need one.
 fn build_leg(arch: &str, fresh: bool) -> bool {
-    let riscv = arch == "riscv64";
+    let riscv64 = arch == "riscv64";
     let x86 = arch == "x86_64";
-    let target = if riscv { RISCV_TARGET } else { TARGET };
+    let target = if riscv64 { RISCV64_TARGET } else { TARGET };
     !fresh
         || if x86 {
         // `uefi_image` packs the archive, builds the kernel against it, and stages the loader;
@@ -682,8 +682,8 @@ fn build_leg(arch: &str, fresh: bool) -> bool {
             } else {
                 uefi_image_with(Some(probe_features()))
             }
-    } else if riscv {
-        redoxfs_server_build(RISCV_TARGET) && mkdisk() && mkredoxfs_of(SWISH_CHECK_DISK_MEBIBYTES) && has_initial_ramdisk_riscv()
+    } else if riscv64 {
+        redoxfs_server_build(RISCV64_TARGET) && mkdisk() && mkredoxfs_of(SWISH_CHECK_DISK_MEBIBYTES) && has_initial_ramdisk_riscv64()
     } else {
         redoxfs_server_build(TARGET) && mkredoxfs_of(SWISH_CHECK_DISK_MEBIBYTES) && mkdisk() && user()
     } // After the archive build, whose packages it copies: a package the image's catalog

@@ -27,7 +27,7 @@ keeps the short list. This is every entry as it was written, sentence-split for 
   which the 2026-09-04 session did not. Its "5,936 unpadded, 11,070 padded" is a true statement about
   a kernel nobody booted that evening. The optional per-IPC-depth boot of milestone 134 (the register of
   measures) rests on the same assumption, and inherits this.
-- `cargo xtask bench --riscv --extra-features <f>` silently ignored the features until 2026-09-19,
+- `cargo xtask bench --riscv64 --extra-features <f>` silently ignored the features until 2026-09-19,
   building a plain `bench` kernel and printing its numbers under the flag. This control's QEMU boot
   proof found it, and it was fixed in `xtask` (the x86_64 arm had it too). Any riscv64 E3 rehearsal
   taken through that path before this date measured an un-padded kernel.

@@ -6,7 +6,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-08-03,baseline,byte_sink_protocol,47,43,2,0,2,
 2026-08-03,baseline,c_seam,25,21,1,0,3,
 2026-08-03,baseline,calendar,395,369,7,3,16,
-2026-08-03,baseline,capability,54,37,1,0,16,
+2026-08-03,baseline,capability_table,54,37,1,0,16,
 2026-08-03,baseline,clock_protocol,66,54,2,7,3,
 2026-08-03,baseline,compositor,233,209,14,0,10,
 2026-08-03,baseline,coremark,109,106,2,1,0,
@@ -45,7 +45,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-09-14,34833498873,byte_sink_proto,47,43,2,0,2,
 2026-09-14,34833498873,c_seam,25,21,1,0,3,
 2026-09-14,34833498873,calendar,395,371,5,3,16,
-2026-09-14,34833498873,capability,84,60,8,0,16,
+2026-09-14,34833498873,capability_table,84,60,8,0,16,
 2026-09-14,34833498873,clock_proto,72,54,6,7,5,
 2026-09-14,34833498873,component_plan,126,70,11,7,38,
 2026-09-14,34833498873,compositor,233,208,15,0,10,
@@ -109,7 +109,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-09-16,35163453633,byte_sink_protocol,47,43,2,0,2,
 2026-09-16,35163453633,c_seam,25,21,1,0,3,
 2026-09-16,35163453633,calendar,395,371,5,3,16,
-2026-09-16,35163453633,capability,84,60,8,0,16,
+2026-09-16,35163453633,capability_table,84,60,8,0,16,
 2026-09-16,35163453633,clock_protocol,72,54,6,7,5,
 2026-09-16,35163453633,component_plan,126,70,11,7,38,
 2026-09-16,35163453633,compositor,233,208,15,0,10,
@@ -171,7 +171,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-09-19,35421192143,byte_sink_protocol,47,43,2,0,2,
 2026-09-19,35421192143,c_seam,25,21,1,0,3,
 2026-09-19,35421192143,calendar,395,371,5,3,16,
-2026-09-19,35421192143,capability,84,65,3,0,16,
+2026-09-19,35421192143,capability_table,84,65,3,0,16,
 2026-09-19,35421192143,clock_protocol,69,54,3,7,5,
 2026-09-19,35421192143,component_plan,126,70,11,7,38,
 2026-09-19,35421192143,compositor,233,208,15,0,10,
@@ -233,7 +233,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-09-21,35589550926,byte_sink_protocol,47,43,2,0,2,
 2026-09-21,35589550926,c_seam,25,21,1,0,3,
 2026-09-21,35589550926,calendar,395,371,5,3,16,
-2026-09-21,35589550926,capability,84,65,3,0,16,
+2026-09-21,35589550926,capability_table,84,65,3,0,16,
 2026-09-21,35589550926,clock_protocol,69,54,3,7,5,
 2026-09-21,35589550926,component_plan,126,70,11,7,38,
 2026-09-21,35589550926,compositor,233,208,15,0,10,
@@ -303,7 +303,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-10-03,37108924347,byte_sink_protocol,79,70,7,0,2,
 2026-10-03,37108924347,c_seam,25,21,1,0,3,
 2026-10-03,37108924347,calendar,395,371,5,3,16,
-2026-10-03,37108924347,capability,121,88,4,3,26,
+2026-10-03,37108924347,capability_table,121,88,4,3,26,
 2026-10-03,37108924347,clock_protocol,69,54,3,7,5,
 2026-10-03,37108924347,component_plan,154,93,12,9,40,
 2026-10-03,37108924347,compositor,233,209,14,0,10,
@@ -388,7 +388,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-10-05,37307759312,byte_sink_protocol,79,73,4,0,2,
 2026-10-05,37307759312,c_seam,25,21,1,0,3,
 2026-10-05,37307759312,calendar,395,371,5,3,16,
-2026-10-05,37307759312,capability,119,87,3,3,26,
+2026-10-05,37307759312,capability_table,119,87,3,3,26,
 2026-10-05,37307759312,clock_protocol,69,54,3,7,5,
 2026-10-05,37307759312,component_plan,154,102,2,10,40,
 2026-10-05,37307759312,compositor,238,209,17,0,12,
@@ -479,7 +479,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-10-12,38252397727,c_library_errno,43,42,1,0,0,
 2026-10-12,38252397727,c_seam,25,21,1,0,3,
 2026-10-12,38252397727,calendar,395,372,4,3,16,
-2026-10-12,38252397727,capability,130,98,3,3,26,
+2026-10-12,38252397727,capability_table,130,98,3,3,26,
 2026-10-12,38252397727,capability_witness_protocol,16,0,16,0,0,
 2026-10-12,38252397727,clock_protocol,69,54,3,7,5,
 2026-10-12,38252397727,component_plan,154,102,2,10,40,
@@ -577,7 +577,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-10-14,38654094250,c_library_errno,43,42,1,0,0,
 2026-10-14,38654094250,c_seam,25,21,1,0,3,
 2026-10-14,38654094250,calendar,395,372,4,3,16,
-2026-10-14,38654094250,capability,130,98,3,3,26,
+2026-10-14,38654094250,capability_table,130,98,3,3,26,
 2026-10-14,38654094250,capability_witness_protocol,16,10,6,0,0,
 2026-10-14,38654094250,clock_protocol,69,54,3,7,5,
 2026-10-14,38654094250,component_plan,154,102,2,10,40,
@@ -673,7 +673,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-10-19,39238962856,c_library_errno,43,42,1,0,0,
 2026-10-19,39238962856,c_seam,25,21,1,0,3,
 2026-10-19,39238962856,calendar,395,372,4,3,16,
-2026-10-19,39238962856,capability,130,98,3,3,26,
+2026-10-19,39238962856,capability_table,130,98,3,3,26,
 2026-10-19,39238962856,capability_manifest_note,269,191,3,10,65,
 2026-10-19,39238962856,capability_witness_contract,16,10,6,0,0,
 2026-10-19,39238962856,clock_contract,69,54,3,7,5,
@@ -773,7 +773,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-10-26,40311212712,c_library_errno,43,42,1,0,0,0
 2026-10-26,40311212712,c_seam,25,21,1,0,3,0
 2026-10-26,40311212712,calendar,395,372,4,3,16,1
-2026-10-26,40311212712,capability,130,98,3,3,26,0
+2026-10-26,40311212712,capability_table,130,98,3,3,26,0
 2026-10-26,40311212712,capability_manifest_note,371,243,3,9,116,0
 2026-10-26,40311212712,capability_plan,154,102,2,10,40,0
 2026-10-26,40311212712,capability_witness_contract,16,10,6,0,0,0
@@ -877,7 +877,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-11-02,41451956976,c_library_errno,43,42,1,0,0,0
 2026-11-02,41451956976,c_seam,25,21,1,0,3,0
 2026-11-02,41451956976,calendar,395,372,4,3,16,1
-2026-11-02,41451956976,capability,130,98,3,3,26,0
+2026-11-02,41451956976,capability_table,130,98,3,3,26,0
 2026-11-02,41451956976,capability_manifest_note,484,317,3,8,156,0
 2026-11-02,41451956976,capability_plan,154,102,2,10,40,0
 2026-11-02,41451956976,capability_witness_contract,16,10,6,0,0,0
@@ -989,7 +989,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-11-09,42628160522,c_library_errno,43,42,1,0,0,0
 2026-11-09,42628160522,c_seam,25,21,1,0,3,0
 2026-11-09,42628160522,calendar,395,372,4,3,16,1
-2026-11-09,42628160522,capability,130,98,3,3,26,0
+2026-11-09,42628160522,capability_table,130,98,3,3,26,0
 2026-11-09,42628160522,capability_manifest_note,484,317,3,8,156,0
 2026-11-09,42628160522,capability_plan,154,102,2,10,40,0
 2026-11-09,42628160522,capability_witness_contract,16,10,6,0,0,0
@@ -1097,7 +1097,7 @@ census,run,crate,tested,caught,missed,timeout,unviable,real_holes
 2026-11-16,43876176886,byte_sink_contract,89,83,4,0,2,0
 2026-11-16,43876176886,c_library_errno,43,42,1,0,0,0
 2026-11-16,43876176886,c_seam,25,21,1,0,3,0
-2026-11-16,43876176886,capability,131,99,3,3,26,0
+2026-11-16,43876176886,capability_table,131,99,3,3,26,0
 2026-11-16,43876176886,capability_manifest_note,467,308,3,8,148,0
 2026-11-16,43876176886,capability_plan,154,102,2,10,40,0
 2026-11-16,43876176886,capability_witness_contract,16,10,6,0,0,0

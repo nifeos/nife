@@ -78,7 +78,7 @@ milestone landed). A third stream makes an ordered slot convention untenable and
 one first.
 
 An opcode on the one endpoint. `byte_sink_contract` puts the operation in the top byte of the
-request word, so `OPERATION_BYTES = 0` and `OPERATION_EOF = 1` leave 254 spellings free. A third, "these bytes are
+request word, so `OPERATION_BYTES = 0` and `OPERATION_END_OF_STREAM = 1` leave 254 spellings free. A third, "these bytes are
 a diagnostic", would carry the distinction on the wire the writer already holds: no second
 capability, no second slot, no spawn_protocol change, no progenitor change, and §51 intact word for
 word. The reader then decides, so `2> name` would name where the shell sends the diag messages it is

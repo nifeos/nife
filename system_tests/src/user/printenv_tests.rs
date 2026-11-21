@@ -81,7 +81,7 @@ fn line(out: RendezvousId, buf: &mut [u8; 128]) -> usize {
 /// Read `printenv`'s stream to its end, so it has nothing left to send when its stdout goes, then
 /// reclaim the region the endpoint came from.
 fn finish(out: RendezvousId, endpoints: u64) {
-    while crate::sched::ipc_receive(out)[0] != byte_sink_contract::eof() {}
+    while crate::sched::ipc_receive(out)[0] != byte_sink_contract::end_of_stream() {}
     crate::sched::reclaim_region(endpoints).expect("the endpoint region did not come back");
 }
 

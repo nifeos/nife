@@ -681,6 +681,8 @@ machine_discovery = { version = "0.1.0", path = "../crates/machine_discovery" }
 # prints the ones below it and `crates/serial_console` matches all of them, so AGENTS.md rule 7
 # makes the strings a crate rather than copies. `no_std`, no dependencies of its own.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
+# What `boot_self_test` and the kernel pass between the two halves of the boot self-test.
+self_test_contract = { version = "0.1.0", path = "../crates/self_test_contract" }
 abi = { version = "0.1.0", path = "../crates/abi" }
 # Named here so the first cut's `carry_interfaces!` lists can read these interfaces' ids and
 # versions (milestone 956 (the linked interfaces carry checkable versions)); each program already

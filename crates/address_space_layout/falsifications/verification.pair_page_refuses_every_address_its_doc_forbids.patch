@@ -5,15 +5,15 @@ The defect: `pair_page` rounds an unaligned address down instead of refusing it.
 Expected to fail: the harness's `refused_inputs_never_reach_here` loop is reached, an unwinding failure, for an unaligned address inside `PAIR_PAGES`.
 
 diff --git a/crates/address_space_layout/src/lib.rs b/crates/address_space_layout/src/lib.rs
-index cb71c3977..5287e2232 100644
+index 12c26e340..6a71cb847 100644
 --- a/crates/address_space_layout/src/lib.rs
 +++ b/crates/address_space_layout/src/lib.rs
-@@ -249,7 +249,7 @@ pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64 {
+@@ -285,7 +285,7 @@ pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64 {
  /// in the source; what the call adds is that an address outside [`PAIR_PAGES`], or not page
  /// aligned, stops the build instead of colliding with a runtime page at run time.
  pub const fn pair_page(virtual_address: u64) -> u64 {
--    window(PAIR_PAGES, virtual_address, PAGE)
-+    window(PAIR_PAGES, virtual_address & !(PAGE - 1), PAGE)
+-    window(PAIR_PAGES, virtual_address, PAGE_BYTES)
++    window(PAIR_PAGES, virtual_address & !(PAGE_BYTES - 1), PAGE_BYTES)
  }
  
  /// **A runtime window's address, checked against the map at compile time.** As [`pair_page`], for

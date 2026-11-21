@@ -11,7 +11,8 @@ use super::*;
 // page's own crate, which knows nothing of the map; each architecture's build checks its own
 // address.
 const _: () = assert!(
-    counter_frequency_contract::PAGE_VIRTUAL_ADDRESS >= address_space_layout::CODE_MODEL_CEILING
+    counter_frequency_contract::PAGE_VIRTUAL_ADDRESS
+        >= address_space_layout::CODE_MODEL_CEILING_VIRTUAL_ADDRESS
 );
 
 /// Why a binary was refused.

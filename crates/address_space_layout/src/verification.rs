@@ -1,10 +1,10 @@
 //! **Machine-checked proofs (Kani) of the user address-space map**: every address below the
 //! code-model ceiling lies in exactly one band, whole pages and in address order; each band
 //! function accepts exactly the pages its doc allows; and [`check_image`] places exactly the images
-//! the image band holds. Behind `#[cfg(kani)]`, so only `cargo kani` (script/verify) compiles them.
+//! the image band holds. Behind `#[cfg(kani)]`, so only `cargo kani` compiles them.
 //! The crate root carries the table of bands these harnesses prove.
 //!
-//! The constant facts (the bands tile `[0, CODE_MODEL_CEILING)`, each page aligned, the ceiling a
+//! The constant facts (the bands tile `[0, CODE_MODEL_CEILING_VIRTUAL_ADDRESS)`, each page aligned, the ceiling a
 //! low-half address on every architecture) are also `const` asserts in `lib.rs`, where every
 //! consumer's build checks them. These harnesses state the same map per address, through
 //! [`Band::contains`], which is what every band function and loader asks. So a falsification of a
@@ -49,20 +49,20 @@ fn band_index(virtual_address: u64) -> usize {
 /// The page around it lies wholly in the same band, which is what page aligned at both ends means
 /// for a band at least a page wide, and its top bits are clear on all three architectures:
 /// aarch64 splits the halves at bit 48, `x86_64` at bit 47, `riscv64` (Sv39) at bit 38, as
-/// `LOW_HALF_SPLIT_SHIFTS` restates from the paging code.
+/// [`LOW_HALF_SPLIT_SHIFTS`] records.
 /// Falsification: replayable `crates/address_space_layout/falsifications/verification.every_address_below_the_ceiling_lies_in_exactly_one_band.patch`
 #[kani::proof]
 #[kani::unwind(9)]
 fn every_address_below_the_ceiling_lies_in_exactly_one_band() {
     let virtual_address: u64 = kani::any();
-    if virtual_address >= CODE_MODEL_CEILING {
+    if virtual_address >= CODE_MODEL_CEILING_VIRTUAL_ADDRESS {
         assert_eq!(bands_containing(virtual_address), 0);
         return;
     }
     assert_eq!(bands_containing(virtual_address), 1);
     let band = BANDS[band_index(virtual_address)].1;
-    let page = virtual_address - virtual_address % PAGE;
-    assert!(band.contains(page) && band.contains(page + PAGE - 1));
+    let page = virtual_address - virtual_address % PAGE_BYTES;
+    assert!(band.contains(page) && band.contains(page + PAGE_BYTES - 1));
     for (_, shift) in LOW_HALF_SPLIT_SHIFTS {
         assert_eq!(virtual_address >> shift, 0);
     }
@@ -77,13 +77,13 @@ fn every_address_below_the_ceiling_lies_in_exactly_one_band() {
 fn the_bands_are_listed_in_address_order() {
     let low: u64 = kani::any();
     let high: u64 = kani::any();
-    kani::assume(low < high && high < CODE_MODEL_CEILING);
+    kani::assume(low < high && high < CODE_MODEL_CEILING_VIRTUAL_ADDRESS);
     assert!(band_index(low) <= band_index(high));
 }
 
 /// The band function's contract, stated without the function: page aligned and inside `band`.
 fn is_allowed(band: Band, virtual_address: u64) -> bool {
-    virtual_address.is_multiple_of(PAGE)
+    virtual_address.is_multiple_of(PAGE_BYTES)
         && virtual_address >= band.start
         && virtual_address < band.end
 }
@@ -92,7 +92,7 @@ fn is_allowed(band: Band, virtual_address: u64) -> bool {
 /// band, and in no other band.
 fn assert_placed(band: Band, virtual_address: u64, returned: u64) {
     assert_eq!(returned, virtual_address);
-    assert!(band.start <= returned && returned + PAGE <= band.end);
+    assert!(band.start <= returned && returned + PAGE_BYTES <= band.end);
     assert_eq!(bands_containing(returned), 1);
 }
 
@@ -182,7 +182,7 @@ fn service_window_refuses_every_address_its_doc_forbids() {
 fn window_accepts_every_whole_window_its_band_holds() {
     let start: u64 = kani::any();
     let bytes: u64 = kani::any();
-    kani::assume(start.is_multiple_of(PAGE) && bytes.is_multiple_of(PAGE) && bytes > 0);
+    kani::assume(start.is_multiple_of(PAGE_BYTES) && bytes.is_multiple_of(PAGE_BYTES) && bytes > 0);
     kani::assume((RUNTIME_WINDOWS.start..RUNTIME_WINDOWS.end).contains(&start));
     kani::assume(bytes <= RUNTIME_WINDOWS.end - start);
     assert_eq!(window(RUNTIME_WINDOWS, start, bytes), start);
@@ -197,8 +197,8 @@ fn window_accepts_every_whole_window_its_band_holds() {
 fn window_refuses_every_malformed_or_overrunning_window() {
     let start: u64 = kani::any();
     let bytes: u64 = kani::any();
-    let allowed = start.is_multiple_of(PAGE)
-        && bytes.is_multiple_of(PAGE)
+    let allowed = start.is_multiple_of(PAGE_BYTES)
+        && bytes.is_multiple_of(PAGE_BYTES)
         && bytes > 0
         && (RUNTIME_WINDOWS.start..RUNTIME_WINDOWS.end).contains(&start)
         && bytes <= RUNTIME_WINDOWS.end - start;
@@ -221,13 +221,13 @@ fn check_image_places_exactly_what_the_image_band_holds() {
         Ok(())
     } else if starts_inside && end > IMAGE.end {
         Err(ImagePlacement::TooLarge {
-            image_end: end,
-            stack_base: IMAGE.end,
+            image_end_virtual_address: end,
+            stack_base_virtual_address: IMAGE.end,
         })
     } else {
         Err(ImagePlacement::OutsideBand {
-            image_start: start,
-            image_end: end,
+            image_start_virtual_address: start,
+            image_end_virtual_address: end,
         })
     };
     assert_eq!(check_image(start, end), expected);

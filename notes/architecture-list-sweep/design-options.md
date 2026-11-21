@@ -19,7 +19,7 @@ nobody extended the parse by one field.
 
 What it costs, measured. The arch-to-triple table is currently written out four times:
 `script/stack-frame-check`, `script/stack-depth-check`, `script/fastpath-footprint` (all three as
-`case "$arch" in ... esac`), and `xtask`'s `TARGET` / `RISCV_TARGET` / `X86_TARGET` constants. The
+`case "$arch" in ... esac`), and `xtask`'s `TARGET` / `RISCV64_TARGET` / `X86_TARGET` constants. The
 bare triple list is written out four more times: `script/bootstrap`, `script/drift`,
 `script/toolchain-bump`, and `deny.toml`. A `script/` entry point printing `arch<TAB>triple` per
 line is about fifteen lines of POSIX sh reading `rust-toolchain.toml`. Each `case` block becomes a

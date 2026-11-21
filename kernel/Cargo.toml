@@ -49,7 +49,7 @@ address_space_identifier = { version = "0.1.0", path = "../crates/address_space_
 # warning is expected; any other `unused_dependencies` warning from the kernel is a real finding.
 # Do not add an `allow` for it either, because that would hide a second, real one.
 memory_corruption_canary_gate = { version = "0.1.0", path = "../crates/memory_corruption_canary_gate" }
-capability_table = { version = "0.1.0", path = "../crates/capability_table" }
+capability_table = { version = "0.1.0", path = "../crates/capability_table", features = ["peak"] }
 # The timer re-arm's arithmetic (milestone 360 (`crates/timetable`'s proved `next_after` is not what
 # the timer calls), §178 (where the timer re-arm seam goes)). The aarch64 and riscv64 `rearm` call
 # the Kani-proved `next_after` rather than keeping a copy, so the proof binds the code that runs.
@@ -95,6 +95,8 @@ block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nif
 # rather than two copies of a literal. That is not hypothetical here: the one marker that existed
 # before this crate WAS two copies of a literal, one inside a single architecture's arm.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
+# The page the kernel hands the self-test program for its half of the boot self-test.
+self_test_contract = { version = "0.1.0", path = "../crates/self_test_contract" }
 # The per-test time record's grammar (milestone 807 (the kernel suite reports what each test cost), §254 (a gate prints what each item cost), Fork 1): the test runner prints it and
 # `xtask` parses it, so rule 7 makes it a crate.
 test_times = { version = "0.1.0", path = "../crates/test_times" }

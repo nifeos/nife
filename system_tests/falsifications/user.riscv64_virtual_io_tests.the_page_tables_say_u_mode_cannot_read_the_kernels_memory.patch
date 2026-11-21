@@ -1,4 +1,4 @@
-Falsifies `system_tests::user::riscv_virtual_io_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`.
+Falsifies `system_tests::user::riscv64_virtual_io_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`.
 
 Architecture: riscv64
 
@@ -40,7 +40,7 @@ the test calls its single line of defence, and it is also what makes that defect
 unrepresentable.
 
 **The rubber-stamp guards stay green, which is what makes this a real falsification rather
-than a broken function.** The test also requires `user_can_read(IMAGE_BASE)` (the process's own
+than a broken function.** The test also requires `user_can_read(IMAGE_BASE_VIRTUAL_ADDRESS)` (the process's own
 text, mapped and `U`) and `!user_can_read(STACK.start)` (its own half, unmapped). Under this
 patch the first is still true because the page is mapped, and the second is still false
 because nothing is there. A checker that simply said yes to everything would fail the second,

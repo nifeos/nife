@@ -5,5 +5,8 @@ edition = "2024"
 publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
 license.workspace = true
 
+[dev-dependencies]
+address_space_layout = { version = "0.1.0", path = "../address_space_layout" }
+
 [lints]
 workspace = true

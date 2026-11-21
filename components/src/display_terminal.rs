@@ -341,7 +341,8 @@ impl HandoffRun {
         unsafe {
             core::slice::from_raw_parts_mut(
                 component::HANDOFF_ADDRESS as *mut u8,
-                (video_terminal::handoff::HANDOFF_PAGES * address_space_layout::PAGE) as usize,
+                (video_terminal::handoff::HANDOFF_PAGES * address_space_layout::PAGE_BYTES)
+                    as usize,
             )
         }
     }

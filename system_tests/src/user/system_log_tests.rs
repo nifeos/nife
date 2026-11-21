@@ -288,7 +288,7 @@ fn badge_of_every_message(ep: RendezvousId) -> u64 {
             "the badge changed between messages"
         );
         seen = Some(m[3]);
-        if m[0] == byte_sink_contract::eof() {
+        if m[0] == byte_sink_contract::end_of_stream() {
             break;
         }
         bytes += byte_sink_contract::len(m[0]);

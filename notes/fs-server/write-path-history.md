@@ -98,9 +98,9 @@ the ISA whose hardware arrives in three weeks. It works.
 `an_interrupt_that_arrives_before_the_wait_is_not_lost` now run on RISC-V (see notes/interrupts.md).
 They prove the PLIC claim / route / mask / notify / complete path, and the pending-signal count that
 closes the lost-wakeup window, both directly and with no device driver in the way. Each was proved
-capable of failing. Dropping `irq_notify` from `riscv_trap_dispatch`'s external-interrupt arm turns
+capable of failing. Dropping `irq_notify` from `riscv64_trap_dispatch`'s external-interrupt arm turns
 the first red. Dropping the `pending` increment from `Endpoint::signal` turns the second red while
-leaving the first green. Above them, the whole riscv `riscv_virtual_io_tests` module runs a real
+leaving the first green. Above them, the whole riscv `riscv64_virtual_io_tests` module runs a real
 userspace driver whose completions are interrupts, on both the mmio and PCIe transports.
 
 So there is no open kernel-side interrupt-delivery defect to inherit. Milestone 53 (the board's own

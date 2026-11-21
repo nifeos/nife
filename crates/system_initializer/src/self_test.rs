@@ -2,7 +2,7 @@
 //! what its checks need, wait for its verdict, and print its transcript before the prompt
 //! (milestone 1063 (the boot self-test's spawning checks run from userspace)). The checks
 //! themselves are the program's; this is only the wiring, in the terms
-//! `boot_ladder::self_test_program` fixes. See notes/self-test-checks.md, "The two halves".
+//! `self_test_contract::self_test_program` fixes. See notes/self-test-checks.md, "The two halves".
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`.
@@ -15,7 +15,7 @@
 //! - The test and benchmark kernels run no self-test and grant no page, and their boots print no
 //!   verdict at all.
 
-use boot_ladder::self_test_program::{
+use self_test_contract::self_test_program::{
     self as contract, entropy_source, header, image, image_virtual_address, images_fit, message,
     slot,
 };

@@ -3,8 +3,8 @@ use crate::sched;
 
 /// Where the hand-built child's code and stack go: the map's image base and top stack page, as
 /// `supervision_tests` gives for its own.
-const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
 
 /// A one-instruction runaway: branch (aarch64) or jump (riscv) to self, forever. It never
 /// yields, never system calls, never touches an rendezvous, so nothing cooperative can end it and the

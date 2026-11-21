@@ -33,8 +33,8 @@ on nife), fits with room for a hundred and ninety of it.
 Ask in order, and stop at the first yes.
 
 1. Is it the program's code or data? `IMAGE`. A child built by hand from a stub puts its code page
-   at `IMAGE_BASE` too.
-2. Is it the stack? `STACK`, down from `STACK_TOP_PAGE`.
+   at `IMAGE_BASE_VIRTUAL_ADDRESS` too.
+2. Is it the stack? `STACK`, down from `STACK_TOP_PAGE_VIRTUAL_ADDRESS`.
 3. Does the kernel map it into every process without being asked? `PROCESS_PAGES`.
 4. Is it the heap? `HEAP`.
 5. Is it placed by a loader or a runtime for programs that did not choose the address? `RUNTIME_WINDOWS`,
@@ -110,13 +110,13 @@ as `Err(())`, so there the check only makes the failure early and clean.
 ## What changed with it
 
 - `kernel::user::USER_STACK_VA` and `supervision_contract::CHILD_STACK_VA` are both the map's
-  `STACK_TOP_PAGE`, so neither can move alone.
+  `STACK_TOP_PAGE_VIRTUAL_ADDRESS`, so neither can move alone.
 - `crates/user_mode_runtime/link.ld` links at `0x6000_0000`. A linker script cannot name a Rust
   constant, so the map's host test parses the script's `. =` line and fails if the two differ.
 - basalt's build of `rg` and `cryptography_exerciser/build.rs` link with the shared script, at its base.
 - The screen aperture is at `0x5800_0000`, outside the heap band.
-- Hand-built children in the kernel's tests and in `fixtures/` put their code at `IMAGE_BASE` and
-  their stack at `STACK_TOP_PAGE`, so their page tables have a real program's shape.
+- Hand-built children in the kernel's tests and in `fixtures/` put their code at `IMAGE_BASE_VIRTUAL_ADDRESS` and
+  their stack at `STACK_TOP_PAGE_VIRTUAL_ADDRESS`, so their page tables have a real program's shape.
 - `cargo xtask` checks every program it packs into an archive against the image band.
 - The progenitor's job regions grew by the one table counted above: 41 pages, and 98 for a job
   that also builds a directory caretaker.

@@ -76,7 +76,7 @@ const BADGE_B: u64 = 0x779B;
 const OWN_REGION_PAGES: u64 = 16;
 const CONDUCTOR_PAGES: u64 = 16;
 
-const PAGE: u64 = address_space_layout::PAGE;
+const PAGE: u64 = address_space_layout::PAGE_BYTES;
 
 type Snap = [Option<(Object, u32)>; SLOTS];
 

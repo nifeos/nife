@@ -1,19 +1,19 @@
 # address_space_layout
 
-Which band of a process's low half holds what: eight bands that tile the first 2 GiB, the same on
-aarch64, riscv64 and x86_64, with `const fn` checks that stop the build when a page or a window is
-placed outside its band.
+Which band of a process's low half holds what. Eight bands tile the first 2 GiB, the same on
+aarch64, riscv64 and x86_64, and `const fn` checks stop the build when a page or a window lies
+outside its band.
 
 Several programs must agree on where things go in a process: a linker script, two loaders, a
-runtime, a kernel and every fixture that shares a page. This crate is the one table they read, so a
-new page is placed by the table and not by choosing a number beside the others. The crate is
-`no_std`, has no dependencies and is dual licensed `MIT OR Apache-2.0`. It is proven: every property
-it claims is a Kani harness in the tree, and every harness carries a falsification patch that shows
+runtime, a kernel and every fixture that shares a page. This crate is the one table they read, so the
+table places a new page, not a number chosen beside the others. The crate is
+`no_std`, has no dependencies and is dual licensed `MIT OR Apache-2.0`. Kani proves it: every property
+it claims is a harness in the tree, and every harness carries a falsification patch that shows
 what turns it red.
 
 ## EXAMPLES
 
-Place a pair page and a whole window in a `const`, so a wrong address stops the build:
+Place a pair page and a whole window in a `const`, so a wrong address stops the build.
 
 ```rust
 use address_space_layout::{pair_page, window, SERVICE_WINDOWS};
@@ -27,7 +27,17 @@ assert_eq!(CONTROL_PAGE, 0x60_0000);
 assert_eq!(BLOCK_CHANNEL, 0x5000_0000);
 ```
 
-Ask whether a program image fits, and print why it does not:
+Build a band of your own with `Band::new`, which stops the build when it is empty, inverted or not
+page aligned.
+
+```rust
+use address_space_layout::Band;
+
+const SCRATCH: Band = Band::new(0x10_0000, 0x20_0000);
+assert_eq!(SCRATCH.bytes(), 0x10_0000);
+```
+
+Ask whether a program image fits, and print why it does not.
 
 ```rust
 use address_space_layout::{check_image, IMAGE};
@@ -60,7 +70,7 @@ Eleven Kani harnesses state the layout per address and per window:
   places the image, calls it too large, or calls it outside the band, as its documentation says.
 
 Each harness has a falsification record at
-`falsifications/<module>.<harness>.patch`; applying it with `git apply -p1` from the crate root
+`falsifications/<module>.<harness>.patch`. Applying it with `git apply -p1` from the crate root
 makes that harness fail at its own assertion, which shows the proof checks something. The patches
 need a git checkout, and you revert each one with `git checkout -- src` before the next.
 
@@ -88,7 +98,7 @@ You need a Rust toolchain at or above the minimum version at the foot of this pa
 usual way to get one) and a git checkout. From the crate root:
 
 - `cargo build` and `cargo test` run on the host and need nothing else. The tests are unit tests
-  and two doctests.
+  and three doctests.
 - The crate also builds for bare metal. Add the three targets with `rustup target add
   riscv64imac-unknown-none-elf aarch64-unknown-none-softfloat x86_64-unknown-none`. Then run
   `cargo build --lib --target <target>` for each.
@@ -102,20 +112,18 @@ usual way to get one) and a git checkout. From the crate root:
 
 ## BUGS
 
-- Pair pages are checked for membership, not for collisions within one process; a program with
+- The crate checks a pair page for membership, not for collisions within one process; a program with
   several windows asserts their disjointness itself.
-- `pair_page`, `runtime_window` and `service_window` check one page. A window of many pages is
-  written with `window`; one written with a band function alone can run into the next band unseen.
+- `pair_page`, `runtime_window` and `service_window` check one page. A window of many pages goes
+  through `window`; one written with a band function alone can run into the next band unseen.
 - `window` checks a window against its band, not against another window in the same band.
-- **The layout is fixed.** Every band and every fixed window sits at one address in every process
+- **The layout does not move.** Every band and every fixed window sits at one address in every process
   on every architecture, so there is no address-space layout randomization. The design buys a pair
   page checked at compile time and one linker script; it gives up the unpredictability that a
   randomizing system offers an attacker's guess.
 - Other crates restate some of these numbers, pinned by their own tests.
 - A loader that reports a too-large image as "could not spawn" hides `check_image`'s reason.
-- `window` is a provisional name, and so are the address and length constants (`PAGE`,
-  `IMAGE_BASE`, `STACK_TOP` and the rest), which do not yet say whether they hold an address or a
-  length.
+- `window` keeps a provisional name until the first tag.
 
 ## Minimum Rust version
 

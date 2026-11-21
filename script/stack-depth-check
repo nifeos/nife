@@ -212,7 +212,7 @@ TRAP_FRAME = {"aarch64": 272, "riscv64": 288, "x86_64": 176}
 # Where a kernel thread stack starts carrying frames. `thread_entry` is a kernel thread's first Rust
 # frame (context.s's thread_trampoline calls it), `user_thread_entry` is the EL0 mirror, and the
 # arch dispatcher is every trap taken while running on this stack.
-DISPATCH = {"aarch64": "exception_dispatch", "riscv64": "riscv_trap_dispatch",
+DISPATCH = {"aarch64": "exception_dispatch", "riscv64": "riscv64_trap_dispatch",
             "x86_64": "x86_trap_dispatch"}
 
 # **The trap path is two halves since milestone 124, and which half you are on decides which stack
@@ -222,7 +222,7 @@ DISPATCH = {"aarch64": "exception_dispatch", "riscv64": "riscv_trap_dispatch",
 # trampoline between them (`dispatch_on_interrupt_stack`) has an edge in the disassembly and no
 # frame of its own, so the walker would happily charge the body to the thread stack; cutting that
 # edge is what models the switch. See kernel/src/interrupt_stack.rs.
-BODY = {"aarch64": "exception_body", "riscv64": "riscv_trap_body", "x86_64": "x86_trap_body"}
+BODY = {"aarch64": "exception_body", "riscv64": "riscv64_trap_body", "x86_64": "x86_trap_body"}
 ARCH = os.environ["ARCH"]
 if ARCH not in TRAP_FRAME or ARCH not in DISPATCH or ARCH not in BODY:
     print(f"script/stack-depth-check: {ARCH} is in rust-toolchain.toml but has no TRAP_FRAME, "

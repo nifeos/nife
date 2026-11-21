@@ -184,7 +184,7 @@ Two readings.
    352 and 320, are QEMU boot 2's minimums, QEMU's server RECEIVE median of 544 is radon's max,
    and QEMU boot 2's server SEND max is radon's median of 480.
 2. Every EL0 series is 16 bytes deeper on radon, floor included, so the difference sits above
-   `system_call::dispatch`. It is `riscv_trap_body`: its frame is 176 bytes in the board build and 160
+   `system_call::dispatch`. It is `riscv64_trap_body`: its frame is 176 bytes in the board build and 160
    in QEMU's, with `s5` to `s7` saved as well. Building each feature alone settles which one:
    `bench,single_hart,ipc_stack_depth` gives the 176-byte frame, `bench,board,ipc_stack_depth`
    the 160-byte one. `single_hart` adds no code to the trap path; its one `cfg` returns early from

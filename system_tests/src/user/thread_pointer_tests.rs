@@ -24,8 +24,8 @@ use crate::capability_object::Rights;
 use crate::sched;
 use crate::system_call::invoke;
 
-const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
 /// The page of words the thread pointers name, identical in every spinner's space.
 const VA: u64 = address_space_layout::pair_page(0x0060_0000);
 

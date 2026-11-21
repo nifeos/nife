@@ -133,7 +133,7 @@ pub(super) fn drain(parking: sched::RendezvousId, n: usize) {
 /// A region holding a live thread refuses reclamation, and the refusal arms a kill on the way past
 /// (the amendment to §16 (object revocation)), so a test that keeps children alive ends them itself
 /// rather than leaving them to `tidy`. It also asserts every tid a survey reported is reapable
-/// through the same rendezvous, `capability_table::survey_includes`'s scope property from the control
+/// through the same rendezvous, `survey_includes`'s scope property from the control
 /// side. The wait is the clock's, not a yield count: a released child's time to exit is the host's
 /// (notes/hvf-leg.md).
 pub(super) fn collect_all(capability: u64, tids: &[u64]) {
@@ -362,7 +362,7 @@ fn a_viewer_without_the_domain_is_refused_rather_than_shown_an_empty_list() {
 ///
 /// Then the reap, through the same rendezvous, and the row is gone. The two halves are checked in one
 /// test on purpose: the domain the viewer reports and the domain the supervisor may collect from
-/// are one set, which is `capability_table::survey_includes`'s proved property observed on a real kernel.
+/// are one set, which is `survey_includes`'s proved property observed on a real kernel.
 #[test_case]
 fn a_dead_child_is_still_in_the_domain_until_it_is_reaped() {
     let (budget, rendezvous_region) = arena();

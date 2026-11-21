@@ -3,7 +3,7 @@
 //! `cargo run --example parse_static_executable -- <file>` reads the file. With no argument it
 //! reads the crate's own seed for the machine it was built on, from `tests/fixtures/`.
 
-use static_elf::{Elf, MACHINE_AARCH64, MACHINE_RISCV, NATIVE_MACHINE, PageBytes};
+use static_elf::{Elf, MACHINE_AARCH64, MACHINE_RISCV64, NATIVE_MACHINE, PageBytes};
 
 fn main() {
     let bytes = match std::env::args_os().nth(1) {
@@ -13,7 +13,7 @@ fn main() {
         }),
         None => match NATIVE_MACHINE {
             MACHINE_AARCH64 => include_bytes!("../tests/fixtures/minimal_rx_aarch64.elf").to_vec(),
-            MACHINE_RISCV => include_bytes!("../tests/fixtures/minimal_rx_riscv64.elf").to_vec(),
+            MACHINE_RISCV64 => include_bytes!("../tests/fixtures/minimal_rx_riscv64.elf").to_vec(),
             _ => include_bytes!("../tests/fixtures/minimal_rx_x86_64.elf").to_vec(),
         },
     };

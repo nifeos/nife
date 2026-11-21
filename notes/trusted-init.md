@@ -58,7 +58,7 @@ Three pieces, no new system call, no new capability, no key material.
 
 3. The boot path refuses. `trust::require(name, bytes)` runs before the boot program's address
    space is built: `boot_progenitor` on every architecture, and riscv's
-   `riscv_initial_ramdisk_demo`. For the test child builders that `spawn_elf_child_builder` enters,
+   `riscv64_initial_ramdisk_demo`. For the test child builders that `spawn_elf_child_builder` enters,
    the kernel checks the archive's table instead (`trust::require_program_in`). On a mismatch it prints what it expected,
    what it measured, and calls `arch::halt()`.
 

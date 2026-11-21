@@ -8,14 +8,19 @@ Expected to fail: the harness's `assert_eq!`, on any end-of-stream first word pa
 non-zero second or third word.
 
 diff --git a/crates/byte_sink_contract/src/lib.rs b/crates/byte_sink_contract/src/lib.rs
+index cd68507..202391d 100644
 --- a/crates/byte_sink_contract/src/lib.rs
 +++ b/crates/byte_sink_contract/src/lib.rs
-@@ -259,7 +259,7 @@ pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; MAXIMUM_INLINE_BYTES]) -> Message
-             out[8..].copy_from_slice(&w2.to_le_bytes());
+@@ -306,11 +306,7 @@ pub fn unpack(
+             out[8..].copy_from_slice(&word_two.to_le_bytes());
              Message::Bytes(n)
          }
--        OPERATION_EOF if w0 == eof() && w1 == 0 && w2 == 0 => Message::Eof,
-+        OPERATION_EOF => Message::Eof,
+-        OPERATION_END_OF_STREAM
+-            if word_zero == end_of_stream() && word_one == 0 && word_two == 0 =>
+-        {
+-            Message::EndOfStream
+-        }
++        OPERATION_END_OF_STREAM => Message::EndOfStream,
          _ => Message::Malformed,
      }
  }

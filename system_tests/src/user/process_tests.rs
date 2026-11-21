@@ -23,8 +23,8 @@ use crate::capability_object::{Object, Rights};
 use crate::sched;
 use crate::system_call::invoke;
 
-const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-pub(super) const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+pub(super) const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
 /// A second stack, two pages below the first so a guard page sits between them.
 const STACK_B_VA: u64 = STACK_VA - 2 * page_frames::FRAME_BYTES;
 /// The shared page: the address wait word at `+0`, the waiter's return count at `+8` and results at

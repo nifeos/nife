@@ -53,7 +53,7 @@ The protocol lane left it open ("both `< file` and a pipe's read end need an inp
 that does not exist"). The decision is the smallest one available:
 
 > A source is the sink contract received rather than sent. An endpoint the program holds with
-> `READ`, on which `OPERATION_BYTES` messages arrive until `OPERATION_EOF`.
+> `READ`, on which `OPERATION_BYTES` messages arrive until `OPERATION_END_OF_STREAM`.
 
 No new protocol, no new opcodes, no reply. Three consequences fall out and all three are wanted:
 
@@ -64,7 +64,7 @@ No new protocol, no new opcodes, no reply. Three consequences fall out and all t
    and writes the sink contract at it, which is what `fixtures/src/file_source.rs` already was
    (`fixtures/src/sink.rs`'s verify role, until milestone 292 gave it its own name). The shell
    itself is a producer when a builtin leads a pipeline.
-3. `OPERATION_EOF` becomes load-bearing rather than tidy. A producer has to tell its reader that it
+3. `OPERATION_END_OF_STREAM` becomes load-bearing rather than tidy. A producer has to tell its reader that it
    has finished; inferring it from a death notification would be a fact about process supervision
    standing in for a fact about a stream. This is why `date` gained an end-of-stream message.
 

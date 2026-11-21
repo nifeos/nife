@@ -40,7 +40,7 @@ pub(crate) fn main() -> ExitCode {
         // `has_initial_ramdisk_aarch64` only packs, so this calls `user()` (build, then pack), as its
         // two siblings build and pack in one call.
         "initial-ramdisk-aarch64" => user(),
-        "initial-ramdisk-riscv" => has_initial_ramdisk_riscv(),
+        "initial-ramdisk-riscv64" => has_initial_ramdisk_riscv64(),
         // The third archive (milestone 161). Same programs, built for x86_64.
         "initial-ramdisk-x86" => has_initial_ramdisk_x86(),
         // The bootable UEFI image (milestone 87): the entry real firmware can start, staged at

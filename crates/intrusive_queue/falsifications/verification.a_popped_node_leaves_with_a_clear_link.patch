@@ -11,7 +11,7 @@ more nodes were queued.
 diff --git a/crates/intrusive_queue/src/lib.rs b/crates/intrusive_queue/src/lib.rs
 --- a/crates/intrusive_queue/src/lib.rs
 +++ b/crates/intrusive_queue/src/lib.rs
-@@ -263,7 +263,6 @@
+@@ -296,7 +296,6 @@
              if self.head.is_none() {
                  self.tail = None;
              }

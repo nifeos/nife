@@ -34,18 +34,20 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 
 ## Finding status
 
-- P0-1, the manifest stands alone: Open. `Cargo.toml` still inherits the workspace's license and
-  lints and has no `rust-version`, `description` or `repository`, and the crate has no README and no
-  license files; the move pull request writes them, or a lane does it in the tree first.
+- P0-1, the manifest stands alone: Done, [#3888](https://github.com/nifeos/nife/pull/3888). The
+  manifest carries its own license, lints, `rust-version` 1.85, `description` and `repository`, and
+  the crate has a README and both license files.
 - P0-2, the crate's text refers back into nife: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3656](https://github.com/nifeos/nife/pull/3656). Only the `Name:` blocks remain, and the move
   strips them.
-- P1-3, the proved `derive` is not the delegation the kernel runs: Open. `Capability::delegate`
+- P1-3, the proved `derive` is not the delegation the kernel runs: Done. `Capability::delegate`
   holds the rule once, the kernel's `Delegation::derive` calls it, and a harness proves it
-  ([#3656](https://github.com/nifeos/nife/pull/3656)). Left: the two `REVOKE` arms in
-  `kernel/src/system_call.rs` still test `GRANT` inline under no harness; the shape of a system-call-layer
-  harness is two-way, and the maintainer rules it provisionally.
+  ([#3656](https://github.com/nifeos/nife/pull/3656)). The two `REVOKE` arms in
+  `kernel/src/system_call.rs` test `GRANT` inline with no harness, by the maintainer's provisional
+  ruling ([#3888](https://github.com/nifeos/nife/pull/3888)). The reason sits beside them. A revoke
+  mints nothing, `allows` has its proof in the crate, and a harness of the arm needs stubs of the
+  current thread, its table and the frame revoke that the kernel proofs do not have.
 - P1-4, a slot truncates on a 32-bit target: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565).
 - P1-5, `len` means capacity: Done, [#3656](https://github.com/nifeos/nife/pull/3656). The name
@@ -58,15 +60,18 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 - P2-10, `Error` is thin for a stranger: Done, [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3656](https://github.com/nifeos/nife/pull/3656). The ruling of 2026-11-19 (UTC) keeps `GrantRequired` and
   `SlotOccupied`.
-- P2-11, the process-wide peak is unconditional: Open. The static and its readers sit behind
-  `target_has_atomic = "32"` ([#3565](https://github.com/nifeos/nife/pull/3565)); a `peak` cargo
-  feature remains. It is two-way until the release, and the maintainer rules it provisionally; the
-  feature's name then joins the release name review.
+- P2-11, the process-wide peak is unconditional: Done,
+  [#3565](https://github.com/nifeos/nife/pull/3565),
+  [#3888](https://github.com/nifeos/nife/pull/3888). `highest_seen` and its static are behind the
+  cargo feature `peak`, off by default, which the kernel turns on (the maintainer's provisional
+  ruling). The feature's name joins the release name review.
 - P2-12, no read-only walk, and `delete_matching` takes `Fn`: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565),
   [#3656](https://github.com/nifeos/nife/pull/3656).
-- P2-13, the mutation record travels as unknown: Open. The move pull request writes the three
-  survivors and their reasons into `.github/mutants-exempts`.
+- P2-13, the mutation record travels as unknown: Done,
+  [#3888](https://github.com/nifeos/nife/pull/3888). The crate's `.github/mutants-exempts` lists the
+  three survivors and the four timeouts with their reasons, and `.cargo/mutants.toml` excludes the
+  Kani proofs.
 - P2-14, one test pins the global exactly: Declined. No table has more than 64 slots, so no test can
   exceed the pinned `(64, 64)`, and a wider table cannot break the exact assertion.
 - P2-15, notes beside the crate have drifted: Done,
@@ -78,14 +83,22 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
   [#3674](https://github.com/nifeos/nife/pull/3674).
 - The five names: Done (ruled 2026-11-19 UTC, option A). `delegate`, `GrantRequired`, `SlotOccupied`,
   `capacity` and `iter` stand as built.
-- The move: Open. The review package is `notes/crate-reviews/capability-table.md`, and
-  nifeos/capability_table does not exist; the clearance under Open decisions comes next.
+- The move: Open (cleared 2026-11-21 UTC, option A). [#3888](https://github.com/nifeos/nife/pull/3888)
+  readies the crate in the tree: `Reap`, `reap_decision` and `survey_includes` stay in nife, in
+  `kernel/src/sched/region_reaping.rs` with their four proofs in `region_reaping/verification.rs`
+  (the place is the lane's provisional choice). Next: create nifeos/capability_table from the dry
+  run, then the pin pull request.
 
 ## Open decisions
 
-One decision is open. D2 below rules the five names.
+None. The clearance below has its ruling.
 
 ### Clear the review, which creates nifeos/capability_table
+
+Ruled 2026-11-21 (UTC), option A. The crate moves to nifeos/capability_table with `publish =
+false`, no tag and no publish. It carries the table, the rights algebra and `Capability::delegate`.
+`Reap`, `reap_decision` and `survey_includes`, with their Kani harnesses and falsification patches,
+stay in nife, wired into `script/verify` and `script/falsifications`, with no change of behavior.
 
 Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
 architect reads; clearing it is the go to create the crate's repository and move the crate there.

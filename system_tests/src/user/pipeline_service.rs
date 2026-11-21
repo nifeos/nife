@@ -470,7 +470,7 @@ fn spawn_service_stub(spawn_ep: RendezvousId, result: RendezvousId) -> ! {
             && let Some(ep) = take_rendezvous(spawn_ep)
         {
             crate::sched::spawn(move || {
-                crate::sched::ipc_send(ep, [byte_sink_contract::eof(), 0, 0]);
+                crate::sched::ipc_send(ep, [byte_sink_contract::end_of_stream(), 0, 0]);
             });
         }
         // A `--mem` grant is received and dropped: no stage of the pipeline script asks for

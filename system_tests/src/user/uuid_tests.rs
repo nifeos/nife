@@ -36,7 +36,7 @@ fn spawn_uuid_holding_no_entropy(endpoints: u64) -> RendezvousId {
 /// **where the stream ends** and not only what a line said.
 fn chunk(out: RendezvousId, buf: &mut [u8; 16]) -> Option<usize> {
     let words = crate::sched::ipc_receive(out);
-    if words[0] == byte_sink_contract::eof() {
+    if words[0] == byte_sink_contract::end_of_stream() {
         return None;
     }
     let count = words[0] as usize;

@@ -169,7 +169,7 @@ supply-chain|ci|script/supply-chain
 coverage|ci|script/coverage
 fuzz-1|ci|script/fuzz --time 60 --shard 1/2
 fuzz-2|ci|script/fuzz --time 60 --shard 2/2
-bench|ci|script/bench --check && script/bench --riscv --check && script/bench --x86 --check
+bench|ci|script/bench --check && script/bench --riscv64 --check && script/bench --x86 --check
 cpu-matrix|ci|script/cpu-matrix
 watchdog-check|ci|script/soak-test --wedge --arch x86_64 && script/soak-test --watchdog --arch x86_64
 crate-probes|ci|script/crate-probes

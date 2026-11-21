@@ -8,7 +8,7 @@
 
 /// The driver crate itself, so the kernel names the tree's types without depending on it.
 pub use ::designware_ethernet as device;
-use address_space_layout::{PAGE, pair_page};
+use address_space_layout::{PAGE_BYTES, pair_page};
 use designware_ethernet::bring_up::{Account, AddressSource, Error, Inputs};
 use designware_ethernet::cache_coherence::{Observation, Payload, Verdict};
 use designware_ethernet::link::{Link, Speed};
@@ -63,11 +63,11 @@ pub const ALWAYS_ON_SYSTEM_CONTROLLER_VIRTUAL_ADDRESS: u64 = pair_page(0x0000_00
 
 const _: () = assert!(
     DATA_PLANE_VIRTUAL_ADDRESS
-        + designware_ethernet::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE
+        + designware_ethernet::layout::DIRECT_MEMORY_ACCESS_REGION_PAGES * PAGE_BYTES
         <= CONTROL_REGISTER_VIRTUAL_ADDRESS
 );
 const _: () = assert!(
-    CONTROL_REGISTER_VIRTUAL_ADDRESS + CONTROL_REGISTER_PAGES * PAGE
+    CONTROL_REGISTER_VIRTUAL_ADDRESS + CONTROL_REGISTER_PAGES * PAGE_BYTES
         <= ALWAYS_ON_SYSTEM_CONTROLLER_VIRTUAL_ADDRESS
 );
 
@@ -113,8 +113,8 @@ pub fn control_spawn_words(inputs: &Inputs) -> Option<[u64; 3]> {
 pub fn control_inputs(words: [u64; 3], bus_configuration: BusConfiguration) -> Option<Inputs> {
     let [settings, base, station] = words;
     let physical_layer_device = Settings::from_word(settings)?;
-    let region_physical_address = base & !(PAGE - 1);
-    if region_physical_address == 0 || base & (PAGE - 1) > 0x1f {
+    let region_physical_address = base & !(PAGE_BYTES - 1);
+    if region_physical_address == 0 || base & (PAGE_BYTES - 1) > 0x1f {
         return None;
     }
     let tree_station = match station {
@@ -493,7 +493,7 @@ impl Handoff {
     ///
     /// Name: provisional. No ruling covers it.
     pub fn unpack(arg0: u64, arg1: u64) -> Option<Handoff> {
-        if arg0 & 0xffff != ROLE_TAG || arg1 == 0 || !arg1.is_multiple_of(PAGE) {
+        if arg0 & 0xffff != ROLE_TAG || arg1 == 0 || !arg1.is_multiple_of(PAGE_BYTES) {
             return None;
         }
         let b = (arg0 >> 16).to_le_bytes();

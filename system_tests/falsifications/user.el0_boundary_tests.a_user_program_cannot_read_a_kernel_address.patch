@@ -46,7 +46,7 @@ The riscv64 leg is the reason the other two share a record rather than the claim
 access unless `sstatus.SUM` is set. So the same defect there does not produce a kernel that lets
 userspace read it; it produces a kernel that cannot read itself, and dies before any test runs.
 riscv64's evidence for row 21 is the software walk in
-`riscv_virtual_io_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`. See
+`riscv64_virtual_io_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`. See
 notes/confinement-claims.md row 21.
 
 diff --git a/kernel/src/arch/aarch64/mmu.rs b/kernel/src/arch/aarch64/mmu.rs

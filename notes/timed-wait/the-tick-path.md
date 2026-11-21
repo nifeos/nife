@@ -16,8 +16,8 @@ save.
 
 | aarch64 | | riscv64 | |
 |---|---|---|---|
-| `exception_dispatch` | 76 | `riscv_trap_dispatch` | 69 |
-| `exception_body` | 127 | `riscv_trap_body` | 238 |
+| `exception_dispatch` | 76 | `riscv64_trap_dispatch` | 69 |
+| `exception_body` | 127 | `riscv64_trap_body` | 238 |
 | `handle_interrupt` | 79 | | |
 | `gic::acknowledge` | 31 | | |
 | `gic::end_of_interrupt` | 29 | | |

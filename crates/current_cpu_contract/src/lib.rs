@@ -141,7 +141,7 @@ pub const PAGE_CONTENT_BYTES: usize = TICK_HERTZ_OFFSET_BYTES + 8;
 /// [`thread_page_virtual_address`]`(k)`; slot 0 is [`PAGE_VIRTUAL_ADDRESS`] itself, so a process's
 /// first thread reads where every thread read before slots existed.
 pub const THREAD_PAGE_SLOTS: usize =
-    (address_space_layout::PROCESS_PAGES.bytes() / address_space_layout::PAGE) as usize;
+    (address_space_layout::PROCESS_PAGES.bytes() / address_space_layout::PAGE_BYTES) as usize;
 
 /// Where thread page slot `k` is mapped: [`PAGE_VIRTUAL_ADDRESS`] for slot 0, and one page lower
 /// for each slot after it, inside `PROCESS_PAGES` and so inside the stack's last-level table.
@@ -150,20 +150,20 @@ pub const THREAD_PAGE_SLOTS: usize =
 /// Name: provisional.
 pub const fn thread_page_virtual_address(k: usize) -> Option<u64> {
     if k < THREAD_PAGE_SLOTS {
-        Some(PAGE_VIRTUAL_ADDRESS - k as u64 * address_space_layout::PAGE)
+        Some(PAGE_VIRTUAL_ADDRESS - k as u64 * address_space_layout::PAGE_BYTES)
     } else {
         None
     }
 }
 
 /// The fixed virtual address the kernel maps this page at in every process, the same on all three
-/// architectures: `address_space_layout::CURRENT_CPU_PAGE`, the last page of `PROCESS_PAGES`. One
+/// architectures: `address_space_layout::CURRENT_CPU_PAGE_VIRTUAL_ADDRESS`, the last page of `PROCESS_PAGES`. One
 /// page above the stack's top page, it shares the stack's three upper-level page tables, so the
 /// mapping costs only its leaf entry; a page alone in its tables costs a table frame at each level
 /// on every spawn.
 ///
 /// Name: provisional.
-pub const PAGE_VIRTUAL_ADDRESS: u64 = address_space_layout::CURRENT_CPU_PAGE;
+pub const PAGE_VIRTUAL_ADDRESS: u64 = address_space_layout::CURRENT_CPU_PAGE_VIRTUAL_ADDRESS;
 
 /// Build a fresh page's bytes: the magic, and [`UNSCHEDULED`] for a thread that has not run yet,
 /// with no allowance and no tick. The kernel writes this into a zeroed frame before mapping it
@@ -509,7 +509,7 @@ mod tests {
         // One page apart, so no two threads share a slot's page.
         assert_eq!(
             thread_page_virtual_address(1),
-            Some(PAGE_VIRTUAL_ADDRESS - address_space_layout::PAGE)
+            Some(PAGE_VIRTUAL_ADDRESS - address_space_layout::PAGE_BYTES)
         );
     }
 
@@ -548,7 +548,7 @@ mod tests {
         assert!(address_space_layout::PROCESS_PAGES.contains(PAGE_VIRTUAL_ADDRESS));
         assert_eq!(
             PAGE_VIRTUAL_ADDRESS >> 21,
-            address_space_layout::STACK_TOP_PAGE >> 21,
+            address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS >> 21,
             "not in the stack's 2 MiB, so the mapping buys an L3 of its own"
         );
     }

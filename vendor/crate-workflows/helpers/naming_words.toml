@@ -262,6 +262,13 @@ endings = ["re", "res"]
 words = ["virtual", "physical", "bus", "mac", "ip", "ipv4", "ipv6", "i2c", "email", "socket", "network",
          "ethernet", "peer", "relative", "block", "logical"]
 
+# The words that, straight after `address`, make a compound that is not an address: an address
+# space is a space, and an address wait or wake is a synchronization queue keyed by an address.
+# `Key::address_space`, `AddressWaitTable` and `address_wake` are not read by the address rule. A
+# later `address` in the same name is still read.
+[address_compounds]
+words = ["space", "spaces", "wait", "waits", "wake", "wakes"]
+
 # The words straight before `address` that make it a verb, not a location: `can_address_blocks`.
 [address_verb_before]
 words = ["can", "cannot", "to", "may", "must", "will", "should", "could", "would", "might"]

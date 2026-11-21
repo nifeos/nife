@@ -243,7 +243,7 @@ fn programs_fit_the_address_space_map(files: &[(&str, &[u8])]) -> Result<(), Err
 /// The page-rounded span of a 64-bit little-endian ELF's `PT_LOAD` segments, or `None` if `bytes`
 /// is not one or has no loadable segment.
 fn image_span(bytes: &[u8]) -> Option<(u64, u64)> {
-    const PAGE: u64 = address_space_layout::PAGE;
+    const PAGE: u64 = address_space_layout::PAGE_BYTES;
     let u16_at = |o: usize| Some(u16::from_le_bytes(bytes.get(o..o + 2)?.try_into().ok()?));
     let u32_at = |o: usize| Some(u32::from_le_bytes(bytes.get(o..o + 4)?.try_into().ok()?));
     let u64_at = |o: usize| Some(u64::from_le_bytes(bytes.get(o..o + 8)?.try_into().ok()?));
@@ -298,7 +298,10 @@ mod tests {
             noise.push((x >> 24) as u8);
         }
         vec![
-            ("progenitor", elf_at(address_space_layout::IMAGE_BASE)),
+            (
+                "progenitor",
+                elf_at(address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS),
+            ),
             ("jig", b"jig".to_vec()),
             ("mdr", b"mdr".to_vec()),
             ("wc", noise),
@@ -370,13 +373,13 @@ mod tests {
     /// `mkfs` was, is named.
     #[test]
     fn an_archive_program_outside_the_image_band_is_named() {
-        let good = elf_at(address_space_layout::IMAGE_BASE);
+        let good = elf_at(address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS);
         let mkfs_as_it_was = elf_at(0x20_0000);
         assert_eq!(
             image_span(&good),
             Some((
-                address_space_layout::IMAGE_BASE,
-                address_space_layout::IMAGE_BASE + 0x2000
+                address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS,
+                address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS + 0x2000
             ))
         );
         assert!(

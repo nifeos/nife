@@ -44,6 +44,9 @@ extension (`TARGET_EXTENSIONS`), or an extensionless file under `script/`, `help
 - A GitHub `blob/<commit sha>/...#L12` permalink. It names an immutable file, so it cannot drift.
 - Files that are output or data, not writing (`DATA_EXTENSIONS`: logs, TSV and CSV tables, patches,
   JSON), and `vendor/`, `patches/`, `target/`, which are somebody else's text.
+- A crate's `.github/mutants-exempts` (`DATA_NAMES`). The crate-workflows mutation gate matches each
+  line on its `file:line` prefix, so the line number is the key the tool reads, not a pointer a
+  writer chose; the gate itself refuses an entry whose line no longer holds a survivor.
 - This file, whose fixtures are the patterns it looks for.
 
 **An exception is marked at the citation.** `line-citation: exception. Reason: ...` on the same
@@ -81,6 +84,7 @@ CODE_EXTENSIONS = ('rs', 'S', 's', 'py', 'sh', 'c', 'h', 'toml', 'yml', 'yaml', 
 TARGET_EXTENSIONS = DOC_EXTENSIONS + CODE_EXTENSIONS
 DATA_EXTENSIONS = ('.log', '.tsv', '.csv', '.patch', '.diff', '.json', '.svg', '.txt', '.lock')
 EXCLUDED_PREFIXES = ('vendor/', 'patches/', 'target/')
+DATA_NAMES = ('.github/mutants-exempts',)
 
 _PATH = (r'(?:[A-Za-z0-9_./][A-Za-z0-9_.\-/]*\.(?:' + '|'.join(TARGET_EXTENSIONS) + r')'
          r'|(?:script|helpers|\.githooks)/[A-Za-z0-9_\-]+)')
@@ -93,10 +97,15 @@ FENCE = re.compile(r'^\s{0,3}(```|~~~)')
 LIST_ITEM = re.compile(r'^\s*(?:[-*+]|\d+[.)])\s')
 
 
+# A crate's mutation exemptions are keyed by `src/<file>:<line>`, the form cargo-mutants reports and
+# the crate template's gate matches, so its lines are data and not citations.
+DATA_NAMES = ('.github/mutants-exempts',)
+
+
 def in_scope(path):
     if path.startswith(EXCLUDED_PREFIXES) or path == SELF:
         return False
-    return not path.endswith(DATA_EXTENSIONS)
+    return not path.endswith(DATA_EXTENSIONS) and not path.endswith(DATA_NAMES)
 
 
 def kind(target):
@@ -304,13 +313,14 @@ def selftest():
         failed += 1
         print(f'line-citations selftest: kinds {kinds}', file=sys.stderr)
     for p, want in (('vendor/x.md', False), ('bench/a.log', False), ('notes/d.tsv', False),
-                    (SELF, False), ('notes/x.md', True), ('script/lint', True)):
+                    (SELF, False), ('notes/x.md', True), ('script/lint', True),
+                    ('crates/a/.github/mutants-exempts', False)):
         if in_scope(p) != want:
             failed += 1
             print(f'line-citations selftest: in_scope({p!r}) is {not want}', file=sys.stderr)
     if failed:
         return 1
-    print(f'line-citations selftest: {len(cases) + 7} fixtures')
+    print(f'line-citations selftest: {len(cases) + 8} fixtures')
     return 0
 
 

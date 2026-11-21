@@ -452,21 +452,17 @@ crates/address_space_layout/src/lib.rs::BANDS
 
 crates/address_space_layout/src/lib.rs::Band
 
-crates/address_space_layout/src/lib.rs::CODE_MODEL_CEILING
 
-crates/address_space_layout/src/lib.rs::CURRENT_CPU_PAGE
 
 crates/address_space_layout/src/lib.rs::HEAP
 
 crates/address_space_layout/src/lib.rs::IMAGE
 
-crates/address_space_layout/src/lib.rs::IMAGE_BASE
 
 crates/address_space_layout/src/lib.rs::ImagePlacement
 
 crates/address_space_layout/src/lib.rs::NULL_GUARD
 
-crates/address_space_layout/src/lib.rs::PAGE
 
 crates/address_space_layout/src/lib.rs::PAIR_PAGES
 
@@ -478,9 +474,7 @@ crates/address_space_layout/src/lib.rs::SERVICE_WINDOWS
 
 crates/address_space_layout/src/lib.rs::STACK
 
-crates/address_space_layout/src/lib.rs::STACK_TOP
 
-crates/address_space_layout/src/lib.rs::STACK_TOP_PAGE
 
 crates/address_space_layout/src/lib.rs::bytes
 
@@ -568,7 +562,6 @@ crates/bitmap_font/src/render.rs::is_ink
 
 
 
-crates/boot_ladder/src/rungs.rs::SELF_TEST_FAILED
 
 
 crates/boot_slot/src/lib.rs::EMPTY
@@ -651,7 +644,6 @@ crates/byte_sink_contract/src/lib.rs::KIND_TEXT
 
 crates/byte_sink_contract/src/lib.rs::OPERATION_BYTES
 
-crates/byte_sink_contract/src/lib.rs::OPERATION_EOF
 
 crates/byte_sink_contract/src/lib.rs::OPERATION_SHIFT
 
@@ -665,7 +657,6 @@ crates/byte_sink_contract/src/lib.rs::Sent
 crates/byte_sink_contract/src/lib.rs::classify
 
 
-crates/byte_sink_contract/src/lib.rs::eof
 
 crates/byte_sink_contract/src/lib.rs::kind
 
@@ -986,8 +977,6 @@ crates/capability_table/src/lib.rs::NONE
 
 crates/capability_table/src/lib.rs::READ
 
-crates/capability_table/src/lib.rs::Reap
-
 crates/capability_table/src/lib.rs::Rights
 
 crates/capability_table/src/lib.rs::WRITE
@@ -1027,10 +1016,6 @@ crates/capability_table/src/lib.rs::new
 crates/capability_table/src/lib.rs::peak
 
 crates/capability_table/src/lib.rs::put
-
-crates/capability_table/src/lib.rs::reap_decision
-
-crates/capability_table/src/lib.rs::survey_includes
 
 crates/capability_table/src/lib.rs::union
 
@@ -5383,36 +5368,8 @@ crates/pmap/src/lib.rs::write_report
 
 
 
-crates/program_argument_contract/src/lib.rs::EMPTY
-
-crates/program_argument_contract/src/lib.rs::HEADER_BYTES
-
-crates/program_argument_contract/src/lib.rs::Iter
-
 crates/program_argument_contract/src/lib.rs::MAGIC
 
-crates/program_argument_contract/src/lib.rs::PAGE_BYTES
-
-crates/program_argument_contract/src/lib.rs::PageBuilder
-
-crates/program_argument_contract/src/lib.rs::Refused
-
-crates/program_argument_contract/src/lib.rs::count
-
-crates/program_argument_contract/src/lib.rs::finish
-
-
-crates/program_argument_contract/src/lib.rs::is_empty
-
-crates/program_argument_contract/src/lib.rs::iter
-
-crates/program_argument_contract/src/lib.rs::len
-
-crates/program_argument_contract/src/lib.rs::new
-
-crates/program_argument_contract/src/lib.rs::parse
-
-crates/program_argument_contract/src/lib.rs::push
 
 crates/program_table/src/image.rs
 
@@ -10196,7 +10153,7 @@ system_tests/src/user/revoke_service.rs::wire
 
 system_tests/src/user/ripgrep_tests.rs
 
-system_tests/src/user/riscv_virtual_io_tests.rs
+system_tests/src/user/riscv64_virtual_io_tests.rs
 
 system_tests/src/user/rm_program_tests.rs
 

@@ -95,7 +95,7 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`domain_name_resolution_contract`](crate-reviews/domain-name-resolution-contract.md) | 6 | ready for review |
 | [`socket_contract`](crate-reviews/socket-contract.md) | contract | cleared to move (2026-11-21 UTC, repository `nifeos/socket_contract` approved, `publish = false`, no tag, no publish); the move lane first proves the `std` farm builds from the pinned checkout |
 | [`machine_statistics_contract`](crate-reviews/machine-statistics-contract.md) | contract | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for `address_space_layout` and `current_cpu_contract` |
-| [`address_space_layout`](crate-reviews/address-space-layout.md) | 3 | ready for review; the names of items 7, 9, 15 and 17 wait for the architect |
+| [`address_space_layout`](crate-reviews/address-space-layout.md) | 3 | cleared 2026-11-21 (UTC); the move follows |
 | [`user_mode_runtime`](crate-reviews/user-mode-runtime.md) | 3 | cleared to move (2026-11-21 UTC, `publish = false`, no tag, no publish); the move waits for `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract` to leave the tree; thin machine checks recorded as a limitation |
 | [`memory_region_heap`](crate-reviews/memory-region-heap.md) | 9 | cleared to move (2026-11-20 UTC, no tag, no publish); the move waits for `abi`, `address_space_layout` and `user_mode_runtime` to get repositories |
 | [`environment_contract`](crate-reviews/environment-contract.md) | contract | clearance for the architect (names ratified) |
@@ -106,7 +106,9 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`device_tree_blob`](crate-reviews/device-tree-blob.md) | 4 | cleared to move (2026-11-20 UTC, no tag, no publish) |
 | [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | cleared to move (2026-11-20 UTC, `publish = false`, no tag, no publish); the first tag waits for a litmus run on real Arm and RISC-V hardware |
 | [`boot_ladder`](crate-reviews/boot-ladder.md) | 1078 | ready for review |
-| [`capability_table`](crate-reviews/capability-table.md) | kernel | ready for review; milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) asks for the clearance |
+| [`capability_table`](crate-reviews/capability-table.md) | kernel | cleared to move (2026-11-21 UTC, no tag, no publish); milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) tracks the move |
 | [`filesystem_contract`](crate-reviews/filesystem-contract.md) | 2 | ready for review; one clearance of the repository shared with `filesystem_fixture`, and the names |
 | [`filesystem_fixture`](crate-reviews/filesystem-fixture.md) | 2 | ready for review with `filesystem_contract`; the item names wait for the rename lane of milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves) |
 | [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | ready for review; milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) asks for the clearance |
+| [`line_editor`](crate-reviews/line-editor.md) | 1098 | ready for review; the move waits for the item 3 rename lane |
+| [`terminal_contract`](crate-reviews/terminal-contract.md) | contract | ready for review; the move waits for its interface number and the reserved-bit ruling |

@@ -13,7 +13,7 @@
 //! - Eight bytes per call (the terminal contract's request shape), so a sixteen-byte sink
 //!   message is two round trips.
 //! - No back pressure of its own: flow control is the chain of rendezvous, with nothing buffered.
-//! - `OPERATION_EOF` ends a writer, not the terminal; nothing notices a client dead mid-message.
+//! - `OPERATION_END_OF_STREAM` ends a writer, not the terminal; nothing notices a client dead mid-message.
 //!
 //! Name: ratified 2026-08-03 (calef), replacing `terminal_sink`. It holds the terminal endpoint,
 //! which also carries `OPERATION_READLINE`, and hands out a sink that cannot read, which is the caretaker
@@ -47,10 +47,13 @@ fn start(_x0: u64, _x1: u64, _x2: u64) -> ! {
     loop {
         let (w0, w1, w2) = receive(SINK);
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(w0, w1, w2),
+            &mut buf,
+        ) {
             byte_sink_contract::Message::Bytes(n) => print(&buf[..n]),
             // One endpoint serves every client in turn, so a writer's end is not the terminal's.
-            byte_sink_contract::Message::Eof => {}
+            byte_sink_contract::Message::EndOfStream => {}
             // Said aloud, or the client believes it printed.
             byte_sink_contract::Message::Malformed => {
                 print(b"terminal_sink_caretaker: unreadable message\n");

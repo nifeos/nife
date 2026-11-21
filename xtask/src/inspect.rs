@@ -3,7 +3,7 @@
 use std::process::Command;
 
 use crate::host::{kernel_elf, llvm_tool, run, workspace_root};
-use crate::{RISCV_TARGET, RUNNER, TARGET, X86_TARGET, build};
+use crate::{RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, build};
 
 /// Boot the kernel with QEMU frozen and a GDB stub listening.
 ///
@@ -126,15 +126,15 @@ pub(crate) fn image() -> bool {
 /// Only a triple names an architecture or a std build; the checkout's own directory name is not
 /// evidence of anything, so no arm may match on a bare `nife`.
 fn strip_tag(path: &str) -> &'static str {
-    if path.contains(RISCV_TARGET) {
-        "riscv"
+    if path.contains(RISCV64_TARGET) {
+        "riscv64"
     } else if path.contains(X86_TARGET) {
         "x86"
     } else if path.contains(TARGET) {
         // Provisional name: the aarch64 bare-metal tag, so `host` means real host builds only.
         "aarch64"
     } else if path.contains("riscv64-unknown-nife") {
-        "std-riscv"
+        "std-riscv64"
     } else if path.contains("x86_64-unknown-nife") {
         "std-x86"
     } else if path.contains("aarch64-unknown-nife") {

@@ -478,7 +478,7 @@ mod capability_tests;
 mod filesystem_tests;
 
 /// **The network path**: virtio-net, DHCP, the socket contract, name resolution, TCP, HTTP and
-/// `std::net`. aarch64 only; the RISC-V twins are in `riscv_virtual_io_tests`.
+/// `std::net`. aarch64 only; the RISC-V twins are in `riscv64_virtual_io_tests`.
 #[cfg(all(test, initial_ramdisk))]
 mod network_tests;
 
@@ -580,7 +580,7 @@ mod live_swap_tests;
 ///
 /// Cross-ISA: one hash implementation (`crates/measured_boot`) and one trust root `build.rs`
 /// generates into the kernel, checked from the boot path on every architecture (`boot_progenitor`,
-/// and riscv's `riscv_initial_ramdisk_demo`). A real refusal halts the machine, so these test the
+/// and riscv's `riscv64_initial_ramdisk_demo`). A real refusal halts the machine, so these test the
 /// decision: the function the boot path consults says Ok for the initial ramdisk QEMU loaded (the
 /// whole build composition, end to end, matches the archive in RAM) and Err for bytes off by one
 /// bit. The boot path's only response to Err is `arch::halt()`, in `trust::require`.
@@ -843,7 +843,7 @@ mod fs_shared_page_tests;
 /// unconditionally. What these prove that aarch64's runs do not: userspace device drivers with
 /// DMA, and the kernel's DMA confinement, on the second ISA.
 #[cfg(all(test, target_arch = "riscv64"))]
-mod riscv_virtual_io_tests;
+mod riscv64_virtual_io_tests;
 
 /// **The operators, end to end: `|` is two processes and an endpoint** (milestone 50,
 /// notes/pipes.md).
