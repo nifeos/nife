@@ -14,36 +14,6 @@ The crate is `no_std`, has no dependencies, and is dual licensed `MIT OR Apache-
 harnesses prove its list logic, and each carries a falsification patch that shows what turns it
 red.
 
-## The caller's contract
-
-A node implements `Node`, an `unsafe` trait whose two methods read and store its link. One `unsafe`
-call, `Unqueued::new`, mints a node into an `Unqueued` token. `Queue::push_back` consumes the
-token and `Queue::pop_front` hands it back. The token is neither `Clone` nor `Copy`, so a second
-push of the same node does not compile without a second `unsafe` mint.
-
-The caller keeps three rules, and the documentation cites them by number:
-
-1. A node is on at most one queue until popped. The token enforces this.
-2. A node outlives its time on the queue. No type in the crate can check this, because the queue
-   does not own its nodes. `Unqueued::new` states it once, where the caller mints the token.
-3. The caller serializes all access to a queue and its links, and mints each token from the
-   node's owning pointer, never from a reference.
-
-Rule 3's second half is about pointer provenance. Mint the token from the pointer every later
-access derives from: the one `Box::into_raw` returned, the pointer a table stores, or `&raw mut`
-on a local the program does not name again. A token minted from a reborrow, such as
-`NonNull::from(&mut *owner)`, dies at the owner's next `&mut` reborrow under Rust's aliasing
-rules. The queue's next use of that token is then undefined behavior. Miri reports it under both
-Stacked Borrows and Tree Borrows. The test
-`a_token_from_the_owning_pointer_survives_later_borrows` runs the safe shape.
-
-A dropped token strands its node, and so does a dropped queue that still holds nodes: queueing
-one again needs a fresh mint. `Queue` has no `Drop`, so a caller can move a queue by value through
-`Default` and `core::mem::take`.
-
-`Queue<T>` is `Send` only when `T` is, as `LinkedList<T>` is. `Unqueued<T>` is never `Send`, since
-`NonNull<T>` is not.
-
 ## EXAMPLES
 
 A run queue: threads leave in the order they arrived.
@@ -101,6 +71,36 @@ The harnesses cover the list logic. They do not cover the caller's contract: no 
 that a caller kept a node alive or minted its token from the owning pointer. Miri covers the
 aliasing side through the tests, and the repository's weekly workflow runs it.
 
+## The caller's contract
+
+A node implements `Node`, an `unsafe` trait whose two methods read and store its link. One `unsafe`
+call, `Unqueued::new`, mints a node into an `Unqueued` token. `Queue::push_back` consumes the
+token and `Queue::pop_front` hands it back. The token is neither `Clone` nor `Copy`, so a second
+push of the same node does not compile without a second `unsafe` mint.
+
+The caller keeps three rules, and the documentation cites them by number:
+
+1. A node is on at most one queue until popped. The token enforces this.
+2. A node outlives its time on the queue. No type in the crate can check this, because the queue
+   does not own its nodes. `Unqueued::new` states it once, where the caller mints the token.
+3. The caller serializes all access to a queue and its links, and mints each token from the
+   node's owning pointer, never from a reference.
+
+Rule 3's second half is about pointer provenance. Mint the token from the pointer every later
+access derives from: the one `Box::into_raw` returned, the pointer a table stores, or `&raw mut`
+on a local the program does not name again. A token minted from a reborrow, such as
+`NonNull::from(&mut *owner)`, dies at the owner's next `&mut` reborrow under Rust's aliasing
+rules. The queue's next use of that token is then undefined behavior. Miri reports it under both
+Stacked Borrows and Tree Borrows. The test
+`a_token_from_the_owning_pointer_survives_later_borrows` runs the safe shape.
+
+A dropped token strands its node, and so does a dropped queue that still holds nodes: queueing
+one again needs a fresh mint. `Queue` has no `Drop`, so a caller can move a queue by value through
+`Default` and `core::mem::take`.
+
+`Queue<T>` is `Send` only when `T` is, as `LinkedList<T>` is. `Unqueued<T>` is never `Send`, since
+`NonNull<T>` is not.
+
 ## Building and testing
 
 ```sh
@@ -117,9 +117,9 @@ are `compile_fail`: a double push (`E0382`) and a queue of `Rc` nodes sent to an
 
 ### Running the proofs
 
-Install Kani first: run `cargo install --locked kani-verifier --version 0.68.0`, then
-`cargo kani setup`. Setup downloads a model checker and the Rust toolchain Kani pins, so it
-needs network access. Then run every harness:
+Install Kani first: run `cargo install --locked
+kani-verifier --version 0.68.0`, then `cargo kani setup`. Setup downloads a model checker and
+the Rust toolchain Kani pins, so it needs network access. Then run every harness:
 
 ```sh
 cargo kani
