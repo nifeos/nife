@@ -131,7 +131,7 @@ None beyond the milestone's open items (P0-3, P1-6, P1-7, P1-9, P2-11).
 
 ## Result of `script/crate-standalone`
 
-A run with `--no-kani` fails exactly the checks the move resolves: 60 unratified names, the path
+A run with `--no-kani` fails exactly the checks the move resolves: one unratified name (the private test module), the path
 dependency, the workspace `license` and `lints`, no `rust-version`, no README, no license files.
 The citations fail too (12 section, 12 path and 9 milestone lines, in patch headers and rustdoc). The build is
 skipped because the dependency is outside the copy. Host tests, clippy with warnings denied, the
