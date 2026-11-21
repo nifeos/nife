@@ -10,12 +10,12 @@ non-zero second or third word.
 diff --git a/crates/byte_sink_contract/src/lib.rs b/crates/byte_sink_contract/src/lib.rs
 --- a/crates/byte_sink_contract/src/lib.rs
 +++ b/crates/byte_sink_contract/src/lib.rs
-@@ -259,7 +259,7 @@ pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; INLINE_MAXIMUM]) -> Msg
+@@ -259,7 +259,7 @@ pub fn unpack(w0: u64, w1: u64, w2: u64, out: &mut [u8; MAXIMUM_INLINE_BYTES]) -> Message
              out[8..].copy_from_slice(&w2.to_le_bytes());
-             Msg::Bytes(n)
+             Message::Bytes(n)
          }
--        OPERATION_EOF if w0 == eof() && w1 == 0 && w2 == 0 => Msg::Eof,
-+        OPERATION_EOF => Msg::Eof,
-         _ => Msg::Malformed,
+-        OPERATION_EOF if w0 == eof() && w1 == 0 && w2 == 0 => Message::Eof,
++        OPERATION_EOF => Message::Eof,
+         _ => Message::Malformed,
      }
  }

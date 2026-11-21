@@ -126,6 +126,13 @@ name = "byte_sink_contract"
 version = "0.1.0"
 
 [[package]]
+name = "byte_sink_fixture"
+version = "0.1.0"
+dependencies = [
+ "byte_sink_contract",
+]
+
+[[package]]
 name = "byteorder"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -560,6 +567,7 @@ dependencies = [
  "abi",
  "address_space_layout",
  "byte_sink_contract",
+ "byte_sink_fixture",
  "c_seam",
  "capability_manifest_note",
  "capability_plan",
@@ -1617,6 +1625,7 @@ dependencies = [
  "address_space_layout",
  "block_roster_contract",
  "byte_sink_contract",
+ "byte_sink_fixture",
  "c_program_fixture",
  "capability_witness_contract",
  "clock_contract",

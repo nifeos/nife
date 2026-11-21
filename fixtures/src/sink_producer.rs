@@ -45,7 +45,7 @@ const OUTPUT: u64 = 0;
 user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
-    let payload = [b'x'; byte_sink_contract::INLINE_MAXIMUM];
+    let payload = [b'x'; byte_sink_contract::MAXIMUM_INLINE_BYTES];
     for _ in 0..(SINK_MESSAGES + SINK_WARMUP_MESSAGES) {
         let (w0, w1, w2, _) = byte_sink_contract::pack(&payload);
         send(OUTPUT, w0, w1, w2);

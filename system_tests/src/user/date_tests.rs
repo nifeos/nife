@@ -297,9 +297,9 @@ fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
                 m[0],
                 m[1],
                 m[2],
-                &mut [0u8; byte_sink_contract::INLINE_MAXIMUM]
+                &mut [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES]
             ),
-            byte_sink_contract::Msg::Eof
+            byte_sink_contract::Message::Eof
         ),
         "the second stream did not end: {m:?}",
     );
@@ -313,9 +313,9 @@ fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
                 m[0],
                 m[1],
                 m[2],
-                &mut [0u8; byte_sink_contract::INLINE_MAXIMUM]
+                &mut [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES]
             ),
-            byte_sink_contract::Msg::Eof
+            byte_sink_contract::Message::Eof
         ),
         "a clockless date wrote {m:?} to its OUTPUT; that is the byte that used to land in the file",
     );

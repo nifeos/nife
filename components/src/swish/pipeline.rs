@@ -569,7 +569,7 @@ fn feed(nav: &mut Nav, stage: &[u8], w: &mut dyn ByteOut) {
 /// two words at a time; `fixtures/src/file_source.rs` is the same loop from the other side.
 struct SinkWriter {
     slot: u64,
-    buf: [u8; byte_sink_contract::INLINE_MAXIMUM],
+    buf: [u8; byte_sink_contract::MAXIMUM_INLINE_BYTES],
     n: usize,
     /// Set once a send has failed. Everything after is dropped rather than retried: `Gone` means the
     /// reader stopped caring, and there is nothing to report it to.
@@ -580,7 +580,7 @@ impl SinkWriter {
     fn new(slot: u64) -> Self {
         SinkWriter {
             slot,
-            buf: [0; byte_sink_contract::INLINE_MAXIMUM],
+            buf: [0; byte_sink_contract::MAXIMUM_INLINE_BYTES],
             n: 0,
             stopped: false,
         }
@@ -863,14 +863,14 @@ fn drain_into(f: &mut FileOut) {
             print(swish::FAULTED_SENTENCE);
             return;
         }
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
-            byte_sink_contract::Msg::Bytes(n) => f.push(&buf[..n]),
-            byte_sink_contract::Msg::Eof => {
+            byte_sink_contract::Message::Bytes(n) => f.push(&buf[..n]),
+            byte_sink_contract::Message::Eof => {
                 f.finish();
                 return;
             }
-            byte_sink_contract::Msg::Malformed => {
+            byte_sink_contract::Message::Malformed => {
                 f.finish();
                 print(b"  (that program sent something this shell cannot read as bytes)\n");
                 return;
