@@ -36,7 +36,13 @@ The rules every step keeps:
 locally and creates nothing. It copies the crate's tracked files and adds the template's scaffold,
 with every caller pinned at the newest template release. It deletes the `Name:` blocks, regenerates
 each falsification patch over the stripped source for `-p1`, sets `repository` in the manifest and carries the crate's mutation baseline row into `.github/mutants-exempts` as a comment. Then it builds
-and tests the copy at its `rust-version` and runs the template's cheap checks from that release. It ends
+and tests the copy at its `rust-version` and runs the template's cheap checks from that release.
+The checks are every helper the release's `check / standalone` job enforces, at ceiling 0 on the
+staged tree. A crate that nife's `helpers/template_report_baseline.txt` counts as baseline therefore
+fails the dry run until its findings are fixed. The list is read from the release's `check.yml`; a
+helper without a runner here fails the run as `template coverage`. A clean run means a green first
+`check / standalone`, except for the shellcheck step and a missing `typos`, which the run reports.
+It ends
 with the nife-side follow-up: each consumer manifest's new line and every other file that names
 the crate. The script's header lists what it does not check.
 
@@ -283,10 +289,6 @@ publishes.
 
 ## BUGS
 
-- The template's newest release lacks the naming gates. `spelled_out.py`, `unit_symbols.py`,
-  the passive-voice, history-phrase and function-length checks are on `main` but in no release;
-  `v7` is the newest. A move pinned at a release runs none of them. A template release, adopted by
-  the canary, closes it.
 - The template's orphan check misreads modules declared in `foo.rs`. A `mod tests;` in
   `src/foo.rs` resolves to `src/foo/tests.rs`, and the check looks for `src/tests.rs`. It reports
   35 false orphans in `file_allocation_table`, so `check / standalone` would fail its first run.

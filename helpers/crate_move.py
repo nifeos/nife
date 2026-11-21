@@ -52,12 +52,53 @@ TEMPLATE_CHECKS = (
     ('file length', 'file_length.py', lambda s: s.rust),
     ('comment blocks', 'comment_blocks.py', lambda s: s.rust),
     ('function length', 'function_length.py', lambda s: s.rust),
+    ('acronyms', 'prose_acronyms.py', lambda s: s.readmes + s.changelog + s.docs + s.rust),
+    ('banned figures', 'prose_figures.py', lambda s: s.readmes + s.changelog + s.docs + s.rust),
+    ('README test count', 'readme_test_counts.py', lambda s: s.readmes),
     ('spelled-out words', 'spelled_out.py', lambda s: ['--manifest', 'Cargo.toml'] + s.rust),
     ('unit symbols', 'unit_symbols.py', lambda s: ['--manifest', 'Cargo.toml'] + s.rust),
+    ('register names', 'register_names.py', lambda s: ['--manifest', 'Cargo.toml'] + s.rust),
+    ('british spelling', 'british_spelling.py', lambda s: ['--manifest', 'Cargo.toml'] + s.rust),
+    ('service model', 'service_model.py', lambda s: ['--manifest', 'Cargo.toml'] + s.rust),
+    ('contract names', 'contract_names.py', lambda s: ['--manifest', 'Cargo.toml'] + s.rust),
+    ('question shape', 'question_shape.py', lambda s: ['--manifest', 'Cargo.toml'] + s.rust),
+    ('service model prose', 'service_model.py', lambda s: ['--prose'] + s.nonlock),
+    ('README badge row', 'readme_badges.py', lambda s: ['--crate-dir', '.', '--repository', s.repository]),
+    ('typos', 'typos_gate.sh', lambda s: ['.']),
     ('orphan modules', 'orphan_modules.py', lambda s: ['.']),
     ('markdown links', 'check_links.py', lambda s: s.markdown),
     ('falsification records', 'falsify.py', lambda s: ['--manifest-path', 'Cargo.toml', '--check']),
 )
+
+
+# Steps of the template's `standalone` job that are not one of its helpers, so they are not in the
+# derived list: they are run by checks() directly or have no staged equivalent.
+JOB_ONLY_HELPERS = {'job_budget'}
+REPORT_ONLY = re.compile(r'report only', re.I)
+
+
+def standalone_helpers(workflow):
+    """The helpers the template's `standalone` job enforces, read from its check.yml.
+
+    A step whose name says `report only` never fails the job, so it is left out, as are the
+    clock and budget steps. Comment lines are dropped: they name helpers in prose. A `for check in a b c` loop names helpers through `helpers/$check.py`.
+    Returns a sorted list of helper names without extension; an empty list means the job was not
+    found, which the caller reports as a failure rather than as a clean run.
+    """
+    m = re.search(r'(?ms)^  standalone:\n(.*?)(?=^  [A-Za-z0-9_-]+:\n|\Z)', workflow)
+    if not m:
+        return []
+    found = set()
+    for step in re.split(r'(?m)^      - ', m.group(1)):
+        name = re.match(r'name:\s*(.*)', step)
+        if name and REPORT_ONLY.search(name.group(1)):
+            continue
+        step = re.sub(r'(?m)^\s*#.*$', '', step)
+        found.update(re.findall(r'helpers/([A-Za-z0-9_]+)\.(?:py|sh)\b', step))
+        for loop in re.findall(r'for check in ([^;\n]+); do', step):
+            found.update(loop.split())
+    found.discard('$check')
+    return sorted(found - JOB_ONLY_HELPERS)
 
 
 def moved_source(text, crate):
@@ -252,7 +293,7 @@ def mentions(root, crate):
 class Staged:
     """The file lists the template's checks read, from the staged repository's index."""
 
-    def __init__(self, repo):
+    def __init__(self, repo, crate=None):
         files = subprocess.run(['git', '-C', repo, 'ls-files'], capture_output=True, text=True,
                                check=True).stdout.split()
         self.files = files
@@ -261,6 +302,8 @@ class Staged:
         self.readmes = [f for f in files if '/' not in f and f.upper().startswith('README')]
         self.changelog = [f for f in files if f == 'CHANGELOG.md']
         self.docs = [f for f in files if f.startswith('docs/') and f.endswith('.md')]
+        self.nonlock = [f for f in files if not f.endswith('Cargo.lock')]
+        self.repository = 'nifeos/' + (crate or 'crate')
 
 
 BASELINE = '.cargo/mutants-baseline.txt'
@@ -817,29 +860,52 @@ def build(into, manifest, targets, work, report):
         return
     code, out = run(['cargo', f'+{toolchain}', 'test', '--quiet'], into, env)
     report('FAIL' if code else 'ok', 'build', f'host tests on {toolchain}' + (f': {tail(out)}' if code else ''))
+    # `check / standalone`'s first step: a broken intra-doc link or an invalid HTML tag is an error.
+    doc_env = dict(env, RUSTDOCFLAGS='-D rustdoc::broken_intra_doc_links -D rustdoc::invalid_html_tags')
+    code, out = run(['cargo', f'+{toolchain}', 'doc', '--quiet', '--no-deps'], into, doc_env)
+    report('FAIL' if code else 'ok', 'rustdoc', f'broken links are errors on {toolchain}' + (f': {tail(out)}' if code else ''))
     for t in targets:
         code, out = run(['cargo', f'+{toolchain}', 'build', '--quiet', '--lib', '--target', t], into, env)
         report('FAIL' if code else 'ok', 'build', f'{t} on {toolchain}' + (f': {tail(out)}' if code else ''))
 
 
-def checks(into, tree, rev, report, own=frozenset()):
+def checks(into, tree, rev, report, own=frozenset(), crate=None):
     """The template's cheap checks, then the two rules the template does not hold.
 
     The two rules report the crate's own files (`own`, relative to the staged root) first and the
     template's scaffold after, under their own step names, so the move lane reads its crate's
     findings without the scaffold's lines ahead of them.
     """
-    staged = Staged(into)
+    staged = Staged(into, crate)
     helpers = os.path.join(tree, 'helpers')
+    workflow = os.path.join(tree, '.github', 'workflows', 'check.yml')
+    enforced = standalone_helpers(open(workflow).read()) if os.path.exists(workflow) else []
+    if not enforced:
+        report('FAIL', 'template standalone job', f'cannot read the job from check.yml at {rev}')
+    run_here = {helper.rsplit('.', 1)[0] for _label, helper, _argv in TEMPLATE_CHECKS}
+    for helper in enforced:
+        if helper not in run_here:
+            report('FAIL', 'template coverage', f'the template\'s standalone job runs {helper}, which this'
+                   ' dry run does not; add it to TEMPLATE_CHECKS in helpers/crate_move.py')
     for label, helper, argv in TEMPLATE_CHECKS:
         path = os.path.join(helpers, helper)
         if not os.path.exists(path):
             report('note', label, f'not at template {rev}, so the pinned template does not run it')
             continue
-        code, out = run([sys.executable, path] + argv(staged), into)
+        if helper.endswith('.sh'):
+            command = ['sh', path]
+        else:
+            command = [sys.executable, path]
+        code, out = run(command + argv(staged), into)
+        if helper == 'typos_gate.sh' and code == 2 and 'not installed' in out:
+            report('note', label, 'typos is not installed here, so this gate did not run; install it'
+                   ' (cargo install typos-cli) before trusting a clean result')
+            continue
         lines = [line for line in out.splitlines() if line.strip()]
         report('FAIL' if code else 'ok', label,
                f'{len(lines)} line(s), first: {lines[0][:300]}' if code and lines else '')
+    code, out = run(['git', 'ls-files', '-ci', '--exclude-standard'], into)
+    report('FAIL' if out else 'ok', 'tracked but ignored', out.replace('\n', ' ') if out else '')
     texts = {f: open(os.path.join(into, f), errors='replace').read()
              for f in staged.files if f.endswith(crate_release.TEXT) or f.startswith('.githooks/')}
     for suffix, part in split_own(texts, own):
@@ -1004,6 +1070,30 @@ def fuzz_selftest():
     print('crate_move fuzz selftest: ok')
 
 
+def coverage_selftest():
+    """The gates this dry run once missed fail a staged tree, and a job helper it lacks fails the run."""
+    run_here = {h.rsplit('.', 1)[0] for _l, h, _a in TEMPLATE_CHECKS}
+    assert {'prose_acronyms', 'readme_test_counts', 'register_names'} <= run_here
+    with tempfile.TemporaryDirectory(prefix='crate-move-coverage-') as tmp:
+        tree, into = os.path.join(tmp, 'template'), os.path.join(tmp, 'staged')
+        os.makedirs(os.path.join(tree, '.github', 'workflows'))
+        os.makedirs(os.path.join(tree, 'helpers'))
+        os.makedirs(os.path.join(into, 'src'))
+        with open(os.path.join(tree, '.github', 'workflows', 'check.yml'), 'w') as f:
+            f.write('  standalone:\n    steps:\n      - name: a\n        run: helpers/brand_new.py\n'
+                    '      - name: b\n        run: helpers/readme_test_counts.py\n')
+        with open(os.path.join(tree, 'helpers', 'readme_test_counts.py'), 'w') as f:
+            f.write('import sys\nsys.exit(1 if "42 tests" in open(sys.argv[1]).read() else 0)\n')
+        open(os.path.join(into, 'README.md'), 'w').write('It has 42 tests.\n')
+        run(['git', 'init', '--quiet'], into)
+        run(['git', 'add', '--all'], into)
+        seen = []
+        checks(into, tree, 'vT', lambda kind, step, why='': seen.append((kind, step)), crate='x')
+        assert ('FAIL', 'README test count') in seen, seen
+        assert ('FAIL', 'template coverage') in seen, seen
+        assert ('note', 'register names') in seen, 'an absent helper is reported, never passed'
+
+
 def selftest():
     patch_selftest()
     fuzz_selftest()
@@ -1054,6 +1144,19 @@ def selftest():
     texts = {'src/lib.rs': 'a', 'CONTRIBUTING.md': 'b', 'README.md': 'c'}
     assert split_own(texts, {'src/lib.rs', 'README.md'}) == \
         [('', {'src/lib.rs': 'a', 'README.md': 'c'}), (' (template scaffold)', {'CONTRIBUTING.md': 'b'})]
+    job = ('jobs:\n  other:\n    steps:\n      - name: x\n        run: helpers/nope.py\n  standalone:\n'
+           '    steps:\n      - name: clock\n        run: echo\n'
+           '      # (helpers/rust_names.py) is only mentioned\n'
+           '      - name: a\n        run: python3 .crate-workflows/helpers/readme_test_counts.py $r\n'
+           '      - name: naming\n        run: |\n          for check in spelled_out register_names; do\n'
+           '            python3 ".crate-workflows/helpers/$check.py" $rs\n          done\n'
+           '      - name: soft (report only, in the job summary)\n        run: helpers/abbreviations.py\n'
+           '      - name: budget\n        run: python3 .crate-workflows/helpers/job_budget.py check\n'
+           '  supply-chain:\n    steps:\n      - run: helpers/crate-slug.sh\n')
+    assert standalone_helpers(job) == ['readme_test_counts', 'register_names', 'spelled_out'], \
+        standalone_helpers(job)
+    assert standalone_helpers('jobs:\n  other:\n') == []
+    coverage_selftest()
     print('crate_move selftest: ok')
 
 
@@ -1096,7 +1199,7 @@ def main(argv):
         seed_script_reproduces(into, moved, work, report)
     run(['git', 'init', '--quiet', '--initial-branch=main'], into)
     run(['git', 'add', '--all'], into)
-    checks(into, tree, rev, report, own)
+    checks(into, tree, rev, report, own, args.crate)
     shutil.rmtree(work, ignore_errors=True)
     follow_up(root, args.crate, manifest.get('package', {}).get('version', '0.1.0'), moved)
     print(f'crate-move: staged in {into}, with git initialized and every file added, nothing committed;'
