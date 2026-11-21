@@ -2,10 +2,38 @@
 name = "capability_table"
 version = "0.1.0"
 edition = "2024"
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
-license.workspace = true
+rust-version = "1.85"
+description = "A fixed-size table of unforgeable capabilities with rights that only narrow, proven with Kani"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/nifeos/capability_table"
+readme = "README.md"
+keywords = ["capability", "rights", "no-std", "kani", "security"]
+categories = ["no-std", "embedded", "os"]
+publish = false     # held until the maintainers decide the first release
 
-[lints]
-workspace = true
+# no_std for a kernel, std for host tests. A capability table is an array of slots, each holding a
+# capability: an object the owner chooses and the rights held over it. A program names a capability
+# by its slot number, so it cannot forge one, and every copy it makes holds no more rights than its
+# source.
+
+[features]
+# `highest_seen`, the largest occupancy any table in the binary has reached. It is a `static` that
+# every table writes when it grows, so it is off by default and a program that reads it turns it on.
+peak = []
+
+[lints.rust]
+# `cfg(kani)` is set by the Kani model checker, which proves this crate's harnesses.
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+# This crate has no `unsafe` code, so this lint has nothing to read; the shared standalone gate asks
+# every crate to carry it, and it costs nothing here.
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
 
 [dependencies]
