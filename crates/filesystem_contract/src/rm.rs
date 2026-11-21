@@ -3,7 +3,7 @@
 //!
 //! - A line is framed as std's stdout is: `w0` = the byte count (at most 16), the bytes
 //!   little-endian in `w1`|`w2`. Diagnostics always go out this way; `-v` adds one per name removed.
-//! - The report stream ends with the sink contract's end of stream, `(eof(), 0, 0)`, whose two
+//! - The report stream ends with the sink contract's end of stream, `(end_of_stream(), 0, 0)`, whose two
 //!   words after the first are reserved and carry nothing.
 //! - The verdict, once and after that end of stream, on [`VERDICT_SLOT`]: `w0` = the exit status,
 //!   `w1` = how many names were removed, `w2` = 0. A `SEND` returns only once its message is

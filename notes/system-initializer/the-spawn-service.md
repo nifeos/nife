@@ -209,7 +209,7 @@ A redirected or screen-narrowed child owes the shell no answer of its own. The s
 nothing to read and no way to learn of a failure, so the progenitor sends one `SPAWN_OK` or failure
 word for it. An unredirected child's own message is the shell's single read, and a failure is the
 sentinel. A child that was never built cannot end its own second stream. The shell drains that stream
-to `OPERATION_EOF` before it reads anything else, so the progenitor sends the end for it.
+to `OPERATION_END_OF_STREAM` before it reads anything else, so the progenitor sends the end for it.
 
 ## BUGS
 

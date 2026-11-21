@@ -377,8 +377,11 @@ fn line(ep: RendezvousId, buf: &mut [u8; 256]) -> Option<usize> {
     loop {
         let m = crate::sched::ipc_receive(ep);
         let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(m[0], m[1], m[2], &mut chunk) {
-            byte_sink_contract::Message::Eof => return None,
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(m[0], m[1], m[2]),
+            &mut chunk,
+        ) {
+            byte_sink_contract::Message::EndOfStream => return None,
             byte_sink_contract::Message::Malformed => {
                 panic!("the timetable wrote a malformed sink message")
             }

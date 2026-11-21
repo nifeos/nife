@@ -9,8 +9,8 @@ exactly one argument.
 diff --git a/crates/program_argument_contract/src/lib.rs b/crates/program_argument_contract/src/lib.rs
 --- a/crates/program_argument_contract/src/lib.rs
 +++ b/crates/program_argument_contract/src/lib.rs
-@@ -272,7 +272,7 @@
-     /// Whether there are none.
+@@ -323,7 +323,7 @@
+     /// Name: ratified 2026-11-21 (UTC).
      #[must_use]
      pub const fn is_empty(&self) -> bool {
 -        self.count == 0

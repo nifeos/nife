@@ -1744,10 +1744,10 @@ impl Service<'_> {
         } else if !ok {
             send(result_ep, failure, 0, 0);
         }
-        // The shell drains the second stream to `OPERATION_EOF` before reading anything else, and a
+        // The shell drains the second stream to `OPERATION_END_OF_STREAM` before reading anything else, and a
         // child never built cannot end it, so the progenitor does.
         if !ok && let Some(ep) = req.delegated.diagnostics {
-            send(ep, byte_sink_contract::eof(), 0, 0);
+            send(ep, byte_sink_contract::end_of_stream(), 0, 0);
         }
     }
 }

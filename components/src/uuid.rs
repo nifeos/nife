@@ -142,7 +142,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         );
     }
     if has_diag {
-        send(DIAG_SLOT, byte_sink_contract::eof(), 0, 0);
+        send(DIAG_SLOT, byte_sink_contract::end_of_stream(), 0, 0);
     }
 
     if let Some(bytes) = drawn {
@@ -155,7 +155,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         write_on(REPORT, &line);
     }
 
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 
@@ -164,8 +164,8 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 fn write_on(slot: u64, bytes: &[u8]) {
     let mut rest = bytes;
     while !rest.is_empty() {
-        let (w0, w1, w2, n) = byte_sink_contract::pack(rest);
-        send(slot, w0, w1, w2);
+        let (words, n) = byte_sink_contract::pack(rest);
+        send(slot, words.word_zero, words.word_one, words.word_two);
         rest = &rest[n..];
     }
 }

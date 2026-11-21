@@ -1,7 +1,7 @@
 //! **The self-test's tally and the lines it prints**, shared by its two halves: the kernel, which
-//! runs the checks of its own internals, and `boot_self_test`, the userspace program the progenitor
-//! runs for the checks that need a user program. Both print through this code, so a check line and the verdict read
-//! the same whichever half printed them.
+//! runs the checks of its own internals, and a user program that runs the checks that need one.
+//! Both print through this code, so a check line and the verdict read the same whichever half
+//! printed them.
 //!
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`, for what the module renders.
@@ -37,7 +37,7 @@ pub const PACKED_FIELD_BITS: u32 = 21;
 pub const fn check(name: &str) -> usize {
     let mut i = 0;
     while i < CHECKS {
-        if str_eq(SELF_TEST_CHECKS[i], name) {
+        if strings_are_equal(SELF_TEST_CHECKS[i], name) {
             return i;
         }
         i += 1;
@@ -46,7 +46,7 @@ pub const fn check(name: &str) -> usize {
 }
 
 /// `a == b` in a `const fn`, where `PartialEq` on `str` cannot be called.
-const fn str_eq(a: &str, b: &str) -> bool {
+const fn strings_are_equal(a: &str, b: &str) -> bool {
     let (a, b) = (a.as_bytes(), b.as_bytes());
     if a.len() != b.len() {
         return false;
@@ -78,9 +78,9 @@ pub enum Outcome {
 /// [`SELF_TEST_CHECKS`]. No allocation, because a self-test that could fail to report by running
 /// out of memory would report on the wrong thing.
 ///
-/// The kernel records its half and hands the three words to the progenitor
-/// ([`to_words`](Tally::to_words)); `boot_self_test` reads them back
-/// ([`from_words`](Tally::from_words)), records the rest and prints the verdict.
+/// The kernel records its half and hands the three words on ([`to_words`](Tally::to_words)); the
+/// user program reads them back ([`from_words`](Tally::from_words)), records the rest and prints
+/// the verdict.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-10 UTC).
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -158,9 +158,8 @@ impl Tally {
     }
 
     /// **The tally in one word**: passed in the low [`PACKED_FIELD_BITS`] bits, failed in the next,
-    /// absent in the next. The form a one-word message carries: `boot_self_test` sends it to the
-    /// progenitor with its verdict, and the progenitor sends it on to the kernel, which paints the
-    /// verdict on a screen it still holds.
+    /// absent in the next. The form a one-word message carries, such as the one in which the user
+    /// program sends its tally back to the kernel with the verdict.
     ///
     /// Name: provisional.
     pub const fn to_packed(&self) -> u64 {
@@ -279,9 +278,9 @@ impl fmt::Display for CheckLine<'_> {
 /// `<system> self-test subject: thread 19, which the userspace check kills on purpose`.
 ///
 /// The thread id is decimal, as the kernel prints it in its own report of the kill (`user thread
-/// 19 killed: ...`), so a gate can match the two by number. `swish-check` excludes from its
-/// killed-thread check exactly the threads these lines name, and fails every other kill;
-/// [`subject_thread`] reads the number back.
+/// 19 killed: ...`), so a gate can match the two by number. A gate that fails on a killed thread can exclude exactly
+/// the threads these lines name and fail every other kill; [`subject_thread`] reads the number
+/// back.
 ///
 /// Name: provisional (milestone 1063's lane, 2026-11-11 UTC).
 pub struct SubjectLine<'a> {
@@ -462,7 +461,7 @@ mod tests {
 
     const HEADS: Heads<'static> = Heads::new("example");
 
-    /// The line a green tally prints is the shape `serial_console` reads.
+    /// The line a green tally prints is the shape a console reader reads.
     #[test]
     fn a_tally_prints_the_verdict_the_console_reads() {
         let mut t = Tally::new();

@@ -29,14 +29,14 @@ user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     say(b"servant: installed; its note asks to run as a service\n");
-    send(OUT, byte_sink_contract::eof(), 0, 0);
+    send(OUT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 
 fn say(mut rest: &[u8]) {
     while !rest.is_empty() {
-        let (w0, w1, w2, n) = byte_sink_contract::pack(rest);
-        send(OUT, w0, w1, w2);
+        let (words, n) = byte_sink_contract::pack(rest);
+        send(OUT, words.word_zero, words.word_one, words.word_two);
         rest = &rest[n..];
     }
 }

@@ -167,6 +167,7 @@ ps	userspace	components
 regions	kernel	retired
 screen_console	shared	components,kernel,uefi_loader
 sealed_pair	host	-
+self_test_contract	shared	components,fixtures,kernel
 serial_console	host	-
 sink_proto	shared	retired
 slab	kernel	retired

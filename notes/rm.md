@@ -113,7 +113,7 @@ words, packed by `filesystem_contract::grant` exactly as a per-file grant's name
 costs no extra frame, and holds nothing that names a progenitor, a terminal, or the filesystem
 above its grant.
 
-The report is a byte sink and ends as every sink stream does, with `(eof(), 0, 0)`. The exit
+The report is a byte sink and ends as every sink stream does, with `(end_of_stream(), 0, 0)`. The exit
 status and the count of names removed go after it, once, to a verdict endpoint at slot 2
 (`filesystem_contract::rm::VERDICT_SLOT`). A `SEND` returns only once a receiver takes its message, so
 the verdict cannot overtake the text: a reader drains the report to its end, then receives the

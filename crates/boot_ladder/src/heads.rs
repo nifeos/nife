@@ -48,7 +48,7 @@ impl<'a> Heads<'a> {
     /// Deliberately generic across architectures: a recogniser that knew only one board's wording
     /// would report a healthy board of another kind as never having booted.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC), block 1078.
     pub const fn banner(&self) -> Head<'a> {
         self.head(" on ")
     }
@@ -59,7 +59,7 @@ impl<'a> Heads<'a> {
     /// the point: reaching it means the whole description printed, which is the claim a ladder rung
     /// should make. A header would only have meant the block started.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC), block 1078.
     pub const fn machine(&self) -> Head<'a> {
         self.head(" machine: ")
     }
@@ -72,7 +72,7 @@ impl<'a> Heads<'a> {
     /// [`crate::verdict::Verdict`] renders it. The counts are there on success as well as on
     /// failure, so that "ran nothing and passed" is distinguishable from "ran the set and passed".
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC), block 1078.
     pub const fn self_test(&self) -> Head<'a> {
         self.head(" self-test: ")
     }
@@ -85,7 +85,7 @@ impl<'a> Heads<'a> {
     /// the verdict by its head must not find this line. [`crate::verdict::SubjectLine`] renders it
     /// and [`crate::verdict::subject_thread`] reads it back.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC), block 1078.
     pub const fn self_test_subject(&self) -> Head<'a> {
         self.head(" self-test subject: thread ")
     }
@@ -98,7 +98,7 @@ impl<'a> Heads<'a> {
     /// of [`SELF_TEST_CHECKS`](crate::SELF_TEST_CHECKS) ran. The
     /// [`self_test`](Heads::self_test) verdict follows it and says whether they passed.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC), block 1078.
     pub const fn core_runs(&self) -> Head<'a> {
         self.head(": the capability core runs on ")
     }
@@ -112,7 +112,7 @@ impl<'a> Heads<'a> {
     ///
     /// See the crate's `BUGS` for why the banner and not the prompt itself.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC), block 1078.
     pub const fn shell_banner(&self) -> Head<'a> {
         self.head(" capability shell")
     }
@@ -124,7 +124,7 @@ impl<'a> Heads<'a> {
     /// line asks it to hold, and a host that wants a screendump waits for it, takes the dump and
     /// answers. A boot that was not asked to hold never prints it.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC), block 1078.
     pub const fn screen_held(&self) -> Head<'a> {
         self.head(" screen: held for the host; ")
     }

@@ -19,11 +19,11 @@ self-test. The other eight, `userspace`, `budget`, `supervised`, `teardown`, `bl
 builds before the shell.
 
 - The tally is code both halves share, `boot_ladder::verdict`: one bit per check in three masks, and
-  the line and verdict formats. The kernel writes its tally into the page `boot_ladder::kernel_half`
+  the line and verdict formats. The kernel writes its tally into the page `self_test_contract::kernel_half`
   lays out. The hand-over grants that page to the progenitor. The progenitor maps it read-only into
   the program, which adds its own outcomes and prints the one verdict.
 - The page also carries what the program cannot learn at user level: a kernel address to fault on,
-  whether the build injects, and what the JH7110 bring-up answered. `boot_ladder::self_test_program`
+  whether the build injects, and what the JH7110 bring-up answered. `self_test_contract::self_test_program`
   fixes the program's slots, its addresses, the image table and its two messages.
 - The program cannot read the archive, so the progenitor measures `kernel_test_subject`,
   `memory_region_depleter` and `block_driver` and copies them in. The program builds each child

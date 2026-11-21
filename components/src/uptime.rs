@@ -96,7 +96,7 @@ user_mode_runtime::program_entry!(start);
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let line = uptime::format(monotonic_nanoseconds());
     write_bytes(line.as_bytes());
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 
@@ -108,9 +108,14 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 fn write_bytes(bytes: &[u8]) {
     let mut off = 0usize;
     while off < bytes.len() {
-        let (w0, w1, w2, took) = byte_sink_contract::pack(&bytes[off..]);
+        let (words, took) = byte_sink_contract::pack(&bytes[off..]);
         if !matches!(
-            byte_sink_contract::classify(send(REPORT, w0, w1, w2)),
+            byte_sink_contract::classify(send(
+                REPORT,
+                words.word_zero,
+                words.word_one,
+                words.word_two
+            )),
             byte_sink_contract::Sent::Ok
         ) {
             return;

@@ -108,7 +108,7 @@ user_mode_runtime::program_entry!(start);
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let Some(page) = config_page() else {
         line(b"printenv: no configuration was granted");
-        send(REPORT, byte_sink_contract::eof(), 0, 0);
+        send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
         exit();
     };
 
@@ -116,7 +116,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     key_line(&page, b"LANG", page.locale());
     key_line(&page, b"TERM", page.terminal_type());
 
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 

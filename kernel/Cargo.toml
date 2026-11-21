@@ -95,6 +95,8 @@ block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nif
 # rather than two copies of a literal. That is not hypothetical here: the one marker that existed
 # before this crate WAS two copies of a literal, one inside a single architecture's arm.
 boot_ladder = { version = "0.1.0", path = "../crates/boot_ladder" }
+# The page the kernel hands the self-test program for its half of the boot self-test.
+self_test_contract = { version = "0.1.0", path = "../crates/self_test_contract" }
 # The per-test time record's grammar (milestone 807 (the kernel suite reports what each test cost), §254 (a gate prints what each item cost), Fork 1): the test runner prints it and
 # `xtask` parses it, so rule 7 makes it a crate.
 test_times = { version = "0.1.0", path = "../crates/test_times" }

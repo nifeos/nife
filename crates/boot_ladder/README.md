@@ -60,8 +60,8 @@ The self-test prints one verdict line. Its grammar is code, not prose: `verdict:
 and `verdict::ParsedVerdict` reads it, so the printer and every reader agree by construction.
 
 ```text
-nife self-test: 12 of 15 passed, 3 absent: block_device clock true_random_number_generator
-nife self-test: 13 of 15 passed, 2 FAILED: userspace entropy
+example self-test: 12 of 15 passed, 3 absent: block_device clock true_random_number_generator
+example self-test: 13 of 15 passed, 2 FAILED: userspace entropy
 ```
 
 A verdict is green unless it carries a `FAILED:` list. An `absent:` list names checks the machine

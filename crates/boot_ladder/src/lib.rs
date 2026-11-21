@@ -42,10 +42,12 @@
 
 #![no_std]
 
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
+
 mod heads;
-pub mod kernel_half;
 mod rungs;
-pub mod self_test_program;
 pub mod verdict;
 
 pub use heads::{Head, Heads};

@@ -19,7 +19,7 @@
 //!   16      ...   count records, each a little-endian u32 length and then that many bytes
 //! ```
 //! Any byte may appear in a record, nothing past the records is read, and a line longer than
-//! [`MAXIMUM_RECORDS_BYTES`] is refused ([`Refused::TooLong`]).
+//! [`MAXIMUM_RECORDS_BYTES`] is refused ([`PushRefused::TooLong`]).
 
 //! # A page that does not parse reads as no arguments
 //!
@@ -54,9 +54,13 @@
 #![cfg_attr(not(test), no_std)]
 
 /// The page this layout fills. One frame.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub const PAGE_BYTES: usize = 4096;
 
 /// The header: [`MAGIC`], the count and the total.
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub const HEADER_BYTES: usize = 16;
 
 /// The bytes of records one page holds, each argument's four-byte length prefix included.
@@ -70,7 +74,7 @@ pub const MAXIMUM_RECORDS_BYTES: usize = PAGE_BYTES - HEADER_BYTES;
 /// most [`MAXIMUM_RECORDS_BYTES`], so a caller that checks a line before it has a page counts with
 /// this function and not with a copy of the prefix width.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-21 (UTC).
 #[must_use]
 pub const fn record_bytes(argument_bytes: usize) -> usize {
     LENGTH_PREFIX_BYTES + argument_bytes
@@ -90,19 +94,21 @@ pub const MAGIC: [u8; 8] = *b"nifeargv";
 /// the layout now carries: a break to the layout is a new version, and the magic changes in the
 /// same coordinated change.
 ///
-/// Name: provisional, minted 2026-10-29 (UTC) by lane milestone/956-checkable-interface-versions.
+/// Name: ratified 2026-11-21 (UTC).
 pub const VERSION: u32 = 1;
 
 /// This interface's identity in a program's `INTERFACES` note: 18, naming the argument page. The
 /// number is this interface's for good: no other interface takes it, and a format change is a new
 /// version, never a new number. A program declares the pair of this id and [`VERSION`].
 ///
-/// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
+/// Name: ratified 2026-11-21 (UTC).
 pub const INTERFACE_ID: u64 = 18;
 
 /// Why [`PageBuilder::push`] refused an argument.
+///
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Refused {
+pub enum PushRefused {
     /// The argument does not fit in what is left of the page. The line is too long to run, and
     /// nothing is truncated to make it fit.
     TooLong,
@@ -112,7 +118,7 @@ pub enum Refused {
 /// buffer cannot hold a page, and a longer one is refused too, so a caller that hands over the
 /// wrong region learns of it at once.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1106-renames-fixes.
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct WrongPageLength;
 
@@ -122,6 +128,8 @@ pub struct WrongPageLength;
 /// (the shell) writes straight into the frame it is about to send and has no stack to spare for a
 /// second 4 KiB copy. A refused argument leaves the page as it was, and nothing is valid until
 /// [`PageBuilder::finish`] writes the header: a page abandoned half-built reads as no arguments.
+///
+/// Name: ratified 2026-11-21 (UTC).
 ///
 /// # Examples
 ///
@@ -155,6 +163,8 @@ impl core::fmt::Debug for PageBuilder<'_> {
 }
 
 impl<'p> PageBuilder<'p> {
+    /// Name: ratified 2026-11-21 (UTC).
+    ///
     /// An empty argv, written over `page`. The magic is cleared first, so the page is not a valid
     /// argv again until [`Self::finish`].
     ///
@@ -176,17 +186,19 @@ impl<'p> PageBuilder<'p> {
 
     /// Append one argument, or refuse it if the page cannot hold it.
     ///
+    /// Name: ratified 2026-11-21 (UTC).
+    ///
     /// # Errors
     ///
-    /// [`Refused::TooLong`] when the argument's record is longer than [`Self::remaining_bytes`].
+    /// [`PushRefused::TooLong`] when the argument's record is longer than [`Self::remaining_bytes`].
     /// The page and the count are left as they were.
-    pub fn push(&mut self, argument: &[u8]) -> Result<(), Refused> {
+    pub fn push(&mut self, argument: &[u8]) -> Result<(), PushRefused> {
         let need = record_bytes(argument.len());
         if need > self.remaining_bytes() {
-            return Err(Refused::TooLong);
+            return Err(PushRefused::TooLong);
         }
         // `need` fits the page, so the length fits a `u32`; a failure here is the same refusal.
-        let length = u32::try_from(argument.len()).map_err(|_| Refused::TooLong)?;
+        let length = u32::try_from(argument.len()).map_err(|_| PushRefused::TooLong)?;
         let at = HEADER_BYTES + self.used;
         self.page[at..at + LENGTH_PREFIX_BYTES].copy_from_slice(&length.to_le_bytes());
         self.page[at + LENGTH_PREFIX_BYTES..at + need].copy_from_slice(argument);
@@ -198,19 +210,23 @@ impl<'p> PageBuilder<'p> {
     /// How many bytes of records the page still has room for, so an argument fits when its
     /// [`record_bytes`] are no more than this.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-21 (UTC).
     #[must_use]
     pub const fn remaining_bytes(&self) -> usize {
         MAXIMUM_RECORDS_BYTES - self.used
     }
 
     /// How many arguments have been pushed.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     #[must_use]
-    pub const fn count(&self) -> u32 {
+    pub const fn argument_count(&self) -> u32 {
         self.count
     }
 
     /// Write the header, which is what makes the page an argv. Returns the count.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     // The count is a convenience: a caller that has been counting its own pushes ignores it.
     #[allow(clippy::must_use_candidate)]
     pub fn finish(self) -> u32 {
@@ -226,7 +242,7 @@ impl<'p> PageBuilder<'p> {
 
 /// A parsed argument page: an argv that has already been checked whole.
 ///
-/// Name: provisional, renamed from `ArgPage` so the name is spelled out.
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Clone, Copy, Debug)]
 pub struct ArgumentPage<'a> {
     records: &'a [u8],
@@ -235,12 +251,18 @@ pub struct ArgumentPage<'a> {
 
 impl<'a> ArgumentPage<'a> {
     /// No arguments.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub const EMPTY: ArgumentPage<'static> = ArgumentPage {
         records: &[],
         count: 0,
     };
 
-    /// Read `page`. Anything that is not a whole, consistent page is [`Self::EMPTY`]: see the
+    /// Read `page`.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
+    ///
+    /// Anything that is not a whole, consistent page is [`Self::EMPTY`]: see the
     /// crate's documentation for why a partial argv is never returned.
     #[must_use]
     pub fn parse(page: &'a [u8]) -> Self {
@@ -289,18 +311,24 @@ impl<'a> ArgumentPage<'a> {
     }
 
     /// How many arguments.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     #[must_use]
     pub const fn len(&self) -> usize {
         self.count as usize
     }
 
     /// Whether there are none.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.count == 0
     }
 
     /// The arguments, in order.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     #[must_use]
     pub fn iter(&self) -> Iter<'a> {
         Iter {
@@ -311,6 +339,8 @@ impl<'a> ArgumentPage<'a> {
 }
 
 /// The arguments of an [`ArgumentPage`], in order.
+///
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Clone, Debug)]
 pub struct Iter<'a> {
     rest: &'a [u8],
@@ -494,7 +524,7 @@ mod tests {
         let rest = b.remaining_bytes();
         b.push(&vec![b'x'; rest - 4]).unwrap();
         assert_eq!(b.remaining_bytes(), 0);
-        assert_eq!(b.push(b""), Err(Refused::TooLong));
+        assert_eq!(b.push(b""), Err(PushRefused::TooLong));
     }
 
     /// Iterating a borrowed page with `for` gives the same arguments as `iter`, and an iterator that
@@ -530,15 +560,15 @@ mod tests {
         let mut b = PageBuilder::new(&mut page).unwrap();
         let big = vec![b'x'; MAXIMUM_RECORDS_BYTES - 4];
         b.push(&big).unwrap();
-        assert_eq!(b.push(b""), Err(Refused::TooLong));
-        assert_eq!(b.count(), 1);
+        assert_eq!(b.push(b""), Err(PushRefused::TooLong));
+        assert_eq!(b.argument_count(), 1);
         b.finish();
         assert_eq!(read(&page), [big]);
 
         let mut b = PageBuilder::new(&mut page).unwrap();
         assert_eq!(
             b.push(&[b'x'; MAXIMUM_RECORDS_BYTES - 3]),
-            Err(Refused::TooLong)
+            Err(PushRefused::TooLong)
         );
         b.finish();
         assert!(ArgumentPage::parse(&page).is_empty());
@@ -606,17 +636,17 @@ mod tests {
         assert!(ArgumentPage::parse(&p).is_empty());
     }
 
-    /// **The counts are numbers, not flags.** `count`, `len`, `is_empty` and `size_hint` each have a
+    /// **The counts are numbers, not flags.** `argument_count`, `len`, `is_empty` and `size_hint` each have a
     /// two-value wrong answer (0 or 1) that a one-argument fixture cannot tell from the right one,
     /// so this uses three arguments and checks the hint shrinks as the iterator is drained.
     #[test]
     fn counts_track_three_arguments_and_the_hint_shrinks() {
         let mut page = [0; PAGE_BYTES];
         let mut b = PageBuilder::new(&mut page).unwrap();
-        assert_eq!(b.count(), 0);
+        assert_eq!(b.argument_count(), 0);
         for (i, argument) in [&b"a"[..], b"bb", b"ccc"].into_iter().enumerate() {
             b.push(argument).unwrap();
-            assert_eq!(b.count(), u32::try_from(i).unwrap() + 1);
+            assert_eq!(b.argument_count(), u32::try_from(i).unwrap() + 1);
         }
         assert_eq!(b.finish(), 3);
 

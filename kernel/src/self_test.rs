@@ -5,7 +5,7 @@
 //! at EL1, run on every architecture, each printing its line, a failure printing and the boot
 //! carrying on. The checks that need a user program run in `boot_self_test`, which the progenitor
 //! starts before the shell; the kernel hands it this half's tally in the page
-//! `boot_ladder::kernel_half` describes, and that program prints the one verdict
+//! `self_test_contract::kernel_half` describes, and that program prints the one verdict
 //! (`boot_ladder::Heads::self_test`, matched by `crates/serial_console`). notes/boot-ladder.md has the
 //! verdict's contract, and notes/self-test-checks.md each check's design and the full account of
 //! the BUGS below.
@@ -42,7 +42,7 @@ mod timer {
 /// **Make one check in each half report failure**, so the verdict can be seen red: `cargo xtask
 /// boot-check --inject` builds with this on and asserts the gate goes red, naming `exceptions` here
 /// and `userspace` in `boot_self_test`, which reads it from the kernel's half
-/// (`boot_ladder::kernel_half::flag::INJECT`).
+/// (`self_test_contract::kernel_half::flag::INJECT`).
 ///
 /// It also stops the counter the checks here read (this module's `timer::now`), so every injected
 /// run proves the waits are bounded. A `cfg!` rather than `#[cfg]`, so both arms compile on every
@@ -59,7 +59,7 @@ pub const fn injects() -> bool {
 }
 
 /// **The kernel's half of the tally**, kept from [`run`] until the hand-over writes it into the
-/// page the progenitor passes on (`boot_ladder::kernel_half`) or, with no progenitor to hand it
+/// page the progenitor passes on (`self_test_contract::kernel_half`) or, with no progenitor to hand it
 /// to, prints the verdict itself ([`verdict_without_userspace`]). Three words:
 /// `boot_ladder::verdict::Tally`'s.
 static HALF: [AtomicU64; 3] = [const { AtomicU64::new(0) }; 3];
