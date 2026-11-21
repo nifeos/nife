@@ -22,7 +22,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use super::{RISCV64_TARGET, TARGET, cargo_profiled, profile_dir, user};
-use crate::archive::{has_initial_ramdisk_riscv64, initial_ramdisk_path, riscv64_initial_ramdisk_path};
+use crate::archive::{
+    has_initial_ramdisk_riscv64, initial_ramdisk_path, riscv64_initial_ramdisk_path,
+};
 use crate::host::workspace_root;
 use crate::portable_executable;
 use crate::uefi::uefi_image;

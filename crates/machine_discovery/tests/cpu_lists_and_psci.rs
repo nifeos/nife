@@ -213,14 +213,20 @@ fn both_architectures_answer_the_same_call() {
     let riscv64 = cpus(QEMU_RISCV64);
 
     assert_eq!(arm.address_cells, riscv64.address_cells);
-    assert_eq!(riscv64.described, 1, "the riscv64 fixture was dumped at -smp 1");
+    assert_eq!(
+        riscv64.described, 1,
+        "the riscv64 fixture was dumped at -smp 1"
+    );
     assert_eq!(riscv64.cpus()[0].hwid, 0);
     assert_eq!(
         riscv64.cpus()[0].enable_method,
         EnableMethod::Unstated,
         "the RISC-V binding has no enable-method: SBI HSM is the only mechanism",
     );
-    assert!(riscv64.cpus()[0].usable, "the riscv64 tree says status = okay");
+    assert!(
+        riscv64.cpus()[0].usable,
+        "the riscv64 tree says status = okay"
+    );
 }
 
 /// **Eighteen cores in a sixteen-slot record: `described` is the machine's and `len` is ours.**

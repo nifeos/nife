@@ -11,7 +11,9 @@
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::archive::{has_initial_ramdisk_riscv64, initial_ramdisk_path, riscv64_initial_ramdisk_path};
+use crate::archive::{
+    has_initial_ramdisk_riscv64, initial_ramdisk_path, riscv64_initial_ramdisk_path,
+};
 use crate::host::{cargo, workspace_root};
 use crate::scanout::screendump;
 use crate::{RISCV64_TARGET, TARGET, profile_dir};

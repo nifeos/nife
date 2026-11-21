@@ -360,7 +360,10 @@ extern "C" fn riscv64_trap_dispatch(frame: &mut TrapFrame) {
 /// interrupt stack (a trap from S-mode).
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
-#[cfg_attr(target_os = "none", unsafe(link_section = ".text.hot.riscv64_trap_body"))]
+#[cfg_attr(
+    target_os = "none",
+    unsafe(link_section = ".text.hot.riscv64_trap_body")
+)]
 extern "C" fn riscv64_trap_body(frame: &mut TrapFrame) -> bool {
     let scause = frame.scause;
 

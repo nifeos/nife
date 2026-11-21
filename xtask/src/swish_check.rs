@@ -23,7 +23,9 @@ use script::*;
 use transcript::*;
 use verdict::*;
 
-use crate::archive::{has_initial_ramdisk_riscv64, initial_ramdisk_path, riscv64_initial_ramdisk_path};
+use crate::archive::{
+    has_initial_ramdisk_riscv64, initial_ramdisk_path, riscv64_initial_ramdisk_path,
+};
 use crate::disk::{
     SWISH_CHECK_DISK_MEBIBYTES, disk_path, mkdisk, mkredoxfs_of, redoxfs_server_build,
 };
