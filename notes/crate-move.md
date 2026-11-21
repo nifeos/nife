@@ -39,12 +39,12 @@ each falsification patch over the stripped source for `-p1`, sets `repository` i
 and tests the copy at its `rust-version` and runs the template's cheap checks from that release.
 The checks are every helper the release's `check / standalone` job enforces, at ceiling 0 on the
 staged tree. A crate that nife's `helpers/template_report_baseline.txt` counts as baseline therefore
-fails the dry run until its findings are fixed. The list is read from the release's `check.yml`; a
+fails the dry run until its findings are fixed. The dry run reads the list from the release's `check.yml`; a
 helper without a runner here fails the run as `template coverage`. A clean run means a green first
 `check / standalone`, except for the shellcheck step and a missing `typos`, which the run reports.
 It ends
 with the nife-side follow-up: each consumer manifest's new line and every other file that names
-the crate. The script's header lists what it does not check.
+the crate. The script's header lists what it skips.
 
 A finding is a change to make before the move. A lane fixes a finding against the crate itself, in
 nife: a README section or a sentence over the prose limits, a mention of nife in the crate's text.
@@ -278,8 +278,7 @@ publishes.
 - Create `nifeos/<crate>` (step 5).
 - Install the `nife-smelter` app on it (step 6).
 - Run `script/grant-org-secrets <crate>` to grant `NIFE_SMELTER_PRIVATE_KEY` and `SETTINGS_TOKEN`
-  to it (step 7). `NIFE_SMELTER_APP_ID` is org-wide, and the `SETTINGS_TOKEN` token reaches every
-  repository of the organization and needs no widening.
+  to it (step 7).
 - Dispatch the release that makes each tag, and cancel its publish (step 13).
 - Approve each publication onto the allowlist (step 16).
 - Create the first-publish token on the `crates-io` environment (step 17).
@@ -299,10 +298,7 @@ publishes.
   `.cargo/mutants-baseline.txt` into the staged `.github/mutants-exempts` as a comment, and the
   follow-up list says to delete the row here. The template's gate wants one `<file>:<line> # <reason>`
   line per surviving mutant, and the census records four counts (caught, missed, timeout, unviable)
-  and no locations, so the lines cannot be written mechanically. The first `weekly / mutation` run in the crate repository fails on each survivor and names it;
-  the move lane lists them in one pull request there.
-- The dry run's nife check skips a word joined by an underscore, so it passes an identifier such
-  as `NIFE_DATA`. Read `helpers/lint_externalized_crates.py`'s count for the crate as well.
-- Condition 3 is unmeasured on the pilot. Its release runs were the two that made its tags, and
-  none ran with `dry-run=true`, so whether a dry run of an already tagged version passes the gate is
-  unknown.
+  and no locations, so the lines cannot be written mechanically. The first `weekly / mutation` run fails on each survivor and names it; the move lane lists them in one pull request.
+- The dry run's nife check passes an identifier such as `NIFE_DATA`. Read `helpers/lint_externalized_crates.py`'s count for the crate as well.
+- Condition 3 is unmeasured on the pilot: no release run used `dry-run=true`, so whether a dry
+  run of an already tagged version passes the gate is unknown.
