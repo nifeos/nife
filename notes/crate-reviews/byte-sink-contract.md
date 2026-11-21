@@ -123,7 +123,7 @@ The other P1 and P2 items:
 
 ## Names
 
-The architect ratified every name below on 2026-11-21 (UTC), except `MessageWords`, which stays provisional for the release review.
+The architect ratified every name below on 2026-11-21 (UTC), except `MessageWords`, which waits for the release review.
 
 | item | status | rule or reason |
 |---|---|---|
@@ -155,7 +155,7 @@ All of these belong to the move itself. No in-tree item blocks it.
 
 ## Recommendation
 
-Cleared on 2026-11-21 (UTC). The three conditions the milestone sets (P1-3, P1-8 and P1-9) are built. The seven
+The architect cleared the crate on 2026-11-21 (UTC). The lane built the three conditions the milestone sets (P1-3, P1-8 and P1-9). The seven
 failures of `script/crate-standalone` are the ones a move writes: the manifest, the README, both
 licenses and the path in a comment. The crate has no dependency and no
 `unsafe`, its public API holds the wire and nothing else, six proofs each have a falsifying patch,
@@ -163,10 +163,10 @@ and the decoder enforces what the documentation says about the wire.
 
 ## Decisions for the architect
 
-1. The move is cleared (2026-11-21 UTC).
-2. The Names table is ratified (2026-11-21 UTC).
-3. The identity pair `INTERFACE_ID` 6 and `VERSION` 1 is frozen as built (2026-11-21 UTC).
-4. P2-12 (typed `first_word` parameters) and P2-13 (a words struct for `pack`) are ruled
-   (2026-11-21 UTC) and built. `MessageWords` is the one name left for the release review.
+1. The architect cleared the move on 2026-11-21 (UTC).
+2. The architect ratified the Names table on 2026-11-21 (UTC), apart from `MessageWords`.
+3. The architect froze the identity pair `INTERFACE_ID` 6 and `VERSION` 1 as built on 2026-11-21 (UTC).
+4. The architect ruled P2-12 and P2-13 on 2026-11-21 (UTC), and the lane built both. `MessageWords`
+   is the one name left for the release review.
 
 Nothing here asks for a tag, a publication or a repository.

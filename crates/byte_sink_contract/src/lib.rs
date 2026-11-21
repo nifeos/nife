@@ -148,6 +148,9 @@ pub struct MessageWords {
 
 impl MessageWords {
     /// The three words of a message, in order.
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by lane byte-sink-contract-names. The standard
+    /// spelling of a constructor.
     pub const fn new(word_zero: u64, word_one: u64, word_two: u64) -> Self {
         Self {
             word_zero,
