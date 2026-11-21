@@ -8,7 +8,7 @@ crate	bucket	linked_by
 abi	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
 activation_set	shared	retired
 address_space_identifier	kernel	kernel
-address_space_layout	shared	c_library,components,cryptography_exerciser,fixtures,jig,kernel,mdr,pinned_tls_exerciser,redoxfs_server,std,std_exerciser
+address_space_layout	shared	retired
 allocation_cache	userspace	std
 approval_file	userspace	jig
 argument_protocol	shared	retired

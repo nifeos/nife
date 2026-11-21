@@ -3,7 +3,6 @@
 # The prose baseline, and what each survivor means, is notes/mutation-testing.md.
 abi 67 6 0 8
 address_space_identifier 21 2 0 2
-address_space_layout 30 1 0 9
 allocation_cache 44 0 0 8
 bitmap_font 12 0 0 2
 block_roster 54 1 0 4
