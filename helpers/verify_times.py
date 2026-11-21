@@ -322,23 +322,40 @@ def parse_replay_log(text):
 # ---------------------------------------------------------------------------------------------
 # GitHub.
 
-def gh_json(path, tries=3):
-    # Retried, because one TLS timeout in hour-long backfill of thousands of calls lost the lot on
-    # 2026-10-07; a call that fails three times still raises.
-    for attempt in range(tries):
-        done = subprocess.run(["gh", "api", path], capture_output=True, text=True)
+# The waits between tries of one `gh api` call, in seconds. A refresh reads twenty runs' job
+# listings and every prove and re-falsify shard's log, and GitHub answers a busy API with a passing
+# 502 or 503; one such answer that outlasts the waits fails the whole refresh, and the shard table
+# keeps its stale seconds for another day. Doubling from 5 seconds spans 155 seconds.
+GH_WAITS = (5, 10, 20, 40, 80)
+
+
+def transient(stderr):
+    """Whether a failed `gh` call is worth asking again: a 5xx answer, or no HTTP status at all
+    (a timeout or a reset connection). A 4xx is the request's own fault and is refused at once."""
+    status = re.search(r"\bHTTP (\d{3})\b", stderr)
+    return not status or status.group(1).startswith("5")
+
+
+def gh_api(argv, run=subprocess.run, sleep=time.sleep):
+    """`gh api` with `argv` after it, retried over GH_WAITS while a failure is transient; the
+    output as text, or a RuntimeError naming the last failure."""
+    for wait in GH_WAITS + (None,):
+        done = run(["gh", "api"] + argv, capture_output=True)
+        err = done.stderr.decode(errors="replace").strip()
         if not done.returncode:
-            return json.loads(done.stdout)
-        if attempt + 1 < tries:
-            time.sleep(5 * (attempt + 1))
-    raise RuntimeError("gh api %s: %s" % (path, done.stderr.strip()))
+            return done.stdout.decode(errors="replace")
+        if wait is None or not transient(err):
+            break
+        sleep(wait)
+    raise RuntimeError("gh api %s: %s" % (argv[-1], err))
+
+
+def gh_json(path):
+    return json.loads(gh_api([path]))
 
 
 def gh_text(path):
-    done = subprocess.run(["gh", "api", "--allow-escape-sequences", path], capture_output=True)
-    if done.returncode:
-        raise RuntimeError("gh api %s: %s" % (path, done.stderr.decode(errors="replace").strip()))
-    return done.stdout.decode(errors="replace")
+    return gh_api(["--allow-escape-sequences", path])
 
 
 def _minutes(job):
@@ -796,6 +813,34 @@ def selftest():
     rows = merge_rows(from_csv(to_csv([a])), [b])
     expect("kept and added", [str(x["run"]) for x in rows], ["1", "2"])
     expect("idempotent", to_csv(merge_rows(from_csv(to_csv(rows)), [b])), to_csv(rows))
+
+    def answers(*replies):
+        """A stub for subprocess.run that answers each call with the next (exit, stderr)."""
+        queue, calls = list(replies), []
+
+        def run(argv, **_kw):
+            calls.append(argv)
+            code, err = queue.pop(0)
+            return subprocess.CompletedProcess(argv, code, b"" if code else b"log", err.encode())
+        return run, calls
+
+    waited = []
+    run, calls = answers(*([(1, "gh: HTTP 503")] * 5 + [(0, "")]))
+    expect("five 503s in a row are waited out", (gh_api(["x"], run, waited.append), waited),
+           ("log", list(GH_WAITS)))
+    waited = []
+    run, calls = answers((1, "gh: Not Found (HTTP 404)"))
+    try:
+        gh_api(["x"], run, waited.append)
+        expect("a 404 raises", "returned", "raised")
+    except RuntimeError:
+        expect("a 404 is asked once and never waited on", (len(calls), waited), (1, []))
+    run, calls = answers(*([(1, "gh: Server Error (HTTP 502)")] * 6))
+    try:
+        gh_api(["x"], run, lambda _s: None)
+        expect("a 502 on every try raises", "returned", "raised")
+    except RuntimeError:
+        expect("a 502 on every try is asked six times", len(calls), 6)
 
     print("verify_times selftest: %s" % ("ok" if ok else "FAILED"))
     return 0 if ok else 1
