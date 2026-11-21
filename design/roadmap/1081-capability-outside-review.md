@@ -44,10 +44,10 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
 - P1-3, the proved `derive` is not the delegation the kernel runs: Done. `Capability::delegate`
   holds the rule once, the kernel's `Delegation::derive` calls it, and a harness proves it
   ([#3656](https://github.com/nifeos/nife/pull/3656)). The two `REVOKE` arms in
-  `kernel/src/system_call.rs` test `GRANT` inline and get no harness, for a reason recorded beside
-  them ([#3888](https://github.com/nifeos/nife/pull/3888); the maintainer's provisional ruling): a
-  revoke mints nothing, `allows` is proved in the crate, and a harness of the arm needs stubs of
-  the current thread, its table and the frame revoke that the kernel proofs do not have.
+  `kernel/src/system_call.rs` test `GRANT` inline with no harness, by the maintainer's provisional
+  ruling ([#3888](https://github.com/nifeos/nife/pull/3888)). The reason sits beside them. A revoke
+  mints nothing, `allows` has its proof in the crate, and a harness of the arm needs stubs of the
+  current thread, its table and the frame revoke that the kernel proofs do not have.
 - P1-4, a slot truncates on a 32-bit target: Done,
   [#3565](https://github.com/nifeos/nife/pull/3565).
 - P1-5, `len` means capacity: Done, [#3656](https://github.com/nifeos/nife/pull/3656). The name
