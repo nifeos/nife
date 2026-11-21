@@ -9,6 +9,8 @@
 /// Uppercase, the tree's word for a failed check, which other boot lines also use. It appears
 /// *inside* a [`self_test`](crate::Heads::self_test) line, after any [`SELF_TEST_ABSENT`] list; a
 /// matcher wanting a failed verdict must find both.
+///
+/// Name: ratified 2026-11-19 (UTC), block 1078.
 pub const SELF_TEST_FAILED: &str = "FAILED: ";
 
 /// **What a verdict says before it names the checks this machine had nothing for**:
@@ -20,7 +22,7 @@ pub const SELF_TEST_FAILED: &str = "FAILED: ";
 /// absence is acceptable is the board's fact, not the kernel's: `serial_console`'s board profiles
 /// name the checks that may not be absent on each board, and read such an absence as a failure.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-19 (UTC), block 1078.
 pub const SELF_TEST_ABSENT: &str = "absent: ";
 
 /// **The boot self-test's checks, by name, in the order the verdict names them.**
@@ -35,7 +37,7 @@ pub const SELF_TEST_ABSENT: &str = "absent: ";
 /// They are printed, and matched, so they are a contract. A name is lower-case ASCII letters,
 /// digits and underscores, and appears once.
 ///
-/// Name: ratified 2026-11-14 (UTC), each of the fifteen.
+/// Name: ratified 2026-11-19 (UTC), block 1078; the fifteen strings ratified 2026-11-14 (UTC).
 pub const SELF_TEST_CHECKS: &[&str] = &[
     "exceptions",
     "mapping",
@@ -65,7 +67,7 @@ pub const SELF_TEST_CHECKS: &[&str] = &[
 /// | 5 | `exceptions`, `mapping`, `frames`, `timer`, `scheduler` |
 /// | 13 | the current list without `supervised` and `teardown` |
 ///
-/// Name: provisional. A name for what the numbers count, as the review of this crate asked.
+/// Name: ratified 2026-11-19 (UTC), block 1078. A name for what the numbers count.
 pub const EARLIER_SELF_TEST_CHECK_COUNTS: &[usize] = &[5, 13];
 
 #[cfg(test)]
