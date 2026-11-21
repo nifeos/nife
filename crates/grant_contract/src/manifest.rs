@@ -20,7 +20,7 @@ pub enum OutputDeclaration {
     /// One or more raw `u64` answers on the result endpoint, read by the shell and rendered by it.
     /// Older than the sink contract and still right for an integer; not redirectable.
     Words,
-    /// The sink contract (`crates/byte_sink_contract`): self-framing byte messages ending in `OPERATION_END_OF_STREAM`. The
+    /// The sink contract (`nifeos/byte_sink_contract`): self-framing byte messages ending in `OPERATION_END_OF_STREAM`. The
     /// only output that `>` and `|` can substitute, because it is the only one whose meaning does
     /// not depend on who is reading it.
     Bytes,

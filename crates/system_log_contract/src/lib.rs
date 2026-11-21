@@ -6,7 +6,7 @@
 //!   the unbadged intake capability, which only the spawner holds.
 //! - [`read`]: how a reader asks for records, and the shared page they land in as JSONL.
 //!
-//! A writer speaks the byte sink (`crates/byte_sink_contract`), not this crate. See
+//! A writer speaks the byte sink (`nifeos/byte_sink_contract`), not this crate. See
 //! notes/system-log.md, "Attribution".
 
 //! # BUGS

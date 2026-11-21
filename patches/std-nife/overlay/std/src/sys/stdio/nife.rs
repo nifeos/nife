@@ -1,4 +1,4 @@
-//! stdout/stderr over the **sink contract** (`crates/byte_sink_contract`, milestone 50), on the
+//! stdout/stderr over the **sink contract** (`nifeos/byte_sink_contract`, milestone 50), on the
 //! endpoint the std slot convention puts in slot 1 (see `pal/nife/rt.rs`): SEND, register-only, up
 //! to 16 bytes per message. Register-only is forced by substitutability: a sink that also required
 //! a page mapped at an agreed address could not be swapped by putting a different capability in

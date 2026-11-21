@@ -1,7 +1,7 @@
 //! **`wc`: the consumer** (milestone 50, notes/pipes.md).
 //!
 //! It counts lines, words and bytes on its input and writes the three numbers to its output. Both
-//! ends are the sink contract (`crates/byte_sink_contract`), the same sixteen-byte framing that
+//! ends are the sink contract (`nifeos/byte_sink_contract`), the same sixteen-byte framing that
 //! `date` and every `println!` write. Sink messages arrive on slot 1 until
 //! [`byte_sink_contract::OPERATION_END_OF_STREAM`]. Behind it is another program (`date | wc`), a file the
 //! shell opened and streamed (`wc < report.txt`, or `wc report.txt`, the same bytes), or the shell

@@ -51,7 +51,7 @@ Every diagnostic path in the tree, found by grep on base `140adf859` (the comman
 | kernel gauges after handoff | 2: `capability slots:` (`kernel/src/cap.rs:358`) and `progenitor stack:` (`kernel/src/progenitor_stack.rs:118`) | the same UART, interleaved with userspace at byte granularity | `script/swish-check`, which needs both lines and filters one of them out first |
 | kernel fault report | 3 lines, ~150 bytes, per faulting user thread, all three architectures | the same UART | `script/swish-check` (`KERNEL_FAULT_TOKENS`) |
 | semihosting | 58 hits, all exit-with-status | QEMU's exit code | the test harness; no semihosted writes exist |
-| userspace output | no debug-put system call; four system calls total (`crates/abi/src/lib.rs:119`) | a byte sink (`crates/byte_sink_contract`, 16 bytes per `SEND`) to whatever slot 1 holds | a terminal, a pipe, a file, or nothing |
+| userspace output | no debug-put system call; four system calls total (`crates/abi/src/lib.rs:119`) | a byte sink (`nifeos/byte_sink_contract`, 16 bytes per `SEND`) to whatever slot 1 holds | a terminal, a pipe, a file, or nothing |
 | declared second streams, §67 (a program's second stream is a declaration) | 5 programs declare `BytesAndDiagnostics`, of 21 manifests | a second sink the shell plans for them | the terminal, or `2>` |
 | manifest `reports` flag | byte 28 of the manifest note | nothing: no spawn code reads it, only test asserts | nobody |
 | timetable child report | one word per scheduled child (`components/src/timetable.rs:376`) | the timetable's `CHILD_REPORT` endpoint | the kernel harness in tests; Fork 6 C removes it for durable jobs |
@@ -120,7 +120,7 @@ capability; the service stamps every record from the badge.**
   declared stream, and no manifest field changes. The refused alternative, a `log` manifest field,
   costs a manifest note version bump for a fact the spawner already knows.
 - The one protocol consequence that matters. A byte sink's writer *must end* on `Gone`
-  (`crates/byte_sink_contract`, the `SIGPIPE` rule), and `SEND` blocks until received; neither suits
+  (`nifeos/byte_sink_contract`, the `SIGPIPE` rule), and `SEND` blocks until received; neither suits
   a log, which is why `login_audit_receiver` already parks an undrained audit send forever. A log
   grant means `Gone` is ignored and the service receives unconditionally, dropping rather than
   letting a writer wait.

@@ -1,6 +1,6 @@
 # The sink protocol: one way to write bytes somewhere
 
-*Milestone 50, the protocol lane. `crates/byte_sink_contract`, `fixtures/src/sink.rs`, the std PAL's
+*Milestone 50, the protocol lane. `nifeos/byte_sink_contract`, `fixtures/src/sink.rs`, the std PAL's
 `sys/stdio/nife.rs`, and `abi::Error::Gone`.*
 
 ## The problem, which was not the one anybody expected

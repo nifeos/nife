@@ -10,7 +10,7 @@
 
 //! # What this program holds
 //!
-//! Slot 0, its output: the sink contract (`crates/byte_sink_contract`). No manifest note, so a
+//! Slot 0, its output: the sink contract (`nifeos/byte_sink_contract`). No manifest note, so a
 //! vouched copy is endowed as `program_table::NO_NOTE_MANIFEST`, its output alone.
 //!
 //! # BUGS

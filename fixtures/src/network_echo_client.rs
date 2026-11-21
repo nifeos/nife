@@ -17,7 +17,7 @@
 
 //! # What this program holds
 //!
-//! - slot 0: its output, the sink contract (`crates/byte_sink_contract`).
+//! - slot 0: its output, the sink contract (`nifeos/byte_sink_contract`).
 //! - slot 1: the `--mem` budget, which pays for its socket page (the network grant has no memory).
 //! - slot 10 ([`grant_contract::NETWORK_SLOT`]): `WRITE` on the stack's endpoint, placed because the
 //!   manifest declares `network`; empty when the progenitor built no stack (`x86_64`, or `NIFE_NET`
