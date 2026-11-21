@@ -25,7 +25,7 @@ The caller keeps three rules, and the documentation cites them by number:
 
 1. A node is on at most one queue until popped. The token enforces this.
 2. A node outlives its time on the queue. No type in the crate can check this, because the queue
-   does not own its nodes. `Unqueued::new` states it once, where the token is minted.
+   does not own its nodes. `Unqueued::new` states it once, where the caller mints the token.
 3. The caller serializes all access to a queue and its links, and mints each token from the
    node's owning pointer, never from a reference.
 
@@ -92,9 +92,9 @@ unsafe { drop((Box::from_raw(a.as_ptr()), Box::from_raw(b.as_ptr()))) };
 Two Kani harnesses in `src/lib.rs` drive the real `Queue` against a model of an array and two
 counters:
 
-- Any interleaving of pushes and pops is first in, first out and lossless: over six symbolic steps
-  and three nodes, the queue hands nodes back in push order and agrees with the model on its
-  length and emptiness at every step. Kani also checks that no step follows a stale link.
+- Any interleaving of pushes and pops is first in, first out and lossless. Over six symbolic steps
+  and three nodes, the queue hands nodes back in push order. It agrees with the model on its length
+  and emptiness at every step, and Kani checks that no step follows a stale link.
 - A popped node leaves with a clear link, whichever node it was and however many followed it.
 
 The harnesses cover the list logic. They do not cover the caller's contract: no proof here shows
@@ -118,7 +118,7 @@ are `compile_fail`: a double push (`E0382`) and a queue of `Rc` nodes sent to an
 ### Running the proofs
 
 Install Kani first: run `cargo install --locked kani-verifier --version 0.68.0`, then
-`cargo kani setup`. Setup downloads a model checker and the Rust toolchain Kani is pinned to, so it
+`cargo kani setup`. Setup downloads a model checker and the Rust toolchain Kani pins, so it
 needs network access. Then run every harness:
 
 ```sh
@@ -158,8 +158,8 @@ check it expects to fail.
 
 - The queue is singly linked and offers only `push_back` and `pop_front`. Taking one particular
   node out means popping every node and pushing the others back.
-- Nothing in the crate checks rule 2. A node freed while queued is undefined behavior at the
-  queue's next touch of it.
+- Nothing in the crate checks rule 2. Freeing a node that a queue still holds causes undefined
+  behavior at the queue's next touch of it.
 - The proofs stop at six steps over three nodes.
 
 ## Minimum Rust version
