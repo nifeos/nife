@@ -1,7 +1,6 @@
 # Review package: `grant_contract`
 
-*Name: provisional, minted by lane milestone/1094-grant-plan-rulings-built. The `grant_contract`
-package of [crate-reviews.md](../crate-reviews.md), written with
+*The `grant_contract` package of [crate-reviews.md](../crate-reviews.md), written with
 `script/crate-review-packet grant_contract`. It is the second of two for the split in milestone 1094
 (`grant_plan`: what an outside maintainer would fix before it leaves); [grant-plan.md](grant-plan.md) is the
 first.*
@@ -19,13 +18,13 @@ packages in nife link it.
 
 | item | value |
 |---|---|
-| crate | `grant_contract`; the maintainer ruled the name as built on 2026-11-19 UTC, and `script/names` still reports it provisional until the architect ratifies it |
+| crate | `grant_contract`; the name is ruled as built, and the block in `lib.rs` stays provisional until the name of the library above it is chosen |
 | interface | `INTERFACE_ID` 17, `VERSION` 1 |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024; none |
 | license | inherited from the nife workspace; no license files in the crate |
 | `publish` | `false` |
-| size | four files under `src/`: `lib.rs` 55 lines, `manifest.rs` 727, `manifest/tests.rs` 99, `verbs.rs` 407 |
+| size | four files under `src/`: `lib.rs` 55 lines, `manifest.rs` 749, `manifest/tests.rs` 99, `verbs.rs` 482 |
 | consumers in nife | `components`, `capability_manifest_note`, `grant_plan`, `program_asks` (dev), `program_table`, `swish`, `system_initializer`, `timetable`, `fixtures`, `fuzz`, `jig`, `std_exerciser`, `system_tests` (dev), `xtask` |
 
 ## Public API
@@ -49,17 +48,13 @@ milestone 597 (a program carries its manifest in an ELF note) reads.
 
 ## Names
 
-The crate has 46 names with a block: 22 ratified and 24 provisional. The provisional ones were
-minted by this lane under the two rulings of milestone 1094.
+`python3 helpers/name_release.py --draft grant_contract` lists 75 names: 71 ratified (2026-11-20 UTC),
+the crate and its two modules `manifest` and `verbs` still provisional, and one private item with no
+block. The ratified names include the slot constants, the verb-authority bits, the manifest methods,
+`Manifest`, `WordGrant`, `VerbGrant`, `narrow_by_verb`, `verb_key`, `page_verb`, `delegated_identity`,
+`MAXIMUM_VERB_BYTES`, `RIGHTS_BITS_DO_NOT_OVERLAP` and the private field `length_bytes`.
 
-| name | before | reason |
-|---|---|---|
-| `verbs::MAXIMUM_VERB_BYTES` | `MAXIMUM_VERB` | unit |
-| `RIGHTS_BITS_DO_NOT_OVERLAP` | `THE_RIGHTS_BITS_SHARE_NO_BIT` | says the property, not the phrase |
-| private field `length_bytes` | `len` | unit |
-| the block of each item in `manifest.rs` and `verbs.rs` that cites the new spellings | | provisional until the architect ratifies |
-
-The lane added no alias of an old nife spelling.
+The crate carries no `doc(alias)` of an earlier nife spelling.
 
 ## Naming rules
 
@@ -94,7 +89,7 @@ None for this package. The clearance covers this crate with `grant_plan`.
 
 ## Result of `script/crate-standalone`
 
-The run fails with 17 findings. They are the crate name and 55 item names not yet ratified
+The run fails on the crate and module names not yet ratified
 (`python3 helpers/name_release.py --draft grant_contract` prints the table), the missing README,
 license files and `rust-version`, and the citations listed above. The two path dependencies are
 sibling crates in nife. The run skips the build and proofs because the copy needs them.
