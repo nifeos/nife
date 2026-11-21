@@ -108,14 +108,14 @@ fn spawn_shell_runnable_program(
 fn relay_row(report: sched::RendezvousId) {
     loop {
         let [w0, w1, w2, ..] = sched::ipc_receive(report);
-        let mut bytes = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut bytes = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(w0, w1, w2, &mut bytes) {
-            byte_sink_contract::Msg::Bytes(n) => {
+            byte_sink_contract::Message::Bytes(n) => {
                 for &b in &bytes[..n] {
                     crate::print!("{}", b as char);
                 }
             }
-            byte_sink_contract::Msg::Eof | byte_sink_contract::Msg::Malformed => return,
+            byte_sink_contract::Message::Eof | byte_sink_contract::Message::Malformed => return,
         }
     }
 }

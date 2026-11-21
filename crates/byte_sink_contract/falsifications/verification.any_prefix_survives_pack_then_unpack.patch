@@ -17,5 +17,5 @@ index 7bf381b61..8dcab81c2 100644
 -    hi.copy_from_slice(&words[8..]);
 +    hi.copy_from_slice(&words[..8]);
      (
-         req(OPERATION_BYTES, n as u64),
+         first_word(OPERATION_BYTES, n as u64),
          u64::from_le_bytes(lo),

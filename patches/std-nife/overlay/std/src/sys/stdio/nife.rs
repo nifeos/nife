@@ -93,8 +93,8 @@ const STREAM_ENDED: u8 = 3;
 
 /// The bytes of the last frame a short read could not take: the frame, where the rest starts, and
 /// where it ends.
-static STREAM_AHEAD: Mutex<([u8; sinkproto::INLINE_MAXIMUM], usize, usize)> =
-    Mutex::new(([0; sinkproto::INLINE_MAXIMUM], 0, 0));
+static STREAM_AHEAD: Mutex<([u8; sinkproto::MAXIMUM_INLINE_BYTES], usize, usize)> =
+    Mutex::new(([0; sinkproto::MAXIMUM_INLINE_BYTES], 0, 0));
 
 /// One read from the byte stream, or `None` when the slot turned out to be empty and the console
 /// should answer instead.
@@ -118,13 +118,13 @@ fn read_stream(buf: &mut [u8]) -> Option<usize> {
         }
         STREAM.store(STREAM_HELD, Ordering::Relaxed);
         match sinkproto::unpack(w0, w1, w2, frame) {
-            sinkproto::Msg::Bytes(n) => {
+            sinkproto::Message::Bytes(n) => {
                 *at = 0;
                 *end = n;
             }
             // A malformed frame ends the input rather than being skipped, `mdr`'s and `wc`'s rule:
             // a document silently missing a paragraph cannot be told from one that never had it.
-            sinkproto::Msg::Eof | sinkproto::Msg::Malformed => {
+            sinkproto::Message::Eof | sinkproto::Message::Malformed => {
                 STREAM.store(STREAM_ENDED, Ordering::Relaxed);
                 return Some(0);
             }

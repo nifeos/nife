@@ -1257,11 +1257,11 @@ pub(super) fn drain_text_with(read: &mut dyn FnMut() -> Option<(u64, u64, u64)>)
             print(swish::FAULTED_SENTENCE);
             return;
         }
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
-            byte_sink_contract::Msg::Bytes(n) => print(&buf[..n]),
-            byte_sink_contract::Msg::Eof => return,
-            byte_sink_contract::Msg::Malformed => {
+            byte_sink_contract::Message::Bytes(n) => print(&buf[..n]),
+            byte_sink_contract::Message::Eof => return,
+            byte_sink_contract::Message::Malformed => {
                 print(b"\n  (that program sent something this shell cannot read as bytes)\n");
                 return;
             }
@@ -1364,13 +1364,13 @@ pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
             break;
         }
         let (w0, w1, w2) = receive(ep);
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
-            byte_sink_contract::Msg::Bytes(n) => dest.push(&buf[..n]),
-            byte_sink_contract::Msg::Eof => done += 1,
+            byte_sink_contract::Message::Bytes(n) => dest.push(&buf[..n]),
+            byte_sink_contract::Message::Eof => done += 1,
             // The progenitor's failure sentinel arrives here too, as an `OPERATION_EOF` it sends on this rendezvous so
             // this drain can end; anything else is a program that cannot spell the contract.
-            byte_sink_contract::Msg::Malformed => done += 1,
+            byte_sink_contract::Message::Malformed => done += 1,
         }
     }
     dest.finish();

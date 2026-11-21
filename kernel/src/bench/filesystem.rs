@@ -285,14 +285,16 @@ fn drain_report(report: crate::sched::RendezvousId, out: &mut [u8]) -> usize {
     let mut len = 0usize;
     loop {
         let words = sched::ipc_receive(report);
-        let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
-            byte_sink_contract::Msg::Bytes(n) => {
+            byte_sink_contract::Message::Bytes(n) => {
                 let take = n.min(out.len() - len);
                 out[len..len + take].copy_from_slice(&chunk[..take]);
                 len += take;
             }
-            byte_sink_contract::Msg::Eof | byte_sink_contract::Msg::Malformed => return len,
+            byte_sink_contract::Message::Eof | byte_sink_contract::Message::Malformed => {
+                return len;
+            }
         }
     }
 }
@@ -304,15 +306,15 @@ fn walk_rows(report: crate::sched::RendezvousId, row: &str) {
     let mut len = 0usize;
     loop {
         let words = sched::ipc_receive(report);
-        let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
-            byte_sink_contract::Msg::Bytes(n) => {
+            byte_sink_contract::Message::Bytes(n) => {
                 let take = n.min(text.len() - len);
                 text[len..len + take].copy_from_slice(&chunk[..take]);
                 len += take;
             }
-            byte_sink_contract::Msg::Eof => break,
-            byte_sink_contract::Msg::Malformed => {
+            byte_sink_contract::Message::Eof => break,
+            byte_sink_contract::Message::Malformed => {
                 println!(
                     "bench-probe: fs_walk malformed sink message {:#x}",
                     words[0]

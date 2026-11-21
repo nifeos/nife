@@ -33,7 +33,7 @@ pub const DONE: u64 = 0x5142_0000_0000_0002;
 
 /// A sink reports this on a message the contract does not define, with the offending first word
 /// in the second position. It refuses rather than guessing (see
-/// [`byte_sink_contract::Msg::Malformed`]).
+/// [`byte_sink_contract::Message::Malformed`]).
 pub const BAD: u64 = 0x5142_0000_0000_0003;
 
 /// A writer's report of how its last `SEND` classified. A number, because the assertion it

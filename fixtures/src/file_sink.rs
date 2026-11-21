@@ -122,10 +122,10 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let mut off = 0u64;
     loop {
         let (w0, w1, w2) = receive(SINK);
-        let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+        let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
-            byte_sink_contract::Msg::Bytes(0) => {}
-            byte_sink_contract::Msg::Bytes(n) => {
+            byte_sink_contract::Message::Bytes(0) => {}
+            byte_sink_contract::Message::Bytes(n) => {
                 put(&buf[..n]);
                 let wrote = fs_call(fs::req(fs::WRITE, handle, n as u64), off);
                 if wrote != n as i64 {
@@ -136,8 +136,8 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
                 }
                 off += n as u64;
             }
-            byte_sink_contract::Msg::Eof => break,
-            byte_sink_contract::Msg::Malformed => {
+            byte_sink_contract::Message::Eof => break,
+            byte_sink_contract::Message::Malformed => {
                 send(REPORT, fixture::BAD, w0, off);
                 exit();
             }

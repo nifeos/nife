@@ -114,9 +114,9 @@ impl Log {
             self.refused += 1;
             return Handled::Nothing;
         }
-        let mut bytes = [0u8; INLINE_MAXIMUM];
+        let mut bytes = [0u8; MAXIMUM_INLINE_BYTES];
         match unpack(w0, w1, w2, &mut bytes) {
-            Msg::Bytes(n) => {
+            Message::Bytes(n) => {
                 let level = byte_sink_contract::severity(w0);
                 // Split the borrow: the assembler emits while the store takes the line.
                 let Log {
@@ -129,12 +129,12 @@ impl Log {
                     store.line(registry, line, now);
                 });
             }
-            Msg::Eof => {
+            Message::Eof => {
                 if let Some(line) = self.assembler.finish(badge) {
                     self.store.line(&self.registry, line, now);
                 }
             }
-            Msg::Malformed => self.refused += 1,
+            Message::Malformed => self.refused += 1,
         }
         Handled::Nothing
     }
