@@ -15,8 +15,8 @@ this package does not restate them, and checks which have landed.
 The one framing every "write these bytes there" destination speaks, so a terminal, a file and a
 pipe are substitutable in one capability slot. A sink is a `Rendezvous` with `WRITE` only. A writer
 `SEND`s up to 16 bytes in three message registers (the opcode, body kind, severity and count in the
-first word, the bytes in the other two) and gets no reply; the one fact `SEND`'s return carries is
-whether the sink is absent (`NoSink`, write into the void) or destroyed (`Gone`, the writer must
+first word, the bytes in the other two) and gets no reply. `SEND`'s return carries one fact: whether
+the sink is absent (`NoSink`, so write into the void) or destroyed (`Gone`, so the writer must
 end). The crate is `no_std`, has no dependency and no `unsafe`, and six Kani harnesses prove the
 decoder and the helpers. One module, `fixture`, is this tree's test scaffolding and still ships in
 the public API.
