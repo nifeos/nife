@@ -5,15 +5,15 @@ The defect: `window` asks the band to hold one page more than the window, so a w
 Expected to fail: Kani reports "a window must lie wholly inside its band" reachable for a window ending at `RUNTIME_WINDOWS.end`.
 
 diff --git a/crates/address_space_layout/src/lib.rs b/crates/address_space_layout/src/lib.rs
-index cb71c3977..d58d9d550 100644
+index 12c26e340..570cb4340 100644
 --- a/crates/address_space_layout/src/lib.rs
 +++ b/crates/address_space_layout/src/lib.rs
-@@ -238,7 +238,7 @@ pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64 {
+@@ -274,7 +274,7 @@ pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64 {
          panic!("a window must not wrap past the top of the address space");
      };
      assert!(
 -        band.holds(start_virtual_address, end_virtual_address),
-+        band.holds(start_virtual_address, end_virtual_address + PAGE),
++        band.holds(start_virtual_address, end_virtual_address + PAGE_BYTES),
          "a window must lie wholly inside its band"
      );
      start_virtual_address

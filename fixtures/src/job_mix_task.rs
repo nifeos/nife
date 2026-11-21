@@ -101,8 +101,8 @@ const MAP_TARGET_VA: u64 = address_space_layout::pair_page(0x40_0000);
 const PAGE: u64 = 4096;
 /// Where a child's code and stack go in the address space the [`job_mix::SPAWN`] job builds for it:
 /// the address-space map's image base and top stack page, where a loaded program's would be.
-const CHILD_CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+const CHILD_CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+const CHILD_STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
 /// Where this task maps, writable, the one frame it fills with the child's code. Far from anything
 /// the loader maps, which is the choice `os_primitives_benchmarker` made for the same frame.
 const STUB_SCRATCH_VA: u64 = address_space_layout::pair_page(0x0100_0000);

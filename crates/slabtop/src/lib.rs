@@ -77,7 +77,7 @@ pub fn write_report(s: &Spending, out: &mut dyn FnMut(&[u8])) {
     }
     for (pages, what) in rows {
         write_right(pages, 8, out);
-        write_right(pages * (address_space_layout::PAGE / 1024), 9, out);
+        write_right(pages * (address_space_layout::PAGE_BYTES / 1024), 9, out);
         out(b"  ");
         out(what);
         out(b"\n");

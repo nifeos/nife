@@ -5,7 +5,7 @@
 //! in `x1`. It squares `n`, `SEND`s the answer on the one endpoint it holds ([`RESULT`]) and exits:
 //! no role byte and no capability beyond the one it needs, because the program *is* its authority
 //! and the squaring is arbitrary. It links with `components`' linker script
-//! (`crates/user_mode_runtime/link.ld`, at `address_space_layout::IMAGE_BASE`), which is no conflict
+//! (`crates/user_mode_runtime/link.ld`, at `address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS`), which is no conflict
 //! in its own address space, and shares not one line of code with `hello`.
 //!
 //! Name: ratified 2026-09-13 (calef, working the unratified worklist). Refused `worker` (a generic

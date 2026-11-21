@@ -124,7 +124,7 @@ fn a_full_page_fits_its_maximum() {
 #[allow(clippy::assertions_on_constants)]
 fn the_page_sits_clear_of_its_neighbors() {
     assert!(address_space_layout::RUNTIME_WINDOWS.contains(PAGE_VIRTUAL_ADDRESS));
-    assert!(PAGE_VIRTUAL_ADDRESS >= 0x1700_0000 + address_space_layout::PAGE);
+    assert!(PAGE_VIRTUAL_ADDRESS >= 0x1700_0000 + address_space_layout::PAGE_BYTES);
 }
 
 /// A `StartupWindow` finds its kind's address on the page, then answers from its cache without
@@ -134,8 +134,8 @@ fn a_startup_window_reads_the_page_once() {
     let mut page = [0u8; PAGE_BYTES];
     write(&mut page, &[window(DATA_PLANE, 0x98_0000, 2)]).unwrap();
     // SAFETY: the test hands the page in a buffer and never calls `virtual_address`.
-    let plane = unsafe { StartupWindow::new(DATA_PLANE, 2 * address_space_layout::PAGE) };
-    assert_eq!(plane.length_bytes(), 2 * address_space_layout::PAGE);
+    let plane = unsafe { StartupWindow::new(DATA_PLANE, 2 * address_space_layout::PAGE_BYTES) };
+    assert_eq!(plane.length_bytes(), 2 * address_space_layout::PAGE_BYTES);
     assert_eq!(
         plane.virtual_address_in(|| StartupPage::parse(&page)),
         0x98_0000
@@ -159,10 +159,10 @@ fn a_startup_window_refuses_a_page_that_does_not_match() {
         })
     };
     assert_eq!(
-        run(DATA_PLANE, address_space_layout::PAGE, true).ok(),
+        run(DATA_PLANE, address_space_layout::PAGE_BYTES, true).ok(),
         Some(0x98_0000)
     );
-    assert!(run(DATA_PLANE, address_space_layout::PAGE, false).is_err());
-    assert!(run(DOORBELL_PAGE, address_space_layout::PAGE, true).is_err());
-    assert!(run(DATA_PLANE, address_space_layout::PAGE + 1, true).is_err());
+    assert!(run(DATA_PLANE, address_space_layout::PAGE_BYTES, false).is_err());
+    assert!(run(DOORBELL_PAGE, address_space_layout::PAGE_BYTES, true).is_err());
+    assert!(run(DATA_PLANE, address_space_layout::PAGE_BYTES + 1, true).is_err());
 }

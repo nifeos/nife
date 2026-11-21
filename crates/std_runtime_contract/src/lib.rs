@@ -37,8 +37,8 @@
 //! `crates/address_space_layout` (milestone 206 (a program image has under 896 KiB),
 //! DECISIONS §171 (where a program image starts) option D), restated as a number because the PAL
 //! has no crate to name; the test module pins each to its band, the shape `byte_sink_contract`
-//! uses for `abi`. A std program is linked at the map's `IMAGE_BASE` and its stack grows down from
-//! `STACK_TOP_PAGE`.
+//! uses for `abi`. A std program is linked at the map's `IMAGE_BASE_VIRTUAL_ADDRESS` and its stack grows down from
+//! `STACK_TOP_PAGE_VIRTUAL_ADDRESS`.
 
 //! # BUGS
 //!

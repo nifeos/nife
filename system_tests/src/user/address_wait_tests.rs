@@ -22,8 +22,8 @@ use crate::capability_object::Rights;
 use crate::sched;
 use crate::system_call::invoke;
 
-const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
-const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
+const CODE_VA: u64 = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
+const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS;
 /// The page the waiter uses: the address wait word at `+0`, a count of returns at `+8`, and at `+16` the
 /// OR of every `WAIT` result plus one, so a woken return (`0`) sets bit 0, a changed-word return
 /// (`1`) sets bit 1, and any error (negative) sets high bits that cannot be mistaken for either.

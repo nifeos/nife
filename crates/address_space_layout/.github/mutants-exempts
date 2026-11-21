@@ -1,0 +1,6 @@
+# A mutant that survives goes here, one per line, with the reason it is equivalent behavior:
+#   src/lib.rs:4 # swapping the operand order is the same arithmetic
+# A line without a reason is refused, and a line naming a survivor that no longer exists is
+# refused too, so this list can only shrink by a diff that says why.
+
+src/lib.rs:351 # check_image: with the start inside IMAGE, an end equal to IMAGE.end passed holds() above, so > and >= agree on every input that reaches this branch

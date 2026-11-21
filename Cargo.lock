@@ -1172,6 +1172,9 @@ version = "0.1.0"
 [[package]]
 name = "page_tables"
 version = "0.1.0"
+dependencies = [
+ "address_space_layout",
+]
 
 [[package]]
 name = "pci_configuration_space"

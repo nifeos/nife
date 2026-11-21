@@ -5,15 +5,15 @@ The defect: `service_window` checks against a band one page too wide, so the fir
 Expected to fail: the harness's `refused_inputs_never_reach_here` loop is reached, an unwinding failure, at `SERVICE_WINDOWS.end`.
 
 diff --git a/crates/address_space_layout/src/lib.rs b/crates/address_space_layout/src/lib.rs
-index cb71c3977..377e0f16e 100644
+index 12c26e340..ef802663f 100644
 --- a/crates/address_space_layout/src/lib.rs
 +++ b/crates/address_space_layout/src/lib.rs
-@@ -270,7 +270,7 @@ pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = runtime_window(0x2000_0000);
+@@ -306,7 +306,7 @@ pub const INITIAL_RAMDISK_VIRTUAL_ADDRESS: u64 = runtime_window(0x2000_0000);
  /// **A service window's address, checked against the map at compile time.** As [`pair_page`], for
  /// [`SERVICE_WINDOWS`].
  pub const fn service_window(virtual_address: u64) -> u64 {
--    window(SERVICE_WINDOWS, virtual_address, PAGE)
-+    window(Band { start: SERVICE_WINDOWS.start, end: SERVICE_WINDOWS.end + PAGE }, virtual_address, PAGE)
+-    window(SERVICE_WINDOWS, virtual_address, PAGE_BYTES)
++    window(Band { start: SERVICE_WINDOWS.start, end: SERVICE_WINDOWS.end + PAGE_BYTES }, virtual_address, PAGE_BYTES)
  }
  
  /// **Why an image does not fit the map.** Both variants name the numbers a reader needs to fix the

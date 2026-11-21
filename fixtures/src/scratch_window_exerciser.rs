@@ -91,7 +91,7 @@ const _: () = assert!(BUILDS * IMAGE_PAGES > SCRATCH_WINDOW_PAGES * 3 / 2);
 /// the entry point, and `IMAGE_PAGES - 1` pages of writable memory after it. Just enough for `static_elf::Elf::parse`,
 /// which is all the loader needs.
 fn forge(out: &mut [u8; EHDR + 2 * PHDR + BODY]) {
-    let base = address_space_layout::IMAGE_BASE;
+    let base = address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS;
     out[0..4].copy_from_slice(b"\x7fELF");
     out[4] = 2; // 64-bit
     out[5] = 1; // little-endian
@@ -149,7 +149,7 @@ fn start(_arg0: u64, _arg1: u64, _arg2: u64) -> ! {
         if frame < 0
             || !user_mode_runtime::map_page_frame(
                 frame as u64,
-                address_space_layout::STACK_TOP_PAGE - k * PAGE,
+                address_space_layout::STACK_TOP_PAGE_VIRTUAL_ADDRESS - k * PAGE,
                 true,
                 MEMORY_REGION,
             )

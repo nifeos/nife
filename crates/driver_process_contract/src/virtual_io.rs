@@ -21,7 +21,7 @@ use pci_configuration_space::{
 use startup_page_contract::WindowKind;
 
 /// **One page, in bytes**: the granule of every mapping a starter makes.
-const PAGE_BYTES: u64 = address_space_layout::PAGE;
+const PAGE_BYTES: u64 = address_space_layout::PAGE_BYTES;
 
 /// **How many pages the register window can hold**: the most distinct BAR pages the four
 /// structures may touch together. QEMU's modern virtio-pci functions put each structure on a page

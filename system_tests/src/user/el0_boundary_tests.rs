@@ -201,7 +201,7 @@ fn the_hardware_says_el0_cannot_read_the_kernels_memory() {
 
         // Its own code is readable, or the check refuses everything.
         assert!(
-            mmu::user_can_read(address_space_layout::IMAGE_BASE),
+            mmu::user_can_read(address_space_layout::IMAGE_BASE_VIRTUAL_ADDRESS),
             "EL0 cannot read its own .text, so the check refuses everything and proves nothing",
         );
 
