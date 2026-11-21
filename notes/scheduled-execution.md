@@ -36,7 +36,7 @@ at-boot      least_authority_demo 3
 every 1s     date
 ```
 
-At registration each command goes through `grant_plan::parse_run` and `program_table::plan`, which is
+At registration each command goes through `grant_plan::parse_invocation` and `program_table::plan`, which is
 the same function `swish` checks a prompt line with. That is one call rather than a second
 implementation, so "a scheduled entry is checked exactly as a typed one" is true in the code instead
 of being a convention two places are trusted to keep. What comes out is a `grant_plan::Endowment`:
@@ -95,7 +95,7 @@ vocabulary to discuss.
 
 ## `Held`: what the scheduler holds is a parameter, not an era
 
-`timetable::Held` is `grant_plan::Holdings` one level out, and it exists for exactly the reason that
+`timetable::Held` is `grant_plan::ShellHoldings` one level out, and it exists for exactly the reason that
 one does. "This scheduler holds nothing to back that" has to be a statement about a particular
 process's capability table. The same document is four refusals in a scheduler granted nothing but a budget, and
 four running jobs in one granted a clock, a directory and a terminal. Neither the document nor the

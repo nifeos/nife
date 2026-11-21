@@ -64,7 +64,7 @@ fn shell_expanded() -> Option<u64> {
                 directory::ENUMERATE | directory::DESCEND | directory::READ,
             ),
             arg2: 0,
-            // A measurement: six pages ran within a few dozen bytes of the guard once `Holdings`
+            // A measurement: six pages ran within a few dozen bytes of the guard once `ShellHoldings`
             // learned a second tree's mount point. See notes/two-trees.md, "The globbing
             // witness's stack, measured", and its BUGS for the smaller frame that should replace
             // the seventh page.

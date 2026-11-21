@@ -316,8 +316,8 @@ pub enum ProgramArgumentDeclaration {
     /// program is told what to do), DECISIONS §170). Every word after the program's name, up to the
     /// first operator, reaches it unquoted after `argv[0]`, unclassified, since §170 ruled these
     /// bytes carry no authority; such a manifest declares no positional grant. A word that names
-    /// something is granted it as the [`WordGrant`] says (`grant_plan::expand::Designation`).
-    /// Only a `std` program can read an argv (`grant_plan::argv`). Name: provisional (2026-09-26).
+    /// something is granted it as the [`WordGrant`] says (`grant_plan::expansion::Designation`).
+    /// Only a `std` program can read an argv (`grant_plan::write_argument_page`). Name: provisional (2026-09-26).
     Words(WordGrant),
 }
 

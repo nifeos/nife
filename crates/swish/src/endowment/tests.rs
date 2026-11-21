@@ -1,7 +1,7 @@
 //! Tests of the shell's own endowment, its `bind` rows and the census of held slots.
 
 use grant_plan::MountedTree;
-use grant_plan::navigation::Cwd;
+use grant_plan::navigation::DirectoryPath;
 
 use super::*;
 use crate::test_support::shown;
@@ -12,15 +12,15 @@ use crate::test_support::shown;
 /// of this test pins.
 #[test]
 fn a_bound_name_prints_its_own_namespace_row() {
-    let mut target = Cwd::root();
+    let mut target = DirectoryPath::root();
     target.descend(b"logs");
     target.descend(b"2026");
     let mut binds = navigation::Bindings::none();
     binds.add(b"recent", target).unwrap();
-    let holdings = Holdings {
+    let holdings = ShellHoldings {
         directory: true,
         mounted: None,
-        cwd: Cwd::root(),
+        working_directory: DirectoryPath::root(),
         binds,
     };
     let s = shown(|o| write_holdings(128, holdings, None, None, o));
@@ -33,10 +33,10 @@ fn a_bound_name_prints_its_own_namespace_row() {
     let empty = shown(|o| {
         write_holdings(
             128,
-            Holdings {
+            ShellHoldings {
                 directory: true,
                 mounted: None,
-                cwd: Cwd::root(),
+                working_directory: DirectoryPath::root(),
                 binds: navigation::Bindings::none(),
             },
             None,
@@ -53,10 +53,10 @@ fn holding_a_directory_changes_exactly_one_line_of_the_endowment() {
     let with = shown(|o| {
         write_holdings(
             128,
-            Holdings {
+            ShellHoldings {
                 directory: true,
                 mounted: None,
-                cwd: Cwd::root(),
+                working_directory: DirectoryPath::root(),
                 binds: navigation::Bindings::none(),
             },
             None,
@@ -64,7 +64,7 @@ fn holding_a_directory_changes_exactly_one_line_of_the_endowment() {
             o,
         );
     });
-    let without = shown(|o| write_holdings(128, Holdings::default(), None, None, o));
+    let without = shown(|o| write_holdings(128, ShellHoldings::default(), None, None, o));
     let differing = with
         .lines()
         .zip(without.lines())
@@ -77,8 +77,8 @@ fn holding_a_directory_changes_exactly_one_line_of_the_endowment() {
     assert!(with.contains("128 pages"));
 }
 
-fn at(components: &[&[u8]]) -> Cwd {
-    let mut c = Cwd::root();
+fn at(components: &[&[u8]]) -> DirectoryPath {
+    let mut c = DirectoryPath::root();
     for name in components {
         assert!(c.descend(name));
     }
@@ -90,10 +90,10 @@ fn at(components: &[&[u8]]) -> Cwd {
 /// one-grant shell prints exactly the old single row.
 #[test]
 fn a_second_grant_prints_its_row_and_where_it_is_mounted() {
-    let holdings = Holdings {
+    let holdings = ShellHoldings {
         directory: true,
         mounted: MountedTree::mounted_at(at(&[b"media", b"usb"])),
-        cwd: Cwd::root(),
+        working_directory: DirectoryPath::root(),
         binds: navigation::Bindings::none(),
     };
     let s = shown(|o| write_holdings(128, holdings, None, None, o));
@@ -106,9 +106,9 @@ fn a_second_grant_prints_its_row_and_where_it_is_mounted() {
     let one_grant = shown(|o| {
         write_holdings(
             128,
-            Holdings {
+            ShellHoldings {
                 directory: true,
-                ..Holdings::default()
+                ..ShellHoldings::default()
             },
             None,
             None,
@@ -123,10 +123,10 @@ fn a_second_grant_prints_its_row_and_where_it_is_mounted() {
 /// pointing into it is the mount path. No label reaches the screen.
 #[test]
 fn a_mounted_tree_prints_as_paths_in_the_one_tree() {
-    let mut holdings = Holdings {
+    let mut holdings = ShellHoldings {
         directory: true,
         mounted: MountedTree::mounted_at(at(&[b"media", b"usb"])),
-        cwd: at(&[b"media", b"usb", b"logs"]),
+        working_directory: at(&[b"media", b"usb", b"logs"]),
         binds: navigation::Bindings::none(),
     };
     assert_eq!(shown(|o| write_pwd(&holdings, o)), "  /media/usb/logs\n");
@@ -147,7 +147,9 @@ fn a_mounted_tree_prints_as_paths_in_the_one_tree() {
         "{s}"
     );
 
-    holdings.bind(b"here", holdings.cwd).expect("a free name");
+    holdings
+        .bind(b"here", holdings.working_directory)
+        .expect("a free name");
     let s = shown(|o| write_holdings(128, holdings, None, None, o));
     assert!(s.contains("bind here -> /media/usb/logs"), "{s}");
 }
@@ -161,17 +163,17 @@ fn a_mounted_tree_prints_as_paths_in_the_one_tree() {
 /// a table that printed only the object would have lost it.
 #[test]
 fn a_clock_is_one_row_and_it_says_the_shell_cannot_pass_it_on() {
-    let with = shown(|o| write_holdings(128, Holdings::default(), Some(5), None, o));
+    let with = shown(|o| write_holdings(128, ShellHoldings::default(), Some(5), None, o));
     assert!(with.contains("cap 5  frame     clock"), "{with}");
     assert!(with.contains("NOT delegable"), "{with}");
 
     // The slot is the caller's to state rather than a constant here, because it moves with the
     // wiring: a shell granted no directory has one fewer capability under it.
-    let lower = shown(|o| write_holdings(128, Holdings::default(), Some(4), None, o));
+    let lower = shown(|o| write_holdings(128, ShellHoldings::default(), Some(4), None, o));
     assert!(lower.contains("cap 4  frame     clock"), "{lower}");
 
     // And a shell granted none says what is missing.
-    let without = shown(|o| write_holdings(128, Holdings::default(), None, None, o));
+    let without = shown(|o| write_holdings(128, ShellHoldings::default(), None, None, o));
     assert!(without.contains("was\n     granted none"), "{without}");
     assert!(without.contains("nothing to measure with"), "{without}");
 }

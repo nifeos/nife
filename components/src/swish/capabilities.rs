@@ -62,7 +62,7 @@ pub(super) fn capabilities(nav: &mut Nav, tail: &[u8]) {
     // endowment only: the rows above are what this shell understands it was given, and the census
     // is the kernel's answer, so a slot no row names cannot hide. It is what `script/swish-check`
     // reads to prove this shell holds no display device.
-    if grant_plan::trim(tail).is_empty() {
+    if tail.trim_ascii().is_empty() {
         swish::write_census(
             abi::fault::FAULT_RENDEZVOUS_SLOT,
             &user_mode_runtime::is_granted,
@@ -75,7 +75,7 @@ pub(super) fn capabilities(nav: &mut Nav, tail: &[u8]) {
 /// when its program token has a `/` in it or names an installed program, so `caps` previews
 /// exactly what would run.
 fn plain_line(tail: &[u8]) -> Option<ParsedInvocation<'_>> {
-    let l = line::split(grant_plan::trim(tail)).ok()?;
+    let l = line::split(tail.trim_ascii()).ok()?;
     let [stage] = l.stages() else {
         return None;
     };
@@ -83,7 +83,7 @@ fn plain_line(tail: &[u8]) -> Option<ParsedInvocation<'_>> {
         return None;
     }
     match grant_plan::parse(stage) {
-        Command::Run(spec) => Some(spec),
+        CommandLine::Run(spec) => Some(spec),
         _ => None,
     }
 }
@@ -201,8 +201,8 @@ static mut VERSION_SET: [u8; filesystem_contract::PAGE_BYTES] =
 /// there is none, or one that is not text, or one that fills a page.
 fn nearest_version_set(nav: &Nav) -> Option<&'static str> {
     nav.dir?;
-    let (which, pos) = nav.holds.locate(&nav.holds.cwd);
-    let t = nav.tree(which);
+    let (side, pos) = nav.holds.serving_tree(&nav.holds.working_directory);
+    let t = nav.tree(side);
     // SAFETY: this shell is one thread and `VERSION_SET` is used here and nowhere else, so no
     // other reference to it can exist while this one does; the returned borrow is dropped before
     // the next read of the static, because [`bare`] resolves inside this one's scope.

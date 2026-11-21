@@ -6,7 +6,7 @@
 //! Name: provisional, minted 2026-11-14 (UTC) by lane milestone/1094-grant-plan-split.
 
 use grant_contract::{Manifest, ShortOptions};
-use grant_plan::{argv, verb_of};
+use grant_plan::{line_verb, write_argument_page};
 
 use crate::*;
 
@@ -86,7 +86,7 @@ fn a_verb_narrows_and_never_widens() {
     let jig = Program::Jig.manifest();
     let as_typed = |line: &[u8]| {
         let mut buf = [0u8; MAXIMUM_VERB_BYTES];
-        narrow_by_verb(&jig, Program::Jig.verbs(), verb_of(line, &mut buf))
+        narrow_by_verb(&jig, Program::Jig.verbs(), line_verb(line, &mut buf))
     };
     let list = as_typed(b"jig list");
     assert!(list.catalog && !list.installer && !list.network);
@@ -106,12 +106,9 @@ fn a_verb_narrows_and_never_widens() {
     assert_eq!(remove.indexes, IndexStoreDeclaration::Forbidden);
     // The progenitor's reading of the page the shell assembles agrees with the shell's.
     let mut page = [0u8; program_argument_contract::PAGE_BYTES];
-    argv(b"jig 'install' greeting", &mut page).unwrap();
+    write_argument_page(b"jig 'install' greeting", &mut page).unwrap();
     let mut read = [0u8; MAXIMUM_VERB_BYTES];
-    assert_eq!(
-        verb_of_page(&page, &mut read),
-        Some(&b"install greeting"[..])
-    );
+    assert_eq!(page_verb(&page, &mut read), Some(&b"install greeting"[..]));
     // **`list -u` holds the activation directory and nothing else** (milestone 809), and
     // only typed as two words: quoted as one, it is no verb at all.
     let outdated = as_typed(b"jig list -u");
@@ -121,9 +118,9 @@ fn a_verb_narrows_and_never_widens() {
     assert!(!as_typed(b"jig list --upgradable").activation_directory);
     assert_eq!(as_typed(b"jig 'list -u'"), as_typed(b"jig upgrade"));
     let mut page = [0u8; program_argument_contract::PAGE_BYTES];
-    argv(b"jig list -u", &mut page).unwrap();
+    write_argument_page(b"jig list -u", &mut page).unwrap();
     let mut read = [0u8; MAXIMUM_VERB_BYTES];
-    assert_eq!(verb_of_page(&page, &mut read), Some(&b"list -u"[..]));
+    assert_eq!(page_verb(&page, &mut read), Some(&b"list -u"[..]));
     let nothing = as_typed(b"jig upgrade");
     assert!(!nothing.installer && !nothing.catalog && !nothing.network);
     assert_eq!(nothing.indexes, IndexStoreDeclaration::Forbidden);
@@ -246,15 +243,15 @@ fn only_jig_holds_the_installer_and_the_catalog() {
 #[test]
 fn a_typed_name_is_planned_against_its_row() {
     let run = |line: &'static [u8]| {
-        let grant_plan::Command::Run(r) = grant_plan::parse(line) else {
+        let grant_plan::CommandLine::Run(r) = grant_plan::parse(line) else {
             panic!("not an invocation")
         };
         r
     };
     let (program, endowment) = plan(
         &run(b"least_authority_demo 9"),
-        Holdings::default(),
-        expand::Expansion::none(),
+        ShellHoldings::default(),
+        expansion::Expansion::none(),
     )
     .unwrap();
     assert_eq!(program, Program::LeastAuthorityDemo);
@@ -263,16 +260,16 @@ fn a_typed_name_is_planned_against_its_row() {
     assert_eq!(
         plan(
             &run(b"swish -c date"),
-            Holdings::default(),
-            expand::Expansion::none()
+            ShellHoldings::default(),
+            expansion::Expansion::none()
         ),
         Err(Refusal::IsolationNotBuilt)
     );
     assert_eq!(
         plan(
             &run(b"no_such_thing"),
-            Holdings::default(),
-            expand::Expansion::none()
+            ShellHoldings::default(),
+            expansion::Expansion::none()
         ),
         Err(Refusal::NoSuchProgram)
     );

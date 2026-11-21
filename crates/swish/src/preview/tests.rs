@@ -6,7 +6,7 @@ use std::string::String;
 use std::vec::Vec;
 
 use grant_contract::{FileGrantDeclaration, InputDeclaration, MemoryGrantDeclaration};
-use grant_plan::navigation::Cwd;
+use grant_plan::navigation::DirectoryPath;
 
 use super::*;
 use crate::test_support::{endowment, listing, shown};
@@ -20,15 +20,16 @@ use crate::test_support::{endowment, listing, shown};
 #[test]
 fn capabilities_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks() {
     use grant_contract::Manifest;
-    use grant_plan::expand::Expansion;
-    use grant_plan::{Command, Holdings};
+    use grant_plan::expansion::Expansion;
+    use grant_plan::{CommandLine, ShellHoldings};
     use program_table::NO_NOTE_MANIFEST;
     let say = |v: Option<super::Vouched>, holds: bool, declared: Option<Manifest>, line: &[u8]| {
-        let Command::Run(spec) = grant_plan::parse(line) else {
+        let CommandLine::Run(spec) = grant_plan::parse(line) else {
             panic!("not an invocation")
         };
         let m = declared.unwrap_or(NO_NOTE_MANIFEST);
-        let e = grant_plan::plan_against(&spec, m, Holdings::default(), Expansion::none()).unwrap();
+        let e = grant_plan::plan_against(&spec, m, ShellHoldings::default(), Expansion::none())
+            .unwrap();
         let mut said = Vec::new();
         super::write_image_capabilities(
             b"bin/x",
@@ -37,7 +38,7 @@ fn capabilities_of_an_image_names_its_provenance_the_gate_and_what_the_note_asks
             holds,
             declared,
             &e,
-            &Holdings::default(),
+            &ShellHoldings::default(),
             &mut |b| {
                 said.extend_from_slice(b);
             },
@@ -127,7 +128,7 @@ fn a_memory_grant_is_a_row_and_no_grant_is_no_row() {
         !shown(|o| write_preview(
             Program::MemoryGrantDepleter,
             &e,
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o
         ))
@@ -138,7 +139,7 @@ fn a_memory_grant_is_a_row_and_no_grant_is_no_row() {
         shown(|o| write_preview(
             Program::MemoryGrantDepleter,
             &e,
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o
         ))
@@ -149,21 +150,21 @@ fn a_memory_grant_is_a_row_and_no_grant_is_no_row() {
 #[test]
 fn append_and_truncate_differ_in_exactly_one_line_of_the_preview() {
     let grant = grant_plan::FileGrant {
-        which: grant_plan::navigation::Which::A,
-        directory: Cwd::root(),
-        name: grant_plan::expand::Name::new(b"out.txt").expect("a nameable file"),
+        side: grant_plan::navigation::GrantSide::First,
+        directory: DirectoryPath::root(),
+        name: grant_plan::expansion::Name::new(b"out.txt").expect("a nameable file"),
         writable: true,
     };
     let mut e = endowment(Program::Date);
     e.sink = line::Sink::File(grant, line::Mode::Truncate);
     let truncate: Vec<String> =
-        shown(|o| write_preview(Program::Date, &e, &Holdings::default(), None, o))
+        shown(|o| write_preview(Program::Date, &e, &ShellHoldings::default(), None, o))
             .lines()
             .map(String::from)
             .collect();
     e.sink = line::Sink::File(grant, line::Mode::Append);
     let append: Vec<String> =
-        shown(|o| write_preview(Program::Date, &e, &Holdings::default(), None, o))
+        shown(|o| write_preview(Program::Date, &e, &ShellHoldings::default(), None, o))
             .lines()
             .map(String::from)
             .collect();
@@ -185,12 +186,12 @@ fn append_and_truncate_differ_in_exactly_one_line_of_the_preview() {
 fn a_directory_grant_prints_every_name_and_says_whether_r_was_typed() {
     let mut e = endowment(Program::Rm);
     e.directory = Some(grant_plan::DirectoryGrant {
-        which: grant_plan::navigation::Which::A,
-        directory: Cwd::root(),
+        side: grant_plan::navigation::GrantSide::First,
+        directory: DirectoryPath::root(),
         names: listing(&[b"a.txt", b"b.txt"]),
         subtree: false,
     });
-    let without = shown(|o| write_preview(Program::Rm, &e, &Holdings::default(), None, o));
+    let without = shown(|o| write_preview(Program::Rm, &e, &ShellHoldings::default(), None, o));
     assert!(without.contains("a.txt b.txt"), "{without}");
     assert!(
         without.contains("no -r, so it cannot even look"),
@@ -200,7 +201,7 @@ fn a_directory_grant_prints_every_name_and_says_whether_r_was_typed() {
     if let Some(g) = e.directory.as_mut() {
         g.subtree = true;
     }
-    let with = shown(|o| write_preview(Program::Rm, &e, &Holdings::default(), None, o));
+    let with = shown(|o| write_preview(Program::Rm, &e, &ShellHoldings::default(), None, o));
     assert!(with.contains("-r grants the walk"), "{with}");
 }
 
@@ -211,7 +212,7 @@ fn date_says_the_clock_is_not_on_the_line() {
         write_preview(
             Program::Date,
             &endowment(Program::Date),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o,
         );
@@ -223,7 +224,7 @@ fn date_says_the_clock_is_not_on_the_line() {
         !shown(|o| write_preview(
             Program::Wc,
             &endowment(Program::Wc),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o
         ))
@@ -238,7 +239,7 @@ fn printenv_says_the_config_page_is_not_on_the_line() {
         write_preview(
             Program::Printenv,
             &endowment(Program::Printenv),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o,
         );
@@ -250,7 +251,7 @@ fn printenv_says_the_config_page_is_not_on_the_line() {
         !shown(|o| write_preview(
             Program::Wc,
             &endowment(Program::Wc),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o
         ))
@@ -282,7 +283,7 @@ fn capabilities_printenv_prints_the_values_on_the_page_the_child_will_read() {
         write_preview(
             Program::Printenv,
             &endowment(Program::Printenv),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             Some(page),
             o,
         );
@@ -298,7 +299,7 @@ fn capabilities_printenv_prints_the_values_on_the_page_the_child_will_read() {
         write_preview(
             Program::Wc,
             &endowment(Program::Wc),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             Some(page),
             o,
         );
@@ -311,7 +312,7 @@ fn capabilities_printenv_prints_the_values_on_the_page_the_child_will_read() {
         write_preview(
             Program::Printenv,
             &endowment(Program::Printenv),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o,
         );
@@ -332,7 +333,7 @@ fn capabilities_on_a_pipeline_threads_the_page_to_the_stage_that_declares_it() {
         write_capabilities(
             b"printenv | wc",
             128,
-            Holdings::default(),
+            ShellHoldings::default(),
             None,
             Some(page),
             &mut |_| Ok(NameSet::empty()),
@@ -354,13 +355,13 @@ fn the_shells_config_view_is_one_row_and_it_cannot_pass_it_on() {
     let bytes = unusual_page();
     // SAFETY: as above.
     let page = unsafe { ConfigurationPage::new(bytes.as_ptr() as u64) };
-    let with = shown(|o| write_holdings(128, Holdings::default(), None, Some(page), o));
+    let with = shown(|o| write_holdings(128, ShellHoldings::default(), None, Some(page), o));
     assert!(
         with.contains("cap 21 frame     config     READ only, NOT delegable"),
         "{with}"
     );
     assert!(with.contains("TZ=America/Los_Angeles"), "{with}");
-    let without = shown(|o| write_holdings(128, Holdings::default(), None, None, o));
+    let without = shown(|o| write_holdings(128, ShellHoldings::default(), None, None, o));
     assert!(!without.contains("config"), "{without}");
 }
 
@@ -371,7 +372,7 @@ fn uuid_says_the_entropy_endpoint_is_not_on_the_line() {
         write_preview(
             Program::Uuid,
             &endowment(Program::Uuid),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o,
         );
@@ -386,7 +387,7 @@ fn uuid_says_the_entropy_endpoint_is_not_on_the_line() {
         !shown(|o| write_preview(
             Program::Date,
             &endowment(Program::Date),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o
         ))
@@ -396,7 +397,7 @@ fn uuid_says_the_entropy_endpoint_is_not_on_the_line() {
         !shown(|o| write_preview(
             Program::Wc,
             &endowment(Program::Wc),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o
         ))
@@ -413,7 +414,7 @@ fn the_reboot_preview_names_the_reboot_object_and_nothing_else_has_it() {
         write_preview(
             Program::Reboot,
             &endowment(Program::Reboot),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o,
         );
@@ -424,7 +425,7 @@ fn the_reboot_preview_names_the_reboot_object_and_nothing_else_has_it() {
     );
     assert!(s.contains("cap 14 endpoint  sync   WRITE"), "{s}");
     for p in Program::ALL.iter().filter(|p| **p != Program::Reboot) {
-        let s = shown(|o| write_preview(*p, &endowment(*p), &Holdings::default(), None, o));
+        let s = shown(|o| write_preview(*p, &endowment(*p), &ShellHoldings::default(), None, o));
         assert!(
             !s.contains("cap 13") && !s.contains("cap 14"),
             "{}: {s}",
@@ -462,7 +463,7 @@ fn a_std_program_previews_its_fixed_slots() {
         write_preview(
             Program::StdExerciser,
             &endowment(Program::StdExerciser),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o,
         );
@@ -487,7 +488,7 @@ fn a_std_program_previews_its_fixed_slots() {
         write_preview(
             Program::Uuid,
             &endowment(Program::Uuid),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o,
         );
@@ -518,7 +519,7 @@ fn the_preview_shows_the_network_only_where_it_is_declared() {
     // What `caps` prints is what the progenitor's spawn service reads (`Manifest::network`),
     // so the row appearing for the witness would be the preview admitting an over-grant.
     let shown_for =
-        |p: Program| shown(|o| write_preview(p, &endowment(p), &Holdings::default(), None, o));
+        |p: Program| shown(|o| write_preview(p, &endowment(p), &ShellHoldings::default(), None, o));
     assert!(shown_for(Program::NetworkEchoClient).contains("cap 10 endpoint  network  WRITE"));
     // A `std` program holds it at the layout's slot, with the region its sockets are made from.
     // `write_preview` is the unnarrowed manifest: what the verb table can choose from.
@@ -556,7 +557,7 @@ fn every_preview_names_where_the_output_goes() {
         let mut e = endowment(Program::Date);
         e.sink = sink;
         assert!(
-            shown(|o| write_preview(Program::Date, &e, &Holdings::default(), None, o))
+            shown(|o| write_preview(Program::Date, &e, &ShellHoldings::default(), None, o))
                 .contains("    output   "),
             "{sink:?} left the destination unnamed"
         );
@@ -569,14 +570,14 @@ fn capabilities_with_no_tail_is_the_shells_own_endowment() {
         write_capabilities(
             b"   ",
             128,
-            Holdings::default(),
+            ShellHoldings::default(),
             None,
             None,
             &mut |_| Ok(NameSet::empty()),
             o,
         );
     });
-    let direct = shown(|o| write_holdings(128, Holdings::default(), None, None, o));
+    let direct = shown(|o| write_holdings(128, ShellHoldings::default(), None, None, o));
     assert_eq!(tail, direct);
 }
 
@@ -586,7 +587,7 @@ fn capabilities_previews_every_stage_of_a_pipeline() {
         write_capabilities(
             b"date | wc",
             128,
-            Holdings::default(),
+            ShellHoldings::default(),
             None,
             None,
             &mut |_| Ok(NameSet::empty()),
@@ -608,9 +609,9 @@ fn capabilities_previews_every_stage_of_a_pipeline() {
 /// a `--mem` at the declared minimum, and a file name for a declared input or file.
 #[test]
 fn the_arg_line_follows_the_manifest_for_every_program() {
-    let holdings = Holdings {
+    let holdings = ShellHoldings {
         directory: true,
-        ..Holdings::default()
+        ..ShellHoldings::default()
     };
     for &prog in Program::ALL {
         let m = prog.manifest();
@@ -663,7 +664,7 @@ fn capabilities_refuses_a_pipeline_whose_stage_has_no_bytes_to_pipe() {
         write_capabilities(
             b"least_authority_demo 7 | wc",
             128,
-            Holdings::default(),
+            ShellHoldings::default(),
             None,
             None,
             &mut |_| Ok(NameSet::empty()),
@@ -682,7 +683,7 @@ fn capabilities_refuses_the_line_it_would_have_refused_at_the_prompt() {
         write_capabilities(
             b"wc report.txt",
             128,
-            Holdings::default(),
+            ShellHoldings::default(),
             None,
             None,
             &mut |_| Ok(NameSet::empty()),
@@ -699,7 +700,7 @@ fn capabilities_says_so_when_the_tail_is_not_an_invocation() {
         write_capabilities(
             b"help",
             128,
-            Holdings::default(),
+            ShellHoldings::default(),
             None,
             None,
             &mut |_| Ok(NameSet::empty()),
@@ -722,7 +723,7 @@ fn capabilities_of_a_timed_command_previews_the_command_itself() {
             write_capabilities(
                 line,
                 128,
-                Holdings::default(),
+                ShellHoldings::default(),
                 Some(5),
                 None,
                 &mut |_| Ok(NameSet::empty()),
@@ -752,14 +753,14 @@ fn a_declarer_shows_where_its_second_stream_goes() {
     let mut e = endowment(Program::Date);
     e.sink = line::Sink::File(
         grant_plan::FileGrant {
-            which: grant_plan::navigation::Which::A,
-            directory: Cwd::root(),
-            name: grant_plan::expand::Name::new(b"when.txt").expect("a nameable file"),
+            side: grant_plan::navigation::GrantSide::First,
+            directory: DirectoryPath::root(),
+            name: grant_plan::expansion::Name::new(b"when.txt").expect("a nameable file"),
             writable: true,
         },
         line::Mode::Truncate,
     );
-    let s = shown(|o| write_preview(Program::Date, &e, &Holdings::default(), None, o));
+    let s = shown(|o| write_preview(Program::Date, &e, &ShellHoldings::default(), None, o));
     assert!(s.contains("    output   when.txt"), "{s}");
     assert!(
         // And the row says the destination is **not** this shell, which is what the terminal's
@@ -775,7 +776,7 @@ fn a_declarer_shows_where_its_second_stream_goes() {
         write_preview(
             Program::Wc,
             &endowment(Program::Wc),
-            &Holdings::default(),
+            &ShellHoldings::default(),
             None,
             o,
         );
@@ -791,10 +792,10 @@ fn capabilities_refuses_a_second_stream_the_program_never_declared() {
         write_capabilities(
             b"least_authority_demo 7 2> err.txt",
             128,
-            Holdings {
+            ShellHoldings {
                 directory: true,
                 mounted: None,
-                cwd: Cwd::root(),
+                working_directory: DirectoryPath::root(),
                 binds: navigation::Bindings::none(),
             },
             None,
@@ -845,7 +846,7 @@ fn the_jig_preview_shows_the_index_store_the_verb_holds_and_yields_it_to_a_desig
             write_capabilities(
                 line,
                 128,
-                Holdings::default(),
+                ShellHoldings::default(),
                 None,
                 None,
                 &mut |_| Ok(NameSet::empty()),
@@ -878,12 +879,20 @@ fn the_jig_preview_shows_the_index_store_the_verb_holds_and_yields_it_to_a_desig
     assert!(!list.contains("/activation  read-only"), "{list}");
     let mut designated = endowment(Program::Jig);
     designated.directory = Some(grant_plan::DirectoryGrant {
-        which: grant_plan::navigation::Which::A,
-        directory: Cwd::root(),
+        side: grant_plan::navigation::GrantSide::First,
+        directory: DirectoryPath::root(),
         names: listing(&[b"x.nifepkg"]),
         subtree: false,
     });
-    let own = shown(|o| write_preview(Program::Jig, &designated, &Holdings::default(), None, o));
+    let own = shown(|o| {
+        write_preview(
+            Program::Jig,
+            &designated,
+            &ShellHoldings::default(),
+            None,
+            o,
+        )
+    });
     assert!(!own.contains("/activation/indexes"), "{own}");
     assert!(!own.contains("sources"), "{own}");
 }

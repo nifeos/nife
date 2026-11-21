@@ -101,7 +101,7 @@ fn a_std_program_declares_only_what_the_std_layout_can_hold() {
 
 /// **No manifest declares both a file and an input** (milestone 150). Both take a bare name on
 /// the command line, so a program declaring both would leave the parser two indistinguishable
-/// positions and nothing but order to tell them apart; `plan_against_with`'s input operand
+/// positions and nothing but order to tell them apart; `plan_against_with_streams`'s input operand
 /// relies on the combination never occurring. An argument together with an input is a different
 /// case and is allowed (milestone 498 (whether a program may take an argument and an input
 /// stream)).

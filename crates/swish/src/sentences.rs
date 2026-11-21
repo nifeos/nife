@@ -11,9 +11,9 @@ use super::*;
 /// A shell holding a second tree prints the same kind of path: the second tree is mounted in the
 /// one tree the shell presents, so standing inside it prints the mount path (calef, 2026-09-26,
 /// for milestone 154 (a process that holds two directory capabilities)).
-pub fn write_pwd(holdings: &Holdings, out: &mut dyn FnMut(&[u8])) {
+pub fn write_pwd(holdings: &ShellHoldings, out: &mut dyn FnMut(&[u8])) {
     let mut buf = [0u8; navigation::MAXIMUM_RENDERED_PATH_BYTES];
-    let n = holdings.cwd.render(&mut buf);
+    let n = holdings.working_directory.render(&mut buf);
     out(b"  ");
     out(&buf[..n]);
     out(b"\n");
@@ -95,11 +95,11 @@ pub fn write_help(out: &mut dyn FnMut(&[u8])) {
 /// the wording cannot drift); the shell supplies the program name where one helps.
 ///
 /// ```
-/// use grant_plan::{Command, Refusal};
+/// use grant_plan::{CommandLine, Refusal};
 /// use swish::write_refusal;
 ///
 /// let render = |line: &[u8], refusal| {
-///     let Command::Run(spec) = grant_plan::parse(line) else { panic!("not an invocation") };
+///     let CommandLine::Run(spec) = grant_plan::parse(line) else { panic!("not an invocation") };
 ///     let mut s = Vec::new();
 ///     write_refusal(&spec, refusal, &mut |b| s.extend_from_slice(b));
 ///     String::from_utf8(s).unwrap()

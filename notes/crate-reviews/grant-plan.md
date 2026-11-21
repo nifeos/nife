@@ -37,8 +37,8 @@ Eleven modules, all `pub`: `word`, `lexing`, `parsing`, `line`, `expand`, `navig
 |---|---|
 | lexing | `lexing::MAXIMUM_FILE_NAME_BYTES` and the tokenizer over a byte line |
 | parsing | the pipeline and redirection grammar; operands come back as `Result<_, ()>` in two places (item 7 below) |
-| expansion | `expand::Expander`, `Name`, `NameSet`, `Batch`, `Resume`; `MAXIMUM_NAMES`, `MAXIMUM_NAME_BYTES` |
-| navigation | `navigation::Cwd`, `Bindings`, `BindEntry` (`position`), `TwoRoots`, `Path`, `Which`, `Step`, `Refused`, `BindRefused`; `MAXIMUM_NAME_BYTES`, `MAXIMUM_DIRECTORY_NAME_BYTES`, `MAXIMUM_RENDERED_PATH_BYTES` |
+| expansion | `expansion::Expander`, `Name`, `NameSet`, `Batch`, `Resume`; `MAXIMUM_NAMES`, `MAXIMUM_NAME_BYTES` |
+| navigation | `navigation::Cwd`, `Bindings`, `BindEntry` (`position`), `TwoRoots`, `Path`, `Which`, `Step`, `Refused`, `BindRefusal`; `MAXIMUM_NAME_BYTES`, `MAXIMUM_DIRECTORY_NAME_BYTES`, `MAXIMUM_RENDERED_PATH_BYTES` |
 | planning | the holdings, expansion and stream types the planner reads, and the plan it returns |
 | refusal | `Refusal`, with its sentence built from the constants that bound it |
 | command | `command::rm_options` and the command table |
@@ -67,7 +67,7 @@ ratify.
 | `BindEntry::position` | `pos` | spelled out |
 | `COOPERATIVE_GRACE_POLLS` | `COOP_GRACE_TICKS` | spelled out; it counts watch-loop polls, not time |
 | `lexing::MAXIMUM_FILE_NAME_BYTES` | `MAXIMUM_FILE_NAME` | unit |
-| `expand::MAXIMUM_NAME_BYTES`, `navigation::MAXIMUM_NAME_BYTES` | `MAXIMUM_NAME` | unit |
+| `expansion::MAXIMUM_NAME_BYTES`, `navigation::MAXIMUM_NAME_BYTES` | `MAXIMUM_NAME` | unit |
 | `navigation::MAXIMUM_DIRECTORY_NAME_BYTES` | `MAXIMUM_DIRECTORY_NAME` | unit |
 | `navigation::MAXIMUM_RENDERED_PATH_BYTES` | `RENDER_MAXIMUM` | unit, and the noun first |
 | private fields `length_bytes` and `name_length_bytes` | `len`, `name_len` | unit; the standard library's `len` method stays |
@@ -100,7 +100,7 @@ These findings of the outside review remain unbuilt. Each is Open in milestone 1
 1. P1-5: a Kani harness per claim, with a falsification patch for each.
 2. P0-3: the manifest and the repository root belong to the workspace; the move writes them.
 3. P1-9: documentation written for a stranger, and P1-9b: `missing_docs` denied once it holds.
-4. P1-11: take `&Holdings`, `&Expansion` and `&Streams` instead of two-kilobyte values by value.
+4. P1-11: take `&ShellHoldings`, `&Expansion` and `&Streams` instead of two-kilobyte values by value.
    The milestone records no ruling for it, so it is not built.
 5. P1-13: an undeclared widening option in `Manifest::is_well_formed`.
 6. P1-14: a mutation run on the split crates.

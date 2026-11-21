@@ -1,6 +1,6 @@
 //! Planning tests: the operators, `2>`, and the draining lane.
 
-use crate::expand::{Expansion, Name};
+use crate::expansion::{Expansion, Name};
 use crate::test_support::{WITH_DIRECTORY, plan_line};
 use crate::*;
 
@@ -116,7 +116,7 @@ fn naming_a_file_to_a_reader_is_the_operator_left_out() {
     // The same line against a shell that holds no directory is refused: a statement about its
     // capability table.
     assert_eq!(
-        plan_line(b"wc report.txt", Holdings::default()),
+        plan_line(b"wc report.txt", ShellHoldings::default()),
         Err((0, Refusal::NoSuchCapability(CapabilityKind::File))),
     );
 }
@@ -326,29 +326,29 @@ fn a_missing_argument_is_reported_before_a_missing_byte_stream() {
 #[test]
 fn a_redirection_needs_a_directory_to_resolve_against() {
     assert_eq!(
-        plan_line(b"date > report.txt", Holdings::default()),
+        plan_line(b"date > report.txt", ShellHoldings::default()),
         Err((0, Refusal::NoSuchCapability(CapabilityKind::File))),
     );
     // A pipeline with no file on it needs no directory at all, which is what makes `date | wc`
     // runnable in a shell that holds nothing but a spawn channel.
-    assert!(plan_line(b"date | wc", Holdings::default()).is_ok());
+    assert!(plan_line(b"date | wc", ShellHoldings::default()).is_ok());
 }
 
 /// A redirection resolves its leading path exactly as an operand does, against where the shell
 /// stands, and records the result as a value.
 #[test]
 fn a_redirection_resolves_its_leading_path() {
-    let mut deeper = navigation::Cwd::root();
+    let mut deeper = navigation::DirectoryPath::root();
     deeper
         .apply(navigation::path(b"logs").unwrap().steps())
         .unwrap();
-    let holds = Holdings {
+    let shell_holdings = ShellHoldings {
         directory: true,
         mounted: None,
-        cwd: deeper,
+        working_directory: deeper,
         binds: navigation::Bindings::none(),
     };
-    let (p, _) = plan_line(b"date > old/report.txt", holds).unwrap();
+    let (p, _) = plan_line(b"date > old/report.txt", shell_holdings).unwrap();
     let line::Sink::File(g, _) = p[0].unwrap().sink else {
         panic!("not a file sink")
     };
@@ -359,7 +359,9 @@ fn a_redirection_resolves_its_leading_path() {
     assert_eq!(&buf[..n], b"/logs/old");
     // An absolute path resolves from this shell's root rather than from where it stands, so
     // the same line typed in two directories names one file.
-    let line::Sink::File(g, _) = plan_line(b"date > /old/report.txt", holds).unwrap().0[0]
+    let line::Sink::File(g, _) = plan_line(b"date > /old/report.txt", shell_holdings)
+        .unwrap()
+        .0[0]
         .unwrap()
         .sink
     else {
@@ -414,7 +416,7 @@ fn an_input_operand_survives_a_pipeline() {
 }
 
 /// A filter that answers while it reads: the manifest shape no shipped program declares yet.
-/// Planned through [`plan_against_with`] so [`check_chain`] is live, tested logic rather than a
+/// Planned through [`plan_against_with_streams`] so [`check_chain`] is live, tested logic rather than a
 /// branch nothing reaches, exactly as [`READS_A_FILE`] keeps `FileGrantDeclaration::Required` live.
 const RENDERS_AS_IT_READS: Manifest = Manifest {
     program_argument: ProgramArgumentDeclaration::Forbidden,
@@ -447,10 +449,10 @@ const RENDERS_AS_IT_READS: Manifest = Manifest {
 
 /// Plan one stage against an explicit manifest, with the operators' answer folded in.
 fn plan_as(m: Manifest, text: &[u8], streams: Streams) -> Endowment {
-    let Command::Run(r) = parse(text) else {
+    let CommandLine::Run(r) = parse(text) else {
         panic!()
     };
-    plan_against_with(&r, m, WITH_DIRECTORY, Expansion::none(), streams).unwrap()
+    plan_against_with_streams(&r, m, WITH_DIRECTORY, Expansion::none(), streams).unwrap()
 }
 
 /// **The declaration reaches the endowment**, which is what lets a whole line be checked rather
@@ -459,8 +461,8 @@ fn plan_as(m: Manifest, text: &[u8], streams: Streams) -> Endowment {
 fn writing_while_reading_is_a_declaration_the_plan_carries() {
     let streams = Streams {
         source: line::Source::File(FileGrant {
-            which: navigation::Which::A,
-            directory: navigation::Cwd::root(),
+            side: navigation::GrantSide::First,
+            directory: navigation::DirectoryPath::root(),
             name: Name::new(b"page.md").unwrap(),
             writable: false,
         }),
@@ -480,8 +482,8 @@ fn writing_while_reading_is_a_declaration_the_plan_carries() {
 fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
     let src = Streams {
         source: line::Source::File(FileGrant {
-            which: navigation::Which::A,
-            directory: navigation::Cwd::root(),
+            side: navigation::GrantSide::First,
+            directory: navigation::DirectoryPath::root(),
             name: Name::new(b"page.md").unwrap(),
             writable: false,
         }),
@@ -517,8 +519,8 @@ fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
     let to_file = Streams {
         sink: line::Sink::File(
             FileGrant {
-                which: navigation::Which::A,
-                directory: navigation::Cwd::root(),
+                side: navigation::GrantSide::First,
+                directory: navigation::DirectoryPath::root(),
                 name: Name::new(b"out.txt").unwrap(),
                 writable: true,
             },
@@ -529,7 +531,7 @@ fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
     let renderer_to_file = plan_as(RENDERS_AS_IT_READS, b"wc", to_file);
     assert_eq!(
         check_chain(true, &[Some(renderer_to_file)]),
-        Err(Refusal::NoReaderButThisShell),
+        Err(Refusal::NoReaderStage),
     );
 }
 
@@ -538,7 +540,7 @@ fn a_chain_this_shell_feeds_needs_one_stage_that_reads_to_the_end() {
 #[test]
 fn the_both_ends_refusal_names_the_fix() {
     assert!(
-        Refusal::NoReaderButThisShell
+        Refusal::NoReaderStage
             .message()
             .contains("give it a reader that is not this shell"),
     );

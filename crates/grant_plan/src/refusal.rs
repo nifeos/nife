@@ -30,7 +30,7 @@ pub enum Refusal {
     FileRequired,
     /// The program is endowed a **directory** and the command named nothing in one. `rm` with no
     /// operand is this: there is no default, because a default would be a grant nobody typed.
-    PathRequired,
+    DirectoryRequired,
     /// A short option this program does not declare. Refused at the prompt rather than handed over
     /// for the program to ignore, and it is the same rule as an unplaceable token: **the line means
     /// exactly what it says or it does not run.** It matters more than it looks here, because an
@@ -69,7 +69,7 @@ pub enum Refusal {
     /// **A pattern matched no name here** (milestone 47's globbing lane). zsh's default rather than
     /// bash's pass-the-pattern-through, and the model forces it: the expansion *is* the grant, so an
     /// empty expansion is an empty grant and running the command would be running it with an
-    /// authority nobody named. See [`expand::Expander::finish`](crate::expand::Expander::finish).
+    /// authority nobody named. See [`expansion::Expander::finish`](crate::expansion::Expander::finish).
     NoMatch,
     /// **A pattern matched more names than one grant can carry.** Unix's `ARG_MAX` with a more
     /// honest cause: not a buffer that ran out but a capability the child could neither hold nor be
@@ -77,7 +77,7 @@ pub enum Refusal {
     /// of what it matched is the worst outcome this mechanism has.
     TooManyNames,
     /// A name a pattern matched cannot travel in a grant (longer than
-    /// [`expand::MAXIMUM_NAME_BYTES`](crate::expand::MAXIMUM_NAME_BYTES)). Refused whole rather than dropped
+    /// [`expansion::MAXIMUM_NAME_BYTES`](crate::expansion::MAXIMUM_NAME_BYTES)). Refused whole rather than dropped
     /// from the set, for [`Refusal::TooManyNames`]'s reason.
     MatchNotNameable,
     /// A pattern somewhere other than a token's **last** component (`*/report.txt`). Selecting
@@ -151,7 +151,7 @@ pub enum Refusal {
     /// put a reader after it (`| wc`) rather than to change anything the program does. See
     /// [`check_chain`](crate::check_chain) and notes/pipes.md: with no select, no poll and no timed receive, one wait
     /// point per process is the whole of the reason.
-    NoReaderButThisShell,
+    NoReaderStage,
     /// **A builtin in a pipeline stage that the shell cannot supply.** `cd | wc` is the shape: a
     /// builtin rebinds what the shell holds and produces no stream. The producing builtins (`echo`,
     /// `ls`, `pwd`) are not this, because the shell writes their bytes into the pipe itself.
@@ -245,7 +245,7 @@ impl Refusal {
             // file, and this program is declared to take none.
             Refusal::FileForbidden => "takes no file; drop the name",
             Refusal::FileRequired => "is granted one file; name it on the line",
-            Refusal::PathRequired => "is granted the directory holding what you name; name it",
+            Refusal::DirectoryRequired => "is granted the directory holding what you name; name it",
             Refusal::NoSuchOption => "no such option (this shell will not pass one along unread)",
             Refusal::FileNotNameable => {
                 "that is not a name this shell can grant: at most 252 bytes a file, 16 a directory, 8 deep"
@@ -313,7 +313,7 @@ impl Refusal {
             // Phrased about the line rather than about the program, because it is true of neither
             // one alone: the program is fine and the shell is fine, and what cannot be done is this
             // shell feeding it and reading it at the same time.
-            Refusal::NoReaderButThisShell => {
+            Refusal::NoReaderStage => {
                 "writes while it reads, and this shell can only wait on one thing at a time: give \
                  it a reader that is not this shell, as in '| wc'"
             }
@@ -357,7 +357,7 @@ impl Refusal {
             Refusal::ScopeTooDeep => "scoped blocks nest at most 3 deep",
             Refusal::ScopeCannotRestore => {
                 "a scoped block cannot put back a background job it would start, stop, wait for \
-                 or resume: the commands need an isolated child, 'swish -c', which is \
+                 or resume: the commands need an isolated child, 'swish -c', side is \
                  reserved and not built yet"
             }
             Refusal::IsolationNotBuilt => {

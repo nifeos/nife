@@ -28,15 +28,15 @@ pub const MAXIMUM_NAMES: usize = 8;
 /// **The most bytes of name one expansion may grant, all its names together**, for
 /// [`MAXIMUM_NAMES`]'s reason: a [`NameSet`] is copied through the shell's deepest frames, so it
 /// holds its names packed in this many bytes rather than [`MAXIMUM_NAMES`] slots of
-/// [`MAXIMUM_NAME_BYTES`] each. It matches `filesystem_contract::nameset::NAME_BYTES`, pinned by a host
+/// [`MAXIMUM_NAME_BYTES`] each. It matches `filesystem_contract::nameset::MAXIMUM_NAME_SET_BYTES`, pinned by a host
 /// test, and exceeding it is the same [`Refusal::TooManyNames`]. See notes/glob-grant/xargs.md
 /// ("The bytes a set carries").
 ///
 /// Name: provisional (milestone 946 (a granted file name can be longer than sixteen bytes)).
-pub const NAME_BYTES: usize = 512;
+pub const MAXIMUM_NAME_SET_BYTES: usize = 512;
 
 // `NameSet::ends` holds offsets into the packed bytes as `u16`, and `Name` holds its length as a `u8`.
-const _: () = assert!(NAME_BYTES <= u16::MAX as usize);
+const _: () = assert!(MAXIMUM_NAME_SET_BYTES <= u16::MAX as usize);
 const _: () = assert!(MAXIMUM_NAME_BYTES <= u8::MAX as usize);
 
 /// One name, owned. See the module note: a name a pattern produced is not a slice of the line.
@@ -59,10 +59,10 @@ impl core::fmt::Debug for Name {
 
 impl Name {
     /// A name, or `None` if it cannot travel in a grant at all. **`None` rather than a truncation**,
-    /// for [`crate::file_name_fits`]'s reason: a truncated filename is a different file, and this is
+    /// for [`crate::is_valid_file_name`]'s reason: a truncated filename is a different file, and this is
     /// the path that decides what gets granted.
     pub fn new(name: &[u8]) -> Option<Name> {
-        if !crate::file_name_fits(name) {
+        if !crate::is_valid_file_name(name) {
             return None;
         }
         let mut bytes = [0u8; MAXIMUM_NAME_BYTES];
@@ -79,6 +79,15 @@ impl Name {
     }
 }
 
+/// **A name was refused because the set is full or cannot hold it**: by count, by bytes, because
+/// the name cannot travel in a grant, or because the set already holds it. It carries no detail, as
+/// the caller turns it into the refusal that suits the line.
+///
+/// Name: provisional (ruled 2026-11-20 UTC with `NameSet::try_push`; the architect clears it with
+/// the crate's review).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct NameSetFull;
+
 /// **The namespace a grant designates**: one name for a plain token, the matched names for a
 /// pattern.
 ///
@@ -93,8 +102,8 @@ impl Name {
 pub struct NameSet {
     /// The names, packed end to end in order: name `i` is `bytes[start(i)..ends[i]]`. Packed rather
     /// than [`MAXIMUM_NAMES`] slots of [`MAXIMUM_NAME_BYTES`], because this is copied by value through
-    /// the shell's deepest frames ([`NAME_BYTES`]).
-    bytes: [u8; NAME_BYTES],
+    /// the shell's deepest frames ([`MAXIMUM_NAME_SET_BYTES`]).
+    bytes: [u8; MAXIMUM_NAME_SET_BYTES],
     /// Where each name ends in `bytes`, in step with `is_directory`.
     ends: [u16; MAXIMUM_NAMES],
     /// Whether each name is a directory, in step with `ends`.
@@ -135,7 +144,7 @@ impl NameSet {
     /// A set holding no names.
     pub const fn empty() -> Self {
         NameSet {
-            bytes: [0; NAME_BYTES],
+            bytes: [0; MAXIMUM_NAME_SET_BYTES],
             ends: [0; MAXIMUM_NAMES],
             is_directory: [false; MAXIMUM_NAMES],
             n: 0,
@@ -145,7 +154,7 @@ impl NameSet {
     /// The set of exactly one name: what a token with no pattern in it designates.
     pub fn one(name: &[u8], is_directory: bool) -> Option<NameSet> {
         let mut set = NameSet::empty();
-        set.push(name, is_directory).then_some(set)
+        set.try_push(name, is_directory).ok().map(|()| set)
     }
 
     /// Where name `i` starts in `bytes`.
@@ -168,17 +177,22 @@ impl NameSet {
 
     /// Whether `len` more bytes of name fit beside what is held.
     fn has_room_for(&self, len: usize) -> bool {
-        self.n < MAXIMUM_NAMES && self.name_bytes() + len <= NAME_BYTES
+        self.n < MAXIMUM_NAMES && self.name_bytes() + len <= MAXIMUM_NAME_SET_BYTES
     }
 
-    /// Add a name. `false` if the set is full, by count or by bytes, or the name cannot travel in a
-    /// grant; the caller must turn that into a refusal rather than carrying on with a smaller set.
-    pub fn push(&mut self, name: &[u8], is_directory: bool) -> bool {
-        if !crate::file_name_fits(name) || self.contains(name) || !self.has_room_for(name.len()) {
-            return false;
+    /// Add a name. [`NameSetFull`] if the set is full, by count or by bytes, or the name cannot
+    /// travel in a grant or is already held; the caller must turn that into a refusal rather than
+    /// carrying on with a smaller set.
+    ///
+    /// Name: provisional (`try_` because it can fail, and it returns a `Result` rather than a
+    /// `bool`; ruled 2026-11-20 UTC).
+    pub fn try_push(&mut self, name: &[u8], is_directory: bool) -> Result<(), NameSetFull> {
+        if !crate::is_valid_file_name(name) || self.contains(name) || !self.has_room_for(name.len())
+        {
+            return Err(NameSetFull);
         }
         self.insert(self.n, name, is_directory);
-        true
+        Ok(())
     }
 
     /// Put `name` at index `at`, moving the names from `at` on up by one. The caller has checked
@@ -219,7 +233,7 @@ impl NameSet {
     ///
     /// Returns whether nothing was left out: `false` when `name` itself, or names it displaced, did
     /// not fit. The name goes in when it sorts below a name held, displacing the largest ones until
-    /// the set fits [`MAXIMUM_NAMES`] and [`NAME_BYTES`] again, so what is left out always sorts
+    /// the set fits [`MAXIMUM_NAMES`] and [`MAXIMUM_NAME_SET_BYTES`] again, so what is left out always sorts
     /// after what is kept. The caller then refuses every later name after the set's last
     /// ([`Expander::offer`]), or a short name could slip in behind a long one that was left out and
     /// the next batch would skip it. It takes a name the caller has established can travel in a
@@ -342,7 +356,7 @@ impl<'a> Expander<'a> {
     ///
     /// The same membership decision as [`Expander::new`] and a different collection policy: instead
     /// of refusing the ninth match, this takes the smallest matches strictly after `resume` that fit
-    /// [`MAXIMUM_NAMES`] and [`NAME_BYTES`], and reports that the rest exist. Membership is decided
+    /// [`MAXIMUM_NAMES`] and [`MAXIMUM_NAME_SET_BYTES`], and reports that the rest exist. Membership is decided
     /// once, in [`Expander::offer`], so a batched line and an unbatched one cannot disagree about
     /// what a pattern designates.
     ///
@@ -368,14 +382,14 @@ impl<'a> Expander<'a> {
         if !byte_glob::matches(self.pattern, name) || self.set.contains(name) {
             return;
         }
-        if !crate::file_name_fits(name) {
+        if !crate::is_valid_file_name(name) {
             // It matched and cannot travel in a grant, so refuse here, before either collector: a
             // batch may not drop it either, which would be the silent prefix this exists to refuse.
             self.refused.get_or_insert(Refusal::MatchNotNameable);
             return;
         }
         let Some(resume) = self.resume else {
-            if !self.set.push(name, is_directory) {
+            if self.set.try_push(name, is_directory).is_err() {
                 self.refused.get_or_insert(Refusal::TooManyNames);
             }
             return;
@@ -448,7 +462,7 @@ impl Batch {
     ///
     /// Both halves matter: a batch with nothing after it ends the sweep, and so does an empty batch,
     /// because there is no watermark to carry forward.
-    pub fn next(&self) -> Option<Resume> {
+    pub fn next_resume(&self) -> Option<Resume> {
         if !self.more {
             return None;
         }
@@ -466,7 +480,7 @@ impl Batch {
 /// the exact mistake this OS exists to not make.
 ///
 /// A token ending in `..` designates a directory rather than a name, so there is no pattern in it.
-pub fn magic_component(token: &[u8]) -> Result<bool, Refusal> {
+pub fn last_component_has_magic(token: &[u8]) -> Result<bool, Refusal> {
     let parsed = navigation::path(token).map_err(crate::nav_refusal)?;
     let steps = parsed.steps();
     let Some((last, lead)) = steps.split_last() else {
@@ -514,14 +528,14 @@ impl Designation {
     /// Add a name found here, or one the program may create. A full set is
     /// [`Refusal::TooManyNames`], and a name that cannot travel in a grant
     /// [`Refusal::MatchNotNameable`], rather than a smaller grant than the line said.
-    pub fn name(&mut self, name: &[u8], is_directory: bool) -> Result<(), Refusal> {
+    pub fn try_add_name(&mut self, name: &[u8], is_directory: bool) -> Result<(), Refusal> {
         if self.names.contains(name) {
             return Ok(());
         }
         if Name::new(name).is_none() {
             return Err(Refusal::MatchNotNameable);
         }
-        if self.names.push(name, is_directory) {
+        if self.names.try_push(name, is_directory).is_ok() {
             Ok(())
         } else {
             Err(Refusal::TooManyNames)
@@ -529,7 +543,7 @@ impl Designation {
     }
 
     /// A word named the current directory itself.
-    pub fn here(&mut self) {
+    pub fn designate_here(&mut self) {
         self.here = true;
     }
 
@@ -597,7 +611,7 @@ impl Expansion {
     }
 
     /// The positional at `index` was a pattern, and these are the names it matched.
-    pub fn at(index: usize, names: NameSet) -> Self {
+    pub fn new(index: usize, names: NameSet) -> Self {
         Expansion {
             at: Some(index),
             names,
@@ -662,7 +676,7 @@ mod tests {
         // A pattern is a well-formed component, so bash's pass-through would grant a name nobody
         // has yet.
         assert!(
-            crate::file_name_fits(b"*.rs"),
+            crate::is_valid_file_name(b"*.rs"),
             "if this ever becomes false, the refusal above is still right for the other reason",
         );
     }
@@ -712,31 +726,34 @@ mod tests {
     /// is an authority question and not a matching one.
     #[test]
     fn a_pattern_may_only_be_the_last_component() {
-        assert_eq!(magic_component(b"*.txt"), Ok(true));
-        assert_eq!(magic_component(b"logs/*.txt"), Ok(true));
-        assert_eq!(magic_component(b"report.txt"), Ok(false));
-        assert_eq!(magic_component(b"logs/report.txt"), Ok(false));
+        assert_eq!(last_component_has_magic(b"*.txt"), Ok(true));
+        assert_eq!(last_component_has_magic(b"logs/*.txt"), Ok(true));
+        assert_eq!(last_component_has_magic(b"report.txt"), Ok(false));
+        assert_eq!(last_component_has_magic(b"logs/report.txt"), Ok(false));
         assert_eq!(
-            magic_component(b"*/report.txt"),
+            last_component_has_magic(b"*/report.txt"),
             Err(Refusal::PatternInPath)
         );
-        assert_eq!(magic_component(b"a/*/b"), Err(Refusal::PatternInPath));
+        assert_eq!(
+            last_component_has_magic(b"a/*/b"),
+            Err(Refusal::PatternInPath)
+        );
         // The refusals a path already has still come first: the token is parsed before anything
         // asks whether it has magic in it.
         assert_eq!(
-            magic_component(b"/*/report.txt"),
+            last_component_has_magic(b"/*/report.txt"),
             Err(Refusal::PatternInPath)
         );
         // An absolute pattern is an ordinary pattern, expanded against the directory its leading
         // path names, which for a leading `/` is the holder's own root.
-        assert_eq!(magic_component(b"/etc/*"), Ok(true));
+        assert_eq!(last_component_has_magic(b"/etc/*"), Ok(true));
     }
 
     /// An expansion is placed at the positional it came from, and nowhere else.
     #[test]
     fn an_expansion_belongs_to_one_positional() {
         let set = NameSet::one(b"x", false).unwrap();
-        let e = Expansion::at(1, set);
+        let e = Expansion::new(1, set);
         assert_eq!(e.for_positional(0), None);
         assert_eq!(e.for_positional(1).unwrap().only(), Some(&b"x"[..]));
         assert_eq!(Expansion::none().for_positional(0), None);
@@ -791,7 +808,7 @@ mod tests {
     /// Which of [`TWENTY`] this is, as a bit, for the seen-mask the sweeps keep. This crate has no
     /// allocator, in tests or out, so "every name exactly once" is twenty bits rather than a sorted
     /// vector.
-    fn which(name: &[u8]) -> u32 {
+    fn side(name: &[u8]) -> u32 {
         let i = TWENTY
             .iter()
             .position(|n| *n == name)
@@ -835,11 +852,11 @@ mod tests {
             sizes[batches] = b.names.len();
             batches += 1;
             for (name, _) in b.names.iter() {
-                let bit = which(name);
+                let bit = side(name);
                 assert_eq!(seen & bit, 0, "a name appeared in two batches");
                 seen |= bit;
             }
-            match b.next() {
+            match b.next_resume() {
                 Some(r) => resume = r,
                 None => break,
             }
@@ -866,7 +883,7 @@ mod tests {
         assert_eq!(b.names.last(), Some(&b"b07.txt"[..]));
 
         // And the second batch continues the ordering rather than restarting it.
-        let second = batch(b"b*.txt", b.next().unwrap(), &twenty()).unwrap();
+        let second = batch(b"b*.txt", b.next_resume().unwrap(), &twenty()).unwrap();
         assert_eq!(
             second.names.iter().next().map(|(n, _)| n),
             Some(&b"b08.txt"[..]),
@@ -903,7 +920,7 @@ mod tests {
         assert!(over.more);
         assert_eq!(over.names.len(), MAXIMUM_NAMES);
         assert_eq!(
-            over.next(),
+            over.next_resume(),
             Name::new(over.names.last().unwrap()).map(Resume::After),
         );
     }
@@ -925,7 +942,7 @@ mod tests {
             }
             let b = e.finish_batch().unwrap();
             for (name, _) in b.names.iter() {
-                let bit = which(name);
+                let bit = side(name);
                 assert_eq!(
                     seen & bit,
                     0,
@@ -935,7 +952,7 @@ mod tests {
                 // The command runs: every name it was granted is gone before the next enumeration.
                 live[bit.trailing_zeros() as usize] = None;
             }
-            match b.next() {
+            match b.next_resume() {
                 Some(r) => resume = r,
                 None => break,
             }
@@ -955,7 +972,7 @@ mod tests {
         );
         let done = batch(b"*", Resume::After(Name::new(b"a.txt").unwrap()), &listing).unwrap();
         assert!(done.names.is_empty() && !done.more);
-        assert_eq!(done.next(), None);
+        assert_eq!(done.next_resume(), None);
     }
 
     /// **A set is bounded by its bytes as well as its count** (milestone 946): two of the longest
@@ -965,15 +982,21 @@ mod tests {
         let a = [b'a'; MAXIMUM_NAME_BYTES];
         let b = [b'b'; MAXIMUM_NAME_BYTES];
         let mut set = NameSet::empty();
-        assert!(set.push(&a, false));
-        assert!(set.push(&b, true));
+        assert!(set.try_push(&a, false).is_ok());
+        assert!(set.try_push(&b, true).is_ok());
         assert_eq!(set.name_bytes(), 2 * MAXIMUM_NAME_BYTES);
-        const ROOM: usize = NAME_BYTES - 2 * MAXIMUM_NAME_BYTES;
+        const ROOM: usize = MAXIMUM_NAME_SET_BYTES - 2 * MAXIMUM_NAME_BYTES;
         let fits = [b'c'; ROOM];
         let over = [b'c'; ROOM + 1];
-        assert!(!set.push(&over, false), "one byte past NAME_BYTES");
-        assert!(set.push(&fits, false), "and the rest fits exactly");
-        assert_eq!(set.name_bytes(), NAME_BYTES);
+        assert!(
+            set.try_push(&over, false).is_err(),
+            "one byte past MAXIMUM_NAME_SET_BYTES"
+        );
+        assert!(
+            set.try_push(&fits, false).is_ok(),
+            "and the rest fits exactly"
+        );
+        assert_eq!(set.name_bytes(), MAXIMUM_NAME_SET_BYTES);
         let got: [(&[u8], bool); 3] = [(&a, false), (&b, true), (&fits, false)];
         assert!(set.iter().eq(got.iter().copied()), "{set:?}");
         let listing: [(&[u8], bool); 3] = [(&a, false), (&b, false), (&over, false)];
@@ -998,7 +1021,7 @@ mod tests {
             first.names
         );
         assert!(first.more);
-        let second = batch(b"*", first.next().unwrap(), &listing).unwrap();
+        let second = batch(b"*", first.next_resume().unwrap(), &listing).unwrap();
         let want: [(&[u8], bool); 2] = [(&c, false), (b"d", false)];
         assert!(
             second.names.iter().eq(want.iter().copied()),
@@ -1008,8 +1031,8 @@ mod tests {
         assert!(!second.more);
         // And a long name that displaces held ones for room still leaves out only names after
         // what is kept.
-        // Each short name is long enough that the four together are over NAME_BYTES.
-        const SHORT: usize = (NAME_BYTES - 2 * MAXIMUM_NAME_BYTES) / 2 + 1;
+        // Each short name is long enough that the four together are over MAXIMUM_NAME_SET_BYTES.
+        const SHORT: usize = (MAXIMUM_NAME_SET_BYTES - 2 * MAXIMUM_NAME_BYTES) / 2 + 1;
         let mut b1 = [b'1'; SHORT];
         b1[0] = b'b';
         let mut b2 = [b'2'; SHORT];
@@ -1078,7 +1101,7 @@ mod tests {
         assert_eq!(NameSet::empty().last(), None);
         let mut d = Designation::none();
         assert!(!d.is_here());
-        d.here();
+        d.designate_here();
         assert!(d.is_here());
     }
 
@@ -1090,10 +1113,10 @@ mod tests {
         assert!(NameSet::one(&TOO_LONG, false).is_none());
         assert!(NameSet::one(b"a/b", false).is_none());
         let mut set = NameSet::empty();
-        assert!(!set.push(&TOO_LONG, false));
+        assert!(set.try_push(&TOO_LONG, false).is_err());
         assert!(set.is_empty(), "a refused name was kept");
-        assert!(set.push(b"a", false));
-        assert!(!set.push(b"a", true), "a name is held once");
+        assert!(set.try_push(b"a", false).is_ok());
+        assert!(set.try_push(b"a", true).is_err(), "a name is held once");
         assert_eq!(set.len(), 1);
     }
 }

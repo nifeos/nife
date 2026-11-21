@@ -105,7 +105,7 @@ This block said `rm -r` was the only thing composing `ENUMERATE`, and that was a
 was minted (corrected 2026-08-17 by the status-accuracy sweep; the status itself is right and did not
 move). At least four other things compose it, and one of them predates this block by ten days. They
 are the shell's glob expander (`expand` in `components/src/swish/navigation.rs`, driving
-`crates/grant_plan/src/expand.rs`, landed
+`crates/grant_plan/src/expansion.rs`, landed
 2026-08-03 against this block's 2026-08-13), the SMB server
 (`descend_rights` in `user/src/smb_server.rs`), the `std` PAL's `read_dir`
 (`readdir` in `patches/std-nife/overlay/std/src/sys/fs/nife/path_operations.rs`), and the survey viewer's kernel-level

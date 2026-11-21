@@ -222,7 +222,7 @@ impl Selection<'_> {
     /// The order is not cosmetic. A walk that failed is reported first, because a selector's verdict
     /// over a listing that is not the domain means nothing. Then a selector that can never match,
     /// because that is a fact about what was asked rather than about what is running, and it is true
-    /// whatever the domain holds: the same reason `grant_plan::plan_against_with` answers a
+    /// whatever the domain holds: the same reason `grant_plan::plan_against_with_streams` answers a
     /// misquoted line before it resolves the program name.
     pub fn write_diagnostics(&self, out: &mut dyn FnMut(&[u8])) {
         if !self.complete {

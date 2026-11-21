@@ -151,7 +151,7 @@ impl<'a> Line<'a> {
 
     /// How many stages the line has. Always at least one, which is why this is not spelled `len`:
     /// there is no empty line at this level, an empty line is one empty stage and
-    /// [`crate::parse`] reads it as [`Command::Empty`](crate::Command::Empty).
+    /// [`crate::parse`] reads it as [`CommandLine::Empty`](crate::CommandLine::Empty).
     pub fn stage_count(&self) -> usize {
         self.nstages
     }
@@ -192,7 +192,7 @@ impl<'a> Line<'a> {
     ///
     /// `file` is the caller's already-designated [`crate::FileGrant`], because resolving a name
     /// needs the shell's position and this module deliberately knows nothing about directories.
-    pub fn sink_for(&self, i: usize, file: Option<crate::FileGrant>) -> Sink {
+    pub fn stage_sink(&self, i: usize, file: Option<crate::FileGrant>) -> Sink {
         if i + 1 < self.nstages {
             Sink::Pipe
         } else {
@@ -203,8 +203,8 @@ impl<'a> Line<'a> {
         }
     }
 
-    /// What stage `i`'s input slot holds. The mirror of [`sink_for`](Line::sink_for).
-    pub fn source_for(&self, i: usize, file: Option<crate::FileGrant>) -> Source {
+    /// What stage `i`'s input slot holds. The mirror of [`stage_sink`](Line::stage_sink).
+    pub fn stage_source(&self, i: usize, file: Option<crate::FileGrant>) -> Source {
         if i > 0 {
             Source::Pipe
         } else {
@@ -270,7 +270,7 @@ pub fn split(line: &[u8]) -> Result<Line<'_>, Refusal> {
         }
         let start = i;
         i = scan_command_words(line, start)?;
-        stages[n] = crate::trim(&line[start..i]);
+        stages[n] = line[start..i].trim_ascii();
 
         // Then the redirections, which must all come after the command words.
         i = read_redirections(line, i, n, &mut r)?;
@@ -366,20 +366,20 @@ fn read_redirections<'a>(
         // names. A second `<` is not consumed: there is no here-document, so `<<` falls through
         // and is refused for the name it does not have.
         #[derive(PartialEq)]
-        enum Which {
+        enum GrantSide {
             In,
             Out,
             Diag,
         }
-        let (which, append, width) = match line[i] {
-            b'<' => (Which::In, false, 1),
+        let (side, append, width) = match line[i] {
+            b'<' => (GrantSide::In, false, 1),
             b'>' => {
                 let a = line.get(i + 1) == Some(&b'>');
-                (Which::Out, a, if a { 2 } else { 1 })
+                (GrantSide::Out, a, if a { 2 } else { 1 })
             }
             _ => {
                 let a = line.get(i + 2) == Some(&b'>');
-                (Which::Diag, a, if a { 3 } else { 2 })
+                (GrantSide::Diag, a, if a { 3 } else { 2 })
             }
         };
         i += width;
@@ -391,18 +391,18 @@ fn read_redirections<'a>(
         // part of what is designated rather than the end of it. That is the correctness gap this
         // shell had: a file with a space in its name could not be written to at all.
         let t = i;
-        i = word::span(line, i, &|b| b.is_ascii_whitespace() || is_op(b));
+        i = word::token_end(line, i, &|b| b.is_ascii_whitespace() || is_op(b));
         if i == t {
             return Err(Refusal::NoRedirectTarget);
         }
         let name = word::read(&line[t..i])?;
-        let (slot, quoted) = match which {
-            Which::In => (&mut r.ins, &mut r.in_q),
-            Which::Out => {
+        let (slot, quoted) = match side {
+            GrantSide::In => (&mut r.ins, &mut r.in_q),
+            GrantSide::Out => {
                 r.apps[n] = append;
                 (&mut r.outs, &mut r.out_q)
             }
-            Which::Diag => {
+            GrantSide::Diag => {
                 r.diag_apps[n] = append;
                 (&mut r.diags, &mut r.diag_q)
             }
@@ -502,7 +502,7 @@ mod tests {
                 core::str::from_utf8(line).unwrap()
             );
             assert!(l.is_plain());
-            assert_eq!(l.stages()[0], crate::trim(line));
+            assert_eq!(l.stages()[0], line.trim_ascii());
         }
     }
 
@@ -568,7 +568,7 @@ mod tests {
         assert_eq!(a.output, Some(&b"report.txt"[..]));
         assert_eq!(a.mode(), Mode::Append);
         // And it reaches the sink, which is the only place anything downstream reads it.
-        assert!(matches!(a.sink_for(0, None), Sink::Report));
+        assert!(matches!(a.stage_sink(0, None), Sink::Report));
         // A line with no `>` on it has nothing to append to, and says Truncate because that is the
         // default rather than because it means anything.
         assert_eq!(split(b"date | wc").unwrap().mode(), Mode::Truncate);
@@ -852,17 +852,17 @@ mod tests {
         }
     }
 
-    /// [`Line::sink_for`] and [`Line::source_for`] are the whole of "which capability goes in which
+    /// [`Line::stage_sink`] and [`Line::stage_source`] are the whole of "which capability goes in which
     /// slot", so the table they implement is worth pinning: the head reads, the tail writes, and the
     /// joints are pipes.
     #[test]
     fn the_ends_of_a_pipeline_are_the_only_ones_that_touch_a_file() {
         let l = split(b"echo a | wc | wc").unwrap();
-        assert_eq!(l.sink_for(0, None), Sink::Pipe);
-        assert_eq!(l.sink_for(1, None), Sink::Pipe);
-        assert_eq!(l.sink_for(2, None), Sink::Report);
-        assert_eq!(l.source_for(0, None), Source::None);
-        assert_eq!(l.source_for(1, None), Source::Pipe);
-        assert_eq!(l.source_for(2, None), Source::Pipe);
+        assert_eq!(l.stage_sink(0, None), Sink::Pipe);
+        assert_eq!(l.stage_sink(1, None), Sink::Pipe);
+        assert_eq!(l.stage_sink(2, None), Sink::Report);
+        assert_eq!(l.stage_source(0, None), Source::None);
+        assert_eq!(l.stage_source(1, None), Source::Pipe);
+        assert_eq!(l.stage_source(2, None), Source::Pipe);
     }
 }

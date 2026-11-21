@@ -95,9 +95,9 @@ milestone's question: does `/a/x` reach grant A and `/b/y` reach grant B, with n
 the other's parent? A label selects one grant's root by an exact match on an absolute path's first
 component. Nothing after the first component can re-select a grant, so a later name that collides
 with the other label is an ordinary step inside the grant already chosen. Past the label a path
-resolves the way a single `Cwd` does, so `..` stops at that grant's own root and never at an unheld
+resolves the way a single `DirectoryPath` does, so `..` stops at that grant's own root and never at an unheld
 root above both. That is what makes `/a/../b` refused: the first component commits to grant A, and
-`..` from A's root has nothing to pop. No new check was needed, since `Cwd::apply` already had the
+`..` from A's root has nothing to pop. No new check was needed, since `DirectoryPath::apply` already had the
 property.
 
 A relative token is refused, as `.` alone is, because a holder of two roots has no reason to prefer
@@ -105,8 +105,8 @@ either. That is the shadowing question milestone 47 (navigation and naming) leav
 `TwoRoots::resolve_from` gives a two-grant shell its single moving position (DECISIONS §126 (a
 process holding two directory capabilities gets a real, single, moving `cwd`)).
 
-`Bindings` is `bind`'s namespace. A bound entry is a value, a `Cwd` under a name: no capability
-slot, no handle to leak, no lifetime. It reuses `Cwd::apply`'s depth bound and root clamp, so a
+`Bindings` is `bind`'s namespace. A bound entry is a value, a `DirectoryPath` under a name: no capability
+slot, no handle to leak, no lifetime. It reuses `DirectoryPath::apply`'s depth bound and root clamp, so a
 bound name cannot reach deeper or higher than a direct walk to the same place. It is not an ordered
 union. There is one entry per name, and a name already bound refuses a second bind rather than
 shadowing it. Milestone 47's open `PATH` questions (shadowing across several sources at one name,

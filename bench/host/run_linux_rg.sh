@@ -6,7 +6,7 @@
 # It boots the SAME Alpine kernel run_linux_walk.sh uses, on the SAME `virt,accel=hvf` machine with
 # the SAME `-cpu host`, `-m 256M` and `-smp 4` as nife's bench boot. PID 1 is `walk_pricing`'s
 # `rg_host` example, built static for musl: it stages the priced tree, runs `/rg` over it with the
-# words nife's `rg` hears (split by `grant_plan::each_word`, the function that builds nife's argv),
+# words nife's `rg` hears (split by `grant_plan::for_each_word`, the function that builds nife's argv),
 # and prints ripgrep's own `--stats` figure per run. `/rg` is built from the same crates.io source
 # `helpers/build-ripgrep.sh` builds nife's from, with the same `-Copt-level=s`.
 #

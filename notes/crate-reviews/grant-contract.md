@@ -36,7 +36,7 @@ packages in nife link it.
 | slots | `CATALOG_SLOT`, `DIAGNOSTICS_SLOT`, `DOMAIN_SLOT`, `ENTROPY_SLOT`, `INDEX_SOURCES_SLOT`, `INSTALLER_REPLY_SLOT`, `INSTALLER_SLOT` and the rest of the slot list |
 | declarations | `FileGrantDeclaration`, `DirectoryGrantDeclaration` (`Forbidden`, `Required`) |
 | manifest | `Manifest`, with `is_well_formed`; `RIGHTS_BITS_DO_NOT_OVERLAP`, the compile-time check that the rights bits share no bit |
-| verbs | `verbs::ManifestAuthorities` (a `u16` set with `union`, `contains`, `bits`, `from_bits`), `VerbGrant`, `narrow_by_verb`, `verb_key`, `delegated_within`, `verb_of_page`, `MAXIMUM_VERB_BYTES` |
+| verbs | `verbs::ManifestAuthorities` (a `u16` set with `union`, `contains`, `bits`, `from_bits`), `VerbGrant`, `narrow_by_verb`, `verb_key`, `delegated_identity`, `page_verb`, `MAXIMUM_VERB_BYTES` |
 
 The packet lists every item with its signature.
 

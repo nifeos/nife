@@ -143,7 +143,7 @@ disagree about what the line designates, and that is the one thing the pairing e
 A program that hears words (milestone 205 (how a foreign program is told what to do), §170 clauses
 2 to 5) has nothing expanded. Its words are designated instead, and the planner turns them into
 one directory grant at the current directory. Every word after the program's name is asked, in
-`grant_plan::each_word`'s reading, so the words designated are the words the program hears:
+`grant_plan::for_each_word`'s reading, so the words designated are the words the program hears:
 
 - a word shaped like an option (`-i`, `--color=never`) designates nothing;
 - an absolute path or one that starts with `..` designates nothing, because the program's root is

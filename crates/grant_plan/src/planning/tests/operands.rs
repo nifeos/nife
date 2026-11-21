@@ -1,7 +1,7 @@
 //! Planning tests: `rm` and the directory it is granted, globbing, and programs that hear
 //! words.
 
-use crate::expand::{Expander, Expansion, MAXIMUM_NAMES};
+use crate::expansion::{Expander, Expansion, MAXIMUM_NAMES};
 use crate::test_support::{READS_A_FILE, WITH_DIRECTORY, plan, plan_against};
 use crate::*;
 
@@ -17,7 +17,7 @@ use crate::*;
 /// the names on the line is the nameset caretaker globbing needs, and it is the same shape.
 #[test]
 fn naming_something_to_remove_grants_the_directory_that_holds_it() {
-    let Command::Run(r) = parse(b"rm old.txt") else {
+    let CommandLine::Run(r) = parse(b"rm old.txt") else {
         panic!()
     };
     let e = plan(&r, WITH_DIRECTORY).unwrap();
@@ -40,7 +40,7 @@ fn naming_something_to_remove_grants_the_directory_that_holds_it() {
 
     // A path operand is walked at the prompt, so the grant is the directory it landed in and
     // the child still only ever sees one component (§27 intact).
-    let Command::Run(r) = parse(b"rm logs/2026/old.txt") else {
+    let CommandLine::Run(r) = parse(b"rm logs/2026/old.txt") else {
         panic!()
     };
     let g = plan(&r, WITH_DIRECTORY).unwrap().directory.unwrap();
@@ -57,13 +57,13 @@ fn naming_something_to_remove_grants_the_directory_that_holds_it() {
 #[test]
 fn the_recursion_option_is_what_widens_the_grant() {
     let narrow = {
-        let Command::Run(r) = parse(b"rm logs") else {
+        let CommandLine::Run(r) = parse(b"rm logs") else {
             panic!()
         };
         plan(&r, WITH_DIRECTORY).unwrap()
     };
     let wide = {
-        let Command::Run(r) = parse(b"rm -r logs") else {
+        let CommandLine::Run(r) = parse(b"rm -r logs") else {
             panic!()
         };
         plan(&r, WITH_DIRECTORY).unwrap()
@@ -95,7 +95,7 @@ const SWEEPS_A_TREE: Manifest = Manifest {
 /// the manifest declares it, and widening must follow that bit rather than position zero.
 #[test]
 fn the_recursion_letter_widens_by_its_own_bit_wherever_it_is_declared() {
-    let Command::Run(r) = parse(b"sweep -r logs") else {
+    let CommandLine::Run(r) = parse(b"sweep -r logs") else {
         panic!()
     };
     let e = plan_against(&r, SWEEPS_A_TREE, WITH_DIRECTORY).unwrap();
@@ -111,17 +111,17 @@ fn the_recursion_letter_widens_by_its_own_bit_wherever_it_is_declared() {
 /// here in milliseconds. A cluster is one token, as every Unix `rm -rf` is typed.
 #[test]
 fn rm_options_are_numbered_by_their_position_in_its_manifest() {
-    let Command::Run(r) = parse(b"rm -rfv doomed") else {
+    let CommandLine::Run(r) = parse(b"rm -rfv doomed") else {
         panic!()
     };
-    assert_eq!(r.options(), b"rfv");
+    assert_eq!(r.short_options(), b"rfv");
     let e = plan(&r, WITH_DIRECTORY).unwrap();
     assert_eq!(
         e.short_options,
         rm_options::RECURSIVE | rm_options::FORCE | rm_options::VERBOSE
     );
     // Separately typed, in any order, is the same grant: options are a set.
-    let Command::Run(r) = parse(b"rm -v -f -r doomed") else {
+    let CommandLine::Run(r) = parse(b"rm -v -f -r doomed") else {
         panic!()
     };
     assert_eq!(
@@ -134,7 +134,7 @@ fn rm_options_are_numbered_by_their_position_in_its_manifest() {
         (b"rm -f x", rm_options::FORCE),
         (b"rm -v x", rm_options::VERBOSE),
     ] {
-        let Command::Run(r) = parse(line) else {
+        let CommandLine::Run(r) = parse(line) else {
             panic!()
         };
         assert_eq!(
@@ -151,17 +151,17 @@ fn rm_options_are_numbered_by_their_position_in_its_manifest() {
 /// would be a shell whose printed preview and actual transfer could disagree.
 #[test]
 fn an_option_the_manifest_does_not_declare_is_refused() {
-    let Command::Run(r) = parse(b"rm -q doomed") else {
+    let CommandLine::Run(r) = parse(b"rm -q doomed") else {
         panic!()
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::NoSuchOption));
     // A cluster is refused whole, on its first unknown letter: `-rq` must not half-apply.
-    let Command::Run(r) = parse(b"rm -rq doomed") else {
+    let CommandLine::Run(r) = parse(b"rm -rq doomed") else {
         panic!()
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::NoSuchOption));
     // And a program that declares no options at all refuses every one.
-    let Command::Run(r) = parse(b"least_authority_demo -r 9") else {
+    let CommandLine::Run(r) = parse(b"least_authority_demo -r 9") else {
         panic!()
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::NoSuchOption));
@@ -176,24 +176,24 @@ fn an_option_the_manifest_does_not_declare_is_refused() {
 /// program in the static table declared a grant the interactive shell cannot back.
 #[test]
 fn rm_needs_an_operand_and_something_to_narrow() {
-    let Command::Run(r) = parse(b"rm") else {
+    let CommandLine::Run(r) = parse(b"rm") else {
         panic!()
     };
-    assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::PathRequired));
-    let Command::Run(r) = parse(b"rm -rf") else {
+    assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::DirectoryRequired));
+    let CommandLine::Run(r) = parse(b"rm -rf") else {
         panic!()
     };
     assert_eq!(
         plan(&r, WITH_DIRECTORY),
-        Err(Refusal::PathRequired),
+        Err(Refusal::DirectoryRequired),
         "options are not operands: `rm -rf` names nothing",
     );
 
-    let Command::Run(r) = parse(b"rm doomed") else {
+    let CommandLine::Run(r) = parse(b"rm doomed") else {
         panic!()
     };
     assert_eq!(
-        plan(&r, Holdings::default()),
+        plan(&r, ShellHoldings::default()),
         Err(Refusal::NoSuchCapability(CapabilityKind::File)),
         "a shell granted no directory holds nothing that could back this",
     );
@@ -214,7 +214,7 @@ fn a_directory_grant_cannot_be_named_out_of_the_shells_root() {
         (too_long, Refusal::FileNotNameable),
         (b"rm seventeen-bytes!!/old.txt", Refusal::FileNotNameable),
     ] {
-        let Command::Run(r) = parse(line) else {
+        let CommandLine::Run(r) = parse(line) else {
             panic!()
         };
         assert_eq!(
@@ -232,7 +232,7 @@ fn a_directory_grant_cannot_be_named_out_of_the_shells_root() {
 /// is the same question), so it waits for the same answer instead of getting a private one.
 #[test]
 fn rm_takes_one_operand_because_a_manifest_grants_one_directory() {
-    let Command::Run(r) = parse(b"rm a b") else {
+    let CommandLine::Run(r) = parse(b"rm a b") else {
         panic!()
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::Unexpected));
@@ -246,20 +246,20 @@ fn rm_takes_one_operand_because_a_manifest_grants_one_directory() {
 /// grant is, so a `cd` afterwards cannot change what an already-planned `rm` would take away.
 #[test]
 fn a_directory_grant_is_fixed_where_it_was_planned() {
-    let mut holds = WITH_DIRECTORY;
+    let mut shell_holdings = WITH_DIRECTORY;
     assert!(
-        holds
-            .cwd
+        shell_holdings
+            .working_directory
             .apply(navigation::path(b"logs").unwrap().steps())
             .is_ok()
     );
-    let Command::Run(r) = parse(b"rm -r old") else {
+    let CommandLine::Run(r) = parse(b"rm -r old") else {
         panic!()
     };
-    let g = plan(&r, holds).unwrap().directory.unwrap();
+    let g = plan(&r, shell_holdings).unwrap().directory.unwrap();
     assert_eq!(g.directory.depth(), 1);
     assert_eq!(g.directory.component(0), b"logs");
-    holds.cwd.ascend();
+    shell_holdings.working_directory.ascend();
     assert_eq!(g.directory.depth(), 1, "the grant followed the shell");
 }
 
@@ -276,7 +276,7 @@ const LISTING: [(&[u8], bool); 4] = [
 ];
 
 /// Expand a pattern over [`LISTING`], the way both `echo` and the shell's grant path do.
-fn expanded(pattern: &[u8]) -> Result<expand::NameSet, Refusal> {
+fn expanded(pattern: &[u8]) -> Result<expansion::NameSet, Refusal> {
     let mut e = Expander::new(pattern);
     for (name, is_dir) in LISTING {
         e.offer(name, is_dir);
@@ -292,10 +292,10 @@ fn expanded(pattern: &[u8]) -> Result<expand::NameSet, Refusal> {
 fn what_echo_shows_is_what_rm_would_transfer() {
     let shown = expanded(b"*.txt").expect("the pattern matches two of these names");
 
-    let Command::Run(r) = parse(b"rm *.txt") else {
+    let CommandLine::Run(r) = parse(b"rm *.txt") else {
         panic!("`rm *.txt` must parse as a program invocation")
     };
-    let granted = super::plan(&r, WITH_DIRECTORY, Expansion::at(0, shown))
+    let granted = super::plan(&r, WITH_DIRECTORY, Expansion::new(0, shown))
         .unwrap()
         .directory
         .expect("the pattern did not become a directory grant")
@@ -310,15 +310,15 @@ fn what_echo_shows_is_what_rm_would_transfer() {
     );
     // And `caps rm *.txt` previews the identical endowment, because the preview re-parses the
     // command you would have typed and plans it against the same expansion.
-    let Command::Capabilities(tail) = parse(b"caps rm *.txt") else {
+    let CommandLine::Capabilities(tail) = parse(b"caps rm *.txt") else {
         panic!()
     };
-    let Command::Run(previewed) = parse(tail) else {
+    let CommandLine::Run(previewed) = parse(tail) else {
         panic!()
     };
     assert_eq!(
-        super::plan(&previewed, WITH_DIRECTORY, Expansion::at(0, shown)),
-        super::plan(&r, WITH_DIRECTORY, Expansion::at(0, shown)),
+        super::plan(&previewed, WITH_DIRECTORY, Expansion::new(0, shown)),
+        super::plan(&r, WITH_DIRECTORY, Expansion::new(0, shown)),
     );
 }
 
@@ -327,7 +327,7 @@ fn what_echo_shows_is_what_rm_would_transfer() {
 /// that was typed designates itself whatever anybody hands the planner alongside it.
 #[test]
 fn a_literal_operand_is_the_set_of_one_and_ignores_any_expansion() {
-    let Command::Run(r) = parse(b"rm old.txt") else {
+    let CommandLine::Run(r) = parse(b"rm old.txt") else {
         panic!()
     };
     let names = plan(&r, WITH_DIRECTORY).unwrap().directory.unwrap().names;
@@ -338,7 +338,7 @@ fn a_literal_operand_is_the_set_of_one_and_ignores_any_expansion() {
     // Nothing should ever do this; the point is that it cannot change the grant if it does.
     let stray = expanded(b"*.txt").unwrap();
     assert_eq!(
-        super::plan(&r, WITH_DIRECTORY, Expansion::at(0, stray))
+        super::plan(&r, WITH_DIRECTORY, Expansion::new(0, stray))
             .unwrap()
             .directory
             .unwrap()
@@ -354,18 +354,18 @@ fn a_literal_operand_is_the_set_of_one_and_ignores_any_expansion() {
 /// the moment anything created a file called `*.txt`.
 #[test]
 fn a_pattern_with_nothing_to_expand_it_against_is_refused_not_taken_literally() {
-    let Command::Run(r) = parse(b"rm *.txt") else {
+    let CommandLine::Run(r) = parse(b"rm *.txt") else {
         panic!()
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::Unexpanded));
     assert!(
-        file_name_fits(b"*.txt"),
+        is_valid_file_name(b"*.txt"),
         "the refusal above is the ONLY thing stopping a pattern becoming a grantable name",
     );
     // In a shell holding no directory the bigger fact wins: there is nothing to narrow, and
     // therefore nothing to expand against either.
     assert_eq!(
-        plan(&r, Holdings::default()),
+        plan(&r, ShellHoldings::default()),
         Err(Refusal::NoSuchCapability(CapabilityKind::File)),
     );
 }
@@ -373,7 +373,7 @@ fn a_pattern_with_nothing_to_expand_it_against_is_refused_not_taken_literally() 
 /// The two costs the roadmap said to design rather than discover, at the prompt.
 #[test]
 fn an_empty_match_and_an_oversized_one_are_both_refused_before_anything_spawns() {
-    let Command::Run(r) = parse(b"rm *.rs") else {
+    let CommandLine::Run(r) = parse(b"rm *.rs") else {
         panic!()
     };
     // Nothing matched. The expander refuses first, and the planner refuses an empty set handed
@@ -383,7 +383,7 @@ fn an_empty_match_and_an_oversized_one_are_both_refused_before_anything_spawns()
         super::plan(
             &r,
             WITH_DIRECTORY,
-            Expansion::at(0, expand::NameSet::empty())
+            Expansion::new(0, expansion::NameSet::empty())
         ),
         Err(Refusal::NoMatch),
     );
@@ -410,14 +410,14 @@ fn an_empty_match_and_an_oversized_one_are_both_refused_before_anything_spawns()
 /// permission.
 #[test]
 fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
-    let Command::Run(r) = parse(b"rm */old.txt") else {
+    let CommandLine::Run(r) = parse(b"rm */old.txt") else {
         panic!()
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::PatternInPath));
 
     // A file grant takes one name, so a pattern that matched two has designated something this
     // program cannot be handed.
-    let Command::Run(r) = parse(b"wc *.txt") else {
+    let CommandLine::Run(r) = parse(b"wc *.txt") else {
         panic!()
     };
     assert_eq!(
@@ -425,19 +425,19 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
             &r,
             READS_A_FILE,
             WITH_DIRECTORY,
-            Expansion::at(0, expanded(b"*.txt").unwrap()),
+            Expansion::new(0, expanded(b"*.txt").unwrap()),
         ),
         Err(Refusal::AmbiguousFile),
     );
     // And one that matched exactly one name is a perfectly good way to name it.
-    let Command::Run(r) = parse(b"wc *.log") else {
+    let CommandLine::Run(r) = parse(b"wc *.log") else {
         panic!()
     };
     let g = super::plan_against(
         &r,
         READS_A_FILE,
         WITH_DIRECTORY,
-        Expansion::at(0, expanded(b"*.log").unwrap()),
+        Expansion::new(0, expanded(b"*.log").unwrap()),
     )
     .unwrap()
     .file
@@ -449,25 +449,29 @@ fn a_pattern_is_refused_where_it_cannot_mean_one_thing() {
 /// typed name is, and the leading path is walked here rather than passed on.
 #[test]
 fn a_pattern_is_resolved_where_the_shell_was_standing() {
-    let mut holds = WITH_DIRECTORY;
+    let mut shell_holdings = WITH_DIRECTORY;
     assert!(
-        holds
-            .cwd
+        shell_holdings
+            .working_directory
             .apply(navigation::path(b"logs").unwrap().steps())
             .is_ok()
     );
-    let Command::Run(r) = parse(b"rm -r 2026/*.txt") else {
+    let CommandLine::Run(r) = parse(b"rm -r 2026/*.txt") else {
         panic!()
     };
-    let g = super::plan(&r, holds, Expansion::at(0, expanded(b"*.txt").unwrap()))
-        .unwrap()
-        .directory
-        .unwrap();
+    let g = super::plan(
+        &r,
+        shell_holdings,
+        Expansion::new(0, expanded(b"*.txt").unwrap()),
+    )
+    .unwrap()
+    .directory
+    .unwrap();
     assert_eq!(g.directory.depth(), 2);
     assert_eq!(g.directory.component(0), b"logs");
     assert_eq!(g.directory.component(1), b"2026");
     assert!(g.subtree, "-r still widens a set grant");
-    holds.cwd.ascend();
+    shell_holdings.working_directory.ascend();
     assert_eq!(g.directory.depth(), 2, "the grant followed the shell");
 }
 
@@ -477,24 +481,30 @@ fn a_pattern_is_resolved_where_the_shell_was_standing() {
 #[test]
 fn the_set_bound_matches_the_contract_that_carries_the_set() {
     assert_eq!(MAXIMUM_NAMES, filesystem_contract::nameset::MAXIMUM_NAMES);
-    assert_eq!(expand::NAME_BYTES, filesystem_contract::nameset::NAME_BYTES);
     assert_eq!(
-        expand::MAXIMUM_NAME_BYTES,
+        expansion::MAXIMUM_NAME_SET_BYTES,
+        filesystem_contract::nameset::MAXIMUM_NAME_SET_BYTES
+    );
+    assert_eq!(
+        expansion::MAXIMUM_NAME_BYTES,
         filesystem_contract::grant::MAXIMUM_NAME_BYTES
     );
     // And the widest set this crate can plan must fit the buffer that contract sizes for it: every
     // name it may hold, sharing every byte it may hold.
-    let wide = [b'w'; expand::NAME_BYTES / MAXIMUM_NAMES];
+    let wide = [b'w'; expansion::MAXIMUM_NAME_SET_BYTES / MAXIMUM_NAMES];
     let widest: [(&[u8], bool); MAXIMUM_NAMES] = [(&wide[..], false); MAXIMUM_NAMES];
     let mut buf = [0u8; filesystem_contract::nameset::MAXIMUM_BYTES];
     assert!(filesystem_contract::nameset::encode(&widest, &mut buf).is_some());
-    let mut set = expand::NameSet::empty();
+    let mut set = expansion::NameSet::empty();
     for i in 0..MAXIMUM_NAMES {
         let mut name = wide;
         name[0] = b'a' + i as u8;
-        assert!(set.push(&name, false), "name {i} fits the set's bytes");
+        assert!(
+            set.try_push(&name, false).is_ok(),
+            "name {i} fits the set's bytes"
+        );
     }
-    assert_eq!(set.name_bytes(), expand::NAME_BYTES);
+    assert_eq!(set.name_bytes(), expansion::MAXIMUM_NAME_SET_BYTES);
 }
 
 /// **A program that hears words places no positional grant** (milestone 205, DECISIONS §170).
@@ -534,7 +544,7 @@ fn a_program_that_hears_words_places_no_positional_grant() {
 #[test]
 fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
     let e = plan(
-        &parse_run(b"std_exerciser -xyz --long a b c d e f"),
+        &parse_invocation(b"std_exerciser -xyz --long a b c d e f"),
         WITH_DIRECTORY,
     )
     .unwrap();
@@ -545,7 +555,7 @@ fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
     );
     // And a line `argv` would refuse is refused here, at the prompt, before anything is sent.
     assert_eq!(
-        plan(&parse_run(b"std_exerciser *.rs"), WITH_DIRECTORY),
+        plan(&parse_invocation(b"std_exerciser *.rs"), WITH_DIRECTORY),
         Err(Refusal::PatternInArguments)
     );
 }
@@ -556,12 +566,12 @@ fn a_program_that_hears_words_is_planned_whatever_its_words_are() {
 /// refusal says so, until the child exists.
 #[test]
 fn the_isolation_form_is_reserved_and_says_it_is_not_built() {
-    let Command::Run(r) = parse(b"swish -c ls") else {
+    let CommandLine::Run(r) = parse(b"swish -c ls") else {
         panic!()
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::IsolationNotBuilt));
     // And nothing else is reserved: an unknown word is still just unknown.
-    let Command::Run(r) = parse(b"swishy -c ls") else {
+    let CommandLine::Run(r) = parse(b"swishy -c ls") else {
         panic!()
     };
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::NoSuchProgram));

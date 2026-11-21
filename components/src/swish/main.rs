@@ -39,12 +39,12 @@
 #![feature(vec_push_within_capacity)]
 
 use filesystem_contract::{directory_entry, fs};
-use grant_plan::expand::{Expander, NameSet, Resume};
+use grant_plan::expansion::{Expander, NameSet, Resume};
 use grant_plan::line::{self, Line, Source};
-use grant_plan::navigation::{self as grant_navigation, Cwd, Refused, Step};
+use grant_plan::navigation::{self as grant_navigation, DirectoryPath, PathRefusal, Step};
 use grant_plan::{
-    Action, Command, DirectoryGrant as GrantDir, Endowment, Escalation, ParsedInvocation, Refusal,
-    Streams, TouchOperands,
+    CommandLine, DirectoryGrant as GrantDir, Endowment, Escalation, InterruptAction,
+    ParsedInvocation, Refusal, Streams, TouchOperands,
 };
 use program_table::{Program, job_channel_page, spawn_protocol};
 use swish::{Route, Say, Status, Untimed, sequence};

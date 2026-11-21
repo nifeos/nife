@@ -8,7 +8,7 @@ other's (`system_tests/src/user/multi_dir_namespace_tests.rs`, the `fs_test_clie
 the half after that: the real `swish` builtins and the per-command grant planner working across two
 trees, presented the way calef ruled.
 
-The pure half is `crates/grant_plan` (`Holdings::anchor`, `locate`, `place`, and a `which` on
+The pure half is `crates/grant_plan` (`ShellHoldings::steps_after_start`, `serving_tree`, `path_in_one_tree`, and a `side` on
 `FileGrant` and `DirectoryGrant`). The requests are `components/src/swish/navigation.rs` (`Nav`, `Tree`, the
 `two_trees` witness). The guest proof is
 `a_shell_holding_two_trees_moves_between_them_and_crosses_neither`.
@@ -27,14 +27,14 @@ not. The ruling's decision record is pull request #1380, and it leaves what `..`
 point open: the shell goes to the parent, and design/roadmap/0683-what-dot-dot-does-at-a-mount-point.md
 asks calef to confirm.
 
-So the shell's position is one path, `Holdings::cwd`, and a second tree is only a mount point,
-`MountedTree::mount`. Everything that resolves a path does it the same way:
+So the shell's position is one path, `ShellHoldings::cwd`, and a second tree is only a mount point,
+`MountedTree::mount_point`. Everything that resolves a path does it the same way:
 
-1. `Holdings::anchor` says where the steps start: where the shell stands for a relative path, a
+1. `ShellHoldings::steps_after_start` says where the steps start: where the shell stands for a relative path, a
    bound name's position when the first component is bound, the root otherwise.
-2. `Cwd::apply` applies the rest. This is where `..` is answered, so `..` from `/media/usb` is
+2. `DirectoryPath::apply` applies the rest. This is where `..` is answered, so `..` from `/media/usb` is
    `/media`, and `..` past `/` refuses with nothing sent, as it always did.
-3. `Holdings::locate` says which tree serves the result: the second, from its own root, for a path
+3. `ShellHoldings::serving_tree` says which tree serves the result: the second, from its own root, for a path
    through the mount point; the first, unchanged, for anything else.
 
 `plan_path`, `walk_steps` and the planner's `designate` all do exactly this. Before, there were
@@ -121,9 +121,9 @@ expander holds one, `Expansion` carries one into `plan`, `designate` returns one
 not fit in four pages, and the answer was smaller frames rather than a bigger stack.
 
 Seven came with this milestone, and it is a number rather than a smaller frame. Six pages ran within
-a few dozen bytes of the guard, and a `Holdings` that learned where a second tree is mounted crossed
+a few dozen bytes of the guard, and a `ShellHoldings` that learned where a second tree is mounted crossed
 it, with a data abort on `sp` inside `navigation::path`, under `designate`. The smaller frame is known, and
-the `Holdings` entry under BUGS below records it.
+the `ShellHoldings` entry under BUGS below records it.
 
 ## BUGS
 
@@ -136,6 +136,6 @@ the `Holdings` entry under BUGS below records it.
   manifest, makes the manifest the only source of one.
 - A path through a mount point is bounded by the one tree's depth, eight components counting the
   mount point's own, not by the second tree's.
-- `program_table::plan` and the three functions under it take an `~1 KiB` `Holdings` by value, so a
+- `program_table::plan` and the three functions under it take an `~1 KiB` `ShellHoldings` by value, so a
   debug build keeps a copy in each frame. The globbing witness ran within bytes of its stack and
-  now has a seventh page; passing `&Holdings` is the smaller frame that should replace that page.
+  now has a seventh page; passing `&ShellHoldings` is the smaller frame that should replace that page.

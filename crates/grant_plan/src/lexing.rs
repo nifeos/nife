@@ -27,7 +27,7 @@ pub const MAXIMUM_WORDS_NAME_BYTES: usize = 16;
 /// Whether a designated name can travel as a grant at all. A name is a single component, the same
 /// rule the FS server enforces (DECISIONS §27): a path is not something this shell can express,
 /// because there is no namespace here to walk.
-pub fn file_name_fits(name: &[u8]) -> bool {
+pub fn is_valid_file_name(name: &[u8]) -> bool {
     !name.is_empty()
         && name.len() <= MAXIMUM_FILE_NAME_BYTES
         && name != b"."
@@ -36,25 +36,12 @@ pub fn file_name_fits(name: &[u8]) -> bool {
         && !name.contains(&b'\\')
 }
 
-/// Trim ASCII whitespace from both ends.
-pub fn trim(s: &[u8]) -> &[u8] {
-    let mut a = 0;
-    let mut b = s.len();
-    while a < b && s[a].is_ascii_whitespace() {
-        a += 1;
-    }
-    while b > a && s[b - 1].is_ascii_whitespace() {
-        b -= 1;
-    }
-    &s[a..b]
-}
-
 /// Split off the first whitespace-delimited word; return `(word, rest)` where `rest` keeps its
 /// internal spacing (so `echo` can print it verbatim). The word keeps its quotes if it had any;
 /// [`parse`] takes them off, because whether the word is a builtin is a question about what it
 /// says rather than about how it was spelled.
 pub(crate) fn split_first_word(s: &[u8]) -> (&[u8], &[u8]) {
-    let mut i = word::span(s, 0, &|b| b.is_ascii_whitespace());
+    let mut i = word::token_end(s, 0, &|b| b.is_ascii_whitespace());
     let word = &s[..i];
     while i < s.len() && s[i].is_ascii_whitespace() {
         i += 1;
@@ -64,7 +51,7 @@ pub(crate) fn split_first_word(s: &[u8]) -> (&[u8], &[u8]) {
 
 /// Parse a base-10 `u64`. `None` for empty or any non-digit byte, so `--mem twelve` is a missing
 /// grant rather than a silent zero.
-pub fn parse_u64(s: &[u8]) -> Option<u64> {
+pub(crate) fn parse_u64(s: &[u8]) -> Option<u64> {
     if s.is_empty() {
         return None;
     }

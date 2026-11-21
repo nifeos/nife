@@ -154,7 +154,7 @@ pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) ->
 /// **The key [`narrow_by_verb`] looks up for a verb and the word after it**, copied into `out`: the
 /// verb, then a space and the word after it when both fit in [`MAXIMUM_VERB_BYTES`] bytes, which is the
 /// key a verb with an option has (`list -u`). `None` for an empty verb, one longer than
-/// [`MAXIMUM_VERB_BYTES`], or one that holds a space itself. [`verb_of_page`] reads its two words off an
+/// [`MAXIMUM_VERB_BYTES`], or one that holds a space itself. [`page_verb`] reads its two words off an
 /// argument page, and a planner that reads them off a command line calls this with the same two.
 ///
 /// Name: provisional; public since lane `milestone/1094-grant-plan-split`, so that a planner in
@@ -188,7 +188,7 @@ pub fn verb_key<'o>(
 /// know that its check is the progenitor's.
 ///
 /// ```
-/// use grant_contract::delegated_within;
+/// use grant_contract::delegated_identity;
 /// let mut page = [0u8; program_argument_contract::PAGE_BYTES];
 /// let mut builder = program_argument_contract::PageBuilder::new(&mut page).unwrap();
 /// for word in ["jig", "install", "--within", "lab-runner", "greeting"] {
@@ -196,12 +196,12 @@ pub fn verb_key<'o>(
 /// }
 /// builder.finish();
 /// let mut out = [0u8; 32];
-/// let n = delegated_within(&page, &mut out).unwrap();
+/// let n = delegated_identity(&page, &mut out).unwrap();
 /// assert_eq!(&out[..n], b"lab-runner");
 /// ```
 ///
 /// Name: provisional, minted 2026-10-28 (UTC) by milestone/911-scripted-installs-approval-file.
-pub fn delegated_within(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
+pub fn delegated_identity(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
     let args = program_argument_contract::ArgumentPage::parse(page);
     let mut words = args.iter().skip(1);
     while let Some(word) = words.next() {
@@ -218,10 +218,10 @@ pub fn delegated_within(page: &[u8], out: &mut [u8; 32]) -> Option<usize> {
 }
 
 /// **The verb on an argument page**: its `argv[1]`, and `argv[2]` after a space when both fit,
-/// as the program will read them. `grant_plan::verb_of`'s reading of the page `grant_plan::argv`
+/// as the program will read them. `grant_plan::line_verb`'s reading of the page `grant_plan::write_argument_page`
 /// assembled from the line, which is what the progenitor holds; `None` for a page that does not
 /// parse, has one word, or whose second is longer than [`MAXIMUM_VERB_BYTES`] or holds a space.
-pub fn verb_of_page<'o>(page: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
+pub fn page_verb<'o>(page: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
     let args = program_argument_contract::ArgumentPage::parse(page);
     let mut words = args.iter().skip(1);
     let verb = words.next()?;
@@ -283,7 +283,7 @@ mod tests {
         let read = |words: &[&[u8]]| {
             let page = page(words);
             let mut out = [0u8; MAXIMUM_VERB_BYTES];
-            verb_of_page(&page, &mut out).map(<[u8]>::to_vec)
+            page_verb(&page, &mut out).map(<[u8]>::to_vec)
         };
         assert_eq!(
             read(&[b"jig", b"sixteen-bytes-ab"]),
@@ -382,7 +382,7 @@ mod tests {
     /// whole; a line that says no `--within` names none.
     #[test]
     fn a_delegated_line_names_an_approval_of_at_most_thirty_two_bytes() {
-        let named = |words: &[&[u8]], out: &mut [u8; 32]| delegated_within(&page(words), out);
+        let named = |words: &[&[u8]], out: &mut [u8; 32]| delegated_identity(&page(words), out);
         let mut out = [0u8; 32];
         assert_eq!(
             named(

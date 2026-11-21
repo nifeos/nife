@@ -16,7 +16,7 @@
 //! calef's naming pass.
 
 use grant_plan::word::Cursor;
-use grant_plan::{Command, Refusal, trim};
+use grant_plan::{CommandLine, Refusal};
 
 use crate::sequence;
 
@@ -80,7 +80,7 @@ pub(crate) fn brace_step(line: &[u8], i: usize, depth: usize) -> i8 {
 ///
 /// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
 pub fn body(tail: &[u8]) -> Result<&[u8], Refusal> {
-    let t = trim(tail);
+    let t = tail.trim_ascii();
     if t.first() != Some(&b'{') || !is_word_brace(t, 0) {
         return Err(Refusal::ScopeMalformed);
     }
@@ -92,7 +92,7 @@ pub fn body(tail: &[u8]) -> Result<&[u8], Refusal> {
                 b'{' if is_word_brace(t, i) => depth += 1,
                 b'}' if is_word_brace(t, i) => {
                     if depth == 0 {
-                        let inner = trim(&t[1..i]);
+                        let inner = t[1..i].trim_ascii();
                         if i + 1 != t.len() || inner.is_empty() {
                             return Err(Refusal::ScopeMalformed);
                         }
@@ -142,14 +142,17 @@ fn walk(commands: &[u8], level: usize) -> Result<(), Refusal> {
     for &(_, segment) in seq.segments() {
         let mut command = grant_plan::parse(segment);
         // The prefix words wrap a whole command line, which may itself be a block or a job verb.
-        while let Command::Time(t) | Command::Xargs(t) = command {
+        while let CommandLine::Time(t) | CommandLine::Xargs(t) = command {
             command = grant_plan::parse(t);
         }
         match command {
-            Command::Kill(_) | Command::Wait(_) | Command::Fg(_) | Command::Bg(_) => {
+            CommandLine::Kill(_)
+            | CommandLine::Wait(_)
+            | CommandLine::Foreground(_)
+            | CommandLine::Background(_) => {
                 return Err(Refusal::ScopeCannotRestore);
             }
-            Command::Scope(t) => {
+            CommandLine::Scope(t) => {
                 if level >= MAXIMUM_DEPTH {
                     return Err(Refusal::ScopeTooDeep);
                 }

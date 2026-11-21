@@ -1,5 +1,5 @@
-//! **Reading a line**: `tokenize`, `argv`, `parse`, the `user` and `vouch` verbs, `parse_run`,
-//! and `ParsedInvocation`. `parse_run` is the only thing that builds a `ParsedInvocation`, so its fields stay private
+//! **Reading a line**: `tokenize`, `write_argument_page`, `parse`, the `user` and `vouch` verbs, `parse_invocation`,
+//! and `ParsedInvocation`. `parse_invocation` is the only thing that builds a `ParsedInvocation`, so its fields stay private
 //! here (§272, fork 3).
 //!
 //! The crate root re-exports every public item (§272 (the grant-plan crate root splits into
@@ -8,20 +8,20 @@
 //! Name: provisional (milestone 842, 2026-10-11), as are its sibling modules' names.
 
 use crate::{
-    Command, MAXIMUM_SHORT_OPTIONS, MAXIMUM_VERB_BYTES, Refusal, TouchOperands, parse_u64,
-    split_first_word, trim, verb_key, word,
+    CommandLine, MAXIMUM_SHORT_OPTIONS, MAXIMUM_VERB_BYTES, Refusal, TouchOperands, parse_u64,
+    split_first_word, verb_key, word,
 };
 
 /// Split a command line into whitespace-separated tokens, writing them into `out` and returning
 /// the filled prefix. A tiny `no_std` tokenizer: no allocation, bounded by `out.len()`. Tokens
-/// past `out.len()` are not returned; [`parse_run`], which gives it sixteen slots, refuses the
+/// past `out.len()` are not returned; [`parse_invocation`], which gives it sixteen slots, refuses the
 /// first of them rather than losing it, so a caller that needs every token reads a line it knows
-/// to be short, or walks it one token at a time as `each_word` does.
+/// to be short, or walks it one token at a time as `for_each_word` does.
 ///
 /// **Whitespace inside quotes is not a separator** (milestone 67). The quotes stay on the token,
 /// because this function's job is where a token ends and [`word::read`]'s is what it means; a
 /// caller that wants the name rather than the spelling asks for it. That split is what lets
-/// [`parse_run`] refuse `a"b"` in one place instead of every scanner having to.
+/// [`parse_invocation`] refuse `a"b"` in one place instead of every scanner having to.
 pub fn tokenize<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> &'b [&'a [u8]] {
     split_tokens(line, out).0
 }
@@ -56,31 +56,31 @@ fn split_tokens<'a, 'b>(line: &'a [u8], out: &'b mut [&'a [u8]]) -> (&'b [&'a [u
 /// words it carries.
 ///
 /// `line` is one command: the program's name and its words, no operator. Every word is read as
-/// [`parse_run`] reads one, quotes off, and none is classified. The name is `argv[0]` as typed,
+/// [`parse_invocation`] reads one, quotes off, and none is classified. The name is `argv[0]` as typed,
 /// because `ripgrep` skips the first element and `clap` treats it as the binary's name. Refused,
 /// with the page left not an argv, for [`check_words`]'s reasons, which the planner already asked
 /// of the same line.
-pub fn argv(
+pub fn write_argument_page(
     line: &[u8],
     page: &mut [u8; program_argument_contract::PAGE_BYTES],
 ) -> Result<u32, Refusal> {
     let mut b =
         program_argument_contract::PageBuilder::new(page).map_err(|_| Refusal::ArgumentsTooLong)?;
-    each_word(line, &mut |w| {
+    for_each_word(line, &mut |w| {
         b.push(w).map_err(|_| Refusal::ArgumentsTooLong)
     })?;
     Ok(b.finish())
 }
 
-/// **Whether [`argv`] would take `line`**, without a page to write on. The planner asks it, so a
+/// **Whether [`write_argument_page`] would take `line`**, without a page to write on. The planner asks it, so a
 /// line is refused at the prompt, and in `caps`, before anything is spawned. Three reasons: quotes
 /// that do not make sense ([`word::read`]'s), an unquoted pattern
 /// ([`Refusal::PatternInArguments`]), and more than one page ([`Refusal::ArgumentsTooLong`]). There
-/// is no word-count ceiling beyond the page, unlike [`parse_run`]'s sixteen tokens, because nothing
+/// is no word-count ceiling beyond the page, unlike [`parse_invocation`]'s sixteen tokens, because nothing
 /// here is placed into a slot.
 pub fn check_words(line: &[u8]) -> Result<(), Refusal> {
     let mut used = 0usize;
-    each_word(line, &mut |w| {
+    for_each_word(line, &mut |w| {
         used += program_argument_contract::record_bytes(w.len());
         if used > program_argument_contract::MAXIMUM_RECORDS_BYTES {
             Err(Refusal::ArgumentsTooLong)
@@ -90,11 +90,11 @@ pub fn check_words(line: &[u8]) -> Result<(), Refusal> {
     })
 }
 
-/// Every word of `line`, quotes off, with an unquoted pattern refused. The one walk [`argv`] and
+/// Every word of `line`, quotes off, with an unquoted pattern refused. The one walk [`write_argument_page`] and
 /// [`check_words`] share, so the check and the page cannot disagree about what a word is, and the
 /// shell's designation walks it too (milestone 205), so it designates from the same words the
 /// program hears. Name: provisional.
-pub fn each_word(
+pub fn for_each_word(
     line: &[u8],
     f: &mut dyn FnMut(&[u8]) -> Result<(), Refusal>,
 ) -> Result<(), Refusal> {
@@ -125,52 +125,52 @@ pub const BUILTINS: &[&[u8]] = &[
     b"mkdir", b"pwd", b"scope", b"time", b"touch", b"wait", b"xargs",
 ];
 
-/// Parse a whole command line into a [`Command`]. Pure and allocation-free.
+/// Parse a whole command line into a [`CommandLine`]. Pure and allocation-free.
 ///
 /// The first token selects the command, and one that is not a builtin is a **program name**.
 /// `echo` keeps the rest of the line verbatim; the prefix words (`caps`, `time`, `xargs`) keep it
 /// unsplit, since their operand is a command line; everything else works on tokens. Builtins win
 /// over programs, so the shell's program table must never learn a name
 /// that is also a builtin.
-pub fn parse(line: &[u8]) -> Command<'_> {
-    let trimmed = trim(line);
+pub fn parse(line: &[u8]) -> CommandLine<'_> {
+    let trimmed = line.trim_ascii();
     if trimmed.is_empty() {
-        return Command::Empty;
+        return CommandLine::Empty;
     }
     let (first, rest) = split_first_word(trimmed);
     // A quoted builtin name still names the builtin. A first word whose quotes do not make sense
-    // falls through to `parse_run`, the one place a quoting refusal is raised.
+    // falls through to `parse_invocation`, the one place a quoting refusal is raised.
     let first = match word::read(first) {
         Ok(w) => w.text,
-        Err(_) => return Command::Run(parse_run(trimmed)),
+        Err(_) => return CommandLine::Run(parse_invocation(trimmed)),
     };
     match first {
-        b"help" => Command::Help,
-        b"echo" => Command::Echo(rest),
-        b"caps" => Command::Capabilities(rest),
-        b"time" => Command::Time(rest),
-        b"xargs" => Command::Xargs(rest),
-        b"scope" => Command::Scope(rest),
+        b"help" => CommandLine::Help,
+        b"echo" => CommandLine::Echo(rest),
+        b"caps" => CommandLine::Capabilities(rest),
+        b"time" => CommandLine::Time(rest),
+        b"xargs" => CommandLine::Xargs(rest),
+        b"scope" => CommandLine::Scope(rest),
         // A path operand is one designation however many slashes it has, so `trim` is all the
         // classification it needs.
-        b"cd" => Command::Cd(trim(rest)),
-        b"pwd" => Command::Pwd,
-        b"ls" => Command::Ls(trim(rest)),
-        b"mkdir" => Command::Mkdir(trim(rest)),
+        b"cd" => CommandLine::Cd(rest.trim_ascii()),
+        b"pwd" => CommandLine::Pwd,
+        b"ls" => CommandLine::Ls(rest.trim_ascii()),
+        b"mkdir" => CommandLine::Mkdir(rest.trim_ascii()),
         // One path, or with `-t` two words: the instant's text, unparsed, and then the name.
         b"touch" => {
-            let rest = trim(rest);
+            let rest = rest.trim_ascii();
             match rest.strip_prefix(b"-t") {
                 Some(after_flag)
                     if after_flag.is_empty() || after_flag[0].is_ascii_whitespace() =>
                 {
-                    let (at, name) = split_first_word(trim(after_flag));
-                    Command::Touch(TouchOperands {
+                    let (at, name) = split_first_word(after_flag.trim_ascii());
+                    CommandLine::Touch(TouchOperands {
                         at: Some(at),
-                        name: trim(name),
+                        name: name.trim_ascii(),
                     })
                 }
-                _ => Command::Touch(TouchOperands {
+                _ => CommandLine::Touch(TouchOperands {
                     at: None,
                     name: rest,
                 }),
@@ -178,22 +178,22 @@ pub fn parse(line: &[u8]) -> Command<'_> {
         }
         // One word for the target, and the trimmed rest for the name, untokenized.
         b"bind" => {
-            let rest = trim(rest);
+            let rest = rest.trim_ascii();
             let (target, name) = split_first_word(rest);
-            Command::Bind(target, trim(name))
+            CommandLine::Bind(target, name.trim_ascii())
         }
-        b"apropos" => Command::Apropos(trim(rest)),
-        b"vouch" => Command::Vouch(trim(rest)),
-        b"user" => Command::User(trim(rest)),
-        b"jobs" => Command::Jobs,
-        b"wait" => Command::Wait(trim(rest)),
-        b"kill" => Command::Kill(trim(rest)),
-        b"fg" => Command::Fg(trim(rest)),
-        b"bg" => Command::Bg(trim(rest)),
+        b"apropos" => CommandLine::Apropos(rest.trim_ascii()),
+        b"vouch" => CommandLine::Vouch(rest.trim_ascii()),
+        b"user" => CommandLine::User(rest.trim_ascii()),
+        b"jobs" => CommandLine::Jobs,
+        b"wait" => CommandLine::Wait(rest.trim_ascii()),
+        b"kill" => CommandLine::Kill(rest.trim_ascii()),
+        b"fg" => CommandLine::Foreground(rest.trim_ascii()),
+        b"bg" => CommandLine::Background(rest.trim_ascii()),
         // `rm` is deliberately not a builtin: a builtin runs with the shell's whole endowment, and
         // a destructive loop takes an attenuated grant instead. Whether a program exists is
         // `plan`'s question, not the parser's.
-        _ => Command::Run(parse_run(trimmed)),
+        _ => CommandLine::Run(parse_invocation(trimmed)),
     }
 }
 
@@ -212,7 +212,7 @@ pub fn parse(line: &[u8]) -> Command<'_> {
 /// ```
 #[allow(clippy::result_unit_err)]
 pub fn job_operand(tail: &[u8]) -> Result<Option<usize>, ()> {
-    let t = trim(tail);
+    let t = tail.trim_ascii();
     if t.is_empty() {
         return Ok(None);
     }
@@ -242,7 +242,7 @@ pub fn job_operand(tail: &[u8]) -> Result<Option<usize>, ()> {
 /// ```
 #[allow(clippy::result_unit_err)]
 pub fn kill_operands(tail: &[u8]) -> Result<(bool, usize), ()> {
-    let t = trim(tail);
+    let t = tail.trim_ascii();
     let (force, job) = match t.strip_prefix(b"-9") {
         Some(rest) if rest.first().is_some_and(u8::is_ascii_whitespace) => (true, rest),
         _ => (false, t),
@@ -264,11 +264,11 @@ pub enum UserVerb<'a> {
     Usage,
 }
 
-/// Classify [`Command::User`]'s tail: a verb and one name of at most [`crate::MAXIMUM_WORDS_NAME_BYTES`] bytes, the
+/// Classify [`CommandLine::User`]'s tail: a verb and one name of at most [`crate::MAXIMUM_WORDS_NAME_BYTES`] bytes, the
 /// most an identity can be and still have a subtree.
 pub fn user_verb(tail: &[u8]) -> UserVerb<'_> {
-    let (verb, rest) = split_first_word(trim(tail));
-    let name = trim(rest);
+    let (verb, rest) = split_first_word(tail.trim_ascii());
+    let name = rest.trim_ascii();
     let one_name = !name.is_empty()
         && name.len() <= crate::MAXIMUM_WORDS_NAME_BYTES
         && !name.starts_with(b"#")
@@ -280,11 +280,11 @@ pub fn user_verb(tail: &[u8]) -> UserVerb<'_> {
     }
 }
 
-/// Classify [`Command::Vouch`]'s tail: one operand, a path (it has a `/`), whose last component
+/// Classify [`CommandLine::Vouch`]'s tail: one operand, a path (it has a `/`), whose last component
 /// ([`vouched_name`]) the installed-programs table can record. `None` for anything else, which the shell
 /// answers with what it takes.
-pub fn vouch_verb(tail: &[u8]) -> Option<&[u8]> {
-    let path = trim(tail);
+pub fn vouch_operand(tail: &[u8]) -> Option<&[u8]> {
+    let path = tail.trim_ascii();
     let one_word = !path.is_empty() && !path.iter().any(u8::is_ascii_whitespace);
     match vouched_name(path) {
         Some(_) if one_word && path.contains(&b'/') => Some(path),
@@ -314,7 +314,7 @@ pub fn vouched_name(path: &[u8]) -> Option<&[u8]> {
 /// classify is a flag: a token starting with `-` that is not `--mem` is refused rather than allowed
 /// to fall into the file position, which is the single way a typo could otherwise become a
 /// capability transfer.
-pub fn parse_run(line: &[u8]) -> ParsedInvocation<'_> {
+pub fn parse_invocation(line: &[u8]) -> ParsedInvocation<'_> {
     let mut toks: [&[u8]; 16] = [b""; 16];
     let (toks, left_over) = split_tokens(line, &mut toks);
 
@@ -455,10 +455,10 @@ pub struct ParsedInvocation<'a> {
     /// reaches that position.
     pub unexpected: Option<&'a [u8]>,
     /// **The line's quotes do not make sense** ([`Refusal::UnclosedQuote`] or
-    /// [`Refusal::PartlyQuoted`]), carried rather than returned because [`parse_run`] has no error
+    /// [`Refusal::PartlyQuoted`]), carried rather than returned because [`parse_invocation`] has no error
     /// channel and because this is a fact about the *line*, not about any program.
     ///
-    /// [`plan_against_with`](crate::plan_against_with) answers it **before** it resolves the program, which is the one place
+    /// [`plan_against_with_streams`](crate::plan_against_with_streams) answers it **before** it resolves the program, which is the one place
     /// the ordering matters: a line whose words cannot be read has no reliable first word either, so
     /// "no such program" would be a true sentence about a name nobody typed.
     pub misquoted: Option<Refusal>,
@@ -471,13 +471,13 @@ impl<'a> ParsedInvocation<'a> {
         &self.positional_tokens[..self.positional_count]
     }
 
-    /// The whole invocation as typed, for [`argv`]. See the field.
+    /// The whole invocation as typed, for [`write_argument_page`]. See the field.
     pub fn line(&self) -> &'a [u8] {
         self.line
     }
 
     /// The short-option letters typed, in order. Meaningless until a manifest says which exist.
-    pub fn options(&self) -> &[u8] {
+    pub fn short_options(&self) -> &[u8] {
         &self.short_options[..self.short_option_count]
     }
 
@@ -495,18 +495,18 @@ impl<'a> ParsedInvocation<'a> {
 mod tests;
 
 /// **The line's verb**: its second word, quotes off, as the program will hear it as `argv[1]`
-/// (`each_word`'s reading, which `grant_plan::argv` assembles the page from), followed by a
+/// (`for_each_word`'s reading, which `grant_plan::write_argument_page` assembles the page from), followed by a
 /// space and the third word when both fit in [`MAXIMUM_VERB_BYTES`] bytes, which is the key a verb with
 /// an option has (`list -u`). `None` when there is no second word, when it is longer than
 /// [`MAXIMUM_VERB_BYTES`], or when it holds a space itself, so a quoted `'list -u'` is no verb. Copied
 /// into `out`, because a quoted word's text is a temporary.
 ///
 /// Name: provisional.
-pub fn verb_of<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
+pub fn line_verb<'o>(line: &[u8], out: &'o mut [u8; MAXIMUM_VERB_BYTES]) -> Option<&'o [u8]> {
     let mut seen = 0usize;
     let mut held = [[0u8; MAXIMUM_VERB_BYTES]; 2];
     let mut lens = [None; 2];
-    let _ = each_word(line, &mut |w| {
+    let _ = for_each_word(line, &mut |w| {
         seen += 1;
         if (2..=3).contains(&seen) && w.len() <= MAXIMUM_VERB_BYTES {
             held[seen - 2][..w.len()].copy_from_slice(w);
