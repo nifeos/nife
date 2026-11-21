@@ -18,7 +18,7 @@ diff --git a/kernel/src/sched/switch.rs b/kernel/src/sched/switch.rs
 index 82ba2d245..027fe8963 100644
 --- a/kernel/src/sched/switch.rs
 +++ b/kernel/src/sched/switch.rs
-@@ -579,7 +579,5 @@ pub(super) fn reap_switched_out(
+@@ -460,7 +460,5 @@ pub(super) fn reap_switched_out(
          .and_then(|s| s.threads.get(prev))
          .and_then(|t| t.process);
      process::reap_corpse(guard, prev);

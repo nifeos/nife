@@ -13,7 +13,7 @@ diff --git a/kernel/src/sched/process.rs b/kernel/src/sched/process.rs
 index 68aa9f979..662e26f44 100644
 --- a/kernel/src/sched/process.rs
 +++ b/kernel/src/sched/process.rs
-@@ -399,11 +399,7 @@ pub(super) fn reap_corpses(pid: ProcessId) {
+@@ -413,11 +413,7 @@ pub(super) fn reap_corpses(pid: ProcessId) {
              .iter_mut()
              .find(|t| stranded(t) && !t.handshake.on_cpu && !t.handshake.wake_pending)
              .map(|t| t.id);

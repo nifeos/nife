@@ -11,7 +11,7 @@ empty, so its `WAKE` answers `NoSuchSlot`.
 diff --git a/kernel/src/sched/process.rs b/kernel/src/sched/process.rs
 --- a/kernel/src/sched/process.rs
 +++ b/kernel/src/sched/process.rs
-@@ -165,7 +165,7 @@ pub(super) fn join(
+@@ -170,7 +170,7 @@ pub(super) fn join(
              }
          }
          (*ptr).process = Some(pid);
