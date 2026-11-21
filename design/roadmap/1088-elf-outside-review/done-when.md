@@ -11,7 +11,7 @@ An appendix to [the milestone](../1088-elf-outside-review.md).
 - `page_range` and the overlap check take the page size as a value that cannot be zero or a
   non-power-of-two. A harness quantifies over every power of two (items 5 and 6).
 - No `as usize` narrows a file field. `usize::try_from` does, and the four sites are tests of
-  `SegmentOutOfBounds` or `BadProgramHeaders` on a forged header with a bit above 32 set (item 7).
+  `SegmentOutOfBounds` or `ProgramHeadersOutOfBounds` on a forged header with a bit above 32 set (item 7).
 - `Error` and `NoteError` implement `Display` and `core::error::Error`. `Elf` is `Debug`, `Clone`
   and `Copy`. The UEFI loader keeps its own wording table and the kernel its own `LoadError`
   display, worded for their readers (item 8).

@@ -100,7 +100,7 @@ impl<'a> Elf<'a> {
     /// validating every member of an aarch64 package on an `x86_64` build host) calls this. Every
     /// other check is the same as `parse`'s.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn parse_for_machine(bytes: &'a [u8], machine: u16) -> Result<Self, Error> {
         Self::parse_with(bytes, machine, PageBytes::FOUR_KIBIBYTES)
     }
@@ -112,7 +112,7 @@ impl<'a> Elf<'a> {
     /// different 4 KiB pages of one 16 KiB page pass `parse`, and a loader mapping 16 KiB pages
     /// then meets a page it has already mapped, after part of the program is in place.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn parse_with(bytes: &'a [u8], machine: u16, page_bytes: PageBytes) -> Result<Self, Error> {
         if bytes.len() < EHDR_SIZE {
             return Err(Error::TooSmall);
@@ -146,12 +146,13 @@ impl<'a> Elf<'a> {
         let entry = u64le(bytes, 24);
         // A 64-bit offset the target cannot hold names nothing, rather than truncating onto
         // other bytes on a target whose `usize` is narrower.
-        let phoff = usize::try_from(u64le(bytes, 32)).map_err(|_| Error::BadProgramHeaders)?;
+        let phoff =
+            usize::try_from(u64le(bytes, 32)).map_err(|_| Error::ProgramHeadersOutOfBounds)?;
         let phentsize = u16le(bytes, 54) as usize;
         let phnum = u16le(bytes, 56) as usize;
 
         if phentsize < PHDR_SIZE {
-            return Err(Error::BadProgramHeaders);
+            return Err(Error::ProgramHeadersOutOfBounds);
         }
         if phnum > MAXIMUM_PHNUM {
             return Err(Error::TooManyProgramHeaders);
@@ -162,12 +163,12 @@ impl<'a> Elf<'a> {
         // kind of arithmetic that wraps.
         let table_len = phnum
             .checked_mul(phentsize)
-            .ok_or(Error::BadProgramHeaders)?;
+            .ok_or(Error::ProgramHeadersOutOfBounds)?;
         let table_end = phoff
             .checked_add(table_len)
-            .ok_or(Error::BadProgramHeaders)?;
+            .ok_or(Error::ProgramHeadersOutOfBounds)?;
         if table_end > bytes.len() {
-            return Err(Error::BadProgramHeaders);
+            return Err(Error::ProgramHeadersOutOfBounds);
         }
 
         let elf = Elf {
@@ -229,7 +230,7 @@ impl<'a> Elf<'a> {
     /// The `i`th program header, if it is a `PT_LOAD`.
     fn segment_at(&self, i: usize) -> Result<Option<Segment<'a>>, Error> {
         let off = program_header_offset(self.phoff, i, self.phentsize, self.table_end)
-            .ok_or(Error::BadProgramHeaders)?;
+            .ok_or(Error::ProgramHeadersOutOfBounds)?;
         let ph = &self.bytes[off..off + PHDR_SIZE];
 
         if u32le(ph, 0) != PT_LOAD {
@@ -293,7 +294,7 @@ pub(crate) fn program_header_offset(
 /// raw fields and the file length, so Kani proves it panic-free and in bounds for every input.
 ///
 /// Returns the exclusive end offset of the segment's file data, so `[p_offset, end)` lies within a
-/// `file_len`-byte file, or the error the fields earn: `SegmentTruncated`, `SegmentOutOfBounds`,
+/// `file_len`-byte file, or the error the fields earn: `MemorySmallerThanFile`, `SegmentOutOfBounds`,
 /// then `AddressOverflow`, in that order. Loopless so the proofs reach it, which the whole parse
 /// is not.
 pub(crate) fn check_segment_bounds(
@@ -306,7 +307,7 @@ pub(crate) fn check_segment_bounds(
     // The segment cannot claim less memory than it has bytes on disk.
     // A `memsz` too large for the target is larger than any `filesz` that fits it.
     if usize::try_from(memsz).is_ok_and(|memsz| memsz < filesz) {
-        return Err(Error::SegmentTruncated);
+        return Err(Error::MemorySmallerThanFile);
     }
 
     // The file range must lie within the file. `p_offset` and `filesz` are hostile, so the add is

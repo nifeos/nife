@@ -7,19 +7,19 @@ pub(crate) const PT_LOAD: u32 = 1;
 
 /// `PF_X` in `p_flags`: the segment holds code.
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+/// Name: ratified 2026-11-21 (UTC).
 #[doc(alias = "PF_X")]
 pub const EXECUTABLE: u32 = 1;
 
 /// `PF_W` in `p_flags`: the segment may be written.
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+/// Name: ratified 2026-11-21 (UTC).
 #[doc(alias = "PF_W")]
 pub const WRITABLE: u32 = 2;
 
 /// `PF_R` in `p_flags`: the segment may be read.
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+/// Name: ratified 2026-11-21 (UTC).
 #[doc(alias = "PF_R")]
 pub const READABLE: u32 = 4;
 
@@ -29,7 +29,7 @@ pub struct Segment<'a> {
     /// `p_vaddr`: the virtual address the program wants this at. Its choice, and the loader
     /// honours it or refuses.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     #[doc(alias = "p_vaddr")]
     pub virtual_address: u64,
 
@@ -42,13 +42,13 @@ pub struct Segment<'a> {
     /// meets a kernel image, whose segments are linked high and loaded low with no fixed offset
     /// between the two. Nothing in the parse checks it.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     #[doc(alias = "p_paddr")]
     pub physical_address: u64,
 
     /// `p_memsz`: how many bytes of **memory** it occupies. May exceed `data.len()`.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     #[doc(alias = "p_memsz")]
     pub memory_bytes: u64,
 
@@ -107,19 +107,19 @@ impl Segment<'_> {
 /// assert_eq!(PageBytes::new(3000), None);
 /// ```
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PageBytes(u64);
 
 impl PageBytes {
     /// A 4 KiB page, the smallest page each of `aarch64`, `riscv64` and `x86_64` maps.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     pub const FOUR_KIBIBYTES: PageBytes = PageBytes(4096);
 
     /// `bytes` as a page size, or `None` when it is zero or not a power of two.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     pub const fn new(bytes: u64) -> Option<Self> {
         if bytes.is_power_of_two() {
             Some(Self(bytes))
@@ -130,7 +130,7 @@ impl PageBytes {
 
     /// The page size in bytes.
     ///
-    /// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+    /// Name: ratified 2026-11-21 (UTC).
     pub const fn get(self) -> u64 {
         self.0
     }

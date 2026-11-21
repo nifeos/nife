@@ -42,13 +42,13 @@ parses them at 16 KiB.
 Finding: `src/parse.rs` line 116 (`phoff`), `:202` (`p_offset`), `:205` (`filesz`) and `:246` (`memsz as
 usize`) narrow a `u64` from the file with `as`. On a 32-bit target a `p_offset` of `0x1_0000_0010`
 becomes `0x10` and the bounds check passes on the wrong bytes. `memsz as usize` turns
-`SegmentTruncated` into a comparison of low halves. No read goes out of bounds, because the code checks every slice after the cast, so this is wrong data, not memory unsafety. The note reader already does
+`MemorySmallerThanFile` into a comparison of low halves. No read goes out of bounds, because the code checks every slice after the cast, so this is wrong data, not memory unsafety. The note reader already does
 it right: `NoteSegment::range` (`src/note.rs` lines 53 to 54) and `from_head` (`:90`) use `usize::try_from`.
 The three bare-metal targets the crate names are 64-bit, so no current user feels it. Inferred
 from reading; the review built no 32-bit target.
 
 Change: `usize::try_from(...).map_err(|_| Error::...)` at the four sites, `SegmentOutOfBounds` for
-the offsets and sizes and `BadProgramHeaders` for `phoff`, and `check_segment_bounds` takes the
+the offsets and sizes and `ProgramHeadersOutOfBounds` for `phoff`, and `check_segment_bounds` takes the
 converted values as it does now so the three harnesses stay as they are. Door: two-way. Effort: XS.
 
 #### The error types implement neither `Display` nor `core::error::Error`, and `Elf` derives nothing

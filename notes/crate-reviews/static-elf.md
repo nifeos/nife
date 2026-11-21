@@ -115,23 +115,23 @@ backs these claims today (see above).
 
 ## Names
 
-Every name below is provisional. The architect ratifies them later, one at a time; this package
-ratifies none. The ELF specification's spelling is a `#[doc(alias)]` on each item that has one.
+The names below were ratified on 2026-11-21 (UTC), except the three `MACHINE_*` constants, which
+stay provisional. The ELF specification's spelling is a `#[doc(alias)]` on each item that has one.
 
 | item | kind | spelling and alias |
 |---|---|---|
 | `static_elf` | crate | ratified 2026-11-14 (UTC) |
 | `Elf` | type | the format's name, which the acronym test keeps |
-| `Elf::{parse, parse_for_machine, parse_with, entry, segments, note}` | methods | `parse_for_machine` and `parse_with` are provisional |
-| `Segment` and its fields `virtual_address`, `physical_address`, `memory_bytes`, `flags`, `data` | type, fields | aliases `p_vaddr`, `p_paddr`, `p_memsz`, `p_flags`, `p_filesz` |
+| `Elf::{parse, parse_for_machine, parse_with, entry, segments, note}` | methods | `parse_for_machine` and `parse_with` ratified 2026-11-21 (UTC) |
+| `Segment` and its fields `virtual_address`, `physical_address`, `memory_bytes`, `flags`, `data` | type, fields | aliases `p_vaddr`, `p_paddr`, `p_memsz`, `p_flags`, `p_filesz`; fields ratified 2026-11-21 (UTC) |
 | `Segment::{is_readable, is_writable, is_executable, page_range}` | methods | spelled out |
-| `READABLE`, `WRITABLE`, `EXECUTABLE` | constants | aliases `PF_R`, `PF_W`, `PF_X` |
-| `PageBytes`, `PageBytes::{new, get, FOUR_KIBIBYTES}` | type, constructor, accessor, constant | unit in the name |
-| `MACHINE_AARCH64`, `MACHINE_RISCV`, `MACHINE_X86_64` | constants | aliases `EM_AARCH64`, `EM_RISCV`, `EM_X86_64` |
-| `NATIVE_MACHINE` | constant | the machine `Elf::parse` accepts in this build; open to removal before a tag |
-| `Error` and its seventeen variants | enum | `TooSmall`, `BadMagic`, `Not64Bit`, `NotLittleEndian`, `BadVersion`, `WrongMachine`, `NeedsRelocation`, `NotExecutable`, `BadProgramHeaders`, `SegmentOutOfBounds`, `SegmentTruncated`, `WritableAndExecutable`, `SegmentUnreachable`, `SegmentsOverlap`, `EntryNotExecutable`, `AddressOverflow`, `TooManyProgramHeaders` |
-| `NoteError` and its five variants | enum | `NotReadable`, `SegmentOutOfBounds`, `BadAlignment`, `Truncated`, `Duplicate` |
-| `NoteSegments`, `NoteSegments::from_head`, `NoteSegment` with fields `offset`, `bytes`, `alignment` and method `range`, `NoteSearch`, `NoteSearch::{new, segment}` | types, methods, fields | aliases `p_offset`, `p_filesz`, `p_align` on the three fields |
+| `READABLE`, `WRITABLE`, `EXECUTABLE` | constants | aliases `PF_R`, `PF_W`, `PF_X`; ratified 2026-11-21 (UTC) |
+| `PageBytes`, `PageBytes::{new, get, FOUR_KIBIBYTES}` | type, constructor, accessor, constant | unit in the name; ratified 2026-11-21 (UTC) |
+| `MACHINE_AARCH64`, `MACHINE_RISCV`, `MACHINE_X86_64` | constants | aliases `EM_AARCH64`, `EM_RISCV`, `EM_X86_64`; provisional |
+| `NATIVE_MACHINE` | constant | the machine `Elf::parse` accepts in this build; ratified 2026-11-21 (UTC), stays public |
+| `Error` and its seventeen variants | enum | ratified 2026-11-21 (UTC); `MemorySmallerThanFile` replaces `SegmentTruncated` and `ProgramHeadersOutOfBounds` replaces `BadProgramHeaders`. Variants: `TooSmall`, `BadMagic`, `Not64Bit`, `NotLittleEndian`, `BadVersion`, `WrongMachine`, `NeedsRelocation`, `NotExecutable`, `ProgramHeadersOutOfBounds`, `SegmentOutOfBounds`, `MemorySmallerThanFile`, `WritableAndExecutable`, `SegmentUnreachable`, `SegmentsOverlap`, `EntryNotExecutable`, `AddressOverflow`, `TooManyProgramHeaders` |
+| `NoteError` and its five variants | enum | ratified 2026-11-21 (UTC): `NotReadable`, `SegmentOutOfBounds`, `BadAlignment`, `Truncated`, `Duplicate` |
+| `NoteSegments`, `NoteSegments::from_head`, `NoteSegment` with fields `offset`, `bytes`, `alignment` and method `range`, `NoteSearch`, `NoteSearch::{new, segment}` | types, methods, fields | aliases `p_offset`, `p_filesz`, `p_align` on the three fields; ratified 2026-11-21 (UTC) |
 
 The abbreviations `ELF` and `PT_NOTE` stay as the format's own terms. `Name:` blocks in the crate
 source stay as built, and `script/crate-move` strips them from the moved copy.

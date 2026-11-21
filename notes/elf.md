@@ -182,7 +182,7 @@ and there are fourteen of them.
 | `NotAarch64` | ...to be an x86 binary. Caught here, rather than as a mystery illegal-instruction fault at EL0. |
 | `NeedsRelocation` | ...to be a PIE. It expects a dynamic linker. We are not one, and running it anyway means jumping to an address that means nothing. |
 | `EntryNotExecutable` | ...to start in its `.data` segment. |
-| `SegmentTruncated` | `p_memsz < p_filesz`. |
+| `MemorySmallerThanFile` | `p_memsz < p_filesz`. |
 
 And one the parser cannot catch, because it is a kernel policy and not an ELF fact:
 

@@ -91,9 +91,9 @@ pub const fn refusal(error: static_elf::Error) -> &'static str {
         WrongMachine => "the embedded kernel is for a different architecture than this loader",
         NeedsRelocation => "the embedded kernel is a PIE and nothing here relocates it",
         NotExecutable => "the embedded kernel is not an executable",
-        BadProgramHeaders => "the embedded kernel's program header table is out of bounds",
+        ProgramHeadersOutOfBounds => "the embedded kernel's program header table is out of bounds",
         SegmentOutOfBounds => "an embedded kernel segment runs past the end of the file",
-        SegmentTruncated => "an embedded kernel segment has more bytes than memory",
+        MemorySmallerThanFile => "an embedded kernel segment has more bytes than memory",
         WritableAndExecutable => {
             "the embedded kernel ships a writable-executable segment (see kernel/link-x86_64.ld)"
         }
@@ -323,9 +323,9 @@ mod tests {
             WrongMachine,
             NeedsRelocation,
             NotExecutable,
-            BadProgramHeaders,
+            ProgramHeadersOutOfBounds,
             SegmentOutOfBounds,
-            SegmentTruncated,
+            MemorySmallerThanFile,
             WritableAndExecutable,
             SegmentUnreachable,
             SegmentsOverlap,

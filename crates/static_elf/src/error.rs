@@ -62,12 +62,12 @@ pub enum Error {
     /// Not an executable at all (a relocatable object, a core dump).
     NotExecutable,
     /// The program header table runs off the end of the file.
-    BadProgramHeaders,
+    ProgramHeadersOutOfBounds,
     /// A segment's file contents run off the end of the file. `p_offset + p_filesz` is hostile,
     /// and a loader that trusted it would map whatever follows the buffer into a process.
     SegmentOutOfBounds,
     /// `p_memsz < p_filesz`: the segment claims to occupy less memory than it has bytes.
-    SegmentTruncated,
+    MemorySmallerThanFile,
     /// A segment that is both writable and executable. A page that is both is how a buffer
     /// overflow becomes code execution, so a loader holding W^X refuses the file asking for one.
     WritableAndExecutable,
@@ -102,9 +102,13 @@ impl core::fmt::Display for Error {
                 "a position-independent or shared object, which needs relocation"
             }
             Error::NotExecutable => "not an executable",
-            Error::BadProgramHeaders => "the program header table runs off the end of the file",
+            Error::ProgramHeadersOutOfBounds => {
+                "the program header table runs off the end of the file"
+            }
             Error::SegmentOutOfBounds => "a segment's file contents run off the end of the file",
-            Error::SegmentTruncated => "a segment claims less memory than it has bytes on disk",
+            Error::MemorySmallerThanFile => {
+                "a segment claims less memory than it has bytes on disk"
+            }
             Error::WritableAndExecutable => "a segment is both writable and executable",
             Error::SegmentUnreachable => "a segment is neither readable nor executable",
             Error::SegmentsOverlap => "two segments want the same page",
