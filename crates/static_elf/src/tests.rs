@@ -339,7 +339,7 @@ fn an_execute_only_segment_is_accepted_and_is_not_readable() {
 /// `e_phentsize` is checked against the size of a program header from both sides: one byte short
 /// is refused, and a larger entry (which the format allows) is not refused for its size.
 #[test]
-fn the_phentsize_boundary_is_one_whole_header() {
+fn the_program_header_entry_size_boundary_is_one_whole_header() {
     let mut bytes = good();
     bytes[54..56].copy_from_slice(&((PHDR_SIZE - 1) as u16).to_le_bytes());
     assert_eq!(
