@@ -58,7 +58,7 @@ pub const SECTORS_PER_BLOCK: u64 = (BLOCK_BYTES as u64) / SECTOR_BYTES;
 /// Equal to `fs::TRANSFER_PAGES` on purpose, so a full file request fans out to one blk request
 /// per RedoxFS `Disk::read_at`/`write_at` call.
 ///
-/// The device DMAs straight into the region, so a larger request would overrun it. A caller that
+/// The device reads and writes the region directly, by direct memory access, so a larger request would overrun it. A caller that
 /// sends [`super::request`]`(operation)`, whose low bits are zero, gets one block ([`request_block_count`]), so
 /// the single-block callers (`disk_surveyor`, `disk_partitioner`, `mkfs`) need no change.
 pub const TRANSFER_BLOCKS: usize = 16;
@@ -88,7 +88,7 @@ pub const fn request_block_count(w0: u64) -> usize {
 }
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, for
-/// `fs::MAXIMUM_TRANSFER_BYTES`'s reason: this contract has no test harness at EL0 (the unprivileged exception level), and a build is the
+/// `fs::MAXIMUM_TRANSFER_BYTES`'s reason: this contract has no test harness in an unprivileged process, and a build is the
 /// only artifact that can be wrong about it there.
 const _: () = {
     assert!(TRANSFER_BLOCKS >= 1);

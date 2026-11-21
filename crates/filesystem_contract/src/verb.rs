@@ -294,7 +294,7 @@ pub const TABLE: [Verb; (LAST - FIRST + 1) as usize] = [
     // The only one of the three that carries a second word: the caller's asserted seconds
     // value, TRUNCATE's reason for putting an offset-shaped quantity in `w1` rather than the
     // length field. `needs_all` carries both rights, exactly as RENAME's does for its two: a
-    // proxy that only asks "does this mutate" needs no finer answer, and the FS server is what
+    // proxy that only asks "does this mutate" needs no finer answer, and the filesystem server is what
     // actually checks each bit.
     row(
         fs::SET_MODIFICATION_TIME_AT,

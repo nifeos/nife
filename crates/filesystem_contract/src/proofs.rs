@@ -1,7 +1,7 @@
 //! **Machine-checked proofs (Kani) of the packers and decoders**, beside the rights proofs in
 //! [`directory`]: every field a word carries comes back out unchanged, no field bleeds into another, and
 //! the verb table is total over the opcode space. Behind `#[cfg(kani)]`, so only `cargo kani`
-//! (`script/verify`) compiles them. See notes/verification.md.
+//! compiles them.
 //!
 //! Name: provisional, after the module every other crate's harnesses live in.
 

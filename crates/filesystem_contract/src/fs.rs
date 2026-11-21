@@ -222,7 +222,7 @@ pub const STATFS: u64 = 18;
 /// many device flushes the block server has completed since it started, this one included, so a
 /// success is `>= 1`; or an error, `EBADF` for a handle the server did not mint.
 ///
-/// The FS server commits each write before replying, so after a successful `SYNC` every
+/// The filesystem server commits each write before replying, so after a successful `SYNC` every
 /// acknowledged write is on the medium the device calls durable. Needs [`super::directory::WRITE`], else
 /// [`super::directory::EROFS`]: a flush stalls the queue for every client, and a holder that may not write
 /// has nothing to make durable. The block server's `EOPNOTSUPP` passes through unchanged.
@@ -317,14 +317,14 @@ pub const BIND_SYNC: u64 = 66;
 /// to [`MAXIMUM_TRANSFER_BYTES`] bytes. Sixteen, so 64 KiB: a tuning number, and this is where it
 /// changes.
 ///
-/// The FS server maps all of them. A client maps as many as it intends to use and asks for no
+/// The filesystem server maps all of them. A client maps as many as it intends to use and asks for no
 /// more, so one that moves 4096 bytes maps one page and needs no change. Nothing checks that a
 /// client asked for no more than it mapped: one that sends `len = MAXIMUM_TRANSFER_BYTES` with one page
 /// mapped faults on its own second page, after the server has done the work.
 pub const TRANSFER_PAGES: usize = 16;
 
 /// **The largest payload one [`READ`] or [`WRITE`] may carry**, in bytes: the whole file
-/// channel ([`TRANSFER_PAGES`] pages). The FS server clamps every request's length to this,
+/// channel ([`TRANSFER_PAGES`] pages). The filesystem server clamps every request's length to this,
 /// which is the one bound that keeps a request inside the region it shares.
 ///
 /// Setting [`TRANSFER_PAGES`] to 1 makes this [`super::PAGE_BYTES`], the one-page contract, which is
@@ -367,7 +367,7 @@ pub const CLIENT_WINDOWS: usize = 8;
 pub const MAXIMUM_LENGTH_BYTES: u64 = (1 << 40) - 1;
 
 /// **The channel's arithmetic, checked by the build rather than by a test**, because a test does
-/// not run in the EL0 (unprivileged) build and a build is the only artifact that can be wrong about this.
+/// not run in the unprivileged build and a build is the only artifact that can be wrong about this.
 ///
 /// Both halves have a failure mode worth naming. A channel that is not a whole number of pages
 /// cannot be wired at all, since a mapping is per page. And a length the packing truncates would

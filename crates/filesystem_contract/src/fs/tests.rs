@@ -85,7 +85,7 @@ fn a_rename_carries_two_directories_and_two_lengths_without_them_bleeding() {
 ///
 /// The arithmetic the channel has to satisfy is a `const` block next to the constants
 /// themselves, because a build is the only artifact that can be wrong about it and a test does
-/// not run in the EL0 build. What is left here is the round trip, which needs the packing.
+/// not run in the unprivileged build. What is left here is the round trip, which needs the packing.
 #[test]
 fn a_single_page_request_still_means_one_page() {
     let w0 = fs::request(fs::READ, 1, PAGE_BYTES as u64);

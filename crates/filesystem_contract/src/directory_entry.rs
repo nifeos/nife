@@ -23,11 +23,9 @@ pub fn encode(out: &mut [u8], name: &[u8], is_directory: bool) -> Option<usize> 
     Some(n)
 }
 
-/// Walk the records in `buf` (exactly the `r0` bytes a [`fs::READDIR`] reply filled). Stops at
+/// Walk the records in `buf` (exactly the `r0` bytes a `fs::READDIR` reply filled). Stops at
 /// the first record that runs off the end, which is what a truncated or corrupt reply looks like
 /// and which must not be read as a name.
-///
-/// [`fs::READDIR`]: super::fs::READDIR
 pub fn iter(buf: &[u8]) -> Entries<'_> {
     Entries { buf, at: 0 }
 }

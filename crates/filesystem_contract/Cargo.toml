@@ -6,9 +6,12 @@ rust-version = "1.88"
 description = "The wire protocols of a filesystem stack: the block protocol between a filesystem server and a block server, and the file-service protocol between a client and the filesystem server"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+repository = "https://github.com/nifeos/filesystem_contract"
+documentation = "https://github.com/nifeos/filesystem_contract"
+homepage = "https://github.com/nifeos/filesystem_contract"
 keywords = ["no-std", "filesystem", "capabilities", "kani"]
 categories = ["no-std", "embedded", "filesystem"]
-publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+publish = false     # not published yet: the first release to crates.io waits on a review of the crate's names
 
 # The wire protocols of the filesystem stack: the block-IPC protocol (FS server <-> block server)
 # and the file-service protocol (client <-> FS server). Pure logic, host-tested, no_std, no

@@ -84,7 +84,7 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
     assert_eq!(nameset::encode(&[(b"one.txt", false)], &mut tight), None);
     // The fit check runs before the record's first byte is laid, so a single-record refusal
     // leaves the buffer clean. (Refusing a later record can leave earlier ones behind; the
-    // `None` is what the caller must honour either way.) Without this, a refusal could still
+    // `None` is what the caller must honor either way.) Without this, a refusal could still
     // have scribbled most of a capability into a buffer somebody reuses.
     assert_eq!(
         tight, [0u8; 9],
