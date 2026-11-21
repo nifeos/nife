@@ -138,7 +138,8 @@ impl<O: Copy> Capability<O> {
     /// Without `GRANT` the answer is [`Error::GrantRequired`], whatever `rights` asks for. With it,
     /// asking for a right the source lacks is [`Error::CannotWiden`], not a silent clamp.
     ///
-    /// Name: provisional (`delegate`, `GrantRequired`).
+    /// Name: ratified 2026-11-19 (UTC), with `Error::GrantRequired`. Refused `derive`, which is the
+    /// table's narrowing copy into a slot; this one is a capability's copy of itself.
     pub fn delegate(&self, rights: Rights) -> Result<Capability<O>, Error> {
         if !self.rights.allows(Rights::GRANT) {
             return Err(Error::GrantRequired);
@@ -174,13 +175,16 @@ pub enum Error {
     NoSuchSlot,
     /// You asked to derive a capability with rights you do not hold.
     CannotWiden,
-    /// **The capability may not be passed on.** Its holder lacks [`Rights::GRANT`]. Provisional
-    /// name.
+    /// **The capability may not be passed on.** Its holder lacks [`Rights::GRANT`].
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     GrantRequired,
     /// The table is full.
     NoFreeSlot,
     /// **The slot asked for is already occupied.** Distinct from [`NoFreeSlot`](Self::NoFreeSlot),
-    /// which says the whole table is full. Provisional name.
+    /// which says the whole table is full.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     SlotOccupied,
 }
 
@@ -367,7 +371,8 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// The table's fixed capacity, `N`: how many slots it has, occupied or not. Never changes; a
     /// capability table's size is part of its type. [`used`](Self::used) counts the occupied ones.
     ///
-    /// Name: provisional, from `len`, which in std counts the elements held.
+    /// Name: ratified 2026-11-19 (UTC), as std's `Vec::capacity`. Refused `len`, which in std counts
+    /// the elements held.
     pub const fn capacity(&self) -> usize {
         N
     }
@@ -456,7 +461,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// table's occupancy and not its capacity, because it follows the occupied mask as
     /// [`delete_matching`](Self::delete_matching) does.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC).
     pub fn iter(&self) -> impl Iterator<Item = (u64, Capability<O>)> + '_ {
         let mut occupied = self.occupied_mask();
         core::iter::from_fn(move || {
