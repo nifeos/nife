@@ -37,7 +37,7 @@ pub const PACKED_FIELD_BITS: u32 = 21;
 pub const fn check(name: &str) -> usize {
     let mut i = 0;
     while i < CHECKS {
-        if str_eq(SELF_TEST_CHECKS[i], name) {
+        if strings_are_equal(SELF_TEST_CHECKS[i], name) {
             return i;
         }
         i += 1;
@@ -46,7 +46,7 @@ pub const fn check(name: &str) -> usize {
 }
 
 /// `a == b` in a `const fn`, where `PartialEq` on `str` cannot be called.
-const fn str_eq(a: &str, b: &str) -> bool {
+const fn strings_are_equal(a: &str, b: &str) -> bool {
     let (a, b) = (a.as_bytes(), b.as_bytes());
     if a.len() != b.len() {
         return false;
