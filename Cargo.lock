@@ -108,6 +108,7 @@ source = "git+https://github.com/nifeos/block_roster_contract?rev=2bd3da34888fc1
 [[package]]
 name = "boot_ladder"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/boot_ladder?rev=196bf4e8201e027a025c938aa87da9778310c9c7#196bf4e8201e027a025c938aa87da9778310c9c7"
 
 [[package]]
 name = "boot_slot"
@@ -173,7 +174,7 @@ dependencies = [
 [[package]]
 name = "capability_table"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/capability_table?rev=62080aff201e72d73f59ace206bc3c92a1c7c325#62080aff201e72d73f59ace206bc3c92a1c7c325"
+source = "git+https://github.com/nifeos/capability_table?rev=a8d0fa65b08050e788719bd0e88922f9cd6b43bb#a8d0fa65b08050e788719bd0e88922f9cd6b43bb"
 
 [[package]]
 name = "capability_witness_contract"
@@ -793,6 +794,7 @@ source = "git+https://github.com/nifeos/interfaces_note?rev=bfa27187a87e0cc1916e
 [[package]]
 name = "intrusive_queue"
 version = "0.1.0"
+source = "git+https://github.com/nifeos/intrusive_queue?rev=08c31f2d1397edc91f8046d068eaaf4f116b580b#08c31f2d1397edc91f8046d068eaaf4f116b580b"
 
 [[package]]
 name = "jh7110_clock_and_reset"

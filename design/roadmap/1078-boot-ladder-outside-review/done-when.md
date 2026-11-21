@@ -15,7 +15,7 @@ An appendix to [the milestone](../1078-boot-ladder-outside-review.md).
 - `cargo test` runs the boundary, substring, invariant and round-trip tests. The kernel prints
   through `Verdict`, and `serial_console` and `xtask` read through `ParsedVerdict`. One Kani harness
   runs green and its falsification patch turns it red.
-- `git grep -n "nife capability shell" -- ':!crates/boot_ladder' ':!*tests.rs' ':!*.md'` in nife
+- `git grep -n "nife capability shell" -- ':!*tests.rs' ':!*.md'` in nife
   finds nothing, and `script/lint` fails if it ever does.
 - The three renames stand as built, `Stage::Prompt` and `Stage::Tour` included, ratified 2026-11-19
   (UTC).

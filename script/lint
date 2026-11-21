@@ -2678,10 +2678,6 @@ REGISTRY = {
         'how many Kani proof harnesses crates/inter_process_communication carries',
         lambda: _harness_hits().get('inter_process_communication', 0),
     ),
-    'intrusive-fifo-harnesses': (
-        'how many Kani proof harnesses crates/intrusive_queue carries',
-        lambda: _harness_hits().get('intrusive_queue', 0),
-    ),
     'address-space-identifier-harnesses': (
         'how many Kani proof harnesses crates/address_space_identifier carries',
         lambda: _harness_hits().get('address_space_identifier', 0),

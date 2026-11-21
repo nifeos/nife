@@ -5,7 +5,7 @@
 //! 2026-09-19: *one tool with a board profile, and the profile is the firmware prologue only*):
 //! [`Profile::prologue`], the ordered rungs; [`Profile::refusals`], the ways that firmware gives up
 //! before handing over; and [`Profile::relocation`], a discriminator that is not a rung. The
-//! kernel's own ladder is [`crate::progress::Stage`], with its markers in `crates/boot_ladder`.
+//! kernel's own ladder is [`crate::progress::Stage`], with its markers in `boot_ladder`.
 //! Adding a board is adding a [`Profile`].
 //!
 
@@ -21,7 +21,7 @@
 //!
 
 //! Names provisional, this lane's coinage (2026-09-19, milestone 324 part 3). `Profile` is the word
-//! calef's own ruling used (*"a board profile"*); `Rung` is `crates/boot_ladder`'s word for the
+//! calef's own ruling used (*"a board profile"*); `Rung` is `boot_ladder`'s word for the
 //! same shape one level up; `Sign` was chosen over `Match` (a verb) and `Pattern` (which promises a
 //! regular expression).
 

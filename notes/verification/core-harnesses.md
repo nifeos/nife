@@ -209,10 +209,10 @@ notes/generational-names.md); the table names the three this appendix adjudicate
 | `live_names_are_distinct_and_resolve_to_their_own_entry` | the `(generation, slot)` packing cannot alias two live entries |
 | `a_name_the_table_never_minted_resolves_to_nothing` | for `from_bits` of any u64, resolution succeeds only on exactly a name the table issued |
 
-## `crates/intrusive_queue`
+## `intrusive_queue`
 
-Two in `crates/intrusive_queue/src/lib.rs` <!--count:intrusive-fifo-harnesses-->, the scheduler's
-queue structure (milestone 14 phase A.2; see notes/intrusive-queues.md):
+Two in the repository `nifeos/intrusive_queue`, whose `proofs` workflow proves them and replays
+each falsification patch. It is the scheduler's queue structure (milestone 14 phase A.2; see notes/intrusive-queues.md):
 
 | Harness | Property |
 |---|---|

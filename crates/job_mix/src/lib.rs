@@ -26,7 +26,7 @@
 // console cannot speak to any of the three boards) part 2): everything from here to `COMPUTE`
 // leaves the machine and is read back by `crates/serial_console` and `cargo xtask job-mix`.
 //
-// They are **stable heads**, on `crates/boot_ladder`'s rule: a matcher keys on the head, which
+// They are **stable heads**, on `boot_ladder`'s rule: a matcher keys on the head, which
 // never changes, and the tail carries the numbers and is free to improve, so the fields inside a
 // line are not shared (notes/job-mix/instrument.md, "The console markers are a contract").
 //

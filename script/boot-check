@@ -43,7 +43,7 @@
 # BUGS
 #
 # **The prompt rung is the shell's banner, not the `$ `.** Two bytes is too weak to key on in a log
-# that has just carried a kilobyte of hex (`crates/boot_ladder`'s own BUGS). So this proves `swish`
+# that has just carried a kilobyte of hex (`boot_ladder`'s own BUGS). So this proves `swish`
 # started and printed, not that a prompt was offered or that anything could be typed at it;
 # `script/swish-check` makes the stronger claim by typing, and this does not duplicate it.
 #

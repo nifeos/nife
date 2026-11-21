@@ -2,7 +2,7 @@
 //!
 //! The firmware prologue, up to [`Stage::Firmware`], is a board profile in [`crate::board`].
 //! Everything from [`Stage::Banner`] up is the kernel's own ladder and is shared by every board:
-//! `crates/boot_ladder` and `crates/job_mix` hold its markers, and a profile may not name one.
+//! `boot_ladder` and `crates/job_mix` hold its markers, and a profile may not name one.
 //! Every marker is quoted from this tree and asserted against a capture in
 //! `tests/fixtures/captured/`; notes/board-console/markers.md gives each one's source.
 //!

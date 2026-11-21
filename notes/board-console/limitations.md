@@ -98,7 +98,7 @@ documentation and never watched on a wire is the assertion-shaped-as-measurement
 keeps catching. Its prologue stays unwritten until a board prints something.
 
 Nothing gates a profile against the board it claims to describe. It is the same gap
-`crates/boot_ladder` records against the kernel, one level out, with the same mechanism: review, plus
+`boot_ladder` records against the kernel, one level out, with the same mechanism: review, plus
 a capture in `tests/fixtures/captured/` for every rung anybody asserts on. A rung declared with a
 marker no machine prints fails in the direction that looks like success.
 
