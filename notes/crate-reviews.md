@@ -104,3 +104,4 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`byte_glob`](crate-reviews/byte-glob.md) | contract | cleared and moved (2026-11-20 UTC, no tag, no publish); nife pins `nifeos/byte_glob` by commit |
 | [`device_tree_blob`](crate-reviews/device-tree-blob.md) | 4 | cleared to move (2026-11-20 UTC, no tag, no publish) |
 | [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | ready for review |
+| [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | not ready: waits for P1-3, P1-8 and P1-9 |
