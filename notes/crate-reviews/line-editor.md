@@ -53,7 +53,7 @@ All commands ran in this lane's worktree, at `main` with this lane's edits to do
 | check | result |
 |---|---|
 | `script/crate-review-packet line_editor` | no dependency, no type from another crate in a public signature, no `unsafe` site, two harnesses each paired with one patch; three paths into the nife tree, five section citations and five milestone citations in shipped text, first at `src/lib.rs` line 8 |
-| `script/crate-standalone line_editor` | STANDALONE_LINE_EDITOR |
+| `script/crate-standalone line_editor` | 9 failures, all of them the move's work: 44 names not ratified, inherited `license` and `lints`, no `rust-version`, no license files, and the citations above. The build passes on the host and on the three bare-metal targets on stable, both Kani harnesses verify, and each fails under its falsification patch |
 | `cargo test -p line_editor` | 66 unit tests and 4 doctests pass |
 | `cargo clippy -p line_editor --all-targets -- -D warnings` | no warning |
 | `cargo doc -p line_editor --no-deps` with warnings denied | no warning |

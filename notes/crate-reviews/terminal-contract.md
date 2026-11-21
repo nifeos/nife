@@ -55,7 +55,7 @@ All commands ran in this lane's worktree, at `main` with this lane's edits to do
 | check | result |
 |---|---|
 | `script/crate-review-packet terminal_contract` | no dependency, no type from another crate in a public signature, no `unsafe` site, no Kani harness; nine paths into the nife tree, seven section citations, nine milestone citations and three lines naming the architect in shipped text |
-| `script/crate-standalone terminal_contract` | STANDALONE_TERMINAL_CONTRACT |
+| `script/crate-standalone terminal_contract` | 13 failures: the crate name and 33 items not ratified, inherited `license` and `lints`, no `rust-version`, no README or license files, the four citation counts above, and no Kani harness. The build passes on the host and on the three bare-metal targets on stable |
 | `cargo test -p terminal_contract` | 5 unit tests pass; no doctest |
 | `cargo clippy -p terminal_contract --all-targets -- -D warnings` | no warning |
 | `cargo doc -p terminal_contract --no-deps` with warnings denied | no warning |
