@@ -644,7 +644,7 @@ fn create_into_a_populated_root_and_look_it_up() {
     let mut srv = server_with(&[
         (
             "motd",
-            b"redoxfs served this file to an EL0 client through a capability handle\n",
+            b"redoxfs served this file to an unprivileged client through a capability handle\n",
         ),
         (
             "scratch",
@@ -685,7 +685,7 @@ fn create_through_the_block_chunking_does_not_loop() {
         for (name, body) in [
             (
                 "motd",
-                &b"redoxfs served this file to an EL0 client through a capability handle\n"[..],
+                &b"redoxfs served this file to an unprivileged client through a capability handle\n"[..],
             ),
             (
                 "scratch",
