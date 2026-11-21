@@ -68,11 +68,11 @@ harness. The proofs are inductive steps over one waiter per queue.
 
 ## Names
 
-The architect ratified every public name on 2026-11-21 (UTC), with two renames: `Notification::poll`
-is now `try_wait` (a non-blocking `wait`, the shape the Rust standard library gives `try_` calls),
-and `AddressWaitTable::waiters` is now `waiter_count` (a count of the waiters under one key, which
-the bare plural noun did not say). No alias of an old nife spelling exists. `script/crate-standalone`
-counts the names its own gate still reads as unratified; the move strips the `Name:` blocks.
+The architect ratified every public name on 2026-11-21 (UTC), with two renames. `Notification::poll`
+is now `try_wait`, a non-blocking `wait`, which is the shape the Rust standard library gives its
+`try_` calls. `AddressWaitTable::waiters` is now `waiter_count`, a count of the waiters under one
+key, which the bare plural noun did not say. No alias of an old nife spelling exists. The move
+strips the `Name:` blocks.
 
 | name | status | what was refused |
 |---|---|---|
