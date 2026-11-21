@@ -6,10 +6,11 @@ on every later wait. A copy where a take was meant.
 Expected to fail: `assert_eq!(n.word, 0)` after `WaitVerdict::Word`.
 
 diff --git a/crates/inter_process_communication/src/notification.rs b/crates/inter_process_communication/src/notification.rs
+index ac3a00c..8bb6363 100644
 --- a/crates/inter_process_communication/src/notification.rs
 +++ b/crates/inter_process_communication/src/notification.rs
-@@ -192,7 +192,7 @@ impl<T: Node> Notification<T> {
-     /// `me`, and the caller blocks it.
+@@ -236,7 +236,7 @@ impl<T: Node> Notification<T> {
+     /// Name: ratified 2026-11-21 (UTC).
      pub fn wait(&mut self, me: Unqueued<T>) -> WaitVerdict<T> {
          if self.word != 0 {
 -            WaitVerdict::Word(core::mem::take(&mut self.word), me)

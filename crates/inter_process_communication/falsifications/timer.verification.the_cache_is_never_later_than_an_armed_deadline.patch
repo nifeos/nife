@@ -8,12 +8,12 @@ Expected to fail: `cache_is_sound` after an arm, whenever another timer was alre
 than the new deadline: that timer's expiry is now invisible to the tick.
 
 diff --git a/crates/inter_process_communication/src/timer.rs b/crates/inter_process_communication/src/timer.rs
-index 5e38c9a0c..5ceab0715 100644
+index ac047e1..5ae9035 100644
 --- a/crates/inter_process_communication/src/timer.rs
 +++ b/crates/inter_process_communication/src/timer.rs
-@@ -137,7 +137,7 @@ impl<T: Copy> Timer<T> {
- /// **The cache after arming `deadline`**: never raised, only lowered. Called under the same lock
- /// as the arm, so the cache and the timers never disagree for anyone who holds it.
+@@ -147,7 +147,7 @@ impl<T: Copy> Timer<T> {
+ ///
+ /// Name: ratified 2026-11-21 (UTC).
  pub fn lowered(cached: u64, deadline: u64) -> u64 {
 -    cached.min(deadline)
 +    deadline

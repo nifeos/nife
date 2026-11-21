@@ -205,5 +205,5 @@ pub fn address_wait_waiters(space: u64, va: u64) -> usize {
     // SAFETY: as `address_wake`'s.
     sched
         .address_waits
-        .waiters(key, |w| unsafe { address_wait_key_of(w) })
+        .waiter_count(key, |w| unsafe { address_wait_key_of(w) })
 }
