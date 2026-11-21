@@ -5,10 +5,10 @@ The defect: `window` no longer checks that the length is a whole number of pages
 Expected to fail: the harness's `refused_inputs_never_reach_here` loop is reached, an unwinding failure, for an unaligned length.
 
 diff --git a/crates/address_space_layout/src/lib.rs b/crates/address_space_layout/src/lib.rs
-index cb71c3977..beba76b1c 100644
+index 12c26e340..d45a9374c 100644
 --- a/crates/address_space_layout/src/lib.rs
 +++ b/crates/address_space_layout/src/lib.rs
-@@ -230,10 +230,6 @@ pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64 {
+@@ -266,10 +266,6 @@ pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64 {
          start_virtual_address.is_multiple_of(PAGE_BYTES),
          "a window must start on a page"
      );
