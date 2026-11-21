@@ -738,13 +738,30 @@ def has_week_note(text, week, issue):
 # ---------------------------------------------------------------------------------------------
 # GitHub.
 
-def gh_json(path, tries=3):
-    for attempt in range(tries):
-        done = subprocess.run(["gh", "api", path], capture_output=True, text=True)
+# The waits between tries of one `gh api` call, in seconds. GitHub answers a busy API with a
+# passing 502 or 503, and the update step reads several hundred run listings eight at a time, so
+# one such answer per pass is the normal case. Two waits of 5 and 10 seconds were too short: a
+# single 502 that outlasted them cost the pass every day after the one it was reading, so the
+# newest day was the one lost and the near-budget issues judged runs a day old. Doubling from 5
+# seconds spans 155 seconds, a small part of the step's budget.
+GH_WAITS = (5, 10, 20, 40, 80)
+
+
+def transient(stderr):
+    """Whether a failed `gh` call is worth asking again: a 5xx answer, or no HTTP status at all
+    (a timeout or a reset connection). A 4xx is the request's own fault and is refused at once."""
+    status = re.search(r"\bHTTP (\d{3})\b", stderr)
+    return not status or status.group(1).startswith("5")
+
+
+def gh_json(path, run=subprocess.run, sleep=time.sleep):
+    for wait in GH_WAITS + (None,):
+        done = run(["gh", "api", path], capture_output=True, text=True)
         if not done.returncode:
             return json.loads(done.stdout)
-        if attempt + 1 < tries:
-            time.sleep(5 * (attempt + 1))
+        if wait is None or not transient(done.stderr):
+            break
+        sleep(wait)
     raise RuntimeError("gh api %s: %s" % (path, done.stderr.strip()))
 
 
@@ -1295,6 +1312,35 @@ def selftest():
            merge_wait_days([{"date": "2026-11-18"}, {"date": "2026-11-19"}], "2026-11-19", row)[1], row)
     expect("a re-read day with no row drops the stale one",
            merge_wait_days([{"date": "2026-11-19"}], "2026-11-19", None), [])
+
+    def answers(*replies):
+        """A stub for subprocess.run that answers each call with the next (exit, stderr)."""
+        queue, calls = list(replies), []
+
+        def run(argv, **_kw):
+            calls.append(argv)
+            code, err = queue.pop(0)
+            return subprocess.CompletedProcess(argv, code, "{\"n\": 1}" if not code else "", err)
+        return run, calls
+
+    waited = []
+    run, calls = answers(*([(1, "gh: Server Error (HTTP 502)")] * 5 + [(0, "")]))
+    expect("five 502s in a row are waited out", (gh_json("x", run, waited.append), waited),
+           ({"n": 1}, list(GH_WAITS)))
+    waited = []
+    run, calls = answers((1, "gh: Not Found (HTTP 404)"))
+    try:
+        gh_json("x", run, waited.append)
+        expect("a 404 raises", "returned", "raised")
+    except RuntimeError:
+        expect("a 404 is asked once and never waited on", (len(calls), waited), (1, []))
+    run, calls = answers(*([(1, "gh: HTTP 503")] * 6))
+    try:
+        gh_json("x", run, lambda _s: None)
+        expect("a 503 on every try raises", "returned", "raised")
+    except RuntimeError:
+        expect("a 503 on every try is asked six times", len(calls), 6)
+    expect("a call with no HTTP status is transient", transient("read tcp: i/o timeout"), True)
 
     print("ci_job_times selftest: %s" % ("ok" if ok else "FAILED"))
     return 0 if ok else 1
