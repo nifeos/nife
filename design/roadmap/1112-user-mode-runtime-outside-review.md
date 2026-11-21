@@ -88,10 +88,8 @@ crate's own reasons.
 - Clearing the review package, which approves the repository and the move: Done, ruled 2026-11-21 UTC,
   option A. The repository `nifeos/user_mode_runtime` is approved as `publish = false`, with no tag and no
   publish. The move waits until `abi`, `address_space_layout`, `current_cpu_contract` and `socket_contract`
-  have left the tree and are git pins (milestone 1017 step 3). The thin machine checks (13 unit tests, 9
-  doctests mostly `no_run`, no Kani harness, no fuzz target, no Miri or mutation baseline, most of the
-  public functions covered only by QEMU boot tests) are a recorded limitation; a first tag needs its own
-  ruling.
+  have left the tree. The thin machine checks are a recorded limitation (the package lists them), and a
+  first tag needs its own ruling.
 
 ## Open decisions
 
@@ -106,8 +104,6 @@ The maintainer ruled on 2026-11-19 UTC, provisionally, to remove the sized windo
 `write::<T>` (now `read_volatile` and `write_volatile`). After the first tag a name is a published surface. The package
 (`notes/crate-reviews/user-mode-runtime.md`) lists every public name with its status and a
 proposal.
-
-Ruled 2026-11-20 UTC: A, with the short forms spelled out (see the status list).
 
 Recommendation: A. Ratify the names as built, from the package's tables.
 
@@ -133,7 +129,7 @@ its repository (the rule of 2026-11-01 UTC). The package exists
 (`notes/crate-reviews/user-mode-runtime.md`). Every nife program and `disk-tools` depend on this crate, so it leaves at step 3 of milestone
 1017, after the contract crates it links.
 
-Ruled 2026-11-21 UTC: A. The move waits for the four path dependencies above to leave the tree.
+Ruled 2026-11-21 UTC: A.
 
 Recommendation: A, clear the package, now that it and P0-3 have landed; milestone 1017 step 3 times the move.
 
@@ -146,8 +142,7 @@ Door: one-way. Clearing creates a public repository, and nife, basalt and `disk-
 
 Prior art. `cortex-m-rt` lives in its own repository and every embedded binary pins it, which is
 the shape Decision 2 copied for `link.ld`. nife cleared its xHCI, e1000e and FAT packages one
-approval each. Concrete example: after clearing, `script/crate-move` creates
-`nifeos/user_mode_runtime`, and each program's manifest pins it by a full commit.
+approval each. Concrete example: each program's manifest pins the new repository by a full commit.
 
 What it blocks: the move, and with it `disk-tools` leaving (milestone 1017 step 4).
 
@@ -285,8 +280,7 @@ has no caller outside the crate. Item 15 is the work.
 
 ## Follow-on
 
-- **Outstanding.** The findings "Finding status" marks Open, each line read against
-  `crates/user_mode_runtime`.
+- **Outstanding.** The findings marked Open in Finding status.
 
 ## Done when
 

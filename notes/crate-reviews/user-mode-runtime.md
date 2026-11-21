@@ -8,7 +8,7 @@ The names are ratified (2026-11-20 UTC). The architect cleared the package on 20
 `nifeos/user_mode_runtime` is approved as `publish = false`, with no tag and no publish. The move to that
 repository is step 3 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md),
-after the contract crates the crate links, and waits until `abi`, `address_space_layout`,
+after the contract crates the crate links. It waits until `abi`, `address_space_layout`,
 `current_cpu_contract` and `socket_contract` have left the tree and are git pins. It describes the crate as `main` plus this branch leaves it. The
 outside review that produced the work is
 [milestone 1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1112-user-mode-runtime-outside-review.md).
@@ -204,7 +204,7 @@ one way to read and write a window and no acronym left unexpanded at its first u
 the move lane's text work (P1-8) and the contract crates that leave first.
 
 Limitation, recorded at the clearance: the machine checks are thin. The crate has 13 unit tests, 9 doctests
-(most `no_run`), no Kani harness, no fuzz target and no Miri or mutation baseline. QEMU boot tests cover
+(most `no_run`), no Kani harness, no fuzz target and no Miri or mutation baseline. QEMU boot tests alone cover
 most of its roughly 104 public functions. A first tag needs its own ruling.
 
 Cleared.
