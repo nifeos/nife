@@ -107,7 +107,7 @@ What proves the producer, and what running and installing cost, is in
 Built 2026-09-24 by the rung 3a consumer lane, in three pieces:
 
 - The image carries its own package source. Every archive build (`cargo xtask initial-ramdisk-aarch64`
-  and `initial-ramdisk-riscv`) runs every recipe under `packages/`, writes the package
+  and `initial-ramdisk-riscv64`) runs every recipe under `packages/`, writes the package
   to `target/packages/`, and packs the catalog lines as the archive entry
   `package_archive::CATALOG` (provisional name), above the measurement table. So the kernel's
   trust root vouches for the catalog, and the catalog vouches for the package. That is §195's
@@ -142,7 +142,7 @@ pass the first half too. They share one
 spawn because every `net_stack` a test starts holds a virtio slot for the rest of the boot; this
 lane took the table's tenth bump (`MAXIMUM_DEVICES`, to 34) and filed the unregister it keeps
 deferring as `design/roadmap/0647-a-virtio-slot-comes-back-when-its-driver-dies.md`. riscv64 runs
-the same test as a twin in `system_tests/src/user/riscv_virtual_io_tests.rs`.
+the same test as a twin in `system_tests/src/user/riscv64_virtual_io_tests.rs`.
 
 ### The versioned table, as logic
 

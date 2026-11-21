@@ -7,7 +7,7 @@
 
 use machine_discovery::interrupt_id;
 
-const QEMU_RISCV_VIRT: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt-smp4.dtb");
+const QEMU_RISCV64_VIRT: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt-smp4.dtb");
 const JH7110: &[u8] = include_bytes!("fixtures/jh7110.dtb");
 const JH7110_VENDOR: &[u8] = include_bytes!("fixtures/jh7110-vendor.dtb");
 // The aarch64 machine's tree lives with the `device_tree_blob` crate's fixture tests; reuse it
@@ -16,7 +16,7 @@ const QEMU_AARCH64_VIRT: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt.dtb"
 
 /// The console node's name, as `kernel/src/console.rs` pins it: both QEMU riscv64 `virt` and the
 /// JH7110 spell UART0 exactly this way.
-const RISCV_UART: &[u8] = b"serial@10000000";
+const RISCV64_UART: &[u8] = b"serial@10000000";
 
 fn tree(bytes: &[u8]) -> device_tree_blob::DeviceTreeBlob<'_> {
     device_tree_blob::DeviceTreeBlob::from_bytes(bytes).expect("fixture is a valid device tree")
@@ -26,8 +26,8 @@ fn tree(bytes: &[u8]) -> device_tree_blob::DeviceTreeBlob<'_> {
 /// was written for, the tree and the constant agree, which is why the bug stayed invisible until
 /// a board with a different answer ran the same kernel.
 #[test]
-fn qemu_riscv_virt_uart_is_plic_source_10() {
-    let id = interrupt_id::of_node(&tree(QEMU_RISCV_VIRT), RISCV_UART).unwrap();
+fn qemu_riscv64_virt_uart_is_plic_source_10() {
+    let id = interrupt_id::of_node(&tree(QEMU_RISCV64_VIRT), RISCV64_UART).unwrap();
     assert_eq!(id, Some(10));
 }
 
@@ -37,12 +37,12 @@ fn qemu_riscv_virt_uart_is_plic_source_10() {
 #[test]
 fn jh7110_uart_is_plic_source_32_in_both_trees() {
     assert_eq!(
-        interrupt_id::of_node(&tree(JH7110), RISCV_UART).unwrap(),
+        interrupt_id::of_node(&tree(JH7110), RISCV64_UART).unwrap(),
         Some(32),
         "the mainline-modeled tree, parent inherited from /soc"
     );
     assert_eq!(
-        interrupt_id::of_node(&tree(JH7110_VENDOR), RISCV_UART).unwrap(),
+        interrupt_id::of_node(&tree(JH7110_VENDOR), RISCV64_UART).unwrap(),
         Some(32),
         "the vendor-modeled tree, parent on the node itself"
     );
@@ -64,7 +64,7 @@ fn qemu_aarch64_virt_pl011_is_intid_33() {
 /// from the wrong property.
 #[test]
 fn a_tree_that_does_not_say_answers_none() {
-    let dt = tree(QEMU_RISCV_VIRT);
+    let dt = tree(QEMU_RISCV64_VIRT);
     assert_eq!(interrupt_id::of_node(&dt, b"memory@").unwrap(), None);
     assert_eq!(interrupt_id::of_node(&dt, b"clint@").unwrap(), None);
     assert_eq!(interrupt_id::of_node(&dt, b"no-such-node@").unwrap(), None);

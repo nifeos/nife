@@ -65,7 +65,7 @@ mod usage;
 mod vt_replay;
 
 use crate::archive::{
-    has_initial_ramdisk_aarch64, has_initial_ramdisk_riscv, has_initial_ramdisk_x86,
+    has_initial_ramdisk_aarch64, has_initial_ramdisk_riscv64, has_initial_ramdisk_x86,
 };
 use crate::bench::bench;
 use crate::board::{board_console, board_script};
@@ -92,9 +92,9 @@ const RUNNER: &str = "helpers/qemu-runner-aarch64.sh";
 
 /// The RISC-V target, for the second-architecture initial ramdisk (milestone 20 (a portable HAL)).
 /// The kernel itself is built and run through cargo + `helpers/qemu-runner-riscv64.sh` directly,
-/// not this xtask; this const exists only so `initial-ramdisk-riscv` builds the userspace archive
+/// not this xtask; this const exists only so `initial-ramdisk-riscv64` builds the userspace archive
 /// for the matching target.
-const RISCV_TARGET: &str = "riscv64imac-unknown-none-elf";
+const RISCV64_TARGET: &str = "riscv64imac-unknown-none-elf";
 
 /// The `x86_64` target (milestone 161). The kernel is built and run through cargo +
 /// `helpers/qemu-runner-x86_64.sh`, exactly as the RISC-V one is, and since item 4's hand-off this

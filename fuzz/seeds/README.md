@@ -49,7 +49,7 @@ never grew the third case, so on an x86_64 host the `elf_parse` corpus was silen
 `crates/static_elf/tests/fuzz_seed.rs` went red with no available fix (milestone 288).
 
 `crates/static_elf/tests/fuzz_seed.rs` now asserts that the seed for *this* build parses, and that this
-directory holds a seed for each of `static_elf::MACHINE_AARCH64`, `MACHINE_RISCV` and `MACHINE_X86_64`,
+directory holds a seed for each of `static_elf::MACHINE_AARCH64`, `MACHINE_RISCV64` and `MACHINE_X86_64`,
 so a missing seed fails on every host.
 
 ## BUGS

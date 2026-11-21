@@ -53,7 +53,7 @@ the calling hart:
 
 | harts online | `rfence_self` ticks |
 |---:|---:|
-| 1 (what `--riscv` boots) | 5991 |
+| 1 (what `--riscv64` boots) | 5991 |
 | 2 | 6432 |
 | 4 | 7153 |
 
@@ -74,7 +74,7 @@ same with `sbi_remote_sfence_vma_asid`. Each skips the firmware call only when t
 which on a one-hart boot is the correct answer.
 
 The limit of the benchmark: `rfence_self` passes `me`, its *own* hart, so the cost is "getting into
-firmware and back" rather than a shootdown. On the single-hart boot `--riscv` uses, the production
+firmware and back" rather than a shootdown. On the single-hart boot `--riscv64` uses, the production
 call sites issue zero RFENCEs, which the suite's own probe prints (`map_new_remote_fences 0 over 64
 iters`). So this row prices a call the running kernel never makes in that configuration. It is a
 floor for what an RFENCE costs, not the cost of a shootdown, and a change to the real shootdown

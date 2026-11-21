@@ -8,7 +8,7 @@ Expected to fail: an arithmetic overflow in `leading_number`.
 diff --git a/crates/boot_ladder/src/verdict.rs b/crates/boot_ladder/src/verdict.rs
 --- a/crates/boot_ladder/src/verdict.rs
 +++ b/crates/boot_ladder/src/verdict.rs
-@@ -410,9 +410,7 @@ fn leading_number(bytes: &[u8]) -> Option<(usize, usize)> {
+@@ -429,9 +429,7 @@ fn leading_number(bytes: &[u8]) -> Option<(usize, usize)> {
      let mut value = 0usize;
      let mut end = 0;
      while end < bytes.len() && bytes[end].is_ascii_digit() {

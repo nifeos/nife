@@ -98,12 +98,12 @@ fn clang() -> String {
         "/usr/local/opt/llvm/bin/clang",
         "clang",
     ] {
-        let has_riscv = Command::new(c)
+        let has_riscv64 = Command::new(c)
             .arg("-print-targets")
             .output()
             .map(|o| String::from_utf8_lossy(&o.stdout).contains("riscv64"))
             .unwrap_or(false);
-        if has_riscv {
+        if has_riscv64 {
             return c.to_string();
         }
     }

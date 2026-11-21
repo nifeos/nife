@@ -1,6 +1,6 @@
 //! An intrusive first in, first out (FIFO) queue: the link lives inside the node, so push and pop cannot allocate or
-//! fail, and a pop hands back the node itself. The kernel's run queues and migration inboxes use
-//! it. Nothing here checks rule 2 below. See notes/intrusive-queues.md.
+//! fail, and a pop hands back the node itself. Nothing here checks rule 2 below; the README holds
+//! the contract's fine print, the examples and what the proofs cover.
 //!
 //! # The caller's contract
 //!
@@ -17,6 +17,11 @@
 #![cfg_attr(not(test), no_std)]
 
 use core::ptr::NonNull;
+
+/// The README's examples, compiled and run as doctests.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+struct ReadmeExample;
 
 /// A type that carries its own queue link.
 ///
@@ -64,8 +69,7 @@ pub unsafe trait Node: Sized {
 /// Neither `Clone` nor `Copy`: [`Queue::push_back`] consumes it and [`Queue::pop_front`] hands it
 /// back, so a node cannot be on two queues without `unsafe`. `#[repr(transparent)]` over its
 /// [`NonNull`], so `Option<Unqueued<T>>` is one pointer wide. It cannot carry lifetime (rule 2),
-/// which [`Unqueued::new`] discharges once. A dropped token strands its node. See
-/// notes/intrusive-queues.md.
+/// which [`Unqueued::new`] discharges once. A dropped token strands its node.
 ///
 /// Name: ratified 2026-11-19 (UTC), with `new`, `as_ptr` and `as_non_null`.
 #[repr(transparent)]
@@ -272,8 +276,9 @@ impl<T: Node> Queue<T> {
             None => self.head = Some(node),
         }
         self.tail = Some(node);
-        // Wrapping, on every IPC (release builds check overflow, notes/overflow-checks.md): `len`
-        // counts distinct live linked nodes of nonzero size, so it never reaches `usize::MAX`.
+        // Wrapping: a plain `+` carries an overflow check in any profile that enables them, on the
+        // path every push takes. `len` counts distinct live linked nodes of nonzero size, so it
+        // never reaches `usize::MAX`, and that check could never fire.
         self.len = self.len.wrapping_add(1);
     }
 
@@ -318,10 +323,9 @@ impl<T: Node> Default for Queue<T> {
     }
 }
 
-/// Machine-checked proofs (DECISIONS §14 (the project's direction)). The harness drives the real
-/// `Queue` with a symbolic operation sequence against a trivially-correct model (an array and two
-/// counters), covering every push/pop pattern up to the bound, the regrowth-from-empty transitions
-/// included.
+/// Machine-checked proofs. The harness drives the real `Queue` with a symbolic operation sequence
+/// against a trivially-correct model (an array and two counters), covering every push/pop pattern
+/// up to the bound, the regrowth-from-empty transitions included.
 #[cfg(kani)]
 mod verification {
     use super::*;
@@ -355,7 +359,7 @@ mod verification {
             N { next: None, tag: 1 },
             N { next: None, tag: 2 },
         ];
-        // One token per node, minted from one pointer to the array, the way the kernel mints
+        // One token per node, minted from one pointer to the array, the way a kernel mints
         // from the pointer its table stores. `nodes` is not named again, so every later access
         // goes through a token. A token is in `held` while its node is off the queue.
         let base = (&raw mut nodes).cast::<N>();
@@ -454,7 +458,7 @@ mod tests {
         }
     }
 
-    /// A test's node, owned through the pointer `Box::into_raw` returned, as the kernel owns a
+    /// A test's node, owned through the pointer `Box::into_raw` returned, as a kernel owns a
     /// thread through the pointer its table stores. Every access, the token's and the test's,
     /// derives from that one pointer, and dropping it frees the node.
     struct Owned(NonNull<N>);
@@ -547,8 +551,8 @@ mod tests {
         assert!(q.is_empty());
     }
 
-    /// The token is the pointer and nothing more: `#[repr(transparent)]` is the zero-cost claim the
-    /// kernel's footprint gate rests on, and `Option` of one is still one word.
+    /// The token is the pointer and nothing more: `#[repr(transparent)]` is the zero-cost claim a
+    /// caller's footprint rests on, and `Option` of one is still one word.
     #[test]
     fn a_token_is_one_pointer_wide() {
         use core::mem::size_of;
@@ -603,9 +607,9 @@ mod tests {
     }
 
     /// **A token minted from the owning pointer survives the owner's later reborrows.** The
-    /// sequence is the kernel thread table's over a thread's life: the table stores the pointer
+    /// sequence is a kernel thread table's over a thread's life: the table stores the pointer
     /// `Box::into_raw` returned and mints the token from it, then hands out `&mut` reborrows of
-    /// the node (`Threads::get_mut`) while the token moves on and off a queue, until the node is
+    /// the node (`Table::get_mut` below) while the token moves on and off a queue, until the node is
     /// retired. Run it under Miri with either borrow model (`cargo miri test -p intrusive_queue`,
     /// and again with `MIRIFLAGS=-Zmiri-tree-borrows`): both pass it. A token minted instead from
     /// one of those reborrows, `NonNull::from(table.get_mut(0))`, is invalidated by the next

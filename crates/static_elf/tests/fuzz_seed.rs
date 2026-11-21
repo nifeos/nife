@@ -66,7 +66,7 @@ fn the_fuzz_seed_is_a_valid_executable() {
 /// Every machine the crate names.
 const MACHINES: [u16; 3] = [
     static_elf::MACHINE_AARCH64,
-    static_elf::MACHINE_RISCV,
+    static_elf::MACHINE_RISCV64,
     static_elf::MACHINE_X86_64,
 ];
 

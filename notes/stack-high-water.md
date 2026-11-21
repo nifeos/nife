@@ -158,7 +158,7 @@ decided by which calls run, and moving a stack's base changes no call. The table
 The FS server's *user* stack has its own watermark already (`the_redoxfs_servers_stack_still_has_headroom`,
 
 The FS server's *user* stack has its own watermark already (`the_redoxfs_servers_stack_still_has_headroom`,
-in `system_tests/src/user/filesystem_tests.rs` and its RISC-V twin in `riscv_virtual_io_tests.rs`); this instrument is the
+in `system_tests/src/user/filesystem_tests.rs` and its RISC-V twin in `riscv64_virtual_io_tests.rs`); this instrument is the
 kernel-stack complement.
 
 ## The gate
@@ -217,7 +217,7 @@ kernel reaches 2 to 2.4 KiB. At 600 bytes a thread, cache capacity does not expl
 threads. Page-aligned stacks aliasing in radon's 4-way L1 might; so might page-aligned TCBs, and a
 cheap coloring experiment would tell them apart. On radon at one commit, kernel-thread CALL/REPLY
 reproduces QEMU to the byte and every EL0 series reads 16 bytes deeper, because `single_hart` grows
-`riscv_trap_body`'s frame. The instrument, the tables and the readings are in
+`riscv64_trap_body`'s frame. The instrument, the tables and the readings are in
 [stack-high-water/per-ipc-depth.md](stack-high-water/per-ipc-depth.md).
 
 ## BUGS

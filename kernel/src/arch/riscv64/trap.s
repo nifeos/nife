@@ -155,7 +155,7 @@ trap_entry:
     csrw    sscratch, t0
 
     mv      a0, sp
-    call    riscv_trap_dispatch
+    call    riscv64_trap_dispatch
     # fall through to trap_return
 
 # Restore a TrapFrame at sp and return from the trap. Shared by the trap path and by the first entry
@@ -307,7 +307,7 @@ trap_return:
 #
 # s0 holds the interrupted sp across the call because it is callee-saved, so the handler cannot
 # clobber it and it needs no slot on either stack. Its own save costs the interrupted stack 16 bytes.
-# `riscv_trap_body` returns its bool in a0, which nothing here touches.
+# `riscv64_trap_body` returns its bool in a0, which nothing here touches.
 # CFI: an ordinary function, `call`ed and `ret`urning, so the default frame is real. The one wrinkle
 # is the same one `switch_to` has (see arch/aarch64/context.s's CFI note): `mv sp, a1` moves onto an
 # unrelated interrupt stack partway through, so the CFA formula is restated in terms of `s0` (which
@@ -328,11 +328,11 @@ dispatch_on_interrupt_stack:
     mv      s0, sp
     .cfi_def_cfa_register s0
     mv      sp, a1
-    call    riscv_trap_body
+    call    riscv64_trap_body
     mv      sp, s0                  # back to the interrupted stack BEFORE anything can switch away
     .cfi_def_cfa_register sp
     j       6f
-5:  call    riscv_trap_body
+5:  call    riscv64_trap_body
 
 6:  ld      ra, 8(sp)
     .cfi_restore ra

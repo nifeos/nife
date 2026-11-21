@@ -16,8 +16,8 @@ use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::archive::{
-    has_initial_ramdisk_riscv, has_initial_ramdisk_x86, initial_ramdisk_path,
-    riscv_initial_ramdisk_path, x86_initial_ramdisk_path,
+    has_initial_ramdisk_riscv64, has_initial_ramdisk_x86, initial_ramdisk_path,
+    riscv64_initial_ramdisk_path, x86_initial_ramdisk_path,
 };
 use crate::disk::{
     disk_path, mkblankdisk, mkdisk, mkgptdisk, mknvmedisk, mkredoxfs, mkredoxfs_crash,
@@ -35,7 +35,7 @@ use crate::scanout::{
     HostLoad, ScanoutReferee, cargo_test_with_scanout_check, cargo_test_with_scanout_only,
 };
 use crate::uefi::{uefi_boot, uefi_test};
-use crate::{RELEASE, RISCV_TARGET, RUNNER, TARGET, X86_TARGET, time_record, user};
+use crate::{RELEASE, RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, time_record, user};
 
 /// The architecture legs `test` should run: all three by default, the ones `--arch` names otherwise.
 ///
@@ -563,7 +563,7 @@ fn host_tests() -> bool {
             return false;
         }
     }
-    for target in [TARGET, RISCV_TARGET] {
+    for target in [TARGET, RISCV64_TARGET] {
         if !run(
             "cargo",
             &[
@@ -586,7 +586,7 @@ fn host_tests() -> bool {
 pub(crate) fn build_suite_programs(legs: ArchLegs) -> bool {
     // Build the std demo (milestone 27 (Rust `std` on the native ABI)) for every custom target
     // first, so every initial ramdisk carries it: has_initial_ramdisk_aarch64 (inside `user`) packs the
-    // aarch64 std_exerciser, has_initial_ramdisk_riscv packs the riscv one. Outside the leg guards
+    // aarch64 std_exerciser, has_initial_ramdisk_riscv64 packs the riscv one. Outside the leg guards
     // below because BOTH legs need it, and the nifefs data disk with it: it is arch-neutral, and
     // the riscv leg reads it whether or not the aarch64 leg ran.
     if !std_exerciser() || !mkdisk() {
@@ -725,7 +725,7 @@ fn riscv64_suite(filtered: bool) -> bool {
     // `cargo()` exports: the riscv ELF loader must never be handed aarch64 ELFs. The disk is
     // arch-neutral (a nifefs data image) and was built by mkdisk() above.
     // The riscv FS server, before the riscv archive that packs it.
-    if !redoxfs_server_build(RISCV_TARGET) || !has_initial_ramdisk_riscv() {
+    if !redoxfs_server_build(RISCV64_TARGET) || !has_initial_ramdisk_riscv64() {
         return false;
     }
     // Fresh images for this leg: the aarch64 leg writes the shared image, and reusing it would
@@ -738,7 +738,7 @@ fn riscv64_suite(filtered: bool) -> bool {
     // threads. xtask is single-threaded here: this runs on the main thread before the child
     // that reads it is spawned, and the only thread xtask ever starts (the transcript reader
     // in swish_check_leg) copies pipe bytes into a String and never touches the environment.
-    unsafe { std::env::set_var("NIFE_INITIAL_RAMDISK", riscv_initial_ramdisk_path()) };
+    unsafe { std::env::set_var("NIFE_INITIAL_RAMDISK", riscv64_initial_ramdisk_path()) };
     // SAFETY: `set_var`/`remove_var` became unsafe in edition 2024 because they race other
     // threads. xtask is single-threaded here: this runs on the main thread before the child
     // that reads it is spawned, and the only thread xtask ever starts (the transcript reader
@@ -752,19 +752,19 @@ fn riscv64_suite(filtered: bool) -> bool {
     // The kernel's unit tests, then the system suite under the scanout check (milestone 609 (the
     // system tests leave the kernel crate)); the aarch64 leg says why the check is on the second.
     if filtered {
-        if !filtered_leg("riscv64", RISCV_TARGET) {
+        if !filtered_leg("riscv64", RISCV64_TARGET) {
             return false;
         }
     } else if (image_selected("kernel")
         && !time_record::cargo_test(
             &time_record::leg("riscv64"),
             "kernel",
-            &["test", "-p", "kernel", "--target", RISCV_TARGET],
+            &["test", "-p", "kernel", "--target", RISCV64_TARGET],
         ))
         || (image_selected("system")
             && !cargo_test_with_scanout_check(
                 "riscv64",
-                &["test", "-p", "system_tests", "--target", RISCV_TARGET],
+                &["test", "-p", "system_tests", "--target", RISCV64_TARGET],
             ))
     {
         return false;
@@ -965,7 +965,7 @@ fn x86_64_on_amd_vi() -> bool {
 /// capability FS server) phase 2): reopen the images with the host tool and confirm the FS server's
 /// writes persisted and the filesystems still parse. The images are the last leg's: x86_64 in a
 /// full run, riscv64 when `--arch x86_64` was not asked for, aarch64 when it was the only leg. No
-/// crash test runs on x86_64 (the twins in `filesystem_tests` and `riscv_virtual_io_tests` are cfg-gated
+/// crash test runs on x86_64 (the twins in `filesystem_tests` and `riscv64_virtual_io_tests` are cfg-gated
 /// to their ISAs), so after an x86_64 leg the crash check is skipped: a check whose subject did not
 /// happen is worse than no check. See notes/xtask-test.md.
 fn images_after_the_run(legs: ArchLegs, filtered: bool) -> bool {

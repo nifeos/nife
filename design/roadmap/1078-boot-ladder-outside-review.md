@@ -41,8 +41,8 @@ a `Head` that prints through `Display` and matches a line in place. `src/rungs.r
 verdict's two inner heads (`SELF_TEST_FAILED`, `SELF_TEST_ABSENT`), the fifteen check names
 (`SELF_TEST_CHECKS`) and the two older list lengths (`EARLIER_SELF_TEST_CHECK_COUNTS`).
 `src/verdict.rs` holds the verdict's grammar: `Verdict` prints it and `ParsedVerdict` reads it.
-`kernel_half` and `self_test_program` hold the pages and slots the kernel, the progenitor and the
-self-test program agree on. The crate is `no_std`, with no dependencies and no `unsafe`. The kernel
+The pages and slots the kernel, the progenitor and the self-test program agree on are not in this
+crate; they are nife's `self_test_contract`, which depends on it. The crate is `no_std`, with no dependencies and no `unsafe`. The kernel
 prints its heads, the self-test program prints the verdict, the shell prints its banner, and
 `serial_console` and `xtask` read them through the same code. Soundness has nothing to review.
 Correctness lives in the agreement between the printer and the readers, and that is where the items
@@ -120,8 +120,9 @@ Ruled 2026-11-19 (UTC), option A. Every name stands as built. The accessors on `
 `machine`, `self_test`, `self_test_subject`, `core_runs`, `shell_banner` and `screen_held`. The
 constants are `SELF_TEST_FAILED`, `SELF_TEST_ABSENT`, `SELF_TEST_CHECKS` and
 `EARLIER_SELF_TEST_CHECK_COUNTS`. The printed bytes stay as ruled 2026-11-14 (UTC), so the shell
-banner keeps its text and takes no period. The names in `verdict`, `kernel_half` and
-`self_test_program` are outside this ruling and go to the crate's release name review.
+banner keeps its text and takes no period. The names in `verdict` are outside this ruling and go
+to the crate's release name review; `kernel_half` and `self_test_program` are nife's, in
+`self_test_contract`.
 
 Prior art: systemd's readiness protocol names its messages for what they say (`READY=1`,
 `STATUS=`), and its reader and writer share `sd_notify`'s definition. U-Boot's `bootstage` names
@@ -173,11 +174,10 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
   it is a reviewed interface.
 - P1-8, the ten public names: Done, [#3589](https://github.com/nifeos/nife/pull/3589),
   [#3655](https://github.com/nifeos/nife/pull/3655). Ratified as built (ruled 2026-11-19 UTC).
-- P1-8b, the `self_test_program` names: Open. About twenty provisional names, with one change
-  proposed (`DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS` to
-  `DIRECT_MEMORY_ACCESS_OBSERVER_VIRTUAL_ADDRESS`) and not applied; a two-way door the maintainer
-  rules provisionally. Which of the module's items stay public is a question for the self-test
-  program's own move.
+- P1-8b, the `self_test_program` names: out of this crate. The module is in nife's
+  `self_test_contract`, so its names, and the proposed change of
+  `DIRECT_MEMORY_ACCESS_PEEK_VIRTUAL_ADDRESS` to `DIRECT_MEMORY_ACCESS_OBSERVER_VIRTUAL_ADDRESS`,
+  are nife's to rule and not this review's.
 - P1-9, the boundary claim and the matching rule: Done,
   [#3586](https://github.com/nifeos/nife/pull/3586),
   [#3655](https://github.com/nifeos/nife/pull/3655).
@@ -197,42 +197,20 @@ The checks are in [the appendix](1078-boot-ladder-outside-review/done-when.md).
   [#3589](https://github.com/nifeos/nife/pull/3589).
 - Decision, printed check names spelled out: Done (ruled 2026-11-14 UTC),
   [#3586](https://github.com/nifeos/nife/pull/3586).
+- Decision, clear the review: Done (ruled 2026-11-21 UTC, option A). The crate moves with
+  `publish = false`, no tag and no publication, and carries only the console lines; `kernel_half`
+  and `self_test_program` stay in nife as `self_test_contract`.
 - The move: Open. The review package is
-  [notes/crate-reviews/boot-ladder.md](../../notes/crate-reviews/boot-ladder.md), and nifeos/boot_ladder
-  does not exist; the clearance under Open decisions comes next.
+  [notes/crate-reviews/boot-ladder.md](../../notes/crate-reviews/boot-ladder.md). The split is in
+  tree; nifeos/boot_ladder does not exist yet.
 
 ## Open decisions
 
-One question is open, below. The publishing hold stands.
-
-### Clear the review, which creates nifeos/boot_ladder
-
-Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
-architect reads; clearing it is the go to create the crate's repository and move the crate.
-The package for `boot_ladder` exists. The crate's in-tree work
-lacks only P1-7's lint section and P2-12's growth; P0-1 and P0-2 come with the move itself.
-
-Recommendation: A.
-
-- A. The architect clears the review package now.
-- B. Hold the package until milestone 972's names land, so the move carries them and the new
-  repository does not take a release for each.
-
-Door: one-way. The template's workflows and nife's pin act on a repository and a moved
-crate from the first day; moving back is a second move.
-
-Prior art (recalled, not read): the Rust project moved `libc` and `compiler_builtins` out of the
-compiler's tree into repositories of their own, and the compiler consumes them back by version.
-Where nife differs: a review package checks that the crate stands alone before it leaves, not
-after. Example: `jh7110_entropy`, whose review the architect cleared on 2026-11-01 (UTC), lives in
-nifeos/jh7110_entropy, and nife depends on it at a pinned revision.
-
-What it blocks: the move, and so the first tag and the first publish.
+None. The publishing hold stands.
 
 ## Follow-on
 
-- **Outstanding.** The Open lines under [Finding status](#finding-status) and the review clearance
-  under [Open decisions](#open-decisions).
+- **Outstanding.** The Open lines under [Finding status](#finding-status).
 
 ## BUGS
 

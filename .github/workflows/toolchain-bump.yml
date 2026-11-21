@@ -186,7 +186,7 @@ jobs:
           mkdir -p "$out"
           : > "$out/report.md"
           for leg in aarch64 riscv64 x86_64; do
-            case "$leg" in aarch64) flag="" ;; riscv64) flag="--riscv" ;; x86_64) flag="--x86" ;; esac
+            case "$leg" in aarch64) flag="" ;; riscv64) flag="--riscv64" ;; x86_64) flag="--x86" ;; esac
             # shellcheck disable=SC2086 # $flag is empty for aarch64.
             script/bench $flag --restamp --report "$out/$leg.md" || true
             cat "$out/$leg.md" >> "$out/report.md" 2>/dev/null \
@@ -531,7 +531,7 @@ jobs:
           For each floor still naming \`$CURRENT\`, read the table above, then on this branch:
 
           \`\`\`
-          script/bench --check                                  # or --riscv / --x86
+          script/bench --check                                  # or --riscv64 / --x86
           script/bench --save --why \"$TARGET: <what moved>\"   # --why is required
           \`\`\`
 

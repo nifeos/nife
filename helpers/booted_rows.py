@@ -371,8 +371,8 @@ def selftest_logs():
                '[PANIC] panicked at an assertion\n')
     x86 = ('test kernel::user::pass_tests::attack_five ... ok\n'
            'test kernel::user::pass_tests::attack_four_six_seven ... ok\n')
-    riscv = 'test kernel::user::pass_tests::attack_five ... ok\n'
-    return aarch64, x86, riscv
+    riscv64 = 'test kernel::user::pass_tests::attack_five ... ok\n'
+    return aarch64, x86, riscv64
 
 
 # The recorded passes the checker must reproduce (milestone 920's Done means): each note's own count.
@@ -408,8 +408,8 @@ def selftest(tree):
         assert tests[('pass_tests', 'attack_five')] == ('boot', [5], True)
         assert tests[('pass_tests', 'attack_four_six_seven')] == ('boot', [4, 6, 7], True)
         assert tests[('lib', 'six_on_the_host')] == ('host', [6], True)
-        aarch64, x86, riscv = selftest_logs()
-        runs = read_log(aarch64) + read_log(x86, 'x86_64') + read_log(riscv, 'riscv64')
+        aarch64, x86, riscv64 = selftest_logs()
+        runs = read_log(aarch64) + read_log(x86, 'x86_64') + read_log(riscv64, 'riscv64')
         grades = {r: grade_row(r, floor, tests, runs, {1}) for r in floor['rows'] if r != 3}
     assert grades[1] == (True, 'booted (pass 7\'s test, accepted in writing)'), grades[1]
     assert grades[2] == (False, 'rerun of the row\'s cited test'), grades[2]

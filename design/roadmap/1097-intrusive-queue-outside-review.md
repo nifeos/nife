@@ -25,10 +25,13 @@ cargo-mutants. No new tool.
 Every item not Done blocks the first crates.io publish, which waits until every outside-review
 milestone reaches delivery.
 
-- Item 1, the manifest is a workspace member's: Open. The move writes the crate's own rows.
-- Item 2, the front page points into nife: Open. The notes pointers (`src/lib.rs` lines 3, 64 and
-  243), the DECISIONS citation (line 287) and the `Name:` blocks leave with the move.
-- Item 3, no repository skeleton: Open. The move stages the README and the two license files.
+- Item 1, the manifest is a workspace member's: Done. The manifest states its own license,
+  `rust-version = "1.85"`, description, keywords, categories and lint tables.
+- Item 2, the front page points into nife: Done for the notes pointers and the DECISIONS
+  citation, which `src/lib.rs` no longer carries, and the README holds the contract's fine print.
+  The `Name:` blocks leave with the move.
+- Item 3, no repository skeleton: Open. The README and the two license files are in the crate;
+  the move stages the template's scaffold, and a stranger run goes on record after it.
 - Item 4, `Queue<T>` is `Send` for every `T`: Done, by this lane's pull request. `Queue<T>` is `Send`
   only when `T: Send`, with a compile-fail doctest (decision 1).
 - Item 5, the documentation teaches an aliasing minting shape: Done,
