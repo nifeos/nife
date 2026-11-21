@@ -1,7 +1,7 @@
 # Review package: `address_space_layout`
 
 *Name: provisional. The `address_space_layout` package of [crate-reviews.md](../crate-reviews.md),
-in its own file because the packages together outgrow the page.*
+in its own file.*
 
 The architect reads this to clear the crate for its move to its own repository, as part of step 3
 of [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
@@ -15,12 +15,11 @@ milestone first; it holds the full item text.
 The one table every program of a process agrees on: where its image, stack, heap and shared windows
 sit in the low half of its address space. Eight bands tile the first 2 GiB, the same on aarch64,
 riscv64 and x86_64. `const fn` checks (`pair_page`, `runtime_window`, `service_window` and the
-whole-window `window`) stop the build when a page or a window is placed outside its band, and
+whole-window `window`) stop the build when a page or a window sits outside its band, and
 `check_image` tells a loader why an image does not fit. The crate is `no_std`, has no dependency
 and no `unsafe` (`#![forbid(unsafe_code)]`), and eleven Kani harnesses prove the layout. The kernel,
 the program builder, the runtime, the linker script test and every fixture that shares a page read
-it. Nothing in the crate points back into nife except a few lines of text listed under what still
-blocks the move.
+it. Two lines of text point back into nife; the list of what blocks the move names them.
 
 ## Identity
 
@@ -57,21 +56,21 @@ All of these ran on this lane's tree, at the commit the pull request carries.
 
 | check | result |
 |---|---|
-| `script/crate-standalone address_space_layout` | five failures, all known and all the move's work: `names` (27 names not ratified), `files` (no `LICENSE-MIT`, no `LICENSE-APACHE`), `citations` (one milestone citation at `src/lib.rs:425`, one path into the nife tree at `src/verification.rs:4`). Passing: the build on 1.88 for the host and the three bare-metal targets (`aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf`, `x86_64-unknown-none`), Kani 11 of 11 harnesses verified with 0 failures, and all eleven falsification patches turn exactly their own harness red |
+| `script/crate-standalone address_space_layout` | five failures, all known and all the move's work: `names` (27 names not ratified), `files` (no `LICENSE-MIT`, no `LICENSE-APACHE`), `citations` (one milestone citation in the `an_image_the_size_of_a_large_program_fits_and_the_old_ceiling_is_gone` test, one path into the nife tree in the `verification` module's opening comment). Passing: the build on 1.88 for the host and the three bare-metal targets (`aarch64-unknown-none-softfloat`, `riscv64imac-unknown-none-elf`, `x86_64-unknown-none`), Kani 11 of 11 harnesses verified with 0 failures, and all eleven falsification patches turn exactly their own harness red |
 | `cargo test -p address_space_layout` | 7 unit tests and 2 doctests pass |
 | `cargo clippy -p address_space_layout --all-targets -- -D warnings` | no warning |
 | `cargo doc -p address_space_layout --no-deps` with `RUSTDOCFLAGS="-D warnings"` | no warning |
 | the template's `spelled_out`, `unit_symbols`, `question_shape` and `british_spelling` over both source files | 109 names judged, 0 refused each |
 | the template's `register_names` over both source files | refuses five Kani harness names that contain the word `address` (item 13, below). Nothing else |
 | `script/names address_space_layout` and `python3 helpers/name_release.py --draft address_space_layout` | the crate name ratified; `INITIAL_RAMDISK_VIRTUAL_ADDRESS`, `MAXIMUM_STACK_PAGES` and the `verification` module ratified; `VERSION`, `INTERFACE_ID` and `window` provisional; every other public item has no block |
-| `script/crate-review-packet --no-rustdoc address_space_layout` | the packet the tables above draw on; its public API list is the grep fallback, so signatures were read from the source |
+| `script/crate-review-packet --no-rustdoc address_space_layout` | the packet the tables above draw on; its public API list is the grep fallback, so the lane read signatures from the source |
 
 Not run, and so not claimed: the stranger test (`script/stranger-test` on the README), the
 template's workflows (`check`, `proofs`, `weekly`, `msrv`, mutation, semver), a fresh
 `cargo mutants` run, `cargo package`, `cargo-semver-checks` (a first release has no baseline),
 `script/crate-move --dry-run`, and `cargo xtask std-src` against a git dependency. The 1.88 floor
 is the lowest toolchain installed here; the template's `msrv` job confirms the exact floor.
-`script/lint` is run by the lane before it pushes, and CI runs it again.
+The lane runs `script/lint` before it pushes, and CI runs it again.
 
 ## Public API
 
@@ -99,29 +98,34 @@ No nife type appears in a signature. What a stranger may find surprising:
 
 ## Proofs
 
-Eleven Kani harnesses, each with a falsification patch under `falsifications/`: every address
-below 2 GiB lies in exactly one band and the map lies in the user half of all three architectures;
-`BANDS` is in address order; each of `pair_page`, `runtime_window` and `service_window` accepts
-every page of its band and refuses every address its documentation forbids; `window` accepts
-every page-aligned, non-empty window its band holds and refuses a malformed or overrunning one;
-and `check_image` places, refuses or calls outside exactly as documented. The harnesses name no
-unproved assumption. Two further facts the crate checks at compile time rather than by proof: the
-bands tile `[0, 2 GiB)` with no gap, and the stack and process pages share one 2 MiB page-table
-window.
+Eleven Kani harnesses, each with a falsification patch under `falsifications/`, state the layout.
+
+- Every address below 2 GiB lies in exactly one band, and the map lies in the user half of all
+  three architectures.
+- `BANDS` is in address order.
+- `pair_page`, `runtime_window` and `service_window` each accept every page of their band and
+  refuse every address their documentation forbids.
+- `window` accepts every page-aligned, non-empty window its band holds. It refuses a malformed or
+  overrunning one.
+- `check_image` places, refuses or calls outside exactly as documented.
+
+The harnesses name no unproved assumption. Two further facts hold at compile time and not by
+proof: the bands tile `[0, 2 GiB)` with no gap, and the stack and process pages share one 2 MiB
+page-table window.
 
 ## Rulings in force
 
 - The crate is `address_space_layout`, in code and as the package name, with no alias of the
   earlier spelling (decision N1, option A, ruled 2026-11-14 UTC).
-- The band numbers and `MAXIMUM_STACK_PAGES` are ratified by §171 (where a program image starts),
-  option D.
+- The band numbers and `MAXIMUM_STACK_PAGES` come from §171 (where a program image starts),
+  option D, which ratified them.
 - The whole-window check `window` is the maintainer's provisional ruling of 2026-11-14 UTC, a
   two-way door before the first tag. The three one-page functions are wrappers over it.
 - The maintainer rules two-way names provisionally; item 7, item 15 and item 17 are in that class.
 
 ## Names
 
-Everything below is provisional or unblocked by a ruling. None of it is ratified by this package;
+Everything below is provisional unless marked ratified. This package ratifies none of it;
 the architect ratifies, renames or sends it back.
 
 | item | name as built | state | reason | the architect's to ratify |
@@ -133,9 +137,9 @@ the architect ratifies, renames or sends it back.
 | 9 | `window` | provisional, built | one public function that checks a whole window against its band; the alternative is three sibling spans, which triples the surface. The `Name:` block says the architect may revisit it before the first tag | yes |
 | 15 | `Band::new` | provisional, not built | a `const` constructor asserting `start < end` and page alignment, so a band built through it cannot be inverted. The fields stay public. Adding it removes nothing | yes |
 | 17 | public `LOW_HALF_SPLIT_SHIFTS` | provisional, not built | `page_tables` needs the constant to test its three `SPLIT_SHIFT`s against it; making it `pub` adds one public name | yes |
-| - | `VERSION`, `INTERFACE_ID` | provisional | the pair `block_roster_contract` and the other contract crates ratified; this crate's blocks were minted by the lane that added them | yes, as built |
+| - | `VERSION`, `INTERFACE_ID` | provisional | the pair `block_roster_contract` and the other contract crates ratified; a lane minted this crate's blocks | yes, as built |
 | - | `INITIAL_RAMDISK_VIRTUAL_ADDRESS`, `MAXIMUM_STACK_PAGES` | ratified | | no |
-| - | `Band`, the eight band constants, `BANDS`, `bytes`, `contains`, `holds`, `pair_page`, `runtime_window`, `service_window`, `check_image`, `ImagePlacement` and its variants | no block | none was minted with a `Name:` block; they pass the template's naming checks (109 names, 0 refused) | review as part of the clearance |
+| - | `Band`, the eight band constants, `BANDS`, `bytes`, `contains`, `holds`, `pair_page`, `runtime_window`, `service_window`, `check_image`, `ImagePlacement` and its variants | no block | none carries a `Name:` block; they pass the template's naming checks (109 names, 0 refused) | review as part of the clearance |
 
 ## What still blocks the move
 
@@ -143,7 +147,7 @@ the architect ratifies, renames or sends it back.
 |---|---|
 | Item 2: the falsification records read `crates/address_space_layout/falsifications/<harness>.patch` and every patch header names `a/crates/address_space_layout/src/lib.rs`. `helpers/crate_move.py` rewrites the records and regenerates every patch in crate-relative form at the move; this package did not run the move, so that is unconfirmed. | move lane |
 | Item 5: the license texts, `CHANGELOG.md`, `_typos.toml`, caller workflows, `.github` files and the recorded stranger run | move lane |
-| The two lines of nife text: `src/lib.rs:425` names a milestone and `src/verification.rs:4` names `script/verify`; the 27 `Name:` blocks go at the move | move lane |
+| The two lines of text that point into nife: the test `an_image_the_size_of_a_large_program_fits_and_the_old_ceiling_is_gone` names a milestone and the `verification` module's opening comment names `script/verify`; the 27 `Name:` blocks go at the move | move lane |
 | Item 11: one `.github/mutants-exempts` line for the `check_image` `>` to `>=` mutant, with the equivalence reason | move lane |
 | Item 13: the template's `register_names.py` reads `address` in a harness function name as an address. Until nifeos/crate-workflows fixes it, the crate's `check / standalone` is red on its first run | maintainer, in another repository |
 | The pins: all 27 dependents move to `address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "<landed commit>" }` in one pull request (one revision per contract per image), preferably through one root `[workspace.dependencies]` entry | move lane |
@@ -151,7 +155,7 @@ the architect ratifies, renames or sends it back.
 | The three provisional names of items 7, 15 and 17 and the name `window`, once ruled | the architect, then the lane that builds them |
 | Item 18 and the milestone 1017 table: its blocker row for this crate names a test that has since moved; the lane that edits 1017 drops it | the 1017 lane |
 
-Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16 of the milestone are done in this tree. The nife-side
+Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16 of the milestone stand done in this tree. The nife-side
 checks that walk `crates/` (item 17) also need `helpers/interface_declarations_check.py` to read
 the pinned checkout through `cargo metadata`, in the move's pull request.
 
