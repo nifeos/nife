@@ -34,10 +34,16 @@ pub const MAXIMUM_WORDS_NAME_BYTES: usize = 16;
 /// `EACCES` is the Unix answer, "you were denied", which implies a policy that could have said
 /// yes. There is no policy here. The capability carries one direction, so the honest statement
 /// is about the thing itself, and `std::io::ErrorKind::ReadOnlyFilesystem` is what a caller sees.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "read-only file system")]
 pub const EROFS: i32 = 30;
 
 /// `ENOTDIR`, the reply to a [`super::fs::CREATE`] through a file grant. "This is a file, not a
 /// directory" is a fact about what the holder has, not a refusal of what it asked.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "not a directory")]
 pub const ENOTDIR: i32 = 20;
 
 /// The handle the caretaker mints for the one file it serves. Fixed, because there is exactly

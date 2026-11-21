@@ -29,22 +29,40 @@ pub const INTERFACE_ID: u64 = 15;
 /// either, `ENOENT`. `EISDIR` for a directory. A relative path `a/b/f` is walked as [`OPENDIR`]
 /// hops asking for `DESCEND | w1`, `w1` being the per-step rights: a step that comes up short is
 /// [`super::directory::EPERM`], and an empty step, `.` or `..` is `EINVAL`.
+///
+/// POSIX call: `open(2)`.
+#[doc(alias = "open")]
 pub const OPEN: u64 = 1;
 /// Read up to [`req_len`] bytes from the handle ([`req_handle`]) at offset `w1` into the shared
 /// page. Reply `r0` = bytes read (≥ 0, 0 at end of file) into the shared page, or an error.
+///
+/// POSIX call: `read(2)`.
+#[doc(alias = "read")]
 pub const READ: u64 = 2;
 /// Write [`req_len`] bytes from the shared page to the handle at offset `w1`. Reply `r0` = bytes
 /// written (≥ 0), or an error.
+///
+/// POSIX call: `write(2)`.
+#[doc(alias = "write")]
 pub const WRITE: u64 = 3;
 /// Close the handle ([`req_handle`]). Reply `r0` = 0, or an error if the handle was not open.
+///
+/// POSIX call: `close(2)`.
+#[doc(alias = "close")]
 pub const CLOSE: u64 = 4;
 /// The current size in bytes of the handle's file. Reply `r0` = size (≥ 0), or an error.
+///
+/// POSIX call: `fstat(2)`.
+#[doc(alias = "file status")]
 pub const FSTAT: u64 = 5;
 /// Create the name in the shared page ([`req_len`] bytes) under the directory handle in
 /// [`req_handle`] and open it: [`OPEN`]'s shape, second word 0. Reply `r0` = a handle, or an error.
 ///
 /// Needs [`super::directory::CREATE`], else [`super::directory::EROFS`]. `EEXIST` if the name exists, and
 /// nothing is modified: create is create, not create-or-open.
+///
+/// POSIX call: `creat(2)`.
+#[doc(alias = "create")]
 pub const CREATE: u64 = 6;
 /// Set the size of the handle's ([`req_handle`]) file to exactly `w1` bytes; [`req_len`] is 0.
 /// Reply `r0` = 0, or an error.
@@ -53,6 +71,9 @@ pub const CREATE: u64 = 6;
 /// extends with zeroes. Without the shrink a write shorter than the file would leave the old tail
 /// behind it. Truncating to the current size is a no-op, which
 /// `std::fs::write` relies on, since it truncates unconditionally.
+///
+/// POSIX call: `ftruncate(2)`.
+#[doc(alias = "truncate")]
 pub const TRUNCATE: u64 = 7;
 /// **Descend**: resolve the name in the shared page under the directory handle in [`req_handle`]
 /// and hand back a handle to the child directory. `w1` is the requested [`super::directory`] mask, or
@@ -65,6 +86,9 @@ pub const TRUNCATE: u64 = 7;
 /// [`super::directory::DESCEND`] on the parent is `ENOENT`; a file is `ENOTDIR`; an empty component, `.`
 /// or `..` is `EINVAL`. A relative path is walked hop by hop, each step obeying these rules and
 /// asking for `DESCEND | requested`.
+///
+/// POSIX call: `opendir(3)`.
+#[doc(alias = "open directory")]
 pub const OPENDIR: u64 = 8;
 /// **Enumerate a directory handle.** [`req_handle`] is the directory and `w1` a cursor, the index
 /// of the first entry to return. Reply `r0` = bytes written into the shared page as
@@ -73,12 +97,18 @@ pub const OPENDIR: u64 = 8;
 /// Needs [`super::directory::ENUMERATE`]; its absence is [`super::directory::EPERM`], not an empty listing
 /// (a filesystem declares what it offers and must be truthful). Entries are sorted
 /// by name, so a directory changed between two calls can repeat or skip a name.
+///
+/// POSIX call: `readdir(3)`.
+#[doc(alias = "read directory")]
 pub const READDIR: u64 = 9;
 /// **Make a child directory and hand back a capability to it**: [`OPENDIR`]'s shape and its
 /// attenuation, so making a directory mints no more authority than finding one. `w1` takes
 /// [`super::directory::PARENT_RIGHTS`] as [`OPENDIR`] does. Needs
 /// [`super::directory::CREATE`] and [`super::directory::DESCEND`]; `EEXIST` if the name is there, for
 /// [`CREATE`]'s reason.
+///
+/// POSIX call: `mkdir(2)`.
+#[doc(alias = "make directory")]
 pub const MKDIR: u64 = 10;
 /// **Move a name to another directory, or to another name in the same one.** The source is
 /// [`req_handle`]/[`req_len`] of the request word; the destination rides in `w1`, packed by
@@ -90,6 +120,9 @@ pub const MKDIR: u64 = 10;
 /// kind is replaced; a file over a directory is `EISDIR`, the reverse `ENOTDIR`, a non-empty
 /// destination directory `ENOTEMPTY`, and a directory moved between directories `EINVAL`. A rename
 /// onto itself succeeds.
+///
+/// POSIX call: `rename(2)`.
+#[doc(alias = "rename")]
 pub const RENAME: u64 = 11;
 /// **Remove a name from a directory: `unlink`, not revocation.** The name in the shared page
 /// ([`req_len`] bytes) leaves the directory in [`req_handle`]; second word 0. Reply `r0` = 0, or an
@@ -99,6 +132,9 @@ pub const RENAME: u64 = 11;
 /// handle are gone. Needs [`super::directory::REMOVE`], else [`super::directory::EROFS`], checked before the
 /// name is resolved so a refusal says nothing about the name. A directory is
 /// [`super::directory::EISDIR`]: [`RMDIR`] takes only an empty one, so no single call removes a subtree.
+///
+/// POSIX call: `unlink(2)`.
+#[doc(alias = "unlink")]
 pub const UNLINK: u64 = 12;
 /// **Remove an empty directory**, `rmdir(2)`: [`UNLINK`]'s shape, and it hands nothing back.
 /// Reply `r0` = 0, or an error.
@@ -108,6 +144,9 @@ pub const UNLINK: u64 = 12;
 /// [`super::directory::REMOVE`] on the parent, else [`super::directory::EROFS`], checked before the name is
 /// resolved. A file is `ENOTDIR`. Not revocation: a handle onto the removed directory then fails
 /// with `ENOENT`.
+///
+/// POSIX call: `rmdir(2)`.
+#[doc(alias = "remove directory")]
 pub const RMDIR: u64 = 13;
 
 /// **Read one extended attribute of the node a handle names**, file or directory. The name is
@@ -117,6 +156,9 @@ pub const RMDIR: u64 = 13;
 ///
 /// Needs [`super::directory::READ`] on the handle, else `EBADF`, as [`READ`] does. See [`super::extended_attribute`]
 /// for why there is no attribute right.
+///
+/// POSIX call: `getxattr(2)`.
+#[doc(alias = "get extended attribute")]
 pub const GETXATTR: u64 = 14;
 /// **Set one extended attribute on the node a handle names.** The name is [`req_len`] bytes at the
 /// start of the shared page and the value follows it; `w1` packs the value's length and type code
@@ -126,6 +168,9 @@ pub const GETXATTR: u64 = 14;
 /// (the same rule). Needs [`super::directory::WRITE`], else [`super::directory::EROFS`]. `ERANGE` for a name the
 /// store cannot hold, [`super::extended_attribute::E2BIG`] for an over-long value, [`super::extended_attribute::ENOSPC`] at
 /// [`super::extended_attribute::MAXIMUM_ATTRIBUTES`] attributes.
+///
+/// POSIX call: `setxattr(2)`.
+#[doc(alias = "set extended attribute")]
 pub const SETXATTR: u64 = 15;
 /// **List the attribute names on the node a handle names**.
 ///
@@ -137,6 +182,9 @@ pub const SETXATTR: u64 = 15;
 /// exactly, so a listing is always complete in one reply and cannot be observed half-changed.
 ///
 /// Needs [`super::directory::READ`], refused with `EBADF`, for [`GETXATTR`]'s reason.
+///
+/// POSIX call: `listxattr(2)`.
+#[doc(alias = "list extended attributes")]
 pub const LISTXATTR: u64 = 16;
 /// **Remove one extended attribute from the node a handle names**.
 ///
@@ -146,6 +194,9 @@ pub const LISTXATTR: u64 = 16;
 /// specific thing and "it was not there" is the answer.
 ///
 /// Needs [`super::directory::WRITE`], refused with [`super::directory::EROFS`].
+///
+/// POSIX call: `removexattr(2)`.
+#[doc(alias = "remove extended attribute")]
 pub const REMOVEXATTR: u64 = 17;
 
 /// **How much room the store behind this capability has**: POSIX `statfs`, cut to three numbers.
@@ -161,6 +212,9 @@ pub const REMOVEXATTR: u64 = 17;
 /// - Two subtrees on one image can signal through the free count; isolation needs two images
 ///   the same way.
 /// - The numbers are a forecast: the store's `ENOSPC` at write time decides.
+///
+/// POSIX call: `statfs(2)`.
+#[doc(alias = "file system statistics")]
 pub const STATFS: u64 = 18;
 
 /// **Make everything this server has acknowledged durable**.
@@ -178,6 +232,9 @@ pub const STATFS: u64 = 18;
 /// - It syncs the whole device, never a subtree or a file.
 /// - It does not fence: a write and a sync issued at once on two handles are unordered.
 /// - The count is a fact about the device, so two clients of one image can watch each other sync.
+///
+/// POSIX call: `fsync(2)`.
+#[doc(alias = "synchronize")]
 pub const SYNC: u64 = 19;
 
 /// **The modification time of `name`, in Unix seconds** (`touch`'s two behaviors

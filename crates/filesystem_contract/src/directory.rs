@@ -78,23 +78,41 @@ pub const REMOVE_TREE: u64 = ENUMERATE | DESCEND | REMOVE;
 
 /// `EROFS`: a mutating right the capability does not carry. The same number and the same
 /// argument as [`super::grant::EROFS`].
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "read-only file system")]
 pub const EROFS: i32 = 30;
 /// `EPERM`: [`ENUMERATE`] withheld. The only refusal here that must be loud rather than
 /// concealing, because concealment would mean lying about the directory.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "operation not permitted")]
 pub const EPERM: i32 = 1;
 /// `EISDIR`: [`super::fs::OPEN`] of a name that is a directory. [`super::fs::OPENDIR`] is the
 /// verb, and answering with a useless file handle instead is how a caller ends up reading a
 /// directory's raw bytes and believing them.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "is a directory")]
 pub const EISDIR: i32 = 21;
 /// `ENOTDIR`: [`super::fs::OPENDIR`] of a name that is a file, or a directory verb aimed at a
 /// file handle. Same number and same argument as [`super::grant::ENOTDIR`].
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "not a directory")]
 pub const ENOTDIR: i32 = 20;
 /// `EINVAL`: a name that is not a single component, and [`super::fs::RENAME`]'s refusal to move
 /// a **directory** between two directories (the verb's own doc gives the cycle argument).
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "invalid argument")]
 pub const EINVAL: i32 = 22;
 /// `ENOTEMPTY`: [`super::fs::RENAME`] over a destination directory that still has entries in it,
 /// and [`super::fs::RMDIR`] of one. On `RMDIR` it is the safety property rather than an
 /// inconvenience: a verb that emptied what it found would put a whole subtree behind one call.
+///
+/// The POSIX error number, spelled as `errno.h` spells it.
+#[doc(alias = "directory not empty")]
 pub const ENOTEMPTY: i32 = 39;
 
 /// **What a refusal from this contract means, in one sentence a shell can print.**
