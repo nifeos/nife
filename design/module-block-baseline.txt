@@ -2300,13 +2300,10 @@ crates/filesystem_fixture/src/lib.rs::ABSOLUTE_REACHED_INNER
 
 crates/filesystem_fixture/src/lib.rs::ABSOLUTE_REACHED_SECRET
 
-crates/filesystem_fixture/src/lib.rs::ABS_INNER
 
-crates/filesystem_fixture/src/lib.rs::ABS_SECRET
 
 crates/filesystem_fixture/src/lib.rs::AGREED
 
-crates/filesystem_fixture/src/lib.rs::ATTRS_FAILED
 
 crates/filesystem_fixture/src/lib.rs::B
 
@@ -2353,7 +2350,6 @@ crates/filesystem_fixture/src/lib.rs::ENUMERATED
 
 crates/filesystem_fixture/src/lib.rs::ENUMERATED_A_STRANGER
 
-crates/filesystem_fixture/src/lib.rs::ESP
 
 crates/filesystem_fixture/src/lib.rs::EXCLUDED_A_STRANGER
 
@@ -2371,7 +2367,6 @@ crates/filesystem_fixture/src/lib.rs::GLOBSET
 
 crates/filesystem_fixture/src/lib.rs::GLOB_BODY
 
-crates/filesystem_fixture/src/lib.rs::GLOB_DIR
 
 crates/filesystem_fixture/src/lib.rs::GLOB_FAILED
 
@@ -2397,7 +2392,6 @@ crates/filesystem_fixture/src/lib.rs::GRANTED_ACCESS_FAILED
 
 crates/filesystem_fixture/src/lib.rs::GRANTED_ACCESS_FAILED
 
-crates/filesystem_fixture/src/lib.rs::GRANTED_ATTRS_FAILED
 
 crates/filesystem_fixture/src/lib.rs::GRANTED_READ_FAILED
 
@@ -2413,7 +2407,6 @@ crates/filesystem_fixture/src/lib.rs::INNER_BODY
 
 crates/filesystem_fixture/src/lib.rs::KIND
 
-crates/filesystem_fixture/src/lib.rs::LBA
 
 crates/filesystem_fixture/src/lib.rs::LEAF
 
@@ -2435,15 +2428,12 @@ crates/filesystem_fixture/src/lib.rs::LISTED_ROOT
 
 crates/filesystem_fixture/src/lib.rs::MADE
 
-crates/filesystem_fixture/src/lib.rs::MADE_A_DIR
 
 crates/filesystem_fixture/src/lib.rs::MADE_BODY
 
 crates/filesystem_fixture/src/lib.rs::MADE_BODY
 
-crates/filesystem_fixture/src/lib.rs::MADE_DIR
 
-crates/filesystem_fixture/src/lib.rs::MADE_DIR
 
 crates/filesystem_fixture/src/lib.rs::MADE_NAME
 
@@ -2483,33 +2473,19 @@ crates/filesystem_fixture/src/lib.rs::NARROW
 
 crates/filesystem_fixture/src/lib.rs::NAVIGATION_FAILED
 
-crates/filesystem_fixture/src/lib.rs::NAV_BIND_ALIAS
 
-crates/filesystem_fixture/src/lib.rs::NAV_BIND_MARKER
 
-crates/filesystem_fixture/src/lib.rs::NAV_BIND_NESTED
 
-crates/filesystem_fixture/src/lib.rs::NAV_BODY
 
-crates/filesystem_fixture/src/lib.rs::NAV_DIR
 
-crates/filesystem_fixture/src/lib.rs::NAV_EMPTY
 
-crates/filesystem_fixture/src/lib.rs::NAV_GONE
 
-crates/filesystem_fixture/src/lib.rs::NAV_INSIDE
 
-crates/filesystem_fixture/src/lib.rs::NAV_KEPT
 
-crates/filesystem_fixture/src/lib.rs::NAV_TOUCH
 
-crates/filesystem_fixture/src/lib.rs::NAV_TOUCH_AT_RFC3339
 
-crates/filesystem_fixture/src/lib.rs::NAV_TOUCH_AT_UNIX
 
-crates/filesystem_fixture/src/lib.rs::NAV_TOUCH_BODY
 
-crates/filesystem_fixture/src/lib.rs::NAV_TOUCH_NO_SETTIME
 
 
 
@@ -2546,9 +2522,7 @@ crates/filesystem_fixture/src/lib.rs::PWD_IS_ROOT
 
 crates/filesystem_fixture/src/lib.rs::PWD_STARTS_AT_ROOT
 
-crates/filesystem_fixture/src/lib.rs::RAND_READ
 
-crates/filesystem_fixture/src/lib.rs::RAND_WRITE
 
 crates/filesystem_fixture/src/lib.rs::REACHED_ACROSS
 
@@ -2566,21 +2540,15 @@ crates/filesystem_fixture/src/lib.rs::REACHED_SECRET
 
 crates/filesystem_fixture/src/lib.rs::REACHED_SIBLING
 
-crates/filesystem_fixture/src/lib.rs::READ_ATTRS
 
-crates/filesystem_fixture/src/lib.rs::RECORD
 
 crates/filesystem_fixture/src/lib.rs::RECORD_READ
 
-crates/filesystem_fixture/src/lib.rs::REDIR
 
 crates/filesystem_fixture/src/lib.rs::REDIRECTED_FROM_MOUNT
 
-crates/filesystem_fixture/src/lib.rs::REDIR_BODY
 
-crates/filesystem_fixture/src/lib.rs::REDIR_ONE
 
-crates/filesystem_fixture/src/lib.rs::REDIR_TWO
 
 
 crates/filesystem_fixture/src/lib.rs::RENAMED
@@ -2637,7 +2605,6 @@ crates/filesystem_fixture/src/lib.rs::SAW_NEITHER
 
 crates/filesystem_fixture/src/lib.rs::SAW_SECRET
 
-crates/filesystem_fixture/src/lib.rs::SCRATCH_INIT
 
 crates/filesystem_fixture/src/lib.rs::SCRATCH_NAME
 
@@ -2647,13 +2614,10 @@ crates/filesystem_fixture/src/lib.rs::SECRET
 
 crates/filesystem_fixture/src/lib.rs::SECRET_BODY
 
-crates/filesystem_fixture/src/lib.rs::SEQ_READ
 
-crates/filesystem_fixture/src/lib.rs::SEQ_WRITE
 
 crates/filesystem_fixture/src/lib.rs::SET_AND_READ_BACK
 
-crates/filesystem_fixture/src/lib.rs::SET_AN_ATTR
 
 crates/filesystem_fixture/src/lib.rs::SHARED_ISOLATED
 
@@ -2669,9 +2633,7 @@ crates/filesystem_fixture/src/lib.rs::SHARED_VICTIM_BODY
 
 crates/filesystem_fixture/src/lib.rs::SHARED_VICTIM_NAME
 
-crates/filesystem_fixture/src/lib.rs::SIZES
 
-crates/filesystem_fixture/src/lib.rs::SIZE_FILES
 
 crates/filesystem_fixture/src/lib.rs::SMALL_BODY
 
@@ -2693,7 +2655,6 @@ crates/filesystem_fixture/src/lib.rs::TOUCH_AT_ROUND_TRIPPED
 
 crates/filesystem_fixture/src/lib.rs::TOUCH_CREATED
 
-crates/filesystem_fixture/src/lib.rs::TOUCH_MTIME_ADVANCED
 
 crates/filesystem_fixture/src/lib.rs::TOUCH_NOW_NEEDS_ONLY_WRITE
 
@@ -2703,7 +2664,6 @@ crates/filesystem_fixture/src/lib.rs::TRUNCATED
 
 crates/filesystem_fixture/src/lib.rs::TWO_TREES_FAILED
 
-crates/filesystem_fixture/src/lib.rs::UNIT
 
 crates/filesystem_fixture/src/lib.rs::UNLINKED
 
@@ -2727,13 +2687,11 @@ crates/filesystem_fixture/src/lib.rs::WALK_ENTRIES
 
 crates/filesystem_fixture/src/lib.rs::WALK_FILES
 
-crates/filesystem_fixture/src/lib.rs::WARMUP
 
 crates/filesystem_fixture/src/lib.rs::WIDE
 
 crates/filesystem_fixture/src/lib.rs::WIDENED
 
-crates/filesystem_fixture/src/lib.rs::WIDE_COUNT
 
 crates/filesystem_fixture/src/lib.rs::WRITE_PATTERN
 
@@ -2741,7 +2699,6 @@ crates/filesystem_fixture/src/lib.rs::WROTE
 
 crates/filesystem_fixture/src/lib.rs::WROTE
 
-crates/filesystem_fixture/src/lib.rs::WROTE_ATTR
 
 crates/filesystem_fixture/src/lib.rs::name
 

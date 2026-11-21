@@ -133,7 +133,7 @@ pub fn stage<D: Disk>(srv: &mut Server<D>, parent: u32) -> Result<()> {
         srv.close(chain)?;
     }
     let wide = srv.make_dir(root, &copy(tree::WIDE)?, directory::ALL)?;
-    for i in 0..tree::WIDE_COUNT {
+    for i in 0..tree::WIDE_FILES {
         let name = tree::wide_name(i);
         file(
             srv,
@@ -152,8 +152,8 @@ pub fn stage<D: Disk>(srv: &mut Server<D>, parent: u32) -> Result<()> {
         tree::SMALL_BODY,
     )?;
     srv.close(narrow)?;
-    let sizes = srv.make_dir(root, &copy(tree::SIZES)?, directory::ALL)?;
-    for (name, len) in tree::SIZE_FILES {
+    let sizes = srv.make_dir(root, &copy(tree::BYTE_REGION)?, directory::ALL)?;
+    for (name, len) in tree::BYTE_REGION_FILES {
         let body: Vec<u8> = (0..len).map(tree::sized_byte).collect();
         file(srv, sizes, name, &body)?;
     }

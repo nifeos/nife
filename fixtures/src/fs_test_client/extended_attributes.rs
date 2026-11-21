@@ -10,7 +10,7 @@
 
 use filesystem_contract::{directory, extended_attribute, fs};
 use filesystem_fixture as fixture;
-use fixture::attrs;
+use fixture::attributes;
 use user_mode_runtime::call;
 
 use crate::channel::{
@@ -81,19 +81,25 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     // 1. Set an attribute and read it back: its bytes AND its type code. The kind is the half that
     //    catches a layer which stored the value and threw the type away, which is the thing that
     //    would foreclose indexing later without anyone noticing.
-    if xattr_set(scratch, attrs::NAME, attrs::KIND, attrs::VALUE) >= 0 {
-        let r = xattr_get(scratch, attrs::NAME);
+    if xattr_set(
+        scratch,
+        attributes::NAME,
+        attributes::KIND,
+        attributes::VALUE,
+    ) >= 0
+    {
+        let r = xattr_get(scratch, attributes::NAME);
         if r >= 0
-            && extended_attribute::reply_kind(r) == attrs::KIND
-            && extended_attribute::reply_value_len(r) == attrs::VALUE.len()
+            && extended_attribute::reply_kind(r) == attributes::KIND
+            && extended_attribute::reply_value_len(r) == attributes::VALUE.len()
         {
-            get_page(attrs::VALUE.len(), &mut buf);
-            if &buf[..attrs::VALUE.len()] == attrs::VALUE {
-                v |= attrs::SET_AND_READ_BACK;
+            get_page(attributes::VALUE.len(), &mut buf);
+            if &buf[..attributes::VALUE.len()] == attributes::VALUE {
+                v |= attributes::SET_AND_READ_BACK;
             }
         }
     } else {
-        v |= attrs::ATTRS_FAILED;
+        v |= attributes::ATTRIBUTES_FAILED;
     }
 
     // 2. The listing names it, and names nothing else. A store keyed on the wrong node would show up
@@ -105,12 +111,12 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
         let mut saw = false;
         for name in extended_attribute::list::iter(&buf[..(n as usize).min(buf.len())]) {
             count += 1;
-            if name == attrs::NAME {
+            if name == attributes::NAME {
                 saw = true;
             }
         }
         if saw && count == 1 {
-            v |= attrs::LISTED;
+            v |= attributes::LISTED;
         }
     }
 
@@ -129,16 +135,16 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     )
     .0 as i64;
     if filesystem_contract::reply_errno(r) == Some(extended_attribute::E2BIG) {
-        v |= attrs::OVERSIZE_REFUSED;
+        v |= attributes::OVERSIZE_REFUSED;
     }
 
     // 4. Removing it takes it away, and reading it afterwards is ENODATA. Without this the round
     //    trip above is equally true of a store that never forgets anything.
-    if xattr_remove(scratch, attrs::NAME) >= 0
-        && filesystem_contract::reply_errno(xattr_get(scratch, attrs::NAME))
+    if xattr_remove(scratch, attributes::NAME) >= 0
+        && filesystem_contract::reply_errno(xattr_get(scratch, attributes::NAME))
             == Some(extended_attribute::ENODATA)
     {
-        v |= attrs::GONE_AFTER_REMOVE;
+        v |= attributes::GONE_AFTER_REMOVE;
     }
 
     v |= an_attribute_follows_its_file_across_a_rename();
@@ -146,12 +152,12 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     // 6. And the file's death takes its attributes with it: unlink the name, make it again, and the
     //    new file has nothing on it. The node id is very likely reused, which is the case that makes
     //    a leaked blob a correctness bug rather than wasted space.
-    if dir_unlink(fs::ROOT, attrs::PROBE_MOVED) >= 0 {
-        let fresh = dir_create(fs::ROOT, attrs::PROBE_MOVED);
+    if dir_unlink(fs::ROOT, attributes::PROBE_MOVED) >= 0 {
+        let fresh = dir_create(fs::ROOT, attributes::PROBE_MOVED);
         if fresh >= 0 && xattr_list(fresh as u64) == 0 {
-            v |= attrs::GONE_AFTER_UNLINK;
+            v |= attributes::GONE_AFTER_UNLINK;
         }
-        let _ = dir_unlink(fs::ROOT, attrs::PROBE_MOVED);
+        let _ = dir_unlink(fs::ROOT, attributes::PROBE_MOVED);
     }
 
     // 7. The store is not in the namespace: it cannot be opened, created, or descended into.
@@ -163,7 +169,7 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
             directory::ALL,
         ) < 0
     {
-        v |= attrs::STORE_UNNAMEABLE;
+        v |= attributes::STORE_UNNAMEABLE;
     }
 
     v |= a_full_enumeration_does_not_name_the_store();
@@ -178,29 +184,39 @@ fn an_attribute_follows_its_file_across_a_rename() -> u64 {
     // 5. **The headline: an attribute follows its file across a rename.** The two names are unlinked
     //    first, because `NIFE_KEEP_REDOXFS` makes a second boot meet the first boot's leftovers
     //    and an `EEXIST` here would read as a broken layer.
-    let _ = dir_unlink(fs::ROOT, attrs::PROBE);
-    let _ = dir_unlink(fs::ROOT, attrs::PROBE_MOVED);
-    let probe = dir_create(fs::ROOT, attrs::PROBE);
+    let _ = dir_unlink(fs::ROOT, attributes::PROBE);
+    let _ = dir_unlink(fs::ROOT, attributes::PROBE_MOVED);
+    let probe = dir_create(fs::ROOT, attributes::PROBE);
     if probe >= 0
-        && xattr_set(probe as u64, attrs::NAME, attrs::KIND, attrs::VALUE) >= 0
-        && dir_rename(fs::ROOT, attrs::PROBE, fs::ROOT, attrs::PROBE_MOVED) >= 0
+        && xattr_set(
+            probe as u64,
+            attributes::NAME,
+            attributes::KIND,
+            attributes::VALUE,
+        ) >= 0
+        && dir_rename(
+            fs::ROOT,
+            attributes::PROBE,
+            fs::ROOT,
+            attributes::PROBE_MOVED,
+        ) >= 0
     {
         // Opened at its NEW name, through a handle minted after the rename, so nothing carried over
         // from the handle that set it.
-        let moved = dir_open(fs::ROOT, attrs::PROBE_MOVED);
+        let moved = dir_open(fs::ROOT, attributes::PROBE_MOVED);
         let r = if moved >= 0 {
-            xattr_get(moved as u64, attrs::NAME)
+            xattr_get(moved as u64, attributes::NAME)
         } else {
             -1
         };
-        if r >= 0 && extended_attribute::reply_value_len(r) == attrs::VALUE.len() {
-            get_page(attrs::VALUE.len(), &mut buf);
-            if &buf[..attrs::VALUE.len()] == attrs::VALUE {
-                v |= attrs::SURVIVED_RENAME;
+        if r >= 0 && extended_attribute::reply_value_len(r) == attributes::VALUE.len() {
+            get_page(attributes::VALUE.len(), &mut buf);
+            if &buf[..attributes::VALUE.len()] == attributes::VALUE {
+                v |= attributes::SURVIVED_RENAME;
             }
         }
     } else {
-        v |= attrs::ATTRS_FAILED;
+        v |= attributes::ATTRIBUTES_FAILED;
     }
     v
 }
@@ -235,7 +251,7 @@ fn a_full_enumeration_does_not_name_the_store() -> u64 {
         entries += seen;
     }
     if clean && finished && entries > 0 {
-        v |= attrs::STORE_UNLISTED;
+        v |= attributes::STORE_UNLISTED;
     }
     v
 }

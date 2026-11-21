@@ -34,7 +34,7 @@ staged glob names against a glob matcher live with the matcher.
 
 ## What it holds
 
-- Image contents: `MOTD_NAME` and `MOTD`, `SCRATCH_NAME` and `SCRATCH_INIT`, `WRITE_PATTERN`, and
+- Image contents: `MOTD_NAME` and `MOTD`, `SCRATCH_NAME` and `SCRATCH_PLACEHOLDER`, `WRITE_PATTERN`, and
   the `tree`, `walk`, `blank` and `crash` modules, which name the directories and files a test
   image carries and the disk each test starts from.
 - Verdict words and bitmaps: `SUCCESS`, `VERDICT` and the witnesses `escape`, `dirscape`, `twodir`,

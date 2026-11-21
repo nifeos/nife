@@ -29,7 +29,7 @@ pub(crate) fn blank_check_after_run() -> bool {
         eprintln!("BLANK IMAGE CHECK FAILED: cannot read {path}");
         return false;
     };
-    let lba = blank::LBA as usize;
+    let lba = blank::LOGICAL_BLOCK_BYTES as usize;
     if img.len() < 34 * lba {
         eprintln!("BLANK IMAGE CHECK FAILED: {path} is {} bytes", img.len());
         return false;
@@ -231,7 +231,7 @@ fn redoxfs_glob_grant_took_exactly_the_match() -> bool {
             return false;
         }
     }
-    for name in [tree::GLOB_MISS, tree::GLOB_DIR] {
+    for name in [tree::GLOB_MISS, tree::GLOB_DIRECTORY] {
         if !globset.iter().any(|got| got == name) {
             eprintln!(
                 "MILESTONE-47 GLOB FAILED: `{name}` did NOT match the pattern and is gone from \
@@ -242,7 +242,7 @@ fn redoxfs_glob_grant_took_exactly_the_match() -> bool {
             return false;
         }
     }
-    let inner = format!("{}/{}", tree::GLOBSET, tree::GLOB_DIR);
+    let inner = format!("{}/{}", tree::GLOBSET, tree::GLOB_DIRECTORY);
     match redoxfs_ls(&img, &inner) {
         Some(names) if names.iter().any(|n| n == tree::GLOB_INNER) => {
             eprintln!(
@@ -294,7 +294,9 @@ fn redoxfs_subtree_was_confined() -> bool {
     // A run index is appended to each name so three attacker runs sharing one image do not collide,
     // so the prefix is what identifies a creation rather than the whole name.
     let attackers_own = |n: &String| {
-        n.starts_with(tree::MADE) || n.starts_with(tree::MADE_DIR) || n.starts_with(tree::MOVED)
+        n.starts_with(tree::MADE)
+            || n.starts_with(tree::MADE_DIRECTORY)
+            || n.starts_with(tree::MOVED)
     };
     if let Some(leaked) = root.iter().find(|n| attackers_own(n)) {
         eprintln!(
@@ -305,8 +307,11 @@ fn redoxfs_subtree_was_confined() -> bool {
         return false;
     }
     let count = |prefix: &str| sub.iter().filter(|n| n.starts_with(prefix)).count();
-    let (made_files, made_dirs, moved) =
-        (count(tree::MADE), count(tree::MADE_DIR), count(tree::MOVED));
+    let (made_files, made_dirs, moved) = (
+        count(tree::MADE),
+        count(tree::MADE_DIRECTORY),
+        count(tree::MOVED),
+    );
     if made_files == 0 || made_dirs == 0 {
         eprintln!(
             "milestone-47 confinement check: `{}` holds {sub:?}, with {made_files} created files \
@@ -354,7 +359,7 @@ fn shell_navigation_landed(root: &[String], home: &[String]) -> bool {
     use filesystem_fixture::tree;
     let count = |dir: &[String], prefix: &str| dir.iter().filter(|n| n.starts_with(prefix)).count();
 
-    if count(home, tree::NAV_KEPT) == 0 || count(home, tree::NAV_DIR) == 0 {
+    if count(home, tree::NAVIGATION_KEPT) == 0 || count(home, tree::NAVIGATION_DIRECTORY) == 0 {
         eprintln!(
             "milestone-47 navigation check: a shell's root holds {home:?}, with nothing a \
              navigating shell made in it. \"what it removed is gone\" is true of a shell that \
@@ -362,27 +367,27 @@ fn shell_navigation_landed(root: &[String], home: &[String]) -> bool {
         );
         return false;
     }
-    if count(home, tree::NAV_TOUCH) == 0 {
+    if count(home, tree::NAVIGATION_TOUCH) == 0 {
         eprintln!(
             "MILESTONE-47 NAVIGATION FAILED: a shell's root holds no `{}` name, so its `touch` \
              never reached the platter: {home:?}",
-            tree::NAV_TOUCH,
+            tree::NAVIGATION_TOUCH,
         );
         return false;
     }
-    if count(home, tree::NAV_GONE) != 0 {
+    if count(home, tree::NAVIGATION_GONE) != 0 {
         eprintln!(
             "MILESTONE-47 NAVIGATION FAILED: a shell's root still holds a `{}` name, so its `rm` \
              reported success and never reached the platter: {home:?}",
-            tree::NAV_GONE,
+            tree::NAVIGATION_GONE,
         );
         return false;
     }
     let leaked = |n: &&String| {
-        n.starts_with(tree::NAV_KEPT)
-            || n.starts_with(tree::NAV_GONE)
-            || n.starts_with(tree::NAV_DIR)
-            || n.starts_with(tree::NAV_TOUCH)
+        n.starts_with(tree::NAVIGATION_KEPT)
+            || n.starts_with(tree::NAVIGATION_GONE)
+            || n.starts_with(tree::NAVIGATION_DIRECTORY)
+            || n.starts_with(tree::NAVIGATION_TOUCH)
     };
     if let Some(name) = root.iter().find(leaked) {
         eprintln!(

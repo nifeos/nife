@@ -177,78 +177,81 @@ fn probe_attributes(writable: bool) -> u64 {
     //    "refused".
     let (l, _) = call(FILE, fs::request(fs::LISTXATTR, grant::HANDLE, 0), 0);
     if (l as i64) < 0 {
-        verdict |= escape::GRANTED_ATTRS_FAILED;
+        verdict |= escape::GRANTED_ATTRIBUTES_FAILED;
     }
 
     //    A get of an attribute that is not set must answer `ENODATA`, **not** `EOPNOTSUPP`. That is
     //    the difference between a request that reached the store and one the caretaker refused, and
     //    it is the only probe here that a read-only grant can make about a verb that reads.
-    put_page(fixture::attrs::NAME);
+    put_page(fixture::attributes::NAME);
     let (g0, _) = call(
         FILE,
         fs::request(
             fs::GETXATTR,
             grant::HANDLE,
-            fixture::attrs::NAME.len() as u64,
+            fixture::attributes::NAME.len() as u64,
         ),
         0,
     );
     if filesystem_contract::reply_errno(g0 as i64) == Some(extended_attribute::ENOTSUP) {
-        verdict |= escape::GRANTED_ATTRS_FAILED;
+        verdict |= escape::GRANTED_ATTRIBUTES_FAILED;
     }
 
     //    A set: accepted only with the write direction, which is `WROTE`'s and `TRUNCATED`'s rule
     //    applied to the third way of changing a file. When it is accepted it is read straight back
     //    with its **type code**, because "the server took my attribute" and "my attribute is on the
     //    file" are different claims, and then removed, so the run leaves the image as it found it.
-    put_page(fixture::attrs::NAME);
-    put_page_at(fixture::attrs::NAME.len(), fixture::attrs::VALUE);
+    put_page(fixture::attributes::NAME);
+    put_page_at(fixture::attributes::NAME.len(), fixture::attributes::VALUE);
     let (s, _) = call(
         FILE,
         fs::request(
             fs::SETXATTR,
             grant::HANDLE,
-            fixture::attrs::NAME.len() as u64,
+            fixture::attributes::NAME.len() as u64,
         ),
-        extended_attribute::specification(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
+        extended_attribute::specification(
+            fixture::attributes::KIND,
+            fixture::attributes::VALUE.len() as u64,
+        ),
     );
     if (s as i64) >= 0 {
-        verdict |= escape::WROTE_ATTR;
-        put_page(fixture::attrs::NAME);
+        verdict |= escape::WROTE_ATTRIBUTE;
+        put_page(fixture::attributes::NAME);
         let (g, _) = call(
             FILE,
             fs::request(
                 fs::GETXATTR,
                 grant::HANDLE,
-                fixture::attrs::NAME.len() as u64,
+                fixture::attributes::NAME.len() as u64,
             ),
             0,
         );
         get_page(extended_attribute::reply_value_len(g as i64), &mut buf);
         if (g as i64) < 0
-            || extended_attribute::reply_kind(g as i64) != fixture::attrs::KIND
-            || extended_attribute::reply_value_len(g as i64) != fixture::attrs::VALUE.len()
-            || &buf[..fixture::attrs::VALUE.len()] != fixture::attrs::VALUE
+            || extended_attribute::reply_kind(g as i64) != fixture::attributes::KIND
+            || extended_attribute::reply_value_len(g as i64) != fixture::attributes::VALUE.len()
+            || &buf[..fixture::attributes::VALUE.len()] != fixture::attributes::VALUE
         {
-            verdict |= escape::GRANTED_ATTRS_FAILED;
+            verdict |= escape::GRANTED_ATTRIBUTES_FAILED;
         }
-        put_page(fixture::attrs::NAME);
+        put_page(fixture::attributes::NAME);
         let (rm, _) = call(
             FILE,
             fs::request(
                 fs::REMOVEXATTR,
                 grant::HANDLE,
-                fixture::attrs::NAME.len() as u64,
+                fixture::attributes::NAME.len() as u64,
             ),
             0,
         );
         if (rm as i64) < 0 {
-            verdict |= escape::GRANTED_ATTRS_FAILED;
+            verdict |= escape::GRANTED_ATTRIBUTES_FAILED;
         }
     } else if writable {
         // A writable grant that cannot set one is the control for the refusal: without it, a
         // caretaker that refused every attribute request would pass the read-only run.
-        verdict |= escape::GRANTED_ATTRS_FAILED;
+        verdict |= escape::GRANTED_ATTRIBUTES_FAILED;
     }
     verdict
 }

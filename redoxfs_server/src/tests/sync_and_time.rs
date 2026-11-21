@@ -99,12 +99,12 @@ fn setting_an_arbitrary_mtime_round_trips_exactly_and_is_not_now() {
     let root = filesystem_contract::fs::ROOT as u32;
 
     // The same instant the kernel-booted witness asserts with a real `touch -t` command line
-    // (`filesystem_fixture::tree::NAV_TOUCH_AT_UNIX`), reused here rather than a second
+    // (`filesystem_fixture::tree::NAVIGATION_TOUCH_AT_UNIX_SECONDS`), reused here rather than a second
     // literal so the two round-trip checks (this one in-process, that one over the real wire)
     // are provably checking the same claim. Nowhere near this server's own advancing clock
     // (which starts at 1 and has moved by single digits by the time this test runs), so a
     // fallback to "now" cannot coincidentally pass.
-    const ASSERTED: u64 = filesystem_fixture::tree::NAV_TOUCH_AT_UNIX;
+    const ASSERTED: u64 = filesystem_fixture::tree::NAVIGATION_TOUCH_AT_UNIX_SECONDS;
     srv.set_mtime_at(root, &named("motd"), ASSERTED)
         .expect("write an arbitrary mtime with full rights");
     assert_eq!(

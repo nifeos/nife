@@ -202,7 +202,7 @@ const REPORT: u64 = 1;
 /// runs. Lines go through [`builtin`], the prompt's path. See `notes/swish-language/witness.md`,
 /// "The navigating script".
 pub(super) fn navigate(spec: u64) -> ! {
-    use filesystem_fixture::{VERDICT, navscape as nb, tree};
+    use filesystem_fixture::{VERDICT, navigation as nb, tree};
     let run = filesystem_contract::grant::specification_len(spec) as u64;
     let mut nav = Nav::rooted(filesystem_contract::grant::specification_rights(spec));
     let mut v = 0u64;
@@ -213,13 +213,13 @@ pub(super) fn navigate(spec: u64) -> ! {
 
     // 7. `mkdir`, which mints a capability and hands it straight back: making a directory is not
     //    going there.
-    let dirname = run_name(tree::NAV_DIR, run);
+    let dirname = run_name(tree::NAVIGATION_DIRECTORY, run);
     let mut cmd = [0u8; 32];
     if matches!(
         run_line(&mut nav, line(&mut cmd, b"mkdir ", &dirname)),
         Some(Say::Nothing)
     ) {
-        v |= nb::MADE_DIR;
+        v |= nb::MADE_DIRECTORY;
     }
 
     // 7b. `cd /` is `pwd`'s output typed back. The middle check stops a shell that never moved.
@@ -239,14 +239,14 @@ pub(super) fn navigate(spec: u64) -> ! {
     probe_directory_removal(&mut nav, run, &dirname, &mut cmd, &mut v);
 
     // 11a. `touch`, the two-fold contract (see `touch_twice`).
-    let touched = run_name(tree::NAV_TOUCH, run);
+    let touched = run_name(tree::NAVIGATION_TOUCH, run);
     touch_twice(&mut nav, &touched, &mut cmd, &mut v);
 
     // 11a-bis. `touch`'s mtime half, on the name `touch_twice` just made.
     touch_mtime_probes(&mut nav, &touched, &mut v);
 
     // 11a-ter. `WRITE` without `SETTIME`, over the real wire.
-    let narrow_dir = run_name(tree::NAV_TOUCH_NO_SETTIME, run);
+    let narrow_dir = run_name(tree::NAVIGATION_TOUCH_NO_SETTIME, run);
     touch_mtime_without_settime(&nav, name_of(&narrow_dir), &mut v);
 
     // 11. Neither removal reaches out of the root. Through the path resolver, not `removed`,
@@ -276,7 +276,7 @@ pub(super) fn navigate(spec: u64) -> ! {
 /// [`navigate`]'s steps 1 to 4b: `pwd` and `..` at the root, then the two files reached plainly
 /// and with a leading slash.
 fn probe_root_and_reach(nav: &mut Nav, v: &mut u64) {
-    use filesystem_fixture::{navscape as nb, tree};
+    use filesystem_fixture::{navigation as nb, tree};
 
     // 1. `pwd` at the start. The root of your namespace renders as `/` because it is the root of
     //    the only namespace you have.
@@ -319,11 +319,11 @@ fn probe_root_and_reach(nav: &mut Nav, v: &mut u64) {
     // 4b. **The same two probes, asked with a leading slash.** This is what "an absolute path
     //     grants nothing" is measured as rather than asserted: each shell reaches exactly the file
     //     its own root contains, and a `/` rooted in a global namespace would make both reach both.
-    if let Some((t, h)) = opened_token(nav, tree::ABS_INNER.as_bytes()) {
+    if let Some((t, h)) = opened_token(nav, tree::ABSOLUTE_INNER.as_bytes()) {
         *v |= nb::ABSOLUTE_REACHED_INNER;
         nav.close_in(t, h);
     }
-    if let Some((t, h)) = opened_token(nav, tree::ABS_SECRET.as_bytes()) {
+    if let Some((t, h)) = opened_token(nav, tree::ABSOLUTE_SECRET.as_bytes()) {
         *v |= nb::ABSOLUTE_REACHED_SECRET;
         nav.close_in(t, h);
     }
@@ -331,7 +331,7 @@ fn probe_root_and_reach(nav: &mut Nav, v: &mut u64) {
 
 /// [`navigate`]'s steps 5 and 6: what `ls` shows, then down one level and back.
 fn probe_listing_and_descent(nav: &mut Nav, v: &mut u64) {
-    use filesystem_fixture::{navscape as nb, tree};
+    use filesystem_fixture::{navigation as nb, tree};
 
     // 5. `ls`. A listing is a rendering of authority, so what is in it is checked and not merely
     //    counted: a name from the other shell's root appearing here would be an escape even though
@@ -363,12 +363,12 @@ fn probe_listing_and_descent(nav: &mut Nav, v: &mut u64) {
 /// [`navigate`]'s steps 8 and 9: create two files, then `UNLINK` one while still holding it.
 /// Reports and exits if either file cannot be created.
 fn probe_unlink_while_held(nav: &mut Nav, run: u64, v: &mut u64) {
-    use filesystem_fixture::{VERDICT, navscape as nb, tree};
+    use filesystem_fixture::{VERDICT, navigation as nb, tree};
 
     // 8. Two files: one that stays, so the other's absence afterwards is a fact about `rm` rather
     //    than about a shell that created nothing.
-    let kept = run_name(tree::NAV_KEPT, run);
-    let doomed = run_name(tree::NAV_GONE, run);
+    let kept = run_name(tree::NAVIGATION_KEPT, run);
+    let doomed = run_name(tree::NAVIGATION_GONE, run);
     let (Some(k), Some(h)) = (created(nav, name_of(&kept)), created(nav, name_of(&doomed))) else {
         // Nothing else below can mean anything without them.
         send(REPORT, VERDICT, *v | nb::NAVIGATION_FAILED, 0);
@@ -376,14 +376,14 @@ fn probe_unlink_while_held(nav: &mut Nav, run: u64, v: &mut u64) {
     };
     *v |= nb::CREATED;
     nav.close(k); // the name is what this one is for; a handle nobody closes pins the node
-    put_page(tree::NAV_BODY);
+    put_page(tree::NAVIGATION_BODY);
     let w = call(
         DIR,
-        fs::request(fs::WRITE, h, tree::NAV_BODY.len() as u64),
+        fs::request(fs::WRITE, h, tree::NAVIGATION_BODY.len() as u64),
         0,
     )
     .0 as i64;
-    if w != tree::NAV_BODY.len() as i64 {
+    if w != tree::NAVIGATION_BODY.len() as i64 {
         *v |= nb::NAVIGATION_FAILED;
     }
 
@@ -394,13 +394,13 @@ fn probe_unlink_while_held(nav: &mut Nav, run: u64, v: &mut u64) {
         let mut buf = [0u8; 64];
         let n = call(
             DIR,
-            fs::request(fs::READ, h, tree::NAV_BODY.len() as u64),
+            fs::request(fs::READ, h, tree::NAVIGATION_BODY.len() as u64),
             0,
         )
         .0 as i64;
-        if n == tree::NAV_BODY.len() as i64 {
+        if n == tree::NAVIGATION_BODY.len() as i64 {
             get_page(n as usize, &mut buf);
-            if &buf[..n as usize] == tree::NAV_BODY {
+            if &buf[..n as usize] == tree::NAVIGATION_BODY {
                 *v |= nb::HOLDER_KEPT_READING;
             }
         }
@@ -421,14 +421,14 @@ fn probe_directory_removal(
     cmd: &mut [u8; 32],
     v: &mut u64,
 ) {
-    use filesystem_fixture::{navscape as nb, tree};
+    use filesystem_fixture::{navigation as nb, tree};
 
     // 10. `UNLINK` of a directory is refused, and so is `RMDIR` of a non-empty one: no single call
     //     on this contract takes a subtree away.
     if !removed(nav, fs::UNLINK, name_of(dirname)) {
         *v |= nb::UNLINK_REFUSED_A_DIRECTORY;
     }
-    let empty = run_name(tree::NAV_EMPTY, run);
+    let empty = run_name(tree::NAVIGATION_EMPTY, run);
     if matches!(
         run_line(nav, line(cmd, b"mkdir ", &empty)),
         Some(Say::Nothing)
@@ -438,7 +438,7 @@ fn probe_directory_removal(
         let inside = nav.name_call(
             fs::CREATE,
             open_dir(nav, name_of(&empty)).unwrap_or(fs::ROOT),
-            tree::NAV_INSIDE.as_bytes(),
+            tree::NAVIGATION_INSIDE.as_bytes(),
             0,
         );
         if let Some(d) = open_dir(nav, name_of(&empty)) {
@@ -448,7 +448,7 @@ fn probe_directory_removal(
                     *v |= nb::RMDIR_REFUSED_NON_EMPTY;
                 }
                 // Empty it by hand, exactly as `rm -r` does: bottom-up, one safe step at a time.
-                let gone = nav.name_call(fs::UNLINK, d, tree::NAV_INSIDE.as_bytes(), 0) == 0;
+                let gone = nav.name_call(fs::UNLINK, d, tree::NAVIGATION_INSIDE.as_bytes(), 0) == 0;
                 nav.close(d);
                 if gone && removed(nav, fs::RMDIR, name_of(&empty)) {
                     *v |= nb::RMDIR_REMOVED_EMPTY;
@@ -468,12 +468,12 @@ fn probe_bind(
     cmd: &mut [u8; 32],
     v: &mut u64,
 ) {
-    use filesystem_fixture::{navscape as nb, tree};
+    use filesystem_fixture::{navigation as nb, tree};
 
     // 12. `bind` a directory nested in step 7's, holding a marker, under a fresh top-level word,
     //     then reach it through the bound name three ways.
-    let nested = run_name(tree::NAV_BIND_NESTED, run);
-    let alias = run_name(tree::NAV_BIND_ALIAS, run);
+    let nested = run_name(tree::NAVIGATION_BIND_NESTED, run);
+    let alias = run_name(tree::NAVIGATION_BIND_ALIAS, run);
     let marker_made = matches!(
         run_line(nav, line(cmd, b"cd ", dirname)),
         Some(Say::Nothing)
@@ -483,7 +483,7 @@ fn probe_bind(
     ) && matches!(
         run_line(nav, line(cmd, b"cd ", &nested)),
         Some(Say::Nothing)
-    ) && created(nav, tree::NAV_BIND_MARKER.as_bytes())
+    ) && created(nav, tree::NAVIGATION_BIND_MARKER.as_bytes())
         .map(|h| nav.close(h))
         .is_some()
         && matches!(run_line(nav, b"cd /"), Some(Say::Nothing));
@@ -496,7 +496,7 @@ fn probe_bind(
             let mut cmd2 = [0u8; 32];
             let mut saw_marker = false;
             let listed = nav.ls(line(&mut cmd2, b"/", &alias), &mut |name, _| {
-                if name == tree::NAV_BIND_MARKER.as_bytes() {
+                if name == tree::NAVIGATION_BIND_MARKER.as_bytes() {
                     saw_marker = true;
                 }
             });
@@ -547,7 +547,7 @@ fn probe_bind(
 /// [`open_source`], the shell's own paths. Nothing here may print: this wiring maps no terminal
 /// page, so [`print`] would fault. See `notes/swish-language/witness.md`, "The two-tree script".
 pub(super) fn two_trees(spec: u64) -> ! {
-    use filesystem_fixture::{VERDICT, tree, twotrees as tt};
+    use filesystem_fixture::{VERDICT, mounted_tree as tt, tree};
     const A: u64 = 0;
     const B: u64 = 1;
     const REPORT: u64 = 2;
@@ -597,7 +597,7 @@ pub(super) fn two_trees(spec: u64) -> ! {
 /// [`two_trees`]' moves: where it starts, into the mount and out of it, and the refusals that
 /// must not move it.
 fn two_tree_moves(nav: &mut Nav) -> u64 {
-    use filesystem_fixture::{tree, twotrees as tt};
+    use filesystem_fixture::{mounted_tree as tt, tree};
     let mut v = 0u64;
     let inner = tree::INNER.as_bytes();
     let secret = tree::SECRET.as_bytes();
@@ -669,7 +669,7 @@ fn two_tree_moves(nav: &mut Nav) -> u64 {
 /// [`two_trees`]' per-command grants, planned and opened under the mount. Its own frame because
 /// each planned `Endowment` is a kilobyte or more in a debug build.
 fn two_tree_grants(nav: &mut Nav) -> u64 {
-    use filesystem_fixture::{tree, twotrees as tt};
+    use filesystem_fixture::{mounted_tree as tt, tree};
     let mut v = 0u64;
 
     if let Ok(g) = grant_plan::input_file_grant(b"/second/secret", holdings(nav))
@@ -699,7 +699,7 @@ fn two_tree_grants(nav: &mut Nav) -> u64 {
 /// [`two_trees`]' `rm` step, alone in its frame and called from [`two_trees`] itself, because the
 /// planner under it is the deepest chain this witness reaches and nothing else should sit under it.
 fn two_tree_rm(nav: &mut Nav) -> u64 {
-    use filesystem_fixture::twotrees as tt;
+    use filesystem_fixture::mounted_tree as tt;
     if let CommandLine::Run(rspec) = grant_plan::parse(b"rm /second/secret")
         && let Ok((_, e)) = program_table::plan(
             &rspec,
@@ -766,7 +766,7 @@ impl Text {
 /// narrowed, reordered or added to a set shows up as a disagreement. Three refusals keep the
 /// agreement from being vacuous. See `notes/swish-language/witness.md`, "The globbing script".
 pub(super) fn globbing(spec: u64) -> ! {
-    use filesystem_fixture::{VERDICT, globscape, tree};
+    use filesystem_fixture::{VERDICT, globbing, tree};
     let mut nav = Nav::rooted(filesystem_contract::grant::specification_rights(spec));
     let mut v = 0u64;
 
@@ -774,12 +774,12 @@ pub(super) fn globbing(spec: u64) -> ! {
     let mut shown = Text::new();
     let said = echo(&mut nav, tree::GLOB_PATTERN, &mut |b| shown.push(b));
     if matches!(said, Say::Nothing) && !shown.as_bytes().is_empty() {
-        v |= globscape::EXPANDED;
+        v |= globbing::EXPANDED;
     }
     // And it is not simply everything in the directory. Both strangers are one entry away and the
     // caretaker a hop up could name either.
-    if !shown.holds(tree::GLOB_MISS.as_bytes()) && !shown.holds(tree::GLOB_DIR.as_bytes()) {
-        v |= globscape::EXCLUDED_A_STRANGER;
+    if !shown.holds(tree::GLOB_MISS.as_bytes()) && !shown.holds(tree::GLOB_DIRECTORY.as_bytes()) {
+        v |= globbing::EXCLUDED_A_STRANGER;
     }
 
     // 2. What the same pattern would transfer, planned as `rm <pattern>` from the same text.
@@ -793,17 +793,17 @@ pub(super) fn globbing(spec: u64) -> ! {
             Ok(e) => match program_table::plan(&rspec, holdings(&nav), e) {
                 Ok((_, endow)) => match endow.directory {
                     Some(g) => swish::write_set(&g.names, &mut |b| granted.push(b)),
-                    None => v |= globscape::GLOB_FAILED,
+                    None => v |= globbing::GLOB_FAILED,
                 },
-                Err(_) => v |= globscape::GLOB_FAILED,
+                Err(_) => v |= globbing::GLOB_FAILED,
             },
-            Err(_) => v |= globscape::GLOB_FAILED,
+            Err(_) => v |= globbing::GLOB_FAILED,
         }
     } else {
-        v |= globscape::GLOB_FAILED;
+        v |= globbing::GLOB_FAILED;
     }
     if !granted.as_bytes().is_empty() && granted.as_bytes() == shown.as_bytes() {
-        v |= globscape::AGREED;
+        v |= globbing::AGREED;
     }
 
     // 3. A pattern that matches nothing. Refused, not printed as itself: the expansion is the grant,
@@ -814,7 +814,7 @@ pub(super) fn globbing(spec: u64) -> ! {
         Say::Cannot(Refusal::NoMatch)
     ) && nothing.as_bytes().is_empty()
     {
-        v |= globscape::NO_MATCH_REFUSED;
+        v |= globbing::NO_MATCH_REFUSED;
     }
 
     // 4. A pattern in a leading component, refused where it is read.
@@ -824,7 +824,7 @@ pub(super) fn globbing(spec: u64) -> ! {
             Err(Say::Cannot(Refusal::PatternInPath))
         )
     {
-        v |= globscape::PATTERN_IN_PATH_REFUSED;
+        v |= globbing::PATTERN_IN_PATH_REFUSED;
     }
 
     // 5. And a line with no pattern in it is still text: byte for byte, spacing included.
@@ -834,7 +834,7 @@ pub(super) fn globbing(spec: u64) -> ! {
         Say::Nothing
     ) && plain.as_bytes() == tree::GLOB_PLAIN
     {
-        v |= globscape::TEXT_UNTOUCHED;
+        v |= globbing::TEXT_UNTOUCHED;
     }
 
     send(REPORT, VERDICT, v, 0);
@@ -906,7 +906,7 @@ fn open_dir(nav: &Nav, name: &[u8]) -> Option<u64> {
 /// no-op half. A `touch` that truncated what it found would satisfy the first check and fail this
 /// one, which is why the two are chained with early returns rather than nested as one question.
 fn touch_twice(nav: &mut Nav, touched: &([u8; 16], usize), cmd: &mut [u8; 32], v: &mut u64) {
-    use filesystem_fixture::{navscape as nb, tree};
+    use filesystem_fixture::{navigation as nb, tree};
 
     let Some(Say::Nothing) = run_line(nav, line(cmd, b"touch ", touched)) else {
         return;
@@ -915,15 +915,15 @@ fn touch_twice(nav: &mut Nav, touched: &([u8; 16], usize), cmd: &mut [u8; 32], v
         return;
     };
     *v |= nb::TOUCH_CREATED;
-    put_page(tree::NAV_TOUCH_BODY);
+    put_page(tree::NAVIGATION_TOUCH_BODY);
     let w = call(
         DIR,
-        fs::request(fs::WRITE, h, tree::NAV_TOUCH_BODY.len() as u64),
+        fs::request(fs::WRITE, h, tree::NAVIGATION_TOUCH_BODY.len() as u64),
         0,
     )
     .0 as i64;
     nav.close(h);
-    if w != tree::NAV_TOUCH_BODY.len() as i64 {
+    if w != tree::NAVIGATION_TOUCH_BODY.len() as i64 {
         return;
     }
     let Some(Say::Nothing) = run_line(nav, line(cmd, b"touch ", touched)) else {
@@ -934,14 +934,14 @@ fn touch_twice(nav: &mut Nav, touched: &([u8; 16], usize), cmd: &mut [u8; 32], v
     };
     let n = call(
         DIR,
-        fs::request(fs::READ, h2, tree::NAV_TOUCH_BODY.len() as u64),
+        fs::request(fs::READ, h2, tree::NAVIGATION_TOUCH_BODY.len() as u64),
         0,
     )
     .0 as i64;
-    if n == tree::NAV_TOUCH_BODY.len() as i64 {
+    if n == tree::NAVIGATION_TOUCH_BODY.len() as i64 {
         let mut buf = [0u8; 64];
         get_page(n as usize, &mut buf);
-        if &buf[..n as usize] == tree::NAV_TOUCH_BODY {
+        if &buf[..n as usize] == tree::NAVIGATION_TOUCH_BODY {
             *v |= nb::TOUCH_PRESERVED;
         }
     }
@@ -953,9 +953,9 @@ fn touch_twice(nav: &mut Nav, touched: &([u8; 16], usize), cmd: &mut [u8; 32], v
 /// behaviors need two rights)). Runs after [`touch_twice`] and reuses `touched`, which by then
 /// names a file with a body: a bare `touch`, then `touch -t`, each checked against a `GET_MODIFICATION_TIME`
 /// read. Chained, because `TOUCH_AT_ROUND_TRIPPED` is checked against the mtime
-/// `TOUCH_MTIME_ADVANCED` established.
+/// `TOUCH_MODIFICATION_TIME_ADVANCED` established.
 fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
-    use filesystem_fixture::{navscape as nb, tree};
+    use filesystem_fixture::{navigation as nb, tree};
 
     let Some(before) = mtime_of(nav, name_of(touched)) else {
         return;
@@ -972,7 +972,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
     if after_bare <= before {
         return;
     }
-    *v |= nb::TOUCH_MTIME_ADVANCED;
+    *v |= nb::TOUCH_MODIFICATION_TIME_ADVANCED;
 
     // `touch -t <RFC 3339>`, a real command line the parser has to split into three tokens
     // (`touch`, `-t`, the instant, the name) and dispatch to `fs::SET_MODIFICATION_TIME_AT` with the seconds
@@ -983,7 +983,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
     let mut n = 0;
     at_cmd[n..n + AT_PREFIX.len()].copy_from_slice(AT_PREFIX);
     n += AT_PREFIX.len();
-    let rfc = tree::NAV_TOUCH_AT_RFC3339.as_bytes();
+    let rfc = tree::NAVIGATION_TOUCH_AT_RFC3339.as_bytes();
     at_cmd[n..n + rfc.len()].copy_from_slice(rfc);
     n += rfc.len();
     at_cmd[n] = b' ';
@@ -995,7 +995,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
         return;
     };
     if let Some(after_at) = mtime_of(nav, name_of(touched))
-        && after_at == tree::NAV_TOUCH_AT_UNIX
+        && after_at == tree::NAVIGATION_TOUCH_AT_UNIX_SECONDS
         && after_at != after_bare
     {
         *v |= nb::TOUCH_AT_ROUND_TRIPPED;
@@ -1011,7 +1011,7 @@ fn touch_mtime_probes(nav: &mut Nav, touched: &([u8; 16], usize), v: &mut u64) {
 /// `SETTIME`, one level below the shell's own root, and both mtime verbs are sent straight to it.
 fn touch_mtime_without_settime(nav: &Nav, name: &[u8], v: &mut u64) {
     use filesystem_contract::directory;
-    use filesystem_fixture::navscape as nb;
+    use filesystem_fixture::navigation as nb;
 
     let narrow_rights = directory::ALL & !directory::SETTIME;
     let r = nav.name_call(fs::MKDIR, nav.here(), name, narrow_rights);
@@ -1032,7 +1032,7 @@ fn touch_mtime_without_settime(nav: &Nav, name: &[u8], v: &mut u64) {
             fs::SET_MODIFICATION_TIME_AT,
             dir_handle,
             inner,
-            filesystem_fixture::tree::NAV_TOUCH_AT_UNIX,
+            filesystem_fixture::tree::NAVIGATION_TOUCH_AT_UNIX_SECONDS,
         ) < 0
         {
             *v |= nb::TOUCH_AT_REFUSED_WITHOUT_SETTIME;

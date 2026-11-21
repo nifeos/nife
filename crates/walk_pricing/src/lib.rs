@@ -15,7 +15,7 @@
 //!
 //! - A median of three is not statistics: the figures are magnitudes and directions.
 //! - Warm, not cold: these are the costs of a second walk.
-//! - The per-entry slope is inside one `READDIR` page; see `fixture::walk::WIDE_COUNT`.
+//! - The per-entry slope is inside one `READDIR` page; see `fixture::walk::WIDE_FILES`.
 //! - Path-shaped only: a walker holding `std::fs::Dir` handles is not measured.
 //!
 //! notes/walk-pricing.md, "What the instrument does not see", has each in full.
@@ -50,15 +50,15 @@ pub fn stage(root: &Path) -> io::Result<()> {
     }
     let wide = root.join(tree::WIDE);
     fs::create_dir_all(&wide)?;
-    for i in 0..tree::WIDE_COUNT {
+    for i in 0..tree::WIDE_FILES {
         fs::write(wide.join(name(i)), tree::SMALL_BODY)?;
     }
     let narrow = root.join(tree::NARROW);
     fs::create_dir_all(&narrow)?;
     fs::write(narrow.join(name(0)), tree::SMALL_BODY)?;
-    let sizes = root.join(tree::SIZES);
+    let sizes = root.join(tree::BYTE_REGION);
     fs::create_dir_all(&sizes)?;
-    for (file, len) in tree::SIZE_FILES {
+    for (file, len) in tree::BYTE_REGION_FILES {
         let body: Vec<u8> = (0..len).map(tree::sized_byte).collect();
         fs::write(sizes.join(file), body)?;
     }
@@ -232,12 +232,12 @@ pub struct Price {
 impl Price {
     /// What one more entry in a listing costs.
     pub fn per_entry(&self) -> f64 {
-        (self.list_wide as f64 - self.list_narrow as f64) / (tree::WIDE_COUNT - 1) as f64
+        (self.list_wide as f64 - self.list_narrow as f64) / (tree::WIDE_FILES - 1) as f64
     }
 
     /// What one more KiB read costs.
     pub fn per_kibibytes(&self) -> f64 {
-        let (small, large) = (tree::SIZE_FILES[0].1, tree::SIZE_FILES[2].1);
+        let (small, large) = (tree::BYTE_REGION_FILES[0].1, tree::BYTE_REGION_FILES[2].1);
         (self.read_large as f64 - self.read_small as f64) / ((large - small) as f64 / 1024.0)
     }
 }
@@ -271,9 +271,9 @@ pub fn price(root: &Path) -> io::Result<Price> {
     let list_narrow = list(&root.join(tree::NARROW))?;
     let list_wide = list(&root.join(tree::WIDE))?;
 
-    let sizes = root.join(tree::SIZES);
-    let small = sizes.join(tree::SIZE_FILES[0].0);
-    let large = sizes.join(tree::SIZE_FILES[2].0);
+    let sizes = root.join(tree::BYTE_REGION);
+    let small = sizes.join(tree::BYTE_REGION_FILES[0].0);
+    let large = sizes.join(tree::BYTE_REGION_FILES[2].0);
     let read_small = median_nanoseconds(|| fs::read(&small).map(drop))?;
     let read_large = median_nanoseconds(|| fs::read(&large).map(drop))?;
 
@@ -329,7 +329,7 @@ pub fn report(p: &Price) -> Vec<String> {
             "walk per entry {:.0} ns (list 1: {} ns, list {}: {} ns)",
             p.per_entry(),
             p.list_narrow,
-            tree::WIDE_COUNT,
+            tree::WIDE_FILES,
             p.list_wide,
         ),
         format!(
@@ -567,10 +567,10 @@ mod tests {
     /// they measured: 127 more entries, and 252 more KiB (the largest sized file less the smallest).
     #[test]
     fn a_price_per_entry_and_per_kibibytes_divide_the_difference_by_what_differs() {
-        let kibibytes = (tree::SIZE_FILES[2].1 - tree::SIZE_FILES[0].1) / 1024;
+        let kibibytes = (tree::BYTE_REGION_FILES[2].1 - tree::BYTE_REGION_FILES[0].1) / 1024;
         let p = price_with(
             100,
-            100 + 7 * (tree::WIDE_COUNT as u64 - 1),
+            100 + 7 * (tree::WIDE_FILES as u64 - 1),
             50,
             50 + 3 * kibibytes as u64,
         );

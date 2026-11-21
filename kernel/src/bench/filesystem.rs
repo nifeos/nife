@@ -89,7 +89,7 @@ pub(super) fn fs_throughput() {
         };
         println!("bench: {name} {ticks} {transfers}");
         // Hundredths of MiB/s. Zero ticks is a broken run, reported as zero rather than divided.
-        let bytes = transfers * filesystem_fixture::throughput::UNIT as u64;
+        let bytes = transfers * filesystem_fixture::throughput::UNIT_BYTES as u64;
         let hundredths = bytes
             .checked_mul(hertz)
             .and_then(|v| v.checked_mul(100))

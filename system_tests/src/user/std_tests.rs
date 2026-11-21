@@ -259,7 +259,7 @@ pub(super) fn assert_a_kill_mid_transaction_recovers(
 /// same thing and the useful part is naming *which* claim broke rather than printing a number
 /// the reader has to decode. Each missing bit is one sentence about the layer.
 pub(super) fn assert_attrs(attrs: u64) {
-    use filesystem_fixture::attrs as a;
+    use filesystem_fixture::attributes as a;
     if attrs == a::EXPECTED {
         return;
     }
@@ -289,7 +289,7 @@ pub(super) fn assert_attrs(attrs: u64) {
             crate::println!("    MISSING: {what}");
         }
     }
-    if attrs & a::ATTRS_FAILED != 0 {
+    if attrs & a::ATTRIBUTES_FAILED != 0 {
         crate::println!("    the witness reported that something it should do failed");
     }
     panic!(

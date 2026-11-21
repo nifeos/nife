@@ -177,8 +177,8 @@ fn a_read_only_per_file_grant_survives_an_attacker() {
 /// **A read-only per-file grant carries its file's attributes, and cannot write them**
 /// (milestone 61).
 ///
-/// The same run as the test above, read a second way. `GRANTED_ATTRS_FAILED` clear means the
-/// listing and the get went through the caretaker to the store; `WROTE_ATTR` clear means the set
+/// The same run as the test above, read a second way. `GRANTED_ATTRIBUTES_FAILED` clear means the
+/// listing and the get went through the caretaker to the store; `WROTE_ATTRIBUTE` clear means the set
 /// did not, because a read-only grant must not forward one. Its own assertion, because "the
 /// verdict was zero" does not say which properties were in it. The writable twin below keeps it
 /// from passing vacuously.
@@ -193,13 +193,13 @@ fn a_read_only_per_file_grant_reads_its_files_attributes_and_writes_none() {
         crate::testing::skip!("no RedoxFS disk attached");
     };
     assert_eq!(
-        verdict & escape::GRANTED_ATTRS_FAILED,
+        verdict & escape::GRANTED_ATTRIBUTES_FAILED,
         0,
         "the caretaker did not forward the attribute reads, so a program behind a per-file \
          grant still cannot reach its own file's attributes",
     );
     assert_eq!(
-        verdict & escape::WROTE_ATTR,
+        verdict & escape::WROTE_ATTRIBUTE,
         0,
         "a read-only grant forwarded SETXATTR: an attribute is a way to change a file",
     );
@@ -226,9 +226,9 @@ fn a_writable_per_file_grant_writes_that_file_and_still_only_that_file() {
     ) else {
         crate::testing::skip!("no RedoxFS disk attached");
     };
-    // `WROTE_ATTR` is the third way to change a file, after bytes and length; a direction check
+    // `WROTE_ATTRIBUTE` is the third way to change a file, after bytes and length; a direction check
     // that covered only the first two would leave one open.
-    let expected = escape::WROTE | escape::TRUNCATED | escape::WROTE_ATTR;
+    let expected = escape::WROTE | escape::TRUNCATED | escape::WROTE_ATTRIBUTE;
     assert_eq!(
         verdict,
         expected,
@@ -293,9 +293,9 @@ fn describe_escape(v: u64) -> &'static str {
         "it reached a file with a handle it was never given"
     } else if v & escape::GRANTED_READ_FAILED != 0 {
         "the granted read itself failed, so nothing above was actually proven"
-    } else if v & escape::WROTE_ATTR != 0 {
+    } else if v & escape::WROTE_ATTRIBUTE != 0 {
         "it set an extended attribute through a read-only grant"
-    } else if v & escape::GRANTED_ATTRS_FAILED != 0 {
+    } else if v & escape::GRANTED_ATTRIBUTES_FAILED != 0 {
         "it could not reach its own file's attributes, which milestone 61 says it carries"
     } else {
         "nothing (an empty verdict should not have failed an assertion)"
