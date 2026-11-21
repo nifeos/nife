@@ -108,5 +108,5 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`boot_ladder`](crate-reviews/boot-ladder.md) | 1078 | ready for review |
 | [`capability_table`](crate-reviews/capability-table.md) | kernel | ready for review; milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) asks for the clearance |
 | [`filesystem_contract`](crate-reviews/filesystem-contract.md) | 2 | ready for review; one clearance of the repository shared with `filesystem_fixture`, and the names |
-| [`filesystem_fixture`](crate-reviews/filesystem-fixture.md) | 2 | ready for review with `filesystem_contract`; the item names wait for milestone 1091's rename lane |
+| [`filesystem_fixture`](crate-reviews/filesystem-fixture.md) | 2 | ready for review with `filesystem_contract`; the item names wait for the rename lane of milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves) |
 | [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | ready for review; milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) asks for the clearance |

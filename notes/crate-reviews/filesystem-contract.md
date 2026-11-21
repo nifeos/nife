@@ -7,13 +7,11 @@ the packages together outgrow the page.*
 The architect reads this to clear the crate for its move to its own repository, at step 2 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 The crate shares that repository with `filesystem_fixture`, as two crates of one Cargo workspace in
-which the fixture never publishes (ruled 2026-11-14 UTC). This file and
-[the fixture's package](filesystem-fixture.md) are the one package that Decision E of
+which the fixture never publishes (ruled 2026-11-14 UTC). Decision E of
 [milestone 1090 (`filesystem_contract`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1090-filesystem-contract-outside-review.md)
-and Decision 3 of
-[milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1091-filesystem-fixture-outside-review.md)
-rule: one file per crate, and one clearance of the shared repository, asked here. The package
-describes the crate as `main` leaves it. The findings and their statuses are in milestone 1090; this
+rules one package for both crates. This file and [the fixture's package](filesystem-fixture.md)
+are that package, and this file asks for the one clearance of the shared repository. It describes
+the crate as `main` leaves it. The findings and their statuses are in milestone 1090; this
 package does not restate them, and checks which have landed.
 
 ## In one paragraph
@@ -34,7 +32,7 @@ reply decoding.
 
 | item | value |
 |---|---|
-| crate | `filesystem_contract`, ratified (renamed from `fs_proto`; the `_contract` suffix ruled 2026-10-18 UTC) |
+| crate | `filesystem_contract`, ratified 2026-08-23 UTC |
 | identity values | `block::INTERFACE_ID` 14 and `fs::INTERFACE_ID` 15, each with `VERSION` 1, rows 14 and 15 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table. No magic word. The four constants carry provisional `Name:` blocks; see Names |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88 |
@@ -74,34 +72,30 @@ only.
 | `script/names filesystem_contract` | the crate name ratified |
 | `python3 helpers/name_release.py --draft filesystem_contract` | 193 names: 24 read ratified (the crate, ten standing `tests` modules, 13 items), 36 provisional, 133 with no block |
 | the template's naming gates (`spelled_out`, `unit_symbols`, `register_names`, `british_spelling`, `service_model`, `contract_names`, `question_shape`, and `service_model --prose`), from a clone of `nifeos/crate-workflows` at `56437de`, with the arguments `check.yml` passes | two refusals over a ceiling of 0. `spelled_out`: the test `a_grant_spec_carries_its_length_and_its_direction_apart` (`src/grant/tests.rs` line 61), a `spec` that Decision B's table did not list. `register_names`: `block::SIZE` (`src/block.rs` line 27), the opcode Decision B keeps with an exemption that does not exist yet (item 5). The other five gates and the prose check pass, 660 names judged |
-| the template's `abbreviations` report (report only) | 85 components in 22 files. Most are POSIX verb and errno spellings Decision B keeps (`opendir`, `readdir`, `enotdir`, `erofs` and the rest) and `errno` itself. The rest are `buf` (14), `req` (6), `rw` (3), `dst` (3), `blk` in three test names, and single test bindings (`dl`, `dh`, `na`, `nb`, `sl`, `ro`) |
+| the template's `abbreviations` report (report only) | 85 components in 22 files: mostly the POSIX verbs and errnos Decision B keeps, then `buf` (14), `req` (6), `rw` and `dst` (3 each), and test bindings |
 | `python3 helpers/lint_externalized_crates.py --count` | 20 hits for this crate; the six mentions of nife in shipped text are item 1 |
 | `script/lint` and `script/test` | see the pull request's checks |
 
-Not run, and so not claimed: the stranger test, which waits for the README in the scaffold's shape
-(item 10). Not run either: the template's `check`, `proofs` and `weekly` workflows, since no
-repository exists, and `cargo-mutants`, whose census belongs to its own window (08:00 to 13:00 UTC);
-the equivalent mutants are item 9. A first release has no baseline for `cargo-semver-checks`. The
-lane ran neither `cargo package`, a fuzz target, Miri nor the QEMU-side filesystem tests.
+Not run, and so not claimed: the stranger test (it waits for item 10) and the template's workflows
+(no repository exists). Nor `cargo-mutants` (its window is 08:00 to 13:00 UTC), `cargo package`,
+fuzz, Miri or the QEMU filesystem tests.
 
 ## Public API
 
 | module | items |
 |---|---|
-| crate root | `PAGE_BYTES` (4096), `OPERATION_SHIFT` (56), `req(operation)`, `operation(w0)`, `READY`, `DESCENT_REFUSED` |
-| `reply` | `MAXIMUM_ERRNO` (4095), `EPROTO` (71), `reply_err(errno)`, `reply_errno(r0)` |
-| `block` (interface 14) | `VERSION`, `INTERFACE_ID`; opcodes `READ`, `WRITE`, `SIZE`, `FLUSH`; `BLOCK_BYTES`, `SECTOR_BYTES`, `SECTORS_PER_BLOCK`, `TRANSFER_BLOCKS`, `MAXIMUM_TRANSFER_BYTES`; `req(operation, blocks)`, `req_blocks(w0)` |
-| `fs` (interface 15) | `VERSION`, `INTERFACE_ID`, `ROOT`; 23 opcodes from `OPEN` (1) to `NARROW` (23), with `BIND`, `UNBIND`, `BIND_SYNC` and the three modification-time verbs; `TRANSFER_PAGES`, `MAXIMUM_TRANSFER_BYTES`, `CLIENT_WINDOWS`, `MAXIMUM_LENGTH_BYTES`, `MAXIMUM_HANDLE`; `req`, `req_handle`, `req_len`, `rename_dst`, `dst_handle`, `dst_len` |
-| `directory` | the rights `ENUMERATE`, `READ`, `WRITE`, `CREATE`, `REMOVE`, `DESCEND`, `SETTIME`, `ALL`, `PARENT_RIGHTS`, `REMOVE_TREE`; six errno constants; `explain(errno)`; `Rights` with `root`, `attenuate`, `allows`, `denies_all`, `bits`, `resolve` |
-| `verb` | `Verb` (seven public fields) with `carries_len`, `takes_name`, `reissues_handle`, `mutates`; `Operand`; `FIRST`, `LAST`, `TABLE` (23 rows), `of(operation)`; `verb::file_grant` with `Policy`, `POLICY`, `EBADF`, `of` |
-| `directory_entry` | `IS_DIRECTORY`, `record_len`, `encode`, `iter`, `Entries` |
-| `statfs` | `RECORD_BYTES`, `encode`, `decode`, `total_bytes`, `free_bytes` |
-| `grant` | `READ`, `WRITE`, `MAXIMUM_NAME_BYTES`, `MAXIMUM_WORDS_NAME_BYTES`, `EROFS`, `ENOTDIR`, `HANDLE`, `WHOLE_NAMESPACE`; `pack_name`, `unpack_name`, `fits`, `fits_words`, `specification`, `specification_len`, `specification_rights`, `is_writable` |
-| `nameset` | `MAXIMUM_NAMES`, `MAXIMUM_NAME_SET_BYTES`, `MAXIMUM_BYTES`, `IS_DIRECTORY`; `encode`, `iter`, `contains`, `count`, `Names` |
-| `extended_attribute` (alias `xattr`) | `MAXIMUM_NAME_BYTES`, `MAXIMUM_VALUE_BYTES`, `MAXIMUM_ATTRIBUTES`, `MAXIMUM_KIND`, `RAW`, five errno constants, `STORE_DIRECTORY` (`.extended-attributes`); `specification`, `specification_kind`, `specification_value_len`, `reply`, `reply_kind`, `reply_value_len`, `is_valid_name`; the submodules `list` (`record_len`, `MAXIMUM_BYTES`, `encode`, `iter`, `Names`) and `store` (`RECORD_HEADER_BYTES`, `record_len`, `MAXIMUM_BYTES`, `file_name`, `iter`, `count`, `get`, `list`, `set`, `remove`, `Records`) |
-| `rm` | `VERDICT_SLOT`, `OK`, `status(errno)` |
+| crate root | `PAGE_BYTES`, `OPERATION_SHIFT`, `req`, `operation`, `READY`, `DESCENT_REFUSED` |
+| `reply` | `MAXIMUM_ERRNO`, `EPROTO`, `reply_err`, `reply_errno` |
+| `block` (interface 14) | identity, four opcodes, the block and sector sizes and transfer limits, `req`, `req_blocks` |
+| `fs` (interface 15) | identity, `ROOT`, 23 opcodes, the transfer and window limits, the request and rename-destination packers |
+| `directory` | ten rights, six errno constants, `explain`, `Rights` |
+| `verb` | `Verb`, `Operand`, `TABLE` (23 rows), `of`; `file_grant` |
+| `directory_entry`, `nameset`, `statfs` | the `READDIR`, name-set and `STATFS` encodings |
+| `grant` | the grant packers and their limits |
+| `extended_attribute` (alias `xattr`) | the specification and reply packers, `STORE_DIRECTORY`, and the submodules `list` and `store` |
+| `rm` | `VERDICT_SLOT`, `OK`, `status` |
 
-No type from another crate appears in a public signature, and the crate names no kernel type.
+The packet lists all. No type from another crate appears in a public signature.
 
 What a stranger may find surprising:
 
@@ -109,19 +103,13 @@ What a stranger may find surprising:
   skips it (Decision A). A file of that name cannot exist on a volume this protocol serves.
 - `block::req_blocks` decodes the low byte plus one, so a word whose low byte is 255 reads as 256
   blocks, past `TRANSFER_BLOCKS` (item 14, open).
-- `directory_entry::encode` accepts an empty name (item 15, open).
-- `fs::req`, `fs::rename_dst`, `grant::specification` and `extended_attribute::specification` mask an
-  oversized field rather than refusing it, and `extended_attribute::reply` masks a kind (items 7 and
-  22, open).
-- `CLIENT_WINDOWS` (8) is documented as provisional, a capacity choice rather than a contract fact,
-  and its documentation cites `abi::rendezvous::BADGE`, a type of this tree (item 12, open).
-- `rm` is the verdict convention of one program, not filesystem protocol (item 12, open).
+- The packers mask an oversized field rather than refuse it (items 7 and 22, open).
+- `rm` and `CLIENT_WINDOWS` are one program's convention and a capacity choice, not protocol (item
+  12, open).
 
 ## What landed
 
-The milestone sets no condition on this package beyond the other items landing; Decision E does not
-hold the move for it. What the milestone's Finding status marks done, verified by reading the source
-and by the runs above:
+What the milestone marks done, checked against the source and the runs above:
 
 | item | state | evidence |
 |---|---|---|
@@ -132,30 +120,10 @@ and by the runs above:
 | 13, 17, 18, 19, 20 | landed ([#3566](https://github.com/nifeos/nife/pull/3566)) | no British spelling (`british_spelling` 0); the length-or-offset doc on `MAXIMUM_LENGTH_BYTES`; a `const` assertion that `usize::BITS >= 40`; no warning at 1.88 in the scratch workspace |
 | Decision A, `.extended-attributes` | ruled 2026-11-14 UTC and built ([#3577](https://github.com/nifeos/nife/pull/3577)) | `extended_attribute::STORE_DIRECTORY` holds `.extended-attributes` |
 | Decision C, the reply error range | ruled 2026-11-14 UTC and built ([#3577](https://github.com/nifeos/nife/pull/3577)) | `MAXIMUM_ERRNO` 4095, `EPROTO` 71, `reply_err` asserts its range in every build |
-| Decision D, §99's store name | ruled 2026-11-19 UTC and built | §99 names `.extended-attributes` |
+| Decision D, the store name in §99 (where Apple's metadata lands: stream or sidecar) | ruled 2026-11-19 UTC and built | §99 names `.extended-attributes` |
 
-Still open, each as the milestone states it: items 1 to 3 and 10 (the move commit), the aliases and
-the `block::SIZE` exemption of item 5, items 7, 9, 11, 12, 14, 15, 16, 21 and 22, and the walker
-termination of item 8.
-
-## Rulings in force
-
-- Decision A (ruled 2026-11-14 UTC): the extended-attribute store is a directory in the image root
-  named `.extended-attributes`. Every name-taking verb refuses that name with `EINVAL` in every
-  directory and at every depth, and `READDIR` skips it. It is a disk layout and a wire rule.
-- Decision C (ruled 2026-11-14 UTC): a reply's first word in `-4095..=-1` is the error code
-  `1..=4095` (`MAXIMUM_ERRNO`); any other negative word is a protocol violation that `reply_errno`
-  reads as `EPROTO` (71); `reply_err` asserts its code is in range in every build.
-- Decision D (ruled 2026-11-19 UTC): §99 (where Apple's metadata lands: stream or sidecar) names the
-  sidecar store `.extended-attributes`.
-- The shared repository (ruled 2026-11-14 UTC): `filesystem_contract` and `filesystem_fixture` share
-  one repository as two crates of one Cargo workspace; the fixture never publishes.
-- Decision B (the maintainer's provisional ruling, 2026-11-14 UTC, a two-way door before the first
-  tag): the renames of its table, applied; the POSIX verb and errno names keep their spelling, each
-  with `#[doc(alias)]` and a line naming the source; no alias of the old spellings.
-- Decision E (the maintainer's provisional ruling for the package step, 2026-11-19 UTC): one package
-  covers both crates, and the move is not held for it. Ratifying the names and clearing the review,
-  which is also the go to create the repository as `publish = false`, stay the architect's.
+Still open, as the milestone states them: items 1 to 3 and 10 (the move commit) and part of item 5.
+Also open: items 7, 9, 11, 12, 14 to 16, 21 and 22, and the walker termination of item 8.
 
 ## Names
 
@@ -220,13 +188,12 @@ Built and provisional, not in Decision B's table:
 | `directory::Rights::resolve` | provisional | |
 | `grant::fits_words` | provisional | beside `fits` and `MAXIMUM_WORDS_NAME_BYTES` |
 | `verb::Verb::reissues_handle` | provisional | |
-| `block::SECTOR_BYTES` | provisional (milestone 886) | |
+| `block::SECTOR_BYTES` | provisional (milestone 886 (the filesystem test fixture moves to its own crate)) | |
 | `rm::VERDICT_SLOT` | provisional | item 12 may move the module |
-| `DESCENT_REFUSED` | provisional | moved here from the fixture with `READY` (milestone 886) |
+| `DESCENT_REFUSED` | provisional | with `READY`, the line milestone 886 drew |
 
-Every other public item (133 with no block) is a plain word or a standard-library spelling: `encode`,
-`decode`, `iter`, `count`, `get`, `set`, `remove`, `contains`, `of`, `explain`, `record_len` and the
-like. Two families the `abbreviations` report lists are not covered by Decision B: the request
+The other 133 public items, with no block, are plain words or standard-library spellings (`encode`,
+`iter`, `get`, `of`). Two families the `abbreviations` report lists are not covered by Decision B: the request
 packers `req`, `req_handle`, `req_len`, `req_blocks` and the rename-destination pair `rename_dst`,
 `dst_handle`, `dst_len`. `byte_sink_contract` renamed its own `req` to `first_word` under P1-9 of
 milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves). The
@@ -238,9 +205,6 @@ The full table for the ratifying pull request is the output of
 
 ## What still blocks the move
 
-All of these belong to the move or to items the milestone already holds open. No package item blocks
-it.
-
 | item | owner |
 |---|---|
 | Item 1: the six mentions of nife in `README.md` (lines 5 and 87), `src/lib.rs` line 33, `src/grant.rs` lines 11 and 13 and `src/extended_attribute.rs` line 76; the `publish` comment; a `repository` field; the `Name:` strip. | move lane |
@@ -248,7 +212,7 @@ it.
 | Item 3: the eleven patches rewritten from `a/crates/filesystem_contract/...` to `a/src/...` and `git apply -p1`, and the path in `src/proofs.rs` line 4. | move lane |
 | Item 5: the aliases and source lines on the kept POSIX verb and errno names, the `fs` and `statfs` aliases, and the `register_names` exemption for `block::SIZE`. The test name `a_grant_spec_carries_its_length_and_its_direction_apart`, which `spelled_out` refuses, joins this item; its name follows Decision B's `spec` row. | a rename lane before the move |
 | Item 10: the README in the scaffold's shape, with the badge row and the Kani cost. | move lane |
-| The workspace: one repository root manifest listing both crates; the template's caller workflows with `allow-unpublished` for the fixture. Items 2, 3, 4 and 6 of milestone 1091 must land first. | move lane |
+| The workspace: one repository root manifest listing both crates; the template's caller workflows with `allow-unpublished` for the fixture. Items 2, 3, 4 and 6 of milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves) must land first. | move lane |
 | The `std` farm copies `src/lib.rs` into the patched standard library; it must read the pinned checkout's source, or the move breaks the platform layer's build. | maintainer, as for `socket_contract` |
 | Convert the nineteen consumers' path dependencies (including `fuzz`'s) to `git` and `rev` with `version = "0.1.0"`, and read every file `script/crate-move --dry-run` lists. | move lane |
 
@@ -256,40 +220,27 @@ Before the tag, as the milestone holds them: items 7, 8 (walker termination), 9,
 
 ## Recommendation
 
-Ready to clear, together with `filesystem_fixture`. The crate has no dependency and no `unsafe`, no
-foreign type in its public API, eleven proofs that each fail under their patch, and builds and tests
+Ready to clear, together with `filesystem_fixture`. The crate has no dependency, no `unsafe` and no
+foreign type in its public API. Its eleven proofs each fail under their patch. It builds and tests
 green at 1.88 for the host and the three bare-metal targets, alone and inside a two-crate
 workspace. The two failures of `script/crate-standalone` are the ones a move writes (the name
 ratification and a patch path). The two template naming refusals are one test name and the kept
 `block::SIZE`, both item 5. The decisions the milestone took to the architect (A, C, D) are ruled and
 built.
 
-The architect's name review acts on the Names table. Seven of Decision B's renames replace names
-#2797 ratified before the units rule, and need ratifying again.
-
 ## Open questions
 
-- Items 7 and 22 (the packers assert rather than mask) change what a release build does with a bad
-  field. Both wait for the caretaker call sites that forward a client's length or handle to refuse
-  first. They are two-way until the first tag and one-way after it.
-- Items 14 (`req_blocks` decodes 256) and 15 (`directory_entry::encode` accepts an empty name) are
-  two-way doors the maintainer rules provisionally; neither is ruled.
-- Item 16 (one `errno` module for the three spellings of the error vocabulary) mints a module name,
-  a provisional maintainer call that Decision B's table does not list.
-- Item 12: where `rm` lands (the program or `byte_sink_contract`) and whether `CLIENT_WINDOWS` is a
-  contract fact are placement calls the maintainer makes.
+Items 7, 12, 14, 15, 16 and 22 are the maintainer's calls before the tag, and none is ruled. Items 7
+and 22 change what a release build does with a bad field, so they turn one-way at the first tag.
 
 ## Decisions for the architect
 
 1. Clear the review of `filesystem_contract`, which with the fixture's clearance is the go to create
    the shared repository with `publish = false` for both crates. Recommendation: yes. The move waits
    for items 1 to 3, 5 and 10 here and items 2, 3, 4, 6 and 11 of milestone 1091.
-2. Ratify the Names table: Decision B's renames as built, including the seven new spellings of names
-   #2797 ratified (`MAXIMUM_NAME_BYTES` twice, `MAXIMUM_VALUE_BYTES`, `MAXIMUM_TRANSFER_BYTES` twice,
-   `MAXIMUM_LENGTH_BYTES`, `MAXIMUM_ATTRIBUTES`), the provisional names that table does not list
-   (`reply`, `MAXIMUM_ERRNO`, `EPROTO`, `proofs`, `SETTIME`, `resolve`, `fits_words`,
-   `reissues_handle`, `SECTOR_BYTES`, `VERDICT_SLOT`, `DESCENT_REFUSED`), and the kept POSIX verb and
-   errno spellings. Provisional names stay provisional until the architect rules.
+2. Ratify the Names section's four tables: Decision B's renames as built, the seven new spellings of
+   names #2797 ratified, the kept POSIX verb and errno spellings, and the provisional names Decision
+   B does not list. Provisional names stay provisional until the architect rules.
 3. Ratify the identity values `block::INTERFACE_ID` 14 and `fs::INTERFACE_ID` 15, each at `VERSION`
    1, as frozen, as for the other contract crates.
 4. Decide whether the request packers `req`, `req_handle`, `req_len`, `req_blocks` and the
@@ -298,4 +249,4 @@ The architect's name review acts on the Names table. Seven of Decision B's renam
    `byte_sink_contract` renamed its `req`, since the tightening is the one that cannot come later;
    the spellings are a rename lane's proposal. Two-way until the first release.
 
-Nothing here asks for a tag or a publication.
+Nothing here asks for a tag or a publish.

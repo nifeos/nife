@@ -8,22 +8,21 @@ The architect reads this to clear the crate for its move, with `filesystem_contr
 shared repository at step 2 of
 [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
 The crate gets no repository of its own: it is the second crate of a two-crate Cargo workspace and
-never publishes (Decision 1, ruled 2026-11-14 UTC). This file and
-[the contract's package](filesystem-contract.md) are the one package that Decision 3 of
+never publishes (Decision 1, ruled 2026-11-14 UTC). Decision 3 of
 [milestone 1091 (`filesystem_fixture`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1091-filesystem-fixture-outside-review.md)
-and Decision E of
-[milestone 1090 (`filesystem_contract`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1090-filesystem-contract-outside-review.md)
-rule. The clearance of the shared repository is asked once, in the contract's package; this file
+rules one package for both crates, with Decision E of
+[milestone 1090 (`filesystem_contract`: what an outside maintainer would fix before it leaves)](../../design/roadmap/1090-filesystem-contract-outside-review.md).
+This file and [the contract's package](filesystem-contract.md) are that package. The clearance of the shared repository is asked once, in the contract's package; this file
 asks for the fixture's own names and its half of that clearance. The findings and their statuses
 are in milestone 1091; this package does not restate them, and checks which have landed.
 
 ## In one paragraph
 
-The test data both sides of the file protocol agree on. The image builder writes these files into a
-filesystem image, and the kernel's tests, `std_exerciser` and the system tests read the same
-constants back and compare: the tree of fixed files and their contents, the `walk` byte region, the
-escape and subtree-grant witnesses, the extended-attribute cases, the crash cut point, the blank
-volume layout and the throughput record sizes. A disagreement between the builder and a reader is a
+The test data both sides of the file protocol agree on. The image builder writes these files into a filesystem image.
+The kernel's tests, `std_exerciser` and the system tests read the same constants back and compare.
+They cover the fixed tree, the `walk` byte region, the escape and subtree-grant witnesses, the
+extended-attribute cases, the crash cut point, the blank volume layout and the throughput record
+sizes. A disagreement between the builder and a reader is a
 compile error, not a failed boot. It is `no_std`, has no `unsafe`, and depends on
 `filesystem_contract` alone. It has no proofs, since it holds data rather than algorithms beyond
 four small helpers.
@@ -32,7 +31,7 @@ four small helpers.
 
 | item | value |
 |---|---|
-| crate | `filesystem_fixture`, provisional (milestone 886, moved out of the contract crate) |
+| crate | `filesystem_fixture`, provisional (milestone 886 (the filesystem test fixture moves to its own crate)) |
 | identity values | `INTERFACE_ID` 16, `VERSION` 1, row 16 of [milestone 956 (the linked interfaces carry checkable versions)](../../design/roadmap/0956-the-linked-interfaces-carry-checkable-versions.md)'s id table. No magic word. Both carry provisional `Name:` blocks |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024, 1.88 |
@@ -75,9 +74,10 @@ only.
 | `python3 helpers/lint_externalized_crates.py --count` | 16 hits for this crate; the mentions of nife in shipped text are item 6 |
 | `script/lint` and `script/test` | see the pull request's checks |
 
-Not run, and so not claimed: the stranger test, which comes with the move (item 11); the template's
-workflows, since no repository exists; `cargo-mutants`, whose census belongs to its own window
-(08:00 to 13:00 UTC); and the QEMU system tests that read the fixture back from a built image. A
+Not run, and so not claimed: the stranger test, which comes with the move (item 11), and the
+template's workflows, since no repository exists. Not run either: `cargo-mutants`, whose census
+belongs to its own window (08:00 to 13:00 UTC), and the QEMU system tests that read the fixture
+back from a built image. A
 crate that never publishes has no `cargo-semver-checks` baseline and no `cargo package` rehearsal.
 
 ## Public API
@@ -105,7 +105,7 @@ What a stranger may find surprising:
 - `walk::SMALL_BODY` (`"nife walk entry\n"`), the partition names `blank::NAMES` (`"nife boot"`,
   `"nife root"`, `"nife data"`) and `blank::MADE_BODY` ("created by nife") are data the image
   builder writes and `xtask/src/disk_check.rs` reads back (item 6).
-- `throughput::UNIT` is a `usize` beside `u64` neighbours, and the casts live in the kernel bench
+- `throughput::UNIT` is a `usize` beside `u64` neighbors, and the casts live in the kernel bench
   and the client (item 15, open).
 
 ## What landed
@@ -113,13 +113,13 @@ What a stranger may find surprising:
 | item | state | evidence |
 |---|---|---|
 | 1, the template accepts a nifeos git dependency and several crates | landed in the template ([crate-workflows#66](https://github.com/nifeos/crate-workflows/pull/66), [crate-workflows#64](https://github.com/nifeos/crate-workflows/pull/64)) | the scratch workspace builds and tests as one |
-| 7, 9, 10, 12, 13, 14 | landed ([#3566](https://github.com/nifeos/nife/pull/3566)) | `rg_match_path` bounded and `wide_name` no longer wraps, both tested (`the_rg_match_paths_meet_at_the_region_boundaries` and its neighbours) |
+| 7, 9, 10, 12, 13, 14 | landed ([#3566](https://github.com/nifeos/nife/pull/3566)) | `rg_match_path` bounded and `wide_name` no longer wraps, both tested (`the_rg_match_paths_meet_at_the_region_boundaries` and its neighbors) |
 | 8, the unused `durability` module | landed ([#3566](https://github.com/nifeos/nife/pull/3566)) | the module is gone |
 | Decision 1, the shared repository | ruled 2026-11-14 UTC | the crate text that states the pairing is item 2 |
 
-Still open, each as the milestone states it: item 2 (the README at line 58 and the root `BUGS` at
-`src/lib.rs` line 12 still say the contract leaves first and this crate then pins it by revision),
-items 3, 4, 6 and 11, and items 15 to 18. Milestone 1017's step 2 row still gives the removed
+Still open, as the milestone states them: items 2, 3, 4, 6 and 11, and items 15 to 18. Under item
+2 the README (line 58) and the root `BUGS` (`src/lib.rs` line 12) still say the contract leaves
+first and this crate then pins it by revision. Milestone 1017's step 2 row still gives the removed
 development dependency as the reason for the pairing; its owner corrects it.
 
 ## Rulings in force
@@ -127,8 +127,7 @@ development dependency as the reason for the pairing; its owner corrects it.
 - Decision 1 (ruled 2026-11-14 UTC): one workspace repository shared with `filesystem_contract`,
   `publish = false`; no copy of the four constants `redoxfs` reads.
 - Decision 2 (the maintainer's provisional ruling, 2026-11-14 UTC, a two-way door before the first
-  tag): the three rename tables hold as written, with no alias of the old spellings; the command
-  names a reader types keep their spelling, each with `#[doc(alias)]` and a doc line naming the
+  tag): the three rename tables hold as written, with no alias of the old spellings. The command names a reader types keep their spelling, each with `#[doc(alias)]` and a doc line naming the
   command.
 - Decision 3 (the maintainer's provisional ruling for the package step, 2026-11-19 UTC): one package
   covers both crates, and the move is not held for it. Ratifying the names and clearing the review,
