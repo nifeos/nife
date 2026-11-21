@@ -35,7 +35,9 @@ pub const OPERATION_SHIFT: u32 = 56;
 
 /// Build a request's first word from just an opcode (the block protocol's shape: the operand, a
 /// block index, rides in the second word).
-pub const fn req(operation: u64) -> u64 {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the root-request lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn request(operation: u64) -> u64 {
     operation << OPERATION_SHIFT
 }
 

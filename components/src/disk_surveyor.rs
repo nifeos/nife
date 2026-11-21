@@ -45,7 +45,7 @@ use block_roster_contract::{
     Roster, TRANSPORT_NON_VOLATILE_MEMORY_EXPRESS, TRANSPORT_VIRTIO_MEMORY_MAPPED_IO,
     TRANSPORT_VIRTIO_PCI,
 };
-use filesystem_contract::{block, req};
+use filesystem_contract::{block, request};
 use globally_unique_identifier_partition_table::PartitionTable;
 use globally_unique_identifier_partition_table::entry::NAME_UNITS;
 use globally_unique_identifier_partition_table::span::Span;
@@ -261,7 +261,7 @@ fn survey() -> ! {
     // How big is the disk? This is the question only a *holder* can ask: the roster deliberately
     // carries no capacity, because a size is a fact about the device rather than about the machine
     // having one (`block_roster_contract`).
-    let size = call(BLK, req(block::SIZE), 0).0 as i64;
+    let size = call(BLK, request(block::SIZE), 0).0 as i64;
     if size > 0 && (size as u64).is_multiple_of(LBA) {
         flags |= F_SIZE;
         let block_count = size as u64 / LBA;
@@ -357,7 +357,7 @@ fn read_span(span: Span, into: &mut [u8]) -> bool {
         if at + block::BLOCK_BYTES > into.len() {
             return false;
         }
-        if (call(BLK, req(block::READ), span.first_block + i).0 as i64) < 0 {
+        if (call(BLK, request(block::READ), span.first_block + i).0 as i64) < 0 {
             return false;
         }
         // SAFETY: BLK_PAGE is a page this program mapped from a frame it holds, of exactly one

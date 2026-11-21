@@ -1,6 +1,6 @@
-# toolchain: nightly-2026-11-10
-# date: 2026-11-12
-# why: re-baselined to origin/main bf2266f58: system_call_entry 2010 -> 2106 (4.8%) had accumulated on main under the 5% band
+# toolchain: nightly-2026-11-21
+# date: 2026-11-21
+# why: nightly-2026-11-21: the compiler alone shrank riscv64 ipc_send_receive 4018 -> 3788 (-5.7%), ipc_call_reply 5104 -> 4828 (-5.4%), system_call_entry 2106 -> 1882 (-10.6%); aarch64 and x86_64 stayed within the 5% band, so their baselines are untouched
 # bench/fastpath-riscv64.txt: an upper bound on the IPC fastpath's instruction footprint.
 # Written by script/fastpath-footprint --save. Updating this file is a statement that a
 # footprint change is intended and understood; do it in the commit that causes it.
@@ -10,7 +10,7 @@
 # milestone 188 phase 1 because the system runs the second and this gate measured only the
 # first. `ipc_fastpath` is DERIVED, the worse of the two, kept under its old name because
 # the tree cites it; it is not checked separately. Both shapes and `system_call_entry` are.
-ipc_send_receive 4018
-ipc_call_reply 5104
-ipc_fastpath 5104
-system_call_entry 2106
+ipc_send_receive 3788
+ipc_call_reply 4828
+ipc_fastpath 4828
+system_call_entry 1882
