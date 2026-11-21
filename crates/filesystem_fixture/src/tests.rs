@@ -37,8 +37,8 @@ fn the_escape_bits_are_distinct() {
         CREATED,
         FORGED_HANDLE,
         GRANTED_READ_FAILED,
-        WROTE_ATTR,
-        GRANTED_ATTRS_FAILED,
+        WROTE_ATTRIBUTE,
+        GRANTED_ATTRIBUTES_FAILED,
     ];
     let mut seen = 0u64;
     for b in bits {
@@ -54,7 +54,7 @@ fn the_escape_bits_are_distinct() {
 /// an expected set, so two outcomes on one bit make a wrong verdict read as a right one.
 #[test]
 fn the_directory_escape_bits_are_distinct() {
-    use crate::dirscape::*;
+    use crate::directory_escape::*;
     let bits = [
         REACHED_PARENT,
         REACHED_SIBLING,
@@ -65,13 +65,13 @@ fn the_directory_escape_bits_are_distinct() {
         CREATED,
         WROTE,
         RENAMED,
-        MADE_A_DIR,
+        MADE_A_DIRECTORY,
         ENUMERATED_A_STRANGER,
         FORGED_HANDLE,
         OPENED_ITS_OWN,
         GRANTED_ACCESS_FAILED,
-        READ_ATTRS,
-        SET_AN_ATTR,
+        READ_ATTRIBUTES,
+        SET_AN_ATTRIBUTE,
         REACHED_AN_UNMATCHED_NAME,
     ];
     let mut seen = 0u64;
@@ -89,14 +89,14 @@ fn the_directory_escape_bits_are_distinct() {
 #[test]
 fn the_absolute_probe_names_are_the_relative_ones_rooted() {
     use crate::tree::*;
-    assert_eq!(ABS_INNER, format!("/{INNER}"));
-    assert_eq!(ABS_SECRET, format!("/{SECRET}"));
+    assert_eq!(ABSOLUTE_INNER, format!("/{INNER}"));
+    assert_eq!(ABSOLUTE_SECRET, format!("/{SECRET}"));
 }
 
 /// **The two-grant fixture's bits**, which had no distinctness test of its own at all.
 #[test]
 fn the_two_grant_bits_are_distinct() {
-    use crate::twodir::*;
+    use crate::endpoint_boundary::*;
     // A witness bit of zero turns its probe into one that always passes. Two of these bits are
     // the structural finding that an endpoint is the boundary.
     let bits = [
@@ -127,10 +127,10 @@ fn the_two_grant_bits_are_distinct() {
 fn every_throughput_phase_tag_has_its_own_name() {
     use crate::throughput::*;
     let named = [
-        (SEQ_WRITE, "fs_seq_write"),
-        (SEQ_READ, "fs_seq_read"),
-        (RAND_READ, "fs_rand_read"),
-        (RAND_WRITE, "fs_rand_write"),
+        (SEQUENTIAL_WRITE, "fs_seq_write"),
+        (SEQUENTIAL_READ, "fs_seq_read"),
+        (RANDOM_READ, "fs_rand_read"),
+        (RANDOM_WRITE, "fs_rand_write"),
         (RECORD_READ, "fs_record_read"),
         (PAYLOAD_FILL, "fs_payload_fill"),
     ];
@@ -150,7 +150,7 @@ fn every_throughput_phase_tag_has_its_own_name() {
 /// a bit that meant two things would let one shell's success stand in for the other's failure.
 #[test]
 fn the_navigation_bits_are_distinct() {
-    use crate::navscape::*;
+    use crate::navigation::*;
     let bits = [
         PWD_IS_ROOT,
         CLAMPED_AT_ROOT,
@@ -164,7 +164,7 @@ fn the_navigation_bits_are_distinct() {
         DESCENDED,
         RETURNED,
         CREATED,
-        MADE_DIR,
+        MADE_DIRECTORY,
         UNLINKED,
         HOLDER_KEPT_READING,
         NAME_GONE_AFTER_UNLINK,
@@ -175,10 +175,10 @@ fn the_navigation_bits_are_distinct() {
         ABSOLUTE_REACHED_INNER,
         ABSOLUTE_REACHED_SECRET,
         ABSOLUTE_CLAMPED_AT_ROOT,
-        // Every bit `navscape` declares belongs in this list, and nothing checks that a new one is.
+        // Every bit `navigation` declares belongs in this list, and nothing checks that a new one is.
         TOUCH_CREATED,
         TOUCH_PRESERVED,
-        TOUCH_MTIME_ADVANCED,
+        TOUCH_MODIFICATION_TIME_ADVANCED,
         TOUCH_AT_ROUND_TRIPPED,
         TOUCH_NOW_NEEDS_ONLY_WRITE,
         TOUCH_AT_REFUSED_WITHOUT_SETTIME,
@@ -226,67 +226,67 @@ fn the_witness_bits_are_distinct_single_bits() {
         crate::escape::CREATED,
         crate::escape::FORGED_HANDLE,
         crate::escape::GRANTED_READ_FAILED,
-        crate::escape::WROTE_ATTR,
-        crate::escape::GRANTED_ATTRS_FAILED,
+        crate::escape::WROTE_ATTRIBUTE,
+        crate::escape::GRANTED_ATTRIBUTES_FAILED,
     ]);
     all_distinct_bits(&[
-        crate::dirscape::REACHED_PARENT,
-        crate::dirscape::REACHED_SIBLING,
-        crate::dirscape::WALKED_UP,
-        crate::dirscape::WIDENED,
-        crate::dirscape::ENUMERATED,
-        crate::dirscape::DESCENDED,
-        crate::dirscape::CREATED,
-        crate::dirscape::WROTE,
-        crate::dirscape::RENAMED,
-        crate::dirscape::ENUMERATED_A_STRANGER,
-        crate::dirscape::FORGED_HANDLE,
-        crate::dirscape::GRANTED_ACCESS_FAILED,
-        crate::dirscape::MADE_A_DIR,
-        crate::dirscape::OPENED_ITS_OWN,
-        crate::dirscape::READ_ATTRS,
-        crate::dirscape::SET_AN_ATTR,
-        crate::dirscape::REACHED_AN_UNMATCHED_NAME,
+        crate::directory_escape::REACHED_PARENT,
+        crate::directory_escape::REACHED_SIBLING,
+        crate::directory_escape::WALKED_UP,
+        crate::directory_escape::WIDENED,
+        crate::directory_escape::ENUMERATED,
+        crate::directory_escape::DESCENDED,
+        crate::directory_escape::CREATED,
+        crate::directory_escape::WROTE,
+        crate::directory_escape::RENAMED,
+        crate::directory_escape::ENUMERATED_A_STRANGER,
+        crate::directory_escape::FORGED_HANDLE,
+        crate::directory_escape::GRANTED_ACCESS_FAILED,
+        crate::directory_escape::MADE_A_DIRECTORY,
+        crate::directory_escape::OPENED_ITS_OWN,
+        crate::directory_escape::READ_ATTRIBUTES,
+        crate::directory_escape::SET_AN_ATTRIBUTE,
+        crate::directory_escape::REACHED_AN_UNMATCHED_NAME,
     ]);
     all_distinct_bits(&[
-        crate::navscape::PWD_IS_ROOT,
-        crate::navscape::CLAMPED_AT_ROOT,
-        crate::navscape::WALKED_UP,
-        crate::navscape::ABSOLUTE_IS_MY_ROOT,
-        crate::navscape::REACHED_INNER,
-        crate::navscape::REACHED_SECRET,
-        crate::navscape::LISTED,
-        crate::navscape::SAW_INNER,
-        crate::navscape::SAW_SECRET,
-        crate::navscape::DESCENDED,
-        crate::navscape::RETURNED,
-        crate::navscape::CREATED,
-        crate::navscape::MADE_DIR,
-        crate::navscape::UNLINKED,
-        crate::navscape::HOLDER_KEPT_READING,
-        crate::navscape::NAME_GONE_AFTER_UNLINK,
-        crate::navscape::UNLINK_REFUSED_A_DIRECTORY,
-        crate::navscape::NAVIGATION_FAILED,
-        crate::navscape::RMDIR_REFUSED_NON_EMPTY,
-        crate::navscape::RMDIR_REMOVED_EMPTY,
-        crate::navscape::ABSOLUTE_REACHED_INNER,
-        crate::navscape::ABSOLUTE_REACHED_SECRET,
-        crate::navscape::ABSOLUTE_CLAMPED_AT_ROOT,
-        crate::navscape::TOUCH_CREATED,
-        crate::navscape::TOUCH_PRESERVED,
-        crate::navscape::TOUCH_MTIME_ADVANCED,
-        crate::navscape::TOUCH_AT_ROUND_TRIPPED,
-        crate::navscape::TOUCH_NOW_NEEDS_ONLY_WRITE,
-        crate::navscape::TOUCH_AT_REFUSED_WITHOUT_SETTIME,
+        crate::navigation::PWD_IS_ROOT,
+        crate::navigation::CLAMPED_AT_ROOT,
+        crate::navigation::WALKED_UP,
+        crate::navigation::ABSOLUTE_IS_MY_ROOT,
+        crate::navigation::REACHED_INNER,
+        crate::navigation::REACHED_SECRET,
+        crate::navigation::LISTED,
+        crate::navigation::SAW_INNER,
+        crate::navigation::SAW_SECRET,
+        crate::navigation::DESCENDED,
+        crate::navigation::RETURNED,
+        crate::navigation::CREATED,
+        crate::navigation::MADE_DIRECTORY,
+        crate::navigation::UNLINKED,
+        crate::navigation::HOLDER_KEPT_READING,
+        crate::navigation::NAME_GONE_AFTER_UNLINK,
+        crate::navigation::UNLINK_REFUSED_A_DIRECTORY,
+        crate::navigation::NAVIGATION_FAILED,
+        crate::navigation::RMDIR_REFUSED_NON_EMPTY,
+        crate::navigation::RMDIR_REMOVED_EMPTY,
+        crate::navigation::ABSOLUTE_REACHED_INNER,
+        crate::navigation::ABSOLUTE_REACHED_SECRET,
+        crate::navigation::ABSOLUTE_CLAMPED_AT_ROOT,
+        crate::navigation::TOUCH_CREATED,
+        crate::navigation::TOUCH_PRESERVED,
+        crate::navigation::TOUCH_MODIFICATION_TIME_ADVANCED,
+        crate::navigation::TOUCH_AT_ROUND_TRIPPED,
+        crate::navigation::TOUCH_NOW_NEEDS_ONLY_WRITE,
+        crate::navigation::TOUCH_AT_REFUSED_WITHOUT_SETTIME,
     ]);
     all_distinct_bits(&[
-        crate::globscape::EXPANDED,
-        crate::globscape::AGREED,
-        crate::globscape::EXCLUDED_A_STRANGER,
-        crate::globscape::NO_MATCH_REFUSED,
-        crate::globscape::PATTERN_IN_PATH_REFUSED,
-        crate::globscape::TEXT_UNTOUCHED,
-        crate::globscape::GLOB_FAILED,
+        crate::globbing::EXPANDED,
+        crate::globbing::AGREED,
+        crate::globbing::EXCLUDED_A_STRANGER,
+        crate::globbing::NO_MATCH_REFUSED,
+        crate::globbing::PATTERN_IN_PATH_REFUSED,
+        crate::globbing::TEXT_UNTOUCHED,
+        crate::globbing::GLOB_FAILED,
     ]);
 }
 
@@ -294,29 +294,29 @@ fn the_witness_bits_are_distinct_single_bits() {
 #[test]
 fn the_attribute_claim_bits_are_distinct_and_cover_the_required_eight() {
     all_distinct_bits(&[
-        crate::attrs::SET_AND_READ_BACK,
-        crate::attrs::LISTED,
-        crate::attrs::SURVIVED_RENAME,
-        crate::attrs::GONE_AFTER_REMOVE,
-        crate::attrs::GONE_AFTER_UNLINK,
-        crate::attrs::OVERSIZE_REFUSED,
-        crate::attrs::STORE_UNNAMEABLE,
-        crate::attrs::STORE_UNLISTED,
-        crate::attrs::ATTRS_FAILED,
+        crate::attributes::SET_AND_READ_BACK,
+        crate::attributes::LISTED,
+        crate::attributes::SURVIVED_RENAME,
+        crate::attributes::GONE_AFTER_REMOVE,
+        crate::attributes::GONE_AFTER_UNLINK,
+        crate::attributes::OVERSIZE_REFUSED,
+        crate::attributes::STORE_UNNAMEABLE,
+        crate::attributes::STORE_UNLISTED,
+        crate::attributes::ATTRIBUTES_FAILED,
     ]);
     assert_eq!(
-        crate::attrs::EXPECTED,
-        crate::attrs::SET_AND_READ_BACK
-            | crate::attrs::LISTED
-            | crate::attrs::SURVIVED_RENAME
-            | crate::attrs::GONE_AFTER_REMOVE
-            | crate::attrs::GONE_AFTER_UNLINK
-            | crate::attrs::OVERSIZE_REFUSED
-            | crate::attrs::STORE_UNNAMEABLE
-            | crate::attrs::STORE_UNLISTED,
+        crate::attributes::EXPECTED,
+        crate::attributes::SET_AND_READ_BACK
+            | crate::attributes::LISTED
+            | crate::attributes::SURVIVED_RENAME
+            | crate::attributes::GONE_AFTER_REMOVE
+            | crate::attributes::GONE_AFTER_UNLINK
+            | crate::attributes::OVERSIZE_REFUSED
+            | crate::attributes::STORE_UNNAMEABLE
+            | crate::attributes::STORE_UNLISTED,
         "the eight required claims, bits 0 through 7"
     );
-    assert_eq!(crate::attrs::EXPECTED, 255);
+    assert_eq!(crate::attributes::EXPECTED, 255);
 }
 
 // ---- survivor triage of the 2026-10-03 census: the shared fixture's arithmetic ---------------
@@ -353,7 +353,7 @@ fn the_wide_directory_names_are_n_and_three_digits() {
 #[test]
 #[should_panic]
 fn a_wide_name_past_the_last_file_is_refused() {
-    let _ = crate::walk::wide_name(crate::walk::WIDE_COUNT);
+    let _ = crate::walk::wide_name(crate::walk::WIDE_FILES);
 }
 
 /// The match list ends at `RG_MATCHES`; one past it would repeat the narrow file.
@@ -409,7 +409,7 @@ fn the_walk_totals_are_what_the_shape_adds_up_to() {
 /// set could still match.
 #[test]
 fn every_two_trees_flag_is_its_own_single_bit() {
-    use crate::twotrees::*;
+    use crate::mounted_tree::*;
     let flags = [
         PWD_STARTS_AT_ROOT,
         LISTED_ROOT,
@@ -447,11 +447,31 @@ fn the_subtree_fixture_is_grantable_and_unambiguous() {
 
     use crate::tree::*;
     for name in [
-        SUB, INNER, DEEPER, LEAF, OTHER, SECRET, MADE, MADE_DIR, MOVED, NAV_KEPT, NAV_GONE,
-        NAV_DIR, NAV_EMPTY, NAV_INSIDE,
+        SUB,
+        INNER,
+        DEEPER,
+        LEAF,
+        OTHER,
+        SECRET,
+        MADE,
+        MADE_DIRECTORY,
+        MOVED,
+        NAVIGATION_KEPT,
+        NAVIGATION_GONE,
+        NAVIGATION_DIRECTORY,
+        NAVIGATION_EMPTY,
+        NAVIGATION_INSIDE,
         // The `rm -r` subtree. Its names ride in a grant too: the program is *started* with the
         // one name it is to remove, packed the way every other grant is.
-        RMTREE, RM_KEEP, RM_DOOMED, RM_ONE, RM_TWO, RM_NESTED, RM_LEAF, RM_SOLO, RM_MISSING,
+        RMTREE,
+        RM_KEEP,
+        RM_DOOMED,
+        RM_ONE,
+        RM_TWO,
+        RM_NESTED,
+        RM_LEAF,
+        RM_SOLO,
+        RM_MISSING,
     ] {
         assert!(
             grant::fits(name.as_bytes()),
@@ -462,7 +482,13 @@ fn the_subtree_fixture_is_grantable_and_unambiguous() {
     // index is appended to each. A fixture name that started with one of those prefixes would
     // be read as an escape, or would hide one.
     let probes = [
-        MADE, MADE_DIR, MOVED, NAV_KEPT, NAV_GONE, NAV_DIR, NAV_EMPTY,
+        MADE,
+        MADE_DIRECTORY,
+        MOVED,
+        NAVIGATION_KEPT,
+        NAVIGATION_GONE,
+        NAVIGATION_DIRECTORY,
+        NAVIGATION_EMPTY,
     ];
     for fixture in ROOT_ENTRIES
         .iter()
@@ -550,7 +576,7 @@ fn a_text_frame_and_a_verdict_are_told_apart_by_the_first_word() {
 fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
     use filesystem_contract::{extended_attribute, grant};
 
-    use crate::attrs::*;
+    use crate::attributes::*;
     let bits = [
         SET_AND_READ_BACK,
         LISTED,
@@ -560,7 +586,7 @@ fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
         OVERSIZE_REFUSED,
         STORE_UNNAMEABLE,
         STORE_UNLISTED,
-        ATTRS_FAILED,
+        ATTRIBUTES_FAILED,
     ];
     let mut seen = 0u64;
     for b in bits {
@@ -573,7 +599,7 @@ fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
     }
     assert_eq!(
         EXPECTED,
-        seen & !ATTRS_FAILED,
+        seen & !ATTRIBUTES_FAILED,
         "a correct run reports every outcome and no failure",
     );
     // The witness's fixture has to be usable: two distinct names it can create and rename
@@ -586,7 +612,7 @@ fn the_attribute_witness_bits_are_distinct_and_its_expectation_matches_them() {
     // default kind should fail the build rather than wait for the suite. The same discipline
     // `a_text_frame_and_a_verdict_are_told_apart_by_the_first_word` uses.
     const _: () = assert!(
-        crate::attrs::KIND != extended_attribute::RAW,
+        crate::attributes::KIND != extended_attribute::RAW,
         "a default kind would hide a layer that dropped it",
     );
 }

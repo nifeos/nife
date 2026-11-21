@@ -9,7 +9,7 @@
 
 use filesystem_contract::{directory, extended_attribute, fs};
 use filesystem_fixture as fixture;
-use fixture::{dirscape as esc, tree};
+use fixture::{directory_escape as esc, tree};
 use user_mode_runtime::{call, exit, send};
 
 use crate::channel::{
@@ -78,9 +78,9 @@ pub(crate) fn dir_attacker(run: u64) -> ! {
         v |= esc::CREATED;
         v |= write_what_it_made(created);
     }
-    let made_dir = run_name(tree::MADE_DIR, run);
+    let made_dir = run_name(tree::MADE_DIRECTORY, run);
     if dir_mkdir(fs::ROOT, made_str(&made_dir), directory::READ) >= 0 {
-        v |= esc::MADE_A_DIR;
+        v |= esc::MADE_A_DIRECTORY;
     }
 
     // 9. Descending inside the grant, which is allowed exactly when DESCEND was granted. Asking for
@@ -142,40 +142,51 @@ fn probe_its_own_attributes(own: i64) -> u64 {
     if (l as i64) < 0 {
         v |= esc::GRANTED_ACCESS_FAILED;
     } else {
-        v |= esc::READ_ATTRS;
+        v |= esc::READ_ATTRIBUTES;
     }
 
-    put_page(fixture::attrs::NAME);
-    put_page_at(fixture::attrs::NAME.len(), fixture::attrs::VALUE);
+    put_page(fixture::attributes::NAME);
+    put_page_at(fixture::attributes::NAME.len(), fixture::attributes::VALUE);
     let (s, _) = call(
         FILE,
-        fs::request(fs::SETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
-        extended_attribute::specification(fixture::attrs::KIND, fixture::attrs::VALUE.len() as u64),
+        fs::request(
+            fs::SETXATTR,
+            own as u64,
+            fixture::attributes::NAME.len() as u64,
+        ),
+        extended_attribute::specification(
+            fixture::attributes::KIND,
+            fixture::attributes::VALUE.len() as u64,
+        ),
     );
     if (s as i64) >= 0 {
-        put_page(fixture::attrs::NAME);
+        put_page(fixture::attributes::NAME);
         let (g, _) = call(
             FILE,
-            fs::request(fs::GETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
+            fs::request(
+                fs::GETXATTR,
+                own as u64,
+                fixture::attributes::NAME.len() as u64,
+            ),
             0,
         );
         get_page(extended_attribute::reply_value_len(g as i64), &mut buf);
         if (g as i64) >= 0
-            && extended_attribute::reply_kind(g as i64) == fixture::attrs::KIND
-            && extended_attribute::reply_value_len(g as i64) == fixture::attrs::VALUE.len()
-            && buf[..fixture::attrs::VALUE.len()] == *fixture::attrs::VALUE
+            && extended_attribute::reply_kind(g as i64) == fixture::attributes::KIND
+            && extended_attribute::reply_value_len(g as i64) == fixture::attributes::VALUE.len()
+            && buf[..fixture::attributes::VALUE.len()] == *fixture::attributes::VALUE
         {
-            v |= esc::SET_AN_ATTR;
+            v |= esc::SET_AN_ATTRIBUTE;
         } else {
             v |= esc::GRANTED_ACCESS_FAILED;
         }
-        put_page(fixture::attrs::NAME);
+        put_page(fixture::attributes::NAME);
         let (rm, _) = call(
             FILE,
             fs::request(
                 fs::REMOVEXATTR,
                 own as u64,
-                fixture::attrs::NAME.len() as u64,
+                fixture::attributes::NAME.len() as u64,
             ),
             0,
         );

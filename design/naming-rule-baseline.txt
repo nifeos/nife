@@ -52,19 +52,12 @@ crates/documentation/src/index.rs::STORE_DIR spelled-out
 
 
 
-crates/filesystem_fixture/src/lib.rs::GLOB_DIR spelled-out
 
-crates/filesystem_fixture/src/lib.rs::MADE_A_DIR spelled-out
 
-crates/filesystem_fixture/src/lib.rs::MADE_DIR spelled-out
 
-crates/filesystem_fixture/src/lib.rs::MADE_DIR spelled-out
 
-crates/filesystem_fixture/src/lib.rs::NAV_DIR spelled-out
 
-crates/filesystem_fixture/src/lib.rs::SCRATCH_INIT spelled-out
 
-crates/filesystem_fixture/src/lib.rs::TOUCH_MTIME_ADVANCED spelled-out
 
 crates/firmware_configuration/src/lib.rs::DmaCommand spelled-out
 

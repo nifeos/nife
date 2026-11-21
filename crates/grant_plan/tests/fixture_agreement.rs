@@ -21,7 +21,7 @@ fn the_glob_fixture_is_matched_by_the_pattern_it_is_staged_for() {
             "{name} is in the granted set and the pattern does not match it",
         );
     }
-    for name in [tree::GLOB_MISS, tree::GLOB_DIR, tree::GLOB_INNER] {
+    for name in [tree::GLOB_MISS, tree::GLOB_DIRECTORY, tree::GLOB_INNER] {
         assert!(
             !byte_glob::matches(p, name.as_bytes()),
             "{name} is a control and the pattern matches it, so it proves nothing",
@@ -32,7 +32,7 @@ fn the_glob_fixture_is_matched_by_the_pattern_it_is_staged_for() {
         tree::GLOB_ONE,
         tree::GLOB_TWO,
         tree::GLOB_MISS,
-        tree::GLOB_DIR,
+        tree::GLOB_DIRECTORY,
     ] {
         assert!(grant::fits(name.as_bytes()), "{name} does not fit a grant");
     }

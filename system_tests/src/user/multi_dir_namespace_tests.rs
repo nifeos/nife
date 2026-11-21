@@ -1,5 +1,5 @@
 use filesystem_contract::directory;
-use filesystem_fixture::twodir as t;
+use filesystem_fixture::endpoint_boundary as t;
 
 use super::*;
 use crate::sched;
@@ -138,7 +138,7 @@ fn two_tree_shell() -> Option<u64> {
 /// consistent with a shell that reaches nothing.
 #[test_case]
 fn a_shell_holding_two_trees_moves_between_them_and_crosses_neither() {
-    use filesystem_fixture::twotrees as tt;
+    use filesystem_fixture::mounted_tree as tt;
     if fs_service::fs_server_image().is_none() {
         crate::testing::skip!(fs_service::NO_FS_SERVER);
     }

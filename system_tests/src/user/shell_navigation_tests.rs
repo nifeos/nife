@@ -1,5 +1,5 @@
 use filesystem_contract::directory;
-use filesystem_fixture::{navscape as nb, tree};
+use filesystem_fixture::{navigation as nb, tree};
 
 use super::*;
 use crate::sched;
@@ -18,7 +18,7 @@ pub(super) const ALWAYS: u64 = nb::PWD_IS_ROOT
     | nb::ABSOLUTE_CLAMPED_AT_ROOT
     | nb::LISTED
     | nb::CREATED
-    | nb::MADE_DIR
+    | nb::MADE_DIRECTORY
     | nb::UNLINKED
     | nb::HOLDER_KEPT_READING
     | nb::NAME_GONE_AFTER_UNLINK
@@ -33,7 +33,7 @@ pub(super) const ALWAYS: u64 = nb::PWD_IS_ROOT
     | nb::TOUCH_PRESERVED
     // `touch`'s mtime half (milestone 47's mtime lane, DECISIONS §112): a bare `touch` moves the
     // mtime forward, and `touch -t` lands on exactly the asserted instant rather than "now" again.
-    | nb::TOUCH_MTIME_ADVANCED
+    | nb::TOUCH_MODIFICATION_TIME_ADVANCED
     | nb::TOUCH_AT_ROUND_TRIPPED
     // The two-right split, proven against one freshly-minted handle rather than assumed from
     // `redoxfs_server`'s own host tests: `WRITE` alone is enough for bare `touch`, and it is not enough

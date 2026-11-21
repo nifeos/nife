@@ -1,6 +1,6 @@
 use byte_sink_contract::end_of_stream;
 use filesystem_contract::{directory, rm as rr};
-use filesystem_fixture::{VERDICT, globscape, tree};
+use filesystem_fixture::{VERDICT, globbing, tree};
 
 use super::*;
 use crate::sched;
@@ -80,16 +80,16 @@ fn shell_expanded() -> Option<u64> {
 
 fn assert_shell_agreed(v: u64) {
     assert_eq!(
-        v & globscape::GLOB_FAILED,
+        v & globbing::GLOB_FAILED,
         0,
         "the shell could not plan the grant at all, so nothing it reported means anything",
     );
-    let want = globscape::EXPANDED
-        | globscape::AGREED
-        | globscape::EXCLUDED_A_STRANGER
-        | globscape::NO_MATCH_REFUSED
-        | globscape::PATTERN_IN_PATH_REFUSED
-        | globscape::TEXT_UNTOUCHED;
+    let want = globbing::EXPANDED
+        | globbing::AGREED
+        | globbing::EXCLUDED_A_STRANGER
+        | globbing::NO_MATCH_REFUSED
+        | globbing::PATTERN_IN_PATH_REFUSED
+        | globbing::TEXT_UNTOUCHED;
     assert_eq!(
         v, want,
         "the globbing witness reported {v:#x}, wanted {want:#x}",

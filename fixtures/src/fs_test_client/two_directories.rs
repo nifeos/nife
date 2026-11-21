@@ -24,7 +24,7 @@ use crate::channel::put_page;
 /// by `TwoRoots::resolve` before any request is sent; and neither caretaker's tree is reachable
 /// through the other's endpoint, asked directly of each (notes/dir-capability.md).
 pub(crate) fn two_dir() -> ! {
-    use filesystem_fixture::twodir as t;
+    use filesystem_fixture::endpoint_boundary as t;
     use fixture::tree;
 
     /// Grant A's endpoint: `fs_service::start_granted_two_dirs`' slot 0.

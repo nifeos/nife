@@ -57,7 +57,7 @@ const BLK_PAGE: u64 = address_space_layout::service_window(0x5000_0000);
 const TRANSFER: u64 = block::BLOCK_BYTES as u64;
 
 /// The logical block size a GPT counts in. See BUGS.
-const LBA: u64 = blank::LBA;
+const LBA: u64 = blank::LOGICAL_BLOCK_BYTES;
 
 // The roles, in `a0`. Must match kernel/src/user/disk_service.rs.
 const ROLE_PARTITION: u64 = 0;
@@ -178,7 +178,11 @@ fn partition() -> ! {
     }
 
     let layout = [
-        (types::EFI_SYSTEM, blank::ESP, blank::NAMES[0]),
+        (
+            types::EFI_SYSTEM,
+            blank::EFI_SYSTEM_PARTITION,
+            blank::NAMES[0],
+        ),
         (types::LINUX_FILESYSTEM, blank::LINUX, blank::NAMES[1]),
         (
             nife_partition_types::NIFE_DATA,

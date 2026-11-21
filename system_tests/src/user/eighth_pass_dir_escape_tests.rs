@@ -9,7 +9,7 @@
 //! notes/confinement-claims/the-eighth-pass-tests.md.
 
 use filesystem_contract::directory;
-use filesystem_fixture::{dirscape as esc, navscape as nb, tree};
+use filesystem_fixture::{directory_escape as esc, navigation as nb, tree};
 
 use super::dir_capability_tests::{assert_verdict, attack_a_subtree};
 use super::shell_navigation_tests::{ALWAYS, navigate};
@@ -17,7 +17,7 @@ use super::*;
 
 /// **A grant that drops one right must lose exactly that right's capability and no other.**
 ///
-/// The read-only verdict is `OPENED_ITS_OWN | ENUMERATED | DESCENDED | READ_ATTRS`. Without
+/// The read-only verdict is `OPENED_ITS_OWN | ENUMERATED | DESCENDED | READ_ATTRIBUTES`. Without
 /// `ENUMERATE` the listing goes; without `READ` both opens go; the descent and everything above
 /// the grant stay identical. Missing bits are asserted as strongly as present ones: more reach is
 /// the escape, and less makes the refusals prove nothing.
@@ -37,7 +37,7 @@ fn a_grant_that_drops_one_right_loses_exactly_that_right() {
     };
     assert_verdict(
         read_only,
-        esc::OPENED_ITS_OWN | esc::ENUMERATED | esc::DESCENDED | esc::READ_ATTRS,
+        esc::OPENED_ITS_OWN | esc::ENUMERATED | esc::DESCENDED | esc::READ_ATTRIBUTES,
         "read-only",
     );
 
@@ -45,7 +45,7 @@ fn a_grant_that_drops_one_right_loses_exactly_that_right() {
         .expect("the service was wired for the read-only run");
     assert_verdict(
         no_enumerate,
-        esc::OPENED_ITS_OWN | esc::DESCENDED | esc::READ_ATTRS,
+        esc::OPENED_ITS_OWN | esc::DESCENDED | esc::READ_ATTRIBUTES,
         "enumerate-less",
     );
     assert_eq!(
@@ -58,7 +58,7 @@ fn a_grant_that_drops_one_right_loses_exactly_that_right() {
         .expect("the service was wired for the read-only run");
     assert_verdict(no_read, esc::ENUMERATED | esc::DESCENDED, "read-less");
     assert_eq!(
-        no_read & (esc::OPENED_ITS_OWN | esc::READ_ATTRS),
+        no_read & (esc::OPENED_ITS_OWN | esc::READ_ATTRIBUTES),
         0,
         "a grant with no READ right still opened a file or read its attributes",
     );

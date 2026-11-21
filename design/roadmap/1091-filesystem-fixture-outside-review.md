@@ -50,10 +50,12 @@ then the decisions and the release step.
   still gives the removed dev-dependency as the reason for the pairing, and its owner corrects it.
 - Item 3 (P0), acronyms and British spelling: Done. [#3566](https://github.com/nifeos/nife/pull/3566) read the doc comments in full, and the `MOTD` literal now says
   "an unprivileged client" where it said `EL0`, in the crate and in the test that compares it.
-- Item 4 (P0), names the gates refuse: Ruled (Decision 2, maintainer, provisional, 2026-11-14 UTC).
-  Not built: `SCRATCH_INIT`, `MADE_DIR`, `NAV_DIR`, `TOUCH_MTIME_ADVANCED`, `twotrees`, `navscape`
-  and the rest of the three tables are still in the crate; one rename lane applies them across the
-  nine manifests, with aliases on the kept command names.
+- Item 4 (P0), names the gates refuse: Done (Decision 2, maintainer, provisional, 2026-11-14 UTC).
+  The lane applied the three tables across the nine manifests as provisional names, with no alias
+  of an old spelling. `spelled_out`, `register_names` and the other five gates report 0 refused names.
+  The kept command names that are not integer constants (`RM_*`, `RG_*`, `GLOB*`, `MOTD*`) carry
+  `#[doc(alias)]`; the integer ones (`RMDIR_*`, `PWD_*`, `UNLINK*`) cannot, because the template
+  never allows an alias on an integer constant.
 - Item 5 (P0), no review package and 244 unratified names: Open.
   [The fixture's package](../../notes/crate-reviews/filesystem-fixture.md) and
   [the contract's](../../notes/crate-reviews/filesystem-contract.md) form the one package. It asks

@@ -28,7 +28,7 @@ const _: () = {
     // The record-aligned throughput phase reads at multiples of `RECORD`, which means what it
     // claims only while each multiple is a record boundary. See that constant's comment.
     assert!(
-        filesystem_fixture::throughput::RECORD
+        filesystem_fixture::throughput::RECORD_BYTES
             .is_multiple_of(redoxfs::BLOCK_SIZE << redoxfs::RECORD_LEVEL)
     );
 

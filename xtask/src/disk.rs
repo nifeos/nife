@@ -174,7 +174,7 @@ pub(crate) fn mkredoxfs_of(mebibytes: &str) -> bool {
     let motd = workspace_root().join("target/redoxfs-motd.tmp");
     let scratch = workspace_root().join("target/redoxfs-scratch.tmp");
     if std::fs::write(&motd, filesystem_fixture::MOTD).is_err()
-        || std::fs::write(&scratch, filesystem_fixture::SCRATCH_INIT).is_err()
+        || std::fs::write(&scratch, filesystem_fixture::SCRATCH_PLACEHOLDER).is_err()
     {
         eprintln!("mkredoxfs: cannot stage the fixture files");
         return false;
@@ -982,7 +982,7 @@ fn stage_subtree() -> Option<String> {
     // Milestone 47's globbing tree, a sibling of both. Two names the pattern matches and two it does
     // not, in one directory, so "the grant is what matched" is a claim about *which* names.
     let globset = root.join(tree::GLOBSET);
-    let globdir = globset.join(tree::GLOB_DIR);
+    let globdir = globset.join(tree::GLOB_DIRECTORY);
     // Milestone 109's batching tree, a sibling of the globbing one: eleven names one pattern
     // matches, which is more than a single grant can carry, so `xargs` has a real directory to
     // sweep at a real prompt. Its own directory rather than more files in `globset`, because the
@@ -990,7 +990,7 @@ fn stage_subtree() -> Option<String> {
     let globmany = root.join(tree::GLOBMANY);
     // Milestone 50's redirection tree, a sibling of all of them: the witness shell writes files into
     // its root, and it needs somewhere those writes cannot be confused with another test's.
-    let redir = root.join(tree::REDIR);
+    let redir = root.join(tree::REDIRECTION);
     let mut ok = std::fs::create_dir_all(&globmany).is_ok()
         && std::fs::write(globmany.join(tree::MANY_MISS), tree::MANY_BODY).is_ok();
     for name in tree::MANY_NAMES {
@@ -1002,8 +1002,8 @@ fn stage_subtree() -> Option<String> {
         && std::fs::create_dir_all(&nested).is_ok()
         && std::fs::create_dir_all(&globdir).is_ok()
         && std::fs::create_dir_all(&redir).is_ok()
-        && std::fs::write(redir.join(tree::REDIR_ONE), tree::REDIR_BODY).is_ok()
-        && std::fs::write(redir.join(tree::REDIR_TWO), tree::REDIR_BODY).is_ok()
+        && std::fs::write(redir.join(tree::REDIRECTION_ONE), tree::REDIRECTION_BODY).is_ok()
+        && std::fs::write(redir.join(tree::REDIRECTION_TWO), tree::REDIRECTION_BODY).is_ok()
         && std::fs::write(globset.join(tree::GLOB_ONE), tree::GLOB_BODY).is_ok()
         && std::fs::write(globset.join(tree::GLOB_TWO), tree::GLOB_BODY).is_ok()
         && std::fs::write(globset.join(tree::GLOB_MISS), tree::GLOB_BODY).is_ok()
@@ -1175,7 +1175,7 @@ pub(crate) fn mknvmedisk() -> bool {
 /// not apply here for the same reason it does not apply to the crash image.
 pub(crate) fn mkblankdisk() -> bool {
     let path = blank_disk_path();
-    let bytes = std::vec![0u8; (filesystem_fixture::blank::DISK_BLOCKS * filesystem_fixture::blank::LBA) as usize];
+    let bytes = std::vec![0u8; (filesystem_fixture::blank::DISK_BLOCKS * filesystem_fixture::blank::LOGICAL_BLOCK_BYTES) as usize];
     if let Err(e) = std::fs::write(&path, &bytes) {
         eprintln!("mkblankdisk: could not write {path}: {e}");
         return false;

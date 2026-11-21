@@ -23,7 +23,7 @@ use crate::channel::{FILE, REPORT, dir_descend, dir_open, get_page, put_page, pu
 /// question with `READ`. It removes its attribute before reporting, so the file the post-run host
 /// check pins is left as found. See notes/fs-server/the-test-client.md.
 pub(crate) fn set_attrs() -> ! {
-    use fixture::{dirscape as esc, tree};
+    use fixture::{directory_escape as esc, tree};
     let mut v = 0u64;
     let mut buf = [0u8; 128];
 
@@ -41,46 +41,54 @@ pub(crate) fn set_attrs() -> ! {
         if (l as i64) < 0 {
             v |= esc::GRANTED_ACCESS_FAILED;
         } else {
-            v |= esc::READ_ATTRS;
+            v |= esc::READ_ATTRIBUTES;
         }
 
         // A set, read straight back with its type code, then removed. The attribute's name is not a
         // name in the directory, so a caretaker that filtered it against the set would refuse this
         // and the bit would stay clear.
-        put_page(fixture::attrs::NAME);
-        put_page_at(fixture::attrs::NAME.len(), fixture::attrs::VALUE);
+        put_page(fixture::attributes::NAME);
+        put_page_at(fixture::attributes::NAME.len(), fixture::attributes::VALUE);
         let (s, _) = call(
             FILE,
-            fs::request(fs::SETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
+            fs::request(
+                fs::SETXATTR,
+                own as u64,
+                fixture::attributes::NAME.len() as u64,
+            ),
             extended_attribute::specification(
-                fixture::attrs::KIND,
-                fixture::attrs::VALUE.len() as u64,
+                fixture::attributes::KIND,
+                fixture::attributes::VALUE.len() as u64,
             ),
         );
         if (s as i64) >= 0 {
-            put_page(fixture::attrs::NAME);
+            put_page(fixture::attributes::NAME);
             let (g, _) = call(
                 FILE,
-                fs::request(fs::GETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
+                fs::request(
+                    fs::GETXATTR,
+                    own as u64,
+                    fixture::attributes::NAME.len() as u64,
+                ),
                 0,
             );
             get_page(extended_attribute::reply_value_len(g as i64), &mut buf);
             if (g as i64) >= 0
-                && extended_attribute::reply_kind(g as i64) == fixture::attrs::KIND
-                && extended_attribute::reply_value_len(g as i64) == fixture::attrs::VALUE.len()
-                && buf[..fixture::attrs::VALUE.len()] == *fixture::attrs::VALUE
+                && extended_attribute::reply_kind(g as i64) == fixture::attributes::KIND
+                && extended_attribute::reply_value_len(g as i64) == fixture::attributes::VALUE.len()
+                && buf[..fixture::attributes::VALUE.len()] == *fixture::attributes::VALUE
             {
-                v |= esc::SET_AN_ATTR;
+                v |= esc::SET_AN_ATTRIBUTE;
             } else {
                 v |= esc::GRANTED_ACCESS_FAILED;
             }
-            put_page(fixture::attrs::NAME);
+            put_page(fixture::attributes::NAME);
             let (rm, _) = call(
                 FILE,
                 fs::request(
                     fs::REMOVEXATTR,
                     own as u64,
-                    fixture::attrs::NAME.len() as u64,
+                    fixture::attributes::NAME.len() as u64,
                 ),
                 0,
             );

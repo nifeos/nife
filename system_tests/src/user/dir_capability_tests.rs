@@ -1,5 +1,5 @@
 use filesystem_contract::directory;
-use filesystem_fixture::dirscape as esc;
+use filesystem_fixture::directory_escape as esc;
 
 use super::*;
 use crate::sched;
@@ -88,7 +88,7 @@ fn describe_dirscape(v: u64) -> &'static str {
         "it reached something with a handle it was never given"
     } else if v & esc::CREATED != 0 {
         "it created a name through a capability with no create right"
-    } else if v & esc::MADE_A_DIR != 0 {
+    } else if v & esc::MADE_A_DIRECTORY != 0 {
         "it made a directory through a capability that could not"
     } else if v & esc::RENAMED != 0 {
         "it renamed a name through a capability with no remove right"
@@ -100,9 +100,9 @@ fn describe_dirscape(v: u64) -> &'static str {
         "it enumerated through a capability with no enumerate right"
     } else if v & esc::REACHED_AN_UNMATCHED_NAME != 0 {
         "it reached a name in the granted directory that the grant's set does not carry"
-    } else if v & esc::SET_AN_ATTR != 0 {
+    } else if v & esc::SET_AN_ATTRIBUTE != 0 {
         "it set an extended attribute through a capability with no write right"
-    } else if v & esc::READ_ATTRS != 0 {
+    } else if v & esc::READ_ATTRIBUTES != 0 {
         "it read extended attributes through a capability that could not open the file"
     } else if v & esc::GRANTED_ACCESS_FAILED != 0 {
         "the granted access itself failed, so nothing was actually proven"
@@ -134,7 +134,7 @@ fn a_read_only_directory_capability_reaches_its_subtree_and_nothing_above_it() {
     };
     assert_verdict(
         v,
-        esc::OPENED_ITS_OWN | esc::ENUMERATED | esc::DESCENDED | esc::READ_ATTRS,
+        esc::OPENED_ITS_OWN | esc::ENUMERATED | esc::DESCENDED | esc::READ_ATTRIBUTES,
         "read-only",
     );
 }
@@ -163,9 +163,9 @@ fn a_full_directory_capability_does_everything_inside_and_nothing_outside() {
             | esc::CREATED
             | esc::WROTE
             | esc::RENAMED
-            | esc::MADE_A_DIR
-            | esc::READ_ATTRS
-            | esc::SET_AN_ATTR,
+            | esc::MADE_A_DIRECTORY
+            | esc::READ_ATTRIBUTES
+            | esc::SET_AN_ATTRIBUTE,
         "full",
     );
 }
@@ -190,7 +190,11 @@ fn an_append_only_directory_capability_adds_and_cannot_walk_or_list() {
     };
     assert_verdict(
         v,
-        esc::OPENED_ITS_OWN | esc::CREATED | esc::WROTE | esc::READ_ATTRS | esc::SET_AN_ATTR,
+        esc::OPENED_ITS_OWN
+            | esc::CREATED
+            | esc::WROTE
+            | esc::READ_ATTRIBUTES
+            | esc::SET_AN_ATTRIBUTE,
         "append-only",
     );
 }
@@ -200,7 +204,7 @@ fn an_append_only_directory_capability_adds_and_cannot_walk_or_list() {
 ///
 /// `fs_nameset_caretaker` inspects a name on every request, so its four attribute verbs could go
 /// wrong either way. Filtering the attribute name against the set would hide what is attached to a
-/// matched file (`READ_ATTRS` and `SET_AN_ATTR` catch it). Not filtering the directory names would
+/// matched file (`READ_ATTRIBUTES` and `SET_AN_ATTRIBUTE` catch it). Not filtering the directory names would
 /// unmake the set (`REACHED_AN_UNMATCHED_NAME` catches it, through `directory::READ` verbs `rm` never
 /// sends). The set is one name in `sub`, so `deeper` is one entry away and reachable one hop up.
 #[test_case]
@@ -237,7 +241,7 @@ fn a_name_set_capability_reads_its_attributes_and_still_names_only_its_set() {
     );
     assert_verdict(
         v,
-        esc::OPENED_ITS_OWN | esc::READ_ATTRS | esc::SET_AN_ATTR,
+        esc::OPENED_ITS_OWN | esc::READ_ATTRIBUTES | esc::SET_AN_ATTRIBUTE,
         "name-set",
     );
 }

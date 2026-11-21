@@ -241,8 +241,8 @@ fn std_fs_reads_a_file_through_a_granted_directory_capability() {
 /// twin carries the reasoning: same caretaker, same attacker, same verdict.
 ///
 /// Milestone 61's attribute forwarding is inside this zero, in both directions: the attribute
-/// reads reached the store (`GRANTED_ATTRS_FAILED` clear) and the attribute write did not
-/// (`WROTE_ATTR` clear). Spelled out in the aarch64 twin's second assertion; here the exact
+/// reads reached the store (`GRANTED_ATTRIBUTES_FAILED` clear) and the attribute write did not
+/// (`WROTE_ATTRIBUTE` clear). Spelled out in the aarch64 twin's second assertion; here the exact
 /// verdict carries it, which is what the parity gate wants (§19: the same suite, both ISAs).
 #[test_case]
 fn a_read_only_per_file_grant_survives_an_attacker() {
@@ -268,7 +268,7 @@ fn a_writable_per_file_grant_writes_that_file_and_still_only_that_file() {
     };
     assert_eq!(
         verdict,
-        escape::WROTE | escape::TRUNCATED | escape::WROTE_ATTR,
+        escape::WROTE | escape::TRUNCATED | escape::WROTE_ATTRIBUTE,
         "a writable grant must write, truncate and set an attribute on its own file and do \
          nothing else",
     );

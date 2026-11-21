@@ -75,7 +75,7 @@ const BLOCK: usize = block::BLOCK_BYTES;
 
 /// The logical block size the partition table counts in (`disk_surveyor`'s BUGS: nothing on the
 /// wire reports the device's).
-const LBA: u64 = blank::LBA;
+const LBA: u64 = blank::LOGICAL_BLOCK_BYTES;
 
 /// The heap cap. The engine keeps a compress buffer sized by `RECORD_SIZE` (128 KiB, still the ceiling after milestone
 /// 138 lowered the *created* record level, because the buffer must fit any record this build can

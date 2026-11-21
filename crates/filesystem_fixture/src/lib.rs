@@ -39,15 +39,20 @@ pub const VERSION: u32 = 1;
 pub const INTERFACE_ID: u64 = 16;
 
 /// A file the image ships with; the client reads it back through a granted directory capability.
+#[doc(alias = "motd")]
 pub const MOTD_NAME: &str = "motd";
 /// Its exact contents. Longer than eight bytes so the report's head word is a real prefix.
+#[doc(alias = "motd")]
 pub const MOTD: &[u8] =
     b"redoxfs served this file to an unprivileged client through a capability handle\n";
 
 /// A file the image ships with (with placeholder contents) so the client can open it and write.
 pub const SCRATCH_NAME: &str = "scratch";
 /// Placeholder contents the host tool writes; overwritten by the client's write test.
-pub const SCRATCH_INIT: &[u8] = b"(placeholder overwritten by the redoxfs_server write test)";
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+pub const SCRATCH_PLACEHOLDER: &[u8] =
+    b"(placeholder overwritten by the redoxfs_server write test)";
 /// What the client writes to `scratch` and reads back; the host tool re-reads it after the run
 /// to prove the write reached the on-disk image and the filesystem is still consistent.
 pub const WRITE_PATTERN: &[u8] = b"CRKFS_WRITE_OK: this round-tripped through the RedoxFS image\n";
@@ -107,7 +112,9 @@ pub mod throughput {
     /// protocol's own ceiling and the tuning lives at that one constant. A figure here is how fast
     /// this architecture moves one request's worth, so a comparison against a system whose client
     /// passes a differently sized buffer compares two different things.
-    pub const UNIT: usize = filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const UNIT_BYTES: usize = filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES;
 
     /// **Bytes moved per phase, held constant across transfer sizes on purpose.** 1 MiB, bounded by
     /// the 16 MiB fixture image rather than chosen for statistics: the write phases fit beside
@@ -117,35 +124,45 @@ pub mod throughput {
     /// compare.
     ///
     /// Name: provisional, minted 2026-11-14 (UTC) by lane lane/outside-review-1089-1100.
-    pub const TOTAL: u64 = 1024 * 1024;
+    pub const TOTAL_BYTES: u64 = 1024 * 1024;
 
-    /// Transfers per phase: [`TOTAL`] divided by [`UNIT`]. 256 at one page, 16 at sixteen.
-    pub const BLOCKS: u64 = TOTAL / UNIT as u64;
+    /// Transfers per phase: [`TOTAL_BYTES`] divided by [`UNIT_BYTES`]. 256 at one page, 16 at sixteen.
+    pub const BLOCKS: u64 = TOTAL_BYTES / UNIT_BYTES as u64;
 
-    /// **The phase moves exactly [`TOTAL`] bytes at every transfer size**, which is what makes a
+    /// **The phase moves exactly [`TOTAL_BYTES`] bytes at every transfer size**, which is what makes a
     /// before and an after on `bench/transfer-size-sweep.sh` a comparison rather than two
     /// numbers, and what the sequential phase's `FSTAT` check against the file size depends on.
     /// A build is where this has to hold, because the phase runs in user mode where no test does.
     const _: () = {
         assert!(BLOCKS >= 1);
-        assert!(BLOCKS * UNIT as u64 == TOTAL);
-        assert!(TOTAL.is_multiple_of(RECORD));
+        assert!(BLOCKS * UNIT_BYTES as u64 == TOTAL_BYTES);
+        assert!(TOTAL_BYTES.is_multiple_of(RECORD_BYTES));
     };
 
     /// Untimed transfers before each phase: the `OPEN`, the first cold block, and whatever the
     /// engine touches on its first walk of the file.
-    pub const WARMUP: u64 = 8;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const WARMUP_TRANSFERS: u64 = 8;
 
     /// Phase tags, sent as the report's third word so the bench boot names a result rather than
     /// counting messages. The order they are performed in is the order they are listed, and it
     /// is forced: the write phase is what creates the file the read phases read.
-    pub const SEQ_WRITE: u64 = 1;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const SEQUENTIAL_WRITE: u64 = 1;
     /// Sequential read of the file the write phase left behind.
-    pub const SEQ_READ: u64 = 2;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const SEQUENTIAL_READ: u64 = 2;
     /// Read at page-aligned offsets drawn from a fixed-seed pseudo-random number generator, so a run is reproducible.
-    pub const RAND_READ: u64 = 3;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const RANDOM_READ: u64 = 3;
     /// Write at those same pseudo-random offsets, in place, over a file that already exists.
-    pub const RAND_WRITE: u64 = 4;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const RANDOM_WRITE: u64 = 4;
     /// **A read of the first page of a record**, kept because it refuted a model of where the
     /// milliseconds go. A read at a record's start was predicted to be cheaper than one in its
     /// middle; it measures the same as the other read phases, to within 3%, because `read_record`
@@ -159,7 +176,9 @@ pub mod throughput {
     /// changes and every figure this phase produced stays comparable. **This is the store's number,
     /// not the protocol's**: the filesystem server asserts at compile time that it is a whole number
     /// of records.
-    pub const RECORD: u64 = 128 * 1024;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const RECORD_BYTES: u64 = 128 * 1024;
 
     /// **The cost of producing one page of payload**, with no filesystem in it at all.
     ///
@@ -184,10 +203,10 @@ pub mod throughput {
     /// which is a client that reported a tag this table does not know.
     pub const fn name(tag: u64) -> Option<&'static str> {
         match tag {
-            SEQ_WRITE => Some("fs_seq_write"),
-            SEQ_READ => Some("fs_seq_read"),
-            RAND_READ => Some("fs_rand_read"),
-            RAND_WRITE => Some("fs_rand_write"),
+            SEQUENTIAL_WRITE => Some("fs_seq_write"),
+            SEQUENTIAL_READ => Some("fs_seq_read"),
+            RANDOM_READ => Some("fs_rand_read"),
+            RANDOM_WRITE => Some("fs_rand_write"),
             RECORD_READ => Some("fs_record_read"),
             PAYLOAD_FILL => Some("fs_payload_fill"),
             _ => None,
@@ -222,13 +241,17 @@ pub mod escape {
     /// is `WROTE`'s twin for the same reason `TRUNCATED` is: an attribute is a way to change a
     /// file that carries no file bytes, so a direction check that only covered `WRITE` and
     /// `TRUNCATE` would leave one open. Added with the forwarding it guards.
-    pub const WROTE_ATTR: u64 = 1 << 6;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const WROTE_ATTRIBUTE: u64 = 1 << 6;
     /// **Reading its own file's attributes failed**, so the capability does not carry what
     /// it is meant to carry. A control bit in [`GRANTED_READ_FAILED`]'s shape rather
     /// than an escape, and the one that catches a regression to the old behavior: before
     /// attributes were forwarded the caretaker answered `EOPNOTSUPP` to all four attribute verbs, so this
     /// bit would be set in **both** runs.
-    pub const GRANTED_ATTRS_FAILED: u64 = 1 << 7;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const GRANTED_ATTRIBUTES_FAILED: u64 = 1 << 7;
 }
 
 /// The attacker's report leads with this so a silent client (a trapped one) cannot be mistaken
@@ -267,9 +290,13 @@ pub mod tree {
     ///
     /// Constants rather than bytes built at the call site because the witness runs on two
     /// stack pages and has been one page short before now: a static string costs it nothing.
-    pub const ABS_INNER: &str = "/inner";
-    /// [`SECRET`] as an absolute path. See [`ABS_INNER`].
-    pub const ABS_SECRET: &str = "/secret";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const ABSOLUTE_INNER: &str = "/inner";
+    /// [`SECRET`] as an absolute path. See [`ABSOLUTE_INNER`].
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const ABSOLUTE_SECRET: &str = "/secret";
     /// What [`SECRET`] holds.
     pub const SECRET_BODY: &[u8] = b"CRK47-SECRET: in a sibling of the granted directory\n";
 
@@ -283,74 +310,104 @@ pub mod tree {
     pub const MADE_BODY: &[u8] = b"CRK47: written through a directory capability\n";
     /// The directory the writable attacker makes inside its grant, to prove `MKDIR` mints a
     /// capability and that the capability it mints is not wider than the one that made it.
-    pub const MADE_DIR: &str = "dir-by-atk";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const MADE_DIRECTORY: &str = "dir-by-atk";
     /// What the attacker renames [`MADE`] to, if its capability carries
     /// [`filesystem_contract::directory::REMOVE`]. The post-run host check looks for a name with this prefix
     /// in [`SUB`] **and** a [`MADE`] one that was not renamed, which is `REMOVE` being enforced
     /// witnessed from outside the guest: one capability moved a name and another could not.
     pub const MOVED: &str = "moved-by-atk";
 
-    /// The file a navigating shell creates and **leaves** in its root, so that [`NAV_GONE`]'s
+    /// The file a navigating shell creates and **leaves** in its root, so that [`NAVIGATION_GONE`]'s
     /// absence afterwards is a fact about `unlink` rather than about a shell that created
     /// nothing. Run-indexed like the names above, for the same reason.
-    pub const NAV_KEPT: &str = "nav-kept";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_KEPT: &str = "nav-kept";
     /// The file a navigating shell creates, opens, writes, and then **unlinks while its own
     /// handle is still open**. Two claims ride on it: in-guest, the read through that handle
-    /// still returns [`NAV_BODY`] (unlink removes a name, not an object); on the host, this name
+    /// still returns [`NAVIGATION_BODY`] (unlink removes a name, not an object); on the host, this name
     /// is not in the directory afterwards (the removal reached the platter).
-    pub const NAV_GONE: &str = "nav-gone";
-    /// What goes into [`NAV_GONE`] before it is unlinked, and what must still be readable
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_GONE: &str = "nav-gone";
+    /// What goes into [`NAVIGATION_GONE`] before it is unlinked, and what must still be readable
     /// through the open handle after.
-    pub const NAV_BODY: &[u8] = b"CRK47-NAV: a name can go while the bytes stay\n";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_BODY: &[u8] = b"CRK47-NAV: a name can go while the bytes stay\n";
     /// The directory a navigating shell makes with `mkdir` and leaves behind. It stays because
     /// the shell never empties it: [`filesystem_contract::fs::UNLINK`] refuses a directory and
     /// [`filesystem_contract::fs::RMDIR`] refuses a non-empty one, so a directory with a name in it
     /// takes two deliberate steps to remove and neither of them is one word.
-    pub const NAV_DIR: &str = "nav-dir";
-    /// The directory a navigating shell makes, puts [`NAV_INSIDE`] in, and then removes with
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_DIRECTORY: &str = "nav-dir";
+    /// The directory a navigating shell makes, puts [`NAVIGATION_INSIDE`] in, and then removes with
     /// `RMDIR` **after** taking that name back out. Two claims ride on it: in-guest, the first
     /// `RMDIR` is refused with `ENOTEMPTY` and the second succeeds; on the host, this name is
     /// not in the directory afterwards, so the removal reached the platter.
-    pub const NAV_EMPTY: &str = "nav-empty";
-    /// The one name inside [`NAV_EMPTY`], which is what makes the first `RMDIR` a refusal. It is
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_EMPTY: &str = "nav-empty";
+    /// The one name inside [`NAVIGATION_EMPTY`], which is what makes the first `RMDIR` a refusal. It is
     /// unlinked before the second, so nothing of it survives either.
-    pub const NAV_INSIDE: &str = "in";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_INSIDE: &str = "in";
     /// The file a navigating shell `touch`es twice: once absent (proving the create half),
     /// once present with a body already in it (proving the second call is a no-op rather than
     /// a truncate). Left behind, run-indexed like the names above, so the host check can find
     /// it and confirm the second `touch` did not disturb what the first write put there.
-    pub const NAV_TOUCH: &str = "nav-touch";
-    /// What a navigating shell writes into [`NAV_TOUCH`] before touching it a second time, and
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_TOUCH: &str = "nav-touch";
+    /// What a navigating shell writes into [`NAVIGATION_TOUCH`] before touching it a second time, and
     /// what must still be there after: the only claim `touch` on an existing name makes is
     /// that it changes nothing.
-    pub const NAV_TOUCH_BODY: &[u8] = b"CRK47-TOUCH: a second touch must not disturb this\n";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_TOUCH_BODY: &[u8] = b"CRK47-TOUCH: a second touch must not disturb this\n";
 
     /// **The instant `touch -t` asserts in the mtime probes**: 2030-01-01T00:00:00Z, far enough past this repository's own history
     /// that neither this server's advancing logical clock nor a real wall-clock reading could
     /// coincidentally produce it. The timestamp text of Request for Comments 3339 that a real command line carries.
-    pub const NAV_TOUCH_AT_RFC3339: &str = "2030-01-01T00:00:00Z";
-    /// [`NAV_TOUCH_AT_RFC3339`] as the Unix-seconds value the wire and a read-back both use, so
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_TOUCH_AT_RFC3339: &str = "2030-01-01T00:00:00Z";
+    /// [`NAVIGATION_TOUCH_AT_RFC3339`] as the Unix-seconds value the wire and a read-back both use, so
     /// a round-trip check compares against the same number the text names rather than a second
     /// copy that could drift from it. Verified independently rather than derived at either end:
     /// `date -u -d 2030-01-01T00:00:00Z +%s` and Python's `datetime` both agree it is this.
-    pub const NAV_TOUCH_AT_UNIX: u64 = 1_893_456_000;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_TOUCH_AT_UNIX_SECONDS: u64 = 1_893_456_000;
     /// The fresh directory the navigating witness mints with `MKDIR`, attenuated to `WRITE` and
     /// not `SETTIME`, to prove `touch -t` needs the right through the real wire and not only in
     /// `redoxfs_server`'s own host tests. Ten bytes plus a run digit, `run_name`'s bound.
-    pub const NAV_TOUCH_NO_SETTIME: &str = "nav-notime";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_TOUCH_NO_SETTIME: &str = "nav-notime";
 
     /// **`bind`'s witness**. A directory nested inside
-    /// [`NAV_DIR`], holding [`NAV_BIND_MARKER`], and bound to a fresh top-level name
-    /// ([`NAV_BIND_ALIAS`]) so `ls`, `cd` and `..` can all be checked through the bound name
+    /// [`NAVIGATION_DIRECTORY`], holding [`NAVIGATION_BIND_MARKER`], and bound to a fresh top-level name
+    /// ([`NAVIGATION_BIND_ALIAS`]) so `ls`, `cd` and `..` can all be checked through the bound name
     /// against the same real files a direct walk would reach.
-    pub const NAV_BIND_NESTED: &str = "nav-bind-nest";
-    /// The marker file [`NAV_BIND_NESTED`] holds. Its name alone is the claim: reachable
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_BIND_NESTED: &str = "nav-bind-nest";
+    /// The marker file [`NAVIGATION_BIND_NESTED`] holds. Its name alone is the claim: reachable
     /// through the bind means the same `OPENDIR`/`OPEN` the direct path would have sent.
-    pub const NAV_BIND_MARKER: &str = "marker";
-    /// The top-level name [`NAV_BIND_NESTED`] is bound to. A fresh word, never a real
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_BIND_MARKER: &str = "marker";
+    /// The top-level name [`NAVIGATION_BIND_NESTED`] is bound to. A fresh word, never a real
     /// top-level entry, so reaching it through `ls`/`cd` is unambiguously the bind and not a
     /// coincidence of the fixture tree's own shape.
-    pub const NAV_BIND_ALIAS: &str = "nav-bound";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const NAVIGATION_BIND_ALIAS: &str = "nav-bound";
 
     /// **The directory the redirection witness works in**, a
     /// sibling of [`SUB`]: the root is shared with every test in the boot, so a shell that writes
@@ -361,13 +418,21 @@ pub mod tree {
     /// ```text
     ///   /redir      alpha  beta        <- the redirection witness is granted this
     /// ```
-    pub const REDIR: &str = "redir";
-    /// The first of the two files inside [`REDIR`].
-    pub const REDIR_ONE: &str = "alpha";
-    /// The second of the two files inside [`REDIR`].
-    pub const REDIR_TWO: &str = "beta";
-    /// What both [`REDIR_ONE`] and [`REDIR_TWO`] hold.
-    pub const REDIR_BODY: &[u8] = b"CRK50: a file the redirection witness lists\n";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const REDIRECTION: &str = "redir";
+    /// The first of the two files inside [`REDIRECTION`].
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const REDIRECTION_ONE: &str = "alpha";
+    /// The second of the two files inside [`REDIRECTION`].
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const REDIRECTION_TWO: &str = "beta";
+    /// What both [`REDIRECTION_ONE`] and [`REDIRECTION_TWO`] hold.
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const REDIRECTION_BODY: &[u8] = b"CRK50: a file the redirection witness lists\n";
 
     /// **The subtree the `rm` program is granted**, a sibling of [`SUB`]
     /// so a capability to one is provably not a capability to the other.
@@ -379,29 +444,40 @@ pub mod tree {
     /// ```
     ///
     /// [`RM_KEEP`] is the control: the grant reaches it, and it stays because nothing named it.
+    #[doc(alias = "rm")]
     pub const RMTREE: &str = "rmtree";
     /// A file beside the doomed tree, inside the grant. Nothing names it, so nothing removes it.
+    #[doc(alias = "rm")]
     pub const RM_KEEP: &str = "rm-keep";
     /// What [`RM_KEEP`] holds.
+    #[doc(alias = "rm")]
     pub const RM_KEEP_BODY: &[u8] = b"CRK47-RM: inside the grant, and never named\n";
     /// The directory `rm -r` is pointed at.
+    #[doc(alias = "rm")]
     pub const RM_DOOMED: &str = "rm-doomed";
     /// Two files directly inside it, so the walk has something to unlink at the top level.
+    #[doc(alias = "rm")]
     pub const RM_ONE: &str = "rm-one";
     /// The second of the two top-level files inside [`RM_DOOMED`].
+    #[doc(alias = "rm")]
     pub const RM_TWO: &str = "rm-two";
     /// A directory inside it, so the walk has to recurse and `RMDIR` has to run bottom-up.
+    #[doc(alias = "rm")]
     pub const RM_NESTED: &str = "rm-nested";
     /// The file at the bottom: the last thing unlinked and the deepest the walk goes.
+    #[doc(alias = "rm")]
     pub const RM_LEAF: &str = "rm-leaf";
     /// What every file under [`RM_DOOMED`] holds.
+    #[doc(alias = "rm")]
     pub const RM_BODY: &[u8] = b"CRK47-RM: a file `rm -r` is expected to take away\n";
     /// A plain file beside the doomed tree, removed by a plain `rm` with no options. It is what
     /// makes **silence on success** falsifiable: that run must report a zero status and print
     /// nothing at all, and `rm(1)`'s `-v` exists precisely because the default prints nothing.
+    #[doc(alias = "rm")]
     pub const RM_SOLO: &str = "rm-solo";
     /// A name that is **not** on the image. `rm` of it is a diagnostic and a non-zero exit;
     /// `rm -f` of it is silence and a zero one, which is the whole of what `-f` means.
+    #[doc(alias = "rm")]
     pub const RM_MISSING: &str = "rm-nothing";
 
     /// **The directory the set grant of the globbing tests is planned in**, a sibling of [`RMTREE`].
@@ -412,35 +488,47 @@ pub mod tree {
     /// ```
     ///
     /// [`GLOB_PATTERN`] matches exactly [`GLOB_ONE`] and [`GLOB_TWO`]. [`GLOB_MISS`] is a file a
-    /// set-attenuated capability must not name; [`GLOB_DIR`] is a directory, so the type bit
+    /// set-attenuated capability must not name; [`GLOB_DIRECTORY`] is a directory, so the type bit
     /// [`filesystem_contract::nameset::IS_DIRECTORY`] carries has something to be wrong about.
+    #[doc(alias = "glob")]
     pub const GLOBSET: &str = "globset";
     /// The pattern the shell expands, and the whole of what `rm *.txt` designates here. Pinned
     /// against the matcher by a host test, so the set the kernel test states literally is
     /// provably the expansion rather than a second opinion about it.
+    #[doc(alias = "glob")]
     pub const GLOB_PATTERN: &[u8] = b"gl-*.txt";
     /// The first of the two names [`GLOB_PATTERN`] matches.
+    #[doc(alias = "glob")]
     pub const GLOB_ONE: &str = "gl-one.txt";
     /// The second of the two names [`GLOB_PATTERN`] matches.
+    #[doc(alias = "glob")]
     pub const GLOB_TWO: &str = "gl-two.txt";
     /// A file in the same directory that the pattern does **not** match. It is the escape the
     /// nameset caretaker is attacked with: it exists, and the caretaker one hop up could remove
     /// it.
+    #[doc(alias = "glob")]
     pub const GLOB_MISS: &str = "gl-three.log";
     /// A directory in the same directory, not matched either. It is why a set record carries a
     /// type bit at all.
-    pub const GLOB_DIR: &str = "gl-dir";
-    /// A file inside [`GLOB_DIR`], so the unmatched directory is not empty and a run that
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    #[doc(alias = "glob")]
+    pub const GLOB_DIRECTORY: &str = "gl-dir";
+    /// A file inside [`GLOB_DIRECTORY`], so the unmatched directory is not empty and a run that
     /// removed it would have had to walk it.
+    #[doc(alias = "glob")]
     pub const GLOB_INNER: &str = "gl-inner";
     /// What every matched file holds.
+    #[doc(alias = "glob")]
     pub const GLOB_BODY: &[u8] = b"CRK47-GLOB: a name a pattern either matched or did not\n";
     /// A pattern that matches **nothing** here, so the empty-expansion refusal has something to
     /// be about. Same prefix as the others deliberately: it fails on the extension alone, which
     /// is the case a matcher that gave up early would get wrong.
+    #[doc(alias = "glob")]
     pub const GLOB_NOMATCH: &[u8] = b"gl-*.rs";
     /// A line with no pattern in it, echoed to check that globbing did not quietly turn `echo`
     /// into a word-splitter. Its two consecutive spaces are the whole point.
+    #[doc(alias = "glob")]
     pub const GLOB_PLAIN: &[u8] = b"two  spaces";
 
     /// **The batching tree**: a directory holding more matching names than one
@@ -449,6 +537,7 @@ pub mod tree {
     /// A sibling of [`GLOBSET`] rather than an extension of it, deliberately: the globbing
     /// tests assert that `gl-*.txt` matches exactly two names, and adding files there to
     /// make this one's point would make that one's point by accident.
+    #[doc(alias = "glob")]
     pub const GLOBMANY: &str = "globmany";
     /// The pattern, matching every one of [`MANY_NAMES`] and not [`MANY_MISS`]. Pinned against
     /// the matcher by a host test, the way [`GLOB_PATTERN`] is.
@@ -485,13 +574,13 @@ pub mod tree {
     /// the root is shared with every other test in the boot (the `std::fs` test creates
     /// `made-by-std` in it), so an exact comparison would couple this gate to what
     /// unrelated tests happen to write. The upward-escape half is checked against [`MADE`] and
-    /// [`MADE_DIR`] instead, which are names only the attacker writes.
+    /// [`MADE_DIRECTORY`] instead, which are names only the attacker writes.
     pub const ROOT_ENTRIES: [&str; 9] = [
         GLOBMANY,
         GLOBSET,
         crate::MOTD_NAME,
         OTHER,
-        REDIR,
+        REDIRECTION,
         RMTREE,
         crate::SCRATCH_NAME,
         SUB,
@@ -518,19 +607,25 @@ pub mod walk {
     pub const DEPTH: usize = 8;
     /// The file at every level of the chain, [`CHAIN`] included.
     pub const LEVEL_FILE: &str = "f";
-    /// The width region: one directory holding [`WIDE_COUNT`] files.
+    /// The width region: one directory holding [`WIDE_FILES`] files.
     pub const WIDE: &str = "wide";
     /// Files in [`WIDE`]. 128 four-byte names are 768 bytes of `READDIR` records
     /// ([`filesystem_contract::directory_entry::record_len`]), so the whole listing is one page and the slope is per
     /// entry rather than per page. Pricing a page boundary would want more than 680 names.
-    pub const WIDE_COUNT: usize = 128;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const WIDE_FILES: usize = 128;
     /// The control: [`WIDE`]'s shape with one file, so the difference is entries alone.
     pub const NARROW: &str = "narrow";
     /// The byte region.
-    pub const SIZES: &str = "sizes";
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const BYTE_REGION: &str = "sizes";
     /// Its files and their sizes. 4 KiB is one page; 256 KiB is sixteen of the file channel's
     /// largest requests ([`filesystem_contract::fs::MAXIMUM_TRANSFER_BYTES`]).
-    pub const SIZE_FILES: [(&str, usize); 3] =
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const BYTE_REGION_FILES: [(&str, usize); 3] =
         [("s4k", 4096), ("s64k", 65_536), ("s256k", 262_144)];
     /// What every file in [`CHAIN`], [`WIDE`] and [`NARROW`] holds. Sixteen bytes, so a small
     /// file's read is one request and the byte region is the only place bytes vary.
@@ -547,9 +642,9 @@ pub mod walk {
     }
 
     /// Name of the `i`th file in [`WIDE`] (and the one in [`NARROW`]): `n` and three digits. `i`
-    /// is below [`WIDE_COUNT`]; three digits would wrap a larger one onto a name already used.
+    /// is below [`WIDE_FILES`]; three digits would wrap a larger one onto a name already used.
     pub const fn wide_name(i: usize) -> [u8; 4] {
-        debug_assert!(i < WIDE_COUNT);
+        debug_assert!(i < WIDE_FILES);
         [
             b'n',
             b'0' + (i / 100 % 10) as u8,
@@ -565,7 +660,7 @@ pub mod walk {
     /// is spoken)).
     pub const WALK_DIRECTORIES: usize = 4 + DEPTH;
     /// Files a full walk opens.
-    pub const WALK_FILES: usize = (DEPTH + 1) + WIDE_COUNT + 1 + SIZE_FILES.len();
+    pub const WALK_FILES: usize = (DEPTH + 1) + WIDE_FILES + 1 + BYTE_REGION_FILES.len();
     /// Entries a full walk is handed by `read_dir`, which is every directory and every file
     /// once. Printed and asserted by the priced program, so a walk that silently skipped a
     /// directory it could not look into fails on a count rather than on a slower figure.
@@ -574,11 +669,11 @@ pub mod walk {
     pub const WALK_BYTES: usize = {
         let mut sized = 0;
         let mut i = 0;
-        while i < SIZE_FILES.len() {
-            sized += SIZE_FILES[i].1;
+        while i < BYTE_REGION_FILES.len() {
+            sized += BYTE_REGION_FILES[i].1;
             i += 1;
         }
-        (WALK_FILES - SIZE_FILES.len()) * SMALL_BODY.len() + sized
+        (WALK_FILES - BYTE_REGION_FILES.len()) * SMALL_BODY.len() + sized
     };
     /// Path components a full walk resolves: each entry's depth below [`ROOT`], summed, since
     /// that is the length of the path a walker hands back to list or open it. On the target system it is
@@ -597,7 +692,7 @@ pub mod walk {
             i += 1;
         }
         // The wide, narrow and sized files, at depth 2.
-        sum + 2 * (WIDE_COUNT + 1 + SIZE_FILES.len())
+        sum + 2 * (WIDE_FILES + 1 + BYTE_REGION_FILES.len())
     };
 
     /// **What unmodified `ripgrep` is told to do over this tree**, as a line
@@ -611,10 +706,11 @@ pub mod walk {
     /// search.
     ///
     /// Name: provisional.
+    #[doc(alias = "rg")]
     pub const RG_SEARCH: &str = "rg --threads 1 --no-mmap --stats 'walk entry'";
     /// Lines [`RG_SEARCH`] matches: one in every file holding [`SMALL_BODY`], none in the
     /// sized files, whose bytes are the alphabet.
-    pub const RG_MATCHES: usize = WALK_FILES - SIZE_FILES.len();
+    pub const RG_MATCHES: usize = WALK_FILES - BYTE_REGION_FILES.len();
     /// **The control for the refusal**: the same pattern naming one file, which needs `READ`
     /// and `DESCEND` and no `ENUMERATE`. Under a grant lacking `ENUMERATE` this still finds
     /// its one line, so a refused walk is about enumeration alone. Typed as a person would,
@@ -622,17 +718,20 @@ pub mod walk {
     /// also shows the guest needs no `--no-mmap`.
     ///
     /// Name: provisional.
+    #[doc(alias = "rg")]
     pub const RG_NAMED: &str = "rg 'walk entry' narrow/n000";
 
     /// **[`RG_SEARCH`] without `--threads 1`**: `ripgrep` picks its own thread count from
     /// `available_parallelism`, the online core count, and takes `ignore`'s parallel walker when
     /// that is more than one. A line a person would type, apart from the measurement pins.
     /// Name: provisional (lane milestone/121-rg-threads, 2026-10-12 UTC).
+    #[doc(alias = "rg")]
     pub const RG_SEARCH_THREADED: &str = "rg --no-mmap --stats 'walk entry'";
     /// **[`RG_SEARCH`] told four threads**, whatever the core count.
     ///
     /// Name: provisional, lane milestone/121-rg-threads (#2016), 2026-10-12 (UTC).
     /// The pull request records no other name considered.
+    #[doc(alias = "rg")]
     pub const RG_SEARCH_FOUR_THREADS: &str = "rg --threads 4 --no-mmap --stats 'walk entry'";
     /// The thread count [`RG_SEARCH_FOUR_THREADS`] names.
     pub const RG_FOUR: usize = 4;
@@ -668,12 +767,12 @@ pub mod walk {
             }
             put(LEVEL_FILE.as_bytes(), &mut len);
         } else {
-            let (dir, n) = if i - (DEPTH + 1) < WIDE_COUNT {
+            let (directory, n) = if i - (DEPTH + 1) < WIDE_FILES {
                 (WIDE, i - (DEPTH + 1))
             } else {
                 (NARROW, 0)
             };
-            put(dir.as_bytes(), &mut len);
+            put(directory.as_bytes(), &mut len);
             put(b"/", &mut len);
             put(&wide_name(n), &mut len);
         }
@@ -684,7 +783,9 @@ pub mod walk {
 /// **The directory attacker's report**, a bitmap for the same reason the per-file
 /// attacker's is one: the test asserts an *expected set*, so the read-only run and the wide run
 /// are each other's control and a caretaker that refused everything fails one of them.
-pub mod dirscape {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+pub mod directory_escape {
     /// It opened a file that exists only in the granted directory's **parent**. Never allowed:
     /// this is "cannot reach its parent".
     pub const REACHED_PARENT: u64 = 1;
@@ -705,7 +806,9 @@ pub mod dirscape {
     pub const CREATED: u64 = 1 << 6;
     /// It made a **directory** inside the grant and got a capability to it. Expected only with
     /// [`filesystem_contract::directory::CREATE`] and [`filesystem_contract::directory::DESCEND`] together.
-    pub const MADE_A_DIR: u64 = 1 << 12;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const MADE_A_DIRECTORY: u64 = 1 << 12;
     /// Its write to a file inside the grant was accepted **and read back**. Expected only with
     /// [`filesystem_contract::directory::WRITE`].
     pub const WROTE: u64 = 1 << 7;
@@ -731,7 +834,9 @@ pub mod dirscape {
     /// can open the file at all: an attribute is part of what a file *is*, so a capability that
     /// may read the file may read what is attached to it. Before attributes were forwarded the
     /// caretaker answered `EOPNOTSUPP` and this bit was never set.
-    pub const READ_ATTRS: u64 = 1 << 14;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const READ_ATTRIBUTES: u64 = 1 << 14;
     /// **It set an extended attribute on that file and read it back with its type code.**
     /// Expected only with [`filesystem_contract::directory::WRITE`], which is [`WROTE`]'s rule applied to the
     /// third way of changing a file.
@@ -742,7 +847,9 @@ pub mod dirscape {
     /// through, so a read-only subtree grant is refused by the server rather than by a branch in
     /// the caretaker, which is exactly that program's design property holding under a verb it
     /// was never taught.
-    pub const SET_AN_ATTR: u64 = 1 << 15;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const SET_AN_ATTRIBUTE: u64 = 1 << 15;
     /// **It reached a name in the granted directory that the grant's *set* does not carry**
     /// Never allowed.
     ///
@@ -756,13 +863,15 @@ pub mod dirscape {
 /// **What the two-directory witness reports**: one process, two `fs_subtree_caretaker`s,
 /// two capability table slots, and the negative control that only a union of two grants can state.
 ///
-/// A bitmap for [`dirscape`]'s reason: the test asserts an *exact* set, so a witness that
+/// A bitmap for [`directory_escape`]'s reason: the test asserts an *exact* set, so a witness that
 /// reached nothing and one that reached everything both fail. The witness is told nothing
 /// about its two grants beyond which capability table slot each landed in (slot 0 is always the first,
 /// slot 1 the second); it
 /// tries to name a file in each subtree, tries to cross from one to the other both by request
 /// and by `grant_plan::navigation::TwoRoots`'s own client-side resolution, and reports what it found.
-pub mod twodir {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+pub mod endpoint_boundary {
     /// It opened the file inside the **first** grant, through the first grant's own endpoint.
     /// The control for that half: without it, every refusal below is equally consistent with a
     /// caretaker that reaches nothing.
@@ -791,12 +900,14 @@ pub mod twodir {
 /// **What a shell holding two trees reports**, the live half of holding two directory
 /// capabilities: the real `swish` builtins, `cd`, `pwd`, `ls`, `bind` and a
 /// planned `<`, run over two live caretakers, the first over [`tree::SUB`] and the second over
-/// [`tree::OTHER`], mounted at [`twotrees::MOUNT`] in the first.
+/// [`tree::OTHER`], mounted at [`mounted_tree::MOUNT`] in the first.
 ///
-/// The presentation: one tree, with other trees mounted at names in it. [`twodir`] proved one process can hold two trees; this proves the shell presents them
+/// The presentation: one tree, with other trees mounted at names in it. [`endpoint_boundary`] proved one process can hold two trees; this proves the shell presents them
 /// as one, with the same exact-set check, so the reaching bits are the controls for the
 /// refusal bits. Provisional names, all of them.
-pub mod twotrees {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+pub mod mounted_tree {
     /// Where the witness mounts the second tree, as the shell's own path.
     pub const MOUNT: &str = "/second";
     /// `pwd` printed `/` at the start: one root, whatever the shell holds.
@@ -852,7 +963,9 @@ pub mod twotrees {
 /// **nothing about which subtree it was rooted in** beyond a run index; it tries to name one file
 /// from each of two different roots and reports which it reached, so "two shells cannot name each
 /// other's files" is read off the *pair* of reports rather than claimed by either.
-pub mod navscape {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+pub mod navigation {
     /// `pwd` rendered `/` before anything moved. The root of your namespace is the root of the
     /// only namespace you have, which is the whole of "pwd is relative to your root".
     pub const PWD_IS_ROOT: u64 = 1;
@@ -889,7 +1002,9 @@ pub mod navscape {
     /// It created both of its files with the shell's `create` path.
     pub const CREATED: u64 = 1 << 11;
     /// `mkdir` made a directory in its root.
-    pub const MADE_DIR: u64 = 1 << 12;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const MADE_DIRECTORY: u64 = 1 << 12;
     /// `rm` removed the name it had made.
     pub const UNLINKED: u64 = 1 << 13;
     /// **After that `rm`, a read through the handle it still held returned the bytes.** The
@@ -929,7 +1044,7 @@ pub mod navscape {
     /// `touch` on a name that was not there created it: the name now opens and its size is
     /// zero. The create half of `touch`, made a measurement rather than a claim.
     pub const TOUCH_CREATED: u64 = 1 << 23;
-    /// `touch` on a name that was already there, holding [`crate::tree::NAV_TOUCH_BODY`],
+    /// `touch` on a name that was already there, holding [`crate::tree::NAVIGATION_TOUCH_BODY`],
     /// left it holding exactly that afterward. Without this bit, [`TOUCH_CREATED`] is equally
     /// true of a `touch` that quietly truncates whatever it finds.
     pub const TOUCH_PRESERVED: u64 = 1 << 24;
@@ -938,10 +1053,12 @@ pub mod navscape {
     /// prove the *bytes*; this is the first bit that reads a timestamp back through the wire
     /// (`GET_MODIFICATION_TIME`) at all, so it is also the first proof that the getter and the create-time
     /// stamp agree on what "before" means.
-    pub const TOUCH_MTIME_ADVANCED: u64 = 1 << 25;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const TOUCH_MODIFICATION_TIME_ADVANCED: u64 = 1 << 25;
     /// **`touch -t 2030-01-01T00:00:00Z`, typed as a real command line, produced a mtime that
-    /// reads back as exactly [`crate::tree::NAV_TOUCH_AT_UNIX`] and not the value
-    /// [`TOUCH_MTIME_ADVANCED`] just observed.** This makes the rule a measurement: a
+    /// reads back as exactly [`crate::tree::NAVIGATION_TOUCH_AT_UNIX_SECONDS`] and not the value
+    /// [`TOUCH_MODIFICATION_TIME_ADVANCED`] just observed.** This makes the rule a measurement: a
     /// `touch -t` that silently fell back to "now" would still be a later timestamp than the
     /// bare touch before it, so the *exact* comparison, not merely "later", is what makes this
     /// bit mean the caller's assertion moved rather than the server's own clock.
@@ -961,14 +1078,14 @@ pub mod navscape {
     /// bit's sibling and clear this one, and a caretaker that refused everything would clear
     /// both.
     pub const TOUCH_AT_REFUSED_WITHOUT_SETTIME: u64 = 1 << 28;
-    /// **`ls` of a bound name listed the real directory it points at**: [`crate::tree::NAV_BIND_MARKER`]
-    /// appeared in a listing of [`crate::tree::NAV_BIND_ALIAS`], which this shell never `mkdir`ed
+    /// **`ls` of a bound name listed the real directory it points at**: [`crate::tree::NAVIGATION_BIND_MARKER`]
+    /// appeared in a listing of [`crate::tree::NAVIGATION_BIND_ALIAS`], which this shell never `mkdir`ed
     /// or `cd`ed into directly. `bind`'s own claim, made a measurement: a
     /// bound name reaches what the position it was given reaches, over the real wire.
     pub const BIND_REACHED_TARGET: u64 = 1 << 29;
     /// **`..` from inside a bound path landed at the bind's own real parent**, not at some
     /// boundary invented at the alias: `cd /<alias>` followed by one `cd ..` rendered
-    /// [`crate::tree::NAV_DIR`]'s own run-indexed path (`pwd` shows the real tree, not the
+    /// [`crate::tree::NAVIGATION_DIRECTORY`]'s own run-indexed path (`pwd` shows the real tree, not the
     /// name used to reach it, because a position has no memory of how it was reached). Proves
     /// `bind` composes the underlying position's own resolution rather than re-clamping at
     /// the alias.
@@ -985,14 +1102,16 @@ pub mod navscape {
 /// The shell it runs in holds a real directory capability served by a real
 /// `fs_subtree_caretaker`, so what is under test is the prompt's own expansion path over a real
 /// `READDIR`, not a reimplementation of it.
-pub mod globscape {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+pub mod globbing {
     /// `echo` expanded the pattern into a non-empty set. The precondition for everything else:
     /// a shell that expanded nothing agrees with a grant of nothing, perfectly and uselessly.
     pub const EXPANDED: u64 = 1;
     /// **The names `echo` printed and the names the grant carries are the same bytes.** The
     /// headline: the expansion you see is the authority that moves.
     pub const AGREED: u64 = 1 << 1;
-    /// The expansion contains neither [`crate::tree::GLOB_MISS`] nor [`crate::tree::GLOB_DIR`],
+    /// The expansion contains neither [`crate::tree::GLOB_MISS`] nor [`crate::tree::GLOB_DIRECTORY`],
     /// which exist in the same directory and are one entry away. Without this, [`AGREED`] is
     /// equally true of a shell that expanded a pattern to everything it could see.
     pub const EXCLUDED_A_STRANGER: u64 = 1 << 2;
@@ -1017,7 +1136,9 @@ pub mod globscape {
 /// It rides the third word of the filesystem client's proof report, beside the `motd` head and the
 /// success sentinel, because the attribute layer is served by the same filesystem server over the same
 /// endpoint and a second boot of the whole three-process stack would prove nothing new.
-pub mod attrs {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+pub mod attributes {
     /// An attribute was set and read back with **its type code and its bytes**. The type code
     /// half is what makes this more than a byte-string round trip: a layer that dropped the kind
     /// would pass every other bit here.
@@ -1048,7 +1169,9 @@ pub mod attrs {
     pub const STORE_UNLISTED: u64 = 1 << 7;
     /// **Something that should have worked did not**, so nothing above proves anything. The
     /// control bit, in the shape every other witness here uses.
-    pub const ATTRS_FAILED: u64 = 1 << 8;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const ATTRIBUTES_FAILED: u64 = 1 << 8;
 
     /// What a correct run reports, stated once so the two instruction-set legs' assertions cannot drift.
     /// The eight required claims, bits 0 through 7; a test holds it equal to their union.
@@ -1114,12 +1237,16 @@ pub mod blank {
     pub const DISK_BLOCKS: u64 = 131_072;
     /// The logical block size the table counts in. Every disk this project has met uses it, and
     /// nothing on the blk wire reports it (`disk_surveyor`'s BUGS).
-    pub const LBA: u64 = 512;
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const LOGICAL_BLOCK_BYTES: u64 = 512;
 
     /// The system partition of the Extensible Firmware Interface: first and last logical block, inclusive. 2048 is the 1 MiB
     /// alignment every real tool uses. Nothing formats it or [`LINUX`]; they give the table more
     /// than one entry and more than one unique globally unique identifier.
-    pub const ESP: (u64, u64) = (2048, 10239);
+    ///
+    /// Name: provisional, minted 2026-11-21 (UTC) by the filesystem-fixture-renames lane.
+    pub const EFI_SYSTEM_PARTITION: (u64, u64) = (2048, 10239);
     /// The Linux filesystem partition.
     pub const LINUX: (u64, u64) = (10240, 30719);
     /// **The data partition**, the one that gets a filesystem. Its start and its
