@@ -1,6 +1,6 @@
 # Review package: `grant_plan`
 
-*Name: provisional, minted by lane milestone/1094-grant-plan-rulings-built. The `grant_plan` package
+*The `grant_plan` package
 of [crate-reviews.md](../crate-reviews.md), written with `script/crate-review-packet grant_plan`.
 It is the first of two for the split in milestone 1094 (`grant_plan`: what an outside maintainer would fix before it leaves);
 [grant-contract.md](grant-contract.md) is the second.*
@@ -20,28 +20,29 @@ on `byte_glob` and on `program_argument_contract`. The catalog of nife's program
 
 | item | value |
 |---|---|
-| crate | `grant_plan`; `script/names` and `script/crate-standalone` report 188 names in it not ratified, the crate name among them |
+| crate | `grant_plan`; the crate name is ratified; `script/crate-standalone` reports the names in it that are not |
 | version | `0.1.0`; no tag |
 | edition, `rust-version` | 2024; none |
 | license | inherited from the nife workspace; no `LICENSE-MIT` or `LICENSE-APACHE` in the crate |
 | `publish` | `false` |
-| size | 21 files, 8,747 lines under `src/`, about 3,000 of tests |
+| size | 21 files, 8,950 lines under `src/`, about 3,000 of tests |
 | consumers in nife | `components`, `program_table`, `swish`, `timetable`, `walk_pricing` (dev), `fixtures`, `kernel`, `system_tests` (dev) |
 
 ## Public API
 
-Eleven modules, all `pub`: `word`, `lexing`, `parsing`, `line`, `expand`, `navigation`, `planning`,
-`refusal`, `command`, `escalation` and the crate root's constants. The groups:
+The public modules are `expansion`, `line`, `navigation` and `word`; `command`, `escalation`,
+`lexing`, `parsing`, `planning` and `refusal` are private, and the crate root re-exports what a
+caller needs. The groups:
 
 | group | items |
 |---|---|
 | lexing | `lexing::MAXIMUM_FILE_NAME_BYTES` and the tokenizer over a byte line |
-| parsing | the pipeline and redirection grammar; operands come back as `Result<_, ()>` in two places (item 7 below) |
-| expansion | `expand::Expander`, `Name`, `NameSet`, `Batch`, `Resume`; `MAXIMUM_NAMES`, `MAXIMUM_NAME_BYTES` |
-| navigation | `navigation::Cwd`, `Bindings`, `BindEntry` (`position`), `TwoRoots`, `Path`, `Which`, `Step`, `Refused`, `BindRefused`; `MAXIMUM_NAME_BYTES`, `MAXIMUM_DIRECTORY_NAME_BYTES`, `MAXIMUM_RENDERED_PATH_BYTES` |
+| parsing | the pipeline and redirection grammar; `kill_operands` comes back as `Result<_, ()>` (item 7 below) |
+| expansion | `expansion::Expander`, `Name`, `NameSet`, `Batch`, `Resume`, `Designation`, `Expansion`; `MAXIMUM_NAME_SET_BYTES` |
+| navigation | `navigation::DirectoryPath`, `Bindings`, `BindEntry` (`position`), `TwoRoots`, `Path`, `GrantSide`, `Step`, `PathRefusal`, `BindRefusal`; `MAXIMUM_NAME_BYTES`, `MAXIMUM_DIRECTORY_NAME_BYTES`, `MAXIMUM_RENDERED_PATH_BYTES` |
 | planning | the holdings, expansion and stream types the planner reads, and the plan it returns |
 | refusal | `Refusal`, with its sentence built from the constants that bound it |
-| command | `command::rm_options` and the command table |
+| command | `Command`, whose builtin variants keep the typed word (`Fg`, `Bg`, `Cd`, `Pwd`, `Ls`), and `CommandLine` |
 | escalation | `Escalation` and `COOPERATIVE_GRACE_POLLS` |
 
 The full list, with signatures, is in the packet (`script/crate-review-packet grant_plan`, kept
@@ -56,28 +57,20 @@ cover: no input indexes past a line, and no path walk leaves the person's root.
 
 ## Names
 
-The crate has 64 names with a block: 19 ratified and 45 provisional. The provisional ones were
-minted by this lane under the two rulings of milestone 1094 (`grant_plan`: what an outside maintainer would fix before it leaves), and each carries a `Name:` block stating that. They are for the architect to
-ratify.
+`python3 helpers/name_release.py --draft grant_plan` lists 202 names: 82 ratified (2026-11-20 UTC),
+11 provisional (the modules and a few older items) and 109 with no block, mostly ordinary nouns and
+verbs on methods and fields that the architect brings by family. The ratified names include the
+module names `navigation` and `expansion`, the unit-spelled `MAXIMUM_*_BYTES` family,
+`COOPERATIVE_GRACE_POLLS`, `BUILTINS`, `line_verb`, `Designation`, `Scope`, `PathRefusal`,
+`BindRefusal`, `DirectoryPath`, `GrantSide` and the expansion methods `next_resume`, `try_push`,
+`try_add_name`, `designate_here` and `Expansion::new`.
 
-| name | before | reason |
-|---|---|---|
-| `navigation` (module) | `nav` | spelled out |
-| `command::rm_options` (module) | `rmopt` | spelled out |
-| `BindEntry::position` | `pos` | spelled out |
-| `COOPERATIVE_GRACE_POLLS` | `COOP_GRACE_TICKS` | spelled out; it counts watch-loop polls, not time |
-| `lexing::MAXIMUM_FILE_NAME_BYTES` | `MAXIMUM_FILE_NAME` | unit |
-| `expand::MAXIMUM_NAME_BYTES`, `navigation::MAXIMUM_NAME_BYTES` | `MAXIMUM_NAME` | unit |
-| `navigation::MAXIMUM_DIRECTORY_NAME_BYTES` | `MAXIMUM_DIRECTORY_NAME` | unit |
-| `navigation::MAXIMUM_RENDERED_PATH_BYTES` | `RENDER_MAXIMUM` | unit, and the noun first |
-| private fields `length_bytes` and `name_length_bytes` | `len`, `name_len` | unit; the standard library's `len` method stays |
-
-The lane added no alias of an old nife spelling.
+The crate carries no `doc(alias)` of an earlier nife spelling.
 
 ## Naming rules
 
 Checked with `helpers/name_checks.py` (`script/lint`, "names meet the current naming rules"): no
-finding. The baseline rows of the renamed files moved with them.
+finding.
 
 ## License
 
@@ -100,22 +93,22 @@ These findings of the outside review remain unbuilt. Each is Open in milestone 1
 1. P1-5: a Kani harness per claim, with a falsification patch for each.
 2. P0-3: the manifest and the repository root belong to the workspace; the move writes them.
 3. P1-9: documentation written for a stranger, and P1-9b: `missing_docs` denied once it holds.
-4. P1-11: take `&Holdings`, `&Expansion` and `&Streams` instead of two-kilobyte values by value.
+4. P1-11: take `&ShellHoldings`, `&Expansion` and `&Streams` instead of two-kilobyte values by value.
    The milestone records no ruling for it, so it is not built.
 5. P1-13: an undeclared widening option in `Manifest::is_well_formed`.
 6. P1-14: a mutation run on the split crates.
-7. P2-16: `Result<_, ()>` operands in `parsing.rs`.
+7. P2-16: the `Result<_, ()>` return of `kill_operands`.
 8. P2-19: a runnable example under `examples/`.
 
 ## Open questions
 
-None for this package. The names above are the architect's to ratify, and the clearance covers
+None for this package. The names with no block are the architect's to rule by family, and the clearance covers
 `grant_plan` and `grant_contract` together.
 
 ## Result of `script/crate-standalone`
 
-The run fails with 20 findings. The first is the 188 unratified names, which the architect clears by
-ratifying them (`python3 helpers/name_release.py --draft grant_plan` prints the table). The rest are
+The run fails. The first is the names not yet ratified, which the architect clears by
+ruling on them (`python3 helpers/name_release.py --draft grant_plan` prints the table). The rest are
 the manifest, the missing README and license files and the citations listed above, which are the
 move's work and not defects of the source. The run skips the build and proofs because the copy
 needs the sibling crates. The six path dependencies resolve to sibling crates in

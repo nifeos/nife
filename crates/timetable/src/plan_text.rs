@@ -129,7 +129,7 @@ fn write_grant(e: &Endowment, command: &[u8], report: bool, out: &mut dyn FnMut(
     out(b"    grants ");
     // The word typed, not the row's name: an installed program is filed under
     // `program_table::IMAGE_ROW`, whose name is not the program's.
-    out(grant_plan::parse_run(command).program);
+    out(grant_plan::parse_invocation(command).program);
     out(b" exactly:\n");
     if report {
         out(b"      cap 0  endpoint  report its answer to this timetable\n");

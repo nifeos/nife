@@ -2,7 +2,7 @@
 //!
 //! On a nife command line *designation is authorization* (Mark Miller's principle): naming a
 //! resource in a command is how you grant it. The crate performs no IO and makes no system call.
-//! [`parse`] turns a line of bytes into a [`Command`]. For a program invocation, [`plan_against`]
+//! [`parse`] turns a line of bytes into a [`CommandLine`]. For a program invocation, [`plan_against`]
 //! places its tokens into the slots a program's [`Manifest`] declares and yields an [`Endowment`],
 //! exactly what to grant the child, or a typed [`Refusal`] the shell prints at the prompt. The
 //! manifest is the caller's to supply: this crate knows no program, and the declarations it plans
@@ -17,7 +17,7 @@
 
 #![no_std]
 
-pub mod expand;
+pub mod expansion;
 pub mod line;
 pub mod navigation;
 pub mod word;
@@ -33,21 +33,22 @@ mod test_support;
 mod tests;
 
 pub use command::{
-    Command, DirectoryGrant, Endowment, FileGrant, Holdings, MAXIMUM_SHORT_OPTIONS, MountedTree,
-    TouchOperands, rm_options,
+    CommandLine, DirectoryGrant, Endowment, FileGrant, MAXIMUM_SHORT_OPTIONS, MountedTree,
+    ShellHoldings, TouchOperands, rm_options,
 };
-pub use escalation::{Action, COOPERATIVE_GRACE_POLLS, Escalation};
+pub use escalation::{COOPERATIVE_GRACE_POLLS, Escalation, InterruptAction};
 // The declarations a line is planned against, in scope under the names the modules here always
 // used. Not re-exported: each item has one public path, in `grant_contract`.
 pub(crate) use grant_contract::*;
 pub use parsing::{
-    BUILTINS, MAXIMUM_POSITIONALS, ParsedInvocation, UserVerb, argv, check_words, each_word,
-    job_operand, kill_operands, parse, parse_run, tokenize, user_verb, verb_of, vouch_verb,
-    vouched_name,
+    BUILTINS, MAXIMUM_POSITIONALS, ParsedInvocation, UserVerb, check_words, for_each_word,
+    job_operand, kill_operands, line_verb, parse, parse_invocation, tokenize, user_verb,
+    vouch_operand, vouched_name, write_argument_page,
 };
 pub(crate) use planning::nav_refusal;
 pub use planning::{
-    ISOLATION_WORD, Streams, check_chain, plan_against, plan_against_with, redirect_target,
+    Streams, check_chain, input_file_grant, output_file_grant, plan_against,
+    plan_against_with_streams,
 };
 // The rows the tests plan against, as a caller would pass them (see the dev dependency's comment).
 #[cfg(test)]
@@ -57,8 +58,6 @@ pub use refusal::{CapabilityKind, Refusal};
 mod lexing;
 
 use lexing::*;
-pub use lexing::{
-    MAXIMUM_FILE_NAME_BYTES, MAXIMUM_WORDS_NAME_BYTES, file_name_fits, parse_u64, trim,
-};
+pub use lexing::{MAXIMUM_FILE_NAME_BYTES, MAXIMUM_WORDS_NAME_BYTES, is_valid_file_name};
 
 // ---- small byte helpers (no_std, no alloc) ----

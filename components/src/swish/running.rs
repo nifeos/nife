@@ -30,7 +30,7 @@ pub(super) struct Argv {
     pub(super) frame: u64,
 }
 
-/// **Write `cmd`'s words onto a fresh frame**, through window `stage`, with `grant_plan::argv`, or
+/// **Write `cmd`'s words onto a fresh frame**, through window `stage`, with `grant_plan::write_argument_page`, or
 /// say why not: `Err(Some)` is a refusal about the line, `Err(None)` is this shell's budget.
 /// Nothing is sent either way. The planner already ran `check_words` on the same bytes, so a
 /// refusal here is not expected; it is handled rather than unwrapped because a shell that panics
@@ -41,7 +41,7 @@ pub(super) fn assemble_argv(cmd: &[u8], stage: usize) -> Result<Argv, Option<Ref
     // SAFETY: `va` is one page this shell just mapped read/write, fresh, and nothing else reaches
     // it until the frame is sent; the borrow ends before this function returns.
     let page = unsafe { &mut *(va as *mut [u8; spawn_protocol::IMAGE_PAGE as usize]) };
-    match grant_plan::argv(cmd, page) {
+    match grant_plan::write_argument_page(cmd, page) {
         Ok(_) => Ok(a),
         Err(r) => {
             release_argv(a, true);
@@ -111,9 +111,9 @@ pub(super) fn words_grant(
     // **A directory in the mounted tree is named through the mount** (milestone 834 (ioping on nife and Linux)): the
     // progenitor builds the caretaker against the tree `spawn_protocol::in_mounted_tree` says.
     let mut routed = [0u8; filesystem_contract::grant::MAXIMUM_WORDS_NAME_BYTES + 1];
-    let dir = match g.which {
-        grant_navigation::Which::A => dir,
-        grant_navigation::Which::B => {
+    let dir = match g.side {
+        grant_navigation::GrantSide::First => dir,
+        grant_navigation::GrantSide::Second => {
             let mount = spawn_protocol::MOUNTED_TREE_NAME;
             let n = mount.len() + 1 + dir.len();
             if n > routed.len() {
@@ -825,7 +825,7 @@ pub(super) fn dir_grant(g: &GrantDir, flags: u64) -> Result<(DirWords, bool), &'
     // tree's; the words below say nothing about which tree, so sending them for the second would
     // hand the program a directory of the same name in the *first*. Refused here, with nothing
     // spawned, until the spawn protocol carries the tree (the roadmap block's BUGS entry).
-    if g.which != grant_navigation::Which::A {
+    if g.side != grant_navigation::GrantSide::First {
         return Err(
             b"  that directory is in a mounted tree, and the progenitor builds a caretaker\n  from the root tree; a grant there is not built\n",
         );
@@ -926,7 +926,7 @@ pub(super) fn hold_pages(program: Program, e: &Endowment, line: &[u8]) -> Option
         return None;
     }
     let mut verb = [0u8; grant_contract::MAXIMUM_VERB_BYTES];
-    let verb = grant_plan::verb_of(line, &mut verb);
+    let verb = grant_plan::line_verb(line, &mut verb);
     let manifest = grant_contract::narrow_by_verb(&e.manifest, program.verbs(), verb);
     if manifest.installer {
         return None;
@@ -1558,7 +1558,7 @@ pub(super) fn run(nav: &mut Nav, cmd: &[u8], spec: ParsedInvocation) {
                 // stdin read only in cooked mode, so the shell leaves raw mode first, as it does for a
                 // supervised job, and the next prompt's editor takes it back.
                 let mut verb = [0u8; grant_contract::MAXIMUM_VERB_BYTES];
-                let verb = grant_plan::verb_of(spec.line(), &mut verb);
+                let verb = grant_plan::line_verb(spec.line(), &mut verb);
                 if grant_contract::narrow_by_verb(&endow.manifest, program.verbs(), verb)
                     .console_input
                 {

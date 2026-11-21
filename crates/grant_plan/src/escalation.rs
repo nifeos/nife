@@ -9,8 +9,10 @@
 // ---- the two-tier interrupt escalation policy (DECISIONS §24) ----
 
 /// What the shell should do this step of watching a foreground job for `^C`.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Action {
+pub enum InterruptAction {
     /// Nothing this step.
     None,
     /// Deliver the cooperative interrupt: ask the job to stop itself (the first tier).
@@ -24,7 +26,7 @@ pub enum Action {
 /// cooperative signal is still torn down without needing a second keystroke. In ticks (the shell's
 /// own watch loop iterations), not wall time, so it is deterministic and testable without a clock.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built; it counts watch-loop polls, not time.
+/// Name: ratified 2026-11-20 (UTC).
 pub const COOPERATIVE_GRACE_POLLS: u32 = 200;
 
 /// The two-tier escalation policy, as a small state machine the shell drives while a foreground job
@@ -34,9 +36,9 @@ pub const COOPERATIVE_GRACE_POLLS: u32 = 200;
 ///
 /// The shell feeds it two events: [`on_interrupt`](Escalation::on_interrupt) when it observes a
 /// fresh `^C`, and [`on_tick`](Escalation::on_tick) each watch-loop iteration. The first `^C` asks
-/// the job to stop ([`Action::Cooperative`]); a second `^C`, or the grace window elapsing with no
-/// clean exit, tears it down ([`Action::Forcible`]). After a forcible decision the machine is spent
-/// and returns [`Action::None`].
+/// the job to stop ([`InterruptAction::Cooperative`]); a second `^C`, or the grace window elapsing with no
+/// clean exit, tears it down ([`InterruptAction::Forcible`]). After a forcible decision the machine is spent
+/// and returns [`InterruptAction::None`].
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Escalation {
     interrupts: u32,
@@ -58,34 +60,34 @@ impl Escalation {
 
     /// A fresh `^C` was observed. The first asks the job to stop and arms the grace window; a second
     /// (while the same job is still foreground) escalates to a forcible teardown.
-    pub fn on_interrupt(&mut self) -> Action {
+    pub fn on_interrupt(&mut self) -> InterruptAction {
         if self.done {
-            return Action::None;
+            return InterruptAction::None;
         }
         self.interrupts += 1;
         if self.interrupts == 1 {
             self.coop_sent = true;
             self.grace_left = COOPERATIVE_GRACE_POLLS;
-            Action::Cooperative
+            InterruptAction::Cooperative
         } else {
             self.done = true;
-            Action::Forcible
+            InterruptAction::Forcible
         }
     }
 
     /// A watch-loop tick with no new `^C`. Once the cooperative signal is out, the grace window
     /// counts down; when it reaches zero the job is torn down even without a second `^C`, so a job
     /// that ignores the cooperative signal does not hang the prompt forever.
-    pub fn on_tick(&mut self) -> Action {
+    pub fn on_tick(&mut self) -> InterruptAction {
         if self.done || !self.coop_sent {
-            return Action::None;
+            return InterruptAction::None;
         }
         self.grace_left = self.grace_left.saturating_sub(1);
         if self.grace_left == 0 {
             self.done = true;
-            Action::Forcible
+            InterruptAction::Forcible
         } else {
-            Action::None
+            InterruptAction::None
         }
     }
 

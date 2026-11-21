@@ -16,9 +16,9 @@ macro, the panic handler macro and typed windows over memory the kernel handed t
 - `program_entry!` writes the process entry point, `_start`, with the stack alignment each
   architecture expects. `panic_handler!` writes a panic handler that traps.
 - `mapped_window::MappedWindow` is one page the kernel handed the process at a fixed virtual address.
-  Every access is volatile and checks its bounds. `read::<T>` and `write::<T>` take the sealed
+  Every access is volatile and checks its bounds. `read_volatile::<T>` and `write_volatile::<T>` take the sealed
   `WindowInteger` types, and a misaligned address panics instead of causing undefined behavior.
-- The opt-in modules `initial_ramdisk`, `virtio`, `entropy`, `socket_frame` and `child_stub` each
+- The opt-in modules `initial_ramdisk`, `virtual_io`, `entropy`, `socket_frame` and `child_stub` each
   hold one invariant several programs had copied.
 - `link.ld` is the link script for the entry registers and link layout (interface 20, `VERSION`
   1). `build.rs` copies it into `OUT_DIR` and adds that directory to the linker search path, so a
@@ -35,8 +35,8 @@ use user_mode_runtime::mapped_window::{MappedWindow, PAGE_BYTES};
 // SAFETY: the program's wiring maps one read/write page at this address before it runs.
 const WINDOW: MappedWindow = unsafe { MappedWindow::new(0x0090_0000, PAGE_BYTES) };
 
-WINDOW.write::<u16>(0x080, 7);
-assert_eq!(WINDOW.read::<u16>(0x080), 7);
+WINDOW.write_volatile::<u16>(0x080, 7);
+assert_eq!(WINDOW.read_volatile::<u16>(0x080), 7);
 ```
 
 Build a program for one of the three targets, and it takes `link.ld` from this crate:

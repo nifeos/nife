@@ -269,7 +269,7 @@ fn here_holds(word: &[u8]) -> Result<NameSet, Say> {
     }
 }
 
-fn designated(line: &[u8], g: grant_contract::WordGrant) -> grant_plan::expand::Designation {
+fn designated(line: &[u8], g: grant_contract::WordGrant) -> grant_plan::expansion::Designation {
     designation(line, g, &mut here_holds)
         .unwrap()
         .designation()

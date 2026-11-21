@@ -33,10 +33,10 @@ pub struct Vouched {
 /// # EXAMPLES
 ///
 /// ```
-/// let grant_plan::Command::Run(spec) = grant_plan::parse(b"./a.out") else { panic!() };
+/// let grant_plan::CommandLine::Run(spec) = grant_plan::parse(b"./a.out") else { panic!() };
 /// let m = grant_contract::Manifest { network: true, ..program_table::NO_NOTE_MANIFEST };
-/// let holds = grant_plan::Holdings::default();
-/// let e = grant_plan::plan_against(&spec, m, holds, grant_plan::expand::Expansion::none()).unwrap();
+/// let holds = grant_plan::ShellHoldings::default();
+/// let e = grant_plan::plan_against(&spec, m, holds, grant_plan::expansion::Expansion::none()).unwrap();
 /// let mut said = Vec::new();
 /// swish::write_image_capabilities(b"./a.out", b"sha256:ab12", None, true, Some(m), &e, &holds, &mut |b| said.extend_from_slice(b));
 /// let said = String::from_utf8(said).unwrap();
@@ -53,7 +53,7 @@ pub fn write_image_capabilities(
     holds: bool,
     declared: Option<grant_contract::Manifest>,
     e: &Endowment,
-    holdings: &Holdings,
+    holdings: &ShellHoldings,
     out: &mut dyn FnMut(&[u8]),
 ) {
     let vouched = vouched_by.is_some();
@@ -169,22 +169,22 @@ fn write_note_asks(declared: Option<grant_contract::Manifest>, out: &mut dyn FnM
 pub fn write_capabilities(
     tail: &[u8],
     budget_pages: u64,
-    holdings: Holdings,
+    holdings: ShellHoldings,
     clock: Option<u64>,
     config: Option<ConfigurationPage>,
     expand: &mut dyn FnMut(&[u8]) -> Result<NameSet, Say>,
     out: &mut dyn FnMut(&[u8]),
 ) {
-    let mut tail = grant_plan::trim(tail);
+    let mut tail = tail.trim_ascii();
     if tail.is_empty() {
         return write_holdings(budget_pages, holdings, clock, config, out);
     }
     // `caps time <command>` previews the command. A loop, not recursion: this frame carries a
     // whole split `Line` by value, and `caps time time time date` is a line a person can type.
     let mut timed = false;
-    while let Command::Time(inner) = grant_plan::parse(tail) {
+    while let CommandLine::Time(inner) = grant_plan::parse(tail) {
         timed = true;
-        tail = grant_plan::trim(inner);
+        tail = inner.trim_ascii();
         if tail.is_empty() {
             return write_untimed(Untimed::NothingToTime, out);
         }
@@ -197,21 +197,21 @@ pub fn write_capabilities(
         Err(r) => return write_say(Say::Cannot(r), out),
     };
     let sink_file = match l.output {
-        Some(t) => match grant_plan::redirect_target(t, holdings, true) {
+        Some(t) => match grant_plan::output_file_grant(t, holdings) {
             Ok(g) => Some(g),
             Err(r) => return write_say(Say::Cannot(r), out),
         },
         None => None,
     };
     let source_file = match l.input {
-        Some(t) => match grant_plan::redirect_target(t, holdings, false) {
+        Some(t) => match grant_plan::input_file_grant(t, holdings) {
             Ok(g) => Some(g),
             Err(r) => return write_say(Say::Cannot(r), out),
         },
         None => None,
     };
     let diag_file = match l.diagnostics {
-        Some(t) => match grant_plan::redirect_target(t, holdings, true) {
+        Some(t) => match grant_plan::output_file_grant(t, holdings) {
             Ok(g) => Some((g, l.diagnostics_mode())),
             Err(r) => return write_say(Say::Cannot(r), out),
         },
@@ -219,7 +219,7 @@ pub fn write_capabilities(
     };
     for (i, stage) in l.stages().iter().enumerate() {
         // Only a program invocation carries a grant to preview; `caps help` has nothing to say.
-        let Command::Run(spec) = grant_plan::parse(stage) else {
+        let CommandLine::Run(spec) = grant_plan::parse(stage) else {
             out(b"  caps previews a command's grant; try: caps memory_grant_depleter --mem 16\n");
             return;
         };
@@ -229,8 +229,8 @@ pub fn write_capabilities(
             Err(said) => return write_say(said, out),
         };
         let streams = Streams {
-            sink: l.sink_for(i, sink_file),
-            source: l.source_for(i, source_file),
+            sink: l.stage_sink(i, sink_file),
+            source: l.stage_source(i, source_file),
             diagnostics: diag_file,
         };
         match program_table::plan_stage(&spec, holdings, expanded, streams) {
@@ -239,7 +239,7 @@ pub fn write_capabilities(
                 // Narrowed by the line's verb, as the progenitor narrows it reading the same word
                 // off the argv (milestone 809 (the package client becomes a program), option V2).
                 let mut verb = [0u8; grant_contract::MAXIMUM_VERB_BYTES];
-                let verb = grant_plan::verb_of(stage, &mut verb);
+                let verb = grant_plan::line_verb(stage, &mut verb);
                 let m = grant_contract::narrow_by_verb(&e.manifest, program.verbs(), verb);
                 out(b"  ");
                 out(program.name().as_bytes());
@@ -253,7 +253,7 @@ pub fn write_capabilities(
 /// Write the endowment a resolved invocation would hand the new process, planned as `program`,
 /// whose name heads the preview and whose resolver zone is printed. `holdings` is what the
 /// planning shell held, which is how a directory grant's position is printed as a path in the one
-/// tree even when the grant is in a mounted second tree ([`Holdings::place`]).
+/// tree even when the grant is in a mounted second tree ([`ShellHoldings::path_in_one_tree`]).
 ///
 /// `config` is this shell's own view of the inert-configuration page, when it holds one
 /// ([`grant_contract::SHELL_CONFIGURATION_SLOT`]). It is the frame the progenitor endows a child declaring
@@ -262,7 +262,7 @@ pub fn write_capabilities(
 pub fn write_preview(
     program: Program,
     e: &Endowment,
-    holdings: &Holdings,
+    holdings: &ShellHoldings,
     config: Option<ConfigurationPage>,
     out: &mut dyn FnMut(&[u8]),
 ) {
@@ -286,7 +286,7 @@ fn write_preview_rows(
     e: &Endowment,
     m: &grant_contract::Manifest,
     zone: Option<&str>,
-    holdings: &Holdings,
+    holdings: &ShellHoldings,
     config: Option<ConfigurationPage>,
     out: &mut dyn FnMut(&[u8]),
 ) {
@@ -363,7 +363,7 @@ fn write_result_and_memory_rows(
 fn write_file_and_directory_rows(
     e: &Endowment,
     m: &grant_contract::Manifest,
-    holdings: &Holdings,
+    holdings: &ShellHoldings,
     std: bool,
     out: &mut dyn FnMut(&[u8]),
 ) {
@@ -387,7 +387,9 @@ fn write_file_and_directory_rows(
         );
         out(b"endpoint  dir      ");
         let mut buf = [0u8; navigation::MAXIMUM_RENDERED_PATH_BYTES];
-        let n = holdings.place(g.which, &g.directory).render(&mut buf);
+        let n = holdings
+            .path_in_one_tree(g.side, &g.directory)
+            .render(&mut buf);
         out(&buf[..n]);
         if let grant_contract::ProgramArgumentDeclaration::Words(w) = m.program_argument {
             if g.names.is_empty() {

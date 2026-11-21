@@ -100,7 +100,7 @@ pub(super) const NO_CLOCK: u64 = 0;
 /// A per-file grant and a redirection both narrow a directory capability, so a shell granted one
 /// (slot [`DIR_TERMINAL`]) can back `>` and `<`, and a shell granted none refuses them. See
 /// notes/pipes/the-shell-side.md, "The shell's slots".
-pub(super) fn holdings(nav: &Nav) -> grant_plan::Holdings {
+pub(super) fn holdings(nav: &Nav) -> grant_plan::ShellHoldings {
     nav.holds
 }
 

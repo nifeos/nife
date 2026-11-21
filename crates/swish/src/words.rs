@@ -16,7 +16,7 @@ pub fn is_pattern(token: &[u8]) -> Result<bool, Refusal> {
     if !byte_glob::has_magic(token) {
         return Ok(false);
     }
-    grant_plan::expand::magic_component(token)
+    grant_plan::expansion::last_component_has_magic(token)
 }
 
 /// **Expand the invocation's pattern operand, before anything is planned.**
@@ -43,7 +43,7 @@ pub fn expansion(
         }
         match is_pattern(token) {
             Ok(false) => continue,
-            Ok(true) => return Ok(Expansion::at(i, expand(token)?)),
+            Ok(true) => return Ok(Expansion::new(i, expand(token)?)),
             Err(r) => return Err(Say::Cannot(r)),
         }
     }
@@ -65,10 +65,10 @@ pub fn designation(
     grant: grant_contract::WordGrant,
     resolve: &mut dyn FnMut(&[u8]) -> Result<NameSet, Say>,
 ) -> Result<Expansion, Say> {
-    let mut d = grant_plan::expand::Designation::none();
+    let mut d = grant_plan::expansion::Designation::none();
     let mut first = true;
     let mut said = Ok(());
-    let walked = grant_plan::each_word(line, &mut |w| {
+    let walked = grant_plan::for_each_word(line, &mut |w| {
         if core::mem::take(&mut first) || w.first() == Some(&b'-') || said.is_err() {
             return Ok(());
         }
@@ -77,7 +77,7 @@ pub fn designation(
             rest = r;
         }
         if rest.is_empty() || rest == b"." {
-            d.here();
+            d.designate_here();
             return Ok(());
         }
         let name = rest.split(|&b| b == b'/').next().unwrap_or(rest);
@@ -92,11 +92,11 @@ pub fn designation(
         }
         match resolve(name) {
             Ok(set) => match set.iter().next() {
-                Some((found, is_dir)) => d.name(found, is_dir),
+                Some((found, is_dir)) => d.try_add_name(found, is_dir),
                 None => Ok(()),
             },
             Err(Say::Cannot(Refusal::NoMatch)) if grant == grant_contract::WordGrant::Create => {
-                d.name(name, false)
+                d.try_add_name(name, false)
             }
             Err(Say::NoDirectory) => {
                 said = Err(Say::NoDirectory);
@@ -113,7 +113,7 @@ pub fn designation(
     match (walked, said) {
         // A shell holding no directory designates nothing, and the planner grants nothing.
         (_, Err(Say::NoDirectory)) => Ok(Expansion::designated(
-            grant_plan::expand::Designation::none(),
+            grant_plan::expansion::Designation::none(),
         )),
         (_, Err(s)) => Err(s),
         (Err(r), _) => Err(Say::Cannot(r)),
@@ -139,15 +139,15 @@ pub fn write_set(set: &NameSet, out: &mut dyn FnMut(&[u8])) {
 /// # Examples
 ///
 /// ```
-/// use grant_plan::expand::NameSet;
+/// use grant_plan::expansion::NameSet;
 /// use swish::{Say, echo};
 ///
 /// // A directory holding two files, standing in for the one the shell would have to ask a server
 /// // for. Everything else on this path is the real thing.
 /// let mut listing = |_pattern: &[u8]| -> Result<NameSet, Say> {
 ///     let mut set = NameSet::empty();
-///     set.push(b"notes.txt", false);
-///     set.push(b"report.txt", false);
+///     set.try_push(b"notes.txt", false).unwrap();
+///     set.try_push(b"report.txt", false).unwrap();
 ///     Ok(set)
 /// };
 ///
@@ -229,7 +229,7 @@ pub fn pieces<'a>(
         let word = i;
         // A word ends at the first bare whitespace, so `echo "two  spaces"` is one word and keeps
         // the spacing inside it.
-        i = grant_plan::word::span(text, i, &|b| b.is_ascii_whitespace());
+        i = grant_plan::word::token_end(text, i, &|b| b.is_ascii_whitespace());
         if i == word {
             continue;
         }

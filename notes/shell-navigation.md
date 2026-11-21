@@ -62,7 +62,7 @@ paragraph: the two shells run the same two probes with a leading slash
 (`navscape::ABSOLUTE_REACHED_INNER` and `ABSOLUTE_REACHED_SECRET`) and each reaches exactly the file
 its own root contains. A `/` rooted in anything global would set both bits in both reports.
 
-What forced it was `pwd` printing a path nobody could type back. `Cwd::render` has answered
+What forced it was `pwd` printing a path nobody could type back. `DirectoryPath::render` has answered
 `/logs/2026` since the day it was written, because naming a position relative to your own root is the
 only honest rendering; and typing that same token back was a refusal. A round trip that does not
 close is the tell that a refusal has outlived its reason (§71's promotion trigger, met exactly).
@@ -83,7 +83,7 @@ This is the rule most likely to be got wrong, and the place it is made true is `
 
 ```rust
 pub struct FileGrant<'a> {
-    pub dir: navigation::Cwd,   // where the name was resolved, fixed at plan time
+    pub dir: navigation::DirectoryPath,   // where the name was resolved, fixed at plan time
     pub name: &'a [u8],  // always a single component
     pub writable: bool,
 }

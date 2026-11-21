@@ -73,8 +73,8 @@ milestone reaches delivery.
 - P1-14, the mutation record predates the split: Open. A full run on the three crates gives the
   figure the release gate asks for.
 - P2-15, `NameSet`'s `Debug`: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
-- P2-16, `Result<_, ()>` operands: Open. `src/parsing.rs` lines 212 and 242 allow
-  `clippy::result_unit_err`; a lane names the errors.
+- P2-16, `Result<_, ()>` operands: Open. `kill_operands` in `src/parsing.rs` allows
+  `clippy::result_unit_err`; a lane names the error.
 - P2-17, an unchecked window shift: Done, [#3566](https://github.com/nifeos/nife/pull/3566).
 - P2-18, tests pin thirteen of twenty-eight wire ids: Done,
   [#3566](https://github.com/nifeos/nife/pull/3566).
@@ -197,11 +197,16 @@ The rules in force, with their background and prior art, are in
   `crates/grant_contract` the leaf a program links, and `crates/program_table` the catalog that
   stays in nife.
 - Public names that need a decoder: the maintainer's provisional ruling of 2026-11-14 (UTC). The
-  eight renames hold, with `job_page_frame` becoming `job_channel_page`; `Cwd` and `argv` stay.
+  eight renames hold, with `job_page_frame` becoming `job_channel_page`. Built.
 - Limits carry their unit: the maintainer's provisional ruling of 2026-11-19 (UTC), two-way until
   the first publish.
 - The names `grant_contract` and `program_table`: ruled 2026-11-19 (UTC), both as built.
 - Review clearance and the repositories: the maintainer's provisional ruling of 2026-11-19 (UTC).
+- The names of both crates: ruled 2026-11-20 (UTC) and built. `expand` is `expansion`, `Cwd` is
+  `DirectoryPath`, `Which` is `GrantSide`, `Refused` is `PathRefusal`, `verb_of` is `line_verb`,
+  `page_verb` and `delegated_identity` are the grant_contract spellings, the builtin variants of
+  `Command` keep the typed word, and every name those rulings cover carries `Name: ratified`.
+  Names with no block wait on rulings by family.
 
 ## Done when
 
@@ -210,9 +215,8 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 ## BUGS
 
 - This block has no review package to inherit from, so its list of ratified names comes from the
-  `Name:` blocks in the source (64 ratified of 201) and not from a packet that an architect has
-  read. A recording lane should run `script/crate-review-packet grant_plan` before the split lane
-  starts and attach the result beside this block.
+  `Name:` blocks in the source, not from a packet that an architect has read. The review packages
+  under `notes/crate-reviews/` now carry that list.
 - Item 4's defect came from reading `parse_run` and from the shape of the shipped manifests, not
   from a failing test. The change includes the test.
 - Item 5's uncertainty about the template's `falsify` pairing was not resolved; the change holds
@@ -224,9 +228,8 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 - `grant_plan`'s tests plan against `program_table`'s catalog through a dev-dependency, so the
   crate cannot run its tests outside this tree until they plan against manifests of their own. The
   move lane writes those before 1017 step 6.
-- `ISOLATION_WORD` (`b"swish"`) is in `grant_plan`, and is public so the catalog can
-  refuse the word before resolving it. It names nife's shell, so the crate cannot leave with it;
-  the move lane makes it a value the caller passes.
+- `ISOLATION_WORD` (`b"swish"`) is in `program_table`, so the catalog can refuse the word before
+  resolving it. It names nife's shell and stays in nife.
 - The review measured the sizes with the tree's nightly on one 64-bit host. They match on every
   64-bit target by construction (no pointers in the values), and the review measured no other.
 
@@ -234,8 +237,8 @@ The checks are in [the appendix](1094-grant-plan-outside-review/done-when.md).
 
 - **Done.** P0 item 1, the split, in #3584: `grant_plan`, `crates/grant_contract` and
   `crates/program_table` build and test on their own.
-- **Done.** The limits rule (P1-6) and the eight renames (P1-7) are built, and the review packages
-  are written. The review packages carry the clearance, after which the repositories follow with no tag and no publish.
+- **Done.** The limits rule (P1-6), the eight renames (P1-7) and the 2026-11-20 name rulings are
+  built, and the review packages are written. The review packages carry the clearance, after which the repositories follow with no tag and no publish.
 - **Outstanding.** Every finding marked Open or Ruled under "Finding status", each checked against
   the three crates' sources on main.
 - **Recorded.** `grant_plan`'s tests plan against the catalog, and `ISOLATION_WORD` names the

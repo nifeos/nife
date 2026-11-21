@@ -110,7 +110,7 @@ fn two_tree_shell() -> Option<u64> {
             role: ROLE_TWO_TREES,
             arg: filesystem_contract::grant::specification(0, rights),
             // **Seven, measured.** This script plans an `rm`, and the planner's own frames in a
-            // debug build (`plan_against_with` alone is over 11 KiB) are the deepest chain it
+            // debug build (`plan_against_with_streams` alone is over 11 KiB) are the deepest chain it
             // reaches, about 26 KiB with the witness above them. Four overflowed there, presenting
             // as a data abort on the shell's own `sp` and then as the lost-wakeup watchdog, and six
             // would leave under 2 KiB; the seventh is headroom, one short of this wiring's ceiling.
