@@ -292,7 +292,10 @@ impl Session {
             fs::RENAME => {
                 let src = self.name(u, 0)?;
                 let dst = self.name(u, src)?;
-                (src, fs::rename_destination(u.int_in_range(0..=11)?, dst as u64))
+                (
+                    src,
+                    fs::rename_destination(u.int_in_range(0..=11)?, dst as u64),
+                )
             }
             fs::GETXATTR | fs::REMOVEXATTR => (self.name(u, 0)?, 0),
             fs::SETXATTR => {
