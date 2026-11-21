@@ -58,7 +58,7 @@ e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", re
 coremark = { version = "0.1.0", path = "../crates/coremark" }
 abi = { version = "0.1.0", path = "../crates/abi" }
 block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
-byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }
+byte_sink_contract = { version = "0.1.0", git = "https://github.com/nifeos/byte_sink_contract", rev = "8a6c4599882e505d219829fd106d9e572d56f6e9" }
 byte_sink_fixture = { version = "0.1.0", path = "../crates/byte_sink_fixture" }
 # The system log's wire contracts (milestone 613 (a system log service: the in-memory half)): the
 # suite plays the spawner and a reader, so it links the words they agree on rather than copies.

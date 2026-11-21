@@ -57,7 +57,7 @@ that is what makes it the only one who can say it. A writer holds a badged copy,
 send as badge 0 nor as anybody else.
 
 What a writer sends is not in this crate. A writer speaks the byte sink
-(`crates/byte_sink_contract`), whose first word's spare bits carry a severity and a body kind since
+(`nifeos/byte_sink_contract`), whose first word's spare bits carry a severity and a body kind since
 §242 amended it. That is the point of the shape: a program that already prints can be given the
 log instead of a terminal and change nothing.
 
