@@ -7,8 +7,8 @@ Expected to fail: `assert!(fs::request_handle(w0) == handle)`, for any non-zero 
 diff --git a/crates/filesystem_contract/src/fs.rs b/crates/filesystem_contract/src/fs.rs
 --- a/crates/filesystem_contract/src/fs.rs
 +++ b/crates/filesystem_contract/src/fs.rs
-@@ -354,7 +354,7 @@
- /// ```
+@@ -356,7 +356,7 @@ pub const MAXIMUM_HANDLE: u64 = 0xffff;
+ /// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
  pub const fn request(operation: u64, handle: u64, len: u64) -> u64 {
      (operation << super::OPERATION_SHIFT)
 -        | ((handle & MAXIMUM_HANDLE) << 40)
