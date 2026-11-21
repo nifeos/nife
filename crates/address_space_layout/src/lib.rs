@@ -583,7 +583,7 @@ mod tests {
     }
 
     #[test]
-    fn a_band_that_is_empty_inverted_or_unaligned_is_refused() {
+    fn a_band_that_is_empty_inverted_or_off_a_page_is_refused() {
         let refused =
             |start: u64, end: u64| std::panic::catch_unwind(|| Band::new(start, end)).is_err();
         assert!(!refused(PAGE_BYTES, 2 * PAGE_BYTES));
