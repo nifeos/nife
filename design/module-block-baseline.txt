@@ -3028,78 +3028,45 @@ crates/globally_unique_identifier_partition_table/src/testing.rs
 crates/globally_unique_identifier_partition_table/src/testing.rs::sample_disk
 
 
-crates/grant_contract/src/manifest.rs::DIAGNOSTICS_SLOT
 
-crates/grant_contract/src/manifest.rs::DOMAIN_SLOT
 
-crates/grant_contract/src/manifest.rs::ENTROPY_SLOT
 
-crates/grant_contract/src/manifest.rs::Manifest
 
-crates/grant_contract/src/manifest.rs::NETWORK_SLOT
 
-crates/grant_contract/src/manifest.rs::diagnostics_slot
 
-crates/grant_contract/src/manifest.rs::hears_words
 
-crates/grant_contract/src/manifest.rs::is_byte_stream
 
-crates/grant_contract/src/manifest.rs::letters
 
-crates/grant_contract/src/manifest.rs::new
 
 crates/grant_contract/src/manifest.rs::rights
 
-crates/grant_contract/src/manifest.rs::rights
-
-crates/grant_contract/src/manifest.rs::try_new
-
-
-crates/grant_contract/src/verbs.rs::ALL
-
-crates/grant_contract/src/verbs.rs::CATALOG
-
-crates/grant_contract/src/verbs.rs::CLOCK
-
-crates/grant_contract/src/verbs.rs::CONFIGURATION
-
-crates/grant_contract/src/verbs.rs::DOMAIN
-
-crates/grant_contract/src/verbs.rs::ENTROPY
-
-crates/grant_contract/src/verbs.rs::INDEXES
-
-crates/grant_contract/src/verbs.rs::INDEXES_WRITE
-
-crates/grant_contract/src/verbs.rs::INSTALLER
-
-crates/grant_contract/src/verbs.rs::MACHINE
-
-crates/grant_contract/src/verbs.rs::NETWORK
-
-crates/grant_contract/src/verbs.rs::NONE
-
-crates/grant_contract/src/verbs.rs::SHARE
-
-crates/grant_contract/src/verbs.rs::VerbGrant
-
-crates/grant_contract/src/verbs.rs::bits
-
-crates/grant_contract/src/verbs.rs::contains
-
-crates/grant_contract/src/verbs.rs::from_bits
-
-crates/grant_contract/src/verbs.rs::narrow_by_verb
-
-crates/grant_contract/src/verbs.rs::union
 
 
 
-crates/grant_plan/src/command.rs::Endowment
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 crates/grant_plan/src/command.rs::FORCE
 
-crates/grant_plan/src/command.rs::FileGrant
 
 
 crates/grant_plan/src/command.rs::RECURSIVE
@@ -3134,7 +3101,6 @@ crates/grant_plan/src/escalation.rs::on_interrupt
 crates/grant_plan/src/escalation.rs::on_tick
 
 
-crates/grant_plan/src/expansion.rs
 
 crates/grant_plan/src/expansion.rs::Batch
 
@@ -3321,7 +3287,6 @@ crates/grant_plan/src/navigation.rs::Path
 
 crates/grant_plan/src/navigation.rs::Step
 
-crates/grant_plan/src/navigation.rs::TwoRoots
 
 
 crates/grant_plan/src/navigation.rs::add
@@ -3384,7 +3349,6 @@ crates/grant_plan/src/parsing.rs::UserVerb
 
 crates/grant_plan/src/parsing.rs::check_words
 
-crates/grant_plan/src/parsing.rs::for_each_word
 
 crates/grant_plan/src/parsing.rs::is_quoted
 

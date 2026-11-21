@@ -351,7 +351,7 @@ impl Refusal {
     /// The lines of milestone 52's refusals (DECISIONS §160). Each says which form to reach for,
     /// because the refusal is the whole documentation of a spelling that ships provisional.
     ///
-    /// Name: provisional, minted 2026-10-27 (UTC) by milestone/52-subshells.
+    /// Name: ratified 2026-11-20 (UTC).
     fn scope_message(self) -> &'static str {
         match self {
             Refusal::ScopeMalformed => {

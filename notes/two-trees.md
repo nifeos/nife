@@ -27,7 +27,7 @@ not. The ruling's decision record is pull request #1380, and it leaves what `..`
 point open: the shell goes to the parent, and design/roadmap/0683-what-dot-dot-does-at-a-mount-point.md
 asks calef to confirm.
 
-So the shell's position is one path, `ShellHoldings::cwd`, and a second tree is only a mount point,
+So the shell's position is one path, `ShellHoldings::working_directory`, and a second tree is only a mount point,
 `MountedTree::mount_point`. Everything that resolves a path does it the same way:
 
 1. `ShellHoldings::steps_after_start` says where the steps start: where the shell stands for a relative path, a

@@ -26,7 +26,7 @@ pub enum InterruptAction {
 /// cooperative signal is still torn down without needing a second keystroke. In ticks (the shell's
 /// own watch loop iterations), not wall time, so it is deterministic and testable without a clock.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built; it counts watch-loop polls, not time.
+/// Name: ratified 2026-11-20 (UTC).
 pub const COOPERATIVE_GRACE_POLLS: u32 = 200;
 
 /// The two-tier escalation policy, as a small state machine the shell drives while a foreground job

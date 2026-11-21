@@ -23,7 +23,7 @@ pub const MAXIMUM_DEPTH: usize = 8;
 /// component of a path can be a file, and a file may be named that long. A component the shell
 /// descends through or stands in is held to [`MAXIMUM_DIRECTORY_NAME_BYTES`] as well ([`DirectoryPath::descend`]).
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 
 /// **The longest directory name a [`DirectoryPath`] or a bound name holds**, which is [`crate::MAXIMUM_WORDS_NAME_BYTES`]:
@@ -32,7 +32,7 @@ pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 /// It is also what keeps a [`DirectoryPath`] small, and the shell carries one by value in every
 /// [`crate::ShellHoldings`] and several in an [`crate::Endowment`].
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_DIRECTORY_NAME_BYTES: usize = crate::MAXIMUM_WORDS_NAME_BYTES;
 
 // A bound directory entry holds its name length as a `u8`.
@@ -42,7 +42,7 @@ const _: () = assert!(MAXIMUM_DIRECTORY_NAME_BYTES <= u8::MAX as usize);
 /// The bytes [`DirectoryPath::render`] can need: a slash per level, plus each name, plus the leading slash a
 /// root renders as on its own.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_RENDERED_PATH_BYTES: usize =
     1 + MAXIMUM_DEPTH * (1 + MAXIMUM_DIRECTORY_NAME_BYTES);
 
@@ -60,7 +60,7 @@ pub enum PathRefusal {
     /// A directory to stand in, descend through or bind whose name is over
     /// [`MAXIMUM_DIRECTORY_NAME_BYTES`]. A name that long is a file's, not a place this shell can be.
     ///
-    /// Name: provisional (milestone 946).
+    /// Name: ratified 2026-11-20 (UTC).
     DirectoryNameTooLong,
     /// `..` at the root. The clamp, reported rather than silently ignored: at your root there is
     /// nothing above to name, and a shell that said nothing would leave a user believing they had
@@ -401,6 +401,8 @@ impl DirectoryPath {
 /// nothing later re-selects. Past the label a path resolves as a single [`DirectoryPath`] does, so `..` stops
 /// at that grant's own root and `/a/../b` is refused. It is not `bind`'s ordered union. See
 /// notes/grant-expression/grant-plan-crate.md ("Navigation").
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub struct TwoRoots<'a> {
     label_a: &'a [u8],
     label_b: &'a [u8],
@@ -520,6 +522,7 @@ pub const MAXIMUM_BINDS: usize = 4;
 pub struct BindEntry {
     name: [u8; MAXIMUM_DIRECTORY_NAME_BYTES],
     name_length_bytes: u8,
+    /// Name: ratified 2026-11-20 (UTC).
     position: DirectoryPath,
 }
 

@@ -95,7 +95,9 @@ pub fn check_words(line: &[u8]) -> Result<(), Refusal> {
 /// Every word of `line`, quotes off, with an unquoted pattern refused. The one walk [`write_argument_page`] and
 /// [`check_words`] share, so the check and the page cannot disagree about what a word is, and the
 /// shell's designation walks it too (milestone 205), so it designates from the same words the
-/// program hears. Name: ratified 2026-11-20 (UTC).
+/// program hears.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn for_each_word(
     line: &[u8],
     f: &mut dyn FnMut(&[u8]) -> Result<(), Refusal>,
@@ -121,7 +123,7 @@ pub fn for_each_word(
 /// `parse` and not here still works; it only is not offered on Tab. The test beside `parse` holds
 /// the other direction: everything listed here is a builtin.
 ///
-/// Name: provisional (milestone 47, 2026-09-26).
+/// Name: ratified 2026-11-20 (UTC).
 pub const BUILTINS: &[&[u8]] = &[
     b"apropos", b"bg", b"bind", b"caps", b"cd", b"echo", b"fg", b"help", b"jobs", b"kill", b"ls",
     b"mkdir", b"pwd", b"scope", b"time", b"touch", b"wait", b"xargs",
@@ -202,7 +204,7 @@ pub fn parse(line: &[u8]) -> CommandLine<'_> {
 /// **Which job an operand names** (milestone 48): `%N` or a bare `N`, counted from one. `Ok(None)`
 /// is an empty operand (every job to `wait`, the newest to `fg`); `Err(())` names no job.
 ///
-/// Name: provisional, minted 2026-10-18 (UTC) by milestone/48-job-control.
+/// Name: ratified 2026-11-20 (UTC).
 ///
 /// ```
 /// use grant_plan::job_operand;
@@ -233,7 +235,7 @@ pub fn job_operand(tail: &[u8]) -> Result<Option<usize>, ()> {
 /// **`kill`'s operands** (milestone 48 (job control)): whether `-9` asked for the forcible tier, and
 /// the job, which is required rather than guessed.
 ///
-/// Name: provisional, minted 2026-10-18 (UTC) by milestone/48-job-control.
+/// Name: ratified 2026-11-20 (UTC).
 ///
 /// ```
 /// use grant_plan::kill_operands;

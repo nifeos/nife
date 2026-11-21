@@ -40,6 +40,8 @@ impl OutputDeclaration {
     /// **Whether `>` and `|` have anything to substitute**, which is what the operators' check asks.
     /// A declared second stream does not change the answer: the first stream is still the sink
     /// contract, and a redirection still names where *it* goes.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn is_byte_stream(self) -> bool {
         matches!(
             self,
@@ -49,6 +51,8 @@ impl OutputDeclaration {
 
     /// The capability table slot this program's declared second stream lands in, or `None` for a program that
     /// declares none. `Some` is the whole of what makes `2>` legal on a command line.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn diagnostics_slot(self) -> Option<u64> {
         match self {
             OutputDeclaration::BytesAndDiagnostics { slot } => Some(slot),
@@ -119,12 +123,15 @@ pub const MAXIMUM_DECLARED_SHORT_OPTIONS: usize = 16;
 /// Name: ratified 2026-10-18 (calef: "Yes").
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct ShortOptions {
+    /// Name: ratified 2026-11-20 (UTC).
     letters: [u8; MAXIMUM_DECLARED_SHORT_OPTIONS],
     length_bytes: u8,
 }
 
 impl ShortOptions {
     /// The option set `letters` spells, or `None` if it breaks one of the three rules above.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn try_new(letters: &[u8]) -> Option<Self> {
         if letters.len() > MAXIMUM_DECLARED_SHORT_OPTIONS {
             return None;
@@ -154,6 +161,8 @@ impl ShortOptions {
 
     /// [`try_new`](Self::try_new) for a manifest written in source, where a bad option set is a
     /// compile error rather than a value.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn new(letters: &[u8]) -> Self {
         match Self::try_new(letters) {
             Some(f) => f,
@@ -174,6 +183,8 @@ impl ShortOptions {
 /// a program that declares none has no slot. Eight, above every ordinary grant, placed by
 /// `abi::thread_control_block::CAPABILITY_INSERT`'s explicit target. See notes/program-manifest.md ("The
 /// named slots").
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub const DIAGNOSTICS_SLOT: u64 = 8;
 
 /// **The capability table slot a process-domain capability lands in** (milestone 126), for the programs that
@@ -182,6 +193,8 @@ pub const DIAGNOSTICS_SLOT: u64 = 8;
 /// Seven, just below [`DIAGNOSTICS_SLOT`], placed for that constant's reason. A program spawned
 /// without the declaration holds an empty slot here and is refused by the kernel rather than shown
 /// an empty domain.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub const DOMAIN_SLOT: u64 = 7;
 
 /// **The capability table slot a client view of the entropy service lands in** (milestone 111), for
@@ -191,6 +204,8 @@ pub const DOMAIN_SLOT: u64 = 7;
 /// seven positional capabilities. A program spawned without the declaration holds an empty slot
 /// here: its first `CALL` answers `abi::Error::NoSuchSlot`, which `entropy_contract::delivered_bytes`
 /// reads as `None`. See notes/program-manifest.md ("The named slots").
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub const ENTROPY_SLOT: u64 = 9;
 
 /// **The capability table slot a client view of the network stack lands in** (milestone 590
@@ -201,6 +216,8 @@ pub const ENTROPY_SLOT: u64 = 9;
 /// `abi::fault::FAULT_RENDEZVOUS_SLOT`. A program spawned without the declaration holds an empty slot here,
 /// and its first `CALL` answers `abi::Error::NoSuchSlot`; `unreachable_network_witness` is the
 /// program that shows it at the prompt.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub const NETWORK_SLOT: u64 = 10;
 
 /// **Where the boot shell holds the inert-configuration page** (milestone 47 (navigation and
@@ -232,7 +249,7 @@ pub const SHELL_CONFIGURATION_VIRTUAL_ADDRESS: u64 = 0x0000_0000_00d0_1000;
 /// number in either layout. `WRITE` alone: the holder may send a request and may not receive
 /// another's or pass the endpoint on.
 ///
-/// Name: provisional (milestone 809).
+/// Name: ratified 2026-11-20 (UTC).
 pub const INSTALLER_SLOT: u64 = 15;
 
 /// **Where the same program finds the endpoint the progenitor answers its requests on**
@@ -240,7 +257,7 @@ pub const INSTALLER_SLOT: u64 = 15;
 /// result endpoint, which the shell is reading while this program runs, so an installer request
 /// is answered on an endpoint of the holder's own, made from its job's region when it is built.
 ///
-/// Name: provisional (milestone 809).
+/// Name: ratified 2026-11-20 (UTC).
 pub const INSTALLER_REPLY_SLOT: u64 = 16;
 
 /// **Where a program that declares [`Manifest::catalog`] finds the catalog page's capability**
@@ -249,7 +266,7 @@ pub const INSTALLER_REPLY_SLOT: u64 = 16;
 /// without the grant says so instead of faulting on an unmapped page. Seventeen, one past
 /// [`INSTALLER_REPLY_SLOT`].
 ///
-/// Name: provisional (milestone 809).
+/// Name: ratified 2026-11-20 (UTC).
 pub const CATALOG_SLOT: u64 = 17;
 
 /// **Where a program that holds [`Manifest::indexes`] finds the index sources page's capability**
@@ -258,7 +275,7 @@ pub const CATALOG_SLOT: u64 = 17;
 /// it. The index store's directory grant is at `std_runtime_contract::FS_DIR_SLOT`, the `std`
 /// layout's one directory slot.
 ///
-/// Name: provisional 2026-10-12 (UTC), lane `milestone/801-jig-installs-from-the-index`.
+/// Name: ratified 2026-11-20 (UTC).
 pub const INDEX_SOURCES_SLOT: u64 = 18;
 
 /// **Where a program that declares [`Manifest::machine`] finds the machine statistics page's
@@ -281,7 +298,7 @@ pub const SHARE_SLOT: u64 = 12;
 /// rather than the next free one, and far below `abi::fault::FAULT_RENDEZVOUS_SLOT`. `WRITE` alone, so the
 /// holder can invoke it and cannot hand it on.
 ///
-/// Name: provisional (milestone 805).
+/// Name: ratified 2026-11-20 (UTC).
 pub const REBOOT_SLOT: u64 = 13;
 
 /// **Where a program that declares [`Manifest::sync`] finds its sync-only capability**
@@ -300,7 +317,7 @@ pub const SYNC_SLOT: u64 = 14;
 /// everywhere else, which is every machine CI boots. `WRITE` alone, the right to `CALL` the route.
 /// The reboot declaration carries it, since restarting the board is the only thing the route does.
 ///
-/// Name: provisional.
+/// Name: ratified 2026-11-20 (UTC).
 pub const POWER_MANAGEMENT_CHIP_ROUTE_SLOT: u64 = 23;
 
 /// A program's expectation about the integer argument (`least_authority_demo 9`'s `9`).
@@ -323,6 +340,8 @@ pub enum ProgramArgumentDeclaration {
 
 impl ProgramArgumentDeclaration {
     /// Whether the program hears the line as its argv ([`ProgramArgumentDeclaration::Words`]).
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn hears_words(&self) -> bool {
         matches!(self, ProgramArgumentDeclaration::Words(_))
     }
@@ -338,7 +357,7 @@ impl ProgramArgumentDeclaration {
 /// "The file's directory" is not a variant: a line names it, `.` included (calef's N1 ruling,
 /// 2026-09-27T06:27Z: `rg pattern .`).
 ///
-/// Name: provisional (2026-09-27).
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum WordGrant {
     /// Read, list and walk what was named. `rg`'s.
@@ -359,7 +378,7 @@ pub enum WordGrant {
 #[allow(clippy::assertions_on_constants, clippy::eq_op)]
 // This module is private, so nothing outside can reach the constant; the mutation exclusion in
 // .cargo/mutants.toml is its reader, and helpers/mutation_exclusion_check.py fails if it is gone.
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built.
+/// Name: ratified 2026-11-20 (UTC).
 #[allow(dead_code)]
 pub const RIGHTS_BITS_DO_NOT_OVERLAP: () = assert!((1u64 | 2 | 32) + 4 + 8 == 1 | 2 | 4 | 8 | 32);
 
@@ -367,6 +386,8 @@ impl WordGrant {
     /// The rights a caretaker asks the file service for, as `filesystem_contract::directory`'s bits. Spelled
     /// as numbers here because this crate does not link the filesystem contract (see its
     /// `Cargo.toml`); `word_rights_are_the_filesystem_contracts` pins them to its constants.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn rights(self) -> u64 {
         const ENUMERATE: u64 = 1 << 0;
         const READ: u64 = 1 << 1;
@@ -454,7 +475,7 @@ impl Manifest {
     /// undeclared one as "no widening" and says nothing. A manifest that fails here is a bug in
     /// whoever wrote it, and a caller that builds manifests checks this before planning.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn is_well_formed(&self) -> bool {
         match self.directory {
             DirectoryGrantDeclaration::Required {
@@ -478,6 +499,8 @@ impl Manifest {
 /// A program's SHILL-style manifest: the endowment it declares it expects. The shell checks the
 /// command's grants against this at spawn, so a mismatch is a refusal at the prompt rather than a
 /// mystery hang inside a program that did not get what it needed. See notes/program-manifest.md.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Manifest {
     /// What the program takes as its integer argument.
@@ -647,8 +670,7 @@ pub struct Manifest {
     /// No image or note may carry it, and a verb holding it holds no index store
     /// ([`narrow_by_verb`](crate::narrow_by_verb)), since there is one slot.
     ///
-    /// Name: provisional, minted 2026-10-18 (UTC) by lane `milestone/809-jig-list-u`. Not
-    /// `activation`, which was the draft spelling of [`installer`](Manifest::installer).
+    /// Name: ratified 2026-11-20 (UTC).
     pub activation_directory: bool,
     /// **Whether the program's standard input is the owner's console** (milestone 892 (a std
     /// program at the prompt holds the network and a resolver); calef, 2026-10-19 (UTC), on #2405:
@@ -658,7 +680,7 @@ pub struct Manifest {
     /// program in this table may hold it, as only the owner's console grants the installer: no
     /// image may declare it (`image_can_carry`) and no note may carry it.
     ///
-    /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
+    /// Name: ratified 2026-11-20 (UTC).
     pub console_input: bool,
     /// **Which runtime contract the program was built against**, and so where it expects each
     /// capability to be (milestone 595 (provisional)). See [`StartupContract`].

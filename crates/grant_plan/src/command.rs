@@ -25,8 +25,7 @@ pub enum CommandLine<'a> {
     /// you would have typed, unprefixed, which is the whole point of the spelling: what you inspect
     /// and what you run cannot drift apart.
     ///
-    /// Name: provisional, minted 2026-10-27 (UTC) by lane capability-sweep-1. Spelled out from
-    /// `Capabilities` under the capability ruling of 2026-10-06 (UTC).
+    /// Name: ratified 2026-11-20 (UTC).
     Capabilities(&'a [u8]),
     /// `time <command>`: run that command exactly as typed and say how long it took.
     ///
@@ -49,7 +48,7 @@ pub enum CommandLine<'a> {
     /// `swish::scope` reads it. It touches no capability, so what a command did to the world
     /// (a file made, a program run) stays done.
     ///
-    /// Name: provisional (milestone 52, 2026-10-27 UTC), for calef's naming pass.
+    /// Name: ratified 2026-11-20 (UTC).
     Scope(&'a [u8]),
     /// `cd [path]`: rebind the shell's position inside the directory capability it already holds.
     /// **A builtin, in the same category as `caps`**: it spawns nothing, grants nothing, and confers
@@ -172,6 +171,8 @@ pub const MAXIMUM_SHORT_OPTIONS: usize = 8;
 /// **It borrows nothing from the command line**: a name a pattern produced comes out of a directory
 /// listing rather than out of the line, so the grant owns it. With [`FileGrant::directory`] a
 /// value, not a pointer at the shell, nothing after planning can change what an endowment means.
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Endowment {
     /// **The declared needs this endowment was planned against**: the manifest the caller passed,
@@ -237,6 +238,8 @@ pub struct Endowment {
 /// the operand's leading path, held as a value, so a `cd` after planning cannot change what the
 /// grant means and the child has no cwd to re-resolve against. See notes/shell-navigation.md ("The
 /// cwd stops at the process boundary").
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct FileGrant {
     /// **Which of the shell's trees `dir` is in**, since milestone 154 (a process that holds two
@@ -320,7 +323,7 @@ pub struct ShellHoldings {
     /// process that holds two directory capabilities). `None` for a one-grant shell, which
     /// resolves and prints exactly as it always has.
     ///
-    /// Name: ratified 2026-10-18 (calef: "Yes"). The shape is provisional.
+    /// Name: ratified 2026-10-18. The shape is provisional.
     pub mounted: Option<MountedTree>,
     /// **Where the shell stands, in the one tree it presents**: a path from its root, through a
     /// mount point when it stands in the second tree ([`ShellHoldings::serving_tree`] says which tree that
@@ -330,20 +333,19 @@ pub struct ShellHoldings {
     pub working_directory: navigation::DirectoryPath,
     /// **Names this shell has bound to a position it already reached some other way**
     /// (`bind`, milestone 47 (navigation and naming); [`navigation::Bindings`]'s own doc has the full
-    /// design). A bound position is a path in the one tree, like [`ShellHoldings::cwd`], so a bind can
+    /// design). A bound position is a path in the one tree, like [`ShellHoldings::working_directory`], so a bind can
     /// point through a mount point with nothing special to say about it.
     pub binds: navigation::Bindings,
 }
 
 /// **A second tree, and where it is mounted in the first** (milestone 154).
 ///
-/// calef ruled the presentation on 2026-09-26: *"One tree with other trees mounted at names in
-/// it."* The user sees one root; the second tree appears at a mount point, like a Unix mount or a
+/// The presentation is one tree with other trees mounted at names in it. The user sees one root; the second tree appears at a mount point, like a Unix mount or a
 /// Plan 9 `bind`, and which capability serves a name is bookkeeping the shell keeps to itself. So
 /// the whole of what this records is the mount point. Where the shell stands is a path in the one
-/// tree ([`ShellHoldings::cwd`]); which tree that is follows from whether the path runs through here.
+/// tree ([`ShellHoldings::working_directory`]); which tree that is follows from whether the path runs through here.
 ///
-/// Name: ratified 2026-10-18 (calef: "Yes"). The shape is provisional.
+/// Name: ratified 2026-10-18. The shape is provisional.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct MountedTree {
     mount: navigation::DirectoryPath,
@@ -434,7 +436,7 @@ impl ShellHoldings {
 
     /// **Which tree serves a path in the one tree, and where inside it**: the second tree, from
     /// its own root, for a path that runs through its mount point; the first tree, unchanged, for
-    /// everything else. This is the bookkeeping calef's ruling keeps out of sight: a path never
+    /// everything else. This is the bookkeeping the one-tree presentation keeps out of sight: a path never
     /// says which tree it is in, and this is the one place that decides.
     ///
     /// Name: ratified 2026-11-20 (UTC).

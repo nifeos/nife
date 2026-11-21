@@ -6,13 +6,15 @@
 //! [`NameSet`] own their bytes, since a matched name comes out of a listing read into a reused
 //! buffer, not out of the line. Only a token's last component expands; `**` and qualifiers are
 //! out (notes/glob.md). See notes/glob-grant.md.
+//!
+//! Name: ratified 2026-11-20 (UTC).
 
 use crate::Refusal;
 use crate::navigation::{self, Step};
 
 /// The longest name a grant can carry, which is [`crate::MAXIMUM_FILE_NAME_BYTES`].
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_NAME_BYTES: usize = crate::MAXIMUM_FILE_NAME_BYTES;
 
 /// **The most names one expansion may grant**: Unix's `ARG_MAX` as a capability limit. The set
@@ -168,8 +170,7 @@ impl NameSet {
 
     /// The bytes of name the set holds, all its names together.
     ///
-    /// Name: provisional, minted 2026-10-24 (UTC) by lane
-    /// `milestone/946-granted-file-name-longer-than-sixteen-bytes`.
+    /// Name: ratified 2026-11-20 (UTC).
     pub fn name_bytes(&self) -> usize {
         self.start(self.n)
     }
@@ -512,7 +513,7 @@ pub fn last_component_has_magic(token: &[u8]) -> Result<bool, Refusal> {
 /// `.` (calef's N1 ruling, 2026-09-27T06:27Z: "to search here you type `rg pattern .`"). Neither:
 /// the line designated nothing and grants nothing.
 ///
-/// Name: provisional (2026-09-27).
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Designation {
     names: NameSet,

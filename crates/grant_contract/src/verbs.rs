@@ -22,55 +22,88 @@ pub struct ManifestAuthorities(u16);
 
 impl ManifestAuthorities {
     /// Nothing. What a word that is no verb in the table is granted.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const NONE: ManifestAuthorities = ManifestAuthorities(0);
     /// [`Manifest::clock`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const CLOCK: ManifestAuthorities = ManifestAuthorities(1 << 0);
     /// [`Manifest::configuration`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const CONFIGURATION: ManifestAuthorities = ManifestAuthorities(1 << 1);
     /// [`Manifest::entropy`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const ENTROPY: ManifestAuthorities = ManifestAuthorities(1 << 2);
     /// [`Manifest::network`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const NETWORK: ManifestAuthorities = ManifestAuthorities(1 << 3);
     /// [`Manifest::domain`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const DOMAIN: ManifestAuthorities = ManifestAuthorities(1 << 4);
     /// [`Manifest::machine`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const MACHINE: ManifestAuthorities = ManifestAuthorities(1 << 5);
     /// [`Manifest::share`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const SHARE: ManifestAuthorities = ManifestAuthorities(1 << 6);
     /// [`Manifest::installer`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const INSTALLER: ManifestAuthorities = ManifestAuthorities(1 << 7);
     /// [`Manifest::catalog`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const CATALOG: ManifestAuthorities = ManifestAuthorities(1 << 8);
-    /// [`Manifest::indexes`], read only (milestone 801 (packages over the internet)). Name:
-    /// provisional 2026-10-12 (UTC), as is the bit.
+    /// [`Manifest::indexes`], read only (milestone 801 (packages over the internet)).
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const INDEXES: ManifestAuthorities = ManifestAuthorities(1 << 9);
     /// [`Manifest::indexes`], read and written: `jig update`. Holds nothing without
-    /// [`ManifestAuthorities::INDEXES`]. Name: provisional 2026-10-12 (UTC), as is the bit.
+    /// [`ManifestAuthorities::INDEXES`].
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const INDEXES_WRITE: ManifestAuthorities = ManifestAuthorities(1 << 10);
     /// [`Manifest::activation_directory`]: `activation/`, read only, in place of the index store
     /// (milestone 809, `jig list -u`).
     ///
-    /// Name: provisional, minted 2026-10-18 (UTC) by lane `milestone/809-jig-list-u`, as is the bit.
+    /// Name: ratified 2026-11-20 (UTC).
     pub const ACTIVATION: ManifestAuthorities = ManifestAuthorities(1 << 11);
     /// Every bit above, and no other.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const ALL: ManifestAuthorities = ManifestAuthorities((1 << 12) - 1);
 
     /// Both sets.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn union(self, other: ManifestAuthorities) -> ManifestAuthorities {
         ManifestAuthorities(self.0 | other.0)
     }
 
     /// Whether every bit of `other` is in this set.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn contains(self, other: ManifestAuthorities) -> bool {
         self.0 & other.0 == other.0
     }
 
     /// The bits, as a verb record carries them.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn bits(self) -> u16 {
         self.0
     }
 
     /// The set these bits name, or `None` if any bit names no authority.
+    ///
+    /// Name: ratified 2026-11-20 (UTC).
     pub const fn from_bits(bits: u16) -> Option<ManifestAuthorities> {
         if bits & !ManifestAuthorities::ALL.0 == 0 {
             Some(ManifestAuthorities(bits))
@@ -83,7 +116,9 @@ impl ManifestAuthorities {
 /// **One verb and what it is granted** (milestone 809, option V2): `jig list` reads the catalog and
 /// nothing else; `jig install` also holds the installer and the network. A list of these pairs is
 /// the whole of a verb table, in the spawner's row for a program or in its note (`capability_manifest_note`'s
-/// verb record, which is the same list as bytes). Name: provisional.
+/// verb record, which is the same list as bytes).
+///
+/// Name: ratified 2026-11-20 (UTC).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct VerbGrant {
     /// The word, as typed after the program's name, or that word, one space and the word after
@@ -96,7 +131,7 @@ pub struct VerbGrant {
 
 /// The longest verb a verb table may hold, in bytes: `capability_manifest_note`'s record gives each sixteen.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane milestone/1094-grant-plan-rulings-built, with its unit spelled out.
+/// Name: ratified 2026-11-20 (UTC).
 pub const MAXIMUM_VERB_BYTES: usize = 16;
 
 /// **A manifest narrowed by the verb a line used** (milestone 809 (the package client becomes a
@@ -108,6 +143,8 @@ pub const MAXIMUM_VERB_BYTES: usize = 16;
 /// So `jig list` cannot reach the installer or the network, which is what 281 (`watch` holds
 /// exactly what `ps` holds)'s test asks of two programs. The shell calls this to plan and preview,
 /// and the progenitor to endow, each with the word it read from the same argv, so they agree.
+///
+/// Name: ratified 2026-11-20 (UTC).
 pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) -> Manifest {
     if verbs.is_empty() {
         return *m;
@@ -157,8 +194,7 @@ pub fn narrow_by_verb(m: &Manifest, verbs: &[VerbGrant], verb: Option<&[u8]>) ->
 /// [`MAXIMUM_VERB_BYTES`], or one that holds a space itself. [`page_verb`] reads its two words off an
 /// argument page, and a planner that reads them off a command line calls this with the same two.
 ///
-/// Name: provisional; public since lane `milestone/1094-grant-plan-split`, so that a planner in
-/// another crate builds the same key.
+/// Name: ratified 2026-11-20 (UTC).
 pub fn verb_key<'o>(
     verb: &[u8],
     option: Option<&[u8]>,
