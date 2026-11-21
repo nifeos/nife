@@ -33,7 +33,7 @@ which is the gate this landed against.
 Nothing here lets the *shell* hand a clock to anything. That is a real difference and not a
 formality. A shell holding the page could grant it to any child. The progenitor granting it per manifest
 means the set of processes that can read the time is decided by declarations rather than by a prompt.
-Making it delegable would mean the progenitor keeping a copy for the shell, a `Holdings` field, and a clock
+Making it delegable would mean the progenitor keeping a copy for the shell, a `ShellHoldings` field, and a clock
 position on the wire after all. There is no program asking for it, so it is recorded and not built.
 
 Recorded-accepted by milestone 94's sweep (2026-08-04). "No program is asking" is the whole

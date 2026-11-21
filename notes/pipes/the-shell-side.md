@@ -33,7 +33,7 @@ reading the directory and writing the file.
 ## The head's input comes off the plan
 
 An input operand is a trailing positional at a program that declares an input
-(`grant_plan::plan_against_with`). The same rule makes `wc report.txt` mean `wc < report.txt`. Only
+(`grant_plan::plan_against_with_streams`). The same rule makes `wc report.txt` mean `wc < report.txt`. Only
 the planner knows it, because it needs the manifest. Reading the input off `Line` instead would be
 the shell classifying tokens the planner has already classified. So `run_pipeline` takes the head's
 input file from `plans[0]`. A head with an empty input slot answers a `receive` with `NoSuchSlot`

@@ -43,7 +43,7 @@ And a fourth, underneath: even with a page arriving, the shell printed at most 5
 A named file did not reach a pipeline stage. `wc report.txt` is `wc < report.txt` with the
 operator left out, and the resolution is the planner's, because deciding that a trailing
 positional is a stream needs the manifest (`InputDeclaration::Required` plus a bare token, in
-`grant_plan::plan_against_with`). `run` read that answer off the plan. `pipeline` did not: it wired
+`grant_plan::plan_against_with_streams`). `run` read that answer off the plan. `pipeline` did not: it wired
 the head's input off the `Line`, which has no `<` on it, so it threw away a planned `Source::File`
 and spawned the stage with an empty input slot.
 
@@ -123,7 +123,7 @@ second output stream: `InputDeclaration::Required { writes_while_reading }`, car
 and checked over a whole planned line by `grant_plan::check_chain`. That is because the barrier may
 be any stage in the chain and no single stage can answer the question.
 
-A line with no barrier is `Refusal::NoReaderButThisShell` at the prompt, before the shell opens any
+A line with no barrier is `Refusal::NoReaderStage` at the prompt, before the shell opens any
 file, which matters because a `>` truncates and a line that will not run must not have emptied
 one:
 

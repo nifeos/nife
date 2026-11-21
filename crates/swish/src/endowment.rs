@@ -16,7 +16,7 @@ use super::*;
 /// boolean, because a shell wired without a filesystem has one fewer capability below it.
 pub fn write_holdings(
     budget_pages: u64,
-    holdings: Holdings,
+    holdings: ShellHoldings,
     clock: Option<u64>,
     config: Option<ConfigurationPage>,
     out: &mut dyn FnMut(&[u8]),
@@ -42,7 +42,7 @@ pub fn write_holdings(
             write_num(program_table::spawn_protocol::MOUNTED_TREE_SLOT, out);
             out(b" endpoint  directory  a second tree, mounted at ");
             let mut buf = [0u8; navigation::MAXIMUM_RENDERED_PATH_BYTES];
-            let n = sd.mount().render(&mut buf);
+            let n = sd.mount_point().render(&mut buf);
             out(&buf[..n]);
             out(b"\n");
             out(b"    namespace: one tree, with the second mounted in it (milestone 154)\n");

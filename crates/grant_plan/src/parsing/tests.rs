@@ -9,23 +9,23 @@ use crate::*;
 fn every_listed_builtin_is_a_builtin_and_no_program() {
     for &b in BUILTINS {
         assert!(
-            !matches!(parse(b), Command::Run(_)),
+            !matches!(parse(b), CommandLine::Run(_)),
             "{:?} is not a builtin",
             b
         );
         assert!(Program::from_name(b).is_none(), "{:?} is also a program", b);
     }
     assert!(
-        matches!(parse(b"wc"), Command::Run(_)),
+        matches!(parse(b"wc"), CommandLine::Run(_)),
         "the control: a program runs"
     );
 }
 
 #[test]
 fn empty_and_blank_lines_are_empty() {
-    assert_eq!(parse(b""), Command::Empty);
-    assert_eq!(parse(b"   "), Command::Empty);
-    assert_eq!(parse(b"\t \n"), Command::Empty);
+    assert_eq!(parse(b""), CommandLine::Empty);
+    assert_eq!(parse(b"   "), CommandLine::Empty);
+    assert_eq!(parse(b"\t \n"), CommandLine::Empty);
 }
 
 /// The tokenizer's edges, exactly. Trailing whitespace must scan to `len` and stop (one byte
@@ -60,31 +60,31 @@ fn a_quoted_span_is_one_token_however_many_spaces_are_in_it() {
 /// The parser takes the quotes off, and what is left is the designation.
 #[test]
 fn a_quoted_operand_designates_the_bytes_between_the_quotes() {
-    let r = parse_run(b"wc \"my notes.txt\"");
+    let r = parse_invocation(b"wc \"my notes.txt\"");
     assert_eq!(r.program, b"wc");
     assert_eq!(r.positionals(), [&b"my notes.txt"[..]]);
     assert!(r.is_quoted(0), "the flag is what stops it being expanded");
     assert_eq!(r.misquoted, None);
     // A bare operand is unchanged, so nothing about an ordinary line moved.
-    assert!(!parse_run(b"wc notes.txt").is_quoted(0));
+    assert!(!parse_invocation(b"wc notes.txt").is_quoted(0));
 }
 
 /// **A quoted token is never an option**, which is the sharpest edge quoting has here: `-r` is
 /// what widens `rm`'s grant from one name to a subtree walk, and a quoted `-r` is a file name.
 #[test]
 fn quoting_keeps_a_dash_from_widening_a_grant() {
-    let r = parse_run(b"rm \"-r\"");
-    assert_eq!(r.options(), b"");
+    let r = parse_invocation(b"rm \"-r\"");
+    assert_eq!(r.short_options(), b"");
     assert_eq!(r.positionals(), [&b"-r"[..]]);
     // And unquoted it is still the option it always was.
-    assert_eq!(parse_run(b"rm -r x").options(), b"r");
+    assert_eq!(parse_invocation(b"rm -r x").short_options(), b"r");
     // Same rule for `--mem`, which is an option that moves memory.
-    let r = parse_run(b"memory_grant_depleter \"--mem\" 16");
+    let r = parse_invocation(b"memory_grant_depleter \"--mem\" 16");
     assert_eq!(r.memory_grant, None);
     assert_eq!(r.positionals(), [&b"--mem"[..], &b"16"[..]]);
     // ... while a quoted *value* is still the number it says.
     assert_eq!(
-        parse_run(b"memory_grant_depleter --mem \"16\"").memory_grant,
+        parse_invocation(b"memory_grant_depleter --mem \"16\"").memory_grant,
         Some(16)
     );
 }
@@ -94,23 +94,23 @@ fn quoting_keeps_a_dash_from_widening_a_grant() {
 /// wondering which words are exempt.
 #[test]
 fn a_quoted_builtin_name_still_names_the_builtin() {
-    assert!(matches!(parse(b"\"help\""), Command::Help));
-    assert!(matches!(parse(b"'echo' hi"), Command::Echo(b"hi")));
+    assert!(matches!(parse(b"\"help\""), CommandLine::Help));
+    assert!(matches!(parse(b"'echo' hi"), CommandLine::Echo(b"hi")));
 }
 
 /// **A line whose quotes do not make sense is refused before a program is named**, because
 /// otherwise "no such program" would be a true sentence about a word nobody typed.
 #[test]
 fn a_misquoted_line_is_refused_ahead_of_everything_else() {
-    let r = parse_run(b"wc 'my notes.txt");
+    let r = parse_invocation(b"wc 'my notes.txt");
     assert_eq!(r.misquoted, Some(Refusal::UnclosedQuote));
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::UnclosedQuote));
     // Even when the program does not exist, so the ordering is real rather than incidental.
-    let r = parse_run(b"nosuchprog 'x");
+    let r = parse_invocation(b"nosuchprog 'x");
     assert_eq!(plan(&r, WITH_DIRECTORY), Err(Refusal::UnclosedQuote));
     // And the joining case.
     assert_eq!(
-        parse_run(b"wc a\"b\"").misquoted,
+        parse_invocation(b"wc a\"b\"").misquoted,
         Some(Refusal::PartlyQuoted)
     );
 }
@@ -119,7 +119,7 @@ fn a_misquoted_line_is_refused_ahead_of_everything_else() {
 /// array either; the missing value stays `None` for the plan to refuse.
 #[test]
 fn a_trailing_mem_flag_is_a_missing_value_not_a_read_past_the_line() {
-    let r = parse_run(b"memory_grant_depleter --mem");
+    let r = parse_invocation(b"memory_grant_depleter --mem");
     assert_eq!(r.program, b"memory_grant_depleter");
     assert_eq!(r.memory_grant, None);
 }
@@ -129,7 +129,7 @@ fn a_trailing_mem_flag_is_a_missing_value_not_a_read_past_the_line() {
 /// stepping by the wrong arithmetic visibly lands somewhere else.
 #[test]
 fn a_mem_flag_consumes_its_value_and_nothing_after_it() {
-    let r = parse_run(b"memory_grant_depleter --mem 4");
+    let r = parse_invocation(b"memory_grant_depleter --mem 4");
     assert_eq!(r.memory_grant, Some(4));
     assert!(r.positionals().is_empty(), "the value became an operand");
     assert_eq!(r.unexpected, None);
@@ -140,12 +140,12 @@ fn a_mem_flag_consumes_its_value_and_nothing_after_it() {
 #[test]
 fn the_flag_and_positional_ceilings_refuse_rather_than_overflow() {
     // Nine letters in one cluster, and MAXIMUM_SHORT_OPTIONS is eight.
-    let r = parse_run(b"rm -abcdefghi x");
-    assert_eq!(r.options(), b"");
+    let r = parse_invocation(b"rm -abcdefghi x");
+    assert_eq!(r.short_options(), b"");
     assert_eq!(r.unexpected, Some(&b"-abcdefghi"[..]));
 
     // Five operands, and MAXIMUM_POSITIONALS is four.
-    let r = parse_run(b"prog a b c d e");
+    let r = parse_invocation(b"prog a b c d e");
     assert_eq!(r.positionals().len(), MAXIMUM_POSITIONALS);
     assert_eq!(r.unexpected, Some(&b"e"[..]));
 }
@@ -153,31 +153,31 @@ fn the_flag_and_positional_ceilings_refuse_rather_than_overflow() {
 #[test]
 fn help_is_a_builtin_and_everything_else_is_a_program() {
     // Three reserved words, and any other first token is a program name.
-    assert_eq!(parse(b"help"), Command::Help);
-    assert_eq!(parse(b"  help  "), Command::Help);
-    let Command::Run(r) = parse(b"frobnicate") else {
+    assert_eq!(parse(b"help"), CommandLine::Help);
+    assert_eq!(parse(b"  help  "), CommandLine::Help);
+    let CommandLine::Run(r) = parse(b"frobnicate") else {
         panic!("a bare word must be a program invocation")
     };
     assert_eq!(r.program, b"frobnicate");
 
     // The navigation builtins parse to themselves. Builtins win over programs, so the program
     // namespace must never learn one of these names: it would be unreachable.
-    assert_eq!(parse(b"pwd"), Command::Pwd);
-    assert_eq!(parse(b"cd deeper"), Command::Cd(b"deeper"));
-    assert_eq!(parse(b"cd"), Command::Cd(b""), "bare `cd` is your root");
-    assert_eq!(parse(b"ls"), Command::Ls(b""));
-    assert_eq!(parse(b"ls  sub "), Command::Ls(b"sub"));
-    assert_eq!(parse(b"mkdir logs"), Command::Mkdir(b"logs"));
+    assert_eq!(parse(b"pwd"), CommandLine::Pwd);
+    assert_eq!(parse(b"cd deeper"), CommandLine::Cd(b"deeper"));
+    assert_eq!(parse(b"cd"), CommandLine::Cd(b""), "bare `cd` is your root");
+    assert_eq!(parse(b"ls"), CommandLine::Ls(b""));
+    assert_eq!(parse(b"ls  sub "), CommandLine::Ls(b"sub"));
+    assert_eq!(parse(b"mkdir logs"), CommandLine::Mkdir(b"logs"));
     assert_eq!(
         parse(b"touch logs"),
-        Command::Touch(TouchOperands {
+        CommandLine::Touch(TouchOperands {
             at: None,
             name: b"logs"
         })
     );
     assert_eq!(
         parse(b"touch"),
-        Command::Touch(TouchOperands {
+        CommandLine::Touch(TouchOperands {
             at: None,
             name: b""
         }),
@@ -187,7 +187,7 @@ fn help_is_a_builtin_and_everything_else_is_a_program() {
     // (kept exactly as typed, unparsed) and the name.
     assert_eq!(
         parse(b"touch -t 2030-01-01T00:00:00Z logs"),
-        Command::Touch(TouchOperands {
+        CommandLine::Touch(TouchOperands {
             at: Some(b"2030-01-01T00:00:00Z"),
             name: b"logs"
         })
@@ -196,7 +196,7 @@ fn help_is_a_builtin_and_everything_else_is_a_program() {
     // end-of-input right after it.
     assert_eq!(
         parse(b"touch -template"),
-        Command::Touch(TouchOperands {
+        CommandLine::Touch(TouchOperands {
             at: None,
             name: b"-template"
         }),
@@ -205,33 +205,33 @@ fn help_is_a_builtin_and_everything_else_is_a_program() {
     // `bind`: one word for the target, everything after it (trimmed) for the name.
     assert_eq!(
         parse(b"bind logs/2026 recent"),
-        Command::Bind(b"logs/2026", b"recent"),
+        CommandLine::Bind(b"logs/2026", b"recent"),
     );
     assert_eq!(
         parse(b"  bind   logs/2026   recent  "),
-        Command::Bind(b"logs/2026", b"recent"),
+        CommandLine::Bind(b"logs/2026", b"recent"),
     );
     assert_eq!(
         parse(b"bind"),
-        Command::Bind(b"", b""),
+        CommandLine::Bind(b"", b""),
         "bare `bind` needs both words"
     );
     assert_eq!(
         parse(b"bind logs/2026"),
-        Command::Bind(b"logs/2026", b""),
+        CommandLine::Bind(b"logs/2026", b""),
         "one word is a target with no name to file it under",
     );
     assert_eq!(
         parse(b"apropos capability"),
-        Command::Apropos(b"capability")
+        CommandLine::Apropos(b"capability")
     );
     assert_eq!(
         parse(b"apropos  capability "),
-        Command::Apropos(b"capability")
+        CommandLine::Apropos(b"capability")
     );
     // With no operand it is still the builtin, so the shell answers "that verb needs a word"
     // rather than looking for a program nobody has.
-    assert_eq!(parse(b"apropos"), Command::Apropos(b""));
+    assert_eq!(parse(b"apropos"), CommandLine::Apropos(b""));
 }
 
 /// **`vouch` takes one file and records it by its last component** (DECISIONS §221). A bare
@@ -241,7 +241,7 @@ fn help_is_a_builtin_and_everything_else_is_a_program() {
 /// [`UserVerb::Usage`], so a line the list could not hold never reaches it.
 #[test]
 fn user_takes_suspend_or_resume_and_one_name() {
-    let Command::User(tail) = parse(b"user  suspend  alice ") else {
+    let CommandLine::User(tail) = parse(b"user  suspend  alice ") else {
         panic!("`user` is not its own command");
     };
     assert_eq!(user_verb(tail), UserVerb::Suspend(b"alice"));
@@ -265,10 +265,10 @@ fn user_takes_suspend_or_resume_and_one_name() {
 
 #[test]
 fn vouch_takes_one_path_and_names_it_by_its_last_component() {
-    let Command::Vouch(tail) = parse(b"vouch  installed/unvouched ") else {
+    let CommandLine::Vouch(tail) = parse(b"vouch  installed/unvouched ") else {
         panic!("`vouch` is not its own command");
     };
-    assert_eq!(vouch_verb(tail), Some(&b"installed/unvouched"[..]));
+    assert_eq!(vouch_operand(tail), Some(&b"installed/unvouched"[..]));
     assert_eq!(
         vouched_name(b"installed/unvouched"),
         Some(&b"unvouched"[..])
@@ -283,7 +283,7 @@ fn vouch_takes_one_path_and_names_it_by_its_last_component() {
         b"./x#y",
         b"./seventeen-bytes!!",
     ] {
-        assert_eq!(vouch_verb(bad), None, "{:?}", core::str::from_utf8(bad));
+        assert_eq!(vouch_operand(bad), None, "{:?}", core::str::from_utf8(bad));
     }
 }
 
@@ -293,17 +293,17 @@ fn vouch_takes_one_path_and_names_it_by_its_last_component() {
 /// table, which builtins are matched before.
 #[test]
 fn jig_is_a_program_and_package_is_not_a_builtin() {
-    let Command::Run(r) = parse(b"jig install greeting") else {
+    let CommandLine::Run(r) = parse(b"jig install greeting") else {
         panic!("`jig` must parse as a program invocation");
     };
     assert_eq!(Program::from_name(r.program), Some(Program::Jig));
-    let Command::Run(r) = parse(b"package install greeting") else {
+    let CommandLine::Run(r) = parse(b"package install greeting") else {
         panic!("`package` is no longer a builtin");
     };
     assert_eq!(Program::from_name(r.program), None);
     // `rm` is a program, not a builtin that would shadow the name; its manifest decides what the
     // operand grants.
-    let Command::Run(r) = parse(b"rm old.txt") else {
+    let CommandLine::Run(r) = parse(b"rm old.txt") else {
         panic!("`rm` must parse as a program invocation, not a builtin")
     };
     assert_eq!(r.program, b"rm");
@@ -328,7 +328,7 @@ fn jig_is_a_program_and_package_is_not_a_builtin() {
     }
 }
 
-/// **The verb is the second word, with the third beside it when both fit** ([`verb_of`]): `None`
+/// **The verb is the second word, with the third beside it when both fit** ([`line_verb`]): `None`
 /// for a bare program name, the second word alone when no third follows or the third would not
 /// fit, both joined by one space when they fit, and `None` when the second word is longer than
 /// [`MAXIMUM_VERB_BYTES`] or, quoted, holds a space itself.
@@ -336,7 +336,7 @@ fn jig_is_a_program_and_package_is_not_a_builtin() {
 fn the_verb_is_the_second_word_and_the_third_when_both_fit() {
     let verb = |line: &[u8]| {
         let mut out = [0u8; MAXIMUM_VERB_BYTES];
-        verb_of(line, &mut out).map(<[u8]>::to_vec)
+        line_verb(line, &mut out).map(<[u8]>::to_vec)
     };
     assert_eq!(verb(b"jig"), None);
     assert_eq!(verb(b"jig list").as_deref(), Some(&b"list"[..]));
@@ -362,30 +362,36 @@ fn the_verb_is_the_second_word_and_the_third_when_both_fit() {
 
 #[test]
 fn echo_keeps_internal_spacing() {
-    assert_eq!(parse(b"echo hello world"), Command::Echo(b"hello world"));
-    assert_eq!(parse(b"echo   two  spaces"), Command::Echo(b"two  spaces"));
-    assert_eq!(parse(b"echo"), Command::Echo(b""));
+    assert_eq!(
+        parse(b"echo hello world"),
+        CommandLine::Echo(b"hello world")
+    );
+    assert_eq!(
+        parse(b"echo   two  spaces"),
+        CommandLine::Echo(b"two  spaces")
+    );
+    assert_eq!(parse(b"echo"), CommandLine::Echo(b""));
 }
 
 #[test]
 fn a_second_integer_is_unexpected_not_ignored() {
-    let Command::Run(r) = parse(b"least_authority_demo 3 5") else {
+    let CommandLine::Run(r) = parse(b"least_authority_demo 3 5") else {
         panic!()
     };
     assert_eq!(r.positionals(), [&b"3"[..], &b"5"[..]]);
-    assert_eq!(plan(&r, Holdings::default()), Err(Refusal::Unexpected));
+    assert_eq!(plan(&r, ShellHoldings::default()), Err(Refusal::Unexpected));
 }
 
 #[test]
 fn mem_flag_must_have_a_numeric_value() {
     // `--mem twelve` is a missing grant, not a silent zero: parse_u64 rejects it, so memory_grant_depleter
     // sees "no --mem given" and refuses.
-    let Command::Run(r) = parse(b"memory_grant_depleter --mem twelve") else {
+    let CommandLine::Run(r) = parse(b"memory_grant_depleter --mem twelve") else {
         panic!()
     };
     assert_eq!(r.memory_grant, None);
     assert_eq!(
-        plan(&r, Holdings::default()),
+        plan(&r, ShellHoldings::default()),
         Err(Refusal::MemoryGrantRequired)
     );
 }
@@ -393,22 +399,22 @@ fn mem_flag_must_have_a_numeric_value() {
 #[test]
 fn capabilities_previews_the_command_you_would_have_typed() {
     // The tail is the line itself, so what you inspect and what you run cannot drift apart.
-    assert_eq!(parse(b"caps"), Command::Capabilities(b""));
+    assert_eq!(parse(b"caps"), CommandLine::Capabilities(b""));
     assert_eq!(
         parse(b"caps memory_grant_depleter --mem 16"),
-        Command::Capabilities(b"memory_grant_depleter --mem 16")
+        CommandLine::Capabilities(b"memory_grant_depleter --mem 16")
     );
-    let Command::Capabilities(tail) = parse(b"caps memory_grant_depleter --mem 16") else {
+    let CommandLine::Capabilities(tail) = parse(b"caps memory_grant_depleter --mem 16") else {
         panic!()
     };
-    let (Command::Run(previewed), Command::Run(typed)) =
+    let (CommandLine::Run(previewed), CommandLine::Run(typed)) =
         (parse(tail), parse(b"memory_grant_depleter --mem 16"))
     else {
         panic!()
     };
     assert_eq!(
-        plan(&previewed, Holdings::default()),
-        plan(&typed, Holdings::default()),
+        plan(&previewed, ShellHoldings::default()),
+        plan(&typed, ShellHoldings::default()),
         "the preview must plan the identical endowment to the command itself",
     );
 }
@@ -422,46 +428,46 @@ fn capabilities_previews_the_command_you_would_have_typed() {
 /// re-tokenizing, inserting a grant) would make "what you time is what you run" a slogan.
 #[test]
 fn time_runs_the_command_you_would_have_typed() {
-    assert_eq!(parse(b"time"), Command::Time(b""));
+    assert_eq!(parse(b"time"), CommandLine::Time(b""));
     assert_eq!(
         parse(b"time memory_grant_depleter --mem 16"),
-        Command::Time(b"memory_grant_depleter --mem 16")
+        CommandLine::Time(b"memory_grant_depleter --mem 16")
     );
-    let Command::Time(tail) = parse(b"time memory_grant_depleter --mem 16") else {
+    let CommandLine::Time(tail) = parse(b"time memory_grant_depleter --mem 16") else {
         panic!()
     };
-    let (Command::Run(timed), Command::Run(typed)) =
+    let (CommandLine::Run(timed), CommandLine::Run(typed)) =
         (parse(tail), parse(b"memory_grant_depleter --mem 16"))
     else {
         panic!()
     };
     assert_eq!(
-        plan(&timed, Holdings::default()),
-        plan(&typed, Holdings::default()),
+        plan(&timed, ShellHoldings::default()),
+        plan(&typed, ShellHoldings::default()),
         "timing a command must not change what it is granted",
     );
 
     // The operators survive the prefix: `time date | wc` times the pipeline, not `date` alone
     // (`caps` has the same test one layer up, in `swish::route`).
-    assert_eq!(parse(b"time date | wc"), Command::Time(b"date | wc"));
+    assert_eq!(parse(b"time date | wc"), CommandLine::Time(b"date | wc"));
 }
 
 /// Assemble `line`'s argv and check it reads back as exactly `want`.
 fn assert_words(line: &[u8], want: &[&[u8]]) {
     let mut page = [0u8; program_argument_contract::PAGE_BYTES];
-    assert_eq!(argv(line, &mut page), Ok(want.len() as u32));
+    assert_eq!(write_argument_page(line, &mut page), Ok(want.len() as u32));
     let got = program_argument_contract::ArgumentPage::parse(&page);
     assert_eq!(got.len(), want.len());
     assert!(got.iter().eq(want.iter().copied()));
 }
 
 fn refused(line: &[u8]) -> Refusal {
-    argv(line, &mut [0u8; program_argument_contract::PAGE_BYTES]).unwrap_err()
+    write_argument_page(line, &mut [0u8; program_argument_contract::PAGE_BYTES]).unwrap_err()
 }
 
 /// **Every word arrives as it was typed, and none is classified** (§170). An option the shell
 /// never heard of, a `--long=value`, an integer, and a quoted phrase with the quotes off; the
-/// name first, as `argv[0]`. Past `parse_run`'s sixteen tokens too, because nothing is placed.
+/// name first, as `argv[0]`. Past `parse_invocation`'s sixteen tokens too, because nothing is placed.
 #[test]
 fn argv_carries_every_word_as_typed() {
     assert_words(
@@ -492,7 +498,10 @@ fn argv_refuses_a_line_past_one_page_and_leaves_no_argv() {
     let mut line = [b'x'; program_argument_contract::MAXIMUM_RECORDS_BYTES + 3];
     line[..3].copy_from_slice(b"rg ");
     let mut page = [0u8; program_argument_contract::PAGE_BYTES];
-    assert_eq!(argv(&line, &mut page), Err(Refusal::ArgumentsTooLong));
+    assert_eq!(
+        write_argument_page(&line, &mut page),
+        Err(Refusal::ArgumentsTooLong)
+    );
     assert!(program_argument_contract::ArgumentPage::parse(&page).is_empty());
 }
 
@@ -500,7 +509,7 @@ fn argv_refuses_a_line_past_one_page_and_leaves_no_argv() {
 
 #[test]
 fn a_quoted_word_is_known_by_its_position_and_the_last_slot_is_readable() {
-    let spec = parse_run(b"rm \"a\" b c d");
+    let spec = parse_invocation(b"rm \"a\" b c d");
     assert!(spec.is_quoted(0));
     assert!(!spec.is_quoted(1));
     assert!(
@@ -551,7 +560,7 @@ fn kill_reads_dash_nine_only_as_its_own_word() {
     assert_eq!(kill_operands(b"-9%1"), Err(()));
 }
 
-/// A line with more tokens than `parse_run` has room for is refused, not shortened. The seventeenth
+/// A line with more tokens than `parse_invocation` has room for is refused, not shortened. The seventeenth
 /// token used to vanish without a trace, so `a b` after seven `--mem 1` pairs planned `a` and lost
 /// `b`, which is a word the person typed and never had read.
 #[test]
@@ -566,27 +575,28 @@ fn a_seventeenth_token_is_refused_and_never_dropped() {
 
     // Sixteen tokens fill the buffer and leave nothing over: nothing to refuse.
     let sixteen = line(b" a");
-    let parsed = parse_run(&sixteen);
+    let parsed = parse_invocation(&sixteen);
     assert_eq!(parsed.unexpected, None);
     assert_eq!(parsed.positionals(), [&b"a"[..]]);
 
     // One token past the sixteenth is named as the token nothing can place.
     let seventeen = line(b" a b");
-    assert_eq!(parse_run(&seventeen).unexpected, Some(&b"b"[..]));
+    assert_eq!(parse_invocation(&seventeen).unexpected, Some(&b"b"[..]));
 
     // The first dropped token is the one named, however many follow it.
     let more = line(b" a b c");
-    assert_eq!(parse_run(&more).unexpected, Some(&b"b"[..]));
+    assert_eq!(parse_invocation(&more).unexpected, Some(&b"b"[..]));
 
     // Trailing whitespace after the sixteenth token is not a seventeenth token.
     let padded = line(b" a   ");
-    assert_eq!(parse_run(&padded).unexpected, None);
+    assert_eq!(parse_invocation(&padded).unexpected, None);
 }
 
 /// An unplaceable token earlier on the line is the one named, not a later one that no room was
 /// left for.
 #[test]
 fn the_earliest_token_nothing_can_place_is_named_when_the_line_is_also_too_long() {
-    let parsed = parse_run(b"p -9 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 a b");
+    let parsed =
+        parse_invocation(b"p -9 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 --mem 1 a b");
     assert_eq!(parsed.unexpected, Some(&b"-9"[..]));
 }

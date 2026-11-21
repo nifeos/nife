@@ -119,7 +119,7 @@ it cannot also read that stage's output, so a filter that writes while it reads 
 prompt. A line runs if some stage reads to the end before writing (a barrier; `wc` is the only one).
 It also runs if its tail's output goes to the terminal's sink rather than back to this shell, under
 §106 (the `terminal_sink_caretaker` narrowing). A line with neither is
-`Refusal::NoReaderButThisShell` at the prompt, before any `>` has emptied a file. The draining lane
+`Refusal::NoReaderStage` at the prompt, before any `>` has emptied a file. The draining lane
 of 2026-08-04, its two bugs and the ways out are in [the wait-point
 appendix](pipes/one-wait-point.md).
 

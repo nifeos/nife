@@ -17,11 +17,11 @@ pub(super) fn builtin(nav: &mut Nav, cmd: &[u8], each: &mut dyn FnMut(&[u8], boo
         // They spawn nothing and grant nothing: the shell is rebinding and reading a capability it
         // already holds, which is why these are builtins, and why the worry about an over-granted
         // listing *program* (which would hold the power to read everything it lists) does not arise.
-        Command::Cd(path) => Some(nav.cd(path)),
-        Command::Ls(path) => Some(nav.ls(path, each)),
-        Command::Mkdir(path) => Some(nav.mkdir(path)),
-        Command::Touch(args) => Some(nav.touch(args)),
-        Command::Bind(target, name) => Some(nav.bind(target, name)),
+        CommandLine::Cd(path) => Some(nav.cd(path)),
+        CommandLine::Ls(path) => Some(nav.ls(path, each)),
+        CommandLine::Mkdir(path) => Some(nav.mkdir(path)),
+        CommandLine::Touch(args) => Some(nav.touch(args)),
+        CommandLine::Bind(target, name) => Some(nav.bind(target, name)),
         _ => None,
     }
 }
@@ -100,9 +100,9 @@ pub(super) fn time_command(nav: &mut Nav, tail: &[u8]) {
     // a person can type, and each level of recursion here costs a `dispatch` frame on a stack that
     // has run out four times already (notes/pipes/the-boot.md). Timing something twice measures
     // nothing twice.
-    let mut tail = grant_plan::trim(tail);
-    while let Command::Time(inner) = grant_plan::parse(tail) {
-        tail = grant_plan::trim(inner);
+    let mut tail = tail.trim_ascii();
+    while let CommandLine::Time(inner) = grant_plan::parse(tail) {
+        tail = inner.trim_ascii();
     }
     if tail.is_empty() {
         refused();
@@ -130,7 +130,7 @@ pub(super) const MAXIMUM_BATCHES: u64 = 256;
 /// **Run a command once per batch of what its pattern matched** (milestone 109).
 ///
 /// A prefix word and not a program: a batching program would have to hold the union of every
-/// batch, more than [`grant_plan::expand::MAXIMUM_NAMES`], which nothing can carry, so the batching
+/// batch, more than [`grant_plan::expansion::MAXIMUM_NAMES`], which nothing can carry, so the batching
 /// goes where the directory authority already is. The iteration is the builtin; `rm` stays a
 /// program with an attenuated grant. The sweep stops at the first batch that does not run, so what
 /// ran is a prefix of the match, and each batch's set is printed before it runs, so the shell can
@@ -139,9 +139,9 @@ pub(super) fn xargs(nav: &mut Nav, tail: &[u8]) {
     // Collapse a nested prefix rather than recursing, [`time_command`]'s reason: `xargs xargs rm
     // *.txt` is a line a person can type, batching a batch is still one sweep, and every level of
     // recursion costs a frame on a stack that has run out four times already.
-    let mut tail = grant_plan::trim(tail);
-    while let Command::Xargs(inner) = grant_plan::parse(tail) {
-        tail = grant_plan::trim(inner);
+    let mut tail = tail.trim_ascii();
+    while let CommandLine::Xargs(inner) = grant_plan::parse(tail) {
+        tail = inner.trim_ascii();
     }
     if tail.is_empty() {
         refused();
@@ -193,12 +193,12 @@ pub(super) fn dispatch_one(nav: &mut Nav, cmd: &[u8]) {
         return;
     }
     match grant_plan::parse(cmd) {
-        Command::Empty => {}
-        Command::Help => help(),
+        CommandLine::Empty => {}
+        CommandLine::Help => help(),
         // `echo` expands, and that is half of the globbing demonstration: what it prints is
         // literally the authority the same words would transfer to a program. The newline goes out
         // only when the line itself did, so a refused expansion is one line and not two.
-        Command::Echo(text) => match echo(nav, text, &mut print) {
+        CommandLine::Echo(text) => match echo(nav, text, &mut print) {
             Say::Nothing => print(b"\n"),
             said => say(said),
         },
@@ -206,30 +206,30 @@ pub(super) fn dispatch_one(nav: &mut Nav, cmd: &[u8]) {
         // line so they can see the operators. Kept so this function is complete on its own: it is
         // the whole of "what one command means", and a reader should not have to know about the
         // interception to find every arm.
-        Command::Capabilities(tail) => capabilities(nav, tail),
-        Command::Time(tail) => time_command(nav, tail),
-        Command::Xargs(tail) => xargs(nav, tail),
-        Command::Scope(tail) => scope_block(nav, tail),
-        Command::Pwd => print_pwd(nav),
+        CommandLine::Capabilities(tail) => capabilities(nav, tail),
+        CommandLine::Time(tail) => time_command(nav, tail),
+        CommandLine::Xargs(tail) => xargs(nav, tail),
+        CommandLine::Scope(tail) => scope_block(nav, tail),
+        CommandLine::Pwd => print_pwd(nav),
         // **Search, which grants nothing** (milestone 40 phase 2). It is here rather than in
         // [`builtin`] because its answer is columns of text rather than a listing, so the witness's
         // `each(name, is_dir)` callback is the wrong shape for it; what it shares with the
         // navigation builtins is the argument for being a builtin at all.
-        Command::Apropos(term) => say(apropos(nav, term)),
-        Command::Vouch(tail) => vouch(nav, grant_plan::vouch_verb(tail)),
-        Command::User(tail) => user(nav, grant_plan::user_verb(tail)),
-        Command::Jobs => list_jobs(&mut nav.jobs),
-        Command::Wait(tail) => wait_jobs(&mut nav.jobs, tail),
-        Command::Kill(tail) => kill_job(&mut nav.jobs, tail),
-        Command::Fg(tail) => foreground(&mut nav.jobs, tail),
-        Command::Bg(tail) => resume_in_background(&mut nav.jobs, tail),
-        Command::Run(spec) => run(nav, cmd, spec),
+        CommandLine::Apropos(term) => say(apropos(nav, term)),
+        CommandLine::Vouch(tail) => vouch(nav, grant_plan::vouch_operand(tail)),
+        CommandLine::User(tail) => user(nav, grant_plan::user_verb(tail)),
+        CommandLine::Jobs => list_jobs(&mut nav.jobs),
+        CommandLine::Wait(tail) => wait_jobs(&mut nav.jobs, tail),
+        CommandLine::Kill(tail) => kill_job(&mut nav.jobs, tail),
+        CommandLine::Foreground(tail) => foreground(&mut nav.jobs, tail),
+        CommandLine::Background(tail) => resume_in_background(&mut nav.jobs, tail),
+        CommandLine::Run(spec) => run(nav, cmd, spec),
         // Handled above, by the one implementation the witness also runs.
-        Command::Cd(_)
-        | Command::Ls(_)
-        | Command::Mkdir(_)
-        | Command::Touch(_)
-        | Command::Bind(_, _) => {}
+        CommandLine::Cd(_)
+        | CommandLine::Ls(_)
+        | CommandLine::Mkdir(_)
+        | CommandLine::Touch(_)
+        | CommandLine::Bind(_, _) => {}
     }
 }
 

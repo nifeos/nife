@@ -25,9 +25,9 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
 
     // A full set fits exactly, and one more name does not: BYTES is a bound that is met, not a
     // guess with slack in it. The widest set is the most names whose bytes together reach
-    // NAME_BYTES, which is MAXIMUM_NAMES names sharing it.
-    let each = nameset::NAME_BYTES / nameset::MAXIMUM_NAMES;
-    let wide = [b'w'; nameset::NAME_BYTES / nameset::MAXIMUM_NAMES];
+    // MAXIMUM_NAME_SET_BYTES, which is MAXIMUM_NAMES names sharing it.
+    let each = nameset::MAXIMUM_NAME_SET_BYTES / nameset::MAXIMUM_NAMES;
+    let wide = [b'w'; nameset::MAXIMUM_NAME_SET_BYTES / nameset::MAXIMUM_NAMES];
     let full: [(&[u8], bool); nameset::MAXIMUM_NAMES] =
         [(&wide[..], false); nameset::MAXIMUM_NAMES];
     assert_eq!(
@@ -36,11 +36,11 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
     );
     assert_eq!(
         each * nameset::MAXIMUM_NAMES,
-        nameset::NAME_BYTES,
+        nameset::MAXIMUM_NAME_SET_BYTES,
         "the full set meets the bound"
     );
     assert_eq!(
-        2 * nameset::MAXIMUM_NAMES + nameset::NAME_BYTES + 1,
+        2 * nameset::MAXIMUM_NAMES + nameset::MAXIMUM_NAME_SET_BYTES + 1,
         nameset::MAXIMUM_BYTES,
         "the widest set this contract carries must fit its own buffer exactly",
     );
@@ -51,7 +51,7 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
     let n = nameset::encode(&two, &mut buf).expect("two of the longest names fit");
     assert_eq!(nameset::iter(&buf[..n]).count(), 2);
     assert!(nameset::contains(&buf[..n], &longest));
-    let spill = [b's'; nameset::NAME_BYTES - 2 * grant::MAXIMUM_NAME_BYTES + 1];
+    let spill = [b's'; nameset::MAXIMUM_NAME_SET_BYTES - 2 * grant::MAXIMUM_NAME_BYTES + 1];
     let three: [(&[u8], bool); 3] = [
         (&longest[..], false),
         (&longest[..], true),
@@ -60,7 +60,7 @@ fn a_name_set_round_trips_and_refuses_rather_than_truncating() {
     assert_eq!(
         nameset::encode(&three, &mut buf),
         None,
-        "one byte past NAME_BYTES is refused, not dropped",
+        "one byte past MAXIMUM_NAME_SET_BYTES is refused, not dropped",
     );
     let over: [(&[u8], bool); nameset::MAXIMUM_NAMES + 1] =
         [(b"a", false); nameset::MAXIMUM_NAMES + 1];

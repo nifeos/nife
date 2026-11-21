@@ -23,14 +23,14 @@ const PIPE_REGION_PAGES: u64 = 8;
 pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     // The names on the ends, resolved against where we stand now, exactly as an operand is.
     let out = match l.output {
-        Some(t) => match grant_plan::redirect_target(t, holdings(nav), true) {
+        Some(t) => match grant_plan::output_file_grant(t, holdings(nav)) {
             Ok(g) => Some(g),
             Err(r) => return say(Say::Cannot(r)),
         },
         None => None,
     };
     let inp = match l.input {
-        Some(t) => match grant_plan::redirect_target(t, holdings(nav), false) {
+        Some(t) => match grant_plan::input_file_grant(t, holdings(nav)) {
             Ok(g) => Some(g),
             Err(r) => return say(Say::Cannot(r)),
         },
@@ -38,7 +38,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     };
     // `2>` names one destination for the line: one diagnostic rendezvous serves every declarer.
     let diag_file = match l.diagnostics {
-        Some(t) => match grant_plan::redirect_target(t, holdings(nav), true) {
+        Some(t) => match grant_plan::output_file_grant(t, holdings(nav)) {
             Ok(g) => Some((g, l.diagnostics_mode())),
             Err(r) => return say(Say::Cannot(r)),
         },
@@ -57,7 +57,7 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
     let mut head_builtin = false;
     for (i, stage) in l.stages().iter().enumerate() {
         match grant_plan::parse(stage) {
-            Command::Run(spec) => {
+            CommandLine::Run(spec) => {
                 // A name the image and an installed package both have is refused wherever it
                 // stands (§229 (how a bare name at the prompt reaches an installed program), B2).
                 if let swish::bare::Bare::Both(path) = bare(nav, spec.program) {
@@ -70,8 +70,8 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
                     Err(said) => return say(said),
                 };
                 let streams = Streams {
-                    sink: l.sink_for(i, out),
-                    source: l.source_for(i, inp),
+                    sink: l.stage_sink(i, out),
+                    source: l.stage_source(i, inp),
                     diagnostics: diag_file,
                 };
                 match program_table::plan_stage(&spec, holdings(nav), expanded, streams) {
@@ -83,8 +83,8 @@ pub(super) fn pipeline(nav: &mut Nav, l: Line<'_>) {
                 }
             }
             // A producing builtin, only at the head and only with nothing feeding it: none reads.
-            Command::Echo(_) | Command::Ls(_) | Command::Pwd
-                if i == 0 && matches!(l.source_for(0, inp), Source::None) =>
+            CommandLine::Echo(_) | CommandLine::Ls(_) | CommandLine::Pwd
+                if i == 0 && matches!(l.stage_source(0, inp), Source::None) =>
             {
                 // No manifest, so no second stream for a `2>` to name.
                 if diag_file.is_some() {
@@ -529,26 +529,26 @@ pub(super) trait ByteOut {
 /// The builtins write through a callback, so the same `echo` and `ls` feed a pipe and a file.
 fn feed(nav: &mut Nav, stage: &[u8], w: &mut dyn ByteOut) {
     let said = match grant_plan::parse(stage) {
-        Command::Echo(text) => {
+        CommandLine::Echo(text) => {
             let said = echo(nav, text, &mut |b| w.push(b));
             if matches!(said, Say::Nothing) {
                 w.push(b"\n");
             }
             said
         }
-        Command::Ls(path) => nav.ls(path, &mut |name, is_dir| {
+        CommandLine::Ls(path) => nav.ls(path, &mut |name, is_dir| {
             w.push(name);
             if is_dir {
                 w.push(b"/");
             }
             w.push(b"\n");
         }),
-        Command::Pwd => {
+        CommandLine::Pwd => {
             if nav.dir.is_none() {
                 Say::NoDirectory
             } else {
                 let mut buf = [0u8; grant_navigation::MAXIMUM_RENDERED_PATH_BYTES];
-                let k = nav.holds.cwd.render(&mut buf);
+                let k = nav.holds.working_directory.render(&mut buf);
                 w.push(&buf[..k]);
                 w.push(b"\n");
                 Say::Nothing
@@ -640,7 +640,7 @@ const FILE_CHUNK: usize = 256;
 fn open_at(
     nav: &Nav,
     t: Tree,
-    at: Cwd,
+    at: DirectoryPath,
     tmp: &mut [u64; grant_navigation::MAXIMUM_DEPTH],
 ) -> Result<(u64, usize), Say> {
     let mut handle = fs::ROOT;
@@ -668,7 +668,7 @@ fn open_at(
 /// truncates before the command runs; [`line::Mode::Append`] starts the offset at `FSTAT`'s size.
 /// See notes/pipes/the-file-end.md.
 fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Result<FileOut, Say> {
-    let t = nav.tree(g.which);
+    let t = nav.tree(g.side);
     let mut tmp = [0u64; grant_navigation::MAXIMUM_DEPTH];
     let (dir_handle, opened) = open_at(nav, t, g.directory, &mut tmp)?;
     let name = g.name.as_bytes();
@@ -719,7 +719,7 @@ fn open_sink(nav: &mut Nav, g: grant_plan::FileGrant, mode: line::Mode) -> Resul
 /// refusal, not an empty stream, because a `wc < typo.txt` that reported zero would be a lie a
 /// person would believe.
 pub(super) fn open_source(nav: &mut Nav, g: grant_plan::FileGrant) -> Result<FileIn, Say> {
-    let t = nav.tree(g.which);
+    let t = nav.tree(g.side);
     let mut tmp = [0u64; grant_navigation::MAXIMUM_DEPTH];
     let (dir_handle, opened) = open_at(nav, t, g.directory, &mut tmp)?;
     let handle = nav.name_call_in(t, fs::OPEN, dir_handle, g.name.as_bytes(), 0);

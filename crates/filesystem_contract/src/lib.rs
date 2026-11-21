@@ -119,7 +119,7 @@ pub mod grant;
 /// the name-set caretaker.
 ///
 /// A set does not fit in `START`'s argument words, so it rides in a frame the wiring maps read-only
-/// into the caretaker, and [`nameset::MAXIMUM_NAMES`] and [`nameset::NAME_BYTES`] are the
+/// into the caretaker, and [`nameset::MAXIMUM_NAMES`] and [`nameset::MAXIMUM_NAME_SET_BYTES`] are the
 /// capability's ceilings. A record is a length byte, a flags byte ([`nameset::IS_DIRECTORY`]), then the
 /// name; a zero length ends the set, so a name may not be empty. The caretaker answers `READDIR`
 /// from the set, so the type is what the directory said when the grant was planned.

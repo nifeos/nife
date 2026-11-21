@@ -601,7 +601,7 @@ pub mod walk {
 
     /// **What unmodified `ripgrep` is told to do over this tree**, as a line
     /// typed at the prompt, with the tree as its working directory. The kernel harness turns
-    /// it into an argv with `grant_plan::argv`, the shell's own function, and
+    /// it into an argv with `grant_plan::write_argument_page`, the shell's own function, and
     /// a host-side example runs the same words, so the guest and Linux run
     /// one command. `--threads 1` and `--no-mmap` are the block's two honesty pins: nife
     /// answered one thread when this was written and has no `mmap`, so the host must be held to

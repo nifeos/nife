@@ -1,6 +1,6 @@
 //! Tests of the fixed sentences, `help`, and the outcome of a spawn.
 
-use grant_plan::navigation::Cwd;
+use grant_plan::navigation::DirectoryPath;
 
 use super::*;
 use crate::test_support::{endowment, shown, spec_of};
@@ -29,15 +29,15 @@ fn pwd_prints_the_position_relative_to_this_shells_own_root() {
     // The leading slash is this shell's root, not the system's. A shell holding one directory
     // capability has no name for anything above it, so `/` at depth zero is the honest answer
     // rather than a borrowed one, and `pwd` is the only place a user sees it.
-    assert_eq!(shown(|o| write_pwd(&Holdings::default(), o)), "  /\n");
+    assert_eq!(shown(|o| write_pwd(&ShellHoldings::default(), o)), "  /\n");
 
-    let mut cwd = Cwd::root();
-    assert!(cwd.descend(b"docs"));
-    assert!(cwd.descend(b"drafts"));
-    let holdings = Holdings {
+    let mut working_directory = DirectoryPath::root();
+    assert!(working_directory.descend(b"docs"));
+    assert!(working_directory.descend(b"drafts"));
+    let holdings = ShellHoldings {
         directory: true,
-        cwd,
-        ..Holdings::default()
+        working_directory,
+        ..ShellHoldings::default()
     };
     assert_eq!(shown(|o| write_pwd(&holdings, o)), "  /docs/drafts\n");
 }
@@ -169,7 +169,7 @@ fn help_names_every_verb_the_parser_accepts() {
         assert!(text.contains(verb), "help does not mention {verb}");
         // And it really is a verb this shell answers, rather than a word in a sentence.
         assert!(
-            !matches!(grant_plan::parse(verb.as_bytes()), Command::Run(_)),
+            !matches!(grant_plan::parse(verb.as_bytes()), CommandLine::Run(_)),
             "{verb} is not a builtin any more; the help is stale"
         );
     }

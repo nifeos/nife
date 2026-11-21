@@ -18,7 +18,7 @@ pub(crate) fn shown(f: impl FnOnce(&mut dyn FnMut(&[u8]))) -> String {
 
 pub(crate) fn spec_of(line: &[u8]) -> ParsedInvocation<'_> {
     match grant_plan::parse(line) {
-        Command::Run(spec) => spec,
+        CommandLine::Run(spec) => spec,
         other => panic!("expected an invocation, parsed {other:?}"),
     }
 }
@@ -27,7 +27,10 @@ pub(crate) fn spec_of(line: &[u8]) -> ParsedInvocation<'_> {
 pub(crate) fn listing(names: &[&'static [u8]]) -> NameSet {
     let mut set = NameSet::empty();
     for n in names {
-        assert!(set.push(n, false), "fixture too large for a NameSet");
+        assert!(
+            set.try_push(n, false).is_ok(),
+            "fixture too large for a NameSet"
+        );
     }
     set
 }

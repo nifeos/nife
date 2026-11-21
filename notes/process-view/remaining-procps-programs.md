@@ -18,7 +18,7 @@ need one, the option says so and stops.
 ## 1. `pwdx`: the premise the block carried was wrong
 
 Decided 2026-09-26: option A. calef: *"Yes, decline pwdx."* The ruling is §224 (no `pwdx`), and
-the reason is the one below: only the shell has a working directory (`grant_plan::navigation::Cwd`), so
+the reason is the one below: only the shell has a working directory (`grant_plan::navigation::DirectoryPath`), so
 `pwdx` has nothing to report. The fork is kept as it was written, since it is the reasoning.
 
 The block filed `pwdx` beside `w` as "print a name for a tid", blocked on a display name. That is
@@ -27,8 +27,8 @@ not what `pwdx` does. Upstream `pwdx PID` prints the process's current working d
 display name, and it was waiting on the wrong fork for a month.
 
 The real question is sharper. A working directory here is not a kernel fact. It is a value,
-`grant_plan::navigation::Cwd`, inside the shell's own `Holdings` (`crates/grant_plan/src/command.rs`). A grep
-for `Cwd` across `components/` and `crates/` finds it in `grant_plan` and the shell (`swish`) and
+`grant_plan::navigation::DirectoryPath`, inside the shell's own `ShellHoldings` (`crates/grant_plan/src/command.rs`). A grep
+for `DirectoryPath` across `components/` and `crates/` finds it in `grant_plan` and the shell (`swish`) and
 nowhere else. Other programs receive grants, not a position to resolve against. So on this system
 exactly one kind of process has a working directory, and it can already print it with `pwd`.
 
@@ -38,7 +38,7 @@ What is being decided: whether `procps` ships a `pwdx` at all.
 |---|---|---|
 | A. Decline it, as `sysctl` was (§115 (no `sysctl`)) | a line in the package table | wins; see below |
 | B. The shell answers a query about its own position | a request protocol the shell serves, and a capability to ask it | a new protocol two programs agree on, for a fact only its owner has any use for |
-| C. The kernel keeps a cwd per thread | a path in the kernel | wrong on its face: the kernel does not resolve paths, and a `Cwd` names components inside one capability, which means nothing to anyone who does not hold it |
+| C. The kernel keeps a cwd per thread | a path in the kernel | wrong on its face: the kernel does not resolve paths, and a `DirectoryPath` names components inside one capability, which means nothing to anyone who does not hold it |
 
 The tree's analogous case is `sysctl` and `pkill`: a program whose Unix job is reaching into state
 the caller does not hold was declined, and the gap was recorded rather than papered over. Option B

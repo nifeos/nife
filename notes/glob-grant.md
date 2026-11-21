@@ -4,7 +4,7 @@ Milestone 47's globbing lane. Built 2026-07-31. [glob.md](glob.md) is the matche
 on two byte strings with no filesystem in it; this note is the layer that turns a match into an
 authority, and the demonstration that hangs on it.
 
-The code is `crates/grant_plan/src/expand.rs` (the expander and the name set, host-tested),
+The code is `crates/grant_plan/src/expansion.rs` (the expander and the name set, host-tested),
 `crates/filesystem_contract`'s `nameset` module (the wire encoding),
 `components/src/fs_nameset_caretaker.rs` (the caretaker), `components/src/swish/` (`echo`, and the
 grant path), `components/src/rm.rs` (the namespace mode), and `kernel/src/user/fs_service/set_grant.rs`'s
@@ -44,7 +44,7 @@ existing powers to use. So `echo *.txt` on Unix prints a list of names that happ
 handed. Here it is the same object: the shell expands once, and the names it printed are the names
 the caretaker is built from.
 
-It only means anything if both go through one expander, which is why `grant_plan::expand::Expander`
+It only means anything if both go through one expander, which is why `grant_plan::expansion::Expander`
 exists and why both `echo` and the grant planner drive it. The guest test then checks the pairing
 from the other end: a shell rooted in the fixture's `globset` runs `echo gl-*.txt` and plans
 `rm gl-*.txt`, and reports whether the names agree. They share the expander, not the
@@ -73,7 +73,7 @@ Two guards fall out, and both exist so authority cannot move silently:
 
 The first guard matters more than it looks. The obvious argument
 is that bash's pass-the-pattern-through is harmless here, because a name containing `*` would be
-refused downstream. It would not be: neither `grant_plan::file_name_fits` nor the
+refused downstream. It would not be: neither `grant_plan::is_valid_file_name` nor the
 FS server's `check_component` rejects `*` (they refuse the empty name, `.`, `..`, `/`, `\`, `:` and
 NUL, and nothing else). Checked rather than remembered, and there is a host test pinning it. What
 that leaves is a worse cost: passing the pattern through would build a grant whose namespace is a

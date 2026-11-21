@@ -100,7 +100,7 @@ impl NarrowedStd {
 ///
 /// `std::fs` inside it sees `name` as `/`, and nothing in the PAL knows the difference. `line`,
 /// when given, is a command line as typed at the prompt; it becomes the program's argv through
-/// `grant_plan::argv`, as the shell sends it (§170 (how a foreign program is told what to do)).
+/// `grant_plan::write_argument_page`, as the shell sends it (§170 (how a foreign program is told what to do)).
 #[cfg_attr(not(any(test, feature = "system_tests")), allow(dead_code))]
 pub fn start_std_narrowed(
     blk_image: &'static [u8],
