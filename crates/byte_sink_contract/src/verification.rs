@@ -1,7 +1,6 @@
 //! **Machine-checked proofs (Kani) of the byte-sink framing**: the decoder is total, and the five
 //! properties a sink implementer relies on hold for every input, not the sampled ones the unit
-//! tests pin. Behind `#[cfg(kani)]`, so only `cargo kani` (script/verify) compiles them, and the
-//! standard library's copy of this crate, which stops at its test module, never sees them.
+//! tests pin. Behind `#[cfg(kani)]`, so only `cargo kani` compiles them.
 //!
 //! Name: provisional, minted 2026-11-14 (UTC) by lane maintainer/outside-review-fixes-1075-1088,
 //! after the module every other crate's harnesses live in.

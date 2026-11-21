@@ -225,8 +225,9 @@ pub fn pack(bytes: &[u8]) -> (MessageWords, usize) {
 /// **Where a bytes message's severity rides**: bits 39:32 of the first word, which the framing left
 /// unused (the count is bits 31:0 and the opcode bits 63:56). A log writer shares this framing
 /// rather than having its own: a terminal, a pipe and a file read the count through [`len`] and
-/// never see these bits. The field holds the syslog level plus one (RFC 5424's 0 emergency to 7
-/// debug), so 0 still means not set, and a sink that cares then infers a level from the stream.
+/// never see these bits. The field holds the syslog level plus one. The levels are
+/// those of the syslog protocol (Request for Comments 5424), 0 emergency to 7 debug, so 0 still
+/// means not set, and a sink that cares then infers a level from the stream.
 /// The width and the plus-one encoding are provisional. A consumer reads these bits only on a bytes
 /// message.
 pub const SEVERITY_SHIFT: u32 = 32;
@@ -441,7 +442,7 @@ mod tests {
     /// first word IS its length, which is the wire std's stdout sent before this contract existed.
     #[test]
     fn a_bytes_messages_first_word_is_its_length() {
-        let (MessageWords { word_zero, .. }, _) = pack(b"nife");
+        let (MessageWords { word_zero, .. }, _) = pack(b"abcd");
         assert_eq!(word_zero, 4);
     }
 
