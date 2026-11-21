@@ -15,7 +15,7 @@
 use device_tree_blob::{DeviceTreeBlob, Region};
 use pci_configuration_space::{intx_interrupt_number, memory_window_32_bit};
 
-const QEMU_RISCV_VIRT: &[u8] =
+const QEMU_RISCV64_VIRT: &[u8] =
     include_bytes!("../../machine_discovery/tests/fixtures/qemu-riscv64-virt.dtb");
 
 /// The discovery `memory::initialize` performs, over the riscv `virt` tree: the node found by its
@@ -25,8 +25,8 @@ const QEMU_RISCV_VIRT: &[u8] =
 /// nothing else. The kernel-side twin (same claim against the live tree, on the machine) is the
 /// test in kernel/src/pci.rs.
 #[test]
-fn discovery_finds_the_riscv_windows_the_constants_named() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+fn discovery_finds_the_riscv64_windows_the_constants_named() {
+    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV64_VIRT).unwrap();
     let mut regs = [Region {
         start: 0,
         size_bytes: 0,
@@ -92,7 +92,7 @@ fn the_jh7110_has_no_generic_ecam_bridge_and_discovery_says_none() {
 /// happen to attach.
 #[test]
 fn the_intx_swizzle_matches_the_interrupt_map() {
-    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV_VIRT).unwrap();
+    let dtb = DeviceTreeBlob::from_bytes(QEMU_RISCV64_VIRT).unwrap();
     let map = dtb
         .node_property(b"pci@", b"interrupt-map")
         .unwrap()

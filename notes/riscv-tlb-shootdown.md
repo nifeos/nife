@@ -165,7 +165,7 @@ script/console --arch riscv64
 
 ## The numbers, and the honest part
 
-`script/bench --riscv`, deterministic icount ticks, against the base commit:
+`script/bench --riscv64`, deterministic icount ticks, against the base commit:
 
 | benchmark | before | after | delta |
 |---|---|---|---|

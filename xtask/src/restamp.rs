@@ -1,4 +1,4 @@
-//! `cargo xtask bench [--riscv|--x86] --restamp`: carry an icount floor across a nightly bump
+//! `cargo xtask bench [--riscv64|--x86] --restamp`: carry an icount floor across a nightly bump
 //! without re-saving it, when an A/B on this machine proves the compiler did not move it.
 //!
 //! It builds and runs the bench leg twice on one machine and tree, under the nightly the floor's
@@ -50,7 +50,7 @@ type Row = (String, u64, u64);
 /// Run the restamp for the leg the command line names. `leg` builds and runs one bench pass and
 /// returns whether it succeeded; its rows are read back through [`take_last_run`].
 pub(crate) fn restamp(leg: impl Fn() -> bool) -> bool {
-    let file = if std::env::args().any(|a| a == "--riscv") {
+    let file = if std::env::args().any(|a| a == "--riscv64") {
         "bench/baseline-riscv64.txt"
     } else if std::env::args().any(|a| a == "--x86") {
         "bench/baseline-x86_64.txt"

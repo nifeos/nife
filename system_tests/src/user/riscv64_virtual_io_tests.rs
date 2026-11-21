@@ -110,7 +110,7 @@ fn a_faulting_user_thread_is_killed_and_the_kernel_survives() {
 /// line between U-mode and kernel memory (aarch64 also splits TTBR0/TTBR1). The precondition checks
 /// the kernel is mapped here at all, which also proves the kernel-half share happened.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.riscv_virtual_io_tests.the_page_tables_say_u_mode_cannot_read_the_kernels_memory.patch`
+/// Falsification: replayable `system_tests/falsifications/user.riscv64_virtual_io_tests.the_page_tables_say_u_mode_cannot_read_the_kernels_memory.patch`
 #[test_case]
 fn the_page_tables_say_u_mode_cannot_read_the_kernels_memory() {
     // Inside the direct map, so it is mapped for certain and it is the kernel's own memory.
@@ -570,7 +570,7 @@ fn a_client_echoes_over_tcp_through_the_socket_contract_pci() {
 /// **An accept nobody answers ends at `net_stack`'s bound** (the riscv-cpu-net-flake lane,
 /// 2026-10-13 UTC). The aarch64 twin in `network_tests` carries the reasoning.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.riscv_virtual_io_tests.an_accept_nobody_answers_ends_at_the_stacks_bound.patch`
+/// Falsification: replayable `system_tests/falsifications/user.riscv64_virtual_io_tests.an_accept_nobody_answers_ends_at_the_stacks_bound.patch`
 #[test_case]
 fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
     let started = crate::arch::timer::now();

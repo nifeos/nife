@@ -1,4 +1,4 @@
-Falsifies `system_tests::user::riscv_virtual_io_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`.
+Falsifies `system_tests::user::riscv64_virtual_io_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`.
 
 Architecture: riscv64
 

@@ -69,7 +69,7 @@ property". Four assertions were broken on purpose
 and went red on both ISAs. What stays aarch64-only, and why, is written at each test. The full
 record is in [riscv-parity-scope/user-tests-port.md](riscv-parity-scope/user-tests-port.md).
 
-### Open gap: `tests` and `riscv_virtual_io_tests` overlap by 24 tests
+### Open gap: `tests` and `riscv64_virtual_io_tests` overlap by 24 tests
 
 The 24 are gated to aarch64 only because the twin exists. The overlap was measured: nine bodies are
 byte-identical and no behavior diverges
@@ -127,14 +127,14 @@ tour, as on aarch64.
 
 All eleven primitives plus CoreMark run on RISC-V, single-hart and SMP. `bench.rs` moved its timing
 to `arch::timer::now`/`frequency` (rdtime on riscv), the boot reaches `bench::run` under `--features
-bench`. `initial-ramdisk-riscv` packs `os_primitives_benchmarker` + `coremark`. Two fixes fell out
+bench`. `initial-ramdisk-riscv64` packs `os_primitives_benchmarker` + `coremark`. Two fixes fell out
 of `spawn_el0` (the fast
 userspace spawn+reap loop): os_primitives_benchmarker's 9-instruction `CHILD_STUB` was aarch64
 machine code (added the riscv `li`/`ecall` version). And the `MAP_CODE` system call never synced the
 icache on the userspace
 map-executable path (a correctness fix for both arches, latent until a spawn loop stressed it).
 
-And the numbers are now comparable. `cargo xtask bench --riscv` runs the same suite on riscv under
+And the numbers are now comparable. `cargo xtask bench --riscv64` runs the same suite on riscv under
 the same deterministic `-icount` instrument (single hart, so an idle `wfi` cannot jump virtual time to
 the timer and inflate the spawn primitives), with its own baseline (`bench/baseline-riscv64.txt`) for
 `--check`/`--save`. The comparable metric is ns/iter: under `-icount shift=0` virtual time advances
@@ -181,7 +181,7 @@ interrupt. A twin would share that one source between the builder's UART capabil
 delegated one. It would then prove delivery through whichever route was bound last, not through the
 delegated capability, which is the whole claim. On RISC-V the property (an interrupt arriving as a
 message through a delegated Interrupt cap) is proved by
-`riscv_virtual_io_tests::a_userspace_driver_reads_a_file_from_a_virtual_io_disk`, which asserts that
+`riscv64_virtual_io_tests::a_userspace_driver_reads_a_file_from_a_virtual_io_disk`, which asserts that
 `ROUTED_INTERRUPTS` rises while a userspace driver waits on its own Interrupt cap, and by
 `sched::tests::an_interrupt_becomes_a_message`.
 

@@ -1,7 +1,7 @@
 //! RISC-V traps: the `stvec` vector, the saved [`TrapFrame`], and the dispatch into the portable
 //! system call and fault handlers.
 //!
-//! trap.s is the single trap entry. It fills a [`TrapFrame`] and calls [`riscv_trap_dispatch`],
+//! trap.s is the single trap entry. It fills a [`TrapFrame`] and calls [`riscv64_trap_dispatch`],
 //! which fans out on `scause`. The portable system call dispatcher reads `ecall`'s `a7` and `a0`..`a5`
 //! through `TrapFrame::{system_call_nr, arg, set_arg}`.
 //!
@@ -226,7 +226,7 @@ const CAUSE_ECALL_U: u64 = 8;
 /// `scause` exception code for a breakpoint (`ebreak`).
 const CAUSE_BREAKPOINT: u64 = 3;
 /// `scause` exception code for an illegal instruction, which is **also** what an FP instruction
-/// raises while `sstatus.FS` is Off. See the arm that reads it in [`riscv_trap_body`].
+/// raises while `sstatus.FS` is Off. See the arm that reads it in [`riscv64_trap_body`].
 const CAUSE_ILLEGAL_INSTRUCTION: u64 = 2;
 /// `scause` exception code for a page fault on an instruction fetch.
 const CAUSE_INSTRUCTION_PAGE_FAULT: u64 = 12;
@@ -313,14 +313,14 @@ fn advance_past_trapping_insn(frame: &mut TrapFrame) {
 }
 
 unsafe extern "C" {
-    /// Switch to `top` (or stay put if it is 0), call [`riscv_trap_body`], come back.
+    /// Switch to `top` (or stay put if it is 0), call [`riscv64_trap_body`], come back.
     /// Defined in trap.s, because moving `sp` is assembly and policy is not.
     fn dispatch_on_interrupt_stack(frame: &mut TrapFrame, top: u64) -> bool;
 }
 
 /// The outer half of the trap path, which stays on the interrupted stack.
 ///
-/// Picks the stack [`riscv_trap_body`] runs on, then runs any deferred `schedule()` on the
+/// Picks the stack [`riscv64_trap_body`] runs on, then runs any deferred `schedule()` on the
 /// interrupted thread's own stack. See `kernel/src/interrupt_stack.rs`.
 ///
 /// Context: interrupt context, with interrupts masked.
@@ -328,19 +328,19 @@ unsafe extern "C" {
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
 #[cfg_attr(
     target_os = "none",
-    unsafe(link_section = ".text.hot.riscv_trap_dispatch")
+    unsafe(link_section = ".text.hot.riscv64_trap_dispatch")
 )]
-extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
+extern "C" fn riscv64_trap_dispatch(frame: &mut TrapFrame) {
     // A U-mode trap stays on its thread's kernel stack: the system call may block, which an interrupt
     // stack may not.
     let from_user = frame.sstatus & SPP == 0;
     let top = crate::interrupt_stack::top_for_trap(from_user);
     let deferred_switch = if top == 0 {
         // The common case calls directly: the trampoline would cost every `ecall` instructions.
-        riscv_trap_body(frame)
+        riscv64_trap_body(frame)
     } else {
         // SAFETY: `top` is this hart's own interrupt-stack top, from the module that owns the
-        // region; the trampoline calls `riscv_trap_body` with our own argument and restores `sp`
+        // region; the trampoline calls `riscv64_trap_body` with our own argument and restores `sp`
         // before returning. The frame outlives the call: it is on the stack we are standing on.
         unsafe { dispatch_on_interrupt_stack(frame, top) }
     };
@@ -360,8 +360,11 @@ extern "C" fn riscv_trap_dispatch(frame: &mut TrapFrame) {
 /// interrupt stack (a trap from S-mode).
 #[unsafe(no_mangle)]
 // In the pinned hot section: milestone 796 (pin the hot trap path's placement).
-#[cfg_attr(target_os = "none", unsafe(link_section = ".text.hot.riscv_trap_body"))]
-extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
+#[cfg_attr(
+    target_os = "none",
+    unsafe(link_section = ".text.hot.riscv64_trap_body")
+)]
+extern "C" fn riscv64_trap_body(frame: &mut TrapFrame) -> bool {
     let scause = frame.scause;
 
     if scause & INTERRUPT != 0 {
@@ -405,7 +408,7 @@ extern "C" fn riscv_trap_body(frame: &mut TrapFrame) -> bool {
             }
         }
 
-        // Preemption runs in `riscv_trap_dispatch`, on the interrupted thread's stack, never on
+        // Preemption runs in `riscv64_trap_dispatch`, on the interrupted thread's stack, never on
         // the interrupt stack this may be on (DECISIONS §5 (execution model: preemptive threads)).
         return true;
     }

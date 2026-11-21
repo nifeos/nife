@@ -117,7 +117,7 @@ cannot see drift on `main` that no save has captured either.
 - `spawn_reap`'s two causes do not add up. Stubbing the counter takes off 612 ticks and
   shrinking the table takes off 881, against a total drift of 1,087. They were measured one at a
   time on `main`, not together, and the overlap is not attributed.
-- Before 2026-10-02 `script/bench --riscv` attached five disks it does not read, inherited from
+- Before 2026-10-02 `script/bench --riscv64` attached five disks it does not read, inherited from
   `host::cargo`'s exported `NIFE_DISK`, and failed on a checkout where no aarch64 leg had run
   `mkdisk`. Fixed in the same pull request; without the disks the rows move by at most 0.05%
   (`yield_switch` +96 ticks).

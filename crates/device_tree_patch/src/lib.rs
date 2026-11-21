@@ -567,7 +567,7 @@ mod tests {
     const WITH_INITIAL_RAMDISK: &[u8] = include_bytes!(
         "../../machine_discovery/tests/fixtures/qemu-aarch64-virt-initial-ramdisk.dtb"
     );
-    const RISCV: &[u8] =
+    const RISCV64: &[u8] =
         include_bytes!("../../machine_discovery/tests/fixtures/qemu-riscv64-virt.dtb");
 
     fn rewrite(src: &[u8], start: u64, end: u64) -> Vec<u8> {
@@ -609,7 +609,7 @@ mod tests {
 
     #[test]
     fn the_kernel_reads_back_the_archive_it_is_told_about() {
-        for src in [PLAIN, WITH_INITIAL_RAMDISK, RISCV] {
+        for src in [PLAIN, WITH_INITIAL_RAMDISK, RISCV64] {
             let out = rewrite(src, 0x4800_0000, 0x4849_0000);
             let tree = DeviceTreeBlob::from_bytes(&out).unwrap();
             assert_eq!(
@@ -848,7 +848,7 @@ mod tests {
     #[test]
     fn the_kernel_reads_back_the_command_line_it_is_handed() {
         let words = b"nife.progenitor=sha256:00 nife.base=sha256:11";
-        for src in [PLAIN, WITH_INITIAL_RAMDISK, RISCV] {
+        for src in [PLAIN, WITH_INITIAL_RAMDISK, RISCV64] {
             for arguments in [&words[..], b"", b"odd"] {
                 let out = rewrite_with_arguments(src, arguments);
                 let tree = DeviceTreeBlob::from_bytes(&out).unwrap();
@@ -967,7 +967,7 @@ mod tests {
     /// to the next, the structure block ends on `END`, and the boot CPU is the firmware's.
     #[test]
     fn the_header_describes_the_blocks_it_wrote() {
-        for src in [PLAIN, RISCV, &tree(&[], &bare_root(), false, 0)[..]] {
+        for src in [PLAIN, RISCV64, &tree(&[], &bare_root(), false, 0)[..]] {
             let out = rewrite(src, 0x4800_0000, 0x4849_0000);
             let (total, st, strings, rsv) = (
                 field(&out, 1),
@@ -1094,7 +1094,7 @@ mod tests {
         other[at + 5] = b'n';
         assert_eq!(out, other, "/soc/chosen is treated like any other node");
 
-        for src in [PLAIN, WITH_INITIAL_RAMDISK, RISCV] {
+        for src in [PLAIN, WITH_INITIAL_RAMDISK, RISCV64] {
             let out = rewrite(src, 0x1000, 0x2000);
             assert_eq!(chosen_nodes(&out), chosen_nodes(src), "no second /chosen");
         }

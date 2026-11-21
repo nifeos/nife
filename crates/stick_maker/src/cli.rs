@@ -461,7 +461,7 @@ mod tests {
         },
         File {
             path: "EFI/BOOT/BOOTRISCV64.EFI",
-            bytes: b"riscv boot file",
+            bytes: b"riscv64 boot file",
         },
     ];
 
@@ -582,7 +582,7 @@ mod tests {
         assert!(person.saw("has to be ERASED first: it is formatted ExFAT, not FAT"));
         assert_eq!(
             fs::read(dir.join("erased/EFI/BOOT/BOOTRISCV64.EFI")).unwrap(),
-            b"riscv boot file"
+            b"riscv64 boot file"
         );
         fs::remove_dir_all(dir).unwrap();
     }
@@ -740,7 +740,7 @@ mod tests {
             },
             File {
                 path: "EFI/BOOT/BOOTRISCV64.EFI",
-                bytes: b"riscv",
+                bytes: b"riscv64",
             },
         ];
         let mut person = Script::with(&[]);

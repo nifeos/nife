@@ -177,7 +177,7 @@ fn raise_test_interrupt(intid: u32) {
     debug_assert_eq!(
         intid,
         delivery_interrupt_number(),
-        "riscv can only raise the console UART's own line by hand"
+        "riscv64 can only raise the console UART's own line by hand"
     );
     crate::console::raise_uart_interrupt();
 }

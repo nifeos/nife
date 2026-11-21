@@ -10190,7 +10190,7 @@ system_tests/src/user/revoke_service.rs::wire
 
 system_tests/src/user/ripgrep_tests.rs
 
-system_tests/src/user/riscv_virtual_io_tests.rs
+system_tests/src/user/riscv64_virtual_io_tests.rs
 
 system_tests/src/user/rm_program_tests.rs
 

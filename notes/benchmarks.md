@@ -24,7 +24,7 @@ The committed baseline is the performance record.
 ```sh
 script/bench                    # aarch64 icount counts
 script/bench --check            # diff against bench/baseline-aarch64.txt; fails past the tripwire
-script/bench --riscv --check    # the same for riscv64
+script/bench --riscv64 --check    # the same for riscv64
 script/bench --x86 --check      # the same for x86_64
 script/bench --save --why "<reason>"   # re-record, in the commit that moved the numbers
 script/bench --real             # HVF, one hart: per-core magnitudes, never gates

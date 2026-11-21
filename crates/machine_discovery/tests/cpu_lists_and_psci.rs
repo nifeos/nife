@@ -18,7 +18,7 @@ const QEMU_VIRT_SMP4: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-smp4.dt
 const QEMU_VIRT_SMC: &[u8] = include_bytes!("fixtures/qemu-aarch64-virt-smc.dtb");
 /// The RISC-V machine, borrowed rather than copied so a regenerated tree cannot leave two crates
 /// testing different bytes.
-const QEMU_RISCV: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt.dtb");
+const QEMU_RISCV64: &[u8] = include_bytes!("fixtures/qemu-riscv64-virt.dtb");
 const CLUSTERED: &[u8] = include_bytes!("fixtures/clustered-cpus.dtb");
 const NO_PSCI: &[u8] = include_bytes!("fixtures/no-psci.dtb");
 /// Eighteen cores, a `/cpus` whose `#address-cells` is two bytes rather than four, one `reg` of
@@ -113,7 +113,7 @@ fn the_same_board_with_a_hypervisor_states_smc() {
 #[test]
 fn a_tree_without_psci_answers_none() {
     assert_eq!(psci(NO_PSCI), None);
-    assert_eq!(psci(QEMU_RISCV), None, "RISC-V starts harts over SBI HSM");
+    assert_eq!(psci(QEMU_RISCV64), None, "RISC-V starts harts over SBI HSM");
 }
 
 /// **PSCI 0.1 publishes its own function ids, and they are not the standard ones.**
@@ -201,8 +201,8 @@ fn the_described_count_is_the_machines_and_the_length_is_ours() {
 /// outlived it; this is the value it should have been reading, and the aarch64 side has always read
 /// its own from `CNTFRQ_EL0`.
 #[test]
-fn the_riscv_timebase_comes_from_the_tree() {
-    assert_eq!(cpus(QEMU_RISCV).timebase_hertz, Some(10_000_000));
+fn the_riscv64_timebase_comes_from_the_tree() {
+    assert_eq!(cpus(QEMU_RISCV64).timebase_hertz, Some(10_000_000));
 }
 
 /// **The `/cpus` decode does not care which architecture wrote the tree.** Same call, same struct,
@@ -210,17 +210,23 @@ fn the_riscv_timebase_comes_from_the_tree() {
 #[test]
 fn both_architectures_answer_the_same_call() {
     let arm = cpus(QEMU_VIRT_SMP4);
-    let riscv = cpus(QEMU_RISCV);
+    let riscv64 = cpus(QEMU_RISCV64);
 
-    assert_eq!(arm.address_cells, riscv.address_cells);
-    assert_eq!(riscv.described, 1, "the riscv fixture was dumped at -smp 1");
-    assert_eq!(riscv.cpus()[0].hwid, 0);
+    assert_eq!(arm.address_cells, riscv64.address_cells);
     assert_eq!(
-        riscv.cpus()[0].enable_method,
+        riscv64.described, 1,
+        "the riscv64 fixture was dumped at -smp 1"
+    );
+    assert_eq!(riscv64.cpus()[0].hwid, 0);
+    assert_eq!(
+        riscv64.cpus()[0].enable_method,
         EnableMethod::Unstated,
         "the RISC-V binding has no enable-method: SBI HSM is the only mechanism",
     );
-    assert!(riscv.cpus()[0].usable, "the riscv tree says status = okay");
+    assert!(
+        riscv64.cpus()[0].usable,
+        "the riscv64 tree says status = okay"
+    );
 }
 
 /// **Eighteen cores in a sixteen-slot record: `described` is the machine's and `len` is ours.**
