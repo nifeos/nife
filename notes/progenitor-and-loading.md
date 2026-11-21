@@ -145,8 +145,8 @@ on a fault, and symbolizing it is done offline against the unstripped binary sti
 `target/`.
 
 Two deliberate choices. `--strip-debug` rather than `--strip-all`, so the symbol table survives for
-anything that later wants to read it out of the archive, less its assembler-private `.L` labels
-(`--discard-locals`), which name nothing and which a toolchain can emit by the tens of thousands. And a missing `llvm-objcopy` is a hard
+anything that later wants to read it out of the archive. It loses its assembler-private `.L` labels
+(`--discard-locals`): they name nothing, and a toolchain can emit tens of thousands. And a missing `llvm-objcopy` is a hard
 failure rather than a quiet fallback to unstripped bytes. The measured-boot digest (phase B.1 of
 DECISIONS §26 (the fault endpoint)) is taken over exactly these bytes. A build that packed different
 bytes depending on which tools were installed would be a build whose trust root meant something
