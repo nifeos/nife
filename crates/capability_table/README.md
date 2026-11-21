@@ -99,15 +99,9 @@ Run `rustup target add` once, before the first bare-metal build. Without it, tha
 
 ### Running the proofs
 
-The proofs need Kani, which `rustup` does not install. Install it once, with network access,
-since the setup step downloads a model checker:
-
-```sh
-cargo install --locked kani-verifier --version 0.68.0
-cargo kani setup
-```
-
-CI uses version 0.68.0, and another version may verify differently.
+The proofs need Kani, which `rustup` does not install. Install it once, with network access: run
+`cargo install --locked kani-verifier --version 0.68.0`, then `cargo kani setup`, which downloads a
+model checker. CI uses version 0.68.0, and another version may verify differently.
 
 Then `cargo kani`, from the crate's directory, runs all twelve harnesses in under half a minute on
 one development machine, most of it compiling. CI runs plain
