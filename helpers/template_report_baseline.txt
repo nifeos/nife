@@ -113,10 +113,6 @@ inter_process_communication abbreviations 51
 inter_process_communication prose_acronyms 4
 inter_process_communication readme_acronyms 1
 inter_process_communication register_names 4
-intrusive_queue abbreviations 6
-intrusive_queue prose_acronyms 1
-intrusive_queue readme_acronyms 1
-intrusive_queue register_names 1
 jh7110_clock_and_reset abbreviations 56
 jh7110_clock_and_reset_contract abbreviations 1
 jh7110_clock_and_reset_devices abbreviations 1

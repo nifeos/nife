@@ -196,7 +196,7 @@ e1000e = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/e1000e", re
 extensible_host_controller_interface = { version = "0.1.0-pre.3", git = "https://github.com/nifeos/extensible_host_controller_interface", rev = "99daca365beb53961c3d64b01751f8de85a281ac" }
 static_elf = { version = "0.1.0", path = "../crates/static_elf" }
 page_frames = { version = "0.1.0", path = "../crates/page_frames" }
-intrusive_queue = { version = "0.1.0", path = "../crates/intrusive_queue" }
+intrusive_queue = { version = "0.1.0", git = "https://github.com/nifeos/intrusive_queue", rev = "4dc5e18321dc7940e6523140fdefb3b693431e35" }
 inter_process_communication = { version = "0.1.0", path = "../crates/inter_process_communication" }
 # What machine is this (milestone 60). The kernel reads the device tree and the ID registers; every
 # decoding of what it finds lives in the crate, host-tested against a real device tree and against

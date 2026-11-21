@@ -23,4 +23,3 @@ user_mode_runtime
 subtree_scope
 memory_region_heap
 line_editor
-intrusive_queue
