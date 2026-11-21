@@ -120,14 +120,14 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
             for (k, b) in chunk[..n].iter_mut().enumerate() {
                 *b = get(i + k);
             }
-            let (w0, w1, w2, _) = byte_sink_contract::pack(&chunk[..n]);
-            send(SINK, w0, w1, w2);
+            let (words, _) = byte_sink_contract::pack(&chunk[..n]);
+            send(SINK, words.word_zero, words.word_one, words.word_two);
             i += n;
         }
         off += got as u64;
     }
 
-    send(SINK, byte_sink_contract::eof(), 0, 0);
+    send(SINK, byte_sink_contract::end_of_stream(), 0, 0);
     let _ = fs_call(fs::req(fs::CLOSE, handle, 0), 0);
     send(REPORT, fixture::DONE, size, 0);
     exit();

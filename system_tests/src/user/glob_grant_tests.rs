@@ -1,4 +1,4 @@
-use byte_sink_contract::eof;
+use byte_sink_contract::end_of_stream;
 use filesystem_contract::{directory, rm as rr};
 use filesystem_fixture::{VERDICT, globscape, tree};
 
@@ -131,7 +131,7 @@ fn run_rm(name: &str, flags: u64) -> (u64, u64) {
         // `rm` ends its report with the sink contract's end of stream, its reserved words zero,
         // and then sends the verdict on its own endpoint (`filesystem_contract::rm`). The shell
         // phase reports a `VERDICT` bitmap instead.
-        if w0 == eof() {
+        if w0 == end_of_stream() {
             assert_eq!(
                 (w1, w2),
                 (0, 0),

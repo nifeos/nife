@@ -650,7 +650,6 @@ crates/byte_sink_contract/src/lib.rs::KIND_TEXT
 
 crates/byte_sink_contract/src/lib.rs::OPERATION_BYTES
 
-crates/byte_sink_contract/src/lib.rs::OPERATION_EOF
 
 crates/byte_sink_contract/src/lib.rs::OPERATION_SHIFT
 
@@ -664,7 +663,6 @@ crates/byte_sink_contract/src/lib.rs::Sent
 crates/byte_sink_contract/src/lib.rs::classify
 
 
-crates/byte_sink_contract/src/lib.rs::eof
 
 crates/byte_sink_contract/src/lib.rs::kind
 

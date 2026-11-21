@@ -47,10 +47,10 @@ user_mode_runtime::program_entry!(start);
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let payload = [b'x'; byte_sink_contract::MAXIMUM_INLINE_BYTES];
     for _ in 0..(SINK_MESSAGES + SINK_WARMUP_MESSAGES) {
-        let (w0, w1, w2, _) = byte_sink_contract::pack(&payload);
-        send(OUTPUT, w0, w1, w2);
+        let (words, _) = byte_sink_contract::pack(&payload);
+        send(OUTPUT, words.word_zero, words.word_one, words.word_two);
     }
-    send(OUTPUT, byte_sink_contract::eof(), 0, 0);
+    send(OUTPUT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 

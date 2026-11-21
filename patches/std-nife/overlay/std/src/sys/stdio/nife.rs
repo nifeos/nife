@@ -55,8 +55,8 @@ fn sink_gone() -> io::Error {
 
 /// One message on the sink. Returns how many bytes it carried.
 fn send_chunk(bytes: &[u8]) -> io::Result<usize> {
-    let (w0, w1, w2, n) = sinkproto::pack(bytes);
-    match sinkproto::classify(rt::send(rt::STDOUT_SLOT, w0, w1, w2)) {
+    let (words, n) = sinkproto::pack(bytes);
+    match sinkproto::classify(rt::send(rt::STDOUT_SLOT, words.word_zero, words.word_one, words.word_two)) {
         sinkproto::Sent::Ok => Ok(n),
         sinkproto::Sent::Gone => Err(sink_gone()),
         sinkproto::Sent::NoSink => Err(no_sink()),
@@ -70,7 +70,7 @@ fn send_chunk(bytes: &[u8]) -> io::Result<usize> {
 /// would block forever on a writer that has exited. Errors are dropped on purpose: a program on its
 /// way out cannot act on one, and a sink that is already gone has already heard everything it needs.
 pub fn end_of_stream() {
-    let _ = rt::send(rt::STDOUT_SLOT, sinkproto::eof(), 0, 0);
+    let _ = rt::send(rt::STDOUT_SLOT, sinkproto::end_of_stream(), 0, 0);
 }
 
 impl Stdin {
@@ -117,14 +117,14 @@ fn read_stream(buf: &mut [u8]) -> Option<usize> {
             return None;
         }
         STREAM.store(STREAM_HELD, Ordering::Relaxed);
-        match sinkproto::unpack(w0, w1, w2, frame) {
+        match sinkproto::unpack(sinkproto::MessageWords::new(w0, w1, w2), frame) {
             sinkproto::Message::Bytes(n) => {
                 *at = 0;
                 *end = n;
             }
             // A malformed frame ends the input rather than being skipped, `mdr`'s and `wc`'s rule:
             // a document silently missing a paragraph cannot be told from one that never had it.
-            sinkproto::Message::Eof | sinkproto::Message::Malformed => {
+            sinkproto::Message::EndOfStream | sinkproto::Message::Malformed => {
                 STREAM.store(STREAM_ENDED, Ordering::Relaxed);
                 return Some(0);
             }

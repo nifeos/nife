@@ -97,7 +97,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     }
     write_on(REPORT, line.bytes());
     // The barrier: the shell takes end-of-stream only after it has passed the line on.
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
 
     // **The board's own route first**: a reset it honors never answers. Any answer means the
     // board is still running, and the reboot object is next.
@@ -145,7 +145,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     };
     write_on(if has_diag { DIAG_SLOT } else { REPORT }, reason);
     if has_diag {
-        send(DIAG_SLOT, byte_sink_contract::eof(), 0, 0);
+        send(DIAG_SLOT, byte_sink_contract::end_of_stream(), 0, 0);
     }
     exit();
 }
@@ -153,9 +153,9 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
 /// End both streams and exit, for the two paths that never reached the reset.
 fn finish(has_diag: bool) -> ! {
     if has_diag {
-        send(DIAG_SLOT, byte_sink_contract::eof(), 0, 0);
+        send(DIAG_SLOT, byte_sink_contract::end_of_stream(), 0, 0);
     }
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 
@@ -201,8 +201,8 @@ impl Line {
 fn write_on(slot: u64, bytes: &[u8]) {
     let mut rest = bytes;
     while !rest.is_empty() {
-        let (w0, w1, w2, n) = byte_sink_contract::pack(rest);
-        send(slot, w0, w1, w2);
+        let (words, n) = byte_sink_contract::pack(rest);
+        send(slot, words.word_zero, words.word_one, words.word_two);
         rest = &rest[n..];
     }
 }

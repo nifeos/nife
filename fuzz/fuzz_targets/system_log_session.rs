@@ -25,7 +25,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use byte_sink_contract::{eof, pack, with_severity};
+use byte_sink_contract::{end_of_stream, pack, with_severity};
 use libfuzzer_sys::arbitrary::{Result as ArbResult, Unstructured};
 use libfuzzer_sys::fuzz_target;
 use system_log::{Handled, Log};
@@ -103,7 +103,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
             // Writers' bytes, most of the time.
             0..=7 => write_chunk(u, &mut log, badge, now)?,
             8 => {
-                log.handle(badge, eof(), 0, 0, now);
+                log.handle(badge, end_of_stream(), 0, 0, now);
             }
             // The spawner names a badge's program or user.
             9 | 10 => name_badge(u, &mut log, &mut model, badge, now)?,
@@ -151,14 +151,14 @@ fn write_chunk(u: &mut Unstructured, log: &mut Log, badge: u64, now: u64) -> Arb
         chunk.extend_from_slice(FRAGMENTS[u.choose_index(FRAGMENTS.len())?]);
     }
     chunk.truncate(16);
-    let (mut w0, w1, w2, _) = pack(&chunk);
+    let (mut words, _) = pack(&chunk);
     if u.ratio(1, 4)? {
-        w0 = with_severity(w0, u.int_in_range(0..=7)?);
+        words.word_zero = with_severity(words.word_zero, u.int_in_range(0..=7)?);
     }
     if u.ratio(1, 32)? {
-        w0 = u.arbitrary()?;
+        words.word_zero = u.arbitrary()?;
     }
-    log.handle(badge, w0, w1, w2, now);
+    log.handle(badge, words.word_zero, words.word_one, words.word_two, now);
     Ok(())
 }
 

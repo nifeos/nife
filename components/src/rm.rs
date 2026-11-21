@@ -13,7 +13,7 @@
 //! - **slot 0**: the narrowed directory endpoint, `WRITE`; [`fs::ROOT`] on it is **the directory
 //!   the name is in**, because taking a name away is an operation on a directory.
 //! - **slot 1**: a report endpoint, `WRITE`: framed text, then one end of stream
-//!   ([`byte_sink_contract::eof`], its reserved words zero). Output at slot 1, unlike every other
+//!   ([`byte_sink_contract::end_of_stream`], its reserved words zero). Output at slot 1, unlike every other
 //!   program, so both wirings agree (notes/rm.md, "The program's shape").
 //! - **slot 2** ([`rm::VERDICT_SLOT`]): a verdict endpoint, `WRITE`, optional: the exit status
 //!   and the count, once, after the end of stream ([`filesystem_contract::rm`], [`verdict`]). The
@@ -337,14 +337,14 @@ fn text(bytes: &[u8]) {
 /// **Close the report, then send the verdict on its own endpoint** ([`filesystem_contract::rm`]).
 ///
 /// This program's manifest declares [`grant_contract::OutputDeclaration::Bytes`], the sink contract:
-/// self-framing byte messages ending in `(eof(), 0, 0)`, which the shell reads through
+/// self-framing byte messages ending in `(end_of_stream(), 0, 0)`, which the shell reads through
 /// `byte_sink_contract::unpack`, so `rm -rv logs | wc` works. The contract reserves the end of
 /// stream's other two words, so the status and the count cannot ride there; they go to
 /// [`VERDICT`]. A `SEND` returns only once its message is received, so the verdict cannot overtake
 /// the text: when it goes out, the reader already holds every line and the end. With no verdict
 /// endpoint the second `SEND` is refused, and nothing is lost that the spawner asked for.
 fn verdict(status: u64, count: u64) {
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     send(VERDICT, status, count, 0);
 }
 

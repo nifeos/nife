@@ -242,7 +242,10 @@ pub(super) fn drain_until_end(
         }
         let words = sched::ipc_receive(report);
         let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(words[0], words[1], words[2]),
+            &mut chunk,
+        ) {
             byte_sink_contract::Message::Bytes(n) => {
                 assert!(
                     len + n <= out.len(),
@@ -251,7 +254,7 @@ pub(super) fn drain_until_end(
                 out[len..len + n].copy_from_slice(&chunk[..n]);
                 len += n;
             }
-            byte_sink_contract::Message::Eof => return len,
+            byte_sink_contract::Message::EndOfStream => return len,
             byte_sink_contract::Message::Malformed => {
                 panic!("{what}: a sink message out of contract")
             }

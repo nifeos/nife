@@ -75,10 +75,10 @@ semantics does, and it is the opcode list that makes that true rather than polic
   w0 = (op << 56) | len          w1, w2 = up to 16 bytes, little-endian, low word first
 
   OPERATION_BYTES = 0    len = 1..=16   the bytes are in w1|w2
-  OPERATION_EOF   = 1    len = 0        the writer is finished; w1 = w2 = 0
+  OPERATION_END_OF_STREAM   = 1    len = 0        the writer is finished; w1 = w2 = 0
 ```
 
-An end of stream is exactly `(eof(), 0, 0)`: a writer sends zero in its two later words, and
+An end of stream is exactly `(end_of_stream(), 0, 0)`: a writer sends zero in its two later words, and
 `unpack` refuses any other end of stream as malformed. A result due after the stream (`rm`'s exit
 status) goes on an endpoint of its own.
 
@@ -88,7 +88,7 @@ protocol changed no instruction on the fastpath, cost no message, and the benchm
 `println!` cannot tell that anything happened. An opcode is a claim about what a message means; the
 cheapest claim to make is the one the wire was already making.
 
-`OPERATION_EOF` is new and it is not decoration. Without it a pipe's reader blocks forever after the
+`OPERATION_END_OF_STREAM` is new and it is not decoration. Without it a pipe's reader blocks forever after the
 writer exits, and "the producer is done" would have to be inferred from a death notification the
 reader may not even be the supervisor for. That is a fact about process supervision standing in for
 a fact about a stream. std sends it from the PAL's `cleanup`, which std's runtime calls after `main`
@@ -150,7 +150,7 @@ Three programs in `fixtures/`, and the sink among them is the `fs_file_caretaker
 that speaks the sink contract to its client and the underlying protocol to whatever is behind it.
 
 - `file_sink`: holds a `filesystem_contract` endpoint and a shared page, creates or opens one name,
-  and appends every message's bytes at a running offset. `OPERATION_EOF` closes the handle and
+  and appends every message's bytes at a running offset. `OPERATION_END_OF_STREAM` closes the handle and
   reports the total. Its client holds an endpoint to this process and nothing that names the FS
   server, so it cannot seek, truncate, re-read or stat, which is milestone 50's "grants strictly
   less than Unix" made structural rather than promised.
@@ -270,7 +270,7 @@ each case.
   0` decision paying out immediately: its hand-rolled framing is bit for bit a `BYTES` message. It
   announced no end of stream, because nothing yet read its output as a stream. `|` has since landed
   and it does: every exit path in `components/src/date.rs` goes through an `end()` that sends
-  `byte_sink_contract::eof()` first, because a reader downstream of a `|` has no other way to learn
+  `byte_sink_contract::end_of_stream()` first, because a reader downstream of a `|` has no other way to learn
   the producer is finished. See notes/pipes.md.
 - **No buffering, and it is now measured rather than argued.** A pipe built from this contract is
   full lockstep, where Unix's 64 KB buffer lets a producer run ahead. `bench: sink_throughput`

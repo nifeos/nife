@@ -37,14 +37,14 @@ user_mode_runtime::program_entry!(start);
 /// Name: provisional, minted 2026-10-19 (UTC) by milestone/892-installed-programs-hold-the-network-and-zones.
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     say(b"dialer: RAN, though no grant of the network is recorded\n");
-    send(OUT, byte_sink_contract::eof(), 0, 0);
+    send(OUT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 
 fn say(mut rest: &[u8]) {
     while !rest.is_empty() {
-        let (w0, w1, w2, n) = byte_sink_contract::pack(rest);
-        send(OUT, w0, w1, w2);
+        let (words, n) = byte_sink_contract::pack(rest);
+        send(OUT, words.word_zero, words.word_one, words.word_two);
         rest = &rest[n..];
     }
 }

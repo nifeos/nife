@@ -6,7 +6,7 @@ use super::*;
 /// The framing is the sink contract's (`crates/byte_sink_contract`, milestone 50 (pipes and
 /// redirection: one sink protocol, and `|` turns out to be an endpoint)): `w0` is the count, `w1`
 /// and `w2` the bytes, little-endian. `SEND` blocks until a receiver takes it, so the program is
-/// between its last `println!` and `SYSTEM_CALL_EXIT` when the bytes land. Reading to `OPERATION_EOF`
+/// between its last `println!` and `SYSTEM_CALL_EXIT` when the bytes land. Reading to `OPERATION_END_OF_STREAM`
 /// rather than to `want.len()` proves the program printed exactly this and then finished. Every
 /// std test on every ISA asserts through here, so a drift is a diff in one place.
 pub(super) fn assert_std_transcript(report: crate::sched::RendezvousId, want: &[u8], what: &str) {
@@ -55,7 +55,10 @@ pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &
     loop {
         let words = crate::sched::ipc_receive(ep);
         let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(words[0], words[1], words[2]),
+            &mut chunk,
+        ) {
             byte_sink_contract::Message::Bytes(n) => {
                 for &b in &chunk[..n] {
                     assert!(len < out.len(), "{what}: wrote more than the buffer holds");
@@ -63,7 +66,7 @@ pub(super) fn drain_sink(ep: crate::sched::RendezvousId, out: &mut [u8], what: &
                     len += 1;
                 }
             }
-            byte_sink_contract::Message::Eof => return len,
+            byte_sink_contract::Message::EndOfStream => return len,
             byte_sink_contract::Message::Malformed => {
                 panic!(
                     "{what}: a sink message the contract does not define: {:#x}",
@@ -127,7 +130,10 @@ pub(super) fn drain_sink_from(
             continue;
         }
         let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
-        match byte_sink_contract::unpack(words[0], words[1], words[2], &mut chunk) {
+        match byte_sink_contract::unpack(
+            byte_sink_contract::MessageWords::new(words[0], words[1], words[2]),
+            &mut chunk,
+        ) {
             byte_sink_contract::Message::Bytes(n) => {
                 for &b in &chunk[..n] {
                     assert!(len < out.len(), "{what}: wrote more than the buffer holds");
@@ -139,7 +145,7 @@ pub(super) fn drain_sink_from(
                     }
                 }
             }
-            byte_sink_contract::Message::Eof => break true,
+            byte_sink_contract::Message::EndOfStream => break true,
             byte_sink_contract::Message::Malformed => {
                 panic!(
                     "{what}: a sink message the contract does not define: {:#x}",

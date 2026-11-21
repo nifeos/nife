@@ -74,8 +74,13 @@ fn start(repeat: u64, _a1: u64, _a2: u64) -> ! {
     'outer: loop {
         let mut off = 0usize;
         while off < fixture::TRANSCRIPT.len() {
-            let (w0, w1, w2, n) = byte_sink_contract::pack(&fixture::TRANSCRIPT[off..]);
-            last = byte_sink_contract::classify(send(SINK, w0, w1, w2));
+            let (words, n) = byte_sink_contract::pack(&fixture::TRANSCRIPT[off..]);
+            last = byte_sink_contract::classify(send(
+                SINK,
+                words.word_zero,
+                words.word_one,
+                words.word_two,
+            ));
             if !matches!(last, byte_sink_contract::Sent::Ok) {
                 break 'outer;
             }
@@ -89,7 +94,7 @@ fn start(repeat: u64, _a1: u64, _a2: u64) -> ! {
     }
 
     if matches!(last, byte_sink_contract::Sent::Ok) {
-        let _ = send(SINK, byte_sink_contract::eof(), 0, 0);
+        let _ = send(SINK, byte_sink_contract::end_of_stream(), 0, 0);
     }
     send(REPORT, fixture::code(last), total, rounds);
     exit();

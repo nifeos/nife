@@ -137,7 +137,7 @@ all reasons it has no answer.
 
 The diagnostic rendezvous is retyped straight from the shell's budget and kept for the session. A
 pipeline's region is destroyed to turn a dead reader into `Gone`, and a stream this shell always
-drains to `OPERATION_EOF` has no dead reader to signal.
+drains to `OPERATION_END_OF_STREAM` has no dead reader to signal.
 
 ## The output ceiling
 

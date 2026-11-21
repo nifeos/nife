@@ -970,8 +970,8 @@ fn say(bytes: &[u8]) {
     }
     let mut rest = bytes;
     while !rest.is_empty() {
-        let (w0, w1, w2, n) = byte_sink_contract::pack(rest);
-        send(OUT, w0, w1, w2);
+        let (words, n) = byte_sink_contract::pack(rest);
+        send(OUT, words.word_zero, words.word_one, words.word_two);
         rest = &rest[n..];
     }
 }
@@ -1018,7 +1018,7 @@ fn done(code: u64) -> ! {
         );
         exit();
     }
-    send(OUT, byte_sink_contract::eof(), 0, 0);
+    send(OUT, byte_sink_contract::end_of_stream(), 0, 0);
     send(OUT, code, 0, 0);
     exit();
 }
