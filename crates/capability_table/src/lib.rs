@@ -138,7 +138,8 @@ impl<O: Copy> Capability<O> {
     /// Without `GRANT` the answer is [`Error::GrantRequired`], whatever `rights` asks for. With it,
     /// asking for a right the source lacks is [`Error::CannotWiden`], not a silent clamp.
     ///
-    /// Name: provisional (`delegate`, `GrantRequired`).
+    /// Name: ratified 2026-11-19 (UTC), with `Error::GrantRequired`. Refused `derive`, which is the
+    /// table's narrowing copy into a slot; this one is a capability's copy of itself.
     pub fn delegate(&self, rights: Rights) -> Result<Capability<O>, Error> {
         if !self.rights.allows(Rights::GRANT) {
             return Err(Error::GrantRequired);
@@ -166,55 +167,6 @@ impl<O> Capability<O> {
     }
 }
 
-/// **May this supervision rendezvous collect this thread's corpse?** A supervisor may collect a
-/// corpse without being able to build one.
-///
-/// The whole authorization decision of a reap, which an owner calls before the reclaim; nothing
-/// here mints, widens, or returns a capability, so a supervisor gains no memory authority by
-/// reaping.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Reap {
-    /// Authorized: this rendezvous supervises that thread, and the thread is a corpse.
-    Permitted,
-    /// The thread is supervised here but still running. Collecting a corpse is not killing.
-    StillAlive,
-    /// No thread by that name is supervised by *this* rendezvous: it never existed, it is
-    /// unsupervised, it belongs to another supervisor, or its name is stale.
-    NotSupervised,
-}
-
-/// The decision, from the three facts the kernel has: the thread's recorded supervision rendezvous
-/// (`None` if the thread does not resolve at all, or resolves and is unsupervised), the rendezvous
-/// actually being invoked, and whether the thread is dead.
-///
-/// The supervision check comes first, so a live stranger and a stale name give the same answer;
-/// liveness is disclosed only inside the relationship.
-pub const fn reap_decision(
-    supervising_rendezvous: Option<u64>,
-    invoked_rendezvous: u64,
-    dead: bool,
-) -> Reap {
-    match supervising_rendezvous {
-        Some(rendezvous) if rendezvous == invoked_rendezvous => {
-            if dead {
-                Reap::Permitted
-            } else {
-                Reap::StillAlive
-            }
-        }
-        _ => Reap::NotSupervised,
-    }
-}
-
-/// **Is this thread inside the domain that rendezvous supervises?**
-///
-/// The scoping decision of a process view, which an owner applies to each thread it reports. It is
-/// the predicate [`reap_decision`] authorizes with, so the threads a supervisor sees are the ones
-/// whose deaths reach it. Liveness is not an input: an uncollected corpse is still in the domain.
-pub const fn survey_includes(supervising_rendezvous: Option<u64>, invoked_rendezvous: u64) -> bool {
-    matches!(supervising_rendezvous, Some(rendezvous) if rendezvous == invoked_rendezvous)
-}
-
 /// Why a capability table operation was refused.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Error {
@@ -223,13 +175,16 @@ pub enum Error {
     NoSuchSlot,
     /// You asked to derive a capability with rights you do not hold.
     CannotWiden,
-    /// **The capability may not be passed on.** Its holder lacks [`Rights::GRANT`]. Provisional
-    /// name.
+    /// **The capability may not be passed on.** Its holder lacks [`Rights::GRANT`].
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     GrantRequired,
     /// The table is full.
     NoFreeSlot,
     /// **The slot asked for is already occupied.** Distinct from [`NoFreeSlot`](Self::NoFreeSlot),
-    /// which says the whole table is full. Provisional name.
+    /// which says the whole table is full.
+    ///
+    /// Name: ratified 2026-11-19 (UTC).
     SlotOccupied,
 }
 
@@ -266,7 +221,7 @@ pub use storage::CapabilityTable;
 /// cannot forget the bookkeeping. The harnesses `the_free_mask_is_the_empty_slots` and
 /// `the_count_is_the_slots` check the two doors against the array.
 mod storage {
-    #[cfg(target_has_atomic = "32")]
+    #[cfg(all(target_has_atomic = "32", feature = "peak"))]
     use super::note_peak;
     use super::{Capability, MAXIMUM_SLOTS};
 
@@ -284,7 +239,8 @@ mod storage {
         used: u16,
         /// The largest `used` this table has ever held. **Never decreases**, which is the whole
         /// point: the number a boot reports is what it *reached*, not what it happens to be holding
-        /// when somebody looks. See [`peak`](Self::peak) and [`highest_seen`](super::highest_seen).
+        /// when somebody looks. See [`peak`](Self::peak), and `highest_seen` behind the
+        /// `peak` feature.
         peak: u16,
     }
 
@@ -374,7 +330,7 @@ mod storage {
                 self.used = self.used.wrapping_add(1);
                 if self.used > self.peak {
                     self.peak = self.used;
-                    #[cfg(target_has_atomic = "32")]
+                    #[cfg(all(target_has_atomic = "32", feature = "peak"))]
                     note_peak(self.peak, N);
                 }
             }
@@ -416,7 +372,8 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// The table's fixed capacity, `N`: how many slots it has, occupied or not. Never changes; a
     /// capability table's size is part of its type. [`used`](Self::used) counts the occupied ones.
     ///
-    /// Name: provisional, from `len`, which in std counts the elements held.
+    /// Name: ratified 2026-11-19 (UTC), as std's `Vec::capacity`. Refused `len`, which in std counts
+    /// the elements held.
     pub const fn capacity(&self) -> usize {
         N
     }
@@ -505,7 +462,7 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
     /// table's occupancy and not its capacity, because it follows the occupied mask as
     /// [`delete_matching`](Self::delete_matching) does.
     ///
-    /// Name: provisional.
+    /// Name: ratified 2026-11-19 (UTC).
     pub fn iter(&self) -> impl Iterator<Item = (u64, Capability<O>)> + '_ {
         let mut occupied = self.occupied_mask();
         core::iter::from_fn(move || {
@@ -537,7 +494,8 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
 }
 
 /// **The high-water mark across every capability table in this binary, and the ceiling it was
-/// measured against**, packed as `peak << 16 | ceiling` so a reader gets a pair true at one instant.
+/// measured against**, kept only with the `peak` feature. Packed as `peak << 16 | ceiling` so a
+/// reader gets a pair true at one instant.
 ///
 /// A reader sees the mark move without walking every table under a lock. [`note_peak`] saturates.
 ///
@@ -545,12 +503,12 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
 /// - It does not say which table: a `static` cannot be keyed by a const generic. An owner with one
 ///   instantiation reads the mark directly; a host test binary sees whichever climbed highest, and
 ///   `ceiling` tells which.
-#[cfg(target_has_atomic = "32")]
+#[cfg(all(target_has_atomic = "32", feature = "peak"))]
 static PEAK: core::sync::atomic::AtomicU32 = core::sync::atomic::AtomicU32::new(0);
 
 /// Raise [`PEAK`] if `peak` beats what is recorded. Called from [`CapabilityTable`]'s one private
 /// growth path, so it cannot be forgotten.
-#[cfg(target_has_atomic = "32")]
+#[cfg(all(target_has_atomic = "32", feature = "peak"))]
 fn note_peak(peak: u16, ceiling: usize) {
     use core::sync::atomic::Ordering;
     let ceiling = core::cmp::min(ceiling, u16::MAX as usize) as u32;
@@ -564,8 +522,10 @@ fn note_peak(peak: u16, ceiling: usize) {
 /// **The highest occupancy any capability table has reached, and that table's capacity.**
 ///
 /// `(0, 0)` before anything has ever been inserted. One number for every instantiation linked
-/// into the binary; see `PEAK`'s BUGS.
-#[cfg(target_has_atomic = "32")]
+/// into the binary; see `PEAK`'s BUGS. Present only with the `peak` feature, because the record
+/// is a `static` every table in the binary writes on growth, which a user who does not read it
+/// should not pay for.
+#[cfg(all(target_has_atomic = "32", feature = "peak"))]
 pub fn highest_seen() -> (usize, usize) {
     let packed = PEAK.load(core::sync::atomic::Ordering::Relaxed);
     ((packed >> 16) as usize, (packed & 0xffff) as usize)
@@ -929,95 +889,6 @@ mod verification {
         // The weaker relation the capability model is phrased in, which the above implies.
         assert!(child.rights.is_subset_of(parent.rights));
         assert_eq!(child.object, child_object);
-    }
-
-    /// **A reap is authorized by the supervision relationship, and by nothing else**. For
-    /// every pair of rendezvous names and every liveness, `Permitted` implies the thread's recorded
-    /// fault rendezvous *is* the rendezvous being invoked and the thread is dead, so no
-    /// unsupervised thread, other supervisor's child or stale name is reapable. The proof pins the
-    /// gate; `reap_decision` taking and returning no `Capability` pins the absence of a grant.
-    /// Falsification: replayable `crates/capability_table/falsifications/verification.reap_is_permitted_only_to_the_supervising_rendezvous.patch`
-    #[kani::proof]
-    fn reap_is_permitted_only_to_the_supervising_rendezvous() {
-        let invoked: u64 = kani::any();
-        let supervising_rendezvous: Option<u64> =
-            if kani::any() { Some(kani::any()) } else { None };
-        let dead: bool = kani::any();
-
-        match reap_decision(supervising_rendezvous, invoked, dead) {
-            Reap::Permitted => {
-                assert_eq!(
-                    supervising_rendezvous,
-                    Some(invoked),
-                    "reaped through the wrong rendezvous"
-                );
-                assert!(dead, "reaped a live thread");
-            }
-            // A live child is refused as such only when it really is ours; otherwise the answer
-            // must disclose nothing, which is the next harness.
-            Reap::StillAlive => {
-                assert_eq!(supervising_rendezvous, Some(invoked));
-                assert!(!dead);
-            }
-            Reap::NotSupervised => assert_ne!(supervising_rendezvous, Some(invoked)),
-        }
-    }
-
-    /// **The refusal for a thread you do not supervise does not depend on the thread.** For any two
-    /// liveness values, a tid whose fault rendezvous is not the invoked one answers identically, so a
-    /// supervisor cannot use `REAP` to learn whether some other supervisor's child (or a recycled
-    /// tid) is alive. The two facts are distinguishable only *inside* the relationship.
-    /// Falsification: replayable `crates/capability_table/falsifications/verification.a_stranger_reveals_nothing_about_its_liveness.patch`
-    #[kani::proof]
-    fn a_stranger_reveals_nothing_about_its_liveness() {
-        let invoked: u64 = kani::any();
-        let supervising_rendezvous: Option<u64> =
-            if kani::any() { Some(kani::any()) } else { None };
-        kani::assume(supervising_rendezvous != Some(invoked));
-
-        assert_eq!(
-            reap_decision(supervising_rendezvous, invoked, true),
-            reap_decision(supervising_rendezvous, invoked, false),
-        );
-        assert_eq!(
-            reap_decision(supervising_rendezvous, invoked, true),
-            Reap::NotSupervised
-        );
-    }
-
-    /// **A survey shows a thread only to the rendezvous that supervises it.** For
-    /// every pair of rendezvous names, inclusion holds exactly when the recorded fault rendezvous
-    /// is the invoked one. Both directions matter: a stranger is never shown, and every member is,
-    /// so a monitor missing an entry can conclude the thread is gone rather than hidden.
-    /// Falsification: replayable `crates/capability_table/falsifications/verification.a_survey_shows_exactly_the_endpoints_own_children.patch`
-    #[kani::proof]
-    fn a_survey_shows_exactly_the_endpoints_own_children() {
-        let invoked: u64 = kani::any();
-        let supervising_rendezvous: Option<u64> =
-            if kani::any() { Some(kani::any()) } else { None };
-
-        assert_eq!(
-            survey_includes(supervising_rendezvous, invoked),
-            supervising_rendezvous == Some(invoked)
-        );
-    }
-
-    /// **Seeing and collecting are scoped by the same relationship.** For every
-    /// input, a thread is in the survey exactly when a reap of it would get past the supervision
-    /// check, whatever its liveness. So the domain `ps` reports and the domain a supervisor may
-    /// reap from cannot diverge, which is the property that lets one predicate answer both.
-    /// Falsification: replayable `crates/capability_table/falsifications/verification.the_view_and_the_reap_have_the_same_scope.patch`
-    #[kani::proof]
-    fn the_view_and_the_reap_have_the_same_scope() {
-        let invoked: u64 = kani::any();
-        let supervising_rendezvous: Option<u64> =
-            if kani::any() { Some(kani::any()) } else { None };
-        let dead: bool = kani::any();
-
-        assert_eq!(
-            survey_includes(supervising_rendezvous, invoked),
-            reap_decision(supervising_rendezvous, invoked, dead) != Reap::NotSupervised,
-        );
     }
 }
 

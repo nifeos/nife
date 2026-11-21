@@ -273,33 +273,6 @@ fn rights_arithmetic() {
     assert_eq!(Rights::ALL.intersect(Rights::READ), Rights::READ);
 }
 
-/// The four cases of the reap gate, spelled out as the readable companion to the symbolic
-/// proofs: my corpse, my live child, another supervisor's child, an unsupervised thread (which
-/// is also what a stale tid looks like, because a name that does not resolve carries no
-/// rendezvous).
-#[test]
-fn reap_authorizes_only_a_corpse_this_rendezvous_supervises() {
-    assert_eq!(reap_decision(Some(7), 7, true), Reap::Permitted);
-    assert_eq!(reap_decision(Some(7), 7, false), Reap::StillAlive);
-    assert_eq!(reap_decision(Some(9), 7, true), Reap::NotSupervised);
-    assert_eq!(reap_decision(None, 7, true), Reap::NotSupervised);
-}
-
-/// The scoping half of the gate, and the reason it has a `cargo test` companion at all: a
-/// mutation run replaced `survey_includes` with a constant `true`
-/// and again with a constant `false`, and **both survived the whole suite**. Kani proves this
-/// predicate for every input, but `script/verify` is a different gate on a different cadence,
-/// so a build that answered "everyone is in your domain" would reach a reviewer with
-/// the test suite green. Liveness is deliberately absent: a corpse is still in the domain, which
-/// is what lets `ps` show a `Dead` child its supervisor has not collected.
-#[test]
-fn a_survey_shows_this_rendezvous_children_and_nobody_else() {
-    assert!(survey_includes(Some(7), 7));
-    assert!(survey_includes(Some(0), 0));
-    assert!(!survey_includes(Some(9), 7));
-    assert!(!survey_includes(None, 7));
-}
-
 /// **Both halves of the packed high-water word, read exactly rather than as a floor.**
 ///
 /// `PEAK` is shared by every table in this binary, so a floor cannot pin either half: `>>` for

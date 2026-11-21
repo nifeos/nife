@@ -1,0 +1,7 @@
+# cargo-mutants configuration, read from the crate root.
+#
+# The proofs in `mod verification` at the end of src/lib.rs are `#[cfg(kani)]`, so `cargo test`
+# never compiles them: a change to them cannot fail any test, and every mutant of them survives for
+# that reason alone. Kani checks the proofs in CI, and each proof carries a falsification patch
+# under falsifications/ that must make Kani fail. That is their mutation testing.
+exclude_re = ['(replace | in )verification::']

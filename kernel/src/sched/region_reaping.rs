@@ -347,11 +347,64 @@ pub fn reclaim_region(region: u64) -> Result<(), ()> {
     Ok(())
 }
 
+/// **May this supervision rendezvous collect this thread's corpse?** A supervisor may collect a
+/// corpse without being able to build one.
+///
+/// The whole authorization decision of a reap, which [`reap_supervised`] makes before the reclaim;
+/// nothing here mints, widens, or returns a capability, so a supervisor gains no memory authority
+/// by reaping.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum Reap {
+    /// Authorized: this rendezvous supervises that thread, and the thread is a corpse.
+    Permitted,
+    /// The thread is supervised here but still running. Collecting a corpse is not killing.
+    StillAlive,
+    /// No thread by that name is supervised by *this* rendezvous: it never existed, it is
+    /// unsupervised, it belongs to another supervisor, or its name is stale.
+    NotSupervised,
+}
+
+/// The decision, from the three facts the kernel has: the thread's recorded supervision rendezvous
+/// (`None` if the thread does not resolve at all, or resolves and is unsupervised), the rendezvous
+/// actually being invoked, and whether the thread is dead.
+///
+/// The supervision check comes first, so a live stranger and a stale name give the same answer;
+/// liveness is disclosed only inside the relationship.
+const fn reap_decision(
+    supervising_rendezvous: Option<RendezvousId>,
+    invoked_rendezvous: RendezvousId,
+    dead: bool,
+) -> Reap {
+    match supervising_rendezvous {
+        Some(rendezvous) if rendezvous == invoked_rendezvous => {
+            if dead {
+                Reap::Permitted
+            } else {
+                Reap::StillAlive
+            }
+        }
+        _ => Reap::NotSupervised,
+    }
+}
+
+/// **Is this thread inside the domain that rendezvous supervises?**
+///
+/// The scoping decision of a process view, which [`survey_supervised`] applies to each thread it
+/// reports. It is the predicate [`reap_decision`] authorizes with, so the threads a supervisor sees
+/// are the ones whose deaths reach it. Liveness is not an input: an uncollected corpse is still in
+/// the domain.
+const fn survey_includes(
+    supervising_rendezvous: Option<RendezvousId>,
+    invoked_rendezvous: RendezvousId,
+) -> bool {
+    matches!(supervising_rendezvous, Some(rendezvous) if rendezvous == invoked_rendezvous)
+}
+
 /// Collect a corpse a supervision rendezvous supervises (§32 (a supervisor may collect a
 /// corpse without being able to build one), `rendezvous::REAP`).
 ///
 /// `ep` is the invoked rendezvous and `tid` the id on the death message. Authorized when the
-/// thread's `fault_ep` is `ep` (`capability_table::reap_decision`), it reclaims the region the TCB came
+/// thread's `fault_ep` is `ep` (`reap_decision`), it reclaims the region the TCB came
 /// from. Returns `NotSupervised`, `StillAlive`, or `NotPermitted` when the reclaim refuses. See
 /// notes/region-reaping.md ("The supervised reap").
 ///
@@ -364,10 +417,10 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
         let t = sched.threads.get(tid);
         let fault_ep = t.and_then(|t| t.fault_ep);
         let dead = t.is_some_and(|t| t.handshake.state == State::Dead);
-        match capability_table::reap_decision(fault_ep, ep, dead) {
-            capability_table::Reap::NotSupervised => return Err(abi::Error::NotSupervised),
-            capability_table::Reap::StillAlive => return Err(abi::Error::StillAlive),
-            capability_table::Reap::Permitted => {}
+        match reap_decision(fault_ep, ep, dead) {
+            Reap::NotSupervised => return Err(abi::Error::NotSupervised),
+            Reap::StillAlive => return Err(abi::Error::StillAlive),
+            Reap::Permitted => {}
         }
         // A corpse whose core still stands on its stack clears at that core's next
         // `finish_switch`; refusing would reach userspace as `NotPermitted`. Yield the lock and
@@ -391,7 +444,7 @@ pub fn reap_supervised(ep: RendezvousId, tid: ThreadId) -> Result<(), abi::Error
 /// `ep` is the invoked rendezvous, `cursor` the value the last call returned (0 to start) and
 /// `record` an `abi::survey::record` selector. Returns `(next_cursor, tid, word)`, where `word` is
 /// the selected fact; a `next_cursor` of `abi::survey::DONE` ends the walk and the other words are
-/// 0. A thread is in the domain when its `fault_ep` is `ep` (`capability_table::survey_includes`). An
+/// 0. A thread is in the domain when its `fault_ep` is `ep` (`survey_includes`). An
 /// unknown `record` is `BadMethod`, before the walk. See notes/process-view.md and
 /// notes/region-reaping.md ("The survey").
 ///
@@ -413,7 +466,7 @@ pub fn survey_supervised(
     // A cursor past the table is empty, not an error (`iter_from`'s contract).
     let from = usize::try_from(cursor).unwrap_or(usize::MAX);
     for (slot, t) in sched.threads.iter_from(from) {
-        if capability_table::survey_includes(t.fault_ep, ep) {
+        if survey_includes(t.fault_ep, ep) {
             let word = match record {
                 abi::survey::record::STATE => survey_state(t.handshake.state),
                 abi::survey::record::PLACEMENT => survey_placement(t.placement),
@@ -467,16 +520,14 @@ fn survey_process(threads: &Threads, ep: RendezvousId, of: &Thread) -> u64 {
     let target = process_key(of);
     let mut ordinal = 0u64;
     for (slot, t) in threads.iter_from(0) {
-        if !capability_table::survey_includes(t.fault_ep, ep) {
+        if !survey_includes(t.fault_ep, ep) {
             continue;
         }
         let key = process_key(t);
         let seen_before = threads
             .iter_from(0)
             .take_while(|&(earlier, _)| earlier < slot)
-            .any(|(_, e)| {
-                capability_table::survey_includes(e.fault_ep, ep) && process_key(e) == key
-            });
+            .any(|(_, e)| survey_includes(e.fault_ep, ep) && process_key(e) == key);
         if seen_before {
             continue;
         }
@@ -514,10 +565,44 @@ pub(super) const fn survey_state(state: State) -> u64 {
     }
 }
 
+/// Kani proofs of the supervision decisions, `reap_decision` and `survey_includes`: who may reap,
+/// what a refusal discloses, and that the survey and the reap share one scope.
+#[cfg(kani)]
+mod verification;
+
 #[cfg(test)]
 mod tests {
     //! Tests for reclaiming a region: an embryo's thread control block, an unbound address space,
-    //! split pages, slot reuse and an idle rendezvous.
+    //! split pages, slot reuse and an idle rendezvous; and the supervision decisions a reap and a
+    //! survey make.
+
+    use super::{Reap, reap_decision, survey_includes};
+
+    /// The four cases of the reap gate, spelled out as the readable companion to the symbolic
+    /// proofs in `verification`: my corpse, my live child, another supervisor's child, an
+    /// unsupervised thread (which is also what a stale tid looks like, because a name that does not
+    /// resolve carries no rendezvous).
+    #[test_case]
+    fn reap_authorizes_only_a_corpse_this_rendezvous_supervises() {
+        assert_eq!(reap_decision(Some(7), 7, true), Reap::Permitted);
+        assert_eq!(reap_decision(Some(7), 7, false), Reap::StillAlive);
+        assert_eq!(reap_decision(Some(9), 7, true), Reap::NotSupervised);
+        assert_eq!(reap_decision(None, 7, true), Reap::NotSupervised);
+    }
+
+    /// The scoping half of the gate. A mutation run once replaced `survey_includes` with a constant
+    /// `true` and again with a constant `false`, and both survived the whole suite; the Kani proofs
+    /// run on a different cadence from the tests, so a build that answered "everyone is in your
+    /// domain" would reach a reviewer with the tests green. Liveness is deliberately absent: a
+    /// corpse is still in the domain, which is what lets `ps` show a `Dead` child its supervisor
+    /// has not collected.
+    #[test_case]
+    fn a_survey_shows_this_rendezvous_children_and_nobody_else() {
+        assert!(survey_includes(Some(7), 7));
+        assert!(survey_includes(Some(0), 0));
+        assert!(!survey_includes(Some(9), 7));
+        assert!(!survey_includes(None, 7));
+    }
 
     /// Object revocation reclaims a region holding an unstarted TCB, the smallest proof of the
     /// mechanism: the TCB's slot is freed, its name dies, and the region's frames return.

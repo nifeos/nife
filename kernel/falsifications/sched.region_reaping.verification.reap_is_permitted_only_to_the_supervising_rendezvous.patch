@@ -1,4 +1,4 @@
-Falsifies `capability_table::reap_is_permitted_only_to_the_supervising_rendezvous`.
+Falsifies `kernel::sched::region_reaping::verification::reap_is_permitted_only_to_the_supervising_rendezvous`.
 
 The defect: the fall-through arm of `reap_decision` authorizes any corpse, not only
 one this rendezvous supervises. Written the way it would actually arrive, as a
@@ -12,11 +12,11 @@ Expected to fail: `assert_eq!(supervising_rendezvous, Some(invoked), "reaped thr
 rendezvous")` in the `Reap::Permitted` arm, on any `supervising_rendezvous` that is `None` or
 names some other rendezvous while `dead` holds.
 
-diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
-index dcd2cbb5..be92a85b 100644
---- a/crates/capability_table/src/lib.rs
-+++ b/crates/capability_table/src/lib.rs
-@@ -206,6 +206,7 @@ pub const fn reap_decision(fault_ep: Option<u64>, invoked_ep: u64, dead: bool) -
+diff --git a/kernel/src/sched/region_reaping.rs b/kernel/src/sched/region_reaping.rs
+index db941b37d..d747771ec 100644
+--- a/kernel/src/sched/region_reaping.rs
++++ b/kernel/src/sched/region_reaping.rs
+@@ -383,6 +383,7 @@ const fn reap_decision(
                  Reap::StillAlive
              }
          }

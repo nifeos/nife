@@ -106,5 +106,5 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`device_tree_blob`](crate-reviews/device-tree-blob.md) | 4 | cleared to move (2026-11-20 UTC, no tag, no publish) |
 | [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | cleared to move (2026-11-20 UTC, `publish = false`, no tag, no publish); the first tag waits for a litmus run on real Arm and RISC-V hardware |
 | [`boot_ladder`](crate-reviews/boot-ladder.md) | 1078 | ready for review |
-| [`capability_table`](crate-reviews/capability-table.md) | kernel | ready for review; milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) asks for the clearance |
+| [`capability_table`](crate-reviews/capability-table.md) | kernel | cleared to move (2026-11-21 UTC, no tag, no publish); milestone 1081 (`capability_table`: what an outside maintainer would fix before it leaves) tracks the move |
 | [`byte_sink_contract`](crate-reviews/byte-sink-contract.md) | contract | ready for review; milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves) asks for the clearance |

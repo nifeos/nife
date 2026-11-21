@@ -1,0 +1,10 @@
+# A mutant that survives goes here, one per line, with the reason it is equivalent behavior:
+#   src/lib.rs:4 # swapping the operand order is the same arithmetic
+# A line without a reason is refused, and a line naming a survivor that no longer exists is
+# refused too, so this list can only shrink by a diff that says why.
+
+src/lib.rs:49 # `1 << 0` and `1 >> 0` are both 1, so READ keeps its bit
+src/lib.rs:312 # `>=` also stores and reports a peak equal to the old one, which changes neither the field nor the shared maximum
+src/lib.rs:491 # the peak sits in the high half and the ceiling in the low half, so `|` and `^` pack the same word
+src/lib.rs:447 # `|=` never clears the lowest bit, so the walk never ends and the run times out, which is the mutant caught
+src/lib.rs:464 # `|=`, `+` or `/` can leave the lowest bit set, so the sweep never ends and the run times out, which is the mutant caught

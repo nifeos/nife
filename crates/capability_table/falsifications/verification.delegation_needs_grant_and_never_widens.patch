@@ -10,9 +10,10 @@ without the `GRANT` bit and a request inside it.
 diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
 --- a/crates/capability_table/src/lib.rs
 +++ b/crates/capability_table/src/lib.rs
-@@ -140,9 +140,6 @@
+@@ -140,10 +140,7 @@
      ///
-     /// Name: provisional (`delegate`, `GrantRequired`).
+     /// Name: ratified 2026-11-19 (UTC), with `Error::GrantRequired`. Refused `derive`, which is the
+     /// table's narrowing copy into a slot; this one is a capability's copy of itself.
      pub fn delegate(&self, rights: Rights) -> Result<Capability<O>, Error> {
 -        if !self.rights.allows(Rights::GRANT) {
 -            return Err(Error::GrantRequired);

@@ -173,6 +173,9 @@ dependencies = [
 [[package]]
 name = "capability_table"
 version = "0.1.0"
+dependencies = [
+ "capability_table",
+]
 
 [[package]]
 name = "capability_witness_contract"

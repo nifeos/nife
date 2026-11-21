@@ -983,8 +983,6 @@ crates/capability_table/src/lib.rs::NONE
 
 crates/capability_table/src/lib.rs::READ
 
-crates/capability_table/src/lib.rs::Reap
-
 crates/capability_table/src/lib.rs::Rights
 
 crates/capability_table/src/lib.rs::WRITE
@@ -1024,10 +1022,6 @@ crates/capability_table/src/lib.rs::new
 crates/capability_table/src/lib.rs::peak
 
 crates/capability_table/src/lib.rs::put
-
-crates/capability_table/src/lib.rs::reap_decision
-
-crates/capability_table/src/lib.rs::survey_includes
 
 crates/capability_table/src/lib.rs::union
 
