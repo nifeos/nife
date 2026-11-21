@@ -36,7 +36,7 @@ and two example lines in the README (see What still blocks the move).
 | dependencies | none |
 | `unsafe` | no site |
 | Kani harnesses | 2, in `src/verdict.rs`: `a_count_is_read_without_overflow` and `a_segment_is_read_without_panicking`, each with a falsification patch under `falsifications/` |
-| mutation baseline | none recorded; not run (see What was run) |
+| mutation baseline | none recorded; not run |
 
 ## Who in nife depends on it
 
@@ -69,12 +69,15 @@ Run from this lane's worktree on the head named in the pull request.
 | `script/names boot_ladder` and `python3 helpers/name_release.py --draft boot_ladder` | the crate name ratified; the rest listed in Names below |
 | `script/lint` | LINT_RESULT |
 
-Not run, and so not claimed: the stranger test (no `docs/stranger-test.md` exists yet), the
-README's two examples (the crate does not include its README as documentation, so `cargo test`
-does not compile them; the stranger test is where they run), a mutation census (outside its
-window, and the crate has no baseline), `cargo-semver-checks` (a first release has no baseline),
-the bare-metal builds of the standalone run beyond what `script/crate-standalone` reports above,
-the template's workflows (no repository exists), and any QEMU boot that exercises the printers.
+Not run, and so not claimed:
+
+- The stranger test. No `docs/stranger-test.md` exists yet.
+- The README's two examples. The crate does not include its README as documentation, so `cargo test`
+  does not compile them; the stranger test is where they run.
+- A mutation census. It falls outside its window, and the crate has no baseline.
+- `cargo-semver-checks`, because a first release has no baseline.
+- The template's workflows, because no repository exists.
+- Any QEMU boot that exercises the printers.
 
 ## Public API
 
@@ -100,9 +103,9 @@ No nife type appears in a signature. What a stranger may find surprising:
 
 ## Rulings
 
-- The heads are fixed shapes after the caller's system name (the architect, 2026-11-14 UTC, 1078
-  decision W, option A). The nine shapes are ratified as printed; nife passes `nife`, so the
-  printed bytes are unchanged. The shell banner keeps its text and takes no period.
+- The heads take the caller's system name and fix the shape after it (the architect, 2026-11-14 UTC, 1078
+  decision W, option A). The architect ratified the nine shapes as printed; nife passes `nife`, so the
+  printed bytes stay the same. The shell banner keeps its text and takes no period.
 - The printed check names (the architect, 2026-11-14 UTC, 1078 decision C): `blockdev` became
   `block_device`, `trng` became `true_random_number_generator`, and the other thirteen are
   ratified, `device_interrupt` included. The slot and the flag that name the generator follow
@@ -121,7 +124,7 @@ check names on 2026-11-14 UTC, and the eleven names in the first group below on 
 Everything else is provisional and is the architect's to ratify; this lane ratifies none of it and
 changes none of it. The `Name:` blocks of the eleven ratified names in `src/heads.rs` and
 `src/rungs.rs` still read `provisional`; the lane that records the 2026-11-19 ruling brings them
-to match, and the move strips the blocks.
+to match; the move strips the blocks.
 
 | group | items | status |
 |---|---|---|
@@ -158,8 +161,8 @@ None of these changes a printed byte.
 1. Rename `str_eq` (private) to a question-shaped name.
 2. Replace the two `nife self-test:` lines in the README's verdict example with the example system's
    name.
-3. Update the eleven `Name:` blocks of the ratified names to read ratified, when the 2026-11-19
-   ruling is recorded.
+3. Update the eleven `Name:` blocks of the ratified names to read ratified, in the lane that
+   records the 2026-11-19 ruling.
 4. Make `cargo test` compile the README's two examples (for instance `#![doc = include_str!(...)]`
    under `cfg(doctest)`), so a stranger's first code runs.
 5. Write the lint section of P1-7 in nife.
@@ -168,8 +171,8 @@ None of these changes a printed byte.
 
 ## Open questions
 
-1. Should `kernel_half` and `self_test_program` stay in this crate? They are used by the kernel, the
-   first user program and the self-test program of one system, and by no reader of console lines. The
+1. Should `kernel_half` and `self_test_program` stay in this crate? The kernel, the
+   first user program and the self-test program of one system use them, and no reader of console lines does. The
    crate's one-sentence purpose does not name them. Keeping them avoids a second repository and
    keeps one pin; splitting them leaves the console-line crate small and reusable by a second
    system. The maintainer found no second consumer today.
@@ -180,8 +183,7 @@ None of these changes a printed byte.
 
 Clear the move, with no tag and no publication. The crate stands alone: no dependency, no `unsafe`,
 no reference back into nife apart from the items above, a README with the matching rule, the
-verdict grammar as shared code, and two proofs with falsification patches. The names the architect
-ruled are built, and the open names are listed above for ratification, not hidden. The items under
+verdict grammar as shared code, and two proofs with falsification patches. The code carries the architect's rulings on names, and the open names sit above for ratification. The items under
 What still blocks the move are small, none changes a printed byte, and the move lane or the
 maintainer can land them before or with the move.
 

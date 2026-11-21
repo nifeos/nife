@@ -209,7 +209,7 @@ One question is open, below. The publishing hold stands.
 
 Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
 architect reads; clearing it is the go to create the crate's repository and move the crate.
-The package for `boot_ladder` is written. The crate's in-tree work
+The package for `boot_ladder` exists. The crate's in-tree work
 lacks only P1-7's lint section and P2-12's growth; P0-1 and P0-2 come with the move itself.
 
 Recommendation: A.
