@@ -13,9 +13,8 @@ Raised by a read-only outside review of `crates/capability_table`, met as a stra
 meet it on the day it becomes `nifeos/<crate>`. The review changed nothing; it lists what the move
 lane and the lanes after it change.
 
-The crate has no review package under `notes/crate-reviews/` and no row in
-[`notes/crate-reviews.md`](../../notes/crate-reviews.md), so this review has no settled baseline to
-inherit. Whether a package is in flight on a branch is unverified. The review treats as settled anyway
+The crate's review package is [`notes/crate-reviews/capability-table.md`](../../notes/crate-reviews/capability-table.md),
+indexed in [`notes/crate-reviews.md`](../../notes/crate-reviews.md). This review treats as settled
 whatever a ruling in the tree already covers. That is the crate name as ratified against `caps`
 and `cap_space` (reopened below for one reason only, item D1, ruled `capability_table`), `CapabilityTable` as the exported
 type and `MAXIMUM_SLOTS` as ratified. It also covers the five right bits and their positions (the
@@ -79,8 +78,8 @@ rows, Kani, and the crate's own harness builder (`any_small_capability_table`). 
   [#3674](https://github.com/nifeos/nife/pull/3674).
 - The five names: Done (ruled 2026-11-19 UTC, option A). `delegate`, `GrantRequired`, `SlotOccupied`,
   `capacity` and `iter` stand as built.
-- The move: Open. No review package exists under `notes/crate-reviews/`, and nifeos/capability_table
-  does not exist; a package lane comes first, then the clearance under Open decisions.
+- The move: Open. The review package is `notes/crate-reviews/capability-table.md`, and
+  nifeos/capability_table does not exist; the clearance under Open decisions comes next.
 
 ## Open decisions
 
@@ -90,12 +89,12 @@ One decision is open. D2 below rules the five names.
 
 Background: a crate that leaves nife gets a review package under `notes/crate-reviews/`, which an
 architect reads; clearing it is the go to create the crate's repository and move the crate there.
-No package exists for this crate yet, so a package lane writes one first. The crate's only consumer
+The package for this crate is `notes/crate-reviews/capability-table.md`. The crate's only consumer
 is the kernel, which then depends on it at a pinned revision.
 
 Recommendation: A.
 
-- A. A package lane writes the review package now, and the architect clears it when it arrives; the
+- A. The architect clears the review package; the
   manifest, README, licenses and exemptions (P0-1, P2-13) come with the move.
 - B. Land P0-1 and the `peak` feature (P2-11) in the tree first, so the package shows the crate as
   it will publish.
