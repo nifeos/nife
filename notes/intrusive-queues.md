@@ -53,7 +53,7 @@ safety is a discipline, stated once and kept:
 2. **The thread table's TCB page pins the address**: each thread lives at the start of one page
    that never moves (notes/thread-control-block.md).
 3. **Only the queue that holds a thread touches its link**, under that queue's synchronization:
-   a run queue is single-core with interrupts masked; an inbox is behind its mutex.
+   a run queue is single-core with interrupts masked; an inbox is behind its mutual exclusion lock.
 
 ## The crate's contract, and the `Unqueued` token
 

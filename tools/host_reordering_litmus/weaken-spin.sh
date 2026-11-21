@@ -1,6 +1,6 @@
 #!/bin/sh
 # weaken-spin.sh: weakens the orderings of the kernel's lock, `crates/test_and_set_lock`, in place, so the
-# kernel suite runs with every InterruptSafeMutex (kernel/src/sync.rs wraps test_and_set_lock::SpinLock)
+# kernel suite runs with every InterruptSafeMutualExclusionLock (kernel/src/sync.rs wraps test_and_set_lock::SpinLock)
 # broken.
 #
 #   release  the unlock store is Relaxed instead of Release (the guard's drop and force_unlock)

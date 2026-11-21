@@ -146,7 +146,7 @@ fn naming_a_file_to_a_reader_is_the_operator_left_out() {
 ///
 /// `wc out.txt | wc` puts the operand on the head of a pipeline; the planner resolves it, since
 /// deciding that a trailing positional is a stream needs the manifest. An empty input slot does
-/// not hang: `receive` answers `NoSuchSlot`, which decodes as `byte_sink_contract::Msg::Malformed`
+/// not hang: `receive` answers `NoSuchSlot`, which decodes as `byte_sink_contract::Message::Malformed`
 /// and reads as end of document, so a head fed nothing reports `0 0 0`. The assertion is derived
 /// from the line above rather than a constant: the second `wc`'s byte total is the length of the
 /// first one's answer, less the prompt's two-space indent. See notes/pipes.md, EXAMPLES.

@@ -7,10 +7,10 @@ closing finding 3, the PLIC enable-bit race, and what the tests can and cannot p
 
 ## Three things decided along the way
 
-`enable` and `disable` now share one helper that holds an `InterruptSafeMutex` across the
+`enable` and `disable` now share one helper that holds an `InterruptSafeMutualExclusionLock` across the
 read-modify-write.
 
-**It must be `InterruptSafeMutex`, and that is not belt-and-braces.** `disable` is called *from the
+**It must be `InterruptSafeMutualExclusionLock`, and that is not belt-and-braces.** `disable` is called *from the
 external-interrupt handler* and `enable` from thread context with interrupts on. A plain spinlock
 would let a thread take the word on hart H, take an external interrupt on H, and spin in the handler
 forever on a lock only the interrupted code can release. One hart, no SMP needed, permanent. This is the

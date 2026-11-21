@@ -966,8 +966,8 @@ pub(crate) unsafe fn switch_user_root(satp: u64) {
 }
 
 /// Serializes edits to the kernel's live tables across harts, at aarch64's lock rank.
-static KERNEL_MMU: crate::sync::InterruptSafeMutex<()> =
-    crate::sync::InterruptSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
+static KERNEL_MMU: crate::sync::InterruptSafeMutualExclusionLock<()> =
+    crate::sync::InterruptSafeMutualExclusionLock::new(crate::sync::rank::KERNEL_MMU, ());
 
 /// The kernel's live page tables, as a `Mapper` rooted at `KERNEL_ROOT`, which every hart shares.
 ///

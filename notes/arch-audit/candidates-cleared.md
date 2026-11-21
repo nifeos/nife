@@ -101,6 +101,6 @@ online mask and count, is published with `Release` after everything else is set 
 counted also targets it.
 
 The cross-core inbox. The one place a core reaches into another core's `PerCpu` is
-`cpu::inbox_of`, which is a real `IrqSafeMutex`. Everything else in `PerCpu` (`switched_from`,
+`cpu::inbox_of`, which is a real `InterruptSafeMutualExclusionLock`. Everything else in `PerCpu` (`switched_from`,
 `need_resched`, `runq_len`, `rng`) is touched by its owner, with the relaxed atomics serving as
 interior mutability through a shared static rather than as cross-core synchronization.

@@ -1,7 +1,7 @@
 //! **A program that does not know what it is writing to** (milestone 50, split out of the `sink`
 //! binary by milestone 292; notes/sink-protocol.md).
 //!
-//! It writes [`byte_sink_contract::fixture::TRANSCRIPT`] to whatever is in slot 0 and reports how
+//! It writes [`byte_sink_fixture::TRANSCRIPT`] to whatever is in slot 0 and reports how
 //! the last `SEND` classified, by value: "gone" and "never had one" must be two numbers to test
 //! milestone 50 (one sink protocol)'s one behaviour change. **The negative is the point**: it holds
 //! one writable endpoint and a report endpoint, nothing that names a file, a directory, a terminal
@@ -50,7 +50,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use byte_sink_contract::fixture;
+use byte_sink_fixture as fixture;
 use user_mode_runtime::{exit, send};
 
 /// The byte sink, `WRITE`, and the whole of what this program holds towards its output: no page,

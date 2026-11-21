@@ -180,8 +180,9 @@ pub(crate) fn require_program_in<'a>(fs: &nifefs::Fs<'a>, name: &str) -> Option<
 
 /// What the loader's command line said, recorded once at boot by [`record_loader_digests`]. `None`
 /// until then, and on a boot whose loader wrote no command line at all.
-static LOADER_DIGESTS: crate::sync::InterruptSafeMutex<Option<Result<LoaderDigests, Refusal>>> =
-    crate::sync::InterruptSafeMutex::new(crate::sync::rank::RAM, None);
+static LOADER_DIGESTS: crate::sync::InterruptSafeMutualExclusionLock<
+    Option<Result<LoaderDigests, Refusal>>,
+> = crate::sync::InterruptSafeMutualExclusionLock::new(crate::sync::rank::RAM, None);
 
 /// **Record the loader's two digests from the boot command line**, or why it has none: `None` for
 /// a boot with no command line. Called once by each front end while the line is still mapped

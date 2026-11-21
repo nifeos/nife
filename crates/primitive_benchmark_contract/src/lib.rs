@@ -35,7 +35,7 @@
 pub const NULL_SYSTEM_CALL_ITERATIONS: u64 = 20_000;
 
 /// Sink messages in the timed part of the throughput loop, each carrying
-/// `byte_sink_contract::INLINE_MAXIMUM` bytes. 5 000 messages are 80 000 bytes, past the 64 KiB a
+/// `byte_sink_contract::MAXIMUM_INLINE_BYTES` bytes. 5 000 messages are 80 000 bytes, past the 64 KiB a
 /// Unix pipe buffers, so a producer that could run ahead would have had to stop at least once.
 ///
 /// Name: provisional, minted 2026-10-31 (UTC) by lane/961-step-1-bench-commands.
@@ -200,14 +200,14 @@ mod tests {
                 // Bounded, so a loop that never ends fails here instead of hanging the run.
                 sent += 1;
                 assert!(sent <= 8, "write_row did not stop");
-                let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
+                let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
                 match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
-                    byte_sink_contract::Msg::Bytes(n) => {
+                    byte_sink_contract::Message::Bytes(n) => {
                         bytes[length..length + n].copy_from_slice(&buf[..n]);
                         length += n;
                     }
-                    byte_sink_contract::Msg::Eof => ended = true,
-                    byte_sink_contract::Msg::Malformed => panic!("malformed"),
+                    byte_sink_contract::Message::Eof => ended = true,
+                    byte_sink_contract::Message::Malformed => panic!("malformed"),
                 }
                 byte_sink_contract::Sent::Ok
             },
@@ -231,8 +231,8 @@ mod tests {
             |w0, w1, w2| {
                 sent += 1;
                 assert!(sent <= 8, "write_row did not stop");
-                let mut buf = [0u8; byte_sink_contract::INLINE_MAXIMUM];
-                if let byte_sink_contract::Msg::Bytes(0) =
+                let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
+                if let byte_sink_contract::Message::Bytes(0) =
                     byte_sink_contract::unpack(w0, w1, w2, &mut buf)
                 {
                     empty += 1;

@@ -59,6 +59,7 @@ coremark = { version = "0.1.0", path = "../crates/coremark" }
 abi = { version = "0.1.0", path = "../crates/abi" }
 block_roster_contract = { version = "0.1.0-pre.2", git = "https://github.com/nifeos/block_roster_contract", rev = "2bd3da34888fc1993ea5586f5ba3c74e98a2dbe1" }
 byte_sink_contract = { version = "0.1.0", path = "../crates/byte_sink_contract" }
+byte_sink_fixture = { version = "0.1.0", path = "../crates/byte_sink_fixture" }
 # The system log's wire contracts (milestone 613 (a system log service: the in-memory half)): the
 # suite plays the spawner and a reader, so it links the words they agree on rather than copies.
 system_log_contract = { version = "0.1.0", path = "../crates/system_log_contract" }

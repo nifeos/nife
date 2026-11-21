@@ -41,7 +41,7 @@
 #![allow(missing_docs)]
 #![no_main]
 
-use byte_sink_contract::fixture;
+use byte_sink_fixture as fixture;
 use filesystem_contract::fs;
 use user_mode_runtime::mapped_window::MappedWindow;
 use user_mode_runtime::{call, exit, send};
@@ -115,8 +115,8 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         // and it is the whole of what a sink adapter is.
         let mut i = 0usize;
         while i < got as usize {
-            let mut chunk = [0u8; byte_sink_contract::INLINE_MAXIMUM];
-            let n = (got as usize - i).min(byte_sink_contract::INLINE_MAXIMUM);
+            let mut chunk = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
+            let n = (got as usize - i).min(byte_sink_contract::MAXIMUM_INLINE_BYTES);
             for (k, b) in chunk[..n].iter_mut().enumerate() {
                 *b = get(i + k);
             }

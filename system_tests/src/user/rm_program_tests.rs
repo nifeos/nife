@@ -59,10 +59,14 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
         let [w0, w1, w2, _, _] = sched::ipc_receive(report);
         // `rm` speaks the sink contract it declares, so the report is decoded the way any sink
         // decodes it: an end of stream with a non-zero reserved word is malformed, not an end.
-        match byte_sink_contract::unpack(w0, w1, w2, &mut [0u8; byte_sink_contract::INLINE_MAXIMUM])
-        {
-            byte_sink_contract::Msg::Bytes(_) => {}
-            byte_sink_contract::Msg::Eof => {
+        match byte_sink_contract::unpack(
+            w0,
+            w1,
+            w2,
+            &mut [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES],
+        ) {
+            byte_sink_contract::Message::Bytes(_) => {}
+            byte_sink_contract::Message::Eof => {
                 // The verdict comes after the end, on its own endpoint (`filesystem_contract::rm`).
                 // Receiving it only now is what keeps it from overtaking the text.
                 let [status, removed, zero, _, _] = sched::ipc_receive(verdict);
@@ -74,7 +78,7 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
                     printed,
                 });
             }
-            byte_sink_contract::Msg::Malformed => {
+            byte_sink_contract::Message::Malformed => {
                 panic!("rm sent a message the sink contract refuses: {w0:#x} {w1:#x} {w2:#x}")
             }
         }

@@ -13,9 +13,9 @@ index 7bf381b61..cd063b846 100644
 @@ -293,7 +293,7 @@ pub enum Sent {
  /// channel to report on, its only channel being the broken one. The conservative reading keeps it
  /// running; the alternative kills a program because its spawner was careless.
- pub const fn classify(ret: i64) -> Sent {
--    if ret >= 0 {
-+    if ret > 0 {
+ pub const fn classify(returned: i64) -> Sent {
+-    if returned >= 0 {
++    if returned > 0 {
          Sent::Ok
-     } else if ret == GONE {
+     } else if returned == GONE {
          Sent::Gone

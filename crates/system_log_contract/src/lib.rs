@@ -135,7 +135,7 @@ pub mod record {
 
         /// Decode a header, or `None` when it cannot be one: a length past [`TEXT_MAXIMUM`]
         /// (obeying it would be a read past the record), a level past 7, or a reserved byte that is
-        /// not zero. Refused rather than repaired, for `byte_sink_contract::Msg::Malformed`'s
+        /// not zero. Refused rather than repaired, for `byte_sink_contract::Message::Malformed`'s
         /// reason.
         pub fn decode(b: &[u8; HEADER_LEN]) -> Option<Header> {
             let word = |i: usize| {

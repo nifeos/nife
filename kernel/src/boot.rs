@@ -360,7 +360,7 @@ fn bring_up_machine(boot_info_pointer: usize) {
 /// Bring up the interrupt controller and the timer, then **unmask interrupts**.
 ///
 /// This is the line the whole locking discipline was written for. From here, a timer interrupt
-/// can land between any two instructions in the kernel, and every `InterruptSafeMutex` starts
+/// can land between any two instructions in the kernel, and every `InterruptSafeMutualExclusionLock` starts
 /// actually masking something. See DECISIONS §9 and notes/locking.md.
 fn initialize_interrupts(_dtb: usize) {
     use crate::arch::{interrupt_controller, interrupts, timer};

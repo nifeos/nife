@@ -726,7 +726,7 @@ static TICK_CURSOR: AtomicUsize = AtomicUsize::new(0);
 /// shared rendezvous starves all but one waiter. See notes/soak/tick-route.md.
 ///
 /// Context: called from `sched::on_tick`, in interrupt context, on every core. Takes `IPC_TABLES`
-/// through `interrupt_notify`, an `InterruptSafeMutex` (§9 (locking: `IrqSafeMutex`, plus a
+/// through `interrupt_notify`, an `InterruptSafeMutualExclusionLock` (§9 (locking: `IrqSafeMutex`, plus a
 /// discipline)), so
 /// the interrupted code cannot hold it.
 ///

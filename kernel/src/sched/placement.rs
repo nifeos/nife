@@ -110,7 +110,7 @@ pub(super) fn place_on(target: usize, thread: Unqueued<Thread>) -> Option<usize>
         // Read before the push gives the token away. SAFETY: a token's thread is live while the
         // token exists (`Threads::mint_token`), and IPC_TABLES (held) serializes every `Thread`.
         let tid = unsafe { (*thread.as_ptr()).id };
-        // The inbox mutex serializes access to the link.
+        // The inbox mutual exclusion lock serializes access to the link.
         let mut inbox = cpu::inbox_of(target).lock();
         inbox.push_back(thread);
         // Mirror the inbox depth so it counts as load (§28), under the inbox lock.
@@ -160,7 +160,7 @@ pub fn serve_steal_request() {
         // SAFETY: reading the id of the thread we just popped and hold exclusively.
         let tid = unsafe { (*t.as_ptr()).id };
         trace::record(trace::Event::StealServe, tid, requester as u8);
-        // The requester's inbox mutex orders this pop before its drain, as in `place_on`.
+        // The requester's inbox mutual exclusion lock orders this pop before its drain, as in `place_on`.
         let mut inbox = cpu::inbox_of(requester).lock();
         inbox.push_back(t);
         cpu::of(requester).note_inbox_len(inbox.len());

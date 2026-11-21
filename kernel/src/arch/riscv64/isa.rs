@@ -9,12 +9,13 @@
 
 use machine_discovery::riscv64::{EID_BASE, Isa, SBI_TABLE, Sbi, SbiExtensions};
 
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 use crate::{print, println};
 
 /// The record, written once by [`initialize`]. `None` until then, so an early read panics rather
 /// than returning a plausible all-zero machine.
-static ISA: InterruptSafeMutex<Option<Isa>> = InterruptSafeMutex::new(rank::ISA, None);
+static ISA: InterruptSafeMutualExclusionLock<Option<Isa>> =
+    InterruptSafeMutualExclusionLock::new(rank::ISA, None);
 
 /// Discover the machine from the device tree at physical `dtb_ptr` and from SBI, and record it.
 ///

@@ -844,8 +844,8 @@ pub(crate) unsafe fn switch_user_root(ttbr: u64) {
 ///
 /// Two cores spawning threads map into the shared TTBR1 tables at once. Ranked below `IPC_TABLES`
 /// and above the allocators it calls (`sync::rank::KERNEL_MMU`).
-static KERNEL_MMU: crate::sync::InterruptSafeMutex<()> =
-    crate::sync::InterruptSafeMutex::new(crate::sync::rank::KERNEL_MMU, ());
+static KERNEL_MMU: crate::sync::InterruptSafeMutualExclusionLock<()> =
+    crate::sync::InterruptSafeMutualExclusionLock::new(crate::sync::rank::KERNEL_MMU, ());
 
 /// The kernel's live page tables, as a `Mapper`.
 ///
