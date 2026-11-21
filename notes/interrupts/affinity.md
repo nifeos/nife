@@ -75,9 +75,9 @@ for S-mode on QEMU
   handler running `disable` on a neighbor. A lost update either masks a device forever (its driver
   blocks on an interrupt that never arrives) or leaves a level-triggered source live after the handler
   masked it (an interrupt storm on that hart). So `enable`/`disable` go through one helper holding an
-  `InterruptSafeMutex` at `rank::INTERRUPT_CONTROLLER`, the same rank the GIC's lock takes.
+  `InterruptSafeMutualExclusionLock` at `rank::INTERRUPT_CONTROLLER`, the same rank the GIC's lock takes.
 
-  It has to be `InterruptSafeMutex` rather than a plain lock.
+  It has to be `InterruptSafeMutualExclusionLock` rather than a plain lock.
   That is the §9 (locking: IrqSafeMutex, plus a discipline) deadlock rather than caution. `disable`
   runs *in the handler* while `enable` runs in thread context with interrupts on.
   A plain spinlock would let a thread take the word on a hart and then have that hart's own
@@ -127,7 +127,7 @@ kind of race that passes a thousand test runs and then fails in front of an audi
 it by reading for the pattern rather than by waiting for it to bite ([arch-audit.md](../arch-audit.md),
 finding 3).
 
-The fix is one `InterruptSafeMutex` around the read and the write together, so steps 1-4 and 2-6
+The fix is one `InterruptSafeMutualExclusionLock` around the read and the write together, so steps 1-4 and 2-6
 cannot
 interleave: whichever hart takes the lock second re-reads the word *after* the first hart's store and
 computes from current state. It is the smallest possible critical section (a read, an or/and-not, a

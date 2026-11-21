@@ -1552,7 +1552,7 @@ mod interleavings {
     //!
     //! The protocol is lock-based, so loom searches the interleaving of critical sections, not
     //! memory orderings: the model assumes mutual exclusion and says nothing about whether
-    //! `InterruptSafeMutex` delivers it. The harnesses use `RegionTable<2>` or `<4>`, not the kernel's 256,
+    //! `InterruptSafeMutualExclusionLock` delivers it. The harnesses use `RegionTable<2>` or `<4>`, not the kernel's 256,
     //! because the search is exponential in the interleavings and nothing in the protocol depends
     //! on capacity. Every other input is the kernel's own source.
 

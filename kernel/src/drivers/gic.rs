@@ -17,7 +17,7 @@
 //!   not model the reordering; argon, a GIC-400, would. The fix is one `dsb ishst` in
 //!   `arch::interrupt_controller::send_sgi` ahead of the GICv2 call.
 
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 // Register offsets and bits from the GIC architecture specification, version 2 (Arm IHI 0048B),
 // chapter 4, under each register's own heading, and checked against Linux's
@@ -76,8 +76,8 @@ pub(crate) struct Gic {
     gicc: u64,
 }
 
-static GIC: InterruptSafeMutex<Option<Gic>> =
-    InterruptSafeMutex::new(rank::INTERRUPT_CONTROLLER, None);
+static GIC: InterruptSafeMutualExclusionLock<Option<Gic>> =
+    InterruptSafeMutualExclusionLock::new(rank::INTERRUPT_CONTROLLER, None);
 
 impl Gic {
     /// Write the distributor's 32-bit register at `offset`.

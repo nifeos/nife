@@ -34,7 +34,7 @@ the number from `script/lint` and not from here.
 
 63 sites is a small number for an SMP kernel on two weakly ordered ISAs, and the reason is
 DECISIONS §9 (locking). Almost everything shared is behind a ranked interrupt-safe lock, and
-`InterruptSafeMutex` wraps `test_and_set_lock::SpinLock`, which locks with `compare_exchange(false, true,
+`InterruptSafeMutualExclusionLock` wraps `test_and_set_lock::SpinLock`, which locks with `compare_exchange(false, true,
 Acquire, Relaxed)` and unlocks with `store(false, Release)`. So the overwhelming majority of this
 kernel's happens-before edges are supplied by one acquire/release pair in `crates/test_and_set_lock`, which
 no call site names and no grep over the kernel's call sites can find. Loom checks that pair, with

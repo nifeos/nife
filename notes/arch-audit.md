@@ -187,10 +187,10 @@ is to fire.
 #### Closed
 
 Reported first, then fixed on review, as execution inside decided architecture rather than a design
-fork. §9 (locking: IrqSafeMutex, plus a discipline) already establishes `InterruptSafeMutex` plus a rank order. `drivers/gic.rs` already takes a lock
+fork. §9 (locking: IrqSafeMutex, plus a discipline) already establishes `InterruptSafeMutualExclusionLock` plus a rank order. `drivers/gic.rs` already takes a lock
 for this exact operation, and 16b added `rank::IOMMU` without escalating, so a rank is precedented.
 
-`enable` and `disable` now share one helper that holds an `InterruptSafeMutex` across the read-modify-write,
+`enable` and `disable` now share one helper that holds an `InterruptSafeMutualExclusionLock` across the read-modify-write,
 at rank `rank::INTERRUPT_CONTROLLER`. It must be interrupt-safe, because `disable`
 runs in the handler and a plain spinlock would deadlock one hart against itself. Both icount
 baselines are byte-identical, so nothing hot was locked. No test can catch the race itself; the tests
@@ -222,7 +222,7 @@ candidate:
   discipline predates the bug.
 - GIC acknowledge/EOI and PLIC claim/complete cannot cross cores, the timers touch only per-core or
   M-mode state, secondary bring-up runs masked, and the cross-core inbox is a real
-  `InterruptSafeMutex`.
+  `InterruptSafeMutualExclusionLock`.
 
 ## The honest summary
 
@@ -232,7 +232,7 @@ Three findings from a full read of both ISAs' arch trees, and their dispositions
 |---|---|---|
 | 1 | The RISC-V mask was safe by an unstated invariant, not by construction, and the comment claimed otherwise | **Fixed**, and the invariant is now a compile-time assertion |
 | 2 | `trap_entry` leaves a user-controlled value in `sscratch` across the faultable frame stores | **Left documented**, on review: paying hot-path cost to harden behind a kernel-stack overflow that is already fatal is a bad trade |
-| 3 | The PLIC's enable-bit read-modify-write is unserialized, a reachable liveness bug and a parity gap | **Fixed** on review, with an `InterruptSafeMutex` at the GIC's rank |
+| 3 | The PLIC's enable-bit read-modify-write is unserialized, a reachable liveness bug and a parity gap | **Fixed** on review, with an `InterruptSafeMutualExclusionLock` at the GIC's rank |
 
 Nothing found was a live privilege or memory-safety hole; the two that were are the two already
 fixed. Finding 3 is the one worth remembering for its shape rather than its severity. It was not a

@@ -218,7 +218,7 @@ fn mmio_block_device_n(n: usize) -> Option<VirtualIoMmioDevice> {
 // and validates every descriptor against the driver's DMA region first. See notes/dma.md.
 // ---------------------------------------------------------------------------------------------
 
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 // virtio-mmio v2 registers the kernel drives.
 const REG_DEVICE_FEATURES_SEL: u64 = 0x014;
@@ -599,7 +599,7 @@ impl Devices {
     }
 }
 
-static DEVICES: InterruptSafeMutex<Devices> = InterruptSafeMutex::new(
+static DEVICES: InterruptSafeMutualExclusionLock<Devices> = InterruptSafeMutualExclusionLock::new(
     rank::VIRTUAL_IO,
     Devices {
         table: generational_table::Table::new(),

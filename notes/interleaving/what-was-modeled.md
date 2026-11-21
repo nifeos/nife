@@ -207,7 +207,7 @@ the recorded bug.
 
 ## `crates/test_and_set_lock`, the kernel's lock (2026-10-25)
 
-`InterruptSafeMutex` (`kernel/src/sync.rs`) masks interrupts and checks lock ranks, and under that
+`InterruptSafeMutualExclusionLock` (`kernel/src/sync.rs`) masks interrupts and checks lock ranks, and under that
 it
 takes `test_and_set_lock::SpinLock`: a flag set with an Acquire compare-exchange and cleared with a Release
 store. Most of the kernel's happens-before edges come from that pair

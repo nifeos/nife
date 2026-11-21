@@ -97,7 +97,7 @@ pub fn interrupt_route(intid: u32) -> Option<RendezvousId> {
 /// never lost while the receiver is busy. A stale `ep` drops it.
 ///
 /// Context: interrupt context. Takes `IPC_TABLES`, which the interrupted code cannot hold, because
-/// `InterruptSafeMutex` masks interrupts while held (§9 (locking)); sends any SGI after releasing
+/// `InterruptSafeMutualExclusionLock` masks interrupts while held (§9 (locking)); sends any SGI after releasing
 /// it.
 ///
 /// Name: ratified 2026-10-27 (#2797).

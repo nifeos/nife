@@ -267,9 +267,9 @@ pub(super) fn drain_until_end(
 /// thread exited, and `available_parallelism` is the online count (§269 (how threads share a
 /// process) fork 7). After the program ends, its process has ended with every member reaped.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.std_threads_tests.four_std_threads_share_a_mutex_an_atomic_and_a_space.patch`
+/// Falsification: replayable `system_tests/falsifications/user.std_threads_tests.four_std_threads_share_a_mutual_exclusion_lock_an_atomic_and_a_space.patch`
 #[test_case]
-fn four_std_threads_share_a_mutex_an_atomic_and_a_space() {
+fn four_std_threads_share_a_mutual_exclusion_lock_an_atomic_and_a_space() {
     let Some(image) = std_threads_image() else {
         crate::testing::skip!(super::std_service::NO_STD_EXERCISER);
     };

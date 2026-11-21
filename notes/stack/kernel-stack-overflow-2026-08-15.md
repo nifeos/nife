@@ -39,7 +39,7 @@ On aarch64 the two addresses cohere into a story:
   cascaded. A store into the guard raises a same-EL sync abort, whose entry pushes another frame
   0x110 lower, which faults again, and so on down the guard page. The dump we finally get is the
   cascade's last inner fault, printed once a frame lands whole in the mapped page below the guard.
-- `x30` = `IrqSafeMutex<Option<Scheduler>>::lock + 0x190`, the instruction after that function's
+- `x30` = `InterruptSafeMutualExclusionLock<Option<Scheduler>>::lock + 0x190`, the instruction after that function's
   `bl spin_loop_hint`, a value that is only live inside the contended spin of `SCHED.lock`.
   The thread that died
   was spinning for the scheduler lock with interrupts already masked, within ~272 bytes of its

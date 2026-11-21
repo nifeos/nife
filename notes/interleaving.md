@@ -36,11 +36,11 @@ was for.
 
 | Candidate | What it actually is | Reachable by loom |
 |---|---|---|
-| The IPC sender queue (`crates/inter_process_communication`) | zero atomics. `Rendezvous` is plain data under the `SCHED` `InterruptSafeMutex` | nothing to explore |
+| The IPC sender queue (`crates/inter_process_communication`) | zero atomics. `Rendezvous` is plain data under the `SCHED` `InterruptSafeMutualExclusionLock` | nothing to explore |
 | `crates/intrusive_queue` (the run queues) | zero atomics. Single-owner with interrupts masked, plus an `UnsafeCell` | nothing to explore |
 | `nifeos/generational_table` (the thread table) | zero atomics. Under `SCHED` | nothing to explore **as atomics**, and that reading was too narrow: `crates/memory_regions` is a `generational_table` table under a lock, and its protocol had a real double free in it. See the `thread_wake_handshake` and `memory_regions` sections of [what-was-modeled.md](interleaving/what-was-modeled.md) |
 | The reaper handoff (`PerCpu::switched_from`) | one `AtomicU64`, both accesses `Relaxed`, written and read **by the same core** with interrupts masked. The atomic is interior mutability, not synchronization | nothing to explore |
-| The run-queue handoff | the migration inbox is an `InterruptSafeMutex`; the *steal request slot* is the lock-free part | **yes**, and it is the pilot |
+| The run-queue handoff | the migration inbox is an `InterruptSafeMutualExclusionLock`; the *steal request slot* is the lock-free part | **yes**, and it is the pilot |
 
 So the population is smaller than it looked, and that is a fact about the design rather than a gap in
 the search: this kernel puts almost everything behind a ranked interrupt-safe lock on purpose
@@ -84,7 +84,7 @@ timing table already said "all four crates".
 | `crates/thread_wake_handshake` | block/wake, in the gaps between `SCHED` critical sections (2026-08-14) | a wake racing a switch-out resumes on a saved context; three historical races rebuilt as `#[should_panic]` reconstructions |
 | `crates/memory_corruption_canary_gate` | the corruption canary's arm/check/disarm (2026-08-15) | armer and checker exclusion, disarm's quiescence, single-flight checking; the old two-flag protocol failed on the first run |
 | `crates/memory_regions` | the untyped region claim (2026-08-18) | exactly one destroyer reclaims; a witness harness asserts the pre-#316 protocol double-frees |
-| `crates/test_and_set_lock` | the lock under `InterruptSafeMutex` (2026-10-25) | exclusion and the happens-before edge for two and three takers, and a Relaxed release that must fail |
+| `crates/test_and_set_lock` | the lock under `InterruptSafeMutualExclusionLock` (2026-10-25) | exclusion and the happens-before edge for two and three takers, and a Relaxed release that must fail |
 
 Two of the five are lock-based, so what loom searches there is the interleaving of critical
 sections, not memory orderings. That is the standing correction to the survey: a protocol is a
@@ -253,7 +253,7 @@ model that searches code the kernel no longer runs reports success forever, with
 Milestone 136 (one decision path, and a gate that keeps it that way) gated this for `crates/memory_regions`, where #316's double free could be rebuilt
 from the public API alone. `script/lint`'s "the region claim protocol has one decision path" check
 pins the crate's public surface and requires each free loop to make its entitling call first. The
-other loom crates have the same exposure and are not gated, except that `InterruptSafeMutex`'s field
+other loom crates have the same exposure and are not gated, except that `InterruptSafeMutualExclusionLock`'s field
 type
 is `test_and_set_lock::SpinLock`, so the compiler holds that caller. The rebuilt gap, the two halves of
 the check and the `compile_fail` doctests are in

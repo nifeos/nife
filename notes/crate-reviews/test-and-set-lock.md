@@ -15,7 +15,7 @@ A test-and-set spinlock for `no_std` code: one flag, taken with an Acquire compa
 released with a Release store, and a guard that hands out the data while it holds the flag. The
 source is written so that loom runs the real lock, not a copy of it, under every interleaving of two
 and three threads. It is not fair, not reentrant, does not poison and does not mask interrupts. The
-kernel's `InterruptSafeMutex` wraps it and adds the interrupt masking and the lock ranks. The crate
+kernel's `InterruptSafeMutualExclusionLock` wraps it and adds the interrupt masking and the lock ranks. The crate
 is `no_std`, has no run-time dependency, and holds four `unsafe` sites in the library: the `Sync`
 impl, the guard's `Deref` and `DerefMut`, and `force_unlock`. It has no Kani harness: its proof is
 five loom models. Nothing in its manifest points back into nife.
@@ -40,7 +40,7 @@ Each by a path dependency with `version = "0.1.0"`, except the litmus tool, whic
 
 | package | manifest | table |
 |---|---|---|
-| `kernel` | `kernel/Cargo.toml` | dependencies. `kernel/src/sync.rs` wraps `test_and_set_lock::SpinLock` in `InterruptSafeMutex`, and `kernel/src/user/fs_service/two_dirs.rs` holds one static |
+| `kernel` | `kernel/Cargo.toml` | dependencies. `kernel/src/sync.rs` wraps `test_and_set_lock::SpinLock` in `InterruptSafeMutualExclusionLock`, and `kernel/src/user/fs_service/two_dirs.rs` holds one static |
 | `system_tests` | `system_tests/Cargo.toml` | dependencies. Six statics in `system_tests/src/user/`: `pipeline_tests.rs`, `pipeline_service.rs`, `confined_fuzzer_tests.rs`, `redirection_tests.rs` and two in `system_call_fuzzer_tests.rs` |
 | `host_reordering_litmus` | `tools/host_reordering_litmus/Cargo.toml` | dependencies. It runs the real lock on a bare-metal guest beside its own copy, and `weaken-spin.sh` edits the crate's source in place |
 

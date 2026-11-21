@@ -1,6 +1,6 @@
 //! The kernel console, and `print!` / `println!`.
 //!
-//! One `InterruptSafeMutex` holds the console UART and, where the machine has one, the screen, so a
+//! One `InterruptSafeMutualExclusionLock` holds the console UART and, where the machine has one, the screen, so a
 //! `print!` from an interrupt handler cannot splice into another writer's line. See
 //! notes/kernel-console.md.
 
@@ -24,7 +24,7 @@ type ConsoleUart = crate::drivers::ns16550::Ns16550<crate::arch::PortIo>;
 use machine_discovery::framebuffer::Framebuffer;
 use screen_console::{Cells, PixelSink, ScreenConsole};
 
-use crate::sync::{InterruptSafeMutex, rank};
+use crate::sync::{InterruptSafeMutualExclusionLock, rank};
 
 /// **The heads of this system's boot lines**, built from the name every one of them begins with.
 /// The kernel prints the banner, machine, tour, screen-hold and (with no progenitor) verdict lines
@@ -153,17 +153,18 @@ impl core::fmt::Write for KernelConsole {
 ///
 /// SAFETY: `UART_BASE` is the documented UART address on QEMU `virt`, and nothing else in the kernel
 /// touches it.
-static CONSOLE: InterruptSafeMutex<KernelConsole> = InterruptSafeMutex::new(
-    rank::CONSOLE,
-    KernelConsole {
-        // SAFETY: `UART_BASE` is the documented console address on every machine this kernel is
-        // built for (see its own doc comment), and nothing else in the kernel touches it.
-        uart: unsafe { ConsoleUart::new(UART_BASE) },
-        screen: None,
-        cells: Cells::new(),
-        line: crate::kernel_log::Line::new(),
-    },
-);
+static CONSOLE: InterruptSafeMutualExclusionLock<KernelConsole> =
+    InterruptSafeMutualExclusionLock::new(
+        rank::CONSOLE,
+        KernelConsole {
+            // SAFETY: `UART_BASE` is the documented console address on every machine this kernel is
+            // built for (see its own doc comment), and nothing else in the kernel touches it.
+            uart: unsafe { ConsoleUart::new(UART_BASE) },
+            screen: None,
+            cells: Cells::new(),
+            line: crate::kernel_log::Line::new(),
+        },
+    );
 
 /// Name: provisional. Spelled out under the `init` ruling of 2026-10-26 (UTC), in
 /// design/naming/acronyms-and-abbreviations.md.
@@ -357,7 +358,7 @@ pub fn hold_screen_at_handover() {
 ///
 /// Bounded twice, and either bound ends the wait: `HOLD_TICKS` (ten seconds of ticks) and
 /// `HOLD_POLLS` (register reads, for a machine whose timer is not ticking). Runs outside the
-/// console lock, an `InterruptSafeMutex`, which it takes per poll: holding it for seconds would
+/// console lock, an `InterruptSafeMutualExclusionLock`, which it takes per poll: holding it for seconds would
 /// hold
 /// interrupts off, and the `println!` here would deadlock on it. See notes/kernel-console.md, "The
 /// screen hold".

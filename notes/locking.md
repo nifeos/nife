@@ -25,7 +25,7 @@ one.
 ## The fix
 
 Mask interrupts for as long as the lock is held. The interrupt cannot fire, so it
-cannot try to take the lock. Linux calls this `spin_lock_irqsave`; ours is `InterruptSafeMutex`
+cannot try to take the lock. Linux calls this `spin_lock_irqsave`; ours is `InterruptSafeMutualExclusionLock`
 in `kernel/src/sync.rs`.
 
 On aarch64 that means the `I` bit of `PSTATE.DAIF`:
@@ -80,7 +80,7 @@ not enjoy explaining.
 
 This is precisely why Linux's is called `irqsave`/`irqrestore` and not `irqoff`/`irqon`,
 and it is the single easiest thing to get wrong here. There is a test named
-`interrupt_safe_mutex_restores_rather_than_enables` whose only job is to catch it, and it was
+`interrupt_safe_mutual_exclusion_lock_restores_rather_than_enables` whose only job is to catch it, and it was
 verified against a deliberately broken `restore()`.
 
 ## Why we didn't build per-CPU reserves
@@ -227,7 +227,7 @@ a panic path, which is only `CONSOLE`.
 
 ## Why the lock path carries inline hints
 
-`InterruptSafeMutex::lock` is `#[inline]`. Unmarked, the generic is emitted once and can inline only
+`InterruptSafeMutualExclusionLock::lock` is `#[inline]`. Unmarked, the generic is emitted once and can inline only
 in
 the codegen unit that owns it. Which unit that is depends on a metadata hash Cargo derives partly
 from the host triple. One commit then built two aarch64 kernels 25 KiB of text apart, and
@@ -252,7 +252,7 @@ closures on all three ISAs.
 
 See [DECISIONS](../design/decisions/0009-irq-safe-locking.md) §9 for the full table. The short version:
 
-1. All kernel locks are `InterruptSafeMutex`.
+1. All kernel locks are `InterruptSafeMutualExclusionLock`.
 2. Mask, then lock. Unlock, then restore.
 3. Restore, never blindly enable.
 4. Keep critical sections short: interrupts are off for the whole of it.

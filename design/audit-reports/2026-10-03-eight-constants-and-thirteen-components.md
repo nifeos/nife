@@ -204,7 +204,7 @@ it act. Recorded in `crates/free/src/lib.rs`'s BUGS.
 ### 6. ACCEPTED: `USAGE`'s subtree records walk the whole region table with interrupts masked
 
 `spent` sums every region that descends from the named one, and `descends_from` walks each
-candidate's parent chain, under `REGIONS`, an `IrqSafeMutex`. Measured on the host (a throwaway
+candidate's parent chain, under `REGIONS`, an `InterruptSafeMutualExclusionLock`. Measured on the host (a throwaway
 test, not committed): 8 ns for a root with eight children; 42 µs for a root over the deepest chain
 the table can hold (256 regions, each split from the last); 62 µs for that chain's leaf, which
 rejects every candidate after a full walk. A holder of `ENUMERATE` on any region can repeat the
