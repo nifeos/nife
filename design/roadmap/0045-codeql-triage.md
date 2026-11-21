@@ -50,8 +50,9 @@ is worse than none, because it manufactures the appearance of review
 
 ## Follow-on
 
-- **Recorded.** `crates/intrusive_queue/src/lib.rs` carries the standing caveat: pointer validity
-  and aliasing in the intrusive queue remain inexpressible. `NonNull` made nullness structural and
+- **Recorded.** The caller's contract in [`nifeos/intrusive_queue`'s README](https://github.com/nifeos/intrusive_queue/blob/08c31f2d1397edc91f8046d068eaaf4f116b580b/README.md#the-callers-contract)
+  carries the standing caveat: pointer validity and aliasing in the intrusive queue remain
+  inexpressible. `NonNull` made nullness structural and
   cleared both alerts. What upholds the rest is the kernel's state machine rather than any type,
   which the crate says out loud rather than letting two green checkmarks imply safety.
 

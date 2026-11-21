@@ -122,7 +122,7 @@ counterparty; the expiry wakes it; it returns.
 
 A deadline on `Rendezvous::RECEIVE`/`CALL` needs two things the other two do not, and both are concrete:
 
-1. A targeted unlink from an endpoint's wait queue. `crates/intrusive_queue`'s `Queue` is
+1. A targeted unlink from an endpoint's wait queue. `nifeos/intrusive_queue`'s `Queue` is
    singly linked: one `next` per node, `head`/`tail`/`len`, and its whole API is `push_back`,
    `pop_front`, `is_empty`, `len`. `inter_process_communication::Rendezvous` adds only
    `drain_waiters`, which drains *all* of them. Removing one specific waiter is a new method,

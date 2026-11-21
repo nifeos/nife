@@ -498,7 +498,6 @@ byte_sink_contract	10	the byte-sink framing: any prefix round-trips, the decoder
 domain_name_resolution_contract	494	the grant table: any short run of control messages never panics, and a badge is in force only once a message said Granted, in a window that never moves
 program_argument_contract	74	the argument page parser: never panics, yields exactly len items, and a parsed page holds exactly the records its header states
 inter_process_communication	14	the rendezvous state machine
-intrusive_queue	10	the scheduler's queue structure
 address_space_identifier	1	the TLB tag allocator
 line_editor	88	the line editor's escape parser and range delete keep the cursor inside the line
 machine_statistics_contract	58	the statistics page reader admits exactly the pages it names, every accessor is total over an admitted page, and a built header reads back empty
