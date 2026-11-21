@@ -31,7 +31,7 @@ opposite rights, is a one-way pipe neither side can run backwards. The client ho
 `WRITE`-only capability: it can send and it *cannot express* receiving. Nobody had to tell it
 which end it is. It could not be the other end if it tried.
 
-This is [`capability_table::Rights`](../../crates/capability_table/src/lib.rs) doing real work, and it is a distinction Unix
+This is [`capability_table::Rights`](https://github.com/nifeos/capability_table/blob/62080aff201e72d73f59ace206bc3c92a1c7c325/src/lib.rs) doing real work, and it is a distinction Unix
 does not have: a pipe fd is a pipe fd.
 
 ## The scheduler learned a third thing a thread can be

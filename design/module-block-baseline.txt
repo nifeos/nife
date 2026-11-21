@@ -961,65 +961,35 @@ crates/capability_plan/src/lib.rs::slot_for
 
 crates/capability_plan/src/lib.rs::slot_of
 
-crates/capability_table/src/lib.rs::ALL
 
-crates/capability_table/src/lib.rs::BIND
 
-crates/capability_table/src/lib.rs::CapabilityTable
 
-crates/capability_table/src/lib.rs::ENUMERATE
 
-crates/capability_table/src/lib.rs::Error
 
-crates/capability_table/src/lib.rs::GRANT
 
-crates/capability_table/src/lib.rs::NONE
 
-crates/capability_table/src/lib.rs::READ
 
-crates/capability_table/src/lib.rs::Rights
 
-crates/capability_table/src/lib.rs::WRITE
 
-crates/capability_table/src/lib.rs::allows
 
-crates/capability_table/src/lib.rs::bits
 
-crates/capability_table/src/lib.rs::delete
 
-crates/capability_table/src/lib.rs::delete_matching
 
-crates/capability_table/src/lib.rs::derive
 
-crates/capability_table/src/lib.rs::from_bits
 
-crates/capability_table/src/lib.rs::get
 
-crates/capability_table/src/lib.rs::highest_seen
 
-crates/capability_table/src/lib.rs::insert
 
-crates/capability_table/src/lib.rs::insert_at
 
-crates/capability_table/src/lib.rs::insert_at_or_above
 
-crates/capability_table/src/lib.rs::intersect
 
-crates/capability_table/src/lib.rs::is_empty
 
-crates/capability_table/src/lib.rs::is_subset_of
 
-crates/capability_table/src/lib.rs::mint_child
 
-crates/capability_table/src/lib.rs::new
 
-crates/capability_table/src/lib.rs::peak
 
-crates/capability_table/src/lib.rs::put
 
-crates/capability_table/src/lib.rs::union
 
-crates/capability_table/src/lib.rs::used
 
 
 crates/capability_witness_contract/src/lib.rs::CHILD_ANSWERED

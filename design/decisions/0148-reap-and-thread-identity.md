@@ -59,7 +59,7 @@ than a rights bit and was not what the fork asked.
 
 ### What was refused, and the reason each lost
 
-- A `REAP` rights bit. [`ENUMERATE`](../../crates/capability_table/src/lib.rs)'s own precedent is real
+- A `REAP` rights bit. [`ENUMERATE`](https://github.com/nifeos/capability_table/blob/62080aff201e72d73f59ace206bc3c92a1c7c325/src/lib.rs)'s own precedent is real
   (milestone 126 split it out of `READ`, and its doc comment records that `READ` wrongly authorized
   `REAP` on a rendezvous), and there are 28 unused bits, so the structural cost is nil. It lost on a
   check: `REAP` alone buys cleanup, not restart. Rebuilding needs `RETYPE`, which needs `WRITE`,
