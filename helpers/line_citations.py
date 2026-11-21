@@ -44,6 +44,9 @@ extension (`TARGET_EXTENSIONS`), or an extensionless file under `script/`, `help
 - A GitHub `blob/<commit sha>/...#L12` permalink. It names an immutable file, so it cannot drift.
 - Files that are output or data, not writing (`DATA_EXTENSIONS`: logs, TSV and CSV tables, patches,
   JSON), and `vendor/`, `patches/`, `target/`, which are somebody else's text.
+- A crate's `.github/mutants-exempts` (`DATA_NAMES`). The crate-workflows mutation gate matches each
+  line on its `file:line` prefix, so the line number is the key the tool reads, not a pointer a
+  writer chose; the gate itself refuses an entry whose line no longer holds a survivor.
 - This file, whose fixtures are the patterns it looks for.
 
 **An exception is marked at the citation.** `line-citation: exception. Reason: ...` on the same
@@ -81,6 +84,7 @@ CODE_EXTENSIONS = ('rs', 'S', 's', 'py', 'sh', 'c', 'h', 'toml', 'yml', 'yaml', 
 TARGET_EXTENSIONS = DOC_EXTENSIONS + CODE_EXTENSIONS
 DATA_EXTENSIONS = ('.log', '.tsv', '.csv', '.patch', '.diff', '.json', '.svg', '.txt', '.lock')
 EXCLUDED_PREFIXES = ('vendor/', 'patches/', 'target/')
+DATA_NAMES = ('.github/mutants-exempts',)
 
 _PATH = (r'(?:[A-Za-z0-9_./][A-Za-z0-9_.\-/]*\.(?:' + '|'.join(TARGET_EXTENSIONS) + r')'
          r'|(?:script|helpers|\.githooks)/[A-Za-z0-9_\-]+)')
@@ -96,7 +100,7 @@ LIST_ITEM = re.compile(r'^\s*(?:[-*+]|\d+[.)])\s')
 def in_scope(path):
     if path.startswith(EXCLUDED_PREFIXES) or path == SELF:
         return False
-    return not path.endswith(DATA_EXTENSIONS)
+    return not path.endswith(DATA_EXTENSIONS) and not path.endswith(DATA_NAMES)
 
 
 def kind(target):

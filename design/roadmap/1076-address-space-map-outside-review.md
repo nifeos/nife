@@ -156,9 +156,9 @@ program builder and the runtime all read it. Its review package lists every publ
 state, including the provisional names of items 7, 9, 15 and 17. This decision is the clearing of
 that package.
 
-Decision, option A, 2026-11-21 (UTC): the review is cleared. That approves creating
+Decision, option A, 2026-11-21 (UTC): the architect cleared the review. That approves creating
 `nifeos/address_space_layout` and moving the crate with `publish = false`, no tag and no publish.
-The names of items 7, 15 and 17 are ratified as the package proposed them; `window`, `VERSION` and
+The clearance ratifies the names of items 7, 15 and 17 as the package proposed them; `window`, `VERSION` and
 `INTERFACE_ID` stay provisional.
 
 - A. Clear the review once the package lands, which approves creating the repository and moving
@@ -226,7 +226,7 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
   move. `cargo xtask std-src` reads the crate from Cargo's git checkout when the manifests name a
   git dependency; a dry run against a local git repository of the staged crate copied that
   checkout's `src/lib.rs`.
-- The move: Open. The review is cleared; the repository and the first push follow this tree's
+- The move: Open. The architect cleared the review; the repository and the first push follow this tree's
   preparation.
 - Publishing: Open. No first publish happens until the last outside-review milestone closes
   (ruled 2026-11-18 UTC).
@@ -258,4 +258,4 @@ None.
 
 ## Index row
 
-An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. The crate's own name has its ruling and its rename. The review package is cleared and the constants carry their ratified names; the whole-window check keeps a provisional one.
+An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. The crate's own name has its ruling and its rename. The architect cleared the review package, and the constants carry their ratified names; the whole-window check keeps a provisional one.
