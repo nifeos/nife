@@ -109,8 +109,7 @@ The comparison with nearby work is in [the appendix](1076-address-space-map-outs
 ## Decisions for the architect
 
 The architect ruled the crate's name and cleared the review package, which ratifies the names of
-items 7, 15 and 17. The whole-window check is the maintainer's provisional ruling, a two-way door
-before the first tag.
+items 7, 9, 15 and 17, the whole-window check `window` among them.
 
 ### The crate's name
 
@@ -140,12 +139,12 @@ Prior art: `vm-memory` checks a region's range against its neighbors once, as da
 
 Concrete example: `crates/process_builder/src/lib.rs` lines 51 to 54 builds `SCRATCH_WINDOW` from two `runtime_window` calls, one for the start and one for the end. With `window` it is one call that also proves the 64 MiB between them lies in the band.
 
-Decided by the maintainer on 2026-11-14 (UTC), provisional: a two-way door before the first tag,
-which the architect may revisit. The crate gains one function,
+Decided by the maintainer on 2026-11-14 (UTC), and the name ratified by the review clearance of
+2026-11-21 (UTC). The crate gains one function,
 `pub const fn window(band: Band, start_virtual_address: u64, bytes: u64) -> u64`, which asserts
 both arguments page aligned and `band.holds(start, start + bytes)` and returns the start. The three
 one-page functions become one-line wrappers over it with `PAGE_BYTES`, and their callers do not
-change. The name `window` ships provisional. Item 9 is the work.
+change. Item 9 is the work.
 
 ### Clearing the review package
 
@@ -158,8 +157,8 @@ that package.
 
 Decision, option A, 2026-11-21 (UTC): the architect cleared the review. That approves creating
 `nifeos/address_space_layout` and moving the crate with `publish = false`, no tag and no publish.
-The clearance ratifies the names of items 7, 15 and 17 as the package proposed them; `window`, `VERSION` and
-`INTERFACE_ID` stay provisional.
+The clearance ratifies the names of items 7, 9, 15 and 17 as the package proposed them, `window`
+included; `VERSION` and `INTERFACE_ID` stay provisional.
 
 - A. Clear the review once the package lands, which approves creating the repository and moving
   the crate.
@@ -201,7 +200,7 @@ The checks are in [the appendix](1076-address-space-map-outside-review/done-when
   ratified and renamed at every call site.
 - Item 8 and decision N1, the crate's name: Done, [#3593](https://github.com/nifeos/nife/pull/3593).
 - Item 9 and decision 3, a whole-window check: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
-  The name `window` stays the maintainer's provisional ruling until the review package.
+  The review clearance of 2026-11-21 (UTC) ratifies the name `window`.
 - Item 10, `const` assertions under Kani's toolchain: Done,
   [#3659](https://github.com/nifeos/nife/pull/3659).
 - Item 11, the surviving mutant's exemption: Done, [#3886](https://github.com/nifeos/nife/pull/3886). The crate carries its own
@@ -238,7 +237,7 @@ None.
 ## Follow-on
 
 - **Done.** The crate's own name, `address_space_layout`. Items 1, 3, 4, 6, 8, 9, 10, 12, 14 and 16,
-  and the README of item 5, are done in this tree: the crate has `window` (provisional) and a
+  and the README of item 5, are done in this tree: the crate has `window` and a
   manifest that stands alone.
 - **Done.** The review package, [notes/crate-reviews/address-space-layout.md](../../notes/crate-reviews/address-space-layout.md),
   lists every public name with its state.
@@ -258,4 +257,4 @@ None.
 
 ## Index row
 
-An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. The crate's own name has its ruling and its rename. The architect cleared the review package, and the constants carry their ratified names; the whole-window check keeps a provisional one.
+An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. The crate's own name has its ruling and its rename. The architect cleared the review package, and the constants carry their ratified names, the whole-window check `window` among them.

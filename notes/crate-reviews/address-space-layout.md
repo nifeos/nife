@@ -55,7 +55,7 @@ All of these ran on this lane's tree, at the commit the pull request carries.
 
 | check | result |
 |---|---|
-| `script/crate-standalone address_space_layout` | one failure, `names`: 21 names are not ratified (`VERSION`, `INTERFACE_ID` and `window` provisional; 18 public items carry no block). Passing: the build on 1.88 for the host and the three bare-metal targets, Kani 11 of 11 harnesses verified, and all eleven falsification patches turn exactly their own harness red |
+| `script/crate-standalone address_space_layout` | one failure, `names`: 20 names are not ratified (`VERSION` and `INTERFACE_ID` provisional; 18 public items carry no block). Passing: the build on 1.88 for the host and the three bare-metal targets, Kani 11 of 11 harnesses verified, and all eleven falsification patches turn exactly their own harness red |
 | `script/crate-move --dry-run address_space_layout` | clean: every patch applies with no offset or fuzz, the template's prose, README, naming and history checks pass, and no file mentions nife |
 | `cargo kani` and the template's `falsify.py` on a git checkout of the staged crate | 11 of 11 verified; all eleven records hold |
 | `cargo mutants` and the template's `mutants_gate.py` on the staged crate | 20 caught, 26 unviable, one survivor, exempted with its reason |
@@ -114,11 +114,11 @@ page-table window.
   earlier spelling (decision N1, option A, ruled 2026-11-14 UTC).
 - The band numbers and `MAXIMUM_STACK_PAGES` come from §171 (where a program image starts),
   option D, which ratified them.
-- The whole-window check `window` is the maintainer's provisional ruling of 2026-11-14 UTC, a
-  two-way door before the first tag. The three one-page functions are wrappers over it.
+- The review clearance of 2026-11-21 UTC ratifies the whole-window check `window`. The three
+  one-page functions wrap it.
 - The review is cleared (option A, ruled 2026-11-21 UTC): the crate moves to
   `nifeos/address_space_layout` with `publish = false`, no tag and no publish, and the names of
-  items 7, 15 and 17 are ratified as proposed.
+  items 7, 9, 15 and 17 are ratified as proposed.
 
 ## Names
 
@@ -127,7 +127,7 @@ page-table window.
 | 7 | `PAGE_BYTES`; `IMAGE_BASE_VIRTUAL_ADDRESS`, `STACK_TOP_VIRTUAL_ADDRESS`, `STACK_TOP_PAGE_VIRTUAL_ADDRESS`, `CURRENT_CPU_PAGE_VIRTUAL_ADDRESS`, `CODE_MODEL_CEILING_VIRTUAL_ADDRESS`; the `ImagePlacement` fields `image_start_virtual_address`, `image_end_virtual_address`, `stack_base_virtual_address` | ratified 2026-11-21 (UTC), renamed at every call site |
 | 15 | `Band::new` | ratified 2026-11-21 (UTC) |
 | 17 | public `LOW_HALF_SPLIT_SHIFTS` | ratified 2026-11-21 (UTC) |
-| 9 | `window` | provisional, the maintainer's ruling; the architect may revisit it before the first tag |
+| 9 | `window` | ratified 2026-11-21 (UTC) |
 | - | `VERSION`, `INTERFACE_ID` | provisional |
 | - | `INITIAL_RAMDISK_VIRTUAL_ADDRESS`, `MAXIMUM_STACK_PAGES` | ratified |
 | - | `Band`, the eight band constants, `BANDS`, `bytes`, `contains`, `holds`, `pair_page`, `runtime_window`, `service_window`, `check_image`, `ImagePlacement` | no block; they pass the template's naming checks |

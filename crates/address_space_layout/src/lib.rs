@@ -250,8 +250,7 @@ pub const CURRENT_CPU_PAGE_VIRTUAL_ADDRESS: u64 = PROCESS_PAGES.end - PAGE_BYTES
 /// start_virtual_address + bytes)` lies inside `band`. [`pair_page`], [`runtime_window`] and
 /// [`service_window`] are this for one page of their bands.
 ///
-/// Name: provisional, ruled provisionally by the maintainer on 2026-11-14 (UTC) (block 1076
-/// decision 3); the architect may revisit it before the first tag.
+/// Name: ratified 2026-11-21 (UTC).
 ///
 /// # Examples
 ///
