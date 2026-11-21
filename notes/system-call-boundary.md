@@ -68,7 +68,7 @@ What folding one administrative method into the decoder cost, measured:
 | `MemoryRegion::USAGE` | 5.6% larger on riscv64 and 8.8% on `x86_64`, over the 5% bound |
 | `Reply::REPLY_CAPABILITY` | 144 bytes (8.6%) more on `x86_64`, for a method only the network stack uses |
 | `ThreadControlBlock::SET_THREAD_POINTER` | aarch64 6% over the 5% bound |
-| the `AddressSpace` futex arm | aarch64 over the 5% bound |
+| the `AddressSpace` address wait arm | aarch64 over the 5% bound |
 | `MAP_INTO`'s rollback and tail check | riscv64 over the 5% bound |
 
 `REPLY_CAPABILITY` looks its Reply up again rather than take it from `invoke`, so the arm in `invoke`

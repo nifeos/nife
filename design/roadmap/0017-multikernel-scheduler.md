@@ -15,7 +15,7 @@ Why it matters. Optional; not on the thesis path.
 
 Deliverable. Per-core state, with message-passing where `IPC_TABLES` now serializes every core. That
 lock (rank 60, `kernel/src/sched/ipc_tables.rs`) guards the thread table, the rendezvous table and
-the kernel's rendezvous chunks, the notification and timer tables, the futex buckets and the process
+the kernel's rendezvous chunks, the notification and timer tables, the address wait buckets and the process
 table.
 
 What is per-core already. The SMP work of §11 (SMP: per-CPU run queues) and §28 (SMP placement)

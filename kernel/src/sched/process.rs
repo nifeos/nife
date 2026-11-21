@@ -384,7 +384,7 @@ pub(super) fn reap_corpse(
 /// **Reap the members `end` finished where they were blocked** (milestone 812). A member that ends
 /// itself is reaped at its own switch-out; one finished in place is never switched again, so this
 /// frees it instead: it runs after the departing member's reap and after `DESTROY`. Without it a
-/// `std` program whose idle workers sleep on a futex at `exit` keeps its space until its region is
+/// `std` program whose idle workers sleep on an address wait at `exit` keeps its space until its region is
 /// destroyed. A supervised member is `Dead`, not `Finished`, and waits for its supervisor's `REAP`.
 pub(super) fn reap_corpses(pid: ProcessId) {
     // A killed member that was mid-way into blocking when the end came is still on another core for

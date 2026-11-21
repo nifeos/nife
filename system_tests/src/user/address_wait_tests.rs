@@ -1,21 +1,21 @@
-//! `futex_tests`: `AddressSpace::WAIT` and `WAKE` (milestone 812 (`std::thread::spawn` runs real
+//! `address_wait_tests`: `AddressSpace::WAIT` and `WAKE` (milestone 812 (`std::thread::spawn` runs real
 //! threads in one address space), §269 (how threads share a process) fork 2).
 //!
 //! A user thread parks on a word of its own space and sleeps until it is woken; a word that no
 //! longer holds what the waiter expected does not sleep; every form §269 reserves is refused; and
-//! a waiter whose region is destroyed leaves the futex table. One hand-written waiter per ISA, so
+//! a waiter whose region is destroyed leaves the address wait table. One hand-written waiter per ISA, so
 //! the same claims are proved on all three (§19 (architectural parity is a tenet)).
 
 //! # BUGS
 //!
 //! - The waker is the kernel test, not a second user thread: two threads cannot share a space
 //!   until the join is built (it waits on calef's ruling on pull request #1892), so the wake is
-//!   `sched::futex_wake` called directly, past the own-space check. The system call layer's checks are
+//!   `sched::address_wake` called directly, past the own-space check. The system call layer's checks are
 //!   proved below, by a caller refused at each; the end-to-end proof is the milestone's exit test,
 //!   four threads contending a `std::sync::Mutex`.
 
 use abi::Error;
-use abi::futex::{PRIVATE, SIZE_U32, SIZE_U64};
+use abi::address_wait::{PRIVATE, SIZE_U32, SIZE_U64};
 
 use super::*;
 use crate::capability_object::Rights;
@@ -24,7 +24,7 @@ use crate::system_call::invoke;
 
 const CODE_VA: u64 = address_space_layout::IMAGE_BASE;
 const STACK_VA: u64 = address_space_layout::STACK_TOP_PAGE;
-/// The page the waiter uses: the futex word at `+0`, a count of returns at `+8`, and at `+16` the
+/// The page the waiter uses: the address wait word at `+0`, a count of returns at `+8`, and at `+16` the
 /// OR of every `WAIT` result plus one, so a woken return (`0`) sets bit 0, a changed-word return
 /// (`1`) sets bit 1, and any error (negative) sets high bits that cannot be mistaken for either.
 const VA: u64 = address_space_layout::pair_page(0x0060_0000);
@@ -146,7 +146,7 @@ fn start_waiter(region: u64) -> (u64, u64, u64) {
         .expect("configure");
     sched::start_thread_control_block(tid, [0, VA, PRIVATE | SIZE_U32]).expect("start");
     assert!(
-        wait_for(5, || sched::futex_waiters(name, VA) == 1),
+        wait_for(5, || sched::address_wait_waiters(name, VA) == 1),
         "the waiter never parked on its word (it returned {} times, results {:#x})",
         word(page, 8),
         word(page, 16),
@@ -166,12 +166,12 @@ fn stop(tid: u64, region: u64) {
 /// A thread parked on a word sleeps until a wake names that word, and a changed word does not put
 /// it to sleep.
 ///
-/// The waiter's `WAIT` expects `0` and parks with no return at all (a futex that returned on its
+/// The waiter's `WAIT` expects `0` and parks with no return at all (an address wait that returned on its
 /// own would make every `std` lock a spin); a wake for the neighboring word wakes nobody. Then the
 /// word becomes `1` and one wake releases it, and every later `WAIT` returns `1` at once. Its
 /// results are exactly a wake (`0`) and changed words (`1`).
 ///
-/// Falsification: replayable `system_tests/falsifications/user.futex_tests.a_waiter_sleeps_until_its_word_is_woken.patch`
+/// Falsification: replayable `system_tests/falsifications/user.address_wait_tests.a_waiter_sleeps_until_its_word_is_woken.patch`
 #[test_case]
 fn a_waiter_sleeps_until_its_word_is_woken() {
     let region = crate::memory_region::create(16).expect("no region");
@@ -183,12 +183,12 @@ fn a_waiter_sleeps_until_its_word_is_woken() {
     }
     assert_eq!(word(page, 8), 0, "a parked waiter returned without a wake");
     assert_eq!(
-        sched::futex_wake(name, VA + 4, u64::MAX),
+        sched::address_wake(name, VA + 4, u64::MAX),
         0,
         "a wake of the neighboring word woke somebody",
     );
     assert_eq!(
-        sched::futex_waiters(name, VA),
+        sched::address_wait_waiters(name, VA),
         1,
         "the waiter left its word"
     );
@@ -200,7 +200,7 @@ fn a_waiter_sleeps_until_its_word_is_woken() {
             .store(1, core::sync::atomic::Ordering::Release);
     }
     assert_eq!(
-        sched::futex_wake(name, VA, 1),
+        sched::address_wake(name, VA, 1),
         1,
         "the wake found nobody on the word"
     );
@@ -217,53 +217,53 @@ fn a_waiter_sleeps_until_its_word_is_woken() {
     );
 }
 
-/// **A waiter whose region is destroyed leaves the futex table.** Left there, a later wake of the
+/// **A waiter whose region is destroyed leaves the address wait table.** Left there, a later wake of the
 /// same word would walk to a TCB page the region has already handed back.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.futex_tests.a_waiter_whose_region_is_destroyed_leaves_the_futex_table.patch`
+/// Falsification: replayable `system_tests/falsifications/user.address_wait_tests.a_waiter_whose_region_is_destroyed_leaves_the_address_wait_table.patch`
 #[test_case]
-fn a_waiter_whose_region_is_destroyed_leaves_the_futex_table() {
+fn a_waiter_whose_region_is_destroyed_leaves_the_address_wait_table() {
     let region = crate::memory_region::create(16).expect("no region");
     let (tid, name, _) = start_waiter(region);
-    let queued_before = sched::futex_queued();
+    let queued_before = sched::address_wait_queued();
     assert!(
         wait_for(5, || sched::reclaim_region(region).is_ok()),
-        "the region of a thread parked on a futex could not be destroyed",
+        "the region of a thread parked on an address wait could not be destroyed",
     );
     assert!(
         !sched::is_thread_present(tid),
         "the parked waiter outlived its region"
     );
     assert_eq!(
-        sched::futex_waiters(name, VA),
+        sched::address_wait_waiters(name, VA),
         0,
         "a destroyed waiter is still parked on its word",
     );
     // The count above asks each queued waiter its key, and a torn-down thread no longer has one,
     // so a dead TCB left linked would not be counted there. This counts links, whatever they are.
     assert_eq!(
-        sched::futex_queued(),
+        sched::address_wait_queued(),
         queued_before - 1,
-        "a destroyed waiter's TCB is still linked on the futex table",
+        "a destroyed waiter's TCB is still linked on the address wait table",
     );
     assert_eq!(
-        sched::futex_wake(name, VA, u64::MAX),
+        sched::address_wake(name, VA, u64::MAX),
         0,
         "a wake found a waiter that no longer exists",
     );
 }
 
 /// **Every form §269 reserves is refused, and so is every word a caller has no business naming**,
-/// each with the error `abi::address_space::WAIT` documents and in its order: a shared futex or
+/// each with the error `abi::address_space::WAIT` documents and in its order: a shared address wait or
 /// another size (`BadMethod`), a capability without `READ` (`NotPermitted`), a misaligned or
 /// kernel-half address (`BadPointer`), and a space that is not the caller's own (`WrongObject`).
 ///
 /// The caller is this test, a kernel thread with no space of its own, so the last refusal is the
 /// one every well-formed call from it meets.
 ///
-/// Falsification: replayable `system_tests/falsifications/user.futex_tests.the_reserved_futex_forms_and_foreign_words_are_refused.patch`
+/// Falsification: replayable `system_tests/falsifications/user.address_wait_tests.the_reserved_address_wait_forms_and_foreign_words_are_refused.patch`
 #[test_case]
-fn the_reserved_futex_forms_and_foreign_words_are_refused() {
+fn the_reserved_address_wait_forms_and_foreign_words_are_refused() {
     let region = crate::memory_region::create(16).expect("no region");
     let name = user_address_space_create(region).expect("no address space");
     let reader = sched::grant(crate::capability_object::address_space_capability(
@@ -281,8 +281,8 @@ fn the_reserved_futex_forms_and_foreign_words_are_refused() {
 
     for method in [abi::address_space::WAIT, abi::address_space::WAKE] {
         for (flags, what) in [
-            (SIZE_U32, "a shared futex"),
-            (PRIVATE | SIZE_U64, "a 64-bit futex"),
+            (SIZE_U32, "a shared address wait"),
+            (PRIVATE | SIZE_U64, "a 64-bit address wait"),
             (good | 1 << 8, "an unknown flag"),
         ] {
             assert_eq!(

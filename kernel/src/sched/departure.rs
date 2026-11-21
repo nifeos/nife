@@ -16,10 +16,10 @@ pub fn exit() -> ! {
 }
 
 /// `SYSTEM_CALL_EXIT_THREAD`: end the calling thread, and its process only if no other
-/// member runs. `word`, if not zero, is cleared and its futex waiters woken first: see
-/// `futex::clear_and_wake`. Never returns.
+/// member runs. `word`, if not zero, is cleared and its address wait waiters woken first: see
+/// `address_wait::clear_and_wake`. Never returns.
 pub fn exit_thread(word: u64) -> ! {
-    futex::clear_and_wake(word);
+    address_wait::clear_and_wake(word);
     depart(abi::fault::EVENT_EXIT, 0, 0, false)
 }
 

@@ -1,6 +1,11 @@
-//! Futex wait and wake, the scheduler half (§269 (how threads share a process) fork 2). The queues
-//! are `inter_process_communication::futex`, the wire contract `abi::address_space::WAIT`, and the
-//! argument `notes/futex.md`.
+//! Address wait and wake, the scheduler half (§269 (how threads share a process) fork 2). The queues
+//! are `inter_process_communication::address_wait`, the wire contract `abi::address_space::WAIT`, and the
+//! argument `notes/address-wait.md`.
+//!
+//! Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. The module and its functions say what the call does, a wait on an address
+//! and a wake of it, and not the Linux word for it (a fast user-space mutex); the alias on each
+//! public function keeps that word findable. `address_wait_queued` and `address_wait_waiters` keep
+//! the stem of the wait they count.
 
 use core::sync::atomic::Ordering;
 
@@ -8,28 +13,28 @@ use super::{
     IPC_TABLES, Thread, Wait, current_thread_id, hold_token, schedule, take_token, trace, wake,
 };
 
-/// The key a parked futex waiter is under, read from its own handshake: what the futex table asks
+/// The key a parked address wait waiter is under, read from its own handshake: what the address wait table asks
 /// of each waiter it passes while looking for a key.
 ///
 /// # Safety
-/// `waiter` is a thread on the futex table, so a live TCB page, and `IPC_TABLES` is held. Only the
+/// `waiter` is a thread on the address wait table, so a live TCB page, and `IPC_TABLES` is held. Only the
 /// handshake's wait record is read, through the raw pointer, never a reference to the `Thread`.
-unsafe fn futex_key_of(
+unsafe fn address_wait_key_of(
     waiter: core::ptr::NonNull<Thread>,
-) -> inter_process_communication::futex::Key {
+) -> inter_process_communication::address_wait::Key {
     // SAFETY: the function's contract; `wait_on` is a `Copy` field read in place.
     match unsafe { (*waiter.as_ptr()).handshake.wait_on } {
-        Some(Wait::Futex(key)) => key,
-        // A waiter on this table that is not parked on a futex is a bookkeeping defect; a key no
+        Some(Wait::Address(key)) => key,
+        // A waiter on this table that is not parked on an address wait is a bookkeeping defect; a key no
         // wake can name keeps it from being woken as somebody else's.
-        _ => inter_process_communication::futex::Key {
+        _ => inter_process_communication::address_wait::Key {
             address_space: u64::MAX,
             virtual_address: u64::MAX,
         },
     }
 }
 
-/// Whether `space` is the calling thread's own address space: the futex methods' authority check,
+/// Whether `space` is the calling thread's own address space: the address wait methods' authority check,
 /// since a thread may only wait on or wake words of its own space (§269 fork 2).
 pub fn is_current_space(space: u64) -> bool {
     let guard = IPC_TABLES.lock();
@@ -47,10 +52,13 @@ pub fn is_current_space(space: u64) -> bool {
 /// and that `space` is the caller's.
 ///
 /// Context: reads the word and parks under one hold of `IPC_TABLES`, which `WAKE` also takes, so a
-/// waker's store is either seen here or finds this thread parked (notes/futex.md). The load is
+/// waker's store is either seen here or finds this thread parked (notes/address-wait.md). The load is
 /// `Acquire`, pairing with the waker's store.
-pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error> {
-    let key = inter_process_communication::futex::Key {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
+#[doc(alias = "futex")]
+pub fn address_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error> {
+    let key = inter_process_communication::address_wait::Key {
         address_space: space,
         virtual_address: va,
     };
@@ -68,7 +76,7 @@ pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error>
         // aligned and inside the page. An atomic load, because user threads write the word
         // concurrently. Whether the frame can be revoked between the walk and the load has not been
         // argued (the walk is not under the space's own lock), and it is recorded in
-        // notes/futex.md's BUGS: the worst case is reading one stale word of a frame being freed,
+        // notes/address-wait.md's BUGS: the worst case is reading one stale word of a frame being freed,
         // which makes this compare wrong and nothing else, since nothing read is returned.
         let word = unsafe {
             (*(crate::arch::mmu::phys_to_virt(phys) as *const core::sync::atomic::AtomicU32))
@@ -79,9 +87,9 @@ pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error>
         }
         let current = current_thread_id();
         let token = take_token(sched, current);
-        sched.futexes.park(key, token);
+        sched.address_waits.park(key, token);
         let t = sched.threads.get_mut(current).expect("running thread");
-        t.handshake.park(Wait::Futex(key)); // only a WAKE (or an abort) may wake us
+        t.handshake.park(Wait::Address(key)); // only a WAKE (or an abort) may wake us
         trace::record(trace::Event::BlockSelf, current, 12);
     }
     schedule(); // blocks; a WAKE serves us and makes us Ready
@@ -100,8 +108,11 @@ pub fn futex_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error>
 /// `AddressSpace::WAKE`, the kernel half (§269 fork 2): wake up to `count` threads parked on the
 /// word at `va` in `space`, oldest first, and return how many. Reads no memory, so an unmapped `va`
 /// has no waiters. The woken are placed on this core: the waker is usually about to block or yield.
-pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
-    let key = inter_process_communication::futex::Key {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
+#[doc(alias = "futex")]
+pub fn address_wake(space: u64, va: u64, count: u64) -> u64 {
+    let key = inter_process_communication::address_wait::Key {
         address_space: space,
         virtual_address: va,
     };
@@ -110,15 +121,15 @@ pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
     let maximum = usize::try_from(count).unwrap_or(usize::MAX);
     // SAFETY: every waiter on the table is a live TCB, and `IPC_TABLES` is held.
     let mut woken = sched
-        .futexes
-        .take(key, maximum, |w| unsafe { futex_key_of(w) });
+        .address_waits
+        .take(key, maximum, |w| unsafe { address_wait_key_of(w) });
     let mut n = 0;
     while let Some(token) = woken.pop_front() {
         let tid = hold_token(token);
         let t = sched
             .threads
             .get_mut(tid)
-            .expect("a futex waiter vanished under IPC_TABLES");
+            .expect("an address wait waiter vanished under IPC_TABLES");
         t.mailbox = [0; 5];
         t.handshake.serve();
         trace::record(trace::Event::Served, tid, 12);
@@ -129,7 +140,7 @@ pub fn futex_wake(space: u64, va: u64, count: u64) -> u64 {
 }
 
 /// `SYSTEM_CALL_EXIT_THREAD`'s word: store zero in the calling thread's 32-bit word at `va` and wake every
-/// futex waiter on it, so a joiner may free the thread's stack. Called before the thread departs,
+/// address wait waiter on it, so a joiner may free the thread's stack. Called before the thread departs,
 /// which runs on the kernel stack, so the user stack is not touched again. A word that is zero,
 /// misaligned, outside the user half or not mapped writable is skipped: nothing stops an exit.
 pub(super) fn clear_and_wake(va: u64) {
@@ -164,27 +175,35 @@ pub(super) fn clear_and_wake(va: u64) {
         (*(crate::arch::mmu::phys_to_virt(phys) as *const core::sync::atomic::AtomicU32))
             .store(0, Ordering::Release);
     }
-    futex_wake(space, va, u64::MAX);
+    address_wake(space, va, u64::MAX);
 }
 
-/// How many threads are linked on the futex table at all: for the tests, which must see a TCB
+/// How many threads are linked on the address wait table at all: for the tests, which must see a TCB
 /// left linked after its thread was torn down, which no longer has a key to be counted under.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub fn futex_queued() -> usize {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
+#[doc(alias = "futex")]
+pub fn address_wait_queued() -> usize {
     let guard = IPC_TABLES.lock();
-    guard.as_ref().map_or(0, |sched| sched.futexes.len())
+    guard.as_ref().map_or(0, |sched| sched.address_waits.len())
 }
 
-/// How many threads are parked on the futex at `va` in `space`: for the tests, which need to know
+/// How many threads are parked on the address wait at `va` in `space`: for the tests, which need to know
 /// a thread is asleep on exactly this word before they wake it.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
-pub fn futex_waiters(space: u64, va: u64) -> usize {
-    let key = inter_process_communication::futex::Key {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
+#[doc(alias = "futex")]
+pub fn address_wait_waiters(space: u64, va: u64) -> usize {
+    let key = inter_process_communication::address_wait::Key {
         address_space: space,
         virtual_address: va,
     };
     let mut guard = IPC_TABLES.lock();
     let sched = guard.as_mut().expect("no scheduler");
-    // SAFETY: as `futex_wake`'s.
-    sched.futexes.waiters(key, |w| unsafe { futex_key_of(w) })
+    // SAFETY: as `address_wake`'s.
+    sched
+        .address_waits
+        .waiters(key, |w| unsafe { address_wait_key_of(w) })
 }

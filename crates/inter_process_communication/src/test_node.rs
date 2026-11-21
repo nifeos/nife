@@ -10,7 +10,7 @@
 //! - The node is on no queue and is minted once, from the pointer every other access to it
 //!   derives from (`Unqueued::new`'s provenance clause).
 //!
-//! The futex tests keep a node of their own, because theirs carries the key it waits on.
+//! The address wait tests keep a node of their own, because theirs carries the key it waits on.
 //!
 //! Name: provisional, minted 2026-11-20 (UTC) by 1095-ipc-outstanding-findings. Considered:
 //! `test_support`, which says less about what the module holds.

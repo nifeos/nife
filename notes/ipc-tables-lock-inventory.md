@@ -10,7 +10,7 @@ finds below, the hot set is IPC rather than scheduling.*
 Run queues, `current` and held rank are per-CPU (DECISIONS §11 (SMP: per-CPU run queues) and
 §28 (SMP placement)). Each thread's CapabilityTable has its own lock, from
 milestone 761 (capability lookup off the global lock). What lives under the one `IPC_TABLES` lock
-is the thread table, the rendezvous table, the notification and timer tables, the futex buckets and the
+is the thread table, the rendezvous table, the notification and timer tables, the address wait buckets and the
 process table (`kernel/src/sched/ipc_tables.rs`). Milestone 17 (multikernel-leaning)'s question is
 whether that remainder ever costs enough to justify partitioning it; this note is the denominator
 for that question.
@@ -128,10 +128,10 @@ kernel chunk down, and if one should, the handle becomes an array. `MAXIMUM_KERN
 derived so chunks can host `MAXIMUM_RENDEZVOUS` one-page endpoints, which makes the registry, never
 the page supply, the limit that refuses.
 
-### `FUTEX_BUCKETS`
+### `ADDRESS_WAIT_BUCKETS`
 
-`FUTEX_BUCKETS` is 64. A wake walks one bucket, so that is four waiters a bucket on average with the
-machine full, at 24 bytes a bucket. The futex queues are under this lock for the reason every wait
+`ADDRESS_WAIT_BUCKETS` is 64. A wake walks one bucket, so that is four waiters a bucket on average with the
+machine full, at 24 bytes a bucket. The address wait queues are under this lock for the reason every wait
 queue is: the check of the word, the park and a waker's take must be one order.
 
 ## BUGS

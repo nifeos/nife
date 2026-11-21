@@ -1391,7 +1391,7 @@ design/roadmap/0944-the-self-test-proves-supervision-and-teardown.md	3
 design/roadmap/0945-serial-driver-has-no-starter.md	5
 design/roadmap/0946-a-granted-file-name-longer-than-sixteen-bytes.md	21
 design/roadmap/0951-a-hand-written-ipc-fastpath.md	4
-design/roadmap/0958-a-futex-word-is-walked-and-touched-under-the-revocation-lock.md	4
+design/roadmap/0958-an-address-wait-word-is-walked-and-touched-under-the-revocation-lock.md	4
 design/roadmap/0959-a-reply-is-consumed-and-delivered-under-one-hold.md	2
 design/roadmap/0960-the-xhci-driver-is-not-mapped-the-legacy-support-capability.md	1
 design/roadmap/0961-the-special-boots-become-shell-commands.md	18
@@ -1703,7 +1703,7 @@ notes/fs-server/the-test-client.md	10
 notes/fs-server/throughput.md	11
 notes/fs-server/verb-table.md	3
 notes/fs-server/write-path-history.md	18
-notes/futex.md	15
+notes/address-wait.md	15
 notes/fuzzing-the-services.md	4
 notes/fuzzing.md	24
 notes/fuzzing/ci-budget.md	4

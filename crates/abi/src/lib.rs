@@ -98,7 +98,7 @@ pub const SYSTEM_CALL_CAPABILITY_DELETE: u64 = 3;
 /// thread of its process the process ends too, as [`SYSTEM_CALL_EXIT`] would end it. Needs no capability.
 ///
 /// `word`, if not zero, names a 32-bit word in the caller's own space: once the thread has left
-/// user mode for good the kernel stores zero there and wakes every futex waiter on it, so a joiner
+/// user mode for good the kernel stores zero there and wakes every address wait waiter on it, so a joiner
 /// may free the thread's stack. An unmapped or misaligned word is skipped, never a reason not to
 /// exit. *(Number provisional.)*
 ///
@@ -210,10 +210,13 @@ pub mod address_space;
 
 /// **The `flags` word of [`address_space::WAIT`] and [`address_space::WAKE`]**. The bit layout is Linux futex2's (`FUTEX2_SIZE_*` in bits 0 and 1,
 /// `FUTEX2_PRIVATE` at bit 7), so a reader who knows that ABI knows this one, and the two forms
-/// reserved for later are spellable now and refused rather than undefined.
+/// reserved for later are spellable now and refused rather than undefined. Linux calls the idea a
+/// fast user-space mutex ("futex"), and keeps that word for its own system call.
 ///
-/// Name: provisional (2026-10-10 UTC).
-pub mod futex;
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. The module says what the call does, a wait on an address, and not the
+/// Linux word for it; the alias keeps that word findable.
+#[doc(alias = "futex")]
+pub mod address_wait;
 
 /// Methods on a **process** capability. Created by [`memory_region::RETYPE_OBJECT`] with [`object_type::PROCESS`], whose second
 /// word is the address space the process will hold.

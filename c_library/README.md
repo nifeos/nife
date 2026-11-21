@@ -39,7 +39,7 @@ what was taken, what was left behind and why.
 | `src/platform/allocator.rs` | `malloc` and its family on `std`'s allocator, which is `talc` over the process's untyped budget |
 | `src/start.rs` | how a `std` program becomes a C program: `argv`, `environ`, `main`, `exit` |
 | `src/pthread.rs` | POSIX threads on `std`'s threads: create, join, detach, exit, self |
-| `src/platform/futex.rs` | relibc's wait-on-address pair, on `std`'s thread parking |
+| `src/platform/address_wait.rs` | relibc's wait-on-address pair, on `std`'s thread parking |
 | `src/platform/stream.rs` | pipes, `socketpair` and `poll`, inside one process |
 | `c/thread_start.c` | where a new thread's C begins, so `pthread_exit` can `longjmp` back |
 | `src/bin/c_program.rs` | the `std` program a C program is linked into |
@@ -92,7 +92,7 @@ as if it were something else (BUGS).
 | memory | `malloc` on `std`'s heap; anonymous `mmap` from the same heap; `brk` refused |
 | process | `exit`, `atexit`, `getenv`, `uname` (`nife`); `getpid` 0 and the user and group calls 65534 (`nobody`), because nife issues no process identifier and attaches no identity to a process; `fork` and `exec*` refused (§264 (`fork` is declined for good)) |
 | signals | `sigaction` records, `sigprocmask` masks, and `raise` (or `kill` of this process) delivers synchronously; nothing else ever sends one |
-| threads | `pthread_create` is `std::thread::Builder::spawn`; mutexes, condition variables, read-write locks, barriers, semaphores and `pthread_once` are relibc's, waiting through `futex.rs`; keys, `errno` and the locale per thread |
+| threads | `pthread_create` is `std::thread::Builder::spawn`; mutexes, condition variables, read-write locks, barriers, semaphores and `pthread_once` are relibc's, waiting through `address_wait.rs`; keys, `errno` and the locale per thread |
 | pipes and sockets | `pipe`, `pipe2` and `socketpair(AF_UNIX, SOCK_STREAM)` are byte queues in the process; `poll` and `select` wait on any of them; every other socket call is `ENOSYS` until stage 3, and so is `getaddrinfo` |
 | resources | `getrusage` answers zeros (BUGS); `getpriority` answers nice 0, and `setpriority` takes only 0 |
 | refused by design | `dlopen` finds nothing (a program is one static image), `shmget` and its family answer `ENOSYS`, and `syslog` writes to standard error only under `LOG_PERROR` or `LOG_CONS` |
@@ -192,7 +192,7 @@ Stage 2 (milestone 836) added these, also reversible:
 
 - **Threads are `std`'s**, not relibc's `clone` and control block, for the reason the platform layer
   is on `std`. `bitflags` is a two-line struct.
-- **The futex is a parking lot on `std::thread::park`**, rather than a new `std` export of the
+- **The address wait is a parking lot on `std::thread::park`**, rather than a new `std` export of the
   kernel's `WAIT` and `WAKE`, so `std` gains no public API (BUGS: a second crossing).
 - **Pipes and socket pairs are queues in the process**, needing no kernel object while both ends
   are in one process.
@@ -243,7 +243,7 @@ checks each, built by `helpers/build-c-library-contract.sh` and run by `c_thread
   a thread, so a blocking call is not a cancellation point. A caller-supplied stack is refused.
 - **Scheduling parameters change nothing.** nife's scheduler has one class: every priority range
   is 0, and `sched_setscheduler` answers `EPERM`. `sched_getcpu` and CPU affinity are not built.
-- **A futex wake crosses twice**: `futex.rs` parks through `std`, which waits on a word of its own
+- **An address wait wake crosses twice**: `address_wait.rs` parks through `std`, which waits on a word of its own
   in the kernel, rather than on the program's word directly. A timed wait burns a core, as `std`'s
   do until the kernel's `WAIT` takes a deadline.
 - **File calls take turns.** Every call on a file holds the descriptor table's lock throughout,

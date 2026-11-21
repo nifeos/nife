@@ -3,7 +3,7 @@
 *Name: ratified 2026-10-18 (calef, convention-rulings Rule 3).*
 
 *Written 2026-10-10 (UTC) by milestone 812 (`std::thread::spawn` runs real threads in one address
-space)'s lane. The kernel side is in `notes/processes.md`, `notes/futex.md` and
+space)'s lane. The kernel side is in `notes/processes.md`, `notes/address-wait.md` and
 `notes/thread-pointer.md`; this note is the `std` PAL.*
 
 ## What a program needs, and where it gets it
@@ -14,7 +14,7 @@ Three slots of `std_runtime_contract`, all of them the program's own:
 |---|---|---|
 | 10 | its process, `BIND` only | `thread::spawn` joins each new thread to it |
 | 11 | its first thread, `WRITE` | the main thread sets its own thread pointer |
-| 12 | its address space, `READ` | the futex waits `std`'s locks make |
+| 12 | its address space, `READ` | the address waits `std`'s locks make |
 
 The progenitor gives all three to every `std` program it builds (`StdLayout`), through
 `supervision_contract`'s `CHILDS_OWN_PROCESS`, `CHILDS_OWN_THREAD` and `CHILDS_OWN_SPACE`
@@ -35,7 +35,7 @@ instead of sleeping, which is correct and slower.
 - `sys/thread_local/key/nife.rs`. Thread-local keys, xous's shape. The thread pointer names the
   thread's block of key slots, whose first word is the block itself for `x86_64`'s `fs:[0]`. The
   main thread makes its block on first use, before any second thread exists.
-- `sys/sync/futex/nife.rs`. `AddressSpace::WAIT` and `WAKE` on slot 12, under the futex locks
+- `sys/sync/futex/nife.rs`. `AddressSpace::WAIT` and `WAKE` on slot 12, under the address wait locks
   `std` already has for Linux.
 - `available_parallelism` reads the allowance on the thread's current-CPU page: the online core
   count today.
@@ -94,5 +94,5 @@ faster in two (riscv64 at 1.07 times, `x86_64`'s one-core leg at 1.05).
   (`notes/processes.md`).
 - **Fixed 2026-10-12 (UTC): the file page's lock spun.** `std::fs` shares one page per process with
   the file server and held a spinlock on it across each `CALL`, so under `rg`'s parallel walk the
-  waiting workers spun while the holder slept in `CALL`. It is a futex mutex now
+  waiting workers spun while the holder slept in `CALL`. It is an address wait mutex now
   (`sys/fs/nife/page.rs`, lane milestone/121-rg-threads).

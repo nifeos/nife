@@ -1,6 +1,6 @@
 # census=2026-11-16 run=43876176886 sha=e57b7bab264e50c5cb7865d8e08a08d0a8159ebb
 crate,function,mutation,path,line,verdict,detail
-abi,admitted,replace | with ^,crates/abi/src/futex.rs,17,const,128 | 2 are pairwise disjoint
+abi,admitted,replace | with ^,crates/abi/src/address_wait.rs,17,const,128 | 2 are pairwise disjoint
 abi,,replace << with >>,crates/abi/src/rights.rs,2,literal,a zero feed or amount: 1 and 0
 abi,,replace | with ^,crates/abi/src/rights.rs,24,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint
 abi,,replace | with ^,crates/abi/src/rights.rs,24,const,1 | 2 | 4 | 8 | 16 are pairwise disjoint

@@ -71,14 +71,14 @@ member remains, or by the region sweep once the process's name is gone.
 `system_tests/src/user/process_tests.rs`, on all three architectures, each test with a replayable
 falsification:
 
-- two hand-written threads share a space, a table and a futex, one of them ending itself with
+- two hand-written threads share a space, a table and an address wait, one of them ending itself with
   `SYSTEM_CALL_EXIT_THREAD`;
 - a sibling's `exit` ends the supervised member, and its supervisor hears `EVENT_EXIT`;
 - every refusal of the contract;
 - a destroyed region ends its process and a member that lives in another region.
 
 `std_threads_tests::rayons_parallel_sum_runs_on_every_online_core` proves the reaping of blocked
-members: `rayon`'s idle workers are asleep on a futex when its `main` returns. `a_member_stranded_killed_on_a_futex_is_finished_and_reaped` stages the mid-switch case's
+members: `rayon`'s idle workers are asleep on an address wait when its `main` returns. `a_member_stranded_killed_on_an_address_wait_is_finished_and_reaped` stages the mid-switch case's
 outcome, since the race itself cannot be staged on demand.
 
 ## BUGS

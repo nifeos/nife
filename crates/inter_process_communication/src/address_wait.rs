@@ -1,18 +1,18 @@
-//! **Futex wait queues: threads parked on a word, found again by its key** (milestone 812
+//! **Address wait queues: threads parked on a word, found again by its key** (milestone 812
 //! (`std::thread::spawn` runs real threads in one address space), §269 (how threads share a
 //! process) fork 2).
 //!
-//! A futex is a key, `(address_space, virtual_address)`, not an object. This module is the queuing: buckets of
+//! An address wait (Linux calls it a fast user-space mutex, "futex") is a key, `(address_space, virtual_address)`, not an object. This module is the queuing: buckets of
 //! intrusive FIFOs, oldest waiter first within a key, with each waiter's key read back through
-//! `key_of` because keys collide in a bucket. The kernel side is `kernel/src/sched/futex.rs`; see
-//! `notes/futex.md` and `notes/inter-process-communication.md`.
+//! `key_of` because keys collide in a bucket. The kernel side is `kernel/src/sched/address_wait.rs`; see
+//! `notes/address-wait.md` and `notes/inter-process-communication.md`.
 //!
 //! # Examples
 //!
 //! ```
 //! use core::ptr::NonNull;
 //! use intrusive_queue::{Node, Unqueued};
-//! use inter_process_communication::futex::{FutexTable, Key};
+//! use inter_process_communication::address_wait::{AddressWaitTable, Key};
 //!
 //! struct Thread { next: Option<NonNull<Thread>>, key: Key }
 //! // SAFETY: plain field storage, which is the whole of the `Node` contract.
@@ -25,11 +25,11 @@
 //! let mut a = Thread { next: None, key: word };
 //! // The token's pointer comes from the place itself, and `a` is not named again.
 //! let pointer_a = NonNull::new(&raw mut a).unwrap();
-//! let mut futexes: FutexTable<Thread, 4> = FutexTable::new();
-//! // SAFETY: `a` is a live local declared before `futexes`, on no queue, minted once.
-//! futexes.park(word, unsafe { Unqueued::new(pointer_a) });
+//! let mut address_waits: AddressWaitTable<Thread, 4> = AddressWaitTable::new();
+//! // SAFETY: `a` is a live local declared before `address_waits`, on no queue, minted once.
+//! address_waits.park(word, unsafe { Unqueued::new(pointer_a) });
 //! // SAFETY: every queued pointer is the live `Thread` above.
-//! let mut woken = futexes.take(word, usize::MAX, |t| unsafe { t.as_ref().key });
+//! let mut woken = address_waits.take(word, usize::MAX, |t| unsafe { t.as_ref().key });
 //! assert!(woken.pop_front().is_some_and(|t| t == pointer_a));
 //! ```
 //!
@@ -37,11 +37,12 @@
 //!
 //! - A wake walks its whole bucket, so it costs the bucket's length, not the number woken.
 //!
-//! Name: provisional. `FutexTable` names the thing (the plural `Futexes` named a collection of
-//! objects, and a futex is a key). `Key::address_space` and `Key::virtual_address` say which kind
+//! Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. The module and `AddressWaitTable` say what the queues are for, a wait on an
+//! address, and not the Linux word for it. `AddressWaitTable` names the thing (a plural noun named a collection of
+//! objects, and an address wait is a key). `Key::address_space` and `Key::virtual_address` say which kind
 //! of name and which kind of address the fields hold. `BUCKETS` is the word the documentation uses
 //! for the const parameter. `len` is the standard library's spelling of a count. Considered:
-//! keeping `Futexes` and renaming only the parameter, the count and the field.
+//! keeping the plural noun and renaming only the parameter, the count and the field.
 
 use core::ptr::NonNull;
 
@@ -60,24 +61,30 @@ pub struct Key {
 
 /// **The wait queues**, `BUCKETS` buckets of intrusive FIFOs.
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1095-ipc-rulings-built. A table of futex wait
-/// queues, named for the thing; the module header gives what was considered.
-pub struct FutexTable<T: Node, const BUCKETS: usize> {
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. A table of address wait queues, named for the thing; the module header gives
+/// what was considered.
+#[doc(alias = "futex")]
+pub struct AddressWaitTable<T: Node, const BUCKETS: usize> {
     buckets: [Queue<T>; BUCKETS],
 }
 
-impl<T: Node, const BUCKETS: usize> Default for FutexTable<T, BUCKETS> {
+impl<T: Node, const BUCKETS: usize> Default for AddressWaitTable<T, BUCKETS> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T: Node, const BUCKETS: usize> FutexTable<T, BUCKETS> {
+impl<T: Node, const BUCKETS: usize> AddressWaitTable<T, BUCKETS> {
     /// No one waiting on anything.
     pub const fn new() -> Self {
         Self {
             buckets: {
-                const { assert!(BUCKETS > 0, "a futex table needs at least one bucket") };
+                const {
+                    assert!(
+                        BUCKETS > 0,
+                        "an address wait table needs at least one bucket"
+                    );
+                };
                 [const { Queue::new() }; BUCKETS]
             },
         }
@@ -200,7 +207,7 @@ mod tests {
     }
 
     /// A one-bucket table forces every key to collide, which is the case the key check exists for.
-    type OneBucket = FutexTable<T, 1>;
+    type OneBucket = AddressWaitTable<T, 1>;
 
     fn key_of(t: NonNull<T>) -> Key {
         // SAFETY: every pointer these tests queue is one of the test's own live locals.
@@ -236,7 +243,7 @@ mod tests {
     fn a_wake_takes_only_its_own_key_in_order_and_at_most_maximum() {
         let a = key(1, 0x1000);
         let b = key(1, 0x1004);
-        let c = key(2, 0x1000); // the same address in another space is another futex
+        let c = key(2, 0x1000); // the same address in another space is another address wait
         let mut threads = [a, b, a, c, a].map(|key| T { next: None, key });
         let pointers = element_pointers(&raw mut threads);
         let mut f = OneBucket::new();
@@ -288,12 +295,12 @@ mod tests {
         // real program makes. Neither should land in one bucket.
         let mut hit = [false; 64];
         for i in 0..64 {
-            hit[FutexTable::<T, 64>::bucket(key(9, 0x4000 + 4 * i))] = true;
+            hit[AddressWaitTable::<T, 64>::bucket(key(9, 0x4000 + 4 * i))] = true;
         }
         assert!(hit.iter().filter(|&&h| h).count() > 32);
         let mut hit = [false; 64];
         for s in 0..64 {
-            hit[FutexTable::<T, 64>::bucket(key(s << 32 | 3, 0x4000))] = true;
+            hit[AddressWaitTable::<T, 64>::bucket(key(s << 32 | 3, 0x4000))] = true;
         }
         assert!(hit.iter().filter(|&&h| h).count() > 32);
     }
