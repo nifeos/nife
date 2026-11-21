@@ -1,5 +1,10 @@
 # address_space_layout
 
+[![check](https://github.com/nifeos/address_space_layout/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/nifeos/address_space_layout/actions/workflows/ci.yml?query=branch%3Amain)
+[![proofs](https://github.com/nifeos/address_space_layout/actions/workflows/proofs.yml/badge.svg?branch=main)](https://github.com/nifeos/address_space_layout/actions/workflows/proofs.yml?query=branch%3Amain)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](https://github.com/nifeos/address_space_layout#license)
+[![minimum Rust version](https://img.shields.io/badge/rust-1.88%2B-blue.svg)](https://github.com/nifeos/address_space_layout/blob/main/Cargo.toml)
+
 Which band of a process's low half holds what. Eight bands tile the first 2 GiB, the same on
 aarch64, riscv64 and x86_64, and `const fn` checks stop the build when a page or a window lies
 outside its band.
@@ -53,15 +58,15 @@ println!("{refusal}");
 
 Eleven Kani harnesses state the layout per address and per window:
 
-- `every_address_below_the_ceiling_lies_in_exactly_one_band`: every address below 2 GiB is in one
+- `every_virtual_address_below_the_ceiling_lies_in_exactly_one_band`: every address below 2 GiB is in one
   band and no address above it is in any, each band is page aligned, and the whole map lies in the
   user half of all three architectures.
-- `the_bands_are_listed_in_address_order`: `BANDS` is in address order.
+- `the_bands_are_listed_in_virtual_address_order`: `BANDS` is in address order.
 - `pair_page_accepts_every_page_of_its_band`, `runtime_window_accepts_every_page_of_its_band` and
   `service_window_accepts_every_page_of_its_band`: each band function accepts every page of its
   band, returns it unchanged, and the page lies in no other band.
-- `pair_page_refuses_every_address_its_doc_forbids`, `runtime_window_refuses_every_address_its_doc_forbids`
-  and `service_window_refuses_every_address_its_doc_forbids`: each refuses an unaligned address or
+- `pair_page_refuses_every_virtual_address_its_doc_forbids`, `runtime_window_refuses_every_virtual_address_its_doc_forbids`
+  and `service_window_refuses_every_virtual_address_its_doc_forbids`: each refuses an unaligned address or
   one outside its band, so the build stops.
 - `window_accepts_every_whole_window_its_band_holds` and
   `window_refuses_every_malformed_or_overrunning_window`: `window` accepts a page aligned, non-empty window
@@ -98,7 +103,7 @@ You need a Rust toolchain at or above the minimum version at the foot of this pa
 usual way to get one) and a git checkout. From the crate root:
 
 - `cargo build` and `cargo test` run on the host and need nothing else. The tests are unit tests
-  and three doctests.
+  and doctests.
 - The crate also builds for bare metal. Add the three targets with `rustup target add
   riscv64imac-unknown-none-elf aarch64-unknown-none-softfloat x86_64-unknown-none`. Then run
   `cargo build --lib --target <target>` for each.

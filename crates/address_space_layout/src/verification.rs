@@ -50,10 +50,10 @@ fn band_index(virtual_address: u64) -> usize {
 /// for a band at least a page wide, and its top bits are clear on all three architectures:
 /// aarch64 splits the halves at bit 48, `x86_64` at bit 47, `riscv64` (Sv39) at bit 38, as
 /// [`LOW_HALF_SPLIT_SHIFTS`] records.
-/// Falsification: replayable `crates/address_space_layout/falsifications/verification.every_address_below_the_ceiling_lies_in_exactly_one_band.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.every_virtual_address_below_the_ceiling_lies_in_exactly_one_band.patch`
 #[kani::proof]
 #[kani::unwind(9)]
-fn every_address_below_the_ceiling_lies_in_exactly_one_band() {
+fn every_virtual_address_below_the_ceiling_lies_in_exactly_one_band() {
     let virtual_address: u64 = kani::any();
     if virtual_address >= CODE_MODEL_CEILING_VIRTUAL_ADDRESS {
         assert_eq!(bands_containing(virtual_address), 0);
@@ -71,10 +71,10 @@ fn every_address_below_the_ceiling_lies_in_exactly_one_band() {
 /// **[`BANDS`] is in address order**: of two addresses in the map, the lower one is never in a
 /// later band. The names a message prints come from this order, and a reader takes the table as a
 /// picture of the address space.
-/// Falsification: replayable `crates/address_space_layout/falsifications/verification.the_bands_are_listed_in_address_order.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.the_bands_are_listed_in_virtual_address_order.patch`
 #[kani::proof]
 #[kani::unwind(10)]
-fn the_bands_are_listed_in_address_order() {
+fn the_bands_are_listed_in_virtual_address_order() {
     let low: u64 = kani::any();
     let high: u64 = kani::any();
     kani::assume(low < high && high < CODE_MODEL_CEILING_VIRTUAL_ADDRESS);
@@ -109,11 +109,11 @@ fn pair_page_accepts_every_page_of_its_band() {
 
 /// **[`pair_page`] refuses every address its doc forbids**: unaligned, or outside [`PAIR_PAGES`].
 /// The build stops (a panic in a `const`) for each one, and for at least one.
-/// Falsification: replayable `crates/address_space_layout/falsifications/verification.pair_page_refuses_every_address_its_doc_forbids.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.pair_page_refuses_every_virtual_address_its_doc_forbids.patch`
 #[kani::proof]
 #[kani::should_panic]
 #[kani::unwind(1)]
-fn pair_page_refuses_every_address_its_doc_forbids() {
+fn pair_page_refuses_every_virtual_address_its_doc_forbids() {
     let virtual_address: u64 = kani::any();
     kani::assume(!is_allowed(PAIR_PAGES, virtual_address));
     pair_page(virtual_address);
@@ -136,11 +136,11 @@ fn runtime_window_accepts_every_page_of_its_band() {
 }
 
 /// **[`runtime_window`] refuses every address its doc forbids**, and at least one.
-/// Falsification: replayable `crates/address_space_layout/falsifications/verification.runtime_window_refuses_every_address_its_doc_forbids.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.runtime_window_refuses_every_virtual_address_its_doc_forbids.patch`
 #[kani::proof]
 #[kani::should_panic]
 #[kani::unwind(1)]
-fn runtime_window_refuses_every_address_its_doc_forbids() {
+fn runtime_window_refuses_every_virtual_address_its_doc_forbids() {
     let virtual_address: u64 = kani::any();
     kani::assume(!is_allowed(RUNTIME_WINDOWS, virtual_address));
     runtime_window(virtual_address);
@@ -163,11 +163,11 @@ fn service_window_accepts_every_page_of_its_band() {
 }
 
 /// **[`service_window`] refuses every address its doc forbids**, and at least one.
-/// Falsification: replayable `crates/address_space_layout/falsifications/verification.service_window_refuses_every_address_its_doc_forbids.patch`
+/// Falsification: replayable `crates/address_space_layout/falsifications/verification.service_window_refuses_every_virtual_address_its_doc_forbids.patch`
 #[kani::proof]
 #[kani::should_panic]
 #[kani::unwind(1)]
-fn service_window_refuses_every_address_its_doc_forbids() {
+fn service_window_refuses_every_virtual_address_its_doc_forbids() {
     let virtual_address: u64 = kani::any();
     kani::assume(!is_allowed(SERVICE_WINDOWS, virtual_address));
     service_window(virtual_address);
