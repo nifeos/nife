@@ -175,22 +175,22 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
   points at `crates/publish-allowlist.txt`. Also left: the scaffold and the `Name:` strip, and a
   test payload other than `b"nife"` (`src/lib.rs` line 394, not a wire literal).
 - P0-2, the `VERSION` text: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- P1-3, `fixture` in the public API: Ruled (maintainer provisional, decision B, 2026-11-14 UTC). Not
-  built: `pub mod fixture` is still in `src/lib.rs`; it moves to an in-tree `byte_sink_fixture`
-  (name provisional), and four consumers change one `use`.
+- P1-3, `fixture` in the public API: Done (maintainer provisional, decision B, 2026-11-14 UTC),
+  [#3873](https://github.com/nifeos/nife/pull/3873). The module is the in-tree crate
+  `byte_sink_fixture` (name provisional, `publish = false`), and its consumers changed one `use`.
 - P1-4, the `abi` dev-dependency: Done, [#3565](https://github.com/nifeos/nife/pull/3565). The pin
   of `GONE` to `abi::Error::Gone` is a `const` assertion in `system_tests/src/user/sink_tests.rs`.
 - P1-5, proofs: Done, [#3565](https://github.com/nifeos/nife/pull/3565). Five harnesses, each with a
   falsification patch.
 - P1-6, the decoder ignores `kind`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - P1-7, British spellings: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
-- P1-8, end-of-stream words reserved: Open. `unpack` refuses either word non-zero and `rm`'s verdict
-  has its own endpoint ([#3581](https://github.com/nifeos/nife/pull/3581)); one sentence remains,
-  since the crate root's "What it does not carry" still says a sink ignores the two words.
-- P1-9, names a later rule reopens: Ruled (maintainer provisional, decision D, 2026-11-14 UTC). Not
-  built: `INLINE_MAXIMUM`, `req`, `Msg` and `ret` keep their old names; one rename lane applies
-  `MAXIMUM_INLINE_BYTES`, `first_word`, `Message` and `returned`, with no alias and the std PAL
-  regenerated, and the names then go to the crate's release name review.
+- P1-8, end-of-stream words reserved: Done. `unpack` refuses either word non-zero and `rm`'s verdict
+  has its own endpoint ([#3581](https://github.com/nifeos/nife/pull/3581)); the crate root's "What
+  it does not carry" states the rule ([#3873](https://github.com/nifeos/nife/pull/3873)).
+- P1-9, names a later rule reopens: Done (maintainer provisional, decision D, 2026-11-14 UTC),
+  [#3873](https://github.com/nifeos/nife/pull/3873). `MAXIMUM_INLINE_BYTES`, `first_word`,
+  `Message` and `returned` replace the old names, with no alias; the names then go to the crate's
+  release name review.
 - P1-10, the zero-count contradiction: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - P2-11, `len` on a narrow `usize`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
   `unpack` compares the count as `u64`.
@@ -205,11 +205,12 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 - P2-15, severity bits on any first word: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - Decision A, no wire version operation: Done (maintainer provisional, 2026-11-14 UTC), built as
   P0-2, [#3565](https://github.com/nifeos/nife/pull/3565).
-- Decision B, `fixture` out of the published crate: Ruled (maintainer provisional, 2026-11-14 UTC).
-  Not built: P1-3.
+- Decision B, `fixture` out of the published crate: Done (maintainer provisional, 2026-11-14 UTC),
+  built as P1-3, [#3873](https://github.com/nifeos/nife/pull/3873).
 - Decision C, end-of-stream words reserved: Done (ruled 2026-11-14 UTC, option A),
   [#3581](https://github.com/nifeos/nife/pull/3581).
-- Decision D, the names: Ruled (maintainer provisional, 2026-11-14 UTC). Not built: P1-9.
+- Decision D, the names: Done (maintainer provisional, 2026-11-14 UTC), built as P1-9,
+  [#3873](https://github.com/nifeos/nife/pull/3873).
 - The move: Open. No review package exists under `notes/crate-reviews/`, and
   nifeos/byte_sink_contract does not exist; a package lane comes first, then the clearance under
   Open decisions.
