@@ -15,7 +15,7 @@ use crate::sched;
 
 /// The `net_stack` program's ELF bytes (milestone 30, piece 3): the smoltcp net server, a distinct
 /// binary loaded by name. Used only by the net tests, whose RISC-V twins live in
-/// `riscv_virtual_io_tests`.
+/// `riscv64_virtual_io_tests`.
 #[cfg(target_arch = "aarch64")]
 fn net_stack_image() -> &'static [u8] {
     program("net_stack").expect("no net_stack program in the initial ramdisk")
@@ -82,7 +82,7 @@ const NET_CLIENT_NO_ANSWER: u64 = 2;
 /// DISCOVER left (TX) and the OFFER returned (RX), across both queues and both directions of the
 /// confinement, with no TCP/IP stack in the loop.
 // RISC-V twin:
-// `riscv_virtual_io_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net`. Gated here
+// `riscv64_virtual_io_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net`. Gated here
 // rather than run twice: that module drives the same property on the other instruction set through
 // the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
 // slowest tests to prove nothing.
@@ -115,7 +115,7 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net() {
 /// mmio one. Proves the multi-queue confinement and the net driver work over the bus real
 /// hardware uses.
 // RISC-V twin:
-// `riscv_virtual_io_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net_pci`. Gated
+// `riscv64_virtual_io_tests::a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net_pci`. Gated
 // here rather than run twice: that module drives the same property on the other instruction set
 // through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
@@ -143,7 +143,7 @@ fn a_userspace_driver_completes_a_dhcp_round_trip_over_virtual_io_net_pci() {
 /// knows nothing about DHCP; it owns only the DMA confinement. The server reports the acquired
 /// address, which must land in slirp's 10.0.2.0/24, so only a real DHCP round trip driven by
 /// smoltcp over the confined NIC can produce it.
-// RISC-V twin: `riscv_virtual_io_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp`. Gated here
+// RISC-V twin: `riscv64_virtual_io_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp`. Gated here
 // rather than run twice: that module drives the same property on the other instruction set through
 // the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
 // slowest tests to prove nothing.
@@ -173,7 +173,7 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp() {
 
 /// The net server over the PCIe transport, behind the IOMMU (milestone 30, §20): smoltcp drives
 /// a NIC confined in hardware and still gets its lease.
-// RISC-V twin: `riscv_virtual_io_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci`. Gated
+// RISC-V twin: `riscv64_virtual_io_tests::the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci`. Gated
 // here rather than run twice: that module drives the same property on the other instruction set
 // through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
@@ -203,7 +203,7 @@ fn the_net_server_acquires_a_dhcp_lease_over_smoltcp_pci() {
 /// deterministic and never leaves the emulator. 10.0.2.3:53 is not a local resolver: libslirp NATs
 /// it to the host's nameserver, which fails about 2.5% of queries (measured), so it cannot gate.
 // RISC-V twin:
-// `riscv_virtual_io_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract`. Gated here
+// `riscv64_virtual_io_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract`. Gated here
 // rather than run twice: that module drives the same property on the other instruction set through
 // the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
 // slowest tests to prove nothing.
@@ -228,7 +228,7 @@ fn a_client_completes_a_udp_round_trip_through_the_socket_contract() {
 
 /// The same UDP round trip over the PCIe transport, behind the IOMMU.
 // RISC-V twin:
-// `riscv_virtual_io_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract_pci`. Gated
+// `riscv64_virtual_io_tests::a_client_completes_a_udp_round_trip_through_the_socket_contract_pci`. Gated
 // here rather than run twice: that module drives the same property on the other instruction set
 // through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
@@ -296,7 +296,7 @@ fn an_accept_nobody_answers_ends_at_the_stacks_bound() {
 /// second half, real DNS via 10.0.2.3 (forwarded to the host's nameserver), does not gate: no answer
 /// skips (milestone 214's partial shape), and only a reply that is not a valid answer fails.
 // RISC-V twin:
-// `riscv_virtual_io_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers`.
+// `riscv64_virtual_io_tests::a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers`.
 // Gated here rather than run twice: that module drives the same property on the other instruction
 // set through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
@@ -340,7 +340,7 @@ fn a_name_resolves_through_the_stack_and_a_real_one_when_the_host_answers() {
 /// sends a payload, receives the echo, and closes. The full round trip, handshake through
 /// bidirectional data to teardown, deterministic and zero-host-setup (nothing outlives QEMU),
 /// through the client, `net_stack`, smoltcp, and the confined NIC.
-// RISC-V twin: `riscv_virtual_io_tests::a_client_echoes_over_tcp_through_the_socket_contract`. Gated
+// RISC-V twin: `riscv64_virtual_io_tests::a_client_echoes_over_tcp_through_the_socket_contract`. Gated
 // here rather than run twice: that module drives the same property on the other instruction set
 // through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
@@ -374,7 +374,7 @@ fn a_client_echoes_over_tcp_through_the_socket_contract() {
 /// virtio slot for the rest of the boot (`MAXIMUM_DEVICES`). Nothing else in the tree fetches a
 /// file over TCP or checks a package's digest on a target.
 // RISC-V twin:
-// `riscv_virtual_io_tests::a_package_fetched_over_http_is_accepted_only_by_the_image_digest`.
+// `riscv64_virtual_io_tests::a_package_fetched_over_http_is_accepted_only_by_the_image_digest`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_package_fetched_over_http_is_accepted_only_by_the_image_digest() {
@@ -403,7 +403,7 @@ fn a_package_fetched_over_http_is_accepted_only_by_the_image_digest() {
 }
 
 /// The same TCP echo round trip over the PCIe transport, behind the IOMMU.
-// RISC-V twin: `riscv_virtual_io_tests::a_client_echoes_over_tcp_through_the_socket_contract_pci`.
+// RISC-V twin: `riscv64_virtual_io_tests::a_client_echoes_over_tcp_through_the_socket_contract_pci`.
 // Gated here rather than run twice: that module drives the same property on the other instruction
 // set through the same `block_driver` and `net_stack` binaries, and a second copy would double the
 // suite's slowest tests to prove nothing.
@@ -431,7 +431,7 @@ fn a_client_echoes_over_tcp_through_the_socket_contract_pci() {
 /// again. `net_stack` derived the local port from the socket id, so the reopen reused the exact
 /// port and the second connect stalled on a slirp flow that had not cleared; the rotating allocator
 /// hands the reopen a fresh port, so both connects complete. The client reports OK only if they do.
-// RISC-V twin: `riscv_virtual_io_tests::a_reopened_socket_id_connects_again_over_tcp`. Gated here
+// RISC-V twin: `riscv64_virtual_io_tests::a_reopened_socket_id_connects_again_over_tcp`. Gated here
 // rather than run twice: that module drives the same property on the other instruction set through
 // the same `block_driver` and `net_stack` binaries, and a second copy would double the suite's
 // slowest tests to prove nothing.
@@ -464,7 +464,7 @@ fn a_reopened_socket_id_connects_again_over_tcp() {
 /// `Stack` rendezvous and a shared frame, listens on the one port its spawn granted, and serves two
 /// connections on one listener, which proves it re-arms. The listen and UDP bind grants are
 /// refused, bound and collided in the same spawn; notes/net/the-inbound-half.md has both halves.
-// RISC-V twin: `riscv_virtual_io_tests::a_host_process_connects_to_the_guest_and_is_answered`.
+// RISC-V twin: `riscv64_virtual_io_tests::a_host_process_connects_to_the_guest_and_is_answered`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_host_process_connects_to_the_guest_and_is_answered() {
@@ -533,7 +533,7 @@ const STD_LISTEN_EXPECTED: &[u8] =
 /// `net honestly unsupported` gap from phase one: std's networking runs on the native ABI,
 /// reaching the same path the hand-written client does through std's blocking API. Its stdout
 /// is reassembled off the rendezvous and compared byte for byte, the `std_exerciser` discipline.
-// RISC-V twin: `riscv_virtual_io_tests::std_net_runs_over_the_socket_contract`. Gated here rather than
+// RISC-V twin: `riscv64_virtual_io_tests::std_net_runs_over_the_socket_contract`. Gated here rather than
 // run twice: that module drives the same property on the other instruction set through the same
 // `block_driver` and `net_stack` binaries, and a second copy would double the suite's slowest tests
 // to prove nothing.
@@ -564,7 +564,7 @@ fn std_net_runs_over_the_socket_contract() {
 /// refused` (`AddrInUse`) ride the same spawn, because a boot is the expensive unit; the sibling
 /// test above is the stack with no grant. xtask's inbound prober checks the answer was the guest's
 /// own, which the guest cannot know. See notes/net/std-tcp-listener.md.
-// RISC-V twin: `riscv_virtual_io_tests::a_std_program_serves_a_granted_listening_port`.
+// RISC-V twin: `riscv64_virtual_io_tests::a_std_program_serves_a_granted_listening_port`.
 #[cfg(target_arch = "aarch64")]
 #[test_case]
 fn a_std_program_serves_a_granted_listening_port() {

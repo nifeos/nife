@@ -229,7 +229,7 @@ problems, and only the first was large.
    `outlaw`, `spin`, `forged_elf`, and friends, from milestone 7a). Each would need a RISC-V
    twin: not a translation of 37 instructions, but 37 *programs*, each hand-assembled.
 
-   **But it should not be done that way.** `riscv_virtual_io_tests` already showed the alternative: load
+   **But it should not be done that way.** `riscv64_virtual_io_tests` already showed the alternative: load
    a real ELF from the initrd and drive that. The programs are tiny and their behaviors are
    ordinary (return, system call twice, read a forbidden address, spin forever, die on purpose), so they
    are `user/` binaries or entry roles of one binary, built by the existing toolchain for both

@@ -20,15 +20,15 @@
 #                              milestone 38's four throughput phases (fs_seq_read and friends)
 #   script/bench --keyboard  attach a virtio keyboard and press it over the QEMU monitor, for the
 #                            keyboard_up and keyboard_event rows of keyboard_driver; composes with
-#                            --riscv and --x86, never gates. See
+#                            --riscv64 and --x86, never gates. See
 #                            notes/benchmarks/kernel-bench-harness.md, "The keyboard rows"
 #
 # **All three architectures, each against its own baseline.** With no architecture flag the
-# instrument is aarch64 and the baseline is `bench/baseline-aarch64.txt`; `--riscv` and `--x86`
+# instrument is aarch64 and the baseline is `bench/baseline-aarch64.txt`; `--riscv64` and `--x86`
 # select the other two and their own `bench/baseline-<arch>.txt`. The flags compose with
 # everything above, so `--check` and `--save --why` mean the same thing on each:
 #
-#   script/bench --riscv --check    diff against bench/baseline-riscv64.txt. CI runs this on
+#   script/bench --riscv64 --check    diff against bench/baseline-riscv64.txt. CI runs this on
 #                                   every pull request, beside the aarch64 leg
 #   script/bench --x86 --check      diff against bench/baseline-x86_64.txt
 #   script/bench --x86 --save --why "<reason>"

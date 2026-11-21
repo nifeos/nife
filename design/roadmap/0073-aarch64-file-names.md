@@ -184,7 +184,7 @@ stem, not just the path.
   and a type per page-table configuration, with 174 call sites behind it. The finding worth carrying
   is here too, that ARM has no short format name the way `Sv39` is one.
 - **Recorded.** `notes/riscv-parity-scope.md` holds the question this block left open,
-  `system_tests/src/user/riscv_virtual_io_tests.rs` having no `virtio_tests.rs` twin. Its "Open gap" section
+  `system_tests/src/user/riscv64_virtual_io_tests.rs` having no `virtio_tests.rs` twin. Its "Open gap" section
   measured the overlap at 24 tests, found no behavioral divergence in any of them, and names the
   merge that would settle whether the file is a RISC-V-only module or half of a pair. The name waits
   on that, because the answer changes the name.

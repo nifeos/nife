@@ -1,24 +1,24 @@
 //! **Which machine an ELF file may be for**: the `e_machine` values this crate names, the one
 //! [`Elf::parse`](crate::Elf::parse) accepts, and the test support that holds the check symmetric.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-21 (UTC).
 
 /// `e_machine` for 64-bit Arm. Pass it to [`Elf::parse_for_machine`](crate::Elf::parse_for_machine)
 /// to validate an aarch64 program on any host.
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+/// Name: ratified 2026-11-21 (UTC).
 #[doc(alias = "EM_AARCH64")]
 pub const MACHINE_AARCH64: u16 = 183;
 
 /// `e_machine` for RISC-V, which ELF64 uses for RV64.
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+/// Name: ratified 2026-11-21 (UTC), renamed from `MACHINE_RISCV`.
 #[doc(alias = "EM_RISCV")]
-pub const MACHINE_RISCV: u16 = 243;
+pub const MACHINE_RISCV64: u16 = 243;
 
 /// `e_machine` for `x86_64`.
 ///
-/// Name: provisional, minted 2026-11-16 (UTC) by milestone/1088-static-elf-outside-review-fixes.
+/// Name: ratified 2026-11-21 (UTC).
 #[doc(alias = "EM_X86_64")]
 pub const MACHINE_X86_64: u16 = 62;
 
@@ -28,7 +28,7 @@ pub const MACHINE_X86_64: u16 = 62;
 /// Every architecture has its own arm; a default arm naming one architecture would catch the next
 /// one added.
 #[cfg(target_arch = "riscv64")]
-pub(crate) const EXPECTED_MACHINE: u16 = MACHINE_RISCV;
+pub(crate) const EXPECTED_MACHINE: u16 = MACHINE_RISCV64;
 
 #[cfg(target_arch = "x86_64")]
 pub(crate) const EXPECTED_MACHINE: u16 = MACHINE_X86_64;
@@ -50,7 +50,7 @@ pub const NATIVE_MACHINE: u16 = EXPECTED_MACHINE;
 /// Adding an architecture is one edit here and one arm of `EXPECTED_MACHINE`; forgetting either
 /// fails the test build (see [`FOREIGN_MACHINES`]).
 #[cfg(test)]
-pub(crate) const KNOWN_MACHINES: [u16; 3] = [MACHINE_AARCH64, MACHINE_RISCV, MACHINE_X86_64];
+pub(crate) const KNOWN_MACHINES: [u16; 3] = [MACHINE_AARCH64, MACHINE_RISCV64, MACHINE_X86_64];
 
 /// The machines this crate names that this build does not accept: [`KNOWN_MACHINES`] minus
 /// [`NATIVE_MACHINE`].

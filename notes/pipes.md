@@ -162,8 +162,8 @@ commands:
 ```sh
 script/console                                   # aarch64
 
-cargo xtask initial-ramdisk-riscv                         # riscv64
-NIFE_INITIAL_RAMDISK=target/initial-ramdisk-riscv.img NIFE_DISK=target/nifefs.img \
+cargo xtask initial-ramdisk-riscv64                         # riscv64
+NIFE_INITIAL_RAMDISK=target/initial-ramdisk-riscv64.img NIFE_DISK=target/nifefs.img \
   cargo run -p kernel --target riscv64imac-unknown-none-elf
 ```
 

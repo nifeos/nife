@@ -189,7 +189,7 @@ cause that measures zero. `bench --x86 --check` passed throughout because 5.9% i
 tripwire could not see it, and the record beside the number said something untrue.
 
 At the time of the audit nothing would have caught it, because x86_64 had no gate.
-`script/ci-build`'s bench entry was `script/bench --check && script/bench --riscv --check`. The
+`script/ci-build`'s bench entry was `script/bench --check && script/bench --riscv64 --check`. The
 third leg existed, was committed, and was never pulled, and `ci.yml` carried a `BUGS` note saying so.
 That is why x86_64's only inter-save window is 1,526 commits long while aarch64's median is a few
 dozen: on the gated architectures a gross regression forces a save, and on the third nothing did.

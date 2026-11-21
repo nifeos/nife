@@ -191,7 +191,7 @@ that shape as well as the flip does. So it was measured rather than assumed.
 
 ### `bench_x86` was the one arm that never pinned its core count
 
-`bench()` pins `NIFE_SMP=1` for aarch64 and `bench_riscv` pins it for riscv64, each with the reason
+`bench()` pins `NIFE_SMP=1` for aarch64 and `bench_riscv64` pins it for riscv64, each with the reason
 at the call site: a primitive benchmark measures per-core path length. `bench_x86` set the variable
 nowhere and took the runner's default, while both its `eprintln!`s said "single hart". The flip made
 that line false and nothing said so. It is pinned now.

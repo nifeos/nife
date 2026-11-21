@@ -180,7 +180,7 @@ table carried them before the split.
 - E1, E3's latency half and E4 need a real cache, and this tree has one accelerator that provides
   one. "Tier A needs no silicon" is true of the experiments' *design*. But a Rust benchmark still
   needs real caches to run on, and today that is HVF, aarch64-only. `cargo xtask bench
-  --riscv` always runs under TCG, since no riscv64 accelerator exists in this tree. So all three
+  --riscv64` always runs under TCG, since no riscv64 accelerator exists in this tree. So all three
   self-skip there rather than print a fiction. It is the same self-skip shape
   `real_single_hart_or_skip` in `kernel/src/bench.rs` already uses for the icount case. This is not
   the Tier B kind of gap, a counter or an authority question that does not exist yet. This
@@ -192,7 +192,7 @@ table carried them before the split.
 - E2's naive reading was wrong. `sched::thread_count()` taken partway through the full test suite
   (279 `#[test_case]`s in one continuous boot) read 95 and 82 on the two ISAs. Both were dominated
   by threads that earlier, unrelated tests left allocated. The fix is in `system_tests/src/user/tests.rs`
-  and `riscv_virtual_io_tests.rs`: a baseline taken at the top of the same test, with the census
+  and `riscv64_virtual_io_tests.rs`: a baseline taken at the top of the same test, with the census
   reported as a delta. Any future count of "how many threads does X create" taken inside the
   shared-boot suite should take the same delta rather than trust an absolute `thread_count()`.
 

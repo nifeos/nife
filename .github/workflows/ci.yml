@@ -2586,7 +2586,7 @@ jobs:
         env:
           NIFE_BENCH_READINGS: ${{ runner.temp }}/bench-readings.tsv
       # Three legs, three architectures, since 2026-09-15: `script/ci-build`'s `bench` row is
-      # `script/bench --check && script/bench --riscv --check && script/bench --x86 --check`, so
+      # `script/bench --check && script/bench --riscv64 --check && script/bench --x86 --check`, so
       # this one step pulls all three tripwires. **This comment said the opposite for six days**,
       # having been written before the x86_64 leg was added and never compared against the script
       # it describes, and a lane read it and concluded that a failure it was looking at had gone

@@ -291,7 +291,7 @@ fn the_new_rungs_sit_where_the_milestone_put_them() {
     assert!(Stage::SelfTest > Stage::Machine);
     assert!(
         Stage::CoreRuns > Stage::SelfTest,
-        "the riscv tour runs after it"
+        "the riscv64 tour runs after it"
     );
     assert!(
         Stage::ShellBanner > Stage::CoreRuns,

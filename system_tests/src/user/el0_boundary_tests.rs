@@ -173,7 +173,7 @@ fn a_user_threads_trap_frame_sits_where_the_trap_path_rebuilds_it() {
 ///
 /// `AT S1E0R` translates an address as EL0 would, for a read. The precondition (the text is mapped)
 /// keeps the test from being vacuous. aarch64-only because its RISC-V twin,
-/// `riscv_virtual_io_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`, asserts the
+/// `riscv64_virtual_io_tests::the_page_tables_say_u_mode_cannot_read_the_kernels_memory`, asserts the
 /// same three things by walking the tables for the `U` bit; RISC-V has no such instruction, and
 /// one portable test could assert only what both mechanisms can say.
 ///

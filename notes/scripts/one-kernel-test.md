@@ -42,7 +42,7 @@ written are suppressed rather than allowed to fail for an unrelated reason:
 - The last item above is out of date. `filtered_leg` in `xtask/src/suite.rs` starts neither
   referee, so a filter that selects `a_host_process_connects_to_the_guest_and_is_answered` hangs
   until the 60 s watchdog: no host process ever connects. Seen 2026-10-13 (UTC) on riscv64 with
-  `--test riscv_virtual_io_tests`, twice, with and without that day's `while_installed` change.
+  `--test riscv64_virtual_io_tests`, twice, with and without that day's `while_installed` change.
 
 ## Repeating it (`--repeat N`)
 

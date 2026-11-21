@@ -63,7 +63,7 @@ use std::path::PathBuf;
 use package_archive::{Attributes, Package, package_size, sha256, write_package};
 
 use crate::host::workspace_root;
-use crate::{RISCV_TARGET, TARGET, X86_TARGET, profile_dir};
+use crate::{RISCV64_TARGET, TARGET, X86_TARGET, profile_dir};
 
 /// Where built packages land. Under `target/` because a package is an artifact, and because
 /// nothing in this tree is ready to publish one.
@@ -416,7 +416,7 @@ pub(crate) fn build_base_programs(triple: &str, arch: &str, test: bool) -> bool 
 pub(crate) fn triple(arch: &str) -> Result<&'static str, String> {
     match arch {
         "aarch64" => Ok(TARGET),
-        "riscv64" => Ok(RISCV_TARGET),
+        "riscv64" => Ok(RISCV64_TARGET),
         "x86_64" => Ok(X86_TARGET),
         other => Err(format!(
             "unknown architecture {other}; it is aarch64, riscv64 or x86_64"
@@ -692,7 +692,7 @@ fn resolve(root: &std::path::Path, architecture: &str, source: &Source) -> Resul
         Source::Program(name) => {
             let triple = match architecture {
                 "aarch64" => TARGET,
-                "riscv64" => RISCV_TARGET,
+                "riscv64" => RISCV64_TARGET,
                 "x86_64" => X86_TARGET,
                 other => return Err(format!("unknown architecture {other}")),
             };
@@ -706,7 +706,7 @@ fn resolve(root: &std::path::Path, architecture: &str, source: &Source) -> Resul
                     if architecture == "aarch64" {
                         "aarch64"
                     } else if architecture == "riscv64" {
-                        "riscv"
+                        "riscv64"
                     } else {
                         "x86"
                     }

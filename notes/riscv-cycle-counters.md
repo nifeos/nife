@@ -73,7 +73,7 @@ Every merge boots this, and it passes:
   cycles      : SBI PMU counter 0, CSR 0xc00, 64 bits
 ```
 
-(on the default `rv64` model) and `cargo xtask bench --riscv` prints
+(on the default `rv64` model) and `cargo xtask bench --riscv64` prints
 
 ```text
   probe: cycles_per_tick 100.00 (10000029 cycles over 100000 ticks at cntfrq 10000000)
@@ -178,7 +178,7 @@ The line names every outcome, so there is nothing here to infer.
 ### Step 3: is the number plausible?
 
 ```console
-$ cargo xtask bench --riscv                        # for the card image, per notes/visionfive2.md
+$ cargo xtask bench --riscv64                        # for the card image, per notes/visionfive2.md
 ```
 
 and read the one probe line:

@@ -74,7 +74,7 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
 
    Preemption works too, and it is the property that separates a kernel from a runtime. The
    S-mode timer already fired every 10ms; the missing half was hanging a reschedule off it. Now
-   `riscv_trap_dispatch` records the tick (`sched::on_tick`) and defers the switch to the trap tail,
+   `riscv64_trap_dispatch` records the tick (`sched::on_tick`) and defers the switch to the trap tail,
    the same four lines as aarch64's `handle_irq`: `if take_need_resched() && is_running() {
    count_preemption(); schedule(); }`. Two threads whose entire body is a tight loop (no yield, no
    system call, not even a call) both make progress: ~680k and ~666k iterations in 0.2s, 18 preemptions.
@@ -113,7 +113,7 @@ An appendix to [notes/riscv-port.md](../riscv-port.md), moved there on 2026-10-1
 
    And a real device interrupt flows through the PLIC. A keystroke becomes a message. The
    NS16550 raises its receive line into the PLIC, and the PLIC delivers a supervisor external
-   interrupt (`scause` = 9). `riscv_trap_dispatch` claims it (acknowledging and masking that source),
+   interrupt (`scause` = 9). `riscv64_trap_dispatch` claims it (acknowledging and masking that source),
    looks up the endpoint it is routed to, and notifies it. A kernel driver thread blocked there wakes, reads
    the byte, and re-arms the source. Boot shows "a keystroke reached a kernel driver through the
    PLIC: 0x41 ('A')". The shape is exactly aarch64's `handle_irq` (mask, notify, complete) and it

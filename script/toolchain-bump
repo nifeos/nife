@@ -124,7 +124,7 @@ echo "==> One thing is left: the icount floors. The scheduled workflow's restamp
 echo "    across when it proves the compiler moved no row (calef, 2026-09-26). By hand, try that"
 echo "    first:"
 echo
-echo "        script/bench --restamp && script/bench --riscv --restamp && script/bench --x86 --restamp"
+echo "        script/bench --restamp && script/bench --riscv64 --restamp && script/bench --x86 --restamp"
 echo
 echo "    and re-record any floor whose leg refuses, as below."
 echo
@@ -134,10 +134,10 @@ echo "    nothing in this tree is responsible for. Re-record them IN THIS COMMIT
 echo "    moved:"
 echo
 echo "        script/bench --check         # read the deltas first; this is the part that matters"
-echo "        script/bench --riscv --check"
+echo "        script/bench --riscv64 --check"
 echo "        script/bench --x86 --check"
 echo "        script/bench --save --why \"nightly bump: <what moved>\"   # --why is required"
-echo "        script/bench --riscv --save --why \"...\" && script/bench --x86 --save --why \"...\""
+echo "        script/bench --riscv64 --save --why \"...\" && script/bench --x86 --save --why \"...\""
 echo
 echo "    A floor that moved a long way is not a formality to click past: a nightly can make this"
 echo "    kernel genuinely slower, and re-saving without reading the delta is the one outcome this"

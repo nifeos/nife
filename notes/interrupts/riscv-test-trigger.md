@@ -25,7 +25,7 @@ Two other options were considered and are worse, for reasons worth keeping:
   It is the
   obvious "software-generated interrupt" on RISC-V and it is the wrong one. It arrives as a
   *supervisor software* interrupt, `scause` = 1, which is a different arm of
-  `riscv_trap_dispatch` from a device's `scause` = 9: that arm drains the scheduler inbox and serves
+  `riscv64_trap_dispatch` from a device's `scause` = 9: that arm drains the scheduler inbox and serves
   steal requests, and touches neither `interrupt_route` nor `interrupt_notify`. A test built on it
   would have
   looked like parity with aarch64 and proved nothing about interrupt-to-message delivery.

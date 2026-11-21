@@ -12,11 +12,11 @@ use crate::farm::{
 use crate::host::{bin_elf, workspace_root};
 use crate::inspect::read_stripped;
 use crate::measure::{boot_programs, write_measure_manifest};
-use crate::{RISCV_TARGET, TARGET, X86_TARGET, profile_dir};
+use crate::{RISCV64_TARGET, TARGET, X86_TARGET, profile_dir};
 
 /// **Build the two program packages, `components` and `fixtures`, for `target`**, in the run's
 /// profile and with the attacker roles only when [`crate::CONFINEMENT_ATTACKERS`] says so. The one
-/// place the three initial ramdisk builders ([`crate::user`], [`has_initial_ramdisk_riscv`],
+/// place the three initial ramdisk builders ([`crate::user`], [`has_initial_ramdisk_riscv64`],
 /// [`has_initial_ramdisk_x86`]) spell that build, so the feature cannot reach one architecture's
 /// archive and not another's. Switching between a test and any other boot recompiles
 /// `components`, because cargo fingerprints features; that is the price of the shipped image not
@@ -51,9 +51,9 @@ pub(crate) fn initial_ramdisk_path() -> String {
 
 /// Where the RISC-V initial ramdisk archive is written (milestone 20 (a portable HAL)). Separate
 /// from the aarch64 one because it holds riscv64 ELFs, not aarch64 ones.
-pub(crate) fn riscv_initial_ramdisk_path() -> String {
+pub(crate) fn riscv64_initial_ramdisk_path() -> String {
     workspace_root()
-        .join("target/initial-ramdisk-riscv.img")
+        .join("target/initial-ramdisk-riscv64.img")
         .display()
         .to_string()
 }
@@ -345,32 +345,32 @@ fn check_declared_programs(names: &[String]) -> Result<(), String> {
 /// `NIFE_INITIAL_RAMDISK` at the result and boot the riscv kernel, e.g.:
 ///
 /// ```text
-/// cargo xtask initial-ramdisk-riscv
-/// NIFE_INITIAL_RAMDISK=target/initial-ramdisk-riscv.img cargo run -p kernel \
+/// cargo xtask initial-ramdisk-riscv64
+/// NIFE_INITIAL_RAMDISK=target/initial-ramdisk-riscv64.img cargo run -p kernel \
 ///     --target riscv64imac-unknown-none-elf
 /// ```
 ///
 /// Name: ratified 2026-10-28 (UTC) (calef, relayed by the maintainer), renamed from
-/// `initial_ramdisk_riscv`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite
+/// `initial_ramdisk_riscv64`: the question shape asks a `bool` `is_`, `has_`, `can_` or a finite
 /// verb.
-pub(crate) fn has_initial_ramdisk_riscv() -> bool {
+pub(crate) fn has_initial_ramdisk_riscv64() -> bool {
     // The whole package, never a `--bin` list: a list has to be kept in step with
     // `declared_programs` by hand. Every program compiles for this target.
-    if !build_programs(RISCV_TARGET) {
+    if !build_programs(RISCV64_TARGET) {
         return false;
     }
 
     let bin = |name: &str| {
         workspace_root()
             .join(format!(
-                "target/{RISCV_TARGET}/{}/{name}",
+                "target/{RISCV64_TARGET}/{}/{name}",
                 crate::profile_dir()
             ))
             .display()
             .to_string()
     };
     // Every declared program, packed under its own name (milestone 150).
-    let Some(mut blobs) = declared_program_blobs("initial-ramdisk-riscv", bin) else {
+    let Some(mut blobs) = declared_program_blobs("initial-ramdisk-riscv64", bin) else {
         return false;
     };
     // The `std` programs and the ported ones, exactly as on aarch64. DECISIONS §19 is why `rg`'s
@@ -381,12 +381,12 @@ pub(crate) fn has_initial_ramdisk_riscv() -> bool {
     // The FS server (milestone 32 (a real filesystem: RedoxFS behind a capability FS server) phase
     // 2) and `mkfs`, built for the riscv bare target, ride along
     // when present, exactly as std_exerciser does; `test` builds them first.
-    blobs.extend(file_server_blobs(RISCV_TARGET));
+    blobs.extend(file_server_blobs(RISCV64_TARGET));
     // Measure the boot programs before the riscv kernel is built (milestone 22 phase B.1).
     let Some((size, _)) = write_archive(
-        "initial-ramdisk-riscv",
+        "initial-ramdisk-riscv64",
         "riscv64",
-        &riscv_initial_ramdisk_path(),
+        &riscv64_initial_ramdisk_path(),
         "the archive",
         &blobs,
     ) else {
@@ -394,7 +394,7 @@ pub(crate) fn has_initial_ramdisk_riscv() -> bool {
     };
     eprintln!(
         "wrote {} ({size} bytes): progenitor, least_authority_demo",
-        riscv_initial_ramdisk_path()
+        riscv64_initial_ramdisk_path()
     );
     true
 }

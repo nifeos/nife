@@ -94,9 +94,9 @@ always.
 
 ## Why `tick` is never inlined
 
-`riscv_trap_body` is in `script/fastpath-footprint`'s `system_call_entry` set, because an `ecall`
+`riscv64_trap_body` is in `script/fastpath-footprint`'s `system_call_entry` set, because an `ecall`
 arrives through the same handler as every other trap. The timer arm of that handler is not
-something a system call fetches. When LLVM folds `tick` in, its bytes land inside `riscv_trap_body` and
+something a system call fetches. When LLVM folds `tick` in, its bytes land inside `riscv64_trap_body` and
 the flat entry-set sum counts them. That happened once from an unrelated change in `sched.rs`, and
 moved the sum 12.1% (1,870 to 2,096 bytes) against a 5% bound. `#[inline(never)]` keeps the number
 measuring what it names, and one `jal` per 10 ms tick costs nothing worth having. The gate's own

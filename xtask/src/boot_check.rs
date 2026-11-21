@@ -3,11 +3,11 @@
 use std::process::Command;
 
 use crate::archive::{
-    has_initial_ramdisk_riscv, has_initial_ramdisk_x86, initial_ramdisk_path,
-    riscv_initial_ramdisk_path, x86_initial_ramdisk_path,
+    has_initial_ramdisk_riscv64, has_initial_ramdisk_x86, initial_ramdisk_path,
+    riscv64_initial_ramdisk_path, x86_initial_ramdisk_path,
 };
 use crate::host::{flag_value, run};
-use crate::{RISCV_TARGET, RUNNER, TARGET, X86_TARGET, profile_dir, user};
+use crate::{RISCV64_TARGET, RUNNER, TARGET, X86_TARGET, profile_dir, user};
 
 /// **Boot every architecture's default kernel and fail if it does not climb the whole ladder**:
 /// the configuration `cargo xtask run` gives a person (nothing else in CI boots the default riscv64
@@ -67,10 +67,10 @@ pub(crate) fn boot_check() -> bool {
         ),
         (
             "riscv64",
-            RISCV_TARGET,
+            RISCV64_TARGET,
             "helpers/qemu-runner-riscv64.sh",
-            has_initial_ramdisk_riscv as fn() -> bool,
-            riscv_initial_ramdisk_path as fn() -> String,
+            has_initial_ramdisk_riscv64 as fn() -> bool,
+            riscv64_initial_ramdisk_path as fn() -> String,
         ),
         (
             "x86_64",

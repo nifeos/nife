@@ -30,7 +30,7 @@ use object::read::elf::{ElfFile64, ProgramHeader};
 use program_table::{Program, job_region_pages};
 
 use crate::host::{flag_value, workspace_root};
-use crate::{RISCV_TARGET, TARGET, X86_TARGET, profile_dir};
+use crate::{RISCV64_TARGET, TARGET, X86_TARGET, profile_dir};
 
 /// Pages one address space costs beyond its image and stack: the thread control block, the
 /// address-space root, the intermediate tables for the windows a child touches (two
@@ -153,7 +153,7 @@ pub(crate) fn rows(
 pub(crate) fn region_check() -> bool {
     let (target, arch) = match flag_value("--arch").as_deref() {
         None | Some("aarch64") => (TARGET, "aarch64"),
-        Some("riscv64") => (RISCV_TARGET, "riscv64"),
+        Some("riscv64") => (RISCV64_TARGET, "riscv64"),
         Some("x86_64") => (X86_TARGET, "x86_64"),
         Some(other) => {
             eprintln!("region-check: --arch {other} is not aarch64, riscv64 or x86_64");

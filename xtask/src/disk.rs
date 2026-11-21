@@ -742,7 +742,7 @@ fn genuine_and_tampered(root: &std::path::Path, stem: &str) -> Result<(Vec<u8>, 
 fn image_lacking_the_packages(architecture: &str) -> Result<(String, Vec<u8>), String> {
     let archive = match architecture {
         "aarch64" => crate::archive::initial_ramdisk_path(),
-        "riscv64" => crate::archive::riscv_initial_ramdisk_path(),
+        "riscv64" => crate::archive::riscv64_initial_ramdisk_path(),
         _ => crate::archive::x86_initial_ramdisk_path(),
     };
     let image = std::fs::read(&archive).map_err(|e| format!("could not read {archive}: {e}"))?;
@@ -774,7 +774,7 @@ impl SeededPrograms {
     fn read(root: &std::path::Path, architecture: &str) -> Result<Self, String> {
         let triple = match architecture {
             "aarch64" => crate::TARGET,
-            "riscv64" => crate::RISCV_TARGET,
+            "riscv64" => crate::RISCV64_TARGET,
             _ => crate::X86_TARGET,
         };
         let witness = root.join(format!(
