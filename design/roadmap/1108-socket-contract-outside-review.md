@@ -5,7 +5,7 @@ milestone_dependencies: 1017, 1000
 decision_dependencies: none
 machine_requirements: none
 specific_machine: none
-needs_person: yes
+needs_person: no
 ---
 # 1108. `socket_contract`: what an outside maintainer would fix before it leaves
 
@@ -59,8 +59,8 @@ package, `notes/crate-reviews/socket-contract.md`.
   `user_mode_runtime`'s window API that no milestone holds.
 - P2-9, names: Done, [#3811](https://github.com/nifeos/nife/pull/3811) built the package's names
   table, and the architect ratified it as built on 2026-11-20 UTC. `Cursor::next` and `polled_wait::next` keep their spelling (the
-  table keeps them). `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC); adding `tcp`
-  and `udp` to the template's accepted words is in another repository and not done.
+  table keeps them). `tcp`, `udp` and `ipv4` stay abbreviated (ruled 2026-11-16 UTC), and the template
+  accepts `tcp` and `udp`.
 - P2-10, inline "provisional" prose: Done. No doc comment in `src/lib.rs` says it; the move strips
   the ratified `Name:` blocks.
 - P2-11, vocabulary undefined: Done, [#3580](https://github.com/nifeos/nife/pull/3580).
@@ -79,7 +79,7 @@ package, `notes/crate-reviews/socket-contract.md`.
 - PKG-4, the package's names table: Done and ratified (2026-11-20 UTC),
   [#3811](https://github.com/nifeos/nife/pull/3811), with one difference: the four offset rows keep `_BYTES`, because the family's
   `<FIELD>_OFFSET_BYTES` spelling (ruled 2026-11-14 UTC) wins, and only their stems changed.
-- PKG-5, clearing the move with no tag and no publish: Open, and an open decision below.
+- PKG-5, clearing the move with no tag and no publish: Done as a ruling (2026-11-21 UTC): cleared, with `nifeos/socket_contract` approved and `publish = false`.
 
 ## Rules in force
 
@@ -88,35 +88,9 @@ package, `notes/crate-reviews/socket-contract.md`.
   client built against the crate in its own repository bakes them in, so neither changes without a
   new ruling. No operation sends `VERSION` on the wire; the bind-time check that reads it belongs
   to milestone 1000 (message contracts carry bind-time version checks).
-
-## Open decisions
-
-### Clearing the move of `socket_contract`
-
-Clearing a crate's review package is what approves its repository, here
-`nifeos/socket_contract`. The package says the crate builds, proves and stands alone, and it
-recommends against clearing yet, until the maintainer brings the clearance. The architect ratified its names (P2-9 and PKG-4); where `fixture`, `ephemeral_port`
-and `polled_wait` live (PKG-2 and PKG-3) has a provisional answer. The package also lists
-a maintainer step: the `std` farm must read the pinned checkout's source, or the move breaks the
-platform layer's build.
-
-Recommendation: A.
-
-- A. Clear once the maintainer's step on the `std` farm has landed (#3811 built PKG-2, PKG-3, P2-9 and PKG-4,
-  and the architect ratified the names), with no tag and no publish.
-- B. Clear before the scope moves land, and let them happen in the new repository.
-- C. Hold the clearance until the first publish is near, and move nothing before then.
-
-Door: one-way. A public repository is visible and forkable the moment it exists, and the eight
-path dependencies in nife switch to it.
-
-Prior art: smoltcp keeps its socket types and the stack in one crate, which is the shape C keeps;
-`embedded-nal` publishes the client-side traits alone, apart from any stack, which is closer to
-A. nife differs by keeping one contract crate that both sides link, with the stack's private logic
-outside it. In this tree, `block_roster_contract` and `entropy_contract` each moved after a cleared
-package.
-
-Blocks: the move, and with it any tag and the first publish.
+- The move of `socket_contract` is cleared (ruled 2026-11-21 UTC, option A): the architect approved
+  creating `nifeos/socket_contract` with `publish = false`, no tag and no publish. The move lane's
+  first step is to prove that the `std` farm builds the platform layer from the pinned checkout.
 
 ## What was checked, and how
 
@@ -184,9 +158,8 @@ The P2 items are in [the appendix](1108-socket-contract-outside-review/later-ite
 
 ## Decisions for the architect
 
-Only one-way doors, both ruled. The package's decisions 1 and 5 are under "Open decisions" above;
-its decisions 2, 3 and 4 are two-way doors the maintainer rules provisionally. These two are
-additions the package did not raise.
+Only one-way doors, all ruled. The package's decisions 2, 3 and 4 are two-way doors the maintainer
+rules provisionally. D1 and D2 are additions the package did not raise.
 
 ### D1. Where a send's length travels (ruled 2026-11-11 UTC as recommended)
 
