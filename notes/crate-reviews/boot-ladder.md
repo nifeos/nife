@@ -59,7 +59,7 @@ Run from this lane's worktree on the head named in the pull request.
 | check | result |
 |---|---|
 | `script/crate-review-packet boot_ladder` | the table in Public API below comes from it; 0 `unsafe` sites, 0 dependencies, no foreign type in a public signature, 2 harnesses with 2 patches, no reference back into nife and no parent-path literal |
-| `script/crate-standalone boot_ladder` | STANDALONE_RESULT |
+| `script/crate-standalone boot_ladder` | one failure, `names`: 116 names not ratified, the table in Names below. The manifest, the files, the citations and the build on 1.88 for the host and the three bare-metal targets pass; Kani proves 2 of 2 harnesses; both falsification patches turn their harness red |
 | `cargo test -p boot_ladder` | 22 unit tests pass; 0 documentation tests |
 | `cargo clippy -p boot_ladder --all-targets -- -D warnings` | no warning |
 | `cargo doc -p boot_ladder --no-deps` with warnings denied | no warning |
@@ -67,7 +67,7 @@ Run from this lane's worktree on the head named in the pull request.
 | the template's `question_shape` | 1 refused: the private `const fn str_eq` in `src/verdict.rs` returns `bool` and is not named like a question; the template's ceiling is 0 |
 | the template's `abbreviations`, report only | 331 names judged, 0 components that are not words |
 | `script/names boot_ladder` and `python3 helpers/name_release.py --draft boot_ladder` | the crate name ratified; the rest listed in Names below |
-| `script/lint` | LINT_RESULT |
+| `script/lint` | the full run passes, all 151 sections |
 
 Not run, and so not claimed:
 
