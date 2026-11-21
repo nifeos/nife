@@ -352,16 +352,22 @@ pub const MAXIMUM_HANDLE: u64 = 0xffff;
 /// assert_eq!(fs::request_handle(w0), fs::ROOT);
 /// assert_eq!(fs::request_length_bytes(w0), 10);
 /// ```
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn request(operation: u64, handle: u64, len: u64) -> u64 {
     (operation << super::OPERATION_SHIFT)
         | ((handle & MAXIMUM_HANDLE) << 40)
         | (len & MAXIMUM_LENGTH_BYTES)
 }
 /// The handle of a file request word.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn request_handle(w0: u64) -> u64 {
     (w0 >> 40) & MAXIMUM_HANDLE
 }
 /// The length/count of a file request word.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn request_length_bytes(w0: u64) -> usize {
     (w0 & MAXIMUM_LENGTH_BYTES) as usize
 }
@@ -369,14 +375,20 @@ pub const fn request_length_bytes(w0: u64) -> usize {
 /// Pack [`RENAME`]'s **destination** half into the second word: the same handle and length
 /// fields [`request`] uses, minus the opcode, because a rename names two directories and one word
 /// cannot carry both. Read back with [`destination_handle`] and [`destination_length_bytes`].
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn rename_destination(handle: u64, len: u64) -> u64 {
     ((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LENGTH_BYTES)
 }
 /// The destination directory handle of a [`RENAME`]'s second word.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn destination_handle(w1: u64) -> u64 {
     (w1 >> 40) & MAXIMUM_HANDLE
 }
 /// The destination name's length, in bytes, of a [`RENAME`]'s second word.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn destination_length_bytes(w1: u64) -> usize {
     (w1 & MAXIMUM_LENGTH_BYTES) as usize
 }

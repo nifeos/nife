@@ -196,7 +196,7 @@ The other 133 public items, with no block, are plain words or standard-library s
 `iter`, `get`, `of`). The request packers `fs::request`, `request_handle`, `request_length_bytes`,
 `block::request`, `request_block_count` and the rename-destination trio `rename_destination`,
 `destination_handle`, `destination_length_bytes` are spelled out, as `byte_sink_contract` spelled out
-its own packer (`first_word`, P1-9 of milestone 1079). The wire bytes are unchanged, and a test pins
+its own packer (`first_word`, P1-9 of milestone 1079 (`byte_sink_contract`: what an outside maintainer would fix before it leaves)). The wire bytes are unchanged, and a test pins
 them. The spellings are provisional.
 
 The full table for the ratifying pull request is the output of

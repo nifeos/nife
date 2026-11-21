@@ -72,6 +72,8 @@ pub const MAXIMUM_TRANSFER_BYTES: usize = TRANSFER_BLOCKS * BLOCK_BYTES;
 /// Pack a blk request's first word: opcode (bits 63:56, [`super::OPERATION_SHIFT`]) and a block count
 /// (bits 7:0, stored as `blocks - 1` so the all-zero word a single-block caller sends decodes as
 /// one block). `blocks` must be in `1..=TRANSFER_BLOCKS`.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn request(operation: u64, blocks: usize) -> u64 {
     assert!(blocks >= 1 && blocks <= TRANSFER_BLOCKS);
     (operation << super::OPERATION_SHIFT) | (blocks as u64 - 1)
@@ -79,6 +81,8 @@ pub const fn request(operation: u64, blocks: usize) -> u64 {
 
 /// The block count of a blk request word: [`request`]'s inverse. A word built by
 /// [`super::req`]`(operation)`, as a single-block caller sends, decodes as 1.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
 pub const fn request_block_count(w0: u64) -> usize {
     ((w0 & 0xff) + 1) as usize
 }

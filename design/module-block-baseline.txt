@@ -2034,9 +2034,7 @@ crates/filesystem_contract/src/block.rs::TRANSFER_BLOCKS
 
 crates/filesystem_contract/src/block.rs::WRITE
 
-crates/filesystem_contract/src/block.rs::req
 
-crates/filesystem_contract/src/block.rs::request_block_count
 
 
 crates/filesystem_contract/src/directory.rs
@@ -2203,17 +2201,11 @@ crates/filesystem_contract/src/fs.rs::UNLINK
 
 crates/filesystem_contract/src/fs.rs::WRITE
 
-crates/filesystem_contract/src/fs.rs::destination_handle
 
-crates/filesystem_contract/src/fs.rs::destination_length_bytes
 
-crates/filesystem_contract/src/fs.rs::rename_destination
 
-crates/filesystem_contract/src/fs.rs::req
 
-crates/filesystem_contract/src/fs.rs::request_handle
 
-crates/filesystem_contract/src/fs.rs::request_length_bytes
 
 
 crates/filesystem_contract/src/grant.rs
