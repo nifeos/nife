@@ -34,7 +34,6 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// let mut waiter = ThreadControlBlock { next: None };
 /// let waiter = NonNull::new(&raw mut waiter).unwrap();
 /// let mut n: Notification<ThreadControlBlock> = Notification::new();
-///
 /// // Two signals with nobody waiting accumulate into one word. Neither is lost.
 /// assert_eq!(n.signal(0b01, false), SignalVerdict::Counted);
 /// assert_eq!(n.signal(0b10, false), SignalVerdict::Counted);

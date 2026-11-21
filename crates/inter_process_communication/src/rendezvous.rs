@@ -30,7 +30,6 @@ use super::*;
 /// let (server_token, client_token) = unsafe {
 ///     (Unqueued::new(NonNull::from(&mut server)), Unqueued::new(NonNull::from(&mut client)))
 /// };
-///
 /// // A receive with nobody sending queues, giving up its token; the caller blocks it.
 /// assert_eq!(ep.receive(server_token), ReceiveVerdict::Blocked);
 /// assert!(!ep.is_idle() && ep.one_queue_invariant_holds());
