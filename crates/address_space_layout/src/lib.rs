@@ -181,7 +181,7 @@ pub const SERVICE_WINDOWS: Band = Band {
     end: 0x6000_0000,
 };
 
-/// **The program's own ELF segments.** A program's linker script links at [`IMAGE_BASE_VIRTUAL_ADDRESS`], and the
+/// **The program's own Executable and Linkable Format (ELF) segments.** A program's linker script links at [`IMAGE_BASE_VIRTUAL_ADDRESS`], and the
 /// host test that holds the two to the same number lives with the script's owner, not here.
 pub const IMAGE: Band = Band {
     start: SERVICE_WINDOWS.end,
