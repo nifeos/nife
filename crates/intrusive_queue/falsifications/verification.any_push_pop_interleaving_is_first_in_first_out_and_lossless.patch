@@ -8,8 +8,8 @@ test does.
 Expected to fail: the harness's `assert_eq!(q.is_empty(), m_head == m_tail)`, on the sequence
 push, pop, push. The stale tail takes the `Some` arm of the push, so the new node is linked
 behind a node that has already left the queue and `head` stays `None`: the queue reports itself
-empty while holding a node, and that node is lost. In the kernel this queue holds runnable
-threads.
+empty while holding a node, and that node is lost. In a scheduler, that node is a runnable
+thread that never runs again.
 
 diff --git a/crates/intrusive_queue/src/lib.rs b/crates/intrusive_queue/src/lib.rs
 --- a/crates/intrusive_queue/src/lib.rs

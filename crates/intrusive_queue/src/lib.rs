@@ -359,7 +359,7 @@ mod verification {
             N { next: None, tag: 1 },
             N { next: None, tag: 2 },
         ];
-        // One token per node, minted from one pointer to the array, the way the kernel mints
+        // One token per node, minted from one pointer to the array, the way a kernel mints
         // from the pointer its table stores. `nodes` is not named again, so every later access
         // goes through a token. A token is in `held` while its node is off the queue.
         let base = (&raw mut nodes).cast::<N>();
@@ -458,7 +458,7 @@ mod tests {
         }
     }
 
-    /// A test's node, owned through the pointer `Box::into_raw` returned, as the kernel owns a
+    /// A test's node, owned through the pointer `Box::into_raw` returned, as a kernel owns a
     /// thread through the pointer its table stores. Every access, the token's and the test's,
     /// derives from that one pointer, and dropping it frees the node.
     struct Owned(NonNull<N>);
@@ -551,8 +551,8 @@ mod tests {
         assert!(q.is_empty());
     }
 
-    /// The token is the pointer and nothing more: `#[repr(transparent)]` is the zero-cost claim the
-    /// kernel's footprint gate rests on, and `Option` of one is still one word.
+    /// The token is the pointer and nothing more: `#[repr(transparent)]` is the zero-cost claim a
+    /// caller's footprint rests on, and `Option` of one is still one word.
     #[test]
     fn a_token_is_one_pointer_wide() {
         use core::mem::size_of;
@@ -607,9 +607,9 @@ mod tests {
     }
 
     /// **A token minted from the owning pointer survives the owner's later reborrows.** The
-    /// sequence is the kernel thread table's over a thread's life: the table stores the pointer
+    /// sequence is a kernel thread table's over a thread's life: the table stores the pointer
     /// `Box::into_raw` returned and mints the token from it, then hands out `&mut` reborrows of
-    /// the node (`Threads::get_mut`) while the token moves on and off a queue, until the node is
+    /// the node (`Table::get_mut` below) while the token moves on and off a queue, until the node is
     /// retired. Run it under Miri with either borrow model (`cargo miri test -p intrusive_queue`,
     /// and again with `MIRIFLAGS=-Zmiri-tree-borrows`): both pass it. A token minted instead from
     /// one of those reborrows, `NonNull::from(table.get_mut(0))`, is invalidated by the next
