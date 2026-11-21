@@ -194,12 +194,12 @@ The checks are in [the appendix](1079-byte-sink-contract-outside-review/done-whe
 - P1-10, the zero-count contradiction: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
 - P2-11, `len` on a narrow `usize`: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
   `unpack` compares the count as `u64`.
-- P2-12, `req` drops high bits: Open. Typed `operation: u8` and `len: u32` parameters retype the
-  public opcode constants; a two-way door before the release, which the maintainer rules
-  provisionally.
-- P2-13, `pack` returns a bare four-tuple: Open. Whether `pack` and `unpack` take a words struct is
-  two-way until the release, and the maintainer rules it provisionally; if taken, the struct's name
-  joins the release name review.
+- P2-12, `req` drops high bits: Done (maintainer provisional, two-way door),
+  [#3880](https://github.com/nifeos/nife/pull/3880). `first_word` takes typed `operation: u8` and
+  `len: u32` parameters, so a caller cannot pass bits the word drops.
+- P2-13, `pack` returns a bare four-tuple: Done (maintainer provisional, two-way door),
+  [#3880](https://github.com/nifeos/nife/pull/3880). `pack` and `unpack` take and return
+  `MessageWords`; the struct's name stays provisional and joins the release name review.
 - P2-14, equivalent mutants: Open. Four exemptions with their reasons go into the new repository's
   `.github/mutants-exempts`.
 - P2-15, severity bits on any first word: Done, [#3565](https://github.com/nifeos/nife/pull/3565).
