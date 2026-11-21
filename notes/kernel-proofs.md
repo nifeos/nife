@@ -58,8 +58,7 @@ exhaustive list of what a harness in `kernel/src` cannot see. The same list is i
    are in files containing no `asm!` at all, and `arch/aarch64/iommu.rs` is now proved in place. The
    architecture layer is still overwhelmingly unverified, and the timer re-arm drift is still on the
    far side of this line, but "unreachable by construction" was a claim about a directory and the
-   truth is a claim about two constructs. (This paragraph named the VisionFive 2 undelivered wake
-   until 2026-09-24; BUGS below records why that reading is retracted.)
+   truth is a claim about two constructs.
 
    A stub can cross it, at a price: [kernel-proofs/stubbing-an-instruction.md](kernel-proofs/stubbing-an-instruction.md).
 3. **Two thirds of `kernel/src/arch/` is not compiled at all, and this is a `cfg` rather than a
@@ -137,15 +136,9 @@ The detail is in [kernel-proofs/x86-interrupt-controller-proofs.md](kernel-proof
 
 ### And four in `kernel/src/sched/region_reaping/verification.rs`
 
-The supervision decisions `REAP` and `SURVEY` make, `reap_decision` and `survey_includes`, are pure
-functions of the thread's supervising rendezvous, the invoked rendezvous and, for a reap, whether
-the thread is dead. They name no architecture, so all four harnesses run on every host.
-`reap_is_permitted_only_to_the_supervising_rendezvous`: a reap is permitted only to the supervisor.
-`a_stranger_reveals_nothing_about_its_liveness`: outside the relationship the answer is the same
-for a live thread and a dead one. `a_survey_shows_exactly_the_endpoints_own_children`: a survey
-includes a thread exactly when this rendezvous supervises it. `the_view_and_the_reap_have_the_same_scope`:
-the survey and the reap agree for every liveness. Each carries a falsification patch under
-`kernel/falsifications/`, and they are claims 6 to 9 of [the confinement claims](confinement-claims.md).
+`reap_decision` and `survey_includes` name no architecture, so their four harnesses run on every
+host. They are claims 6 to 9 of [the confinement claims](confinement-claims.md), which say what
+each proves, and each has a patch under `kernel/falsifications/`.
 
 ## Which architecture the prover actually sees
 
@@ -155,10 +148,10 @@ as more coverage than it is.
 | host | `arch/` subtree compiled | harnesses that run |
 |---|---|---|
 | aarch64 (dev Mac; `ubuntu-26.04-arm` runners) | `arch/aarch64/`, and `arch/riscv64/iommu.rs` | 13: two in `system_call.rs`, four in `region_reaping/verification.rs`, three in each `iommu.rs`, one in `fp.rs` |
-| x86_64 (cordoba; the `ubuntu-26.04` runner) | `arch/x86_64/` | 9: the same six in `system_call.rs` and `region_reaping/verification.rs`, two in `interrupt_controller.rs`, one in `fp.rs` |
-| either, via script/verify-riscv64 | `arch/riscv64/`, natively | 12: the same six in `system_call.rs` and `region_reaping/verification.rs`, three in `iommu.rs`, three in `mmu.rs` |
+| x86_64 (cordoba; the `ubuntu-26.04` runner) | `arch/x86_64/` | 11: the same six, two in `interrupt_controller.rs`, two in `iommu.rs`, one in `fp.rs` |
+| either, via script/verify-riscv64 | `arch/riscv64/`, natively | 12: the same six, three in `iommu.rs`, three in `mmu.rs` |
 
-Sixteen distinct harnesses on the first two hosts, since the six in `system_call.rs` and
+Eighteen distinct harnesses on the first two hosts, since the six in `system_call.rs` and
 `region_reaping/verification.rs` run on both.
 
 **riscv64 needed a target, not a host**: milestone 589 (Kani can prove riscv64 from the hosts we
