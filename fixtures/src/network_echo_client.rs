@@ -181,7 +181,7 @@ fn finish(pieces: &[&[u8]]) -> ! {
             rest = &rest[n..];
         }
     }
-    send(OUT, byte_sink_contract::eof(), 0, 0);
+    send(OUT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 

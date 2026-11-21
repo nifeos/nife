@@ -65,7 +65,9 @@ fn start(startup_word: u64, _a1: u64, _a2: u64) -> ! {
         let n = match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Message::Bytes(n) => n,
             // End of stream, or a message this framing does not know: stop reading either way.
-            byte_sink_contract::Message::Eof | byte_sink_contract::Message::Malformed => break,
+            byte_sink_contract::Message::EndOfStream | byte_sink_contract::Message::Malformed => {
+                break;
+            }
         };
         seen += 1;
         if seen == SINK_WARMUP_MESSAGES {

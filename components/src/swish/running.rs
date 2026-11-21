@@ -1212,7 +1212,7 @@ fn plain_request(
 /// **Drain a byte stream off the result rendezvous and print it**, which is what the shell does when
 /// a program's output slot is the shell's own (`Sink::Report`, the default).
 ///
-/// It drains until `OPERATION_EOF` (milestone 50 (pipes and redirection)). Stopping earlier would
+/// It drains until `OPERATION_END_OF_STREAM` (milestone 50 (pipes and redirection)). Stopping earlier would
 /// leave a message queued that the next command's single `receive` takes as its answer.
 pub(super) fn drain_text() {
     drain_text_with(&mut || Some(receive(RESULT)));
@@ -1260,7 +1260,7 @@ pub(super) fn drain_text_with(read: &mut dyn FnMut() -> Option<(u64, u64, u64)>)
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Message::Bytes(n) => print(&buf[..n]),
-            byte_sink_contract::Message::Eof => return,
+            byte_sink_contract::Message::EndOfStream => return,
             byte_sink_contract::Message::Malformed => {
                 print(b"\n  (that program sent something this shell cannot read as bytes)\n");
                 return;
@@ -1277,7 +1277,7 @@ pub(super) fn drain_text_with(read: &mut dyn FnMut() -> Option<(u64, u64, u64)>)
 ///
 /// It is retyped straight out of [`BUDGET`] rather than out of a per-line region, and that is a
 /// decision rather than a shortcut: a pipeline's region is destroyed to turn a dead reader into
-/// `Gone`, and a stream this shell always drains to `OPERATION_EOF` has no dead reader to signal. One
+/// `Gone`, and a stream this shell always drains to `OPERATION_END_OF_STREAM` has no dead reader to signal. One
 /// rendezvous for the session costs one page and saves a SPLIT and a DESTROY per `date`.
 pub(super) static DIAG_EP: core::sync::atomic::AtomicU64 =
     core::sync::atomic::AtomicU64::new(u64::MAX);
@@ -1354,7 +1354,7 @@ const SCREEN_REAP_ATTEMPTS: usize = 1024;
 ///
 /// Runs before the output is drained, the only order that cannot deadlock in `date | wc`, so a
 /// declaring program must say everything before it produces anything (notes/pipes.md's BUGS).
-/// `writers` is how many stages hold the rendezvous; each sends exactly one `OPERATION_EOF`, and
+/// `writers` is how many stages hold the rendezvous; each sends exactly one `OPERATION_END_OF_STREAM`, and
 /// the drain ends at that count. See `notes/swish-language/running.md`, "The second stream".
 pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
     let Some(ep) = diag_rendezvous() else { return };
@@ -1367,8 +1367,8 @@ pub(super) fn drain_diagnostics(dest: &mut dyn ByteOut, writers: usize) {
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Message::Bytes(n) => dest.push(&buf[..n]),
-            byte_sink_contract::Message::Eof => done += 1,
-            // The progenitor's failure sentinel arrives here too, as an `OPERATION_EOF` it sends on this rendezvous so
+            byte_sink_contract::Message::EndOfStream => done += 1,
+            // The progenitor's failure sentinel arrives here too, as an `OPERATION_END_OF_STREAM` it sends on this rendezvous so
             // this drain can end; anything else is a program that cannot spell the contract.
             byte_sink_contract::Message::Malformed => done += 1,
         }

@@ -129,7 +129,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     diag_end();
 
     found.write_report(&mut |bytes| write_on(REPORT, bytes));
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 
@@ -148,7 +148,7 @@ fn diag_slot() -> u64 {
 /// the first, so a `pmap` that exited without this would leave the prompt blocked.
 fn diag_end() {
     if HAS_DIAG.load(Ordering::Relaxed) {
-        send(DIAG_SLOT, byte_sink_contract::eof(), 0, 0);
+        send(DIAG_SLOT, byte_sink_contract::end_of_stream(), 0, 0);
     }
 }
 

@@ -2,7 +2,7 @@ extern crate std;
 use std::string::String;
 use std::vec::Vec;
 
-use byte_sink_contract::{eof, pack, with_severity};
+use byte_sink_contract::{end_of_stream, pack, with_severity};
 
 use super::*;
 
@@ -195,12 +195,12 @@ fn a_writer_cannot_register_itself() {
 /// End of stream flushes a writer's partial line, flagged as cut, and a line longer than the
 /// text bound becomes two records rather than one silently truncated.
 #[test]
-fn eof_flushes_and_a_long_line_is_split_not_truncated() {
+fn end_of_stream_flushes_and_a_long_line_is_split_not_truncated() {
     let mut log = Log::new();
     register(&mut log, 1, b"w", b"");
     reader(&mut log, 9, b"", true, 0);
     write(&mut log, 1, b"no newline", 0);
-    log.handle(1, eof(), 0, 0, 1);
+    log.handle(1, end_of_stream(), 0, 0, 1);
     let long = [b'x'; record::TEXT_MAXIMUM + 10];
     write(&mut log, 1, &long, 2);
     write(&mut log, 1, b"\n", 3);

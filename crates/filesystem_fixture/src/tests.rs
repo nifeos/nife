@@ -504,7 +504,7 @@ fn the_subtree_fixture_is_grantable_and_unambiguous() {
 /// rests on: a receiver reads "the first message is the verdict" as "this run printed nothing".
 ///
 /// `rm` does not use this word. It declares the sink contract, so it ends its report with the
-/// byte-sink contract's `(eof(), 0, 0)`, pinned over there by `eof_is_not_a_byte_count`, and sends
+/// byte-sink contract's `(end_of_stream(), 0, 0)`, pinned over there by `end_of_stream_is_not_a_byte_count`, and sends
 /// its status and count after that on an endpoint of its own (`filesystem_contract::rm`). What is
 /// checked here is the word the attackers and the shell witnesses use.
 #[test]

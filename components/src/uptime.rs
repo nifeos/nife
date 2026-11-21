@@ -96,7 +96,7 @@ user_mode_runtime::program_entry!(start);
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let line = uptime::format(monotonic_nanoseconds());
     write_bytes(line.as_bytes());
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 

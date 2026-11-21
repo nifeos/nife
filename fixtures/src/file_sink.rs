@@ -19,11 +19,11 @@
 
 //! # EXAMPLES
 //! ```
-//! use byte_sink_contract::{eof, pack};
+//! use byte_sink_contract::{end_of_stream, pack};
 //!
 //! let (w0, w1, w2, n) = pack(b"hello\n"); // SEND these three words: append n bytes
 //! assert_eq!(n, 6);
-//! let _end = eof();                       // SEND this: close the file
+//! let _end = end_of_stream();                // SEND this: close the file
 //! # let _ = (w0, w1, w2);
 //! ```
 //!
@@ -136,7 +136,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
                 }
                 off += n as u64;
             }
-            byte_sink_contract::Message::Eof => break,
+            byte_sink_contract::Message::EndOfStream => break,
             byte_sink_contract::Message::Malformed => {
                 send(REPORT, fixture::BAD, w0, off);
                 exit();

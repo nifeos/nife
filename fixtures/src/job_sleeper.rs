@@ -82,7 +82,7 @@ fn say(bytes: &[u8]) {
 
 /// End the stream and exit.
 fn done() -> ! {
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 

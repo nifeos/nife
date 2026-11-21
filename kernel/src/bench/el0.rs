@@ -115,7 +115,9 @@ fn relay_row(report: sched::RendezvousId) {
                     crate::print!("{}", b as char);
                 }
             }
-            byte_sink_contract::Message::Eof | byte_sink_contract::Message::Malformed => return,
+            byte_sink_contract::Message::EndOfStream | byte_sink_contract::Message::Malformed => {
+                return;
+            }
         }
     }
 }

@@ -81,7 +81,7 @@ transcript):
 ```text
   date, no clock, with a declared second stream:
      the diagnostic endpoint     "date: the time is unknown: this process holds no clock capability"
-     the output endpoint         OPERATION_EOF, and not one byte before it
+     the output endpoint         OPERATION_END_OF_STREAM, and not one byte before it
 ```
 
 The second line is the fix. `date > when.txt` drains the output into the file, and the output is

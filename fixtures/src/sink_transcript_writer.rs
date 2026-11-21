@@ -89,7 +89,7 @@ fn start(repeat: u64, _a1: u64, _a2: u64) -> ! {
     }
 
     if matches!(last, byte_sink_contract::Sent::Ok) {
-        let _ = send(SINK, byte_sink_contract::eof(), 0, 0);
+        let _ = send(SINK, byte_sink_contract::end_of_stream(), 0, 0);
     }
     send(REPORT, fixture::code(last), total, rounds);
     exit();

@@ -105,7 +105,7 @@ fn wc_counts(out: RendezvousId, what: &str) -> (u64, u64, u64) {
 ///
 /// The indifference claim on the input side, where a source is the sink contract received rather
 /// than sent. One `wc` ELF is spawned twice with identical grants except slot 1: a pipe (this test
-/// sends the transcript sixteen bytes at a time, then `OPERATION_EOF`) and a file (`file_sink`
+/// sends the transcript sixteen bytes at a time, then `OPERATION_END_OF_STREAM`) and a file (`file_sink`
 /// writes it to the RedoxFS image and `file_source` streams it back, `wc < report.txt` without the
 /// shell). `wc` holds nothing that could tell which. The answers must be equal and must equal the
 /// transcript, because two arms broken the same way would satisfy equality alone.
@@ -139,7 +139,7 @@ fn one_reader_two_sources_and_the_same_answer() {
         crate::sched::ipc_send(pipe, [w0, w1, w2]);
         off += n;
     }
-    crate::sched::ipc_send(pipe, [byte_sink_contract::eof(), 0, 0]);
+    crate::sched::ipc_send(pipe, [byte_sink_contract::end_of_stream(), 0, 0]);
     let piped = wc_counts(out, "wc reading a pipe");
 
     // The transcript's own numbers, so the pipe arm is anchored to something rather than only

@@ -30,7 +30,7 @@ user_mode_runtime::program_entry!(start);
 
 fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     say(b"seeker 0.1.0: holding the network and nife.test\n");
-    send(OUT, byte_sink_contract::eof(), 0, 0);
+    send(OUT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 

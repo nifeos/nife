@@ -142,7 +142,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         );
     }
     if has_diag {
-        send(DIAG_SLOT, byte_sink_contract::eof(), 0, 0);
+        send(DIAG_SLOT, byte_sink_contract::end_of_stream(), 0, 0);
     }
 
     if let Some(bytes) = drawn {
@@ -155,7 +155,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         write_on(REPORT, &line);
     }
 
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 

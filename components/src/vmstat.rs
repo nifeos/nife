@@ -118,10 +118,10 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     let diag = if has_diag { DIAG_SLOT } else { REPORT };
     vmstat::write_diagnostics(granted, machine.as_ref(), &mut |b| write_on(diag, b));
     if has_diag {
-        send(DIAG_SLOT, byte_sink_contract::eof(), 0, 0);
+        send(DIAG_SLOT, byte_sink_contract::end_of_stream(), 0, 0);
     }
     vmstat::write_report(machine.as_ref(), now, &mut |b| write_on(REPORT, b));
-    send(REPORT, byte_sink_contract::eof(), 0, 0);
+    send(REPORT, byte_sink_contract::end_of_stream(), 0, 0);
     exit();
 }
 

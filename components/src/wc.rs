@@ -3,7 +3,7 @@
 //! It counts lines, words and bytes on its input and writes the three numbers to its output. Both
 //! ends are the sink contract (`crates/byte_sink_contract`), the same sixteen-byte framing that
 //! `date` and every `println!` write. Sink messages arrive on slot 1 until
-//! [`byte_sink_contract::OPERATION_EOF`]. Behind it is another program (`date | wc`), a file the
+//! [`byte_sink_contract::OPERATION_END_OF_STREAM`]. Behind it is another program (`date | wc`), a file the
 //! shell opened and streamed (`wc < report.txt`, or `wc report.txt`, the same bytes), or the shell
 //! itself (`echo hello | wc`), and nothing this program holds can ask which. In `wc report.txt`
 //! the name is a designation the *shell* resolves: a `wc` that opened the file it counts would be
@@ -136,7 +136,7 @@ fn count() -> (u64, u64, u64) {
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         let n = match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Message::Bytes(n) => n,
-            byte_sink_contract::Message::Eof => break,
+            byte_sink_contract::Message::EndOfStream => break,
             byte_sink_contract::Message::Malformed => break,
         };
         for &b in &buf[..n] {
@@ -193,7 +193,7 @@ fn report(lines: u64, words: u64, bytes: u64) {
         }
         off += took;
     }
-    send(SINK, byte_sink_contract::eof(), 0, 0);
+    send(SINK, byte_sink_contract::end_of_stream(), 0, 0);
 }
 
 /// Render a `u64` in base 10 into `out`, returning how many bytes it took.

@@ -151,7 +151,7 @@ pub fn write_row(
         }
         offset += took;
     }
-    send(byte_sink_contract::eof(), 0, 0);
+    send(byte_sink_contract::end_of_stream(), 0, 0);
 }
 
 fn push(out: &mut [u8], at: usize, bytes: &[u8]) -> usize {
@@ -206,7 +206,7 @@ mod tests {
                         bytes[length..length + n].copy_from_slice(&buf[..n]);
                         length += n;
                     }
-                    byte_sink_contract::Message::Eof => ended = true,
+                    byte_sink_contract::Message::EndOfStream => ended = true,
                     byte_sink_contract::Message::Malformed => panic!("malformed"),
                 }
                 byte_sink_contract::Sent::Ok

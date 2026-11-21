@@ -273,7 +273,7 @@ fn an_unknown_clock_is_said_plainly_rather_than_printed_as_1970() {
 ///
 /// The claim `2>` is built on, checked by value. The same `date`, spawned with no clock and a
 /// diagnostic endpoint at its manifest's slot: the complaint arrives on the diagnostic endpoint,
-/// ending in `OPERATION_EOF`, and the output carries `OPERATION_EOF` and not one byte before it, so
+/// ending in `OPERATION_END_OF_STREAM`, and the output carries `OPERATION_END_OF_STREAM` and not one byte before it, so
 /// `date > when.txt` leaves the file empty and the complaint readable. The diagnostic stream is
 /// drained first and to completion: a `date` that interleaved the two would block this test, the
 /// same deadlock a real prompt would hit (notes/date.md, "The second stream").
@@ -299,7 +299,7 @@ fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
                 m[2],
                 &mut [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES]
             ),
-            byte_sink_contract::Message::Eof
+            byte_sink_contract::Message::EndOfStream
         ),
         "the second stream did not end: {m:?}",
     );
@@ -315,7 +315,7 @@ fn a_declared_second_stream_carries_the_complaint_and_the_output_stays_empty() {
                 m[2],
                 &mut [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES]
             ),
-            byte_sink_contract::Message::Eof
+            byte_sink_contract::Message::EndOfStream
         ),
         "a clockless date wrote {m:?} to its OUTPUT; that is the byte that used to land in the file",
     );

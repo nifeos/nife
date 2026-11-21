@@ -66,7 +66,7 @@ fn run_rm(rights: u64, name: &str, flags: u64) -> Option<Outcome> {
             &mut [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES],
         ) {
             byte_sink_contract::Message::Bytes(_) => {}
-            byte_sink_contract::Message::Eof => {
+            byte_sink_contract::Message::EndOfStream => {
                 // The verdict comes after the end, on its own endpoint (`filesystem_contract::rm`).
                 // Receiving it only now is what keeps it from overtaking the text.
                 let [status, removed, zero, _, _] = sched::ipc_receive(verdict);

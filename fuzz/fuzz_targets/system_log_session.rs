@@ -25,7 +25,7 @@
 
 use std::collections::{HashMap, HashSet};
 
-use byte_sink_contract::{eof, pack, with_severity};
+use byte_sink_contract::{end_of_stream, pack, with_severity};
 use libfuzzer_sys::arbitrary::{Result as ArbResult, Unstructured};
 use libfuzzer_sys::fuzz_target;
 use system_log::{Handled, Log};
@@ -103,7 +103,7 @@ fn session(u: &mut Unstructured) -> ArbResult<()> {
             // Writers' bytes, most of the time.
             0..=7 => write_chunk(u, &mut log, badge, now)?,
             8 => {
-                log.handle(badge, eof(), 0, 0, now);
+                log.handle(badge, end_of_stream(), 0, 0, now);
             }
             // The spawner names a badge's program or user.
             9 | 10 => name_badge(u, &mut log, &mut model, badge, now)?,

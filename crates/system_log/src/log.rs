@@ -129,7 +129,7 @@ impl Log {
                     store.line(registry, line, now);
                 });
             }
-            Message::Eof => {
+            Message::EndOfStream => {
                 if let Some(line) = self.assembler.finish(badge) {
                     self.store.line(&self.registry, line, now);
                 }

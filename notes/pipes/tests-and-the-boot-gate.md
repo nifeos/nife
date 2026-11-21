@@ -38,7 +38,7 @@ says the source convention is real rather than merely chosen. One `wc` ELF, spaw
 identical grants except for what is behind slot 1:
 
 - a pipe: the kernel sends the transcript on an endpoint itself, sixteen bytes at a time, then
-  `OPERATION_EOF`. That is exactly what a program on the left of a `|` does.
+  `OPERATION_END_OF_STREAM`. That is exactly what a program on the left of a `|` does.
 - a file: `sink`'s file role writes the same transcript into a real file on the real RedoxFS image,
   and its source role then reads it back out and streams it over the same contract. That is
   `wc < report.txt` minus the shell that would name the file.

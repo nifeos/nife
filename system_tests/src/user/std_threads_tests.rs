@@ -251,7 +251,7 @@ pub(super) fn drain_until_end(
                 out[len..len + n].copy_from_slice(&chunk[..n]);
                 len += n;
             }
-            byte_sink_contract::Message::Eof => return len,
+            byte_sink_contract::Message::EndOfStream => return len,
             byte_sink_contract::Message::Malformed => {
                 panic!("{what}: a sink message out of contract")
             }

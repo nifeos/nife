@@ -18,10 +18,13 @@ fn any_prefix_survives_pack_then_unpack() {
     let src: [u8; MAXIMUM_INLINE_BYTES] = kani::any();
     let mut n = 0;
     while n <= MAXIMUM_INLINE_BYTES {
-        let (w0, w1, w2, taken) = pack(&src[..n]);
+        let (word_zero, word_one, word_two, taken) = pack(&src[..n]);
         assert_eq!(taken, n);
         let mut out = [0u8; MAXIMUM_INLINE_BYTES];
-        assert_eq!(unpack(w0, w1, w2, &mut out), Message::Bytes(n));
+        assert_eq!(
+            unpack(word_zero, word_one, word_two, &mut out),
+            Message::Bytes(n)
+        );
         assert_eq!(out[..n], src[..n]);
         n += 1;
     }
@@ -31,9 +34,9 @@ fn any_prefix_survives_pack_then_unpack() {
 /// Falsification: replayable `crates/byte_sink_contract/falsifications/verification.unpack_never_answers_more_than_a_message_holds.patch`
 #[kani::proof]
 fn unpack_never_answers_more_than_a_message_holds() {
-    let (w0, w1, w2): (u64, u64, u64) = kani::any();
+    let (word_zero, word_one, word_two): (u64, u64, u64) = kani::any();
     let mut out = [0u8; MAXIMUM_INLINE_BYTES];
-    if let Message::Bytes(n) = unpack(w0, w1, w2, &mut out) {
+    if let Message::Bytes(n) = unpack(word_zero, word_one, word_two, &mut out) {
         assert!(n <= MAXIMUM_INLINE_BYTES);
     }
 }
@@ -43,13 +46,13 @@ fn unpack_never_answers_more_than_a_message_holds() {
 /// Falsification: replayable `crates/byte_sink_contract/falsifications/verification.severity_reads_back_clamped_and_leaves_the_rest.patch`
 #[kani::proof]
 fn severity_reads_back_clamped_and_leaves_the_rest() {
-    let w0: u64 = kani::any();
+    let word_zero: u64 = kani::any();
     let level: u8 = kani::any();
-    let marked = with_severity(w0, level);
+    let marked = with_severity(word_zero, level);
     assert_eq!(severity(marked), Some(level.min(7)));
-    assert_eq!(len(marked), len(w0));
-    assert_eq!(operation(marked), operation(w0));
-    assert_eq!(kind(marked), kind(w0));
+    assert_eq!(len(marked), len(word_zero));
+    assert_eq!(operation(marked), operation(word_zero));
+    assert_eq!(kind(marked), kind(word_zero));
 }
 
 /// **`classify` is `Gone` exactly for [`GONE`] and `Ok` exactly for a non-negative return.**
@@ -62,16 +65,19 @@ fn classify_separates_the_three_outcomes() {
 }
 
 /// **An end of stream decodes from exactly one message**: over every three words, [`unpack`]
-/// answers [`Message::Eof`] if and only if they are `(eof(), 0, 0)`.
+/// answers [`Message::EndOfStream`] if and only if they are `(end_of_stream(), 0, 0)`.
 /// Falsification: replayable `crates/byte_sink_contract/falsifications/verification.an_end_of_stream_decodes_exactly_from_its_one_message.patch`
 #[kani::proof]
 fn an_end_of_stream_decodes_exactly_from_its_one_message() {
-    let w0: u64 = kani::any();
-    let w1: u64 = kani::any();
-    let w2: u64 = kani::any();
+    let word_zero: u64 = kani::any();
+    let word_one: u64 = kani::any();
+    let word_two: u64 = kani::any();
     let mut out = [0u8; MAXIMUM_INLINE_BYTES];
-    let decoded = unpack(w0, w1, w2, &mut out);
-    assert_eq!(decoded == Message::Eof, (w0, w1, w2) == (eof(), 0, 0));
+    let decoded = unpack(word_zero, word_one, word_two, &mut out);
+    assert_eq!(
+        decoded == Message::EndOfStream,
+        (word_zero, word_one, word_two) == (end_of_stream(), 0, 0)
+    );
 }
 
 /// **An end-of-stream first word equals no bytes message of any length.**
@@ -80,5 +86,5 @@ fn an_end_of_stream_decodes_exactly_from_its_one_message() {
 fn end_of_stream_is_no_bytes_message() {
     let n: u64 = kani::any();
     kani::assume(n <= MAXIMUM_INLINE_BYTES as u64);
-    assert_ne!(eof(), first_word(OPERATION_BYTES, n));
+    assert_ne!(end_of_stream(), first_word(OPERATION_BYTES, n));
 }

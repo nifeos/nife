@@ -520,7 +520,7 @@ fn spawn_stages(
 /// as a spawned program cannot tell what is in its output slot.
 pub(super) trait ByteOut {
     fn push(&mut self, bytes: &[u8]);
-    /// Say the stream is over. On a pipe that is `OPERATION_EOF`; on a file it is the last write.
+    /// Say the stream is over. On a pipe that is `OPERATION_END_OF_STREAM`; on a file it is the last write.
     fn finish(&mut self);
 }
 
@@ -618,7 +618,7 @@ impl ByteOut for SinkWriter {
     fn finish(&mut self) {
         self.flush();
         if !self.stopped {
-            send(self.slot, byte_sink_contract::eof(), 0, 0);
+            send(self.slot, byte_sink_contract::end_of_stream(), 0, 0);
         }
     }
 }
@@ -813,7 +813,7 @@ pub(super) struct FileIn {
 
 impl FileIn {
     /// **Stream the file over the sink contract**, which is the whole of `<`: the head stage
-    /// receives `OPERATION_BYTES` until `OPERATION_EOF` on a rendezvous, as from a `|`.
+    /// receives `OPERATION_BYTES` until `OPERATION_END_OF_STREAM` on a rendezvous, as from a `|`.
     fn stream_into(&mut self, pipe: u64) {
         let mut w = SinkWriter::new(pipe);
         let mut off = 0u64;
@@ -866,7 +866,7 @@ fn drain_into(f: &mut FileOut) {
         let mut buf = [0u8; byte_sink_contract::MAXIMUM_INLINE_BYTES];
         match byte_sink_contract::unpack(w0, w1, w2, &mut buf) {
             byte_sink_contract::Message::Bytes(n) => f.push(&buf[..n]),
-            byte_sink_contract::Message::Eof => {
+            byte_sink_contract::Message::EndOfStream => {
                 f.finish();
                 return;
             }

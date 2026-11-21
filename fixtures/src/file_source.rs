@@ -127,7 +127,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         off += got as u64;
     }
 
-    send(SINK, byte_sink_contract::eof(), 0, 0);
+    send(SINK, byte_sink_contract::end_of_stream(), 0, 0);
     let _ = fs_call(fs::req(fs::CLOSE, handle, 0), 0);
     send(REPORT, fixture::DONE, size, 0);
     exit();

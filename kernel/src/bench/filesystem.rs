@@ -292,7 +292,7 @@ fn drain_report(report: crate::sched::RendezvousId, out: &mut [u8]) -> usize {
                 out[len..len + take].copy_from_slice(&chunk[..take]);
                 len += take;
             }
-            byte_sink_contract::Message::Eof | byte_sink_contract::Message::Malformed => {
+            byte_sink_contract::Message::EndOfStream | byte_sink_contract::Message::Malformed => {
                 return len;
             }
         }
@@ -313,7 +313,7 @@ fn walk_rows(report: crate::sched::RendezvousId, row: &str) {
                 text[len..len + take].copy_from_slice(&chunk[..take]);
                 len += take;
             }
-            byte_sink_contract::Message::Eof => break,
+            byte_sink_contract::Message::EndOfStream => break,
             byte_sink_contract::Message::Malformed => {
                 println!(
                     "bench-probe: fs_walk malformed sink message {:#x}",

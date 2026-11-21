@@ -132,7 +132,7 @@ and already in the tree. Today `components/src/swish/` wires this only for super
 foreground jobs (`spawn_interruptible`, watching a cooperative job-frame `DONE` flag, which is a
 *different*, userspace-cooperative mechanism, not §26's kernel path). Ordinary sink-declaring
 children (`date`, `wc`, `doc`) are spawned with no fault endpoint at all; the shell's only
-completion signal for them today is draining their output to `OPERATION_EOF`. If a tail stage's primary
+completion signal for them today is draining their output to `OPERATION_END_OF_STREAM`. If a tail stage's primary
 output moves to `terminal_sink_caretaker`, the shell needs a different completion signal, and §26's
 already-built fault endpoint is sitting there unused for exactly this purpose. That materially
 lowers the cost of option (d): it is a wiring change (grant an already-existing kernel object at

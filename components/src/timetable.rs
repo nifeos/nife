@@ -1018,7 +1018,7 @@ fn done(code: u64) -> ! {
         );
         exit();
     }
-    send(OUT, byte_sink_contract::eof(), 0, 0);
+    send(OUT, byte_sink_contract::end_of_stream(), 0, 0);
     send(OUT, code, 0, 0);
     exit();
 }
