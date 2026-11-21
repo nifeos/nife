@@ -37,3 +37,8 @@ manual_let_else = "warn"
 doc_markdown = "warn"
 
 [dependencies]
+
+[dev-dependencies]
+# The crate's own tests turn `peak` on, so `cargo test` and a mutation run reach `highest_seen`;
+# a program that depends on the crate still gets it only by asking.
+capability_table = { version = "0.1.0", path = ".", features = ["peak"] }

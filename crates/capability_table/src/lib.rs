@@ -221,7 +221,7 @@ pub use storage::CapabilityTable;
 /// cannot forget the bookkeeping. The harnesses `the_free_mask_is_the_empty_slots` and
 /// `the_count_is_the_slots` check the two doors against the array.
 mod storage {
-    #[cfg(all(target_has_atomic = "32", any(feature = "peak", test)))]
+    #[cfg(all(target_has_atomic = "32", feature = "peak"))]
     use super::note_peak;
     use super::{Capability, MAXIMUM_SLOTS};
 
@@ -330,7 +330,7 @@ mod storage {
                 self.used = self.used.wrapping_add(1);
                 if self.used > self.peak {
                     self.peak = self.used;
-                    #[cfg(all(target_has_atomic = "32", any(feature = "peak", test)))]
+                    #[cfg(all(target_has_atomic = "32", feature = "peak"))]
                     note_peak(self.peak, N);
                 }
             }
@@ -503,12 +503,12 @@ impl<O: Copy, const N: usize> CapabilityTable<O, N> {
 /// - It does not say which table: a `static` cannot be keyed by a const generic. An owner with one
 ///   instantiation reads the mark directly; a host test binary sees whichever climbed highest, and
 ///   `ceiling` tells which.
-#[cfg(all(target_has_atomic = "32", any(feature = "peak", test)))]
+#[cfg(all(target_has_atomic = "32", feature = "peak"))]
 static PEAK: core::sync::atomic::AtomicU32 = core::sync::atomic::AtomicU32::new(0);
 
 /// Raise [`PEAK`] if `peak` beats what is recorded. Called from [`CapabilityTable`]'s one private
 /// growth path, so it cannot be forgotten.
-#[cfg(all(target_has_atomic = "32", any(feature = "peak", test)))]
+#[cfg(all(target_has_atomic = "32", feature = "peak"))]
 fn note_peak(peak: u16, ceiling: usize) {
     use core::sync::atomic::Ordering;
     let ceiling = core::cmp::min(ceiling, u16::MAX as usize) as u32;
@@ -525,7 +525,7 @@ fn note_peak(peak: u16, ceiling: usize) {
 /// into the binary; see `PEAK`'s BUGS. Present only with the `peak` feature, because the record
 /// is a `static` every table in the binary writes on growth, which a user who does not read it
 /// should not pay for.
-#[cfg(all(target_has_atomic = "32", any(feature = "peak", test)))]
+#[cfg(all(target_has_atomic = "32", feature = "peak"))]
 pub fn highest_seen() -> (usize, usize) {
     let packed = PEAK.load(core::sync::atomic::Ordering::Relaxed);
     ((packed >> 16) as usize, (packed & 0xffff) as usize)
