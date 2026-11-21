@@ -91,15 +91,15 @@ The P1 items are in [the appendix](1076-address-space-map-outside-review/before-
 
 ## What the move needs in nife
 
-Twenty-six manifests depend on the crate by `path` with `version = "0.1.0"`; `jig/Cargo.toml` and
-`xtask/Cargo.toml` by path alone. Under §305 (git dependencies on `nifeos/*` only, pinned to a
+Twenty-seven manifests depend on the crate by `path`, all but `jig/Cargo.toml` with
+`version = "0.1.0"`; `page_tables` as a development dependency. Under §305 (git dependencies on `nifeos/*` only, pinned to a
 landed commit) each becomes
 `address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "<landed commit>" }`,
 the form `components/Cargo.toml` already uses for `jh7110_entropy` and `e1000e`. Milestone 1017 rules
-one revision per contract per image, so all twenty-six move in one pull request, and recommends a
+one revision per contract per image, so all twenty-seven move in one pull request, and recommends a
 root `[workspace.dependencies]` entry so the next bump touches one line. For `memory_region_heap`
 (`crates/memory_region_heap/Cargo.toml` line 21), whose default heap base is the map's `HEAP.start`,
-the same line applies. `cargo xtask std-src` also generates its core into std. Whether that generator resolves a git dependency where it resolved a path one stays unverified and deserves one dry run before the pull request. The crate leaves `crates/publish-allowlist.txt`'s rule by gaining
+the same line applies. `cargo xtask std-src` also copies `src/lib.rs` into std, and it finds the file through `cargo metadata`, so it reads Cargo's git checkout once the pins land. The crate leaves `crates/publish-allowlist.txt`'s rule by gaining
 its row, and the root `Cargo.toml`'s member list drops it.
 
 ## Prior art
@@ -108,10 +108,9 @@ The comparison with nearby work is in [the appendix](1076-address-space-map-outs
 
 ## Decisions for the architect
 
-The architect ruled the crate's name. The whole-window check is the maintainer's provisional
-ruling, a two-way door before the first tag. The constants of item 7 are a two-way door the
-maintainer rules provisionally, and the finding status says so. The decision still open is under
-"Open decisions" below.
+The architect ruled the crate's name and cleared the review package, which ratifies the names of
+items 7, 15 and 17. The whole-window check is the maintainer's provisional ruling, a two-way door
+before the first tag.
 
 ### The crate's name
 
@@ -148,60 +147,6 @@ both arguments page aligned and `band.holds(start, start + bytes)` and returns t
 one-page functions become one-line wrappers over it with `PAGE_BYTES`, and their callers do not
 change. The name `window` ships provisional. Item 9 is the work.
 
-## Done when
-
-The checks are in [the appendix](1076-address-space-map-outside-review/done-when.md).
-
-## Finding status
-
-- Item 1, the host test reads a file outside the crate: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 2, falsification records carry nife's tree paths: Open. `helpers/crate_move.py` rewrites
-  the nine records and regenerates every patch in crate-relative form at the move.
-- Item 3, the manifest does not stand alone: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 4, documentation addressed to a reader inside nife: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 5, no README, licenses, changelog or scaffold: Open.
-  [#3659](https://github.com/nifeos/nife/pull/3659) added the README; the license files,
-  `CHANGELOG.md`, `_typos.toml`, caller workflows, `.github` files and the recorded stranger run
-  come with the move.
-- Item 6, parameter and helper names the template refuses: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 7 and decision 2, the address and length constants: Open. Two-way until the first tag, so
-  the maintainer rules it provisionally. The recommendation is `PAGE_BYTES` and the
-  `_VIRTUAL_ADDRESS` stem on the five address constants and the three `ImagePlacement` fields,
-  renamed in the move pull request. calef ratifies the names in the crate's review package.
-- Item 8 and decision N1, the crate's name: Done, [#3593](https://github.com/nifeos/nife/pull/3593).
-- Item 9 and decision 3, a whole-window check: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
-  The name `window` stays the maintainer's provisional ruling until the review package.
-- Item 10, `const` assertions under Kani's toolchain: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 11, the surviving mutant's exemption: Open. One `.github/mutants-exempts` line with the
-  equivalence reason, at the move.
-- Item 12, the layout is the same in every process: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 13, the template's `register_names.py` misreads harness names: Open. The template still
-  reads `address` in a function name as an address, so the crate's `check / standalone` is red on
-  its first run until nifeos/crate-workflows fixes it.
-- Item 14, `BANDS` fixes the band count in its type: Done,
-  [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 15, a caller can build `Band` inverted: Open. Two-way, so the maintainer rules the
-  constructor's name provisionally (`Band::new`, asserting `start < end` and page alignment), and
-  the review package carries it.
-- Item 16, `#![forbid(unsafe_code)]`: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
-- Item 17, nife's checks that walk `crates/` lose this crate: Open. Two-way, so the maintainer rules
-  provisionally on making `LOW_HALF_SPLIT_SHIFTS` public for the `page_tables` test; the
-  declarations check also has to read the pinned checkout.
-- Item 18, milestone 1017's stale blocker row: Open. The row that says the `link.ld` test must move
-  is stale, and the lane that owns milestone 1017 drops it.
-- nife's pins: Open. All twenty-eight manifests move to one `rev` in one pull request after the
-  move, with a dry run of `cargo xtask std-src` first.
-- The move: Open. It waits for the review package and its clearance.
-- Publishing: Open. No first publish happens until the last outside-review milestone closes
-  (ruled 2026-11-18 UTC).
-
-## Open decisions
-
 ### Clearing the review package
 
 Background. Before a crate leaves this tree, calef reads its code and its review package and
@@ -211,7 +156,10 @@ program builder and the runtime all read it. Its review package lists every publ
 state, including the provisional names of items 7, 9, 15 and 17. This decision is the clearing of
 that package.
 
-Recommendation: A.
+Decision, option A, 2026-11-21 (UTC): the review is cleared. That approves creating
+`nifeos/address_space_layout` and moving the crate with `publish = false`, no tag and no publish.
+The names of items 7, 15 and 17 are ratified as the package proposed them; `window`, `VERSION` and
+`INTERFACE_ID` stay provisional.
 
 - A. Clear the review once the package lands, which approves creating the repository and moving
   the crate.
@@ -227,7 +175,65 @@ the kernel's tree as a crate of its own, pinned by commit, with the compiler che
 against its band. Example: `block_roster_contract` had its clearance on 2026-11-09 (UTC) and now
 lives in a repository of its own, which nife pins at the commit of a pre-release tag.
 
-Blocks: the move, and through it the tag and the first publish.
+## Done when
+
+The checks are in [the appendix](1076-address-space-map-outside-review/done-when.md).
+
+## Finding status
+
+- Item 1, the host test reads a file outside the crate: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 2, falsification records carry nife's tree paths: Open until the move. `helpers/crate_move.py`
+  rewrites the eleven records and regenerates every patch in crate-relative form; on the staged copy
+  every patch applies with no offset, and each turns exactly its own harness red. [#3886](https://github.com/nifeos/nife/pull/3886) refreshed the
+  patches against the renamed source.
+- Item 3, the manifest does not stand alone: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 4, documentation addressed to a reader inside nife: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 5, no README, licenses, changelog or scaffold: Open.
+  [#3659](https://github.com/nifeos/nife/pull/3659) added the README and [#3886](https://github.com/nifeos/nife/pull/3886) the license files;
+  `CHANGELOG.md`, `_typos.toml`, caller workflows, `.github` files and the recorded stranger run
+  come with the move.
+- Item 6, parameter and helper names the template refuses: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 7 and decision 2, the address and length constants: Done, [#3886](https://github.com/nifeos/nife/pull/3886). `PAGE_BYTES` and the
+  `_VIRTUAL_ADDRESS` stem on the five address constants and the three `ImagePlacement` fields,
+  ratified and renamed at every call site.
+- Item 8 and decision N1, the crate's name: Done, [#3593](https://github.com/nifeos/nife/pull/3593).
+- Item 9 and decision 3, a whole-window check: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
+  The name `window` stays the maintainer's provisional ruling until the review package.
+- Item 10, `const` assertions under Kani's toolchain: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 11, the surviving mutant's exemption: Done, [#3886](https://github.com/nifeos/nife/pull/3886). The crate carries its own
+  `.github/mutants-exempts` line and a `.cargo/mutants.toml` that leaves the `cfg(kani)` module
+  out, and the template's mutation gate passes on the staged copy.
+- Item 12, the layout is the same in every process: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 13, the template's `register_names.py` misreads harness names: Open. The template still
+  reads `address` in a function name as an address, so the crate's `check / standalone` is red on
+  its first run until nifeos/crate-workflows fixes it.
+- Item 14, `BANDS` fixes the band count in its type: Done,
+  [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 15, a caller can build `Band` inverted: Done, [#3886](https://github.com/nifeos/nife/pull/3886). `Band::new` asserts `start < end` and
+  page alignment at both ends; the fields stay public.
+- Item 16, `#![forbid(unsafe_code)]`: Done, [#3659](https://github.com/nifeos/nife/pull/3659).
+- Item 17, nife's checks that walk `crates/` lose this crate: Open. [#3886](https://github.com/nifeos/nife/pull/3886) made
+  `LOW_HALF_SPLIT_SHIFTS` public and `page_tables` tests its three `SPLIT_SHIFT`s against it; the
+  declarations check still has to read the pinned checkout, in the pins pull request.
+- Item 18, milestone 1017's stale blocker row: Open. The row that says the `link.ld` test must move
+  is stale, and the lane that owns milestone 1017 drops it.
+- nife's pins: Open. All twenty-seven manifests move to one `rev` in one pull request after the
+  move. `cargo xtask std-src` reads the crate from Cargo's git checkout when the manifests name a
+  git dependency; a dry run against a local git repository of the staged crate copied that
+  checkout's `src/lib.rs`.
+- The move: Open. The review is cleared; the repository and the first push follow this tree's
+  preparation.
+- Publishing: Open. No first publish happens until the last outside-review milestone closes
+  (ruled 2026-11-18 UTC).
+
+## Open decisions
+
+None.
 
 ## Follow-on
 
@@ -236,14 +242,12 @@ Blocks: the move, and through it the tag and the first publish.
   manifest that stands alone.
 - **Done.** The review package, [notes/crate-reviews/address-space-layout.md](../../notes/crate-reviews/address-space-layout.md),
   lists every public name with its state.
-- **Outstanding.** The architect's ruling on the provisional names of items 7, 9, 15 and 17, and
-  the clearance of the package. Items 7, 15 and 17 are not built. The move still owes items 2, 5
-  (the rest of the scaffold), 11 and 13; item 18 is left to 1017.
+- **Done.** The clearance, and items 7, 11 and 15, with item 17's `page_tables` test.
+- **Outstanding.** The repository and the move (items 2 and 5's scaffold), the pins and item 17's
+  declarations check, and item 13 in the template; item 18 is left to 1017.
 
 ## BUGS
 
-- Nothing here builds `Band::new` (item 15) or a public `LOW_HALF_SPLIT_SHIFTS` (item 17); the
-  maintainer names them provisionally and the review package carries them.
 - Item 13 is the template's to fix, and until it lands the crate's `check / standalone` is red on
   the first run for a reason no change here removes.
 - The 1.88 floor is the lowest installed toolchain that builds the crate (1.85 fails on
@@ -251,8 +255,7 @@ Blocks: the move, and through it the tag and the first publish.
   check.
 - The template's prose, README and history gates have not run on the crate's README, because they
   run in the crate's own repository; the move runs them.
-- This review did not verify whether `cargo xtask std-src` resolves a git dependency. The move lane runs it before the pull request.
 
 ## Index row
 
-An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. The crate's own name has its ruling and its rename. The constants and the whole-window check carry provisional names, and the review package waits for its clearance.
+An outside review of `address_space_layout` before it leaves nife found three findings that stop a standalone build (a test reading a file outside the crate, falsification records in nife's path form, a manifest that inherits from the workspace). It found nine to land before the first tag and six for later. The crate's own name has its ruling and its rename. The review package is cleared and the constants carry their ratified names; the whole-window check keeps a provisional one.
