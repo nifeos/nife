@@ -1,8 +1,8 @@
 # Review package: `byte_sink_contract`
 
-*Name: provisional, minted by lane milestone/1079-byte-sink-contract-review-package. The
-`byte_sink_contract` package of [crate-reviews.md](../crate-reviews.md), in its own file because the
-packages together outgrow the page.*
+*Name: provisional, minted by lane milestone/1079-byte-sink-contract-review-package. This is the
+`byte_sink_contract` package of [crate-reviews.md](../crate-reviews.md). It has its own file because
+the packages together outgrow the page.*
 
 The architect reads this to clear the crate for its move to its own repository, as part of step 5
 of [milestone 1017 (the contract crates leave in this order)](../../design/roadmap/1017-the-contract-crates-leave-in-this-order.md).
@@ -46,7 +46,7 @@ the public API.
 | users of `fixture` | `fixtures/src/sink_transcript_writer.rs`, `file_sink.rs`, `file_source.rs`, and the kernel-side `system_tests/src/user/sink_tests.rs` |
 
 Milestone 1017's table still lists a development dependency on `abi` for this crate. The crate has
-no dependency now (P1-4 landed), so the row is stale; this package does not edit it.
+no dependency now (P1-4 landed), so the row no longer matches the tree; this package leaves it alone.
 
 ## What was run
 
@@ -65,10 +65,10 @@ All commands ran in this lane's worktree, at `main` with this lane's one added f
 | `script/crate-review-packet byte_sink_contract` | facts above; no foreign type in any public signature, no `unsafe` site |
 | `script/lint` | see the pull request's checks |
 
-Not run, and so not claimed: the stranger test (there is no README to follow), `cargo-mutants` (a
-census belongs to its own window), Miri, `cargo-semver-checks` (a first release has no baseline),
-`cargo package` (no packaging manifest yet), the template's workflows (no repository exists), the
-QEMU-side `sink_tests`, and a build for a 16-bit target.
+Not run, and so not claimed: the stranger test, since there is no README to follow. Also not run:
+`cargo-mutants`, whose census belongs to its own window, and Miri. A first release has no baseline
+for `cargo-semver-checks`, and no repository exists for the template's workflows. The lane ran
+neither `cargo package`, the QEMU-side `sink_tests` nor a build for a 16-bit target.
 
 ## Public API
 
@@ -88,10 +88,10 @@ No nife type appears in a signature. What a stranger may find surprising:
   zero-byte write (P1-10, done).
 - An end of stream is exactly the message `(eof(), 0, 0)`; `unpack` returns `Malformed` for any
   other, including a first word with any bit set below the opcode (decision C, built).
-- `unpack` returns `Malformed` for a bytes message whose body kind is not `KIND_TEXT`, so a future
-  structured body is refused by every decoder and not printed as text (P1-6, done).
-- `with_severity` and `severity` act on any first word, including an end of stream; only a bytes
-  message's severity is read by any consumer (P2-15, done).
+- `unpack` returns `Malformed` for a bytes message whose body kind is not `KIND_TEXT`, so every decoder refuses a future
+  structured body and none prints it as text (P1-6, done).
+- `with_severity` and `severity` act on any first word, including an end of stream; no consumer reads severity
+  on anything but a bytes message (P2-15, done).
 
 ## What landed, and what did not
 
@@ -115,7 +115,7 @@ The other P1 and P2 items, by the same reading:
 | P1-6, `kind` refused | done |
 | P1-7, British spellings | done; `british_spelling` refuses none |
 | P1-10, zero-count rule | done |
-| P2-11, narrow `usize` | done; the count is compared as `u64` |
+| P2-11, narrow `usize` | done; `unpack` compares the count as `u64` |
 | P2-12, `req` typed parameters | open; `req` still takes `u64` for both |
 | P2-13, a words struct for `pack` | open; `pack` still returns a bare four-tuple |
 | P2-14, mutant exemptions | open; they go into the new repository's `.github/mutants-exempts` |
@@ -123,10 +123,10 @@ The other P1 and P2 items, by the same reading:
 
 ## Names
 
-The crate name is ratified. `verification` is a standing ratified module name. Everything else
-below is the maintainer's provisional ruling on decision D (2026-11-14 UTC, a two-way door) or
-unreviewed. Nothing here is ratified by this lane; the architect ratifies, changes or refuses each
-row. The names are not applied: milestone 1079's P1-9 is the work.
+The architect ratified the crate name, and `verification` is a standing ratified module name.
+Everything else below is the maintainer's provisional ruling on decision D (2026-11-14 UTC, a
+two-way door) or has no review yet. This lane ratifies nothing; the architect ratifies, changes or
+refuses each row. Nothing below is built: milestone 1079's P1-9 is the work.
 
 | item now | proposed | status | rule or reason |
 |---|---|---|---|
@@ -164,18 +164,18 @@ and the third (P1-8) has one sentence left that contradicts the decoder. Clearin
 architect's name review and the repository's first commit act on a crate whose public API still
 carries test scaffolding and four names the maintainer has ruled to change. The crate is otherwise
 in good order: no dependency, no `unsafe`, six proofs each with a falsifying patch, the naming checks
-pass, and the wire is specified and enforced by the decoder.
+pass, and the decoder enforces what the documentation says about the wire.
 
-The package is complete as a reading aid. Once the three items land, the lane that landed the last
+The package is complete as a reading aid. Once the three items land, the lane that lands the last
 one updates the What was run table and this recommendation, and the architect reads it then.
 
 ## Open questions
 
-- Should the two-way provisional rulings (decisions A, B and D) be ratified now, so the lane that
-  applies them builds against ratified names, or after the build? Ratifying first avoids a second
-  rename.
+- Should the architect ratify the two-way provisional rulings (decisions A, B and D) now, so the
+  lane that applies them builds against ratified names, or after the build? Ratifying first avoids
+  a second rename.
 - P2-12 (typed `req` parameters) and P2-13 (a words struct) change the public signatures before the
-  release. Neither is built or ruled. Both are two-way until the first release and one-way after it.
+  release. Nobody has built or ruled either. Both are two-way until the first release and one-way after it.
 
 ## Decisions for the architect
 
