@@ -13,9 +13,8 @@ Raised by a read-only review of `crates/filesystem_fixture` as a stranger would 
 clone of `nifeos/nife` at `137639a3a`. It changes nothing; it lists what the lanes that move the
 crate change, and the two decisions only an architect can take.
 
-There is no review package for this crate: `notes/crate-reviews/` has no `filesystem-fixture.md`
-and `notes/crate-reviews.md` has no row for it. This review therefore has no settled baseline to
-respect beyond the rulings already recorded in the tree. Milestone 886 (the filesystem test fixture
+This review respects the rulings recorded in the tree and no earlier package; the crate's review
+package is [`filesystem-fixture.md`](../../notes/crate-reviews/filesystem-fixture.md). Milestone 886 (the filesystem test fixture
 moves to its own crate) ruled where the line between this crate and `filesystem_contract` sits and
 which protocol words stay behind. Milestone 956 (the linked interfaces carry checkable versions)
 assigned interface id 16 at version 1. Milestone 1017 (the contract crates leave in this order)
@@ -58,8 +57,10 @@ then the decisions and the release step.
   Not built: `SCRATCH_INIT`, `MADE_DIR`, `NAV_DIR`, `TOUCH_MTIME_ADVANCED`, `twotrees`, `navscape`
   and the rest of the three tables are still in the crate; one rename lane applies them across the
   nine manifests, with aliases on the kept command names.
-- Item 5 (P0), no review package and 244 unratified names: Open. `notes/crate-reviews/` has no
-  package for this crate; it comes after item 4 and may cover both crates of the shared repository.
+- Item 5 (P0), no review package and 244 unratified names: Open.
+  [The fixture's package](../../notes/crate-reviews/filesystem-fixture.md) and
+  [the contract's](../../notes/crate-reviews/filesystem-contract.md) form the one package. It asks
+  for the crate name and the identity values now, and for the item names after item 4.
 - Item 6 (P1), the crate describes this tree: Open. Eight mentions of nife remain in `src/lib.rs`
   and one in the README, and the data literals (`"nife walk entry\n"`, `"nife boot"`) change with
   the image builder and `xtask/src/disk_check.rs`.
@@ -91,12 +92,13 @@ then the decisions and the release step.
 - Decision 2, the names: Ruled (maintainer, provisional, 2026-11-14 UTC). Not built: item 4 is the
   work.
 - Decision 3, the review package and clearance: Ruled (maintainer, provisional for the package step,
-  2026-11-19 UTC). Not built: the package, which is item 5.
+  2026-11-19 UTC). The package is written (item 5); the
+  clearance stays open until the architect gives it.
 
 ## Open decisions
 
 None. The review package carries the name ratification and the clearance of the review, which stay
-the architect's once the package exists.
+the architect's.
 
 ## Goal
 

@@ -109,7 +109,7 @@ source = "git+https://github.com/nifeos/block_roster_contract?rev=2bd3da34888fc1
 [[package]]
 name = "boot_ladder"
 version = "0.1.0"
-source = "git+https://github.com/nifeos/boot_ladder?rev=196bf4e8201e027a025c938aa87da9778310c9c7#196bf4e8201e027a025c938aa87da9778310c9c7"
+source = "git+https://github.com/nifeos/boot_ladder?rev=ed235428c6551ddcf673bdb140b972535238fe3b#ed235428c6551ddcf673bdb140b972535238fe3b"
 
 [[package]]
 name = "boot_slot"
@@ -175,9 +175,7 @@ dependencies = [
 [[package]]
 name = "capability_table"
 version = "0.1.0"
-dependencies = [
- "capability_table",
-]
+source = "git+https://github.com/nifeos/capability_table?rev=a8d0fa65b08050e788719bd0e88922f9cd6b43bb#a8d0fa65b08050e788719bd0e88922f9cd6b43bb"
 
 [[package]]
 name = "capability_witness_contract"

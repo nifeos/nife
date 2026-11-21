@@ -2523,19 +2523,18 @@ def _abi_system_calls():
 
 
 def _rights_bits():
-    """Named single-bit rights in crates/capability_table: how many rights a capability can carry.
+    """Named single-bit rights in `abi::rights`: how many rights a capability can carry.
 
-    Counted from `capability_table::Rights` rather than from `abi::rights` because the prose that states
-    this number is about `Rights`, and the abi module documents itself as *matching* it. Only the
-    single-bit constants count: `NONE` is `Rights(0)` and `ALL` is a mask of the others, so the
-    shape assumed is `pub const NAME: Rights = Rights(1 << N);` and neither aggregate matches it.
+    Counted from the ABI's rights module, which the kernel asserts equal to the rights mask of the
+    capability table crate it links (`nifeos/capability_table`, a pinned dependency that is no
+    longer in this tree). Only the single-bit constants count: `ALL` and `SPEND_ONLY` are masks of
+    the others, so the shape assumed is `pub const NAME: u64 = 1 << N;` and neither mask matches it.
 
-    That the two sides agree, and that `ALL` is exactly the union of these bits, is pinned by tests
-    rather than here (`rights_are_distinct_single_bits`, `rights_bits_are_the_wire_format`). This
-    counts; those compare.
+    That `ALL` is exactly the union of these bits is pinned by the kernel's assertion and by tests
+    rather than here. This counts; those compare.
     """
-    text = pathlib.Path('crates/capability_table/src/lib.rs').read_text(errors='replace')
-    return len(re.findall(r'^[ \t]*pub const [A-Z_0-9]+: Rights = Rights\(1 << \d', text, re.M))
+    text = pathlib.Path('crates/abi/src/rights.rs').read_text(errors='replace')
+    return len(re.findall(r'^[ \t]*pub const [A-Z_0-9]+: u64 = 1 << \d', text, re.M))
 
 
 def _loom_hits():
@@ -2663,10 +2662,6 @@ REGISTRY = {
     # had already cost two sweeps their re-derivation. A lane landing a harness in one of these
     # crates bumps the number beside the marker in the same commit, which is the forcing function
     # the total `kani-harnesses` marker already exercises.
-    'capability-table-harnesses': (
-        'how many Kani proof harnesses crates/capability_table carries',
-        lambda: _harness_hits().get('capability_table', 0),
-    ),
     'memory-regions-harnesses': (
         'how many Kani proof harnesses crates/memory_regions carries',
         lambda: _harness_hits().get('memory_regions', 0),
@@ -2706,7 +2701,7 @@ REGISTRY = {
         _abi_system_calls,
     ),
     'rights-bits': (
-        'how many named single-bit rights a capability can carry (capability_table::Rights)',
+        'how many named single-bit rights a capability can carry (abi::rights)',
         _rights_bits,
     ),
     'loom-harnesses': (

@@ -7,9 +7,9 @@ file holds the harness tables and the reasoning for the capability core, the unt
 accounting, the paging arithmetic, the frame allocator, the device-tree leaves, the IPC rendezvous,
 the generational table, the intrusive queue and the ASID allocator.
 
-## `crates/capability_table`
+## `nifeos/capability_table`
 
-12 harnesses in `crates/capability_table/src/lib.rs`, under `#[cfg(kani)]` <!--count:capability-table-harnesses-->;
+12 harnesses in the repository `nifeos/capability_table`, in `src/lib.rs` under `#[cfg(kani)]`;
 the table names the eight this appendix adjudicated:
 
 | Harness | Property |

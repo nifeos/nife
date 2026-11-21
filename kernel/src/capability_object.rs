@@ -1,6 +1,6 @@
 //! What a capability in nife can point at.
 //!
-//! The table itself is `crates/capability_table`, which is pure logic and knows nothing about this file.
+//! The table itself is `nifeos/capability_table`, the repository the kernel pins, which is pure logic and knows nothing about this file.
 //! This is the kernel's half: **the set of nouns.**
 //!
 //! DECISIONS §10, notes/capabilities.md, and notes/capability-objects.md for each object.

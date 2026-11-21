@@ -7,7 +7,7 @@
 # for as long as another lane's real proof holds the pool. This file is that section and its
 # regression test at once:
 #
-#   1. extra arguments: `script/verify --only capability_table --harness X` hands `--harness X` to
+#   1. extra arguments: `script/verify --only page_tables --harness X` hands `--harness X` to
 #      `cargo kani` (once dropped by an option-parsing `set --`, found 2026-10-05).
 #   2. the pool is held in full by a fake holder, taken with the tool's own mechanism in a scratch
 #      NIFE_HEAVY_SLOT_DIR, and the stubbed run still finishes under a deadline. Fails if the
@@ -37,10 +37,10 @@ mkdir -p "$tmp/bin" "$tmp/slots"
 cat >"$tmp/bin/cargo" <<'STUB'
 #!/bin/sh
 # Stub: `cargo kani --version` succeeds; any other call is recorded. For stage 3, `cargo metadata`
-# places capability_table in a scratch directory and `cargo kani list` writes three harnesses there.
+# places page_tables in a scratch directory and `cargo kani list` writes three harnesses there.
 [ "$1" = kani ] && [ "$2" = "--version" ] && { echo "cargo-kani $(cat .kani-version)"; exit 0; }
 if [ "$1" = metadata ]; then
-	printf '{"packages": [{"name": "capability_table", "manifest_path": "%s/row/Cargo.toml"}, {"name": "domain_name_resolution_contract", "manifest_path": "%s/row/Cargo.toml"}]}\n' "$VERIFY_STUB_DIR" "$VERIFY_STUB_DIR"
+	printf '{"packages": [{"name": "page_tables", "manifest_path": "%s/row/Cargo.toml"}, {"name": "domain_name_resolution_contract", "manifest_path": "%s/row/Cargo.toml"}]}\n' "$VERIFY_STUB_DIR" "$VERIFY_STUB_DIR"
 	exit 0
 fi
 if [ "$1 $2" = "kani list" ]; then
@@ -89,7 +89,7 @@ bounded() {
 }
 
 stubbed_verify() {
-	VERIFY_STUB_LOG="$tmp/log" script/verify --only capability_table --harness lint_probe_harness >/dev/null 2>&1
+	VERIFY_STUB_LOG="$tmp/log" script/verify --only page_tables --harness lint_probe_harness >/dev/null 2>&1
 }
 
 # The control: with the pool left on, the same run waits behind the holder. If this finished, the
@@ -104,8 +104,8 @@ bounded 3 stubbed_verify || rc=$?
 rc=0
 NIFE_KANI_POOL=off bounded 60 stubbed_verify || rc=$?
 [ "$rc" -ne 124 ] || fail "a stubbed run with the pool off waited for the held Kani pool"
-if ! grep -q '^kani -p capability_table .*--harness lint_probe_harness' "$tmp/log" 2>/dev/null; then
-	echo "verify-stub-selftest: script/verify --only capability_table --harness X did not hand --harness X to cargo kani:" >&2
+if ! grep -q '^kani -p page_tables .*--harness lint_probe_harness' "$tmp/log" 2>/dev/null; then
+	echo "verify-stub-selftest: script/verify --only page_tables --harness X did not hand --harness X to cargo kani:" >&2
 	sed 's/^/  /' "$tmp/log" >&2 2>/dev/null || echo "  (stub cargo was never called)" >&2
 	exit 1
 fi
@@ -115,19 +115,19 @@ echo "script/verify: extra arguments reach cargo kani, and a stubbed run takes n
 mkdir -p "$tmp/row"
 apart() {
 	VERIFY_STUB_LOG="$tmp/log" VERIFY_STUB_DIR="$tmp" NIFE_KANI_POOL=off NIFE_KANI_APART="$1" \
-		script/verify --only capability_table >"$tmp/apart.out" 2>&1
+		script/verify --only page_tables >"$tmp/apart.out" 2>&1
 }
 : >"$tmp/log"
-apart "$(printf 'capability_table\tverification::b')" || { sed 's/^/  /' "$tmp/apart.out" >&2; fail "a row held apart failed"; }
-grep -q '^kani -p capability_table --harness verification::a --harness verification::c --exact ' "$tmp/log" ||
+apart "$(printf 'page_tables\tverification::b')" || { sed 's/^/  /' "$tmp/apart.out" >&2; fail "a row held apart failed"; }
+grep -q '^kani -p page_tables --harness verification::a --harness verification::c --exact ' "$tmp/log" ||
 	{ sed 's/^/  /' "$tmp/log" >&2; fail "the first pass was not every other harness, --exact"; }
-grep -q '^kani -p capability_table --harness verification::b --exact ' "$tmp/log" ||
+grep -q '^kani -p page_tables --harness verification::b --exact ' "$tmp/log" ||
 	{ sed 's/^/  /' "$tmp/log" >&2; fail "the held-apart harness did not prove alone"; }
 [ ! -e "$tmp/row/kani-list.json" ] || fail "the listing was left in the crate directory"
 : >"$tmp/log"
-if apart "$(printf 'capability_table\tverification::gone')"; then fail "a stale held-apart name passed"; fi
+if apart "$(printf 'page_tables\tverification::gone')"; then fail "a stale held-apart name passed"; fi
 grep -q 'no longer has: verification::gone' "$tmp/apart.out" || fail "a stale held-apart name failed without naming it"
-grep -q '^kani -p capability_table --harness' "$tmp/log" && fail "a stale held-apart name still ran a proof"
+grep -q '^kani -p page_tables --harness' "$tmp/log" && fail "a stale held-apart name still ran a proof"
 [ ! -e "$tmp/row/kani-list.json" ] || fail "a failed listing was left in the crate directory"
 : >"$tmp/log"
 VERIFY_STUB_LOG="$tmp/log" VERIFY_STUB_DIR="$tmp" NIFE_KANI_POOL=off \
