@@ -35,7 +35,7 @@ Without `--threads 1` it walks on one thread per core, and the kernel counts the
 Through the kernel harness, not the prompt. `system_tests/src/user/ripgrep_tests.rs` spawns `rg`
 with `fs_service::start_std_narrowed`. It puts a heap budget at slot 0, an output endpoint at slot
 1, a caretaker narrowing `walk/` to the rights under test at slot 4, and the argv at slot 8. The
-argv is built from a line typed as it would be at the prompt, by `grant_plan::argv`, the function
+argv is built from a line typed as it would be at the prompt, by `grant_plan::write_argument_page`, the function
 `swish` uses. It is placed as the progenitor places it: a `READ` frame mapped read-only at `ARGS_PAGE`
 (milestone 205 (how a foreign program is told what to do)). The image loads at its own link address
 since milestone 206 (a program image has under 896 KiB) moved the ceiling to 496 MiB.
@@ -185,7 +185,7 @@ all three.
 line above six times through the caretaker grant and keeps the median of the last five.
 `bench/host/run_linux_rg.sh` boots the Alpine `virt` kernel on the same `virt,accel=hvf` machine,
 `-cpu host -m 256M -smp 4`, with `walk_pricing`'s `rg_host` example as PID 1. It stages the same
-tree, splits the same line with `grant_plan::each_word`, and runs a static Linux `rg` built from
+tree, splits the same line with `grant_plan::for_each_word`, and runs a static Linux `rg` built from
 the same source with the same flags, six times, keeping the last five.
 
 | 2026-10-07, M-series host | `rg`'s own clock, median of 5 | spawn to exit |

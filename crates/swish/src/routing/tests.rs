@@ -16,7 +16,7 @@ fn capabilities_is_answered_before_the_line_is_split() {
 #[test]
 fn a_line_with_no_operators_is_one_command() {
     match route(b"  least_authority_demo 7  ") {
-        Route::One(stage) => assert_eq!(grant_plan::trim(stage), b"least_authority_demo 7"),
+        Route::One(stage) => assert_eq!(stage.trim_ascii(), b"least_authority_demo 7"),
         other => panic!("expected one command, got {other:?}"),
     }
 }
@@ -26,8 +26,8 @@ fn operators_make_a_pipeline_of_the_stages_typed() {
     match route(b"date | wc") {
         Route::Pipeline(l) => {
             assert_eq!(l.stages().len(), 2);
-            assert_eq!(grant_plan::trim(l.stages()[0]), b"date");
-            assert_eq!(grant_plan::trim(l.stages()[1]), b"wc");
+            assert_eq!(l.stages()[0].trim_ascii(), b"date");
+            assert_eq!(l.stages()[1].trim_ascii(), b"wc");
         }
         other => panic!("expected a pipeline, got {other:?}"),
     }

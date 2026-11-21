@@ -290,7 +290,7 @@ fn probe_root_and_reach(nav: &mut Nav, v: &mut u64) {
     let said = run_line(nav, b"cd ..");
     if !pwd_is(nav, b"/") {
         *v |= nb::WALKED_UP;
-    } else if matches!(said, Some(Say::Refused(Refused::AtYourRoot))) {
+    } else if matches!(said, Some(Say::Refused(PathRefusal::AtYourRoot))) {
         *v |= nb::CLAMPED_AT_ROOT;
     }
 
@@ -299,7 +299,7 @@ fn probe_root_and_reach(nav: &mut Nav, v: &mut u64) {
     //    is, so there is no level above it to name and the syntax meets the same wall `..` does.
     if matches!(
         run_line(nav, b"cd /.."),
-        Some(Say::Refused(Refused::AtYourRoot))
+        Some(Say::Refused(PathRefusal::AtYourRoot))
     ) && pwd_is(nav, b"/")
     {
         *v |= nb::ABSOLUTE_CLAMPED_AT_ROOT;
@@ -516,7 +516,7 @@ fn probe_bind(
                     && pwd_is(nav, b"/")
                     && matches!(
                         run_line(nav, b"cd .."),
-                        Some(Say::Refused(Refused::AtYourRoot))
+                        Some(Say::Refused(PathRefusal::AtYourRoot))
                     )
                     && pwd_is(nav, b"/")
                 {
@@ -544,7 +544,7 @@ pub(super) fn two_trees(spec: u64) -> ! {
     let rights = filesystem_contract::grant::specification_rights(spec);
     let mount = grant_navigation::path(tt::MOUNT.as_bytes())
         .ok()
-        .and_then(|p| grant_plan::Holdings::default().resolve_path(&p).ok())
+        .and_then(|p| grant_plan::ShellHoldings::default().resolve_path(&p).ok())
         .and_then(grant_plan::MountedTree::mounted_at);
     let (Some(mount), true) = (mount, rights != 0) else {
         send(REPORT, VERDICT, tt::TWO_TREES_FAILED, 0);
@@ -644,7 +644,7 @@ fn two_tree_moves(nav: &mut Nav) -> u64 {
         let said = run_line(nav, line);
         if !pwd_is(nav, at) {
             v |= tt::MOVED_ON_REFUSAL;
-        } else if matches!(said, Some(Say::Refused(Refused::AtYourRoot))) {
+        } else if matches!(said, Some(Say::Refused(PathRefusal::AtYourRoot))) {
             clamped += 1;
         } else {
             v |= tt::CLIMBED_OUT;
@@ -662,8 +662,8 @@ fn two_tree_grants(nav: &mut Nav) -> u64 {
     use filesystem_fixture::{tree, twotrees as tt};
     let mut v = 0u64;
 
-    if let Ok(g) = grant_plan::redirect_target(b"/second/secret", holdings(nav), false)
-        && g.which == grant_navigation::Which::B
+    if let Ok(g) = grant_plan::input_file_grant(b"/second/secret", holdings(nav))
+        && g.side == grant_navigation::GrantSide::Second
         && let Ok(f) = open_source(nav, g)
     {
         let want = tree::SECRET_BODY;
@@ -677,7 +677,7 @@ fn two_tree_grants(nav: &mut Nav) -> u64 {
         call(f.dir, fs::req(fs::CLOSE, f.handle, 0), 0);
     }
     // And the same name outside the mount opens nothing, because the first tree has no `secret`.
-    if let Ok(g) = grant_plan::redirect_target(b"/secret", holdings(nav), false)
+    if let Ok(g) = grant_plan::input_file_grant(b"/secret", holdings(nav))
         && let Ok(f) = open_source(nav, g)
     {
         v |= tt::REACHED_ACROSS;
@@ -690,11 +690,14 @@ fn two_tree_grants(nav: &mut Nav) -> u64 {
 /// planner under it is the deepest chain this witness reaches and nothing else should sit under it.
 fn two_tree_rm(nav: &mut Nav) -> u64 {
     use filesystem_fixture::twotrees as tt;
-    if let Command::Run(rspec) = grant_plan::parse(b"rm /second/secret")
-        && let Ok((_, e)) =
-            program_table::plan(&rspec, holdings(nav), grant_plan::expand::Expansion::none())
+    if let CommandLine::Run(rspec) = grant_plan::parse(b"rm /second/secret")
+        && let Ok((_, e)) = program_table::plan(
+            &rspec,
+            holdings(nav),
+            grant_plan::expansion::Expansion::none(),
+        )
         && let Some(g) = e.directory
-        && g.which == grant_navigation::Which::B
+        && g.side == grant_navigation::GrantSide::Second
         && dir_grant(&g, e.short_options).is_err()
     {
         return tt::RM_IN_MOUNT_REFUSED;
@@ -775,7 +778,7 @@ pub(super) fn globbing(spec: u64) -> ! {
     cmd[3..3 + tree::GLOB_PATTERN.len()].copy_from_slice(tree::GLOB_PATTERN);
     let line = &cmd[..3 + tree::GLOB_PATTERN.len()];
     let mut granted = Text::new();
-    if let Command::Run(rspec) = grant_plan::parse(line) {
+    if let CommandLine::Run(rspec) = grant_plan::parse(line) {
         match expansion(&mut nav, &rspec) {
             Ok(e) => match program_table::plan(&rspec, holdings(&nav), e) {
                 Ok((_, endow)) => match endow.directory {
@@ -805,7 +808,7 @@ pub(super) fn globbing(spec: u64) -> ! {
     }
 
     // 4. A pattern in a leading component, refused where it is read.
-    if let Command::Run(bad) = grant_plan::parse(b"rm */gone")
+    if let CommandLine::Run(bad) = grant_plan::parse(b"rm */gone")
         && matches!(
             expansion(&mut nav, &bad),
             Err(Say::Cannot(Refusal::PatternInPath))
@@ -836,7 +839,7 @@ fn run_line(nav: &mut Nav, cmd: &[u8]) -> Option<Say> {
 /// Whether `pwd` would print exactly this.
 fn pwd_is(nav: &Nav, want: &[u8]) -> bool {
     let mut buf = [0u8; grant_navigation::MAXIMUM_RENDERED_PATH_BYTES];
-    let n = nav.holds.cwd.render(&mut buf);
+    let n = nav.holds.working_directory.render(&mut buf);
     &buf[..n] == want
 }
 

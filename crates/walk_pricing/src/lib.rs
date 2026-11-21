@@ -446,7 +446,7 @@ mod tests {
         stage(&root).expect("stage the tree");
         for line in [tree::RG_SEARCH_THREADED, tree::RG_SEARCH_FOUR_THREADS] {
             let mut words: Vec<String> = Vec::new();
-            grant_plan::each_word(line.as_bytes(), &mut |w| {
+            grant_plan::for_each_word(line.as_bytes(), &mut |w| {
                 words.push(String::from_utf8(w.to_vec()).expect("ASCII"));
                 Ok(())
             })

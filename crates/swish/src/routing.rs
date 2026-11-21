@@ -65,10 +65,10 @@ pub fn route(cmd: &[u8]) -> Route<'_> {
         return Route::Cannot(Refusal::GroupingParentheses);
     }
     match grant_plan::parse(cmd) {
-        Command::Scope(tail) => return Route::Scope(tail),
-        Command::Capabilities(tail) => return Route::Capabilities(tail),
-        Command::Time(tail) => return Route::Time(tail),
-        Command::Xargs(tail) => return Route::Xargs(tail),
+        CommandLine::Scope(tail) => return Route::Scope(tail),
+        CommandLine::Capabilities(tail) => return Route::Capabilities(tail),
+        CommandLine::Time(tail) => return Route::Time(tail),
+        CommandLine::Xargs(tail) => return Route::Xargs(tail),
         _ => {}
     }
     match line::split(cmd) {

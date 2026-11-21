@@ -9,7 +9,7 @@ const ALL: &[Refusal] = &[
     Refusal::NoSuchCapability(CapabilityKind::File),
     Refusal::FileForbidden,
     Refusal::FileRequired,
-    Refusal::PathRequired,
+    Refusal::DirectoryRequired,
     Refusal::NoSuchOption,
     Refusal::FileNotNameable,
     Refusal::MemoryGrantForbidden,
@@ -37,7 +37,7 @@ const ALL: &[Refusal] = &[
     Refusal::NoDiagnosticStream,
     Refusal::InputForbidden,
     Refusal::InputRequired,
-    Refusal::NoReaderButThisShell,
+    Refusal::NoReaderStage,
     Refusal::NotAPipelineStage,
     Refusal::Unexpected,
     Refusal::UnclosedQuote,
@@ -121,20 +121,20 @@ fn a_quoted_limit_is_the_constant_behind_it() {
         (
             Refusal::TooManyNames,
             "at most {},",
-            crate::expand::MAXIMUM_NAMES,
-            "expand::MAXIMUM_NAMES",
+            crate::expansion::MAXIMUM_NAMES,
+            "expansion::MAXIMUM_NAMES",
         ),
         (
             Refusal::TooManyNames,
             ", {} bytes of name",
-            crate::expand::NAME_BYTES,
-            "expand::NAME_BYTES",
+            crate::expansion::MAXIMUM_NAME_SET_BYTES,
+            "expansion::MAXIMUM_NAME_SET_BYTES",
         ),
         (
             Refusal::MatchNotNameable,
             "at most {} bytes",
-            crate::expand::MAXIMUM_NAME_BYTES,
-            "expand::MAXIMUM_NAME_BYTES",
+            crate::expansion::MAXIMUM_NAME_BYTES,
+            "expansion::MAXIMUM_NAME_BYTES",
         ),
         (
             Refusal::TooManyStages,
@@ -194,8 +194,8 @@ fn every_number_a_refusal_names_is_its_constants_value() {
     );
     says(refused_file_name, crate::navigation::MAXIMUM_DEPTH);
     let too_many = Refusal::TooManyNames.message();
-    says(too_many, crate::expand::MAXIMUM_NAMES);
-    says(too_many, crate::expand::NAME_BYTES);
+    says(too_many, crate::expansion::MAXIMUM_NAMES);
+    says(too_many, crate::expansion::MAXIMUM_NAME_SET_BYTES);
     says(
         Refusal::MatchNotNameable.message(),
         crate::MAXIMUM_FILE_NAME_BYTES,
@@ -209,23 +209,23 @@ fn every_number_a_refusal_names_is_its_constants_value() {
         program_argument_contract::MAXIMUM_RECORDS_BYTES,
     );
     says(
-        crate::navigation::Refused::NotAName.message(),
+        crate::navigation::PathRefusal::NotAName.message(),
         crate::MAXIMUM_FILE_NAME_BYTES,
     );
     says(
-        crate::navigation::Refused::TooDeep.message(),
+        crate::navigation::PathRefusal::TooDeep.message(),
         crate::navigation::MAXIMUM_DEPTH,
     );
     says(
-        crate::navigation::Refused::DirectoryNameTooLong.message(),
+        crate::navigation::PathRefusal::DirectoryNameTooLong.message(),
         crate::navigation::MAXIMUM_DIRECTORY_NAME_BYTES,
     );
     says(
-        crate::navigation::BindRefused::NotAName.message(),
+        crate::navigation::BindRefusal::NotAName.message(),
         crate::navigation::MAXIMUM_DIRECTORY_NAME_BYTES,
     );
     says(
-        crate::navigation::BindRefused::TooMany.message(),
+        crate::navigation::BindRefusal::TooMany.message(),
         crate::navigation::MAXIMUM_BINDS,
     );
 }

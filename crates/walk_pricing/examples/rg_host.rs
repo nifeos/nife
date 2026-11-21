@@ -6,7 +6,7 @@
 //! ```
 //!
 //! The words are `filesystem_fixture::walk::RG_SEARCH` split by nife's argv builder,
-//! `grant_plan::each_word`, run in the staged tree with output to a drained pipe (a host's nearest
+//! `grant_plan::for_each_word`, run in the staged tree with output to a drained pipe (a host's nearest
 //! thing to nife's byte sink). It prints ripgrep's own `seconds` line and spawn-to-exit beside it.
 
 //! # BUGS
@@ -45,7 +45,7 @@ fn main() {
     let _ = std::fs::remove_dir_all(&dir);
     walk_pricing::stage(&dir).expect("could not stage the priced tree");
     let mut words: Vec<Vec<u8>> = Vec::new();
-    grant_plan::each_word(tree::RG_SEARCH.as_bytes(), &mut |w| {
+    grant_plan::for_each_word(tree::RG_SEARCH.as_bytes(), &mut |w| {
         words.push(w.to_vec());
         Ok(())
     })

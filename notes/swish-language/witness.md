@@ -89,7 +89,7 @@ The wiring is `fs_service::start_granted_two_dirs`. The first tree is the fixtur
 the second its sibling `other` at slot 1, and a report rendezvous sits at slot 2. The mount point,
 `fixture::twotrees::MOUNT`, is the witness's own, as the slot order is. Nothing tells an interactive
 shell where a second tree is mounted yet; that transport arrives with the first real second
-filesystem. The `<` probe goes through `grant_plan::redirect_target` and `open_source`, the
+filesystem. The `<` probe goes through `grant_plan::input_file_grant` and `open_source`, the
 pipeline's own path. What is under test is the shell's resolver, walk and grant plumbing.
 
 ## The globbing script

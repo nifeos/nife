@@ -18,18 +18,18 @@ pub const MAXIMUM_NAMES: usize = 8;
 /// bytes. Over it is the same
 /// refusal as a ninth name, never a truncation.
 ///
-/// Name: provisional (milestone 946).
-pub const NAME_BYTES: usize = 512;
+/// Name: ratified 2026-11-20 (UTC).
+pub const MAXIMUM_NAME_SET_BYTES: usize = 512;
 
 /// Bytes an encoded set occupies at most: a two-byte header per name, the names, and the
 /// terminator.
 ///
 /// Name: provisional, minted 2026-11-18 (UTC) by the lane of milestone 1090 (an outside review of `filesystem_contract`).
-pub const MAXIMUM_BYTES: usize = 2 * MAXIMUM_NAMES + NAME_BYTES + 1;
+pub const MAXIMUM_BYTES: usize = 2 * MAXIMUM_NAMES + MAXIMUM_NAME_SET_BYTES + 1;
 
 // A set arrives in one page, and the longest name has to fit in one set.
 const _: () = assert!(MAXIMUM_BYTES <= super::PAGE_BYTES);
-const _: () = assert!(NAME_BYTES >= 2 * grant::MAXIMUM_NAME_BYTES);
+const _: () = assert!(MAXIMUM_NAME_SET_BYTES >= 2 * grant::MAXIMUM_NAME_BYTES);
 
 /// Bit 0 of a record's flags byte: this name was a directory when the grant was planned.
 ///
@@ -38,7 +38,7 @@ pub const IS_DIRECTORY: u8 = 1 << 0;
 
 /// Write `names` into `out`, returning the bytes used, or `None` if the set does not fit, a name
 /// is empty or too long, there are more than [`MAXIMUM_NAMES`] of them, or together they are over
-/// [`NAME_BYTES`].
+/// [`MAXIMUM_NAME_SET_BYTES`].
 ///
 /// A record is a length byte, a flags byte ([`IS_DIRECTORY`]), then the name; a zero length ends the set,
 /// so a name may not be empty.
@@ -56,7 +56,7 @@ pub fn encode(names: &[(&[u8], bool)], out: &mut [u8]) -> Option<usize> {
             return None;
         }
         name_bytes += name.len();
-        if name_bytes > NAME_BYTES {
+        if name_bytes > MAXIMUM_NAME_SET_BYTES {
             return None;
         }
         let end = n + 2 + name.len();

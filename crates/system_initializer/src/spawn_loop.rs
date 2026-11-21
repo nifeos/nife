@@ -773,7 +773,7 @@ impl Service<'_> {
                 )
             };
             let mut read = [0u8; grant_contract::MAXIMUM_VERB_BYTES];
-            let w = grant_contract::verb_of_page(page, &mut read)?;
+            let w = grant_contract::page_verb(page, &mut read)?;
             verb[..w.len()].copy_from_slice(w);
             Some(w.len())
         });
@@ -792,7 +792,7 @@ impl Service<'_> {
                     spawn_protocol::IMAGE_PAGE as usize,
                 )
             };
-            grant_contract::delegated_within(page, &mut within)
+            grant_contract::delegated_identity(page, &mut within)
         });
         let manifest = if wiring.image {
             image_manifest
@@ -1093,7 +1093,7 @@ impl Service<'_> {
         let own_ut = self.c.own_ut;
         let page = match (std_layout, region, seen) {
             (true, Some(r), Some(theirs)) => copy_args(own_ut, r, theirs, |copy| {
-                grant_contract::verb_of_page(copy, &mut [0u8; grant_contract::MAXIMUM_VERB_BYTES])
+                grant_contract::page_verb(copy, &mut [0u8; grant_contract::MAXIMUM_VERB_BYTES])
                     == job.verb()
             }),
             _ => None,
