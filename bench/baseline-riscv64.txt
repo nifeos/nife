@@ -1,9 +1,7 @@
-# toolchain: nightly-2026-11-20
+# toolchain: nightly-2026-11-21
 # qemu: 11.1.2
-# date: 2026-11-18
-# why: nightly-2026-11-18: no row rose. Measured on one machine by running the same tree at both pins: the compiler alone moved yield_switch -16.41%, ipc_rtt -16.75%, relay_rtt -16.75%, call_reply -16.10%, broker_rtt -16.10%, spawn_reap -12.75%, map_new -9.04%, rfence_self -1.70%, coremark -11.36%, null_system_call -8.55%, ctx_switch -15.92%, ipc_rtt_el0 -15.99%, sink_throughput -15.98%, map_el0 -16.40%, spawn_el0 -13.09%. Both nightlies carry LLVM 23.1.5 and the bench kernel builds at -O0; coremark touches no OS primitive and moved with the rest, so this is code generation, not a kernel path. Which rustc change did it is not identified. This save also absorbs drift already on main at the old pin, from -5.83% (relay_rtt) to +2.61% (map_el0) against the 2026-10-22 floor.
-# why: 2026-11-19: restamped from nightly-2026-11-18 to nightly-2026-11-19 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: none (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: none
-# why: 2026-11-20: restamped from nightly-2026-11-19 to nightly-2026-11-20 by `cargo xtask bench --restamp`, rows unchanged; compiler term on one machine, largest: map_el0 -0.002%, null_system_call -0.002%, call_reply -0.001% (bounds 0.5% per row, 2% cumulative); cumulative since the last --save: map_el0 -0.002%, null_system_call -0.002%, call_reply -0.001%
+# date: 2026-11-21
+# why: nightly-2026-11-21: no row rose. Measured by the bump workflow on one runner at both pins and reproduced here: the compiler alone moved yield_switch -5.55%, ipc_rtt -5.50%, relay_rtt -5.50%, call_reply -5.50%, broker_rtt -5.50%, spawn_reap -4.18%, map_new -3.17%, rfence_self -0.60%, coremark -3.37%, null_system_call -3.23%, ctx_switch -5.34%, ipc_rtt_el0 -5.33%, sink_throughput -5.14%, map_el0 -4.87%, spawn_el0 -4.18%. Coremark touches no OS primitive and moved with the rest, so this is code generation, not a kernel path.
 # bench/baseline-riscv64.txt: deterministic icount tick counts (cargo xtask bench --save).
 # Recorded against the QEMU pinned in .qemu-version. icount counts guest instructions, so the
 # emulator version is part of what these numbers mean: script/qemu-check fails when the QEMU on
@@ -16,18 +14,18 @@
              # Updating this file is a statement that a performance change is intended and
              # understood; do it in the commit that causes the change. Checked by --check, a coarse
              # 10% tripwire (icount counts drift across builds; see notes/benchmarks.md).
-yield_switch 144221 2000
-ipc_rtt 134980 1000
-relay_rtt 269301 1000
-call_reply 146090 1000
-broker_rtt 291700 1000
-spawn_reap 30488 64
-map_new 2305 64
-rfence_self 5970 512
-coremark 3238070 256
-null_system_call 62001 20000
-ctx_switch 400801 5000
-ipc_rtt_el0 1441266 5000
-sink_throughput 624841 80000
-map_el0 40529 500
-spawn_el0 196015 100
+yield_switch 136220 2000
+ipc_rtt 127560 1000
+relay_rtt 254500 1000
+call_reply 138060 1000
+broker_rtt 275661 1000
+spawn_reap 29212 64
+map_new 2227 64
+rfence_self 5935 512
+coremark 3129037 256
+null_system_call 60000 20000
+ctx_switch 379401 5000
+ipc_rtt_el0 1364403 5000
+sink_throughput 594167 80000
+map_el0 38555 500
+spawn_el0 187872 100
