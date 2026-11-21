@@ -33,6 +33,10 @@ c_library/src/long_double.rs
 
 c_library/src/long_double.rs::relibc_ldtod
 
+c_library/src/platform/address_wait.rs::wait
+
+c_library/src/platform/address_wait.rs::wake
+
 c_library/src/platform/allocator.rs
 
 c_library/src/platform/allocator.rs::alloc
@@ -45,9 +49,7 @@ c_library/src/platform/allocator.rs::free
 
 c_library/src/platform/allocator.rs::realloc
 
-c_library/src/platform/address_wait.rs::wait
 
-c_library/src/platform/address_wait.rs::wake
 
 c_library/src/platform/nife.rs
 
@@ -224,6 +226,22 @@ crates/abi/src/address_space.rs::WAIT
 
 crates/abi/src/address_space.rs::WAKE
 
+crates/abi/src/address_wait.rs
+
+crates/abi/src/address_wait.rs::PRIVATE
+
+crates/abi/src/address_wait.rs::SIZE_MASK
+
+crates/abi/src/address_wait.rs::SIZE_U16
+
+crates/abi/src/address_wait.rs::SIZE_U32
+
+crates/abi/src/address_wait.rs::SIZE_U64
+
+crates/abi/src/address_wait.rs::SIZE_U8
+
+crates/abi/src/address_wait.rs::admitted
+
 crates/abi/src/console.rs
 
 crates/abi/src/console.rs::WRITE
@@ -243,21 +261,13 @@ crates/abi/src/fault.rs::EVENT_EXIT
 crates/abi/src/fault.rs::EVENT_FAULT
 
 
-crates/abi/src/address_wait.rs
 
-crates/abi/src/address_wait.rs::PRIVATE
 
-crates/abi/src/address_wait.rs::SIZE_MASK
 
-crates/abi/src/address_wait.rs::SIZE_U16
 
-crates/abi/src/address_wait.rs::SIZE_U32
 
-crates/abi/src/address_wait.rs::SIZE_U64
 
-crates/abi/src/address_wait.rs::SIZE_U8
 
-crates/abi/src/address_wait.rs::admitted
 
 
 crates/abi/src/interrupt.rs::WAIT
@@ -3807,12 +3817,18 @@ crates/http_response/src/lib.rs::status
 crates/http_response/src/lib.rs::with_room
 
 
+
+
+
+
+
+
+
 crates/inter_process_communication/src/address_wait.rs::Key
 
 crates/inter_process_communication/src/address_wait.rs::new
 
 crates/inter_process_communication/src/address_wait.rs::park
-
 
 crates/inter_process_communication/src/address_wait.rs::remove
 
@@ -8357,6 +8373,13 @@ kernel/src/revoke.rs::revoke_region
 
 kernel/src/sched.rs
 
+
+
+
+
+
+kernel/src/sched/address_wait.rs::is_current_space
+
 kernel/src/sched/canary.rs
 
 kernel/src/sched/capabilities.rs::grant
@@ -8379,17 +8402,11 @@ kernel/src/sched/departure.rs::fault
 
 kernel/src/sched/departure.rs::yield_now
 
-kernel/src/sched/address_wait.rs
 
-kernel/src/sched/address_wait.rs::address_wait_queued
 
-kernel/src/sched/address_wait.rs::address_wait
 
-kernel/src/sched/address_wait.rs::address_wait_waiters
 
-kernel/src/sched/address_wait.rs::address_wake
 
-kernel/src/sched/address_wait.rs::is_current_space
 
 kernel/src/sched/inspection.rs::ConductorMove
 
@@ -9296,6 +9313,7 @@ notes/address-space-identifiers.md
 
 notes/address-space-map.md
 
+
 notes/arch-audit.md
 
 notes/architecture-list-sweep.md
@@ -9452,7 +9470,6 @@ notes/frames.md
 
 notes/fs-server.md
 
-notes/address-wait.md
 
 notes/fuzzing-the-services.md
 
@@ -10081,6 +10098,8 @@ system_tests/src/entry.rs::system_tests_main
 
 system_tests/src/user.rs
 
+system_tests/src/user/address_wait_tests.rs
+
 system_tests/src/user/alloc_service.rs
 
 system_tests/src/user/alloc_service.rs::BUDGET_PAGES
@@ -10153,7 +10172,6 @@ system_tests/src/user/force_kill_tests.rs
 
 system_tests/src/user/fs_shared_page_tests.rs
 
-system_tests/src/user/address_wait_tests.rs
 
 system_tests/src/user/glob_grant_tests.rs
 

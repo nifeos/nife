@@ -37,7 +37,7 @@
 //!
 //! - A wake walks its whole bucket, so it costs the bucket's length, not the number woken.
 //!
-//! Name: provisional. The module and `AddressWaitTable` say what the queues are for, a wait on an
+//! Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. The module and `AddressWaitTable` say what the queues are for, a wait on an
 //! address, and not the Linux word for it. `AddressWaitTable` names the thing (a plural noun named a collection of
 //! objects, and an address wait is a key). `Key::address_space` and `Key::virtual_address` say which kind
 //! of name and which kind of address the fields hold. `BUCKETS` is the word the documentation uses
@@ -61,7 +61,7 @@ pub struct Key {
 
 /// **The wait queues**, `BUCKETS` buckets of intrusive FIFOs.
 ///
-/// Name: provisional. A table of address wait queues, named for the thing; the module header gives
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. A table of address wait queues, named for the thing; the module header gives
 /// what was considered.
 #[doc(alias = "futex")]
 pub struct AddressWaitTable<T: Node, const BUCKETS: usize> {

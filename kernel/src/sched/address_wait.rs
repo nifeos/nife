@@ -2,7 +2,7 @@
 //! are `inter_process_communication::address_wait`, the wire contract `abi::address_space::WAIT`, and the
 //! argument `notes/address-wait.md`.
 //!
-//! Name: provisional. The module and its functions say what the call does, a wait on an address
+//! Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. The module and its functions say what the call does, a wait on an address
 //! and a wake of it, and not the Linux word for it (a fast user-space mutex); the alias on each
 //! public function keeps that word findable. `address_wait_queued` and `address_wait_waiters` keep
 //! the stem of the wait they count.
@@ -54,6 +54,8 @@ pub fn is_current_space(space: u64) -> bool {
 /// Context: reads the word and parks under one hold of `IPC_TABLES`, which `WAKE` also takes, so a
 /// waker's store is either seen here or finds this thread parked (notes/address-wait.md). The load is
 /// `Acquire`, pairing with the waker's store.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
 #[doc(alias = "futex")]
 pub fn address_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Error> {
     let key = inter_process_communication::address_wait::Key {
@@ -106,6 +108,8 @@ pub fn address_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Erro
 /// `AddressSpace::WAKE`, the kernel half (§269 fork 2): wake up to `count` threads parked on the
 /// word at `va` in `space`, oldest first, and return how many. Reads no memory, so an unmapped `va`
 /// has no waiters. The woken are placed on this core: the waker is usually about to block or yield.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
 #[doc(alias = "futex")]
 pub fn address_wake(space: u64, va: u64, count: u64) -> u64 {
     let key = inter_process_communication::address_wait::Key {
@@ -177,6 +181,8 @@ pub(super) fn clear_and_wake(va: u64) {
 /// How many threads are linked on the address wait table at all: for the tests, which must see a TCB
 /// left linked after its thread was torn down, which no longer has a key to be counted under.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
 #[doc(alias = "futex")]
 pub fn address_wait_queued() -> usize {
     let guard = IPC_TABLES.lock();
@@ -186,6 +192,8 @@ pub fn address_wait_queued() -> usize {
 /// How many threads are parked on the address wait at `va` in `space`: for the tests, which need to know
 /// a thread is asleep on exactly this word before they wake it.
 #[cfg_attr(not(feature = "system_tests"), allow(dead_code))]
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. Spelled out from the Linux word.
 #[doc(alias = "futex")]
 pub fn address_wait_waiters(space: u64, va: u64) -> usize {
     let key = inter_process_communication::address_wait::Key {

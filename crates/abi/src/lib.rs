@@ -213,7 +213,7 @@ pub mod address_space;
 /// reserved for later are spellable now and refused rather than undefined. Linux calls the idea a
 /// fast user-space mutex ("futex"), and keeps that word for its own system call.
 ///
-/// Name: provisional. The module says what the call does, a wait on an address, and not the
+/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. The module says what the call does, a wait on an address, and not the
 /// Linux word for it; the alias keeps that word findable.
 #[doc(alias = "futex")]
 pub mod address_wait;
