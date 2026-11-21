@@ -417,7 +417,7 @@ fn prove_the_directory(behavior: u64, identity: &[u8], dir_ep: u64, region: u64)
     let mut hint = 0u64;
     let (r0, _) = call(
         dir_ep,
-        filesystem_contract::fs::req(
+        filesystem_contract::fs::request(
             filesystem_contract::fs::READDIR,
             filesystem_contract::fs::ROOT,
             0,
@@ -589,17 +589,17 @@ fn store_schedule(dir: u64, doc: &[u8]) -> bool {
     use filesystem_contract::fs;
     let name = timetable_store::SCHEDULE_FILE_NAME.as_bytes();
     put_page(name);
-    let (mut h, _) = call(dir, fs::req(fs::CREATE, fs::ROOT, name.len() as u64), 0);
+    let (mut h, _) = call(dir, fs::request(fs::CREATE, fs::ROOT, name.len() as u64), 0);
     if (h as i64) < 0 {
         put_page(name);
-        h = call(dir, fs::req(fs::OPEN, fs::ROOT, name.len() as u64), 0).0;
-        if (h as i64) < 0 || (call(dir, fs::req(fs::TRUNCATE, h, 0), 0).0 as i64) < 0 {
+        h = call(dir, fs::request(fs::OPEN, fs::ROOT, name.len() as u64), 0).0;
+        if (h as i64) < 0 || (call(dir, fs::request(fs::TRUNCATE, h, 0), 0).0 as i64) < 0 {
             return false;
         }
     }
     put_page(doc);
-    let (w, _) = call(dir, fs::req(fs::WRITE, h, doc.len() as u64), 0);
-    let _ = call(dir, fs::req(fs::CLOSE, h, 0), 0);
+    let (w, _) = call(dir, fs::request(fs::WRITE, h, doc.len() as u64), 0);
+    let _ = call(dir, fs::request(fs::CLOSE, h, 0), 0);
     w as i64 == doc.len() as i64
 }
 
@@ -639,7 +639,11 @@ fn write_marker(dir: u64, content: &[u8]) -> bool {
     put_page(MARKER_NAME.as_bytes());
     let (h, _) = call(
         dir,
-        filesystem_contract::fs::req(filesystem_contract::fs::CREATE, 0, MARKER_NAME.len() as u64),
+        filesystem_contract::fs::request(
+            filesystem_contract::fs::CREATE,
+            0,
+            MARKER_NAME.len() as u64,
+        ),
         0,
     );
     if (h as i64) < 0 {
@@ -648,13 +652,13 @@ fn write_marker(dir: u64, content: &[u8]) -> bool {
     put_page(content);
     let (w, _) = call(
         dir,
-        filesystem_contract::fs::req(filesystem_contract::fs::WRITE, h, content.len() as u64),
+        filesystem_contract::fs::request(filesystem_contract::fs::WRITE, h, content.len() as u64),
         0,
     );
     let ok = w as i64 == content.len() as i64;
     let _ = call(
         dir,
-        filesystem_contract::fs::req(filesystem_contract::fs::CLOSE, h, 0),
+        filesystem_contract::fs::request(filesystem_contract::fs::CLOSE, h, 0),
         0,
     );
     ok
@@ -667,7 +671,7 @@ fn is_absent(dir: u64, name: &str) -> bool {
     put_page(name.as_bytes());
     let (r0, _) = call(
         dir,
-        filesystem_contract::fs::req(filesystem_contract::fs::OPEN, 0, name.len() as u64),
+        filesystem_contract::fs::request(filesystem_contract::fs::OPEN, 0, name.len() as u64),
         0,
     );
     (r0 as i64) < 0
@@ -681,7 +685,11 @@ fn read_marker(dir: u64) -> Option<u64> {
     put_page(MARKER_NAME.as_bytes());
     let (h, _) = call(
         dir,
-        filesystem_contract::fs::req(filesystem_contract::fs::OPEN, 0, MARKER_NAME.len() as u64),
+        filesystem_contract::fs::request(
+            filesystem_contract::fs::OPEN,
+            0,
+            MARKER_NAME.len() as u64,
+        ),
         0,
     );
     if (h as i64) < 0 {
@@ -689,12 +697,12 @@ fn read_marker(dir: u64) -> Option<u64> {
     }
     let (n, _) = call(
         dir,
-        filesystem_contract::fs::req(filesystem_contract::fs::READ, h, 16),
+        filesystem_contract::fs::request(filesystem_contract::fs::READ, h, 16),
         0,
     );
     let _ = call(
         dir,
-        filesystem_contract::fs::req(filesystem_contract::fs::CLOSE, h, 0),
+        filesystem_contract::fs::request(filesystem_contract::fs::CLOSE, h, 0),
         0,
     );
     if (n as i64) < 0 {
@@ -717,7 +725,7 @@ fn teardown_directory(dir: u64, region: u64) -> u64 {
     };
     let (r0, _) = call(
         dir,
-        filesystem_contract::fs::req(
+        filesystem_contract::fs::request(
             filesystem_contract::fs::READDIR,
             filesystem_contract::fs::ROOT,
             0,

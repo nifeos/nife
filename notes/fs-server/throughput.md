@@ -79,7 +79,7 @@ build, not a fact this section now retracts.
 ## The transfer unit: one page until milestone 138 step 3, sixteen since
 
 A `READ` or `WRITE` moves its bytes through the region the client and the FS server share, and that
-region was one page. Nothing in the wire word ever required that: `fs::req` has carried a 40-bit
+region was one page. Nothing in the wire word ever required that: `fs::request` has carried a 40-bit
 length since milestone 32. So the multi-page transfer milestone 38's `BUGS` entry called for turned
 out to be one constant, `filesystem_contract::fs::TRANSFER_PAGES`. There was no new opcode, reply
 word, descriptor or changed field.

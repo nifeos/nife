@@ -2016,9 +2016,7 @@ crates/filesystem_contract/src/block.rs::TRANSFER_BLOCKS
 
 crates/filesystem_contract/src/block.rs::WRITE
 
-crates/filesystem_contract/src/block.rs::req
 
-crates/filesystem_contract/src/block.rs::req_blocks
 
 
 crates/filesystem_contract/src/directory.rs
@@ -2185,17 +2183,11 @@ crates/filesystem_contract/src/fs.rs::UNLINK
 
 crates/filesystem_contract/src/fs.rs::WRITE
 
-crates/filesystem_contract/src/fs.rs::dst_handle
 
-crates/filesystem_contract/src/fs.rs::dst_len
 
-crates/filesystem_contract/src/fs.rs::rename_dst
 
-crates/filesystem_contract/src/fs.rs::req
 
-crates/filesystem_contract/src/fs.rs::req_handle
 
-crates/filesystem_contract/src/fs.rs::req_len
 
 
 crates/filesystem_contract/src/grant.rs

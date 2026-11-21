@@ -4,7 +4,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
 
 ## P2: after the first tag
 
-14. `blk::req_blocks` decodes a count the contract refuses.
+14. `blk::request_block_count` decodes a count the contract refuses.
     Finding: `src/blk.rs` line 80 returns `(w0 & 0xff) + 1`, so a low byte of `0xff` decodes as 256
     where `TRANSFER_BLOCKS` is 16. All three block servers clamp with `.min(TRANSFER_BLOCKS)`
     (`components/src/designware_mobile_storage.rs` line 187,
@@ -44,7 +44,7 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
     Door: two-way. Effort: XS.
 
 19. `usize` casts on a narrower target.
-    Finding: `fs::req_len`, `fs::dst_len` (`src/fs.rs` line 361, `:376`) and `xattr::spec_value_len`
+    Finding: `fs::request_length_bytes`, `fs::destination_length_bytes` (`src/fs.rs` line 361, `:376`) and `xattr::spec_value_len`
     cast a 40-bit or 32-bit field to `usize`. On a 32-bit target the 40-bit cast drops the high
     byte; a length of `2^32 + 4096` reads as 4096, a smaller successful read, the failure the
     `const` block names. None of the crate's three targets is 32-bit. Inferred, not built.

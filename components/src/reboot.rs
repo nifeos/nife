@@ -65,7 +65,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
     // is nothing to sync. Otherwise the reply is the device's flush count, or a negative errno.
     let synced = if is_granted(SYNC_SLOT) {
         use filesystem_contract::fs;
-        call(SYNC_SLOT, fs::req(fs::SYNC, fs::ROOT, 0), 0).0 as i64
+        call(SYNC_SLOT, fs::request(fs::SYNC, fs::ROOT, 0), 0).0 as i64
     } else {
         0
     };

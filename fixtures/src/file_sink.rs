@@ -94,17 +94,17 @@ fn fs_call(w0: u64, w1: u64) -> i64 {
 fn open_for_writing() -> u64 {
     let name = fixture::SINK_NAME.as_bytes();
     put(name);
-    let created = fs_call(fs::req(fs::CREATE, fs::ROOT, name.len() as u64), 0);
+    let created = fs_call(fs::request(fs::CREATE, fs::ROOT, name.len() as u64), 0);
     if created >= 0 {
         return created as u64;
     }
     put(name);
-    let opened = fs_call(fs::req(fs::OPEN, fs::ROOT, name.len() as u64), 0);
+    let opened = fs_call(fs::request(fs::OPEN, fs::ROOT, name.len() as u64), 0);
     if opened < 0 {
         send(REPORT, fixture::BAD, opened as u64, 0);
         exit();
     }
-    if fs_call(fs::req(fs::TRUNCATE, opened as u64, 0), 0) < 0 {
+    if fs_call(fs::request(fs::TRUNCATE, opened as u64, 0), 0) < 0 {
         send(REPORT, fixture::BAD, opened as u64, 1);
         exit();
     }
@@ -130,7 +130,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
             byte_sink_contract::Message::Bytes(0) => {}
             byte_sink_contract::Message::Bytes(n) => {
                 put(&buf[..n]);
-                let wrote = fs_call(fs::req(fs::WRITE, handle, n as u64), off);
+                let wrote = fs_call(fs::request(fs::WRITE, handle, n as u64), off);
                 if wrote != n as i64 {
                     // A short write is a lost byte, and a sink that reported DONE after one would
                     // be certifying a file it did not write. Say which request failed and stop.
@@ -147,7 +147,7 @@ fn start(_a0: u64, _a1: u64, _a2: u64) -> ! {
         }
     }
 
-    let _ = fs_call(fs::req(fs::CLOSE, handle, 0), 0);
+    let _ = fs_call(fs::request(fs::CLOSE, handle, 0), 0);
     send(REPORT, fixture::DONE, off, 0);
     exit();
 }

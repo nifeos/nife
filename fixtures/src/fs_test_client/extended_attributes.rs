@@ -33,7 +33,7 @@ fn xattr_set(handle: u64, name: &[u8], kind: u32, value: &[u8]) -> i64 {
     put_page_at(name.len(), value);
     call(
         FILE,
-        fs::req(fs::SETXATTR, handle, name.len() as u64),
+        fs::request(fs::SETXATTR, handle, name.len() as u64),
         extended_attribute::specification(kind, value.len() as u64),
     )
     .0 as i64
@@ -43,18 +43,28 @@ fn xattr_set(handle: u64, name: &[u8], kind: u32, value: &[u8]) -> i64 {
 /// kind and length are all this returns; the bytes are read with [`get_page`].
 fn xattr_get(handle: u64, name: &[u8]) -> i64 {
     put_page(name);
-    call(FILE, fs::req(fs::GETXATTR, handle, name.len() as u64), 0).0 as i64
+    call(
+        FILE,
+        fs::request(fs::GETXATTR, handle, name.len() as u64),
+        0,
+    )
+    .0 as i64
 }
 
 /// `LISTXATTR`: no name, no cursor. The reply is how many bytes of records landed in the page.
 fn xattr_list(handle: u64) -> i64 {
-    call(FILE, fs::req(fs::LISTXATTR, handle, 0), 0).0 as i64
+    call(FILE, fs::request(fs::LISTXATTR, handle, 0), 0).0 as i64
 }
 
 /// `REMOVEXATTR`: [`xattr_get`]'s shape, and the reply is 0 or an error.
 fn xattr_remove(handle: u64, name: &[u8]) -> i64 {
     put_page(name);
-    call(FILE, fs::req(fs::REMOVEXATTR, handle, name.len() as u64), 0).0 as i64
+    call(
+        FILE,
+        fs::request(fs::REMOVEXATTR, handle, name.len() as u64),
+        0,
+    )
+    .0 as i64
 }
 
 /// The extended-attribute witness (milestone 57): every claim of the layer, attempted against the
@@ -111,7 +121,7 @@ pub(crate) fn attr_witness(scratch: u64) -> u64 {
     fill_page(big.len(), extended_attribute::MAXIMUM_VALUE_BYTES + 1, b'Z');
     let r = call(
         FILE,
-        fs::req(fs::SETXATTR, scratch, big.len() as u64),
+        fs::request(fs::SETXATTR, scratch, big.len() as u64),
         extended_attribute::specification(
             extended_attribute::RAW,
             (extended_attribute::MAXIMUM_VALUE_BYTES + 1) as u64,
@@ -203,7 +213,7 @@ fn a_full_enumeration_does_not_name_the_store() -> u64 {
     //    that stopped early would be a clean report about the part it happened to read.
     let (mut cursor, mut entries, mut clean, mut finished) = (0u64, 0u64, true, false);
     for _ in 0..64 {
-        let n = call(FILE, fs::req(fs::READDIR, fs::ROOT, 0), cursor).0 as i64;
+        let n = call(FILE, fs::request(fs::READDIR, fs::ROOT, 0), cursor).0 as i64;
         if n <= 0 {
             finished = n == 0;
             break;

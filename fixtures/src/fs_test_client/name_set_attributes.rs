@@ -37,7 +37,7 @@ pub(crate) fn set_attrs() -> ! {
         // A listing: a read, so it needs what reading the file needs and nothing more. Zero
         // attributes is a successful listing, which is what tells "forwarded and there were none"
         // apart from "the caretaker refused it".
-        let (l, _) = call(FILE, fs::req(fs::LISTXATTR, own as u64, 0), 0);
+        let (l, _) = call(FILE, fs::request(fs::LISTXATTR, own as u64, 0), 0);
         if (l as i64) < 0 {
             v |= esc::GRANTED_ACCESS_FAILED;
         } else {
@@ -51,7 +51,7 @@ pub(crate) fn set_attrs() -> ! {
         put_page_at(fixture::attrs::NAME.len(), fixture::attrs::VALUE);
         let (s, _) = call(
             FILE,
-            fs::req(fs::SETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
+            fs::request(fs::SETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
             extended_attribute::specification(
                 fixture::attrs::KIND,
                 fixture::attrs::VALUE.len() as u64,
@@ -61,7 +61,7 @@ pub(crate) fn set_attrs() -> ! {
             put_page(fixture::attrs::NAME);
             let (g, _) = call(
                 FILE,
-                fs::req(fs::GETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
+                fs::request(fs::GETXATTR, own as u64, fixture::attrs::NAME.len() as u64),
                 0,
             );
             get_page(extended_attribute::reply_value_len(g as i64), &mut buf);
@@ -77,7 +77,7 @@ pub(crate) fn set_attrs() -> ! {
             put_page(fixture::attrs::NAME);
             let (rm, _) = call(
                 FILE,
-                fs::req(
+                fs::request(
                     fs::REMOVEXATTR,
                     own as u64,
                     fixture::attrs::NAME.len() as u64,

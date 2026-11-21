@@ -67,7 +67,7 @@ fn open_refuses_every_refused_name_and_opens_a_legal_one() {
         let len = stage(&mut window, name);
         let (r0, _) = srv.handle(
             0,
-            fs::req(fs::OPEN, fs::ROOT, len),
+            fs::request(fs::OPEN, fs::ROOT, len),
             0,
             &mut window,
             &mut NoEdges,
@@ -81,7 +81,7 @@ fn open_refuses_every_refused_name_and_opens_a_legal_one() {
     let len = stage(&mut window, b"motd");
     let (r0, _) = srv.handle(
         0,
-        fs::req(fs::OPEN, fs::ROOT, len),
+        fs::request(fs::OPEN, fs::ROOT, len),
         0,
         &mut window,
         &mut NoEdges,
@@ -99,7 +99,7 @@ fn opendir_refuses_every_refused_name_and_descends_a_legal_one() {
         let len = stage(&mut window, name);
         let (r0, _) = srv.handle(
             0,
-            fs::req(fs::OPENDIR, fs::ROOT, len),
+            fs::request(fs::OPENDIR, fs::ROOT, len),
             filesystem_contract::directory::ALL,
             &mut window,
             &mut NoEdges,
@@ -113,7 +113,7 @@ fn opendir_refuses_every_refused_name_and_descends_a_legal_one() {
     let len = stage(&mut window, b"sub");
     let (r0, _) = srv.handle(
         0,
-        fs::req(fs::OPENDIR, fs::ROOT, len),
+        fs::request(fs::OPENDIR, fs::ROOT, len),
         filesystem_contract::directory::ALL,
         &mut window,
         &mut NoEdges,
@@ -135,7 +135,7 @@ fn create_and_mkdir_refuse_every_refused_name_and_change_nothing() {
             let len = stage(&mut window, name);
             let (r0, _) = srv.handle(
                 0,
-                fs::req(code, fs::ROOT, len),
+                fs::request(code, fs::ROOT, len),
                 0,
                 &mut window,
                 &mut NoEdges,
@@ -156,7 +156,7 @@ fn create_and_mkdir_refuse_every_refused_name_and_change_nothing() {
     let len = stage(&mut window, b"made-file");
     let (r0, _) = srv.handle(
         0,
-        fs::req(fs::CREATE, fs::ROOT, len),
+        fs::request(fs::CREATE, fs::ROOT, len),
         0,
         &mut window,
         &mut NoEdges,
@@ -165,7 +165,7 @@ fn create_and_mkdir_refuse_every_refused_name_and_change_nothing() {
     let len = stage(&mut window, b"made-dir");
     let (r0, _) = srv.handle(
         0,
-        fs::req(fs::MKDIR, fs::ROOT, len),
+        fs::request(fs::MKDIR, fs::ROOT, len),
         0,
         &mut window,
         &mut NoEdges,
@@ -186,7 +186,7 @@ fn unlink_and_rmdir_refuse_every_refused_name_and_remove_nothing() {
             let len = stage(&mut window, name);
             let (r0, _) = srv.handle(
                 0,
-                fs::req(code, fs::ROOT, len),
+                fs::request(code, fs::ROOT, len),
                 0,
                 &mut window,
                 &mut NoEdges,
@@ -221,7 +221,7 @@ fn the_mtime_verbs_refuse_every_refused_name() {
             let len = stage(&mut window, name);
             let (r0, _) = srv.handle(
                 0,
-                fs::req(code, fs::ROOT, len),
+                fs::request(code, fs::ROOT, len),
                 0,
                 &mut window,
                 &mut NoEdges,
@@ -236,7 +236,7 @@ fn the_mtime_verbs_refuse_every_refused_name() {
     let len = stage(&mut window, b"motd");
     let (r0, _) = srv.handle(
         0,
-        fs::req(fs::GET_MODIFICATION_TIME, fs::ROOT, len),
+        fs::request(fs::GET_MODIFICATION_TIME, fs::ROOT, len),
         0,
         &mut window,
         &mut NoEdges,
@@ -259,10 +259,10 @@ fn rename_refuses_a_refused_name_in_either_operand_and_changes_nothing() {
     let rename = |srv: &mut Server<DiskMemory>, window: &mut [u8], src: &[u8], dst: &[u8]| -> i64 {
         window[..src.len()].copy_from_slice(src);
         window[src.len()..src.len() + dst.len()].copy_from_slice(dst);
-        let w1 = fs::rename_dst(fs::ROOT, dst.len() as u64);
+        let w1 = fs::rename_destination(fs::ROOT, dst.len() as u64);
         srv.handle(
             0,
-            fs::req(fs::RENAME, fs::ROOT, src.len() as u64),
+            fs::request(fs::RENAME, fs::ROOT, src.len() as u64),
             w1,
             window,
             &mut NoEdges,
@@ -327,7 +327,7 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
         let len = stage(&mut window, STORE_DIRECTORY.as_bytes());
         let (r0, _) = srv.handle(
             0,
-            fs::req(code, sub as u64, len),
+            fs::request(code, sub as u64, len),
             0,
             &mut window,
             &mut NoEdges,
@@ -349,7 +349,7 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
             let len = stage(&mut window, path.as_bytes());
             let (r0, _) = srv.handle(
                 0,
-                fs::req(code, fs::ROOT, len),
+                fs::request(code, fs::ROOT, len),
                 0,
                 &mut window,
                 &mut NoEdges,
@@ -362,10 +362,10 @@ fn the_store_name_is_refused_at_every_depth_and_listed_nowhere() {
     let sub_rename = |srv: &mut Server<DiskMemory>, window: &mut [u8], src: &[u8], dst: &[u8]| {
         window[..src.len()].copy_from_slice(src);
         window[src.len()..src.len() + dst.len()].copy_from_slice(dst);
-        let w1 = fs::rename_dst(fs::ROOT, dst.len() as u64);
+        let w1 = fs::rename_destination(fs::ROOT, dst.len() as u64);
         srv.handle(
             0,
-            fs::req(fs::RENAME, sub as u64, src.len() as u64),
+            fs::request(fs::RENAME, sub as u64, src.len() as u64),
             w1,
             window,
             &mut NoEdges,

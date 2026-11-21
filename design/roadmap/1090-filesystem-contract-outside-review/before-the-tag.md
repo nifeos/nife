@@ -21,8 +21,8 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
    Door: the range is a contract statement, Decision C; the code is two-way. Effort: XS.
 
 7. The packers mask where the contract names truncation as the worst failure.
-   Finding: `fs::req` (`src/fs.rs` line 351) masks `handle` to 16 bits and `len` to 40.
-   `fs::rename_dst` (`:368`) does the same. `grant::spec` (`src/grant.rs` line 116) masks `len` to 8
+   Finding: `fs::request` (`src/fs.rs` line 351) masks `handle` to 16 bits and `len` to 40.
+   `fs::rename_destination` (`:368`) does the same. `grant::spec` (`src/grant.rs` line 116) masks `len` to 8
    bits, so `spec(256, rights)` carries length 0, which is `WHOLE_NAMESPACE` (`:143`).
    `xattr::spec` (`src/xattr.rs` line 82) masks `value_len` to 32 bits. The `const` block at `src/fs.rs` line 318 says a
    truncated length "would arrive at the server as a smaller successful read rather than as an
@@ -36,9 +36,9 @@ An appendix to [the milestone](../1090-filesystem-contract-outside-review.md).
 8. The proofs cover one `&`, and nothing else.
    Finding: three harnesses in `src/dir.rs` line 221, all over `Rights`; the grandchild patch's own
    header says it adds no falsification the first does not catch. Nothing proves seven properties.
-   First, `fs::req` and `rename_dst` round-trip for every in-range opcode, handle and length, and no
+   First, `fs::request` and `rename_destination` round-trip for every in-range opcode, handle and length, and no
    field bleeds. Second, `xattr::reply` is non-negative for every kind and length and round-trips
-   with `reply_kind` and `reply_value_len`. Third, `blk::req`/`req_blocks` round-trip in `1..=16`.
+   with `reply_kind` and `reply_value_len`. Third, `blk::req`/`request_block_count` round-trip in `1..=16`.
    Fourth, `grant::pack_name`/`unpack_name` round-trip at every length to 16. Fifth, the four
    walkers (`dirent::iter`, `nameset::iter`, `xattr::list::iter`, `xattr::store::iter`) consume
    their input and terminate on every buffer up to a page. The recorded mutation runs show this is

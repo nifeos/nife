@@ -166,7 +166,7 @@ pub(super) fn file_digest(t: Tree, handle: u64, size: u64) -> Option<measured_bo
     let mut chunk = [0u8; 256];
     let mut at = 0u64;
     while at < size {
-        let n = call(t.slot, fs::req(fs::READ, handle, PAGE), at).0 as i64;
+        let n = call(t.slot, fs::request(fs::READ, handle, PAGE), at).0 as i64;
         if n <= 0 {
             return None;
         }
@@ -321,7 +321,7 @@ pub(super) fn read_named(
         return None;
     }
     let want = (out.len() as u64).min(PAGE);
-    let n = call(t.slot, fs::req(fs::READ, h as u64, want), 0).0 as i64;
+    let n = call(t.slot, fs::request(fs::READ, h as u64, want), 0).0 as i64;
     nav.close_in(t, h as u64);
     let n = usize::try_from(n).ok()?.min(out.len());
     get_page_at(0, &mut out[..n]);

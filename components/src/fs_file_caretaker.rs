@@ -106,8 +106,8 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
         let Some(reply_slot) = req.delivered.into_reply() else {
             continue;
         };
-        let len = fs::req_len(w0).min(PAGE);
-        let asked = fs::req_handle(w0);
+        let len = fs::request_length_bytes(w0).min(PAGE);
+        let asked = fs::request_handle(w0);
         let code = operation(w0);
 
         // One refusal site: an opcode this contract does not carry gets `EBADF`, as a forged
@@ -146,7 +146,7 @@ fn serve(handle: u64, name: &[u8], writable: bool) -> ! {
             Policy::Forward => {
                 let n = if v.carries_len() { len as u64 } else { 0 };
                 let second = if v.carries_w1 { w1 } else { 0 };
-                forward(fs::req(code, handle, n), second)
+                forward(fs::request(code, handle, n), second)
             }
             // Not offered: the row's errno says which "no", ENOTDIR for every directory verb.
             Policy::Refused(errno) => reply_err(errno),
@@ -165,7 +165,7 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     // Open the granted name once. If it is not there, die rather than serve a hole, so the
     // failure lands at the grant rather than at the first read.
     put(name);
-    let (r0, _) = call(FS, fs::req(fs::OPEN, 0, n as u64), 0);
+    let (r0, _) = call(FS, fs::request(fs::OPEN, 0, n as u64), 0);
     if reply_errno(r0 as i64).is_some() {
         panic!();
     }

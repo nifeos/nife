@@ -377,7 +377,12 @@ fn probe_unlink_while_held(nav: &mut Nav, run: u64, v: &mut u64) {
     *v |= nb::CREATED;
     nav.close(k); // the name is what this one is for; a handle nobody closes pins the node
     put_page(tree::NAV_BODY);
-    let w = call(DIR, fs::req(fs::WRITE, h, tree::NAV_BODY.len() as u64), 0).0 as i64;
+    let w = call(
+        DIR,
+        fs::request(fs::WRITE, h, tree::NAV_BODY.len() as u64),
+        0,
+    )
+    .0 as i64;
     if w != tree::NAV_BODY.len() as i64 {
         *v |= nb::NAVIGATION_FAILED;
     }
@@ -387,7 +392,12 @@ fn probe_unlink_while_held(nav: &mut Nav, run: u64, v: &mut u64) {
     if removed(nav, fs::UNLINK, name_of(&doomed)) {
         *v |= nb::UNLINKED;
         let mut buf = [0u8; 64];
-        let n = call(DIR, fs::req(fs::READ, h, tree::NAV_BODY.len() as u64), 0).0 as i64;
+        let n = call(
+            DIR,
+            fs::request(fs::READ, h, tree::NAV_BODY.len() as u64),
+            0,
+        )
+        .0 as i64;
         if n == tree::NAV_BODY.len() as i64 {
             get_page(n as usize, &mut buf);
             if &buf[..n as usize] == tree::NAV_BODY {
@@ -667,21 +677,21 @@ fn two_tree_grants(nav: &mut Nav) -> u64 {
         && let Ok(f) = open_source(nav, g)
     {
         let want = tree::SECRET_BODY;
-        let got = call(f.dir, fs::req(fs::READ, f.handle, want.len() as u64), 0).0 as i64;
+        let got = call(f.dir, fs::request(fs::READ, f.handle, want.len() as u64), 0).0 as i64;
         let mut buf = [0u8; 64];
         let n = (got.max(0) as usize).min(buf.len());
         get_page(n, &mut buf);
         if &buf[..n] == want {
             v |= tt::REDIRECTED_FROM_MOUNT;
         }
-        call(f.dir, fs::req(fs::CLOSE, f.handle, 0), 0);
+        call(f.dir, fs::request(fs::CLOSE, f.handle, 0), 0);
     }
     // And the same name outside the mount opens nothing, because the first tree has no `secret`.
     if let Ok(g) = grant_plan::input_file_grant(b"/secret", holdings(nav))
         && let Ok(f) = open_source(nav, g)
     {
         v |= tt::REACHED_ACROSS;
-        call(f.dir, fs::req(fs::CLOSE, f.handle, 0), 0);
+        call(f.dir, fs::request(fs::CLOSE, f.handle, 0), 0);
     }
     v
 }
@@ -908,7 +918,7 @@ fn touch_twice(nav: &mut Nav, touched: &([u8; 16], usize), cmd: &mut [u8; 32], v
     put_page(tree::NAV_TOUCH_BODY);
     let w = call(
         DIR,
-        fs::req(fs::WRITE, h, tree::NAV_TOUCH_BODY.len() as u64),
+        fs::request(fs::WRITE, h, tree::NAV_TOUCH_BODY.len() as u64),
         0,
     )
     .0 as i64;
@@ -924,7 +934,7 @@ fn touch_twice(nav: &mut Nav, touched: &([u8; 16], usize), cmd: &mut [u8; 32], v
     };
     let n = call(
         DIR,
-        fs::req(fs::READ, h2, tree::NAV_TOUCH_BODY.len() as u64),
+        fs::request(fs::READ, h2, tree::NAV_TOUCH_BODY.len() as u64),
         0,
     )
     .0 as i64;

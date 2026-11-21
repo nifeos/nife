@@ -132,9 +132,9 @@ fn serve(dir: u64) -> ! {
         let Some(reply_slot) = req.delivered.into_reply() else {
             continue;
         };
-        let len = fs::req_len(w0).min(PAGE) as u64;
+        let len = fs::request_length_bytes(w0).min(PAGE) as u64;
         let code = operation(w0);
-        let Some(server_handle) = table.get(fs::req_handle(w0)) else {
+        let Some(server_handle) = table.get(fs::request_handle(w0)) else {
             reply(reply_slot, reply_err(EBADF), 0);
             continue;
         };
@@ -152,20 +152,20 @@ fn serve(dir: u64) -> ! {
             // Closing the granted directory is refused for the same reason the FS server refuses to
             // close its own root: it is not something the client opened, and a client that could
             // close it could make every later request in its own session fail.
-            let client = fs::req_handle(w0);
+            let client = fs::request_handle(w0);
             if client == fs::ROOT {
                 reply_err(EINVAL)
             } else {
                 table.0[client as usize] = None;
-                forward(fs::req(fs::CLOSE, server_handle, 0), 0)
+                forward(fs::request(fs::CLOSE, server_handle, 0), 0)
             }
         } else if v.operand == verb::Operand::Rename {
             // The one verb whose second word is not opaque: it names a second directory, so both
             // handles are translated, and the FS server decides whether their rights allow the move.
-            match table.get(fs::dst_handle(w1)) {
+            match table.get(fs::destination_handle(w1)) {
                 Some(dst) => forward(
-                    fs::req(code, server_handle, len),
-                    fs::rename_dst(dst, fs::dst_len(w1).min(PAGE) as u64),
+                    fs::request(code, server_handle, len),
+                    fs::rename_destination(dst, fs::destination_length_bytes(w1).min(PAGE) as u64),
                 ),
                 None => reply_err(EBADF),
             }
@@ -176,7 +176,7 @@ fn serve(dir: u64) -> ! {
             // grant carried; nothing here loops, so no request removes more than the client named.
             let n = if v.carries_len() { len } else { 0 };
             let second = if v.carries_w1 { w1 } else { 0 };
-            let (r0, r1) = call(FS, fs::req(code, server_handle, n), second);
+            let (r0, r1) = call(FS, fs::request(code, server_handle, n), second);
             let r = r0 as i64;
             if code == fs::OPEN {
                 size = r1;
@@ -192,7 +192,7 @@ fn serve(dir: u64) -> ! {
                         // Give the handle straight back rather than leaking it in the server: this
                         // process holds the only reference to it and would otherwise pin a node for
                         // the rest of the boot.
-                        forward(fs::req(fs::CLOSE, r as u64, 0), 0);
+                        forward(fs::request(fs::CLOSE, r as u64, 0), 0);
                         reply_err(EMFILE)
                     }
                 }
@@ -216,14 +216,14 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     let (r0, _) = if n == 0 {
         call(
             FS,
-            fs::req(fs::NARROW, fs::ROOT, 0),
+            fs::request(fs::NARROW, fs::ROOT, 0),
             grant::specification_rights(spec),
         )
     } else {
         put(&buf[..n]);
         call(
             FS,
-            fs::req(fs::OPENDIR, fs::ROOT, n as u64),
+            fs::request(fs::OPENDIR, fs::ROOT, n as u64),
             grant::specification_rights(spec),
         )
     };

@@ -163,9 +163,9 @@ fn serve(dir: u64, set: &[u8]) -> ! {
         let Some(reply_slot) = req.delivered.into_reply() else {
             continue;
         };
-        let len = fs::req_len(w0).min(PAGE);
+        let len = fs::request_length_bytes(w0).min(PAGE);
         let code = operation(w0);
-        let asked = fs::req_handle(w0);
+        let asked = fs::request_handle(w0);
         let Some(server_handle) = table.get(asked) else {
             reply(reply_slot, reply_err(EBADF), 0);
             continue;
@@ -216,7 +216,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
                 reply_err(EINVAL)
             } else {
                 table.0[asked as usize] = None;
-                forward(fs::req(fs::CLOSE, server_handle, 0), 0)
+                forward(fs::request(fs::CLOSE, server_handle, 0), 0)
             }
         } else if code == fs::READDIR && filtered {
             // At the granted directory `READDIR` is answered from the set, which is the namespace.
@@ -227,24 +227,24 @@ fn serve(dir: u64, set: &[u8]) -> ! {
             // `RENAME` needs both names in the set: renaming a matched name onto an unmatched one
             // destroys a name this capability was never granted. So a set capability cannot move a
             // name out of the set, and `mv *.txt` is not expressible (notes/glob-grant.md).
-            let dst_len = fs::dst_len(w1).min(PAGE);
+            let destination_length_bytes = fs::destination_length_bytes(w1).min(PAGE);
             let mut src = [0u8; grant::MAXIMUM_NAME_BYTES];
             let mut dst = [0u8; grant::MAXIMUM_NAME_BYTES];
             let sn = name_at(0, len, &mut src);
-            let dn = name_at(len, dst_len, &mut dst);
-            let dst_handle = table.get(fs::dst_handle(w1));
+            let dn = name_at(len, destination_length_bytes, &mut dst);
+            let destination_handle = table.get(fs::destination_handle(w1));
             let src_ok = !filtered || nameset::contains(set, &src[..sn]);
-            let dst_ok = dst_handle != Some(dir) || nameset::contains(set, &dst[..dn]);
+            let dst_ok = destination_handle != Some(dir) || nameset::contains(set, &dst[..dn]);
             // Re-stage both halves, for the shared-page reason above.
             if src_ok && dst_ok {
                 put_at(0, &src[..sn]);
                 put_at(len, &dst[..dn]);
             }
-            match dst_handle {
+            match destination_handle {
                 _ if !(src_ok && dst_ok) => reply_err(ENOENT),
                 Some(d) => forward(
-                    fs::req(code, server_handle, len as u64),
-                    fs::rename_dst(d, dst_len as u64),
+                    fs::request(code, server_handle, len as u64),
+                    fs::rename_destination(d, destination_length_bytes as u64),
                 ),
                 None => reply_err(EBADF),
             }
@@ -254,7 +254,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
             // word only for the verbs that read it.
             let n = if v.carries_len() { len as u64 } else { 0 };
             let second = if v.carries_w1 { w1 } else { 0 };
-            let (r0, r1) = call(FS, fs::req(code, server_handle, n), second);
+            let (r0, r1) = call(FS, fs::request(code, server_handle, n), second);
             let r = r0 as i64;
             if code == fs::OPEN {
                 size = r1;
@@ -265,7 +265,7 @@ fn serve(dir: u64, set: &[u8]) -> ! {
                 match table.install(r as u64) {
                     Some(client) => client as i64,
                     None => {
-                        forward(fs::req(fs::CLOSE, r as u64, 0), 0);
+                        forward(fs::request(fs::CLOSE, r as u64, 0), 0);
                         reply_err(EMFILE)
                     }
                 }
@@ -321,14 +321,14 @@ fn start(name_lo: u64, name_hi: u64, spec: u64) -> ! {
     let (r0, _) = if n == 0 {
         call(
             FS,
-            fs::req(fs::NARROW, fs::ROOT, 0),
+            fs::request(fs::NARROW, fs::ROOT, 0),
             grant::specification_rights(spec),
         )
     } else {
         put_at(0, &buf[..n]);
         call(
             FS,
-            fs::req(fs::OPENDIR, fs::ROOT, n as u64),
+            fs::request(fs::OPENDIR, fs::ROOT, n as u64),
             grant::specification_rights(spec),
         )
     };

@@ -95,8 +95,8 @@ attempt knew it had not solved, written while the code was in front of someone.
   all." A `replace: bool` read there costs one branch before `tx.rename_node`, in a server that
   already resolves the destination on every call to decide `EISDIR`/`ENOTDIR`.
 
-  The wire side is free too. `fs::rename_dst`'s second word packs a 16-bit handle and a 40-bit length
-  into a 64-bit word (`fs_proto::fs::rename_dst`), leaving bits 63:56 unclaimed, so a `NOREPLACE` bit
+  The wire side is free too. `fs::rename_destination`'s second word packs a 16-bit handle and a 40-bit length
+  into a 64-bit word (`fs_proto::fs::rename_destination`), leaving bits 63:56 unclaimed, so a `NOREPLACE` bit
   costs no wire growth. §42's racy-emulation concern is real for a POSIX host filesystem reached over
   `link`/`unlink`. It is not a description of a from-scratch, single-request-at-a-time server
   transacting against its own B-tree. This is a wire-format change on a verb two programs already

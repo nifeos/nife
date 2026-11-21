@@ -24,7 +24,7 @@ impl documentation::index::Pages for Shard {
     fn page(&mut self, index: u64, out: &mut [u8; documentation::index::PAGE]) -> bool {
         let got = call(
             self.dir,
-            fs::req(fs::READ, self.handle, documentation::index::PAGE as u64),
+            fs::request(fs::READ, self.handle, documentation::index::PAGE as u64),
             index * documentation::index::PAGE as u64,
         )
         .0 as i64;
@@ -93,7 +93,7 @@ pub(super) fn apropos(nav: &mut Nav, term: &[u8]) -> Say {
     }
     let got = call(
         dir,
-        fs::req(fs::READ, handle as u64, MANIFEST_MAXIMUM as u64),
+        fs::request(fs::READ, handle as u64, MANIFEST_MAXIMUM as u64),
         0,
     )
     .0 as i64;

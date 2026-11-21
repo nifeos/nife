@@ -20,8 +20,8 @@ pub const VERSION: u32 = 1;
 /// Name: provisional, minted 2026-11-01 (UTC) by lane lane/956-interface-ids-for-the-owed-formats.
 pub const INTERFACE_ID: u64 = 15;
 
-/// Open the name in the shared page ([`req_len`] bytes) under the directory handle in
-/// [`req_handle`] ([`ROOT`] for the bound directory). Reply `r0` = a handle or an error, and `r1` =
+/// Open the name in the shared page ([`request_length_bytes`] bytes) under the directory handle in
+/// [`request_handle`] ([`ROOT`] for the bound directory). Reply `r0` = a handle or an error, and `r1` =
 /// the file's size at the open, or 0 for "not given": a hint for sizing a buffer, never an answer
 /// to a later size question ([`FSTAT`]).
 ///
@@ -33,19 +33,19 @@ pub const INTERFACE_ID: u64 = 15;
 /// POSIX call: `open(2)`.
 #[doc(alias = "open")]
 pub const OPEN: u64 = 1;
-/// Read up to [`req_len`] bytes from the handle ([`req_handle`]) at offset `w1` into the shared
+/// Read up to [`request_length_bytes`] bytes from the handle ([`request_handle`]) at offset `w1` into the shared
 /// page. Reply `r0` = bytes read (≥ 0, 0 at end of file) into the shared page, or an error.
 ///
 /// POSIX call: `read(2)`.
 #[doc(alias = "read")]
 pub const READ: u64 = 2;
-/// Write [`req_len`] bytes from the shared page to the handle at offset `w1`. Reply `r0` = bytes
+/// Write [`request_length_bytes`] bytes from the shared page to the handle at offset `w1`. Reply `r0` = bytes
 /// written (≥ 0), or an error.
 ///
 /// POSIX call: `write(2)`.
 #[doc(alias = "write")]
 pub const WRITE: u64 = 3;
-/// Close the handle ([`req_handle`]). Reply `r0` = 0, or an error if the handle was not open.
+/// Close the handle ([`request_handle`]). Reply `r0` = 0, or an error if the handle was not open.
 ///
 /// POSIX call: `close(2)`.
 #[doc(alias = "close")]
@@ -55,8 +55,8 @@ pub const CLOSE: u64 = 4;
 /// POSIX call: `fstat(2)`.
 #[doc(alias = "file status")]
 pub const FSTAT: u64 = 5;
-/// Create the name in the shared page ([`req_len`] bytes) under the directory handle in
-/// [`req_handle`] and open it: [`OPEN`]'s shape, second word 0. Reply `r0` = a handle, or an error.
+/// Create the name in the shared page ([`request_length_bytes`] bytes) under the directory handle in
+/// [`request_handle`] and open it: [`OPEN`]'s shape, second word 0. Reply `r0` = a handle, or an error.
 ///
 /// Needs [`super::directory::CREATE`], else [`super::directory::EROFS`]. `EEXIST` if the name exists, and
 /// nothing is modified: create is create, not create-or-open.
@@ -64,7 +64,7 @@ pub const FSTAT: u64 = 5;
 /// POSIX call: `creat(2)`.
 #[doc(alias = "create")]
 pub const CREATE: u64 = 6;
-/// Set the size of the handle's ([`req_handle`]) file to exactly `w1` bytes; [`req_len`] is 0.
+/// Set the size of the handle's ([`request_handle`]) file to exactly `w1` bytes; [`request_length_bytes`] is 0.
 /// Reply `r0` = 0, or an error.
 ///
 /// POSIX `ftruncate` in both directions: shrinking discards the bytes past the new size, growing
@@ -75,7 +75,7 @@ pub const CREATE: u64 = 6;
 /// POSIX call: `ftruncate(2)`.
 #[doc(alias = "truncate")]
 pub const TRUNCATE: u64 = 7;
-/// **Descend**: resolve the name in the shared page under the directory handle in [`req_handle`]
+/// **Descend**: resolve the name in the shared page under the directory handle in [`request_handle`]
 /// and hand back a handle to the child directory. `w1` is the requested [`super::directory`] mask, or
 /// [`super::directory::PARENT_RIGHTS`] for "the parent's rights, whatever they are", which a client
 /// that cannot read its own capability asks for when it holds the directory for later use.
@@ -90,9 +90,9 @@ pub const TRUNCATE: u64 = 7;
 /// POSIX call: `opendir(3)`.
 #[doc(alias = "open directory")]
 pub const OPENDIR: u64 = 8;
-/// **Enumerate a directory handle.** [`req_handle`] is the directory and `w1` a cursor, the index
+/// **Enumerate a directory handle.** [`request_handle`] is the directory and `w1` a cursor, the index
 /// of the first entry to return. Reply `r0` = bytes written into the shared page as
-/// [`super::directory_entry`] records; 0 means the cursor is past the end. [`req_len`] is ignored.
+/// [`super::directory_entry`] records; 0 means the cursor is past the end. [`request_length_bytes`] is ignored.
 ///
 /// Needs [`super::directory::ENUMERATE`]; its absence is [`super::directory::EPERM`], not an empty listing
 /// (a filesystem declares what it offers and must be truthful). Entries are sorted
@@ -111,9 +111,9 @@ pub const READDIR: u64 = 9;
 #[doc(alias = "make directory")]
 pub const MKDIR: u64 = 10;
 /// **Move a name to another directory, or to another name in the same one.** The source is
-/// [`req_handle`]/[`req_len`] of the request word; the destination rides in `w1`, packed by
-/// [`rename_dst`]. Both names are in the shared page, source first: `[0, req_len)`, then
-/// `[req_len, req_len + dst_len)`. Reply `r0` = 0, or an error.
+/// [`request_handle`]/[`request_length_bytes`] of the request word; the destination rides in `w1`, packed by
+/// [`rename_destination`]. Both names are in the shared page, source first: `[0, request_length_bytes)`, then
+/// `[request_length_bytes, request_length_bytes + destination_length_bytes)`. Reply `r0` = 0, or an error.
 ///
 /// Atomic against concurrency and against a crash. Needs [`super::directory::REMOVE`] on the source and
 /// [`super::directory::CREATE`] on the destination, else [`super::directory::EROFS`]. A destination of the same
@@ -125,7 +125,7 @@ pub const MKDIR: u64 = 10;
 #[doc(alias = "rename")]
 pub const RENAME: u64 = 11;
 /// **Remove a name from a directory: `unlink`, not revocation.** The name in the shared page
-/// ([`req_len`] bytes) leaves the directory in [`req_handle`]; second word 0. Reply `r0` = 0, or an
+/// ([`request_length_bytes`] bytes) leaves the directory in [`request_handle`]; second word 0. Reply `r0` = 0, or an
 /// error.
 ///
 /// A handle already open on the file keeps reading; the node goes when its last name and last
@@ -150,7 +150,7 @@ pub const UNLINK: u64 = 12;
 pub const RMDIR: u64 = 13;
 
 /// **Read one extended attribute of the node a handle names**, file or directory. The name is
-/// [`req_len`] bytes at the start of the shared page, and `w1` is 0. Reply `r0` =
+/// [`request_length_bytes`] bytes at the start of the shared page, and `w1` is 0. Reply `r0` =
 /// [`super::extended_attribute::reply`], packing the value's type code and length, with the value in the shared
 /// page; `ENODATA` if it is not set.
 ///
@@ -160,7 +160,7 @@ pub const RMDIR: u64 = 13;
 /// POSIX call: `getxattr(2)`.
 #[doc(alias = "get extended attribute")]
 pub const GETXATTR: u64 = 14;
-/// **Set one extended attribute on the node a handle names.** The name is [`req_len`] bytes at the
+/// **Set one extended attribute on the node a handle names.** The name is [`request_length_bytes`] bytes at the
 /// start of the shared page and the value follows it; `w1` packs the value's length and type code
 /// ([`super::extended_attribute::specification`]). Reply `r0` = 0.
 ///
@@ -174,7 +174,7 @@ pub const GETXATTR: u64 = 14;
 pub const SETXATTR: u64 = 15;
 /// **List the attribute names on the node a handle names**.
 ///
-/// [`req_len`] and the second word are both 0. Reply `r0` = how many bytes of the shared page
+/// [`request_length_bytes`] and the second word are both 0. Reply `r0` = how many bytes of the shared page
 /// were filled with [`super::extended_attribute::list`] records; 0 means the node has no attributes.
 ///
 /// There is **no cursor**, unlike [`READDIR`], and that is a property rather than an omission:
@@ -188,7 +188,7 @@ pub const SETXATTR: u64 = 15;
 pub const LISTXATTR: u64 = 16;
 /// **Remove one extended attribute from the node a handle names**.
 ///
-/// [`GETXATTR`]'s shape: the name is [`req_len`] bytes at the start of the shared page, the
+/// [`GETXATTR`]'s shape: the name is [`request_length_bytes`] bytes at the start of the shared page, the
 /// second word is 0. Reply `r0` = 0, or `ENODATA` if the attribute was not set. Removing an
 /// attribute that is not there is an **error, not a no-op**, because the caller asked about a
 /// specific thing and "it was not there" is the answer.
@@ -200,7 +200,7 @@ pub const LISTXATTR: u64 = 16;
 pub const REMOVEXATTR: u64 = 17;
 
 /// **How much room the store behind this capability has**: POSIX `statfs`, cut to three numbers.
-/// [`req_len`] and `w1` are 0; [`req_handle`] is any handle this server minted, [`ROOT`] included,
+/// [`request_length_bytes`] and `w1` are 0; [`request_handle`] is any handle this server minted, [`ROOT`] included,
 /// and holding one is the whole qualification: it needs no right. Reply `r0` = the bytes of the
 /// shared page filled ([`super::statfs::RECORD_BYTES`]) with the [`super::statfs`] record, or an error;
 /// `EBADF` for a handle the server did not mint.
@@ -218,7 +218,7 @@ pub const REMOVEXATTR: u64 = 17;
 pub const STATFS: u64 = 18;
 
 /// **Make everything this server has acknowledged durable**.
-/// [`req_len`] and `w1` are 0; [`req_handle`] is any handle this server minted. Reply `r0` = how
+/// [`request_length_bytes`] and `w1` are 0; [`request_handle`] is any handle this server minted. Reply `r0` = how
 /// many device flushes the block server has completed since it started, this one included, so a
 /// success is `>= 1`; or an error, `EBADF` for a handle the server did not mint.
 ///
@@ -238,8 +238,8 @@ pub const STATFS: u64 = 18;
 pub const SYNC: u64 = 19;
 
 /// **The modification time of `name`, in Unix seconds** (`touch`'s two behaviors
-/// need two rights). [`UNLINK`]'s shape: the name is [`req_len`] bytes at the start of the shared
-/// page, resolved directly under [`req_handle`], `w1` 0. Reply `r0` = the mtime, or an error.
+/// need two rights). [`UNLINK`]'s shape: the name is [`request_length_bytes`] bytes at the start of the shared
+/// page, resolved directly under [`request_handle`], `w1` 0. Reply `r0` = the mtime, or an error.
 ///
 /// Name-taking, as the setters are, because `touch` never opens what it acts on. Needs
 /// [`super::directory::READ`], a naming right, so its absence is `ENOENT`, checked before the name is
@@ -269,9 +269,9 @@ pub const SET_MODIFICATION_TIME: u64 = 21;
 ///
 /// Name: provisional (2026-08-24); an architect's to ratify.
 pub const SET_MODIFICATION_TIME_AT: u64 = 22;
-/// **Narrow a directory handle you already hold**: [`req_handle`] is the directory and `w1` the
-/// requested [`super::directory`] mask. No name is resolved and [`req_len`] is 0. Reply `r0` = a second
-/// directory handle, or an error. The handle in [`req_handle`] stays open and unchanged.
+/// **Narrow a directory handle you already hold**: [`request_handle`] is the directory and `w1` the
+/// requested [`super::directory`] mask. No name is resolved and [`request_length_bytes`] is 0. Reply `r0` = a second
+/// directory handle, or an error. The handle in [`request_handle`] stays open and unchanged.
 ///
 /// The new handle's rights are [`super::directory::Rights::attenuate`] of the held handle's, the same
 /// function [`OPENDIR`] and [`MKDIR`] narrow through, so it carries no right the held handle
@@ -283,7 +283,7 @@ pub const SET_MODIFICATION_TIME_AT: u64 = 22;
 /// Name: provisional (2026-10-27 UTC); an architect's to ratify. The number is verb 23.
 pub const NARROW: u64 = 23;
 
-/// **Bind a badge to a directory: a subtree grant the server enforces itself**. [`req_handle`] is a directory handle the
+/// **Bind a badge to a directory: a subtree grant the server enforces itself**. [`request_handle`] is a directory handle the
 /// caller holds, `w1` a badge (a client window's index, under badged endpoint
 /// capabilities). A request carrying that badge then sees the directory as its [`ROOT`] and
 /// reaches only handles it minted (`subtree_scope::Bindings::bind`). Reply `r0` = 0, or `EPERM`
@@ -338,14 +338,14 @@ pub const TRANSFER_PAGES: usize = 16;
 /// use filesystem_contract::{PAGE_BYTES, fs};
 ///
 /// // The largest read this contract permits, in one request.
-/// let w0 = fs::req(fs::READ, 3, fs::MAXIMUM_TRANSFER_BYTES as u64);
-/// assert_eq!(fs::req_len(w0), fs::MAXIMUM_TRANSFER_BYTES);
+/// let w0 = fs::request(fs::READ, 3, fs::MAXIMUM_TRANSFER_BYTES as u64);
+/// assert_eq!(fs::request_length_bytes(w0), fs::MAXIMUM_TRANSFER_BYTES);
 /// assert_eq!(fs::MAXIMUM_TRANSFER_BYTES, fs::TRANSFER_PAGES * PAGE_BYTES);
 ///
 /// // A client that shares only the first page keeps working untouched: it asks for one page,
 /// // and one page is what the region behind its request has always been.
-/// let w0 = fs::req(fs::READ, 3, PAGE_BYTES as u64);
-/// assert_eq!(fs::req_len(w0), PAGE_BYTES);
+/// let w0 = fs::request(fs::READ, 3, PAGE_BYTES as u64);
+/// assert_eq!(fs::request_length_bytes(w0), PAGE_BYTES);
 /// ```
 ///
 /// Name: ratified 2026-10-27 (#2797).
@@ -399,42 +399,54 @@ pub const MAXIMUM_HANDLE: u64 = 0xffff;
 /// use filesystem_contract::{fs, operation};
 ///
 /// // `read(handle 3, 1024)`.
-/// let w0 = fs::req(fs::READ, 3, 1024);
+/// let w0 = fs::request(fs::READ, 3, 1024);
 /// assert_eq!(operation(w0), fs::READ); // the opcode field is the same one in both protocols
-/// assert_eq!(fs::req_handle(w0), 3);
-/// assert_eq!(fs::req_len(w0), 1024);
+/// assert_eq!(fs::request_handle(w0), 3);
+/// assert_eq!(fs::request_length_bytes(w0), 1024);
 ///
 /// // An OPEN sends handle ROOT and the *name's* length; the name itself is in the page.
-/// let w0 = fs::req(fs::OPEN, fs::ROOT, b"report.txt".len() as u64);
-/// assert_eq!(fs::req_handle(w0), fs::ROOT);
-/// assert_eq!(fs::req_len(w0), 10);
+/// let w0 = fs::request(fs::OPEN, fs::ROOT, b"report.txt".len() as u64);
+/// assert_eq!(fs::request_handle(w0), fs::ROOT);
+/// assert_eq!(fs::request_length_bytes(w0), 10);
 /// ```
-pub const fn req(operation: u64, handle: u64, len: u64) -> u64 {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn request(operation: u64, handle: u64, len: u64) -> u64 {
     (operation << super::OPERATION_SHIFT)
         | ((handle & MAXIMUM_HANDLE) << 40)
         | (len & MAXIMUM_LENGTH_BYTES)
 }
 /// The handle of a file request word.
-pub const fn req_handle(w0: u64) -> u64 {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn request_handle(w0: u64) -> u64 {
     (w0 >> 40) & MAXIMUM_HANDLE
 }
 /// The length/count of a file request word.
-pub const fn req_len(w0: u64) -> usize {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn request_length_bytes(w0: u64) -> usize {
     (w0 & MAXIMUM_LENGTH_BYTES) as usize
 }
 
 /// Pack [`RENAME`]'s **destination** half into the second word: the same handle and length
-/// fields [`req`] uses, minus the opcode, because a rename names two directories and one word
-/// cannot carry both. Read back with [`dst_handle`] and [`dst_len`].
-pub const fn rename_dst(handle: u64, len: u64) -> u64 {
+/// fields [`request`] uses, minus the opcode, because a rename names two directories and one word
+/// cannot carry both. Read back with [`destination_handle`] and [`destination_length_bytes`].
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn rename_destination(handle: u64, len: u64) -> u64 {
     ((handle & MAXIMUM_HANDLE) << 40) | (len & MAXIMUM_LENGTH_BYTES)
 }
 /// The destination directory handle of a [`RENAME`]'s second word.
-pub const fn dst_handle(w1: u64) -> u64 {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn destination_handle(w1: u64) -> u64 {
     (w1 >> 40) & MAXIMUM_HANDLE
 }
 /// The destination name's length, in bytes, of a [`RENAME`]'s second word.
-pub const fn dst_len(w1: u64) -> usize {
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by the request-names lane of milestone 1090 (an outside review of `filesystem_contract`).
+pub const fn destination_length_bytes(w1: u64) -> usize {
     (w1 & MAXIMUM_LENGTH_BYTES) as usize
 }
 

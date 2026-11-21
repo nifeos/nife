@@ -393,14 +393,14 @@ fn a_sync_only_badge_answers_sync_and_refuses_everything_else() {
             continue;
         }
         for handle in [fs::ROOT, file] {
-            let (r0, _) = srv.handle(3, fs::req(code, handle, 4), 0, &mut window, &mut edges);
+            let (r0, _) = srv.handle(3, fs::request(code, handle, 4), 0, &mut window, &mut edges);
             assert_eq!(r0, -(EPERM as i64), "opcode {code} on handle {handle}");
         }
     }
     assert_eq!(edges.0, 0, "a refused verb reached the device");
     let (r0, _) = srv.handle(
         3,
-        fs::req(fs::SYNC, fs::ROOT, 0),
+        fs::request(fs::SYNC, fs::ROOT, 0),
         0,
         &mut window,
         &mut edges,
@@ -413,7 +413,7 @@ fn a_sync_only_badge_answers_sync_and_refuses_everything_else() {
     assert!(!srv.is_sync_only(3));
     let (r0, _) = srv.handle(
         3,
-        fs::req(fs::SYNC, fs::ROOT, 0),
+        fs::request(fs::SYNC, fs::ROOT, 0),
         0,
         &mut window,
         &mut edges,
