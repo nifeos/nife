@@ -61,7 +61,6 @@ interfaces = [
     "master_boot_record",
     "documentation",
     "machine_discovery",
-    "boot_ladder",
     # The boot self-test's hand-over: the kernel, the progenitor and `boot_self_test` link it.
     "self_test_contract",
     "test_times",

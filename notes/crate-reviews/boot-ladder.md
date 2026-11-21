@@ -136,7 +136,7 @@ part of this review.
 |---|---|
 | Add the `repository` line to the manifest; the move tool's `add_repository` writes it. | move lane |
 | Add `CHANGELOG.md`, `_typos.toml` and `docs/stranger-test.md` from the scaffold, and run the stranger test. The README and both licenses exist. | move lane |
-| The `script/lint` section that refuses a head literal outside `crates/boot_ladder`, tests and fixtures (milestone 1078, P1-7). It is nife's gate, and as a new lint section it is a reviewed interface. | maintainer; not a block on the crate, a block on the milestone's Done when |
+| The `script/lint` section that refuses a head literal outside `boot_ladder`, tests and fixtures (milestone 1078, P1-7). It is nife's gate, and as a new lint section it is a reviewed interface. | maintainer; not a block on the crate, a block on the milestone's Done when |
 | Decide where the soak markers and job-mix field names that `notes/bugs-without-milestones/drivers-boot-and-install-1.md` proposes hoisting into this crate live, and land [milestone 972 (the boot stick's shared names are code)](../../design/roadmap/0972-the-boot-sticks-shared-names-are-code.md) or record that it waits (milestone 1078, P2-12). Milestone 972 is `NOT-STARTED`. | maintainer |
 | Convert the five path dependents to `git` and `rev` with `version = "0.1.0"`, and read every file the move dry run lists. | move lane |
 

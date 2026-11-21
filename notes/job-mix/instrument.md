@@ -34,7 +34,7 @@ The weighting is stated rather than derived.
 
 The markers are text that leaves the machine and is read back by something that is not the machine:
 `crates/serial_console` on a bench or in CI, and `cargo xtask job-mix` under QEMU.
-`crates/boot_ladder` holds the boot tour's markers for the same reason, and its header carries the
+`boot_ladder` holds the boot tour's markers for the same reason, and its header carries the
 argument. Three copies of a contract agreeing because a reader checked them is milestone 268 (every
 architecture boots the same way)'s finding 3, and the fix that milestone found is to have one copy.
 

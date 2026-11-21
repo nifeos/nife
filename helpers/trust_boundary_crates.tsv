@@ -17,7 +17,7 @@ base_digest_contract	shared	components,fixtures,kernel
 bitfont	shared	retired
 bitmap_font	shared	components,kernel,uefi_loader
 block_roster_contract	shared	retired
-boot_ladder	shared	components,fixtures,kernel
+boot_ladder	shared	retired
 boot_slot	shared	components,kernel,uefi_loader
 byte_glob	shared	retired
 byte_sink_contract	shared	components,fixtures,kernel,std

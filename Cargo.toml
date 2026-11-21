@@ -13,7 +13,6 @@ members = [
     "crates/bitmap_font",
     "crates/glyph_atlas",
     "crates/serial_console",
-    "crates/boot_ladder",
     "crates/boot_slot",
     "crates/test_times",
     "crates/memory_corruption_canary_gate",
