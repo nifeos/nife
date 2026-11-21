@@ -1,5 +1,5 @@
 //! The notification state machine of milestone 151 (notification objects), to the rules of §101
-//! (notification objects): a data word and a wait queue, and what a signal, a wait and a poll do
+//! (notification objects): a data word and a wait queue, and what a signal, a wait and a try-wait do
 //! with them.
 //!
 //! A signaler ORs bits into the word and never blocks; a waiter takes whatever has accumulated. A
@@ -7,8 +7,8 @@
 //! receive is the kernel's to decide, and [`Notification::signal`] takes it as a boolean. See
 //! `notes/inter-process-communication.md` ("The notification").
 //!
-//! Name: provisional (milestone 151's lane, 2026-09-26). `Notification` is §101's own word for the
-//! object, and seL4's; the module, the type and the two outcome enums are unratified.
+//! Name: ratified 2026-11-21 (UTC). `Notification` is §101's own word for the object, and seL4's; the module,
+//! the type and the two verdict enums are ratified.
 
 use core::ptr::NonNull;
 
@@ -54,8 +54,10 @@ use intrusive_queue::{Node, Queue, Unqueued};
 /// }
 /// assert!(n.is_idle());
 /// ```
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub struct Notification<T: Node> {
-    /// Bits signaled since the last wait, poll or bound delivery took them. A bitfield of binary
+    /// Bits signaled since the last wait, try-wait or bound delivery took them. A bitfield of binary
     /// semaphores, as seL4's is: a signal ORs in, a take clears all of it.
     word: u64,
     /// Threads blocked in `WAIT`, oldest first.
@@ -65,8 +67,8 @@ pub struct Notification<T: Node> {
 /// What a hang dump reads from a [`Notification`]:
 /// [`debug_counts`](Notification::debug_counts).
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1095-ipc-rulings-built. Replaces a tuple
-/// whose positions a reader had to remember. Considered: keeping the tuple.
+/// Name: ratified 2026-11-21 (UTC), with its two fields. Named fields in place of a tuple whose positions a
+/// reader had to remember. Refused: keeping the tuple.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct NotificationCounts {
     /// Threads blocked waiting.
@@ -77,9 +79,9 @@ pub struct NotificationCounts {
 
 /// What a [`signal`](Notification::signal) decided.
 ///
-/// Name: provisional. The `Verdict` suffix gives all five operation enums one shape, and is the
-/// word this crate's prose already uses for what an operation decided. Considered: `SignalOutcome` and
-/// keeping the bare name.
+/// Name: ratified 2026-11-21 (UTC), with its variants. The `Verdict` suffix gives all five operation enums one
+/// shape, and is the word this crate's prose already uses for what an operation decided. Refused:
+/// `SignalOutcome` and keeping the bare name.
 pub enum SignalVerdict<T> {
     /// A thread was waiting on the notification itself: deliver this word to it and wake it. It is
     /// already off the queue, and this is its token.
@@ -87,7 +89,7 @@ pub enum SignalVerdict<T> {
     /// Nobody waited here, and the bound thread is parked in a receive on an endpoint: deliver this
     /// word to it there (the kernel unlinks it from that endpoint's queue). The word is cleared.
     ToBound(u64),
-    /// Nobody could take it now; the bits are in the word for the next wait, poll or receive.
+    /// Nobody could take it now; the bits are in the word for the next wait, try-wait or receive.
     Counted,
     /// The signal carried no bits, so there was nothing to deliver and nobody was woken.
     Empty,
@@ -96,9 +98,9 @@ pub enum SignalVerdict<T> {
 /// What a [`wait`](Notification::wait) decided. As for the rendezvous's verdicts, the one that
 /// leaves the caller off the queue hands its token back.
 ///
-/// Name: provisional. The `Verdict` suffix gives all five operation enums one shape, and is the
-/// word this crate's prose already uses for what an operation decided. Considered: `WaitOutcome` and
-/// keeping the bare name.
+/// Name: ratified 2026-11-21 (UTC), with its variants. The `Verdict` suffix gives all five operation enums one
+/// shape, and is the word this crate's prose already uses for what an operation decided. Refused:
+/// `WaitOutcome` and keeping the bare name.
 pub enum WaitVerdict<T> {
     /// The word was non-zero: here it is, and it is now clear. The caller does not block, and keeps
     /// its token.
@@ -157,6 +159,8 @@ impl<T> core::fmt::Debug for SignalVerdict<T> {
 
 impl<T: Node> Notification<T> {
     /// An idle notification: word zero, nobody waiting.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub const fn new() -> Self {
         Self {
             word: 0,
@@ -166,26 +170,30 @@ impl<T: Node> Notification<T> {
 
     /// **A non-zero word and a queued waiter never coexist.** The load-bearing invariant.
     ///
-    /// Name: provisional, and deliberately the verb form the Rust predicate rule asks for, as its
-    /// rendezvous twin (`one_queue_invariant_holds`) has.
+    /// Name: ratified 2026-11-21 (UTC). The verb form the Rust predicate rule asks for, as its rendezvous twin
+    /// (`one_queue_invariant_holds`) has.
     pub fn invariant_holds(&self) -> bool {
         self.word == 0 || self.waiters.is_empty()
     }
 
     /// No thread is waiting here. The word does not count: a word holds no thread.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn is_idle(&self) -> bool {
         self.waiters.is_empty()
     }
 
     /// The accumulated word, without taking it. Diagnostic (a hang dump), and what the kernel's
     /// bind reads to decide whether a newly bound receiver has something waiting for it.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn word(&self) -> u64 {
         self.word
     }
 
     /// Diagnostic: how many threads are waiting and the accumulated word, for a hang dump.
     ///
-    /// Name: provisional, with [`NotificationCounts`] and its two fields: they replace a tuple
+    /// Name: ratified 2026-11-21 (UTC), with [`NotificationCounts`] and its two fields, which replace a tuple
     /// whose positions a reader had to remember.
     pub fn debug_counts(&self) -> NotificationCounts {
         NotificationCounts {
@@ -202,6 +210,8 @@ impl<T: Node> Notification<T> {
     ///
     /// Zero bits is [`SignalVerdict::Empty`] and changes nothing, for the reason
     /// `notes/notification-objects.md` gives.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn signal(&mut self, bits: u64, bound_receiving: bool) -> SignalVerdict<T> {
         if bits == 0 {
             return SignalVerdict::Empty;
@@ -222,6 +232,8 @@ impl<T: Node> Notification<T> {
 
     /// A thread `me` waits. Take the word if it is non-zero, handing `me` back; otherwise queue
     /// `me`, and the caller blocks it.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn wait(&mut self, me: Unqueued<T>) -> WaitVerdict<T> {
         if self.word != 0 {
             WaitVerdict::Word(core::mem::take(&mut self.word), me)
@@ -234,7 +246,9 @@ impl<T: Node> Notification<T> {
     /// **Take the word without blocking**: the non-blocking `WAIT`, and also what a bound thread's
     /// receive does on entry to collect a signal that arrived while it was elsewhere. Zero means
     /// nothing was pending.
-    pub fn poll(&mut self) -> u64 {
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
+    pub fn try_wait(&mut self) -> u64 {
         core::mem::take(&mut self.word)
     }
 
@@ -243,6 +257,8 @@ impl<T: Node> Notification<T> {
     /// freed. The same drain-and-repush as
     /// [`Rendezvous::remove_receiver`](crate::Rendezvous::remove_receiver): `victim` is only
     /// compared.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn remove_waiter(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
         let mut kept: Queue<T> = Queue::new();
         let mut found = None;
@@ -259,6 +275,8 @@ impl<T: Node> Notification<T> {
 
     /// **Empty the wait queue, handing every waiter to `f`** (the notification is being destroyed).
     /// Each is popped before `f` sees it, token and all, so `f` may queue it elsewhere.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn drain_waiters(&mut self, mut f: impl FnMut(Unqueued<T>)) {
         while let Some(w) = self.waiters.pop_front() {
             f(w);
@@ -295,7 +313,7 @@ mod verification {
     }
 
     /// **Every operation preserves the invariant.** One symbolic operation from an arbitrary valid
-    /// state: signal (with an arbitrary word and an arbitrary binding verdict), wait, poll, or
+    /// state: signal (with an arbitrary word and an arbitrary binding verdict), wait, try-wait, or
     /// remove a waiter.
     /// Falsification: replayable `crates/inter_process_communication/falsifications/notification.verification.every_operation_preserves_the_invariant.patch`
     #[kani::proof]
@@ -315,7 +333,7 @@ mod verification {
                 let _ = n.wait(me);
             }
             2 => {
-                n.poll();
+                n.try_wait();
             }
             _ => {
                 let _ = n.remove_waiter(waiter);
@@ -521,8 +539,8 @@ mod tests {
         assert!(matches!(n.signal(1, false), SignalVerdict::Woke(t, 1) if t == pointer_a));
         assert!(matches!(n.signal(2, false), SignalVerdict::Woke(t, 2) if t == pointer_c));
         assert_eq!(n.signal(4, false), SignalVerdict::Counted);
-        assert_eq!(n.poll(), 4);
-        assert_eq!(n.poll(), 0);
+        assert_eq!(n.try_wait(), 4);
+        assert_eq!(n.try_wait(), 0);
     }
 
     /// The invariant is "no word while anyone waits", and it is the pair that matters: a word with

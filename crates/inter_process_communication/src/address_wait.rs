@@ -37,12 +37,13 @@
 //!
 //! - A wake walks its whole bucket, so it costs the bucket's length, not the number woken.
 //!
-//! Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. The module and `AddressWaitTable` say what the queues are for, a wait on an
-//! address, and not the Linux word for it. `AddressWaitTable` names the thing (a plural noun named a collection of
-//! objects, and an address wait is a key). `Key::address_space` and `Key::virtual_address` say which kind
-//! of name and which kind of address the fields hold. `BUCKETS` is the word the documentation uses
-//! for the const parameter. `len` is the standard library's spelling of a count. Considered:
-//! keeping the plural noun and renaming only the parameter, the count and the field.
+//! Name: ratified 2026-11-21 (UTC). The module and `AddressWaitTable` say what the queues are for, a wait on an
+//! address, and not the Linux word for it. `AddressWaitTable` names the thing (a plural noun named
+//! a collection of objects, and an address wait is a key). `Key::address_space` and
+//! `Key::virtual_address` say which kind of name and which kind of address the fields hold.
+//! `BUCKETS` is the word the documentation uses for the const parameter. `len` is the standard
+//! library's spelling of a count, and `waiter_count` counts the waiters under one key. Refused:
+//! keeping the plural noun, and `waiters` for the per-key count.
 
 use core::ptr::NonNull;
 
@@ -50,6 +51,8 @@ use intrusive_queue::{Node, Queue, Unqueued};
 
 /// **What a waiter is parked under**: the address space it waits in, by the kernel's generational
 /// name for it, and the virtual address of the 32-bit word in that space.
+///
+/// Name: ratified 2026-11-21 (UTC).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Key {
     /// The address space's name, as `kernel::user`'s registry hands it out.
@@ -61,8 +64,8 @@ pub struct Key {
 
 /// **The wait queues**, `BUCKETS` buckets of intrusive FIFOs.
 ///
-/// Name: provisional, minted 2026-11-21 (UTC) by lane futex-spelled-out. A table of address wait queues, named for the thing; the module header gives
-/// what was considered.
+/// Name: ratified 2026-11-21 (UTC). A table of address wait queues, named for the thing; the module header
+/// gives what was refused.
 #[doc(alias = "futex")]
 pub struct AddressWaitTable<T: Node, const BUCKETS: usize> {
     buckets: [Queue<T>; BUCKETS],
@@ -76,6 +79,8 @@ impl<T: Node, const BUCKETS: usize> Default for AddressWaitTable<T, BUCKETS> {
 
 impl<T: Node, const BUCKETS: usize> AddressWaitTable<T, BUCKETS> {
     /// No one waiting on anything.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub const fn new() -> Self {
         Self {
             buckets: {
@@ -100,6 +105,8 @@ impl<T: Node, const BUCKETS: usize> AddressWaitTable<T, BUCKETS> {
     }
 
     /// **Park `waiter` under `key`**, at the back of its bucket.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn park(&mut self, key: Key, waiter: Unqueued<T>) {
         self.buckets[Self::bucket(key)].push_back(waiter);
     }
@@ -107,6 +114,8 @@ impl<T: Node, const BUCKETS: usize> AddressWaitTable<T, BUCKETS> {
     /// **Take up to `maximum` waiters parked under `key`**, first parked first, and hand them back
     /// as a queue of their own so the caller can wake each one without holding a borrow of this
     /// table. Waiters under other keys in the same bucket stay, in their order.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn take(
         &mut self,
         key: Key,
@@ -131,6 +140,8 @@ impl<T: Node, const BUCKETS: usize> AddressWaitTable<T, BUCKETS> {
 
     /// **Unlink one waiter**, the teardown of a thread that will never be woken (its region is being
     /// destroyed). `None` if it was not parked under `key`.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn remove(&mut self, key: Key, victim: NonNull<T>) -> Option<Unqueued<T>> {
         let bucket = &mut self.buckets[Self::bucket(key)];
         let mut kept = Queue::new();
@@ -150,22 +161,23 @@ impl<T: Node, const BUCKETS: usize> AddressWaitTable<T, BUCKETS> {
     /// whether they still have one. What catches a teardown that forgot to unlink a thread: a dead
     /// TCB has no key to count it by, but it is still a link.
     ///
-    /// Name: provisional, minted 2026-11-19 (UTC) by lane 1095-ipc-rulings-built. The standard
-    /// library's spelling of a count.
+    /// Name: ratified 2026-11-21 (UTC). The standard library's spelling of a count.
     pub fn len(&self) -> usize {
         self.buckets.iter().map(Queue::len).sum()
     }
 
     /// **Whether no waiter is linked anywhere in the table**, the pair of [`len`](Self::len).
     ///
-    /// Name: provisional. The standard library's spelling, which a public `len` brings with it.
+    /// Name: ratified 2026-11-21 (UTC). The standard library's spelling, which a public `len` brings with it.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
     /// How many waiters are parked under `key`. For tests and diagnostics; a wake does not need it.
     /// `&mut` because the queue is intrusive and walked by popping, in order, then put back as it was.
-    pub fn waiters(&mut self, key: Key, key_of: impl Fn(NonNull<T>) -> Key) -> usize {
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
+    pub fn waiter_count(&mut self, key: Key, key_of: impl Fn(NonNull<T>) -> Key) -> usize {
         let bucket = &mut self.buckets[Self::bucket(key)];
         let mut kept = Queue::new();
         let mut count = 0;
@@ -249,15 +261,15 @@ mod tests {
         let mut f = OneBucket::new();
         park_all(&mut f, &pointers);
         assert_eq!(f.len(), 5);
-        assert_eq!(f.waiters(a, key_of), 3);
+        assert_eq!(f.waiter_count(a, key_of), 3);
 
         let mut two = f.take(a, 2, key_of);
         assert!(two.pop_front().is_some_and(|t| t == pointers[0]));
         assert!(two.pop_front().is_some_and(|t| t == pointers[2]));
         assert!(two.pop_front().is_none());
-        assert_eq!(f.waiters(a, key_of), 1);
-        assert_eq!(f.waiters(b, key_of), 1);
-        assert_eq!(f.waiters(c, key_of), 1);
+        assert_eq!(f.waiter_count(a, key_of), 1);
+        assert_eq!(f.waiter_count(b, key_of), 1);
+        assert_eq!(f.waiter_count(c, key_of), 1);
 
         // The collided keys kept their order around the ones taken.
         assert_eq!(drain(f.take(c, usize::MAX, key_of)), 1);

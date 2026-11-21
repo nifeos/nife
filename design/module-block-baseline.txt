@@ -3759,7 +3759,7 @@ crates/inter_process_communication/src/address_wait.rs::remove
 
 crates/inter_process_communication/src/address_wait.rs::take
 
-crates/inter_process_communication/src/address_wait.rs::waiters
+crates/inter_process_communication/src/address_wait.rs::waiter_count
 
 crates/inter_process_communication/src/notification.rs::Notification
 

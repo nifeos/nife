@@ -1,7 +1,7 @@
 //! **One IPC rendezvous**: its two wait queues and pending-signal count, and what a send or a
 //! receive on it decided.
 //!
-//! Name: provisional (lane maintainer/split-parents-to-zero, 2026-10-13 UTC).
+//! Name: ratified 2026-11-21 (UTC).
 
 use super::*;
 
@@ -45,6 +45,8 @@ use super::*;
 /// }
 /// assert!(ep.is_idle() && ep.one_queue_invariant_holds());
 /// ```
+///
+/// Name: ratified 2026-11-21 (UTC).
 pub struct Rendezvous<T: Node> {
     /// Senders blocked here, waiting for a receiver.
     pub(crate) senders: Queue<T>,
@@ -57,15 +59,14 @@ pub struct Rendezvous<T: Node> {
     /// [`send`](Self::send) answers [`SendVerdict::Refused`] (§101 (notification objects), as amended)
     /// and the sender queue is empty.
     ///
-    /// Name: provisional (milestone 603 (an interrupt's endpoint refuses every send)): calef names
-    /// public items, and this is read through the public methods.
+    /// Name: ratified 2026-11-21 (UTC). Private, read through [`is_bound_to_interrupt`](Self::is_bound_to_interrupt).
     pub(crate) bound_to_interrupt: bool,
 }
 
 /// What a hang dump reads from a [`Rendezvous`]: [`debug_counts`](Rendezvous::debug_counts).
 ///
-/// Name: provisional, minted 2026-11-19 (UTC) by lane 1095-ipc-rulings-built. Replaces a tuple
-/// whose positions a reader had to remember. Considered: keeping the tuple.
+/// Name: ratified 2026-11-21 (UTC), with its three fields. Named fields in place of a tuple whose positions a
+/// reader had to remember. Refused: keeping the tuple.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RendezvousCounts {
     /// Senders parked on the rendezvous.
@@ -79,10 +80,10 @@ pub struct RendezvousCounts {
 /// What a [`send`](Rendezvous::send) decided. Every verdict that leaves the sender off a queue
 /// hands its token back, and the one that queues it does not.
 ///
-/// Name: provisional. The `Verdict` suffix keeps the type from sharing a name with
-/// `core::marker::Send` in the same namespace, and is the word this crate's prose already uses
-/// for what an operation decided. Considered: `Sent` and `Received`, `SendOutcome`, and keeping
-/// the bare name.
+/// Name: ratified 2026-11-21 (UTC), with its variants. The `Verdict` suffix keeps the type from sharing a name
+/// with `core::marker::Send` in the same namespace, and is the word this crate's prose already uses
+/// for what an operation decided. Refused: `Sent` and `Received`, `SendOutcome`, and keeping the
+/// bare name.
 pub enum SendVerdict<T> {
     /// A receiver was waiting: rendezvous with this one (its token, since it has left the receiver
     /// queue), and the sender does not join a queue (its token, second).
@@ -94,16 +95,17 @@ pub enum SendVerdict<T> {
     /// was taken, and the sender's token comes back. The caller turns this into an error and must
     /// not block.
     ///
-    /// Name: provisional (milestone 603): calef names public items.
+    /// Name: ratified 2026-11-21 (UTC).
     Refused(Unqueued<T>),
 }
 
 /// What a [`receive`](Rendezvous::receive) decided. As for [`SendVerdict`], a verdict that leaves the
 /// receiver off a queue hands its token back.
 ///
-/// Name: provisional. The `Verdict` suffix matches `SendVerdict`, which needs it so the type does
-/// not share a name with `core::marker::Send`, and is the word this crate's prose already uses for
-/// what an operation decided. Considered: `Received`, `ReceiveOutcome`, and keeping the bare name.
+/// Name: ratified 2026-11-21 (UTC), with its variants. The `Verdict` suffix matches `SendVerdict`, which needs
+/// it so the type does not share a name with `core::marker::Send`, and is the word this crate's
+/// prose already uses for what an operation decided. Refused: `Received`, `ReceiveOutcome`, and
+/// keeping the bare name.
 pub enum ReceiveVerdict<T> {
     /// A pending async signal was drained; the receiver does not block (its token).
     Signal(Unqueued<T>),
@@ -176,6 +178,8 @@ impl<T> core::fmt::Debug for ReceiveVerdict<T> {
 impl<T: Node> Rendezvous<T> {
     /// An idle rendezvous: both wait queues empty, no pending signal. `const` so the kernel can
     /// build the rendezvous table at compile time rather than at boot.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub const fn new() -> Self {
         Self {
             senders: Queue::new(),
@@ -195,7 +199,7 @@ impl<T: Node> Rendezvous<T> {
     /// empty, and since `send` refuses from now on it stays empty, so no [`receive`](Self::receive)
     /// here can return [`ReceiveVerdict::FromSender`]. Queued receivers stay: they wait for the interrupt.
     ///
-    /// Name: provisional (milestone 603): calef names public items.
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn bind_to_interrupt(&mut self, mut refuse: impl FnMut(Unqueued<T>)) {
         self.bound_to_interrupt = true;
         while let Some(sender) = self.senders.pop_front() {
@@ -205,22 +209,24 @@ impl<T: Node> Rendezvous<T> {
 
     /// Whether [`bind_to_interrupt`](Self::bind_to_interrupt) has been called on this rendezvous.
     ///
-    /// Name: provisional (milestone 603): calef names public items.
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn is_bound_to_interrupt(&self) -> bool {
         self.bound_to_interrupt
     }
 
     /// **At most one wait queue is ever non-empty.** The load-bearing invariant.
     ///
-    /// Name: provisional. The verb form the Rust predicate rule asks for, as its notification twin
-    /// `invariant_holds` already has. Considered: `is_one_queue`, which reads as a question about
-    /// the queues and not about the invariant.
+    /// Name: ratified 2026-11-21 (UTC). The verb form the Rust predicate rule asks for, as its notification twin
+    /// `invariant_holds` has. Refused: `is_one_queue`, which reads as a question about the queues
+    /// and not about the invariant.
     pub fn one_queue_invariant_holds(&self) -> bool {
         self.senders.is_empty() || self.receivers.is_empty()
     }
 
     /// **No thread is blocked on this rendezvous** (both wait queues empty). The pending signal count
     /// does not count: a signal holds no thread.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn is_idle(&self) -> bool {
         self.senders.is_empty() && self.receivers.is_empty()
     }
@@ -229,7 +235,7 @@ impl<T: Node> Rendezvous<T> {
     /// a hang dump, a nonzero sender count with a zero receiver count on a request rendezvous is a
     /// stalled server.
     ///
-    /// Name: provisional, with [`RendezvousCounts`] and its three fields: they replace a tuple
+    /// Name: ratified 2026-11-21 (UTC), with [`RendezvousCounts`] and its three fields, which replace a tuple
     /// whose positions a reader had to remember.
     pub fn debug_counts(&self) -> RendezvousCounts {
         RendezvousCounts {
@@ -242,6 +248,8 @@ impl<T: Node> Rendezvous<T> {
     /// Empty both wait queues, handing every blocked thread to `f` with its token, for object
     /// revocation. The caller wakes each one with an error. Afterwards [`is_idle`](Self::is_idle)
     /// holds.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn drain_waiters(&mut self, mut f: impl FnMut(Unqueued<T>)) {
         while let Some(w) = self.senders.pop_front() {
             f(w);
@@ -257,6 +265,8 @@ impl<T: Node> Rendezvous<T> {
     /// `victim` is compared by pointer and never dereferenced. The survivors keep their FIFO order,
     /// and the cost is the queue's length. See `notes/inter-process-communication.md` ("Taking a
     /// thread back off a queue").
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn remove_sender(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
         let mut kept: Queue<T> = Queue::new();
         let mut found = None;
@@ -275,6 +285,8 @@ impl<T: Node> Rendezvous<T> {
     /// twin of [`remove_sender`](Self::remove_sender), for a region teardown that ends a thread
     /// blocked in `RECEIVE` here. The kernel asks both queues, because a thread's recorded wait
     /// role does not say which queue holds it.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn remove_receiver(&mut self, victim: NonNull<T>) -> Option<Unqueued<T>> {
         let mut kept: Queue<T> = Queue::new();
         let mut found = None;
@@ -292,6 +304,8 @@ impl<T: Node> Rendezvous<T> {
     /// A sender `me` arrives. Rendezvous with a waiting receiver if there is one, otherwise `me`
     /// joins the sender queue and the caller blocks it. On a rendezvous that carries an interrupt,
     /// [`SendVerdict::Refused`] with nothing touched.
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn send(&mut self, me: Unqueued<T>) -> SendVerdict<T> {
         // Before a receiver is popped: the receiver here is the driver, and handing it a sender's
         // words is the forgery the refusal exists to stop.
@@ -308,6 +322,8 @@ impl<T: Node> Rendezvous<T> {
     /// A receiver `me` arrives. Drain a pending signal first (never lose one behind a later
     /// sender), then collect a queued sender, otherwise `me` joins the receiver queue (and the
     /// caller should block it).
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn receive(&mut self, me: Unqueued<T>) -> ReceiveVerdict<T> {
         if self.pending > 0 {
             self.pending -= 1;
@@ -357,6 +373,8 @@ impl<T: Node> Rendezvous<T> {
     /// assert!(ep.signal().is_some_and(|t| t == NonNull::from(&mut driver)));
     /// assert!(ep.is_idle());
     /// ```
+    ///
+    /// Name: ratified 2026-11-21 (UTC).
     pub fn signal(&mut self) -> Option<Unqueued<T>> {
         if let Some(receiver) = self.receivers.pop_front() {
             Some(receiver)
