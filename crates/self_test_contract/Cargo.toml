@@ -1,0 +1,30 @@
+[package]
+name = "self_test_contract"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "The boot self-test's hand-over: the page the kernel fills for the first user program, and the slots, images and messages that program and the self-test program agree on"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+keywords = ["no-std", "self-test", "boot"]
+categories = ["no-std", "embedded"]
+publish = false     # the default; the allowlist lint holds the exception (crates/publish-allowlist.txt)
+
+# The boot self-test runs in two halves, the kernel's and a user program's. This crate is the one
+# definition of what passes between them, so the kernel, the first user program and the self-test
+# program cannot drift on a page's layout, a slot or a message word.
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+missing_docs = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"
+cast_ptr_alignment = "warn"
+ptr_as_ptr = "warn"
+semicolon_if_nothing_returned = "warn"
+manual_let_else = "warn"
+doc_markdown = "warn"
+
+[dependencies]
+boot_ladder = { version = "0.1.0", path = "../boot_ladder" }

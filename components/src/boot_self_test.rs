@@ -3,9 +3,9 @@
 //! userspace)).
 //!
 //! The kernel runs the checks of its own internals and hands their tally over in the page
-//! `boot_ladder::kernel_half` describes. The progenitor builds this program before the shell, with
+//! `self_test_contract::kernel_half` describes. The progenitor builds this program before the shell, with
 //! a budget of its own, the boot's entropy service, the devices the kernel set aside and the three
-//! programs it builds as bytes (`boot_ladder::self_test_program`). This program builds each child
+//! programs it builds as bytes (`self_test_contract::self_test_program`). This program builds each child
 //! from that budget and supervises it, writes each check's line into a transcript the progenitor
 //! copies to the console, then the verdict (`boot_ladder::Heads::self_test`), and exits. Every check here
 //! runs on every architecture, and one the machine has nothing for says `absent` and why. See
@@ -32,11 +32,11 @@
 use core::fmt::{self, Write};
 use core::sync::atomic::Ordering;
 
-use boot_ladder::kernel_half::{KernelHalf, flag, word};
-use boot_ladder::self_test_program::{
+use boot_ladder::verdict::{CheckLine, Outcome, SubjectLine, Tally, check};
+use self_test_contract::kernel_half::{KernelHalf, flag, word};
+use self_test_contract::self_test_program::{
     self as contract, entropy_source, header, image, image_virtual_address, message, slot,
 };
-use boot_ladder::verdict::{CheckLine, Outcome, SubjectLine, Tally, check};
 use supervision_contract::{ChildEndowment, Retention};
 use user_mode_runtime::{
     Message, Received, capability_delete, destroy_memory_region, is_granted, map_page_frame,

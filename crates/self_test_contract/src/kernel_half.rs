@@ -12,7 +12,7 @@
 //! Name: provisional, minted 2026-11-10 (UTC) by lane
 //! `milestone/1063-the-boot-self-test-spawns-from-userspace`, for whose half the page carries.
 
-use crate::verdict::Tally;
+use boot_ladder::verdict::Tally;
 
 /// The page's first word: `NIFESTK1` as little-endian bytes. A page without it is not this page.
 ///
@@ -27,7 +27,7 @@ pub mod word {
     ///
     /// Name: provisional.
     pub const MAGIC: usize = 0;
-    /// The kernel's tally: passed, failed, absent (`verdict::Tally::to_words`).
+    /// The kernel's tally: passed, failed, absent (`boot_ladder::verdict::Tally::to_words`).
     ///
     /// Name: provisional.
     pub const TALLY: usize = 1;
@@ -193,8 +193,9 @@ impl KernelHalf {
 
 #[cfg(test)]
 mod tests {
+    use boot_ladder::verdict::{Outcome, check};
+
     use super::*;
-    use crate::verdict::{Outcome, check};
 
     /// Every flag is its own single bit, starting at bit 0 and leaving none out, so one fact never
     /// reads as another.
