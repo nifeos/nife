@@ -1,4 +1,4 @@
-Falsifies `capability_table::a_survey_shows_exactly_the_endpoints_own_children`.
+Falsifies `kernel::sched::region_reaping::verification::a_survey_shows_exactly_the_endpoints_own_children`.
 
 The defect: `survey_includes` reports every supervised thread rather than only the
 ones supervised *here*. This is what a `ps` written to be useful looks like before
@@ -15,18 +15,19 @@ it is stated as a predicate and again as an agreement with the reap, so a single
 widening is caught twice. It is not caught by anything in the `reap_decision`
 harnesses, which this patch leaves untouched.
 
-diff --git a/crates/capability_table/src/lib.rs b/crates/capability_table/src/lib.rs
-index a5b8f24b3..8d650d16b 100644
---- a/crates/capability_table/src/lib.rs
-+++ b/crates/capability_table/src/lib.rs
-@@ -187,8 +187,8 @@ pub const fn reap_decision(
- /// The scoping decision of a process view, which an owner applies to each thread it reports. It is
- /// the predicate [`reap_decision`] authorizes with, so the threads a supervisor sees are the ones
- /// whose deaths reach it. Liveness is not an input: an uncollected corpse is still in the domain.
--pub const fn survey_includes(supervising_rendezvous: Option<u64>, invoked_rendezvous: u64) -> bool {
+diff --git a/kernel/src/sched/region_reaping.rs b/kernel/src/sched/region_reaping.rs
+index db941b37d..b06419f00 100644
+--- a/kernel/src/sched/region_reaping.rs
++++ b/kernel/src/sched/region_reaping.rs
+@@ -395,9 +395,9 @@ const fn reap_decision(
+ /// the domain.
+ const fn survey_includes(
+     supervising_rendezvous: Option<RendezvousId>,
+-    invoked_rendezvous: RendezvousId,
++    _invoked_rendezvous: RendezvousId,
+ ) -> bool {
 -    matches!(supervising_rendezvous, Some(rendezvous) if rendezvous == invoked_rendezvous)
-+pub const fn survey_includes(supervising_rendezvous: Option<u64>, _invoked_rendezvous: u64) -> bool {
 +    supervising_rendezvous.is_some()
  }
  
- /// Why a capability table operation was refused.
+ /// Collect a corpse a supervision rendezvous supervises (§32 (a supervisor may collect a

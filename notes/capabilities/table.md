@@ -68,8 +68,10 @@ down a budget tree never increase, and a spend-only (`GRANT`-less) budget cannot
 
 ## Reap and survey
 
-`reap_decision` is the whole authorization of `rendezvous::REAP`, as pure logic the kernel calls
-(`sched::reap_supervised`) before it reclaims. It takes no `Capability` and returns none, so a supervisor
+`reap_decision`, in `kernel/src/sched/region_reaping.rs`, is the whole authorization of
+`rendezvous::REAP`, as pure logic `sched::reap_supervised` calls before it reclaims. It and
+`survey_includes` live in the kernel rather than in `capability_table`, because they speak of
+supervision and rendezvous, which are the kernel's, and the table crate does not. It takes no `Capability` and returns none, so a supervisor
 gains no authority by reaping. The supervision check comes first, so a live stranger and a stale
 name give the same answer. Only inside the relationship does liveness change the answer.
 
