@@ -65,12 +65,16 @@ All of these ran on this lane's tree, at the commit the pull request carries.
 | `script/names address_space_layout` and `python3 helpers/name_release.py --draft address_space_layout` | the crate name ratified; `INITIAL_RAMDISK_VIRTUAL_ADDRESS`, `MAXIMUM_STACK_PAGES` and the `verification` module ratified; `VERSION`, `INTERFACE_ID` and `window` provisional; every other public item has no block |
 | `script/crate-review-packet --no-rustdoc address_space_layout` | the packet the tables above draw on; its public API list is the grep fallback, so the lane read signatures from the source |
 
-Not run, and so not claimed: the stranger test (`script/stranger-test` on the README), the
-template's workflows (`check`, `proofs`, `weekly`, `msrv`, mutation, semver), a fresh
-`cargo mutants` run, `cargo package`, `cargo-semver-checks` (a first release has no baseline),
-`script/crate-move --dry-run`, and `cargo xtask std-src` against a git dependency. The 1.88 floor
-is the lowest toolchain installed here; the template's `msrv` job confirms the exact floor.
-The lane runs `script/lint` before it pushes, and CI runs it again.
+Not run, and so not claimed:
+
+- the stranger test (`script/stranger-test` on the README);
+- the template's workflows (`check`, `proofs`, `weekly`, `msrv`, mutation, semver);
+- a fresh `cargo mutants` run and `cargo package`;
+- `cargo-semver-checks`, since a first release has no baseline;
+- `script/crate-move --dry-run`, and `cargo xtask std-src` against a git dependency.
+
+The 1.88 floor is the lowest toolchain installed here; the template's `msrv` job confirms the exact
+floor. The lane runs `script/lint` before it pushes, and CI runs it again.
 
 ## Public API
 
@@ -195,9 +199,9 @@ names, which become permanent after the first tag.
    recommendation is to ratify `window`, `Band::new` and a public `LOW_HALF_SPLIT_SHIFTS` as
    named, and to ratify the rename of the length and address constants as proposed.
 2. Clear the review, which approves creating `nifeos/address_space_layout` and moving the crate,
-   with `publish = false`, no tag and no publish. The recommendation is to clear it (option A of
-   the milestone's open decision); option B clears it with named changes to the provisional names,
-   which land in the move pull request, and option C sends the package back.
+   with `publish = false`, no tag and no publish. The recommendation is option A of the milestone's
+   open decision, which clears it. Option B clears it with named changes to the provisional names,
+   which land in the move pull request. Option C sends the package back.
 
 ## Reproducer
 
