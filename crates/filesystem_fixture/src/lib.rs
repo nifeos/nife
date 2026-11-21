@@ -8,9 +8,9 @@
 //!
 //! # BUGS
 //!
-//! - The dependency on `filesystem_contract` is a path today, so this crate stands alone only once
-//!   that crate has left and this one pins it by revision. The contract leaves first.
-//! - Much of the crate describes nife's own QEMU test runs (the witnesses, the benchmark phases), not
+//! - The dependency on `filesystem_contract` is a path inside this repository's workspace, so this
+//!   crate builds only beside it.
+//! - Much of the crate describes the QEMU test runs of the stack it was written for (the witnesses, the benchmark phases), not
 //!   a filesystem in general. A third party gets the file names and the shapes as examples.
 //!
 //! Name: provisional (proposed by block 886, its crate-root name lifted; considered and refused
@@ -41,7 +41,8 @@ pub const INTERFACE_ID: u64 = 16;
 /// A file the image ships with; the client reads it back through a granted directory capability.
 pub const MOTD_NAME: &str = "motd";
 /// Its exact contents. Longer than eight bytes so the report's head word is a real prefix.
-pub const MOTD: &[u8] = b"redoxfs served this file to an EL0 client through a capability handle\n";
+pub const MOTD: &[u8] =
+    b"redoxfs served this file to an unprivileged client through a capability handle\n";
 
 /// A file the image ships with (with placeholder contents) so the client can open it and write.
 pub const SCRATCH_NAME: &str = "scratch";
@@ -533,7 +534,7 @@ pub mod walk {
         [("s4k", 4096), ("s64k", 65_536), ("s256k", 262_144)];
     /// What every file in [`CHAIN`], [`WIDE`] and [`NARROW`] holds. Sixteen bytes, so a small
     /// file's read is one request and the byte region is the only place bytes vary.
-    pub const SMALL_BODY: &[u8] = b"nife walk entry\n";
+    pub const SMALL_BODY: &[u8] = b"walk entry body\n";
 
     /// The byte at `i` of a sized file: printable, a newline every 64, so a search tool run
     /// over the tree later has lines to match and the host and guest agree without a file.
@@ -580,7 +581,7 @@ pub mod walk {
         (WALK_FILES - SIZE_FILES.len()) * SMALL_BODY.len() + sized
     };
     /// Path components a full walk resolves: each entry's depth below [`ROOT`], summed, since
-    /// that is the length of the path a walker hands back to list or open it. On nife it is
+    /// that is the length of the path a walker hands back to list or open it. On the target system it is
     /// the number of hops a component-at-a-time resolver pays, and what a multi-component
     /// resolve would save. Computed from the shape rather than by walking, so a walker that
     /// skipped a directory cannot agree with it by construction.
@@ -603,7 +604,7 @@ pub mod walk {
     /// typed at the prompt, with the tree as its working directory. The kernel harness turns
     /// it into an argv with `grant_plan::write_argument_page`, the shell's own function, and
     /// a host-side example runs the same words, so the guest and Linux run
-    /// one command. `--threads 1` and `--no-mmap` are the block's two honesty pins: nife
+    /// one command. `--threads 1` and `--no-mmap` are the block's two honesty pins: the guest
     /// answered one thread when this was written and has no `mmap`, so the host must be held to
     /// the same. The threaded lines are below. `--stats`
     /// is what makes the search measurable from inside both: ripgrep times its own walk and
@@ -618,7 +619,7 @@ pub mod walk {
     /// and `DESCEND` and no `ENUMERATE`. Under a grant lacking `ENUMERATE` this still finds
     /// its one line, so a refused walk is about enumeration alone. Typed as a person would,
     /// with neither pin: a single named file is where `ripgrep` tries a memory map, so this
-    /// also shows nife needs no `--no-mmap`.
+    /// also shows the guest needs no `--no-mmap`.
     ///
     /// Name: provisional.
     pub const RG_NAMED: &str = "rg 'walk entry' narrow/n000";
@@ -1121,7 +1122,7 @@ pub mod blank {
     pub const ESP: (u64, u64) = (2048, 10239);
     /// The Linux filesystem partition.
     pub const LINUX: (u64, u64) = (10240, 30719);
-    /// **The nife data partition**, the one that gets a filesystem. Its start and its
+    /// **The data partition**, the one that gets a filesystem. Its start and its
     /// length are both whole multiples of RedoxFS's 4096-byte block, which `mkfs` requires
     /// and refuses without: a filesystem whose blocks straddle the partition's first byte would
     /// read fine through the offset disk that made it and be unreadable by anything else.
@@ -1131,14 +1132,14 @@ pub mod blank {
     pub const PARTITIONS: usize = 3;
 
     /// The name written into every entry's 36 UTF-16 units, in order.
-    pub const NAMES: [&str; PARTITIONS] = ["nife boot", "nife root", "nife data"];
+    pub const NAMES: [&str; PARTITIONS] = ["boot", "root", "data"];
 
     /// The file `mkfs` creates on the filesystem it just made, so the host tool has
     /// something to read back. An empty filesystem that opens proves the header; a file the
     /// guest wrote proves the tree, the allocator and the root node too.
     pub const MADE_NAME: &str = "made-on-target";
     /// Its contents, checked byte for byte on the host after the run.
-    pub const MADE_BODY: &[u8] = b"CRK57: this filesystem was created by nife on the target\n";
+    pub const MADE_BODY: &[u8] = b"CRK57: this filesystem was created on the target\n";
 }
 
 #[cfg(test)]
