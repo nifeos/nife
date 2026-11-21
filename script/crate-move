@@ -57,8 +57,12 @@
 #    byte.
 # 6. `git init` and `git add --all` in the staged tree, so the checks that read `git ls-files` see
 #    what a push would carry. Nothing is committed.
-# 7. Runs the template's cheap checks from the pinned revision (standalone, prose, ratchets,
-#    naming, orphan modules, links, falsification records) plus two it lacks: citations of this
+# 7. Runs the template's cheap checks from the pinned revision (standalone, prose, acronyms,
+#    README test count, ratchets, every naming gate, README badge row, typos, orphan modules,
+#    links, falsification records) at ceiling 0 on the staged tree, as `check / standalone` runs
+#    them. The list is read from the template's own check.yml: a helper the `standalone` job
+#    enforces (a step not named `report only`) that this script has no runner for fails the run
+#    as `template coverage`, so a gate added to the template cannot go unchecked here. Plus two it lacks: citations of this
 #    tree, and the word `nife` anywhere in the staged files. Those two report the crate's own files
 #    first and the scaffold's under `(template scaffold)`, so the scaffold's lines never come first.
 # 8. Prints the nife-side follow-up: each consumer manifest's replacement line, every other
@@ -81,7 +85,9 @@
 # - Kani does not run. `script/crate-standalone` proves the harnesses and replays each patch on
 #   this tree's copy; the staged tree's `-p1` patches are checked for form and for applying
 #   (`falsify.py --check`), not replayed.
-# - The template's heavy jobs (coverage, clippy, rustdoc, supply chain, Miri, mutation) do not run;
+# - `check / standalone`'s shellcheck step does not run, and typos is a note, not a pass, when the
+#   binary is missing here.
+# - The template's heavy jobs (coverage, clippy, supply chain, Miri, mutation) do not run;
 #   the repository's first CI run is their first run.
 # - There is no live mode. Creating the repository, pushing and tagging are the runbook's steps,
 #   taken by hand, because each is a person's or needs one's approval.
