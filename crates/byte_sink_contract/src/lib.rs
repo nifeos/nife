@@ -98,6 +98,8 @@ pub const MAXIMUM_INLINE_BYTES: usize = 16;
 pub const GONE: i64 = -11;
 
 /// Pack an opcode and a length into a message's first word.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane lane/byte-sink-contract-in-tree-work.
 pub const fn first_word(operation: u64, len: u64) -> u64 {
     (operation << OPERATION_SHIFT) | (len & 0xffff_ffff)
 }
@@ -221,6 +223,8 @@ pub const fn kind(w0: u64) -> u8 {
 }
 
 /// What one received message was.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane lane/byte-sink-contract-in-tree-work.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Message {
     /// [`OPERATION_BYTES`]: this many bytes were written into the caller's buffer, 0 to

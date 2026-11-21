@@ -21,6 +21,7 @@ boot_ladder	shared	components,fixtures,kernel
 boot_slot	shared	components,kernel,uefi_loader
 byte_glob	shared	retired
 byte_sink_contract	shared	components,fixtures,kernel,std
+byte_sink_fixture	userspace	fixtures
 byte_sink_proto	shared	retired
 byte_sink_protocol	shared	retired
 c_library_errno	userspace	c_library

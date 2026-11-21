@@ -16,28 +16,40 @@ use byte_sink_contract::Sent;
 /// What `fixtures/src/sink_transcript_writer.rs` writes. Long enough to span several messages and to
 /// end mid-message, so a decoder that only ever sees full 16-byte chunks is not being flattered
 /// by the fixture.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane lane/byte-sink-contract-in-tree-work.
 pub const TRANSCRIPT: &[u8] =
     b"a program does not know what its output slot holds, and that is the point.\n";
 
 /// The name `fixtures/src/file_sink.rs` writes into. Created on first use rather than shipped in the
 /// image, because the file's existence is part of what the test proves.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane lane/byte-sink-contract-in-tree-work.
 pub const SINK_NAME: &str = "sinkout";
 
 /// A sink reports this once its destination is open and before it takes a byte, so a hang in
 /// opening the file is distinguishable from a hang in the serve path. Same discipline as
 /// `filesystem_contract::READY`.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane lane/byte-sink-contract-in-tree-work.
 pub const READY: u64 = 0x5142_0000_0000_0001;
 
 /// A sink reports this after end-of-stream, with the byte total in the second word.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane lane/byte-sink-contract-in-tree-work.
 pub const DONE: u64 = 0x5142_0000_0000_0002;
 
 /// A sink reports this on a message the contract does not define, with the offending first word
 /// in the second position. It refuses rather than guessing (see
 /// [`byte_sink_contract::Message::Malformed`]).
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane lane/byte-sink-contract-in-tree-work.
 pub const BAD: u64 = 0x5142_0000_0000_0003;
 
 /// A writer's report of how its last `SEND` classified. A number, because the assertion it
 /// serves is about telling `Gone` from `NoSink` and a boolean cannot carry that.
+///
+/// Name: provisional, minted 2026-11-21 (UTC) by lane lane/byte-sink-contract-in-tree-work.
 pub const fn code(sent: Sent) -> u64 {
     match sent {
         Sent::Ok => 0,
