@@ -6,7 +6,7 @@ abi,admitted,replace | with ^,1,or_xor,equivalent,unclassified,noise,
 address_space_identifier,Allocator::free,replace && with ||,1,logic,gap,,gap,
 address_space_identifier,Allocator::free,replace < with <=,1,comparison,gap,,gap,
 address_space_layout,check_image,replace > with >=,1,comparison,equivalent,unclassified,algebraic,
-boot_ladder,,replace << with >>,1,shift,equivalent,algebraic,noise,
+boot_ladder,,replace << with >>,1,shift,equivalent,algebraic,noise,yes
 boot_ladder,Tally::fail_unrecorded,replace | with ^,2,or_xor,equivalent,algebraic,noise,
 boot_ladder,Tally::is_recorded,replace | with ^,2,or_xor,equivalent,algebraic,noise,
 boot_ladder,Tally::to_packed,replace | with ^,2,or_xor,equivalent,algebraic,noise,
