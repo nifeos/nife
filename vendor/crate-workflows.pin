@@ -11,14 +11,14 @@
 name = crate-workflows
 # The template publishes no version. Its release tags (v7 and so on) mark the workflows callers
 # pin, not these files, so the abbreviated commit stands in.
-version = 223cf6f
+version = 56437de
 
 source = git
 
-url = https://github.com/nifeos/crate-workflows/archive/223cf6f6dfa00d4acf23a60f6eca877acc94327b.tar.gz
-sha256 = ab80232678e3656aeec324159d47b8b450c5ec613b0f2735f46c6c4752a97361
+url = https://github.com/nifeos/crate-workflows/archive/56437ded32a66bf13b369b2095c8c7af2d840b05.tar.gz
+sha256 = f9ba7004c3139a15f79f91b5c07890b953799d2966b7968f208a13d9dc173d19
 
-vcs = 223cf6f6dfa00d4acf23a60f6eca877acc94327b
+vcs = 56437ded32a66bf13b369b2095c8c7af2d840b05
 
 divergence = vendor/crate-workflows.divergence.patch
 

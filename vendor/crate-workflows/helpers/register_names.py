@@ -127,10 +127,13 @@ def address_findings(definition, parts, words):
     qualifiers = _words('address_qualifiers', words)
     verb_before = _words('address_verb_before', words)
     verb_after = _words('address_verb_after', words)
+    compounds = _words('address_compounds', words)
     for k, part in enumerate(parts):
         if part not in ('address', 'addresses', 'addr', 'addrs'):
             continue
         before = parts[k - 1] if k else None
+        if part == 'address' and parts[k + 1:k + 2] and parts[k + 1] in compounds:
+            continue  # `address_space`, `AddressWaitTable`: not an address
         if before in qualifiers:
             continue
         if k > 1 and parts[k - 2] + parts[k - 1] in qualifiers:
@@ -325,6 +328,14 @@ fn a_byte_addressed_card_is_read_by_addressing_it() {}
 pub const PHYSICAL_FRAME_ADDRESS: u64 = 0;
 pub const RELATIVE_ADDRESS_OFFSETS: u64 = 0;
 pub fn bus_address() -> u64 { 0 }
+pub struct Key { address_space: u32 }
+pub struct AddressSpace;
+pub const ADDRESS_SPACE: u32 = 0;
+pub struct AddressWaitTable;
+pub fn address_wait() {}
+pub fn address_wake() {}
+pub enum AddressWaitError { Timeout }
+pub const ADDRESS_SPACE_BASE_ADDRESS: u64 = 0;
 pub const SYSTEM_MANAGEMENT_BUS_ADDRESS_MASK: u16 = 0x7f;
 pub fn frame_address() -> u64 { 0 }
 pub fn address() -> u64 { 0 }
@@ -352,7 +363,8 @@ pub const CARD_DETECT_BIT: u32 = 1;
     bad = judge('src/sd.rs', rust_names.definitions(src), words)
     got = sorted(line.split(': ')[1] for line in bad)
     want = sorted(['const PHYSICAL_FRAME_ADDRESS', 'const RELATIVE_ADDRESS_OFFSETS',
-                   'fn frame_address', 'fn address', 'const MASK_STATUS_REGISTER',
+                   'fn frame_address', 'fn address', 'const ADDRESS_SPACE_BASE_ADDRESS',
+                   'const MASK_STATUS_REGISTER',
                    'const READ_LENGTH', 'const CARD_DETECT_REGISTER', 'const CARD_DETECTED',
                    'const CARD_PRESENT'])
     if got != want:
