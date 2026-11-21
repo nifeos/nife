@@ -53,7 +53,7 @@ exhaustive list of what a harness in `kernel/src` cannot see. The same list is i
    harness ever calls into that code, Kani reports the unsupported construct instead of proving
    past it.
 
-   The boundary is `asm!` and MMIO, not the directory `arch/` (milestone 255): 4,004 of `arch/`'s
+   The boundary is `asm!` and MMIO, not the directory `arch/`: 4,004 of `arch/`'s
    16,225 lines are in files containing no `asm!` at all, and `arch/aarch64/iommu.rs` has its proofs
    in place. The architecture layer is still mostly unverified, and the timer re-arm drift is on the
    far side of this line.
