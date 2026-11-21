@@ -104,4 +104,4 @@ One file each, in `notes/crate-reviews/`. The step is journey 5's.
 | [`globally_unique_identifier_partition_table`](crate-reviews/globally-unique-identifier-partition-table.md) | 2 | cleared to move (2026-11-20 UTC, no tag, no publish); a bounded `parse` totality harness, or a recorded reason it cannot finish, is due before its first tag |
 | [`byte_glob`](crate-reviews/byte-glob.md) | contract | cleared and moved (2026-11-20 UTC, no tag, no publish); nife pins `nifeos/byte_glob` by commit |
 | [`device_tree_blob`](crate-reviews/device-tree-blob.md) | 4 | cleared to move (2026-11-20 UTC, no tag, no publish) |
-| [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | ready for review |
+| [`test_and_set_lock`](crate-reviews/test-and-set-lock.md) | 1109 | cleared to move (2026-11-20 UTC, `publish = false`, no tag, no publish); the first tag waits for a litmus run on real Arm and RISC-V hardware |
