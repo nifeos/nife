@@ -24,7 +24,7 @@ unsafe fn address_wait_key_of(
 ) -> inter_process_communication::address_wait::Key {
     // SAFETY: the function's contract; `wait_on` is a `Copy` field read in place.
     match unsafe { (*waiter.as_ptr()).handshake.wait_on } {
-        Some(Wait::AddressWait(key)) => key,
+        Some(Wait::Address(key)) => key,
         // A waiter on this table that is not parked on an address wait is a bookkeeping defect; a key no
         // wake can name keeps it from being woken as somebody else's.
         _ => inter_process_communication::address_wait::Key {
@@ -89,7 +89,7 @@ pub fn address_wait(space: u64, va: u64, expected: u32) -> Result<u64, abi::Erro
         let token = take_token(sched, current);
         sched.address_waits.park(key, token);
         let t = sched.threads.get_mut(current).expect("running thread");
-        t.handshake.park(Wait::AddressWait(key)); // only a WAKE (or an abort) may wake us
+        t.handshake.park(Wait::Address(key)); // only a WAKE (or an abort) may wake us
         trace::record(trace::Event::BlockSelf, current, 12);
     }
     schedule(); // blocks; a WAKE serves us and makes us Ready

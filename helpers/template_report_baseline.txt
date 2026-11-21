@@ -1,6 +1,6 @@
-abi abbreviations 20
+abi abbreviations 18
 abi prose_acronyms 26
-abi register_names 9
+abi register_names 11
 address_space_identifier abbreviations 9
 address_space_identifier prose_acronyms 4
 address_space_identifier readme_acronyms 4
@@ -109,10 +109,10 @@ initial_ramdisk_writer prose_acronyms 1
 initial_ramdisk_writer register_names 2
 installed_programs abbreviations 17
 installed_programs prose_acronyms 1
-inter_process_communication abbreviations 53
+inter_process_communication abbreviations 51
 inter_process_communication prose_acronyms 4
 inter_process_communication readme_acronyms 1
-inter_process_communication register_names 2
+inter_process_communication register_names 4
 intrusive_queue abbreviations 6
 intrusive_queue prose_acronyms 1
 intrusive_queue readme_acronyms 1

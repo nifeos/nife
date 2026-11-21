@@ -83,7 +83,7 @@ impl<T: Node, const BUCKETS: usize> AddressWaitTable<T, BUCKETS> {
                     assert!(
                         BUCKETS > 0,
                         "an address wait table needs at least one bucket"
-                    )
+                    );
                 };
                 [const { Queue::new() }; BUCKETS]
             },

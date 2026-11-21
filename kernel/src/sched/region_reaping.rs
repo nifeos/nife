@@ -96,7 +96,7 @@ pub(super) fn finish_blocked_resident(sched: &mut IpcTables, tid: ThreadId) {
             }
         }
         // On the address wait table under its key, where a later `WAKE` would walk a freed TCB.
-        Some(Wait::AddressWait(key)) => {
+        Some(Wait::Address(key)) => {
             let ptr = thread_control_block_ptr(sched, tid);
             if let Some(token) = sched.address_waits.remove(key, ptr) {
                 hold_token(token);

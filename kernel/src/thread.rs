@@ -273,7 +273,7 @@ pub enum Wait {
     /// Parked in `AddressSpace::WAIT` on an address wait (milestone 812 (`std::thread::spawn` runs real
     /// threads in one address space)), under this key in the scheduler's address wait table. The key is
     /// the whole identity: there is no address wait object to name.
-    AddressWait(inter_process_communication::address_wait::Key),
+    Address(inter_process_communication::address_wait::Key),
     /// **Stopped by `ThreadControlBlock::SUSPEND`** (DECISIONS §300), on no queue: only `RESUME`
     /// serves this wait, so every other wake is refused by the handshake's gate. A thread parks
     /// here only from `Ready` or `Running`; one suspended inside an IPC finishes that wait first.
