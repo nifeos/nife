@@ -129,10 +129,10 @@ names (#3853, #3856, #3866). Three open pull requests share files with step 3.
 | #3884, the crate-workflows pin bump | 1, the baseline | the baseline |
 
 The recommendation is to start step 3 after #3879 and #3883 merge, and before `abi` leaves for a
-repository of its own. #3879 keeps the triples as they are, so it does not collide with step 5. The
-move of `user_mode_runtime` (milestone 1112, `user_mode_runtime`: what an outside maintainer would
-fix before it leaves) waits on `abi` leaving, as step 3 of milestone 1017's order (the contract
-crates leave in this order) requires. A
+repository of its own. #3879 keeps the triples as they are, so it does not collide with step 5. Milestone
+1112 (`user_mode_runtime`: what an outside maintainer would fix before it leaves) moves that crate
+only after `abi` leaves, as step 3 of milestone 1017 (the contract crates leave in this order)
+requires. A
 rename before any move keeps the whole change inside one repository and one queue.
 
 ## The outward steps
@@ -222,12 +222,6 @@ Prior art. On macOS, `uname -s` prints `Darwin`, the kernel, while Rust's `targe
 Hermit and Redox use one name for the kernel and the interface, so they offer no split.
 
 Blocks: step 4 only in which line the C library's platform module keeps.
-
-## Follow-on
-
-- **Proposed.** Steps 1 to 6, each a lane of its own, in the order above.
-- **Proposed.** The outward steps, each after its own go.
-- **Proposed.** A ruling on `.nifepkg`, if the distribution's format is to follow the interface.
 
 ## BUGS
 
