@@ -117,7 +117,7 @@ current_cpu_contract = { version = "0.1.0", path = "../crates/current_cpu_contra
 # The user address-space map (milestone 206 (a program image has under 896 KiB), DECISIONS §171 (where a program image starts) option D): where the loader puts a
 # program's image and stack, and the check that refuses an image that does not fit, shared with the
 # userspace loader so the two cannot disagree about either.
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "2a22dbdb966d50eb98e8c69ccb59d86275cf3065" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 # Where each device-driver process finds its windows, and the spawn words each one receives: the
 # process layout around the device crates (`e1000e`, `designware_ethernet`,
 # `designware_mobile_storage`, `extensible_host_controller_interface`,

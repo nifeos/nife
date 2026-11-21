@@ -5,7 +5,7 @@ the linker script, two loaders, std's runtime, the kernel's test harnesses and e
 shares a page. This page is the map they agree on, so a new page is placed by the map rather than
 by looking for a gap. Milestone 206 (a program image has under 896 KiB) drew it, under DECISIONS
 §171 (where a program image starts), option D, ruled by calef on 2026-09-26.
-The map is a crate, [`nifeos/address_space_layout`](https://github.com/nifeos/address_space_layout/blob/2a22dbdb966d50eb98e8c69ccb59d86275cf3065/src/lib.rs), because
+The map is a crate, [`nifeos/address_space_layout`](https://github.com/nifeos/address_space_layout/blob/02d497b62915c1fb133ef1de6e76598fa51e67fe/src/lib.rs), because
 it is a list of numbers several binaries agree on (AGENTS.md rule 7). This page explains it; the
 crate is the rule.
 

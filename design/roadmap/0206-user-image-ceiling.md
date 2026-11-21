@@ -79,7 +79,7 @@ for 190 of it.
   (its page tables first, before the initrd window): milestone 604 (the builder's scratch cursor is
   bounded) made it wrap inside a fixed window.
 - **Recorded.** Band checks see membership, not collisions within one program; two protocol crates
-  restate their numbers: [`nifeos/address_space_layout`](https://github.com/nifeos/address_space_layout/blob/2a22dbdb966d50eb98e8c69ccb59d86275cf3065/src/lib.rs).
+  restate their numbers: [`nifeos/address_space_layout`](https://github.com/nifeos/address_space_layout/blob/02d497b62915c1fb133ef1de6e76598fa51e67fe/src/lib.rs).
 - **Recorded.** The userspace loader refuses a too-large image as `Err(())`, with no reason:
   `crates/supervision_contract/src/lib.rs`.
 

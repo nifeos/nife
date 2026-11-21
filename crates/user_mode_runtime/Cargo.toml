@@ -40,7 +40,7 @@ doc_markdown = "warn"
 
 [dependencies]
 abi = { version = "0.1.0", path = "../abi" }
-address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "2a22dbdb966d50eb98e8c69ccb59d86275cf3065" }
+address_space_layout = { version = "0.1.0", git = "https://github.com/nifeos/address_space_layout", rev = "02d497b62915c1fb133ef1de6e76598fa51e67fe" }
 # The x86_64 timebase page (milestone 161 (the x86_64 kernel port)'s `counter_hertz` follow-up): the kernel's calibrated TSC rate,
 # read from the fixed page `kernel::user::load` maps read-only into every x86_64 process. Only
 # `counter_hertz`'s x86_64 arm reads it, but the dependency is unconditional the way clock_contract's and
