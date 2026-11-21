@@ -253,7 +253,7 @@ pub fn write_capabilities(
 /// Write the endowment a resolved invocation would hand the new process, planned as `program`,
 /// whose name heads the preview and whose resolver zone is printed. `holdings` is what the
 /// planning shell held, which is how a directory grant's position is printed as a path in the one
-/// tree even when the grant is in a mounted second tree ([`ShellHoldings::place`]).
+/// tree even when the grant is in a mounted second tree ([`ShellHoldings::path_in_one_tree`]).
 ///
 /// `config` is this shell's own view of the inert-configuration page, when it holds one
 /// ([`grant_contract::SHELL_CONFIGURATION_SLOT`]). It is the frame the progenitor endows a child declaring

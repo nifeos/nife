@@ -891,7 +891,7 @@ fn the_jig_preview_shows_the_index_store_the_verb_holds_and_yields_it_to_a_desig
             &ShellHoldings::default(),
             None,
             o,
-        )
+        );
     });
     assert!(!own.contains("/activation/indexes"), "{own}");
     assert!(!own.contains("sources"), "{own}");
