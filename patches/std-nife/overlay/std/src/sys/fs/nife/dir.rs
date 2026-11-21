@@ -97,11 +97,11 @@ impl Dir {
             let mut p = page();
             let (at, name) = walk(&mut p, self.at.0, path, open_rights(opts))?;
             p.put(name.as_bytes());
-            request(proto::req(proto::OPEN, at.0, name.len() as u64), 0)?
+            request(proto::request(proto::OPEN, at.0, name.len() as u64), 0)?
         };
         if opts.truncate {
-            if let Err(e) = request(proto::req(proto::TRUNCATE, handle, 0), 0) {
-                let _ = request(proto::req(proto::CLOSE, handle, 0), 0);
+            if let Err(e) = request(proto::request(proto::TRUNCATE, handle, 0), 0) {
+                let _ = request(proto::request(proto::CLOSE, handle, 0), 0);
                 return Err(e);
             }
         }
@@ -154,7 +154,7 @@ impl Dir {
         let mut p = page();
         let (at, name) = walk(&mut p, self.at.0, path, fsproto::directory::REMOVE)?;
         p.put(name.as_bytes());
-        request(proto::req(proto::UNLINK, at.0, name.len() as u64), 0)?;
+        request(proto::request(proto::UNLINK, at.0, name.len() as u64), 0)?;
         Ok(())
     }
 
@@ -174,7 +174,7 @@ impl Dir {
         p.put(src.as_bytes());
         p.put_at(src.len(), dst.as_bytes());
         request(
-            proto::req(proto::RENAME, src_at.0, src.len() as u64),
+            proto::request(proto::RENAME, src_at.0, src.len() as u64),
             proto::rename_destination(dst_at.0, dst.len() as u64),
         )?;
         Ok(())
@@ -189,8 +189,8 @@ impl Dir {
         let (at, name) =
             walk(&mut p, self.at.0, path, fsproto::directory::CREATE | fsproto::directory::DESCEND)?;
         p.put(name.as_bytes());
-        let handle = request(proto::req(proto::MKDIR, at.0, name.len() as u64), 0)?;
-        let _ = request(proto::req(proto::CLOSE, handle, 0), 0);
+        let handle = request(proto::request(proto::MKDIR, at.0, name.len() as u64), 0)?;
+        let _ = request(proto::request(proto::CLOSE, handle, 0), 0);
         Ok(())
     }
 
@@ -223,7 +223,7 @@ impl Dir {
         let mut p = page();
         let (at, name) = walk(&mut p, self.at.0, path, fsproto::directory::REMOVE)?;
         p.put(name.as_bytes());
-        request(proto::req(proto::RMDIR, at.0, name.len() as u64), 0)?;
+        request(proto::request(proto::RMDIR, at.0, name.len() as u64), 0)?;
         Ok(())
     }
 }

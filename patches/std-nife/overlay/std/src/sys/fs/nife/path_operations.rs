@@ -40,11 +40,11 @@ pub(super) fn stat_under(at: u64, path: &Path) -> io::Result<FileAttr> {
     let mut p = page();
     let (at, name) = walk(&mut p, at, path, fsproto::directory::READ)?;
     p.put(name.as_bytes());
-    let (size, dir) = match request(proto::req(proto::OPEN, at.0, name.len() as u64), 0) {
+    let (size, dir) = match request(proto::request(proto::OPEN, at.0, name.len() as u64), 0) {
         Ok(handle) => {
-            let size = request(proto::req(proto::FSTAT, handle, 0), 0);
+            let size = request(proto::request(proto::FSTAT, handle, 0), 0);
             // Closed before `size?` can return, so an `FSTAT` failure does not leak the handle.
-            let _ = request(proto::req(proto::CLOSE, handle, 0), 0);
+            let _ = request(proto::request(proto::CLOSE, handle, 0), 0);
             (size?, false)
         }
         Err(e) if e.kind() == io::ErrorKind::IsADirectory => (0, true),
@@ -52,7 +52,7 @@ pub(super) fn stat_under(at: u64, path: &Path) -> io::Result<FileAttr> {
     };
     // The name again: nothing promises `OPEN`'s reply left the page as it found it.
     p.put(name.as_bytes());
-    let (r0, _) = rt::call(FS, proto::req(proto::GET_MODIFICATION_TIME, at.0, name.len() as u64), 0);
+    let (r0, _) = rt::call(FS, proto::request(proto::GET_MODIFICATION_TIME, at.0, name.len() as u64), 0);
     let mtime = match fsproto::reply_errno(r0 as i64) {
         None => Mtime::Seconds(r0),
         Some(_) => Mtime::Refused(r0),
@@ -102,7 +102,7 @@ pub fn readdir(p: &Path) -> io::Result<ReadDir> {
     let mut cursor: u64 = 0;
     let result = loop {
         // `request_length_bytes` is ignored by READDIR; the cursor rides in the second word.
-        let filled = match request(proto::req(proto::READDIR, handle, 0), cursor) {
+        let filled = match request(proto::request(proto::READDIR, handle, 0), cursor) {
             Ok(n) => n as usize,
             Err(e) => break Err(e),
         };
@@ -152,7 +152,7 @@ pub fn unlink(p: &Path) -> io::Result<()> {
     let mut page = page();
     let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::REMOVE)?;
     page.put(name.as_bytes());
-    request(proto::req(proto::UNLINK, at.0, name.len() as u64), 0)?;
+    request(proto::request(proto::UNLINK, at.0, name.len() as u64), 0)?;
     Ok(())
 }
 
@@ -167,7 +167,7 @@ pub fn rmdir(p: &Path) -> io::Result<()> {
     let mut page = page();
     let (at, name) = walk(&mut page, proto::ROOT, p, fsproto::directory::REMOVE)?;
     page.put(name.as_bytes());
-    request(proto::req(proto::RMDIR, at.0, name.len() as u64), 0)?;
+    request(proto::request(proto::RMDIR, at.0, name.len() as u64), 0)?;
     Ok(())
 }
 
@@ -195,7 +195,7 @@ pub fn rename(old: &Path, new: &Path) -> io::Result<()> {
     page.put(src.as_bytes());
     page.put_at(src.len(), dst.as_bytes());
     request(
-        proto::req(proto::RENAME, src_at.0, src.len() as u64),
+        proto::request(proto::RENAME, src_at.0, src.len() as u64),
         proto::rename_destination(dst_at.0, dst.len() as u64),
     )?;
     Ok(())
@@ -306,7 +306,7 @@ pub fn set_times(p: &Path, times: FileTimes) -> io::Result<()> {
     let (at, name) =
         walk(&mut page, proto::ROOT, p, fsproto::directory::WRITE | fsproto::directory::SETTIME)?;
     page.put(name.as_bytes());
-    request(proto::req(proto::SET_MODIFICATION_TIME_AT, at.0, name.len() as u64), secs)?;
+    request(proto::request(proto::SET_MODIFICATION_TIME_AT, at.0, name.len() as u64), secs)?;
     Ok(())
 }
 
@@ -339,8 +339,8 @@ impl DirBuilder {
         // The second word asks for rights on the child. `create_dir` needs nothing from the handle
         // it gets back, because it closes it, so it asks for none. A caller that kept the handle
         // would send `fsproto::directory::PARENT_RIGHTS` (§98) rather than guess a mask.
-        let handle = request(proto::req(proto::MKDIR, at.0, name.len() as u64), 0)?;
-        let _ = request(proto::req(proto::CLOSE, handle, 0), 0);
+        let handle = request(proto::request(proto::MKDIR, at.0, name.len() as u64), 0)?;
+        let _ = request(proto::request(proto::CLOSE, handle, 0), 0);
         Ok(())
     }
 }

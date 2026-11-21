@@ -89,19 +89,19 @@ pub(super) fn open_handle(path: &Path, opts: &OpenOptions) -> io::Result<(u64, u
     let want = open_rights(opts);
     if count_names(path)? > 1 && paths_offered() && let Some(joined) = joined(path) {
         p.put(joined.as_bytes());
-        match open_reply(proto::req(proto::OPEN, proto::ROOT, joined.len() as u64), want) {
+        match open_reply(proto::request(proto::OPEN, proto::ROOT, joined.len() as u64), want) {
             Err(e) if refused_as_a_path(&e) => {}
             done => return done.inspect(|_| paths_seen()),
         }
         let (at, name) = walk(&mut p, proto::ROOT, path, want)?;
         p.put(name.as_bytes());
-        let opened = open_reply(proto::req(proto::OPEN, at.0, name.len() as u64), want)?;
+        let opened = open_reply(proto::request(proto::OPEN, at.0, name.len() as u64), want)?;
         paths_refused();
         return Ok(opened);
     }
     let (at, name) = walk(&mut p, proto::ROOT, path, want)?;
     p.put(name.as_bytes());
-    open_reply(proto::req(proto::OPEN, at.0, name.len() as u64), want)
+    open_reply(proto::request(proto::OPEN, at.0, name.len() as u64), want)
 }
 
 /// One `OPEN`, keeping both reply words: the handle, and the size ruling B put in the second.
@@ -131,5 +131,5 @@ pub(super) fn create_handle(path: &Path, opts: &OpenOptions) -> io::Result<u64> 
         fsproto::directory::CREATE | open_rights(opts),
     )?;
     p.put(name.as_bytes());
-    request(proto::req(proto::CREATE, at.0, name.len() as u64), 0)
+    request(proto::request(proto::CREATE, at.0, name.len() as u64), 0)
 }
