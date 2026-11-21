@@ -84,24 +84,29 @@ def word_initials(word):
 
 
 def spelled_runs(token, words, title_case=False):
-    """Does a run of `words` spell exactly the token's letters, small words skipped?"""
+    """Does a run of `words` spell exactly the token's letters?
+
+    The small words give no letter, or give one: `Federal Bureau of Investigation` spells FBI and
+    `Request for Comments` spells RFC, so both counts are tried."""
     want = letters(token)
     for start in range(len(words)):
         if words[start].lower() in prose_acronyms.STOP:
             continue
-        got = ''
-        for w in words[start:]:
-            if w.lower() in prose_acronyms.STOP:
-                continue
-            if title_case and not w[0].isupper():
-                break
-            if TOKEN.search(w):
-                break  # an acronym is not part of a prose expansion (`FAT16's` spells no FAT)
-            got += word_initials(w)
-            if len(got) >= len(want):
-                break
-        if got == want and len(want) >= 2:
-            return True
+        for keep_small in (False, True):
+            got = ''
+            for w in words[start:]:
+                small = w.lower() in prose_acronyms.STOP
+                if small and not keep_small:
+                    continue
+                if title_case and not w[0].isupper() and not small:
+                    break
+                if TOKEN.search(w):
+                    break  # an acronym is not part of a prose expansion (`FAT16's` spells no FAT)
+                got += word_initials(w) if not small else w[0].lower()
+                if len(got) >= len(want):
+                    break
+            if got == want and len(want) >= 2:
+                return True
     return False
 
 
@@ -299,6 +304,9 @@ def selftest():
         ('The AON (always-on) domain.\n', []),
         ('A FAT12 volume, then a full directory except FAT16\'s root.\n', [('FAT12', None)]),
         ('The AON (never-off) domain.\n', [('AON', None)]),
+        ('Request for Comments (RFC) 5905, and later the RFC.\n', []),
+        ('The Request for Comments is indexed. The RFC numbers.\n\nThe RFC again.\n', []),
+        ('The Request of Comments holds notes.\n\nThe RFC again.\n', [('RFC', None)]),
     ]
     failed = []
     for src, want in cases:
